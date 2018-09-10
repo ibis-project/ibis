@@ -663,8 +663,7 @@ which yield boolean arrays:
    agged = (expr
             [expr.one.notnull()]
             .group_by('is_valid')
-            .aggregate(expr.three.notnull()
-                       .sum().name('three_count')))
+            .aggregate(three_count=lambda t: t.three.notnull().sum()))
    print(ibis.impala.compile(agged))
 
 ``BETWEEN``

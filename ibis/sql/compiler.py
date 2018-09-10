@@ -3,7 +3,7 @@
 
 import abc
 
-from collections import defaultdict
+from collections import OrderedDict
 from itertools import chain
 
 import six
@@ -100,7 +100,7 @@ class SelectBuilder(object):
         self.subqueries = []
         self.distinct = False
 
-        self.op_memo = util.IbisSet()
+        self.op_memo = set()
 
     def get_result(self):
         # make idempotent
@@ -153,7 +153,7 @@ class SelectBuilder(object):
         # going to see if any table nodes appearing in the where stack have
         # been marked previously by the above code.
         for expr in self.filters:
-            needs_alias = _foreign_ref_check(self, expr)
+            needs_alias = foreign_ref_check(self, expr)
             if needs_alias:
                 self.context.set_always_alias()
 
@@ -598,26 +598,20 @@ def _blocking_base(expr):
 
 
 def _extract_subqueries(select_stmt):
-    helper = _ExtractSubqueries(select_stmt)
+    helper = ExtractSubqueries(select_stmt)
     return helper.get_result()
 
 
-def _extract_noop(self, expr):
+def extract_noop(self, _):
     return
 
 
-class _ExtractSubqueries(object):
-
-    # Helper class to make things a little easier
-
+class ExtractSubqueries(object):
     def __init__(self, query, greedy=False):
         self.query = query
         self.greedy = greedy
-
-        # Ordered set that uses object .equals to find keys
-        self.observed_exprs = util.IbisMap()
-
-        self.expr_counts = defaultdict(int)
+        self.expr_counts = OrderedDict()
+        self.node_to_expr = {}
 
     def get_result(self):
         if self.query.table_set is not None:
@@ -626,42 +620,39 @@ class _ExtractSubqueries(object):
         for clause in self.query.filters:
             self.visit(clause)
 
-        to_extract = []
+        expr_counts = self.expr_counts
 
-        # Read them inside-out, to avoid nested dependency issues
-        for expr, key in zip(self.observed_exprs.keys,
-                             self.observed_exprs.values):
-            v = self.expr_counts[key]
+        if self.greedy:
+            to_extract = list(expr_counts.keys())
+        else:
+            to_extract = [op for op, count in expr_counts.items() if count > 1]
 
-            if self.greedy or v > 1:
-                to_extract.append(expr)
-
-        return to_extract
+        node_to_expr = self.node_to_expr
+        return [node_to_expr[op] for op in to_extract]
 
     def observe(self, expr):
-        if self.seen(expr):
-            key = self.observed_exprs.get(expr)
-        else:
-            # this key only needs to be unique because of the IbisMap
-            key = id(expr.op())
-            self.observed_exprs.set(expr, key)
+        key = expr.op()
 
-        self.expr_counts[key] += 1
+        if key not in self.node_to_expr:
+            self.node_to_expr[key] = expr
+
+        assert self.node_to_expr[key].equals(expr)
+        self.expr_counts[key] = self.expr_counts.setdefault(key, 0) + 1
 
     def seen(self, expr):
-        return expr in self.observed_exprs
+        return expr.op() in self.expr_counts
 
     def visit(self, expr):
         node = expr.op()
-        method = '_visit_{0}'.format(type(node).__name__)
+        method = 'visit_{}'.format(type(node).__name__)
 
         if hasattr(self, method):
             f = getattr(self, method)
             f(expr)
         elif isinstance(node, ops.Join):
-            self._visit_join(expr)
+            self.visit_join(expr)
         elif isinstance(node, ops.PhysicalTable):
-            self._visit_physical_table(expr)
+            self.visit_physical_table(expr)
         elif isinstance(node, ops.ValueOp):
             for arg in node.flat_args():
                 if not isinstance(arg, ir.Expr):
@@ -670,74 +661,70 @@ class _ExtractSubqueries(object):
         else:
             raise NotImplementedError(type(node))
 
-    def _visit_join(self, expr):
+    def visit_join(self, expr):
         node = expr.op()
         self.visit(node.left)
         self.visit(node.right)
 
-    _visit_physical_table = _extract_noop
+    visit_physical_table = extract_noop
 
-    def _visit_Exists(self, expr):
+    def visit_Exists(self, expr):
         node = expr.op()
         self.visit(node.foreign_table)
         for pred in node.predicates:
             self.visit(pred)
 
-    _visit_ExistsSubquery = _visit_Exists
-    _visit_NotExistsSubquery = _visit_Exists
+    visit_NotExistsSubquery = visit_ExistsSubquery = visit_Exists
 
-    def _visit_Aggregation(self, expr):
+    def visit_Aggregation(self, expr):
         self.visit(expr.op().table)
         self.observe(expr)
 
-    def _visit_Distinct(self, expr):
+    def visit_Distinct(self, expr):
         self.observe(expr)
 
-    def _visit_Limit(self, expr):
+    def visit_Limit(self, expr):
         self.visit(expr.op().table)
         self.observe(expr)
 
-    def _visit_Union(self, expr):
+    def visit_Union(self, expr):
         op = expr.op()
         self.visit(op.left)
         self.visit(op.right)
         self.observe(expr)
 
-    def _visit_MaterializedJoin(self, expr):
+    def visit_MaterializedJoin(self, expr):
         self.visit(expr.op().join)
         self.observe(expr)
 
-    def _visit_Selection(self, expr):
+    def visit_Selection(self, expr):
         self.visit(expr.op().table)
         self.observe(expr)
 
-    def _visit_SQLQueryResult(self, expr):
+    def visit_SQLQueryResult(self, expr):
         self.observe(expr)
 
-    def _visit_TableColumn(self, expr):
+    def visit_TableColumn(self, expr):
         table = expr.op().table
         if not self.seen(table):
             self.visit(table)
 
-    def _visit_SelfReference(self, expr):
+    def visit_SelfReference(self, expr):
         self.visit(expr.op().table)
 
 
-def _foreign_ref_check(query, expr):
-    checker = _CorrelatedRefCheck(query, expr)
+def foreign_ref_check(query, expr):
+    checker = CorrelatedRefCheck(query, expr)
     return checker.get_result()
 
 
-class _CorrelatedRefCheck(object):
+class CorrelatedRefCheck(object):
 
     def __init__(self, query, expr):
         self.query = query
         self.ctx = query.context
         self.expr = expr
-
-        qroots = self.query.table_set._root_tables()
-
-        self.query_roots = util.IbisSet.from_list(qroots)
+        self.query_roots = frozenset(self.query.table_set._root_tables())
 
         # aliasing required
         self.foreign_refs = []
@@ -746,33 +733,34 @@ class _CorrelatedRefCheck(object):
         self.has_query_root = False
 
     def get_result(self):
-        self._visit(self.expr)
+        self.visit(self.expr)
         return self.has_query_root and self.has_foreign_root
 
-    def _visit(self, expr, in_subquery=False, visit_cache=None,
-               visit_table_cache=None):
+    def visit(self, expr, in_subquery=False, visit_cache=None,
+              visit_table_cache=None):
         if visit_cache is None:
             visit_cache = set()
 
-        if (id(expr), in_subquery) in visit_cache:
-            return
-        visit_cache.add((id(expr), in_subquery))
-
         node = expr.op()
+        key = node, in_subquery
+        if key in visit_cache:
+            return
 
-        in_subquery = in_subquery or self._is_subquery(node)
+        visit_cache.add(key)
+
+        in_subquery = in_subquery or self.is_subquery(node)
 
         for arg in node.flat_args():
             if isinstance(arg, ir.TableExpr):
-                self._visit_table(arg, in_subquery=in_subquery,
-                                  visit_cache=visit_cache,
-                                  visit_table_cache=visit_table_cache)
+                self.visit_table(arg, in_subquery=in_subquery,
+                                 visit_cache=visit_cache,
+                                 visit_table_cache=visit_table_cache)
             elif isinstance(arg, ir.Expr):
-                self._visit(arg, in_subquery=in_subquery,
-                            visit_cache=visit_cache,
-                            visit_table_cache=visit_table_cache)
+                self.visit(arg, in_subquery=in_subquery,
+                           visit_cache=visit_cache,
+                           visit_table_cache=visit_table_cache)
 
-    def _is_subquery(self, node):
+    def is_subquery(self, node):
         # XXX
         if isinstance(node, (ops.TableArrayView,
                              transforms.ExistsSubquery,
@@ -780,46 +768,47 @@ class _CorrelatedRefCheck(object):
             return True
 
         if isinstance(node, ops.TableColumn):
-            return not self._is_root(node.table)
+            return not self.is_root(node.table)
 
         return False
 
-    def _visit_table(self, expr, in_subquery=False, visit_cache=None,
-                     visit_table_cache=None):
+    def visit_table(self, expr, in_subquery=False, visit_cache=None,
+                    visit_table_cache=None):
         if visit_table_cache is None:
             visit_table_cache = set()
 
-        if (id(expr), in_subquery) in visit_table_cache:
+        key = expr._key, in_subquery
+        if key in visit_table_cache:
             return
-        visit_table_cache.add((id(expr), in_subquery))
+        visit_table_cache.add(key)
 
         node = expr.op()
 
         if isinstance(node, (ops.PhysicalTable, ops.SelfReference)):
-            self._ref_check(node, in_subquery=in_subquery)
+            self.ref_check(node, in_subquery=in_subquery)
 
         for arg in node.flat_args():
             if isinstance(arg, ir.Expr):
-                self._visit(arg, in_subquery=in_subquery,
-                            visit_cache=visit_cache,
-                            visit_table_cache=visit_table_cache)
+                self.visit(arg, in_subquery=in_subquery,
+                           visit_cache=visit_cache,
+                           visit_table_cache=visit_table_cache)
 
-    def _ref_check(self, node, in_subquery=False):
-        is_aliased = self.ctx.has_ref(node)
+    def ref_check(self, node, in_subquery=False):
+        ctx = self.ctx
+        is_aliased = ctx.has_ref(node)
 
-        if self._is_root(node):
+        if self.is_root(node):
             if in_subquery:
                 self.has_query_root = True
         else:
             if in_subquery:
                 self.has_foreign_root = True
-                if (not is_aliased and
-                        self.ctx.has_ref(node, parent_contexts=True)):
-                    self.ctx.make_alias(node)
-            elif not self.ctx.has_ref(node):
-                self.ctx.make_alias(node)
+                if not is_aliased and ctx.has_ref(node, parent_contexts=True):
+                    ctx.make_alias(node)
+            elif not ctx.has_ref(node):
+                ctx.make_alias(node)
 
-    def _is_root(self, what):
+    def is_root(self, what):
         if isinstance(what, ir.Expr):
             what = what.op()
         return what in self.query_roots
@@ -832,11 +821,9 @@ def _adapt_expr(expr):
     #
     # Canonical case is scalar values or arrays produced by some reductions
     # (simple reductions, or distinct, say)
-    def as_is(x):
-        return x
 
     if isinstance(expr, ir.TableExpr):
-        return expr, as_is
+        return expr, toolz.identity
 
     def _get_scalar(field):
         def scalar_handler(results):
@@ -864,7 +851,7 @@ def _adapt_expr(expr):
             raise NotImplementedError(repr(expr))
 
     elif isinstance(expr, ir.AnalyticExpr):
-        return expr.to_aggregation(), as_is
+        return expr.to_aggregation(), toolz.identity
 
     elif isinstance(expr, ir.ExprList):
         exprs = expr.exprs()
@@ -880,9 +867,9 @@ def _adapt_expr(expr):
 
         if is_aggregation:
             table = ir.find_base_table(exprs[0])
-            return table.aggregate(exprs), as_is
+            return table.aggregate(exprs), toolz.identity
         elif not any_aggregation:
-            return expr, as_is
+            return expr, toolz.identity
         else:
             raise NotImplementedError(expr._repr())
 
@@ -1214,12 +1201,11 @@ class QueryContext(object):
         if isinstance(table, ir.TableExpr):
             table = table.op()
 
-        k = id(table)
-        if k in self._table_key_memo:
-            return self._table_key_memo[k]
-        else:
+        try:
+            return self._table_key_memo[table]
+        except KeyError:
             val = table._repr()
-            self._table_key_memo[k] = val
+            self._table_key_memo[table] = val
             return val
 
     def _key_in(self, key, memo_attr, parent_contexts=False):
@@ -1492,36 +1478,22 @@ class Select(DML):
         if cache is None:
             cache = {}
 
-        if (self, other) in cache:
-            return cache[(self, other)]
+        key = self, other
 
-        if id(self) == id(other):
-            cache[(self, other)] = True
-            return True
-
-        if not isinstance(other, Select):
-            cache[(self, other)] = False
-            return False
-
-        this_exprs = self._all_exprs()
-        other_exprs = other._all_exprs()
-
-        if self.limit != other.limit:
-            cache[(self, other)] = False
-            return False
-
-        for x, y in zip(this_exprs, other_exprs):
-            if not x.equals(y):
-                cache[(self, other)] = False
-                return False
-
-        cache[(self, other)] = True
-        return True
+        try:
+            return cache[key]
+        except KeyError:
+            cache[key] = result = (
+                self is other or
+                (isinstance(other, Select) and
+                    self.limit == other.limit and
+                    ops.all_equal(self._all_exprs(), other._all_exprs())))
+            return result
 
     def _all_exprs(self):
         # Gnarly, maybe we can improve this somehow
-        expr_attrs = ['select_set', 'table_set', 'where', 'group_by', 'having',
-                      'order_by', 'subqueries']
+        expr_attrs = ('select_set', 'table_set', 'where', 'group_by', 'having',
+                      'order_by', 'subqueries')
         exprs = []
         for attr in expr_attrs:
             val = getattr(self, attr)

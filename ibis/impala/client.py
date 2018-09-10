@@ -743,7 +743,7 @@ class ImpalaClient(SQLClient):
         self._hdfs = hdfs_client
         self._kudu = None
 
-        self._temp_objects = weakref.WeakValueDictionary()
+        self._temp_objects = weakref.WeakSet()
 
         self._ensure_temp_db_exists()
 
@@ -775,9 +775,9 @@ class ImpalaClient(SQLClient):
         """
         Close Impala connection and drop any temporary objects
         """
-        for k, v in self._temp_objects.items():
+        for obj in self._temp_objects:
             try:
-                v.drop()
+                obj.drop()
             except HS2Error:
                 pass
 
@@ -1309,8 +1309,7 @@ class ImpalaClient(SQLClient):
                     .format(qualified_name, cardinality))
         self._execute(set_card)
 
-        self._temp_objects[id(t)] = t
-
+        self._temp_objects.add(t)
         return t
 
     def text_file(self, hdfs_path, column_name='value'):

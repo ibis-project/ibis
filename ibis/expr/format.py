@@ -1,17 +1,3 @@
-# Copyright 2014 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import ibis.util as util
 
 import ibis.expr.types as ir
@@ -35,13 +21,11 @@ class FormatMemo(object):
         return self._key(obj) in self.formatted
 
     def _key(self, expr):
-        memo_key = id(expr)
-        if memo_key in self._repr_memo:
-            return self._repr_memo[memo_key]
-
-        result = self._format(expr)
-        self._repr_memo[memo_key] = result
-
+        memo = self._repr_memo
+        try:
+            result = memo[expr]
+        except KeyError:
+            result = memo[expr] = self._format(expr)
         return result
 
     def _format(self, expr):
@@ -52,7 +36,7 @@ class FormatMemo(object):
             formatter = self._format
         key = self._key(expr)
         if key not in self.formatted:
-            self.aliases[key] = 'ref_%d' % len(self.formatted)
+            self.aliases[key] = 'ref_{:d}'.format(len(self.formatted))
             self.formatted[key] = formatter(expr)
             self.ops[key] = expr.op()
 
@@ -141,10 +125,11 @@ class ExprFormatter(object):
     def _memoize_tables(self):
         table_memo_ops = (ops.Aggregation, ops.Selection,
                           ops.SelfReference)
-        if id(self.expr) in self.memo.visit_memo:
+        expr = self.expr
+        if expr.op() in self.memo.visit_memo:
             return
 
-        stack = [self.expr]
+        stack = [expr]
         seen = set()
         memo = self.memo
 
@@ -166,8 +151,7 @@ class ExprFormatter(object):
                         memo.observe(e, self._format_node)
                 elif isinstance(op, ops.TableNode) and op.has_schema():
                     memo.observe(e, self._format_table)
-
-                memo.visit_memo.add(id(e))
+                memo.visit_memo.add(op)
 
     def _indent(self, text, indents=1):
         return util.indent(text, self.indent_size * indents)
@@ -217,19 +201,15 @@ class ExprFormatter(object):
         arg_names = getattr(op, 'display_argnames', op.argnames)
 
         if not arg_names:
-            for arg in op.args:
-                if util.is_iterable(arg):
-                    for x in arg:
-                        visit(x)
-                else:
-                    visit(arg)
+            for arg in op.flat_args():
+                visit(arg)
         else:
             for arg, name in zip(op.args, arg_names):
                 if name == 'arg' and isinstance(op, ops.ValueOp):
                     # don't display first argument's name in repr
                     name = None
                 if name is not None:
-                    name = self._indent('{0}:'.format(name))
+                    name = self._indent('{}:'.format(name))
                 if util.is_iterable(arg):
                     if name is not None and len(arg) > 0:
                         formatted_args.append(name)
@@ -248,19 +228,20 @@ class ExprFormatter(object):
 
         opname = type(op).__name__
         type_display = self._get_type_display(expr)
-        opline = '%s[%s]' % (opname, type_display)
+        opline = '{}[{}]'.format(opname, type_display)
         return '\n'.join([opline] + formatted_args)
 
     def _format_subexpr(self, expr):
-        key = id(expr)
-        if key not in self.memo.subexprs:
+        subexprs = self.memo.subexprs
+        key = expr.op()
+        try:
+            result = subexprs[key]
+        except KeyError:
             formatter = ExprFormatter(expr, memo=self.memo, memoize=False)
-            self.memo.subexprs[key] = self._indent(formatter.get_result(), 1)
-
-        return self.memo.subexprs[key]
+            result = subexprs[key] = self._indent(formatter.get_result(), 1)
+        return result
 
     def _get_type_display(self, expr=None):
         if expr is None:
             expr = self.expr
-
         return expr._type_display()

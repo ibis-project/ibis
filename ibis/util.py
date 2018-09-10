@@ -44,48 +44,6 @@ def promote_list(val):
     return val
 
 
-class IbisSet(object):
-
-    def __init__(self, keys=None):
-        self.keys = keys or []
-
-    @classmethod
-    def from_list(cls, keys):
-        return IbisSet(keys)
-
-    def __contains__(self, obj):
-        for other in self.keys:
-            if obj.equals(other):
-                return True
-        return False
-
-    def add(self, obj):
-        self.keys.append(obj)
-
-
-class IbisMap(object):
-
-    def __init__(self):
-        self.keys = []
-        self.values = []
-
-    def __contains__(self, obj):
-        for other in self.keys:
-            if obj.equals(other):
-                return True
-        return False
-
-    def set(self, key, value):
-        self.keys.append(key)
-        self.values.append(value)
-
-    def get(self, key):
-        for k, v in zip(self.keys, self.values):
-            if key.equals(k):
-                return v
-        raise KeyError(key)
-
-
 def is_function(v):
     return isinstance(v, (types.FunctionType, types.LambdaType))
 
