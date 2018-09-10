@@ -19,6 +19,23 @@ from ibis.common import RelationError, ExpressionError, IbisTypeError
 
 
 def sub_for(expr, substitutions):
+    """Substitute subexpressions in `expr` with expression to expression
+    mapping `substitutions`.
+
+    Parameters
+    ----------
+    expr : ibis.expr.types.Expr
+        An Ibis expression
+    substitutions : Mapping[ibis.expr.types.Expr, ibis.expr.types.Expr]
+        A mapping from expression to expression. If any subexpression of `expr`
+        is equal to any of the keys in `substitutions`, the value for that key
+        will replace the corresponding expression in `expr`.
+
+    Returns
+    -------
+    ibis.expr.types.Expr
+        An Ibis expression
+    """
     mapping = {k.op(): v for k, v in substitutions}
     substitutor = Substitutor()
     return substitutor.substitute(expr, mapping)
@@ -43,11 +60,11 @@ class Substitutor(object):
         Parameters
         ----------
         expr : ibis.expr.types.Expr
-        mapping : Dict, OrderedDict
+        mapping : Mapping[ibis.expr.types.Expr, ibis.expr.types.Expr]
 
         Returns
         -------
-        new_expr : ibis.expr.types.Expr
+        ibis.expr.types.Expr
         """
         node = expr.op()
         try:
