@@ -4,6 +4,7 @@ import pytest
 pytest.importorskip('graphviz')
 
 import ibis  # noqa: E402
+import ibis.util as util  # noqa: E402
 import ibis.expr.types as ir  # noqa: E402
 import ibis.expr.rules as rlz  # noqa: E402
 import ibis.expr.visualize as viz  # noqa: E402
@@ -14,6 +15,12 @@ from ibis.expr.signature import Argument as Arg  # noqa: E402
 pytestmark = pytest.mark.skipif(
     int(os.environ.get('CONDA_BUILD', 0)) == 1, reason='CONDA_BUILD defined'
 )
+
+
+def key(expr, name=None):
+    if name is None:
+        name = util.safe_get_name(expr)
+    return str(hash((util.expr_key(expr), name)))
 
 
 @pytest.mark.parametrize(
@@ -34,8 +41,8 @@ pytestmark = pytest.mark.skipif(
 def test_exprs(table, expr_func):
     expr = expr_func(table)
     graph = viz.to_graph(expr)
-    assert str(hash((table, 'table'))) in graph.source
-    assert str(hash((expr, ir.safe_get_name(expr)))) in graph.source
+    assert key(table, 'table') in graph.source
+    assert key(expr) in graph.source
 
 
 def test_custom_expr():
@@ -52,7 +59,7 @@ def test_custom_expr():
     op = MyExprNode('Hello!', 42.3)
     expr = op.to_expr()
     graph = viz.to_graph(expr)
-    assert str(hash((expr, ir.safe_get_name(expr)))) in graph.source
+    assert key(expr) in graph.source
 
 
 def test_custom_expr_with_not_implemented_type():
@@ -74,7 +81,7 @@ def test_custom_expr_with_not_implemented_type():
     op = MyExprNode('Hello!', 42.3)
     expr = op.to_expr()
     graph = viz.to_graph(expr)
-    assert str(hash((expr, ir.safe_get_name(expr)))) in graph.source
+    assert key(expr) in graph.source
 
 
 @pytest.mark.parametrize('how', ['inner', 'left', 'right', 'outer'])
@@ -84,7 +91,7 @@ def test_join(how):
     joined = left.join(right, left.b == right.b, how=how)
     result = joined[left.a, right.c]
     graph = viz.to_graph(result)
-    assert str(hash((result, ir.safe_get_name(result)))) in graph.source
+    assert key(result) in graph.source
 
 
 def test_sort_by():
@@ -93,7 +100,7 @@ def test_sort_by():
         sum_a=t.a.sum().cast('double')
     ).sort_by('c')
     graph = viz.to_graph(expr)
-    assert str(hash((expr, ir.safe_get_name(expr)))) in graph.source
+    assert key(expr) in graph.source
 
 
 @pytest.mark.skipif(
@@ -126,5 +133,5 @@ def test_between():
     source = graph.source
 
     # one for the node itself and one for the edge to between
-    assert str(hash((lower_bound, 'lower_bound'))) in source
-    assert str(hash((upper_bound, 'upper_bound'))) in source
+    assert key(lower_bound, 'lower_bound') in source
+    assert key(upper_bound, 'upper_bound') in source

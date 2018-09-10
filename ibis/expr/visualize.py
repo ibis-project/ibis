@@ -3,6 +3,7 @@ import tempfile
 import graphviz as gv
 
 import ibis
+import ibis.util as util
 import ibis.common as com
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
@@ -73,7 +74,7 @@ DEFAULT_NODE_ATTRS = {
 
 
 def to_graph(expr, node_attr=None, edge_attr=None):
-    stack = [(expr, ir.safe_get_name(expr))]
+    stack = [(expr, util.safe_get_name(expr))]
     seen = set()
     g = gv.Digraph(
         node_attr=node_attr or DEFAULT_NODE_ATTRS,
@@ -82,12 +83,14 @@ def to_graph(expr, node_attr=None, edge_attr=None):
     g.attr(rankdir='BT')
 
     while stack:
-        v = e, ename = stack.pop()
-        if v not in seen:
-            seen.add(v)
+        e, ename = stack.pop()
+        vkey = util.expr_key(e), ename
+
+        if vkey not in seen:
+            seen.add(vkey)
 
             vlabel = get_label(e, argname=ename)
-            vhash = str(hash(v))
+            vhash = str(hash(vkey))
             g.node(vhash, label=vlabel)
 
             node = e.op()
@@ -95,9 +98,9 @@ def to_graph(expr, node_attr=None, edge_attr=None):
             for arg, name in zip(args, node.signature.names()):
                 if isinstance(arg, ir.Expr):
                     u = arg, name
-                    uhash = str(hash(u))
+                    ukey = util.expr_key(arg), name
+                    uhash = str(hash(ukey))
                     ulabel = get_label(arg, argname=name)
-
                     g.node(uhash, label=ulabel)
                     g.edge(uhash, vhash)
                     stack.append(u)

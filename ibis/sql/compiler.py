@@ -776,9 +776,10 @@ class CorrelatedRefCheck(object):
         if visit_table_cache is None:
             visit_table_cache = set()
 
-        if (expr, in_subquery) in visit_table_cache:
+        key = util.expr_key(expr), in_subquery
+        if key in visit_table_cache:
             return
-        visit_table_cache.add((expr, in_subquery))
+        visit_table_cache.add(key)
 
         node = expr.op()
 
