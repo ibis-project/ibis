@@ -251,26 +251,6 @@ def get_logger(name, level=None, format=None, propagate=False):
     return logger
 
 
-def safe_get_name(expr):
-    """Get the name of an expression `expr`, returning ``None`` if the
-    expression has no name.
-
-    Parameters
-    ----------
-    expr : ibis.expr.types.Expr
-
-    Returns
-    -------
-    Optional[str]
-    """
-    import ibis.common as com
-
-    try:
-        return expr.get_name()
-    except (com.ExpressionError, AttributeError):
-        return None
-
-
 def expr_key(expr):
     """Key suitable for hashing an expression.
 
@@ -281,4 +261,4 @@ def expr_key(expr):
     ----------
     expr : ir.Expr
     """
-    return type(expr), safe_get_name(expr), expr.op()
+    return type(expr), expr._safe_name, expr.op()

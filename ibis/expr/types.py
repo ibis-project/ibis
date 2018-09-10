@@ -50,6 +50,20 @@ class Expr(object):
         from ibis.expr.format import ExprFormatter
         return ExprFormatter(self, memo=memo).get_result()
 
+    @property
+    def _safe_name(self):
+        """Get the name of an expression `expr`, returning ``None`` if the
+        expression has no name.
+
+        Returns
+        -------
+        Optional[str]
+        """
+        try:
+            return self.get_name()
+        except (com.ExpressionError, AttributeError):
+            return None
+
     def _repr_png_(self):
         if not ibis.options.graphviz_repr:
             return None

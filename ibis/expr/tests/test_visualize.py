@@ -19,7 +19,7 @@ pytestmark = pytest.mark.skipif(
 
 def key(expr, name=None):
     if name is None:
-        name = util.safe_get_name(expr)
+        name = expr._safe_name
     return str(hash((util.expr_key(expr), name)))
 
 

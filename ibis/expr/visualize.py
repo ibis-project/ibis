@@ -74,7 +74,7 @@ DEFAULT_NODE_ATTRS = {
 
 
 def to_graph(expr, node_attr=None, edge_attr=None):
-    stack = [(expr, util.safe_get_name(expr))]
+    stack = [(expr, expr._safe_name)]
     seen = set()
     g = gv.Digraph(
         node_attr=node_attr or DEFAULT_NODE_ATTRS,
