@@ -90,10 +90,10 @@
     //     {"environment_type": "conda", "six": null}, // don't run without six on conda
     // ],
     //
-    "include": [
-        // additional env for python2.7
-        {"python": "2.7", "funcsigs": [], "enum34": [], "functools32": []}
-    ],
+    // "include": [
+    //     // additional env for python2.7
+    //     {"python": "2.7", "funcsigs": [], "enum34": [], "functools32": []}
+    // ],
 
     // The directory (relative to the current directory) that benchmarks are
     // stored in.  If not provided, defaults to "benchmarks"

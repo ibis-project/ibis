@@ -23,29 +23,57 @@ class Expr(object):
         self._arg = arg
 
     def __repr__(self):
-        if config.options.interactive:
-            try:
-                result = self.execute()
-                return repr(result)
-            except com.TranslationError as e:
-                output = ('Translation to backend failed\n'
-                          'Error message: {0}\n'
-                          'Expression repr follows:\n{1}'
-                          .format(e.args[0], self._repr()))
-                return output
-        else:
+        if not config.options.interactive:
             return self._repr()
+
+        try:
+            result = self.execute()
+        except com.TranslationError as e:
+            output = ('Translation to backend failed\n'
+                      'Error message: {0}\n'
+                      'Expression repr follows:\n{1}'
+                      .format(e.args[0], self._repr()))
+            return output
+        else:
+            return repr(result)
+
+    def __hash__(self):
+        return hash(self._key)
 
     def __bool__(self):
         raise ValueError("The truth value of an Ibis expression is not "
                          "defined")
 
-    def __nonzero__(self):
-        return self.__bool__()
+    __nonzero__ = __bool__
 
     def _repr(self, memo=None):
         from ibis.expr.format import ExprFormatter
         return ExprFormatter(self, memo=memo).get_result()
+
+    @property
+    def _safe_name(self):
+        """Get the name of an expression `expr`, returning ``None`` if the
+        expression has no name.
+
+        Returns
+        -------
+        Optional[str]
+        """
+        try:
+            return self.get_name()
+        except (com.ExpressionError, AttributeError):
+            return None
+
+    @property
+    def _key(self):
+        """Key suitable for hashing an expression.
+
+        Returns
+        -------
+        Tuple[Type[Expr], Optional[str], ibis.expr.operations.Node]
+            A tuple of hashable objects uniquely identifying this expression.
+        """
+        return type(self), self._safe_name, self.op()
 
     def _repr_png_(self):
         if not ibis.options.graphviz_repr:
@@ -675,6 +703,8 @@ class ListExpr(ColumnExpr, AnyValue):
 
     def __bool__(self):
         return bool(self.values)
+
+    __nonzero__ = __bool__
 
     def __len__(self):
         return len(self.values)

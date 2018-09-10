@@ -1,16 +1,4 @@
-# Copyright 2014 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+from operator import methodcaller
 
 import toolz
 
@@ -30,29 +18,39 @@ from ibis.common import RelationError, ExpressionError, IbisTypeError
 
 
 def sub_for(expr, substitutions):
-    mapping = {repr(k.op()): v for k, v in substitutions}
+    """Substitute subexpressions in `expr` with expression to expression
+    mapping `substitutions`.
+
+    Parameters
+    ----------
+    expr : ibis.expr.types.Expr
+        An Ibis expression
+    substitutions : List[Tuple[ibis.expr.types.Expr, ibis.expr.types.Expr]]
+        A mapping from expression to expression. If any subexpression of `expr`
+        is equal to any of the keys in `substitutions`, the value for that key
+        will replace the corresponding expression in `expr`.
+
+    Returns
+    -------
+    ibis.expr.types.Expr
+        An Ibis expression
+    """
+    mapping = {k.op(): v for k, v in substitutions}
     substitutor = Substitutor()
     return substitutor.substitute(expr, mapping)
-
-
-def _expr_key(expr):
-    try:
-        name = expr.get_name()
-    except (AttributeError, ExpressionError):
-        name = None
-
-    try:
-        op = expr.op()
-    except AttributeError:
-        return expr, name
-    else:
-        return repr(op), name
 
 
 class Substitutor(object):
 
     def __init__(self):
-        cache = toolz.memoize(key=lambda args, kwargs: _expr_key(args[0]))
+        """Initialize the Substitutor class.
+
+        Notes
+        -----
+        We need a new cache per substitution call, otherwise we leak state
+        across calls and end up incorrectly reusing other substitions' cache.
+        """
+        cache = toolz.memoize(key=lambda args, kwargs: args[0]._key)
         self.substitute = cache(self._substitute)
 
     def _substitute(self, expr, mapping):
@@ -61,38 +59,38 @@ class Substitutor(object):
         Parameters
         ----------
         expr : ibis.expr.types.Expr
-        mapping : Dict, OrderedDict
+        mapping : Mapping[ibis.expr.operations.Node, ibis.expr.types.Expr]
 
         Returns
         -------
-        new_expr : ibis.expr.types.Expr
+        ibis.expr.types.Expr
         """
         node = expr.op()
-        key = repr(node)
-        if key in mapping:
-            return mapping[key]
-        if node.blocks():
-            return expr
-
-        new_args = list(node.args)
-        unchanged = True
-        for i, arg in enumerate(new_args):
-            if isinstance(arg, ir.Expr):
-                new_arg = self.substitute(arg, mapping)
-                unchanged = unchanged and new_arg is arg
-                new_args[i] = new_arg
-        if unchanged:
-            return expr
         try:
-            new_node = type(node)(*new_args)
-        except IbisTypeError:
-            return expr
+            return mapping[node]
+        except KeyError:
+            if node.blocks():
+                return expr
 
-        try:
-            name = expr.get_name()
-        except ExpressionError:
-            name = None
-        return expr._factory(new_node, name=name)
+            new_args = list(node.args)
+            unchanged = True
+            for i, arg in enumerate(new_args):
+                if isinstance(arg, ir.Expr):
+                    new_arg = self.substitute(arg, mapping)
+                    unchanged = unchanged and new_arg is arg
+                    new_args[i] = new_arg
+            if unchanged:
+                return expr
+            try:
+                new_node = type(node)(*new_args)
+            except IbisTypeError:
+                return expr
+
+            try:
+                name = expr.get_name()
+            except ExpressionError:
+                name = None
+            return expr._factory(new_node, name=name)
 
 
 class ScalarAggregate(object):
@@ -317,8 +315,7 @@ class ExprSimplifier(object):
         return result, unchanged[0]
 
     def lift(self, expr, block=None):
-        # This use of id() is OK since only for memoization
-        key = id(expr.op()), block
+        key = expr.op(), block
 
         if key in self.lift_memo:
             return self.lift_memo[key]
@@ -882,16 +879,12 @@ def fully_originate_from(exprs, parents):
         op = expr.op()
 
         if isinstance(expr, ir.TableExpr):
-            return lin.proceed, expr
-        elif op.blocks():
-            return lin.halt, None
-        else:
-            return lin.proceed, None
+            return lin.proceed, expr.op()
+        return lin.halt if op.blocks() else lin.proceed, None
 
     # unique table dependencies of exprs and parents
     exprs_deps = set(lin.traverse(finder, exprs))
     parents_deps = set(lin.traverse(finder, parents))
-
     return exprs_deps <= parents_deps
 
 
@@ -1000,7 +993,7 @@ def find_source_table(expr):
             return lin.proceed, None
 
     first_tables = lin.traverse(finder, expr.op().flat_args())
-    options = list(toolz.unique(first_tables, key=id))
+    options = list(toolz.unique(first_tables, key=methodcaller('op')))
 
     if len(options) > 1:
         raise NotImplementedError('More than one base table not implemented')

@@ -1,8 +1,9 @@
+import collections
+import itertools
+import operator
+
 import six
 import toolz
-import operator
-import itertools
-import collections
 
 from ibis.expr.schema import HasSchema, Schema
 
@@ -26,12 +27,12 @@ def distinct_roots(*expressions):
     roots = toolz.concat(
         expression._root_tables() for expression in expressions
     )
-    return list(toolz.unique(roots, key=id))
+    return list(toolz.unique(roots))
 
 
 class Node(Annotable):
 
-    __slots__ = ('_expr_cached',)
+    __slots__ = '_expr_cached', '_hash',
 
     def __repr__(self):
         return self._repr()
@@ -49,12 +50,12 @@ class Node(Annotable):
 
         for x in self.args:
             if isinstance(x, (tuple, list)):
-                pp = repr([_pp(y) for y in x])
+                pp = repr(list(map(_pp, x)))
             else:
                 pp = _pp(x)
             pprint_args.append(pp)
 
-        return '%s(%s)' % (opname, ', '.join(pprint_args))
+        return '{}({})'.format(opname, ', '.join(pprint_args))
 
     @property
     def inputs(self):
@@ -75,32 +76,32 @@ class Node(Annotable):
             else:
                 yield arg
 
+    def __hash__(self):
+        if not hasattr(self, '_hash'):
+            self._hash = hash(
+                (type(self),) + tuple(
+                    element.op() if isinstance(element, ir.Expr) else element
+                    for element in self.flat_args()
+                )
+            )
+        return self._hash
+
+    def __eq__(self, other):
+        return self.equals(other)
+
     def equals(self, other, cache=None):
         if cache is None:
             cache = {}
 
-        if (self, other) in cache:
-            return cache[(self, other)]
+        key = self, other
 
-        if self is other:
-            cache[(self, other)] = True
-            return True
-
-        if type(self) != type(other):
-            cache[(self, other)] = False
-            return False
-
-        if len(self.args) != len(other.args):
-            cache[(self, other)] = False
-            return False
-
-        for left, right in zip(self.args, other.args):
-            if not all_equal(left, right, cache=cache):
-                cache[(self, other)] = False
-                return False
-
-        cache[(self, other)] = True
-        return True
+        try:
+            return cache[key]
+        except KeyError:
+            cache[key] = result = self is other or (
+                type(self) == type(other) and
+                all_equal(self.args, other.args, cache=cache))
+            return result
 
     def compatible_with(self, other):
         return self.equals(other)
@@ -151,6 +152,9 @@ def all_equal(left, right, cache=None):
     cache : Optional[Dict[Tuple[Node, Node], bool]]
         A dictionary indicating whether two Nodes are equal
     """
+    if cache is None:
+        cache = {}
+
     if util.is_iterable(left):
         # check that left and right are equal length iterables and that all
         # of their elements are equal
@@ -249,8 +253,8 @@ def find_all_base_tables(expr, memo=None):
     node = expr.op()
 
     if isinstance(expr, ir.TableExpr) and node.blocks():
-        if id(expr) not in memo:
-            memo[id(node)] = expr
+        if expr not in memo:
+            memo[node] = expr
         return memo
 
     for arg in expr.op().flat_args():
@@ -1018,8 +1022,7 @@ class WindowOp(ValueOp):
                         self.window._group_by
                     )
                 )
-            ),
-            key=id
+            )
         ))
         return result
 

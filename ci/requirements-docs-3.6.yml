@@ -16,6 +16,7 @@ dependencies:
   - lz4
   - matplotlib
   - multipledispatch
+  - nbconvert=5.3.1
   - nbsphinx
   - numpy
   - numpydoc

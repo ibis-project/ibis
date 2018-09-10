@@ -16,6 +16,12 @@ pytestmark = pytest.mark.skipif(
 )
 
 
+def key(expr, name=None):
+    if name is None:
+        name = expr._safe_name
+    return str(hash((expr._key, name)))
+
+
 @pytest.mark.parametrize(
     'expr_func',
     [
@@ -34,8 +40,8 @@ pytestmark = pytest.mark.skipif(
 def test_exprs(table, expr_func):
     expr = expr_func(table)
     graph = viz.to_graph(expr)
-    assert str(hash(table.op())) in graph.source
-    assert str(hash(expr.op())) in graph.source
+    assert key(table, 'table') in graph.source
+    assert key(expr) in graph.source
 
 
 def test_custom_expr():
@@ -52,7 +58,7 @@ def test_custom_expr():
     op = MyExprNode('Hello!', 42.3)
     expr = op.to_expr()
     graph = viz.to_graph(expr)
-    assert str(hash(op)) in graph.source
+    assert key(expr) in graph.source
 
 
 def test_custom_expr_with_not_implemented_type():
@@ -74,7 +80,7 @@ def test_custom_expr_with_not_implemented_type():
     op = MyExprNode('Hello!', 42.3)
     expr = op.to_expr()
     graph = viz.to_graph(expr)
-    assert str(hash(op)) in graph.source
+    assert key(expr) in graph.source
 
 
 @pytest.mark.parametrize('how', ['inner', 'left', 'right', 'outer'])
@@ -84,7 +90,7 @@ def test_join(how):
     joined = left.join(right, left.b == right.b, how=how)
     result = joined[left.a, right.c]
     graph = viz.to_graph(result)
-    assert str(hash(result.op())) in graph.source
+    assert key(result) in graph.source
 
 
 def test_sort_by():
@@ -93,7 +99,7 @@ def test_sort_by():
         sum_a=t.a.sum().cast('double')
     ).sort_by('c')
     graph = viz.to_graph(expr)
-    assert str(hash(expr.op())) in graph.source
+    assert key(expr) in graph.source
 
 
 @pytest.mark.skipif(
@@ -126,5 +132,5 @@ def test_between():
     source = graph.source
 
     # one for the node itself and one for the edge to between
-    assert source.count(str(hash(lower_bound.op()))) == 2
-    assert source.count(str(hash(upper_bound.op()))) == 2
+    assert key(lower_bound, 'lower_bound') in source
+    assert key(upper_bound, 'upper_bound') in source

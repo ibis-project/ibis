@@ -4,12 +4,14 @@
 from __future__ import absolute_import
 
 import operator
+from operator import methodcaller
 
 from collections import OrderedDict
 
 import pandas as pd
 
 import toolz
+from toolz import concat, concatv, unique, compose, first
 
 from multipledispatch import Dispatcher
 
@@ -164,7 +166,7 @@ def remap_overlapping_column_names(table_op, root_table, data_columns):
         for name in root_table.schema.names
     ]
     mapping = OrderedDict(
-        (toolz.first(col_name), final_name)
+        (first(col_name), final_name)
         for col_name, final_name in column_names if col_name
     )
     return mapping
@@ -254,21 +256,15 @@ def physical_tables_physical_table(t):
 def physical_tables_join(join):
     # Physical roots of Join nodes are the unique physical roots of their
     # left and right TableNodes.
-    return list(toolz.unique(
-        toolz.concatv(
-            toolz.unique(physical_tables(join.left.op()), key=id),
-            toolz.unique(physical_tables(join.right.op()), key=id)
-        ),
-        key=id,
-    ))
+    func = compose(physical_tables, methodcaller('op'))
+    return list(unique(concat(map(func, (join.left, join.right)))))
 
 
 @physical_tables.register(ops.Node)
 def physical_tables_node(node):
     # Iterative case. Any other Node's physical roots are the unique physical
     # roots of that Node's root tables.
-    tables = toolz.concat(map(physical_tables, node.root_tables()))
-    return list(toolz.unique(tables, key=id))
+    return list(unique(concat(map(physical_tables, node.root_tables()))))
 
 
 @execute_node.register(ops.Selection, pd.DataFrame)
@@ -322,7 +318,7 @@ def execute_selection_dataframe(op, data, scope=None, **kwargs):
 
     # create a sequence of columns that we need to drop
     temporary_columns = pd.Index(
-        toolz.concatv(grouping_keys, ordering_keys)).difference(data.columns)
+        concatv(grouping_keys, ordering_keys)).difference(data.columns)
 
     # no reason to call drop if we don't need to
     if temporary_columns.empty:
