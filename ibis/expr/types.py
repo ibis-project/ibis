@@ -10,13 +10,6 @@ import ibis.common as com
 import ibis.config as config
 
 
-def safe_get_name(expr):
-    try:
-        return expr.get_name()
-    except (com.ExpressionError, AttributeError):
-        return None
-
-
 # TODO move methods containing ops import to api.py
 
 class Expr(object):
@@ -45,7 +38,7 @@ class Expr(object):
             return repr(result)
 
     def __hash__(self):
-        return hash((type(self), safe_get_name(self), self.op()))
+        return hash(util.expr_key(self))
 
     def __bool__(self):
         raise ValueError("The truth value of an Ibis expression is not "
