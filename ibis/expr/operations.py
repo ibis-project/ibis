@@ -87,7 +87,7 @@ class Node(Annotable):
         return self._hash
 
     def __eq__(self, other):
-        return self is other or self.equals(other)
+        return self.equals(other)
 
     def equals(self, other, cache=None):
         if cache is None:
