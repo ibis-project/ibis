@@ -742,10 +742,11 @@ class CorrelatedRefCheck(object):
             visit_cache = set()
 
         node = expr.op()
-        if (node, in_subquery) in visit_cache:
+        key = node, in_subquery
+        if key in visit_cache:
             return
 
-        visit_cache.add((node, in_subquery))
+        visit_cache.add(key)
 
         in_subquery = in_subquery or self.is_subquery(node)
 
