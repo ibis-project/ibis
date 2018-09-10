@@ -38,7 +38,7 @@ class Expr(object):
             return repr(result)
 
     def __hash__(self):
-        return hash(util.expr_key(self))
+        return hash(self._key)
 
     def __bool__(self):
         raise ValueError("The truth value of an Ibis expression is not "
@@ -63,6 +63,17 @@ class Expr(object):
             return self.get_name()
         except (com.ExpressionError, AttributeError):
             return None
+
+    @property
+    def _key(self):
+        """Key suitable for hashing an expression.
+
+        Returns
+        -------
+        Tuple[Type[Expr], Optional[str], ibis.expr.operations.Node]
+            A tuple of hashable objects uniquely identifying this expression.
+        """
+        return type(self), self._safe_name, self.op()
 
     def _repr_png_(self):
         if not ibis.options.graphviz_repr:

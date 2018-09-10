@@ -4,7 +4,6 @@ import pytest
 pytest.importorskip('graphviz')
 
 import ibis  # noqa: E402
-import ibis.util as util  # noqa: E402
 import ibis.expr.types as ir  # noqa: E402
 import ibis.expr.rules as rlz  # noqa: E402
 import ibis.expr.visualize as viz  # noqa: E402
@@ -20,7 +19,7 @@ pytestmark = pytest.mark.skipif(
 def key(expr, name=None):
     if name is None:
         name = expr._safe_name
-    return str(hash((util.expr_key(expr), name)))
+    return str(hash((expr._key, name)))
 
 
 @pytest.mark.parametrize(

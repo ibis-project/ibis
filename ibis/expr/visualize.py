@@ -3,7 +3,6 @@ import tempfile
 import graphviz as gv
 
 import ibis
-import ibis.util as util
 import ibis.common as com
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
@@ -84,7 +83,7 @@ def to_graph(expr, node_attr=None, edge_attr=None):
 
     while stack:
         e, ename = stack.pop()
-        vkey = util.expr_key(e), ename
+        vkey = e._key, ename
 
         if vkey not in seen:
             seen.add(vkey)
@@ -98,7 +97,7 @@ def to_graph(expr, node_attr=None, edge_attr=None):
             for arg, name in zip(args, node.signature.names()):
                 if isinstance(arg, ir.Expr):
                     u = arg, name
-                    ukey = util.expr_key(arg), name
+                    ukey = arg._key, name
                     uhash = str(hash(ukey))
                     ulabel = get_label(arg, argname=name)
                     g.node(uhash, label=ulabel)

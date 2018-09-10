@@ -249,16 +249,3 @@ def get_logger(name, level=None, format=None, propagate=False):
             logging, os.environ.get('LOGLEVEL', 'WARNING').upper()))
     logger.addHandler(handler)
     return logger
-
-
-def expr_key(expr):
-    """Key suitable for hashing an expression.
-
-    We can't put this on Expr itself because it would have to be implemented in
-    __eq__ which we override to return expressions.
-
-    Parameters
-    ----------
-    expr : ir.Expr
-    """
-    return type(expr), expr._safe_name, expr.op()

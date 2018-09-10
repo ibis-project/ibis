@@ -6,7 +6,6 @@ import ibis.expr.types as ir
 import ibis.expr.lineage as lin
 import ibis.expr.operations as ops
 
-from ibis import util
 from ibis.expr.schema import HasSchema
 from ibis.expr.window import window
 
@@ -51,7 +50,7 @@ class Substitutor(object):
         We need a new cache per substitution call, otherwise we leak state
         across calls and end up incorrectly reusing other substitions' cache.
         """
-        cache = toolz.memoize(key=lambda args, kwargs: util.expr_key(args[0]))
+        cache = toolz.memoize(key=lambda args, kwargs: args[0]._key)
         self.substitute = cache(self._substitute)
 
     def _substitute(self, expr, mapping):
