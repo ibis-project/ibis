@@ -4,6 +4,7 @@ Roadmap
 =======
 This document is an outline of the next set of major efforts within ibis.
 
+.. _long_term_goals:
 
 Long Term Goals
 ---------------
@@ -12,8 +13,13 @@ few short-term goals and provides information and direction for a few key areas
 of focus over the next 1-2 years, possibly longer depending on the amount of
 time the developers of Ibis can devote to the project.
 
+.. _compiler_structure:
+
 Compiler Structure
 ~~~~~~~~~~~~~~~~~~
+
+.. _separation_of_concerns:
+
 Separation of Concerns
 ^^^^^^^^^^^^^^^^^^^^^^
 The current architecture of the ibis compiler has a few key problems that need
@@ -34,6 +40,8 @@ optimize whole expression trees.
 This approach lets us optimize queries piece by piece, as opposed to having to
 provide all optimization implementations in a single pull request.
 
+.. _unifying_table_and_column_compilation:
+
 Unifying Table and Column Compilation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Right now, it is very difficult to customize the way the operations underlying
@@ -42,8 +50,15 @@ backend (or the compiler’s parent class). This needs to be addressed, if only
 to ease the burden of implementing the UNNEST operation and make the codebase
 easier to understand and maintain.
 
+.. _depth:
+
 Depth
 ~~~~~
+"Depth" goals relate to enhancing Ibis to provide better support for
+backend-specific functionality.
+
+.. _backend_specific_operations:
+
 Backend-Specific Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 As the number of ibis users and use cases grows there will be an increasing
@@ -66,6 +81,8 @@ define operations with a backend-specific spelling (presumably in the name of
 expediency) that may actually be easily generalizable to or useful for other
 backends. This behavior should be discouraged to the extent possible.
 
+.. _standardize_udfs:
+
 Standardize UDFs (User Defined Functions)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 A few backends have support for UDFs. Impala, Pandas and BigQuery all have at
@@ -74,6 +91,8 @@ be extended to other backends where possible. We outline different approaches
 to adding UDFs to the backends that are well-supported but currently do not
 have a UDF implementation. Development of a standard interface for UDFs is
 ideal, so that it’s easy for new backends to implement the interface.
+
+.. _breadth:
 
 Breadth
 ~~~~~~~
@@ -87,12 +106,19 @@ At minimum we need a way to display which backends implement which operations.
 With the ability to provide custom operations we also need a way to display the
 custom operations that each backend provides.
 
+.. _backend_specific_goals:
+
 Backend-Specific Goals
 ----------------------
-These are goals related to specific backends
+These goals relate to specific backends
+
+.. _pandas:
 
 Pandas
 ~~~~~~
+
+.. _speed_up_grouped_rolling_and_simple_aggregations_using_numba:
+
 Speed up grouped, rolling, and simple aggregations using numba
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Pandas aggregations are quite slow relative to an equivalent numba
@@ -100,8 +126,13 @@ implementation, for various reasons. Since ibis hides the implementation
 details of a particular expression we can experiment with using different
 aggregation implementations.
 
+.. _dask:
+
 Dask
 ~~~~
+
+.. _implement_a_dask_backed:
+
 Implement a Dask backend
 ^^^^^^^^^^^^^^^^^^^^^^^^
 There is currently no way in ibis to easily parallelize a computation on a
@@ -109,9 +140,14 @@ single machine, let alone distribute a computation across machines.
 
 Dask provides APIs for doing such things.
 
+.. _spark:
+
 Spark
 ~~~~~
-Implement a SparkSQL backend
 
+.. _implement_a_spark_backend:
+
+Implement a SparkSQL backend
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 SparkSQL provides a way to execute distributed SQL queries similar to other
 backends supported by ibis such as Impala and BigQuery.
