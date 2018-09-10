@@ -86,9 +86,6 @@ class Node(Annotable):
             )
         return self._hash
 
-    def __eq__(self, other):
-        return self.equals(other)
-
     def equals(self, other, cache=None):
         if cache is None:
             cache = {}
@@ -98,12 +95,12 @@ class Node(Annotable):
         try:
             return cache[key]
         except KeyError:
-            pass
+            cache[key] = result = self is other or (
+                type(self) == type(other) and
+                all_equal(self.args, other.args, cache=cache))
+            return result
 
-        cache[key] = result = self is other or (
-            type(self) == type(other) and
-            all_equal(self.args, other.args, cache=cache))
-        return result
+    __eq__ = equals
 
     def compatible_with(self, other):
         return self.equals(other)
