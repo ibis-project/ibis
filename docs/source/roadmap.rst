@@ -68,7 +68,9 @@ why people will choose that technology over another. Ibis should support an API
 that reflects the backend that underlies an expression and expose the
 functionality of that specific backend.
 
-A concrete example of this is the `FARM_FINGERPRINT <>`_ function in BigQuery.
+A concrete example of this is the `FARM_FINGERPRINT
+<https://cloud.google.com/bigquery/docs/reference/standard-sql/functions-and-operators#farm_fingerprint>`_
+function in BigQuery.
 
 It is unlikely that the main ValueExpr API will ever grow such a method, but a
 BigQuery user shouldn’t be restricted to using only the methods this API
