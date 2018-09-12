@@ -442,6 +442,24 @@ FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
     assert result == expected
 
 
+def test_approx_median(alltypes):
+    d = alltypes.double_col
+    expr = d.approx_median()
+    result = expr.compile()
+    expected = """\
+SELECT APPROX_QUANTILES(`double_col`, 2)[OFFSET(1)] AS `approx_median`
+FROM `ibis-gbq.testing.functional_alltypes`"""
+    assert result == expected
+
+    m = alltypes.month
+    expr2 = d.approx_median(where=m > 6)
+    result = expr2.compile()
+    expected = """\
+SELECT APPROX_QUANTILES(CASE WHEN `month` > 6 THEN `double_col` ELSE NULL END, 2)[OFFSET(1)] AS `approx_median`
+FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
+    assert result == expected
+
+
 @pytest.mark.parametrize(
     ('unit', 'expected_unit', 'expected_func'),
     [

@@ -697,3 +697,13 @@ def test_boolean_casting(alltypes):
     assert count.loc[False] == 5840
     assert count.loc[True] == 730
     assert count.loc[None] == 730
+
+
+def test_approx_median(alltypes):
+    m = alltypes.month
+    expected = m.execute().median()
+    assert expected == 7
+
+    expr = m.approx_median()
+    result = expr.execute()
+    assert result == expected
