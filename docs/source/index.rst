@@ -88,6 +88,7 @@ SQL engine support needing code contributors:
    design
    extending
    backends
+   roadmap
    release
    legal
 
