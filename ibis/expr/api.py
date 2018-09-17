@@ -2016,21 +2016,34 @@ def _string_dunder_contains(arg, substr):
 def _string_getitem(self, key):
     if isinstance(key, slice):
         start, stop, step = key.start, key.stop, key.step
-        if step and step != 1:
+
+        if step is not None and not isinstance(step, ir.Expr) and step != 1:
             raise ValueError('Step can only be 1')
 
-        start = start or 0
+        if not isinstance(start, ir.Expr):
+            if start is not None and start < 0:
+                raise ValueError(
+                    'Negative slicing not yet supported, got start value of '
+                    '{:d}'.format(start)
+                )
+            if start is None:
+                start = 0
 
-        if start < 0 or stop < 0:
-            raise ValueError('negative slicing not yet supported')
+        if not isinstance(stop, ir.Expr):
+            if stop is not None and stop < 0:
+                raise ValueError(
+                    'Negative slicing not yet supported, got stop value of '
+                    '{:d}'.format(stop)
+                )
+            if stop is None:
+                stop = self.length()
 
         return self.substr(start, stop - start)
     elif isinstance(key, six.integer_types):
         return self.substr(key, 1)
-    else:
-        raise NotImplementedError(
-            'string __getitem__[{}]'.format(type(key).__name__)
-        )
+    raise NotImplementedError(
+        'string __getitem__[{}]'.format(type(key).__name__)
+    )
 
 
 _string_value_methods = dict(
