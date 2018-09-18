@@ -855,13 +855,6 @@ class ImpalaClient(SQLClient):
             ast = self._build_ast(to_insert)
             select = ast.queries[0]
 
-            if partition is not None:
-                # Fairly certain this is currently the case
-                raise ValueError('partition not supported with '
-                                 'create-table-as-select. Create an '
-                                 'empty partitioned table instead '
-                                 'and insert into those partitions.')
-
             statement = ddl.CTAS(table_name, select,
                                  database=database,
                                  can_exist=force,
