@@ -26,14 +26,37 @@ def execute_string_length_series(op, data, **kwargs):
     return data.str.len().astype('int32')
 
 
-@execute_node.register(
-    ops.Substring,
-    pd.Series,
-    (pd.Series,) + integer_types,
-    (pd.Series,) + integer_types
-)
-def execute_string_substring(op, data, start, length, **kwargs):
+@execute_node.register(ops.Substring, pd.Series, integer_types, integer_types)
+def execute_substring_int_int(op, data, start, length, **kwargs):
     return data.str[start:start + length]
+
+
+@execute_node.register(ops.Substring, pd.Series, pd.Series, integer_types)
+def execute_substring_series_int(op, data, start, length, **kwargs):
+    return execute_substring_series_series(
+        op, data, start, pd.Series(np.repeat(length, len(start))), **kwargs)
+
+
+@execute_node.register(ops.Substring, pd.Series, integer_types, pd.Series)
+def execute_string_substring_int_series(op, data, start, length, **kwargs):
+    return execute_substring_series_series(
+        op, data, pd.Series(np.repeat(start, len(length))), length, **kwargs)
+
+
+@execute_node.register(ops.Substring, pd.Series, pd.Series, pd.Series)
+def execute_substring_series_series(op, data, start, length, **kwargs):
+    end = start + length
+
+    def iterate(value,
+                start_iter=start.values.flat,
+                end_iter=end.values.flat):
+        begin = next(start_iter)
+        end = next(end_iter)
+        if (begin is not None and pd.isnull(begin)) or (
+                end is not None and pd.isnull(end)):
+            return None
+        return value[begin:end]
+    return data.map(iterate)
 
 
 @execute_node.register(ops.Strip, pd.Series)
