@@ -151,6 +151,33 @@ def test_string_col_is_unicode(backend, alltypes, df):
             id='right',
         ),
         param(
+            lambda t: t.date_string_col[1:3],
+            lambda t: t.date_string_col.str[1:3],
+            id='slice'
+        ),
+        param(
+            lambda t: t.date_string_col[t.date_string_col.length() - 1:],
+            lambda t: t.date_string_col.str[-1:],
+            id='expr_slice_begin'
+        ),
+        param(
+            lambda t: t.date_string_col[:t.date_string_col.length()],
+            lambda t: t.date_string_col,
+            id='expr_slice_end'
+        ),
+        param(
+            lambda t: t.date_string_col[:],
+            lambda t: t.date_string_col,
+            id='expr_empty_slice'
+        ),
+        param(
+            lambda t: t.date_string_col[
+                t.date_string_col.length() - 2:t.date_string_col.length() - 1
+            ],
+            lambda t: t.date_string_col.str[-2:-1],
+            id='expr_slice_begin_end'
+        ),
+        param(
             lambda t: t.date_string_col.split('/'),
             lambda t: t.date_string_col.str.split('/'),
             id='split',
