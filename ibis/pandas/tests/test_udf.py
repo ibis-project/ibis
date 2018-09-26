@@ -9,31 +9,39 @@ import ibis
 import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 
-from ibis.pandas.udf import udf, udaf, nullable
+from ibis.pandas.udf import udf, nullable
 from ibis.pandas.dispatch import pause_ordering
 
 
 with pause_ordering():
 
-    @udf(input_type=[dt.string], output_type=dt.int64)
+    @udf.elementwise(input_type=[dt.string], output_type=dt.int64)
     def my_string_length(series, **kwargs):
         return series.str.len() * 2
 
-    @udaf(input_type=[dt.string], output_type=dt.int64)
+    @udf.elementwise(input_type=[dt.double, dt.double], output_type=dt.double)
+    def my_add(series1, series2, *kwargs):
+        return series1 + series2
+
+    @udf.reduction(input_type=[dt.string], output_type=dt.int64)
     def my_string_length_sum(series, **kwargs):
         return (series.str.len() * 2).sum()
 
-    @udaf(input_type=[dt.double, dt.double], output_type=dt.double)
+    @udf.reduction(input_type=[dt.double, dt.double], output_type=dt.double)
     def my_corr(lhs, rhs, **kwargs):
         return lhs.corr(rhs)
 
-    @udf([dt.double], dt.double)
+    @udf.elementwise([dt.double], dt.double)
     def add_one(x):
         return x + 1.0
 
-    @udf([dt.double], dt.double)
+    @udf.elementwise([dt.double], dt.double)
     def times_two(x, scope=None):
         return x * 2.0
+
+    @udf.analytic(input_type=[dt.double], output_type=dt.double)
+    def zscore(series):
+        return (series - series.mean()) / series.std()
 
 
 def test_udf():
@@ -49,6 +57,41 @@ def test_udf():
     tm.assert_series_equal(result, expected)
 
 
+def test_multiple_argument_udf():
+    df = pd.DataFrame({'a': [1.0, 2.0, 3.0], 'b': [3.0, 4.0, 5.0]})
+    con = ibis.pandas.connect({'df': df})
+    t = con.table('df')
+    expr = my_add(t.a, t.b)
+
+    assert isinstance(expr, ir.ColumnExpr)
+    assert isinstance(expr, ir.NumericColumn)
+    assert isinstance(expr, ir.FloatingColumn)
+
+    result = expr.execute()
+    expected = (t.a + t.b).execute()
+    tm.assert_series_equal(result, expected)
+
+
+def test_multiple_argument_udf_group_by():
+    df = pd.DataFrame({
+        'a': [1.0, 2.0, 3.0], 'b': [3.0, 4.0, 5.0], 'key': list('aab')})
+    con = ibis.pandas.connect({'df': df})
+    t = con.table('df')
+    expr = t.groupby(t.key).aggregate(my_add=my_add(t.a, t.b).sum())
+
+    assert isinstance(expr, ir.TableExpr)
+    assert isinstance(expr.my_add, ir.ColumnExpr)
+    assert isinstance(expr.my_add, ir.NumericColumn)
+    assert isinstance(expr.my_add, ir.FloatingColumn)
+
+    result = expr.execute()
+    expected = pd.DataFrame({
+        'key': list('ab'),
+        'my_add': [sum([1.0 + 3.0, 2.0 + 4.0]), sum([3.0 + 5.0])],
+    })
+    tm.assert_frame_equal(result, expected)
+
+
 def test_udaf():
     df = pd.DataFrame({'a': list('cba')})
     con = ibis.pandas.connect({'df': df})
@@ -62,7 +105,41 @@ def test_udaf():
     assert result == expected
 
 
-def test_udaf_in_groupby():
+def test_udaf_analytic():
+    df = pd.DataFrame({'a': np.random.randn(4), 'key': list('abba')})
+    con = ibis.pandas.connect({'df': df})
+    t = con.table('df')
+    expr = zscore(t.a)
+
+    assert isinstance(expr, ir.ColumnExpr)
+
+    result = expr.execute()
+
+    def f(s):
+        return s.sub(s.mean()).div(s.std())
+
+    expected = f(df.a)
+    tm.assert_series_equal(result, expected)
+
+
+def test_udaf_analytic_group_by():
+    df = pd.DataFrame({'a': np.random.randn(4), 'key': list('abba')})
+    con = ibis.pandas.connect({'df': df})
+    t = con.table('df')
+    expr = zscore(t.a).over(ibis.window(group_by=t.key))
+
+    assert isinstance(expr, ir.ColumnExpr)
+
+    result = expr.execute()
+
+    def f(s):
+        return s.sub(s.mean()).div(s.std())
+
+    expected = df.groupby('key').a.transform(f)
+    tm.assert_series_equal(result, expected)
+
+
+def test_udaf_groupby():
     df = pd.DataFrame({
         'a': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
         'b': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
@@ -99,16 +176,16 @@ def test_nullable_non_nullable_field():
 
 def test_udaf_parameter_mismatch():
     with pytest.raises(Exception):
-        @udaf(input_type=[dt.double], output_type=dt.double)
+        @udf.reduction(input_type=[dt.double], output_type=dt.double)
         def my_corr(lhs, rhs, **kwargs):
             pass
 
 
 def test_udf_parameter_mismatch():
     with pytest.raises(Exception):
-        @udf(input_type=[], output_type=dt.double)
+        @udf.reduction(input_type=[], output_type=dt.double)
         def my_corr2(lhs, **kwargs):
-            return 1.0
+            pass
 
 
 def test_call_multiple_udfs():
@@ -125,7 +202,7 @@ def test_call_multiple_udfs():
 
 
 def test_udaf_window():
-    @udaf([dt.double], dt.double)
+    @udf.reduction([dt.double], dt.double)
     def my_mean(series):
         return series.mean()
 

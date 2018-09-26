@@ -17,19 +17,7 @@ API
 
 .. warning::
 
-   The UDF/UDAF API is experimental. It is provisional and subject to change.
-
-The API for user defined *scalar* functions will look like this:
-
-.. code-block:: python
-
-   @udf(input_type=[double], output_type=double)
-   def add_one(x):
-       return x + 1.0
-
-
-User defined *aggregate* functions are nearly identical, with the exception
-of using the ``@udaf`` decorator instead of the ``@udf`` decorator.
+   The UDF API is experimental. It is provisional and subject to change.
 
 Impala
 ------
@@ -43,18 +31,60 @@ Pandas
 
 .. _udf.pandas:
 
-Pandas supports defining both UDFs and UDAFs.
+Ibis supports defining three kinds of user-defined functions for operations on
+expressions targeting the pandas backend: **element-wise**, **reduction**, and
+**analytic**.
 
-When you define a UDF you automatically get support for applying that UDF in a
-scalar context, as well as in any group by operation.
+.. note::
 
-When you define a UDAF you automatically get support for standard scalar
-aggregations, group bys, *as well as* any supported windowing operation.
+   An **element-wise** function is a function that takes N rows as input and
+   produces N rows of output. ``log``, ``exp``, and ``floor`` are examples of
+   element-wise functions.
 
-The API for these functions is the same as described above.
+   A **reduction** is a function that takes N rows as input and produces 1 row
+   as output. ``sum``, ``mean`` and ``count`` are examples of reductions. In
+   the context of a ``GROUP BY``, reductions produce 1 row of output *per
+   group*.
 
-The objects you receive as input arguments are either ``pandas.Series`` or
-python or numpy scalars depending on the operation.
+   An **analytic** function is like an **element-wise** function in that it
+   takes N rows as input and produces N rows of output. The key difference is
+   that analytic functions can be applied *per group* using window functions.
+   Z-score is an example of an analytic function.
+
+The API for creating each kind of function is done with a decorator:
+
+.. code-block:: python
+
+   import ibis.expr.datatypes as dt
+   from ibis.pandas import udf
+
+   @udf.elementwise(input_type=[dt.int64], output_type=.dtdouble)
+   def add_one(x):
+       return x + 1.0
+
+   @udf.reduction(input_type=[dt.double], output_type=.dtdouble)
+   def double_mean(series):
+       return 2 * series.mean()
+
+   @udf.analytic(input_type=[dt.double], output_type=.dtdouble)
+   def zscore(series):
+       return (series - series.mean()) / series.std()
+
+Details of Pandas UDFs
+~~~~~~~~~~~~~~~~~~~~~~
+
+- *element-wise* functions automatically provide support for applying your UDF
+  to any combination of scalar values and columns.
+- *reduction* functions automatically provide support for whole column
+  aggregations, grouped aggregations, and application of your function over a
+  window.
+- *analytic* functions work in both grouped and non-grouped settings
+- The objects you receive as input arguments are either ``pandas.Series`` or
+  python or numpy scalars depending on the operation.
+- Any keyword arguments (other than ``**kwargs``) must be given a default value
+  or the function **will not work**. A standard Python convention is to set the
+  default value to ``None`` and handle setting it to something not ``None`` in
+  the body of the function if necessary.
 
 Using ``add_one`` from above as an example, the following call will receive a
 ``pandas.Series`` for the ``x`` argument:
@@ -74,32 +104,34 @@ And this will receive the ``int`` 1:
 
    >>> expr = add_one(1)
 
-Finally, since the pandas backend passes around ``**kwargs`` you can accept
-``**kwargs`` in your function:
+Since the pandas backend passes around ``**kwargs`` you can accept ``**kwargs``
+in your function:
 
 .. code-block:: python
 
-   @udf([double], double)
-   def add_one(x, **kwargs):
-       return x + 1.0
+   import ibis.expr.datatypes as dt
+   from ibis.pandas import udf
+
+   @udf.elementwise([dt.int64], dt.double)
+   def add_two(x, **kwargs):
+       # do stuff with kwargs
+       return x + 2.0
 
 Or you can leave them out as we did in the example above. You can also
-optionally accept *specific* keyword arguments. This requires knowledge of how
-the pandas backend works for it to be useful:
-
-.. note::
-
-   Any keyword arguments (other than ``**kwargs``) must be given a default
-   value or the UDF/UDAF **will not work**. A standard Python convention is to
-   set the default value to ``None``.
+optionally accept specific keyword arguments.
 
 For example:
 
 .. code-block:: python
 
-   @udf([double], double)
-   def add_one(x, scope=None):
-       return x + 1.0
+   import ibis.expr.datatypes as dt
+   from ibis.pandas import udf
+
+   @udf.elementwise([dt.int64], dt.double)
+   def add_two_with_none(x, y=None):
+       if y is None:
+           y = 2.0
+       return x + y
 
 BigQuery
 --------
@@ -108,7 +140,7 @@ BigQuery
 
 .. note::
 
-   BigQuery only supports scalar UDFs at this time.
+   BigQuery only supports element-wise UDFs at this time.
 
 BigQuery supports UDFs through JavaScript. Ibis provides support for this by
 turning Python code into JavaScript.
@@ -117,7 +149,10 @@ The interface is very similar to the pandas UDF API:
 
 .. code-block:: python
 
-   @udf([double], double)
+   import ibis.expr.datatypes as dt
+   from ibis.bigquery import udf
+
+   @udf([dt.double], dt.double)
    def my_bigquery_add_one(x):
        return x + 1.0
 

@@ -12,7 +12,7 @@ pytest.importorskip('google.cloud.bigquery')
 
 pytestmark = pytest.mark.bigquery
 
-from ibis.bigquery.api import udf  # noqa: E402
+from ibis.bigquery import udf  # noqa: E402
 
 PROJECT_ID = os.environ.get('GOOGLE_BIGQUERY_PROJECT_ID', 'ibis-gbq')
 DATASET_ID = 'testing'

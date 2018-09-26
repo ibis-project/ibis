@@ -327,7 +327,7 @@ class Window(AggregationContext):
             if callable(function):
                 method = operator.methodcaller(
                     'apply',
-                    _apply(function, args, kwargs)
+                    _apply(function, args, kwargs),
                 )
             else:
                 assert isinstance(function, six.string_types)
