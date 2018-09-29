@@ -1,0 +1,35 @@
+jobs:
+- job: Windows
+  pool:
+    vmImage: vs2017-win2017
+  strategy:
+    maxParallel: 3
+    matrix:
+      py27:
+        PYTHON_VERSION: "2.7"
+      py35:
+        PYTHON_VERSION: "3.5"
+      py36:
+        PYTHON_VERSION: "3.6"
+  steps:
+    - task: CondaEnvironment@1
+      inputs:
+        createCustomEnvironment: True
+        environmentName: "ibis_$(PYTHON_VERSION)"
+        packageSpecs: pytables numpy pandas multipledispatch sqlalchemy psycopg2 graphviz click mock plumbum flake8 pytest-xdist
+        installOptions: -c conda-forge
+        createOptions: python="$(PYTHON_VERSION)" -c conda-forge
+        cleanEnvironment: True
+        updateConda: False
+    - script: python setup.py develop
+      displayName: 'Install ibis'
+    - script: conda list
+      displayName: 'Show installed packages'
+    - script: python ci\\datamgr.py download
+      displayName: 'Download data'
+    - script: python ci\\datamgr.py parquet -i
+      displayName: 'Load Parquet data'
+    - script: python ci\\datamgr.py sqlite
+      displayName: 'Load SQLite data'
+    - script: pytest --tb=short -n auto -m "not backend and not clickhouse and not impala and not hdfs and not bigquery and not mapd and not mysql and not postgresql" -ra ibis
+      displayName: 'Run tests'
