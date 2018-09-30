@@ -104,14 +104,14 @@ def build(recipe):
 @cli.command()
 @click.argument('package_location', default='/opt/conda/conda-bld')
 @click.argument('artifact_directory', default='/tmp/packages')
-@click.argument('architectures', default=('linux-64', 'noarch'))
-def deploy(package_location, artifact_directory, architectures):
+@click.argument('architecture', default='linux-64')
+def deploy(package_location, artifact_directory, architecture):
     artifact_dir = Path(artifact_directory)
     artifact_dir.mkdir(parents=True, exist_ok=True)
     package_loc = Path(package_location)
     assert package_loc.exists(), 'Path {} does not exist'.format(package_loc)
 
-    for architecture in architectures:
+    for architecture in (architecture, 'noarch'):
         arch_artifact_directory = str(artifact_dir / architecture)
         arch_package_directory = str(package_loc / architecture)
         shutil.copytree(arch_package_directory, arch_artifact_directory)
