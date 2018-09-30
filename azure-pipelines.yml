@@ -19,7 +19,7 @@ jobs:
       displayName: 'Start Windows docker-compose'
       inputs:
         containerregistrytype: 'Container Registery'
-        dockerComposeFile: ci\\docker-compose-windows.yml
+        dockerComposeFile: '**/docker-compose-windows.yml'
         action: 'Run Services'
         buildImages: False
     - task: CondaEnvironment@1
@@ -42,13 +42,13 @@ jobs:
     - script: conda list
       displayName: 'Show installed packages'
 
-    - script: python ci\\datamgr.py download
+    - script: python ci/datamgr.py download
       displayName: 'Download data'
 
-    - script: python ci\\datamgr.py parquet -i
+    - script: python ci/datamgr.py parquet -i
       displayName: 'Load Parquet data'
 
-    - script: python ci\\datamgr.py sqlite
+    - script: python ci/datamgr.py sqlite
       displayName: 'Load SQLite data'
 
     - script: pytest --tb=short --junitxml=junit.xml -n auto -m "not backend and not clickhouse and not impala and not hdfs and not bigquery and not mapd and not mysql and not postgresql" -ra ibis
@@ -75,16 +75,16 @@ jobs:
     - script: conda install --name base --yes --channel conda-forge conda-build
       displayName: 'Install conda build into base environment'
 
-    - script: python ci\\feedstock.py clone
+    - script: python ci/feedstock.py clone
       displayName: 'Clone conda-forge recipe'
 
-    - script: python ci\\feedstock.py update
+    - script: python ci/feedstock.py update
       displayName: 'Update conda-forge recipe'
 
-    - script: python ci\\feedstock.py build
+    - script: python ci/feedstock.py build
       displayName: 'Build conda package from conda-forge recipe'
 
-    - script: python ci\\feedstock.py deploy C:\\Miniconda\conda-bld conda win-64
+    - script: python ci/feedstock.py deploy C:/Miniconda/conda-bld conda win-64
       displayName: 'Copy conda package to artifact directory'
 
     # publish sdist and wheel and conda package
