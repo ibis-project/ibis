@@ -1,5 +1,5 @@
 jobs:
-- job: Windows Test
+- job: WindowsTest
   pool:
     vmImage: vs2017-win2017
   strategy:
@@ -74,7 +74,7 @@ jobs:
         mergeTestResults: False
       condition: succeededOrFailed()  # pass or fail, but not cancelled
 
-- job: Windows Conda Build
+- job: WindowsCondaBuild
   pool:
     vmImage: vs2017-win2017
   strategy:
