@@ -53,7 +53,7 @@ jobs:
     - script: python ci/datamgr.py mysql
       displayName: 'Load MySQL data'
 
-    - script: python ci/datamgr.py postgres
+    - script: 'python ci/datamgr.py postgres --psql-path="C:\\Program Files\\postgresql\\pg10\\bin\\psql"'
       displayName: 'Load PostgreSQL data'
 
     - script: python ci/datamgr.py sqlite
