@@ -6,19 +6,22 @@ jobs:
     maxParallel: 3
     matrix:
       py27:
-        PYTHON_VERSION: "2.7"
+        python.version: "2.7"
+        pyarrow.version: "0.9.0"
       py35:
-        PYTHON_VERSION: "3.5"
+        python.version: "3.5"
+        pyarrow.version: "0.10.0"
       py36:
-        PYTHON_VERSION: "3.6"
+        python.version: "3.6"
+        pyarrow.version: "0.10.0"
   steps:
     - task: CondaEnvironment@1
       inputs:
         createCustomEnvironment: True
-        environmentName: "ibis_$(PYTHON_VERSION)"
-        packageSpecs: pytables numpy pandas pyarrow multipledispatch sqlalchemy psycopg2 graphviz click mock plumbum flake8 pytest-xdist
+        environmentName: "ibis_$(python.version)"
+        packageSpecs: pytables numpy pandas pyarrow=$(pyarrow.version) multipledispatch sqlalchemy psycopg2 graphviz click mock plumbum flake8 pytest-xdist
         installOptions: -c conda-forge
-        createOptions: python="$(PYTHON_VERSION)" -c conda-forge
+        createOptions: python="$(python.version)" -c conda-forge
         cleanEnvironment: True
         updateConda: False
     - script: python setup.py develop
