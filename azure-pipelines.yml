@@ -24,36 +24,36 @@ jobs:
         createOptions: python="$(python.version)" -c conda-forge
         cleanEnvironment: True
         updateConda: False
-    - script: python setup.py develop
-      displayName: 'Install ibis'
-    - script: conda list
-      displayName: 'Show installed packages'
-    - script: python ci\\datamgr.py download
-      displayName: 'Download data'
-    - script: python ci\\datamgr.py parquet -i
-      displayName: 'Load Parquet data'
-    - script: python ci\\datamgr.py sqlite
-      displayName: 'Load SQLite data'
-    - script: pytest --tb=short --junitxml=junit.xml -n auto -m "not backend and not clickhouse and not impala and not hdfs and not bigquery and not mapd and not mysql and not postgresql" -ra ibis
-      displayName: 'Run tests'
+    #- script: python setup.py develop
+      #displayName: 'Install ibis'
+    #- script: conda list
+      #displayName: 'Show installed packages'
+    #- script: python ci\\datamgr.py download
+      #displayName: 'Download data'
+    #- script: python ci\\datamgr.py parquet -i
+      #displayName: 'Load Parquet data'
+    #- script: python ci\\datamgr.py sqlite
+      #displayName: 'Load SQLite data'
+    #- script: pytest --tb=short --junitxml=junit.xml -n auto -m "not backend and not clickhouse and not impala and not hdfs and not bigquery and not mapd and not mysql and not postgresql" -ra ibis
+      #displayName: 'Run tests'
 
-    # publish test results
-    - task: PublishTestResults@2
-      inputs:
-        testResultsFiles: junit.xml
-        testRunTitle: 'Publish test results'
+    ## publish test results
+    #- task: PublishTestResults@2
+      #inputs:
+        #testResultsFiles: junit.xml
+        #testRunTitle: 'Publish test results'
 
-    # build source dist and wheel
-    - script: python setup.py sdist bdist_wheel
-      displayName: 'Build source distribution and wheel'
+    ## build source dist and wheel
+    #- script: python setup.py sdist bdist_wheel
+      #displayName: 'Build source distribution and wheel'
 
     # build a conda package
     - script: conda install --name base --yes --channel conda-forge conda-build
       displayName: 'Install conda build into base environment'
-    - script: python ci\\feedstock.py clone
-      displayName: 'Clone conda-forge recipe'
-    - script: python ci\\feedstock.py update
-      displayName: 'Update conda-forge recipe'
+    - script: |
+        python ci\\feedstock.py clone
+        python ci\\feedstock.py update
+      displayName: 'Clone and update conda-forge recipe'
     - script: python ci\\feedstock.py build
       displayName: 'Build conda package from conda-forge recipe'
     - script: python ci\\feedstock.py deploy C:\\Miniconda\conda-bld dist win-64
