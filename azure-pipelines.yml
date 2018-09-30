@@ -5,17 +5,18 @@ jobs:
   strategy:
     maxParallel: 3
     matrix:
-      #py27:
-        #python.version: "2.7"
-        #pyarrow: ""
-      #py35:
-        #python.version: "3.5"
-        #pyarrow: "pyarrow"
+      py27:
+        python.version: "2.7"
+        pyarrow: ""
+      py35:
+        python.version: "3.5"
+        pyarrow: "pyarrow"
       py36:
         python.version: "3.6"
         pyarrow: "pyarrow"
   steps:
     - task: CondaEnvironment@1
+      displayName: 'Create conda environment'
       inputs:
         createCustomEnvironment: True
         environmentName: "ibis_$(python.version)"
@@ -24,44 +25,64 @@ jobs:
         createOptions: python="$(python.version)" -c conda-forge
         cleanEnvironment: True
         updateConda: False
+
+    - script: flake8
+      displayName: 'Lint'
+
     - script: python setup.py develop
       displayName: 'Install ibis'
-    #- script: conda list
-      #displayName: 'Show installed packages'
-    #- script: python ci\\datamgr.py download
-      #displayName: 'Download data'
-    #- script: python ci\\datamgr.py parquet -i
-      #displayName: 'Load Parquet data'
-    #- script: python ci\\datamgr.py sqlite
-      #displayName: 'Load SQLite data'
-    #- script: pytest --tb=short --junitxml=junit.xml -n auto -m "not backend and not clickhouse and not impala and not hdfs and not bigquery and not mapd and not mysql and not postgresql" -ra ibis
-      #displayName: 'Run tests'
 
-    ## publish test results
-    #- task: PublishTestResults@2
-      #inputs:
-        #testResultsFiles: junit.xml
-        #testRunTitle: 'Publish test results'
+    - script: conda list
+      displayName: 'Show installed packages'
 
-    ## build source dist and wheel
-    #- script: python setup.py sdist bdist_wheel
-      #displayName: 'Build source distribution and wheel'
+    - script: python ci\\datamgr.py download
+      displayName: 'Download data'
+
+    - script: python ci\\datamgr.py parquet -i
+      displayName: 'Load Parquet data'
+
+    - script: python ci\\datamgr.py sqlite
+      displayName: 'Load SQLite data'
+
+    - script: pytest --tb=short --junitxml=junit.xml -n auto -m "not backend and not clickhouse and not impala and not hdfs and not bigquery and not mapd and not mysql and not postgresql" -ra ibis
+      displayName: 'Run tests'
+
+    # publish test results
+    - task: PublishTestResults@2
+      displayName: 'Publish test results from pytest JUnitXML'
+      inputs:
+        testResultsFiles: junit.xml
+        testRunTitle: 'Publish test results'
+
+    # build source dist and wheel
+    - script: python setup.py sdist bdist_wheel
+      displayName: 'Build source distribution and wheel'
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish sdist and wheel to Azure'
+      inputs:
+        pathToPublish: dist
+        artifactName: dist
 
     # build a conda package
     - script: conda install --name base --yes --channel conda-forge conda-build
       displayName: 'Install conda build into base environment'
-    - script: |
-        python ci\\feedstock.py clone
-        python ci\\feedstock.py update
-      displayName: 'Clone and update conda-forge recipe'
+
+    - script: python ci\\feedstock.py clone
+      displayName: 'Clone conda-forge recipe'
+
+    - script: python ci\\feedstock.py update
+      displayName: 'Update conda-forge recipe'
+
     - script: python ci\\feedstock.py build
       displayName: 'Build conda package from conda-forge recipe'
-    - script: python ci\\feedstock.py deploy C:\\Miniconda\conda-bld dist win-64
-      displayName: 'Deploy conda-forge recipe'
+
+    - script: python ci\\feedstock.py deploy C:\\Miniconda\conda-bld conda win-64
+      displayName: 'Copy conda package to artifact directory'
 
     # publish sdist and wheel and conda package
     - task: PublishBuildArtifacts@1
-      displayName: 'Publish artifact: sdist bdist_wheel conda-pkg'
+      displayName: 'Publish conda package to Azure'
       inputs:
-        pathToPublish: dist
-        artifactName: dist
+        pathToPublish: conda
+        artifactName: conda
