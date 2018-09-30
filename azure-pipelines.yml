@@ -15,13 +15,6 @@ jobs:
         python.version: "3.6"
         pyarrow: "pyarrow"
   steps:
-    - task: DockerCompose@0
-      displayName: 'Start Windows docker-compose'
-      inputs:
-        containerregistrytype: 'Container Registery'
-        dockerComposeFile: '**/docker-compose-windows.yml'
-        action: 'Run services'
-        buildImages: False
     - task: CondaEnvironment@1
       displayName: 'Create conda environment'
       inputs:
