@@ -15,11 +15,19 @@ jobs:
         python.version: "3.6"
         pyarrow: "pyarrow"
   steps:
-    - script: choco install -y postgresql10 --params '/Password:postgres'
-      displayName: 'Install postgres from chocolatey'
-
     - script: choco install -y mariadb
       displayName: 'Install mariadb (mysql) from chocolatey'
+
+    - script: mysql -u root -e "CREATE OR REPLACE USER ibis@localhost IDENTIFIED BY 'ibis'"
+      displayName: 'Create ibis user and password in MySQL database'
+
+    - script: mysql -u root -e "GRANT ALL PRIVILEGES ON *.* TO 'ibis'@'%'"
+      displayName: 'Setup privileges for ibis user in MySQL'
+
+    - script: mysql -u ibis -p ibis -e 'SELECT 1'
+
+    - script: choco install -y postgresql10 --params '/Password:postgres'
+      displayName: 'Install postgres from chocolatey'
 
     - task: CondaEnvironment@1
       displayName: 'Create conda environment'
@@ -65,26 +73,6 @@ jobs:
       inputs:
         testResultsFiles: junit.xml
         testRunTitle: 'Publish test results'
-
-- job: Build
-  pool:
-    vmImage: vs2017-win2017
-  strategy:
-    maxParallel: 3
-    matrix:
-      py27:
-        python.version: "2.7"
-      py35:
-        python.version: "3.5"
-      py36:
-        python.version: "3.6"
-  steps:
-    - task: CondaEnvironment@1
-      displayName: 'Create base conda environment'
-      inputs:
-        createCustomEnvironment: False
-        packageSpecs: ''
-        updateConda: False
 
     # build a conda package
     - script: conda install --name base --yes --channel conda-forge conda-build
