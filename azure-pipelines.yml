@@ -66,16 +66,6 @@ jobs:
         testResultsFiles: junit.xml
         testRunTitle: 'Publish test results'
 
-    # build source dist and wheel
-    - script: python setup.py sdist bdist_wheel
-      displayName: 'Build source distribution and wheel'
-
-    - task: PublishBuildArtifacts@1
-      displayName: 'Publish sdist and wheel to Azure'
-      inputs:
-        pathToPublish: dist
-        artifactName: dist
-
     # build a conda package
     - script: conda install --name base --yes --channel conda-forge conda-build
       displayName: 'Install conda build into base environment'
