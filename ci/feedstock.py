@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import os
-import random
 import shutil
 import sys
 import tempfile
