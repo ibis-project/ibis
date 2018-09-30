@@ -32,9 +32,7 @@ def cli():
 
 
 default_repo = 'https://github.com/conda-forge/ibis-framework-feedstock'
-default_dest = os.path.join(
-    tempfile.gettempdir(),
-    'ibis-framework-feedstock-{}'.format(random.getrandbits(16)))
+default_dest = os.path.join(tempfile.gettempdir(), 'ibis-framework-feedstock')
 
 
 @cli.command()
