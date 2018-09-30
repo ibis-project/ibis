@@ -55,5 +55,7 @@ jobs:
         artifactName: dist
 
     # build a conda package
+    - script: conda install --name base --yes --channel conda-forge conda-build
+      displayName: 'Install conda build into base environment'
     - script: python ci\\feedstock.py test
       displayName: 'Clone, update and build conda-forge recipe'
