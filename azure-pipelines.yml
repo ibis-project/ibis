@@ -89,19 +89,15 @@ jobs:
     - task: CondaEnvironment@1
       displayName: 'Create conda environment'
       inputs:
-        createCustomEnvironment: True
-        environmentName: "ibis_$(python.version)"
-        packageSpecs: python=$(python-version) click jinja2 ruamel.yaml plumbum
-        installOptions: -c conda-forge
-        createOptions: -c conda-forge
-        cleanEnvironment: True
+        createCustomEnvironment: False
+        packageSpecs: ''
         updateConda: False
 
     - script: python setup.py develop
       displayName: 'Install ibis'
 
     # build a conda package
-    - script: conda install --name base --yes --channel conda-forge conda-build
+    - script: conda install --name base --yes --channel conda-forge conda-build click jinja2 ruamel.yaml plumbum
       displayName: 'Install conda build into base environment'
 
     - script: python ci/feedstock.py clone
