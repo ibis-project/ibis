@@ -2,5 +2,3 @@ version: '3'
 services:
   postgres:
     image: stefanscherer/postgres-windows
-    ports:
-      - 5432:5432
