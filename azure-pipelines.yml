@@ -71,6 +71,7 @@ jobs:
       inputs:
         testResultsFiles: junit.xml
         testRunTitle: 'Publish test results'
+      condition: succeededOrFailed()  # pass or fail, but not cancelled
 
 - job: Build
   pool:
