@@ -86,7 +86,7 @@ jobs:
         python.version: "3.5"
       py36:
         python.version: "3.6"
-
+  steps:
     - task: CondaEnvironment@1
       displayName: 'Create conda environment'
       inputs:
