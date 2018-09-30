@@ -72,6 +72,34 @@ jobs:
         testResultsFiles: junit.xml
         testRunTitle: 'Publish test results'
 
+jobs:
+- job: Build
+  pool:
+    vmImage: vs2017-win2017
+  strategy:
+    maxParallel: 3
+    matrix:
+      py27:
+        python.version: "2.7"
+      py35:
+        python.version: "3.5"
+      py36:
+        python.version: "3.6"
+
+    - task: CondaEnvironment@1
+      displayName: 'Create conda environment'
+      inputs:
+        createCustomEnvironment: True
+        environmentName: "ibis_$(python.version)"
+        packageSpecs: python=$(python-version) click jinja2 ruamel.yaml plumbum
+        installOptions: -c conda-forge
+        createOptions: -c conda-forge
+        cleanEnvironment: True
+        updateConda: False
+
+    - script: python setup.py develop
+      displayName: 'Install ibis'
+
     # build a conda package
     - script: conda install --name base --yes --channel conda-forge conda-build
       displayName: 'Install conda build into base environment'
