@@ -202,6 +202,10 @@ class PostgreSQL(Backend, RoundHalfToEven):
 
     returned_timestamp_unit = 's'
 
+    @property
+    def name(self):
+        return 'postgres'
+
     def connect(self, data_directory):
         user = os.environ.get('IBIS_TEST_POSTGRES_USER',
                               os.environ.get('PGUSER', 'postgres'))
