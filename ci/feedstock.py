@@ -85,15 +85,15 @@ def update(meta, source_path):
 
 @cli.command()
 @click.argument('recipe', default=os.path.join(default_dest, 'recipe'))
-def build(recipe):
+@click.option(
+    '--python',
+    default='{}.{}'.format(sys.version_info.major, sys.version_info.minor))
+def build(recipe, python):
     click.echo('Building {} recipe...'.format(recipe))
-
-    python_version = '{}.{}'.format(
-        sys.version_info.major, sys.version_info.minor)
 
     cmd = conda['build', recipe,
                 '--channel', 'conda-forge',
-                '--python', python_version]
+                '--python', python]
 
     cmd(stdout=click.get_binary_stream('stdout'),
         stderr=click.get_binary_stream('stderr'))
