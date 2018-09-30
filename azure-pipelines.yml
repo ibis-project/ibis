@@ -18,7 +18,7 @@ jobs:
     - script: choco install -y postgresql10 --params '/Password:postgres'
       displayName: 'Install postgres from chocolatey'
 
-    - script: choco install -y mariadb --version 10.2.13
+    - script: choco install -y mariadb
       displayName: 'Install mariadb (mysql) from chocolatey'
 
     - task: CondaEnvironment@1
