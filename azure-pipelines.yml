@@ -1,5 +1,7 @@
 jobs:
 - job: Databases
+  strategy:
+    maxParallel: 10
   pool:
     vmImage: vs2017-win2017
   steps:
@@ -14,7 +16,7 @@ jobs:
   pool:
     vmImage: vs2017-win2017
   strategy:
-    maxParallel: 3
+    maxParallel: 10
     matrix:
       py27:
         python.version: "2.7"
