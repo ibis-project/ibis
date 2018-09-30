@@ -62,15 +62,16 @@ jobs:
     - script: python ci/datamgr.py parquet -i
       displayName: 'Load Parquet data'
 
-    - script: pytest --tb=short --junitxml=junit.xml -n auto -m "not postgresql and not backend and not clickhouse and not impala and not hdfs and not bigquery and not mapd" -ra ibis
+    - script: pytest --tb=short --junitxml=junit-$(python.version).xml -n auto -m "not postgresql and not backend and not clickhouse and not impala and not hdfs and not bigquery and not mapd" -ra ibis
       displayName: 'Run tests'
 
     # publish test results
     - task: PublishTestResults@2
       displayName: 'Publish test results from pytest JUnitXML'
       inputs:
-        testResultsFiles: junit.xml
+        testResultsFiles: junit-$(python.version).xml
         testRunTitle: 'Publish test results'
+        mergeTestResults: False
       condition: succeededOrFailed()  # pass or fail, but not cancelled
 
 - job: Build
