@@ -18,9 +18,6 @@ jobs:
     - script: choco install -y mariadb
       displayName: 'Install mariadb (mysql) from chocolatey'
 
-    - script: powershell "$env:path -split ';'"
-      displayName: 'Show PATH after installing mariadb'
-
     - script: '"C:\\Program Files\\MariaDB 10.2\\bin\\mysql" -u root -e "CREATE OR REPLACE USER ibis@localhost IDENTIFIED BY ''ibis''"'
       displayName: 'Create ibis user and password in MySQL database'
 
