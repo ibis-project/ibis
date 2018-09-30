@@ -20,8 +20,9 @@ IBIS_DIR = Path(__file__).parent.parent.absolute()
 
 
 def render(path):
-    env = Environment(loader=FileSystemLoader(str(path.parent)))
-    template = env.get_template(path.name)
+    parent = str(path.parent)
+    env = Environment(loader=FileSystemLoader(parent))
+    template = env.get_template(path.name, parent=parent)
     return template.render()
 
 
