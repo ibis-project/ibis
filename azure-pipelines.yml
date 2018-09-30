@@ -20,7 +20,7 @@ jobs:
       inputs:
         containerregistrytype: 'Container Registery'
         dockerComposeFile: '**/docker-compose-windows.yml'
-        action: 'Run Services'
+        action: 'run Services'
         buildImages: False
     - task: CondaEnvironment@1
       displayName: 'Create conda environment'
