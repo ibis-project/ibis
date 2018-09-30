@@ -52,3 +52,5 @@ jobs:
         artifactName: dist
 
     # build a conda package
+    - script: python ci\\feedstock.py test
+      displayName: 'Clone, update and build conda-forge recipe'
