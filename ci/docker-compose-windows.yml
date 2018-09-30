@@ -2,3 +2,9 @@ version: '3'
 services:
   postgres:
     image: stefanscherer/postgres-windows
+
+# cf https://github.com/docker/compose/issues/4024
+networks:
+  default:
+    external:
+      name: nat
