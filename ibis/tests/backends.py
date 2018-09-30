@@ -196,7 +196,7 @@ class SQLite(Backend, RoundAwayFromZero):
         return t.mutate(timestamp_col=t.timestamp_col.cast('timestamp'))
 
 
-class Postgres(Backend, RoundHalfToEven):
+class PostgreSQL(Backend, RoundHalfToEven):
     # postgres rounds half to even for double precision and half away from zero
     # for numeric and decimal
 
