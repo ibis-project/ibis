@@ -31,5 +31,24 @@ jobs:
       displayName: 'Load Parquet data'
     - script: python ci\\datamgr.py sqlite
       displayName: 'Load SQLite data'
-    - script: pytest --tb=short -n auto -m "not backend and not clickhouse and not impala and not hdfs and not bigquery and not mapd and not mysql and not postgresql" -ra ibis
+    - script: pytest --tb=short --junitxml=junit.xml -n auto -m "not backend and not clickhouse and not impala and not hdfs and not bigquery and not mapd and not mysql and not postgresql" -ra ibis
       displayName: 'Run tests'
+
+    # publish test results
+    - task: PublishTestResults@2
+      inputs:
+        testResultsFiles: junit.xml
+        testRunTitle: 'Publish test results'
+
+    # build source dist and wheel
+    - script: python setup.py sdist bdist_wheel
+      displayName: 'Build source distribution and wheel'
+
+    # publish sdist and wheel
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish artifact: sdist bdist_wheel'
+      inputs:
+        pathToPublish: dist
+        artifactName: dist
+
+    # build a conda package
