@@ -19,7 +19,7 @@ jobs:
       inputs:
         createCustomEnvironment: True
         environmentName: "ibis_$(python.version)"
-        packageSpecs: pytables numpy pandas ruamel.yaml pyarrow=$(pyarrow.version) multipledispatch sqlalchemy psycopg2 graphviz click mock plumbum flake8 pytest-xdist
+        packageSpecs: pytables numpy pandas ruamel.yaml jinja2 pyarrow=$(pyarrow.version) multipledispatch sqlalchemy psycopg2 graphviz click mock plumbum flake8 pytest-xdist
         installOptions: -c conda-forge
         createOptions: python="$(python.version)" -c conda-forge
         cleanEnvironment: True
