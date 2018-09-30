@@ -180,8 +180,12 @@ def parquet(tables, data_directory, ignore_missing_dependency, **params):
               default=str(SCRIPT_DIR / 'schema' / 'postgresql.sql'))
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
 @click.option('-d', '--data-directory', default=DATA_DIR)
-def postgres(schema, tables, data_directory, **params):
-    from plumbum.cmd import psql
+@click.option('-l', '--psql-path', type=click.Path(exists=True), default=None)
+def postgres(schema, tables, data_directory, psql_path, **params):
+    if psql_path is None:
+        from plumbum.cmd import psql
+    else:
+        psql = local[psql_path]
 
     data_directory = Path(data_directory)
     logger.info('Initializing PostgreSQL...')
