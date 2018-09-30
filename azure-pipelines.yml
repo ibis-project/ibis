@@ -61,7 +61,7 @@ jobs:
 
     # publish sdist and wheel and conda package
     - task: PublishBuildArtifacts@1
-      displayName: 'Publish artifact: sdist bdist_wheel'
+      displayName: 'Publish artifact: sdist bdist_wheel conda-pkg'
       inputs:
         pathToPublish: dist
         artifactName: dist
