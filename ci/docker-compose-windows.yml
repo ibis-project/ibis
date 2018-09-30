@@ -1,7 +1,7 @@
 version: '3'
 services:
   postgres:
-    image: stefanscherer/postgres-windows
+    image: stefanscherer/postgres-windows:10.2-insider
 
 # cf https://github.com/docker/compose/issues/4024
 networks:
