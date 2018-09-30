@@ -72,7 +72,6 @@ jobs:
         testResultsFiles: junit.xml
         testRunTitle: 'Publish test results'
 
-jobs:
 - job: Build
   pool:
     vmImage: vs2017-win2017
