@@ -3,7 +3,7 @@ jobs:
   pool:
     vmImage: vs2017-win2017
   strategy:
-    maxParallel: 10
+    maxParallel: 3
     matrix:
       py27:
         python.version: "2.7"
@@ -66,6 +66,26 @@ jobs:
         testResultsFiles: junit.xml
         testRunTitle: 'Publish test results'
 
+- job: Build
+  pool:
+    vmImage: vs2017-win2017
+  strategy:
+    maxParallel: 3
+    matrix:
+      py27:
+        python.version: "2.7"
+      py35:
+        python.version: "3.5"
+      py36:
+        python.version: "3.6"
+  steps:
+    - task: CondaEnvironment@1
+      displayName: 'Create base conda environment'
+      inputs:
+        createCustomEnvironment: False
+        packageSpecs: ''
+        updateConda: False
+
     # build a conda package
     - script: conda install --name base --yes --channel conda-forge conda-build
       displayName: 'Install conda build into base environment'
@@ -76,7 +96,7 @@ jobs:
     - script: python ci/feedstock.py update
       displayName: 'Update conda-forge recipe'
 
-    - script: python ci/feedstock.py build
+    - script: python ci/feedstock.py build --python=$(python.version)
       displayName: 'Build conda package from conda-forge recipe'
 
     - script: python ci/feedstock.py deploy C:/Miniconda/conda-bld conda win-64
