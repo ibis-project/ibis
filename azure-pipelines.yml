@@ -5,12 +5,12 @@ jobs:
   strategy:
     maxParallel: 3
     matrix:
-      py27:
-        python.version: "2.7"
-        pyarrow: ""
-      py35:
-        python.version: "3.5"
-        pyarrow: "pyarrow"
+      #py27:
+        #python.version: "2.7"
+        #pyarrow: ""
+      #py35:
+        #python.version: "3.5"
+        #pyarrow: "pyarrow"
       py36:
         python.version: "3.6"
         pyarrow: "pyarrow"
@@ -24,8 +24,8 @@ jobs:
         createOptions: python="$(python.version)" -c conda-forge
         cleanEnvironment: True
         updateConda: False
-    #- script: python setup.py develop
-      #displayName: 'Install ibis'
+    - script: python setup.py develop
+      displayName: 'Install ibis'
     #- script: conda list
       #displayName: 'Show installed packages'
     #- script: python ci\\datamgr.py download
