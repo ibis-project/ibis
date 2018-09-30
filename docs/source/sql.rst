@@ -208,6 +208,10 @@ to create function that reference a field of interest:
            return table[field].abs().mean()
        return closure
 
+Now you can write:
+
+.. ipython:: python
+
    expr = (t.group_by(['one', 'three'])
            .aggregate(the_sum=t.two.sum())
            .group_by('one')
