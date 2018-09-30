@@ -47,15 +47,21 @@ jobs:
     - script: python setup.py sdist bdist_wheel
       displayName: 'Build source distribution and wheel'
 
-    # publish sdist and wheel
+    # build a conda package
+    - script: conda install --name base --yes --channel conda-forge conda-build
+      displayName: 'Install conda build into base environment'
+    - script: python ci\\feedstock.py clone
+      displayName: 'Clone conda-forge recipe'
+    - script: python ci\\feedstock.py update
+      displayName: 'Update conda-forge recipe'
+    - script: python ci\\feedstock.py build
+      displayName: 'Build conda package from conda-forge recipe'
+    - script: python ci\\feedstock.py deploy C:\\Miniconda\conda-bld dist win-64
+      displayName: 'Deploy conda-forge recipe'
+
+    # publish sdist and wheel and conda package
     - task: PublishBuildArtifacts@1
       displayName: 'Publish artifact: sdist bdist_wheel'
       inputs:
         pathToPublish: dist
         artifactName: dist
-
-    # build a conda package
-    - script: conda install --name base --yes --channel conda-forge conda-build
-      displayName: 'Install conda build into base environment'
-    - script: python ci\\feedstock.py test
-      displayName: 'Clone, update and build conda-forge recipe'
