@@ -1,0 +1,118 @@
+jobs:
+- job: WindowsTest
+  pool:
+    vmImage: vs2017-win2017
+  strategy:
+    maxParallel: 3
+    matrix:
+      py27:
+        python.version: "2.7"
+        pyarrow: ""
+      py35:
+        python.version: "3.5"
+        pyarrow: "pyarrow"
+      py36:
+        python.version: "3.6"
+        pyarrow: "pyarrow"
+  steps:
+    - script: choco install -y mariadb
+      displayName: 'Install mariadb (mysql) from chocolatey'
+
+    - script: '"C:\\Program Files\\MariaDB 10.2\\bin\\mysql" -u root -e "CREATE OR REPLACE USER ibis@localhost IDENTIFIED BY ''ibis''"'
+      displayName: 'Create ibis user and password in MySQL database'
+
+    - script: '"C:\\Program Files\\MariaDB 10.2\\bin\\mysql" -u root -e "GRANT ALL PRIVILEGES ON *.* TO ibis@localhost"'
+      displayName: 'Setup privileges for ibis user in MySQL'
+
+    - script: choco install -y postgresql10 --params '/Password:postgres'
+      displayName: 'Install postgres from chocolatey'
+
+    - task: CondaEnvironment@1
+      displayName: 'Create conda environment'
+      inputs:
+        createCustomEnvironment: True
+        environmentName: "ibis_$(python.version)"
+        packageSpecs: pytables numpy pandas ruamel.yaml jinja2 $(pyarrow) multipledispatch pymysql sqlalchemy psycopg2 graphviz click mock plumbum flake8 pytest-xdist
+        installOptions: --channel conda-forge
+        createOptions: python="$(python.version)" --channel conda-forge
+        cleanEnvironment: True
+        updateConda: False
+
+    - script: flake8
+      displayName: 'Lint'
+
+    - script: python setup.py develop
+      displayName: 'Install ibis'
+
+    - script: conda list
+      displayName: 'Show installed packages'
+
+    - script: python ci/datamgr.py download
+      displayName: 'Download data'
+
+    - script: python ci/datamgr.py mysql
+      displayName: 'Load MySQL data'
+
+    - script: 'python ci/datamgr.py postgres --psql-path="C:/Program Files/PostgreSQL/10/bin/psql.exe"'
+      displayName: 'Load PostgreSQL data'
+
+    - script: python ci/datamgr.py sqlite
+      displayName: 'Load SQLite data'
+
+    - script: python ci/datamgr.py parquet -i
+      displayName: 'Load Parquet data'
+
+    - script: pytest --tb=short --junitxml=junit-$(python.version).xml -n auto -m "not backend and not clickhouse and not impala and not hdfs and not bigquery and not mapd" -ra ibis
+      displayName: 'Run tests'
+
+    # publish test results
+    - task: PublishTestResults@2
+      displayName: 'Publish test results from pytest JUnitXML'
+      inputs:
+        testResultsFiles: junit-$(python.version).xml
+        testRunTitle: 'Publish test results'
+        mergeTestResults: False
+      condition: succeededOrFailed()  # pass or fail, but not cancelled
+
+- job: WindowsCondaBuild
+  pool:
+    vmImage: vs2017-win2017
+  strategy:
+    maxParallel: 3
+    matrix:
+      py27:
+        python.version: "2.7"
+      py35:
+        python.version: "3.5"
+      py36:
+        python.version: "3.6"
+  steps:
+    - task: CondaEnvironment@1
+      displayName: 'Create conda-build environment'
+      inputs:
+        createCustomEnvironment: False
+        packageSpecs: conda-build click jinja2 ruamel.yaml plumbum
+        installOptions: --channel conda-forge
+        updateConda: False
+
+    - script: python setup.py develop
+      displayName: 'Install ibis'
+
+    - script: python ci/feedstock.py clone
+      displayName: 'Clone conda-forge recipe'
+
+    - script: python ci/feedstock.py update
+      displayName: 'Update conda-forge recipe'
+
+    - script: python ci/feedstock.py build --python=$(python.version)
+      displayName: 'Build conda package from conda-forge recipe'
+
+    - script: python ci/feedstock.py deploy C:/Miniconda/conda-bld conda win-64
+      displayName: 'Copy conda package to artifact directory'
+
+    # publish sdist and wheel and conda package
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish conda package to Azure'
+      inputs:
+        pathToPublish: conda
+        artifactName: conda

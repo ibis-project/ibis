@@ -196,11 +196,15 @@ class SQLite(Backend, RoundAwayFromZero):
         return t.mutate(timestamp_col=t.timestamp_col.cast('timestamp'))
 
 
-class Postgres(Backend, RoundHalfToEven):
+class PostgreSQL(Backend, RoundHalfToEven):
     # postgres rounds half to even for double precision and half away from zero
     # for numeric and decimal
 
     returned_timestamp_unit = 's'
+
+    @property
+    def name(self):
+        return 'postgres'
 
     def connect(self, data_directory):
         user = os.environ.get('IBIS_TEST_POSTGRES_USER',

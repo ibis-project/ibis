@@ -198,34 +198,6 @@ Indeed:
 
    print(ibis.impala.compile(expr))
 
-A useful pattern you can try is that of the *function factory* which allows you
-to create function that reference a field of interest:
-
-.. code-block:: python
-
-   def mad(field):
-       def closure(table):
-           return table[field].abs().mean()
-       return closure
-
-
-.. ipython:: python
-   :suppress:
-
-   def mad(field):
-       def closure(table):
-           return table[field].abs().mean()
-       return closure
-
-Now you can do:
-
-.. ipython:: python
-
-   expr = (t.group_by(['one', 'three'])
-           .aggregate(the_sum=t.two.sum())
-           .group_by('one')
-           .aggregate(mad=mad('the_sum')))
-
 Filtering / ``WHERE``
 ---------------------
 
