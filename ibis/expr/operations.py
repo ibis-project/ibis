@@ -2733,15 +2733,28 @@ class MapValueOrDefaultForKey(ValueOp):
     default = Arg(rlz.any)
 
     def output_type(self):
-        map_type = self.arg.type()
+        arg = self.arg
+        default = self.default
+        map_type = arg.type()
         value_type = map_type.value_type
-        default_type = self.default.type()
+        default_type = default.type()
 
-        if default_type is not dt.null and value_type != default_type:
-            raise ValueError("default type: {} must be the same "
-                             "as the map value_type {}".format(
-                                 default_type, value_type))
-        return rlz.shape_like(tuple(self.args), map_type.value_type)
+        if default_type is not dt.null:
+            # compute the result_type by getting the highest precedence type
+            # from the value_type vs the default_type
+            try:
+                result_type = dt.highest_precedence((value_type, default_type))
+            except com.IbisTypeError:
+                # if we can't compute the precedence then fail
+                raise com.IbisTypeError(
+                    'map value type {} cannot be cast to default value type '
+                    '{}'.format(value_type, default_type)
+                )
+        else:
+            # otherwise the result type is the value type since the user
+            # did not provide a default value
+            result_type = value_type
+        return rlz.shape_like(tuple(self.args), result_type)
 
 
 class MapKeys(ValueOp):
