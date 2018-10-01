@@ -122,4 +122,4 @@ jobs:
       inputs:
         pathToPublish: conda
         artifactName: conda
-      condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+      condition: and(succeeded(), eq(variables['System.PullRequest.IsFork'], False))
