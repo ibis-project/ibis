@@ -110,12 +110,6 @@ jobs:
     - script: python ci/feedstock.py deploy C:/Miniconda/conda-bld conda win-64
       displayName: 'Copy conda package to artifact directory'
 
-    - script: echo $(Build.SourceBranch)
-      displayName: 'Show source branch'
-
-    - script: echo $(Build.Repository.Name)
-      displayName: 'Show build repo name'
-
     # publish sdist and wheel and conda package
     - task: PublishBuildArtifacts@1
       displayName: 'Publish conda package to Azure'
