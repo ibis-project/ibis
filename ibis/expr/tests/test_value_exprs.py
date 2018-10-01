@@ -161,7 +161,7 @@ def test_simple_map_operations():
     assert isinstance(expr.get('d', default).op(), ops.MapValueOrDefaultForKey)
 
     # test for an invalid default type, nulls are ok
-    with pytest.raises(ValueError):
+    with pytest.raises(IbisTypeError):
         expr.get('d', ibis.literal('foo'))
 
     assert isinstance(expr.get('d', ibis.literal(None)).op(),
@@ -1338,6 +1338,20 @@ def test_column_isin_map_keys():
     mapping = ibis.literal({'a': 1, 'b': 2})
     expr = t.a.isin(mapping.keys())
     assert isinstance(expr, ir.BooleanColumn)
+
+
+def test_map_get_with_compatible_value_int8():
+    t = ibis.literal({'A': 1000, 'B': 2000})
+    v = t.get('C', 3)
+    assert isinstance(v, ir.IntegerScalar)
+    assert v.type() == dt.int16
+
+
+def test_map_get_with_compatible_value_float():
+    t = ibis.literal({'A': 1000, 'B': 2000})
+    v = t.get('C', 3.0)
+    assert isinstance(v, ir.FloatingScalar)
+    assert v.type() == dt.double
 
 
 @pytest.mark.parametrize(
