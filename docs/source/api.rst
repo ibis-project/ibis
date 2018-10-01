@@ -260,6 +260,7 @@ Table methods
    TableExpr.aggregate
    TableExpr.count
    TableExpr.distinct
+   TableExpr.drop
    TableExpr.info
    TableExpr.filter
    TableExpr.get_column
