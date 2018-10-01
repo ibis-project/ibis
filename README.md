@@ -2,12 +2,12 @@
 
 |Service|Status|
 | -------------: | :---- |
-| Documentation | [![Documentation Status](https://img.shields.io/badge/docs-docs.ibis--project.org-blue.svg)](http://docs.ibis-project.org) |
+| Documentation  | [![Documentation Status](https://img.shields.io/badge/docs-docs.ibis--project.org-blue.svg)](http://docs.ibis-project.org) |
 | Conda packages | [![Anaconda-Server Badge](https://anaconda.org/conda-forge/ibis-framework/badges/version.svg)](https://anaconda.org/conda-forge/ibis-framework) |
-| PyPI | ![PyPI](https://img.shields.io/pypi/v/ibis-framework.svg) |
-| CircleCI | [![CircleCI Status](https://circleci.com/gh/ibis-project/ibis.svg?style=shield&circle-token=b84ff8383cbb0d6788ee0f9635441cb962949a4f)](https://circleci.com/gh/ibis-project/ibis/tree/master) |
-| AppVeyor | [![AppVeyor Status](https://ci.appveyor.com/api/projects/status/github/ibis-project/ibis?branch=master&svg=true)](https://ci.appveyor.com/project/cpcloud/ibis-xh5g1) |
-| Coverage | ![Codecov branch](https://img.shields.io/codecov/c/github/ibis-project/ibis/master.svg) |
+| PyPI           | ![PyPI](https://img.shields.io/pypi/v/ibis-framework.svg) |
+| CircleCI       | [![CircleCI Status](https://circleci.com/gh/ibis-project/ibis.svg?style=shield&circle-token=b84ff8383cbb0d6788ee0f9635441cb962949a4f)](https://circleci.com/gh/ibis-project/ibis/tree/master) |
+| Azure          | [![Azure Status](https://dev.azure.com/ibis-project/ibis/_apis/build/status/ibis-project.ibis)](https://dev.azure.com/ibis-project/ibis/_build) |
+| Coverage       | ![Codecov branch](https://img.shields.io/codecov/c/github/ibis-project/ibis/master.svg) |
 
 
 Ibis is a toolbox to bridge the gap between local Python environments, remote
