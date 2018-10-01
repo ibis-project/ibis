@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import os
-import random
 import shutil
 import sys
 import tempfile
@@ -20,8 +19,9 @@ IBIS_DIR = Path(__file__).parent.parent.absolute()
 
 
 def render(path):
-    env = Environment(loader=FileSystemLoader(str(path.parent)))
-    template = env.get_template(path.name)
+    parent = str(path.parent)
+    env = Environment(loader=FileSystemLoader(parent))
+    template = env.get_template(path.name, parent=parent)
     return template.render()
 
 
@@ -31,9 +31,7 @@ def cli():
 
 
 default_repo = 'https://github.com/conda-forge/ibis-framework-feedstock'
-default_dest = os.path.join(
-    tempfile.gettempdir(),
-    'ibis-framework-feedstock-{}'.format(random.getrandbits(16)))
+default_dest = os.path.join(tempfile.gettempdir(), 'ibis-framework-feedstock')
 
 
 @cli.command()
@@ -87,15 +85,15 @@ def update(meta, source_path):
 
 @cli.command()
 @click.argument('recipe', default=os.path.join(default_dest, 'recipe'))
-def build(recipe):
+@click.option(
+    '--python',
+    default='{}.{}'.format(sys.version_info.major, sys.version_info.minor))
+def build(recipe, python):
     click.echo('Building {} recipe...'.format(recipe))
-
-    python_version = '{}.{}'.format(
-        sys.version_info.major, sys.version_info.minor)
 
     cmd = conda['build', recipe,
                 '--channel', 'conda-forge',
-                '--python', python_version]
+                '--python', python]
 
     cmd(stdout=click.get_binary_stream('stdout'),
         stderr=click.get_binary_stream('stderr'))
@@ -104,14 +102,14 @@ def build(recipe):
 @cli.command()
 @click.argument('package_location', default='/opt/conda/conda-bld')
 @click.argument('artifact_directory', default='/tmp/packages')
-@click.argument('architectures', default=('linux-64', 'noarch'))
-def deploy(package_location, artifact_directory, architectures):
+@click.argument('architecture', default='linux-64')
+def deploy(package_location, artifact_directory, architecture):
     artifact_dir = Path(artifact_directory)
     artifact_dir.mkdir(parents=True, exist_ok=True)
     package_loc = Path(package_location)
     assert package_loc.exists(), 'Path {} does not exist'.format(package_loc)
 
-    for architecture in architectures:
+    for architecture in (architecture, 'noarch'):
         arch_artifact_directory = str(artifact_dir / architecture)
         arch_package_directory = str(package_loc / architecture)
         shutil.copytree(arch_package_directory, arch_artifact_directory)
