@@ -116,4 +116,4 @@ jobs:
       inputs:
         pathToPublish: conda
         artifactName: conda
-      condition: and(succeeded(), eq(variables['System.PullRequest.IsFork'], False))
+      condition: and(succeeded(), eq(variables['System.PullRequest.IsFork'], 'False'))
