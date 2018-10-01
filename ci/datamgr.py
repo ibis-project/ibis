@@ -15,7 +15,6 @@ import sqlalchemy as sa
 
 from toolz import dissoc
 from plumbum import local
-from plumbum.cmd import curl, psql
 
 import ibis
 from ibis.compat import Path
@@ -118,6 +117,8 @@ def cli():
               default='https://storage.googleapis.com/ibis-testing-data')
 @click.option('-d', '--directory', default=SCRIPT_DIR)
 def download(base_url, directory, name):
+    from plumbum.cmd import curl
+
     directory = Path(directory)
     if not directory.exists():
         directory.mkdir()
@@ -179,7 +180,9 @@ def parquet(tables, data_directory, ignore_missing_dependency, **params):
               default=str(SCRIPT_DIR / 'schema' / 'postgresql.sql'))
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
 @click.option('-d', '--data-directory', default=DATA_DIR)
-def postgres(schema, tables, data_directory, **params):
+@click.option('-l', '--psql-path', type=click.Path(exists=True), default=None)
+def postgres(schema, tables, data_directory, psql_path, **params):
+    psql = local.get('psql', psql_path)
     data_directory = Path(data_directory)
     logger.info('Initializing PostgreSQL...')
     engine = init_database('postgresql', params, schema,

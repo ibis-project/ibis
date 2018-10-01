@@ -2,7 +2,7 @@ import sys
 import pytest
 
 from ibis.tests.backends import (Csv, Parquet, Pandas,
-                                 SQLite, Postgres, MySQL, MapD,
+                                 SQLite, PostgreSQL, MySQL, MapD,
                                  Clickhouse, Impala, BigQuery)
 
 
@@ -13,7 +13,7 @@ params_backend = [
     pytest.param(Parquet, marks=pytest.mark.parquet),
     pytest.param(Pandas, marks=pytest.mark.pandas),
     pytest.param(SQLite, marks=pytest.mark.sqlite),
-    pytest.param(Postgres, marks=pytest.mark.postgres),
+    pytest.param(PostgreSQL, marks=pytest.mark.postgresql),
     pytest.param(MySQL, marks=pytest.mark.mysql),
     pytest.param(Clickhouse, marks=pytest.mark.clickhouse),
     pytest.param(BigQuery, marks=pytest.mark.bigquery),
