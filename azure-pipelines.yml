@@ -1,7 +1,7 @@
 jobs:
 - job: WindowsTest
   pool:
-    vmImage: vs2017-win2017
+    vmImage: 'VS2017-Win2016'
   strategy:
     maxParallel: 3
     matrix:
@@ -76,7 +76,7 @@ jobs:
 
 - job: WindowsCondaBuild
   pool:
-    vmImage: vs2017-win2017
+    vmImage: 'VS2017-Win2016'
   strategy:
     maxParallel: 3
     matrix:
