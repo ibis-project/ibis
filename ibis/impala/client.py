@@ -1,9 +1,11 @@
+import operator
 import re
-import six
-import time
-import weakref
-import traceback
 import threading
+import time
+import traceback
+import weakref
+
+import six
 
 from posixpath import join as pjoin
 from collections import deque
@@ -21,7 +23,7 @@ import ibis.expr.operations as ops
 
 from ibis.config import options
 from ibis.client import Query, Database, DatabaseEntity, SQLClient
-from ibis.compat import lzip, parse_version
+from ibis.compat import parse_version, zip
 from ibis.filesystems import HDFS, WebHDFS
 from ibis.impala import udf, ddl
 from ibis.impala.compat import impyla, ImpylaError, HS2Error
@@ -839,10 +841,7 @@ class ImpalaClient(SQLClient):
 
     def _get_list(self, cur):
         tuples = cur.fetchall()
-        if len(tuples) > 0:
-            return list(lzip(*tuples)[0])
-        else:
-            return []
+        return list(map(operator.itemgetter(0), tuples))
 
     def set_database(self, name):
         """
@@ -863,7 +862,7 @@ class ImpalaClient(SQLClient):
         -------
         if_exists : boolean
         """
-        return len(self.list_databases(like=name)) > 0
+        return bool(self.list_databases(like=name))
 
     def create_database(self, name, path=None, force=False):
         """

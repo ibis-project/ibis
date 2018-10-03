@@ -15,9 +15,6 @@ PY2 = sys.version_info[0] == 2
 if not PY2:
     unicode_type = str
 
-    def lzip(*x):
-        return list(zip(*x))
-
     zip = zip
     zip_longest = itertools.zip_longest
 
@@ -25,7 +22,7 @@ if not PY2:
         return x.keys()
 
     from decimal import Decimal
-    from inspect import signature, Parameter, _empty
+    from inspect import signature, Parameter
     import unittest.mock as mock
     range = range
     map = map
@@ -40,10 +37,9 @@ else:
     except ImportError:
         from decimal import Decimal  # noqa: F401
 
-    from funcsigs import signature, Parameter, _empty  # noqa: F401
+    from funcsigs import signature, Parameter  # noqa: F401
 
     unicode_type = unicode  # noqa: F821
-    lzip = zip
     zip = itertools.izip
     zip_longest = itertools.izip_longest
     map = itertools.imap
