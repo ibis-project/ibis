@@ -1,8 +1,12 @@
+"""APIs for creating user-defined element-wise, reduction and analytic
+functions.
+"""
+
 from __future__ import absolute_import
 
 import collections
-
 import itertools
+import operator
 
 import six
 
@@ -13,14 +17,15 @@ from pandas.core.groupby import SeriesGroupBy
 
 import toolz
 
+from multipledispatch import Dispatcher
+
 import ibis.expr.datatypes as dt
 import ibis.expr.signature as sig
 import ibis.expr.operations as ops
 
 from ibis.pandas.core import scalar_types
-from ibis.pandas.dispatch import execute_node, Dispatcher, pause_ordering
-from ibis.compat import (
-    functools, signature, Parameter, _empty as empty, viewkeys)
+from ibis.pandas.dispatch import execute_node, pause_ordering
+from ibis.compat import functools, Parameter, signature, viewkeys
 
 
 rule_to_python_type = Dispatcher(
@@ -37,10 +42,9 @@ rule : DataType
 
 Returns
 -------
-types : Union[type, Tuple[type...]]
-    A pandas backend friendly signature
-"""
-)
+Union[Type[U], Tuple[Type[T], ...]]
+    A pandas-backend-friendly signature
+""")
 
 
 def arguments_from_signature(signature, *args, **kwargs):
@@ -54,7 +58,7 @@ def arguments_from_signature(signature, *args, **kwargs):
 
     Returns
     -------
-    args, kwargs : Tuple[Tuple[object...], Dict[str, object]]
+    Tuple[Tuple, Dict[str, Any]]
 
     Examples
     --------
@@ -143,16 +147,20 @@ def nullable(datatype):
     return (type(None),) if datatype.nullable else ()
 
 
-def udf_signature(input_type, klass):
-    """Compute the appropriate signature for an ibis Node from a list of input
-    types.
+def udf_signature(input_type, pin, klass):
+    """Compute the appropriate signature for a
+    :class:`~ibis.expr.operations.Node` from a list of input types
+    `input_type`.
 
     Parameters
     ----------
     input_type : List[ibis.expr.datatypes.DataType]
-        A list of ibis DataType instances
-    klass : Type
-        pd.Series or SeriesGroupBy
+        A list of :class:`~ibis.expr.datatypes.DataType` instances representing
+        the signature of a UDF/UDAF.
+    pin : Optional[int]
+        If this is not None, pin the `pin`-th argument type to `klass`
+    klass : Union[Type[pd.Series], Type[SeriesGroupBy]]
+        The pandas object that every argument type should contain
 
     Returns
     -------
@@ -165,231 +173,341 @@ def udf_signature(input_type, klass):
     >>> import pandas as pd
     >>> from pandas.core.groupby import SeriesGroupBy
     >>> import ibis.expr.datatypes as dt
-    >>> input_type = [dt.int64, dt.double]
-    >>> sig = udf_signature(input_type, pd.Series)
+    >>> input_type = [dt.string, dt.double]
+    >>> sig = udf_signature(input_type, pin=None, klass=pd.Series)
     >>> pprint(sig)  # doctest: +ELLIPSIS
-    ((<class '...Series'>,
-      <... 'int'>,
-      <... 'numpy.integer'>,
-      <... 'NoneType'>),
+    ((<class '...Series'>, <... '...str...'>, <... 'NoneType'>),
      (<class '...Series'>,
       <... 'float'>,
       <... 'numpy.floating'>,
       <... 'NoneType'>))
-    >>> input_type = [dt.Int64(nullable=False), dt.Double(nullable=False)]
-    >>> sig = udf_signature(input_type, SeriesGroupBy)
+    >>> not_nullable_types = [
+    ...     dt.String(nullable=False), dt.Double(nullable=False)]
+    >>> sig = udf_signature(not_nullable_types, pin=None, klass=pd.Series)
     >>> pprint(sig)  # doctest: +ELLIPSIS
-    ((<class '...SeriesGroupBy'>,
-      <... 'int'>,
-      <... 'numpy.integer'>),
-     (<class '...SeriesGroupBy'>,
+    ((<class '...Series'>, <... '...str...'>),
+     (<class '...Series'>,
       <... 'float'>,
       <... 'numpy.floating'>))
+    >>> sig0 = udf_signature(input_type, pin=0, klass=SeriesGroupBy)
+    >>> sig1 = udf_signature(input_type, pin=1, klass=SeriesGroupBy)
+    >>> pprint(sig0)  # doctest: +ELLIPSIS
+    (<class '...SeriesGroupBy'>,
+     (<class '...SeriesGroupBy'>,
+      <... 'float'>,
+      <... 'numpy.floating'>,
+      <... 'NoneType'>))
+    >>> pprint(sig1)  # doctest: +ELLIPSIS
+    ((<class '...SeriesGroupBy'>,
+      <... '...str...'>,
+      <... 'NoneType'>),
+     <class '...SeriesGroupBy'>)
     """
+    nargs = len(input_type)
+
+    if not nargs:
+        return ()
+
+    if nargs == 1:
+        r, = input_type
+        result = (klass,) + rule_to_python_type(r) + nullable(r)
+        return (result,)
+
     return tuple(
-        (klass,) + rule_to_python_type(r) + nullable(r) for r in input_type
+        klass if pin is not None and pin == i else
+        ((klass,) + rule_to_python_type(r) + nullable(r))
+        for i, r in enumerate(input_type)
     )
 
 
-def check_matching_signature(input_type):
-    """Make sure that the number of arguments declared by the user in
-    `input_type` matches that of the wrapped function's signature.
+def parameter_count(funcsig):
+    """Get the number of positional-or-keyword or position-only parameters in a
+    function signature.
+
+    Parameters
+    ----------
+    funcsig : inspect.Signature
+        A UDF signature
+
+    Returns
+    -------
+    int
+        The number of parameters
+    """
+    return sum(
+        param.kind in {param.POSITIONAL_OR_KEYWORD, param.POSITIONAL_ONLY}
+        for param in funcsig.parameters.values()
+        if param.default is Parameter.empty
+    )
+
+
+def valid_function_signature(input_type, func):
+    """Check that the declared number of inputs (the length of `input_type`)
+    and the number of inputs to `func` are equal.
 
     Parameters
     ----------
     input_type : List[DataType]
+    func : callable
 
     Returns
     -------
-    wrapper : callable
+    inspect.Signature
     """
-    def wrapper(func):
-        num_params = sum(
-            param.kind in {param.POSITIONAL_OR_KEYWORD, param.POSITIONAL_ONLY}
-            for param in signature(func).parameters.values()
-            if param.default is empty
+    funcsig = signature(func)
+    declared_parameter_count = len(input_type)
+    function_parameter_count = parameter_count(funcsig)
+
+    if declared_parameter_count != function_parameter_count:
+        raise TypeError(
+            'Function signature {!r} has {:d} parameters, '
+            'input_type has {:d}. These must match'.format(
+                func.__name__,
+                function_parameter_count,
+                declared_parameter_count,
+            )
         )
-        num_declared = len(input_type)
-        if num_params != num_declared:
-            raise TypeError(
-                'Function {!r} has {:d} parameters, '
-                'input_type has {:d}. These must match'.format(
-                    func.__name__,
-                    num_params,
-                    num_declared,
-                )
+    return funcsig
+
+
+class udf(object):
+    @staticmethod
+    def elementwise(input_type, output_type):
+        """Define a UDF (user-defined function) that operates element wise on a
+        Pandas Series.
+
+        Parameters
+        ----------
+        input_type : List[ibis.expr.datatypes.DataType]
+            A list of the types found in :mod:`~ibis.expr.datatypes`. The
+            length of this list must match the number of arguments to the
+            function. Variadic arguments are not yet supported.
+        output_type : ibis.expr.datatypes.DataType
+            The return type of the function.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> import ibis.expr.datatypes as dt
+        >>> from ibis.pandas.udf import udf
+        >>> @udf.elementwise(input_type=[dt.string], output_type=dt.int64)
+        ... def my_string_length(series):
+        ...     return series.str.len() * 2
+        """
+        def wrapper(func):
+            # validate that the input_type argument and the function signature
+            # match
+            funcsig = valid_function_signature(input_type, func)
+
+            # generate a new custom node
+            UDFNode = type(
+                func.__name__,
+                (ops.ValueOp,),
+                {
+                    'signature': sig.TypeSignature.from_dtypes(input_type),
+                    'output_type': output_type.array_type
+                }
             )
 
-        return func
-    return wrapper
-
-
-def udf(input_type, output_type):
-    """Define a UDF (user-defined function) that operates element wise on a
-    Pandas Series.
-
-    Parameters
-    ----------
-    input_type : List[ibis.rules]
-        A rules encoding the abstract type of each argument. These are found in
-        :mod:`~ibis.expr.rules`. The length of this list must match the number
-        of arguments to the function. Argument splatting in the UDF signature
-        is not supported.
-    output_type : ibis.rules or ibis.expr.datatypes.DataType
-        The return type of the function.
-
-    Examples
-    --------
-    >>> import ibis
-    >>> @udf(input_type=[dt.string], output_type=dt.int64)
-    ... def my_string_length(series):
-    ...     return series.str.len() * 2
-    """
-    def wrapper(func):
-        # generate a new custom node
-
-        UDFNode = type(
-            func.__name__,
-            (ops.ValueOp,),
-            {
-                'signature': sig.TypeSignature.from_dtypes(input_type),
-                'output_type': output_type.array_type
-            }
-        )
-
-        # Don't reorder the multiple dispatch graph for each of these
-        # definitions
-        with pause_ordering():
-
-            # Define a execution rule for a simple elementwise Series function
-            @execute_node.register(
-                UDFNode, *udf_signature(input_type, klass=pd.Series)
-            )
-            def execute_udf_node(op, *args, **kwargs):
-                args, kwargs = arguments_from_signature(
-                    signature(func), *args, **kwargs
-                )
-                return func(*args, **kwargs)
-
-            # Define an execution rule for elementwise operations on a grouped
-            # Series
-            @execute_node.register(
-                UDFNode, *udf_signature(input_type, klass=SeriesGroupBy)
-            )
-            def execute_udf_node_groupby(op, *args, **kwargs):
-                groupers = [
-                    grouper for grouper in (
-                        getattr(arg, 'grouper', None) for arg in args
-                    ) if grouper is not None
-                ]
-
-                # all grouping keys must be identical
-                assert all(groupers[0] == grouper for grouper in groupers[1:])
-
-                # we're performing a scalar operation on grouped column, so
-                # perform the operation directly on the underlying Series and
-                # regroup after it's finished
-                arguments = [getattr(arg, 'obj', arg) for arg in args]
-                groupings = groupers[0].groupings
-                args, kwargs = arguments_from_signature(
-                    signature(func), *arguments, **kwargs
-                )
-                return func(*args, **kwargs).groupby(groupings)
-
-        @check_matching_signature(input_type)
-        @functools.wraps(func)
-        def wrapped(*args):
-            return UDFNode(*args).to_expr()
-
-        return wrapped
-
-    return wrapper
-
-
-def udaf(input_type, output_type):
-    """Define a UDAF (user-defined aggregation function) that takes N pandas.
-    Series or scalar values as inputs.
-
-    Parameters
-    ----------
-    input_type : List[T]
-        A rules encoding the abstract type of each argument or one of the types
-        found in :mod:`~ibis.expr.datatypes`. These are found in
-        :mod:`~ibis.expr.rules`. The length of this list must match the number
-        of arguments to the function. Argument splatting in the UDF signature
-        is not supported.
-    output_type : rule or ibis.expr.datatypes.DataType
-        The abstract return type of the function. This *cannot* be a rule that
-        encodes a :class:`~ibis.expr.types.ColumnExpr` since this API is for
-        defining *aggregation* functions.
-
-    Examples
-    --------
-    >>> import ibis
-    >>> @udaf(input_type=[dt.string], output_type=dt.int64)
-    ... def my_string_length_agg(series, **kwargs):
-    ...     return (series.str.len() * 2).sum()
-    """
-    def wrapper(func):
-        UDAFNode = type(
-            func.__name__,
-            (ops.Reduction,),
-            {
-                'signature': sig.TypeSignature.from_dtypes(input_type),
-                'output_type': output_type.scalar_type
-            }
-        )
-
-        with pause_ordering():
-
-            # An execution rule for a simple aggregate node
-            @execute_node.register(
-                UDAFNode, *udf_signature(input_type, klass=pd.Series)
-            )
-            def execute_udaf_node(op, *args, **kwargs):
-                args, kwargs = arguments_from_signature(
-                    signature(func), *args, **kwargs
-                )
-                return func(*args, **kwargs)
-
-            # An execution rule for a grouped aggregation node. This includes
-            # aggregates applied over a window.
-            @execute_node.register(
-                UDAFNode, *udf_signature(input_type, klass=SeriesGroupBy)
-            )
-            def execute_udaf_node_groupby(op, *args, **kwargs):
-                # construct a generator that yields the next group of data for
-                # every argument excluding the first (pandas performs the
-                # iteration for the first argument) for each argument that is a
-                # SeriesGroupBy.
-                #
-                # If the argument is not a SeriesGroupBy then keep repeating it
-                # until all groups are exhausted.
-                aggcontext = kwargs.pop('aggcontext', None)
-                assert aggcontext is not None, 'aggcontext is None'
-                iters = (
-                    (data for _, data in arg)
-                    if isinstance(arg, SeriesGroupBy)
-                    else itertools.repeat(arg) for arg in args[1:]
-                )
-                funcsig = signature(func)
-
-                def aggregator(first, *rest, **kwargs):
-                    # map(next, *rest) gets the inputs for the next group
-                    # TODO: might be inefficient to do this on every call
+            # definitions
+            with pause_ordering():
+                # Define an execution rule for a simple elementwise Series
+                # function
+                @execute_node.register(
+                    UDFNode,
+                    *udf_signature(input_type, pin=None, klass=pd.Series))
+                @execute_node.register(
+                    UDFNode,
+                    *(rule_to_python_type(argtype) + nullable(argtype)
+                        for argtype in input_type))
+                def execute_udf_node(op, *args, **kwargs):
                     args, kwargs = arguments_from_signature(
-                        funcsig, first, *map(next, rest), **kwargs
+                        funcsig, *args, **kwargs
                     )
                     return func(*args, **kwargs)
 
-                result = aggcontext.agg(args[0], aggregator, *iters, **kwargs)
-                return result
+                # Define an execution rule for elementwise operations on a
+                # grouped Series
+                nargs = len(input_type)
+                group_by_signatures = [
+                    udf_signature(input_type, pin=pin, klass=SeriesGroupBy)
+                    for pin in range(nargs)
+                ]
 
-        @check_matching_signature(input_type)
-        @functools.wraps(func)
-        def wrapped(*args):
-            return UDAFNode(*args).to_expr()
+                @toolz.compose(*(execute_node.register(UDFNode, *types)
+                                 for types in group_by_signatures))
+                def execute_udf_node_groupby(op, *args, **kwargs):
+                    groupers = [
+                        grouper for grouper in (
+                            getattr(arg, 'grouper', None) for arg in args
+                        ) if grouper is not None
+                    ]
 
-        return wrapped
+                    # all grouping keys must be identical
+                    assert all(
+                        groupers[0] == grouper for grouper in groupers[1:])
 
-    return wrapper
+                    # we're performing a scalar operation on grouped column, so
+                    # perform the operation directly on the underlying Series
+                    # and regroup after it's finished
+                    arguments = [getattr(arg, 'obj', arg) for arg in args]
+                    groupings = groupers[0].groupings
+                    args, kwargs = arguments_from_signature(
+                        signature(func), *arguments, **kwargs
+                    )
+                    return func(*args, **kwargs).groupby(groupings)
+
+            @functools.wraps(func)
+            def wrapped(*args):
+                return UDFNode(*args).to_expr()
+            return wrapped
+        return wrapper
+
+    @staticmethod
+    def reduction(input_type, output_type):
+        """Define a user-defined reduction function that takes N pandas Series
+        or scalar values as inputs and produces one row of output.
+
+        Parameters
+        ----------
+        input_type : List[ibis.expr.datatypes.DataType]
+            A list of the types found in :mod:`~ibis.expr.datatypes`. The
+            length of this list must match the number of arguments to the
+            function. Variadic arguments are not yet supported.
+        output_type : ibis.expr.datatypes.DataType
+            The return type of the function.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> import ibis.expr.datatypes as dt
+        >>> from ibis.pandas.udf import udf
+        >>> @udf.reduction(input_type=[dt.string], output_type=dt.int64)
+        ... def my_string_length_agg(series, **kwargs):
+        ...     return (series.str.len() * 2).sum()
+        """
+        return udf._grouped(
+            input_type, output_type,
+            base_class=ops.Reduction,
+            output_type_method=operator.attrgetter('scalar_type'))
+
+    @staticmethod
+    def analytic(input_type, output_type):
+        """Define an *analytic* user-defined function that takes N
+        pandas Series or scalar values as inputs and produces N rows of output.
+
+        Parameters
+        ----------
+        input_type : List[ibis.expr.datatypes.DataType]
+            A list of the types found in :mod:`~ibis.expr.datatypes`. The
+            length of this list must match the number of arguments to the
+            function. Variadic arguments are not yet supported.
+        output_type : ibis.expr.datatypes.DataType
+            The return type of the function.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> import ibis.expr.datatypes as dt
+        >>> from ibis.pandas.udf import udf
+        >>> @udf.analytic(input_type=[dt.double], output_type=dt.double)
+        ... def zscore(series):  # note the use of aggregate functions
+        ...     return (series - series.mean()) / series.std()
+        """
+        return udf._grouped(
+            input_type, output_type,
+            base_class=ops.AnalyticOp,
+            output_type_method=operator.attrgetter('array_type'))
+
+    @staticmethod
+    def _grouped(input_type, output_type, base_class,
+                 output_type_method):
+        """Define a user-defined function that is applied per group.
+
+        Parameters
+        ----------
+        input_type : List[ibis.expr.datatypes.DataType]
+            A list of the types found in :mod:`~ibis.expr.datatypes`. The
+            length of this list must match the number of arguments to the
+            function. Variadic arguments are not yet supported.
+        output_type : ibis.expr.datatypes.DataType
+            The return type of the function.
+        base_class : Type[T]
+            The base class of the generated Node
+        output_type_method : Callable
+            A callable that determines the method to call to get the expression
+            type of the UDF
+
+        See Also
+        --------
+        ibis.pandas.udf.reduction
+        ibis.pandas.udf.analytic
+        """
+        def wrapper(func):
+            funcsig = valid_function_signature(input_type, func)
+
+            UDAFNode = type(
+                func.__name__,
+                (base_class,),
+                {
+                    'signature': sig.TypeSignature.from_dtypes(input_type),
+                    'output_type': output_type_method(output_type),
+                }
+            )
+
+            with pause_ordering():
+                # An execution rule for a simple aggregate node
+                @execute_node.register(
+                    UDAFNode,
+                    *udf_signature(input_type, pin=None, klass=pd.Series))
+                def execute_udaf_node(op, *args, **kwargs):
+                    args, kwargs = arguments_from_signature(
+                        funcsig, *args, **kwargs
+                    )
+                    return func(*args, **kwargs)
+
+                # An execution rule for a grouped aggregation node. This
+                # includes aggregates applied over a window.
+                nargs = len(input_type)
+                group_by_signatures = [
+                    udf_signature(input_type, pin=pin, klass=SeriesGroupBy)
+                    for pin in range(nargs)
+                ]
+
+                @toolz.compose(*(execute_node.register(UDAFNode, *types)
+                                 for types in group_by_signatures))
+                def execute_udaf_node_groupby(op, *args, **kwargs):
+                    # construct a generator that yields the next group of data
+                    # for every argument excluding the first (pandas performs
+                    # the iteration for the first argument) for each argument
+                    # that is a SeriesGroupBy.
+                    #
+                    # If the argument is not a SeriesGroupBy then keep
+                    # repeating it until all groups are exhausted.
+                    aggcontext = kwargs.pop('aggcontext', None)
+                    assert aggcontext is not None, 'aggcontext is None'
+                    iters = (
+                        (data for _, data in arg)
+                        if isinstance(arg, SeriesGroupBy)
+                        else itertools.repeat(arg)
+                        for arg in args[1:]
+                    )
+                    funcsig = signature(func)
+
+                    def aggregator(first, *rest, **kwargs):
+                        # map(next, *rest) gets the inputs for the next group
+                        # TODO: might be inefficient to do this on every call
+                        args, kwargs = arguments_from_signature(
+                            funcsig, first, *map(next, rest), **kwargs
+                        )
+                        return func(*args, **kwargs)
+
+                    result = aggcontext.agg(
+                        args[0], aggregator, *iters, **kwargs)
+                    return result
+
+            @functools.wraps(func)
+            def wrapped(*args):
+                return UDAFNode(*args).to_expr()
+            return wrapped
+        return wrapper

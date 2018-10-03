@@ -1,3 +1,5 @@
+"""BigQuery public API"""
+
 import google.cloud.bigquery  # noqa: F401 fail early if bigquery is missing
 import ibis.common as com
 
@@ -9,6 +11,14 @@ try:
     from ibis.bigquery.udf import udf  # noqa: F401
 except ImportError:
     pass
+
+
+__all__ = (
+    'compile',
+    'connect',
+    'verify',
+    'udf',
+)
 
 
 def compile(expr, params=None):
