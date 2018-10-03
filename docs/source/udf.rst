@@ -83,8 +83,8 @@ Here's how to define an analytic function:
 
 Details of Pandas UDFs
 ~~~~~~~~~~~~~~~~~~~~~~
-- :ref:`Element-wise functions <udf.element>` automatically provide support for
-  applying your UDF to any combination of scalar values and columns.
+- :ref:`Element-wise functions <udf.elementwise>` automatically provide support
+  for applying your UDF to any combination of scalar values and columns.
 - :ref:`Reduction functions <udf.reduction>` automatically provide support for
   whole column aggregations, grouped aggregations, and application of your
   function over a window.
