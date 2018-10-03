@@ -203,19 +203,21 @@ def udf_signature(input_type, pin, klass):
       <... 'NoneType'>),
      <class '...SeriesGroupBy'>)
     """
-    assert input_type, 'empty input_type'
     nargs = len(input_type)
-    if nargs > 1:
-        return tuple(
-            klass if pin is not None and pin == i else
-            ((klass,) + rule_to_python_type(r) + nullable(r))
-            for i, r in enumerate(input_type)
-        )
-    else:
-        assert nargs == 1
+
+    if not nargs:
+        return ()
+
+    if nargs == 1:
         r, = input_type
         result = (klass,) + rule_to_python_type(r) + nullable(r)
         return (result,)
+
+    return tuple(
+        klass if pin is not None and pin == i else
+        ((klass,) + rule_to_python_type(r) + nullable(r))
+        for i, r in enumerate(input_type)
+    )
 
 
 def parameter_count(funcsig):
@@ -255,6 +257,7 @@ def valid_function_signature(input_type, func):
     funcsig = signature(func)
     declared_parameter_count = len(input_type)
     function_parameter_count = parameter_count(funcsig)
+
     if declared_parameter_count != function_parameter_count:
         raise TypeError(
             'Function signature {!r} has {:d} parameters, '
@@ -292,6 +295,10 @@ class udf(object):
         ...     return series.str.len() * 2
         """
         def wrapper(func):
+            # validate that the input_type argument and the function signature
+            # match
+            funcsig = valid_function_signature(input_type, func)
+
             # generate a new custom node
             UDFNode = type(
                 func.__name__,
@@ -301,8 +308,6 @@ class udf(object):
                     'output_type': output_type.array_type
                 }
             )
-
-            funcsig = valid_function_signature(input_type, func)
 
             # definitions
             with pause_ordering():
@@ -413,8 +418,7 @@ class udf(object):
     @staticmethod
     def _grouped(input_type, output_type, base_class,
                  output_type_method):
-        """Define a UDAF (user-defined aggregation function) that takes N
-        pandas Series or scalar values as inputs.
+        """Define a user-defined function that is applied per group.
 
         Parameters
         ----------
@@ -436,6 +440,8 @@ class udf(object):
         ibis.pandas.udf.analytic
         """
         def wrapper(func):
+            funcsig = valid_function_signature(input_type, func)
+
             UDAFNode = type(
                 func.__name__,
                 (base_class,),
@@ -444,8 +450,6 @@ class udf(object):
                     'output_type': output_type_method(output_type),
                 }
             )
-
-            funcsig = valid_function_signature(input_type, func)
 
             with pause_ordering():
                 # An execution rule for a simple aggregate node
