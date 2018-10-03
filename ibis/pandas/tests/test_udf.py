@@ -6,6 +6,7 @@ import pandas as pd
 import pandas.util.testing as tm
 
 import ibis
+import ibis.common as com
 import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 
@@ -43,6 +44,10 @@ with pause_ordering():
     def zscore(series):
         return (series - series.mean()) / series.std()
 
+    @udf.elementwise([], dt.int64)
+    def a_single_number(**kwargs):
+        return 1
+
 
 def test_udf():
     df = pd.DataFrame({'a': list('abc')})
@@ -55,6 +60,21 @@ def test_udf():
     result = expr.execute()
     expected = t.a.execute().str.len().mul(2)
     tm.assert_series_equal(result, expected)
+
+
+@pytest.mark.xfail(
+    raises=com.UnboundExpressionError,
+    reason=(
+        'Need to differentiate between zero argument functions and empty scope'
+    ),
+)
+def test_zero_argument_udf():
+    df = pd.DataFrame({'a': [1.0, 2.0, 3.0], 'b': [3.0, 4.0, 5.0]})
+    con = ibis.pandas.connect({'df': df})
+    t = con.table('df')
+    expr = t.projection([a_single_number().name('foo')])
+    result = ibis.pandas.execute(expr)
+    assert result is not None
 
 
 def test_multiple_argument_udf():
