@@ -160,7 +160,7 @@ def udf_signature(input_type, pin, klass):
     pin : Optional[int]
         If this is not None, pin the `pin`-th argument type to `klass`
     klass : Union[Type[pd.Series], Type[SeriesGroupBy]]
-        pd.Series or SeriesGroupBy
+        The pandas object that every argument type should contain
 
     Returns
     -------
@@ -316,6 +316,10 @@ class udf(object):
                 @execute_node.register(
                     UDFNode,
                     *udf_signature(input_type, pin=None, klass=pd.Series))
+                @execute_node.register(
+                    UDFNode,
+                    *(rule_to_python_type(argtype) + nullable(argtype)
+                        for argtype in input_type))
                 def execute_udf_node(op, *args, **kwargs):
                     args, kwargs = arguments_from_signature(
                         funcsig, *args, **kwargs
