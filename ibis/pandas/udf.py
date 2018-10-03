@@ -218,37 +218,53 @@ def udf_signature(input_type, pin, klass):
         return (result,)
 
 
-def check_matching_signature(input_type):
-    """Make sure that the number of arguments declared by the user in
-    `input_type` matches that of the wrapped function's signature.
+def parameter_count(funcsig):
+    """Get the number of positional-or-keyword or position-only parameters in a
+    function signature.
+
+    Parameters
+    ----------
+    funcsig : inspect.Signature
+        A UDF signature
+
+    Returns
+    -------
+    int
+        The number of parameters
+    """
+    return sum(
+        param.kind in {param.POSITIONAL_OR_KEYWORD, param.POSITIONAL_ONLY}
+        for param in funcsig.parameters.values()
+        if param.default is Parameter.empty
+    )
+
+
+def valid_function_signature(input_type, func):
+    """Check that the declared number of inputs (the length of `input_type`)
+    and the number of inputs to `func` are equal.
 
     Parameters
     ----------
     input_type : List[DataType]
+    func : callable
 
     Returns
     -------
-    callable
+    inspect.Signature
     """
-    def wrapper(func):
-        num_params = sum(
-            param.kind in {param.POSITIONAL_OR_KEYWORD, param.POSITIONAL_ONLY}
-            for param in signature(func).parameters.values()
-            if param.default is Parameter.empty
-        )
-        num_declared = len(input_type)
-        if num_params != num_declared:
-            raise TypeError(
-                'Function {!r} has {:d} parameters, '
-                'input_type has {:d}. These must match'.format(
-                    func.__name__,
-                    num_params,
-                    num_declared,
-                )
+    funcsig = signature(func)
+    declared_parameter_count = len(input_type)
+    function_parameter_count = parameter_count(funcsig)
+    if declared_parameter_count != function_parameter_count:
+        raise TypeError(
+            'Function signature {!r} has {:d} parameters, '
+            'input_type has {:d}. These must match'.format(
+                func.__name__,
+                function_parameter_count,
+                declared_parameter_count,
             )
-
-        return func
-    return wrapper
+        )
+    return funcsig
 
 
 class udf(object):
@@ -286,7 +302,8 @@ class udf(object):
                 }
             )
 
-            # Don't reorder the multiple dispatch graph for each of these
+            funcsig = valid_function_signature(input_type, func)
+
             # definitions
             with pause_ordering():
                 # Define an execution rule for a simple elementwise Series
@@ -296,7 +313,7 @@ class udf(object):
                     *udf_signature(input_type, pin=None, klass=pd.Series))
                 def execute_udf_node(op, *args, **kwargs):
                     args, kwargs = arguments_from_signature(
-                        signature(func), *args, **kwargs
+                        funcsig, *args, **kwargs
                     )
                     return func(*args, **kwargs)
 
@@ -331,7 +348,6 @@ class udf(object):
                     )
                     return func(*args, **kwargs).groupby(groupings)
 
-            @check_matching_signature(input_type)
             @functools.wraps(func)
             def wrapped(*args):
                 return UDFNode(*args).to_expr()
@@ -429,6 +445,8 @@ class udf(object):
                 }
             )
 
+            funcsig = valid_function_signature(input_type, func)
+
             with pause_ordering():
                 # An execution rule for a simple aggregate node
                 @execute_node.register(
@@ -436,7 +454,7 @@ class udf(object):
                     *udf_signature(input_type, pin=None, klass=pd.Series))
                 def execute_udaf_node(op, *args, **kwargs):
                     args, kwargs = arguments_from_signature(
-                        signature(func), *args, **kwargs
+                        funcsig, *args, **kwargs
                     )
                     return func(*args, **kwargs)
 
@@ -480,7 +498,6 @@ class udf(object):
                         args[0], aggregator, *iters, **kwargs)
                     return result
 
-            @check_matching_signature(input_type)
             @functools.wraps(func)
             def wrapped(*args):
                 return UDAFNode(*args).to_expr()
