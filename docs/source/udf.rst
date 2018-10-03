@@ -10,48 +10,27 @@ topic.
 This section of the documentation will discuss some of the backend specific
 details of user defined functions.
 
-API
----
-
-.. _udf.api:
-
 .. warning::
 
-   The UDF API is experimental. It is provisional and subject to change.
-
-Impala
-------
-
-.. _udf.impala:
-
-TODO
-
-Pandas
-------
+   The UDF API is provisional and subject to change.
 
 .. _udf.pandas:
 
+Pandas
+------
 Ibis supports defining three kinds of user-defined functions for operations on
 expressions targeting the pandas backend: **element-wise**, **reduction**, and
 **analytic**.
 
-.. note::
+.. _udf.elementwise:
 
-   An **element-wise** function is a function that takes N rows as input and
-   produces N rows of output. ``log``, ``exp``, and ``floor`` are examples of
-   element-wise functions.
+Element-wise Functions
+~~~~~~~~~~~~~~~~~~~~~~
+An **element-wise** function is a function that takes N rows as input and
+produces N rows of output. ``log``, ``exp``, and ``floor`` are examples of
+element-wise functions.
 
-   A **reduction** is a function that takes N rows as input and produces 1 row
-   as output. ``sum``, ``mean`` and ``count`` are examples of reductions. In
-   the context of a ``GROUP BY``, reductions produce 1 row of output *per
-   group*.
-
-   An **analytic** function is like an **element-wise** function in that it
-   takes N rows as input and produces N rows of output. The key difference is
-   that analytic functions can be applied *per group* using window functions.
-   Z-score is an example of an analytic function.
-
-The API for creating each kind of function is done with a decorator:
+Here's how to define an element-wise function:
 
 .. code-block:: python
 
@@ -62,9 +41,41 @@ The API for creating each kind of function is done with a decorator:
    def add_one(x):
        return x + 1.0
 
+.. _udf.reduction:
+
+Reduction Functions
+~~~~~~~~~~~~~~~~~~~
+A **reduction** is a function that takes N rows as input and produces 1 row
+as output. ``sum``, ``mean`` and ``count`` are examples of reductions. In
+the context of a ``GROUP BY``, reductions produce 1 row of output *per
+group*.
+
+Here's how to define a reduction function:
+
+.. code-block:: python
+
+   import ibis.expr.datatypes as dt
+   from ibis.pandas import udf
+
    @udf.reduction(input_type=[dt.double], output_type=.dtdouble)
    def double_mean(series):
        return 2 * series.mean()
+
+.. _udf.analytic:
+
+Analytic Functions
+~~~~~~~~~~~~~~~~~~
+An **analytic** function is like an **element-wise** function in that it
+takes N rows as input and produces N rows of output. The key difference is
+that analytic functions can be applied *per group* using window functions.
+Z-score is an example of an analytic function.
+
+Here's how to define an analytic function:
+
+.. code-block:: python
+
+   import ibis.expr.datatypes as dt
+   from ibis.pandas import udf
 
    @udf.analytic(input_type=[dt.double], output_type=.dtdouble)
    def zscore(series):
@@ -72,19 +83,23 @@ The API for creating each kind of function is done with a decorator:
 
 Details of Pandas UDFs
 ~~~~~~~~~~~~~~~~~~~~~~
-
-- *element-wise* functions automatically provide support for applying your UDF
-  to any combination of scalar values and columns.
-- *reduction* functions automatically provide support for whole column
-  aggregations, grouped aggregations, and application of your function over a
-  window.
-- *analytic* functions work in both grouped and non-grouped settings
+- :ref:`Element-wise functions <udf.element>` automatically provide support for
+  applying your UDF to any combination of scalar values and columns.
+- :ref:`Reduction functions <udf.reduction>` automatically provide support for
+  whole column aggregations, grouped aggregations, and application of your
+  function over a window.
+- :ref:`Analytic functions <udf.analytic>` work in both grouped and non-grouped
+  settings
 - The objects you receive as input arguments are either ``pandas.Series`` or
-  python or numpy scalars depending on the operation.
-- Any keyword arguments (other than ``**kwargs``) must be given a default value
-  or the function **will not work**. A standard Python convention is to set the
-  default value to ``None`` and handle setting it to something not ``None`` in
-  the body of the function if necessary.
+  Python/NumPy scalars.
+
+.. note::
+
+   Any keyword arguments must be given a default value or the function **will
+   not work**.
+
+   A common Python convention is to set the default value to ``None`` and
+   handle setting it to something not ``None`` in the body of the function.
 
 Using ``add_one`` from above as an example, the following call will receive a
 ``pandas.Series`` for the ``x`` argument:
