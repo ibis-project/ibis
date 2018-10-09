@@ -68,7 +68,10 @@ with pause_ordering():
     def a_single_number(**kwargs):
         return 1
 
-    @udf.reduction([dt.double, dt.Array(dt.double)], dt.Array(dt.double))
+    @udf.reduction(
+        input_type=[dt.double, dt.Array(dt.double)],
+        output_type=dt.Array(dt.double)
+    )
     def quantiles(series, quantiles):
         return list(series.quantile(quantiles))
 
