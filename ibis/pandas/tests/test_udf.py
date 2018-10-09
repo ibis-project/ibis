@@ -68,6 +68,10 @@ with pause_ordering():
     def a_single_number(**kwargs):
         return 1
 
+    @udf.reduction([dt.double, dt.Array(dt.double)], dt.Array(dt.double))
+    def quantiles(series, quantiles):
+        return list(series.quantile(quantiles))
+
 
 def test_udf(t, df):
     expr = my_string_length(t.a)
@@ -244,3 +248,28 @@ def test_udaf_window():
             level=0, drop=True)
     )
     tm.assert_frame_equal(result, expected)
+
+
+@pytest.fixture(
+    params=[
+        [0.25, 0.75],
+        [0.01, 0.99],
+    ]
+)
+def qs(request):
+    return request.param
+
+
+def test_array_return_type_reduction(con, t, df, qs):
+    expr = quantiles(t.b, qs)
+    result = expr.execute()
+    expected = df.b.quantile(qs)
+    assert result == expected.tolist()
+
+
+def test_array_return_type_reduction_window(con, t, df, qs):
+    expr = quantiles(t.b, qs).over(ibis.window())
+    result = expr.execute()
+    expected_raw = df.b.quantile(qs).tolist()
+    expected = pd.Series([expected_raw] * len(df))
+    tm.assert_series_equal(result, expected)
