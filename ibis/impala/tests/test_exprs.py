@@ -545,7 +545,7 @@ CASE
   WHEN (`f` >= 0) AND (`f` < 10) THEN 0
   WHEN (`f` >= 10) AND (`f` < 25) THEN 1
   WHEN (`f` >= 25) AND (`f` <= 50) THEN 2
-  ELSE NULL
+  ELSE CAST(NULL AS tinyint)
 END"""
 
         expr2 = self.table.f.bucket(buckets, close_extreme=False)
@@ -669,7 +669,7 @@ END"""
 CASE
   WHEN `f` < 10 THEN 0
   WHEN `f` >= 10 THEN 1
-  ELSE NULL
+  ELSE CAST(NULL AS tinyint)
 END"""
 
         expr2 = (self.table.f.bucket([10], include_over=True,
@@ -712,7 +712,7 @@ FROM (
       WHEN (`f` >= 0) AND (`f` < 10) THEN 1
       WHEN (`f` >= 10) AND (`f` < 25) THEN 2
       WHEN (`f` >= 25) AND (`f` <= 50) THEN 3
-      ELSE NULL
+      ELSE CAST(NULL AS tinyint)
     END AS `tier`, count(*) AS `count`
   FROM alltypes
   GROUP BY 1
