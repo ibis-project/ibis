@@ -1297,9 +1297,8 @@ class TypedCaseBuilder(object):
     __slots__ = ()
 
     def type(self):
-        types = frozenset(ExpressionList(self.results).to_expr().types())
-        type, = types
-        return type
+        types = [result.type() for result in self.results]
+        return dt.highest_precedence(types)
 
     def else_(self, result_expr):
         """
