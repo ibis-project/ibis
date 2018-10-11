@@ -3,7 +3,7 @@ channels:
 dependencies:
   - click
   - clickhouse-cityhash
-  - clickhouse-driver>=0.0.8
+  - clickhouse-driver=0.0.15
   - clickhouse-sqlalchemy
   - cmake
   - flake8
