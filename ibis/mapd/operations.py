@@ -679,6 +679,8 @@ _unsupported_ops = [
     ops.TimestampDiff,
     ops.DayOfWeekIndex,
     ops.DayOfWeekName,
+    # table
+    ops.Union
 ]
 
 _unsupported_ops = {k: raise_unsupported_op_error for k in _unsupported_ops}
