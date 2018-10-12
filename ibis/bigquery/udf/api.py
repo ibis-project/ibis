@@ -68,7 +68,7 @@ def udf(input_type, output_type, strict=True, libraries=None):
 
     Examples
     --------
-    >>> from ibis.bigquery.api import udf
+    >>> from ibis.bigquery import udf
     >>> import ibis.expr.datatypes as dt
     >>> @udf(input_type=[dt.double], output_type=dt.double)
     ... def add_one(x):

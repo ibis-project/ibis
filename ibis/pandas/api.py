@@ -4,10 +4,16 @@ import ibis
 import toolz
 
 from ibis.pandas.client import PandasClient
-from ibis.pandas.execution import execute, execute_node  # noqa: F401
+from ibis.pandas.execution import execute, execute_node
+from ibis.pandas.udf import udf
 
 
-__all__ = 'connect', 'execute', 'dialect'
+__all__ = (
+    'connect',
+    'dialect',
+    'execute',
+    'udf',
+)
 
 
 def connect(dictionary):
