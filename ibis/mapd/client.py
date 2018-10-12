@@ -1,4 +1,5 @@
-from pkg_resources import parse_version
+import ibis.common as com
+from ibis.compat import parse_version
 from ibis.client import Database, Query, SQLClient, DatabaseEntity
 from ibis.mapd.compiler import MapDDialect, build_ast
 from ibis.mapd import ddl
@@ -286,6 +287,10 @@ class MapDTable(ir.TableExpr, DatabaseEntity):
             result = f(**{k: v})
             results.append(result)
         return results
+
+    def union(self, *args, **kwargs):
+        msg = "MapD backend doesn't support Union operation!"
+        raise com.UnsupportedOperationError(msg)
 
 
 class MapDClient(SQLClient):
