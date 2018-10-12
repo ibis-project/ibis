@@ -328,7 +328,7 @@ def _cross_join(translator, expr):
     args = expr.op().args
     t1, t2 = args[:2]
 
-    return translator.translate(t1.join(t2, True))
+    return translator.translate(t1.join(t2, ibis.literal(True)))
 
 
 def literal(translator, expr):
