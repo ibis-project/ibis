@@ -497,14 +497,14 @@ def test_left_binary_op(t, df, op, args):
     ],
     ids=operator.attrgetter('__name__'),
 )
-@pytest.mark.parametrize('args', [lambda c: (1.0, c), lambda c: (c, 1.0)])
-def test_left_binary_op_gb(t, df, op, args):
+@pytest.mark.parametrize('argfunc', [lambda c: (1.0, c), lambda c: (c, 1.0)])
+def test_left_binary_op_gb(t, df, op, argfunc):
     expr = t.groupby('dup_strings').aggregate(
-        foo=op(*args(t.float64_with_zeros)).sum()
+        foo=op(*argfunc(t.float64_with_zeros)).sum()
     )
     result = expr.execute()
     expected = df.groupby('dup_strings').float64_with_zeros.apply(
-        lambda s: op(*args(s)).sum()
+        lambda s: op(*argfunc(s)).sum()
     ).reset_index().rename(columns={'float64_with_zeros': 'foo'})
     tm.assert_frame_equal(result, expected)
 

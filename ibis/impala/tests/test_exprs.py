@@ -479,7 +479,7 @@ END"""
         expected = """CASE
   WHEN `f` > 0 THEN `d` * 2
   WHEN `c` < 0 THEN `a` * 2
-  ELSE NULL
+  ELSE CAST(NULL AS bigint)
 END"""
         assert result == expected
 
@@ -545,7 +545,7 @@ CASE
   WHEN (`f` >= 0) AND (`f` < 10) THEN 0
   WHEN (`f` >= 10) AND (`f` < 25) THEN 1
   WHEN (`f` >= 25) AND (`f` <= 50) THEN 2
-  ELSE NULL
+  ELSE CAST(NULL AS tinyint)
 END"""
 
         expr2 = self.table.f.bucket(buckets, close_extreme=False)
@@ -554,7 +554,7 @@ CASE
   WHEN (`f` >= 0) AND (`f` < 10) THEN 0
   WHEN (`f` >= 10) AND (`f` < 25) THEN 1
   WHEN (`f` >= 25) AND (`f` < 50) THEN 2
-  ELSE NULL
+  ELSE CAST(NULL AS tinyint)
 END"""
 
         expr3 = self.table.f.bucket(buckets, closed='right')
@@ -563,7 +563,7 @@ CASE
   WHEN (`f` >= 0) AND (`f` <= 10) THEN 0
   WHEN (`f` > 10) AND (`f` <= 25) THEN 1
   WHEN (`f` > 25) AND (`f` <= 50) THEN 2
-  ELSE NULL
+  ELSE CAST(NULL AS tinyint)
 END"""
 
         expr4 = self.table.f.bucket(buckets, closed='right',
@@ -573,7 +573,7 @@ CASE
   WHEN (`f` > 0) AND (`f` <= 10) THEN 0
   WHEN (`f` > 10) AND (`f` <= 25) THEN 1
   WHEN (`f` > 25) AND (`f` <= 50) THEN 2
-  ELSE NULL
+  ELSE CAST(NULL AS tinyint)
 END"""
 
         expr5 = self.table.f.bucket(buckets, include_under=True)
@@ -583,7 +583,7 @@ CASE
   WHEN (`f` >= 0) AND (`f` < 10) THEN 1
   WHEN (`f` >= 10) AND (`f` < 25) THEN 2
   WHEN (`f` >= 25) AND (`f` <= 50) THEN 3
-  ELSE NULL
+  ELSE CAST(NULL AS tinyint)
 END"""
 
         expr6 = self.table.f.bucket(buckets,
@@ -596,7 +596,7 @@ CASE
   WHEN (`f` >= 10) AND (`f` < 25) THEN 2
   WHEN (`f` >= 25) AND (`f` <= 50) THEN 3
   WHEN `f` > 50 THEN 4
-  ELSE NULL
+  ELSE CAST(NULL AS tinyint)
 END"""
 
         expr7 = self.table.f.bucket(buckets,
@@ -610,7 +610,7 @@ CASE
   WHEN (`f` >= 10) AND (`f` < 25) THEN 2
   WHEN (`f` >= 25) AND (`f` < 50) THEN 3
   WHEN `f` >= 50 THEN 4
-  ELSE NULL
+  ELSE CAST(NULL AS tinyint)
 END"""
 
         expr8 = self.table.f.bucket(buckets, closed='right',
@@ -622,7 +622,7 @@ CASE
   WHEN (`f` > 0) AND (`f` <= 10) THEN 1
   WHEN (`f` > 10) AND (`f` <= 25) THEN 2
   WHEN (`f` > 25) AND (`f` <= 50) THEN 3
-  ELSE NULL
+  ELSE CAST(NULL AS tinyint)
 END"""
 
         expr9 = self.table.f.bucket([10], closed='right',
@@ -632,7 +632,7 @@ END"""
 CASE
   WHEN `f` <= 10 THEN 0
   WHEN `f` > 10 THEN 1
-  ELSE NULL
+  ELSE CAST(NULL AS tinyint)
 END"""
 
         expr10 = self.table.f.bucket([10], include_over=True,
@@ -641,7 +641,7 @@ END"""
 CASE
   WHEN `f` < 10 THEN 0
   WHEN `f` >= 10 THEN 1
-  ELSE NULL
+  ELSE CAST(NULL AS tinyint)
 END"""
 
         cases = [
@@ -669,7 +669,7 @@ END"""
 CASE
   WHEN `f` < 10 THEN 0
   WHEN `f` >= 10 THEN 1
-  ELSE NULL
+  ELSE CAST(NULL AS tinyint)
 END"""
 
         expr2 = (self.table.f.bucket([10], include_over=True,
@@ -680,7 +680,7 @@ END"""
 CAST(CASE
   WHEN `f` < 10 THEN 0
   WHEN `f` >= 10 THEN 1
-  ELSE NULL
+  ELSE CAST(NULL AS tinyint)
 END AS double)"""
 
         self._check_expr_cases([(expr, expected),
@@ -712,7 +712,7 @@ FROM (
       WHEN (`f` >= 0) AND (`f` < 10) THEN 1
       WHEN (`f` >= 10) AND (`f` < 25) THEN 2
       WHEN (`f` >= 25) AND (`f` <= 50) THEN 3
-      ELSE NULL
+      ELSE CAST(NULL AS tinyint)
     END AS `tier`, count(*) AS `count`
   FROM alltypes
   GROUP BY 1
