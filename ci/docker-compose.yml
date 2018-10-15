@@ -45,7 +45,7 @@ services:
       - 25020:25020
 
   clickhouse:
-    image: yandex/clickhouse-server:1.1.54388
+    image: yandex/clickhouse-server:18.12
     ports:
       - 8123:8123
       - 9000:9000

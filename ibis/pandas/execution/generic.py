@@ -253,6 +253,11 @@ def execute_series_quantile_groupby(
     return result
 
 
+@execute_node.register(ops.Cast, type(None), dt.DataType)
+def execute_cast_null_to_anything(op, data, type, **kwargs):
+    return None
+
+
 @execute_node.register(ops.Cast, datetime.datetime, dt.String)
 def execute_cast_datetime_or_timestamp_to_string(op, data, type, **kwargs):
     """Cast timestamps to strings"""

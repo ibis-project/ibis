@@ -526,3 +526,19 @@ def test_now():
     result = ibis.bigquery.compile(expr)
     expected = 'SELECT CURRENT_TIMESTAMP() AS `tmp`'
     assert result == expected
+
+
+def test_bucket():
+    t = ibis.table([('value', 'double')], name='t')
+    buckets = [0, 1, 3]
+    expr = t.value.bucket(buckets).name('foo')
+    result = ibis.bigquery.compile(expr)
+    expected = """\
+SELECT
+  CASE
+    WHEN (`value` >= 0) AND (`value` < 1) THEN 0
+    WHEN (`value` >= 1) AND (`value` <= 3) THEN 1
+    ELSE CAST(NULL AS INT64)
+  END AS `tmp`
+FROM t"""
+    assert result == expected
