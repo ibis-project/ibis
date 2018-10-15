@@ -1,6 +1,7 @@
 from ibis.tests.util import assert_equal
 
 import ibis
+import ibis.common as com
 import ibis.expr.types as ir
 import pandas as pd
 import pytest
@@ -54,19 +55,28 @@ def test_database_layer(con, alltypes):
 
 def test_compile_toplevel():
     t = ibis.table([('foo', 'double')], name='t0')
-
-    # it works!
     expr = t.foo.sum()
     result = ibis.mapd.compile(expr)
     expected = 'SELECT sum("foo") AS "sum"\nFROM t0'  # noqa
     assert str(result) == expected
 
 
-def text_exists_table_with_database(
-    con, alltypes, test_data_db, temp_table, temp_database
-):
+def text_exists_table_with_database(con, alltypes, test_data_db, temp_table,
+                                    temp_database):
     tmp_db = test_data_db
     con.create_table(temp_table, alltypes, database=tmp_db)
 
     assert con.exists_table(temp_table, database=tmp_db)
     assert not con.exists_table(temp_table, database=temp_database)
+
+
+def test_union_op(alltypes):
+    with pytest.raises(com.UnsupportedOperationError):
+        t1 = alltypes
+        t2 = alltypes
+        t1.union(t2)
+
+    with pytest.raises(com.UnsupportedOperationError):
+        t1 = alltypes.head()
+        t2 = alltypes.head()
+        t1.union(t2)

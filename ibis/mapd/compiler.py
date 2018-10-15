@@ -253,3 +253,5 @@ _add_methods(
         byte_length=_unary_op('length', mapd_ops.ByteLength)
     )
 )
+
+_add_methods(ir.TableExpr, dict(union=mapd_ops._union))
