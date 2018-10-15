@@ -298,7 +298,7 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         cases = [
             (expr, sa.case([(st.c.f > L(0), st.c.d * L(2)),
                             (st.c.c < L(0), st.c.a * L(2))],
-                           else_=sa.null())),
+                           else_=sa.cast(sa.null(), sa.BIGINT))),
         ]
         self._check_expr_cases(cases)
 
