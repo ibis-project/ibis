@@ -326,9 +326,8 @@ def _set_literal_format(translator, expr):
 
 def _cross_join(translator, expr):
     args = expr.op().args
-    t1, t2 = args[:2]
-
-    return translator.translate(t1.join(t2, ibis.literal(True)))
+    left, right = args[:2]
+    return translator.translate(left.join(right, ibis.literal(True)))
 
 
 def literal(translator, expr):

@@ -153,7 +153,7 @@ class MapDTableSetFormatter(compiles.TableSetFormatter):
                 buf.write(fmt_preds)
             else:
                 buf.write(
-                    util.indent('ON (TRUE)', self.indent * 2)
+                    util.indent('ON TRUE', self.indent * 2)
                 )
 
         return buf.getvalue()
