@@ -102,3 +102,8 @@ def test_where_operator(alltypes):
 def test_quote_name(alltypes, name):
     expr = alltypes.aggregate(alltypes.count().name(name))
     assert name in expr.execute()
+
+
+def test_timestamp_col(alltypes):
+    # https://github.com/ibis-project/ibis/issues/1613
+    alltypes[alltypes.timestamp_col < '2000-03-01'].execute()
