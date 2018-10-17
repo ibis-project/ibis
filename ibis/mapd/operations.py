@@ -348,7 +348,7 @@ def literal(translator, expr):
                 msg = 'Unsupported subsecond accuracy {}'
                 raise ValueError(msg.format(value))
             value = value.strftime('%Y-%m-%d %H:%M:%S')
-        return "toDateTime('{0!s}')".format(value)
+        return "'{0!s}'".format(value)
     elif isinstance(expr, ir.DateValue):
         if isinstance(value, date):
             value = value.strftime('%Y-%m-%d')
