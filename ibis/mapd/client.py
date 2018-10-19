@@ -534,8 +534,7 @@ class MapDClient(SQLClient):
         self._execute(statement, False)
 
     def create_table(self, table_name, obj=None, schema=None, database=None,
-                     fragment_size=None, max_rows=None, page_size=None,
-                     partitions=None, shard_count=None):
+                     max_rows=None):
         """
         Create a new table in MapD using an Ibis table expression.
 
@@ -548,24 +547,10 @@ class MapDClient(SQLClient):
           Mutually exclusive with expr, creates an empty table with a
           particular schema
         database : string, default None (optional)
-        fragment_size : int, Default None
-          Number of rows per fragment that is a unit of the table for query
-          processing. Default = 32 million rows, which is not expected to be
-          changed.
         max_rows : int, Default None
           Set the maximum number of rows allowed in a table to create a capped
           collection. When this limit is reached, the oldest fragment is
           removed. Default = 2^62.
-        page_size : int, Default None
-          Number of I/O page bytes. Default = 1MB, which does not need to be
-          changed.
-        partitions : string, Default None
-          Partition strategy option:
-            SHARDED: Partition table using sharding.
-            REPLICATED: Partition table using replication.
-        shard_count : int , Default None
-           Number of shards to create, typically equal to the number of GPUs
-           across which the data table is distributed.
 
         Examples
         --------
@@ -592,11 +577,7 @@ class MapDClient(SQLClient):
             statement = ddl.CreateTableWithSchema(
                 table_name, schema,
                 database=database,
-                fragment_size=fragment_size,
-                max_rows=max_rows,
-                page_size=page_size,
-                partitions=partitions,
-                shard_count=shard_count
+                max_rows=max_rows
             )
         else:
             raise com.IbisError('Must pass expr or schema')
