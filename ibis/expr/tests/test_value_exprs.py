@@ -1340,18 +1340,23 @@ def test_column_isin_map_keys():
     assert isinstance(expr, ir.BooleanColumn)
 
 
-def test_map_get_with_compatible_value_int8():
-    t = ibis.literal({'A': 1000, 'B': 2000})
-    v = t.get('C', 3)
-    assert isinstance(v, ir.IntegerScalar)
-    assert v.type() == dt.int16
+def test_map_get_with_compatible_value_same_kind():
+    value = ibis.literal({'A': 1000, 'B': 2000})
+    expr = value.get('C', 3)
+    assert value.type() == dt.Map(dt.string, dt.int16)
+    assert expr.type() == dt.int16
 
 
-def test_map_get_with_compatible_value_float():
-    t = ibis.literal({'A': 1000, 'B': 2000})
-    v = t.get('C', 3.0)
-    assert isinstance(v, ir.FloatingScalar)
-    assert v.type() == dt.double
+def test_map_get_with_incompatible_value_different_kind():
+    value = ibis.literal({'A': 1000, 'B': 2000})
+    with pytest.raises(IbisTypeError):
+        value.get('C', 3.0)
+
+
+def test_map_get_with_incompatible_value():
+    value = ibis.literal({'A': 1000, 'B': 2000})
+    with pytest.raises(IbisTypeError):
+        value.get('C', ['A'])
 
 
 @pytest.mark.parametrize(
