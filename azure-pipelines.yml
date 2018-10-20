@@ -15,6 +15,17 @@ jobs:
         python.version: "3.6"
         pyarrow: "pyarrow"
   steps:
+    - task: CondaEnvironment@1
+      displayName: 'Create conda environment'
+      inputs:
+        createCustomEnvironment: True
+        environmentName: "ibis_$(python.version)"
+        packageSpecs: pytables numpy pandas ruamel.yaml jinja2 $(pyarrow) multipledispatch pymysql sqlalchemy psycopg2 graphviz click mock plumbum flake8 pytest-xdist
+        installOptions: --channel conda-forge --override-channels
+        createOptions: python="$(python.version)" --channel conda-forge --override-channels
+        cleanEnvironment: True
+        updateConda: False
+
     - script: choco install -y mariadb
       displayName: 'Install mariadb (mysql) from chocolatey'
 
@@ -26,17 +37,6 @@ jobs:
 
     - script: choco install -y postgresql10 --params '/Password:postgres'
       displayName: 'Install postgres from chocolatey'
-
-    - task: CondaEnvironment@1
-      displayName: 'Create conda environment'
-      inputs:
-        createCustomEnvironment: True
-        environmentName: "ibis_$(python.version)"
-        packageSpecs: pytables numpy pandas ruamel.yaml jinja2 $(pyarrow) multipledispatch pymysql sqlalchemy psycopg2 graphviz click mock plumbum flake8 pytest-xdist
-        installOptions: --channel conda-forge --override-channels
-        createOptions: python="$(python.version)" --channel conda-forge --override-channels
-        cleanEnvironment: True
-        updateConda: False
 
     - script: flake8
       displayName: 'Lint'
