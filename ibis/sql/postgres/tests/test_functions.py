@@ -919,6 +919,28 @@ def test_cumulative_partitioned_ordered_window(alltypes, func, df):
     tm.assert_series_equal(result, expected)
 
 
+@pytest.mark.parametrize('func', ['lead', 'lag'])
+def test_analytic_shift_functions(alltypes, func, df):
+    method = getattr(alltypes.double_col, func)
+    expr = method(1)
+    result = expr.execute().rename('double_col')
+    expected = df.double_col.shift(-1 if func == 'lead' else 1)
+    tm.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize('func', ['first', 'last'])
+def test_first_last_value(alltypes, func, df):
+    col = alltypes.sort_by(ibis.desc(alltypes.string_col)).double_col
+    method = getattr(col, func)
+    expr = method()
+    result = expr.execute().rename('double_col')
+    expected = pd.Series(
+        np.repeat(df.double_col.iloc[-1 if func == 'first' else 0], len(df)),
+        name='double_col',
+    )
+    tm.assert_series_equal(result, expected)
+
+
 def test_null_column(alltypes):
     t = alltypes
     nrows = t.count().execute()
