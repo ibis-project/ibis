@@ -31,7 +31,6 @@ def distinct_roots(*expressions):
 
 
 class Node(Annotable):
-
     __slots__ = '_expr_cached', '_hash',
 
     def __repr__(self):
@@ -2739,22 +2738,12 @@ class MapValueOrDefaultForKey(ValueOp):
         value_type = map_type.value_type
         default_type = default.type()
 
-        if default_type is not dt.null:
-            # compute the result_type by getting the highest precedence type
-            # from the value_type vs the default_type
-            try:
-                result_type = dt.highest_precedence((value_type, default_type))
-            except com.IbisTypeError:
-                # if we can't compute the precedence then fail
-                raise com.IbisTypeError(
-                    'map value type {} cannot be cast to default value type '
-                    '{}'.format(value_type, default_type)
-                )
-        else:
-            # otherwise the result type is the value type since the user
-            # did not provide a default value
-            result_type = value_type
-        return rlz.shape_like(tuple(self.args), result_type)
+        if default is not None and not default_type.castable(value_type):
+            raise com.IbisTypeError(
+                "Default value {} of type {} cannot be cast to map's value "
+                "type {}".format(default, default_type, value_type)
+            )
+        return rlz.shape_like(tuple(self.args), value_type)
 
 
 class MapKeys(ValueOp):
