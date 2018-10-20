@@ -201,7 +201,7 @@ class ClickhouseTable(ir.TableExpr, DatabaseEntity):
                 obj[col] = obj[col].dt.date
 
         data = obj.to_dict('records')
-        return self._client.con.process_insert_query(query, data, **kwargs)
+        return self._client.con.execute(query, data, **kwargs)
 
 
 class ClickhouseDatabaseTable(ops.DatabaseTable):
@@ -240,7 +240,7 @@ class ClickhouseClient(SQLClient):
             query = query.compile()
         self.log(query)
 
-        response = self.con.process_ordinary_query(
+        response = self.con.execute(
             query, columnar=True, with_column_types=True,
             external_tables=external_tables
         )

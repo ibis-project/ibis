@@ -3,7 +3,7 @@ channels:
 dependencies:
   - click
   - clickhouse-cityhash
-  - clickhouse-driver=0.0.15
+  - clickhouse-driver
   - clickhouse-sqlalchemy
   - cmake
   - enum34
