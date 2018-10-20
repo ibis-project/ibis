@@ -33,8 +33,8 @@ jobs:
         createCustomEnvironment: True
         environmentName: "ibis_$(python.version)"
         packageSpecs: pytables numpy pandas ruamel.yaml jinja2 $(pyarrow) multipledispatch pymysql sqlalchemy psycopg2 graphviz click mock plumbum flake8 pytest-xdist
-        installOptions: --channel conda-forge
-        createOptions: python="$(python.version)" --channel conda-forge
+        installOptions: --channel conda-forge --override-channels
+        createOptions: python="$(python.version)" --channel conda-forge --override-channels
         cleanEnvironment: True
         updateConda: False
 
@@ -92,6 +92,7 @@ jobs:
       inputs:
         createCustomEnvironment: False
         packageSpecs: conda-build click jinja2 ruamel.yaml plumbum
+        installOptions: --channel conda-forge --override-channels
         updateConda: False
 
     - script: python setup.py develop
