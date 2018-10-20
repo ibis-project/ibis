@@ -13,7 +13,7 @@ ARG ENVKIND
 COPY ci/requirements-${ENVKIND}-${PYTHON}.yml /
 
 RUN conda env create -q -n ibis-${ENVKIND}-${PYTHON} -f /requirements-${ENVKIND}-${PYTHON}.yml \
- && conda install conda-build -y -q
+ && conda install conda-build -y -q -c conda-forge --override-channels
 
 # we intentionally keep conda artifacts in the image to speedup recipe building
 # on the other hand to reduce image size run the following in the previous layer
