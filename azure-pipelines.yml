@@ -92,7 +92,6 @@ jobs:
       inputs:
         createCustomEnvironment: False
         packageSpecs: conda-build click jinja2 ruamel.yaml plumbum
-        installOptions: --channel conda-forge
         updateConda: False
 
     - script: python setup.py develop
