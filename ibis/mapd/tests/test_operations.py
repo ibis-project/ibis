@@ -51,3 +51,15 @@ def test_string_operations(alltypes, result_fn, check_result):
     if isinstance(result, pd.DataFrame):
         result = result.values[0][0]
     assert check_result(result)
+
+
+def test_cross_join(alltypes):
+    d = alltypes.double_col
+
+    tier = d.histogram(10).name('hist_bin')
+    expr = (alltypes.group_by(tier)
+            .aggregate([d.min(), d.max(), alltypes.count()])
+            .sort_by('hist_bin'))
+    df = expr.execute()
+    assert df.size == 40
+    assert df['count'][0] == 730
