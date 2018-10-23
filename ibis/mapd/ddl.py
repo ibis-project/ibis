@@ -100,27 +100,16 @@ class CreateTable(CreateDDL):
 
 class CreateTableWithSchema(CreateTable):
     def __init__(
-        self, table_name, schema, database=None, fragment_size=None,
-        max_rows=None, page_size=None, partitions=None, shard_count=None
+        self, table_name, schema, database=None, max_rows=None
     ):
         self.table_name = table_name
         self.database = database
         self.schema = schema
-        self.fragment_size = fragment_size
         self.max_rows = max_rows
-        self.page_size = page_size
-        self.partitions = partitions
-        self.shard_count = shard_count
 
     @property
     def with_params(self):
-        return dict(
-            fragment_size=self.fragment_size,
-            max_rows=self.max_rows,
-            page_size=self.page_size,
-            partitions=self.partitions,
-            shard_count=self.shard_count
-        )
+        return dict(max_rows=self.max_rows)
 
     @property
     def _pieces(self):

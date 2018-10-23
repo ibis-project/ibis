@@ -60,3 +60,13 @@ def test_compile_toplevel():
     result = ibis.mapd.compile(expr)
     expected = 'SELECT sum("foo") AS "sum"\nFROM t0'  # noqa
     assert str(result) == expected
+
+
+def text_exists_table_with_database(
+    con, alltypes, test_data_db, temp_table, temp_database
+):
+    tmp_db = test_data_db
+    con.create_table(temp_table, alltypes, database=tmp_db)
+
+    assert con.exists_table(temp_table, database=tmp_db)
+    assert not con.exists_table(temp_table, database=temp_database)
