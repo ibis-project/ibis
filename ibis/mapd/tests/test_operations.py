@@ -51,3 +51,12 @@ def test_string_operations(alltypes, result_fn, check_result):
     if isinstance(result, pd.DataFrame):
         result = result.values[0][0]
     assert check_result(result)
+
+
+def test_join_diff_name(alltypes):
+    """Test left join operation between columns with different name"""
+    t = alltypes.sort_by('index').limit(10)
+    t1 = alltypes[t.index.name('id1'), t.tinyint_col]
+    t2 = alltypes[t.index.name('id2'), t.smallint_col]
+    df = t1.left_join(t2, t1.id1 == t2.id2).materialize().execute()
+    assert df.size == 40
