@@ -2738,12 +2738,14 @@ class MapValueOrDefaultForKey(ValueOp):
         value_type = map_type.value_type
         default_type = default.type()
 
-        if default is not None and not default_type.castable(value_type):
+        if default is not None and not dt.same_kind(default_type, value_type):
             raise com.IbisTypeError(
-                "Default value {} of type {} cannot be cast to map's value "
+                "Default value\n{}\nof type {} cannot be cast to map's value "
                 "type {}".format(default, default_type, value_type)
             )
-        return rlz.shape_like(tuple(self.args), value_type)
+
+        result_type = dt.highest_precedence((default_type, value_type))
+        return rlz.shape_like(tuple(self.args), result_type)
 
 
 class MapKeys(ValueOp):
