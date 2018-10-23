@@ -1340,10 +1340,17 @@ def test_column_isin_map_keys():
     assert isinstance(expr, ir.BooleanColumn)
 
 
-def test_map_get_with_compatible_value_same_kind():
+def test_map_get_with_compatible_value_smaller():
     value = ibis.literal({'A': 1000, 'B': 2000})
     expr = value.get('C', 3)
     assert value.type() == dt.Map(dt.string, dt.int16)
+    assert expr.type() == dt.int16
+
+
+def test_map_get_with_compatible_value_bigger():
+    value = ibis.literal({'A': 1, 'B': 2})
+    expr = value.get('C', 3000)
+    assert value.type() == dt.Map(dt.string, dt.int8)
     assert expr.type() == dt.int16
 
 
@@ -1351,6 +1358,34 @@ def test_map_get_with_incompatible_value_different_kind():
     value = ibis.literal({'A': 1000, 'B': 2000})
     with pytest.raises(IbisTypeError):
         value.get('C', 3.0)
+
+
+@pytest.mark.parametrize('null_value', [None, ibis.NA])
+def test_map_get_with_null_on_not_nullable(null_value):
+    map_type = dt.Map(dt.string, dt.Int16(nullable=False))
+    value = ibis.literal({'A': 1000, 'B': 2000}).cast(map_type)
+    assert value.type() == map_type
+    with pytest.raises(IbisTypeError):
+        assert value.get('C', null_value)
+
+
+@pytest.mark.parametrize('null_value', [None, ibis.NA])
+def test_map_get_with_null_on_nullable(null_value):
+    value = ibis.literal({'A': 1000, 'B': None})
+    result = value.get('C', null_value)
+    assert result.type().nullable
+
+
+@pytest.mark.parametrize('null_value', [None, ibis.NA])
+def test_map_get_with_null_on_null_type_with_null(null_value):
+    value = ibis.literal({'A': None, 'B': None})
+    result = value.get('C', null_value)
+    assert result.type().nullable
+
+
+def test_map_get_with_null_on_null_type_with_non_null():
+    value = ibis.literal({'A': None, 'B': None})
+    assert value.get('C', 1).type() == dt.int8
 
 
 def test_map_get_with_incompatible_value():
