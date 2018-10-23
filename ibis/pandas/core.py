@@ -19,7 +19,7 @@ This is a no-op because we execute ibis expressions directly.
 Execution
 ---------
 Execution is divided into different dispatched functions, each arising from
-different a use case.
+a different use case.
 
 A top level function `execute` exists to provide the API for executing an ibis
 expression against in-memory data.
