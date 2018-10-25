@@ -331,9 +331,43 @@ def _cross_join(translator, expr):
     return translator.translate(left.join(right, ibis.literal(True)))
 
 
+def _format_point_value(value):
+    return ' '.join([str(v) for v in value])
+
+
+def _format_line_value(value):
+    return ', '.join([
+        '{}'.format(_format_point_value(point)) for point in value
+    ])
+
+
+def _format_polygon_value(value):
+    return ', '.join([
+        '({})'.format(
+            _format_line_value(line)) for line in value
+    ])
+
+
+def _format_multipolygon_value(value):
+    return ', '.join([
+        '({})'.format(_format_polygon_value(polygon)) for polygon in value
+    ])
+
+
 def literal(translator, expr):
     value = expr.op().value
-    if isinstance(expr, ir.BooleanValue):
+
+    # geo spatial data type
+    if isinstance(expr, ir.PointScalar):
+        return "POINT({0!s})".format(_format_point_value(value))
+    elif isinstance(expr, ir.LineScalar):
+        return "LINESTRING({0!s})".format(_format_line_value(value))
+    elif isinstance(expr, ir.PolygonScalar):
+        return "POLYGON({0!s})".format(_format_polygon_value(value))
+    elif isinstance(expr, ir.MultiPolygonScalar):
+        return "MULTIPOLYGON({0!s})".format(_format_multipolygon_value(value))
+    # primitive data type
+    elif isinstance(expr, ir.BooleanValue):
         return '1' if value else '0'
     elif isinstance(expr, ir.StringValue):
         return "'{0!s}'".format(value.replace("'", "\\'"))
@@ -375,6 +409,7 @@ def literal(translator, expr):
         if isinstance(value, date):
             value = value.strftime('%Y-%m-%d')
         return "toDate('{0!s}')".format(value)
+    # array data type
     elif isinstance(expr, ir.ArrayValue):
         return str(list(value))
     else:

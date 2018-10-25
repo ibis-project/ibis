@@ -32,6 +32,7 @@ import ibis.expr.types as ir
 
 
 class DataType:
+
     __slots__ = 'nullable',
 
     def __init__(self, nullable: bool = True) -> None:
@@ -602,6 +603,41 @@ class Map(Variadic):
         )
 
 
+
+# GEO SPATIAL DATA TYPE
+class GeoSpatial(DataType):
+    # TODO: maybe it needs geo spatial system information
+    __slots__ = ()
+
+
+class Point(GeoSpatial):
+    scalar = ir.PointScalar
+    column = ir.PointColumn
+
+    __slots__ = ()
+
+
+class Line(GeoSpatial):
+    scalar = ir.LineScalar
+    column = ir.LineColumn
+
+    __slots__ = ()
+
+
+class Polygon(GeoSpatial):
+    scalar = ir.PolygonScalar
+    column = ir.PolygonColumn
+
+    __slots__ = ()
+
+
+class MultiPolygon(GeoSpatial):
+    scalar = ir.MultiPolygonScalar
+    column = ir.MultiPolygonColumn
+
+    __slots__ = ()
+
+
 # ---------------------------------------------------------------------
 any = Any()
 null = Null()
@@ -629,6 +665,11 @@ time = Time()
 timestamp = Timestamp()
 interval = Interval()
 category = Category()
+# geo spatial data type
+point = Point()
+line = Line()
+polygon = Polygon()
+multipolygon = MultiPolygon()
 
 
 _primitive_types = [
@@ -686,6 +727,11 @@ class Tokens:
     TIME = 19
     INTERVAL = 20
     SET = 21
+    # GEO SPATIAL DATA TYPE
+    POINT = 22
+    LINE = 23
+    POLYGON = 24
+    MULTIPOLYGON = 25
 
     @staticmethod
     def name(value):
@@ -777,6 +823,24 @@ _TYPE_RULES = collections.OrderedDict(
                 Tokens.MAP,
                 Tokens.STRUCT,
                 Tokens.INTERVAL
+            ),
+        )
+    ] + [
+        # geo spatial data type
+        (
+            '(?P<{}>{})'.format(token.upper(), token),
+            lambda token, toktype=toktype: Token(toktype, token)
+        ) for token, toktype in zip(
+            (
+                'point',
+                'line',
+                'polygon',
+                'multipolygon',
+            ), (
+                Tokens.POINT,
+                Tokens.LINE,
+                Tokens.POLYGON,
+                Tokens.MULTIPOLYGON,
             ),
         )
     ] + [
@@ -946,6 +1010,9 @@ class TypeParser:
         struct : "struct" "<" field ":" type ("," field ":" type)* ">"
 
         field : [a-zA-Z_][a-zA-Z_0-9]*
+
+        geospatial: point | line | polygon | multipolygon
+
         """
         if self._accept(Tokens.PRIMITIVE):
             assert self.tok is not None
@@ -1058,6 +1125,20 @@ class TypeParser:
 
             self._expect(Tokens.RBRACKET)
             return Struct(names, types)
+
+        # geo spatial data type
+        elif self._accept(Tokens.POINT):
+            return Point()
+
+        elif self._accept(Tokens.LINE):
+            return Line()
+
+        elif self._accept(Tokens.POLYGON):
+            return Polygon()
+
+        elif self._accept(Tokens.MULTIPOLYGON):
+            return MultiPolygon()
+
         else:
             raise SyntaxError('Type cannot be parsed: {}'.format(self.text))
 
@@ -1162,6 +1243,13 @@ def infer_set(values: GenericSet) -> Set:
     if not values:
         return Set(null)
     return Set(highest_precedence(map(infer, values)))
+
+
+@infer.register(tuple)
+def infer_tuple(values):
+    if not values:
+        return Array(null)
+    return Array(Primitive())
 
 
 @infer.register(datetime.time)
@@ -1343,6 +1431,15 @@ def can_cast_variadic(
     **kwargs
 ) -> bool:
     return castable(source.value_type, target.value_type)
+
+
+# geo spatial data type
+@castable.register(Array, Point)
+@castable.register(Array, Line)
+@castable.register(Array, Polygon)
+@castable.register(Array, MultiPolygon)
+def can_cast_geospatial(source, target, **kwargs):
+    return True
 
 
 # @castable.register(Map, Map)

@@ -677,6 +677,35 @@ class IntervalScalar(AnyScalar, IntervalValue): pass  # noqa: E701,E302
 class IntervalColumn(AnyColumn, IntervalValue): pass  # noqa: E701,E302
 
 
+class GeoSpatialValue(NumericValue): pass  # noqa: E701,E302
+class GeoSpatialScalar(NumericScalar, GeoSpatialValue): pass  # noqa: E701,E302
+class GeoSpatialColumn(NumericColumn, GeoSpatialValue): pass  # noqa: E701,E302
+
+
+class PointValue(GeoSpatialValue): pass  # noqa: E701,E302
+class PointScalar(GeoSpatialScalar, PointValue): pass  # noqa: E701,E302
+class PointColumn(GeoSpatialColumn, PointValue): pass  # noqa: E701,E302
+
+
+class LineValue(GeoSpatialValue): pass  # noqa: E701,E302
+class LineScalar(GeoSpatialScalar, LineValue): pass  # noqa: E701,E302
+class LineColumn(GeoSpatialColumn, LineValue): pass  # noqa: E701,E302
+
+
+class PolygonValue(GeoSpatialValue): pass  # noqa: E701,E302
+class PolygonScalar(GeoSpatialScalar, PolygonValue): pass  # noqa: E701,E302
+class PolygonColumn(GeoSpatialColumn, PolygonValue): pass  # noqa: E701,E302
+
+
+class MultiPolygonValue(GeoSpatialValue): pass  # noqa: E701,E302
+class MultiPolygonScalar(  # noqa: E302
+    GeoSpatialScalar, MultiPolygonValue
+): pass  # noqa: E701
+class MultiPolygonColumn(  # noqa: E302
+    GeoSpatialColumn, MultiPolygonValue
+): pass  # noqa: E701
+
+
 class ListExpr(ColumnExpr, AnyValue):
 
     @property

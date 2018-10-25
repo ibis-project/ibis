@@ -50,7 +50,12 @@ from ibis.expr.types import (  # noqa
     ArrayValue, ArrayScalar, ArrayColumn,
     MapValue, MapScalar, MapColumn,
     StructValue, StructScalar, StructColumn,
-    CategoryValue, CategoryScalar, CategoryValue
+    CategoryValue, CategoryScalar, CategoryValue,
+    GeoSpatialColumn, GeoSpatialScalar, GeoSpatialValue,
+    PointColumn, PointScalar, PointValue,
+    LineColumn, LineScalar, LineValue,
+    PolygonColumn, PolygonScalar, PolygonValue,
+    MultiPolygonColumn, MultiPolygonScalar, MultiPolygonValue
 )
 
 
@@ -1536,6 +1541,14 @@ _add_methods(ir.FloatingValue, _floating_value_methods)
 
 _add_methods(ir.NumericColumn, _numeric_column_methods)
 
+
+# GEO Spatial
+
+_geospatial_value_methods = dict()
+_geospatial_column_methods = dict()
+
+_add_methods(ir.GeoSpatialValue, _geospatial_value_methods)
+_add_methods(ir.GeoSpatialColumn, _geospatial_column_methods)
 
 # ----------------------------------------------------------------------
 # Boolean API
