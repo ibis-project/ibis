@@ -53,10 +53,22 @@ def test_string_operations(alltypes, result_fn, check_result):
     assert check_result(result)
 
 
-def test_join_diff_name(alltypes):
+def test_join_diff_name(awards_players, batting):
     """Test left join operation between columns with different name"""
-    t = alltypes.sort_by('index').limit(10)
-    t1 = alltypes[t.index.name('id1'), t.tinyint_col]
-    t2 = alltypes[t.index.name('id2'), t.smallint_col]
-    df = t1.left_join(t2, t1.id1 == t2.id2).materialize().execute()
-    assert df.size == 40
+    t1 = awards_players.sort_by('yearID').limit(10)
+    t2 = batting.sort_by('yearID').limit(10)
+    t2 = t2[
+        t2.playerID.name('pID'),
+        t2.yearID.name('yID'),
+        t2.lgID.name('lID'),
+        t2.teamID
+    ]
+    k = [t1, t2.teamID]
+    df = t1.left_join(
+        t2, (
+                (t1.yearID == t2.yID) &
+                (t1.playerID == t2.pID) &
+                (t1.lgID == t2.lID)
+        )
+    )[k].materialize().execute()
+    assert df.size == 80
