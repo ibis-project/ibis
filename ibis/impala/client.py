@@ -1842,7 +1842,7 @@ def _split_signature(x):
     return name, rest[:-1]
 
 
-_arg_type = re.compile('(.*)\.\.\.|([^\.]*)')
+_arg_type = re.compile(r'(.*)\.\.\.|([^\.]*)')
 
 
 class _type_parser(object):

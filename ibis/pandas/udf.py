@@ -24,7 +24,7 @@ import ibis.expr.signature as sig
 import ibis.expr.operations as ops
 
 from ibis.pandas.core import scalar_types
-from ibis.pandas.dispatch import execute_node, pause_ordering
+from ibis.pandas.dispatch import execute_node
 from ibis.compat import functools, Parameter, signature, viewkeys
 
 
@@ -310,52 +310,51 @@ class udf(object):
             )
 
             # definitions
-            with pause_ordering():
-                # Define an execution rule for a simple elementwise Series
-                # function
-                @execute_node.register(
-                    UDFNode,
-                    *udf_signature(input_type, pin=None, klass=pd.Series))
-                @execute_node.register(
-                    UDFNode,
-                    *(rule_to_python_type(argtype) + nullable(argtype)
-                        for argtype in input_type))
-                def execute_udf_node(op, *args, **kwargs):
-                    args, kwargs = arguments_from_signature(
-                        funcsig, *args, **kwargs
-                    )
-                    return func(*args, **kwargs)
+            # Define an execution rule for a simple elementwise Series
+            # function
+            @execute_node.register(
+                UDFNode,
+                *udf_signature(input_type, pin=None, klass=pd.Series))
+            @execute_node.register(
+                UDFNode,
+                *(rule_to_python_type(argtype) + nullable(argtype)
+                    for argtype in input_type))
+            def execute_udf_node(op, *args, **kwargs):
+                args, kwargs = arguments_from_signature(
+                    funcsig, *args, **kwargs
+                )
+                return func(*args, **kwargs)
 
-                # Define an execution rule for elementwise operations on a
-                # grouped Series
-                nargs = len(input_type)
-                group_by_signatures = [
-                    udf_signature(input_type, pin=pin, klass=SeriesGroupBy)
-                    for pin in range(nargs)
+            # Define an execution rule for elementwise operations on a
+            # grouped Series
+            nargs = len(input_type)
+            group_by_signatures = [
+                udf_signature(input_type, pin=pin, klass=SeriesGroupBy)
+                for pin in range(nargs)
+            ]
+
+            @toolz.compose(*(execute_node.register(UDFNode, *types)
+                             for types in group_by_signatures))
+            def execute_udf_node_groupby(op, *args, **kwargs):
+                groupers = [
+                    grouper for grouper in (
+                        getattr(arg, 'grouper', None) for arg in args
+                    ) if grouper is not None
                 ]
 
-                @toolz.compose(*(execute_node.register(UDFNode, *types)
-                                 for types in group_by_signatures))
-                def execute_udf_node_groupby(op, *args, **kwargs):
-                    groupers = [
-                        grouper for grouper in (
-                            getattr(arg, 'grouper', None) for arg in args
-                        ) if grouper is not None
-                    ]
+                # all grouping keys must be identical
+                assert all(
+                    groupers[0] == grouper for grouper in groupers[1:])
 
-                    # all grouping keys must be identical
-                    assert all(
-                        groupers[0] == grouper for grouper in groupers[1:])
-
-                    # we're performing a scalar operation on grouped column, so
-                    # perform the operation directly on the underlying Series
-                    # and regroup after it's finished
-                    arguments = [getattr(arg, 'obj', arg) for arg in args]
-                    groupings = groupers[0].groupings
-                    args, kwargs = arguments_from_signature(
-                        signature(func), *arguments, **kwargs
-                    )
-                    return func(*args, **kwargs).groupby(groupings)
+                # we're performing a scalar operation on grouped column, so
+                # perform the operation directly on the underlying Series
+                # and regroup after it's finished
+                arguments = [getattr(arg, 'obj', arg) for arg in args]
+                groupings = groupers[0].groupings
+                args, kwargs = arguments_from_signature(
+                    signature(func), *arguments, **kwargs
+                )
+                return func(*args, **kwargs).groupby(groupings)
 
             @functools.wraps(func)
             def wrapped(*args):
@@ -455,56 +454,55 @@ class udf(object):
                 }
             )
 
-            with pause_ordering():
-                # An execution rule for a simple aggregate node
-                @execute_node.register(
-                    UDAFNode,
-                    *udf_signature(input_type, pin=None, klass=pd.Series))
-                def execute_udaf_node(op, *args, **kwargs):
+            # An execution rule for a simple aggregate node
+            @execute_node.register(
+                UDAFNode,
+                *udf_signature(input_type, pin=None, klass=pd.Series))
+            def execute_udaf_node(op, *args, **kwargs):
+                args, kwargs = arguments_from_signature(
+                    funcsig, *args, **kwargs
+                )
+                return func(*args, **kwargs)
+
+            # An execution rule for a grouped aggregation node. This
+            # includes aggregates applied over a window.
+            nargs = len(input_type)
+            group_by_signatures = [
+                udf_signature(input_type, pin=pin, klass=SeriesGroupBy)
+                for pin in range(nargs)
+            ]
+
+            @toolz.compose(*(execute_node.register(UDAFNode, *types)
+                             for types in group_by_signatures))
+            def execute_udaf_node_groupby(op, *args, **kwargs):
+                # construct a generator that yields the next group of data
+                # for every argument excluding the first (pandas performs
+                # the iteration for the first argument) for each argument
+                # that is a SeriesGroupBy.
+                #
+                # If the argument is not a SeriesGroupBy then keep
+                # repeating it until all groups are exhausted.
+                aggcontext = kwargs.pop('aggcontext', None)
+                assert aggcontext is not None, 'aggcontext is None'
+                iters = (
+                    (data for _, data in arg)
+                    if isinstance(arg, SeriesGroupBy)
+                    else itertools.repeat(arg)
+                    for arg in args[1:]
+                )
+                funcsig = signature(func)
+
+                def aggregator(first, *rest, **kwargs):
+                    # map(next, *rest) gets the inputs for the next group
+                    # TODO: might be inefficient to do this on every call
                     args, kwargs = arguments_from_signature(
-                        funcsig, *args, **kwargs
+                        funcsig, first, *map(next, rest), **kwargs
                     )
                     return func(*args, **kwargs)
 
-                # An execution rule for a grouped aggregation node. This
-                # includes aggregates applied over a window.
-                nargs = len(input_type)
-                group_by_signatures = [
-                    udf_signature(input_type, pin=pin, klass=SeriesGroupBy)
-                    for pin in range(nargs)
-                ]
-
-                @toolz.compose(*(execute_node.register(UDAFNode, *types)
-                                 for types in group_by_signatures))
-                def execute_udaf_node_groupby(op, *args, **kwargs):
-                    # construct a generator that yields the next group of data
-                    # for every argument excluding the first (pandas performs
-                    # the iteration for the first argument) for each argument
-                    # that is a SeriesGroupBy.
-                    #
-                    # If the argument is not a SeriesGroupBy then keep
-                    # repeating it until all groups are exhausted.
-                    aggcontext = kwargs.pop('aggcontext', None)
-                    assert aggcontext is not None, 'aggcontext is None'
-                    iters = (
-                        (data for _, data in arg)
-                        if isinstance(arg, SeriesGroupBy)
-                        else itertools.repeat(arg)
-                        for arg in args[1:]
-                    )
-                    funcsig = signature(func)
-
-                    def aggregator(first, *rest, **kwargs):
-                        # map(next, *rest) gets the inputs for the next group
-                        # TODO: might be inefficient to do this on every call
-                        args, kwargs = arguments_from_signature(
-                            funcsig, first, *map(next, rest), **kwargs
-                        )
-                        return func(*args, **kwargs)
-
-                    result = aggcontext.agg(
-                        args[0], aggregator, *iters, **kwargs)
-                    return result
+                result = aggcontext.agg(
+                    args[0], aggregator, *iters, **kwargs)
+                return result
 
             @functools.wraps(func)
             def wrapped(*args):
