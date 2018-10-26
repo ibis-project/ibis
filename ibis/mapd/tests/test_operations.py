@@ -51,3 +51,11 @@ def test_string_operations(alltypes, result_fn, check_result):
     if isinstance(result, pd.DataFrame):
         result = result.values[0][0]
     assert check_result(result)
+
+
+def test_where_operator(alltypes):
+    t = alltypes.sort_by('index').limit(10)
+    expr = ibis.where(t.index > 4, 1, 0)
+    counts = expr.execute().value_counts()
+    assert counts[0] == 5
+    assert counts[1] == 5
