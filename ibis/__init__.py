@@ -15,7 +15,6 @@
 
 # flake8: noqa
 import sys
-from multipledispatch import halt_ordering, restart_ordering
 
 import ibis.config_init
 import ibis.util as util
@@ -29,9 +28,6 @@ from ibis.filesystems import HDFS, WebHDFS
 
 # __all__ is defined
 from ibis.expr.api import *
-
-# speeds up signature registration
-halt_ordering()
 
 # pandas backend is mandatory
 import ibis.pandas.api as pandas
@@ -77,8 +73,6 @@ with suppress(ImportError):
     if sys.version_info.major < 3:
         raise ImportError('The MapD backend is not supported under Python 2.')
     import ibis.mapd.api as mapd
-
-restart_ordering()
 
 
 def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',

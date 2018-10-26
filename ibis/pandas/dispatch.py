@@ -1,8 +1,6 @@
 from __future__ import absolute_import
 
-import contextlib
-
-from multipledispatch import Dispatcher, halt_ordering, restart_ordering
+from multipledispatch import Dispatcher
 
 import ibis
 import ibis.common as com
@@ -83,13 +81,3 @@ data : object
 @post_execute.register(ops.Node, object)
 def post_execute_default(op, data, **kwargs):
     return data
-
-
-@contextlib.contextmanager
-def pause_ordering():
-    """Pause multipledispatch ordering."""
-    halt_ordering()
-    try:
-        yield
-    finally:
-        restart_ordering()
