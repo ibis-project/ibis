@@ -394,8 +394,8 @@ def test_least(con, alltypes, translate):
 # TODO: clickhouse-driver escaping bug
 @pytest.mark.parametrize(('expr', 'expected'), [
     (L('abcd').re_search('[a-z]'), True),
-    (L('abcd').re_search('[\\\d]+'), False),
-    (L('1222').re_search('[\\\d]+'), True),
+    (L('abcd').re_search(r'[\\d]+'), False),
+    (L('1222').re_search(r'[\\d]+'), True),
 ])
 def test_regexp(con, expr, expected):
     assert con.execute(expr) == expected
@@ -406,7 +406,7 @@ def test_regexp(con, expr, expected):
     # (L('abcd').re_extract('(ab)(cd)', 1), 'cd'),
 
     # valid group number but no match => empty string
-    (L('abcd').re_extract('(\\\d)', 0), ''),
+    (L('abcd').re_extract(r'(\\d)', 0), ''),
 
     # match but not a valid group number => NULL
     # (L('abcd').re_extract('abcd', 3), None),
@@ -416,17 +416,17 @@ def test_regexp_extract(con, expr, expected, translate):
 
 
 def test_column_regexp_extract(con, alltypes, translate):
-    expected = "extractAll(`string_col`, '[\d]+')[3 + 1]"
+    expected = r"extractAll(`string_col`, '[\d]+')[3 + 1]"
 
-    expr = alltypes.string_col.re_extract('[\d]+', 3)
+    expr = alltypes.string_col.re_extract(r'[\d]+', 3)
     assert translate(expr) == expected
     assert len(con.execute(expr))
 
 
 def test_column_regexp_replace(con, alltypes, translate):
-    expected = "replaceRegexpAll(`string_col`, '[\d]+', 'aaa')"
+    expected = r"replaceRegexpAll(`string_col`, '[\d]+', 'aaa')"
 
-    expr = alltypes.string_col.re_replace('[\d]+', 'aaa')
+    expr = alltypes.string_col.re_replace(r'[\d]+', 'aaa')
     assert translate(expr) == expected
     assert len(con.execute(expr))
 

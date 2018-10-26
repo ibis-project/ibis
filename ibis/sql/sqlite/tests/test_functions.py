@@ -306,8 +306,8 @@ NULL_INT64 = L(None).cast(dt.int64)
     ('expr', 'expected'),
     [
         (L('abcd').re_search('[a-z]'), True),
-        (L('abcd').re_search('[\d]+'), False),
-        (L('1222').re_search('[\d]+'), True),
+        (L('abcd').re_search(r'[\d]+'), False),
+        (L('1222').re_search(r'[\d]+'), True),
         pytest.param(
             L('abcd').re_search(None),
             None,
@@ -349,7 +349,7 @@ def test_regexp_replace(con, expr, expected):
     ('expr', 'expected'),
     [
         (L('1222').re_extract(r'1(22)\d+', 1).cast('int64'), 22),
-        (L('abcd').re_extract('(\d+)', 1), None),
+        (L('abcd').re_extract(r'(\d+)', 1), None),
         (L('1222').re_extract('([a-z]+)', 1), None),
         (L('1222').re_extract(r'1(22)\d+', 2), None),
 

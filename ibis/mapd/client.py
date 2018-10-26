@@ -106,7 +106,7 @@ class MapDDataType(object):
         elif dtype in cls.ibis_dtypes:
             typename = cls.ibis_dtypes[dtype]
         else:
-            raise NotImplemented('{0} not Implemented'.format(dtype))
+            raise NotImplementedError('{} dtype not implemented'.format(dtype))
 
         if nullable is None:
             nullable = dtype.nullable
