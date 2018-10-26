@@ -26,43 +26,54 @@ _SQLITE_UDAF_REGISTRY = set()
 
 
 def udf(f):
-    _SQLITE_UDF_REGISTRY.add(f)
-    return f
+    """Create a SQLite scalar UDF from `f`
+
+    Parameters
+    ----------
+    f
+        A callable object
+
+    Returns
+    -------
+    callable
+        A callable object that returns ``None`` if any of its inputs are
+        ``None``.
+    """
+    @functools.wraps(f)
+    def wrapper(*args):
+        if any(arg is None for arg in args):
+            return None
+        return f(*args)
+
+    _SQLITE_UDF_REGISTRY.add(wrapper)
+    return wrapper
 
 
-def udaf(f):
-    _SQLITE_UDAF_REGISTRY.add(f)
-    return f
+def udaf(cls):
+    """Register a UDAF class with any SQLite connection."""
+    _SQLITE_UDAF_REGISTRY.add(cls)
+    return cls
 
 
 @udf
 def _ibis_sqlite_reverse(string):
-    if string is not None:
-        return string[::-1]
-    return None
+    return string[::-1]
 
 
 @udf
 def _ibis_sqlite_string_ascii(string):
-    if string is not None:
-        return ord(string[0])
-    return None
+    return ord(string[0])
 
 
 @udf
 def _ibis_sqlite_capitalize(string):
-    if string is not None:
-        return string.capitalize()
-    return None
+    return string.capitalize()
 
 
 @udf
 def _ibis_sqlite_translate(string, from_string, to_string):
-    if (string is not None and
-            from_string is not None and to_string is not None):
-        table = compat.maketrans(from_string, to_string)
-        return string.translate(table)
-    return None
+    table = compat.maketrans(from_string, to_string)
+    return string.translate(table)
 
 
 @udf
@@ -78,8 +89,6 @@ def _ibis_sqlite_regex_search(string, regex):
     -------
     found : bool
     """
-    if string is None or regex is None:
-        return None
     return re.search(regex, string) is not None
 
 
@@ -97,8 +106,6 @@ def _ibis_sqlite_regex_replace(string, pattern, replacement):
     -------
     result : str
     """
-    if string is None or pattern is None or replacement is None:
-        return None
     return re.sub(pattern, replacement, string)
 
 
@@ -116,9 +123,6 @@ def _ibis_sqlite_regex_extract(string, pattern, index):
     -------
     result : str or None
     """
-    if string is None or pattern is None or index is None:
-        return None
-
     result = re.search(pattern, string)
     if result is not None and 0 <= index <= (result.lastindex or -1):
         return result.group(index)
@@ -139,19 +143,19 @@ def _ibis_sqlite_exp(arg):
     result : Optional[number]
         None If the input is None
     """
-    return math.exp(arg) if arg is not None else None
+    return math.exp(arg)
 
 
 @udf
 def _ibis_sqlite_log(arg, base):
-    if arg is None or base is None or arg < 0 or base < 0:
+    if arg < 0 or base < 0:
         return None
     return math.log(arg, base)
 
 
 @udf
 def _ibis_sqlite_ln(arg):
-    if arg is None or arg < 0:
+    if arg < 0:
         return None
     return math.log(arg)
 
@@ -168,35 +172,28 @@ def _ibis_sqlite_log10(arg):
 
 @udf
 def _ibis_sqlite_floor(arg):
-    return math.floor(arg) if arg is not None else None
+    return math.floor(arg)
 
 
 @udf
 def _ibis_sqlite_ceil(arg):
-    return math.ceil(arg) if arg is not None else None
+    return math.ceil(arg)
 
 
 @udf
 def _ibis_sqlite_sign(arg):
-    if arg is None:
-        return None
-    elif arg == 0:
+    if not arg:
         return 0
-    else:
-        return math.copysign(1, arg)
+    return math.copysign(1, arg)
 
 
 @udf
 def _ibis_sqlite_floordiv(left, right):
-    if left is None or right is None:
-        return None
     return left // right
 
 
 @udf
 def _ibis_sqlite_mod(left, right):
-    if left is None or right is None:
-        return None
     return left % right
 
 
@@ -217,7 +214,7 @@ def _ibis_sqlite_power(arg, power):
         None If either argument is None or we're trying to take a fractional
         power or a negative number
     """
-    if arg is None or power is None or (arg < 0.0 and not power.is_integer()):
+    if arg < 0.0 and not power.is_integer():
         return None
     return arg ** power
 
@@ -240,7 +237,6 @@ def _ibis_sqlite_sqrt(arg):
 
 
 class _ibis_sqlite_var(object):
-
     def __init__(self, offset):
         self.mean = 0.0
         self.sum_of_squares_of_differences = 0.0
@@ -248,30 +244,27 @@ class _ibis_sqlite_var(object):
         self.offset = offset
 
     def step(self, value):
-        if value is None:
-            return
-
-        self.count += 1
-        delta = value - self.mean
-        self.mean += delta / self.count
-        self.sum_of_squares_of_differences += delta * (value - self.mean)
+        if value is not None:
+            self.count += 1
+            delta = value - self.mean
+            self.mean += delta / self.count
+            self.sum_of_squares_of_differences += delta * (value - self.mean)
 
     def finalize(self):
-        if not self.count:
-            return None
-        return self.sum_of_squares_of_differences / (self.count - self.offset)
+        count = self.count
+        if count:
+            return self.sum_of_squares_of_differences / (count - self.offset)
+        return None
 
 
 @udaf
 class _ibis_sqlite_var_pop(_ibis_sqlite_var):
-
     def __init__(self):
         super(_ibis_sqlite_var_pop, self).__init__(0)
 
 
 @udaf
 class _ibis_sqlite_var_samp(_ibis_sqlite_var):
-
     def __init__(self):
         super(_ibis_sqlite_var_samp, self).__init__(1)
 

@@ -1,5 +1,7 @@
 import pytest
 
+from pytest import param
+
 import pandas as pd
 
 
@@ -29,16 +31,20 @@ def right_df(right):
     'left',
     'right',
     'outer',
-    pytest.mark.xfail(
+    param(
         'semi',
-        raises=NotImplementedError,
-        reason='Semi join not implemented'
+        marks=pytest.mark.xfail(
+            raises=NotImplementedError,
+            reason='Semi join not implemented'
+        ),
     ),
-    pytest.mark.xfail(
+    param(
         'anti',
-        raises=NotImplementedError,
-        reason='Anti join not implemented'
-    ),
+        marks=pytest.mark.xfail(
+            raises=NotImplementedError,
+            reason='Anti join not implemented'
+        ),
+    )
 ])
 def test_join_project_left_table(backend, con, left, right,
                                  left_df, right_df, how):

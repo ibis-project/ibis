@@ -9,6 +9,8 @@ from datetime import date, datetime
 
 import pytest
 
+from pytest import param
+
 import numpy as np
 
 import ibis
@@ -159,21 +161,27 @@ def test_simple_datetime_operations(con, func, expected, translate):
         methodcaller('strftime', 'DD BAR %w FOO "D'),
         methodcaller('strftime', 'DD BAR "%w" FOO "D'),
         methodcaller('strftime', 'DD BAR "%d" FOO "D'),
-        pytest.mark.xfail(
+        param(
             methodcaller('strftime', 'DD BAR "%c" FOO "D'),
-            condition=os.name == 'nt',
-            reason='Locale-specific format specs not available on Windows',
+            marks=pytest.mark.xfail(
+                condition=os.name == 'nt',
+                reason='Locale-specific format specs not available on Windows',
+            )
         ),
-        pytest.mark.xfail(
+        param(
             methodcaller('strftime', 'DD BAR "%x" FOO "D'),
-            condition=os.name == 'nt',
-            reason='Locale-specific format specs not available on Windows',
+            marks=pytest.mark.xfail(
+                condition=os.name == 'nt',
+                reason='Locale-specific format specs not available on Windows',
+            ),
         ),
-        pytest.mark.xfail(
+        param(
             methodcaller('strftime', 'DD BAR "%X" FOO "D'),
-            condition=os.name == 'nt',
-            reason='Locale-specific format specs not available on Windows',
-        ),
+            marks=pytest.mark.xfail(
+                condition=os.name == 'nt',
+                reason='Locale-specific format specs not available on Windows',
+            ),
+        )
     ]
 )
 def test_strftime(con, func):
@@ -1022,20 +1030,26 @@ def test_array_collect(array_types):
         (3, None),
 
         # negative slices are not supported
-        pytest.mark.xfail(
-            (-3, None),
-            raises=ValueError,
-            reason='Negative slicing not supported'
+        param(
+            -3, None,
+            marks=pytest.mark.xfail(
+                raises=ValueError,
+                reason='Negative slicing not supported'
+            ),
         ),
-        pytest.mark.xfail(
-            (None, -3),
-            raises=ValueError,
-            reason='Negative slicing not supported'
+        param(
+            None, -3,
+            marks=pytest.mark.xfail(
+                raises=ValueError,
+                reason='Negative slicing not supported'
+            )
         ),
-        pytest.mark.xfail(
-            (-3, -1),
-            raises=ValueError,
-            reason='Negative slicing not supported'
+        param(
+            -3, -1,
+            marks=pytest.mark.xfail(
+                raises=ValueError,
+                reason='Negative slicing not supported'
+            )
         ),
     ]
 )

@@ -1,5 +1,8 @@
-import pytest
 import decimal
+
+import pytest
+
+from pytest import param
 
 import ibis
 
@@ -62,10 +65,16 @@ def test_identical_to(backend, sorted_alltypes, con, sorted_df):
     ('int_col', (1, 2, 3)),
     ('string_col', ['1', '2', '3']),
     ('string_col', ('1', '2', '3')),
-    pytest.mark.xfail(('int_col', {1}), raises=TypeError,
-                      reason='Not yet implemented'),
-    pytest.mark.xfail(('int_col', frozenset({1})), raises=TypeError,
-                      reason='Not yet implemented'),
+    param(
+        'int_col',
+        {1},
+        marks=pytest.mark.xfail(raises=TypeError, reason='Not yet implemented')
+    ),
+    param(
+        'int_col',
+        frozenset({1}),
+        marks=pytest.mark.xfail(raises=TypeError, reason='Not yet implemented')
+    ),
 ])
 @tu.skipif_unsupported
 @tu.skipif_backend(MapD)
@@ -85,10 +94,16 @@ def test_isin(backend, sorted_alltypes, sorted_df, column, elements):
     ('int_col', (1, 2, 3)),
     ('string_col', ['1', '2', '3']),
     ('string_col', ('1', '2', '3')),
-    pytest.mark.xfail(('int_col', {1}), raises=TypeError,
-                      reason='Not yet implemented'),
-    pytest.mark.xfail(('int_col', frozenset({1})), raises=TypeError,
-                      reason='Not yet implemented'),
+    param(
+        'int_col',
+        {1},
+        marks=pytest.mark.xfail(raises=TypeError, reason='Not yet implemented')
+    ),
+    param(
+        'int_col',
+        frozenset({1}),
+        marks=pytest.mark.xfail(raises=TypeError, reason='Not yet implemented')
+    ),
 ])
 @tu.skipif_unsupported
 @tu.skipif_backend(MapD)

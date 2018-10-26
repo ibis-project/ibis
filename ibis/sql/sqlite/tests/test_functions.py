@@ -308,21 +308,9 @@ NULL_INT64 = L(None).cast(dt.int64)
         (L('abcd').re_search('[a-z]'), True),
         (L('abcd').re_search(r'[\d]+'), False),
         (L('1222').re_search(r'[\d]+'), True),
-        pytest.param(
-            L('abcd').re_search(None),
-            None,
-            marks=pytest.mark.xfail
-        ),
-        pytest.param(
-            NULL_STRING.re_search('[a-z]'),
-            None,
-            marks=pytest.mark.xfail
-        ),
-        pytest.param(
-            NULL_STRING.re_search(NULL_STRING),
-            None,
-            marks=pytest.mark.xfail
-        )
+        (L('abcd').re_search(None), None),
+        (NULL_STRING.re_search('[a-z]'), None),
+        (NULL_STRING.re_search(NULL_STRING), None)
     ]
 )
 def test_regexp_search(con, expr, expected):
@@ -727,7 +715,7 @@ def test_identical_to(alltypes):
 
 
 @pytest.mark.xfail(raises=AttributeError, reason='NYI')
-def test_truncate(con, alltypes):
+def test_truncate_method(con, alltypes):
     expr = alltypes.limit(5)
     name = str(uuid.uuid4())
     con.create_table(name, expr)
@@ -737,10 +725,16 @@ def test_truncate(con, alltypes):
     assert len(t.execute()) == 0
 
 
-@pytest.mark.xfail(
-    raises=AssertionError,
-    reason='SQLite returns bools as integers, Ibis should recast them'
-)
+def test_truncate_from_connection(con, alltypes):
+    expr = alltypes.limit(5)
+    name = str(uuid.uuid4())
+    con.create_table(name, expr)
+    t = con.table(name)
+    assert len(t.execute()) == 5
+    con.truncate_table(name)
+    assert len(t.execute()) == 0
+
+
 def test_not(alltypes):
     t = alltypes.limit(10)
     expr = t.projection([(~t.double_col.isnull()).name('double_col')])
