@@ -29,8 +29,8 @@ conda install ibis-framework -c conda-forge
 
 Ibis currently provides tools for interacting with the following systems:
 
-- [Apache Impala (incubating)](http://impala.io/)
-- [Apache Kudu](http://getkudu.io)
+- [Apache Impala](https://impala.apache.org/)
+- [Apache Kudu](https://kudu.apache.org/)
 - [Hadoop Distributed File System (HDFS)](https://hadoop.apache.org/)
 - [PostgreSQL](https://www.postgresql.org/)
 - [MySQL](https://www.mysql.com/) (Experimental)
