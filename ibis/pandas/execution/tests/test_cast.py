@@ -1,5 +1,8 @@
-import pytest
 import decimal
+
+import pytest
+
+from pytest import param
 
 import pandas as pd
 import pandas.util.testing as tm  # noqa: E402
@@ -48,7 +51,7 @@ def test_cast_string(t, df, from_, to, expected):
     [
         ('string', 'object'),
         ('int64', 'int64'),
-        pytest.mark.xfail(('double', 'float64'), raises=TypeError),
+        param('double', 'float64', marks=pytest.mark.xfail(raises=TypeError)),
         (
             dt.Timestamp('America/Los_Angeles'),
             'datetime64[ns, America/Los_Angeles]'
@@ -78,7 +81,10 @@ def test_cast_timestamp_column(t, df, column, to, expected):
     [
         ('string', str),
         ('int64', lambda x: x.value),
-        pytest.mark.xfail(('double', float), raises=NotImplementedError),
+        param(
+            'double', float,
+            marks=pytest.mark.xfail(raises=NotImplementedError)
+        ),
         (
             dt.Timestamp('America/Los_Angeles'),
             lambda x: pd.Timestamp(x, tz='America/Los_Angeles')

@@ -2,6 +2,8 @@ import os
 
 import pytest
 
+from pytest import param
+
 import pandas as pd
 import pandas.util.testing as tm
 
@@ -226,24 +228,31 @@ SELECT (my_len_0('abcd') + my_len_0('abcd')) + my_len_1('abcd') AS `tmp`'''
 @pytest.mark.parametrize(
     ('argument_type', 'return_type'),
     [
-        pytest.mark.xfail((dt.int64, dt.float64), raises=TypeError),
-        pytest.mark.xfail((dt.float64, dt.int64), raises=TypeError),
+        param(dt.int64, dt.float64, marks=pytest.mark.xfail(raises=TypeError)),
+        param(dt.float64, dt.int64, marks=pytest.mark.xfail(raises=TypeError)),
 
         # complex argument type, valid return type
-        pytest.mark.xfail((dt.Array(dt.int64), dt.float64), raises=TypeError),
+        param(
+            dt.Array(dt.int64), dt.float64,
+            marks=pytest.mark.xfail(raises=TypeError)
+        ),
 
         # valid argument type, complex invalid return type
-        pytest.mark.xfail(
-            (dt.float64, dt.Array(dt.int64)), raises=TypeError),
+        param(
+            dt.float64, dt.Array(dt.int64),
+            marks=pytest.mark.xfail(raises=TypeError),
+        ),
 
         # both invalid
-        pytest.mark.xfail(
-            (dt.Array(dt.Array(dt.int64)), dt.int64), raises=TypeError),
+        param(
+            dt.Array(dt.Array(dt.int64)), dt.int64,
+            marks=pytest.mark.xfail(raises=TypeError),
+        ),
 
         # struct type with nested integer, valid return type
-        pytest.mark.xfail(
-            (dt.Struct.from_tuples([('x', dt.Array(dt.int64))]), dt.float64),
-            raises=TypeError,
+        param(
+            dt.Struct.from_tuples([('x', dt.Array(dt.int64))]), dt.float64,
+            marks=pytest.mark.xfail(raises=TypeError)
         )
     ]
 )

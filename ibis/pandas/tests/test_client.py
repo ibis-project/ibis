@@ -1,13 +1,13 @@
 import pytest
 
+from pytest import param
+
 import numpy as np
 
 import pandas as pd
 import pandas.util.testing as tm
 
 import ibis
-
-pytest.importorskip('multipledispatch')
 
 from ibis.pandas.client import PandasTable  # noqa: E402
 
@@ -79,18 +79,18 @@ def test_drop(table):
 @pytest.mark.parametrize(
     'unit',
     [
-        pytest.mark.xfail('Y', raises=TypeError),
-        pytest.mark.xfail('M', raises=TypeError),
-        pytest.mark.xfail('D', raises=TypeError),
-        pytest.mark.xfail('h', raises=TypeError),
-        pytest.mark.xfail('m', raises=TypeError),
-        pytest.mark.xfail('s', raises=TypeError),
-        pytest.mark.xfail('ms', raises=TypeError),
-        pytest.mark.xfail('us', raises=TypeError),
+        param('Y', marks=pytest.mark.xfail(raises=TypeError)),
+        param('M', marks=pytest.mark.xfail(raises=TypeError)),
+        param('D', marks=pytest.mark.xfail(raises=TypeError)),
+        param('h', marks=pytest.mark.xfail(raises=TypeError)),
+        param('m', marks=pytest.mark.xfail(raises=TypeError)),
+        param('s', marks=pytest.mark.xfail(raises=TypeError)),
+        param('ms', marks=pytest.mark.xfail(raises=TypeError)),
+        param('us', marks=pytest.mark.xfail(raises=TypeError)),
         'ns',
-        pytest.mark.xfail('ps', raises=TypeError),
-        pytest.mark.xfail('fs', raises=TypeError),
-        pytest.mark.xfail('as', raises=TypeError),
+        param('ps', marks=pytest.mark.xfail(raises=TypeError)),
+        param('fs', marks=pytest.mark.xfail(raises=TypeError)),
+        param('as', marks=pytest.mark.xfail(raises=TypeError)),
     ]
 )
 def test_datetime64_infer(client, unit):

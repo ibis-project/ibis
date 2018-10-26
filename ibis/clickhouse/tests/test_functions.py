@@ -1,11 +1,15 @@
 import math
-import pytest
 import operator
-import pandas as pd
-import pandas.util.testing as tm
 
 from operator import methodcaller
 from datetime import date, datetime
+
+import pytest
+
+from pytest import param
+
+import pandas as pd
+import pandas.util.testing as tm
 
 import ibis
 import ibis.expr.types as ir
@@ -91,10 +95,10 @@ def test_timestamp_now(con, translate):
 
 
 @pytest.mark.parametrize(('unit', 'expected'), [
-    pytest.mark.xfail(('y', '2009-01-01')),
-    pytest.mark.xfail(('m', '2009-05-01')),
-    pytest.mark.xfail(('d', '2009-05-17')),
-    pytest.mark.xfail(('w', '2009-05-11')),
+    param('y', '2009-01-01', marks=pytest.mark.xfail),
+    param('m', '2009-05-01', marks=pytest.mark.xfail),
+    param('d', '2009-05-17', marks=pytest.mark.xfail),
+    param('w', '2009-05-11', marks=pytest.mark.xfail),
     ('h', '2009-05-17 12:00:00'),
     ('minute', '2009-05-17 12:34:00'),
 ])
@@ -172,11 +176,15 @@ def test_fillna_nullif(con, expr, expected):
     (L(1.2345), 'Float64'),
     (L(datetime(2015, 9, 1, hour=14, minute=48, second=5)), 'DateTime'),
     (L(date(2015, 9, 1)), 'Date'),
-    pytest.mark.xfail(
-        (ibis.NA, 'Null'),
-        raises=AssertionError,
-        reason=('Client/server version mismatch not handled in the clickhouse '
-                'driver')
+    param(
+        ibis.NA, 'Null',
+        marks=pytest.mark.xfail(
+            raises=AssertionError,
+            reason=(
+                'Client/server version mismatch not handled in the clickhouse '
+                'driver'
+            )
+        )
     )
 ])
 def test_typeof(con, value, expected):

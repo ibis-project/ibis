@@ -110,7 +110,7 @@ def test_integer_to_interval_timestamp(backend, con, alltypes, df, unit):
 
 
 @pytest.mark.parametrize(
-    'unit', ['Y', param('Q', marks=-pytest.mark.xfail), 'M', 'W', 'D']
+    'unit', ['Y', param('Q', marks=pytest.mark.xfail), 'M', 'W', 'D']
 )
 @tu.skipif_unsupported
 def test_integer_to_interval_date(backend, con, alltypes, df, unit):

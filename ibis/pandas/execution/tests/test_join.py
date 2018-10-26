@@ -1,12 +1,11 @@
+import pytest
+
+from pytest import param
+
 import pandas as pd
 import pandas.util.testing as tm
 
-import pytest
-
 import ibis
-
-
-pytest.importorskip('multipledispatch')
 
 pytestmark = pytest.mark.pandas
 
@@ -18,16 +17,20 @@ join_type = pytest.mark.parametrize(
         'left',
         'right',
         'outer',
-        pytest.mark.xfail(
+        param(
             'semi',
-            raises=NotImplementedError,
-            reason='Semi join not implemented'
+            marks=pytest.mark.xfail(
+                raises=NotImplementedError,
+                reason='Semi join not implemented'
+            )
         ),
-        pytest.mark.xfail(
+        param(
             'anti',
-            raises=NotImplementedError,
-            reason='Anti join not implemented'
-        ),
+            marks=pytest.mark.xfail(
+                raises=NotImplementedError,
+                reason='Anti join not implemented'
+            )
+        )
     ]
 )
 
