@@ -1,12 +1,12 @@
 import os
 import regex as re
 import math
-import inspect
 
 import sqlalchemy as sa
 
+from ibis import compat
 from ibis.client import Database
-from ibis.compat import maketrans, functools
+from ibis.compat import functools
 from ibis.sql.sqlite.compiler import SQLiteDialect
 
 import ibis.sql.alchemy as alch
@@ -60,7 +60,7 @@ def _ibis_sqlite_capitalize(string):
 def _ibis_sqlite_translate(string, from_string, to_string):
     if (string is not None and
             from_string is not None and to_string is not None):
-        table = maketrans(from_string, to_string)
+        table = compat.maketrans(from_string, to_string)
         return string.translate(table)
     return None
 
@@ -277,26 +277,21 @@ class _ibis_sqlite_var_samp(_ibis_sqlite_var):
 
 
 def number_of_arguments(callable):
-    argspec = inspect.getargspec(callable)
-
-    if argspec.varargs is not None:
+    signature = compat.signature(callable)
+    parameters = signature.parameters.values()
+    kinds = [param.kind for param in parameters]
+    valid_kinds = (
+        compat.Parameter.POSITIONAL_OR_KEYWORD,
+        compat.Parameter.POSITIONAL_ONLY,
+    )
+    if any(kind not in valid_kinds for kind in kinds) or any(
+        param.default is not compat.Parameter.empty for param in parameters
+    ):
         raise TypeError(
-            'Variable length arguments not supported in Ibis SQLite function '
-            'registration'
+            'Only positional arguments without defaults are supported in Ibis '
+            'SQLite function registration'
         )
-
-    if argspec.keywords is not None:
-        raise NotImplementedError(
-            'Keyword arguments not implemented for Ibis SQLite function '
-            'registration'
-        )
-
-    if argspec.defaults is not None:
-        raise NotImplementedError(
-            'Keyword arguments not implemented for Ibis SQLite function '
-            'registration'
-        )
-    return len(argspec.args)
+    return len(parameters)
 
 
 def _register_function(func, con):
