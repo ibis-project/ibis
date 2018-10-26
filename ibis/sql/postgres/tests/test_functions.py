@@ -1023,16 +1023,18 @@ def test_array_length(array_types):
     tm.assert_frame_equal(result, expected)
 
 
-def test_array_schema(array_types):
-    assert array_types.x.type() == dt.Array(dt.int64)
-    assert array_types.y.type() == dt.Array(dt.string)
-    assert array_types.z.type() == dt.Array(dt.double)
+@pytest.mark.parametrize(
+    ('column', 'value_type'),
+    [('x', dt.int64), ('y', dt.string), ('z', dt.double)]
+)
+def test_array_schema(array_types, column, value_type):
+    assert array_types[column].type() == dt.Array(value_type)
 
 
 def test_array_collect(array_types):
     expr = array_types.group_by(
         array_types.grouper
-    ).aggregate(collected=array_types.scalar_column.collect())
+    ).aggregate(collected=lambda t: t.scalar_column.collect())
     result = expr.execute().sort_values('grouper').reset_index(drop=True)
     expected = pd.DataFrame({
         'grouper': list('abc'),
