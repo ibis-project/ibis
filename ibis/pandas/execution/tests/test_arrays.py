@@ -5,6 +5,8 @@ import pandas.util.testing as tm
 
 import pytest
 
+from pytest import param
+
 import ibis
 from ibis.common import IbisTypeError
 
@@ -90,20 +92,26 @@ def test_array_collect_scalar(client):
         (3, None),
 
         # negative slices are not supported
-        pytest.mark.xfail(
-            (-3, None),
-            raises=ValueError,
-            reason='Negative slicing not supported'
+        param(
+            -3, None,
+            marks=pytest.mark.xfail(
+                raises=ValueError,
+                reason='Negative slicing not supported'
+            )
         ),
-        pytest.mark.xfail(
-            (None, -3),
-            raises=ValueError,
-            reason='Negative slicing not supported'
+        param(
+            None, -3,
+            marks=pytest.mark.xfail(
+                raises=ValueError,
+                reason='Negative slicing not supported'
+            )
         ),
-        pytest.mark.xfail(
-            (-3, -1),
-            raises=ValueError,
-            reason='Negative slicing not supported'
+        param(
+            -3, -1,
+            marks=pytest.mark.xfail(
+                raises=ValueError,
+                reason='Negative slicing not supported'
+            )
         ),
     ]
 )
@@ -128,20 +136,26 @@ def test_array_slice(t, df, start, stop):
         (3, None),
 
         # negative slices are not supported
-        pytest.mark.xfail(
-            (-3, None),
-            raises=ValueError,
-            reason='Negative slicing not supported'
+        param(
+            -3, None,
+            marks=pytest.mark.xfail(
+                raises=ValueError,
+                reason='Negative slicing not supported'
+            )
         ),
-        pytest.mark.xfail(
-            (None, -3),
-            raises=ValueError,
-            reason='Negative slicing not supported'
+        param(
+            None, -3,
+            marks=pytest.mark.xfail(
+                raises=ValueError,
+                reason='Negative slicing not supported'
+            )
         ),
-        pytest.mark.xfail(
-            (-3, -1),
-            raises=ValueError,
-            reason='Negative slicing not supported'
+        param(
+            -3, -1,
+            marks=pytest.mark.xfail(
+                raises=ValueError,
+                reason='Negative slicing not supported'
+            )
         ),
     ]
 )

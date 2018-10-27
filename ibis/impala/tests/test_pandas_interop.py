@@ -9,6 +9,8 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 
+pytestmark = pytest.mark.impala
+
 pytest.importorskip('hdfs')
 pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')

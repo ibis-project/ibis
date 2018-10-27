@@ -63,3 +63,11 @@ def test_cross_join(alltypes):
     df = expr.execute()
     assert df.size == 40
     assert df['count'][0] == 730
+
+
+def test_where_operator(alltypes):
+    t = alltypes.sort_by('index').limit(10)
+    expr = ibis.where(t.index > 4, 1, 0)
+    counts = expr.execute().value_counts()
+    assert counts[0] == 5
+    assert counts[1] == 5

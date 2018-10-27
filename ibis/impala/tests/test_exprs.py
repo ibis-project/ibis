@@ -885,24 +885,24 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
         self._check_expr_cases(cases)
 
     def test_rlike(self):
-        ex = "regexp_like(`string_col`, '[\d]+')"
+        ex = r"regexp_like(`string_col`, '[\d]+')"
         cases = [
-            (self.table.string_col.rlike('[\d]+'), ex),
-            (self.table.string_col.re_search('[\d]+'), ex),
+            (self.table.string_col.rlike(r'[\d]+'), ex),
+            (self.table.string_col.re_search(r'[\d]+'), ex),
         ]
         self._check_expr_cases(cases)
 
     def test_re_extract(self):
-        sql = "regexp_extract(`string_col`, '[\d]+', 0)"
+        sql = r"regexp_extract(`string_col`, '[\d]+', 0)"
         cases = [
-            (self.table.string_col.re_extract('[\d]+', 0), sql)
+            (self.table.string_col.re_extract(r'[\d]+', 0), sql)
         ]
         self._check_expr_cases(cases)
 
     def test_re_replace(self):
-        sql = "regexp_replace(`string_col`, '[\d]+', 'aaa')"
+        sql = r"regexp_replace(`string_col`, '[\d]+', 'aaa')"
         cases = [
-            (self.table.string_col.re_replace('[\d]+', 'aaa'), sql)
+            (self.table.string_col.re_replace(r'[\d]+', 'aaa'), sql)
         ]
         self._check_expr_cases(cases)
 
@@ -1130,9 +1130,9 @@ def test_builtins_1(con, alltypes):
         # string stuff
         s.contains('6'),
         s.like('6%'),
-        s.re_search('[\d]+'),
-        s.re_extract('[\d]+', 0),
-        s.re_replace('[\d]+', 'a'),
+        s.re_search(r'[\d]+'),
+        s.re_extract(r'[\d]+', 0),
+        s.re_replace(r'[\d]+', 'a'),
         s.repeat(2),
         s.translate("a", "b"),
         s.find("a"),

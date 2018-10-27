@@ -359,6 +359,14 @@ def literal(translator, expr):
         raise NotImplementedError(type(expr))
 
 
+def _where(translator, expr):
+    # pull out the arguments to the expression
+    args = expr.op().args
+    condition, expr1, expr2 = args
+    expr = condition.ifelse(expr1, expr2)
+    return translator.translate(expr)
+
+
 def raise_unsupported_expr_error(expr):
     msg = "MapD backend doesn't support {} operation!"
     op = expr.op()
@@ -604,7 +612,7 @@ _general_ops = {
     ops.Literal: literal,
     ops.ValueList: _value_list,
     ops.Cast: _cast,
-    ops.Where: fixed_arity('if', 3),
+    ops.Where: _where,
     ops.TableColumn: _table_column,
     ops.CrossJoin: _cross_join
 }
@@ -678,6 +686,8 @@ _unsupported_ops = [
     ops.TimestampDiff,
     ops.DayOfWeekIndex,
     ops.DayOfWeekName,
+    # table
+    ops.Union
 ]
 
 _unsupported_ops = {k: raise_unsupported_op_error for k in _unsupported_ops}
