@@ -3,17 +3,15 @@ import pytest
 import ibis.tests.util as tu
 
 
-@pytest.mark.parametrize('column', [
-    'string_col',
-    'double_col',
-    'date_string_col',
-    pytest.mark.skip(
-        pytest.mark.xfail('timestamp_col',
-                          raises=AssertionError,
-                          reason='NYT'),
-        reason='hangs'
-    )
-])
+@pytest.mark.parametrize(
+    'column',
+    [
+        'string_col',
+        'double_col',
+        'date_string_col',
+        pytest.param('timestamp_col', marks=pytest.mark.skip(reason='hangs'))
+    ]
+)
 @tu.skipif_unsupported
 def test_distinct_column(backend, alltypes, df, column):
     expr = alltypes[column].distinct()

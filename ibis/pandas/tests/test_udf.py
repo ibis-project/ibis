@@ -11,7 +11,6 @@ import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 
 from ibis.pandas.udf import udf, nullable
-from ibis.pandas.dispatch import pause_ordering
 
 
 @pytest.fixture
@@ -34,46 +33,52 @@ def t(con):
     return con.table('df')
 
 
-with pause_ordering():
+@udf.elementwise(input_type=[dt.string], output_type=dt.int64)
+def my_string_length(series, **kwargs):
+    return series.str.len() * 2
 
-    @udf.elementwise(input_type=[dt.string], output_type=dt.int64)
-    def my_string_length(series, **kwargs):
-        return series.str.len() * 2
 
-    @udf.elementwise(input_type=[dt.double, dt.double], output_type=dt.double)
-    def my_add(series1, series2, *kwargs):
-        return series1 + series2
+@udf.elementwise(input_type=[dt.double, dt.double], output_type=dt.double)
+def my_add(series1, series2, *kwargs):
+    return series1 + series2
 
-    @udf.reduction(input_type=[dt.string], output_type=dt.int64)
-    def my_string_length_sum(series, **kwargs):
-        return (series.str.len() * 2).sum()
 
-    @udf.reduction(input_type=[dt.double, dt.double], output_type=dt.double)
-    def my_corr(lhs, rhs, **kwargs):
-        return lhs.corr(rhs)
+@udf.reduction(input_type=[dt.string], output_type=dt.int64)
+def my_string_length_sum(series, **kwargs):
+    return (series.str.len() * 2).sum()
 
-    @udf.elementwise([dt.double], dt.double)
-    def add_one(x):
-        return x + 1.0
 
-    @udf.elementwise([dt.double], dt.double)
-    def times_two(x, scope=None):
-        return x * 2.0
+@udf.reduction(input_type=[dt.double, dt.double], output_type=dt.double)
+def my_corr(lhs, rhs, **kwargs):
+    return lhs.corr(rhs)
 
-    @udf.analytic(input_type=[dt.double], output_type=dt.double)
-    def zscore(series):
-        return (series - series.mean()) / series.std()
 
-    @udf.elementwise([], dt.int64)
-    def a_single_number(**kwargs):
-        return 1
+@udf.elementwise([dt.double], dt.double)
+def add_one(x):
+    return x + 1.0
 
-    @udf.reduction(
-        input_type=[dt.double, dt.Array(dt.double)],
-        output_type=dt.Array(dt.double)
-    )
-    def quantiles(series, quantiles):
-        return list(series.quantile(quantiles))
+
+@udf.elementwise([dt.double], dt.double)
+def times_two(x, scope=None):
+    return x * 2.0
+
+
+@udf.analytic(input_type=[dt.double], output_type=dt.double)
+def zscore(series):
+    return (series - series.mean()) / series.std()
+
+
+@udf.elementwise([], dt.int64)
+def a_single_number(**kwargs):
+    return 1
+
+
+@udf.reduction(
+    input_type=[dt.double, dt.Array(dt.double)],
+    output_type=dt.Array(dt.double)
+)
+def quantiles(series, quantiles):
+    return list(series.quantile(quantiles))
 
 
 def test_udf(t, df):

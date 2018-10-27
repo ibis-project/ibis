@@ -1,5 +1,7 @@
 import pytest
 
+from pytest import param
+
 from multipledispatch.conflict import ambiguities
 
 import ibis.expr.datatypes as dt
@@ -38,16 +40,21 @@ def test_no_ambiguities():
         ),
         (dt.date, 'DATE'),
         (dt.timestamp, 'TIMESTAMP'),
-        pytest.mark.xfail(
-            (dt.timestamp(timezone='US/Eastern'), 'TIMESTAMP'),
-            raises=TypeError,
-            reason='Not supported in BigQuery'
+
+        param(
+            dt.timestamp(timezone='US/Eastern'), 'TIMESTAMP',
+            marks=pytest.mark.xfail(
+                raises=TypeError,
+                reason='Not supported in BigQuery'
+            )
         ),
         ('array<struct<a: string>>', 'ARRAY<STRUCT<a STRING>>'),
-        pytest.mark.xfail(
-            (dt.Decimal(38, 9), 'NUMERIC'),
-            raises=TypeError,
-            reason='Not supported in BigQuery'
+        param(
+            dt.Decimal(38, 9), 'NUMERIC',
+            marks=pytest.mark.xfail(
+                raises=TypeError,
+                reason='Not supported in BigQuery'
+            )
         ),
     ]
 )
@@ -65,17 +72,18 @@ def test_simple_failure_mode(datatype):
 @pytest.mark.parametrize(
     ('type', 'expected'),
     [
-        pytest.mark.xfail((dt.int64, 'INT64'), raises=TypeError),
-        pytest.mark.xfail(
-            (dt.Array(dt.int64), 'ARRAY<INT64>'),
-            raises=TypeError
+        param(
+            dt.int64, 'INT64',
+            marks=pytest.mark.xfail(raises=TypeError),
         ),
-        pytest.mark.xfail(
-            (
-                dt.Struct.from_tuples([('a', dt.Array(dt.int64))]),
-                'STRUCT<a ARRAY<INT64>>'
-            ),
-            raises=TypeError,
+        param(
+            dt.Array(dt.int64), 'ARRAY<INT64>',
+            marks=pytest.mark.xfail(raises=TypeError),
+        ),
+        param(
+            dt.Struct.from_tuples([('a', dt.Array(dt.int64))]),
+            'STRUCT<a ARRAY<INT64>>',
+            marks=pytest.mark.xfail(raises=TypeError)
         )
     ]
 )

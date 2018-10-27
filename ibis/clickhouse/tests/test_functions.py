@@ -1,11 +1,15 @@
 import math
-import pytest
 import operator
-import pandas as pd
-import pandas.util.testing as tm
 
 from operator import methodcaller
 from datetime import date, datetime
+
+import pytest
+
+from pytest import param
+
+import pandas as pd
+import pandas.util.testing as tm
 
 import ibis
 import ibis.expr.types as ir
@@ -91,10 +95,10 @@ def test_timestamp_now(con, translate):
 
 
 @pytest.mark.parametrize(('unit', 'expected'), [
-    pytest.mark.xfail(('y', '2009-01-01')),
-    pytest.mark.xfail(('m', '2009-05-01')),
-    pytest.mark.xfail(('d', '2009-05-17')),
-    pytest.mark.xfail(('w', '2009-05-11')),
+    param('y', '2009-01-01', marks=pytest.mark.xfail),
+    param('m', '2009-05-01', marks=pytest.mark.xfail),
+    param('d', '2009-05-17', marks=pytest.mark.xfail),
+    param('w', '2009-05-11', marks=pytest.mark.xfail),
     ('h', '2009-05-17 12:00:00'),
     ('minute', '2009-05-17 12:34:00'),
 ])
@@ -172,11 +176,15 @@ def test_fillna_nullif(con, expr, expected):
     (L(1.2345), 'Float64'),
     (L(datetime(2015, 9, 1, hour=14, minute=48, second=5)), 'DateTime'),
     (L(date(2015, 9, 1)), 'Date'),
-    pytest.mark.xfail(
-        (ibis.NA, 'Null'),
-        raises=AssertionError,
-        reason=('Client/server version mismatch not handled in the clickhouse '
-                'driver')
+    param(
+        ibis.NA, 'Null',
+        marks=pytest.mark.xfail(
+            raises=AssertionError,
+            reason=(
+                'Client/server version mismatch not handled in the clickhouse '
+                'driver'
+            )
+        )
     )
 ])
 def test_typeof(con, value, expected):
@@ -394,8 +402,8 @@ def test_least(con, alltypes, translate):
 # TODO: clickhouse-driver escaping bug
 @pytest.mark.parametrize(('expr', 'expected'), [
     (L('abcd').re_search('[a-z]'), True),
-    (L('abcd').re_search('[\\\d]+'), False),
-    (L('1222').re_search('[\\\d]+'), True),
+    (L('abcd').re_search(r'[\\d]+'), False),
+    (L('1222').re_search(r'[\\d]+'), True),
 ])
 def test_regexp(con, expr, expected):
     assert con.execute(expr) == expected
@@ -406,7 +414,7 @@ def test_regexp(con, expr, expected):
     # (L('abcd').re_extract('(ab)(cd)', 1), 'cd'),
 
     # valid group number but no match => empty string
-    (L('abcd').re_extract('(\\\d)', 0), ''),
+    (L('abcd').re_extract(r'(\\d)', 0), ''),
 
     # match but not a valid group number => NULL
     # (L('abcd').re_extract('abcd', 3), None),
@@ -416,17 +424,17 @@ def test_regexp_extract(con, expr, expected, translate):
 
 
 def test_column_regexp_extract(con, alltypes, translate):
-    expected = "extractAll(`string_col`, '[\d]+')[3 + 1]"
+    expected = r"extractAll(`string_col`, '[\d]+')[3 + 1]"
 
-    expr = alltypes.string_col.re_extract('[\d]+', 3)
+    expr = alltypes.string_col.re_extract(r'[\d]+', 3)
     assert translate(expr) == expected
     assert len(con.execute(expr))
 
 
 def test_column_regexp_replace(con, alltypes, translate):
-    expected = "replaceRegexpAll(`string_col`, '[\d]+', 'aaa')"
+    expected = r"replaceRegexpAll(`string_col`, '[\d]+', 'aaa')"
 
-    expr = alltypes.string_col.re_replace('[\d]+', 'aaa')
+    expr = alltypes.string_col.re_replace(r'[\d]+', 'aaa')
     assert translate(expr) == expected
     assert len(con.execute(expr))
 

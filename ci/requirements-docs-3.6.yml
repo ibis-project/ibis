@@ -15,7 +15,7 @@ dependencies:
   - jupyter
   - lz4
   - matplotlib
-  - multipledispatch
+  - multipledispatch>=0.6.0
   - nbconvert=5.3.1
   - nbsphinx
   - numpy

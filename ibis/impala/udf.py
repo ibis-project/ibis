@@ -311,7 +311,7 @@ def parse_type(t):
             raise Exception(t)
 
 
-_VARCHAR_RE = re.compile('varchar\((\d+)\)')
+_VARCHAR_RE = re.compile(r'varchar\((\d+)\)')
 
 
 def _parse_varchar(t):
