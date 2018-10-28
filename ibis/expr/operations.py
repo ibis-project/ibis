@@ -31,7 +31,6 @@ def distinct_roots(*expressions):
 
 
 class Node(Annotable):
-
     __slots__ = '_expr_cached', '_hash',
 
     def __repr__(self):
@@ -2733,15 +2732,20 @@ class MapValueOrDefaultForKey(ValueOp):
     default = Arg(rlz.any)
 
     def output_type(self):
-        map_type = self.arg.type()
+        arg = self.arg
+        default = self.default
+        map_type = arg.type()
         value_type = map_type.value_type
-        default_type = self.default.type()
+        default_type = default.type()
 
-        if default_type is not dt.null and value_type != default_type:
-            raise ValueError("default type: {} must be the same "
-                             "as the map value_type {}".format(
-                                 default_type, value_type))
-        return rlz.shape_like(tuple(self.args), map_type.value_type)
+        if default is not None and not dt.same_kind(default_type, value_type):
+            raise com.IbisTypeError(
+                "Default value\n{}\nof type {} cannot be cast to map's value "
+                "type {}".format(default, default_type, value_type)
+            )
+
+        result_type = dt.highest_precedence((default_type, value_type))
+        return rlz.shape_like(tuple(self.args), result_type)
 
 
 class MapKeys(ValueOp):
