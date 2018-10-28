@@ -497,14 +497,10 @@ def _window(t, expr):
     window_op = arg.op()
 
     _require_order_by = (
-        ops.Lag,
-        ops.Lead,
         ops.DenseRank,
         ops.MinRank,
         ops.NTile,
         ops.PercentRank,
-        ops.FirstValue,
-        ops.LastValue,
     )
 
     if isinstance(window_op, ops.CumulativeOp):

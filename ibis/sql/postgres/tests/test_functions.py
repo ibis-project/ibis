@@ -173,15 +173,15 @@ def test_simple_datetime_operations(con, func, expected, translate):
             marks=pytest.mark.xfail(
                 condition=os.name == 'nt',
                 reason='Locale-specific format specs not available on Windows',
-            ),
+            )
         ),
         param(
             methodcaller('strftime', 'DD BAR "%X" FOO "D'),
             marks=pytest.mark.xfail(
                 condition=os.name == 'nt',
                 reason='Locale-specific format specs not available on Windows',
-            ),
-        )
+            )
+        ),
     ]
 )
 def test_strftime(con, func):
@@ -913,8 +913,35 @@ def test_cumulative_partitioned_ordered_window(alltypes, func, df):
         (t.double_col - f().over(window)).name('double_col')
     ])
     result = expr.execute().double_col
+    method = methodcaller('cum{}'.format(func))
     expected = df.groupby(df.string_col).double_col.transform(
-        lambda c: c - getattr(c, 'cum%s' % func)()
+        lambda c: c - method(c)
+    )
+    tm.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize(('func', 'shift_amount'), [('lead', -1), ('lag', 1)])
+def test_analytic_shift_functions(alltypes, df, func, shift_amount):
+    method = getattr(alltypes.double_col, func)
+    expr = method(1)
+    result = expr.execute().rename('double_col')
+    expected = df.double_col.shift(shift_amount)
+    tm.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    ('func', 'expected_index'),
+    [('first', -1), ('last', 0)]
+)
+def test_first_last_value(alltypes, df, func, expected_index):
+    col = alltypes.sort_by(ibis.desc(alltypes.string_col)).double_col
+    method = getattr(col, func)
+    expr = method()
+    result = expr.execute().rename('double_col')
+    expected = pd.Series(
+        df.double_col.iloc[expected_index],
+        index=pd.RangeIndex(len(df)),
+        name='double_col',
     )
     tm.assert_series_equal(result, expected)
 
@@ -924,10 +951,7 @@ def test_null_column(alltypes):
     nrows = t.count().execute()
     expr = t.mutate(na_column=ibis.NA).na_column
     result = expr.execute()
-    tm.assert_series_equal(
-        result,
-        pd.Series([None] * nrows, name='na_column')
-    )
+    tm.assert_series_equal(result, pd.Series([None] * nrows, name='na_column'))
 
 
 def test_null_column_union(alltypes, df):
@@ -999,16 +1023,18 @@ def test_array_length(array_types):
     tm.assert_frame_equal(result, expected)
 
 
-def test_array_schema(array_types):
-    assert array_types.x.type() == dt.Array(dt.int64)
-    assert array_types.y.type() == dt.Array(dt.string)
-    assert array_types.z.type() == dt.Array(dt.double)
+@pytest.mark.parametrize(
+    ('column', 'value_type'),
+    [('x', dt.int64), ('y', dt.string), ('z', dt.double)]
+)
+def test_array_schema(array_types, column, value_type):
+    assert array_types[column].type() == dt.Array(value_type)
 
 
 def test_array_collect(array_types):
     expr = array_types.group_by(
         array_types.grouper
-    ).aggregate(collected=array_types.scalar_column.collect())
+    ).aggregate(collected=lambda t: t.scalar_column.collect())
     result = expr.execute().sort_values('grouper').reset_index(drop=True)
     expected = pd.DataFrame({
         'grouper': list('abc'),
@@ -1051,6 +1077,13 @@ def test_array_collect(array_types):
                 reason='Negative slicing not supported'
             )
         ),
+        param(
+            -3, -1,
+            marks=pytest.mark.xfail(
+                raises=ValueError,
+                reason='Negative slicing not supported'
+            )
+        )
     ]
 )
 def test_array_slice(array_types, start, stop):
