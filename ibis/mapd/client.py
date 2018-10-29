@@ -289,7 +289,7 @@ class MapDTable(ir.TableExpr, DatabaseEntity):
         return results
 
     def union(self, *args, **kwargs):
-        msg = "MapD backend doesn't support Union operation!"
+        msg = "MapD backend doesn't support Union operation"
         raise com.UnsupportedOperationError(msg)
 
 
