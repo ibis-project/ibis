@@ -123,7 +123,8 @@ class MapDTableSetFormatter(compiles.TableSetFormatter):
     """
     _join_names = {
         ops.InnerJoin: 'JOIN',
-        ops.LeftJoin: 'LEFT JOIN'
+        ops.LeftJoin: 'LEFT JOIN',
+        ops.CrossJoin: 'JOIN'
     }
 
     def get_result(self):
@@ -159,6 +160,10 @@ class MapDTableSetFormatter(compiles.TableSetFormatter):
                 fmt_preds = util.indent('ON ' + conj.join(fmt_preds),
                                         self.indent * 2)
                 buf.write(fmt_preds)
+            else:
+                buf.write(
+                    util.indent('ON TRUE', self.indent * 2)
+                )
 
         return buf.getvalue()
 

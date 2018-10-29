@@ -1310,3 +1310,53 @@ def cast(source, target, **kwargs):
         raise com.IbisTypeError('Datatype {} cannot be implicitly '
                                 'casted to {}'.format(source, target))
     return target
+
+
+same_kind = Dispatcher(
+    'same_kind',
+    doc="""\
+Compute whether two :class:`~ibis.expr.datatypes.DataType` instances are the
+same kind.
+
+Parameters
+----------
+a : DataType
+b : DataType
+
+Returns
+-------
+bool
+    Whether two :class:`~ibis.expr.datatypes.DataType` instances are the same
+    kind.
+""")
+
+
+@same_kind.register(DataType, DataType)
+def same_kind_default(a, b):
+    """Return whether `a` is exactly equiavlent to `b`"""
+    return a.equals(b)
+
+
+@same_kind.register(Integer, Integer)
+@same_kind.register(Floating, Floating)
+def same_kind_numeric(a, b):
+    """Return ``True``."""
+    return True
+
+
+@same_kind.register(DataType, Null)
+def same_kind_right_null(a, _):
+    """Return whether `a` is nullable."""
+    return a.nullable
+
+
+@same_kind.register(Null, DataType)
+def same_kind_left_null(_, b):
+    """Return whether `b` is nullable."""
+    return b.nullable
+
+
+@same_kind.register(Null, Null)
+def same_kind_both_null(a, b):
+    """Return ``True``."""
+    return True

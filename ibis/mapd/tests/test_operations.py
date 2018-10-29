@@ -74,6 +74,18 @@ def test_join_diff_name(awards_players, batting):
     assert df.size == 80
 
 
+def test_cross_join(alltypes):
+    d = alltypes.double_col
+
+    tier = d.histogram(10).name('hist_bin')
+    expr = (alltypes.group_by(tier)
+            .aggregate([d.min(), d.max(), alltypes.count()])
+            .sort_by('hist_bin'))
+    df = expr.execute()
+    assert df.size == 40
+    assert df['count'][0] == 730
+
+
 def test_where_operator(alltypes):
     t = alltypes.sort_by('index').limit(10)
     expr = ibis.where(t.index > 4, 1, 0)

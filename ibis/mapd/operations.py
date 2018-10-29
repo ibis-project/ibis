@@ -324,6 +324,12 @@ def _set_literal_format(translator, expr):
     return '({})'.format(', '.join(formatted))
 
 
+def _cross_join(translator, expr):
+    args = expr.op().args
+    left, right = args[:2]
+    return translator.translate(left.join(right, ibis.literal(True)))
+
+
 def literal(translator, expr):
     value = expr.op().value
     if isinstance(expr, ir.BooleanValue):
@@ -608,6 +614,7 @@ _general_ops = {
     ops.Cast: _cast,
     ops.Where: _where,
     ops.TableColumn: _table_column,
+    ops.CrossJoin: _cross_join
 }
 
 # UNSUPPORTED OPERATIONS
