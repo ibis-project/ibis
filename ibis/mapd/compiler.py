@@ -143,12 +143,21 @@ class MapDTableSetFormatter(compiles.TableSetFormatter):
         for jtype, table, preds in zip(self.join_types, self.join_tables[1:],
                                        self.join_predicates):
             buf.write('\n')
-            buf.write(util.indent('{0} {1}'.format(jtype, table), self.indent))
+            buf.write(util.indent('{} {}'.format(jtype, table), self.indent))
 
-            if len(preds):
+            fmt_preds = []
+            npreds = len(preds)
+            for pred in preds:
+                new_pred = self._translate(pred)
+                if npreds > 1:
+                    new_pred = '({})'.format(new_pred)
+                fmt_preds.append(new_pred)
+
+            if len(fmt_preds):
                 buf.write('\n')
-                fmt_preds = map(self._format_predicate, preds)
-                fmt_preds = util.indent('USING ' + ', '.join(fmt_preds),
+
+                conj = ' AND\n{}'.format(' ' * 3)
+                fmt_preds = util.indent('ON ' + conj.join(fmt_preds),
                                         self.indent * 2)
                 buf.write(fmt_preds)
             else:
@@ -158,19 +167,17 @@ class MapDTableSetFormatter(compiles.TableSetFormatter):
 
         return buf.getvalue()
 
+    _non_equijoin_supported = True
+
     def _validate_join_predicates(self, predicates):
         for pred in predicates:
             op = pred.op()
-            if not isinstance(op, ops.Equals):
-                raise com.TranslationError(
-                    'Non-equality join predicates are not supported'
-                )
 
-            left_on, right_on = op.args
-            if left_on.get_name() != right_on.get_name():
-                raise com.TranslationError(
-                    'Joining on different column names is not supported'
-                )
+            if (not isinstance(op, ops.Equals) and
+                    not self._non_equijoin_supported):
+                raise com.TranslationError('Non-equality join predicates, '
+                                           'i.e. non-equijoins, are not '
+                                           'supported')
 
     def _format_predicate(self, predicate):
         column = predicate.op().args[0]

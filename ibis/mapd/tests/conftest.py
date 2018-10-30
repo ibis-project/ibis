@@ -41,6 +41,16 @@ def alltypes(con):
     return con.table('functional_alltypes')
 
 
+@pytest.fixture(scope='module')
+def awards_players(con):
+    return con.table('awards_players')
+
+
+@pytest.fixture(scope='module')
+def batting(con):
+    return con.table('batting')
+
+
 @pytest.fixture
 def translate():
     """
