@@ -126,12 +126,12 @@ class Foo(enum.Enum):
     b = 2
 
 
-class Bar(object):
+class Bar:
     a = 'A'
     b = 'B'
 
 
-class Baz(object):
+class Baz:
 
     def __init__(self, a):
         self.a = a

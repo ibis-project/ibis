@@ -56,7 +56,7 @@ def _get_group_by_key(table, value):
     return value
 
 
-class GroupedTableExpr(object):
+class GroupedTableExpr:
 
     """
     Helper intermediate construct
@@ -284,7 +284,7 @@ def _group_agg_dispatch(name):
     return wrapper
 
 
-class GroupedArray(object):
+class GroupedArray:
 
     def __init__(self, arr, parent):
         self.arr = arr

@@ -31,7 +31,7 @@ def approx_equal(a, b, eps):
     assert abs(a - b) < eps
 
 
-class ExprSQLTest(object):
+class ExprSQLTest:
 
     def _check_expr_cases(self, cases, named=False):
         for expr, expected in cases:

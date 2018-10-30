@@ -315,7 +315,7 @@ def literal(translator, expr):
         raise NotImplementedError(type(expr))
 
 
-class CaseFormatter(object):
+class CaseFormatter:
 
     def __init__(self, translator, base, cases, results, default):
         self.translator = translator

@@ -16,7 +16,7 @@ def _is_quoted(x):
     return quoted is not None
 
 
-class MapDQualifiedSQLStatement(object):
+class MapDQualifiedSQLStatement:
     def _get_scoped_name(self, obj_name, database):  # noqa: F401
         return obj_name
 

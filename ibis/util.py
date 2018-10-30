@@ -7,6 +7,8 @@ import operator
 import os
 import types
 
+from uuid import uuid4
+
 import six
 
 import toolz
@@ -16,13 +18,7 @@ from ibis.config import options
 
 
 def guid():
-    try:
-        from ibis.comms import uuid4_hex
-        return uuid4_hex()
-    except ImportError:
-        from uuid import uuid4
-        guid = uuid4()
-        return guid.hex if not compat.PY2 else guid.get_hex()
+    return uuid4().hex
 
 
 def indent(text, spaces):

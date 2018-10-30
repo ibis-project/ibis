@@ -15,7 +15,7 @@ import ibis
 
 from ibis import literal as L  # noqa: E402
 from ibis.expr import datatypes as dt
-from ibis.compat import PY2, parse_version
+from ibis.compat import parse_version
 
 
 pytestmark = pytest.mark.pandas
@@ -120,7 +120,6 @@ def test_cast_integer_to_date(t, df):
     tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.skipif(PY2, reason="not enabled on PY2")
 def test_times_ops(t, df):
     result = t.plain_datetimes_naive.time().between('10:00', '10:00').execute()
     expected = np.zeros(len(df), dtype=bool)
@@ -146,7 +145,6 @@ def test_times_ops(t, df):
         'plain_datetimes_naive'
     ]
 )
-@pytest.mark.skipif(PY2, reason="not enabled on PY2")
 def test_times_ops_with_tz(t, df, tz, rconstruct, column):
     expected = rconstruct(len(df), dtype=bool)
 
@@ -161,7 +159,6 @@ def test_times_ops_with_tz(t, df, tz, rconstruct, column):
     tm.assert_numpy_array_equal(result, expected)
 
 
-@pytest.mark.skipif(not PY2, reason="testing for PY2")
 def test_times_ops_py2(t, df):
     with pytest.raises(ValueError):
         t.plain_datetimes_naive.time()

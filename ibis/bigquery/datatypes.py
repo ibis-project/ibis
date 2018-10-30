@@ -5,7 +5,7 @@ from multipledispatch import Dispatcher
 import ibis.expr.datatypes as dt
 
 
-class TypeTranslationContext(object):
+class TypeTranslationContext:
     """A tag class to allow alteration of the way a particular type is
     translated.
 

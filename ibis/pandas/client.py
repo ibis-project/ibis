@@ -22,7 +22,10 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
 from ibis.compat import (
-    PY2, DatetimeTZDtype, CategoricalDtype, parse_version, infer_dtype
+    DatetimeTZDtype,
+    CategoricalDtype,
+    parse_version,
+    infer_dtype
 )
 
 
@@ -282,8 +285,6 @@ def convert_any_to_interval(_, out_dtype, column):
 @convert.register(np.dtype, dt.String, pd.Series)
 def convert_any_to_string(_, out_dtype, column):
     result = column.astype(out_dtype.to_pandas(), errors='ignore')
-    if PY2:
-        return column.str.decode('utf-8', errors='ignore')
     return result
 
 

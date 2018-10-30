@@ -40,7 +40,7 @@ def sub_for(expr, substitutions):
     return substitutor.substitute(expr, mapping)
 
 
-class Substitutor(object):
+class Substitutor:
 
     def __init__(self):
         """Initialize the Substitutor class.
@@ -93,7 +93,7 @@ class Substitutor(object):
             return expr._factory(new_node, name=name)
 
 
-class ScalarAggregate(object):
+class ScalarAggregate:
 
     def __init__(self, expr, memo=None, default_name='tmp'):
         self.expr = expr
@@ -234,7 +234,7 @@ def substitute_parents(expr, lift_memo=None, past_projection=True):
     return rewriter.get_result()
 
 
-class ExprSimplifier(object):
+class ExprSimplifier:
 
     """
     Rewrite the input expression by replacing any table expressions part of a
@@ -604,7 +604,7 @@ def _can_pushdown(op, predicates):
     return True
 
 
-class _PushdownValidate(object):
+class _PushdownValidate:
 
     def __init__(self, parent, predicate):
         self.parent = parent
@@ -711,7 +711,7 @@ def windowize_function(expr, w=None):
     return _windowize(expr, w)
 
 
-class Projector(object):
+class Projector:
 
     """
     Analysis and validation of projection operation, taking advantage of
@@ -813,7 +813,7 @@ def _maybe_resolve_exprs(table, exprs):
         return None
 
 
-class ExprValidator(object):
+class ExprValidator:
 
     def __init__(self, exprs):
         self.parent_exprs = exprs

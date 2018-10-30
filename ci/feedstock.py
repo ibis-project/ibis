@@ -5,6 +5,8 @@ import shutil
 import sys
 import tempfile
 
+from pathlib import Path
+
 import click
 import ruamel.yaml
 
@@ -12,7 +14,6 @@ from jinja2 import Environment, FileSystemLoader
 from plumbum.cmd import git, conda
 
 import ibis
-from ibis.compat import Path, PY2
 
 
 IBIS_DIR = Path(__file__).parent.parent.absolute()
@@ -74,9 +75,6 @@ def update(meta, source_path):
 
     updated_content = ruamel.yaml.round_trip_dump(
         recipe, default_flow_style=False, width=sys.maxsize).strip()
-
-    if PY2:
-        updated_content = updated_content.decode('utf-8')
 
     click.echo(updated_content)
 

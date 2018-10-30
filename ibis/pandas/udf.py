@@ -270,7 +270,7 @@ def valid_function_signature(input_type, func):
     return funcsig
 
 
-class udf(object):
+class udf:
     @staticmethod
     def elementwise(input_type, output_type):
         """Define a UDF (user-defined function) that operates element wise on a

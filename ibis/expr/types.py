@@ -12,7 +12,7 @@ import ibis.config as config
 
 # TODO move methods containing ops import to api.py
 
-class Expr(object):
+class Expr:
     """Base expression class"""
 
     def _type_display(self):
@@ -940,7 +940,7 @@ def param(type):
     return ops.ScalarParameter(dt.dtype(type)).to_expr()
 
 
-class UnnamedMarker(object):
+class UnnamedMarker:
     pass
 
 

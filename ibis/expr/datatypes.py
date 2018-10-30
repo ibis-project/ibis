@@ -1,5 +1,7 @@
+import builtins
 import collections
 import datetime
+import functools
 import itertools
 import numbers
 import re
@@ -11,11 +13,10 @@ import toolz
 from multipledispatch import Dispatcher
 
 import ibis.common as com
-from ibis.compat import PY2, builtins, functools
 import ibis.expr.types as ir
 
 
-class DataType(object):
+class DataType:
 
     __slots__ = 'nullable',
 
@@ -49,17 +50,6 @@ class DataType(object):
                 for slot in toolz.unique(self.__slots__ + ('nullable',))
             )
         )
-
-    if PY2:
-        def __getstate__(self):
-            return {
-                slot: getattr(self, slot)
-                for slot in toolz.unique(self.__slots__ + ('nullable',))
-            }
-
-        def __setstate__(self, instance_dict):
-            for key, value in instance_dict.items():
-                setattr(self, key, value)
 
     def __str__(self):
         return self.name.lower()
@@ -663,7 +653,7 @@ _primitive_types = (
 )
 
 
-class Tokens(object):
+class Tokens:
     """Class to hold tokens for lexing
     """
     __slots__ = ()
@@ -820,7 +810,7 @@ def _generate_tokens(pat, text):
             yield func(m.group(m.lastgroup))
 
 
-class TypeParser(object):
+class TypeParser:
     """A type parser for complex types.
 
     Parameters
@@ -1055,7 +1045,7 @@ dtype = Dispatcher('dtype')
 validate_type = dtype
 
 
-@dtype.register(object)
+@dtype.register
 def default(value, **kwargs):
     raise com.IbisTypeError('Value {!r} is not a valid datatype'.format(value))
 
@@ -1107,7 +1097,7 @@ def highest_precedence(dtypes):
     return functools.reduce(higher_precedence, dtypes)
 
 
-@infer.register(object)
+@infer.register
 def infer_dtype_default(value):
     raise com.InputTypeError(value)
 

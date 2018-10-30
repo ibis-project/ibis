@@ -2,7 +2,6 @@ import pytest
 import datetime
 import operator
 
-from ibis.compat import PY2
 import ibis
 import ibis.expr.api as api
 import ibis.expr.types as ir
@@ -325,7 +324,6 @@ def test_date_arithmetics():
         assert isinstance(expr.op(), ops.DateAdd)
 
 
-@pytest.mark.skipif(PY2, reason='time support is not enabled on python 2')
 def test_time_arithmetics():
     t1 = api.time('18:00')
     t2 = api.time('19:12')

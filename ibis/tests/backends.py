@@ -11,7 +11,7 @@ from ibis.compat import Path, parse_version
 from ibis.impala.tests.conftest import IbisTestEnv as ImpalaEnv
 
 
-class RoundAwayFromZero(object):
+class RoundAwayFromZero:
     def round(self, series, decimals=0):
         if not decimals:
             return (-np.sign(series) * np.ceil(-series.abs() - 0.5)).astype(
@@ -20,7 +20,7 @@ class RoundAwayFromZero(object):
         return series.round(decimals=decimals)
 
 
-class RoundHalfToEven(object):
+class RoundHalfToEven:
     def round(self, series, decimals=0):
         result = series.round(decimals=decimals)
         if not decimals:
@@ -28,7 +28,7 @@ class RoundHalfToEven(object):
         return result
 
 
-class Backend(object):
+class Backend:
     check_dtype = True
     check_names = True
     supports_arrays = True
@@ -100,7 +100,7 @@ class Backend(object):
         return module.dialect.make_context(params=params)
 
 
-class UnorderedComparator(object):
+class UnorderedComparator:
 
     def assert_series_equal(self, left, right, *args, **kwargs):
         left = left.sort_values().reset_index(drop=True)

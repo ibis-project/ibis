@@ -28,7 +28,7 @@ class HDFSError(com.IbisError):
     pass
 
 
-class HDFS(object):
+class HDFS:
 
     """
     Interface class to HDFS for ibis that abstracts away (and protects
