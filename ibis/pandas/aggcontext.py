@@ -227,7 +227,7 @@ import ibis.expr.types as ir
 
 
 @six.add_metaclass(abc.ABCMeta)
-class AggregationContext(object):
+class AggregationContext:
     __slots__ = 'parent', 'group_by', 'order_by', 'dtype'
 
     def __init__(self, parent=None, group_by=None, order_by=None, dtype=None):

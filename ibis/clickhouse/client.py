@@ -46,7 +46,7 @@ _ibis_dtypes = {v: k for k, v in _clickhouse_dtypes.items()}
 _ibis_dtypes[dt.String] = 'String'
 
 
-class ClickhouseDataType(object):
+class ClickhouseDataType:
 
     __slots__ = 'typename', 'nullable'
 

@@ -1,6 +1,5 @@
 import pytest
 from toolz import identity
-from ibis.compat import PY2
 from ibis.common import IbisTypeError
 from functools import partial
 from ibis.expr.signature import Argument, TypeSignature, Annotable
@@ -134,11 +133,6 @@ def test_maintain_definition_order():
         upper = Argument(int, default=None)
 
     assert list(Between.signature.keys()) == ['value', 'lower', 'upper']
-
-    if PY2:
-        assert (Between.signature['value']._serial <
-                Between.signature['lower']._serial <
-                Between.signature['upper']._serial)
 
 
 def test_signature_equals():

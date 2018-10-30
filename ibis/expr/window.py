@@ -10,7 +10,7 @@ def _list_to_tuple(x):
     return x
 
 
-class Window(object):
+class Window:
 
     """
     A generic window function clause, patterned after SQL window clauses for

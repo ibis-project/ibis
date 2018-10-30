@@ -82,7 +82,7 @@ def bigquery_schema(table):
     return sch.schema(fields)
 
 
-class BigQueryCursor(object):
+class BigQueryCursor:
     """Cursor to allow the BigQuery client to reuse machinery in ibis/client.py
     """
 

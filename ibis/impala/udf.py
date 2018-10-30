@@ -26,7 +26,7 @@ __all__ = ['add_operation', 'scalar_function', 'aggregate_function',
            'wrap_udf', 'wrap_uda']
 
 
-class Function(object):
+class Function:
 
     def __init__(self, inputs, output, name):
         self.inputs = tuple(map(dt.dtype, inputs))
@@ -94,7 +94,7 @@ class AggregateFunction(Function):
         return input_type, output_type
 
 
-class ImpalaFunction(object):
+class ImpalaFunction:
 
     def __init__(self, name=None, lib_path=None):
         self.lib_path = lib_path

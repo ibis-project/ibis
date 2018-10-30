@@ -386,7 +386,7 @@ def _name_expr(formatted_expr, quoted_name):
     return '{} AS {}'.format(formatted_expr, quoted_name)
 
 
-class CaseFormatter(object):
+class CaseFormatter:
 
     def __init__(self, translator, base, cases, results, default):
         self.translator = translator

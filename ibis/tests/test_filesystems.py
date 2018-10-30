@@ -515,5 +515,4 @@ def _get_all_files(path):
 
 
 def guidbytes():
-    guid = util.guid()
-    return guid if compat.PY2 else guid.encode('utf8')
+    return util.guid().encode('utf8')

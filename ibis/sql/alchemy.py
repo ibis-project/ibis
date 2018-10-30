@@ -1316,7 +1316,7 @@ def _and_all(clauses):
     return result
 
 
-class AlchemyProxy(object):
+class AlchemyProxy:
     """
     Wraps a SQLAlchemy ResultProxy and ensures that .close() is called on
     garbage collection

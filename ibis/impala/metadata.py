@@ -77,7 +77,7 @@ def _try_int(x):
         return x
 
 
-class MetadataParser(object):
+class MetadataParser:
 
     """
     A simple state-ish machine to parse the results of DESCRIBE FORMATTED
@@ -269,7 +269,7 @@ def _get_meta(attr, key):
     return f
 
 
-class TableMetadata(object):
+class TableMetadata:
 
     """
     Container for the parsed and wrangled results of DESCRIBE FORMATTED for
@@ -315,9 +315,9 @@ class TableMetadata(object):
     serde_properties = _get_meta('storage', 'Desc Params')
 
 
-class TableInfo(object):
+class TableInfo:
     pass
 
 
-class TableStorageInfo(object):
+class TableStorageInfo:
     pass

@@ -44,7 +44,7 @@ class NotExistsSubquery(ops.Node):
         return ExistsExpr
 
 
-class AnyToExistsTransform(object):
+class AnyToExistsTransform:
 
     """
     Some code duplication with the correlated ref check; should investigate

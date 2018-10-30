@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.compat import PY2
 
 pa = pytest.importorskip('pyarrow')  # noqa: E402
 import pyarrow.parquet as pq
@@ -67,13 +66,7 @@ def parquet_schema():
 
 
 def test_convert_parquet(parquet_schema):
-    # TODO(jreback)
-    # not entirely sure this is correct
-    # should these be strings in py2?
-    if PY2:
-        strings = [dt.binary, dt.binary, dt.binary]
-    else:
-        strings = [dt.string, dt.string, dt.string]
+    strings = [dt.string, dt.string, dt.string]
 
     # uint32, int8, int16 stored as upcasted types
     types = [dt.uint8, dt.uint16, dt.int64, dt.uint64,

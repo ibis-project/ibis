@@ -648,7 +648,7 @@ def quote_identifier(name, quotechar='`', force=False):
         return name
 
 
-class CaseFormatter(object):
+class CaseFormatter:
 
     def __init__(self, translator, base, cases, results, default):
         self.translator = translator

@@ -35,7 +35,7 @@ def _is_quoted(x):
     return quoted is not None
 
 
-class ImpalaQualifiedSQLStatement(object):
+class ImpalaQualifiedSQLStatement:
 
     def _get_scoped_name(self, obj_name, database):
         if database:
@@ -269,7 +269,7 @@ class CreateTableWithSchema(CreateTable):
         yield self._location()
 
 
-class DelimitedFormat(object):
+class DelimitedFormat:
 
     def __init__(self, path, delimiter=None, escapechar=None,
                  na_rep=None, lineterminator=None):
@@ -300,7 +300,7 @@ class DelimitedFormat(object):
             yield format_tblproperties(props)
 
 
-class AvroFormat(object):
+class AvroFormat:
 
     def __init__(self, path, avro_schema):
         self.path = path
@@ -317,7 +317,7 @@ class AvroFormat(object):
         yield format_tblproperties(props)
 
 
-class ParquetFormat(object):
+class ParquetFormat:
 
     def __init__(self, path):
         self.path = path

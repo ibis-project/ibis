@@ -24,7 +24,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.analytics as _analytics
 import ibis.expr.operations as ops
 
-from ibis.compat import PY2, to_time, to_date
+from ibis.compat import to_time, to_date
 from ibis.expr.types import Expr, null, param, literal, sequence, as_value_expr
 from ibis.expr.schema import Schema
 
@@ -2252,31 +2252,24 @@ def _timestamp_strftime(arg, format_str):
 
 
 def _timestamp_time(arg):
-    """
-    Return a Time node for a Timestamp
-    We can then perform certain operations on this node
-    w/o actually instantiating the underlying structure
-    (which is inefficient in pandas/numpy)
+    """Return a Time node for a Timestamp.
+
+    We can perform certain operations on this node w/o actually instantiating
+    the underlying structure (which is inefficient in pandas/numpy)
 
     Returns
     -------
-    Time node
+    TimeValue
     """
-    if PY2:
-        raise ValueError("time support is not enabled on python 2")
     return ops.Time(arg).to_expr()
 
 
 def _timestamp_date(arg):
-    """
-    Return a Date node for a Timestamp
-    We can then perform certain operations on this node
-    w/o actually instantiating the underlying structure
-    (which is inefficient in pandas/numpy)
+    """Return a Date for a Timestamp.
 
     Returns
     -------
-    Date node
+    DateValue
     """
     return ops.Date(arg).to_expr()
 

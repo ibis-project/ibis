@@ -236,7 +236,7 @@ def _ibis_sqlite_sqrt(arg):
     return None if arg is None or arg < 0.0 else math.sqrt(arg)
 
 
-class _ibis_sqlite_var(object):
+class _ibis_sqlite_var:
     def __init__(self, offset):
         self.mean = 0.0
         self.sum_of_squares_of_differences = 0.0

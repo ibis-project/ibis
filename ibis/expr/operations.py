@@ -725,7 +725,7 @@ class StringJoin(ValueOp):
         return rlz.shape_like(tuple(self.flat_args()), dt.string)
 
 
-class BooleanValueOp(object):
+class BooleanValueOp:
     pass
 
 
@@ -1292,7 +1292,7 @@ class CumulativeAll(CumulativeOp):
 
 # ---------------------------------------------------------------------
 
-class TypedCaseBuilder(object):
+class TypedCaseBuilder:
     __slots__ = ()
 
     def type(self):
@@ -1775,7 +1775,7 @@ class SortKey(Node):
         return self.expr.get_name()
 
 
-class DeferredSortKey(object):
+class DeferredSortKey:
 
     def __init__(self, what, ascending=True):
         self.what = what
@@ -1933,7 +1933,7 @@ class Selection(TableNode, HasSchema):
         return Selection(expr, [], sort_keys=sort_exprs)
 
 
-class AggregateSelection(object):
+class AggregateSelection:
     # sort keys cannot be discarded because of order-dependent
     # aggregate functions like GROUP_CONCAT
 

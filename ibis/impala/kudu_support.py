@@ -37,7 +37,7 @@ _kudu_type_to_ibis_typeclass = {
 }
 
 
-class KuduImpalaInterface(object):
+class KuduImpalaInterface:
 
     """
     User-facing wrapper layer for the ImpalaClient

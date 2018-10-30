@@ -51,7 +51,7 @@ class ImpalaDatabase(Database):
                                      database=self.name)
 
 
-class ImpalaConnection(object):
+class ImpalaConnection:
 
     """
     Database connection wrapper
@@ -161,7 +161,7 @@ class ImpalaConnection(object):
         self.connection_pool.append(cur)
 
 
-class ImpalaCursor(object):
+class ImpalaCursor:
 
     def __init__(self, cursor, con, impyla_con, database,
                  options):
@@ -1845,7 +1845,7 @@ def _split_signature(x):
 _arg_type = re.compile(r'(.*)\.\.\.|([^\.]*)')
 
 
-class _type_parser(object):
+class _type_parser:
 
     NORMAL, IN_PAREN = 0, 1
 
