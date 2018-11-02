@@ -1,4 +1,5 @@
 import collections
+import functools
 import itertools
 import operator
 
@@ -13,7 +14,6 @@ import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 
 from ibis import util, compat
-import functools, map, zip
 from ibis.expr.signature import Annotable, Argument as Arg
 
 
@@ -208,7 +208,7 @@ class TableNode(Node):
 class TableColumn(ValueOp):
     """Selects a column from a TableExpr"""
 
-    name = Arg(str + int)
+    name = Arg((str, int))
     table = Arg(ir.TableExpr)
 
     def __init__(self, name, table):
