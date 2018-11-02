@@ -8,7 +8,8 @@ DOCKER := ENVKIND=$(ENVKIND) docker-compose -f $(COMPOSE_FILE)
 DOCKER_RUN := $(DOCKER) run --rm
 
 clean:
-	@find . -name '*.pyc' -exec -delete
+	@find . -name '*.pyc' -type f -delete
+	@rm -rf $(find . -name __pycache__ -type d)
 
 develop: clean
 	@python setup.py develop
