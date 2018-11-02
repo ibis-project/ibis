@@ -29,8 +29,8 @@ def test_valid_datatype(value, expected):
 @pytest.mark.parametrize(('value', 'expected'), [
     ('exception', IbisTypeError),
     ('array<cat>', IbisTypeError),
-    (int, NotImplementedError),
-    ([float], NotImplementedError)
+    (int, IbisTypeError),
+    ([float], IbisTypeError)
 ])
 def test_invalid_datatype(value, expected):
     with pytest.raises(expected):
