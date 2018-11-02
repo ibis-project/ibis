@@ -165,7 +165,7 @@ def pre_execute_timestamp_now(op, *args, **kwargs):
     return {op: pd.Timestamp('now')}
 
 
-@execute_node.register(ops.DayOfWeekIndex, str + (datetime.date,))
+@execute_node.register(ops.DayOfWeekIndex, (str, datetime.date,))
 def execute_day_of_week_index_any(op, value, **kwargs):
     return pd.Timestamp(value).dayofweek
 
@@ -199,7 +199,7 @@ def day_name(obj):
         return obj.weekday_name
 
 
-@execute_node.register(ops.DayOfWeekName, str + (datetime.date,))
+@execute_node.register(ops.DayOfWeekName, (str, datetime.date,))
 def execute_day_of_week_name_any(op, value, **kwargs):
     return day_name(pd.Timestamp(value))
 

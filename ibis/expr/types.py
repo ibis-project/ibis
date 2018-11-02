@@ -402,7 +402,7 @@ class TableExpr(Expr):
         return name in self.schema()
 
     def __getitem__(self, what):
-        if isinstance(what, str + int):
+        if isinstance(what, (str, int)):
             return self.get_column(what)
 
         if isinstance(what, slice):

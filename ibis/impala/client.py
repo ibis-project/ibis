@@ -22,7 +22,7 @@ import ibis.expr.operations as ops
 
 from ibis.config import options
 from ibis.client import Query, Database, DatabaseEntity, SQLClient
-from pkg_resources import parse_version, zip
+from pkg_resources import parse_version
 from ibis.filesystems import HDFS, WebHDFS
 from ibis.impala import udf, ddl
 from ibis.impala.compat import impyla, ImpylaError, HS2Error

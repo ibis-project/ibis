@@ -244,7 +244,7 @@ def execute_series_lead_lag(op, data, offset, default, **kwargs):
     (ops.Lead, ops.Lag),
     (pd.Series, SeriesGroupBy),
     timedelta_types,
-    date_types + timestamp_types + str + (type(None),),
+    date_types + timestamp_types + (str, type(None)),
 )
 def execute_series_lead_lag_timedelta(
     op, data, offset, default, aggcontext=None, **kwargs

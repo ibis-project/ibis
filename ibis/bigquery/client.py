@@ -203,7 +203,7 @@ def bq_param_array(param, value):
 
 @bigquery_param.register(
     ir.TimestampScalar,
-    str + (datetime.datetime, datetime.date)
+    (str, datetime.datetime, datetime.date)
 )
 def bq_param_timestamp(param, value):
     assert isinstance(param.type(), dt.Timestamp), str(param.type())

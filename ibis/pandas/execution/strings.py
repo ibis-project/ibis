@@ -77,7 +77,7 @@ def execute_string_rstrip(op, data, **kwargs):
     ops.LPad,
     pd.Series,
     (pd.Series,) + integer_types,
-    (pd.Series,) + str
+    (pd.Series, str)
 )
 def execute_string_lpad(op, data, length, pad, **kwargs):
     return data.str.pad(length, side='left', fillchar=pad)
@@ -87,7 +87,7 @@ def execute_string_lpad(op, data, length, pad, **kwargs):
     ops.RPad,
     pd.Series,
     (pd.Series,) + integer_types,
-    (pd.Series,) + str
+    (pd.Series, str)
 )
 def execute_string_rpad(op, data, length, pad, **kwargs):
     return data.str.pad(length, side='right', fillchar=pad)
@@ -121,7 +121,7 @@ def execute_string_repeat(op, data, times, **kwargs):
 @execute_node.register(
     ops.StringFind,
     pd.Series,
-    (pd.Series,) + str,
+    (pd.Series, str),
     (pd.Series, type(None)) + integer_types,
     (pd.Series, type(None)) + integer_types,
 )
@@ -275,7 +275,7 @@ def execute_series_regex_search_gb(op, data, pattern, **kwargs):
 @execute_node.register(
     ops.RegexExtract,
     pd.Series,
-    (pd.Series,) + str,
+    (pd.Series, str),
     integer_types,
 )
 def execute_series_regex_extract(op, data, pattern, index, **kwargs):
@@ -397,7 +397,7 @@ def execute_series_right_gb(op, data, nchars, **kwargs):
     ).groupby(data.grouper.groupings)
 
 
-@execute_node.register(ops.StringJoin, (pd.Series,) + str, list)
+@execute_node.register(ops.StringJoin, (pd.Series, str), list)
 def execute_series_join_scalar_sep(op, sep, data, **kwargs):
     return reduce(lambda x, y: x + sep + y, data)
 

@@ -3,6 +3,8 @@ import functools
 import itertools
 import operator
 
+from contextlib import suppress
+
 import toolz
 
 from ibis.expr.schema import HasSchema, Schema
@@ -13,7 +15,7 @@ import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 
-from ibis import util, compat
+from ibis import util
 from ibis.expr.signature import Annotable, Argument as Arg
 
 
@@ -2192,10 +2194,10 @@ class Comparison(BinaryOp, BooleanValueOp):
 
     def _maybe_cast_args(self, left, right):
         # it might not be necessary?
-        with compat.suppress(com.IbisTypeError):
+        with suppress(com.IbisTypeError):
             return left, rlz.cast(right, left)
 
-        with compat.suppress(com.IbisTypeError):
+        with suppress(com.IbisTypeError):
             return rlz.cast(left, right), right
 
         return left, right

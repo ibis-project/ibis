@@ -117,17 +117,17 @@ def struct_rule(rule):
 
 @rule_to_python_type.register(dt.String)
 def string_rule(rule):
-    return str
+    return (str,)
 
 
 @rule_to_python_type.register(dt.Integer)
 def int_rule(rule):
-    return int + (np.integer,)
+    return int, np.integer
 
 
 @rule_to_python_type.register(dt.Floating)
 def float_rule(rule):
-    return (float, np.floating)
+    return float, np.floating
 
 
 def nullable(datatype):

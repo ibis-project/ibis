@@ -47,7 +47,7 @@ def execute_node_literal_value_datatype(op, value, datatype, **kwargs):
 
 @execute_literal.register(
     ops.Literal,
-    timedelta_types + str + integer_types,
+    timedelta_types + (str,) + integer_types,
     dt.Interval
 )
 def execute_interval_literal(op, value, dtype, **kwargs):
@@ -291,11 +291,7 @@ def execute_cast_bool_to_timestamp(op, data, type, **kwargs):
     )
 
 
-@execute_node.register(
-    ops.Cast,
-    integer_types + str,
-    dt.Timestamp
-)
+@execute_node.register(ops.Cast, integer_types + (str,), dt.Timestamp)
 def execute_cast_simple_literal_to_timestamp(op, data, type, **kwargs):
     """Cast integer and strings to timestamps"""
     return pd.Timestamp(data, tz=type.timezone)
@@ -323,9 +319,7 @@ def execute_cast_datetime_to_datetime(op, data, type, **kwargs):
     ).to_pydatetime()
 
 
-@execute_node.register(
-    ops.Cast, fixed_width_types + str, dt.DataType
-)
+@execute_node.register(ops.Cast, fixed_width_types + (str,), dt.DataType)
 def execute_cast_string_literal(op, data, type, **kwargs):
     try:
         cast_function = constants.IBIS_TO_PYTHON_LITERAL_TYPES[type]
@@ -349,7 +343,7 @@ def execute_round_scalars(op, data, places, **kwargs):
 @execute_node.register(
     ops.Round,
     pd.Series,
-    (pd.Series, np.integer, type(None)) + int
+    (pd.Series, np.integer, type(None), int)
 )
 def execute_round_series(op, data, places, **kwargs):
     if data.dtype == np.dtype(np.object_):
@@ -698,9 +692,7 @@ def execute_null_if_zero_series(op, data, **kwargs):
     return data.where(data != 0, np.nan)
 
 
-@execute_node.register(
-    ops.StringSplit, pd.Series, (pd.Series,) + str
-)
+@execute_node.register(ops.StringSplit, pd.Series, (pd.Series, str))
 def execute_string_split(op, data, delimiter, **kwargs):
     return data.str.split(delimiter)
 

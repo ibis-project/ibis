@@ -3180,7 +3180,7 @@ def projection(table, exprs):
     """
     import ibis.expr.analysis as L
 
-    if isinstance(exprs, (Expr,) + str):
+    if isinstance(exprs, (Expr, str)):
         exprs = [exprs]
 
     projector = L.Projector(table, exprs)

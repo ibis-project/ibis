@@ -1423,7 +1423,8 @@ def test_invalid_negate(value, expected_type):
         np.uint64,
         np.uint8,
         float,
-    ] + list(int)
+        int,
+    ]
 )
 def test_valid_negate(type):
     value = type(1)
