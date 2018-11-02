@@ -6,7 +6,6 @@ import numbers
 
 import numpy as np
 import pandas as pd
-import six
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -81,7 +80,7 @@ def execute_decimal_abs(op, data, **kwargs):
 
 
 @execute_node.register(
-    ops.Round, decimal.Decimal, (np.integer,) + six.integer_types
+    ops.Round, decimal.Decimal, (np.integer,) + int
 )
 def execute_round_decimal(op, data, places, **kwargs):
     # If we only allowed Python 3, we wouldn't have to implement any of this;

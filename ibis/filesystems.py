@@ -17,7 +17,6 @@
 
 import posixpath
 
-import six
 
 from ibis.config import options
 from ibis.util import implements
@@ -309,7 +308,7 @@ class WebHDFS(HDFS):
     def put(self, hdfs_path, resource, overwrite=False, verbose=None,
             **kwargs):
         verbose = verbose or options.verbose
-        if isinstance(resource, six.string_types):
+        if isinstance(resource, str):
             # `resource` is a path.
             return self.client.upload(hdfs_path, resource, overwrite=overwrite,
                                       **kwargs)

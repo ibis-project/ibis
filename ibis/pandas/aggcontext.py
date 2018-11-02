@@ -215,7 +215,6 @@ Ibis
 import abc
 import operator
 
-import six
 
 from multipledispatch import Dispatcher
 
@@ -226,8 +225,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 
 
-@six.add_metaclass(abc.ABCMeta)
-class AggregationContext:
+class AggregationContext(abc.ABC):
     __slots__ = 'parent', 'group_by', 'order_by', 'dtype'
 
     def __init__(self, parent=None, group_by=None, order_by=None, dtype=None):
@@ -252,7 +250,7 @@ class Summarize(AggregationContext):
     __slots__ = ()
 
     def agg(self, grouped_data, function, *args, **kwargs):
-        if isinstance(function, six.string_types):
+        if isinstance(function, str):
             return getattr(grouped_data, function)(*args, **kwargs)
 
         if not callable(function):
@@ -317,7 +315,7 @@ class Window(AggregationContext):
                 return windowed.apply(_apply(function, args, kwargs))
             else:
                 # otherwise we're a string and we're probably faster
-                assert isinstance(function, six.string_types)
+                assert isinstance(function, str)
                 method = getattr(windowed, function)
                 result = method(*args, **kwargs)
                 return result
@@ -330,7 +328,7 @@ class Window(AggregationContext):
                     _apply(function, args, kwargs),
                 )
             else:
-                assert isinstance(function, six.string_types)
+                assert isinstance(function, str)
                 method = operator.methodcaller(function, *args, **kwargs)
 
         # get the DataFrame from which the operand originated (passed in when

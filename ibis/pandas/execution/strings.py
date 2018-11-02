@@ -1,7 +1,6 @@
 import itertools
 import operator
 
-import six
 
 import regex as re
 
@@ -78,7 +77,7 @@ def execute_string_rstrip(op, data, **kwargs):
     ops.LPad,
     pd.Series,
     (pd.Series,) + integer_types,
-    (pd.Series,) + six.string_types
+    (pd.Series,) + str
 )
 def execute_string_lpad(op, data, length, pad, **kwargs):
     return data.str.pad(length, side='left', fillchar=pad)
@@ -88,7 +87,7 @@ def execute_string_lpad(op, data, length, pad, **kwargs):
     ops.RPad,
     pd.Series,
     (pd.Series,) + integer_types,
-    (pd.Series,) + six.string_types
+    (pd.Series,) + str
 )
 def execute_string_rpad(op, data, length, pad, **kwargs):
     return data.str.pad(length, side='right', fillchar=pad)
@@ -122,7 +121,7 @@ def execute_string_repeat(op, data, times, **kwargs):
 @execute_node.register(
     ops.StringFind,
     pd.Series,
-    (pd.Series,) + six.string_types,
+    (pd.Series,) + str,
     (pd.Series, type(None)) + integer_types,
     (pd.Series, type(None)) + integer_types,
 )
@@ -192,7 +191,7 @@ def sql_like_to_regex(pattern, escape=None):
 
 @execute_node.register(
     ops.StringSQLLike,
-    pd.Series, six.string_types, (six.string_types, type(None))
+    pd.Series, str, (str, type(None))
 )
 def execute_string_like_series_string(op, data, pattern, escape, **kwargs):
     new_pattern = re.compile(sql_like_to_regex(pattern, escape=escape))
@@ -202,7 +201,7 @@ def execute_string_like_series_string(op, data, pattern, escape, **kwargs):
 
 
 @execute_node.register(
-    ops.StringSQLLike, SeriesGroupBy, six.string_types, six.string_types
+    ops.StringSQLLike, SeriesGroupBy, str, str
 )
 def execute_string_like_series_groupby_string(
     op, data, pattern, escape, **kwargs
@@ -214,7 +213,7 @@ def execute_string_like_series_groupby_string(
 
 @execute_node.register(
     ops.GroupConcat,
-    pd.Series, six.string_types, (pd.Series, type(None))
+    pd.Series, str, (pd.Series, type(None))
 )
 def execute_group_concat_series_mask(
     op, data, sep, mask, aggcontext=None, **kwargs
@@ -223,7 +222,7 @@ def execute_group_concat_series_mask(
 
 
 @execute_node.register(
-    ops.GroupConcat, SeriesGroupBy, six.string_types, type(None)
+    ops.GroupConcat, SeriesGroupBy, str, type(None)
 )
 def execute_group_concat_series_gb(
     op, data, sep, _, aggcontext=None, **kwargs
@@ -233,7 +232,7 @@ def execute_group_concat_series_gb(
 
 
 @execute_node.register(
-    ops.GroupConcat, SeriesGroupBy, six.string_types, SeriesGroupBy
+    ops.GroupConcat, SeriesGroupBy, str, SeriesGroupBy
 )
 def execute_group_concat_series_gb_mask(
     op, data, sep, mask, aggcontext=None, **kwargs
@@ -259,14 +258,14 @@ def execute_string_ascii_group_by(op, data, **kwargs):
     ).groupby(data.grouper.groupings)
 
 
-@execute_node.register(ops.RegexSearch, pd.Series, six.string_types)
+@execute_node.register(ops.RegexSearch, pd.Series, str)
 def execute_series_regex_search(op, data, pattern, **kwargs):
     return data.map(
         lambda x, pattern=re.compile(pattern): pattern.search(x) is not None
     )
 
 
-@execute_node.register(ops.RegexSearch, SeriesGroupBy, six.string_types)
+@execute_node.register(ops.RegexSearch, SeriesGroupBy, str)
 def execute_series_regex_search_gb(op, data, pattern, **kwargs):
     return execute_series_regex_search(
         op, data, getattr(pattern, 'obj', pattern), **kwargs
@@ -276,7 +275,7 @@ def execute_series_regex_search_gb(op, data, pattern, **kwargs):
 @execute_node.register(
     ops.RegexExtract,
     pd.Series,
-    (pd.Series,) + six.string_types,
+    (pd.Series,) + str,
     integer_types,
 )
 def execute_series_regex_extract(op, data, pattern, index, **kwargs):
@@ -293,7 +292,7 @@ def execute_series_regex_extract(op, data, pattern, index, **kwargs):
 @execute_node.register(
     ops.RegexExtract,
     SeriesGroupBy,
-    six.string_types,
+    str,
     integer_types,
 )
 def execute_series_regex_extract_gb(op, data, pattern, index, **kwargs):
@@ -309,8 +308,8 @@ def execute_series_regex_extract_gb(op, data, pattern, index, **kwargs):
 @execute_node.register(
     ops.RegexReplace,
     pd.Series,
-    six.string_types,
-    six.string_types,
+    str,
+    str,
 )
 def execute_series_regex_replace(op, data, pattern, replacement, **kwargs):
     def replacer(x, pattern=re.compile(pattern)):
@@ -321,8 +320,8 @@ def execute_series_regex_replace(op, data, pattern, replacement, **kwargs):
 @execute_node.register(
     ops.RegexReplace,
     SeriesGroupBy,
-    six.string_types,
-    six.string_types,
+    str,
+    str,
 )
 def execute_series_regex_replace_gb(op, data, pattern, replacement, **kwargs):
     return execute_series_regex_replace(
@@ -348,7 +347,7 @@ def execute_series_translate_series_series(
     ops.Translate,
     pd.Series,
     pd.Series,
-    six.string_types,
+    str,
 )
 def execute_series_translate_series_scalar(
     op, data, from_string, to_string, **kwargs
@@ -360,7 +359,7 @@ def execute_series_translate_series_scalar(
 @execute_node.register(
     ops.Translate,
     pd.Series,
-    six.string_types,
+    str,
     pd.Series,
 )
 def execute_series_translate_scalar_series(
@@ -373,8 +372,8 @@ def execute_series_translate_scalar_series(
 @execute_node.register(
     ops.Translate,
     pd.Series,
-    six.string_types,
-    six.string_types,
+    str,
+    str,
 )
 def execute_series_translate_scalar_scalar(
     op, data, from_string, to_string, **kwargs
@@ -398,7 +397,7 @@ def execute_series_right_gb(op, data, nchars, **kwargs):
     ).groupby(data.grouper.groupings)
 
 
-@execute_node.register(ops.StringJoin, (pd.Series,) + six.string_types, list)
+@execute_node.register(ops.StringJoin, (pd.Series,) + str, list)
 def execute_series_join_scalar_sep(op, sep, data, **kwargs):
     return reduce(lambda x, y: x + sep + y, data)
 

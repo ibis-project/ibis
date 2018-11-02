@@ -1,7 +1,5 @@
 import abc
 
-import six
-
 from ibis.config import options
 
 import ibis.util as util
@@ -30,7 +28,7 @@ class Query:
             dml, 'parent_expr', getattr(dml, 'table_set', None)
         )
 
-        if not isinstance(sql, six.string_types):
+        if not isinstance(sql, str):
             self.compiled_sql = sql.compile()
         else:
             self.compiled_sql = sql
@@ -64,7 +62,7 @@ class Query:
                              'schema'.format(type(self.expr)))
 
 
-class SQLClient(six.with_metaclass(abc.ABCMeta, Client)):
+class SQLClient(Client, metaclass=abc.ABCMeta):
 
     dialect = comp.Dialect
     query_class = Query

@@ -32,9 +32,6 @@ import subprocess
 import sys
 import textwrap
 
-from six.moves import input
-import six
-
 if __name__ == '__main__':
     IBIS_HOME = os.path.abspath(__file__).rsplit("/", 2)[0]
     PROJECT_NAME = 'ibis'
@@ -81,7 +78,7 @@ if __name__ == '__main__':
         sys.exit(-1)
 
     def run_cmd(cmd):
-        if isinstance(cmd, six.string_types):
+        if isinstance(cmd, str):
             cmd = cmd.split(' ')
 
         try:
@@ -95,9 +92,10 @@ if __name__ == '__main__':
             print('--------------')
             raise e
 
-        if isinstance(output, six.binary_type):
-            output = output.decode('utf-8')
-        return output
+        try:
+            return output.decode('utf-8')
+        except AttributeError:
+            return output
 
     def continue_maybe(prompt):
         result = input("\n%s (y/n): " % prompt)

@@ -1,4 +1,4 @@
-from six import StringIO
+from io import StringIO
 from datetime import date, datetime
 
 import ibis.common as com

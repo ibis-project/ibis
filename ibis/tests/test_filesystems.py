@@ -5,7 +5,7 @@ from os import path as osp
 import os
 import shutil
 
-from six import BytesIO
+from io import BytesIO
 
 import pytest
 

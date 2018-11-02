@@ -1,4 +1,3 @@
-import six
 
 from multipledispatch import Dispatcher
 
@@ -25,7 +24,7 @@ class UDFContext(TypeTranslationContext):
 ibis_type_to_bigquery_type = Dispatcher('ibis_type_to_bigquery_type')
 
 
-@ibis_type_to_bigquery_type.register(six.string_types)
+@ibis_type_to_bigquery_type.register(str)
 def trans_string_default(datatype):
     return ibis_type_to_bigquery_type(dt.dtype(datatype))
 
@@ -35,7 +34,7 @@ def trans_default(t):
     return ibis_type_to_bigquery_type(t, TypeTranslationContext())
 
 
-@ibis_type_to_bigquery_type.register(six.string_types, TypeTranslationContext)
+@ibis_type_to_bigquery_type.register(str, TypeTranslationContext)
 def trans_string_context(datatype, context):
     return ibis_type_to_bigquery_type(dt.dtype(datatype), context)
 

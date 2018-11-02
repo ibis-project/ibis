@@ -8,7 +8,6 @@ import tempfile
 import warnings
 
 import click
-import six
 
 import pandas as pd
 import sqlalchemy as sa
@@ -68,8 +67,8 @@ def read_tables(names, data_directory):
         if name == 'functional_alltypes':
             df['bool_col'] = df['bool_col'].astype(bool)
             # string_col is actually dt.int64
-            df['string_col'] = df['string_col'].astype(six.text_type)
-            df['date_string_col'] = df['date_string_col'].astype(six.text_type)
+            df['string_col'] = df['string_col'].astype(str)
+            df['date_string_col'] = df['date_string_col'].astype(str)
             # timestamp_col has object dtype
             df['timestamp_col'] = pd.to_datetime(df['timestamp_col'])
 

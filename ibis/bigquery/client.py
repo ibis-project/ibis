@@ -4,7 +4,6 @@ from collections import OrderedDict
 
 import regex as re
 
-import six
 
 import pandas as pd
 
@@ -205,7 +204,7 @@ def bq_param_array(param, value):
 
 @bigquery_param.register(
     ir.TimestampScalar,
-    six.string_types + (datetime.datetime, datetime.date)
+    str + (datetime.datetime, datetime.date)
 )
 def bq_param_timestamp(param, value):
     assert isinstance(param.type(), dt.Timestamp), str(param.type())
@@ -216,12 +215,12 @@ def bq_param_timestamp(param, value):
         param.get_name(), 'TIMESTAMP', timestamp_value)
 
 
-@bigquery_param.register(ir.StringScalar, six.string_types)
+@bigquery_param.register(ir.StringScalar, str)
 def bq_param_string(param, value):
     return bq.ScalarQueryParameter(param.get_name(), 'STRING', value)
 
 
-@bigquery_param.register(ir.IntegerScalar, six.integer_types)
+@bigquery_param.register(ir.IntegerScalar, int)
 def bq_param_integer(param, value):
     return bq.ScalarQueryParameter(param.get_name(), 'INT64', value)
 
@@ -236,7 +235,7 @@ def bq_param_boolean(param, value):
     return bq.ScalarQueryParameter(param.get_name(), 'BOOL', value)
 
 
-@bigquery_param.register(ir.DateScalar, six.string_types)
+@bigquery_param.register(ir.DateScalar, str)
 def bq_param_date_string(param, value):
     return bigquery_param(param, pd.Timestamp(value).to_pydatetime().date())
 

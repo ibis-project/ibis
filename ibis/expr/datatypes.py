@@ -6,7 +6,6 @@ import itertools
 import numbers
 import re
 
-import six
 import pandas as pd
 
 import toolz
@@ -59,7 +58,7 @@ class DataType:
         return type(self).__name__
 
     def equals(self, other, cache=None):
-        if isinstance(other, six.string_types):
+        if isinstance(other, str):
             other = dtype(other)
 
         return (
@@ -1055,7 +1054,7 @@ def from_ibis_dtype(value):
     return value
 
 
-@dtype.register(six.string_types)
+@dtype.register(str)
 def from_string(value):
     try:
         return TypeParser(value).parse()
@@ -1159,7 +1158,7 @@ def infer_interval(value):
     return interval
 
 
-@infer.register(six.string_types)
+@infer.register(str)
 def infer_string(value):
     return string
 
@@ -1169,7 +1168,7 @@ def infer_floating(value):
     return double
 
 
-@infer.register(six.integer_types)
+@infer.register(int)
 def infer_integer(value, allow_overflow=False):
     for dtype in (int8, int16, int32, int64):
         if dtype.bounds.lower <= value <= dtype.bounds.upper:

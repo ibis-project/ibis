@@ -1,11 +1,10 @@
+import io
 import operator
 import re
 import threading
 import time
 import traceback
 import weakref
-
-import six
 
 from posixpath import join as pjoin
 from collections import deque
@@ -1852,7 +1851,7 @@ class _type_parser:
     def __init__(self, value):
         self.value = value
         self.state = self.NORMAL
-        self.buf = six.StringIO()
+        self.buf = io.StringIO()
         self.types = []
         for c in value:
             self._step(c)
@@ -1862,7 +1861,7 @@ class _type_parser:
         val = self.buf.getvalue().strip()
         if val:
             self.types.append(val)
-        self.buf = six.StringIO()
+        self.buf = io.StringIO()
 
     def _step(self, c):
         if self.state == self.NORMAL:

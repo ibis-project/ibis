@@ -13,7 +13,7 @@ from pathlib import Path  # noqa: F401
 
 import numpy as np
 
-from six import BytesIO, StringIO, string_types  # noqa: F401
+from io import BytesIO, StringIO, string_types  # noqa: F401
 
 zip = zip
 zip_longest = itertools.zip_longest

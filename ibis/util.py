@@ -9,7 +9,6 @@ import types
 
 from uuid import uuid4
 
-import six
 
 import toolz
 
@@ -160,7 +159,7 @@ def is_iterable(o):
     >>> is_iterable([])
     True
     """
-    return (not isinstance(o, six.string_types) and
+    return (not isinstance(o, str) and
             isinstance(o, collections.Iterable))
 
 

@@ -6,9 +6,8 @@ import abc
 from collections import OrderedDict
 from itertools import chain
 
-import six
 
-from six import StringIO
+from io import StringIO
 
 import toolz
 
@@ -25,15 +24,13 @@ import ibis.sql.transforms as transforms
 from ibis.compat import map
 
 
-@six.add_metaclass(abc.ABCMeta)
-class DML:
+class DML(abc.ABC):
     @abc.abstractmethod
     def compile(self):
         pass
 
 
-@six.add_metaclass(abc.ABCMeta)
-class DDL:
+class DDL(abc.ABC):
     @abc.abstractmethod
     def compile(self):
         pass

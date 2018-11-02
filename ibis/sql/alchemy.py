@@ -2,7 +2,6 @@ import contextlib
 import numbers
 import operator
 
-import six
 
 import sqlalchemy as sa
 import sqlalchemy.sql as sql
@@ -244,7 +243,7 @@ def infix_op(infix_sym):
 
 
 def fixed_arity(sa_func, arity):
-    if isinstance(sa_func, six.string_types):
+    if isinstance(sa_func, str):
         sa_func = getattr(sa.func, sa_func)
 
     def formatter(t, expr):
@@ -699,7 +698,7 @@ class AlchemyContext(comp.QueryContext):
         self._table_objects = {}
 
     def collapse(self, queries):
-        if isinstance(queries, six.string_types):
+        if isinstance(queries, str):
             return queries
 
         if len(queries) > 1:

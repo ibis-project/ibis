@@ -1,4 +1,3 @@
-import six
 import ibis.util as util
 import ibis.expr.rules as rlz
 
@@ -156,8 +155,7 @@ class AnnotableMeta(type):
         return super(AnnotableMeta, meta).__new__(meta, name, bases, attribs)
 
 
-@six.add_metaclass(AnnotableMeta)
-class Annotable:
+class Annotable(metaclass=AnnotableMeta):
 
     __slots__ = ()
 

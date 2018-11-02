@@ -37,7 +37,6 @@ dependencies:
   - regex
   - requests
   - ruamel.yaml
-  - six
   - sphinx_rtd_theme<0.3
   - sqlalchemy
   - thrift

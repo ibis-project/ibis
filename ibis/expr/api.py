@@ -6,7 +6,6 @@ import functools
 import operator
 import warnings
 
-import six
 import toolz
 
 import dateutil.parser
@@ -200,12 +199,12 @@ def timestamp(value):
     --------
     result : TimestampScalar
     """
-    if isinstance(value, six.string_types):
+    if isinstance(value, str):
         try:
             value = pd.Timestamp(value)
         except pd.errors.OutOfBoundsDatetime:
             value = dateutil.parser.parse(value)
-    if isinstance(value, six.integer_types):
+    if isinstance(value, int):
         warnings.warn(
             'Integer values for timestamp literals are deprecated in 0.11.0 '
             'and will be removed in 0.12.0. To pass integers as timestamp '
@@ -226,7 +225,7 @@ def date(value):
     --------
     result : TimeScalar
     """
-    if isinstance(value, six.string_types):
+    if isinstance(value, str):
         value = to_date(value)
     return literal(value, type=dt.date)
 
@@ -243,7 +242,7 @@ def time(value):
     --------
     result : TimeScalar
     """
-    if isinstance(value, six.string_types):
+    if isinstance(value, str):
         value = to_time(value)
     return literal(value, type=dt.time)
 
@@ -277,7 +276,7 @@ def interval(value=None, unit='s', years=None, quarters=None, months=None,
         if isinstance(value, datetime.timedelta):
             unit = 's'
             value = int(value.total_seconds())
-        elif not isinstance(value, six.integer_types):
+        elif not isinstance(value, int):
             raise ValueError('Interval value must be an integer')
     else:
         kwds = [
@@ -2039,7 +2038,7 @@ def _string_getitem(self, key):
                 stop = self.length()
 
         return self.substr(start, stop - start)
-    elif isinstance(key, six.integer_types):
+    elif isinstance(key, int):
         return self.substr(key, 1)
     raise NotImplementedError(
         'string __getitem__[{}]'.format(type(key).__name__)
@@ -3181,7 +3180,7 @@ def projection(table, exprs):
     """
     import ibis.expr.analysis as L
 
-    if isinstance(exprs, (Expr,) + six.string_types):
+    if isinstance(exprs, (Expr,) + str):
         exprs = [exprs]
 
     projector = L.Projector(table, exprs)
