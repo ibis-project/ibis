@@ -25,10 +25,6 @@ import pprint
 import warnings
 
 
-def u(s):
-    return s
-
-
 DeprecatedOption = namedtuple('DeprecatedOption', 'key msg rkey removal_ver')
 RegisteredOption = namedtuple(
     'RegisteredOption', 'key defval doc validator cb')
@@ -105,7 +101,7 @@ def _describe_option(pat='', _print_desc=True):
     if len(keys) == 0:
         raise OptionError('No such keys(s)')
 
-    s = u('')
+    s = ''
     for k in keys:  # filter by pat
         s += _build_option_description(k)
 
@@ -559,29 +555,35 @@ def _warn_if_deprecated(key):
 
 
 def _build_option_description(k):
-    """ Builds a formatted description of a registered option and prints it """
-
+    """Builds a formatted description of a registered option and prints it."""
     o = _get_registered_option(k)
     d = _get_deprecated_option(k)
 
-    s = u('%s ') % k
+    buf = ['{} '.format(k)]
 
     if o.doc:
-        s += '\n'.join(o.doc.strip().split('\n'))
+        doc = '\n'.join(o.doc.strip().splitlines())
     else:
-        s += 'No description available.'
+        doc = 'No description available.'
+
+    buf.append(doc)
 
     if o:
-        s += u('\n    [default: %s] [currently: %s]') % (o.defval,
-                                                         _get_option(k, True))
+        buf.append(
+            '\n    [default: {}] [currently: {}]'.format(
+                o.defval, _get_option(k, True)
+            )
+        )
 
     if d:
-        s += u('\n    (Deprecated')
-        s += (u(', use `%s` instead.') % d.rkey if d.rkey else '')
-        s += u(')')
+        buf.append(
+            '\n    (Deprecated{})'.format(
+                ', use `{}` instead.'.format(d.rkey) if d.rkey else ''
+            )
+        )
 
-    s += '\n\n'
-    return s
+    buf.append('\n\n')
+    return ''.join(buf)
 
 
 def pp_options_list(keys, width=80, _print=False):
