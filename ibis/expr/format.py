@@ -12,7 +12,7 @@ class FormatMemo(object):
         self.formatted = {}
         self.aliases = {}
         self.ops = {}
-        self.counts = defaultdict(lambda: 0)
+        self.counts = defaultdict(int)
         self._repr_memo = {}
         self.subexprs = {}
         self.visit_memo = set()
@@ -53,12 +53,12 @@ class FormatMemo(object):
 
 
 class ExprFormatter(object):
+    """For creating a nice tree-like representation of an expression graph.
 
-    """
-    For creating a nice tree-like representation of an expression graph for
-    displaying in the console.
-
+    Notes
+    -----
     TODO: detect reused DAG nodes and do not display redundant information
+
     """
 
     def __init__(self, expr, indent_size=2, base_level=0, memo=None,
@@ -204,7 +204,12 @@ class ExprFormatter(object):
             for arg in op.flat_args():
                 visit(arg)
         else:
-            for arg, name in zip(op.args, arg_names):
+            signature = op.signature
+            arg_name_pairs = (
+                (arg, name) for arg, name in zip(op.args, arg_names)
+                if signature[name].show
+            )
+            for arg, name in arg_name_pairs:
                 if name == 'arg' and isinstance(op, ops.ValueOp):
                     # don't display first argument's name in repr
                     name = None
