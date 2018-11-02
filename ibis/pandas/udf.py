@@ -8,7 +8,6 @@ import collections
 import itertools
 import operator
 
-import six
 
 import numpy as np
 import pandas as pd
@@ -119,12 +118,12 @@ def struct_rule(rule):
 
 @rule_to_python_type.register(dt.String)
 def string_rule(rule):
-    return six.string_types
+    return str
 
 
 @rule_to_python_type.register(dt.Integer)
 def int_rule(rule):
-    return six.integer_types + (np.integer,)
+    return int + (np.integer,)
 
 
 @rule_to_python_type.register(dt.Floating)

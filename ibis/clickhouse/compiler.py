@@ -1,4 +1,4 @@
-from six import StringIO
+from io import StringIO
 
 import ibis.common as com
 import ibis.util as util

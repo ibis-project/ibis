@@ -1,5 +1,4 @@
 import os
-import six
 import pytest
 import numpy as np
 import pandas as pd
@@ -127,7 +126,7 @@ class Pandas(Backend, RoundHalfToEven):
             'functional_alltypes': pd.read_csv(
                 str(data_directory / 'functional_alltypes.csv'),
                 index_col=None,
-                dtype={'bool_col': bool, 'string_col': six.text_type},
+                dtype={'bool_col': bool, 'string_col': str},
                 parse_dates=['timestamp_col'],
                 encoding='utf-8'
             ),

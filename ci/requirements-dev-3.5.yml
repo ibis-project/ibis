@@ -30,7 +30,6 @@ dependencies:
   - regex
   - requests
   - ruamel.yaml
-  - six
   - sqlalchemy
   - toolz
   - xorg-libxpm

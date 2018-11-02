@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from ibis.mapd.identifiers import quote_identifier, _identifiers
 from ibis.impala import compiler as impala_compiler
-from six import StringIO
+from io import StringIO
 
 
 import ibis

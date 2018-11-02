@@ -4,7 +4,6 @@ import re
 
 from functools import partial
 
-import six
 import pytz
 import toolz
 import numpy as np
@@ -156,7 +155,7 @@ def infer_pandas_schema(df, schema=None):
 
     pairs = []
     for column_name, pandas_dtype in df.dtypes.iteritems():
-        if not isinstance(column_name, six.string_types):
+        if not isinstance(column_name, str):
             raise TypeError(
                 'Column names must be strings to use the pandas backend'
             )

@@ -31,7 +31,6 @@ dependencies:
   - regex
   - requests
   - ruamel.yaml
-  - six
   - sqlalchemy
   - thrift
   - toolz

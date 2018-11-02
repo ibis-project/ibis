@@ -24,7 +24,6 @@ import ibis.expr.types as ir
 import ibis.expr.window as _window
 import ibis.util as util
 
-import six
 import toolz
 
 
@@ -49,7 +48,7 @@ _function_types = tuple(
 
 
 def _get_group_by_key(table, value):
-    if isinstance(value, six.string_types):
+    if isinstance(value, str):
         return table[value]
     if isinstance(value, _function_types):
         return value(table)

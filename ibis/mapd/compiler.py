@@ -1,4 +1,4 @@
-from six import StringIO
+from io import StringIO
 from . import operations as mapd_ops
 from .identifiers import quote_identifier  # noqa: F401
 from .operations import _type_to_sql_string  # noqa: F401

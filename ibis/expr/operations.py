@@ -2,7 +2,6 @@ import collections
 import itertools
 import operator
 
-import six
 import toolz
 
 from ibis.expr.schema import HasSchema, Schema
@@ -67,7 +66,7 @@ class Node(Annotable):
 
     def flat_args(self):
         for arg in self.args:
-            if not isinstance(arg, six.string_types) and isinstance(
+            if not isinstance(arg, str) and isinstance(
                 arg, collections.Iterable
             ):
                 for x in arg:
@@ -209,12 +208,12 @@ class TableNode(Node):
 class TableColumn(ValueOp):
     """Selects a column from a TableExpr"""
 
-    name = Arg(six.string_types + six.integer_types)
+    name = Arg(str + int)
     table = Arg(ir.TableExpr)
 
     def __init__(self, name, table):
         schema = table.schema()
-        if isinstance(name, six.integer_types):
+        if isinstance(name, int):
             name = schema.name_at_position(name)
         super(TableColumn, self).__init__(name, table)
 
@@ -271,11 +270,11 @@ class PhysicalTable(TableNode, HasSchema):
 
 class UnboundTable(PhysicalTable):
     schema = Arg(sch.Schema)
-    name = Arg(six.string_types, default=genname)
+    name = Arg(str, default=genname)
 
 
 class DatabaseTable(PhysicalTable):
-    name = Arg(six.string_types)
+    name = Arg(str)
     schema = Arg(sch.Schema)
     source = Arg(rlz.client)
 
@@ -301,7 +300,7 @@ class TableArrayView(ValueOp):
     subqueries to be viewed as arrays)
     """
     table = Arg(ir.TableExpr)
-    name = Arg(six.string_types)
+    name = Arg(str)
 
     def __init__(self, table):
         schema = table.schema()
@@ -738,7 +737,7 @@ class FuzzySearch(ValueOp, BooleanValueOp):
 class StringSQLLike(FuzzySearch):
     arg = Arg(rlz.string)
     pattern = Arg(rlz.string)
-    escape = Arg(six.string_types, default=None)
+    escape = Arg(str, default=None)
 
 
 class StringSQLILike(StringSQLLike):
@@ -1521,7 +1520,7 @@ def _clean_join_predicates(left, right, predicates):
             lk = left._ensure_expr(lk)
             rk = right._ensure_expr(rk)
             pred = lk == rk
-        elif isinstance(pred, six.string_types):
+        elif isinstance(pred, str):
             pred = left[pred] == right[pred]
         elif not isinstance(pred, ir.Expr):
             raise NotImplementedError
@@ -1738,7 +1737,7 @@ def to_sort_key(table, key):
         if isinstance(key, (ir.SortExpr, DeferredSortKey)):
             return to_sort_key(table, key)
 
-    if isinstance(sort_order, six.string_types):
+    if isinstance(sort_order, str):
         if sort_order.lower() in ('desc', 'descending'):
             sort_order = False
         elif not isinstance(sort_order, bool):
@@ -1820,7 +1819,7 @@ class Selection(TableNode, HasSchema):
 
         projections = []
         for selection in selections:
-            if isinstance(selection, six.string_types):
+            if isinstance(selection, str):
                 projection = table[selection]
             else:
                 projection = selection
@@ -2772,7 +2771,7 @@ class MapConcat(ValueOp):
 
 class StructField(ValueOp):
     arg = Arg(rlz.struct)
-    field = Arg(six.string_types)
+    field = Arg(str)
 
     def output_type(self):
         struct_dtype = self.arg.type()

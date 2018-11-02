@@ -1,4 +1,4 @@
-from six import StringIO
+from io import StringIO
 import datetime
 from operator import add, mul, sub
 

@@ -1,5 +1,4 @@
 import os
-import six
 import sys
 import itertools
 import webbrowser
@@ -403,7 +402,7 @@ class TableExpr(Expr):
         return name in self.schema()
 
     def __getitem__(self, what):
-        if isinstance(what, six.string_types + six.integer_types):
+        if isinstance(what, str + int):
             return self.get_column(what)
 
         if isinstance(what, slice):
@@ -478,9 +477,9 @@ class TableExpr(Expr):
         return out_exprs
 
     def _ensure_expr(self, expr):
-        if isinstance(expr, six.string_types):
+        if isinstance(expr, str):
             return self[expr]
-        elif isinstance(expr, six.integer_types):
+        elif isinstance(expr, int):
             return self[self.schema().name_at_position(expr)]
         elif not isinstance(expr, Expr):
             return expr(self)

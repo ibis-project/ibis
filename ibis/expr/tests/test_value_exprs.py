@@ -6,7 +6,6 @@ from collections import OrderedDict
 from operator import methodcaller
 from datetime import date, datetime, time
 
-import six
 
 import pytest
 
@@ -1424,7 +1423,7 @@ def test_invalid_negate(value, expected_type):
         np.uint64,
         np.uint8,
         float,
-    ] + list(six.integer_types)
+    ] + list(int)
 )
 def test_valid_negate(type):
     value = type(1)

@@ -4,7 +4,6 @@ from functools import partial
 
 import regex as re
 
-import six
 
 import toolz
 
@@ -110,12 +109,12 @@ def _extract_field(sql_attr):
 bigquery_cast = Dispatcher('bigquery_cast')
 
 
-@bigquery_cast.register(six.string_types, dt.Timestamp, dt.Integer)
+@bigquery_cast.register(str, dt.Timestamp, dt.Integer)
 def bigquery_cast_timestamp_to_integer(compiled_arg, from_, to):
     return 'UNIX_MICROS({})'.format(compiled_arg)
 
 
-@bigquery_cast.register(six.string_types, dt.DataType, dt.DataType)
+@bigquery_cast.register(str, dt.DataType, dt.DataType)
 def bigquery_cast_generate(compiled_arg, from_, to):
     sql_type = ibis_type_to_bigquery_type(to)
     return 'CAST({} AS {})'.format(compiled_arg, sql_type)
