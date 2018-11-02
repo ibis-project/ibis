@@ -1106,14 +1106,6 @@ def test_time_timestamp_invalid_compare(op, left, right):
     assert result.type().equals(dt.boolean)
 
 
-def test_time_invalid_compare_on_py2():
-
-    # we cannot actually compare datetime.time objects and literals
-    # in a deferred way in python 2, they short circuit in the CPython
-    result = operator.eq(time(10, 0), literal('10:00'))
-    assert not result
-
-
 def test_scalar_parameter_set():
     value = ibis.param({dt.int64})
 
