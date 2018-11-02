@@ -1,11 +1,12 @@
 import ibis
 
-from ibis.expr.types import Expr
 from ibis.expr.format import ExprFormatter
+from ibis.expr.operations import Node
+from ibis.expr.signature import Argument as Arg
+from ibis.expr.types import Expr
 
 
 def test_format_custom_expr():
-
     class CustomExpr(Expr):
         def _type_display(self):
             return 'my-custom'
@@ -222,3 +223,25 @@ def test_scalar_parameter_formatting():
 
     value = ibis.param('int64').name('my_param')
     assert str(value) == 'my_param = ScalarParameter[int64]'
+
+
+def test_repring_does_not_show_with_option():
+    class CustomExpr(Expr):
+        pass
+
+    class CustomOp(Node):
+        first_arg = Arg(int, show=False)
+        second_arg = Arg(float)
+
+        def output_type(self):
+            return CustomExpr
+
+    op = CustomOp(1, 2.0)
+    expr = op.to_expr()
+
+    result = repr(expr)
+    expected = """\
+CustomOp[CustomExpr]
+  second_arg:
+    2.0"""
+    assert result == expected
