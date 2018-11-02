@@ -17,35 +17,38 @@ _undefined = object()  # marker for missing argument
 
 
 class Argument(object):
-    """Argument definition
+    """Argument definition."""
 
-    """
     if PY2:
         # required to maintain definition order in Annotated metaclass
         _counter = itertools.count()
-        __slots__ = '_serial', 'validator', 'default'
+        __slots__ = '_serial', 'validator', 'default', 'show',
     else:
-        __slots__ = 'validator', 'default'
+        __slots__ = 'validator', 'default', 'show',
 
-    def __init__(self, validator, default=_undefined):
+    def __init__(self, validator, default=_undefined, show=True):
         """Argument constructor
 
         Parameters
         ----------
         validator : Union[Callable[[arg], coerced], Type, Tuple[Type]]
-          Function which handles validation and/or coercion of the given
-          argument.
+            Function which handles validation and/or coercion of the given
+            argument.
         default : Union[Any, Callable[[], str]]
-          In case of missing (None) value for validation this will be used.
-          Note, that default value (except for None) must also pass the inner
-          validator.
-          If callable is passed, it will be executed just before the inner, and
-          itsreturn value will be treaded as default.
+            In case of missing (None) value for validation this will be used.
+            Note, that default value (except for None) must also pass the inner
+            validator.
+            If callable is passed, it will be executed just before the inner,
+            and itsreturn value will be treaded as default.
+        show : bool
+            Whether to show this argument in an :class:`~ibis.expr.types.Expr`
+            that contains it.
         """
         if PY2:
             self._serial = next(self._counter)
 
         self.default = default
+        self.show = show
         if isinstance(validator, type):
             self.validator = rlz.instance_of(validator)
         elif isinstance(validator, tuple):
