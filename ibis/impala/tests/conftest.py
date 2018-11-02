@@ -8,7 +8,6 @@ import ibis.util as util
 import ibis
 
 from ibis import options
-from ibis.compat import map, zip
 from ibis.expr.tests.mocks import MockConnection
 
 

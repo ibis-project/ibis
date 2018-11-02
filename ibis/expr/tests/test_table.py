@@ -10,7 +10,7 @@ import ibis.expr.types as ir
 import ibis.expr.analysis as L
 import ibis.expr.operations as ops
 
-from ibis.compat import pickle
+import pickle
 from ibis.common import ExpressionError, RelationError
 from ibis.expr.types import ColumnExpr, TableExpr
 

@@ -12,7 +12,7 @@ from sqlalchemy.sql.functions import GenericFunction
 
 import ibis
 
-from ibis.compat import functools
+import functools
 from ibis.sql.alchemy import (unary, fixed_arity, infix_op,
                               _variance_reduction, _get_sqla_table)
 import ibis.common as com

@@ -6,7 +6,6 @@ import abc
 from collections import OrderedDict
 from itertools import chain
 
-
 from io import StringIO
 
 import toolz
@@ -20,8 +19,6 @@ import ibis.expr.analysis as L
 import ibis.expr.analytics as analytics
 import ibis.expr.operations as ops
 import ibis.sql.transforms as transforms
-
-from ibis.compat import map
 
 
 class DML(abc.ABC):

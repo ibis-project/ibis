@@ -11,7 +11,6 @@ import pytest
 
 from ibis.filesystems import HDFS
 from ibis.impala.tests.conftest import IbisTestEnv
-import ibis.compat as compat
 import ibis.util as util
 import ibis
 

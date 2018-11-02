@@ -1,9 +1,9 @@
 import datetime
 
 from collections import OrderedDict
+from pkg_resources import parse_version
 
 import regex as re
-
 
 import pandas as pd
 
@@ -20,7 +20,6 @@ import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 import ibis.expr.lineage as lin
 
-from ibis.compat import parse_version
 from ibis.client import Database, Query, SQLClient
 from ibis.bigquery import compiler as comp
 from ibis.bigquery.datatypes import ibis_type_to_bigquery_type

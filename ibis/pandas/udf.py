@@ -5,9 +5,11 @@ functions.
 from __future__ import absolute_import
 
 import collections
+import functools
 import itertools
 import operator
 
+from inspect import Parameter, signature
 
 import numpy as np
 import pandas as pd
@@ -24,7 +26,6 @@ import ibis.expr.operations as ops
 
 from ibis.pandas.core import scalar_types
 from ibis.pandas.dispatch import execute_node
-from ibis.compat import functools, Parameter, signature, viewkeys
 
 
 rule_to_python_type = Dispatcher(
@@ -61,7 +62,7 @@ def arguments_from_signature(signature, *args, **kwargs):
 
     Examples
     --------
-    >>> from ibis.compat import signature
+    >>> from inspect import signature
     >>> def foo(a, b=1):
     ...     return a + b
     >>> foo_sig = signature(foo)
@@ -81,9 +82,7 @@ def arguments_from_signature(signature, *args, **kwargs):
     """
     bound = signature.bind_partial(*args)
     meta_kwargs = toolz.merge({'kwargs': kwargs}, kwargs)
-    remaining_parameters = viewkeys(signature.parameters) - viewkeys(
-        bound.arguments
-    )
+    remaining_parameters = signature.parameters.keys() - bound.arguments.keys()
     new_kwargs = {
         k: meta_kwargs[k] for k in remaining_parameters
         if k in signature.parameters

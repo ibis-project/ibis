@@ -16,7 +16,7 @@ from sqlalchemy.dialects.mysql.base import MySQLDialect
 
 import pandas as pd
 
-from ibis.compat import parse_version, functools
+from pkg_resources import parse_version, functools
 from ibis.client import SQLClient, Query, Database
 from ibis.sql.compiler import Select, Union, TableSetFormatter, Dialect
 

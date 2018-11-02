@@ -4,7 +4,7 @@ import enum
 from itertools import starmap, product
 
 
-from ibis.compat import suppress
+from contextlib import suppress
 import ibis.util as util
 import ibis.common as com
 import ibis.expr.types as ir

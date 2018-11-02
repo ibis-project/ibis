@@ -1,6 +1,7 @@
 import itertools
 import operator
 
+from functools import reduce
 
 import regex as re
 
@@ -13,7 +14,6 @@ from pandas.core.groupby import SeriesGroupBy
 
 import ibis
 
-from ibis.compat import reduce, maketrans
 import ibis.expr.operations as ops
 
 from ibis.pandas.dispatch import execute_node
@@ -338,7 +338,7 @@ def execute_series_translate_series_series(
 ):
     to_string_iter = iter(to_string)
     table = from_string.apply(
-        lambda x, y: maketrans(x, y=next(y)), args=(to_string_iter,)
+        lambda x, y: str.maketrans(x, y=next(y)), args=(to_string_iter,)
     )
     return data.str.translate(table)
 
@@ -352,7 +352,7 @@ def execute_series_translate_series_series(
 def execute_series_translate_series_scalar(
     op, data, from_string, to_string, **kwargs
 ):
-    table = from_string.map(lambda x, y=to_string: maketrans(x=x, y=y))
+    table = from_string.map(lambda x, y=to_string: str.maketrans(x=x, y=y))
     return data.str.translate(table)
 
 
@@ -365,7 +365,7 @@ def execute_series_translate_series_scalar(
 def execute_series_translate_scalar_series(
     op, data, from_string, to_string, **kwargs
 ):
-    table = to_string.map(lambda y, x=from_string: maketrans(x=x, y=y))
+    table = to_string.map(lambda y, x=from_string: str.maketrans(x=x, y=y))
     return data.str.translate(table)
 
 
@@ -378,7 +378,7 @@ def execute_series_translate_scalar_series(
 def execute_series_translate_scalar_scalar(
     op, data, from_string, to_string, **kwargs
 ):
-    return data.str.translate(maketrans(from_string, to_string))
+    return data.str.translate(str.maketrans(from_string, to_string))
 
 
 @execute_node.register(

@@ -16,7 +16,7 @@ from toolz import dissoc
 from plumbum import local
 
 import ibis
-from ibis.compat import Path
+from pathlib import Path
 
 
 SCRIPT_DIR = Path(__file__).parent.absolute()

@@ -3,7 +3,7 @@ import pytest
 import ibis
 import ibis.tests.util as tu
 
-from ibis.compat import functools
+import functools
 
 
 def array_test(f):

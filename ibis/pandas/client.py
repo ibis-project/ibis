@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import re
 
 from functools import partial
+from pkg_resources import parse_version
 
 import pytz
 import toolz
@@ -23,7 +24,6 @@ import ibis.expr.operations as ops
 from ibis.compat import (
     DatetimeTZDtype,
     CategoricalDtype,
-    parse_version,
     infer_dtype
 )
 

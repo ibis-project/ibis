@@ -81,6 +81,7 @@ from __future__ import absolute_import
 import numbers
 import datetime
 
+import functools
 
 import numpy as np
 
@@ -98,7 +99,6 @@ import ibis.expr.operations as ops
 import ibis.expr.datatypes as dt
 import ibis.expr.window as win
 
-from ibis.compat import functools
 from ibis.client import find_backends
 
 import ibis.pandas.aggcontext as agg_ctx

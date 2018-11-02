@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 import unittest
 
 from posixpath import join as pjoin
@@ -15,7 +17,6 @@ import ibis.common as com
 import ibis.util as util
 
 from ibis.common import IbisTypeError
-from ibis.compat import Decimal
 from ibis.expr.tests.mocks import MockConnection
 
 pytest.importorskip('hdfs')

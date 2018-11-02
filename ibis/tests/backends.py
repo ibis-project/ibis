@@ -1,12 +1,18 @@
 import os
+
+from pathlib import Path
+from pkg_resources import parse_version
+
 import pytest
+
 import numpy as np
+
 import pandas as pd
 import pandas.util.testing as tm
 
 import ibis
 import ibis.expr.operations as ops
-from ibis.compat import Path, parse_version
+
 from ibis.impala.tests.conftest import IbisTestEnv as ImpalaEnv
 
 

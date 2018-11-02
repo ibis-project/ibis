@@ -7,7 +7,7 @@ import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
-from ibis.compat import parse_version
+from pkg_resources import parse_version
 from ibis.file.client import FileClient
 from ibis.pandas.api import PandasDialect
 from ibis.pandas.core import execute_node, execute

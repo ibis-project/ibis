@@ -4,7 +4,6 @@ from pytest import param
 import ibis
 import ibis.tests.util as tu
 import ibis.expr.datatypes as dt
-from ibis.compat import maketrans
 
 
 def test_string_col_is_unicode(backend, alltypes, df):
@@ -60,8 +59,8 @@ def test_string_col_is_unicode(backend, alltypes, df):
             id='repeat'
         ),
         param(
-            lambda t: t.string_col.translate(u'0', u'a'),
-            lambda t: t.string_col.str.translate(maketrans(u'0', u'a')),
+            lambda t: t.string_col.translate('0', 'a'),
+            lambda t: t.string_col.str.translate(str.maketrans('0', 'a')),
             id='translate',
         ),
         param(

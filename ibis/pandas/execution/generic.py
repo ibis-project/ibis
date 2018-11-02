@@ -3,9 +3,11 @@ from __future__ import absolute_import
 import collections
 import datetime
 import decimal
+import functools
 import math
 import numbers
 import operator
+
 from collections import Sized
 
 import numpy as np
@@ -19,7 +21,7 @@ import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
-from ibis.compat import functools, map, DatetimeTZDtype, zip
+from ibis.compat import DatetimeTZDtype
 
 from ibis.pandas.core import (
     execute,

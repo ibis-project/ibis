@@ -6,7 +6,7 @@ import sqlalchemy as sa
 
 from ibis import compat
 from ibis.client import Database
-from ibis.compat import functools
+import functools
 from ibis.sql.sqlite.compiler import SQLiteDialect
 
 import ibis.sql.alchemy as alch

@@ -1,6 +1,7 @@
+from unittest import mock
+
 import pytest
 
-from ibis.compat import mock
 import pandas as pd
 
 pytest.importorskip('hdfs')

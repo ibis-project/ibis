@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
 import concurrent.futures
-
 import itertools
 import os
+
+from io import BytesIO
+from pathlib import Path
 
 import click
 import toolz
@@ -13,7 +15,6 @@ from plumbum.cmd import make, cmake
 
 import ibis
 
-from ibis.compat import BytesIO, Path
 from ibis.common import IbisError
 from ibis.impala.tests.conftest import IbisTestEnv
 

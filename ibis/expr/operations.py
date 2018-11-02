@@ -13,7 +13,7 @@ import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 
 from ibis import util, compat
-from ibis.compat import functools, map, zip
+import functools, map, zip
 from ibis.expr.signature import Annotable, Argument as Arg
 
 

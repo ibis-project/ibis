@@ -1,4 +1,4 @@
-from ibis.compat import parse_version
+from pkg_resources import parse_version
 from ibis.client import Database, Query, SQLClient, DatabaseEntity
 from ibis.mapd.compiler import MapDDialect, build_ast
 from ibis.mapd import ddl

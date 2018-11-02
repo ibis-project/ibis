@@ -1,6 +1,7 @@
 import datetime
 
 from operator import methodcaller
+from pkg_resources import parse_version
 
 import pytest
 
@@ -15,7 +16,6 @@ import ibis
 
 from ibis import literal as L  # noqa: E402
 from ibis.expr import datatypes as dt
-from ibis.compat import parse_version
 
 
 pytestmark = pytest.mark.pandas

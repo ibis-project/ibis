@@ -22,7 +22,7 @@ import ibis.expr.operations as ops
 
 from ibis.config import options
 from ibis.client import Query, Database, DatabaseEntity, SQLClient
-from ibis.compat import parse_version, zip
+from pkg_resources import parse_version, zip
 from ibis.filesystems import HDFS, WebHDFS
 from ibis.impala import udf, ddl
 from ibis.impala.compat import impyla, ImpylaError, HS2Error
@@ -287,9 +287,8 @@ class ImpalaQuery(Query):
 
 
 def _column_batches_to_dataframe(names, batches):
-    from ibis.compat import zip as czip
     cols = {}
-    for name, chunks in czip(names, czip(*[b.columns for b in batches])):
+    for name, chunks in zip(names, zip(*[b.columns for b in batches])):
         cols[name] = _chunks_to_pandas_array(chunks)
     return pd.DataFrame(cols, columns=names)
 
