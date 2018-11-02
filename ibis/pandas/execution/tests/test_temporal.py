@@ -159,11 +159,6 @@ def test_times_ops_with_tz(t, df, tz, rconstruct, column):
     tm.assert_numpy_array_equal(result, expected)
 
 
-def test_times_ops_py2(t, df):
-    with pytest.raises(ValueError):
-        t.plain_datetimes_naive.time()
-
-
 @pytest.mark.parametrize(
     ('op', 'expected'),
     [
