@@ -1044,7 +1044,7 @@ dtype = Dispatcher('dtype')
 validate_type = dtype
 
 
-@dtype.register
+@dtype.register(object)
 def default(value, **kwargs):
     raise com.IbisTypeError('Value {!r} is not a valid datatype'.format(value))
 
@@ -1096,7 +1096,7 @@ def highest_precedence(dtypes):
     return functools.reduce(higher_precedence, dtypes)
 
 
-@infer.register
+@infer.register(object)
 def infer_dtype_default(value):
     raise com.InputTypeError(value)
 
