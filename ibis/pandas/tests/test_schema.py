@@ -8,6 +8,8 @@ import ibis
 from ibis.expr import datatypes as dt
 from ibis.expr import schema as sch
 
+pytestmark = pytest.mark.pandas
+
 
 @pytest.mark.parametrize(('column', 'expected_dtype'), [
     ([True, False, False], dt.boolean),
