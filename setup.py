@@ -47,6 +47,7 @@ all_requires = (
 develop_requires = all_requires + [
     'click',
     'flake8',
+    'mypy',
     'pytest>=3',
 ]
 

@@ -14,6 +14,9 @@ clean:
 develop: clean
 	@python setup.py develop
 
+typecheck:
+	@mypy --ignore-missing-imports $(MAKEFILE_DIR)/ibis
+
 lint:
 	@flake8
 
@@ -45,10 +48,10 @@ test:
 	@ENVKIND=$(ENVKIND) $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not udf'
 
 testmost:
-	@ENVKIND=$(ENVKIND) $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not udf and not impala and not hdfs'
+	@ENVKIND=$(ENVKIND) $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not (udf or impala or hdfs)'
 
 testfast:
-	@ENVKIND=$(ENVKIND) $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not udf and not impala and not bigquery'
+	@ENVKIND=$(ENVKIND) $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not (udf or impala or hdfs or bigquery)'
 
 docclean:
 	@$(DOCKER_RUN) ibis rm -rf /tmp/docs.ibis-project.org
