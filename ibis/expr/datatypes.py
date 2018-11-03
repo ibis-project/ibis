@@ -41,7 +41,13 @@ class DataType:
         self.nullable = nullable
 
     def __call__(self, nullable: bool = True) -> 'DataType':
-        return self._factory(nullable)
+        if nullable is not True and nullable is not False:
+            raise TypeError(
+                "__call__ only accepts the 'nullable' argument. "
+                "Please construct a new instance of the type to change the "
+                "values of the attributes."
+            )
+        return self._factory(nullable=nullable)
 
     def _factory(self, nullable: bool = True) -> 'DataType':
         slots = {
