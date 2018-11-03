@@ -5,6 +5,7 @@ from datetime import datetime
 
 import ibis
 import ibis.expr.api as api
+import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.expr.rules as rlz
 import ibis.expr.operations as ops
@@ -108,7 +109,7 @@ def test_greater_comparison_pandas_timestamp(alltypes):
 def test_timestamp_precedence():
     ts = ibis.literal(datetime.now())
     highest_type = rlz.highest_precedence_dtype([ibis.NA, ts])
-    assert highest_type == 'timestamp'
+    assert highest_type == dt.timestamp
 
 
 @pytest.mark.parametrize(

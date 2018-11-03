@@ -72,7 +72,16 @@ class DataType:
     def name(self) -> str:
         return type(self).__name__
 
-    def equals(self, other: 'DataType') -> bool:
+    def equals(
+        self,
+        other: 'DataType',
+        cache: Optional[Mapping[GenericAny, bool]] = None
+    ) -> bool:
+        if isinstance(other, str):
+            raise TypeError(
+                'Comparing datatypes to strings is not allowed. Convert '
+                '{!r} to the equivalent DataType instance.'.format(other)
+            )
         return (
             isinstance(other, type(self)) and
             self.nullable == other.nullable and
