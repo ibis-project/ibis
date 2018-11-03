@@ -53,6 +53,9 @@ testmost:
 testfast:
 	@ENVKIND=$(ENVKIND) $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not (udf or impala or hdfs or bigquery)'
 
+testparams:
+	@echo "not (udf or impala or hdfs or postgresql or mysql or mapd or clickhouse)"
+
 docclean:
 	@$(DOCKER_RUN) ibis rm -rf /tmp/docs.ibis-project.org
 
