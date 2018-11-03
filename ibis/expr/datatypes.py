@@ -223,7 +223,10 @@ class Timestamp(Primitive):
         nullable: bool = True,
         timezone: Optional[str] = None,
     ) -> 'Timestamp':
-        return type(self)(timezone=timezone, nullable=nullable)
+        return type(self)(
+            timezone=timezone if timezone is not None else self.timezone,
+            nullable=nullable
+        )
 
     def __str__(self) -> str:
         timezone = self.timezone
