@@ -230,7 +230,6 @@ class Expr:
 
 
 class ExprList(Expr):
-
     def _type_display(self):
         return ', '.join(expr._type_display() for expr in self.exprs())
 
