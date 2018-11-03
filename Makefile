@@ -1,4 +1,4 @@
-.PHONY: all clean-pyc develop lint test docclean docs docserve
+.PHONY: all clean develop typecheck stop build start load restart init test testmost testfast testparams docclean doc
 
 SHELL := /bin/bash
 ENVKIND := docs
@@ -8,8 +8,10 @@ DOCKER := ENVKIND=$(ENVKIND) docker-compose -f $(COMPOSE_FILE)
 DOCKER_RUN := $(DOCKER) run --rm
 
 clean:
-	@find . -name '*.pyc' -type f -delete
-	@rm -rf $(find . -name __pycache__ -type d)
+	@python setup.py clean
+	@find $(MAKEFILE_DIR) -name '*.pyc' -type f -delete
+	@rm -rf $(MAKEFILE_DIR)/build $(MAKEFILE_DIR)/dist \
+	    $(find $(MAKEFILE_DIR) -name __pycache__ -type d)
 
 develop: clean
 	@python setup.py develop
@@ -54,12 +56,12 @@ testfast:
 	@ENVKIND=$(ENVKIND) $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not (udf or impala or hdfs or bigquery)'
 
 testparams:
-	@echo "not (udf or impala or hdfs or postgresql or mysql or mapd or clickhouse)"
+	@echo 'not (udf or impala or hdfs or postgresql or mysql or mapd or clickhouse)'
 
 docclean:
 	@$(DOCKER_RUN) ibis rm -rf /tmp/docs.ibis-project.org
 
-docs: docclean
+doc: docclean
 	@$(DOCKER_RUN) ibis ping -c 1 quickstart.cloudera
 	@$(DOCKER_RUN) ibis git clone --branch gh-pages https://github.com/ibis-project/docs.ibis-project.org /tmp/docs.ibis-project.org
 	@$(DOCKER_RUN) ibis find /tmp/docs.ibis-project.org -maxdepth 1 ! -wholename /tmp/docs.ibis-project.org \
