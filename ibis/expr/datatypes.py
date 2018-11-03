@@ -698,8 +698,8 @@ _primitive_types = [
 
 
 class Tokens:
-    """Class to hold tokens for lexing
-    """
+    """Class to hold tokens for lexing."""
+
     __slots__ = ()
 
     ANY = 0
