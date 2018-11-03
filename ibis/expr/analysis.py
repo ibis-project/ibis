@@ -912,7 +912,7 @@ class FilterValidator(ExprValidator):
         is_valid = True
 
         if isinstance(op, ops.Contains):
-            value_valid = super(FilterValidator, self).validate(op.value)
+            value_valid = super().validate(op.value)
             is_valid = value_valid
         else:
             roots_valid = []

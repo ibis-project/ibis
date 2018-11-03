@@ -260,13 +260,13 @@ class _ibis_sqlite_var:
 @udaf
 class _ibis_sqlite_var_pop(_ibis_sqlite_var):
     def __init__(self):
-        super(_ibis_sqlite_var_pop, self).__init__(0)
+        super().__init__(0)
 
 
 @udaf
 class _ibis_sqlite_var_samp(_ibis_sqlite_var):
     def __init__(self):
-        super(_ibis_sqlite_var_samp, self).__init__(1)
+        super().__init__(1)
 
 
 def number_of_arguments(callable):
@@ -322,7 +322,7 @@ class SQLiteClient(alch.AlchemyClient):
     table_class = SQLiteTable
 
     def __init__(self, path=None, create=False):
-        super(SQLiteClient, self).__init__(sa.create_engine('sqlite://'))
+        super().__init__(sa.create_engine('sqlite://'))
         self.name = path
         self.database_name = 'base'
 
@@ -396,4 +396,4 @@ class SQLiteClient(alch.AlchemyClient):
     def list_tables(self, like=None, database=None, schema=None):
         if database is None:
             database = self.database_name
-        return super(SQLiteClient, self).list_tables(like, schema=database)
+        return super().list_tables(like, schema=database)

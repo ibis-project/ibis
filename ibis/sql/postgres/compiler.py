@@ -402,7 +402,7 @@ def _log(t, expr):
 
 class regex_extract(GenericFunction):
     def __init__(self, string, pattern, index):
-        super(regex_extract, self).__init__(string, pattern, index)
+        super().__init__(string, pattern, index)
         self.string = string
         self.pattern = pattern
         self.index = index

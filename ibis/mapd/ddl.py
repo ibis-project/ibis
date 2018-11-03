@@ -48,7 +48,7 @@ class DropTable(DropObject):
     _object_type = 'TABLE'
 
     def __init__(self, table_name, database=None, must_exist=True):
-        super(DropTable, self).__init__(must_exist=must_exist)
+        super().__init__(must_exist=must_exist)
         self.table_name = table_name
         self.database = database
 
@@ -151,7 +151,7 @@ class CreateView(CTAS):
     """Create a view"""
 
     def __init__(self, table_name, select, database=None):
-        super(CreateView, self).__init__(table_name, select, database=database)
+        super().__init__(table_name, select, database=database)
 
     @property
     def _pieces(self):
@@ -343,7 +343,7 @@ class DropDatabase(DropObject):
     _object_type = 'DATABASE'
 
     def __init__(self, name):
-        super(DropDatabase, self).__init__(must_exist=True)
+        super().__init__(must_exist=True)
         self.name = name
 
     def _object_name(self):

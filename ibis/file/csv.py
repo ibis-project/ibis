@@ -41,7 +41,7 @@ def connect(path):
 class CSVTable(ops.DatabaseTable):
 
     def __init__(self, name, schema, source, **kwargs):
-        super(CSVTable, self).__init__(name, schema, source)
+        super().__init__(name, schema, source)
         self.read_csv_kwargs = kwargs
 
 

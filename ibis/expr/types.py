@@ -293,7 +293,7 @@ class ValueExpr(Expr):
     """
 
     def __init__(self, arg, dtype, name=None):
-        super(ValueExpr, self).__init__(arg)
+        super().__init__(arg)
         self._name = name
         self._dtype = dtype
 
@@ -302,7 +302,7 @@ class ValueExpr(Expr):
             isinstance(other, ValueExpr) and
             self._name == other._name and
             self._dtype == other._dtype and
-            super(ValueExpr, self).equals(other, cache=cache)
+            super().equals(other, cache=cache)
         )
 
     def has_name(self):

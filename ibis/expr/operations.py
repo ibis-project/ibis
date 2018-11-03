@@ -217,7 +217,7 @@ class TableColumn(ValueOp):
         schema = table.schema()
         if isinstance(name, int):
             name = schema.name_at_position(name)
-        super(TableColumn, self).__init__(name, table)
+        super().__init__(name, table)
 
     def _validate(self):
         if self.name not in self.table.schema():
@@ -310,7 +310,7 @@ class TableArrayView(ValueOp):
             raise com.ExpressionError('Table can only have a single column')
 
         name = schema.names[0]
-        return super(TableArrayView, self).__init__(table, name)
+        return super().__init__(table, name)
 
     def _make_expr(self):
         ctype = self.table._get_type(self.name)
@@ -536,7 +536,7 @@ class MathUnaryOp(UnaryOp):
 class ExpandingTypeMathUnaryOp(MathUnaryOp):
     def output_type(self):
         if not isinstance(self.arg, ir.DecimalValue):
-            return super(ExpandingTypeMathUnaryOp, self).output_type()
+            return super().output_type()
         arg = self.arg
         return rlz.shape_like(arg, arg.type().largest)
 
@@ -1002,7 +1002,7 @@ class WindowOp(ValueOp):
             window = window.bind(table)
 
         expr = propagate_down_window(expr, window)
-        super(WindowOp, self).__init__(expr, window)
+        super().__init__(expr, window)
 
     def over(self, window):
         new_window = self.window.combine(window)
@@ -1558,7 +1558,7 @@ class Join(TableNode):
         _validate_join_tables(left, right)
         left, right, predicates = _make_distinct_join_predicates(left, right,
                                                                  predicates)
-        super(Join, self).__init__(left, right, predicates)
+        super().__init__(left, right, predicates)
 
     def _get_schema(self):
         # For joins retaining both table schemas, merge them together here
@@ -1677,7 +1677,7 @@ class AsOfJoin(Join):
     tolerance = Arg(rlz.interval(), default=None)
 
     def __init__(self, left, right, predicates, by, tolerance):
-        super(AsOfJoin, self).__init__(left, right, predicates)
+        super().__init__(left, right, predicates)
         self.by = _clean_join_predicates(self.left, self.right, by)
         self.tolerance = tolerance
 
@@ -1839,9 +1839,12 @@ class Selection(TableNode, HasSchema):
             predicates if predicates is not None else []
         )))
 
-        super(Selection, self).__init__(table=table, selections=projections,
-                                        predicates=predicates,
-                                        sort_keys=sort_keys)
+        super().__init__(
+            table=table,
+            selections=projections,
+            predicates=predicates,
+            sort_keys=sort_keys
+        )
 
     def _validate(self):
         from ibis.expr.analysis import FilterValidator
@@ -2036,9 +2039,14 @@ class Aggregation(TableNode, HasSchema):
         predicates = self._rewrite_exprs(table, predicates)
         sort_keys = self._rewrite_exprs(table, sort_keys)
 
-        super(Aggregation, self).__init__(table=table, metrics=metrics, by=by,
-                                          having=having, predicates=predicates,
-                                          sort_keys=sort_keys)
+        super().__init__(
+            table=table,
+            metrics=metrics,
+            by=by,
+            having=having,
+            predicates=predicates,
+            sort_keys=sort_keys
+        )
 
     def _validate(self):
         from ibis.expr.analysis import is_reduction
@@ -2190,7 +2198,7 @@ class Comparison(BinaryOp, BooleanValueOp):
         :param left:
         :param right:
         """
-        super(BinaryOp, self).__init__(*self._maybe_cast_args(left, right))
+        super().__init__(*self._maybe_cast_args(left, right))
 
     def _maybe_cast_args(self, left, right):
         # it might not be necessary?
@@ -2274,7 +2282,7 @@ class Contains(ValueOp, BooleanValueOp):
             else:
                 # or a set of scalar values
                 options = frozenset(options)
-        super(Contains, self).__init__(value, options)
+        super().__init__(value, options)
 
     def output_type(self):
         all_args = [self.value]
@@ -2323,7 +2331,7 @@ class TopK(ValueOp):
         if not isinstance(k, int) or k < 0:
             raise ValueError('k must be positive integer, was: {0}'.format(k))
 
-        super(ValueOp, self).__init__(arg, k, by)
+        super().__init__(arg, k, by)
 
     def output_type(self):
         return ir.TopKExpr
@@ -2847,7 +2855,7 @@ class ExpressionList(Node):
     exprs = Arg(rlz.noop)
 
     def __init__(self, values):
-        super(ExpressionList, self).__init__(list(map(rlz.any, values)))
+        super().__init__(list(map(rlz.any, values)))
 
     @property
     def inputs(self):
@@ -2867,7 +2875,7 @@ class ValueList(ValueOp):
     display_argnames = False  # disable showing argnames in repr
 
     def __init__(self, values):
-        super(ValueList, self).__init__(tuple(map(rlz.any, values)))
+        super().__init__(tuple(map(rlz.any, values)))
 
     def output_type(self):
         dtype = rlz.highest_precedence_dtype(self.values)

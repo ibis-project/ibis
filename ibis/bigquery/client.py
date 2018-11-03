@@ -134,7 +134,7 @@ def _find_scalar_parameter(expr):
 class BigQueryQuery(Query):
 
     def __init__(self, client, ddl, query_parameters=None):
-        super(BigQueryQuery, self).__init__(client, ddl)
+        super().__init__(client, ddl)
 
         # self.expr comes from the parent class
         query_parameter_names = dict(
@@ -363,7 +363,7 @@ class BigQueryClient(SQLClient):
         return self.dataset
 
     def table(self, name, database=None):
-        t = super(BigQueryClient, self).table(name, database=database)
+        t = super().table(name, database=database)
         project, dataset, name = t.op().name.split('.')
         dataset_ref = self.client.dataset(dataset, project=project)
         table_ref = dataset_ref.table(name)

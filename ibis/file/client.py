@@ -95,7 +95,7 @@ class FileClient(ibis.client.Client):
 class FileDatabase(ibis.client.Database):
 
     def __init__(self, name, client, path=None):
-        super(FileDatabase, self).__init__(name, client)
+        super().__init__(name, client)
         self.path = path
 
     def __str__(self):

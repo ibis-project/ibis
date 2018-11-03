@@ -110,14 +110,14 @@ class UnorderedComparator:
     def assert_series_equal(self, left, right, *args, **kwargs):
         left = left.sort_values().reset_index(drop=True)
         right = right.sort_values().reset_index(drop=True)
-        return super(UnorderedComparator, self).assert_series_equal(
+        return super().assert_series_equal(
             left, right, *args, **kwargs)
 
     def assert_frame_equal(self, left, right, *args, **kwargs):
         columns = list(set(left.columns) & set(right.columns))
         left = left.sort_values(by=columns)
         right = right.sort_values(by=columns)
-        return super(UnorderedComparator, self).assert_frame_equal(
+        return super().assert_frame_equal(
              left, right, *args, **kwargs)
 
 
@@ -308,14 +308,14 @@ class Clickhouse(Backend, RoundHalfToEven):
             raise NotImplementedError(
                 'Clickhouse does not support more than 2 arguments to greatest'
             )
-        return super(Clickhouse, self).least(f, *args)
+        return super().least(f, *args)
 
     def least(self, f, *args):
         if len(args) > 2:
             raise NotImplementedError(
                 'Clickhouse does not support more than 2 arguments to least'
             )
-        return super(Clickhouse, self).least(f, *args)
+        return super().least(f, *args)
 
 
 class BigQuery(UnorderedComparator, Backend, RoundAwayFromZero):

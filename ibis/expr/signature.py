@@ -152,7 +152,7 @@ class AnnotableMeta(type):
         attribs['signature'] = signature
         attribs['__slots__'] = tuple(unique(slots))
 
-        return super(AnnotableMeta, meta).__new__(meta, name, bases, attribs)
+        return super().__new__(meta, name, bases, attribs)
 
 
 class Annotable(metaclass=AnnotableMeta):

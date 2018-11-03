@@ -291,7 +291,7 @@ class Window(AggregationContext):
     __slots__ = 'construct_window',
 
     def __init__(self, kind, *args, **kwargs):
-        super(Window, self).__init__(
+        super().__init__(
             parent=kwargs.pop('parent', None),
             group_by=kwargs.pop('group_by', None),
             order_by=kwargs.pop('order_by', None),
@@ -363,7 +363,7 @@ class Cumulative(Window):
     __slots__ = ()
 
     def __init__(self, *args, **kwargs):
-        super(Cumulative, self).__init__('expanding', *args, **kwargs)
+        super().__init__('expanding', *args, **kwargs)
 
 
 class Moving(Window):
@@ -375,7 +375,7 @@ class Moving(Window):
         preceding = compute_window_spec(preceding, dtype)
         closed = None if not isinstance(
             preceding, timedelta_types + (pd.offsets.DateOffset,)) else 'both'
-        super(Moving, self).__init__(
+        super().__init__(
             'rolling', preceding, *args, closed=closed, **kwargs
         )
 
