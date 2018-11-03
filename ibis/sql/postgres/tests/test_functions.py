@@ -1391,7 +1391,7 @@ def tz(request):
 @pytest.yield_fixture
 def tzone_compute(con, guid, tz):
     schema = ibis.schema([
-        ('ts', dt.timestamp(tz)),
+        ('ts', dt.Timestamp(tz)),
         ('b', 'double'),
         ('c', 'string'),
     ])
