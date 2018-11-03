@@ -6,6 +6,8 @@ import itertools
 import numbers
 import re
 
+from typing import Mapping, NamedTuple, Optional, Tuple
+
 import pandas as pd
 
 import toolz
@@ -14,34 +16,35 @@ from multipledispatch import Dispatcher
 import ibis.common as com
 import ibis.expr.types as ir
 
+EqualityCache = Mapping[Tuple['DataType', 'DataType'], bool]
+
 
 class DataType:
-
     __slots__ = 'nullable',
 
-    def __init__(self, nullable=True):
+    def __init__(self, nullable: bool = True) -> None:
         self.nullable = nullable
 
-    def __call__(self, nullable=True):
+    def __call__(self, nullable: bool = True) -> 'DataType':
         return self._factory(nullable=nullable)
 
-    def _factory(self, nullable=True):
+    def _factory(self, nullable: bool = True) -> 'DataType':
         return type(self)(nullable=nullable)
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return self.equals(other)
 
-    def __ne__(self, other):
-        return not self.__eq__(other)
+    def __ne__(self, other) -> bool:
+        return not (self == other)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         custom_parts = tuple(
             getattr(self, slot)
             for slot in toolz.unique(self.__slots__ + ('nullable',))
         )
         return hash((type(self),) + custom_parts)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return '{}({})'.format(
             self.name,
             ', '.join(
@@ -50,24 +53,29 @@ class DataType:
             )
         )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name.lower()
 
     @property
-    def name(self):
+    def name(self) -> str:
         return type(self).__name__
 
-    def equals(self, other, cache=None):
-        if isinstance(other, str):
-            other = dtype(other)
-
+    def equals(
+        self,
+        other: 'DataType',
+        cache: Optional[EqualityCache] = None
+    ) -> bool:
         return (
             isinstance(other, type(self)) and
             self.nullable == other.nullable and
             self._equal_part(other, cache=cache)
         )
 
-    def _equal_part(self, other, cache=None):
+    def _equal_part(
+        self,
+        other: 'DataType',
+        cache: Optional[EqualityCache] = None
+    ) -> bool:
         return True
 
     def castable(self, target, **kwargs):
@@ -84,15 +92,13 @@ class DataType:
 
 
 class Any(DataType):
-
     __slots__ = ()
 
 
 class Primitive(DataType):
-
     __slots__ = ()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         name = self.name.lower()
         if not self.nullable:
             return '{}[non-nullable]'.format(name)
@@ -107,7 +113,6 @@ class Null(DataType):
 
 
 class Variadic(DataType):
-
     __slots__ = ()
 
 
@@ -118,7 +123,7 @@ class Boolean(Primitive):
     __slots__ = ()
 
 
-Bounds = collections.namedtuple('Bounds', ('lower', 'upper'))
+Bounds = NamedTuple('Bounds', [('lower', int), ('upper', int)])
 
 
 class Integer(Primitive):
@@ -128,7 +133,7 @@ class Integer(Primitive):
     __slots__ = ()
 
     @property
-    def bounds(self):
+    def bounds(self) -> Bounds:
         exp = self._nbytes * 8 - 1
         lower = -1 << exp
         return Bounds(lower=lower, upper=~lower)
@@ -184,42 +189,49 @@ class Timestamp(Primitive):
 
     __slots__ = 'timezone',
 
-    def __init__(self, timezone=None, nullable=True):
-        super(Timestamp, self).__init__(nullable=nullable)
+    def __init__(
+        self,
+        timezone: Optional[str] = None,
+        nullable: bool = True
+    ) -> None:
+        super().__init__(nullable=nullable)
         self.timezone = timezone
 
-    def _equal_part(self, other, cache=None):
+    def _equal_part(
+        self,
+        other: 'DataType',
+        cache: Optional[EqualityCache] = None
+    ) -> bool:
         return self.timezone == other.timezone
 
-    def __call__(self, timezone=None, nullable=True):
+    def __call__(
+        self,
+        timezone: Optional[str] = None,
+        nullable: bool = True
+    ) -> 'Timestamp':
         return type(self)(timezone=timezone, nullable=nullable)
 
-    def __str__(self):
+    def __str__(self) -> str:
         timezone = self.timezone
         typename = self.name.lower()
         if timezone is None:
             return typename
         return '{}({!r})'.format(typename, timezone)
 
-    def __repr__(self):
-        return DataType.__repr__(self)
-
 
 class SignedInteger(Integer):
-
     @property
-    def largest(self):
+    def largest(self) -> 'Int64':
         return int64
 
 
 class UnsignedInteger(Integer):
-
     @property
-    def largest(self):
+    def largest(self) -> 'UInt64':
         return uint64
 
     @property
-    def bounds(self):
+    def bounds(self) -> Bounds:
         exp = self._nbytes * 8 - 1
         upper = 1 << exp
         return Bounds(lower=0, upper=upper)
@@ -232,82 +244,71 @@ class Floating(Primitive):
     __slots__ = ()
 
     @property
-    def largest(self):
+    def largest(self) -> 'Float64':
         return float64
 
 
 class Int8(SignedInteger):
-
     __slots__ = ()
 
     _nbytes = 1
 
 
 class Int16(SignedInteger):
-
     __slots__ = ()
 
     _nbytes = 2
 
 
 class Int32(SignedInteger):
-
     __slots__ = ()
 
     _nbytes = 4
 
 
 class Int64(SignedInteger):
-
     __slots__ = ()
 
     _nbytes = 8
 
 
 class UInt8(UnsignedInteger):
-
     __slots__ = ()
 
     _nbytes = 1
 
 
 class UInt16(UnsignedInteger):
-
     __slots__ = ()
 
     _nbytes = 2
 
 
 class UInt32(UnsignedInteger):
-
     __slots__ = ()
 
     _nbytes = 4
 
 
 class UInt64(UnsignedInteger):
-
     __slots__ = ()
 
     _nbytes = 8
 
 
 class Halffloat(Floating):
-
     __slots__ = ()
 
     _nbytes = 2
 
 
 class Float(Floating):
-
     __slots__ = ()
 
     _nbytes = 4
 
 
 class Double(Floating):
-
     __slots__ = ()
 
     _nbytes = 8
@@ -324,7 +325,12 @@ class Decimal(DataType):
 
     __slots__ = 'precision', 'scale'
 
-    def __init__(self, precision, scale, nullable=True):
+    def __init__(
+        self,
+        precision: int,
+        scale: int,
+        nullable: bool = True
+    ) -> None:
         if not isinstance(precision, numbers.Integral):
             raise TypeError('Decimal type precision must be an integer')
         if not isinstance(scale, numbers.Integral):
@@ -347,22 +353,23 @@ class Decimal(DataType):
         self.precision = precision
         self.scale = scale
 
-    def __str__(self):
+    def __str__(self) -> str:
         return '{}({:d}, {:d})'.format(
             self.name.lower(),
             self.precision,
             self.scale,
         )
 
-    def _equal_part(self, other, cache=None):
+    def _equal_part(
+        self,
+        other: 'DataType',
+        cache: Optional[EqualityCache] = None
+    ) -> bool:
         return self.precision == other.precision and self.scale == other.scale
 
     @property
-    def largest(self):
+    def largest(self) -> 'Decimal':
         return Decimal(38, self.scale)
-
-
-assert hasattr(Decimal, '__hash__')
 
 
 class Interval(DataType):
