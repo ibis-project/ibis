@@ -5,22 +5,17 @@ jobs:
   strategy:
     maxParallel: 3
     matrix:
-      py27:
-        python.version: "2.7"
-        pyarrow: ""
       py35:
         python.version: "3.5"
-        pyarrow: "pyarrow"
       py36:
         python.version: "3.6"
-        pyarrow: "pyarrow"
   steps:
     - task: CondaEnvironment@1
       displayName: 'Create conda environment'
       inputs:
         createCustomEnvironment: True
         environmentName: "ibis_$(python.version)"
-        packageSpecs: pytables numpy pandas ruamel.yaml jinja2 $(pyarrow) multipledispatch pymysql sqlalchemy psycopg2 graphviz click mock plumbum flake8 pytest-xdist
+        packageSpecs: pytables numpy pandas ruamel.yaml jinja2 pyarrow multipledispatch pymysql sqlalchemy psycopg2 graphviz click mock plumbum flake8 pytest-xdist
         installOptions: --channel conda-forge
         createOptions: python="$(python.version)" --channel conda-forge
         cleanEnvironment: True
@@ -80,8 +75,6 @@ jobs:
   strategy:
     maxParallel: 3
     matrix:
-      py27:
-        python.version: "2.7"
       py35:
         python.version: "3.5"
       py36:
