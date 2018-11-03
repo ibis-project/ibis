@@ -1164,16 +1164,19 @@ def higher_precedence(left: DataType, right: DataType) -> DataType:
 
 
 def highest_precedence(dtypes: Iterator[DataType]) -> DataType:
+    """Compute the highest precedence of `dtypes`."""
     return functools.reduce(higher_precedence, dtypes)
 
 
 @infer.register(object)
 def infer_dtype_default(value: GenericAny) -> DataType:
+    """Default implementation of :func:`~ibis.expr.datatypes.infer`."""
     raise com.InputTypeError(value)
 
 
 @infer.register(collections.OrderedDict)
-def infer_struct(value: collections.OrderedDict) -> Struct:
+def infer_struct(value: collections.OrderedDict[str, GenericAny]) -> Struct:
+    """Infer the :class:`~ibis.expr.datatypes.Struct` type of `value`."""
     if not value:
         raise TypeError('Empty struct type not supported')
     return Struct(
@@ -1183,7 +1186,8 @@ def infer_struct(value: collections.OrderedDict) -> Struct:
 
 
 @infer.register(collections.abc.Mapping)
-def infer_map(value: Mapping) -> Map:
+def infer_map(value: Mapping[GenericAny, GenericAny]) -> Map:
+    """Infer the :class:`~ibis.expr.datatypes.Map` type of `value`."""
     if not value:
         return Map(null, null)
     return Map(
@@ -1194,6 +1198,7 @@ def infer_map(value: Mapping) -> Map:
 
 @infer.register(list)
 def infer_list(values: List[GenericAny]) -> Array:
+    """Infer the :class:`~ibis.expr.datatypes.Array` type of `values`."""
     if not values:
         return Array(null)
     return Array(highest_precedence(map(infer, values)))
@@ -1201,6 +1206,7 @@ def infer_list(values: List[GenericAny]) -> Array:
 
 @infer.register((set, frozenset))
 def infer_set(values: GenericSet) -> Set:
+    """Infer the :class:`~ibis.expr.datatypes.Set` type of `values`."""
     if not values:
         return Set(null)
     return Set(highest_precedence(map(infer, values)))
@@ -1365,11 +1371,11 @@ def can_cast_string_to_temporal(
     if value is None:
         return False
     try:
-        # this is the only pandas import left
         pd.Timestamp(value)
-        return True
     except ValueError:
         return False
+    else:
+        return True
 
 
 Collection = TypeVar('Collection', Array, Set)
