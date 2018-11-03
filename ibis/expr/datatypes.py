@@ -15,7 +15,6 @@ from typing import (
     Mapping,
     NamedTuple,
     Optional,
-    Pattern,
     Sequence,
     Set as GenericSet,
     Tuple,
@@ -883,16 +882,20 @@ class TypeParser:
     def _accept(self, toktype: int) -> bool:
         if self.nexttok is not None and self.nexttok.type == toktype:
             self._advance()
+            assert self.tok is not None, \
+                'self.tok should not be None when _accept succeeds'
             return True
         return False
 
     def _expect(self, toktype: int) -> None:
         if not self._accept(toktype):
-            raise SyntaxError('Expected {} after {!r} in {!r}'.format(
-                Tokens.name(toktype),
-                getattr(self.tok, 'value', self.tok),
-                self.text,
-            ))
+            raise SyntaxError(
+                'Expected {} after {!r} in {!r}'.format(
+                    Tokens.name(toktype),
+                    getattr(self.tok, 'value', self.tok),
+                    self.text,
+                )
+            )
 
     def parse(self) -> DataType:
         self._advance()
@@ -969,11 +972,13 @@ class TypeParser:
         field : [a-zA-Z_][a-zA-Z_0-9]*
         """
         if self._accept(Tokens.PRIMITIVE):
+            assert self.tok is not None
             return self.tok.value
 
         elif self._accept(Tokens.TIMESTAMP):
             if self._accept(Tokens.LPAREN):
                 self._expect(Tokens.STRARG)
+                assert self.tok is not None
                 timezone = self.tok.value[1:-1]  # remove surrounding quotes
                 self._expect(Tokens.RPAREN)
                 return Timestamp(timezone=timezone)
@@ -985,6 +990,7 @@ class TypeParser:
         elif self._accept(Tokens.INTERVAL):
             if self._accept(Tokens.LBRACKET):
                 self._expect(Tokens.PRIMITIVE)
+                assert self.tok is not None
                 value_type = self.tok.value
                 self._expect(Tokens.RBRACKET)
             else:
@@ -992,6 +998,7 @@ class TypeParser:
 
             if self._accept(Tokens.LPAREN):
                 self._expect(Tokens.STRARG)
+                assert self.tok is not None
                 unit = self.tok.value[1:-1]  # remove surrounding quotes
                 self._expect(Tokens.RPAREN)
             else:
@@ -1001,8 +1008,8 @@ class TypeParser:
 
         elif self._accept(Tokens.DECIMAL):
             if self._accept(Tokens.LPAREN):
-
                 self._expect(Tokens.INTEGER)
+                assert self.tok is not None
                 precision = self.tok.value
 
                 self._expect(Tokens.COMMA)
@@ -1044,6 +1051,7 @@ class TypeParser:
             self._expect(Tokens.LBRACKET)
 
             self._expect(Tokens.PRIMITIVE)
+            assert self.tok is not None
             key_type = self.tok.value
 
             self._expect(Tokens.COMMA)
@@ -1058,6 +1066,7 @@ class TypeParser:
             self._expect(Tokens.LBRACKET)
 
             self._expect(Tokens.FIELD)
+            assert self.tok is not None
             names = [self.tok.value]
 
             self._expect(Tokens.COLON)
@@ -1065,7 +1074,6 @@ class TypeParser:
             types = [self.type()]
 
             while self._accept(Tokens.COMMA):
-
                 self._expect(Tokens.FIELD)
                 names.append(self.tok.value)
 
