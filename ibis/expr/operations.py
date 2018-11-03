@@ -242,7 +242,7 @@ class TableColumn(ValueOp):
 
     def _make_expr(self):
         dtype = self.table._get_type(self.name)
-        klass = dtype.array_type()
+        klass = dtype.column_type()
         return klass(self, name=self.name)
 
 
@@ -314,7 +314,7 @@ class TableArrayView(ValueOp):
 
     def _make_expr(self):
         ctype = self.table._get_type(self.name)
-        klass = ctype.array_type()
+        klass = ctype.column_type()
         return klass(self, name=self.name)
 
 
@@ -1045,7 +1045,7 @@ class Lead(ShiftBase):
 class RankBase(AnalyticOp):
 
     def output_type(self):
-        return dt.int64.array_type()
+        return dt.int64.column_type()
 
 
 class MinRank(RankBase):
@@ -1126,7 +1126,7 @@ class CumulativeSum(CumulativeOp):
             dtype = dt.int64
         else:
             dtype = self.arg.type().largest
-        return dtype.array_type()
+        return dtype.column_type()
 
 
 class CumulativeMean(CumulativeOp):
@@ -1138,7 +1138,7 @@ class CumulativeMean(CumulativeOp):
             dtype = self.arg.type().largest
         else:
             dtype = dt.float64
-        return dtype.array_type()
+        return dtype.column_type()
 
 
 class CumulativeMax(CumulativeOp):
@@ -1254,7 +1254,7 @@ class Any(ValueOp):
         if self._reduction:
             return dt.boolean.scalar_type()
         else:
-            return dt.boolean.array_type()
+            return dt.boolean.column_type()
 
     def negate(self):
         return NotAny(self.arg)
@@ -2313,7 +2313,7 @@ class SummaryFilter(ValueOp):
     expr = Arg(rlz.noop)
 
     def output_type(self):
-        return dt.boolean.array_type()
+        return dt.boolean.column_type()
 
 
 class TopK(ValueOp):

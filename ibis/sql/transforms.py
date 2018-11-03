@@ -68,7 +68,7 @@ class AnyToExistsTransform:
         else:
             op = NotExistsSubquery(self.foreign_table, self.predicates)
 
-        expr_type = dt.boolean.array_type()
+        expr_type = dt.boolean.column_type()
         return expr_type(op)
 
     def _visit(self, expr):

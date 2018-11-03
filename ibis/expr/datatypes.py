@@ -99,7 +99,7 @@ class DataType:
     def scalar_type(self):
         return functools.partial(self.scalar, dtype=self)
 
-    def array_type(self):
+    def column_type(self):
         return functools.partial(self.column, dtype=self)
 
 
@@ -1095,9 +1095,9 @@ class TypeParser:
             raise SyntaxError('Type cannot be parsed: {}'.format(self.text))
 
 
-def array_type(t):
+def column_type(t):
     # compatibility
-    return dtype(t).array_type()
+    return dtype(t).column_type()
 
 
 def scalar_type(t):

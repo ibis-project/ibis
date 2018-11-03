@@ -305,7 +305,7 @@ def shape_like(arg, dtype=None):
     dtype = dt.dtype(datatype)
 
     if columnar:
-        return dtype.array_type()
+        return dtype.column_type()
     else:
         return dtype.scalar_type()
 
@@ -319,7 +319,7 @@ def scalar_like(arg):
 @promoter
 def array_like(arg):
     output_dtype = arg.type()
-    return output_dtype.array_type()
+    return output_dtype.column_type()
 
 
 column_like = array_like

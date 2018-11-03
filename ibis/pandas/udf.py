@@ -303,7 +303,7 @@ class udf:
                 (ops.ValueOp,),
                 {
                     'signature': sig.TypeSignature.from_dtypes(input_type),
-                    'output_type': output_type.array_type
+                    'output_type': output_type.column_type
                 }
             )
 
@@ -414,7 +414,7 @@ class udf:
         return udf._grouped(
             input_type, output_type,
             base_class=ops.AnalyticOp,
-            output_type_method=operator.attrgetter('array_type'))
+            output_type_method=operator.attrgetter('column_type'))
 
     @staticmethod
     def _grouped(input_type, output_type, base_class,
