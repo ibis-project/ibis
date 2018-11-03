@@ -30,9 +30,6 @@ from multipledispatch import Dispatcher
 import ibis.common as com
 import ibis.expr.types as ir
 
-GenericDataType = TypeVar('GenericDataType', bound='DataType')
-EqualityCache = Mapping[Tuple[GenericDataType, GenericDataType], bool]
-
 
 class DataType:
     __slots__ = 'nullable',
@@ -534,7 +531,7 @@ class Struct(DataType):
     @classmethod
     def from_tuples(
         self,
-        pairs: Sequence[Tuple[str, Union[str, GenericDataType]]],
+        pairs: Sequence[Tuple[str, Union[str, DataType]]],
         nullable: bool = True,
     ) -> 'Struct':
         names, types = zip(*pairs)
