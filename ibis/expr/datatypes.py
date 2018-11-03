@@ -10,12 +10,12 @@ import typing
 from typing import (
     Any as GenericAny,
     Callable,
-    ClassVar,
     Iterator,
     List,
     Mapping,
     NamedTuple,
     Optional,
+    Pattern,
     Sequence,
     Set as GenericSet,
     Tuple,
@@ -73,25 +73,13 @@ class DataType:
     def name(self) -> str:
         return type(self).__name__
 
-    def equals(
-        self,
-        other: 'DataType',
-        cache: Optional[EqualityCache] = None
-    ) -> bool:
+    def equals(self, other: 'DataType') -> bool:
         return (
             isinstance(other, type(self)) and
             self.nullable == other.nullable and
-            self._equal_part(other, cache=cache)
-        )
-
-    def _equal_part(
-        self,
-        other: 'DataType',
-        cache: Optional[EqualityCache] = None
-    ) -> bool:
-        return self.__slots__ == other.__slots__ and all(
-            getattr(self, slot) == getattr(other, slot)
-            for slot in self.__slots__ if slot != 'nullable'
+            self.__slots__ == other.__slots__ and
+            all(getattr(self, slot) == getattr(other, slot)
+                for slot in self.__slots__)
         )
 
     def castable(self, target, **kwargs):
@@ -232,6 +220,11 @@ class Timestamp(Primitive):
         if timezone is None:
             return typename
         return '{}({!r})'.format(typename, timezone)
+
+    def __repr__(self) -> str:
+        # Can't use super here because the parent method doesn't print the
+        # timezone
+        return DataType.__repr__(self)
 
 
 class SignedInteger(Integer):
@@ -527,11 +520,11 @@ class Struct(DataType):
     @classmethod
     def from_tuples(
         self,
-        pairs: Sequence[Tuple[str, GenericDataType]],
+        pairs: Sequence[Tuple[str, Union[str, GenericDataType]]],
         nullable: bool = True,
     ) -> 'Struct':
         names, types = zip(*pairs)
-        return Struct(names, types, nullable=nullable)
+        return Struct(list(names), list(map(dtype, types)), nullable=nullable)
 
     @property
     def pairs(self) -> Mapping:
@@ -840,7 +833,7 @@ _TYPE_KEYS = tuple(_TYPE_RULES.keys())
 _TYPE_PATTERN = re.compile('|'.join(_TYPE_KEYS), flags=re.IGNORECASE)
 
 
-def _generate_tokens(pat, text):
+def _generate_tokens(pat: GenericAny, text: str) -> Iterator[Token]:
     """Generate a sequence of tokens from `text` that match `pat`
 
     Parameters
@@ -854,11 +847,12 @@ def _generate_tokens(pat, text):
     rules = _TYPE_RULES
     keys = _TYPE_KEYS
     groupindex = pat.groupindex
-    for m in iter(pat.scanner(text).match, None):
-        func = rules[keys[groupindex[m.lastgroup] - 1]]
+    scanner = pat.scanner(text)
+    for m in iter(scanner.match, None):
+        lastgroup = m.lastgroup
+        func = rules[keys[groupindex[lastgroup] - 1]]
         if func is not None:
-            assert callable(func), 'func must be callable'
-            yield func(m.group(m.lastgroup))
+            yield func(m.group(lastgroup))
 
 
 class TypeParser:
@@ -877,26 +871,26 @@ class TypeParser:
 
     __slots__ = 'text', 'tokens', 'tok', 'nexttok'
 
-    def __init__(self, text):
-        self.text = text
+    def __init__(self, text: str):
+        self.text = text  # type: str
         self.tokens = _generate_tokens(_TYPE_PATTERN, text)
-        self.tok = None
-        self.nexttok = None
+        self.tok = None  # type: Optional[Token]
+        self.nexttok = None  # type: Optional[Token]
 
     def _advance(self) -> None:
         self.tok, self.nexttok = self.nexttok, next(self.tokens, None)
 
-    def _accept(self, toktype) -> bool:
+    def _accept(self, toktype: int) -> bool:
         if self.nexttok is not None and self.nexttok.type == toktype:
             self._advance()
             return True
         return False
 
-    def _expect(self, toktype) -> None:
+    def _expect(self, toktype: int) -> None:
         if not self._accept(toktype):
             raise SyntaxError('Expected {} after {!r} in {!r}'.format(
                 Tokens.name(toktype),
-                self.tok.value,
+                getattr(self.tok, 'value', self.tok),
                 self.text,
             ))
 
@@ -905,6 +899,8 @@ class TypeParser:
 
         # any and null types cannot be nested
         if self._accept(Tokens.ANY) or self._accept(Tokens.NULL):
+            assert self.tok is not None, \
+                'self.tok was None when parsing ANY or NULL type'
             return self.tok.value
 
         t = self.type()
