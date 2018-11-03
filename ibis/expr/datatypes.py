@@ -504,9 +504,9 @@ class Struct(DataType):
 
     def __init__(
         self,
-        names: Sequence[str],
-        types: Sequence[DataType],
-        nullable: bool = True
+        names: List[str],
+        types: List[DataType],
+        nullable: bool = True,
     ) -> None:
         """Construct a ``Struct`` type from a `names` and `types`.
 
@@ -521,6 +521,8 @@ class Struct(DataType):
         nullable : bool, optional
             Whether the struct can be null
         """
+        if not (names and types):
+            raise ValueError('names and types must not be empty')
         if len(names) != len(types):
             raise ValueError('names and types must have the same length')
 
