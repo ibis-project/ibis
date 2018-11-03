@@ -42,7 +42,7 @@ def test_no_ambiguities():
         (dt.timestamp, 'TIMESTAMP'),
 
         param(
-            dt.timestamp(timezone='US/Eastern'), 'TIMESTAMP',
+            dt.Timestamp(timezone='US/Eastern'), 'TIMESTAMP',
             marks=pytest.mark.xfail(
                 raises=TypeError,
                 reason='Not supported in BigQuery'
