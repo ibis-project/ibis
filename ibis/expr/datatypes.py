@@ -40,6 +40,9 @@ class DataType:
     def __init__(self, nullable: bool = True) -> None:
         self.nullable = nullable
 
+    def __call__(self, nullable: bool = True) -> 'DataType':
+        return self._factory(nullable)
+
     def _factory(self, nullable: bool = True) -> 'DataType':
         return type(self)(nullable=nullable)
 
@@ -217,8 +220,8 @@ class Timestamp(Primitive):
 
     def __call__(
         self,
+        nullable: bool = True,
         timezone: Optional[str] = None,
-        nullable: bool = True
     ) -> 'Timestamp':
         return type(self)(timezone=timezone, nullable=nullable)
 
