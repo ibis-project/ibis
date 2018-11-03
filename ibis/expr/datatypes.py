@@ -343,7 +343,7 @@ class Decimal(DataType):
                 )
             )
 
-        super(Decimal, self).__init__(nullable=nullable)
+        super().__init__(nullable=nullable)
         self.precision = precision
         self.scale = scale
 
@@ -386,8 +386,13 @@ class Interval(DataType):
         ns='nanosecond'
     )
 
-    def __init__(self, unit='s', value_type=None, nullable=True):
-        super(Interval, self).__init__(nullable=nullable)
+    def __init__(
+        self,
+        unit: str = 's',
+        value_type: Integer = None,
+        nullable: bool = True,
+    ) -> None:
+        super().__init__(nullable=nullable)
         if unit not in self._units:
             raise ValueError('Unsupported interval unit `{}`'.format(unit))
 
@@ -429,7 +434,7 @@ class Category(DataType):
     __slots__ = 'cardinality',
 
     def __init__(self, cardinality=None, nullable=True):
-        super(Category, self).__init__(nullable=nullable)
+        super().__init__(nullable=nullable)
         self.cardinality = cardinality
 
     def __repr__(self):
@@ -476,7 +481,7 @@ class Struct(DataType):
         if len(names) != len(types):
             raise ValueError('names and types must have the same length')
 
-        super(Struct, self).__init__(nullable=nullable)
+        super().__init__(nullable=nullable)
         self.pairs = collections.OrderedDict(zip(names, types))
 
     @classmethod
@@ -524,7 +529,7 @@ class Array(Variadic):
     __slots__ = 'value_type',
 
     def __init__(self, value_type, nullable=True):
-        super(Array, self).__init__(nullable=nullable)
+        super().__init__(nullable=nullable)
         self.value_type = dtype(value_type)
 
     def __str__(self):
@@ -541,7 +546,7 @@ class Set(Variadic):
     __slots__ = 'value_type',
 
     def __init__(self, value_type, nullable=True):
-        super(Set, self).__init__(nullable=nullable)
+        super().__init__(nullable=nullable)
         self.value_type = dtype(value_type)
 
     def __str__(self):
@@ -558,7 +563,7 @@ class Enum(DataType):
     __slots__ = 'rep_type', 'value_type'
 
     def __init__(self, rep_type, value_type, nullable=True):
-        super(Enum, self).__init__(nullable=nullable)
+        super().__init__(nullable=nullable)
         self.rep_type = dtype(rep_type)
         self.value_type = dtype(value_type)
 
@@ -576,7 +581,7 @@ class Map(Variadic):
     __slots__ = 'key_type', 'value_type'
 
     def __init__(self, key_type, value_type, nullable=True):
-        super(Map, self).__init__(nullable=nullable)
+        super().__init__(nullable=nullable)
         self.key_type = dtype(key_type)
         self.value_type = dtype(value_type)
 
