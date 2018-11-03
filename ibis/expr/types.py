@@ -229,12 +229,6 @@ class Expr:
         return self.op().root_tables()
 
 
-if sys.version_info.major == 2:
-    # Python 2.7 doesn't return NotImplemented unless the other operand has
-    # an attribute called "timetuple". This is a bug that's fixed in Python 3
-    Expr.timetuple = None
-
-
 class ExprList(Expr):
 
     def _type_display(self):
