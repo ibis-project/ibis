@@ -44,7 +44,11 @@ class DataType:
         return self._factory(nullable)
 
     def _factory(self, nullable: bool = True) -> 'DataType':
-        return type(self)(nullable=nullable)
+        slots = {
+            slot: getattr(self, slot) for slot in self.__slots__
+            if slot != 'nullable'
+        }
+        return type(self)(nullable=nullable, **slots)
 
     def __eq__(self, other) -> bool:
         return self.equals(other)
@@ -217,16 +221,6 @@ class Timestamp(Primitive):
     ) -> None:
         super().__init__(nullable=nullable)
         self.timezone = timezone
-
-    def __call__(
-        self,
-        nullable: bool = True,
-        timezone: Optional[str] = None,
-    ) -> 'Timestamp':
-        return type(self)(
-            timezone=timezone if timezone is not None else self.timezone,
-            nullable=nullable
-        )
 
     def __str__(self) -> str:
         timezone = self.timezone
