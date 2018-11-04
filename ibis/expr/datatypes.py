@@ -338,7 +338,7 @@ class UInt64(UnsignedInteger):
         return 8
 
 
-class Halffloat(Floating):
+class Float16(Floating):
     __slots__ = ()
 
     @property
