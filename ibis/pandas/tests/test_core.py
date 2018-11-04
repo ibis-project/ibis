@@ -7,12 +7,10 @@ import ibis
 import ibis.common as com
 import ibis.expr.operations as ops
 
-pytest.importorskip('multipledispatch')
+from ibis.pandas.dispatch import execute_node, pre_execute, post_execute
+from ibis.pandas.client import PandasClient
 
-from ibis.pandas.dispatch import (
-    execute_node, pre_execute, post_execute)  # noqa: E402
-from ibis.pandas.client import PandasClient  # noqa: E402
-from multipledispatch.conflict import ambiguities  # noqa: E402
+from multipledispatch.conflict import ambiguities
 
 pytestmark = pytest.mark.pandas
 
