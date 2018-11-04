@@ -1293,13 +1293,11 @@ BoundedIntegral = TypeVar(
 )
 
 
-@castable.register(BoundedSignedInteger, BoundedSignedInteger)
-@castable.register(BoundedUnsignedInteger, BoundedUnsignedInteger)
 @castable.register(BoundedSignedInteger, BoundedUnsignedInteger)
 @castable.register(BoundedUnsignedInteger, BoundedSignedInteger)
-def can_cast_to_unsigned(
-    source: BoundedIntegral,
-    target: BoundedIntegral,
+def can_cast_to_differently_signed_integer_type(
+    source: BoundedInteger,
+    target: BoundedInteger,
     value: Optional[int] = None,
     **kwargs
 ) -> bool:
