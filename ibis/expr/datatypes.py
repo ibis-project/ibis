@@ -1397,12 +1397,12 @@ def cast(
     **kwargs
 ) -> DataType:
     """Attempts to implicitly cast from source dtype to target dtype"""
-    source, target = dtype(source), dtype(target)
+    source, result_target = dtype(source), dtype(target)
 
-    if not castable(source, target, **kwargs):
+    if not castable(source, result_target, **kwargs):
         raise com.IbisTypeError('Datatype {} cannot be implicitly '
-                                'casted to {}'.format(source, target))
-    return target
+                                'casted to {}'.format(source, result_target))
+    return result_target
 
 
 same_kind = Dispatcher(
