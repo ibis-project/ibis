@@ -103,7 +103,7 @@ def connect(
         smallint_col : int16
         int_col : int32
         bigint_col : int64
-        float_col : float
+        float_col : float32
         double_col : float64
         date_string_col : string
         string_col : string
