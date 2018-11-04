@@ -1,7 +1,7 @@
 import contextlib
+import functools
 import numbers
 import operator
-
 
 import sqlalchemy as sa
 import sqlalchemy.sql as sql
@@ -16,7 +16,7 @@ from sqlalchemy.dialects.mysql.base import MySQLDialect
 
 import pandas as pd
 
-from pkg_resources import parse_version, functools
+from pkg_resources import parse_version
 from ibis.client import SQLClient, Query, Database
 from ibis.sql.compiler import Select, Union, TableSetFormatter, Dialect
 
