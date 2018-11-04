@@ -1284,7 +1284,7 @@ def can_cast_any(source: DataType, target: DataType, **kwargs) -> bool:
 
 
 @castable.register(Null, DataType)
-def can_cast_null(source, target, **kwargs) -> bool:
+def can_cast_null(source: DataType, target: DataType, **kwargs) -> bool:
     return target.nullable
 
 
