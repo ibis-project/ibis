@@ -36,9 +36,7 @@ def ibis_table(core_client):
     return core_client.table('df')
 
 
-@pytest.mark.parametrize(
-    'func', [execute_node, pre_execute, post_execute]
-)
+@pytest.mark.parametrize('func', [execute_node, pre_execute, post_execute])
 def test_no_execute_ambiguities(func):
     assert not ambiguities(func.funcs)
 
@@ -64,8 +62,8 @@ def test_pre_execute_basic(ibis_table, dataframe):
     Test that pre_execute has intercepted execution and provided its own
     scope dict
     """
-    @pre_execute.register(ops.Node, PandasClient)
-    def pre_execute_test(op, client, **kwargs):
+    @pre_execute.register(ops.Node, ibis.client.Client)
+    def pre_execute_test(op, client, scope=None, **kwargs):
         df = dataframe.assign(plain_int64=dataframe['plain_int64'] + 1)
         return {op: df}
 
@@ -73,7 +71,7 @@ def test_pre_execute_basic(ibis_table, dataframe):
     tm.assert_frame_equal(
         result, dataframe.assign(plain_int64=dataframe['plain_int64'] + 1))
 
-    del pre_execute.funcs[(ops.Node, PandasClient)]
+    del pre_execute.funcs[ops.Node, ibis.client.Client]
     pre_execute.reorder()
     pre_execute._cache.clear()
 
