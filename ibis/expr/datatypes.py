@@ -154,18 +154,6 @@ class Integer(Primitive):
 
     __slots__ = ()
 
-    @property
-    def nbytes(self) -> int:
-        raise TypeError(
-            'Cannot computer the number of bytes of an abstract integer'
-        )
-
-    @property
-    def bounds(self) -> IntegerBounds:
-        exp = self.nbytes * 8 - 1
-        lower = -1 << exp
-        return IntegerBounds(lower=lower, upper=~lower)
-
 
 class String(Variadic):
     """A type representing a string.
@@ -233,133 +221,156 @@ class Timestamp(DataType):
         return '{}({!r})'.format(typename, timezone)
 
 
+class BoundedInteger(Integer):
+    __slots__ = 'nbytes', 'bounds'
+
+    def __init__(
+        self,
+        nbytes: int,
+        bounds: IntegerBounds,
+        nullable: bool = True
+    ) -> None:
+        super().__init__(nullable=nullable)
+        self.nbytes = nbytes
+        self.bounds = bounds
+
+
 class SignedInteger(Integer):
+    __slots__ = ()
+
+
+class BoundedSignedInteger(BoundedInteger, SignedInteger):
+    __slots__ = ()
+
+    def __init__(self, nbytes: int, nullable: bool = True) -> None:
+        super().__init__(
+            nbytes=nbytes,
+            bounds=IntegerBounds(
+                lower=-1 << (nbytes * 8 - 1),
+                upper=~(-1 << (nbytes * 8 - 1))
+            ),
+            nullable=nullable,
+        )
+
     @property
     def largest(self) -> 'Int64':
         return int64
 
 
 class UnsignedInteger(Integer):
+    __slots__ = ()
+
+
+class BoundedUnsignedInteger(BoundedInteger, UnsignedInteger):
+    __slots__ = ()
+
+    def __init__(self, nbytes: int, nullable: bool = True) -> None:
+        super().__init__(
+            nbytes=nbytes,
+            bounds=IntegerBounds(lower=0, upper=1 << (nbytes * 8 - 1)),
+            nullable=nullable,
+        )
+
     @property
     def largest(self) -> 'UInt64':
         return uint64
 
-    @property
-    def bounds(self) -> IntegerBounds:
-        exp = self.nbytes * 8 - 1
-        upper = 1 << exp
-        return IntegerBounds(lower=0, upper=upper)
+
+class Int8(BoundedSignedInteger):
+    __slots__ = ()
+
+    def __init__(self, nullable: bool = True) -> None:
+        super().__init__(nbytes=1, nullable=nullable)
+
+
+class Int16(BoundedSignedInteger):
+    __slots__ = ()
+
+    def __init__(self, nullable: bool = True) -> None:
+        super().__init__(nbytes=2, nullable=nullable)
+
+
+class Int32(BoundedSignedInteger):
+    __slots__ = ()
+
+    def __init__(self, nullable: bool = True) -> None:
+        super().__init__(nbytes=4, nullable=nullable)
+
+
+class Int64(BoundedSignedInteger):
+    __slots__ = ()
+
+    def __init__(self, nullable: bool = True) -> None:
+        super().__init__(nbytes=8, nullable=nullable)
+
+
+class UInt8(BoundedUnsignedInteger):
+    __slots__ = ()
+
+    def __init__(self, nullable: bool = True) -> None:
+        super().__init__(nbytes=1, nullable=nullable)
+
+
+class UInt16(BoundedUnsignedInteger):
+    __slots__ = ()
+
+    def __init__(self, nullable: bool = True) -> None:
+        super().__init__(nbytes=2, nullable=nullable)
+
+
+class UInt32(BoundedUnsignedInteger):
+    __slots__ = ()
+
+    def __init__(self, nullable: bool = True) -> None:
+        super().__init__(nbytes=4, nullable=nullable)
+
+
+class UInt64(BoundedUnsignedInteger):
+    __slots__ = ()
+
+    def __init__(self, nullable: bool = True) -> None:
+        super().__init__(nbytes=8, nullable=nullable)
 
 
 class Floating(Primitive):
     scalar = ir.FloatingScalar
     column = ir.FloatingColumn
 
-    __slots__ = ()
+    __slots__ = 'nbytes',
+
+    def __init__(self, nbytes: int, nullable: bool = True) -> None:
+        super().__init__(nullable=nullable)
+        self.nbytes = nbytes
 
     @property
     def largest(self) -> 'Float64':
         return float64
 
-    @property
-    def nbytes(self) -> int:
-        raise TypeError(
-            'Cannot compute the number of bytes of an abstract floating point '
-            'type'
-        )
-
-
-class Int8(SignedInteger):
-    __slots__ = ()
-
-    @property
-    def nbytes(self) -> int:
-        return 1
-
-
-class Int16(SignedInteger):
-    __slots__ = ()
-
-    @property
-    def nbytes(self) -> int:
-        return 2
-
-
-class Int32(SignedInteger):
-    __slots__ = ()
-
-    @property
-    def nbytes(self) -> int:
-        return 4
-
-
-class Int64(SignedInteger):
-    __slots__ = ()
-
-    @property
-    def nbytes(self) -> int:
-        return 8
-
-
-class UInt8(UnsignedInteger):
-    __slots__ = ()
-
-    @property
-    def nbytes(self) -> int:
-        return 1
-
-
-class UInt16(UnsignedInteger):
-    __slots__ = ()
-
-    @property
-    def nbytes(self) -> int:
-        return 2
-
-
-class UInt32(UnsignedInteger):
-    __slots__ = ()
-
-    @property
-    def nbytes(self) -> int:
-        return 4
-
-
-class UInt64(UnsignedInteger):
-    __slots__ = ()
-
-    @property
-    def nbytes(self) -> int:
-        return 8
-
 
 class Float16(Floating):
     __slots__ = ()
 
-    @property
-    def nbytes(self) -> int:
-        return 2
+    def __init__(self, nullable: bool = True) -> None:
+        super().__init__(nbytes=2, nullable=nullable)
 
 
 class Float32(Floating):
     __slots__ = ()
 
-    @property
-    def nbytes(self) -> int:
-        return 4
+    def __init__(self, nullable: bool = True) -> None:
+        super().__init__(nbytes=4, nullable=nullable)
 
 
 class Float64(Floating):
     __slots__ = ()
 
-    @property
-    def nbytes(self) -> int:
-        return 8
+    def __init__(self, nullable: bool = True) -> None:
+        super().__init__(nbytes=8, nullable=nullable)
 
 
-Float16 = Halffloat
-Float32 = Float
-Float64 = Double
+Halffloat = Float16
+Float = Float32
+Double = Float64
 
 
 class Decimal(DataType):
