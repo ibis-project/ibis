@@ -126,12 +126,9 @@ def _cast(translator, expr):
     arg, target_type = op.args
     arg_formatted = translator.translate(arg)
 
-    if isinstance(arg, ir.CategoryValue) and target_type == 'int32':
+    if isinstance(arg, ir.CategoryValue) and target_type == dt.int32:
         return arg_formatted
-    if (
-        isinstance(arg, (ir.TimeValue, ir.DateValue, ir.TimestampValue)) and
-            target_type == 'int64'
-            ):
+    if isinstance(arg, ir.TemporalValue) and target_type == dt.int64:
         return '1000000 * unix_timestamp({})'.format(arg_formatted)
     else:
         sql_type = _type_to_sql_string(target_type)

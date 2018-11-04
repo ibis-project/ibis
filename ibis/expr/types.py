@@ -616,19 +616,24 @@ class BinaryScalar(AnyScalar, BinaryValue): pass  # noqa: E701,E302
 class BinaryColumn(AnyColumn, BinaryValue): pass  # noqa: E701,E302
 
 
-class TimeValue(AnyValue): pass  # noqa: E701,E302
-class TimeScalar(AnyScalar, TimeValue): pass  # noqa: E701,E302
-class TimeColumn(AnyColumn, TimeValue): pass  # noqa: E701,E302
+class TemporalValue(AnyValue): pass  # noqa: E701,E302
+class TemporalScalar(AnyScalar, TemporalValue): pass  # noqa: E701,E302
+class TemporalColumn(AnyColumn, TemporalValue): pass  # noqa: E701,E302
 
 
-class DateValue(AnyValue): pass  # noqa: E701,E302
-class DateScalar(AnyScalar, DateValue): pass  # noqa: E701,E302
-class DateColumn(AnyColumn, DateValue): pass  # noqa: E701,E302
+class TimeValue(TemporalValue): pass  # noqa: E701,E302
+class TimeScalar(TemporalScalar, TimeValue): pass  # noqa: E701,E302
+class TimeColumn(TemporalColumn, TimeValue): pass  # noqa: E701,E302
 
 
-class TimestampValue(AnyValue): pass  # noqa: E701,E302
-class TimestampScalar(AnyScalar, TimestampValue): pass  # noqa: E701,E302
-class TimestampColumn(AnyColumn, TimestampValue): pass  # noqa: E701,E302
+class DateValue(TemporalValue): pass  # noqa: E701,E302
+class DateScalar(TemporalScalar, DateValue): pass  # noqa: E701,E302
+class DateColumn(TemporalColumn, DateValue): pass  # noqa: E701,E302
+
+
+class TimestampValue(TemporalValue): pass  # noqa: E701,E302
+class TimestampScalar(TemporalScalar, TimestampValue): pass  # noqa: E701,E302
+class TimestampColumn(TemporalColumn, TimestampValue): pass  # noqa: E701,E302
 
 
 class CategoryValue(AnyValue): pass  # noqa: E701,E302
