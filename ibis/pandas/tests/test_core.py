@@ -55,21 +55,21 @@ def test_from_dataframe(dataframe, ibis_table, core_client):
     tm.assert_frame_equal(result, expected)
 
 
-def test_pre_execute_basic(ibis_table, dataframe):
+def test_pre_execute_basic():
     """
     Test that pre_execute has intercepted execution and provided its own
     scope dict
     """
-    @pre_execute.register(ops.Node, ibis.client.Client)
-    def pre_execute_test(op, client, scope=None, **kwargs):
-        df = dataframe.assign(plain_int64=dataframe['plain_int64'] + 1)
-        return {op: df}
+    @pre_execute.register(ops.Add)
+    def pre_execute_test(op, *clients, scope=None, **kwargs):
+        return {op: 4}
 
-    result = ibis_table.execute()
-    tm.assert_frame_equal(
-        result, dataframe.assign(plain_int64=dataframe['plain_int64'] + 1))
+    one = ibis.literal(1)
+    expr = one + one
+    result = ibis.pandas.execute(expr)
+    assert result == 4
 
-    del pre_execute.funcs[ops.Node, ibis.client.Client]
+    del pre_execute.funcs[(ops.Add,)]
     pre_execute.reorder()
     pre_execute._cache.clear()
 
