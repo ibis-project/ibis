@@ -1391,7 +1391,7 @@ def can_cast_variadic(source: Collection, target: Collection, **kwargs):
 # TODO cast category
 
 
-def cast(source, target, **kwargs) -> DataType:
+def cast(source: Union[DataType, str], target: Union[DataType, str], **kwargs) -> DataType:
     """Attempts to implicitly cast from source dtype to target dtype"""
     source, target = dtype(source), dtype(target)
 
