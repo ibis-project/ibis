@@ -1288,24 +1288,32 @@ def can_cast_null(source: DataType, target: DataType, **kwargs) -> bool:
     return target.nullable
 
 
-@castable.register(SignedInteger, UnsignedInteger)
-@castable.register(UnsignedInteger, SignedInteger)
+BoundedIntegral = TypeVar(
+    'BoundedIntegral', BoundedSignedInteger, BoundedUnsignedInteger
+)
+
+
+@castable.register(BoundedSignedInteger, BoundedSignedInteger)
+@castable.register(BoundedUnsignedInteger, BoundedUnsignedInteger)
 def can_cast_to_unsigned(
-    source: Integer,
-    target: Integer,
+    source: BoundedIntegral,
+    target: BoundedIntegral,
     value: Optional[int] = None,
     **kwargs
 ) -> bool:
     if value is None:
         return False
-
     bounds = target.bounds
     return bounds.lower <= value <= bounds.upper
 
 
-@castable.register(SignedInteger, SignedInteger)
-@castable.register(UnsignedInteger, UnsignedInteger)
-def can_cast_integers(source: Integer, target: Integer, **kwargs) -> bool:
+@castable.register(BoundedSignedInteger, BoundedSignedInteger)
+@castable.register(BoundedUnsignedInteger, BoundedUnsignedInteger)
+def can_cast_integers(
+    source: BoundedIntegral,
+    target: BoundedIntegral,
+    **kwargs
+) -> bool:
     return target.nbytes >= source.nbytes
 
 
@@ -1379,7 +1387,11 @@ Collection = TypeVar('Collection', Array, Set)
 
 @castable.register(Array, Array)
 @castable.register(Set, Set)
-def can_cast_variadic(source: Collection, target: Collection, **kwargs):
+def can_cast_variadic(
+    source: Collection,
+    target: Collection,
+    **kwargs
+) -> bool:
     return castable(source.value_type, target.value_type)
 
 
