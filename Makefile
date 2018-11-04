@@ -47,16 +47,20 @@ init: restart
 	@$(MAKE) load
 
 test:
-	@ENVKIND=$(ENVKIND) $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not udf'
+	@ENVKIND=$(ENVKIND) $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not udf' \
+	    --doctest-modules --doctest-ignore-import-errors
 
 testmost:
-	@ENVKIND=$(ENVKIND) $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not (udf or impala or hdfs)'
+	@ENVKIND=$(ENVKIND) $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not (udf or impala or hdfs)' \
+	    --doctest-modules --doctest-ignore-import-errors
 
 testfast:
-	@ENVKIND=$(ENVKIND) $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not (udf or impala or hdfs or bigquery)'
+	@ENVKIND=$(ENVKIND) $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not (udf or impala or hdfs or bigquery)' \
+	    --doctest-modules --doctest-ignore-import-errors
 
 testparams:
-	@echo 'not (udf or impala or hdfs or postgresql or mysql or mapd or clickhouse)'
+	@echo 'not (udf or impala or hdfs or postgresql or mysql or mapd or clickhouse)' \
+	    --doctest-modules --doctest-ignore-import-errors
 
 docclean:
 	@$(DOCKER_RUN) ibis rm -rf /tmp/docs.ibis-project.org
