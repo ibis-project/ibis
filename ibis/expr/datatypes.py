@@ -1100,16 +1100,6 @@ class TypeParser:
             raise SyntaxError('Type cannot be parsed: {}'.format(self.text))
 
 
-def column_type(t):
-    # compatibility
-    return dtype(t).column_type()
-
-
-def scalar_type(t):
-    # compatibility
-    return dtype(t).scalar_type()
-
-
 dtype = Dispatcher('dtype')
 
 validate_type = dtype
