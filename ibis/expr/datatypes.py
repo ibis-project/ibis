@@ -354,7 +354,7 @@ class Float32(Floating):
         return 4
 
 
-class Double(Floating):
+class Float64(Floating):
     __slots__ = ()
 
     @property
