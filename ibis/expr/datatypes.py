@@ -346,7 +346,7 @@ class Float16(Floating):
         return 2
 
 
-class Float(Floating):
+class Float32(Floating):
     __slots__ = ()
 
     @property
