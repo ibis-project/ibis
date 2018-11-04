@@ -1279,7 +1279,7 @@ def can_cast_subtype(source: DataType, target: DataType, **kwargs) -> bool:
 @castable.register(Integer, (Floating, Decimal))
 @castable.register(Floating, Decimal)
 @castable.register((Date, Timestamp), (Date, Timestamp))
-def can_cast_any(source, target, **kwargs) -> bool:
+def can_cast_any(source: DataType, target: DataType, **kwargs) -> bool:
     return True
 
 
