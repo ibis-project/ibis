@@ -958,25 +958,25 @@ def find_source_table(expr):
     UnboundTable[table]
       name: t
       schema:
-        a : double
+        a : float64
         b : string
     Selection[table]
       table:
         Table: ref_0
       selections:
         Table: ref_0
-        c = Add[double*]
+        c = Add[float64*]
           left:
-            a = Column[double*] 'a' from table
+            a = Column[float64*] 'a' from table
               ref_0
           right:
-            Literal[double]
+            Literal[float64]
               42.0
     >>> find_source_table(expr)
     UnboundTable[table]
       name: t
       schema:
-        a : double
+        a : float64
         b : string
     >>> left = ibis.table([('a', 'int64'), ('b', 'string')])
     >>> right = ibis.table([('c', 'int64'), ('d', 'string')])

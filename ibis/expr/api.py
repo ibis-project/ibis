@@ -3022,8 +3022,8 @@ def mutate(table, exprs=None, **mutations):
     UnboundTable[table]
       name: t
       schema:
-        foo : double
-        bar : double
+        foo : float64
+        bar : float64
     <BLANKLINE>
     Selection[table]
       table:
@@ -3032,12 +3032,12 @@ def mutate(table, exprs=None, **mutations):
         Table: ref_0
         baz = Literal[int8]
           5
-        qux = Add[double*]
+        qux = Add[float64*]
           left:
-            foo = Column[double*] 'foo' from table
+            foo = Column[float64*] 'foo' from table
               ref_0
           right:
-            bar = Column[double*] 'bar' from table
+            bar = Column[float64*] 'bar' from table
               ref_0
 
     Using the :meth:`ibis.expr.types.Expr.name` method to name the new columns
@@ -3120,7 +3120,7 @@ def projection(table, exprs):
       name: t
       schema:
         a : int64
-        b : double
+        b : float64
     <BLANKLINE>
     Selection[table]
       table:
@@ -3128,9 +3128,9 @@ def projection(table, exprs):
       selections:
         a = Column[int64*] 'a' from table
           ref_0
-        b_plus_1 = Add[double*]
+        b_plus_1 = Add[float64*]
           left:
-            b = Column[double*] 'b' from table
+            b = Column[float64*] 'b' from table
               ref_0
           right:
             Literal[int8]
@@ -3148,7 +3148,7 @@ def projection(table, exprs):
       name: t
       schema:
         a : int64
-        b : double
+        b : float64
     <BLANKLINE>
     Selection[table]
       table:
@@ -3161,9 +3161,9 @@ def projection(table, exprs):
             where:
               None
           <ibis.expr.window.Window object at 0x...>
-        mean_b = WindowOp[double*]
-          mean_b = Mean[double]
-            b = Column[double*] 'b' from table
+        mean_b = WindowOp[float64*]
+          mean_b = Mean[float64]
+            b = Column[float64*] 'b' from table
               ref_0
             where:
               None

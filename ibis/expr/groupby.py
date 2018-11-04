@@ -158,7 +158,7 @@ class GroupedTableExpr:
           schema:
             foo : string
             bar : string
-            baz : double
+            baz : float64
         >>> expr = (t.group_by('foo')
         ...          .order_by(ibis.desc('bar'))
         ...          .mutate(qux=lambda x: x.baz.lag(),
@@ -170,24 +170,24 @@ class GroupedTableExpr:
           schema:
             foo : string
             bar : string
-            baz : double
+            baz : float64
         Selection[table]
           table:
             Table: ref_0
           selections:
             Table: ref_0
-            qux = WindowOp[double*]
-              qux = Lag[double*]
-                baz = Column[double*] 'baz' from table
+            qux = WindowOp[float64*]
+              qux = Lag[float64*]
+                baz = Column[float64*] 'baz' from table
                   ref_0
                 offset:
                   None
                 default:
                   None
               <ibis.expr.window.Window object at 0x...>
-            qux2 = WindowOp[double*]
-              qux2 = Lead[double*]
-                baz = Column[double*] 'baz' from table
+            qux2 = WindowOp[float64*]
+              qux2 = Lead[float64*]
+                baz = Column[float64*] 'baz' from table
                   ref_0
                 offset:
                   None

@@ -845,7 +845,7 @@ def literal(value, type=None):
     int8
     >>> y = ibis.literal(42, type='double')
     >>> y.type()
-    double
+    float64
     >>> ibis.literal('foobar', type='int64')  # doctest: +ELLIPSIS
     Traceback (most recent call last):
       ...

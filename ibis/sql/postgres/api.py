@@ -107,7 +107,7 @@ def connect(
         int_col : int32
         bigint_col : int64
         float_col : float
-        double_col : double
+        double_col : float64
         date_string_col : string
         string_col : string
         timestamp_col : timestamp
