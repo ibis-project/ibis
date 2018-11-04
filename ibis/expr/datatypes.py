@@ -211,7 +211,7 @@ class Time(Primitive):
     __slots__ = ()
 
 
-class Timestamp(Primitive):
+class Timestamp(DataType):
     scalar = ir.TimestampScalar
     column = ir.TimestampColumn
 
@@ -231,11 +231,6 @@ class Timestamp(Primitive):
         if timezone is None:
             return typename
         return '{}({!r})'.format(typename, timezone)
-
-    def __repr__(self) -> str:
-        # Can't use super here because the parent method doesn't print the
-        # timezone
-        return DataType.__repr__(self)
 
 
 class SignedInteger(Integer):
