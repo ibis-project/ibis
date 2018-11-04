@@ -1136,7 +1136,7 @@ def from_string(value: str) -> DataType:
 
 
 @dtype.register(list)
-def from_list(values: List[GenericAny]) -> Array:
+def from_list(values: List[Union[DataType, str]]) -> Array:
     if not values:
         return Array(null)
     return Array(highest_precedence(map(dtype, values)))
