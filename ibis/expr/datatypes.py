@@ -1175,7 +1175,7 @@ def infer_dtype_default(value: GenericAny) -> DataType:
 
 
 @infer.register(collections.OrderedDict)
-def infer_struct(value: collections.OrderedDict[str, GenericAny]) -> Struct:
+def infer_struct(value: Mapping[str, GenericAny]) -> Struct:
     """Infer the :class:`~ibis.expr.datatypes.Struct` type of `value`."""
     if not value:
         raise TypeError('Empty struct type not supported')
