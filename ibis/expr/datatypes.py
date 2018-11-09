@@ -145,7 +145,7 @@ class Boolean(Primitive):
     __slots__ = ()
 
 
-IntegerBounds = NamedTuple('IntegerBounds', [('lower', int), ('upper', int)])
+Bounds = NamedTuple('Bounds', [('lower', int), ('upper', int)])
 
 
 class Integer(Primitive):
@@ -153,6 +153,12 @@ class Integer(Primitive):
     column = ir.IntegerColumn
 
     __slots__ = ()
+
+    @property
+    def _nbytes(self) -> int:
+        raise TypeError(
+            "Cannot determine the size in bytes of an abstract integer type."
+        )
 
 
 class String(Variadic):
@@ -221,151 +227,101 @@ class Timestamp(DataType):
         return '{}({!r})'.format(typename, timezone)
 
 
-class BoundedInteger(Integer):
-    __slots__ = 'nbytes', 'bounds'
-
-    def __init__(
-        self,
-        nbytes: int,
-        bounds: IntegerBounds,
-        nullable: bool = True
-    ) -> None:
-        super().__init__(nullable=nullable)
-        self.nbytes = nbytes
-        self.bounds = bounds
-
-
 class SignedInteger(Integer):
-    __slots__ = ()
-
-
-class BoundedSignedInteger(BoundedInteger, SignedInteger):
-    __slots__ = ()
-
-    def __init__(self, nbytes: int, nullable: bool = True) -> None:
-        super().__init__(
-            nbytes=nbytes,
-            bounds=IntegerBounds(
-                lower=-1 << (nbytes * 8 - 1),
-                upper=~(-1 << (nbytes * 8 - 1))
-            ),
-            nullable=nullable,
-        )
+    @property
+    def largest(self):
+        return int64
 
     @property
-    def largest(self) -> 'Int64':
-        return int64
+    def bounds(self):
+        exp = self._nbytes * 8 - 1
+        upper = (1 << exp) - 1
+        return Bounds(lower=~upper, upper=upper)
 
 
 class UnsignedInteger(Integer):
-    __slots__ = ()
-
-
-class BoundedUnsignedInteger(BoundedInteger, UnsignedInteger):
-    __slots__ = ()
-
-    def __init__(self, nbytes: int, nullable: bool = True) -> None:
-        super().__init__(
-            nbytes=nbytes,
-            bounds=IntegerBounds(lower=0, upper=1 << (nbytes * 8 - 1)),
-            nullable=nullable,
-        )
-
     @property
-    def largest(self) -> 'UInt64':
+    def largest(self):
         return uint64
 
-
-class Int8(BoundedSignedInteger):
-    __slots__ = ()
-
-    def __init__(self, nullable: bool = True) -> None:
-        super().__init__(nbytes=1, nullable=nullable)
-
-
-class Int16(BoundedSignedInteger):
-    __slots__ = ()
-
-    def __init__(self, nullable: bool = True) -> None:
-        super().__init__(nbytes=2, nullable=nullable)
-
-
-class Int32(BoundedSignedInteger):
-    __slots__ = ()
-
-    def __init__(self, nullable: bool = True) -> None:
-        super().__init__(nbytes=4, nullable=nullable)
-
-
-class Int64(BoundedSignedInteger):
-    __slots__ = ()
-
-    def __init__(self, nullable: bool = True) -> None:
-        super().__init__(nbytes=8, nullable=nullable)
-
-
-class UInt8(BoundedUnsignedInteger):
-    __slots__ = ()
-
-    def __init__(self, nullable: bool = True) -> None:
-        super().__init__(nbytes=1, nullable=nullable)
-
-
-class UInt16(BoundedUnsignedInteger):
-    __slots__ = ()
-
-    def __init__(self, nullable: bool = True) -> None:
-        super().__init__(nbytes=2, nullable=nullable)
-
-
-class UInt32(BoundedUnsignedInteger):
-    __slots__ = ()
-
-    def __init__(self, nullable: bool = True) -> None:
-        super().__init__(nbytes=4, nullable=nullable)
-
-
-class UInt64(BoundedUnsignedInteger):
-    __slots__ = ()
-
-    def __init__(self, nullable: bool = True) -> None:
-        super().__init__(nbytes=8, nullable=nullable)
+    @property
+    def bounds(self):
+        exp = self._nbytes * 8 - 1
+        upper = 1 << exp
+        return Bounds(lower=0, upper=upper)
 
 
 class Floating(Primitive):
     scalar = ir.FloatingScalar
     column = ir.FloatingColumn
 
-    __slots__ = 'nbytes',
-
-    def __init__(self, nbytes: int, nullable: bool = True) -> None:
-        super().__init__(nullable=nullable)
-        self.nbytes = nbytes
+    __slots__ = ()
 
     @property
-    def largest(self) -> 'Float64':
+    def largest(self):
         return float64
+
+    @property
+    def _nbytes(self) -> int:
+        raise TypeError(
+            "Cannot determine the size in bytes of an abstract floating "
+            "point type."
+        )
+
+
+class Int8(SignedInteger):
+    __slots__ = ()
+    _nbytes = 1
+
+
+class Int16(SignedInteger):
+    __slots__ = ()
+    _nbytes = 2
+
+
+class Int32(SignedInteger):
+    __slots__ = ()
+    _nbytes = 4
+
+
+class Int64(SignedInteger):
+    __slots__ = ()
+    _nbytes = 8
+
+
+class UInt8(UnsignedInteger):
+    __slots__ = ()
+    _nbytes = 1
+
+
+class UInt16(UnsignedInteger):
+    __slots__ = ()
+    _nbytes = 2
+
+
+class UInt32(UnsignedInteger):
+    __slots__ = ()
+    _nbytes = 4
+
+
+class UInt64(UnsignedInteger):
+    __slots__ = ()
+    _nbytes = 8
 
 
 class Float16(Floating):
     __slots__ = ()
-
-    def __init__(self, nullable: bool = True) -> None:
-        super().__init__(nbytes=2, nullable=nullable)
+    _nbytes = 2
 
 
 class Float32(Floating):
     __slots__ = ()
-
-    def __init__(self, nullable: bool = True) -> None:
-        super().__init__(nbytes=4, nullable=nullable)
+    _nbytes = 4
 
 
 class Float64(Floating):
     __slots__ = ()
-
-    def __init__(self, nullable: bool = True) -> None:
-        super().__init__(nbytes=8, nullable=nullable)
+    _nbytes = 8
 
 
 Halffloat = Float16
@@ -890,7 +846,7 @@ class TypeParser:
 
     __slots__ = 'text', 'tokens', 'tok', 'nexttok'
 
-    def __init__(self, text: str):
+    def __init__(self, text: str) -> None:
         self.text = text  # type: str
         self.tokens = _generate_tokens(_TYPE_PATTERN, text)
         self.tok = None  # type: Optional[Token]
@@ -1288,16 +1244,14 @@ def can_cast_null(source: DataType, target: DataType, **kwargs) -> bool:
     return target.nullable
 
 
-BoundedIntegral = TypeVar(
-    'BoundedIntegral', BoundedSignedInteger, BoundedUnsignedInteger
-)
+Integral = TypeVar('Integral', SignedInteger, UnsignedInteger)
 
 
-@castable.register(BoundedSignedInteger, BoundedUnsignedInteger)
-@castable.register(BoundedUnsignedInteger, BoundedSignedInteger)
+@castable.register(SignedInteger, UnsignedInteger)
+@castable.register(UnsignedInteger, SignedInteger)
 def can_cast_to_differently_signed_integer_type(
-    source: BoundedInteger,
-    target: BoundedInteger,
+    source: Integral,
+    target: Integral,
     value: Optional[int] = None,
     **kwargs
 ) -> bool:
@@ -1307,14 +1261,10 @@ def can_cast_to_differently_signed_integer_type(
     return bounds.lower <= value <= bounds.upper
 
 
-@castable.register(BoundedSignedInteger, BoundedSignedInteger)
-@castable.register(BoundedUnsignedInteger, BoundedUnsignedInteger)
-def can_cast_integers(
-    source: BoundedIntegral,
-    target: BoundedIntegral,
-    **kwargs
-) -> bool:
-    return target.nbytes >= source.nbytes
+@castable.register(SignedInteger, SignedInteger)
+@castable.register(UnsignedInteger, UnsignedInteger)
+def can_cast_integers(source: Integral, target: Integral, **kwargs) -> bool:
+    return target._nbytes >= source._nbytes
 
 
 @castable.register(Floating, Floating)
@@ -1325,7 +1275,7 @@ def can_cast_floats(
     **kwargs
 ) -> bool:
     if upcast:
-        return target.nbytes >= source.nbytes
+        return target._nbytes >= source._nbytes
 
     # double -> float must be allowed because
     # float literals are inferred as doubles
