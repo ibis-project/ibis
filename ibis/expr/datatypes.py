@@ -1241,13 +1241,6 @@ def infer_set(values: GenericSet) -> Set:
     return Set(highest_precedence(map(infer, values)))
 
 
-@infer.register(tuple)
-def infer_tuple(values):
-    if not values:
-        return Array(null)
-    return Array(Primitive())
-
-
 @infer.register(datetime.time)
 def infer_time(value: datetime.time) -> Time:
     return time

@@ -175,7 +175,7 @@ def test_char_varchar_invalid(spec):
     ('polygon', dt.polygon),
     ('multipolygon', dt.multipolygon)
 ])
-def test_primitive(spec, expected):
+def test_primitive_from_string(spec, expected):
     assert dt.dtype(spec) == expected
 
 
