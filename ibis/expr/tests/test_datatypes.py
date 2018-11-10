@@ -169,7 +169,11 @@ def test_char_varchar_invalid(spec):
     ('date', dt.date),
     ('time', dt.time),
     ('timestamp', dt.timestamp),
-    ('interval', dt.interval)
+    ('interval', dt.interval),
+    ('point', dt.point),
+    ('line', dt.line),
+    ('polygon', dt.polygon),
+    ('multipolygon', dt.multipolygon)
 ])
 def test_primitive(spec, expected):
     assert dt.dtype(spec) == expected
