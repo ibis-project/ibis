@@ -7,22 +7,15 @@ import operator
 import os
 import types
 
-import six
+from uuid import uuid4
 
 import toolz
 
-import ibis.compat as compat
 from ibis.config import options
 
 
 def guid():
-    try:
-        from ibis.comms import uuid4_hex
-        return uuid4_hex()
-    except ImportError:
-        from uuid import uuid4
-        guid = uuid4()
-        return guid.hex if not compat.PY2 else guid.get_hex()
+    return uuid4().hex
 
 
 def indent(text, spaces):
@@ -69,20 +62,12 @@ def adjoin(space, *lists):
         newLists.append(nl)
     toJoin = zip(*newLists)
     for lines in toJoin:
-        out_lines.append(_join_unicode(lines))
-    return _join_unicode(out_lines, sep='\n')
+        out_lines.append(''.join(lines))
+    return '\n'.join(out_lines)
 
 
-def _join_unicode(lines, sep=''):
-    try:
-        return sep.join(lines)
-    except UnicodeDecodeError:
-        sep = compat.unicode_type(sep)
-        return sep.join([x.decode('utf-8') if isinstance(x, str) else x
-                         for x in lines])
-
-
-def log(msg):
+def log(msg: str) -> None:
+    """Log `msg` using ``options.verbose_log`` if set, otherwise ``print``."""
     if options.verbose:
         (options.verbose_log or print)(msg)
 
@@ -164,7 +149,7 @@ def is_iterable(o):
     >>> is_iterable([])
     True
     """
-    return (not isinstance(o, six.string_types) and
+    return (not isinstance(o, str) and
             isinstance(o, collections.Iterable))
 
 

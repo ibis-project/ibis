@@ -4,7 +4,7 @@ import pandas as pd
 import ibis.expr.schema as sch
 import ibis.expr.operations as ops
 
-from ibis.compat import parse_version
+from pkg_resources import parse_version
 from ibis.file.client import FileClient
 from ibis.pandas.api import PandasDialect
 from ibis.pandas.core import execute_node, pre_execute, execute
@@ -41,7 +41,7 @@ def connect(path):
 class CSVTable(ops.DatabaseTable):
 
     def __init__(self, name, schema, source, **kwargs):
-        super(CSVTable, self).__init__(name, schema, source)
+        super().__init__(name, schema, source)
         self.read_csv_kwargs = kwargs
 
 

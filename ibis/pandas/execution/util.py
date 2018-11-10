@@ -1,6 +1,5 @@
 import operator
 
-import six
 
 import toolz
 
@@ -13,7 +12,7 @@ from ibis.pandas.core import execute
 def compute_sort_key(key, data, scope=None, **kwargs):
     by = key.to_expr()
     try:
-        if isinstance(by, six.string_types):
+        if isinstance(by, str):
             return by, None
         return by.get_name(), None
     except com.ExpressionError:

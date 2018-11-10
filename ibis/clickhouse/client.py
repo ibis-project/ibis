@@ -1,8 +1,10 @@
 import re
-import numpy as np
-import pandas as pd
 
 from collections import OrderedDict
+from pkg_resources import parse_version
+
+import numpy as np
+import pandas as pd
 
 import ibis.common as com
 import ibis.expr.types as ir
@@ -11,7 +13,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
 from ibis.config import options
-from ibis.compat import zip as czip, parse_version
 from ibis.client import Query, Database, DatabaseEntity, SQLClient
 from ibis.clickhouse.compiler import ClickhouseDialect, build_ast
 from ibis.util import log
@@ -46,7 +47,7 @@ _ibis_dtypes = {v: k for k, v in _clickhouse_dtypes.items()}
 _ibis_dtypes[dt.String] = 'String'
 
 
-class ClickhouseDataType(object):
+class ClickhouseDataType:
 
     __slots__ = 'typename', 'nullable'
 
@@ -248,7 +249,7 @@ class ClickhouseClient(SQLClient):
             return response
 
         data, columns = response
-        colnames, typenames = czip(*columns)
+        colnames, typenames = zip(*columns)
         coltypes = list(map(ClickhouseDataType.parse, typenames))
 
         return data, colnames, coltypes

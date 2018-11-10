@@ -8,7 +8,6 @@ import ibis.util as util
 import ibis
 
 from ibis import options
-from ibis.compat import map, zip
 from ibis.expr.tests.mocks import MockConnection
 
 
@@ -16,7 +15,7 @@ def isproperty(obj):
     return isinstance(obj, property)
 
 
-class IbisTestEnv(object):
+class IbisTestEnv:
     def items(self):
         return [
             (name, getattr(self, name))

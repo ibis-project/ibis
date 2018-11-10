@@ -24,7 +24,6 @@ import ibis.expr.types as ir
 import ibis.expr.window as _window
 import ibis.util as util
 
-import six
 import toolz
 
 
@@ -49,14 +48,14 @@ _function_types = tuple(
 
 
 def _get_group_by_key(table, value):
-    if isinstance(value, six.string_types):
+    if isinstance(value, str):
         return table[value]
     if isinstance(value, _function_types):
         return value(table)
     return value
 
 
-class GroupedTableExpr(object):
+class GroupedTableExpr:
 
     """
     Helper intermediate construct
@@ -159,7 +158,7 @@ class GroupedTableExpr(object):
           schema:
             foo : string
             bar : string
-            baz : double
+            baz : float64
         >>> expr = (t.group_by('foo')
         ...          .order_by(ibis.desc('bar'))
         ...          .mutate(qux=lambda x: x.baz.lag(),
@@ -171,24 +170,24 @@ class GroupedTableExpr(object):
           schema:
             foo : string
             bar : string
-            baz : double
+            baz : float64
         Selection[table]
           table:
             Table: ref_0
           selections:
             Table: ref_0
-            qux = WindowOp[double*]
-              qux = Lag[double*]
-                baz = Column[double*] 'baz' from table
+            qux = WindowOp[float64*]
+              qux = Lag[float64*]
+                baz = Column[float64*] 'baz' from table
                   ref_0
                 offset:
                   None
                 default:
                   None
               <ibis.expr.window.Window object at 0x...>
-            qux2 = WindowOp[double*]
-              qux2 = Lead[double*]
-                baz = Column[double*] 'baz' from table
+            qux2 = WindowOp[float64*]
+              qux2 = Lead[float64*]
+                baz = Column[float64*] 'baz' from table
                   ref_0
                 offset:
                   None
@@ -284,7 +283,7 @@ def _group_agg_dispatch(name):
     return wrapper
 
 
-class GroupedArray(object):
+class GroupedArray:
 
     def __init__(self, arr, parent):
         self.arr = arr

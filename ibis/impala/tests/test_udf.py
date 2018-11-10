@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 import unittest
 
 from posixpath import join as pjoin
@@ -15,7 +17,6 @@ import ibis.common as com
 import ibis.util as util
 
 from ibis.common import IbisTypeError
-from ibis.compat import Decimal
 from ibis.expr.tests.mocks import MockConnection
 
 pytest.importorskip('hdfs')
@@ -84,7 +85,7 @@ class TestWrapping(unittest.TestCase):
             expr = func(sv)
             assert type(expr) == type(ibis_type.scalar_type()(expr.op()))  # noqa: E501, E721
             expr = func(av)
-            assert type(expr) == type(ibis_type.array_type()(expr.op()))  # noqa: E501, E721
+            assert type(expr) == type(ibis_type.column_type()(expr.op()))  # noqa: E501, E721
 
     def test_uda_primitive_output_types(self):
         types = [

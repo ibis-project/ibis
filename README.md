@@ -40,5 +40,4 @@ Ibis currently provides tools for interacting with the following systems:
 - [BigQuery](https://cloud.google.com/bigquery)
 - [MapD](https://www.mapd.com/) (Experimental)
 
-Learn more about using the library at http://docs.ibis-project.org and read the
-project blog at http://ibis-project.org for news and updates.
+Learn more about using the library at http://docs.ibis-project.org.

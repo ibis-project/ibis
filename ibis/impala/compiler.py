@@ -1,4 +1,4 @@
-from six import StringIO
+from io import StringIO
 import datetime
 from operator import add, mul, sub
 
@@ -111,7 +111,9 @@ _sql_type_names = {
     'int32': 'int',
     'int64': 'bigint',
     'float': 'float',
+    'float32': 'float',
     'double': 'double',
+    'float64': 'double',
     'string': 'string',
     'boolean': 'boolean',
     'timestamp': 'timestamp',
@@ -124,12 +126,9 @@ def _cast(translator, expr):
     arg, target_type = op.args
     arg_formatted = translator.translate(arg)
 
-    if isinstance(arg, ir.CategoryValue) and target_type == 'int32':
+    if isinstance(arg, ir.CategoryValue) and target_type == dt.int32:
         return arg_formatted
-    if (
-        isinstance(arg, (ir.TimeValue, ir.DateValue, ir.TimestampValue)) and
-            target_type == 'int64'
-            ):
+    if isinstance(arg, ir.TemporalValue) and target_type == dt.int64:
         return '1000000 * unix_timestamp({})'.format(arg_formatted)
     else:
         sql_type = _type_to_sql_string(target_type)
@@ -648,7 +647,7 @@ def quote_identifier(name, quotechar='`', force=False):
         return name
 
 
-class CaseFormatter(object):
+class CaseFormatter:
 
     def __init__(self, translator, base, cases, results, default):
         self.translator = translator

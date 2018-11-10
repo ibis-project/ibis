@@ -21,7 +21,7 @@ import ibis.expr.schema as sch
 from ibis.config import options
 
 
-class DataFrameWriter(object):
+class DataFrameWriter:
 
     """
     Interface class for writing pandas objects to Impala tables

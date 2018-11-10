@@ -22,7 +22,7 @@ def test_format_custom_expr():
 def test_format_table_column(table):
     # GH #507
     result = repr(table.f)
-    assert 'Column[double*]' in result
+    assert 'Column[float64*]' in result
 
 
 def test_format_projection(table):
@@ -38,7 +38,9 @@ def test_table_type_output():
             ('dept_id', 'string'),
             ('year', 'int32'),
             ('y', 'double')
-        ], 'foo')
+        ],
+        name='foo',
+    )
 
     expr = foo.dept_id == foo.view().dept_id
     result = repr(expr)

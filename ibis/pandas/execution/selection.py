@@ -3,22 +3,22 @@
 
 from __future__ import absolute_import
 
+import functools
 import operator
-from operator import methodcaller
 
 from collections import OrderedDict
+from operator import methodcaller
 
 import pandas as pd
 
 import toolz
+
 from toolz import concat, concatv, unique, compose, first
 
 from multipledispatch import Dispatcher
 
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
-
-from ibis.compat import functools
 
 from ibis.pandas.dispatch import execute_node
 from ibis.pandas.core import execute

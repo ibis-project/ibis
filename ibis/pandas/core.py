@@ -81,7 +81,7 @@ from __future__ import absolute_import
 import numbers
 import datetime
 
-import six
+import functools
 
 import numpy as np
 
@@ -99,7 +99,6 @@ import ibis.expr.operations as ops
 import ibis.expr.datatypes as dt
 import ibis.expr.window as win
 
-from ibis.compat import functools
 from ibis.client import find_backends
 
 import ibis.pandas.aggcontext as agg_ctx
@@ -108,7 +107,7 @@ from ibis.pandas.dispatch import (
 )
 
 
-integer_types = six.integer_types + (np.integer,)
+integer_types = np.integer, int
 floating_types = numbers.Real,
 numeric_types = integer_types + floating_types
 boolean_types = bool, np.bool_
@@ -119,7 +118,7 @@ timestamp_types = pd.Timestamp, datetime.datetime, np.datetime64
 timedelta_types = pd.Timedelta, datetime.timedelta, np.timedelta64
 temporal_types = date_types + time_types + timestamp_types + timedelta_types
 scalar_types = fixed_width_types + temporal_types
-simple_types = scalar_types + six.string_types
+simple_types = scalar_types + (str,)
 
 _VALID_INPUT_TYPES = (
     ibis.client.Client, ir.Expr, dt.DataType, type(None), win.Window, tuple

@@ -1,12 +1,12 @@
+import functools
+import inspect
 import os
 import regex as re
 import math
 
 import sqlalchemy as sa
 
-from ibis import compat
 from ibis.client import Database
-from ibis.compat import functools
 from ibis.sql.sqlite.compiler import SQLiteDialect
 
 import ibis.sql.alchemy as alch
@@ -72,7 +72,7 @@ def _ibis_sqlite_capitalize(string):
 
 @udf
 def _ibis_sqlite_translate(string, from_string, to_string):
-    table = compat.maketrans(from_string, to_string)
+    table = str.maketrans(from_string, to_string)
     return string.translate(table)
 
 
@@ -236,7 +236,7 @@ def _ibis_sqlite_sqrt(arg):
     return None if arg is None or arg < 0.0 else math.sqrt(arg)
 
 
-class _ibis_sqlite_var(object):
+class _ibis_sqlite_var:
     def __init__(self, offset):
         self.mean = 0.0
         self.sum_of_squares_of_differences = 0.0
@@ -260,25 +260,25 @@ class _ibis_sqlite_var(object):
 @udaf
 class _ibis_sqlite_var_pop(_ibis_sqlite_var):
     def __init__(self):
-        super(_ibis_sqlite_var_pop, self).__init__(0)
+        super().__init__(0)
 
 
 @udaf
 class _ibis_sqlite_var_samp(_ibis_sqlite_var):
     def __init__(self):
-        super(_ibis_sqlite_var_samp, self).__init__(1)
+        super().__init__(1)
 
 
 def number_of_arguments(callable):
-    signature = compat.signature(callable)
+    signature = inspect.signature(callable)
     parameters = signature.parameters.values()
     kinds = [param.kind for param in parameters]
     valid_kinds = (
-        compat.Parameter.POSITIONAL_OR_KEYWORD,
-        compat.Parameter.POSITIONAL_ONLY,
+        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        inspect.Parameter.POSITIONAL_ONLY,
     )
     if any(kind not in valid_kinds for kind in kinds) or any(
-        param.default is not compat.Parameter.empty for param in parameters
+        param.default is not inspect.Parameter.empty for param in parameters
     ):
         raise TypeError(
             'Only positional arguments without defaults are supported in Ibis '
@@ -322,7 +322,7 @@ class SQLiteClient(alch.AlchemyClient):
     table_class = SQLiteTable
 
     def __init__(self, path=None, create=False):
-        super(SQLiteClient, self).__init__(sa.create_engine('sqlite://'))
+        super().__init__(sa.create_engine('sqlite://'))
         self.name = path
         self.database_name = 'base'
 
@@ -396,4 +396,4 @@ class SQLiteClient(alch.AlchemyClient):
     def list_tables(self, like=None, database=None, schema=None):
         if database is None:
             database = self.database_name
-        return super(SQLiteClient, self).list_tables(like, schema=database)
+        return super().list_tables(like, schema=database)

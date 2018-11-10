@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os
+import pathlib
 
 from setuptools import setup, find_packages
 
@@ -10,7 +10,7 @@ import versioneer
 LONG_DESCRIPTION = """
 Ibis is a productivity-centric Python big data framework.
 
-See http://ibis-project.org
+See http://docs.ibis-project.org
 """
 
 impala_requires = [
@@ -47,13 +47,15 @@ all_requires = (
 develop_requires = all_requires + [
     'click',
     'flake8',
+    'mypy',
     'pytest>=3',
 ]
 
-with open(
-    os.path.join(os.path.dirname(__file__), 'requirements.txt'), 'rt'
-) as f:
-    install_requires = list(map(str.strip, f))
+install_requires = [
+    line.strip() for line in pathlib.Path(__file__).parent.joinpath(
+        'requirements.txt'
+    ).read_text().splitlines()
+]
 
 setup(
     name='ibis-framework',
@@ -62,33 +64,21 @@ setup(
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     install_requires=install_requires,
-    python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*',
+    python_requires='>=3.5',
     extras_require={
         'all': all_requires,
-        'develop:python_version < "3"': develop_requires + [
-            'thriftpy<=0.3.9',
-            'thrift<=0.9.3',
-            'mock',
-        ],
-        'develop:python_version >= "3"': develop_requires,
-        'impala:python_version < "3"': impala_requires + [
-            'thriftpy<=0.3.9',
-            'thrift<=0.9.3',
-        ],
-        'impala:python_version >= "3"': impala_requires,
+        'develop': develop_requires,
+        'impala': impala_requires,
         'kerberos': kerberos_requires,
         'postgres': postgres_requires,
-        'mapd:python_version >= "3"': mapd_requires,
+        'mapd': mapd_requires,
         'mysql': mysql_requires,
         'sqlite': sqlite_requires,
         'visualization': visualization_requires,
         'clickhouse': clickhouse_requires,
         'bigquery': bigquery_requires,
-        'csv:python_version < "3"': ['pathlib2'],
         'hdf5': hdf5_requires,
-        'hdf5:python_version < "3"': hdf5_requires + ['pathlib2'],
         'parquet': parquet_requires,
-        'parquet:python_version < "3"': parquet_requires + ['pathlib2'],
     },
     description="Productivity-centric Python Big Data Framework",
     long_description=LONG_DESCRIPTION,
@@ -97,9 +87,7 @@ setup(
         'Operating System :: OS Independent',
         'Intended Audience :: Science/Research',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 2.7',
         'Topic :: Scientific/Engineering',
     ],
     license='Apache License, Version 2.0',

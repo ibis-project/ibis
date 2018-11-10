@@ -3,14 +3,15 @@ from __future__ import absolute_import
 import collections
 import datetime
 import decimal
+import functools
 import math
 import numbers
 import operator
+
 from collections import Sized
 
 import numpy as np
 import pandas as pd
-import six
 import toolz
 from pandas.core.groupby import DataFrameGroupBy, SeriesGroupBy
 
@@ -20,7 +21,7 @@ import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
-from ibis.compat import functools, map, DatetimeTZDtype, zip
+from ibis.compat import DatetimeTZDtype
 
 from ibis.pandas.core import (
     execute,
@@ -46,7 +47,7 @@ def execute_node_literal_value_datatype(op, value, datatype, **kwargs):
 
 @execute_literal.register(
     ops.Literal,
-    timedelta_types + six.string_types + integer_types,
+    timedelta_types + (str,) + integer_types,
     dt.Interval
 )
 def execute_interval_literal(op, value, dtype, **kwargs):
@@ -290,11 +291,7 @@ def execute_cast_bool_to_timestamp(op, data, type, **kwargs):
     )
 
 
-@execute_node.register(
-    ops.Cast,
-    integer_types + six.string_types,
-    dt.Timestamp
-)
+@execute_node.register(ops.Cast, integer_types + (str,), dt.Timestamp)
 def execute_cast_simple_literal_to_timestamp(op, data, type, **kwargs):
     """Cast integer and strings to timestamps"""
     return pd.Timestamp(data, tz=type.timezone)
@@ -322,9 +319,7 @@ def execute_cast_datetime_to_datetime(op, data, type, **kwargs):
     ).to_pydatetime()
 
 
-@execute_node.register(
-    ops.Cast, fixed_width_types + six.string_types, dt.DataType
-)
+@execute_node.register(ops.Cast, fixed_width_types + (str,), dt.DataType)
 def execute_cast_string_literal(op, data, type, **kwargs):
     try:
         cast_function = constants.IBIS_TO_PYTHON_LITERAL_TYPES[type]
@@ -339,7 +334,7 @@ def execute_cast_string_literal(op, data, type, **kwargs):
 @execute_node.register(
     ops.Round,
     scalar_types,
-    (six.integer_types, type(None))
+    (int, type(None))
 )
 def execute_round_scalars(op, data, places, **kwargs):
     return round(data, places) if places else round(data)
@@ -348,7 +343,7 @@ def execute_round_scalars(op, data, places, **kwargs):
 @execute_node.register(
     ops.Round,
     pd.Series,
-    (pd.Series, np.integer, type(None)) + six.integer_types
+    (pd.Series, np.integer, type(None), int)
 )
 def execute_round_series(op, data, places, **kwargs):
     if data.dtype == np.dtype(np.object_):
@@ -621,13 +616,13 @@ def execute_not_bool(op, data, **kwargs):
     numeric_types,
 )
 @execute_node.register(
-    (ops.Comparison, ops.Add, ops.Multiply), pd.Series, six.string_types)
+    (ops.Comparison, ops.Add, ops.Multiply), pd.Series, str)
 @execute_node.register(
-    (ops.Comparison, ops.Add, ops.Multiply), six.string_types, pd.Series)
+    (ops.Comparison, ops.Add, ops.Multiply), str, pd.Series)
 @execute_node.register(
-    (ops.Comparison, ops.Add), six.string_types, six.string_types)
-@execute_node.register(ops.Multiply, integer_types, six.string_types)
-@execute_node.register(ops.Multiply, six.string_types, integer_types)
+    (ops.Comparison, ops.Add), str, str)
+@execute_node.register(ops.Multiply, integer_types, str)
+@execute_node.register(ops.Multiply, str, integer_types)
 def execute_binary_op(op, left, right, **kwargs):
     op_type = type(op)
     try:
@@ -697,9 +692,7 @@ def execute_null_if_zero_series(op, data, **kwargs):
     return data.where(data != 0, np.nan)
 
 
-@execute_node.register(
-    ops.StringSplit, pd.Series, (pd.Series,) + six.string_types
-)
+@execute_node.register(ops.StringSplit, pd.Series, (pd.Series, str))
 def execute_string_split(op, data, delimiter, **kwargs):
     return data.str.split(delimiter)
 

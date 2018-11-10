@@ -1,17 +1,15 @@
 import pytest
 from pytest import param
 
-import six
 import ibis
 import ibis.tests.util as tu
 import ibis.expr.datatypes as dt
-from ibis.compat import maketrans
 
 
 def test_string_col_is_unicode(backend, alltypes, df):
     dtype = alltypes.string_col.type()
     assert dtype == dt.String(nullable=dtype.nullable)
-    is_text_type = lambda x: isinstance(x, six.text_type)  # noqa: E731
+    is_text_type = lambda x: isinstance(x, str)  # noqa: E731
     assert df.string_col.map(is_text_type).all()
     result = alltypes.string_col.execute()
     assert result.map(is_text_type).all()
@@ -61,8 +59,8 @@ def test_string_col_is_unicode(backend, alltypes, df):
             id='repeat'
         ),
         param(
-            lambda t: t.string_col.translate(u'0', u'a'),
-            lambda t: t.string_col.str.translate(maketrans(u'0', u'a')),
+            lambda t: t.string_col.translate('0', 'a'),
+            lambda t: t.string_col.str.translate(str.maketrans('0', 'a')),
             id='translate',
         ),
         param(

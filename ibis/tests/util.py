@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
+
 import pytest
 
 import ibis
 import ibis.common as com
 import ibis.util as util
-
-from ibis.compat import functools
 
 
 def assert_equal(left, right):

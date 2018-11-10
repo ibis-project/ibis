@@ -1,11 +1,11 @@
 import collections
+import functools
 import inspect
 import itertools
 
 import ibis.expr.rules as rlz
 import ibis.expr.datatypes as dt
 
-from ibis.compat import functools
 from ibis.expr.signature import Argument as Arg
 
 from ibis.bigquery.compiler import BigQueryUDFNode, compiles

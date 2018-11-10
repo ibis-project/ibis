@@ -1,3 +1,6 @@
+from decimal import Decimal
+from io import StringIO
+
 import unittest
 
 import pytest
@@ -13,7 +16,6 @@ from ibis import literal as L
 from ibis.expr.datatypes import Category
 
 from ibis.common import RelationError
-from ibis.compat import StringIO, Decimal
 from ibis.expr.tests.mocks import MockConnection
 
 pytest.importorskip('hdfs')
@@ -31,7 +33,7 @@ def approx_equal(a, b, eps):
     assert abs(a - b) < eps
 
 
-class ExprSQLTest(object):
+class ExprSQLTest:
 
     def _check_expr_cases(self, cases, named=False):
         for expr, expected in cases:

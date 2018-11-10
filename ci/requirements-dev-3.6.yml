@@ -13,6 +13,7 @@ dependencies:
   - jinja2
   - lz4
   - multipledispatch>=0.6.0
+  - mypy
   - numpy
   - pandas
   - plumbum
@@ -31,7 +32,6 @@ dependencies:
   - regex
   - requests
   - ruamel.yaml
-  - six
   - sqlalchemy
   - thrift
   - toolz

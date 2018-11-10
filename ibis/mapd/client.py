@@ -1,4 +1,4 @@
-from ibis.compat import parse_version
+from pkg_resources import parse_version
 from ibis.client import Database, Query, SQLClient, DatabaseEntity
 from ibis.mapd.compiler import MapDDialect, build_ast
 from ibis.mapd import ddl
@@ -41,7 +41,7 @@ def _validate_compatible(from_schema, to_schema):
     return
 
 
-class MapDDataType(object):
+class MapDDataType:
 
     __slots__ = 'typename', 'nullable'
 
@@ -113,7 +113,7 @@ class MapDDataType(object):
         return cls(typename, nullable=nullable)
 
 
-class MapDCursor(object):
+class MapDCursor:
     """Cursor to allow the MapD client to reuse machinery in ibis/client.py
     """
 

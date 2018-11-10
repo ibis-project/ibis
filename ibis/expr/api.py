@@ -6,7 +6,6 @@ import functools
 import operator
 import warnings
 
-import six
 import toolz
 
 import dateutil.parser
@@ -24,7 +23,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.analytics as _analytics
 import ibis.expr.operations as ops
 
-from ibis.compat import PY2, to_time, to_date
+from ibis.compat import to_time, to_date
 from ibis.expr.types import Expr, null, param, literal, sequence, as_value_expr
 from ibis.expr.schema import Schema
 
@@ -200,12 +199,12 @@ def timestamp(value):
     --------
     result : TimestampScalar
     """
-    if isinstance(value, six.string_types):
+    if isinstance(value, str):
         try:
             value = pd.Timestamp(value)
         except pd.errors.OutOfBoundsDatetime:
             value = dateutil.parser.parse(value)
-    if isinstance(value, six.integer_types):
+    if isinstance(value, int):
         warnings.warn(
             'Integer values for timestamp literals are deprecated in 0.11.0 '
             'and will be removed in 0.12.0. To pass integers as timestamp '
@@ -226,7 +225,7 @@ def date(value):
     --------
     result : TimeScalar
     """
-    if isinstance(value, six.string_types):
+    if isinstance(value, str):
         value = to_date(value)
     return literal(value, type=dt.date)
 
@@ -243,7 +242,7 @@ def time(value):
     --------
     result : TimeScalar
     """
-    if isinstance(value, six.string_types):
+    if isinstance(value, str):
         value = to_time(value)
     return literal(value, type=dt.time)
 
@@ -277,7 +276,7 @@ def interval(value=None, unit='s', years=None, quarters=None, months=None,
         if isinstance(value, datetime.timedelta):
             unit = 's'
             value = int(value.total_seconds())
-        elif not isinstance(value, six.integer_types):
+        elif not isinstance(value, int):
             raise ValueError('Interval value must be an integer')
     else:
         kwds = [
@@ -2039,7 +2038,7 @@ def _string_getitem(self, key):
                 stop = self.length()
 
         return self.substr(start, stop - start)
-    elif isinstance(key, six.integer_types):
+    elif isinstance(key, int):
         return self.substr(key, 1)
     raise NotImplementedError(
         'string __getitem__[{}]'.format(type(key).__name__)
@@ -2252,31 +2251,24 @@ def _timestamp_strftime(arg, format_str):
 
 
 def _timestamp_time(arg):
-    """
-    Return a Time node for a Timestamp
-    We can then perform certain operations on this node
-    w/o actually instantiating the underlying structure
-    (which is inefficient in pandas/numpy)
+    """Return a Time node for a Timestamp.
+
+    We can perform certain operations on this node w/o actually instantiating
+    the underlying structure (which is inefficient in pandas/numpy)
 
     Returns
     -------
-    Time node
+    TimeValue
     """
-    if PY2:
-        raise ValueError("time support is not enabled on python 2")
     return ops.Time(arg).to_expr()
 
 
 def _timestamp_date(arg):
-    """
-    Return a Date node for a Timestamp
-    We can then perform certain operations on this node
-    w/o actually instantiating the underlying structure
-    (which is inefficient in pandas/numpy)
+    """Return a Date for a Timestamp.
 
     Returns
     -------
-    Date node
+    DateValue
     """
     return ops.Date(arg).to_expr()
 
@@ -3030,8 +3022,8 @@ def mutate(table, exprs=None, **mutations):
     UnboundTable[table]
       name: t
       schema:
-        foo : double
-        bar : double
+        foo : float64
+        bar : float64
     <BLANKLINE>
     Selection[table]
       table:
@@ -3040,12 +3032,12 @@ def mutate(table, exprs=None, **mutations):
         Table: ref_0
         baz = Literal[int8]
           5
-        qux = Add[double*]
+        qux = Add[float64*]
           left:
-            foo = Column[double*] 'foo' from table
+            foo = Column[float64*] 'foo' from table
               ref_0
           right:
-            bar = Column[double*] 'bar' from table
+            bar = Column[float64*] 'bar' from table
               ref_0
 
     Using the :meth:`ibis.expr.types.Expr.name` method to name the new columns
@@ -3128,7 +3120,7 @@ def projection(table, exprs):
       name: t
       schema:
         a : int64
-        b : double
+        b : float64
     <BLANKLINE>
     Selection[table]
       table:
@@ -3136,9 +3128,9 @@ def projection(table, exprs):
       selections:
         a = Column[int64*] 'a' from table
           ref_0
-        b_plus_1 = Add[double*]
+        b_plus_1 = Add[float64*]
           left:
-            b = Column[double*] 'b' from table
+            b = Column[float64*] 'b' from table
               ref_0
           right:
             Literal[int8]
@@ -3156,7 +3148,7 @@ def projection(table, exprs):
       name: t
       schema:
         a : int64
-        b : double
+        b : float64
     <BLANKLINE>
     Selection[table]
       table:
@@ -3169,9 +3161,9 @@ def projection(table, exprs):
             where:
               None
           <ibis.expr.window.Window object at 0x...>
-        mean_b = WindowOp[double*]
-          mean_b = Mean[double]
-            b = Column[double*] 'b' from table
+        mean_b = WindowOp[float64*]
+          mean_b = Mean[float64]
+            b = Column[float64*] 'b' from table
               ref_0
             where:
               None
@@ -3188,7 +3180,7 @@ def projection(table, exprs):
     """
     import ibis.expr.analysis as L
 
-    if isinstance(exprs, (Expr,) + six.string_types):
+    if isinstance(exprs, (Expr, str)):
         exprs = [exprs]
 
     projector = L.Projector(table, exprs)

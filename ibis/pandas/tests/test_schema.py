@@ -8,6 +8,8 @@ import ibis
 from ibis.expr import datatypes as dt
 from ibis.expr import schema as sch
 
+pytestmark = pytest.mark.pandas
+
 
 @pytest.mark.parametrize(('column', 'expected_dtype'), [
     ([True, False, False], dt.boolean),
@@ -26,7 +28,7 @@ from ibis.expr import schema as sch
       pd.Timestamp('2010-11-01 00:02:00.1000'),
       pd.Timestamp('2010-11-01 00:03:00.300000')], dt.timestamp),
     (pd.date_range('20130101', periods=3, tz='US/Eastern'),
-     dt.timestamp('US/Eastern')),
+     dt.Timestamp('US/Eastern')),
     ([pd.Timedelta('1 days'),
       pd.Timedelta('-1 days 2 min 3us'),
       pd.Timedelta('-2 days +23:57:59.999997')], dt.Interval('ns')),

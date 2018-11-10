@@ -6,11 +6,12 @@ import ibis
 import ibis.common as com
 import ibis.config as config
 import ibis.expr.api as api
+import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.expr.analysis as L
 import ibis.expr.operations as ops
 
-from ibis.compat import pickle
+import pickle
 from ibis.common import ExpressionError, RelationError
 from ibis.expr.types import ColumnExpr, TableExpr
 
@@ -45,7 +46,7 @@ def test_view_new_relation(table):
 
 def test_get_type(table, schema_dict):
     for k, v in schema_dict.items():
-        assert table._get_type(k) == v
+        assert table._get_type(k) == dt.dtype(v)
 
 
 def test_getitem_column_select(table, schema_dict):
@@ -103,7 +104,7 @@ def test_projection_with_exprs(table):
     proj = table[col_exprs + ['g']]
     schema = proj.schema()
     assert schema.names == ['log_b', 'mean_diff', 'g']
-    assert schema.types == ['double', 'double', 'string']
+    assert schema.types == [dt.double, dt.double, dt.string]
 
     # Test with unnamed expr
     with pytest.raises(ExpressionError):

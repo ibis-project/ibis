@@ -1,10 +1,9 @@
 import datetime
 
 from collections import OrderedDict
+from pkg_resources import parse_version
 
 import regex as re
-
-import six
 
 import pandas as pd
 
@@ -21,7 +20,6 @@ import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 import ibis.expr.lineage as lin
 
-from ibis.compat import parse_version
 from ibis.client import Database, Query, SQLClient
 from ibis.bigquery import compiler as comp
 from ibis.bigquery.datatypes import ibis_type_to_bigquery_type
@@ -82,7 +80,7 @@ def bigquery_schema(table):
     return sch.schema(fields)
 
 
-class BigQueryCursor(object):
+class BigQueryCursor:
     """Cursor to allow the BigQuery client to reuse machinery in ibis/client.py
     """
 
@@ -136,7 +134,7 @@ def _find_scalar_parameter(expr):
 class BigQueryQuery(Query):
 
     def __init__(self, client, ddl, query_parameters=None):
-        super(BigQueryQuery, self).__init__(client, ddl)
+        super().__init__(client, ddl)
 
         # self.expr comes from the parent class
         query_parameter_names = dict(
@@ -205,7 +203,7 @@ def bq_param_array(param, value):
 
 @bigquery_param.register(
     ir.TimestampScalar,
-    six.string_types + (datetime.datetime, datetime.date)
+    (str, datetime.datetime, datetime.date)
 )
 def bq_param_timestamp(param, value):
     assert isinstance(param.type(), dt.Timestamp), str(param.type())
@@ -216,12 +214,12 @@ def bq_param_timestamp(param, value):
         param.get_name(), 'TIMESTAMP', timestamp_value)
 
 
-@bigquery_param.register(ir.StringScalar, six.string_types)
+@bigquery_param.register(ir.StringScalar, str)
 def bq_param_string(param, value):
     return bq.ScalarQueryParameter(param.get_name(), 'STRING', value)
 
 
-@bigquery_param.register(ir.IntegerScalar, six.integer_types)
+@bigquery_param.register(ir.IntegerScalar, int)
 def bq_param_integer(param, value):
     return bq.ScalarQueryParameter(param.get_name(), 'INT64', value)
 
@@ -236,7 +234,7 @@ def bq_param_boolean(param, value):
     return bq.ScalarQueryParameter(param.get_name(), 'BOOL', value)
 
 
-@bigquery_param.register(ir.DateScalar, six.string_types)
+@bigquery_param.register(ir.DateScalar, str)
 def bq_param_date_string(param, value):
     return bigquery_param(param, pd.Timestamp(value).to_pydatetime().date())
 
@@ -365,7 +363,7 @@ class BigQueryClient(SQLClient):
         return self.dataset
 
     def table(self, name, database=None):
-        t = super(BigQueryClient, self).table(name, database=database)
+        t = super().table(name, database=database)
         project, dataset, name = t.op().name.split('.')
         dataset_ref = self.client.dataset(dataset, project=project)
         table_ref = dataset_ref.table(name)

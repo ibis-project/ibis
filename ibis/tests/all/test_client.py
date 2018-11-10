@@ -3,7 +3,7 @@ import pytest
 import ibis
 import ibis.tests.util as tu
 import ibis.expr.datatypes as dt
-from ibis.compat import parse_version
+from pkg_resources import parse_version
 
 
 @tu.skipif_unsupported

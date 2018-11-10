@@ -1,3 +1,4 @@
+import functools
 import operator
 import os
 
@@ -5,7 +6,6 @@ from collections import OrderedDict
 from operator import methodcaller
 from datetime import date, datetime, time
 
-import six
 
 import pytest
 
@@ -14,7 +14,6 @@ import numpy as np
 import toolz
 
 from ibis import literal
-from ibis.compat import PY2, functools
 from ibis.common import IbisTypeError
 from ibis.tests.util import assert_equal
 
@@ -1079,7 +1078,6 @@ def test_decimal_modulo_output_type(value, type, expected_type_class):
         operator.ge,
     ]
 )
-@pytest.mark.skipif(PY2, reason="time comparsions not available on PY2")
 def test_time_compare(op, left, right):
     result = op(left, right)
     assert result.type().equals(dt.boolean)
@@ -1106,15 +1104,6 @@ def test_time_compare(op, left, right):
 def test_time_timestamp_invalid_compare(op, left, right):
     result = op(left, right)
     assert result.type().equals(dt.boolean)
-
-
-@pytest.mark.skipif(not PY2, reason="invalid compare of time on PY2")
-def test_time_invalid_compare_on_py2():
-
-    # we cannot actually compare datetime.time objects and literals
-    # in a deferred way in python 2, they short circuit in the CPython
-    result = operator.eq(time(10, 0), literal('10:00'))
-    assert not result
 
 
 def test_scalar_parameter_set():
@@ -1195,7 +1184,6 @@ def test_scalar_parameter_compare(left, right, expected):
         (['a'], [1]),
     ]
 )
-@pytest.mark.xfail(PY2, reason='Not supported on Python 2')
 def test_between_time_failure_time(case, creator, left, right):
     value = creator(case)
     with pytest.raises(TypeError):
@@ -1427,7 +1415,8 @@ def test_invalid_negate(value, expected_type):
         np.uint64,
         np.uint8,
         float,
-    ] + list(six.integer_types)
+        int,
+    ]
 )
 def test_valid_negate(type):
     value = type(1)

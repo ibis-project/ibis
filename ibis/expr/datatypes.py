@@ -1,47 +1,72 @@
+import builtins
 import collections
 import datetime
+import functools
 import itertools
 import numbers
 import re
+import typing
 
-import six
+from typing import (
+    Any as GenericAny,
+    Callable,
+    Iterator,
+    List,
+    Mapping,
+    NamedTuple,
+    Optional,
+    Sequence,
+    Set as GenericSet,
+    Tuple,
+    TypeVar,
+    Union,
+)
+
 import pandas as pd
 
 import toolz
 from multipledispatch import Dispatcher
 
 import ibis.common as com
-from ibis.compat import PY2, builtins, functools
 import ibis.expr.types as ir
 
 
-class DataType(object):
-
+class DataType:
     __slots__ = 'nullable',
 
-    def __init__(self, nullable=True):
+    def __init__(self, nullable: bool = True) -> None:
         self.nullable = nullable
 
-    def __call__(self, nullable=True):
+    def __call__(self, nullable: bool = True) -> 'DataType':
+        if nullable is not True and nullable is not False:
+            raise TypeError(
+                "__call__ only accepts the 'nullable' argument. "
+                "Please construct a new instance of the type to change the "
+                "values of the attributes."
+            )
         return self._factory(nullable=nullable)
 
-    def _factory(self, nullable=True):
-        return type(self)(nullable=nullable)
+    def _factory(self, nullable: bool = True) -> 'DataType':
+        slots = {
+            slot: getattr(self, slot) for slot in self.__slots__
+            if slot != 'nullable'
+        }
+        return type(self)(nullable=nullable, **slots)
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return self.equals(other)
 
-    def __ne__(self, other):
-        return not self.__eq__(other)
+    def __ne__(self, other) -> bool:
+        return not (self == other)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         custom_parts = tuple(
             getattr(self, slot)
             for slot in toolz.unique(self.__slots__ + ('nullable',))
         )
         return hash((type(self),) + custom_parts)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return '{}({})'.format(
             self.name,
             ', '.join(
@@ -50,36 +75,30 @@ class DataType(object):
             )
         )
 
-    if PY2:
-        def __getstate__(self):
-            return {
-                slot: getattr(self, slot)
-                for slot in toolz.unique(self.__slots__ + ('nullable',))
-            }
-
-        def __setstate__(self, instance_dict):
-            for key, value in instance_dict.items():
-                setattr(self, key, value)
-
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name.lower()
 
     @property
-    def name(self):
+    def name(self) -> str:
         return type(self).__name__
 
-    def equals(self, other, cache=None):
-        if isinstance(other, six.string_types):
-            other = dtype(other)
-
+    def equals(
+        self,
+        other: 'DataType',
+        cache: Optional[Mapping[GenericAny, bool]] = None
+    ) -> bool:
+        if isinstance(other, str):
+            raise TypeError(
+                'Comparing datatypes to strings is not allowed. Convert '
+                '{!r} to the equivalent DataType instance.'.format(other)
+            )
         return (
             isinstance(other, type(self)) and
             self.nullable == other.nullable and
-            self._equal_part(other, cache=cache)
+            self.__slots__ == other.__slots__ and
+            all(getattr(self, slot) == getattr(other, slot)
+                for slot in self.__slots__)
         )
-
-    def _equal_part(self, other, cache=None):
-        return True
 
     def castable(self, target, **kwargs):
         return castable(self, target, **kwargs)
@@ -90,20 +109,18 @@ class DataType(object):
     def scalar_type(self):
         return functools.partial(self.scalar, dtype=self)
 
-    def array_type(self):
+    def column_type(self):
         return functools.partial(self.column, dtype=self)
 
 
 class Any(DataType):
-
     __slots__ = ()
 
 
 class Primitive(DataType):
-
     __slots__ = ()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         name = self.name.lower()
         if not self.nullable:
             return '{}[non-nullable]'.format(name)
@@ -118,7 +135,6 @@ class Null(DataType):
 
 
 class Variadic(DataType):
-
     __slots__ = ()
 
 
@@ -129,7 +145,7 @@ class Boolean(Primitive):
     __slots__ = ()
 
 
-Bounds = collections.namedtuple('Bounds', ('lower', 'upper'))
+Bounds = NamedTuple('Bounds', [('lower', int), ('upper', int)])
 
 
 class Integer(Primitive):
@@ -139,10 +155,10 @@ class Integer(Primitive):
     __slots__ = ()
 
     @property
-    def bounds(self):
-        exp = self._nbytes * 8 - 1
-        lower = -1 << exp
-        return Bounds(lower=lower, upper=~lower)
+    def _nbytes(self) -> int:
+        raise TypeError(
+            "Cannot determine the size in bytes of an abstract integer type."
+        )
 
 
 class String(Variadic):
@@ -189,42 +205,41 @@ class Time(Primitive):
     __slots__ = ()
 
 
-class Timestamp(Primitive):
+class Timestamp(DataType):
     scalar = ir.TimestampScalar
     column = ir.TimestampColumn
 
     __slots__ = 'timezone',
 
-    def __init__(self, timezone=None, nullable=True):
-        super(Timestamp, self).__init__(nullable=nullable)
+    def __init__(
+        self,
+        timezone: Optional[str] = None,
+        nullable: bool = True
+    ) -> None:
+        super().__init__(nullable=nullable)
         self.timezone = timezone
 
-    def _equal_part(self, other, cache=None):
-        return self.timezone == other.timezone
-
-    def __call__(self, timezone=None, nullable=True):
-        return type(self)(timezone=timezone, nullable=nullable)
-
-    def __str__(self):
+    def __str__(self) -> str:
         timezone = self.timezone
         typename = self.name.lower()
         if timezone is None:
             return typename
         return '{}({!r})'.format(typename, timezone)
 
-    def __repr__(self):
-        return DataType.__repr__(self)
-
 
 class SignedInteger(Integer):
-
     @property
     def largest(self):
         return int64
 
+    @property
+    def bounds(self):
+        exp = self._nbytes * 8 - 1
+        upper = (1 << exp) - 1
+        return Bounds(lower=~upper, upper=upper)
+
 
 class UnsignedInteger(Integer):
-
     @property
     def largest(self):
         return uint64
@@ -246,87 +261,72 @@ class Floating(Primitive):
     def largest(self):
         return float64
 
+    @property
+    def _nbytes(self) -> int:
+        raise TypeError(
+            "Cannot determine the size in bytes of an abstract floating "
+            "point type."
+        )
+
 
 class Int8(SignedInteger):
-
     __slots__ = ()
-
     _nbytes = 1
 
 
 class Int16(SignedInteger):
-
     __slots__ = ()
-
     _nbytes = 2
 
 
 class Int32(SignedInteger):
-
     __slots__ = ()
-
     _nbytes = 4
 
 
 class Int64(SignedInteger):
-
     __slots__ = ()
-
     _nbytes = 8
 
 
 class UInt8(UnsignedInteger):
-
     __slots__ = ()
-
     _nbytes = 1
 
 
 class UInt16(UnsignedInteger):
-
     __slots__ = ()
-
     _nbytes = 2
 
 
 class UInt32(UnsignedInteger):
-
     __slots__ = ()
-
     _nbytes = 4
 
 
 class UInt64(UnsignedInteger):
-
     __slots__ = ()
-
     _nbytes = 8
 
 
-class Halffloat(Floating):
-
+class Float16(Floating):
     __slots__ = ()
-
     _nbytes = 2
 
 
-class Float(Floating):
-
+class Float32(Floating):
     __slots__ = ()
-
     _nbytes = 4
 
 
-class Double(Floating):
-
+class Float64(Floating):
     __slots__ = ()
-
     _nbytes = 8
 
 
-Float16 = Halffloat
-Float32 = Float
-Float64 = Double
+Halffloat = Float16
+Float = Float32
+Double = Float64
 
 
 class Decimal(DataType):
@@ -335,7 +335,12 @@ class Decimal(DataType):
 
     __slots__ = 'precision', 'scale'
 
-    def __init__(self, precision, scale, nullable=True):
+    def __init__(
+        self,
+        precision: int,
+        scale: int,
+        nullable: bool = True
+    ) -> None:
         if not isinstance(precision, numbers.Integral):
             raise TypeError('Decimal type precision must be an integer')
         if not isinstance(scale, numbers.Integral):
@@ -354,26 +359,20 @@ class Decimal(DataType):
                 )
             )
 
-        super(Decimal, self).__init__(nullable=nullable)
-        self.precision = precision
-        self.scale = scale
+        super().__init__(nullable=nullable)
+        self.precision = precision  # type: int
+        self.scale = scale  # type: int
 
-    def __str__(self):
+    def __str__(self) -> str:
         return '{}({:d}, {:d})'.format(
             self.name.lower(),
             self.precision,
             self.scale,
         )
 
-    def _equal_part(self, other, cache=None):
-        return self.precision == other.precision and self.scale == other.scale
-
     @property
-    def largest(self):
+    def largest(self) -> 'Decimal':
         return Decimal(38, self.scale)
-
-
-assert hasattr(Decimal, '__hash__')
 
 
 class Interval(DataType):
@@ -397,8 +396,13 @@ class Interval(DataType):
         ns='nanosecond'
     )
 
-    def __init__(self, unit='s', value_type=None, nullable=True):
-        super(Interval, self).__init__(nullable=nullable)
+    def __init__(
+        self,
+        unit: str = 's',
+        value_type: Integer = None,
+        nullable: bool = True,
+    ) -> None:
+        super().__init__(nullable=nullable)
         if unit not in self._units:
             raise ValueError('Unsupported interval unit `{}`'.format(unit))
 
@@ -428,10 +432,6 @@ class Interval(DataType):
         value_type_name = self.value_type.name.lower()
         return '{}<{}>(unit={!r})'.format(typename, value_type_name, unit)
 
-    def _equal_part(self, other, cache=None):
-        return (self.unit == other.unit and
-                self.value_type.equals(other.value_type, cache=cache))
-
 
 class Category(DataType):
     scalar = ir.CategoryScalar
@@ -440,7 +440,7 @@ class Category(DataType):
     __slots__ = 'cardinality',
 
     def __init__(self, cardinality=None, nullable=True):
-        super(Category, self).__init__(nullable=nullable)
+        super().__init__(nullable=nullable)
         self.cardinality = cardinality
 
     def __repr__(self):
@@ -449,12 +449,6 @@ class Category(DataType):
         else:
             cardinality = 'unknown'
         return '{}(cardinality={!r})'.format(self.name, cardinality)
-
-    def _equal_part(self, other, cache=None):
-        return (
-            self.cardinality == other.cardinality and
-            self.nullable == other.nullable
-        )
 
     def to_integer_type(self):
         # TODO: this should be removed I guess
@@ -468,9 +462,14 @@ class Struct(DataType):
     scalar = ir.StructScalar
     column = ir.StructColumn
 
-    __slots__ = 'pairs',
+    __slots__ = 'names', 'types'
 
-    def __init__(self, names, types, nullable=True):
+    def __init__(
+        self,
+        names: List[str],
+        types: List[DataType],
+        nullable: bool = True,
+    ) -> None:
         """Construct a ``Struct`` type from a `names` and `types`.
 
         Parameters
@@ -484,47 +483,45 @@ class Struct(DataType):
         nullable : bool, optional
             Whether the struct can be null
         """
+        if not (names and types):
+            raise ValueError('names and types must not be empty')
         if len(names) != len(types):
             raise ValueError('names and types must have the same length')
 
-        super(Struct, self).__init__(nullable=nullable)
-        self.pairs = collections.OrderedDict(zip(names, types))
+        super().__init__(nullable=nullable)
+        self.names = names
+        self.types = types
 
     @classmethod
-    def from_tuples(self, pairs):
-        return Struct(*map(list, zip(*pairs)))
+    def from_tuples(
+        self,
+        pairs: Sequence[Tuple[str, Union[str, DataType]]],
+        nullable: bool = True,
+    ) -> 'Struct':
+        names, types = zip(*pairs)
+        return Struct(list(names), list(map(dtype, types)), nullable=nullable)
 
     @property
-    def names(self):
-        return self.pairs.keys()
+    def pairs(self) -> Mapping:
+        return collections.OrderedDict(zip(self.names, self.types))
 
-    @property
-    def types(self):
-        return self.pairs.values()
-
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> DataType:
         return self.pairs[key]
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((
             type(self), tuple(self.names), tuple(self.types), self.nullable
         ))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return '{}({}, nullable={})'.format(
             self.name, list(self.pairs.items()), self.nullable
         )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return '{}<{}>'.format(
             self.name.lower(),
             ', '.join(itertools.starmap('{}: {}'.format, self.pairs.items()))
-        )
-
-    def _equal_part(self, other, cache=None):
-        return self.names == other.names and (
-            left.equals(right, cache=cache)
-            for left, right in zip(self.types, other.types)
         )
 
 
@@ -534,15 +531,16 @@ class Array(Variadic):
 
     __slots__ = 'value_type',
 
-    def __init__(self, value_type, nullable=True):
-        super(Array, self).__init__(nullable=nullable)
+    def __init__(
+        self,
+        value_type: Union[str, DataType],
+        nullable: bool = True
+    ) -> None:
+        super().__init__(nullable=nullable)
         self.value_type = dtype(value_type)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return '{}<{}>'.format(self.name.lower(), self.value_type)
-
-    def _equal_part(self, other, cache=None):
-        return self.value_type.equals(other.value_type, cache=cache)
 
 
 class Set(Variadic):
@@ -551,15 +549,16 @@ class Set(Variadic):
 
     __slots__ = 'value_type',
 
-    def __init__(self, value_type, nullable=True):
-        super(Set, self).__init__(nullable=nullable)
+    def __init__(
+        self,
+        value_type: Union[str, DataType],
+        nullable: bool = True
+    ) -> None:
+        super().__init__(nullable=nullable)
         self.value_type = dtype(value_type)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return '{}<{}>'.format(self.name.lower(), self.value_type)
-
-    def _equal_part(self, other, cache=None):
-        return self.value_type.equals(other.value_type, cache=cache)
 
 
 class Enum(DataType):
@@ -568,16 +567,15 @@ class Enum(DataType):
 
     __slots__ = 'rep_type', 'value_type'
 
-    def __init__(self, rep_type, value_type, nullable=True):
-        super(Enum, self).__init__(nullable=nullable)
+    def __init__(
+        self,
+        rep_type: DataType,
+        value_type: DataType,
+        nullable: bool = True
+    ) -> None:
+        super().__init__(nullable=nullable)
         self.rep_type = dtype(rep_type)
         self.value_type = dtype(value_type)
-
-    def _equal_part(self, other, cache=None):
-        return (
-            self.rep_type.equals(other.rep_type, cache=cache) and
-            self.value_type.equals(other.value_type, cache=cache)
-        )
 
 
 class Map(Variadic):
@@ -586,27 +584,25 @@ class Map(Variadic):
 
     __slots__ = 'key_type', 'value_type'
 
-    def __init__(self, key_type, value_type, nullable=True):
-        super(Map, self).__init__(nullable=nullable)
+    def __init__(
+        self,
+        key_type: DataType,
+        value_type: DataType,
+        nullable: bool = True
+    ) -> None:
+        super().__init__(nullable=nullable)
         self.key_type = dtype(key_type)
         self.value_type = dtype(value_type)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return '{}<{}, {}>'.format(
             self.name.lower(),
             self.key_type,
             self.value_type,
         )
 
-    def _equal_part(self, other, cache=None):
-        return (
-            self.key_type.equals(other.key_type, cache=cache) and
-            self.value_type.equals(other.value_type, cache=cache)
-        )
-
 
 # ---------------------------------------------------------------------
-
 any = Any()
 null = Null()
 boolean = Boolean()
@@ -635,7 +631,7 @@ interval = Interval()
 category = Category()
 
 
-_primitive_types = (
+_primitive_types = [
     ('any', any),
     ('null', null),
     ('boolean', boolean),
@@ -660,12 +656,12 @@ _primitive_types = (
     ('time', time),
     ('timestamp', timestamp),
     ('interval', interval)
-)
+]  # type: List[Tuple[str, DataType]]
 
 
-class Tokens(object):
-    """Class to hold tokens for lexing
-    """
+class Tokens:
+    """Class to hold tokens for lexing."""
+
     __slots__ = ()
 
     ANY = 0
@@ -709,6 +705,9 @@ Token = collections.namedtuple('Token', ('type', 'value'))
 _STRING_REGEX = """('[^\n'\\\\]*(?:\\\\.[^\n'\\\\]*)*'|"[^\n"\\\\"]*(?:\\\\.[^\n"\\\\]*)*")"""  # noqa: E501
 
 
+Action = Optional[Callable[[str], Token]]
+
+
 _TYPE_RULES = collections.OrderedDict(
     [
         # any, null, bool|boolean
@@ -716,13 +715,19 @@ _TYPE_RULES = collections.OrderedDict(
         ('(?P<NULL>null)', lambda token: Token(Tokens.NULL, null)),
         (
             '(?P<BOOLEAN>bool(?:ean)?)',
-            lambda token: Token(Tokens.PRIMITIVE, boolean),
+            typing.cast(
+                Action,
+                lambda token: Token(Tokens.PRIMITIVE, boolean),
+            ),
         ),
     ] + [
         # primitive types
         (
             '(?P<{}>{})'.format(token.upper(), token),
-            lambda token, value=value: Token(Tokens.PRIMITIVE, value)
+            typing.cast(
+                Action,
+                lambda token, value=value: Token(Tokens.PRIMITIVE, value),
+            )
         ) for token, value in _primitive_types
         if token not in {
             'any', 'null', 'timestamp', 'time', 'interval', 'boolean'
@@ -749,7 +754,10 @@ _TYPE_RULES = collections.OrderedDict(
         # decimal + complex types
         (
             '(?P<{}>{})'.format(token.upper(), token),
-            lambda token, toktype=toktype: Token(toktype, token)
+            typing.cast(
+                Action,
+                lambda token, toktype=toktype: Token(toktype, token)
+            )
         ) for token, toktype in zip(
             (
                 'decimal',
@@ -759,7 +767,7 @@ _TYPE_RULES = collections.OrderedDict(
                 'set',
                 'map',
                 'struct',
-                'interval'
+                'interval',
             ), (
                 Tokens.DECIMAL,
                 Tokens.VARCHAR,
@@ -800,7 +808,7 @@ _TYPE_KEYS = tuple(_TYPE_RULES.keys())
 _TYPE_PATTERN = re.compile('|'.join(_TYPE_KEYS), flags=re.IGNORECASE)
 
 
-def _generate_tokens(pat, text):
+def _generate_tokens(pat: GenericAny, text: str) -> Iterator[Token]:
     """Generate a sequence of tokens from `text` that match `pat`
 
     Parameters
@@ -809,18 +817,20 @@ def _generate_tokens(pat, text):
         The pattern to use for tokenization
     text : str
         The text to tokenize
+
     """
     rules = _TYPE_RULES
     keys = _TYPE_KEYS
     groupindex = pat.groupindex
-    for m in iter(pat.scanner(text).match, None):
-        func = rules[keys[groupindex[m.lastgroup] - 1]]
+    scanner = pat.scanner(text)
+    for m in iter(scanner.match, None):
+        lastgroup = m.lastgroup
+        func = rules[keys[groupindex[lastgroup] - 1]]
         if func is not None:
-            assert callable(func), 'func must be callable'
-            yield func(m.group(m.lastgroup))
+            yield func(m.group(lastgroup))
 
 
-class TypeParser(object):
+class TypeParser:
     """A type parser for complex types.
 
     Parameters
@@ -831,38 +841,45 @@ class TypeParser(object):
     Notes
     -----
     Adapted from David Beazley's and Brian Jones's Python Cookbook
+
     """
 
     __slots__ = 'text', 'tokens', 'tok', 'nexttok'
 
-    def __init__(self, text):
-        self.text = text
+    def __init__(self, text: str) -> None:
+        self.text = text  # type: str
         self.tokens = _generate_tokens(_TYPE_PATTERN, text)
-        self.tok = None
-        self.nexttok = None
+        self.tok = None  # type: Optional[Token]
+        self.nexttok = None  # type: Optional[Token]
 
-    def _advance(self):
+    def _advance(self) -> None:
         self.tok, self.nexttok = self.nexttok, next(self.tokens, None)
 
-    def _accept(self, toktype):
+    def _accept(self, toktype: int) -> bool:
         if self.nexttok is not None and self.nexttok.type == toktype:
             self._advance()
+            assert self.tok is not None, \
+                'self.tok should not be None when _accept succeeds'
             return True
         return False
 
-    def _expect(self, toktype):
+    def _expect(self, toktype: int) -> None:
         if not self._accept(toktype):
-            raise SyntaxError('Expected {} after {!r} in {!r}'.format(
-                Tokens.name(toktype),
-                self.tok.value,
-                self.text,
-            ))
+            raise SyntaxError(
+                'Expected {} after {!r} in {!r}'.format(
+                    Tokens.name(toktype),
+                    getattr(self.tok, 'value', self.tok),
+                    self.text,
+                )
+            )
 
-    def parse(self):
+    def parse(self) -> DataType:
         self._advance()
 
         # any and null types cannot be nested
         if self._accept(Tokens.ANY) or self._accept(Tokens.NULL):
+            assert self.tok is not None, \
+                'self.tok was None when parsing ANY or NULL type'
             return self.tok.value
 
         t = self.type()
@@ -878,7 +895,7 @@ class TypeParser(object):
                 'Found additional tokens {}'.format(additional_tokens)
             )
 
-    def type(self):
+    def type(self) -> DataType:
         """
         type : primitive
              | decimal
@@ -931,11 +948,13 @@ class TypeParser(object):
         field : [a-zA-Z_][a-zA-Z_0-9]*
         """
         if self._accept(Tokens.PRIMITIVE):
+            assert self.tok is not None
             return self.tok.value
 
         elif self._accept(Tokens.TIMESTAMP):
             if self._accept(Tokens.LPAREN):
                 self._expect(Tokens.STRARG)
+                assert self.tok is not None
                 timezone = self.tok.value[1:-1]  # remove surrounding quotes
                 self._expect(Tokens.RPAREN)
                 return Timestamp(timezone=timezone)
@@ -947,6 +966,7 @@ class TypeParser(object):
         elif self._accept(Tokens.INTERVAL):
             if self._accept(Tokens.LBRACKET):
                 self._expect(Tokens.PRIMITIVE)
+                assert self.tok is not None
                 value_type = self.tok.value
                 self._expect(Tokens.RBRACKET)
             else:
@@ -954,6 +974,7 @@ class TypeParser(object):
 
             if self._accept(Tokens.LPAREN):
                 self._expect(Tokens.STRARG)
+                assert self.tok is not None
                 unit = self.tok.value[1:-1]  # remove surrounding quotes
                 self._expect(Tokens.RPAREN)
             else:
@@ -963,8 +984,8 @@ class TypeParser(object):
 
         elif self._accept(Tokens.DECIMAL):
             if self._accept(Tokens.LPAREN):
-
                 self._expect(Tokens.INTEGER)
+                assert self.tok is not None
                 precision = self.tok.value
 
                 self._expect(Tokens.COMMA)
@@ -1006,6 +1027,7 @@ class TypeParser(object):
             self._expect(Tokens.LBRACKET)
 
             self._expect(Tokens.PRIMITIVE)
+            assert self.tok is not None
             key_type = self.tok.value
 
             self._expect(Tokens.COMMA)
@@ -1020,6 +1042,7 @@ class TypeParser(object):
             self._expect(Tokens.LBRACKET)
 
             self._expect(Tokens.FIELD)
+            assert self.tok is not None
             names = [self.tok.value]
 
             self._expect(Tokens.COLON)
@@ -1027,7 +1050,6 @@ class TypeParser(object):
             types = [self.type()]
 
             while self._accept(Tokens.COMMA):
-
                 self._expect(Tokens.FIELD)
                 names.append(self.tok.value)
 
@@ -1040,33 +1062,23 @@ class TypeParser(object):
             raise SyntaxError('Type cannot be parsed: {}'.format(self.text))
 
 
-def array_type(t):
-    # compatibility
-    return dtype(t).array_type()
-
-
-def scalar_type(t):
-    # compatibility
-    return dtype(t).scalar_type()
-
-
 dtype = Dispatcher('dtype')
 
 validate_type = dtype
 
 
 @dtype.register(object)
-def default(value, **kwargs):
+def default(value, **kwargs) -> DataType:
     raise com.IbisTypeError('Value {!r} is not a valid datatype'.format(value))
 
 
 @dtype.register(DataType)
-def from_ibis_dtype(value):
+def from_ibis_dtype(value: DataType) -> DataType:
     return value
 
 
-@dtype.register(six.string_types)
-def from_string(value):
+@dtype.register(str)
+def from_string(value: str) -> DataType:
     try:
         return TypeParser(value).parse()
     except SyntaxError:
@@ -1076,14 +1088,14 @@ def from_string(value):
 
 
 @dtype.register(list)
-def from_list(values):
+def from_list(values: List[GenericAny]) -> Array:
     if not values:
         return Array(null)
     return Array(highest_precedence(map(dtype, values)))
 
 
 @dtype.register(collections.Set)
-def from_set(values):
+def from_set(values: GenericSet) -> Set:
     if not values:
         return Set(null)
     return Set(highest_precedence(map(dtype, values)))
@@ -1092,7 +1104,7 @@ def from_set(values):
 infer = Dispatcher('infer')
 
 
-def higher_precedence(left, right):
+def higher_precedence(left: DataType, right: DataType) -> DataType:
     if castable(left, right, upcast=True):
         return right
     elif castable(right, left, upcast=True):
@@ -1103,17 +1115,20 @@ def higher_precedence(left, right):
     )
 
 
-def highest_precedence(dtypes):
+def highest_precedence(dtypes: Iterator[DataType]) -> DataType:
+    """Compute the highest precedence of `dtypes`."""
     return functools.reduce(higher_precedence, dtypes)
 
 
 @infer.register(object)
-def infer_dtype_default(value):
+def infer_dtype_default(value: GenericAny) -> DataType:
+    """Default implementation of :func:`~ibis.expr.datatypes.infer`."""
     raise com.InputTypeError(value)
 
 
 @infer.register(collections.OrderedDict)
-def infer_struct(value):
+def infer_struct(value: Mapping[str, GenericAny]) -> Struct:
+    """Infer the :class:`~ibis.expr.datatypes.Struct` type of `value`."""
     if not value:
         raise TypeError('Empty struct type not supported')
     return Struct(
@@ -1122,8 +1137,9 @@ def infer_struct(value):
     )
 
 
-@infer.register(dict)
-def infer_map(value):
+@infer.register(collections.abc.Mapping)
+def infer_map(value: Mapping[GenericAny, GenericAny]) -> Map:
+    """Infer the :class:`~ibis.expr.datatypes.Map` type of `value`."""
     if not value:
         return Map(null, null)
     return Map(
@@ -1133,31 +1149,33 @@ def infer_map(value):
 
 
 @infer.register(list)
-def infer_list(values):
+def infer_list(values: List[GenericAny]) -> Array:
+    """Infer the :class:`~ibis.expr.datatypes.Array` type of `values`."""
     if not values:
         return Array(null)
     return Array(highest_precedence(map(infer, values)))
 
 
 @infer.register((set, frozenset))
-def infer_set(values):
+def infer_set(values: GenericSet) -> Set:
+    """Infer the :class:`~ibis.expr.datatypes.Set` type of `values`."""
     if not values:
         return Set(null)
     return Set(highest_precedence(map(infer, values)))
 
 
 @infer.register(datetime.time)
-def infer_time(value):
+def infer_time(value: datetime.time) -> Time:
     return time
 
 
 @infer.register(datetime.date)
-def infer_date(value):
+def infer_date(value: datetime.date) -> Date:
     return date
 
 
 @infer.register(datetime.datetime)
-def infer_timestamp(value):
+def infer_timestamp(value: datetime.datetime) -> Timestamp:
     if value.tzinfo:
         return Timestamp(timezone=str(value.tzinfo))
     else:
@@ -1165,22 +1183,22 @@ def infer_timestamp(value):
 
 
 @infer.register(datetime.timedelta)
-def infer_interval(value):
+def infer_interval(value: datetime.timedelta) -> Interval:
     return interval
 
 
-@infer.register(six.string_types)
-def infer_string(value):
+@infer.register(str)
+def infer_string(value: str) -> String:
     return string
 
 
 @infer.register(builtins.float)
-def infer_floating(value):
+def infer_floating(value: builtins.float) -> Double:
     return double
 
 
-@infer.register(six.integer_types)
-def infer_integer(value, allow_overflow=False):
+@infer.register(int)
+def infer_integer(value: int, allow_overflow: bool = False) -> Integer:
     for dtype in (int8, int16, int32, int64):
         if dtype.bounds.lower <= value <= dtype.bounds.upper:
             return dtype
@@ -1192,12 +1210,12 @@ def infer_integer(value, allow_overflow=False):
 
 
 @infer.register(bool)
-def infer_boolean(value):
+def infer_boolean(value: bool) -> Boolean:
     return boolean
 
 
 @infer.register((type(None), Null))
-def infer_null(value):
+def infer_null(value: Optional[Null]) -> Null:
     return null
 
 
@@ -1205,7 +1223,7 @@ castable = Dispatcher('castable')
 
 
 @castable.register(DataType, DataType)
-def can_cast_subtype(source, target, **kwargs):
+def can_cast_subtype(source: DataType, target: DataType, **kwargs) -> bool:
     return isinstance(target, type(source))
 
 
@@ -1217,33 +1235,45 @@ def can_cast_subtype(source, target, **kwargs):
 @castable.register(Integer, (Floating, Decimal))
 @castable.register(Floating, Decimal)
 @castable.register((Date, Timestamp), (Date, Timestamp))
-def can_cast_any(source, target, **kwargs):
+def can_cast_any(source: DataType, target: DataType, **kwargs) -> bool:
     return True
 
 
 @castable.register(Null, DataType)
-def can_cast_null(source, target, **kwargs):
+def can_cast_null(source: DataType, target: DataType, **kwargs) -> bool:
     return target.nullable
+
+
+Integral = TypeVar('Integral', SignedInteger, UnsignedInteger)
 
 
 @castable.register(SignedInteger, UnsignedInteger)
 @castable.register(UnsignedInteger, SignedInteger)
-def can_cast_to_unsigned(source, target, value=None, **kwargs):
+def can_cast_to_differently_signed_integer_type(
+    source: Integral,
+    target: Integral,
+    value: Optional[int] = None,
+    **kwargs
+) -> bool:
     if value is None:
         return False
-
     bounds = target.bounds
     return bounds.lower <= value <= bounds.upper
 
 
 @castable.register(SignedInteger, SignedInteger)
 @castable.register(UnsignedInteger, UnsignedInteger)
-def can_cast_integers(source, target, **kwargs):
+def can_cast_integers(source: Integral, target: Integral, **kwargs) -> bool:
     return target._nbytes >= source._nbytes
 
 
 @castable.register(Floating, Floating)
-def can_cast_floats(source, target, upcast=False, **kwargs):
+def can_cast_floats(
+    source: Floating,
+    target: Floating,
+    upcast: bool = False,
+    **kwargs
+) -> bool:
     if upcast:
         return target._nbytes >= source._nbytes
 
@@ -1253,13 +1283,13 @@ def can_cast_floats(source, target, upcast=False, **kwargs):
 
 
 @castable.register(Decimal, Decimal)
-def can_cast_decimals(source, target, **kwargs):
+def can_cast_decimals(source: Decimal, target: Decimal, **kwargs) -> bool:
     return (target.precision >= source.precision and
             target.scale >= source.scale)
 
 
 @castable.register(Interval, Interval)
-def can_cast_intervals(source, target, **kwargs):
+def can_cast_intervals(source: Interval, target: Interval, **kwargs) -> bool:
     return (
         source.unit == target.unit and
         castable(source.value_type, target.value_type)
@@ -1267,30 +1297,51 @@ def can_cast_intervals(source, target, **kwargs):
 
 
 @castable.register(Integer, Boolean)
-def can_cast_integer_to_boolean(source, target, value=None, **kwargs):
-    return value == 0 or value == 1
+def can_cast_integer_to_boolean(
+    source: Integer,
+    target: Boolean,
+    value: Optional[int] = None,
+    **kwargs
+) -> bool:
+    return value is not None and (value == 0 or value == 1)
 
 
 @castable.register(Integer, Interval)
-def can_cast_integer_to_interval(source, target, **kwargs):
+def can_cast_integer_to_interval(
+    source: Interval,
+    target: Interval,
+    **kwargs
+) -> bool:
     return castable(source, target.value_type)
 
 
 @castable.register(String, (Date, Time, Timestamp))
-def can_cast_string_to_temporal(source, target, value=None, **kwargs):
+def can_cast_string_to_temporal(
+    source: String,
+    target: Union[Date, Time, Timestamp],
+    value: Optional[str] = None,
+    **kwargs
+) -> bool:
     if value is None:
         return False
     try:
-        # this is the only pandas import left
         pd.Timestamp(value)
-        return True
     except ValueError:
         return False
+    else:
+        return True
+
+
+Collection = TypeVar('Collection', Array, Set)
 
 
 @castable.register(Array, Array)
 @castable.register(Set, Set)
-def can_cast_variadic(source, target, **kwargs):
+def can_cast_variadic(
+    source: Collection,
+    target: Collection,
+    **kwargs
+) -> bool:
     return castable(source.value_type, target.value_type)
 
 
@@ -1302,14 +1353,18 @@ def can_cast_variadic(source, target, **kwargs):
 # TODO cast category
 
 
-def cast(source, target, **kwargs):
+def cast(
+    source: Union[DataType, str],
+    target: Union[DataType, str],
+    **kwargs
+) -> DataType:
     """Attempts to implicitly cast from source dtype to target dtype"""
-    source, target = dtype(source), dtype(target)
+    source, result_target = dtype(source), dtype(target)
 
-    if not castable(source, target, **kwargs):
+    if not castable(source, result_target, **kwargs):
         raise com.IbisTypeError('Datatype {} cannot be implicitly '
-                                'casted to {}'.format(source, target))
-    return target
+                                'casted to {}'.format(source, result_target))
+    return result_target
 
 
 same_kind = Dispatcher(
@@ -1332,31 +1387,34 @@ bool
 
 
 @same_kind.register(DataType, DataType)
-def same_kind_default(a, b):
+def same_kind_default(a: DataType, b: DataType) -> bool:
     """Return whether `a` is exactly equiavlent to `b`"""
     return a.equals(b)
 
 
+Numeric = TypeVar('Numeric', Integer, Floating)
+
+
 @same_kind.register(Integer, Integer)
 @same_kind.register(Floating, Floating)
-def same_kind_numeric(a, b):
+def same_kind_numeric(a: Numeric, b: Numeric) -> bool:
     """Return ``True``."""
     return True
 
 
 @same_kind.register(DataType, Null)
-def same_kind_right_null(a, _):
+def same_kind_right_null(a: DataType, _: Null) -> bool:
     """Return whether `a` is nullable."""
     return a.nullable
 
 
 @same_kind.register(Null, DataType)
-def same_kind_left_null(_, b):
+def same_kind_left_null(_: Null, b: DataType) -> bool:
     """Return whether `b` is nullable."""
     return b.nullable
 
 
 @same_kind.register(Null, Null)
-def same_kind_both_null(a, b):
+def same_kind_both_null(a: Null, b: Null) -> bool:
     """Return ``True``."""
     return True

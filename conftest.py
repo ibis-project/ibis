@@ -3,7 +3,7 @@ import os
 import sys
 import pytest
 
-from ibis.compat import Path
+from pathlib import Path
 
 
 collect_ignore = ['setup.py']

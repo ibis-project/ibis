@@ -1,7 +1,5 @@
 import abc
 
-import six
-
 from ibis.config import options
 
 import ibis.util as util
@@ -12,11 +10,11 @@ import ibis.expr.operations as ops
 import ibis.sql.compiler as comp
 
 
-class Client(object):
+class Client:
     pass
 
 
-class Query(object):
+class Query:
 
     """Abstraction for DML query execution to enable queries, progress,
     cancellation and more (for backends supporting such functionality).
@@ -30,7 +28,7 @@ class Query(object):
             dml, 'parent_expr', getattr(dml, 'table_set', None)
         )
 
-        if not isinstance(sql, six.string_types):
+        if not isinstance(sql, str):
             self.compiled_sql = sql.compile()
         else:
             self.compiled_sql = sql
@@ -64,7 +62,7 @@ class Query(object):
                              'schema'.format(type(self.expr)))
 
 
-class SQLClient(six.with_metaclass(abc.ABCMeta, Client)):
+class SQLClient(Client, metaclass=abc.ABCMeta):
 
     dialect = comp.Dialect
     query_class = Query
@@ -258,7 +256,7 @@ class SQLClient(six.with_metaclass(abc.ABCMeta, Client)):
         raise NotImplementedError(type(self).__name__)
 
 
-class QueryPipeline(object):
+class QueryPipeline:
     """
     Execute a series of queries, and capture any result sets generated
 
@@ -312,7 +310,7 @@ def find_backends(expr):
                     stack.append(arg.op())
 
 
-class Database(object):
+class Database:
 
     def __init__(self, name, client):
         self.name = name
@@ -421,7 +419,7 @@ class DatabaseNamespace(Database):
             return '{0}*'.format(self.namespace)
 
 
-class DatabaseEntity(object):
+class DatabaseEntity:
     pass
 
 

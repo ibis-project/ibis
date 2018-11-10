@@ -1,8 +1,7 @@
 import contextlib
+import functools
 import numbers
 import operator
-
-import six
 
 import sqlalchemy as sa
 import sqlalchemy.sql as sql
@@ -17,7 +16,7 @@ from sqlalchemy.dialects.mysql.base import MySQLDialect
 
 import pandas as pd
 
-from ibis.compat import parse_version, functools
+from pkg_resources import parse_version
 from ibis.client import SQLClient, Query, Database
 from ibis.sql.compiler import Select, Union, TableSetFormatter, Dialect
 
@@ -244,7 +243,7 @@ def infix_op(infix_sym):
 
 
 def fixed_arity(sa_func, arity):
-    if isinstance(sa_func, six.string_types):
+    if isinstance(sa_func, str):
         sa_func = getattr(sa.func, sa_func)
 
     def formatter(t, expr):
@@ -695,11 +694,11 @@ class AlchemySelectBuilder(comp.SelectBuilder):
 class AlchemyContext(comp.QueryContext):
 
     def __init__(self, *args, **kwargs):
-        super(AlchemyContext, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._table_objects = {}
 
     def collapse(self, queries):
-        if isinstance(queries, six.string_types):
+        if isinstance(queries, str):
             return queries
 
         if len(queries) > 1:
@@ -849,7 +848,7 @@ class AlchemyTable(ops.DatabaseTable):
 
     def __init__(self, table, source, schema=None):
         schema = sch.infer(table, schema=schema)
-        super(AlchemyTable, self).__init__(table.name, schema, source)
+        super().__init__(table.name, schema, source)
         self.sqla_table = table
 
 
@@ -913,7 +912,7 @@ class AlchemyClient(SQLClient):
     query_class = AlchemyQuery
 
     def __init__(self, con):
-        super(AlchemyClient, self).__init__()
+        super().__init__()
         self.con = con
         self.meta = sa.MetaData(bind=con)
         self._inspector = sa.inspect(con)
@@ -1015,7 +1014,7 @@ class AlchemyClient(SQLClient):
 
     @invalidates_reflection_cache
     def raw_sql(self, query, results=False):
-        return super(AlchemyClient, self).raw_sql(query, results=results)
+        return super().raw_sql(query, results=results)
 
     def _build_ast(self, expr, context):
         return build_ast(expr, context)
@@ -1037,7 +1036,7 @@ class AlchemySelect(Select):
 
     def __init__(self, *args, **kwargs):
         self.exists = kwargs.pop('exists', False)
-        super(AlchemySelect, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def compile(self):
         # Can't tell if this is a hack or not. Revisit later
@@ -1316,7 +1315,7 @@ def _and_all(clauses):
     return result
 
 
-class AlchemyProxy(object):
+class AlchemyProxy:
     """
     Wraps a SQLAlchemy ResultProxy and ensures that .close() is called on
     garbage collection
@@ -1378,7 +1377,7 @@ class Over(_Over):
         preceding=None,
         following=None,
     ):
-        super(Over, self).__init__(
+        super().__init__(
             element, order_by=order_by, partition_by=partition_by
         )
         if not isinstance(preceding, _valid_frame_types):

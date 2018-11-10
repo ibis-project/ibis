@@ -3,9 +3,8 @@ import enum
 
 from itertools import starmap, product
 
-import six
 
-from ibis.compat import suppress
+from contextlib import suppress
 import ibis.util as util
 import ibis.common as com
 import ibis.expr.types as ir
@@ -151,7 +150,7 @@ def member_of(obj, arg):
 
 @validator
 def list_of(inner, arg, min_length=0):
-    if isinstance(arg, six.string_types) or not isinstance(
+    if isinstance(arg, str) or not isinstance(
         arg, (collections.Sequence, ir.ListExpr)
     ):
         raise com.IbisTypeError('Argument must be a sequence')
@@ -306,7 +305,7 @@ def shape_like(arg, dtype=None):
     dtype = dt.dtype(datatype)
 
     if columnar:
-        return dtype.array_type()
+        return dtype.column_type()
     else:
         return dtype.scalar_type()
 
@@ -320,7 +319,7 @@ def scalar_like(arg):
 @promoter
 def array_like(arg):
     output_dtype = arg.type()
-    return output_dtype.array_type()
+    return output_dtype.column_type()
 
 
 column_like = array_like

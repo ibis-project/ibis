@@ -72,7 +72,7 @@ def _flatten_subclass_tree(cls):
     return frozenset({cls}) | subclasses | children
 
 
-class PandasExprTranslator(object):
+class PandasExprTranslator:
     # get the dispatched functions from the execute_node dispatcher and compute
     # and flatten the type tree of the first argument which is always the Node
     # subclass
