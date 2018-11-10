@@ -59,7 +59,7 @@ jobs:
     - script: python ci/datamgr.py parquet -i
       displayName: 'Load Parquet data'
 
-    - script: pytest --tb=short --junitxml=junit-$(python.version).xml -n auto -m "not backend and not clickhouse and not impala and not hdfs and not bigquery and not mapd" -ra ibis
+    - script: pytest --tb=short --junitxml=junit-$(python.version).xml -n auto -m "not backend and not clickhouse and not impala and not hdfs and not bigquery and not mapd and not mysql" -ra ibis
       displayName: 'Run tests'
 
     # publish test results
