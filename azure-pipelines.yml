@@ -21,14 +21,15 @@ jobs:
         cleanEnvironment: True
         updateConda: False
 
-    - script: choco install -y mariadb
-      displayName: 'Install mariadb (mysql) from chocolatey'
+    # FIXME Disabled temporarily because choco fails to install
+    # - script: choco install -y mariadb
+    #   displayName: 'Install mariadb (mysql) from chocolatey'
 
-    - script: '"C:\\Program Files\\MariaDB 10.2\\bin\\mysql" -u root -e "CREATE OR REPLACE USER ibis@localhost IDENTIFIED BY ''ibis''"'
-      displayName: 'Create ibis user and password in MySQL database'
-
-    - script: '"C:\\Program Files\\MariaDB 10.2\\bin\\mysql" -u root -e "GRANT ALL PRIVILEGES ON *.* TO ibis@localhost"'
-      displayName: 'Setup privileges for ibis user in MySQL'
+    # - script: '"C:\\Program Files\\MariaDB 10.2\\bin\\mysql" -u root -e "CREATE OR REPLACE USER ibis@localhost IDENTIFIED BY ''ibis''"'
+    #   displayName: 'Create ibis user and password in MySQL database'
+    #
+    # - script: '"C:\\Program Files\\MariaDB 10.2\\bin\\mysql" -u root -e "GRANT ALL PRIVILEGES ON *.* TO ibis@localhost"'
+    #   displayName: 'Setup privileges for ibis user in MySQL'
 
     - script: choco install -y postgresql10 --params '/Password:postgres'
       displayName: 'Install postgres from chocolatey'
@@ -45,8 +46,9 @@ jobs:
     - script: python ci/datamgr.py download
       displayName: 'Download data'
 
-    - script: python ci/datamgr.py mysql
-      displayName: 'Load MySQL data'
+    # FIXME Disabled temporarily because choco fails to install
+    # - script: python ci/datamgr.py mysql
+    #   displayName: 'Load MySQL data'
 
     - script: 'python ci/datamgr.py postgres --psql-path="C:/Program Files/PostgreSQL/10/bin/psql.exe"'
       displayName: 'Load PostgreSQL data'
