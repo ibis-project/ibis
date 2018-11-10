@@ -603,10 +603,7 @@ class Map(Variadic):
         )
 
 
-
-# GEO SPATIAL DATA TYPE
 class GeoSpatial(DataType):
-    # TODO: maybe it needs geo spatial system information
     __slots__ = ()
 
 
@@ -727,7 +724,6 @@ class Tokens:
     TIME = 19
     INTERVAL = 20
     SET = 21
-    # GEO SPATIAL DATA TYPE
     POINT = 22
     LINE = 23
     POLYGON = 24
