@@ -23,7 +23,7 @@ jobs:
         cleanEnvironment: True
         updateConda: False
 
-    - script: choco install -y mariadb
+    - script: choco install -y mariadb --version 10.2.7
       displayName: 'Install mariadb (mysql) from chocolatey'
 
     - script: '"C:\\Program Files\\MariaDB 10.2\\bin\\mysql" -u root -e "CREATE OR REPLACE USER ibis@localhost IDENTIFIED BY ''ibis''"'
