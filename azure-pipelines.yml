@@ -9,6 +9,8 @@ jobs:
         python.version: "3.5"
       py36:
         python.version: "3.6"
+      py37:
+        python.version: "3.7"
   steps:
     - task: CondaEnvironment@1
       displayName: 'Create conda environment'
@@ -81,6 +83,8 @@ jobs:
         python.version: "3.5"
       py36:
         python.version: "3.6"
+      py37:
+        python.version: "3.7"
   steps:
     - task: CondaEnvironment@1
       displayName: 'Create conda-build environment'
