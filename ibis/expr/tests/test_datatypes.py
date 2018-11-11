@@ -364,6 +364,9 @@ def test_time_valid():
 ])
 def test_infer_dtype(value, expected_dtype):
     assert dt.infer(value) == expected_dtype
+    # test literal creation
+    value = ibis.literal(value, type=expected_dtype)
+    assert value.type() == expected_dtype
 
 
 @pytest.mark.parametrize(('source', 'target'), [

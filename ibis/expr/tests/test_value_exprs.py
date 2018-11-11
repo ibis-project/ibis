@@ -50,26 +50,24 @@ def test_unicode():
     assert False
 
 
-@pytest.mark.parametrize(
-    ['value', 'expected_type'],
-    [
-        (5, 'int8'),
-        (127, 'int8'),
-        (128, 'int16'),
-        (32767, 'int16'),
-        (32768, 'int32'),
-        (2147483647, 'int32'),
-        (2147483648, 'int64'),
-        (-5, 'int8'),
-        (-128, 'int8'),
-        (-129, 'int16'),
-        (-32769, 'int32'),
-        (-2147483649, 'int64'),
-        (1.5, 'double'),
-        ('foo', 'string'),
-    ]
-)
-def test_literal_cases(value, expected_type):
+@pytest.mark.parametrize(['value', 'expected_type'], [
+    (5, 'int8'),
+    (127, 'int8'),
+    (128, 'int16'),
+    (32767, 'int16'),
+    (32768, 'int32'),
+    (2147483647, 'int32'),
+    (2147483648, 'int64'),
+    (-5, 'int8'),
+    (-128, 'int8'),
+    (-129, 'int16'),
+    (-32769, 'int32'),
+    (-2147483649, 'int64'),
+    (1.5, 'double'),
+    ('foo', 'string'),
+    ([1, 2, 3], 'array<int8>')
+])
+def test_literal_with_implicit_type(value, expected_type):
     expr = ibis.literal(value)
 
     assert isinstance(expr, ir.ScalarExpr)
@@ -79,25 +77,41 @@ def test_literal_cases(value, expected_type):
     assert expr.op().value is value
 
 
-@pytest.mark.parametrize(
-    ['value', 'expected_type'],
-    [
-        (5, 'int16'),
-        (127, 'double'),
-        (128, 'int64'),
-        (32767, 'double'),
-        (32768, 'float'),
-        (2147483647, 'int64'),
-        (-5, 'int16'),
-        (-128, 'int32'),
-        (-129, 'int64'),
-        (-32769, 'float'),
-        (-2147483649, 'double'),
-        (1.5, 'double'),
-        ('foo', 'string'),
-    ]
-)
-def test_literal_with_different_type(value, expected_type):
+pointA = (1, 2)
+pointB = (-3, 4)
+pointC = (5, 19)
+lineAB = [pointA, pointB]
+lineBC = [pointB, pointC]
+lineCA = [pointC, pointA]
+polygon1 = [lineAB, lineBC, lineCA]
+polygon2 = [lineAB, lineBC, lineCA]
+multipolygon1 = [polygon1, polygon2]
+
+
+@pytest.mark.parametrize(['value', 'expected_type'], [
+    (5, 'int16'),
+    (127, 'double'),
+    (128, 'int64'),
+    (32767, 'double'),
+    (32768, 'float'),
+    (2147483647, 'int64'),
+    (-5, 'int16'),
+    (-128, 'int32'),
+    (-129, 'int64'),
+    (-32769, 'float'),
+    (-2147483649, 'double'),
+    (1.5, 'double'),
+    ('foo', 'string'),
+    (list(pointA), 'point'),
+    (tuple(pointA), 'point'),
+    (list(lineAB), 'line'),
+    (tuple(lineAB), 'line'),
+    (list(polygon1), 'polygon'),
+    (tuple(polygon1), 'polygon'),
+    (list(multipolygon1), 'multipolygon'),
+    (tuple(multipolygon1), 'multipolygon')
+])
+def test_literal_with_explicit_type(value, expected_type):
     expr = ibis.literal(value, type=expected_type)
     assert expr.type().equals(dt.validate_type(expected_type))
 
@@ -181,9 +195,23 @@ def test_simple_map_operations():
         ('foo', 'double'),
     ]
 )
-def test_literal_with_different_type_failure(value, expected_type):
-    with pytest.raises(TypeError):
+def test_literal_with_non_coercible_type(value, expected_type):
+    expected_msg = 'Value .* cannot be safely coerced to .*'
+    with pytest.raises(TypeError, match=expected_msg):
         ibis.literal(value, type=expected_type)
+
+
+def test_non_inferrable_literal():
+    expected_msg = ('The datatype of value .* cannot be inferred, try '
+                    'passing it explicitly with the `type` keyword.')
+
+    value = tuple(pointA)
+
+    with pytest.raises(TypeError, match=expected_msg):
+        ibis.literal(value)
+
+    point = ibis.literal(value, type='point')
+    assert point.type() == dt.point
 
 
 def test_literal_list():
