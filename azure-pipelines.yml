@@ -26,10 +26,10 @@ jobs:
     - script: choco install -y mysql
       displayName: 'Install mariadb (mysql) from chocolatey'
 
-    - script: '"mysql" -u root -e "CREATE OR REPLACE USER ibis@localhost IDENTIFIED BY ''ibis''"'
+    - script: '"C:\\tools\\mysql" -u root -e "CREATE OR REPLACE USER ibis@localhost IDENTIFIED BY ''ibis''"'
       displayName: 'Create ibis user and password in MySQL database'
 
-    - script: '"mysql" -u root -e "GRANT ALL PRIVILEGES ON *.* TO ibis@localhost"'
+    - script: '"C:\\tools\\mysql" -u root -e "GRANT ALL PRIVILEGES ON *.* TO ibis@localhost"'
       displayName: 'Setup privileges for ibis user in MySQL'
 
     - script: choco install -y postgresql10 --params '/Password:postgres'
