@@ -139,9 +139,14 @@ _special_chars = (
     '*'
 )
 
+
 def quote_identifier(name, quotechar='"', force=False):
     if (
-        (force or any(c in name for c in _special_chars) or name in _identifiers) and
+        (
+            force or
+            any(c in name for c in _special_chars) or
+            name in _identifiers
+        ) and
         quotechar not in name
     ):
         return '{0}{1}{0}'.format(quotechar, name)
