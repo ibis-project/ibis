@@ -92,3 +92,12 @@ def test_where_operator(alltypes):
     counts = expr.execute().value_counts()
     assert counts[0] == 5
     assert counts[1] == 5
+
+
+@pytest.mark.parametrize(('name',), [
+    ('count_*',),
+    ('regular_name',)
+])
+def test_quote_name(alltypes, name):
+    expr = alltypes.aggregate(alltypes.count().name(name))
+    assert name in expr.execute()
