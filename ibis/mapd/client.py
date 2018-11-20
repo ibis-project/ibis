@@ -68,6 +68,10 @@ class MapDDataType:
         'TIME': dt.time,
         'TIMESTAMP': dt.timestamp,
         'VARCHAR': dt.string,
+        'POINT': dt.point,
+        'LINESTRING': dt.linestring,
+        'POLYGON':  dt.polygon,
+        'MULTIPOLYGON': dt.multipolygon
     }
 
     ibis_dtypes = {

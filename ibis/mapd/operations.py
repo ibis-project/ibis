@@ -1,8 +1,10 @@
-import warnings
+from copy import copy
 from datetime import date, datetime
+from io import StringIO
+import warnings
+
 from ibis.mapd.identifiers import quote_identifier
 from ibis.impala import compiler as impala_compiler
-from io import StringIO
 
 
 import ibis
@@ -332,40 +334,63 @@ def _cross_join(translator, expr):
 
 
 def _format_point_value(value):
-    return ' '.join([str(v) for v in value])
+    return ' '.join(str(v) for v in value)
 
 
-def _format_line_value(value):
-    return ', '.join([
+def _format_linestring_value(value):
+    return ', '.join(
         '{}'.format(_format_point_value(point)) for point in value
-    ])
+    )
 
 
 def _format_polygon_value(value):
-    return ', '.join([
+    return ', '.join(
         '({})'.format(
-            _format_line_value(line)) for line in value
-    ])
+            _format_linestring_value(line)) for line in value
+    )
 
 
 def _format_multipolygon_value(value):
-    return ', '.join([
+    return ', '.join(
         '({})'.format(_format_polygon_value(polygon)) for polygon in value
-    ])
+    )
+
+
+def _format_geo_metadata(op, value):
+    value = copy(value)
+    srid = op.args[1].srid
+    geotype = op.args[1].geotype
+
+    if geotype is None or geotype not in ('geometry', 'geography'):
+        return "'{}'".format(value)
+
+    if geotype == 'geography':
+        geofunc = 'ST_GeogFromText'
+    else:
+        geofunc = 'ST_GeomFromText'
+
+    return "{}('{}'{})".format(
+        geofunc, value, ', {}'.format(srid) if srid else ''
+    )
 
 
 def literal(translator, expr):
-    value = expr.op().value
+    op = expr.op()
+    value = op.value
 
     # geo spatial data type
     if isinstance(expr, ir.PointScalar):
-        return "POINT({0!s})".format(_format_point_value(value))
-    elif isinstance(expr, ir.LineScalar):
-        return "LINESTRING({0!s})".format(_format_line_value(value))
+        result = "POINT({0})".format(_format_point_value(value))
+        return _format_geo_metadata(op, result)
+    elif isinstance(expr, ir.LineStringScalar):
+        result = "LINESTRING({0})".format(_format_linestring_value(value))
+        return _format_geo_metadata(op, result)
     elif isinstance(expr, ir.PolygonScalar):
-        return "POLYGON({0!s})".format(_format_polygon_value(value))
+        result = "POLYGON({0!s})".format(_format_polygon_value(value))
+        return _format_geo_metadata(op, result)
     elif isinstance(expr, ir.MultiPolygonScalar):
-        return "MULTIPOLYGON({0!s})".format(_format_multipolygon_value(value))
+        result = "MULTIPOLYGON({0})".format(_format_multipolygon_value(value))
+        return _format_geo_metadata(op, result)
     # primitive data type
     elif isinstance(expr, ir.BooleanValue):
         return '1' if value else '0'

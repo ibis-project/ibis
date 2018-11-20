@@ -604,24 +604,58 @@ class Map(Variadic):
 
 
 class GeoSpatial(DataType):
-    __slots__ = ()
+    __slots__ = 'geotype', 'srid'
+
+    def __init__(
+        self,
+        geotype: str = None,
+        srid: int = None,
+        nullable: bool = True
+    ):
+        """Geospatial data type base class
+
+        Parameters
+        ----------
+        geotype : str
+            Specification of geospatial type which could be `geography` or
+            `geometry`.
+        srid : int
+            Spatial Reference System Identifier
+        nullable : bool, optional
+            Whether the struct can be null
+        """
+        super().__init__(nullable=nullable)
+
+        if geotype not in (None, 'geometry', 'geography'):
+            raise ValueError(
+                'The `geotype` parameter should be `geometry` or `geography`'
+            )
+
+        self.geotype = geotype
+        self.srid = srid
 
 
 class Point(GeoSpatial):
+    """A point described by two coordinates."""
     scalar = ir.PointScalar
     column = ir.PointColumn
 
     __slots__ = ()
 
 
-class Line(GeoSpatial):
-    scalar = ir.LineScalar
-    column = ir.LineColumn
+class LineString(GeoSpatial):
+    """A sequence of 2 or more points."""
+    scalar = ir.LineStringScalar
+    column = ir.LineStringColumn
 
     __slots__ = ()
 
 
 class Polygon(GeoSpatial):
+    """A set of one or more rings (closed line strings), with the first
+    representing the shape (external ring) and the rest representing holes in
+    that shape (internal rings).
+    """
     scalar = ir.PolygonScalar
     column = ir.PolygonColumn
 
@@ -629,6 +663,7 @@ class Polygon(GeoSpatial):
 
 
 class MultiPolygon(GeoSpatial):
+    """A set of one or more polygons."""
     scalar = ir.MultiPolygonScalar
     column = ir.MultiPolygonColumn
 
@@ -664,7 +699,7 @@ interval = Interval()
 category = Category()
 # geo spatial data type
 point = Point()
-line = Line()
+linestring = LineString()
 polygon = Polygon()
 multipolygon = MultiPolygon()
 
@@ -724,10 +759,13 @@ class Tokens:
     TIME = 19
     INTERVAL = 20
     SET = 21
-    POINT = 22
-    LINE = 23
-    POLYGON = 24
-    MULTIPOLYGON = 25
+    GEOGRAPHY = 22
+    GEOMETRY = 23
+    POINT = 24
+    LINESTRING = 25
+    POLYGON = 26
+    MULTIPOLYGON = 27
+    SEMICOLON = 28
 
     @staticmethod
     def name(value):
@@ -828,13 +866,17 @@ _TYPE_RULES = collections.OrderedDict(
             lambda token, toktype=toktype: Token(toktype, token)
         ) for token, toktype in zip(
             (
+                'geometry',
+                'geography',
                 'point',
-                'line',
+                'linestring',
                 'polygon',
                 'multipolygon',
             ), (
+                Tokens.GEOMETRY,
+                Tokens.GEOGRAPHY,
                 Tokens.POINT,
-                Tokens.LINE,
+                Tokens.LINESTRING,
                 Tokens.POLYGON,
                 Tokens.MULTIPOLYGON,
             ),
@@ -851,6 +893,7 @@ _TYPE_RULES = collections.OrderedDict(
         # timezones
         ('(?P<COMMA>,)', lambda token: Token(Tokens.COMMA, token)),
         ('(?P<COLON>:)', lambda token: Token(Tokens.COLON, token)),
+        ('(?P<SEMICOLON>;)', lambda token: Token(Tokens.SEMICOLON, token)),
         (r'(?P<LPAREN>\()', lambda token: Token(Tokens.LPAREN, token)),
         (r'(?P<RPAREN>\))', lambda token: Token(Tokens.RPAREN, token)),
         ('(?P<LBRACKET><)', lambda token: Token(Tokens.LBRACKET, token)),
@@ -1007,7 +1050,26 @@ class TypeParser:
 
         field : [a-zA-Z_][a-zA-Z_0-9]*
 
-        geospatial: point | line | polygon | multipolygon
+        point : "point"
+              | "point" ";" srid
+              | "point" ":" geotype
+              | "point" ";" srid ":" geotype
+
+        linestring : "linestring"
+                   | "linestring" ";" srid
+                   | "linestring" ":" geotype
+                   | "linestring" ";" srid ":" geotype
+
+        polygon : "polygon"
+                | "polygon" ";" srid
+                | "polygon" ":" geotype
+                | "polygon" ";" srid ":" geotype
+
+
+        multipolygon : "multipolygon"
+                     | "multipolygon" ";" srid
+                     | "multipolygon" ":" geotype
+                     | "multipolygon" ";" srid ":" geotype
 
         """
         if self._accept(Tokens.PRIMITIVE):
@@ -1124,16 +1186,72 @@ class TypeParser:
 
         # geo spatial data type
         elif self._accept(Tokens.POINT):
-            return Point()
+            geotype = None
+            srid = None
 
-        elif self._accept(Tokens.LINE):
-            return Line()
+            if self._accept(Tokens.SEMICOLON):
+                self._expect(Tokens.INTEGER)
+                assert self.tok is not None
+                srid = self.tok.value
+
+            if self._accept(Tokens.COLON):
+                if self._accept(Tokens.GEOGRAPHY):
+                    geotype = 'geography'
+                elif self._accept(Tokens.GEOMETRY):
+                    geotype = 'geometry'
+
+            return Point(geotype=geotype, srid=srid)
+
+        elif self._accept(Tokens.LINESTRING):
+            geotype = None
+            srid = None
+
+            if self._accept(Tokens.SEMICOLON):
+                self._expect(Tokens.INTEGER)
+                assert self.tok is not None
+                srid = self.tok.value
+
+            if self._accept(Tokens.COLON):
+                if self._accept(Tokens.GEOGRAPHY):
+                    geotype = 'geography'
+                elif self._accept(Tokens.GEOMETRY):
+                    geotype = 'geometry'
+
+            return LineString(geotype=geotype, srid=srid)
 
         elif self._accept(Tokens.POLYGON):
-            return Polygon()
+            geotype = None
+            srid = None
+
+            if self._accept(Tokens.SEMICOLON):
+                self._expect(Tokens.INTEGER)
+                assert self.tok is not None
+                srid = self.tok.value
+
+            if self._accept(Tokens.COLON):
+                if self._accept(Tokens.GEOGRAPHY):
+                    geotype = 'geography'
+                elif self._accept(Tokens.GEOMETRY):
+                    geotype = 'geometry'
+
+            return Polygon(geotype=geotype, srid=srid)
 
         elif self._accept(Tokens.MULTIPOLYGON):
-            return MultiPolygon()
+            geotype = None
+            srid = None
+
+            if self._accept(Tokens.SEMICOLON):
+                self._expect(Tokens.INTEGER)
+                assert self.tok is not None
+                srid = self.tok.value
+
+            if self._accept(Tokens.COLON):
+                if self._accept(Tokens.GEOGRAPHY):
+                    geotype = 'geography'
+                elif self._accept(Tokens.GEOMETRY):
+                    geotype = 'geometry'
+
+            return MultiPolygon(geotype=geotype, srid=srid)
 
         else:
             raise SyntaxError('Type cannot be parsed: {}'.format(self.text))
@@ -1424,7 +1542,7 @@ def can_cast_variadic(
 
 # geo spatial data type
 @castable.register(Array, Point)
-@castable.register(Array, Line)
+@castable.register(Array, LineString)
 @castable.register(Array, Polygon)
 @castable.register(Array, MultiPolygon)
 def can_cast_geospatial(source, target, **kwargs):

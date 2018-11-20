@@ -678,8 +678,8 @@ class IntervalColumn(AnyColumn, IntervalValue): pass  # noqa: E701,E302
 
 
 class GeoSpatialValue(NumericValue): pass  # noqa: E701,E302
-class GeoSpatialScalar(NumericScalar, GeoSpatialValue): pass  # noqa: E701,E302
-class GeoSpatialColumn(NumericColumn, GeoSpatialValue): pass  # noqa: E701,E302
+class GeoSpatialScalar(NumericScalar, GeoSpatialValue): pass  # noqa: E701,E302,E501
+class GeoSpatialColumn(NumericColumn, GeoSpatialValue): pass  # noqa: E701,E302,E501
 
 
 class PointValue(GeoSpatialValue): pass  # noqa: E701,E302
@@ -687,9 +687,9 @@ class PointScalar(GeoSpatialScalar, PointValue): pass  # noqa: E701,E302
 class PointColumn(GeoSpatialColumn, PointValue): pass  # noqa: E701,E302
 
 
-class LineValue(GeoSpatialValue): pass  # noqa: E701,E302
-class LineScalar(GeoSpatialScalar, LineValue): pass  # noqa: E701,E302
-class LineColumn(GeoSpatialColumn, LineValue): pass  # noqa: E701,E302
+class LineStringValue(GeoSpatialValue): pass  # noqa: E701,E302
+class LineStringScalar(GeoSpatialScalar, LineStringValue): pass  # noqa: E701,E302,E501
+class LineStringColumn(GeoSpatialColumn, LineStringValue): pass  # noqa: E701,E302,E501
 
 
 class PolygonValue(GeoSpatialValue): pass  # noqa: E701,E302

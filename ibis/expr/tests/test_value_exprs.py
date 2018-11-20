@@ -50,23 +50,25 @@ def test_unicode():
     assert False
 
 
-@pytest.mark.parametrize(['value', 'expected_type'], [
-    (5, 'int8'),
-    (127, 'int8'),
-    (128, 'int16'),
-    (32767, 'int16'),
-    (32768, 'int32'),
-    (2147483647, 'int32'),
-    (2147483648, 'int64'),
-    (-5, 'int8'),
-    (-128, 'int8'),
-    (-129, 'int16'),
-    (-32769, 'int32'),
-    (-2147483649, 'int64'),
-    (1.5, 'double'),
-    ('foo', 'string'),
-    ([1, 2, 3], 'array<int8>')
-])
+@pytest.mark.parametrize(
+    ['value', 'expected_type'], [
+        (5, 'int8'),
+        (127, 'int8'),
+        (128, 'int16'),
+        (32767, 'int16'),
+        (32768, 'int32'),
+        (2147483647, 'int32'),
+        (2147483648, 'int64'),
+        (-5, 'int8'),
+        (-128, 'int8'),
+        (-129, 'int16'),
+        (-32769, 'int32'),
+        (-2147483649, 'int64'),
+        (1.5, 'double'),
+        ('foo', 'string'),
+        ([1, 2, 3], 'array<int8>')
+    ]
+)
 def test_literal_with_implicit_type(value, expected_type):
     expr = ibis.literal(value)
 
@@ -88,29 +90,31 @@ polygon2 = [lineAB, lineBC, lineCA]
 multipolygon1 = [polygon1, polygon2]
 
 
-@pytest.mark.parametrize(['value', 'expected_type'], [
-    (5, 'int16'),
-    (127, 'double'),
-    (128, 'int64'),
-    (32767, 'double'),
-    (32768, 'float'),
-    (2147483647, 'int64'),
-    (-5, 'int16'),
-    (-128, 'int32'),
-    (-129, 'int64'),
-    (-32769, 'float'),
-    (-2147483649, 'double'),
-    (1.5, 'double'),
-    ('foo', 'string'),
-    (list(pointA), 'point'),
-    (tuple(pointA), 'point'),
-    (list(lineAB), 'line'),
-    (tuple(lineAB), 'line'),
-    (list(polygon1), 'polygon'),
-    (tuple(polygon1), 'polygon'),
-    (list(multipolygon1), 'multipolygon'),
-    (tuple(multipolygon1), 'multipolygon')
-])
+@pytest.mark.parametrize(
+    ['value', 'expected_type'], [
+        (5, 'int16'),
+        (127, 'double'),
+        (128, 'int64'),
+        (32767, 'double'),
+        (32768, 'float'),
+        (2147483647, 'int64'),
+        (-5, 'int16'),
+        (-128, 'int32'),
+        (-129, 'int64'),
+        (-32769, 'float'),
+        (-2147483649, 'double'),
+        (1.5, 'double'),
+        ('foo', 'string'),
+        (list(pointA), 'point'),
+        (tuple(pointA), 'point'),
+        (list(lineAB), 'linestring'),
+        (tuple(lineAB), 'linestring'),
+        (list(polygon1), 'polygon'),
+        (tuple(polygon1), 'polygon'),
+        (list(multipolygon1), 'multipolygon'),
+        (tuple(multipolygon1), 'multipolygon')
+    ]
+)
 def test_literal_with_explicit_type(value, expected_type):
     expr = ibis.literal(value, type=expected_type)
     assert expr.type().equals(dt.validate_type(expected_type))

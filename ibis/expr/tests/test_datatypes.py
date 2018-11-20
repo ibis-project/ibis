@@ -171,7 +171,7 @@ def test_char_varchar_invalid(spec):
     ('timestamp', dt.timestamp),
     ('interval', dt.interval),
     ('point', dt.point),
-    ('line', dt.line),
+    ('linestring', dt.linestring),
     ('polygon', dt.polygon),
     ('multipolygon', dt.multipolygon)
 ])

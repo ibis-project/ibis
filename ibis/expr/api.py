@@ -53,7 +53,7 @@ from ibis.expr.types import (  # noqa
     CategoryValue, CategoryScalar, CategoryValue,
     GeoSpatialColumn, GeoSpatialScalar, GeoSpatialValue,
     PointColumn, PointScalar, PointValue,
-    LineColumn, LineScalar, LineValue,
+    LineStringColumn, LineStringScalar, LineStringValue,
     PolygonColumn, PolygonScalar, PolygonValue,
     MultiPolygonColumn, MultiPolygonScalar, MultiPolygonValue
 )

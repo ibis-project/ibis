@@ -113,25 +113,24 @@ def test_literal_geospatial():
     # point
     point_0 = (0, 0)
     point = ibis.literal(point_0, type='point')
-    assert ibis.mapd.compile(point) == 'SELECT POINT(0 0) AS tmp'
+    assert ibis.mapd.compile(point) == "SELECT 'POINT(0 0)' AS tmp"
 
     # line
     line_0 = [point_0, point_0]
-    line = ibis.literal(line_0, type='line')
-    assert ibis.mapd.compile(line) == 'SELECT LINESTRING(0 0, 0 0) AS tmp'
+    line = ibis.literal(line_0, type='linestring')
+    assert ibis.mapd.compile(line) == "SELECT 'LINESTRING(0 0, 0 0)' AS tmp"
 
     # polygon
     polygon_0 = [tuple(line_0), tuple(line_0)]
     polygon = ibis.literal(polygon_0, type='polygon')
     assert ibis.mapd.compile(polygon) == (
-        'SELECT POLYGON((0 0, 0 0), (0 0, 0 0)) AS tmp'
+        "SELECT 'POLYGON((0 0, 0 0), (0 0, 0 0))' AS tmp"
     )
 
     # multipolygon
     mpolygon_0 = [tuple(polygon_0), tuple(polygon_0)]
     mpolygon = ibis.literal(mpolygon_0, type='multipolygon')
     assert ibis.mapd.compile(mpolygon) == (
-        'SELECT MULTIPOLYGON(((0 0, 0 0), (0 0, 0 0)), '
-        '((0 0, 0 0), (0 0, 0 0))) AS tmp'
+        "SELECT 'MULTIPOLYGON(((0 0, 0 0), (0 0, 0 0)), "
+        "((0 0, 0 0), (0 0, 0 0)))' AS tmp"
     )
-
