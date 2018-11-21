@@ -94,10 +94,10 @@ def test_where_operator(alltypes):
     assert counts[1] == 5
 
 
-@pytest.mark.parametrize(('name',), [
-    ('regular_name',),
-    ('star_name*',),
-    ('space_name ',),
+@pytest.mark.parametrize('name', [
+    'regular_name',
+    'star_name*',
+    'space_name ',
 ])
 def test_quote_name(alltypes, name):
     expr = alltypes.aggregate(alltypes.count().name(name))
