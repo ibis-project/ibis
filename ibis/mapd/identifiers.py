@@ -134,9 +134,19 @@ _ibis = frozenset({
 _identifiers = _ddl | _dml | _data_type | _ibis
 
 
+_special_chars = (
+    ' ',
+    '*'
+)
+
+
 def quote_identifier(name, quotechar='"', force=False):
     if (
-        (force or name.count(' ') or name in _identifiers) and
+        (
+            force or
+            any(c in name for c in _special_chars) or
+            name in _identifiers
+        ) and
         quotechar not in name
     ):
         return '{0}{1}{0}'.format(quotechar, name)

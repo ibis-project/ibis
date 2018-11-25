@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from ibis.mapd.identifiers import quote_identifier, _identifiers
+from ibis.mapd.identifiers import quote_identifier
 from ibis.impala import compiler as impala_compiler
 from io import StringIO
 
@@ -381,9 +381,7 @@ def raise_unsupported_op_error(translator, expr, *args):
 
 # translator
 def _name_expr(formatted_expr, quoted_name):
-    if quoted_name in _identifiers:
-        quoted_name = '"{}"'.format(quoted_name)
-    return '{} AS {}'.format(formatted_expr, quoted_name)
+    return '{} AS {}'.format(formatted_expr, quote_identifier(quoted_name))
 
 
 class CaseFormatter:
