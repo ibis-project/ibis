@@ -75,7 +75,7 @@ services:
       KUDU_MASTER: "false"
 
   mapd:
-    image: mapd/mapd-ce-cpu:v4.1.3
+    image: mapd/mapd-ce-cpu:v4.4.0
     ports:
       - "9091-9092:9091-9092"
     environment:
