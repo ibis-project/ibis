@@ -461,10 +461,14 @@ def execute_count_distinct_series_groupby(
 
 @execute_node.register(ops.Arbitrary, SeriesGroupBy, type(None))
 def execute_arbitrary_series_groupby(op, data, _, aggcontext=None, **kwargs):
-    if op.how not in {'first', 'last'}:
+    how = op.how
+    if how is None:
+        how = 'first'
+
+    if how not in {'first', 'last'}:
         raise com.OperationNotDefinedError(
-            'Arbitrary {!r} is not supported'.format(op.how))
-    return aggcontext.agg(data, op.how)
+            'Arbitrary {!r} is not supported'.format(how))
+    return aggcontext.agg(data, how)
 
 
 def _filtered_reduction(mask, method, data):
