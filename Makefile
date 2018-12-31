@@ -15,6 +15,7 @@ clean:
 
 develop: clean
 	@python setup.py develop
+	pre-commit install
 
 typecheck:
 	@mypy --ignore-missing-imports $(MAKEFILE_DIR)/ibis
