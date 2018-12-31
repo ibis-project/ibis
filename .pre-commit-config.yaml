@@ -1,0 +1,8 @@
+repos:
+  - repo: git://github.com/pre-commit/pre-commit-hooks
+    rev: v2.1.0
+    hooks:
+     - id: flake8
+       types:
+         - python
+       args: ['--config=setup.cfg']

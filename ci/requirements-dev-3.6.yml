@@ -18,6 +18,7 @@ dependencies:
   - pandas
   - plumbum
   - psycopg2
+  - pre_commit
   - pyarrow>=0.6.0
   - pymapd>=0.4.0
   - pymysql
