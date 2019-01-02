@@ -168,6 +168,66 @@ method of :class:`~ibis.bigquery.client.BigQueryClient` objects:
    >>> t = db.my_awesome_table
    >>> t.sweet_column.sum().execute()  # runs against the billing project
 
+`Pandas <https://www.pandas.pydata.org/>`_ Quickstart
+------------------------------------------------------
+
+Ibis's Pandas backend is available on Ibis's core:
+
+Create a client by supplying a dictionary of DataFrames using
+:func:`~ibis.pandas.connect`. The keys become the table names:
+
+.. code-block:: python
+
+   >>> con = ibis.pandas.connect({
+   ...     'A': pandas.util.testing.makeDataFrame(),
+   ...     'B': pandas.util.testing.makeDataFrame()
+   ... })
+
+.. _install.mapd:
+
+`MapD <https://www.omnisci.com/>`_ Quickstart
+------------------------------------------------------
+
+Install dependencies for Ibis's MapD dialect:
+
+::
+
+  pip install ibis-framework[mapd]
+
+Create a client by passing in database connection parameters such as ``host``,
+``port``, ``database``,  ``user`` and ``password`` to
+:func:`~ibis.mapd.connect`:
+
+.. code-block:: python
+
+   >>> con = ibis.mapd.connect(
+   ...     host='localhost', database='mapd', port=9091,
+   ...     user='mapd', password='HyperInteractive'
+   ... )
+
+.. _install.mysql:
+
+`MySQL <https://www.mysql.com/>`_ Quickstart
+------------------------------------------------------
+
+Install dependencies for Ibis's MySQL dialect:
+
+::
+
+  pip install ibis-framework[mysql]
+
+Create a client by passing a connection string or individual parameters to
+:func:`~ibis.mysql.connect`:
+
+.. code-block:: python
+
+   >>> con = ibis.mysql.connect(
+   ...     'mysql://user:pass@host:port/my_database'
+   ... )
+   >>> con = ibis.mysql.connect(
+   ...     user='bob', port=23569, database='ibis_testing'
+   ... )
+
 Learning Resources
 ------------------
 
