@@ -168,7 +168,7 @@ method of :class:`~ibis.bigquery.client.BigQueryClient` objects:
    >>> t = db.my_awesome_table
    >>> t.sweet_column.sum().execute()  # runs against the billing project
 
-`Pandas <https://www.pandas.pydata.org/>`_ Quickstart
+`Pandas <https://pandas.pydata.org/>`_ Quickstart
 ------------------------------------------------------
 
 Ibis's Pandas backend is available on Ibis's core:
