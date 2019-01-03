@@ -18,8 +18,8 @@ dependencies:
   - pandas
   - plumbum
   - psycopg2
-  - pyarrow==0.7.1
-  - pymapd>=0.4.0
+  - pyarrow>=0.7.1
+  - pymapd==0.6.0
   - pymysql
   - pytables
   - pytest
