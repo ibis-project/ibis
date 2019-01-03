@@ -18,7 +18,7 @@ def con():
         port=MAPD_PORT,
         user=MAPD_USER,
         password=MAPD_PASS,
-        database=MAPD_DB,
+        database=MAPD_DB
     )
 
 
