@@ -38,6 +38,6 @@ Ibis currently provides tools for interacting with the following systems:
 - [Pandas](https://pandas.pydata.org/) [DataFrames](http://pandas.pydata.org/pandas-docs/stable/dsintro.html#dataframe) (Experimental)
 - [Clickhouse](https://clickhouse.yandex)
 - [BigQuery](https://cloud.google.com/bigquery)
-- [MapD](https://www.mapd.com/) (Experimental)
+- [MapD](https://www.mapd.com) (Experimental)
 
 Learn more about using the library at http://docs.ibis-project.org.
