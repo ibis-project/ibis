@@ -75,6 +75,10 @@ test: &test
         command: |
           bash <(curl -s https://codecov.io/bash) \
             -f /tmp/ibis/test-reports/pytest-cov/coverage.xml
+    - run:
+        name: Show MapD Server log
+        command: docker logs $(docker ps -aqf "name=mapd")
+        when: on_fail
 
 
 build: &build
