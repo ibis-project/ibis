@@ -45,8 +45,8 @@ Or from `conda-forge <http://conda-forge.github.io>`_ with
 
 At this time, Ibis offers some level of support for the following systems:
 
-- `Apache Impala (incubating) <http://impala.io/>`_
-- `Apache Kudu (incubating) <http://getkudu.io/>`_
+- `Apache Impala <https://impala.apache.org/>`_
+- `Apache Kudu <https://kudu.apache.org/>`_
 - `PostgreSQL <https://www.postgresql.org/>`_
 - `SQLite <https://www.sqlite.org/>`_
 - `Google BigQuery <https://cloud.google.com/bigquery/>`_
