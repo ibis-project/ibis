@@ -19,7 +19,6 @@ dependencies:
   - plumbum
   - psycopg2
   - pyarrow>=0.7.1
-  - pymapd==0.6.0
   - pymysql
   - pytables
   - pytest
@@ -37,3 +36,5 @@ dependencies:
   - toolz
   - xorg-libxpm
   - xorg-libxrender
+  - pip:
+    - pymapd==0.6.0
