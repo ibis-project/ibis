@@ -17,6 +17,7 @@ dependencies:
   - numpy
   - pandas
   - plumbum
+  - pre_commit
   - psycopg2
   - pyarrow>=0.7.1
   - pymapd==0.6.0

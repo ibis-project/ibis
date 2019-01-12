@@ -43,6 +43,8 @@ Conda Environment Setup
       # Install ibis
       make develop
 
+   *Note: `make develop` command also install a `pre-commit` Git hook.*
+
 
 All-in-One Command
 ------------------
