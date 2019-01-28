@@ -6,7 +6,7 @@ from pkg_resources import parse_version
 from pymapd.cursor import Cursor
 
 try:
-    from pygdf.dataframe import DataFrame as GPUDataFrame
+    from cudf.dataframe.dataframe import DataFrame as GPUDataFrame
 except ImportError:
     GPUDataFrame = None
 
