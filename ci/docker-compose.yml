@@ -140,7 +140,6 @@ services:
       dockerfile: ci/Dockerfile.dev
       args:
         PYTHON: ${PYTHON_VERSION:-3.6}
-        ENVKIND: ${ENVKIND:-dev}
 
   ibis-docs:
     image: ibis-docs:${PYTHON_VERSION:-3.6}

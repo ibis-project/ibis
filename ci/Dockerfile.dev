@@ -6,8 +6,6 @@ ADD ci/requirements-dev.yml /
 RUN conda install -q -y -c conda-forge \
         --file requirements-dev.yml \
         python=$PYTHON \
- && conda install conda-build -q -c conda-forge \
-        --override-channels \
  && conda clean --all -y
 
 COPY . /ibis
