@@ -51,7 +51,7 @@ test: &test
         command: docker-compose run ibis conda list
     - run:
         name: Capture the exact environment used
-        command: docker-compose run ibis conda env export > /tmp/env/env.yml
+        command: docker-compose run ibis conda list --export > /tmp/env/env.yml
     - run:
         name: Execute Pytest
         command: |
@@ -151,7 +151,7 @@ docs: &docs
         command: docker-compose run ibis find /tmp/docs.ibis-project.org -maxdepth 1 ! -name '*.git' ! -wholename /tmp/docs.ibis-project.org ! -name 'CNAME' ! -name '*.nojekyll' -exec rm -rf {} \;
     - run:
         name: Show the environment used to build the docs
-        command: docker-compose run ibis conda env export
+        command: docker-compose run ibis conda list
     - run:
         name: Build Documentation
         command: docker-compose run ibis sphinx-build -b html docs/source /tmp/docs.ibis-project.org -W -T -j auto
