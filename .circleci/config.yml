@@ -205,6 +205,6 @@ workflows:
   test:
     jobs:
       - python36_test
-      - python36_conda_build
+      # - python36_conda_build
       - python36_benchmark
       - python36_docs

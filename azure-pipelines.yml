@@ -67,42 +67,42 @@ jobs:
         mergeTestResults: False
       condition: succeededOrFailed()  # pass or fail, but not cancelled
 
-- job: WindowsCondaBuild
-  pool:
-    vmImage: 'VS2017-Win2016'
-  strategy:
-    maxParallel: 3
-    matrix:
-      py36:
-        python.version: "3.6"
-  steps:
-    - task: CondaEnvironment@1
-      displayName: 'Create conda-build environment'
-      inputs:
-        createCustomEnvironment: False
-        packageSpecs: conda-build click jinja2 ruamel.yaml plumbum
-        installOptions: --channel conda-forge --override-channels
-        updateConda: False
-
-    - script: python setup.py develop
-      displayName: 'Install ibis'
-
-    - script: python ci/feedstock.py clone
-      displayName: 'Clone conda-forge recipe'
-
-    - script: python ci/feedstock.py update
-      displayName: 'Update conda-forge recipe'
-
-    - script: python ci/feedstock.py build --python=$(python.version)
-      displayName: 'Build conda package from conda-forge recipe'
-
-    - script: python ci/feedstock.py deploy C:/Miniconda/conda-bld conda win-64
-      displayName: 'Copy conda package to artifact directory'
-
-    # publish sdist and wheel and conda package
-    - task: PublishBuildArtifacts@1
-      displayName: 'Publish conda package to Azure'
-      inputs:
-        pathToPublish: conda
-        artifactName: conda
-      condition: and(succeeded(), eq(variables['System.PullRequest.IsFork'], 'False'))
+# - job: WindowsCondaBuild
+#   pool:
+#     vmImage: 'VS2017-Win2016'
+#   strategy:
+#     maxParallel: 3
+#     matrix:
+#       py36:
+#         python.version: "3.6"
+#   steps:
+#     - task: CondaEnvironment@1
+#       displayName: 'Create conda-build environment'
+#       inputs:
+#         createCustomEnvironment: False
+#         packageSpecs: conda-build click jinja2 ruamel.yaml plumbum
+#         installOptions: --channel conda-forge --override-channels
+#         updateConda: False
+#
+#     - script: python setup.py develop
+#       displayName: 'Install ibis'
+#
+#     - script: python ci/feedstock.py clone
+#       displayName: 'Clone conda-forge recipe'
+#
+#     - script: python ci/feedstock.py update
+#       displayName: 'Update conda-forge recipe'
+#
+#     - script: python ci/feedstock.py build --python=$(python.version)
+#       displayName: 'Build conda package from conda-forge recipe'
+#
+#     - script: python ci/feedstock.py deploy C:/Miniconda/conda-bld conda win-64
+#       displayName: 'Copy conda package to artifact directory'
+#
+#     # publish sdist and wheel and conda package
+#     - task: PublishBuildArtifacts@1
+#       displayName: 'Publish conda package to Azure'
+#       inputs:
+#         pathToPublish: conda
+#         artifactName: conda
+#       condition: and(succeeded(), eq(variables['System.PullRequest.IsFork'], 'False'))
