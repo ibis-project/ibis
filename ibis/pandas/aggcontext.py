@@ -196,8 +196,11 @@ Pandas
     ...     'time': pd.date_range(periods=4, start='now')
     ... })
     >>> sorter = lambda df: df.sort_values('time')
-    >>> gb = df.groupby('key').apply(sorter).groupby('key')
-    >>> gb.groupby('key').value.rolling(3).sum()  # doctest: +SKIP
+    >>> gb = df.groupby('key').apply(sorter).reset_index(
+    ...    drop=True
+    ... ).groupby('key')
+    >>> rolling = gb.value.rolling(2)
+    >>> rolling.sum()  # doctest: +SKIP
 
 Ibis
 
@@ -208,7 +211,7 @@ Ibis
     ...     ('time', 'timestamp'), ('key', 'string'), ('value', 'double')
     ... ]
     >>> t = ibis.table(schema, name='t')
-    >>> window = ibis.trailing_window(3, order_by=t.time, group_by=t.key)
+    >>> window = ibis.trailing_window(2, order_by=t.time, group_by=t.key)
     >>> t.value.sum().over(window)  # doctest: +SKIP
 """
 
