@@ -130,7 +130,7 @@ docs: &docs
         command: docker ps
     - run:
         name: Build Ibis Documentation Image
-        command: docker-compose build --pull ibis
+        command: docker-compose build --pull ibis-docs
     - run:
         name: List Docker Images
         command: docker images

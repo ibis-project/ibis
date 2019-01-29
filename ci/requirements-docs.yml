@@ -1,0 +1,7 @@
+ipython
+jupyter
+matplotlib
+nbconvert=5.3.1
+nbsphinx
+numpydoc
+sphinx_rtd_theme<0.3

@@ -8,17 +8,15 @@ RUN apt-get -qq update --yes \
  && rm -rf /var/lib/apt/lists/*
 
 ARG PYTHON
-ARG ENVKIND
-
-ADD ci/requirements-${ENVKIND}-${PYTHON}.yml /
-
+ADD ci/requirements-dev.yml \
+    ci/requirements-docs.yml \
+    /
 RUN conda install -q -y -c conda-forge \
-        --file requirements-${ENVKIND}-${PYTHON}.yml \
- && conda install conda-build -q -c conda-forge --override-channels
+        --file requirements-dev.yml \
+        --file requirements-docs.yml \
+        python=$PYTHON \
+ && conda clean --all -y
 
-# we intentionally keep conda artifacts in the image to speedup recipe building
-# on the other hand to reduce image size run the following in the previous layer
-# && conda clean -a -y
 COPY . /ibis
 WORKDIR /ibis
 

@@ -1,0 +1,16 @@
+FROM continuumio/miniconda3
+
+ARG PYTHON
+ADD ci/requirements-dev.yml /
+
+RUN conda install -q -y -c conda-forge \
+        --file requirements-dev.yml \
+        python=$PYTHON \
+ && conda install conda-build -q -c conda-forge \
+        --override-channels \
+ && conda clean --all -y
+
+COPY . /ibis
+WORKDIR /ibis
+
+RUN python setup.py develop

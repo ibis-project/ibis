@@ -137,7 +137,15 @@ services:
       - /tmp/ibis:/tmp
     build:
       context: ..
-      dockerfile: ci/Dockerfile
+      dockerfile: ci/Dockerfile.dev
       args:
         PYTHON: ${PYTHON_VERSION:-3.6}
         ENVKIND: ${ENVKIND:-dev}
+
+  ibis-docs:
+    image: ibis-docs:${PYTHON_VERSION:-3.6}
+    build:
+      context: ..
+      dockerfile: ci/Dockerfile.docs
+      args:
+        PYTHON: ${PYTHON_VERSION:-3.6}
