@@ -5,8 +5,6 @@ jobs:
   strategy:
     maxParallel: 3
     matrix:
-      py35:
-        python.version: "3.5"
       py36:
         python.version: "3.6"
   steps:
@@ -75,8 +73,6 @@ jobs:
   strategy:
     maxParallel: 3
     matrix:
-      py35:
-        python.version: "3.5"
       py36:
         python.version: "3.6"
   steps:
