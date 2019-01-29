@@ -1,46 +1,43 @@
-channels:
-  - conda-forge
-dependencies:
-  - click
-  - clickhouse-cityhash
-  - clickhouse-driver
-  - clickhouse-sqlalchemy
-  - cmake
-  - flake8
-  - google-cloud-bigquery>=1.0.0
-  - graphviz
-  - impyla>=0.14.0
-  - ipython
-  - jinja2
-  - jupyter
-  - lz4
-  - matplotlib
-  - multipledispatch>=0.6.0
-  - mypy
-  - nbconvert=5.3.1
-  - nbsphinx
-  - numpy
-  - numpydoc
-  - pandas
-  - plumbum
-  - psycopg2
-  - pyarrow>=0.6.0
-  - pymapd>=0.4.0
-  - pymysql
-  - pytables
-  - pytest
-  - pytest-cov
-  - pytest-xdist
-  - python=3.6
-  - python-graphviz
-  - python-hdfs>=2.0.16
-  - pytz
-  - regex
-  - requests
-  - ruamel.yaml
-  - sphinx_rtd_theme<0.3
-  - sqlalchemy
-  - thrift
-  - toolz
-  - xorg-libxpm
-  - xorg-libxrender
+click
+clickhouse-cityhash
+clickhouse-driver
+clickhouse-sqlalchemy
+cmake
+flake8
+google-cloud-bigquery>=1.0.0
+graphviz
+impyla>=0.14.0
+ipython
+jinja2
+jupyter
+lz4
+matplotlib
+multipledispatch>=0.6.0
+mypy
+nbconvert=5.3.1
+nbsphinx
+numpy
+numpydoc
+pandas
+plumbum
+psycopg2
+pyarrow>=0.6.0
+pymapd>=0.4.0
+pymysql
+pytables
+pytest
+pytest-cov
+pytest-xdist
+python=3.6
+python-graphviz
+python-hdfs>=2.0.16
+pytz
+regex
+requests
+ruamel.yaml
+sphinx_rtd_theme<0.3
+sqlalchemy
+thrift
+toolz
+xorg-libxpm
+xorg-libxrender

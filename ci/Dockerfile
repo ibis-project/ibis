@@ -10,20 +10,16 @@ RUN apt-get -qq update --yes \
 ARG PYTHON
 ARG ENVKIND
 
-COPY ci/requirements-${ENVKIND}-${PYTHON}.yml /
+ADD ci/requirements-${ENVKIND}-${PYTHON}.yml /
 
-RUN conda env create -q -n ibis-${ENVKIND}-${PYTHON} -f /requirements-${ENVKIND}-${PYTHON}.yml \
- && conda install conda-build -y -q -c conda-forge --override-channels
+RUN conda install -q -y -c conda-forge \
+        --file requirements-${ENVKIND}-${PYTHON}.yml \
+ && conda install conda-build -q -c conda-forge --override-channels
 
 # we intentionally keep conda artifacts in the image to speedup recipe building
 # on the other hand to reduce image size run the following in the previous layer
 # && conda clean -a -y
-
-RUN echo 'source activate ibis-'${ENVKIND}-${PYTHON}' && exec "$@"' > activate.sh
-
 COPY . /ibis
 WORKDIR /ibis
 
-RUN bash /activate.sh python setup.py develop
-
-ENTRYPOINT ["bash", "/activate.sh"]
+RUN python setup.py develop
