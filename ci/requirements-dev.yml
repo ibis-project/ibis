@@ -9,7 +9,6 @@ graphviz
 impyla>=0.14.0
 jinja2
 lz4
-make
 multipledispatch>=0.6.0
 mypy
 numpy

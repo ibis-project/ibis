@@ -135,6 +135,7 @@ services:
       GOOGLE_APPLICATION_CREDENTIALS: /tmp/gcloud-service-key.json
     volumes:
       - /tmp/ibis:/tmp
+      - ..:/ibis
     build:
       context: ..
       dockerfile: ci/Dockerfile.dev
@@ -143,6 +144,9 @@ services:
 
   ibis-docs:
     image: ibis-docs:${PYTHON_VERSION:-3.6}
+    volumes:
+      - /tmp/ibis:/tmp
+      - ..:/ibis
     build:
       context: ..
       dockerfile: ci/Dockerfile.docs

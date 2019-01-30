@@ -1,28 +1,12 @@
-FROM continuumio/miniconda3
+ARG PYTHON
+FROM ibis:$PYTHON
 
 # fonts are for docs
 RUN apt-get -qq update --yes \
- && apt-get -qq install --yes --no-install-recommends \
-   build-essential ttf-dejavu \
-   git make clang libboost-dev postgresql-client ca-certificates \
+ && apt-get -qq install --yes ttf-dejavu
  && rm -rf /var/lib/apt/lists/*
 
-ARG PYTHON
-ADD ci/requirements-dev.yml \
-    ci/requirements-docs.yml \
-    /
-RUN conda config --add channels conda-forge \
- && conda update --all -y -q \
- && conda install -q -y -c conda-forge \
-        --file requirements-dev.yml \
+ADD ci/requirements-docs.yml /
+RUN conda install -q -y -c conda-forge \
         --file requirements-docs.yml \
-        python=$PYTHON \
  && conda clean --all -y
-
-# TODO(kszucs): remove once the note in requiremens-dev.yml is resolved
-RUN pip install git+git://github.com/omnisci/pymapd.git@d5b57cae4e88e1fbc720680a6ae64698714379e9
-
-COPY . /ibis
-WORKDIR /ibis
-
-RUN python setup.py develop
