@@ -1,5 +1,6 @@
 ipython
 jupyter
+make
 matplotlib
 nbconvert=5.3.1
 nbsphinx
