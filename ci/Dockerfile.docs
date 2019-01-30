@@ -11,11 +11,16 @@ ARG PYTHON
 ADD ci/requirements-dev.yml \
     ci/requirements-docs.yml \
     /
-RUN conda install -q -y -c conda-forge \
+RUN conda config --add channels conda-forge \
+ && conda update --all -y -q \
+ && conda install -q -y -c conda-forge \
         --file requirements-dev.yml \
         --file requirements-docs.yml \
         python=$PYTHON \
  && conda clean --all -y
+
+# TODO(kszucs): remove once the note in requiremens-dev.yml is resolved
+RUN pip install git+git://github.com/omnisci/pymapd.git@d5b57cae4e88e1fbc720680a6ae64698714379e9
 
 COPY . /ibis
 WORKDIR /ibis
