@@ -1,4 +1,3 @@
-import sys
 import pytest
 import pandas as pd
 import numpy as np
@@ -72,11 +71,6 @@ def parquet(tmpdir, data):
     pa = pytest.importorskip('pyarrow')
     import pyarrow.parquet as pq  # noqa: E402
     from ibis.file.parquet import ParquetClient
-
-    if sys.platform == 'win32':
-        pytest.skip(reason='See ibis issue #1698')
-    else:
-        raise ValueError(sys.platform)
 
     # create single files
     d = tmpdir.mkdir('pq')
