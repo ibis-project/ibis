@@ -6,7 +6,8 @@ cmake
 flake8
 google-cloud-bigquery>=1.0.0
 graphviz
-impyla>=0.14.0
+# FIXME(kszucs): temporarily installed via pip to support python 3.7 tests
+# impyla>=0.14.0
 jinja2
 lz4
 multipledispatch>=0.6.0

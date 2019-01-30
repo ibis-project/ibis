@@ -138,6 +138,9 @@ docs: &docs
         name: Wait for Databases
         command: docker-compose run waiter
     - run:
+        name: Show Running Containers
+        command: docker ps
+    - run:
         name: Load Test Datasets
         command: docker-compose run ibis-docs ci/load-data.sh
     - run:

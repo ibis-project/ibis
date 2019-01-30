@@ -15,8 +15,9 @@ RUN conda config --add channels conda-forge \
         python=$PYTHON \
  && conda clean --all -y
 
-# TODO(kszucs): remove once the note in requiremens-dev.yml is resolved
-RUN pip install git+git://github.com/omnisci/pymapd.git@d5b57cae4e88e1fbc720680a6ae64698714379e9
+# TODO(kszucs): remove once the notes in requiremens-dev.yml is resolved
+RUN pip install git+git://github.com/cloudera/impyla.git@1ef84dba5a37c9aa4020f05895e371605513ea62 \
+ && pip install git+git://github.com/omnisci/pymapd.git@d5b57cae4e88e1fbc720680a6ae64698714379e9
 
 COPY . /ibis
 WORKDIR /ibis
