@@ -2,8 +2,10 @@
 
 export PYTHON_VERSION="3.6"
 
-docker-compose build --pull ibis
-docker-compose build --pull ibis-docs
+docker-compose build ibis
+docker-compose build ibis-docs
+
+# TODO(kszucs): move the following commands in a single script
 docker-compose run --rm ibis-docs ping -c 1 quickstart.cloudera
 docker-compose run --rm ibis-docs rm -rf /tmp/docs.ibis-project.org
 docker-compose run --rm ibis-docs git clone \

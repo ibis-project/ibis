@@ -28,7 +28,7 @@ test: &test
         command: docker ps
     - run:
         name: Build Ibis Image
-        command: docker-compose build --pull ibis
+        command: docker-compose build ibis
     - run:
         name: List Docker Images
         command: docker images
@@ -84,7 +84,7 @@ build: &build
         path: ~/ibis
     - run:
         name: Build Ibis Image
-        command: docker-compose build --pull ibis
+        command: docker-compose build ibis
     - run:
         name: List Docker Images
         command: docker images
@@ -107,7 +107,7 @@ benchmark: &benchmark
         path: ~/ibis
     - run:
         name: Build Ibis Image
-        command: docker-compose build --pull ibis
+        command: docker-compose build ibis
     - run:
         name: Run Benchmark (ASV)
         command: |
@@ -130,7 +130,7 @@ docs: &docs
         command: docker ps
     - run:
         name: Build Ibis Documentation Image
-        command: docker-compose build --pull ibis && docker-compose build --pull ibis-docs
+        command: docker-compose build ibis && docker-compose build ibis-docs
     - run:
         name: List Docker Images
         command: docker images
