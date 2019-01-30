@@ -35,6 +35,8 @@ requests
 ruamel.yaml
 sqlalchemy
 thrift
+# required for impyla in case of py3
+thriftpy
 toolz
 xorg-libxpm
 xorg-libxrender
