@@ -1,4 +1,4 @@
-import os
+import sys
 import pytest
 import pandas as pd
 import numpy as np
@@ -68,7 +68,7 @@ def hdf(tmpdir, data):
 
 
 @pytest.fixture
-@pytest.mark.skipif(os.name == 'nt', reason='See ibis issue #1698')
+@pytest.mark.skipif(sys.platform == 'win32', reason='See ibis issue #1698')
 def parquet(tmpdir, data):
     pa = pytest.importorskip('pyarrow')
     import pyarrow.parquet as pq  # noqa: E402
