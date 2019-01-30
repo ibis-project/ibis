@@ -7,6 +7,6 @@ RUN apt-get -qq update --yes \
  && rm -rf /var/lib/apt/lists/*
 
 ADD ci/requirements-docs.yml /
-RUN conda install -q -y -c conda-forge \
-        --file requirements-docs.yml \
+RUN conda install -q -y \
+        --file /requirements-docs.yml \
  && conda clean --all -y

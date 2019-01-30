@@ -1,8 +1,10 @@
 ipython
 jupyter
-make
 matplotlib
 nbconvert=5.3.1
 nbsphinx
+nomkl
 numpydoc
+# must pin again otherwise strange things happen
+pyarrow>=0.12
 sphinx_rtd_theme<0.3

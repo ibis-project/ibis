@@ -11,7 +11,7 @@ ADD ci/requirements-dev.yml /
 RUN conda config --add channels conda-forge \
  && conda update --all -y -q \
  && conda install -q -y \
-        --file requirements-dev.yml \
+        --file /requirements-dev.yml \
         python=$PYTHON \
  && conda clean --all -y
 

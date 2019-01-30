@@ -130,7 +130,7 @@ docs: &docs
         command: docker ps
     - run:
         name: Build Ibis Documentation Image
-        command: docker-compose build --pull ibis-docs
+        command: docker-compose build --pull ibis && docker-compose build --pull ibis-docs
     - run:
         name: List Docker Images
         command: docker images
@@ -139,22 +139,22 @@ docs: &docs
         command: docker-compose run waiter
     - run:
         name: Load Test Datasets
-        command: docker-compose run ibis ci/load-data.sh
+        command: docker-compose run ibis-docs ci/load-data.sh
     - run:
         name: Ping the Notebook Impala Hostname
-        command: docker-compose run ibis ping -c 1 quickstart.cloudera
+        command: docker-compose run ibis-docs ping -c 1 quickstart.cloudera
     - run:
         name: Clone Documentation Repository
-        command: docker-compose run ibis git clone --branch gh-pages https://github.com/ibis-project/docs.ibis-project.org /tmp/docs.ibis-project.org
+        command: docker-compose run ibis-docs git clone --branch gh-pages https://github.com/ibis-project/docs.ibis-project.org /tmp/docs.ibis-project.org
     - run:
         name: Clear Out Old Documentation Files
-        command: docker-compose run ibis find /tmp/docs.ibis-project.org -maxdepth 1 ! -name '*.git' ! -wholename /tmp/docs.ibis-project.org ! -name 'CNAME' ! -name '*.nojekyll' -exec rm -rf {} \;
+        command: docker-compose run ibis-docs find /tmp/docs.ibis-project.org -maxdepth 1 ! -name '*.git' ! -wholename /tmp/docs.ibis-project.org ! -name 'CNAME' ! -name '*.nojekyll' -exec rm -rf {} \;
     - run:
         name: Show the environment used to build the docs
-        command: docker-compose run ibis conda list
+        command: docker-compose run ibis-docs conda list
     - run:
         name: Build Documentation
-        command: docker-compose run ibis sphinx-build -b html docs/source /tmp/docs.ibis-project.org -W -T -j auto
+        command: docker-compose run ibis-docs sphinx-build -b html docs/source /tmp/docs.ibis-project.org -W -T -j auto
     - run:
         name: Who is Running
         command: |

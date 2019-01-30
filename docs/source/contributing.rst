@@ -29,7 +29,7 @@ Here are the steps to run clone the repo and run the test suite:
    pushd ibis/ci
 
    # start services, build ibis, and load data into databases
-   ENVKIND=docs ./build.sh
+   ./build.sh
 
    # optionally run all tests
-   ENVKIND=docs ./test.sh -m 'not udf' -n auto -o cache_dir=/tmp/.pytest_cache
+   ./test.sh -m 'not udf' -n auto -o cache_dir=/tmp/.pytest_cache
