@@ -184,10 +184,21 @@ jobs:
       - PYTHONHASHSEED: ""
       - PYTHON_VERSION: 3.6
 
+  python37_test:
+    <<: *test
+    environment:
+      - PYTHONHASHSEED: ""
+      - PYTHON_VERSION: 3.7
+
   python36_conda_build:
     <<: *build
     environment:
       - PYTHON_VERSION: 3.6
+
+  python37_conda_build:
+    <<: *build
+    environment:
+      - PYTHON_VERSION: 3.7
 
   python36_benchmark:
     <<: *benchmark
@@ -205,6 +216,8 @@ workflows:
   test:
     jobs:
       - python36_test
-      # - python36_conda_build
+      - python36_test
       - python36_benchmark
       - python36_docs
+      # - python36_conda_build
+      # - python37_conda_build
