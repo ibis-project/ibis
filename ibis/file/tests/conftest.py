@@ -68,6 +68,7 @@ def hdf(tmpdir, data):
 
 
 @pytest.fixture
+@pytest.mark.skipif(os.name == 'nt', reason='See ibis issue #1698')
 def parquet(tmpdir, data):
     pa = pytest.importorskip('pyarrow')
     import pyarrow.parquet as pq  # noqa: E402
@@ -75,7 +76,6 @@ def parquet(tmpdir, data):
 
     # create single files
     d = tmpdir.mkdir('pq')
-    assert os.path.exists(str(d))
 
     for k, v in data.items():
         f = d / '{}.parquet'.format(k)
