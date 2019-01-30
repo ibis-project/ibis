@@ -3,7 +3,7 @@ FROM ibis:$PYTHON
 
 # fonts are for docs
 RUN apt-get -qq update --yes \
- && apt-get -qq install --yes ttf-dejavu
+ && apt-get -qq install --yes ttf-dejavu \
  && rm -rf /var/lib/apt/lists/*
 
 ADD ci/requirements-docs.yml /
