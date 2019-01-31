@@ -1,3 +1,4 @@
+import warnings
 from datetime import date, datetime
 from ibis.mapd.identifiers import quote_identifier
 from ibis.impala import compiler as impala_compiler
@@ -346,9 +347,30 @@ def literal(translator, expr):
         if isinstance(value, datetime):
             if value.microsecond != 0:
                 msg = 'Unsupported subsecond accuracy {}'
-                raise ValueError(msg.format(value))
+                warnings.warn(msg.format(value))
             value = value.strftime('%Y-%m-%d %H:%M:%S')
-        return "toDateTime('{0!s}')".format(value)
+        elif isinstance(value, str):
+            # check if the datetime format is a valid format (
+            # '%Y-%m-%d %H:%M:%S' or '%Y-%m-%d'). if format is '%Y-%m-%d' it
+            # is converted to '%Y-%m-%d 00:00:00'
+            msg = (
+                "Literal datetime string should use '%Y-%m-%d %H:%M:%S' "
+                "format. When '%Y-%m-%d' format is used,  datetime will be "
+                "converted automatically to '%Y-%m-%d 00:00:00'"
+            )
+
+            try:
+                dt_value = datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+            except ValueError:
+                try:
+                    dt_value = datetime.strptime(value, '%Y-%m-%d')
+                    warnings.warn(msg)
+                except ValueError:
+                    raise Exception(msg)
+
+            value = dt_value.strftime('%Y-%m-%d %H:%M:%S')
+
+        return "'{0!s}'".format(value)
     elif isinstance(expr, ir.DateValue):
         if isinstance(value, date):
             value = value.strftime('%Y-%m-%d')
