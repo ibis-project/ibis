@@ -273,7 +273,7 @@ def identity_func_testing(
     assert issubclass(type(expr), ir.ScalarExpr)
     result = udfcon.execute(expr)
     # Hacky
-    if datatype is 'timestamp':
+    if datatype == 'timestamp':
         assert type(result) == pd.Timestamp
     else:
         lop = literal.op()
