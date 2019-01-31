@@ -71,7 +71,7 @@ def test_cast_datetime_strings_to_date(t, df, column):
     result = expr.execute()
     expected = pd.to_datetime(
         df[column], infer_datetime_format=True
-    ).dt.normalize()
+    ).dt.normalize().dt.tz_localize(None)
     tm.assert_series_equal(result, expected)
 
 
@@ -86,7 +86,11 @@ def test_cast_datetime_strings_to_date(t, df, column):
 def test_cast_datetime_strings_to_timestamp(t, df, column):
     expr = t[column].cast('timestamp')
     result = expr.execute()
-    expected = pd.to_datetime(df[column], infer_datetime_format=True)
+    expected = pd.to_datetime(
+        df[column], infer_datetime_format=True
+    )
+    if getattr(expected.dtype, 'tz', None) is not None:
+        expected = expected.dt.tz_convert(None)
     tm.assert_series_equal(result, expected)
 
 

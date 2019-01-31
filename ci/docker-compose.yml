@@ -135,9 +135,50 @@ services:
       GOOGLE_APPLICATION_CREDENTIALS: /tmp/gcloud-service-key.json
     volumes:
       - /tmp/ibis:/tmp
+      - ..:/ibis
     build:
       context: ..
-      dockerfile: ci/Dockerfile
+      dockerfile: ci/Dockerfile.dev
       args:
         PYTHON: ${PYTHON_VERSION:-3.6}
-        ENVKIND: ${ENVKIND:-dev}
+
+  ibis-docs:
+    image: ibis-docs:${PYTHON_VERSION:-3.6}
+    # TODO(kszucs): use a .env file to reduce duplications
+    environment:
+      IBIS_TEST_DOWNLOAD_DIRECTORY: /tmp
+      IBIS_TEST_DATA_DIRECTORY: /tmp/ibis-testing-data
+      IBIS_TEST_SQLITE_DATABASE: /tmp/ibis_testing.db
+      IBIS_TEST_NN_HOST: impala
+      IBIS_TEST_IMPALA_HOST: impala
+      IBIS_TEST_IMPALA_PORT: 21050
+      IBIS_TEST_WEBHDFS_PORT: 50070
+      IBIS_TEST_WEBHDFS_USER: hdfs
+      IBIS_TEST_MYSQL_HOST: mysql
+      IBIS_TEST_MYSQL_PORT: 3306
+      IBIS_TEST_MYSQL_USER: ibis
+      IBIS_TEST_MYSQL_PASSWORD: ibis
+      IBIS_TEST_MYSQL_DATABASE: ibis_testing
+      IBIS_TEST_POSTGRES_HOST: postgres
+      IBIS_TEST_POSTGRES_PORT: 5432
+      IBIS_TEST_POSTGRES_USER: postgres
+      IBIS_TEST_POSTGRES_PASSWORD: postgres
+      IBIS_TEST_POSTGRES_DATABASE: ibis_testing
+      IBIS_TEST_CLICKHOUSE_HOST: clickhouse
+      IBIS_TEST_CLICKHOUSE_PORT: 9000
+      IBIS_TEST_CLICKHOUSE_DATABASE: ibis_testing
+      IBIS_TEST_MAPD_HOST: mapd
+      IBIS_TEST_MAPD_PORT: 9091
+      IBIS_TEST_MAPD_DATABASE: ibis_testing
+      IBIS_TEST_MAPD_USER: mapd
+      IBIS_TEST_MAPD_PASSWORD: HyperInteractive
+      GOOGLE_BIGQUERY_PROJECT_ID: ibis-gbq
+      GOOGLE_APPLICATION_CREDENTIALS: /tmp/gcloud-service-key.json
+    volumes:
+      - /tmp/ibis:/tmp
+      - ..:/ibis
+    build:
+      context: ..
+      dockerfile: ci/Dockerfile.docs
+      args:
+        PYTHON: ${PYTHON_VERSION:-3.6}

@@ -156,16 +156,8 @@ def parquet(tables, data_directory, ignore_missing_dependency, **params):
 
     data_directory = Path(data_directory)
     for table, df in read_tables(tables, data_directory):
-        if table == 'functional_alltypes':
-            schema = pa.schema([
-                pa.field('string_col', pa.string()),
-                pa.field('date_string_col', pa.string())
-            ])
-        else:
-            schema = None
-        arrow_table = pa.Table.from_pandas(df, schema=schema)
+        arrow_table = pa.Table.from_pandas(df)
         target_path = data_directory / '{}.parquet'.format(table)
-
         pq.write_table(arrow_table, str(target_path))
 
 

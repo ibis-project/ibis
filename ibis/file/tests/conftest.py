@@ -74,9 +74,9 @@ def parquet(tmpdir, data):
 
     # create single files
     d = tmpdir.mkdir('pq')
-    for k, v in data.items():
 
-        f = d / "{}.parquet".format(k)
+    for k, v in data.items():
+        f = d / '{}.parquet'.format(k)
         table = pa.Table.from_pandas(v)
         pq.write_table(table, str(f))
 
