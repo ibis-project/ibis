@@ -2,6 +2,7 @@ import pytest
 
 import ibis
 import ibis.expr.lineage as lin
+import ibis.expr.operations as ops
 
 from ibis.tests.util import assert_equal
 
@@ -206,3 +207,24 @@ def test_lineage_join(companies, rounds):
     assert len(results) == len(expected)
     for r, e in zip(results, expected):
         assert_equal(r, e)
+
+
+@pytest.mark.parametrize('expr,node_type,expected_count', [
+    (lambda c: (c.funding_rounds + c.funding_total_usd) + c.funding_rounds,
+     ops.Add, 2),
+    (lambda c: (c.funding_rounds + c.funding_total_usd) - c.funding_rounds,
+     ops.Add, 1),
+    (lambda c: c.funding_rounds - c.funding_total_usd, ops.Add, 0),
+])
+def test_find_nodes(companies, expr, node_type, expected_count):
+    e = expr(companies)
+    nodes = list(lin.find_nodes(e, node_type))
+    assert expected_count == len(nodes)
+
+
+def test_roots(companies):
+    expr = companies.funding_rounds + companies.funding_total_usd
+    roots = list(lin.roots(expr))
+    assert 1 == len(roots)
+
+    assert companies.op().equals(roots[0])
