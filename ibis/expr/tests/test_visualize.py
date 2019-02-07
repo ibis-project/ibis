@@ -8,6 +8,7 @@ import ibis.expr.types as ir  # noqa: E402
 import ibis.expr.rules as rlz  # noqa: E402
 import ibis.expr.visualize as viz  # noqa: E402
 import ibis.expr.operations as ops  # noqa: E402
+import ibis.expr.api as api  # noqa; E402
 
 from ibis.expr.signature import Argument as Arg  # noqa: E402
 
@@ -134,3 +135,14 @@ def test_between():
     # one for the node itself and one for the edge to between
     assert key(lower_bound, 'lower_bound') in source
     assert key(upper_bound, 'upper_bound') in source
+
+
+def test_asof_join():
+    left = ibis.table([('time', 'int32'), ('value', 'double')])
+    right = ibis.table([('time', 'int32'), ('value2', 'double')])
+    right = right.mutate(foo=1)
+
+    joined = api.asof_join(left, right, 'time')
+    result = joined[left, right.foo]
+    graph = viz.to_graph(result)
+    assert key(result) in graph.source
