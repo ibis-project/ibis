@@ -22,219 +22,190 @@
 #
 # Lightly modified from version of this script in incubator-parquet-format
 
-from __future__ import print_function
+"""Command line tool for merging PRs."""
 
-from requests.auth import HTTPBasicAuth
-import requests
-
+import collections
+import contextlib
 import os
-import subprocess
+import pathlib
 import sys
 import textwrap
 
-if __name__ == '__main__':
-    IBIS_HOME = os.path.abspath(__file__).rsplit("/", 2)[0]
-    PROJECT_NAME = 'ibis'
-    print("IBIS_HOME = " + IBIS_HOME)
+from typing import Iterator
 
-    # Remote name with the PR
-    PR_REMOTE_NAME = os.environ.get("PR_REMOTE_NAME", "upstream")
+import click
 
-    # Remote name where results pushed
-    PUSH_REMOTE_NAME = os.environ.get("PUSH_REMOTE_NAME", "upstream")
+from plumbum import cmd
 
-    GITHUB_BASE = "https://github.com/pandas-dev/" + PROJECT_NAME + "/pull"
-    GITHUB_API_BASE = "https://api.github.com/repos/pandas-dev/" + PROJECT_NAME
+import requests
 
-    # Prefix added to temporary branches
-    BRANCH_PREFIX = "PR_TOOL"
+IBIS_HOME = pathlib.Path(__file__).parent.parent
+PROJECT_NAME = "ibis"
 
-    os.chdir(IBIS_HOME)
+# Remote name with the PR
+PR_REMOTE_NAME = os.environ.get("PR_REMOTE_NAME", "upstream")
 
-    auth_required = False
+# Remote name where results pushed
+PUSH_REMOTE_NAME = os.environ.get("PUSH_REMOTE_NAME", "upstream")
 
-    if auth_required:
-        GITHUB_USERNAME = os.environ['GITHUB_USER']
-        import getpass
-        GITHUB_PASSWORD = getpass.getpass('Enter github.com password for %s:'
-                                          % GITHUB_USERNAME)
+GITHUB_API_BASE = "https://api.github.com/repos/ibis-project/{}".format(
+    PROJECT_NAME
+)
 
-        def get_json_auth(url):
-            auth = HTTPBasicAuth(GITHUB_USERNAME, GITHUB_PASSWORD)
-            req = requests.get(url, auth=auth)
-            return req.json()
+# Prefix added to temporary branches
+BRANCH_PREFIX = "PR_TOOL"
 
-        get_json = get_json_auth
-    else:
-        def get_json_no_auth(url):
-            req = requests.get(url)
-            return req.json()
+git = cmd.git["-C", IBIS_HOME]
 
-        get_json = get_json_no_auth
 
-    def fail(msg):
-        print(msg)
-        clean_up()
-        sys.exit(-1)
+@contextlib.contextmanager
+def clean_up(new_head: str, original_head: str) -> Iterator[None]:
+    """Checkout `new_head` and return to `original_head` after yielding."""
+    git["checkout", new_head](stdout=sys.stdout, stderr=sys.stderr)
+    try:
+        yield
+    finally:
+        git["checkout", original_head](stdout=sys.stdout, stderr=sys.stderr)
+        branches = git["branch"]().strip().split()
+        for branch in branches:
+            if branch.startswith(BRANCH_PREFIX):
+                git["branch", "-D", branch](
+                    stdout=sys.stdout, stderr=sys.stderr
+                )
 
-    def run_cmd(cmd):
-        if isinstance(cmd, str):
-            cmd = cmd.split(' ')
 
-        try:
-            output = subprocess.check_output(cmd)
-        except subprocess.CalledProcessError as e:
-            # this avoids hiding the stdout / stderr of failed processes
-            print('Command failed: %s' % cmd)
-            print('With output:')
-            print('--------------')
-            print(e.output)
-            print('--------------')
-            raise e
+def merge_pr(
+    pr_num: int,
+    target_ref: str,
+    title: str,
+    body: str,
+    pr_repo_desc: str,
+    original_head: str,
+    target_branch_name: str,
+    pr_branch_name: str,
+    confirm_push: bool,
+) -> None:
+    """Merge a pull request."""
+    git["merge", pr_branch_name, "--squash"](
+        stdout=sys.stdout, stderr=sys.stderr
+    )
 
-        try:
-            return output.decode('utf-8')
-        except AttributeError:
-            return output
+    commit_authors = git[
+        "log", "HEAD..{}".format(pr_branch_name), "--pretty=format:%an <%ae>"
+    ]().split()
+    author_count = collections.Counter(commit_authors)
+    distinct_authors = [author for author, _ in author_count.most_common()]
+    primary_author = distinct_authors[0]
+    commits = git[
+        "log", "HEAD..{}".format(pr_branch_name), "--pretty=format:%h [%an] %s"
+    ]().split()
 
-    def continue_maybe(prompt):
-        result = input("\n%s (y/n): " % prompt)
-        if result.lower() != "y":
-            fail("Okay, exiting")
+    merge_message_flags = ["-m", title]
+    if body is not None:
+        merge_message_flags += ["-m", "\n".join(textwrap.wrap(body))]
 
-    original_head = run_cmd("git rev-parse HEAD")[:8]
+    authors = "\n".join(map("Author: {}".format, distinct_authors))
 
-    def clean_up():
-        print("Restoring head pointer to %s" % original_head)
-        run_cmd("git checkout %s" % original_head)
+    merge_message_flags += ["-m", authors]
 
-        branches = run_cmd("git branch").replace(" ", "").split("\n")
+    # The string "Closes #{pr}" string is required for GitHub to correctly
+    # close the PR
+    merge_message_flags += [
+        "-m",
+        "Closes #{:d} from {} and squashes the following commits:".format(
+            pr_num, pr_repo_desc
+        ),
+    ]
+    for commit in commits:
+        merge_message_flags += ["-m", commit]
 
-        for branch in filter(lambda x: x.startswith(BRANCH_PREFIX), branches):
-            print("Deleting local branch %s" % branch)
-            run_cmd("git branch -D %s" % branch)
+    git["commit", "--no-verify", "--author", primary_author][
+        merge_message_flags
+    ](stdout=sys.stdout, stderr=sys.stderr)
 
-    # merge the requested PR and return the merge hash
-    def merge_pr(pr_num, target_ref):
-        pr_branch_name = "%s_MERGE_PR_%s" % (BRANCH_PREFIX, pr_num)
-        target_branch_name = "%s_MERGE_PR_%s_%s" % (BRANCH_PREFIX, pr_num,
-                                                    target_ref.upper())
-        run_cmd("git fetch %s pull/%s/head:%s" % (PR_REMOTE_NAME, pr_num,
-                                                  pr_branch_name))
-        run_cmd("git fetch %s %s:%s" % (PUSH_REMOTE_NAME, target_ref,
-                                        target_branch_name))
-        run_cmd("git checkout %s" % target_branch_name)
+    if confirm_push:
+        prompt = "Merge complete (local ref {}). Push to {}?".format(
+            target_branch_name, PUSH_REMOTE_NAME
+        )
+        if input("\n{} ([Yy]/n): ".format(prompt)).lower() != "y":
+            sys.exit(-1)
 
-        had_conflicts = False
-        try:
-            run_cmd(['git', 'merge', pr_branch_name, '--squash'])
-        except Exception as e:
-            msg = ("Error merging: %s\nWould you like to "
-                   "manually fix-up this merge?" % e)
-            continue_maybe(msg)
-            msg = ("Okay, please fix any conflicts and 'git add' "
-                   "conflicting files... Finished?")
-            continue_maybe(msg)
-            had_conflicts = True
+    git[
+        "push",
+        PUSH_REMOTE_NAME,
+        "{}:{}".format(target_branch_name, target_ref),
+    ](stdout=sys.stdout, stderr=sys.stderr)
 
-        commit_authors = run_cmd(['git', 'log', 'HEAD..%s' % pr_branch_name,
-                                 '--pretty=format:%an <%ae>']).split("\n")
-        distinct_authors = sorted(set(commit_authors),
-                                  key=lambda x: commit_authors.count(x),
-                                  reverse=True)
-        primary_author = distinct_authors[0]
-        commits = run_cmd(['git', 'log', 'HEAD..%s' % pr_branch_name,
-                          '--pretty=format:%h [%an] %s']).split("\n\n")
+    merge_hash = git["rev-parse", target_branch_name]().strip()
+    click.echo("Pull request #{:d} merged!".format(pr_num))
+    click.echo("Merge hash: {}".format(merge_hash))
 
-        merge_message_flags = []
 
-        merge_message_flags += ["-m", title]
-        if body is not None:
-            merge_message_flags += ["-m", '\n'.join(textwrap.wrap(body))]
+@click.command()
+@click.option(
+    "-p",
+    "--pr",
+    type=int,
+    prompt="Which pull request would you like to merge? (e.g. 34)",
+)
+@click.option("--confirm-push/--no-confirm-push", default=True)
+def main(pr: int, confirm_push: bool) -> None:  # noqa: D103
+    original_head = git["rev-parse", "--abbrev-ref", "HEAD"]().strip()
 
-        authors = "\n".join(["Author: %s" % a for a in distinct_authors])
+    if not original_head:
+        original_head = git["rev-parse", "HEAD"]().strip()
 
-        merge_message_flags += ["-m", authors]
+    pr_json = requests.get("{}/pulls/{:d}".format(GITHUB_API_BASE, pr)).json()
 
-        if had_conflicts:
-            committer_name = run_cmd("git config --get user.name").strip()
-            committer_email = run_cmd("git config --get user.email").strip()
-            message = ("This patch had conflicts when merged, "
-                       "resolved by\nCommitter: %s <%s>" %
-                       (committer_name, committer_email))
-            merge_message_flags += ["-m", message]
+    message = pr_json.get("message", None)
+    if message is not None and message.lower() == "not found":
+        raise click.ClickException("PR {:d} does not exist.".format(pr))
 
-        # The string "Closes #%s" string is required for GitHub to correctly
-        # close the PR
-        merge_message_flags += [
-            "-m",
-            "Closes #%s from %s and squashes the following commits:"
-            % (pr_num, pr_repo_desc)]
-        for c in commits:
-            merge_message_flags += ["-m", c]
+    if not pr_json["mergeable"]:
+        raise click.ClickException(
+            "Pull request {:d} cannot be merged in its current form."
+        )
 
-        run_cmd(['git', 'commit',
-                 '--no-verify',  # do not run commit hooks
-                 '--author="%s"' % primary_author] +
-                merge_message_flags)
+    url = pr_json["url"]
+    title = pr_json["title"]
+    body = pr_json["body"]
+    target_ref = pr_json["base"]["ref"]
+    user_login = pr_json["user"]["login"]
+    base_ref = pr_json["head"]["ref"]
+    pr_repo_desc = "{}/{}".format(user_login, base_ref)
 
-        continue_maybe("Merge complete (local ref %s). Push to %s?" % (
-            target_branch_name, PUSH_REMOTE_NAME))
+    click.echo("\n=== Pull Request #{:d} ===".format(pr))
+    click.echo(
+        "title\t{}\nsource\t{}\ntarget\t{}\nurl\t{}".format(
+            title, pr_repo_desc, target_ref, url
+        )
+    )
 
-        try:
-            run_cmd('git push %s %s:%s' % (
-                PUSH_REMOTE_NAME, target_branch_name, target_ref))
-        except Exception as e:
-            clean_up()
-            fail("Exception while pushing: %s" % e)
+    pr_branch_name = "{}_MERGE_PR_{:d}".format(BRANCH_PREFIX, pr)
+    target_branch_name = "{}_MERGE_PR_{:d}_{}".format(
+        BRANCH_PREFIX, pr, target_ref.upper()
+    )
+    git[
+        "fetch", PR_REMOTE_NAME, "pull/{:d}/head:{}".format(pr, pr_branch_name)
+    ](stdout=sys.stdout, stderr=sys.stderr)
+    git[
+        "fetch",
+        PUSH_REMOTE_NAME,
+        "{}:{}".format(target_ref, target_branch_name),
+    ](stdout=sys.stdout, stderr=sys.stderr)
+    with clean_up(target_branch_name, original_head):
+        merge_pr(
+            pr,
+            target_ref,
+            title,
+            body,
+            pr_repo_desc,
+            original_head,
+            target_branch_name,
+            pr_branch_name,
+            confirm_push,
+        )
 
-        merge_hash = run_cmd("git rev-parse %s" % target_branch_name)[:8]
-        clean_up()
-        print("Pull request #%s merged!" % pr_num)
-        print("Merge hash: %s" % merge_hash)
-        return merge_hash
 
-    branches = get_json("%s/branches" % GITHUB_API_BASE)
-    branch_names = filter(lambda x: x.startswith("branch-"),
-                          [x['name'] for x in branches])
-
-    pr_num = input("Which pull request would you like to merge? (e.g. 34): ")
-    pr = get_json("%s/pulls/%s" % (GITHUB_API_BASE, pr_num))
-
-    url = pr["url"]
-    title = pr["title"]
-    body = pr["body"]
-    target_ref = pr["base"]["ref"]
-    user_login = pr["user"]["login"]
-    base_ref = pr["head"]["ref"]
-    pr_repo_desc = "%s/%s" % (user_login, base_ref)
-
-    if pr["merged"] is True:
-        print("Pull request {0} has already been merged, assuming "
-              "you want to backport".format(pr_num))
-        merge_commit_desc = run_cmd([
-            'git', 'log', '--merges', '--first-parent',
-            '--grep=pull request #%s' % pr_num, '--oneline']).split("\n")[0]
-        if merge_commit_desc == "":
-            fail("Couldn't find any merge commit for #{0}"
-                 ", you may need to update HEAD.".format(pr_num))
-
-        merge_hash = merge_commit_desc[:7]
-        message = merge_commit_desc[8:]
-
-        print("Found: %s" % message)
-        sys.exit(0)
-
-    if not bool(pr["mergeable"]):
-        msg = ("Pull request {0} is not mergeable in its current form.\n"
-               "Continue? (experts only!)".format(pr_num))
-        continue_maybe(msg)
-
-    print("\n=== Pull Request #%s ===" % pr_num)
-    print("title\t%s\nsource\t%s\ntarget\t%s\nurl\t%s" % (
-        title, pr_repo_desc, target_ref, url))
-    continue_maybe("Proceed with merging pull request #%s?" % pr_num)
-
-    merged_refs = [target_ref]
-
-    merge_hash = merge_pr(pr_num, target_ref)
+if __name__ == "__main__":
+    main()
