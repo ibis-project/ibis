@@ -1,9 +1,8 @@
+import regex as re
+import pandas as pd
+import pymapd
+
 from pkg_resources import parse_version
-from ibis.client import Database, Query, SQLClient, DatabaseEntity
-from ibis.mapd.compiler import MapDDialect, build_ast
-from ibis.mapd import ddl
-from ibis.sql.compiler import DDL, DML
-from ibis.util import log
 from pymapd.cursor import Cursor
 
 try:
@@ -11,14 +10,16 @@ try:
 except ImportError:
     GPUDataFrame = None
 
-import regex as re
-import pandas as pd
-import pymapd
-
 import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+
+from ibis.client import Database, Query, SQLClient, DatabaseEntity
+from ibis.mapd.compiler import MapDDialect, build_ast
+from ibis.mapd import ddl
+from ibis.sql.compiler import DDL, DML
+from ibis.util import log
 
 EXECUTION_TYPE_ICP = 1
 EXECUTION_TYPE_ICP_GPU = 2

@@ -52,6 +52,12 @@ class MapDQueryBuilder(compiles.QueryBuilder):
 
     """
     select_builder = MapDSelectBuilder
+    union_class = None
+
+    def _make_union(self):
+        raise com.UnsupportedOperationError(
+            "MapD backend doesn't support Union operation"
+        )
 
 
 class MapDQueryContext(compiles.QueryContext):

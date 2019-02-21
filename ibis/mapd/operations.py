@@ -726,4 +726,5 @@ _operation_registry.update(_geometric_ops)
 _operation_registry.update(_string_ops)
 _operation_registry.update(_date_ops)
 _operation_registry.update(_agg_ops)
+# the last update should be with unsupported ops
 _operation_registry.update(_unsupported_ops)
