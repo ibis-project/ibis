@@ -25,9 +25,11 @@ def get_type(expr):
     except com.IbisError:
         op = expr.op()
         assert isinstance(op, ops.Join)
-        left_table_name = op.left.op().name or ops.genname()
+        left_table_name = getattr(
+            op.left.op(), 'name', None) or ops.genname()
         left_schema = op.left.schema()
-        right_table_name = op.right.op().name or ops.genname()
+        right_table_name = getattr(
+            op.right.op(), 'name', None) or ops.genname()
         right_schema = op.right.schema()
         pairs = [
             ('{}.{}'.format(left_table_name, left_column), type)
