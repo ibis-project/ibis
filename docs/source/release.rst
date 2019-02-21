@@ -11,6 +11,18 @@ Release Notes
 
 Current ``ibis.__version__``: |version|
 
+Unreleased
+-----------------
+
+This release brings new implementations such as Geo Spatial support.
+
+New Features
+~~~~~~~~~~~~
+
+* Experimental Geo Spatial datatype support, initially for MapD backend
+  (:issue:`1665`)
+
+
 v0.14.0 (August 23rd, 2018)
 ---------------------------
 

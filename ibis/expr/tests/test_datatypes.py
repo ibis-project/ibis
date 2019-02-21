@@ -22,7 +22,23 @@ def test_validate_type():
     ('set<uint8>', dt.Set(dt.uint8)),
     ([dt.uint8], dt.Array(dt.uint8)),
     ([dt.float32, dt.float64], dt.Array(dt.float64)),
-    ({dt.string}, dt.Set(dt.string))
+    ({dt.string}, dt.Set(dt.string)),
+    ('point', dt.point),
+    ('point;4326', dt.point),
+    ('point;4326:geometry', dt.point),
+    ('point;4326:geography', dt.point),
+    ('linestring', dt.linestring),
+    ('linestring;4326', dt.linestring),
+    ('linestring;4326:geometry', dt.linestring),
+    ('linestring;4326:geography', dt.linestring),
+    ('polygon', dt.polygon),
+    ('polygon;4326', dt.polygon),
+    ('polygon;4326:geometry', dt.polygon),
+    ('polygon;4326:geography', dt.polygon),
+    ('multipolygon', dt.multipolygon),
+    ('multipolygon;4326', dt.multipolygon),
+    ('multipolygon;4326:geometry', dt.multipolygon),
+    ('multipolygon;4326:geography', dt.multipolygon)
 ])
 def test_dtype(spec, expected):
     assert dt.dtype(spec) == expected

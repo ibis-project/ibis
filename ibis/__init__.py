@@ -1,5 +1,3 @@
-import sys
-
 from contextlib import suppress
 
 import ibis.config_init  # noqa: F401
@@ -55,8 +53,7 @@ with suppress(ImportError):
 
 with suppress(ImportError):
     # pip install ibis-framework[mapd]
-    if sys.version_info.major >= 3:
-        import ibis.mapd.api as mapd  # noqa: F401
+    import ibis.mapd.api as mapd  # noqa: F401
 
 
 def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
