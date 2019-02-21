@@ -401,12 +401,6 @@ def raise_unsupported_op_error(translator, expr, *args):
     raise com.UnsupportedOperationError(msg.format(type(op)))
 
 
-# unsupported operations
-def _union(*args, **kwargs):
-    msg = "MapD backend doesn't support Union operation!"
-    raise com.UnsupportedOperationError(msg)
-
-
 # translator
 def _name_expr(formatted_expr, quoted_name):
     return '{} AS {}'.format(formatted_expr, quote_identifier(quoted_name))
