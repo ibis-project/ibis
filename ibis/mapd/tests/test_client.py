@@ -73,12 +73,13 @@ def text_exists_table_with_database(con, alltypes, test_data_db, temp_table,
 def test_union_op(alltypes):
     t1 = alltypes
     t2 = alltypes
+    expr = t1.union(t2)
+
     with pytest.raises(com.UnsupportedOperationError):
-        print(t1.union(t2))
+        expr.compile()
 
     t1 = alltypes.head()
     t2 = alltypes.head()
+    expr = t1.union(t2)
     with pytest.raises(com.UnsupportedOperationError):
-        t1 = alltypes.head()
-        t2 = alltypes.head()
-        t1.union(t2)
+        expr.compile()
