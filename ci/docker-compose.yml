@@ -77,7 +77,10 @@ services:
   mapd:
     image: mapd/mapd-ce-cpu:v4.4.2
     ports:
+      - 9090:9090
       - 9091:9091
+      - 9092:9092
+      - 9093:9093
     environment:
       - MAPD_HOST=mapd
       - MAPD_PORT=9091

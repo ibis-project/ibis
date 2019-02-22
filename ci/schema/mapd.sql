@@ -70,3 +70,13 @@ CREATE TABLE functional_alltypes (
     year_ INTEGER,
     month_ INTEGER
 );
+
+DROP TABLE IF EXISTS geo;
+
+CREATE TABLE geo (
+  id INTEGER,
+  geo_point POINT,
+  geo_linestring LINESTRING,
+  geo_polygon POLYGON,
+  geo_multipolygon MULTIPOLYGON
+);

@@ -54,6 +54,11 @@ def awards_players(backend):
     return backend.awards_players()
 
 
+@pytest.fixture(scope='session')
+def geo(backend):
+    return backend.geo()
+
+
 @pytest.fixture
 def analytic_alltypes(alltypes):
     return alltypes.groupby('string_col').order_by('id')
@@ -77,3 +82,10 @@ def batting_df(batting):
 @pytest.fixture(scope='session')
 def awards_players_df(awards_players):
     return awards_players.execute(limit=None)
+
+
+@pytest.fixture(scope='session')
+def geo_df(geo):
+    # Currently geo is implemented just for MapD
+    if geo is not None:
+        return geo.execute(limit=None)

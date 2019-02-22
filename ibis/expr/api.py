@@ -72,6 +72,24 @@ __all__ = (
     'Expr',
     'expr_list',
     'greatest',
+    'geo_area',
+    'geo_contains',
+    'geo_distance',
+    'geo_end_point',
+    'geo_length',
+    'geo_max_distance',
+    'geo_n_points',
+    'geo_n_rings',
+    'geo_perimeter',
+    'geo_point_n',
+    'geo_srid',
+    'geo_start_point',
+    'geo_x',
+    'geo_x_max',
+    'geo_x_min',
+    'geo_y',
+    'geo_y_max',
+    'geo_y_min',
     'hour',
     'ifelse',
     'infer_dtype',
@@ -1541,10 +1559,324 @@ _add_methods(ir.FloatingValue, _floating_value_methods)
 
 _add_methods(ir.NumericColumn, _numeric_column_methods)
 
+# ----------------------------------------------------------------------
+# GeoSpatial API
 
-# GEO Spatial
 
-_geospatial_value_methods = dict()
+def geo_area(arg, use_spheroid=None):
+    """
+    Compute area of a geo spatial data
+
+    Parameters
+    ----------
+    arg : geometry or geography
+    use_spheroid:  default None
+
+    Returns
+    -------
+    area : double scalar
+    """
+    op = ops.GeoArea(arg, use_spheroid)
+    return op.to_expr()
+
+
+def geo_contains(left, right):
+    """
+    Check if the first geometry contains the second one
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    contains : bool scalar
+    """
+    op = ops.GeoContains(left, right)
+    return op.to_expr()
+
+
+def geo_distance(left, right, use_spheroid=None):
+    """
+    Compute distance between two geo spatial data
+
+    Parameters
+    ----------
+    left : geometry or geography
+    right : geometry or geography
+    use_spheroid : default None
+
+    Returns
+    -------
+    distance : double scalar
+    """
+    op = ops.GeoDistance(left, right, use_spheroid)
+    return op.to_expr()
+
+
+def geo_length(arg, use_spheroid=None):
+    """
+    Compute length of a geo spatial data
+
+    Parameters
+    ----------
+    arg : geometry or geography
+    use_spheroid : default None
+
+    Returns
+    -------
+    length : double scalar
+    """
+    op = ops.GeoLength(arg, use_spheroid)
+    return op.to_expr()
+
+
+def geo_perimeter(arg, use_spheroid=None):
+    """
+    Compute perimeter of a geo spatial data
+
+    Parameters
+    ----------
+    arg : geometry or geography
+    use_spheroid : default None
+
+    Returns
+    -------
+    perimeter : double scalar
+    """
+    op = ops.GeoPerimeter(arg, use_spheroid)
+    return op.to_expr()
+
+
+def geo_max_distance(left, right):
+    """Returns the 2-dimensional maximum distance between two geometries in
+    projected units. If g1 and g2 is the same geometry the function will
+    return the distance between the two vertices most far from each other
+    in that geometry
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    MaxDistance : double scalar
+    """
+    op = ops.GeoMaxDistance(left, right)
+    return op.to_expr()
+
+
+def geo_x(arg):
+    """Return the X coordinate of the point, or NULL if not available.
+    Input must be a point
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    X : double scalar
+    """
+    op = ops.GeoX(arg)
+    return op.to_expr()
+
+
+def geo_y(arg):
+    """Return the Y coordinate of the point, or NULL if not available.
+    Input must be a point
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    Y : double scalar
+    """
+    op = ops.GeoY(arg)
+    return op.to_expr()
+
+
+def geo_x_min(arg):
+    """Returns Y minima of a geometry
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    XMin : double scalar
+    """
+    op = ops.GeoXMin(arg)
+    return op.to_expr()
+
+
+def geo_x_max(arg):
+    """Returns X maxima of a geometry
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    XMax : double scalar
+    """
+    op = ops.GeoXMax(arg)
+    return op.to_expr()
+
+
+def geo_y_min(arg):
+    """Returns Y minima of a geometry
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    YMin : double scalar
+    """
+    op = ops.GeoYMin(arg)
+    return op.to_expr()
+
+
+def geo_y_max(arg):
+    """Returns Y maxima of a geometry
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    YMax : double scalar
+    """
+    op = ops.GeoYMax(arg)
+    return op.to_expr()
+
+
+def geo_start_point(arg):
+    """Returns the first point of a LINESTRING geometry as a POINT or
+    NULL if the input parameter is not a LINESTRING
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    Point : geometry scalar
+    """
+    op = ops.GeoStartPoint(arg)
+    return op.to_expr()
+
+
+def geo_end_point(arg):
+    """Returns the last point of a LINESTRING geometry as a POINT or
+    NULL if the input parameter is not a LINESTRING
+
+    Parameters
+    ----------
+    arg : geometry or geography
+
+    Returns
+    -------
+    EndPoint : geometry scalar
+    """
+    op = ops.GeoEndPoint(arg)
+    return op.to_expr()
+
+
+def geo_point_n(arg, n):
+    """Return the Nth point in a single linestring in the geometry.
+    Negative values are counted backwards from the end of the LineString,
+    so that -1 is the last point. Returns NULL if there is no linestring in
+    the geometry
+
+    Parameters
+    ----------
+    arg : geometry
+    n : integer
+
+    Returns
+    -------
+    PointN : geometry scalar
+    """
+    op = ops.GeoPointN(arg, n)
+    return op.to_expr()
+
+
+def geo_n_points(arg):
+    """Return the number of points in a geometry. Works for all geometries
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    NPoints : double scalar
+    """
+    op = ops.GeoNPoints(arg)
+    return op.to_expr()
+
+
+def geo_n_rings(arg):
+    """If the geometry is a polygon or multi-polygon returns the number of
+    rings. It counts the outer rings as well
+
+    Parameters
+    ----------
+    arg : geometry or geography
+
+    Returns
+    -------
+    NRings : double scalar
+    """
+    op = ops.GeoNRings(arg)
+    return op.to_expr()
+
+
+def geo_srid(arg):
+    """Returns the spatial reference identifier for the ST_Geometry
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    SRID : Integer scalar
+    """
+    op = ops.GeoSRID(arg)
+    return op.to_expr()
+
+
+_geospatial_value_methods = dict(
+    area=geo_area,
+    contains=geo_contains,
+    distance=geo_distance,
+    end_point=geo_end_point,
+    length=geo_length,
+    max_distance=geo_max_distance,
+    n_points=geo_n_points,
+    n_rings=geo_n_rings,
+    perimeter=geo_perimeter,
+    point_n=geo_point_n,
+    srid=geo_srid,
+    start_point=geo_start_point,
+    x=geo_x,
+    x_max=geo_x_max,
+    x_min=geo_x_min,
+    y_min=geo_y_min,
+    y=geo_y,
+    y_max=geo_y_max
+)
 _geospatial_column_methods = dict()
 
 _add_methods(ir.GeoSpatialValue, _geospatial_value_methods)

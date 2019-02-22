@@ -2,7 +2,6 @@
 
 import json
 import os
-import sys
 import tarfile
 import tempfile
 import warnings
@@ -20,8 +19,9 @@ from pathlib import Path
 
 
 SCRIPT_DIR = Path(__file__).parent.absolute()
+DATA_DIR_NAME = 'ibis-testing-data'
 DATA_DIR = Path(os.environ.get('IBIS_TEST_DATA_DIRECTORY',
-                               SCRIPT_DIR / 'ibis-testing-data'))
+                               SCRIPT_DIR / DATA_DIR_NAME))
 
 TEST_TABLES = ['functional_alltypes', 'diamonds', 'batting',
                'awards_players']
@@ -62,7 +62,13 @@ def init_database(driver, params, schema=None, recreate=True, **kwargs):
 def read_tables(names, data_directory):
     for name in names:
         path = data_directory / '{}.csv'.format(name)
-        df = pd.read_csv(str(path), index_col=None, header=0)
+
+        params = {}
+
+        if name == 'geo':
+            params['quotechar'] = '"'
+
+        df = pd.read_csv(str(path), index_col=None, header=0, **params)
 
         if name == 'functional_alltypes':
             df['bool_col'] = df['bool_col'].astype(bool)
@@ -111,22 +117,28 @@ def cli():
 
 
 @cli.command()
-@click.argument('name', default='ibis-testing-data.tar.gz')
-@click.option('--base-url',
-              default='https://storage.googleapis.com/ibis-testing-data')
+@click.argument('name', default='{}.tar.gz'.format(DATA_DIR_NAME))
+@click.option(
+    '--base-url',
+    default='https://api.github.com/repos/ibis-project/testing-data/'
+            'tarball/master'
+)
 @click.option('-d', '--directory', default=SCRIPT_DIR)
 def download(base_url, directory, name):
     from plumbum.cmd import curl
+    from shutil import rmtree
 
     directory = Path(directory)
     if not directory.exists():
         directory.mkdir()
 
-    data_url = '{}/{}'.format(base_url, name)
     path = directory / name
+    data_dir = directory / DATA_DIR_NAME
+    # when testing-data repository is updated, update this variable if needed
+    download_data_dir_name = 'ibis-project-testing-data-a88a4b3'
 
     if not path.exists():
-        download = curl[data_url, '-o', path, '-L']
+        download = curl[base_url, '-o', path, '-L']
         download(stdout=click.get_binary_stream('stdout'),
                  stderr=click.get_binary_stream('stderr'))
     else:
@@ -134,8 +146,14 @@ def download(base_url, directory, name):
 
     logger.info('Extracting archive to %s', directory)
     if path.suffix in ('.tar', '.gz', '.bz2', '.xz'):
+        # remove existent folder
+        if os.path.exists(data_dir):
+            rmtree(str(data_dir))
+        # extract all files
         with tarfile.open(str(path), mode='r|gz') as f:
             f.extractall(path=str(directory))
+        # rename
+        os.rename(directory / download_data_dir_name, data_dir)
 
 
 @cli.command()
@@ -222,13 +240,9 @@ def sqlite(database, schema, tables, data_directory, **params):
 @click.option('-D', '--database', default='ibis_testing')
 @click.option('-S', '--schema', type=click.File('rt'),
               default=str(SCRIPT_DIR / 'schema' / 'mapd.sql'))
-@click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
+@click.option('-t', '--tables', multiple=True, default=TEST_TABLES + ['geo'])
 @click.option('-d', '--data-directory', default=DATA_DIR)
 def mapd(schema, tables, data_directory, **params):
-    if sys.version_info.major < 3:
-        logger.info('MapD backend is unavailable for Python 2.')
-        return
-
     import pymapd
 
     data_directory = Path(data_directory)
@@ -288,9 +302,17 @@ def mapd(schema, tables, data_directory, **params):
             else:
                 continue
             df.rename(columns={df_col: column}, inplace=True)
-        conn.load_table_columnar(table, df)
+
+        # load geospatial data
+        if table == 'geo':
+            conn.load_table_rowwise(
+                table, list(df.itertuples(index=False, name=None))
+            )
+        else:
+            conn.load_table_columnar(table, df)
 
     conn.close()
+    logger.info('Done!')
 
 
 @cli.command()

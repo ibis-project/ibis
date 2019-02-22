@@ -262,6 +262,8 @@ array = value(dt.Array)
 struct = value(dt.Struct)
 mapping = value(dt.Map(dt.any, dt.any))
 
+geospatial = value(dt.GeoSpatial)
+
 
 @validator
 def interval(arg, units=None):
