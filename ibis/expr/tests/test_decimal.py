@@ -45,16 +45,16 @@ def test_where(lineitem):
     q = table.l_quantity
     expr = api.where(table.l_discount > 0,
                      q * table.l_discount,
-                     api.null)
+                     api.null())
 
     assert isinstance(expr, ir.DecimalColumn)
 
     expr = api.where(table.l_discount > 0,
-                     (q * table.l_discount).sum(), api.null)
+                     (q * table.l_discount).sum(), api.null())
     assert isinstance(expr, ir.DecimalColumn)
 
     expr = api.where(table.l_discount.sum() > 0,
-                     (q * table.l_discount).sum(), api.null)
+                     (q * table.l_discount).sum(), api.null())
     assert isinstance(expr, ir.DecimalScalar)
 
 

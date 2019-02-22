@@ -22,7 +22,23 @@ def test_validate_type():
     ('set<uint8>', dt.Set(dt.uint8)),
     ([dt.uint8], dt.Array(dt.uint8)),
     ([dt.float32, dt.float64], dt.Array(dt.float64)),
-    ({dt.string}, dt.Set(dt.string))
+    ({dt.string}, dt.Set(dt.string)),
+    ('point', dt.point),
+    ('point;4326', dt.point),
+    ('point;4326:geometry', dt.point),
+    ('point;4326:geography', dt.point),
+    ('linestring', dt.linestring),
+    ('linestring;4326', dt.linestring),
+    ('linestring;4326:geometry', dt.linestring),
+    ('linestring;4326:geography', dt.linestring),
+    ('polygon', dt.polygon),
+    ('polygon;4326', dt.polygon),
+    ('polygon;4326:geometry', dt.polygon),
+    ('polygon;4326:geography', dt.polygon),
+    ('multipolygon', dt.multipolygon),
+    ('multipolygon;4326', dt.multipolygon),
+    ('multipolygon;4326:geometry', dt.multipolygon),
+    ('multipolygon;4326:geography', dt.multipolygon)
 ])
 def test_dtype(spec, expected):
     assert dt.dtype(spec) == expected
@@ -169,9 +185,13 @@ def test_char_varchar_invalid(spec):
     ('date', dt.date),
     ('time', dt.time),
     ('timestamp', dt.timestamp),
-    ('interval', dt.interval)
+    ('interval', dt.interval),
+    ('point', dt.point),
+    ('linestring', dt.linestring),
+    ('polygon', dt.polygon),
+    ('multipolygon', dt.multipolygon)
 ])
-def test_primitive(spec, expected):
+def test_primitive_from_string(spec, expected):
     assert dt.dtype(spec) == expected
 
 
@@ -360,6 +380,9 @@ def test_time_valid():
 ])
 def test_infer_dtype(value, expected_dtype):
     assert dt.infer(value) == expected_dtype
+    # test literal creation
+    value = ibis.literal(value, type=expected_dtype)
+    assert value.type() == expected_dtype
 
 
 @pytest.mark.parametrize(('source', 'target'), [

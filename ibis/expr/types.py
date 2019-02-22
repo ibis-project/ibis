@@ -677,6 +677,35 @@ class IntervalScalar(AnyScalar, IntervalValue): pass  # noqa: E701,E302
 class IntervalColumn(AnyColumn, IntervalValue): pass  # noqa: E701,E302
 
 
+class GeoSpatialValue(NumericValue): pass  # noqa: E701,E302
+class GeoSpatialScalar(NumericScalar, GeoSpatialValue): pass  # noqa: E701,E302,E501
+class GeoSpatialColumn(NumericColumn, GeoSpatialValue): pass  # noqa: E701,E302,E501
+
+
+class PointValue(GeoSpatialValue): pass  # noqa: E701,E302
+class PointScalar(GeoSpatialScalar, PointValue): pass  # noqa: E701,E302
+class PointColumn(GeoSpatialColumn, PointValue): pass  # noqa: E701,E302
+
+
+class LineStringValue(GeoSpatialValue): pass  # noqa: E701,E302
+class LineStringScalar(GeoSpatialScalar, LineStringValue): pass  # noqa: E701,E302,E501
+class LineStringColumn(GeoSpatialColumn, LineStringValue): pass  # noqa: E701,E302,E501
+
+
+class PolygonValue(GeoSpatialValue): pass  # noqa: E701,E302
+class PolygonScalar(GeoSpatialScalar, PolygonValue): pass  # noqa: E701,E302
+class PolygonColumn(GeoSpatialColumn, PolygonValue): pass  # noqa: E701,E302
+
+
+class MultiPolygonValue(GeoSpatialValue): pass  # noqa: E701,E302
+class MultiPolygonScalar(  # noqa: E302
+    GeoSpatialScalar, MultiPolygonValue
+): pass  # noqa: E701
+class MultiPolygonColumn(  # noqa: E302
+    GeoSpatialColumn, MultiPolygonValue
+): pass  # noqa: E701
+
+
 class ListExpr(ColumnExpr, AnyValue):
 
     @property
@@ -857,18 +886,35 @@ def literal(value, type=None):
     if hasattr(value, 'op') and isinstance(value.op(), ops.Literal):
         return value
 
-    if value is null:
-        dtype = dt.null
+    try:
+        inferred_dtype = dt.infer(value)
+    except com.InputTypeError:
+        has_inferred = False
     else:
-        dtype = dt.infer(value)
+        has_inferred = True
 
-    if type is not None:
+    if type is None:
+        has_explicit = False
+    else:
+        has_explicit = True
+        explicit_dtype = dt.dtype(type)
+
+    if has_explicit and has_inferred:
         try:
-            # check that dtype is implicitly castable to explicitly given dtype
-            dtype = dtype.cast(type, value=value)
+            # ensure type correctness: check that the inferred dtype is
+            # implicitly castable to the explicitly given dtype and value
+            dtype = inferred_dtype.cast(explicit_dtype, value=value)
         except com.IbisTypeError:
-            raise TypeError('Value {!r} cannot be safely coerced '
-                            'to {}'.format(value, type))
+            raise TypeError('Value {!r} cannot be safely coerced to {}'
+                            .format(value, type))
+    elif has_explicit:
+        dtype = explicit_dtype
+    elif has_inferred:
+        dtype = inferred_dtype
+    else:
+        raise TypeError('The datatype of value {!r} cannot be inferred, try '
+                        'passing it explicitly with the `type` keyword.'
+                        .format(value))
 
     if dtype is dt.null:
         return null().cast(dtype)

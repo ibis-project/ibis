@@ -107,3 +107,30 @@ def test_quote_name(alltypes, name):
 def test_timestamp_col(alltypes):
     # https://github.com/ibis-project/ibis/issues/1613
     alltypes[alltypes.timestamp_col < '2000-03-01'].execute()
+
+
+def test_literal_geospatial():
+    # point
+    point_0 = (0, 0)
+    point = ibis.literal(point_0, type='point')
+    assert ibis.mapd.compile(point) == "SELECT 'POINT(0 0)' AS tmp"
+
+    # line
+    line_0 = [point_0, point_0]
+    line = ibis.literal(line_0, type='linestring')
+    assert ibis.mapd.compile(line) == "SELECT 'LINESTRING(0 0, 0 0)' AS tmp"
+
+    # polygon
+    polygon_0 = [tuple(line_0), tuple(line_0)]
+    polygon = ibis.literal(polygon_0, type='polygon')
+    assert ibis.mapd.compile(polygon) == (
+        "SELECT 'POLYGON((0 0, 0 0), (0 0, 0 0))' AS tmp"
+    )
+
+    # multipolygon
+    mpolygon_0 = [tuple(polygon_0), tuple(polygon_0)]
+    mpolygon = ibis.literal(mpolygon_0, type='multipolygon')
+    assert ibis.mapd.compile(mpolygon) == (
+        "SELECT 'MULTIPOLYGON(((0 0, 0 0), (0 0, 0 0)), "
+        "((0 0, 0 0), (0 0, 0 0)))' AS tmp"
+    )
