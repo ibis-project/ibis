@@ -30,6 +30,7 @@ clickhouse_requires = ['clickhouse-driver>=0.0.8', 'clickhouse-cityhash']
 bigquery_requires = ['google-cloud-bigquery>=1.0.0']
 hdf5_requires = ['tables>=3.0.0']
 parquet_requires = ['pyarrow>=0.6.0']
+spark_requires = ['pyspark>=2.4.0']
 
 all_requires = (
     impala_requires +
@@ -41,7 +42,8 @@ all_requires = (
     clickhouse_requires +
     bigquery_requires +
     hdf5_requires +
-    parquet_requires
+    parquet_requires +
+    spark_requires
 )
 
 develop_requires = all_requires + [
@@ -79,6 +81,7 @@ setup(
         'bigquery': bigquery_requires,
         'hdf5': hdf5_requires,
         'parquet': parquet_requires,
+        'spark': spark_requires
     },
     description="Productivity-centric Python Big Data Framework",
     long_description=LONG_DESCRIPTION,

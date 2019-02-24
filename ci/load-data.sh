@@ -8,7 +8,8 @@ declare -A argcommands=([sqlite]=sqlite
                         [clickhouse]=clickhouse
                         [mapd]=mapd
                         [mysql]=mysql
-                        [impala]=impala)
+                        [impala]=impala
+                        [spark]=spark)
 
 if [[ "$#" == 0 ]]; then
     ARGS=(${!argcommands[@]})  # keys of argcommands
