@@ -39,7 +39,7 @@ def test_invalid_arity_validator():
 def test_argument_raise_on_missing_value():
     arg = Argument(lambda x: x)
 
-    expected_msg = 'Missing required value for argument'
+    expected_msg = 'Missing required value for unnamed argument'
     with pytest.raises(TypeError, match=expected_msg):
         arg.validate()
 
