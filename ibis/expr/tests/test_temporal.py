@@ -203,7 +203,7 @@ def test_timedelta_generic_api(case, expected):
 
 def test_interval_time_expr(table):
     c = table.k
-    x = api.timedelta(hours=1)
+    x = api.interval(hours=1)
 
     expr = x + c
     assert isinstance(expr, ir.TimeColumn)
@@ -226,7 +226,7 @@ def test_interval_time_expr(table):
 
 def test_interval_date_expr(table):
     c = table.j
-    x = api.timedelta(days=1)
+    x = api.interval(days=1)
 
     expr = x + c
     assert isinstance(expr, ir.DateColumn)
@@ -249,7 +249,7 @@ def test_interval_date_expr(table):
 
 def test_interval_timestamp_expr(table):
     c = table.i
-    x = api.timedelta(seconds=1)
+    x = api.interval(seconds=1)
 
     expr = x + c
     assert isinstance(expr, ir.TimestampColumn)
