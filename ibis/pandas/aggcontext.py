@@ -300,11 +300,13 @@ class Window(AggregationContext):
             order_by=kwargs.pop('order_by', None),
             dtype=kwargs.pop('dtype'),
         )
-        kwargs['raw'] = True
         self.construct_window = operator.methodcaller(
             kind, *args, **kwargs)
 
     def agg(self, grouped_data, function, *args, **kwargs):
+        # avoid a pandas warning about numpy arrays being passed through
+        # directly
+        kwargs["raw"] = True
         group_by = self.group_by
         order_by = self.order_by
 
