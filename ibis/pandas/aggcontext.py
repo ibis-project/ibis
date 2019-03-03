@@ -300,6 +300,7 @@ class Window(AggregationContext):
             order_by=kwargs.pop('order_by', None),
             dtype=kwargs.pop('dtype'),
         )
+        kwargs['raw'] = True
         self.construct_window = operator.methodcaller(
             kind, *args, **kwargs)
 
