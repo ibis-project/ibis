@@ -40,11 +40,11 @@ def test_argument_raise_on_missing_value():
     arg = Argument(lambda x: x)
 
     expected_msg = 'Missing required value for argument'
-    with pytest.raises(TypeError, message=expected_msg):
+    with pytest.raises(TypeError, match=expected_msg):
         arg.validate()
 
     expected_msg = 'Missing required value for argument `mandatory`'
-    with pytest.raises(TypeError, message=expected_msg):
+    with pytest.raises(TypeError, match=expected_msg):
         arg.validate(name='mandatory')
 
 
