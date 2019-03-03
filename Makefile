@@ -6,6 +6,7 @@ MAKEFILE_DIR = $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 COMPOSE_FILE := "$(MAKEFILE_DIR)/ci/docker-compose.yml"
 DOCKER := ENVKIND=$(ENVKIND) docker-compose -f $(COMPOSE_FILE)
 DOCKER_RUN := $(DOCKER) run --rm
+PYTEST_OPTIONS :=
 
 clean:
 	@python setup.py clean
@@ -49,19 +50,19 @@ init: restart
 
 test:
 	@ENVKIND=$(ENVKIND) $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not udf' \
-	    --doctest-modules --doctest-ignore-import-errors
+	    --doctest-modules --doctest-ignore-import-errors ${PYTEST_OPTIONS}
 
 testmost:
 	@ENVKIND=$(ENVKIND) $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not (udf or impala or hdfs)' \
-	    --doctest-modules --doctest-ignore-import-errors
+	    --doctest-modules --doctest-ignore-import-errors ${PYTEST_OPTIONS}
 
 testfast:
 	@ENVKIND=$(ENVKIND) $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not (udf or impala or hdfs or bigquery)' \
-	    --doctest-modules --doctest-ignore-import-errors
+	    --doctest-modules --doctest-ignore-import-errors ${PYTEST_OPTIONS}
 
 testparams:
 	@echo 'not (udf or impala or hdfs or postgresql or mysql or mapd or clickhouse)' \
-	    --doctest-modules --doctest-ignore-import-errors
+	    --doctest-modules --doctest-ignore-import-errors ${PYTEST_OPTIONS}
 
 docclean:
 	@$(DOCKER_RUN) ibis rm -rf /tmp/docs.ibis-project.org
