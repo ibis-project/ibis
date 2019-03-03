@@ -318,22 +318,6 @@ def interval(value=None, unit='s', years=None, quarters=None, months=None,
     return literal(value, type=type).op().to_expr()
 
 
-@functools.wraps(interval)
-def timedelta(*args, **kwargs):
-    warnings.warn('ibis.timedelta is deprecated, use ibis.interval instead',
-                  DeprecationWarning)
-    return interval(*args, **kwargs)
-
-
-def _timedelta(name, unit):
-    def f(value=1):
-        msg = 'ibis.{0} is deprecated, use ibis.interval({0}s=n) instead'
-        warnings.warn(msg.format(name), DeprecationWarning)
-        return interval(value, unit=unit)
-    f.__name__ = name
-    return f
-
-
 schema.__doc__ = """\
 Validate and return an Ibis Schema object
 
