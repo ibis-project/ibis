@@ -8,7 +8,7 @@ import math
 import numbers
 import operator
 
-from collections import Sized
+from collections.abc import Sized
 
 import numpy as np
 import pandas as pd
@@ -231,7 +231,7 @@ def execute_series_quantile(op, data, quantile, aggcontext=None, **kwargs):
     )
 
 
-@execute_node.register(ops.MultiQuantile, pd.Series, collections.Sequence)
+@execute_node.register(ops.MultiQuantile, pd.Series, collections.abc.Sequence)
 def execute_series_quantile_sequence(
     op, data, quantile, aggcontext=None, **kwargs
 ):
@@ -241,7 +241,9 @@ def execute_series_quantile_sequence(
     return list(result)
 
 
-@execute_node.register(ops.MultiQuantile, SeriesGroupBy, collections.Sequence)
+@execute_node.register(
+    ops.MultiQuantile, SeriesGroupBy, collections.abc.Sequence
+)
 def execute_series_quantile_groupby(
         op, data, quantile, aggcontext=None, **kwargs):
 
@@ -742,17 +744,17 @@ def execute_node_self_reference_dataframe(op, data, **kwargs):
     return data
 
 
-@execute_node.register(ops.ValueList, collections.Sequence)
+@execute_node.register(ops.ValueList, collections.abc.Sequence)
 def execute_node_value_list(op, _, **kwargs):
     return [execute(arg, **kwargs) for arg in op.values]
 
 
-@execute_node.register(ops.StringConcat, collections.Sequence)
+@execute_node.register(ops.StringConcat, collections.abc.Sequence)
 def execute_node_string_concat(op, args, **kwargs):
     return functools.reduce(operator.add, args)
 
 
-@execute_node.register(ops.StringJoin, collections.Sequence)
+@execute_node.register(ops.StringJoin, collections.abc.Sequence)
 def execute_node_string_join(op, args, **kwargs):
     return op.sep.join(args)
 
@@ -760,7 +762,7 @@ def execute_node_string_join(op, args, **kwargs):
 @execute_node.register(
     ops.Contains,
     pd.Series,
-    (collections.Sequence, collections.Set)
+    (collections.abc.Sequence, collections.abc.Set)
 )
 def execute_node_contains_series_sequence(op, data, elements, **kwargs):
     return data.isin(elements)
@@ -769,7 +771,7 @@ def execute_node_contains_series_sequence(op, data, elements, **kwargs):
 @execute_node.register(
     ops.NotContains,
     pd.Series,
-    (collections.Sequence, collections.Set)
+    (collections.abc.Sequence, collections.abc.Set)
 )
 def execute_node_not_contains_series_sequence(op, data, elements, **kwargs):
     return ~data.isin(elements)
@@ -917,23 +919,23 @@ def compute_row_reduction(func, value, **kwargs):
     return pd.Series(raw).squeeze()
 
 
-@execute_node.register(ops.Greatest, collections.Sequence)
+@execute_node.register(ops.Greatest, collections.abc.Sequence)
 def execute_node_greatest_list(op, value, **kwargs):
     return compute_row_reduction(np.maximum.reduce, value, axis=0)
 
 
-@execute_node.register(ops.Least, collections.Sequence)
+@execute_node.register(ops.Least, collections.abc.Sequence)
 def execute_node_least_list(op, value, **kwargs):
     return compute_row_reduction(np.minimum.reduce, value, axis=0)
 
 
-@execute_node.register(ops.Coalesce, collections.Sequence)
+@execute_node.register(ops.Coalesce, collections.abc.Sequence)
 def execute_node_coalesce(op, values, **kwargs):
     # TODO: this is slow
     return compute_row_reduction(coalesce, values)
 
 
-@execute_node.register(ops.ExpressionList, collections.Sequence)
+@execute_node.register(ops.ExpressionList, collections.abc.Sequence)
 def execute_node_expr_list(op, sequence, **kwargs):
     # TODO: no true approx count distinct for pandas, so we use exact for now
     columns = [e.get_name() for e in op.exprs]

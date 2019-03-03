@@ -1,4 +1,5 @@
 import collections
+
 from multipledispatch import Dispatcher
 
 import ibis.common as com
@@ -165,16 +166,16 @@ def identity(s):
     return s
 
 
-@schema.register(collections.Mapping)
+@schema.register(collections.abc.Mapping)
 def schema_from_mapping(d):
     return Schema.from_dict(d)
 
 
-@schema.register(collections.Iterable)
+@schema.register(collections.abc.Iterable)
 def schema_from_pairs(lst):
     return Schema.from_tuples(lst)
 
 
-@schema.register(collections.Iterable, collections.Iterable)
+@schema.register(collections.abc.Iterable, collections.abc.Iterable)
 def schema_from_names_types(names, types):
     return Schema(names, types)
