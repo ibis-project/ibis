@@ -67,7 +67,6 @@ __all__ = (
     'cross_join',
     'cumulative_window',
     'date',
-    'day',
     'desc',
     'Expr',
     'expr_list',
@@ -90,7 +89,6 @@ __all__ = (
     'geo_y',
     'geo_y_max',
     'geo_y_min',
-    'hour',
     'ifelse',
     'infer_dtype',
     'infer_schema',
@@ -98,12 +96,7 @@ __all__ = (
     'join',
     'least',
     'literal',
-    'microsecond',
-    'millisecond',
-    'minute',
-    'month',
     'NA',
-    'nanosecond',
     'negate',
     'now',
     'null',
@@ -114,17 +107,14 @@ __all__ = (
     'row_number',
     'schema',
     'Schema',
-    'second',
     'sequence',
     'table',
     'time',
     'timestamp',
     'trailing_range_window',
     'trailing_window',
-    'week',
     'where',
     'window',
-    'year',
 )
 
 
@@ -344,23 +334,10 @@ def _timedelta(name, unit):
     return f
 
 
-year = _timedelta('year', 'Y')
-quarter = _timedelta('quarter', 'Q')
-month = _timedelta('month', 'M')
-week = _timedelta('week', 'W')
-day = _timedelta('day', 'D')
-hour = _timedelta('hour', 'h')
-minute = _timedelta('minute', 'm')
-second = _timedelta('second', 's')
-millisecond = _timedelta('millisecond', 'ms')
-microsecond = _timedelta('microsecond', 'us')
-nanosecond = _timedelta('nanosecond', 'ns')
-
-
 schema.__doc__ = """\
 Validate and return an Ibis Schema object
 
-{0}
+{}
 
 Parameters
 ----------
@@ -3317,23 +3294,6 @@ def _table_materialize(table):
     return op.to_expr()
 
 
-def add_column(table, expr, name=None):
-    """
-    Add indicated column expression to table, producing a new table. Note:
-    this is a shortcut for performing a projection having the same effect.
-
-    Returns
-    -------
-    modified_table : TableExpr
-    """
-    warnings.warn('add_column is deprecated, use mutate(name=expr, ...)',
-                  DeprecationWarning)
-    if name is not None:
-        return table.mutate(**{name: expr})
-    else:
-        return table.mutate(expr)
-
-
 def _safe_get_name(expr):
     try:
         return expr.get_name()
@@ -3614,7 +3574,6 @@ _table_methods = dict(
     set_column=_table_set_column,
     filter=filter,
     materialize=_table_materialize,
-    add_column=add_column,
     mutate=mutate,
     projection=projection,
     select=projection,
