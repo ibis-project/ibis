@@ -423,9 +423,10 @@ def test_timestamp_scalar_in_filter(alltypes, translate):
     table = alltypes
 
     expr = (table.filter([table.timestamp_col <
-                         (ibis.timestamp('2010-01-01') + ibis.week(3)),
+                         (ibis.timestamp('2010-01-01') +
+                             ibis.interval(weeks=3)),
                          table.timestamp_col < (ibis.now() +
-                                                ibis.day(10))
+                                                ibis.interval(days=10))
                           ])
             .count())
     expr.execute()

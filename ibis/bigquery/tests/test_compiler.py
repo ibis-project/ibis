@@ -271,14 +271,14 @@ FROM `{}.testing.functional_alltypes`""".format(project_id)  # noqa: E501
     ('preceding', 'value'),
     [
         (5, 5),
-        (ibis.nanosecond(), 0.001),
-        (ibis.microsecond(), 1),
-        (ibis.second(), 1000000),
-        (ibis.minute(), 1000000 * 60),
-        (ibis.hour(), 1000000 * 60 * 60),
-        (ibis.day(), 1000000 * 60 * 60 * 24),
-        (2 * ibis.day(), 1000000 * 60 * 60 * 24 * 2),
-        (ibis.week(), 1000000 * 60 * 60 * 24 * 7),
+        (ibis.interval(nanoseconds=1), 0.001),
+        (ibis.interval(microseconds=1), 1),
+        (ibis.interval(seconds=1), 1000000),
+        (ibis.interval(minutes=1), 1000000 * 60),
+        (ibis.interval(hours=1), 1000000 * 60 * 60),
+        (ibis.interval(days=1), 1000000 * 60 * 60 * 24),
+        (2 * ibis.interval(days=1), 1000000 * 60 * 60 * 24 * 2),
+        (ibis.interval(weeks=1), 1000000 * 60 * 60 * 24 * 7),
     ]
 )
 def test_trailing_range_window(alltypes, preceding, value, project_id):
@@ -298,7 +298,7 @@ FROM `{}.testing.functional_alltypes`""".format(  # noqa: E501
 @pytest.mark.parametrize(
     ('preceding', 'value'),
     [
-        (ibis.year(), None),
+        (ibis.interval(years=1), None),
     ]
 )
 def test_trailing_range_window_unsupported(alltypes, preceding, value):

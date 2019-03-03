@@ -1032,9 +1032,10 @@ WHERE (`a` > 0) AND
         table = self.con.table('functional_alltypes')
 
         expr = (table.filter([table.timestamp_col <
-                             (ibis.timestamp('2010-01-01') + ibis.month(3)),
+                             (ibis.timestamp('2010-01-01') +
+                                 ibis.interval(months=3)),
                              table.timestamp_col < (ibis.now() +
-                                                    ibis.day(10))])
+                                                    ibis.interval(days=10))])
                 .count())
 
         result = to_sql(expr)

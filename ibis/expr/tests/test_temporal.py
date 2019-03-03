@@ -9,25 +9,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
 
-@pytest.mark.parametrize('timedelta', [
-    api.timedelta,
-    api.year,
-    api.quarter,
-    api.month,
-    api.week,
-    api.day,
-    api.hour,
-    api.minute,
-    api.second,
-    api.millisecond,
-    api.microsecond,
-    api.nanosecond
-])
-def test_timedelta_deprecated(timedelta):
-    with pytest.deprecated_call():
-        timedelta(1)
-
-
 def test_temporal_literals():
     date = ibis.literal('2015-01-01', 'date')
     assert isinstance(date, ir.DateScalar)
@@ -37,16 +18,16 @@ def test_temporal_literals():
 
 
 @pytest.mark.parametrize(('interval', 'unit', 'expected'), [
-    (api.month(3), 'Q', api.quarter(1)),
-    (api.month(12), 'Y', api.year(1)),
-    (api.quarter(8), 'Y', api.year(2)),
-    (api.day(14), 'W', api.week(2)),
-    (api.minute(240), 'h', api.hour(4)),
-    (api.second(360), 'm', api.minute(6)),
-    (api.second(3 * 86400), 'D', api.day(3)),
-    (api.millisecond(5000), 's', api.second(5)),
-    (api.microsecond(5000000), 's', api.second(5)),
-    (api.nanosecond(5000000000), 's', api.second(5)),
+    (api.interval(months=3), 'Q', api.interval(quarters=1)),
+    (api.interval(months=12), 'Y', api.interval(years=1)),
+    (api.interval(quarters=8), 'Y', api.interval(years=2)),
+    (api.interval(days=14), 'W', api.interval(weeks=2)),
+    (api.interval(minutes=240), 'h', api.interval(hours=4)),
+    (api.interval(seconds=360), 'm', api.interval(minutes=6)),
+    (api.interval(seconds=3 * 86400), 'D', api.interval(days=3)),
+    (api.interval(milliseconds=5000), 's', api.interval(seconds=5)),
+    (api.interval(microseconds=5000000), 's', api.interval(seconds=5)),
+    (api.interval(nanoseconds=5000000000), 's', api.interval(seconds=5)),
 ])
 def test_upconvert(interval, unit, expected):
     result = interval.to_unit(unit)
@@ -59,14 +40,14 @@ def test_upconvert(interval, unit, expected):
     'Y', 'Q', 'M'
 ])
 @pytest.mark.parametrize('delta', [
-    api.week(),
-    api.day(),
-    api.hour(),
-    api.minute(),
-    api.second(),
-    api.millisecond(),
-    api.microsecond(),
-    api.nanosecond()
+    api.interval(weeks=1),
+    api.interval(days=1),
+    api.interval(hours=1),
+    api.interval(minutes=1),
+    api.interval(seconds=1),
+    api.interval(milliseconds=1),
+    api.interval(microseconds=1),
+    api.interval(nanoseconds=1)
 ])
 def test_cannot_upconvert(delta, target):
     with pytest.raises(ValueError):
@@ -74,10 +55,10 @@ def test_cannot_upconvert(delta, target):
 
 
 @pytest.mark.parametrize('expr', [
-    api.day(2) * 2,
-    api.day(2) * (-2),
-    3 * api.day(2),
-    (-3) * api.day(2)
+    api.interval(days=2) * 2,
+    api.interval(days=2) * (-2),
+    3 * api.interval(days=2),
+    (-3) * api.interval(days=2)
 ])
 def test_multiply(expr):
     assert isinstance(expr, ir.IntervalScalar)
@@ -85,8 +66,8 @@ def test_multiply(expr):
 
 
 @pytest.mark.parametrize('expr', [
-    api.day() + api.day(),
-    api.day(2) + api.hour(4)
+    api.interval(days=1) + api.interval(days=1),
+    api.interval(days=2) + api.interval(hours=4)
 ])
 def test_add(expr):
     assert isinstance(expr, ir.IntervalScalar)
@@ -94,8 +75,8 @@ def test_add(expr):
 
 
 @pytest.mark.parametrize('expr', [
-    api.day(3) - api.day(),
-    api.day(2) - api.hour(4)
+    api.interval(days=3) - api.interval(days=1),
+    api.interval(days=2) - api.interval(hours=4)
 ])
 def test_subtract(expr):
     assert isinstance(expr, ir.IntervalScalar)
@@ -103,19 +84,42 @@ def test_subtract(expr):
 
 
 @pytest.mark.parametrize(('case', 'expected'), [
-    (api.second(2).to_unit('s'), api.second(2)),
-    (api.second(2).to_unit('ms'), api.millisecond(2 * 1000)),
-    (api.second(2).to_unit('us'), api.microsecond(2 * 1000000)),
-    (api.second(2).to_unit('ns'), api.nanosecond(2 * 1000000000)),
+    (api.interval(seconds=2).to_unit('s'), api.interval(seconds=2)),
+    (
+        api.interval(seconds=2).to_unit('ms'),
+        api.interval(milliseconds=2 * 1000)
+    ),
+    (
+        api.interval(seconds=2).to_unit('us'),
+        api.interval(microseconds=2 * 1000000)
+    ),
+    (
+        api.interval(seconds=2).to_unit('ns'),
+        api.interval(nanoseconds=2 * 1000000000)
+    ),
 
-    (api.millisecond(2).to_unit('ms'), api.millisecond(2)),
-    (api.millisecond(2).to_unit('us'), api.microsecond(2 * 1000)),
-    (api.millisecond(2).to_unit('ns'), api.nanosecond(2 * 1000000)),
+    (
+        api.interval(milliseconds=2).to_unit('ms'),
+        api.interval(milliseconds=2)
+    ),
+    (
+        api.interval(milliseconds=2).to_unit('us'),
+        api.interval(microseconds=2 * 1000)
+    ),
+    (
+        api.interval(milliseconds=2).to_unit('ns'),
+        api.interval(nanoseconds=2 * 1000000)
+    ),
 
-    (api.microsecond(2).to_unit('us'), api.microsecond(2)),
-    (api.microsecond(2).to_unit('ns'), api.nanosecond(2 * 1000)),
-
-    (api.nanosecond(2).to_unit('ns'), api.nanosecond(2)),
+    (
+        api.interval(microseconds=2).to_unit('us'),
+        api.interval(microseconds=2)
+    ),
+    (
+        api.interval(microseconds=2).to_unit('ns'),
+        api.interval(nanoseconds=2 * 1000)
+    ),
+    (api.interval(nanoseconds=2).to_unit('ns'), api.interval(nanoseconds=2)),
 ])
 def test_downconvert_second_parts(case, expected):
     assert isinstance(case, ir.IntervalScalar)
@@ -124,12 +128,21 @@ def test_downconvert_second_parts(case, expected):
 
 
 @pytest.mark.parametrize(('case', 'expected'), [
-    (api.hour(2).to_unit('h'), api.hour(2)),
-    (api.hour(2).to_unit('m'), api.minute(2 * 60)),
-    (api.hour(2).to_unit('s'), api.second(2 * 3600)),
-    (api.hour(2).to_unit('ms'), api.millisecond(2 * 3600000)),
-    (api.hour(2).to_unit('us'), api.microsecond(2 * 3600000000)),
-    (api.hour(2).to_unit('ns'), api.nanosecond(2 * 3600000000000))
+    (api.interval(hours=2).to_unit('h'), api.interval(hours=2)),
+    (api.interval(hours=2).to_unit('m'), api.interval(minutes=2 * 60)),
+    (api.interval(hours=2).to_unit('s'), api.interval(seconds=2 * 3600)),
+    (
+        api.interval(hours=2).to_unit('ms'),
+        api.interval(milliseconds=2 * 3600000)
+    ),
+    (
+        api.interval(hours=2).to_unit('us'),
+        api.interval(microseconds=2 * 3600000000)
+    ),
+    (
+        api.interval(hours=2).to_unit('ns'),
+        api.interval(nanoseconds=2 * 3600000000000)
+    )
 ])
 def test_downconvert_hours(case, expected):
     assert isinstance(case, ir.IntervalScalar)
@@ -138,16 +151,25 @@ def test_downconvert_hours(case, expected):
 
 
 @pytest.mark.parametrize(('case', 'expected'), [
-    (api.week(2).to_unit('D'), api.day(2 * 7)),
-    (api.week(2).to_unit('h'), api.hour(2 * 7 * 24)),
+    (api.interval(weeks=2).to_unit('D'), api.interval(days=2 * 7)),
+    (api.interval(weeks=2).to_unit('h'), api.interval(hours=2 * 7 * 24)),
 
-    (api.day(2).to_unit('D'), api.day(2)),
-    (api.day(2).to_unit('h'), api.hour(2 * 24)),
-    (api.day(2).to_unit('m'), api.minute(2 * 1440)),
-    (api.day(2).to_unit('s'), api.second(2 * 86400)),
-    (api.day(2).to_unit('ms'), api.millisecond(2 * 86400000)),
-    (api.day(2).to_unit('us'), api.microsecond(2 * 86400000000)),
-    (api.day(2).to_unit('ns'), api.nanosecond(2 * 86400000000000)),
+    (api.interval(days=2).to_unit('D'), api.interval(days=2)),
+    (api.interval(days=2).to_unit('h'), api.interval(hours=2 * 24)),
+    (api.interval(days=2).to_unit('m'), api.interval(minutes=2 * 1440)),
+    (api.interval(days=2).to_unit('s'), api.interval(seconds=2 * 86400)),
+    (
+        api.interval(days=2).to_unit('ms'),
+        api.interval(milliseconds=2 * 86400000)
+    ),
+    (
+        api.interval(days=2).to_unit('us'),
+        api.interval(microseconds=2 * 86400000000)
+    ),
+    (
+        api.interval(days=2).to_unit('ns'),
+        api.interval(nanoseconds=2 * 86400000000000)
+    ),
 ])
 def test_downconvert_day(case, expected):
     assert isinstance(case, ir.IntervalScalar)
@@ -156,24 +178,24 @@ def test_downconvert_day(case, expected):
 
 
 @pytest.mark.parametrize(('a', 'b', 'unit'), [
-    (api.day(), api.day(3), 'D'),
-    (api.second(), api.hour(10), 's'),
-    (api.hour(3), api.day(2), 'h')
+    (api.interval(days=1), api.interval(days=3), 'D'),
+    (api.interval(seconds=1), api.interval(hours=10), 's'),
+    (api.interval(hours=3), api.interval(days=2), 'h')
 ])
 def test_combine_with_different_kinds(a, b, unit):
     assert (a + b).type().unit == unit
 
 
 @pytest.mark.parametrize(('case', 'expected'), [
-    (api.interval(quarters=2), api.quarter(2)),
-    (api.interval(weeks=2), api.week(2)),
-    (api.interval(days=3), api.day(3)),
-    (api.interval(hours=4), api.hour(4)),
-    (api.interval(minutes=5), api.minute(5)),
-    (api.interval(seconds=6), api.second(6)),
-    (api.interval(milliseconds=7), api.millisecond(7)),
-    (api.interval(microseconds=8), api.microsecond(8)),
-    (api.interval(nanoseconds=9), api.nanosecond(9)),
+    (api.interval(quarters=2), api.interval(quarters=2)),
+    (api.interval(weeks=2), api.interval(weeks=2)),
+    (api.interval(days=3), api.interval(days=3)),
+    (api.interval(hours=4), api.interval(hours=4)),
+    (api.interval(minutes=5), api.interval(minutes=5)),
+    (api.interval(seconds=6), api.interval(seconds=6)),
+    (api.interval(milliseconds=7), api.interval(milliseconds=7)),
+    (api.interval(microseconds=8), api.interval(microseconds=8)),
+    (api.interval(nanoseconds=9), api.interval(nanoseconds=9)),
 ])
 def test_timedelta_generic_api(case, expected):
     assert case.equals(expected)

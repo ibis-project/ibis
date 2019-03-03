@@ -27,7 +27,11 @@ row_offset = pytest.mark.parametrize(
     'row_offset', list(map(ibis.literal, [-1, 1, 0])))
 range_offset = pytest.mark.parametrize(
     'range_offset',
-    [ibis.day(), 2 * ibis.day(), -2 * ibis.day()]
+    [
+        ibis.interval(days=1),
+        2 * ibis.interval(days=1),
+        -2 * ibis.interval(days=1),
+    ]
 )
 
 
