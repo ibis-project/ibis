@@ -87,7 +87,7 @@ def test_cast_timestamp_column(t, df, column, to, expected):
         ),
         (
             dt.Timestamp('America/Los_Angeles'),
-            lambda x: pd.Timestamp(x, tz='America/Los_Angeles')
+            lambda x: pd.Timestamp(x).tz_localize('America/Los_Angeles')
         )
     ]
 )
