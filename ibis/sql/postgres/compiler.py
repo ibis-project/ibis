@@ -146,7 +146,7 @@ def _cast(t, expr):
     if typ.equals(dt.binary):
         #  decode yields a column of memoryview which is annoying to deal with
         # in pandas. CAST(expr AS BYTEA) is correct and returns byte strings.
-        return sa.cast(sa_arg, sa.Binary())
+        return sa.cast(sa_arg, sa.LargeBinary())
 
     return sa.cast(sa_arg, sa_type)
 
