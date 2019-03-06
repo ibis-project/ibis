@@ -148,7 +148,6 @@ services:
     image: ibis-docs:${PYTHON_VERSION:-3.6}
     # TODO(kszucs): use a .env file to reduce duplications
     environment:
-      IBIS_TEST_DOWNLOAD_DIRECTORY: /tmp
       IBIS_TEST_DATA_DIRECTORY: /tmp/ibis-testing-data
       IBIS_TEST_SQLITE_DATABASE: /tmp/ibis_testing.db
       IBIS_TEST_NN_HOST: impala
