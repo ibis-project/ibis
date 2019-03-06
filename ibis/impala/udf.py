@@ -294,6 +294,9 @@ def add_operation(op, func_name, db):
     comp._operation_registry[op] = translator
 
 
+_COMPLEX_RE = re.compile(r'(struct|map|array)\<([^>]+)\>')
+
+
 def parse_type(t):
     t = t.lower()
     if t in _impala_to_ibis_type:
@@ -307,6 +310,8 @@ def parse_type(t):
                 return t
             else:
                 return ValueError(t)
+        elif _COMPLEX_RE.match(t):
+            return _impala_complex_type_to_ibis(t)
         else:
             raise Exception(t)
 
@@ -336,6 +341,31 @@ def _ibis_string_to_impala(tval):
         return repr(result)
 
 
+_COMPLEX_RE = re.compile(r'(struct|map|array)\<([\s\S]+)\>$')
+_STRUCT_FIELD_RE = re.compile(
+    r"`?(\w+)`?:((?:struct|map|array)\<[\s\S]+?\>|\S+)(?:\s+comment '([^']+)')?(?:,\n|$)") # noqa E501
+_MAP_FIELD_RE = re.compile(r"([^,]+),((?:struct|map|array)\<[\s\S]+?\>|.*)")
+
+
+def _impala_complex_type_to_ibis(tval):
+    t_type, t_schema = _COMPLEX_RE.findall(tval)[0]
+    if t_type == 'struct':
+        parts = _STRUCT_FIELD_RE.findall(t_schema)
+        names = [c[0] for c in parts]
+        types = [parse_type(c[1]) for c in parts]
+        t = dt.Struct(names, types)
+    elif t_type == 'map':
+        parts = _MAP_FIELD_RE.findall(t_schema)[0]
+        types = [parse_type(c) for c in parts]
+        t = dt.Map(types[0], types[1])
+    elif t_type == 'array':
+        type_ = parse_type(t_schema)
+        t = dt.Array(type_)
+    else:
+        raise Exception(tval)
+    return t
+
+
 _impala_to_ibis_type = {
     'boolean': 'boolean',
     'tinyint': 'int8',
@@ -348,5 +378,8 @@ _impala_to_ibis_type = {
     'varchar': 'string',
     'char': 'string',
     'timestamp': 'timestamp',
-    'decimal': 'decimal'
+    'decimal': 'decimal',
+    'map': 'map',
+    'array': 'array',
+    'struct': 'struct'
 }
