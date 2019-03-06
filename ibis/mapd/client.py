@@ -1,8 +1,8 @@
+import pkg_resources
 import regex as re
 import pandas as pd
 import pymapd
 
-from pkg_resources import parse_version
 from pymapd.cursor import Cursor
 
 try:
@@ -768,7 +768,9 @@ class MapDClient(SQLClient):
 
     @property
     def version(self):
-        return parse_version(pymapd.__version__)
+        # pymapd doesn't have __version__
+        dist = pkg_resources.get_distribution('pymapd')
+        return pkg_resources.parse_version(dist.version)
 
 
 @dt.dtype.register(MapDDataType)

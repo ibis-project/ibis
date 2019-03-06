@@ -6,9 +6,7 @@ cmake
 flake8
 google-cloud-bigquery>=1.0.0
 graphviz
-# FIXME(kszucs): uncomment once
-# https://github.com/conda-forge/impyla-feedstock/pull/13 is merged
-# impyla>=0.14.2
+impyla>=0.14.2
 jinja2
 lz4
 multipledispatch>=0.6.0
