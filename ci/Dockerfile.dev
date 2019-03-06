@@ -15,9 +15,6 @@ RUN conda config --add channels conda-forge \
         python=$PYTHON \
  && conda clean --all -y
 
-# TODO(kszucs): remove once the notes in requiremens-dev.yml is resolved
-RUN pip install pymapd>=0.8
-
 COPY . /ibis
 WORKDIR /ibis
 
