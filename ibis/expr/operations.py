@@ -2883,3 +2883,127 @@ class ValueList(ValueOp):
 
     def root_tables(self):
         return distinct_roots(*self.values)
+
+
+# ----------------------------------------------------------------------
+# GeoSpatial operations
+
+class GeoSpatialBinOp(BinaryOp):
+    """Geo Spatial base binary"""
+    left = Arg(rlz.geospatial)
+    right = Arg(rlz.geospatial)
+
+
+class GeoSpatialUnOp(UnaryOp):
+    """Geo Spatial base unary"""
+    arg = Arg(rlz.geospatial)
+
+
+class GeoDistance(GeoSpatialBinOp):
+    """Returns minimum distance between two geo spatial data"""
+    output_type = rlz.shape_like('args', dt.float64)
+
+
+class GeoContains(GeoSpatialBinOp):
+    """Check if the first geo spatial data contains the second one"""
+    output_type = rlz.shape_like('args', dt.boolean)
+
+
+class GeoArea(GeoSpatialUnOp):
+    """Area of the geo spatial data"""
+    output_type = rlz.shape_like('args', dt.float64)
+
+
+class GeoPerimeter(GeoSpatialUnOp):
+    """Perimeter of the geo spatial data"""
+    output_type = rlz.shape_like('args', dt.float64)
+
+
+class GeoLength(GeoSpatialUnOp):
+    """Length of geo spatial data"""
+    output_type = rlz.shape_like('args', dt.float64)
+
+
+class GeoMaxDistance(GeoSpatialBinOp):
+    """Returns the 2-dimensional maximum distance between two geometries in
+    projected units. If g1 and g2 is the same geometry the function will
+    return the distance between the two vertices most far from each other
+    in that geometry
+    """
+    output_type = rlz.shape_like('args', dt.float64)
+
+
+class GeoX(GeoSpatialUnOp):
+    """Return the X coordinate of the point, or NULL if not available.
+    Input must be a point
+    """
+    output_type = rlz.shape_like('args', dt.float64)
+
+
+class GeoY(GeoSpatialUnOp):
+    """Return the Y coordinate of the point, or NULL if not available.
+    Input must be a point
+    """
+    output_type = rlz.shape_like('args', dt.float64)
+
+
+class GeoXMin(GeoSpatialUnOp):
+    """Returns Y minima of a bounding box 2d or 3d or a geometry"""
+    output_type = rlz.shape_like('args', dt.float64)
+
+
+class GeoXMax(GeoSpatialUnOp):
+    """Returns X maxima of a bounding box 2d or 3d or a geometry"""
+    output_type = rlz.shape_like('args', dt.float64)
+
+
+class GeoYMin(GeoSpatialUnOp):
+    """Returns Y minima of a bounding box 2d or 3d or a geometry"""
+    output_type = rlz.shape_like('args', dt.float64)
+
+
+class GeoYMax(GeoSpatialUnOp):
+    """Returns Y maxima of a bounding box 2d or 3d or a geometry"""
+    output_type = rlz.shape_like('args', dt.float64)
+
+
+class GeoStartPoint(GeoSpatialUnOp):
+    """Returns the first point of a LINESTRING geometry as a POINT or
+    NULL if the input parameter is not a LINESTRING
+    """
+    output_type = rlz.shape_like('arg', dt.point)
+
+
+class GeoEndPoint(GeoSpatialUnOp):
+    """Returns the last point of a LINESTRING geometry as a POINT or
+    NULL if the input parameter is not a LINESTRING
+    """
+    output_type = rlz.shape_like('arg', dt.point)
+
+
+# TODO: https://postgis.net/docs/ST_PointN.html
+class GeoPointN(GeoSpatialUnOp):
+    """Return the Nth point in a single linestring in the geometry.
+    Negative values are counted backwards from the end of the LineString,
+    so that -1 is the last point. Returns NULL if there is no linestring in
+    the geometry
+    """
+    n = Arg(rlz.integer)
+    output_type = rlz.shape_like('args', dt.point)
+
+
+class GeoNPoints(GeoSpatialUnOp):
+    """Return the number of points in a geometry. Works for all geometries"""
+    output_type = rlz.shape_like('args', dt.int64)
+
+
+class GeoNRings(GeoSpatialUnOp):
+    """If the geometry is a polygon or multi-polygon returns the number of
+    rings. It counts the outer rings as well
+    """
+    output_type = rlz.shape_like('args', dt.int64)
+
+
+class GeoSRID(GeoSpatialUnOp):
+    """Returns the spatial reference identifier for the ST_Geometry"""
+    output_type = rlz.shape_like('args', dt.int64)

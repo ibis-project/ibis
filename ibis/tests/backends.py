@@ -96,6 +96,9 @@ class Backend:
     def awards_players(self):
         return self.db.awards_players
 
+    def geo(self):
+        return None
+
     @classmethod
     def make_context(cls, params=None):
         module_name = cls.__name__.lower()
@@ -246,6 +249,9 @@ class MapD(Backend):
         return ibis.mapd.connect(
             host=host, user=user, password=password, database=database
         )
+
+    def geo(self):
+        return self.db.geo
 
 
 class MySQL(Backend, RoundHalfToEven):

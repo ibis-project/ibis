@@ -13,12 +13,9 @@
 # limitations under the License.
 
 import collections
-
 import pytest
-
 import ibis
-
-from ibis.expr.tests.mocks import MockConnection
+from ibis.expr.tests.mocks import MockConnection, GeoMockConnection
 
 
 @pytest.fixture
@@ -96,3 +93,13 @@ def functional_alltypes(con):
 @pytest.fixture
 def lineitem(con):
     return con.table('tpch_lineitem')
+
+
+@pytest.fixture
+def geo_con():
+    return GeoMockConnection()
+
+
+@pytest.fixture
+def geo_table(geo_con):
+    return geo_con.table('geo')

@@ -1,27 +1,26 @@
 #!/usr/bin/env python
 
-import json
 import os
-import sys
-import tarfile
+import json
+import logging
+import zipfile
 import tempfile
 import warnings
+from pathlib import Path
 
 import click
-
 import pandas as pd
 import sqlalchemy as sa
-
 from toolz import dissoc
 from plumbum import local
 
 import ibis
-from pathlib import Path
 
 
 SCRIPT_DIR = Path(__file__).parent.absolute()
+DATA_DIR_NAME = 'ibis-testing-data'
 DATA_DIR = Path(os.environ.get('IBIS_TEST_DATA_DIRECTORY',
-                               SCRIPT_DIR / 'ibis-testing-data'))
+                               SCRIPT_DIR / DATA_DIR_NAME))
 
 TEST_TABLES = ['functional_alltypes', 'diamonds', 'batting',
                'awards_players']
@@ -62,7 +61,13 @@ def init_database(driver, params, schema=None, recreate=True, **kwargs):
 def read_tables(names, data_directory):
     for name in names:
         path = data_directory / '{}.csv'.format(name)
-        df = pd.read_csv(str(path), index_col=None, header=0)
+
+        params = {}
+
+        if name == 'geo':
+            params['quotechar'] = '"'
+
+        df = pd.read_csv(str(path), index_col=None, header=0, **params)
 
         if name == 'functional_alltypes':
             df['bool_col'] = df['bool_col'].astype(bool)
@@ -106,36 +111,53 @@ def insert_tables(engine, names, data_directory):
 
 
 @click.group()
-def cli():
-    pass
+@click.option('--quiet/--verbose', '-q', default=False, is_flag=True)
+def cli(quiet):
+    if quiet:
+        logger.setLevel(logging.ERROR)
+    else:
+        logger.setLevel(logging.INFO)
 
 
 @cli.command()
-@click.argument('name', default='ibis-testing-data.tar.gz')
-@click.option('--base-url',
-              default='https://storage.googleapis.com/ibis-testing-data')
-@click.option('-d', '--directory', default=SCRIPT_DIR)
-def download(base_url, directory, name):
+@click.option('--repo-url', '-r',
+              default='https://github.com/ibis-project/testing-data')
+@click.option('-d', '--directory', default=DATA_DIR)
+def download(repo_url, directory):
     from plumbum.cmd import curl
+    from shutil import rmtree
 
     directory = Path(directory)
-    if not directory.exists():
-        directory.mkdir()
-
-    data_url = '{}/{}'.format(base_url, name)
-    path = directory / name
+    # download the master branch
+    url = repo_url + '/archive/master.zip'
+    # download the zip next to the target directory with the same name
+    path = directory.with_suffix('.zip')
 
     if not path.exists():
-        download = curl[data_url, '-o', path, '-L']
+        logger.info('Downloading {} to {}...'.format(url, path))
+        path.parent.mkdir(parents=True, exist_ok=True)
+        download = curl[url, '-o', path, '-L']
         download(stdout=click.get_binary_stream('stdout'),
                  stderr=click.get_binary_stream('stderr'))
     else:
-        logger.info('Skipping download: %s already exists', name)
+        logger.info('Skipping download: {} already exists'.format(path))
 
-    logger.info('Extracting archive to %s', directory)
-    if path.suffix in ('.tar', '.gz', '.bz2', '.xz'):
-        with tarfile.open(str(path), mode='r|gz') as f:
-            f.extractall(path=str(directory))
+    logger.info('Extracting archive to {}'.format(directory))
+
+    # extract all files
+    extract_to = directory.with_name(directory.name + '_extracted')
+    with zipfile.ZipFile(path, 'r') as f:
+        f.extractall(extract_to)
+
+    # remove existent folder
+    if directory.exists():
+        rmtree(str(directory))
+
+    # rename to the target directory
+    (extract_to / 'testing-data-master').rename(directory)
+
+    # remove temporary extraction folder
+    extract_to.rmdir()
 
 
 @cli.command()
@@ -222,13 +244,9 @@ def sqlite(database, schema, tables, data_directory, **params):
 @click.option('-D', '--database', default='ibis_testing')
 @click.option('-S', '--schema', type=click.File('rt'),
               default=str(SCRIPT_DIR / 'schema' / 'mapd.sql'))
-@click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
+@click.option('-t', '--tables', multiple=True, default=TEST_TABLES + ['geo'])
 @click.option('-d', '--data-directory', default=DATA_DIR)
 def mapd(schema, tables, data_directory, **params):
-    if sys.version_info.major < 3:
-        logger.info('MapD backend is unavailable for Python 2.')
-        return
-
     import pymapd
 
     data_directory = Path(data_directory)
@@ -288,9 +306,17 @@ def mapd(schema, tables, data_directory, **params):
             else:
                 continue
             df.rename(columns={df_col: column}, inplace=True)
-        conn.load_table_columnar(table, df)
+
+        # load geospatial data
+        if table == 'geo':
+            conn.load_table_rowwise(
+                table, list(df.itertuples(index=False, name=None))
+            )
+        else:
+            conn.load_table_columnar(table, df)
 
     conn.close()
+    logger.info('Done!')
 
 
 @cli.command()

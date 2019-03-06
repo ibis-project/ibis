@@ -6,8 +6,7 @@ cmake
 flake8
 google-cloud-bigquery>=1.0.0
 graphviz
-# FIXME(kszucs): temporarily installed via pip to support python 3.7 tests
-# impyla>=0.14.0
+impyla>=0.14.2
 jinja2
 lz4
 multipledispatch>=0.6.0
@@ -17,11 +16,8 @@ pandas
 plumbum
 pre_commit
 psycopg2
-pyarrow
-# FIXME(kszucs): installing pymapd pins pyarrow to 0.11 which cannot coexist
-# with bigquery, importing both pyarrow=0.11 and google.cloud.bigquery in any
-# order it segfaults with a protobuf error
-# pymapd
+pyarrow>=0.12
+pymapd>=0.8
 pymysql
 pytables
 pytest

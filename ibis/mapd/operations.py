@@ -651,6 +651,28 @@ _geometric_ops = {
     Conv_4326_900913_Y: unary('conv_4326_900913_y')
 }
 
+# GEO SPATIAL
+_geospatial_ops = {
+    ops.GeoArea: unary('ST_AREA'),
+    ops.GeoContains: fixed_arity('ST_CONTAINS', 2),
+    ops.GeoDistance: fixed_arity('ST_DISTANCE', 2),
+    ops.GeoLength: unary('ST_LENGTH'),
+    ops.GeoPerimeter: unary('ST_PERIMETER'),
+    ops.GeoMaxDistance: fixed_arity('ST_MAXDISTANCE', 2),
+    ops.GeoX: unary('ST_X'),
+    ops.GeoY: unary('ST_Y'),
+    ops.GeoXMin: unary('ST_XMIN'),
+    ops.GeoXMax: unary('ST_XMAX'),
+    ops.GeoYMin: unary('ST_YMIN'),
+    ops.GeoYMax: unary('ST_YMAX'),
+    ops.GeoStartPoint: unary('ST_STARTPOINT'),
+    ops.GeoEndPoint: unary('ST_ENDPOINT'),
+    ops.GeoPointN: fixed_arity('ST_POINTN', 2),
+    ops.GeoNPoints: unary('ST_NPOINTS'),
+    ops.GeoNRings: unary('ST_NRINGS'),
+    ops.GeoSRID: unary('ST_SRID'),
+}
+
 # STRING
 _string_ops = {
     ops.StringLength: _length(),
@@ -786,5 +808,6 @@ _operation_registry.update(_geometric_ops)
 _operation_registry.update(_string_ops)
 _operation_registry.update(_date_ops)
 _operation_registry.update(_agg_ops)
+_operation_registry.update(_geospatial_ops)
 # the last update should be with unsupported ops
 _operation_registry.update(_unsupported_ops)
