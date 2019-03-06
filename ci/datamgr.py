@@ -2,6 +2,7 @@
 
 import os
 import json
+import logging
 import zipfile
 import tempfile
 import warnings
@@ -110,44 +111,53 @@ def insert_tables(engine, names, data_directory):
 
 
 @click.group()
-def cli():
-    pass
+@click.option('--quiet/--verbose', '-q', default=False, is_flag=True)
+def cli(quiet):
+    if quiet:
+        logger.setLevel(logging.ERROR)
+    else:
+        logger.setLevel(logging.INFO)
 
 
 @cli.command()
-@click.argument('name', default='{}.zip'.format(DATA_DIR_NAME))
 @click.option('--repo-url', '-r',
               default='https://github.com/ibis-project/testing-data')
-@click.option('-d', '--directory', default=SCRIPT_DIR)
-def download(repo_url, directory, name):
+@click.option('-d', '--directory', default=DATA_DIR)
+def download(repo_url, directory):
     from plumbum.cmd import curl
     from shutil import rmtree
 
     directory = Path(directory)
-    if not directory.exists():
-        directory.mkdir()
-
+    # download the master branch
     url = repo_url + '/archive/master.zip'
-    path = directory / name
-    data_dir = directory / DATA_DIR_NAME
+    # download the zip next to the target directory with the same name
+    path = directory.with_suffix('.zip')
 
     if not path.exists():
+        logger.info('Downloading {} to {}...'.format(url, path))
+        path.parent.mkdir(parents=True, exist_ok=True)
         download = curl[url, '-o', path, '-L']
         download(stdout=click.get_binary_stream('stdout'),
                  stderr=click.get_binary_stream('stderr'))
     else:
-        logger.info('Skipping download: %s already exists', name)
+        logger.info('Skipping download: {} already exists'.format(path))
 
-    logger.info('Extracting archive to %s', directory)
+    logger.info('Extracting archive to {}'.format(directory))
+
+    # extract all files
+    extract_to = directory.with_name(directory.name + '_extracted')
+    with zipfile.ZipFile(path, 'r') as f:
+        f.extractall(extract_to)
 
     # remove existent folder
-    if os.path.exists(data_dir):
-        rmtree(str(data_dir))
-    # extract all files
-    with zipfile.ZipFile(path, 'r') as f:
-        f.extractall(directory)
-    # rename
-    os.rename(directory / 'testing-data-master', data_dir)
+    if directory.exists():
+        rmtree(str(directory))
+
+    # rename to the target directory
+    (extract_to / 'testing-data-master').rename(directory)
+
+    # remove temporary extraction folder
+    extract_to.rmdir()
 
 
 @cli.command()
