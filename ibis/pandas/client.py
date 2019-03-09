@@ -163,7 +163,7 @@ def infer_pandas_schema(df, schema=None):
         if column_name in schema:
             ibis_dtype = dt.dtype(schema[column_name])
         elif pandas_dtype == np.object_:
-            inferred_dtype = infer_pandas_dtype(df[column_name].dropna())
+            inferred_dtype = infer_pandas_dtype(df[column_name], skipna=True)
             if inferred_dtype in {'mixed', 'decimal'}:
                 # TODO: in principal we can handle decimal (added in pandas
                 # 0.23)
