@@ -326,11 +326,12 @@ class Window(AggregationContext):
                 return result
         else:
             # do mostly the same thing as if we did NOT have a grouping key,
-            # but don't call the callable just yet. See below where we call it
+            # but don't call the callable just yet. See below where we call it.
             if callable(function):
                 method = operator.methodcaller(
                     'apply',
                     _apply(function, args, kwargs),
+                    raw=True,
                 )
             else:
                 assert isinstance(function, str)
