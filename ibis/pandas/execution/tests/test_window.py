@@ -404,7 +404,7 @@ def test_window_with_preceding_expr():
     expected = df.set_index('time').value.rolling(
         '3d', closed='both').mean().reset_index(drop=True)
     expected.index.name = None
-    day = ibis.day()
+    day = ibis.interval(days=1)
     window = ibis.trailing_window(3 * day, order_by=t.time)
     expr = t.value.mean().over(window)
     result = expr.execute()
