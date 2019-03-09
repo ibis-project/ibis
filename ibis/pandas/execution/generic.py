@@ -127,19 +127,16 @@ def execute_cast_series_date(op, data, type, **kwargs):
         )
 
     if from_type.equals(dt.string):
+        values = data.values
+        datetimes = pd.to_datetime(
+            values, infer_datetime_format=True
+        )
         try:
-            date_values = data.values.astype('datetime64[D]').astype(
-                'datetime64[ns]'
-            )
+            datetimes = datetimes.tz_convert(None)
         except TypeError:
-            date_values = _normalize(
-                pd.to_datetime(
-                    data.values, infer_datetime_format=True, box=False
-                ),
-                data.index,
-                data.name,
-            )
-        return pd.Series(date_values, index=data.index, name=data.name)
+            pass
+        dates = _normalize(datetimes, data.index, data.name)
+        return pd.Series(dates, index=data.index, name=data.name)
 
     if isinstance(from_type, dt.Integer):
         return pd.Series(
