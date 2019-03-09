@@ -12,7 +12,7 @@ lz4
 multipledispatch>=0.6.0
 mypy
 numpy
-pandas
+pandas>=0.21
 plumbum
 pre_commit
 psycopg2
