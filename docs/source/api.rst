@@ -256,7 +256,6 @@ Table methods
 .. autosummary::
    :toctree: generated/
 
-   TableExpr.add_column
    TableExpr.aggregate
    TableExpr.count
    TableExpr.distinct
