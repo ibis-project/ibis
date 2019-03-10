@@ -219,8 +219,8 @@ def _replace_interval_with_scalar(expr):
 
     Parameters
     ----------
-    expr : float or expression of intervals, i.e.
-      1 * ibis.day() + 5 * ibis.hour()
+    expr : float or expression of intervals
+        For example, ``ibis.interval(days=1) + ibis.interval(hours=5)``
 
     Returns
     -------
