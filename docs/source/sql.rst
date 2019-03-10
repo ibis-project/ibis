@@ -1187,7 +1187,7 @@ arithmetic. For example:
 
 .. ipython:: python
 
-   expr = events[events.ts > (ibis.now() - ibis.year())]
+   expr = events[events.ts > (ibis.now() - ibis.interval(years=1))]
    print(ibis.impala.compile(expr))
 
 The implementation of each timedelta offset will depend on the query engine.
