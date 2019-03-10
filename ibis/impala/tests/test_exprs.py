@@ -1409,8 +1409,8 @@ def test_decimal_timestamp_builtins(con):
 
         dc.fillna(0),
 
-        ts < (ibis.now() + ibis.month(3)),
-        ts < (ibis.timestamp('2005-01-01') + ibis.month(3)),
+        ts < (ibis.now() + ibis.interval(months=3)),
+        ts < (ibis.timestamp('2005-01-01') + ibis.interval(months=3)),
 
         # hashing
         dc.hash(),
@@ -1449,8 +1449,8 @@ def test_timestamp_scalar_in_filter(alltypes):
 
     expr = (table.filter([
         table.timestamp_col <
-        (ibis.timestamp('2010-01-01') + ibis.month(3)),
-        table.timestamp_col < (ibis.now() + ibis.day(10))
+        (ibis.timestamp('2010-01-01') + ibis.interval(months=3)),
+        table.timestamp_col < (ibis.now() + ibis.interval(days=10))
     ]).count())
     expr.execute()
 
