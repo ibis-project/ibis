@@ -48,9 +48,13 @@ init: restart
 	@$(MAKE) build
 	@$(MAKE) load
 
-test:
+testparallel:
 	@ENVKIND=$(ENVKIND) $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not udf' \
 	    --doctest-modules --doctest-ignore-import-errors ${PYTEST_OPTIONS}
+
+test:
+	@ENVKIND=$(ENVKIND) $(MAKEFILE_DIR)/ci/test.sh ${PYTEST_OPTIONS} \
+	    --doctest-modules --doctest-ignore-import-errors
 
 testmost:
 	@ENVKIND=$(ENVKIND) $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not (udf or impala or hdfs)' \
