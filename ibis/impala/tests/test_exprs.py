@@ -277,8 +277,12 @@ FROM alltypes"""
             add_template = 'date_add({1}, INTERVAL {2} {0})'
             sub_template = 'date_sub({1}, INTERVAL {2} {0})'
 
-            cases.append((t + offset, add_template.format(unit.upper(), f, K)))
-            cases.append((t - offset, sub_template.format(unit.upper(), f, K)))
+            cases.append(
+                (t + offset, add_template.format(compiled_unit.upper(), f, K))
+            )
+            cases.append(
+                (t - offset, sub_template.format(compiled_unit.upper(), f, K))
+            )
 
         self._check_expr_cases(cases)
 
