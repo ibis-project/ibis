@@ -697,3 +697,10 @@ def test_simple_case_column(batting, batting_df):
         )
     )
     tm.assert_series_equal(result, expected)
+
+
+def test_table_distinct(t, df):
+    expr = t[['dup_strings']].distinct()
+    result = expr.execute()
+    expected = df[['dup_strings']].drop_duplicates()
+    tm.assert_frame_equal(result, expected)
