@@ -43,7 +43,7 @@ load:
 	@$(DOCKER_RUN) -e LOGLEVEL ibis ci/load-data.sh
 
 restart: stop
-	@$(MAKE) SERVICES=${SERVICES} start
+	@$(MAKE) start
 
 init: restart
 	@$(MAKE) build
