@@ -63,22 +63,30 @@ def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
 
     Parameters
     ----------
-    host : string, Host name of the HDFS NameNode
-    port : int, NameNode's WebHDFS port (default 50070)
-    protocol : {'webhdfs'}
-    use_https : boolean, default 'default'
+    host : str
+        Host name of the HDFS NameNode
+    port : int
+        NameNode's WebHDFS port
+    protocol : str,
+        The protocol used to communicate with HDFS. The only valid value is
+        ``'webhdfs'``.
+    use_https : bool
         Connect to WebHDFS with HTTPS, otherwise plain HTTP. For secure
-        authentication, the default for this is True, otherwise False
-    auth_mechanism : string, Set to NOSASL or PLAIN for non-secure clusters.
+        authentication, the default for this is True, otherwise False.
+    auth_mechanism : str
+        Set to NOSASL or PLAIN for non-secure clusters.
         Set to GSSAPI or LDAP for Kerberos-secured clusters.
-    verify : boolean, Set to False to turn off verifying SSL certificates.
-        (default True)
+    verify : bool
+        Set to False to turn off verifying SSL certificates.
 
-    Other keywords are forwarded to hdfs library classes
+    Notes
+    -----
+    Other keywords are forwarded to HDFS library classes.
 
     Returns
     -------
-    client : WebHDFS
+    WebHDFS
+
     """
     import requests
     if session is None:

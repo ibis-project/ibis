@@ -243,10 +243,7 @@ class HDFS:
 
 
 class WebHDFS(HDFS):
-
-    """
-    A WebHDFS-based interface to HDFS using the HDFSCli library
-    """
+    """A WebHDFS-based interface to HDFS using the HDFSCli library."""
 
     def __init__(self, client):
         self.client = client
@@ -256,9 +253,7 @@ class WebHDFS(HDFS):
         return 'webhdfs'
 
     def status(self, path):
-        """
-        Retrieve HDFS metadata for path
-        """
+        """Retrieve HDFS metadata for path."""
         return self.client.status(path)
 
     @implements(HDFS.chmod)
@@ -293,9 +288,7 @@ class WebHDFS(HDFS):
         return self.client.rename(hdfs_path_src, hdfs_path_dest)
 
     def delete(self, hdfs_path, recursive=False):
-        """
-        Delete a file.
-        """
+        """Delete a file located at `hdfs_path`."""
         return self.client.delete(hdfs_path, recursive=recursive)
 
     @implements(HDFS.head)
