@@ -77,7 +77,9 @@ def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
         Set to NOSASL or PLAIN for non-secure clusters.
         Set to GSSAPI or LDAP for Kerberos-secured clusters.
     verify : bool
-        Set to False to turn off verifying SSL certificates.
+        Set to :data:`False` to turn off verifying SSL certificates.
+    session : Optional[requests.Session]
+        A custom :class:`requests.Session` object.
 
     Notes
     -----
