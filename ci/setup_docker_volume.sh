@@ -32,7 +32,3 @@ fi
 
 mkdir -p /tmp/ibis
 cp "${GOOGLE_APPLICATION_CREDENTIALS}" /tmp/ibis/gcloud-service-key.json
-cp -rf "${IBIS_TEST_DATA_DIRECTORY}" /tmp/ibis
-
-gzipprog="$([ "$(which pigz)" ] && echo pigz || echo gzip)"
-tar -I "${gzipprog}" -cf /tmp/ibis/ibis-testing-data.tar.gz "${IBIS_TEST_DATA_DIRECTORY}" 2> /dev/null
