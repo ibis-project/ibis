@@ -58,9 +58,8 @@ with suppress(ImportError):
 
 def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
                  use_https='default', auth_mechanism='NOSASL',
-                 verify=True, **kwds):
-    """
-    Connect to HDFS
+                 verify=True, session=None, **kwds):
+    """Connect to HDFS.
 
     Parameters
     ----------
@@ -82,7 +81,8 @@ def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
     client : WebHDFS
     """
     import requests
-    session = kwds.setdefault('session', requests.Session())
+    if session is None:
+        session = requests.Session()
     session.verify = verify
     if auth_mechanism in ('GSSAPI', 'LDAP'):
         if use_https == 'default':
@@ -100,7 +100,7 @@ def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
         # note SSL
         url = '{0}://{1}:{2}'.format(prefix, host, port)
         kwds.setdefault('mutual_auth', 'OPTIONAL')
-        hdfs_client = KerberosClient(url, **kwds)
+        hdfs_client = KerberosClient(url, session=session, **kwds)
     else:
         if use_https == 'default':
             prefix = 'http'
@@ -108,7 +108,7 @@ def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
             prefix = 'https' if use_https else 'http'
         from hdfs.client import InsecureClient
         url = '{}://{}:{}'.format(prefix, host, port)
-        hdfs_client = InsecureClient(url, **kwds)
+        hdfs_client = InsecureClient(url, session=session, **kwds)
     return WebHDFS(hdfs_client)
 
 
