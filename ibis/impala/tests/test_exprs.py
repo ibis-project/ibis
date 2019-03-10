@@ -257,8 +257,9 @@ FROM alltypes"""
         self._check_expr_cases(cases)
 
     def test_timestamp_deltas(self):
-        units = ['year', 'month', 'week', 'day',
-                 'hour', 'minute', 'second']
+        units = [
+            'years', 'months', 'weeks', 'days', 'hours', 'minutes', 'seconds'
+        ]
 
         t = self.table.i
         f = '`i`'
@@ -266,7 +267,7 @@ FROM alltypes"""
         cases = []
         for unit in units:
             K = 5
-            offset = getattr(ibis, unit)(K)
+            offset = ibis.interval(**{unit: K})
             add_template = 'date_add({1}, INTERVAL {2} {0})'
             sub_template = 'date_sub({1}, INTERVAL {2} {0})'
 
@@ -1426,13 +1427,14 @@ def test_decimal_timestamp_builtins(con):
         ts.truncate('minute'),
     ]
 
-    timestamp_fields = ['year', 'month', 'day', 'hour', 'minute',
-                        'second', 'week']
+    timestamp_fields = [
+        'years', 'months', 'days', 'hours', 'minutes', 'seconds', 'weeks'
+    ]
     for field in timestamp_fields:
         if hasattr(ts, field):
             exprs.append(getattr(ts, field)())
 
-        offset = getattr(ibis, field)(2)
+        offset = ibis.interval(**{field: 2})
         exprs.append(ts + offset)
         exprs.append(ts - offset)
 
