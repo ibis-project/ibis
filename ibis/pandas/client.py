@@ -21,11 +21,7 @@ import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
-from ibis.compat import (
-    DatetimeTZDtype,
-    CategoricalDtype,
-    infer_dtype
-)
+from ibis.compat import DatetimeTZDtype, CategoricalDtype
 
 
 try:
@@ -260,7 +256,7 @@ def convert_datetime64_to_timestamp(in_dtype, out_dtype, column):
     try:
         series = pd.to_datetime(column, utc=True)
     except pd.errors.OutOfBoundsDatetime:
-        inferred_dtype = infer_dtype(column)
+        inferred_dtype = infer_pandas_dtype(column, skipna=True)
         if inferred_dtype in PANDAS_DATE_TYPES:
             # not great, but not really any other option
             return column.map(
