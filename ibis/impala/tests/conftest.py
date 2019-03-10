@@ -4,8 +4,6 @@ import warnings
 
 import pytest
 
-import impala
-
 import ibis.util as util
 import ibis
 
@@ -182,6 +180,7 @@ CREATE TABLE IF NOT EXISTS {} (
 
 @pytest.fixture(scope='session')
 def tmp_db(env, con, test_data_db):
+    impala = pytest.importorskip("impala")
     tmp_db = env.tmp_db
 
     if not con.exists_database(tmp_db):
