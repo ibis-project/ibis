@@ -27,7 +27,7 @@ lint:
 
 stop:
 # stop all running docker compose services
-	@$(DOCKER) rm --force --stop
+	@$(DOCKER) rm --force --stop ${SERVICES}
 
 build:
 # build the ibis image
@@ -43,7 +43,7 @@ load:
 	@$(DOCKER_RUN) -e LOGLEVEL ibis ci/load-data.sh
 
 restart: stop
-	@$(MAKE) start
+	@$(MAKE) SERVICES=${SERVICES} start
 
 init: restart
 	@$(MAKE) build
