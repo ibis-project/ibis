@@ -54,7 +54,6 @@ class DataFrameWriter:
         return temp_hdfs_dir
 
     def write_csv(self, path):
-
         with tempfile.NamedTemporaryFile() as f:
             # Write the DataFrame to the temporary file path
             if options.verbose:
