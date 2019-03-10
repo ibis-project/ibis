@@ -381,7 +381,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
 
     @property
     def _client(self):
-        return self.op().args[2]
+        return self.op().source
 
     def _match_name(self):
         m = ddl.fully_qualified_re.match(self._qualified_name)
