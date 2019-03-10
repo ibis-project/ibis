@@ -258,14 +258,20 @@ FROM alltypes"""
 
     def test_timestamp_deltas(self):
         units = [
-            'years', 'months', 'weeks', 'days', 'hours', 'minutes', 'seconds'
+            ('years', 'year'),
+            ('months', 'month'),
+            ('weeks', 'week'),
+            ('days', 'day'),
+            ('hours', 'hour'),
+            ('minutes', 'minute'),
+            ('seconds', 'second'),
         ]
 
         t = self.table.i
         f = '`i`'
 
         cases = []
-        for unit in units:
+        for unit, compiled_unit in units:
             K = 5
             offset = ibis.interval(**{unit: K})
             add_template = 'date_add({1}, INTERVAL {2} {0})'
