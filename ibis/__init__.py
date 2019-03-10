@@ -58,31 +58,41 @@ with suppress(ImportError):
 
 def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
                  use_https='default', auth_mechanism='NOSASL',
-                 verify=True, **kwds):
-    """
-    Connect to HDFS
+                 verify=True, session=None, **kwds):
+    """Connect to HDFS.
 
     Parameters
     ----------
-    host : string, Host name of the HDFS NameNode
-    port : int, NameNode's WebHDFS port (default 50070)
-    protocol : {'webhdfs'}
-    use_https : boolean, default 'default'
+    host : str
+        Host name of the HDFS NameNode
+    port : int
+        NameNode's WebHDFS port
+    protocol : str,
+        The protocol used to communicate with HDFS. The only valid value is
+        ``'webhdfs'``.
+    use_https : bool
         Connect to WebHDFS with HTTPS, otherwise plain HTTP. For secure
-        authentication, the default for this is True, otherwise False
-    auth_mechanism : string, Set to NOSASL or PLAIN for non-secure clusters.
+        authentication, the default for this is True, otherwise False.
+    auth_mechanism : str
+        Set to NOSASL or PLAIN for non-secure clusters.
         Set to GSSAPI or LDAP for Kerberos-secured clusters.
-    verify : boolean, Set to False to turn off verifying SSL certificates.
-        (default True)
+    verify : bool
+        Set to :data:`False` to turn off verifying SSL certificates.
+    session : Optional[requests.Session]
+        A custom :class:`requests.Session` object.
 
-    Other keywords are forwarded to hdfs library classes
+    Notes
+    -----
+    Other keywords are forwarded to HDFS library classes.
 
     Returns
     -------
-    client : WebHDFS
+    WebHDFS
+
     """
     import requests
-    session = kwds.setdefault('session', requests.Session())
+    if session is None:
+        session = requests.Session()
     session.verify = verify
     if auth_mechanism in ('GSSAPI', 'LDAP'):
         if use_https == 'default':
@@ -100,7 +110,7 @@ def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
         # note SSL
         url = '{0}://{1}:{2}'.format(prefix, host, port)
         kwds.setdefault('mutual_auth', 'OPTIONAL')
-        hdfs_client = KerberosClient(url, **kwds)
+        hdfs_client = KerberosClient(url, session=session, **kwds)
     else:
         if use_https == 'default':
             prefix = 'http'
@@ -108,7 +118,7 @@ def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
             prefix = 'https' if use_https else 'http'
         from hdfs.client import InsecureClient
         url = '{}://{}:{}'.format(prefix, host, port)
-        hdfs_client = InsecureClient(url, **kwds)
+        hdfs_client = InsecureClient(url, session=session, **kwds)
     return WebHDFS(hdfs_client)
 
 

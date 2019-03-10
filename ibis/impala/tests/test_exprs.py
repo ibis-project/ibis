@@ -257,21 +257,32 @@ FROM alltypes"""
         self._check_expr_cases(cases)
 
     def test_timestamp_deltas(self):
-        units = ['year', 'month', 'week', 'day',
-                 'hour', 'minute', 'second']
+        units = [
+            ('years', 'year'),
+            ('months', 'month'),
+            ('weeks', 'week'),
+            ('days', 'day'),
+            ('hours', 'hour'),
+            ('minutes', 'minute'),
+            ('seconds', 'second'),
+        ]
 
         t = self.table.i
         f = '`i`'
 
         cases = []
-        for unit in units:
+        for unit, compiled_unit in units:
             K = 5
-            offset = getattr(ibis, unit)(K)
+            offset = ibis.interval(**{unit: K})
             add_template = 'date_add({1}, INTERVAL {2} {0})'
             sub_template = 'date_sub({1}, INTERVAL {2} {0})'
 
-            cases.append((t + offset, add_template.format(unit.upper(), f, K)))
-            cases.append((t - offset, sub_template.format(unit.upper(), f, K)))
+            cases.append(
+                (t + offset, add_template.format(compiled_unit.upper(), f, K))
+            )
+            cases.append(
+                (t - offset, sub_template.format(compiled_unit.upper(), f, K))
+            )
 
         self._check_expr_cases(cases)
 
@@ -1409,8 +1420,8 @@ def test_decimal_timestamp_builtins(con):
 
         dc.fillna(0),
 
-        ts < (ibis.now() + ibis.month(3)),
-        ts < (ibis.timestamp('2005-01-01') + ibis.month(3)),
+        ts < (ibis.now() + ibis.interval(months=3)),
+        ts < (ibis.timestamp('2005-01-01') + ibis.interval(months=3)),
 
         # hashing
         dc.hash(),
@@ -1426,13 +1437,14 @@ def test_decimal_timestamp_builtins(con):
         ts.truncate('minute'),
     ]
 
-    timestamp_fields = ['year', 'month', 'day', 'hour', 'minute',
-                        'second', 'week']
+    timestamp_fields = [
+        'years', 'months', 'days', 'hours', 'minutes', 'seconds', 'weeks'
+    ]
     for field in timestamp_fields:
         if hasattr(ts, field):
             exprs.append(getattr(ts, field)())
 
-        offset = getattr(ibis, field)(2)
+        offset = ibis.interval(**{field: 2})
         exprs.append(ts + offset)
         exprs.append(ts - offset)
 
@@ -1449,8 +1461,8 @@ def test_timestamp_scalar_in_filter(alltypes):
 
     expr = (table.filter([
         table.timestamp_col <
-        (ibis.timestamp('2010-01-01') + ibis.month(3)),
-        table.timestamp_col < (ibis.now() + ibis.day(10))
+        (ibis.timestamp('2010-01-01') + ibis.interval(months=3)),
+        table.timestamp_col < (ibis.now() + ibis.interval(days=10))
     ]).count())
     expr.execute()
 

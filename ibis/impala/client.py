@@ -381,7 +381,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
 
     @property
     def _client(self):
-        return self.op().args[2]
+        return self.op().source
 
     def _match_name(self):
         m = ddl.fully_qualified_re.match(self._qualified_name)
@@ -882,16 +882,16 @@ class ImpalaClient(SQLClient):
         return self._execute(statement)
 
     def drop_database(self, name, force=False):
-        """
-        Drop an Impala database
+        """Drop an Impala database.
 
         Parameters
         ----------
         name : string
           Database name
-        force : boolean, default False
+        force : bool, default False
           If False and there are any tables in this database, raises an
           IntegrityError
+
         """
         if not force or self.exists_database(name):
             tables = self.list_tables(database=name)

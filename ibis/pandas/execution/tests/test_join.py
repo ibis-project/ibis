@@ -311,8 +311,11 @@ def test_keyed_asof_join(
 def test_keyed_asof_join_with_tolerance(
         time_keyed_left, time_keyed_right, time_keyed_df1, time_keyed_df2):
     expr = time_keyed_left.asof_join(
-        time_keyed_right, 'time', by='key', tolerance=2 * ibis.day())[
-            time_keyed_left, time_keyed_right.other_value]
+        time_keyed_right,
+        'time',
+        by='key',
+        tolerance=2 * ibis.interval(days=1)
+    )[time_keyed_left, time_keyed_right.other_value]
     result = expr.execute()
     expected = pd.merge_asof(
         time_keyed_df1, time_keyed_df2,

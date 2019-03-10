@@ -87,13 +87,36 @@ def test_cast_timestamp_column(t, df, column, to, expected):
         ),
         (
             dt.Timestamp('America/Los_Angeles'),
-            lambda x: pd.Timestamp(x, tz='America/Los_Angeles')
+            lambda x: x.tz_localize('America/Los_Angeles')
         )
     ]
 )
-@pytest.mark.parametrize('tz', [None, 'UTC', 'America/New_York'])
+def test_cast_timestamp_scalar_naive(to, expected):
+    literal_expr = ibis.literal(pd.Timestamp('now'))
+    value = literal_expr.cast(to)
+    result = ibis.pandas.execute(value)
+    raw = ibis.pandas.execute(literal_expr)
+    assert result == expected(raw)
+
+
+@pytest.mark.parametrize(
+    ('to', 'expected'),
+    [
+        ('string', str),
+        ('int64', lambda x: x.value),
+        param(
+            'double', float,
+            marks=pytest.mark.xfail(raises=NotImplementedError)
+        ),
+        (
+            dt.Timestamp('America/Los_Angeles'),
+            lambda x: x.tz_convert('America/Los_Angeles')
+        )
+    ]
+)
+@pytest.mark.parametrize('tz', ['UTC', 'America/New_York'])
 def test_cast_timestamp_scalar(to, expected, tz):
-    literal_expr = ibis.literal(pd.Timestamp('now', tz=tz))
+    literal_expr = ibis.literal(pd.Timestamp('now').tz_localize(tz))
     value = literal_expr.cast(to)
     result = ibis.pandas.execute(value)
     raw = ibis.pandas.execute(literal_expr)

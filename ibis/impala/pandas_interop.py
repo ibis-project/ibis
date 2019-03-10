@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+import csv
+import tempfile
+
 from posixpath import join as pjoin
 
 import ibis.util as util
@@ -38,7 +40,7 @@ class DataFrameWriter:
 
     def write_temp_csv(self):
         temp_hdfs_dir = pjoin(options.impala.temp_hdfs_path,
-                              'pandas_{0}'.format(util.guid()))
+                              'pandas_{}'.format(util.guid()))
         self.hdfs.mkdir(temp_hdfs_dir)
 
         # Keep track of the temporary HDFS file
@@ -52,17 +54,14 @@ class DataFrameWriter:
         return temp_hdfs_dir
 
     def write_csv(self, path):
-        import csv
-
-        tmp_path = 'tmp_{0}.csv'.format(util.guid())
-        f = open(tmp_path, 'w+')
-
-        try:
+        with tempfile.NamedTemporaryFile() as f:
             # Write the DataFrame to the temporary file path
             if options.verbose:
-                util.log('Writing DataFrame to temporary file')
+                util.log(
+                    'Writing DataFrame to temporary file {}'.format(f.name)
+                )
 
-            self.df.to_csv(f, header=False, index=False,
+            self.df.to_csv(f.name, header=False, index=False,
                            sep=',',
                            quoting=csv.QUOTE_NONE,
                            escapechar='\\',
@@ -72,14 +71,7 @@ class DataFrameWriter:
             if options.verbose:
                 util.log('Writing CSV to: {0}'.format(path))
 
-            self.hdfs.put(path, f)
-        finally:
-            f.close()
-            try:
-                os.remove(tmp_path)
-            except os.error:
-                pass
-
+            self.hdfs.put(path, f.name)
         return path
 
     def get_schema(self):

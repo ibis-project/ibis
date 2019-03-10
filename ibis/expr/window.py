@@ -286,7 +286,7 @@ def trailing_range_window(preceding, order_by, group_by=None):
     Parameters
     ----------
     preceding : float or expression of intervals, i.e.
-      1 * ibis.day() + 5 * ibis.hour()
+      ibis.interval(days=1) + ibis.interval(hours=5)
     order_by : expressions, default None
       For analytic functions requiring an ordering, specify here, or let Ibis
       determine the default ordering (for functions like rank)

@@ -1289,7 +1289,7 @@ def from_list(values: List[GenericAny]) -> Array:
     return Array(highest_precedence(map(dtype, values)))
 
 
-@dtype.register(collections.Set)
+@dtype.register(collections.abc.Set)
 def from_set(values: GenericSet) -> Set:
     if not values:
         return Set(null)

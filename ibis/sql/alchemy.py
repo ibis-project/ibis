@@ -1407,7 +1407,7 @@ def compile_over_with_frame(element, compiler, **kw):
         if clause is not None and len(clause)
     )
     return '%s OVER (%s%sROWS BETWEEN %s PRECEDING AND %s FOLLOWING)' % (
-        compiler.process(getattr(element, 'element', element.func), **kw),
+        compiler.process(getattr(element, 'element', element.element), **kw),
         clauses,
         ' ' if clauses else '',  # only add a space if we order by or group by
         str(element.preceding).upper(),

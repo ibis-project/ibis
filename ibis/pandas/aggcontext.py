@@ -304,6 +304,8 @@ class Window(AggregationContext):
             kind, *args, **kwargs)
 
     def agg(self, grouped_data, function, *args, **kwargs):
+        # avoid a pandas warning about numpy arrays being passed through
+        # directly
         group_by = self.group_by
         order_by = self.order_by
 
@@ -315,7 +317,7 @@ class Window(AggregationContext):
             # if we're a UD(A)F or a function that isn't a string (like the
             # collect implementation) then call apply
             if callable(function):
-                return windowed.apply(_apply(function, args, kwargs))
+                return windowed.apply(_apply(function, args, kwargs), raw=True)
             else:
                 # otherwise we're a string and we're probably faster
                 assert isinstance(function, str)
@@ -324,11 +326,12 @@ class Window(AggregationContext):
                 return result
         else:
             # do mostly the same thing as if we did NOT have a grouping key,
-            # but don't call the callable just yet. See below where we call it
+            # but don't call the callable just yet. See below where we call it.
             if callable(function):
                 method = operator.methodcaller(
                     'apply',
                     _apply(function, args, kwargs),
+                    raw=True,
                 )
             else:
                 assert isinstance(function, str)

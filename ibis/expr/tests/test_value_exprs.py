@@ -1303,7 +1303,7 @@ def test_nullable_column_propagated():
     'base_expr',
     [
         ibis.table([('interval_col', dt.Interval(unit='D'))]).interval_col,
-        ibis.second(42),
+        ibis.interval(seconds=42),
     ]
 )
 def test_interval_negate(base_expr):

@@ -6,6 +6,8 @@ MAKEFILE_DIR = $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 COMPOSE_FILE := "$(MAKEFILE_DIR)/ci/docker-compose.yml"
 DOCKER := ENVKIND=$(ENVKIND) docker-compose -f $(COMPOSE_FILE)
 DOCKER_RUN := $(DOCKER) run --rm
+PYTEST_OPTIONS :=
+SERVICES := mapd postgres mysql clickhouse impala kudu-master kudu-tserver
 
 clean:
 	@python setup.py clean
@@ -25,7 +27,7 @@ lint:
 
 stop:
 # stop all running docker compose services
-	@$(DOCKER) rm --force --stop
+	@$(DOCKER) rm --force --stop ${SERVICES}
 
 build:
 # build the ibis image
@@ -33,7 +35,7 @@ build:
 
 start:
 # start all docker compose services
-	@$(DOCKER) up -d --no-build mapd postgres mysql clickhouse impala kudu-master kudu-tserver
+	@$(DOCKER) up -d --no-build ${SERVICES}
 # wait for services to start
 	@$(DOCKER_RUN) waiter
 
@@ -47,21 +49,25 @@ init: restart
 	@$(MAKE) build
 	@$(MAKE) load
 
-test:
+testparallel:
 	@ENVKIND=$(ENVKIND) $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not udf' \
+	    --doctest-modules --doctest-ignore-import-errors ${PYTEST_OPTIONS}
+
+test:
+	@ENVKIND=$(ENVKIND) $(MAKEFILE_DIR)/ci/test.sh ${PYTEST_OPTIONS} \
 	    --doctest-modules --doctest-ignore-import-errors
 
 testmost:
 	@ENVKIND=$(ENVKIND) $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not (udf or impala or hdfs)' \
-	    --doctest-modules --doctest-ignore-import-errors
+	    --doctest-modules --doctest-ignore-import-errors ${PYTEST_OPTIONS}
 
 testfast:
 	@ENVKIND=$(ENVKIND) $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not (udf or impala or hdfs or bigquery)' \
-	    --doctest-modules --doctest-ignore-import-errors
+	    --doctest-modules --doctest-ignore-import-errors ${PYTEST_OPTIONS}
 
 testparams:
 	@echo 'not (udf or impala or hdfs or postgresql or mysql or mapd or clickhouse)' \
-	    --doctest-modules --doctest-ignore-import-errors
+	    --doctest-modules --doctest-ignore-import-errors ${PYTEST_OPTIONS}
 
 docclean:
 	@$(DOCKER_RUN) ibis rm -rf /tmp/docs.ibis-project.org

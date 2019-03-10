@@ -99,7 +99,7 @@ def test_integer_to_interval_timestamp(backend, con, alltypes, df, unit):
     with warnings.catch_warnings():
         # both the implementation and test code raises pandas
         # PerformanceWarning, because We use DateOffset addition
-        warnings.simplefilter('ignore')
+        warnings.simplefilter("ignore", category=pd.errors.PerformanceWarning)
         result = con.execute(expr)
         offset = df.int_col.apply(convert_to_offset)
         expected = df.timestamp_col + offset
@@ -128,7 +128,9 @@ def test_integer_to_interval_date(backend, con, alltypes, df, unit):
         return pd.offsets.DateOffset(**{resolution: x})
 
     offset = df.int_col.apply(convert_to_offset)
-    expected = pd.to_datetime(df.date_string_col) + offset
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=pd.errors.PerformanceWarning)
+        expected = pd.to_datetime(df.date_string_col) + offset
     expected = backend.default_series_rename(expected)
 
     backend.assert_series_equal(result, expected)

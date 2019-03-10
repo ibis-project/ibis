@@ -153,13 +153,13 @@ class PandasBackend:
         ]].sort_by(['low_card_key', 'key'])
 
         low_card_window = ibis.trailing_range_window(
-            2 * ibis.day(),
+            ibis.interval(days=2),
             order_by=t.repeated_timestamps,
             group_by=t.low_card_key)
         self.low_card_grouped_rolling = t.value.mean().over(low_card_window)
 
         high_card_window = ibis.trailing_range_window(
-            2 * ibis.day(),
+            ibis.interval(days=2),
             order_by=t.repeated_timestamps,
             group_by=t.key)
         self.high_card_grouped_rolling = t.value.mean().over(high_card_window)

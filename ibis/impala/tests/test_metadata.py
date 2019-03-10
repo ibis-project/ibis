@@ -40,7 +40,7 @@ class TestMetadataParser(unittest.TestCase):
             ('# Detailed Table Information', nan, nan),
             ('Database:', 'tpcds', nan),
             ('Owner:', 'wesm', nan),
-            ('CreateTime:', 'Sun Nov 08 01:09:42 PST 2015', nan),
+            ('CreateTime:', '2015-11-08 01:09:42-08:00', nan),
             ('LastAccessTime:', 'UNKNOWN', nan),
             ('Protect Mode:', 'None', nan),
             ('Retention:', '0', nan),

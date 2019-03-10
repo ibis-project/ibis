@@ -13,7 +13,7 @@ pytest.importorskip('hdfs')
 pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
 
-import impala  # noqa: E402
+impala = pytest.importorskip('impala')
 
 from ibis.impala.compat import ImpylaError  # noqa: E402
 

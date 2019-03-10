@@ -200,28 +200,6 @@ def test_projection_array_expr(table):
     assert_equal(result, expected)
 
 
-def test_add_column(table):
-    # Creates a projection with a select-all on top of a non-projection
-    # TableExpr
-    new_expr = (table['a'] * 5).name('bigger_a')
-
-    t = table
-
-    result = t.add_column(new_expr)
-    expected = t[[t, new_expr]]
-    assert_equal(result, expected)
-
-    result = t.add_column(new_expr, 'wat')
-    expected = t[[t, new_expr.name('wat')]]
-    assert_equal(result, expected)
-
-
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_add_column_scalar_expr(table):
-    # Check literals, at least
-    assert False
-
-
 @pytest.mark.xfail(raises=AssertionError, reason='NYT')
 def test_add_column_aggregate_crossjoin(table):
     # A new column that depends on a scalar value produced by this or some
@@ -234,18 +212,6 @@ def test_add_column_aggregate_crossjoin(table):
     # Here, VAL could be something produced by aggregating table1 or any
     # other table for that matter.
     assert False
-
-
-def test_add_column_existing_projection(table):
-    # The "blocking" predecessor table is a projection; we can simply add
-    # the column to the existing projection
-    foo = (table.f * 2).name('foo')
-    bar = (table.f * 4).name('bar')
-    t2 = table.add_column(foo)
-    t3 = t2.add_column(bar)
-
-    expected = table[table, foo, bar]
-    assert_equal(t3, expected)
 
 
 def test_mutate(table):
@@ -763,8 +729,7 @@ def test_join_combo_with_projection(table):
     # SELECT left.*, right.a, right.b
     # FROM left join right on left.key = right.key
     t = table
-    t2 = t.add_column(t['f'] * 2, 'foo')
-    t2 = t2.add_column(t['f'] * 4, 'bar')
+    t2 = t.mutate(foo=t.f * 2, bar=t.f * 4)
 
     # this works
     joined = t.left_join(t2, [t['g'] == t2['g']])
@@ -1220,26 +1185,6 @@ def test_mutate2(table):
     expected = m2.mutate(baz=h(m2))
 
     assert_equal(result, expected)
-
-
-def test_add_column2(table):
-    def g(x):
-        return x.f * 2
-
-    result = table.add_column(g, name='foo')
-    expected = table.mutate(foo=g)
-    assert_equal(result, expected)
-
-
-def test_add_column_proxies_to_mutate(table):
-    result = table.add_column(ibis.now().cast('date'), name='date')
-    expected = table.mutate(date=ibis.now().cast('date'))
-    assert_equal(result, expected)
-
-
-def test_add_column_depricated(table):
-    with pytest.deprecated_call():
-        table.add_column(ibis.now().cast('date'), name='date')
 
 
 def test_groupby_mutate(table):

@@ -74,7 +74,7 @@ def test_integer_to_timestamp():
 
 
 def test_comparison_timestamp(alltypes):
-    expr = alltypes.i > (alltypes.i.min() + ibis.day(3))
+    expr = alltypes.i > alltypes.i.min() + ibis.interval(days=3)
     assert isinstance(expr, ir.BooleanColumn)
 
 

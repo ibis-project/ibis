@@ -76,7 +76,7 @@ def test_limit_offset(alltypes):
     tm.assert_frame_equal(alltypes.limit(4).execute(), expected.head(4))
     tm.assert_frame_equal(alltypes.limit(8).execute(), expected.head(8))
     tm.assert_frame_equal(alltypes.limit(4, offset=4).execute(),
-                          expected.ix[4:7].reset_index(drop=True))
+                          expected.iloc[4:8].reset_index(drop=True))
 
 
 def test_subquery(alltypes, df):
@@ -423,9 +423,10 @@ def test_timestamp_scalar_in_filter(alltypes, translate):
     table = alltypes
 
     expr = (table.filter([table.timestamp_col <
-                         (ibis.timestamp('2010-01-01') + ibis.week(3)),
+                         (ibis.timestamp('2010-01-01') +
+                             ibis.interval(weeks=3)),
                          table.timestamp_col < (ibis.now() +
-                                                ibis.day(10))
+                                                ibis.interval(days=10))
                           ])
             .count())
     expr.execute()

@@ -211,8 +211,7 @@ def upload_udfs(con):
 
 @click.group(context_settings=dict(help_option_names=['-h', '--help']))
 def main():
-    """Manage test data for Ibis"""
-    pass
+    """Manage impala test data for Ibis."""
 
 
 @main.command()
