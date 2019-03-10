@@ -7,6 +7,7 @@ COMPOSE_FILE := "$(MAKEFILE_DIR)/ci/docker-compose.yml"
 DOCKER := ENVKIND=$(ENVKIND) docker-compose -f $(COMPOSE_FILE)
 DOCKER_RUN := $(DOCKER) run --rm
 PYTEST_OPTIONS :=
+SERVICES := mapd postgres mysql clickhouse impala kudu-master kudu-tserver
 
 clean:
 	@python setup.py clean
@@ -34,7 +35,7 @@ build:
 
 start:
 # start all docker compose services
-	@$(DOCKER) up -d --no-build mapd postgres mysql clickhouse impala kudu-master kudu-tserver
+	@$(DOCKER) up -d --no-build ${SERVICES}
 # wait for services to start
 	@$(DOCKER_RUN) waiter
 
