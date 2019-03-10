@@ -4,6 +4,8 @@ import warnings
 
 import pytest
 
+import impala
+
 import ibis.util as util
 import ibis
 
@@ -188,7 +190,16 @@ def tmp_db(env, con, test_data_db):
         yield tmp_db
     finally:
         con.set_database(test_data_db)
-        con.drop_database(tmp_db, force=True)
+        try:
+            con.drop_database(tmp_db, force=True)
+        except impala.error.HiveServer2Error:
+            # The database can be dropped by another process during tear down
+            # in the middle of dropping this one if tests are running in
+            # parallel.
+            #
+            # We only care that it gets dropped before all tests are finished
+            # running.
+            pass
 
 
 @pytest.fixture(scope='session')
