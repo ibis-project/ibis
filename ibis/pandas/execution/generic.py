@@ -989,3 +989,8 @@ def execute_simple_case_series(op, value, whens, thens, otherwise, **kwargs):
         otherwise = np.nan
     raw = np.select([value == when for when in whens], thens, otherwise)
     return wrap_case_result(raw, op.to_expr())
+
+
+@execute_node.register(ops.Distinct, pd.DataFrame)
+def execute_distinct_dataframe(op, df, **kwargs):
+    return df.drop_duplicates()
