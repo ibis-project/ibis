@@ -145,11 +145,12 @@ def _type_to_sql_string(tval):
         return 'map<{}, {}>'.format(
             _type_to_sql_string(tval.key_type),
             _type_to_sql_string(tval.value_type)
-            )
+        )
     if isinstance(tval, dt.Array):
         return 'array<{}>'.format(_type_to_sql_string(tval.value_type))
     if isinstance(tval, dt.Struct):
-        parts = ["{}:{}".format(n, _type_to_sql_string(t)) for n, t in tval.pairs.items()] # noqa E501
+        parts = ["{}:{}".format(n, _type_to_sql_string(t)) for n, t
+                 in tval.pairs.items()]
         return 'struct<{}>'.format(','.join(parts))
     name = tval.name.lower()
     try:

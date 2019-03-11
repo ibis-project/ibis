@@ -126,6 +126,12 @@ class MockConnection(SQLClient):
             ('year', 'int32'),
             ('month', 'int32')
         ],
+        'functional_complextypes': [
+            ('array_col', 'array<string>'),
+            ('map_col', 'map<string,int32>'),
+            ('struct_col', 'struct<a:string>'),
+            ('complex_struct_col', 'struct<m:map<string,int32>>')
+        ],
         'airlines': [
             ('year', 'int32'),
             ('month', 'int32'),

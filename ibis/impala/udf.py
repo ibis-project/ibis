@@ -341,21 +341,25 @@ def _ibis_string_to_impala(tval):
         return repr(result)
 
 
-_COMPLEX_RE = re.compile(r'(struct|map|array)\<([\s\S]+)\>$')
+_COMPLEX_RE = re.compile(r'^(struct|map|array)\<([\s\S]+)\>$')
 _STRUCT_FIELD_RE = re.compile(
     r"`?(\w+)`?:((?:struct|map|array)\<[\s\S]+?\>|\S+)(?:\s+comment '([^']+)')?(?:,\n|$)") # noqa E501
 _MAP_FIELD_RE = re.compile(r"([^,]+),((?:struct|map|array)\<[\s\S]+?\>|.*)")
 
 
 def _impala_complex_type_to_ibis(tval):
-    t_type, t_schema = _COMPLEX_RE.findall(tval)[0]
+    t_type, t_schema = _COMPLEX_RE.match(tval).groups()
     if t_type == 'struct':
         parts = _STRUCT_FIELD_RE.findall(t_schema)
+        if not parts:
+            raise ValueError(tval)
         names = [c[0] for c in parts]
         types = [parse_type(c[1]) for c in parts]
         t = dt.Struct(names, types)
     elif t_type == 'map':
-        parts = _MAP_FIELD_RE.findall(t_schema)[0]
+        parts = _MAP_FIELD_RE.match(t_schema).groups()
+        if not parts:
+            raise ValueError(tval)
         types = [parse_type(c) for c in parts]
         t = dt.Map(types[0], types[1])
     elif t_type == 'array':

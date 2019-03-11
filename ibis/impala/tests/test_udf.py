@@ -1,4 +1,5 @@
 from decimal import Decimal
+import collections
 
 import unittest
 
@@ -44,6 +45,10 @@ class TestWrapping(unittest.TestCase):
         self.s = self.table.string_col
         self.b = self.table.bool_col
         self.t = self.table.timestamp_col
+        self.a = self.con.table('functional_complextypes').array_col
+        self.m = self.con.table('functional_complextypes').map_col
+        self.st = self.con.table('functional_complextypes').struct_col
+        self.c = self.con.table('functional_complextypes').complex_struct_col
         self.dec = self.con.table('tpch_customer').c_acctbal
         self.all_cols = [self.i8, self.i16, self.i32, self.i64, self.d,
                          self.f, self.dec, self.s, self.b, self.t]
@@ -76,6 +81,27 @@ class TestWrapping(unittest.TestCase):
             ('double', 1.0, self.d),
             ('string', '1', self.s),
             ('timestamp', ibis.timestamp('1961-04-10'), self.t)
+        ]
+        for t, sv, av in types:
+            func = self._register_udf([t], t, 'test')
+
+            ibis_type = dt.validate_type(t)
+
+            expr = func(sv)
+            assert type(expr) == type(ibis_type.scalar_type()(expr.op()))  # noqa: E501, E721
+            expr = func(av)
+            assert type(expr) == type(ibis_type.column_type()(expr.op()))  # noqa: E501, E721
+
+    def test_udf_complex_output_types(self):
+        types = [
+            ('array<string>', ['1'], self.a),
+            ('map<string,int32>', {'1': 1}, self.m),
+            ('struct<a:string>', collections.OrderedDict([('a', 1)]), self.st),
+            (
+                'struct<m:map<string,int32>>',
+                collections.OrderedDict([('m', {'1': 1})]),
+                self.c
+            )
         ]
         for t, sv, av in types:
             func = self._register_udf([t], t, 'test')
@@ -206,7 +232,7 @@ def uda_so(udfcon, test_data_dir):
         ('float', ibis.literal(3.14), 'float_col'),
         ('double', ibis.literal(3.14), 'double_col'),
         ('string', ibis.literal('ibis'), 'string_col'),
-        ('timestamp', ibis.timestamp('1961-04-10'), 'timestamp_col'),
+        ('timestamp', ibis.timestamp('1961-04-10'), 'timestamp_col')
     ]
 )
 def test_identity_primitive_types(
