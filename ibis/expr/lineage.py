@@ -6,6 +6,37 @@ import ibis.expr.types as ir
 import ibis.expr.operations as ops
 
 
+def find_nodes(expr, node_types):
+    """Depth-first search of the expression tree yielding nodes of a given
+    type or set of types.
+
+    Parameters
+    ----------
+    expr: ibis.expr.types.Expr
+    node_types: type or tuple of types
+
+    Yields
+    ------
+    op: type
+        A node of given node_types
+    """
+    def extender(op):
+        return (arg for arg in op.args if isinstance(arg, ir.Expr))
+    return _search_for_nodes([expr], extender, node_types)
+
+
+def _search_for_nodes(stack, extender, node_types):
+    seen = set()
+    while stack:
+        expr = stack.pop()
+        op = expr.op()
+        if op not in seen:
+            if isinstance(op, node_types):
+                yield op
+            seen.add(op)
+            stack.extend(extender(op))
+
+
 def roots(expr, types=(ops.PhysicalTable,)):
     """Yield every node of a particular type on which an expression depends.
 
@@ -28,23 +59,15 @@ def roots(expr, types=(ops.PhysicalTable,)):
     you've come to the right place. By default, we yield the physical tables
     that an expression depends on.
     """
-    seen = set()
-
-    stack = [arg for arg in reversed(expr.op().root_tables())
+    stack = [arg.to_expr() for arg in reversed(expr.op().root_tables())
              if isinstance(arg, types)]
 
-    while stack:
-        table = stack.pop()
-
-        if table not in seen:
-            seen.add(table)
-            yield table
-
-        # flatten and reverse so that we traverse in preorder
-        stack.extend(reversed(list(chain.from_iterable(
-            arg.op().root_tables() for arg in table.flat_args()
+    def extender(op):
+        return reversed(list(chain.from_iterable(
+            arg.op().root_tables() for arg in op.flat_args()
             if isinstance(arg, types)
-        ))))
+        )))
+    return _search_for_nodes(stack, extender, types)
 
 
 class Container:
