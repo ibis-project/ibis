@@ -4,7 +4,7 @@ Tests for general IBIS Api calls
 import unittest
 import pyarrow as pa
 
-from arrow.api import connect
+from arrow import connect
 
 
 
