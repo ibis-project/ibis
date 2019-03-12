@@ -403,7 +403,8 @@ def execute_and_reset(
         expr, params=params, scope=scope, aggcontext=aggcontext, **kwargs)
     if isinstance(result, pd.DataFrame):
         schema = expr.schema()
-        return result.reset_index()[schema.names]
+        df = result.reset_index()
+        return df.loc[:, schema.names]
     elif isinstance(result, pd.Series):
         return result.reset_index(drop=True)
     return result

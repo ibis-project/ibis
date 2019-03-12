@@ -2,6 +2,7 @@ import operator
 
 import pandas as pd
 
+import ibis.util
 import ibis.expr.operations as ops
 
 from ibis.pandas.dispatch import execute_node
@@ -19,6 +20,39 @@ def _compute_join_column(column_expr, **kwargs):
 
     root_table, = column_op.root_tables()
     return new_column, root_table
+
+
+@execute_node.register(ops.CrossJoin, pd.DataFrame, pd.DataFrame)
+def execute_cross_join(op, left, right, **kwargs):
+    """Execute a cross join in pandas.
+
+    Notes
+    -----
+    We create a dummy column of all :data:`True` instances and use that as the
+    join key. This results in the desired Cartesian product behavior guaranteed
+    by cross join.
+
+    """
+    # generate a unique name for the temporary join key
+    key = "cross_join_{}".format(ibis.util.guid())
+    join_key = {key: True}
+    new_left = left.assign(**join_key)
+    new_right = right.assign(**join_key)
+
+    # inner/outer doesn't matter because every row matches every other row
+    result = pd.merge(
+        new_left,
+        new_right,
+        how='inner',
+        on=key,
+        copy=False,
+        suffixes=constants.JOIN_SUFFIXES,
+    )
+
+    # remove the generated key
+    del result[key]
+
+    return result
 
 
 @execute_node.register(ops.Join, pd.DataFrame, pd.DataFrame)

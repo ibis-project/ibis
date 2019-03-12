@@ -45,6 +45,16 @@ def test_join(how, left, right, df1, df2):
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
+def test_cross_join(left, right, df1, df2):
+    expr = left.cross_join(right)[left, right.other_value, right.key3]
+    result = expr.execute()
+    expected = pd.merge(
+        df1.assign(dummy=1), df2.assign(dummy=1), how='inner', on='dummy'
+    ).rename(columns=dict(key_x='key'))
+    del expected['dummy'], expected['key_y']
+    tm.assert_frame_equal(result[expected.columns], expected)
+
+
 @join_type
 def test_join_project_left_table(how, left, right, df1, df2):
     expr = left.join(right, left.key == right.key, how=how)[left, right.key3]
@@ -52,6 +62,15 @@ def test_join_project_left_table(how, left, right, df1, df2):
     expected = pd.merge(df1, df2, how=how, on='key')[
         list(left.columns) + ['key3']
     ]
+    tm.assert_frame_equal(result[expected.columns], expected)
+
+
+def test_cross_join_project_left_table(left, right, df1, df2):
+    expr = left.cross_join(right)[left, right.key3]
+    result = expr.execute()
+    expected = pd.merge(
+        df1.assign(dummy=1), df2.assign(dummy=1), how='inner', on='dummy'
+    ).rename(columns=dict(key_x='key'))[list(left.columns) + ['key3']]
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
@@ -67,10 +86,7 @@ def test_join_with_multiple_predicates(how, left, right, df1, df2):
         left_on=['key', 'key2'],
         right_on=['key', 'key3'],
     ).reset_index(drop=True)
-    tm.assert_frame_equal(
-        result[expected.columns],
-        expected
-    )
+    tm.assert_frame_equal(result[expected.columns], expected)
 
 
 @join_type
