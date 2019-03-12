@@ -178,3 +178,11 @@ def test_timestamp_field_access_on_time_failure(
     date_col = alltypes.i.time()
     with pytest.raises(AttributeError):
         getattr(date_col, field)
+
+
+def test_integer_timestamp_fails():
+    with pytest.raises(
+        TypeError,
+        match=r"Use ibis\.literal\(42\)\.to_timestamp",
+    ):
+        ibis.timestamp(42)
