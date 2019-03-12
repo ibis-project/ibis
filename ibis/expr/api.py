@@ -3,6 +3,7 @@ from __future__ import print_function
 import collections
 import datetime
 import functools
+import numbers
 import operator
 
 import toolz
@@ -216,7 +217,7 @@ def timestamp(value):
             value = pd.Timestamp(value)
         except pd.errors.OutOfBoundsDatetime:
             value = dateutil.parser.parse(value)
-    if isinstance(value, int):
+    if isinstance(value, numbers.Integral):
         raise TypeError(
             (
                 "Passing an integer to ibis.timestamp is not supported. Use "
