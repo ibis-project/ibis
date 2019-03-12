@@ -142,13 +142,6 @@ class CreateTable(CreateDDL):
         }
         return storage_lines[self.format]
 
-    def _partition(self):
-        if self.partition:
-            return "\nPARTITIONED BY ({})".format(", ".join(self.partition))
-        else:
-            return ''
-
-
 
 class CTAS(CreateTable):
 
@@ -167,7 +160,6 @@ class CTAS(CreateTable):
     def compile(self):
         buf = StringIO()
         buf.write(self._create_line())
-        buf.write(self._partition())
         buf.write(self._storage())
         buf.write(self._location())
 
