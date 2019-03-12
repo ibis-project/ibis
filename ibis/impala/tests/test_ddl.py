@@ -291,22 +291,6 @@ SELECT *
 FROM test1""".format(path)
         assert result == expected
 
-    def test_create_table_as_with_partitions(self):
-        partition = ('year', 'month', 'day')
-        select = build_ast(self.con.table('test1')).queries[0]
-        statement = ddl.CTAS('db.test_table',
-                             select,
-                             partition=partition)
-        result = statement.compile()
-
-        expected = """\
-                CREATE TABLE db.test_table
-        PARTIONED BY (year, month, day) AS SELECT *
-        FROM test1"""
-        assert result == expected
-
-
-
     def test_create_table_with_location(self):
         path = '/path/to/table'
         schema = ibis.schema([('foo', 'string'),
