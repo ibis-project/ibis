@@ -200,13 +200,15 @@ def desc(expr):
         return ops.SortKey(expr, ascending=False).to_expr()
 
 
-def timestamp(value):
+def timestamp(value, timezone=None):
     """
     Returns a timestamp literal if value is likely coercible to a timestamp
 
     Parameters
     ----------
     value : timestamp value as string
+    timezone: timezone as string
+        defaults to None
 
     Returns
     --------
@@ -214,7 +216,7 @@ def timestamp(value):
     """
     if isinstance(value, str):
         try:
-            value = pd.Timestamp(value)
+            value = pd.Timestamp(value, tz=timezone)
         except pd.errors.OutOfBoundsDatetime:
             value = dateutil.parser.parse(value)
     if isinstance(value, numbers.Integral):
@@ -225,7 +227,7 @@ def timestamp(value):
                 "expression from an integer."
             ).format(value=value)
         )
-    return literal(value, type=dt.timestamp)
+    return literal(value, type=dt.Timestamp(timezone=timezone))
 
 
 def date(value):

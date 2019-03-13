@@ -6,7 +6,7 @@ from collections import OrderedDict
 from operator import methodcaller
 from datetime import date, datetime, time
 
-
+import pandas as pd
 import pytest
 
 import numpy as np
@@ -1320,6 +1320,27 @@ def test_large_timestamp():
     expected = datetime(year=4567, month=2, day=3)
     result = expr.op().value
     assert result == expected
+
+
+@pytest.mark.parametrize('tz', [
+    None,
+    'UTC'
+])
+def test_timestamp_with_timezone(tz):
+    expr = ibis.timestamp('2017-01-01', timezone=tz)
+    expected = pd.Timestamp('2017-01-01', tz=tz)
+    result = expr.op().value
+    assert expected == result
+
+
+@pytest.mark.parametrize('tz', [
+    None,
+    'UTC'
+])
+def test_timestamp_timezone_type(tz):
+    expr = ibis.timestamp('2017-01-01', timezone=tz)
+    expected = dt.Timestamp(timezone=tz)
+    assert expected == expr.op().dtype
 
 
 def test_map_get_broadcast():
