@@ -1,5 +1,6 @@
 import pytest
 
+import numpy as np
 import pandas as pd
 from datetime import datetime
 
@@ -178,3 +179,12 @@ def test_timestamp_field_access_on_time_failure(
     date_col = alltypes.i.time()
     with pytest.raises(AttributeError):
         getattr(date_col, field)
+
+
+@pytest.mark.parametrize("value", [42, np.int64(42), np.int8(-42)])
+def test_integer_timestamp_fails(value):
+    with pytest.raises(
+        TypeError,
+        match=r"Use ibis\.literal\(-?\d+\)\.to_timestamp",
+    ):
+        ibis.timestamp(value)

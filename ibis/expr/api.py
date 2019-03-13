@@ -3,8 +3,8 @@ from __future__ import print_function
 import collections
 import datetime
 import functools
+import numbers
 import operator
-import warnings
 
 import toolz
 
@@ -217,11 +217,13 @@ def timestamp(value):
             value = pd.Timestamp(value)
         except pd.errors.OutOfBoundsDatetime:
             value = dateutil.parser.parse(value)
-    if isinstance(value, int):
-        warnings.warn(
-            'Integer values for timestamp literals are deprecated in 0.11.0 '
-            'and will be removed in 0.12.0. To pass integers as timestamp '
-            'literals, use pd.Timestamp({:d}, unit=...)'.format(value)
+    if isinstance(value, numbers.Integral):
+        raise TypeError(
+            (
+                "Passing an integer to ibis.timestamp is not supported. Use "
+                "ibis.literal({value:d}).to_timestamp() to create a timestamp "
+                "expression from an integer."
+            ).format(value=value)
         )
     return literal(value, type=dt.timestamp)
 
