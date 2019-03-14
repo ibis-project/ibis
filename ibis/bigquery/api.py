@@ -59,7 +59,7 @@ CLIENT_SECRET = "iU5ohAF2qcqrujegE3hQ1cPt"
 
 
 def connect(
-    project_id: str = Optional[None],
+    project_id: Optional[str] = None,
     dataset_id: Optional[str] = None,
     credentials: Optional[google.auth.credentials.Credentials] = None,
 ) -> BigQueryClient:
