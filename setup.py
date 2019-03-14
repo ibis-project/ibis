@@ -27,7 +27,7 @@ mapd_requires = ['pymapd']
 kerberos_requires = ['requests-kerberos']
 visualization_requires = ['graphviz']
 clickhouse_requires = ['clickhouse-driver>=0.0.8', 'clickhouse-cityhash']
-bigquery_requires = ['google-cloud-bigquery>=1.0.0']
+bigquery_requires = ['google-cloud-bigquery>=1.0.0', 'pydata-google-auth']
 hdf5_requires = ['tables>=3.0.0']
 parquet_requires = ['pyarrow>=0.6.0']
 

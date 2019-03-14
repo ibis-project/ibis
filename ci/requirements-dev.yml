@@ -17,6 +17,7 @@ plumbum
 pre_commit
 psycopg2
 pyarrow>=0.12
+pydata-google-auth
 pymapd>=0.8
 pymysql
 pytables

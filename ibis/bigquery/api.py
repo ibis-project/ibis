@@ -1,4 +1,4 @@
-"""BigQuery public API"""
+"""BigQuery public API."""
 
 import google.cloud.bigquery  # noqa: F401 fail early if bigquery is missing
 import ibis.common as com
@@ -35,10 +35,7 @@ def compile(expr, params=None):
 
 
 def verify(expr, params=None):
-    """
-    Determine if expression can be successfully translated to execute on
-    BigQuery
-    """
+    """Check if an expression can be successfully translated using BigQuery."""
     try:
         compile(expr, params=params)
         return True
@@ -47,17 +44,25 @@ def verify(expr, params=None):
 
 
 def connect(project_id, dataset_id, credentials=None):
-    """Create a BigQueryClient for use with Ibis
+    """Create a BigQueryClient for use with Ibis.
 
     Parameters
     ----------
-    project_id: str
-    dataset_id: str
-    credentials : google.auth.credentials.Credentials, optional, default None
+    project_id : str
+        A BigQuery project id.
+    dataset_id : str
+        A dataset id that lives inside of the project indicated by
+        `project_id`.
+    credentials : google.auth.credentials.Credentials
 
     Returns
     -------
     BigQueryClient
+
     """
+    import pydata_google_auth
+
+    if credentials is None:
+        credentials, project_id = pydata_google_auth.default()
 
     return BigQueryClient(project_id, dataset_id, credentials=credentials)
