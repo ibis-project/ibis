@@ -80,13 +80,14 @@ def connect(
 
     """
     if credentials is None:
+        credentials_cache = pydata_google_auth.cache.ReadWriteCredentialsCache(
+            filename="ibis.json"
+        )
         credentials, project_id = pydata_google_auth.default(
             SCOPES,
             client_id=CLIENT_ID,
             client_secret=CLIENT_SECRET,
-            cache=pydata_google_auth.cache.ReadWriteCredentialsCache(
-                filename="ibis.json"
-            )
+            credentials_cache=credentials_cache,
         )
 
     return BigQueryClient(
