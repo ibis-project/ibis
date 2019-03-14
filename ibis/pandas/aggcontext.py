@@ -1,5 +1,4 @@
-"""Implements an object to describe in what context a window aggregation is
-occurring.
+"""Implements an object to describe the context of a window aggregation.
 
 For any particular aggregation such as ``sum``, ``mean``, etc we need to decide
 based on the presence or absence of other expressions like ``group_by`` and
@@ -217,7 +216,7 @@ Ibis
 
 import abc
 import operator
-
+import warnings
 
 from multipledispatch import Dispatcher
 
@@ -331,7 +330,6 @@ class Window(AggregationContext):
                 method = operator.methodcaller(
                     'apply',
                     _apply(function, args, kwargs),
-                    raw=True,
                 )
             else:
                 assert isinstance(function, str)
@@ -354,7 +352,13 @@ class Window(AggregationContext):
 
         # perform the per-group rolling operation
         windowed = self.construct_window(grouped)
-        result = method(windowed)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message=".+raw=True.+",
+                category=FutureWarning
+            )
+            result = method(windowed)
         index = result.index
         result.index = pd.MultiIndex.from_arrays(
             [frame.index] + list(map(
