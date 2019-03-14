@@ -707,3 +707,9 @@ def test_approx_median(alltypes):
     expr = m.approx_median()
     result = expr.execute()
     assert result == expected
+
+
+def test_client_without_dataset(project_id):
+    con = ibis.bigquery.connect(project_id)
+    with pytest.raises(ValueError, match="Unable to determine BigQuery"):
+        con.list_tables()
