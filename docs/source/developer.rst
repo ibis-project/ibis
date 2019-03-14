@@ -107,17 +107,17 @@ Before you begin, you must have a `Google Cloud Platform project
 the `BigQuery API enabled
 <https://console.cloud.google.com/flows/enableapi?apiid=bigquery>`_.
 
-#. **Set up application default credentials by following the `getting started with
-   GCP authentication guide
-   <https://cloud.google.com/docs/authentication/getting-started>`_.**
+#. Set up application default credentials by following the `getting started
+   with GCP authentication guide
+   <https://cloud.google.com/docs/authentication/getting-started>`_.
 
-#. **Set the ``GOOGLE_BIGQUERY_PROJECT_ID`` environment variable**:
+#. Set the ``GOOGLE_BIGQUERY_PROJECT_ID`` environment variable:
 
    .. code:: sh
 
       export GOOGLE_BIGQUERY_PROJECT_ID=your-project-id
 
-#. **Load data into BigQuery**:
+#. Load data into BigQuery:
 
    .. code:: sh
 
