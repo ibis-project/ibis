@@ -1,6 +1,11 @@
 """BigQuery public API."""
 
-import google.cloud.bigquery  # noqa: F401 fail early if bigquery is missing
+from typing import Optional
+
+import google.cloud.bigquery  # noqa: F401, fail early if bigquery is missing
+import google.auth.credentials
+import pydata_google_auth
+
 import ibis.common as com
 
 from ibis.config import options  # noqa: F401
@@ -22,20 +27,23 @@ __all__ = (
 
 
 def compile(expr, params=None):
-    """
-    Force compilation of expression as though it were an expression depending
-    on BigQuery. Note you can also call expr.compile()
+    """Compile an expression for BigQuery.
 
     Returns
     -------
-    compiled : string
+    compiled : str
+
+    See Also
+    --------
+    ibis.expr.types.Expr.compile
+
     """
     from ibis.bigquery.compiler import to_sql
     return to_sql(expr, dialect.make_context(params=params))
 
 
 def verify(expr, params=None):
-    """Check if an expression can be successfully translated using BigQuery."""
+    """Check if an expression can be compiled using BigQuery."""
     try:
         compile(expr, params=params)
         return True
@@ -43,7 +51,18 @@ def verify(expr, params=None):
         return False
 
 
-def connect(project_id, dataset_id, credentials=None):
+SCOPES = ["https://www.googleapis.com/auth/bigquery"]
+CLIENT_ID = (
+    "546535678771-gvffde27nd83kfl6qbrnletqvkdmsese.apps.googleusercontent.com"
+)
+CLIENT_SECRET = "iU5ohAF2qcqrujegE3hQ1cPt"
+
+
+def connect(
+    project_id: str = Optional[None],
+    dataset_id: Optional[str] = None,
+    credentials: Optional[google.auth.credentials.Credentials] = None,
+) -> BigQueryClient:
     """Create a BigQueryClient for use with Ibis.
 
     Parameters
@@ -60,9 +79,13 @@ def connect(project_id, dataset_id, credentials=None):
     BigQueryClient
 
     """
-    import pydata_google_auth
-
     if credentials is None:
-        credentials, project_id = pydata_google_auth.default()
+        credentials, project_id = pydata_google_auth.default(
+            SCOPES,
+            client_id=CLIENT_ID,
+            client_secret=CLIENT_SECRET,
+        )
 
-    return BigQueryClient(project_id, dataset_id, credentials=credentials)
+    return BigQueryClient(
+        project_id, dataset_id=dataset_id, credentials=credentials
+    )

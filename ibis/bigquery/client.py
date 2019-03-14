@@ -1,7 +1,10 @@
+"""BigQuery ibis client implementation."""
+
 import datetime
 
 from collections import OrderedDict
 from pkg_resources import parse_version
+from typing import Optional, Tuple
 
 import regex as re
 
@@ -51,6 +54,7 @@ _LEGACY_TO_STANDARD = {
 
 @dt.dtype.register(bq.schema.SchemaField)
 def bigquery_field_to_ibis_dtype(field):
+    """Convert BigQuery `field` to an ibis type."""
     typ = field.field_type
     if typ == 'RECORD':
         fields = field.fields
@@ -68,6 +72,7 @@ def bigquery_field_to_ibis_dtype(field):
 
 @sch.infer.register(bq.table.Table)
 def bigquery_schema(table):
+    """Infer the schema of a BigQuery `table` object."""
     fields = OrderedDict((el.name, dt.dtype(el)) for el in table.schema)
     partition_info = table._properties.get('timePartitioning', None)
 
@@ -81,38 +86,57 @@ def bigquery_schema(table):
 
 
 class BigQueryCursor:
-    """Cursor to allow the BigQuery client to reuse machinery in ibis/client.py
+    """BigQuery cursor.
+
+    This allows the BigQuery client to reuse machinery in
+    :file:`ibis/client.py`.
+
     """
 
     def __init__(self, query):
+        """Construct a BigQueryCursor with query `query`."""
         self.query = query
 
     def fetchall(self):
+        """Fetch all rows."""
         result = self.query.result()
         return [row.values() for row in result]
 
     @property
     def columns(self):
+        """Return the columns of the result set."""
         result = self.query.result()
         return [field.name for field in result.schema]
 
     @property
     def description(self):
+        """Get the fields of the result set's schema."""
         result = self.query.result()
         return [field for field in result.schema]
 
     def __enter__(self):
         # For compatibility when constructed from Query.execute()
+        """No-op for compatibility.
+
+        See Also
+        --------
+        ibis.client.Query.execute
+
+        """
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        pass
+        """No-op for compatibility.
+
+        See Also
+        --------
+        ibis.client.Query.execute
+
+        """
 
 
 def _find_scalar_parameter(expr):
-    """:func:`~ibis.expr.lineage.traverse` function to find all
-    :class:`~ibis.expr.types.ScalarParameter` instances and yield the operation
-    and the parent expresssion's resolved name.
+    """Find all :class:`~ibis.expr.types.ScalarParameter` instances.
 
     Parameters
     ----------
@@ -121,6 +145,8 @@ def _find_scalar_parameter(expr):
     Returns
     -------
     Tuple[bool, object]
+        The operation and the parent expresssion's resolved name.
+
     """
     op = expr.op()
 
@@ -163,7 +189,7 @@ class BigQueryQuery(Query):
 
 
 class BigQueryDatabase(Database):
-    pass
+    """A BigQuery dataset."""
 
 
 bigquery_param = Dispatcher('bigquery_param')
@@ -277,20 +303,21 @@ def rename_partitioned_column(table_expr, bq_table):
     return table_expr.relabel({NATIVE_PARTITION_COL: col})
 
 
-def parse_project_and_dataset(project, dataset):
-    """Figure out the project id under which queries will run versus the
-    project of where the data live as well as what dataset to use.
+def parse_project_and_dataset(
+    project: str,
+    dataset: Optional[str] = None,
+) -> Tuple[str, str, Optional[str]]:
+    """Compute the billing project, data project, and dataset if available.
+
+    This function figure out the project id under which queries will run versus
+    the project of where the data live as well as what dataset to use.
 
     Parameters
     ----------
     project : str
         A project name
-    dataset : str
+    dataset : Optional[str]
         A ``<project>.<dataset>`` string or just a dataset name
-
-    Returns
-    -------
-    data_project, billing_project, dataset : str, str, str
 
     Examples
     --------
@@ -314,32 +341,44 @@ def parse_project_and_dataset(project, dataset):
     'ibis-gbq'
     >>> dataset
     'my_dataset'
+    >>> data_project, billing_project, dataset = parse_project_and_dataset(
+    ...     'ibis-gbq'
+    ... )
+    >>> data_project
+    'ibis-gbq'
+    >>> print(dataset)
+    None
+
     """
     try:
         data_project, dataset = dataset.split('.')
-    except ValueError:
+    except (ValueError, AttributeError):
         billing_project = data_project = project
     else:
         billing_project = project
+
     return data_project, billing_project, dataset
 
 
 class BigQueryClient(SQLClient):
+    """An ibis BigQuery client implementation."""
 
     query_class = BigQueryQuery
     database_class = BigQueryDatabase
     table_class = BigQueryTable
     dialect = comp.BigQueryDialect
 
-    def __init__(self, project_id, dataset_id, credentials=None):
-        """
+    def __init__(self, project_id, dataset_id=None, credentials=None):
+        """Construct a BigQueryClient.
+
         Parameters
         ----------
         project_id : str
             A project name
-        dataset_id : str
+        dataset_id : Optional[str]
             A ``<project_id>.<dataset_id>`` string or just a dataset name
-        credentials : google.auth.credentials.Credentials, optional
+        credentials : google.auth.credentials.Credentials
+
         """
         (self.data_project,
          self.billing_project,
@@ -348,6 +387,8 @@ class BigQueryClient(SQLClient):
                                 credentials=credentials)
 
     def _parse_project_and_dataset(self, dataset):
+        if not dataset and not self.dataset:
+            raise ValueError("Unable to determine BigQuery dataset.")
         project, _, dataset = parse_project_and_dataset(
             self.billing_project,
             dataset or '{}.{}'.format(self.data_project, self.dataset),
@@ -381,10 +422,11 @@ class BigQueryClient(SQLClient):
 
     def _fully_qualified_name(self, name, database):
         project, dataset = self._parse_project_and_dataset(database)
-        return '{}.{}.{}'.format(project, dataset, name)
+        return "{}.{}.{}".format(project, dataset, name)
 
     def _get_table_schema(self, qualified_name):
         dataset, table = qualified_name.rsplit('.', 1)
+        assert dataset is not None, "dataset is None"
         return self.get_schema(table, database=dataset)
 
     def _get_schema_using_query(self, limited_query):
@@ -413,6 +455,12 @@ class BigQueryClient(SQLClient):
         return BigQueryCursor(query)
 
     def database(self, name=None):
+        if name is None and self.dataset is None:
+            raise ValueError(
+                "Unable to determine BigQuery dataset. Call "
+                "client.database('my_dataset') or set_database('my_dataset') "
+                "to assign your client a dataset."
+            )
         return self.database_class(name or self.dataset, self)
 
     @property
