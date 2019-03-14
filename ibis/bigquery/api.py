@@ -84,6 +84,9 @@ def connect(
             SCOPES,
             client_id=CLIENT_ID,
             client_secret=CLIENT_SECRET,
+            cache=pydata_google_auth.cache.ReadWriteCredentialsCache(
+                filename="ibis.json"
+            )
         )
 
     return BigQueryClient(
