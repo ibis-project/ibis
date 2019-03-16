@@ -1251,9 +1251,11 @@ def test_table_drop_with_filter():
     left = left.drop(['C'])
     left = left.mutate(the_date=datetime.date(2018, 1, 1))
 
-    right = ibis.table([('a', 'float64'), ('b', 'string')], name='s')
+    right = ibis.table([('b', 'string')], name='s')
     joined = left.join(right, left.B == right.b)
-    joined = joined[left, right.a.name("A"), right.b]
-    joined = joined.filter(joined.A < 1.0)
+    joined = joined[left, right.b]
+    joined = joined.filter(True)
     result = ibis.bigquery.compile(joined)
+    print()
+    print(result)
     assert result
