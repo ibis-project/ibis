@@ -1244,7 +1244,7 @@ def test_unbound_table_name():
 
 def test_table_drop_with_filter():
     left = ibis.table(
-        [('a', 'int64'), ('B', 'string'), ('c', 'timestamp')],
+        [('a', 'int64'), ('b', 'string'), ('c', 'timestamp')],
         name='t',
     ).relabel({'c': 'C'})
     left = left.filter(left.C == datetime.date(2018, 1, 1))
@@ -1252,10 +1252,24 @@ def test_table_drop_with_filter():
     left = left.mutate(the_date=datetime.date(2018, 1, 1))
 
     right = ibis.table([('b', 'string')], name='s')
-    joined = left.join(right, left.B == right.b)
-    joined = joined[left, right.b]
-    joined = joined.filter(True)
+    joined = left.join(right, left.b == right.b)
+    joined = joined[left.a]
+    joined = joined.filter(joined.a < 1.0)
     result = ibis.bigquery.compile(joined)
-    print()
-    print(result)
-    assert result
+    expected = """\
+SELECT t0.`a`
+FROM (
+  SELECT `a`, `b`, DATE '2018-01-01' AS `the_date`
+  FROM (
+    SELECT *
+    FROM (
+      SELECT `a`, `b`, `c` AS `C`
+      FROM t
+    ) t3
+    WHERE `C` = TIMESTAMP '2018-01-01'
+  ) t2
+) t0
+  INNER JOIN s t1
+    ON t0.`b` = t1.`b`
+WHERE t0.`a` < 1.0"""
+    assert result == expected
