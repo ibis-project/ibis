@@ -1256,6 +1256,23 @@ def test_table_drop_with_filter():
     joined = joined[left.a]
     joined = joined.filter(joined.a < 1.0)
     result = ibis.bigquery.compile(joined)
+    # previously this was generating incorrect aliases due to not binding the
+    # self to expressions when calling projection:
+    # SELECT t0.`a`
+    # FROM (
+    #   SELECT `a`, `b`, DATE '2018-01-01' AS `the_date`
+    #   FROM (
+    #     SELECT *
+    #     FROM (
+    #       SELECT `a`, `b`, `c` AS `C`
+    #       FROM t
+    #     ) t3
+    #     WHERE `C` = TIMESTAMP '2018-01-01'
+    #   ) t2
+    # ) t0
+    #   INNER JOIN s t1
+    #     ON t0.`b` = t1.`b`
+    # WHERE t0.`a` < 1.0
     expected = """\
 SELECT t0.`a`
 FROM (
