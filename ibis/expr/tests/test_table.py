@@ -1,3 +1,4 @@
+import datetime
 import re
 
 import pytest
@@ -1239,3 +1240,20 @@ def test_unbound_table_name():
     name = t.op().name
     match = re.match(r'^unbound_table_\d+$', name)
     assert match is not None
+
+
+def test_table_drop_with_filter():
+    left = ibis.table(
+        [('a', 'int64'), ('B', 'string'), ('c', 'timestamp')],
+        name='t',
+    ).relabel({'c': 'C'})
+    left = left.filter(left.C == datetime.date(2018, 1, 1))
+    left = left.drop(['C'])
+    left = left.mutate(the_date=datetime.date(2018, 1, 1))
+
+    right = ibis.table([('a', 'float64'), ('b', 'string')], name='s')
+    joined = left.join(right, left.B == right.b)
+    joined = joined[left, right.a.name("A"), right.b]
+    joined = joined.filter(joined.A < 1.0)
+    result = ibis.bigquery.compile(joined)
+    assert result
