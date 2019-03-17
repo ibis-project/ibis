@@ -1,6 +1,8 @@
 from __future__ import absolute_import
+from functools import partial
 
 from multipledispatch import Dispatcher
+import toolz
 
 import ibis
 import ibis.common as com
@@ -44,6 +46,15 @@ depth-first traversal of the tree.
 @pre_execute.register(ops.Node, ibis.client.Client)
 def pre_execute_default(node, *clients, **kwargs):
     return {}
+
+
+# Merge the results of all client pre-execution with scope
+@pre_execute.register(ops.Node, [ibis.client.Client])
+def pre_execute_multiple_clients(node, *clients, scope=None, **kwargs):
+    return toolz.merge(
+        scope,
+        *map(partial(pre_execute, node, scope=scope, **kwargs), clients)
+    )
 
 
 execute_literal = Dispatcher(
