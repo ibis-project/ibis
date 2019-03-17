@@ -13,7 +13,8 @@ RUN conda config --add channels conda-forge \
  && conda install -q -y \
         --file /requirements-dev.yml \
         python=$PYTHON \
- && conda clean --all -y
+ && conda clean --all -y \
+ && pip install pydata-google-auth
 
 COPY . /ibis
 WORKDIR /ibis
