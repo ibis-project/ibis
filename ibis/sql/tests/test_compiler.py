@@ -2425,9 +2425,9 @@ def test_table_drop_with_filter():
         [('a', 'int64'), ('b', 'string'), ('c', 'timestamp')],
         name='t',
     ).relabel({'c': 'C'})
-    left = left.filter(left.C == datetime.date(2018, 1, 1))
+    left = left.filter(left.C == datetime.datetime(2018, 1, 1))
     left = left.drop(['C'])
-    left = left.mutate(the_date=datetime.date(2018, 1, 1))
+    left = left.mutate(the_date=datetime.datetime(2018, 1, 1))
 
     right = ibis.table([('b', 'string')], name='s')
     joined = left.join(right, left.b == right.b)
@@ -2438,15 +2438,12 @@ def test_table_drop_with_filter():
     # self to expressions when calling projection:
     # SELECT t0.`a`
     # FROM (
-    #   SELECT `a`, `b`, '2018-01-01' AS `the_date`
+    #   SELECT t2.`a`, t2.`b`, '2018-01-01 00:00:00' AS `the_date`
     #   FROM (
-    #     SELECT *
-    #     FROM (
-    #       SELECT `a`, `b`, `c` AS `C`
-    #       FROM t
-    #     ) t3
-    #     WHERE `C` = '2018-01-01'
-    #   ) t2
+    #     SELECT `a`, `b`, `c` AS `C`
+    #     FROM t
+    #   ) t3
+    #   WHERE t3.`C` = '2018-01-01 00:00:00'
     # ) t0
     #   INNER JOIN s t1
     #     ON t0.`b` = t1.`b`
@@ -2454,14 +2451,14 @@ def test_table_drop_with_filter():
     expected = """\
 SELECT t0.`a`
 FROM (
-  SELECT `a`, `b`, '2018-01-01' AS `the_date`
+  SELECT `a`, `b`, '2018-01-01 00:00:00' AS `the_date`
   FROM (
     SELECT *
     FROM (
       SELECT `a`, `b`, `c` AS `C`
       FROM t
     ) t3
-    WHERE `C` = '2018-01-01'
+    WHERE `C` = '2018-01-01 00:00:00'
   ) t2
 ) t0
   INNER JOIN s t1
