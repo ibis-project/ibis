@@ -3533,22 +3533,18 @@ def _table_view(self):
 
 
 def _table_drop(self, fields):
-    if len(fields) == 0:
-        # noop
+    if not fields:
+        # no-op if nothing to be dropped
         return self
 
-    fields = set(fields)
-    to_project = []
-    for name in self.schema():
-        if name in fields:
-            fields.remove(name)
-        else:
-            to_project.append(name)
+    schema = self.schema()
+    field_set = frozenset(fields)
+    missing_fields = field_set.difference(schema)
 
-    if len(fields) > 0:
-        raise KeyError('Fields not in table: {0!s}'.format(fields))
+    if missing_fields:
+        raise KeyError('Fields not in table: {0!s}'.format(missing_fields))
 
-    return self.projection(to_project)
+    return self[[field for field in schema if field not in field_set]]
 
 
 _table_methods = dict(
