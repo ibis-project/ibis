@@ -158,17 +158,18 @@ def _find_scalar_parameter(expr):
 
 
 class BigQueryQuery(Query):
-
     def __init__(self, client, ddl, query_parameters=None):
         super().__init__(client, ddl)
 
         # self.expr comes from the parent class
         query_parameter_names = dict(
-            lin.traverse(_find_scalar_parameter, self.expr))
+            lin.traverse(_find_scalar_parameter, self.expr)
+        )
         self.query_parameters = [
             bigquery_param(
                 param.to_expr().name(query_parameter_names[param]), value
-            ) for param, value in (query_parameters or {}).items()
+            )
+            for param, value in (query_parameters or {}).items()
         ]
 
     def _fetch(self, cursor):
@@ -181,7 +182,7 @@ class BigQueryQuery(Query):
         with self.client._execute(
             self.compiled_sql,
             results=True,
-            query_parameters=self.query_parameters
+            query_parameters=self.query_parameters,
         ) as cur:
             result = self._fetch(cur)
 
@@ -223,13 +224,13 @@ def bq_param_array(param, value):
         else:
             query_value = value
         result = bq.ArrayQueryParameter(
-            param.get_name(), bigquery_type, query_value)
+            param.get_name(), bigquery_type, query_value
+        )
         return result
 
 
 @bigquery_param.register(
-    ir.TimestampScalar,
-    (str, datetime.datetime, datetime.date)
+    ir.TimestampScalar, (str, datetime.datetime, datetime.date)
 )
 def bq_param_timestamp(param, value):
     assert isinstance(param.type(), dt.Timestamp), str(param.type())
@@ -237,7 +238,8 @@ def bq_param_timestamp(param, value):
     # TODO(phillipc): Not sure if this is the correct way to do this.
     timestamp_value = pd.Timestamp(value, tz='UTC').to_pydatetime()
     return bq.ScalarQueryParameter(
-        param.get_name(), 'TIMESTAMP', timestamp_value)
+        param.get_name(), 'TIMESTAMP', timestamp_value
+    )
 
 
 @bigquery_param.register(ir.StringScalar, str)
@@ -304,8 +306,7 @@ def rename_partitioned_column(table_expr, bq_table):
 
 
 def parse_project_and_dataset(
-    project: str,
-    dataset: Optional[str] = None,
+    project: str, dataset: Optional[str] = None
 ) -> Tuple[str, str, Optional[str]]:
     """Compute the billing project, data project, and dataset if available.
 
@@ -380,11 +381,14 @@ class BigQueryClient(SQLClient):
         credentials : google.auth.credentials.Credentials
 
         """
-        (self.data_project,
-         self.billing_project,
-         self.dataset) = parse_project_and_dataset(project_id, dataset_id)
-        self.client = bq.Client(project=self.data_project,
-                                credentials=credentials)
+        (
+            self.data_project,
+            self.billing_project,
+            self.dataset,
+        ) = parse_project_and_dataset(project_id, dataset_id)
+        self.client = bq.Client(
+            project=self.data_project, credentials=credentials
+        )
 
     def _parse_project_and_dataset(self, dataset):
         if not dataset and not self.dataset:
@@ -416,8 +420,9 @@ class BigQueryClient(SQLClient):
         return result
 
     def _execute_query(self, dml):
-        query = self.query_class(self, dml,
-                                 query_parameters=dml.context.params)
+        query = self.query_class(
+            self, dml, query_parameters=dml.context.params
+        )
         return query.execute()
 
     def _fully_qualified_name(self, name, database):
@@ -487,7 +492,8 @@ class BigQueryClient(SQLClient):
         ]
         if like:
             results = [
-                dataset_name for dataset_name in results
+                dataset_name
+                for dataset_name in results
                 if re.match(like, dataset_name) is not None
             ]
         return results
@@ -512,7 +518,8 @@ class BigQueryClient(SQLClient):
         ]
         if like:
             result = [
-                table_name for table_name in result
+                table_name
+                for table_name in result
                 if re.match(like, table_name) is not None
             ]
         return result

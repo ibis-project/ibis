@@ -27,7 +27,8 @@ import warnings
 
 DeprecatedOption = namedtuple('DeprecatedOption', 'key msg rkey removal_ver')
 RegisteredOption = namedtuple(
-    'RegisteredOption', 'key defval doc validator cb')
+    'RegisteredOption', 'key defval doc validator cb'
+)
 
 _deprecated_options = {}  # holds deprecated option metdata
 _registered_options = {}  # holds registered option metdata
@@ -43,6 +44,7 @@ class OptionError(AttributeError, KeyError):
 
 #
 # User API
+
 
 def _get_single_key(pat, silent):
     keys = _select_options(pat)
@@ -74,8 +76,9 @@ def _set_option(*args, **kwargs):
     # must at least 1 arg deal with constraints later
     nargs = len(args)
     if not nargs or nargs % 2 != 0:
-        raise ValueError("Must provide an even number of non-keyword "
-                         "arguments")
+        raise ValueError(
+            "Must provide an even number of non-keyword " "arguments"
+        )
 
     # default to false
     silent = kwargs.get('silent', False)
@@ -119,10 +122,12 @@ def _reset_option(pat, silent=False):
         raise OptionError('No such keys(s)')
 
     if len(keys) > 1 and len(pat) < 4 and pat != 'all':
-        raise ValueError('You must specify at least 4 characters when '
-                         'resetting multiple keys, use the special keyword '
-                         '"all" to reset all the options to their default '
-                         'value')
+        raise ValueError(
+            'You must specify at least 4 characters when '
+            'resetting multiple keys, use the special keyword '
+            '"all" to reset all the options to their default '
+            'value'
+        )
 
     for k in keys:
         _set_option(k, _registered_options[k].defval, silent=silent)
@@ -188,7 +193,6 @@ class DictWrapper:
 
 
 class CallableDynamicDoc:
-
     def __init__(self, func, doc_tmpl):
         self.__doc_tmpl__ = doc_tmpl
         self.__func__ = func
@@ -200,8 +204,9 @@ class CallableDynamicDoc:
     def __doc__(self):
         opts_desc = _describe_option('all', _print_desc=False)
         opts_list = pp_options_list(list(_registered_options.keys()))
-        return self.__doc_tmpl__.format(opts_desc=opts_desc,
-                                        opts_list=opts_list)
+        return self.__doc_tmpl__.format(
+            opts_desc=opts_desc, opts_list=opts_list
+        )
 
 
 _get_option_tmpl = """
@@ -372,6 +377,7 @@ def register_option(key, defval, doc='', validator=None, cb=None):
     """
     import tokenize
     import keyword
+
     key = key.lower()
 
     if key in _registered_options:
@@ -395,22 +401,26 @@ def register_option(key, defval, doc='', validator=None, cb=None):
     cursor = _global_config
     for i, p in enumerate(path[:-1]):
         if not isinstance(cursor, dict):
-            raise OptionError("Path prefix to option '%s' is already an option"
-                              % '.'.join(path[:i]))
+            raise OptionError(
+                "Path prefix to option '%s' is already an option"
+                % '.'.join(path[:i])
+            )
         if p not in cursor:
             cursor[p] = {}
         cursor = cursor[p]
 
     if not isinstance(cursor, dict):
-        raise OptionError("Path prefix to option '%s' is already an option"
-                          % '.'.join(path[:-1]))
+        raise OptionError(
+            "Path prefix to option '%s' is already an option"
+            % '.'.join(path[:-1])
+        )
 
     cursor[path[-1]] = defval  # initialize
 
     # save the option metadata
-    _registered_options[key] = RegisteredOption(key=key, defval=defval,
-                                                doc=doc, validator=validator,
-                                                cb=cb)
+    _registered_options[key] = RegisteredOption(
+        key=key, defval=defval, doc=doc, validator=validator, cb=cb
+    )
 
 
 def deprecate_option(key, msg=None, rkey=None, removal_ver=None):
@@ -447,14 +457,16 @@ def deprecate_option(key, msg=None, rkey=None, removal_ver=None):
     key = key.lower()
 
     if key in _deprecated_options:
-        raise OptionError("Option '%s' has already been defined as deprecated."
-                          % key)
+        raise OptionError(
+            "Option '%s' has already been defined as deprecated." % key
+        )
 
     _deprecated_options[key] = DeprecatedOption(key, msg, rkey, removal_ver)
 
 
 #
 # functions internal to the module
+
 
 def _select_options(pat):
     """returns a list of keys matching `pat`
@@ -593,9 +605,14 @@ def pp_options_list(keys, width=80, _print=False):
     from itertools import groupby
 
     def pp(name, ks):
-        pfx = ('- ' + name + '.[' if name else '')
-        ls = wrap(', '.join(ks), width, initial_indent=pfx,
-                  subsequent_indent='  ', break_long_words=False)
+        pfx = '- ' + name + '.[' if name else ''
+        ls = wrap(
+            ', '.join(ks),
+            width,
+            initial_indent=pfx,
+            subsequent_indent='  ',
+            break_long_words=False,
+        )
         if ls and ls[-1] and name:
             ls[-1] = ls[-1] + ']'
         return ls
@@ -606,8 +623,8 @@ def pp_options_list(keys, width=80, _print=False):
         ls += pp('', singles)
     keys = [x for x in keys if x.find('.') >= 0]
 
-    for k, g in groupby(sorted(keys), lambda x: x[:x.rfind('.')]):
-        ks = [x[len(k) + 1:] for x in list(g)]
+    for k, g in groupby(sorted(keys), lambda x: x[: x.rfind('.')]):
+        ks = [x[len(k) + 1 :] for x in list(g)]
         ls += pp(k, ks)
     s = '\n'.join(ls)
     if _print:
@@ -645,7 +662,6 @@ def config_prefix(prefix):
     global register_option, get_option, set_option, reset_option
 
     def wrap(func):
-
         def inner(key, *args, **kwds):
             pkey = '%s.%s' % (prefix, key)
             return func(pkey, *args, **kwds)
@@ -666,6 +682,7 @@ def config_prefix(prefix):
 
 # These factories and methods are handy for use as the validator
 # arg in register_option
+
 
 def is_type_factory(_type):
     """
@@ -712,8 +729,9 @@ def is_one_of_factory(legal_values):
     def inner(x):
         if x not in legal_values:
             pp_values = map(str, legal_values)
-            raise ValueError("Value must be one of %s"
-                             % str("|".join(pp_values)))
+            raise ValueError(
+                "Value must be one of %s" % str("|".join(pp_values))
+            )
 
     return inner
 

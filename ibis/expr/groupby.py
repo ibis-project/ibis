@@ -42,7 +42,7 @@ _function_types = tuple(
             types.LambdaType,
             types.MethodType,
             getattr(types, 'UnboundMethodType', None),
-        )
+        ),
     )
 )
 
@@ -91,8 +91,9 @@ class GroupedTableExpr:
             return GroupedArray(col, self)
 
     def aggregate(self, metrics=None, **kwds):
-        return self.table.aggregate(metrics, by=self.by,
-                                    having=self._having, **kwds)
+        return self.table.aggregate(
+            metrics, by=self.by, having=self._having, **kwds
+        )
 
     def having(self, expr):
         """
@@ -110,8 +111,11 @@ class GroupedTableExpr:
         exprs = util.promote_list(expr)
         new_having = self._having + exprs
         return GroupedTableExpr(
-            self.table, self.by,
-            having=new_having, order_by=self._order_by, window=self._window
+            self.table,
+            self.by,
+            having=new_having,
+            order_by=self._order_by,
+            window=self._window,
         )
 
     def order_by(self, expr):
@@ -130,8 +134,11 @@ class GroupedTableExpr:
         exprs = util.promote_list(expr)
         new_order = self._order_by + exprs
         return GroupedTableExpr(
-            self.table, self.by,
-            having=self._having, order_by=new_order, window=self._window
+            self.table,
+            self.by,
+            having=self._having,
+            order_by=new_order,
+            window=self._window,
         )
 
     def mutate(self, exprs=None, **kwds):
@@ -240,16 +247,24 @@ class GroupedTableExpr:
 
         groups = _resolve_exprs(self.table, groups)
 
-        return _window.window(preceding=preceding, following=following,
-                              group_by=groups, order_by=sorts)
+        return _window.window(
+            preceding=preceding,
+            following=following,
+            group_by=groups,
+            order_by=sorts,
+        )
 
     def over(self, window):
         """
         Add a window clause to be applied to downstream analytic expressions
         """
-        return GroupedTableExpr(self.table, self.by, having=self._having,
-                                order_by=self._order_by,
-                                window=window)
+        return GroupedTableExpr(
+            self.table,
+            self.by,
+            having=self._having,
+            order_by=self._order_by,
+            window=window,
+        )
 
     def count(self, metric_name='count'):
         """
@@ -284,7 +299,6 @@ def _group_agg_dispatch(name):
 
 
 class GroupedArray:
-
     def __init__(self, arr, parent):
         self.arr = arr
         self.parent = parent

@@ -41,7 +41,6 @@ def sub_for(expr, substitutions):
 
 
 class Substitutor:
-
     def __init__(self):
         """Initialize the Substitutor class.
 
@@ -94,7 +93,6 @@ class Substitutor:
 
 
 class ScalarAggregate:
-
     def __init__(self, expr, memo=None, default_name='tmp'):
         self.expr = expr
         self.memo = memo or {}
@@ -219,6 +217,7 @@ def find_immediate_parent_tables(expr):
             Literal[int8]
               1
     """
+
     def finder(expr):
         if isinstance(expr, ir.TableExpr):
             return lin.halt, expr
@@ -229,8 +228,9 @@ def find_immediate_parent_tables(expr):
 
 
 def substitute_parents(expr, lift_memo=None, past_projection=True):
-    rewriter = ExprSimplifier(expr, lift_memo=lift_memo,
-                              block_projection=not past_projection)
+    rewriter = ExprSimplifier(
+        expr, lift_memo=lift_memo, block_projection=not past_projection
+    )
     return rewriter.get_result()
 
 
@@ -274,7 +274,8 @@ class ExprSimplifier:
         lifted_args = []
         for arg in node.args:
             lifted_arg, unch_arg = self._lift_arg(
-                arg, block=self.block_projection)
+                arg, block=self.block_projection
+            )
             lifted_args.append(lifted_arg)
 
             unchanged = unchanged and unch_arg
@@ -347,13 +348,17 @@ class ExprSimplifier:
             can_lift = False
 
             for val in root.selections:
-                if (isinstance(val.op(), ops.PhysicalTable) and
-                        node.name in val.schema()):
+                if (
+                    isinstance(val.op(), ops.PhysicalTable)
+                    and node.name in val.schema()
+                ):
                     can_lift = True
                     lifted_root = self.lift(val)
-                elif (isinstance(val.op(), ops.TableColumn) and
-                      val.op().name == val.get_name() and
-                      node.name == val.get_name()):
+                elif (
+                    isinstance(val.op(), ops.TableColumn)
+                    and val.op().name == val.get_name()
+                    and node.name == val.get_name()
+                ):
                     can_lift = True
                     lifted_root = self.lift(val.op().table)
 
@@ -391,8 +396,9 @@ class ExprSimplifier:
         unchanged = unch and unch1 and unch2 and unch3
 
         if not unchanged:
-            lifted_op = ops.Aggregation(lifted_table, lifted_aggs,
-                                        by=lifted_by, having=lifted_having)
+            lifted_op = ops.Aggregation(
+                lifted_table, lifted_aggs, by=lifted_by, having=lifted_having
+            )
             result = ir.TableExpr(lifted_op)
         else:
             result = expr
@@ -421,9 +427,12 @@ class ExprSimplifier:
         unchanged = unch and unch_sel
 
         if not unchanged:
-            lifted_projection = ops.Selection(lifted_table, lifted_selections,
-                                              lifted_predicates,
-                                              lifted_sort_keys)
+            lifted_projection = ops.Selection(
+                lifted_table,
+                lifted_selections,
+                lifted_predicates,
+                lifted_sort_keys,
+            )
             result = ir.TableExpr(lifted_projection)
         else:
             result = expr
@@ -436,8 +445,7 @@ class ExprSimplifier:
         left_lifted = self.lift(op.left, block=block)
         right_lifted = self.lift(op.right, block=block)
 
-        unchanged = (left_lifted is op.left and
-                     right_lifted is op.right)
+        unchanged = left_lifted is op.left and right_lifted is op.right
 
         # Fix predicates
         lifted_preds = []
@@ -460,8 +468,9 @@ class ExprSimplifier:
         if block is None:
             block = self.block_projection
 
-        helper = ExprSimplifier(expr, lift_memo=self.lift_memo,
-                                block_projection=block)
+        helper = ExprSimplifier(
+            expr, lift_memo=self.lift_memo, block_projection=block
+        )
         return helper.get_result()
 
 
@@ -492,6 +501,7 @@ def has_reduction(expr):
     that we only examine every non-table expression that precedes the first
     table expression.
     """
+
     def fn(expr):
         op = expr.op()
         if isinstance(op, ops.TableNode):  # don't go below any table nodes
@@ -499,6 +509,7 @@ def has_reduction(expr):
         if isinstance(op, ops.Reduction):
             return lin.halt, True
         return lin.proceed, None
+
     reduction_status = lin.traverse(fn, expr)
     return any(reduction_status)
 
@@ -517,15 +528,20 @@ def apply_filter(expr, predicates):
         # GH1344: We can't sub in things with correlated subqueries
         simplified_predicates = [
             sub_for(predicate, [(expr, op.table)])
-            if not has_reduction(predicate) else predicate
+            if not has_reduction(predicate)
+            else predicate
             for predicate in predicates
         ]
 
         if op.table._is_valid(simplified_predicates):
             result = ops.Aggregation(
-                op.table, op.metrics, by=op.by, having=op.having,
+                op.table,
+                op.metrics,
+                by=op.by,
+                having=op.having,
                 predicates=op.predicates + simplified_predicates,
-                sort_keys=op.sort_keys)
+                sort_keys=op.sort_keys,
+            )
 
             return ir.TableExpr(result)
     elif isinstance(op, ops.Join):
@@ -556,15 +572,18 @@ def _filter_selection(expr, predicates):
         # ref issue (described in more detail in #59)
         simplified_predicates = [
             sub_for(predicate, [(expr, op.table)])
-            if not has_reduction(predicate) else predicate
+            if not has_reduction(predicate)
+            else predicate
             for predicate in predicates
         ]
 
         if op.table._is_valid(simplified_predicates):
             result = ops.Selection(
-                op.table, [],
+                op.table,
+                [],
                 predicates=op.predicates + simplified_predicates,
-                sort_keys=op.sort_keys)
+                sort_keys=op.sort_keys,
+            )
             return result.to_expr()
 
     can_pushdown = _can_pushdown(op, predicates)
@@ -572,10 +591,12 @@ def _filter_selection(expr, predicates):
     if can_pushdown:
         simplified_predicates = [substitute_parents(x) for x in predicates]
         fused_predicates = op.predicates + simplified_predicates
-        result = ops.Selection(op.table,
-                               selections=op.selections,
-                               predicates=fused_predicates,
-                               sort_keys=op.sort_keys)
+        result = ops.Selection(
+            op.table,
+            selections=op.selections,
+            predicates=fused_predicates,
+            sort_keys=op.sort_keys,
+        )
     else:
         result = ops.Selection(expr, selections=[], predicates=predicates)
 
@@ -605,7 +626,6 @@ def _can_pushdown(op, predicates):
 
 
 class _PushdownValidate:
-
     def __init__(self, parent, predicate):
         self.parent = parent
         self.pred = predicate
@@ -640,19 +660,24 @@ class _PushdownValidate:
             return False
 
         for val in self.parent.selections:
-            if (isinstance(val.op(), ops.PhysicalTable) and
-                    node.name in val.schema()):
+            if (
+                isinstance(val.op(), ops.PhysicalTable)
+                and node.name in val.schema()
+            ):
                 is_valid = True
-            elif (isinstance(val.op(), ops.TableColumn) and
-                  node.name == val.get_name() and
-                  not _is_aliased(val)):
+            elif (
+                isinstance(val.op(), ops.TableColumn)
+                and node.name == val.get_name()
+                and not _is_aliased(val)
+            ):
                 # Aliased table columns are no good
                 col_table = val.op().table.op()
 
                 lifted_node = substitute_parents(expr).op()
 
-                is_valid = (col_table.equals(node.table.op()) or
-                            col_table.equals(lifted_node.table.op()))
+                is_valid = col_table.equals(
+                    node.table.op()
+                ) or col_table.equals(lifted_node.table.op())
 
         return is_valid
 
@@ -670,8 +695,9 @@ def windowize_function(expr, w=None):
             walked_child = _walk(window_arg, w)
 
             if walked_child is not window_arg:
-                walked = x._factory(ops.WindowOp(walked_child, window_w),
-                                    name=x._name)
+                walked = x._factory(
+                    ops.WindowOp(walked_child, window_w), name=x._name
+                )
             else:
                 walked = x
 
@@ -770,11 +796,13 @@ class Projector:
             lifted_val = substitute_parents(val)
 
             # a * projection
-            if (isinstance(val, ir.TableExpr) and
-                (self.parent.op().compatible_with(val.op()) or
-                 # gross we share the same table root. Better way to
-                 # detect?
-                 len(roots) == 1 and val._root_tables()[0] is roots[0])):
+            if isinstance(val, ir.TableExpr) and (
+                self.parent.op().compatible_with(val.op())
+                # gross we share the same table root. Better way to
+                # detect?
+                or len(roots) == 1
+                and val._root_tables()[0] is roots[0]
+            ):
                 can_fuse = True
 
                 have_root = False
@@ -799,9 +827,12 @@ class Projector:
                 fused_exprs.append(val)
 
         if can_fuse:
-            return ops.Selection(root.table, fused_exprs,
-                                 predicates=root.predicates,
-                                 sort_keys=root.sort_keys)
+            return ops.Selection(
+                root.table,
+                fused_exprs,
+                predicates=root.predicates,
+                sort_keys=root.sort_keys,
+            )
         else:
             return None
 
@@ -814,7 +845,6 @@ def _maybe_resolve_exprs(table, exprs):
 
 
 class ExprValidator:
-
     def __init__(self, exprs):
         self.parent_exprs = exprs
 
@@ -870,8 +900,10 @@ class ExprValidator:
             raise RelationError(msg)
 
     def _error_message(self, expr):
-        return ('The expression %s does not fully originate from '
-                'dependencies of the table expression.' % repr(expr))
+        return (
+            'The expression %s does not fully originate from '
+            'dependencies of the table expression.' % repr(expr)
+        )
 
 
 def fully_originate_from(exprs, parents):
@@ -905,8 +937,9 @@ class FilterValidator(ExprValidator):
     def validate(self, expr):
         op = expr.op()
 
-        if (isinstance(expr, ir.BooleanColumn) and
-                isinstance(op, ops.TableColumn)):
+        if isinstance(expr, ir.BooleanColumn) and isinstance(
+            op, ops.TableColumn
+        ):
             return True
 
         is_valid = True
@@ -986,6 +1019,7 @@ def find_source_table(expr):
     ...
     NotImplementedError: More than one base table not implemented
     """
+
     def finder(expr):
         if isinstance(expr, ir.TableExpr):
             return lin.halt, expr
@@ -1049,6 +1083,7 @@ def flatten_predicate(expr):
         Literal[string]
           foo
     """
+
     def predicate(expr):
         if isinstance(expr.op(), ops.And):
             return lin.proceed, None
@@ -1101,6 +1136,7 @@ def is_reduction(expr):
     -------
     check output : bool
     """
+
     def has_reduction(op):
         if getattr(op, '_reduction', False):
             return True

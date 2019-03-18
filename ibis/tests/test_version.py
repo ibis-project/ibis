@@ -15,10 +15,7 @@ import ibis
 def test_import_time():
     sh = pytest.importorskip('sh')
 
-    lines = [
-        'from timeit import timeit',
-        "print(timeit('import ibis'))",
-    ]
+    lines = ['from timeit import timeit', "print(timeit('import ibis'))"]
 
     delta = float(str(sh.python(c='; '.join(lines))))
     assert delta < 2.0

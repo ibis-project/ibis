@@ -4,7 +4,7 @@ from ibis.sql.postgres.client import PostgreSQLClient
 from ibis.sql.postgres.compiler import (  # noqa: F401, E501
     compiles,
     rewrites,
-    dialect
+    dialect,
 )
 
 
@@ -55,7 +55,7 @@ def connect(
     port=5432,
     database=None,
     url=None,
-    driver='psycopg2'
+    driver='psycopg2',
 ):
     """Create an Ibis client located at `user`:`password`@`host`:`port`
     connected to a PostgreSQL database named `database`.

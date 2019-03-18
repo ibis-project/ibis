@@ -58,37 +58,57 @@ FROM ibis_testing.`alltypes`"""
 @pytest.mark.parametrize(
     ['window', 'frame'],
     [
-        (window(preceding=0),
-         'range between current row and unbounded following'),
-
-        (window(following=0),
-         'range between unbounded preceding and current row'),
-
-        (window(preceding=5),
-         'rows between 5 preceding and unbounded following'),
-        (window(preceding=5, following=0),
-         'rows between 5 preceding and current row'),
-        (window(preceding=5, following=2),
-         'rows between 5 preceding and 2 following'),
-        (window(following=2),
-         'rows between unbounded preceding and 2 following'),
-        (window(following=2, preceding=0),
-         'rows between current row and 2 following'),
-        (window(preceding=5),
-         'rows between 5 preceding and unbounded following'),
-        (window(following=[5, 10]),
-         'rows between 5 following and 10 following'),
-        (window(preceding=[10, 5]),
-         'rows between 10 preceding and 5 preceding'),
-
+        (
+            window(preceding=0),
+            'range between current row and unbounded following',
+        ),
+        (
+            window(following=0),
+            'range between unbounded preceding and current row',
+        ),
+        (
+            window(preceding=5),
+            'rows between 5 preceding and unbounded following',
+        ),
+        (
+            window(preceding=5, following=0),
+            'rows between 5 preceding and current row',
+        ),
+        (
+            window(preceding=5, following=2),
+            'rows between 5 preceding and 2 following',
+        ),
+        (
+            window(following=2),
+            'rows between unbounded preceding and 2 following',
+        ),
+        (
+            window(following=2, preceding=0),
+            'rows between current row and 2 following',
+        ),
+        (
+            window(preceding=5),
+            'rows between 5 preceding and unbounded following',
+        ),
+        (
+            window(following=[5, 10]),
+            'rows between 5 following and 10 following',
+        ),
+        (
+            window(preceding=[10, 5]),
+            'rows between 10 preceding and 5 preceding',
+        ),
         # # cumulative windows
-        (ibis.cumulative_window(),
-         'range between unbounded preceding and current row'),
-
+        (
+            ibis.cumulative_window(),
+            'range between unbounded preceding and current row',
+        ),
         # # trailing windows
-        (ibis.trailing_window(10),
-         'rows between 10 preceding and current row'),
-    ]
+        (
+            ibis.trailing_window(10),
+            'rows between 10 preceding and current row',
+        ),
+    ],
 )
 def test_window_frame_specs(con, window, frame):
     t = con.table('alltypes')
@@ -110,7 +130,7 @@ FROM ibis_testing.`alltypes`"""
         (lambda t, w: t.f.cummin().over(w), lambda t, w: t.f.min().over(w)),
         (lambda t, w: t.f.cummax().over(w), lambda t, w: t.f.max().over(w)),
         (lambda t, w: t.f.cummean().over(w), lambda t, w: t.f.mean().over(w)),
-    ]
+    ],
 )
 def test_cumulative_functions(alltypes, cumulative, static):
     t = alltypes
@@ -142,8 +162,7 @@ FROM ibis_testing.`alltypes`"""
 def test_rank_functions(alltypes):
     t = alltypes
 
-    proj = t[t.g, t.f.rank().name('minr'),
-             t.f.dense_rank().name('denser')]
+    proj = t[t.g, t.f.rank().name('minr'), t.f.dense_rank().name('denser')]
     expected = """\
 SELECT `g`, (rank() OVER (ORDER BY `f`) - 1) AS `minr`,
        (dense_rank() OVER (ORDER BY `f`) - 1) AS `denser`
@@ -176,9 +195,9 @@ SELECT `f`, (row_number() OVER (ORDER BY `f` DESC) - 1) AS `revrank`
 FROM ibis_testing.`alltypes`"""
     assert_sql_equal(proj, expected)
 
-    expr = (t.group_by('g')
-            .order_by(ibis.desc(t.f))
-            [t.d.lag().name('foo'), t.a.max()])
+    expr = t.group_by('g').order_by(ibis.desc(t.f))[
+        t.d.lag().name('foo'), t.a.max()
+    ]
     expected = """\
 SELECT lag(`d`) OVER (PARTITION BY `g` ORDER BY `f` DESC) AS `foo`,
        max(`a`) OVER (PARTITION BY `g` ORDER BY `f` DESC) AS `max`
@@ -195,9 +214,7 @@ SELECT *, (row_number() OVER (PARTITION BY `g`) - 1) AS `foo`
 FROM ibis_testing.`alltypes`"""
     assert_sql_equal(expr, expected)
 
-    expr = (t.group_by(t.g)
-            .order_by(t.f)
-            .mutate(ibis.row_number().name('foo')))
+    expr = t.group_by(t.g).order_by(t.f).mutate(ibis.row_number().name('foo'))
 
     expected = """\
 SELECT *, (row_number() OVER (PARTITION BY `g` ORDER BY `f`) - 1) AS `foo`
@@ -218,11 +235,7 @@ FROM ibis_testing.`alltypes`"""
 
 @pytest.mark.parametrize(
     ['column', 'op'],
-    [
-        ('f', 'approx_nunique'),
-        ('f', 'approx_median'),
-        ('g', 'group_concat'),
-    ]
+    [('f', 'approx_nunique'), ('f', 'approx_median'), ('g', 'group_concat')],
 )
 def test_unsupported_aggregate_functions(alltypes, column, op):
     t = alltypes

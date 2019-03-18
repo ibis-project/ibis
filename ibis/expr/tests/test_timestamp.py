@@ -35,7 +35,7 @@ def test_string_cast_to_timestamp(alltypes):
         ('minute', ops.ExtractMinute, ir.IntegerColumn),
         ('second', ops.ExtractSecond, ir.IntegerColumn),
         ('millisecond', ops.ExtractMillisecond, ir.IntegerColumn),
-    ]
+    ],
 )
 def test_extract_fields(field, expected_operation, expected_type, alltypes):
     # type-size may be database specific
@@ -56,7 +56,7 @@ def test_now():
     [
         (ibis.timestamp, '2015-01-01 00:00:00'),
         (ibis.literal, pd.Timestamp('2015-01-01 00:00:00')),
-    ]
+    ],
 )
 def test_timestamp_literals(function, value):
     expr = function(value)
@@ -119,7 +119,7 @@ def test_timestamp_precedence():
         ('year', ops.ExtractYear, ir.IntegerColumn),
         ('month', ops.ExtractMonth, ir.IntegerColumn),
         ('day', ops.ExtractDay, ir.IntegerColumn),
-    ]
+    ],
 )
 def test_timestamp_field_access_on_date(
     field, expected_operation, expected_type, alltypes
@@ -137,7 +137,7 @@ def test_timestamp_field_access_on_date(
         ('minute', ops.ExtractMinute, ir.IntegerColumn),
         ('second', ops.ExtractSecond, ir.IntegerColumn),
         ('millisecond', ops.ExtractMillisecond, ir.IntegerColumn),
-    ]
+    ],
 )
 def test_timestamp_field_access_on_date_failure(
     field, expected_operation, expected_type, alltypes
@@ -154,7 +154,7 @@ def test_timestamp_field_access_on_date_failure(
         ('minute', ops.ExtractMinute, ir.IntegerColumn),
         ('second', ops.ExtractSecond, ir.IntegerColumn),
         ('millisecond', ops.ExtractMillisecond, ir.IntegerColumn),
-    ]
+    ],
 )
 def test_timestamp_field_access_on_time(
     field, expected_operation, expected_type, alltypes
@@ -171,7 +171,7 @@ def test_timestamp_field_access_on_time(
         ('year', ops.ExtractYear, ir.IntegerColumn),
         ('month', ops.ExtractMonth, ir.IntegerColumn),
         ('day', ops.ExtractDay, ir.IntegerColumn),
-    ]
+    ],
 )
 def test_timestamp_field_access_on_time_failure(
     field, expected_operation, expected_type, alltypes
@@ -184,7 +184,6 @@ def test_timestamp_field_access_on_time_failure(
 @pytest.mark.parametrize("value", [42, np.int64(42), np.int8(-42)])
 def test_integer_timestamp_fails(value):
     with pytest.raises(
-        TypeError,
-        match=r"Use ibis\.literal\(-?\d+\)\.to_timestamp",
+        TypeError, match=r"Use ibis\.literal\(-?\d+\)\.to_timestamp"
     ):
         ibis.timestamp(value)

@@ -22,13 +22,13 @@ from ibis.expr.signature import Argument as Arg
 
 
 class ExistsExpr(ir.AnalyticExpr):
-
     def type(self):
         return 'exists'
 
 
 class ExistsSubquery(ops.Node):
     """Helper class"""
+
     foreign_table = Arg(rlz.noop)
     predicates = Arg(rlz.noop)
 

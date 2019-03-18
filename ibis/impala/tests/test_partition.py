@@ -26,9 +26,9 @@ def df():
         {
             'year': [2009] * 3 + [2010] * 3,
             'month': list(map(str, [1, 2, 3] * 2)),
-            'value': list(range(1, 7))
+            'value': list(range(1, 7)),
         },
-        index=list(range(6))
+        index=list(range(6)),
     )
     df = pd.concat([df] * 10, ignore_index=True)
     df['id'] = df.index.values
@@ -47,29 +47,38 @@ def unpart_t(con, df, tmp_db):
 
 
 def test_is_partitioned(con, temp_table):
-    schema = ibis.schema([('foo', 'string'),
-                          ('year', 'int32'),
-                          ('month', 'string')])
+    schema = ibis.schema(
+        [('foo', 'string'), ('year', 'int32'), ('month', 'string')]
+    )
     name = temp_table
     con.create_table(name, schema=schema, partition=['year', 'month'])
     assert con.table(name).is_partitioned
 
 
 def test_create_table_with_partition_column(con, temp_table_db):
-    schema = ibis.schema([('year', 'int32'),
-                          ('month', 'string'),
-                          ('day', 'int8'),
-                          ('value', 'double')])
+    schema = ibis.schema(
+        [
+            ('year', 'int32'),
+            ('month', 'string'),
+            ('day', 'int8'),
+            ('value', 'double'),
+        ]
+    )
 
     tmp_db, name = temp_table_db
     con.create_table(
-        name, schema=schema, database=tmp_db, partition=['year', 'month'])
+        name, schema=schema, database=tmp_db, partition=['year', 'month']
+    )
 
     # the partition column get put at the end of the table
-    ex_schema = ibis.schema([('day', 'int8'),
-                             ('value', 'double'),
-                             ('year', 'int32'),
-                             ('month', 'string')])
+    ex_schema = ibis.schema(
+        [
+            ('day', 'int8'),
+            ('value', 'double'),
+            ('year', 'int32'),
+            ('month', 'string'),
+        ]
+    )
     table_schema = con.get_schema(name, database=tmp_db)
     assert_equal(table_schema, ex_schema)
 
@@ -80,19 +89,21 @@ def test_create_table_with_partition_column(con, temp_table_db):
 
 
 def test_create_partitioned_separate_schema(con, temp_table):
-    schema = ibis.schema([('day', 'int8'),
-                          ('value', 'double')])
-    part_schema = ibis.schema([('year', 'int32'),
-                               ('month', 'string')])
+    schema = ibis.schema([('day', 'int8'), ('value', 'double')])
+    part_schema = ibis.schema([('year', 'int32'), ('month', 'string')])
 
     name = temp_table
     con.create_table(name, schema=schema, partition=part_schema)
 
     # the partition column get put at the end of the table
-    ex_schema = ibis.schema([('day', 'int8'),
-                             ('value', 'double'),
-                             ('year', 'int32'),
-                             ('month', 'string')])
+    ex_schema = ibis.schema(
+        [
+            ('day', 'int8'),
+            ('value', 'double'),
+            ('year', 'int32'),
+            ('month', 'string'),
+        ]
+    )
     table_schema = con.get_schema(name)
     assert_equal(table_schema, ex_schema)
 
@@ -114,8 +125,9 @@ def test_insert_select_partitioned_table(con, df, temp_table, unpart_t):
     unique_keys = df[part_keys].drop_duplicates()
 
     for i, (year, month) in enumerate(unique_keys.itertuples(index=False)):
-        select_stmt = unpart_t[(unpart_t.year == year) &
-                               (unpart_t.month == month)]
+        select_stmt = unpart_t[
+            (unpart_t.year == year) & (unpart_t.month == month)
+        ]
 
         # test both styles of insert
         if i:
@@ -155,9 +167,9 @@ def test_dynamic_partitioning():
 
 
 def test_add_drop_partition_no_location(con, temp_table):
-    schema = ibis.schema([('foo', 'string'),
-                          ('year', 'int32'),
-                          ('month', 'int16')])
+    schema = ibis.schema(
+        [('foo', 'string'), ('year', 'int32'), ('month', 'int16')]
+    )
     name = temp_table
     con.create_table(name, schema=schema, partition=['year', 'month'])
     table = con.table(name)
@@ -174,9 +186,9 @@ def test_add_drop_partition_no_location(con, temp_table):
 
 
 def test_add_drop_partition_owned_by_impala(hdfs, con, temp_table):
-    schema = ibis.schema([('foo', 'string'),
-                          ('year', 'int32'),
-                          ('month', 'int16')])
+    schema = ibis.schema(
+        [('foo', 'string'), ('year', 'int32'), ('month', 'int16')]
+    )
     name = temp_table
     con.create_table(name, schema=schema, partition=['year', 'month'])
 
@@ -202,9 +214,9 @@ def test_add_drop_partition_owned_by_impala(hdfs, con, temp_table):
 
 @pytest.mark.xfail(raises=impala.error.HiveServer2Error, reason='HIVE-12613')
 def test_add_drop_partition_hive_bug(con, temp_table):
-    schema = ibis.schema([('foo', 'string'),
-                          ('year', 'int32'),
-                          ('month', 'int16')])
+    schema = ibis.schema(
+        [('foo', 'string'), ('year', 'int32'), ('month', 'int16')]
+    )
     name = temp_table
     con.create_table(name, schema=schema, partition=['year', 'month'])
 
@@ -243,10 +255,7 @@ def test_load_data_partition(con, hdfs, tmp_dir, unpart_t, df, temp_table):
 
     df2 = df.drop(['year', 'month'], axis='columns')
 
-    csv_props = {
-        'serialization.format': ',',
-        'field.delim': ','
-    }
+    csv_props = {'serialization.format': ',', 'field.delim': ','}
 
     for i, (year, month) in enumerate(unique_keys.itertuples(index=False)):
         chunk = df2[(df.year == year) & (df.month == month)]
@@ -261,8 +270,7 @@ def test_load_data_partition(con, hdfs, tmp_dir, unpart_t, df, temp_table):
             part = [year, month]
 
         part_t.add_partition(part)
-        part_t.alter_partition(part, format='text',
-                               serde_properties=csv_props)
+        part_t.alter_partition(part, format='text', serde_properties=csv_props)
         part_t.load_data(chunk_path, partition=part)
 
     hdfs.rmdir(hdfs_dir)
@@ -270,10 +278,11 @@ def test_load_data_partition(con, hdfs, tmp_dir, unpart_t, df, temp_table):
 
 
 def verify_partitioned_table(part_t, df, unique_keys):
-    result = (part_t.execute()
-              .sort_values(by='id')
-              .reset_index(drop=True)
-              [df.columns])
+    result = (
+        part_t.execute()
+        .sort_values(by='id')
+        .reset_index(drop=True)[df.columns]
+    )
 
     assert_frame_equal(result, df)
 

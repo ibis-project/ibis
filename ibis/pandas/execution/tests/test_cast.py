@@ -34,11 +34,7 @@ def test_cast_numeric(t, df, from_, to, expected):
 
 @pytest.mark.parametrize('from_', ['float64_as_strings', 'int64_as_strings'])
 @pytest.mark.parametrize(
-    ('to', 'expected'),
-    [
-        ('double', 'float64'),
-        ('string', 'object'),
-    ]
+    ('to', 'expected'), [('double', 'float64'), ('string', 'object')]
 )
 def test_cast_string(t, df, from_, to, expected):
     c = t[from_].cast(to)
@@ -54,21 +50,17 @@ def test_cast_string(t, df, from_, to, expected):
         param('double', 'float64', marks=pytest.mark.xfail(raises=TypeError)),
         (
             dt.Timestamp('America/Los_Angeles'),
-            'datetime64[ns, America/Los_Angeles]'
+            'datetime64[ns, America/Los_Angeles]',
         ),
         (
             "timestamp('America/Los_Angeles')",
-            'datetime64[ns, America/Los_Angeles]'
-        )
-    ]
+            'datetime64[ns, America/Los_Angeles]',
+        ),
+    ],
 )
 @pytest.mark.parametrize(
     'column',
-    [
-        'plain_datetimes_naive',
-        'plain_datetimes_ny',
-        'plain_datetimes_utc',
-    ]
+    ['plain_datetimes_naive', 'plain_datetimes_ny', 'plain_datetimes_utc'],
 )
 def test_cast_timestamp_column(t, df, column, to, expected):
     c = t[column].cast(to)
@@ -82,14 +74,15 @@ def test_cast_timestamp_column(t, df, column, to, expected):
         ('string', str),
         ('int64', lambda x: x.value),
         param(
-            'double', float,
-            marks=pytest.mark.xfail(raises=NotImplementedError)
+            'double',
+            float,
+            marks=pytest.mark.xfail(raises=NotImplementedError),
         ),
         (
             dt.Timestamp('America/Los_Angeles'),
-            lambda x: x.tz_localize('America/Los_Angeles')
-        )
-    ]
+            lambda x: x.tz_localize('America/Los_Angeles'),
+        ),
+    ],
 )
 def test_cast_timestamp_scalar_naive(to, expected):
     literal_expr = ibis.literal(pd.Timestamp('now'))
@@ -105,14 +98,15 @@ def test_cast_timestamp_scalar_naive(to, expected):
         ('string', str),
         ('int64', lambda x: x.value),
         param(
-            'double', float,
-            marks=pytest.mark.xfail(raises=NotImplementedError)
+            'double',
+            float,
+            marks=pytest.mark.xfail(raises=NotImplementedError),
         ),
         (
             dt.Timestamp('America/Los_Angeles'),
-            lambda x: x.tz_convert('America/Los_Angeles')
-        )
-    ]
+            lambda x: x.tz_convert('America/Los_Angeles'),
+        ),
+    ],
 )
 @pytest.mark.parametrize('tz', ['UTC', 'America/New_York'])
 def test_cast_timestamp_scalar(to, expected, tz):
@@ -131,11 +125,7 @@ def test_timestamp_with_timezone_is_inferred_correctly(t, df):
 
 @pytest.mark.parametrize(
     'column',
-    [
-        'plain_datetimes_naive',
-        'plain_datetimes_ny',
-        'plain_datetimes_utc',
-    ]
+    ['plain_datetimes_naive', 'plain_datetimes_ny', 'plain_datetimes_utc'],
 )
 def test_cast_date(t, df, column):
     expr = t[column].cast('date')
@@ -153,8 +143,7 @@ def test_cast_to_decimal(t, df, type):
         lambda x: context.create_decimal(x).quantize(
             decimal.Decimal(
                 '{}.{}'.format(
-                    '0' * (type.precision - type.scale),
-                    '0' * type.scale
+                    '0' * (type.precision - type.scale), '0' * type.scale
                 )
             )
         )

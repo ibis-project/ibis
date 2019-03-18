@@ -13,12 +13,7 @@ Ibis is a productivity-centric Python big data framework.
 See http://docs.ibis-project.org
 """
 
-impala_requires = [
-    'hdfs>=2.0.16',
-    'impyla>=0.14.0',
-    'sqlalchemy',
-    'requests',
-]
+impala_requires = ['hdfs>=2.0.16', 'impyla>=0.14.0', 'sqlalchemy', 'requests']
 
 sqlite_requires = ['sqlalchemy']
 postgres_requires = sqlite_requires + ['psycopg2']
@@ -32,29 +27,26 @@ hdf5_requires = ['tables>=3.0.0']
 parquet_requires = ['pyarrow>=0.6.0']
 
 all_requires = (
-    impala_requires +
-    postgres_requires +
-    mapd_requires +
-    mysql_requires +
-    kerberos_requires +
-    visualization_requires +
-    clickhouse_requires +
-    bigquery_requires +
-    hdf5_requires +
-    parquet_requires
+    impala_requires
+    + postgres_requires
+    + mapd_requires
+    + mysql_requires
+    + kerberos_requires
+    + visualization_requires
+    + clickhouse_requires
+    + bigquery_requires
+    + hdf5_requires
+    + parquet_requires
 )
 
-develop_requires = all_requires + [
-    'click',
-    'flake8',
-    'mypy',
-    'pytest>=3',
-]
+develop_requires = all_requires + ['click', 'flake8', 'mypy', 'pytest>=3']
 
 install_requires = [
-    line.strip() for line in pathlib.Path(__file__).parent.joinpath(
-        'requirements.txt'
-    ).read_text().splitlines()
+    line.strip()
+    for line in pathlib.Path(__file__)
+    .parent.joinpath('requirements.txt')
+    .read_text()
+    .splitlines()
 ]
 
 setup(
@@ -92,5 +84,5 @@ setup(
     ],
     license='Apache License, Version 2.0',
     maintainer="Phillip Cloud",
-    maintainer_email="phillip.cloud@twosigma.com"
+    maintainer_email="phillip.cloud@twosigma.com",
 )

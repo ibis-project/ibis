@@ -98,8 +98,7 @@ def test_projection_with_exprs(table):
     # unnamed expr to test
     mean_diff = (table['a'] - table['c']).mean()
 
-    col_exprs = [table['b'].log().name('log_b'),
-                 mean_diff.name('mean_diff')]
+    col_exprs = [table['b'].log().name('log_b'), mean_diff.name('mean_diff')]
 
     proj = table[col_exprs + ['g']]
     schema = proj.schema()
@@ -117,10 +116,7 @@ def test_projection_duplicate_names(table):
 
 
 def test_projection_invalid_root(table):
-    schema1 = {
-        'foo': 'double',
-        'bar': 'int32'
-    }
+    schema1 = {'foo': 'double', 'bar': 'int32'}
 
     left = api.table(schema1, name='foo')
     right = api.table(schema1, name='bar')
@@ -219,8 +215,7 @@ def test_mutate(table):
     foo = (table.a + table.b).name('foo')
 
     expr = table.mutate(foo, one=one, two=2)
-    expected = table[table, foo, one.name('one'),
-                     ibis.literal(2).name('two')]
+    expected = table[table, foo, one.name('one'), ibis.literal(2).name('two')]
     assert_equal(expr, expected)
 
 
@@ -229,20 +224,26 @@ def test_mutate_alter_existing_columns(table):
     foo = table.d * 2
     expr = table.mutate(f=new_f, foo=foo)
 
-    expected = table['a', 'b', 'c', 'd', 'e',
-                     new_f.name('f'), 'g', 'h',
-                     'i', 'j', 'k',
-                     foo.name('foo')]
+    expected = table[
+        'a',
+        'b',
+        'c',
+        'd',
+        'e',
+        new_f.name('f'),
+        'g',
+        'h',
+        'i',
+        'j',
+        'k',
+        foo.name('foo'),
+    ]
 
     assert_equal(expr, expected)
 
 
 def test_replace_column(table):
-    tb = api.table([
-        ('a', 'int32'),
-        ('b', 'double'),
-        ('c', 'string')
-    ])
+    tb = api.table([('a', 'int32'), ('b', 'double'), ('c', 'string')])
 
     expr = tb.b.cast('int32')
     tb2 = tb.set_column('b', expr)
@@ -365,9 +366,7 @@ def test_sort_by(table):
 
 
 def test_sort_by_desc_deferred_sort_key(table):
-    result = (table.group_by('g')
-              .size()
-              .sort_by(ibis.desc('count')))
+    result = table.group_by('g').size().sort_by(ibis.desc('count'))
 
     tmp = table.group_by('g').size()
     expected = tmp.sort_by((tmp['count'], False))
@@ -476,12 +475,11 @@ def test_aggregate_non_list_inputs(table):
 def test_aggregate_keywords(table):
     t = table
 
-    expr = t.aggregate(foo=t.f.sum(), bar=lambda x: x.f.mean(),
-                       by='g')
-    expr2 = t.group_by('g').aggregate(foo=t.f.sum(),
-                                      bar=lambda x: x.f.mean())
-    expected = t.aggregate([t.f.mean().name('bar'),
-                            t.f.sum().name('foo')], by='g')
+    expr = t.aggregate(foo=t.f.sum(), bar=lambda x: x.f.mean(), by='g')
+    expr2 = t.group_by('g').aggregate(foo=t.f.sum(), bar=lambda x: x.f.mean())
+    expected = t.aggregate(
+        [t.f.mean().name('bar'), t.f.sum().name('foo')], by='g'
+    )
 
     assert_equal(expr, expected)
     assert_equal(expr2, expected)
@@ -538,10 +536,7 @@ def test_aggregate_post_predicate(table):
     metrics = [table.f.sum().name('total')]
     by = ['g']
 
-    invalid_having_cases = [
-        table.f.sum(),
-        table.f > 2
-    ]
+    invalid_having_cases = [table.f.sum(), table.f > 2]
     for case in invalid_having_cases:
         with pytest.raises(com.ExpressionError):
             table.aggregate(metrics, by=by, having=[case])
@@ -552,10 +547,7 @@ def test_group_by_having_api(table):
     metric = table.f.sum().name('foo')
     postp = table.d.mean() > 1
 
-    expr = (table
-            .group_by('g')
-            .having(postp)
-            .aggregate(metric))
+    expr = table.group_by('g').having(postp).aggregate(metric)
 
     expected = table.aggregate(metric, by='g', having=postp)
     assert_equal(expr, expected)
@@ -563,10 +555,12 @@ def test_group_by_having_api(table):
 
 def test_group_by_kwargs(table):
     t = table
-    expr = (t.group_by(['f', t.h], z='g', z2=t.d)
-             .aggregate(t.d.mean().name('foo')))
-    expected = (t.group_by(['f', t.h, t.g.name('z'), t.d.name('z2')])
-                .aggregate(t.d.mean().name('foo')))
+    expr = t.group_by(['f', t.h], z='g', z2=t.d).aggregate(
+        t.d.mean().name('foo')
+    )
+    expected = t.group_by(['f', t.h, t.g.name('z'), t.d.name('z2')]).aggregate(
+        t.d.mean().name('foo')
+    )
     assert_equal(expr, expected)
 
 
@@ -577,8 +571,7 @@ def test_aggregate_root_table_internal(table):
 
 def test_compound_aggregate_expr(table):
     # See ibis #24
-    compound_expr = (table['a'].sum() /
-                     table['a'].mean()).name('foo')
+    compound_expr = (table['a'].sum() / table['a'].mean()).name('foo')
     assert L.is_reduction(compound_expr)
 
     # Validates internally
@@ -603,15 +596,13 @@ def test_group_by_count_size(table):
     result1 = table.group_by('g').size()
     result2 = table.group_by('g').count()
 
-    expected = (table.group_by('g')
-                .aggregate([table.count().name('count')]))
+    expected = table.group_by('g').aggregate([table.count().name('count')])
 
     assert_equal(result1, expected)
     assert_equal(result2, expected)
 
     result = table.group_by('g').count('foo')
-    expected = (table.group_by('g')
-                .aggregate([table.count().name('foo')]))
+    expected = table.group_by('g').aggregate([table.count().name('foo')])
     assert_equal(result, expected)
 
 
@@ -632,8 +623,7 @@ def test_group_by_column_select_api(table):
 def test_value_counts_convenience(table):
     # #152
     result = table.g.value_counts()
-    expected = (table.group_by('g')
-                .aggregate(table.count().name('count')))
+    expected = table.group_by('g').aggregate(table.count().name('count'))
 
     assert_equal(result, expected)
 
@@ -670,7 +660,7 @@ def test_default_reduction_names(table):
         (d.approx_nunique(), 'approx_nunique'),
         (d.approx_median(), 'approx_median'),
         (d.min(), 'min'),
-        (d.max(), 'max')
+        (d.max(), 'max'),
     ]
 
     for expr, ex_name in cases:
@@ -697,23 +687,27 @@ def test_asof_join():
 
 def test_asof_join_with_by():
     left = ibis.table(
-        [('time', 'int32'), ('key', 'int32'), ('value', 'double')])
+        [('time', 'int32'), ('key', 'int32'), ('value', 'double')]
+    )
     right = ibis.table(
-        [('time', 'int32'), ('key', 'int32'), ('value2', 'double')])
+        [('time', 'int32'), ('key', 'int32'), ('value2', 'double')]
+    )
     joined = api.asof_join(left, right, 'time', by='key')
     by = joined.op().by[0].op()
     assert by.left.op().name == by.right.op().name == 'key'
 
 
 def test_equijoin_schema_merge():
-    table1 = ibis.table([('key1',  'string'), ('value1', 'double')])
-    table2 = ibis.table([('key2',  'string'), ('stuff', 'int32')])
+    table1 = ibis.table([('key1', 'string'), ('value1', 'double')])
+    table2 = ibis.table([('key2', 'string'), ('stuff', 'int32')])
 
     pred = table1['key1'] == table2['key2']
     join_types = ['inner_join', 'left_join', 'outer_join']
 
-    ex_schema = api.Schema(['key1', 'value1', 'key2', 'stuff'],
-                           ['string', 'double', 'string', 'int32'])
+    ex_schema = api.Schema(
+        ['key1', 'value1', 'key2', 'stuff'],
+        ['string', 'double', 'string', 'int32'],
+    )
 
     for fname in join_types:
         f = getattr(table1, fname)
@@ -803,11 +797,13 @@ def test_materialized_join_reference_bug(con):
     customer = con.table('tpch_customer')
     lineitem = con.table('tpch_lineitem')
 
-    items = (orders
-             .join(lineitem, orders.o_orderkey == lineitem.l_orderkey)
-             [lineitem, orders.o_custkey, orders.o_orderpriority]
-             .join(customer, [('o_custkey', 'c_custkey')])
-             .materialize())
+    items = (
+        orders.join(lineitem, orders.o_orderkey == lineitem.l_orderkey)[
+            lineitem, orders.o_custkey, orders.o_orderpriority
+        ]
+        .join(customer, [('o_custkey', 'c_custkey')])
+        .materialize()
+    )
     items['o_orderpriority'].value_counts()
 
 
@@ -825,8 +821,8 @@ def test_join_project_after(table):
     # ...
     #
     # The default for a join is selecting all fields if possible
-    table1 = ibis.table([('key1',  'string'), ('value1', 'double')])
-    table2 = ibis.table([('key2',  'string'), ('stuff', 'int32')])
+    table1 = ibis.table([('key1', 'string'), ('value1', 'double')])
+    table2 = ibis.table([('key2', 'string'), ('stuff', 'int32')])
 
     pred = table1['key1'] == table2['key2']
 
@@ -840,8 +836,8 @@ def test_join_project_after(table):
 
 def test_semi_join_schema(table):
     # A left semi join discards the schema of the right table
-    table1 = ibis.table([('key1',  'string'), ('value1', 'double')])
-    table2 = ibis.table([('key2',  'string'), ('stuff', 'double')])
+    table1 = ibis.table([('key1', 'string'), ('value1', 'double')])
+    table2 = ibis.table([('key2', 'string'), ('stuff', 'double')])
 
     pred = table1['key1'] == table2['key2']
     semi_joined = table1.semi_join(table2, [pred]).materialize()
@@ -880,8 +876,9 @@ def test_join_compound_boolean_predicate(table):
 
 
 def test_filter_join_unmaterialized(table):
-    table1 = ibis.table({'key1': 'string', 'key2': 'string',
-                         'value1': 'double'})
+    table1 = ibis.table(
+        {'key1': 'string', 'key2': 'string', 'value1': 'double'}
+    )
     table2 = ibis.table({'key3': 'string', 'value2': 'double'})
 
     # It works!
@@ -891,20 +888,19 @@ def test_filter_join_unmaterialized(table):
 
 
 def test_join_overlapping_column_names(table):
-    t1 = ibis.table([('foo', 'string'),
-                     ('bar', 'string'),
-                     ('value1', 'double')])
-    t2 = ibis.table([('foo', 'string'),
-                     ('bar', 'string'),
-                     ('value2', 'double')])
+    t1 = ibis.table(
+        [('foo', 'string'), ('bar', 'string'), ('value1', 'double')]
+    )
+    t2 = ibis.table(
+        [('foo', 'string'), ('bar', 'string'), ('value2', 'double')]
+    )
 
     joined = t1.join(t2, 'foo')
     expected = t1.join(t2, t1.foo == t2.foo)
     assert_equal(joined, expected)
 
     joined = t1.join(t2, ['foo', 'bar'])
-    expected = t1.join(t2, [t1.foo == t2.foo,
-                            t1.bar == t2.bar])
+    expected = t1.join(t2, [t1.foo == t2.foo, t1.bar == t2.bar])
     assert_equal(joined, expected)
 
 
@@ -962,19 +958,25 @@ def test_join_non_boolean_expr(con):
 
 
 def test_unravel_compound_equijoin(table):
-    t1 = ibis.table([
-        ('key1', 'string'),
-        ('key2', 'string'),
-        ('key3', 'string'),
-        ('value1', 'double')
-    ], 'foo_table')
+    t1 = ibis.table(
+        [
+            ('key1', 'string'),
+            ('key2', 'string'),
+            ('key3', 'string'),
+            ('value1', 'double'),
+        ],
+        'foo_table',
+    )
 
-    t2 = ibis.table([
-        ('key1', 'string'),
-        ('key2', 'string'),
-        ('key3', 'string'),
-        ('value2', 'double')
-    ], 'bar_table')
+    t2 = ibis.table(
+        [
+            ('key1', 'string'),
+            ('key2', 'string'),
+            ('key3', 'string'),
+            ('value2', 'double'),
+        ],
+        'bar_table',
+    )
 
     p1 = t1.key1 == t2.key1
     p2 = t1.key2 == t2.key2
@@ -996,15 +998,8 @@ def test_join_nontrivial_exprs(table):
 
 
 def test_union(table):
-    schema1 = [
-        ('key', 'string'),
-        ('value', 'double')
-    ]
-    schema2 = [
-        ('key', 'string'),
-        ('key2', 'string'),
-        ('value', 'double')
-    ]
+    schema1 = [('key', 'string'), ('value', 'double')]
+    schema2 = [('key', 'string'), ('key2', 'string'), ('value', 'double')]
     t1 = ibis.table(schema1, 'foo')
     t2 = ibis.table(schema1, 'bar')
     t3 = ibis.table(schema2, 'baz')
@@ -1026,13 +1021,15 @@ def test_column_ref_on_projection_rename(con):
     nation = con.table('tpch_nation')
     customer = con.table('tpch_customer')
 
-    joined = (region.inner_join(
-        nation, [region.r_regionkey == nation.n_regionkey])
-        .inner_join(
-            customer, [customer.c_nationkey == nation.n_nationkey]))
+    joined = region.inner_join(
+        nation, [region.r_regionkey == nation.n_regionkey]
+    ).inner_join(customer, [customer.c_nationkey == nation.n_nationkey])
 
-    proj_exprs = [customer, nation.n_name.name('nation'),
-                  region.r_name.name('region')]
+    proj_exprs = [
+        customer,
+        nation.n_name.name('nation'),
+        region.r_name.name('region'),
+    ]
     joined = joined.projection(proj_exprs)
 
     metrics = [joined.c_acctbal.sum().name('metric')]
@@ -1043,19 +1040,14 @@ def test_column_ref_on_projection_rename(con):
 
 @pytest.fixture
 def t1():
-    return ibis.table([
-        ('key1', 'string'),
-        ('key2', 'string'),
-        ('value1', 'double')
-    ], 'foo')
+    return ibis.table(
+        [('key1', 'string'), ('key2', 'string'), ('value1', 'double')], 'foo'
+    )
 
 
 @pytest.fixture
 def t2():
-    return ibis.table([
-        ('key1', 'string'),
-        ('key2', 'string')
-    ], 'bar')
+    return ibis.table([('key1', 'string'), ('key2', 'string')], 'bar')
 
 
 def test_simple_existence_predicate(t1, t2):
@@ -1083,10 +1075,11 @@ def test_not_exists_predicate(t1, t2):
 
 def test_aggregate_metrics(table):
 
-    functions = [lambda x: x.e.sum().name('esum'),
-                 lambda x: x.f.sum().name('fsum')]
-    exprs = [table.e.sum().name('esum'),
-             table.f.sum().name('fsum')]
+    functions = [
+        lambda x: x.e.sum().name('esum'),
+        lambda x: x.f.sum().name('fsum'),
+    ]
+    exprs = [table.e.sum().name('esum'), table.f.sum().name('fsum')]
 
     result = table.aggregate(functions[0])
     expected = table.aggregate(exprs[0])
@@ -1098,8 +1091,7 @@ def test_aggregate_metrics(table):
 
 
 def test_group_by_keys(table):
-    m = table.mutate(foo=table.f * 2,
-                     bar=table.e / 2)
+    m = table.mutate(foo=table.f * 2, bar=table.e / 2)
 
     expr = m.group_by(lambda x: x.foo).size()
     expected = m.group_by('foo').size()
@@ -1111,22 +1103,16 @@ def test_group_by_keys(table):
 
 
 def test_having(table):
-    m = table.mutate(foo=table.f * 2,
-                     bar=table.e / 2)
+    m = table.mutate(foo=table.f * 2, bar=table.e / 2)
 
-    expr = (m.group_by('foo')
-            .having(lambda x: x.foo.sum() > 10)
-            .size())
-    expected = (m.group_by('foo')
-                .having(m.foo.sum() > 10)
-                .size())
+    expr = m.group_by('foo').having(lambda x: x.foo.sum() > 10).size()
+    expected = m.group_by('foo').having(m.foo.sum() > 10).size()
 
     assert_equal(expr, expected)
 
 
 def test_filter(table):
-    m = table.mutate(foo=table.f * 2,
-                     bar=table.e / 2)
+    m = table.mutate(foo=table.f * 2, bar=table.e / 2)
 
     result = m.filter(lambda x: x.foo > 10)
     result2 = m[lambda x: x.foo > 10]
@@ -1135,8 +1121,7 @@ def test_filter(table):
     assert_equal(result, expected)
     assert_equal(result2, expected)
 
-    result = m.filter([lambda x: x.foo > 10,
-                       lambda x: x.bar < 0])
+    result = m.filter([lambda x: x.foo > 10, lambda x: x.bar < 0])
     expected = m.filter([m.foo > 10, m.bar < 0])
     assert_equal(result, expected)
 
@@ -1191,10 +1176,8 @@ def test_groupby_mutate(table):
     t = table
 
     g = t.group_by('g').order_by('f')
-    expr = g.mutate(foo=lambda x: x.f.lag(),
-                    bar=lambda x: x.f.rank())
-    expected = g.mutate(foo=t.f.lag(),
-                        bar=t.f.rank())
+    expr = g.mutate(foo=lambda x: x.f.lag(), bar=lambda x: x.f.rank())
+    expected = g.mutate(foo=t.f.lag(), bar=t.f.rank())
 
     assert_equal(expr, expected)
 
@@ -1203,10 +1186,10 @@ def test_groupby_projection(table):
     t = table
 
     g = t.group_by('g').order_by('f')
-    expr = g.projection([lambda x: x.f.lag().name('foo'),
-                         lambda x: x.f.rank().name('bar')])
-    expected = g.projection([t.f.lag().name('foo'),
-                             t.f.rank().name('bar')])
+    expr = g.projection(
+        [lambda x: x.f.lag().name('foo'), lambda x: x.f.rank().name('bar')]
+    )
+    expected = g.projection([t.f.lag().name('foo'), t.f.rank().name('bar')])
 
     assert_equal(expr, expected)
 

@@ -20,8 +20,10 @@ def find_nodes(expr, node_types):
     op: type
         A node of given node_types
     """
+
     def extender(op):
         return (arg for arg in op.args if isinstance(arg, ir.Expr))
+
     return _search_for_nodes([expr], extender, node_types)
 
 
@@ -59,20 +61,29 @@ def roots(expr, types=(ops.PhysicalTable,)):
     you've come to the right place. By default, we yield the physical tables
     that an expression depends on.
     """
-    stack = [arg.to_expr() for arg in reversed(expr.op().root_tables())
-             if isinstance(arg, types)]
+    stack = [
+        arg.to_expr()
+        for arg in reversed(expr.op().root_tables())
+        if isinstance(arg, types)
+    ]
 
     def extender(op):
-        return reversed(list(chain.from_iterable(
-            arg.op().root_tables() for arg in op.flat_args()
-            if isinstance(arg, types)
-        )))
+        return reversed(
+            list(
+                chain.from_iterable(
+                    arg.op().root_tables()
+                    for arg in op.flat_args()
+                    if isinstance(arg, types)
+                )
+            )
+        )
+
     return _search_for_nodes(stack, extender, types)
 
 
 class Container:
 
-    __slots__ = 'data',
+    __slots__ = ('data',)
 
     def __init__(self, data):
         self.data = deque(self.visitor(data))
@@ -99,7 +110,7 @@ class Stack(Container):
     """Wrapper around a list to provide a common API for graph traversal
     """
 
-    __slots__ = 'data',
+    __slots__ = ('data',)
 
     def get(self):
         return self.data.pop()
@@ -114,7 +125,7 @@ class Queue(Container):
     """Wrapper around a queue.Queue to provide a common API for graph traversal
     """
 
-    __slots__ = 'data',
+    __slots__ = ('data',)
 
     def get(self):
         return self.data.popleft()
@@ -232,8 +243,11 @@ def traverse(fn, expr, type=ir.Expr, container=Stack):
             elif isinstance(control, Iterable):
                 args = control
             else:
-                raise TypeError('First item of the returned tuple must be '
-                                'an instance of boolean or iterable')
+                raise TypeError(
+                    'First item of the returned tuple must be '
+                    'an instance of boolean or iterable'
+                )
 
-            todo.extend(arg for arg in todo.visitor(args)
-                        if isinstance(arg, type))
+            todo.extend(
+                arg for arg in todo.visitor(args) if isinstance(arg, type)
+            )

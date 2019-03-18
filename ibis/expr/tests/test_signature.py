@@ -5,15 +5,11 @@ from functools import partial
 from ibis.expr.signature import Argument, TypeSignature, Annotable
 
 
-@pytest.mark.parametrize(('validator', 'expected'), [
-    (lambda x: x, 3),
-    (lambda x: x**2, 9),
-    (lambda x: x + 1, 4)
-], ids=[
-    'identity',
-    'square',
-    'inc'
-])
+@pytest.mark.parametrize(
+    ('validator', 'expected'),
+    [(lambda x: x, 3), (lambda x: x ** 2, 9), (lambda x: x + 1, 4)],
+    ids=['identity', 'square', 'inc'],
+)
 def test_argument(validator, expected):
     arg = Argument(validator)
 
@@ -48,60 +44,69 @@ def test_argument_raise_on_missing_value():
         arg.validate(name='mandatory')
 
 
-@pytest.mark.parametrize(('default', 'expected'), [
-    (None, None),
-    (0, 0),
-    ('default', 'default'),
-    (lambda: 3, 3)
-])
+@pytest.mark.parametrize(
+    ('default', 'expected'),
+    [(None, None), (0, 0), ('default', 'default'), (lambda: 3, 3)],
+)
 def test_optional_argument(default, expected):
     arg = Argument(lambda x: x, default=default)
     assert arg.validate() == expected
     assert arg() == expected
 
 
-@pytest.mark.parametrize(('arg', 'value', 'expected'), [
-    (Argument(identity, default=None), None, None),
-    (Argument(identity, default=None), 'three', 'three'),
-    (Argument(identity, default=1), None, 1),
-    (Argument(identity, default=lambda: 8), 'cat', 'cat'),
-    (Argument(identity, default=lambda: 8), None, 8),
-    (Argument(int, default=11), None, 11),
-    (Argument(int, default=None), None, None),
-    (Argument(int, default=None), 18, 18),
-    (Argument(str, default=None), 'caracal', 'caracal'),
-])
+@pytest.mark.parametrize(
+    ('arg', 'value', 'expected'),
+    [
+        (Argument(identity, default=None), None, None),
+        (Argument(identity, default=None), 'three', 'three'),
+        (Argument(identity, default=1), None, 1),
+        (Argument(identity, default=lambda: 8), 'cat', 'cat'),
+        (Argument(identity, default=lambda: 8), None, 8),
+        (Argument(int, default=11), None, 11),
+        (Argument(int, default=None), None, None),
+        (Argument(int, default=None), 18, 18),
+        (Argument(str, default=None), 'caracal', 'caracal'),
+    ],
+)
 def test_valid_optional(arg, value, expected):
     assert arg(value) == expected
 
 
-@pytest.mark.parametrize(('arg', 'value', 'expected'), [
-    (Argument(int, default=''), None, IbisTypeError),
-    (Argument(int), 'lynx', IbisTypeError),
-])
+@pytest.mark.parametrize(
+    ('arg', 'value', 'expected'),
+    [
+        (Argument(int, default=''), None, IbisTypeError),
+        (Argument(int), 'lynx', IbisTypeError),
+    ],
+)
 def test_invalid_optional(arg, value, expected):
     with pytest.raises(expected):
         arg(value)
 
 
-between = TypeSignature([
-    ('value', Argument(int)),
-    ('lower', Argument(int, default=0)),
-    ('upper', Argument(int, default=None))
-])
+between = TypeSignature(
+    [
+        ('value', Argument(int)),
+        ('lower', Argument(int, default=0)),
+        ('upper', Argument(int, default=None)),
+    ]
+)
 
 
-@pytest.mark.parametrize(('call', 'expected'), [
-    (partial(between, 3), (3, 0, None)),
-    (partial(between, 3), (3, 0, None)),
-    (partial(between, 3), (3, 0, None)),
-    (partial(between, 3, 1), (3, 1, None)),
-    (partial(between, 4, 2, 5), (4, 2, 5)),
-    (partial(between, 3, lower=1), (3, 1, None)),
-    (partial(between, 4, lower=2, upper=5), (4, 2, 5)),
-    (partial(between, 4, upper=5), (4, 0, 5)),
-    (partial(between, value=4, upper=5), (4, 0, 5)),
-])
+@pytest.mark.parametrize(
+    ('call', 'expected'),
+    [
+        (partial(between, 3), (3, 0, None)),
+        (partial(between, 3), (3, 0, None)),
+        (partial(between, 3), (3, 0, None)),
+        (partial(between, 3, 1), (3, 1, None)),
+        (partial(between, 4, 2, 5), (4, 2, 5)),
+        (partial(between, 3, lower=1), (3, 1, None)),
+        (partial(between, 4, lower=2, upper=5), (4, 2, 5)),
+        (partial(between, 4, upper=5), (4, 0, 5)),
+        (partial(between, value=4, upper=5), (4, 0, 5)),
+    ],
+)
 def test_input_signature(call, expected):
     assert call() == list(zip(['value', 'lower', 'upper'], expected))
 
@@ -136,30 +141,14 @@ def test_maintain_definition_order():
 
 
 def test_signature_equals():
-    s1 = TypeSignature([
-        ('left', Argument(int)),
-        ('right', Argument(int))
-    ])
-    s2 = TypeSignature([
-        ('left', Argument(int)),
-        ('right', Argument(int))
-    ])
-    s3 = TypeSignature([
-        ('left', Argument(int)),
-        ('right', Argument(float))
-    ])
-    s4 = TypeSignature([
-        ('left', Argument(int)),
-        ('right', Argument(float))
-    ])
-    s5 = TypeSignature([
-        ('left_one', Argument(int)),
-        ('right', Argument(float))
-    ])
-    s6 = TypeSignature([
-        ('left_one', Argument(int)),
-        ('right', Argument(int))
-    ])
+    s1 = TypeSignature([('left', Argument(int)), ('right', Argument(int))])
+    s2 = TypeSignature([('left', Argument(int)), ('right', Argument(int))])
+    s3 = TypeSignature([('left', Argument(int)), ('right', Argument(float))])
+    s4 = TypeSignature([('left', Argument(int)), ('right', Argument(float))])
+    s5 = TypeSignature(
+        [('left_one', Argument(int)), ('right', Argument(float))]
+    )
+    s6 = TypeSignature([('left_one', Argument(int)), ('right', Argument(int))])
     assert s1 == s2
     assert s3 == s4
     assert s1 != s3
@@ -185,31 +174,33 @@ def test_signature_inheritance():
     class IntAddClip(FloatAddClip, IntBinop):
         pass
 
-    assert IntBinop.signature == TypeSignature([
-        ('left', Argument(int)),
-        ('right', Argument(int))
-    ])
-    assert FloatAddRhs.signature == TypeSignature([
-        ('left', Argument(int)),
-        ('right', Argument(float))
-    ])
-    assert FloatAddClip.signature == TypeSignature([
-        ('left', Argument(float)),
-        ('right', Argument(float)),
-        ('clip_lower', Argument(int, default=0)),
-        ('clip_upper', Argument(int, default=10))
-    ])
-    assert IntAddClip.signature == TypeSignature([
-        ('left', Argument(int)),
-        ('right', Argument(int)),
-        ('clip_lower', Argument(int, default=0)),
-        ('clip_upper', Argument(int, default=10))
-    ])
+    assert IntBinop.signature == TypeSignature(
+        [('left', Argument(int)), ('right', Argument(int))]
+    )
+    assert FloatAddRhs.signature == TypeSignature(
+        [('left', Argument(int)), ('right', Argument(float))]
+    )
+    assert FloatAddClip.signature == TypeSignature(
+        [
+            ('left', Argument(float)),
+            ('right', Argument(float)),
+            ('clip_lower', Argument(int, default=0)),
+            ('clip_upper', Argument(int, default=10)),
+        ]
+    )
+    assert IntAddClip.signature == TypeSignature(
+        [
+            ('left', Argument(int)),
+            ('right', Argument(int)),
+            ('clip_lower', Argument(int, default=0)),
+            ('clip_upper', Argument(int, default=10)),
+        ]
+    )
 
 
 def test_slots_are_inherited_and_overridable():
     class Op(Annotable):
-        __slots__ = '_cache',  # first definition
+        __slots__ = ('_cache',)  # first definition
         arg = Argument(lambda x: x)
 
     class StringOp(Op):
@@ -219,7 +210,7 @@ def test_slots_are_inherited_and_overridable():
         sep = Argument(str)  # inherit
 
     class StringJoin(StringOp):
-        __slots__ = '_memoize',  # override
+        __slots__ = ('_memoize',)  # override
         sep = Argument(str)
 
     assert Op.__slots__ == ('_cache', 'arg')

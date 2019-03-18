@@ -37,7 +37,7 @@ def test_table_type_output():
             ('job', 'string'),
             ('dept_id', 'string'),
             ('year', 'int32'),
-            ('y', 'double')
+            ('y', 'double'),
         ],
         name='foo',
     )
@@ -82,22 +82,19 @@ def test_aggregate_arg_names(table):
 
 def test_format_multiple_join_with_projection():
     # Star schema with fact table
-    table = ibis.table([
-        ('c', 'int32'),
-        ('f', 'double'),
-        ('foo_id', 'string'),
-        ('bar_id', 'string'),
-    ], 'one')
+    table = ibis.table(
+        [
+            ('c', 'int32'),
+            ('f', 'double'),
+            ('foo_id', 'string'),
+            ('bar_id', 'string'),
+        ],
+        'one',
+    )
 
-    table2 = ibis.table([
-        ('foo_id', 'string'),
-        ('value1', 'double')
-    ], 'two')
+    table2 = ibis.table([('foo_id', 'string'), ('value1', 'double')], 'two')
 
-    table3 = ibis.table([
-        ('bar_id', 'string'),
-        ('value2', 'double')
-    ], 'three')
+    table3 = ibis.table([('bar_id', 'string'), ('value2', 'double')], 'three')
 
     filtered = table[table['f'] > 0]
 
@@ -125,8 +122,9 @@ def test_memoize_database_table(con):
     joined = table2.inner_join(table3, [join_pred])
 
     met1 = (table3['f'] - table2['value']).mean().name('foo')
-    result = joined.aggregate([met1, table3['f'].sum().name('bar')],
-                              by=[table3['g'], table2['key']])
+    result = joined.aggregate(
+        [met1, table3['f'].sum().name('bar')], by=[table3['g'], table2['key']]
+    )
 
     formatted = repr(result)
     assert formatted.count('test1') == 1
@@ -134,9 +132,10 @@ def test_memoize_database_table(con):
 
 
 def test_memoize_filtered_table():
-    airlines = ibis.table([('dest', 'string'),
-                           ('origin', 'string'),
-                           ('arrdelay', 'int32')], 'airlines')
+    airlines = ibis.table(
+        [('dest', 'string'), ('origin', 'string'), ('arrdelay', 'int32')],
+        'airlines',
+    )
 
     dests = ['ORD', 'JFK', 'SFO']
     t = airlines[airlines.dest.isin(dests)]
@@ -150,13 +149,11 @@ def test_memoize_insert_sort_key(con):
     table = con.table('airlines')
 
     t = table['arrdelay', 'dest']
-    expr = (t.group_by('dest')
-            .mutate(dest_avg=t.arrdelay.mean(),
-                    dev=t.arrdelay - t.arrdelay.mean()))
+    expr = t.group_by('dest').mutate(
+        dest_avg=t.arrdelay.mean(), dev=t.arrdelay - t.arrdelay.mean()
+    )
 
-    worst = (expr[expr.dev.notnull()]
-             .sort_by(ibis.desc('dev'))
-             .limit(10))
+    worst = expr[expr.dev.notnull()].sort_by(ibis.desc('dev')).limit(10)
 
     result = repr(worst)
     assert result.count('airlines') == 1
@@ -177,21 +174,24 @@ def test_named_value_expr_show_name(table):
 
 def test_memoize_filtered_tables_in_join():
     # related: GH #667
-    purchases = ibis.table([('region', 'string'),
-                            ('kind', 'string'),
-                            ('user', 'int64'),
-                            ('amount', 'double')], 'purchases')
+    purchases = ibis.table(
+        [
+            ('region', 'string'),
+            ('kind', 'string'),
+            ('user', 'int64'),
+            ('amount', 'double'),
+        ],
+        'purchases',
+    )
 
     metric = purchases.amount.sum().name('total')
-    agged = (purchases.group_by(['region', 'kind'])
-             .aggregate(metric))
+    agged = purchases.group_by(['region', 'kind']).aggregate(metric)
 
     left = agged[agged.kind == 'foo']
     right = agged[agged.kind == 'bar']
 
     cond = left.region == right.region
-    joined = (left.join(right, cond)
-              [left, right.total.name('right_total')])
+    joined = left.join(right, cond)[left, right.total.name('right_total')]
 
     result = repr(joined)
 

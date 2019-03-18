@@ -10,6 +10,7 @@ __all__ = 'compile', 'verify', 'connect', 'dialect'
 
 try:
     import lz4  # noqa: F401
+
     _default_compression = 'lz4'
 except ImportError:
     _default_compression = False
@@ -25,6 +26,7 @@ def compile(expr, params=None):
     compiled : string
     """
     from ibis.clickhouse.compiler import to_sql
+
     return to_sql(expr, dialect.make_context(params=params))
 
 
@@ -40,8 +42,15 @@ def verify(expr, params=None):
         return False
 
 
-def connect(host='localhost', port=9000, database='default', user='default',
-            password='', client_name='ibis', compression=_default_compression):
+def connect(
+    host='localhost',
+    port=9000,
+    database='default',
+    user='default',
+    password='',
+    client_name='ibis',
+    compression=_default_compression,
+):
     """Create an ClickhouseClient for use with Ibis.
 
     Parameters
@@ -83,9 +92,15 @@ def connect(host='localhost', port=9000, database='default', user='default',
     -------
     ClickhouseClient
     """
-    client = ClickhouseClient(host, port=port, database=database, user=user,
-                              password=password, client_name=client_name,
-                              compression=compression)
+    client = ClickhouseClient(
+        host,
+        port=port,
+        database=database,
+        user=user,
+        password=password,
+        client_name=client_name,
+        compression=compression,
+    )
     if options.default_backend is None:
         options.default_backend = client
 

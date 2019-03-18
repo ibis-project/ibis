@@ -22,13 +22,13 @@ pytestmark = pytest.mark.kudu
 
 
 class KuduImpalaTestEnv(IbisTestEnv):
-
     def __init__(self):
         super().__init__()
 
         # band-aid until Kudu support merged into Impala mainline
-        self.test_host = os.getenv('IBIS_TEST_KIMPALA_HOST',
-                                   'quickstart.cloudera')
+        self.test_host = os.getenv(
+            'IBIS_TEST_KIMPALA_HOST', 'quickstart.cloudera'
+        )
 
         # XXX
         self.impala_host = self.test_host
@@ -37,10 +37,12 @@ class KuduImpalaTestEnv(IbisTestEnv):
         self.master_port = os.getenv('IBIS_TEST_KUDU_MASTER_PORT', 7051)
         self.nn_host = os.environ.get('IBIS_TEST_KUDU_NN_HOST', self.test_host)
 
-        self.webhdfs_port = int(os.environ.get('IBIS_TEST_WEBHDFS_PORT',
-                                               50070))
-        self.hdfs_superuser = os.environ.get('IBIS_TEST_HDFS_SUPERUSER',
-                                             'hdfs')
+        self.webhdfs_port = int(
+            os.environ.get('IBIS_TEST_WEBHDFS_PORT', 50070)
+        )
+        self.hdfs_superuser = os.environ.get(
+            'IBIS_TEST_HDFS_SUPERUSER', 'hdfs'
+        )
 
 
 ENV = KuduImpalaTestEnv()
@@ -61,11 +63,9 @@ class TestKuduTools(unittest.TestCase):
             ('f', dt.Boolean(False), 'bool', False, False),
             ('g', dt.Float(False), 'float', False, False),
             ('h', dt.Double(True), 'double', True, False),
-
             # TODO
             # ('i', 'binary', False, False),
-
-            ('j', dt.Timestamp(True), 'timestamp', True, False)
+            ('j', dt.Timestamp(True), 'timestamp', True, False),
         ]
 
         builder = kudu.schema_builder()
@@ -88,14 +88,17 @@ class TestKuduTools(unittest.TestCase):
         assert_equal(ischema, expected)
 
     def test_create_external_ddl(self):
-        schema = ibis.schema([('key1', 'int32'),
-                              ('key2', 'int64'),
-                              ('value1', 'double')])
+        schema = ibis.schema(
+            [('key1', 'int32'), ('key2', 'int64'), ('value1', 'double')]
+        )
 
-        stmt = ksupport.CreateTableKudu('impala_name', 'kudu_name',
-                                        ['master1.d.com:7051',
-                                         'master2.d.com:7051'],
-                                        schema, ['key1', 'key2'])
+        stmt = ksupport.CreateTableKudu(
+            'impala_name',
+            'kudu_name',
+            ['master1.d.com:7051', 'master2.d.com:7051'],
+            schema,
+            ['key1', 'key2'],
+        )
 
         result = stmt.compile()
         expected = """\
@@ -116,9 +119,15 @@ TBLPROPERTIES (
 
         select = build_ast(con.table('test1')).queries[0]
         statement = ksupport.CTASKudu(
-            'another_table', 'kudu_name', ['dom.d.com:7051'],
-            select, ['string_col'], external=True,
-            can_exist=False, database='foo')
+            'another_table',
+            'kudu_name',
+            ['dom.d.com:7051'],
+            select,
+            ['string_col'],
+            external=True,
+            can_exist=False,
+            database='foo',
+        )
         result = statement.compile()
 
         expected = """\
@@ -135,7 +144,6 @@ FROM test1"""
 
 
 class TestKuduE2E(ImpalaE2E, unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         ImpalaE2E.setup_e2e(cls, ENV)
@@ -206,10 +214,13 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
 
         impala_name = self._temp_impala_name()
         impala_db = self.env.test_data_db
-        self.con.kudu.table(kudu_name, name=impala_name,
-                            database=impala_db,
-                            external=True,
-                            persist=True)
+        self.con.kudu.table(
+            kudu_name,
+            name=impala_name,
+            database=impala_db,
+            external=True,
+            persist=True,
+        )
 
         t = self.con.table(impala_name, database=impala_db)
         assert len(t.execute()) == nrows
@@ -230,19 +241,26 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
 
         impala_name = self._temp_impala_name()
         impala_db = self.env.test_data_db
-        self.con.kudu.table(kudu_name, name=impala_name,
-                            database=impala_db,
-                            external=True,
-                            persist=True)
+        self.con.kudu.table(
+            kudu_name,
+            name=impala_name,
+            database=impala_db,
+            external=True,
+            persist=True,
+        )
 
         impala_name2 = self._temp_impala_name()
         expr = self.con.table(impala_name, database=impala_db)
 
         kudu_name2 = 'ibis-ctas-{0}'.format(util.guid())
 
-        self.con.kudu.create_table(impala_name2, kudu_name2,
-                                   primary_keys=['key'],
-                                   obj=expr, database=impala_db)
+        self.con.kudu.create_table(
+            impala_name2,
+            kudu_name2,
+            primary_keys=['key'],
+            obj=expr,
+            database=impala_db,
+        )
 
         # TODO: should some stats be automatically computed?
         itable = self.con.table(impala_name2, database=impala_db)
@@ -258,10 +276,13 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
         impala_name = self._temp_impala_name()
         kudu_name = 'ibis-empty-{0}'.format(util.guid())
 
-        self.con.kudu.create_table(impala_name, kudu_name,
-                                   primary_keys=['key'],
-                                   schema=ischema,
-                                   database=self.env.test_data_db)
+        self.con.kudu.create_table(
+            impala_name,
+            kudu_name,
+            primary_keys=['key'],
+            schema=ischema,
+            database=self.env.test_data_db,
+        )
 
         ktable = self.kclient.table(kudu_name)
         assert ktable.schema.equals(kschema)

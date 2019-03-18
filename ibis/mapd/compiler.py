@@ -39,6 +39,7 @@ class MapDSelectBuilder(compiles.SelectBuilder):
     """
 
     """
+
     @property
     def _select_class(self):
         return MapDSelect
@@ -51,6 +52,7 @@ class MapDQueryBuilder(compiles.QueryBuilder):
     """
 
     """
+
     select_builder = MapDSelectBuilder
     union_class = None
 
@@ -64,6 +66,7 @@ class MapDQueryContext(compiles.QueryContext):
     """
 
     """
+
     always_alias = False
 
     def _to_sql(self, expr, ctx):
@@ -75,6 +78,7 @@ class MapDSelect(compiles.Select):
     """
 
     """
+
     @property
     def translator(self):
         return MapDExprTranslator
@@ -93,10 +97,7 @@ class MapDSelect(compiles.Select):
 
         lines = []
         if self.group_by:
-            columns = [
-                '{}'.format(expr.get_name())
-                for expr in self.group_by
-            ]
+            columns = ['{}'.format(expr.get_name()) for expr in self.group_by]
             clause = 'GROUP BY {}'.format(', '.join(columns))
             lines.append(clause)
 
@@ -127,10 +128,11 @@ class MapDTableSetFormatter(compiles.TableSetFormatter):
     """
 
     """
+
     _join_names = {
         ops.InnerJoin: 'JOIN',
         ops.LeftJoin: 'LEFT JOIN',
-        ops.CrossJoin: 'JOIN'
+        ops.CrossJoin: 'JOIN',
     }
 
     def get_result(self):
@@ -146,8 +148,9 @@ class MapDTableSetFormatter(compiles.TableSetFormatter):
 
         buf = StringIO()
         buf.write(self.join_tables[0])
-        for jtype, table, preds in zip(self.join_types, self.join_tables[1:],
-                                       self.join_predicates):
+        for jtype, table, preds in zip(
+            self.join_types, self.join_tables[1:], self.join_predicates
+        ):
             buf.write('\n')
             buf.write(util.indent('{} {}'.format(jtype, table), self.indent))
 
@@ -163,13 +166,12 @@ class MapDTableSetFormatter(compiles.TableSetFormatter):
                 buf.write('\n')
 
                 conj = ' AND\n{}'.format(' ' * 3)
-                fmt_preds = util.indent('ON ' + conj.join(fmt_preds),
-                                        self.indent * 2)
+                fmt_preds = util.indent(
+                    'ON ' + conj.join(fmt_preds), self.indent * 2
+                )
                 buf.write(fmt_preds)
             else:
-                buf.write(
-                    util.indent('ON TRUE', self.indent * 2)
-                )
+                buf.write(util.indent('ON TRUE', self.indent * 2))
 
         return buf.getvalue()
 
@@ -179,11 +181,15 @@ class MapDTableSetFormatter(compiles.TableSetFormatter):
         for pred in predicates:
             op = pred.op()
 
-            if (not isinstance(op, ops.Equals) and
-                    not self._non_equijoin_supported):
-                raise com.TranslationError('Non-equality join predicates, '
-                                           'i.e. non-equijoins, are not '
-                                           'supported')
+            if (
+                not isinstance(op, ops.Equals)
+                and not self._non_equijoin_supported
+            ):
+                raise com.TranslationError(
+                    'Non-equality join predicates, '
+                    'i.e. non-equijoins, are not '
+                    'supported'
+                )
 
     def _format_predicate(self, predicate):
         column = predicate.op().args[0]
@@ -197,6 +203,7 @@ class MapDExprTranslator(compiles.ExprTranslator):
     """
 
     """
+
     _registry = mapd_ops._operation_registry
     _rewrites = impala_compiler.ImpalaExprTranslator._rewrites.copy()
 
@@ -210,6 +217,7 @@ class MapDDialect(compiles.Dialect):
     """
 
     """
+
     translator = MapDExprTranslator
 
 
@@ -241,21 +249,18 @@ def mapd_rewrite_not_any(expr):
 
 
 _add_methods(
-    ir.NumericValue, dict(
+    ir.NumericValue,
+    dict(
         conv_4326_900913_x=_unary_op(
             'conv_4326_900913_x', mapd_ops.Conv_4326_900913_X
         ),
         conv_4326_900913_y=_unary_op(
             'conv_4326_900913_y', mapd_ops.Conv_4326_900913_Y
         ),
-        truncate=_binop_expr(
-            'truncate', mapd_ops.NumericTruncate
-        )
-    )
+        truncate=_binop_expr('truncate', mapd_ops.NumericTruncate),
+    ),
 )
 
 _add_methods(
-    ir.StringValue, dict(
-        byte_length=_unary_op('length', mapd_ops.ByteLength)
-    )
+    ir.StringValue, dict(byte_length=_unary_op('length', mapd_ops.ByteLength))
 )

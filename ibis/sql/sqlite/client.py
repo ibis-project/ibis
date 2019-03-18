@@ -39,6 +39,7 @@ def udf(f):
         A callable object that returns ``None`` if any of its inputs are
         ``None``.
     """
+
     @functools.wraps(f)
     def wrapper(*args):
         if any(arg is None for arg in args):

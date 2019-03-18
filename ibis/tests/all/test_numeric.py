@@ -15,24 +15,45 @@ from ibis import literal as L
 from ibis.tests.backends import MapD
 
 
-@pytest.mark.parametrize(('operand_fn', 'expected_operand_fn'), [
-    param(lambda t: t.float_col, lambda t: t.float_col, id='float-column'),
-    param(lambda t: t.double_col, lambda t: t.double_col, id='double-column'),
-    param(lambda t: ibis.literal(1.3), lambda t: 1.3, id='float-literal'),
-    param(lambda t: ibis.literal(np.nan), lambda t: np.nan, id='nan-literal'),
-    param(lambda t: ibis.literal(np.inf), lambda t: np.inf, id='inf-literal'),
-    param(lambda t: ibis.literal(-np.inf),
-          lambda t: -np.inf,
-          id='-inf-literal')
-])
-@pytest.mark.parametrize(('expr_fn', 'expected_expr_fn'), [
-    param(operator.methodcaller('isnan'), np.isnan, id='isnan'),
-    param(operator.methodcaller('isinf'), np.isinf, id='isinf')
-])
+@pytest.mark.parametrize(
+    ('operand_fn', 'expected_operand_fn'),
+    [
+        param(lambda t: t.float_col, lambda t: t.float_col, id='float-column'),
+        param(
+            lambda t: t.double_col, lambda t: t.double_col, id='double-column'
+        ),
+        param(lambda t: ibis.literal(1.3), lambda t: 1.3, id='float-literal'),
+        param(
+            lambda t: ibis.literal(np.nan), lambda t: np.nan, id='nan-literal'
+        ),
+        param(
+            lambda t: ibis.literal(np.inf), lambda t: np.inf, id='inf-literal'
+        ),
+        param(
+            lambda t: ibis.literal(-np.inf),
+            lambda t: -np.inf,
+            id='-inf-literal',
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    ('expr_fn', 'expected_expr_fn'),
+    [
+        param(operator.methodcaller('isnan'), np.isnan, id='isnan'),
+        param(operator.methodcaller('isinf'), np.isinf, id='isinf'),
+    ],
+)
 @tu.skipif_unsupported
-def test_isnan_isinf(backend, con, alltypes, df,
-                     operand_fn, expected_operand_fn,
-                     expr_fn, expected_expr_fn):
+def test_isnan_isinf(
+    backend,
+    con,
+    alltypes,
+    df,
+    operand_fn,
+    expected_operand_fn,
+    expr_fn,
+    expected_expr_fn,
+):
     expr = expr_fn(operand_fn(alltypes))
     expected = expected_expr_fn(expected_operand_fn(df))
 
@@ -45,26 +66,29 @@ def test_isnan_isinf(backend, con, alltypes, df,
         assert result == expected
 
 
-@pytest.mark.parametrize(('expr', 'expected'), [
-    param(L(-5).abs(), 5, id='abs-neg'),
-    param(L(5).abs(), 5, id='abs'),
-    param(ibis.least(L(10), L(1)), 1, id='least'),
-    param(ibis.greatest(L(10), L(1)), 10, id='greatest'),
-    param(L(5.5).round(), 6.0, id='round'),
-    param(L(5.556).round(2), 5.56, id='round-digits'),
-    param(L(5.556).ceil(), 6.0, id='ceil'),
-    param(L(5.556).floor(), 5.0, id='floor'),
-    param(L(5.556).exp(), math.exp(5.556), id='expr'),
-    param(L(5.556).sign(), 1, id='sign-pos'),
-    param(L(-5.556).sign(), -1, id='sign-neg'),
-    param(L(0).sign(), 0, id='sign-zero'),
-    param(L(5.556).sqrt(), math.sqrt(5.556), id='sqrt'),
-    param(L(5.556).log(2), math.log(5.556, 2), id='log-base'),
-    param(L(5.556).ln(), math.log(5.556), id='ln'),
-    param(L(5.556).log2(), math.log(5.556, 2), id='log2'),
-    param(L(5.556).log10(), math.log10(5.556), id='log10'),
-    param(L(11) % 3, 11 % 3, id='mod'),
-])
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        param(L(-5).abs(), 5, id='abs-neg'),
+        param(L(5).abs(), 5, id='abs'),
+        param(ibis.least(L(10), L(1)), 1, id='least'),
+        param(ibis.greatest(L(10), L(1)), 10, id='greatest'),
+        param(L(5.5).round(), 6.0, id='round'),
+        param(L(5.556).round(2), 5.56, id='round-digits'),
+        param(L(5.556).ceil(), 6.0, id='ceil'),
+        param(L(5.556).floor(), 5.0, id='floor'),
+        param(L(5.556).exp(), math.exp(5.556), id='expr'),
+        param(L(5.556).sign(), 1, id='sign-pos'),
+        param(L(-5.556).sign(), -1, id='sign-neg'),
+        param(L(0).sign(), 0, id='sign-zero'),
+        param(L(5.556).sqrt(), math.sqrt(5.556), id='sqrt'),
+        param(L(5.556).log(2), math.log(5.556, 2), id='log-base'),
+        param(L(5.556).ln(), math.log(5.556), id='ln'),
+        param(L(5.556).log2(), math.log(5.556, 2), id='log2'),
+        param(L(5.556).log10(), math.log10(5.556), id='log10'),
+        param(L(11) % 3, 11 % 3, id='mod'),
+    ],
+)
 @tu.skipif_backend(MapD)
 @tu.skipif_unsupported
 def test_math_functions_literals(backend, con, alltypes, df, expr, expected):
@@ -85,34 +109,34 @@ def test_math_functions_literals(backend, con, alltypes, df, expr, expected):
         param(
             lambda t: (-t.double_col).abs(),
             lambda t: (-t.double_col).abs(),
-            id='abs-neg'
+            id='abs-neg',
         ),
         param(
             lambda t: t.double_col.abs(),
             lambda t: t.double_col.abs(),
-            id='abs'
+            id='abs',
         ),
         param(
             lambda t: t.double_col.ceil(),
             lambda t: np.ceil(t.double_col).astype('int64'),
-            id='ceil'
+            id='ceil',
         ),
         param(
             lambda t: t.double_col.floor(),
             lambda t: np.floor(t.double_col).astype('int64'),
-            id='floor'
+            id='floor',
         ),
         param(
             lambda t: t.double_col.sign(),
             lambda t: np.sign(t.double_col),
-            id='sign'
+            id='sign',
         ),
         param(
             lambda t: (-t.double_col).sign(),
             lambda t: np.sign(-t.double_col),
-            id='sign-negative'
+            id='sign-negative',
         ),
-    ]
+    ],
 )
 @tu.skipif_unsupported
 def test_simple_math_functions_columns(
@@ -128,35 +152,36 @@ def test_simple_math_functions_columns(
 # domain errors), and we test the backends' various failure modes in each
 # backend's test suite
 
+
 @pytest.mark.parametrize(
     ('expr_fn', 'expected_fn'),
     [
         param(
             lambda t: t.double_col.add(1).sqrt(),
             lambda t: np.sqrt(t.double_col + 1),
-            id='sqrt'
+            id='sqrt',
         ),
         param(
             lambda t: t.double_col.add(1).exp(),
             lambda t: np.exp(t.double_col + 1),
-            id='exp'
+            id='exp',
         ),
         param(
             lambda t: t.double_col.add(1).log(2),
             lambda t: np.log2(t.double_col + 1),
-            id='log2'
+            id='log2',
         ),
         param(
             lambda t: t.double_col.add(1).ln(),
             lambda t: np.log(t.double_col + 1),
-            id='ln'
+            id='ln',
         ),
         param(
             lambda t: t.double_col.add(1).log10(),
             lambda t: np.log10(t.double_col + 1),
-            id='log10'
+            id='log10',
         ),
-    ]
+    ],
 )
 @tu.skipif_unsupported
 def test_complex_math_functions_columns(
@@ -184,27 +209,30 @@ def test_complex_math_functions_columns(
         param(
             lambda be, t: be.least(ibis.least, t.bigint_col, t.int_col),
             lambda be, t: pd.Series(list(map(min, t.bigint_col, t.int_col))),
-            id='least-all-columns'
+            id='least-all-columns',
         ),
         param(
             lambda be, t: be.least(ibis.least, t.bigint_col, t.int_col, -2),
             lambda be, t: pd.Series(
-                list(map(min, t.bigint_col, t.int_col, [-2] * len(t)))),
-            id='least-scalar'
+                list(map(min, t.bigint_col, t.int_col, [-2] * len(t)))
+            ),
+            id='least-scalar',
         ),
         param(
             lambda be, t: be.greatest(ibis.greatest, t.bigint_col, t.int_col),
             lambda be, t: pd.Series(list(map(max, t.bigint_col, t.int_col))),
-            id='greatest-all-columns'
+            id='greatest-all-columns',
         ),
         param(
             lambda be, t: be.greatest(
-                ibis.greatest, t.bigint_col, t.int_col, -2),
+                ibis.greatest, t.bigint_col, t.int_col, -2
+            ),
             lambda be, t: pd.Series(
-                list(map(max, t.bigint_col, t.int_col, [-2] * len(t)))),
-            id='greatest-scalar'
+                list(map(max, t.bigint_col, t.int_col, [-2] * len(t)))
+            ),
+            id='greatest-scalar',
         ),
-    ]
+    ],
 )
 @tu.skipif_unsupported
 def test_backend_specific_numerics(
@@ -216,14 +244,18 @@ def test_backend_specific_numerics(
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.parametrize('op', [
-    operator.add,
-    operator.sub,
-    operator.mul,
-    operator.truediv,
-    operator.floordiv,
-    operator.pow,
-], ids=lambda op: op.__name__)
+@pytest.mark.parametrize(
+    'op',
+    [
+        operator.add,
+        operator.sub,
+        operator.mul,
+        operator.truediv,
+        operator.floordiv,
+        operator.pow,
+    ],
+    ids=lambda op: op.__name__,
+)
 def test_binary_arithmetic_operations(backend, alltypes, df, op):
     smallint_col = alltypes.smallint_col + 1  # make it nonzero
     smallint_series = df.smallint_col + 1
@@ -238,8 +270,9 @@ def test_binary_arithmetic_operations(backend, alltypes, df, op):
         result = result.astype('float64')
 
     expected = backend.default_series_rename(expected)
-    backend.assert_series_equal(result, expected, check_exact=False,
-                                check_less_precise=True)
+    backend.assert_series_equal(
+        result, expected, check_exact=False, check_less_precise=True
+    )
 
 
 def test_mod(backend, alltypes, df):
@@ -265,8 +298,9 @@ def test_floating_mod(backend, alltypes, df):
     expected = operator.mod(df.double_col, df.smallint_col + 1)
 
     expected = backend.default_series_rename(expected)
-    backend.assert_series_equal(result, expected, check_exact=False,
-                                check_less_precise=True)
+    backend.assert_series_equal(
+        result, expected, check_exact=False, check_less_precise=True
+    )
 
 
 @pytest.mark.parametrize(
@@ -278,7 +312,7 @@ def test_floating_mod(backend, alltypes, df):
         'bigint_col',
         'float_col',
         'double_col',
-    ]
+    ],
 )
 @pytest.mark.parametrize('denominator', [0, 0.0])
 def test_divide_by_zero(backend, alltypes, df, column, denominator):

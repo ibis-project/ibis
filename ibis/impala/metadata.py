@@ -106,8 +106,9 @@ class MetadataParser:
         self._reset()
         self._parse()
 
-        return TableMetadata(self.schema, self.info, self.storage,
-                             partitions=self.partitions)
+        return TableMetadata(
+            self.schema, self.info, self.storage, partitions=self.partitions
+        )
 
     def _parse(self):
         self.schema = self._parse_schema()
@@ -130,9 +131,10 @@ class MetadataParser:
     def _parse_schema(self):
         tup = self._next_tuple()
         if 'col_name' not in tup[0]:
-            raise ValueError('DESCRIBE FORMATTED did not return '
-                             'the expected results: {0}'
-                             .format(tup))
+            raise ValueError(
+                'DESCRIBE FORMATTED did not return '
+                'the expected results: {0}'.format(tup)
+            )
         self._next_tuple()
 
         # Use for both main schema and partition schema (if any)
@@ -177,7 +179,7 @@ class MetadataParser:
         'protect mode': _get_type(),
         'retention': _get_type(_try_int),
         'location': _get_type(),
-        'table type': _get_type()
+        'table type': _get_type(),
     }
 
     def _parse_table_parameters(self):
@@ -266,6 +268,7 @@ def _get_meta(attr, key):
             return result
         else:
             return data[key]
+
     return f
 
 
@@ -275,6 +278,7 @@ class TableMetadata:
     Container for the parsed and wrangled results of DESCRIBE FORMATTED for
     easier Ibis use (and testing).
     """
+
     def __init__(self, schema, info, storage, partitions=None):
         self.schema = schema
         self.info = info
@@ -292,7 +296,7 @@ class TableMetadata:
         data = {
             'schema': self.schema,
             'info': self.info,
-            'storage info': self.storage
+            'storage info': self.storage,
         }
         if self.partitions is not None:
             data['partition schema'] = self.partitions

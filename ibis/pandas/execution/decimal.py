@@ -61,7 +61,7 @@ def execute_decimal_unary(op, data, **kwargs):
     function = getattr(
         decimal.Decimal,
         operation_name,
-        lambda x: decimal.Decimal(math_function(x))
+        lambda x: decimal.Decimal(math_function(x)),
     )
     try:
         return function(data)
@@ -90,7 +90,7 @@ def execute_round_decimal(op, data, places, **kwargs):
     if places < 0:
         decimal_format_string = '0.{}E+{:d}'.format(
             '0' * (integer_part_length - 1 + places),
-            max(integer_part_length + places, abs(places))
+            max(integer_part_length + places, abs(places)),
         )
     else:
         decimal_format_string = '{}.{}'.format(
@@ -112,7 +112,7 @@ def execute_cast_series_to_decimal(op, data, type, **kwargs):
     scale = type.scale
     context = decimal.Context(prec=precision)
     places = context.create_decimal(
-        '{}.{}'.format('0' * (precision - scale), '0' * scale),
+        '{}.{}'.format('0' * (precision - scale), '0' * scale)
     )
     return data.apply(
         lambda x, context=context, places=places: (  # noqa: E501

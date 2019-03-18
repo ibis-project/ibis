@@ -33,7 +33,7 @@ _kudu_type_to_ibis_typeclass = {
     'double': dt.Double,
     'bool': dt.Boolean,
     'string': dt.String,
-    'timestamp': dt.Timestamp
+    'timestamp': dt.Timestamp,
 }
 
 
@@ -55,8 +55,13 @@ class KuduImpalaInterface:
     def table_exists(self, name):
         return self.client.table_exists(name)
 
-    def connect(self, host_or_hosts, port_or_ports=7051,
-                rpc_timeout=None, admin_timeout=None):
+    def connect(
+        self,
+        host_or_hosts,
+        port_or_ports=7051,
+        rpc_timeout=None,
+        admin_timeout=None,
+    ):
         """
         Pass-through connection interface to the Kudu client
 
@@ -75,23 +80,36 @@ class KuduImpalaInterface:
         -------
         None
         """
-        self.client = kudu.connect(host_or_hosts, port_or_ports,
-                                   rpc_timeout_ms=rpc_timeout,
-                                   admin_timeout_ms=admin_timeout)
+        self.client = kudu.connect(
+            host_or_hosts,
+            port_or_ports,
+            rpc_timeout_ms=rpc_timeout,
+            admin_timeout_ms=admin_timeout,
+        )
 
     def _check_connected(self):
         if not self.is_connected:
-            raise IbisError('Please first connect to a Kudu cluster '
-                            'with client.kudu.connect')
+            raise IbisError(
+                'Please first connect to a Kudu cluster '
+                'with client.kudu.connect'
+            )
 
     @property
     def is_connected(self):
         # crude check for now
         return self.client is not None
 
-    def create_table(self, impala_name, kudu_name, primary_keys=None,
-                     obj=None, schema=None, database=None,
-                     external=False, force=False):
+    def create_table(
+        self,
+        impala_name,
+        kudu_name,
+        primary_keys=None,
+        obj=None,
+        schema=None,
+        database=None,
+        external=False,
+        force=False,
+    ):
         """
         Create an Kudu-backed table in the connected Impala cluster. For
         non-external tables, this will create a Kudu table with a compatible
@@ -121,28 +139,38 @@ class KuduImpalaInterface:
         self._check_connected()
 
         if not external and (primary_keys is None or len(primary_keys) == 0):
-            raise ValueError('Must specify primary keys when DDL creates a '
-                             'new Kudu table')
+            raise ValueError(
+                'Must specify primary keys when DDL creates a '
+                'new Kudu table'
+            )
 
         if obj is not None:
             if external:
-                raise ValueError('Cannot create an external Kudu-Impala table '
-                                 'from an expression or DataFrame')
+                raise ValueError(
+                    'Cannot create an external Kudu-Impala table '
+                    'from an expression or DataFrame'
+                )
 
             if isinstance(obj, pd.DataFrame):
                 from ibis.impala.pandas_interop import write_temp_dataframe
-                writer, to_insert = write_temp_dataframe(self.impala_client,
-                                                         obj)
+
+                writer, to_insert = write_temp_dataframe(
+                    self.impala_client, obj
+                )
             else:
                 to_insert = obj
             # XXX: exposing a lot of internals
             ast = self.impala_client._build_ast(to_insert)
             select = ast.queries[0]
 
-            stmt = CTASKudu(impala_name, kudu_name,
-                            self.client.master_addrs,
-                            select, primary_keys,
-                            database=database)
+            stmt = CTASKudu(
+                impala_name,
+                kudu_name,
+                self.client.master_addrs,
+                select,
+                primary_keys,
+                database=database,
+            )
         else:
             if external:
                 ktable = self.client.table(kudu_name)
@@ -150,20 +178,26 @@ class KuduImpalaInterface:
                 schema = schema_kudu_to_ibis(kschema)
                 primary_keys = kschema.primary_keys()
             elif schema is None:
-                raise ValueError('Must specify schema for new empty '
-                                 'Kudu-backed table')
+                raise ValueError(
+                    'Must specify schema for new empty ' 'Kudu-backed table'
+                )
 
-            stmt = CreateTableKudu(impala_name, kudu_name,
-                                   self.client.master_addrs,
-                                   schema, primary_keys,
-                                   external=external,
-                                   database=database,
-                                   can_exist=False)
+            stmt = CreateTableKudu(
+                impala_name,
+                kudu_name,
+                self.client.master_addrs,
+                schema,
+                primary_keys,
+                external=external,
+                database=database,
+                can_exist=False,
+            )
 
         self.impala_client._execute(stmt)
 
-    def table(self, kudu_name, name=None, database=None, persist=False,
-              external=True):
+    def table(
+        self, kudu_name, name=None, database=None, persist=False, external=True
+    ):
         """
         Convenience to expose an existing Kudu table (using CREATE TABLE) as an
         Impala table. To create a new table both in the Hive Metastore with
@@ -197,9 +231,9 @@ class KuduImpalaInterface:
         parquet_table : ImpalaTable
         """
         # Law of demeter, but OK for now because internal class coupling
-        name, database = (self.impala_client
-                          ._get_concrete_table_path(name, database,
-                                                    persist=persist))
+        name, database = self.impala_client._get_concrete_table_path(
+            name, database, persist=persist
+        )
         self.create_table(name, kudu_name, database=database, external=True)
         return self.impala_client._wrap_new_table(name, database, persist)
 
@@ -215,15 +249,21 @@ class CreateTableKudu(ddl.CreateTable):
     # - DISTRIBUTE BY RANGE`
     # - multi master test
 
-    def __init__(self, table_name, kudu_table_name,
-                 master_addrs, schema, key_columns,
-                 external=True, **kwargs):
+    def __init__(
+        self,
+        table_name,
+        kudu_table_name,
+        master_addrs,
+        schema,
+        key_columns,
+        external=True,
+        **kwargs,
+    ):
         self.kudu_table_name = kudu_table_name
         self.master_addrs = master_addrs
         self.schema = schema
         self.key_columns = key_columns
-        ddl.CreateTable.__init__(self, table_name, external=external,
-                                 **kwargs)
+        ddl.CreateTable.__init__(self, table_name, external=external, **kwargs)
 
         self._validate()
 
@@ -252,26 +292,41 @@ class CreateTableKudu(ddl.CreateTable):
         addr_string = ', '.join(self.master_addrs)
         keys_string = ', '.join(self.key_columns)
 
-        tbl_props.update({
-            'kudu.table_name': self.kudu_table_name,
-            'kudu.master_addresses': addr_string,
-            'kudu.key_columns': keys_string
-        })
+        tbl_props.update(
+            {
+                'kudu.table_name': self.kudu_table_name,
+                'kudu.master_addresses': addr_string,
+                'kudu.key_columns': keys_string,
+            }
+        )
 
         return tbl_props
 
 
 class CTASKudu(CreateTableKudu):
-
-    def __init__(self, table_name, kudu_name, master_addrs,
-                 select, key_columns, database=None,
-                 external=False, can_exist=False):
+    def __init__(
+        self,
+        table_name,
+        kudu_name,
+        master_addrs,
+        select,
+        key_columns,
+        database=None,
+        external=False,
+        can_exist=False,
+    ):
         self.select = select
-        CreateTableKudu.__init__(self, table_name, kudu_name,
-                                 master_addrs, None, key_columns,
-                                 database=database,
-                                 external=external,
-                                 can_exist=can_exist)
+        CreateTableKudu.__init__(
+            self,
+            table_name,
+            kudu_name,
+            master_addrs,
+            None,
+            key_columns,
+            database=database,
+            external=external,
+            can_exist=can_exist,
+        )
 
     def compile(self):
         buf = StringIO()

@@ -21,8 +21,7 @@ def connect(project_id, dataset_id):
         )
     elif not google_application_credentials:
         pytest.skip(
-            'Environment variable GOOGLE_APPLICATION_CREDENTIALS '
-            'is empty'
+            'Environment variable GOOGLE_APPLICATION_CREDENTIALS is empty'
         )
     elif not os.path.exists(google_application_credentials):
         pytest.skip(

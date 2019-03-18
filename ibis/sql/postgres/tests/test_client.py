@@ -25,14 +25,12 @@ pytest.importorskip('psycopg2')
 
 pytestmark = pytest.mark.postgresql
 
-POSTGRES_TEST_DB = os.environ.get('IBIS_TEST_POSTGRES_DATABASE',
-                                  'ibis_testing')
-IBIS_POSTGRES_HOST = os.environ.get('IBIS_TEST_POSTGRES_HOST',
-                                    'localhost')
-IBIS_POSTGRES_USER = os.environ.get('IBIS_TEST_POSTGRES_USER',
-                                    'postgres')
-IBIS_POSTGRES_PASS = os.environ.get('IBIS_TEST_POSTGRES_PASSWORD',
-                                    'postgres')
+POSTGRES_TEST_DB = os.environ.get(
+    'IBIS_TEST_POSTGRES_DATABASE', 'ibis_testing'
+)
+IBIS_POSTGRES_HOST = os.environ.get('IBIS_TEST_POSTGRES_HOST', 'localhost')
+IBIS_POSTGRES_USER = os.environ.get('IBIS_TEST_POSTGRES_USER', 'postgres')
+IBIS_POSTGRES_PASS = os.environ.get('IBIS_TEST_POSTGRES_PASSWORD', 'postgres')
 
 
 def test_table(alltypes):

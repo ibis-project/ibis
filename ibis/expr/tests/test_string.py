@@ -99,10 +99,7 @@ def test_contains(table):
 
 @pytest.mark.parametrize(
     ('left_slice', 'right_start', 'right_stop'),
-    [
-        (slice(None, 3), 0, 3),
-        (slice(2, 6), 2, 4),
-    ]
+    [(slice(None, 3), 0, 3), (slice(2, 6), 2, 4)],
 )
 def test_getitem_slice(table, left_slice, right_start, right_stop):
     case = table.g[left_slice]

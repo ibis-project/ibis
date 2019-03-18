@@ -14,7 +14,7 @@ from ibis.bigquery.udf.core import PythonToJavaScriptTranslator
 from ibis.bigquery.datatypes import ibis_type_to_bigquery_type, UDFContext
 
 
-__all__ = 'udf',
+__all__ = ('udf',)
 
 
 _udf_name_cache = collections.defaultdict(itertools.count)
@@ -169,37 +169,42 @@ def udf(input_type, output_type, strict=True, libraries=None):
         signature = inspect.signature(f)
         parameter_names = signature.parameters.keys()
 
-        udf_node_fields = collections.OrderedDict([
-            (name, Arg(rlz.value(type)))
-            for name, type in zip(parameter_names, input_type)
-        ] + [
-            (
-                'output_type',
-                lambda self, output_type=output_type: rlz.shape_like(
-                    self.args, dtype=output_type
-                )
-            ),
-            ('__slots__', ('js',)),
-        ])
+        udf_node_fields = collections.OrderedDict(
+            [
+                (name, Arg(rlz.value(type)))
+                for name, type in zip(parameter_names, input_type)
+            ]
+            + [
+                (
+                    'output_type',
+                    lambda self, output_type=output_type: rlz.shape_like(
+                        self.args, dtype=output_type
+                    ),
+                ),
+                ('__slots__', ('js',)),
+            ]
+        )
 
         udf_node = create_udf_node(f.__name__, udf_node_fields)
 
         @compiles(udf_node)
         def compiles_udf_node(t, expr):
             return '{}({})'.format(
-                udf_node.__name__,
-                ', '.join(map(t.translate, expr.op().args))
+                udf_node.__name__, ', '.join(map(t.translate, expr.op().args))
             )
 
         type_translation_context = UDFContext()
         return_type = ibis_type_to_bigquery_type(
-            dt.dtype(output_type), type_translation_context)
+            dt.dtype(output_type), type_translation_context
+        )
         bigquery_signature = ', '.join(
             '{name} {type}'.format(
                 name=name,
                 type=ibis_type_to_bigquery_type(
-                    dt.dtype(type), type_translation_context)
-            ) for name, type in zip(parameter_names, input_type)
+                    dt.dtype(type), type_translation_context
+                ),
+            )
+            for name, type in zip(parameter_names, input_type)
         )
         source = PythonToJavaScriptTranslator(f).compile()
         js = '''\
@@ -217,10 +222,10 @@ return {internal_name}({args});
             strict=repr('use strict') + ';\n' if strict else '',
             args=', '.join(parameter_names),
             libraries=(
-                '\nOPTIONS (\n    library={}\n)'.format(
-                    repr(list(libraries))
-                ) if libraries else ''
-            )
+                '\nOPTIONS (\n    library={}\n)'.format(repr(list(libraries)))
+                if libraries
+                else ''
+            ),
         )
 
         @functools.wraps(f)

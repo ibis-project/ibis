@@ -58,7 +58,13 @@ def rounds(con):
 def test_lineage(companies):
     # single table dependency
     funding_buckets = [
-        0, 1000000, 10000000, 50000000, 100000000,  500000000, 1000000000
+        0,
+        1_000_000,
+        10_000_000,
+        50_000_000,
+        100_000_000,
+        500_000_000,
+        1_000_000_000,
     ]
 
     bucket_names = [
@@ -71,13 +77,12 @@ def test_lineage(companies):
         'Over 1b',
     ]
 
-    bucket = (
-        companies.funding_total_usd.bucket(funding_buckets, include_over=True)
+    bucket = companies.funding_total_usd.bucket(
+        funding_buckets, include_over=True
     )
 
     mutated = companies.mutate(
-        bucket=bucket,
-        status=companies.status.fillna('Unknown')
+        bucket=bucket, status=companies.status.fillna('Unknown')
     )
 
     filtered = mutated[
@@ -92,11 +97,7 @@ def test_lineage(companies):
     )
 
     results = list(lin.lineage(bucket))
-    expected = [
-        bucket,
-        companies.funding_total_usd,
-        companies,
-    ]
+    expected = [bucket, companies.funding_total_usd, companies]
     for r, e in zip(results, expected):
         assert_equal(r, e)
 
@@ -130,7 +131,7 @@ def test_lineage(companies):
         filtered,
         bucket.name('bucket'),
         companies.funding_total_usd,
-        companies
+        companies,
     ]
     for r, e in zip(results, expected):
         assert_equal(r, e)
@@ -163,9 +164,8 @@ def test_lineage_multiple_parents(companies):
 def test_lineage_join(companies, rounds):
     joined = companies.join(
         rounds,
-        companies.first_funding_at.cast(
-            'timestamp'
-        ).year() == rounds.funded_year
+        companies.first_funding_at.cast('timestamp').year()
+        == rounds.funded_year,
     )
     expr = joined[
         companies.funding_total_usd,
@@ -173,9 +173,9 @@ def test_lineage_join(companies, rounds):
         rounds.company_city,
         rounds.raised_amount_usd,
     ]
-    perc_raised = (
-        expr.raised_amount_usd / expr.funding_total_usd
-    ).name('perc_raised')
+    perc_raised = (expr.raised_amount_usd / expr.funding_total_usd).name(
+        'perc_raised'
+    )
     results = list(lin.lineage(perc_raised))
 
     expected = [
@@ -187,7 +187,7 @@ def test_lineage_join(companies, rounds):
         expr.funding_total_usd,
         # expr,  # *could* appear here as well, but we've already traversed it
         companies.funding_total_usd,
-        companies
+        companies,
     ]
     assert len(results) == len(expected)
     for r, e in zip(results, expected):
@@ -202,20 +202,31 @@ def test_lineage_join(companies, rounds):
         rounds.raised_amount_usd,
         companies.funding_total_usd,
         rounds,
-        companies
+        companies,
     ]
     assert len(results) == len(expected)
     for r, e in zip(results, expected):
         assert_equal(r, e)
 
 
-@pytest.mark.parametrize('expr,node_type,expected_count', [
-    (lambda c: (c.funding_rounds + c.funding_total_usd) + c.funding_rounds,
-     ops.Add, 2),
-    (lambda c: (c.funding_rounds + c.funding_total_usd) - c.funding_rounds,
-     ops.Add, 1),
-    (lambda c: c.funding_rounds - c.funding_total_usd, ops.Add, 0),
-])
+@pytest.mark.parametrize(
+    'expr,node_type,expected_count',
+    [
+        (
+            lambda c: (c.funding_rounds + c.funding_total_usd)
+            + c.funding_rounds,
+            ops.Add,
+            2,
+        ),
+        (
+            lambda c: (c.funding_rounds + c.funding_total_usd)
+            - c.funding_rounds,
+            ops.Add,
+            1,
+        ),
+        (lambda c: c.funding_rounds - c.funding_total_usd, ops.Add, 0),
+    ],
+)
 def test_find_nodes(companies, expr, node_type, expected_count):
     e = expr(companies)
     nodes = list(lin.find_nodes(e, node_type))

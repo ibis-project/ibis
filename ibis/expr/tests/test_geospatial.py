@@ -3,9 +3,9 @@ import ibis
 import pytest
 
 
-@pytest.mark.parametrize('modifier', [
-    '', ';4326', ';4326:geometry', ';4326:geography'
-])
+@pytest.mark.parametrize(
+    'modifier', ['', ';4326', ';4326:geometry', ';4326:geography']
+)
 def test_geo_literals_smoke(modifier):
     """Smoke tests for geo spatial literals"""
     point = (0, 1)
@@ -16,17 +16,17 @@ def test_geo_literals_smoke(modifier):
 
     polygon = [
         ((0, 0), (4, 0), (4, 4), (0, 4), (0, 0)),
-        ((1, 1), (2, 1), (2, 2), (1, 2), (1, 1))
+        ((1, 1), (2, 1), (2, 2), (1, 2), (1, 1)),
     ]
     ibis.literal(polygon, type='polygon{}'.format(modifier))
 
     polygon1 = (
         ((0, 0), (4, 0), (4, 4), (0, 4), (0, 0)),
-        ((1, 1), (2, 1), (2, 2), (1, 2), (1, 1))
+        ((1, 1), (2, 1), (2, 2), (1, 2), (1, 1)),
     )
     polygon2 = (
         ((10, 10), (14, 10), (14, 14), (10, 14), (10, 10)),
-        ((11, 11), (12, 11), (12, 12), (11, 12), (11, 11))
+        ((11, 11), (12, 11), (12, 12), (11, 12), (11, 11)),
     )
     multipolygon = [polygon1, polygon2]
     ibis.literal(multipolygon, type='multipolygon{}'.format(modifier))

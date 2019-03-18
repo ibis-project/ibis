@@ -290,7 +290,7 @@ def compute_window_spec_default(obj, _):
 
 
 class Window(AggregationContext):
-    __slots__ = 'construct_window',
+    __slots__ = ('construct_window',)
 
     def __init__(self, kind, *args, **kwargs):
         super().__init__(
@@ -299,8 +299,7 @@ class Window(AggregationContext):
             order_by=kwargs.pop('order_by', None),
             dtype=kwargs.pop('dtype'),
         )
-        self.construct_window = operator.methodcaller(
-            kind, *args, **kwargs)
+        self.construct_window = operator.methodcaller(kind, *args, **kwargs)
 
     def agg(self, grouped_data, function, *args, **kwargs):
         # avoid a pandas warning about numpy arrays being passed through
@@ -328,8 +327,7 @@ class Window(AggregationContext):
             # but don't call the callable just yet. See below where we call it.
             if callable(function):
                 method = operator.methodcaller(
-                    'apply',
-                    _apply(function, args, kwargs),
+                    'apply', _apply(function, args, kwargs)
                 )
             else:
                 assert isinstance(function, str)
@@ -354,16 +352,13 @@ class Window(AggregationContext):
         windowed = self.construct_window(grouped)
         with warnings.catch_warnings():
             warnings.filterwarnings(
-                "ignore",
-                message=".+raw=True.+",
-                category=FutureWarning
+                "ignore", message=".+raw=True.+", category=FutureWarning
             )
             result = method(windowed)
         index = result.index
         result.index = pd.MultiIndex.from_arrays(
-            [frame.index] + list(map(
-                index.get_level_values, range(index.nlevels)
-            )),
+            [frame.index]
+            + list(map(index.get_level_values, range(index.nlevels))),
             names=[frame.index.name] + index.names,
         )
         return result
@@ -381,13 +376,17 @@ class Moving(Window):
 
     def __init__(self, preceding, *args, **kwargs):
         from ibis.pandas.core import timedelta_types
+
         dtype = getattr(preceding, 'type', lambda: None)()
         preceding = compute_window_spec(preceding, dtype)
-        closed = None if not isinstance(
-            preceding, timedelta_types + (pd.offsets.DateOffset,)) else 'both'
-        super().__init__(
-            'rolling', preceding, *args, closed=closed, **kwargs
+        closed = (
+            None
+            if not isinstance(
+                preceding, timedelta_types + (pd.offsets.DateOffset,)
+            )
+            else 'both'
         )
+        super().__init__('rolling', preceding, *args, closed=closed, **kwargs)
 
     def short_circuit_method(self, grouped_data, function):
         raise AttributeError('No short circuit method for rolling operations')

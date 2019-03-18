@@ -44,15 +44,16 @@ def test_combine_windows(alltypes):
     w2 = ibis.window(preceding=5, following=5)
 
     w3 = w1.combine(w2)
-    expected = ibis.window(group_by=t.g, order_by=t.f,
-                           preceding=5, following=5)
+    expected = ibis.window(
+        group_by=t.g, order_by=t.f, preceding=5, following=5
+    )
     assert_equal(w3, expected)
 
     w4 = ibis.window(group_by=t.a, order_by=t.e)
     w5 = w3.combine(w4)
-    expected = ibis.window(group_by=[t.g, t.a],
-                           order_by=[t.f, t.e],
-                           preceding=5, following=5)
+    expected = ibis.window(
+        group_by=[t.g, t.a], order_by=[t.f, t.e], preceding=5, following=5
+    )
     assert_equal(w5, expected)
 
     # Cannot combine windows of varying types.
@@ -78,8 +79,7 @@ def test_window_function_bind(alltypes):
     # GH #532
     t = alltypes
 
-    w = ibis.window(group_by=lambda x: x.g,
-                    order_by=lambda x: x.f)
+    w = ibis.window(group_by=lambda x: x.g, order_by=lambda x: x.f)
 
     expr = t.f.lag().over(w)
 
@@ -95,14 +95,19 @@ def test_auto_windowize_analysis_bug(con):
     def metric(x):
         return x.arrdelay.mean().name('avg_delay')
 
-    annual_delay = (t[t.dest.isin(['JFK', 'SFO'])]
-                    .group_by(['dest', 'year'])
-                    .aggregate(metric))
+    annual_delay = (
+        t[t.dest.isin(['JFK', 'SFO'])]
+        .group_by(['dest', 'year'])
+        .aggregate(metric)
+    )
     what = annual_delay.group_by('dest')
     enriched = what.mutate(grand_avg=annual_delay.avg_delay.mean())
 
-    expr = (annual_delay.avg_delay.mean().name('grand_avg')
-            .over(ibis.window(group_by=annual_delay.dest)))
+    expr = (
+        annual_delay.avg_delay.mean()
+        .name('grand_avg')
+        .over(ibis.window(group_by=annual_delay.dest))
+    )
     expected = annual_delay[annual_delay, expr]
 
     assert_equal(enriched, expected)
@@ -115,8 +120,16 @@ def test_mutate_sorts_keys(con):
 
     result = g.mutate(zzz=m, yyy=m, ddd=m, ccc=m, bbb=m, aaa=m)
 
-    expected = g.mutate([m.name('aaa'), m.name('bbb'), m.name('ccc'),
-                         m.name('ddd'), m.name('yyy'), m.name('zzz')])
+    expected = g.mutate(
+        [
+            m.name('aaa'),
+            m.name('bbb'),
+            m.name('ccc'),
+            m.name('ddd'),
+            m.name('yyy'),
+            m.name('zzz'),
+        ]
+    )
 
     assert_equal(result, expected)
 
@@ -126,8 +139,7 @@ def test_window_bind_to_table(alltypes):
     w = ibis.window(group_by='g', order_by=ibis.desc('f'))
 
     w2 = w.bind(alltypes)
-    expected = ibis.window(group_by=t.g,
-                           order_by=ibis.desc(t.f))
+    expected = ibis.window(group_by=t.g, order_by=ibis.desc(t.f))
 
     assert_equal(w2, expected)
 
@@ -141,7 +153,7 @@ def test_preceding_following_validate(alltypes):
         ibis.window(preceding=(None, 4)),
         ibis.window(preceding=(10, 4)),
         ibis.window(following=(4, None)),
-        ibis.window(following=(4, 10))
+        ibis.window(following=(4, 10)),
     ]
 
     # these are ill-specified
@@ -152,7 +164,7 @@ def test_preceding_following_validate(alltypes):
         lambda: ibis.window(preceding=-1),
         lambda: ibis.window(following=-1),
         lambda: ibis.window(preceding=(-1, 2)),
-        lambda: ibis.window(following=(2, -1))
+        lambda: ibis.window(following=(2, -1)),
     ]
 
     for i, case in enumerate(error_cases):

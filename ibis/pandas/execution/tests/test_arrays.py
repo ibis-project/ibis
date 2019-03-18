@@ -12,17 +12,21 @@ from ibis.common import IbisTypeError
 
 
 def test_array_length(t, df):
-    expr = t.projection([
-        t.array_of_float64.length().name('array_of_float64_length'),
-        t.array_of_int64.length().name('array_of_int64_length'),
-        t.array_of_strings.length().name('array_of_strings_length'),
-    ])
+    expr = t.projection(
+        [
+            t.array_of_float64.length().name('array_of_float64_length'),
+            t.array_of_int64.length().name('array_of_int64_length'),
+            t.array_of_strings.length().name('array_of_strings_length'),
+        ]
+    )
     result = expr.execute()
-    expected = pd.DataFrame({
-        'array_of_float64_length': [2, 1, 0],
-        'array_of_int64_length': [2, 0, 1],
-        'array_of_strings_length': [2, 0, 1],
-    })
+    expected = pd.DataFrame(
+        {
+            'array_of_float64_length': [2, 1, 0],
+            'array_of_int64_length': [2, 0, 1],
+            'array_of_strings_length': [2, 0, 1],
+        }
+    )
 
     tm.assert_frame_equal(result, expected)
 
@@ -37,14 +41,15 @@ def test_array_length_scalar(client):
 
 
 def test_array_collect(t, df):
-    expr = t.group_by(
-        t.dup_strings
-    ).aggregate(collected=t.float64_with_zeros.collect())
+    expr = t.group_by(t.dup_strings).aggregate(
+        collected=t.float64_with_zeros.collect()
+    )
     result = expr.execute().sort_values('dup_strings').reset_index(drop=True)
-    expected = df.groupby(
-        'dup_strings'
-    ).float64_with_zeros.apply(list).reset_index().rename(
-        columns={'float64_with_zeros': 'collected'}
+    expected = (
+        df.groupby('dup_strings')
+        .float64_with_zeros.apply(list)
+        .reset_index()
+        .rename(columns={'float64_with_zeros': 'collected'})
     )
     tm.assert_frame_equal(result, expected)
 
@@ -54,18 +59,20 @@ def test_array_collect(t, df):
     reason=(
         'Pandas does not implement rolling for functions that do not return '
         'numbers'
-    )
+    ),
 )
 def test_array_collect_rolling_partitioned(t, df):
     window = ibis.trailing_window(2, order_by=t.plain_int64)
     colexpr = t.plain_float64.collect().over(window)
     expr = t['dup_strings', 'plain_int64', colexpr.name('collected')]
     result = expr.execute()
-    expected = pd.DataFrame({
-        'dup_strings': ['d', 'a', 'd'],
-        'plain_int64': [1, 2, 3],
-        'collected': [[4.0], [4.0, 5.0], [5.0, 6.0]],
-    })[expr.columns]
+    expected = pd.DataFrame(
+        {
+            'dup_strings': ['d', 'a', 'd'],
+            'plain_int64': [1, 2, 3],
+            'collected': [[4.0], [4.0, 5.0], [5.0, 6.0]],
+        }
+    )[expr.columns]
     tm.assert_frame_equal(result, expected)
 
 
@@ -86,34 +93,32 @@ def test_array_collect_scalar(client):
         (1, 1),
         (2, 3),
         (2, 5),
-
         (None, 3),
         (None, None),
         (3, None),
-
         # negative slices are not supported
         param(
-            -3, None,
+            -3,
+            None,
             marks=pytest.mark.xfail(
-                raises=ValueError,
-                reason='Negative slicing not supported'
-            )
+                raises=ValueError, reason='Negative slicing not supported'
+            ),
         ),
         param(
-            None, -3,
+            None,
+            -3,
             marks=pytest.mark.xfail(
-                raises=ValueError,
-                reason='Negative slicing not supported'
-            )
+                raises=ValueError, reason='Negative slicing not supported'
+            ),
         ),
         param(
-            -3, -1,
+            -3,
+            -1,
             marks=pytest.mark.xfail(
-                raises=ValueError,
-                reason='Negative slicing not supported'
-            )
+                raises=ValueError, reason='Negative slicing not supported'
+            ),
         ),
-    ]
+    ],
 )
 def test_array_slice(t, df, start, stop):
     expr = t.array_of_strings[start:stop]
@@ -130,34 +135,32 @@ def test_array_slice(t, df, start, stop):
         (1, 1),
         (2, 3),
         (2, 5),
-
         (None, 3),
         (None, None),
         (3, None),
-
         # negative slices are not supported
         param(
-            -3, None,
+            -3,
+            None,
             marks=pytest.mark.xfail(
-                raises=ValueError,
-                reason='Negative slicing not supported'
-            )
+                raises=ValueError, reason='Negative slicing not supported'
+            ),
         ),
         param(
-            None, -3,
+            None,
+            -3,
             marks=pytest.mark.xfail(
-                raises=ValueError,
-                reason='Negative slicing not supported'
-            )
+                raises=ValueError, reason='Negative slicing not supported'
+            ),
         ),
         param(
-            -3, -1,
+            -3,
+            -1,
             marks=pytest.mark.xfail(
-                raises=ValueError,
-                reason='Negative slicing not supported'
-            )
+                raises=ValueError, reason='Negative slicing not supported'
+            ),
         ),
-    ]
+    ],
 )
 def test_array_slice_scalar(client, start, stop):
     raw_value = [-11, 42, 10]
@@ -172,11 +175,13 @@ def test_array_slice_scalar(client, start, stop):
 def test_array_index(t, df, index):
     expr = t[t.array_of_float64[index].name('indexed')]
     result = expr.execute()
-    expected = pd.DataFrame({
-        'indexed': df.array_of_float64.apply(
-            lambda x: x[index] if -len(x) <= index < len(x) else None
-        )
-    })
+    expected = pd.DataFrame(
+        {
+            'indexed': df.array_of_float64.apply(
+                lambda x: x[index] if -len(x) <= index < len(x) else None
+            )
+        }
+    )
     tm.assert_frame_equal(result, expected)
 
 
@@ -218,7 +223,7 @@ def test_array_concat(t, df, op):
     result = expr.execute()
     expected = op(
         df.array_of_float64.apply(lambda x: list(map(str, x))),
-        df.array_of_strings
+        df.array_of_strings,
     )
     tm.assert_series_equal(result, expected)
 

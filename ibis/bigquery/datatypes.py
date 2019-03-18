@@ -1,4 +1,3 @@
-
 from multipledispatch import Dispatcher
 
 import ibis.expr.datatypes as dt
@@ -14,6 +13,7 @@ class TypeTranslationContext:
     avoid suprising results due to BigQuery's handling of INT64 types in
     JavaScript UDFs.
     """
+
     __slots__ = ()
 
 
@@ -61,7 +61,8 @@ def trans_lossy_integer(t, context):
 @ibis_type_to_bigquery_type.register(dt.Array, TypeTranslationContext)
 def trans_array(t, context):
     return 'ARRAY<{}>'.format(
-        ibis_type_to_bigquery_type(t.value_type, context))
+        ibis_type_to_bigquery_type(t.value_type, context)
+    )
 
 
 @ibis_type_to_bigquery_type.register(dt.Struct, TypeTranslationContext)
@@ -69,9 +70,9 @@ def trans_struct(t, context):
     return 'STRUCT<{}>'.format(
         ', '.join(
             '{} {}'.format(
-                name,
-                ibis_type_to_bigquery_type(dt.dtype(type), context)
-            ) for name, type in zip(t.names, t.types)
+                name, ibis_type_to_bigquery_type(dt.dtype(type), context)
+            )
+            for name, type in zip(t.names, t.types)
         )
     )
 

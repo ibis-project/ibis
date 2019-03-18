@@ -23,7 +23,10 @@ pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
 
 from ibis.impala.compiler import (
-    ImpalaExprTranslator, to_sql, ImpalaDialect)  # noqa: E402
+    ImpalaExprTranslator,
+    to_sql,
+    ImpalaDialect,
+)  # noqa: E402
 from ibis.sql.tests.test_compiler import ExprTestCases  # noqa: E402
 
 pytestmark = pytest.mark.impala
@@ -34,7 +37,6 @@ def approx_equal(a, b, eps):
 
 
 class ExprSQLTest:
-
     def _check_expr_cases(self, cases, named=False):
         for expr, expected in cases:
             repr(expr)
@@ -49,7 +51,6 @@ class ExprSQLTest:
 
 
 class TestValueExprs(unittest.TestCase, ExprSQLTest):
-
     def setUp(self):
         self.con = MockConnection()
         self.table = self.con.table('alltypes')
@@ -68,7 +69,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
         cases = [
             ('simple', "'simple'"),
             ('I can\'t', "'I can\\'t'"),
-            ('An "escape"', "'An \"escape\"'")
+            ('An "escape"', "'An \"escape\"'"),
         ]
 
         for value, expected in cases:
@@ -86,26 +87,15 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
         self._check_expr_cases(cases)
 
     def test_number_boolean_literals(self):
-        cases = [
-            (5, '5'),
-            (1.5, '1.5'),
-            (True, 'TRUE'),
-            (False, 'FALSE')
-        ]
+        cases = [(5, '5'), (1.5, '1.5'), (True, 'TRUE'), (False, 'FALSE')]
         self._check_literals(cases)
 
     def test_column_ref_table_aliases(self):
         context = ImpalaDialect.make_context()
 
-        table1 = ibis.table([
-            ('key1', 'string'),
-            ('value1', 'double')
-        ])
+        table1 = ibis.table([('key1', 'string'), ('value1', 'double')])
 
-        table2 = ibis.table([
-            ('key2', 'string'),
-            ('value and2', 'double')
-        ])
+        table2 = ibis.table([('key2', 'string'), ('value and2', 'double')])
 
         context.set_ref(table1, 't0')
         context.set_ref(table2, 't1')
@@ -133,7 +123,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
         cases = [
             (g.cast('double').name('g_dub'), 'CAST(`g` AS double) AS `g_dub`'),
             (g.name('has a space'), '`g` AS `has a space`'),
-            (((a - b) * a).name('expr'), '(`a` - `b`) * `a` AS `expr`')
+            (((a - b) * a).name('expr'), '(`a` - `b`) * `a` AS `expr`'),
         ]
 
         return self._check_expr_cases(cases, named=True)
@@ -158,7 +148,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
             (h & bool_col, '`h` AND (`a` > 0)'),
             (h | bool_col, '`h` OR (`a` > 0)'),
             # xor is brute force
-            (h ^ bool_col, '(`h` OR (`a` > 0)) AND NOT (`h` AND (`a` > 0))')
+            (h ^ bool_col, '(`h` OR (`a` > 0)) AND NOT (`h` AND (`a` > 0))'),
         ]
         self._check_expr_cases(cases)
 
@@ -168,23 +158,23 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
         cases = [
             ((a + b) + c, '(`a` + `b`) + `c`'),
             (a.log() + c, 'ln(`a`) + `c`'),
-            (b + (-(a + c)), '`b` + (-(`a` + `c`))')
+            (b + (-(a + c)), '`b` + (-(`a` + `c`))'),
         ]
 
         self._check_expr_cases(cases)
 
     def test_between(self):
-        cases = [
-            (self.table.f.between(0, 1), '`f` BETWEEN 0 AND 1')
-        ]
+        cases = [(self.table.f.between(0, 1), '`f` BETWEEN 0 AND 1')]
         self._check_expr_cases(cases)
 
     def test_isnull_notnull(self):
         cases = [
             (self.table['g'].isnull(), '`g` IS NULL'),
             (self.table['a'].notnull(), '`a` IS NOT NULL'),
-            ((self.table['a'] + self.table['b']).isnull(),
-             '`a` + `b` IS NULL')
+            (
+                (self.table['a'] + self.table['b']).isnull(),
+                '`a` + `b` IS NULL',
+            ),
         ]
         self._check_expr_cases(cases)
 
@@ -199,24 +189,24 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
             (a.cast('string'), 'CAST(`a` AS string)'),
             (d.cast('int8'), 'CAST(`d` AS tinyint)'),
             (g.cast('double'), 'CAST(`g` AS double)'),
-            (g.cast('timestamp'), 'CAST(`g` AS timestamp)')
+            (g.cast('timestamp'), 'CAST(`g` AS timestamp)'),
         ]
         self._check_expr_cases(cases)
 
     def test_misc_conditionals(self):
         a = self.table.a
-        cases = [
-            (a.nullif(0), 'nullif(`a`, 0)')
-        ]
+        cases = [(a.nullif(0), 'nullif(`a`, 0)')]
         self._check_expr_cases(cases)
 
     def test_decimal_casts(self):
         cases = [
-            (L('9.9999999').cast('decimal(38, 5)'),
-             "CAST('9.9999999' AS decimal(38, 5))"),
+            (
+                L('9.9999999').cast('decimal(38, 5)'),
+                "CAST('9.9999999' AS decimal(38, 5))",
+            ),
             (
                 self.table.f.cast('decimal(12, 2)'),
-                "CAST(`f` AS decimal(12, 2))"
+                "CAST(`f` AS decimal(12, 2))",
             ),
         ]
         self._check_expr_cases(cases)
@@ -225,35 +215,45 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
         cases = [
             (-self.table['a'], '-`a`'),
             (-self.table['f'], '-`f`'),
-            (-self.table['h'], 'NOT `h`')
+            (-self.table['h'], 'NOT `h`'),
         ]
         self._check_expr_cases(cases)
 
     def test_timestamp_extract_field(self):
-        fields = ['year', 'month', 'day', 'hour', 'minute',
-                  'second', 'millisecond']
+        fields = [
+            'year',
+            'month',
+            'day',
+            'hour',
+            'minute',
+            'second',
+            'millisecond',
+        ]
 
-        cases = [(getattr(self.table.i, field)(),
-                  "extract(`i`, '{0}')".format(field))
-                 for field in fields]
+        cases = [
+            (
+                getattr(self.table.i, field)(),
+                "extract(`i`, '{0}')".format(field),
+            )
+            for field in fields
+        ]
         self._check_expr_cases(cases)
 
         # integration with SQL translation
-        expr = self.table[self.table.i.year().name('year'),
-                          self.table.i.month().name('month'),
-                          self.table.i.day().name('day')]
+        expr = self.table[
+            self.table.i.year().name('year'),
+            self.table.i.month().name('month'),
+            self.table.i.day().name('day'),
+        ]
 
         result = to_sql(expr)
-        expected = \
-            """SELECT extract(`i`, 'year') AS `year`, extract(`i`, 'month') AS `month`,
+        expected = """SELECT extract(`i`, 'year') AS `year`, extract(`i`, 'month') AS `month`,
        extract(`i`, 'day') AS `day`
 FROM alltypes"""
         assert result == expected
 
     def test_timestamp_now(self):
-        cases = [
-            (ibis.now(), 'now()')
-        ]
+        cases = [(ibis.now(), 'now()')]
         self._check_expr_cases(cases)
 
     def test_timestamp_deltas(self):
@@ -290,12 +290,12 @@ FROM alltypes"""
         from pandas import Timestamp
 
         tv1 = '2015-01-01 12:34:56'
-        ex1 = ("'2015-01-01 12:34:56'")
+        ex1 = "'2015-01-01 12:34:56'"
 
         cases = [
             (L(Timestamp(tv1)), ex1),
             (L(Timestamp(tv1).to_pydatetime()), ex1),
-            (ibis.timestamp(tv1), ex1)
+            (ibis.timestamp(tv1), ex1),
         ]
         self._check_expr_cases(cases)
 
@@ -304,11 +304,11 @@ FROM alltypes"""
         cases = [
             (
                 timestamp_value.day_of_week.index(),
-                "pmod(dayofweek('2015-09-01 01:00:23') - 2, 7)"
+                "pmod(dayofweek('2015-09-01 01:00:23') - 2, 7)",
             ),
             (
                 timestamp_value.day_of_week.full_name(),
-                "dayname('2015-09-01 01:00:23')"
+                "dayname('2015-09-01 01:00:23')",
             ),
         ]
         self._check_expr_cases(cases)
@@ -317,17 +317,23 @@ FROM alltypes"""
         col = self.table.c
 
         cases = [
-            (col.to_timestamp(),
-             'CAST(from_unixtime(`c`, "yyyy-MM-dd HH:mm:ss") '
-             'AS timestamp)'),
-            (col.to_timestamp('ms'),
-             'CAST(from_unixtime(CAST(floor(`c` / 1000) AS int), '
-             '"yyyy-MM-dd HH:mm:ss") '
-             'AS timestamp)'),
-            (col.to_timestamp('us'),
-             'CAST(from_unixtime(CAST(floor(`c` / 1000000) AS int), '
-             '"yyyy-MM-dd HH:mm:ss") '
-             'AS timestamp)'),
+            (
+                col.to_timestamp(),
+                'CAST(from_unixtime(`c`, "yyyy-MM-dd HH:mm:ss") '
+                'AS timestamp)',
+            ),
+            (
+                col.to_timestamp('ms'),
+                'CAST(from_unixtime(CAST(floor(`c` / 1000) AS int), '
+                '"yyyy-MM-dd HH:mm:ss") '
+                'AS timestamp)',
+            ),
+            (
+                col.to_timestamp('us'),
+                'CAST(from_unixtime(CAST(floor(`c` / 1000000) AS int), '
+                '"yyyy-MM-dd HH:mm:ss") '
+                'AS timestamp)',
+            ),
         ]
         self._check_expr_cases(cases)
 
@@ -364,18 +370,27 @@ FROM alltypes"""
 
 
 class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
-
     def setUp(self):
         self.con = MockConnection()
         self.table = self.con.table('functional_alltypes')
 
     def test_numeric_unary_builtins(self):
         # No argument functions
-        functions = ['abs', 'ceil', 'floor', 'exp', 'sqrt',
-                     ('log', 'ln'),
-                     ('approx_median', 'appx_median'),
-                     ('approx_nunique', 'ndv'),
-                     'ln', 'log2', 'log10', 'nullifzero', 'zeroifnull']
+        functions = [
+            'abs',
+            'ceil',
+            'floor',
+            'exp',
+            'sqrt',
+            ('log', 'ln'),
+            ('approx_median', 'appx_median'),
+            ('approx_nunique', 'ndv'),
+            'ln',
+            'log2',
+            'log10',
+            'nullifzero',
+            'zeroifnull',
+        ]
 
         cases = []
         for what in functions:
@@ -386,24 +401,25 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
 
             for cname in ['double_col', 'int_col']:
                 expr = getattr(self.table[cname], ibis_name)()
-                cases.append((expr, '{0}({1})'.format(
-                    sql_name, '`{0}`'.format(cname))))
+                cases.append(
+                    (expr, '{0}({1})'.format(sql_name, '`{0}`'.format(cname)))
+                )
 
         self._check_expr_cases(cases)
 
     def test_log_other_bases(self):
-        cases = [
-            (self.table.double_col.log(5), 'log(5, `double_col`)')
-        ]
+        cases = [(self.table.double_col.log(5), 'log(5, `double_col`)')]
         self._check_expr_cases(cases)
 
     def test_round(self):
         cases = [
             (self.table.double_col.round(), 'round(`double_col`)'),
             (self.table.double_col.round(0), 'round(`double_col`, 0)'),
-            (self.table.double_col.round(2, ), 'round(`double_col`, 2)'),
-            (self.table.double_col.round(self.table.tinyint_col),
-             'round(`double_col`, `tinyint_col`)')
+            (self.table.double_col.round(2), 'round(`double_col`, 2)'),
+            (
+                self.table.double_col.round(self.table.tinyint_col),
+                'round(`double_col`, `tinyint_col`)',
+            ),
         ]
         self._check_expr_cases(cases)
 
@@ -411,12 +427,12 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
         cases = [
             (
                 self.table.tinyint_col.sign(),
-                'CAST(sign(`tinyint_col`) AS tinyint)'
+                'CAST(sign(`tinyint_col`) AS tinyint)',
             ),
             (self.table.float_col.sign(), 'sign(`float_col`)'),
             (
                 self.table.double_col.sign(),
-                'CAST(sign(`double_col`) AS double)'
+                'CAST(sign(`double_col`) AS double)',
             ),
         ]
         self._check_expr_cases(cases)
@@ -424,19 +440,18 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
     def test_hash(self):
         expr = self.table.int_col.hash()
         assert isinstance(expr, ir.IntegerColumn)
-        assert isinstance(self.table.int_col.sum().hash(),
-                          ir.IntegerScalar)
+        assert isinstance(self.table.int_col.sum().hash(), ir.IntegerScalar)
 
-        cases = [
-            (self.table.int_col.hash(), 'fnv_hash(`int_col`)')
-        ]
+        cases = [(self.table.int_col.hash(), 'fnv_hash(`int_col`)')]
         self._check_expr_cases(cases)
 
     def test_reduction_where(self):
         cond = self.table.bigint_col < 70
         c = self.table.double_col
-        tmp = ('{0}(CASE WHEN `bigint_col` < 70 THEN `double_col` '
-               'ELSE NULL END)')
+        tmp = (
+            '{0}(CASE WHEN `bigint_col` < 70 THEN `double_col` '
+            'ELSE NULL END)'
+        )
         cases = [
             (c.sum(where=cond), tmp.format('sum')),
             (c.count(where=cond), tmp.format('count')),
@@ -459,7 +474,6 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
 
 
 class TestCaseExprs(unittest.TestCase, ExprSQLTest, ExprTestCases):
-
     def setUp(self):
         self.con = MockConnection()
         self.table = self.con.table('alltypes')
@@ -510,10 +524,8 @@ END"""
         f = table.l_quantity
 
         cases = [
-            (f.nullif(f == 0),
-             'nullif(`l_quantity`, `l_quantity` = 0)'),
-            (f.fillna(0),
-             'isnull(`l_quantity`, CAST(0 AS decimal(12, 2)))'),
+            (f.nullif(f == 0), 'nullif(`l_quantity`, `l_quantity` = 0)'),
+            (f.fillna(0), 'isnull(`l_quantity`, CAST(0 AS decimal(12, 2)))'),
         ]
         self._check_expr_cases(cases)
 
@@ -522,8 +534,10 @@ END"""
         f = table.l_extendedprice
 
         cases = [
-            (f.fillna(0),
-             'isnull(`l_extendedprice`, CAST(0 AS decimal(12, 2)))'),
+            (
+                f.fillna(0),
+                'isnull(`l_extendedprice`, CAST(0 AS decimal(12, 2)))',
+            ),
             (f.fillna(0.0), 'isnull(`l_extendedprice`, 0.0)'),
         ]
         self._check_expr_cases(cases)
@@ -544,7 +558,6 @@ FROM functional_alltypes"""
 
 
 class TestBucketHistogram(unittest.TestCase, ExprSQLTest):
-
     def setUp(self):
         self.con = MockConnection()
         self.table = self.con.table('alltypes')
@@ -579,8 +592,9 @@ CASE
   ELSE CAST(NULL AS tinyint)
 END"""
 
-        expr4 = self.table.f.bucket(buckets, closed='right',
-                                    close_extreme=False)
+        expr4 = self.table.f.bucket(
+            buckets, closed='right', close_extreme=False
+        )
         expected4 = """\
 CASE
   WHEN (`f` > 0) AND (`f` <= 10) THEN 0
@@ -599,9 +613,9 @@ CASE
   ELSE CAST(NULL AS tinyint)
 END"""
 
-        expr6 = self.table.f.bucket(buckets,
-                                    include_under=True,
-                                    include_over=True)
+        expr6 = self.table.f.bucket(
+            buckets, include_under=True, include_over=True
+        )
         expected6 = """\
 CASE
   WHEN `f` < 0 THEN 0
@@ -612,10 +626,9 @@ CASE
   ELSE CAST(NULL AS tinyint)
 END"""
 
-        expr7 = self.table.f.bucket(buckets,
-                                    close_extreme=False,
-                                    include_under=True,
-                                    include_over=True)
+        expr7 = self.table.f.bucket(
+            buckets, close_extreme=False, include_under=True, include_over=True
+        )
         expected7 = """\
 CASE
   WHEN `f` < 0 THEN 0
@@ -626,9 +639,9 @@ CASE
   ELSE CAST(NULL AS tinyint)
 END"""
 
-        expr8 = self.table.f.bucket(buckets, closed='right',
-                                    close_extreme=False,
-                                    include_under=True)
+        expr8 = self.table.f.bucket(
+            buckets, closed='right', close_extreme=False, include_under=True
+        )
         expected8 = """\
 CASE
   WHEN `f` <= 0 THEN 0
@@ -638,9 +651,9 @@ CASE
   ELSE CAST(NULL AS tinyint)
 END"""
 
-        expr9 = self.table.f.bucket([10], closed='right',
-                                    include_over=True,
-                                    include_under=True)
+        expr9 = self.table.f.bucket(
+            [10], closed='right', include_over=True, include_under=True
+        )
         expected9 = """\
 CASE
   WHEN `f` <= 10 THEN 0
@@ -648,8 +661,9 @@ CASE
   ELSE CAST(NULL AS tinyint)
 END"""
 
-        expr10 = self.table.f.bucket([10], include_over=True,
-                                     include_under=True)
+        expr10 = self.table.f.bucket(
+            [10], include_over=True, include_under=True
+        )
         expected10 = """\
 CASE
   WHEN `f` < 10 THEN 0
@@ -674,9 +688,9 @@ END"""
     def test_cast_category_to_int_noop(self):
         # Because the bucket result is an integer, no explicit cast is
         # necessary
-        expr = (self.table.f.bucket([10], include_over=True,
-                                    include_under=True)
-                .cast('int32'))
+        expr = self.table.f.bucket(
+            [10], include_over=True, include_under=True
+        ).cast('int32')
 
         expected = """\
 CASE
@@ -685,9 +699,9 @@ CASE
   ELSE CAST(NULL AS tinyint)
 END"""
 
-        expr2 = (self.table.f.bucket([10], include_over=True,
-                                     include_under=True)
-                 .cast('double'))
+        expr2 = self.table.f.bucket(
+            [10], include_over=True, include_under=True
+        ).cast('double')
 
         expected2 = """\
 CAST(CASE
@@ -696,17 +710,16 @@ CAST(CASE
   ELSE CAST(NULL AS tinyint)
 END AS double)"""
 
-        self._check_expr_cases([(expr, expected),
-                                (expr2, expected2)])
+        self._check_expr_cases([(expr, expected), (expr2, expected2)])
 
     def test_bucket_assign_labels(self):
         buckets = [0, 10, 25, 50]
         bucket = self.table.f.bucket(buckets, include_under=True)
 
         size = self.table.group_by(bucket.name('tier')).size()
-        labelled = size.tier.label(['Under 0', '0 to 10',
-                                    '10 to 25', '25 to 50'],
-                                   nulls='error').name('tier2')
+        labelled = size.tier.label(
+            ['Under 0', '0 to 10', '10 to 25', '25 to 50'], nulls='error'
+        ).name('tier2')
         expr = size[labelled, size['count']]
 
         expected = """\
@@ -736,12 +749,12 @@ FROM (
         assert result == expected
 
         self.assertRaises(ValueError, size.tier.label, ['a', 'b', 'c'])
-        self.assertRaises(ValueError, size.tier.label,
-                          ['a', 'b', 'c', 'd', 'e'])
+        self.assertRaises(
+            ValueError, size.tier.label, ['a', 'b', 'c', 'd', 'e']
+        )
 
 
 class TestInNotIn(unittest.TestCase, ExprSQLTest):
-
     def setUp(self):
         self.con = MockConnection()
         self.table = self.con.table('alltypes')
@@ -750,19 +763,24 @@ class TestInNotIn(unittest.TestCase, ExprSQLTest):
         values = ['foo', 'bar', 'baz']
         values_formatted = tuple(set(values))
         cases = [
-            (self.table.g.isin(values),
-             "`g` IN {}".format(values_formatted)),
-            (self.table.g.notin(values),
-             "`g` NOT IN {}".format(values_formatted))
+            (self.table.g.isin(values), "`g` IN {}".format(values_formatted)),
+            (
+                self.table.g.notin(values),
+                "`g` NOT IN {}".format(values_formatted),
+            ),
         ]
         self._check_expr_cases(cases)
 
     def test_literal_in_list(self):
         cases = [
-            (L(2).isin([self.table.a, self.table.b, self.table.c]),
-             '2 IN (`a`, `b`, `c`)'),
-            (L(2).notin([self.table.a, self.table.b, self.table.c]),
-             '2 NOT IN (`a`, `b`, `c`)')
+            (
+                L(2).isin([self.table.a, self.table.b, self.table.c]),
+                '2 IN (`a`, `b`, `c`)',
+            ),
+            (
+                L(2).notin([self.table.a, self.table.b, self.table.c]),
+                '2 NOT IN (`a`, `b`, `c`)',
+            ),
         ]
         self._check_expr_cases(cases)
 
@@ -786,7 +804,6 @@ WHERE `g` NOT IN {}"""
 
 
 class TestCoalesceGreaterLeast(unittest.TestCase, ExprSQLTest):
-
     def setUp(self):
         self.con = MockConnection()
         self.table = self.con.table('functional_alltypes')
@@ -794,36 +811,44 @@ class TestCoalesceGreaterLeast(unittest.TestCase, ExprSQLTest):
     def test_coalesce(self):
         t = self.table
         cases = [
-            (ibis.coalesce(t.string_col, 'foo'),
-             "coalesce(`string_col`, 'foo')"),
-            (ibis.coalesce(t.int_col, t.bigint_col),
-             'coalesce(`int_col`, `bigint_col`)'),
+            (
+                ibis.coalesce(t.string_col, 'foo'),
+                "coalesce(`string_col`, 'foo')",
+            ),
+            (
+                ibis.coalesce(t.int_col, t.bigint_col),
+                'coalesce(`int_col`, `bigint_col`)',
+            ),
         ]
         self._check_expr_cases(cases)
 
     def test_greatest(self):
         t = self.table
         cases = [
-            (ibis.greatest(t.string_col, 'foo'),
-             "greatest(`string_col`, 'foo')"),
-            (ibis.greatest(t.int_col, t.bigint_col),
-             'greatest(`int_col`, `bigint_col`)'),
+            (
+                ibis.greatest(t.string_col, 'foo'),
+                "greatest(`string_col`, 'foo')",
+            ),
+            (
+                ibis.greatest(t.int_col, t.bigint_col),
+                'greatest(`int_col`, `bigint_col`)',
+            ),
         ]
         self._check_expr_cases(cases)
 
     def test_least(self):
         t = self.table
         cases = [
-            (ibis.least(t.string_col, 'foo'),
-             "least(`string_col`, 'foo')"),
-            (ibis.least(t.int_col, t.bigint_col),
-             'least(`int_col`, `bigint_col`)'),
+            (ibis.least(t.string_col, 'foo'), "least(`string_col`, 'foo')"),
+            (
+                ibis.least(t.int_col, t.bigint_col),
+                'least(`int_col`, `bigint_col`)',
+            ),
         ]
         self._check_expr_cases(cases)
 
 
 class TestAnalyticFunctions(unittest.TestCase, ExprSQLTest):
-
     def setUp(self):
         self.con = MockConnection()
         self.table = self.con.table('functional_alltypes')
@@ -834,8 +859,10 @@ class TestAnalyticFunctions(unittest.TestCase, ExprSQLTest):
         w = ibis.window(order_by=t.float_col)
 
         cases = [
-            (ibis.row_number().over(w),
-             '(row_number() OVER (ORDER BY `float_col`) - 1)'),
+            (
+                ibis.row_number().over(w),
+                '(row_number() OVER (ORDER BY `float_col`) - 1)',
+            ),
             (t.string_col.lag(), 'lag(`string_col`)'),
             (t.string_col.lag(2), 'lag(`string_col`, 2)'),
             (t.string_col.lag(default=0), 'lag(`string_col`, 1, 0)'),
@@ -852,7 +879,6 @@ class TestAnalyticFunctions(unittest.TestCase, ExprSQLTest):
 
 
 class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
-
     def setUp(self):
         self.con = MockConnection()
         self.table = self.con.table('functional_alltypes')
@@ -868,7 +894,7 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
             (s.rstrip(), 'rtrim(`string_col`)'),
             (s.capitalize(), 'initcap(`string_col`)'),
             (s.length(), 'length(`string_col`)'),
-            (s.ascii_str(), 'ascii(`string_col`)')
+            (s.ascii_str(), 'ascii(`string_col`)'),
         ]
         self._check_expr_cases(cases)
 
@@ -876,15 +902,15 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
         # Database numbers starting from 1
         cases = [
             (self.table.string_col.substr(2), 'substr(`string_col`, 2 + 1)'),
-            (self.table.string_col.substr(0, 3),
-             'substr(`string_col`, 0 + 1, 3)')
+            (
+                self.table.string_col.substr(0, 3),
+                'substr(`string_col`, 0 + 1, 3)',
+            ),
         ]
         self._check_expr_cases(cases)
 
     def test_strright(self):
-        cases = [
-            (self.table.string_col.right(4), 'strright(`string_col`, 4)')
-        ]
+        cases = [(self.table.string_col.right(4), 'strright(`string_col`, 4)')]
         self._check_expr_cases(cases)
 
     def test_like(self):
@@ -892,8 +918,8 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
             (self.table.string_col.like('foo%'), "`string_col` LIKE 'foo%'"),
             (
                 self.table.string_col.like(['foo%', '%bar']),
-                "`string_col` LIKE 'foo%' OR `string_col` LIKE '%bar'"
-            )
+                "`string_col` LIKE 'foo%' OR `string_col` LIKE '%bar'",
+            ),
         ]
         self._check_expr_cases(cases)
 
@@ -907,35 +933,29 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
 
     def test_re_extract(self):
         sql = r"regexp_extract(`string_col`, '[\d]+', 0)"
-        cases = [
-            (self.table.string_col.re_extract(r'[\d]+', 0), sql)
-        ]
+        cases = [(self.table.string_col.re_extract(r'[\d]+', 0), sql)]
         self._check_expr_cases(cases)
 
     def test_re_replace(self):
         sql = r"regexp_replace(`string_col`, '[\d]+', 'aaa')"
-        cases = [
-            (self.table.string_col.re_replace(r'[\d]+', 'aaa'), sql)
-        ]
+        cases = [(self.table.string_col.re_replace(r'[\d]+', 'aaa'), sql)]
         self._check_expr_cases(cases)
 
     def test_parse_url(self):
         sql = "parse_url(`string_col`, 'HOST')"
-        cases = [
-            (self.table.string_col.parse_url('HOST'), sql)
-        ]
+        cases = [(self.table.string_col.parse_url('HOST'), sql)]
         self._check_expr_cases(cases)
 
     def test_repeat(self):
-        cases = [
-            (self.table.string_col.repeat(2), 'repeat(`string_col`, 2)')
-        ]
+        cases = [(self.table.string_col.repeat(2), 'repeat(`string_col`, 2)')]
         self._check_expr_cases(cases)
 
     def test_translate(self):
         cases = [
-            (self.table.string_col.translate('a', 'b'),
-             "translate(`string_col`, 'a', 'b')")
+            (
+                self.table.string_col.translate('a', 'b'),
+                "translate(`string_col`, 'a', 'b')",
+            )
         ]
         self._check_expr_cases(cases)
 
@@ -945,38 +965,42 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
         cases = [
             (s.find('a'), "locate('a', `string_col`) - 1"),
             (s.find('a', 2), "locate('a', `string_col`, 3) - 1"),
-            (s.find('a', start=i1),
-             "locate('a', `string_col`, `tinyint_col` + 1) - 1")
+            (
+                s.find('a', start=i1),
+                "locate('a', `string_col`, `tinyint_col` + 1) - 1",
+            ),
         ]
         self._check_expr_cases(cases)
 
     def test_lpad(self):
         cases = [
             (self.table.string_col.lpad(1, 'a'), "lpad(`string_col`, 1, 'a')"),
-            (self.table.string_col.lpad(25), "lpad(`string_col`, 25, ' ')")
+            (self.table.string_col.lpad(25), "lpad(`string_col`, 25, ' ')"),
         ]
         self._check_expr_cases(cases)
 
     def test_rpad(self):
         cases = [
             (self.table.string_col.rpad(1, 'a'), "rpad(`string_col`, 1, 'a')"),
-            (self.table.string_col.rpad(25), "rpad(`string_col`, 25, ' ')")
+            (self.table.string_col.rpad(25), "rpad(`string_col`, 25, ' ')"),
         ]
         self._check_expr_cases(cases)
 
     def test_find_in_set(self):
         cases = [
-            (self.table.string_col.find_in_set(['a']),
-             "find_in_set(`string_col`, 'a') - 1"),
-            (self.table.string_col.find_in_set(['a', 'b']),
-             "find_in_set(`string_col`, 'a,b') - 1")
+            (
+                self.table.string_col.find_in_set(['a']),
+                "find_in_set(`string_col`, 'a') - 1",
+            ),
+            (
+                self.table.string_col.find_in_set(['a', 'b']),
+                "find_in_set(`string_col`, 'a,b') - 1",
+            ),
         ]
         self._check_expr_cases(cases)
 
     def test_string_join(self):
-        cases = [
-            (L(',').join(['a', 'b']), "concat_ws(',', 'a', 'b')")
-        ]
+        cases = [(L(',').join(['a', 'b']), "concat_ws(',', 'a', 'b')")]
         self._check_expr_cases(cases)
 
 
@@ -1000,9 +1024,9 @@ def test_execute_exprs_no_table_ref(con, expr, expected):
     assert result == expected
 
     # ExprList
-    exlist = ibis.api.expr_list([L(1).name('a'),
-                                 ibis.now().name('b'),
-                                 L(2).log().name('c')])
+    exlist = ibis.api.expr_list(
+        [L(1).name('a'), ibis.now().name('b'), L(2).log().name('c')]
+    )
     con.execute(exlist)
 
 
@@ -1010,8 +1034,7 @@ def test_summary_execute(alltypes):
     table = alltypes
 
     # also test set_column while we're at it
-    table = table.set_column('double_col',
-                             table.double_col * 2)
+    table = table.set_column('double_col', table.double_col * 2)
 
     expr = table.double_col.summary()
     repr(expr)
@@ -1019,10 +1042,13 @@ def test_summary_execute(alltypes):
     result = expr.execute()
     assert isinstance(result, pd.DataFrame)
 
-    expr = (table.group_by('string_col')
-            .aggregate([table.double_col.summary().prefix('double_'),
-                        table.float_col.summary().prefix('float_'),
-                        table.string_col.summary().suffix('_string')]))
+    expr = table.group_by('string_col').aggregate(
+        [
+            table.double_col.summary().prefix('double_'),
+            table.float_col.summary().prefix('float_'),
+            table.string_col.summary().suffix('_string'),
+        ]
+    )
     result = expr.execute()
     assert isinstance(result, pd.DataFrame)
 
@@ -1057,28 +1083,22 @@ def test_builtins_1(con, alltypes):
     exprs = [
         api.now(),
         api.e,
-
         # hash functions
         i4.hash(),
         d.hash(),
         s.hash(),
-
         # modulus cases
         i1 % 5,
         i4 % 10,
         20 % i1,
         d % 5,
-
         i1.zeroifnull(),
         i4.zeroifnull(),
         i8.zeroifnull(),
-
         i4.to_timestamp('s'),
         i4.to_timestamp('ms'),
         i4.to_timestamp('us'),
-
         i8.to_timestamp(),
-
         d.abs(),
         d.cast('decimal(12, 2)'),
         d.cast('int32'),
@@ -1092,54 +1112,41 @@ def test_builtins_1(con, alltypes):
         d.log2(),
         d.log10(),
         d.notnull(),
-
         d.zeroifnull(),
         d.nullifzero(),
-
         d.round(),
         d.round(2),
         d.round(i1),
-
         i1.sign(),
         i4.sign(),
         d.sign(),
-
         # conv
         i1.convert_base(10, 2),
         i4.convert_base(10, 2),
         i8.convert_base(10, 2),
         s.convert_base(10, 2),
-
         d.sqrt(),
         d.zeroifnull(),
-
         # nullif cases
         5 / i1.nullif(0),
         5 / i1.nullif(i4),
         5 / i4.nullif(0),
         5 / d.nullif(0),
-
         api.literal(5).isin([i1, i4, d]),
-
         # tier and histogram
         d.bucket([0, 10, 25, 50, 100]),
         d.bucket([0, 10, 25, 50], include_over=True),
         d.bucket([0, 10, 25, 50], include_over=True, close_extreme=False),
         d.bucket([10, 25, 50, 100], include_under=True),
-
         d.histogram(10),
         d.histogram(5, base=10),
         d.histogram(base=10, binwidth=5),
-
         # coalesce-like cases
-        api.coalesce(table.int_col,
-                     api.null(),
-                     table.smallint_col,
-                     table.bigint_col, 5),
-        api.greatest(table.float_col,
-                     table.double_col, 5),
+        api.coalesce(
+            table.int_col, api.null(), table.smallint_col, table.bigint_col, 5
+        ),
+        api.greatest(table.float_col, table.double_col, 5),
         api.least(table.string_col, 'foo'),
-
         # string stuff
         s.contains('6'),
         s.like('6%'),
@@ -1160,16 +1167,14 @@ def test_builtins_1(con, alltypes):
         s.strip(),
         s.lstrip(),
         s.strip(),
-
         # strings with int expr inputs
         s.left(i1),
         s.right(i1),
         s.substr(i1, i1 + 2),
-        s.repeat(i1)
+        s.repeat(i1),
     ]
 
-    proj_exprs = [expr.name('e%d' % i)
-                  for i, expr in enumerate(exprs)]
+    proj_exprs = [expr.name('e%d' % i) for i, expr in enumerate(exprs)]
 
     projection = table[proj_exprs]
     projection.limit(10).execute()
@@ -1187,14 +1192,17 @@ def _check_impala_output_types_match(con, table):
         return x
 
     left, right = t.schema(), table.schema()
-    for i, (n, left, right) in enumerate(zip(
-            left.names, left.types, right.types)):
+    for i, (n, left, right) in enumerate(
+        zip(left.names, left.types, right.types)
+    ):
         left = _clean_type(left)
         right = _clean_type(right)
 
         if left != right:
-            pytest.fail('Value for {0} had left type {1}'
-                        ' and right type {2}'.format(n, left, right))
+            pytest.fail(
+                'Value for {0} had left type {1}'
+                ' and right type {2}'.format(n, left, right)
+            )
 
 
 @pytest.mark.parametrize(
@@ -1204,13 +1212,12 @@ def _check_impala_output_types_match(con, table):
         (L(50) % 5, 0),
         (L(50000) % 10, 0),
         (250 % L(50), 0),
-
         # nullif cases
         (5 / L(50).nullif(0), 0.1),
         (5 / L(50).nullif(L(50000)), 0.1),
         (5 / L(50000).nullif(0), 0.0001),
         (L(50000).zeroifnull(), 50000),
-    ]
+    ],
 )
 def test_int_builtins(con, expr, expected):
     result = con.execute(expr)
@@ -1234,22 +1241,35 @@ def test_column_types(alltypes):
         (L(50000).to_timestamp('s'), pd.to_datetime(50000, unit='s')),
         (L(50000).to_timestamp('ms'), pd.to_datetime(50000, unit='ms')),
         (L(5 * 10 ** 8).to_timestamp(), pd.to_datetime(5 * 10 ** 8, unit='s')),
-
-        (ibis.timestamp('2009-05-17 12:34:56').truncate('y'),
-         pd.Timestamp('2009-01-01')),
-        (ibis.timestamp('2009-05-17 12:34:56').truncate('M'),
-         pd.Timestamp('2009-05-01')),
-        (ibis.timestamp('2009-05-17 12:34:56').truncate('month'),
-         pd.Timestamp('2009-05-01')),
-        (ibis.timestamp('2009-05-17 12:34:56').truncate('d'),
-         pd.Timestamp('2009-05-17')),
-        (ibis.timestamp('2009-05-17 12:34:56').truncate('h'),
-         pd.Timestamp('2009-05-17 12:00')),
-        (ibis.timestamp('2009-05-17 12:34:56').truncate('m'),
-         pd.Timestamp('2009-05-17 12:34')),
-        (ibis.timestamp('2009-05-17 12:34:56').truncate('minute'),
-         pd.Timestamp('2009-05-17 12:34'))
-    ]
+        (
+            ibis.timestamp('2009-05-17 12:34:56').truncate('y'),
+            pd.Timestamp('2009-01-01'),
+        ),
+        (
+            ibis.timestamp('2009-05-17 12:34:56').truncate('M'),
+            pd.Timestamp('2009-05-01'),
+        ),
+        (
+            ibis.timestamp('2009-05-17 12:34:56').truncate('month'),
+            pd.Timestamp('2009-05-01'),
+        ),
+        (
+            ibis.timestamp('2009-05-17 12:34:56').truncate('d'),
+            pd.Timestamp('2009-05-17'),
+        ),
+        (
+            ibis.timestamp('2009-05-17 12:34:56').truncate('h'),
+            pd.Timestamp('2009-05-17 12:00'),
+        ),
+        (
+            ibis.timestamp('2009-05-17 12:34:56').truncate('m'),
+            pd.Timestamp('2009-05-17 12:34'),
+        ),
+        (
+            ibis.timestamp('2009-05-17 12:34:56').truncate('minute'),
+            pd.Timestamp('2009-05-17 12:34'),
+        ),
+    ],
 )
 def test_timestamp_builtins(con, expr, expected):
     result = con.execute(expr)
@@ -1268,7 +1288,7 @@ def test_timestamp_builtins(con, expr, expected):
         (L(5.245).round(), 5),
         (L(5.245).round(2), Decimal('5.25')),
         (L(5.245).sign(), 1),
-    ]
+    ],
 )
 def test_decimal_builtins(con, expr, expected):
     result = con.execute(expr)
@@ -1288,7 +1308,7 @@ def test_decimal_builtins(con, expr, expected):
         pytest.param(lambda dc: dc.sqrt(), '2.29019', id='sqrt'),
         pytest.param(lambda dc: dc.zeroifnull(), '5.245', id='zeroifnull'),
         pytest.param(lambda dc: -dc, '-5.245', id='neg'),
-    ]
+    ],
 )
 def test_decimal_builtins_2(con, func, expected):
     dc = L('5.245').cast('decimal(12, 5)')
@@ -1314,10 +1334,8 @@ def test_decimal_builtins_2(con, func, expected):
         (L('abcd').left(2), 'ab'),
         (L('abcd').right(2), 'cd'),
         (L('abcd').repeat(2), 'abcdabcd'),
-
         # global replace not available in Impala yet
         # (L('aabbaabbaa').replace('bb', 'B'), 'aaBaaBaa'),
-
         (L('0123').translate('012', 'abc'), 'abc3'),
         (L('abcd').find('a'), 0),
         (L('baaaab').find('b', 2), 5),
@@ -1329,10 +1347,9 @@ def test_decimal_builtins_2(con, func, expected):
         (L(', ').join(['a', 'b']), 'a, b'),
         (L('abcd').like('a%'), True),
         (L('abcd').re_search('[a-z]'), True),
-
         (L('abcd').re_extract('[a-z]', 0), 'a'),
         (L('abcd').re_replace('(b)', '2'), 'a2cd'),
-    ]
+    ],
 )
 def test_string_functions(con, expr, expected):
     result = con.execute(expr)
@@ -1343,11 +1360,13 @@ def test_string_functions(con, expr, expected):
     ('expr', 'expected'),
     [
         (L("https://www.cloudera.com").parse_url('HOST'), "www.cloudera.com"),
-
-        (L('https://www.youtube.com/watch?v=kEuEcWfewf8&t=10')
-         .parse_url('QUERY', 'v'),
-         'kEuEcWfewf8'),
-    ]
+        (
+            L('https://www.youtube.com/watch?v=kEuEcWfewf8&t=10').parse_url(
+                'QUERY', 'v'
+            ),
+            'kEuEcWfewf8',
+        ),
+    ],
 )
 def test_parse_url(con, expr, expected):
     result = con.execute(expr)
@@ -1361,7 +1380,7 @@ def test_parse_url(con, expr, expected):
         (L(7) // 2, 3),
         (L(7).floordiv(2), 3),
         (L(2).rfloordiv(7), 3),
-    ]
+    ],
 )
 def test_div_floordiv(con, expr, expected):
     result = con.execute(expr)
@@ -1370,14 +1389,15 @@ def test_div_floordiv(con, expr, expected):
 
 @pytest.mark.xfail(
     raises=RelationError,
-    reason='Equality was broken, and fixing it broke this test')
+    reason='Equality was broken, and fixing it broke this test',
+)
 def test_filter_predicates(con):
     t = con.table('tpch_nation')
 
     predicates = [
         lambda x: x.n_name.lower().like('%ge%'),
         lambda x: x.n_name.lower().contains('ge'),
-        lambda x: x.n_name.lower().rlike('.*ge.*')
+        lambda x: x.n_name.lower().rlike('.*ge.*'),
     ]
 
     expr = t
@@ -1414,19 +1434,13 @@ def test_decimal_timestamp_builtins(con):
         dc * 2,
         dc ** 2,
         dc.cast('double'),
-
-        api.where(table.l_discount > 0,
-                  dc * table.l_discount, api.NA),
-
+        api.where(table.l_discount > 0, dc * table.l_discount, api.NA),
         dc.fillna(0),
-
         ts < (ibis.now() + ibis.interval(months=3)),
         ts < (ibis.timestamp('2005-01-01') + ibis.interval(months=3)),
-
         # hashing
         dc.hash(),
         ts.hash(),
-
         # truncate
         ts.truncate('y'),
         ts.truncate('q'),
@@ -1438,7 +1452,13 @@ def test_decimal_timestamp_builtins(con):
     ]
 
     timestamp_fields = [
-        'years', 'months', 'days', 'hours', 'minutes', 'seconds', 'weeks'
+        'years',
+        'months',
+        'days',
+        'hours',
+        'minutes',
+        'seconds',
+        'weeks',
     ]
     for field in timestamp_fields:
         if hasattr(ts, field):
@@ -1448,8 +1468,7 @@ def test_decimal_timestamp_builtins(con):
         exprs.append(ts + offset)
         exprs.append(ts - offset)
 
-    proj_exprs = [expr.name('e%d' % i)
-                  for i, expr in enumerate(exprs)]
+    proj_exprs = [expr.name('e%d' % i) for i, expr in enumerate(exprs)]
 
     projection = table[proj_exprs].limit(10)
     projection.execute()
@@ -1459,11 +1478,13 @@ def test_timestamp_scalar_in_filter(alltypes):
     # #310
     table = alltypes
 
-    expr = (table.filter([
-        table.timestamp_col <
-        (ibis.timestamp('2010-01-01') + ibis.interval(months=3)),
-        table.timestamp_col < (ibis.now() + ibis.interval(days=10))
-    ]).count())
+    expr = table.filter(
+        [
+            table.timestamp_col
+            < (ibis.timestamp('2010-01-01') + ibis.interval(months=3)),
+            table.timestamp_col < (ibis.now() + ibis.interval(days=10)),
+        ]
+    ).count()
     expr.execute()
 
 
@@ -1484,20 +1505,16 @@ def test_aggregations(alltypes):
         s.approx_nunique(),
         d.approx_median(),
         s.group_concat(),
-
         d.std(),
         d.std(how='pop'),
         d.var(),
         d.var(how='pop'),
-
         table.bool_col.any(),
         table.bool_col.notany(),
         -table.bool_col.any(),
-
         table.bool_col.all(),
         table.bool_col.notall(),
         -table.bool_col.all(),
-
         table.bool_col.count(where=cond),
         d.sum(where=cond),
         d.mean(where=cond),
@@ -1526,31 +1543,25 @@ def test_analytic_functions(alltypes):
         f.dense_rank(),
         f.percent_rank(),
         f.ntile(buckets=7),
-
         f.first(),
         f.last(),
-
         f.first().over(ibis.window(preceding=10)),
         f.first().over(ibis.window(following=10)),
-
         ibis.row_number(),
         f.cumsum(),
         f.cummean(),
         f.cummin(),
         f.cummax(),
-
         # boolean cumulative reductions
         (f == 0).cumany(),
         (f == 0).cumall(),
-
         f.sum(),
         f.mean(),
         f.min(),
-        f.max()
+        f.max(),
     ]
 
-    proj_exprs = [expr.name('e%d' % i)
-                  for i, expr in enumerate(exprs)]
+    proj_exprs = [expr.name('e%d' % i) for i, expr in enumerate(exprs)]
 
     proj_table = g.mutate(proj_exprs)
     proj_table.execute()
@@ -1573,27 +1584,32 @@ def test_tpch_self_join_failure(con):
         region.r_name.name('region'),
         nation.n_name.name('nation'),
         orders.o_totalprice.name('amount'),
-        orders.o_orderdate.cast('timestamp').name('odate')]
+        orders.o_orderdate.cast('timestamp').name('odate'),
+    ]
 
     joined_all = (
         region.join(nation, region.r_regionkey == nation.n_regionkey)
         .join(customer, customer.c_nationkey == nation.n_nationkey)
-        .join(orders, orders.o_custkey == customer.c_custkey)
-        [fields_of_interest])
+        .join(orders, orders.o_custkey == customer.c_custkey)[
+            fields_of_interest
+        ]
+    )
 
     year = joined_all.odate.year().name('year')
     total = joined_all.amount.sum().cast('double').name('total')
-    annual_amounts = (joined_all
-                      .group_by(['region', year])
-                      .aggregate(total))
+    annual_amounts = joined_all.group_by(['region', year]).aggregate(total)
 
     current = annual_amounts
     prior = annual_amounts.view()
 
     yoy_change = (current.total - prior.total).name('yoy_change')
-    yoy = (current.join(prior, ((current.region == prior.region) &
-                                (current.year == (prior.year - 1))))
-           [current.region, current.year, yoy_change])
+    yoy = current.join(
+        prior,
+        (
+            (current.region == prior.region)
+            & (current.year == (prior.year - 1))
+        ),
+    )[current.region, current.year, yoy_change]
 
     # no analysis failure
     con.explain(yoy)
@@ -1606,16 +1622,20 @@ def test_tpch_correlated_subquery_failure(con):
     customer = con.table('tpch_customer')
     orders = con.table('tpch_orders')
 
-    fields_of_interest = [customer,
-                          region.r_name.name('region'),
-                          orders.o_totalprice.name('amount'),
-                          orders.o_orderdate
-                          .cast('timestamp').name('odate')]
+    fields_of_interest = [
+        customer,
+        region.r_name.name('region'),
+        orders.o_totalprice.name('amount'),
+        orders.o_orderdate.cast('timestamp').name('odate'),
+    ]
 
-    tpch = (region.join(nation, region.r_regionkey == nation.n_regionkey)
-            .join(customer, customer.c_nationkey == nation.n_nationkey)
-            .join(orders, orders.o_custkey == customer.c_custkey)
-            [fields_of_interest])
+    tpch = (
+        region.join(nation, region.r_regionkey == nation.n_regionkey)
+        .join(customer, customer.c_nationkey == nation.n_nationkey)
+        .join(orders, orders.o_custkey == customer.c_custkey)[
+            fields_of_interest
+        ]
+    )
 
     t2 = tpch.view()
     conditional_avg = t2[(t2.region == tpch.region)].amount.mean()
@@ -1650,12 +1670,12 @@ FROM functional_alltypes"""
 def test_unions_with_ctes(con, alltypes):
     t = alltypes
 
-    expr1 = (t.group_by(['tinyint_col', 'string_col'])
-             .aggregate(t.double_col.sum().name('metric')))
+    expr1 = t.group_by(['tinyint_col', 'string_col']).aggregate(
+        t.double_col.sum().name('metric')
+    )
     expr2 = expr1.view()
 
-    join1 = (expr1.join(expr2, expr1.string_col == expr2.string_col)
-             [[expr1]])
+    join1 = expr1.join(expr2, expr1.string_col == expr2.string_col)[[expr1]]
     join2 = join1.view()
 
     expr = join1.union(join2)
@@ -1678,7 +1698,7 @@ def test_head(con):
         (L(1), ibis.NA.cast('int64'), False),
         (L(0), L(1), False),
         (L(1), L(0), False),
-    ]
+    ],
 )
 def test_identical_to(con, left, right, expected):
     expr = left.identical_to(right)
@@ -1696,12 +1716,8 @@ def test_not(alltypes):
 
 def test_where_with_timestamp():
     t = ibis.table(
-        [
-            ('uuid', 'string'),
-            ('ts', 'timestamp'),
-            ('search_level', 'int64'),
-        ],
-        name='t'
+        [('uuid', 'string'), ('ts', 'timestamp'), ('search_level', 'int64')],
+        name='t',
     )
     expr = t.group_by(t.uuid).aggregate(
         min_date=t.ts.min(where=t.search_level == 1)

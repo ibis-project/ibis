@@ -22,6 +22,7 @@ def compile(expr, params=None):
     Force compilation of expression for the SQLite target
     """
     from ibis.sql.alchemy import to_sqlalchemy
+
     return to_sqlalchemy(expr, dialect.make_context(params=params))
 
 

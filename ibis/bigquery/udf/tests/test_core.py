@@ -65,9 +65,11 @@ def test_yield_from():
     d = {}
 
     with tempfile.NamedTemporaryFile('r+') as f:
-        f.write("""\
+        f.write(
+            """\
 def f(a):
-    yield from [1, 2, 3]""")
+    yield from [1, 2, 3]"""
+        )
         f.seek(0)
         code = builtins.compile(f.read(), f.name, 'exec')
         exec(code, d)
@@ -115,15 +117,16 @@ def div(x, y):
 
 
 @pytest.mark.parametrize(
-    ('op', 'expected'),
-    [(add, '+'), (sub, '-'), (mul, '*'), (div, '/')]
+    ('op', 'expected'), [(add, '+'), (sub, '-'), (mul, '*'), (div, '/')]
 )
 def test_binary_operators(op, expected):
     js = compile(op)
     expected = """\
 function {}(x, y) {{
     return (x {} y);
-}}""".format(op.__name__, expected)
+}}""".format(
+        op.__name__, expected
+    )
     assert expected == js
 
 
@@ -193,6 +196,7 @@ def test_true_false_none():
         b = False
         c = None
         return a if c != None else b  # noqa: E711
+
     expected = """\
 function f() {
     let a = true;
@@ -376,6 +380,7 @@ def test_setitem():
         y = '2'
         x[y] = y
         return x
+
     expected = """\
 function f(a) {
     let x = {};
@@ -395,6 +400,7 @@ def test_delete():
         del x[0 + 3]
         del y.a
         return 1
+
     expected = """\
 function f(a) {
     let x = [a, 1, 2, 3];
@@ -451,6 +457,7 @@ def test_list_comp():
     def f():
         x = [a + b for a, b in [(1, 2), (3, 4), (5, 6)] if a > 1 if b > 2]
         return x
+
     expected = """\
 function f() {
     let x = [[1, 2], [3, 4], [5, 6]].filter((([a, b]) => ((a > 1) && (b > 2)))).map((([a, b]) => (a + b)));
@@ -476,6 +483,7 @@ def test_nested_list_comp():
             if c > 3
         ]
         return x
+
     expected = """\
 function f() {
     let x = [1, 4, 7].map(
@@ -495,8 +503,10 @@ def test_splat():
     def f(x, y, z):
         def g(a, b, c):
             return a - b - c
+
         args = [x, y, z]
         return g(*args)
+
     expected = """\
 function f(x, y, z) {
     function g(a, b, c) {
@@ -512,6 +522,7 @@ function f(x, y, z) {
 def test_varargs():
     def f(*args):
         return sum(*args)
+
     expected = """\
 function f(...args) {
     return sum(...args);
@@ -523,6 +534,7 @@ function f(...args) {
 def test_missing_vararg():
     def my_range(n):
         return [1 for x in [n]]
+
     js = compile(my_range)
     expected = """\
 function my_range(n) {
@@ -534,6 +546,7 @@ function my_range(n) {
 def test_len_rewrite():
     def my_func(a):
         return len(a)
+
     js = compile(my_func)
     expected = """\
 function my_func(a) {

@@ -20,8 +20,9 @@ def _read_csv(path, schema, **kwargs):
     dates = list(toolz.valfilter(lambda s: s == 'datetime64[ns]', dtypes))
     dtypes = toolz.dissoc(dtypes, *dates)
 
-    return pd.read_csv(str(path), dtype=dtypes, parse_dates=dates,
-                       encoding='utf-8', **kwargs)
+    return pd.read_csv(
+        str(path), dtype=dtypes, parse_dates=dates, encoding='utf-8', **kwargs
+    )
 
 
 def connect(path):
@@ -39,7 +40,6 @@ def connect(path):
 
 
 class CSVTable(ops.DatabaseTable):
-
     def __init__(self, name, schema, source, **kwargs):
         super().__init__(name, schema, source)
         self.read_csv_kwargs = kwargs
@@ -110,8 +110,10 @@ def csv_pre_execute_selection(op, client, scope, **kwargs):
 
         if op.selections:
             header = _read_csv(path, schema=table.schema, header=0, nrows=1)
-            usecols = [getattr(s.op(), 'name', None) or s.get_name()
-                       for s in op.selections]
+            usecols = [
+                getattr(s.op(), 'name', None) or s.get_name()
+                for s in op.selections
+            ]
 
             # we cannot read all the columns that we would like
             if len(pd.Index(usecols) & header.columns) != len(usecols):

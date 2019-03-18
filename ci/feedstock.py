@@ -44,8 +44,10 @@ def clone(repo_uri, destination):
 
     cmd = git['clone', repo_uri, destination]
 
-    cmd(stdout=click.get_binary_stream('stdout'),
-        stderr=click.get_binary_stream('stderr'))
+    cmd(
+        stdout=click.get_binary_stream('stdout'),
+        stderr=click.get_binary_stream('stderr'),
+    )
 
 
 SCRIPT = (
@@ -55,8 +57,9 @@ SCRIPT = (
 
 
 @cli.command()
-@click.argument('meta',
-                default=os.path.join(default_dest, 'recipe', 'meta.yaml'))
+@click.argument(
+    'meta', default=os.path.join(default_dest, 'recipe', 'meta.yaml')
+)
 @click.option('--source-path', default=str(IBIS_DIR))
 def update(meta, source_path):
     path = Path(meta)
@@ -74,7 +77,8 @@ def update(meta, source_path):
     recipe['build']['script'] = SCRIPT
 
     updated_content = ruamel.yaml.round_trip_dump(
-        recipe, default_flow_style=False, width=sys.maxsize).strip()
+        recipe, default_flow_style=False, width=sys.maxsize
+    ).strip()
 
     click.echo(updated_content)
 
@@ -85,16 +89,19 @@ def update(meta, source_path):
 @click.argument('recipe', default=os.path.join(default_dest, 'recipe'))
 @click.option(
     '--python',
-    default='{}.{}'.format(sys.version_info.major, sys.version_info.minor))
+    default='{}.{}'.format(sys.version_info.major, sys.version_info.minor),
+)
 def build(recipe, python):
     click.echo('Building {} recipe...'.format(recipe))
 
-    cmd = conda['build', recipe,
-                '--channel', 'conda-forge',
-                '--python', python]
+    cmd = conda[
+        'build', recipe, '--channel', 'conda-forge', '--python', python
+    ]
 
-    cmd(stdout=click.get_binary_stream('stdout'),
-        stderr=click.get_binary_stream('stderr'))
+    cmd(
+        stdout=click.get_binary_stream('stdout'),
+        stderr=click.get_binary_stream('stderr'),
+    )
 
 
 @cli.command()
@@ -112,8 +119,10 @@ def deploy(package_location, artifact_directory, architecture):
         arch_package_directory = str(package_loc / architecture)
         shutil.copytree(arch_package_directory, arch_artifact_directory)
     cmd = conda['index', artifact_directory]
-    cmd(stdout=click.get_binary_stream('stdout'),
-        stderr=click.get_binary_stream('stderr'))
+    cmd(
+        stdout=click.get_binary_stream('stdout'),
+        stderr=click.get_binary_stream('stderr'),
+    )
 
 
 @cli.command()

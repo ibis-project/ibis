@@ -2,8 +2,7 @@ import pandas as pd
 import sqlalchemy as sa
 import sqlalchemy.dialects.mysql as mysql
 
-from ibis.sql.alchemy import (unary, fixed_arity, infix_op,
-                              _variance_reduction)
+from ibis.sql.alchemy import unary, fixed_arity, infix_op, _variance_reduction
 import ibis.common as com
 import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
@@ -48,10 +47,7 @@ def _capitalize(t, expr):
     arg, = expr.op().args
     sa_arg = t.translate(arg)
     return sa.func.concat(
-        sa.func.ucase(
-            sa.func.left(sa_arg, 1)
-        ),
-        sa.func.substring(sa_arg, 2)
+        sa.func.ucase(sa.func.left(sa_arg, 1)), sa.func.substring(sa_arg, 2)
     )
 
 
@@ -60,6 +56,7 @@ def _extract(fmt):
         arg, = expr.op().args
         sa_arg = t.translate(arg)
         return sa.extract(fmt, sa_arg)
+
     return translator
 
 
@@ -70,7 +67,7 @@ _truncate_formats = {
     'D': '%Y-%m-%d',
     # 'W': 'week',
     'M': '%Y-%m-01',
-    'Y': '%Y-01-01'
+    'Y': '%Y-01-01',
 }
 
 
@@ -183,48 +180,45 @@ def _literal(t, expr):
         return sa.literal(value)
 
 
-_operation_registry.update({
-    ops.Literal: _literal,
-
-    # strings
-    ops.Substring: _substr,
-    ops.StringFind: _string_find,
-    ops.Capitalize: _capitalize,
-    ops.RegexSearch: infix_op('REGEXP'),
-
-    # math
-    ops.Log: _log,
-    ops.Log2: unary(sa.func.log2),
-    ops.Log10: unary(sa.func.log10),
-    ops.Round: _round,
-
-    # dates and times
-    ops.Date: unary(sa.func.date),
-    ops.DateAdd: infix_op('+'),
-    ops.DateSub: infix_op('-'),
-    ops.DateDiff: fixed_arity(sa.func.datediff, 2),
-    ops.TimestampAdd: infix_op('+'),
-    ops.TimestampSub: infix_op('-'),
-    ops.TimestampDiff: _timestamp_diff,
-    ops.DateTruncate: _truncate,
-    ops.TimestampTruncate: _truncate,
-    ops.IntervalFromInteger: _interval_from_integer,
-    ops.Strftime: fixed_arity(sa.func.date_format, 2),
-    ops.ExtractYear: _extract('year'),
-    ops.ExtractMonth: _extract('month'),
-    ops.ExtractDay: _extract('day'),
-    ops.ExtractHour: _extract('hour'),
-    ops.ExtractMinute: _extract('minute'),
-    ops.ExtractSecond: _extract('second'),
-    ops.ExtractMillisecond: _extract('millisecond'),
-
-    # reductions
-    ops.Variance: _variance_reduction('var'),
-    ops.StandardDev: _variance_reduction('stddev'),
-
-    ops.IdenticalTo: _identical_to,
-    ops.TimestampNow: fixed_arity(sa.func.now, 0),
-})
+_operation_registry.update(
+    {
+        ops.Literal: _literal,
+        # strings
+        ops.Substring: _substr,
+        ops.StringFind: _string_find,
+        ops.Capitalize: _capitalize,
+        ops.RegexSearch: infix_op('REGEXP'),
+        # math
+        ops.Log: _log,
+        ops.Log2: unary(sa.func.log2),
+        ops.Log10: unary(sa.func.log10),
+        ops.Round: _round,
+        # dates and times
+        ops.Date: unary(sa.func.date),
+        ops.DateAdd: infix_op('+'),
+        ops.DateSub: infix_op('-'),
+        ops.DateDiff: fixed_arity(sa.func.datediff, 2),
+        ops.TimestampAdd: infix_op('+'),
+        ops.TimestampSub: infix_op('-'),
+        ops.TimestampDiff: _timestamp_diff,
+        ops.DateTruncate: _truncate,
+        ops.TimestampTruncate: _truncate,
+        ops.IntervalFromInteger: _interval_from_integer,
+        ops.Strftime: fixed_arity(sa.func.date_format, 2),
+        ops.ExtractYear: _extract('year'),
+        ops.ExtractMonth: _extract('month'),
+        ops.ExtractDay: _extract('day'),
+        ops.ExtractHour: _extract('hour'),
+        ops.ExtractMinute: _extract('minute'),
+        ops.ExtractSecond: _extract('second'),
+        ops.ExtractMillisecond: _extract('millisecond'),
+        # reductions
+        ops.Variance: _variance_reduction('var'),
+        ops.StandardDev: _variance_reduction('stddev'),
+        ops.IdenticalTo: _identical_to,
+        ops.TimestampNow: fixed_arity(sa.func.now, 0),
+    }
+)
 
 
 def add_operation(op, translation_func):
@@ -236,15 +230,17 @@ class MySQLExprTranslator(alch.AlchemyExprTranslator):
     _registry = _operation_registry
     _rewrites = alch.AlchemyExprTranslator._rewrites.copy()
     _type_map = alch.AlchemyExprTranslator._type_map.copy()
-    _type_map.update({
-        dt.Boolean: mysql.BOOLEAN,
-        dt.Int8: mysql.TINYINT,
-        dt.Int32: mysql.INTEGER,
-        dt.Int64: mysql.BIGINT,
-        dt.Double: mysql.DOUBLE,
-        dt.Float: mysql.FLOAT,
-        dt.String: mysql.VARCHAR,
-    })
+    _type_map.update(
+        {
+            dt.Boolean: mysql.BOOLEAN,
+            dt.Int8: mysql.TINYINT,
+            dt.Int32: mysql.INTEGER,
+            dt.Int64: mysql.BIGINT,
+            dt.Double: mysql.DOUBLE,
+            dt.Float: mysql.FLOAT,
+            dt.String: mysql.VARCHAR,
+        }
+    )
 
 
 rewrites = MySQLExprTranslator.rewrites

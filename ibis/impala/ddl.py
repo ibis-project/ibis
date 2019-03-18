@@ -36,7 +36,6 @@ def _is_quoted(x):
 
 
 class ImpalaQualifiedSQLStatement:
-
     def _get_scoped_name(self, obj_name, database):
         if database:
             scoped_name = '{}.`{}`'.format(database, obj_name)
@@ -60,14 +59,11 @@ class ImpalaDML(DML, ImpalaQualifiedSQLStatement):
 
 
 class CreateDDL(ImpalaDDL):
-
     def _if_exists(self):
         return 'IF NOT EXISTS ' if self.can_exist else ''
 
 
-_format_aliases = {
-    'TEXT': 'TEXTFILE'
-}
+_format_aliases = {'TEXT': 'TEXTFILE'}
 
 
 def _sanitize_format(format):
@@ -109,10 +105,17 @@ class CreateTable(CreateDDL):
 
     """
 
-    def __init__(self, table_name, database=None, external=False,
-                 format='parquet', can_exist=False,
-                 partition=None, path=None,
-                 tbl_properties=None):
+    def __init__(
+        self,
+        table_name,
+        database=None,
+        external=False,
+        format='parquet',
+        can_exist=False,
+        partition=None,
+        path=None,
+        tbl_properties=None,
+    ):
         self.table_name = table_name
         self.database = database
         self.partition = partition
@@ -131,9 +134,7 @@ class CreateTable(CreateDDL):
 
     def _create_line(self):
         scoped_name = self._get_scoped_name(self.table_name, self.database)
-        return '{} {}{}'.format(
-            self._prefix, self._if_exists(), scoped_name
-        )
+        return '{} {}{}'.format(self._prefix, self._if_exists(), scoped_name)
 
     def _location(self):
         return "LOCATION '{}'".format(self.path) if self.path else None
@@ -158,12 +159,25 @@ class CTAS(CreateTable):
     Create Table As Select
     """
 
-    def __init__(self, table_name, select, database=None,
-                 external=False, format='parquet', can_exist=False,
-                 path=None, partition=None):
+    def __init__(
+        self,
+        table_name,
+        select,
+        database=None,
+        external=False,
+        format='parquet',
+        can_exist=False,
+        path=None,
+        partition=None,
+    ):
         super().__init__(
-            table_name, database=database, external=external, format=format,
-            can_exist=can_exist, path=path, partition=partition,
+            table_name,
+            database=database,
+            external=external,
+            format=format,
+            can_exist=can_exist,
+            path=path,
+            partition=partition,
         )
         self.select = select
 
@@ -205,12 +219,22 @@ class CreateView(CTAS):
 
 
 class CreateTableParquet(CreateTable):
-
-    def __init__(self, table_name, path, example_file=None, example_table=None,
-                 schema=None, external=True, **kwargs):
+    def __init__(
+        self,
+        table_name,
+        path,
+        example_file=None,
+        example_table=None,
+        schema=None,
+        external=True,
+        **kwargs,
+    ):
         super().__init__(
-            table_name, external=external, format='parquet', path=path,
-            **kwargs
+            table_name,
+            external=external,
+            format='parquet',
+            path=path,
+            **kwargs,
         )
         self.example_file = example_file
         self.example_table = example_table
@@ -232,7 +256,6 @@ class CreateTableParquet(CreateTable):
 
 
 class CreateTableWithSchema(CreateTable):
-
     def __init__(self, table_name, schema, table_format=None, **kwargs):
         super().__init__(table_name, **kwargs)
         self.schema = schema
@@ -245,8 +268,8 @@ class CreateTableWithSchema(CreateTable):
             part_schema = self.partition
             if not isinstance(part_schema, sch.Schema):
                 part_schema = sch.Schema(
-                    part_schema,
-                    [self.schema[name] for name in part_schema])
+                    part_schema, [self.schema[name] for name in part_schema]
+                )
 
             to_delete = []
             for name in self.partition:
@@ -270,9 +293,14 @@ class CreateTableWithSchema(CreateTable):
 
 
 class DelimitedFormat:
-
-    def __init__(self, path, delimiter=None, escapechar=None,
-                 na_rep=None, lineterminator=None):
+    def __init__(
+        self,
+        path,
+        delimiter=None,
+        escapechar=None,
+        na_rep=None,
+        lineterminator=None,
+    ):
         self.path = path
         self.delimiter = delimiter
         self.escapechar = escapechar
@@ -294,14 +322,11 @@ class DelimitedFormat:
         yield "LOCATION '{}'".format(self.path)
 
         if self.na_rep is not None:
-            props = {
-                'serialization.null.format': self.na_rep
-            }
+            props = {'serialization.null.format': self.na_rep}
             yield format_tblproperties(props)
 
 
 class AvroFormat:
-
     def __init__(self, path, avro_schema):
         self.path = path
         self.avro_schema = avro_schema
@@ -318,7 +343,6 @@ class AvroFormat:
 
 
 class ParquetFormat:
-
     def __init__(self, path):
         self.path = path
 
@@ -328,25 +352,33 @@ class ParquetFormat:
 
 
 class CreateTableDelimited(CreateTableWithSchema):
-
-    def __init__(self, table_name, path, schema,
-                 delimiter=None, escapechar=None, lineterminator=None,
-                 na_rep=None, external=True, **kwargs):
-        table_format = DelimitedFormat(path, delimiter=delimiter,
-                                       escapechar=escapechar,
-                                       lineterminator=lineterminator,
-                                       na_rep=na_rep)
+    def __init__(
+        self,
+        table_name,
+        path,
+        schema,
+        delimiter=None,
+        escapechar=None,
+        lineterminator=None,
+        na_rep=None,
+        external=True,
+        **kwargs,
+    ):
+        table_format = DelimitedFormat(
+            path,
+            delimiter=delimiter,
+            escapechar=escapechar,
+            lineterminator=lineterminator,
+            na_rep=na_rep,
+        )
         super().__init__(
             table_name, schema, table_format, external=external, **kwargs
         )
 
 
 class CreateTableAvro(CreateTable):
-
     def __init__(self, table_name, path, avro_schema, external=True, **kwargs):
-        super().__init__(
-            table_name, external=external, **kwargs
-        )
+        super().__init__(table_name, external=external, **kwargs)
         self.table_format = AvroFormat(path, avro_schema)
 
     @property
@@ -355,11 +387,15 @@ class CreateTableAvro(CreateTable):
 
 
 class InsertSelect(ImpalaDML):
-
-    def __init__(self, table_name, select_expr, database=None,
-                 partition=None,
-                 partition_schema=None,
-                 overwrite=False):
+    def __init__(
+        self,
+        table_name,
+        select_expr,
+        database=None,
+        partition=None,
+        partition_schema=None,
+        overwrite=False,
+    ):
         self.table_name = table_name
         self.database = database
         self.select = select_expr
@@ -376,16 +412,16 @@ class InsertSelect(ImpalaDML):
             cmd = 'INSERT INTO'
 
         if self.partition is not None:
-            part = _format_partition(self.partition,
-                                     self.partition_schema)
+            part = _format_partition(self.partition, self.partition_schema)
             partition = ' {} '.format(part)
         else:
             partition = ''
 
         select_query = self.select.compile()
         scoped_name = self._get_scoped_name(self.table_name, self.database)
-        return'{0} {1}{2}\n{3}'.format(cmd, scoped_name, partition,
-                                       select_query)
+        return '{0} {1}{2}\n{3}'.format(
+            cmd, scoped_name, partition, select_query
+        )
 
 
 def _format_partition(partition, partition_schema):
@@ -393,8 +429,9 @@ def _format_partition(partition, partition_schema):
     if isinstance(partition, dict):
         for name in partition_schema:
             if name in partition:
-                tok = _format_partition_kv(name, partition[name],
-                                           partition_schema[name])
+                tok = _format_partition_kv(
+                    name, partition[name], partition_schema[name]
+                )
             else:
                 # dynamic partitioning
                 tok = name
@@ -422,9 +459,15 @@ class LoadData(ImpalaDDL):
     Generate DDL for LOAD DATA command. Cannot be cancelled
     """
 
-    def __init__(self, table_name, path, database=None,
-                 partition=None, partition_schema=None,
-                 overwrite=False):
+    def __init__(
+        self,
+        table_name,
+        path,
+        database=None,
+        partition=None,
+        partition_schema=None,
+        overwrite=False,
+    ):
         self.table_name = table_name
         self.database = database
         self.path = path
@@ -438,20 +481,27 @@ class LoadData(ImpalaDDL):
         overwrite = 'OVERWRITE ' if self.overwrite else ''
 
         if self.partition is not None:
-            partition = '\n' + _format_partition(self.partition,
-                                                 self.partition_schema)
+            partition = '\n' + _format_partition(
+                self.partition, self.partition_schema
+            )
         else:
             partition = ''
 
         scoped_name = self._get_scoped_name(self.table_name, self.database)
-        return ("LOAD DATA INPATH '{}' {}INTO TABLE {}{}"
-                .format(self.path, overwrite, scoped_name, partition))
+        return "LOAD DATA INPATH '{}' {}INTO TABLE {}{}".format(
+            self.path, overwrite, scoped_name, partition
+        )
 
 
 class AlterTable(ImpalaDDL):
-
-    def __init__(self, table, location=None, format=None, tbl_properties=None,
-                 serde_properties=None):
+    def __init__(
+        self,
+        table,
+        location=None,
+        format=None,
+        tbl_properties=None,
+        serde_properties=None,
+    ):
         self.table = table
         self.location = location
         self.format = _sanitize_format(format)
@@ -488,15 +538,22 @@ class AlterTable(ImpalaDDL):
 
 
 class PartitionProperties(AlterTable):
-
-    def __init__(self, table, partition, partition_schema,
-                 location=None, format=None,
-                 tbl_properties=None, serde_properties=None):
+    def __init__(
+        self,
+        table,
+        partition,
+        partition_schema,
+        location=None,
+        format=None,
+        tbl_properties=None,
+        serde_properties=None,
+    ):
         super().__init__(
             table,
-            location=location, format=format,
+            location=location,
+            format=format,
             tbl_properties=tbl_properties,
-            serde_properties=serde_properties
+            serde_properties=serde_properties,
         )
         self.partition = partition
         self.partition_schema = partition_schema
@@ -512,24 +569,19 @@ class PartitionProperties(AlterTable):
 
 
 class AddPartition(PartitionProperties):
-
     def __init__(self, table, partition, partition_schema, location=None):
-        super().__init__(
-            table, partition, partition_schema, location=location
-        )
+        super().__init__(table, partition, partition_schema, location=location)
 
     def compile(self):
         return self._compile('ADD')
 
 
 class AlterPartition(PartitionProperties):
-
     def compile(self):
         return self._compile('', 'SET ')
 
 
 class DropPartition(PartitionProperties):
-
     def __init__(self, table, partition, partition_schema):
         super().__init__(table, partition, partition_schema)
 
@@ -538,9 +590,9 @@ class DropPartition(PartitionProperties):
 
 
 class RenameTable(AlterTable):
-
-    def __init__(self, old_name, new_name, old_database=None,
-                 new_database=None):
+    def __init__(
+        self, old_name, new_name, old_database=None, new_database=None
+    ):
         # if either database is None, the name is assumed to be fully scoped
         self.old_name = old_name
         self.old_database = old_database
@@ -559,13 +611,13 @@ class RenameTable(AlterTable):
         self.new_qualified_name = new_qualified_name
 
     def compile(self):
-        cmd = '{} RENAME TO {}'.format(self.old_qualified_name,
-                                       self.new_qualified_name)
+        cmd = '{} RENAME TO {}'.format(
+            self.old_qualified_name, self.new_qualified_name
+        )
         return self._wrap_command(cmd)
 
 
 class DropObject(ImpalaDDL):
-
     def __init__(self, must_exist=True):
         self.must_exist = must_exist
 
@@ -607,7 +659,6 @@ class DropView(DropTable):
 
 
 class CacheTable(ImpalaDDL):
-
     def __init__(self, table_name, database=None, pool='default'):
         self.table_name = table_name
         self.database = database
@@ -615,13 +666,12 @@ class CacheTable(ImpalaDDL):
 
     def compile(self):
         scoped_name = self._get_scoped_name(self.table_name, self.database)
-        return "ALTER TABLE {} SET CACHED IN '{}'" .format(
+        return "ALTER TABLE {} SET CACHED IN '{}'".format(
             scoped_name, self.pool
         )
 
 
 class CreateDatabase(CreateDDL):
-
     def __init__(self, name, path=None, can_exist=False):
         self.name = name
         self.path = path
@@ -651,8 +701,10 @@ class DropDatabase(DropObject):
 
 
 def format_schema(schema):
-    elements = [_format_schema_element(name, t)
-                for name, t in zip(schema.names, schema.types)]
+    elements = [
+        _format_schema_element(name, t)
+        for name, t in zip(schema.names, schema.types)
+    ]
     return '({})'.format(',\n '.join(elements))
 
 
@@ -680,24 +732,28 @@ class CreateFunction(ImpalaDDL):
 
 
 class CreateUDF(CreateFunction):
-
     def compile(self):
         create_decl = 'CREATE FUNCTION'
         impala_sig = self._impala_signature()
-        param_line = ("location '{}' symbol='{}'"
-                      .format(self.func.lib_path, self.func.so_symbol))
+        param_line = "location '{}' symbol='{}'".format(
+            self.func.lib_path, self.func.so_symbol
+        )
         return ' '.join([create_decl, impala_sig, param_line])
 
 
 class CreateUDA(CreateFunction):
-
     def compile(self):
         create_decl = 'CREATE AGGREGATE FUNCTION'
         impala_sig = self._impala_signature()
         tokens = ["location '{}'".format(self.func.lib_path)]
 
-        fn_names = ('init_fn', 'update_fn', 'merge_fn', 'serialize_fn',
-                    'finalize_fn')
+        fn_names = (
+            'init_fn',
+            'update_fn',
+            'merge_fn',
+            'serialize_fn',
+            'finalize_fn',
+        )
 
         for fn in fn_names:
             value = getattr(self.func, fn)
@@ -708,9 +764,9 @@ class CreateUDA(CreateFunction):
 
 
 class DropFunction(DropObject):
-
-    def __init__(self, name, inputs, must_exist=True,
-                 aggregate=False, database=None):
+    def __init__(
+        self, name, inputs, must_exist=True, aggregate=False, database=None
+    ):
         super().__init__(must_exist=must_exist)
         self.name = name
         self.inputs = tuple(map(dt.dtype, inputs))
@@ -739,7 +795,6 @@ class DropFunction(DropObject):
 
 
 class ListFunction(ImpalaDDL):
-
     def __init__(self, database, like=None, aggregate=False):
         self.database = database
         self.like = like

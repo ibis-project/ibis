@@ -25,16 +25,17 @@ def test_simple_case_expr(table):
     default_result = table.b
 
     expr1 = table.g.lower().cases(
-        [(case1, result1),
-         (case2, result2)],
-        default=default_result
+        [(case1, result1), (case2, result2)], default=default_result
     )
 
-    expr2 = (table.g.lower().case()
-             .when(case1, result1)
-             .when(case2, result2)
-             .else_(default_result)
-             .end())
+    expr2 = (
+        table.g.lower()
+        .case()
+        .when(case1, result1)
+        .when(case2, result2)
+        .else_(default_result)
+        .end()
+    )
 
     assert_equal(expr1, expr2)
     assert isinstance(expr1, ir.IntegerColumn)
@@ -51,12 +52,14 @@ def test_multiple_case_expr(table):
 
     default = table.d
 
-    expr = (ibis.case()
-            .when(case1, result1)
-            .when(case2, result2)
-            .when(case3, result3)
-            .else_(default)
-            .end())
+    expr = (
+        ibis.case()
+        .when(case1, result1)
+        .when(case2, result2)
+        .when(case3, result3)
+        .else_(default)
+        .end()
+    )
 
     op = expr.op()
     assert isinstance(expr, ir.FloatingColumn)
@@ -106,17 +109,17 @@ def test_no_implicit_cast_possible():
 
 def test_case_mixed_type():
     t0 = ibis.table(
-        [('one', 'string'),
-         ('two', 'double'),
-         ('three', 'int32')], name='my_data')
+        [('one', 'string'), ('two', 'double'), ('three', 'int32')],
+        name='my_data',
+    )
 
     expr = (
-        t0.three
-          .case()
-          .when(0, 'low')
-          .when(1, 'high')
-          .else_('null')
-          .end()
-          .name('label'))
+        t0.three.case()
+        .when(0, 'low')
+        .when(1, 'high')
+        .else_('null')
+        .end()
+        .name('label')
+    )
     result = t0[expr]
     assert result['label'].type().equals(dt.string)

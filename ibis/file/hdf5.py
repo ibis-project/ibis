@@ -27,13 +27,15 @@ class HDFClient(FileClient):
     extension = 'h5'
     table_class = HDFTable
 
-    def insert(self, path, key, expr, format='table',
-               data_columns=True, **kwargs):
+    def insert(
+        self, path, key, expr, format='table', data_columns=True, **kwargs
+    ):
 
         path = self.root / path
         data = execute(expr)
-        data.to_hdf(str(path), key, format=format,
-                    data_columns=data_columns, **kwargs)
+        data.to_hdf(
+            str(path), key, format=format, data_columns=data_columns, **kwargs
+        )
 
     def table(self, name, path):
         if name not in self.list_tables(path):

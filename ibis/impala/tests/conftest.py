@@ -39,11 +39,13 @@ class IbisTestEnv:
     @property
     def tmp_db(self):
         options.impala.temp_db = tmp_db = os.environ.get(
-                'IBIS_TEST_TMP_DB', 'ibis_testing_tmp_db')
+            'IBIS_TEST_TMP_DB', 'ibis_testing_tmp_db'
+        )
         return tmp_db
 
     options.impala.temp_hdfs_path = tmp_dir = os.environ.get(
-        'IBIS_TEST_TMP_HDFS_DIR', '/tmp/__ibis_test_{}'.format(util.guid()))
+        'IBIS_TEST_TMP_HDFS_DIR', '/tmp/__ibis_test_{}'.format(util.guid())
+    )
 
     @property
     def test_data_db(self):
@@ -52,7 +54,8 @@ class IbisTestEnv:
     @property
     def test_data_dir(self):
         return os.environ.get(
-            'IBIS_TEST_DATA_HDFS_DIR', '/__ibis/ibis-testing-data')
+            'IBIS_TEST_DATA_HDFS_DIR', '/__ibis/ibis-testing-data'
+        )
 
     @property
     def nn_host(self):
@@ -116,13 +119,13 @@ def hdfs(env, tmp_dir):
     if env.auth_mechanism in {'GSSAPI', 'LDAP'}:
         warnings.warn("Ignoring invalid Certificate Authority errors")
 
-    client = ibis.hdfs_connect(host=env.nn_host,
-                               port=env.webhdfs_port,
-                               auth_mechanism=env.auth_mechanism,
-                               verify=env.auth_mechanism not in {
-                                   'GSSAPI', 'LDAP'
-                               },
-                               user=env.webhdfs_user)
+    client = ibis.hdfs_connect(
+        host=env.nn_host,
+        port=env.webhdfs_port,
+        auth_mechanism=env.auth_mechanism,
+        verify=env.auth_mechanism not in {'GSSAPI', 'LDAP'},
+        user=env.webhdfs_user,
+    )
 
     if not client.exists(tmp_dir):
         client.mkdir(tmp_dir)
@@ -132,10 +135,12 @@ def hdfs(env, tmp_dir):
 
 @pytest.fixture(scope='session')
 def con_no_hdfs(env, test_data_db):
-    con = ibis.impala.connect(host=env.impala_host,
-                              database=test_data_db,
-                              port=env.impala_port,
-                              auth_mechanism=env.auth_mechanism)
+    con = ibis.impala.connect(
+        host=env.impala_host,
+        database=test_data_db,
+        port=env.impala_port,
+        auth_mechanism=env.auth_mechanism,
+    )
     if not env.use_codegen:
         con.disable_codegen()
     assert con.get_options()['DISABLE_CODEGEN'] == '1'
@@ -147,11 +152,13 @@ def con_no_hdfs(env, test_data_db):
 
 @pytest.fixture(scope='session')
 def con(env, hdfs, test_data_db):
-    con = ibis.impala.connect(host=env.impala_host,
-                              database=test_data_db,
-                              port=env.impala_port,
-                              auth_mechanism=env.auth_mechanism,
-                              hdfs_client=hdfs)
+    con = ibis.impala.connect(
+        host=env.impala_host,
+        database=test_data_db,
+        port=env.impala_port,
+        auth_mechanism=env.auth_mechanism,
+        hdfs_client=hdfs,
+    )
     if not env.use_codegen:
         con.disable_codegen()
     assert con.get_options()['DISABLE_CODEGEN'] == '1'
@@ -203,11 +210,13 @@ def tmp_db(env, con, test_data_db):
 
 @pytest.fixture(scope='session')
 def con_no_db(env, hdfs):
-    con = ibis.impala.connect(host=env.impala_host,
-                              database=None,
-                              port=env.impala_port,
-                              auth_mechanism=env.auth_mechanism,
-                              hdfs_client=hdfs)
+    con = ibis.impala.connect(
+        host=env.impala_host,
+        database=None,
+        port=env.impala_port,
+        auth_mechanism=env.auth_mechanism,
+        hdfs_client=hdfs,
+    )
     if not env.use_codegen:
         con.disable_codegen()
     assert con.get_options()['DISABLE_CODEGEN'] == '1'
@@ -284,9 +293,9 @@ def temp_view_db(con, temp_database):
 
 @pytest.fixture
 def temp_parquet_table_schema():
-    return ibis.schema([
-        ('id', 'int32'), ('name', 'string'), ('files', 'int32')
-    ])
+    return ibis.schema(
+        [('id', 'int32'), ('name', 'string'), ('files', 'int32')]
+    )
 
 
 @pytest.fixture
@@ -330,7 +339,9 @@ STORED AS KUDU
 TBLPROPERTIES (
   'kudu.master_addresses' = 'kudu',
   'kudu.num_tablet_replicas' = '1'
-)""".format(database=test_data_db, name=name)
+)""".format(
+            database=test_data_db, name=name
+        )
     )
     drop_sql = 'DROP TABLE {database}.{name}'.format(
         database=test_data_db, name=name

@@ -9,42 +9,48 @@ pytestmark = pytest.mark.mapd
 pytest.importorskip('pymapd')
 
 
-@pytest.mark.parametrize(('result_fn', 'expected'), [
-    param(
-        lambda t: t[t, ibis.literal(1).degrees().name('n')].limit(1)['n'],
-        57.2957795130823,
-        id='literal_degree'
-    ),
-    param(
-        lambda t: t[t, ibis.literal(1).radians().name('n')].limit(1)['n'],
-        0.0174532925199433,
-        id='literal_radians'
-    ),
-    param(
-        lambda t: t.double_col.corr(t.float_col),
-        1.000000000000113,
-        id='double_float_correlation'
-    ),
-    param(
-        lambda t: t.double_col.cov(t.float_col),
-        91.67005567565313,
-        id='double_float_covariance'
-    )
-])
+@pytest.mark.parametrize(
+    ('result_fn', 'expected'),
+    [
+        param(
+            lambda t: t[t, ibis.literal(1).degrees().name('n')].limit(1)['n'],
+            57.295_779_513_082_3,
+            id='literal_degree',
+        ),
+        param(
+            lambda t: t[t, ibis.literal(1).radians().name('n')].limit(1)['n'],
+            0.017_453_292_519_943_3,
+            id='literal_radians',
+        ),
+        param(
+            lambda t: t.double_col.corr(t.float_col),
+            1.000_000_000_000_113,
+            id='double_float_correlation',
+        ),
+        param(
+            lambda t: t.double_col.cov(t.float_col),
+            91.670_055_675_653_13,
+            id='double_float_covariance',
+        ),
+    ],
+)
 def test_operations_scalar(alltypes, result_fn, expected):
     result = result_fn(alltypes).execute()
     np.testing.assert_allclose(result, expected)
 
 
-@pytest.mark.parametrize(('result_fn', 'check_result'), [
-    param(
-        lambda t: (
-            t[t.date_string_col][t.date_string_col.ilike('10/%')].limit(1)
-        ),
-        lambda v: v.startswith('10/'),
-        id='string_ilike'
-    )
-])
+@pytest.mark.parametrize(
+    ('result_fn', 'check_result'),
+    [
+        param(
+            lambda t: (
+                t[t.date_string_col][t.date_string_col.ilike('10/%')].limit(1)
+            ),
+            lambda v: v.startswith('10/'),
+            id='string_ilike',
+        )
+    ],
+)
 def test_string_operations(alltypes, result_fn, check_result):
     result = result_fn(alltypes).execute()
 
@@ -61,16 +67,21 @@ def test_join_diff_name(awards_players, batting):
         t2.playerID.name('pID'),
         t2.yearID.name('yID'),
         t2.lgID.name('lID'),
-        t2.teamID
+        t2.teamID,
     ]
     k = [t1, t2.teamID]
-    df = t1.left_join(
-        t2, (
-                (t1.yearID == t2.yID) &
-                (t1.playerID == t2.pID) &
-                (t1.lgID == t2.lID)
-        )
-    )[k].materialize().execute()
+    df = (
+        t1.left_join(
+            t2,
+            (
+                (t1.yearID == t2.yID)
+                & (t1.playerID == t2.pID)
+                & (t1.lgID == t2.lID)
+            ),
+        )[k]
+        .materialize()
+        .execute()
+    )
     assert df.size == 80
 
 
@@ -78,9 +89,11 @@ def test_cross_join(alltypes):
     d = alltypes.double_col
 
     tier = d.histogram(10).name('hist_bin')
-    expr = (alltypes.group_by(tier)
-            .aggregate([d.min(), d.max(), alltypes.count()])
-            .sort_by('hist_bin'))
+    expr = (
+        alltypes.group_by(tier)
+        .aggregate([d.min(), d.max(), alltypes.count()])
+        .sort_by('hist_bin')
+    )
     df = expr.execute()
     assert df.size == 40
     assert df['count'][0] == 730
@@ -94,11 +107,7 @@ def test_where_operator(alltypes):
     assert counts[1] == 5
 
 
-@pytest.mark.parametrize('name', [
-    'regular_name',
-    'star_name*',
-    'space_name ',
-])
+@pytest.mark.parametrize('name', ['regular_name', 'star_name*', 'space_name '])
 def test_quote_name(alltypes, name):
     expr = alltypes.aggregate(alltypes.count().name(name))
     assert name in expr.execute()
@@ -136,13 +145,16 @@ def test_literal_geospatial():
     )
 
 
-@pytest.mark.parametrize(('result_fn', 'expected_fn'), [
-    param(
-        lambda t: t.double_col.arbitrary(),
-        lambda t: t.double_col.iloc[-1],
-        id='double_col_arbitrary_none'
-    ),
-])
+@pytest.mark.parametrize(
+    ('result_fn', 'expected_fn'),
+    [
+        param(
+            lambda t: t.double_col.arbitrary(),
+            lambda t: t.double_col.iloc[-1],
+            id='double_col_arbitrary_none',
+        )
+    ],
+)
 def test_arbitrary_none(alltypes, df_alltypes, result_fn, expected_fn):
     expr = result_fn(alltypes)
     result = expr.execute()

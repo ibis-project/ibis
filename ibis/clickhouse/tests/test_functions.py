@@ -21,53 +21,63 @@ clickhouse_driver = pytest.importorskip('clickhouse_driver')
 pytestmark = pytest.mark.clickhouse
 
 
-@pytest.mark.parametrize(('to_type', 'expected'), [
-    ('int8', 'CAST(`double_col` AS Int8)'),
-    ('int16', 'CAST(`double_col` AS Int16)'),
-    ('float', 'CAST(`double_col` AS Float32)'),
-    # alltypes.double_col is non-nullable
-    (dt.Double(nullable=False), '`double_col`')
-])
+@pytest.mark.parametrize(
+    ('to_type', 'expected'),
+    [
+        ('int8', 'CAST(`double_col` AS Int8)'),
+        ('int16', 'CAST(`double_col` AS Int16)'),
+        ('float', 'CAST(`double_col` AS Float32)'),
+        # alltypes.double_col is non-nullable
+        (dt.Double(nullable=False), '`double_col`'),
+    ],
+)
 def test_cast_double_col(alltypes, translate, to_type, expected):
     expr = alltypes.double_col.cast(to_type)
     assert translate(expr) == expected
 
 
-@pytest.mark.parametrize(('to_type', 'expected'), [
-    ('int8', 'CAST(`string_col` AS Int8)'),
-    ('int16', 'CAST(`string_col` AS Int16)'),
-    (dt.String(nullable=False), '`string_col`'),
-    ('timestamp', 'CAST(`string_col` AS DateTime)'),
-    ('date', 'CAST(`string_col` AS Date)')
-])
+@pytest.mark.parametrize(
+    ('to_type', 'expected'),
+    [
+        ('int8', 'CAST(`string_col` AS Int8)'),
+        ('int16', 'CAST(`string_col` AS Int16)'),
+        (dt.String(nullable=False), '`string_col`'),
+        ('timestamp', 'CAST(`string_col` AS DateTime)'),
+        ('date', 'CAST(`string_col` AS Date)'),
+    ],
+)
 def test_cast_string_col(alltypes, translate, to_type, expected):
     expr = alltypes.string_col.cast(to_type)
     assert translate(expr) == expected
 
 
-@pytest.mark.xfail(raises=AssertionError,
-                   reason='Clickhouse doesn\'t have decimal type')
+@pytest.mark.xfail(
+    raises=AssertionError, reason='Clickhouse doesn\'t have decimal type'
+)
 def test_decimal_cast():
     assert False
 
 
-@pytest.mark.parametrize('column', [
-    'index',
-    'Unnamed: 0',
-    'id',
-    'bool_col',
-    'tinyint_col',
-    'smallint_col',
-    'int_col',
-    'bigint_col',
-    'float_col',
-    'double_col',
-    'date_string_col',
-    'string_col',
-    'timestamp_col',
-    'year',
-    'month',
-])
+@pytest.mark.parametrize(
+    'column',
+    [
+        'index',
+        'Unnamed: 0',
+        'id',
+        'bool_col',
+        'tinyint_col',
+        'smallint_col',
+        'int_col',
+        'bigint_col',
+        'float_col',
+        'double_col',
+        'date_string_col',
+        'string_col',
+        'timestamp_col',
+        'year',
+        'month',
+    ],
+)
 def test_noop_cast(alltypes, translate, column):
     col = alltypes[column]
     result = col.cast(col.type())
@@ -94,28 +104,34 @@ def test_timestamp_now(con, translate):
     # assert con.execute(expr) == now
 
 
-@pytest.mark.parametrize(('unit', 'expected'), [
-    param('y', '2009-01-01', marks=pytest.mark.xfail),
-    param('m', '2009-05-01', marks=pytest.mark.xfail),
-    param('d', '2009-05-17', marks=pytest.mark.xfail),
-    param('w', '2009-05-11', marks=pytest.mark.xfail),
-    ('h', '2009-05-17 12:00:00'),
-    ('minute', '2009-05-17 12:34:00'),
-])
+@pytest.mark.parametrize(
+    ('unit', 'expected'),
+    [
+        param('y', '2009-01-01', marks=pytest.mark.xfail),
+        param('m', '2009-05-01', marks=pytest.mark.xfail),
+        param('d', '2009-05-17', marks=pytest.mark.xfail),
+        param('w', '2009-05-11', marks=pytest.mark.xfail),
+        ('h', '2009-05-17 12:00:00'),
+        ('minute', '2009-05-17 12:34:00'),
+    ],
+)
 def test_timestamp_truncate(con, translate, unit, expected):
     stamp = ibis.timestamp('2009-05-17 12:34:56')
     expr = stamp.truncate(unit)
     assert con.execute(expr) == pd.Timestamp(expected)
 
 
-@pytest.mark.parametrize(('func', 'expected'), [
-    (methodcaller('year'), 2015),
-    (methodcaller('month'), 9),
-    (methodcaller('day'), 1),
-    (methodcaller('hour'), 14),
-    (methodcaller('minute'), 48),
-    (methodcaller('second'), 5),
-])
+@pytest.mark.parametrize(
+    ('func', 'expected'),
+    [
+        (methodcaller('year'), 2015),
+        (methodcaller('month'), 9),
+        (methodcaller('day'), 1),
+        (methodcaller('hour'), 14),
+        (methodcaller('minute'), 48),
+        (methodcaller('second'), 5),
+    ],
+)
 def test_simple_datetime_operations(con, func, expected):
     value = ibis.timestamp('2015-09-01 14:48:05.359')
     with pytest.raises(ValueError):
@@ -125,10 +141,7 @@ def test_simple_datetime_operations(con, func, expected):
     con.execute(func(value)) == expected
 
 
-@pytest.mark.parametrize(('value', 'expected'), [
-    (0, None),
-    (5.5, 5.5)
-])
+@pytest.mark.parametrize(('value', 'expected'), [(0, None), (5.5, 5.5)])
 def test_nullifzero(con, value, expected):
     result = con.execute(L(value).nullifzero())
     if expected is None:
@@ -137,31 +150,40 @@ def test_nullifzero(con, value, expected):
         assert result == expected
 
 
-@pytest.mark.parametrize(('expr', 'expected'), [
-    (L(None).isnull(), True),
-    (L(1).isnull(), False),
-    (L(None).notnull(), False),
-    (L(1).notnull(), True),
-])
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        (L(None).isnull(), True),
+        (L(1).isnull(), False),
+        (L(None).notnull(), False),
+        (L(1).notnull(), True),
+    ],
+)
 def test_isnull_notnull(con, expr, expected):
     assert con.execute(expr) == expected
 
 
-@pytest.mark.parametrize(('expr', 'expected'), [
-    (ibis.coalesce(5, None, 4), 5),
-    (ibis.coalesce(ibis.NA, 4, ibis.NA), 4),
-    (ibis.coalesce(ibis.NA, ibis.NA, 3.14), 3.14),
-])
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        (ibis.coalesce(5, None, 4), 5),
+        (ibis.coalesce(ibis.NA, 4, ibis.NA), 4),
+        (ibis.coalesce(ibis.NA, ibis.NA, 3.14), 3.14),
+    ],
+)
 def test_coalesce(con, expr, expected):
     assert con.execute(expr) == expected
 
 
-@pytest.mark.parametrize(('expr', 'expected'), [
-    (ibis.NA.fillna(5), 5),
-    (L(5).fillna(10), 5),
-    (L(5).nullif(5), None),
-    (L(10).nullif(5), 10),
-])
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        (ibis.NA.fillna(5), 5),
+        (L(5).fillna(10), 5),
+        (L(5).nullif(5), None),
+        (L(10).nullif(5), 10),
+    ],
+)
 def test_fillna_nullif(con, expr, expected):
     result = con.execute(expr)
     if expected is None:
@@ -170,23 +192,27 @@ def test_fillna_nullif(con, expr, expected):
         assert result == expected
 
 
-@pytest.mark.parametrize(('value', 'expected'), [
-    (L('foo_bar'), 'String'),
-    (L(5), 'UInt8'),
-    (L(1.2345), 'Float64'),
-    (L(datetime(2015, 9, 1, hour=14, minute=48, second=5)), 'DateTime'),
-    (L(date(2015, 9, 1)), 'Date'),
-    param(
-        ibis.NA, 'Null',
-        marks=pytest.mark.xfail(
-            raises=AssertionError,
-            reason=(
-                'Client/server version mismatch not handled in the clickhouse '
-                'driver'
-            )
-        )
-    )
-])
+@pytest.mark.parametrize(
+    ('value', 'expected'),
+    [
+        (L('foo_bar'), 'String'),
+        (L(5), 'UInt8'),
+        (L(1.2345), 'Float64'),
+        (L(datetime(2015, 9, 1, hour=14, minute=48, second=5)), 'DateTime'),
+        (L(date(2015, 9, 1)), 'Date'),
+        param(
+            ibis.NA,
+            'Null',
+            marks=pytest.mark.xfail(
+                raises=AssertionError,
+                reason=(
+                    'Client/server version mismatch not handled in the '
+                    'clickhouse driver'
+                ),
+            ),
+        ),
+    ],
+)
 def test_typeof(con, value, expected):
     assert con.execute(value.typeof()) == expected
 
@@ -196,11 +222,14 @@ def test_string_length(con, value, expected):
     assert con.execute(L(value).length()) == expected
 
 
-@pytest.mark.parametrize(('op', 'expected'), [
-    (methodcaller('substr', 0, 3), 'foo'),
-    (methodcaller('substr', 4, 3), 'bar'),
-    (methodcaller('substr', 1), 'oo_bar'),
-])
+@pytest.mark.parametrize(
+    ('op', 'expected'),
+    [
+        (methodcaller('substr', 0, 3), 'foo'),
+        (methodcaller('substr', 4, 3), 'bar'),
+        (methodcaller('substr', 1), 'oo_bar'),
+    ],
+)
 def test_string_substring(con, op, expected):
     value = L('foo_bar')
     assert con.execute(op(value)) == expected
@@ -232,13 +261,16 @@ def test_string_lenght(con):
     assert con.execute(L('FOO').length()) == 3
 
 
-@pytest.mark.parametrize(('value', 'op', 'expected'), [
-    (L('foobar'), methodcaller('contains', 'bar'), True),
-    (L('foobar'), methodcaller('contains', 'foo'), True),
-    (L('foobar'), methodcaller('contains', 'baz'), False),
-    (L('100%'), methodcaller('contains', '%'), True),
-    (L('a_b_c'), methodcaller('contains', '_'), True),
-])
+@pytest.mark.parametrize(
+    ('value', 'op', 'expected'),
+    [
+        (L('foobar'), methodcaller('contains', 'bar'), True),
+        (L('foobar'), methodcaller('contains', 'foo'), True),
+        (L('foobar'), methodcaller('contains', 'baz'), False),
+        (L('100%'), methodcaller('contains', '%'), True),
+        (L('a_b_c'), methodcaller('contains', '_'), True),
+    ],
+)
 def test_string_contains(con, op, value, expected):
     assert con.execute(op(value)) == expected
 
@@ -252,11 +284,10 @@ def test_re_replace(con, translate):
     assert con.execute(expr2) == 'here: Hello, World!'
 
 
-@pytest.mark.parametrize(('value', 'expected'), [
-    (L('a'), 0),
-    (L('b'), 1),
-    (L('d'), -1),  # TODO: what's the expected?
-])
+@pytest.mark.parametrize(
+    ('value', 'expected'),
+    [(L('a'), 0), (L('b'), 1), (L('d'), -1)],  # TODO: what's the expected?
+)
 def test_find_in_set(con, value, expected, translate):
     vals = list('abc')
     expr = value.find_in_set(vals)
@@ -272,14 +303,23 @@ def test_string_column_find_in_set(con, alltypes, translate):
     assert len(con.execute(expr))
 
 
-@pytest.mark.parametrize(('url', 'extract', 'expected'), [
-    (L('https://www.cloudera.com'), 'HOST', 'www.cloudera.com'),
-    (L('https://www.cloudera.com'), 'PROTOCOL', 'https'),
-    (L('https://www.youtube.com/watch?v=kEuEcWfewf8&t=10'), 'PATH',
-     '/watch'),
-    (L('https://www.youtube.com/watch?v=kEuEcWfewf8&t=10'), 'QUERY',
-     'v=kEuEcWfewf8&t=10')
-])
+@pytest.mark.parametrize(
+    ('url', 'extract', 'expected'),
+    [
+        (L('https://www.cloudera.com'), 'HOST', 'www.cloudera.com'),
+        (L('https://www.cloudera.com'), 'PROTOCOL', 'https'),
+        (
+            L('https://www.youtube.com/watch?v=kEuEcWfewf8&t=10'),
+            'PATH',
+            '/watch',
+        ),
+        (
+            L('https://www.youtube.com/watch?v=kEuEcWfewf8&t=10'),
+            'QUERY',
+            'v=kEuEcWfewf8&t=10',
+        ),
+    ],
+)
 def test_parse_url(con, translate, url, extract, expected):
     expr = url.parse_url(extract)
     assert con.execute(expr) == expected
@@ -294,22 +334,21 @@ def test_parse_url_query_parameter(con, translate):
     assert con.execute(expr) == 'kEuEcWfewf8'
 
 
-@pytest.mark.parametrize(('expr', 'expected'), [
-    (L('foobar').find('bar'), 3),
-    (L('foobar').find('baz'), -1),
-
-    (L('foobar').like('%bar'), True),
-    (L('foobar').like('foo%'), True),
-    (L('foobar').like('%baz%'), False),
-
-    (L('foobar').like(['%bar']), True),
-    (L('foobar').like(['foo%']), True),
-    (L('foobar').like(['%baz%']), False),
-
-    (L('foobar').like(['%bar', 'foo%']), True),
-
-    (L('foobarfoo').replace('foo', 'H'), 'HbarH'),
-])
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        (L('foobar').find('bar'), 3),
+        (L('foobar').find('baz'), -1),
+        (L('foobar').like('%bar'), True),
+        (L('foobar').like('foo%'), True),
+        (L('foobar').like('%baz%'), False),
+        (L('foobar').like(['%bar']), True),
+        (L('foobar').like(['foo%']), True),
+        (L('foobar').like(['%baz%']), False),
+        (L('foobar').like(['%bar', 'foo%']), True),
+        (L('foobarfoo').replace('foo', 'H'), 'HbarH'),
+    ],
+)
 def test_string_find_like(con, expr, expected):
     assert con.execute(expr) == expected
 
@@ -337,43 +376,52 @@ def test_string_column_find(con, alltypes, translate):
     assert len(con.execute(expr))
 
 
-@pytest.mark.parametrize(('call', 'expected'), [
-    (methodcaller('log'), 'log(`double_col`)'),
-    (methodcaller('log2'), 'log2(`double_col`)'),
-    (methodcaller('log10'), 'log10(`double_col`)'),
-    (methodcaller('round'), 'round(`double_col`)'),
-    (methodcaller('round', 0), 'round(`double_col`, 0)'),
-    (methodcaller('round', 2), 'round(`double_col`, 2)'),
-    (methodcaller('exp'), 'exp(`double_col`)'),
-    (methodcaller('abs'), 'abs(`double_col`)'),
-    (methodcaller('ceil'), 'ceil(`double_col`)'),
-    (methodcaller('floor'), 'floor(`double_col`)'),
-    (methodcaller('sqrt'), 'sqrt(`double_col`)'),
-    (methodcaller('sign'), 'intDivOrZero(`double_col`, abs(`double_col`))')
-])
+@pytest.mark.parametrize(
+    ('call', 'expected'),
+    [
+        (methodcaller('log'), 'log(`double_col`)'),
+        (methodcaller('log2'), 'log2(`double_col`)'),
+        (methodcaller('log10'), 'log10(`double_col`)'),
+        (methodcaller('round'), 'round(`double_col`)'),
+        (methodcaller('round', 0), 'round(`double_col`, 0)'),
+        (methodcaller('round', 2), 'round(`double_col`, 2)'),
+        (methodcaller('exp'), 'exp(`double_col`)'),
+        (methodcaller('abs'), 'abs(`double_col`)'),
+        (methodcaller('ceil'), 'ceil(`double_col`)'),
+        (methodcaller('floor'), 'floor(`double_col`)'),
+        (methodcaller('sqrt'), 'sqrt(`double_col`)'),
+        (
+            methodcaller('sign'),
+            'intDivOrZero(`double_col`, abs(`double_col`))',
+        ),
+    ],
+)
 def test_translate_math_functions(con, alltypes, translate, call, expected):
     expr = call(alltypes.double_col)
     assert translate(expr) == expected
     assert len(con.execute(expr))
 
 
-@pytest.mark.parametrize(('expr', 'expected'), [
-    (L(-5).abs(), 5),
-    (L(5).abs(), 5),
-    (L(5.5).round(), 6.0),
-    (L(5.556).round(2), 5.56),
-    (L(5.556).ceil(), 6.0),
-    (L(5.556).floor(), 5.0),
-    (L(5.556).exp(), math.exp(5.556)),
-    (L(5.556).sign(), 1),
-    (L(-5.556).sign(), -1),
-    (L(0).sign(), 0),
-    (L(5.556).sqrt(), math.sqrt(5.556)),
-    (L(5.556).log(2), math.log(5.556, 2)),
-    (L(5.556).ln(), math.log(5.556)),
-    (L(5.556).log2(), math.log(5.556, 2)),
-    (L(5.556).log10(), math.log10(5.556)),
-])
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        (L(-5).abs(), 5),
+        (L(5).abs(), 5),
+        (L(5.5).round(), 6.0),
+        (L(5.556).round(2), 5.56),
+        (L(5.556).ceil(), 6.0),
+        (L(5.556).floor(), 5.0),
+        (L(5.556).exp(), math.exp(5.556)),
+        (L(5.556).sign(), 1),
+        (L(-5.556).sign(), -1),
+        (L(0).sign(), 0),
+        (L(5.556).sqrt(), math.sqrt(5.556)),
+        (L(5.556).log(2), math.log(5.556, 2)),
+        (L(5.556).ln(), math.log(5.556)),
+        (L(5.556).log2(), math.log(5.556, 2)),
+        (L(5.556).log10(), math.log10(5.556)),
+    ],
+)
 def test_math_functions(con, expr, expected, translate):
     assert con.execute(expr) == expected
 
@@ -400,25 +448,29 @@ def test_least(con, alltypes, translate):
 
 
 # TODO: clickhouse-driver escaping bug
-@pytest.mark.parametrize(('expr', 'expected'), [
-    (L('abcd').re_search('[a-z]'), True),
-    (L('abcd').re_search(r'[\\d]+'), False),
-    (L('1222').re_search(r'[\\d]+'), True),
-])
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        (L('abcd').re_search('[a-z]'), True),
+        (L('abcd').re_search(r'[\\d]+'), False),
+        (L('1222').re_search(r'[\\d]+'), True),
+    ],
+)
 def test_regexp(con, expr, expected):
     assert con.execute(expr) == expected
 
 
-@pytest.mark.parametrize(('expr', 'expected'), [
-    (L('abcd').re_extract('([a-z]+)', 0), 'abcd'),
-    # (L('abcd').re_extract('(ab)(cd)', 1), 'cd'),
-
-    # valid group number but no match => empty string
-    (L('abcd').re_extract(r'(\\d)', 0), ''),
-
-    # match but not a valid group number => NULL
-    # (L('abcd').re_extract('abcd', 3), None),
-])
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        (L('abcd').re_extract('([a-z]+)', 0), 'abcd'),
+        # (L('abcd').re_extract('(ab)(cd)', 1), 'cd'),
+        # valid group number but no match => empty string
+        (L('abcd').re_extract(r'(\\d)', 0), ''),
+        # match but not a valid group number => NULL
+        # (L('abcd').re_extract('abcd', 3), None),
+    ],
+)
 def test_regexp_extract(con, expr, expected, translate):
     assert con.execute(expr) == expected
 
@@ -452,7 +504,7 @@ def test_numeric_builtins_work(con, alltypes, df, translate):
         'Newer clickhouse server uses Nullable(Nothing) type '
         'for Null values which is currently unhandled by '
         'clickhouse-driver'
-    )
+    ),
 )
 def test_null_column(alltypes, translate):
     t = alltypes
@@ -463,11 +515,14 @@ def test_null_column(alltypes, translate):
     tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.parametrize(('attr', 'expected'), [
-    (operator.methodcaller('year'), {2009, 2010}),
-    (operator.methodcaller('month'), set(range(1, 13))),
-    (operator.methodcaller('day'), set(range(1, 32)))
-])
+@pytest.mark.parametrize(
+    ('attr', 'expected'),
+    [
+        (operator.methodcaller('year'), {2009, 2010}),
+        (operator.methodcaller('month'), set(range(1, 13))),
+        (operator.methodcaller('day'), set(range(1, 32))),
+    ],
+)
 def test_date_extract_field(db, alltypes, attr, expected):
     t = alltypes
     expr = attr(t.timestamp_col.cast('date')).distinct()

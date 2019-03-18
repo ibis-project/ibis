@@ -44,30 +44,31 @@ def test_null():
 
 @pytest.mark.xfail(
     raises=AssertionError,
-    reason='UTF-8 support in Impala non-existent at the moment?'
+    reason='UTF-8 support in Impala non-existent at the moment?',
 )
 def test_unicode():
     assert False
 
 
 @pytest.mark.parametrize(
-    ['value', 'expected_type'], [
+    ['value', 'expected_type'],
+    [
         (5, 'int8'),
         (127, 'int8'),
         (128, 'int16'),
         (32767, 'int16'),
         (32768, 'int32'),
-        (2147483647, 'int32'),
-        (2147483648, 'int64'),
+        (2_147_483_647, 'int32'),
+        (2_147_483_648, 'int64'),
         (-5, 'int8'),
         (-128, 'int8'),
         (-129, 'int16'),
         (-32769, 'int32'),
-        (-2147483649, 'int64'),
+        (-2_147_483_649, 'int64'),
         (1.5, 'double'),
         ('foo', 'string'),
-        ([1, 2, 3], 'array<int8>')
-    ]
+        ([1, 2, 3], 'array<int8>'),
+    ],
 )
 def test_literal_with_implicit_type(value, expected_type):
     expr = ibis.literal(value)
@@ -91,18 +92,19 @@ multipolygon1 = [polygon1, polygon2]
 
 
 @pytest.mark.parametrize(
-    ['value', 'expected_type'], [
+    ['value', 'expected_type'],
+    [
         (5, 'int16'),
         (127, 'double'),
         (128, 'int64'),
         (32767, 'double'),
         (32768, 'float'),
-        (2147483647, 'int64'),
+        (2_147_483_647, 'int64'),
         (-5, 'int16'),
         (-128, 'int32'),
         (-129, 'int64'),
         (-32769, 'float'),
-        (-2147483649, 'double'),
+        (-2_147_483_649, 'double'),
         (1.5, 'double'),
         ('foo', 'string'),
         (list(pointA), 'point'),
@@ -112,8 +114,8 @@ multipolygon1 = [polygon1, polygon2]
         (list(polygon1), 'polygon'),
         (tuple(polygon1), 'polygon'),
         (list(multipolygon1), 'multipolygon'),
-        (tuple(multipolygon1), 'multipolygon')
-    ]
+        (tuple(multipolygon1), 'multipolygon'),
+    ],
 )
 def test_literal_with_explicit_type(value, expected_type):
     expr = ibis.literal(value, type=expected_type)
@@ -130,18 +132,20 @@ def test_literal_with_explicit_type(value, expected_type):
         (
             {'a': [1.0, 2.0], 'b': [], 'c': [3.0]},
             'map<string, array<double>>',
-            ir.MapScalar
+            ir.MapScalar,
         ),
         (
-            OrderedDict([
-                ('a', 1),
-                ('b', list('abc')),
-                ('c', OrderedDict([('foo', [1.0, 2.0])]))
-            ]),
+            OrderedDict(
+                [
+                    ('a', 1),
+                    ('b', list('abc')),
+                    ('c', OrderedDict([('foo', [1.0, 2.0])])),
+                ]
+            ),
             'struct<a: int8, b: array<string>, c: struct<foo: array<double>>>',
-            ir.StructScalar
-        )
-    ]
+            ir.StructScalar,
+        ),
+    ],
 )
 def test_literal_complex_types(value, expected_type, expected_class):
     expr = ibis.literal(value)
@@ -153,11 +157,13 @@ def test_literal_complex_types(value, expected_type, expected_class):
 
 
 def test_struct_operations():
-    value = OrderedDict([
-        ('a', 1),
-        ('b', list('abc')),
-        ('c', OrderedDict([('foo', [1.0, 2.0])]))
-    ])
+    value = OrderedDict(
+        [
+            ('a', 1),
+            ('b', list('abc')),
+            ('c', OrderedDict([('foo', [1.0, 2.0])])),
+        ]
+    )
     expr = ibis.literal(value)
     assert isinstance(expr, ir.StructValue)
     assert isinstance(expr.b, ir.ArrayValue)
@@ -181,8 +187,9 @@ def test_simple_map_operations():
     with pytest.raises(IbisTypeError):
         expr.get('d', ibis.literal('foo'))
 
-    assert isinstance(expr.get('d', ibis.literal(None)).op(),
-                      ops.MapValueOrDefaultForKey)
+    assert isinstance(
+        expr.get('d', ibis.literal(None)).op(), ops.MapValueOrDefaultForKey
+    )
 
     assert isinstance(expr['b'].op(), ops.MapValueForKey)
     assert isinstance(expr.keys().op(), ops.MapKeys)
@@ -194,10 +201,10 @@ def test_simple_map_operations():
     [
         (32767, 'int8'),
         (32768, 'int16'),
-        (2147483647, 'int16'),
-        (2147483648, 'int32'),
+        (2_147_483_647, 'int16'),
+        (2_147_483_648, 'int32'),
         ('foo', 'double'),
-    ]
+    ],
 )
 def test_literal_with_non_coercible_type(value, expected_type):
     expected_msg = 'Value .* cannot be safely coerced to .*'
@@ -206,8 +213,10 @@ def test_literal_with_non_coercible_type(value, expected_type):
 
 
 def test_non_inferrable_literal():
-    expected_msg = ('The datatype of value .* cannot be inferred, try '
-                    'passing it explicitly with the `type` keyword.')
+    expected_msg = (
+        'The datatype of value .* cannot be inferred, try '
+        'passing it explicitly with the `type` keyword.'
+    )
 
     value = tuple(pointA)
 
@@ -352,22 +361,30 @@ def test_distinct_count(functional_alltypes, where):
 
 
 def test_distinct_unnamed_array_expr():
-    table = ibis.table([('year', 'int32'),
-                        ('month', 'int32'),
-                        ('day', 'int32')], 'foo')
+    table = ibis.table(
+        [('year', 'int32'), ('month', 'int32'), ('day', 'int32')], 'foo'
+    )
 
     # it works!
-    expr = (ibis.literal('-')
-            .join([table.year.cast('string'),
-                   table.month.cast('string'),
-                   table.day.cast('string')])
-            .distinct())
+    expr = (
+        ibis.literal('-')
+        .join(
+            [
+                table.year.cast('string'),
+                table.month.cast('string'),
+                table.day.cast('string'),
+            ]
+        )
+        .distinct()
+    )
     repr(expr)
 
 
 def test_distinct_count_numeric_types(functional_alltypes):
-    metric = functional_alltypes.bigint_col.distinct().count().name(
-        'unique_bigints'
+    metric = (
+        functional_alltypes.bigint_col.distinct()
+        .count()
+        .name('unique_bigints')
     )
     functional_alltypes.group_by('string_col').aggregate(metric)
 
@@ -438,7 +455,7 @@ def test_null_literal():
         ('d', 'cummax'),
         ('h', 'cumany'),
         ('h', 'cumall'),
-    ]
+    ],
 )
 def test_cumulative_yield_array_types(table, column, operation):
     expr = getattr(getattr(table, column), operation)()
@@ -571,16 +588,9 @@ def test_isnull_notnull():
     assert False
 
 
-@pytest.mark.parametrize('column', [
-    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'
-])
-@pytest.mark.parametrize('how', [
-    None, 'first', 'last', 'heavy'
-])
-@pytest.mark.parametrize('condition_fn', [
-    lambda t: None,
-    lambda t: t.a > 8
-])
+@pytest.mark.parametrize('column', ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'])
+@pytest.mark.parametrize('how', [None, 'first', 'last', 'heavy'])
+@pytest.mark.parametrize('condition_fn', [lambda t: None, lambda t: t.a > 8])
 def test_arbitrary(table, column, how, condition_fn):
     col = table[column]
     where = condition_fn(table)
@@ -598,7 +608,7 @@ def test_arbitrary(table, column, how, condition_fn):
         ('h', lambda column: column.all()),
         ('c', lambda column: (column == 0).any()),
         ('c', lambda column: (column == 0).all()),
-    ]
+    ],
 )
 def test_any_all_notany(table, column, operation):
     expr = operation(table[column])
@@ -615,7 +625,7 @@ def test_any_all_notany(table, column, operation):
         operator.le,
         operator.eq,
         operator.ne,
-    ]
+    ],
 )
 @pytest.mark.parametrize('column', list('abcdef'))
 @pytest.mark.parametrize('case', [2, 2 ** 9, 2 ** 17, 2 ** 33, 1.5])
@@ -648,8 +658,14 @@ def test_boolean_comparisons(table):
 
 @pytest.mark.parametrize(
     'operation',
-    [operator.lt, operator.gt, operator.ge, operator.le,
-     operator.eq, operator.ne]
+    [
+        operator.lt,
+        operator.gt,
+        operator.ge,
+        operator.le,
+        operator.eq,
+        operator.ne,
+    ],
 )
 def test_string_comparisons(table, operation):
     string_col = table.g
@@ -658,8 +674,7 @@ def test_string_comparisons(table, operation):
 
 
 @pytest.mark.parametrize(
-    'operation',
-    [operator.xor, operator.or_, operator.and_]
+    'operation', [operator.xor, operator.or_, operator.and_]
 )
 def test_boolean_logical_ops(table, operation):
     expr = table.a > 0
@@ -691,9 +706,7 @@ def test_null_column_union():
     t = ibis.table([('a', 'string')])
     with pytest.raises(ibis.common.RelationError):
         s.union(t.mutate(b=ibis.NA))  # needs a type
-    assert (
-        s.union(t.mutate(b=ibis.NA.cast('double'))).schema() == s.schema()
-    )
+    assert s.union(t.mutate(b=ibis.NA.cast('double'))).schema() == s.schema()
 
 
 def test_string_compare_numeric_array(table):
@@ -745,13 +758,7 @@ def test_chained_comparisons_not_allowed(table):
 
 
 @pytest.mark.parametrize(
-    'operation',
-    [
-        operator.add,
-        operator.mul,
-        operator.truediv,
-        operator.sub
-    ]
+    'operation', [operator.add, operator.mul, operator.truediv, operator.sub]
 )
 def test_binop_string_type_error(table, operation):
     # Strings are not valid for any numeric arithmetic
@@ -770,84 +777,67 @@ def test_binop_string_type_error(table, operation):
     [
         (operator.add, 'a', 0, 'int8'),
         (operator.add, 'a', 5, 'int16'),
-        (operator.add, 'a', 100000, 'int32'),
-        (operator.add, 'a', -100000, 'int32'),
-
+        (operator.add, 'a', 100_000, 'int32'),
+        (operator.add, 'a', -100_000, 'int32'),
         (operator.add, 'a', 1.5, 'double'),
-
         (operator.add, 'b', 0, 'int16'),
         (operator.add, 'b', 5, 'int32'),
         (operator.add, 'b', -5, 'int32'),
-
         (operator.add, 'c', 0, 'int32'),
         (operator.add, 'c', 5, 'int64'),
         (operator.add, 'c', -5, 'int64'),
-
         # technically this can overflow, but we allow it
         (operator.add, 'd', 5, 'int64'),
-
         (operator.mul, 'a', 0, 'int8'),
         (operator.mul, 'a', 5, 'int16'),
         (operator.mul, 'a', 2 ** 24, 'int32'),
         (operator.mul, 'a', -2 ** 24 + 1, 'int32'),
-
         (operator.mul, 'a', 1.5, 'double'),
-
         (operator.mul, 'b', 0, 'int16'),
         (operator.mul, 'b', 5, 'int32'),
         (operator.mul, 'b', -5, 'int32'),
         (operator.mul, 'c', 0, 'int32'),
         (operator.mul, 'c', 5, 'int64'),
         (operator.mul, 'c', -5, 'int64'),
-
         # technically this can overflow, but we allow it
         (operator.mul, 'd', 5, 'int64'),
         (operator.sub, 'a', 5, 'int16'),
-        (operator.sub, 'a', 100000, 'int32'),
-        (operator.sub, 'a', -100000, 'int32'),
-
+        (operator.sub, 'a', 100_000, 'int32'),
+        (operator.sub, 'a', -100_000, 'int32'),
         (operator.sub, 'a', 1.5, 'double'),
-
         (operator.sub, 'b', 5, 'int32'),
         (operator.sub, 'b', -5, 'int32'),
         (operator.sub, 'c', 5, 'int64'),
         (operator.sub, 'c', -5, 'int64'),
-
         # technically this can overflow, but we allow it
         (operator.sub, 'd', 5, 'int64'),
-
         (operator.truediv, 'a', 5, 'double'),
         (operator.truediv, 'a', 1.5, 'double'),
         (operator.truediv, 'b', 5, 'double'),
         (operator.truediv, 'b', -5, 'double'),
         (operator.truediv, 'c', 5, 'double'),
-
         (operator.pow, 'a', 0, 'double'),
         (operator.pow, 'b', 0, 'double'),
         (operator.pow, 'c', 0, 'double'),
         (operator.pow, 'd', 0, 'double'),
         (operator.pow, 'e', 0, 'float'),
         (operator.pow, 'f', 0, 'double'),
-
         (operator.pow, 'a', 2, 'double'),
         (operator.pow, 'b', 2, 'double'),
         (operator.pow, 'c', 2, 'double'),
         (operator.pow, 'd', 2, 'double'),
-
         (operator.pow, 'a', 1.5, 'double'),
         (operator.pow, 'b', 1.5, 'double'),
         (operator.pow, 'c', 1.5, 'double'),
         (operator.pow, 'd', 1.5, 'double'),
-
         (operator.pow, 'e', 2, 'float'),
         (operator.pow, 'f', 2, 'double'),
-
         (operator.pow, 'a', -2, 'double'),
         (operator.pow, 'b', -2, 'double'),
         (operator.pow, 'c', -2, 'double'),
         (operator.pow, 'd', -2, 'double'),
     ],
-    ids=lambda arg: str(getattr(arg, '__name__', arg))
+    ids=lambda arg: str(getattr(arg, '__name__', arg)),
 )
 def test_literal_promotions(table, op, name, case, ex_type):
     col = table[name]
@@ -869,10 +859,11 @@ def test_literal_promotions(table, op, name, case, ex_type):
         (operator.sub, lambda t: t['c'], lambda t: 0, 'int32'),
         (operator.sub, lambda t: 0, lambda t: t['c'], 'int64'),
     ],
-    ids=lambda arg: str(getattr(arg, '__name__', arg))
+    ids=lambda arg: str(getattr(arg, '__name__', arg)),
 )
-def test_zero_subtract_literal_promotions(table, op, left_fn, right_fn,
-                                          ex_type):
+def test_zero_subtract_literal_promotions(
+    table, op, left_fn, right_fn, ex_type
+):
     # in case of zero subtract the order of operands matters
     left, right = left_fn(table), right_fn(table)
     result = op(left, right)
@@ -907,8 +898,7 @@ def test_string_add_concat():
 
 @pytest.fixture
 def expr():
-    exprs = [ibis.literal(1).name('a'),
-             ibis.literal(2).name('b')]
+    exprs = [ibis.literal(1).name('a'), ibis.literal(2).name('b')]
 
     return ibis.expr_list(exprs)
 
@@ -952,17 +942,23 @@ def test_substitute_dict():
     subs = {'a': 'one', 'b': table.bar}
 
     result = table.foo.substitute(subs)
-    expected = (table.foo.case()
-                .when('a', 'one')
-                .when('b', table.bar)
-                .else_(table.foo).end())
+    expected = (
+        table.foo.case()
+        .when('a', 'one')
+        .when('b', table.bar)
+        .else_(table.foo)
+        .end()
+    )
     assert_equal(result, expected)
 
     result = table.foo.substitute(subs, else_=ibis.NA)
-    expected = (table.foo.case()
-                .when('a', 'one')
-                .when('b', table.bar)
-                .else_(ibis.NA).end())
+    expected = (
+        table.foo.case()
+        .when('a', 'one')
+        .when('b', table.bar)
+        .else_(ibis.NA)
+        .end()
+    )
     assert_equal(result, expected)
 
 
@@ -974,7 +970,7 @@ def test_substitute_dict():
         'double',
         'float',
         'int64',
-    ]
+    ],
 )
 def test_not_without_boolean(typ):
     t = ibis.table([('a', typ)], name='t')
@@ -992,15 +988,15 @@ def test_not_without_boolean(typ):
         ([1], ['bar']),
         ([0, 1], ['foo', 'bar']),
         ([1, 0], ['bar', 'foo']),
-    ]
+    ],
 )
 @pytest.mark.parametrize(
     'expr_func',
     [
         lambda t, args: t[args],
         lambda t, args: t.sort_by(args),
-        lambda t, args: t.group_by(args).aggregate(bar_avg=t.bar.mean())
-    ]
+        lambda t, args: t.group_by(args).aggregate(bar_avg=t.bar.mean()),
+    ],
 )
 def test_table_operations_with_integer_column(position, names, expr_func):
     t = ibis.table([('foo', 'string'), ('bar', 'double')])
@@ -1009,23 +1005,9 @@ def test_table_operations_with_integer_column(position, names, expr_func):
     assert result.equals(expected)
 
 
+@pytest.mark.parametrize('value', ['abcdefg', ['a', 'b', 'c'], [1, 2, 3]])
 @pytest.mark.parametrize(
-    'value',
-    [
-        'abcdefg',
-        ['a', 'b', 'c'],
-        [1, 2, 3],
-    ]
-)
-@pytest.mark.parametrize(
-    'operation',
-    [
-        'pow',
-        'sub',
-        'truediv',
-        'floordiv',
-        'mod',
-    ]
+    'operation', ['pow', 'sub', 'truediv', 'floordiv', 'mod']
 )
 def test_generic_value_api_no_arithmetic(value, operation):
     func = getattr(operator, operation)
@@ -1035,12 +1017,7 @@ def test_generic_value_api_no_arithmetic(value, operation):
 
 
 @pytest.mark.parametrize(
-    ('value', 'expected'),
-    [
-        (5, dt.int8),
-        (5.4, dt.double),
-        ('abc', dt.string),
-    ]
+    ('value', 'expected'), [(5, dt.int8), (5.4, dt.double), ('abc', dt.string)]
 )
 def test_fillna_null(value, expected):
     assert ibis.NA.fillna(value).type().equals(expected)
@@ -1053,7 +1030,7 @@ def test_fillna_null(value, expected):
         (date(2017, 4, 2), literal('2017-04-01')),
         (literal('2017-04-01 01:02:33'), datetime(2017, 4, 1, 1, 3, 34)),
         (datetime(2017, 4, 1, 1, 3, 34), literal('2017-04-01 01:02:33')),
-    ]
+    ],
 )
 @pytest.mark.parametrize(
     'op',
@@ -1064,13 +1041,13 @@ def test_fillna_null(value, expected):
         operator.le,
         operator.gt,
         operator.ge,
-        lambda left, right: ibis.timestamp(
-            '2017-04-01 00:02:34'
-        ).between(left, right),
-        lambda left, right: ibis.timestamp(
-            '2017-04-01'
-        ).cast(dt.date).between(left, right)
-    ]
+        lambda left, right: ibis.timestamp('2017-04-01 00:02:34').between(
+            left, right
+        ),
+        lambda left, right: ibis.timestamp('2017-04-01')
+        .cast(dt.date)
+        .between(left, right),
+    ],
 )
 def test_string_temporal_compare(op, left, right):
     result = op(left, right)
@@ -1084,7 +1061,7 @@ def test_string_temporal_compare(op, left, right):
         (3.14, 'double', dt.Double),
         (4.2, 'int64', dt.Double),
         (4, 'int64', dt.Int64),
-    ]
+    ],
 )
 def test_decimal_modulo_output_type(value, type, expected_type_class):
     t = ibis.table([('a', type)])
@@ -1094,10 +1071,7 @@ def test_decimal_modulo_output_type(value, type, expected_type_class):
 
 @pytest.mark.parametrize(
     ('left', 'right'),
-    [
-        (literal('10:00'), time(10, 0)),
-        (time(10, 0), literal('10:00')),
-    ]
+    [(literal('10:00'), time(10, 0)), (time(10, 0), literal('10:00'))],
 )
 @pytest.mark.parametrize(
     'op',
@@ -1108,7 +1082,7 @@ def test_decimal_modulo_output_type(value, type, expected_type_class):
         operator.le,
         operator.gt,
         operator.ge,
-    ]
+    ],
 )
 def test_time_compare(op, left, right):
     result = op(left, right)
@@ -1121,17 +1095,10 @@ def test_time_compare(op, left, right):
         (literal('10:00'), date(2017, 4, 2)),
         (literal('10:00'), datetime(2017, 4, 2, 1, 1)),
         (literal('10:00'), literal('2017-04-01')),
-    ]
+    ],
 )
 @pytest.mark.parametrize(
-    'op',
-    [
-        operator.eq,
-        operator.lt,
-        operator.le,
-        operator.gt,
-        operator.ge,
-    ]
+    'op', [operator.eq, operator.lt, operator.le, operator.gt, operator.ge]
 )
 def test_time_timestamp_invalid_compare(op, left, right):
     result = op(left, right)
@@ -1184,15 +1151,15 @@ def test_scalar_parameter_repr():
             # different Python class, left side is param
             ibis.param(dt.timestamp),
             dt.date,
-            False
+            False,
         ),
         (
             # different Python class, right side is param
             dt.date,
             ibis.param(dt.timestamp),
-            False
+            False,
         ),
-    ]
+    ],
 )
 def test_scalar_parameter_compare(left, right, expected):
     assert left.equals(right) == expected
@@ -1205,16 +1172,10 @@ def test_scalar_parameter_compare(left, right, expected):
         ('now', toolz.compose(methodcaller('time'), ibis.timestamp)),
         (datetime.now().time(), ibis.time),
         ('10:37', ibis.time),
-    ]
+    ],
 )
 @pytest.mark.parametrize(
-    ('left', 'right'),
-    [
-        (1, 'a'),
-        ('a', 1),
-        (1.0, 2.0),
-        (['a'], [1]),
-    ]
+    ('left', 'right'), [(1, 'a'), ('a', 1), (1.0, 2.0), (['a'], [1])]
 )
 def test_between_time_failure_time(case, creator, left, right):
     value = creator(case)
@@ -1224,7 +1185,6 @@ def test_between_time_failure_time(case, creator, left, right):
 
 def test_custom_type_binary_operations():
     class Foo(ir.ValueExpr):
-
         def __add__(self, other):
             op = self.op()
             return type(op)(op.value + other).to_expr()
@@ -1275,13 +1235,15 @@ def test_struct_field_dir():
 
 
 def test_nullable_column_propagated():
-    t = ibis.table([
-        ('a', dt.Int32(nullable=True)),
-        ('b', dt.Int32(nullable=False)),
-        ('c', dt.String(nullable=False)),
-        ('d', dt.double),  # nullable by default
-        ('f', dt.Double(nullable=False))
-    ])
+    t = ibis.table(
+        [
+            ('a', dt.Int32(nullable=True)),
+            ('b', dt.Int32(nullable=False)),
+            ('c', dt.String(nullable=False)),
+            ('d', dt.double),  # nullable by default
+            ('f', dt.Double(nullable=False)),
+        ]
+    )
 
     assert t.a.type().nullable is True
     assert t.b.type().nullable is False
@@ -1304,7 +1266,7 @@ def test_nullable_column_propagated():
     [
         ibis.table([('interval_col', dt.Interval(unit='D'))]).interval_col,
         ibis.interval(seconds=42),
-    ]
+    ],
 )
 def test_interval_negate(base_expr):
     expr = -base_expr
@@ -1322,10 +1284,7 @@ def test_large_timestamp():
     assert result == expected
 
 
-@pytest.mark.parametrize('tz', [
-    None,
-    'UTC'
-])
+@pytest.mark.parametrize('tz', [None, 'UTC'])
 def test_timestamp_with_timezone(tz):
     expr = ibis.timestamp('2017-01-01', timezone=tz)
     expected = pd.Timestamp('2017-01-01', tz=tz)
@@ -1333,10 +1292,7 @@ def test_timestamp_with_timezone(tz):
     assert expected == result
 
 
-@pytest.mark.parametrize('tz', [
-    None,
-    'UTC'
-])
+@pytest.mark.parametrize('tz', [None, 'UTC'])
 def test_timestamp_timezone_type(tz):
     expr = ibis.timestamp('2017-01-01', timezone=tz)
     expected = dt.Timestamp(timezone=tz)
@@ -1441,7 +1397,7 @@ def test_map_get_with_incompatible_value():
         (datetime.now(), dt.timestamp),
         (datetime.now().date(), dt.date),
         (datetime.now().time(), dt.time),
-    ]
+    ],
 )
 def test_invalid_negate(value, expected_type):
     expr = ibis.literal(value)
@@ -1469,7 +1425,7 @@ def test_invalid_negate(value, expected_type):
         np.uint8,
         float,
         int,
-    ]
+    ],
 )
 def test_valid_negate(type):
     value = type(1)
@@ -1478,12 +1434,10 @@ def test_valid_negate(type):
 
 
 @pytest.mark.xfail(
-    reason='Type not supported in most backends',
-    raises=TypeError,
+    reason='Type not supported in most backends', raises=TypeError
 )
 @pytest.mark.skipif(
-    os.name == 'nt',
-    reason='np.float128 not appear to exist on windows'
+    os.name == 'nt', reason='np.float128 not appear to exist on windows'
 )
 def test_valid_negate_float128():
     value = np.float128(1)

@@ -10,6 +10,7 @@ import ibis.config as config
 
 # TODO move methods containing ops import to api.py
 
+
 class Expr:
     """Base expression class"""
 
@@ -27,10 +28,11 @@ class Expr:
         try:
             result = self.execute()
         except com.TranslationError as e:
-            output = ('Translation to backend failed\n'
-                      'Error message: {0}\n'
-                      'Expression repr follows:\n{1}'
-                      .format(e.args[0], self._repr()))
+            output = (
+                'Translation to backend failed\n'
+                'Error message: {0}\n'
+                'Expression repr follows:\n{1}'.format(e.args[0], self._repr())
+            )
             return output
         else:
             return repr(result)
@@ -39,13 +41,15 @@ class Expr:
         return hash(self._key)
 
     def __bool__(self):
-        raise ValueError("The truth value of an Ibis expression is not "
-                         "defined")
+        raise ValueError(
+            "The truth value of an Ibis expression is not " "defined"
+        )
 
     __nonzero__ = __bool__
 
     def _repr(self, memo=None):
         from ibis.expr.format import ExprFormatter
+
         return ExprFormatter(self, memo=memo).get_result()
 
     @property
@@ -109,6 +113,7 @@ class Expr:
             If ``graphviz`` is not installed.
         """
         import ibis.expr.visualize as viz
+
         path = viz.draw(viz.to_graph(self), format=format)
         webbrowser.open('file://{}'.format(os.path.abspath(path)))
 
@@ -175,6 +180,7 @@ class Expr:
     def _factory(self):
         def factory(arg, name=None):
             return type(self)(arg, name=name)
+
         return factory
 
     def execute(self, limit='default', params=None, **kwargs):
@@ -194,6 +200,7 @@ class Expr:
           Result of compiling expression and executing in backend
         """
         from ibis.client import execute
+
         return execute(self, limit=limit, params=params, **kwargs)
 
     def compile(self, limit=None, params=None):
@@ -206,6 +213,7 @@ class Expr:
            query representation or list thereof
         """
         from ibis.client import compile
+
         return compile(self, limit=limit, params=params)
 
     def verify(self):
@@ -243,10 +251,12 @@ class ExprList(Expr):
 
     def schema(self):
         import ibis.expr.schema as sch
+
         return sch.Schema(self.names(), self.types())
 
     def rename(self, f):
         import ibis.expr.operations as ops
+
         new_exprs = [x.name(f(x.get_name())) for x in self.exprs()]
         return ops.ExpressionList(new_exprs).to_expr()
 
@@ -265,6 +275,7 @@ class ExprList(Expr):
         combined : ExprList
         """
         import ibis.expr.operations as ops
+
         exprs = list(self.exprs())
         for o in others:
             if not isinstance(o, ExprList):
@@ -291,10 +302,10 @@ class ValueExpr(Expr):
 
     def equals(self, other, cache=None):
         return (
-            isinstance(other, ValueExpr) and
-            self._name == other._name and
-            self._dtype == other._dtype and
-            super().equals(other, cache=cache)
+            isinstance(other, ValueExpr)
+            and self._name == other._name
+            and self._dtype == other._dtype
+            and super().equals(other, cache=cache)
         )
 
     def has_name(self):
@@ -321,17 +332,16 @@ class ValueExpr(Expr):
     def _factory(self):
         def factory(arg, name=None):
             return type(self)(arg, dtype=self.type(), name=name)
+
         return factory
 
 
 class ScalarExpr(ValueExpr):
-
     def _type_display(self):
         return str(self.type())
 
 
 class ColumnExpr(ValueExpr):
-
     def _type_display(self):
         return '{}*'.format(self.type())
 
@@ -344,20 +354,22 @@ class ColumnExpr(ValueExpr):
         """
         roots = self._root_tables()
         if len(roots) > 1:
-            raise com.RelationError('Cannot convert array expression '
-                                    'involving multiple base table references '
-                                    'to a projection')
+            raise com.RelationError(
+                'Cannot convert array expression '
+                'involving multiple base table references '
+                'to a projection'
+            )
 
         table = TableExpr(roots[0])
         return table.projection([self])
 
 
 class AnalyticExpr(Expr):
-
     @property
     def _factory(self):
         def factory(arg):
             return type(self)(arg)
+
         return factory
 
     def _type_display(self):
@@ -368,11 +380,11 @@ class AnalyticExpr(Expr):
 
 
 class TableExpr(Expr):
-
     @property
     def _factory(self):
         def factory(arg):
             return TableExpr(arg)
+
         return factory
 
     def _type_display(self):
@@ -388,6 +400,7 @@ class TableExpr(Expr):
 
     def _assert_valid(self, exprs):
         from ibis.expr.analysis import ExprValidator
+
         ExprValidator([self]).validate_all(exprs)
 
     def __contains__(self, name):
@@ -514,6 +527,7 @@ class TableExpr(Expr):
         column : array expression
         """
         import ibis.expr.operations as ops
+
         ref = ops.TableColumn(name, self)
         return ref.to_expr()
 
@@ -560,6 +574,7 @@ class TableExpr(Expr):
         grouped_expr : GroupedTableExpr
         """
         from ibis.expr.groupby import GroupedTableExpr
+
         return GroupedTableExpr(self, by, **additional_grouping_expressions)
 
     groupby = group_by
@@ -571,143 +586,310 @@ class TableExpr(Expr):
 # defined for each type.
 
 
-class AnyValue(ValueExpr): pass  # noqa: E701,E302
-class AnyScalar(ScalarExpr, AnyValue): pass  # noqa: E701,E302
-class AnyColumn(ColumnExpr, AnyValue): pass  # noqa: E701,E302
+class AnyValue(ValueExpr):
+    pass  # noqa: E701,E302
 
 
-class NullValue(AnyValue): pass  # noqa: E701,E302
-class NullScalar(AnyScalar, NullValue): pass  # noqa: E701,E302
-class NullColumn(AnyColumn, NullValue): pass  # noqa: E701,E302
+class AnyScalar(ScalarExpr, AnyValue):
+    pass  # noqa: E701,E302
 
 
-class NumericValue(AnyValue): pass  # noqa: E701,E302
-class NumericScalar(AnyScalar, NumericValue): pass  # noqa: E701,E302
-class NumericColumn(AnyColumn, NumericValue): pass  # noqa: E701,E302
+class AnyColumn(ColumnExpr, AnyValue):
+    pass  # noqa: E701,E302
 
 
-class BooleanValue(NumericValue): pass  # noqa: E701,E302
-class BooleanScalar(NumericScalar, BooleanValue): pass  # noqa: E701,E302
-class BooleanColumn(NumericColumn, BooleanValue): pass  # noqa: E701,E302
+class NullValue(AnyValue):
+    pass  # noqa: E701,E302
 
 
-class IntegerValue(NumericValue): pass  # noqa: E701,E302
-class IntegerScalar(NumericScalar, IntegerValue): pass  # noqa: E701,E302
-class IntegerColumn(NumericColumn, IntegerValue): pass  # noqa: E701,E302
+class NullScalar(AnyScalar, NullValue):
+    pass  # noqa: E701,E302
 
 
-class FloatingValue(NumericValue): pass  # noqa: E701,E302
-class FloatingScalar(NumericScalar, FloatingValue): pass  # noqa: E701,E302
-class FloatingColumn(NumericColumn, FloatingValue): pass  # noqa: E701,E302
+class NullColumn(AnyColumn, NullValue):
+    pass  # noqa: E701,E302
 
 
-class DecimalValue(NumericValue): pass  # noqa: E701,E302
-class DecimalScalar(NumericScalar, DecimalValue): pass  # noqa: E701,E302
-class DecimalColumn(NumericColumn, DecimalValue): pass  # noqa: E701,E302
+class NumericValue(AnyValue):
+    pass  # noqa: E701,E302
 
 
-class StringValue(AnyValue): pass  # noqa: E701,E302
-class StringScalar(AnyScalar, StringValue): pass  # noqa: E701,E302
-class StringColumn(AnyColumn, StringValue): pass  # noqa: E701,E302
+class NumericScalar(AnyScalar, NumericValue):
+    pass  # noqa: E701,E302
 
 
-class BinaryValue(AnyValue): pass  # noqa: E701,E302
-class BinaryScalar(AnyScalar, BinaryValue): pass  # noqa: E701,E302
-class BinaryColumn(AnyColumn, BinaryValue): pass  # noqa: E701,E302
+class NumericColumn(AnyColumn, NumericValue):
+    pass  # noqa: E701,E302
 
 
-class TemporalValue(AnyValue): pass  # noqa: E701,E302
-class TemporalScalar(AnyScalar, TemporalValue): pass  # noqa: E701,E302
-class TemporalColumn(AnyColumn, TemporalValue): pass  # noqa: E701,E302
+class BooleanValue(NumericValue):
+    pass  # noqa: E701,E302
 
 
-class TimeValue(TemporalValue): pass  # noqa: E701,E302
-class TimeScalar(TemporalScalar, TimeValue): pass  # noqa: E701,E302
-class TimeColumn(TemporalColumn, TimeValue): pass  # noqa: E701,E302
+class BooleanScalar(NumericScalar, BooleanValue):
+    pass  # noqa: E701,E302
 
 
-class DateValue(TemporalValue): pass  # noqa: E701,E302
-class DateScalar(TemporalScalar, DateValue): pass  # noqa: E701,E302
-class DateColumn(TemporalColumn, DateValue): pass  # noqa: E701,E302
+class BooleanColumn(NumericColumn, BooleanValue):
+    pass  # noqa: E701,E302
 
 
-class TimestampValue(TemporalValue): pass  # noqa: E701,E302
-class TimestampScalar(TemporalScalar, TimestampValue): pass  # noqa: E701,E302
-class TimestampColumn(TemporalColumn, TimestampValue): pass  # noqa: E701,E302
+class IntegerValue(NumericValue):
+    pass  # noqa: E701,E302
 
 
-class CategoryValue(AnyValue): pass  # noqa: E701,E302
-class CategoryScalar(AnyScalar, CategoryValue): pass  # noqa: E701,E302
-class CategoryColumn(AnyColumn, CategoryValue): pass  # noqa: E701,E302
+class IntegerScalar(NumericScalar, IntegerValue):
+    pass  # noqa: E701,E302
 
 
-class EnumValue(AnyValue): pass  # noqa: E701,E302
-class EnumScalar(AnyScalar, EnumValue): pass  # noqa: E701,E302
-class EnumColumn(AnyColumn, EnumValue): pass  # noqa: E701,E302
+class IntegerColumn(NumericColumn, IntegerValue):
+    pass  # noqa: E701,E302
 
 
-class ArrayValue(AnyValue): pass  # noqa: E701,E302
-class ArrayScalar(AnyScalar, ArrayValue): pass  # noqa: E701,E302
-class ArrayColumn(AnyColumn, ArrayValue): pass  # noqa: E701,E302
+class FloatingValue(NumericValue):
+    pass  # noqa: E701,E302
 
 
-class SetValue(AnyValue): pass  # noqa: E701,E302
-class SetScalar(AnyScalar, SetValue): pass  # noqa: E701,E302
-class SetColumn(AnyColumn, SetValue): pass  # noqa: E701,E302
+class FloatingScalar(NumericScalar, FloatingValue):
+    pass  # noqa: E701,E302
 
 
-class MapValue(AnyValue): pass  # noqa: E701,E302
-class MapScalar(AnyScalar, MapValue): pass  # noqa: E701,E302
-class MapColumn(AnyColumn, MapValue): pass  # noqa: E701,E302
+class FloatingColumn(NumericColumn, FloatingValue):
+    pass  # noqa: E701,E302
+
+
+class DecimalValue(NumericValue):
+    pass  # noqa: E701,E302
+
+
+class DecimalScalar(NumericScalar, DecimalValue):
+    pass  # noqa: E701,E302
+
+
+class DecimalColumn(NumericColumn, DecimalValue):
+    pass  # noqa: E701,E302
+
+
+class StringValue(AnyValue):
+    pass  # noqa: E701,E302
+
+
+class StringScalar(AnyScalar, StringValue):
+    pass  # noqa: E701,E302
+
+
+class StringColumn(AnyColumn, StringValue):
+    pass  # noqa: E701,E302
+
+
+class BinaryValue(AnyValue):
+    pass  # noqa: E701,E302
+
+
+class BinaryScalar(AnyScalar, BinaryValue):
+    pass  # noqa: E701,E302
+
+
+class BinaryColumn(AnyColumn, BinaryValue):
+    pass  # noqa: E701,E302
+
+
+class TemporalValue(AnyValue):
+    pass  # noqa: E701,E302
+
+
+class TemporalScalar(AnyScalar, TemporalValue):
+    pass  # noqa: E701,E302
+
+
+class TemporalColumn(AnyColumn, TemporalValue):
+    pass  # noqa: E701,E302
+
+
+class TimeValue(TemporalValue):
+    pass  # noqa: E701,E302
+
+
+class TimeScalar(TemporalScalar, TimeValue):
+    pass  # noqa: E701,E302
+
+
+class TimeColumn(TemporalColumn, TimeValue):
+    pass  # noqa: E701,E302
+
+
+class DateValue(TemporalValue):
+    pass  # noqa: E701,E302
+
+
+class DateScalar(TemporalScalar, DateValue):
+    pass  # noqa: E701,E302
+
+
+class DateColumn(TemporalColumn, DateValue):
+    pass  # noqa: E701,E302
+
+
+class TimestampValue(TemporalValue):
+    pass  # noqa: E701,E302
+
+
+class TimestampScalar(TemporalScalar, TimestampValue):
+    pass  # noqa: E701,E302
+
+
+class TimestampColumn(TemporalColumn, TimestampValue):
+    pass  # noqa: E701,E302
+
+
+class CategoryValue(AnyValue):
+    pass  # noqa: E701,E302
+
+
+class CategoryScalar(AnyScalar, CategoryValue):
+    pass  # noqa: E701,E302
+
+
+class CategoryColumn(AnyColumn, CategoryValue):
+    pass  # noqa: E701,E302
+
+
+class EnumValue(AnyValue):
+    pass  # noqa: E701,E302
+
+
+class EnumScalar(AnyScalar, EnumValue):
+    pass  # noqa: E701,E302
+
+
+class EnumColumn(AnyColumn, EnumValue):
+    pass  # noqa: E701,E302
+
+
+class ArrayValue(AnyValue):
+    pass  # noqa: E701,E302
+
+
+class ArrayScalar(AnyScalar, ArrayValue):
+    pass  # noqa: E701,E302
+
+
+class ArrayColumn(AnyColumn, ArrayValue):
+    pass  # noqa: E701,E302
+
+
+class SetValue(AnyValue):
+    pass  # noqa: E701,E302
+
+
+class SetScalar(AnyScalar, SetValue):
+    pass  # noqa: E701,E302
+
+
+class SetColumn(AnyColumn, SetValue):
+    pass  # noqa: E701,E302
+
+
+class MapValue(AnyValue):
+    pass  # noqa: E701,E302
+
+
+class MapScalar(AnyScalar, MapValue):
+    pass  # noqa: E701,E302
+
+
+class MapColumn(AnyColumn, MapValue):
+    pass  # noqa: E701,E302
 
 
 class StructValue(AnyValue):
-
     def __dir__(self):
-        return sorted(frozenset(
-            itertools.chain(dir(type(self)), self.type().names)
-        ))
-
-class StructScalar(AnyScalar, StructValue): pass  # noqa: E701,E302
-class StructColumn(AnyColumn, StructValue): pass  # noqa: E701,E302
+        return sorted(
+            frozenset(itertools.chain(dir(type(self)), self.type().names))
+        )
 
 
-class IntervalValue(AnyValue): pass  # noqa: E701,E302
-class IntervalScalar(AnyScalar, IntervalValue): pass  # noqa: E701,E302
-class IntervalColumn(AnyColumn, IntervalValue): pass  # noqa: E701,E302
+class StructScalar(AnyScalar, StructValue):
+    pass  # noqa: E701,E302
 
 
-class GeoSpatialValue(NumericValue): pass  # noqa: E701,E302
-class GeoSpatialScalar(NumericScalar, GeoSpatialValue): pass  # noqa: E701,E302,E501
-class GeoSpatialColumn(NumericColumn, GeoSpatialValue): pass  # noqa: E701,E302,E501
+class StructColumn(AnyColumn, StructValue):
+    pass  # noqa: E701,E302
 
 
-class PointValue(GeoSpatialValue): pass  # noqa: E701,E302
-class PointScalar(GeoSpatialScalar, PointValue): pass  # noqa: E701,E302
-class PointColumn(GeoSpatialColumn, PointValue): pass  # noqa: E701,E302
+class IntervalValue(AnyValue):
+    pass  # noqa: E701,E302
 
 
-class LineStringValue(GeoSpatialValue): pass  # noqa: E701,E302
-class LineStringScalar(GeoSpatialScalar, LineStringValue): pass  # noqa: E701,E302,E501
-class LineStringColumn(GeoSpatialColumn, LineStringValue): pass  # noqa: E701,E302,E501
+class IntervalScalar(AnyScalar, IntervalValue):
+    pass  # noqa: E701,E302
 
 
-class PolygonValue(GeoSpatialValue): pass  # noqa: E701,E302
-class PolygonScalar(GeoSpatialScalar, PolygonValue): pass  # noqa: E701,E302
-class PolygonColumn(GeoSpatialColumn, PolygonValue): pass  # noqa: E701,E302
+class IntervalColumn(AnyColumn, IntervalValue):
+    pass  # noqa: E701,E302
 
 
-class MultiPolygonValue(GeoSpatialValue): pass  # noqa: E701,E302
-class MultiPolygonScalar(  # noqa: E302
-    GeoSpatialScalar, MultiPolygonValue
-): pass  # noqa: E701
-class MultiPolygonColumn(  # noqa: E302
-    GeoSpatialColumn, MultiPolygonValue
-): pass  # noqa: E701
+class GeoSpatialValue(NumericValue):
+    pass  # noqa: E701,E302
+
+
+class GeoSpatialScalar(NumericScalar, GeoSpatialValue):
+    pass  # noqa: E701,E302,E501
+
+
+class GeoSpatialColumn(NumericColumn, GeoSpatialValue):
+    pass  # noqa: E701,E302,E501
+
+
+class PointValue(GeoSpatialValue):
+    pass  # noqa: E701,E302
+
+
+class PointScalar(GeoSpatialScalar, PointValue):
+    pass  # noqa: E701,E302
+
+
+class PointColumn(GeoSpatialColumn, PointValue):
+    pass  # noqa: E701,E302
+
+
+class LineStringValue(GeoSpatialValue):
+    pass  # noqa: E701,E302
+
+
+class LineStringScalar(GeoSpatialScalar, LineStringValue):
+    pass  # noqa: E701,E302,E501
+
+
+class LineStringColumn(GeoSpatialColumn, LineStringValue):
+    pass  # noqa: E701,E302,E501
+
+
+class PolygonValue(GeoSpatialValue):
+    pass  # noqa: E701,E302
+
+
+class PolygonScalar(GeoSpatialScalar, PolygonValue):
+    pass  # noqa: E701,E302
+
+
+class PolygonColumn(GeoSpatialColumn, PolygonValue):
+    pass  # noqa: E701,E302
+
+
+class MultiPolygonValue(GeoSpatialValue):
+    pass  # noqa: E701,E302
+
+
+class MultiPolygonScalar(GeoSpatialScalar, MultiPolygonValue):  # noqa: E302
+    pass  # noqa: E701
+
+
+class MultiPolygonColumn(GeoSpatialColumn, MultiPolygonValue):  # noqa: E302
+    pass  # noqa: E701
 
 
 class ListExpr(ColumnExpr, AnyValue):
-
     @property
     def values(self):
         return self.op().values
@@ -736,7 +918,6 @@ class ListExpr(ColumnExpr, AnyValue):
 
 
 class TopKExpr(AnalyticExpr):
-
     def type(self):
         return 'topk'
 
@@ -746,10 +927,12 @@ class TopKExpr(AnalyticExpr):
     def to_filter(self):
         # TODO: move to api.py
         import ibis.expr.operations as ops
+
         return ops.SummaryFilter(self).to_expr()
 
-    def to_aggregation(self, metric_name=None, parent_table=None,
-                       backup_metric_name=None):
+    def to_aggregation(
+        self, metric_name=None, parent_table=None, backup_metric_name=None
+    ):
         """
         Convert the TopK operation to a table aggregation
         """
@@ -775,14 +958,14 @@ class TopKExpr(AnalyticExpr):
         elif parent_table is not None:
             agg = parent_table.aggregate(by, by=[op.arg])
         else:
-            raise com.IbisError('Cross-table TopK; must provide a parent '
-                                'joined table')
+            raise com.IbisError(
+                'Cross-table TopK; must provide a parent ' 'joined table'
+            )
 
         return agg.sort_by([(by.get_name(), False)]).limit(op.k)
 
 
 class SortExpr(Expr):
-
     def _type_display(self):
         return 'array-sort'
 
@@ -801,6 +984,7 @@ class DayOfWeek(Expr):
             where **Monday = 0 and Sunday = 6**.
         """
         import ibis.expr.operations as ops
+
         return ops.DayOfWeekIndex(self.op().arg).to_expr()
 
     def full_name(self):
@@ -812,6 +996,7 @@ class DayOfWeek(Expr):
             The name of the day of the week
         """
         import ibis.expr.operations as ops
+
         return ops.DayOfWeekName(self.op().arg).to_expr()
 
 
@@ -905,16 +1090,18 @@ def literal(value, type=None):
             # implicitly castable to the explicitly given dtype and value
             dtype = inferred_dtype.cast(explicit_dtype, value=value)
         except com.IbisTypeError:
-            raise TypeError('Value {!r} cannot be safely coerced to {}'
-                            .format(value, type))
+            raise TypeError(
+                'Value {!r} cannot be safely coerced to {}'.format(value, type)
+            )
     elif has_explicit:
         dtype = explicit_dtype
     elif has_inferred:
         dtype = inferred_dtype
     else:
-        raise TypeError('The datatype of value {!r} cannot be inferred, try '
-                        'passing it explicitly with the `type` keyword.'
-                        .format(value))
+        raise TypeError(
+            'The datatype of value {!r} cannot be inferred, try '
+            'passing it explicitly with the `type` keyword.'.format(value)
+        )
 
     if dtype is dt.null:
         return null().cast(dtype)
@@ -942,6 +1129,7 @@ def sequence(values):
 
 def as_value_expr(val):
     import pandas as pd
+
     if not isinstance(val, Expr):
         if isinstance(val, (tuple, list)):
             val = sequence(val)
@@ -979,6 +1167,7 @@ def param(type):
     """
     import ibis.expr.datatypes as dt
     import ibis.expr.operations as ops
+
     return ops.ScalarParameter(dt.dtype(type)).to_expr()
 
 

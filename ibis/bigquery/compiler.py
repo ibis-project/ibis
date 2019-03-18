@@ -22,7 +22,11 @@ import ibis.expr.operations as ops
 import ibis.expr.lineage as lin
 
 from ibis.impala.compiler import (
-    ImpalaSelect, unary, fixed_arity, ImpalaTableSetFormatter, _reduction
+    ImpalaSelect,
+    unary,
+    fixed_arity,
+    ImpalaTableSetFormatter,
+    _reduction,
 )
 from ibis.impala import compiler as impala_compiler
 
@@ -34,14 +38,12 @@ class BigQueryUDFNode(ops.ValueOp):
 
 
 class BigQuerySelectBuilder(comp.SelectBuilder):
-
     @property
     def _select_class(self):
         return BigQuerySelect
 
 
 class BigQueryUDFDefinition(comp.DDL):
-
     def __init__(self, expr, context):
         self.expr = expr
         self.context = context
@@ -72,13 +74,14 @@ class BigQueryQueryBuilder(comp.QueryBuilder):
     def generate_setup_queries(self):
         queries = map(
             partial(BigQueryUDFDefinition, context=self.context),
-            lin.traverse(find_bigquery_udf, self.expr)
+            lin.traverse(find_bigquery_udf, self.expr),
         )
 
         # UDFs are uniquely identified by the name of the Node subclass we
         # generate.
         return list(
-            toolz.unique(queries, key=lambda x: type(x.expr.op()).__name__))
+            toolz.unique(queries, key=lambda x: type(x.expr.op()).__name__)
+        )
 
 
 def build_ast(expr, context):
@@ -93,7 +96,6 @@ def to_sql(expr, context):
 
 
 class BigQueryContext(comp.QueryContext):
-
     def _to_sql(self, expr, ctx):
         return to_sql(expr, context=ctx)
 
@@ -103,6 +105,7 @@ def _extract_field(sql_attr):
         op = expr.op()
         arg = translator.translate(op.args[0])
         return 'EXTRACT({} from {})'.format(sql_attr, arg)
+
     return extract_field_formatter
 
 
@@ -155,8 +158,7 @@ def _string_find(translator, expr):
         raise NotImplementedError('end not implemented for string find')
 
     return 'STRPOS({}, {}) - 1'.format(
-        translator.translate(haystack),
-        translator.translate(needle)
+        translator.translate(haystack), translator.translate(needle)
     )
 
 
@@ -178,9 +180,7 @@ def _regex_extract(translator, expr):
     arg, pattern, index = expr.op().args
     regex = _translate_pattern(translator, pattern)
     result = 'REGEXP_EXTRACT_ALL({}, {})[SAFE_OFFSET({})]'.format(
-        translator.translate(arg),
-        regex,
-        translator.translate(index)
+        translator.translate(arg), regex, translator.translate(index)
     )
     return result
 
@@ -189,9 +189,7 @@ def _regex_replace(translator, expr):
     arg, pattern, replacement = expr.op().args
     regex = _translate_pattern(translator, pattern)
     result = 'REGEXP_REPLACE({}, {}, {})'.format(
-        translator.translate(arg),
-        regex,
-        translator.translate(replacement),
+        translator.translate(arg), regex, translator.translate(replacement)
     )
     return result
 
@@ -205,8 +203,7 @@ def _string_concat(translator, expr):
 def _string_join(translator, expr):
     sep, args = expr.op().args
     return 'ARRAY_TO_STRING([{}], {})'.format(
-        ', '.join(map(translator.translate, args)),
-        translator.translate(sep)
+        ', '.join(map(translator.translate, args)), translator.translate(sep)
     )
 
 
@@ -220,8 +217,7 @@ def _string_ascii(translator, expr):
 def _string_right(translator, expr):
     arg, nchars = map(translator.translate, expr.op().args)
     return 'SUBSTR({arg}, -LEAST(LENGTH({arg}), {nchars}))'.format(
-        arg=arg,
-        nchars=nchars,
+        arg=arg, nchars=nchars
     )
 
 
@@ -316,6 +312,7 @@ def _truncate(kind, units):
                 '{!r}'.format(arg.type(), unit)
             )
         return '{}_TRUNC({}, {})'.format(kind, trans_arg, valid_unit)
+
     return truncator
 
 
@@ -346,78 +343,71 @@ STRFTIME_FORMAT_FUNCTIONS = {
 
 
 _operation_registry = impala_compiler._operation_registry.copy()
-_operation_registry.update({
-    ops.ExtractYear: _extract_field('year'),
-    ops.ExtractMonth: _extract_field('month'),
-    ops.ExtractDay: _extract_field('day'),
-    ops.ExtractHour: _extract_field('hour'),
-    ops.ExtractMinute: _extract_field('minute'),
-    ops.ExtractSecond: _extract_field('second'),
-    ops.ExtractMillisecond: _extract_field('millisecond'),
-
-    ops.StringReplace: fixed_arity('REPLACE', 3),
-    ops.StringSplit: fixed_arity('SPLIT', 2),
-    ops.StringConcat: _string_concat,
-    ops.StringJoin: _string_join,
-    ops.StringAscii: _string_ascii,
-    ops.StringFind: _string_find,
-    ops.StrRight: _string_right,
-    ops.Repeat: fixed_arity('REPEAT', 2),
-    ops.RegexSearch: _regex_search,
-    ops.RegexExtract: _regex_extract,
-    ops.RegexReplace: _regex_replace,
-
-    ops.GroupConcat: fixed_arity('STRING_AGG', 2),
-
-    ops.IfNull: fixed_arity('IFNULL', 2),
-    ops.Cast: _cast,
-
-    ops.StructField: _struct_field,
-
-    ops.ArrayCollect: unary('ARRAY_AGG'),
-    ops.ArrayConcat: _array_concat,
-    ops.ArrayIndex: _array_index,
-    ops.ArrayLength: unary('ARRAY_LENGTH'),
-
-    ops.HLLCardinality: _reduction('APPROX_COUNT_DISTINCT'),
-    ops.Log: _log,
-    ops.Sign: unary('SIGN'),
-    ops.Modulus: fixed_arity('MOD', 2),
-
-    ops.Date: unary('DATE'),
-
-    # BigQuery doesn't have these operations built in.
-    # ops.ArrayRepeat: _array_repeat,
-    # ops.ArraySlice: _array_slice,
-    ops.Literal: _literal,
-    ops.Arbitrary: _arbitrary,
-
-    ops.TimestampTruncate: _truncate('TIMESTAMP', _timestamp_units),
-    ops.DateTruncate: _truncate('DATE', _date_units),
-    ops.TimeTruncate: _truncate('TIME', _timestamp_units),
-
-    ops.Time: unary('TIME'),
-
-    ops.TimestampAdd: _timestamp_op(
-        'TIMESTAMP_ADD', {'h', 'm', 's', 'ms', 'us'}),
-    ops.TimestampSub: _timestamp_op(
-        'TIMESTAMP_DIFF', {'h', 'm', 's', 'ms', 'us'}),
-
-    ops.DateAdd: _timestamp_op('DATE_ADD', {'D', 'W', 'M', 'Q', 'Y'}),
-    ops.DateSub: _timestamp_op('DATE_SUB', {'D', 'W', 'M', 'Q', 'Y'}),
-    ops.TimestampNow: fixed_arity('CURRENT_TIMESTAMP', 0),
-})
+_operation_registry.update(
+    {
+        ops.ExtractYear: _extract_field('year'),
+        ops.ExtractMonth: _extract_field('month'),
+        ops.ExtractDay: _extract_field('day'),
+        ops.ExtractHour: _extract_field('hour'),
+        ops.ExtractMinute: _extract_field('minute'),
+        ops.ExtractSecond: _extract_field('second'),
+        ops.ExtractMillisecond: _extract_field('millisecond'),
+        ops.StringReplace: fixed_arity('REPLACE', 3),
+        ops.StringSplit: fixed_arity('SPLIT', 2),
+        ops.StringConcat: _string_concat,
+        ops.StringJoin: _string_join,
+        ops.StringAscii: _string_ascii,
+        ops.StringFind: _string_find,
+        ops.StrRight: _string_right,
+        ops.Repeat: fixed_arity('REPEAT', 2),
+        ops.RegexSearch: _regex_search,
+        ops.RegexExtract: _regex_extract,
+        ops.RegexReplace: _regex_replace,
+        ops.GroupConcat: fixed_arity('STRING_AGG', 2),
+        ops.IfNull: fixed_arity('IFNULL', 2),
+        ops.Cast: _cast,
+        ops.StructField: _struct_field,
+        ops.ArrayCollect: unary('ARRAY_AGG'),
+        ops.ArrayConcat: _array_concat,
+        ops.ArrayIndex: _array_index,
+        ops.ArrayLength: unary('ARRAY_LENGTH'),
+        ops.HLLCardinality: _reduction('APPROX_COUNT_DISTINCT'),
+        ops.Log: _log,
+        ops.Sign: unary('SIGN'),
+        ops.Modulus: fixed_arity('MOD', 2),
+        ops.Date: unary('DATE'),
+        # BigQuery doesn't have these operations built in.
+        # ops.ArrayRepeat: _array_repeat,
+        # ops.ArraySlice: _array_slice,
+        ops.Literal: _literal,
+        ops.Arbitrary: _arbitrary,
+        ops.TimestampTruncate: _truncate('TIMESTAMP', _timestamp_units),
+        ops.DateTruncate: _truncate('DATE', _date_units),
+        ops.TimeTruncate: _truncate('TIME', _timestamp_units),
+        ops.Time: unary('TIME'),
+        ops.TimestampAdd: _timestamp_op(
+            'TIMESTAMP_ADD', {'h', 'm', 's', 'ms', 'us'}
+        ),
+        ops.TimestampSub: _timestamp_op(
+            'TIMESTAMP_DIFF', {'h', 'm', 's', 'ms', 'us'}
+        ),
+        ops.DateAdd: _timestamp_op('DATE_ADD', {'D', 'W', 'M', 'Q', 'Y'}),
+        ops.DateSub: _timestamp_op('DATE_SUB', {'D', 'W', 'M', 'Q', 'Y'}),
+        ops.TimestampNow: fixed_arity('CURRENT_TIMESTAMP', 0),
+    }
+)
 
 _invalid_operations = {
     ops.Translate,
     ops.FindInSet,
     ops.Capitalize,
     ops.DateDiff,
-    ops.TimestampDiff
+    ops.TimestampDiff,
 }
 
 _operation_registry = {
-    k: v for k, v in _operation_registry.items()
+    k: v
+    for k, v in _operation_registry.items()
     if k not in _invalid_operations
 }
 
@@ -469,12 +459,10 @@ def compiles_strftime(translator, expr):
             strftime_format_func_name,
             fmt_string,
             arg_formatted,
-            arg_type.timezone if arg_type.timezone is not None else 'UTC'
+            arg_type.timezone if arg_type.timezone is not None else 'UTC',
         )
     return 'FORMAT_{}({}, {})'.format(
-        strftime_format_func_name,
-        fmt_string,
-        arg_formatted
+        strftime_format_func_name, fmt_string, arg_formatted
     )
 
 
@@ -486,9 +474,7 @@ def compiles_string_to_timestamp(translator, expr):
     if timezone_arg is not None:
         timezone_str = translator.translate(timezone_arg)
         return 'PARSE_TIMESTAMP({}, {}, {})'.format(
-            fmt_string,
-            arg_formatted,
-            timezone_str
+            fmt_string, arg_formatted, timezone_str
         )
     return 'PARSE_TIMESTAMP({}, {})'.format(fmt_string, arg_formatted)
 
@@ -565,11 +551,7 @@ def bq_mean(expr):
         return expr
 
 
-UNIT_FUNCS = {
-    's': 'SECONDS',
-    'ms': 'MILLIS',
-    'us': 'MICROS',
-}
+UNIT_FUNCS = {'s': 'SECONDS', 'ms': 'MILLIS', 'us': 'MICROS'}
 
 
 @compiles(ops.TimestampFromUNIX)

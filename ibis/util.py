@@ -93,6 +93,7 @@ def implements(f):
     def decorator(g):
         g.__doc__ = f.__doc__
         return g
+
     return decorator
 
 
@@ -149,8 +150,7 @@ def is_iterable(o):
     >>> is_iterable([])
     True
     """
-    return (not isinstance(o, str) and
-            isinstance(o, collections.Iterable))
+    return not isinstance(o, str) and isinstance(o, collections.Iterable)
 
 
 def convert_unit(value, unit, to):
@@ -204,7 +204,7 @@ def convert_unit(value, unit, to):
                 'Cannot convert to or from variable length interval'
             )
 
-    factor = functools.reduce(operator.mul, factors[min(i, j):max(i, j)], 1)
+    factor = functools.reduce(operator.mul, factors[min(i, j) : max(i, j)], 1)
     assert factor > 1
 
     if i < j:
@@ -230,7 +230,8 @@ def get_logger(name, level=None, format=None, propagate=False):
     logger = logging.getLogger(name)
     logger.propagate = propagate
     logger.setLevel(
-        level or getattr(
-            logging, os.environ.get('LOGLEVEL', 'WARNING').upper()))
+        level
+        or getattr(logging, os.environ.get('LOGLEVEL', 'WARNING').upper())
+    )
     logger.addHandler(handler)
     return logger

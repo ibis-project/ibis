@@ -47,17 +47,30 @@ class PostgreSQLClient(alch.AlchemyClient):
     database_class = PostgreSQLDatabase
     table_class = PostgreSQLTable
 
-    def __init__(self, host='localhost', user=None, password=None, port=5432,
-                 database='public', url=None, driver='psycopg2'):
+    def __init__(
+        self,
+        host='localhost',
+        user=None,
+        password=None,
+        port=5432,
+        database='public',
+        url=None,
+        driver='psycopg2',
+    ):
         if url is None:
             if driver != 'psycopg2':
                 raise NotImplementedError(
                     'psycopg2 is currently the only supported driver'
                 )
             user = user or getpass.getuser()
-            url = sa.engine.url.URL('postgresql+psycopg2', host=host,
-                                    port=port, username=user,
-                                    password=password, database=database)
+            url = sa.engine.url.URL(
+                'postgresql+psycopg2',
+                host=host,
+                port=port,
+                username=user,
+                password=password,
+                database=database,
+            )
         else:
             url = sa.engine.url.make_url(url)
 
@@ -132,7 +145,8 @@ class PostgreSQLClient(alch.AlchemyClient):
     def list_databases(self):
         # http://dba.stackexchange.com/a/1304/58517
         return [
-            row.datname for row in self.con.execute(
+            row.datname
+            for row in self.con.execute(
                 'SELECT datname FROM pg_database WHERE NOT datistemplate'
             )
         ]
@@ -172,10 +186,7 @@ class PostgreSQLClient(alch.AlchemyClient):
             A table expression.
         """
         if database is not None and database != self.current_database:
-            return (
-                self.database(name=database)
-                    .table(name=name, schema=schema)
-            )
+            return self.database(name=database).table(name=name, schema=schema)
         else:
             alch_table = self._get_sqla_table(name, schema=schema)
             node = self.table_class(alch_table, self, self._schemas.get(name))
@@ -183,9 +194,8 @@ class PostgreSQLClient(alch.AlchemyClient):
 
     def list_tables(self, like=None, database=None, schema=None):
         if database is not None and database != self.current_database:
-            return (
-                self.database(name=database)
-                    .list_tables(like=like, schema=schema)
+            return self.database(name=database).list_tables(
+                like=like, schema=schema
             )
         else:
             parent = super(PostgreSQLClient, self)

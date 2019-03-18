@@ -46,7 +46,8 @@ Notes
 -----
 :class:`~ibis.expr.types.ScalarExpr` instances occur when a specific column
 projection is a window operation.
-""")
+""",
+)
 
 
 @compute_projection.register(ir.ScalarExpr, ops.Selection, pd.DataFrame)
@@ -66,9 +67,10 @@ def compute_projection_scalar_expr(expr, parent, data, scope=None, **kwargs):
                 remap_overlapping_column_names(
                     parent_table_op, t, data_columns
                 ),
-                data
-            )
-        ) for t in op.root_tables()
+                data,
+            ),
+        )
+        for t in op.root_tables()
     )
 
     new_scope = toolz.merge(scope, additional_scope, factory=OrderedDict)
@@ -98,8 +100,10 @@ def compute_projection_column_expr(expr, parent, data, scope=None, **kwargs):
         left_root, right_root = ops.distinct_roots(
             parent_table_op.left, parent_table_op.right
         )
-        suffixes = {left_root: constants.LEFT_JOIN_SUFFIX,
-                    right_root: constants.RIGHT_JOIN_SUFFIX}
+        suffixes = {
+            left_root: constants.LEFT_JOIN_SUFFIX,
+            right_root: constants.RIGHT_JOIN_SUFFIX,
+        }
         return data.loc[:, name + suffixes[root_table]].rename(
             result_name or name
         )
@@ -108,8 +112,9 @@ def compute_projection_column_expr(expr, parent, data, scope=None, **kwargs):
     additional_scope = {
         t: map_new_column_names_to_data(
             remap_overlapping_column_names(parent_table_op, t, data_columns),
-            data
-        ) for t in op.root_tables()
+            data,
+        )
+        for t in op.root_tables()
     }
 
     new_scope = toolz.merge(scope, additional_scope)
@@ -125,13 +130,14 @@ def compute_projection_table_expr(expr, parent, data, **kwargs):
 
     parent_table_op = parent.table.op()
     assert isinstance(parent_table_op, ops.Join)
-    assert (expr.equals(parent_table_op.left) or
-            expr.equals(parent_table_op.right))
+    assert expr.equals(parent_table_op.left) or expr.equals(
+        parent_table_op.right
+    )
 
     mapping = remap_overlapping_column_names(
         parent_table_op,
         root_table=expr.op(),
-        data_columns=frozenset(data.columns)
+        data_columns=frozenset(data.columns),
     )
     return map_new_column_names_to_data(mapping, data)
 
@@ -159,15 +165,18 @@ def remap_overlapping_column_names(table_op, root_table, data_columns):
         return None
 
     left_root, right_root = ops.distinct_roots(table_op.left, table_op.right)
-    suffixes = {left_root: constants.LEFT_JOIN_SUFFIX,
-                right_root: constants.RIGHT_JOIN_SUFFIX}
+    suffixes = {
+        left_root: constants.LEFT_JOIN_SUFFIX,
+        right_root: constants.RIGHT_JOIN_SUFFIX,
+    }
     column_names = [
         ({name, name + suffixes[root_table]} & data_columns, name)
         for name in root_table.schema.names
     ]
     mapping = OrderedDict(
         (first(col_name), final_name)
-        for col_name, final_name in column_names if col_name
+        for col_name, final_name in column_names
+        if col_name
     )
     return mapping
 
@@ -237,7 +246,7 @@ op : ops.Node
 Returns
 -------
 tables : List[ops.Node]
-"""
+""",
 )
 
 
@@ -279,17 +288,14 @@ def execute_selection_dataframe(op, data, scope=None, **kwargs):
         data_pieces = []
         for selection in selections:
             pandas_object = compute_projection(
-                selection,
-                op,
-                data,
-                scope=scope,
-                **kwargs
+                selection, op, data, scope=scope, **kwargs
             )
             data_pieces.append(pandas_object)
 
         new_pieces = [
             piece.reset_index(
-                level=list(range(1, piece.index.nlevels)), drop=True)
+                level=list(range(1, piece.index.nlevels)), drop=True
+            )
             if piece.index.nlevels > 1
             else piece
             for piece in data_pieces
@@ -301,13 +307,15 @@ def execute_selection_dataframe(op, data, scope=None, **kwargs):
             op.table.op(), predicates, data, scope, **kwargs
         )
         predicate = functools.reduce(operator.and_, predicates)
-        assert len(predicate) == len(result), \
-            'Selection predicate length does not match underlying table'
+        assert len(predicate) == len(
+            result
+        ), 'Selection predicate length does not match underlying table'
         result = result.loc[predicate]
 
     if sort_keys:
         result, grouping_keys, ordering_keys = util.compute_sorted_frame(
-            result, order_by=sort_keys, scope=scope, **kwargs)
+            result, order_by=sort_keys, scope=scope, **kwargs
+        )
     else:
         grouping_keys = ordering_keys = ()
 
@@ -318,7 +326,8 @@ def execute_selection_dataframe(op, data, scope=None, **kwargs):
 
     # create a sequence of columns that we need to drop
     temporary_columns = pd.Index(
-        concatv(grouping_keys, ordering_keys)).difference(data.columns)
+        concatv(grouping_keys, ordering_keys)
+    ).difference(data.columns)
 
     # no reason to call drop if we don't need to
     if temporary_columns.empty:

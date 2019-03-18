@@ -53,13 +53,13 @@ pytestmark = pytest.mark.sqlite
         ),
         (
             lambda t: t.string_col.cast(dt.double),
-            lambda at: sa.cast(at.c.string_col, sa.REAL)
+            lambda at: sa.cast(at.c.string_col, sa.REAL),
         ),
         (
             lambda t: t.string_col.cast(dt.float),
-            lambda at: sa.cast(at.c.string_col, sa.REAL)
+            lambda at: sa.cast(at.c.string_col, sa.REAL),
         ),
-    ]
+    ],
 )
 def test_cast(alltypes, alltypes_sqla, translate, func, expected):
     assert translate(func(alltypes)) == str(expected(alltypes_sqla))
@@ -76,14 +76,14 @@ def test_decimal_cast():
         (
             lambda t: t.timestamp_col.cast(dt.timestamp),
             lambda at: sa.func.strftime(
-                '%Y-%m-%d %H:%M:%f', at.c.timestamp_col,
+                '%Y-%m-%d %H:%M:%f', at.c.timestamp_col
             ),
         ),
         (
             lambda t: t.int_col.cast(dt.timestamp),
             lambda at: sa.func.datetime(at.c.int_col, 'unixepoch'),
         ),
-    ]
+    ],
 )
 def test_timestamp_cast_noop(
     alltypes, func, translate, alltypes_sqla, expected_func, sqla_compile
@@ -101,7 +101,6 @@ TIMESTAMP_CONSTANT = ibis.literal('2015-09-01 14:48:05.359').cast('timestamp')
     ('expr', 'expected'),
     [
         (TIMESTAMP_CONSTANT.strftime('%Y%m%d'), '20150901'),
-
         (TIMESTAMP_CONSTANT.year(), 2015),
         (TIMESTAMP_CONSTANT.month(), 9),
         (TIMESTAMP_CONSTANT.day(), 1),
@@ -109,7 +108,7 @@ TIMESTAMP_CONSTANT = ibis.literal('2015-09-01 14:48:05.359').cast('timestamp')
         (TIMESTAMP_CONSTANT.minute(), 48),
         (TIMESTAMP_CONSTANT.second(), 5),
         (TIMESTAMP_CONSTANT.millisecond(), 359),
-    ]
+    ],
 )
 def test_timestamp_functions(con, expr, expected):
     assert con.execute(expr) == expected
@@ -130,8 +129,8 @@ def test_now(con):
         (L(3) * L(4), 12),
         (L(12) / L(4), 3),
         (L(12) ** L(2), 144),
-        (L(12) % L(5), 2)
-    ]
+        (L(12) % L(5), 2),
+    ],
 )
 def test_binary_arithmetic(con, expr, expected):
     assert con.execute(expr) == expected
@@ -144,7 +143,7 @@ def test_binary_arithmetic(con, expr, expected):
         (L(7) // L(2), 3),
         (L(7).floordiv(2), 3),
         (L(2).rfloordiv(7), 3),
-    ]
+    ],
 )
 def test_div_floordiv(con, expr, expected):
     assert con.execute(expr) == expected
@@ -157,7 +156,7 @@ def test_div_floordiv(con, expr, expected):
         (L(5).typeof(), 'integer'),
         (ibis.NA.typeof(), 'null'),
         (L(1.2345).typeof(), 'real'),
-    ]
+    ],
 )
 def test_typeof(con, expr, expected):
     assert con.execute(expr) == expected
@@ -165,21 +164,14 @@ def test_typeof(con, expr, expected):
 
 @pytest.mark.parametrize(
     ('expr', 'expected'),
-    [
-        (L(0).nullifzero(), None),
-        (L(5.5).nullifzero(), 5.5),
-    ]
+    [(L(0).nullifzero(), None), (L(5.5).nullifzero(), 5.5)],
 )
 def test_nullifzero(con, expr, expected):
     assert con.execute(expr) == expected
 
 
 @pytest.mark.parametrize(
-    ('expr', 'expected'),
-    [
-        (L('foo_bar').length(), 7),
-        (L('').length(), 0),
-    ]
+    ('expr', 'expected'), [(L('foo_bar').length(), 7), (L('').length(), 0)]
 )
 def test_string_length(con, expr, expected):
     assert con.execute(expr) == expected
@@ -190,11 +182,10 @@ def test_string_length(con, expr, expected):
     [
         (L('foo_bar').left(3), 'foo'),
         (L('foo_bar').right(3), 'bar'),
-
         (L('foo_bar').substr(0, 3), 'foo'),
         (L('foo_bar').substr(4, 3), 'bar'),
         (L('foo_bar').substr(1), 'oo_bar'),
-    ]
+    ],
 )
 def test_string_substring(con, expr, expected):
     assert con.execute(expr) == expected
@@ -206,7 +197,7 @@ def test_string_substring(con, expr, expected):
         (L('   foo   ').lstrip(), 'foo   '),
         (L('   foo   ').rstrip(), '   foo'),
         (L('   foo   ').strip(), 'foo'),
-    ]
+    ],
 )
 def test_string_strip(con, expr, expected):
     assert con.execute(expr) == expected
@@ -214,10 +205,7 @@ def test_string_strip(con, expr, expected):
 
 @pytest.mark.parametrize(
     ('expr', 'expected'),
-    [
-        (L('foo').upper(), 'FOO'),
-        (L('FOO').lower(), 'foo'),
-    ]
+    [(L('foo').upper(), 'FOO'), (L('FOO').lower(), 'foo')],
 )
 def test_string_upper_lower(con, expr, expected):
     assert con.execute(expr) == expected
@@ -229,7 +217,7 @@ def test_string_upper_lower(con, expr, expected):
         (L('foobar').contains('bar'), True),
         (L('foobar').contains('foo'), True),
         (L('foobar').contains('baz'), False),
-    ]
+    ],
 )
 def test_string_contains(con, expr, expected):
     assert con.execute(expr) == expected
@@ -237,10 +225,7 @@ def test_string_contains(con, expr, expected):
 
 @pytest.mark.parametrize(
     ('expr', 'expected'),
-    [
-        (L('foobar').find('bar'), 3),
-        (L('foobar').find('baz'), -1),
-    ]
+    [(L('foobar').find('bar'), 3), (L('foobar').find('baz'), -1)],
 )
 def test_string_find(con, expr, expected):
     assert con.execute(expr) == expected
@@ -252,13 +237,11 @@ def test_string_find(con, expr, expected):
         (L('foobar').like('%bar'), True),
         (L('foobar').like('foo%'), True),
         (L('foobar').like('%baz%'), False),
-
         (L('foobar').like(['%bar']), True),
         (L('foobar').like(['foo%']), True),
         (L('foobar').like(['%baz%']), False),
-
         (L('foobar').like(['%bar', 'foo%']), True),
-    ]
+    ],
 )
 def test_string_like(con, expr, expected):
     assert con.execute(expr) == expected
@@ -277,11 +260,9 @@ def test_str_replace(con):
         (L(5).abs(), 5),
         (ibis.least(L(5), L(10), L(1)), 1),
         (ibis.greatest(L(5), L(10), L(1)), 10),
-
         (L(5.5).round(), 6.0),
         (L(5.556).round(2), 5.56),
         (L(5.556).sqrt(), math.sqrt(5.556)),
-
         (L(5.556).ceil(), 6.0),
         (L(5.556).floor(), 5.0),
         (L(5.556).exp(), math.exp(5.556)),
@@ -292,7 +273,7 @@ def test_str_replace(con):
         (L(5.556).ln(), math.log(5.556)),
         (L(5.556).log2(), math.log(5.556, 2)),
         (L(5.556).log10(), math.log10(5.556)),
-    ]
+    ],
 )
 def test_math_functions(con, expr, expected):
     assert con.execute(expr) == expected
@@ -310,8 +291,8 @@ NULL_INT64 = L(None).cast(dt.int64)
         (L('1222').re_search(r'[\d]+'), True),
         (L('abcd').re_search(None), None),
         (NULL_STRING.re_search('[a-z]'), None),
-        (NULL_STRING.re_search(NULL_STRING), None)
-    ]
+        (NULL_STRING.re_search(NULL_STRING), None),
+    ],
 )
 def test_regexp_search(con, expr, expected):
     assert con.execute(expr) == expected
@@ -327,7 +308,7 @@ def test_regexp_search(con, expr, expected):
         (L('abcd').re_replace(NULL_STRING, 'a'), None),
         (NULL_STRING.re_replace('a', NULL_STRING), None),
         (NULL_STRING.re_replace(NULL_STRING, 'a'), None),
-    ]
+    ],
 )
 def test_regexp_replace(con, expr, expected):
     assert con.execute(expr) == expected
@@ -340,7 +321,6 @@ def test_regexp_replace(con, expr, expected):
         (L('abcd').re_extract(r'(\d+)', 1), None),
         (L('1222').re_extract('([a-z]+)', 1), None),
         (L('1222').re_extract(r'1(22)\d+', 2), None),
-
         # extract nulls
         (NULL_STRING.re_extract(NULL_STRING, NULL_INT64), None),
         (L('abcd').re_extract(NULL_STRING, NULL_INT64), None),
@@ -348,7 +328,7 @@ def test_regexp_replace(con, expr, expected):
         (L('abcd').re_extract(NULL_STRING, 1), None),
         (NULL_STRING.re_extract('a', NULL_INT64), None),
         (NULL_STRING.re_extract(NULL_STRING, 1), None),
-    ]
+    ],
 )
 def test_regexp_extract(con, expr, expected):
     assert con.execute(expr) == expected
@@ -361,7 +341,7 @@ def test_regexp_extract(con, expr, expected):
         (L(5).fillna(10), 5),
         (L(5).nullif(5), None),
         (L(10).nullif(5), 10),
-    ]
+    ],
 )
 def test_fillna_nullif(con, expr, expected):
     assert con.execute(expr) == expected
@@ -386,20 +366,16 @@ def test_numeric_builtins_work(alltypes, df):
         (
             lambda t: (t.double_col > 20).ifelse(10, -20),
             lambda df: pd.Series(
-                np.where(df.double_col > 20, 10, -20),
-                name='tmp',
-                dtype='int8'
+                np.where(df.double_col > 20, 10, -20), name='tmp', dtype='int8'
             ),
         ),
         (
             lambda t: (t.double_col > 20).ifelse(10, -20).abs(),
             lambda df: pd.Series(
-                np.where(df.double_col > 20, 10, -20),
-                name='tmp',
-                dtype='int8'
+                np.where(df.double_col > 20, 10, -20), name='tmp', dtype='int8'
             ).abs(),
-        )
-    ]
+        ),
+    ],
 )
 def test_ifelse(alltypes, df, func, expected_func):
     result = func(alltypes).execute()
@@ -414,14 +390,14 @@ def test_ifelse(alltypes, df, func, expected_func):
         (
             lambda d: d.bucket([0, 10, 25, 50, 100]),
             lambda s: pd.cut(
-                s, [0, 10, 25, 50, 100], right=False, labels=False,
-            )
+                s, [0, 10, 25, 50, 100], right=False, labels=False
+            ),
         ),
         (
             lambda d: d.bucket([0, 10, 25, 50], include_over=True),
             lambda s: pd.cut(
                 s, [0, 10, 25, 50, np.inf], right=False, labels=False
-            )
+            ),
         ),
         (
             lambda d: d.bucket([0, 10, 25, 50], close_extreme=False),
@@ -432,11 +408,12 @@ def test_ifelse(alltypes, df, func, expected_func):
                 [0, 10, 25, 50], closed='right', close_extreme=False
             ),
             lambda s: pd.cut(
-                s, [0, 10, 25, 50],
+                s,
+                [0, 10, 25, 50],
                 include_lowest=False,
                 right=True,
                 labels=False,
-            )
+            ),
         ),
         (
             lambda d: d.bucket([10, 25, 50, 100], include_under=True),
@@ -444,7 +421,7 @@ def test_ifelse(alltypes, df, func, expected_func):
                 s, [0, 10, 25, 50, 100], right=False, labels=False
             ),
         ),
-    ]
+    ],
 )
 def test_bucket(alltypes, df, func, expected_func):
     expr = func(alltypes.double_col)
@@ -482,9 +459,11 @@ def test_category_label(alltypes, df):
 def test_union(alltypes):
     t = alltypes
 
-    expr = (t.group_by('string_col')
-            .aggregate(t.double_col.sum().name('foo'))
-            .sort_by('string_col'))
+    expr = (
+        t.group_by('string_col')
+        .aggregate(t.double_col.sum().name('foo'))
+        .sort_by('string_col')
+    )
 
     t1 = expr.limit(4)
     t2 = expr.limit(4, offset=4)
@@ -503,14 +482,8 @@ def test_union(alltypes):
             lambda t, cond: t.bool_col.count(),
             lambda df, cond: df.bool_col.count(),
         ),
-        (
-            lambda t, cond: t.bool_col.any(),
-            lambda df, cond: df.bool_col.any(),
-        ),
-        (
-            lambda t, cond: t.bool_col.all(),
-            lambda df, cond: df.bool_col.all(),
-        ),
+        (lambda t, cond: t.bool_col.any(), lambda df, cond: df.bool_col.any()),
+        (lambda t, cond: t.bool_col.all(), lambda df, cond: df.bool_col.all()),
         (
             lambda t, cond: t.bool_col.notany(),
             lambda df, cond: ~df.bool_col.any(),
@@ -519,7 +492,6 @@ def test_union(alltypes):
             lambda t, cond: t.bool_col.notall(),
             lambda df, cond: ~df.bool_col.all(),
         ),
-
         (
             lambda t, cond: t.double_col.sum(),
             lambda df, cond: df.double_col.sum(),
@@ -588,7 +560,7 @@ def test_union(alltypes):
             lambda t, cond: t.double_col.std(where=cond, how='pop'),
             lambda df, cond: df.double_col[cond].std(ddof=0),
         ),
-    ]
+    ],
 )
 def test_aggregations_execute(alltypes, func, df, expected_func):
     cond = alltypes.string_col.isin(['1', '7'])
@@ -637,21 +609,27 @@ def test_interactive_repr_shows_error(alltypes):
 def test_subquery(alltypes, df):
     t = alltypes
 
-    expr = (t.mutate(d=t.double_col.fillna(0))
-            .limit(1000)
-            .group_by('string_col')
-            .size())
+    expr = (
+        t.mutate(d=t.double_col.fillna(0))
+        .limit(1000)
+        .group_by('string_col')
+        .size()
+    )
     result = expr.execute()
-    expected = df.assign(d=df.double_col.fillna(0)).head(1000).groupby(
-        'string_col'
-    ).size().reset_index().rename(columns={0: 'count'})
+    expected = (
+        df.assign(d=df.double_col.fillna(0))
+        .head(1000)
+        .groupby('string_col')
+        .size()
+        .reset_index()
+        .rename(columns={0: 'count'})
+    )
     tm.assert_frame_equal(
         result,
         expected,
-
         # Python 2 + pandas inferred type here is 'mixed' because of SQLAlchemy
         # string type subclasses
-        check_column_type=sys.version_info.major >= 3
+        check_column_type=sys.version_info.major >= 3,
     )
 
 
@@ -663,15 +641,14 @@ def test_filter(alltypes, df):
 
 
 @pytest.mark.parametrize(
-    'column',
-    [lambda t: 'float_col', lambda t: t['float_col']]
+    'column', [lambda t: 'float_col', lambda t: t['float_col']]
 )
 def test_column_access_after_sort(alltypes, df, column):
     expr = alltypes.sort_by(column(alltypes)).head(10).string_col
     result = expr.execute()
-    expected = df.sort_values(
-        'float_col'
-    ).string_col.head(10).reset_index(drop=True)
+    expected = (
+        df.sort_values('float_col').string_col.head(10).reset_index(drop=True)
+    )
     tm.assert_series_equal(result, expected)
 
 
@@ -786,8 +763,8 @@ def test_compile_with_one_unnamed_table():
     [
         (operator.methodcaller('year'), {2009, 2010}),
         (operator.methodcaller('month'), set(range(1, 13))),
-        (operator.methodcaller('day'), set(range(1, 32)))
-    ]
+        (operator.methodcaller('day'), set(range(1, 32))),
+    ],
 )
 def test_date_extract_field(alltypes, attr, expected):
     t = alltypes
@@ -835,6 +812,7 @@ def test_count_on_order_by(db):
     result = str(
         expr.compile().compile(compile_kwargs={'literal_binds': True})
     )
-    expected = ('SELECT count(\'*\') AS count \n'
-                'FROM base.batting AS t0')  # noqa: W291
+    expected = (
+        'SELECT count(\'*\') AS count \n' 'FROM base.batting AS t0'
+    )  # noqa: W291
     assert result == expected

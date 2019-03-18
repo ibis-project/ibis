@@ -16,7 +16,6 @@ def _glue_lists_spacer(spacer, lists):
 
 
 class TestMetadataParser(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         cls.spacer = ('', nan, nan)
@@ -26,14 +25,14 @@ class TestMetadataParser(unittest.TestCase):
             cls.spacer,
             ('foo', 'int', nan),
             ('bar', 'tinyint', nan),
-            ('baz', 'bigint', nan)
+            ('baz', 'bigint', nan),
         ]
 
         cls.partitions = [
             ('# Partition Information', nan, nan),
             ('# col_name', 'data_type', 'comment'),
             cls.spacer,
-            ('qux', 'bigint', nan)
+            ('qux', 'bigint', nan),
         ]
 
         cls.info = [
@@ -44,8 +43,11 @@ class TestMetadataParser(unittest.TestCase):
             ('LastAccessTime:', 'UNKNOWN', nan),
             ('Protect Mode:', 'None', nan),
             ('Retention:', '0', nan),
-            ('Location:', ('hdfs://host-name:20500/my.db'
-                           '/dbname.table_name'), nan),
+            (
+                'Location:',
+                ('hdfs://host-name:20500/my.db' '/dbname.table_name'),
+                nan,
+            ),
             ('Table Type:', 'EXTERNAL_TABLE', nan),
             ('Table Parameters:', nan, nan),
             ('', 'EXTERNAL', 'TRUE'),
@@ -56,30 +58,40 @@ class TestMetadataParser(unittest.TestCase):
 
         cls.storage_info = [
             ('# Storage Information', nan, nan),
-            ('SerDe Library:', ('org.apache.hadoop'
-                                '.hive.serde2.lazy.LazySimpleSerDe'), nan),
+            (
+                'SerDe Library:',
+                ('org.apache.hadoop' '.hive.serde2.lazy.LazySimpleSerDe'),
+                nan,
+            ),
             ('InputFormat:', 'org.apache.hadoop.mapred.TextInputFormat', nan),
-            ('OutputFormat:',
-             'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat',
-             nan),
+            (
+                'OutputFormat:',
+                'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat',
+                nan,
+            ),
             ('Compressed:', 'No', nan),
             ('Num Buckets:', '0', nan),
             ('Bucket Columns:', '[]', nan),
             ('Sort Columns:', '[]', nan),
             ('Storage Desc Params:', nan, nan),
             ('', 'field.delim', '|'),
-            ('', 'serialization.format', '|')
+            ('', 'serialization.format', '|'),
         ]
 
         cls.part_metadata = pd.DataFrame.from_records(
-            _glue_lists_spacer(cls.spacer, [cls.schema, cls.partitions,
-                                            cls.info, cls.storage_info]),
-            columns=['name', 'type', 'comment'])
+            _glue_lists_spacer(
+                cls.spacer,
+                [cls.schema, cls.partitions, cls.info, cls.storage_info],
+            ),
+            columns=['name', 'type', 'comment'],
+        )
 
         cls.unpart_metadata = pd.DataFrame.from_records(
-            _glue_lists_spacer(cls.spacer, [cls.schema, cls.info,
-                                            cls.storage_info]),
-            columns=['name', 'type', 'comment'])
+            _glue_lists_spacer(
+                cls.spacer, [cls.schema, cls.info, cls.storage_info]
+            ),
+            columns=['name', 'type', 'comment'],
+        )
 
         cls.parsed_part = parse_metadata(cls.part_metadata)
         cls.parsed_unpart = parse_metadata(cls.unpart_metadata)
@@ -89,9 +101,10 @@ class TestMetadataParser(unittest.TestCase):
 
         assert params['EXTERNAL'] is True
         assert params['STATS_GENERATED_VIA_STATS_TASK'] is True
-        assert params['numRows'] == 183592
-        assert (params['transient_lastDdlTime'] ==
-                pd.Timestamp('2015-11-12 15:09:01'))
+        assert params['numRows'] == 183_592
+        assert params['transient_lastDdlTime'] == pd.Timestamp(
+            '2015-11-12 15:09:01'
+        )
 
     def test_partitions(self):
         assert self.parsed_unpart.partitions is None
@@ -101,7 +114,7 @@ class TestMetadataParser(unittest.TestCase):
         assert self.parsed_part.schema == [
             ('foo', 'int'),
             ('bar', 'tinyint'),
-            ('baz', 'bigint')
+            ('baz', 'bigint'),
         ]
 
     def test_storage_info(self):

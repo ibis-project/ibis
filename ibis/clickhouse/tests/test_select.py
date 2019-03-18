@@ -28,12 +28,14 @@ def awards_players(con):
 
 def test_timestamp_extract_field(con, db, alltypes):
     t = alltypes.timestamp_col
-    expr = alltypes[t.year().name('year'),
-                    t.month().name('month'),
-                    t.day().name('day'),
-                    t.hour().name('hour'),
-                    t.minute().name('minute'),
-                    t.second().name('second')]
+    expr = alltypes[
+        t.year().name('year'),
+        t.month().name('month'),
+        t.day().name('day'),
+        t.hour().name('hour'),
+        t.minute().name('minute'),
+        t.second().name('second'),
+    ]
 
     result = ibis.clickhouse.compile(expr)
 
@@ -75,33 +77,35 @@ def test_limit_offset(alltypes):
 
     tm.assert_frame_equal(alltypes.limit(4).execute(), expected.head(4))
     tm.assert_frame_equal(alltypes.limit(8).execute(), expected.head(8))
-    tm.assert_frame_equal(alltypes.limit(4, offset=4).execute(),
-                          expected.iloc[4:8].reset_index(drop=True))
+    tm.assert_frame_equal(
+        alltypes.limit(4, offset=4).execute(),
+        expected.iloc[4:8].reset_index(drop=True),
+    )
 
 
 def test_subquery(alltypes, df):
     t = alltypes
 
-    expr = (t.mutate(d=t.double_col)
-            .limit(1000)
-            .group_by('string_col')
-            .size())
+    expr = t.mutate(d=t.double_col).limit(1000).group_by('string_col').size()
     result = expr.execute()
 
     result = result.sort_values('string_col').reset_index(drop=True)
-    expected = (df.assign(d=df.double_col.fillna(0))
-                  .head(1000)
-                  .groupby('string_col')
-                  .string_col.count()
-                  .reset_index(name='count')
-                  .sort_values('string_col')
-                  .reset_index(drop=True))
+    expected = (
+        df.assign(d=df.double_col.fillna(0))
+        .head(1000)
+        .groupby('string_col')
+        .string_col.count()
+        .reset_index(name='count')
+        .sort_values('string_col')
+        .reset_index(drop=True)
+    )
 
     result['count'] = result['count'].astype('int64')
 
     check_column_type = sys.version_info.major >= 3
-    tm.assert_frame_equal(result, expected,
-                          check_column_type=check_column_type)
+    tm.assert_frame_equal(
+        result, expected, check_column_type=check_column_type
+    )
 
 
 def test_simple_scalar_aggregates(db, alltypes):
@@ -167,9 +171,9 @@ WHERE `int_col` > 0"""
 # TODO use alltypes
 def test_table_column_unbox(db, alltypes):
     m = alltypes.float_col.sum().name('total')
-    agged = (alltypes[alltypes.int_col > 0]
-             .group_by('string_col')
-             .aggregate([m]))
+    agged = (
+        alltypes[alltypes.int_col > 0].group_by('string_col').aggregate([m])
+    )
     expr = agged.string_col
 
     sql_query = ibis.clickhouse.compile(expr)
@@ -187,8 +191,9 @@ FROM (
 
 def test_complex_array_expr_projection(db, alltypes):
     # May require finding the base table and forming a projection.
-    expr = (alltypes.group_by('string_col')
-            .aggregate([alltypes.count().name('count')]))
+    expr = alltypes.group_by('string_col').aggregate(
+        [alltypes.count().name('count')]
+    )
     expr2 = expr.string_col.cast('double')
 
     query = ibis.clickhouse.compile(expr2)
@@ -201,18 +206,25 @@ FROM (
     assert query == expected.format(db.name)
 
 
-@pytest.mark.parametrize(('expr', 'expected'), [
-    (ibis.now(), 'SELECT now() AS `tmp`'),
-    (ibis.literal(1) + ibis.literal(2), 'SELECT 1 + 2 AS `tmp`')
-])
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        (ibis.now(), 'SELECT now() AS `tmp`'),
+        (ibis.literal(1) + ibis.literal(2), 'SELECT 1 + 2 AS `tmp`'),
+    ],
+)
 def test_scalar_exprs_no_table_refs(expr, expected):
     assert ibis.clickhouse.compile(expr) == expected
 
 
 def test_expr_list_no_table_refs():
-    exlist = ibis.api.expr_list([ibis.literal(1).name('a'),
-                                 ibis.now().name('b'),
-                                 ibis.literal(2).log().name('c')])
+    exlist = ibis.api.expr_list(
+        [
+            ibis.literal(1).name('a'),
+            ibis.now().name('b'),
+            ibis.literal(2).log().name('c'),
+        ]
+    )
     result = ibis.clickhouse.compile(exlist)
     expected = """\
 SELECT 1 AS `a`, now() AS `b`, log(2) AS `c`"""
@@ -261,8 +273,9 @@ def test_non_equijoin(alltypes):
         expr.execute()
 
 
-def test_join_with_predicate_on_different_columns_raises(con, batting,
-                                                         awards_players):
+def test_join_with_predicate_on_different_columns_raises(
+    con, batting, awards_players
+):
     t1 = batting
     t2 = awards_players
 
@@ -273,21 +286,27 @@ def test_join_with_predicate_on_different_columns_raises(con, batting,
         ibis.clickhouse.compile(expr)
 
 
-@pytest.mark.parametrize(('join_type', 'join_clause'), [
-    ('any_inner_join', 'ANY INNER JOIN'),
-    ('inner_join', 'ALL INNER JOIN'),
-    ('any_left_join', 'ANY LEFT JOIN'),
-    ('left_join', 'ALL LEFT JOIN')
-])
-def test_simple_joins(con, db, batting, awards_players,
-                      join_type, join_clause):
+@pytest.mark.parametrize(
+    ('join_type', 'join_clause'),
+    [
+        ('any_inner_join', 'ANY INNER JOIN'),
+        ('inner_join', 'ALL INNER JOIN'),
+        ('any_left_join', 'ANY LEFT JOIN'),
+        ('left_join', 'ALL LEFT JOIN'),
+    ],
+)
+def test_simple_joins(
+    con, db, batting, awards_players, join_type, join_clause
+):
     t1, t2 = batting, awards_players
     expr = getattr(t1, join_type)(t2, ['playerID'])[[t1]]
 
     expected = """SELECT t0.*
 FROM {0}.`batting` t0
   {join_clause} {0}.`awards_players` t1
-    USING `playerID`""".format(db.name, join_clause=join_clause)
+    USING `playerID`""".format(
+        db.name, join_clause=join_clause
+    )
 
     assert ibis.clickhouse.compile(expr) == expected
     assert len(con.execute(expr))
@@ -342,8 +361,9 @@ WHERE (`int_col` > 0) AND
 
 
 def test_where_use_if(con, alltypes, translate):
-    expr = ibis.where(alltypes.float_col > 0,
-                      alltypes.int_col, alltypes.bigint_col)
+    expr = ibis.where(
+        alltypes.float_col > 0, alltypes.int_col, alltypes.bigint_col
+    )
 
     result = translate(expr)
     expected = "if(`float_col` > 0, `int_col`, `bigint_col`)"
@@ -384,12 +404,13 @@ def test_where_use_if(con, alltypes, translate):
 
 
 @pytest.mark.xfail(
-    raises=com.RelationError, reason='Expression equality is broken')
+    raises=com.RelationError, reason='Expression equality is broken'
+)
 def test_filter_predicates(diamonds):
     predicates = [
         lambda x: x.color.lower().like('%de%'),
         # lambda x: x.color.lower().contains('de'),
-        lambda x: x.color.lower().rlike('.*ge.*')
+        lambda x: x.color.lower().rlike('.*ge.*'),
     ]
 
     expr = diamonds
@@ -401,12 +422,8 @@ def test_filter_predicates(diamonds):
 
 def test_where_with_timestamp():
     t = ibis.table(
-        [
-            ('uuid', 'string'),
-            ('ts', 'timestamp'),
-            ('search_level', 'int64'),
-        ],
-        name='t'
+        [('uuid', 'string'), ('ts', 'timestamp'), ('search_level', 'int64')],
+        name='t',
     )
     expr = t.group_by(t.uuid).aggregate(
         min_date=t.ts.min(where=t.search_level == 1)
@@ -422,13 +439,13 @@ GROUP BY `uuid`"""
 def test_timestamp_scalar_in_filter(alltypes, translate):
     table = alltypes
 
-    expr = (table.filter([table.timestamp_col <
-                         (ibis.timestamp('2010-01-01') +
-                             ibis.interval(weeks=3)),
-                         table.timestamp_col < (ibis.now() +
-                                                ibis.interval(days=10))
-                          ])
-            .count())
+    expr = table.filter(
+        [
+            table.timestamp_col
+            < (ibis.timestamp('2010-01-01') + ibis.interval(weeks=3)),
+            table.timestamp_col < (ibis.now() + ibis.interval(days=10)),
+        ]
+    ).count()
     expr.execute()
 
 
@@ -454,15 +471,14 @@ GROUP BY `key`"""
 
 
 def test_join_with_external_table_errors(con, alltypes, df):
-    external_table = ibis.table([
-        ('a', 'string'),
-        ('b', 'int64'),
-        ('c', 'string')
-    ], name='external')
+    external_table = ibis.table(
+        [('a', 'string'), ('b', 'int64'), ('c', 'string')], name='external'
+    )
 
     alltypes = alltypes.mutate(b=alltypes.tinyint_col)
     expr = alltypes.inner_join(external_table, ['b'])[
-        external_table.a, external_table.c, alltypes.id]
+        external_table.a, external_table.c, alltypes.id
+    ]
 
     with pytest.raises(driver.errors.ServerException):
         expr.execute()
@@ -472,26 +488,25 @@ def test_join_with_external_table_errors(con, alltypes, df):
 
 
 def test_join_with_external_table(con, alltypes, df):
-    external_df = pd.DataFrame([
-        ('alpha', 1, 'first'),
-        ('beta', 2, 'second'),
-        ('gamma', 3, 'third')
-    ], columns=['a', 'b', 'c'])
+    external_df = pd.DataFrame(
+        [('alpha', 1, 'first'), ('beta', 2, 'second'), ('gamma', 3, 'third')],
+        columns=['a', 'b', 'c'],
+    )
     external_df['b'] = external_df['b'].astype('int8')
 
-    external_table = ibis.table([
-        ('a', 'string'),
-        ('b', 'int64'),
-        ('c', 'string')
-    ], name='external')
+    external_table = ibis.table(
+        [('a', 'string'), ('b', 'int64'), ('c', 'string')], name='external'
+    )
 
     alltypes = alltypes.mutate(b=alltypes.tinyint_col)
     expr = alltypes.inner_join(external_table, ['b'])[
-        external_table.a, external_table.c, alltypes.id]
+        external_table.a, external_table.c, alltypes.id
+    ]
 
     result = expr.execute(external_tables={'external': external_df})
-    expected = (df.assign(b=df.tinyint_col)
-                  .merge(external_df, on='b')[['a', 'c', 'id']])
+    expected = df.assign(b=df.tinyint_col).merge(external_df, on='b')[
+        ['a', 'c', 'id']
+    ]
 
     result = result.sort_values('id').reset_index(drop=True)
     expected = expected.sort_values('id').reset_index(drop=True)

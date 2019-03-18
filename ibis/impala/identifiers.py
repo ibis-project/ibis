@@ -159,5 +159,5 @@ impala_identifiers = [
     'view',
     'when',
     'where',
-    'with'
+    'with',
 ]

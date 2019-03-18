@@ -42,15 +42,13 @@ _ibis_type_to_sqla = {
     dt.Binary: sa.Binary,
     dt.String: sa.Text,
     dt.Decimal: sa.NUMERIC,
-
     # Mantissa-based
     dt.Float: sa.Float(precision=24),
     dt.Double: sa.Float(precision=53),
-
     dt.Int8: sa.SmallInteger,
     dt.Int16: sa.SmallInteger,
     dt.Int32: sa.Integer,
-    dt.Int64: sa.BigInteger
+    dt.Int64: sa.BigInteger,
 }
 
 
@@ -188,7 +186,7 @@ def schema_from_table(table, schema=None):
             dtype = dt.dtype(
                 getattr(table.bind, 'dialect', SQLAlchemyDialect()),
                 column.type,
-                nullable=column.nullable
+                nullable=column.nullable,
             )
         pairs.append((name, dtype))
     return sch.schema(pairs)
@@ -207,10 +205,7 @@ def table_from_schema(name, meta, schema):
 
 
 def _variance_reduction(func_name):
-    suffix = {
-        'sample': 'samp',
-        'pop': 'pop'
-    }
+    suffix = {'sample': 'samp', 'pop': 'pop'}
 
     def variance_compiler(t, expr):
         arg, how, where = expr.op().args
@@ -219,8 +214,7 @@ def _variance_reduction(func_name):
             arg = arg.cast('int32')
 
         func = getattr(
-            sa.func,
-            '{}_{}'.format(func_name, suffix.get(how, 'samp'))
+            sa.func, '{}_{}'.format(func_name, suffix.get(how, 'samp'))
         )
 
         if where is not None:
@@ -260,6 +254,7 @@ def varargs(sa_func):
         op = expr.op()
         trans_args = [t.translate(arg) for arg in op.arg]
         return sa_func(*trans_args)
+
     return formatter
 
 
@@ -312,8 +307,9 @@ def _exists_subquery(t, expr):
     op = expr.op()
     ctx = t.context
 
-    filtered = (op.foreign_table.filter(op.predicates)
-                .projection([ir.literal(1).name(ir.unnamed)]))
+    filtered = op.foreign_table.filter(op.predicates).projection(
+        [ir.literal(1).name(ir.unnamed)]
+    )
 
     sub_ctx = ctx.subcontext()
     clause = to_sqlalchemy(filtered, sub_ctx, exists=True)
@@ -356,6 +352,7 @@ def _reduction(sa_func):
         arg, where = op.args[:2]
 
         return _reduction_format(t, sa_func, arg, where)
+
     return formatter
 
 
@@ -561,51 +558,37 @@ _operation_registry = {
     ops.And: fixed_arity(sql.and_, 2),
     ops.Or: fixed_arity(sql.or_, 2),
     ops.Not: unary(sa.not_),
-
     ops.Abs: unary(sa.func.abs),
     ops.Cast: _cast,
     ops.Coalesce: varargs(sa.func.coalesce),
     ops.NullIf: fixed_arity(sa.func.nullif, 2),
     ops.Contains: _contains,
     ops.NotContains: _not_contains,
-
     ops.Count: _reduction(sa.func.count),
     ops.Sum: _reduction(sa.func.sum),
     ops.Mean: _reduction(sa.func.avg),
     ops.Min: _reduction(sa.func.min),
     ops.Max: _reduction(sa.func.max),
-
     ops.CountDistinct: _count_distinct,
-
     ops.GroupConcat: fixed_arity(sa.func.group_concat, 2),
-
     ops.Between: fixed_arity(sa.between, 3),
-
     ops.IsNull: _is_null,
     ops.NotNull: _not_null,
-
     ops.Negate: _negate,
     ops.Round: _round,
-
     ops.TypeOf: unary(sa.func.typeof),
-
     ops.Literal: _literal,
     ops.ValueList: _value_list,
     ops.NullLiteral: lambda *args: sa.null(),
-
     ops.SimpleCase: _simple_case,
     ops.SearchedCase: _searched_case,
-
     ops.TableColumn: _table_column,
     ops.TableArrayView: _table_array_view,
-
     transforms.ExistsSubquery: _exists_subquery,
     transforms.NotExistsSubquery: _exists_subquery,
-
     # miscellaneous varargs
     ops.Least: varargs(sa.func.least),
     ops.Greatest: varargs(sa.func.greatest),
-
     # string
     ops.LPad: fixed_arity(sa.func.lpad, 3),
     ops.RPad: fixed_arity(sa.func.rpad, 3),
@@ -621,7 +604,6 @@ _operation_registry = {
     ops.StringLength: unary(sa.func.length),
     ops.StringReplace: fixed_arity(sa.func.replace, 3),
     ops.StringSQLLike: _string_like,
-
     # math
     ops.Ln: unary(sa.func.ln),
     ops.Exp: unary(sa.func.exp),
@@ -642,7 +624,6 @@ _binary_ops = {
     ops.Multiply: operator.mul,
     ops.Divide: operator.truediv,
     ops.Modulus: operator.mod,
-
     # Comparisons
     ops.Equals: operator.eq,
     ops.NotEquals: operator.ne,
@@ -651,9 +632,7 @@ _binary_ops = {
     ops.Greater: operator.gt,
     ops.GreaterEqual: operator.ge,
     ops.IdenticalTo: lambda x, y: x.op('IS NOT DISTINCT FROM')(y),
-
     # Boolean comparisons
-
     # TODO
 }
 
@@ -682,7 +661,6 @@ for _k, _v in _binary_ops.items():
 
 
 class AlchemySelectBuilder(comp.SelectBuilder):
-
     @property
     def _select_class(self):
         return AlchemySelect
@@ -692,7 +670,6 @@ class AlchemySelectBuilder(comp.SelectBuilder):
 
 
 class AlchemyContext(comp.QueryContext):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._table_objects = {}
@@ -721,8 +698,9 @@ class AlchemyContext(comp.QueryContext):
 
     def has_table(self, expr, parent_contexts=False):
         key = self._get_table_key(expr)
-        return self._key_in(key, '_table_objects',
-                            parent_contexts=parent_contexts)
+        return self._key_in(
+            key, '_table_objects', parent_contexts=parent_contexts
+        )
 
     def set_table(self, expr, obj):
         key = self._get_table_key(expr)
@@ -736,7 +714,6 @@ class AlchemyContext(comp.QueryContext):
 
 
 class AlchemyUnion(Union):
-
     def compile(self):
         def reduce_union(left, right, distincts=iter(self.distincts)):
             distinct = next(distincts)
@@ -775,7 +752,6 @@ def build_ast(expr, context):
 
 
 class AlchemyDatabaseSchema(Database):
-
     def __init__(self, name, database):
         """
 
@@ -802,7 +778,8 @@ class AlchemyDatabaseSchema(Database):
           not exist.
         """
         raise NotImplementedError(
-            "Drop is not implemented yet for sqlalchemy schemas")
+            "Drop is not implemented yet for sqlalchemy schemas"
+        )
 
     def table(self, name):
         """
@@ -817,8 +794,8 @@ class AlchemyDatabaseSchema(Database):
 
     def list_tables(self, like=None):
         return self.database.list_tables(
-            schema=self.name,
-            like=self._qualify_like(like))
+            schema=self.name, like=self._qualify_like(like)
+        )
 
 
 class AlchemyDatabase(Database):
@@ -829,6 +806,7 @@ class AlchemyDatabase(Database):
     client : AlchemyClient
 
     """
+
     schema_class = AlchemyDatabaseSchema
 
     def table(self, name, schema=None):
@@ -836,16 +814,14 @@ class AlchemyDatabase(Database):
 
     def list_tables(self, like=None, schema=None):
         return self.client.list_tables(
-            schema=schema,
-            like=self._qualify_like(like),
-            database=self.name)
+            schema=schema, like=self._qualify_like(like), database=self.name
+        )
 
     def schema(self, name):
         return self.schema_class(name, self)
 
 
 class AlchemyTable(ops.DatabaseTable):
-
     def __init__(self, table, source, schema=None):
         schema = sch.infer(table, schema=schema)
         super().__init__(table.name, schema, source)
@@ -872,11 +848,12 @@ compiles = AlchemyExprTranslator.compiles
 
 
 class AlchemyQuery(Query):
-
     def _fetch(self, cursor):
-        df = pd.DataFrame.from_records(cursor.proxy.fetchall(),
-                                       columns=cursor.proxy.keys(),
-                                       coerce_float=True)
+        df = pd.DataFrame.from_records(
+            cursor.proxy.fetchall(),
+            columns=cursor.proxy.keys(),
+            coerce_float=True,
+        )
         return self.schema().apply_to(df)
 
 
@@ -895,6 +872,7 @@ def invalidates_reflection_cache(f):
     f : callable
         A method on :class:`ibis.sql.alchemy.AlchemyClient`
     """
+
     @functools.wraps(f)
     def wrapped(self, *args, **kwargs):
         result = f(self, *args, **kwargs)
@@ -903,6 +881,7 @@ def invalidates_reflection_cache(f):
         # function
         self._reflection_cache_is_dirty = True
         return result
+
     return wrapped
 
 
@@ -971,8 +950,9 @@ class AlchemyClient(SQLClient):
         t = sa.Table(table_name, self.meta)
         t.drop(checkfirst=force)
 
-        assert not t.exists(), \
-            'Something went wrong during DROP of table {!r}'.format(t.name)
+        assert (
+            not t.exists()
+        ), 'Something went wrong during DROP of table {!r}'.format(t.name)
 
         self.meta.remove(t)
 
@@ -1033,7 +1013,6 @@ class AlchemyClient(SQLClient):
 
 
 class AlchemySelect(Select):
-
     def __init__(self, *args, **kwargs):
         self.exists = kwargs.pop('exists', False)
         super().__init__(*args, **kwargs)
@@ -1045,11 +1024,13 @@ class AlchemySelect(Select):
         self._compile_subqueries()
 
         frag = self._compile_table_set()
-        steps = [self._add_select,
-                 self._add_groupby,
-                 self._add_where,
-                 self._add_order_by,
-                 self._add_limit]
+        steps = [
+            self._add_select,
+            self._add_groupby,
+            self._add_where,
+            self._add_order_by,
+            self._add_limit,
+        ]
 
         for step in steps:
             frag = step(frag)
@@ -1139,8 +1120,9 @@ class AlchemySelect(Select):
         if not len(self.where):
             return fragment
 
-        args = [self._translate(pred, permit_subquery=True)
-                for pred in self.where]
+        args = [
+            self._translate(pred, permit_subquery=True) for pred in self.where
+        ]
         clause = _and_all(args)
         return fragment.where(clause)
 
@@ -1190,7 +1172,6 @@ class AlchemySelect(Select):
 
 
 class _AlchemyTableSet(TableSetFormatter):
-
     def get_result(self):
         # Got to unravel the join stack; the nesting order could be
         # arbitrary, so we do a depth first search and push the join tokens
@@ -1203,9 +1184,9 @@ class _AlchemyTableSet(TableSetFormatter):
             self.join_tables.append(self._format_table(self.expr))
 
         result = self.join_tables[0]
-        for jtype, table, preds in zip(self.join_types,
-                                       self.join_tables[1:],
-                                       self.join_predicates):
+        for jtype, table, preds in zip(
+            self.join_types, self.join_tables[1:], self.join_predicates
+        ):
             if len(preds):
                 sqla_preds = [self._translate(pred) for pred in preds]
                 onclause = _and_all(sqla_preds)
@@ -1221,13 +1202,13 @@ class _AlchemyTableSet(TableSetFormatter):
             elif jtype is ops.OuterJoin:
                 result = result.outerjoin(table, onclause)
             elif jtype is ops.LeftSemiJoin:
-                result = (sa.select([result])
-                          .where(sa.exists(sa.select([1])
-                                           .where(onclause))))
+                result = sa.select([result]).where(
+                    sa.exists(sa.select([1]).where(onclause))
+                )
             elif jtype is ops.LeftAntiJoin:
-                result = (sa.select([result])
-                          .where(~sa.exists(sa.select([1])
-                                            .where(onclause))))
+                result = sa.select([result]).where(
+                    ~sa.exists(sa.select([1]).where(onclause))
+                )
             else:
                 raise NotImplementedError(jtype)
 
@@ -1257,7 +1238,7 @@ class _AlchemyTableSet(TableSetFormatter):
                 *(
                     sa.column(n, _to_sqla_type(t))
                     for n, t in zip(schema.names, schema.types)
-                )
+                ),
             )
         else:
             # A subquery
@@ -1320,6 +1301,7 @@ class AlchemyProxy:
     Wraps a SQLAlchemy ResultProxy and ensures that .close() is called on
     garbage collection
     """
+
     def __init__(self, proxy):
         self.proxy = proxy
 
@@ -1377,20 +1359,16 @@ class Over(_Over):
         preceding=None,
         following=None,
     ):
-        super().__init__(
-            element, order_by=order_by, partition_by=partition_by
-        )
+        super().__init__(element, order_by=order_by, partition_by=partition_by)
         if not isinstance(preceding, _valid_frame_types):
             raise TypeError(
-                'preceding must be a string, integer or None, got %r' % (
-                    type(preceding).__name__
-                )
+                'preceding must be a string, integer or None, got %r'
+                % (type(preceding).__name__)
             )
         if not isinstance(following, _valid_frame_types):
             raise TypeError(
-                'following must be a string, integer or None, got %r' % (
-                    type(following).__name__
-                )
+                'following must be a string, integer or None, got %r'
+                % (type(following).__name__)
             )
         self.preceding = preceding if preceding is not None else 'UNBOUNDED'
         self.following = following if following is not None else 'UNBOUNDED'

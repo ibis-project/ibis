@@ -53,7 +53,7 @@ _ibis_dtypes = toolz.valmap(
         dt.Float64: np.float64,
         dt.Decimal: np.object_,
         dt.Struct: np.object_,
-    }
+    },
 )
 
 
@@ -78,8 +78,8 @@ _numpy_dtypes = toolz.keymap(
         'datetime64': dt.timestamp,
         'datetime64[ns]': dt.timestamp,
         'timedelta64': dt.interval,
-        'timedelta64[ns]': dt.Interval('ns')
-    }
+        'timedelta64[ns]': dt.Interval('ns'),
+    },
 )
 
 
@@ -115,10 +115,11 @@ def from_pandas_categorical(value):
 
 
 @dt.infer.register(
-    (np.generic,) + tuple(
+    (np.generic,)
+    + tuple(
         frozenset(
-            np.signedinteger.__subclasses__() +
-            np.unsignedinteger.__subclasses__()  # np.int64, np.uint64, etc.
+            np.signedinteger.__subclasses__()
+            + np.unsignedinteger.__subclasses__()  # np.int64, np.uint64, etc.
         )
     )  # we need this because in Python 2 int is a parent of np.integer
 )
@@ -218,7 +219,8 @@ Returns
 -------
 result : pd.Series
     The converted column
-""")
+""",
+)
 
 
 @convert.register(DatetimeTZDtype, dt.Timestamp, pd.Series)
@@ -260,11 +262,14 @@ def convert_datetime64_to_timestamp(in_dtype, out_dtype, column):
         if inferred_dtype in PANDAS_DATE_TYPES:
             # not great, but not really any other option
             return column.map(
-                partial(convert_timezone, timezone=out_dtype.timezone))
+                partial(convert_timezone, timezone=out_dtype.timezone)
+            )
         if inferred_dtype not in PANDAS_STRING_TYPES:
             raise TypeError(
-                'Conversion to timestamp not supported for Series of type {!r}'
-                .format(inferred_dtype)
+                (
+                    'Conversion to timestamp not supported for Series of type '
+                    '{!r}'
+                ).format(inferred_dtype)
             )
         return column.map(dateutil.parser.parse)
     else:

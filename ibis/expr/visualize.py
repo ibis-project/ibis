@@ -25,11 +25,11 @@ def get_type(expr):
     except com.IbisError:
         op = expr.op()
         assert isinstance(op, ops.Join)
-        left_table_name = getattr(
-            op.left.op(), 'name', None) or ops.genname()
+        left_table_name = getattr(op.left.op(), 'name', None) or ops.genname()
         left_schema = op.left.schema()
-        right_table_name = getattr(
-            op.right.op(), 'name', None) or ops.genname()
+        right_table_name = (
+            getattr(op.right.op(), 'name', None) or ops.genname()
+        )
         right_schema = op.right.schema()
         pairs = [
             ('{}.{}'.format(left_table_name, left_column), type)
@@ -40,10 +40,13 @@ def get_type(expr):
         ]
         schema = ibis.schema(pairs)
 
-    return ''.join(
-        '<BR ALIGN="LEFT" />  <I>{}</I>: {}'.format(name, type)
-        for name, type in zip(schema.names, schema.types)
-    ) + '<BR ALIGN="LEFT" />'
+    return (
+        ''.join(
+            '<BR ALIGN="LEFT" />  <I>{}</I>: {}'.format(name, type)
+            for name, type in zip(schema.names, schema.types)
+        )
+        + '<BR ALIGN="LEFT" />'
+    )
 
 
 def get_label(expr, argname=None):
@@ -68,18 +71,15 @@ def get_label(expr, argname=None):
     return label
 
 
-DEFAULT_NODE_ATTRS = {
-    'shape': 'box',
-    'fontname': 'Deja Vu Sans Mono',
-}
+DEFAULT_NODE_ATTRS = {'shape': 'box', 'fontname': 'Deja Vu Sans Mono'}
 
 
 def to_graph(expr, node_attr=None, edge_attr=None):
     stack = [(expr, expr._safe_name)]
     seen = set()
     g = gv.Digraph(
-        node_attr=node_attr or DEFAULT_NODE_ATTRS,
-        edge_attr=edge_attr or {})
+        node_attr=node_attr or DEFAULT_NODE_ATTRS, edge_attr=edge_attr or {}
+    )
 
     g.attr(rankdir='BT')
 
@@ -135,7 +135,6 @@ if __name__ == '__main__':
     b = df.b
     filt = df[(a + b * 2 * b / b ** 3 > 4) & (b > 5)]
     expr = filt.groupby(filt.c).aggregate(
-        amean=filt.a.mean(),
-        bsum=filt.b.sum(),
+        amean=filt.a.mean(), bsum=filt.b.sum()
     )
     expr.visualize()

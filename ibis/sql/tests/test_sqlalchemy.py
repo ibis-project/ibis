@@ -37,7 +37,6 @@ L = sa.literal
 
 
 class MockAlchemyConnection(MockConnection):
-
     def __init__(self):
         super().__init__()
         self.meta = sa.MetaData()
@@ -61,11 +60,11 @@ def _table_wrapper(name, tname=None):
     def f(self):
         t = self._table_from_schema(name, tname)
         return t
+
     return f
 
 
 class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
-
     def setUp(self):
         self.con = MockAlchemyConnection()
         self.alltypes = self.con.table('functional_alltypes')
@@ -96,8 +95,9 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
 
     def _translate(self, expr, named=False):
         context = alch.AlchemyDialect.make_context()
-        translator = alch.AlchemyExprTranslator(expr, context=context,
-                                                named=named)
+        translator = alch.AlchemyExprTranslator(
+            expr, context=context, named=named
+        )
         return translator.get_result()
 
     def test_sqla_schema_conversion(self):
@@ -151,7 +151,7 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         d = self.alltypes.double_col
         cases = [
             ((d > 0) & (d < 5), sql.and_(sd > L(0), sd < L(5))),
-            ((d < 0) | (d > 5), sql.or_(sd < L(0), sd > L(5)))
+            ((d < 0) | (d > 5), sql.or_(sd < L(0), sd > L(5))),
         ]
 
         self._check_expr_cases(cases)
@@ -161,9 +161,7 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         sd = sat.c.double_col
         d = self.alltypes.double_col
 
-        cases = [
-            (d.between(5, 10), sd.between(L(5), L(10))),
-        ]
+        cases = [(d.between(5, 10), sd.between(L(5), L(10)))]
         self._check_expr_cases(cases)
 
     def test_isnull_notnull(self):
@@ -181,9 +179,7 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         sat = self.sa_alltypes
         sd = sat.c.double_col
         d = self.alltypes.double_col
-        cases = [
-            (-(d > 0), sql.not_(sd > L(0)))
-        ]
+        cases = [(-(d > 0), sql.not_(sd > L(0)))]
 
         self._check_expr_cases(cases)
 
@@ -201,9 +197,12 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         v3 = f
 
         cases = [
-            (ibis.coalesce(v2, v1, v3),
-             sa.func.coalesce(sa.case([(sd > L(30), sd)], else_=null),
-                              null, sf))
+            (
+                ibis.coalesce(v2, v1, v3),
+                sa.func.coalesce(
+                    sa.case([(sd > L(30), sd)], else_=null), null, sf
+                ),
+            )
         ]
         self._check_expr_cases(cases)
 
@@ -211,9 +210,7 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         sat = self.sa_alltypes
         d = self.alltypes.double_col
 
-        cases = [
-            ((d * 2).name('foo'), (sat.c.double_col * L(2)).label('foo'))
-        ]
+        cases = [((d * 2).name('foo'), (sat.c.double_col * L(2)).label('foo'))]
         self._check_expr_cases(cases, named=True)
 
     def test_joins(self):
@@ -227,28 +224,30 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         spred = rt.c.r_regionkey == nt.c.n_regionkey
 
         fully_mat_joins = [
-            (region.inner_join(nation, ipred),
-             rt.join(nt, spred)),
-
-            (region.left_join(nation, ipred),
-             rt.join(nt, spred, isouter=True)),
-
-            (region.outer_join(nation, ipred),
-             rt.outerjoin(nt, spred)),
+            (region.inner_join(nation, ipred), rt.join(nt, spred)),
+            (
+                region.left_join(nation, ipred),
+                rt.join(nt, spred, isouter=True),
+            ),
+            (region.outer_join(nation, ipred), rt.outerjoin(nt, spred)),
         ]
         for ibis_joined, joined_sqla in fully_mat_joins:
             expected = sa.select([joined_sqla])
             self._compare_sqla(ibis_joined, expected)
 
         subselect_joins = [
-            (region.inner_join(nation, ipred).projection(nation),
-             rt.join(nt, spred)),
-
-            (region.left_join(nation, ipred).projection(nation),
-             rt.join(nt, spred, isouter=True)),
-
-            (region.outer_join(nation, ipred).projection(nation),
-             rt.outerjoin(nt, spred)),
+            (
+                region.inner_join(nation, ipred).projection(nation),
+                rt.join(nt, spred),
+            ),
+            (
+                region.left_join(nation, ipred).projection(nation),
+                rt.join(nt, spred, isouter=True),
+            ),
+            (
+                region.outer_join(nation, ipred).projection(nation),
+                rt.outerjoin(nt, spred),
+            ),
         ]
         for ibis_joined, joined_sqla in subselect_joins:
             expected = sa.select([nt]).select_from(joined_sqla)
@@ -257,14 +256,16 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
     def test_join_just_materialized(self):
         joined = self._case_join_just_materialized()
 
-        rt, nt, ct = self._sqla_tables(['tpch_region', 'tpch_nation',
-                                        'tpch_customer'])
+        rt, nt, ct = self._sqla_tables(
+            ['tpch_region', 'tpch_nation', 'tpch_customer']
+        )
         nt = nt.alias('t0')
         rt = rt.alias('t1')
         ct = ct.alias('t2')
 
-        sqla_joined = (nt.join(rt, nt.c.n_regionkey == rt.c.r_regionkey)
-                       .join(ct, nt.c.n_nationkey == ct.c.c_nationkey))
+        sqla_joined = nt.join(rt, nt.c.n_regionkey == rt.c.r_regionkey).join(
+            ct, nt.c.n_nationkey == ct.c.c_nationkey
+        )
 
         expected = sa.select([sqla_joined])
 
@@ -284,9 +285,16 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         expr = self._case_simple_case()
 
         cases = [
-            (expr, sa.case([(st.c.g == L('foo'), L('bar')),
-                            (st.c.g == L('baz'), L('qux'))],
-                           else_='default')),
+            (
+                expr,
+                sa.case(
+                    [
+                        (st.c.g == L('foo'), L('bar')),
+                        (st.c.g == L('baz'), L('qux')),
+                    ],
+                    else_='default',
+                ),
+            )
         ]
         self._check_expr_cases(cases)
 
@@ -296,9 +304,16 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
 
         expr = self._case_search_case()
         cases = [
-            (expr, sa.case([(st.c.f > L(0), st.c.d * L(2)),
-                            (st.c.c < L(0), st.c.a * L(2))],
-                           else_=sa.cast(sa.null(), sa.BIGINT))),
+            (
+                expr,
+                sa.case(
+                    [
+                        (st.c.f > L(0), st.c.d * L(2)),
+                        (st.c.c < L(0), st.c.a * L(2)),
+                    ],
+                    else_=sa.cast(sa.null(), sa.BIGINT),
+                ),
+            )
         ]
         self._check_expr_cases(cases)
 
@@ -322,7 +337,7 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         k2 = st.c.bar_id
         expected = [
             sa.select([k1, metric]).group_by(k1),
-            sa.select([k1, k2, metric]).group_by(k1, k2)
+            sa.select([k1, k2, metric]).group_by(k1, k2),
         ]
 
         for case, ex_sqla in zip(cases, expected):
@@ -336,10 +351,12 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         metric = F.sum(st.c.f)
         k1 = st.c.foo_id
         expected = [
-            sa.select([k1, metric.label('total')]).group_by(k1)
+            sa.select([k1, metric.label('total')])
+            .group_by(k1)
             .having(metric > L(10)),
-            sa.select([k1, metric.label('total')]).group_by(k1)
-            .having(F.count('*') > L(100))
+            sa.select([k1, metric.label('total')])
+            .group_by(k1)
+            .having(F.count('*') > L(100)),
         ]
 
         for case, ex_sqla in zip(cases, expected):
@@ -385,9 +402,11 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         alltypes = self._get_sqla('alltypes')
 
         t2 = alltypes.alias('t2')
-        t0 = (sa.select([t2.c.g, F.sum(t2.c.f).label('metric')])
-              .group_by(t2.c.g)
-              .cte('t0'))
+        t0 = (
+            sa.select([t2.c.g, F.sum(t2.c.f).label('metric')])
+            .group_by(t2.c.g)
+            .cte('t0')
+        )
 
         t1 = t0.alias('t1')
         table_set = t0.join(t1, t0.c.g == t1.c.g)
@@ -411,8 +430,11 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         s1 = self.sa_alltypes.alias('t0')
         s2 = self.sa_alltypes.alias('t1')
 
-        cond = (sa.exists([L(1)]).select_from(s1)
-                .where(s1.c.string_col == s2.c.string_col))
+        cond = (
+            sa.exists([L(1)])
+            .select_from(s1)
+            .where(s1.c.string_col == s2.c.string_col)
+        )
 
         ex_semi = sa.select([s1]).where(cond)
         ex_anti = sa.select([s1]).where(~cond)
@@ -436,8 +458,9 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         foo = self._to_sqla(self.foo)
         t0 = foo.alias('t0')
         t1 = foo.alias('t1')
-        subq = (sa.select([F.avg(t1.c.y).label('mean')])
-                .where(t0.c.dept_id == t1.c.dept_id))
+        subq = sa.select([F.avg(t1.c.y).label('mean')]).where(
+            t0.c.dept_id == t1.c.dept_id
+        )
         stmt = sa.select([t0]).where(t0.c.y > subq)
         self._compare_sqla(expr, stmt)
 
@@ -447,9 +470,11 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         s1 = self._get_sqla('star1').alias('t2')
         s2 = self._get_sqla('star2').alias('t1')
 
-        agged = (sa.select([s1.c.foo_id, F.sum(s1.c.f).label('total')])
-                 .group_by(s1.c.foo_id)
-                 .alias('t0'))
+        agged = (
+            sa.select([s1.c.foo_id, F.sum(s1.c.f).label('total')])
+            .group_by(s1.c.foo_id)
+            .alias('t0')
+        )
 
         joined = agged.join(s2, agged.c.foo_id == s2.c.foo_id)
         expected = sa.select([agged, s2.c.value1]).select_from(joined)
@@ -462,13 +487,13 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         s1 = self._get_sqla('star1').alias('t2')
         s2 = self._get_sqla('star2').alias('t1')
 
-        expr2 = (expr
-                 [expr.total > 100]
-                 .sort_by(ibis.desc('total')))
+        expr2 = expr[expr.total > 100].sort_by(ibis.desc('total'))
 
-        agged = (sa.select([s1.c.foo_id, F.sum(s1.c.f).label('total')])
-                 .group_by(s1.c.foo_id)
-                 .alias('t3'))
+        agged = (
+            sa.select([s1.c.foo_id, F.sum(s1.c.f).label('total')])
+            .group_by(s1.c.foo_id)
+            .alias('t3')
+        )
 
         joined = agged.join(s2, agged.c.foo_id == s2.c.foo_id)
         expected = sa.select([agged, s2.c.value1]).select_from(joined)
@@ -478,9 +503,11 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
 
         ex = expected.alias('t0')
 
-        expected2 = (sa.select([ex])
-                     .where(ex.c.total > L(100))
-                     .order_by(ex.c.total.desc()))
+        expected2 = (
+            sa.select([ex])
+            .where(ex.c.total > L(100))
+            .order_by(ex.c.total.desc())
+        )
 
         self._compare_sqla(expr2, expected2)
 
@@ -494,7 +521,8 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         ex1 = sa.select([t1]).where(cond1)
 
         cond2 = sa.exists([L(1)]).where(
-            sql.and_(t1.c.key1 == t2.c.key1, t2.c.key2 == L('foo')))
+            sql.and_(t1.c.key1 == t2.c.key1, t2.c.key2 == L('foo'))
+        )
         ex2 = sa.select([t1]).where(cond2)
 
         # pytest.skip('not yet implemented')
@@ -527,8 +555,10 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
 
         cases = [
             (t.distinct(), sa.select([sat]).distinct()),
-            (t['string_col', 'int_col'].distinct(),
-             sa.select([sat.c.string_col, sat.c.int_col]).distinct())
+            (
+                t['string_col', 'int_col'].distinct(),
+                sa.select([sat.c.string_col, sat.c.int_col]).distinct(),
+            ),
         ]
         for case, ex in cases:
             self._compare_sqla(case, ex)
@@ -538,8 +568,7 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         sat = self.sa_alltypes.alias('t0')
 
         cases = [
-            (t.string_col.distinct(),
-             sa.select([sat.c.string_col.distinct()]))
+            (t.string_col.distinct(), sa.select([sat.c.string_col.distinct()]))
         ]
         for case, ex in cases:
             self._compare_sqla(case, ex)
@@ -549,15 +578,23 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         sat = self.sa_alltypes.alias('t0')
 
         cases = [
-            (t.int_col.nunique().name('nunique'),
-             sa.select([F.count(sat.c.int_col.distinct())
-                        .label('nunique')])),
-            (t.group_by('string_col')
-             .aggregate(t.int_col.nunique().name('nunique')),
-             sa.select([sat.c.string_col,
-                        F.count(sat.c.int_col.distinct())
-                        .label('nunique')])
-             .group_by(sat.c.string_col)),
+            (
+                t.int_col.nunique().name('nunique'),
+                sa.select(
+                    [F.count(sat.c.int_col.distinct()).label('nunique')]
+                ),
+            ),
+            (
+                t.group_by('string_col').aggregate(
+                    t.int_col.nunique().name('nunique')
+                ),
+                sa.select(
+                    [
+                        sat.c.string_col,
+                        F.count(sat.c.int_col.distinct()).label('nunique'),
+                    ]
+                ).group_by(sat.c.string_col),
+            ),
         ]
         for case, ex in cases:
             self._compare_sqla(case, ex)
@@ -568,19 +605,23 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         # inline view.
         t = self.alltypes
 
-        agg = (t.group_by('string_col')
-               .aggregate(t.double_col.max().name('foo')))
+        agg = t.group_by('string_col').aggregate(
+            t.double_col.max().name('foo')
+        )
         expr = agg.sort_by(ibis.desc('foo'))
 
         sat = self.sa_alltypes.alias('t1')
-        base = (sa.select([sat.c.string_col,
-                           F.max(sat.c.double_col).label('foo')])
-                .group_by(sat.c.string_col)).alias('t0')
+        base = (
+            sa.select(
+                [sat.c.string_col, F.max(sat.c.double_col).label('foo')]
+            ).group_by(sat.c.string_col)
+        ).alias('t0')
 
-        ex = (sa.select([base.c.string_col,
-                         base.c.foo])
-              .select_from(base)
-              .order_by(sa.desc('foo')))
+        ex = (
+            sa.select([base.c.string_col, base.c.foo])
+            .select_from(base)
+            .order_by(sa.desc('foo'))
+        )
 
         self._compare_sqla(expr, ex)
 

@@ -103,17 +103,20 @@ from ibis.client import find_backends
 
 import ibis.pandas.aggcontext as agg_ctx
 from ibis.pandas.dispatch import (
-     execute_node, pre_execute, post_execute, execute_literal
+    execute_node,
+    pre_execute,
+    post_execute,
+    execute_literal,
 )
 
 
 integer_types = np.integer, int
-floating_types = numbers.Real,
+floating_types = (numbers.Real,)
 numeric_types = integer_types + floating_types
 boolean_types = bool, np.bool_
 fixed_width_types = numeric_types + boolean_types
-date_types = datetime.date,
-time_types = datetime.time,
+date_types = (datetime.date,)
+time_types = (datetime.time,)
 timestamp_types = pd.Timestamp, datetime.datetime, np.datetime64
 timedelta_types = pd.Timedelta, datetime.timedelta, np.timedelta64
 temporal_types = date_types + time_types + timestamp_types + timedelta_types
@@ -121,7 +124,12 @@ scalar_types = fixed_width_types + temporal_types
 simple_types = scalar_types + (str, type(None))
 
 _VALID_INPUT_TYPES = (
-    ibis.client.Client, ir.Expr, dt.DataType, type(None), win.Window, tuple
+    ibis.client.Client,
+    ir.Expr,
+    dt.DataType,
+    type(None),
+    win.Window,
+    tuple,
 ) + scalar_types
 
 
@@ -153,14 +161,14 @@ def execute_with_scope(expr, scope, aggcontext=None, clients=None, **kwargs):
         aggcontext = agg_ctx.Summarize()
 
     pre_executed_scope = pre_execute(
-        op, *clients, scope=scope, aggcontext=aggcontext, **kwargs)
+        op, *clients, scope=scope, aggcontext=aggcontext, **kwargs
+    )
     new_scope = toolz.merge(scope, pre_executed_scope)
     result = execute_until_in_scope(
         expr,
         new_scope,
         aggcontext=aggcontext,
         clients=clients,
-
         # XXX: we *explicitly* pass in scope and not new_scope here so that
         # post_execute sees the scope of execute_with_scope, not the scope of
         # execute_until_in_scope
@@ -169,9 +177,9 @@ def execute_with_scope(expr, scope, aggcontext=None, clients=None, **kwargs):
             scope=scope,
             aggcontext=aggcontext,
             clients=clients,
-            **kwargs
+            **kwargs,
         ),
-        **kwargs
+        **kwargs,
     )
 
     return result
@@ -202,16 +210,23 @@ def execute_until_in_scope(
         return scope[op]
 
     new_scope = execute_bottom_up(
-        expr, scope,
+        expr,
+        scope,
         aggcontext=aggcontext,
-        post_execute_=post_execute_, clients=clients, **kwargs)
+        post_execute_=post_execute_,
+        clients=clients,
+        **kwargs,
+    )
     new_scope = toolz.merge(
         new_scope, pre_execute(op, *clients, scope=scope, **kwargs)
     )
     return execute_until_in_scope(
-        expr, new_scope,
-        aggcontext=aggcontext, clients=clients, post_execute_=post_execute_,
-        **kwargs
+        expr,
+        new_scope,
+        aggcontext=aggcontext,
+        clients=clients,
+        post_execute_=post_execute_,
+        **kwargs,
     )
 
 
@@ -227,10 +242,9 @@ def is_computable_arg(op, arg):
     -------
     result : bool
     """
-    return (
-        isinstance(op, (ops.ExpressionList, ops.ValueList, ops.WindowOp)) or
-        isinstance(arg, _VALID_INPUT_TYPES)
-    )
+    return isinstance(
+        op, (ops.ExpressionList, ops.ValueList, ops.WindowOp)
+    ) or isinstance(arg, _VALID_INPUT_TYPES)
 
 
 def execute_bottom_up(
@@ -279,12 +293,15 @@ def execute_bottom_up(
     # recursively compute each node's arguments until we've changed type
     scopes = [
         execute_bottom_up(
-            arg, scope,
+            arg,
+            scope,
             aggcontext=aggcontext,
             post_execute_=post_execute_,
             clients=clients,
-            **kwargs)
-        if hasattr(arg, 'op') else {arg: arg}
+            **kwargs,
+        )
+        if hasattr(arg, 'op')
+        else {arg: arg}
         for arg in computable_args
     ]
 
@@ -305,8 +322,13 @@ def execute_bottom_up(
         for arg in computable_args
     ]
     result = execute_node(
-        op, *data,
-        scope=scope, aggcontext=aggcontext, clients=clients, **kwargs)
+        op,
+        *data,
+        scope=scope,
+        aggcontext=aggcontext,
+        clients=clients,
+        **kwargs,
+    )
     computed = post_execute_(op, result)
     return {op: computed}
 
@@ -400,7 +422,8 @@ def execute_and_reset(
         * If no data are bound to the input expression
     """
     result = execute(
-        expr, params=params, scope=scope, aggcontext=aggcontext, **kwargs)
+        expr, params=params, scope=scope, aggcontext=aggcontext, **kwargs
+    )
     if isinstance(result, pd.DataFrame):
         schema = expr.schema()
         df = result.reset_index()

@@ -9,8 +9,11 @@ def df():
     rng = pd.date_range('20170101', periods=10, freq='D')
     tickers = ['GOOGL', 'FB', 'APPL', 'NFLX', 'AMZN']
     return pd.DataFrame(
-        {'time': np.repeat(rng, len(tickers)),
-         'ticker': np.tile(tickers, len(rng))})
+        {
+            'time': np.repeat(rng, len(tickers)),
+            'ticker': np.tile(tickers, len(rng)),
+        }
+    )
 
 
 @pytest.fixture

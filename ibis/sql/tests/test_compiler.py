@@ -17,7 +17,6 @@ from ibis import impala  # noqa: E402
 
 
 class TestASTBuilder(unittest.TestCase):
-
     def setUp(self):
         self.con = MockConnection()
 
@@ -65,20 +64,23 @@ class TestASTBuilder(unittest.TestCase):
         joined = table2.inner_join(table3, [join_pred])
 
         met1 = (table3['f'] - table2['value']).mean().name('foo')
-        result = joined.aggregate([met1, table3['f'].sum().name('bar')],
-                                  by=[table3['g'], table2['key']])
+        result = joined.aggregate(
+            [met1, table3['f'].sum().name('bar')],
+            by=[table3['g'], table2['key']],
+        )
 
         stmt = _get_query(result)
 
         # #790, this behavior was different before
         ex_pred = [table3['g'] == table2['key']]
-        expected_table_set = \
-            table2.inner_join(table3, ex_pred)
+        expected_table_set = table2.inner_join(table3, ex_pred)
         assert stmt.table_set.equals(expected_table_set)
 
         # Check various exprs
-        ex_metrics = [(table3['f'] - table2['value']).mean().name('foo'),
-                      table3['f'].sum().name('bar')]
+        ex_metrics = [
+            (table3['f'] - table2['value']).mean().name('foo'),
+            table3['f'].sum().name('bar'),
+        ]
         ex_by = [table3['g'], table2['key']]
         for res, ex in zip(stmt.select_set, ex_by + ex_metrics):
             assert res.equals(ex)
@@ -124,9 +126,7 @@ WHERE `c` > 0"""
 
     def test_scalar_aggregates_multiple_tables(self):
         # #740
-        table = ibis.table([('flag', 'string'),
-                            ('value', 'double')],
-                           'tbl')
+        table = ibis.table([('flag', 'string'), ('value', 'double')], 'tbl')
 
         flagged = table[table.flag == '1']
         unflagged = table[table.flag == '0']
@@ -196,8 +196,9 @@ FROM (
 
     def test_complex_array_expr_projection(self):
         # May require finding the base table and forming a projection.
-        expr = (self.table.group_by('g')
-                .aggregate([self.table.count().name('count')]))
+        expr = self.table.group_by('g').aggregate(
+            [self.table.count().name('count')]
+        )
         expr2 = expr.g.cast('double')
 
         query = impala.compile(expr2)
@@ -218,19 +219,20 @@ SELECT now() AS `tmp`"""
         expected2 = """\
 SELECT 1 + 2 AS `tmp`"""
 
-        cases = [
-            (expr1, expected1),
-            (expr2, expected2)
-        ]
+        cases = [(expr1, expected1), (expr2, expected2)]
 
         for expr, expected in cases:
             result = impala.compile(expr)
             assert result == expected
 
     def test_expr_list_no_table_refs(self):
-        exlist = ibis.api.expr_list([ibis.literal(1).name('a'),
-                                     ibis.now().name('b'),
-                                     ibis.literal(2).log().name('c')])
+        exlist = ibis.api.expr_list(
+            [
+                ibis.literal(1).name('a'),
+                ibis.now().name('b'),
+                ibis.literal(2).log().name('c'),
+            ]
+        )
         result = impala.compile(exlist)
         expected = """\
 SELECT 1 AS `a`, now() AS `b`, ln(2) AS `c`"""
@@ -253,28 +255,24 @@ def _get_query(expr):
     return ast.queries[0]
 
 
-nation = api.table([
-    ('n_regionkey', 'int32'),
-    ('n_nationkey', 'int32'),
-    ('n_name', 'string')
-], 'nation')
+nation = api.table(
+    [('n_regionkey', 'int32'), ('n_nationkey', 'int32'), ('n_name', 'string')],
+    'nation',
+)
 
-region = api.table([
-    ('r_regionkey', 'int32'),
-    ('r_name', 'string')
-], 'region')
+region = api.table([('r_regionkey', 'int32'), ('r_name', 'string')], 'region')
 
-customer = api.table([
-    ('c_nationkey', 'int32'),
-    ('c_name', 'string'),
-    ('c_acctbal', 'double')
-], 'customer')
+customer = api.table(
+    [('c_nationkey', 'int32'), ('c_name', 'string'), ('c_acctbal', 'double')],
+    'customer',
+)
 
 
 def _table_wrapper(name, tname=None):
     @property
     def f(self):
         return self._table_from_schema(name, tname)
+
     return f
 
 
@@ -285,21 +283,11 @@ class ExprTestCases:
             ('job', 'string'),
             ('dept_id', 'string'),
             ('year', 'int32'),
-            ('y', 'double')
+            ('y', 'double'),
         ],
-        'bar': [
-            ('x', 'double'),
-            ('job', 'string')
-        ],
-        't1': [
-            ('key1', 'string'),
-            ('key2', 'string'),
-            ('value1', 'double')
-        ],
-        't2': [
-            ('key1', 'string'),
-            ('key2', 'string')
-        ]
+        'bar': [('x', 'double'), ('job', 'string')],
+        't1': [('key1', 'string'), ('key2', 'string'), ('value1', 'double')],
+        't2': [('key1', 'string'), ('key2', 'string')],
     }
 
     def _table_from_schema(self, name, tname=None):
@@ -314,33 +302,27 @@ class ExprTestCases:
         predA = t1['foo_id'] == t2['foo_id']
         predB = t1['bar_id'] == t3['bar_id']
 
-        what = (t1.left_join(t2, [predA])
-                .inner_join(t3, [predB])
-                .projection([t1, t2['value1'], t3['value2']]))
+        what = (
+            t1.left_join(t2, [predA])
+            .inner_join(t3, [predB])
+            .projection([t1, t2['value1'], t3['value2']])
+        )
         return what
 
     def _case_join_between_joins(self):
-        t1 = api.table([
-            ('key1', 'string'),
-            ('key2', 'string'),
-            ('value1', 'double'),
-        ], 'first')
+        t1 = api.table(
+            [('key1', 'string'), ('key2', 'string'), ('value1', 'double')],
+            'first',
+        )
 
-        t2 = api.table([
-            ('key1', 'string'),
-            ('value2', 'double'),
-        ], 'second')
+        t2 = api.table([('key1', 'string'), ('value2', 'double')], 'second')
 
-        t3 = api.table([
-            ('key2', 'string'),
-            ('key3', 'string'),
-            ('value3', 'double'),
-        ], 'third')
+        t3 = api.table(
+            [('key2', 'string'), ('key3', 'string'), ('value3', 'double')],
+            'third',
+        )
 
-        t4 = api.table([
-            ('key3', 'string'),
-            ('value4', 'double')
-        ], 'fourth')
+        t4 = api.table([('key3', 'string'), ('value4', 'double')], 'fourth')
 
         left = t1.inner_join(t2, [('key1', 'key1')])[t1, t2.value2]
         right = t3.inner_join(t4, [('key3', 'key3')])[t3, t4.value4]
@@ -360,8 +342,9 @@ class ExprTestCases:
         t3 = self.con.table('tpch_customer')
 
         # GH #491
-        return (t1.inner_join(t2, t1.n_regionkey == t2.r_regionkey)
-                .inner_join(t3, t1.n_nationkey == t3.c_nationkey))
+        return t1.inner_join(t2, t1.n_regionkey == t2.r_regionkey).inner_join(
+            t3, t1.n_nationkey == t3.c_nationkey
+        )
 
     def _case_semi_anti_joins(self):
         t1 = self.con.table('star1')
@@ -383,13 +366,15 @@ class ExprTestCases:
 
     def _case_join_projection_subquery_bug(self):
         # From an observed bug, derived from tpch tables
-        geo = (nation.inner_join(region, [('n_regionkey', 'r_regionkey')])
-               [nation.n_nationkey,
-                nation.n_name.name('nation'),
-                region.r_name.name('region')])
+        geo = nation.inner_join(region, [('n_regionkey', 'r_regionkey')])[
+            nation.n_nationkey,
+            nation.n_name.name('nation'),
+            region.r_name.name('region'),
+        ]
 
-        expr = (geo.inner_join(customer, [('n_nationkey', 'c_nationkey')])
-                [customer, geo])
+        expr = geo.inner_join(customer, [('n_nationkey', 'c_nationkey')])[
+            customer, geo
+        ]
 
         return expr
 
@@ -405,9 +390,11 @@ class ExprTestCases:
         t2 = self.con.table('star2')
 
         # This also tests some cases of predicate pushdown
-        e1 = (t1.inner_join(t2, [t1.foo_id == t2.foo_id])
-              .projection([t1, t2.value1, t2.value3])
-              .filter([t1.f > 0, t2.value3 < 1000]))
+        e1 = (
+            t1.inner_join(t2, [t1.foo_id == t2.foo_id])
+            .projection([t1, t2.value1, t2.value3])
+            .filter([t1.f > 0, t2.value3 < 1000])
+        )
 
         # e2 = (t1.inner_join(t2, [t1.foo_id == t2.foo_id])
         #       .filter([t1.f > 0, t2.value3 < 1000])
@@ -434,8 +421,9 @@ class ExprTestCases:
         agged = t.aggregate([t.f.sum().name('total')], by=['g', 'a', 'b'])
         view = agged.view()
         metrics = [(agged.total - view.total).max().name('metric')]
-        expr = (agged.inner_join(view, [agged.a == view.b])
-                .aggregate(metrics, by=[agged.g]))
+        expr = agged.inner_join(view, [agged.a == view.b]).aggregate(
+            metrics, by=[agged.g]
+        )
 
         return expr
 
@@ -445,16 +433,20 @@ class ExprTestCases:
         customer = self.con.table('tpch_customer')
         orders = self.con.table('tpch_orders')
 
-        fields_of_interest = [customer,
-                              region.r_name.name('region'),
-                              orders.o_totalprice.name('amount'),
-                              orders.o_orderdate
-                              .cast('timestamp').name('odate')]
+        fields_of_interest = [
+            customer,
+            region.r_name.name('region'),
+            orders.o_totalprice.name('amount'),
+            orders.o_orderdate.cast('timestamp').name('odate'),
+        ]
 
-        tpch = (region.join(nation, region.r_regionkey == nation.n_regionkey)
-                .join(customer, customer.c_nationkey == nation.n_nationkey)
-                .join(orders, orders.o_custkey == customer.c_custkey)
-                [fields_of_interest])
+        tpch = (
+            region.join(nation, region.r_regionkey == nation.n_regionkey)
+            .join(customer, customer.c_nationkey == nation.n_nationkey)
+            .join(orders, orders.o_custkey == customer.c_custkey)[
+                fields_of_interest
+            ]
+        )
 
         # Self-reference + correlated subquery complicates things
         t2 = tpch.view()
@@ -467,14 +459,17 @@ class ExprTestCases:
         region = self.con.table('tpch_region')
         nation = self.con.table('tpch_nation')
 
-        j1 = (region.join(nation, region.r_regionkey == nation.n_regionkey)
-              [region, nation])
+        j1 = region.join(nation, region.r_regionkey == nation.n_regionkey)[
+            region, nation
+        ]
 
-        j2 = (region.join(nation, region.r_regionkey == nation.n_regionkey)
-              [region, nation].view())
+        j2 = region.join(nation, region.r_regionkey == nation.n_regionkey)[
+            region, nation
+        ].view()
 
-        expr = (j1.join(j2, j1.r_regionkey == j2.r_regionkey)
-                [j1.r_name, j2.n_name])
+        expr = j1.join(j2, j1.r_regionkey == j2.r_regionkey)[
+            j1.r_name, j2.n_name
+        ]
 
         return expr
 
@@ -501,26 +496,28 @@ class ExprTestCases:
             region.r_name.name('region'),
             nation.n_name.name('nation'),
             orders.o_totalprice.name('amount'),
-            orders.o_orderdate.cast('timestamp').name('odate')]
+            orders.o_orderdate.cast('timestamp').name('odate'),
+        ]
 
         joined_all = (
             region.join(nation, region.r_regionkey == nation.n_regionkey)
             .join(customer, customer.c_nationkey == nation.n_nationkey)
-            .join(orders, orders.o_custkey == customer.c_custkey)
-            [fields_of_interest])
+            .join(orders, orders.o_custkey == customer.c_custkey)[
+                fields_of_interest
+            ]
+        )
 
         year = joined_all.odate.year().name('year')
         total = joined_all.amount.sum().cast('double').name('total')
-        annual_amounts = (joined_all
-                          .group_by(['region', year])
-                          .aggregate(total))
+        annual_amounts = joined_all.group_by(['region', year]).aggregate(total)
 
         current = annual_amounts
         prior = annual_amounts.view()
 
         yoy_change = (current.total - prior.total).name('yoy_change')
-        yoy = (current.join(prior, current.year == (prior.year - 1))
-               [current.region, current.year, yoy_change])
+        yoy = current.join(prior, current.year == (prior.year - 1))[
+            current.region, current.year, yoy_change
+        ]
         return yoy
 
     def _case_subquery_in_filter_predicate(self):
@@ -552,13 +549,16 @@ class ExprTestCases:
     def _case_topk_operation(self):
         # TODO: top K with filter in place
 
-        table = api.table([
-            ('foo', 'string'),
-            ('bar', 'string'),
-            ('city', 'string'),
-            ('v1', 'double'),
-            ('v2', 'double'),
-        ], 'tbl')
+        table = api.table(
+            [
+                ('foo', 'string'),
+                ('bar', 'string'),
+                ('city', 'string'),
+                ('v1', 'double'),
+                ('v2', 'double'),
+            ],
+            'tbl',
+        )
 
         what = table.city.topk(10, by=table.v2.mean())
         e1 = table[what]
@@ -572,10 +572,8 @@ class ExprTestCases:
     def _case_simple_aggregate_query(self):
         t1 = self.con.table('star1')
         cases = [
-            t1.aggregate([t1['f'].sum().name('total')],
-                         [t1['foo_id']]),
-            t1.aggregate([t1['f'].sum().name('total')],
-                         ['foo_id', 'bar_id'])
+            t1.aggregate([t1['f'].sum().name('total')], [t1['foo_id']]),
+            t1.aggregate([t1['f'].sum().name('total')], ['foo_id', 'bar_id']),
         ]
 
         return cases
@@ -608,7 +606,7 @@ class ExprTestCases:
         return [
             table.sort_by('f'),
             table.sort_by(('f', 0)),
-            table.sort_by(['c', ('f', 0)])
+            table.sort_by(['c', ('f', 0)]),
         ]
 
     def _case_limit(self):
@@ -618,9 +616,8 @@ class ExprTestCases:
             star1.limit(10),
             star1.limit(10, offset=5),
             star1[star1.f > 0].limit(10),
-
             # Semantically, this should produce a subquery
-            star1.limit(10)[lambda x: x.f > 0]
+            star1.limit(10)[lambda x: x.f > 0],
         ]
 
         return cases
@@ -662,19 +659,21 @@ class ExprTestCases:
         t2 = self.con.table('star2')
 
         limited = t1.limit(100)
-        joined = (limited.inner_join(t2, [limited.foo_id == t2.foo_id])
-                  [[limited]])
+        joined = limited.inner_join(t2, [limited.foo_id == t2.foo_id])[
+            [limited]
+        ]
         return joined
 
     def _case_union(self, distinct=False):
         table = self.con.table('functional_alltypes')
 
-        t1 = (table[table.int_col > 0]
-              [table.string_col.name('key'),
-               table.float_col.cast('double').name('value')])
-        t2 = (table[table.int_col <= 0]
-                   [table.string_col.name('key'),
-                    table.double_col.name('value')])
+        t1 = table[table.int_col > 0][
+            table.string_col.name('key'),
+            table.float_col.cast('double').name('value'),
+        ]
+        t2 = table[table.int_col <= 0][
+            table.string_col.name('key'), table.double_col.name('value')
+        ]
 
         expr = t1.union(t2, distinct=distinct)
 
@@ -682,18 +681,17 @@ class ExprTestCases:
 
     def _case_simple_case(self):
         t = self.con.table('alltypes')
-        return (t.g.case()
-                .when('foo', 'bar')
-                .when('baz', 'qux')
-                .else_('default')
-                .end())
+        return (
+            t.g.case()
+            .when('foo', 'bar')
+            .when('baz', 'qux')
+            .else_('default')
+            .end()
+        )
 
     def _case_search_case(self):
         t = self.con.table('alltypes')
-        return (ibis.case()
-                .when(t.f > 0, t.d * 2)
-                .when(t.c < 0, t.a * 2)
-                .end())
+        return ibis.case().when(t.f > 0, t.d * 2).when(t.c < 0, t.a * 2).end()
 
     def _case_self_reference_in_exists(self):
         t = self.con.table('functional_alltypes')
@@ -722,27 +720,31 @@ class ExprTestCases:
         t2 = self.con.table('star2')
 
         agged = t1.aggregate([t1.f.sum().name('total')], by=['foo_id'])
-        what = (agged.inner_join(t2, [agged.foo_id == t2.foo_id])
-                [agged, t2.value1])
+        what = agged.inner_join(t2, [agged.foo_id == t2.foo_id])[
+            agged, t2.value1
+        ]
 
         return what
 
     def _case_filter_self_join_analysis_bug(self):
-        purchases = ibis.table([('region', 'string'),
-                                ('kind', 'string'),
-                                ('user', 'int64'),
-                                ('amount', 'double')], 'purchases')
+        purchases = ibis.table(
+            [
+                ('region', 'string'),
+                ('kind', 'string'),
+                ('user', 'int64'),
+                ('amount', 'double'),
+            ],
+            'purchases',
+        )
 
         metric = purchases.amount.sum().name('total')
-        agged = (purchases.group_by(['region', 'kind'])
-                 .aggregate(metric))
+        agged = purchases.group_by(['region', 'kind']).aggregate(metric)
 
         left = agged[agged.kind == 'foo']
         right = agged[agged.kind == 'bar']
 
         joined = left.join(right, left.region == right.region)
-        result = joined[left.region,
-                        (left.total - right.total).name('diff')]
+        result = joined[left.region, (left.total - right.total).name('diff')]
 
         return result, purchases
 
@@ -753,16 +755,19 @@ class ExprTestCases:
         #
         # see ibis #71 for more on this
 
-        t = ibis.table([
-            ('a', 'int8'),
-            ('b', 'int16'),
-            ('c', 'int32'),
-            ('d', 'int64'),
-            ('e', 'float'),
-            ('f', 'double'),
-            ('g', 'string'),
-            ('h', 'boolean')
-        ], 'foo')
+        t = ibis.table(
+            [
+                ('a', 'int8'),
+                ('b', 'int16'),
+                ('c', 'int32'),
+                ('d', 'int64'),
+                ('e', 'float'),
+                ('f', 'double'),
+                ('g', 'string'),
+                ('h', 'boolean'),
+            ],
+            'foo',
+        )
 
         proj = t['a', 'b', 'c']
 
@@ -779,7 +784,6 @@ class ExprTestCases:
 
 
 class TestSelectSQL(unittest.TestCase, ExprTestCases):
-
     @classmethod
     def setUpClass(cls):
         cls.con = MockConnection()
@@ -816,28 +820,36 @@ class TestSelectSQL(unittest.TestCase, ExprTestCases):
         pred = t1['foo_id'] == t2['foo_id']
         pred2 = t1['bar_id'] == t2['foo_id']
         cases = [
-            (t1.inner_join(t2, [pred])[[t1]],
-             """SELECT t0.*
+            (
+                t1.inner_join(t2, [pred])[[t1]],
+                """SELECT t0.*
 FROM star1 t0
   INNER JOIN star2 t1
-    ON t0.`foo_id` = t1.`foo_id`"""),
-            (t1.left_join(t2, [pred])[[t1]],
-             """SELECT t0.*
+    ON t0.`foo_id` = t1.`foo_id`""",
+            ),
+            (
+                t1.left_join(t2, [pred])[[t1]],
+                """SELECT t0.*
 FROM star1 t0
   LEFT OUTER JOIN star2 t1
-    ON t0.`foo_id` = t1.`foo_id`"""),
-            (t1.outer_join(t2, [pred])[[t1]],
-             """SELECT t0.*
+    ON t0.`foo_id` = t1.`foo_id`""",
+            ),
+            (
+                t1.outer_join(t2, [pred])[[t1]],
+                """SELECT t0.*
 FROM star1 t0
   FULL OUTER JOIN star2 t1
-    ON t0.`foo_id` = t1.`foo_id`"""),
+    ON t0.`foo_id` = t1.`foo_id`""",
+            ),
             # multiple predicates
-            (t1.inner_join(t2, [pred, pred2])[[t1]],
-             """SELECT t0.*
+            (
+                t1.inner_join(t2, [pred, pred2])[[t1]],
+                """SELECT t0.*
 FROM star1 t0
   INNER JOIN star2 t1
     ON (t0.`foo_id` = t1.`foo_id`) AND
-       (t0.`bar_id` = t1.`foo_id`)"""),
+       (t0.`bar_id` = t1.`foo_id`)""",
+            ),
         ]
 
         for expr, expected_sql in cases:
@@ -994,8 +1006,9 @@ WHERE (t0.`f` > 0) AND
         t1 = self.con.table('star1')
         t2 = self.con.table('star2')
 
-        joined = (t1.inner_join(t2, [t1.foo_id == t2.foo_id])
-                  [t1, (t1.f - t2.value1).name('diff')])
+        joined = t1.inner_join(t2, [t1.foo_id == t2.foo_id])[
+            t1, (t1.f - t2.value1).name('diff')
+        ]
 
         filtered = joined[joined.diff > 1]
 
@@ -1032,12 +1045,13 @@ WHERE (`a` > 0) AND
 
         table = self.con.table('functional_alltypes')
 
-        expr = (table.filter([table.timestamp_col <
-                             (ibis.timestamp('2010-01-01') +
-                                 ibis.interval(months=3)),
-                             table.timestamp_col < (ibis.now() +
-                                                    ibis.interval(days=10))])
-                .count())
+        expr = table.filter(
+            [
+                table.timestamp_col
+                < (ibis.timestamp('2010-01-01') + ibis.interval(months=3)),
+                table.timestamp_col < (ibis.now() + ibis.interval(days=10)),
+            ]
+        ).count()
 
         result = to_sql(expr)
         expected = """\
@@ -1052,9 +1066,9 @@ WHERE (`timestamp_col` < date_add(cast({} as timestamp), INTERVAL 3 MONTH)) AND
         table = self.con.table('airlines')
 
         t = table['arrdelay', 'dest']
-        expr = (t.group_by('dest')
-                .mutate(dest_avg=t.arrdelay.mean(),
-                        dev=t.arrdelay - t.arrdelay.mean()))
+        expr = t.group_by('dest').mutate(
+            dest_avg=t.arrdelay.mean(), dev=t.arrdelay - t.arrdelay.mean()
+        )
 
         tmp1 = expr[expr.dev.notnull()]
         tmp2 = tmp1.sort_by(ibis.desc('dev'))
@@ -1086,7 +1100,7 @@ FROM star1
 GROUP BY 1""",
             """SELECT `foo_id`, `bar_id`, sum(`f`) AS `total`
 FROM star1
-GROUP BY 1, 2"""
+GROUP BY 1, 2""",
         ]
 
         cases = self._case_simple_aggregate_query()
@@ -1141,14 +1155,13 @@ FROM (
         assert False
 
     def test_no_aliases_needed(self):
-        table = api.table([
-            ('key1', 'string'),
-            ('key2', 'string'),
-            ('value', 'double')
-        ])
+        table = api.table(
+            [('key1', 'string'), ('key2', 'string'), ('value', 'double')]
+        )
 
-        expr = table.aggregate([table['value'].sum().name('total')],
-                               by=['key1', 'key2'])
+        expr = table.aggregate(
+            [table['value'].sum().name('total')], by=['key1', 'key2']
+        )
 
         query = _get_query(expr)
         context = query.context
@@ -1159,15 +1172,9 @@ FROM (
         # correctness, and only makes the generated SQL nicer
         raise unittest.SkipTest
 
-        t0 = api.table([
-            ('key', 'string'),
-            ('v1', 'double')
-        ], 't1')
+        t0 = api.table([('key', 'string'), ('v1', 'double')], 't1')
 
-        t1 = api.table([
-            ('key', 'string'),
-            ('v2', 'double')
-        ], 't0')
+        t1 = api.table([('key', 'string'), ('v2', 'double')], 't0')
 
         expr = t0.join(t1, t0.key == t1.key)[t0.key, t0.v1, t1.v2]
 
@@ -1185,9 +1192,9 @@ FROM t0 t2
         t2 = self.con.table('star2')
         t3 = self.con.table('star3')
 
-        expr = (t1.left_join(t2, [t1['foo_id'] == t2['foo_id']])
-                .inner_join(t3, [t1['bar_id'] == t3['bar_id']])
-                [[t1, t2['value1'], t3['value2']]])
+        expr = t1.left_join(t2, [t1['foo_id'] == t2['foo_id']]).inner_join(
+            t3, [t1['bar_id'] == t3['bar_id']]
+        )[[t1, t2['value1'], t3['value2']]]
 
         query = _get_query(expr)
         context = query.context
@@ -1197,11 +1204,10 @@ FROM t0 t2
         assert context.get_ref(t3) == 't2'
 
     def test_fuse_projections(self):
-        table = api.table([
-            ('foo', 'int32'),
-            ('bar', 'int64'),
-            ('value', 'double')
-        ], name='tbl')
+        table = api.table(
+            [('foo', 'int32'), ('bar', 'int64'), ('value', 'double')],
+            name='tbl',
+        )
 
         # Cases where we project in both cases using the base table reference
         f1 = (table['foo'] + table['bar']).name('baz')
@@ -1266,12 +1272,9 @@ WHERE `value` > 0"""
         nation = con.table('tpch_nation')
         region = con.table('tpch_region')
 
-        joined = (
-            customer.inner_join(nation,
-                                [customer.c_nationkey == nation.n_nationkey])
-            .inner_join(region,
-                        [nation.n_regionkey == region.r_regionkey])
-        )
+        joined = customer.inner_join(
+            nation, [customer.c_nationkey == nation.n_nationkey]
+        ).inner_join(region, [nation.n_regionkey == region.r_regionkey])
         proj1 = [customer, nation.n_name, region.r_name]
         step1 = joined[proj1]
 
@@ -1373,19 +1376,23 @@ FROM (
 
     def test_double_nested_subquery_no_aliases(self):
         # We don't require any table aliasing anywhere
-        t = api.table([
-            ('key1', 'string'),
-            ('key2', 'string'),
-            ('key3', 'string'),
-            ('value', 'double')
-        ], 'foo_table')
+        t = api.table(
+            [
+                ('key1', 'string'),
+                ('key2', 'string'),
+                ('key3', 'string'),
+                ('value', 'double'),
+            ],
+            'foo_table',
+        )
 
-        agg1 = t.aggregate([t.value.sum().name('total')],
-                           by=['key1', 'key2', 'key3'])
-        agg2 = agg1.aggregate([agg1.total.sum().name('total')],
-                              by=['key1', 'key2'])
-        agg3 = agg2.aggregate([agg2.total.sum().name('total')],
-                              by=['key1'])
+        agg1 = t.aggregate(
+            [t.value.sum().name('total')], by=['key1', 'key2', 'key3']
+        )
+        agg2 = agg1.aggregate(
+            [agg1.total.sum().name('total')], by=['key1', 'key2']
+        )
+        agg3 = agg2.aggregate([agg2.total.sum().name('total')], by=['key1'])
 
         result = to_sql(agg3)
         expected = """SELECT `key1`, sum(`total`) AS `total`
@@ -1406,11 +1413,11 @@ GROUP BY 1"""
         t1 = self.con.table('star1')
         t2 = self.con.table('star2')
 
-        what = (t1.inner_join(t2, [t1.foo_id == t2.foo_id])
-                [[t1, t2.value1]])
+        what = t1.inner_join(t2, [t1.foo_id == t2.foo_id])[[t1, t2.value1]]
 
-        what = what.aggregate([what.value1.sum().name('total')],
-                              by=[what.foo_id])
+        what = what.aggregate(
+            [what.value1.sum().name('total')], by=[what.foo_id]
+        )
 
         # TODO: Not fusing the aggregation with the projection yet
         result = to_sql(what)
@@ -1650,12 +1657,11 @@ FROM tbl t0
 
     def test_topk_predicate_pushdown_bug(self):
         # Observed on TPCH data
-        cplusgeo = (
-            customer.inner_join(nation, [customer.c_nationkey ==
-                                         nation.n_nationkey])
-                    .inner_join(region, [nation.n_regionkey ==
-                                         region.r_regionkey])
-            [customer, nation.n_name, region.r_name])
+        cplusgeo = customer.inner_join(
+            nation, [customer.c_nationkey == nation.n_nationkey]
+        ).inner_join(region, [nation.n_regionkey == region.r_regionkey])[
+            customer, nation.n_name, region.r_name
+        ]
 
         pred = cplusgeo.n_name.topk(10, by=cplusgeo.c_acctbal.sum())
         expr = cplusgeo.filter([pred])
@@ -1687,9 +1693,10 @@ FROM t0
 
     def test_topk_analysis_bug(self):
         # GH #398
-        airlines = ibis.table([('dest', 'string'),
-                               ('origin', 'string'),
-                               ('arrdelay', 'int32')], 'airlines')
+        airlines = ibis.table(
+            [('dest', 'string'), ('origin', 'string'), ('arrdelay', 'int32')],
+            'airlines',
+        )
 
         dests = ['ORD', 'JFK', 'SFO']
         dests_formatted = repr(tuple(set(dests)))
@@ -1713,14 +1720,17 @@ FROM airlines t0
   ) t1
     ON t0.`dest` = t1.`dest`
 WHERE t0.`dest` IN {}
-GROUP BY 1""".format(dests_formatted)
+GROUP BY 1""".format(
+            dests_formatted
+        )
 
         assert result == expected
 
     def test_topk_to_aggregate(self):
-        t = ibis.table([('dest', 'string'),
-                        ('origin', 'string'),
-                        ('arrdelay', 'int32')], 'airlines')
+        t = ibis.table(
+            [('dest', 'string'), ('origin', 'string'), ('arrdelay', 'int32')],
+            'airlines',
+        )
 
         top = t.dest.topk(10, by=t.arrdelay.mean())
 
@@ -1740,15 +1750,17 @@ GROUP BY 1""".format(dests_formatted)
     def test_case_in_projection(self):
         t = self.con.table('alltypes')
 
-        expr = (t.g.case()
-                .when('foo', 'bar')
-                .when('baz', 'qux')
-                .else_('default').end())
+        expr = (
+            t.g.case()
+            .when('foo', 'bar')
+            .when('baz', 'qux')
+            .else_('default')
+            .end()
+        )
 
-        expr2 = (api.case()
-                 .when(t.g == 'foo', 'bar')
-                 .when(t.g == 'baz', t.g)
-                 .end())
+        expr2 = (
+            api.case().when(t.g == 'foo', 'bar').when(t.g == 'baz', t.g).end()
+        )
 
         proj = t[expr.name('col1'), expr2.name('col2'), t]
 
@@ -1768,10 +1780,7 @@ FROM alltypes"""
         assert result == expected
 
     def test_identifier_quoting(self):
-        data = api.table([
-            ('date', 'int32'),
-            ('explain', 'string')
-        ], 'table')
+        data = api.table([('date', 'int32'), ('explain', 'string')], 'table')
 
         expr = data[data.date.name('else'), data.explain.name('join')]
 
@@ -1869,15 +1878,25 @@ WHERE NOT EXISTS (
         assert result == expected
 
     def test_filter_inside_exists(self):
-        events = ibis.table([('session_id', 'int64'),
-                             ('user_id', 'int64'),
-                             ('event_type', 'int32'),
-                             ('ts', 'timestamp')], 'events')
+        events = ibis.table(
+            [
+                ('session_id', 'int64'),
+                ('user_id', 'int64'),
+                ('event_type', 'int32'),
+                ('ts', 'timestamp'),
+            ],
+            'events',
+        )
 
-        purchases = ibis.table([('item_id', 'int64'),
-                                ('user_id', 'int64'),
-                                ('price', 'double'),
-                                ('ts', 'timestamp')], 'purchases')
+        purchases = ibis.table(
+            [
+                ('item_id', 'int64'),
+                ('user_id', 'int64'),
+                ('price', 'double'),
+                ('ts', 'timestamp'),
+            ],
+            'purchases',
+        )
         filt = purchases.ts > '2015-08-15'
         cond = (events.user_id == purchases[filt].user_id).any()
         expr = events[cond]
@@ -1968,7 +1987,7 @@ FROM star1
 ORDER BY `f` DESC""",
             """SELECT *
 FROM star1
-ORDER BY `c`, `f` DESC"""
+ORDER BY `c`, `f` DESC""",
         ]
 
         for case, ex in zip(cases, expected):
@@ -1995,7 +2014,7 @@ FROM (
   FROM star1
   LIMIT 10
 ) t0
-WHERE `f` > 0"""
+WHERE `f` > 0""",
         ]
 
         for case, ex in zip(cases, expected):
@@ -2023,10 +2042,12 @@ FROM (
         # x.sort_by(...).limit(...)
         #   and will often yield different results
         t = self.con.table('functional_alltypes')
-        expr = (t.group_by('string_col')
-                .aggregate([t.count().name('nrows')])
-                .limit(5)
-                .sort_by('string_col'))
+        expr = (
+            t.group_by('string_col')
+            .aggregate([t.count().name('nrows')])
+            .limit(5)
+            .sort_by('string_col')
+        )
 
         result = to_sql(expr)
         expected = """SELECT *
@@ -2080,27 +2101,33 @@ FROM (
 
     def test_join_filtered_tables_no_pushdown(self):
         # #790, #781
-        tbl_a = ibis.table([('year', 'int32'),
-                            ('month', 'int32'),
-                            ('day', 'int32'),
-                            ('value_a', 'double')], 'a')
+        tbl_a = ibis.table(
+            [
+                ('year', 'int32'),
+                ('month', 'int32'),
+                ('day', 'int32'),
+                ('value_a', 'double'),
+            ],
+            'a',
+        )
 
-        tbl_b = ibis.table([('year', 'int32'),
-                            ('month', 'int32'),
-                            ('day', 'int32'),
-                            ('value_b', 'double')], 'b')
+        tbl_b = ibis.table(
+            [
+                ('year', 'int32'),
+                ('month', 'int32'),
+                ('day', 'int32'),
+                ('value_b', 'double'),
+            ],
+            'b',
+        )
 
-        tbl_a_filter = tbl_a.filter([
-            tbl_a.year == 2016,
-            tbl_a.month == 2,
-            tbl_a.day == 29
-        ])
+        tbl_a_filter = tbl_a.filter(
+            [tbl_a.year == 2016, tbl_a.month == 2, tbl_a.day == 29]
+        )
 
-        tbl_b_filter = tbl_b.filter([
-            tbl_b.year == 2016,
-            tbl_b.month == 2,
-            tbl_b.day == 29
-        ])
+        tbl_b_filter = tbl_b.filter(
+            [tbl_b.year == 2016, tbl_b.month == 2, tbl_b.day == 29]
+        )
 
         joined = tbl_a_filter.left_join(tbl_b_filter, ['year', 'month', 'day'])
         result = joined[tbl_a_filter.value_a, tbl_b_filter.value_b]
@@ -2142,8 +2169,8 @@ FROM (
 
         joined = left.left_join(right, ['id', 'desc'])
         joined = joined[
-            [left[name].name('left_' + name) for name in left.columns] +
-            [right[name].name('right_' + name) for name in right.columns]
+            [left[name].name('left_' + name) for name in left.columns]
+            + [right[name].name('right_' + name) for name in right.columns]
         ]
 
         result = to_sql(joined)
@@ -2167,7 +2194,6 @@ FROM (
 
 
 class TestUnions(unittest.TestCase, ExprTestCases):
-
     def setUp(self):
         self.con = MockConnection()
 
@@ -2217,7 +2243,6 @@ FROM (
 
 
 class TestDistinct(unittest.TestCase):
-
     def setUp(self):
         self.con = MockConnection()
 
@@ -2259,8 +2284,10 @@ GROUP BY 1"""
         # count-distincts in a single aggregation query. This error reporting
         # will be left to the database itself, for now.
         t = self.con.table('functional_alltypes')
-        metrics = [t.int_col.nunique().name('int_card'),
-                   t.smallint_col.nunique().name('smallint_card')]
+        metrics = [
+            t.int_col.nunique().name('int_card'),
+            t.smallint_col.nunique().name('smallint_card'),
+        ]
 
         expr = t.group_by('string_col').aggregate(metrics)
 
@@ -2275,10 +2302,12 @@ GROUP BY 1"""
 
 def test_pushdown_with_or():
     t = ibis.table(
-        [('double_col', 'double'),
-         ('string_col', 'string'),
-         ('int_col', 'int32'),
-         ('float_col', 'float')],
+        [
+            ('double_col', 'double'),
+            ('string_col', 'string'),
+            ('int_col', 'int32'),
+            ('float_col', 'float'),
+        ],
         'functional_alltypes',
     )
     subset = t[(t.double_col > 3.14) & t.string_col.contains('foo')]
@@ -2295,19 +2324,24 @@ WHERE (`double_col` > 3.14) AND
 
 def test_having_size():
     t = ibis.table(
-        [('double_col', 'double'),
-         ('string_col', 'string'),
-         ('int_col', 'int32'),
-         ('float_col', 'float')],
+        [
+            ('double_col', 'double'),
+            ('string_col', 'string'),
+            ('int_col', 'int32'),
+            ('float_col', 'float'),
+        ],
         'functional_alltypes',
     )
     expr = t.group_by(t.string_col).having(t.double_col.max() == 1).size()
     result = to_sql(expr)
-    assert result == """\
+    assert (
+        result
+        == """\
 SELECT `string_col`, count(*) AS `count`
 FROM functional_alltypes
 GROUP BY 1
 HAVING max(`double_col`) = 1"""
+    )
 
 
 def test_having_from_filter():
@@ -2422,8 +2456,7 @@ WHERE t1.`a` = (
 
 def test_table_drop_with_filter():
     left = ibis.table(
-        [('a', 'int64'), ('b', 'string'), ('c', 'timestamp')],
-        name='t',
+        [('a', 'int64'), ('b', 'string'), ('c', 'timestamp')], name='t'
     ).relabel({'c': 'C'})
     left = left.filter(left.C == datetime.datetime(2018, 1, 1))
     left = left.drop(['C'])

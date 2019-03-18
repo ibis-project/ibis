@@ -43,7 +43,7 @@ class Schema:
                     '\n{}{}'.format(name.ljust(space), str(type))
                     for name, type in zip(self.names, self.types)
                 ),
-                2
+                2,
             )
         )
 
@@ -63,9 +63,7 @@ class Schema:
         return self.types[self._name_locs[name]]
 
     def __getstate__(self):
-        return {
-            slot: getattr(self, slot) for slot in self.__class__.__slots__
-        }
+        return {slot: getattr(self, slot) for slot in self.__class__.__slots__}
 
     def __setstate__(self, instance_dict):
         for key, value in instance_dict.items():

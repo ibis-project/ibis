@@ -7,13 +7,13 @@ try:
     from pandas.api.types import (  # noqa: F401
         DatetimeTZDtype,
         CategoricalDtype,
-        infer_dtype
+        infer_dtype,
     )
 except ImportError:
     from pandas.types.dtypes import (  # noqa: F401
         DatetimeTZDtype,
         CategoricalDtype,
-        infer_dtype
+        infer_dtype,
     )
 
 try:

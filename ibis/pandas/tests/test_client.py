@@ -16,12 +16,14 @@ pytestmark = pytest.mark.pandas
 
 @pytest.fixture
 def client():
-    return ibis.pandas.connect({
-        'df': pd.DataFrame({'a': [1, 2, 3], 'b': list('abc')}),
-        'df_unknown': pd.DataFrame({
-            'array_of_strings': [['a', 'b'], [], ['c']],
-        }),
-    })
+    return ibis.pandas.connect(
+        {
+            'df': pd.DataFrame({'a': [1, 2, 3], 'b': list('abc')}),
+            'df_unknown': pd.DataFrame(
+                {'array_of_strings': [['a', 'b'], [], ['c']]}
+            ),
+        }
+    )
 
 
 @pytest.fixture
@@ -91,7 +93,7 @@ def test_drop(table):
         param('ps', marks=pytest.mark.xfail(raises=TypeError)),
         param('fs', marks=pytest.mark.xfail(raises=TypeError)),
         param('as', marks=pytest.mark.xfail(raises=TypeError)),
-    ]
+    ],
 )
 def test_datetime64_infer(client, unit):
     value = np.datetime64('2018-01-02', unit)

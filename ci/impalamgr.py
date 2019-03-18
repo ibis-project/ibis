@@ -20,8 +20,11 @@ from ibis.impala.tests.conftest import IbisTestEnv
 
 
 SCRIPT_DIR = Path(__file__).parent.absolute()
-DATA_DIR = Path(os.environ.get('IBIS_TEST_DATA_DIRECTORY',
-                               SCRIPT_DIR / 'ibis-testing-data'))
+DATA_DIR = Path(
+    os.environ.get(
+        'IBIS_TEST_DATA_DIRECTORY', SCRIPT_DIR / 'ibis-testing-data'
+    )
+)
 
 
 logger = ibis.util.get_logger('impalamgr')
@@ -41,7 +44,7 @@ def make_ibis_client(env):
         port=env.webhdfs_port,
         auth_mechanism=env.auth_mechanism,
         verify=env.auth_mechanism not in ['GSSAPI', 'LDAP'],
-        user=env.webhdfs_user
+        user=env.webhdfs_user,
     )
     auth_mechanism = env.auth_mechanism
     if auth_mechanism == 'GSSAPI' or auth_mechanism == 'LDAP':
@@ -51,7 +54,7 @@ def make_ibis_client(env):
         port=env.impala_port,
         auth_mechanism=env.auth_mechanism,
         hdfs_client=hc,
-        pool_size=16
+        pool_size=16,
     )
 
 
@@ -91,7 +94,8 @@ def can_build_udfs():
 
 def is_impala_loaded(con):
     return con.hdfs.exists(ENV.test_data_dir) and con.exists_database(
-        ENV.test_data_db)
+        ENV.test_data_db
+    )
 
 
 def is_udf_loaded(con):
@@ -113,18 +117,20 @@ def create_test_database(con):
 
     con.create_table(
         'alltypes',
-        schema=ibis.schema([
-            ('a', 'int8'),
-            ('b', 'int16'),
-            ('c', 'int32'),
-            ('d', 'int64'),
-            ('e', 'float'),
-            ('f', 'double'),
-            ('g', 'string'),
-            ('h', 'boolean'),
-            ('i', 'timestamp')
-        ]),
-        database=ENV.test_data_db
+        schema=ibis.schema(
+            [
+                ('a', 'int8'),
+                ('b', 'int16'),
+                ('c', 'int32'),
+                ('d', 'int64'),
+                ('e', 'float'),
+                ('f', 'double'),
+                ('g', 'string'),
+                ('h', 'boolean'),
+                ('i', 'timestamp'),
+            ]
+        ),
+        database=ENV.test_data_db,
     )
     logger.info('Created empty table %s.`alltypes`', ENV.test_data_db)
 
@@ -134,30 +140,42 @@ def create_parquet_tables(con, executor):
         logger.info('Creating %s', table_name)
         schema = schemas.get(table_name)
         path = os.path.join(ENV.test_data_dir, 'parquet', table_name)
-        table = con.parquet_file(path, schema=schema, name=table_name,
-                                 database=ENV.test_data_db, persist=True)
+        table = con.parquet_file(
+            path,
+            schema=schema,
+            name=table_name,
+            database=ENV.test_data_db,
+            persist=True,
+        )
         return table
 
     parquet_files = con.hdfs.ls(os.path.join(ENV.test_data_dir, 'parquet'))
     schemas = {
         'functional_alltypes': ibis.schema(
-            [('id', 'int32'),
-             ('bool_col', 'boolean'),
-             ('tinyint_col', 'int8'),
-             ('smallint_col', 'int16'),
-             ('int_col', 'int32'),
-             ('bigint_col', 'int64'),
-             ('float_col', 'float'),
-             ('double_col', 'double'),
-             ('date_string_col', 'string'),
-             ('string_col', 'string'),
-             ('timestamp_col', 'timestamp'),
-             ('year', 'int32'),
-             ('month', 'int32')]),
+            [
+                ('id', 'int32'),
+                ('bool_col', 'boolean'),
+                ('tinyint_col', 'int8'),
+                ('smallint_col', 'int16'),
+                ('int_col', 'int32'),
+                ('bigint_col', 'int64'),
+                ('float_col', 'float'),
+                ('double_col', 'double'),
+                ('date_string_col', 'string'),
+                ('string_col', 'string'),
+                ('timestamp_col', 'timestamp'),
+                ('year', 'int32'),
+                ('month', 'int32'),
+            ]
+        ),
         'tpch_region': ibis.schema(
-            [('r_regionkey', 'int16'),
-             ('r_name', 'string'),
-             ('r_comment', 'string')])}
+            [
+                ('r_regionkey', 'int16'),
+                ('r_name', 'string'),
+                ('r_comment', 'string'),
+            ]
+        ),
+    }
     return (
         executor.submit(create_table, table_name)
         for table_name in parquet_files
@@ -169,8 +187,13 @@ def create_avro_tables(con, executor):
         logger.info('Creating %s', table_name)
         schema = schemas[table_name]
         path = os.path.join(ENV.test_data_dir, 'avro', table_name)
-        table = con.avro_file(path, schema, name=table_name,
-                              database=ENV.test_data_db, persist=True)
+        table = con.avro_file(
+            path,
+            schema,
+            name=table_name,
+            database=ENV.test_data_db,
+            persist=True,
+        )
         return table
 
     avro_files = con.hdfs.ls(os.path.join(ENV.test_data_dir, 'avro'))
@@ -181,7 +204,10 @@ def create_avro_tables(con, executor):
             'fields': [
                 {'name': 'R_REGIONKEY', 'type': ['null', 'int']},
                 {'name': 'R_NAME', 'type': ['null', 'string']},
-                {'name': 'R_COMMENT', 'type': ['null', 'string']}]}}
+                {'name': 'R_COMMENT', 'type': ['null', 'string']},
+            ],
+        }
+    }
     return (
         executor.submit(create_table, table_name) for table_name in avro_files
     )
@@ -227,7 +253,7 @@ def main():
         'Path to testing data. This downloads data from Google Cloud Storage '
         'if unset'
     ),
-    default=DATA_DIR
+    default=DATA_DIR,
 )
 @click.option(
     '--overwrite', is_flag=True, help='Forces overwriting of data/UDFs'
@@ -296,9 +322,10 @@ def load_impala_data(con, data_dir, overwrite=False):
 
 @main.command()
 @click.option(
-    '--test-data', is_flag=True,
+    '--test-data',
+    is_flag=True,
     help='Cleanup Ibis test data, test database, and also the test UDFs if '
-    'they are stored in the test data directory/database'
+    'they are stored in the test data directory/database',
 )
 @click.option('--udfs', is_flag=True, help='Cleanup Ibis test UDFs only')
 @click.option(

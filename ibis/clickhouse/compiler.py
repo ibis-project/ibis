@@ -27,7 +27,6 @@ def to_sql(expr, context=None):
 
 
 class ClickhouseSelectBuilder(comp.SelectBuilder):
-
     @property
     def _select_class(self):
         return ClickhouseSelect
@@ -42,13 +41,11 @@ class ClickhouseQueryBuilder(comp.QueryBuilder):
 
 
 class ClickhouseQueryContext(comp.QueryContext):
-
     def _to_sql(self, expr, ctx):
         return to_sql(expr, context=ctx)
 
 
 class ClickhouseSelect(comp.Select):
-
     @property
     def translator(self):
         return ClickhouseExprTranslator
@@ -64,8 +61,9 @@ class ClickhouseSelect(comp.Select):
 
         lines = []
         if len(self.group_by) > 0:
-            columns = ['`{0}`'.format(expr.get_name())
-                       for expr in self.group_by]
+            columns = [
+                '`{0}`'.format(expr.get_name()) for expr in self.group_by
+            ]
             clause = 'GROUP BY {0}'.format(', '.join(columns))
             lines.append(clause)
 
@@ -98,7 +96,7 @@ class ClickhouseTableSetFormatter(comp.TableSetFormatter):
         ops.InnerJoin: 'ALL INNER JOIN',
         ops.LeftJoin: 'ALL LEFT JOIN',
         ops.AnyInnerJoin: 'ANY INNER JOIN',
-        ops.AnyLeftJoin: 'ANY LEFT JOIN'
+        ops.AnyLeftJoin: 'ANY LEFT JOIN',
     }
 
     def get_result(self):
@@ -115,16 +113,18 @@ class ClickhouseTableSetFormatter(comp.TableSetFormatter):
         # TODO: Now actually format the things
         buf = StringIO()
         buf.write(self.join_tables[0])
-        for jtype, table, preds in zip(self.join_types, self.join_tables[1:],
-                                       self.join_predicates):
+        for jtype, table, preds in zip(
+            self.join_types, self.join_tables[1:], self.join_predicates
+        ):
             buf.write('\n')
             buf.write(util.indent('{0} {1}'.format(jtype, table), self.indent))
 
             if len(preds):
                 buf.write('\n')
                 fmt_preds = map(self._format_predicate, preds)
-                fmt_preds = util.indent('USING ' + ', '.join(fmt_preds),
-                                        self.indent * 2)
+                fmt_preds = util.indent(
+                    'USING ' + ', '.join(fmt_preds), self.indent * 2
+                )
                 buf.write(fmt_preds)
 
         return buf.getvalue()
@@ -133,13 +133,15 @@ class ClickhouseTableSetFormatter(comp.TableSetFormatter):
         for pred in predicates:
             op = pred.op()
             if not isinstance(op, ops.Equals):
-                raise com.TranslationError('Non-equality join predicates are '
-                                           'not supported')
+                raise com.TranslationError(
+                    'Non-equality join predicates are ' 'not supported'
+                )
 
             left_on, right_on = op.args
             if left_on.get_name() != right_on.get_name():
-                raise com.TranslationError('Joining on different column names '
-                                           'is not supported')
+                raise com.TranslationError(
+                    'Joining on different column names ' 'is not supported'
+                )
 
     def _format_predicate(self, predicate):
         column = predicate.op().args[0]
@@ -155,8 +157,7 @@ class ClickhouseExprTranslator(comp.ExprTranslator):
     context_class = ClickhouseQueryContext
 
     def name(self, translated, name, force=True):
-        return _name_expr(translated,
-                          quote_identifier(name, force=force))
+        return _name_expr(translated, quote_identifier(name, force=force))
 
 
 class ClickhouseDialect(comp.Dialect):

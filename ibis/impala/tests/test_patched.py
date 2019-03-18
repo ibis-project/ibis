@@ -53,11 +53,11 @@ def test_describe_formatted(con, test_data_db):
     t = con.table('functional_alltypes')
     with patch_execute(con) as ex_mock:
         desc = t.describe_formatted()
-        ex_mock.assert_called_with('DESCRIBE FORMATTED '
-                                   '{0}.`{1}`'
-                                   .format(test_data_db,
-                                           'functional_alltypes'),
-                                   results=True)
+        ex_mock.assert_called_with(
+            'DESCRIBE FORMATTED '
+            '{0}.`{1}`'.format(test_data_db, 'functional_alltypes'),
+            results=True,
+        )
         assert isinstance(desc, TableMetadata)
 
 
@@ -66,8 +66,9 @@ def test_show_files(con, test_data_db):
     qualified_name = '{0}.`{1}`'.format(test_data_db, 'functional_alltypes')
     with patch_execute(con) as ex_mock:
         desc = t.files()
-        ex_mock.assert_called_with('SHOW FILES IN {0}'.format(qualified_name),
-                                   results=True)
+        ex_mock.assert_called_with(
+            'SHOW FILES IN {0}'.format(qualified_name), results=True
+        )
         assert isinstance(desc, pd.DataFrame)
 
 
@@ -77,14 +78,14 @@ def test_table_column_stats(con, test_data_db):
     qualified_name = '{0}.`{1}`'.format(test_data_db, 'functional_alltypes')
     with patch_execute(con) as ex_mock:
         desc = t.stats()
-        ex_mock.assert_called_with('SHOW TABLE STATS {0}'
-                                   .format(qualified_name),
-                                   results=True)
+        ex_mock.assert_called_with(
+            'SHOW TABLE STATS {0}'.format(qualified_name), results=True
+        )
         assert isinstance(desc, pd.DataFrame)
 
     with patch_execute(con) as ex_mock:
         desc = t.column_stats()
-        ex_mock.assert_called_with('SHOW COLUMN STATS {0}'
-                                   .format(qualified_name),
-                                   results=True)
+        ex_mock.assert_called_with(
+            'SHOW COLUMN STATS {0}'.format(qualified_name), results=True
+        )
         assert isinstance(desc, pd.DataFrame)

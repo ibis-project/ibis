@@ -71,8 +71,7 @@ def test_find_Compare():
     found = find_names(expr)
     assert len(found) == 6
     assert eq(
-        found,
-        [var('a'), var('b'), var('c'), var('e'), var('f'), var('gh')]
+        found, [var('a'), var('b'), var('c'), var('e'), var('f'), var('gh')]
     )
 
 
