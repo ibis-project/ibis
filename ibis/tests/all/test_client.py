@@ -1,9 +1,10 @@
+from pkg_resources import parse_version
+
 import pytest
 
 import ibis
 import ibis.tests.util as tu
 import ibis.expr.datatypes as dt
-from pkg_resources import parse_version
 
 
 @tu.skipif_unsupported
@@ -38,3 +39,22 @@ def test_query_schema(backend, con, alltypes, expr_fn, expected):
     expected = ibis.schema([(name, dtype(nullable=schema[name].nullable))
                             for name, dtype in expected])
     assert query.schema().equals(expected)
+
+
+@pytest.mark.parametrize('field', [
+    'bool_col', 'tinyint_col', 'smallint_col',
+    'int_col', 'bigint_col', 'float_col', 'double_col',
+    'date_string_col', 'string_col', 'timestamp_col'
+])
+@tu.skipif_unsupported
+def test_sql(backend, con, alltypes, field):
+
+    if (
+        not hasattr(backend, 'sql')
+        or not hasattr(backend, '_get_schema_using_query')
+    ):
+        pytest.skip('Backend {} does not support sql method'.format(backend))
+
+    result = con.sql(alltypes.compile())
+    assert hasattr(result, field)
+    assert hasattr(alltypes, field)
