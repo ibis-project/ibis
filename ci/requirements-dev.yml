@@ -17,7 +17,7 @@ plumbum
 pre_commit
 psycopg2
 pyarrow>=0.12
-pymapd>=0.8
+pymapd>=0.8.2
 pymysql
 pytables
 pytest

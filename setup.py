@@ -23,7 +23,7 @@ impala_requires = [
 sqlite_requires = ['sqlalchemy']
 postgres_requires = sqlite_requires + ['psycopg2']
 mysql_requires = sqlite_requires + ['pymysql']
-mapd_requires = ['pymapd']
+mapd_requires = ['pymapd>=0.8.2']
 kerberos_requires = ['requests-kerberos']
 visualization_requires = ['graphviz']
 clickhouse_requires = ['clickhouse-driver>=0.0.8', 'clickhouse-cityhash']

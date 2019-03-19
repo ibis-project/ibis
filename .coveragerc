@@ -10,5 +10,6 @@ exclude_lines =
     if __name__ == .__main__.:
 ignore_errors = True
 omit =
-    _version.py
-    tests/*
+    *_version.py
+    *tests*
+    *__init__*

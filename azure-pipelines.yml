@@ -7,19 +7,40 @@ jobs:
     matrix:
       py36:
         python.version: "3.6"
+        conda.env: "ibis_3.6"
       py37:
         python.version: "3.7"
+        conda.env: "ibis_3.7"
   steps:
-    - task: CondaEnvironment@1
+    - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
+      displayName: Add conda to PATH
+
+    - script: |
+        conda config --set always_yes True --set show_channel_urls True
+        conda config --add channels conda-forge
+      displayName: 'Set conda configuration'
+
+    - script: conda update --all
+      displayName: 'Update conda'
+
+    - script: conda create --name $(conda.env) python=$(python.version) numpy pandas pytables ruamel.yaml jinja2 pyarrow multipledispatch pymysql sqlalchemy psycopg2 graphviz click mock plumbum flake8 pytest-xdist
       displayName: 'Create conda environment'
-      inputs:
-        createCustomEnvironment: True
-        environmentName: "ibis_$(python.version)"
-        packageSpecs: pytables numpy pandas ruamel.yaml jinja2 pyarrow multipledispatch pymysql sqlalchemy psycopg2 graphviz click mock plumbum flake8 pytest-xdist
-        installOptions: --channel conda-forge
-        createOptions: python="$(python.version)" --channel conda-forge
-        cleanEnvironment: True
-        updateConda: False
+
+    - script: conda info
+      displayName: 'Show conda info'
+
+    - script: conda list --name $(conda.env)
+      displayName: 'Show installed packages'
+
+    - script: |
+        call activate $(conda.env)
+        python -c "import numpy; import pandas"
+      displayName: 'Import numpy and pandas'
+
+    - script: |
+        call activate $(conda.env)
+        flake8
+      displayName: 'Lint'
 
     - script: choco install -y mariadb --version=10.3.11
       displayName: 'Install mariadb (mysql) from chocolatey'
@@ -33,31 +54,39 @@ jobs:
     - script: choco install -y postgresql10 --params '/Password:postgres'
       displayName: 'Install postgres from chocolatey'
 
-    - script: flake8
-      displayName: 'Lint'
-
-    - script: python setup.py develop
+    - script: |
+        call activate $(conda.env)
+        python setup.py develop
       displayName: 'Install ibis'
 
-    - script: conda list
-      displayName: 'Show installed packages'
-
-    - script: python ci/datamgr.py download
+    - script: |
+        call activate $(conda.env)
+        python ci/datamgr.py download
       displayName: 'Download data'
 
-    - script: python ci/datamgr.py mysql
+    - script: |
+        call activate $(conda.env)
+        python ci/datamgr.py mysql
       displayName: 'Load MySQL data'
 
-    - script: 'python ci/datamgr.py postgres --psql-path="C:/Program Files/PostgreSQL/10/bin/psql.exe"'
+    - script: |
+        call activate $(conda.env)
+        python ci/datamgr.py postgres --psql-path="C:/Program Files/PostgreSQL/10/bin/psql.exe"
       displayName: 'Load PostgreSQL data'
 
-    - script: python ci/datamgr.py sqlite
+    - script: |
+        call activate $(conda.env)
+        python ci/datamgr.py sqlite
       displayName: 'Load SQLite data'
 
-    - script: python ci/datamgr.py parquet -i
+    - script: |
+        call activate $(conda.env)
+        python ci/datamgr.py parquet -i
       displayName: 'Load Parquet data'
 
-    - script: pytest --tb=short --junitxml=junit-$(python.version).xml -n auto -m "not backend and not clickhouse and not impala and not hdfs and not bigquery and not mapd and not mysql" -ra ibis
+    - script: |
+        call activate $(conda.env)
+        pytest --tb=short --junitxml="junit-$(python.version).xml" -n auto -m "not backend and not clickhouse and not impala and not hdfs and not bigquery and not mapd and not mysql" -ra ibis
       displayName: 'Run tests'
 
     # publish test results
@@ -69,44 +98,62 @@ jobs:
         mergeTestResults: False
       condition: succeededOrFailed()  # pass or fail, but not cancelled
 
-# - job: WindowsCondaBuild
-#   pool:
-#     vmImage: 'VS2017-Win2016'
-#   strategy:
-#     maxParallel: 3
-#     matrix:
-#       py36:
-#         python.version: "3.6"
-#       py37:
-#         python.version: "3.7"
-#   steps:
-#     - task: CondaEnvironment@1
-#       displayName: 'Create conda-build environment'
-#       inputs:
-#         createCustomEnvironment: False
-#         packageSpecs: conda-build click jinja2 ruamel.yaml plumbum
-#         installOptions: --channel conda-forge --override-channels
-#         updateConda: False
-#
-#     - script: python setup.py develop
-#       displayName: 'Install ibis'
-#
-#     - script: python ci/feedstock.py clone
-#       displayName: 'Clone conda-forge recipe'
-#
-#     - script: python ci/feedstock.py update
-#       displayName: 'Update conda-forge recipe'
-#
-#     - script: python ci/feedstock.py build --python=$(python.version)
-#       displayName: 'Build conda package from conda-forge recipe'
-#
-#     - script: python ci/feedstock.py deploy C:/Miniconda/conda-bld conda win-64
-#       displayName: 'Copy conda package to artifact directory'
-#
-#     # publish sdist and wheel and conda package
-#     - task: PublishBuildArtifacts@1
-#       displayName: 'Publish conda package to Azure'
-#       inputs:
-#         pathToPublish: conda
-#         artifactName: conda
-#       condition: and(succeeded(), eq(variables['System.PullRequest.IsFork'], 'False'))
+#- job: WindowsCondaBuild
+  #pool:
+    #vmImage: 'VS2017-Win2016'
+  #strategy:
+    #maxParallel: 3
+    #matrix:
+      #py36:
+        #python.version: "3.6"
+      #py37:
+        #python.version: "3.7"
+  #steps:
+    #- powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
+      #displayName: Add conda to PATH
+
+    #- script: |
+        #conda config --set always_yes True
+        #conda update --all
+        #conda config --add channels conda-forge
+        #conda config --set show_channel_urls True
+        #conda create --quiet --name "ibis_build_$(python.version)" python=$(python.version)
+      #displayName: Create Anaconda environment
+
+    #- script: |
+        #call activate "ibis_build_$(python.version)"
+        #conda install python=$(python.version) conda-build click jinja2 ruamel.yaml plumbum
+      #displayName: Install dependencies
+
+    #- script: |
+        #call activate "ibis_build_$(python.version)"
+        #python setup.py develop
+      #displayName: 'Install ibis'
+
+    #- script: |
+        #call activate "ibis_build_$(python.version)"
+        #python ci/feedstock.py clone
+      #displayName: 'Clone conda-forge recipe'
+
+    #- script: |
+        #call activate "ibis_build_$(python.version)"
+        #python ci/feedstock.py update
+      #displayName: 'Update conda-forge recipe'
+
+    #- script: |
+        #call activate "ibis_build_$(python.version)"
+        #python ci/feedstock.py build --python=$(python.version)
+      #displayName: 'Build conda package from conda-forge recipe'
+
+    #- script: |
+        #call activate "ibis_build_$(python.version)"
+        #python ci/feedstock.py deploy C:/Miniconda/envs/ibis_build_$(python.version)/conda-bld conda win-64
+      #displayName: 'Copy conda package to artifact directory'
+
+    ## publish sdist and wheel and conda package
+    #- task: PublishBuildArtifacts@1
+      #displayName: 'Publish conda package to Azure'
+      #inputs:
+        #pathToPublish: conda
+        #artifactName: conda
+      #condition: and(succeeded(), eq(variables['System.PullRequest.IsFork'], 'False'))
