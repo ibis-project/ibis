@@ -118,7 +118,7 @@ timestamp_types = pd.Timestamp, datetime.datetime, np.datetime64
 timedelta_types = pd.Timedelta, datetime.timedelta, np.timedelta64
 temporal_types = date_types + time_types + timestamp_types + timedelta_types
 scalar_types = fixed_width_types + temporal_types
-simple_types = scalar_types + (str,)
+simple_types = scalar_types + (str, type(None))
 
 _VALID_INPUT_TYPES = (
     ibis.client.Client, ir.Expr, dt.DataType, type(None), win.Window, tuple

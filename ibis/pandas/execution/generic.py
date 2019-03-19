@@ -856,45 +856,45 @@ def execute_node_log_number_number(op, value, base, **kwargs):
     return math.log(value, base)
 
 
-@execute_node.register(ops.IfNull, pd.Series, scalar_types + (type(None),))
+@execute_node.register(ops.IfNull, pd.Series, simple_types)
 @execute_node.register(ops.IfNull, pd.Series, pd.Series)
 def execute_node_ifnull_series(op, value, replacement, **kwargs):
     return value.fillna(replacement)
 
 
-@execute_node.register(ops.IfNull, scalar_types + (type(None),), pd.Series)
+@execute_node.register(ops.IfNull, simple_types, pd.Series)
 def execute_node_ifnull_scalar_series(op, value, replacement, **kwargs):
     return (
+        replacement if pd.isnull(value) else
         pd.Series(value, index=replacement.index)
-        if pd.notnull(value) else replacement
     )
 
 
-@execute_node.register(
-    ops.IfNull, scalar_types + (type(None),), scalar_types + (type(None),))
+@execute_node.register(ops.IfNull, simple_types, simple_types)
 def execute_node_if_scalars(op, value, replacement, **kwargs):
     return replacement if pd.isnull(value) else value
 
 
-@execute_node.register(ops.NullIf, bool, scalar_types + (type(None),))
-def execute_node_nullif_scalars(op, condition, value, **kwargs):
-    return np.nan if condition else value
+@execute_node.register(ops.NullIf, simple_types, simple_types)
+def execute_node_nullif_scalars(op, value1, value2, **kwargs):
+    return np.nan if value1 == value2 else value1
 
 
 @execute_node.register(ops.NullIf, pd.Series, pd.Series)
-def execute_node_nullif_series(op, condition, series, **kwargs):
-    return pd.Series(np.where(condition.values, np.nan, series.values))
+def execute_node_nullif_series(op, series1, series2, **kwargs):
+    return series1.where(series1 != series2)
 
 
-@execute_node.register(ops.NullIf, pd.Series, scalar_types + (type(None),))
-def execute_node_nullif_series_scalar(op, condition, value, **kwargs):
-    values = np.repeat(value, len(condition))
-    return pd.Series(np.where(condition.values, np.nan, values))
+@execute_node.register(ops.NullIf, pd.Series, simple_types)
+def execute_node_nullif_series_scalar(op, series, value, **kwargs):
+    return series.where(series != value)
 
 
-@execute_node.register(ops.NullIf, bool, pd.Series)
-def execute_node_nullif_scalar_series(op, condition, value, **kwargs):
-    return pd.Series([None], index=value.index) if condition else value
+@execute_node.register(ops.NullIf, simple_types, pd.Series)
+def execute_node_nullif_scalar_series(op, value, series, **kwargs):
+    return pd.Series(
+        np.where(series.values == value, np.nan, value), index=series.index
+    )
 
 
 def coalesce(values):
