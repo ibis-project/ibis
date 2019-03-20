@@ -55,7 +55,7 @@ class MapDDataType:
         'DECIMAL': dt.Decimal(18, 9),
         'DOUBLE': dt.double,
         'FLOAT': dt.float32,
-        'INTEGER': dt.int32,
+        'INT': dt.int32,
         'LINESTRING': dt.linestring,
         'MULTIPOLYGON': dt.multipolygon,
         'NULL': dt.Null,
