@@ -14,6 +14,7 @@ import ibis
 import ibis.expr.operations as ops
 
 from ibis.impala.tests.conftest import IbisTestEnv as ImpalaEnv
+from ibis.bigquery.tests.conftest import connect as bigquery_connect
 
 
 class RoundAwayFromZero:
@@ -330,8 +331,6 @@ class BigQuery(UnorderedComparator, Backend, RoundAwayFromZero):
     returned_timestamp_unit = 'us'
 
     def connect(self, data_directory):
-        ga = pytest.importorskip('google.auth')
-
         project_id = os.environ.get('GOOGLE_BIGQUERY_PROJECT_ID')
         if project_id is None:
             pytest.skip('Environment variable GOOGLE_BIGQUERY_PROJECT_ID '
@@ -339,12 +338,7 @@ class BigQuery(UnorderedComparator, Backend, RoundAwayFromZero):
         elif not project_id:
             pytest.skip('Environment variable GOOGLE_BIGQUERY_PROJECT_ID '
                         'is empty')
-
-        dataset_id = 'testing'
-        try:
-            return ibis.bigquery.connect(project_id, dataset_id)
-        except ga.exceptions.DefaultCredentialsError:
-            pytest.skip('no bigquery credentials found')
+        return bigquery_connect(project_id, dataset_id='testing')
 
 
 class Impala(UnorderedComparator, Backend, RoundAwayFromZero):

@@ -9,11 +9,9 @@ ARG PYTHON
 ADD ci/requirements-dev.yml /
 
 RUN conda config --add channels conda-forge \
- && conda update --all -y -q \
- && conda install -q -y \
-        --file /requirements-dev.yml \
-        python=$PYTHON \
- && conda clean --all -y \
+ && conda update --all --yes --quiet \
+ && conda install --yes --quiet --file /requirements-dev.yml python=$PYTHON conda-build \
+ && conda clean --all --yes \
  && pip install pydata-google-auth
 
 COPY . /ibis
