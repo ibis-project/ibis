@@ -63,7 +63,7 @@ class MapDDataType:
         'POINT': dt.point,
         'POLYGON': dt.polygon,
         'SMALLINT': dt.int16,
-        'TEXT': dt.string,
+        'STR': dt.string,
         'TIME': dt.time,
         'TIMESTAMP': dt.timestamp,
         'TINYINT': dt.int8,
