@@ -14,6 +14,9 @@ pytest.importorskip('google.cloud.bigquery')
 
 pytestmark = pytest.mark.bigquery
 
+from ibis.bigquery.tests.conftest import (
+    connect as bigquery_connect
+)  # noqa: E402
 from ibis.bigquery import udf  # noqa: E402
 
 PROJECT_ID = os.environ.get('GOOGLE_BIGQUERY_PROJECT_ID', 'ibis-gbq')
@@ -22,12 +25,7 @@ DATASET_ID = 'testing'
 
 @pytest.fixture(scope='module')
 def client():
-    ga = pytest.importorskip('google.auth')
-
-    try:
-        return ibis.bigquery.connect(PROJECT_ID, DATASET_ID)
-    except ga.exceptions.DefaultCredentialsError:
-        pytest.skip("no credentials found, skipping")
+    return bigquery_connect(PROJECT_ID, DATASET_ID)
 
 
 @pytest.fixture(scope='module')

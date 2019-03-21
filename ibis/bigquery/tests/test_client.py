@@ -19,22 +19,14 @@ bq = pytest.importorskip('google.cloud.bigquery')
 ga = pytest.importorskip('google.auth')
 exceptions = pytest.importorskip('google.api_core.exceptions')
 
-
+from ibis.bigquery.tests.conftest import (
+    connect as bigquery_connect
+)  # noqa: E402
 from ibis.bigquery.client import bigquery_param  # noqa: E402
 
 
 def test_table(alltypes):
     assert isinstance(alltypes, ir.TableExpr)
-
-
-def test_client_credentials(client, client_no_credentials):
-    alltypes_default = client.table('functional_alltypes')
-    alltypes_no_credentials = client_no_credentials.table(
-        'functional_alltypes'
-    )
-    result = alltypes_default.limit(50).execute()
-    result_no_credentials = alltypes_no_credentials.limit(50).execute()
-    tm.assert_frame_equal(result, result_no_credentials)
 
 
 def test_column_execute(alltypes, df):
@@ -517,14 +509,9 @@ def test_exists_database_different_project(client, name, expected):
 
 
 def test_repeated_project_name(project_id):
-    ga = pytest.importorskip('google.auth')
-
-    try:
-        con = ibis.bigquery.connect(
-            project_id=project_id, dataset_id='{}.testing'.format(project_id))
-    except ga.exceptions.DefaultCredentialsError:
-        pytest.skip("no credentials found, skipping")
-
+    con = bigquery_connect(
+        project_id, dataset_id='{}.testing'.format(project_id)
+    )
     assert 'functional_alltypes' in con.list_tables()
 
 
@@ -710,6 +697,6 @@ def test_approx_median(alltypes):
 
 
 def test_client_without_dataset(project_id):
-    con = ibis.bigquery.connect(project_id)
+    con = bigquery_connect(project_id, dataset_id=None)
     with pytest.raises(ValueError, match="Unable to determine BigQuery"):
         con.list_tables()
