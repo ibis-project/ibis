@@ -50,7 +50,7 @@ class MapDDataType:
     # https://www.mapd.com/docs/latest/mapd-core-guide/fixed-encoding/
     dtypes = {
         'BIGINT': dt.int64,
-        'BOOLEAN': dt.Boolean,
+        'BOOL': dt.Boolean,
         'DATE': dt.date,
         'DECIMAL': dt.Decimal(18, 9),
         'DOUBLE': dt.double,
