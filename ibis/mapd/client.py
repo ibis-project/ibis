@@ -50,28 +50,23 @@ class MapDDataType:
     # https://www.mapd.com/docs/latest/mapd-core-guide/fixed-encoding/
     dtypes = {
         'BIGINT': dt.int64,
-        'BOOLEAN': dt.Boolean,
         'BOOL': dt.Boolean,
-        'CHAR': dt.string,
         'DATE': dt.date,
-        'DECIMAL': dt.float64,
-        'DOUBLE': dt.float64,
-        'INT': dt.int32,
-        'INTEGER': dt.int32,
+        'DECIMAL': dt.Decimal(18, 9),
+        'DOUBLE': dt.double,
         'FLOAT': dt.float32,
+        'INT': dt.int32,
+        'LINESTRING': dt.linestring,
+        'MULTIPOLYGON': dt.multipolygon,
         'NULL': dt.Null,
-        'NUMERIC': dt.float64,
-        'REAL': dt.float32,
+        'NUMERIC': dt.Decimal(18, 9),
+        'POINT': dt.point,
+        'POLYGON': dt.polygon,
         'SMALLINT': dt.int16,
         'STR': dt.string,
-        'TEXT': dt.string,
         'TIME': dt.time,
         'TIMESTAMP': dt.timestamp,
-        'VARCHAR': dt.string,
-        'POINT': dt.point,
-        'LINESTRING': dt.linestring,
-        'POLYGON':  dt.polygon,
-        'MULTIPOLYGON': dt.multipolygon
+        'TINYINT': dt.int8,
     }
 
     ibis_dtypes = {
