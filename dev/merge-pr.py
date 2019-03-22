@@ -76,16 +76,20 @@ def merge_pr(
 
     commit_message = "\n".join(merge_message_pieces)
     click.echo(commit_message)
-    # resp = requests.put(
-    # f"{GITHUB_API_BASE}/pulls/{pr_num:d}/merge",
-    # params=dict(
-    # commit_title=commit_title,
-    # commit_message=commit_message,
-    # merge_method=merge_method,
-    # ),
-    # )
-    # resp.raise_for_status()
-    # click.echo(f"Pull request #{pr_num:d} merged!")
+    resp = requests.put(
+        f"{GITHUB_API_BASE}/pulls/{pr_num:d}/merge",
+        data=dict(
+            commit_title=commit_title,
+            commit_message=commit_message,
+            merge_method=merge_method,
+        ),
+    )
+    resp.raise_for_status()
+    if resp.status_code == 200:
+        resp_json = resp.json()
+        merged = resp_json["merged"]
+        assert merged is True, merged
+        click.echo(f"Pull request #{pr_num:d} successfully merged.")
 
 
 @click.command()
