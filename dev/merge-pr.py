@@ -86,7 +86,6 @@ def merge_pr(
             merge_method=merge_method,
         ),
         headers={'Authorization': 'token {}'.format(password)}
-        # auth=HTTPBasicAuth(github_user, password),
     )
     resp.raise_for_status()
     if resp.status_code == 200:
