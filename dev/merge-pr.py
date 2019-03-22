@@ -76,7 +76,11 @@ def merge_pr(
     )
     merge_message_pieces += commits
 
-    commit_message = "\n".join(merge_message_pieces)
+    commit_message = (
+        "\n".join(merge_message_pieces)
+        .encode("unicode_escape")
+        .decode("UTF-8")
+    )
     # PUT /repos/:owner/:repo/pulls/:number/merge
     resp = requests.put(
         f"{GITHUB_API_BASE}/pulls/{pr_num:d}/merge",
@@ -85,7 +89,7 @@ def merge_pr(
             commit_message=commit_message,
             merge_method=merge_method,
         ),
-        headers={'Authorization': 'token {}'.format(password)}
+        auth=(github_user, password),
     )
     resp.raise_for_status()
     if resp.status_code == 200:
