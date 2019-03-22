@@ -4,6 +4,7 @@ import pandas as pd
 import pymapd
 
 from pymapd.cursor import Cursor
+from pymapd._parsers import _extract_column_details
 
 try:
     from cudf.dataframe.dataframe import DataFrame as GPUDataFrame
@@ -12,6 +13,7 @@ except ImportError:
 
 import ibis.common as com
 import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 
@@ -71,6 +73,31 @@ class MapDDataType:
 
     ibis_dtypes = {
         v: k for k, v in dtypes.items()
+    }
+
+    _mapd_to_ibis_dtypes = {
+        'BIGINT': 'int64',
+        'BOOLEAN': 'Boolean',
+        'BOOL': 'Boolean',
+        'CHAR': 'string',
+        'DATE': 'date',
+        'DECIMAL': 'decimal',
+        'DOUBLE': 'double',
+        'INT': 'int32',
+        'INTEGER': 'int32',
+        'FLOAT': 'float32',
+        'NUMERIC': 'float64',
+        'REAL': 'float32',
+        'SMALLINT': 'int16',
+        'STR': 'string',
+        'TEXT': 'string',
+        'TIME': 'time',
+        'TIMESTAMP': 'timestamp',
+        'VARCHAR': 'string',
+        'POINT': 'point',
+        'LINESTRING': 'linestring',
+        'POLYGON': 'polygon',
+        'MULTIPOLYGON': 'multipolygon'
     }
 
     def __init__(self, typename, nullable=True):
@@ -355,6 +382,14 @@ class MapDClient(SQLClient):
         """Close MapD connection and drop any temporary objects"""
         self.con.close()
 
+    def _adapt_types(self, descr):
+        names = []
+        adapted_types = []
+        for col in descr:
+            names.append(col.name)
+            adapted_types.append(MapDDataType._mapd_to_ibis_dtypes[col.type])
+        return names, adapted_types
+
     def _build_ast(self, expr, context):
         """
         Required.
@@ -369,6 +404,18 @@ class MapDClient(SQLClient):
     def _fully_qualified_name(self, name, database):
         # MapD raises error sometimes with qualified names
         return name
+
+    def _get_schema_using_query(self, query):
+        with self._execute(query, results=True) as result:
+            # resets the state of the cursor and closes operation
+            result.cursor.fetchall()
+            names, ibis_types = self._adapt_types(
+                _extract_column_details(
+                    result.cursor._result.row_set.row_desc
+                )
+            )
+
+        return sch.Schema(names, ibis_types)
 
     def _get_table_schema(self, table_name, database=None):
         """
@@ -760,6 +807,23 @@ class MapDClient(SQLClient):
             (col.name, MapDDataType.parse(col.type))
             for col in self.con.get_table_details(table_name)
         ])
+
+    def sql(self, query):
+        """
+        Convert a SQL query to an Ibis table expression
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        table : TableExpr
+        """
+        # Get the schema by adding a LIMIT 0 on to the end of the query. If
+        # there is already a limit in the query, we find and remove it
+        limited_query = 'SELECT * FROM ({}) t0 LIMIT 1'.format(query)
+        schema = self._get_schema_using_query(limited_query)
+        return ops.SQLQueryResult(query, schema, self).to_expr()
 
     @property
     def version(self):
