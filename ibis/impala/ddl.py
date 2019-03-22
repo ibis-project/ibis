@@ -75,8 +75,8 @@ def _sanitize_format(format):
         return
     format = format.upper()
     format = _format_aliases.get(format, format)
-    if format not in ('PARQUET', 'AVRO', 'TEXTFILE'):
-        raise ValueError('Invalid format: {!r}'.format(format))
+    if format not in ('PARQUET', 'AVRO', 'TEXTFILE', 'KUDU'):
+        raise ValueError('Invalid format: {0}'.format(format))
 
     return format
 
@@ -139,17 +139,12 @@ class CreateTable(CreateDDL):
         return "LOCATION '{}'".format(self.path) if self.path else None
 
     def _storage(self):
-        # By the time we're here, we have a valid format
-        return 'STORED AS {}'.format(self.format)
-
-    @property
-    def pieces(self):
-        yield self._create_line()
-        for piece in filter(None, self._pieces):
-            yield piece
-
-    def compile(self):
-        return '\n'.join(self.pieces)
+        storage_lines = {
+            'PARQUET': '\nSTORED AS PARQUET',
+            'AVRO': '\nSTORED AS AVRO',
+            'KUDU': '\nSTORED AS KUDU',
+        }
+        return storage_lines[self.format]
 
 
 class CTAS(CreateTable):
@@ -233,18 +228,36 @@ class CreateTableParquet(CreateTable):
 
 class CreateTableWithSchema(CreateTable):
 
-    def __init__(self, table_name, schema, table_format=None, **kwargs):
-        super(CreateTableWithSchema, self).__init__(table_name, **kwargs)
+    def __init__(self, table_name, schema, table_format=None,
+                 replicas=None, primary_key=None, **kwargs):
         self.schema = schema
         self.table_format = table_format
+        self.replicas = replicas
+        self.primary_key = primary_key
 
-    @property
-    def _pieces(self):
+        CreateTable.__init__(self, table_name, **kwargs)
+
+    def compile(self):
+        from ibis.expr.api import Schema
+
+        buf = StringIO()
+        buf.write(self._create_line())
+
+        def _push_schema(x, suffix=''):
+            formatted = format_schema(x, suffix=suffix)
+            buf.write('{0}'.format(formatted))
+
         if self.partition is not None:
             main_schema = self.schema
             part_schema = self.partition
-            if not isinstance(part_schema, sch.Schema):
-                part_schema = sch.Schema(
+            if self.primary_key:
+                pk_schema = '\nPRIMARY KEY ({})'.format(
+                    ','.join(self.primary_key))
+            else:
+                pk_schema = ''
+
+            if not isinstance(part_schema, Schema):
+                part_schema = Schema(
                     part_schema,
                     [self.schema[name] for name in part_schema])
 
@@ -256,8 +269,10 @@ class CreateTableWithSchema(CreateTable):
             if len(to_delete):
                 main_schema = main_schema.delete(to_delete)
 
-            yield format_schema(main_schema)
-            yield 'PARTITIONED BY {}'.format(format_schema(part_schema))
+            buf.write('\n')
+            _push_schema(main_schema, suffix=pk_schema)
+            buf.write('\nPARTITIONED BY ')
+            _push_schema(part_schema)
         else:
             yield format_schema(self.schema)
 
@@ -650,10 +665,10 @@ class DropDatabase(DropObject):
         return self.name
 
 
-def format_schema(schema):
+def format_schema(schema, suffix=''):
     elements = [_format_schema_element(name, t)
                 for name, t in zip(schema.names, schema.types)]
-    return '({})'.format(',\n '.join(elements))
+    return '({0}{1})'.format(',\n '.join(elements), suffix)
 
 
 def _format_schema_element(name, t):
