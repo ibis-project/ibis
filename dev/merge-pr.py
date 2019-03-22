@@ -135,6 +135,10 @@ def main(
         git["fetch", remote]()
     except plumbum.commands.processes.ProcessExecutionError as e:
         raise click.ClickException(e.stderr)
+    try:
+        git["fetch", remote, f"pull/{pull_request_number:d}/head"]()
+    except plumbum.commands.processes.ProcessExecutionError as e:
+        raise click.ClickException(e.stderr)
 
     original_head = git["rev-parse", "--abbrev-ref", "HEAD"]().strip()
 
@@ -172,9 +176,14 @@ def main(
         f"url\t{url}"
     )
 
+    base_ref_commit = (
+        git["ls-remote", remote, f"refs/pull/{pull_request_number:d}/head"]()
+        .strip()
+        .split()[0]
+    )
     merge_pr(
         pull_request_number,
-        base_ref,
+        base_ref_commit,
         target_ref,
         commit_title,
         body,
