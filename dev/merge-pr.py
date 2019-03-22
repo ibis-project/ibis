@@ -35,7 +35,6 @@ import plumbum
 from plumbum import cmd
 
 import requests
-from requests.auth import HTTPBasicAuth
 
 IBIS_HOME = pathlib.Path(__file__).parent.parent
 GITHUB_API_BASE = "https://api.github.com/repos/ibis-project/ibis"
@@ -86,7 +85,8 @@ def merge_pr(
             commit_message=commit_message,
             merge_method=merge_method,
         ),
-        auth=HTTPBasicAuth(github_user, password),
+        headers={'Authorization': 'token {}'.format(password)}
+        # auth=HTTPBasicAuth(github_user, password),
     )
     resp.raise_for_status()
     if resp.status_code == 200:
