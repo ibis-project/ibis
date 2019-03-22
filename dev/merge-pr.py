@@ -18,148 +18,121 @@
 
 # Utility for creating well-formed pull request merges and pushing them to
 # Apache.
-#   usage: ./apache-pr-merge.py    (see config env vars below)
+#   usage: ./apache-pull_request_number-merge.py    (see config env vars below)
 #
 # Lightly modified from version of this script in incubator-parquet-format
 
 """Command line tool for merging PRs."""
 
 import collections
-import contextlib
-import os
 import pathlib
-import sys
 import textwrap
 
-from typing import Iterator
-
 import click
+
+import plumbum
 
 from plumbum import cmd
 
 import requests
 
 IBIS_HOME = pathlib.Path(__file__).parent.parent
-PROJECT_NAME = "ibis"
-
-# Remote name with the PR
-PR_REMOTE_NAME = os.environ.get("PR_REMOTE_NAME", "upstream")
-
-# Remote name where results pushed
-PUSH_REMOTE_NAME = os.environ.get("PUSH_REMOTE_NAME", "upstream")
-
-GITHUB_API_BASE = "https://api.github.com/repos/ibis-project/{}".format(
-    PROJECT_NAME
-)
-
-# Prefix added to temporary branches
-BRANCH_PREFIX = "PR_TOOL"
+GITHUB_API_BASE = "https://api.github.com/repos/ibis-project/ibis"
 
 git = cmd.git["-C", IBIS_HOME]
 
 
-@contextlib.contextmanager
-def clean_up(new_head: str, original_head: str) -> Iterator[None]:
-    """Checkout `new_head` and return to `original_head` after yielding."""
-    git["checkout", new_head](stdout=sys.stdout, stderr=sys.stderr)
-    try:
-        yield
-    finally:
-        git["checkout", original_head](stdout=sys.stdout, stderr=sys.stderr)
-        branches = git["branch"]().strip().split()
-        for branch in branches:
-            if branch.startswith(BRANCH_PREFIX):
-                git["branch", "-D", branch](
-                    stdout=sys.stdout, stderr=sys.stderr
-                )
-
-
 def merge_pr(
     pr_num: int,
+    base_ref: str,
     target_ref: str,
-    title: str,
+    commit_title: str,
     body: str,
     pr_repo_desc: str,
     original_head: str,
-    target_branch_name: str,
-    pr_branch_name: str,
-    confirm_push: bool,
+    remote: str,
+    merge_method: str,
 ) -> None:
     """Merge a pull request."""
-    git["merge", pr_branch_name, "--squash"](
-        stdout=sys.stdout, stderr=sys.stderr
-    )
+    git_log = git["log", f"{remote}/{target_ref}..{base_ref}"]
 
-    commit_authors = git[
-        "log", "HEAD..{}".format(pr_branch_name), "--pretty=format:%an <%ae>"
-    ]().split()
+    commit_authors = git_log["--pretty=format:%an <%ae>"]().splitlines()
     author_count = collections.Counter(commit_authors)
     distinct_authors = [author for author, _ in author_count.most_common()]
-    primary_author = distinct_authors[0]
-    commits = git[
-        "log", "HEAD..{}".format(pr_branch_name), "--pretty=format:%h [%an] %s"
-    ]().split()
+    commits = git_log["--pretty=format:%h [%an] %s"]().splitlines()
 
-    merge_message_flags = ["-m", title]
-    if body is not None:
-        merge_message_flags += ["-m", "\n".join(textwrap.wrap(body))]
+    merge_message_pieces = []
+    if body:
+        merge_message_pieces.append("\n".join(textwrap.wrap(body)))
+    merge_message_pieces.extend(map("Author: {}".format, distinct_authors))
 
-    authors = "\n".join(map("Author: {}".format, distinct_authors))
+    # The string f"Closes #{pull_request_number:d}" is required for GitHub to
+    # correctly close the PR
+    merge_message_pieces.append(
+        f"\nCloses #{pr_num:d} from {pr_repo_desc} and squashes the following "
+        "commits:\n"
+    )
+    merge_message_pieces += commits
 
-    merge_message_flags += ["-m", authors]
-
-    # The string "Closes #{pr}" string is required for GitHub to correctly
-    # close the PR
-    merge_message_flags += [
-        "-m",
-        "Closes #{:d} from {} and squashes the following commits:".format(
-            pr_num, pr_repo_desc
-        ),
-    ]
-    for commit in commits:
-        merge_message_flags += ["-m", commit]
-
-    git["commit", "--no-verify", "--author", primary_author][
-        merge_message_flags
-    ](stdout=sys.stdout, stderr=sys.stderr)
-
-    if confirm_push:
-        prompt = "Merge complete (local ref {}). Push to {}?".format(
-            target_branch_name, PUSH_REMOTE_NAME
-        )
-        if input("\n{} ([Yy]/n): ".format(prompt)).lower() != "y":
-            sys.exit(-1)
-
-    git[
-        "push",
-        PUSH_REMOTE_NAME,
-        "{}:{}".format(target_branch_name, target_ref),
-    ](stdout=sys.stdout, stderr=sys.stderr)
-
-    merge_hash = git["rev-parse", target_branch_name]().strip()
-    click.echo("Pull request #{:d} merged!".format(pr_num))
-    click.echo("Merge hash: {}".format(merge_hash))
+    commit_message = "\n".join(merge_message_pieces)
+    click.echo(commit_message)
+    # resp = requests.put(
+    # f"{GITHUB_API_BASE}/pulls/{pr_num:d}/merge",
+    # params=dict(
+    # commit_title=commit_title,
+    # commit_message=commit_message,
+    # merge_method=merge_method,
+    # ),
+    # )
+    # resp.raise_for_status()
+    # click.echo(f"Pull request #{pr_num:d} merged!")
 
 
 @click.command()
 @click.option(
     "-p",
-    "--pr",
+    "--pull-request-number",
     type=int,
-    prompt="Which pull request would you like to merge? (e.g. 34)",
+    prompt="Which pull request would you like to merge? (e.g., 34)",
+    help="The pull request number to merge.",
 )
-@click.option("--confirm-push/--no-confirm-push", default=True)
-def main(pr: int, confirm_push: bool) -> None:  # noqa: D103
+@click.option(
+    "-M",
+    "--merge-method",
+    type=click.Choice(("merge", "squash", "rebase")),
+    default="squash",
+    help="The method to use for merging the PR.",
+    show_default=True,
+)
+@click.option(
+    "-r",
+    "--remote",
+    default="upstream",
+    help="A valid git remote.",
+    show_default=True,
+)
+def main(
+    pull_request_number: int, merge_method: str, remote: str
+) -> None:  # noqa: D103
+    try:
+        git["fetch", remote]()
+    except plumbum.commands.processes.ProcessExecutionError as e:
+        raise click.ClickException(e.stderr)
+
     original_head = git["rev-parse", "--abbrev-ref", "HEAD"]().strip()
 
     if not original_head:
         original_head = git["rev-parse", "HEAD"]().strip()
 
-    pr_json = requests.get("{}/pulls/{:d}".format(GITHUB_API_BASE, pr)).json()
+    resp = requests.get(f"{GITHUB_API_BASE}/pulls/{pull_request_number:d}")
+    resp.raise_for_status()
+    pr_json = resp.json()
 
     message = pr_json.get("message", None)
     if message is not None and message.lower() == "not found":
-        raise click.ClickException("PR {:d} does not exist.".format(pr))
+        raise click.ClickException(
+            f"PR {pull_request_number:d} does not exist."
+        )
 
     if not pr_json["mergeable"]:
         raise click.ClickException(
@@ -167,44 +140,32 @@ def main(pr: int, confirm_push: bool) -> None:  # noqa: D103
         )
 
     url = pr_json["url"]
-    title = pr_json["title"]
+    commit_title = pr_json["title"]
     body = pr_json["body"]
     target_ref = pr_json["base"]["ref"]
     user_login = pr_json["user"]["login"]
     base_ref = pr_json["head"]["ref"]
-    pr_repo_desc = "{}/{}".format(user_login, base_ref)
+    pr_repo_desc = f"{user_login}/{base_ref}"
 
-    click.echo("\n=== Pull Request #{:d} ===".format(pr))
+    click.echo(f"=== Pull Request #{pull_request_number:d} ===")
     click.echo(
-        "title\t{}\nsource\t{}\ntarget\t{}\nurl\t{}".format(
-            title, pr_repo_desc, target_ref, url
-        )
+        f"title\t{commit_title}\n"
+        f"source\t{pr_repo_desc}\n"
+        f"target\t{remote}/{target_ref}\n"
+        f"url\t{url}"
     )
 
-    pr_branch_name = "{}_MERGE_PR_{:d}".format(BRANCH_PREFIX, pr)
-    target_branch_name = "{}_MERGE_PR_{:d}_{}".format(
-        BRANCH_PREFIX, pr, target_ref.upper()
+    merge_pr(
+        pull_request_number,
+        base_ref,
+        target_ref,
+        commit_title,
+        body,
+        pr_repo_desc,
+        original_head,
+        remote,
+        merge_method,
     )
-    git[
-        "fetch", PR_REMOTE_NAME, "pull/{:d}/head:{}".format(pr, pr_branch_name)
-    ](stdout=sys.stdout, stderr=sys.stderr)
-    git[
-        "fetch",
-        PUSH_REMOTE_NAME,
-        "{}:{}".format(target_ref, target_branch_name),
-    ](stdout=sys.stdout, stderr=sys.stderr)
-    with clean_up(target_branch_name, original_head):
-        merge_pr(
-            pr,
-            target_ref,
-            title,
-            body,
-            pr_repo_desc,
-            original_head,
-            target_branch_name,
-            pr_branch_name,
-            confirm_push,
-        )
 
 
 if __name__ == "__main__":
