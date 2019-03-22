@@ -37,7 +37,7 @@ from plumbum import cmd
 import requests
 
 IBIS_HOME = pathlib.Path(__file__).parent.parent
-GITHUB_API_BASE = "https://api.github.com/v3/repos/ibis-project/ibis"
+GITHUB_API_BASE = "https://api.github.com/repos/ibis-project/ibis"
 
 git = cmd.git["-C", IBIS_HOME]
 
