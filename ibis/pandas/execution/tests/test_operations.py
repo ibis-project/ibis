@@ -251,6 +251,64 @@ def test_null_if_zero(t, df, column):
     tm.assert_series_equal(result, expected)
 
 
+@pytest.mark.parametrize(
+    ('left', 'right', 'expected', 'compare'),
+    [
+        pytest.param(
+            lambda t: ibis.literal(1),
+            lambda t: ibis.literal(1),
+            lambda df: np.nan,
+            np.testing.assert_array_equal,  # treats NaNs as equal
+            id='literal_literal_equal'
+        ),
+        pytest.param(
+            lambda t: ibis.literal(1),
+            lambda t: ibis.literal(2),
+            lambda df: 1,
+            np.testing.assert_equal,
+            id='literal_literal_not_equal',
+        ),
+        pytest.param(
+            lambda t: t.dup_strings,
+            lambda t: ibis.literal('a'),
+            lambda df: df.dup_strings.where(df.dup_strings != 'a'),
+            tm.assert_series_equal,
+            id='series_literal',
+        ),
+        pytest.param(
+            lambda t: t.dup_strings,
+            lambda t: t.dup_strings,
+            lambda df: df.dup_strings.where(df.dup_strings != df.dup_strings),
+            tm.assert_series_equal,
+            id='series_series',
+        ),
+        pytest.param(
+            lambda t: ibis.literal('a'),
+            lambda t: t.dup_strings,
+            lambda df: pd.Series(
+                np.where(df.dup_strings == 'a', np.nan, 'a'), index=df.index
+            ),
+            tm.assert_series_equal,
+            id='literal_series',
+        ),
+    ]
+)
+def test_nullif(t, df, left, right, expected, compare):
+    expr = left(t).nullif(right(t))
+    result = ibis.pandas.execute(expr)
+    compare(result, expected(df))
+
+
+def test_nullif_inf():
+    df = pd.DataFrame({'a': [np.inf, 3.14, -np.inf, 42.0]})
+    con = ibis.pandas.connect(dict(t=df))
+    t = con.table('t')
+    expr = t.a.nullif(np.inf).nullif(-np.inf)
+    result = expr.execute()
+    expected = pd.Series([np.nan, 3.14, np.nan, 42.0], name='a')
+    tm.assert_series_equal(result, expected)
+
+
 def test_group_concat(t, df):
     expr = t.groupby(t.dup_strings).aggregate(
         foo=t.plain_int64.group_concat(',')
