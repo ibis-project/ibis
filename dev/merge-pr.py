@@ -52,6 +52,7 @@ def merge_pr(
     original_head: str,
     remote: str,
     merge_method: str,
+    oauth_token: str,
 ) -> None:
     """Merge a pull request."""
     git_log = git["log", f"{remote}/{target_ref}..{base_ref}"]
@@ -75,7 +76,7 @@ def merge_pr(
     merge_message_pieces += commits
 
     commit_message = "\n".join(merge_message_pieces)
-    click.echo(commit_message)
+    # PUT /repos/:owner/:repo/pulls/:number/merge
     resp = requests.put(
         f"{GITHUB_API_BASE}/pulls/{pr_num:d}/merge",
         data=dict(
@@ -83,6 +84,7 @@ def merge_pr(
             commit_message=commit_message,
             merge_method=merge_method,
         ),
+        headers={"Authorization": f"token {oauth_token}"},
     )
     resp.raise_for_status()
     if resp.status_code == 200:
@@ -115,8 +117,9 @@ def merge_pr(
     help="A valid git remote.",
     show_default=True,
 )
+@click.option("-t", "--oauth-token", help="OAuth2 token.")
 def main(
-    pull_request_number: int, merge_method: str, remote: str
+    pull_request_number: int, merge_method: str, remote: str, oauth_token: str
 ) -> None:  # noqa: D103
     try:
         git["fetch", remote]()
@@ -169,6 +172,7 @@ def main(
         original_head,
         remote,
         merge_method,
+        oauth_token,
     )
 
 
