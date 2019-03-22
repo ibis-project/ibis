@@ -84,7 +84,7 @@ def merge_pr(
             commit_message=commit_message,
             merge_method=merge_method,
         ),
-        headers={"Authorization": f"token {oauth_token}"},
+        params=dict(access_token=oauth_token),
     )
     resp.raise_for_status()
     if resp.status_code == 200:
