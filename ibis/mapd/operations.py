@@ -573,6 +573,20 @@ count_distinct = _reduction('count')
 count = _reduction('count')
 
 
+def _arbitrary(translator, expr):
+    arg, how, where = expr.op().args
+
+    if how not in (None, 'last'):
+        raise com.UnsupportedOperationError(
+            '{!r} value not supported for arbitrary in MapD'.format(how)
+        )
+
+    if where is not None:
+        arg = where.ifelse(arg, ibis.NA)
+
+    return 'SAMPLE({})'.format(translator.translate(arg))
+
+
 # MATH
 
 class NumericTruncate(ops.NumericBinaryOp):
@@ -707,6 +721,7 @@ _date_ops = {
 _agg_ops = {
     ops.HLLCardinality: approx_count_distinct,
     ops.DistinctColumn: unary_prefix_op('distinct'),
+    ops.Arbitrary: _arbitrary
 }
 
 # GENERAL
@@ -734,7 +749,6 @@ _unsupported_ops = [
     ops.CumulativeAny,
     ops.CumulativeAll,
     ops.IdenticalTo,
-    ops.Arbitrary,
     ops.RowNumber,
     ops.DenseRank,
     ops.MinRank,
@@ -746,7 +760,6 @@ _unsupported_ops = [
     ops.Lead,
     ops.NTile,
     ops.GroupConcat,
-    ops.Arbitrary,
     ops.NullIf,
     ops.NullIfZero,
     ops.NullLiteral,

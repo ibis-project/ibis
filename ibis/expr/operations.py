@@ -835,7 +835,7 @@ class Count(Reduction):
 
 class Arbitrary(Reduction):
     arg = Arg(rlz.column(rlz.any))
-    how = Arg(rlz.isin({'first', 'last', 'heavy'}), default='first')
+    how = Arg(rlz.isin({'first', 'last', 'heavy'}), default=None)
     where = Arg(rlz.boolean, default=None)
     output_type = rlz.scalar_like('arg')
 

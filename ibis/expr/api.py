@@ -481,7 +481,7 @@ def group_concat(arg, sep=',', where=None):
     return ops.GroupConcat(arg, sep, where).to_expr()
 
 
-def arbitrary(arg, where=None, how='first'):
+def arbitrary(arg, where=None, how=None):
     """
     Selects the first / last non-null value in a column
 

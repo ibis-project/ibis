@@ -37,6 +37,11 @@ def batting(con):
     return con.table('batting')
 
 
+@pytest.fixture(scope='module')
+def df_alltypes(alltypes):
+    return alltypes.execute()
+
+
 @pytest.fixture
 def translate():
     """

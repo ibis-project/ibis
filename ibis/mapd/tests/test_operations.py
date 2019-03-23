@@ -134,3 +134,17 @@ def test_literal_geospatial():
         "SELECT 'MULTIPOLYGON(((0 0, 0 0), (0 0, 0 0)), "
         "((0 0, 0 0), (0 0, 0 0)))' AS tmp"
     )
+
+
+@pytest.mark.parametrize(('result_fn', 'expected_fn'), [
+    param(
+        lambda t: t.double_col.arbitrary(),
+        lambda t: t.double_col.iloc[-1],
+        id='double_col_arbitrary_none'
+    ),
+])
+def test_arbitrary_none(alltypes, df_alltypes, result_fn, expected_fn):
+    expr = result_fn(alltypes)
+    result = expr.execute()
+    expected = expected_fn(df_alltypes)
+    np.testing.assert_allclose(result, expected)

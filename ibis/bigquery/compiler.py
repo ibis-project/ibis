@@ -277,7 +277,7 @@ def _arbitrary(translator, expr):
     if where is not None:
         arg = where.ifelse(arg, ibis.NA)
 
-    if how != 'first':
+    if how not in (None, 'first'):
         raise com.UnsupportedOperationError(
             '{!r} value not supported for arbitrary in BigQuery'.format(how)
         )

@@ -129,7 +129,9 @@ def varargs(func_name):
 
 def _arbitrary(translator, expr):
     arg, how, where = expr.op().args
-    functions = {'first': 'any',
+    functions = {
+                 None: 'any',
+                 'first': 'any',
                  'last': 'anyLast',
                  'heavy': 'anyHeavy'}
     return _aggregate(translator, functions[how], arg, where=where)
