@@ -1,4 +1,4 @@
-blas=*=openblas
+black
 click
 clickhouse-cityhash
 clickhouse-driver

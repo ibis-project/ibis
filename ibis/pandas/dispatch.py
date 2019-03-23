@@ -15,16 +15,18 @@ execute_node = Dispatcher(
     doc=(
         'Execute an individual operation given the operation and its computed '
         'arguments'
-    )
+    ),
 )
 
 
 @execute_node.register(ops.Node)
 def execute_node_without_scope(node, **kwargs):
     raise com.UnboundExpressionError(
-        'Node of type {!r} has no data bound to it. '
-        'You probably tried to execute an expression without a data source.'
-        .format(type(node).__name__)
+        (
+            'Node of type {!r} has no data bound to it. '
+            'You probably tried to execute an expression without a data '
+            'source.'
+        ).format(type(node).__name__)
     )
 
 
@@ -38,7 +40,8 @@ Notes
 This function is useful if parts of the tree structure need to be executed at
 the same time or if there are other reasons to need to interrupt the regular
 depth-first traversal of the tree.
-""")
+""",
+)
 
 
 # Default returns an empty scope
@@ -52,8 +55,7 @@ def pre_execute_default(node, *clients, **kwargs):
 @pre_execute.register(ops.Node, [ibis.client.Client])
 def pre_execute_multiple_clients(node, *clients, scope=None, **kwargs):
     return toolz.merge(
-        scope,
-        *map(partial(pre_execute, node, scope=scope, **kwargs), clients)
+        scope, *map(partial(pre_execute, node, scope=scope, **kwargs), clients)
     )
 
 
@@ -72,7 +74,8 @@ datatype : ibis.expr.datatypes.DataType
     Used to specialize on expressions whose underlying value is of a different
     type than its would-be type. For example, interval values are represented
     by an integer.
-""")
+""",
+)
 
 
 post_execute = Dispatcher(
@@ -86,7 +89,8 @@ op : ibis.expr.operations.Node
     The operation that was just executed
 data : object
     The result of the computation
-""")
+""",
+)
 
 
 @post_execute.register(ops.Node, object)

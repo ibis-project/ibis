@@ -15,6 +15,7 @@ def compile(expr, params=None):
     compiled : string
     """
     from ibis.mapd.compiler import to_sql
+
     return to_sql(expr, dialect.make_context(params=params))
 
 
@@ -31,9 +32,14 @@ def verify(expr, params=None):
 
 
 def connect(
-    uri=None, user=None, password=None, host=None,
-    port=9091, database=None, protocol='binary',
-    execution_type=EXECUTION_TYPE_CURSOR
+    uri=None,
+    user=None,
+    password=None,
+    host=None,
+    port=9091,
+    database=None,
+    protocol='binary',
+    execution_type=EXECUTION_TYPE_CURSOR,
 ):
     """Create a MapDClient for use with Ibis
 
@@ -53,9 +59,14 @@ def connect(
 
     """
     client = MapDClient(
-        uri=uri, user=user, password=password, host=host,
-        port=port, database=database, protocol=protocol,
-        execution_type=execution_type
+        uri=uri,
+        user=user,
+        password=password,
+        host=host,
+        port=port,
+        database=database,
+        protocol=protocol,
+        execution_type=execution_type,
     )
 
     if options.default_backend is None:

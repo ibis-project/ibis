@@ -58,8 +58,10 @@ class Query:
         elif isinstance(self.expr, ir.ValueExpr):
             return sch.schema([(self.expr.get_name(), self.expr.type())])
         else:
-            raise ValueError('Expression with type {} does not have a '
-                             'schema'.format(type(self.expr)))
+            raise ValueError(
+                'Expression with type {} does not have a '
+                'schema'.format(type(self.expr))
+            )
 
 
 class SQLClient(Client, metaclass=abc.ABCMeta):
@@ -206,22 +208,20 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         # note: limit can still be None at this point, if the global
         # default_limit is None
         for query in reversed(query_ast.queries):
-            if (isinstance(query, comp.Select) and
-                    not isinstance(expr, ir.ScalarExpr) and
-                    query.table_set is not None):
+            if (
+                isinstance(query, comp.Select)
+                and not isinstance(expr, ir.ScalarExpr)
+                and query.table_set is not None
+            ):
                 if query.limit is None:
                     if limit == 'default':
                         query_limit = options.sql.default_limit
                     else:
                         query_limit = limit
                     if query_limit:
-                        query.limit = {
-                            'n': query_limit,
-                            'offset': 0
-                        }
+                        query.limit = {'n': query_limit, 'offset': 0}
                 elif limit is not None and limit != 'default':
-                    query.limit = {'n': limit,
-                                   'offset': query.limit['offset']}
+                    query.limit = {'n': limit, 'offset': query.limit['offset']}
         return query_ast
 
     def explain(self, expr, params=None):
@@ -248,8 +248,9 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         with self._execute(statement, results=True) as cur:
             result = self._get_list(cur)
 
-        return 'Query:\n{0}\n\n{1}'.format(util.indent(query, 2),
-                                           '\n'.join(result))
+        return 'Query:\n{0}\n\n{1}'.format(
+            util.indent(query, 2), '\n'.join(result)
+        )
 
     def _build_ast(self, expr, context):
         # Implement in clients
@@ -262,6 +263,7 @@ class QueryPipeline:
 
     Note: No query pipelines have yet been implemented
     """
+
     pass
 
 
@@ -311,7 +313,6 @@ def find_backends(expr):
 
 
 class Database:
-
     def __init__(self, name, client):
         self.name = name
         self.client = client
@@ -380,15 +381,15 @@ class Database:
         return self.client.table(qualified_name, self.name)
 
     def list_tables(self, like=None):
-        return self.client.list_tables(like=self._qualify_like(like),
-                                       database=self.name)
+        return self.client.list_tables(
+            like=self._qualify_like(like), database=self.name
+        )
 
     def _qualify_like(self, like):
         return like
 
 
 class DatabaseNamespace(Database):
-
     def __init__(self, parent, namespace):
         self.parent = parent
         self.namespace = namespace
@@ -424,6 +425,5 @@ class DatabaseEntity:
 
 
 class View(DatabaseEntity):
-
     def drop(self):
         pass

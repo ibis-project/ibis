@@ -33,7 +33,7 @@ import ibis.expr.types as ir
 
 class DataType:
 
-    __slots__ = 'nullable',
+    __slots__ = ('nullable',)
 
     def __init__(self, nullable: bool = True) -> None:
         self.nullable = nullable
@@ -49,7 +49,8 @@ class DataType:
 
     def _factory(self, nullable: bool = True) -> 'DataType':
         slots = {
-            slot: getattr(self, slot) for slot in self.__slots__
+            slot: getattr(self, slot)
+            for slot in self.__slots__
             if slot != 'nullable'
         }
         return type(self)(nullable=nullable, **slots)
@@ -73,7 +74,7 @@ class DataType:
             ', '.join(
                 '{}={!r}'.format(slot, getattr(self, slot))
                 for slot in toolz.unique(self.__slots__ + ('nullable',))
-            )
+            ),
         )
 
     def __str__(self) -> str:
@@ -86,7 +87,7 @@ class DataType:
     def equals(
         self,
         other: 'DataType',
-        cache: Optional[Mapping[GenericAny, bool]] = None
+        cache: Optional[Mapping[GenericAny, bool]] = None,
     ) -> bool:
         if isinstance(other, str):
             raise TypeError(
@@ -94,11 +95,13 @@ class DataType:
                 '{!r} to the equivalent DataType instance.'.format(other)
             )
         return (
-            isinstance(other, type(self)) and
-            self.nullable == other.nullable and
-            self.__slots__ == other.__slots__ and
-            all(getattr(self, slot) == getattr(other, slot)
-                for slot in self.__slots__)
+            isinstance(other, type(self))
+            and self.nullable == other.nullable
+            and self.__slots__ == other.__slots__
+            and all(
+                getattr(self, slot) == getattr(other, slot)
+                for slot in self.__slots__
+            )
         )
 
     def castable(self, target, **kwargs):
@@ -170,6 +173,7 @@ class String(Variadic):
     Because of differences in the way different backends handle strings, we
     cannot assume that strings are UTF-8 encoded.
     """
+
     scalar = ir.StringScalar
     column = ir.StringColumn
 
@@ -186,6 +190,7 @@ class Binary(Variadic):
     but PostgreSQL has a TEXT type and a BYTEA type which are distinct types
     that behave differently.
     """
+
     scalar = ir.BinaryScalar
     column = ir.BinaryColumn
 
@@ -210,12 +215,10 @@ class Timestamp(DataType):
     scalar = ir.TimestampScalar
     column = ir.TimestampColumn
 
-    __slots__ = 'timezone',
+    __slots__ = ('timezone',)
 
     def __init__(
-        self,
-        timezone: Optional[str] = None,
-        nullable: bool = True
+        self, timezone: Optional[str] = None, nullable: bool = True
     ) -> None:
         super().__init__(nullable=nullable)
         self.timezone = timezone
@@ -337,10 +340,7 @@ class Decimal(DataType):
     __slots__ = 'precision', 'scale'
 
     def __init__(
-        self,
-        precision: int,
-        scale: int,
-        nullable: bool = True
+        self, precision: int, scale: int, nullable: bool = True
     ) -> None:
         if not isinstance(precision, numbers.Integral):
             raise TypeError('Decimal type precision must be an integer')
@@ -366,9 +366,7 @@ class Decimal(DataType):
 
     def __str__(self) -> str:
         return '{}({:d}, {:d})'.format(
-            self.name.lower(),
-            self.precision,
-            self.scale,
+            self.name.lower(), self.precision, self.scale
         )
 
     @property
@@ -394,7 +392,7 @@ class Interval(DataType):
         s='second',
         ms='millisecond',
         us='microsecond',
-        ns='nanosecond'
+        ns='nanosecond',
     )
 
     def __init__(
@@ -438,7 +436,7 @@ class Category(DataType):
     scalar = ir.CategoryScalar
     column = ir.CategoryColumn
 
-    __slots__ = 'cardinality',
+    __slots__ = ('cardinality',)
 
     def __init__(self, cardinality=None, nullable=True):
         super().__init__(nullable=nullable)
@@ -466,10 +464,7 @@ class Struct(DataType):
     __slots__ = 'names', 'types'
 
     def __init__(
-        self,
-        names: List[str],
-        types: List[DataType],
-        nullable: bool = True,
+        self, names: List[str], types: List[DataType], nullable: bool = True
     ) -> None:
         """Construct a ``Struct`` type from a `names` and `types`.
 
@@ -510,9 +505,9 @@ class Struct(DataType):
         return self.pairs[key]
 
     def __hash__(self) -> int:
-        return hash((
-            type(self), tuple(self.names), tuple(self.types), self.nullable
-        ))
+        return hash(
+            (type(self), tuple(self.names), tuple(self.types), self.nullable)
+        )
 
     def __repr__(self) -> str:
         return '{}({}, nullable={})'.format(
@@ -522,7 +517,7 @@ class Struct(DataType):
     def __str__(self) -> str:
         return '{}<{}>'.format(
             self.name.lower(),
-            ', '.join(itertools.starmap('{}: {}'.format, self.pairs.items()))
+            ', '.join(itertools.starmap('{}: {}'.format, self.pairs.items())),
         )
 
 
@@ -530,12 +525,10 @@ class Array(Variadic):
     scalar = ir.ArrayScalar
     column = ir.ArrayColumn
 
-    __slots__ = 'value_type',
+    __slots__ = ('value_type',)
 
     def __init__(
-        self,
-        value_type: Union[str, DataType],
-        nullable: bool = True
+        self, value_type: Union[str, DataType], nullable: bool = True
     ) -> None:
         super().__init__(nullable=nullable)
         self.value_type = dtype(value_type)
@@ -548,12 +541,10 @@ class Set(Variadic):
     scalar = ir.SetScalar
     column = ir.SetColumn
 
-    __slots__ = 'value_type',
+    __slots__ = ('value_type',)
 
     def __init__(
-        self,
-        value_type: Union[str, DataType],
-        nullable: bool = True
+        self, value_type: Union[str, DataType], nullable: bool = True
     ) -> None:
         super().__init__(nullable=nullable)
         self.value_type = dtype(value_type)
@@ -569,10 +560,7 @@ class Enum(DataType):
     __slots__ = 'rep_type', 'value_type'
 
     def __init__(
-        self,
-        rep_type: DataType,
-        value_type: DataType,
-        nullable: bool = True
+        self, rep_type: DataType, value_type: DataType, nullable: bool = True
     ) -> None:
         super().__init__(nullable=nullable)
         self.rep_type = dtype(rep_type)
@@ -586,10 +574,7 @@ class Map(Variadic):
     __slots__ = 'key_type', 'value_type'
 
     def __init__(
-        self,
-        key_type: DataType,
-        value_type: DataType,
-        nullable: bool = True
+        self, key_type: DataType, value_type: DataType, nullable: bool = True
     ) -> None:
         super().__init__(nullable=nullable)
         self.key_type = dtype(key_type)
@@ -597,9 +582,7 @@ class Map(Variadic):
 
     def __str__(self) -> str:
         return '{}<{}, {}>'.format(
-            self.name.lower(),
-            self.key_type,
-            self.value_type,
+            self.name.lower(), self.key_type, self.value_type
         )
 
 
@@ -607,10 +590,7 @@ class GeoSpatial(DataType):
     __slots__ = 'geotype', 'srid'
 
     def __init__(
-        self,
-        geotype: str = None,
-        srid: int = None,
-        nullable: bool = True
+        self, geotype: str = None, srid: int = None, nullable: bool = True
     ):
         """Geospatial data type base class
 
@@ -637,6 +617,7 @@ class GeoSpatial(DataType):
 
 class Point(GeoSpatial):
     """A point described by two coordinates."""
+
     scalar = ir.PointScalar
     column = ir.PointColumn
 
@@ -645,6 +626,7 @@ class Point(GeoSpatial):
 
 class LineString(GeoSpatial):
     """A sequence of 2 or more points."""
+
     scalar = ir.LineStringScalar
     column = ir.LineStringColumn
 
@@ -656,6 +638,7 @@ class Polygon(GeoSpatial):
     representing the shape (external ring) and the rest representing holes in
     that shape (internal rings).
     """
+
     scalar = ir.PolygonScalar
     column = ir.PolygonColumn
 
@@ -664,6 +647,7 @@ class Polygon(GeoSpatial):
 
 class MultiPolygon(GeoSpatial):
     """A set of one or more polygons."""
+
     scalar = ir.MultiPolygonScalar
     column = ir.MultiPolygonColumn
 
@@ -728,7 +712,7 @@ _primitive_types = [
     ('date', date),
     ('time', time),
     ('timestamp', timestamp),
-    ('interval', interval)
+    ('interval', interval),
 ]  # type: List[Tuple[str, DataType]]
 
 
@@ -773,8 +757,7 @@ class Tokens:
 
 
 _token_names = dict(
-    (getattr(Tokens, n), n)
-    for n in dir(Tokens) if n.isalpha() and n.isupper()
+    (getattr(Tokens, n), n) for n in dir(Tokens) if n.isalpha() and n.isupper()
 )
 
 
@@ -796,49 +779,50 @@ _TYPE_RULES = collections.OrderedDict(
         (
             '(?P<BOOLEAN>bool(?:ean)?)',
             typing.cast(
-                Action,
-                lambda token: Token(Tokens.PRIMITIVE, boolean),
+                Action, lambda token: Token(Tokens.PRIMITIVE, boolean)
             ),
         ),
-    ] + [
+    ]
+    + [
         # primitive types
         (
             '(?P<{}>{})'.format(token.upper(), token),
             typing.cast(
                 Action,
                 lambda token, value=value: Token(Tokens.PRIMITIVE, value),
-            )
-        ) for token, value in _primitive_types
-        if token not in {
-            'any', 'null', 'timestamp', 'time', 'interval', 'boolean'
-        }
-    ] + [
+            ),
+        )
+        for token, value in _primitive_types
+        if token
+        not in {'any', 'null', 'timestamp', 'time', 'interval', 'boolean'}
+    ]
+    + [
         # timestamp
         (
             r'(?P<TIMESTAMP>timestamp)',
             lambda token: Token(Tokens.TIMESTAMP, token),
-        ),
-    ] + [
+        )
+    ]
+    + [
         # interval - should remove?
         (
             r'(?P<INTERVAL>interval)',
             lambda token: Token(Tokens.INTERVAL, token),
-        ),
-    ] + [
+        )
+    ]
+    + [
         # time
-        (
-            r'(?P<TIME>time)',
-            lambda token: Token(Tokens.TIME, token),
-        ),
-    ] + [
+        (r'(?P<TIME>time)', lambda token: Token(Tokens.TIME, token))
+    ]
+    + [
         # decimal + complex types
         (
             '(?P<{}>{})'.format(token.upper(), token),
             typing.cast(
-                Action,
-                lambda token, toktype=toktype: Token(toktype, token)
-            )
-        ) for token, toktype in zip(
+                Action, lambda token, toktype=toktype: Token(toktype, token)
+            ),
+        )
+        for token, toktype in zip(
             (
                 'decimal',
                 'varchar',
@@ -848,7 +832,8 @@ _TYPE_RULES = collections.OrderedDict(
                 'map',
                 'struct',
                 'interval',
-            ), (
+            ),
+            (
                 Tokens.DECIMAL,
                 Tokens.VARCHAR,
                 Tokens.CHAR,
@@ -856,15 +841,17 @@ _TYPE_RULES = collections.OrderedDict(
                 Tokens.SET,
                 Tokens.MAP,
                 Tokens.STRUCT,
-                Tokens.INTERVAL
+                Tokens.INTERVAL,
             ),
         )
-    ] + [
+    ]
+    + [
         # geo spatial data type
         (
             '(?P<{}>{})'.format(token.upper(), token),
-            lambda token, toktype=toktype: Token(toktype, token)
-        ) for token, toktype in zip(
+            lambda token, toktype=toktype: Token(toktype, token),
+        )
+        for token, toktype in zip(
             (
                 'geometry',
                 'geography',
@@ -872,7 +859,8 @@ _TYPE_RULES = collections.OrderedDict(
                 'linestring',
                 'polygon',
                 'multipolygon',
-            ), (
+            ),
+            (
                 Tokens.GEOMETRY,
                 Tokens.GEOGRAPHY,
                 Tokens.POINT,
@@ -881,14 +869,14 @@ _TYPE_RULES = collections.OrderedDict(
                 Tokens.MULTIPOLYGON,
             ),
         )
-    ] + [
+    ]
+    + [
         # integers, for decimal spec
         (r'(?P<INTEGER>\d+)', lambda token: Token(Tokens.INTEGER, int(token))),
-
         # struct fields
         (
             r'(?P<FIELD>[a-zA-Z_][a-zA-Z_0-9]*)',
-            lambda token: Token(Tokens.FIELD, token)
+            lambda token: Token(Tokens.FIELD, token),
         ),
         # timezones
         ('(?P<COMMA>,)', lambda token: Token(Tokens.COMMA, token)),
@@ -961,8 +949,9 @@ class TypeParser:
     def _accept(self, toktype: int) -> bool:
         if self.nexttok is not None and self.nexttok.type == toktype:
             self._advance()
-            assert self.tok is not None, \
-                'self.tok should not be None when _accept succeeds'
+            assert (
+                self.tok is not None
+            ), 'self.tok should not be None when _accept succeeds'
             return True
         return False
 
@@ -981,8 +970,9 @@ class TypeParser:
 
         # any and null types cannot be nested
         if self._accept(Tokens.ANY) or self._accept(Tokens.NULL):
-            assert self.tok is not None, \
-                'self.tok was None when parsing ANY or NULL type'
+            assert (
+                self.tok is not None
+            ), 'self.tok was None when parsing ANY or NULL type'
             return self.tok.value
 
         t = self.type()
@@ -1326,10 +1316,7 @@ def infer_struct(value: Mapping[str, GenericAny]) -> Struct:
     """Infer the :class:`~ibis.expr.datatypes.Struct` type of `value`."""
     if not value:
         raise TypeError('Empty struct type not supported')
-    return Struct(
-        list(value.keys()),
-        list(map(infer, value.values()))
-    )
+    return Struct(list(value.keys()), list(map(infer, value.values())))
 
 
 @infer.register(collections.abc.Mapping)
@@ -1445,10 +1432,7 @@ Integral = TypeVar('Integral', SignedInteger, UnsignedInteger)
 @castable.register(SignedInteger, UnsignedInteger)
 @castable.register(UnsignedInteger, SignedInteger)
 def can_cast_to_differently_signed_integer_type(
-    source: Integral,
-    target: Integral,
-    value: Optional[int] = None,
-    **kwargs
+    source: Integral, target: Integral, value: Optional[int] = None, **kwargs
 ) -> bool:
     if value is None:
         return False
@@ -1464,10 +1448,7 @@ def can_cast_integers(source: Integral, target: Integral, **kwargs) -> bool:
 
 @castable.register(Floating, Floating)
 def can_cast_floats(
-    source: Floating,
-    target: Floating,
-    upcast: bool = False,
-    **kwargs
+    source: Floating, target: Floating, upcast: bool = False, **kwargs
 ) -> bool:
     if upcast:
         return target._nbytes >= source._nbytes
@@ -1479,33 +1460,28 @@ def can_cast_floats(
 
 @castable.register(Decimal, Decimal)
 def can_cast_decimals(source: Decimal, target: Decimal, **kwargs) -> bool:
-    return (target.precision >= source.precision and
-            target.scale >= source.scale)
+    return (
+        target.precision >= source.precision and target.scale >= source.scale
+    )
 
 
 @castable.register(Interval, Interval)
 def can_cast_intervals(source: Interval, target: Interval, **kwargs) -> bool:
-    return (
-        source.unit == target.unit and
-        castable(source.value_type, target.value_type)
+    return source.unit == target.unit and castable(
+        source.value_type, target.value_type
     )
 
 
 @castable.register(Integer, Boolean)
 def can_cast_integer_to_boolean(
-    source: Integer,
-    target: Boolean,
-    value: Optional[int] = None,
-    **kwargs
+    source: Integer, target: Boolean, value: Optional[int] = None, **kwargs
 ) -> bool:
     return value is not None and (value == 0 or value == 1)
 
 
 @castable.register(Integer, Interval)
 def can_cast_integer_to_interval(
-    source: Interval,
-    target: Interval,
-    **kwargs
+    source: Interval, target: Interval, **kwargs
 ) -> bool:
     return castable(source, target.value_type)
 
@@ -1515,7 +1491,7 @@ def can_cast_string_to_temporal(
     source: String,
     target: Union[Date, Time, Timestamp],
     value: Optional[str] = None,
-    **kwargs
+    **kwargs,
 ) -> bool:
     if value is None:
         return False
@@ -1533,9 +1509,7 @@ Collection = TypeVar('Collection', Array, Set)
 @castable.register(Array, Array)
 @castable.register(Set, Set)
 def can_cast_variadic(
-    source: Collection,
-    target: Collection,
-    **kwargs
+    source: Collection, target: Collection, **kwargs
 ) -> bool:
     return castable(source.value_type, target.value_type)
 
@@ -1558,16 +1532,16 @@ def can_cast_geospatial(source, target, **kwargs):
 
 
 def cast(
-    source: Union[DataType, str],
-    target: Union[DataType, str],
-    **kwargs
+    source: Union[DataType, str], target: Union[DataType, str], **kwargs
 ) -> DataType:
     """Attempts to implicitly cast from source dtype to target dtype"""
     source, result_target = dtype(source), dtype(target)
 
     if not castable(source, result_target, **kwargs):
-        raise com.IbisTypeError('Datatype {} cannot be implicitly '
-                                'casted to {}'.format(source, result_target))
+        raise com.IbisTypeError(
+            'Datatype {} cannot be implicitly '
+            'casted to {}'.format(source, result_target)
+        )
     return result_target
 
 
@@ -1587,7 +1561,8 @@ Returns
 bool
     Whether two :class:`~ibis.expr.datatypes.DataType` instances are the same
     kind.
-""")
+""",
+)
 
 
 @same_kind.register(DataType, DataType)

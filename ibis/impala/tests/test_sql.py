@@ -14,7 +14,6 @@ pytestmark = pytest.mark.impala
 
 
 class TestImpalaSQL(unittest.TestCase):
-
     def test_relabel_projection(self):
         # GH #551
         types = ['int32', 'string', 'double']
@@ -66,14 +65,12 @@ def test_nested_joins_single_cte():
     )
 
     main_kw = max_counts.left_join(
-        counts,
-        ['uuid', max_counts.max_count == counts['count']]
+        counts, ['uuid', max_counts.max_count == counts['count']]
     ).projection([counts])
 
-    result = main_kw.left_join(last_visit, 'uuid').projection([
-        main_kw,
-        last_visit.last_visit,
-    ])
+    result = main_kw.left_join(last_visit, 'uuid').projection(
+        [main_kw, last_visit.last_visit]
+    )
 
     expected = """\
 WITH t0 AS (
@@ -111,27 +108,21 @@ def test_nested_join_multiple_ctes():
             ('rating', 'int8'),
             ('timestamp', 'string'),
         ],
-        name='ratings'
+        name='ratings',
     )
     movies = ibis.table(
-        [
-            ('movieid', 'int64'),
-            ('title', 'string'),
-        ],
-        name='movies'
+        [('movieid', 'int64'), ('title', 'string')], name='movies'
     )
 
     expr = ratings.timestamp.cast('timestamp')
     ratings2 = ratings['userid', 'movieid', 'rating', expr.name('datetime')]
     joined2 = ratings2.join(movies, ['movieid'])[ratings2, movies['title']]
-    joined3 = joined2.filter([
-        joined2.userid == 118205,
-        joined2.datetime.year() > 2001
-    ])
-    top_user_old_movie_ids = joined3.filter([
-        joined3.userid == 118205,
-        joined3.datetime.year() < 2009
-    ])[['movieid']]
+    joined3 = joined2.filter(
+        [joined2.userid == 118_205, joined2.datetime.year() > 2001]
+    )
+    top_user_old_movie_ids = joined3.filter(
+        [joined3.userid == 118_205, joined3.datetime.year() < 2009]
+    )[['movieid']]
     # projection from a filter was hiding an insidious bug, so we're disabling
     # that for now see issue #1295
     cond = joined3.movieid.isin(top_user_old_movie_ids.movieid)
@@ -173,13 +164,8 @@ WHERE t2.`movieid` IN (
 
 def test_logically_negate_complex_boolean_expr():
     t = ibis.table(
-        [
-            ('a', 'string'),
-            ('b', 'double'),
-            ('c', 'int64'),
-            ('d', 'string'),
-        ],
-        name='t'
+        [('a', 'string'), ('b', 'double'), ('c', 'int64'), ('d', 'string')],
+        name='t',
     )
 
     def f(t):
@@ -194,8 +180,7 @@ FROM t"""
 
 
 def test_join_with_nested_or_condition():
-    t1 = ibis.table([('a', 'string'),
-                     ('b', 'string')], 't')
+    t1 = ibis.table([('a', 'string'), ('b', 'string')], 't')
     t2 = t1.view()
 
     joined = t1.join(t2, [t1.a == t2.a, (t1.a != t2.b) | (t1.b != t2.a)])
@@ -211,8 +196,7 @@ FROM t t0
 
 
 def test_join_with_nested_xor_condition():
-    t1 = ibis.table([('a', 'string'),
-                     ('b', 'string')], 't')
+    t1 = ibis.table([('a', 'string'), ('b', 'string')], 't')
     t2 = t1.view()
 
     joined = t1.join(t2, [t1.a == t2.a, (t1.a != t2.b) ^ (t1.b != t2.a)])
@@ -228,11 +212,7 @@ FROM t t0
 
 
 @pytest.mark.parametrize(
-    ('method', 'sql'),
-    [
-        ('isnull', 'IS'),
-        ('notnull', 'IS NOT'),
-    ]
+    ('method', 'sql'), [('isnull', 'IS'), ('notnull', 'IS NOT')]
 )
 def test_is_parens(method, sql):
     t = ibis.table([('a', 'string'), ('b', 'string')], 'table')
@@ -243,7 +223,9 @@ def test_is_parens(method, sql):
     expected = """\
 SELECT *
 FROM `table`
-WHERE (`a` {sql} NULL) = (`b` {sql} NULL)""".format(sql=sql)
+WHERE (`a` {sql} NULL) = (`b` {sql} NULL)""".format(
+        sql=sql
+    )
     assert result == expected
 
 
@@ -261,27 +243,26 @@ WHERE (`a` IS NOT DISTINCT FROM NULL) = (`b` IS NOT DISTINCT FROM NULL)"""
 
 def test_join_aliasing():
     test = ibis.table(
-        [
-            ('a', 'int64'),
-            ('b', 'int64'),
-            ('c', 'int64'),
-        ],
-        name='test_table'
+        [('a', 'int64'), ('b', 'int64'), ('c', 'int64')], name='test_table'
     )
     test = test.mutate(d=test.a + 20)
     test2 = test[test.d, test.c]
     idx = (test2.d / 15).cast('int64').name('idx')
-    test3 = (
-        test2.groupby([test2.d, idx, test2.c])
-             .aggregate(row_count=test2.count())
+    test3 = test2.groupby([test2.d, idx, test2.c]).aggregate(
+        row_count=test2.count()
     )
     test3_totals = test3.groupby(test3.d).aggregate(
-        total=test3.row_count.sum())
-    test4 = test3.join(
-        test3_totals, test3.d == test3_totals.d)[test3, test3_totals.total]
+        total=test3.row_count.sum()
+    )
+    test4 = test3.join(test3_totals, test3.d == test3_totals.d)[
+        test3, test3_totals.total
+    ]
     test5 = test4[test4.row_count < test4.total / 2]
-    agg = test.groupby([test.d, test.b]).aggregate(
-        count=test.count(), unique=test.c.nunique()).view()
+    agg = (
+        test.groupby([test.d, test.b])
+        .aggregate(count=test.count(), unique=test.c.nunique())
+        .view()
+    )
     joined = agg.join(test5, agg.d == test5.d)[agg, test5.total]
     result = joined
     result = to_sql(result)
@@ -368,35 +349,41 @@ WHERE (`a` = (
 @pytest.fixture
 def region():
     return ibis.table(
-        [('r_regionkey', 'int16'),
-         ('r_name', 'string'),
-         ('r_comment', 'string')],
-        name='tpch_region'
+        [
+            ('r_regionkey', 'int16'),
+            ('r_name', 'string'),
+            ('r_comment', 'string'),
+        ],
+        name='tpch_region',
     )
 
 
 @pytest.fixture
 def nation():
     return ibis.table(
-        [('n_nationkey', 'int32'),
-         ('n_name', 'string'),
-         ('n_regionkey', 'int32'),
-         ('n_comment', 'string')],
-        name='tpch_nation'
+        [
+            ('n_nationkey', 'int32'),
+            ('n_name', 'string'),
+            ('n_regionkey', 'int32'),
+            ('n_comment', 'string'),
+        ],
+        name='tpch_nation',
     )
 
 
 @pytest.fixture
 def customer():
     return ibis.table(
-        [('c_custkey', 'int64'),
-         ('c_name', 'string'),
-         ('c_address', 'string'),
-         ('c_nationkey', 'int32'),
-         ('c_phone', 'string'),
-         ('c_acctbal', 'decimal(12, 2)'),
-         ('c_mktsegment', 'string'),
-         ('c_comment', 'string')],
+        [
+            ('c_custkey', 'int64'),
+            ('c_name', 'string'),
+            ('c_address', 'string'),
+            ('c_nationkey', 'int32'),
+            ('c_phone', 'string'),
+            ('c_acctbal', 'decimal(12, 2)'),
+            ('c_mktsegment', 'string'),
+            ('c_comment', 'string'),
+        ],
         name='tpch_customer',
     )
 
@@ -404,30 +391,37 @@ def customer():
 @pytest.fixture
 def orders():
     return ibis.table(
-        [('o_orderkey', 'int64'),
-         ('o_custkey', 'int64'),
-         ('o_orderstatus', 'string'),
-         ('o_totalprice', 'decimal(12, 2)'),
-         ('o_orderdate', 'string'),
-         ('o_orderpriority', 'string'),
-         ('o_clerk', 'string'),
-         ('o_shippriority', 'int32'),
-         ('o_comment', 'string')],
-        name='tpch_orders'
+        [
+            ('o_orderkey', 'int64'),
+            ('o_custkey', 'int64'),
+            ('o_orderstatus', 'string'),
+            ('o_totalprice', 'decimal(12, 2)'),
+            ('o_orderdate', 'string'),
+            ('o_orderpriority', 'string'),
+            ('o_clerk', 'string'),
+            ('o_shippriority', 'int32'),
+            ('o_comment', 'string'),
+        ],
+        name='tpch_orders',
     )
 
 
 @pytest.fixture
 def tpch(region, nation, customer, orders):
-    fields_of_interest = [customer,
-                          region.r_name.name('region'),
-                          orders.o_totalprice,
-                          orders.o_orderdate.cast('timestamp').name('odate')]
+    fields_of_interest = [
+        customer,
+        region.r_name.name('region'),
+        orders.o_totalprice,
+        orders.o_orderdate.cast('timestamp').name('odate'),
+    ]
 
-    return (region.join(nation, region.r_regionkey == nation.n_regionkey)
-            .join(customer, customer.c_nationkey == nation.n_nationkey)
-            .join(orders, orders.o_custkey == customer.c_custkey)
-            [fields_of_interest])
+    return (
+        region.join(nation, region.r_regionkey == nation.n_regionkey)
+        .join(customer, customer.c_nationkey == nation.n_nationkey)
+        .join(orders, orders.o_custkey == customer.c_custkey)[
+            fields_of_interest
+        ]
+    )
 
 
 def test_join_key_name(tpch):
@@ -439,14 +433,16 @@ def test_join_key_name(tpch):
     amount_filter = tpch.o_totalprice > conditional_avg
     post_sizes = tpch[amount_filter].group_by(year).size()
 
-    percent = ((post_sizes['count'] / pre_sizes['count'].cast('double'))
-               .name('fraction'))
+    percent = (post_sizes['count'] / pre_sizes['count'].cast('double')).name(
+        'fraction'
+    )
 
-    expr = (pre_sizes.join(post_sizes, pre_sizes.year == post_sizes.year)
-            [pre_sizes.year,
-             pre_sizes['count'].name('pre_count'),
-             post_sizes['count'].name('post_count'),
-             percent])
+    expr = pre_sizes.join(post_sizes, pre_sizes.year == post_sizes.year)[
+        pre_sizes.year,
+        pre_sizes['count'].name('pre_count'),
+        post_sizes['count'].name('post_count'),
+        percent,
+    ]
     result = ibis.impala.compile(expr)
     expected = """\
 WITH t0 AS (
@@ -487,10 +483,11 @@ def test_join_key_name2(tpch):
     pre_sizes = tpch.group_by(year).size()
     post_sizes = tpch.group_by(year).size().view()
 
-    expr = (pre_sizes.join(post_sizes, pre_sizes.year == post_sizes.year)
-            [pre_sizes.year,
-             pre_sizes['count'].name('pre_count'),
-             post_sizes['count'].name('post_count')])
+    expr = pre_sizes.join(post_sizes, pre_sizes.year == post_sizes.year)[
+        pre_sizes.year,
+        pre_sizes['count'].name('pre_count'),
+        post_sizes['count'].name('post_count'),
+    ]
     result = ibis.impala.compile(expr)
     expected = """\
 WITH t0 AS (

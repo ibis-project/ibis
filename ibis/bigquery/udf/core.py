@@ -25,6 +25,7 @@ class SymbolTable(ChainMap):
     shove a "let" at the beginning of every variable name if it doesn't already
     exist in the current scope.
     """
+
     def __getitem__(self, key):
         if key not in self:
             self[key] = key
@@ -59,9 +60,11 @@ def semicolon(f):
     ----------
     f : callable
     """
+
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
         return f(*args, **kwargs) + ';'
+
     return wrapper
 
 
@@ -71,7 +74,7 @@ def rewrite_print(node):
         func=ast.Attribute(
             value=ast.Name(id='console', ctx=ast.Load()),
             attr='log',
-            ctx=ast.Load()
+            ctx=ast.Load(),
         ),
         args=node.args,
         keywords=node.keywords,
@@ -87,11 +90,7 @@ def rewrite_len(node):
 @rewrite.register(ast.Call(func=ast.Attribute(attr='append')))
 def rewrite_append(node):
     return ast.Call(
-        func=ast.Attribute(
-            value=node.func.value,
-            attr='push',
-            ctx=ast.Load(),
-        ),
+        func=ast.Attribute(value=node.func.value, attr='push', ctx=ast.Load()),
         args=node.args,
         keywords=node.keywords,
     )
@@ -113,14 +112,11 @@ class PythonToJavaScriptTranslator:
         'list': 'Array',
         'Array': 'Array',
         'Date': 'Date',
-
         'dict': 'Object',
         'Map': 'Map',
         'WeakMap': 'WeakMap',
-
         'str': 'String',
         'String': 'String',
-
         'set': 'Set',
         'Set': 'Set',
         'WeakSet': 'WeakSet',
@@ -183,19 +179,17 @@ class PythonToJavaScriptTranslator:
 
         is_name = isinstance(target, ast.Name)
         compiled_target = self.visit(target)
-        if (not is_name or
-                (self.current_class is not None and
-                    compiled_target.startswith('this.'))):
+        if not is_name or (
+            self.current_class is not None
+            and compiled_target.startswith('this.')
+        ):
             self.scope[compiled_target] = compiled_target
         return '{} = {}'.format(
-            self.scope[compiled_target],
-            self.visit(node.value)
+            self.scope[compiled_target], self.visit(node.value)
         )
 
     def translate_special_method(self, name):
-        return {
-            '__init__': 'constructor'
-        }.get(name, name)
+        return {'__init__': 'constructor'}.get(name, name)
 
     def visit_FunctionDef(self, node):
         self.current_function = node
@@ -225,11 +219,11 @@ class PythonToJavaScriptTranslator:
                 prefix += ' ' * (self.current_class is None)
 
             lines = [
-                prefix +
-                self.translate_special_method(node.name) +
-                '({}) {{'.format(self.visit(node.args)),
+                prefix
+                + self.translate_special_method(node.name)
+                + '({}) {{'.format(self.visit(node.args)),
                 body,
-                '}'
+                '}',
             ]
 
             self.current_function = None
@@ -288,10 +282,11 @@ class PythonToJavaScriptTranslator:
             return 'true'
         elif value is False:
             return 'false'
-        assert value is None, \
-            'value is not True and is not False, must be None, got {}'.format(
-                value
-            )
+        assert (
+            value is None
+        ), 'value is not True and is not False, must be None, got {}'.format(
+            value
+        )
         return 'null'
 
     def visit_Str(self, node):
@@ -403,9 +398,7 @@ class PythonToJavaScriptTranslator:
         for op, right in zip(ops, rights):
             comparisons.append(
                 '({} {} {})'.format(
-                    self.visit(left),
-                    self.visit(op),
-                    self.visit(right)
+                    self.visit(left), self.visit(op), self.visit(right)
                 )
             )
             left = right
@@ -520,7 +513,7 @@ class PythonToJavaScriptTranslator:
                 kwonlyargs=[],
                 kw_defaults=[],
                 kwarg=None,
-                defaults=[]
+                defaults=[],
             )
         else:
             signature = ast.List(elts=argslist, ctx=ast.Load())
@@ -535,11 +528,13 @@ class PythonToJavaScriptTranslator:
             method = ast.Attribute(value=array, attr='filter', ctx=ast.Load())
             # array.filter(func)
             array = ast.Call(
-                func=method, args=[lam_sig(body=filt)], keywords=[])
+                func=method, args=[lam_sig(body=filt)], keywords=[]
+            )
 
         method = ast.Attribute(value=array, attr='map', ctx=ast.Load())
         mapped = ast.Call(
-            func=method, args=[lam_sig(body=node.elt)], keywords=[])
+            func=method, args=[lam_sig(body=node.elt)], keywords=[]
+        )
         result = self.visit(mapped)
         return result
 
@@ -555,7 +550,7 @@ if __name__ == '__main__':
     @udf(
         input_type=[dt.double, dt.double, dt.int64],
         output_type=dt.Array(dt.double),
-        strict=False
+        strict=False,
     )
     def my_func(a, b, n):
         class Rectangle:
@@ -634,4 +629,5 @@ if __name__ == '__main__':
         foo = Rectangle(1, 2)
         nnn = len(values)
         return [sum(values) - a + b * y ** -x, z, foo.width, nnn]
+
     print(my_func.js)

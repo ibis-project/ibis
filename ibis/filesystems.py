@@ -33,6 +33,7 @@ class HDFS:
     Interface class to HDFS for ibis that abstracts away (and protects
     user/developer against) various 3rd party library API differences.
     """
+
     def log(self, message):
         print(message)
 
@@ -107,8 +108,9 @@ class HDFS:
         """
         raise NotImplementedError
 
-    def put(self, hdfs_path, resource, overwrite=False, verbose=None,
-            **kwargs):
+    def put(
+        self, hdfs_path, resource, overwrite=False, verbose=None, **kwargs
+    ):
         """
         Write file or directory to HDFS
 
@@ -130,8 +132,14 @@ class HDFS:
         """
         raise NotImplementedError
 
-    def put_tarfile(self, hdfs_path, local_path, compression='gzip',
-                    verbose=None, overwrite=False):
+    def put_tarfile(
+        self,
+        hdfs_path,
+        local_path,
+        compression='gzip',
+        verbose=None,
+        overwrite=False,
+    ):
         """
         Write contents of tar archive to HDFS directly without having to
         decompress it locally first
@@ -145,15 +153,13 @@ class HDFS:
         verbose : boolean, default None (global default)
         """
         import tarfile
-        modes = {
-            None: 'r',
-            'gzip': 'r:gz',
-            'bz2': 'r:bz2'
-        }
+
+        modes = {None: 'r', 'gzip': 'r:gz', 'bz2': 'r:bz2'}
 
         if compression not in modes:
-            raise ValueError('Invalid compression type {0}'
-                             .format(compression))
+            raise ValueError(
+                'Invalid compression type {0}'.format(compression)
+            )
         mode = modes[compression]
 
         tf = tarfile.open(local_path, mode=mode)
@@ -168,8 +174,15 @@ class HDFS:
     def put_zipfile(self, hdfs_path, local_path):
         raise NotImplementedError
 
-    def write(self, hdfs_path, buf, overwrite=False, blocksize=None,
-              replication=None, buffersize=None):
+    def write(
+        self,
+        hdfs_path,
+        buf,
+        overwrite=False,
+        blocksize=None,
+        replication=None,
+        buffersize=None,
+    ):
         raise NotImplementedError
 
     def mkdir(self, path):
@@ -231,10 +244,12 @@ class HDFS:
             head, tail = posixpath.split(name)
 
             tail = tail.lower()
-            return (not tail.endswith('.tmp') and
-                    not tail.endswith('.copying') and
-                    not tail.startswith('_') and
-                    not tail.startswith('.'))
+            return (
+                not tail.endswith('.tmp')
+                and not tail.endswith('.copying')
+                and not tail.startswith('_')
+                and not tail.startswith('.')
+            )
 
         for filename, meta in contents:
             if meta['type'].lower() == 'file' and valid_filename(filename):
@@ -298,23 +313,28 @@ class WebHDFS(HDFS):
             return reader.read()
 
     @implements(HDFS.put)
-    def put(self, hdfs_path, resource, overwrite=False, verbose=None,
-            **kwargs):
+    def put(
+        self, hdfs_path, resource, overwrite=False, verbose=None, **kwargs
+    ):
         verbose = verbose or options.verbose
         if isinstance(resource, str):
             # `resource` is a path.
-            return self.client.upload(hdfs_path, resource, overwrite=overwrite,
-                                      **kwargs)
+            return self.client.upload(
+                hdfs_path, resource, overwrite=overwrite, **kwargs
+            )
         else:
             # `resource` is a file-like object.
             hdfs_path = self.client.resolve(hdfs_path)
-            self.client.write(hdfs_path, data=resource, overwrite=overwrite,
-                              **kwargs)
+            self.client.write(
+                hdfs_path, data=resource, overwrite=overwrite, **kwargs
+            )
             return hdfs_path
 
     @implements(HDFS.get)
-    def get(self, hdfs_path, local_path, overwrite=False, verbose=None,
-            **kwargs):
+    def get(
+        self, hdfs_path, local_path, overwrite=False, verbose=None, **kwargs
+    ):
         verbose = verbose or options.verbose
-        return self.client.download(hdfs_path, local_path, overwrite=overwrite,
-                                    **kwargs)
+        return self.client.download(
+            hdfs_path, local_path, overwrite=overwrite, **kwargs
+        )

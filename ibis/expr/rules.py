@@ -76,12 +76,13 @@ def cast(source, target):
 
 
 class validator(curry):
-
     def __repr__(self):
         return '{}({}{})'.format(
             self.func.__name__,
             repr(self.args)[1:-1],
-            ', '.join('{}={!r}'.format(k, v) for k, v in self.keywords.items())
+            ', '.join(
+                '{}={!r}'.format(k, v) for k, v in self.keywords.items()
+            ),
         )
 
 
@@ -200,8 +201,10 @@ def value(dtype, arg):
         arg = ir.literal(arg)
 
     if not isinstance(arg, ir.AnyValue):
-        raise com.IbisTypeError('Given argument with type {} is not a value '
-                                'expression'.format(type(arg)))
+        raise com.IbisTypeError(
+            'Given argument with type {} is not a value '
+            'expression'.format(type(arg))
+        )
 
     # retrieve literal values for implicit cast check
     value = getattr(arg.op(), 'value', None)
@@ -214,9 +217,11 @@ def value(dtype, arg):
         # implicitly castable to it, like dt.int8 is castable to dt.int64
         return arg
     else:
-        raise com.IbisTypeError('Given argument with datatype {} is not '
-                                'subtype of {} nor implicitly castable to '
-                                'it'.format(arg.type(), dtype))
+        raise com.IbisTypeError(
+            'Given argument with datatype {} is not '
+            'subtype of {} nor implicitly castable to '
+            'it'.format(arg.type(), dtype)
+        )
 
 
 @validator
@@ -236,7 +241,8 @@ def array_of(inner, arg):
     if not isinstance(argtype, dt.Array):
         raise com.IbisTypeError(
             'Argument must be an array, got expression {} which is of type '
-            '{}'.format(val, val.type()))
+            '{}'.format(val, val.type())
+        )
     return value(dt.Array(inner(val[0]).type()), val)
 
 
@@ -278,6 +284,7 @@ def interval(arg, units=None):
 @validator
 def client(arg):
     from ibis.client import Client
+
     return instance_of(Client, arg)
 
 
@@ -288,10 +295,12 @@ def client(arg):
 def promoter(fn):
     def wrapper(name_or_value, *args, **kwargs):
         if isinstance(name_or_value, str):
-            return lambda self: fn(getattr(self, name_or_value),
-                                   *args, **kwargs)
+            return lambda self: fn(
+                getattr(self, name_or_value), *args, **kwargs
+            )
         else:
             return fn(name_or_value, *args, **kwargs)
+
     return wrapper
 
 

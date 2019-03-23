@@ -20,8 +20,14 @@ class Window:
     for current_value
     """
 
-    def __init__(self, group_by=None, order_by=None,
-                 preceding=None, following=None, how='rows'):
+    def __init__(
+        self,
+        group_by=None,
+        order_by=None,
+        preceding=None,
+        following=None,
+        how='rows',
+    ):
         if group_by is None:
             group_by = []
 
@@ -55,8 +61,9 @@ class Window:
             following_tuple = isinstance(self.following, tuple)
             has_following = True
 
-        if ((preceding_tuple and has_following) or
-                (following_tuple and has_preceding)):
+        if (preceding_tuple and has_following) or (
+            following_tuple and has_preceding
+        ):
             raise com.IbisInputError(
                 'Can only specify one window side when you want an '
                 'off-center window'
@@ -91,10 +98,7 @@ class Window:
                     )
         if self.how not in {'rows', 'range'}:
             raise com.IbisInputError(
-                "'how' must be 'rows' or 'range', got {}"
-                .format(
-                    self.how
-                )
+                "'how' must be 'rows' or 'range', got {}".format(self.how)
             )
 
     def bind(self, table):
@@ -107,16 +111,16 @@ class Window:
     def combine(self, window):
         if self.how != window.how:
             raise com.IbisInputError(
-                "Window types must match. Expecting '{}' Window, got '{}'"
-                .format(
-                    self.how.upper(), window.how.upper()
-                )
+                (
+                    "Window types must match. "
+                    "Expecting '{}' Window, got '{}'"
+                ).format(self.how.upper(), window.how.upper())
             )
         kwds = dict(
             preceding=self.preceding or window.preceding,
             following=self.following or window.following,
             group_by=self._group_by + window._group_by,
-            order_by=self._order_by + window._order_by
+            order_by=self._order_by + window._order_by,
         )
         return Window(**kwds)
 
@@ -130,7 +134,7 @@ class Window:
             order_by=kwds.get('order_by', self._order_by),
             preceding=kwds.get('preceding', self.preceding),
             following=kwds.get('following', self.following),
-            how=kwds.get('how', self.how)
+            how=kwds.get('how', self.how),
         )
         return Window(**new_kwds)
 
@@ -155,22 +159,21 @@ class Window:
         except KeyError:
             pass
 
-        if (len(self._group_by) != len(other._group_by) or
-                not ops.all_equal(self._group_by, other._group_by,
-                                  cache=cache)):
+        if len(self._group_by) != len(other._group_by) or not ops.all_equal(
+            self._group_by, other._group_by, cache=cache
+        ):
             cache[self, other] = False
             return False
 
-        if (len(self._order_by) != len(other._order_by) or
-                not ops.all_equal(self._order_by, other._order_by,
-                                  cache=cache)):
+        if len(self._order_by) != len(other._order_by) or not ops.all_equal(
+            self._order_by, other._order_by, cache=cache
+        ):
             cache[self, other] = False
             return False
 
-        equal = (
-            ops.all_equal(self.preceding, other.preceding, cache=cache) and
-            ops.all_equal(self.following, other.following, cache=cache)
-        )
+        equal = ops.all_equal(
+            self.preceding, other.preceding, cache=cache
+        ) and ops.all_equal(self.following, other.following, cache=cache)
         cache[self, other] = equal
         return equal
 
@@ -201,8 +204,13 @@ def window(preceding=None, following=None, group_by=None, order_by=None):
     -------
     win : ibis Window
     """
-    return Window(preceding=preceding, following=following,
-                  group_by=group_by, order_by=order_by, how='rows')
+    return Window(
+        preceding=preceding,
+        following=following,
+        group_by=group_by,
+        order_by=order_by,
+        how='rows',
+    )
 
 
 def range_window(preceding=None, following=None, group_by=None, order_by=None):
@@ -231,8 +239,13 @@ def range_window(preceding=None, following=None, group_by=None, order_by=None):
     -------
     win : ibis Window
     """
-    return Window(preceding=preceding, following=following,
-                  group_by=group_by, order_by=order_by, how='range')
+    return Window(
+        preceding=preceding,
+        following=following,
+        group_by=group_by,
+        order_by=order_by,
+        how='range',
+    )
 
 
 def cumulative_window(group_by=None, order_by=None):
@@ -253,8 +266,9 @@ def cumulative_window(group_by=None, order_by=None):
     -------
     win : ibis Window
     """
-    return Window(preceding=None, following=0,
-                  group_by=group_by, order_by=order_by)
+    return Window(
+        preceding=None, following=0, group_by=group_by, order_by=order_by
+    )
 
 
 def trailing_window(rows, group_by=None, order_by=None):
@@ -275,8 +289,9 @@ def trailing_window(rows, group_by=None, order_by=None):
     -------
     win : ibis Window
     """
-    return Window(preceding=rows, following=0,
-                  group_by=group_by, order_by=order_by)
+    return Window(
+        preceding=rows, following=0, group_by=group_by, order_by=order_by
+    )
 
 
 def trailing_range_window(preceding, order_by, group_by=None):
@@ -297,8 +312,13 @@ def trailing_range_window(preceding, order_by, group_by=None):
     -------
     win: ibis Window
     """
-    return Window(preceding=preceding, following=0,
-                  group_by=group_by, order_by=order_by, how='range')
+    return Window(
+        preceding=preceding,
+        following=0,
+        group_by=group_by,
+        order_by=order_by,
+        how='range',
+    )
 
 
 def propagate_down_window(expr, window):
@@ -307,8 +327,7 @@ def propagate_down_window(expr, window):
     clean_args = []
     unchanged = True
     for arg in op.args:
-        if (isinstance(arg, ir.Expr) and
-                not isinstance(op, ops.WindowOp)):
+        if isinstance(arg, ir.Expr) and not isinstance(op, ops.WindowOp):
             new_arg = propagate_down_window(arg, window)
             if isinstance(new_arg.op(), ops.AnalyticOp):
                 new_arg = ops.WindowOp(new_arg, window).to_expr()

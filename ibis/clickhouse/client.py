@@ -41,7 +41,7 @@ _clickhouse_dtypes = {
     'String': dt.String,
     'FixedString': dt.String,
     'Date': dt.Date,
-    'DateTime': dt.Timestamp
+    'DateTime': dt.Timestamp,
 }
 _ibis_dtypes = {v: k for k, v in _clickhouse_dtypes.items()}
 _ibis_dtypes[dt.String] = 'String'
@@ -97,27 +97,28 @@ class ClickhouseDatabase(Database):
 
 
 class ClickhouseQuery(Query):
-
     def _external_tables(self):
         tables = []
         for name, df in self.extra_options.get('external_tables', {}).items():
             if not isinstance(df, pd.DataFrame):
-                raise TypeError('External table is not an instance of pandas '
-                                'dataframe')
+                raise TypeError(
+                    'External table is not an instance of pandas ' 'dataframe'
+                )
 
             schema = sch.infer(df)
             chtypes = map(ClickhouseDataType.from_ibis, schema.types)
             structure = list(zip(schema.names, map(str, chtypes)))
 
-            tables.append(dict(name=name,
-                               data=df.to_dict('records'),
-                               structure=structure))
+            tables.append(
+                dict(
+                    name=name, data=df.to_dict('records'), structure=structure
+                )
+            )
         return tables
 
     def execute(self):
         cursor = self.client._execute(
-            self.compiled_sql,
-            external_tables=self._external_tables()
+            self.compiled_sql, external_tables=self._external_tables()
         )
         result = self._fetch(cursor)
         return self._wrap_result(result)
@@ -128,9 +129,7 @@ class ClickhouseQuery(Query):
             # handle empty resultset
             return pd.DataFrame([], columns=colnames)
 
-        df = pd.DataFrame.from_dict(
-            OrderedDict(zip(colnames, data))
-        )
+        df = pd.DataFrame.from_dict(OrderedDict(zip(colnames, data)))
         return self.schema().apply_to(df)
 
 
@@ -152,8 +151,11 @@ class ClickhouseTable(ir.TableExpr, DatabaseEntity):
     def _match_name(self):
         m = fully_qualified_re.match(self._qualified_name)
         if not m:
-            raise com.IbisError('Cannot determine database name from {0}'
-                                .format(self._qualified_name))
+            raise com.IbisError(
+                'Cannot determine database name from {0}'.format(
+                    self._qualified_name
+                )
+            )
         db, quoted, unquoted = m.groups()
         return db, quoted or unquoted
 
@@ -185,6 +187,7 @@ class ClickhouseTable(ir.TableExpr, DatabaseEntity):
 
     def insert(self, obj, **kwargs):
         from .identifiers import quote_identifier
+
         schema = self.schema()
 
         assert isinstance(obj, pd.DataFrame)
@@ -192,7 +195,8 @@ class ClickhouseTable(ir.TableExpr, DatabaseEntity):
 
         columns = ', '.join(map(quote_identifier, obj.columns))
         query = 'INSERT INTO {table} ({columns}) VALUES'.format(
-            table=self._qualified_name, columns=columns)
+            table=self._qualified_name, columns=columns
+        )
 
         # convert data columns with datetime64 pandas dtype to native date
         # because clickhouse-driver 0.0.10 does arithmetic operations on it
@@ -242,8 +246,10 @@ class ClickhouseClient(SQLClient):
         self.log(query)
 
         response = self.con.execute(
-            query, columnar=True, with_column_types=True,
-            external_tables=external_tables
+            query,
+            columnar=True,
+            with_column_types=True,
+            external_tables=external_tables,
         )
         if not results:
             return response
@@ -383,7 +389,7 @@ class ClickhouseClient(SQLClient):
         return len(self.list_tables(like=name, database=database)) > 0
 
     def _ensure_temp_db_exists(self):
-        name = options.clickhouse.temp_db,
+        name = (options.clickhouse.temp_db,)
         if not self.exists_database(name):
             self.create_database(name, force=True)
 
@@ -411,9 +417,9 @@ class ClickhouseClient(SQLClient):
 
         try:
             server = self.con.connection.server_info
-            vstring = '{}.{}.{}'.format(server.version_major,
-                                        server.version_minor,
-                                        server.revision)
+            vstring = '{}.{}.{}'.format(
+                server.version_major, server.version_minor, server.revision
+            )
         except Exception:
             self.con.connection.disconnect()
             raise

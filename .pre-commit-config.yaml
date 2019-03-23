@@ -2,7 +2,12 @@ repos:
   - repo: git://github.com/pre-commit/pre-commit-hooks
     rev: v2.1.0
     hooks:
-     - id: flake8
-       types:
-         - python
-       args: ['--config=setup.cfg']
+      - id: flake8
+        types:
+          - python
+        args: ['--config=setup.cfg']
+
+  - repo: https://github.com/ambv/black
+    rev: stable
+    hooks:
+      - id: black

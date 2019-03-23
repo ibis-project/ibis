@@ -24,14 +24,15 @@ def sort_kind():
 
 default = pytest.mark.parametrize('default', [ibis.NA, ibis.literal('a')])
 row_offset = pytest.mark.parametrize(
-    'row_offset', list(map(ibis.literal, [-1, 1, 0])))
+    'row_offset', list(map(ibis.literal, [-1, 1, 0]))
+)
 range_offset = pytest.mark.parametrize(
     'range_offset',
     [
         ibis.interval(days=1),
         2 * ibis.interval(days=1),
         -2 * ibis.interval(days=1),
-    ]
+    ],
 )
 
 
@@ -70,13 +71,16 @@ def test_lag(t, df, row_offset, default, row_window):
 @default
 @range_offset
 def test_lead_delta(t, df, range_offset, default, range_window):
-    expr = t.dup_strings.lead(range_offset, default=default).over(
-        range_window)
+    expr = t.dup_strings.lead(range_offset, default=default).over(range_window)
     result = expr.execute()
-    expected = df[['plain_datetimes_naive', 'dup_strings']].set_index(
-        'plain_datetimes_naive').squeeze().tshift(
-                freq=execute(-range_offset)).reindex(
-                df.plain_datetimes_naive).reset_index(drop=True)
+    expected = (
+        df[['plain_datetimes_naive', 'dup_strings']]
+        .set_index('plain_datetimes_naive')
+        .squeeze()
+        .tshift(freq=execute(-range_offset))
+        .reindex(df.plain_datetimes_naive)
+        .reset_index(drop=True)
+    )
     if default is not ibis.NA:
         expected = expected.fillna(execute(default))
     tm.assert_series_equal(result, expected)
@@ -85,13 +89,16 @@ def test_lead_delta(t, df, range_offset, default, range_window):
 @default
 @range_offset
 def test_lag_delta(t, df, range_offset, default, range_window):
-    expr = t.dup_strings.lag(range_offset, default=default).over(
-        range_window)
+    expr = t.dup_strings.lag(range_offset, default=default).over(range_window)
     result = expr.execute()
-    expected = df[['plain_datetimes_naive', 'dup_strings']].set_index(
-        'plain_datetimes_naive').squeeze().tshift(
-            freq=execute(range_offset)).reindex(
-                df.plain_datetimes_naive).reset_index(drop=True)
+    expected = (
+        df[['plain_datetimes_naive', 'dup_strings']]
+        .set_index('plain_datetimes_naive')
+        .squeeze()
+        .tshift(freq=execute(range_offset))
+        .reindex(df.plain_datetimes_naive)
+        .reset_index(drop=True)
+    )
     if default is not ibis.NA:
         expected = expected.fillna(execute(default))
     tm.assert_series_equal(result, expected)
@@ -115,8 +122,8 @@ def test_group_by_mutate_analytic(t, df):
         first_value=t.plain_int64.first(),
         last_value=t.plain_strings.last(),
         avg_broadcast=t.plain_float64 - t.plain_float64.mean(),
-        delta=(t.plain_int64 - t.plain_int64.lag()) / (
-               t.plain_float64 - t.plain_float64.lag()),
+        delta=(t.plain_int64 - t.plain_int64.lag())
+        / (t.plain_float64 - t.plain_float64.lag()),
     )
     result = expr.execute()
 
@@ -126,9 +133,9 @@ def test_group_by_mutate_analytic(t, df):
         first_value=gb.plain_int64.transform('first'),
         avg_broadcast=df.plain_float64 - gb.plain_float64.transform('mean'),
         delta=(
-            (df.plain_int64 - gb.plain_int64.shift(1)) /
-            (df.plain_float64 - gb.plain_float64.shift(1))
-        )
+            (df.plain_int64 - gb.plain_int64.shift(1))
+            / (df.plain_float64 - gb.plain_float64.shift(1))
+        ),
     )
 
     tm.assert_frame_equal(result[expected.columns], expected)
@@ -161,8 +168,7 @@ def test_batting_zscore(players, players_df):
         g_z=(players_df.G - gb.G.transform('mean')) / gb.G.transform('std')
     )
     cols = expected.columns.tolist()
-    result = expr.execute()[cols].sort_values(cols).reset_index(
-        drop=True)
+    result = expr.execute()[cols].sort_values(cols).reset_index(drop=True)
     tm.assert_frame_equal(result, expected)
 
 
@@ -173,9 +179,8 @@ def test_batting_avg_change_in_games_per_year(players, players_df):
 
     gb = players_df.groupby('playerID')
     expected = players_df.assign(
-        delta=(players_df.G - gb.G.shift(1)) / (
-            players_df.yearID - gb.yearID.shift(1)
-        )
+        delta=(players_df.G - gb.G.shift(1))
+        / (players_df.yearID - gb.yearID.shift(1))
     )
 
     cols = expected.columns.tolist()
@@ -217,8 +222,9 @@ def test_batting_specific_cumulative(batting, batting_df, op, sort_kind):
 
     pandas_method = methodcaller(op)
     expected = pandas_method(
-        batting_df[['G', 'yearID']].sort_values(
-            'yearID', kind=sort_kind).G.expanding()
+        batting_df[['G', 'yearID']]
+        .sort_values('yearID', kind=sort_kind)
+        .G.expanding()
     ).reset_index(drop=True)
     tm.assert_series_equal(result, expected)
 
@@ -232,8 +238,12 @@ def test_batting_cumulative(batting, batting_df, sort_kind):
     result = expr.execute()
 
     columns = ['G', 'yearID']
-    more_values = batting_df[columns].sort_values(
-        'yearID', kind=sort_kind).G.expanding().sum()
+    more_values = (
+        batting_df[columns]
+        .sort_values('yearID', kind=sort_kind)
+        .G.expanding()
+        .sum()
+    )
     expected = batting_df.assign(more_values=more_values)
 
     tm.assert_frame_equal(result[expected.columns], expected)
@@ -245,17 +255,25 @@ def test_batting_cumulative_partitioned(batting, batting_df, sort_kind):
 
     t = batting
     expr = t.G.sum().over(
-        ibis.cumulative_window(order_by=order_by, group_by=group_by))
+        ibis.cumulative_window(order_by=order_by, group_by=group_by)
+    )
     expr = t.mutate(cumulative=expr)
     result = expr.execute()
 
     columns = [group_by, order_by, 'G']
-    expected = batting_df[columns].set_index(
-        order_by).groupby(group_by).G.expanding().sum().rename('cumulative')
+    expected = (
+        batting_df[columns]
+        .set_index(order_by)
+        .groupby(group_by)
+        .G.expanding()
+        .sum()
+        .rename('cumulative')
+    )
 
     tm.assert_series_equal(
         result.set_index([group_by, order_by]).sort_index().cumulative,
-        expected.sort_index())
+        expected.sort_index(),
+    )
 
 
 def test_batting_rolling(batting, batting_df, sort_kind):
@@ -267,8 +285,12 @@ def test_batting_rolling(batting, batting_df, sort_kind):
     result = expr.execute()
 
     columns = ['G', 'yearID']
-    more_values = batting_df[columns].sort_values(
-        'yearID', kind=sort_kind).G.rolling(5).sum()
+    more_values = (
+        batting_df[columns]
+        .sort_values('yearID', kind=sort_kind)
+        .G.rolling(5)
+        .sum()
+    )
     expected = batting_df.assign(more_values=more_values)
 
     tm.assert_frame_equal(result[expected.columns], expected)
@@ -285,12 +307,19 @@ def test_batting_rolling_partitioned(batting, batting_df, sort_kind):
     result = expr.execute()
 
     columns = [group_by, order_by, 'G']
-    expected = batting_df[columns].set_index(
-        order_by).groupby(group_by).G.rolling(3).sum().rename('rolled')
+    expected = (
+        batting_df[columns]
+        .set_index(order_by)
+        .groupby(group_by)
+        .G.rolling(3)
+        .sum()
+        .rename('rolled')
+    )
 
     tm.assert_series_equal(
         result.set_index([group_by, order_by]).sort_index().rolled,
-        expected.sort_index())
+        expected.sort_index(),
+    )
 
 
 @pytest.mark.parametrize(
@@ -298,7 +327,7 @@ def test_batting_rolling_partitioned(batting, batting_df, sort_kind):
     [
         ibis.window(order_by='yearID'),
         ibis.window(order_by='yearID', group_by='playerID'),
-    ]
+    ],
 )
 def test_window_failure_mode(batting, batting_df, window):
     # can't have order by without a following value of 0
@@ -315,15 +344,19 @@ def test_scalar_broadcasting(batting, batting_df):
 
 
 def test_mutate_with_window_after_join(sort_kind):
-    left_df = pd.DataFrame({
-        'ints': [0, 1, 2],
-        'strings': ['a', 'b', 'c'],
-        'dates': pd.date_range('20170101', periods=3),
-    })
-    right_df = pd.DataFrame({
-        'group': [0, 1, 2] * 3,
-        'value': [0, 1, np.nan, 3, 4, np.nan, 6, 7, 8],
-    })
+    left_df = pd.DataFrame(
+        {
+            'ints': [0, 1, 2],
+            'strings': ['a', 'b', 'c'],
+            'dates': pd.date_range('20170101', periods=3),
+        }
+    )
+    right_df = pd.DataFrame(
+        {
+            'group': [0, 1, 2] * 3,
+            'value': [0, 1, np.nan, 3, 4, np.nan, 6, 7, 8],
+        }
+    )
     con = ibis.pandas.connect(dict(left=left_df, right=right_df))
     left, right = map(con.table, ('left', 'right'))
 
@@ -331,24 +364,28 @@ def test_mutate_with_window_after_join(sort_kind):
     proj = joined[left, right.value]
     expr = proj.groupby('ints').mutate(sum=proj.value.sum())
     result = expr.execute()
-    expected = pd.DataFrame({
-        'dates': pd.concat(
-            [left_df.dates] * 3
-        ).sort_values(kind=sort_kind).reset_index(drop=True),
-        'ints': [0] * 3 + [1] * 3 + [2] * 3,
-        'strings': ['a'] * 3 + ['b'] * 3 + ['c'] * 3,
-        'value': [0.0, 3.0, 6.0, 1.0, 4.0, 7.0, np.nan, np.nan, 8.0],
-        'sum': [9.0] * 3 + [12.0] * 3 + [8.0] * 3,
-    })
+    expected = pd.DataFrame(
+        {
+            'dates': pd.concat([left_df.dates] * 3)
+            .sort_values(kind=sort_kind)
+            .reset_index(drop=True),
+            'ints': [0] * 3 + [1] * 3 + [2] * 3,
+            'strings': ['a'] * 3 + ['b'] * 3 + ['c'] * 3,
+            'value': [0.0, 3.0, 6.0, 1.0, 4.0, 7.0, np.nan, np.nan, 8.0],
+            'sum': [9.0] * 3 + [12.0] * 3 + [8.0] * 3,
+        }
+    )
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
 def test_mutate_scalar_with_window_after_join():
     left_df = pd.DataFrame({'ints': range(3)})
-    right_df = pd.DataFrame({
-        'group': [0, 1, 2] * 3,
-        'value': [0, 1, np.nan, 3, 4, np.nan, 6, 7, 8],
-    })
+    right_df = pd.DataFrame(
+        {
+            'group': [0, 1, 2] * 3,
+            'value': [0, 1, np.nan, 3, 4, np.nan, 6, 7, 8],
+        }
+    )
     con = ibis.pandas.connect(dict(left=left_df, right=right_df))
     left, right = map(con.table, ('left', 'right'))
 
@@ -356,21 +393,25 @@ def test_mutate_scalar_with_window_after_join():
     proj = joined[left, right.value]
     expr = proj.mutate(sum=proj.value.sum(), const=1)
     result = expr.execute()
-    expected = pd.DataFrame({
-        'ints': [0] * 3 + [1] * 3 + [2] * 3,
-        'value': [0.0, 3.0, 6.0, 1.0, 4.0, 7.0, np.nan, np.nan, 8.0],
-        'sum': [29.0] * 9,
-        'const': [1] * 9,
-    })
+    expected = pd.DataFrame(
+        {
+            'ints': [0] * 3 + [1] * 3 + [2] * 3,
+            'value': [0.0, 3.0, 6.0, 1.0, 4.0, 7.0, np.nan, np.nan, 8.0],
+            'sum': [29.0] * 9,
+            'const': [1] * 9,
+        }
+    )
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
 def test_project_scalar_after_join():
     left_df = pd.DataFrame({'ints': range(3)})
-    right_df = pd.DataFrame({
-        'group': [0, 1, 2] * 3,
-        'value': [0, 1, np.nan, 3, 4, np.nan, 6, 7, 8],
-    })
+    right_df = pd.DataFrame(
+        {
+            'group': [0, 1, 2] * 3,
+            'value': [0, 1, np.nan, 3, 4, np.nan, 6, 7, 8],
+        }
+    )
     con = ibis.pandas.connect(dict(left=left_df, right=right_df))
     left, right = map(con.table, ('left', 'right'))
 
@@ -378,10 +419,7 @@ def test_project_scalar_after_join():
     proj = joined[left, right.value]
     expr = proj[proj.value.sum().name('sum'), ibis.literal(1).name('const')]
     result = expr.execute()
-    expected = pd.DataFrame({
-        'sum': [29.0] * 9,
-        'const': [1] * 9,
-    })
+    expected = pd.DataFrame({'sum': [29.0] * 9, 'const': [1] * 9})
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
@@ -391,7 +429,8 @@ def test_project_list_scalar():
     expr = con.table('df')
     result = expr.mutate(res=expr.ints.quantile([0.5, 0.95])).execute()
     tm.assert_series_equal(
-        result.res, pd.Series([[1.0, 1.9] for _ in range(0, 3)], name='res'))
+        result.res, pd.Series([[1.0, 1.9] for _ in range(0, 3)], name='res')
+    )
 
 
 def test_window_with_preceding_expr():
@@ -401,8 +440,12 @@ def test_window_with_preceding_expr():
     df = pd.DataFrame({'value': data, 'time': index}, index=index)
     client = ibis.pandas.connect({'df': df})
     t = client.table('df')
-    expected = df.set_index('time').value.rolling(
-        '3d', closed='both').mean().reset_index(drop=True)
+    expected = (
+        df.set_index('time')
+        .value.rolling('3d', closed='both')
+        .mean()
+        .reset_index(drop=True)
+    )
     expected.index.name = None
     day = ibis.interval(days=1)
     window = ibis.trailing_window(3 * day, order_by=t.time)
@@ -420,11 +463,7 @@ def test_window_has_pre_execute_scope():
         called[0] += 1
         return {}
 
-    data = {
-        'key': list('abc'),
-        'value': [1, 2, 3],
-        'dup': list('ggh'),
-    }
+    data = {'key': list('abc'), 'value': [1, 2, 3], 'dup': list('ggh')}
     df = pd.DataFrame(data, columns=['key', 'value', 'dup'])
     client = ibis.pandas.connect(dict(df=df))
     t = client.table('df')

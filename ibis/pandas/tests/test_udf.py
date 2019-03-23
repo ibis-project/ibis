@@ -15,12 +15,14 @@ from ibis.pandas.udf import udf, nullable
 
 @pytest.fixture
 def df():
-    return pd.DataFrame({
-        'a': list('abc'),
-        'b': [1, 2, 3],
-        'c': [4.0, 5.0, 6.0],
-        'key': list('aab'),
-    })
+    return pd.DataFrame(
+        {
+            'a': list('abc'),
+            'b': [1, 2, 3],
+            'c': [4.0, 5.0, 6.0],
+            'key': list('aab'),
+        }
+    )
 
 
 @pytest.fixture
@@ -75,7 +77,7 @@ def a_single_number(**kwargs):
 
 @udf.reduction(
     input_type=[dt.double, dt.Array(dt.double)],
-    output_type=dt.Array(dt.double)
+    output_type=dt.Array(dt.double),
 )
 def quantiles(series, quantiles):
     return list(series.quantile(quantiles))
@@ -130,10 +132,9 @@ def test_multiple_argument_udf_group_by(con, t, df):
     assert isinstance(expr.my_add, ir.FloatingColumn)
 
     result = expr.execute()
-    expected = pd.DataFrame({
-        'key': list('ab'),
-        'my_add': [sum([1.0 + 4.0, 2.0 + 5.0]), 3.0 + 6.0],
-    })
+    expected = pd.DataFrame(
+        {'key': list('ab'), 'my_add': [sum([1.0 + 4.0, 2.0 + 5.0]), 3.0 + 6.0]}
+    )
     tm.assert_frame_equal(result, expected)
 
 
@@ -176,10 +177,15 @@ def test_udaf_analytic_group_by(con, t, df):
 
 
 def test_udaf_groupby():
-    df = pd.DataFrame({
-        'a': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
-        'b': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
-        'key': list('ddeefff')})
+    df = pd.DataFrame(
+        {
+            'a': np.arange(4, dtype=float).tolist()
+            + np.random.rand(3).tolist(),
+            'b': np.arange(4, dtype=float).tolist()
+            + np.random.rand(3).tolist(),
+            'key': list('ddeefff'),
+        }
+    )
     con = ibis.pandas.connect({'df': df})
     t = con.table('df')
     expr = t.groupby(t.key).aggregate(my_corr=my_corr(t.a, t.b))
@@ -189,12 +195,15 @@ def test_udaf_groupby():
     result = expr.execute().sort_values('key')
 
     dfi = df.set_index('key')
-    expected = pd.DataFrame({
-        'key': list('def'),
-        'my_corr': [
-            dfi.loc[value, 'a'].corr(dfi.loc[value, 'b']) for value in 'def'
-        ]
-    })
+    expected = pd.DataFrame(
+        {
+            'key': list('def'),
+            'my_corr': [
+                dfi.loc[value, 'a'].corr(dfi.loc[value, 'b'])
+                for value in 'def'
+            ],
+        }
+    )
 
     columns = ['key', 'my_corr']
     tm.assert_frame_equal(result[columns], expected[columns])
@@ -212,6 +221,7 @@ def test_nullable_non_nullable_field():
 
 def test_udaf_parameter_mismatch():
     with pytest.raises(TypeError):
+
         @udf.reduction(input_type=[dt.double], output_type=dt.double)
         def my_corr(lhs, rhs, **kwargs):
             pass
@@ -219,16 +229,22 @@ def test_udaf_parameter_mismatch():
 
 def test_udf_parameter_mismatch():
     with pytest.raises(TypeError):
+
         @udf.reduction(input_type=[], output_type=dt.double)
         def my_corr2(lhs, **kwargs):
             pass
 
 
 def test_compose_udfs():
-    df = pd.DataFrame({
-        'a': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
-        'b': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
-        'key': list('ddeefff')})
+    df = pd.DataFrame(
+        {
+            'a': np.arange(4, dtype=float).tolist()
+            + np.random.rand(3).tolist(),
+            'b': np.arange(4, dtype=float).tolist()
+            + np.random.rand(3).tolist(),
+            'key': list('ddeefff'),
+        }
+    )
     con = ibis.pandas.connect({'df': df})
     t = con.table('df')
     expr = times_two(add_one(t.a))
@@ -242,28 +258,30 @@ def test_udaf_window():
     def my_mean(series):
         return series.mean()
 
-    df = pd.DataFrame({
-        'a': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
-        'b': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
-        'key': list('ddeefff')})
+    df = pd.DataFrame(
+        {
+            'a': np.arange(4, dtype=float).tolist()
+            + np.random.rand(3).tolist(),
+            'b': np.arange(4, dtype=float).tolist()
+            + np.random.rand(3).tolist(),
+            'key': list('ddeefff'),
+        }
+    )
     con = ibis.pandas.connect({'df': df})
     t = con.table('df')
     window = ibis.trailing_window(2, order_by='a', group_by='key')
     expr = t.mutate(rolled=my_mean(t.b).over(window))
     result = expr.execute().sort_values(['key', 'a'])
     expected = df.sort_values(['key', 'a']).assign(
-        rolled=lambda df: df.groupby('key').b.rolling(2).mean().reset_index(
-            level=0, drop=True)
+        rolled=lambda df: df.groupby('key')
+        .b.rolling(2)
+        .mean()
+        .reset_index(level=0, drop=True)
     )
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.fixture(
-    params=[
-        [0.25, 0.75],
-        [0.01, 0.99],
-    ]
-)
+@pytest.fixture(params=[[0.25, 0.75], [0.01, 0.99]])
 def qs(request):
     return request.param
 

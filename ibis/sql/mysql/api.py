@@ -51,7 +51,7 @@ def connect(
     port=3306,
     database=None,
     url=None,
-    driver='pymysql'
+    driver='pymysql',
 ):
 
     """Create an Ibis client located at `user`:`password`@`host`:`port`

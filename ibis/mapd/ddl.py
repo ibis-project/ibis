@@ -73,9 +73,7 @@ class CreateTable(CreateDDL):
     database : str
     """
 
-    def __init__(
-        self, table_name, database=None
-    ):
+    def __init__(self, table_name, database=None):
         self.table_name = table_name
         self.database = database
 
@@ -84,9 +82,7 @@ class CreateTable(CreateDDL):
         return 'CREATE TABLE'
 
     def _create_line(self):
-        return '{} {}'.format(
-            self._prefix, self.table_name
-        )
+        return '{} {}'.format(self._prefix, self.table_name)
 
     @property
     def pieces(self):
@@ -99,9 +95,7 @@ class CreateTable(CreateDDL):
 
 
 class CreateTableWithSchema(CreateTable):
-    def __init__(
-        self, table_name, schema, database=None, max_rows=None
-    ):
+    def __init__(self, table_name, schema, database=None, max_rows=None):
         self.table_name = table_name
         self.database = database
         self.schema = schema
@@ -115,10 +109,15 @@ class CreateTableWithSchema(CreateTable):
     def _pieces(self):
         yield format_schema(self.schema)
 
-        with_stmt = ','.join([
-            '{}={}'.format(i, "'{}'".format(v) if isinstance(v, str) else v)
-            for i, v in self.with_params.items() if v is not None
-        ])
+        with_stmt = ','.join(
+            [
+                '{}={}'.format(
+                    i, "'{}'".format(v) if isinstance(v, str) else v
+                )
+                for i, v in self.with_params.items()
+                if v is not None
+            ]
+        )
 
         if with_stmt:
             yield ' WITH ({})'.format(with_stmt)
@@ -147,6 +146,7 @@ class CTAS(CreateTable):
 
 # VIEW
 
+
 class CreateView(CTAS):
     """Create a view"""
 
@@ -169,12 +169,17 @@ class DropView(DropTable):
 
 # USER
 
+
 class AlterUser(MapDDDL):
     """Create user"""
 
     def __init__(
-        self, name, password=None, database=None, is_super=False,
-        insert_access=None
+        self,
+        name,
+        password=None,
+        database=None,
+        is_super=False,
+        insert_access=None,
     ):
         self.name = name
         self.password = password
@@ -240,7 +245,6 @@ class DropUser(MapDDDL):
 
 
 class AlterTable(MapDDDL):
-
     def __init__(self, table, tbl_properties=None):
         self.table = table
         self.tbl_properties = tbl_properties
@@ -267,9 +271,9 @@ class AlterTable(MapDDDL):
 
 
 class RenameTable(AlterTable):
-
-    def __init__(self, old_name, new_name, old_database=None,
-                 new_database=None):
+    def __init__(
+        self, old_name, new_name, old_database=None, new_database=None
+    ):
         # if either database is None, the name is assumed to be fully scoped
         self.old_name = old_name
         self.old_database = old_database
@@ -288,8 +292,9 @@ class RenameTable(AlterTable):
         self.new_qualified_name = new_qualified_name
 
     def compile(self):
-        cmd = '{} RENAME TO {}'.format(self.old_qualified_name,
-                                       self.new_qualified_name)
+        cmd = '{} RENAME TO {}'.format(
+            self.old_qualified_name, self.new_qualified_name
+        )
         return self._wrap_command(cmd)
 
 
@@ -307,7 +312,6 @@ class TruncateTable(MapDDDL):
 
 
 class CacheTable(MapDDDL):
-
     def __init__(self, table_name, database=None, pool='default'):
         self.table_name = table_name
         self.database = database
@@ -315,13 +319,12 @@ class CacheTable(MapDDDL):
 
     def compile(self):
         scoped_name = self._get_scoped_name(self.table_name, self.database)
-        return "ALTER TABLE {} SET CACHED IN '{}'" .format(
+        return "ALTER TABLE {} SET CACHED IN '{}'".format(
             scoped_name, self.pool
         )
 
 
 class CreateDatabase(CreateDDL):
-
     def __init__(self, name, owner=None):
         self.name = name
         self.owner = owner
@@ -365,7 +368,6 @@ def _format_schema_element(name, t):
 
 
 class InsertPandas(MapDDML):
-
     def __init__(self, table_name, df, insert_index=False, database=None):
         self.table_name = table_name
         self.database = database
@@ -395,9 +397,7 @@ class InsertPandas(MapDDML):
 
         fields = self._get_field_names()
 
-        stmt = '{0} {1} ({2}) VALUES '.format(
-            cmd, self.table_name, fields
-        )
+        stmt = '{0} {1} ({2}) VALUES '.format(cmd, self.table_name, fields)
 
         for values in self._get_field_values():
             yield '{} ({});'.format(stmt, ','.join(values))

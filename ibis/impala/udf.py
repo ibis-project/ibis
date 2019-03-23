@@ -22,12 +22,16 @@ import ibis.expr.operations as ops
 import ibis.impala.compiler as comp
 
 
-__all__ = ['add_operation', 'scalar_function', 'aggregate_function',
-           'wrap_udf', 'wrap_uda']
+__all__ = [
+    'add_operation',
+    'scalar_function',
+    'aggregate_function',
+    'wrap_udf',
+    'wrap_uda',
+]
 
 
 class Function:
-
     def __init__(self, inputs, output, name):
         self.inputs = tuple(map(dt.dtype, inputs))
         self.output = dt.dtype(output)
@@ -41,8 +45,9 @@ class Function:
 
     def __repr__(self):
         klass = type(self).__name__
-        return ('{0}({1}, {2!r}, {3!r})'
-                .format(klass, self.name, self.inputs, self.output))
+        return '{0}({1}, {2!r}, {3!r})'.format(
+            klass, self.name, self.inputs, self.output
+        )
 
     def __call__(self, *args):
         return self._klass(*args).to_expr()
@@ -61,7 +66,6 @@ class Function:
 
 
 class ScalarFunction(Function):
-
     def _get_class_name(self, name):
         if name is None:
             name = util.guid()
@@ -74,7 +78,6 @@ class ScalarFunction(Function):
 
 
 class AggregateFunction(Function):
-
     def _create_operation(self, name):
         klass = Function._create_operation(self, name)
         klass._reduction = True
@@ -95,7 +98,6 @@ class AggregateFunction(Function):
 
 
 class ImpalaFunction:
-
     def __init__(self, name=None, lib_path=None):
         self.lib_path = lib_path
         self.name = name or util.guid()
@@ -116,8 +118,10 @@ class ImpalaUDF(ScalarFunction, ImpalaFunction):
     """
     Feel free to customize my __doc__ or wrap in a nicer user API
     """
-    def __init__(self, inputs, output, so_symbol=None, lib_path=None,
-                 name=None):
+
+    def __init__(
+        self, inputs, output, so_symbol=None, lib_path=None, name=None
+    ):
         self.so_symbol = so_symbol
         ImpalaFunction.__init__(self, name=name, lib_path=lib_path)
         ScalarFunction.__init__(self, inputs, output, name=self.name)
@@ -134,10 +138,18 @@ class ImpalaUDF(ScalarFunction, ImpalaFunction):
 
 
 class ImpalaUDA(AggregateFunction, ImpalaFunction):
-
-    def __init__(self, inputs, output, update_fn=None, init_fn=None,
-                 merge_fn=None, finalize_fn=None, serialize_fn=None,
-                 lib_path=None, name=None):
+    def __init__(
+        self,
+        inputs,
+        output,
+        update_fn=None,
+        init_fn=None,
+        merge_fn=None,
+        finalize_fn=None,
+        serialize_fn=None,
+        lib_path=None,
+        name=None,
+    ):
         self.init_fn = init_fn
         self.update_fn = update_fn
         self.merge_fn = merge_fn
@@ -155,9 +167,18 @@ class ImpalaUDA(AggregateFunction, ImpalaFunction):
             raise ValueError('Invalid file type. Must be .so')
 
 
-def wrap_uda(hdfs_file, inputs, output, update_fn, init_fn=None,
-             merge_fn=None, finalize_fn=None, serialize_fn=None,
-             close_fn=None, name=None):
+def wrap_uda(
+    hdfs_file,
+    inputs,
+    output,
+    update_fn,
+    init_fn=None,
+    merge_fn=None,
+    finalize_fn=None,
+    serialize_fn=None,
+    close_fn=None,
+    name=None,
+):
     """
     Creates a callable aggregation function object. Must be created in Impala
     to be used
@@ -186,10 +207,17 @@ def wrap_uda(hdfs_file, inputs, output, update_fn, init_fn=None,
     -------
     container : UDA object
     """
-    func = ImpalaUDA(inputs, output, update_fn, init_fn,
-                     merge_fn, finalize_fn,
-                     serialize_fn=serialize_fn,
-                     name=name, lib_path=hdfs_file)
+    func = ImpalaUDA(
+        inputs,
+        output,
+        update_fn,
+        init_fn,
+        merge_fn,
+        finalize_fn,
+        serialize_fn=serialize_fn,
+        name=name,
+        lib_path=hdfs_file,
+    )
     return func
 
 
@@ -212,8 +240,7 @@ def wrap_udf(hdfs_file, inputs, output, so_symbol, name=None):
     -------
     container : UDF object
     """
-    func = ImpalaUDF(inputs, output, so_symbol, name=name,
-                     lib_path=hdfs_file)
+    func = ImpalaUDF(inputs, output, so_symbol, name=name, lib_path=hdfs_file)
     return func
 
 
@@ -259,16 +286,15 @@ def _ibis_signature(inputs):
     if isinstance(inputs, sig.TypeSignature):
         return inputs
 
-    arguments = [('_{}'.format(i), sig.Argument(rlz.value(dtype)))
-                 for i, dtype in enumerate(inputs)]
+    arguments = [
+        ('_{}'.format(i), sig.Argument(rlz.value(dtype)))
+        for i, dtype in enumerate(inputs)
+    ]
     return sig.TypeSignature(arguments)
 
 
 def _create_operation_class(name, input_type, output_type):
-    func_dict = {
-        'signature': input_type,
-        'output_type': output_type,
-    }
+    func_dict = {'signature': input_type, 'output_type': output_type}
     klass = type(name, (ops.ValueOp,), func_dict)
     return klass
 
@@ -348,5 +374,5 @@ _impala_to_ibis_type = {
     'varchar': 'string',
     'char': 'string',
     'timestamp': 'timestamp',
-    'decimal': 'decimal'
+    'decimal': 'decimal',
 }

@@ -43,18 +43,18 @@ def test_where(lineitem):
     table = lineitem
 
     q = table.l_quantity
-    expr = api.where(table.l_discount > 0,
-                     q * table.l_discount,
-                     api.null())
+    expr = api.where(table.l_discount > 0, q * table.l_discount, api.null())
 
     assert isinstance(expr, ir.DecimalColumn)
 
-    expr = api.where(table.l_discount > 0,
-                     (q * table.l_discount).sum(), api.null())
+    expr = api.where(
+        table.l_discount > 0, (q * table.l_discount).sum(), api.null()
+    )
     assert isinstance(expr, ir.DecimalColumn)
 
-    expr = api.where(table.l_discount.sum() > 0,
-                     (q * table.l_discount).sum(), api.null())
+    expr = api.where(
+        table.l_discount.sum() > 0, (q * table.l_discount).sum(), api.null()
+    )
     assert isinstance(expr, ir.DecimalScalar)
 
 
@@ -86,7 +86,7 @@ def test_precision_scale(lineitem):
         (0, 1),  # zero precision
         (12, 38),  # precision less than scale
         (33, -1),  # negative scale
-    ]
+    ],
 )
 def test_invalid_precision_scale_combo(precision, scale):
     with pytest.raises(ValueError):
@@ -95,10 +95,7 @@ def test_invalid_precision_scale_combo(precision, scale):
 
 @pytest.mark.parametrize(
     ('precision', 'scale'),
-    [
-        (38.1, 3),  # non integral precision
-        (38, 3.1),  # non integral scale
-    ]
+    [(38.1, 3), (38, 3.1)],  # non integral precision  # non integral scale
 )
 def test_invalid_precision_scale_type(precision, scale):
     with pytest.raises(TypeError):
@@ -115,7 +112,6 @@ def test_decimal_repr(lineitem):
     col = lineitem.l_extendedprice
     t = col.type()
     expected = 'Decimal(precision={:d}, scale={:d}, nullable=True)'.format(
-        t.precision,
-        t.scale,
+        t.precision, t.scale
     )
     assert repr(t) == expected

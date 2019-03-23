@@ -22,7 +22,6 @@ pytestmark = pytest.mark.hdfs
 
 
 class MockHDFS(HDFS):
-
     def __init__(self):
         self.ls_result = []
 
@@ -34,25 +33,19 @@ class MockHDFS(HDFS):
 
 
 class TestHDFSRandom(unittest.TestCase):
-
     def setUp(self):
         self.con = MockHDFS()
 
     def test_find_any_file(self):
-        ls_contents = [(u'foo',
-                        {u'type': u'DIRECTORY'}),
-                       (u'bar.tmp',
-                        {u'type': u'FILE'}),
-                       (u'baz.copying',
-                        {u'type': u'FILE'}),
-                       (u'_SUCCESS',
-                        {u'type': u'FILE'}),
-                       (u'.peekaboo',
-                        {u'type': u'FILE'}),
-                       (u'0.parq',
-                        {u'type': u'FILE'}),
-                       (u'_FILE',
-                        {u'type': u'DIRECTORY'})]
+        ls_contents = [
+            (u'foo', {u'type': u'DIRECTORY'}),
+            (u'bar.tmp', {u'type': u'FILE'}),
+            (u'baz.copying', {u'type': u'FILE'}),
+            (u'_SUCCESS', {u'type': u'FILE'}),
+            (u'.peekaboo', {u'type': u'FILE'}),
+            (u'0.parq', {u'type': u'FILE'}),
+            (u'_FILE', {u'type': u'DIRECTORY'}),
+        ]
 
         self.con.set_ls(ls_contents)
 
@@ -61,19 +54,19 @@ class TestHDFSRandom(unittest.TestCase):
 
 
 class TestHDFSE2E(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         cls.ENV = ENV
         cls.tmp_dir = pjoin(cls.ENV.tmp_dir, util.guid())
         if cls.ENV.auth_mechanism in ['GSSAPI', 'LDAP']:
             print("Warning: ignoring invalid Certificate Authority errors")
-        cls.hdfs = ibis.hdfs_connect(host=cls.ENV.nn_host,
-                                     port=cls.ENV.webhdfs_port,
-                                     auth_mechanism=cls.ENV.auth_mechanism,
-                                     verify=(cls.ENV.auth_mechanism
-                                             not in ['GSSAPI', 'LDAP']),
-                                     user=cls.ENV.webhdfs_user)
+        cls.hdfs = ibis.hdfs_connect(
+            host=cls.ENV.nn_host,
+            port=cls.ENV.webhdfs_port,
+            auth_mechanism=cls.ENV.auth_mechanism,
+            verify=(cls.ENV.auth_mechanism not in ['GSSAPI', 'LDAP']),
+            user=cls.ENV.webhdfs_user,
+        )
         cls.hdfs.mkdir(cls.tmp_dir)
 
     @classmethod
@@ -159,8 +152,9 @@ class TestHDFSE2E(unittest.TestCase):
         remote_file = self._make_random_hdfs_file()
         existing_remote_file_dest = self._make_random_hdfs_file()
         with self.assertRaises(Exception):
-            self.hdfs.mv(remote_file, existing_remote_file_dest,
-                         overwrite=False)
+            self.hdfs.mv(
+                remote_file, existing_remote_file_dest, overwrite=False
+            )
 
     def test_mv_to_directory(self):
         remote_file = self._make_random_hdfs_file()
@@ -363,6 +357,7 @@ class TestHDFSE2E(unittest.TestCase):
         dirname = self._sample_nested_directory()
 
         import subprocess
+
         tf_name = '{0}.tar.gz'.format(dirname)
         cmd = 'tar zc {0} > {1}'.format(dirname, tf_name)
 
@@ -386,15 +381,13 @@ class TestHDFSE2E(unittest.TestCase):
         nested_dir = osp.join(dirname, util.guid())
         os.mkdir(nested_dir)
 
-        self._make_test_directory(files=5, filesize=K,
-                                  directory=nested_dir)
+        self._make_test_directory(files=5, filesize=K, directory=nested_dir)
 
         return dirname
 
 
 @pytest.mark.superuser
 class TestSuperUserHDFSE2E(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         cls.ENV = ENV
@@ -402,12 +395,13 @@ class TestSuperUserHDFSE2E(unittest.TestCase):
         if cls.ENV.auth_mechanism in ['GSSAPI', 'LDAP']:
             print("Warning: ignoring invalid Certificate Authority errors")
         # NOTE: specifying superuser as set in IbisTestEnv
-        cls.hdfs = ibis.hdfs_connect(host=cls.ENV.nn_host,
-                                     port=cls.ENV.webhdfs_port,
-                                     auth_mechanism=cls.ENV.auth_mechanism,
-                                     verify=(cls.ENV.auth_mechanism
-                                             not in ['GSSAPI', 'LDAP']),
-                                     user=cls.ENV.hdfs_superuser)
+        cls.hdfs = ibis.hdfs_connect(
+            host=cls.ENV.nn_host,
+            port=cls.ENV.webhdfs_port,
+            auth_mechanism=cls.ENV.auth_mechanism,
+            verify=(cls.ENV.auth_mechanism not in ['GSSAPI', 'LDAP']),
+            user=cls.ENV.hdfs_superuser,
+        )
         cls.hdfs.mkdir(cls.tmp_dir)
 
     @classmethod

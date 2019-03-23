@@ -9,6 +9,7 @@ class FormatMemo:
 
     def __init__(self):
         from collections import defaultdict
+
         self.formatted = {}
         self.aliases = {}
         self.ops = {}
@@ -61,8 +62,9 @@ class ExprFormatter:
 
     """
 
-    def __init__(self, expr, indent_size=2, base_level=0, memo=None,
-                 memoize=True):
+    def __init__(
+        self, expr, indent_size=2, base_level=0, memo=None, memoize=True
+    ):
         self.expr = expr
         self.indent_size = indent_size
         self.base_level = base_level
@@ -106,25 +108,30 @@ class ExprFormatter:
             text = '{} = {}'.format(self.expr.get_name(), text)
 
         if self.memoize:
-            alias_to_text = [(self.memo.aliases[x],
-                              self.memo.formatted[x],
-                              self.memo.ops[x])
-                             for x in self.memo.formatted]
+            alias_to_text = [
+                (
+                    self.memo.aliases[x],
+                    self.memo.formatted[x],
+                    self.memo.ops[x],
+                )
+                for x in self.memo.formatted
+            ]
             alias_to_text.sort()
 
             # A hack to suppress printing out of a ref that is the result of
             # the top level expression
-            refs = [x + '\n' + y
-                    for x, y, op in alias_to_text
-                    if not op.equals(what)]
+            refs = [
+                x + '\n' + y
+                for x, y, op in alias_to_text
+                if not op.equals(what)
+            ]
 
             text = '\n\n'.join(refs + [text])
 
         return self._indent(text, self.base_level)
 
     def _memoize_tables(self):
-        table_memo_ops = (ops.Aggregation, ops.Selection,
-                          ops.SelfReference)
+        table_memo_ops = (ops.Aggregation, ops.Selection, ops.SelfReference)
         expr = self.expr
         if expr.op() in self.memo.visit_memo:
             return
@@ -144,7 +151,8 @@ class ExprFormatter:
                     memo.observe(e, self._format_table)
                 elif isinstance(op, ops.Node):
                     stack.extend(
-                        arg for arg in reversed(op.args)
+                        arg
+                        for arg in reversed(op.args)
                         if isinstance(arg, ir.Expr)
                     )
                     if isinstance(op, table_memo_ops):
@@ -160,8 +168,12 @@ class ExprFormatter:
         table = expr.op()
         # format the schema
         rows = ['name: {0!s}\nschema:'.format(table.name)]
-        rows.extend(['  %s : %s' % tup for tup in
-                     zip(table.schema.names, table.schema.types)])
+        rows.extend(
+            [
+                '  %s : %s' % tup
+                for tup in zip(table.schema.names, table.schema.types)
+            ]
+        )
         opname = type(table).__name__
         type_display = self._get_type_display(expr)
         opline = '%s[%s]' % (opname, type_display)
@@ -180,8 +192,9 @@ class ExprFormatter:
         table_formatted = self._indent(table_formatted)
 
         type_display = self._get_type_display(self.expr)
-        return ("Column[{0}] '{1}' from table\n{2}"
-                .format(type_display, col.name, table_formatted))
+        return "Column[{0}] '{1}' from table\n{2}".format(
+            type_display, col.name, table_formatted
+        )
 
     def _format_node(self, expr):
         op = expr.op()
@@ -206,7 +219,8 @@ class ExprFormatter:
         else:
             signature = op.signature
             arg_name_pairs = (
-                (arg, name) for arg, name in zip(op.args, arg_names)
+                (arg, name)
+                for arg, name in zip(op.args, arg_names)
                 if signature[name].show
             )
             for arg, name in arg_name_pairs:

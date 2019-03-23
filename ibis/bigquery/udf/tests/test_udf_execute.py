@@ -15,7 +15,7 @@ pytest.importorskip('google.cloud.bigquery')
 pytestmark = pytest.mark.bigquery
 
 from ibis.bigquery.tests.conftest import (
-    connect as bigquery_connect
+    connect as bigquery_connect,
 )  # noqa: E402
 from ibis.bigquery import udf  # noqa: E402
 
@@ -52,26 +52,28 @@ def test_udf(client, alltypes, df):
     expected = (df.double_col + df.double_col).rename('tmp')
     tm.assert_series_equal(
         result.value_counts().sort_index(),
-        expected.value_counts().sort_index()
+        expected.value_counts().sort_index(),
     )
 
 
 def test_udf_with_struct(client, alltypes, df):
     @udf(
         input_type=[dt.double, dt.double],
-        output_type=dt.Struct.from_tuples([
-            ('width', dt.double),
-            ('height', dt.double)
-        ])
+        output_type=dt.Struct.from_tuples(
+            [('width', dt.double), ('height', dt.double)]
+        ),
     )
     def my_struct_thing(a, b):
         class Rectangle:
             def __init__(self, width, height):
                 self.width = width
                 self.height = height
+
         return Rectangle(a, b)
 
-    assert my_struct_thing.js == '''\
+    assert (
+        my_struct_thing.js
+        == '''\
 CREATE TEMPORARY FUNCTION my_struct_thing_0(a FLOAT64, b FLOAT64)
 RETURNS STRUCT<width FLOAT64, height FLOAT64>
 LANGUAGE js AS """
@@ -87,14 +89,14 @@ function my_struct_thing(a, b) {
 }
 return my_struct_thing(a, b);
 """;'''
+    )
 
     expr = my_struct_thing(alltypes.double_col, alltypes.double_col)
     result = expr.execute()
     assert not result.empty
 
     expected = pd.Series(
-        [{'width': c, 'height': c} for c in df.double_col],
-        name='tmp'
+        [{'width': c, 'height': c} for c in df.double_col], name='tmp'
     )
     tm.assert_series_equal(result, expected)
 
@@ -126,7 +128,6 @@ def test_udf_scalar(client):
 
 
 def test_multiple_calls_has_one_definition(client):
-
     @udf([dt.string], dt.double)
     def my_str_len(s):
         return s.length
@@ -157,7 +158,7 @@ def test_udf_libraries(client):
         dt.double,
         # whatever symbols are exported in the library are visible inside the
         # UDF, in this case lodash defines _ and we use that here
-        libraries=['gs://ibis-testing-libraries/lodash.min.js']
+        libraries=['gs://ibis-testing-libraries/lodash.min.js'],
     )
     def string_length(strings):
         return _.sum(_.map(strings, lambda x: x.length))  # noqa: F821
@@ -184,7 +185,6 @@ def test_udf_with_len(client):
 
 
 def test_multiple_calls_redefinition(client):
-
     @udf([dt.string], dt.double)
     def my_len(s):
         return s.length
@@ -195,6 +195,7 @@ def test_multiple_calls_redefinition(client):
     @udf([dt.string], dt.double)
     def my_len(s):
         return s.length + 1
+
     expr = expr + my_len(s)
 
     sql = client.compile(expr)
@@ -228,31 +229,31 @@ SELECT (my_len_0('abcd') + my_len_0('abcd')) + my_len_1('abcd') AS `tmp`'''
     [
         param(dt.int64, dt.float64, marks=pytest.mark.xfail(raises=TypeError)),
         param(dt.float64, dt.int64, marks=pytest.mark.xfail(raises=TypeError)),
-
         # complex argument type, valid return type
         param(
-            dt.Array(dt.int64), dt.float64,
-            marks=pytest.mark.xfail(raises=TypeError)
+            dt.Array(dt.int64),
+            dt.float64,
+            marks=pytest.mark.xfail(raises=TypeError),
         ),
-
         # valid argument type, complex invalid return type
         param(
-            dt.float64, dt.Array(dt.int64),
+            dt.float64,
+            dt.Array(dt.int64),
             marks=pytest.mark.xfail(raises=TypeError),
         ),
-
         # both invalid
         param(
-            dt.Array(dt.Array(dt.int64)), dt.int64,
+            dt.Array(dt.Array(dt.int64)),
+            dt.int64,
             marks=pytest.mark.xfail(raises=TypeError),
         ),
-
         # struct type with nested integer, valid return type
         param(
-            dt.Struct.from_tuples([('x', dt.Array(dt.int64))]), dt.float64,
-            marks=pytest.mark.xfail(raises=TypeError)
-        )
-    ]
+            dt.Struct.from_tuples([('x', dt.Array(dt.int64))]),
+            dt.float64,
+            marks=pytest.mark.xfail(raises=TypeError),
+        ),
+    ],
 )
 def test_udf_int64(client, argument_type, return_type):
     # invalid argument type, valid return type

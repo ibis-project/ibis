@@ -34,7 +34,6 @@ extensions = [
     'sphinx.ext.mathjax',
     'numpydoc',
     'nbsphinx',
-
     'IPython.sphinxext.ipython_directive',
     'IPython.sphinxext.ipython_console_highlighting',
 ]
@@ -217,7 +216,7 @@ latex_elements = {}
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ('index', 'Ibis.tex', 'Ibis Documentation', 'Ibis Developers', 'manual'),
+    ('index', 'Ibis.tex', 'Ibis Documentation', 'Ibis Developers', 'manual')
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -249,10 +248,7 @@ extlinks = {'issue': ('https://github.com/ibis-project/ibis/issues/%s', '#')}
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    ('index', 'ibis', 'Ibis Documentation',
-     ['Ibis Developers'], 1)
-]
+man_pages = [('index', 'ibis', 'Ibis Documentation', ['Ibis Developers'], 1)]
 
 # If true, show URL addresses after external links.
 # man_show_urls = False
@@ -264,9 +260,15 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'Ibis', 'Ibis Documentation',
-   'Ibis Developers', 'Ibis', 'Pandas-like expressions for analytics',
-   'Miscellaneous'),
+    (
+        'index',
+        'Ibis',
+        'Ibis Documentation',
+        'Ibis Developers',
+        'Ibis',
+        'Pandas-like expressions for analytics',
+        'Miscellaneous',
+    )
 ]
 
 # Documents to append as an appendix to all manuals.

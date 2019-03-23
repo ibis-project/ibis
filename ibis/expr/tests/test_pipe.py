@@ -18,12 +18,15 @@ import ibis
 
 @pytest.fixture
 def pipe_table():
-    return ibis.table([
-        ('key1', 'string'),
-        ('key2', 'string'),
-        ('key3', 'string'),
-        ('value', 'double')
-    ], 'foo_table')
+    return ibis.table(
+        [
+            ('key1', 'string'),
+            ('key2', 'string'),
+            ('key3', 'string'),
+            ('value', 'double'),
+        ],
+        'foo_table',
+    )
 
 
 def test_pipe_positional_args(pipe_table):

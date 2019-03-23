@@ -44,7 +44,8 @@ Returns
 -------
 Union[Type[U], Tuple[Type[T], ...]]
     A pandas-backend-friendly signature
-""")
+""",
+)
 
 
 def arguments_from_signature(signature, *args, **kwargs):
@@ -84,9 +85,11 @@ def arguments_from_signature(signature, *args, **kwargs):
     meta_kwargs = toolz.merge({'kwargs': kwargs}, kwargs)
     remaining_parameters = signature.parameters.keys() - bound.arguments.keys()
     new_kwargs = {
-        k: meta_kwargs[k] for k in remaining_parameters
+        k: meta_kwargs[k]
+        for k in remaining_parameters
         if k in signature.parameters
-        if signature.parameters[k].kind in {
+        if signature.parameters[k].kind
+        in {
             Parameter.KEYWORD_ONLY,
             Parameter.POSITIONAL_OR_KEYWORD,
             Parameter.VAR_KEYWORD,
@@ -212,8 +215,9 @@ def udf_signature(input_type, pin, klass):
         return (result,)
 
     return tuple(
-        klass if pin is not None and pin == i else
-        ((klass,) + rule_to_python_type(r) + nullable(r))
+        klass
+        if pin is not None and pin == i
+        else ((klass,) + rule_to_python_type(r) + nullable(r))
         for i, r in enumerate(input_type)
     )
 
@@ -292,6 +296,7 @@ class udf:
         ... def my_string_length(series):
         ...     return series.str.len() * 2
         """
+
         def wrapper(func):
             # validate that the input_type argument and the function signature
             # match
@@ -303,20 +308,23 @@ class udf:
                 (ops.ValueOp,),
                 {
                     'signature': sig.TypeSignature.from_dtypes(input_type),
-                    'output_type': output_type.column_type
-                }
+                    'output_type': output_type.column_type,
+                },
             )
 
             # definitions
             # Define an execution rule for a simple elementwise Series
             # function
             @execute_node.register(
-                UDFNode,
-                *udf_signature(input_type, pin=None, klass=pd.Series))
+                UDFNode, *udf_signature(input_type, pin=None, klass=pd.Series)
+            )
             @execute_node.register(
                 UDFNode,
-                *(rule_to_python_type(argtype) + nullable(argtype)
-                    for argtype in input_type))
+                *(
+                    rule_to_python_type(argtype) + nullable(argtype)
+                    for argtype in input_type
+                ),
+            )
             def execute_udf_node(op, *args, **kwargs):
                 args, kwargs = arguments_from_signature(
                     funcsig, *args, **kwargs
@@ -331,18 +339,23 @@ class udf:
                 for pin in range(nargs)
             ]
 
-            @toolz.compose(*(execute_node.register(UDFNode, *types)
-                             for types in group_by_signatures))
+            @toolz.compose(
+                *(
+                    execute_node.register(UDFNode, *types)
+                    for types in group_by_signatures
+                )
+            )
             def execute_udf_node_groupby(op, *args, **kwargs):
                 groupers = [
-                    grouper for grouper in (
+                    grouper
+                    for grouper in (
                         getattr(arg, 'grouper', None) for arg in args
-                    ) if grouper is not None
+                    )
+                    if grouper is not None
                 ]
 
                 # all grouping keys must be identical
-                assert all(
-                    groupers[0] == grouper for grouper in groupers[1:])
+                assert all(groupers[0] == grouper for grouper in groupers[1:])
 
                 # we're performing a scalar operation on grouped column, so
                 # perform the operation directly on the underlying Series
@@ -357,7 +370,9 @@ class udf:
             @functools.wraps(func)
             def wrapped(*args):
                 return UDFNode(*args).to_expr()
+
             return wrapped
+
         return wrapper
 
     @staticmethod
@@ -384,9 +399,11 @@ class udf:
         ...     return (series.str.len() * 2).sum()
         """
         return udf._grouped(
-            input_type, output_type,
+            input_type,
+            output_type,
             base_class=ops.Reduction,
-            output_type_method=operator.attrgetter('scalar_type'))
+            output_type_method=operator.attrgetter('scalar_type'),
+        )
 
     @staticmethod
     def analytic(input_type, output_type):
@@ -412,13 +429,14 @@ class udf:
         ...     return (series - series.mean()) / series.std()
         """
         return udf._grouped(
-            input_type, output_type,
+            input_type,
+            output_type,
             base_class=ops.AnalyticOp,
-            output_type_method=operator.attrgetter('column_type'))
+            output_type_method=operator.attrgetter('column_type'),
+        )
 
     @staticmethod
-    def _grouped(input_type, output_type, base_class,
-                 output_type_method):
+    def _grouped(input_type, output_type, base_class, output_type_method):
         """Define a user-defined function that is applied per group.
 
         Parameters
@@ -440,6 +458,7 @@ class udf:
         ibis.pandas.udf.reduction
         ibis.pandas.udf.analytic
         """
+
         def wrapper(func):
             funcsig = valid_function_signature(input_type, func)
 
@@ -449,13 +468,13 @@ class udf:
                 {
                     'signature': sig.TypeSignature.from_dtypes(input_type),
                     'output_type': output_type_method(output_type),
-                }
+                },
             )
 
             # An execution rule for a simple aggregate node
             @execute_node.register(
-                UDAFNode,
-                *udf_signature(input_type, pin=None, klass=pd.Series))
+                UDAFNode, *udf_signature(input_type, pin=None, klass=pd.Series)
+            )
             def execute_udaf_node(op, *args, **kwargs):
                 args, kwargs = arguments_from_signature(
                     funcsig, *args, **kwargs
@@ -470,8 +489,12 @@ class udf:
                 for pin in range(nargs)
             ]
 
-            @toolz.compose(*(execute_node.register(UDAFNode, *types)
-                             for types in group_by_signatures))
+            @toolz.compose(
+                *(
+                    execute_node.register(UDAFNode, *types)
+                    for types in group_by_signatures
+                )
+            )
             def execute_udaf_node_groupby(op, *args, **kwargs):
                 # construct a generator that yields the next group of data
                 # for every argument excluding the first (pandas performs
@@ -498,12 +521,13 @@ class udf:
                     )
                     return func(*args, **kwargs)
 
-                result = aggcontext.agg(
-                    args[0], aggregator, *iters, **kwargs)
+                result = aggcontext.agg(args[0], aggregator, *iters, **kwargs)
                 return result
 
             @functools.wraps(func)
             def wrapped(*args):
                 return UDAFNode(*args).to_expr()
+
             return wrapped
+
         return wrapper

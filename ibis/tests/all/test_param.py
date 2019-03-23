@@ -13,8 +13,8 @@ import ibis.tests.util as tu
         ('double_col', 0.0),
         ('double_col', 10.1),
         ('float_col', 1.1),
-        ('float_col', 2.2)
-    ]
+        ('float_col', 2.2),
+    ],
 )
 @tu.skipif_unsupported
 def test_floating_scalar_parameter(backend, alltypes, df, column, raw_value):
@@ -26,21 +26,21 @@ def test_floating_scalar_parameter(backend, alltypes, df, column, raw_value):
     backend.assert_series_equal(result, expected, check_dtype=False)
 
 
-@pytest.mark.parametrize(('start_string', 'end_string'), [
-    ('2009-03-01', '2010-07-03'),
-    ('2014-12-01', '2017-01-05')
-])
+@pytest.mark.parametrize(
+    ('start_string', 'end_string'),
+    [('2009-03-01', '2010-07-03'), ('2014-12-01', '2017-01-05')],
+)
 @tu.skipif_unsupported
-def test_date_scalar_parameter(backend, alltypes, df, start_string,
-                               end_string):
+def test_date_scalar_parameter(
+    backend, alltypes, df, start_string, end_string
+):
     start, end = ibis.param(dt.date), ibis.param(dt.date)
 
     col = alltypes.timestamp_col.date()
     expr = col.between(start, end)
     expected_expr = col.between(start_string, end_string)
 
-    result = expr.execute(params={start: start_string,
-                                  end: end_string})
+    result = expr.execute(params={start: start_string, end: end_string})
     expected = expected_expr.execute()
 
     backend.assert_series_equal(result, expected)
@@ -67,8 +67,10 @@ def test_scalar_param_array(backend, con):
 def test_scalar_param_struct(backend, con):
     value = collections.OrderedDict([('a', 1), ('b', 'abc'), ('c', 3.0)])
     param = ibis.param(
-        dt.Struct.from_tuples([
-            ('a', 'int64'), ('b', 'string'), ('c', 'float64')]))
+        dt.Struct.from_tuples(
+            [('a', 'int64'), ('b', 'string'), ('c', 'float64')]
+        )
+    )
     result = con.execute(param.a, params={param: value})
     assert result == value['a']
 

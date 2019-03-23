@@ -19,11 +19,11 @@ import ibis
 
 SCRIPT_DIR = Path(__file__).parent.absolute()
 DATA_DIR_NAME = 'ibis-testing-data'
-DATA_DIR = Path(os.environ.get('IBIS_TEST_DATA_DIRECTORY',
-                               SCRIPT_DIR / DATA_DIR_NAME))
+DATA_DIR = Path(
+    os.environ.get('IBIS_TEST_DATA_DIRECTORY', SCRIPT_DIR / DATA_DIR_NAME)
+)
 
-TEST_TABLES = ['functional_alltypes', 'diamonds', 'batting',
-               'awards_players']
+TEST_TABLES = ['functional_alltypes', 'diamonds', 'batting', 'awards_players']
 
 
 logger = ibis.util.get_logger('datamgr')
@@ -120,8 +120,9 @@ def cli(quiet):
 
 
 @cli.command()
-@click.option('--repo-url', '-r',
-              default='https://github.com/ibis-project/testing-data')
+@click.option(
+    '--repo-url', '-r', default='https://github.com/ibis-project/testing-data'
+)
 @click.option('-d', '--directory', default=DATA_DIR)
 def download(repo_url, directory):
     from plumbum.cmd import curl
@@ -137,8 +138,10 @@ def download(repo_url, directory):
         logger.info('Downloading {} to {}...'.format(url, path))
         path.parent.mkdir(parents=True, exist_ok=True)
         download = curl[url, '-o', path, '-L']
-        download(stdout=click.get_binary_stream('stdout'),
-                 stderr=click.get_binary_stream('stderr'))
+        download(
+            stdout=click.get_binary_stream('stdout'),
+            stderr=click.get_binary_stream('stderr'),
+        )
     else:
         logger.info('Skipping download: {} already exists'.format(path))
 
@@ -189,8 +192,12 @@ def parquet(tables, data_directory, ignore_missing_dependency, **params):
 @click.option('-u', '--user', default='postgres')
 @click.option('-p', '--password', default='postgres')
 @click.option('-D', '--database', default='ibis_testing')
-@click.option('-S', '--schema', type=click.File('rt'),
-              default=str(SCRIPT_DIR / 'schema' / 'postgresql.sql'))
+@click.option(
+    '-S',
+    '--schema',
+    type=click.File('rt'),
+    default=str(SCRIPT_DIR / 'schema' / 'postgresql.sql'),
+)
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
 @click.option('-d', '--data-directory', default=DATA_DIR)
 @click.option('-l', '--psql-path', type=click.Path(exists=True), default=None)
@@ -198,16 +205,26 @@ def postgres(schema, tables, data_directory, psql_path, **params):
     psql = local.get('psql', psql_path)
     data_directory = Path(data_directory)
     logger.info('Initializing PostgreSQL...')
-    engine = init_database('postgresql', params, schema,
-                           isolation_level='AUTOCOMMIT')
+    engine = init_database(
+        'postgresql', params, schema, isolation_level='AUTOCOMMIT'
+    )
 
     query = "COPY {} FROM STDIN WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',')"
     database = params['database']
     for table in tables:
         src = data_directory / '{}.csv'.format(table)
-        load = psql['--host', params['host'], '--port', params['port'],
-                    '--username', params['user'], '--dbname', database,
-                    '--command', query.format(table)]
+        load = psql[
+            '--host',
+            params['host'],
+            '--port',
+            params['port'],
+            '--username',
+            params['user'],
+            '--dbname',
+            database,
+            '--command',
+            query.format(table),
+        ]
         with local.env(PGPASSWORD=params['password']):
             with src.open('r') as f:
                 load(stdin=f)
@@ -217,8 +234,12 @@ def postgres(schema, tables, data_directory, psql_path, **params):
 
 @cli.command()
 @click.option('-D', '--database', default=SCRIPT_DIR / 'ibis_testing.db')
-@click.option('-S', '--schema', type=click.File('rt'),
-              default=str(SCRIPT_DIR / 'schema' / 'sqlite.sql'))
+@click.option(
+    '-S',
+    '--schema',
+    type=click.File('rt'),
+    default=str(SCRIPT_DIR / 'schema' / 'sqlite.sql'),
+)
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
 @click.option('-d', '--data-directory', default=DATA_DIR)
 def sqlite(database, schema, tables, data_directory, **params):
@@ -242,8 +263,12 @@ def sqlite(database, schema, tables, data_directory, **params):
 @click.option('-u', '--user', default='mapd')
 @click.option('-p', '--password', default='HyperInteractive')
 @click.option('-D', '--database', default='ibis_testing')
-@click.option('-S', '--schema', type=click.File('rt'),
-              default=str(SCRIPT_DIR / 'schema' / 'mapd.sql'))
+@click.option(
+    '-S',
+    '--schema',
+    type=click.File('rt'),
+    default=str(SCRIPT_DIR / 'schema' / 'mapd.sql'),
+)
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES + ['geo'])
 @click.option('-d', '--data-directory', default=DATA_DIR)
 def mapd(schema, tables, data_directory, **params):
@@ -260,7 +285,7 @@ def mapd(schema, tables, data_directory, **params):
             user=params['user'],
             password=params['password'],
             port=params['port'],
-            dbname='mapd'
+            dbname='mapd',
         )
         stmt = 'CREATE DATABASE {}'.format(params['database'])
         try:
@@ -270,9 +295,11 @@ def mapd(schema, tables, data_directory, **params):
         conn.close()
 
     conn = pymapd.connect(
-        host=params['host'], user=params['user'],
+        host=params['host'],
+        user=params['user'],
         password=params['password'],
-        port=params['port'], dbname=params['database']
+        port=params['port'],
+        dbname=params['database'],
     )
 
     # create tables
@@ -325,8 +352,12 @@ def mapd(schema, tables, data_directory, **params):
 @click.option('-u', '--user', default='ibis')
 @click.option('-p', '--password', default='ibis')
 @click.option('-D', '--database', default='ibis_testing')
-@click.option('-S', '--schema', type=click.File('rt'),
-              default=str(SCRIPT_DIR / 'schema' / 'mysql.sql'))
+@click.option(
+    '-S',
+    '--schema',
+    type=click.File('rt'),
+    default=str(SCRIPT_DIR / 'schema' / 'mysql.sql'),
+)
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
 @click.option('-d', '--data-directory', default=DATA_DIR)
 def mysql(schema, tables, data_directory, **params):
@@ -334,8 +365,9 @@ def mysql(schema, tables, data_directory, **params):
     logger.info('Initializing MySQL...')
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        engine = init_database('mysql+pymysql', params, schema,
-                               isolation_level='AUTOCOMMIT')
+        engine = init_database(
+            'mysql+pymysql', params, schema, isolation_level='AUTOCOMMIT'
+        )
     insert_tables(engine, tables, data_directory)
 
 
@@ -345,8 +377,12 @@ def mysql(schema, tables, data_directory, **params):
 @click.option('-u', '--user', default='default')
 @click.option('-p', '--password', default='')
 @click.option('-D', '--database', default='ibis_testing')
-@click.option('-S', '--schema', type=click.File('rt'),
-              default=str(SCRIPT_DIR / 'schema' / 'clickhouse.sql'))
+@click.option(
+    '-S',
+    '--schema',
+    type=click.File('rt'),
+    default=str(SCRIPT_DIR / 'schema' / 'clickhouse.sql'),
+)
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
 @click.option('-d', '--data-directory', default=DATA_DIR)
 def clickhouse(schema, tables, data_directory, **params):
@@ -403,7 +439,8 @@ def bigquery(data_directory, ignore_missing_dependency, **params):
         schema_json = json.load(schemafile)
         for field in schema_json:
             functional_alltypes_schema.append(
-                bigquery.SchemaField.from_api_repr(field))
+                bigquery.SchemaField.from_api_repr(field)
+            )
     load_config = bigquery.LoadJobConfig()
     load_config.skip_leading_rows = 1  # skip the header row.
     load_config.schema = functional_alltypes_schema
@@ -414,7 +451,8 @@ def bigquery(data_directory, ignore_missing_dependency, **params):
         job = bqclient.load_table_from_file(
             csvfile,
             testing_dataset.table('functional_alltypes'),
-            job_config=load_config).result()
+            job_config=load_config,
+        ).result()
 
         if job.error_result:
             raise click.ClickException(str(job.error_result))
@@ -426,7 +464,8 @@ def bigquery(data_directory, ignore_missing_dependency, **params):
         job = bqclient.load_table_from_file(
             csvfile,
             testing_dataset.table('functional_alltypes_parted'),
-            job_config=load_config).result()
+            job_config=load_config,
+        ).result()
 
         if job.error_result:
             raise click.ClickException(str(job.error_result))
@@ -439,7 +478,8 @@ def bigquery(data_directory, ignore_missing_dependency, **params):
         job = bqclient.load_table_from_file(
             avrofile,
             testing_dataset.table('struct_table'),
-            job_config=load_config)
+            job_config=load_config,
+        )
 
         if job.error_result:
             raise click.ClickException(str(job.error_result))
@@ -452,24 +492,26 @@ def bigquery(data_directory, ignore_missing_dependency, **params):
         bigquery.SchemaField('int_col', 'INTEGER'),
     ]
     date_table.time_partitioning = bigquery.TimePartitioning(
-        field='my_date_parted_col')
+        field='my_date_parted_col'
+    )
     bqclient.create_table(date_table)
 
     # Create empty timestamp-partitioned tables.
     timestamp_table = bigquery.Table(
-        testing_dataset.table('timestamp_column_parted'))
+        testing_dataset.table('timestamp_column_parted')
+    )
     timestamp_table.schema = [
         bigquery.SchemaField('my_timestamp_parted_col', 'DATE'),
         bigquery.SchemaField('string_col', 'STRING'),
         bigquery.SchemaField('int_col', 'INTEGER'),
     ]
     timestamp_table.time_partitioning = bigquery.TimePartitioning(
-        field='my_timestamp_parted_col')
+        field='my_timestamp_parted_col'
+    )
     bqclient.create_table(timestamp_table)
 
     # Create a table with a numeric column
-    numeric_table = bigquery.Table(
-        testing_dataset.table('numeric_table'))
+    numeric_table = bigquery.Table(testing_dataset.table('numeric_table'))
     numeric_table.schema = [
         bigquery.SchemaField('string_col', 'STRING'),
         bigquery.SchemaField('numeric_col', 'NUMERIC'),
@@ -492,7 +534,8 @@ def bigquery(data_directory, ignore_missing_dependency, **params):
         job = bqclient.load_table_from_file(
             csvfile,
             testing_dataset.table('numeric_table'),
-            job_config=load_config).result()
+            job_config=load_config,
+        ).result()
 
         if job.error_result:
             raise click.ClickException(str(job.error_result))

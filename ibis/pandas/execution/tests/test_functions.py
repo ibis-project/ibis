@@ -25,7 +25,7 @@ pytestmark = pytest.mark.pandas
         operator.le,
         operator.gt,
         operator.ge,
-    ]
+    ],
 )
 def test_binary_operations(t, df, op):
     expr = op(t.plain_float64, t.plain_int64)
@@ -49,6 +49,7 @@ def operate(func):
             return func(*args, **kwargs)
         except decimal.InvalidOperation:
             return decimal.Decimal('NaN')
+
     return wrapper
 
 
@@ -58,31 +59,31 @@ def operate(func):
         (methodcaller('round'), lambda x: np.int64(round(x))),
         (
             methodcaller('round', 2),
-            lambda x: x.quantize(decimal.Decimal('.00'))
+            lambda x: x.quantize(decimal.Decimal('.00')),
         ),
         (
             methodcaller('round', 0),
-            lambda x: x.quantize(decimal.Decimal('0.'))
+            lambda x: x.quantize(decimal.Decimal('0.')),
         ),
         (methodcaller('ceil'), lambda x: decimal.Decimal(math.ceil(x))),
         (methodcaller('floor'), lambda x: decimal.Decimal(math.floor(x))),
         (methodcaller('exp'), methodcaller('exp')),
         (
             methodcaller('sign'),
-            lambda x: x if not x else decimal.Decimal(1).copy_sign(x)
+            lambda x: x if not x else decimal.Decimal(1).copy_sign(x),
         ),
         (methodcaller('sqrt'), operate(lambda x: x.sqrt())),
         (
             methodcaller('log', 2),
-            operate(lambda x: x.ln() / decimal.Decimal(2).ln())
+            operate(lambda x: x.ln() / decimal.Decimal(2).ln()),
         ),
         (methodcaller('ln'), operate(lambda x: x.ln())),
         (
             methodcaller('log2'),
-            operate(lambda x: x.ln() / decimal.Decimal(2).ln())
+            operate(lambda x: x.ln() / decimal.Decimal(2).ln()),
         ),
         (methodcaller('log10'), operate(lambda x: x.log10())),
-    ]
+    ],
 )
 def test_math_functions_decimal(t, df, ibis_func, pandas_func):
     dtype = dt.Decimal(12, 3)
@@ -92,8 +93,7 @@ def test_math_functions_decimal(t, df, ibis_func, pandas_func):
         lambda x: context.create_decimal(x).quantize(
             decimal.Decimal(
                 '{}.{}'.format(
-                    '0' * (dtype.precision - dtype.scale),
-                    '0' * dtype.scale
+                    '0' * (dtype.precision - dtype.scale), '0' * dtype.scale
                 )
             )
         )
@@ -110,7 +110,7 @@ def test_round_decimal_with_negative_places(t, df):
     result = expr.execute()
     expected = pd.Series(
         list(map(decimal.Decimal, ['1.0E+2', '2.3E+2', '-1.00E+3'])),
-        name='float64_as_strings'
+        name='float64_as_strings',
     )
     tm.assert_series_equal(result, expected)
 
@@ -121,13 +121,19 @@ def test_round_decimal_with_negative_places(t, df):
         (lambda x: x.clip(lower=0), lambda x: x.clip(lower=0)),
         (lambda x: x.clip(lower=0.0), lambda x: x.clip(lower=0.0)),
         (lambda x: x.clip(upper=0), lambda x: x.clip(upper=0)),
-        (lambda x: x.clip(lower=x - 1, upper=x + 1),
-         lambda x: x.clip(lower=x - 1, upper=x + 1)),
-        (lambda x: x.clip(lower=0, upper=1),
-         lambda x: x.clip(lower=0, upper=1)),
-        (lambda x: x.clip(lower=0, upper=1.0),
-         lambda x: x.clip(lower=0, upper=1.0)),
-    ]
+        (
+            lambda x: x.clip(lower=x - 1, upper=x + 1),
+            lambda x: x.clip(lower=x - 1, upper=x + 1),
+        ),
+        (
+            lambda x: x.clip(lower=0, upper=1),
+            lambda x: x.clip(lower=0, upper=1),
+        ),
+        (
+            lambda x: x.clip(lower=0, upper=1.0),
+            lambda x: x.clip(lower=0, upper=1.0),
+        ),
+    ],
 )
 def test_clip(t, df, ibis_func, pandas_func):
     result = ibis_func(t.float64_with_zeros).execute()
@@ -138,9 +144,11 @@ def test_clip(t, df, ibis_func, pandas_func):
 @pytest.mark.parametrize(
     ('ibis_func', 'pandas_func'),
     [
-        (lambda x: x.quantile([0.25, 0.75]),
-         lambda x: list(x.quantile([0.25, 0.75]))),
-    ]
+        (
+            lambda x: x.quantile([0.25, 0.75]),
+            lambda x: list(x.quantile([0.25, 0.75])),
+        )
+    ],
 )
 @pytest.mark.parametrize('column', ['float64_with_zeros', 'int64_with_zeros'])
 def test_quantile_list(t, df, ibis_func, pandas_func, column):
@@ -153,13 +161,13 @@ def test_quantile_list(t, df, ibis_func, pandas_func, column):
 @pytest.mark.parametrize(
     ('ibis_func', 'pandas_func'),
     [
-        (lambda x: x.quantile(0),
-         lambda x: x.quantile(0)),
-        (lambda x: x.quantile(1),
-         lambda x: x.quantile(1)),
-        (lambda x: x.quantile(0.5, interpolation='linear'),
-         lambda x: x.quantile(0.5, interpolation='linear')),
-    ]
+        (lambda x: x.quantile(0), lambda x: x.quantile(0)),
+        (lambda x: x.quantile(1), lambda x: x.quantile(1)),
+        (
+            lambda x: x.quantile(0.5, interpolation='linear'),
+            lambda x: x.quantile(0.5, interpolation='linear'),
+        ),
+    ],
 )
 def test_quantile_scalar(t, df, ibis_func, pandas_func):
     result = ibis_func(t.float64_with_zeros).execute()
@@ -175,13 +183,11 @@ def test_quantile_scalar(t, df, ibis_func, pandas_func):
     [
         # no lower/upper specified
         (lambda x: x.clip(), ValueError),
-
         # out of range on quantile
         (lambda x: x.quantile(5.0), ValueError),
-
         # invalid interpolation arg
         (lambda x: x.quantile(0.5, interpolation='foo'), ValueError),
-    ]
+    ],
 )
 def test_arraylike_functions_transform_errors(t, df, ibis_func, exc):
     with pytest.raises(exc):

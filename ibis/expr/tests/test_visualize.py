@@ -30,13 +30,10 @@ def key(expr, name=None):
         lambda t: t.a + t.b,
         lambda t: t.a + t.b > 3 ** t.a,
         lambda t: t[(t.a + t.b * 2 * t.b / t.b ** 3 > 4) & (t.b > 5)],
-        lambda t: t[(t.a + t.b * 2 * t.b / t.b ** 3 > 4) & (t.b > 5)].group_by(
-            'c'
-        ).aggregate(
-            amean=lambda f: f.a.mean(),
-            bsum=lambda f: f.b.sum(),
-        )
-    ]
+        lambda t: t[(t.a + t.b * 2 * t.b / t.b ** 3 > 4) & (t.b > 5)]
+        .group_by('c')
+        .aggregate(amean=lambda f: f.a.mean(), bsum=lambda f: f.b.sum()),
+    ],
 )
 def test_exprs(table, expr_func):
     expr = expr_func(table)
@@ -63,7 +60,6 @@ def test_custom_expr():
 
 
 def test_custom_expr_with_not_implemented_type():
-
     class MyExpr(ir.Expr):
         def type(self):
             raise NotImplementedError
@@ -96,22 +92,22 @@ def test_join(how):
 
 def test_sort_by():
     t = ibis.table([('a', 'int64'), ('b', 'string'), ('c', 'int32')])
-    expr = t.groupby(t.b).aggregate(
-        sum_a=t.a.sum().cast('double')
-    ).sort_by('c')
+    expr = (
+        t.groupby(t.b).aggregate(sum_a=t.a.sum().cast('double')).sort_by('c')
+    )
     graph = viz.to_graph(expr)
     assert key(expr) in graph.source
 
 
 @pytest.mark.skipif(
     bool(os.environ.get('APPVEYOR', None)),
-    reason='Not sure what the prerequisites for running this on Windows are'
+    reason='Not sure what the prerequisites for running this on Windows are',
 )
 def test_optional_graphviz_repr():
     t = ibis.table([('a', 'int64'), ('b', 'string'), ('c', 'int32')])
-    expr = t.groupby(t.b).aggregate(
-        sum_a=t.a.sum().cast('double')
-    ).sort_by('c')
+    expr = (
+        t.groupby(t.b).aggregate(sum_a=t.a.sum().cast('double')).sort_by('c')
+    )
 
     # default behavior
     assert expr._repr_png_() is not None

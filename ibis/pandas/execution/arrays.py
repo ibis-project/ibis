@@ -19,18 +19,12 @@ def execute_array_length_scalar(op, data, **kwargs):
     return len(data)
 
 
-@execute_node.register(
-    ops.ArraySlice,
-    pd.Series, int, (int, type(None))
-)
+@execute_node.register(ops.ArraySlice, pd.Series, int, (int, type(None)))
 def execute_array_slice(op, data, start, stop, **kwargs):
     return data.apply(operator.itemgetter(slice(start, stop)))
 
 
-@execute_node.register(
-    ops.ArraySlice,
-    list, int, (int, type(None))
-)
+@execute_node.register(ops.ArraySlice, list, int, (int, type(None)))
 def execute_array_slice_scalar(op, data, start, stop, **kwargs):
     return data[start:stop]
 

@@ -75,19 +75,18 @@ def execute_materialized_join(op, left, right, **kwargs):
                 'Only equality join predicates supported with pandas'
             )
         new_left_column, left_pred_root = _compute_join_column(
-            predicate.left,
-            **kwargs
+            predicate.left, **kwargs
         )
         on[left_pred_root].append(new_left_column)
 
         new_right_column, right_pred_root = _compute_join_column(
-            predicate.right,
-            **kwargs
+            predicate.right, **kwargs
         )
         on[right_pred_root].append(new_right_column)
 
     df = pd.merge(
-        left, right,
+        left,
+        right,
         how=how,
         left_on=on[left_op],
         right_on=on[right_op],
@@ -104,7 +103,8 @@ def execute_asof_join(op, left, right, tolerance, **kwargs):
     left_on, right_on = _extract_predicate_names(op.predicates)
     left_by, right_by = _extract_predicate_names(op.by)
     _validate_columns(
-        overlapping_columns, left_on, right_on, left_by, right_by)
+        overlapping_columns, left_on, right_on, left_by, right_by
+    )
 
     return pd.merge_asof(
         left=left,

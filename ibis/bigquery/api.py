@@ -18,12 +18,7 @@ except ImportError:
     pass
 
 
-__all__ = (
-    'compile',
-    'connect',
-    'verify',
-    'udf',
-)
+__all__ = ('compile', 'connect', 'verify', 'udf')
 
 
 def compile(expr, params=None):
@@ -39,6 +34,7 @@ def compile(expr, params=None):
 
     """
     from ibis.bigquery.compiler import to_sql
+
     return to_sql(expr, dialect.make_context(params=params))
 
 

@@ -20,7 +20,7 @@ ga = pytest.importorskip('google.auth')
 exceptions = pytest.importorskip('google.api_core.exceptions')
 
 from ibis.bigquery.tests.conftest import (
-    connect as bigquery_connect
+    connect as bigquery_connect,
 )  # noqa: E402
 from ibis.bigquery.client import bigquery_param  # noqa: E402
 
@@ -38,7 +38,8 @@ def test_column_execute(alltypes, df):
         # Sort the values because BigQuery doesn't guarantee row order unless
         # there is an order-by clause in the query.
         result.sort_values().reset_index(drop=True),
-        expected.sort_values().reset_index(drop=True))
+        expected.sort_values().reset_index(drop=True),
+    )
 
 
 def test_literal_execute(client):
@@ -58,10 +59,7 @@ def test_simple_aggregate_execute(alltypes, df):
 
 def test_list_tables(client):
     tables = client.list_tables(like='functional_alltypes')
-    assert set(tables) == {
-        'functional_alltypes',
-        'functional_alltypes_parted',
-    }
+    assert set(tables) == {'functional_alltypes', 'functional_alltypes_parted'}
 
 
 def test_current_database(client):
@@ -102,9 +100,9 @@ def test_array_index(struct_table):
     expected = pd.Series(
         [
             {'int_field': None, 'string_field': None},
-            {'int_field': None, 'string_field': 'hijklmnop'}
+            {'int_field': None, 'string_field': 'hijklmnop'},
         ],
-        name='tmp'
+        name='tmp',
     )
     tm.assert_series_equal(result, expected)
 
@@ -147,13 +145,21 @@ def test_array_collect(struct_table):
     )
     result = expr.execute()
     expected = struct_table.execute()
-    expected = expected.assign(
-        key=expected.array_of_structs_col.apply(lambda x: x[0]['string_field'])
-    ).groupby('key').apply(
-        lambda df: list(
-            df.array_of_structs_col.apply(lambda x: x[0]['int_field'])
+    expected = (
+        expected.assign(
+            key=expected.array_of_structs_col.apply(
+                lambda x: x[0]['string_field']
+            )
         )
-    ).reset_index().rename(columns={0: 'foo'})
+        .groupby('key')
+        .apply(
+            lambda df: list(
+                df.array_of_structs_col.apply(lambda x: x[0]['int_field'])
+            )
+        )
+        .reset_index()
+        .rename(columns={0: 'foo'})
+    )
     tm.assert_frame_equal(result, expected)
 
 
@@ -177,12 +183,19 @@ def test_cast_string_to_date(alltypes, df, type):
     expr = '20' + ibis.literal('-').join([year, month, day])
     expr = expr.cast(type)
 
-    result = expr.execute().astype(
-        'datetime64[ns]'
-    ).sort_values().reset_index(drop=True).rename('date_string_col')
-    expected = pd.to_datetime(
-        df.date_string_col
-    ).dt.normalize().sort_values().reset_index(drop=True)
+    result = (
+        expr.execute()
+        .astype('datetime64[ns]')
+        .sort_values()
+        .reset_index(drop=True)
+        .rename('date_string_col')
+    )
+    expected = (
+        pd.to_datetime(df.date_string_col)
+        .dt.normalize()
+        .sort_values()
+        .reset_index(drop=True)
+    )
     tm.assert_series_equal(result, expected)
 
 
@@ -204,11 +217,14 @@ def test_different_partition_col_name(client):
 def test_subquery_scalar_params(alltypes, project_id):
     t = alltypes
     param = ibis.param('timestamp').name('my_param')
-    expr = t[['float_col', 'timestamp_col', 'int_col', 'string_col']][
-        lambda t: t.timestamp_col < param
-    ].groupby('string_col').aggregate(
-        foo=lambda t: t.float_col.sum()
-    ).foo.count()
+    expr = (
+        t[['float_col', 'timestamp_col', 'int_col', 'string_col']][
+            lambda t: t.timestamp_col < param
+        ]
+        .groupby('string_col')
+        .aggregate(foo=lambda t: t.float_col.sum())
+        .foo.count()
+    )
     result = expr.compile(params={param: '20140101'})
     expected = """\
 SELECT count(`foo`) AS `count`
@@ -220,7 +236,9 @@ FROM (
     WHERE `timestamp_col` < @my_param
   ) t1
   GROUP BY 1
-) t0""".format(project_id)
+) t0""".format(
+        project_id
+    )
     assert result == expected
 
 
@@ -229,12 +247,16 @@ def test_scalar_param_string(alltypes, df):
     expr = alltypes[alltypes.string_col == param]
 
     string_value = '0'
-    result = expr.execute(
-        params={param: string_value}
-    ).sort_values('id').reset_index(drop=True)
-    expected = df.loc[
-        df.string_col == string_value
-    ].sort_values('id').reset_index(drop=True)
+    result = (
+        expr.execute(params={param: string_value})
+        .sort_values('id')
+        .reset_index(drop=True)
+    )
+    expected = (
+        df.loc[df.string_col == string_value]
+        .sort_values('id')
+        .reset_index(drop=True)
+    )
     tm.assert_frame_equal(result, expected)
 
 
@@ -243,12 +265,16 @@ def test_scalar_param_int64(alltypes, df):
     expr = alltypes[alltypes.string_col.cast('int64') == param]
 
     int64_value = 0
-    result = expr.execute(
-        params={param: int64_value}
-    ).sort_values('id').reset_index(drop=True)
-    expected = df.loc[
-        df.string_col.astype('int64') == int64_value
-    ].sort_values('id').reset_index(drop=True)
+    result = (
+        expr.execute(params={param: int64_value})
+        .sort_values('id')
+        .reset_index(drop=True)
+    )
+    expected = (
+        df.loc[df.string_col.astype('int64') == int64_value]
+        .sort_values('id')
+        .reset_index(drop=True)
+    )
     tm.assert_frame_equal(result, expected)
 
 
@@ -257,12 +283,16 @@ def test_scalar_param_double(alltypes, df):
     expr = alltypes[alltypes.string_col.cast('int64').cast('double') == param]
 
     double_value = 0.0
-    result = expr.execute(
-        params={param: double_value}
-    ).sort_values('id').reset_index(drop=True)
-    expected = df.loc[
-        df.string_col.astype('int64').astype('float64') == double_value
-    ].sort_values('id').reset_index(drop=True)
+    result = (
+        expr.execute(params={param: double_value})
+        .sort_values('id')
+        .reset_index(drop=True)
+    )
+    expected = (
+        df.loc[df.string_col.astype('int64').astype('float64') == double_value]
+        .sort_values('id')
+        .reset_index(drop=True)
+    )
     tm.assert_frame_equal(result, expected)
 
 
@@ -271,50 +301,64 @@ def test_scalar_param_boolean(alltypes, df):
     expr = alltypes[(alltypes.string_col.cast('int64') == 0) == param]
 
     bool_value = True
-    result = expr.execute(
-        params={param: bool_value}
-    ).sort_values('id').reset_index(drop=True)
-    expected = df.loc[
-        df.string_col.astype('int64') == 0
-    ].sort_values('id').reset_index(drop=True)
+    result = (
+        expr.execute(params={param: bool_value})
+        .sort_values('id')
+        .reset_index(drop=True)
+    )
+    expected = (
+        df.loc[df.string_col.astype('int64') == 0]
+        .sort_values('id')
+        .reset_index(drop=True)
+    )
     tm.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize(
     'timestamp_value',
-    ['2009-01-20 01:02:03',
-     datetime.date(2009, 1, 20),
-     datetime.datetime(2009, 1, 20, 1, 2, 3)]
+    [
+        '2009-01-20 01:02:03',
+        datetime.date(2009, 1, 20),
+        datetime.datetime(2009, 1, 20, 1, 2, 3),
+    ],
 )
 def test_scalar_param_timestamp(alltypes, df, timestamp_value):
     param = ibis.param('timestamp')
     expr = alltypes[alltypes.timestamp_col <= param][['timestamp_col']]
 
-    result = expr.execute(
-        params={param: timestamp_value}
-    ).sort_values('timestamp_col').reset_index(drop=True)
+    result = (
+        expr.execute(params={param: timestamp_value})
+        .sort_values('timestamp_col')
+        .reset_index(drop=True)
+    )
     value = pd.Timestamp(timestamp_value)
-    expected = df.loc[
-        df.timestamp_col <= value, ['timestamp_col']
-    ].sort_values('timestamp_col').reset_index(drop=True)
+    expected = (
+        df.loc[df.timestamp_col <= value, ['timestamp_col']]
+        .sort_values('timestamp_col')
+        .reset_index(drop=True)
+    )
     tm.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize(
     'date_value',
-    ['2009-01-20', datetime.date(2009, 1, 20), datetime.datetime(2009, 1, 20)]
+    ['2009-01-20', datetime.date(2009, 1, 20), datetime.datetime(2009, 1, 20)],
 )
 def test_scalar_param_date(alltypes, df, date_value):
     param = ibis.param('date')
     expr = alltypes[alltypes.timestamp_col.cast('date') <= param]
 
-    result = expr.execute(
-        params={param: date_value}
-    ).sort_values('timestamp_col').reset_index(drop=True)
+    result = (
+        expr.execute(params={param: date_value})
+        .sort_values('timestamp_col')
+        .reset_index(drop=True)
+    )
     value = pd.Timestamp(date_value)
-    expected = df.loc[
-        df.timestamp_col.dt.normalize() <= value
-    ].sort_values('timestamp_col').reset_index(drop=True)
+    expected = (
+        df.loc[df.timestamp_col.dt.normalize() <= value]
+        .sort_values('timestamp_col')
+        .reset_index(drop=True)
+    )
     tm.assert_frame_equal(result, expected)
 
 
@@ -336,16 +380,9 @@ def test_scalar_param_struct(client):
 
 def test_scalar_param_nested(client):
     param = ibis.param('struct<x: array<struct<y: array<double>>>>')
-    value = collections.OrderedDict([
-        (
-            'x',
-            [
-                collections.OrderedDict([
-                    ('y', [1.0, 2.0, 3.0])
-                ])
-            ]
-        )
-    ])
+    value = collections.OrderedDict(
+        [('x', [collections.OrderedDict([('y', [1.0, 2.0, 3.0])])])]
+    )
     result = client.execute(param, {param: value})
     assert value == result
 
@@ -353,16 +390,9 @@ def test_scalar_param_nested(client):
 def test_repr_struct_of_array_of_struct():
     param = ibis.param('struct<x: array<struct<y: array<double>>>>')
     param = param.name('foo')
-    value = collections.OrderedDict([
-        (
-            'x',
-            [
-                collections.OrderedDict([
-                    ('y', [1.0, 2.0, 3.0])
-                ])
-            ]
-        )
-    ])
+    value = collections.OrderedDict(
+        [('x', [collections.OrderedDict([('y', [1.0, 2.0, 3.0])])])]
+    )
     result = bigquery_param(param, value)
     expected = {
         'name': 'foo',
@@ -377,17 +407,17 @@ def test_repr_struct_of_array_of_struct():
                                     'name': 'y',
                                     'type': {
                                         'arrayType': {'type': 'FLOAT64'},
-                                        'type': 'ARRAY'
-                                    }
+                                        'type': 'ARRAY',
+                                    },
                                 }
                             ],
-                            'type': 'STRUCT'
+                            'type': 'STRUCT',
                         },
-                        'type': 'ARRAY'
-                    }
+                        'type': 'ARRAY',
+                    },
                 }
             ],
-            'type': 'STRUCT'
+            'type': 'STRUCT',
         },
         'parameterValue': {
             'structValues': {
@@ -399,7 +429,7 @@ def test_repr_struct_of_array_of_struct():
                                     'arrayValues': [
                                         {'value': 1.0},
                                         {'value': 2.0},
-                                        {'value': 3.0}
+                                        {'value': 3.0},
                                     ]
                                 }
                             }
@@ -407,7 +437,7 @@ def test_repr_struct_of_array_of_struct():
                     ]
                 }
             }
-        }
+        },
     }
     assert result.to_api_repr() == expected
 
@@ -420,9 +450,14 @@ def test_scalar_param_scope(alltypes, project_id):
     t = alltypes
     param = ibis.param('timestamp')
     mut = t.mutate(param=param).compile(params={param: '2017-01-01'})
-    assert mut == """\
+    assert (
+        mut
+        == """\
 SELECT *, @param AS `param`
-FROM `{}.testing.functional_alltypes`""".format(project_id)
+FROM `{}.testing.functional_alltypes`""".format(
+            project_id
+        )
+    )
 
 
 def test_parted_column_rename(parted_alltypes):
@@ -502,7 +537,7 @@ def test_exists_table_different_project_fully_qualified(client):
     [
         ('bigquery-public-data.epa_historical_air_quality', True),
         ('bigquery-foo-bar-project.baz_dataset', False),
-    ]
+    ],
 )
 def test_exists_database_different_project(client, name, expected):
     assert client.exists_database(name) is expected
@@ -517,7 +552,8 @@ def test_repeated_project_name(project_id):
 
 def test_multiple_project_queries(client):
     so = client.table(
-        'posts_questions', database='bigquery-public-data.stackoverflow')
+        'posts_questions', database='bigquery-public-data.stackoverflow'
+    )
     trips = client.table('trips', database='nyc-tlc.yellow')
     join = so.join(trips, so.tags == trips.rate_code)[[so.title]]
     result = join.compile()
@@ -566,15 +602,16 @@ def test_large_timestamp(client):
 
 
 def test_string_to_timestamp(client):
-    timestamp = pd.Timestamp(datetime.datetime(year=2017, month=2, day=6),
-                             tz=pytz.timezone('UTC'))
+    timestamp = pd.Timestamp(
+        datetime.datetime(year=2017, month=2, day=6), tz=pytz.timezone('UTC')
+    )
     expr = ibis.literal('2017-02-06').to_timestamp('%F')
     result = client.execute(expr)
     assert result == timestamp
 
     timestamp_tz = pd.Timestamp(
         datetime.datetime(year=2017, month=2, day=6, hour=5),
-        tz=pytz.timezone('UTC')
+        tz=pytz.timezone('UTC'),
     )
     expr_tz = ibis.literal('2017-02-06').to_timestamp('%F', 'America/New_York')
     result_tz = client.execute(expr_tz)
@@ -596,10 +633,12 @@ def test_timestamp_column_parted_is_not_renamed(client):
 
 def test_prevent_rewrite(alltypes, project_id):
     t = alltypes
-    expr = (t.groupby(t.string_col)
-            .aggregate(collected_double=t.double_col.collect())
-            .pipe(ibis.prevent_rewrite)
-            .filter(lambda t: t.string_col != 'wat'))
+    expr = (
+        t.groupby(t.string_col)
+        .aggregate(collected_double=t.double_col.collect())
+        .pipe(ibis.prevent_rewrite)
+        .filter(lambda t: t.string_col != 'wat')
+    )
     result = expr.compile()
     expected = """\
 SELECT *
@@ -608,7 +647,9 @@ FROM (
   FROM `{}.testing.functional_alltypes`
   GROUP BY 1
 ) t0
-WHERE `string_col` != 'wat'""".format(project_id)
+WHERE `string_col` != 'wat'""".format(
+        project_id
+    )
     assert result == expected
 
 
@@ -616,24 +657,12 @@ WHERE `string_col` != 'wat'""".format(project_id)
     ('case', 'dtype'),
     [
         (datetime.date(2017, 1, 1), dt.date),
-        (
-            pd.Timestamp('2017-01-01'),
-            dt.date
-        ),
+        (pd.Timestamp('2017-01-01'), dt.date),
         ('2017-01-01', dt.date),
-        (
-            datetime.datetime(2017, 1, 1, 4, 55, 59),
-            dt.timestamp,
-        ),
-        (
-            '2017-01-01 04:55:59',
-            dt.timestamp,
-        ),
-        (
-            pd.Timestamp('2017-01-01 04:55:59'),
-            dt.timestamp,
-        ),
-    ]
+        (datetime.datetime(2017, 1, 1, 4, 55, 59), dt.timestamp),
+        ('2017-01-01 04:55:59', dt.timestamp),
+        (pd.Timestamp('2017-01-01 04:55:59'), dt.timestamp),
+    ],
 )
 def test_day_of_week(client, case, dtype):
     date_var = ibis.literal(case, type=dtype)
@@ -663,10 +692,9 @@ def test_column_summary(alltypes):
 
 
 def test_numeric_table_schema(numeric_table):
-    assert numeric_table.schema() == ibis.schema([
-        ('string_col', dt.string),
-        ('numeric_col', dt.Decimal(38, 9))
-    ])
+    assert numeric_table.schema() == ibis.schema(
+        [('string_col', dt.string), ('numeric_col', dt.Decimal(38, 9))]
+    )
 
 
 def test_numeric_sum(numeric_table):

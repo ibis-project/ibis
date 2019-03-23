@@ -56,7 +56,7 @@ def test_string_col_is_unicode(backend, alltypes, df):
         param(
             lambda t: t.string_col.repeat(2),
             lambda t: t.string_col * 2,
-            id='repeat'
+            id='repeat',
         ),
         param(
             lambda t: t.string_col.translate('0', 'a'),
@@ -66,12 +66,12 @@ def test_string_col_is_unicode(backend, alltypes, df):
         param(
             lambda t: t.string_col.find('a'),
             lambda t: t.string_col.str.find('a'),
-            id='find'
+            id='find',
         ),
         param(
             lambda t: t.string_col.lpad(10, 'a'),
             lambda t: t.string_col.str.pad(10, fillchar='a', side='left'),
-            id='lpad'
+            id='lpad',
         ),
         param(
             lambda t: t.string_col.rpad(10, 'a'),
@@ -91,22 +91,22 @@ def test_string_col_is_unicode(backend, alltypes, df):
         param(
             lambda t: t.string_col.lower(),
             lambda t: t.string_col.str.lower(),
-            id='lower'
+            id='lower',
         ),
         param(
             lambda t: t.string_col.upper(),
             lambda t: t.string_col.str.upper(),
-            id='upper'
+            id='upper',
         ),
         param(
             lambda t: t.string_col.reverse(),
             lambda t: t.string_col.str[::-1],
-            id='reverse'
+            id='reverse',
         ),
         param(
             lambda t: t.string_col.ascii_str(),
             lambda t: t.string_col.map(ord).astype('int32'),
-            id='ascii_str'
+            id='ascii_str',
         ),
         param(
             lambda t: t.string_col.length(),
@@ -116,17 +116,17 @@ def test_string_col_is_unicode(backend, alltypes, df):
         param(
             lambda t: t.string_col.strip(),
             lambda t: t.string_col.str.strip(),
-            id='strip'
+            id='strip',
         ),
         param(
             lambda t: t.string_col.lstrip(),
             lambda t: t.string_col.str.lstrip(),
-            id='lstrip'
+            id='lstrip',
         ),
         param(
             lambda t: t.string_col.rstrip(),
             lambda t: t.string_col.str.rstrip(),
-            id='rstrip'
+            id='rstrip',
         ),
         param(
             lambda t: t.string_col.capitalize(),
@@ -136,7 +136,7 @@ def test_string_col_is_unicode(backend, alltypes, df):
         param(
             lambda t: t.date_string_col.substr(2, 3),
             lambda t: t.date_string_col.str[2:5],
-            id='substr'
+            id='substr',
         ),
         param(
             lambda t: t.date_string_col.left(2),
@@ -151,29 +151,29 @@ def test_string_col_is_unicode(backend, alltypes, df):
         param(
             lambda t: t.date_string_col[1:3],
             lambda t: t.date_string_col.str[1:3],
-            id='slice'
+            id='slice',
         ),
         param(
-            lambda t: t.date_string_col[t.date_string_col.length() - 1:],
+            lambda t: t.date_string_col[t.date_string_col.length() - 1 :],
             lambda t: t.date_string_col.str[-1:],
-            id='expr_slice_begin'
+            id='expr_slice_begin',
         ),
         param(
-            lambda t: t.date_string_col[:t.date_string_col.length()],
+            lambda t: t.date_string_col[: t.date_string_col.length()],
             lambda t: t.date_string_col,
-            id='expr_slice_end'
+            id='expr_slice_end',
         ),
         param(
             lambda t: t.date_string_col[:],
             lambda t: t.date_string_col,
-            id='expr_empty_slice'
+            id='expr_empty_slice',
         ),
         param(
             lambda t: t.date_string_col[
-                t.date_string_col.length() - 2:t.date_string_col.length() - 1
+                t.date_string_col.length() - 2 : t.date_string_col.length() - 1
             ],
             lambda t: t.date_string_col.str[-2:-1],
-            id='expr_slice_begin_end'
+            id='expr_slice_begin_end',
         ),
         param(
             lambda t: t.date_string_col.split('/'),
@@ -183,8 +183,8 @@ def test_string_col_is_unicode(backend, alltypes, df):
         param(
             lambda t: ibis.literal('-').join(['a', t.string_col, 'c']),
             lambda t: 'a-' + t.string_col + '-c',
-            id='join'
-        )
+            id='join',
+        ),
     ],
 )
 @tu.skipif_unsupported

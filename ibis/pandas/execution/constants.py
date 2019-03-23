@@ -59,11 +59,9 @@ BINARY_OPERATIONS = {
     ops.GreaterEqual: operator.ge,
     ops.Equals: operator.eq,
     ops.NotEquals: operator.ne,
-
     ops.And: operator.and_,
     ops.Or: operator.or_,
     ops.Xor: operator.xor,
-
     ops.Add: operator.add,
     ops.Subtract: operator.sub,
     ops.Multiply: operator.mul,
@@ -71,5 +69,5 @@ BINARY_OPERATIONS = {
     ops.FloorDivide: operator.floordiv,
     ops.Modulus: operator.mod,
     ops.Power: operator.pow,
-    ops.IdenticalTo: lambda x, y: (x == y) | (pd.isnull(x) & pd.isnull(y))
+    ops.IdenticalTo: lambda x, y: (x == y) | (pd.isnull(x) & pd.isnull(y)),
 }

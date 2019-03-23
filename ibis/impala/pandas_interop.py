@@ -30,6 +30,7 @@ class DataFrameWriter:
 
     Class takes ownership of any temporary data written to HDFS
     """
+
     def __init__(self, client, df, path=None):
         self.client = client
         self.hdfs = client.hdfs
@@ -39,8 +40,9 @@ class DataFrameWriter:
         self.temp_hdfs_dirs = []
 
     def write_temp_csv(self):
-        temp_hdfs_dir = pjoin(options.impala.temp_hdfs_path,
-                              'pandas_{}'.format(util.guid()))
+        temp_hdfs_dir = pjoin(
+            options.impala.temp_hdfs_path, 'pandas_{}'.format(util.guid())
+        )
         self.hdfs.mkdir(temp_hdfs_dir)
 
         # Keep track of the temporary HDFS file
@@ -61,11 +63,15 @@ class DataFrameWriter:
                     'Writing DataFrame to temporary file {}'.format(f.name)
                 )
 
-            self.df.to_csv(f.name, header=False, index=False,
-                           sep=',',
-                           quoting=csv.QUOTE_NONE,
-                           escapechar='\\',
-                           na_rep='#NULL')
+            self.df.to_csv(
+                f.name,
+                header=False,
+                index=False,
+                sep=',',
+                quoting=csv.QUOTE_NONE,
+                escapechar='\\',
+                na_rep='#NULL',
+            )
             f.seek(0)
 
             if options.verbose:
@@ -82,14 +88,17 @@ class DataFrameWriter:
         temp_delimited_name = 'ibis_tmp_pandas_{0}'.format(util.guid())
         schema = self.get_schema()
 
-        return self.client.delimited_file(csv_dir, schema,
-                                          name=temp_delimited_name,
-                                          database=database,
-                                          delimiter=',',
-                                          na_rep='#NULL',
-                                          escapechar='\\\\',
-                                          external=True,
-                                          persist=False)
+        return self.client.delimited_file(
+            csv_dir,
+            schema,
+            name=temp_delimited_name,
+            database=database,
+            delimiter=',',
+            na_rep='#NULL',
+            escapechar='\\\\',
+            external=True,
+            persist=False,
+        )
 
     def __del__(self):
         try:

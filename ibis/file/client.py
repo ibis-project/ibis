@@ -5,7 +5,6 @@ from pathlib import Path
 
 
 class FileClient(ibis.client.Client):
-
     def __init__(self, root):
         self.root = Path(str(root))
         self.dictionary = {}
@@ -93,7 +92,6 @@ class FileClient(ibis.client.Client):
 
 
 class FileDatabase(ibis.client.Database):
-
     def __init__(self, name, client, path=None):
         super().__init__(name, client)
         self.path = path

@@ -22,7 +22,6 @@ from ibis.tests.util import assert_equal
 
 
 class TestAnalytics(unittest.TestCase):
-
     def setUp(self):
         self.con = MockConnection()
         self.alltypes = self.con.table('functional_alltypes')
@@ -71,10 +70,10 @@ class TestAnalytics(unittest.TestCase):
 
     def test_topk_analysis_bug(self):
         # GH #398
-        airlines = ibis.table([('dest', 'string'),
-                               ('origin', 'string'),
-                               ('arrdelay', 'int32')],
-                              'airlines')
+        airlines = ibis.table(
+            [('dest', 'string'), ('origin', 'string'), ('arrdelay', 'int32')],
+            'airlines',
+        )
         dests = ['ORD', 'JFK', 'SFO']
         t = airlines[airlines.dest.isin(dests)]
         delay_filter = t.origin.topk(10, by=t.arrdelay.mean())
@@ -86,10 +85,10 @@ class TestAnalytics(unittest.TestCase):
 
     def test_topk_function_late_bind(self):
         # GH #520
-        airlines = ibis.table([('dest', 'string'),
-                               ('origin', 'string'),
-                               ('arrdelay', 'int32')],
-                              'airlines')
+        airlines = ibis.table(
+            [('dest', 'string'), ('origin', 'string'), ('arrdelay', 'int32')],
+            'airlines',
+        )
         expr1 = airlines.dest.topk(5, by=lambda x: x.arrdelay.mean())
         expr2 = airlines.dest.topk(5, by=airlines.arrdelay.mean())
 

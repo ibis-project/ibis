@@ -71,9 +71,7 @@ class MapDDataType:
         'TINYINT': dt.int8,
     }
 
-    ibis_dtypes = {
-        v: k for k, v in dtypes.items()
-    }
+    ibis_dtypes = {v: k for k, v in dtypes.items()}
 
     _mapd_to_ibis_dtypes = {
         'BIGINT': 'int64',
@@ -97,7 +95,7 @@ class MapDDataType:
         'POINT': 'point',
         'LINESTRING': 'linestring',
         'POLYGON': 'polygon',
-        'MULTIPOLYGON': 'multipolygon'
+        'MULTIPOLYGON': 'multipolygon',
     }
 
     def __init__(self, typename, nullable=True):
@@ -170,6 +168,7 @@ class MapDQuery(Query):
     """
 
     """
+
     def _fetch(self, cursor):
         # check if cursor is a pymapd cursor.Cursor
         return self.schema().apply_to(cursor.to_df())
@@ -297,6 +296,7 @@ class MapDTable(ir.TableExpr, DatabaseEntity):
         -------
         None (for now)
         """
+
         def _run_ddl(**kwds):
             stmt = ddl.AlterTable(self._qualified_name, **kwds)
             return self._execute(stmt)
@@ -319,14 +319,23 @@ class MapDClient(SQLClient):
     """
 
     """
+
     database_class = Database
     query_class = MapDQuery
     dialect = MapDDialect
     table_expr_class = MapDTable
 
-    def __init__(self, uri=None, user=None, password=None, host=None,
-                 port=9091, database=None, protocol='binary',
-                 execution_type=EXECUTION_TYPE_CURSOR):
+    def __init__(
+        self,
+        uri=None,
+        user=None,
+        password=None,
+        host=None,
+        port=9091,
+        database=None,
+        protocol='binary',
+        execution_type=EXECUTION_TYPE_CURSOR,
+    ):
         """
 
         Parameters
@@ -361,8 +370,13 @@ class MapDClient(SQLClient):
         self.execution_type = execution_type
 
         self.con = pymapd.connect(
-            uri=uri, user=user, password=password, host=host,
-            port=port, dbname=database, protocol=protocol
+            uri=uri,
+            user=user,
+            password=password,
+            host=host,
+            port=port,
+            dbname=database,
+            protocol=protocol,
         )
 
     def __del__(self):
@@ -410,9 +424,7 @@ class MapDClient(SQLClient):
             # resets the state of the cursor and closes operation
             result.cursor.fetchall()
             names, ibis_types = self._adapt_types(
-                _extract_column_details(
-                    result.cursor._result.row_set.row_desc
-                )
+                _extract_column_details(result.cursor._result.row_set.row_desc)
             )
 
         return sch.Schema(names, ibis_types)
@@ -510,14 +522,13 @@ class MapDClient(SQLClient):
           if user is a superuser
         """
         statement = ddl.CreateUser(
-            name=name,
-            password=password,
-            is_super=is_super
+            name=name, password=password, is_super=is_super
         )
         self._execute(statement)
 
-    def alter_user(self, name, password=None, is_super=None,
-                   insert_access=None):
+    def alter_user(
+        self, name, password=None, is_super=None, insert_access=None
+    ):
         """
         Alter MapD user parameters
 
@@ -537,7 +548,7 @@ class MapDClient(SQLClient):
             name=name,
             password=password,
             is_super=is_super,
-            insert_access=insert_access
+            insert_access=insert_access,
         )
         self._execute(statement)
 
@@ -580,8 +591,9 @@ class MapDClient(SQLClient):
         statement = ddl.DropView(name, database=database)
         self._execute(statement, False)
 
-    def create_table(self, table_name, obj=None, schema=None, database=None,
-                     max_rows=None):
+    def create_table(
+        self, table_name, obj=None, schema=None, database=None, max_rows=None
+    ):
         """
         Create a new table in MapD using an Ibis table expression.
 
@@ -616,15 +628,10 @@ class MapDClient(SQLClient):
             ast = self._build_ast(to_insert, MapDDialect.make_context())
             select = ast.queries[0]
 
-            statement = ddl.CTAS(
-                table_name, select,
-                database=database
-            )
+            statement = ddl.CTAS(table_name, select, database=database)
         elif schema is not None:
             statement = ddl.CreateTableWithSchema(
-                table_name, schema,
-                database=database,
-                max_rows=max_rows
+                table_name, schema, database=database, max_rows=max_rows
             )
         else:
             raise com.IbisError('Must pass expr or schema')
@@ -708,9 +715,14 @@ class MapDClient(SQLClient):
         else:
             client_class = type(self)
             new_client = client_class(
-                uri=self.uri, user=self.user, password=self.password,
-                host=self.host, port=self.port, database=name,
-                protocol=self.protocol, execution_type=self.execution_type
+                uri=self.uri,
+                user=self.user,
+                password=self.password,
+                host=self.host,
+                port=self.port,
+                database=name,
+                protocol=self.protocol,
+                execution_type=self.execution_type,
             )
             return self.database_class(name, new_client)
 
@@ -738,9 +750,13 @@ class MapDClient(SQLClient):
         if self.db_name != name and name is not None:
             self.con.close()
             self.con = pymapd.connect(
-                uri=self.uri, user=self.user, password=self.password,
-                host=self.host, port=self.port, dbname=name,
-                protocol=self.protocol
+                uri=self.uri,
+                user=self.user,
+                password=self.password,
+                host=self.host,
+                port=self.port,
+                dbname=name,
+                protocol=self.protocol,
             )
             self.db_name = name
 
@@ -803,10 +819,12 @@ class MapDClient(SQLClient):
             col_names.append(col.name)
             col_types.append(MapDDataType.parse(col.type))
 
-        return sch.schema([
-            (col.name, MapDDataType.parse(col.type))
-            for col in self.con.get_table_details(table_name)
-        ])
+        return sch.schema(
+            [
+                (col.name, MapDDataType.parse(col.type))
+                for col in self.con.get_table_details(table_name)
+            ]
+        )
 
     def sql(self, query):
         """

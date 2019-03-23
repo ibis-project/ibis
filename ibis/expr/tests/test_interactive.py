@@ -19,7 +19,6 @@ import ibis.config as config
 
 
 class TestInteractiveUse(unittest.TestCase):
-
     def setUp(self):
         self.con = MockConnection()
 
@@ -40,7 +39,9 @@ class TestInteractiveUse(unittest.TestCase):
         expected = """\
 SELECT *
 FROM functional_alltypes
-LIMIT {0}""".format(config.options.sql.default_limit)
+LIMIT {0}""".format(
+            config.options.sql.default_limit
+        )
 
         assert self.con.executed_queries[0] == expected
 

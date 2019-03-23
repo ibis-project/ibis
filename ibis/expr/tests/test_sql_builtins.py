@@ -23,16 +23,19 @@ from ibis.tests.util import assert_equal
 
 @pytest.fixture
 def sql_table():
-    return ibis.table([
-        ('v1', 'decimal(12, 2)'),
-        ('v2', 'decimal(10, 4)'),
-        ('v3', 'int32'),
-        ('v4', 'int64'),
-        ('v5', 'float'),
-        ('v6', 'double'),
-        ('v7', 'string'),
-        ('v8', 'boolean')
-    ], 'testing')
+    return ibis.table(
+        [
+            ('v1', 'decimal(12, 2)'),
+            ('v2', 'decimal(10, 4)'),
+            ('v3', 'int32'),
+            ('v4', 'int64'),
+            ('v5', 'float'),
+            ('v6', 'double'),
+            ('v7', 'string'),
+            ('v8', 'boolean'),
+        ],
+        'testing',
+    )
 
 
 @pytest.fixture(params=(ibis.coalesce, ibis.greatest, ibis.least))
@@ -49,7 +52,7 @@ def function(request):
         'bigint_col',
         'float_col',
         'double_col',
-    ]
+    ],
 )
 def test_abs(functional_alltypes, lineitem, colname):
     fname = 'abs'

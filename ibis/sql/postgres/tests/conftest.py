@@ -19,24 +19,19 @@ import pytest
 import ibis
 
 PG_USER = os.environ.get(
-    'IBIS_TEST_POSTGRES_USER',
-    os.environ.get('PGUSER', 'postgres')
+    'IBIS_TEST_POSTGRES_USER', os.environ.get('PGUSER', 'postgres')
 )
 PG_PASS = os.environ.get(
-    'IBIS_TEST_POSTGRES_PASSWORD',
-    os.environ.get('PGPASSWORD', 'postgres')
+    'IBIS_TEST_POSTGRES_PASSWORD', os.environ.get('PGPASSWORD', 'postgres')
 )
 PG_HOST = os.environ.get(
-    'IBIS_TEST_POSTGRES_HOST',
-    os.environ.get('PGHOST', 'localhost')
+    'IBIS_TEST_POSTGRES_HOST', os.environ.get('PGHOST', 'localhost')
 )
 PG_PORT = os.environ.get(
-    'IBIS_TEST_POSTGRES_PORT',
-    os.environ.get('PGPORT', 5432)
+    'IBIS_TEST_POSTGRES_PORT', os.environ.get('PGPORT', 5432)
 )
 IBIS_TEST_POSTGRES_DB = os.environ.get(
-    'IBIS_TEST_POSTGRES_DATABASE',
-    os.environ.get('PGDATABASE', 'ibis_testing')
+    'IBIS_TEST_POSTGRES_DATABASE', os.environ.get('PGDATABASE', 'ibis_testing')
 )
 
 
@@ -74,6 +69,7 @@ def at(alltypes):
 @pytest.fixture
 def translate():
     from ibis.sql.postgres.compiler import PostgreSQLDialect
+
     dialect = PostgreSQLDialect()
     context = dialect.make_context()
     return lambda expr: dialect.translator(expr, context).get_result()

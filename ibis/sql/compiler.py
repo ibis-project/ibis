@@ -55,11 +55,15 @@ class QueryAST:
         compiled_teardown_queries = [
             q.compile() for q in self.teardown_queries
         ]
-        return self.context.collapse(list(chain(
-            compiled_setup_queries,
-            compiled_queries,
-            compiled_teardown_queries,
-        )))
+        return self.context.collapse(
+            list(
+                chain(
+                    compiled_setup_queries,
+                    compiled_queries,
+                    compiled_teardown_queries,
+                )
+            )
+        )
 
 
 class SelectBuilder:
@@ -117,17 +121,20 @@ class SelectBuilder:
 
         klass = self._select_class
 
-        return klass(self.table_set, self.select_set,
-                     subqueries=self.subqueries,
-                     where=self.filters,
-                     group_by=self.group_by,
-                     having=self.having,
-                     limit=self.limit,
-                     order_by=self.sort_by,
-                     distinct=self.distinct,
-                     result_handler=self.result_handler,
-                     parent_expr=self.query_expr,
-                     context=self.context)
+        return klass(
+            self.table_set,
+            self.select_set,
+            subqueries=self.subqueries,
+            where=self.filters,
+            group_by=self.group_by,
+            having=self.having,
+            limit=self.limit,
+            order_by=self.sort_by,
+            distinct=self.distinct,
+            result_handler=self.result_handler,
+            parent_expr=self.query_expr,
+            context=self.context,
+        )
 
     def _populate_context(self):
         # Populate aliases for the distinct relations used to output this
@@ -219,8 +226,9 @@ class SelectBuilder:
             min_name = 'min_%s' % aux_hash
             max_name = 'max_%s' % aux_hash
 
-            minmax = self.table_set.aggregate([op.arg.min().name(min_name),
-                                               op.arg.max().name(max_name)])
+            minmax = self.table_set.aggregate(
+                [op.arg.min().name(min_name), op.arg.max().name(max_name)]
+            )
             self.table_set = self.table_set.cross_join(minmax)
 
             if op.base is None:
@@ -281,13 +289,15 @@ class SelectBuilder:
                 return expr._factory(type(op)(left, right))
             else:
                 return expr
-        elif isinstance(op, (ops.Any, ops.BooleanValueOp,
-                             ops.TableColumn, ops.Literal)):
+        elif isinstance(
+            op, (ops.Any, ops.BooleanValueOp, ops.TableColumn, ops.Literal)
+        ):
             return expr
         elif isinstance(op, ops.ValueOp):
-            visited = [self._visit_filter(arg)
-                       if isinstance(arg, ir.Expr) else arg
-                       for arg in op.args]
+            visited = [
+                self._visit_filter(arg) if isinstance(arg, ir.Expr) else arg
+                for arg in op.args
+            ]
             unchanged = True
             for new, old in zip(visited, op.args):
                 if new is not old:
@@ -311,9 +321,11 @@ class SelectBuilder:
     def _visit_filter_Any(self, expr):
         # Rewrite semi/anti-join predicates in way that can hook into SQL
         # translation step
-        transform = transforms.AnyToExistsTransform(self.context, expr,
-                                                    self.table_set)
+        transform = transforms.AnyToExistsTransform(
+            self.context, expr, self.table_set
+        )
         return transform.get_result()
+
     _visit_filter_NotAny = _visit_filter_Any
 
     def _visit_filter_SummaryFilter(self, expr):
@@ -327,8 +339,8 @@ class SelectBuilder:
         op = summary_expr.op()
 
         rank_set = summary_expr.to_aggregation(
-            backup_metric_name='__tmp__',
-            parent_table=self.table_set)
+            backup_metric_name='__tmp__', parent_table=self.table_set
+        )
 
         # GH 1393: previously because of GH667 we were substituting parents,
         # but that introduced a bug when comparing reductions to columns on the
@@ -352,8 +364,9 @@ class SelectBuilder:
 
         # hm, is this the best place for this?
         root_op = source_expr.op()
-        if (isinstance(root_op, ops.Join) and
-                not isinstance(root_op, ops.MaterializedJoin)):
+        if isinstance(root_op, ops.Join) and not isinstance(
+            root_op, ops.MaterializedJoin
+        ):
             # Unmaterialized join
             source_expr = source_expr.materialize()
 
@@ -403,10 +416,7 @@ class SelectBuilder:
         # Ignore "inner" limits, because they've been overrided by an exterior
         # one
         if self.limit is None:
-            self.limit = {
-                'n': op.n,
-                'offset': op.offset
-            }
+            self.limit = {'n': op.n, 'offset': op.offset}
 
         self._collect(op.table, toplevel=toplevel)
 
@@ -713,7 +723,6 @@ def foreign_ref_check(query, expr):
 
 
 class CorrelatedRefCheck:
-
     def __init__(self, query, expr):
         self.query = query
         self.ctx = query.context
@@ -730,8 +739,9 @@ class CorrelatedRefCheck:
         self.visit(self.expr)
         return self.has_query_root and self.has_foreign_root
 
-    def visit(self, expr, in_subquery=False, visit_cache=None,
-              visit_table_cache=None):
+    def visit(
+        self, expr, in_subquery=False, visit_cache=None, visit_table_cache=None
+    ):
         if visit_cache is None:
             visit_cache = set()
 
@@ -746,19 +756,30 @@ class CorrelatedRefCheck:
 
         for arg in node.flat_args():
             if isinstance(arg, ir.TableExpr):
-                self.visit_table(arg, in_subquery=in_subquery,
-                                 visit_cache=visit_cache,
-                                 visit_table_cache=visit_table_cache)
+                self.visit_table(
+                    arg,
+                    in_subquery=in_subquery,
+                    visit_cache=visit_cache,
+                    visit_table_cache=visit_table_cache,
+                )
             elif isinstance(arg, ir.Expr):
-                self.visit(arg, in_subquery=in_subquery,
-                           visit_cache=visit_cache,
-                           visit_table_cache=visit_table_cache)
+                self.visit(
+                    arg,
+                    in_subquery=in_subquery,
+                    visit_cache=visit_cache,
+                    visit_table_cache=visit_table_cache,
+                )
 
     def is_subquery(self, node):
         # XXX
-        if isinstance(node, (ops.TableArrayView,
-                             transforms.ExistsSubquery,
-                             transforms.NotExistsSubquery)):
+        if isinstance(
+            node,
+            (
+                ops.TableArrayView,
+                transforms.ExistsSubquery,
+                transforms.NotExistsSubquery,
+            ),
+        ):
             return True
 
         if isinstance(node, ops.TableColumn):
@@ -766,8 +787,9 @@ class CorrelatedRefCheck:
 
         return False
 
-    def visit_table(self, expr, in_subquery=False, visit_cache=None,
-                    visit_table_cache=None):
+    def visit_table(
+        self, expr, in_subquery=False, visit_cache=None, visit_table_cache=None
+    ):
         if visit_table_cache is None:
             visit_table_cache = set()
 
@@ -783,9 +805,12 @@ class CorrelatedRefCheck:
 
         for arg in node.flat_args():
             if isinstance(arg, ir.Expr):
-                self.visit(arg, in_subquery=in_subquery,
-                           visit_cache=visit_cache,
-                           visit_table_cache=visit_table_cache)
+                self.visit(
+                    arg,
+                    in_subquery=in_subquery,
+                    visit_cache=visit_cache,
+                    visit_table_cache=visit_table_cache,
+                )
 
     def ref_check(self, node, in_subquery=False):
         ctx = self.ctx
@@ -822,13 +847,15 @@ def _adapt_expr(expr):
     def _get_scalar(field):
         def scalar_handler(results):
             return results[field][0]
+
         return scalar_handler
 
     if isinstance(expr, ir.ScalarExpr):
 
         if L.is_scalar_reduction(expr):
             table_expr, name = L.reduction_to_aggregation(
-                expr, default_name='tmp')
+                expr, default_name='tmp'
+            )
             return table_expr, _get_scalar(name)
         else:
             base_table = ir.find_base_table(expr)
@@ -837,8 +864,9 @@ def _adapt_expr(expr):
                 # TODO(phillipc): remove ScalarParameter hack
                 if isinstance(expr.op(), ops.ScalarParameter):
                     name = expr.get_name()
-                    assert name is not None, \
-                        'scalar parameter {} has no name'.format(expr)
+                    assert (
+                        name is not None
+                    ), 'scalar parameter {} has no name'.format(expr)
                     return expr, _get_scalar(name)
                 return expr.name('tmp'), _get_scalar('tmp')
 
@@ -873,6 +901,7 @@ def _adapt_expr(expr):
         def _get_column(name):
             def column_handler(results):
                 return results[name]
+
             return column_handler
 
         if isinstance(op, ops.TableColumn):
@@ -889,8 +918,9 @@ def _adapt_expr(expr):
                 except Exception:
                     name = 'tmp'
 
-                table_expr = (base_table.projection([expr.name(name)])
-                              .distinct())
+                table_expr = base_table.projection(
+                    [expr.name(name)]
+                ).distinct()
                 result_handler = _get_column(name)
             else:
                 table_expr = base_table.projection([expr.name('tmp')])
@@ -898,12 +928,12 @@ def _adapt_expr(expr):
 
         return table_expr, result_handler
     else:
-        raise com.TranslationError('Do not know how to execute: {0}'
-                                   .format(type(expr)))
+        raise com.TranslationError(
+            'Do not know how to execute: {0}'.format(type(expr))
+        )
 
 
 class Union(DML):
-
     def __init__(self, tables, expr, context, distincts):
         self.context = context
         self.tables = tables
@@ -923,8 +953,9 @@ class Union(DML):
         return ',\n'.join(
             '{} AS (\n{}\n)'.format(
                 context.get_ref(expr),
-                util.indent(context.get_compiled_expr(expr), 2)
-            ) for expr in subqueries
+                util.indent(context.get_compiled_expr(expr), 2),
+            )
+            for expr in subqueries
         )
 
     def format_relation(self, expr):
@@ -953,7 +984,7 @@ class Union(DML):
             toolz.interleave(
                 (
                     map(self.format_relation, self.tables),
-                    map(self.keyword, self.distincts)
+                    map(self.keyword, self.distincts),
                 )
             )
         )
@@ -1031,9 +1062,9 @@ class QueryBuilder:
         # 2. every other object starting from 1 is a bool indicating the type
         #    of union (distinct or not distinct)
         table_exprs, distincts = union_info[::2], union_info[1::2]
-        return self.union_class(table_exprs, self.expr,
-                                distincts=distincts,
-                                context=self.context)
+        return self.union_class(
+            table_exprs, self.expr, distincts=distincts, context=self.context
+        )
 
     def _make_select(self):
         builder = self.select_builder(self.expr, self.context)
@@ -1139,8 +1170,9 @@ class QueryContext:
 
     def has_ref(self, expr, parent_contexts=False):
         key = self._get_table_key(expr)
-        return self._key_in(key, '_table_refs',
-                            parent_contexts=parent_contexts)
+        return self._key_in(
+            key, '_table_refs', parent_contexts=parent_contexts
+        )
 
     def set_ref(self, expr, alias):
         key = self._get_table_key(expr)
@@ -1229,8 +1261,9 @@ class ExprTranslator:
         self.expr = expr
         self.permit_subquery = permit_subquery
 
-        assert context is not None, \
-            'context is None in {}'.format(type(self).__name__)
+        assert context is not None, 'context is None in {}'.format(
+            type(self).__name__
+        )
         self.context = context
 
         # For now, governing whether the result will have a name
@@ -1342,14 +1375,15 @@ def _bucket(expr):
         bucket_id += 1
 
     for j, (lower, upper) in enumerate(zip(op.buckets, op.buckets[1:])):
-        if (op.close_extreme and
-            ((op.closed == 'right' and j == 0) or
-             (op.closed == 'left' and j == (user_num_buckets - 1)))):
-            stmt = stmt.when((lower <= op.arg) & (op.arg <= upper),
-                             bucket_id)
+        if op.close_extreme and (
+            (op.closed == 'right' and j == 0)
+            or (op.closed == 'left' and j == (user_num_buckets - 1))
+        ):
+            stmt = stmt.when((lower <= op.arg) & (op.arg <= upper), bucket_id)
         else:
-            stmt = stmt.when(l_cmp(lower, op.arg) & r_cmp(op.arg, upper),
-                             bucket_id)
+            stmt = stmt.when(
+                l_cmp(lower, op.arg) & r_cmp(op.arg, upper), bucket_id
+            )
         bucket_id += 1
 
     if op.include_over:
@@ -1430,11 +1464,22 @@ class Select(DML):
     generated it
     """
 
-    def __init__(self, table_set, select_set, context,
-                 subqueries=None, where=None, group_by=None, having=None,
-                 order_by=None, limit=None,
-                 distinct=False, indent=2,
-                 result_handler=None, parent_expr=None):
+    def __init__(
+        self,
+        table_set,
+        select_set,
+        context,
+        subqueries=None,
+        where=None,
+        group_by=None,
+        having=None,
+        order_by=None,
+        limit=None,
+        distinct=False,
+        indent=2,
+        result_handler=None,
+        parent_expr=None,
+    ):
         self.context = context
 
         self.select_set = select_set
@@ -1463,9 +1508,9 @@ class Select(DML):
 
     def _translate(self, expr, named=False, permit_subquery=False):
         context = self.context
-        translator = self.translator(expr, context=context,
-                                     named=named,
-                                     permit_subquery=permit_subquery)
+        translator = self.translator(
+            expr, context=context, named=named, permit_subquery=permit_subquery
+        )
         return translator.get_result()
 
     def equals(self, other, cache=None):
@@ -1477,17 +1522,24 @@ class Select(DML):
         try:
             return cache[key]
         except KeyError:
-            cache[key] = result = (
-                self is other or
-                (isinstance(other, Select) and
-                    self.limit == other.limit and
-                    ops.all_equal(self._all_exprs(), other._all_exprs())))
+            cache[key] = result = self is other or (
+                isinstance(other, Select)
+                and self.limit == other.limit
+                and ops.all_equal(self._all_exprs(), other._all_exprs())
+            )
             return result
 
     def _all_exprs(self):
         # Gnarly, maybe we can improve this somehow
-        expr_attrs = ('select_set', 'table_set', 'where', 'group_by', 'having',
-                      'order_by', 'subqueries')
+        expr_attrs = (
+            'select_set',
+            'table_set',
+            'where',
+            'group_by',
+            'having',
+            'order_by',
+            'subqueries',
+        )
         exprs = []
         for attr in expr_attrs:
             val = getattr(self, attr)
@@ -1529,18 +1581,20 @@ class Select(DML):
         limit_frag = self.format_limit()
 
         # Glue together the query fragments and return
-        query = '\n'.join(filter(
-            None,
-            [
-                with_frag,
-                select_frag,
-                from_frag,
-                where_frag,
-                groupby_frag,
-                order_frag,
-                limit_frag
-            ]
-        ))
+        query = '\n'.join(
+            filter(
+                None,
+                [
+                    with_frag,
+                    select_frag,
+                    from_frag,
+                    where_frag,
+                    groupby_frag,
+                    order_frag,
+                    limit_frag,
+                ],
+            )
+        )
         return query
 
     def format_subqueries(self):
@@ -1592,8 +1646,11 @@ class Select(DML):
                 # set length of last line
                 line_length = len(indented.split('\n')[-1])
                 tokens = 1
-            elif (tokens > 0 and line_length and
-                  len(val) + line_length > max_length):
+            elif (
+                tokens > 0
+                and line_length
+                and len(val) + line_length > max_length
+            ):
                 # There is an expr, and adding this new one will make the line
                 # too long
                 buf.write(',\n       ') if i else buf.write('\n')
@@ -1637,8 +1694,9 @@ class Select(DML):
 
         lines = []
         if len(self.group_by) > 0:
-            clause = 'GROUP BY {}'.format(', '.join([
-                str(x + 1) for x in self.group_by]))
+            clause = 'GROUP BY {}'.format(
+                ', '.join([str(x + 1) for x in self.group_by])
+            )
             lines.append(clause)
 
         if len(self.having) > 0:
@@ -1709,7 +1767,7 @@ class TableSetFormatter:
         ops.OuterJoin: 'FULL OUTER JOIN',
         ops.LeftAntiJoin: 'LEFT ANTI JOIN',
         ops.LeftSemiJoin: 'LEFT SEMI JOIN',
-        ops.CrossJoin: 'CROSS JOIN'
+        ops.CrossJoin: 'CROSS JOIN',
     }
 
     def __init__(self, parent, expr, indent=2):
@@ -1730,8 +1788,9 @@ class TableSetFormatter:
         right = op.right.op()
 
         if util.all_of([left, right], ops.Join):
-            raise NotImplementedError('Do not support joins between '
-                                      'joins yet')
+            raise NotImplementedError(
+                'Do not support joins between ' 'joins yet'
+            )
 
         self._validate_join_predicates(op.predicates)
 
@@ -1748,8 +1807,9 @@ class TableSetFormatter:
             # When rewrites are possible at the expression IR stage, we should
             # do them. Otherwise subqueries might be necessary in some cases
             # here
-            raise NotImplementedError('not allowing joins on right '
-                                      'side yet')
+            raise NotImplementedError(
+                'not allowing joins on right ' 'side yet'
+            )
         else:
             # Both tables
             self.join_tables.append(self._format_table(op.left))
@@ -1764,11 +1824,15 @@ class TableSetFormatter:
         for pred in predicates:
             op = pred.op()
 
-            if (not isinstance(op, ops.Equals) and
-                    not self._non_equijoin_supported):
-                raise com.TranslationError('Non-equality join predicates, '
-                                           'i.e. non-equijoins, are not '
-                                           'supported')
+            if (
+                not isinstance(op, ops.Equals)
+                and not self._non_equijoin_supported
+            ):
+                raise com.TranslationError(
+                    'Non-equality join predicates, '
+                    'i.e. non-equijoins, are not '
+                    'supported'
+                )
 
     def _get_join_type(self, op):
         return self._join_names[type(op)]
@@ -1789,8 +1853,9 @@ class TableSetFormatter:
         if isinstance(ref_op, ops.PhysicalTable):
             name = ref_op.name
             if name is None:
-                raise com.RelationError('Table did not have a name: {0!r}'
-                                        .format(expr))
+                raise com.RelationError(
+                    'Table did not have a name: {0!r}'.format(expr)
+                )
             result = self._quote_identifier(name)
             is_subquery = False
         else:
@@ -1829,8 +1894,9 @@ class TableSetFormatter:
         # TODO: Now actually format the things
         buf = StringIO()
         buf.write(self.join_tables[0])
-        for jtype, table, preds in zip(self.join_types, self.join_tables[1:],
-                                       self.join_predicates):
+        for jtype, table, preds in zip(
+            self.join_types, self.join_tables[1:], self.join_predicates
+        ):
             buf.write('\n')
             buf.write(util.indent('{} {}'.format(jtype, table), self.indent))
 
@@ -1846,8 +1912,9 @@ class TableSetFormatter:
                 buf.write('\n')
 
                 conj = ' AND\n{}'.format(' ' * 3)
-                fmt_preds = util.indent('ON ' + conj.join(fmt_preds),
-                                        self.indent * 2)
+                fmt_preds = util.indent(
+                    'ON ' + conj.join(fmt_preds), self.indent * 2
+                )
                 buf.write(fmt_preds)
 
         return buf.getvalue()

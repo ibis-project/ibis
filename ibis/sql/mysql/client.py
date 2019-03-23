@@ -12,6 +12,7 @@ import ibis.expr.datatypes as dt
 
 # TODO(kszucs): unsigned integers
 
+
 @dt.dtype.register((mysql.DOUBLE, mysql.REAL))
 def mysql_double(satype, nullable=True):
     return dt.Double(nullable=nullable)
@@ -57,17 +58,30 @@ class MySQLClient(alch.AlchemyClient):
     database_class = MySQLDatabase
     table_class = MySQLTable
 
-    def __init__(self, host='localhost', user=None, password=None, port=3306,
-                 database='mysql', url=None, driver='pymysql'):
+    def __init__(
+        self,
+        host='localhost',
+        user=None,
+        password=None,
+        port=3306,
+        database='mysql',
+        url=None,
+        driver='pymysql',
+    ):
         if url is None:
             if driver != 'pymysql':
                 raise NotImplementedError(
                     'pymysql is currently the only supported driver'
                 )
             user = user or getpass.getuser()
-            url = sa.engine.url.URL('mysql+pymysql', host=host, port=port,
-                                    username=user, password=password,
-                                    database=database)
+            url = sa.engine.url.URL(
+                'mysql+pymysql',
+                host=host,
+                port=port,
+                username=user,
+                password=password,
+                database=database,
+            )
         else:
             url = sa.engine.url.make_url(url)
 
@@ -77,8 +91,9 @@ class MySQLClient(alch.AlchemyClient):
     @contextlib.contextmanager
     def begin(self):
         with super().begin() as bind:
-            previous_timezone = (bind.execute('SELECT @@session.time_zone')
-                                     .scalar())
+            previous_timezone = bind.execute(
+                'SELECT @@session.time_zone'
+            ).scalar()
             try:
                 bind.execute("SET @@session.time_zone = 'UTC'")
             except Exception as e:
@@ -183,10 +198,7 @@ class MySQLClient(alch.AlchemyClient):
             A table expression.
         """
         if database is not None and database != self.current_database:
-            return (
-                self.database(name=database)
-                    .table(name=name, schema=schema)
-            )
+            return self.database(name=database).table(name=name, schema=schema)
         else:
             alch_table = self._get_sqla_table(name, schema=schema)
             node = self.table_class(alch_table, self, self._schemas.get(name))
@@ -194,9 +206,8 @@ class MySQLClient(alch.AlchemyClient):
 
     def list_tables(self, like=None, database=None, schema=None):
         if database is not None and database != self.current_database:
-            return (
-                self.database(name=database)
-                    .list_tables(like=like, schema=schema)
+            return self.database(name=database).list_tables(
+                like=like, schema=schema
             )
         else:
             parent = super(MySQLClient, self)

@@ -61,8 +61,9 @@ def test_compile_toplevel():
     assert str(result) == expected
 
 
-def text_exists_table_with_database(con, alltypes, test_data_db, temp_table,
-                                    temp_database):
+def text_exists_table_with_database(
+    con, alltypes, test_data_db, temp_table, temp_database
+):
     tmp_db = test_data_db
     con.create_table(temp_table, alltypes, database=tmp_db)
 

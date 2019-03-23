@@ -30,32 +30,78 @@ from ibis.expr.schema import Schema
 from ibis.expr.analytics import bucket, histogram
 from ibis.expr.groupby import GroupedTableExpr  # noqa
 from ibis.expr.window import (
-    window, range_window, trailing_window, cumulative_window,
-    trailing_range_window
+    window,
+    range_window,
+    trailing_window,
+    cumulative_window,
+    trailing_range_window,
 )
 
 from ibis.expr.types import (  # noqa
-    ValueExpr, ScalarExpr, ColumnExpr, TableExpr,
-    NumericValue, NumericScalar, NumericColumn,
-    IntegerValue, IntegerScalar, IntegerColumn,
-    NullValue, NullScalar, NullColumn,
-    BooleanValue, BooleanScalar, BooleanColumn,
-    FloatingValue, FloatingScalar, FloatingColumn,
-    StringValue, StringScalar, StringColumn,
-    DecimalValue, DecimalScalar, DecimalColumn,
-    TimestampValue, TimestampScalar, TimestampColumn,
-    IntervalValue, IntervalScalar, IntervalColumn,
-    DateValue, DateScalar, DateColumn,
-    TimeValue, TimeScalar, TimeColumn,
-    ArrayValue, ArrayScalar, ArrayColumn,
-    MapValue, MapScalar, MapColumn,
-    StructValue, StructScalar, StructColumn,
-    CategoryValue, CategoryScalar, CategoryValue,
-    GeoSpatialColumn, GeoSpatialScalar, GeoSpatialValue,
-    PointColumn, PointScalar, PointValue,
-    LineStringColumn, LineStringScalar, LineStringValue,
-    PolygonColumn, PolygonScalar, PolygonValue,
-    MultiPolygonColumn, MultiPolygonScalar, MultiPolygonValue
+    ValueExpr,
+    ScalarExpr,
+    ColumnExpr,
+    TableExpr,
+    NumericValue,
+    NumericScalar,
+    NumericColumn,
+    IntegerValue,
+    IntegerScalar,
+    IntegerColumn,
+    NullValue,
+    NullScalar,
+    NullColumn,
+    BooleanValue,
+    BooleanScalar,
+    BooleanColumn,
+    FloatingValue,
+    FloatingScalar,
+    FloatingColumn,
+    StringValue,
+    StringScalar,
+    StringColumn,
+    DecimalValue,
+    DecimalScalar,
+    DecimalColumn,
+    TimestampValue,
+    TimestampScalar,
+    TimestampColumn,
+    IntervalValue,
+    IntervalScalar,
+    IntervalColumn,
+    DateValue,
+    DateScalar,
+    DateColumn,
+    TimeValue,
+    TimeScalar,
+    TimeColumn,
+    ArrayValue,
+    ArrayScalar,
+    ArrayColumn,
+    MapValue,
+    MapScalar,
+    MapColumn,
+    StructValue,
+    StructScalar,
+    StructColumn,
+    CategoryValue,
+    CategoryScalar,
+    CategoryValue,
+    GeoSpatialColumn,
+    GeoSpatialScalar,
+    GeoSpatialValue,
+    PointColumn,
+    PointScalar,
+    PointValue,
+    LineStringColumn,
+    LineStringScalar,
+    LineStringValue,
+    PolygonColumn,
+    PolygonScalar,
+    PolygonValue,
+    MultiPolygonColumn,
+    MultiPolygonScalar,
+    MultiPolygonValue,
 )
 
 
@@ -264,9 +310,21 @@ def time(value):
     return literal(value, type=dt.time)
 
 
-def interval(value=None, unit='s', years=None, quarters=None, months=None,
-             weeks=None, days=None, hours=None, minutes=None, seconds=None,
-             milliseconds=None, microseconds=None, nanoseconds=None):
+def interval(
+    value=None,
+    unit='s',
+    years=None,
+    quarters=None,
+    months=None,
+    weeks=None,
+    days=None,
+    hours=None,
+    minutes=None,
+    seconds=None,
+    milliseconds=None,
+    microseconds=None,
+    nanoseconds=None,
+):
     """
     Returns an interval literal
 
@@ -307,7 +365,7 @@ def interval(value=None, unit='s', years=None, quarters=None, months=None,
             ('s', seconds),
             ('ms', milliseconds),
             ('us', microseconds),
-            ('ns', nanoseconds)
+            ('ns', nanoseconds),
         ]
         defined_units = [(k, v) for k, v in kwds if v is not None]
 
@@ -348,7 +406,9 @@ Examples
 Returns
 -------
 schema : Schema
-""".format(_data_type_docs)
+""".format(
+    _data_type_docs
+)
 
 
 def case():
@@ -415,6 +475,7 @@ def _add_methods(klass, method_table):
 def _unary_op(name, klass, doc=None):
     def f(arg):
         return klass(arg).to_expr()
+
     f.__name__ = name
     if doc is not None:
         f.__doc__ = doc
@@ -543,6 +604,7 @@ def _boolean_binary_op(name, klass):
 def _boolean_unary_op(name, klass):
     def f(self):
         return klass(self).to_expr()
+
     f.__name__ = name
     return f
 
@@ -567,6 +629,7 @@ def _agg_function(name, klass, assign_default_name=True):
         if assign_default_name:
             expr = expr.name(name)
         return expr
+
     f.__name__ = name
     return f
 
@@ -575,6 +638,7 @@ def _extract_field(name, klass):
     def f(self):
         expr = klass(self).to_expr()
         return expr.name(name)
+
     f.__name__ = name
     return f
 
@@ -613,7 +677,9 @@ Notes
 Returns
 -------
 cast_expr : ValueExpr
-""".format(_data_type_docs)
+""".format(
+    _data_type_docs
+)
 
 
 def typeof(arg):
@@ -983,13 +1049,10 @@ _generic_value_methods = dict(
     notin=notin,
     isnull=_unary_op('isnull', ops.IsNull),
     notnull=_unary_op('notnull', ops.NotNull),
-
     over=over,
-
     case=_case,
     cases=cases,
     substitute=substitute,
-
     __eq__=_binop_expr('__eq__', ops.Equals),
     __ne__=_binop_expr('__ne__', ops.NotEquals),
     __ge__=_binop_expr('__ge__', ops.GreaterEqual),
@@ -1086,10 +1149,7 @@ def _generic_summary(arg, exact_nunique=False, prefix=None):
     -------
     summary : (count, # nulls, nunique)
     """
-    metrics = [
-        arg.count(),
-        arg.isnull().sum().name('nulls')
-    ]
+    metrics = [arg.count(), arg.isnull().sum().name('nulls')]
 
     if exact_nunique:
         unique_metric = arg.nunique().name('uniques')
@@ -1121,7 +1181,7 @@ def _numeric_summary(arg, exact_nunique=False, prefix=None):
         arg.min(),
         arg.max(),
         arg.sum(),
-        arg.mean()
+        arg.mean(),
     ]
 
     if exact_nunique:
@@ -1160,7 +1220,6 @@ _generic_column_methods = dict(
     approx_nunique=approx_nunique,
     group_concat=group_concat,
     value_counts=value_counts,
-
     first=first,
     last=last,
     dense_rank=dense_rank,
@@ -1183,6 +1242,7 @@ _add_methods(ir.ColumnExpr, _generic_column_methods)
 
 # ---------------------------------------------------------------------
 # Numeric API
+
 
 def round(arg, digits=None):
     """
@@ -1233,8 +1293,7 @@ def clip(arg, lower=None, upper=None):
     clipped : same as type of the input
     """
     if lower is None and upper is None:
-        raise ValueError("at least one of lower and "
-                         "upper must be provided")
+        raise ValueError("at least one of lower and " "upper must be provided")
 
     op = ops.Clip(arg, lower, upper)
     return op.to_expr()
@@ -1349,40 +1408,30 @@ _numeric_value_methods = dict(
     nullifzero=_unary_op('nullifzero', ops.NullIfZero),
     zeroifnull=_unary_op('zeroifnull', ops.ZeroIfNull),
     clip=clip,
-
     __add__=add,
     add=add,
-
     __sub__=sub,
     sub=sub,
-
     __mul__=mul,
     mul=mul,
-
     __div__=div,
     __truediv__=div,
     __floordiv__=floordiv,
     div=div,
     floordiv=floordiv,
-
     __rdiv__=rdiv,
     __rtruediv__=rdiv,
     __rfloordiv__=rfloordiv,
     rdiv=rdiv,
     rfloordiv=rfloordiv,
-
     __pow__=pow,
     pow=pow,
-
     __radd__=add,
     radd=add,
-
     __rsub__=rsub,
     rsub=rsub,
-
     __rmul__=_rbinop_expr('__rmul__', ops.Multiply),
     __rpow__=_rbinop_expr('__rpow__', ops.Power),
-
     __mod__=mod,
     __rmod__=_rbinop_expr('__rmod__', ops.Modulus),
     # trigonometric operations
@@ -1417,7 +1466,7 @@ def convert_base(arg, from_base, to_base):
 _integer_value_methods = dict(
     to_timestamp=_integer_to_timestamp,
     to_interval=_integer_to_interval,
-    convert_base=convert_base
+    convert_base=convert_base,
 )
 
 
@@ -1497,25 +1546,20 @@ def covariance(left, right, where=None, how='sample'):
 _numeric_column_methods = dict(
     mean=mean,
     cummean=cummean,
-
     sum=sum,
     cumsum=cumsum,
-
     quantile=quantile,
-
     std=std,
     var=variance,
     corr=correlation,
     cov=covariance,
-
     bucket=bucket,
     histogram=histogram,
     summary=_numeric_summary,
 )
 
 _floating_value_methods = dict(
-    isnan=_unary_op('isnull', ops.IsNan),
-    isinf=_unary_op('isinf', ops.IsInf),
+    isnan=_unary_op('isnull', ops.IsNan), isinf=_unary_op('isinf', ops.IsInf)
 )
 
 _add_methods(ir.NumericValue, _numeric_value_methods)
@@ -1840,7 +1884,7 @@ _geospatial_value_methods = dict(
     x_min=geo_x_min,
     y_min=geo_y_min,
     y=geo_y,
-    y_max=geo_y_max
+    y_max=geo_y_max,
 )
 _geospatial_column_methods = dict()
 
@@ -1886,7 +1930,7 @@ _boolean_column_methods = dict(
     all=_unary_op('all', ops.All),
     notall=_unary_op('notany', ops.NotAll),
     cumany=_unary_op('cumany', ops.CumulativeAny),
-    cumall=_unary_op('cumall', ops.CumulativeAll)
+    cumall=_unary_op('cumall', ops.CumulativeAll),
 )
 
 
@@ -1896,6 +1940,7 @@ _add_methods(ir.BooleanColumn, _boolean_column_methods)
 
 # ---------------------------------------------------------------------
 # String API
+
 
 def _string_substr(self, start, length=None):
     """
@@ -2124,7 +2169,7 @@ def _string_like(self, patterns):
         (
             ops.StringSQLLike(self, pattern).to_expr()
             for pattern in util.promote_list(patterns)
-        )
+        ),
     )
 
 
@@ -2152,7 +2197,7 @@ def _string_ilike(self, patterns):
         (
             ops.StringSQLILike(self, pattern).to_expr()
             for pattern in util.promote_list(patterns)
-        )
+        ),
     )
 
 
@@ -2357,7 +2402,6 @@ def _string_getitem(self, key):
 
 _string_value_methods = dict(
     __getitem__=_string_getitem,
-
     length=_unary_op('length', ops.StringLength),
     lower=_unary_op('lower', ops.Lowercase),
     upper=_unary_op('upper', ops.Uppercase),
@@ -2367,9 +2411,7 @@ _string_value_methods = dict(
     lstrip=_unary_op('lstrip', ops.LStrip),
     rstrip=_unary_op('rstrip', ops.RStrip),
     capitalize=_unary_op('initcap', ops.Capitalize),
-
     convert_base=convert_base,
-
     __contains__=_string_dunder_contains,
     contains=_string_contains,
     like=_string_like,
@@ -2381,7 +2423,6 @@ _string_value_methods = dict(
     re_replace=regex_replace,
     to_timestamp=to_timestamp,
     parse_url=parse_url,
-
     substr=_string_substr,
     left=_string_left,
     right=_string_right,
@@ -2424,8 +2465,9 @@ def _array_slice(array, index):
     if isinstance(index, slice):
         start = index.start
         stop = index.stop
-        if ((start is not None and start < 0) or
-                (stop is not None and stop < 0)):
+        if (start is not None and start < 0) or (
+            stop is not None and stop < 0
+        ):
             raise ValueError('negative slicing not yet supported')
 
         step = index.step
@@ -2433,11 +2475,7 @@ def _array_slice(array, index):
         if step is not None and step != 1:
             raise NotImplementedError('step can only be 1')
 
-        op = ops.ArraySlice(
-            array,
-            start if start is not None else 0,
-            stop,
-        )
+        op = ops.ArraySlice(array, start if start is not None else 0, stop)
     else:
         op = ops.ArrayIndex(array, index)
     return op.to_expr()
@@ -2457,6 +2495,7 @@ _add_methods(ir.ArrayValue, _array_column_methods)
 
 # ---------------------------------------------------------------------
 # Map API
+
 
 def get(expr, key, default=None):
     """
@@ -2506,8 +2545,7 @@ def _struct_get_field(expr, field_name):
 
 
 _struct_column_methods = dict(
-    __getattr__=_struct_get_field,
-    __getitem__=_struct_get_field,
+    __getattr__=_struct_get_field, __getitem__=_struct_get_field
 )
 
 _add_methods(ir.StructValue, _struct_column_methods)
@@ -2515,6 +2553,7 @@ _add_methods(ir.StructValue, _struct_column_methods)
 
 # ---------------------------------------------------------------------
 # Timestamp API
+
 
 def _timestamp_truncate(arg, unit):
     """
@@ -2608,7 +2647,7 @@ Returns
 -------
 DayOfWeek
     An namespace expression containing methods to use to extract information.
-"""
+""",
 )
 
 
@@ -2624,16 +2663,12 @@ _timestamp_value_methods = dict(
     truncate=_timestamp_truncate,
     time=_timestamp_time,
     date=_timestamp_date,
-
     __sub__=_timestamp_sub,
     sub=_timestamp_sub,
-
     __add__=_timestamp_add,
     add=_timestamp_add,
-
     __radd__=_timestamp_radd,
     radd=_timestamp_radd,
-
     __rsub__=_timestamp_sub,
     rsub=_timestamp_sub,
     day_of_week=_day_of_week,
@@ -2686,20 +2721,15 @@ _date_value_methods = dict(
     month=_extract_field('month', ops.ExtractMonth),
     day=_extract_field('day', ops.ExtractDay),
     day_of_week=_day_of_week,
-
     truncate=_date_truncate,
-
     __sub__=_date_sub,
     sub=_date_sub,
-
     __rsub__=_date_sub,
     rsub=_date_sub,
-
     __add__=_date_add,
     add=_date_add,
-
     __radd__=_date_add,
-    radd=_date_add
+    radd=_date_add,
 )
 
 _add_methods(ir.DateValue, _date_value_methods)
@@ -2721,7 +2751,10 @@ Returns
 -------
 IntegerValue
     The number of {0}s in the expression
-""".format(name))
+""".format(
+            name
+        ),
+    )
 
 
 _interval_add = _binop_expr('__add__', ops.IntervalAdd)
@@ -2744,25 +2777,18 @@ _interval_value_methods = dict(
     milliseconds=_interval_property('ms', 'millisecond'),
     microseconds=_interval_property('us', 'microsecond'),
     nanoseconds=_interval_property('ns', 'nanosecond'),
-
     __add__=_interval_add,
     add=_interval_add,
-
     __sub__=_interval_sub,
     sub=_interval_sub,
-
     __radd__=_interval_radd,
     radd=_interval_radd,
-
     __mul__=_interval_mul,
     mul=_interval_mul,
-
     __rmul__=_interval_rmul,
     rmul=_interval_rmul,
-
     __floordiv__=_interval_floordiv,
     floordiv=_interval_floordiv,
-
     __neg__=negate,
     negate=negate,
 )
@@ -2772,6 +2798,7 @@ _add_methods(ir.IntervalValue, _interval_value_methods)
 
 # ---------------------------------------------------------------------
 # Time API
+
 
 def between_time(arg, lower, upper, timezone=None):
     """Check if the input expr falls between the lower/upper bounds passed.
@@ -2848,18 +2875,14 @@ _time_value_methods = dict(
     minute=_extract_field('minute', ops.ExtractMinute),
     second=_extract_field('second', ops.ExtractSecond),
     millisecond=_extract_field('millisecond', ops.ExtractMillisecond),
-
     __sub__=_time_sub,
     sub=_time_sub,
-
     __rsub__=_time_sub,
     rsub=_time_sub,
-
     __add__=_time_add,
     add=_time_add,
-
     __radd__=_time_add,
-    radd=_time_add
+    radd=_time_add,
 )
 
 _add_methods(ir.TimeValue, _time_value_methods)
@@ -2881,9 +2904,7 @@ _add_methods(ir.DecimalValue, _decimal_value_methods)
 # Category API
 
 
-_category_value_methods = dict(
-    label=_analytics.category_label
-)
+_category_value_methods = dict(label=_analytics.category_label)
 
 _add_methods(ir.CategoryValue, _category_value_methods)
 
@@ -2901,7 +2922,7 @@ _join_classes = {
     'left_semi': ops.LeftSemiJoin,
     'semi': ops.LeftSemiJoin,
     'anti': ops.LeftAntiJoin,
-    'cross': ops.CrossJoin
+    'cross': ops.CrossJoin,
 }
 
 
@@ -3098,6 +3119,7 @@ def _table_set_column(table, name, expr):
 def _regular_join_method(name, how, doc=None):
     def f(self, other, predicates=()):
         return self.join(other, predicates, how=how)
+
     if doc:
         f.__doc__ = doc
     else:
@@ -3575,7 +3597,7 @@ _table_methods = dict(
     sort_by=_table_sort_by,
     to_array=_table_to_array,
     union=_table_union,
-    view=_table_view
+    view=_table_view,
 )
 
 

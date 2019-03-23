@@ -65,18 +65,19 @@ def fixed_arity(func_name, arity):
             msg = 'Incorrect number of args {0} instead of {1}'
             raise com.UnsupportedOperationError(msg.format(arg_count, arity))
         return _call(translator, func_name, *op.args)
+
     return formatter
 
 
 def agg(func):
     def formatter(translator, expr):
         return _aggregate(translator, func, *expr.op().args)
+
     return formatter
 
 
 def agg_variance_like(func):
-    variants = {'sample': '{0}Samp'.format(func),
-                'pop': '{0}Pop'.format(func)}
+    variants = {'sample': '{0}Samp'.format(func), 'pop': '{0}Pop'.format(func)}
 
     def formatter(translator, expr):
         arg, how, where = expr.op().args
@@ -94,6 +95,7 @@ def binary_infix_op(infix_sym):
         right_ = _parenthesize(translator, right)
 
         return '{0!s} {1!s} {2!s}'.format(left_, infix_sym, right_)
+
     return formatter
 
 
@@ -124,16 +126,18 @@ def varargs(func_name):
     def varargs_formatter(translator, expr):
         op = expr.op()
         return _call(translator, func_name, *op.arg)
+
     return varargs_formatter
 
 
 def _arbitrary(translator, expr):
     arg, how, where = expr.op().args
     functions = {
-                 None: 'any',
-                 'first': 'any',
-                 'last': 'anyLast',
-                 'heavy': 'anyHeavy'}
+        None: 'any',
+        'first': 'any',
+        'last': 'anyLast',
+        'heavy': 'anyHeavy',
+    }
     return _aggregate(translator, functions[how], arg, where=where)
 
 
@@ -230,11 +234,18 @@ def _hash(translator, expr):
     op = expr.op()
     arg, how = op.args
 
-    algorithms = {'MD5', 'halfMD5',
-                  'SHA1', 'SHA224', 'SHA256',
-                  'intHash32', 'intHash64',
-                  'cityHash64',
-                  'sipHash64', 'sipHash128'}
+    algorithms = {
+        'MD5',
+        'halfMD5',
+        'SHA1',
+        'SHA224',
+        'SHA256',
+        'intHash32',
+        'intHash64',
+        'cityHash64',
+        'sipHash64',
+        'sipHash128',
+    }
 
     if how not in algorithms:
         raise com.UnsupportedOperationError(
@@ -270,7 +281,8 @@ def _interval_format(translator, expr):
     dtype = expr.type()
     if dtype.unit in {'ms', 'us', 'ns'}:
         raise com.UnsupportedOperationError(
-            "Clickhouse doesn't support subsecond interval resolutions")
+            "Clickhouse doesn't support subsecond interval resolutions"
+        )
 
     return 'INTERVAL {} {}'.format(expr.op().value, dtype.resolution.upper())
 
@@ -282,7 +294,8 @@ def _interval_from_integer(translator, expr):
     dtype = expr.type()
     if dtype.unit in {'ms', 'us', 'ns'}:
         raise com.UnsupportedOperationError(
-            "Clickhouse doesn't support subsecond interval resolutions")
+            "Clickhouse doesn't support subsecond interval resolutions"
+        )
 
     arg_ = translator.translate(arg)
     return 'INTERVAL {} {}'.format(arg_, dtype.resolution.upper())
@@ -318,7 +331,6 @@ def literal(translator, expr):
 
 
 class CaseFormatter:
-
     def __init__(self, translator, base, cases, results, default):
         self.translator = translator
         self.base = base
@@ -369,15 +381,17 @@ class CaseFormatter:
 
 def _simple_case(translator, expr):
     op = expr.op()
-    formatter = CaseFormatter(translator, op.base, op.cases, op.results,
-                              op.default)
+    formatter = CaseFormatter(
+        translator, op.base, op.cases, op.results, op.default
+    )
     return formatter.get_result()
 
 
 def _searched_case(translator, expr):
     op = expr.op()
-    formatter = CaseFormatter(translator, None, op.cases, op.results,
-                              op.default)
+    formatter = CaseFormatter(
+        translator, None, op.cases, op.results, op.default
+    )
     return formatter.get_result()
 
 
@@ -409,7 +423,7 @@ def _truncate(translator, expr):
         'D': 'toDate',
         'h': 'toStartOfHour',
         'm': 'toStartOfMinute',
-        's': 'toDateTime'
+        's': 'toDateTime',
     }
 
     try:
@@ -468,15 +482,15 @@ def _table_column(translator, expr):
 def _string_split(translator, expr):
     value, sep = expr.op().args
     return 'splitByString({}, {})'.format(
-        translator.translate(sep),
-        translator.translate(value)
+        translator.translate(sep), translator.translate(value)
     )
 
 
 def _string_join(translator, expr):
     sep, elements = expr.op().args
-    assert isinstance(elements.op(), ops.ValueList), \
-        'elements must be a ValueList, got {}'.format(type(elements.op()))
+    assert isinstance(
+        elements.op(), ops.ValueList
+    ), 'elements must be a ValueList, got {}'.format(type(elements.op()))
     return 'arrayStringConcat([{}], {})'.format(
         ', '.join(map(translator.translate, elements)),
         translator.translate(sep),
@@ -509,7 +523,6 @@ _binary_infix_ops = {
     ops.Divide: binary_infix_op('/'),
     ops.Power: fixed_arity('pow', 2),
     ops.Modulus: binary_infix_op('%'),
-
     # Comparisons
     ops.Equals: binary_infix_op('='),
     ops.NotEquals: binary_infix_op('!='),
@@ -517,42 +530,32 @@ _binary_infix_ops = {
     ops.Greater: binary_infix_op('>'),
     ops.LessEqual: binary_infix_op('<='),
     ops.Less: binary_infix_op('<'),
-
     # Boolean comparisons
     ops.And: binary_infix_op('AND'),
     ops.Or: binary_infix_op('OR'),
     ops.Xor: _xor,
 }
 
-_unary_ops = {
-    ops.Negate: _negate,
-    ops.Not: _not
-}
+_unary_ops = {ops.Negate: _negate, ops.Not: _not}
 
 
 _operation_registry = {
     # Unary operations
     ops.TypeOf: unary('toTypeName'),
-
     ops.IsNan: unary('isNaN'),
     ops.IsInf: unary('isInfinite'),
-
     ops.Abs: unary('abs'),
     ops.Ceil: unary('ceil'),
     ops.Floor: unary('floor'),
     ops.Exp: unary('exp'),
     ops.Round: _round,
-
     ops.Sign: _sign,
     ops.Sqrt: unary('sqrt'),
-
     ops.Hash: _hash,
-
     ops.Log: _log,
     ops.Ln: unary('log'),
     ops.Log2: unary('log2'),
     ops.Log10: unary('log10'),
-
     # Unary aggregates
     ops.CMSMedian: agg('median'),
     # TODO: there is also a `uniq` function which is the
@@ -562,16 +565,12 @@ _operation_registry = {
     ops.Sum: agg('sum'),
     ops.Max: agg('max'),
     ops.Min: agg('min'),
-
     ops.StandardDev: agg_variance_like('stddev'),
     ops.Variance: agg_variance_like('var'),
-
     # ops.GroupConcat: fixed_arity('group_concat', 2),
-
     ops.Count: agg('count'),
     ops.CountDistinct: agg('uniq'),
     ops.Arbitrary: _arbitrary,
-
     # string operations
     ops.StringLength: unary('length'),
     ops.Lowercase: unary('lower'),
@@ -585,56 +584,41 @@ _operation_registry = {
     ops.StringSplit: _string_split,
     ops.StringSQLLike: _string_like,
     ops.Repeat: _string_repeat,
-
     ops.RegexSearch: fixed_arity('match', 2),
     # TODO: extractAll(haystack, pattern)[index + 1]
     ops.RegexExtract: _regex_extract,
     ops.RegexReplace: fixed_arity('replaceRegexpAll', 3),
     ops.ParseURL: _parse_url,
-
     # Temporal operations
     ops.Date: unary('toDate'),
     ops.DateTruncate: _truncate,
-
     ops.TimestampNow: lambda *args: 'now()',
     ops.TimestampTruncate: _truncate,
-
     ops.TimeTruncate: _truncate,
-
     ops.IntervalFromInteger: _interval_from_integer,
-
     ops.ExtractYear: unary('toYear'),
     ops.ExtractMonth: unary('toMonth'),
     ops.ExtractDay: unary('toDayOfMonth'),
     ops.ExtractHour: unary('toHour'),
     ops.ExtractMinute: unary('toMinute'),
     ops.ExtractSecond: unary('toSecond'),
-
     # Other operations
     ops.E: lambda *args: 'e()',
-
     ops.Literal: literal,
     ops.ValueList: _value_list,
-
     ops.Cast: _cast,
-
     # for more than 2 args this should be arrayGreatest|Least(array([]))
     # because clickhouse's greatest and least doesn't support varargs
     ops.Greatest: varargs('greatest'),
     ops.Least: varargs('least'),
-
     ops.Where: fixed_arity('if', 3),
-
     ops.Between: _between,
     ops.Contains: binary_infix_op('IN'),
     ops.NotContains: binary_infix_op('NOT IN'),
-
     ops.SimpleCase: _simple_case,
     ops.SearchedCase: _searched_case,
-
     ops.TableColumn: _table_column,
     ops.TableArrayView: _table_array_view,
-
     ops.DateAdd: binary_infix_op('+'),
     ops.DateSub: binary_infix_op('-'),
     ops.DateDiff: binary_infix_op('-'),
@@ -642,10 +626,8 @@ _operation_registry = {
     ops.TimestampSub: binary_infix_op('-'),
     ops.TimestampDiff: binary_infix_op('-'),
     ops.TimestampFromUNIX: _timestamp_from_unix,
-
     transforms.ExistsSubquery: _exists_subquery,
     transforms.NotExistsSubquery: _exists_subquery,
-
     ops.ArrayLength: unary('length'),
 }
 
@@ -682,7 +664,7 @@ _undocumented_operations = {
     ops.NullIf: fixed_arity('nullIf', 2),
     ops.Coalesce: varargs('coalesce'),
     ops.NullIfZero: _null_if_zero,
-    ops.ZeroIfNull: _zero_if_null
+    ops.ZeroIfNull: _zero_if_null,
 }
 
 
@@ -698,18 +680,16 @@ _unsupported_ops = [
     ops.CumulativeAny,
     ops.CumulativeAll,
     ops.IdenticalTo,
-
     ops.RowNumber,
     ops.DenseRank,
     ops.MinRank,
     ops.PercentRank,
-
     ops.FirstValue,
     ops.LastValue,
     ops.NthValue,
     ops.Lag,
     ops.Lead,
-    ops.NTile
+    ops.NTile,
 ]
 _unsupported_ops = {k: raise_error for k in _unsupported_ops}
 

@@ -16,20 +16,20 @@ pytestmark = pytest.mark.pandas
         param(
             lambda s: s.length(),
             lambda s: s.str.len().astype('int32'),
-            id='length'
+            id='length',
         ),
         param(lambda s: s.substr(1, 2), lambda s: s.str[1:3], id='substr'),
         param(lambda s: s[1:3], lambda s: s.str[1:3], id='slice'),
         param(
-            lambda s: s[s.length() - 1:],
+            lambda s: s[s.length() - 1 :],
             lambda s: s.str[-1:],
-            id='expr_slice_begin'
+            id='expr_slice_begin',
         ),
-        param(lambda s: s[:s.length()], lambda s: s, id='expr_slice_end'),
+        param(lambda s: s[: s.length()], lambda s: s, id='expr_slice_end'),
         param(
-            lambda s: s[s.length() - 2:s.length() - 1],
+            lambda s: s[s.length() - 2 : s.length() - 1],
             lambda s: s.str[-2:-1],
-            id='expr_slice_begin_end'
+            id='expr_slice_begin_end',
         ),
         param(lambda s: s.strip(), lambda s: s.str.strip(), id='strip'),
         param(lambda s: s.lstrip(), lambda s: s.str.lstrip(), id='lstrip'),
@@ -37,12 +37,12 @@ pytestmark = pytest.mark.pandas
         param(
             lambda s: s.lpad(3, 'a'),
             lambda s: s.str.pad(3, side='left', fillchar='a'),
-            id='lpad'
+            id='lpad',
         ),
         param(
             lambda s: s.rpad(3, 'b'),
             lambda s: s.str.pad(3, side='right', fillchar='b'),
-            id='rpad'
+            id='rpad',
         ),
         param(lambda s: s.reverse(), lambda s: s.str[::-1], id='reverse'),
         param(lambda s: s.lower(), lambda s: s.str.lower(), id='lower'),
@@ -50,48 +50,48 @@ pytestmark = pytest.mark.pandas
         param(
             lambda s: s.capitalize(),
             lambda s: s.str.capitalize(),
-            id='capitalize'
+            id='capitalize',
         ),
         param(lambda s: s.repeat(2), lambda s: s * 2, id='repeat'),
         param(
             lambda s: s.contains('a'),
             lambda s: s.str.contains('a', regex=False),
-            id='contains'
+            id='contains',
         ),
         param(
             lambda s: ~s.contains('a'),
             lambda s: ~s.str.contains('a', regex=False),
-            id='not_contains'
+            id='not_contains',
         ),
         param(
             lambda s: s.like('a'),
             lambda s: s.str.contains('^a$', regex=True),
-            id='like'
+            id='like',
         ),
         param(
             lambda s: s.re_search('(ab)+'),
             lambda s: s.str.contains('(ab)+', regex=True),
-            id='re_search'
+            id='re_search',
         ),
         param(
             lambda s: s.re_search('(ab)+') | s.re_search('d{1,2}ee'),
             lambda s: (
-                s.str.contains('(ab)+', regex=True) |
-                s.str.contains('d{1,2}ee')
+                s.str.contains('(ab)+', regex=True)
+                | s.str.contains('d{1,2}ee')
             ),
-            id='re_search_or'
+            id='re_search_or',
         ),
         param(
             lambda s: s + s.rpad(3, 'a'),
             lambda s: s + s.str.pad(3, side='right', fillchar='a'),
-            id='rpad2'
+            id='rpad2',
         ),
         param(
             lambda s: s.split(' '),
             lambda s: s.str.split(' '),
-            id='split_spaces'
-        )
-    ]
+            id='split_spaces',
+        ),
+    ],
 )
 def test_string_ops(t, df, case_func, expected_func):
 
@@ -116,7 +116,6 @@ def test_string_ops(t, df, case_func, expected_func):
         ('^%%6', '%.*6'),
         ('^%^%6', '%%6'),
         ('6^%^%', '6%%'),
-
         ('6_', '6.'),
         ('_6_', '.6.'),
         ('^_6', '_6'),
@@ -125,11 +124,10 @@ def test_string_ops(t, df, case_func, expected_func):
         ('^__6', '_.6'),
         ('^_^_6', '__6'),
         ('6^_^_', '6__'),
-
         ('6%_^%_', '6.*.%.'),
         ('6_^%%_', '6.%.*.'),
         ('_^%%_%_^%_%_^%^__^%%^_^%%6%_', '.%.*..*.%..*.%_.%.*_%.*6.*.'),
-    ]
+    ],
 )
 def test_sql_like_to_regex(pattern, expected):
     result = sql_like_to_regex(pattern, escape='^')

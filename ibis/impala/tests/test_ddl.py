@@ -68,7 +68,8 @@ def test_create_table_with_location_execute(
     table_name = temp_table
 
     con.create_table(
-        table_name, obj=expr, location=tmp_path, database=test_data_db)
+        table_name, obj=expr, location=tmp_path, database=test_data_db
+    )
     assert hdfs.exists(tmp_path)
 
 
@@ -115,10 +116,14 @@ def test_ctas_from_table_expr(con, alltypes, temp_table_db):
 
 
 def test_create_empty_table(con, temp_table):
-    schema = ibis.schema([('a', 'string'),
-                          ('b', 'timestamp'),
-                          ('c', 'decimal(12, 8)'),
-                          ('d', 'double')])
+    schema = ibis.schema(
+        [
+            ('a', 'string'),
+            ('b', 'timestamp'),
+            ('c', 'decimal(12, 8)'),
+            ('d', 'double'),
+        ]
+    )
 
     table_name = temp_table
     con.create_table(table_name, schema=schema)
@@ -159,23 +164,26 @@ def test_insert_validate_types(con, alltypes, test_data_db, temp_table):
     con.create_table(
         table_name,
         schema=expr['tinyint_col', 'int_col', 'string_col'].schema(),
-        database=db
+        database=db,
     )
 
     t = con.table(table_name, database=db)
 
-    to_insert = expr[expr.tinyint_col, expr.smallint_col.name('int_col'),
-                     expr.string_col]
+    to_insert = expr[
+        expr.tinyint_col, expr.smallint_col.name('int_col'), expr.string_col
+    ]
     t.insert(to_insert.limit(10))
 
-    to_insert = expr[expr.tinyint_col,
-                     expr.smallint_col.cast('int32').name('int_col'),
-                     expr.string_col]
+    to_insert = expr[
+        expr.tinyint_col,
+        expr.smallint_col.cast('int32').name('int_col'),
+        expr.string_col,
+    ]
     t.insert(to_insert.limit(10))
 
-    to_insert = expr[expr.tinyint_col,
-                     expr.bigint_col.name('int_col'),
-                     expr.string_col]
+    to_insert = expr[
+        expr.tinyint_col, expr.bigint_col.name('int_col'), expr.string_col
+    ]
 
     limit_expr = to_insert.limit(10)
     with pytest.raises(com.IbisError):
@@ -233,12 +241,14 @@ def table(con, tmp_db, tmp_dir, path_uuid):
     table_name = 'table_{}'.format(util.guid())
     fake_path = pjoin(tmp_dir, path_uuid)
     schema = ibis.schema([('foo', 'string'), ('bar', 'int64')])
-    con.create_table(table_name,
-                     database=tmp_db,
-                     schema=schema,
-                     format='parquet',
-                     external=True,
-                     location=fake_path)
+    con.create_table(
+        table_name,
+        database=tmp_db,
+        schema=schema,
+        format='parquet',
+        external=True,
+        location=fake_path,
+    )
     try:
         yield con.table(table_name, database=tmp_db)
     finally:
@@ -283,9 +293,10 @@ def test_query_avro(con, test_data_dir, tmp_db):
         "fields": [
             {"type": ["int", "null"], "name": "R_REGIONKEY"},
             {"type": ["string", "null"], "name": "R_NAME"},
-            {"type": ["string", "null"], "name": "R_COMMENT"}],
+            {"type": ["string", "null"], "name": "R_COMMENT"},
+        ],
         "type": "record",
-        "name": "a"
+        "name": "a",
     }
 
     table = con.avro_file(hdfs_path, avro_schema, database=tmp_db)
@@ -328,18 +339,24 @@ def test_query_text_file_regex():
 def test_query_delimited_file_directory(con, test_data_dir, tmp_db):
     hdfs_path = pjoin(test_data_dir, 'csv')
 
-    schema = ibis.schema([('foo', 'string'),
-                          ('bar', 'double'),
-                          ('baz', 'int8')])
+    schema = ibis.schema(
+        [('foo', 'string'), ('bar', 'double'), ('baz', 'int8')]
+    )
     name = 'delimited_table_test1'
-    table = con.delimited_file(hdfs_path, schema, name=name, database=tmp_db,
-                               delimiter=',')
+    table = con.delimited_file(
+        hdfs_path, schema, name=name, database=tmp_db, delimiter=','
+    )
 
-    expr = (table
-            [table.bar > 0]
-            .group_by('foo')
-            .aggregate([table.bar.sum().name('sum(bar)'),
-                        table.baz.sum().name('mean(baz)')]))
+    expr = (
+        table[table.bar > 0]
+        .group_by('foo')
+        .aggregate(
+            [
+                table.bar.sum().name('sum(bar)'),
+                table.baz.sum().name('mean(baz)'),
+            ]
+        )
+    )
     assert expr.execute() is not None
 
 

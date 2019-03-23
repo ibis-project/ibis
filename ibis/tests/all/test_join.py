@@ -26,37 +26,41 @@ def right_df(right):
 
 
 @pytest.mark.skip
-@pytest.mark.parametrize('how', [
-    'inner',
-    'left',
-    'right',
-    'outer',
-    param(
-        'semi',
-        marks=pytest.mark.xfail(
-            raises=NotImplementedError,
-            reason='Semi join not implemented'
+@pytest.mark.parametrize(
+    'how',
+    [
+        'inner',
+        'left',
+        'right',
+        'outer',
+        param(
+            'semi',
+            marks=pytest.mark.xfail(
+                raises=NotImplementedError, reason='Semi join not implemented'
+            ),
         ),
-    ),
-    param(
-        'anti',
-        marks=pytest.mark.xfail(
-            raises=NotImplementedError,
-            reason='Anti join not implemented'
+        param(
+            'anti',
+            marks=pytest.mark.xfail(
+                raises=NotImplementedError, reason='Anti join not implemented'
+            ),
         ),
-    )
-])
-def test_join_project_left_table(backend, con, left, right,
-                                 left_df, right_df, how):
+    ],
+)
+def test_join_project_left_table(
+    backend, con, left, right, left_df, right_df, how
+):
     predicate = ['playerID']
     expr = left.join(right, predicate, how=how)[left]
 
     with backend.skip_unsupported():
         result = expr.execute()
 
-    joined = pd.merge(left_df, right_df, how=how, on=predicate,
-                      suffixes=('', '_y'))
+    joined = pd.merge(
+        left_df, right_df, how=how, on=predicate, suffixes=('', '_y')
+    )
     expected = joined[list(left.columns)]
 
-    backend.assert_frame_equal(result[expected.columns], expected,
-                               check_like=True)
+    backend.assert_frame_equal(
+        result[expected.columns], expected, check_like=True
+    )

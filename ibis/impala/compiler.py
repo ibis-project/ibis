@@ -42,8 +42,8 @@ def to_sql(expr, context=None):
 # ----------------------------------------------------------------------
 # Select compilation
 
-class ImpalaSelectBuilder(comp.SelectBuilder):
 
+class ImpalaSelectBuilder(comp.SelectBuilder):
     @property
     def _select_class(self):
         return ImpalaSelect
@@ -55,7 +55,6 @@ class ImpalaQueryBuilder(comp.QueryBuilder):
 
 
 class ImpalaContext(comp.QueryContext):
-
     def _to_sql(self, expr, ctx):
         return to_sql(expr, ctx)
 
@@ -86,7 +85,7 @@ class ImpalaTableSetFormatter(comp.TableSetFormatter):
         ops.OuterJoin: 'FULL OUTER JOIN',
         ops.LeftAntiJoin: 'LEFT ANTI JOIN',
         ops.LeftSemiJoin: 'LEFT SEMI JOIN',
-        ops.CrossJoin: 'CROSS JOIN'
+        ops.CrossJoin: 'CROSS JOIN',
     }
 
     def _get_join_type(self, op):
@@ -173,8 +172,7 @@ _cumulative_to_reduction = {
 
 def _cumulative_to_window(translator, expr, window):
     win = ibis.cumulative_window()
-    win = (win.group_by(window._group_by)
-           .order_by(window._order_by))
+    win = win.group_by(window._group_by).order_by(window._order_by)
 
     op = expr.op()
 
@@ -190,14 +188,14 @@ def _cumulative_to_window(translator, expr, window):
 
 
 _map_interval_to_microseconds = dict(
-    W=604800000000,
-    D=86400000000,
-    h=3600000000,
-    m=60000000,
-    s=1000000,
+    W=604_800_000_000,
+    D=86_400_000_000,
+    h=3_600_000_000,
+    m=60_000_000,
+    s=1_000_000,
     ms=1000,
     us=1,
-    ns=.001
+    ns=0.001,
 )
 
 
@@ -243,10 +241,10 @@ def _replace_interval_with_scalar(expr):
             return microseconds
         except KeyError:
             raise ValueError(
-                "Expected preceding values of week(), " +
-                "day(), hour(), minute(), second(), millisecond(), " +
-                "microseconds(), nanoseconds(); got {}".format(expr)
-                )
+                "Expected preceding values of week(), "
+                + "day(), hour(), minute(), second(), millisecond(), "
+                + "microseconds(), nanoseconds(); got {}".format(expr)
+            )
     elif expr_op.args and isinstance(expr, ir.IntervalValue):
         if len(expr_op.args) > 2:
             raise com.NotImplementedError(
@@ -263,15 +261,12 @@ def _time_range_to_range_window(translator, window):
     order_by_vars = [x.op().args[0] for x in window._order_by]
     if len(order_by_vars) > 1:
         raise com.IbisInputError(
-            "Expected 1 order-by variable, got {}".format(
-                len(order_by_vars)
-            )
+            "Expected 1 order-by variable, got {}".format(len(order_by_vars))
         )
 
     order_var = window._order_by[0].op().args[0]
     timestamp_order_var = order_var.cast('int64')
-    window = window._replace(order_by=timestamp_order_var,
-                             how='range')
+    window = window._replace(order_by=timestamp_order_var, how='range')
 
     # Need to change preceding interval expression to scalars
     preceding = window.preceding
@@ -288,14 +283,16 @@ def _window(translator, expr):
     arg, window = op.args
     window_op = arg.op()
 
-    _require_order_by = (ops.Lag,
-                         ops.Lead,
-                         ops.DenseRank,
-                         ops.MinRank,
-                         ops.FirstValue,
-                         ops.LastValue,
-                         ops.PercentRank,
-                         ops.NTile,)
+    _require_order_by = (
+        ops.Lag,
+        ops.Lead,
+        ops.DenseRank,
+        ops.MinRank,
+        ops.FirstValue,
+        ops.LastValue,
+        ops.PercentRank,
+        ops.NTile,
+    )
 
     _unsupported_reductions = (
         ops.CMSMedian,
@@ -314,8 +311,7 @@ def _window(translator, expr):
 
     # Some analytic functions need to have the expression of interest in
     # the ORDER BY part of the window clause
-    if (isinstance(window_op, _require_order_by) and
-            len(window._order_by) == 0):
+    if isinstance(window_op, _require_order_by) and len(window._order_by) == 0:
         window = window.order_by(window_op.args[0])
 
     # Time ranges need to be converted to microseconds.
@@ -340,8 +336,7 @@ def _format_window(translator, window):
     components = []
 
     if len(window._group_by) > 0:
-        partition_args = [translator.translate(x)
-                          for x in window._group_by]
+        partition_args = [translator.translate(x) for x in window._group_by]
         components.append('PARTITION BY {}'.format(', '.join(partition_args)))
 
     if len(window._order_by) > 0:
@@ -365,13 +360,15 @@ def _format_window(translator, window):
 
     if p is not None and f is not None:
         frame = '{} BETWEEN {} AND {}'.format(
-            window.how.upper(), _prec(p), _foll(f))
+            window.how.upper(), _prec(p), _foll(f)
+        )
 
     elif p is not None:
         if isinstance(p, tuple):
             start, end = p
             frame = '{} BETWEEN {} AND {}'.format(
-                window.how.upper(), _prec(start), _prec(end))
+                window.how.upper(), _prec(start), _prec(end)
+            )
         else:
             kind = 'ROWS' if p > 0 else 'RANGE'
             frame = '{} BETWEEN {} AND UNBOUNDED FOLLOWING'.format(
@@ -381,7 +378,8 @@ def _format_window(translator, window):
         if isinstance(f, tuple):
             start, end = f
             frame = '{} BETWEEN {} AND {}'.format(
-                window.how.upper(), _foll(start), _foll(end))
+                window.how.upper(), _foll(start), _foll(end)
+            )
         else:
             kind = 'ROWS' if f > 0 else 'RANGE'
             frame = '{} BETWEEN UNBOUNDED PRECEDING AND {}'.format(
@@ -398,7 +396,6 @@ def _format_window(translator, window):
 
 
 def _shift_like(name):
-
     def formatter(translator, expr):
         op = expr.op()
         arg, offset, default = op.args
@@ -487,23 +484,24 @@ def _reduction(func_name):
         return _reduction_format(
             translator, func_name, args[0], args[1:], where
         )
+
     return formatter
 
 
 def _variance_like(func_name):
     func_names = {
         'sample': '{}_samp'.format(func_name),
-        'pop': '{}_pop'.format(func_name)
+        'pop': '{}_pop'.format(func_name),
     }
 
     def formatter(translator, expr):
         arg, how, where = expr.op().args
         return _reduction_format(translator, func_names[how], arg, [], where)
+
     return formatter
 
 
 def fixed_arity(func_name, arity):
-
     def formatter(translator, expr):
         op = expr.op()
         if arity != len(op.args):
@@ -518,8 +516,7 @@ def _ifnull_workaround(translator, expr):
     a, b = op.args
 
     # work around per #345, #360
-    if (isinstance(a, ir.DecimalValue) and
-            isinstance(b, ir.IntegerValue)):
+    if isinstance(a, ir.DecimalValue) and isinstance(b, ir.IntegerValue):
         b = b.cast(a.type())
 
     return _format_call(translator, 'isnull', a, b)
@@ -549,6 +546,7 @@ def _binary_infix_op(infix_sym):
             right_arg = _parenthesize(right_arg)
 
         return '{} {} {}'.format(left_arg, infix_sym, right_arg)
+
     return formatter
 
 
@@ -576,15 +574,20 @@ def _needs_parens(op):
         op = op.op()
     op_klass = type(op)
     # function calls don't need parens
-    return (op_klass in _binary_infix_ops or
-            op_klass in {ops.Negate, ops.IsNull, ops.NotNull})
+    return op_klass in _binary_infix_ops or op_klass in {
+        ops.Negate,
+        ops.IsNull,
+        ops.NotNull,
+    }
 
 
 def _set_literal_format(translator, expr):
     value_type = expr.type().value_type
 
-    formatted = [translator.translate(ir.literal(x, type=value_type))
-                 for x in expr.op().value]
+    formatted = [
+        translator.translate(ir.literal(x, type=value_type))
+        for x in expr.op().value
+    ]
 
     return _parenthesize(', '.join(formatted))
 
@@ -610,8 +613,9 @@ def _number_literal_format(translator, expr):
 
 
 def _interval_literal_format(translator, expr):
-    return 'INTERVAL {} {}'.format(expr.op().value,
-                                   expr.type().resolution.upper())
+    return 'INTERVAL {} {}'.format(
+        expr.op().value, expr.type().resolution.upper()
+    )
 
 
 def _interval_from_integer(translator, expr):
@@ -620,8 +624,9 @@ def _interval_from_integer(translator, expr):
     arg, unit = op.args
     arg_formatted = translator.translate(arg)
 
-    return 'INTERVAL {} {}'.format(arg_formatted,
-                                   expr.type().resolution.upper())
+    return 'INTERVAL {} {}'.format(
+        arg_formatted, expr.type().resolution.upper()
+    )
 
 
 def _date_literal_format(translator, expr):
@@ -648,7 +653,6 @@ def quote_identifier(name, quotechar='`', force=False):
 
 
 class CaseFormatter:
-
     def __init__(self, translator, base, cases, results, default):
         self.translator = translator
         self.base = base
@@ -699,15 +703,17 @@ class CaseFormatter:
 
 def _simple_case(translator, expr):
     op = expr.op()
-    formatter = CaseFormatter(translator, op.base, op.cases, op.results,
-                              op.default)
+    formatter = CaseFormatter(
+        translator, op.base, op.cases, op.results, op.default
+    )
     return formatter.get_result()
 
 
 def _searched_case(translator, expr):
     op = expr.op()
-    formatter = CaseFormatter(translator, None, op.cases, op.results,
-                              op.default)
+    formatter = CaseFormatter(
+        translator, None, op.cases, op.results, op.default
+    )
     return formatter.get_result()
 
 
@@ -720,6 +726,7 @@ def _table_array_view(translator, expr):
 
 # ---------------------------------------------------------------------
 # Timestamp arithmetic and other functions
+
 
 def _timestamp_op(func):
     def _formatter(translator, expr):
@@ -744,7 +751,8 @@ def _timestamp_diff(translator, expr):
     left, right = op.args
 
     return 'unix_timestamp({}) - unix_timestamp({})'.format(
-        translator.translate(left), translator.translate(right))
+        translator.translate(left), translator.translate(right)
+    )
 
 
 # ---------------------------------------------------------------------
@@ -802,6 +810,7 @@ def _extract_field(sql_attr):
         # This is pre-2.0 Impala-style, which did not used to support the
         # SQL-99 format extract($FIELD from expr)
         return "extract({}, '{}')".format(arg, sql_attr)
+
     return extract_field_formatter
 
 
@@ -822,7 +831,7 @@ _impala_unit_names = {
     'W': 'W',
     'D': 'J',
     'h': 'HH',
-    'm': 'MI'
+    'm': 'MI',
 }
 
 
@@ -860,6 +869,7 @@ def varargs(func_name):
     def varargs_formatter(translator, expr):
         op = expr.op()
         return _format_call(translator, func_name, *op.arg)
+
     return varargs_formatter
 
 
@@ -1013,7 +1023,7 @@ _literal_formatters = {
     'interval': _interval_literal_format,
     'timestamp': _timestamp_literal_format,
     'date': _date_literal_format,
-    'set': _set_literal_format
+    'set': _set_literal_format,
 }
 
 
@@ -1059,7 +1069,6 @@ _binary_infix_ops = {
     ops.Divide: _binary_infix_op('/'),
     ops.Power: fixed_arity('pow', 2),
     ops.Modulus: _binary_infix_op('%'),
-
     # Comparisons
     ops.Equals: _binary_infix_op('='),
     ops.NotEquals: _binary_infix_op('!='),
@@ -1068,7 +1077,6 @@ _binary_infix_ops = {
     ops.LessEqual: _binary_infix_op('<='),
     ops.Less: _binary_infix_op('<'),
     ops.IdenticalTo: _identical_to,
-
     # Boolean comparisons
     ops.And: _binary_infix_op('AND'),
     ops.Or: _binary_infix_op('OR'),
@@ -1079,8 +1087,7 @@ _binary_infix_ops = {
 def _string_like(translator, expr):
     arg, pattern, _ = expr.op().args
     return '{} LIKE {}'.format(
-        translator.translate(arg),
-        translator.translate(pattern),
+        translator.translate(arg), translator.translate(pattern)
     )
 
 
@@ -1099,36 +1106,27 @@ _operation_registry = {
     ops.IsNull: _is_null,
     ops.Negate: _negate,
     ops.Not: _not,
-
     ops.IsNan: unary('is_nan'),
     ops.IsInf: unary('is_inf'),
-
     ops.IfNull: _ifnull_workaround,
     ops.NullIf: fixed_arity('nullif', 2),
-
     ops.ZeroIfNull: unary('zeroifnull'),
     ops.NullIfZero: unary('nullifzero'),
-
     ops.Abs: unary('abs'),
     ops.BaseConvert: fixed_arity('conv', 3),
     ops.Ceil: unary('ceil'),
     ops.Floor: unary('floor'),
     ops.Exp: unary('exp'),
     ops.Round: _round,
-
     ops.Sign: _sign,
     ops.Sqrt: unary('sqrt'),
-
     ops.Hash: _hash,
-
     ops.Log: _log,
     ops.Ln: unary('ln'),
     ops.Log2: unary('log2'),
     ops.Log10: unary('log10'),
-
     ops.DecimalPrecision: unary('precision'),
     ops.DecimalScale: unary('scale'),
-
     # Unary aggregates
     ops.CMSMedian: _reduction('appx_median'),
     ops.HLLCardinality: _reduction('ndv'),
@@ -1136,15 +1134,11 @@ _operation_registry = {
     ops.Sum: _reduction('sum'),
     ops.Max: _reduction('max'),
     ops.Min: _reduction('min'),
-
     ops.StandardDev: _variance_like('stddev'),
     ops.Variance: _variance_like('var'),
-
     ops.GroupConcat: _reduction('group_concat'),
-
     ops.Count: _reduction('count'),
     ops.CountDistinct: _count_distinct,
-
     # string operations
     ops.StringLength: unary('length'),
     ops.StringAscii: unary('ascii'),
@@ -1169,7 +1163,6 @@ _operation_registry = {
     ops.RegexExtract: fixed_arity('regexp_extract', 3),
     ops.RegexReplace: fixed_arity('regexp_replace', 3),
     ops.ParseURL: _parse_url,
-
     # Timestamp operations
     ops.Date: unary('to_date'),
     ops.TimestampNow: lambda *args: 'now()',
@@ -1183,34 +1176,23 @@ _operation_registry = {
     ops.TimestampTruncate: _truncate,
     ops.DateTruncate: _truncate,
     ops.IntervalFromInteger: _interval_from_integer,
-
     # Other operations
     ops.E: lambda *args: 'e()',
-
     ops.Literal: _literal,
     ops.NullLiteral: _null_literal,
-
     ops.ValueList: _value_list,
-
     ops.Cast: _cast,
-
     ops.Coalesce: varargs('coalesce'),
     ops.Greatest: varargs('greatest'),
     ops.Least: varargs('least'),
-
     ops.Where: fixed_arity('if', 3),
-
     ops.Between: _between,
     ops.Contains: _binary_infix_op('IN'),
     ops.NotContains: _binary_infix_op('NOT IN'),
-
     ops.SimpleCase: _simple_case,
     ops.SearchedCase: _searched_case,
-
     ops.TableColumn: _table_column,
-
     ops.TableArrayView: _table_array_view,
-
     ops.DateAdd: _timestamp_op('date_add'),
     ops.DateSub: _timestamp_op('date_sub'),
     ops.DateDiff: _timestamp_op('datediff'),
@@ -1218,16 +1200,13 @@ _operation_registry = {
     ops.TimestampSub: _timestamp_op('date_sub'),
     ops.TimestampDiff: _timestamp_diff,
     ops.TimestampFromUNIX: _timestamp_from_unix,
-
     transforms.ExistsSubquery: _exists_subquery,
     transforms.NotExistsSubquery: _exists_subquery,
-
     # RowNumber, and rank functions starts with 0 in Ibis-land
     ops.RowNumber: lambda *args: 'row_number()',
     ops.DenseRank: lambda *args: 'dense_rank()',
     ops.MinRank: lambda *args: 'rank()',
     ops.PercentRank: lambda *args: 'percent_rank()',
-
     ops.FirstValue: unary('first_value'),
     ops.LastValue: unary('last_value'),
     ops.NthValue: _nth_value,
@@ -1235,7 +1214,6 @@ _operation_registry = {
     ops.Lead: _shift_like('lead'),
     ops.WindowOp: _window,
     ops.NTile: _ntile,
-
     ops.DayOfWeekIndex: _day_of_week_index,
     ops.DayOfWeekName: _day_of_week_name,
 }
@@ -1249,8 +1227,7 @@ class ImpalaExprTranslator(comp.ExprTranslator):
     context_class = ImpalaContext
 
     def name(self, translated, name, force=True):
-        return _name_expr(translated,
-                          quote_identifier(name, force=force))
+        return _name_expr(translated, quote_identifier(name, force=force))
 
 
 class ImpalaDialect(comp.Dialect):

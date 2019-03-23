@@ -21,7 +21,6 @@ from ibis.expr.signature import Argument as Arg
 
 
 class BucketLike(ops.ValueOp):
-
     @property
     def nbuckets(self):
         return None
@@ -83,12 +82,20 @@ class CategoryLabel(ops.ValueOp):
     def _validate(self):
         cardinality = self.arg.type().cardinality
         if len(self.labels) != cardinality:
-            raise ValueError('Number of labels must match number of '
-                             'categories: {}'.format(cardinality))
+            raise ValueError(
+                'Number of labels must match number of '
+                'categories: {}'.format(cardinality)
+            )
 
 
-def bucket(arg, buckets, closed='left', close_extreme=True,
-           include_under=False, include_over=False):
+def bucket(
+    arg,
+    buckets,
+    closed='left',
+    close_extreme=True,
+    include_under=False,
+    include_over=False,
+):
     """
     Compute a discrete binning of a numeric array
 
@@ -107,13 +114,20 @@ def bucket(arg, buckets, closed='left', close_extreme=True,
     -------
     bucketed : coded value expression
     """
-    op = Bucket(arg, buckets, closed=closed, close_extreme=close_extreme,
-                include_under=include_under, include_over=include_over)
+    op = Bucket(
+        arg,
+        buckets,
+        closed=closed,
+        close_extreme=close_extreme,
+        include_under=include_under,
+        include_over=include_over,
+    )
     return op.to_expr()
 
 
-def histogram(arg, nbins=None, binwidth=None, base=None, closed='left',
-              aux_hash=None):
+def histogram(
+    arg, nbins=None, binwidth=None, base=None, closed='left', aux_hash=None
+):
     """
     Compute a histogram with fixed width bins
 
@@ -132,8 +146,9 @@ def histogram(arg, nbins=None, binwidth=None, base=None, closed='left',
     -------
     histogrammed : coded value expression
     """
-    op = Histogram(arg, nbins, binwidth, base, closed=closed,
-                   aux_hash=aux_hash)
+    op = Histogram(
+        arg, nbins, binwidth, base, closed=closed, aux_hash=aux_hash
+    )
     return op.to_expr()
 
 

@@ -12,6 +12,7 @@ def array_test(f):
         if not backend.supports_arrays:
             pytest.skip('Backend {} does not support arrays'.format(backend))
         return f(backend, *args, **kwargs)
+
     return wrapper
 
 
@@ -24,6 +25,7 @@ def direct_array_operation_test(f):
                 'arrays as column cells'.format(backend)
             )
         return f(backend, *args, **kwargs)
+
     return wrapper
 
 

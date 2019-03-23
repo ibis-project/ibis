@@ -1,9 +1,18 @@
 import sys
 import pytest
 
-from ibis.tests.backends import (Csv, Parquet, Pandas,
-                                 SQLite, PostgreSQL, MySQL, MapD,
-                                 Clickhouse, Impala, BigQuery)
+from ibis.tests.backends import (
+    Csv,
+    Parquet,
+    Pandas,
+    SQLite,
+    PostgreSQL,
+    MySQL,
+    MapD,
+    Clickhouse,
+    Impala,
+    BigQuery,
+)
 
 
 pytestmark = pytest.mark.backend
@@ -17,7 +26,7 @@ params_backend = [
     pytest.param(MySQL, marks=pytest.mark.mysql),
     pytest.param(Clickhouse, marks=pytest.mark.clickhouse),
     pytest.param(BigQuery, marks=pytest.mark.bigquery),
-    pytest.param(Impala, marks=pytest.mark.impala)
+    pytest.param(Impala, marks=pytest.mark.impala),
 ]
 
 if sys.version_info.major > 2:

@@ -32,19 +32,20 @@ def db(con):
 @pytest.fixture
 def dialect():
     import sqlalchemy as sa
+
     return sa.dialects.sqlite.dialect()
 
 
 @pytest.fixture
 def translate(dialect):
     from ibis.sql.sqlite.compiler import SQLiteDialect
+
     ibis_dialect = SQLiteDialect()
     context = ibis_dialect.make_context()
     return lambda expr: str(
-        ibis_dialect.translator(expr, context).get_result().compile(
-            dialect=dialect,
-            compile_kwargs=dict(literal_binds=True)
-        )
+        ibis_dialect.translator(expr, context)
+        .get_result()
+        .compile(dialect=dialect, compile_kwargs=dict(literal_binds=True))
     )
 
 

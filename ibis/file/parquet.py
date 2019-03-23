@@ -33,7 +33,7 @@ _arrow_dtypes = {
     'binary': dt.Binary,
     'bool': dt.Boolean,
     'timestamp[ns]': dt.Timestamp,
-    'timestamp[us]': dt.Timestamp
+    'timestamp[us]': dt.Timestamp,
 }
 
 

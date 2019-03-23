@@ -84,6 +84,7 @@ def execute_map_value_default_series_series_series(op, data, key, default):
         mapping, keyiter=iter(key.values), defaultiter=iter(default.values)
     ):
         return safe_get(mapping, next(keyiter), next(defaultiter))
+
     return data.map(get)
 
 
@@ -188,7 +189,8 @@ def safe_merge(*maps):
 
 @execute_node.register(
     ops.MapConcat,
-    (collections.Mapping, type(None)), (collections.Mapping, type(None))
+    (collections.Mapping, type(None)),
+    (collections.Mapping, type(None)),
 )
 def execute_map_concat_dict_dict(op, lhs, rhs, **kwargs):
     return safe_merge(lhs, rhs)

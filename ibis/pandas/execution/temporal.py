@@ -9,7 +9,11 @@ import ibis.expr.operations as ops
 
 from ibis.pandas.dispatch import execute_node, pre_execute
 from ibis.pandas.core import (
-    numeric_types, integer_types, timestamp_types, timedelta_types)
+    numeric_types,
+    integer_types,
+    timestamp_types,
+    timedelta_types,
+)
 
 
 @execute_node.register(ops.Strftime, pd.Timestamp, str)
@@ -46,8 +50,7 @@ def execute_extract_timestamp_field_series(op, data, **kwargs):
     (pd.Series, str, datetime.time),
 )
 def execute_between_time(op, data, lower, upper, **kwargs):
-    indexer = pd.DatetimeIndex(data).indexer_between_time(
-        lower, upper)
+    indexer = pd.DatetimeIndex(data).indexer_between_time(lower, upper)
     result = np.zeros(len(data), dtype=np.bool_)
     result[indexer] = True
     return result
@@ -99,13 +102,15 @@ def execute_interval_add_multiply_delta_series(op, left, right, **kwargs):
 
 
 @execute_node.register(
-    (ops.TimestampAdd, ops.IntervalAdd), pd.Series, timedelta_types)
+    (ops.TimestampAdd, ops.IntervalAdd), pd.Series, timedelta_types
+)
 def execute_timestamp_interval_add_series_delta(op, left, right, **kwargs):
     return left + pd.Timedelta(right)
 
 
 @execute_node.register(
-    (ops.TimestampAdd, ops.IntervalAdd), pd.Series, pd.Series)
+    (ops.TimestampAdd, ops.IntervalAdd), pd.Series, pd.Series
+)
 def execute_timestamp_interval_add_series_series(op, left, right, **kwargs):
     return left + right
 
@@ -116,7 +121,8 @@ def execute_timestamp_sub_datetime_timedelta(op, left, right, **kwargs):
 
 
 @execute_node.register(
-    (ops.TimestampDiff, ops.TimestampSub), timestamp_types, pd.Series)
+    (ops.TimestampDiff, ops.TimestampSub), timestamp_types, pd.Series
+)
 def execute_timestamp_diff_sub_datetime_series(op, left, right, **kwargs):
     return pd.Timestamp(left) - right
 
@@ -127,7 +133,8 @@ def execute_timestamp_sub_series_timedelta(op, left, right, **kwargs):
 
 
 @execute_node.register(
-    (ops.TimestampDiff, ops.TimestampSub), pd.Series, pd.Series)
+    (ops.TimestampDiff, ops.TimestampSub), pd.Series, pd.Series
+)
 def execute_timestamp_diff_sub_series_series(op, left, right, **kwargs):
     return left - right
 
@@ -148,7 +155,7 @@ def execute_timestamp_diff_series_datetime(op, left, right, **kwargs):
 @execute_node.register(
     ops.IntervalFloorDivide,
     (pd.Timedelta, pd.Series),
-    numeric_types + (pd.Series,)
+    numeric_types + (pd.Series,),
 )
 def execute_interval_multiply_fdiv_series_numeric(op, left, right, **kwargs):
     return op.op(left, right)
@@ -165,7 +172,7 @@ def pre_execute_timestamp_now(op, *args, **kwargs):
     return {op: pd.Timestamp('now')}
 
 
-@execute_node.register(ops.DayOfWeekIndex, (str, datetime.date,))
+@execute_node.register(ops.DayOfWeekIndex, (str, datetime.date))
 def execute_day_of_week_index_any(op, value, **kwargs):
     return pd.Timestamp(value).dayofweek
 
@@ -199,7 +206,7 @@ def day_name(obj):
         return obj.weekday_name
 
 
-@execute_node.register(ops.DayOfWeekName, (str, datetime.date,))
+@execute_node.register(ops.DayOfWeekName, (str, datetime.date))
 def execute_day_of_week_name_any(op, value, **kwargs):
     return day_name(pd.Timestamp(value))
 

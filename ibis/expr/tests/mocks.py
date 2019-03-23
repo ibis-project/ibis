@@ -17,10 +17,10 @@ from ibis.expr.schema import Schema
 
 
 class MockConnection(SQLClient):
-
     @property
     def dialect(self):
         from ibis.impala.compiler import ImpalaDialect
+
         return ImpalaDialect
 
     _tables = {
@@ -35,7 +35,7 @@ class MockConnection(SQLClient):
             ('h', 'boolean'),
             ('i', 'timestamp'),
             ('j', 'date'),
-            ('k', 'time')
+            ('k', 'time'),
         ],
         'star1': [
             ('c', 'int32'),
@@ -46,31 +46,21 @@ class MockConnection(SQLClient):
         'star2': [
             ('foo_id', 'string'),
             ('value1', 'double'),
-            ('value3', 'double')
+            ('value3', 'double'),
         ],
-        'star3': [
-            ('bar_id', 'string'),
-            ('value2', 'double')
-        ],
-        'test1': [
-            ('c', 'int32'),
-            ('f', 'double'),
-            ('g', 'string')
-        ],
-        'test2': [
-            ('key', 'string'),
-            ('value', 'double')
-        ],
+        'star3': [('bar_id', 'string'), ('value2', 'double')],
+        'test1': [('c', 'int32'), ('f', 'double'), ('g', 'string')],
+        'test2': [('key', 'string'), ('value', 'double')],
         'tpch_region': [
             ('r_regionkey', 'int16'),
             ('r_name', 'string'),
-            ('r_comment', 'string')
+            ('r_comment', 'string'),
         ],
         'tpch_nation': [
             ('n_nationkey', 'int16'),
             ('n_name', 'string'),
             ('n_regionkey', 'int16'),
-            ('n_comment', 'string')
+            ('n_comment', 'string'),
         ],
         'tpch_lineitem': [
             ('l_orderkey', 'int64'),
@@ -88,7 +78,7 @@ class MockConnection(SQLClient):
             ('l_receiptdate', 'string'),
             ('l_shipinstruct', 'string'),
             ('l_shipmode', 'string'),
-            ('l_comment', 'string')
+            ('l_comment', 'string'),
         ],
         'tpch_customer': [
             ('c_custkey', 'int64'),
@@ -98,7 +88,7 @@ class MockConnection(SQLClient):
             ('c_phone', 'string'),
             ('c_acctbal', 'decimal'),
             ('c_mktsegment', 'string'),
-            ('c_comment', 'string')
+            ('c_comment', 'string'),
         ],
         'tpch_orders': [
             ('o_orderkey', 'int64'),
@@ -109,7 +99,7 @@ class MockConnection(SQLClient):
             ('o_orderpriority', 'string'),
             ('o_clerk', 'string'),
             ('o_shippriority', 'int32'),
-            ('o_comment', 'string')
+            ('o_comment', 'string'),
         ],
         'functional_alltypes': [
             ('id', 'int32'),
@@ -124,7 +114,7 @@ class MockConnection(SQLClient):
             ('string_col', 'string'),
             ('timestamp_col', 'timestamp'),
             ('year', 'int32'),
-            ('month', 'int32')
+            ('month', 'int32'),
         ],
         'airlines': [
             ('year', 'int32'),
@@ -155,7 +145,7 @@ class MockConnection(SQLClient):
             ('weather_delay', 'int32'),
             ('nas_delay', 'int32'),
             ('security_delay', 'int32'),
-            ('late_aircraft_delay', 'int32')
+            ('late_aircraft_delay', 'int32'),
         ],
         'tpcds_customer': [
             ('c_customer_sk', 'int64'),
@@ -175,7 +165,8 @@ class MockConnection(SQLClient):
             ('c_birth_country', 'string'),
             ('c_login', 'string'),
             ('c_email_address', 'string'),
-            ('c_last_review_date', 'string')],
+            ('c_last_review_date', 'string'),
+        ],
         'tpcds_customer_address': [
             ('ca_address_sk', 'bigint'),
             ('ca_address_id', 'string'),
@@ -189,7 +180,8 @@ class MockConnection(SQLClient):
             ('ca_zip', 'string'),
             ('ca_country', 'string'),
             ('ca_gmt_offset', 'decimal(5,2)'),
-            ('ca_location_type', 'string')],
+            ('ca_location_type', 'string'),
+        ],
         'tpcds_customer_demographics': [
             ('cd_demo_sk', 'bigint'),
             ('cd_gender', 'string'),
@@ -199,7 +191,8 @@ class MockConnection(SQLClient):
             ('cd_credit_rating', 'string'),
             ('cd_dep_count', 'int'),
             ('cd_dep_employed_count', 'int'),
-            ('cd_dep_college_count', 'int')],
+            ('cd_dep_college_count', 'int'),
+        ],
         'tpcds_date_dim': [
             ('d_date_sk', 'bigint'),
             ('d_date_id', 'string'),
@@ -228,13 +221,15 @@ class MockConnection(SQLClient):
             ('d_current_week', 'string'),
             ('d_current_month', 'string'),
             ('d_current_quarter', 'string'),
-            ('d_current_year', 'string')],
+            ('d_current_year', 'string'),
+        ],
         'tpcds_household_demographics': [
             ('hd_demo_sk', 'bigint'),
             ('hd_income_band_sk', 'int'),
             ('hd_buy_potential', 'string'),
             ('hd_dep_count', 'int'),
-            ('hd_vehicle_count', 'int')],
+            ('hd_vehicle_count', 'int'),
+        ],
         'tpcds_item': [
             ('i_item_sk', 'bigint'),
             ('i_item_id', 'string'),
@@ -257,7 +252,8 @@ class MockConnection(SQLClient):
             ('i_units', 'string'),
             ('i_container', 'string'),
             ('i_manager_id', 'int'),
-            ('i_product_name', 'string')],
+            ('i_product_name', 'string'),
+        ],
         'tpcds_promotion': [
             ('p_promo_sk', 'bigint'),
             ('p_promo_id', 'string'),
@@ -277,7 +273,8 @@ class MockConnection(SQLClient):
             ('p_channel_demo', 'string'),
             ('p_channel_details', 'string'),
             ('p_purpose', 'string'),
-            ('p_discount_active', 'string')],
+            ('p_discount_active', 'string'),
+        ],
         'tpcds_store': [
             ('s_store_sk', 'bigint'),
             ('s_store_id', 'string'),
@@ -307,7 +304,8 @@ class MockConnection(SQLClient):
             ('s_zip', 'string'),
             ('s_country', 'string'),
             ('s_gmt_offset', 'decimal(5,2)'),
-            ('s_tax_precentage', 'decimal(5,2)')],
+            ('s_tax_precentage', 'decimal(5,2)'),
+        ],
         'tpcds_store_sales': [
             ('ss_sold_time_sk', 'bigint'),
             ('ss_item_sk', 'bigint'),
@@ -331,7 +329,8 @@ class MockConnection(SQLClient):
             ('ss_net_paid', 'decimal(7,2)'),
             ('ss_net_paid_inc_tax', 'decimal(7,2)'),
             ('ss_net_profit', 'decimal(7,2)'),
-            ('ss_sold_date_sk', 'bigint')],
+            ('ss_sold_date_sk', 'bigint'),
+        ],
         'tpcds_time_dim': [
             ('t_time_sk', 'bigint'),
             ('t_time_id', 'string'),
@@ -342,7 +341,8 @@ class MockConnection(SQLClient):
             ('t_am_pm', 'string'),
             ('t_shift', 'string'),
             ('t_sub_shift', 'string'),
-            ('t_meal_time', 'string')]
+            ('t_meal_time', 'string'),
+        ],
     }
 
     def __init__(self):
@@ -354,6 +354,7 @@ class MockConnection(SQLClient):
 
     def _build_ast(self, expr, context):
         from ibis.impala.compiler import build_ast
+
         return build_ast(expr, context)
 
     def execute(self, expr, limit=None, params=None):
@@ -369,10 +370,10 @@ class MockConnection(SQLClient):
 
 
 class GeoMockConnection(SQLClient):
-
     @property
     def dialect(self):
         from ibis.mapd.compiler import MapDDialect
+
         return MapDDialect
 
     _tables = {
@@ -381,7 +382,7 @@ class GeoMockConnection(SQLClient):
             ('geo_point', 'point'),
             ('geo_linestring', 'linestring'),
             ('geo_polygon', 'polygon'),
-            ('geo_multipolygon', 'multipolygon')
+            ('geo_multipolygon', 'multipolygon'),
         ]
     }
 
@@ -394,6 +395,7 @@ class GeoMockConnection(SQLClient):
 
     def _build_ast(self, expr, context):
         from ibis.mapd.compiler import build_ast
+
         return build_ast(expr, context)
 
     def execute(self, expr, limit=None, params=None):

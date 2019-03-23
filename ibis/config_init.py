@@ -25,7 +25,7 @@ cf.register_option(
 Whether to render expressions as GraphViz PNGs when repr-ing in a Jupyter
 notebook.
 """,
-    validator=cf.is_bool
+    validator=cf.is_bool,
 )
 
 cf.register_option('default_backend', None)
@@ -50,8 +50,9 @@ HDFS path for storage of temporary data
 
 with cf.config_prefix('impala'):
     cf.register_option('temp_db', '__ibis_tmp', impala_temp_db_doc)
-    cf.register_option('temp_hdfs_path', '/tmp/ibis',
-                       impala_temp_hdfs_path_doc)
+    cf.register_option(
+        'temp_hdfs_path', '/tmp/ibis', impala_temp_hdfs_path_doc
+    )
 
 
 clickhouse_temp_db_doc = """

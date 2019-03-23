@@ -6,7 +6,9 @@ from multipledispatch.conflict import ambiguities
 
 import ibis.expr.datatypes as dt
 from ibis.bigquery.datatypes import (
-    ibis_type_to_bigquery_type, UDFContext, TypeTranslationContext
+    ibis_type_to_bigquery_type,
+    UDFContext,
+    TypeTranslationContext,
 )
 
 
@@ -31,32 +33,29 @@ def test_no_ambiguities():
         (dt.Array(dt.int64), 'ARRAY<INT64>'),
         (dt.Array(dt.string), 'ARRAY<STRING>'),
         (
-            dt.Struct.from_tuples([
-                ('a', dt.int64),
-                ('b', dt.string),
-                ('c', dt.Array(dt.string)),
-            ]),
-            'STRUCT<a INT64, b STRING, c ARRAY<STRING>>'
+            dt.Struct.from_tuples(
+                [('a', dt.int64), ('b', dt.string), ('c', dt.Array(dt.string))]
+            ),
+            'STRUCT<a INT64, b STRING, c ARRAY<STRING>>',
         ),
         (dt.date, 'DATE'),
         (dt.timestamp, 'TIMESTAMP'),
-
         param(
-            dt.Timestamp(timezone='US/Eastern'), 'TIMESTAMP',
+            dt.Timestamp(timezone='US/Eastern'),
+            'TIMESTAMP',
             marks=pytest.mark.xfail(
-                raises=TypeError,
-                reason='Not supported in BigQuery'
-            )
+                raises=TypeError, reason='Not supported in BigQuery'
+            ),
         ),
         ('array<struct<a: string>>', 'ARRAY<STRUCT<a STRING>>'),
         param(
-            dt.Decimal(38, 9), 'NUMERIC',
+            dt.Decimal(38, 9),
+            'NUMERIC',
             marks=pytest.mark.xfail(
-                raises=TypeError,
-                reason='Not supported in BigQuery'
-            )
+                raises=TypeError, reason='Not supported in BigQuery'
+            ),
         ),
-    ]
+    ],
 )
 def test_simple(datatype, expected):
     context = TypeTranslationContext()
@@ -72,20 +71,18 @@ def test_simple_failure_mode(datatype):
 @pytest.mark.parametrize(
     ('type', 'expected'),
     [
+        param(dt.int64, 'INT64', marks=pytest.mark.xfail(raises=TypeError)),
         param(
-            dt.int64, 'INT64',
-            marks=pytest.mark.xfail(raises=TypeError),
-        ),
-        param(
-            dt.Array(dt.int64), 'ARRAY<INT64>',
+            dt.Array(dt.int64),
+            'ARRAY<INT64>',
             marks=pytest.mark.xfail(raises=TypeError),
         ),
         param(
             dt.Struct.from_tuples([('a', dt.Array(dt.int64))]),
             'STRUCT<a ARRAY<INT64>>',
-            marks=pytest.mark.xfail(raises=TypeError)
-        )
-    ]
+            marks=pytest.mark.xfail(raises=TypeError),
+        ),
+    ],
 )
 def test_ibis_type_to_bigquery_type_udf(type, expected):
     context = UDFContext()

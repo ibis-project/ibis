@@ -9,15 +9,18 @@ pytest.importorskip('clickhouse_driver')
 pytestmark = pytest.mark.clickhouse
 
 
-@pytest.mark.parametrize(('reduction', 'func_translated'), [
-    ('sum', 'sum'),
-    ('count', 'count'),
-    ('mean', 'avg'),
-    ('max', 'max'),
-    ('min', 'min'),
-    ('std', 'stddevSamp'),
-    ('var', 'varSamp')
-])
+@pytest.mark.parametrize(
+    ('reduction', 'func_translated'),
+    [
+        ('sum', 'sum'),
+        ('count', 'count'),
+        ('mean', 'avg'),
+        ('max', 'max'),
+        ('min', 'min'),
+        ('std', 'stddevSamp'),
+        ('var', 'varSamp'),
+    ],
+)
 def test_reduction_where(con, alltypes, translate, reduction, func_translated):
     template = '{0}If(`double_col`, `bigint_col` < 70)'
     expected = template.format(func_translated)
@@ -40,12 +43,7 @@ def test_std_var_pop(con, alltypes, translate):
     assert isinstance(con.execute(expr2), np.float)
 
 
-@pytest.mark.parametrize('reduction', [
-    'sum',
-    'count',
-    'max',
-    'min'
-])
+@pytest.mark.parametrize('reduction', ['sum', 'count', 'max', 'min'])
 def test_reduction_invalid_where(con, alltypes, reduction):
     condbad_literal = L('T')
 
@@ -54,92 +52,95 @@ def test_reduction_invalid_where(con, alltypes, reduction):
         fn(alltypes.double_col)
 
 
-@pytest.mark.parametrize(('func', 'pandas_func'), [
-    (
-        lambda t, cond: t.bool_col.count(),
-        lambda df, cond: df.bool_col.count(),
-    ),
-    (
-        lambda t, cond: t.bool_col.approx_nunique(),
-        lambda df, cond: df.bool_col.nunique(),
-    ),
-    (
-        lambda t, cond: t.double_col.sum(),
-        lambda df, cond: df.double_col.sum(),
-    ),
-    (
-        lambda t, cond: t.double_col.mean(),
-        lambda df, cond: df.double_col.mean(),
-    ),
-    (
-        lambda t, cond: t.int_col.approx_median(),
-        lambda df, cond: np.int32(df.int_col.median()),
-    ),
-    (
-        lambda t, cond: t.double_col.min(),
-        lambda df, cond: df.double_col.min(),
-    ),
-    (
-        lambda t, cond: t.double_col.max(),
-        lambda df, cond: df.double_col.max(),
-    ),
-    (
-        lambda t, cond: t.double_col.var(),
-        lambda df, cond: df.double_col.var(),
-    ),
-    (
-        lambda t, cond: t.double_col.std(),
-        lambda df, cond: df.double_col.std(),
-    ),
-    (
-        lambda t, cond: t.double_col.var(how='sample'),
-        lambda df, cond: df.double_col.var(ddof=1),
-    ),
-    (
-        lambda t, cond: t.double_col.std(how='pop'),
-        lambda df, cond: df.double_col.std(ddof=0),
-    ),
-    (
-        lambda t, cond: t.bool_col.count(where=cond),
-        lambda df, cond: df.bool_col[cond].count(),
-    ),
-    (
-        lambda t, cond: t.double_col.sum(where=cond),
-        lambda df, cond: df.double_col[cond].sum(),
-    ),
-    (
-        lambda t, cond: t.double_col.mean(where=cond),
-        lambda df, cond: df.double_col[cond].mean(),
-    ),
-    (
-        lambda t, cond: t.float_col.approx_median(where=cond),
-        lambda df, cond: df.float_col[cond].median(),
-    ),
-    (
-        lambda t, cond: t.double_col.min(where=cond),
-        lambda df, cond: df.double_col[cond].min(),
-    ),
-    (
-        lambda t, cond: t.double_col.max(where=cond),
-        lambda df, cond: df.double_col[cond].max(),
-    ),
-    (
-        lambda t, cond: t.double_col.var(where=cond),
-        lambda df, cond: df.double_col[cond].var(),
-    ),
-    (
-        lambda t, cond: t.double_col.std(where=cond),
-        lambda df, cond: df.double_col[cond].std(),
-    ),
-    (
-        lambda t, cond: t.double_col.var(where=cond, how='sample'),
-        lambda df, cond: df.double_col[cond].var(),
-    ),
-    (
-        lambda t, cond: t.double_col.std(where=cond, how='pop'),
-        lambda df, cond: df.double_col[cond].std(ddof=0),
-    )
-])
+@pytest.mark.parametrize(
+    ('func', 'pandas_func'),
+    [
+        (
+            lambda t, cond: t.bool_col.count(),
+            lambda df, cond: df.bool_col.count(),
+        ),
+        (
+            lambda t, cond: t.bool_col.approx_nunique(),
+            lambda df, cond: df.bool_col.nunique(),
+        ),
+        (
+            lambda t, cond: t.double_col.sum(),
+            lambda df, cond: df.double_col.sum(),
+        ),
+        (
+            lambda t, cond: t.double_col.mean(),
+            lambda df, cond: df.double_col.mean(),
+        ),
+        (
+            lambda t, cond: t.int_col.approx_median(),
+            lambda df, cond: np.int32(df.int_col.median()),
+        ),
+        (
+            lambda t, cond: t.double_col.min(),
+            lambda df, cond: df.double_col.min(),
+        ),
+        (
+            lambda t, cond: t.double_col.max(),
+            lambda df, cond: df.double_col.max(),
+        ),
+        (
+            lambda t, cond: t.double_col.var(),
+            lambda df, cond: df.double_col.var(),
+        ),
+        (
+            lambda t, cond: t.double_col.std(),
+            lambda df, cond: df.double_col.std(),
+        ),
+        (
+            lambda t, cond: t.double_col.var(how='sample'),
+            lambda df, cond: df.double_col.var(ddof=1),
+        ),
+        (
+            lambda t, cond: t.double_col.std(how='pop'),
+            lambda df, cond: df.double_col.std(ddof=0),
+        ),
+        (
+            lambda t, cond: t.bool_col.count(where=cond),
+            lambda df, cond: df.bool_col[cond].count(),
+        ),
+        (
+            lambda t, cond: t.double_col.sum(where=cond),
+            lambda df, cond: df.double_col[cond].sum(),
+        ),
+        (
+            lambda t, cond: t.double_col.mean(where=cond),
+            lambda df, cond: df.double_col[cond].mean(),
+        ),
+        (
+            lambda t, cond: t.float_col.approx_median(where=cond),
+            lambda df, cond: df.float_col[cond].median(),
+        ),
+        (
+            lambda t, cond: t.double_col.min(where=cond),
+            lambda df, cond: df.double_col[cond].min(),
+        ),
+        (
+            lambda t, cond: t.double_col.max(where=cond),
+            lambda df, cond: df.double_col[cond].max(),
+        ),
+        (
+            lambda t, cond: t.double_col.var(where=cond),
+            lambda df, cond: df.double_col[cond].var(),
+        ),
+        (
+            lambda t, cond: t.double_col.std(where=cond),
+            lambda df, cond: df.double_col[cond].std(),
+        ),
+        (
+            lambda t, cond: t.double_col.var(where=cond, how='sample'),
+            lambda df, cond: df.double_col[cond].var(),
+        ),
+        (
+            lambda t, cond: t.double_col.std(where=cond, how='pop'),
+            lambda df, cond: df.double_col[cond].std(ddof=0),
+        ),
+    ],
+)
 def test_aggregations(alltypes, df, func, pandas_func, translate):
     table = alltypes.limit(100)
     count = table.count().execute()
@@ -155,14 +156,17 @@ def test_aggregations(alltypes, df, func, pandas_func, translate):
     np.testing.assert_allclose(result, expected)
 
 
-@pytest.mark.parametrize('op', [
-    methodcaller('sum'),
-    methodcaller('mean'),
-    methodcaller('min'),
-    methodcaller('max'),
-    methodcaller('std'),
-    methodcaller('var')
-])
+@pytest.mark.parametrize(
+    'op',
+    [
+        methodcaller('sum'),
+        methodcaller('mean'),
+        methodcaller('min'),
+        methodcaller('max'),
+        methodcaller('std'),
+        methodcaller('var'),
+    ],
+)
 def test_boolean_reduction(alltypes, op, df):
     result = op(alltypes.bool_col).execute()
     assert result == op(df.bool_col)
@@ -189,7 +193,8 @@ def test_boolean_summary(alltypes):
             'sum',
             'mean',
             'approx_nunique',
-        ]
+        ],
     )
-    tm.assert_frame_equal(result, expected, check_column_type=False,
-                          check_dtype=False)
+    tm.assert_frame_equal(
+        result, expected, check_column_type=False, check_dtype=False
+    )

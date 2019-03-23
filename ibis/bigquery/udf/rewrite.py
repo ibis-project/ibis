@@ -23,7 +23,8 @@ def matches(value, pattern):
 
     fields = [
         (field, getattr(pattern, field))
-        for field in pattern._fields if hasattr(pattern, field)
+        for field in pattern._fields
+        if hasattr(pattern, field)
     ]
     for field_name, field_value in fields:
         if not matches(getattr(value, field_name), field_value):
@@ -38,6 +39,7 @@ class Rewriter:
     ----------
     funcs : List[Tuple[ast.AST, Callable[ast.expr, [ast.expr]]]]
     """
+
     def __init__(self):
         self.funcs = []
 
@@ -45,6 +47,7 @@ class Rewriter:
         def wrapper(f):
             self.funcs.append((pattern, f))
             return f
+
         return wrapper
 
     def __call__(self, node):

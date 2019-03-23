@@ -27,7 +27,7 @@ def test_ops_smoke():
     ops.Cast(expr, to='int64')
     ops.TypeOf(arg=2)
     ops.Negate(4)
-    ops.Negate(4.)
+    ops.Negate(4.0)
     ops.NullIfZero(0)
     ops.NullIfZero(1)
     ops.IsNull(ir.null())

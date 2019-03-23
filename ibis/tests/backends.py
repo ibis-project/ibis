@@ -110,19 +110,16 @@ class Backend:
 
 
 class UnorderedComparator:
-
     def assert_series_equal(self, left, right, *args, **kwargs):
         left = left.sort_values().reset_index(drop=True)
         right = right.sort_values().reset_index(drop=True)
-        return super().assert_series_equal(
-            left, right, *args, **kwargs)
+        return super().assert_series_equal(left, right, *args, **kwargs)
 
     def assert_frame_equal(self, left, right, *args, **kwargs):
         columns = list(set(left.columns) & set(right.columns))
         left = left.sort_values(by=columns)
         right = right.sort_values(by=columns)
-        return super().assert_frame_equal(
-             left, right, *args, **kwargs)
+        return super().assert_frame_equal(left, right, *args, **kwargs)
 
 
 class Pandas(Backend, RoundHalfToEven):
@@ -132,19 +129,21 @@ class Pandas(Backend, RoundHalfToEven):
     returned_timestamp_unit = 'ns'
 
     def connect(self, data_directory):
-        return ibis.pandas.connect({
-            'functional_alltypes': pd.read_csv(
-                str(data_directory / 'functional_alltypes.csv'),
-                index_col=None,
-                dtype={'bool_col': bool, 'string_col': str},
-                parse_dates=['timestamp_col'],
-                encoding='utf-8'
-            ),
-            'batting': pd.read_csv(str(data_directory / 'batting.csv')),
-            'awards_players': pd.read_csv(
-                str(data_directory / 'awards_players.csv')
-            ),
-        })
+        return ibis.pandas.connect(
+            {
+                'functional_alltypes': pd.read_csv(
+                    str(data_directory / 'functional_alltypes.csv'),
+                    index_col=None,
+                    dtype={'bool_col': bool, 'string_col': str},
+                    parse_dates=['timestamp_col'],
+                    encoding='utf-8',
+                ),
+                'batting': pd.read_csv(str(data_directory / 'batting.csv')),
+                'awards_players': pd.read_csv(
+                    str(data_directory / 'awards_players.csv')
+                ),
+            }
+        )
 
     def round(self, series, decimals=0):
         result = series.round(decimals=decimals)
@@ -165,11 +164,13 @@ class Csv(Pandas):
         return ibis.csv.connect(data_directory)
 
     def functional_alltypes(self):
-        schema = ibis.schema([
-            ('bool_col', 'boolean'),
-            ('string_col', 'string'),
-            ('timestamp_col', 'timestamp')
-        ])
+        schema = ibis.schema(
+            [
+                ('bool_col', 'boolean'),
+                ('string_col', 'string'),
+                ('timestamp_col', 'timestamp'),
+            ]
+        )
         return self.connection.table('functional_alltypes', schema=schema)
 
 
@@ -193,8 +194,9 @@ class SQLite(Backend, RoundAwayFromZero):
     returned_timestamp_unit = 's'
 
     def connect(self, data_directory):
-        path = os.environ.get('IBIS_TEST_SQLITE_DATABASE',
-                              data_directory / 'ibis_testing.db')
+        path = os.environ.get(
+            'IBIS_TEST_SQLITE_DATABASE', data_directory / 'ibis_testing.db'
+        )
         path = Path(path)
         if not path.exists():
             pytest.skip('SQLite testing db {} does not exist'.format(path))
@@ -216,16 +218,22 @@ class PostgreSQL(Backend, RoundHalfToEven):
         return 'postgres'
 
     def connect(self, data_directory):
-        user = os.environ.get('IBIS_TEST_POSTGRES_USER',
-                              os.environ.get('PGUSER', 'postgres'))
-        password = os.environ.get('IBIS_TEST_POSTGRES_PASSWORD',
-                                  os.environ.get('PGPASS', 'postgres'))
-        host = os.environ.get('IBIS_TEST_POSTGRES_HOST',
-                              os.environ.get('PGHOST', 'localhost'))
-        database = os.environ.get('IBIS_TEST_POSTGRES_DATABASE',
-                                  os.environ.get('PGDATABASE', 'ibis_testing'))
-        return ibis.postgres.connect(host=host, user=user, password=password,
-                                     database=database)
+        user = os.environ.get(
+            'IBIS_TEST_POSTGRES_USER', os.environ.get('PGUSER', 'postgres')
+        )
+        password = os.environ.get(
+            'IBIS_TEST_POSTGRES_PASSWORD', os.environ.get('PGPASS', 'postgres')
+        )
+        host = os.environ.get(
+            'IBIS_TEST_POSTGRES_HOST', os.environ.get('PGHOST', 'localhost')
+        )
+        database = os.environ.get(
+            'IBIS_TEST_POSTGRES_DATABASE',
+            os.environ.get('PGDATABASE', 'ibis_testing'),
+        )
+        return ibis.postgres.connect(
+            host=host, user=user, password=password, database=database
+        )
 
 
 class MapD(Backend):
@@ -236,15 +244,26 @@ class MapD(Backend):
     supports_floating_modulus = False
     returned_timestamp_unit = 's'
     # Exception: Non-empty LogicalValues not supported yet
-    additional_skipped_operations = frozenset({
-        ops.Abs, ops.Round, ops.Ceil, ops.Floor, ops.Exp, ops.Sign, ops.Sqrt,
-        ops.Ln, ops.Log10, ops.Modulus
-    })
+    additional_skipped_operations = frozenset(
+        {
+            ops.Abs,
+            ops.Round,
+            ops.Ceil,
+            ops.Floor,
+            ops.Exp,
+            ops.Sign,
+            ops.Sqrt,
+            ops.Ln,
+            ops.Log10,
+            ops.Modulus,
+        }
+    )
 
     def connect(self, data_directory):
         user = os.environ.get('IBIS_TEST_MAPD_USER', 'mapd')
         password = os.environ.get(
-            'IBIS_TEST_MAPD_PASSWORD', 'HyperInteractive')
+            'IBIS_TEST_MAPD_PASSWORD', 'HyperInteractive'
+        )
         host = os.environ.get('IBIS_TEST_MAPD_HOST', 'localhost')
         database = os.environ.get('IBIS_TEST_MAPD_DATABASE', 'ibis_testing')
         return ibis.mapd.connect(
@@ -266,8 +285,9 @@ class MySQL(Backend, RoundHalfToEven):
         password = os.environ.get('IBIS_TEST_MYSQL_PASSWORD', 'ibis')
         host = os.environ.get('IBIS_TEST_MYSQL_HOST', 'localhost')
         database = os.environ.get('IBIS_TEST_MYSQL_DATABASE', 'ibis_testing')
-        con = ibis.mysql.connect(host=host, user=user, password=password,
-                                 database=database)
+        con = ibis.mysql.connect(
+            host=host, user=user, password=password, database=database
+        )
 
         # mariadb supports window operations after version 10.2
         # but the sqlalchemy version string looks like:
@@ -301,10 +321,16 @@ class Clickhouse(Backend, RoundHalfToEven):
         port = int(os.environ.get('IBIS_TEST_CLICKHOUSE_PORT', 9000))
         user = os.environ.get('IBIS_TEST_CLICKHOUSE_USER', 'default')
         password = os.environ.get('IBIS_TEST_CLICKHOUSE_PASSWORD', '')
-        database = os.environ.get('IBIS_TEST_CLICKHOUSE_DATABASE',
-                                  'ibis_testing')
-        return ibis.clickhouse.connect(host=host, port=port, password=password,
-                                       database=database, user=user)
+        database = os.environ.get(
+            'IBIS_TEST_CLICKHOUSE_DATABASE', 'ibis_testing'
+        )
+        return ibis.clickhouse.connect(
+            host=host,
+            port=port,
+            password=password,
+            database=database,
+            user=user,
+        )
 
     def functional_alltypes(self):
         t = self.connection.database().functional_alltypes
@@ -333,11 +359,14 @@ class BigQuery(UnorderedComparator, Backend, RoundAwayFromZero):
     def connect(self, data_directory):
         project_id = os.environ.get('GOOGLE_BIGQUERY_PROJECT_ID')
         if project_id is None:
-            pytest.skip('Environment variable GOOGLE_BIGQUERY_PROJECT_ID '
-                        'not defined')
+            pytest.skip(
+                'Environment variable GOOGLE_BIGQUERY_PROJECT_ID '
+                'not defined'
+            )
         elif not project_id:
-            pytest.skip('Environment variable GOOGLE_BIGQUERY_PROJECT_ID '
-                        'is empty')
+            pytest.skip(
+                'Environment variable GOOGLE_BIGQUERY_PROJECT_ID is empty'
+            )
         return bigquery_connect(project_id, dataset_id='testing')
 
 
@@ -356,7 +385,7 @@ class Impala(UnorderedComparator, Backend, RoundAwayFromZero):
             port=env.webhdfs_port,
             auth_mechanism=env.auth_mechanism,
             verify=env.auth_mechanism not in ['GSSAPI', 'LDAP'],
-            user=env.webhdfs_user
+            user=env.webhdfs_user,
         )
         auth_mechanism = env.auth_mechanism
         if auth_mechanism == 'GSSAPI' or auth_mechanism == 'LDAP':
@@ -366,5 +395,5 @@ class Impala(UnorderedComparator, Backend, RoundAwayFromZero):
             port=env.impala_port,
             auth_mechanism=env.auth_mechanism,
             hdfs_client=hdfs_client,
-            database='ibis_testing'
+            database='ibis_testing',
         )

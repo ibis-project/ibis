@@ -36,8 +36,7 @@ def test_rewrite_join_projection_without_other_ops(con):
 
     # Construct the thing we expect to obtain
     ex_pred2 = table['bar_id'] == table3['bar_id']
-    ex_expr = (table.left_join(table2, [pred1])
-               .inner_join(table3, [ex_pred2]))
+    ex_expr = table.left_join(table2, [pred1]).inner_join(table3, [ex_pred2])
 
     rewritten_proj = L.substitute_parents(view)
     op = rewritten_proj.op()
@@ -66,8 +65,9 @@ def test_rewrite_past_projection(con):
 def test_multiple_join_deeper_reference():
     # Join predicates down the chain might reference one or more root
     # tables in the hierarchy.
-    table1 = ibis.table({'key1': 'string', 'key2': 'string',
-                        'value1': 'double'})
+    table1 = ibis.table(
+        {'key1': 'string', 'key2': 'string', 'value1': 'double'}
+    )
     table2 = ibis.table({'key3': 'string', 'value2': 'double'})
     table3 = ibis.table({'key4': 'string', 'value3': 'double'})
 
@@ -87,16 +87,18 @@ def test_filter_on_projected_field(con):
     customer = con.table('tpch_customer')
     orders = con.table('tpch_orders')
 
-    fields_of_interest = [customer,
-                          region.r_name.name('region'),
-                          orders.o_totalprice.name('amount'),
-                          orders.o_orderdate
-                          .cast('timestamp').name('odate')]
+    fields_of_interest = [
+        customer,
+        region.r_name.name('region'),
+        orders.o_totalprice.name('amount'),
+        orders.o_orderdate.cast('timestamp').name('odate'),
+    ]
 
     all_join = (
         region.join(nation, region.r_regionkey == nation.n_regionkey)
         .join(customer, customer.c_nationkey == nation.n_nationkey)
-        .join(orders, orders.o_custkey == customer.c_custkey))
+        .join(orders, orders.o_custkey == customer.c_custkey)
+    )
 
     tpch = all_join[fields_of_interest]
 
@@ -119,16 +121,11 @@ def test_join_predicate_from_derived_raises():
     # Join predicate references a derived table, but we can salvage and
     # rewrite it to get the join semantics out
     # see ibis #74
-    table = ibis.table([
-        ('c', 'int32'),
-        ('f', 'double'),
-        ('g', 'string')
-    ], 'foo_table')
+    table = ibis.table(
+        [('c', 'int32'), ('f', 'double'), ('g', 'string')], 'foo_table'
+    )
 
-    table2 = ibis.table([
-        ('key', 'string'),
-        ('value', 'double')
-    ], 'bar_table')
+    table2 = ibis.table([('key', 'string'), ('value', 'double')], 'bar_table')
 
     filter_pred = table['f'] > 0
     table3 = table[filter_pred]
@@ -138,21 +135,13 @@ def test_join_predicate_from_derived_raises():
 
 
 def test_bad_join_predicate_raises():
-    table = ibis.table([
-        ('c', 'int32'),
-        ('f', 'double'),
-        ('g', 'string')
-    ], 'foo_table')
+    table = ibis.table(
+        [('c', 'int32'), ('f', 'double'), ('g', 'string')], 'foo_table'
+    )
 
-    table2 = ibis.table([
-        ('key', 'string'),
-        ('value', 'double')
-    ], 'bar_table')
+    table2 = ibis.table([('key', 'string'), ('value', 'double')], 'bar_table')
 
-    table3 = ibis.table([
-        ('key', 'string'),
-        ('value', 'double')
-    ], 'baz_table')
+    table3 = ibis.table([('key', 'string'), ('value', 'double')], 'baz_table')
 
     with pytest.raises(com.ExpressionError):
         table.inner_join(table2, [table['g'] == table3['key']])
@@ -160,14 +149,18 @@ def test_bad_join_predicate_raises():
 
 def test_filter_self_join():
     # GH #667
-    purchases = ibis.table([('region', 'string'),
-                            ('kind', 'string'),
-                            ('user', 'int64'),
-                            ('amount', 'double')], 'purchases')
+    purchases = ibis.table(
+        [
+            ('region', 'string'),
+            ('kind', 'string'),
+            ('user', 'int64'),
+            ('amount', 'double'),
+        ],
+        'purchases',
+    )
 
     metric = purchases.amount.sum().name('total')
-    agged = (purchases.group_by(['region', 'kind'])
-             .aggregate(metric))
+    agged = purchases.group_by(['region', 'kind']).aggregate(metric)
 
     left = agged[agged.kind == 'foo']
     right = agged[agged.kind == 'bar']
@@ -214,6 +207,7 @@ def test_fuse_filter_sort_by():
 
 # Refactoring deadpool
 
+
 def test_no_rewrite(con):
     table = con.table('test1')
 
@@ -224,6 +218,7 @@ def test_no_rewrite(con):
     result = L.substitute_parents(expr)
     expected = table['c'] == table4['foo']
     assert_equal(result, expected)
+
 
 # def test_projection_with_join_pushdown_rewrite_refs():
 #     # Observed this expression IR issue in a TopK-rewrite context
@@ -299,7 +294,8 @@ def test_is_ancestor_analytic():
     filtered = with_filter_col[with_filter_col['filter'].isnull()]
     subquery = filtered[filtered.columns]
 
-    with_analytic = subquery[subquery.columns +
-                             [subquery.count().name('analytic')]]
+    with_analytic = subquery[
+        subquery.columns + [subquery.count().name('analytic')]
+    ]
 
     assert not subquery.op().equals(with_analytic.op())

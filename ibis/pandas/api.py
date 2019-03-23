@@ -8,12 +8,7 @@ from ibis.pandas.execution import execute, execute_node
 from ibis.pandas.udf import udf
 
 
-__all__ = (
-    'connect',
-    'dialect',
-    'execute',
-    'udf',
-)
+__all__ = ('connect', 'dialect', 'execute', 'udf')
 
 
 def connect(dictionary):
@@ -76,9 +71,11 @@ class PandasExprTranslator:
     # get the dispatched functions from the execute_node dispatcher and compute
     # and flatten the type tree of the first argument which is always the Node
     # subclass
-    _registry = frozenset(toolz.concat(
-        _flatten_subclass_tree(types[0]) for types in execute_node.funcs
-    ))
+    _registry = frozenset(
+        toolz.concat(
+            _flatten_subclass_tree(types[0]) for types in execute_node.funcs
+        )
+    )
     _rewrites = {}
 
 

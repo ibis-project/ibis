@@ -6,52 +6,67 @@ import ibis.expr.datatypes as dt
 
 
 def make_t(name='t'):
-    return ibis.table((('_timestamp', 'int32'),
-                       ('dim1', 'int32'),
-                       ('dim2', 'int32'),
-                       ('valid_seconds', 'int32'),
-                       ('meas1', 'int32'),
-                       ('meas2', 'int32'),
-                       ('year', 'int32'),
-                       ('month', 'int32'),
-                       ('day', 'int32'),
-                       ('hour', 'int32'),
-                       ('minute', 'int32')), name=name)
+    return ibis.table(
+        (
+            ('_timestamp', 'int32'),
+            ('dim1', 'int32'),
+            ('dim2', 'int32'),
+            ('valid_seconds', 'int32'),
+            ('meas1', 'int32'),
+            ('meas2', 'int32'),
+            ('year', 'int32'),
+            ('month', 'int32'),
+            ('day', 'int32'),
+            ('hour', 'int32'),
+            ('minute', 'int32'),
+        ),
+        name=name,
+    )
 
 
 def make_base(t):
     return (
-        (t.year > 2016) | (
-            (t.year == 2016) & (t.month > 6)) | (
-                (t.year == 2016) & (t.month == 6) &
-                (t.day > 6)) | (
-                    (t.year == 2016) & (t.month == 6) &
-                    (t.day == 6) & (t.hour > 6)) |
-        ((t.year == 2016) & (t.month == 6) &
-         (t.day == 6) & (t.hour == 6) &
-         (t.minute >= 5))) & ((t.year < 2016) | (
-             (t.year == 2016) & (t.month < 6)) | (
-                 (t.year == 2016) & (t.month == 6) &
-                 (t.day < 6)) | (
-                     (t.year == 2016) & (t.month == 6) &
-                     (t.day == 6) & (t.hour < 6)) | (
-                         (t.year == 2016) &
-                         (t.month == 6) & (t.day == 6) &
-                         (t.hour == 6) &
-                         (t.minute <= 5)))
+        (t.year > 2016)
+        | ((t.year == 2016) & (t.month > 6))
+        | ((t.year == 2016) & (t.month == 6) & (t.day > 6))
+        | ((t.year == 2016) & (t.month == 6) & (t.day == 6) & (t.hour > 6))
+        | (
+            (t.year == 2016)
+            & (t.month == 6)
+            & (t.day == 6)
+            & (t.hour == 6)
+            & (t.minute >= 5)
+        )
+    ) & (
+        (t.year < 2016)
+        | ((t.year == 2016) & (t.month < 6))
+        | ((t.year == 2016) & (t.month == 6) & (t.day < 6))
+        | ((t.year == 2016) & (t.month == 6) & (t.day == 6) & (t.hour < 6))
+        | (
+            (t.year == 2016)
+            & (t.month == 6)
+            & (t.day == 6)
+            & (t.hour == 6)
+            & (t.minute <= 5)
+        )
+    )
 
 
 def make_large_expr(t, base):
     src_table = t[base]
-    src_table = src_table.mutate(_timestamp=(
-        src_table['_timestamp'] - src_table['_timestamp'] % 3600
-    ).cast('int32').name('_timestamp'), valid_seconds=300)
+    src_table = src_table.mutate(
+        _timestamp=(src_table['_timestamp'] - src_table['_timestamp'] % 3600)
+        .cast('int32')
+        .name('_timestamp'),
+        valid_seconds=300,
+    )
 
     aggs = []
     for meas in ['meas1', 'meas2']:
         aggs.append(src_table[meas].sum().cast('float').name(meas))
     src_table = src_table.aggregate(
-        aggs, by=['_timestamp', 'dim1', 'dim2', 'valid_seconds'])
+        aggs, by=['_timestamp', 'dim1', 'dim2', 'valid_seconds']
+    )
 
     part_keys = ['year', 'month', 'day', 'hour', 'minute']
     ts_col = src_table['_timestamp'].cast('timestamp')
@@ -60,10 +75,20 @@ def make_large_expr(t, base):
         part_col = getattr(ts_col, part_key)()
         new_cols[part_key] = part_col
     src_table = src_table.mutate(**new_cols)
-    return src_table[[
-        '_timestamp', 'dim1', 'dim2', 'meas1', 'meas2',
-        'year', 'month', 'day', 'hour', 'minute'
-    ]]
+    return src_table[
+        [
+            '_timestamp',
+            'dim1',
+            'dim2',
+            'meas1',
+            'meas2',
+            'year',
+            'month',
+            'day',
+            'hour',
+            'minute',
+        ]
+    ]
 
 
 class Suite:
@@ -113,19 +138,22 @@ class Compilation(Suite):
 class PandasBackend:
     def setup(self):
         n = 30 * int(2e5)
-        data = pd.DataFrame({
-            'key': np.random.choice(16000, size=n),
-            'low_card_key': np.random.choice(30, size=n),
-            'value': np.random.rand(n),
-            'timestamps': pd.date_range(
-                start='now', periods=n, freq='s'
-            ).values,
-            'timestamp_strings': pd.date_range(
-                start='now', periods=n, freq='s'
-            ).values.astype(str),
-            'repeated_timestamps': pd.date_range(
-                start='2018-09-01', periods=30).repeat(int(n / 30))
-        })
+        data = pd.DataFrame(
+            {
+                'key': np.random.choice(16000, size=n),
+                'low_card_key': np.random.choice(30, size=n),
+                'value': np.random.rand(n),
+                'timestamps': pd.date_range(
+                    start='now', periods=n, freq='s'
+                ).values,
+                'timestamp_strings': pd.date_range(
+                    start='now', periods=n, freq='s'
+                ).values.astype(str),
+                'repeated_timestamps': pd.date_range(
+                    start='2018-09-01', periods=30
+                ).repeat(int(n / 30)),
+            }
+        )
 
         t = ibis.pandas.connect({'df': data}).table('df')
 
@@ -136,10 +164,10 @@ class PandasBackend:
         self.cast_to_dates = t.timestamps.cast(dt.date)
         self.cast_to_dates_from_strings = t.timestamp_strings.cast(dt.date)
 
-        self.multikey_group_by_with_mutate = t.mutate(
-            dates=t.timestamps.cast('date')
-        ).groupby(['low_card_key', 'dates']).aggregate(
-            avg_value=lambda t: t.value.mean()
+        self.multikey_group_by_with_mutate = (
+            t.mutate(dates=t.timestamps.cast('date'))
+            .groupby(['low_card_key', 'dates'])
+            .aggregate(avg_value=lambda t: t.value.mean())
         )
 
         self.simple_sort = t.sort_by([t.key])
@@ -148,20 +176,22 @@ class PandasBackend:
 
         self.multikey_sort = t.sort_by(['low_card_key', 'key'])
 
-        self.multikey_sort_projection = t[[
-            'low_card_key', 'key', 'value'
-        ]].sort_by(['low_card_key', 'key'])
+        self.multikey_sort_projection = t[
+            ['low_card_key', 'key', 'value']
+        ].sort_by(['low_card_key', 'key'])
 
         low_card_window = ibis.trailing_range_window(
             ibis.interval(days=2),
             order_by=t.repeated_timestamps,
-            group_by=t.low_card_key)
+            group_by=t.low_card_key,
+        )
         self.low_card_grouped_rolling = t.value.mean().over(low_card_window)
 
         high_card_window = ibis.trailing_range_window(
             ibis.interval(days=2),
             order_by=t.repeated_timestamps,
-            group_by=t.key)
+            group_by=t.key,
+        )
         self.high_card_grouped_rolling = t.value.mean().over(high_card_window)
 
     def time_high_cardinality_group_by(self):

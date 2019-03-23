@@ -17,11 +17,13 @@ pytestmark = pytest.mark.pandas
 
 @pytest.fixture
 def dataframe():
-    return pd.DataFrame({
-        'plain_int64': list(range(1, 4)),
-        'plain_strings': list('abc'),
-        'dup_strings': list('dad'),
-    })
+    return pd.DataFrame(
+        {
+            'plain_int64': list(range(1, 4)),
+            'plain_strings': list('abc'),
+            'dup_strings': list('dad'),
+        }
+    )
 
 
 @pytest.fixture
@@ -60,6 +62,7 @@ def test_pre_execute_basic():
     Test that pre_execute has intercepted execution and provided its own
     scope dict
     """
+
     @pre_execute.register(ops.Add)
     def pre_execute_test(op, *clients, scope=None, **kwargs):
         return {op: 4}
@@ -91,7 +94,8 @@ def test_missing_data_on_custom_client():
     class MyClient(PandasClient):
         def table(self, name):
             return ops.DatabaseTable(
-                name, ibis.schema([('a', 'int64')]), self).to_expr()
+                name, ibis.schema([('a', 'int64')]), self
+            ).to_expr()
 
     con = MyClient({})
     t = con.table('t')
@@ -100,7 +104,7 @@ def test_missing_data_on_custom_client():
         match=(
             'Could not find signature for execute_node: '
             '<DatabaseTable, MyClient>'
-        )
+        ),
     ):
         con.execute(t)
 

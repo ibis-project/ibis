@@ -39,6 +39,7 @@ def df(alltypes):
 @pytest.fixture
 def translate():
     from ibis.clickhouse.compiler import ClickhouseDialect
+
     dialect = ClickhouseDialect()
     context = dialect.make_context()
     return lambda expr: dialect.translator(expr, context).get_result()

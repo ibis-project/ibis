@@ -36,9 +36,9 @@ class NameFinder:
             fields = node._fields
         else:
             fields = [field for field in node._fields if field != 'func']
-        return toolz.concat(map(
-            self.find, (getattr(node, field) for field in fields)
-        ))
+        return toolz.concat(
+            map(self.find, (getattr(node, field) for field in fields))
+        )
 
 
 def find_names(node):
@@ -64,7 +64,9 @@ def find_names(node):
     >>> names[1].id
     'b'
     """
-    return list(toolz.unique(
-        filter(None, NameFinder().find(node)),
-        key=lambda node: (node.id, type(node.ctx))
-    ))
+    return list(
+        toolz.unique(
+            filter(None, NameFinder().find(node)),
+            key=lambda node: (node.id, type(node.ctx)),
+        )
+    )

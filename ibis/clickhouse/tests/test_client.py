@@ -86,7 +86,7 @@ def test_verbose_log_queries(con, db):
 
 def test_sql_query_limits(alltypes):
     table = alltypes
-    with config.option_context('sql.default_limit', 100000):
+    with config.option_context('sql.default_limit', 100_000):
         # table has 25 rows
         assert len(table.execute()) == 7300
         # comply with limit arg for TableExpr
@@ -145,8 +145,7 @@ def test_database_default_current_database(con):
 def test_embedded_identifier_quoting(alltypes):
     t = alltypes
 
-    expr = (t[[(t.double_col * 2).name('double(fun)')]]
-            ['double(fun)'].sum())
+    expr = t[[(t.double_col * 2).name('double(fun)')]]['double(fun)'].sum()
     expr.execute()
 
 
@@ -158,26 +157,26 @@ def test_table_info(alltypes):
 
 
 def test_execute_exprs_no_table_ref(con):
-    cases = [
-        (L(1) + L(2), 3)
-    ]
+    cases = [(L(1) + L(2), 3)]
 
     for expr, expected in cases:
         result = con.execute(expr)
         assert result == expected
 
     # ExprList
-    exlist = ibis.api.expr_list([L(1).name('a'),
-                                 ibis.now().name('b'),
-                                 L(2).log().name('c')])
+    exlist = ibis.api.expr_list(
+        [L(1).name('a'), ibis.now().name('b'), L(2).log().name('c')]
+    )
     con.execute(exlist)
 
 
 @pytest.mark.skip(reason="FIXME: it is raising KeyError: 'Unnamed: 0'")
 def test_insert(con, alltypes, df):
     drop = 'DROP TABLE IF EXISTS temporary_alltypes'
-    create = ('CREATE TABLE IF NOT EXISTS '
-              'temporary_alltypes AS functional_alltypes')
+    create = (
+        'CREATE TABLE IF NOT EXISTS '
+        'temporary_alltypes AS functional_alltypes'
+    )
 
     con.raw_sql(drop)
     con.raw_sql(create)
@@ -193,8 +192,10 @@ def test_insert(con, alltypes, df):
 
 def test_insert_with_less_columns(con, alltypes, df):
     drop = 'DROP TABLE IF EXISTS temporary_alltypes'
-    create = ('CREATE TABLE IF NOT EXISTS '
-              'temporary_alltypes AS functional_alltypes')
+    create = (
+        'CREATE TABLE IF NOT EXISTS '
+        'temporary_alltypes AS functional_alltypes'
+    )
 
     con.raw_sql(drop)
     con.raw_sql(create)
@@ -209,8 +210,10 @@ def test_insert_with_less_columns(con, alltypes, df):
 
 def test_insert_with_more_columns(con, alltypes, df):
     drop = 'DROP TABLE IF EXISTS temporary_alltypes'
-    create = ('CREATE TABLE IF NOT EXISTS '
-              'temporary_alltypes AS functional_alltypes')
+    create = (
+        'CREATE TABLE IF NOT EXISTS '
+        'temporary_alltypes AS functional_alltypes'
+    )
 
     con.raw_sql(drop)
     con.raw_sql(create)

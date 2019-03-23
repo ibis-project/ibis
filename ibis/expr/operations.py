@@ -32,7 +32,7 @@ def distinct_roots(*expressions):
 
 
 class Node(Annotable):
-    __slots__ = '_expr_cached', '_hash',
+    __slots__ = '_expr_cached', '_hash'
 
     def __repr__(self):
         return self._repr()
@@ -40,6 +40,7 @@ class Node(Annotable):
     def _repr(self, memo=None):
         if memo is None:
             from ibis.expr.format import FormatMemo
+
             memo = FormatMemo()
 
         opname = type(self).__name__
@@ -79,7 +80,8 @@ class Node(Annotable):
     def __hash__(self):
         if not hasattr(self, '_hash'):
             self._hash = hash(
-                (type(self),) + tuple(
+                (type(self),)
+                + tuple(
                     element.op() if isinstance(element, ir.Expr) else element
                     for element in self.flat_args()
                 )
@@ -99,8 +101,9 @@ class Node(Annotable):
             return cache[key]
         except KeyError:
             cache[key] = result = self is other or (
-                type(self) == type(other) and
-                all_equal(self.args, other.args, cache=cache))
+                type(self) == type(other)
+                and all_equal(self.args, other.args, cache=cache)
+            )
             return result
 
     def compatible_with(self, other):
@@ -130,7 +133,6 @@ class Node(Annotable):
 
 
 class ValueOp(Node):
-
     def root_tables(self):
         exprs = [arg for arg in self.args if isinstance(arg, ir.Expr)]
         return distinct_roots(*exprs)
@@ -158,10 +160,13 @@ def all_equal(left, right, cache=None):
     if util.is_iterable(left):
         # check that left and right are equal length iterables and that all
         # of their elements are equal
-        return util.is_iterable(right) and len(left) == len(right) and all(
-            itertools.starmap(
-                functools.partial(all_equal, cache=cache),
-                zip(left, right)
+        return (
+            util.is_iterable(right)
+            and len(left) == len(right)
+            and all(
+                itertools.starmap(
+                    functools.partial(all_equal, cache=cache), zip(left, right)
+                )
             )
         )
 
@@ -223,8 +228,7 @@ class TableColumn(ValueOp):
         if self.name not in self.table.schema():
             raise com.IbisTypeError(
                 "'{}' is not a field in {}".format(
-                    self.name,
-                    self.table.columns
+                    self.name, self.table.columns
                 )
             )
 
@@ -265,7 +269,6 @@ def find_all_base_tables(expr, memo=None):
 
 
 class PhysicalTable(TableNode, HasSchema):
-
     def blocks(self):
         return True
 
@@ -301,6 +304,7 @@ class TableArrayView(ValueOp):
     (Temporary?) Helper operation class for SQL translation (fully formed table
     subqueries to be viewed as arrays)
     """
+
     table = Arg(ir.TableExpr)
     name = Arg(str)
 
@@ -357,6 +361,7 @@ class IsNull(UnaryOp):
     -------
     isnull : boolean with dimension of caller
     """
+
     output_type = rlz.shape_like('arg', dt.boolean)
 
 
@@ -367,6 +372,7 @@ class NotNull(UnaryOp):
     -------
     notnull : boolean with dimension of caller
     """
+
     output_type = rlz.shape_like('arg', dt.boolean)
 
 
@@ -380,6 +386,7 @@ class IfNull(ValueOp):
     case().when(expr.notnull(), expr)
           .else_(null_substitute_expr)
     """
+
     arg = Arg(rlz.any)
     ifnull_expr = Arg(rlz.any)
     output_type = rlz.shape_like('args')
@@ -387,6 +394,7 @@ class IfNull(ValueOp):
 
 class NullIf(ValueOp):
     """Set values to NULL if they equal the null_if_expr"""
+
     arg = Arg(rlz.any)
     null_if_expr = Arg(rlz.any)
     output_type = rlz.typeof('arg')
@@ -404,6 +412,7 @@ class NullIfZero(ValueOp):
     -------
     maybe_nulled : type of caller
     """
+
     arg = Arg(rlz.numeric)
     output_type = rlz.typeof('arg')
 
@@ -451,6 +460,7 @@ class Least(CoalesceLike):
 
 class Abs(UnaryOp):
     """Absolute value"""
+
     output_type = rlz.typeof('arg')
 
 
@@ -465,6 +475,7 @@ class Ceil(UnaryOp):
       Decimal values: yield decimal
       Other numeric values: yield integer (int32)
     """
+
     arg = Arg(rlz.numeric)
 
     def output_type(self):
@@ -484,6 +495,7 @@ class Floor(UnaryOp):
       Decimal values: yield decimal
       Other numeric values: yield integer (int32)
     """
+
     arg = Arg(rlz.numeric)
 
     def output_type(self):
@@ -577,23 +589,28 @@ class Log10(Logarithm):
 
 class Degrees(ExpandingTypeMathUnaryOp):
     """Converts radians to degrees"""
+
     arg = Arg(rlz.numeric)
 
 
 class Radians(MathUnaryOp):
     """Converts degrees to radians"""
+
     arg = Arg(rlz.numeric)
 
 
 # TRIGONOMETRIC OPERATIONS
 
+
 class TrigonometricUnary(MathUnaryOp):
     """Trigonometric base unary"""
+
     arg = Arg(rlz.numeric)
 
 
 class TrigonometricBinary(BinaryOp):
     """Trigonometric base binary"""
+
     left = Arg(rlz.numeric)
     right = Arg(rlz.numeric)
     output_type = rlz.shape_like('args', dt.float64)
@@ -785,16 +802,18 @@ class StringConcat(ValueOp):
 class ParseURL(ValueOp):
     arg = Arg(rlz.string)
     extract = Arg(
-        rlz.isin({
-            'PROTOCOL',
-            'HOST',
-            'PATH',
-            'REF',
-            'AUTHORITY',
-            'FILE',
-            'USERINFO',
-            'QUERY'
-        })
+        rlz.isin(
+            {
+                'PROTOCOL',
+                'HOST',
+                'PATH',
+                'REF',
+                'AUTHORITY',
+                'FILE',
+                'USERINFO',
+                'QUERY',
+            }
+        )
     )
     key = Arg(rlz.string, default=None)
     output_type = rlz.shape_like('arg', dt.string)
@@ -867,9 +886,10 @@ class Mean(Reduction):
 class Quantile(Reduction):
     arg = Arg(rlz.any)
     quantile = Arg(rlz.strict_numeric)
-    interpolation = Arg(rlz.isin({'linear', 'lower', 'higher',
-                                  'midpoint', 'nearest'}),
-                        default='linear')
+    interpolation = Arg(
+        rlz.isin({'linear', 'lower', 'higher', 'midpoint', 'nearest'}),
+        default='linear',
+    )
 
     def output_type(self):
         return dt.float64.scalar_type()
@@ -878,9 +898,10 @@ class Quantile(Reduction):
 class MultiQuantile(Quantile):
     arg = Arg(rlz.any)
     quantile = Arg(rlz.value(dt.Array(dt.float64)))
-    interpolation = Arg(rlz.isin({'linear', 'lower', 'higher',
-                                  'midpoint', 'nearest'}),
-                        default='linear')
+    interpolation = Arg(
+        rlz.isin({'linear', 'lower', 'higher', 'midpoint', 'nearest'}),
+        default='linear',
+    )
 
     def output_type(self):
         return dt.Array(dt.float64).scalar_type()
@@ -909,6 +930,7 @@ class Variance(VarianceBase):
 
 class Correlation(Reduction):
     """Coefficient of correlation of a set of number pairs."""
+
     left = Arg(rlz.column(rlz.numeric))
     right = Arg(rlz.column(rlz.numeric))
     how = Arg(rlz.isin({'sample', 'pop'}), default=None)
@@ -920,6 +942,7 @@ class Correlation(Reduction):
 
 class Covariance(Reduction):
     """Covariance of a set of number pairs."""
+
     left = Arg(rlz.column(rlz.numeric))
     right = Arg(rlz.column(rlz.numeric))
     how = Arg(rlz.isin({'sample', 'pop'}), default=None)
@@ -946,6 +969,7 @@ class HLLCardinality(Reduction):
 
     Impala offers the NDV built-in function for this.
     """
+
     arg = Arg(rlz.column(rlz.any))
     where = Arg(rlz.boolean, default=None)
 
@@ -969,6 +993,7 @@ class CMSMedian(Reduction):
     Compute the approximate median of a set of comparable values using the
     Count-Min-Sketch algorithm. Exposed in Impala using APPX_MEDIAN.
     """
+
     arg = Arg(rlz.column(rlz.any))
     where = Arg(rlz.boolean, default=None)
     output_type = rlz.scalar_like('arg')
@@ -992,6 +1017,7 @@ class WindowOp(ValueOp):
     def __init__(self, expr, window):
         from ibis.expr.window import propagate_down_window
         from ibis.expr.analysis import is_analytic
+
         if not is_analytic(expr):
             raise com.IbisInputError(
                 'Expression does not contain a valid window operation'
@@ -1013,17 +1039,18 @@ class WindowOp(ValueOp):
         return self.expr.op().inputs[0], self.window
 
     def root_tables(self):
-        result = list(toolz.unique(
-            toolz.concatv(
-                self.expr._root_tables(),
-                distinct_roots(
-                    *toolz.concatv(
-                        self.window._order_by,
-                        self.window._group_by
-                    )
+        result = list(
+            toolz.unique(
+                toolz.concatv(
+                    self.expr._root_tables(),
+                    distinct_roots(
+                        *toolz.concatv(
+                            self.window._order_by, self.window._group_by
+                        )
+                    ),
                 )
             )
-        ))
+        )
         return result
 
 
@@ -1043,7 +1070,6 @@ class Lead(ShiftBase):
 
 
 class RankBase(AnalyticOp):
-
     def output_type(self):
         return dt.int64.column_type()
 
@@ -1067,6 +1093,7 @@ class MinRank(RankBase):
     -------
     ranks : Int64Column, starting from 0
     """
+
     # Equivalent to SQL RANK()
     arg = Arg(rlz.column(rlz.any))
 
@@ -1090,6 +1117,7 @@ class DenseRank(RankBase):
     -------
     ranks : Int64Column, starting from 0
     """
+
     # Equivalent to SQL DENSE_RANK()
     arg = Arg(rlz.column(rlz.any))
 
@@ -1110,6 +1138,7 @@ class RowNumber(RankBase):
     -------
     row_number : Int64Column, starting from 0
     """
+
     # Equivalent to SQL ROW_NUMBER()
 
 
@@ -1119,6 +1148,7 @@ class CumulativeOp(AnalyticOp):
 
 class CumulativeSum(CumulativeOp):
     """Cumulative sum. Requires an order window."""
+
     arg = Arg(rlz.column(rlz.numeric))
 
     def output_type(self):
@@ -1131,6 +1161,7 @@ class CumulativeSum(CumulativeOp):
 
 class CumulativeMean(CumulativeOp):
     """Cumulative mean. Requires an order window."""
+
     arg = Arg(rlz.column(rlz.numeric))
 
     def output_type(self):
@@ -1143,12 +1174,14 @@ class CumulativeMean(CumulativeOp):
 
 class CumulativeMax(CumulativeOp):
     """Cumulative max. Requires an order window."""
+
     arg = Arg(rlz.column(rlz.any))
     output_type = rlz.array_like('arg')
 
 
 class CumulativeMin(CumulativeOp):
     """Cumulative min. Requires an order window."""
+
     arg = Arg(rlz.column(rlz.any))
     output_type = rlz.array_like('arg')
 
@@ -1196,6 +1229,7 @@ class Distinct(TableNode, HasSchema):
     SELECT DISTINCT foo, bar
     FROM table
     """
+
     table = Arg(ir.TableExpr)
 
     def _validate(self):
@@ -1220,6 +1254,7 @@ class DistinctColumn(ValueOp):
     for evaluation if the result should be array-like versus table-like. Also
     for calling count()
     """
+
     arg = Arg(rlz.noop)
     output_type = rlz.typeof('arg')
 
@@ -1238,6 +1273,7 @@ class CountDistinct(Reduction):
 
 # ---------------------------------------------------------------------
 # Boolean reductions and semi/anti join support
+
 
 class Any(ValueOp):
 
@@ -1270,13 +1306,11 @@ class All(ValueOp):
 
 
 class NotAny(Any):
-
     def negate(self):
         return Any(self.arg)
 
 
 class NotAll(All):
-
     def negate(self):
         return All(self.arg)
 
@@ -1292,6 +1326,7 @@ class CumulativeAll(CumulativeOp):
 
 
 # ---------------------------------------------------------------------
+
 
 class TypedCaseBuilder:
     __slots__ = ()
@@ -1310,7 +1345,8 @@ class TypedCaseBuilder:
         """
         kwargs = {
             slot: getattr(self, slot)
-            for slot in self.__slots__ if slot != 'default'
+            for slot in self.__slots__
+            if slot != 'default'
         }
 
         result_expr = ir.as_value_expr(result_expr)
@@ -1323,8 +1359,9 @@ class TypedCaseBuilder:
         if default is None:
             default = ir.null().cast(self.type())
 
-        args = [getattr(self, slot) for slot in self.__slots__
-                if slot != 'default']
+        args = [
+            getattr(self, slot) for slot in self.__slots__ if slot != 'default'
+        ]
         args.append(default)
         op = self.__class__.case_op(*args)
         return op.to_expr()
@@ -1345,7 +1382,7 @@ class SimpleCase(ValueOp):
                 [self.base],
                 self.cases,
                 self.results,
-                [] if self.default is None else [self.default]
+                [] if self.default is None else [self.default],
             )
         )
 
@@ -1355,7 +1392,7 @@ class SimpleCase(ValueOp):
 
 
 class SimpleCaseBuilder(TypedCaseBuilder):
-    __slots__ = 'base', 'cases', 'results', 'default',
+    __slots__ = 'base', 'cases', 'results', 'default'
 
     case_op = SimpleCase
 
@@ -1385,8 +1422,9 @@ class SimpleCaseBuilder(TypedCaseBuilder):
         result_expr = ir.as_value_expr(result_expr)
 
         if not rlz.comparable(self.base, case_expr):
-            raise TypeError('Base expression and passed case are not '
-                            'comparable')
+            raise TypeError(
+                'Base expression and passed case are not ' 'comparable'
+            )
 
         cases = list(self.cases)
         cases.append(case_expr)
@@ -1412,7 +1450,7 @@ class SearchedCase(ValueOp):
             *itertools.chain(
                 cases.values,
                 results.values,
-                [] if default is None else [default]
+                [] if default is None else [default],
             )
         )
 
@@ -1423,7 +1461,7 @@ class SearchedCase(ValueOp):
 
 
 class SearchedCaseBuilder(TypedCaseBuilder):
-    __slots__ = 'cases', 'results', 'default',
+    __slots__ = 'cases', 'results', 'default'
 
     case_op = SearchedCase
 
@@ -1473,6 +1511,7 @@ class Where(ValueOp):
              .when(True, true_expr)
              .else_(false_or_null_expr)
     """
+
     bool_expr = Arg(rlz.boolean)
     true_expr = Arg(rlz.any)
     false_null_expr = Arg(rlz.any)
@@ -1483,12 +1522,16 @@ class Where(ValueOp):
 
 def _validate_join_tables(left, right):
     if not isinstance(left, ir.TableExpr):
-        raise TypeError('Can only join table expressions, got {} for '
-                        'left table'.format(type(left).__name__))
+        raise TypeError(
+            'Can only join table expressions, got {} for '
+            'left table'.format(type(left).__name__)
+        )
 
     if not isinstance(right, ir.TableExpr):
-        raise TypeError('Can only join table expressions, got {} for '
-                        'right table'.format(type(right).__name__))
+        raise TypeError(
+            'Can only join table expressions, got {} for '
+            'right table'.format(type(right).__name__)
+        )
 
 
 def _make_distinct_join_predicates(left, right, predicates):
@@ -1516,8 +1559,7 @@ def _clean_join_predicates(left, right, predicates):
     for pred in predicates:
         if isinstance(pred, tuple):
             if len(pred) != 2:
-                raise com.ExpressionError('Join key tuple must be '
-                                          'length 2')
+                raise com.ExpressionError('Join key tuple must be ' 'length 2')
             lk, rk = pred
             lk = left._ensure_expr(lk)
             rk = right._ensure_expr(rk)
@@ -1544,9 +1586,11 @@ def _validate_join_predicates(left, right, predicates):
     # considering the roots of each input table
     for predicate in predicates:
         if not fully_originate_from(predicate, [left, right]):
-            raise com.RelationError('The expression {!r} does not fully '
-                                    'originate from dependencies of the table '
-                                    'expression.'.format(predicate))
+            raise com.RelationError(
+                'The expression {!r} does not fully '
+                'originate from dependencies of the table '
+                'expression.'.format(predicate)
+            )
 
 
 class Join(TableNode):
@@ -1556,8 +1600,9 @@ class Join(TableNode):
 
     def __init__(self, left, right, predicates):
         _validate_join_tables(left, right)
-        left, right, predicates = _make_distinct_join_predicates(left, right,
-                                                                 predicates)
+        left, right, predicates = _make_distinct_join_predicates(
+            left, right, predicates
+        )
         super().__init__(left, right, predicates)
 
     def _get_schema(self):
@@ -1576,8 +1621,9 @@ class Join(TableNode):
 
         overlap = set(sleft.names) & set(sright.names)
         if overlap:
-            raise com.RelationError('Joined tables have overlapping names: %s'
-                                    % str(list(overlap)))
+            raise com.RelationError(
+                'Joined tables have overlapping names: %s' % str(list(overlap))
+            )
 
         return sleft.append(sright)
 
@@ -1585,8 +1631,7 @@ class Join(TableNode):
         return False
 
     def root_tables(self):
-        if util.all_of([self.left.op(), self.right.op()],
-                       (Join, Selection)):
+        if util.all_of([self.left.op(), self.right.op()], (Join, Selection)):
             # Unraveling is not possible
             return [self.left.op(), self.right.op()]
         else:
@@ -1618,13 +1663,11 @@ class AnyLeftJoin(Join):
 
 
 class LeftSemiJoin(Join):
-
     def _get_schema(self):
         return self.left.schema()
 
 
 class LeftAntiJoin(Join):
-
     def _get_schema(self):
         return self.left.schema()
 
@@ -1689,8 +1732,9 @@ class Union(TableNode, HasSchema):
 
     def _validate(self):
         if not self.left.schema().equals(self.right.schema()):
-            raise com.RelationError('Table schemas must be equal '
-                                    'to form union')
+            raise com.RelationError(
+                'Table schemas must be equal ' 'to form union'
+            )
 
     @property
     def schema(self):
@@ -1721,6 +1765,7 @@ class Limit(TableNode):
 
 # --------------------------------------------------------------------
 # Sorting
+
 
 def to_sort_key(table, key):
     if isinstance(key, DeferredSortKey):
@@ -1754,9 +1799,11 @@ class SortKey(Node):
 
     def __repr__(self):
         # Temporary
-        rows = ['Sort key:',
-                '  ascending: {0!s}'.format(self.ascending),
-                util.indent(_safe_repr(self.expr), 2)]
+        rows = [
+            'Sort key:',
+            '  ascending: {0!s}'.format(self.ascending),
+            util.indent(_safe_repr(self.expr), 2),
+        ]
         return '\n'.join(rows)
 
     def output_type(self):
@@ -1768,16 +1815,17 @@ class SortKey(Node):
     def equals(self, other, cache=None):
         # TODO: might generalize this equals based on fields
         # requires a proxy class with equals for non expr values
-        return (isinstance(other, SortKey) and
-                self.expr.equals(other.expr, cache=cache) and
-                self.ascending == other.ascending)
+        return (
+            isinstance(other, SortKey)
+            and self.expr.equals(other.expr, cache=cache)
+            and self.ascending == other.ascending
+        )
 
     def resolve_name(self):
         return self.expr.get_name()
 
 
 class DeferredSortKey:
-
     def __init__(self, what, ascending=True):
         self.what = what
         self.ascending = ascending
@@ -1810,8 +1858,9 @@ class Selection(TableNode, HasSchema):
     predicates = Arg(rlz.noop, default=None)
     sort_keys = Arg(rlz.noop, default=None)
 
-    def __init__(self, table, selections=None, predicates=None,
-                 sort_keys=None):
+    def __init__(
+        self, table, selections=None, predicates=None, sort_keys=None
+    ):
         import ibis.expr.analysis as L
 
         # Argument cleaning
@@ -1834,16 +1883,20 @@ class Selection(TableNode, HasSchema):
             )
         ]
 
-        predicates = list(toolz.concat(map(
-            L.flatten_predicate,
-            predicates if predicates is not None else []
-        )))
+        predicates = list(
+            toolz.concat(
+                map(
+                    L.flatten_predicate,
+                    predicates if predicates is not None else [],
+                )
+            )
+        )
 
         super().__init__(
             table=table,
             selections=projections,
             predicates=predicates,
-            sort_keys=sort_keys
+            sort_keys=sort_keys,
         )
 
     def _validate(self):
@@ -1909,12 +1962,10 @@ class Selection(TableNode, HasSchema):
             return False
 
         return self.table.equals(other.table) and (
-            self.empty_or_equal(
-                self.predicates, other.predicates) and
-            self.empty_or_equal(
-                self.selections, other.selections) and
-            self.empty_or_equal(
-                self.sort_keys, other.sort_keys))
+            self.empty_or_equal(self.predicates, other.predicates)
+            and self.empty_or_equal(self.selections, other.selections)
+            and self.empty_or_equal(self.sort_keys, other.sort_keys)
+        )
 
     # Operator combination / fusion logic
 
@@ -1930,9 +1981,12 @@ class Selection(TableNode, HasSchema):
         if not self.blocks():
             resolved_keys = _maybe_convert_sort_keys(self.table, sort_exprs)
             if resolved_keys and self.table._is_valid(resolved_keys):
-                return Selection(self.table, self.selections,
-                                 predicates=self.predicates,
-                                 sort_keys=self.sort_keys + resolved_keys)
+                return Selection(
+                    self.table,
+                    self.selections,
+                    predicates=self.predicates,
+                    sort_keys=self.sort_keys + resolved_keys,
+                )
 
         return Selection(expr, [], sort_keys=sort_exprs)
 
@@ -1955,21 +2009,26 @@ class AggregateSelection:
             return self._attempt_pushdown()
 
     def _plain_subquery(self):
-        return Aggregation(self.parent, self.metrics,
-                           by=self.by, having=self.having)
+        return Aggregation(
+            self.parent, self.metrics, by=self.by, having=self.having
+        )
 
     def _attempt_pushdown(self):
         metrics_valid, lowered_metrics = self._pushdown_exprs(self.metrics)
         by_valid, lowered_by = self._pushdown_exprs(self.by)
         having_valid, lowered_having = self._pushdown_exprs(
-            self.having or None)
+            self.having or None
+        )
 
         if metrics_valid and by_valid and having_valid:
-            return Aggregation(self.op.table, lowered_metrics,
-                               by=lowered_by,
-                               having=lowered_having,
-                               predicates=self.op.predicates,
-                               sort_keys=self.op.sort_keys)
+            return Aggregation(
+                self.op.table,
+                lowered_metrics,
+                by=lowered_by,
+                having=lowered_having,
+                predicates=self.op.predicates,
+                sort_keys=self.op.sort_keys,
+            )
         else:
             return self._plain_subquery()
 
@@ -2011,6 +2070,7 @@ class Aggregation(TableNode, HasSchema):
     TODO: not putting this in the aggregate operation yet
     where : pre-aggregation predicate
     """
+
     table = Arg(ir.TableExpr)
     metrics = Arg(rlz.noop)
     by = Arg(rlz.noop)
@@ -2018,8 +2078,15 @@ class Aggregation(TableNode, HasSchema):
     predicates = Arg(rlz.noop, default=None)
     sort_keys = Arg(rlz.noop, default=None)
 
-    def __init__(self, table, metrics, by=None, having=None,
-                 predicates=None, sort_keys=None):
+    def __init__(
+        self,
+        table,
+        metrics,
+        by=None,
+        having=None,
+        predicates=None,
+        sort_keys=None,
+    ):
         # For tables, like joins, that are not materialized
         metrics = self._rewrite_exprs(table, metrics)
 
@@ -2031,8 +2098,9 @@ class Aggregation(TableNode, HasSchema):
 
         # order by only makes sense with group by in an aggregation
         sort_keys = [] if not by or sort_keys is None else sort_keys
-        sort_keys = [to_sort_key(table, k)
-                     for k in util.promote_list(sort_keys)]
+        sort_keys = [
+            to_sort_key(table, k) for k in util.promote_list(sort_keys)
+        ]
 
         by = self._rewrite_exprs(table, by)
         having = self._rewrite_exprs(table, having)
@@ -2045,7 +2113,7 @@ class Aggregation(TableNode, HasSchema):
             by=by,
             having=having,
             predicates=predicates,
-            sort_keys=sort_keys
+            sort_keys=sort_keys,
         )
 
     def _validate(self):
@@ -2055,14 +2123,16 @@ class Aggregation(TableNode, HasSchema):
         # All aggregates are valid
         for expr in self.metrics:
             if not isinstance(expr, ir.ScalarExpr) or not is_reduction(expr):
-                raise TypeError('Passed a non-aggregate expression: %s' %
-                                _safe_repr(expr))
+                raise TypeError(
+                    'Passed a non-aggregate expression: %s' % _safe_repr(expr)
+                )
 
         for expr in self.having:
             if not isinstance(expr, ir.BooleanScalar):
-                raise com.ExpressionError('Having clause must be boolean '
-                                          'expression, was: {0!s}'
-                                          .format(_safe_repr(expr)))
+                raise com.ExpressionError(
+                    'Having clause must be boolean '
+                    'expression, was: {0!s}'.format(_safe_repr(expr))
+                )
 
         # All non-scalar refs originate from the input table
         all_exprs = self.metrics + self.by + self.having + self.sort_keys
@@ -2077,6 +2147,7 @@ class Aggregation(TableNode, HasSchema):
 
     def _rewrite_exprs(self, table, what):
         from ibis.expr.analysis import substitute_parents
+
         what = util.promote_list(what)
 
         all_exprs = []
@@ -2087,15 +2158,17 @@ class Aggregation(TableNode, HasSchema):
                 bound_expr = ir.bind_expr(table, expr)
                 all_exprs.append(bound_expr)
 
-        return [substitute_parents(x, past_projection=False)
-                for x in all_exprs]
+        return [
+            substitute_parents(x, past_projection=False) for x in all_exprs
+        ]
 
     def blocks(self):
         return True
 
     def substitute_table(self, table_expr):
-        return Aggregation(table_expr, self.metrics, by=self.by,
-                           having=self.having)
+        return Aggregation(
+            table_expr, self.metrics, by=self.by, having=self.having
+        )
 
     @property
     def schema(self):
@@ -2114,10 +2187,14 @@ class Aggregation(TableNode, HasSchema):
 
         resolved_keys = _maybe_convert_sort_keys(self.table, sort_exprs)
         if resolved_keys and self.table._is_valid(resolved_keys):
-            return Aggregation(self.table, self.metrics,
-                               by=self.by, having=self.having,
-                               predicates=self.predicates,
-                               sort_keys=self.sort_keys + resolved_keys)
+            return Aggregation(
+                self.table,
+                self.metrics,
+                by=self.by,
+                having=self.having,
+                predicates=self.predicates,
+                sort_keys=self.sort_keys + resolved_keys,
+            )
 
         return Selection(expr, [], sort_keys=sort_exprs)
 
@@ -2136,7 +2213,6 @@ class Multiply(NumericBinaryOp):
 
 
 class Power(NumericBinaryOp):
-
     def output_type(self):
         if util.all_of(self.args, ir.IntegerValue):
             return rlz.shape_like(self.args, dt.float64)
@@ -2212,9 +2288,10 @@ class Comparison(BinaryOp, BooleanValueOp):
 
     def output_type(self):
         if not rlz.comparable(self.left, self.right):
-            raise TypeError('Arguments with datatype {} and {} are '
-                            'not comparable'.format(self.left.type(),
-                                                    self.right.type()))
+            raise TypeError(
+                'Arguments with datatype {} and {} are '
+                'not comparable'.format(self.left.type(), self.right.type())
+            )
         return rlz.shape_like(self.args, dt.boolean)
 
 
@@ -2268,10 +2345,16 @@ class BetweenTime(Between):
 
 class Contains(ValueOp, BooleanValueOp):
     value = Arg(rlz.any)
-    options = Arg(rlz.one_of([rlz.list_of(rlz.any),
-                              rlz.set_,
-                              rlz.column(rlz.any),
-                              rlz.array_of(rlz.any)]))
+    options = Arg(
+        rlz.one_of(
+            [
+                rlz.list_of(rlz.any),
+                rlz.set_,
+                rlz.column(rlz.any),
+                rlz.array_of(rlz.any),
+            ]
+        )
+    )
 
     def __init__(self, value, options):
         # it can be a single expression, like a column
@@ -2306,6 +2389,7 @@ class ReplaceValues(ValueOp):
     SQL, given DAYOFWEEK(timestamp_col), replace 1 through 5 to "WEEKDAY" and 6
     and 7 to "WEEKEND"
     """
+
     pass
 
 
@@ -2345,13 +2429,11 @@ class Constant(ValueOp):
 
 
 class TimestampNow(Constant):
-
     def output_type(self):
         return dt.timestamp.scalar_type()
 
 
 class E(Constant):
-
     def output_type(self):
         return functools.partial(ir.FloatingScalar, dtype=dt.float64)
 
@@ -2360,6 +2442,7 @@ class Pi(Constant):
     """
     The constant pi
     """
+
     def output_type(self):
         return functools.partial(ir.FloatingScalar, dtype=dt.float64)
 
@@ -2381,26 +2464,22 @@ _date_units = dict(
     SYYYY='Y',
     YYY='Y',
     YY='Y',
-
     Q='Q',
     q='Q',
     quarter='Q',
     QUARTER='Q',
-
     M='M',
     month='M',
     MONTH='M',
-
     w='W',
     W='W',
     week='W',
     WEEK='W',
-
     d='D',
     D='D',
     J='D',
     day='D',
-    DAY='D'
+    DAY='D',
 )
 
 _time_units = dict(
@@ -2409,24 +2488,19 @@ _time_units = dict(
     HH24='h',
     hour='h',
     HOUR='h',
-
     m='m',
     MI='m',
     minute='m',
     MINUTE='m',
-
     s='s',
     second='s',
     SECOND='s',
-
     ms='ms',
     millisecond='ms',
     MILLISECOND='ms',
-
     us='us',
     microsecond='ms',
     MICROSECOND='ms',
-
     ns='ns',
     nanosecond='ns',
     NANOSECOND='ns',
@@ -2596,15 +2670,21 @@ class TimeDiff(BinaryOp):
 
 class TimestampAdd(BinaryOp):
     left = Arg(rlz.timestamp)
-    right = Arg(rlz.interval(units={'Y', 'Q', 'M', 'W', 'D',
-                                    'h', 'm', 's', 'ms', 'us', 'ns'}))
+    right = Arg(
+        rlz.interval(
+            units={'Y', 'Q', 'M', 'W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns'}
+        )
+    )
     output_type = rlz.shape_like('left')
 
 
 class TimestampSub(BinaryOp):
     left = Arg(rlz.timestamp)
-    right = Arg(rlz.interval(units={'Y', 'Q', 'M', 'W', 'D',
-                                    'h', 'm', 's', 'ms', 'us', 'ns'}))
+    right = Arg(
+        rlz.interval(
+            units={'Y', 'Q', 'M', 'W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns'}
+        )
+    )
     output_type = rlz.shape_like('left')
 
 
@@ -2619,13 +2699,15 @@ class IntervalBinaryOp(BinaryOp):
         args = [
             arg.cast(arg.type().value_type)
             if isinstance(arg.type(), dt.Interval)
-            else arg for arg in self.args
+            else arg
+            for arg in self.args
         ]
         expr = rlz.numeric_like(args, self.__class__.op)(self)
         left_dtype = self.left.type()
         dtype_type = type(left_dtype)
         additional_args = {
-            attr: getattr(left_dtype, attr) for attr in dtype_type.__slots__
+            attr: getattr(left_dtype, attr)
+            for attr in dtype_type.__slots__
             if attr not in {'unit', 'value_type'}
         }
         dtype = dtype_type(left_dtype.unit, expr.type(), **additional_args)
@@ -2658,9 +2740,9 @@ class IntervalFloorDivide(IntervalBinaryOp):
 
 class IntervalFromInteger(ValueOp):
     arg = Arg(rlz.integer)
-    unit = Arg(rlz.isin({
-        'Y', 'Q', 'M', 'W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns'
-    }))
+    unit = Arg(
+        rlz.isin({'Y', 'Q', 'M', 'W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns'})
+    )
 
     @property
     def resolution(self):
@@ -2795,15 +2877,14 @@ class Literal(ValueOp):
 
     def __repr__(self):
         return '{}({})'.format(
-            type(self).__name__,
-            ', '.join(map(repr, self.args))
+            type(self).__name__, ', '.join(map(repr, self.args))
         )
 
     def equals(self, other, cache=None):
         return (
-            isinstance(other, Literal) and
-            isinstance(other.value, type(self.value)) and
-            self.value == other.value
+            isinstance(other, Literal)
+            and isinstance(other.value, type(self.value))
+            and self.value == other.value
         )
 
     def output_type(self):
@@ -2840,9 +2921,9 @@ class ScalarParameter(ValueOp):
 
     def equals(self, other, cache=None):
         return (
-            isinstance(other, ScalarParameter) and
-            self.counter == other.counter and
-            self.dtype.equals(other.dtype, cache=cache)
+            isinstance(other, ScalarParameter)
+            and self.counter == other.counter
+            and self.dtype.equals(other.dtype, cache=cache)
         )
 
     def root_tables(self):
@@ -2888,39 +2969,47 @@ class ValueList(ValueOp):
 # ----------------------------------------------------------------------
 # GeoSpatial operations
 
+
 class GeoSpatialBinOp(BinaryOp):
     """Geo Spatial base binary"""
+
     left = Arg(rlz.geospatial)
     right = Arg(rlz.geospatial)
 
 
 class GeoSpatialUnOp(UnaryOp):
     """Geo Spatial base unary"""
+
     arg = Arg(rlz.geospatial)
 
 
 class GeoDistance(GeoSpatialBinOp):
     """Returns minimum distance between two geo spatial data"""
+
     output_type = rlz.shape_like('args', dt.float64)
 
 
 class GeoContains(GeoSpatialBinOp):
     """Check if the first geo spatial data contains the second one"""
+
     output_type = rlz.shape_like('args', dt.boolean)
 
 
 class GeoArea(GeoSpatialUnOp):
     """Area of the geo spatial data"""
+
     output_type = rlz.shape_like('args', dt.float64)
 
 
 class GeoPerimeter(GeoSpatialUnOp):
     """Perimeter of the geo spatial data"""
+
     output_type = rlz.shape_like('args', dt.float64)
 
 
 class GeoLength(GeoSpatialUnOp):
     """Length of geo spatial data"""
+
     output_type = rlz.shape_like('args', dt.float64)
 
 
@@ -2930,6 +3019,7 @@ class GeoMaxDistance(GeoSpatialBinOp):
     return the distance between the two vertices most far from each other
     in that geometry
     """
+
     output_type = rlz.shape_like('args', dt.float64)
 
 
@@ -2937,6 +3027,7 @@ class GeoX(GeoSpatialUnOp):
     """Return the X coordinate of the point, or NULL if not available.
     Input must be a point
     """
+
     output_type = rlz.shape_like('args', dt.float64)
 
 
@@ -2944,26 +3035,31 @@ class GeoY(GeoSpatialUnOp):
     """Return the Y coordinate of the point, or NULL if not available.
     Input must be a point
     """
+
     output_type = rlz.shape_like('args', dt.float64)
 
 
 class GeoXMin(GeoSpatialUnOp):
     """Returns Y minima of a bounding box 2d or 3d or a geometry"""
+
     output_type = rlz.shape_like('args', dt.float64)
 
 
 class GeoXMax(GeoSpatialUnOp):
     """Returns X maxima of a bounding box 2d or 3d or a geometry"""
+
     output_type = rlz.shape_like('args', dt.float64)
 
 
 class GeoYMin(GeoSpatialUnOp):
     """Returns Y minima of a bounding box 2d or 3d or a geometry"""
+
     output_type = rlz.shape_like('args', dt.float64)
 
 
 class GeoYMax(GeoSpatialUnOp):
     """Returns Y maxima of a bounding box 2d or 3d or a geometry"""
+
     output_type = rlz.shape_like('args', dt.float64)
 
 
@@ -2971,6 +3067,7 @@ class GeoStartPoint(GeoSpatialUnOp):
     """Returns the first point of a LINESTRING geometry as a POINT or
     NULL if the input parameter is not a LINESTRING
     """
+
     output_type = rlz.shape_like('arg', dt.point)
 
 
@@ -2978,6 +3075,7 @@ class GeoEndPoint(GeoSpatialUnOp):
     """Returns the last point of a LINESTRING geometry as a POINT or
     NULL if the input parameter is not a LINESTRING
     """
+
     output_type = rlz.shape_like('arg', dt.point)
 
 
@@ -2988,12 +3086,14 @@ class GeoPointN(GeoSpatialUnOp):
     so that -1 is the last point. Returns NULL if there is no linestring in
     the geometry
     """
+
     n = Arg(rlz.integer)
     output_type = rlz.shape_like('args', dt.point)
 
 
 class GeoNPoints(GeoSpatialUnOp):
     """Return the number of points in a geometry. Works for all geometries"""
+
     output_type = rlz.shape_like('args', dt.int64)
 
 
@@ -3001,9 +3101,11 @@ class GeoNRings(GeoSpatialUnOp):
     """If the geometry is a polygon or multi-polygon returns the number of
     rings. It counts the outer rings as well
     """
+
     output_type = rlz.shape_like('args', dt.int64)
 
 
 class GeoSRID(GeoSpatialUnOp):
     """Returns the spatial reference identifier for the ST_Geometry"""
+
     output_type = rlz.shape_like('args', dt.int64)

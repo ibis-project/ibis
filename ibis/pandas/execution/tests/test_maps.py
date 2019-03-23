@@ -22,9 +22,7 @@ def test_map_value_or_default_for_key_expr(t):
     expr = t.map_of_complex_values.get('a')
     result = expr.execute()
     expected = pd.Series(
-        [None, [1, 2, 3], None],
-        dtype='object',
-        name='map_of_complex_values',
+        [None, [1, 2, 3], None], dtype='object', name='map_of_complex_values'
     )
     tm.assert_series_equal(result, expected)
 
@@ -37,9 +35,7 @@ def test_map_keys_expr(t):
     expr = t.map_of_strings_integers.keys()
     result = expr.execute().map(safe_sorter)
     expected = pd.Series(
-        [['a', 'b'], None, []],
-        dtype='object',
-        name='map_of_strings_integers'
+        [['a', 'b'], None, []], dtype='object', name='map_of_strings_integers'
     )
     tm.assert_series_equal(result, expected)
 
@@ -50,7 +46,7 @@ def test_map_values_expr(t):
     expected = pd.Series(
         [None, [[], [1, 2, 3]], []],
         dtype='object',
-        name='map_of_complex_values'
+        name='map_of_complex_values',
     )
     tm.assert_series_equal(result, expected)
 
@@ -62,7 +58,7 @@ def test_map_concat_expr(t):
         [
             None,
             {'a': [], 'b': [4, 5, 6], 'c': []},
-            {'b': [4, 5, 6], 'c': [], 'a': []}
+            {'b': [4, 5, 6], 'c': [], 'a': []},
         ],
         dtype='object',
         name='map_of_complex_values',

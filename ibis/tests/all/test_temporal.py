@@ -17,9 +17,7 @@ from ibis.tests.backends import MapD
 from ibis.pandas.execution.temporal import day_name
 
 
-@pytest.mark.parametrize('attr', [
-    'year', 'month', 'day',
-])
+@pytest.mark.parametrize('attr', ['year', 'month', 'day'])
 @tu.skipif_unsupported
 def test_date_extract(backend, alltypes, df, attr):
     expr = getattr(alltypes.timestamp_col.date(), attr)()
@@ -31,10 +29,9 @@ def test_date_extract(backend, alltypes, df, attr):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.parametrize('attr', [
-    'year', 'month', 'day',
-    'hour', 'minute', 'second'
-])
+@pytest.mark.parametrize(
+    'attr', ['year', 'month', 'day', 'hour', 'minute', 'second']
+)
 @tu.skipif_unsupported
 def test_timestamp_extract(backend, alltypes, df, attr):
     expr = getattr(alltypes.timestamp_col, attr)()
@@ -46,11 +43,21 @@ def test_timestamp_extract(backend, alltypes, df, attr):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.parametrize('unit', [
-    'Y', 'M', 'D',
-    param('W', marks=pytest.mark.xfail),
-    'h', 'm', 's', 'ms', 'us', 'ns'
-])
+@pytest.mark.parametrize(
+    'unit',
+    [
+        'Y',
+        'M',
+        'D',
+        param('W', marks=pytest.mark.xfail),
+        'h',
+        'm',
+        's',
+        'ms',
+        'us',
+        'ns',
+    ],
+)
 @tu.skipif_unsupported
 @tu.skipif_backend(MapD)
 def test_timestamp_truncate(backend, alltypes, df, unit):
@@ -65,10 +72,9 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.parametrize('unit', [
-    'Y', 'M', 'D',
-    param('W', marks=pytest.mark.xfail)
-])
+@pytest.mark.parametrize(
+    'unit', ['Y', 'M', 'D', param('W', marks=pytest.mark.xfail)]
+)
 @tu.skipif_unsupported
 def test_date_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.date().truncate(unit)
@@ -82,11 +88,21 @@ def test_date_truncate(backend, alltypes, df, unit):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.parametrize('unit', [
-    'Y', param('Q', marks=pytest.mark.xfail), 'M', 'W', 'D',
-    'h', 'm', 's', param('ms', marks=pytest.mark.xfail),
-    param('us', marks=pytest.mark.xfail)
-])
+@pytest.mark.parametrize(
+    'unit',
+    [
+        'Y',
+        param('Q', marks=pytest.mark.xfail),
+        'M',
+        'W',
+        'D',
+        'h',
+        'm',
+        's',
+        param('ms', marks=pytest.mark.xfail),
+        param('us', marks=pytest.mark.xfail),
+    ],
+)
 @tu.skipif_unsupported
 def test_integer_to_interval_timestamp(backend, con, alltypes, df, unit):
     interval = alltypes.int_col.to_interval(unit=unit)
@@ -117,9 +133,9 @@ def test_integer_to_interval_date(backend, con, alltypes, df, unit):
     interval = alltypes.int_col.to_interval(unit=unit)
     array = alltypes.date_string_col.split('/')
     month, day, year = array[0], array[1], array[2]
-    date_col = expr = ibis.literal('-').join([
-        '20' + year, month, day
-    ]).cast('date')
+    date_col = expr = (
+        ibis.literal('-').join(['20' + year, month, day]).cast('date')
+    )
     expr = date_col + interval
     result = con.execute(expr)
 
@@ -151,31 +167,48 @@ date_value = pd.Timestamp('2017-12-31')
 timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
 
 
-@pytest.mark.parametrize(('expr_fn', 'expected_fn'), [
-    param(lambda t, be: t.timestamp_col + ibis.interval(days=4),
-          lambda t, be: t.timestamp_col + pd.Timedelta(days=4),
-          id='timestamp-add-interval'),
-    param(lambda t, be: t.timestamp_col - ibis.interval(days=17),
-          lambda t, be: t.timestamp_col - pd.Timedelta(days=17),
-          id='timestamp-subtract-interval'),
-    param(lambda t, be: t.timestamp_col.date() + ibis.interval(days=4),
-          lambda t, be: t.timestamp_col.dt.floor('d') + pd.Timedelta(days=4),
-          id='date-add-interval'),
-    param(lambda t, be: t.timestamp_col.date() - ibis.interval(days=14),
-          lambda t, be: t.timestamp_col.dt.floor('d') - pd.Timedelta(days=14),
-          id='date-subtract-interval'),
-    param(lambda t, be: t.timestamp_col - ibis.timestamp(timestamp_value),
-          lambda t, be: pd.Series(
-            t.timestamp_col.sub(timestamp_value).values.astype(
-                'timedelta64[{}]'.format(be.returned_timestamp_unit))),
-          id='timestamp-subtract-timestamp'),
-    param(lambda t, be: t.timestamp_col.date() - ibis.date(date_value),
-          lambda t, be: t.timestamp_col.dt.floor('d') - date_value,
-          id='date-subtract-date'),
-])
+@pytest.mark.parametrize(
+    ('expr_fn', 'expected_fn'),
+    [
+        param(
+            lambda t, be: t.timestamp_col + ibis.interval(days=4),
+            lambda t, be: t.timestamp_col + pd.Timedelta(days=4),
+            id='timestamp-add-interval',
+        ),
+        param(
+            lambda t, be: t.timestamp_col - ibis.interval(days=17),
+            lambda t, be: t.timestamp_col - pd.Timedelta(days=17),
+            id='timestamp-subtract-interval',
+        ),
+        param(
+            lambda t, be: t.timestamp_col.date() + ibis.interval(days=4),
+            lambda t, be: t.timestamp_col.dt.floor('d') + pd.Timedelta(days=4),
+            id='date-add-interval',
+        ),
+        param(
+            lambda t, be: t.timestamp_col.date() - ibis.interval(days=14),
+            lambda t, be: t.timestamp_col.dt.floor('d')
+            - pd.Timedelta(days=14),
+            id='date-subtract-interval',
+        ),
+        param(
+            lambda t, be: t.timestamp_col - ibis.timestamp(timestamp_value),
+            lambda t, be: pd.Series(
+                t.timestamp_col.sub(timestamp_value).values.astype(
+                    'timedelta64[{}]'.format(be.returned_timestamp_unit)
+                )
+            ),
+            id='timestamp-subtract-timestamp',
+        ),
+        param(
+            lambda t, be: t.timestamp_col.date() - ibis.date(date_value),
+            lambda t, be: t.timestamp_col.dt.floor('d') - date_value,
+            id='date-subtract-date',
+        ),
+    ],
+)
 @tu.skipif_unsupported
-def test_temporal_binop(backend, con, alltypes, df,
-                        expr_fn, expected_fn):
+def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
     expr = expr_fn(alltypes, backend)
     expected = expected_fn(df, backend)
 
@@ -186,10 +219,7 @@ def test_temporal_binop(backend, con, alltypes, df,
 
 
 @pytest.mark.parametrize(
-    ('ibis_pattern', 'pandas_pattern'),
-    [
-        ('%Y%m%d', '%Y%m%d')
-    ]
+    ('ibis_pattern', 'pandas_pattern'), [('%Y%m%d', '%Y%m%d')]
 )
 @tu.skipif_unsupported
 def test_strftime(backend, con, alltypes, df, ibis_pattern, pandas_pattern):
@@ -201,26 +231,25 @@ def test_strftime(backend, con, alltypes, df, ibis_pattern, pandas_pattern):
     backend.assert_series_equal(result, expected)
 
 
-unit_factors = {
-    's': int(1e9),
-    'ms': int(1e6),
-    'us': int(1e3),
-}
+unit_factors = {'s': int(1e9), 'ms': int(1e6), 'us': int(1e3)}
 
 
 @pytest.mark.parametrize(
     'unit',
     [
-        'D', 's', 'ms',
+        'D',
+        's',
+        'ms',
         param('us', marks=pytest.mark.xfail),
-        param('ns', marks=pytest.mark.xfail)
-    ]
+        param('ns', marks=pytest.mark.xfail),
+    ],
 )
 @tu.skipif_unsupported
 def test_to_timestamp(backend, con, alltypes, df, unit):
     if unit not in backend.supported_to_timestamp_units:
         pytest.skip(
-            'Unit {!r} not supported by {} to_timestamp'.format(unit, backend))
+            'Unit {!r} not supported by {} to_timestamp'.format(unit, backend)
+        )
 
     backend_unit = backend.returned_timestamp_unit
     factor = unit_factors[unit]
@@ -247,7 +276,7 @@ def test_to_timestamp(backend, con, alltypes, df, unit):
         ('2017-01-05', 3, 'Thursday'),
         ('2017-01-06', 4, 'Friday'),
         ('2017-01-07', 5, 'Saturday'),
-    ]
+    ],
 )
 @tu.skipif_unsupported
 def test_day_of_week_scalar(backend, con, date, expected_index, expected_day):
@@ -267,7 +296,8 @@ def test_day_of_week_column(backend, con, alltypes, df):
     expected_index = df.timestamp_col.dt.dayofweek.astype('int16')
 
     backend.assert_series_equal(
-        result_index, expected_index, check_names=False)
+        result_index, expected_index, check_names=False
+    )
 
     result_day = expr.full_name().execute()
     expected_day = day_name(df.timestamp_col.dt)
@@ -285,8 +315,8 @@ def test_day_of_week_column(backend, con, alltypes, df):
         (
             lambda t: t.timestamp_col.day_of_week.full_name().length().sum(),
             lambda s: day_name(s.dt).str.len().sum(),
-        )
-    ]
+        ),
+    ],
 )
 @tu.skipif_unsupported
 def test_day_of_week_column_group_by(
@@ -299,9 +329,12 @@ def test_day_of_week_column_group_by(
     assert schema['day_of_week_result'] == dt.int64
 
     result = expr.execute().sort_values('string_col')
-    expected = df.groupby('string_col').timestamp_col.apply(
-        day_of_week_pandas
-    ).reset_index().rename(columns=dict(timestamp_col='day_of_week_result'))
+    expected = (
+        df.groupby('string_col')
+        .timestamp_col.apply(day_of_week_pandas)
+        .reset_index()
+        .rename(columns=dict(timestamp_col='day_of_week_result'))
+    )
 
     # FIXME(#1536): Pandas backend should use query.schema().apply_to
     backend.assert_frame_equal(
@@ -310,7 +343,7 @@ def test_day_of_week_column_group_by(
         check_dtype=False,
         # python 2's handling of strings is annoying here wrt sqlalchemy's
         # column name string subclass
-        check_column_type=sys.version_info.major != 2
+        check_column_type=sys.version_info.major != 2,
     )
 
 

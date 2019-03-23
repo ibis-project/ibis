@@ -22,8 +22,12 @@ import ibis.expr.datatypes as dt
 import ibis.pandas.aggcontext as agg_ctx
 
 from ibis.pandas.core import (
-    execute, integer_types, simple_types, date_types, timestamp_types,
-    timedelta_types
+    execute,
+    integer_types,
+    simple_types,
+    date_types,
+    timestamp_types,
+    timedelta_types,
 )
 from ibis.pandas.dispatch import execute_node, pre_execute
 from ibis.pandas.execution import util
@@ -81,7 +85,8 @@ def execute_window_op(
     # execution of that by hand
     operand_op = operand.op()
     pre_executed_scope = pre_execute(
-        operand_op, *clients, scope=scope, aggcontext=aggcontext, **kwargs)
+        operand_op, *clients, scope=scope, aggcontext=aggcontext, **kwargs
+    )
     scope = toolz.merge(scope, pre_executed_scope)
 
     root, = op.root_tables()
@@ -91,8 +96,10 @@ def execute_window_op(
     following = window.following
     order_by = window._order_by
 
-    if order_by and following != 0 and not isinstance(
-        operand_op, ops.ShiftBase
+    if (
+        order_by
+        and following != 0
+        and not isinstance(operand_op, ops.ShiftBase)
     ):
         raise com.OperationNotDefinedError(
             'Window functions affected by following with order_by are not '
@@ -101,11 +108,10 @@ def execute_window_op(
 
     group_by = window._group_by
     grouping_keys = [
-        key_op.name if isinstance(key_op, ops.TableColumn) else execute(
-            key,
-            aggcontext=aggcontext,
-            **kwargs
-        ) for key, key_op in zip(
+        key_op.name
+        if isinstance(key_op, ops.TableColumn)
+        else execute(key, aggcontext=aggcontext, **kwargs)
+        for key, key_op in zip(
             group_by, map(operator.methodcaller('op'), group_by)
         )
     ]
@@ -116,9 +122,13 @@ def execute_window_op(
 
     if group_by:
         if order_by:
-            sorted_df, grouping_keys, ordering_keys = (
-                util.compute_sorted_frame(
-                    data, order_by, group_by=group_by, **kwargs))
+            (
+                sorted_df,
+                grouping_keys,
+                ordering_keys,
+            ) = util.compute_sorted_frame(
+                data, order_by, group_by=group_by, **kwargs
+            )
             source = sorted_df.groupby(grouping_keys, sort=True)
             post_process = _post_process_group_by_order_by
         else:
@@ -126,8 +136,9 @@ def execute_window_op(
             post_process = _post_process_group_by
     else:
         if order_by:
-            source, grouping_keys, ordering_keys = (
-                util.compute_sorted_frame(data, order_by, **kwargs))
+            source, grouping_keys, ordering_keys = util.compute_sorted_frame(
+                data, order_by, **kwargs
+            )
             post_process = _post_process_order_by
         else:
             source = data
@@ -184,8 +195,9 @@ def execute_window_op(
 
     result = execute(operand, scope=new_scope, aggcontext=aggcontext, **kwargs)
     series = post_process(result, data, ordering_keys, grouping_keys)
-    assert len(data) == len(series), \
-        'input data source and computed column do not have the same length'
+    assert len(data) == len(
+        series
+    ), 'input data source and computed column do not have the same length'
     return series
 
 
@@ -217,9 +229,9 @@ def execute_series_cumulative_op(op, data, **kwargs):
         raise ValueError(
             'More than one operation name found in {} class'.format(typename)
         )
-    return agg_ctx.Cumulative(
-        dtype=op.to_expr().type().to_pandas(),
-    ).agg(data, operation_name.lower())
+    return agg_ctx.Cumulative(dtype=op.to_expr().type().to_pandas()).agg(
+        data, operation_name.lower()
+    )
 
 
 def post_lead_lag(result, default):
@@ -269,7 +281,8 @@ def execute_series_lead_lag_timedelta(
 
     # perform the time shift
     adjusted_parent_df = parent_df.assign(
-        **{k: func(parent_df[k], offset) for k in order_by})
+        **{k: func(parent_df[k], offset) for k in order_by}
+    )
 
     # index the parent *after* adjustment
     adjusted_indexed_parent = adjusted_parent_df.set_index(group_by + order_by)

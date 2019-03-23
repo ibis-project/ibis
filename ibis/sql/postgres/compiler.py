@@ -13,8 +13,13 @@ from sqlalchemy.sql.functions import GenericFunction
 import ibis
 
 import functools
-from ibis.sql.alchemy import (unary, fixed_arity, infix_op,
-                              _variance_reduction, _get_sqla_table)
+from ibis.sql.alchemy import (
+    unary,
+    fixed_arity,
+    infix_op,
+    _variance_reduction,
+    _get_sqla_table,
+)
 import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -62,6 +67,7 @@ def _extract(fmt):
         arg, = expr.op().args
         sa_arg = t.translate(arg)
         return sa.cast(sa.extract(fmt, sa_arg), sa.SMALLINT)
+
     return translator
 
 
@@ -89,7 +95,7 @@ _truncate_precisions = {
     'W': 'week',
     'M': 'month',
     'Q': 'quarter',
-    'Y': 'year'
+    'Y': 'year',
 }
 
 
@@ -163,7 +169,7 @@ def _typeof(t, expr):
             ((typ == 'unknown') & (arg.type() != dt.null), 'text'),
             ((typ == 'unknown') & (arg.type() == dt.null), 'null'),
         ],
-        else_=typ
+        else_=typ,
     )
 
 
@@ -212,11 +218,13 @@ _strftime_to_postgresql_rules = {
 }
 
 try:
-    _strftime_to_postgresql_rules.update({
-        '%c': locale.nl_langinfo(locale.D_T_FMT),  # locale date and time
-        '%x': locale.nl_langinfo(locale.D_FMT),  # locale date
-        '%X': locale.nl_langinfo(locale.T_FMT)  # locale time
-    })
+    _strftime_to_postgresql_rules.update(
+        {
+            '%c': locale.nl_langinfo(locale.D_T_FMT),  # locale date and time
+            '%x': locale.nl_langinfo(locale.D_FMT),  # locale date
+            '%X': locale.nl_langinfo(locale.T_FMT),  # locale time
+        }
+    )
 except AttributeError:
     warnings.warn(
         'locale specific date formats (%%c, %%x, %%X) are not yet implemented '
@@ -229,26 +237,22 @@ def tokenize_noop(scanner, token):
 
 
 # translate strftime spec into mostly equivalent PostgreSQL spec
-_scanner = re.Scanner([
-    (py, tokenize_noop)
-    for py in _strftime_to_postgresql_rules.keys()
-] + [
-    # "%e" is in the C standard and Python actually generates this if your spec
-    # contains "%c" but we don't officially support it as a specifier so we
-    # need to special case it in the scanner
-    (r'%e', tokenize_noop),
-
-    # double quotes need to be escaped
-    (r'"', lambda scanner, token: re.escape(token)),
-
-    # spaces should be greedily consumed and kept
-    (r'\s+', tokenize_noop),
-
-    (r'[%s]' % re.escape(string.punctuation), tokenize_noop),
-
-    # everything else except double quotes and spaces
-    (r'[^%s\s]+' % re.escape(string.punctuation), tokenize_noop),
-])
+_scanner = re.Scanner(
+    [(py, tokenize_noop) for py in _strftime_to_postgresql_rules.keys()]
+    + [
+        # "%e" is in the C standard and Python actually generates this if your
+        # spec contains "%c" but we don't officially support it as a specifier
+        # so we need to special case it in the scanner
+        (r'%e', tokenize_noop),
+        # double quotes need to be escaped
+        (r'"', lambda scanner, token: re.escape(token)),
+        # spaces should be greedily consumed and kept
+        (r'\s+', tokenize_noop),
+        (r'[%s]' % re.escape(string.punctuation), tokenize_noop),
+        # everything else except double quotes and spaces
+        (r'[^%s\s]+' % re.escape(string.punctuation), tokenize_noop),
+    ]
+)
 
 
 _lexicon_values = frozenset(_strftime_to_postgresql_rules.values())
@@ -298,7 +302,7 @@ def _reduce_tokens(tokens, arg):
                 new_tokens, _ = _scanner.scan(new_pattern)
                 value = functools.reduce(
                     sa.sql.ColumnElement.concat,
-                    _reduce_tokens(new_tokens, arg)
+                    _reduce_tokens(new_tokens, arg),
                 )
             elif token == '%e':
                 # pad with spaces instead of zeros
@@ -306,7 +310,7 @@ def _reduce_tokens(tokens, arg):
 
             reduced += [
                 sa.func.to_char(arg, ''.join(curtokens)),
-                sa.cast(value, sa.TEXT)
+                sa.cast(value, sa.TEXT),
             ]
 
             # empty current token list in case there are more tokens
@@ -340,12 +344,17 @@ def postgresql_array_search(element, compiler, **kw):
     needle, haystack = element.clauses
     i = sa.func.generate_subscripts(haystack, 1).alias('i')
     c0 = sa.column('i', type_=sa.INTEGER(), _selectable=i)
-    result = sa.func.coalesce(
-        sa.select([c0]).where(
-            haystack[c0].op('IS NOT DISTINCT FROM')(needle)
-        ).order_by(c0).limit(1).as_scalar(),
-        0
-    ) - 1
+    result = (
+        sa.func.coalesce(
+            sa.select([c0])
+            .where(haystack[c0].op('IS NOT DISTINCT FROM')(needle))
+            .order_by(c0)
+            .limit(1)
+            .as_scalar(),
+            0,
+        )
+        - 1
+    )
     string_result = compiler.process(result, **kw)
     return string_result
 
@@ -358,8 +367,7 @@ def _find_in_set(t, expr):
     #       itself also have this property?
     needle, haystack = expr.op().args
     return array_search(
-        t.translate(needle),
-        pg.array(list(map(t.translate, haystack)))
+        t.translate(needle), pg.array(list(map(t.translate, haystack)))
     )
 
 
@@ -382,6 +390,7 @@ def _reduction(func_name):
         if where is not None:
             arg = where.ifelse(arg, None)
         return func(t.translate(arg))
+
     return reduction_compiler
 
 
@@ -392,10 +401,9 @@ def _log(t, expr):
         sa_base = t.translate(base)
         return sa.cast(
             sa.func.log(
-                sa.cast(sa_base, sa.NUMERIC),
-                sa.cast(sa_arg, sa.NUMERIC)
+                sa.cast(sa_base, sa.NUMERIC), sa.cast(sa_arg, sa.NUMERIC)
             ),
-            t.get_sqla_type(expr.type())
+            t.get_sqla_type(expr.type()),
         )
     return sa.func.ln(sa_arg)
 
@@ -427,7 +435,7 @@ def _regex_extract(t, expr):
                 sa.func.regex_extract(string, pattern, index + 1),
             )
         ],
-        else_=''
+        else_='',
     )
     return result
 
@@ -562,7 +570,7 @@ def _array_slice(t, expr):
         sa_stop = _cardinality(sa_arg)
     else:
         sa_stop = t.translate(stop)
-    return sa_arg[sa_start + 1:sa_stop]
+    return sa_arg[sa_start + 1 : sa_stop]
 
 
 def _string_join(t, expr):
@@ -585,8 +593,7 @@ def _literal(t, expr):
 def _day_of_week_index(t, expr):
     sa_arg, = map(t.translate, expr.op().args)
     return sa.cast(
-        sa.cast(sa.extract('dow', sa_arg) + 6, sa.SMALLINT) % 7,
-        sa.SMALLINT
+        sa.cast(sa.extract('dow', sa_arg) + 6, sa.SMALLINT) % 7, sa.SMALLINT
     )
 
 
@@ -595,94 +602,86 @@ def _day_of_week_name(t, expr):
     return sa.func.trim(sa.func.to_char(sa_arg, 'Day'))
 
 
-_operation_registry.update({
-    ops.Literal: _literal,
-
-    # We override this here to support time zones
-    ops.TableColumn: _table_column,
-
-    # types
-    ops.Cast: _cast,
-    ops.TypeOf: _typeof,
-
-    # Floating
-    ops.IsNan: _is_nan,
-    ops.IsInf: _is_inf,
-
-    # null handling
-    ops.IfNull: fixed_arity(sa.func.coalesce, 2),
-
-    # boolean reductions
-    ops.Any: unary(sa.func.bool_or),
-    ops.All: unary(sa.func.bool_and),
-    ops.NotAny: unary(lambda x: sa.not_(sa.func.bool_or(x))),
-    ops.NotAll: unary(lambda x: sa.not_(sa.func.bool_and(x))),
-
-    # strings
-    ops.Substring: _substr,
-    ops.StringFind: _string_find,
-    ops.GroupConcat: _string_agg,
-    ops.Capitalize: unary(sa.func.initcap),
-    ops.RegexSearch: infix_op('~'),
-    ops.RegexReplace: _regex_replace,
-    ops.Translate: fixed_arity('translate', 3),
-    ops.RegexExtract: _regex_extract,
-    ops.StringSplit: fixed_arity(sa.func.string_to_array, 2),
-    ops.StringJoin: _string_join,
-    ops.FindInSet: _find_in_set,
-
-    # math
-    ops.Log: _log,
-    ops.Log2: unary(lambda x: sa.func.log(2, x)),
-    ops.Log10: unary(sa.func.log),
-    ops.Round: _round,
-    ops.Modulus: _mod,
-
-    # dates and times
-    ops.Date: unary(lambda x: sa.cast(x, sa.Date)),
-    ops.DateTruncate: _timestamp_truncate,
-    ops.TimestampTruncate: _timestamp_truncate,
-    ops.IntervalFromInteger: _interval_from_integer,
-    ops.DateAdd: infix_op('+'),
-    ops.DateSub: infix_op('-'),
-    ops.DateDiff: infix_op('-'),
-    ops.TimestampAdd: infix_op('+'),
-    ops.TimestampSub: infix_op('-'),
-    ops.TimestampDiff: infix_op('-'),
-
-    ops.Strftime: _strftime,
-    ops.ExtractYear: _extract('year'),
-    ops.ExtractMonth: _extract('month'),
-    ops.ExtractDay: _extract('day'),
-    ops.ExtractHour: _extract('hour'),
-    ops.ExtractMinute: _extract('minute'),
-    ops.ExtractSecond: _second,
-    ops.ExtractMillisecond: _millisecond,
-    ops.DayOfWeekIndex: _day_of_week_index,
-    ops.DayOfWeekName: _day_of_week_name,
-    ops.Sum: _reduction('sum'),
-    ops.Mean: _reduction('avg'),
-    ops.Min: _reduction('min'),
-    ops.Max: _reduction('max'),
-    ops.Variance: _variance_reduction('var'),
-    ops.StandardDev: _variance_reduction('stddev'),
-
-    # now is in the timezone of the server, but we want UTC
-    ops.TimestampNow: lambda *args: sa.func.timezone('UTC', sa.func.now()),
-
-    ops.CumulativeAll: unary(sa.func.bool_and),
-    ops.CumulativeAny: unary(sa.func.bool_or),
-
-    # array operations
-    ops.ArrayLength: unary(_cardinality),
-    ops.ArrayCollect: unary(sa.func.array_agg),
-    ops.ArraySlice: _array_slice,
-    ops.ArrayIndex: fixed_arity(lambda array, index: array[index + 1], 2),
-    ops.ArrayConcat: fixed_arity(sa.sql.expression.ColumnElement.concat, 2),
-    ops.ArrayRepeat: _array_repeat,
-    ops.IdenticalTo: _identical_to,
-    ops.HLLCardinality: _hll_cardinality,
-})
+_operation_registry.update(
+    {
+        ops.Literal: _literal,
+        # We override this here to support time zones
+        ops.TableColumn: _table_column,
+        # types
+        ops.Cast: _cast,
+        ops.TypeOf: _typeof,
+        # Floating
+        ops.IsNan: _is_nan,
+        ops.IsInf: _is_inf,
+        # null handling
+        ops.IfNull: fixed_arity(sa.func.coalesce, 2),
+        # boolean reductions
+        ops.Any: unary(sa.func.bool_or),
+        ops.All: unary(sa.func.bool_and),
+        ops.NotAny: unary(lambda x: sa.not_(sa.func.bool_or(x))),
+        ops.NotAll: unary(lambda x: sa.not_(sa.func.bool_and(x))),
+        # strings
+        ops.Substring: _substr,
+        ops.StringFind: _string_find,
+        ops.GroupConcat: _string_agg,
+        ops.Capitalize: unary(sa.func.initcap),
+        ops.RegexSearch: infix_op('~'),
+        ops.RegexReplace: _regex_replace,
+        ops.Translate: fixed_arity('translate', 3),
+        ops.RegexExtract: _regex_extract,
+        ops.StringSplit: fixed_arity(sa.func.string_to_array, 2),
+        ops.StringJoin: _string_join,
+        ops.FindInSet: _find_in_set,
+        # math
+        ops.Log: _log,
+        ops.Log2: unary(lambda x: sa.func.log(2, x)),
+        ops.Log10: unary(sa.func.log),
+        ops.Round: _round,
+        ops.Modulus: _mod,
+        # dates and times
+        ops.Date: unary(lambda x: sa.cast(x, sa.Date)),
+        ops.DateTruncate: _timestamp_truncate,
+        ops.TimestampTruncate: _timestamp_truncate,
+        ops.IntervalFromInteger: _interval_from_integer,
+        ops.DateAdd: infix_op('+'),
+        ops.DateSub: infix_op('-'),
+        ops.DateDiff: infix_op('-'),
+        ops.TimestampAdd: infix_op('+'),
+        ops.TimestampSub: infix_op('-'),
+        ops.TimestampDiff: infix_op('-'),
+        ops.Strftime: _strftime,
+        ops.ExtractYear: _extract('year'),
+        ops.ExtractMonth: _extract('month'),
+        ops.ExtractDay: _extract('day'),
+        ops.ExtractHour: _extract('hour'),
+        ops.ExtractMinute: _extract('minute'),
+        ops.ExtractSecond: _second,
+        ops.ExtractMillisecond: _millisecond,
+        ops.DayOfWeekIndex: _day_of_week_index,
+        ops.DayOfWeekName: _day_of_week_name,
+        ops.Sum: _reduction('sum'),
+        ops.Mean: _reduction('avg'),
+        ops.Min: _reduction('min'),
+        ops.Max: _reduction('max'),
+        ops.Variance: _variance_reduction('var'),
+        ops.StandardDev: _variance_reduction('stddev'),
+        # now is in the timezone of the server, but we want UTC
+        ops.TimestampNow: lambda *args: sa.func.timezone('UTC', sa.func.now()),
+        ops.CumulativeAll: unary(sa.func.bool_and),
+        ops.CumulativeAny: unary(sa.func.bool_or),
+        # array operations
+        ops.ArrayLength: unary(_cardinality),
+        ops.ArrayCollect: unary(sa.func.array_agg),
+        ops.ArraySlice: _array_slice,
+        ops.ArrayIndex: fixed_arity(lambda array, index: array[index + 1], 2),
+        ops.ArrayConcat: fixed_arity(
+            sa.sql.expression.ColumnElement.concat, 2
+        ),
+        ops.ArrayRepeat: _array_repeat,
+        ops.IdenticalTo: _identical_to,
+        ops.HLLCardinality: _hll_cardinality,
+    }
+)
 
 
 def add_operation(op, translation_func):
@@ -694,10 +693,7 @@ class PostgreSQLExprTranslator(alch.AlchemyExprTranslator):
     _registry = _operation_registry
     _rewrites = alch.AlchemyExprTranslator._rewrites.copy()
     _type_map = alch.AlchemyExprTranslator._type_map.copy()
-    _type_map.update({
-        dt.Double: pg.DOUBLE_PRECISION,
-        dt.Float: pg.REAL
-    })
+    _type_map.update({dt.Double: pg.DOUBLE_PRECISION, dt.Float: pg.REAL})
 
 
 rewrites = PostgreSQLExprTranslator.rewrites

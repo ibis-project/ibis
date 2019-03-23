@@ -1,7 +1,8 @@
-from ibis.impala.client import (ImpalaConnection,  # noqa: F401
-                                ImpalaClient,
-                                ImpalaDatabase,
-                                ImpalaTable)
+from ibis.impala.client import ImpalaConnection, ImpalaClient
+
+# these objects are exposed in the public API and are not used in the module
+from ibis.impala.client import ImpalaDatabase, ImpalaTable  # noqa: F401
+
 from ibis.impala.compiler import dialect  # noqa: F401
 from ibis.impala.udf import *  # noqa: F401,F403
 from ibis.config import options
@@ -9,15 +10,15 @@ import ibis.common as com
 
 
 def compile(expr, params=None):
-    """
-    Force compilation of expression as though it were an expression depending
-    on Impala. Note you can also call expr.compile()
+    """Force compilation of expression.
 
     Returns
     -------
-    compiled : string
+    str
+
     """
     from ibis.impala.compiler import to_sql
+
     return to_sql(expr, dialect.make_context(params=params))
 
 
@@ -32,10 +33,20 @@ def verify(expr, params=None):
         return False
 
 
-def connect(host='localhost', port=21050, database='default', timeout=45,
-            use_ssl=False, ca_cert=None, user=None,
-            password=None, auth_mechanism='NOSASL',
-            kerberos_service_name='impala', pool_size=8, hdfs_client=None):
+def connect(
+    host='localhost',
+    port=21050,
+    database='default',
+    timeout=45,
+    use_ssl=False,
+    ca_cert=None,
+    user=None,
+    password=None,
+    auth_mechanism='NOSASL',
+    kerberos_service_name='impala',
+    pool_size=8,
+    hdfs_client=None,
+):
     """Create an ImpalaClient for use with Ibis.
 
     Parameters
@@ -99,7 +110,7 @@ def connect(host='localhost', port=21050, database='default', timeout=45,
         'user': user,
         'password': password,
         'auth_mechanism': auth_mechanism,
-        'kerberos_service_name': kerberos_service_name
+        'kerberos_service_name': kerberos_service_name,
     }
 
     con = ImpalaConnection(pool_size=pool_size, **params)

@@ -45,13 +45,14 @@ class Argument:
         elif callable(validator):
             self.validator = validator
         else:
-            raise TypeError('Argument validator must be a callable, type or '
-                            'tuple of types, given: {}'.format(validator))
+            raise TypeError(
+                'Argument validator must be a callable, type or '
+                'tuple of types, given: {}'.format(validator)
+            )
 
     def __eq__(self, other):
         return (
-            self.validator == other.validator and
-            self.default == other.default
+            self.validator == other.validator and self.default == other.default
         )
 
     @property
@@ -94,8 +95,10 @@ class TypeSignature(OrderedDict):
 
     @classmethod
     def from_dtypes(cls, dtypes):
-        return cls(('_{}'.format(i), Argument(rlz.value(dtype)))
-                   for i, dtype in enumerate(dtypes))
+        return cls(
+            ('_{}'.format(i), Argument(rlz.value(dtype)))
+            for i, dtype in enumerate(dtypes)
+        )
 
     def validate(self, *args, **kwargs):
         result = []
