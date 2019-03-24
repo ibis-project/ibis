@@ -7,4 +7,5 @@ nomkl
 numpydoc
 # must pin again otherwise strange things happen
 pyarrow>=0.12
+sphinx-releases
 sphinx_rtd_theme

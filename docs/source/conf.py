@@ -36,7 +36,12 @@ extensions = [
     'nbsphinx',
     'IPython.sphinxext.ipython_directive',
     'IPython.sphinxext.ipython_console_highlighting',
+    'releases',
 ]
+
+releases_github_path = "ibis-project/ibis"
+releases_unstable_prehistory = True
+releases_document_name = ["release"]
 
 autosummary_generate = glob.glob("*.rst")
 
@@ -241,7 +246,7 @@ latex_documents = [
 
 
 # extlinks alias
-extlinks = {'issue': ('https://github.com/ibis-project/ibis/issues/%s', '#')}
+extlinks = {'ghissue': ('https://github.com/ibis-project/ibis/issues/%s', '#')}
 
 
 # -- Options for manual page output ---------------------------------------
