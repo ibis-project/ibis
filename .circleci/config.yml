@@ -157,7 +157,7 @@ docs: &docs
         command: docker-compose run ibis-docs conda list
     - run:
         name: Build Documentation
-        command: docker-compose run ibis-docs sphinx-build -b html docs/source /tmp/docs.ibis-project.org -W -T -j auto
+        command: docker-compose run ibis-docs sphinx-build -b html docs/source /tmp/docs.ibis-project.org -W -T
     - run:
         name: Who is Running
         command: |

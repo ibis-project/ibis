@@ -90,6 +90,7 @@ SQL engine support needing code contributors:
    backends
    roadmap
    release
+   release-pre-1.0
    legal
 
 

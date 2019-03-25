@@ -7,6 +7,13 @@ RUN apt-get -qq update --yes \
  && rm -rf /var/lib/apt/lists/*
 
 ADD ci/requirements-docs.yml /
-RUN conda install -q -y \
-        --file /requirements-docs.yml \
- && conda clean --all -y
+RUN conda config --add channels conda-forge \
+ && conda update --all --yes --quiet \
+ && conda install --yes --quiet --file /requirements-docs.yml python=$PYTHON conda-build \
+ && conda clean --all --yes \
+ && pip install pydata-google-auth
+
+COPY . /ibis
+WORKDIR /ibis
+
+RUN python setup.py develop
