@@ -7,7 +7,9 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`/release-pre-1.0`
 
-* :release:`1.0.0 <2019-03-24>`
+* :release:`1.0.0 <2019-03-26>`
+* :support:`1748` Do not build universal wheels
+* :support:`1747` Remove tag prefix from versioneer
 * :support:`1746` Use releases to manage documentation
 * :feature:`1735` Add black as a pre-commit hook
 * :feature:`1680` Add support for the arbitrary aggregate in the mapd backend
