@@ -139,10 +139,7 @@ class ImpalaConnection(object):
 
     def _new_cursor(self):
         params = self.params.copy()
-        database = None
-        if self.database != 'default':
-            database = self.database
-        con = impyla.connect(database=database, **params)
+        con = impyla.connect(database=self.database, **params)
 
         self._connections.add(con)
 
@@ -368,8 +365,6 @@ class ImpalaDatabaseTable(ops.DatabaseTable):
     pass
 
 
-
-
 class ImpalaTable(ir.TableExpr, DatabaseEntity):
 
     """
@@ -400,7 +395,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
     def _database(self):
         return self._match_name()[0]
 
-    def compute_stats(self, incremental=False, async=False):
+    def compute_stats(self, incremental=False):
         """
         Invoke Impala COMPUTE STATS command to compute column, table, and
         partition statistics.
@@ -408,8 +403,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         See also ImpalaClient.compute_stats
         """
         return self._client.compute_stats(self._qualified_name,
-                                          incremental=incremental,
-                                          async=async)
+                                          incremental=incremental)
 
     def invalidate_metadata(self):
         self._client.invalidate_metadata(self._qualified_name)
@@ -469,10 +463,10 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
 
         Examples
         --------
-        t.insert(table_expr)
+        >>> t.insert(table_expr)  # doctest: +SKIP
 
         # Completely overwrite contents
-        t.insert(table_expr, overwrite=True)
+        >>> t.insert(table_expr, overwrite=True)  # doctest: +SKIP
         """
         if isinstance(obj, pd.DataFrame):
             from ibis.impala.pandas_interop import write_temp_dataframe
@@ -482,11 +476,6 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
 
         if values is not None:
             raise NotImplementedError
-
-        if partition is not None:
-            partition_schema = self.partition_schema()
-        else:
-            partition_schema = None
 
         if validate:
             existing_schema = self.schema()
@@ -504,7 +493,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         else:
             partition_schema = None
 
-        ast = build_ast(expr)
+        ast = build_ast(expr, ImpalaDialect.make_context())
         select = ast.queries[0]
         statement = ddl.InsertSelect(self._qualified_name,
                                      select,
@@ -551,8 +540,6 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         Rename table inside Impala. References to the old table are no longer
         valid.
 
-        return self._execute(stmt)
-
         Parameters
         ----------
         new_name : string
@@ -570,7 +557,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         self._client._execute(statement)
 
         op = self.op().change_name(statement.new_qualified_name)
-        return ImpalaTable(op)
+        return type(self)(op)
 
     def _execute(self, stmt, results=False):
         return self._client._execute(stmt, results=results)
@@ -761,11 +748,10 @@ class ImpalaClient(SQLClient):
 
         self._temp_objects = weakref.WeakValueDictionary()
 
-        self._ensured = False
         self._ensure_temp_db_exists()
 
-    def _build_ast(self, expr):
-        return build_ast(expr)
+    def _build_ast(self, expr, context):
+        return build_ast(expr, context)
 
     def _get_hdfs(self):
         if self._hdfs is None:
@@ -981,20 +967,16 @@ class ImpalaClient(SQLClient):
         schema : ibis Schema
         """
         qualified_name = self._fully_qualified_name(table_name, database)
-        query = 'DESCRIBE {0}'.format(qualified_name)
-        tuples = self.con.fetchall(query)
+        query = 'DESCRIBE {}'.format(qualified_name)
 
-        names, types, comments = zip(*tuples)
+        # only pull out the first two columns which are names and types
+        pairs = [row[:2] for row in self.con.fetchall(query)]
 
-        ibis_types = []
-        for t in types:
-            t = t.lower()
-            t = udf.parse_type(t)
-            ibis_types.append(t)
+        names, types = zip(*pairs)
+        ibis_types = [udf.parse_type(type.lower()) for type in types]
+        names = [name.lower() for name in names]
 
-        names = [x.lower() for x in names]
-
-        return dt.Schema(names, ibis_types)
+        return sch.Schema(names, ibis_types)
 
     @property
     def client_options(self):
@@ -1013,8 +995,7 @@ class ImpalaClient(SQLClient):
         Return current query options for the Impala session
         """
         query = 'SET'
-        tuples = self.con.fetchall(query)
-        return dict(tuples)
+        return dict(row[:2] for row in self.con.fetchall(query))
 
     def set_options(self, options):
         self.con.set_options(options)
@@ -1118,7 +1099,7 @@ class ImpalaClient(SQLClient):
 
         Examples
         --------
-        con.create_table('new_table_name', table_expr)
+        >>> con.create_table('new_table_name', table_expr)  # doctest: +SKIP
         """
         if like_parquet is not None:
             raise NotImplementedError
@@ -1129,21 +1110,15 @@ class ImpalaClient(SQLClient):
                 writer, to_insert = write_temp_dataframe(self, obj)
             else:
                 to_insert = obj
-            ast = self._build_ast(to_insert)
+            ast = self._build_ast(to_insert, ImpalaDialect.make_context())
             select = ast.queries[0]
-
-            if partition is not None:
-                # Fairly certain this is currently the case
-                raise ValueError('partition not supported with '
-                                 'create-table-as-select. Create an '
-                                 'empty partitioned table instead '
-                                 'and insert into those partitions.')
 
             statement = ddl.CTAS(table_name, select,
                                  database=database,
                                  can_exist=force,
                                  format=format,
                                  external=external,
+                                 partition=partition,
                                  path=location)
         elif schema is not None:
             statement = ddl.CreateTableWithSchema(
@@ -1297,7 +1272,6 @@ class ImpalaClient(SQLClient):
         return self._wrap_new_table(name, database, persist)
 
     def _get_concrete_table_path(self, name, database, persist=False):
-        self._ensure_temp_db_exists()
         if not persist:
             if name is None:
                 name = '__ibis_tmp_{0}'.format(util.guid())
@@ -1313,8 +1287,6 @@ class ImpalaClient(SQLClient):
 
     def _ensure_temp_db_exists(self):
         # TODO: session memoize to avoid unnecessary `SHOW DATABASES` calls
-        if self._ensured:
-            return
         name, path = options.impala.temp_db, options.impala.temp_hdfs_path
         if not self.exists_database(name):
             if self._hdfs is None:
@@ -1322,7 +1294,6 @@ class ImpalaClient(SQLClient):
                       ' may be disabled')
             else:
                 self.create_database(name, path=path, force=True)
-        self._ensured = True
 
     def _wrap_new_table(self, name, database, persist):
         qualified_name = self._fully_qualified_name(name, database)
@@ -1332,7 +1303,7 @@ class ImpalaClient(SQLClient):
         else:
             schema = self._get_table_schema(qualified_name)
             node = ImpalaTemporaryTable(qualified_name, schema, self)
-            t = self._table_expr_klass(node)
+            t = self.table_expr_class(node)
 
         # Compute number of rows in table for better default query planning
         cardinality = t.count().execute()
@@ -1410,7 +1381,9 @@ class ImpalaClient(SQLClient):
 
         Examples
         --------
-        con.drop_table('my_table', database='operations', force=True)
+        >>> table = 'my_table'
+        >>> db = 'operations'
+        >>> con.drop_table(table, database=db, force=True)  # doctest: +SKIP
         """
         statement = ddl.DropTable(table_name, database=database,
                                   must_exist=not force)
@@ -1453,7 +1426,10 @@ class ImpalaClient(SQLClient):
 
         Examples
         --------
-        con.cache_table('my_table', database='operations', pool='op_4GB_pool')
+        >>> table = 'my_table'
+        >>> db = 'operations'
+        >>> pool = 'op_4GB_pool'
+        >>> con.cache_table('my_table', database=db, pool=pool)  # noqa: E501 # doctest: +SKIP
         """
         statement = ddl.CacheTable(table_name, database=database, pool=pool)
         self._execute(statement)
@@ -1474,7 +1450,7 @@ class ImpalaClient(SQLClient):
         # all lowercase fields from Impala.
         names = [x.lower() for x in names]
 
-        return dt.Schema(names, ibis_types)
+        return sch.Schema(names, ibis_types)
 
     def create_function(self, func, name=None, database=None):
         """
@@ -1492,20 +1468,9 @@ class ImpalaClient(SQLClient):
         database = database or self.current_database
 
         if isinstance(func, udf.ImpalaUDF):
-            stmt = ddl.CreateFunction(func.lib_path, func.so_symbol,
-                                      func.input_type,
-                                      func.output,
-                                      name, database)
+            stmt = ddl.CreateUDF(func, name=name, database=database)
         elif isinstance(func, udf.ImpalaUDA):
-            stmt = ddl.CreateAggregateFunction(func.lib_path,
-                                               func.input_type,
-                                               func.output,
-                                               func.update_fn,
-                                               func.init_fn,
-                                               func.merge_fn,
-                                               func.serialize_fn,
-                                               func.finalize_fn,
-                                               name, database)
+            stmt = ddl.CreateUDA(func, name=name, database=database)
         else:
             raise TypeError(func)
         self._execute(stmt)
@@ -1635,7 +1600,7 @@ class ImpalaClient(SQLClient):
                         inputs.append(t)
                     else:
                         t = _to_type(var)
-                        inputs = varargs(t)
+                        inputs = rlz.listof(t)
                         # TODO
                         # inputs.append(varargs(t))
                         break
@@ -1676,8 +1641,7 @@ class ImpalaClient(SQLClient):
         """
         return len(self.list_udas(database=database, like=name)) > 0
 
-    def compute_stats(self, name, database=None, incremental=False,
-                      async=False):
+    def compute_stats(self, name, database=None, incremental=False):
         """
         Issue COMPUTE STATS command for a given table
 
@@ -1689,10 +1653,6 @@ class ImpalaClient(SQLClient):
         incremental : boolean, default False
           If True, issue COMPUTE INCREMENTAL STATS
         """
-        # TODO async + cancellation
-        if async:
-            raise NotImplementedError
-
         maybe_inc = 'INCREMENTAL ' if incremental else ''
         cmd = 'COMPUTE {0}STATS'.format(maybe_inc)
 
@@ -1816,7 +1776,7 @@ class ImpalaClient(SQLClient):
                 adapted_types.append(typename)
         return names, adapted_types
 
-    def write_dataframe(self, df, path, format='csv', async=False):
+    def write_dataframe(self, df, path, format='csv'):
         """
         Write a pandas DataFrame to indicated file path (default: HDFS) in the
         indicated format
@@ -1827,11 +1787,96 @@ class ImpalaClient(SQLClient):
         path : string
           Absolute output path
         format : {'csv'}, default 'csv'
-        async : boolean, default False
-          Not yet supported
 
         Returns
         -------
         None (for now)
         """
         from ibis.impala.pandas_interop import DataFrameWriter
+
+        writer = DataFrameWriter(self, df)
+        return writer.write_csv(path)
+
+
+# ----------------------------------------------------------------------
+# ORM-ish usability layer
+
+
+class ScalarFunction(DatabaseEntity):
+
+    def drop(self):
+        pass
+
+
+class AggregateFunction(DatabaseEntity):
+
+    def drop(self):
+        pass
+
+
+class ImpalaTemporaryTable(ops.DatabaseTable):
+
+    def __del__(self):
+        try:
+            self.drop()
+        except com.IbisError:
+            pass
+
+    def drop(self):
+        try:
+            self.source.drop_table(self.name)
+        except ImpylaError:
+            # database might have been dropped
+            pass
+
+
+def _validate_compatible(from_schema, to_schema):
+    if set(from_schema.names) != set(to_schema.names):
+        raise com.IbisInputError('Schemas have different names')
+
+    for name in from_schema:
+        lt = from_schema[name]
+        rt = to_schema[name]
+        if not lt.castable(rt):
+            raise com.IbisInputError('Cannot safely cast {0!r} to {1!r}'
+                                     .format(lt, rt))
+
+
+def _split_signature(x):
+    name, rest = x.split('(', 1)
+    return name, rest[:-1]
+
+
+_arg_type = re.compile('(.*)\.\.\.|([^\.]*)')
+
+
+class _type_parser(object):
+
+    NORMAL, IN_PAREN = 0, 1
+
+    def __init__(self, value):
+        self.value = value
+        self.state = self.NORMAL
+        self.buf = six.StringIO()
+        self.types = []
+        for c in value:
+            self._step(c)
+        self._push()
+
+    def _push(self):
+        val = self.buf.getvalue().strip()
+        if val:
+            self.types.append(val)
+        self.buf = six.StringIO()
+
+    def _step(self, c):
+        if self.state == self.NORMAL:
+            if c == '(':
+                self.state = self.IN_PAREN
+            elif c == ',':
+                self._push()
+                return
+        elif self.state == self.IN_PAREN:
+            if c == ')':
+                self.state = self.NORMAL
+        self.buf.write(c)
