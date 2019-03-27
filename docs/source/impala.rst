@@ -11,7 +11,7 @@ without requiring you to switch back and forth between Python code and the
 Impala shell (where one would be using a mix of DDL and SQL statements).
 
 If you find an Impala task that you cannot perform with Ibis, please get in
-touch on the `GitHub issue tracker <http://github.com/cloudera/ibis>`_.
+touch on the `GitHub issue tracker <http://github.com/pandas-dev/ibis>`_.
 
 While interoperability between the Hadoop / Spark ecosystems and pandas / the
 PyData stack is overall poor (but improving), we also show some ways that you
@@ -21,8 +21,9 @@ can use pandas with Ibis and Impala.
    :suppress:
 
    import ibis
-   hdfs = ibis.hdfs_connect(port=5070)
-   client = ibis.impala.connect(hdfs_client=hdfs)
+   host = 'quickstart.cloudera'
+   hdfs = ibis.hdfs_connect(host=host)
+   client = ibis.impala.connect(host=host, hdfs_client=hdfs)
 
 The Impala client object
 ------------------------
@@ -103,8 +104,8 @@ table itself has a method ``drop`` that you can use:
 
    table.drop()
 
-Expression execution and asynchronous queries
----------------------------------------------
+Expression execution
+--------------------
 
 Ibis expressions have an ``execute`` method with compiles and runs the
 expressions on Impala or whichever backend is being referenced.
@@ -120,29 +121,6 @@ For example:
 For longer-running queries, if you press Control-C (or whatever triggers the
 Python ``KeyboardInterrupt`` on your system), Ibis will attempt to cancel the
 query in progress.
-
-As of Ibis 0.5.0, there is an explicit asynchronous API:
-
-.. ipython:: python
-
-   query = expr.execute(async=True)
-
-With the returned ``AsyncQuery`` object, you have various methods available to
-check on the status of the executing expression:
-
-.. ipython:: python
-
-   import time
-   while not query.is_finished():
-       time.sleep(1)
-   query.is_finished()
-   query.get_result()
-
-If the query is still running, you can attempt to cancel it:
-
-.. code-block:: python
-
-   query.cancel()
 
 Creating tables
 ---------------
@@ -257,15 +235,6 @@ getting information about the partition schema and any existing partition data:
    ImpalaTable.is_partitioned
    ImpalaTable.partition_schema
    ImpalaTable.partitions
-
-For example:
-
-.. ipython:: python
-
-   ss = client.table('tpcds_parquet.store_sales')
-   ss.is_partitioned
-   ss.partitions()[:5]
-   ss.partition_schema()
 
 To address a specific partition in any method that is partition specific, you
 can either use a dict with the partition key names and values, or pass a list

@@ -13,11 +13,15 @@
 # limitations under the License.
 
 from ibis.client import SQLClient
-from ibis.expr.datatypes import Schema
-import ibis
+from ibis.expr.schema import Schema
 
 
 class MockConnection(SQLClient):
+
+    @property
+    def dialect(self):
+        from ibis.impala.compiler import ImpalaDialect
+        return ImpalaDialect
 
     _tables = {
         'alltypes': [
@@ -29,7 +33,9 @@ class MockConnection(SQLClient):
             ('f', 'double'),
             ('g', 'string'),
             ('h', 'boolean'),
-            ('i', 'timestamp')
+            ('i', 'timestamp'),
+            ('j', 'date'),
+            ('k', 'time')
         ],
         'star1': [
             ('c', 'int32'),
@@ -346,19 +352,17 @@ class MockConnection(SQLClient):
         name = name.replace('`', '')
         return Schema.from_tuples(self._tables[name])
 
-    def _build_ast(self, expr):
+    def _build_ast(self, expr, context):
         from ibis.impala.compiler import build_ast
-        return build_ast(expr)
+        return build_ast(expr, context)
 
-    def execute(self, expr, limit=None, async=False):
-        if async:
-            raise NotImplementedError
-        ast = self._build_ast_ensure_limit(expr, limit)
+    def execute(self, expr, limit=None, params=None):
+        ast = self._build_ast_ensure_limit(expr, limit, params=params)
         for query in ast.queries:
             self.executed_queries.append(query.compile())
         return None
 
-    def compile(self, expr, limit=None):
-        ast = self._build_ast_ensure_limit(expr, limit)
+    def compile(self, expr, limit=None, params=None):
+        ast = self._build_ast_ensure_limit(expr, limit, params=params)
         queries = [q.compile() for q in ast.queries]
         return queries[0] if len(queries) == 1 else queries

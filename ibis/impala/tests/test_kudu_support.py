@@ -1,45 +1,30 @@
-# Copyright 2015 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
+import unittest
 import os
+
 import pytest
 
-from ibis.compat import unittest
-from ibis.expr.tests.mocks import MockConnection
-from ibis.impala.client import build_ast
-from ibis.impala.tests.common import IbisTestEnv, ImpalaE2E
-from ibis.tests.util import assert_equal
-import ibis.expr.datatypes as dt
-import ibis.util as util
-import ibis
+pytest.importorskip('hdfs')
+pytest.importorskip('sqlalchemy')
+pytest.importorskip('impala.dbapi')
 
-try:
-    from ibis.impala import kudu_support as ksupport
-    import kudu
-    HAVE_KUDU_CLIENT = True
-except ImportError:
-    HAVE_KUDU_CLIENT = False
+ksupport = pytest.importorskip('ibis.impala.kudu_support')
+kudu = pytest.importorskip('kudu')
 
+from ibis.expr.tests.mocks import MockConnection  # noqa: E402
+from ibis.impala.client import build_ast  # noqa: E402
+from ibis.impala.tests.common import IbisTestEnv, ImpalaE2E  # noqa: E402
+from ibis.tests.util import assert_equal  # noqa: E402
+import ibis.expr.datatypes as dt  # noqa: E402
+import ibis.util as util  # noqa: E402
+import ibis  # noqa: E402
 
-pytestmark = pytest.mark.skipif(not HAVE_KUDU_CLIENT,
-                                reason='Kudu client not installed')
+pytestmark = pytest.mark.kudu
 
 
 class KuduImpalaTestEnv(IbisTestEnv):
 
     def __init__(self):
-        IbisTestEnv.__init__(self)
+        super(KuduImpalaTestEnv, self).__init__()
 
         # band-aid until Kudu support merged into Impala mainline
         self.test_host = os.getenv('IBIS_TEST_KIMPALA_HOST',
@@ -56,6 +41,7 @@ class KuduImpalaTestEnv(IbisTestEnv):
                                                50070))
         self.hdfs_superuser = os.environ.get('IBIS_TEST_HDFS_SUPERUSER',
                                              'hdfs')
+
 
 ENV = KuduImpalaTestEnv()
 
@@ -197,7 +183,6 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
             session.apply(op)
         session.flush()
 
-    @pytest.mark.kudu
     def test_external_kudu_table(self):
         kschema = self.example_schema()
         kudu_name = self._new_kudu_example_table(kschema)
@@ -212,7 +197,6 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
         ischema = ksupport.schema_kudu_to_ibis(kschema, drop_nn=True)
         assert_equal(table.schema(), ischema)
 
-    @pytest.mark.kudu
     def test_internal_kudu_table(self):
         kschema = self.example_schema()
         kudu_name = self._new_kudu_example_table(kschema)
@@ -236,7 +220,6 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
 
         assert not self.con.kudu.table_exists(kudu_name)
 
-    @pytest.mark.kudu
     def test_create_table_as_select_ctas(self):
         # TODO
         kschema = self.example_schema()
@@ -268,7 +251,6 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
         ktable = self.kclient.table(kudu_name2)
         assert ktable.schema.primary_keys() == ['key']
 
-    @pytest.mark.kudu
     def test_create_empty_internal_table(self):
         kschema = self.example_schema()
         ischema = ksupport.schema_kudu_to_ibis(kschema, drop_nn=True)

@@ -1,51 +1,33 @@
-# Copyright 2014 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-from posixpath import join as pjoin
 import re
 import six
-import threading
 import time
 import weakref
+import traceback
+import threading
 
-import hdfs
+from posixpath import join as pjoin
+from collections import deque
+
 import numpy as np
 import pandas as pd
 
-
+import ibis.util as util
 import ibis.common as com
+import ibis.expr.types as ir
+import ibis.expr.rules as rlz
+import ibis.expr.schema as sch
+import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 
 from ibis.config import options
-from ibis.client import (Query, AsyncQuery, Database,
-                         DatabaseEntity, SQLClient)
-from ibis.compat import lzip
+from ibis.client import Query, Database, DatabaseEntity, SQLClient
+from ibis.compat import lzip, parse_version
 from ibis.filesystems import HDFS, WebHDFS
 from ibis.impala import udf, ddl
 from ibis.impala.compat import impyla, ImpylaError, HS2Error
-from ibis.impala.compiler import build_ast
+from ibis.impala.compiler import build_ast, ImpalaDialect
 from ibis.util import log
-from ibis.sql.compiler import DDL
-import ibis.expr.datatypes as dt
-import ibis.expr.operations as ops
-import ibis.expr.types as ir
-import ibis.util as util
-
-
-if six.PY2:
-    import Queue as queue
-else:
-    import queue
+from ibis.sql.compiler import DDL, DML
 
 
 class ImpalaDatabase(Database):
@@ -82,10 +64,10 @@ class ImpalaConnection(object):
         self.options = {}
 
         self.max_pool_size = pool_size
-        self._connections = None
+        self._connections = weakref.WeakSet()
 
-        self.reset_connection_pool()
-        self.ping()
+        self.connection_pool = deque(maxlen=pool_size)
+        self.connection_pool_size = 0
 
     def set_options(self, options):
         self.options.update(options)
@@ -94,15 +76,11 @@ class ImpalaConnection(object):
         """
         Close all open Impyla sessions
         """
-        self.reset_connection_pool()
+        for impyla_connection in self._connections:
+            impyla_connection.close()
 
-    def reset_connection_pool(self):
-        if self._connections is not None:
-            for k, con in self._connections.items():
-                con.close()
-        self._connections = weakref.WeakValueDictionary()
-        self.connection_pool = queue.Queue(self.max_pool_size)
-        self.connection_pool_size = 0
+        self._connections.clear()
+        self.connection_pool.clear()
 
     def set_database(self, name):
         self.database = name
@@ -114,23 +92,22 @@ class ImpalaConnection(object):
         elif key in self.options:
             del self.options[key]
 
-    def execute(self, query, async=False):
-        if isinstance(query, DDL):
+    def execute(self, query):
+        if isinstance(query, (DDL, DML)):
             query = query.compile()
 
         cursor = self._get_cursor()
         self.log(query)
 
         try:
-            cursor.execute(query, async=async)
-        except:
+            cursor.execute(query)
+        except Exception:
             cursor.release()
-
-            import traceback
-            buf = six.StringIO()
-            traceback.print_exc(file=buf)
-            self.error('Exception caused by {0}: {1}'.format(query,
-                                                             buf.getvalue()))
+            self.error(
+                'Exception caused by {}: {}'.format(
+                    query, traceback.format_exc()
+                )
+            )
             raise
 
         return cursor
@@ -148,20 +125,17 @@ class ImpalaConnection(object):
 
     def _get_cursor(self):
         try:
-            cur = self.connection_pool.get(False)
-            if (cur.database != self.database or
-                    cur.options != self.options):
-                cur = self._new_cursor()
-            cur.released = False
-
-            return cur
-        except queue.Empty:
+            cursor = self.connection_pool.popleft()
+        except IndexError:  # deque is empty
             if self.connection_pool_size < self.max_pool_size:
-                cursor = self._new_cursor()
-                self.connection_pool_size += 1
-                return cursor
-            else:
-                raise com.InternalError('Too many concurrent / hung queries')
+                return self._new_cursor()
+            raise com.InternalError('Too many concurrent / hung queries')
+        else:
+            if (cursor.database != self.database or
+                    cursor.options != self.options):
+                return self._new_cursor()
+            cursor.released = False
+            return cursor
 
     def _new_cursor(self):
         params = self.params.copy()
@@ -170,23 +144,22 @@ class ImpalaConnection(object):
             database = self.database
         con = impyla.connect(database=database, **params)
 
-        self._connections[id(con)] = con
+        self._connections.add(con)
 
         # make sure the connection works
-        cursor = con.cursor(convert_types=True, user=params.get('user'))
+        cursor = con.cursor(user=params.get('user'), convert_types=True)
         cursor.ping()
 
         wrapper = ImpalaCursor(cursor, self, con, self.database,
                                self.options.copy())
         wrapper.set_options()
-
         return wrapper
 
     def ping(self):
-        self._new_cursor()
+        self._get_cursor()._cursor.ping()
 
     def release(self, cur):
-        self.connection_pool.put(cur)
+        self.connection_pool.append(cur)
 
 
 class ImpalaCursor(object):
@@ -199,9 +172,14 @@ class ImpalaCursor(object):
         self.database = database
         self.options = options
         self.released = False
+        self.con.connection_pool_size += 1
 
     def __del__(self):
-        self._close_cursor()
+        try:
+            self._close_cursor()
+        except Exception:
+            pass
+
         with self.con.lock:
             self.con.connection_pool_size -= 1
 
@@ -228,7 +206,7 @@ class ImpalaCursor(object):
 
     def set_options(self):
         for k, v in self.options.items():
-            query = 'SET {0}={1}'.format(k, v)
+            query = 'SET {} = {!r}'.format(k, v)
             self._cursor.execute(query)
 
     @property
@@ -240,12 +218,9 @@ class ImpalaCursor(object):
             self.con.release(self)
             self.released = True
 
-    def execute(self, stmt, async=False):
+    def execute(self, stmt):
         self._cursor.execute_async(stmt)
-        if async:
-            return
-        else:
-            self._wait_synchronous()
+        self._wait_synchronous()
 
     def _wait_synchronous(self):
         # Wait to finish, but cancel if KeyboardInterrupt
@@ -302,10 +277,15 @@ class ImpalaQuery(Query):
     def _fetch(self, cursor):
         batches = cursor.fetchall(columnar=True)
         names = [x[0] for x in cursor.description]
-        return _column_batches_to_dataframe(names, batches)
+        df = _column_batches_to_dataframe(names, batches)
 
-    def _db_type_to_dtype(self, db_type):
-        return _HS2_TTypeId_to_dtype[db_type]
+        # Ugly Hack for PY2 to ensure unicode values for string columns
+        if self.expr is not None:
+            # in case of metadata queries there is no expr and
+            # self.schema() would raise an exception
+            return self.schema().apply_to(df)
+
+        return df
 
 
 def _column_batches_to_dataframe(names, batches):
@@ -367,88 +347,6 @@ def _chunks_to_pandas_array(chunks):
     return target
 
 
-class ImpalaAsyncQuery(ImpalaQuery, AsyncQuery):
-
-    def __init__(self, client, ddl):
-        super(ImpalaAsyncQuery, self).__init__(client, ddl)
-        self._cursor = None
-        self._exception = None
-        self._execute_thread = None
-        self._execute_complete = False
-        self._operation_active = False
-
-    def __del__(self):
-        if self._cursor is not None:
-            self._cursor.release()
-
-    def execute(self):
-        if self._operation_active:
-            raise com.IbisError('operation already active')
-        con = self.client.con
-
-        # XXX: there is codegen overhead somewhere which causes execute_async
-        # to block, unfortunately. This threading hack works around it
-        def _async_execute():
-            try:
-                self._cursor = con.execute(self.compiled_ddl, async=True)
-            except Exception as e:
-                self._exception = e
-            self._execute_complete = True
-
-        self._execute_complete = False
-        self._operation_active = True
-        self._execute_thread = threading.Thread(target=_async_execute)
-        self._execute_thread.start()
-        return self
-
-    def _wait_execute(self):
-        if not self._operation_active:
-            raise com.IbisError('No active query')
-        if self._execute_thread.is_alive():
-            self._execute_thread.join()
-        elif self._exception is not None:
-            raise self._exception
-
-    def is_finished(self):
-        """
-        Return True if the operation is finished
-        """
-        from impala.error import ProgrammingError
-        self._wait_execute()
-        try:
-            return self._cursor.is_finished()
-        except ProgrammingError as e:
-            if 'state is not available' in e.args[0]:
-                return True
-            raise
-
-    def cancel(self):
-        """
-        Cancel the query (or attempt to)
-        """
-        self._wait_execute()
-        return self._cursor.cancel()
-
-    def status(self):
-        """
-        Retrieve Impala query status
-        """
-        self._wait_execute()
-        return self._cursor.status()
-
-    def wait(self, progress_bar=True):
-        raise NotImplementedError
-
-    def get_result(self):
-        """
-        Presuming the operation is completed, return the cursor result as would
-        be returned by the synchronous query API
-        """
-        self._wait_execute()
-        result = self._fetch(self._cursor)
-        return self._wrap_result(result)
-
-
 _HS2_TTypeId_to_dtype = {
     'BOOLEAN': 'bool',
     'TINYINT': 'int8',
@@ -466,20 +364,10 @@ _HS2_TTypeId_to_dtype = {
 }
 
 
-# ----------------------------------------------------------------------
-# ORM-ish usability layer
+class ImpalaDatabaseTable(ops.DatabaseTable):
+    pass
 
 
-class ScalarFunction(DatabaseEntity):
-
-    def drop(self):
-        pass
-
-
-class AggregateFunction(DatabaseEntity):
-
-    def drop(self):
-        pass
 
 
 class ImpalaTable(ir.TableExpr, DatabaseEntity):
@@ -553,6 +441,9 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         """
         self._client.drop_table_or_view(self._qualified_name)
 
+    def truncate(self):
+        self._client.truncate_table(self._qualified_name)
+
     def insert(self, obj=None, overwrite=False, partition=None,
                values=None, validate=True, results=False):
         """
@@ -601,18 +492,17 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
             existing_schema = self.schema()
             insert_schema = expr.schema()
             if not insert_schema.equals(existing_schema):
-                try:
-                    _validate_compatible(insert_schema, existing_schema)
-                except com.IbisInputError:
-                    partless_items = existing_schema.items()[:-1*len(partition_schema)]
-                    partless_names = [x[0] for x in partless_items]
-                    partless_types = [x[1] for x in partless_items]
-                    partless_schema = dt.Schema(partless_names, partless_types)
-                    _validate_compatible(insert_schema, partless_schema)
+                _validate_compatible(insert_schema, existing_schema)
 
         if partition is not None:
-            if set(partition_schema.names).intersection(expr.schema().names):
-                expr = expr.drop(partition_schema.names)
+            partition_schema = self.partition_schema()
+            partition_schema_names = frozenset(partition_schema.names)
+            expr = expr.projection([
+                column for column in expr.columns
+                if column not in partition_schema_names
+            ])
+        else:
+            partition_schema = None
 
         ast = build_ast(expr)
         select = ast.queries[0]
@@ -660,6 +550,8 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         """
         Rename table inside Impala. References to the old table are no longer
         valid.
+
+        return self._execute(stmt)
 
         Parameters
         ----------
@@ -711,7 +603,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
             partition_fields.append((x, name_to_type[x]))
 
         pnames, ptypes = zip(*partition_fields)
-        return dt.Schema(pnames, ptypes)
+        return sch.Schema(pnames, ptypes)
 
     def add_partition(self, spec, location=None):
         """
@@ -849,11 +741,14 @@ class ImpalaClient(SQLClient):
     An Ibis client interface that uses Impala
     """
 
+    dialect = ImpalaDialect
     database_class = ImpalaDatabase
-    sync_query = ImpalaQuery
-    async_query = ImpalaAsyncQuery
+    query_class = ImpalaQuery
+    table_class = ImpalaDatabaseTable
+    table_expr_class = ImpalaTable
 
     def __init__(self, con, hdfs_client=None, **params):
+        import hdfs
         self.con = con
 
         if isinstance(hdfs_client, hdfs.Client):
@@ -867,6 +762,7 @@ class ImpalaClient(SQLClient):
         self._temp_objects = weakref.WeakValueDictionary()
 
         self._ensured = False
+        self._ensure_temp_db_exists()
 
     def _build_ast(self, expr):
         return build_ast(expr)
@@ -891,10 +787,6 @@ class ImpalaClient(SQLClient):
         if self._kudu is None:
             self._kudu = KuduImpalaInterface(self)
         return self._kudu
-
-    @property
-    def _table_expr_klass(self):
-        return ImpalaTable
 
     def close(self):
         """
@@ -1108,6 +1000,14 @@ class ImpalaClient(SQLClient):
     def client_options(self):
         return self.con.options
 
+    @property
+    def version(self):
+        with self._execute('select version()', results=True) as cur:
+            raw = self._get_list(cur)[0]
+
+        vstring = raw.split()[2]
+        return parse_version(vstring)
+
     def get_options(self):
         """
         Return current query options for the Impala session
@@ -1162,7 +1062,7 @@ class ImpalaClient(SQLClient):
         expr : ibis TableExpr
         database : string, default None
         """
-        ast = self._build_ast(expr)
+        ast = self._build_ast(expr, ImpalaDialect.make_context())
         select = ast.queries[0]
         statement = ddl.CreateView(name, select, database=database)
         return self._execute(statement)
@@ -1537,7 +1437,7 @@ class ImpalaClient(SQLClient):
         except Exception as e:
             try:
                 self.drop_view(name, database=database)
-            except:
+            except Exception:
                 raise e
 
     def cache_table(self, table_name, database=None, pool='default'):
@@ -1714,12 +1614,9 @@ class ImpalaClient(SQLClient):
         return result
 
     def _get_udfs(self, cur, klass):
-        from ibis.expr.rules import varargs
-        from ibis.expr.datatypes import validate_type
-
         def _to_type(x):
             ibis_type = udf._impala_type_to_ibis(x.lower())
-            return validate_type(ibis_type)
+            return dt.dtype(ibis_type)
 
         tuples = cur.fetchall()
         if len(tuples) > 0:
@@ -1938,76 +1835,3 @@ class ImpalaClient(SQLClient):
         None (for now)
         """
         from ibis.impala.pandas_interop import DataFrameWriter
-
-        if async:
-            raise NotImplementedError
-
-        writer = DataFrameWriter(self, df)
-        return writer.write_csv(path)
-
-
-class ImpalaTemporaryTable(ops.DatabaseTable):
-
-    def __del__(self):
-        try:
-            self.drop()
-        except com.IbisError:
-            pass
-
-    def drop(self):
-        try:
-            self.source.drop_table(self.name)
-        except ImpylaError:
-            # database might have been dropped
-            pass
-
-
-def _validate_compatible(from_schema, to_schema):
-    if set(from_schema.names) != set(to_schema.names):
-        raise com.IbisInputError('Schemas have different names')
-
-    for name in from_schema:
-        lt = from_schema[name]
-        rt = to_schema[name]
-        if not rt.can_implicit_cast(lt):
-            raise com.IbisInputError('Cannot safely cast {0!r} to {1!r}'
-                                     .format(lt, rt))
-
-
-def _split_signature(x):
-    name, rest = x.split('(', 1)
-    return name, rest[:-1]
-
-_arg_type = re.compile('(.*)\.\.\.|([^\.]*)')
-
-
-class _type_parser(object):
-
-    NORMAL, IN_PAREN = 0, 1
-
-    def __init__(self, value):
-        self.value = value
-        self.state = self.NORMAL
-        self.buf = six.StringIO()
-        self.types = []
-        for c in value:
-            self._step(c)
-        self._push()
-
-    def _push(self):
-        val = self.buf.getvalue().strip()
-        if val:
-            self.types.append(val)
-        self.buf = six.StringIO()
-
-    def _step(self, c):
-        if self.state == self.NORMAL:
-            if c == '(':
-                self.state = self.IN_PAREN
-            elif c == ',':
-                self._push()
-                return
-        elif self.state == self.IN_PAREN:
-            if c == ')':
-                self.state = self.NORMAL
-        self.buf.write(c)

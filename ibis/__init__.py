@@ -14,25 +14,71 @@
 
 
 # flake8: noqa
+import sys
+from multipledispatch import halt_ordering, restart_ordering
 
-__version__ = '0.5.0'
-
-from ibis.filesystems import HDFS, WebHDFS
-from ibis.common import IbisError
-
+import ibis.config_init
+import ibis.util as util
 import ibis.expr.api as api
 import ibis.expr.types as ir
+
+from ibis.config import options
+from ibis.common import IbisError
+from ibis.compat import suppress
+from ibis.filesystems import HDFS, WebHDFS
 
 # __all__ is defined
 from ibis.expr.api import *
 
-import ibis.impala.api as impala
-import ibis.sql.sqlite.api as sqlite
-import ibis.sql.postgres.api as postgres
+# speeds up signature registration
+halt_ordering()
 
-import ibis.config_init
-from ibis.config import options
-import ibis.util as util
+# pandas backend is mandatory
+import ibis.pandas.api as pandas
+
+with suppress(ImportError):
+    # pip install ibis-framework[csv]
+    import ibis.file.csv as csv
+
+with suppress(ImportError):
+    # pip install ibis-framework[parquet]
+    import ibis.file.parquet as parquet
+
+with suppress(ImportError):
+    # pip install  ibis-framework[hdf5]
+    import ibis.file.hdf5 as hdf5
+
+with suppress(ImportError):
+    # pip install ibis-framework[impala]
+    import ibis.impala.api as impala
+
+with suppress(ImportError):
+    # pip install ibis-framework[sqlite]
+    import ibis.sql.sqlite.api as sqlite
+
+with suppress(ImportError):
+    # pip install ibis-framework[postgres]
+    import ibis.sql.postgres.api as postgres
+
+with suppress(ImportError):
+    # pip install ibis-framework[mysql]
+    import ibis.sql.mysql.api as mysql
+
+with suppress(ImportError):
+    # pip install ibis-framework[clickhouse]
+    import ibis.clickhouse.api as clickhouse
+
+with suppress(ImportError):
+    # pip install ibis-framework[bigquery]
+    import ibis.bigquery.api as bigquery
+
+with suppress(ImportError):
+    # pip install ibis-framework[mapd]
+    if sys.version_info.major < 3:
+        raise ImportError('The MapD backend is not supported under Python 2.')
+    import ibis.mapd.api as mapd
+
+restart_ordering()
 
 
 def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
@@ -90,17 +136,6 @@ def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
         hdfs_client = InsecureClient(url, **kwds)
     return WebHDFS(hdfs_client)
 
-def test(impala=False):
-    import pytest
-    import ibis
-    import os
-
-    ibis_dir, _ = os.path.split(ibis.__file__)
-
-    args = ['--pyargs', ibis_dir]
-    if impala:
-        args.append('--impala')
-    pytest.main(args)
 
 from ._version import get_versions
 __version__ = get_versions()['version']

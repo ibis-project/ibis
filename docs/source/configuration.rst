@@ -88,3 +88,12 @@ certificates (which may be helpful in testing).  Ibis will assume ``https``
 when connecting to a Kerberized cluster. Because some Ibis commands create HDFS
 directories as well as new Impala databases and/or tables, your user will
 require the necessary privileges.
+
+Default Configuation Values for CDH Components
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Cloudera CDH ships with HDFS, Impala, Hive and many other components.
+Sometimes it's not obvious what default configuration values these tools are
+using or should be using.
+
+This url https://www.cloudera.com/documentation/enterprise/latest/topics/cdh_ig_ports_cdh5.html#topic_9_1
+shows the default configuration values for every component of CDH.

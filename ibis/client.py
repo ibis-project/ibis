@@ -1,52 +1,46 @@
-# Copyright 2014 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+import abc
 
-from ibis.compat import zip as czip
+import six
+
 from ibis.config import options
+
+import ibis.util as util
+import ibis.common as com
 import ibis.expr.types as ir
+import ibis.expr.schema as sch
 import ibis.expr.operations as ops
 import ibis.sql.compiler as comp
-import ibis.common as com
-import ibis.util as util
 
 
 class Client(object):
-
     pass
 
 
 class Query(object):
 
-    """
-    Abstraction for DDL query execution to enable both synchronous and
-    asynchronous queries, progress, cancellation and more (for backends
-    supporting such functionality).
+    """Abstraction for DML query execution to enable queries, progress,
+    cancellation and more (for backends supporting such functionality).
     """
 
-    def __init__(self, client, ddl):
+    def __init__(self, client, sql, **kwargs):
         self.client = client
 
-        if isinstance(ddl, comp.DDL):
-            self.compiled_ddl = ddl.compile()
-        else:
-            self.compiled_ddl = ddl
+        dml = getattr(sql, 'dml', sql)
+        self.expr = getattr(
+            dml, 'parent_expr', getattr(dml, 'table_set', None)
+        )
 
-        self.result_wrapper = getattr(ddl, 'result_handler', None)
+        if not isinstance(sql, six.string_types):
+            self.compiled_sql = sql.compile()
+        else:
+            self.compiled_sql = sql
+
+        self.result_wrapper = getattr(dml, 'result_handler', None)
+        self.extra_options = kwargs
 
     def execute(self):
         # synchronous by default
-        with self.client._execute(self.compiled_ddl, results=True) as cur:
+        with self.client._execute(self.compiled_sql, results=True) as cur:
             result = self._fetch(cur)
 
         return self._wrap_result(result)
@@ -57,47 +51,25 @@ class Query(object):
         return result
 
     def _fetch(self, cursor):
-        import pandas as pd
-        rows = cursor.fetchall()
-        # TODO(wesm): please evaluate/reimpl to optimize for perf/memory
-        dtypes = [self._db_type_to_dtype(x[1]) for x in cursor.description]
-        names = [x[0] for x in cursor.description]
-        cols = {}
-        for (col, name, dtype) in czip(czip(*rows), names, dtypes):
-            try:
-                cols[name] = pd.Series(col, dtype=dtype)
-            except TypeError:
-                # coercing to specified dtype failed, e.g. NULL vals in int col
-                cols[name] = pd.Series(col)
-        return pd.DataFrame(cols, columns=names)
-
-    def _db_type_to_dtype(self, db_type):
         raise NotImplementedError
 
+    def schema(self):
 
-class AsyncQuery(Query):
-
-    """
-    Abstract asynchronous query
-    """
-
-    def execute(self):
-        raise NotImplementedError
-
-    def is_finished(self):
-        raise NotImplementedError
-
-    def cancel(self):
-        raise NotImplementedError
-
-    def get_result(self):
-        raise NotImplementedError
+        if isinstance(self.expr, (ir.TableExpr, ir.ExprList, sch.HasSchema)):
+            return self.expr.schema()
+        elif isinstance(self.expr, ir.ValueExpr):
+            return sch.schema([(self.expr.get_name(), self.expr.type())])
+        else:
+            raise ValueError('Expression with type {} does not have a '
+                             'schema'.format(type(self.expr)))
 
 
-class SQLClient(Client):
+class SQLClient(six.with_metaclass(abc.ABCMeta, Client)):
 
-    sync_query = Query
-    async_query = Query
+    dialect = comp.Dialect
+    query_class = Query
+    table_class = ops.DatabaseTable
+    table_expr_class = ir.TableExpr
 
     def table(self, name, database=None):
         """
@@ -115,12 +87,8 @@ class SQLClient(Client):
         """
         qualified_name = self._fully_qualified_name(name, database)
         schema = self._get_table_schema(qualified_name)
-        node = ops.DatabaseTable(qualified_name, schema, self)
-        return self._table_expr_klass(node)
-
-    @property
-    def _table_expr_klass(self):
-        return ir.TableExpr
+        node = self.table_class(qualified_name, schema, self)
+        return self.table_expr_class(node)
 
     @property
     def current_database(self):
@@ -170,16 +138,9 @@ class SQLClient(Client):
         """
         # Get the schema by adding a LIMIT 0 on to the end of the query. If
         # there is already a limit in the query, we find and remove it
-        limited_query = """\
-SELECT *
-FROM (
-{0}
-) t0
-LIMIT 0""".format(query)
+        limited_query = 'SELECT * FROM ({}) t0 LIMIT 0'.format(query)
         schema = self._get_schema_using_query(limited_query)
-
-        node = ops.SQLQueryResult(query, schema, self)
-        return ir.TableExpr(node)
+        return ops.SQLQueryResult(query, schema, self).to_expr()
 
     def raw_sql(self, query, results=False):
         """
@@ -190,7 +151,7 @@ LIMIT 0""".format(query)
         Parameters
         ----------
         query : string
-          SQL or DDL statement
+          DML or DDL statement
         results : boolean, default False
           Pass True if the query as a result set
 
@@ -201,7 +162,7 @@ LIMIT 0""".format(query)
         """
         return self._execute(query, results=results)
 
-    def execute(self, expr, params=None, limit='default', async=False):
+    def execute(self, expr, params=None, limit='default', **kwargs):
         """
         Compile and execute Ibis expression using this backend client
         interface, returning results in-memory in the appropriate object type
@@ -213,7 +174,6 @@ LIMIT 0""".format(query)
           For expressions yielding result yets; retrieve at most this number of
           values/rows. Overrides any limit already set on the expression.
         params : not yet implemented
-        async : boolean, default False
 
         Returns
         -------
@@ -222,16 +182,13 @@ LIMIT 0""".format(query)
           Array expressions: pandas.Series
           Scalar expressions: Python scalar value
         """
-        ast = self._build_ast_ensure_limit(expr, limit)
+        query_ast = self._build_ast_ensure_limit(expr, limit, params=params)
+        result = self._execute_query(query_ast, **kwargs)
+        return result
 
-        if len(ast.queries) > 1:
-            raise NotImplementedError
-        else:
-            return self._execute_query(ast.queries[0], async=async)
-
-    def _execute_query(self, ddl, async=False):
-        klass = self.async_query if async else self.sync_query
-        return klass(self, ddl).execute()
+    def _execute_query(self, dml, **kwargs):
+        query = self.query_class(self, dml, **kwargs)
+        return query.execute()
 
     def compile(self, expr, params=None, limit=None):
         """
@@ -241,15 +198,16 @@ LIMIT 0""".format(query)
         -------
         output : single query or list of queries
         """
-        ast = self._build_ast_ensure_limit(expr, limit)
-        queries = [query.compile() for query in ast.queries]
-        return queries[0] if len(queries) == 1 else queries
+        query_ast = self._build_ast_ensure_limit(expr, limit, params=params)
+        return query_ast.compile()
 
-    def _build_ast_ensure_limit(self, expr, limit):
-        ast = self._build_ast(expr)
+    def _build_ast_ensure_limit(self, expr, limit, params=None):
+        context = self.dialect.make_context(params=params)
+
+        query_ast = self._build_ast(expr, context)
         # note: limit can still be None at this point, if the global
         # default_limit is None
-        for query in reversed(ast.queries):
+        for query in reversed(query_ast.queries):
             if (isinstance(query, comp.Select) and
                     not isinstance(expr, ir.ScalarExpr) and
                     query.table_set is not None):
@@ -266,9 +224,9 @@ LIMIT 0""".format(query)
                 elif limit is not None and limit != 'default':
                     query.limit = {'n': limit,
                                    'offset': query.limit['offset']}
-        return ast
+        return query_ast
 
-    def explain(self, expr):
+    def explain(self, expr, params=None):
         """
         Query for and return the query plan associated with the indicated
         expression or SQL query.
@@ -278,11 +236,12 @@ LIMIT 0""".format(query)
         plan : string
         """
         if isinstance(expr, ir.Expr):
-            ast = self._build_ast(expr)
-            if len(ast.queries) > 1:
+            context = self.dialect.make_context(params=params)
+            query_ast = self._build_ast(expr, context)
+            if len(query_ast.queries) > 1:
                 raise Exception('Multi-query expression')
 
-            query = ast.queries[0].compile()
+            query = query_ast.queries[0].compile()
         else:
             query = expr
 
@@ -294,55 +253,63 @@ LIMIT 0""".format(query)
         return 'Query:\n{0}\n\n{1}'.format(util.indent(query, 2),
                                            '\n'.join(result))
 
-    def _build_ast(self, expr):
+    def _build_ast(self, expr, context):
         # Implement in clients
-        raise NotImplementedError
+        raise NotImplementedError(type(self).__name__)
 
 
 class QueryPipeline(object):
     """
-    Execute a series of queries, possibly asynchronously, and capture any
-    result sets generated
+    Execute a series of queries, and capture any result sets generated
 
     Note: No query pipelines have yet been implemented
     """
     pass
 
 
-def execute(expr, limit='default', async=False):
-    backend = find_backend(expr)
-    return backend.execute(expr, limit=limit, async=async)
-
-
-def compile(expr, limit=None):
-    backend = find_backend(expr)
-    return backend.compile(expr, limit=limit)
-
-
-def find_backend(expr):
-    backends = []
-
-    def walk(expr):
-        node = expr.op()
-        for arg in node.flat_args():
-            if isinstance(arg, Client):
-                backends.append(arg)
-            elif isinstance(arg, ir.Expr):
-                walk(arg)
-
-    walk(expr)
-    backends = util.unique_by_key(backends, id)
+def validate_backends(backends):
+    if not backends:
+        default = options.default_backend
+        if default is None:
+            raise com.IbisError(
+                'Expression depends on no backends, and found no default'
+            )
+        return [default]
 
     if len(backends) > 1:
         raise ValueError('Multiple backends found')
-    elif len(backends) == 0:
-        default = options.default_backend
-        if default is None:
-            raise com.IbisError('Expression depends on no backends, '
-                                'and found no default')
-        return default
+    return backends
 
-    return backends[0]
+
+def execute(expr, limit='default', params=None, **kwargs):
+    backend, = validate_backends(list(find_backends(expr)))
+    return backend.execute(expr, limit=limit, params=params, **kwargs)
+
+
+def compile(expr, limit=None, params=None, **kwargs):
+    backend, = validate_backends(list(find_backends(expr)))
+    return backend.compile(expr, limit=limit, params=params, **kwargs)
+
+
+def find_backends(expr):
+    seen_backends = set()
+
+    stack = [expr.op()]
+    seen = set()
+
+    while stack:
+        node = stack.pop()
+
+        if node not in seen:
+            seen.add(node)
+
+            for arg in node.flat_args():
+                if isinstance(arg, Client):
+                    if arg not in seen_backends:
+                        yield arg
+                        seen_backends.add(arg)
+                elif isinstance(arg, ir.Expr):
+                    stack.append(arg.op())
 
 
 class Database(object):
@@ -352,12 +319,12 @@ class Database(object):
         self.client = client
 
     def __repr__(self):
-        return "{0}('{1}')".format('Database', self.name)
+        return '{}({!r})'.format(type(self).__name__, self.name)
 
     def __dir__(self):
         attrs = dir(type(self))
         unqualified_tables = [self._unqualify(x) for x in self.tables]
-        return list(sorted(set(attrs + unqualified_tables)))
+        return sorted(frozenset(attrs + unqualified_tables))
 
     def __contains__(self, key):
         return key in self.tables
@@ -370,15 +337,7 @@ class Database(object):
         return self.table(key)
 
     def __getattr__(self, key):
-        special_attrs = ['_ipython_display_', 'trait_names',
-                         '_getAttributeNames']
-
-        try:
-            return object.__getattribute__(self, key)
-        except AttributeError:
-            if key in special_attrs:
-                raise
-            return self.table(key)
+        return self.table(key)
 
     def _qualify(self, value):
         return value
@@ -437,8 +396,9 @@ class DatabaseNamespace(Database):
         self.namespace = namespace
 
     def __repr__(self):
-        return ("{0}(database={1!r}, namespace={2!r})"
-                .format('DatabaseNamespace', self.name, self.namespace))
+        return "{}(database={!r}, namespace={!r})".format(
+            type(self).__name__, self.name, self.namespace
+        )
 
     @property
     def client(self):

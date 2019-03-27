@@ -37,6 +37,22 @@ class TranslationError(IbisError):
     pass
 
 
+class OperationNotDefinedError(TranslationError):
+    pass
+
+
+class UnsupportedOperationError(TranslationError):
+    pass
+
+
+class UnsupportedBackendType(TranslationError):
+    pass
+
+
+class UnboundExpressionError(ValueError, IbisError):
+    pass
+
+
 class IbisInputError(ValueError, IbisError):
     pass
 

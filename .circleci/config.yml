@@ -1,0 +1,235 @@
+version: 2
+
+
+base: &base
+  machine:
+    image: circleci/classic:latest
+    docker_layer_caching: false
+  working_directory: ~/ibis/ci
+
+
+test: &test
+  <<: *base
+  steps:
+    - checkout:
+        path: ~/ibis
+    - run:
+        name: Setup Google Credentials for BigQuery
+        command: |
+          if [ -n "${GCLOUD_SERVICE_KEY}" ]; then
+            mkdir -p /tmp/ibis
+            echo "${GCLOUD_SERVICE_KEY}" | base64 --decode --ignore-garbage > /tmp/ibis/gcloud-service-key.json
+          fi
+    - run:
+        name: Start Databases
+        command: docker-compose up -d --no-build mysql postgres impala clickhouse mapd kudu-tserver kudu-master
+    - run:
+        name: Show Running Containers
+        command: docker ps
+    - run:
+        name: Build Ibis Image
+        command: docker-compose build --pull ibis
+    - run:
+        name: List Docker Images
+        command: docker images
+    - run:
+        name: Flake8
+        command: docker-compose run ibis flake8
+    - run:
+        name: Wait for Databases
+        command: docker-compose run waiter
+    - run:
+        name: Load Test Datasets
+        command: docker-compose run -e LOGLEVEL=DEBUG ibis ci/load-data.sh
+    - run:
+        name: Make artifacts directories
+        command: |
+          sudo mkdir -p /tmp/ibis/test-reports/pytest
+          mkdir -p /tmp/env
+    - run:
+        name: Show packages in conda environment
+        command: docker-compose run ibis conda list
+    - run:
+        name: Capture the exact environment used
+        command: docker-compose run ibis conda env export > /tmp/env/env.yml
+    - run:
+        name: Execute Pytest
+        command: |
+          docker-compose run -e PYTHONHASHSEED=$PYTHONHASHSEED ibis \
+            pytest ibis -m "not udf" \
+                        -ra \
+                        --numprocesses auto \
+                        --doctest-modules \
+                        --doctest-ignore-import-errors \
+                        --junitxml=/tmp/test-reports/pytest/junit.xml \
+                        --cov=ibis \
+                        --cov-report=xml:/tmp/test-reports/pytest-cov/coverage.xml
+    - store_test_results:
+        path: /tmp/ibis/test-reports
+    - store_artifacts:
+        path: /tmp/ibis/test-reports
+    - store_artifacts:
+        path: /tmp/env/env.yml
+    - run:
+        name: Upload Coverage
+        command: |
+          bash <(curl -s https://codecov.io/bash) \
+            -f /tmp/ibis/test-reports/pytest-cov/coverage.xml
+
+
+build: &build
+  <<: *base
+  steps:
+    - checkout:
+        path: ~/ibis
+    - run:
+        name: Build Ibis Image
+        command: docker-compose build --pull ibis
+    - run:
+        name: List Docker Images
+        command: docker images
+    - run:
+        name: Clone, update and build conda-forge recipe
+        command: docker-compose run ibis ci/feedstock.py test
+    - run:
+        name: Permission the host for package deployment
+        command: sudo chown -R "${USER}":"${USER}" /tmp/ibis/packages
+    - store_artifacts:
+        path: /tmp/ibis/packages/linux-64
+    - store_artifacts:
+        path: /tmp/ibis/packages/noarch
+
+
+benchmark: &benchmark
+  <<: *base
+  steps:
+    - checkout:
+        path: ~/ibis
+    - run:
+        name: Build Ibis Image
+        command: docker-compose build --pull ibis
+    - run:
+        name: Run Benchmark (ASV)
+        command: |
+          docker-compose run ibis ci/benchmark.sh circle "${CIRCLE_SHA1}"
+
+
+docs: &docs
+  <<: *base
+  steps:
+    - checkout:
+        path: ~/ibis
+    - add_ssh_keys:
+        fingerprints:
+          - "8d:b0:36:4d:f6:75:f2:5f:00:01:a1:53:63:52:f0:e2"
+    - run:
+        name: Start Databases
+        command: docker-compose up -d --no-build mysql postgres impala clickhouse mapd kudu-master kudu-tserver
+    - run:
+        name: Show Running Containers
+        command: docker ps
+    - run:
+        name: Build Ibis Documentation Image
+        command: docker-compose build --pull ibis
+    - run:
+        name: List Docker Images
+        command: docker images
+    - run:
+        name: Wait for Databases
+        command: docker-compose run waiter
+    - run:
+        name: Load Test Datasets
+        command: docker-compose run ibis ci/load-data.sh
+    - run:
+        name: Ping the Notebook Impala Hostname
+        command: docker-compose run ibis ping -c 1 quickstart.cloudera
+    - run:
+        name: Clone Documentation Repository
+        command: docker-compose run ibis git clone --branch gh-pages https://github.com/ibis-project/docs.ibis-project.org /tmp/docs.ibis-project.org
+    - run:
+        name: Clear Out Old Documentation Files
+        command: docker-compose run ibis find /tmp/docs.ibis-project.org -maxdepth 1 ! -name '*.git' ! -wholename /tmp/docs.ibis-project.org ! -name 'CNAME' ! -name '*.nojekyll' -exec rm -rf {} \;
+    - run:
+        name: Build Documentation
+        command: docker-compose run ibis sphinx-build -b html docs/source /tmp/docs.ibis-project.org -W -T -j auto
+    - run:
+        name: Who is Running
+        command: |
+          echo "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_BRANCH}"
+    - run:
+        name: Push Documentation to Remote Repo
+        command: |
+          if [ "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_BRANCH}" = "ibis-project/master" ]; then
+            sudo chown -R "${USER}":"${USER}" /tmp/ibis
+            pushd /tmp/ibis/docs.ibis-project.org
+
+            git config user.name 'Ibis Documentation Bot'
+            git config user.email ''
+
+            # Add everything
+            git add --all .
+            git commit -m "Docs from ibis at ${CIRCLE_SHA1}"
+            git push origin gh-pages --force
+          fi
+    - store_artifacts:
+        path: /tmp/ibis/docs.ibis-project.org
+
+jobs:
+  python27_test:
+    <<: *test
+    environment:
+      - PYTHONHASHSEED: ""
+      - PYTHON_VERSION: 2.7
+
+  python35_test:
+    <<: *test
+    environment:
+      - PYTHONHASHSEED: 0
+      - PYTHON_VERSION: 3.5
+
+  python36_test:
+    <<: *test
+    environment:
+      - PYTHONHASHSEED: ""
+      - PYTHON_VERSION: 3.6
+
+  python27_conda_build:
+    <<: *build
+    environment:
+      - PYTHON_VERSION: 2.7
+
+  python35_conda_build:
+    <<: *build
+    environment:
+      - PYTHON_VERSION: 3.5
+
+  python36_conda_build:
+    <<: *build
+    environment:
+      - PYTHON_VERSION: 3.6
+
+  python36_benchmark:
+    <<: *benchmark
+    environment:
+      - PYTHON_VERSION: 3.6
+
+  python36_docs:
+    <<: *docs
+    environment:
+      - PYTHON_VERSION: 3.6
+      - ENVKIND: docs
+
+workflows:
+  version: 2
+  test:
+    jobs:
+      - python27_test
+      - python27_conda_build
+
+      - python35_test
+      - python35_conda_build
+
+      - python36_test
+      - python36_conda_build
+      - python36_benchmark
+      - python36_docs

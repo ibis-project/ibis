@@ -303,8 +303,8 @@ Generic value methods
 
 .. _api.functions:
 
-Scalar or array methods
-~~~~~~~~~~~~~~~~~~~~~~~
+Scalar or column methods
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
    :toctree: generated/
@@ -322,51 +322,43 @@ Scalar or array methods
    ValueExpr.over
    ValueExpr.typeof
 
-   ValueExpr.add
-   ValueExpr.sub
-   ValueExpr.mul
-   ValueExpr.div
-   ValueExpr.pow
-   ValueExpr.rdiv
-   ValueExpr.rsub
-
    ValueExpr.case
    ValueExpr.cases
    ValueExpr.substitute
 
-Array methods
-~~~~~~~~~~~~~
+Column methods
+~~~~~~~~~~~~~~
 
 .. autosummary::
    :toctree: generated/
 
-   ArrayExpr.distinct
+   ColumnExpr.distinct
 
-   ArrayExpr.count
-   ArrayExpr.min
-   ArrayExpr.max
-   ArrayExpr.approx_median
-   ArrayExpr.approx_nunique
-   ArrayExpr.group_concat
-   ArrayExpr.nunique
-   ArrayExpr.summary
+   ColumnExpr.count
+   ColumnExpr.min
+   ColumnExpr.max
+   ColumnExpr.approx_median
+   ColumnExpr.approx_nunique
+   ColumnExpr.group_concat
+   ColumnExpr.nunique
+   ColumnExpr.summary
 
-   ArrayExpr.value_counts
+   ColumnExpr.value_counts
 
-   ArrayExpr.first
-   ArrayExpr.last
-   ArrayExpr.dense_rank
-   ArrayExpr.rank
-   ArrayExpr.lag
-   ArrayExpr.lead
-   ArrayExpr.cummin
-   ArrayExpr.cummax
+   ColumnExpr.first
+   ColumnExpr.last
+   ColumnExpr.dense_rank
+   ColumnExpr.rank
+   ColumnExpr.lag
+   ColumnExpr.lead
+   ColumnExpr.cummin
+   ColumnExpr.cummax
 
 General numeric methods
 -----------------------
 
-Scalar or array methods
-~~~~~~~~~~~~~~~~~~~~~~~
+Scalar or column methods
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
    :toctree: generated/
@@ -384,33 +376,41 @@ Scalar or array methods
    NumericValue.round
    NumericValue.nullifzero
    NumericValue.zeroifnull
+   NumericValue.add
+   NumericValue.sub
+   NumericValue.mul
+   NumericValue.div
+   NumericValue.pow
+   NumericValue.rdiv
+   NumericValue.rsub
 
 
-Array methods
-~~~~~~~~~~~~~
+
+Column methods
+~~~~~~~~~~~~~~
 
 .. autosummary::
    :toctree: generated/
 
-   NumericArray.sum
-   NumericArray.mean
+   NumericColumn.sum
+   NumericColumn.mean
 
-   NumericArray.std
-   NumericArray.var
+   NumericColumn.std
+   NumericColumn.var
 
-   NumericArray.cumsum
-   NumericArray.cummean
+   NumericColumn.cumsum
+   NumericColumn.cummean
 
-   NumericArray.bottomk
-   NumericArray.topk
-   NumericArray.bucket
-   NumericArray.histogram
+   NumericColumn.bottomk
+   NumericColumn.topk
+   NumericColumn.bucket
+   NumericColumn.histogram
 
 Integer methods
 ---------------
 
-Scalar or array methods
-~~~~~~~~~~~~~~~~~~~~~~~
+Scalar or column methods
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
    :toctree: generated/
@@ -440,6 +440,7 @@ All string operations are valid either on scalar or array values
    StringValue.capitalize
    StringValue.contains
    StringValue.like
+   StringValue.to_timestamp
    StringValue.parse_url
    StringValue.substr
    StringValue.left
@@ -468,14 +469,104 @@ All timestamp operations are valid either on scalar or array values
 .. autosummary::
    :toctree: generated/
 
-   TimestampValue.truncate
+   TimestampValue.strftime
    TimestampValue.year
    TimestampValue.month
    TimestampValue.day
+   TimestampValue.day_of_week
    TimestampValue.hour
    TimestampValue.minute
    TimestampValue.second
    TimestampValue.millisecond
+   TimestampValue.truncate
+   TimestampValue.time
+   TimestampValue.date
+   TimestampValue.add
+   TimestampValue.radd
+   TimestampValue.sub
+   TimestampValue.rsub
+
+.. _api.date:
+
+Date methods
+------------
+
+.. autosummary::
+   :toctree: generated/
+
+   DateValue.strftime
+   DateValue.year
+   DateValue.month
+   DateValue.day
+   DateValue.day_of_week
+   DateValue.truncate
+   DateValue.add
+   DateValue.radd
+   DateValue.sub
+   DateValue.rsub
+
+.. _api.dow:
+
+Day of week methods
+-------------------
+
+.. currentmodule:: ibis.expr.types
+
+.. autosummary::
+   :toctree: generated/
+
+   DayOfWeek.index
+   DayOfWeek.full_name
+
+.. currentmodule:: ibis.expr.api
+
+.. _api.time:
+
+Time methods
+------------
+
+.. autosummary::
+   :toctree: generated/
+
+   TimeValue.between
+   TimeValue.truncate
+   TimeValue.hour
+   TimeValue.minute
+   TimeValue.second
+   TimeValue.millisecond
+   TimeValue.add
+   TimeValue.radd
+   TimeValue.sub
+   TimeValue.rsub
+
+.. _api.interval:
+
+Interval methods
+----------------
+
+.. autosummary::
+   :toctree: generated/
+
+   IntervalValue.to_unit
+   IntervalValue.years
+   IntervalValue.quarters
+   IntervalValue.months
+   IntervalValue.weeks
+   IntervalValue.days
+   IntervalValue.hours
+   IntervalValue.minutes
+   IntervalValue.seconds
+   IntervalValue.milliseconds
+   IntervalValue.microseconds
+   IntervalValue.nanoseconds
+   IntervalValue.add
+   IntervalValue.radd
+   IntervalValue.sub
+   IntervalValue.mul
+   IntervalValue.rmul
+   IntervalValue.floordiv
+   IntervalValue.negate
+
 
 Boolean methods
 ---------------
@@ -489,10 +580,10 @@ Boolean methods
 .. autosummary::
    :toctree: generated/
 
-   BooleanArray.any
-   BooleanArray.all
-   BooleanArray.cumany
-   BooleanArray.cumall
+   BooleanColumn.any
+   BooleanColumn.all
+   BooleanColumn.cumany
+   BooleanColumn.cumall
 
 Category methods
 ----------------

@@ -12,18 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import unittest
+
+import pytest
+
 import ibis
-
-from ibis.impala.compiler import build_ast, to_sql
-
-from ibis import impala
-
-from ibis.expr.tests.mocks import MockConnection
-from ibis.compat import unittest
-import ibis.common as com
-
 import ibis.expr.api as api
 import ibis.expr.operations as ops
+
+from ibis.expr.tests.mocks import MockConnection
+
+pytest.importorskip('sqlalchemy')
+pytest.importorskip('impala.dbapi')
+
+from ibis.impala.compiler import build_ast, to_sql, ImpalaDialect  # noqa: E402
+from ibis import impala  # noqa: E402
 
 
 class TestASTBuilder(unittest.TestCase):
@@ -44,8 +47,7 @@ class TestASTBuilder(unittest.TestCase):
         joined = table2.inner_join(table3, [join_pred])
         result = joined[[table3, table2['value']]]
 
-        ast = build_ast(result)
-        stmt = ast.queries[0]
+        stmt = _get_query(result)
 
         def foo():
             table3 = table[filter_pred]
@@ -79,8 +81,7 @@ class TestASTBuilder(unittest.TestCase):
         result = joined.aggregate([met1, table3['f'].sum().name('bar')],
                                   by=[table3['g'], table2['key']])
 
-        ast = build_ast(result)
-        stmt = ast.queries[0]
+        stmt = _get_query(result)
 
         # #790, this behavior was different before
         ex_pred = [table3['g'] == table2['key']]
@@ -120,8 +121,7 @@ class TestNonTabularResults(unittest.TestCase):
 
         expr = table[table.c > 0].f.sum()
 
-        ast = build_ast(expr)
-        query = ast.queries[0]
+        query = _get_query(expr)
 
         sql_query = query.compile()
         expected = """SELECT sum(`f`) AS `sum`
@@ -188,8 +188,7 @@ FROM (
         agged = table[table.c > 0].group_by('g').aggregate([m])
         expr = agged.g
 
-        ast = build_ast(expr)
-        query = ast.queries[0]
+        query = _get_query(expr)
 
         sql_query = query.compile()
         expected = """\
@@ -263,8 +262,9 @@ FROM alltypes"""
 
 
 def _get_query(expr):
-    ast = build_ast(expr)
+    ast = build_ast(expr, ImpalaDialect.make_context())
     return ast.queries[0]
+
 
 nation = api.table([
     ('n_regionkey', 'int32'),
@@ -802,9 +802,11 @@ class TestSelectSQL(unittest.TestCase, ExprTestCases):
         assert result == expected
 
     def test_nameless_table(self):
-        # Ensure that user gets some kind of sensible error
+        # Generate a unique table name when we haven't passed on
         nameless = api.table([('key', 'string')])
-        self.assertRaises(com.RelationError, to_sql, nameless)
+        assert to_sql(nameless) == 'SELECT *\nFROM {}'.format(
+            nameless.op().name
+        )
 
         with_name = api.table([('key', 'string')], name='baz')
         result = to_sql(with_name)
@@ -847,8 +849,8 @@ FROM star1 t0
              """SELECT t0.*
 FROM star1 t0
   INNER JOIN star2 t1
-    ON t0.`foo_id` = t1.`foo_id` AND
-       t0.`bar_id` = t1.`foo_id`"""),
+    ON (t0.`foo_id` = t1.`foo_id`) AND
+       (t0.`bar_id` = t1.`foo_id`)"""),
         ]
 
         for expr, expected_sql in cases:
@@ -976,8 +978,8 @@ FROM (
         result = to_sql(what)
         expected = """SELECT *
 FROM star1
-WHERE `f` > 0 AND
-      `c` < (`f` * 2)"""
+WHERE (`f` > 0) AND
+      (`c` < (`f` * 2))"""
         assert result == expected
 
     def test_where_in_array_literal(self):
@@ -992,8 +994,8 @@ WHERE `f` > 0 AND
 FROM star1 t0
   INNER JOIN star2 t1
     ON t0.`foo_id` = t1.`foo_id`
-WHERE t0.`f` > 0 AND
-      t1.`value3` < 1000"""
+WHERE (t0.`f` > 0) AND
+      (t1.`value3` < 1000)"""
 
         result_sql = to_sql(e1)
         assert result_sql == expected_sql
@@ -1034,8 +1036,8 @@ WHERE `diff` > 1"""
         result = to_sql(what)
         expected = """SELECT *
 FROM alltypes
-WHERE `a` > 0 AND
-      `f` BETWEEN 0 AND 1"""
+WHERE (`a` > 0) AND
+      (`f` BETWEEN 0 AND 1)"""
         assert result == expected
 
     def test_where_analyze_scalar_op(self):
@@ -1053,9 +1055,9 @@ WHERE `a` > 0 AND
         expected = """\
 SELECT count(*) AS `count`
 FROM functional_alltypes
-WHERE `timestamp_col` < months_add('2010-01-01 00:00:00', 3) AND
-      `timestamp_col` < days_add(now(), 10)"""
-        assert result == expected
+WHERE (`timestamp_col` < date_add(cast({} as timestamp), INTERVAL 3 MONTH)) AND
+      (`timestamp_col` < date_add(cast(now() as timestamp), INTERVAL 10 DAY))"""  # noqa: E501
+        assert result == expected.format("'2010-01-01 00:00:00'")
 
     def test_bug_duplicated_where(self):
         # GH #539
@@ -1071,16 +1073,21 @@ WHERE `timestamp_col` < months_add('2010-01-01 00:00:00', 3) AND
         worst = tmp2.limit(10)
 
         result = to_sql(worst)
+
+        # TODO(cpcloud): We should be able to flatten the second subquery into
+        # the first
         expected = """\
-SELECT *
+SELECT t0.*
 FROM (
-  SELECT `arrdelay`, `dest`,
-         avg(`arrdelay`) OVER (PARTITION BY `dest`) AS `dest_avg`,
+  SELECT *, avg(`arrdelay`) OVER (PARTITION BY `dest`) AS `dest_avg`,
          `arrdelay` - avg(`arrdelay`) OVER (PARTITION BY `dest`) AS `dev`
-  FROM airlines
+  FROM (
+    SELECT `arrdelay`, `dest`
+    FROM airlines
+  ) t2
 ) t0
-WHERE `dev` IS NOT NULL
-ORDER BY `dev` DESC
+WHERE t0.`dev` IS NOT NULL
+ORDER BY t0.`dev` DESC
 LIMIT 10"""
         assert result == expected
 
@@ -1137,12 +1144,13 @@ FROM (
 ) t0"""
         assert result == expected
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_expr_template_field_name_binding(self):
         # Given an expression with no concrete links to actual database tables,
         # indicate a mapping between the distinct unbound table leaves of the
         # expression and some database tables with compatible schemas but
         # potentially different column names
-        pass
+        assert False
 
     def test_no_aliases_needed(self):
         table = api.table([
@@ -1265,9 +1273,10 @@ WHERE `value` > 0"""
 
     def test_bug_project_multiple_times(self):
         # 108
-        customer = self.con.table('tpch_customer')
-        nation = self.con.table('tpch_nation')
-        region = self.con.table('tpch_region')
+        con = self.con
+        customer = con.table('tpch_customer')
+        nation = con.table('tpch_nation')
+        region = con.table('tpch_region')
 
         joined = (
             customer.inner_join(nation,
@@ -1288,27 +1297,27 @@ WHERE `value` > 0"""
         # it works!
         result = to_sql(expr)
         expected = """\
-SELECT t0.`c_name`, t2.`r_name`, t1.`n_name`
-FROM tpch_customer t0
-  INNER JOIN tpch_nation t1
-    ON t0.`c_nationkey` = t1.`n_nationkey`
-  INNER JOIN tpch_region t2
-    ON t1.`n_regionkey` = t2.`r_regionkey`
+WITH t0 AS (
+  SELECT t2.*, t3.`n_name`, t4.`r_name`
+  FROM tpch_customer t2
+    INNER JOIN tpch_nation t3
+      ON t2.`c_nationkey` = t3.`n_nationkey`
+    INNER JOIN tpch_region t4
+      ON t3.`n_regionkey` = t4.`r_regionkey`
+)
+SELECT `c_name`, `r_name`, `n_name`
+FROM t0
   LEFT SEMI JOIN (
     SELECT *
     FROM (
-      SELECT t1.`n_name`, sum(CAST(t0.`c_acctbal` AS double)) AS `sum`
-      FROM tpch_customer t0
-        INNER JOIN tpch_nation t1
-          ON t0.`c_nationkey` = t1.`n_nationkey`
-        INNER JOIN tpch_region t2
-          ON t1.`n_regionkey` = t2.`r_regionkey`
+      SELECT `n_name`, sum(CAST(`c_acctbal` AS double)) AS `sum`
+      FROM t0
       GROUP BY 1
-    ) t4
+    ) t2
     ORDER BY `sum` DESC
     LIMIT 10
-  ) t3
-    ON t1.`n_name` = t3.`n_name`"""
+  ) t1
+    ON t0.`n_name` = t1.`n_name`"""
         assert result == expected
 
     def test_aggregate_projection_subquery(self):
@@ -1331,8 +1340,8 @@ WHERE `f` > 0"""
         result = to_sql(filtered)
         expected = """SELECT *, `a` + `b` AS `foo`
 FROM alltypes
-WHERE `f` > 0 AND
-      `g` = 'bar'"""
+WHERE (`f` > 0) AND
+      (`g` = 'bar')"""
         assert result == expected
 
         agged = agg(filtered)
@@ -1341,8 +1350,8 @@ WHERE `f` > 0 AND
 FROM (
   SELECT *, `a` + `b` AS `foo`
   FROM alltypes
-  WHERE `f` > 0 AND
-        `g` = 'bar'
+  WHERE (`f` > 0) AND
+        (`g` = 'bar')
 ) t0
 GROUP BY 1"""
         assert result == expected
@@ -1427,9 +1436,10 @@ FROM (
 GROUP BY 1"""
         assert result == expected
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_aggregate_fuse_with_projection(self):
         # see above test case
-        pass
+        assert False
 
     def test_subquery_used_for_self_join(self):
         expr = self._case_subquery_used_for_self_join()
@@ -1561,12 +1571,13 @@ FROM t0
         yoy = self._case_tpch_self_join_failure()
         to_sql(yoy)
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_extract_subquery_nested_lower(self):
         # We may have a join between two tables requiring subqueries, and
         # buried inside these there may be a common subquery. Let's test that
         # we find it and pull it out to the top level to avoid repeating
         # ourselves.
-        pass
+        assert False
 
     def test_subquery_in_filter_predicate(self):
         expr, expr2 = self._case_subquery_in_filter_predicate()
@@ -1663,28 +1674,27 @@ FROM tbl t0
 
         result = to_sql(expr)
         expected = """\
-SELECT t0.*, t1.`n_name`, t2.`r_name`
-FROM customer t0
-  INNER JOIN nation t1
-    ON t0.`c_nationkey` = t1.`n_nationkey`
-  INNER JOIN region t2
-    ON t1.`n_regionkey` = t2.`r_regionkey`
+WITH t0 AS (
+  SELECT t2.*, t3.`n_name`, t4.`r_name`
+  FROM customer t2
+    INNER JOIN nation t3
+      ON t2.`c_nationkey` = t3.`n_nationkey`
+    INNER JOIN region t4
+      ON t3.`n_regionkey` = t4.`r_regionkey`
+)
+SELECT t0.*
+FROM t0
   LEFT SEMI JOIN (
     SELECT *
     FROM (
-      SELECT t1.`n_name`, sum(t0.`c_acctbal`) AS `sum`
-      FROM customer t0
-        INNER JOIN nation t1
-          ON t0.`c_nationkey` = t1.`n_nationkey`
-        INNER JOIN region t2
-          ON t1.`n_regionkey` = t2.`r_regionkey`
+      SELECT `n_name`, sum(`c_acctbal`) AS `sum`
+      FROM t0
       GROUP BY 1
-    ) t4
+    ) t2
     ORDER BY `sum` DESC
     LIMIT 10
-  ) t3
-    ON t1.`n_name` = t3.`n_name`"""
-
+  ) t1
+    ON t0.`n_name` = t1.`n_name`"""
         assert result == expected
 
     def test_topk_analysis_bug(self):
@@ -1694,6 +1704,7 @@ FROM customer t0
                                ('arrdelay', 'int32')], 'airlines')
 
         dests = ['ORD', 'JFK', 'SFO']
+        dests_formatted = repr(tuple(set(dests)))
         delay_filter = airlines.dest.topk(10, by=airlines.arrdelay.mean())
         t = airlines[airlines.dest.isin(dests)]
         expr = t[delay_filter].group_by('origin').size()
@@ -1713,8 +1724,8 @@ FROM airlines t0
     LIMIT 10
   ) t1
     ON t0.`dest` = t1.`dest`
-WHERE t0.`dest` IN ('ORD', 'JFK', 'SFO')
-GROUP BY 1"""
+WHERE t0.`dest` IN {}
+GROUP BY 1""".format(dests_formatted)
 
         assert result == expected
 
@@ -1729,12 +1740,14 @@ GROUP BY 1"""
         expected = to_sql(top.to_aggregation())
         assert result == expected
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_bottomk(self):
-        pass
+        assert False
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_topk_antijoin(self):
         # Get the "other" category somehow
-        pass
+        assert False
 
     def test_case_in_projection(self):
         t = self.con.table('alltypes')
@@ -1816,9 +1829,10 @@ WHERE t0.`y` > (
 )"""
         assert result == expected
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_where_array_correlated(self):
         # Test membership in some record-dependent values, if this is supported
-        pass
+        assert False
 
     def test_exists(self):
         e1, e2 = self._case_exists()
@@ -1839,8 +1853,8 @@ FROM foo t0
 WHERE EXISTS (
   SELECT 1
   FROM bar t1
-  WHERE t0.`key1` = t1.`key1` AND
-        t1.`key2` = 'foo'
+  WHERE (t0.`key1` = t1.`key1`) AND
+        (t1.`key2` = 'foo')
 )"""
         assert result == expected
 
@@ -1850,7 +1864,7 @@ WHERE EXISTS (
 
         cond = t1.key1 == t2.key1
         expr = t1[cond.any()]
-        stmt = build_ast(expr).queries[0]
+        stmt = _get_query(expr)
 
         repr(stmt.where[0])
 
@@ -2041,18 +2055,20 @@ ORDER BY `string_col`"""
         t = self.con.table('functional_alltypes')
 
         expr = t.limit(20).limit(10)
-        stmt = build_ast(expr).queries[0]
+        stmt = _get_query(expr)
 
         assert stmt.limit['n'] == 10
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_top_convenience(self):
         # x.top(10, by=field)
         # x.top(10, by=[field1, field2])
-        pass
+        assert False
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_self_aggregate_in_predicate(self):
         # Per ibis #43
-        pass
+        assert False
 
     def test_self_join_filter_analysis_bug(self):
         expr, _ = self._case_filter_self_join_analysis_bug()
@@ -2111,20 +2127,20 @@ SELECT t0.`value_a`, t1.`value_b`
 FROM (
   SELECT *
   FROM a
-  WHERE `year` = 2016 AND
-        `month` = 2 AND
-        `day` = 29
+  WHERE (`year` = 2016) AND
+        (`month` = 2) AND
+        (`day` = 29)
 ) t0
   LEFT OUTER JOIN (
     SELECT *
     FROM b
-    WHERE `year` = 2016 AND
-          `month` = 2 AND
-          `day` = 29
+    WHERE (`year` = 2016) AND
+          (`month` = 2) AND
+          (`day` = 29)
   ) t1
-    ON t0.`year` = t1.`year` AND
-       t0.`month` = t1.`month` AND
-       t0.`day` = t1.`day`"""
+    ON (t0.`year` = t1.`year`) AND
+       (t0.`month` = t1.`month`) AND
+       (t0.`day` = t1.`day`)"""
 
         assert result_sql == expected_sql
 
@@ -2156,8 +2172,8 @@ FROM (
     FROM bar
     WHERE `id` < 3
   ) t1
-    ON t0.`id` = t1.`id` AND
-       t0.`desc` = t1.`desc`"""
+    ON (t0.`id` = t1.`id`) AND
+       (t0.`desc` = t1.`desc`)"""
 
         assert result == expected
 
@@ -2244,7 +2260,7 @@ FROM functional_alltypes"""
 
         result = to_sql(expr)
         expected = """\
-SELECT `string_col`, COUNT(DISTINCT `int_col`) AS `nunique`
+SELECT `string_col`, count(DISTINCT `int_col`) AS `nunique`
 FROM functional_alltypes
 WHERE `bigint_col` > 0
 GROUP BY 1"""
@@ -2262,8 +2278,8 @@ GROUP BY 1"""
 
         result = to_sql(expr)
         expected = """\
-SELECT `string_col`, COUNT(DISTINCT `int_col`) AS `int_card`,
-       COUNT(DISTINCT `smallint_col`) AS `smallint_card`
+SELECT `string_col`, count(DISTINCT `int_col`) AS `int_card`,
+       count(DISTINCT `smallint_col`) AS `smallint_card`
 FROM functional_alltypes
 GROUP BY 1"""
         assert result == expected
@@ -2283,7 +2299,8 @@ def test_pushdown_with_or():
     expected = """\
 SELECT *
 FROM functional_alltypes
-WHERE (`double_col` > 3.14) AND (locate('foo', `string_col`) - 1 >= 0) AND
+WHERE (`double_col` > 3.14) AND
+      (locate('foo', `string_col`) - 1 >= 0) AND
       (((`int_col` - 1) = 0) OR (`float_col` <= 1.34))"""
     assert result == expected
 
@@ -2318,4 +2335,98 @@ FROM t
 WHERE `b` = 'm'
 GROUP BY 1
 HAVING max(`a`) = 2"""
+    assert result == expected
+
+
+def test_simple_agg_filter():
+    t = ibis.table([('a', 'int64'), ('b', 'string')], name='my_table')
+    filt = t[t.a < 100]
+    expr = filt[filt.a == filt.a.max()]
+    result = to_sql(expr)
+    expected = """\
+SELECT *
+FROM (
+  SELECT *
+  FROM my_table
+  WHERE `a` < 100
+) t0
+WHERE `a` = (
+  SELECT max(`a`) AS `max`
+  FROM my_table
+  WHERE `a` < 100
+)"""
+    assert result == expected
+
+
+def test_agg_and_non_agg_filter():
+    t = ibis.table([('a', 'int64'), ('b', 'string')], name='my_table')
+    filt = t[t.a < 100]
+    expr = filt[filt.a == filt.a.max()]
+    expr = expr[expr.b == 'a']
+    result = to_sql(expr)
+    expected = """\
+SELECT *
+FROM (
+  SELECT *
+  FROM my_table
+  WHERE `a` < 100
+) t0
+WHERE (`a` = (
+  SELECT max(`a`) AS `max`
+  FROM my_table
+  WHERE `a` < 100
+)) AND
+      (`b` = 'a')"""
+    assert result == expected
+
+
+def test_agg_filter():
+    t = ibis.table([('a', 'int64'), ('b', 'int64')], name='my_table')
+    t = t.mutate(b2=t.b * 2)
+    t = t[['a', 'b2']]
+    filt = t[t.a < 100]
+    expr = filt[filt.a == filt.a.max().name('blah')]
+    result = to_sql(expr)
+    expected = """\
+WITH t0 AS (
+  SELECT *, `b` * 2 AS `b2`
+  FROM my_table
+),
+t1 AS (
+  SELECT t0.`a`, t0.`b2`
+  FROM t0
+  WHERE t0.`a` < 100
+)
+SELECT t1.*
+FROM t1
+WHERE t1.`a` = (
+  SELECT max(`a`) AS `blah`
+  FROM t1
+)"""
+    assert result == expected
+
+
+def test_agg_filter_with_alias():
+    t = ibis.table([('a', 'int64'), ('b', 'int64')], name='my_table')
+    t = t.mutate(b2=t.b * 2)
+    t = t[['a', 'b2']]
+    filt = t[t.a < 100]
+    expr = filt[filt.a.name('A') == filt.a.max().name('blah')]
+    result = to_sql(expr)
+    expected = """\
+WITH t0 AS (
+  SELECT *, `b` * 2 AS `b2`
+  FROM my_table
+),
+t1 AS (
+  SELECT t0.`a`, t0.`b2`
+  FROM t0
+  WHERE t0.`a` < 100
+)
+SELECT t1.*
+FROM t1
+WHERE t1.`a` = (
+  SELECT max(`a`) AS `blah`
+  FROM t1
+)"""
     assert result == expected

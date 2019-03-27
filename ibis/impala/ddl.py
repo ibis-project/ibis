@@ -12,46 +12,51 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis.compat import StringIO
 import re
+import json
 
-from ibis.sql.compiler import DDL
+from ibis.sql.compiler import DDL, DML
 from .compiler import quote_identifier, _type_to_sql_string
 
-from ibis.expr.datatypes import validate_type
-from ibis.compat import py_string
+import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
-import ibis.expr.rules as rules
 
 
-fully_qualified_re = re.compile("(.*)\.(?:`(.*)`|(.*))")
+fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
 
 
 def _is_fully_qualified(x):
-    m = fully_qualified_re.search(x)
-    return bool(m)
+    return bool(fully_qualified_re.search(x))
 
 
 def _is_quoted(x):
-    regex = re.compile("(?:`(.*)`|(.*))")
-    quoted, unquoted = regex.match(x).groups()
+    regex = re.compile(r"(?:`(.*)`|(.*))")
+    quoted, _ = regex.match(x).groups()
     return quoted is not None
 
 
-class ImpalaDDL(DDL):
+class ImpalaQualifiedSQLStatement(object):
 
     def _get_scoped_name(self, obj_name, database):
         if database:
-            scoped_name = '{0}.`{1}`'.format(database, obj_name)
+            scoped_name = '{}.`{}`'.format(database, obj_name)
         else:
             if not _is_fully_qualified(obj_name):
                 if _is_quoted(obj_name):
                     return obj_name
                 else:
-                    return '`{0}`'.format(obj_name)
+                    return '`{}`'.format(obj_name)
             else:
                 return obj_name
         return scoped_name
+
+
+class ImpalaDDL(DDL, ImpalaQualifiedSQLStatement):
+    pass
+
+
+class ImpalaDML(DML, ImpalaQualifiedSQLStatement):
+    pass
 
 
 class CreateDDL(ImpalaDDL):
@@ -71,27 +76,27 @@ def _sanitize_format(format):
     format = format.upper()
     format = _format_aliases.get(format, format)
     if format not in ('PARQUET', 'AVRO', 'TEXTFILE'):
-        raise ValueError('Invalid format: {0}'.format(format))
+        raise ValueError('Invalid format: {!r}'.format(format))
 
     return format
 
 
 def _serdeproperties(props):
     formatted_props = _format_properties(props)
-    return 'SERDEPROPERTIES {0}'.format(formatted_props)
+    return 'SERDEPROPERTIES {}'.format(formatted_props)
 
 
 def format_tblproperties(props):
     formatted_props = _format_properties(props)
-    return 'TBLPROPERTIES {0}'.format(formatted_props)
+    return 'TBLPROPERTIES {}'.format(formatted_props)
 
 
 def _format_properties(props):
     tokens = []
     for k, v in sorted(props.items()):
-        tokens.append("  '{0!s}'='{1!s}'".format(k, v))
+        tokens.append("  '{}'='{}'".format(k, v))
 
-    return '(\n{0}\n)'.format(',\n'.join(tokens))
+    return '(\n{}\n)'.format(',\n'.join(tokens))
 
 
 class CreateTable(CreateDDL):
@@ -115,32 +120,36 @@ class CreateTable(CreateDDL):
         self.external = external
         self.can_exist = can_exist
         self.format = _sanitize_format(format)
-
         self.tbl_properties = tbl_properties
+
+    @property
+    def _prefix(self):
+        if self.external:
+            return 'CREATE EXTERNAL TABLE'
+        else:
+            return 'CREATE TABLE'
 
     def _create_line(self):
         scoped_name = self._get_scoped_name(self.table_name, self.database)
-
-        if self.external:
-            create_decl = 'CREATE EXTERNAL TABLE'
-        else:
-            create_decl = 'CREATE TABLE'
-
-        create_line = '{0} {1}{2}'.format(create_decl, self._if_exists(),
-                                          scoped_name)
-        return create_line
+        return '{} {}{}'.format(
+            self._prefix, self._if_exists(), scoped_name
+        )
 
     def _location(self):
-        if self.path:
-            return "\nLOCATION '{0}'".format(self.path)
-        return ''
+        return "LOCATION '{}'".format(self.path) if self.path else None
 
     def _storage(self):
-        storage_lines = {
-            'PARQUET': '\nSTORED AS PARQUET',
-            'AVRO': '\nSTORED AS AVRO'
-        }
-        return storage_lines[self.format]
+        # By the time we're here, we have a valid format
+        return 'STORED AS {}'.format(self.format)
+
+    @property
+    def pieces(self):
+        yield self._create_line()
+        for piece in filter(None, self._pieces):
+            yield piece
+
+    def compile(self):
+        return '\n'.join(self.pieces)
 
 
 class CTAS(CreateTable):
@@ -151,110 +160,91 @@ class CTAS(CreateTable):
 
     def __init__(self, table_name, select, database=None,
                  external=False, format='parquet', can_exist=False,
-                 path=None):
+                 path=None, partition=None):
+        super(CTAS, self).__init__(
+            table_name, database=database, external=external, format=format,
+            can_exist=can_exist, path=path, partition=partition,
+        )
         self.select = select
-        CreateTable.__init__(self, table_name, database=database,
-                             external=external, format=format,
-                             can_exist=can_exist, path=path)
 
-    def compile(self):
-        buf = StringIO()
-        buf.write(self._create_line())
-        buf.write(self._storage())
-        buf.write(self._location())
+    @property
+    def _pieces(self):
+        yield self._partitioned_by()
+        yield self._storage()
+        yield self._location()
+        yield 'AS'
+        yield self.select.compile()
 
-        select_query = self.select.compile()
-        buf.write('\nAS\n{0}'.format(select_query))
-        return buf.getvalue()
+    def _partitioned_by(self):
+        if self.partition is not None:
+            return 'PARTITIONED BY ({})'.format(
+                ', '.join(
+                    quote_identifier(expr._name) for expr in self.partition
+                )
+            )
+        return None
 
 
-class CreateView(CreateDDL):
+class CreateView(CTAS):
 
-    """
-    Create Table As Select
-    """
+    """Create a view"""
 
-    def __init__(self, name, select, database=None, can_exist=False):
-        self.name = name
-        self.database = database
-        self.select = select
-        self.can_exist = can_exist
+    def __init__(self, table_name, select, database=None, can_exist=False):
+        super(CreateView, self).__init__(
+            table_name, select, database=database, can_exist=can_exist
+        )
 
-    def compile(self):
-        buf = StringIO()
-        buf.write(self._create_line())
+    @property
+    def _pieces(self):
+        yield 'AS'
+        yield self.select.compile()
 
-        select_query = self.select.compile()
-        buf.write('\nAS\n{0}'.format(select_query))
-        return buf.getvalue()
-
-    def _create_line(self):
-        scoped_name = self._get_scoped_name(self.name, self.database)
-        return '{0} {1}{2}'.format('CREATE VIEW', self._if_exists(),
-                                   scoped_name)
+    @property
+    def _prefix(self):
+        return 'CREATE VIEW'
 
 
 class CreateTableParquet(CreateTable):
 
-    def __init__(self, table_name, path,
-                 example_file=None,
-                 example_table=None,
-                 schema=None,
-                 external=True,
-                 **kwargs):
+    def __init__(self, table_name, path, example_file=None, example_table=None,
+                 schema=None, external=True, **kwargs):
+        super(CreateTableParquet, self).__init__(
+            table_name, external=external, format='parquet', path=path,
+            **kwargs
+        )
         self.example_file = example_file
         self.example_table = example_table
         self.schema = schema
-        CreateTable.__init__(self, table_name, external=external,
-                             format='parquet', path=path, **kwargs)
 
-        self._validate()
-
-    def _validate(self):
-        pass
-
-    def compile(self):
-        buf = StringIO()
-        buf.write(self._create_line())
-
+    @property
+    def _pieces(self):
         if self.example_file is not None:
-            buf.write("\nLIKE PARQUET '{0}'".format(self.example_file))
+            yield "LIKE PARQUET '{0}'".format(self.example_file)
         elif self.example_table is not None:
-            buf.write("\nLIKE {0}".format(self.example_table))
+            yield "LIKE {0}".format(self.example_table)
         elif self.schema is not None:
-            schema = format_schema(self.schema)
-            buf.write('\n{0}'.format(schema))
+            yield format_schema(self.schema)
         else:
             raise NotImplementedError
 
-        buf.write(self._storage())
-        buf.write(self._location())
-        return buf.getvalue()
+        yield self._storage()
+        yield self._location()
 
 
 class CreateTableWithSchema(CreateTable):
 
     def __init__(self, table_name, schema, table_format=None, **kwargs):
+        super(CreateTableWithSchema, self).__init__(table_name, **kwargs)
         self.schema = schema
         self.table_format = table_format
 
-        CreateTable.__init__(self, table_name, **kwargs)
-
-    def compile(self):
-        from ibis.expr.api import Schema
-
-        buf = StringIO()
-        buf.write(self._create_line())
-
-        def _push_schema(x):
-            formatted = format_schema(x)
-            buf.write('{0}'.format(formatted))
-
+    @property
+    def _pieces(self):
         if self.partition is not None:
             main_schema = self.schema
             part_schema = self.partition
-            if not isinstance(part_schema, Schema):
-                part_schema = Schema(
+            if not isinstance(part_schema, sch.Schema):
+                part_schema = sch.Schema(
                     part_schema,
                     [self.schema[name] for name in part_schema])
 
@@ -266,28 +256,17 @@ class CreateTableWithSchema(CreateTable):
             if len(to_delete):
                 main_schema = main_schema.delete(to_delete)
 
-            buf.write('\n')
-            _push_schema(main_schema)
-            buf.write('\nPARTITIONED BY ')
-            _push_schema(part_schema)
+            yield format_schema(main_schema)
+            yield 'PARTITIONED BY {}'.format(format_schema(part_schema))
         else:
-            buf.write('\n')
-            _push_schema(self.schema)
+            yield format_schema(self.schema)
 
         if self.table_format is not None:
-            buf.write(self.table_format.to_ddl())
+            yield '\n'.join(self.table_format.to_ddl())
         else:
-            buf.write(self._storage())
+            yield self._storage()
 
-        buf.write(self._location())
-
-        return buf.getvalue()
-
-
-class NoFormat(object):
-
-    def to_ddl(self):
-        return ''
+        yield self._location()
 
 
 class DelimitedFormat(object):
@@ -301,30 +280,24 @@ class DelimitedFormat(object):
         self.na_rep = na_rep
 
     def to_ddl(self):
-        buf = StringIO()
-
-        buf.write("\nROW FORMAT DELIMITED")
+        yield 'ROW FORMAT DELIMITED'
 
         if self.delimiter is not None:
-            buf.write("\nFIELDS TERMINATED BY '{0}'".format(self.delimiter))
+            yield "FIELDS TERMINATED BY '{}'".format(self.delimiter)
 
         if self.escapechar is not None:
-            buf.write("\nESCAPED BY '{0}'".format(self.escapechar))
+            yield "ESCAPED BY '{}'".format(self.escapechar)
 
         if self.lineterminator is not None:
-            buf.write("\nLINES TERMINATED BY '{0}'"
-                      .format(self.lineterminator))
+            yield "LINES TERMINATED BY '{}'".format(self.lineterminator)
 
-        buf.write("\nLOCATION '{0}'".format(self.path))
+        yield "LOCATION '{}'".format(self.path)
 
         if self.na_rep is not None:
             props = {
                 'serialization.null.format': self.na_rep
             }
-            buf.write('\n')
-            buf.write(format_tblproperties(props))
-
-        return buf.getvalue()
+            yield format_tblproperties(props)
 
 
 class AvroFormat(object):
@@ -334,19 +307,14 @@ class AvroFormat(object):
         self.avro_schema = avro_schema
 
     def to_ddl(self):
-        import json
-
-        buf = StringIO()
-        buf.write('\nSTORED AS AVRO')
-        buf.write("\nLOCATION '{0}'".format(self.path))
+        yield 'STORED AS AVRO'
+        yield "LOCATION '{}'".format(self.path)
 
         schema = json.dumps(self.avro_schema, indent=2, sort_keys=True)
-        schema = '\n'.join([x.rstrip() for x in schema.split('\n')])
+        schema = '\n'.join(x.rstrip() for x in schema.splitlines())
 
         props = {'avro.schema.literal': schema}
-        buf.write('\n')
-        buf.write(format_tblproperties(props))
-        return buf.getvalue()
+        yield format_tblproperties(props)
 
 
 class ParquetFormat(object):
@@ -355,10 +323,8 @@ class ParquetFormat(object):
         self.path = path
 
     def to_ddl(self):
-        buf = StringIO()
-        buf.write('\nSTORED AS PARQUET')
-        buf.write("\nLOCATION '{0}'".format(self.path))
-        return buf.getvalue()
+        yield 'STORED AS PARQUET'
+        yield "LOCATION '{}'".format(self.path)
 
 
 class CreateTableDelimited(CreateTableWithSchema):
@@ -370,29 +336,25 @@ class CreateTableDelimited(CreateTableWithSchema):
                                        escapechar=escapechar,
                                        lineterminator=lineterminator,
                                        na_rep=na_rep)
-        CreateTableWithSchema.__init__(self, table_name, schema,
-                                       table_format, external=external,
-                                       **kwargs)
+        super(CreateTableDelimited, self).__init__(
+            table_name, schema, table_format, external=external, **kwargs
+        )
 
 
 class CreateTableAvro(CreateTable):
 
     def __init__(self, table_name, path, avro_schema, external=True, **kwargs):
+        super(CreateTableAvro, self).__init__(
+            table_name, external=external, **kwargs
+        )
         self.table_format = AvroFormat(path, avro_schema)
 
-        CreateTable.__init__(self, table_name, external=external, **kwargs)
-
-    def compile(self):
-        buf = StringIO()
-        buf.write(self._create_line())
-
-        format_ddl = self.table_format.to_ddl()
-        buf.write(format_ddl)
-
-        return buf.getvalue()
+    @property
+    def _pieces(self):
+        yield '\n'.join(self.table_format.to_ddl())
 
 
-class InsertSelect(ImpalaDDL):
+class InsertSelect(ImpalaDML):
 
     def __init__(self, table_name, select_expr, database=None,
                  partition=None,
@@ -416,7 +378,7 @@ class InsertSelect(ImpalaDDL):
         if self.partition is not None:
             part = _format_partition(self.partition,
                                      self.partition_schema)
-            partition = ' {0} '.format(part)
+            partition = ' {} '.format(part)
         else:
             partition = ''
 
@@ -442,16 +404,16 @@ def _format_partition(partition, partition_schema):
             tok = _format_partition_kv(name, value, partition_schema[name])
             tokens.append(tok)
 
-    return 'PARTITION ({0})'.format(', '.join(tokens))
+    return 'PARTITION ({})'.format(', '.join(tokens))
 
 
 def _format_partition_kv(k, v, type):
     if type == dt.string:
-        value_formatted = '"{0}"'.format(v)
+        value_formatted = '"{}"'.format(v)
     else:
         value_formatted = str(v)
 
-    return '{0}={1}'.format(k, value_formatted)
+    return '{}={}'.format(k, value_formatted)
 
 
 class LoadData(ImpalaDDL):
@@ -482,7 +444,7 @@ class LoadData(ImpalaDDL):
             partition = ''
 
         scoped_name = self._get_scoped_name(self.table_name, self.database)
-        return ("LOAD DATA INPATH '{0}' {1}INTO TABLE {2}{3}"
+        return ("LOAD DATA INPATH '{}' {}INTO TABLE {}{}"
                 .format(self.path, overwrite, scoped_name, partition))
 
 
@@ -497,16 +459,16 @@ class AlterTable(ImpalaDDL):
         self.serde_properties = serde_properties
 
     def _wrap_command(self, cmd):
-        return 'ALTER TABLE {0}'.format(cmd)
+        return 'ALTER TABLE {}'.format(cmd)
 
     def _format_properties(self, prefix=''):
         tokens = []
 
         if self.location is not None:
-            tokens.append("LOCATION '{0}'".format(self.location))
+            tokens.append("LOCATION '{}'".format(self.location))
 
         if self.format is not None:
-            tokens.append("FILEFORMAT {0}".format(self.format))
+            tokens.append("FILEFORMAT {}".format(self.format))
 
         if self.tbl_properties is not None:
             tokens.append(format_tblproperties(self.tbl_properties))
@@ -515,13 +477,13 @@ class AlterTable(ImpalaDDL):
             tokens.append(_serdeproperties(self.serde_properties))
 
         if len(tokens) > 0:
-            return '\n{0}{1}'.format(prefix, '\n'.join(tokens))
+            return '\n{}{}'.format(prefix, '\n'.join(tokens))
         else:
             return ''
 
     def compile(self):
         props = self._format_properties()
-        action = '{0} SET {1}'.format(self.table, props)
+        action = '{} SET {}'.format(self.table, props)
         return self._wrap_command(action)
 
 
@@ -530,29 +492,31 @@ class PartitionProperties(AlterTable):
     def __init__(self, table, partition, partition_schema,
                  location=None, format=None,
                  tbl_properties=None, serde_properties=None):
+        super(PartitionProperties, self).__init__(
+            table,
+            location=location, format=format,
+            tbl_properties=tbl_properties,
+            serde_properties=serde_properties
+        )
         self.partition = partition
         self.partition_schema = partition_schema
-
-        AlterTable.__init__(self, table, location=location, format=format,
-                            tbl_properties=tbl_properties,
-                            serde_properties=serde_properties)
 
     def _compile(self, cmd, property_prefix=''):
         part = _format_partition(self.partition, self.partition_schema)
         if cmd:
-            part = '{0} {1}'.format(cmd, part)
+            part = '{} {}'.format(cmd, part)
 
         props = self._format_properties(property_prefix)
-        action = '{0} {1}{2}'.format(self.table, part, props)
+        action = '{} {}{}'.format(self.table, part, props)
         return self._wrap_command(action)
 
 
 class AddPartition(PartitionProperties):
 
     def __init__(self, table, partition, partition_schema, location=None):
-        PartitionProperties.__init__(self, table, partition,
-                                     partition_schema,
-                                     location=location)
+        super(AddPartition, self).__init__(
+            table, partition, partition_schema, location=location
+        )
 
     def compile(self):
         return self._compile('ADD')
@@ -567,8 +531,7 @@ class AlterPartition(PartitionProperties):
 class DropPartition(PartitionProperties):
 
     def __init__(self, table, partition, partition_schema):
-        PartitionProperties.__init__(self, table, partition,
-                                     partition_schema)
+        super(DropPartition, self).__init__(table, partition, partition_schema)
 
     def compile(self):
         return self._compile('DROP')
@@ -596,8 +559,8 @@ class RenameTable(AlterTable):
         self.new_qualified_name = new_qualified_name
 
     def compile(self):
-        cmd = '{0} RENAME TO {1}'.format(self.old_qualified_name,
-                                         self.new_qualified_name)
+        cmd = '{} RENAME TO {}'.format(self.old_qualified_name,
+                                       self.new_qualified_name)
         return self._wrap_command(cmd)
 
 
@@ -609,9 +572,7 @@ class DropObject(ImpalaDDL):
     def compile(self):
         if_exists = '' if self.must_exist else 'IF EXISTS '
         object_name = self._object_name()
-        drop_line = 'DROP {0} {1}{2}'.format(self._object_type, if_exists,
-                                             object_name)
-        return drop_line
+        return 'DROP {} {}{}'.format(self._object_type, if_exists, object_name)
 
 
 class DropTable(DropObject):
@@ -619,9 +580,9 @@ class DropTable(DropObject):
     _object_type = 'TABLE'
 
     def __init__(self, table_name, database=None, must_exist=True):
+        super(DropTable, self).__init__(must_exist=must_exist)
         self.table_name = table_name
         self.database = database
-        DropObject.__init__(self, must_exist=must_exist)
 
     def _object_name(self):
         return self._get_scoped_name(self.table_name, self.database)
@@ -637,7 +598,7 @@ class TruncateTable(ImpalaDDL):
 
     def compile(self):
         name = self._get_scoped_name(self.table_name, self.database)
-        return 'TRUNCATE TABLE {0}'.format(name)
+        return 'TRUNCATE TABLE {}'.format(name)
 
 
 class DropView(DropTable):
@@ -654,9 +615,9 @@ class CacheTable(ImpalaDDL):
 
     def compile(self):
         scoped_name = self._get_scoped_name(self.table_name, self.database)
-        cache_line = ('ALTER TABLE {0} SET CACHED IN \'{1}\''
-                      .format(scoped_name, self.pool))
-        return cache_line
+        return "ALTER TABLE {} SET CACHED IN '{}'" .format(
+            scoped_name, self.pool
+        )
 
 
 class CreateDatabase(CreateDDL):
@@ -670,10 +631,9 @@ class CreateDatabase(CreateDDL):
         name = quote_identifier(self.name)
 
         create_decl = 'CREATE DATABASE'
-        create_line = '{0} {1}{2}'.format(create_decl, self._if_exists(),
-                                          name)
+        create_line = '{} {}{}'.format(create_decl, self._if_exists(), name)
         if self.path is not None:
-            create_line += "\nLOCATION '{0}'".format(self.path)
+            create_line += "\nLOCATION '{}'".format(self.path)
 
         return create_line
 
@@ -683,8 +643,8 @@ class DropDatabase(DropObject):
     _object_type = 'DATABASE'
 
     def __init__(self, name, must_exist=True):
+        super(DropDatabase, self).__init__(must_exist=must_exist)
         self.name = name
-        DropObject.__init__(self, must_exist=must_exist)
 
     def _object_name(self):
         return self.name
@@ -693,109 +653,78 @@ class DropDatabase(DropObject):
 def format_schema(schema):
     elements = [_format_schema_element(name, t)
                 for name, t in zip(schema.names, schema.types)]
-    return '({0})'.format(',\n '.join(elements))
+    return '({})'.format(',\n '.join(elements))
 
 
 def _format_schema_element(name, t):
-    return '{0} {1}'.format(quote_identifier(name, force=True),
-                            _type_to_sql_string(t))
+    return '{} {}'.format(
+        quote_identifier(name, force=True), _type_to_sql_string(t)
+    )
 
 
-class CreateFunctionBase(ImpalaDDL):
+class CreateFunction(ImpalaDDL):
 
     _object_type = 'FUNCTION'
 
-    def __init__(self, lib_path, inputs, output, name, database=None):
-        self.lib_path = lib_path
-
-        self.inputs, self.output = inputs, output
-        self.input_sig = _impala_signature(inputs)
-        self.output_sig = _arg_to_string(output)
-
-        self.name = name
+    def __init__(self, func, name=None, database=None):
+        self.func = func
+        self.name = name or func.name
         self.database = database
 
-    def _create_line(self):
+    def _impala_signature(self):
         scoped_name = self._get_scoped_name(self.name, self.database)
-        return ('{0!s}({1!s}) returns {2!s}'
-                .format(scoped_name, self.input_sig, self.output_sig))
+        input_sig = _impala_input_signature(self.func.inputs)
+        output_sig = _type_to_sql_string(self.func.output)
+
+        return '{}({}) returns {}'.format(scoped_name, input_sig, output_sig)
 
 
-class CreateFunction(CreateFunctionBase):
-
-    def __init__(self, lib_path, so_symbol, inputs, output,
-                 name, database=None):
-        self.so_symbol = so_symbol
-
-        CreateFunctionBase.__init__(self, lib_path, inputs, output,
-                                    name, database=database)
+class CreateUDF(CreateFunction):
 
     def compile(self):
         create_decl = 'CREATE FUNCTION'
-        create_line = self._create_line()
-        param_line = ("location '{0!s}' symbol='{1!s}'"
-                      .format(self.lib_path, self.so_symbol))
-        full_line = ' '.join([create_decl, create_line, param_line])
-        return full_line
+        impala_sig = self._impala_signature()
+        param_line = ("location '{}' symbol='{}'"
+                      .format(self.func.lib_path, self.func.so_symbol))
+        return ' '.join([create_decl, impala_sig, param_line])
 
 
-class CreateAggregateFunction(CreateFunction):
-
-    def __init__(self, lib_path, inputs, output, update_fn, init_fn,
-                 merge_fn, serialize_fn, finalize_fn, name, database):
-        self.init = init_fn
-        self.update = update_fn
-        self.merge = merge_fn
-        self.serialize = serialize_fn
-        self.finalize = finalize_fn
-
-        CreateFunctionBase.__init__(self, lib_path, inputs, output,
-                                    name, database=database)
+class CreateUDA(CreateFunction):
 
     def compile(self):
         create_decl = 'CREATE AGGREGATE FUNCTION'
-        create_line = self._create_line()
-        tokens = ["location '{0!s}'".format(self.lib_path)]
+        impala_sig = self._impala_signature()
+        tokens = ["location '{}'".format(self.func.lib_path)]
 
-        if self.init is not None:
-            tokens.append("init_fn='{0}'".format(self.init))
+        fn_names = ('init_fn', 'update_fn', 'merge_fn', 'serialize_fn',
+                    'finalize_fn')
 
-        tokens.append("update_fn='{0}'".format(self.update))
+        for fn in fn_names:
+            value = getattr(self.func, fn)
+            if value is not None:
+                tokens.append("{}='{}'".format(fn, value))
 
-        if self.merge is not None:
-            tokens.append("merge_fn='{0}'".format(self.merge))
-
-        if self.serialize is not None:
-            tokens.append("serialize_fn='{0}'".format(self.serialize))
-
-        if self.finalize is not None:
-            tokens.append("finalize_fn='{0}'".format(self.finalize))
-
-        full_line = (' '.join([create_decl, create_line]) + ' ' +
-                     '\n'.join(tokens))
-        return full_line
+        return ' '.join([create_decl, impala_sig]) + ' ' + '\n'.join(tokens)
 
 
 class DropFunction(DropObject):
 
     def __init__(self, name, inputs, must_exist=True,
                  aggregate=False, database=None):
+        super(DropFunction, self).__init__(must_exist=must_exist)
         self.name = name
-
-        self.inputs = inputs
-        self.input_sig = _impala_signature(inputs)
-
+        self.inputs = tuple(map(dt.dtype, inputs))
         self.must_exist = must_exist
         self.aggregate = aggregate
         self.database = database
-        DropObject.__init__(self, must_exist=must_exist)
+
+    def _impala_signature(self):
+        full_name = self._get_scoped_name(self.name, self.database)
+        input_sig = _impala_input_signature(self.inputs)
+        return '{}({})'.format(full_name, input_sig)
 
     def _object_name(self):
         return self.name
-
-    def _function_sig(self):
-        full_name = self._get_scoped_name(self.name, self.database)
-        return '{0!s}({1!s})'.format(full_name, self.input_sig)
 
     def compile(self):
         tokens = ['DROP']
@@ -805,7 +734,7 @@ class DropFunction(DropObject):
         if not self.must_exist:
             tokens.append('IF EXISTS')
 
-        tokens.append(self._function_sig())
+        tokens.append(self._impala_signature())
         return ' '.join(tokens)
 
 
@@ -820,31 +749,12 @@ class ListFunction(ImpalaDDL):
         statement = 'SHOW '
         if self.aggregate:
             statement += 'AGGREGATE '
-        statement += 'FUNCTIONS IN {0}'.format(self.database)
+        statement += 'FUNCTIONS IN {}'.format(self.database)
         if self.like:
-            statement += " LIKE '{0}'".format(self.like)
+            statement += " LIKE '{}'".format(self.like)
         return statement
 
 
-def _impala_signature(sig):
-    if isinstance(sig, rules.TypeSignature):
-        if isinstance(sig, rules.VarArgs):
-            val = _arg_to_string(sig.arg_type)
-            return '{0}...'.format(val)
-        else:
-            return ', '.join([_arg_to_string(arg) for arg in sig.types])
-    else:
-        return ', '.join([_type_to_sql_string(validate_type(x))
-                          for x in sig])
-
-
-def _arg_to_string(arg):
-    if isinstance(arg, rules.ValueTyped):
-        types = arg.types
-        if len(types) > 1:
-            raise NotImplementedError
-        return _type_to_sql_string(types[0])
-    elif isinstance(arg, py_string):
-        return _type_to_sql_string(validate_type(arg))
-    else:
-        raise NotImplementedError
+def _impala_input_signature(inputs):
+    # TODO: varargs '{}...'.format(val)
+    return ', '.join(map(_type_to_sql_string, inputs))

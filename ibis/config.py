@@ -25,16 +25,14 @@ import pprint
 import warnings
 import sys
 
-from six import StringIO
+PY2 = sys.version_info[0] == 2
 
-PY3 = (sys.version_info[0] >= 3)
-
-if PY3:
+if not PY2:
     def u(s):
         return s
 else:
     def u(s):
-        return unicode(s, "unicode_escape")
+        return unicode(s, "unicode_escape")  # noqa
 
 
 DeprecatedOption = namedtuple('DeprecatedOption', 'key msg rkey removal_ver')
@@ -155,35 +153,39 @@ class DictWrapper(object):
         object.__setattr__(self, "prefix", prefix)
 
     def __repr__(self):
-        buf = StringIO()
-        pprint.pprint(self.d, stream=buf)
-        return buf.getvalue()
+        return pprint.pformat(self.d)
 
     def __setattr__(self, key, val):
-        prefix = object.__getattribute__(self, "prefix")
+        prefix = self.prefix
         if prefix:
             prefix += "."
         prefix += key
-        # you can't set new keys
-        # can you can't overwrite subtrees
+
+        # you can't set new keys and you can't overwrite subtrees
+
         if key in self.d and not isinstance(self.d[key], dict):
             _set_option(prefix, val)
         else:
             raise OptionError("You can only set the value of existing options")
 
     def __getattr__(self, key):
-        prefix = object.__getattribute__(self, "prefix")
+        prefix = self.prefix
         if prefix:
             prefix += "."
         prefix += key
-        v = object.__getattribute__(self, "d")[key]
+
+        try:
+            v = self.d[key]
+        except KeyError as e:
+            raise AttributeError(*e.args)
+
         if isinstance(v, dict):
             return DictWrapper(v, prefix)
         else:
             return _get_option(prefix)
 
     def __dir__(self):
-        return list(self.d.keys())
+        return sorted(self.d.keys())
 
 
 # For user convenience,  we'd like to have the available options described
@@ -210,6 +212,7 @@ class CallableDynamicDoc(object):
         opts_list = pp_options_list(list(_registered_options.keys()))
         return self.__doc_tmpl__.format(opts_desc=opts_desc,
                                         opts_list=opts_list)
+
 
 _get_option_tmpl = """
 get_option(pat)
@@ -326,8 +329,11 @@ class option_context(object):
     You need to invoke as ``option_context(pat, val, [(pat, val), ...])``.
     Examples
     --------
-    >>> with option_context('display.max_rows', 10, 'display.max_columns', 5):
-            ...
+    >>> with option_context('interactive', True):
+    ...     print(options.interactive)
+    True
+    >>> options.interactive
+    False
     """
 
     def __init__(self, *args):
@@ -714,6 +720,7 @@ def is_one_of_factory(legal_values):
                              % str("|".join(pp_values)))
 
     return inner
+
 
 # common type validators, for convenience
 # usage: register_option(... , validator = is_int)

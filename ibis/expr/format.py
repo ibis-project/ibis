@@ -109,14 +109,17 @@ class ExprFormatter(object):
                 text = self._format_node(self.expr)
         elif isinstance(what, ops.TableColumn):
             text = self._format_column(self.expr)
-        elif isinstance(what, ir.Node):
+        elif isinstance(what, ops.Literal):
+            text = 'Literal[{}]\n  {}'.format(
+                self._get_type_display(), str(what.value)
+            )
+        elif isinstance(what, ops.ScalarParameter):
+            text = 'ScalarParameter[{}]'.format(self._get_type_display())
+        elif isinstance(what, ops.Node):
             text = self._format_node(self.expr)
-        elif isinstance(what, ir.Literal):
-            text = 'Literal[%s] %s' % (self._get_type_display(),
-                                       str(what.value))
 
         if isinstance(self.expr, ir.ValueExpr) and self.expr._name is not None:
-            text = '{0} = {1}'.format(self.expr.get_name(), text)
+            text = '{} = {}'.format(self.expr.get_name(), text)
 
         if self.memoize:
             alias_to_text = [(self.memo.aliases[x],
@@ -138,31 +141,33 @@ class ExprFormatter(object):
     def _memoize_tables(self):
         table_memo_ops = (ops.Aggregation, ops.Selection,
                           ops.SelfReference)
+        if id(self.expr) in self.memo.visit_memo:
+            return
 
-        def walk(expr):
-            if id(expr) in self.memo.visit_memo:
-                return
+        stack = [self.expr]
+        seen = set()
+        memo = self.memo
 
-            op = expr.op()
+        while stack:
+            e = stack.pop()
+            op = e.op()
 
-            def visit(arg):
-                if isinstance(arg, list):
-                    [visit(x) for x in arg]
-                elif isinstance(arg, ir.Expr):
-                    walk(arg)
+            if op not in seen:
+                seen.add(op)
 
-            if isinstance(op, ops.PhysicalTable):
-                self.memo.observe(expr, self._format_table)
-            elif isinstance(op, ir.Node):
-                visit(op.args)
-                if isinstance(op, table_memo_ops):
-                    self.memo.observe(expr, self._format_node)
-            elif isinstance(op, ops.TableNode) and op.has_schema():
-                self.memo.observe(expr, self._format_table)
+                if isinstance(op, ops.PhysicalTable):
+                    memo.observe(e, self._format_table)
+                elif isinstance(op, ops.Node):
+                    stack.extend(
+                        arg for arg in reversed(op.args)
+                        if isinstance(arg, ir.Expr)
+                    )
+                    if isinstance(op, table_memo_ops):
+                        memo.observe(e, self._format_node)
+                elif isinstance(op, ops.TableNode) and op.has_schema():
+                    memo.observe(e, self._format_table)
 
-            self.memo.visit_memo.add(id(expr))
-
-        walk(self.expr)
+                memo.visit_memo.add(id(e))
 
     def _indent(self, text, indents=1):
         return util.indent(text, self.indent_size * indents)
@@ -188,10 +193,10 @@ class ExprFormatter(object):
             self.memo.observe(parent, formatter=self._format_node)
 
         table_formatted = self.memo.get_alias(parent)
-        table_formatted = '\n' + self._indent(table_formatted)
+        table_formatted = self._indent(table_formatted)
 
         type_display = self._get_type_display(self.expr)
-        return ("Column[{0}] '{1}' from table {2}"
+        return ("Column[{0}] '{1}' from table\n{2}"
                 .format(type_display, col.name, table_formatted))
 
     def _format_node(self, expr):
@@ -209,20 +214,23 @@ class ExprFormatter(object):
 
             formatted_args.append(result)
 
-        arg_names = getattr(op, '_arg_names', None)
+        arg_names = getattr(op, 'display_argnames', op.argnames)
 
-        if arg_names is None:
+        if not arg_names:
             for arg in op.args:
-                if isinstance(arg, list):
+                if util.is_iterable(arg):
                     for x in arg:
                         visit(x)
                 else:
                     visit(arg)
         else:
             for arg, name in zip(op.args, arg_names):
+                if name == 'arg' and isinstance(op, ops.ValueOp):
+                    # don't display first argument's name in repr
+                    name = None
                 if name is not None:
                     name = self._indent('{0}:'.format(name))
-                if isinstance(arg, list):
+                if util.is_iterable(arg):
                     if name is not None and len(arg) > 0:
                         formatted_args.append(name)
                         indents = 1
@@ -241,7 +249,6 @@ class ExprFormatter(object):
         opname = type(op).__name__
         type_display = self._get_type_display(expr)
         opline = '%s[%s]' % (opname, type_display)
-
         return '\n'.join([opline] + formatted_args)
 
     def _format_subexpr(self, expr):
@@ -256,17 +263,4 @@ class ExprFormatter(object):
         if expr is None:
             expr = self.expr
 
-        if isinstance(expr, ir.TableExpr):
-            return 'table'
-        elif isinstance(expr, ir.ArrayExpr):
-            return 'array(%s)' % expr.type()
-        elif isinstance(expr, ir.SortExpr):
-            return 'array-sort'
-        elif isinstance(expr, (ir.ScalarExpr, ir.AnalyticExpr)):
-            return '%s' % expr.type()
-        elif isinstance(expr, ir.ExprList):
-            list_args = [self._get_type_display(arg)
-                         for arg in expr.op().args]
-            return ', '.join(list_args)
-        else:
-            raise NotImplementedError
+        return expr._type_display()

@@ -1,19 +1,6 @@
-# Copyright 2014 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import pytest
 
+import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis
@@ -24,7 +11,7 @@ from ibis.tests.util import assert_equal
 def test_ifelse(table):
     bools = table.g.isnull()
     result = bools.ifelse("foo", "bar")
-    assert isinstance(result, ir.StringArray)
+    assert isinstance(result, ir.StringColumn)
 
 
 @pytest.mark.xfail(raises=AssertionError, reason='NYT')
@@ -50,7 +37,7 @@ def test_simple_case_expr(table):
              .end())
 
     assert_equal(expr1, expr2)
-    assert isinstance(expr1, ir.Int32Array)
+    assert isinstance(expr1, ir.IntegerColumn)
 
 
 def test_multiple_case_expr(table):
@@ -72,7 +59,7 @@ def test_multiple_case_expr(table):
             .end())
 
     op = expr.op()
-    assert isinstance(expr, ir.DoubleArray)
+    assert isinstance(expr, ir.FloatingColumn)
     assert isinstance(op, ops.SearchedCase)
     assert op.default is default
 
@@ -91,18 +78,18 @@ def test_simple_case_null_else(table):
     expr = table.g.case().when("foo", "bar").end()
     op = expr.op()
 
-    assert isinstance(expr, ir.StringArray)
+    assert isinstance(expr, ir.StringColumn)
     assert isinstance(op.default, ir.ValueExpr)
-    assert isinstance(op.default.op(), ir.NullLiteral)
+    assert isinstance(op.default.op(), ops.NullLiteral)
 
 
 def test_multiple_case_null_else(table):
     expr = ibis.case().when(table.g == "foo", "bar").end()
     op = expr.op()
 
-    assert isinstance(expr, ir.StringArray)
+    assert isinstance(expr, ir.StringColumn)
     assert isinstance(op.default, ir.ValueExpr)
-    assert isinstance(op.default.op(), ir.NullLiteral)
+    assert isinstance(op.default.op(), ops.NullLiteral)
 
 
 @pytest.mark.xfail(raises=AssertionError, reason='NYT')
@@ -113,3 +100,21 @@ def test_case_type_precedence():
 @pytest.mark.xfail(raises=AssertionError, reason='NYT')
 def test_no_implicit_cast_possible():
     assert False
+
+
+def test_case_mixed_type():
+    t0 = ibis.table(
+        [('one', 'string'),
+         ('two', 'double'),
+         ('three', 'int32')], name='my_data')
+
+    expr = (
+        t0.three
+          .case()
+          .when(0, 'low')
+          .when(1, 'high')
+          .else_('null')
+          .end()
+          .name('label'))
+    result = t0[expr]
+    assert result['label'].type().equals(dt.string)

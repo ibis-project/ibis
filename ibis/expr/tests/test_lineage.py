@@ -1,30 +1,57 @@
-import os
 import pytest
+
 import ibis
 import ibis.expr.lineage as lin
+
 from ibis.tests.util import assert_equal
-
-
-IBIS_TEST_CRUNCHBASE_DB = os.environ.get(
-    'IBIS_TEST_CRUNCHBASE_DB',
-    'crunchbase.db'
-)
-
-
-@pytest.fixture
-def con():
-    # make sure this is in the directory where you run py.test
-    return ibis.sqlite.connect(IBIS_TEST_CRUNCHBASE_DB)
 
 
 @pytest.fixture
 def companies(con):
-    return con.table('companies')
+    schema = [
+        ('permalink', 'string'),
+        ('name', 'string'),
+        ('homepage_url', 'string'),
+        ('category_list', 'string'),
+        ('market', 'string'),
+        ('funding_total_usd', 'float'),
+        ('status', 'string'),
+        ('country_code', 'string'),
+        ('state_code', 'string'),
+        ('region', 'string'),
+        ('city', 'string'),
+        ('funding_rounds', 'int32'),
+        ('founded_at', 'string'),
+        ('founded_month', 'string'),
+        ('founded_quarter', 'string'),
+        ('founded_year', 'float'),
+        ('first_funding_at', 'string'),
+        ('last_funding_at', 'string'),
+    ]
+    return ibis.table(schema, name='companies')
 
 
 @pytest.fixture
 def rounds(con):
-    return con.table('rounds')
+    schema = [
+        ('company_permalink', 'string'),
+        ('company_name', 'string'),
+        ('company_category_list', 'string'),
+        ('company_market', 'string'),
+        ('company_country_code', 'string'),
+        ('company_state_code', 'string'),
+        ('company_region', 'string'),
+        ('company_city', 'string'),
+        ('funding_round_permalink', 'string'),
+        ('funding_round_type', 'string'),
+        ('funding_round_code', 'string'),
+        ('funded_at', 'string'),
+        ('funded_month', 'string'),
+        ('funded_quarter', 'string'),
+        ('funded_year', 'int32'),
+        ('raised_amount_usd', 'float'),
+    ]
+    return ibis.table(schema, name='rounds')
 
 
 def test_lineage(companies):
@@ -58,7 +85,8 @@ def test_lineage(companies):
 
     grouped = filtered.group_by(['bucket', 'status']).size()
 
-    joined = grouped.mutate(
+    # TODO(cpcloud): Should this be used?
+    joined = grouped.mutate(  # noqa
         bucket_name=lambda x: x.bucket.label(bucket_names).fillna('Unknown')
     )
 

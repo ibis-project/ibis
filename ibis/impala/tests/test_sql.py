@@ -1,21 +1,16 @@
-# Copyright 2014 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+import operator
+import unittest
+
+import pytest
 
 import ibis
 
-from ibis.impala.compiler import to_sql
-from ibis.compat import unittest
+pytest.importorskip('sqlalchemy')
+pytest.importorskip('impala.dbapi')
+
+from ibis.impala.compiler import to_sql  # noqa: E402
+
+pytestmark = pytest.mark.impala
 
 
 class TestImpalaSQL(unittest.TestCase):
@@ -23,7 +18,7 @@ class TestImpalaSQL(unittest.TestCase):
     def test_relabel_projection(self):
         # GH #551
         types = ['int32', 'string', 'double']
-        table = ibis.table(zip(['foo', 'bar', 'baz'], types), 'table')
+        table = ibis.table(zip(['foo', 'bar', 'baz'], types), name='table')
         relabeled = table.relabel({'foo': 'one', 'baz': 'three'})
 
         result = to_sql(relabeled)
@@ -95,8 +90,8 @@ FROM (
     GROUP BY 1
   ) t3
     LEFT OUTER JOIN t0
-      ON t3.`uuid` = t0.`uuid` AND
-         t3.`max_count` = t0.`count`
+      ON (t3.`uuid` = t0.`uuid`) AND
+         (t3.`max_count` = t0.`count`)
 ) t1
   LEFT OUTER JOIN (
     SELECT `uuid`, max(`ts`) AS `last_visit`
@@ -155,8 +150,8 @@ t1 AS (
 t2 AS (
   SELECT t1.*
   FROM t1
-  WHERE t1.`userid` = 118205 AND
-        extract(t1.`datetime`, 'year') > 2001
+  WHERE (t1.`userid` = 118205) AND
+        (extract(t1.`datetime`, 'year') > 2001)
 )
 SELECT t2.*
 FROM t2
@@ -165,11 +160,205 @@ WHERE t2.`movieid` IN (
   FROM (
     SELECT t1.*
     FROM t1
-    WHERE t1.`userid` = 118205 AND
-          extract(t1.`datetime`, 'year') > 2001 AND
-          t1.`userid` = 118205 AND
-          extract(t1.`datetime`, 'year') < 2009
+    WHERE (t1.`userid` = 118205) AND
+          (extract(t1.`datetime`, 'year') > 2001) AND
+          (t1.`userid` = 118205) AND
+          (extract(t1.`datetime`, 'year') < 2009)
   ) t4
 )"""
     compiled_result = to_sql(result)
     assert compiled_result == expected
+
+
+def test_logically_negate_complex_boolean_expr():
+    t = ibis.table(
+        [
+            ('a', 'string'),
+            ('b', 'double'),
+            ('c', 'int64'),
+            ('d', 'string'),
+        ],
+        name='t'
+    )
+
+    def f(t):
+        return t.a.isin(['foo']) & t.c.notnull()
+
+    expr = f(t)
+    result = to_sql(~expr)
+    expected = """\
+SELECT NOT (`a` IN ('foo') AND (`c` IS NOT NULL)) AS `tmp`
+FROM t"""
+    assert result == expected
+
+
+def test_join_with_nested_or_condition():
+    t1 = ibis.table([('a', 'string'),
+                     ('b', 'string')], 't')
+    t2 = t1.view()
+
+    joined = t1.join(t2, [t1.a == t2.a, (t1.a != t2.b) | (t1.b != t2.a)])
+    expr = joined[t1]
+
+    expected = """\
+SELECT t0.*
+FROM t t0
+  INNER JOIN t t1
+    ON (t0.`a` = t1.`a`) AND
+       ((t0.`a` != t1.`b`) OR (t0.`b` != t1.`a`))"""
+    assert to_sql(expr) == expected
+
+
+def test_join_with_nested_xor_condition():
+    t1 = ibis.table([('a', 'string'),
+                     ('b', 'string')], 't')
+    t2 = t1.view()
+
+    joined = t1.join(t2, [t1.a == t2.a, (t1.a != t2.b) ^ (t1.b != t2.a)])
+    expr = joined[t1]
+
+    expected = """\
+SELECT t0.*
+FROM t t0
+  INNER JOIN t t1
+    ON (t0.`a` = t1.`a`) AND
+       (((t0.`a` != t1.`b`) OR (t0.`b` != t1.`a`)) AND NOT ((t0.`a` != t1.`b`) AND (t0.`b` != t1.`a`)))"""  # noqa: E501
+    assert to_sql(expr) == expected
+
+
+@pytest.mark.parametrize(
+    ('method', 'sql'),
+    [
+        ('isnull', 'IS'),
+        ('notnull', 'IS NOT'),
+    ]
+)
+def test_is_parens(method, sql):
+    t = ibis.table([('a', 'string'), ('b', 'string')], 'table')
+    func = operator.methodcaller(method)
+    expr = t[func(t.a) == func(t.b)]
+
+    result = to_sql(expr)
+    expected = """\
+SELECT *
+FROM `table`
+WHERE (`a` {sql} NULL) = (`b` {sql} NULL)""".format(sql=sql)
+    assert result == expected
+
+
+def test_is_parens_identical_to():
+    t = ibis.table([('a', 'string'), ('b', 'string')], 'table')
+    expr = t[t.a.identical_to(None) == t.b.identical_to(None)]
+
+    result = to_sql(expr)
+    expected = """\
+SELECT *
+FROM `table`
+WHERE (`a` IS NOT DISTINCT FROM NULL) = (`b` IS NOT DISTINCT FROM NULL)"""
+    assert result == expected
+
+
+def test_join_aliasing():
+    test = ibis.table(
+        [
+            ('a', 'int64'),
+            ('b', 'int64'),
+            ('c', 'int64'),
+        ],
+        name='test_table'
+    )
+    test = test.mutate(d=test.a + 20)
+    test2 = test[test.d, test.c]
+    idx = (test2.d / 15).cast('int64').name('idx')
+    test3 = (
+        test2.groupby([test2.d, idx, test2.c])
+             .aggregate(row_count=test2.count())
+    )
+    test3_totals = test3.groupby(test3.d).aggregate(
+        total=test3.row_count.sum())
+    test4 = test3.join(
+        test3_totals, test3.d == test3_totals.d)[test3, test3_totals.total]
+    test5 = test4[test4.row_count < test4.total / 2]
+    agg = test.groupby([test.d, test.b]).aggregate(
+        count=test.count(), unique=test.c.nunique()).view()
+    joined = agg.join(test5, agg.d == test5.d)[agg, test5.total]
+    result = joined
+    result = to_sql(result)
+    expected = """\
+WITH t0 AS (
+  SELECT *, `a` + 20 AS `d`
+  FROM test_table
+),
+t1 AS (
+  SELECT `d`, `c`
+  FROM t0
+),
+t2 AS (
+  SELECT `d`, CAST(`d` / 15 AS bigint) AS `idx`, `c`, count(*) AS `row_count`
+  FROM t1
+  GROUP BY 1, 2, 3
+)
+SELECT t3.*, t4.`total`
+FROM (
+  SELECT `d`, `b`, count(*) AS `count`, count(DISTINCT `c`) AS `unique`
+  FROM t0
+  GROUP BY 1, 2
+) t3
+  INNER JOIN (
+    SELECT t5.*
+    FROM (
+      SELECT t2.*, t8.`total`
+      FROM t2
+        INNER JOIN (
+          SELECT `d`, sum(`row_count`) AS `total`
+          FROM t2
+          GROUP BY 1
+        ) t8
+          ON t2.`d` = t8.`d`
+    ) t5
+    WHERE t5.`row_count` < (t5.`total` / 2)
+  ) t4
+    ON t3.`d` = t4.`d`"""
+    assert result == expected
+
+
+def test_multiple_filters():
+    t = ibis.table([('a', 'int64'), ('b', 'string')], name='t0')
+    filt = t[t.a < 100]
+    expr = filt[filt.a == filt.a.max()]
+    result = to_sql(expr)
+    expected = """\
+SELECT *
+FROM (
+  SELECT *
+  FROM t0
+  WHERE `a` < 100
+) t0
+WHERE `a` = (
+  SELECT max(`a`) AS `max`
+  FROM t0
+  WHERE `a` < 100
+)"""
+    assert result == expected
+
+
+def test_multiple_filters2():
+    t = ibis.table([('a', 'int64'), ('b', 'string')], name='t0')
+    filt = t[t.a < 100]
+    expr = filt[filt.a == filt.a.max()]
+    expr = expr[expr.b == 'a']
+    result = to_sql(expr)
+    expected = """\
+SELECT *
+FROM (
+  SELECT *
+  FROM t0
+  WHERE `a` < 100
+) t0
+WHERE (`a` = (
+  SELECT max(`a`) AS `max`
+  FROM t0
+  WHERE `a` < 100
+)) AND
+      (`b` = 'a')"""
+    assert result == expected
