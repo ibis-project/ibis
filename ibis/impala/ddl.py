@@ -238,6 +238,7 @@ class CreateTableWithSchema(CreateTable):
     def __init__(self, table_name, schema, table_format=None, **kwargs):
         self.schema = schema
         self.table_format = table_format
+
         CreateTable.__init__(self, table_name, **kwargs)
 
     def compile(self):
