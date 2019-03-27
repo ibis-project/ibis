@@ -70,7 +70,7 @@ def _sanitize_format(format):
         return
     format = format.upper()
     format = _format_aliases.get(format, format)
-    if format not in ('PARQUET', 'AVRO', 'TEXTFILE'):
+    if format not in ('PARQUET', 'AVRO', 'TEXTFILE', 'KUDU'):
         raise ValueError('Invalid format: {0}'.format(format))
 
     return format
@@ -138,7 +138,8 @@ class CreateTable(CreateDDL):
     def _storage(self):
         storage_lines = {
             'PARQUET': '\nSTORED AS PARQUET',
-            'AVRO': '\nSTORED AS AVRO'
+            'AVRO': '\nSTORED AS AVRO',
+            'KUDU': '\nSTORED AS KUDU',
         }
         return storage_lines[self.format]
 
