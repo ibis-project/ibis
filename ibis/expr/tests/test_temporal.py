@@ -28,12 +28,8 @@ def test_temporal_literals():
         (api.interval(seconds=360), 'm', api.interval(minutes=6)),
         (api.interval(seconds=3 * 86400), 'D', api.interval(days=3)),
         (api.interval(milliseconds=5000), 's', api.interval(seconds=5)),
-        (api.interval(microseconds=5_000_000), 's', api.interval(seconds=5)),
-        (
-            api.interval(nanoseconds=5_000_000_000),
-            's',
-            api.interval(seconds=5),
-        ),
+        (api.interval(microseconds=5000000), 's', api.interval(seconds=5)),
+        (api.interval(nanoseconds=5000000000), 's', api.interval(seconds=5)),
     ],
 )
 def test_upconvert(interval, unit, expected):
@@ -110,11 +106,11 @@ def test_subtract(expr):
         ),
         (
             api.interval(seconds=2).to_unit('us'),
-            api.interval(microseconds=2 * 1_000_000),
+            api.interval(microseconds=2 * 1000000),
         ),
         (
             api.interval(seconds=2).to_unit('ns'),
-            api.interval(nanoseconds=2 * 1_000_000_000),
+            api.interval(nanoseconds=2 * 1000000000),
         ),
         (
             api.interval(milliseconds=2).to_unit('ms'),
@@ -126,7 +122,7 @@ def test_subtract(expr):
         ),
         (
             api.interval(milliseconds=2).to_unit('ns'),
-            api.interval(nanoseconds=2 * 1_000_000),
+            api.interval(nanoseconds=2 * 1000000),
         ),
         (
             api.interval(microseconds=2).to_unit('us'),
@@ -156,15 +152,15 @@ def test_downconvert_second_parts(case, expected):
         (api.interval(hours=2).to_unit('s'), api.interval(seconds=2 * 3600)),
         (
             api.interval(hours=2).to_unit('ms'),
-            api.interval(milliseconds=2 * 3_600_000),
+            api.interval(milliseconds=2 * 3600000),
         ),
         (
             api.interval(hours=2).to_unit('us'),
-            api.interval(microseconds=2 * 3_600_000_000),
+            api.interval(microseconds=2 * 3600000000),
         ),
         (
             api.interval(hours=2).to_unit('ns'),
-            api.interval(nanoseconds=2 * 3_600_000_000_000),
+            api.interval(nanoseconds=2 * 3600000000000),
         ),
     ],
 )
@@ -185,15 +181,15 @@ def test_downconvert_hours(case, expected):
         (api.interval(days=2).to_unit('s'), api.interval(seconds=2 * 86400)),
         (
             api.interval(days=2).to_unit('ms'),
-            api.interval(milliseconds=2 * 86_400_000),
+            api.interval(milliseconds=2 * 86400000),
         ),
         (
             api.interval(days=2).to_unit('us'),
-            api.interval(microseconds=2 * 86_400_000_000),
+            api.interval(microseconds=2 * 86400000000),
         ),
         (
             api.interval(days=2).to_unit('ns'),
-            api.interval(nanoseconds=2 * 86_400_000_000_000),
+            api.interval(nanoseconds=2 * 86400000000000),
         ),
     ],
 )

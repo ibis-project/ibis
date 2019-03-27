@@ -8,6 +8,16 @@ repos:
         args: ['--config=setup.cfg']
 
   - repo: https://github.com/ambv/black
-    rev: stable
+    # we need to use this commit or later, to pickup the fix that splits
+    # trailing comma syntax into call vs def, both of which weren't implemented
+    # until python 3.6 (3.5 has just the call syntax) and we need to support
+    # 3.5 for a few months.
+    rev: cea13f498418784e22f8fbd78db3f9240a2bad11
     hooks:
       - id: black
+        args: ['--config=pyproject.toml']
+        # a side effect of black running exclude filters and then include
+        # filters (the built-in black behavior) is that a command line such as
+        # black --exclude foo.py foo.py will still format foo.py. We avoid this
+        # in pre-commit by not passing staged files.
+        pass_filenames: false

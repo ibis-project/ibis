@@ -64,7 +64,7 @@ def hdfs_connect(
     auth_mechanism='NOSASL',
     verify=True,
     session=None,
-    **kwds,
+    **kwds
 ):
     """Connect to HDFS.
 

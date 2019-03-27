@@ -14,6 +14,13 @@ test: &test
     - checkout:
         path: ~/ibis
     - run:
+        name: Fetch tags
+        command: git -C ~/ibis fetch --tags
+    - run:
+        name: Show tags
+        command: |
+          git -C ~/ibis tag | cat
+    - run:
         name: Setup Google Credentials for BigQuery
         command: |
           if [ -n "${GCLOUD_SERVICE_KEY}" ]; then
@@ -83,6 +90,13 @@ build: &build
     - checkout:
         path: ~/ibis
     - run:
+        name: Fetch tags
+        command: git -C ~/ibis fetch --tags
+    - run:
+        name: Show tags
+        command: |
+          git -C ~/ibis tag | cat
+    - run:
         name: Build Ibis Image
         command: docker-compose build ibis
     - run:
@@ -106,6 +120,13 @@ benchmark: &benchmark
     - checkout:
         path: ~/ibis
     - run:
+        name: Fetch tags
+        command: git -C ~/ibis fetch --tags
+    - run:
+        name: Show tags
+        command: |
+          git -C ~/ibis tag | cat
+    - run:
         name: Build Ibis Image
         command: docker-compose build ibis
     - run:
@@ -119,6 +140,13 @@ docs: &docs
   steps:
     - checkout:
         path: ~/ibis
+    - run:
+        name: Fetch tags
+        command: git -C ~/ibis fetch --tags
+    - run:
+        name: Show tags
+        command: |
+          git -C ~/ibis tag | cat
     - add_ssh_keys:
         fingerprints:
           - "8d:b0:36:4d:f6:75:f2:5f:00:01:a1:53:63:52:f0:e2"
@@ -181,16 +209,22 @@ docs: &docs
         path: /tmp/ibis/docs.ibis-project.org
 
 jobs:
+  python35_test:
+    <<: *test
+    environment:
+      - PYTHONHASHSEED: 0
+      - PYTHON_VERSION: 3.5
+
   python36_test:
     <<: *test
     environment:
-      - PYTHONHASHSEED: ""
+      - PYTHONHASHSEED: "random"
       - PYTHON_VERSION: 3.6
 
   python37_test:
     <<: *test
     environment:
-      - PYTHONHASHSEED: ""
+      - PYTHONHASHSEED: "random"
       - PYTHON_VERSION: 3.7
 
   python36_conda_build:
@@ -218,6 +252,7 @@ workflows:
   version: 2
   test:
     jobs:
+      - python35_test
       - python36_test
       - python37_test
       - python36_docs

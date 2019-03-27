@@ -14,22 +14,22 @@ pytest.importorskip('pymapd')
     [
         param(
             lambda t: t[t, ibis.literal(1).degrees().name('n')].limit(1)['n'],
-            57.295_779_513_082_3,
+            57.2957795130823,
             id='literal_degree',
         ),
         param(
             lambda t: t[t, ibis.literal(1).radians().name('n')].limit(1)['n'],
-            0.017_453_292_519_943_3,
+            0.0174532925199433,
             id='literal_radians',
         ),
         param(
             lambda t: t.double_col.corr(t.float_col),
-            1.000_000_000_000_113,
+            1.000000000000113,
             id='double_float_correlation',
         ),
         param(
             lambda t: t.double_col.cov(t.float_col),
-            91.670_055_675_653_13,
+            91.67005567565313,
             id='double_float_covariance',
         ),
     ],

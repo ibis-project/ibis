@@ -2,9 +2,11 @@
 
 SHELL := /bin/bash
 MAKEFILE_DIR = $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
+PYTHON_VERSION := 3.6
+PYTHONHASHSEED := "random"
 COMPOSE_FILE := "$(MAKEFILE_DIR)/ci/docker-compose.yml"
 DOCKER := docker-compose -f $(COMPOSE_FILE)
-DOCKER_RUN := $(DOCKER) run --rm
+DOCKER_RUN := PYTHON_VERSION=${PYTHON_VERSION} $(DOCKER) run --rm
 PYTEST_OPTIONS :=
 SERVICES := mapd postgres mysql clickhouse impala kudu-master kudu-tserver
 
@@ -48,19 +50,19 @@ init: restart
 	$(MAKE) load
 
 testparallel:
-	$(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not udf' \
+	PYTHONHASHSEED=${PYTHONHASHSEED} $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not udf' \
 	    --doctest-modules --doctest-ignore-import-errors ${PYTEST_OPTIONS}
 
 test:
-	$(MAKEFILE_DIR)/ci/test.sh ${PYTEST_OPTIONS} \
+	PYTHONHASHSEED=${PYTHONHASHSEED} $(MAKEFILE_DIR)/ci/test.sh ${PYTEST_OPTIONS} \
 	    --doctest-modules --doctest-ignore-import-errors
 
 testmost:
-	$(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not (udf or impala or hdfs)' \
+	PYTHONHASHSEED=${PYTHONHASHSEED} $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not (udf or impala or hdfs)' \
 	    --doctest-modules --doctest-ignore-import-errors ${PYTEST_OPTIONS}
 
 testfast:
-	$(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not (udf or impala or hdfs or bigquery)' \
+	PYTHONHASHSEED=${PYTHONHASHSEED} $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not (udf or impala or hdfs or bigquery)' \
 	    --doctest-modules --doctest-ignore-import-errors ${PYTEST_OPTIONS}
 
 docclean:

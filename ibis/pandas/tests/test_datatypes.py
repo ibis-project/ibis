@@ -124,7 +124,7 @@ def test_dtype_int32():
 
 
 def test_dtype_int64():
-    df = pd.DataFrame({'col': np.int64([102, 67_228_734, -0])})
+    df = pd.DataFrame({'col': np.int64([102, 67228734, -0])})
     inferred = sch.infer(df)
     expected = ibis.schema([('col', 'int64')])
     assert inferred == expected
@@ -138,7 +138,7 @@ def test_dtype_float32():
 
 
 def test_dtype_float64():
-    df = pd.DataFrame({'col': np.float64([-3e43, 43.0, 10_000_000.0])})
+    df = pd.DataFrame({'col': np.float64([-3e43, 43.0, 10000000.0])})
     inferred = sch.infer(df)
     expected = ibis.schema([('col', 'double')])
     assert inferred == expected

@@ -289,12 +289,12 @@ FROM `{}.testing.functional_alltypes`""".format(  # noqa: E501
         (5, 5),
         (ibis.interval(nanoseconds=1), 0.001),
         (ibis.interval(microseconds=1), 1),
-        (ibis.interval(seconds=1), 1_000_000),
-        (ibis.interval(minutes=1), 1_000_000 * 60),
-        (ibis.interval(hours=1), 1_000_000 * 60 * 60),
-        (ibis.interval(days=1), 1_000_000 * 60 * 60 * 24),
-        (2 * ibis.interval(days=1), 1_000_000 * 60 * 60 * 24 * 2),
-        (ibis.interval(weeks=1), 1_000_000 * 60 * 60 * 24 * 7),
+        (ibis.interval(seconds=1), 1000000),
+        (ibis.interval(minutes=1), 1000000 * 60),
+        (ibis.interval(hours=1), 1000000 * 60 * 60),
+        (ibis.interval(days=1), 1000000 * 60 * 60 * 24),
+        (2 * ibis.interval(days=1), 1000000 * 60 * 60 * 24 * 2),
+        (ibis.interval(weeks=1), 1000000 * 60 * 60 * 24 * 7),
     ],
 )
 def test_trailing_range_window(alltypes, preceding, value, project_id):

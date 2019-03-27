@@ -1491,7 +1491,7 @@ def can_cast_string_to_temporal(
     source: String,
     target: Union[Date, Time, Timestamp],
     value: Optional[str] = None,
-    **kwargs,
+    **kwargs
 ) -> bool:
     if value is None:
         return False
