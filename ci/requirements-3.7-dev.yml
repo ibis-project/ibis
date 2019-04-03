@@ -1,0 +1,43 @@
+channels:
+  - conda-forge
+dependencies:
+  - black
+  - click
+  - clickhouse-cityhash
+  - clickhouse-driver
+  - clickhouse-sqlalchemy
+  - cmake
+  - flake8
+  - google-cloud-bigquery>=1.0.0
+  - graphviz
+  - impyla>=0.14.2
+  - jinja2
+  - lz4
+  - multipledispatch>=0.6.0
+  - mypy
+  - numpy
+  - pandas>=0.21
+  - plumbum
+  - pre_commit
+  - psycopg2
+  - pyarrow>=0.12
+  - pymapd>=0.8.3
+  - pymysql
+  - pytables
+  - pytest
+  - pytest-cov
+  - pytest-xdist
+  - python=3.7
+  - python-graphviz
+  - python-hdfs>=2.0.16
+  - pytz
+  - regex
+  - requests
+  - ruamel.yaml
+  - sqlalchemy
+  - thrift
+  # required for impyla in case of py3
+  - thriftpy
+  - toolz
+  - xorg-libxpm
+  - xorg-libxrender

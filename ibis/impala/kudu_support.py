@@ -257,7 +257,7 @@ class CreateTableKudu(ddl.CreateTable):
         schema,
         key_columns,
         external=True,
-        **kwargs,
+        **kwargs
     ):
         self.kudu_table_name = kudu_table_name
         self.master_addrs = master_addrs

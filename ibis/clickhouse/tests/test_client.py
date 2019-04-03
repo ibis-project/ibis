@@ -86,7 +86,7 @@ def test_verbose_log_queries(con, db):
 
 def test_sql_query_limits(alltypes):
     table = alltypes
-    with config.option_context('sql.default_limit', 100_000):
+    with config.option_context('sql.default_limit', 100000):
         # table has 25 rows
         assert len(table.execute()) == 7300
         # comply with limit arg for TableExpr

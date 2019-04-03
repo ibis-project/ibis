@@ -118,10 +118,10 @@ def test_nested_join_multiple_ctes():
     ratings2 = ratings['userid', 'movieid', 'rating', expr.name('datetime')]
     joined2 = ratings2.join(movies, ['movieid'])[ratings2, movies['title']]
     joined3 = joined2.filter(
-        [joined2.userid == 118_205, joined2.datetime.year() > 2001]
+        [joined2.userid == 118205, joined2.datetime.year() > 2001]
     )
     top_user_old_movie_ids = joined3.filter(
-        [joined3.userid == 118_205, joined3.datetime.year() < 2009]
+        [joined3.userid == 118205, joined3.datetime.year() < 2009]
     )[['movieid']]
     # projection from a filter was hiding an insidious bug, so we're disabling
     # that for now see issue #1295

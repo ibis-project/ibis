@@ -149,8 +149,8 @@ def download(repo_url, directory):
 
     # extract all files
     extract_to = directory.with_name(directory.name + '_extracted')
-    with zipfile.ZipFile(path, 'r') as f:
-        f.extractall(extract_to)
+    with zipfile.ZipFile(str(path), 'r') as f:
+        f.extractall(str(extract_to))
 
     # remove existent folder
     if directory.exists():

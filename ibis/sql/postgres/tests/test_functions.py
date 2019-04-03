@@ -197,7 +197,7 @@ def test_strftime(con, func):
         hour=14,
         minute=48,
         second=5,
-        microsecond=359_000,
+        microsecond=359000,
     )
     assert con.execute(func(value)) == func(raw_value)
 
@@ -240,7 +240,7 @@ def test_binary_arithmetic(con, func, left, right, expected):
                     hour=14,
                     minute=48,
                     second=5,
-                    microsecond=359_000,
+                    microsecond=359000,
                 )
             ),
             'timestamp without time zone',

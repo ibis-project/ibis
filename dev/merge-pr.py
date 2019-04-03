@@ -56,7 +56,12 @@ def merge_pr(
     password: str,
 ) -> None:
     """Merge a pull request."""
-    git_log = git["log", f"{remote}/{target_ref}..{base_ref}"]
+    git_log = git[
+        "log",
+        "{remote}/{target_ref}..{base_ref}".format(
+            remote=remote, target_ref=target_ref, base_ref=base_ref
+        ),
+    ]
 
     commit_authors = git_log["--pretty=format:%an <%ae>"]().splitlines()
     author_count = collections.Counter(commit_authors)
@@ -68,18 +73,22 @@ def merge_pr(
         merge_message_pieces.append("\n".join(textwrap.wrap(body)))
     merge_message_pieces.extend(map("Author: {}".format, distinct_authors))
 
-    # The string f"Closes #{pull_request_number:d}" is required for GitHub to
+    # The string "Closes #{pull_request_number:d}" is required for GitHub to
     # correctly close the PR
     merge_message_pieces.append(
-        f"\nCloses #{pr_num:d} from {pr_repo_desc} and squashes the following "
-        "commits:\n"
+        (
+            "\nCloses #{pr_num:d} from {pr_repo_desc} and squashes the "
+            "following commits:\n"
+        ).format(pr_num=pr_num, pr_repo_desc=pr_repo_desc)
     )
     merge_message_pieces += commits
 
     commit_message = "\n".join(merge_message_pieces)
     # PUT /repos/:owner/:repo/pulls/:number/merge
     resp = requests.put(
-        f"{GITHUB_API_BASE}/pulls/{pr_num:d}/merge",
+        "{GITHUB_API_BASE}/pulls/{pr_num:d}/merge".format(
+            GITHUB_API_BASE=GITHUB_API_BASE, pr_num=pr_num
+        ),
         json=dict(
             commit_title=commit_title,
             commit_message=commit_message,
@@ -92,7 +101,11 @@ def merge_pr(
         resp_json = resp.json()
         merged = resp_json["merged"]
         assert merged is True, merged
-        click.echo(f"Pull request #{pr_num:d} successfully merged.")
+        click.echo(
+            "Pull request #{pr_num:d} successfully merged.".format(
+                pr_num=pr_num
+            )
+        )
 
 
 @click.command()
@@ -136,7 +149,13 @@ def main(
     except plumbum.commands.processes.ProcessExecutionError as e:
         raise click.ClickException(e.stderr)
     try:
-        git["fetch", remote, f"pull/{pull_request_number:d}/head"]()
+        git[
+            "fetch",
+            remote,
+            "pull/{pull_request_number:d}/head".format(
+                pull_request_number=pull_request_number
+            ),
+        ]()
     except plumbum.commands.processes.ProcessExecutionError as e:
         raise click.ClickException(e.stderr)
 
@@ -145,14 +164,21 @@ def main(
     if not original_head:
         original_head = git["rev-parse", "HEAD"]().strip()
 
-    resp = requests.get(f"{GITHUB_API_BASE}/pulls/{pull_request_number:d}")
+    resp = requests.get(
+        "{GITHUB_API_BASE}/pulls/{pull_request_number:d}".format(
+            GITHUB_API_BASE=GITHUB_API_BASE,
+            pull_request_number=pull_request_number,
+        )
+    )
     resp.raise_for_status()
     pr_json = resp.json()
 
     message = pr_json.get("message", None)
     if message is not None and message.lower() == "not found":
         raise click.ClickException(
-            f"PR {pull_request_number:d} does not exist."
+            "PR {pull_request_number:d} does not exist.".format(
+                pull_request_number=pull_request_number
+            )
         )
 
     if not pr_json["mergeable"]:
@@ -166,18 +192,38 @@ def main(
     target_ref = pr_json["base"]["ref"]
     user_login = pr_json["user"]["login"]
     base_ref = pr_json["head"]["ref"]
-    pr_repo_desc = f"{user_login}/{base_ref}"
+    pr_repo_desc = "{user_login}/{base_ref}".format(
+        user_login=user_login, base_ref=base_ref
+    )
 
-    click.echo(f"=== Pull Request #{pull_request_number:d} ===")
     click.echo(
-        f"title\t{commit_title}\n"
-        f"source\t{pr_repo_desc}\n"
-        f"target\t{remote}/{target_ref}\n"
-        f"url\t{url}"
+        "=== Pull Request #{pull_request_number:d} ===".format(
+            pull_request_number=pull_request_number
+        )
+    )
+    click.echo(
+        (
+            "title\t{commit_title}\n"
+            "source\t{pr_repo_desc}\n"
+            "target\t{remote}/{target_ref}\n"
+            "url\t{url}"
+        ).format(
+            commit_title=commit_title,
+            pr_repo_desc=pr_repo_desc,
+            remote=remote,
+            target_ref=target_ref,
+            url=url,
+        )
     )
 
     base_ref_commit = (
-        git["ls-remote", remote, f"refs/pull/{pull_request_number:d}/head"]()
+        git[
+            "ls-remote",
+            remote,
+            "refs/pull/{pull_request_number:d}/head".format(
+                pull_request_number=pull_request_number
+            ),
+        ]()
         .strip()
         .split()[0]
     )

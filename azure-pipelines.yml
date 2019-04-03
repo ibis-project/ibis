@@ -5,11 +5,17 @@ jobs:
   strategy:
     maxParallel: 3
     matrix:
+      py35:
+        python.version: "3.5"
+        conda.version: "4.5"
+        conda.env: "ibis_3.5"
       py36:
         python.version: "3.6"
+        conda.version: "4.6"
         conda.env: "ibis_3.6"
       py37:
         python.version: "3.7"
+        conda.version: "4.6"
         conda.env: "ibis_3.7"
   steps:
     - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
@@ -22,6 +28,9 @@ jobs:
 
     - script: conda update --all
       displayName: 'Update conda'
+
+    - script: conda install conda=$(conda.version)
+      displayName: 'Install an appropriate conda version'
 
     - script: conda create --name $(conda.env) python=$(python.version) numpy pandas pytables ruamel.yaml jinja2 pyarrow multipledispatch pymysql sqlalchemy psycopg2 graphviz click mock plumbum flake8 pytest-xdist
       displayName: 'Create conda environment'

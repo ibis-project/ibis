@@ -1,3 +1,5 @@
 [tool.black]
 line-length = 79
 skip-string-normalization = true
+target-version = ["py35", "py36", "py37"]
+exclude = "(ibis/_version|versioneer)\\.py"

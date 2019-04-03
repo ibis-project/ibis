@@ -133,7 +133,7 @@ def test_adapt_scalar_array_results(con, alltypes):
 
 
 def test_interactive_repr_call_failure(con):
-    t = con.table('tpch_lineitem').limit(100_000)
+    t = con.table('tpch_lineitem').limit(100000)
 
     t = t[t, t.l_receiptdate.cast('timestamp').name('date')]
 
@@ -192,7 +192,7 @@ def test_verbose_log_queries(con, test_data_db):
 
 def test_sql_query_limits(con, test_data_db):
     table = con.table('tpch_nation', database=test_data_db)
-    with config.option_context('sql.default_limit', 100_000):
+    with config.option_context('sql.default_limit', 100000):
         # table has 25 rows
         assert len(table.execute()) == 25
         # comply with limit arg for TableExpr
@@ -374,7 +374,7 @@ def test_time_to_int_cast(con):
     now = pytz.utc.localize(datetime.datetime.now())
     d = ibis.literal(now)
     result = con.execute(d.cast('int64'))
-    assert result == int(time.mktime(now.timetuple())) * 1_000_000
+    assert result == int(time.mktime(now.timetuple())) * 1000000
 
 
 def test_set_option_with_dot(con):

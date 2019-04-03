@@ -70,7 +70,9 @@ def update(meta, source_path):
     recipe = ruamel.yaml.round_trip_load(content)
 
     # update the necessary fields, skip leading 'v' in the version
-    recipe['package']['version'] = ibis.__version__[1:]
+    version = ibis.__version__
+    assert not version.startswith('v'), 'version == {}'.format(version)
+    recipe['package']['version'] = version
     recipe['source'] = {'path': source_path}
 
     # XXX: because render will remove the {{ PYTHON }} variable

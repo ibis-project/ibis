@@ -56,7 +56,7 @@ def test_timestamp_functions(case_func, expected_func):
         hour=14,
         minute=48,
         second=5,
-        microsecond=359_000,
+        microsecond=359000,
     )
     result = case_func(v)
     expected = expected_func(vt)

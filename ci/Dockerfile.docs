@@ -7,13 +7,18 @@ RUN apt-get -qq update --yes \
  && rm -rf /var/lib/apt/lists/*
 
 ADD ci/requirements-docs.yml /
+
 RUN conda config --add channels conda-forge \
- && conda update --all --yes --quiet \
- && conda install --yes --quiet --file /requirements-docs.yml python=$PYTHON conda-build \
- && conda clean --all --yes \
- && pip install pydata-google-auth
+ && conda update --all --yes \
+ && conda install --name ibis-env --yes --file /requirements-docs.yml \
+ && conda clean --all --yes
+
+RUN echo 'source activate ibis-env && exec "$@"' > activate.sh
 
 COPY . /ibis
 WORKDIR /ibis
 
-RUN python setup.py develop
+RUN bash /activate.sh python setup.py develop \
+  && bash /activate.sh pip install pydata-google-auth
+
+ENTRYPOINT ["bash", "/activate.sh"]
