@@ -66,6 +66,11 @@ def at(alltypes):
     return alltypes.op().sqla_table
 
 
+@pytest.fixture(scope='module')
+def intervals(con):
+    return con.table("intervals")
+
+
 @pytest.fixture
 def translate():
     from ibis.sql.postgres.compiler import PostgreSQLDialect

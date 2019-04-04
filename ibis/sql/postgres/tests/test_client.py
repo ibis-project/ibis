@@ -13,12 +13,17 @@
 # limitations under the License.
 
 import os
+
 import pytest
+
+import numpy as np
 import pandas as pd
 
-from ibis.tests.util import assert_equal
+import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis
+
+from ibis.tests.util import assert_equal
 
 pytest.importorskip('sqlalchemy')
 pytest.importorskip('psycopg2')
@@ -131,3 +136,65 @@ def test_schema_table():
     schema = con.schema('information_schema')
 
     assert isinstance(schema['tables'], ir.TableExpr)
+
+
+def test_interval_films_schema(con):
+    t = con.table("films")
+    assert t.len.type() == dt.Interval(unit="m")
+    assert t.len.execute().dtype == np.dtype("timedelta64[ns]")
+
+
+@pytest.mark.parametrize(
+    ("column", "expected_dtype"),
+    [
+        # ("a", dt.Interval("Y")),
+        # ("b", dt.Interval("M")),
+        ("c", dt.Interval("D")),
+        ("d", dt.Interval("h")),
+        ("e", dt.Interval("m")),
+        ("f", dt.Interval("s")),
+        # ("g", dt.Interval("M")),
+        ("h", dt.Interval("h")),
+        ("i", dt.Interval("m")),
+        ("j", dt.Interval("s")),
+        ("k", dt.Interval("m")),
+        ("l", dt.Interval("s")),
+        ("m", dt.Interval("s")),
+    ],
+)
+def test_all_interval_types_schema(intervals, column, expected_dtype):
+    assert intervals[column].type() == expected_dtype
+
+
+@pytest.mark.parametrize(
+    ("column", "expected_dtype"),
+    [
+        # ("a", dt.Interval("Y")),
+        # ("b", dt.Interval("M")),
+        ("c", dt.Interval("D")),
+        ("d", dt.Interval("h")),
+        ("e", dt.Interval("m")),
+        ("f", dt.Interval("s")),
+        # ("g", dt.Interval("M")),
+        ("h", dt.Interval("h")),
+        ("i", dt.Interval("m")),
+        ("j", dt.Interval("s")),
+        ("k", dt.Interval("m")),
+        ("l", dt.Interval("s")),
+        ("m", dt.Interval("s")),
+    ],
+)
+def test_all_interval_types_execute(intervals, column, expected_dtype):
+    expr = intervals[column]
+    series = expr.execute()
+    assert series.dtype == np.dtype("timedelta64[ns]")
+
+
+@pytest.mark.xfail(
+    raises=ValueError, reason="Year and month interval types not yet supported"
+)
+def test_unsupported_intervals(con):
+    t = con.table("not_supported_intervals")
+    assert t["a"].type() == dt.Interval("Y")
+    assert t["b"].type() == dt.Interval("M")
+    assert t["g"].type() == dt.Interval("M")

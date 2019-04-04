@@ -287,7 +287,14 @@ def mapd(schema, tables, data_directory, **params):
             port=params['port'],
             dbname='mapd',
         )
-        stmt = 'CREATE DATABASE {}'.format(params['database'])
+        database = params["database"]
+        stmt = "DROP DATABASE {}".format(database)
+        try:
+            conn.execute(stmt)
+        except Exception:
+            logger.warning('MapD DDL statement %r failed', stmt)
+
+        stmt = 'CREATE DATABASE {}'.format(database)
         try:
             conn.execute(stmt)
         except Exception:
@@ -299,7 +306,7 @@ def mapd(schema, tables, data_directory, **params):
         user=params['user'],
         password=params['password'],
         port=params['port'],
-        dbname=params['database'],
+        dbname=database,
     )
 
     # create tables
@@ -343,7 +350,6 @@ def mapd(schema, tables, data_directory, **params):
             conn.load_table_columnar(table, df)
 
     conn.close()
-    logger.info('Done!')
 
 
 @cli.command()
