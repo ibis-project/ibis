@@ -122,6 +122,38 @@ def sa_double(_, satype, nullable=True):
     return dt.Double(nullable=nullable)
 
 
+POSTGRES_FIELD_TO_IBIS_UNIT = {
+    "YEAR": "Y",
+    "MONTH": "M",
+    "DAY": "D",
+    "HOUR": "h",
+    "MINUTE": "m",
+    "SECOND": "s",
+    "YEAR TO MONTH": "M",
+    "DAY TO HOUR": "h",
+    "DAY TO MINUTE": "m",
+    "DAY TO SECOND": "s",
+    "HOUR TO MINUTE": "m",
+    "HOUR TO SECOND": "s",
+    "MINUTE TO SECOND": "s",
+}
+
+
+@dt.dtype.register(PostgreSQLDialect, sa.dialects.postgresql.INTERVAL)
+def sa_postgres_interval(_, satype, nullable=True):
+    field = satype.fields.upper()
+    unit = POSTGRES_FIELD_TO_IBIS_UNIT.get(field, None)
+    if unit is None:
+        raise ValueError(
+            "Unknown PostgreSQL interval field {!r}".format(field)
+        )
+    elif unit in {"Y", "M"}:
+        raise ValueError(
+            "Variable length timedeltas are not yet supported with PostgreSQL"
+        )
+    return dt.Interval(unit=unit, nullable=nullable)
+
+
 @dt.dtype.register(MySQLDialect, sa.dialects.mysql.DOUBLE)
 def sa_mysql_double(_, satype, nullable=True):
     # TODO: handle asdecimal=True
