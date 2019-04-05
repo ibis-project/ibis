@@ -102,10 +102,10 @@ def test_create_table_schema(con):
         ('w', 'multipolygon')
     ])
 
-    try:
-        con.create_table(t_name, schema=schema)
-        t = con.table(t_name)
+    con.create_table(t_name, schema=schema)
+    t = con.table(t_name)
 
+    try:
         assert isinstance(t.a, ir.FloatingColumn)
         assert isinstance(t.b, ir.FloatingColumn)
         assert isinstance(t.c, ir.IntegerColumn)
@@ -115,4 +115,4 @@ def test_create_table_schema(con):
         assert isinstance(t.z, ir.PolygonColumn)
         assert isinstance(t.w, ir.MultiPolygonColumn)
     finally:
-        con.drop_table(t_name, force=True)
+        con.drop_table(t_name)
