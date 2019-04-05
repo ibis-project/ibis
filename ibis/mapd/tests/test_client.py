@@ -103,9 +103,10 @@ def test_create_table_schema(con):
     ])
 
     con.create_table(t_name, schema=schema)
-    t = con.table(t_name)
 
     try:
+        t = con.table(t_name)
+
         assert isinstance(t.a, ir.FloatingColumn)
         assert isinstance(t.b, ir.FloatingColumn)
         assert isinstance(t.c, ir.IntegerColumn)
