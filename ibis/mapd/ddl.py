@@ -404,8 +404,3 @@ class InsertPandas(MapDDML):
 
     def compile(self):
         return '\n'.join(self.pieces)
-
-
-def _mapd_input_signature(inputs):
-    # TODO: varargs '{}...'.format(val)
-    return ', '.join(map(_type_to_sql_string, inputs))

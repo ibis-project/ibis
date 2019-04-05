@@ -16,19 +16,23 @@ import ibis.expr.types as ir
 import ibis.expr.operations as ops
 
 _sql_type_names = {
+    'boolean': 'boolean',
+    'date': 'date',
+    'decimal': 'decimal',
+    'double': 'double',
+    'float32': 'float',
+    'float64': 'double',
     'int8': 'smallint',
     'int16': 'smallint',
     'int32': 'int',
     'int64': 'bigint',
-    'float': 'float',
-    'float64': 'double',
-    'double': 'double',
+    'linestring': 'linestring',
+    'multipolygon': 'multipolygon',
+    'point': 'point',
+    'polygon': 'polygon',
     'string': 'text',
-    'boolean': 'boolean',
-    'timestamp': 'timestamp',
-    'decimal': 'decimal',
-    'date': 'date',
     'time': 'time',
+    'timestamp': 'timestamp',
 }
 
 

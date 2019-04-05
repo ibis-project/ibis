@@ -84,3 +84,36 @@ def test_union_op(alltypes):
     expr = t1.union(t2)
     with pytest.raises(com.UnsupportedOperationError):
         expr.compile()
+
+
+def test_create_table_schema(con):
+    t_name = 'mytable'
+
+    con.drop_table(t_name, force=True)
+
+    schema = ibis.schema([
+        ('a', 'float'),
+        ('b', 'double'),
+        ('c', 'int32'),
+        ('d', 'int64'),
+        ('x', 'point'),
+        ('y', 'linestring'),
+        ('z', 'polygon'),
+        ('w', 'multipolygon')
+    ])
+
+    con.create_table(t_name, schema=schema)
+
+    try:
+        t = con.table(t_name)
+
+        assert isinstance(t.a, ir.FloatingColumn)
+        assert isinstance(t.b, ir.FloatingColumn)
+        assert isinstance(t.c, ir.IntegerColumn)
+        assert isinstance(t.d, ir.IntegerColumn)
+        assert isinstance(t.x, ir.PointColumn)
+        assert isinstance(t.y, ir.LineStringColumn)
+        assert isinstance(t.z, ir.PolygonColumn)
+        assert isinstance(t.w, ir.MultiPolygonColumn)
+    finally:
+        con.drop_table(t_name)
