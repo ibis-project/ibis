@@ -2,21 +2,19 @@ import collections
 import functools
 import itertools
 import operator
-
 from contextlib import suppress
 
 import toolz
 
-from ibis.expr.schema import HasSchema, Schema
-
 import ibis.common as com
-import ibis.expr.types as ir
+import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
-import ibis.expr.datatypes as dt
-
+import ibis.expr.types as ir
 from ibis import util
-from ibis.expr.signature import Annotable, Argument as Arg
+from ibis.expr.schema import HasSchema, Schema
+from ibis.expr.signature import Annotable
+from ibis.expr.signature import Argument as Arg
 
 
 def _safe_repr(x, memo=None):

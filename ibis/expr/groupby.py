@@ -18,13 +18,13 @@ from __future__ import absolute_import
 
 import types
 
+import toolz
+
 import ibis.expr.analysis as L
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.window as _window
 import ibis.util as util
-
-import toolz
 
 
 def _resolve_exprs(table, exprs):

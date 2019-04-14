@@ -1,12 +1,11 @@
-from io import StringIO
 from datetime import date, datetime
+from io import StringIO
 
 import ibis.common as com
-import ibis.util as util
-import ibis.expr.types as ir
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
 import ibis.sql.transforms as transforms
-
+import ibis.util as util
 from ibis.clickhouse.identifiers import quote_identifier
 
 

@@ -1,6 +1,6 @@
-import ibis
 import pytest
 
+import ibis
 
 pytest.importorskip('clickhouse_driver')
 pytestmark = pytest.mark.clickhouse

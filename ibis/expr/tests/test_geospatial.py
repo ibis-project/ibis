@@ -1,6 +1,7 @@
 """ Tests for geo spatial data types"""
-import ibis
 import pytest
+
+import ibis
 
 
 @pytest.mark.parametrize(

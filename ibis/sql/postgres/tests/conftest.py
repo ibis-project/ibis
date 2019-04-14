@@ -14,6 +14,7 @@
 
 
 import os
+
 import pytest
 
 import ibis

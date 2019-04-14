@@ -1,8 +1,10 @@
-import pytest
+from operator import methodcaller
+
 import numpy as np
 import pandas as pd
 import pandas.util.testing as tm
-from operator import methodcaller
+import pytest
+
 from ibis import literal as L
 
 pytest.importorskip('clickhouse_driver')

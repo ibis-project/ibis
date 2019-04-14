@@ -1,12 +1,11 @@
-import os
 import itertools
+import os
 import webbrowser
 
 import ibis
-import ibis.util as util
 import ibis.common as com
 import ibis.config as config
-
+import ibis.util as util
 
 # TODO move methods containing ops import to api.py
 

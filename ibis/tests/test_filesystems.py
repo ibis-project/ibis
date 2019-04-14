@@ -1,18 +1,16 @@
-import unittest
-
-from posixpath import join as pjoin
-from os import path as osp
 import os
 import shutil
-
+import unittest
 from io import BytesIO
+from os import path as osp
+from posixpath import join as pjoin
 
 import pytest
 
+import ibis
+import ibis.util as util
 from ibis.filesystems import HDFS
 from ibis.impala.tests.conftest import IbisTestEnv
-import ibis.util as util
-import ibis
 
 pytest.importorskip('hdfs')
 

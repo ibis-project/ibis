@@ -1,27 +1,22 @@
-import os
-import sys
 import operator
+import os
 import string
+import sys
 import warnings
-
-from operator import methodcaller
 from datetime import date, datetime
-
-import pytest
-
-from pytest import param
+from operator import methodcaller
 
 import numpy as np
-
-import ibis
-import ibis.expr.types as ir
-import ibis.expr.datatypes as dt
-import ibis.config as config
-
-from ibis import literal as L
-
 import pandas as pd
 import pandas.util.testing as tm
+import pytest
+from pytest import param
+
+import ibis
+import ibis.config as config
+import ibis.expr.datatypes as dt
+import ibis.expr.types as ir
+from ibis import literal as L
 
 sa = pytest.importorskip('sqlalchemy')
 pytest.importorskip('psycopg2')

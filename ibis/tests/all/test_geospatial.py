@@ -1,11 +1,12 @@
 """ Tests for geo spatial data types"""
 from inspect import isfunction
-import ibis
-from ibis.tests.backends import MapD
-import ibis.tests.util as tu
-from numpy import testing
-import pytest
 
+import pytest
+from numpy import testing
+
+import ibis
+import ibis.tests.util as tu
+from ibis.tests.backends import MapD
 
 # geo literals declaration
 point_0 = ibis.literal((0, 0), type='point:geometry').name('p')

@@ -4,7 +4,6 @@ import pytest
 
 import ibis
 
-
 PROJECT_ID = os.environ.get('GOOGLE_BIGQUERY_PROJECT_ID', 'ibis-gbq')
 DATASET_ID = 'testing'
 

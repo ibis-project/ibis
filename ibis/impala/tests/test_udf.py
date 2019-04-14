@@ -1,32 +1,27 @@
-from decimal import Decimal
-
 import unittest
-
+from decimal import Decimal
 from posixpath import join as pjoin
-
-import pytest
 
 import numpy as np
 import pandas as pd
+import pytest
 
 import ibis
-import ibis.expr.types as ir
+import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rules
-import ibis.common as com
+import ibis.expr.types as ir
+import ibis.impala as api  # noqa: E402
 import ibis.util as util
-
 from ibis.common import IbisTypeError
 from ibis.expr.tests.mocks import MockConnection
+from ibis.impala import ddl  # noqa: E402
 
 pytest.importorskip('hdfs')
 pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
 
 pytestmark = [pytest.mark.impala, pytest.mark.udf]
-
-from ibis.impala import ddl  # noqa: E402
-import ibis.impala as api  # noqa: E402
 
 
 class TestWrapping(unittest.TestCase):

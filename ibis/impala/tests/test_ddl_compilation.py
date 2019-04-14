@@ -5,9 +5,9 @@ import ibis
 pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
 
-from ibis.impala import ddl  # noqa: E402
-from ibis.impala.client import build_ast  # noqa: E402
-from ibis.impala.compiler import ImpalaDialect  # noqa: E402
+from ibis.impala import ddl  # noqa: E402, isort:skip
+from ibis.impala.client import build_ast  # noqa: E402, isort:skip
+from ibis.impala.compiler import ImpalaDialect  # noqa: E402, isort:skip
 
 
 pytestmark = pytest.mark.impala

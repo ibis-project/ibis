@@ -1,12 +1,14 @@
-from ibis.impala.client import ImpalaConnection, ImpalaClient
-
+import ibis.common as com
+from ibis.config import options
 # these objects are exposed in the public API and are not used in the module
-from ibis.impala.client import ImpalaDatabase, ImpalaTable  # noqa: F401
-
+from ibis.impala.client import (  # noqa: F401
+    ImpalaClient,
+    ImpalaConnection,
+    ImpalaDatabase,
+    ImpalaTable,
+)
 from ibis.impala.compiler import dialect  # noqa: F401
 from ibis.impala.udf import *  # noqa: F401,F403
-from ibis.config import options
-import ibis.common as com
 
 
 def compile(expr, params=None):

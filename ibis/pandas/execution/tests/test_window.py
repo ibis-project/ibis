@@ -2,14 +2,11 @@ from operator import methodcaller
 
 import numpy as np
 import pandas as pd
-
-from pandas.util import testing as tm
-
 import pytest
+from pandas.util import testing as tm
 
 import ibis
 import ibis.expr.operations as ops
-
 from ibis.pandas.dispatch import pre_execute
 
 execute = ibis.pandas.execute

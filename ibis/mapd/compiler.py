@@ -1,16 +1,16 @@
 from io import StringIO
+
+import ibis.common as com
+import ibis.expr.operations as ops
+import ibis.expr.types as ir
+import ibis.sql.compiler as compiles
+import ibis.util as util
+from ibis.expr.api import _add_methods, _binop_expr, _unary_op
+from ibis.impala import compiler as impala_compiler
+
 from . import operations as mapd_ops
 from .identifiers import quote_identifier  # noqa: F401
 from .operations import _type_to_sql_string  # noqa: F401
-from ibis.expr.api import _add_methods, _unary_op, _binop_expr
-
-import ibis.common as com
-import ibis.util as util
-import ibis.expr.types as ir
-import ibis.expr.operations as ops
-import ibis.sql.compiler as compiles
-
-from ibis.impala import compiler as impala_compiler
 
 
 def build_ast(expr, context):

@@ -1,11 +1,11 @@
 import sys
-import pytest
+
 import pandas as pd
 import pandas.util.testing as tm
+import pytest
 
 import ibis
 import ibis.common as com
-
 
 driver = pytest.importorskip('clickhouse_driver')
 pytestmark = pytest.mark.clickhouse

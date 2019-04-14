@@ -1,36 +1,27 @@
 import datetime
-
 from functools import partial
 
+import numpy as np
 import regex as re
-
-
 import toolz
-
 from multipledispatch import Dispatcher
 
 import ibis
 import ibis.common as com
-
-import numpy as np
-
 import ibis.expr.datatypes as dt
-import ibis.expr.types as ir
-
-import ibis.sql.compiler as comp
-import ibis.expr.operations as ops
 import ibis.expr.lineage as lin
-
+import ibis.expr.operations as ops
+import ibis.expr.types as ir
+import ibis.sql.compiler as comp
+from ibis.bigquery.datatypes import ibis_type_to_bigquery_type
+from ibis.impala import compiler as impala_compiler
 from ibis.impala.compiler import (
     ImpalaSelect,
-    unary,
-    fixed_arity,
     ImpalaTableSetFormatter,
     _reduction,
+    fixed_arity,
+    unary,
 )
-from ibis.impala import compiler as impala_compiler
-
-from ibis.bigquery.datatypes import ibis_type_to_bigquery_type
 
 
 class BigQueryUDFNode(ops.ValueOp):

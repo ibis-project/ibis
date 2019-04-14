@@ -15,7 +15,6 @@
 import pytest
 
 import ibis
-
 from ibis.tests.util import assert_equal
 
 

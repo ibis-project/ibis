@@ -1,15 +1,15 @@
-import pytest
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
-from datetime import datetime
+import pytest
 
 import ibis
 import ibis.expr.api as api
 import ibis.expr.datatypes as dt
-import ibis.expr.types as ir
-import ibis.expr.rules as rlz
 import ibis.expr.operations as ops
+import ibis.expr.rules as rlz
+import ibis.expr.types as ir
 
 
 def test_field_select(alltypes):

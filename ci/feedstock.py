@@ -4,17 +4,14 @@ import os
 import shutil
 import sys
 import tempfile
-
 from pathlib import Path
 
 import click
 import ruamel.yaml
-
 from jinja2 import Environment, FileSystemLoader
-from plumbum.cmd import git, conda
+from plumbum.cmd import conda, git
 
 import ibis
-
 
 IBIS_DIR = Path(__file__).parent.parent.absolute()
 

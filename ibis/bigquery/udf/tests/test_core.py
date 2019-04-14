@@ -4,7 +4,7 @@ import tempfile
 
 import pytest
 
-from ibis.bigquery.udf.core import SymbolTable, PythonToJavaScriptTranslator
+from ibis.bigquery.udf.core import PythonToJavaScriptTranslator, SymbolTable
 
 
 def test_symbol_table():

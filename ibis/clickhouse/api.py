@@ -1,9 +1,7 @@
 import ibis.common as com
-
-from ibis.config import options
 from ibis.clickhouse.client import ClickhouseClient
 from ibis.clickhouse.compiler import dialect
-
+from ibis.config import options
 
 __all__ = 'compile', 'verify', 'connect', 'dialect'
 

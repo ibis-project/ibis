@@ -1,7 +1,7 @@
-import ibis.expr.types as ir
-import ibis.expr.operations as ops
-import ibis.util as util
 import ibis.common as com
+import ibis.expr.operations as ops
+import ibis.expr.types as ir
+import ibis.util as util
 
 
 def _list_to_tuple(x):

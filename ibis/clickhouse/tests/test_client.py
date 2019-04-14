@@ -1,13 +1,12 @@
 from io import StringIO
 
-import pytest
 import pandas as pd
+import pandas.util.testing as tm
+import pytest
 
 import ibis
 import ibis.config as config
 import ibis.expr.types as ir
-import pandas.util.testing as tm
-
 from ibis import literal as L
 
 pytest.importorskip('clickhouse_driver')

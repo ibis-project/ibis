@@ -1,15 +1,13 @@
 import collections
 import enum
-
-from itertools import starmap, product
-
-
 from contextlib import suppress
-import ibis.util as util
+from itertools import product, starmap
+
 import ibis.common as com
-import ibis.expr.types as ir
-import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
+import ibis.expr.schema as sch
+import ibis.expr.types as ir
+import ibis.util as util
 
 try:
     from cytoolz import curry, compose, identity

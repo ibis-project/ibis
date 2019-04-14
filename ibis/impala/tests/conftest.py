@@ -4,9 +4,8 @@ import warnings
 
 import pytest
 
-import ibis.util as util
 import ibis
-
+import ibis.util as util
 from ibis import options
 from ibis.expr.tests.mocks import MockConnection
 

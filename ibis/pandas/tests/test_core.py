@@ -1,16 +1,13 @@
-import pytest
-
 import pandas as pd
 import pandas.util.testing as tm
+import pytest
+from multipledispatch.conflict import ambiguities
 
 import ibis
 import ibis.common as com
 import ibis.expr.operations as ops
-
-from ibis.pandas.dispatch import execute_node, pre_execute, post_execute
 from ibis.pandas.client import PandasClient
-
-from multipledispatch.conflict import ambiguities
+from ibis.pandas.dispatch import execute_node, post_execute, pre_execute
 
 pytestmark = pytest.mark.pandas
 

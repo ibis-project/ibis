@@ -17,13 +17,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pprint
 import re
-
+import warnings
 from collections import namedtuple
 from contextlib import contextmanager
-import pprint
-import warnings
-
 
 DeprecatedOption = namedtuple('DeprecatedOption', 'key msg rkey removal_ver')
 RegisteredOption = namedtuple(

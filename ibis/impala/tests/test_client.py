@@ -1,8 +1,9 @@
 import datetime
 import time
+
 import pandas as pd
-import pytz
 import pytest
+import pytz
 
 import ibis
 import ibis.common as com
@@ -10,7 +11,6 @@ import ibis.config as config
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.util as util
-
 from ibis.tests.util import assert_equal
 
 pytest.importorskip('sqlalchemy')

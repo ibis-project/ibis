@@ -1,14 +1,10 @@
-import pytest
-
-from pytest import param
-
 import numpy as np
-
 import pandas as pd
 import pandas.util.testing as tm
+import pytest
+from pytest import param
 
 import ibis
-
 from ibis.pandas.client import PandasTable  # noqa: E402
 
 pytestmark = pytest.mark.pandas

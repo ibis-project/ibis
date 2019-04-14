@@ -5,25 +5,19 @@ from __future__ import absolute_import
 
 import functools
 import operator
-
 from collections import OrderedDict
 from operator import methodcaller
 
 import pandas as pd
-
 import toolz
-
-from toolz import concat, concatv, unique, compose, first
-
 from multipledispatch import Dispatcher
+from toolz import compose, concat, concatv, first, unique
 
-import ibis.expr.types as ir
 import ibis.expr.operations as ops
-
-from ibis.pandas.dispatch import execute_node
+import ibis.expr.types as ir
 from ibis.pandas.core import execute
+from ibis.pandas.dispatch import execute_node
 from ibis.pandas.execution import constants, util
-
 
 compute_projection = Dispatcher(
     'compute_projection',

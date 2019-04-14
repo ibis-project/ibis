@@ -1,15 +1,13 @@
 from __future__ import absolute_import
 
 import decimal
-
-import pytest
+import os
 
 import pandas as pd
+import pytest
 
 import ibis
 import ibis.expr.datatypes as dt
-
-import os
 
 
 @pytest.fixture(scope='module')

@@ -1,12 +1,10 @@
 import collections
 import functools
 
+import pandas as pd
 import toolz
 
-import pandas as pd
-
 import ibis.expr.operations as ops
-
 from ibis.pandas.dispatch import execute_node
 
 

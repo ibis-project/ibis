@@ -2,10 +2,9 @@
 
 import pathlib
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 import versioneer
-
 
 LONG_DESCRIPTION = """
 Ibis is a productivity-centric Python big data framework.

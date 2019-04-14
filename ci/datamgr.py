@@ -1,21 +1,20 @@
 #!/usr/bin/env python
 
-import os
 import json
 import logging
-import zipfile
+import os
 import tempfile
 import warnings
+import zipfile
 from pathlib import Path
 
 import click
 import pandas as pd
 import sqlalchemy as sa
-from toolz import dissoc
 from plumbum import local
+from toolz import dissoc
 
 import ibis
-
 
 SCRIPT_DIR = Path(__file__).parent.absolute()
 DATA_DIR_NAME = 'ibis-testing-data'

@@ -2,13 +2,11 @@ import collections
 import datetime
 import decimal
 
-import pytz
-
-import pytest
-
 import numpy as np
 import pandas as pd
 import pandas.util.testing as tm
+import pytest
+import pytz
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -19,10 +17,8 @@ bq = pytest.importorskip('google.cloud.bigquery')
 ga = pytest.importorskip('google.auth')
 exceptions = pytest.importorskip('google.api_core.exceptions')
 
-from ibis.bigquery.tests.conftest import (
-    connect as bigquery_connect,
-)  # noqa: E402
-from ibis.bigquery.client import bigquery_param  # noqa: E402
+from ibis.bigquery.client import bigquery_param  # noqa: E402, isort:skip
+from ibis.bigquery.tests.conftest import connect  # noqa: E402, isort:skip
 
 
 def test_table(alltypes):
@@ -544,9 +540,7 @@ def test_exists_database_different_project(client, name, expected):
 
 
 def test_repeated_project_name(project_id):
-    con = bigquery_connect(
-        project_id, dataset_id='{}.testing'.format(project_id)
-    )
+    con = connect(project_id, dataset_id='{}.testing'.format(project_id))
     assert 'functional_alltypes' in con.list_tables()
 
 
@@ -725,6 +719,6 @@ def test_approx_median(alltypes):
 
 
 def test_client_without_dataset(project_id):
-    con = bigquery_connect(project_id, dataset_id=None)
+    con = connect(project_id, dataset_id=None)
     with pytest.raises(ValueError, match="Unable to determine BigQuery"):
         con.list_tables()

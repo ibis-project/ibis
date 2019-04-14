@@ -1,16 +1,15 @@
 import functools
 import inspect
-import os
-import regex as re
 import math
+import os
 
+import regex as re
 import sqlalchemy as sa
 
+import ibis.common as com
+import ibis.sql.alchemy as alch
 from ibis.client import Database
 from ibis.sql.sqlite.compiler import SQLiteDialect
-
-import ibis.sql.alchemy as alch
-import ibis.common as com
 
 
 class SQLiteTable(alch.AlchemyTable):

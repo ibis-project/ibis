@@ -1,17 +1,14 @@
-import regex as re
-
 import pyarrow as pa
 import pyarrow.parquet as pq
+import regex as re
+from pkg_resources import parse_version
 
-import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-
-from pkg_resources import parse_version
+import ibis.expr.schema as sch
 from ibis.file.client import FileClient
 from ibis.pandas.api import PandasDialect
-from ibis.pandas.core import execute_node, execute
-
+from ibis.pandas.core import execute, execute_node
 
 dialect = PandasDialect
 

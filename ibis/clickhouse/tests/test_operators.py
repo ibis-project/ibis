@@ -1,14 +1,14 @@
-import pytest
 import operator
+from datetime import date, datetime
+
 import numpy as np
 import pandas as pd
 import pandas.util.testing as tm
-from datetime import date, datetime
+import pytest
 
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import literal as L
-
 
 pytest.importorskip('clickhouse_driver')
 pytestmark = pytest.mark.clickhouse

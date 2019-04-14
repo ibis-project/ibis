@@ -1,5 +1,4 @@
 import ibis
-
 from ibis.expr.format import ExprFormatter
 from ibis.expr.operations import Node
 from ibis.expr.signature import Argument as Arg

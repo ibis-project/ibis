@@ -2,15 +2,14 @@ import pytest
 
 import ibis
 import ibis.common as com
-
 from ibis import window
+from ibis.impala.compiler import to_sql  # noqa: E402
 from ibis.tests.util import assert_equal
 
 pytest.importorskip('hdfs')
 pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
 
-from ibis.impala.compiler import to_sql  # noqa: E402
 
 pytestmark = pytest.mark.impala
 

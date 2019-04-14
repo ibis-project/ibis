@@ -1,10 +1,9 @@
+import pytest
 from pkg_resources import parse_version
 
-import pytest
-
 import ibis
-import ibis.tests.util as tu
 import ibis.expr.datatypes as dt
+import ibis.tests.util as tu
 
 
 @tu.skipif_unsupported

@@ -3,7 +3,6 @@ import pytest
 import ibis
 import ibis.expr.lineage as lin
 import ibis.expr.operations as ops
-
 from ibis.tests.util import assert_equal
 
 

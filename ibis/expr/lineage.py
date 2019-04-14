@@ -1,9 +1,10 @@
+from collections import Iterable, deque
 from itertools import chain
-from toolz import identity, compose
-from collections import deque, Iterable
 
-import ibis.expr.types as ir
+from toolz import compose, identity
+
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
 
 
 def find_nodes(expr, node_types):

@@ -13,9 +13,11 @@
 # limitations under the License.
 
 import collections
+
 import pytest
+
 import ibis
-from ibis.expr.tests.mocks import MockConnection, GeoMockConnection
+from ibis.expr.tests.mocks import GeoMockConnection, MockConnection
 
 
 @pytest.fixture

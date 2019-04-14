@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import getpass
-import psycopg2  # NOQA fail early if the driver is missing
 import contextlib
+import getpass
+
+import psycopg2  # NOQA fail early if the driver is missing
 import sqlalchemy as sa
 
 import ibis.sql.alchemy as alch
-
 from ibis.sql.postgres.compiler import PostgreSQLDialect
 
 

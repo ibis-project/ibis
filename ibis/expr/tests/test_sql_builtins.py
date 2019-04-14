@@ -17,7 +17,6 @@ import pytest
 import ibis
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-
 from ibis.tests.util import assert_equal
 
 

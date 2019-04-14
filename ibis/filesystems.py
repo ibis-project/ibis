@@ -17,10 +17,9 @@
 
 import posixpath
 
-
+import ibis.common as com
 from ibis.config import options
 from ibis.util import implements
-import ibis.common as com
 
 
 class HDFSError(com.IbisError):

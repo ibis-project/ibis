@@ -1,10 +1,9 @@
 import fnmatch
 import os
 import sys
-import pytest
-
 from pathlib import Path
 
+import pytest
 
 collect_ignore = ['setup.py']
 

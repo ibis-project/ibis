@@ -1,7 +1,13 @@
-import unittest
 import os
+import unittest
 
 import pytest
+
+import ibis  # noqa: E402
+import ibis.expr.datatypes as dt  # noqa: E402
+import ibis.util as util  # noqa: E402
+from ibis.expr.tests.mocks import MockConnection  # noqa: E402
+from ibis.tests.util import assert_equal  # noqa: E402
 
 pytest.importorskip('hdfs')
 pytest.importorskip('sqlalchemy')
@@ -10,13 +16,10 @@ pytest.importorskip('impala.dbapi')
 ksupport = pytest.importorskip('ibis.impala.kudu_support')
 kudu = pytest.importorskip('kudu')
 
-from ibis.expr.tests.mocks import MockConnection  # noqa: E402
-from ibis.impala.client import build_ast  # noqa: E402
-from ibis.impala.tests.common import IbisTestEnv, ImpalaE2E  # noqa: E402
-from ibis.tests.util import assert_equal  # noqa: E402
-import ibis.expr.datatypes as dt  # noqa: E402
-import ibis.util as util  # noqa: E402
-import ibis  # noqa: E402
+from ibis.impala.tests.common import IbisTestEnv  # noqa: E402, isort:skip
+from ibis.impala.tests.common import ImpalaE2E  # noqa: E402, isort:skip
+from ibis.impala.client import build_ast  # noqa: E402, isort:skip
+
 
 pytestmark = pytest.mark.kudu
 

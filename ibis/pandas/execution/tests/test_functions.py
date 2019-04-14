@@ -1,16 +1,15 @@
-import pytest
-
-import math
 import decimal
-import operator
 import functools
+import math
+import operator
 from operator import methodcaller
 
 import numpy as np
 import pandas as pd
 import pandas.util.testing as tm  # noqa: E402
-import ibis.expr.datatypes as dt  # noqa: E402
+import pytest
 
+import ibis.expr.datatypes as dt  # noqa: E402
 
 pytestmark = pytest.mark.pandas
 

@@ -1,16 +1,13 @@
-import pytest
-
 import numpy as np
 import pandas as pd
-
+import pytest
 from multipledispatch.conflict import ambiguities
 
 import ibis
+import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-import ibis.expr.datatypes as dt
-
-from ibis.compat import DatetimeTZDtype, CategoricalDtype
+from ibis.compat import CategoricalDtype, DatetimeTZDtype
 
 
 def test_no_infer_ambiguities():

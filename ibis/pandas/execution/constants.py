@@ -10,7 +10,6 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
-
 JOIN_TYPES = {
     ops.LeftJoin: 'left',
     ops.RightJoin: 'right',

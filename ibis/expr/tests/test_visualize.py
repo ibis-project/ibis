@@ -1,16 +1,18 @@
 import os
+
 import pytest
+
+import ibis  # noqa: E402
+import ibis.expr.operations as ops  # noqa: E402
+import ibis.expr.rules as rlz  # noqa: E402
+import ibis.expr.types as ir  # noqa: E402
+from ibis.expr.signature import Argument as Arg  # noqa: E402
 
 pytest.importorskip('graphviz')
 
-import ibis  # noqa: E402
-import ibis.expr.types as ir  # noqa: E402
-import ibis.expr.rules as rlz  # noqa: E402
-import ibis.expr.visualize as viz  # noqa: E402
-import ibis.expr.operations as ops  # noqa: E402
+import ibis.expr.visualize as viz  # noqa: E402, isort:skip
 import ibis.expr.api as api  # noqa; E402
 
-from ibis.expr.signature import Argument as Arg  # noqa: E402
 
 pytestmark = pytest.mark.skipif(
     int(os.environ.get('CONDA_BUILD', 0)) == 1, reason='CONDA_BUILD defined'

@@ -1,14 +1,11 @@
 import operator
-
 from operator import methodcaller
-
-import pytest
 
 import numpy as np
 import numpy.testing as npt
-
 import pandas as pd
 import pandas.util.testing as tm
+import pytest
 
 import ibis
 import ibis.expr.datatypes as dt

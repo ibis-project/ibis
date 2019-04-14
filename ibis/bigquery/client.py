@@ -1,31 +1,26 @@
 """BigQuery ibis client implementation."""
 
 import datetime
-
 from collections import OrderedDict
-from pkg_resources import parse_version
 from typing import Optional, Tuple
 
-import regex as re
-
-import pandas as pd
-
-from google.api_core.exceptions import NotFound
 import google.cloud.bigquery as bq
-
+import pandas as pd
+import regex as re
+from google.api_core.exceptions import NotFound
 from multipledispatch import Dispatcher
+from pkg_resources import parse_version
 
 import ibis
 import ibis.common as com
-import ibis.expr.operations as ops
-import ibis.expr.types as ir
-import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 import ibis.expr.lineage as lin
-
-from ibis.client import Database, Query, SQLClient
+import ibis.expr.operations as ops
+import ibis.expr.schema as sch
+import ibis.expr.types as ir
 from ibis.bigquery import compiler as comp
 from ibis.bigquery.datatypes import ibis_type_to_bigquery_type
+from ibis.client import Database, Query, SQLClient
 
 NATIVE_PARTITION_COL = '_PARTITIONTIME'
 

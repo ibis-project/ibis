@@ -1,14 +1,13 @@
 import enum
-import ibis
+
 import pytest
-
 from toolz import identity
-from ibis.common import IbisTypeError
 
-import ibis.expr.types as ir
-import ibis.expr.rules as rlz
+import ibis
 import ibis.expr.datatypes as dt
-
+import ibis.expr.rules as rlz
+import ibis.expr.types as ir
+from ibis.common import IbisTypeError
 
 table = ibis.table(
     [('int_col', 'int64'), ('string_col', 'string'), ('double_col', 'double')]

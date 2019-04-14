@@ -62,7 +62,7 @@ test: &test
     - run:
         name: Execute Pytest
         command: |
-          docker-compose run -e PYTHONHASHSEED=$PYTHONHASHSEED ibis \
+          docker-compose run -e PYTHONHASHSEED=$PYTHONHASHSEED -e CIRCLECI=$CIRCLECI ibis \
             pytest ibis -m "not udf" \
                         -ra \
                         --numprocesses auto \
