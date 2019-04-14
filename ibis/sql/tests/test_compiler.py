@@ -6,14 +6,12 @@ import pytest
 import ibis
 import ibis.expr.api as api
 import ibis.expr.operations as ops
-
+from ibis import impala  # noqa: E402
 from ibis.expr.tests.mocks import MockConnection
+from ibis.impala.compiler import ImpalaDialect, build_ast, to_sql  # noqa: E402
 
 pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
-
-from ibis.impala.compiler import build_ast, to_sql, ImpalaDialect  # noqa: E402
-from ibis import impala  # noqa: E402
 
 
 class TestASTBuilder(unittest.TestCase):

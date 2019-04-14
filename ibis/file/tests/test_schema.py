@@ -1,12 +1,14 @@
 import tempfile
-import pytest
+
 import numpy as np
 import pandas as pd
+import pyarrow.parquet as pq
+import pytest
+
 import ibis
 import ibis.expr.datatypes as dt
 
 pa = pytest.importorskip('pyarrow')  # noqa: E402
-import pyarrow.parquet as pq
 
 
 @pytest.mark.parametrize(

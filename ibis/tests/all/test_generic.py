@@ -1,15 +1,11 @@
 import decimal
 
 import pytest
-
 from pytest import param
 
 import ibis
-
-from ibis import literal as L
-
 import ibis.tests.util as tu
-
+from ibis import literal as L
 from ibis.tests.backends import MapD
 
 

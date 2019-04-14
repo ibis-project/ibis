@@ -1,9 +1,8 @@
 from warnings import catch_warnings
 
+import pandas.util.testing as tm  # noqa: E402
 import pytest
 from pytest import param
-
-import pandas.util.testing as tm  # noqa: E402
 
 from ibis.pandas.execution.strings import sql_like_to_regex
 

@@ -1,17 +1,15 @@
 import sys
-import pytest
-import ibis
 
+import pyarrow.parquet as pq  # noqa: E402
+import pytest
 from pandas.util import testing as tm
 
-pa = pytest.importorskip('pyarrow')
-import pyarrow.parquet as pq  # noqa: E402
-
+import ibis
+from ibis.file.client import FileDatabase
+from ibis.file.client import execute_and_reset as execute  # noqa: E402
 from ibis.file.parquet import ParquetClient, ParquetTable  # noqa: E402
-from ibis.file.client import (
-    FileDatabase,
-    execute_and_reset as execute,
-)  # noqa: E402
+
+pa = pytest.importorskip('pyarrow')
 
 
 pytestmark = pytest.mark.skipif(

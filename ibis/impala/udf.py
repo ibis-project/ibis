@@ -13,14 +13,13 @@
 
 import re
 
-import ibis.util as util
 import ibis.common as com
-import ibis.expr.rules as rlz
 import ibis.expr.datatypes as dt
-import ibis.expr.signature as sig
 import ibis.expr.operations as ops
+import ibis.expr.rules as rlz
+import ibis.expr.signature as sig
 import ibis.impala.compiler as comp
-
+import ibis.util as util
 
 __all__ = [
     'add_operation',

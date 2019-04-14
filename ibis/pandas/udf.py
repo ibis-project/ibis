@@ -8,25 +8,19 @@ import collections
 import functools
 import itertools
 import operator
-
 from inspect import Parameter, signature
 
 import numpy as np
 import pandas as pd
-
+import toolz
+from multipledispatch import Dispatcher
 from pandas.core.groupby import SeriesGroupBy
 
-import toolz
-
-from multipledispatch import Dispatcher
-
 import ibis.expr.datatypes as dt
-import ibis.expr.signature as sig
 import ibis.expr.operations as ops
-
+import ibis.expr.signature as sig
 from ibis.pandas.core import scalar_types
 from ibis.pandas.dispatch import execute_node
-
 
 rule_to_python_type = Dispatcher(
     'rule_to_python_type',

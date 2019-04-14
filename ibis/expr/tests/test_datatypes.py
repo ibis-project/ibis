@@ -1,7 +1,8 @@
-import pytest
 import datetime
-import pytz
 from collections import OrderedDict
+
+import pytest
+import pytz
 from multipledispatch.conflict import ambiguities
 
 import ibis

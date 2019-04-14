@@ -12,8 +12,12 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import glob
 import datetime
+import glob
+
+import sphinx_rtd_theme  # noqa: E402
+
+from ibis import __version__ as version  # noqa: E402
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -72,7 +76,6 @@ copyright = '{}, Ibis Developers'.format(datetime.date.today().year)
 # The short X.Y version.
 # version = '0.2'
 
-from ibis import __version__ as version  # noqa: E402
 
 # The full version, including alpha/beta/rc tags.
 release = version
@@ -121,7 +124,6 @@ pygments_style = 'sphinx'
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 
-import sphinx_rtd_theme  # noqa: E402
 
 html_theme = "sphinx_rtd_theme"
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]

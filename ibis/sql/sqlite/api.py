@@ -14,7 +14,7 @@
 
 
 from ibis.sql.sqlite.client import SQLiteClient
-from ibis.sql.sqlite.compiler import rewrites, dialect  # noqa: F401
+from ibis.sql.sqlite.compiler import dialect, rewrites  # noqa: F401
 
 
 def compile(expr, params=None):

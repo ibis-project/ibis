@@ -13,10 +13,9 @@
 # limitations under the License.
 
 
-import ibis.expr.rules as rlz
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-
+import ibis.expr.rules as rlz
 from ibis.expr.signature import Argument as Arg
 
 

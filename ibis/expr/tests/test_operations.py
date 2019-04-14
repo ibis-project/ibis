@@ -1,12 +1,11 @@
-import pytest
 import numpy as np
+import pytest
 
 import ibis
-import ibis.expr.types as ir
-import ibis.expr.rules as rlz
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-
+import ibis.expr.rules as rlz
+import ibis.expr.types as ir
 from ibis.common import IbisTypeError
 from ibis.expr.signature import Argument as Arg
 

@@ -14,10 +14,9 @@
 
 import pytest
 
-from ibis import literal
-import ibis.expr.types as ir
 import ibis.expr.operations as ops
-
+import ibis.expr.types as ir
+from ibis import literal
 from ibis.tests.util import assert_equal
 
 

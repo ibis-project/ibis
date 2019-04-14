@@ -1,19 +1,16 @@
-from io import StringIO
 import datetime
+from io import StringIO
 from operator import add, mul, sub
 
 import ibis
+import ibis.common as com
 import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
-import ibis.expr.types as ir
 import ibis.expr.operations as ops
-
+import ibis.expr.types as ir
+import ibis.impala.identifiers as identifiers
 import ibis.sql.compiler as comp
 import ibis.sql.transforms as transforms
-
-import ibis.impala.identifiers as identifiers
-
-import ibis.common as com
 import ibis.util as util
 
 

@@ -14,8 +14,8 @@
 
 import unittest
 
-from ibis.expr.tests.mocks import MockConnection
 import ibis.config as config
+from ibis.expr.tests.mocks import MockConnection
 
 
 class TestInteractiveUse(unittest.TestCase):

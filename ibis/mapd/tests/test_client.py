@@ -1,11 +1,10 @@
-from ibis.tests.util import assert_equal
+import pandas as pd
+import pytest
 
 import ibis
 import ibis.common as com
 import ibis.expr.types as ir
-import pandas as pd
-import pytest
-
+from ibis.tests.util import assert_equal
 
 pytestmark = pytest.mark.mapd
 pytest.importorskip('pymapd')

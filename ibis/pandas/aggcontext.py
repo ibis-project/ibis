@@ -218,9 +218,8 @@ import abc
 import operator
 import warnings
 
-from multipledispatch import Dispatcher
-
 import pandas as pd
+from multipledispatch import Dispatcher
 
 import ibis
 import ibis.expr.datatypes as dt

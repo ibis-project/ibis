@@ -1,19 +1,17 @@
 from contextlib import suppress
 
 import ibis.config_init  # noqa: F401
-import ibis.util as util  # noqa: F401
 import ibis.expr.api as api  # noqa: F401
 import ibis.expr.types as ir  # noqa: F401
-
-from ibis.config import options  # noqa: F401
-from ibis.common import IbisError
-from ibis.filesystems import HDFS, WebHDFS  # noqa: F401
-
-# __all__ is defined
-from ibis.expr.api import *  # noqa: F401,F403
-
 # pandas backend is mandatory
 import ibis.pandas.api as pandas  # noqa: F401
+import ibis.util as util  # noqa: F401
+from ibis.common import IbisError
+from ibis.config import options  # noqa: F401
+from ibis.expr.api import *  # noqa: F401,F403
+from ibis.filesystems import HDFS, WebHDFS  # noqa: F401
+
+from ._version import get_versions  # noqa: E402
 
 with suppress(ImportError):
     # pip install ibis-framework[csv]
@@ -132,8 +130,6 @@ def hdfs_connect(
         hdfs_client = InsecureClient(url, session=session, **kwds)
     return WebHDFS(hdfs_client)
 
-
-from ._version import get_versions  # noqa: E402
 
 __version__ = get_versions()['version']
 del get_versions

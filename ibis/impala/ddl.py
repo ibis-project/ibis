@@ -12,15 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import re
 import json
+import re
 
-from ibis.sql.compiler import DDL, DML
-from .compiler import quote_identifier, _type_to_sql_string
-
-import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
+import ibis.expr.schema as sch
+from ibis.sql.compiler import DDL, DML
 
+from .compiler import _type_to_sql_string, quote_identifier
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
 

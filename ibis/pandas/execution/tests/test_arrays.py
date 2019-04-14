@@ -2,9 +2,7 @@ import operator
 
 import pandas as pd
 import pandas.util.testing as tm
-
 import pytest
-
 from pytest import param
 
 import ibis

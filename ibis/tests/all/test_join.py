@@ -1,8 +1,6 @@
-import pytest
-
-from pytest import param
-
 import pandas as pd
+import pytest
+from pytest import param
 
 
 @pytest.fixture(scope='module')

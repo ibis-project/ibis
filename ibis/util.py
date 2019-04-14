@@ -6,7 +6,6 @@ import logging
 import operator
 import os
 import types
-
 from uuid import uuid4
 
 import toolz

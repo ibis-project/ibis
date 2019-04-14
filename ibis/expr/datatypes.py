@@ -6,9 +6,8 @@ import itertools
 import numbers
 import re
 import typing
-
+from typing import Any as GenericAny
 from typing import (
-    Any as GenericAny,
     Callable,
     Iterator,
     List,
@@ -16,14 +15,11 @@ from typing import (
     NamedTuple,
     Optional,
     Sequence,
-    Set as GenericSet,
-    Tuple,
-    TypeVar,
-    Union,
 )
+from typing import Set as GenericSet
+from typing import Tuple, TypeVar, Union
 
 import pandas as pd
-
 import toolz
 from multipledispatch import Dispatcher
 

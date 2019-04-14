@@ -3,21 +3,17 @@
 import concurrent.futures
 import itertools
 import os
-
 from io import BytesIO
 from pathlib import Path
 
 import click
 import toolz
-
-from plumbum import local, CommandNotFound
-from plumbum.cmd import make, cmake
+from plumbum import CommandNotFound, local
+from plumbum.cmd import cmake, make
 
 import ibis
-
 from ibis.common import IbisError
 from ibis.impala.tests.conftest import IbisTestEnv
-
 
 SCRIPT_DIR = Path(__file__).parent.absolute()
 DATA_DIR = Path(

@@ -2,11 +2,10 @@ import operator
 
 import pandas as pd
 
-import ibis.util
 import ibis.expr.operations as ops
-
-from ibis.pandas.dispatch import execute_node
+import ibis.util
 from ibis.pandas.core import execute
+from ibis.pandas.dispatch import execute_node
 from ibis.pandas.execution import constants
 
 

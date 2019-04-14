@@ -1,7 +1,6 @@
 import unittest
 
 import pandas as pd
-
 from numpy import nan
 
 from ibis.impala.metadata import parse_metadata

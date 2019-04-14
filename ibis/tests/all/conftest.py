@@ -1,19 +1,19 @@
 import sys
+
 import pytest
 
 from ibis.tests.backends import (
-    Csv,
-    Parquet,
-    Pandas,
-    SQLite,
-    PostgreSQL,
-    MySQL,
-    MapD,
-    Clickhouse,
-    Impala,
     BigQuery,
+    Clickhouse,
+    Csv,
+    Impala,
+    MapD,
+    MySQL,
+    Pandas,
+    Parquet,
+    PostgreSQL,
+    SQLite,
 )
-
 
 pytestmark = pytest.mark.backend
 

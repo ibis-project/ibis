@@ -14,15 +14,14 @@
 
 from io import StringIO
 
+import kudu
 import pandas as pd
 
+import ibis.expr.datatypes as dt
 from ibis.common import IbisError
 from ibis.expr.api import schema
 from ibis.impala import ddl
 from ibis.util import implements as copydoc
-import ibis.expr.datatypes as dt
-import kudu
-
 
 _kudu_type_to_ibis_typeclass = {
     'int8': dt.Int8,

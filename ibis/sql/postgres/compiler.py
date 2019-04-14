@@ -1,32 +1,28 @@
-import re
+import functools
 import locale
-import string
 import platform
+import re
+import string
 import warnings
 
 import sqlalchemy as sa
-
-from sqlalchemy.sql import expression
+import sqlalchemy.dialects.postgresql as pg
 from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql import expression
 from sqlalchemy.sql.functions import GenericFunction
 
 import ibis
-
-import functools
-from ibis.sql.alchemy import (
-    unary,
-    fixed_arity,
-    infix_op,
-    _variance_reduction,
-    _get_sqla_table,
-)
 import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-
 import ibis.sql.alchemy as alch
-import sqlalchemy.dialects.postgresql as pg
-
+from ibis.sql.alchemy import (
+    _get_sqla_table,
+    _variance_reduction,
+    fixed_arity,
+    infix_op,
+    unary,
+)
 
 _operation_registry = alch._operation_registry.copy()
 _operation_registry.update(alch._window_functions)

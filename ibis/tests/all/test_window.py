@@ -1,9 +1,9 @@
-import ibis
-import pytest
 import numpy as np
 import pandas as pd
-
+import pytest
 from pytest import param
+
+import ibis
 import ibis.tests.util as tu
 
 

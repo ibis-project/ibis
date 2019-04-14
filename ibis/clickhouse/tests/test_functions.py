@@ -1,21 +1,17 @@
 import math
 import operator
-
-from operator import methodcaller
 from datetime import date, datetime
-
-import pytest
-
-from pytest import param
+from operator import methodcaller
 
 import pandas as pd
 import pandas.util.testing as tm
+import pytest
+from pytest import param
 
 import ibis
-import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
+import ibis.expr.types as ir
 from ibis import literal as L
-
 
 clickhouse_driver = pytest.importorskip('clickhouse_driver')
 pytestmark = pytest.mark.clickhouse

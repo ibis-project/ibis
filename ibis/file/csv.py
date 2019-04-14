@@ -1,15 +1,13 @@
-import toolz
 import pandas as pd
-
-import ibis.expr.schema as sch
-import ibis.expr.operations as ops
-
+import toolz
 from pkg_resources import parse_version
+
+import ibis.expr.operations as ops
+import ibis.expr.schema as sch
 from ibis.file.client import FileClient
 from ibis.pandas.api import PandasDialect
-from ibis.pandas.core import execute_node, pre_execute, execute
+from ibis.pandas.core import execute, execute_node, pre_execute
 from ibis.pandas.execution.selection import physical_tables
-
 
 dialect = PandasDialect
 

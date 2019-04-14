@@ -3,35 +3,30 @@ import functools
 import numbers
 import operator
 
+import pandas as pd
 import sqlalchemy as sa
 import sqlalchemy.sql as sql
-
-from sqlalchemy.sql.elements import Over as _Over
-from sqlalchemy.ext.compiler import compiles as sa_compiles
-from sqlalchemy.engine.interfaces import Dialect as SQLAlchemyDialect
-
-from sqlalchemy.dialects.sqlite.base import SQLiteDialect
-from sqlalchemy.dialects.postgresql.base import PGDialect as PostgreSQLDialect
-from sqlalchemy.dialects.mysql.base import MySQLDialect
-
-import pandas as pd
-
 from pkg_resources import parse_version
-from ibis.client import SQLClient, Query, Database
-from ibis.sql.compiler import Select, Union, TableSetFormatter, Dialect
+from sqlalchemy.dialects.mysql.base import MySQLDialect
+from sqlalchemy.dialects.postgresql.base import PGDialect as PostgreSQLDialect
+from sqlalchemy.dialects.sqlite.base import SQLiteDialect
+from sqlalchemy.engine.interfaces import Dialect as SQLAlchemyDialect
+from sqlalchemy.ext.compiler import compiles as sa_compiles
+from sqlalchemy.sql.elements import Over as _Over
 
 import ibis
-import ibis.util as util
 import ibis.common as com
-import ibis.expr.types as ir
-import ibis.expr.schema as sch
-import ibis.expr.window as W
 import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.expr.schema as sch
+import ibis.expr.types as ir
+import ibis.expr.window as W
 import ibis.sql.compiler as comp
 import ibis.sql.transforms as transforms
-
+import ibis.util as util
+from ibis.client import Database, Query, SQLClient
+from ibis.sql.compiler import Dialect, Select, TableSetFormatter, Union
 
 # TODO(cleanup)
 _ibis_type_to_sqla = {

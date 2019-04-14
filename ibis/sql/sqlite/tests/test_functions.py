@@ -12,27 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import datetime
+import math
+import operator
+import sqlite3
 import sys
 import uuid
-import operator
-import math
-import datetime
-import sqlite3
 import warnings
 
 import numpy as np
 import pandas as pd
-
+import pandas.util.testing as tm  # noqa: E402
 import pytest
 
-sa = pytest.importorskip('sqlalchemy')
-
-from ibis import literal as L  # noqa: E402
 import ibis  # noqa: E402
-import ibis.expr.datatypes as dt  # noqa: E402
 import ibis.config as config  # noqa: E402
+import ibis.expr.datatypes as dt  # noqa: E402
+from ibis import literal as L  # noqa: E402
 
-import pandas.util.testing as tm  # noqa: E402
+sa = pytest.importorskip('sqlalchemy')
 
 
 try:

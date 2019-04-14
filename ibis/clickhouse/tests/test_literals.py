@@ -4,7 +4,6 @@ from pandas import Timestamp
 import ibis
 from ibis import literal as L
 
-
 pytest.importorskip('clickhouse_driver')
 pytestmark = pytest.mark.clickhouse
 

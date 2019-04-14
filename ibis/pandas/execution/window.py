@@ -3,31 +3,25 @@
 
 import operator
 import re
-
 from collections import OrderedDict
 
-
 import numpy as np
-
-import toolz
-
 import pandas as pd
+import toolz
 from pandas.core.groupby import SeriesGroupBy
 
 import ibis.common as com
-import ibis.expr.window as win
-import ibis.expr.operations as ops
 import ibis.expr.datatypes as dt
-
+import ibis.expr.operations as ops
+import ibis.expr.window as win
 import ibis.pandas.aggcontext as agg_ctx
-
 from ibis.pandas.core import (
+    date_types,
     execute,
     integer_types,
     simple_types,
-    date_types,
-    timestamp_types,
     timedelta_types,
+    timestamp_types,
 )
 from ibis.pandas.dispatch import execute_node, pre_execute
 from ibis.pandas.execution import util

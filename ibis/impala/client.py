@@ -5,30 +5,28 @@ import threading
 import time
 import traceback
 import weakref
-
-from posixpath import join as pjoin
 from collections import deque
+from posixpath import join as pjoin
 
 import numpy as np
 import pandas as pd
+from pkg_resources import parse_version
 
-import ibis.util as util
 import ibis.common as com
-import ibis.expr.types as ir
-import ibis.expr.rules as rlz
-import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-
+import ibis.expr.rules as rlz
+import ibis.expr.schema as sch
+import ibis.expr.types as ir
+import ibis.util as util
+from ibis.client import Database, DatabaseEntity, Query, SQLClient
 from ibis.config import options
-from ibis.client import Query, Database, DatabaseEntity, SQLClient
-from pkg_resources import parse_version
 from ibis.filesystems import HDFS, WebHDFS
-from ibis.impala import udf, ddl
-from ibis.impala.compat import impyla, ImpylaError, HS2Error
-from ibis.impala.compiler import build_ast, ImpalaDialect
-from ibis.util import log
+from ibis.impala import ddl, udf
+from ibis.impala.compat import HS2Error, ImpylaError, impyla
+from ibis.impala.compiler import ImpalaDialect, build_ast
 from ibis.sql.compiler import DDL, DML
+from ibis.util import log
 
 
 class ImpalaDatabase(Database):

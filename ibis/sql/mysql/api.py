@@ -1,7 +1,6 @@
 from ibis.sql.alchemy import to_sqlalchemy
-
 from ibis.sql.mysql.client import MySQLClient
-from ibis.sql.mysql.compiler import rewrites, dialect  # noqa: F401
+from ibis.sql.mysql.compiler import dialect, rewrites  # noqa: F401
 
 
 def compile(expr, params=None):

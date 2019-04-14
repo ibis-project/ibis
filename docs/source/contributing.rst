@@ -4,32 +4,41 @@
 Contributing to Ibis
 ********************
 
-.. note::
-
-   Make sure you've read the :ref:`installation section <install>` of the docs
-   before continuing.
-
 .. _contrib.running_tests:
 
-Running the Test Suite
-----------------------
+Clone the Repository
+--------------------
+To contribute to ibis you need to clone the repository from GitHub:
+
+.. code-block:: sh
+
+   git clone https://github.com/ibis-project/ibis
+
+Set Up a Development Environment
+--------------------------------
+#. `Install miniconda <https://docs.conda.io/en/latest/miniconda.html>`_
+#. Create a conda environment suitable for ibis development:
+
+   .. code-block:: sh
+
+      conda env create -n ibis-dev --file ci/requirements-3.7-dev.yml
+
+#. Activate the environment
+
+   .. code-block:: sh
+
+      conda activate ibis-dev
+
+Run the Test Suite
+------------------
 
 Contributor `Krisztián Szűcs <https://github.com/kszucs>`_ has spent many hours
 crafting an easy-to-use `docker-compose <https://docs.docker.com/compose/>`_
 setup that enables ibis developers to get up and running quickly.
 
-Here are the steps to run clone the repo and run the test suite:
+Here are the steps to start database services and run the test suite:
 
 .. code-block:: sh
 
-   # clone ibis
-   git clone https://github.com/ibis-project/ibis
-
-   # go to where the docker-compose file is
-   pushd ibis/ci
-
-   # start services, build ibis, and load data into databases
-   ./build.sh
-
-   # optionally run all tests
-   ./test.sh -m 'not udf' -n auto -o cache_dir=/tmp/.pytest_cache
+   make --directory ibis init
+   make --directory ibis testparallel

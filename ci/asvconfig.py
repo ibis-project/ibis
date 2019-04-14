@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
-import sys
-import asv
 import json
 import socket
+import sys
 
+import asv
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:

@@ -1,8 +1,7 @@
-from ibis.config import options
-from ibis.mapd.compiler import dialect, compiles, rewrites  # noqa: F401
-from ibis.mapd.client import MapDClient, EXECUTION_TYPE_CURSOR
-
 import ibis.common as com
+from ibis.config import options
+from ibis.mapd.client import EXECUTION_TYPE_CURSOR, MapDClient
+from ibis.mapd.compiler import compiles, dialect, rewrites  # noqa: F401
 
 
 def compile(expr, params=None):

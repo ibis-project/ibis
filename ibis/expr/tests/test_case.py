@@ -1,10 +1,9 @@
 import pytest
 
-import ibis.expr.datatypes as dt
-import ibis.expr.types as ir
-import ibis.expr.operations as ops
 import ibis
-
+import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
+import ibis.expr.types as ir
 from ibis.tests.util import assert_equal
 
 

@@ -1,12 +1,12 @@
 from io import StringIO
 
 import ibis.common as com
-import ibis.util as util
 import ibis.expr.operations as ops
 import ibis.sql.compiler as comp
+import ibis.util as util
 
 from .identifiers import quote_identifier
-from .operations import _operation_registry, _name_expr
+from .operations import _name_expr, _operation_registry
 
 
 def build_ast(expr, context):

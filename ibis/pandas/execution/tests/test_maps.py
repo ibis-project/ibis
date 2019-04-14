@@ -1,7 +1,7 @@
-import ibis
-
 import pandas as pd
 import pandas.util.testing as tm
+
+import ibis
 
 
 def test_map_length_expr(t):

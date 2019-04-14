@@ -1,16 +1,13 @@
-import pytest
 import pandas as pd
-import ibis
-
+import pytest
 from pandas.util import testing as tm
 
-pytest.importorskip('tables')
-
+import ibis
+from ibis.file.client import FileDatabase
+from ibis.file.client import execute_and_reset as execute  # noqa: E402
 from ibis.file.hdf5 import HDFClient, HDFTable  # noqa: E402
-from ibis.file.client import (
-    FileDatabase,
-    execute_and_reset as execute,
-)  # noqa: E402
+
+pytest.importorskip('tables')
 
 
 @pytest.fixture

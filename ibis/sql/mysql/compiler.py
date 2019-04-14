@@ -2,13 +2,12 @@ import pandas as pd
 import sqlalchemy as sa
 import sqlalchemy.dialects.mysql as mysql
 
-from ibis.sql.alchemy import unary, fixed_arity, infix_op, _variance_reduction
 import ibis.common as com
-import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
 import ibis.sql.alchemy as alch
-
+from ibis.sql.alchemy import _variance_reduction, fixed_arity, infix_op, unary
 
 _operation_registry = alch._operation_registry.copy()
 

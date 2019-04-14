@@ -1,9 +1,9 @@
-import ibis
 import numpy as np
 import pandas as pd
 import pytest
-
 from pytest import param
+
+import ibis
 
 pytestmark = pytest.mark.mapd
 pytest.importorskip('pymapd')

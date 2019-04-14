@@ -1,13 +1,13 @@
 from __future__ import absolute_import
+
 from functools import partial
 
-from multipledispatch import Dispatcher
 import toolz
+from multipledispatch import Dispatcher
 
 import ibis
 import ibis.common as com
 import ibis.expr.operations as ops
-
 
 # Individual operation execution
 execute_node = Dispatcher(

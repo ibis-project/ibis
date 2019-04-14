@@ -7,7 +7,6 @@ import functools
 import math
 import numbers
 import operator
-
 from collections.abc import Sized
 
 import numpy as np
@@ -17,25 +16,22 @@ from pandas.core.groupby import DataFrameGroupBy, SeriesGroupBy
 
 import ibis
 import ibis.common as com
-import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-
+import ibis.expr.types as ir
 from ibis.compat import DatetimeTZDtype
-
 from ibis.pandas.core import (
-    execute,
     boolean_types,
-    integer_types,
-    floating_types,
-    simple_types,
-    numeric_types,
+    execute,
     fixed_width_types,
+    floating_types,
+    integer_types,
+    numeric_types,
     scalar_types,
+    simple_types,
     timedelta_types,
 )
-
-from ibis.pandas.dispatch import execute_node, execute_literal
+from ibis.pandas.dispatch import execute_literal, execute_node
 from ibis.pandas.execution import constants
 
 

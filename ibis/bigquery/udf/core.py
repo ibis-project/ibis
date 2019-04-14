@@ -2,16 +2,13 @@
 """
 
 import ast
-
-from collections import ChainMap
 import contextlib
 import functools
 import inspect
 import textwrap
-
+from collections import ChainMap
 
 import ibis.expr.datatypes as dt
-
 from ibis.bigquery.udf.find import find_names
 from ibis.bigquery.udf.rewrite import rewrite
 

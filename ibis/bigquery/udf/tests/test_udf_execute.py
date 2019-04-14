@@ -1,23 +1,18 @@
 import os
 
-import pytest
-
-from pytest import param
-
 import pandas as pd
 import pandas.util.testing as tm
+import pytest
+from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis.bigquery import udf  # noqa: E402
 
 pytest.importorskip('google.cloud.bigquery')
 
 pytestmark = pytest.mark.bigquery
 
-from ibis.bigquery.tests.conftest import (
-    connect as bigquery_connect,
-)  # noqa: E402
-from ibis.bigquery import udf  # noqa: E402
 
 PROJECT_ID = os.environ.get('GOOGLE_BIGQUERY_PROJECT_ID', 'ibis-gbq')
 DATASET_ID = 'testing'
@@ -25,7 +20,8 @@ DATASET_ID = 'testing'
 
 @pytest.fixture(scope='module')
 def client():
-    return bigquery_connect(PROJECT_ID, DATASET_ID)
+    from ibis.bigquery.tests.conftest import connect
+    return connect(PROJECT_ID, DATASET_ID)
 
 
 @pytest.fixture(scope='module')

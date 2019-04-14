@@ -1,8 +1,9 @@
-import ibis
-import ibis.util as util
 import os
+
 import pytest
 
+import ibis
+import ibis.util as util
 
 MAPD_HOST = os.environ.get('IBIS_TEST_MAPD_HOST', 'localhost')
 MAPD_PORT = int(os.environ.get('IBIS_TEST_MAPD_PORT', 9091))

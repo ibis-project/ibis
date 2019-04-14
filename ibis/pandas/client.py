@@ -1,28 +1,23 @@
 from __future__ import absolute_import
 
 import re
-
 from functools import partial
-from pkg_resources import parse_version
-
-import pytz
-import toolz
-import numpy as np
-import pandas as pd
 
 import dateutil.parser
-
+import numpy as np
+import pandas as pd
+import pytz
+import toolz
 from multipledispatch import Dispatcher
+from pkg_resources import parse_version
 
 import ibis.client as client
 import ibis.common as com
-import ibis.expr.types as ir
-import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-
-from ibis.compat import DatetimeTZDtype, CategoricalDtype
-
+import ibis.expr.schema as sch
+import ibis.expr.types as ir
+from ibis.compat import CategoricalDtype, DatetimeTZDtype
 
 try:
     infer_pandas_dtype = pd.api.types.infer_dtype

@@ -1,17 +1,14 @@
 import os
 import uuid
 
+import numpy as np
+import pandas.util.testing as tm
 import pytest
 
-import numpy as np
-
-import pandas.util.testing as tm
-
 import ibis
-import ibis.expr.types as ir
 import ibis.common as com
+import ibis.expr.types as ir
 from ibis.util import guid
-
 
 sa = pytest.importorskip('sqlalchemy')
 

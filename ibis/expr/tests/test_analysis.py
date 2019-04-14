@@ -1,13 +1,10 @@
 import pytest
 
 import ibis
-
+import ibis.common as com
 import ibis.expr.analysis as L
 import ibis.expr.operations as ops
-import ibis.common as com
-
 from ibis.tests.util import assert_equal
-
 
 # TODO: test is_reduction
 # TODO: test is_scalar_reduction

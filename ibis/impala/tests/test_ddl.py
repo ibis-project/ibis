@@ -7,14 +7,13 @@ import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.util as util
-
 from ibis.tests.util import assert_equal
 
 pytest.importorskip('hdfs')
 pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
 
-from ibis.impala.compat import HS2Error  # noqa: E402
+from ibis.impala.compat import HS2Error  # noqa: E402, isort:skip
 
 pytestmark = pytest.mark.impala
 

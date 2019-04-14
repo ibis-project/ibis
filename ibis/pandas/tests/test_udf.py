@@ -1,16 +1,13 @@
-import pytest
-
 import numpy as np
-
 import pandas as pd
 import pandas.util.testing as tm
+import pytest
 
 import ibis
 import ibis.common as com
-import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
-
-from ibis.pandas.udf import udf, nullable
+import ibis.expr.types as ir
+from ibis.pandas.udf import nullable, udf
 
 
 @pytest.fixture

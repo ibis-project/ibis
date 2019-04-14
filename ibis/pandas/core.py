@@ -78,37 +78,29 @@ passed to ``post_execute`` would be the bound values passed in at the time the
 
 from __future__ import absolute_import
 
-import numbers
 import datetime
-
 import functools
+import numbers
 
 import numpy as np
-
 import pandas as pd
-
 import toolz
-
 from multipledispatch import Dispatcher
 
 import ibis
 import ibis.common as com
-
-import ibis.expr.types as ir
-import ibis.expr.operations as ops
 import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
+import ibis.expr.types as ir
 import ibis.expr.window as win
-
-from ibis.client import find_backends
-
 import ibis.pandas.aggcontext as agg_ctx
+from ibis.client import find_backends
 from ibis.pandas.dispatch import (
-    execute_node,
-    pre_execute,
-    post_execute,
     execute_literal,
+    execute_node,
+    post_execute,
+    pre_execute,
 )
-
 
 integer_types = np.integer, int
 floating_types = (numbers.Real,)

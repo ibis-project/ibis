@@ -13,19 +13,15 @@
 # limitations under the License.
 
 import sqlalchemy as sa
-
 import toolz
 
 import ibis
-
-from ibis.sql.alchemy import unary, varargs, fixed_arity, _variance_reduction
-
-import ibis.sql.alchemy as alch
+import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.common as com
-
+import ibis.sql.alchemy as alch
+from ibis.sql.alchemy import _variance_reduction, fixed_arity, unary, varargs
 
 _operation_registry = alch._operation_registry.copy()
 

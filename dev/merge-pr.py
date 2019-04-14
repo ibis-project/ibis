@@ -29,12 +29,9 @@ import pathlib
 import textwrap
 
 import click
-
 import plumbum
-
-from plumbum import cmd
-
 import requests
+from plumbum import cmd
 
 IBIS_HOME = pathlib.Path(__file__).parent.parent
 GITHUB_API_BASE = "https://api.github.com/repos/ibis-project/ibis"

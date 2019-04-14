@@ -1,31 +1,26 @@
 import functools
 import operator
 import os
-
 from collections import OrderedDict
-from operator import methodcaller
 from datetime import date, datetime, time
-
-import pandas as pd
-import pytest
+from operator import methodcaller
 
 import numpy as np
-
+import pandas as pd
+import pytest
 import toolz
 
-from ibis import literal
-from ibis.common import IbisTypeError
-from ibis.tests.util import assert_equal
-
 import ibis
-import ibis.expr.api as api
-import ibis.expr.types as ir
-import ibis.expr.rules as rlz
 import ibis.expr.analysis as L
+import ibis.expr.api as api
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-
+import ibis.expr.rules as rlz
+import ibis.expr.types as ir
+from ibis import literal
+from ibis.common import IbisTypeError
 from ibis.expr.signature import Argument as Arg
+from ibis.tests.util import assert_equal
 
 
 def test_null():

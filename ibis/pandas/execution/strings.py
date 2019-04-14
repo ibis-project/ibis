@@ -1,23 +1,17 @@
 import itertools
 import operator
-
 from functools import reduce
-
-import regex as re
 
 import numpy as np
 import pandas as pd
-
+import regex as re
 import toolz
-
 from pandas.core.groupby import SeriesGroupBy
 
 import ibis
-
 import ibis.expr.operations as ops
-
-from ibis.pandas.dispatch import execute_node
 from ibis.pandas.core import integer_types, scalar_types
+from ibis.pandas.dispatch import execute_node
 
 
 @execute_node.register(ops.StringLength, pd.Series)

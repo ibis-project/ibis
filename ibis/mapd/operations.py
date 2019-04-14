@@ -1,19 +1,17 @@
+import warnings
 from copy import copy
 from datetime import date, datetime
 from io import StringIO
-import warnings
-
-from ibis.mapd.identifiers import quote_identifier
-from ibis.impala import compiler as impala_compiler
-
 
 import ibis
 import ibis.common as com
-import ibis.util as util
 import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
-import ibis.expr.operations as ops
+import ibis.util as util
+from ibis.impala import compiler as impala_compiler
+from ibis.mapd.identifiers import quote_identifier
 
 _sql_type_names = {
     'boolean': 'boolean',

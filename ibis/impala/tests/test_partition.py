@@ -1,13 +1,12 @@
 from posixpath import join as pjoin
 
+import pandas as pd
 import pytest
+from pandas.util.testing import assert_frame_equal
 
 import ibis
 import ibis.util as util
 from ibis.tests.util import assert_equal
-
-import pandas as pd
-from pandas.util.testing import assert_frame_equal
 
 pytest.importorskip('hdfs')
 pytest.importorskip('sqlalchemy')
@@ -15,7 +14,7 @@ pytest.importorskip('impala.dbapi')
 
 impala = pytest.importorskip('impala')
 
-from ibis.impala.compat import ImpylaError  # noqa: E402
+from ibis.impala.compat import ImpylaError  # noqa: E402, isort:skip
 
 pytestmark = pytest.mark.impala
 

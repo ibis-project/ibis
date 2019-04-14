@@ -1,8 +1,7 @@
 from unittest import mock
 
-import pytest
-
 import pandas as pd
+import pytest
 
 pytest.importorskip('hdfs')
 pytest.importorskip('sqlalchemy')

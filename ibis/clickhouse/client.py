@@ -1,25 +1,21 @@
 import re
-
 from collections import OrderedDict
-from pkg_resources import parse_version
 
 import numpy as np
 import pandas as pd
+from clickhouse_driver.client import Client as _DriverClient
+from pkg_resources import parse_version
 
 import ibis.common as com
-import ibis.expr.types as ir
-import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-
-from ibis.config import options
-from ibis.client import Query, Database, DatabaseEntity, SQLClient
+import ibis.expr.schema as sch
+import ibis.expr.types as ir
 from ibis.clickhouse.compiler import ClickhouseDialect, build_ast
-from ibis.util import log
+from ibis.client import Database, DatabaseEntity, Query, SQLClient
+from ibis.config import options
 from ibis.sql.compiler import DDL
-
-from clickhouse_driver.client import Client as _DriverClient
-
+from ibis.util import log
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
 base_typename_re = re.compile(r"(\w+)")

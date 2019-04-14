@@ -2,23 +2,21 @@
 """
 
 import abc
-
 from collections import OrderedDict
-from itertools import chain
-
 from io import StringIO
+from itertools import chain
 
 import toolz
 
 import ibis
 import ibis.common as com
-import ibis.util as util
-import ibis.expr.types as ir
-import ibis.expr.format as fmt
 import ibis.expr.analysis as L
 import ibis.expr.analytics as analytics
+import ibis.expr.format as fmt
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
 import ibis.sql.transforms as transforms
+import ibis.util as util
 
 
 class DML(abc.ABC):

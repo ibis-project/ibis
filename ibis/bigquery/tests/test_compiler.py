@@ -1,8 +1,7 @@
 import datetime
 
-import pytest
-
 import pandas as pd
+import pytest
 
 import ibis
 import ibis.expr.datatypes as dt

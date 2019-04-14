@@ -14,15 +14,13 @@
 
 import os
 
-import pytest
-
 import numpy as np
 import pandas as pd
+import pytest
 
+import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-import ibis
-
 from ibis.tests.util import assert_equal
 
 pytest.importorskip('sqlalchemy')

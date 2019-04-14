@@ -3,8 +3,8 @@ import collections
 from multipledispatch import Dispatcher
 
 import ibis.common as com
-import ibis.util as util
 import ibis.expr.datatypes as dt
+import ibis.util as util
 
 
 class Schema:

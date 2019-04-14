@@ -3,9 +3,9 @@ import operator
 import pytest
 
 import ibis.expr.api as api
-import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
 
 
 def test_type_metadata(lineitem):

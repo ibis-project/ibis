@@ -1,14 +1,12 @@
 import decimal
 
-import pytest
-
-from pytest import param
-
 import pandas as pd
 import pandas.util.testing as tm  # noqa: E402
-import ibis.expr.datatypes as dt  # noqa: E402
-import ibis
+import pytest
+from pytest import param
 
+import ibis
+import ibis.expr.datatypes as dt  # noqa: E402
 
 pytestmark = pytest.mark.pandas
 

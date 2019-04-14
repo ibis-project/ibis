@@ -1,20 +1,17 @@
 import sys
-import pytest
 import warnings
-from pytest import param
 
 import numpy as np
 import pandas as pd
-
 import pandas.util.testing as tm
+import pytest
+from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.tests.util as tu
-
-from ibis.tests.backends import MapD
-
 from ibis.pandas.execution.temporal import day_name
+from ibis.tests.backends import MapD
 
 
 @pytest.mark.parametrize('attr', ['year', 'month', 'day'])

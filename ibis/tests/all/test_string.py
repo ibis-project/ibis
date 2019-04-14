@@ -2,8 +2,8 @@ import pytest
 from pytest import param
 
 import ibis
-import ibis.tests.util as tu
 import ibis.expr.datatypes as dt
+import ibis.tests.util as tu
 
 
 def test_string_col_is_unicode(backend, alltypes, df):

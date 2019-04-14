@@ -11,12 +11,14 @@ dependencies:
   - google-cloud-bigquery>=1.0.0
   - graphviz
   - impyla>=0.14.2
+  - isort
   - jinja2
   - lz4
   - multipledispatch>=0.6.0
   - mypy
   - numpy
   - pandas>=0.21
+  - pip
   - plumbum
   - pre_commit
   - psycopg2
@@ -41,3 +43,5 @@ dependencies:
   - toolz
   - xorg-libxpm
   - xorg-libxrender
+  - pip:
+      - seed-isort-config

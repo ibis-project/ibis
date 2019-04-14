@@ -1,13 +1,12 @@
 import abc
 
-from ibis.config import options
-
-import ibis.util as util
 import ibis.common as com
-import ibis.expr.types as ir
-import ibis.expr.schema as sch
 import ibis.expr.operations as ops
+import ibis.expr.schema as sch
+import ibis.expr.types as ir
 import ibis.sql.compiler as comp
+import ibis.util as util
+from ibis.config import options
 
 
 class Client:

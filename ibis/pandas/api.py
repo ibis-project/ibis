@@ -1,12 +1,11 @@
 from __future__ import absolute_import
 
-import ibis
 import toolz
 
+import ibis
 from ibis.pandas.client import PandasClient
 from ibis.pandas.execution import execute, execute_node
 from ibis.pandas.udf import udf
-
 
 __all__ = ('connect', 'dialect', 'execute', 'udf')
 

@@ -4,8 +4,8 @@ import graphviz as gv
 
 import ibis
 import ibis.common as com
-import ibis.expr.types as ir
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
 
 
 def get_type(expr):

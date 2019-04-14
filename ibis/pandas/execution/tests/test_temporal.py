@@ -1,22 +1,16 @@
 import datetime
-
 from operator import methodcaller
-from pkg_resources import parse_version
-
-import pytest
-
-from pytest import param
 
 import numpy as np
-
 import pandas as pd
 import pandas.util.testing as tm  # noqa: E402
+import pytest
+from pkg_resources import parse_version
+from pytest import param
 
 import ibis
-
 from ibis import literal as L  # noqa: E402
 from ibis.expr import datatypes as dt
-
 
 pytestmark = pytest.mark.pandas
 

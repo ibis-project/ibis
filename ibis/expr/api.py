@@ -6,104 +6,102 @@ import functools
 import numbers
 import operator
 
+import dateutil.parser
+import pandas as pd
 import toolz
 
-import dateutil.parser
-
-import pandas as pd
-
 import ibis
-import ibis.util as util
 import ibis.common as com
-import ibis.expr.types as ir
+import ibis.expr.analysis as _L
+import ibis.expr.analytics as _analytics
+import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
-import ibis.expr.analysis as _L
-import ibis.expr.datatypes as dt
-import ibis.expr.analytics as _analytics
-import ibis.expr.operations as ops
-
-from ibis.compat import to_time, to_date
-from ibis.expr.types import Expr, null, param, literal, sequence, as_value_expr
-from ibis.expr.schema import Schema
-
+import ibis.expr.types as ir
+import ibis.util as util
+from ibis.compat import to_date, to_time
 from ibis.expr.analytics import bucket, histogram
 from ibis.expr.groupby import GroupedTableExpr  # noqa
-from ibis.expr.window import (
-    window,
-    range_window,
-    trailing_window,
-    cumulative_window,
-    trailing_range_window,
-)
-
+from ibis.expr.schema import Schema
 from ibis.expr.types import (  # noqa
-    ValueExpr,
-    ScalarExpr,
-    ColumnExpr,
-    TableExpr,
-    NumericValue,
-    NumericScalar,
-    NumericColumn,
-    IntegerValue,
-    IntegerScalar,
-    IntegerColumn,
-    NullValue,
-    NullScalar,
-    NullColumn,
-    BooleanValue,
-    BooleanScalar,
-    BooleanColumn,
-    FloatingValue,
-    FloatingScalar,
-    FloatingColumn,
-    StringValue,
-    StringScalar,
-    StringColumn,
-    DecimalValue,
-    DecimalScalar,
-    DecimalColumn,
-    TimestampValue,
-    TimestampScalar,
-    TimestampColumn,
-    IntervalValue,
-    IntervalScalar,
-    IntervalColumn,
-    DateValue,
-    DateScalar,
-    DateColumn,
-    TimeValue,
-    TimeScalar,
-    TimeColumn,
-    ArrayValue,
-    ArrayScalar,
     ArrayColumn,
-    MapValue,
-    MapScalar,
-    MapColumn,
-    StructValue,
-    StructScalar,
-    StructColumn,
-    CategoryValue,
+    ArrayScalar,
+    ArrayValue,
+    BooleanColumn,
+    BooleanScalar,
+    BooleanValue,
     CategoryScalar,
     CategoryValue,
+    ColumnExpr,
+    DateColumn,
+    DateScalar,
+    DateValue,
+    DecimalColumn,
+    DecimalScalar,
+    DecimalValue,
+    Expr,
+    FloatingColumn,
+    FloatingScalar,
+    FloatingValue,
     GeoSpatialColumn,
     GeoSpatialScalar,
     GeoSpatialValue,
-    PointColumn,
-    PointScalar,
-    PointValue,
+    IntegerColumn,
+    IntegerScalar,
+    IntegerValue,
+    IntervalColumn,
+    IntervalScalar,
+    IntervalValue,
     LineStringColumn,
     LineStringScalar,
     LineStringValue,
-    PolygonColumn,
-    PolygonScalar,
-    PolygonValue,
+    MapColumn,
+    MapScalar,
+    MapValue,
     MultiPolygonColumn,
     MultiPolygonScalar,
     MultiPolygonValue,
+    NullColumn,
+    NullScalar,
+    NullValue,
+    NumericColumn,
+    NumericScalar,
+    NumericValue,
+    PointColumn,
+    PointScalar,
+    PointValue,
+    PolygonColumn,
+    PolygonScalar,
+    PolygonValue,
+    ScalarExpr,
+    StringColumn,
+    StringScalar,
+    StringValue,
+    StructColumn,
+    StructScalar,
+    StructValue,
+    TableExpr,
+    TimeColumn,
+    TimeScalar,
+    TimestampColumn,
+    TimestampScalar,
+    TimestampValue,
+    TimeValue,
+    ValueExpr,
+    as_value_expr,
+    literal,
+    null,
+    param,
+    sequence,
 )
-
+from ibis.expr.window import (
+    cumulative_window,
+    range_window,
+    trailing_range_window,
+    trailing_window,
+    window,
+)
 
 __all__ = (
     'aggregate',
@@ -116,7 +114,6 @@ __all__ = (
     'desc',
     'Expr',
     'expr_list',
-    'greatest',
     'geo_area',
     'geo_contains',
     'geo_distance',
@@ -135,6 +132,7 @@ __all__ = (
     'geo_y',
     'geo_y_max',
     'geo_y_min',
+    'greatest',
     'ifelse',
     'infer_dtype',
     'infer_schema',

@@ -3,16 +3,12 @@ import functools
 import inspect
 import itertools
 
-import ibis.expr.rules as rlz
 import ibis.expr.datatypes as dt
-
-from ibis.expr.signature import Argument as Arg
-
+import ibis.expr.rules as rlz
 from ibis.bigquery.compiler import BigQueryUDFNode, compiles
-
+from ibis.bigquery.datatypes import UDFContext, ibis_type_to_bigquery_type
 from ibis.bigquery.udf.core import PythonToJavaScriptTranslator
-from ibis.bigquery.datatypes import ibis_type_to_bigquery_type, UDFContext
-
+from ibis.expr.signature import Argument as Arg
 
 __all__ = ('udf',)
 

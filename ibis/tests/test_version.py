@@ -1,23 +1,20 @@
 import os
 
+import pytest
 from pkg_resources import parse_version
 from pkg_resources.extern.packaging.version import Version
-
-import pytest
 
 import ibis
 
 
 @pytest.mark.skipif(
-    bool(os.environ.get('CIRCLECI', None)),
-    reason='Testing import time on CI is flaky due to VM variance',
+    bool(os.environ.get("CIRCLECI", None)),
+    reason="Testing import time on Circle CI is flaky due to machine variance",
 )
 def test_import_time():
-    sh = pytest.importorskip('sh')
-
-    lines = ['from timeit import timeit', "print(timeit('import ibis'))"]
-
-    delta = float(str(sh.python(c='; '.join(lines))))
+    pb = pytest.importorskip("plumbum")
+    lines = ["from timeit import timeit", "print(timeit('import ibis'))"]
+    delta = float(pb.cmd.python["-c", "; ".join(lines)]().strip())
     assert delta < 2.0
 
 

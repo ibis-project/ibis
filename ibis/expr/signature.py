@@ -1,7 +1,7 @@
-import ibis.util as util
-import ibis.expr.rules as rlz
-
 from collections import OrderedDict
+
+import ibis.expr.rules as rlz
+import ibis.util as util
 
 try:
     from cytoolz import unique

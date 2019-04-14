@@ -1,10 +1,9 @@
 from ibis.sql.alchemy import to_sqlalchemy
-
 from ibis.sql.postgres.client import PostgreSQLClient
 from ibis.sql.postgres.compiler import (  # noqa: F401, E501
     compiles,
-    rewrites,
     dialect,
+    rewrites,
 )
 
 

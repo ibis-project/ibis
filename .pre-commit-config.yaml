@@ -1,12 +1,12 @@
 repos:
-  - repo: git://github.com/pre-commit/pre-commit-hooks
-    rev: v2.1.0
+  - repo: https://github.com/asottile/seed-isort-config
+    rev: v1.7.0
     hooks:
-      - id: flake8
-        types:
-          - python
-        args: ['--config=setup.cfg']
-
+      - id: seed-isort-config
+  - repo: https://github.com/pre-commit/mirrors-isort
+    rev: v4.3.17
+    hooks:
+      - id: isort
   - repo: https://github.com/ambv/black
     # we need to use this commit or later, to pickup the fix that splits
     # trailing comma syntax into call vs def, both of which weren't implemented
@@ -15,9 +15,14 @@ repos:
     rev: cea13f498418784e22f8fbd78db3f9240a2bad11
     hooks:
       - id: black
-        args: ['--config=pyproject.toml']
         # a side effect of black running exclude filters and then include
         # filters (the built-in black behavior) is that a command line such as
         # black --exclude foo.py foo.py will still format foo.py. We avoid this
         # in pre-commit by not passing staged files.
         pass_filenames: false
+  - repo: git://github.com/pre-commit/pre-commit-hooks
+    rev: v2.1.0
+    hooks:
+      - id: flake8
+        types:
+          - python

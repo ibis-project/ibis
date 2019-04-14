@@ -1,8 +1,7 @@
-import pytest
 import numpy as np
 import pandas as pd
-
 import pandas.util.testing as tm
+import pytest
 
 import ibis
 from ibis.expr import datatypes as dt

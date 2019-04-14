@@ -1,21 +1,18 @@
-import pytest
-
 import numpy as np
-
-from pandas.util.testing import assert_frame_equal
 import pandas as pd
+import pytest
+from pandas.util.testing import assert_frame_equal
 
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
+from ibis.impala.pandas_interop import DataFrameWriter  # noqa: E402
 
 pytestmark = pytest.mark.impala
 
 pytest.importorskip('hdfs')
 pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
-
-from ibis.impala.pandas_interop import DataFrameWriter  # noqa: E402
 
 
 @pytest.fixture

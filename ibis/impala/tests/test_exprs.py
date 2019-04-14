@@ -1,33 +1,29 @@
+import unittest
 from decimal import Decimal
 from io import StringIO
 
-import unittest
-
-import pytest
-
 import pandas as pd
 import pandas.util.testing as tm
+import pytest
 
 import ibis
-import ibis.expr.types as ir
 import ibis.expr.api as api
-
+import ibis.expr.types as ir
 from ibis import literal as L
-from ibis.expr.datatypes import Category
-
 from ibis.common import RelationError
+from ibis.expr.datatypes import Category
 from ibis.expr.tests.mocks import MockConnection
+from ibis.impala.compiler import (  # noqa: E402
+    ImpalaDialect,
+    ImpalaExprTranslator,
+    to_sql,
+)
+from ibis.sql.tests.test_compiler import ExprTestCases  # noqa: E402
 
 pytest.importorskip('hdfs')
 pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
 
-from ibis.impala.compiler import (
-    ImpalaExprTranslator,
-    to_sql,
-    ImpalaDialect,
-)  # noqa: E402
-from ibis.sql.tests.test_compiler import ExprTestCases  # noqa: E402
 
 pytestmark = pytest.mark.impala
 

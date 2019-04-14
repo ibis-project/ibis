@@ -1,7 +1,8 @@
 import os
-import ibis
+
 import pytest
 
+import ibis
 
 CLICKHOUSE_HOST = os.environ.get('IBIS_TEST_CLICKHOUSE_HOST', 'localhost')
 CLICKHOUSE_PORT = int(os.environ.get('IBIS_TEST_CLICKHOUSE_PORT', 9000))
