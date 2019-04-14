@@ -3,7 +3,6 @@ from pandas.util import testing as tm
 
 import ibis
 from ibis.file.client import FileDatabase
-from ibis.file.client import execute_and_reset as execute
 from ibis.file.csv import CSVClient, CSVTable
 
 
@@ -75,19 +74,16 @@ def test_read(csv, data):
     expected['time'] = expected['time'].astype(str)
     tm.assert_frame_equal(result, expected)
 
-    result = execute(closes)
-    tm.assert_frame_equal(result, expected)
-
 
 def test_read_with_projection(csv2, data):
 
     t = csv2.csv_dir2.df
-    result = execute(t)
+    result = t.execute()
     assert 'close' in result.columns
     assert 'open' in result.columns
 
     t = t[['time', 'ticker', 'close']]
-    result = execute(t)
+    result = t.execute()
     assert 'close' in result.columns
     assert 'open' not in result.columns
 
@@ -96,7 +92,7 @@ def test_insert(transformed, tmpdir):
     t = transformed
 
     # csv's don't preserve dtypes
-    expected = execute(t)
+    expected = t.execute()
     expected['time'] = expected['time'].astype(str)
 
     tpath = tmpdir / 'new_csv'

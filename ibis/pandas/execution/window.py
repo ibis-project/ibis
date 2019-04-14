@@ -84,7 +84,13 @@ def execute_window_op(
 
     root, = op.root_tables()
     root_expr = root.to_expr()
-    data = execute(root_expr, scope=scope, aggcontext=aggcontext, **kwargs)
+    data = execute(
+        root_expr,
+        scope=scope,
+        clients=clients,
+        aggcontext=aggcontext,
+        **kwargs,
+    )
 
     following = window.following
     order_by = window._order_by
@@ -143,6 +149,18 @@ def execute_window_op(
         factory=OrderedDict,
     )
 
+    # operand inputs are coming in computed, but we need to recompute them in
+    # the case of a group by
+    if group_by:
+        operand_inputs = {
+            arg.op() for arg in operand.op().inputs if hasattr(arg, "op")
+        }
+        new_scope = OrderedDict(
+            (node, value)
+            for node, value in new_scope.items()
+            if node not in operand_inputs
+        )
+
     # figure out what the dtype of the operand is
     operand_type = operand.type()
     if isinstance(operand_type, dt.Integer) and operand_type.nullable:
@@ -186,7 +204,13 @@ def execute_window_op(
             dtype=operand_dtype,
         )
 
-    result = execute(operand, scope=new_scope, aggcontext=aggcontext, **kwargs)
+    result = execute(
+        operand,
+        scope=new_scope,
+        aggcontext=aggcontext,
+        clients=clients,
+        **kwargs,
+    )
     series = post_process(result, data, ordering_keys, grouping_keys)
     assert len(data) == len(
         series

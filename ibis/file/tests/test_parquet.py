@@ -4,8 +4,8 @@ import pytest
 from pandas.util import testing as tm
 
 import ibis
+
 from ibis.file.client import FileDatabase
-from ibis.file.client import execute_and_reset as execute
 
 pa = pytest.importorskip('pyarrow')  # isort:skip
 pq = pytest.importorskip('pyarrow.parquet')  # isort:skip
@@ -87,13 +87,10 @@ def test_read(parquet, data):
     expected = data['close']
     tm.assert_frame_equal(result, expected)
 
-    result = execute(closes)
-    tm.assert_frame_equal(result, expected)
-
 
 def test_write(transformed, tmpdir):
     t = transformed
-    expected = execute(t)
+    expected = t.execute()
 
     tpath = tmpdir / 'new_dir'
     tpath.mkdir()
@@ -103,7 +100,7 @@ def test_write(transformed, tmpdir):
     t = transformed[['time', 'ticker', 'avg']]
     c = ibis.parquet.connect(tpath)
     c.insert('foo.parquet', t)
-    execute(t)
+    t.execute()
     assert path.exists()
 
     # readback

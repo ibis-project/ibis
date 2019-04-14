@@ -2,7 +2,8 @@ from pathlib import Path
 
 import ibis
 import ibis.expr.types as ir
-from ibis.pandas.core import execute_and_reset
+from ibis.pandas.core import execute
+from ibis.pandas.dispatch import execute_last
 
 
 class FileClient(ibis.client.Client):
@@ -34,9 +35,15 @@ class FileClient(ibis.client.Client):
         return FileDatabase(name, self, path=path)
 
     def execute(self, expr, params=None, **kwargs):  # noqa
-        assert isinstance(expr, ir.Expr)
-        scope = kwargs.pop('scope', {})
-        return execute_and_reset(expr, params=params, scope=scope, **kwargs)
+        assert isinstance(expr, ir.Expr), "Expected ir.Expr, got {}".format(
+            type(expr)
+        )
+        return execute_last(
+            expr.op(),
+            execute(expr, params=params, **kwargs),
+            params=params,
+            **kwargs,
+        )
 
     def list_tables(self, path=None):
         raise NotImplementedError

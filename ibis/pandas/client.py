@@ -1,3 +1,5 @@
+"""The pandas client implementation."""
+
 from __future__ import absolute_import
 
 import re
@@ -18,6 +20,8 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.compat import CategoricalDtype, DatetimeTZDtype
+from ibis.pandas.core import execute
+from ibis.pandas.dispatch import execute_last
 
 try:
     infer_pandas_dtype = pd.api.types.infer_dtype
@@ -354,7 +358,6 @@ class PandasClient(client.Client):
         return PandasTable(name, schema, self).to_expr()
 
     def execute(self, query, params=None, limit='default', **kwargs):
-        from ibis.pandas.core import execute_and_reset
 
         if limit != 'default':
             raise ValueError(
@@ -362,16 +365,35 @@ class PandasClient(client.Client):
                 'pandas backend'
             )
 
-        assert isinstance(query, ir.Expr)
-        return execute_and_reset(query, params=params, **kwargs)
+        if not isinstance(query, ir.Expr):
+            raise TypeError(
+                "`query` has type {!r}, expected ibis.expr.types.Expr".format(
+                    type(query).__name__
+                )
+            )
+        return execute_last(
+            query.op(),
+            execute(query, params=params, **kwargs),
+            params=params,
+            **kwargs,
+        )
 
     def compile(self, expr, *args, **kwargs):
+        """Compile `expr`.
+
+        Notes
+        -----
+        For the pandas backend this is a no-op.
+
+        """
         return expr
 
     def database(self, name=None):
+        """Construct a database called `name`."""
         return PandasDatabase(name, self)
 
     def list_tables(self, like=None):
+        """List the available tables."""
         tables = list(self.dictionary.keys())
         if like is not None:
             pattern = re.compile(like)
@@ -379,16 +401,19 @@ class PandasClient(client.Client):
         return tables
 
     def load_data(self, table_name, obj, **kwargs):
-        """
+        """Load data from `obj` into `table_name`.
+
         Parameters
         ----------
-        table_name : string
-        obj: pandas.DataFrame
+        table_name : str
+        obj : pandas.DataFrame
+
         """
         # kwargs is a catch all for any options required by other backends.
         self.dictionary[table_name] = pd.DataFrame(obj)
 
     def create_table(self, table_name, obj=None, schema=None):
+        """Create a table."""
         if obj is None and schema is None:
             raise com.IbisError('Must pass expr or schema')
 
@@ -403,38 +428,39 @@ class PandasClient(client.Client):
         self.dictionary[table_name] = df
 
     def get_schema(self, table_name, database=None):
-        """
-        Return a Schema object for the indicated table and database
+        """Return a Schema object for the indicated table and database.
 
         Parameters
         ----------
-        table_name : string
-          May be fully qualified
-        database : string, default None
+        table_name : str
+            May be fully qualified
+        database : str
 
         Returns
         -------
-        schema : ibis Schema
+        ibis.expr.schema.Schema
+
         """
         return sch.infer(self.dictionary[table_name])
 
     def exists_table(self, name):
-        """
-        Determine if the indicated table or view exists
+        """Determine if the indicated table or view exists.
 
         Parameters
         ----------
-        name : string
-        database : string, default None
+        name : str
+        database : str
 
         Returns
         -------
-        if_exists : boolean
+        bool
+
         """
         return bool(self.list_tables(like=name))
 
     @property
-    def version(self):
+    def version(self) -> str:
+        """Return the version of the underlying backend library."""
         return parse_version(pd.__version__)
 
 

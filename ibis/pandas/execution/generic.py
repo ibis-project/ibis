@@ -41,6 +41,11 @@ def execute_node_literal_value_datatype(op, value, datatype, **kwargs):
     return value
 
 
+@execute_literal.register(ops.Literal, dt.DataType)
+def execute_node_literal_datatype(op, datatype, **kwargs):
+    return op.value
+
+
 @execute_literal.register(
     ops.Literal, timedelta_types + (str,) + integer_types, dt.Interval
 )
