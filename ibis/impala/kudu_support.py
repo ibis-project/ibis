@@ -1,18 +1,4 @@
-# Copyright 2015 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-from io import StringIO
+from functools import wraps as copydoc
 
 import kudu
 import pandas as pd
@@ -21,7 +7,6 @@ import ibis.expr.datatypes as dt
 from ibis.common import IbisError
 from ibis.expr.api import schema
 from ibis.impala import ddl
-from ibis.util import implements as copydoc
 
 _kudu_type_to_ibis_typeclass = {
     'int8': dt.Int8,
@@ -37,10 +22,7 @@ _kudu_type_to_ibis_typeclass = {
 
 
 class KuduImpalaInterface:
-
-    """
-    User-facing wrapper layer for the ImpalaClient
-    """
+    """User-facing wrapper layer for the ImpalaClient."""
 
     def __init__(self, impala_client):
         self.impala_client = impala_client
@@ -270,16 +252,11 @@ class CreateTableKudu(ddl.CreateTable):
         pass
 
     def compile(self):
-        buf = StringIO()
-        buf.write(self._create_line())
-
-        schema = ddl.format_schema(self.schema)
-        buf.write('\n{0}'.format(schema))
-
-        props = self._get_table_properties()
-        buf.write('\n')
-        buf.write(ddl.format_tblproperties(props))
-        return buf.getvalue()
+        return '{}\n{}\n{}'.format(
+            self._create_line(),
+            ddl.format_schema(self.schema),
+            ddl.format_tblproperties(self._get_table_properties()),
+        )
 
     _table_props_base = {
         'storage_handler': 'com.cloudera.kudu.hive.KuduStorageHandler'
@@ -328,16 +305,11 @@ class CTASKudu(CreateTableKudu):
         )
 
     def compile(self):
-        buf = StringIO()
-        buf.write(self._create_line())
-
-        props = self._get_table_properties()
-        buf.write('\n')
-        buf.write(ddl.format_tblproperties(props))
-
-        select_query = self.select.compile()
-        buf.write(' AS\n{0}'.format(select_query))
-        return buf.getvalue()
+        return '{}\n{} AS\n{}'.format(
+            self._create_line(),
+            ddl.format_tblproperties(self._get_table_properties()),
+            self.select.compile(),
+        )
 
 
 def schema_kudu_to_ibis(kschema, drop_nn=False):

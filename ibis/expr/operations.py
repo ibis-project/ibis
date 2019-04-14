@@ -68,7 +68,7 @@ class Node(Annotable):
     def flat_args(self):
         for arg in self.args:
             if not isinstance(arg, str) and isinstance(
-                arg, collections.Iterable
+                arg, collections.abc.Iterable
             ):
                 for x in arg:
                     yield x

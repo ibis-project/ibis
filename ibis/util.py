@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import collections
 import functools
 import itertools
@@ -7,24 +5,38 @@ import logging
 import operator
 import os
 import types
-from typing import Iterator, Optional, TypeVar
+from numbers import Real
+from typing import (
+    Any,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Type,
+    TypeVar,
+    Union,
+)
 from uuid import uuid4
 
 import toolz
 
 from ibis.config import options
 
+T = TypeVar("T", covariant=True)
+U = TypeVar("U", covariant=True)
+V = TypeVar("V")
 
-def guid():
+
+def guid() -> str:
     return uuid4().hex
 
 
-def indent(text, spaces):
+def indent(text: str, spaces: int) -> str:
     prefix = ' ' * spaces
     return ''.join(prefix + line for line in text.splitlines(True))
 
 
-def is_one_of(values, t):
+def is_one_of(values: Sequence[T], t: Type[U]) -> Iterator[bool]:
     return (isinstance(x, t) for x in values)
 
 
@@ -32,39 +44,31 @@ any_of = toolz.compose(any, is_one_of)
 all_of = toolz.compose(all, is_one_of)
 
 
-def promote_list(val):
+def promote_list(val: Union[V, List[V]]) -> List[V]:
     if not isinstance(val, list):
         val = [val]
     return val
 
 
-def is_function(v):
+def is_function(v: Any) -> bool:
     return isinstance(v, (types.FunctionType, types.LambdaType))
 
 
-def adjoin(space, *lists):
-    """
-    Glues together two sets of strings using the amount of space requested.
-    The idea is to prettify.
-
-    Brought over from from pandas
-    """
-    out_lines = []
-    newLists = []
+def adjoin(space: int, *lists: Sequence[str]) -> str:
+    """Glue together two sets of strings using `space`."""
     lengths = [max(map(len, x)) + space for x in lists[:-1]]
 
     # not the last one
     lengths.append(max(map(len, lists[-1])))
-
-    maxLen = max(map(len, lists))
-    for i, lst in enumerate(lists):
-        nl = [x.ljust(lengths[i]) for x in lst]
-        nl.extend([' ' * lengths[i]] * (maxLen - len(lst)))
-        newLists.append(nl)
-    toJoin = zip(*newLists)
-    for lines in toJoin:
-        out_lines.append(''.join(lines))
-    return '\n'.join(out_lines)
+    max_len = max(map(len, lists))
+    chains = (
+        itertools.chain(
+            (x.ljust(length) for x in lst),
+            itertools.repeat(' ' * length, max_len - len(lst)),
+        )
+        for lst, length in zip(lists, lengths)
+    )
+    return '\n'.join(map(''.join, zip(*chains)))
 
 
 def log(msg: str) -> None:
@@ -73,43 +77,35 @@ def log(msg: str) -> None:
         (options.verbose_log or print)(msg)
 
 
-def approx_equal(a, b, eps):
+def approx_equal(a: Real, b: Real, eps: Real):
     """Return whether the difference between `a` and `b` is less than `eps`.
 
     Parameters
     ----------
-    a : numbers.Real
-    b : numbers.Real
-    eps : numbers.Real
+    a
+    b
+    eps
 
     Returns
     -------
-    are_diff : bool
+    bool
+
     """
     assert abs(a - b) < eps
 
 
-def implements(f):
-    # TODO: is this any different from functools.wraps?
-    def decorator(g):
-        g.__doc__ = f.__doc__
-        return g
-
-    return decorator
-
-
-def safe_index(elements, value):
+def safe_index(elements: Sequence[T], value: T):
     """Find the location of `value` in `elements`, return -1 if `value` is
     not found instead of raising ``ValueError``.
 
     Parameters
     ----------
-    elements : Sequence
-    value : object
+    elements
+    value
 
     Returns
     -------
-    location : object
+    int
 
     Examples
     --------
@@ -118,6 +114,7 @@ def safe_index(elements, value):
     1
     >>> safe_index(sequence, 4)
     -1
+
     """
     try:
         return elements.index(value)
@@ -125,24 +122,25 @@ def safe_index(elements, value):
         return -1
 
 
-def is_iterable(o):
-    """Return whether `o` is a non-string iterable.
+def is_iterable(o: Any) -> bool:
+    """Return whether `o` is iterable and not a :class:`str` or :class:`bytes`.
 
     Parameters
     ----------
-    o : object
+    o
         Any python object
 
     Returns
     -------
-    is_seq : bool
+    bool
 
     Examples
     --------
-    >>> x = '1'
-    >>> is_iterable(x)
+    >>> is_iterable('1')
     False
-    >>> is_iterable(iter(x))
+    >>> is_iterable(b'1')
+    False
+    >>> is_iterable(iter('1'))
     True
     >>> is_iterable(i for i in range(1))
     True
@@ -150,13 +148,15 @@ def is_iterable(o):
     False
     >>> is_iterable([])
     True
+
     """
-    return not isinstance(o, str) and isinstance(o, collections.Iterable)
+    return not isinstance(o, (str, bytes)) and isinstance(
+        o, collections.abc.Iterable
+    )
 
 
 def convert_unit(value, unit, to):
-    """Convert `value`--which is assumed to be in units of `unit`--to units of
-    `to`.
+    """Convert `value`, is assumed to be in units of `unit`, to units of `to`.
 
     Parameters
     ----------
@@ -164,7 +164,7 @@ def convert_unit(value, unit, to):
 
     Returns
     -------
-    result : Union[numbers.Integral, ibis.expr.types.NumericValue]
+    Union[numbers.Integral, ibis.expr.types.NumericValue]
 
     Examples
     --------
@@ -183,6 +183,7 @@ def convert_unit(value, unit, to):
     Traceback (most recent call last):
         ...
     ValueError: Cannot convert to or from variable length interval
+
     """
     # Don't do anything if from and to units are equivalent
     if unit == to:
@@ -236,9 +237,6 @@ def get_logger(name, level=None, format=None, propagate=False):
     )
     logger.addHandler(handler)
     return logger
-
-
-T = TypeVar("T", covariant=True)
 
 
 # taken from the itertools documentation

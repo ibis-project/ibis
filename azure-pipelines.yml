@@ -17,6 +17,8 @@ jobs:
         python.version: "3.7"
         conda.version: "4.6"
         conda.env: "ibis_3.7"
+  variables:
+    AZURECI: 1
   steps:
     - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
       displayName: Add conda to PATH

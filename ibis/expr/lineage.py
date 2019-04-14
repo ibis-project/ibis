@@ -1,5 +1,5 @@
-from collections import Iterable, deque
-from itertools import chain
+import collections
+import itertools
 
 from toolz import compose, identity
 
@@ -71,7 +71,7 @@ def roots(expr, types=(ops.PhysicalTable,)):
     def extender(op):
         return reversed(
             list(
-                chain.from_iterable(
+                itertools.chain.from_iterable(
                     arg.op().root_tables()
                     for arg in op.flat_args()
                     if isinstance(arg, types)
@@ -87,7 +87,7 @@ class Container:
     __slots__ = ('data',)
 
     def __init__(self, data):
-        self.data = deque(self.visitor(data))
+        self.data = collections.deque(self.visitor(data))
 
     def append(self, item):
         self.data.append(item)
@@ -151,7 +151,11 @@ def _get_args(op, name):
         return [col for col in result if col._name == name]
     elif isinstance(op, ops.Aggregation):
         assert name is not None, 'name is None'
-        return [col for col in chain(op.by, op.metrics) if col._name == name]
+        return [
+            col
+            for col in itertools.chain(op.by, op.metrics)
+            if col._name == name
+        ]
     else:
         return op.args
 
@@ -222,7 +226,7 @@ def traverse(fn, expr, type=ir.Expr, container=Stack):
     container: Union[Stack, Queue], default Stack
         Defines the traversing order.
     """
-    args = expr if isinstance(expr, Iterable) else [expr]
+    args = expr if isinstance(expr, collections.abc.Iterable) else [expr]
     todo = container(arg for arg in args if isinstance(arg, type))
     seen = set()
 
@@ -241,7 +245,7 @@ def traverse(fn, expr, type=ir.Expr, container=Stack):
         if control is not halt:
             if control is proceed:
                 args = op.flat_args()
-            elif isinstance(control, Iterable):
+            elif isinstance(control, collections.abc.Iterable):
                 args = control
             else:
                 raise TypeError(

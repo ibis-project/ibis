@@ -90,16 +90,18 @@ def test_create_table_schema(con):
 
     con.drop_table(t_name, force=True)
 
-    schema = ibis.schema([
-        ('a', 'float'),
-        ('b', 'double'),
-        ('c', 'int32'),
-        ('d', 'int64'),
-        ('x', 'point'),
-        ('y', 'linestring'),
-        ('z', 'polygon'),
-        ('w', 'multipolygon')
-    ])
+    schema = ibis.schema(
+        [
+            ('a', 'float'),
+            ('b', 'double'),
+            ('c', 'int32'),
+            ('d', 'int64'),
+            ('x', 'point'),
+            ('y', 'linestring'),
+            ('z', 'polygon'),
+            ('w', 'multipolygon'),
+        ]
+    )
 
     con.create_table(t_name, schema=schema)
 
