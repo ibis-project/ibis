@@ -783,6 +783,7 @@ _unsupported_ops = [
     ops.StringReplace,
     ops.StringJoin,
     ops.StringSplit,
+    ops.StringToTimestamp,
     ops.Translate,
     ops.StringAscii,
     ops.LPad,
