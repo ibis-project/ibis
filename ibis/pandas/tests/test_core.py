@@ -174,6 +174,6 @@ def test_is_computable_input():
     execute_node.reorder()
     execute_node._cache.clear()
 
-    del dt.infer.funcs[MyObject]
+    del dt.infer.funcs[(MyObject,)]
     dt.infer.reorder()
     dt.infer._cache.clear()
