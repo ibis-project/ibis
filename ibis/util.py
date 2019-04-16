@@ -2,10 +2,12 @@ from __future__ import print_function
 
 import collections
 import functools
+import itertools
 import logging
 import operator
 import os
 import types
+from typing import Iterator, Optional, TypeVar
 from uuid import uuid4
 
 import toolz
@@ -234,3 +236,18 @@ def get_logger(name, level=None, format=None, propagate=False):
     )
     logger.addHandler(handler)
     return logger
+
+
+T = TypeVar("T", covariant=True)
+
+
+# taken from the itertools documentation
+def consume(iterator: Iterator[T], n: Optional[int] = None) -> None:
+    """Advance the iterator n-steps ahead. If n is None, consume entirely."""
+    # Use functions that consume iterators at C speed.
+    if n is None:
+        # feed the entire iterator into a zero-length deque
+        collections.deque(iterator, maxlen=0)
+    else:
+        # advance to the empty slice starting at position n
+        next(itertools.islice(iterator, n, n), None)

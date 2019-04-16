@@ -115,14 +115,30 @@ temporal_types = date_types + time_types + timestamp_types + timedelta_types
 scalar_types = fixed_width_types + temporal_types
 simple_types = scalar_types + (str, type(None))
 
-_VALID_INPUT_TYPES = (
-    ibis.client.Client,
-    ir.Expr,
-    dt.DataType,
-    type(None),
-    win.Window,
-    tuple,
-) + scalar_types
+
+@functools.singledispatch
+def is_computable_input(arg):
+    """All inputs are not computable without a specific override."""
+    return False
+
+
+@is_computable_input.register(ibis.client.Client)
+@is_computable_input.register(ir.Expr)
+@is_computable_input.register(dt.DataType)
+@is_computable_input.register(type(None))
+@is_computable_input.register(win.Window)
+@is_computable_input.register(tuple)
+def is_computable_input_arg(arg):
+    """Return whether `arg` is a valid computable argument."""
+    return True
+
+
+# Register is_computable_input for each scalar type (int, float, date, etc).
+# We use consume here to avoid leaking the iteration variable into the module.
+ibis.util.consume(
+    is_computable_input.register(t)(is_computable_input_arg)
+    for t in scalar_types
+)
 
 
 def execute_with_scope(expr, scope, aggcontext=None, clients=None, **kwargs):
@@ -222,23 +238,6 @@ def execute_until_in_scope(
     )
 
 
-def is_computable_arg(op, arg):
-    """Is `arg` a valid input to an ``execute_node`` rule?
-
-    Parameters
-    ----------
-    arg : object
-        Any Python object
-
-    Returns
-    -------
-    result : bool
-    """
-    return isinstance(
-        op, (ops.ExpressionList, ops.ValueList, ops.WindowOp)
-    ) or isinstance(arg, _VALID_INPUT_TYPES)
-
-
 def execute_bottom_up(
     expr, scope, aggcontext=None, post_execute_=None, clients=None, **kwargs
 ):
@@ -278,9 +277,7 @@ def execute_bottom_up(
     # figure out what arguments we're able to compute on based on the
     # expressions inputs. things like expressions, None, and scalar types are
     # computable whereas ``list``s are not
-    args = op.inputs
-    is_computable_argument = functools.partial(is_computable_arg, op)
-    computable_args = list(filter(is_computable_argument, args))
+    computable_args = [arg for arg in op.inputs if is_computable_input(arg)]
 
     # recursively compute each node's arguments until we've changed type
     scopes = [

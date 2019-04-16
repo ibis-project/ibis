@@ -1,3 +1,5 @@
+from typing import Any
+
 import pandas as pd
 import pandas.util.testing as tm
 import pytest
@@ -5,8 +7,10 @@ from multipledispatch.conflict import ambiguities
 
 import ibis
 import ibis.common as com
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.pandas.client import PandasClient
+from ibis.pandas.core import is_computable_input
 from ibis.pandas.dispatch import execute_node, post_execute, pre_execute
 
 pytestmark = pytest.mark.pandas
@@ -121,3 +125,47 @@ def test_post_execute_called_on_joins(dataframe, core_client, ibis_table):
     assert result is not None
     assert not result.empty
     assert count[0] == 1
+
+
+def test_is_computable_input():
+    class MyObject:
+        def __init__(self, value: float) -> None:
+            self.value = value
+
+        def __getattr__(self, name: str) -> Any:
+            return getattr(self.value, name)
+
+        def __hash__(self) -> int:
+            return hash((type(self), self.value))
+
+        def __eq__(self, other):
+            return (
+                isinstance(other, type(self))
+                and isinstance(self, type(other))
+                and self.value == other.value
+            )
+
+    @execute_node.register(ops.Add, int, MyObject)
+    def add_int_my_object(op, left, right, **kwargs):
+        return left + right.value
+
+    # This multimethod must be implemented to play nicely with other value
+    # types like columns and literals. In other words, for a custom
+    # non-expression object to play nicely it must somehow map to one of the
+    # types in ibis/expr/datatypes.py
+    @dt.infer.register(MyObject)
+    def infer_my_object(_, **kwargs):
+        return dt.float64
+
+    @is_computable_input.register(MyObject)
+    def is_computable_input_my_object(_):
+        return True
+
+    one = ibis.literal(1)
+    two = MyObject(2.0)
+    assert is_computable_input(two)
+
+    three = one + two
+    four = three + 1
+    result = ibis.pandas.execute(four)
+    assert result == 4.0
