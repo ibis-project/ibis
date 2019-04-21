@@ -16,10 +16,10 @@
 # license), see the LICENSES directory.
 
 import posixpath
+from functools import wraps as implements
 
 import ibis.common as com
 from ibis.config import options
-from ibis.util import implements
 
 
 class HDFSError(com.IbisError):

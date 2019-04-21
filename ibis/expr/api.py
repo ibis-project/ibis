@@ -1,4 +1,4 @@
-from __future__ import print_function
+"""Ibis expression API definitions."""
 
 import collections
 import datetime
@@ -1323,7 +1323,7 @@ def quantile(arg, quantile, interpolation='linear'):
         if scalar input, scalar type, same as input
         if array input, list of scalar type
     """
-    if isinstance(quantile, collections.Sequence):
+    if isinstance(quantile, collections.abc.Sequence):
         op = ops.MultiQuantile(arg, quantile, interpolation)
     else:
         op = ops.Quantile(arg, quantile, interpolation)

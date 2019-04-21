@@ -169,3 +169,11 @@ def test_is_computable_input():
     four = three + 1
     result = ibis.pandas.execute(four)
     assert result == 4.0
+
+    del execute_node.funcs[ops.Add, int, MyObject]
+    execute_node.reorder()
+    execute_node._cache.clear()
+
+    del dt.infer.funcs[(MyObject,)]
+    dt.infer.reorder()
+    dt.infer._cache.clear()

@@ -150,7 +150,7 @@ def member_of(obj, arg):
 @validator
 def list_of(inner, arg, min_length=0):
     if isinstance(arg, str) or not isinstance(
-        arg, (collections.Sequence, ir.ListExpr)
+        arg, (collections.abc.Sequence, ir.ListExpr)
     ):
         raise com.IbisTypeError('Argument must be a sequence')
 
