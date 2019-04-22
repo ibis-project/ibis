@@ -11,6 +11,7 @@ import pytest
 import toolz
 
 import ibis
+import ibis.common as com
 import ibis.expr.analysis as L
 import ibis.expr.api as api
 import ibis.expr.datatypes as dt
@@ -1438,3 +1439,24 @@ def test_valid_negate_float128():
     value = np.float128(1)
     expr = ibis.literal(value)
     assert -expr is not None
+
+
+@pytest.mark.parametrize(
+    ('kind', 'begin', 'end'),
+    [
+        ('preceding', None, None),
+        ('preceding', 1, None),
+        ('preceding', -1, 1),
+        ('preceding', 1, -1),
+        ('preceding', -1, -1),
+        ('following', None, None),
+        ('following', None, 1),
+        ('following', -1, 1),
+        ('following', 1, -1),
+        ('following', -1, -1),
+    ],
+)
+def test_window_unbounded_invalid(kind, begin, end):
+    kwargs = {kind: (begin, end)}
+    with pytest.raises(com.IbisInputError):
+        ibis.window(**kwargs)

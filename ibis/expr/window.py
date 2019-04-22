@@ -83,16 +83,40 @@ class Window:
             )
         elif preceding_tuple:
             start, end = self.preceding
-            if start is None:
-                assert end >= 0
-            else:
-                assert start > end
+            if end is None:
+                raise com.IbisInputError("preceding end point cannot be None")
+            if end < 0:
+                raise com.IbisInputError(
+                    "preceding end point must be non-negative"
+                )
+            if start is not None:
+                if start < 0:
+                    raise com.IbisInputError(
+                        "preceding start point must be non-negative"
+                    )
+                if start <= end:
+                    raise com.IbisInputError(
+                        "preceding start must be greater than preceding end"
+                    )
         elif following_tuple:
             start, end = self.following
-            if end is None:
-                assert start >= 0
-            else:
-                assert start < end
+            if start is None:
+                raise com.IbisInputError(
+                    "following start point cannot be None"
+                )
+            if start < 0:
+                raise com.IbisInputError(
+                    "following start point must be non-negative"
+                )
+            if end is not None:
+                if end < 0:
+                    raise com.IbisInputError(
+                        "following end point must be non-negative"
+                    )
+                if start >= end:
+                    raise com.IbisInputError(
+                        "following start must be less than following end"
+                    )
         else:
             if not isinstance(self.preceding, ir.Expr):
                 if has_preceding and self.preceding < 0:

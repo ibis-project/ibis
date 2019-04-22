@@ -1,6 +1,7 @@
 import datetime
 from io import StringIO
 from operator import add, mul, sub
+from typing import Optional
 
 import ibis
 import ibis.common as com
@@ -349,11 +350,28 @@ def _format_window(translator, window):
 
     p, f = window.preceding, window.following
 
-    def _prec(p):
-        return '{} PRECEDING'.format(p) if p > 0 else 'CURRENT ROW'
+    def _prec(p: Optional[int]) -> str:
+        assert p is None or p >= 0
 
-    def _foll(f):
-        return '{} FOLLOWING'.format(f) if f > 0 else 'CURRENT ROW'
+        if p is None:
+            prefix = 'UNBOUNDED'
+        else:
+            if not p:
+                return 'CURRENT ROW'
+            prefix = str(p)
+        return '{} PRECEDING'.format(prefix)
+
+    def _foll(f: Optional[int]) -> str:
+        assert f is None or f >= 0
+
+        if f is None:
+            prefix = 'UNBOUNDED'
+        else:
+            if not f:
+                return 'CURRENT ROW'
+            prefix = str(f)
+
+        return '{} FOLLOWING'.format(prefix)
 
     if p is not None and f is not None:
         frame = '{} BETWEEN {} AND {}'.format(
