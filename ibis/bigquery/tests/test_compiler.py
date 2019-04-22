@@ -547,3 +547,25 @@ SELECT
   END AS `tmp`
 FROM t"""
     assert result == expected
+
+
+@pytest.mark.parametrize(
+    ('kind', 'begin', 'end', 'expected'),
+    [
+        ('preceding', None, 1, 'UNBOUNDED PRECEDING AND 1 PRECEDING'),
+        ('following', 1, None, '1 FOLLOWING AND UNBOUNDED FOLLOWING'),
+    ],
+)
+def test_window_unbounded(kind, begin, end, expected):
+    t = ibis.table([('a', 'int64')], name='t')
+    kwargs = {kind: (begin, end)}
+    expr = t.a.sum().over(ibis.window(**kwargs))
+    result = ibis.bigquery.compile(expr)
+    assert (
+        result
+        == """\
+SELECT sum(`a`) OVER (ROWS BETWEEN {}) AS `tmp`
+FROM t""".format(
+            expected
+        )
+    )
