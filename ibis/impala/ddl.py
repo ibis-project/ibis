@@ -229,26 +229,17 @@ class CreateTableParquet(CreateTable):
 class CreateTableWithSchema(CreateTable):
 
     def __init__(self, table_name, schema, table_format=None, **kwargs):
+        super(CreateTableWithSchema, self).__init__(table_name, **kwargs)
         self.schema = schema
         self.table_format = table_format
 
-        CreateTable.__init__(self, table_name, **kwargs)
-
-    def compile(self):
-        from ibis.expr.api import Schema
-
-        buf = StringIO()
-        buf.write(self._create_line())
-
-        def _push_schema(x):
-            formatted = format_schema(x)
-            buf.write('{0}'.format(formatted))
-
+    @property
+    def _pieces(self):
         if self.partition is not None:
             main_schema = self.schema
             part_schema = self.partition
-            if not isinstance(part_schema, Schema):
-                part_schema = Schema(
+            if not isinstance(part_schema, sch.Schema):
+                part_schema = sch.Schema(
                     part_schema,
                     [self.schema[name] for name in part_schema])
 
@@ -260,10 +251,8 @@ class CreateTableWithSchema(CreateTable):
             if len(to_delete):
                 main_schema = main_schema.delete(to_delete)
 
-            buf.write('\n')
-            _push_schema(main_schema)
-            buf.write('\nPARTITIONED BY ')
-            _push_schema(part_schema)
+            yield format_schema(main_schema)
+            yield 'PARTITIONED BY {}'.format(format_schema(part_schema))
         else:
             yield format_schema(self.schema)
 
@@ -659,7 +648,7 @@ class DropDatabase(DropObject):
 def format_schema(schema):
     elements = [_format_schema_element(name, t)
                 for name, t in zip(schema.names, schema.types)]
-    return '({0})'.format(',\n '.join(elements))
+    return '({})'.format(',\n '.join(elements))
 
 
 def _format_schema_element(name, t):
