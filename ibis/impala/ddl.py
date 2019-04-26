@@ -146,6 +146,15 @@ class CreateTable(CreateDDL):
         }
         return storage_lines[self.format]
 
+    @property
+    def pieces(self):
+        yield self._create_line()
+        for piece in filter(None, self._pieces):
+            yield piece
+
+    def compile(self):
+        return '\n'.join(self.pieces)
+
 
 class CTAS(CreateTable):
 
