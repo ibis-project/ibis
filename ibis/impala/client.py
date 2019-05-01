@@ -11,7 +11,12 @@ from collections import deque
 import numpy as np
 import pandas as pd
 
+<<<<<<< HEAD
 import ibis.util as util
+||||||| parent of 9541c94... Don't double-get status
+
+=======
+>>>>>>> 9541c94... Don't double-get status
 import ibis.common as com
 import ibis.expr.types as ir
 import ibis.expr.rules as rlz
@@ -24,8 +29,8 @@ from ibis.client import Query, Database, DatabaseEntity, SQLClient
 from ibis.compat import lzip, parse_version
 from ibis.filesystems import HDFS, WebHDFS
 from ibis.impala import udf, ddl
-from ibis.impala.compat import impyla, ImpylaError, HS2Error, TGetOperationStatusReq
-from ibis.impala.compiler import build_ast, ImpalaDialect
+from ibis.impala.compat import impyla, ImpylaError, HS2Error, TGetOperationStatusReq, TOperationState
+from ibis.impala.compiler import build_ast
 from ibis.util import log
 from ibis.sql.compiler import DDL, DML
 
@@ -76,11 +81,11 @@ class ImpalaConnection(object):
         """
         Close all open Impyla sessions
         """
-        for impyla_connection in self._connections:
-            impyla_connection.close()
-
         self._connections.clear()
         self.connection_pool.clear()
+
+        for impyla_connection in self._connections:
+            impyla_connection.close()
 
     def set_database(self, name):
         self.database = name
@@ -238,9 +243,10 @@ class ImpalaCursor(object):
         cur = self._cursor
         try:
             while True:
-                state = cur.status()
+                status = self._get_status()
+                state = self._get_state_for_status(status)
                 if self._cursor._op_state_is_error(state):
-                    raise HS2Error(self._get_error_message())
+                    raise HS2Error(status.errorMessage)
                 if not cur._op_state_is_executing(state):
                     break
                 time.sleep(_sleep_interval(loop_start))
@@ -267,11 +273,14 @@ class ImpalaCursor(object):
         else:
             return self._cursor.fetchall()
 
-    def _get_error_message(self):
+    def _get_status(self):
         op = self._cursor._last_operation
         req = TGetOperationStatusReq(operationHandle=op.handle)
         resp = op._rpc('GetOperationStatus', req)
-        return resp.errorMessage
+        return resp
+
+    def _get_state_for_status(self, status):
+        return TOperationState._VALUES_TO_NAMES[status.operationState]
 
 class ImpalaQuery(Query):
 
