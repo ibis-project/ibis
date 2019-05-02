@@ -14,4 +14,5 @@
 
 from impala.error import Error as ImpylaError  # noqa
 from impala.error import HiveServer2Error as HS2Error  # noqa
+from impala._thrift_api import TGetOperationStatusReq, TOperationState
 import impala.dbapi as impyla  # noqa

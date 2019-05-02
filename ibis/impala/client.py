@@ -23,7 +23,6 @@ import hdfs
 import numpy as np
 import pandas as pd
 
-
 import ibis.common as com
 
 from ibis.config import options
@@ -32,7 +31,7 @@ from ibis.client import (Query, AsyncQuery, Database,
 from ibis.compat import lzip
 from ibis.filesystems import HDFS, WebHDFS
 from ibis.impala import udf, ddl
-from ibis.impala.compat import impyla, ImpylaError, HS2Error
+from ibis.impala.compat import impyla, ImpylaError, HS2Error, TGetOperationStatusReq, TOperationState
 from ibis.impala.compiler import build_ast
 from ibis.util import log
 from ibis.sql.compiler import DDL
@@ -249,7 +248,6 @@ class ImpalaCursor(object):
 
     def _wait_synchronous(self):
         # Wait to finish, but cancel if KeyboardInterrupt
-        from impala.hiveserver2 import OperationalError
         loop_start = time.time()
 
         def _sleep_interval(start_time):
@@ -267,9 +265,10 @@ class ImpalaCursor(object):
         cur = self._cursor
         try:
             while True:
-                state = cur.status()
+                status = self._get_status()
+                state = self._get_state_for_status(status)
                 if self._cursor._op_state_is_error(state):
-                    raise OperationalError(self._cursor.get_log())
+                    raise HS2Error(status.errorMessage)
                 if not cur._op_state_is_executing(state):
                     break
                 time.sleep(_sleep_interval(loop_start))
@@ -296,6 +295,14 @@ class ImpalaCursor(object):
         else:
             return self._cursor.fetchall()
 
+    def _get_status(self):
+        op = self._cursor._last_operation
+        req = TGetOperationStatusReq(operationHandle=op.handle)
+        resp = op._rpc('GetOperationStatus', req)
+        return resp
+
+    def _get_state_for_status(self, status):
+        return TOperationState._VALUES_TO_NAMES[status.operationState]
 
 class ImpalaQuery(Query):
 
