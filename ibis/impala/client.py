@@ -11,12 +11,7 @@ from collections import deque
 import numpy as np
 import pandas as pd
 
-<<<<<<< HEAD
 import ibis.util as util
-||||||| parent of 9541c94... Don't double-get status
-
-=======
->>>>>>> 9541c94... Don't double-get status
 import ibis.common as com
 import ibis.expr.types as ir
 import ibis.expr.rules as rlz
