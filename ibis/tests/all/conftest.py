@@ -70,7 +70,7 @@ def geo(backend):
 
 @pytest.fixture
 def analytic_alltypes(alltypes):
-    return alltypes.groupby('string_col').order_by('id')
+    return alltypes
 
 
 @pytest.fixture(scope='session')

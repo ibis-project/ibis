@@ -1,5 +1,4 @@
-"""Code for computing window functions with ibis.
-"""
+"""Code for computing window functions with ibis and pandas."""
 
 import operator
 import re
@@ -195,22 +194,22 @@ def execute_window_op(
     return series
 
 
-@execute_node.register(ops.CumulativeSum, pd.Series)
+@execute_node.register(ops.CumulativeSum, (pd.Series, SeriesGroupBy))
 def execute_series_cumsum(op, data, **kwargs):
     return data.cumsum()
 
 
-@execute_node.register(ops.CumulativeMin, pd.Series)
+@execute_node.register(ops.CumulativeMin, (pd.Series, SeriesGroupBy))
 def execute_series_cummin(op, data, **kwargs):
     return data.cummin()
 
 
-@execute_node.register(ops.CumulativeMax, pd.Series)
+@execute_node.register(ops.CumulativeMax, (pd.Series, SeriesGroupBy))
 def execute_series_cummax(op, data, **kwargs):
     return data.cummax()
 
 
-@execute_node.register(ops.CumulativeOp, pd.Series)
+@execute_node.register(ops.CumulativeOp, (pd.Series, SeriesGroupBy))
 def execute_series_cumulative_op(op, data, **kwargs):
     typename = type(op).__name__
     match = re.match(r'^Cumulative([A-Za-z_][A-Za-z0-9_]*)$', typename)
@@ -223,9 +222,16 @@ def execute_series_cumulative_op(op, data, **kwargs):
         raise ValueError(
             'More than one operation name found in {} class'.format(typename)
         )
-    return agg_ctx.Cumulative(dtype=op.to_expr().type().to_pandas()).agg(
-        data, operation_name.lower()
-    )
+
+    dtype = op.to_expr().type().to_pandas()
+    result = agg_ctx.Cumulative(dtype=dtype).agg(data, operation_name.lower())
+
+    # all expanding window operations are required to be int64 or float64, so
+    # we need to cast back to preserve the type of the operation
+    try:
+        return result.astype(dtype)
+    except TypeError:
+        return result
 
 
 def post_lead_lag(result, default):
