@@ -220,35 +220,7 @@ class ImpalaCursor(object):
         self._wait_synchronous()
 
     def _wait_synchronous(self):
-        # Wait to finish, but cancel if KeyboardInterrupt
-        loop_start = time.time()
-
-        def _sleep_interval(start_time):
-            elapsed = time.time() - start_time
-            if elapsed < 0.05:
-                return 0.01
-            elif elapsed < 1.0:
-                return 0.05
-            elif elapsed < 10.0:
-                return 0.1
-            elif elapsed < 60.0:
-                return 0.5
-            return 1.0
-
-        cur = self._cursor
-        try:
-            while True:
-                status = self._get_status()
-                state = self._get_state_for_status(status)
-                if self._cursor._op_state_is_error(state):
-                    raise HS2Error(status.errorMessage)
-                if not cur._op_state_is_executing(state):
-                    break
-                time.sleep(_sleep_interval(loop_start))
-        except KeyboardInterrupt:
-            print('Canceling query')
-            self.cancel()
-            raise
+        self._cursor._wait_to_finish()
 
     def is_finished(self):
         return not self.is_executing()
@@ -267,15 +239,6 @@ class ImpalaCursor(object):
             return self._cursor.fetchcolumnar()
         else:
             return self._cursor.fetchall()
-
-    def _get_status(self):
-        op = self._cursor._last_operation
-        req = TGetOperationStatusReq(operationHandle=op.handle)
-        resp = op._rpc('GetOperationStatus', req)
-        return resp
-
-    def _get_state_for_status(self, status):
-        return TOperationState._VALUES_TO_NAMES[status.operationState]
 
 class ImpalaQuery(Query):
 
