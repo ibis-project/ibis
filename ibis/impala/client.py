@@ -24,7 +24,7 @@ from ibis.client import Query, Database, DatabaseEntity, SQLClient
 from ibis.compat import lzip, parse_version
 from ibis.filesystems import HDFS, WebHDFS
 from ibis.impala import udf, ddl
-from ibis.impala.compat import impyla, ImpylaError, HS2Error, TGetOperationStatusReq, TOperationState
+from ibis.impala.compat import impyla, ImpylaError, HS2Error
 from ibis.impala.compiler import build_ast, ImpalaDialect
 from ibis.util import log
 from ibis.sql.compiler import DDL, DML
