@@ -630,6 +630,117 @@ class ByteLength(ops.StringLength):
     """Returns the length of a string in bytes length"""
 
 
+# WINDOW
+
+def _window(translator, expr):
+    op = expr.op()
+
+    arg, window = op.args
+    window_op = arg.op()
+
+    _require_order_by = (
+        ops.Lag,
+        ops.Lead,
+        ops.DenseRank,
+        ops.MinRank,
+        ops.FirstValue,
+        ops.LastValue,
+        ops.PercentRank,
+        ops.NTile,
+    )
+
+    _unsupported_reductions = (
+        ops.CMSMedian,
+        ops.GroupConcat,
+        ops.HLLCardinality
+    )
+
+    # TODO: enable this when `- 1` option is enable on OmniSci database
+    # _subtract_one = '({}) - 1'.format
+    # _expr_transforms = {
+    #     ops.RowNumber: _subtract_one,
+    #     ops.DenseRank: _subtract_one,
+    #     ops.MinRank: _subtract_one,
+    #     ops.NTile: _subtract_one,
+    # }
+
+    _expr_transforms = {}
+
+    if isinstance(window_op, _unsupported_reductions):
+        raise com.UnsupportedOperationError(
+            '{} is not supported in window functions'.format(type(window_op))
+        )
+
+    if window.preceding is not None:
+        raise com.UnsupportedOperationError(
+            'Window preceding is not supported by OmniSci/MapD backend yet'
+        )
+
+    if window.following is not None and window.following != 0:
+        raise com.UnsupportedOperationError(
+            'Window following is not supported by OmniSci/MapD backend yet'
+        )
+    window.following = None
+
+    # Some analytic functions need to have the expression of interest in
+    # the ORDER BY part of the window clause
+    if isinstance(window_op, _require_order_by) and len(window._order_by) == 0:
+        window = window.order_by(window_op.args[0])
+
+    # Time ranges need to be converted to microseconds.
+    if window.how == 'range':
+        order_by_types = [type(x.op().args[0]) for x in window._order_by]
+        time_range_types = (ir.TimeColumn, ir.DateColumn, ir.TimestampColumn)
+        if any(col_type in time_range_types for col_type in order_by_types):
+            window = impala_compiler._time_range_to_range_window(
+                translator, window
+            )
+
+    window_formatted = impala_compiler._format_window(translator, op, window)
+
+    arg_formatted = translator.translate(arg)
+    result = '{} {}'.format(arg_formatted, window_formatted)
+
+    if type(window_op) in _expr_transforms:
+        return _expr_transforms[type(window_op)](result)
+    else:
+        return result
+
+
+def _shift_like(name, default_offset=None):
+    def formatter(translator, expr):
+        op = expr.op()
+        arg, offset, default = op.args
+
+        arg_formatted = translator.translate(arg)
+
+        if default is not None:
+            if offset is None:
+                offset_formatted = (
+                    '1' if default_offset is None else str(default_offset)
+                )
+            else:
+                offset_formatted = translator.translate(offset)
+
+            default_formatted = translator.translate(default)
+
+            return '{}({}, {}, {})'.format(
+                name, arg_formatted, offset_formatted, default_formatted
+            )
+        elif offset is not None or default_offset is not None:
+            offset_formatted = (
+                translator.translate(offset) if offset is not None
+                else str(default_offset)
+            )
+            return '{}({}, {})'.format(name, arg_formatted, offset_formatted)
+        else:
+            return '{}({})'.format(name, arg_formatted)
+
+    return formatter
+
+
+# operation map
+
 # https://www.mapd.com/docs/latest/mapd-core-guide/dml/
 _binary_infix_ops = {
     # math
@@ -744,11 +855,21 @@ _general_ops = {
     ops.CrossJoin: _cross_join,
 }
 
+# WINDOW
+# RowNumber, and rank functions starts with 0 in Ibis-land
+_window_ops = {
+    ops.WindowOp: _window,
+    ops.Lead: _shift_like('lead', 1),
+    ops.FirstValue: unary('first_value'),
+    ops.LastValue: unary('last_value'),
+    ops.Lag: _shift_like('lag'),
+    ops.Lead: _shift_like('lead'),
+}
+
 # UNSUPPORTED OPERATIONS
 _unsupported_ops = [
     # generic/aggregation
     ops.CMSMedian,
-    ops.WindowOp,
     ops.DecimalPrecision,
     ops.DecimalScale,
     ops.BaseConvert,
@@ -759,16 +880,13 @@ _unsupported_ops = [
     ops.CumulativeAny,
     ops.CumulativeAll,
     ops.IdenticalTo,
-    ops.RowNumber,
-    ops.DenseRank,
-    ops.MinRank,
-    ops.PercentRank,
-    ops.FirstValue,
-    ops.LastValue,
-    ops.NthValue,
-    ops.Lag,
-    ops.Lead,
+    ops.RankBase,  # TODO: it currently doesn't allow `- 1`
+    ops.RowNumber,  # TODO: it currently doesn't allow `- 1`
+    ops.DenseRank,  # TODO: it currently doesn't allow `- 1`
+    ops.MinRank,  # TODO: it currently doesn't allow `- 1`
+    ops.PercentRank,  # TODO: it currently doesn't allow `- 1`
     ops.NTile,
+    ops.NthValue,
     ops.GroupConcat,
     ops.NullIf,
     ops.NullIfZero,
@@ -833,5 +951,6 @@ _operation_registry.update(_string_ops)
 _operation_registry.update(_date_ops)
 _operation_registry.update(_agg_ops)
 _operation_registry.update(_geospatial_ops)
+_operation_registry.update(_window_ops)
 # the last update should be with unsupported ops
 _operation_registry.update(_unsupported_ops)

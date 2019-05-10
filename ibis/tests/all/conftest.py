@@ -41,6 +41,9 @@ params_backend = [
     for backend in ALL_BACKENDS
 ]
 
+# TODO: remove it
+params_backend = [pytest.param(MapD, marks=pytest.mark.mapd)]
+
 
 @pytest.fixture(params=params_backend, scope='session')
 def backend(request, data_directory):

@@ -83,7 +83,6 @@ test: &test
           bash <(curl -s https://codecov.io/bash) \
             -f /tmp/ibis/test-reports/pytest-cov/coverage.xml
 
-
 build: &build
   <<: *base
   steps:

@@ -235,7 +235,7 @@ class PostgreSQL(Backend, RoundHalfToEven):
 class MapD(Backend):
     check_dtype = False
     check_names = False
-    supports_window_operations = False
+    supports_window_operations = True
     supports_divide_by_zero = False
     supports_floating_modulus = False
     returned_timestamp_unit = 's'

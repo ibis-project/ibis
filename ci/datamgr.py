@@ -262,6 +262,7 @@ def sqlite(database, schema, tables, data_directory, **params):
 @click.option('-u', '--user', default='mapd')
 @click.option('-p', '--password', default='HyperInteractive')
 @click.option('-D', '--database', default='ibis_testing')
+@click.option('--protocol', default='binary')
 @click.option(
     '-S',
     '--schema',
@@ -285,6 +286,7 @@ def omnisci(schema, tables, data_directory, **params):
             password=params['password'],
             port=params['port'],
             dbname='mapd',
+            protocol=params['protocol'],
         )
         database = params["database"]
         stmt = "DROP DATABASE {}".format(database)
@@ -306,6 +308,7 @@ def omnisci(schema, tables, data_directory, **params):
         password=params['password'],
         port=params['port'],
         dbname=database,
+        protocol=params['protocol'],
     )
 
     # create tables
