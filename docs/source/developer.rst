@@ -35,7 +35,7 @@ Conda Environment Setup
 
       # Create a conda environment ready for ibis development
       # including building the documentation
-      conda create -n ibis36 -c conda-forge --file=ci/requirements-dev.yml python=3.6
+      conda env create -n ibis36 -f ci/requirements-3.6-dev.yml
 
       # Activate the conda environment
       source activate ibis36
