@@ -1227,7 +1227,7 @@ class _AlchemyTableSet(TableSetFormatter):
             elif jtype is ops.RightJoin:
                 result = table.join(result, onclause, isouter=True)
             elif jtype is ops.OuterJoin:
-                result = result.outerjoin(table, onclause)
+                result = result.outerjoin(table, onclause, full=True)
             elif jtype is ops.LeftSemiJoin:
                 result = sa.select([result]).where(
                     sa.exists(sa.select([1]).where(onclause))
