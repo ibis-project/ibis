@@ -159,10 +159,10 @@ def test_window(backend, analytic_alltypes, df, con, result_fn, expected_fn):
         )
     )
 
+    result = expr.execute().set_index('id').sort_index()
+
     column = expected_fn(df.sort_values('id').groupby('string_col'))
     expected = df.assign(value=column).set_index('id').sort_index()
-
-    result = expr.execute().set_index('id').sort_index()
 
     left, right = result.value, expected.value
     backend.assert_series_equal(left, right)
