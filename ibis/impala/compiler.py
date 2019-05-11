@@ -319,7 +319,7 @@ def _window(translator, expr):
         if any(col_type in time_range_types for col_type in order_by_types):
             window = _time_range_to_range_window(translator, window)
 
-    window_formatted = _format_window(translator, window)
+    window_formatted = _format_window(translator, op, window)
 
     arg_formatted = translator.translate(arg)
     result = '{} {}'.format(arg_formatted, window_formatted)
@@ -330,7 +330,7 @@ def _window(translator, expr):
         return result
 
 
-def _format_window(translator, window):
+def _format_window(translator, op, window):
     components = []
 
     if len(window._group_by) > 0:
@@ -373,7 +373,17 @@ def _format_window(translator, window):
 
         return '{} FOLLOWING'.format(prefix)
 
-    if p is not None and f is not None:
+    frame_clause_not_allowed = (
+        ops.Lag,
+        ops.Lead,
+        ops.DenseRank,
+        ops.MinRank,
+        ops.PercentRank,
+    )
+
+    if isinstance(op.expr.op(), frame_clause_not_allowed):
+        frame = None
+    elif p is not None and f is not None:
         frame = '{} BETWEEN {} AND {}'.format(
             window.how.upper(), _prec(p), _foll(f)
         )
