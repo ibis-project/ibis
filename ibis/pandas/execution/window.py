@@ -320,13 +320,13 @@ def execute_series_group_by_last_value(op, data, aggcontext=None, **kwargs):
 @execute_node.register(ops.MinRank, (pd.Series, SeriesGroupBy))
 def execute_series_min_rank(op, data, **kwargs):
     # TODO(phillipc): Handle ORDER BY
-    return data.rank(method='min', ascending=True)
+    return data.rank(method='min', ascending=True).astype('int64')
 
 
 @execute_node.register(ops.DenseRank, (pd.Series, SeriesGroupBy))
 def execute_series_dense_rank(op, data, **kwargs):
     # TODO(phillipc): Handle ORDER BY
-    return data.rank(method='dense', ascending=True)
+    return data.rank(method='dense', ascending=True).astype('int64')
 
 
 @execute_node.register(ops.PercentRank, (pd.Series, SeriesGroupBy))
