@@ -25,7 +25,7 @@ dependencies:
   - pre_commit
   - psycopg2
   - pyarrow<0.12
-  - pymapd>=0.8.3
+  - pymapd>=0.8.3,<0.11.0
   - pymysql
   - pytables
   - pytest
@@ -39,7 +39,7 @@ dependencies:
   - requests
   - ruamel.yaml
   - sqlalchemy
-  - thrift
+  - thrift>=0.9.3
   # required for impyla in case of py3
   - thriftpy
   - toolz

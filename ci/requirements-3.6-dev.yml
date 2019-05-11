@@ -10,7 +10,7 @@ dependencies:
   - flake8
   - google-cloud-bigquery>=1.0.0
   - graphviz
-  - impyla>=0.14.2
+  - impyla>=0.15.0
   - isort
   - jinja2
   - lz4
@@ -23,7 +23,7 @@ dependencies:
   - pre_commit
   - psycopg2
   - pyarrow>=0.12
-  - pymapd>=0.8.3
+  - pymapd>=0.8.3,<0.11.0
   - pymysql
   - pytables
   - pytest
@@ -37,11 +37,11 @@ dependencies:
   - requests
   - ruamel.yaml
   - sqlalchemy
-  - thrift
-  # required for impyla in case of py3
-  - thriftpy
+  - thrift>=0.9.3
   - toolz
   - xorg-libxpm
   - xorg-libxrender
   - pip:
       - seed-isort-config
+      # required for impyla in case of py3
+      - thriftpy2
