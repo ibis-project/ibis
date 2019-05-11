@@ -21,13 +21,13 @@ import ibis.tests.util as tu
             id='lead',
         ),
         param(
-            lambda t, win: t.float_col.rank().over(win),
-            lambda t: t.float_col.rank(method='min'),
+            lambda t, win: t.id.rank().over(win),
+            lambda t: t.id.rank(method='min').astype('int64') - 1,
             id='rank',
         ),
         param(
-            lambda t, win: t.float_col.dense_rank().over(win),
-            lambda t: t.float_col.rank(method='dense'),
+            lambda t, win: t.id.dense_rank().over(win),
+            lambda t: t.id.rank(method='dense').astype('int64') - 1,
             id='dense_rank',
         ),
         param(
@@ -36,8 +36,8 @@ import ibis.tests.util as tu
             #
             # cume_dist() is the corresponding function in databases that
             # support window functions
-            lambda t, win: t.float_col.percent_rank().over(win),
-            lambda t: t.float_col.rank(pct=True),
+            lambda t, win: t.id.percent_rank().over(win),
+            lambda t: t.id.rank(pct=True),
             id='percent_rank',
             marks=pytest.mark.xfail(raises=AssertionError),
         ),
