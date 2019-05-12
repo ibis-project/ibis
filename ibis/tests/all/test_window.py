@@ -39,7 +39,9 @@ from ibis.tests.backends import Csv, Pandas, Parquet
             lambda t, win: t.id.percent_rank().over(win),
             lambda t: t.id.rank(pct=True),
             id='percent_rank',
-            marks=pytest.mark.xfail(raises=AssertionError),
+            marks=pytest.mark.xpass_backends(
+                [Csv, Pandas, Parquet], raises=AssertionError
+            ),
         ),
         param(
             lambda t, win: t.float_col.ntile(buckets=7).over(win),

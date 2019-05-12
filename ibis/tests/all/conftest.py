@@ -1,41 +1,44 @@
+import operator
+
 import pytest
 
-from ibis.tests.backends import (
-    BigQuery,
-    Clickhouse,
-    Csv,
-    Impala,
-    MapD,
-    MySQL,
-    Pandas,
-    Parquet,
-    PostgreSQL,
-    SQLite,
-)
+from ibis.tests.backends import Backend
+
+
+def subclasses(cls):
+    """Get all child classes of `cls` not including `cls`, transitively."""
+    assert isinstance(cls, type), "cls is not a class, type: {}".format(
+        type(cls)
+    )
+    children = set(cls.__subclasses__())
+    return children.union(*map(subclasses, children))
+
+
+ALL_BACKENDS = sorted(subclasses(Backend), key=operator.attrgetter("__name__"))
 
 
 def pytest_runtest_call(item):
     """Dynamically add an xfail marker for specific backends."""
-    markers = list(item.iter_markers(name="xfail_backends"))
-    for marker in markers:
+    for marker in list(item.iter_markers(name="xfail_backends")):
         backend_types, = marker.args
         if isinstance(item.funcargs["backend"], tuple(backend_types)):
+            item.add_marker(pytest.mark.xfail(**marker.kwargs))
+
+    for marker in list(item.iter_markers(name="xpass_backends")):
+        backend_types, = marker.args
+        backend = item.funcargs["backend"]
+        assert isinstance(backend, Backend), "backend has type {!r}".format(
+            type(backend).__name__
+        )
+        if not isinstance(backend, tuple(backend_types)):
             item.add_marker(pytest.mark.xfail(**marker.kwargs))
 
 
 pytestmark = pytest.mark.backend
 
 params_backend = [
-    pytest.param(Csv, marks=pytest.mark.csv),
-    pytest.param(Parquet, marks=pytest.mark.parquet),
-    pytest.param(Pandas, marks=pytest.mark.pandas),
-    pytest.param(SQLite, marks=pytest.mark.sqlite),
-    pytest.param(PostgreSQL, marks=pytest.mark.postgresql),
-    pytest.param(MySQL, marks=pytest.mark.mysql),
-    pytest.param(Clickhouse, marks=pytest.mark.clickhouse),
-    pytest.param(BigQuery, marks=pytest.mark.bigquery),
-    pytest.param(Impala, marks=pytest.mark.impala),
-    pytest.param(MapD, marks=pytest.mark.mapd)
+    pytest.param(backend, marks=getattr(pytest.mark, backend.__name__.lower()))
+    for backend in ALL_BACKENDS
 ]
 
 

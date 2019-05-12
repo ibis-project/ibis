@@ -11,7 +11,17 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.tests.util as tu
 from ibis.pandas.execution.temporal import day_name
-from ibis.tests.backends import MapD
+from ibis.tests.backends import (
+    BigQuery,
+    Clickhouse,
+    Csv,
+    Impala,
+    MapD,
+    Pandas,
+    Parquet,
+    PostgreSQL,
+    SQLite,
+)
 
 
 @pytest.mark.parametrize('attr', ['year', 'month', 'day'])
@@ -46,7 +56,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
         'Y',
         'M',
         'D',
-        param('W', marks=pytest.mark.xfail),
+        param('W', marks=pytest.mark.xpass_backends((Csv, Pandas, Parquet))),
         'h',
         'm',
         's',
@@ -70,7 +80,13 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
 
 
 @pytest.mark.parametrize(
-    'unit', ['Y', 'M', 'D', param('W', marks=pytest.mark.xfail)]
+    'unit',
+    [
+        'Y',
+        'M',
+        'D',
+        param('W', marks=pytest.mark.xpass_backends((Csv, Pandas, Parquet))),
+    ],
 )
 @tu.skipif_unsupported
 def test_date_truncate(backend, alltypes, df, unit):
@@ -86,28 +102,40 @@ def test_date_truncate(backend, alltypes, df, unit):
 
 
 @pytest.mark.parametrize(
-    'unit',
+    ('unit', 'displacement_type'),
     [
-        'Y',
-        param('Q', marks=pytest.mark.xfail),
-        'M',
-        'W',
-        'D',
-        'h',
-        'm',
-        's',
-        param('ms', marks=pytest.mark.xfail),
-        param('us', marks=pytest.mark.xfail),
+        ('Y', pd.offsets.DateOffset),
+        param('Q', pd.offsets.DateOffset, marks=pytest.mark.xfail),
+        ('M', pd.offsets.DateOffset),
+        ('W', pd.offsets.DateOffset),
+        ('D', pd.offsets.DateOffset),
+        ('h', pd.Timedelta),
+        ('m', pd.Timedelta),
+        ('s', pd.Timedelta),
+        param(
+            'ms',
+            pd.Timedelta,
+            marks=pytest.mark.xpass_backends(
+                (Csv, Pandas, Parquet, BigQuery, Impala, PostgreSQL)
+            ),
+        ),
+        param(
+            'us',
+            pd.Timedelta,
+            marks=pytest.mark.xfail_backends((Clickhouse, MapD, SQLite)),
+        ),
     ],
 )
 @tu.skipif_unsupported
-def test_integer_to_interval_timestamp(backend, con, alltypes, df, unit):
+def test_integer_to_interval_timestamp(
+    backend, con, alltypes, df, unit, displacement_type
+):
     interval = alltypes.int_col.to_interval(unit=unit)
     expr = alltypes.timestamp_col + interval
 
-    def convert_to_offset(x):
+    def convert_to_offset(offset, displacement_type=displacement_type):
         resolution = '{}s'.format(interval.type().resolution)
-        return pd.offsets.DateOffset(**{resolution: x})
+        return displacement_type(**{resolution: offset})
 
     with warnings.catch_warnings():
         # both the implementation and test code raises pandas
@@ -118,7 +146,6 @@ def test_integer_to_interval_timestamp(backend, con, alltypes, df, unit):
         expected = df.timestamp_col + offset
 
     expected = backend.default_series_rename(expected)
-
     backend.assert_series_equal(result, expected)
 
 
@@ -237,7 +264,12 @@ unit_factors = {'s': int(1e9), 'ms': int(1e6), 'us': int(1e3)}
         'D',
         's',
         'ms',
-        param('us', marks=pytest.mark.xfail),
+        param(
+            'us',
+            marks=pytest.mark.xpass_backends(
+                (BigQuery, Csv, Impala, Pandas, Parquet)
+            ),
+        ),
         param('ns', marks=pytest.mark.xfail),
     ],
 )

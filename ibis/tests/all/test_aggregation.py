@@ -3,6 +3,7 @@ import pytest
 from pytest import param
 
 import ibis.tests.util as tu
+from ibis.tests.backends import Clickhouse, MySQL, SQLite
 
 
 @pytest.mark.parametrize(
@@ -67,7 +68,7 @@ import ibis.tests.util as tu
             lambda t, where: t.double_col.approx_median(),
             lambda t, where: t.double_col.median(),
             id='double_col_approx_median',
-            marks=pytest.mark.xfail,
+            marks=pytest.mark.xpass_backends([Clickhouse]),
         ),
         param(
             lambda t, where: t.double_col.std(how='sample'),
@@ -93,7 +94,7 @@ import ibis.tests.util as tu
             lambda t, where: t.string_col.approx_nunique(),
             lambda t, where: t.string_col.nunique(),
             id='string_col_approx_nunique',
-            marks=pytest.mark.xfail,
+            marks=pytest.mark.xfail_backends([MySQL, SQLite]),
         ),
         param(
             lambda t, where: t.string_col.group_concat(','),

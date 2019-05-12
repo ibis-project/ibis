@@ -211,7 +211,6 @@ def test_add_drop_partition_owned_by_impala(hdfs, con, temp_table):
     assert len(table.partitions()) == 1
 
 
-@pytest.mark.xfail(raises=impala.error.HiveServer2Error, reason='HIVE-12613')
 def test_add_drop_partition_hive_bug(con, temp_table):
     schema = ibis.schema(
         [('foo', 'string'), ('year', 'int32'), ('month', 'int16')]
