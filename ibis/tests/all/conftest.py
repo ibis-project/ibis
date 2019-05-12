@@ -15,6 +15,16 @@ from ibis.tests.backends import (
     SQLite,
 )
 
+
+def pytest_runtest_call(item):
+    """Dynamically add an xfail marker for specific backends."""
+    markers = list(item.iter_markers(name="xfail_backends"))
+    for marker in markers:
+        backend_types, = marker.args
+        if isinstance(item.funcargs["backend"], tuple(backend_types)):
+            item.add_marker(pytest.mark.xfail(**marker.kwargs))
+
+
 pytestmark = pytest.mark.backend
 
 params_backend = [
