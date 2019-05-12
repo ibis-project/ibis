@@ -215,6 +215,7 @@ Ibis
 """
 
 import abc
+import functools
 import operator
 import warnings
 
@@ -240,11 +241,19 @@ class AggregationContext(abc.ABC):
         pass
 
 
-def _apply(function, args, kwargs):
+def make_applied_function(function, args=None, kwargs=None):
     assert callable(function), 'function {} is not callable'.format(function)
-    return lambda data, function=function, args=args, kwargs=kwargs: (
-        function(data, *args, **kwargs)
-    )
+
+    @functools.wraps(function)
+    def apply(
+        data,
+        function=function,
+        args=args if args is not None else (),
+        kwargs=kwargs if kwargs is not None else {},
+    ):
+        return function(data, *args, **kwargs)
+
+    return apply
 
 
 class Summarize(AggregationContext):
@@ -259,7 +268,9 @@ class Summarize(AggregationContext):
                 'Object {} is not callable or a string'.format(function)
             )
 
-        return grouped_data.apply(_apply(function, args, kwargs))
+        return grouped_data.apply(
+            make_applied_function(function, args, kwargs)
+        )
 
 
 class Transform(AggregationContext):
@@ -314,19 +325,30 @@ class Window(AggregationContext):
             # if we're a UD(A)F or a function that isn't a string (like the
             # collect implementation) then call apply
             if callable(function):
-                return windowed.apply(_apply(function, args, kwargs), raw=True)
+                return windowed.apply(
+                    make_applied_function(function, args, kwargs), raw=True
+                )
             else:
-                # otherwise we're a string and we're probably faster
+                # otherwise we're a string and probably faster
                 assert isinstance(function, str)
-                method = getattr(windowed, function)
-                result = method(*args, **kwargs)
-                return result
+                method = getattr(windowed, function, None)
+                if method is not None:
+                    return method(*args, **kwargs)
+
+                # handle the case where we pulled out a name from an operation
+                # but it doesn't actually exist
+                return windowed.apply(
+                    make_applied_function(
+                        operator.methodcaller(function, *args, **kwargs)
+                    ),
+                    raw=True,
+                )
         else:
             # do mostly the same thing as if we did NOT have a grouping key,
             # but don't call the callable just yet. See below where we call it.
             if callable(function):
                 method = operator.methodcaller(
-                    'apply', _apply(function, args, kwargs)
+                    'apply', make_applied_function(function, args, kwargs)
                 )
             else:
                 assert isinstance(function, str)

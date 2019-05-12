@@ -5,9 +5,10 @@ from pandas.util import testing as tm
 import ibis
 from ibis.file.client import FileDatabase
 from ibis.file.client import execute_and_reset as execute  # noqa: E402
-from ibis.file.hdf5 import HDFClient, HDFTable  # noqa: E402
 
-pytest.importorskip('tables')
+pytest.importorskip('tables')  # isort:skip
+
+from ibis.file.hdf5 import HDFClient, HDFTable  # noqa: E402, isort:skip
 
 
 @pytest.fixture

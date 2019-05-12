@@ -1,15 +1,17 @@
 import sys
 
-import pyarrow.parquet as pq  # noqa: E402
 import pytest
 from pandas.util import testing as tm
 
 import ibis
 from ibis.file.client import FileDatabase
-from ibis.file.client import execute_and_reset as execute  # noqa: E402
-from ibis.file.parquet import ParquetClient, ParquetTable  # noqa: E402
+from ibis.file.client import execute_and_reset as execute
 
-pa = pytest.importorskip('pyarrow')
+pa = pytest.importorskip('pyarrow')  # isort:skip
+pq = pytest.importorskip('pyarrow.parquet')  # isort:skip
+
+from ibis.file.parquet import ParquetClient  # noqa: E402, isort:skip
+from ibis.file.parquet import ParquetTable  # noqa: E402, isort:skip
 
 
 pytestmark = pytest.mark.skipif(
@@ -19,7 +21,6 @@ pytestmark = pytest.mark.skipif(
 
 @pytest.fixture
 def transformed(parquet):
-
     closes = parquet.pq.close
     opens = parquet.pq.open
 
@@ -32,7 +33,6 @@ def transformed(parquet):
 
 def test_creation(parquet):
     # we have existing files in our dir
-
     d = parquet.client.root
     assert len(list(d.iterdir())) == 1
 
@@ -44,7 +44,6 @@ def test_creation(parquet):
 
 
 def test_client(tmpdir, data):
-
     # construct with a path to a file
     d = tmpdir / 'pq'
     d.mkdir()
@@ -60,7 +59,6 @@ def test_client(tmpdir, data):
 
 
 def test_navigation(parquet):
-
     # directory navigation
     assert isinstance(parquet, FileDatabase)
     result = dir(parquet)
@@ -82,7 +80,6 @@ def test_navigation(parquet):
 
 
 def test_read(parquet, data):
-
     closes = parquet.pq.close
     assert str(closes) is not None
 
