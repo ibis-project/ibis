@@ -1,10 +1,10 @@
-import numpy as np
-import pandas as pd
 import pytest
 from pytest import param
 
 import ibis
+import ibis.common as com
 import ibis.tests.util as tu
+from ibis.tests.backends import Csv, Pandas, Parquet
 
 
 @pytest.mark.parametrize(
@@ -58,22 +58,13 @@ import ibis.tests.util as tu
             id='last',
         ),
         param(
-            lambda t, win: t.float_col.first().over(ibis.window(preceding=10)),
-            lambda t: t,
-            id='first_preceding',
-            marks=pytest.mark.xfail,
-        ),
-        param(
-            lambda t, win: t.float_col.first().over(ibis.window(following=10)),
-            lambda t: t,
-            id='first_following',
-            marks=pytest.mark.xfail,
-        ),
-        param(
             lambda t, win: ibis.row_number().over(win),
-            lambda t: pd.Series(np.arange(len(t))),
+            lambda t: t.cumcount(),
             id='row_number',
-            marks=pytest.mark.xfail(raises=AttributeError),
+            marks=pytest.mark.xfail_backends(
+                (Pandas, Csv, Parquet),
+                raises=(IndexError, com.UnboundExpressionError),
+            ),
         ),
         param(
             lambda t, win: t.double_col.cumsum().over(win),
@@ -144,17 +135,19 @@ import ibis.tests.util as tu
     ],
 )
 @tu.skipif_unsupported
-def test_window(backend, analytic_alltypes, df, con, result_fn, expected_fn):
+def test_window(backend, alltypes, df, con, result_fn, expected_fn):
     if not backend.supports_window_operations:
         pytest.skip(
             'Backend {} does not support window operations'.format(backend)
         )
 
-    expr = analytic_alltypes.mutate(
+    expr = alltypes.mutate(
         value=result_fn(
-            analytic_alltypes,
+            alltypes,
             win=ibis.window(
-                following=0, group_by=["string_col"], order_by=["id"]
+                following=0,
+                group_by=[alltypes.string_col],
+                order_by=[alltypes.id],
             ),
         )
     )

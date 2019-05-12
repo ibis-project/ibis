@@ -379,6 +379,7 @@ def _format_window(translator, op, window):
         ops.DenseRank,
         ops.MinRank,
         ops.PercentRank,
+        ops.RowNumber,
     )
 
     if isinstance(op.expr.op(), frame_clause_not_allowed):
