@@ -256,12 +256,12 @@ class MapD(Backend):
     )
 
     def connect(self, data_directory):
-        user = os.environ.get('IBIS_TEST_MAPD_USER', 'mapd')
+        user = os.environ.get('IBIS_TEST_OMNISCI_USER', 'mapd')
         password = os.environ.get(
-            'IBIS_TEST_MAPD_PASSWORD', 'HyperInteractive'
+            'IBIS_TEST_OMNISCI_PASSWORD', 'HyperInteractive'
         )
-        host = os.environ.get('IBIS_TEST_MAPD_HOST', 'localhost')
-        database = os.environ.get('IBIS_TEST_MAPD_DATABASE', 'ibis_testing')
+        host = os.environ.get('IBIS_TEST_OMNISCI_HOST', 'localhost')
+        database = os.environ.get('IBIS_TEST_OMNISCI_DATABASE', 'ibis_testing')
         return ibis.mapd.connect(
             host=host, user=user, password=password, database=database
         )
