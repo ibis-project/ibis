@@ -29,7 +29,7 @@ test: &test
           fi
     - run:
         name: Start Databases
-        command: docker-compose up -d --no-build mysql postgres impala clickhouse mapd kudu-tserver kudu-master
+        command: docker-compose up -d --no-build mysql postgres impala clickhouse omnisci kudu-tserver kudu-master
     - run:
         name: Show Running Containers
         command: docker ps
@@ -152,7 +152,7 @@ docs: &docs
           - "8d:b0:36:4d:f6:75:f2:5f:00:01:a1:53:63:52:f0:e2"
     - run:
         name: Start Databases
-        command: docker-compose up -d --no-build mysql postgres impala clickhouse mapd kudu-master kudu-tserver
+        command: docker-compose up -d --no-build mysql postgres impala clickhouse omnisci kudu-master kudu-tserver
     - run:
         name: Show Running Containers
         command: docker ps

@@ -8,7 +8,7 @@ COMPOSE_FILE := "$(MAKEFILE_DIR)/ci/docker-compose.yml"
 DOCKER := docker-compose -f $(COMPOSE_FILE)
 DOCKER_RUN := PYTHON_VERSION=${PYTHON_VERSION} $(DOCKER) run --rm
 PYTEST_OPTIONS :=
-SERVICES := mapd postgres mysql clickhouse impala kudu-master kudu-tserver
+SERVICES := omnisci postgres mysql clickhouse impala kudu-master kudu-tserver
 
 clean:
 	python setup.py clean

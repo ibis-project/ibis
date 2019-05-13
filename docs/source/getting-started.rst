@@ -201,7 +201,7 @@ Create a client by passing in database connection parameters such as ``host``,
 .. code-block:: python
 
    >>> con = ibis.mapd.connect(
-   ...     host='localhost', database='mapd', port=9091,
+   ...     host='localhost', database='mapd', port=6274,
    ...     user='mapd', password='HyperInteractive'
    ... )
 

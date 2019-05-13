@@ -1,5 +1,3 @@
-import sys
-
 import pytest
 
 from ibis.tests.backends import (
@@ -37,10 +35,8 @@ params_backend = [
     pytest.param(Clickhouse, marks=pytest.mark.clickhouse),
     pytest.param(BigQuery, marks=pytest.mark.bigquery),
     pytest.param(Impala, marks=pytest.mark.impala),
+    pytest.param(MapD, marks=pytest.mark.mapd)
 ]
-
-if sys.version_info.major > 2:
-    params_backend.append(pytest.param(MapD, marks=pytest.mark.mapd))
 
 
 @pytest.fixture(params=params_backend, scope='session')
