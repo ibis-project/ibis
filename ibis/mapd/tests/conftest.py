@@ -5,21 +5,21 @@ import pytest
 import ibis
 import ibis.util as util
 
-MAPD_HOST = os.environ.get('IBIS_TEST_MAPD_HOST', 'localhost')
-MAPD_PORT = int(os.environ.get('IBIS_TEST_MAPD_PORT', 9091))
-MAPD_USER = os.environ.get('IBIS_TEST_MAPD_USER', 'mapd')
-MAPD_PASS = os.environ.get('IBIS_TEST_MAPD_PASSWORD', 'HyperInteractive')
-MAPD_DB = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
+OMNISCI_HOST = os.environ.get('IBIS_TEST_OMNISCI_HOST', 'localhost')
+OMNISCI_PORT = int(os.environ.get('IBIS_TEST_OMNISCI_PORT', 6274))
+OMNISCI_USER = os.environ.get('IBIS_TEST_OMNISCI_USER', 'mapd')
+OMNISCI_PASS = os.environ.get('IBIS_TEST_OMNISCI_PASSWORD', 'HyperInteractive')
+OMNISCI_DB = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
 
 
 @pytest.fixture(scope='module')
 def con():
     return ibis.mapd.connect(
-        host=MAPD_HOST,
-        port=MAPD_PORT,
-        user=MAPD_USER,
-        password=MAPD_PASS,
-        database=MAPD_DB,
+        host=OMNISCI_HOST,
+        port=OMNISCI_PORT,
+        user=OMNISCI_USER,
+        password=OMNISCI_PASS,
+        database=OMNISCI_DB,
     )
 
 
@@ -72,7 +72,7 @@ def temp_table(con):
 
 @pytest.fixture(scope='session')
 def test_data_db():
-    return MAPD_DB
+    return OMNISCI_DB
 
 
 @pytest.fixture

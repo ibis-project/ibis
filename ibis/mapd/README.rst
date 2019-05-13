@@ -1,4 +1,4 @@
-MapD IBIS backend
+MapD (OmniSci) IBIS backend
 =================
 
 In this document it would be explained the main aspects of `ibis` backend and
@@ -49,7 +49,7 @@ database specified:
 
     mapd_cli = ibis.mapd.connect(
         host='localhost', user='mapd', password='HyperInteractive',
-        port=9091, database='mapd'
+        port=6274, database='mapd'
     )
 
 `verify` method checks if the `ibis` expression can be compiled.

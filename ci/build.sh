@@ -10,7 +10,7 @@ docker-compose -f "$compose_file" build --pull ibis
 
 # start all docker compose services
 docker-compose -f "$compose_file" up -d --no-build \
-    mapd postgres mysql clickhouse impala kudu-master kudu-tserver
+    omnisci postgres mysql clickhouse impala kudu-master kudu-tserver
 
 # wait for services to start
 docker-compose -f "$compose_file" run --rm waiter

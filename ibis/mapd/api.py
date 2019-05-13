@@ -35,7 +35,7 @@ def connect(
     user=None,
     password=None,
     host=None,
-    port=9091,
+    port=6274,
     database=None,
     protocol='binary',
     execution_type=EXECUTION_TYPE_CURSOR,

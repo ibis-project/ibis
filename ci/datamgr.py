@@ -258,7 +258,7 @@ def sqlite(database, schema, tables, data_directory, **params):
 
 @cli.command()
 @click.option('-h', '--host', default='localhost')
-@click.option('-P', '--port', default=9091, type=int)
+@click.option('-P', '--port', default=6274, type=int)
 @click.option('-u', '--user', default='mapd')
 @click.option('-p', '--password', default='HyperInteractive')
 @click.option('-D', '--database', default='ibis_testing')
@@ -266,18 +266,18 @@ def sqlite(database, schema, tables, data_directory, **params):
     '-S',
     '--schema',
     type=click.File('rt'),
-    default=str(SCRIPT_DIR / 'schema' / 'mapd.sql'),
+    default=str(SCRIPT_DIR / 'schema' / 'omnisci.sql'),
 )
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES + ['geo'])
 @click.option('-d', '--data-directory', default=DATA_DIR)
-def mapd(schema, tables, data_directory, **params):
+def omnisci(schema, tables, data_directory, **params):
     import pymapd
 
     data_directory = Path(data_directory)
     reserved_words = ['table', 'year', 'month']
 
     # connection
-    logger.info('Initializing MapD...')
+    logger.info('Initializing OmniSci...')
     if params['database'] != 'mapd':
         conn = pymapd.connect(
             host=params['host'],
@@ -291,13 +291,13 @@ def mapd(schema, tables, data_directory, **params):
         try:
             conn.execute(stmt)
         except Exception:
-            logger.warning('MapD DDL statement %r failed', stmt)
+            logger.warning('OmniSci DDL statement %r failed', stmt)
 
         stmt = 'CREATE DATABASE {}'.format(database)
         try:
             conn.execute(stmt)
         except Exception:
-            logger.exception('MapD DDL statement %r failed', stmt)
+            logger.exception('OmniSci DDL statement %r failed', stmt)
         conn.close()
 
     conn = pymapd.connect(
@@ -313,7 +313,7 @@ def mapd(schema, tables, data_directory, **params):
         try:
             conn.execute(stmt)
         except Exception:
-            logger.exception('MapD DDL statement \n%r\n failed', stmt)
+            logger.exception('OmniSci DDL statement \n%r\n failed', stmt)
 
     # import data
     for table, df in read_tables(tables, data_directory):

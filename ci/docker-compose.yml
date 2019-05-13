@@ -74,25 +74,24 @@ services:
     environment:
       KUDU_MASTER: "false"
 
-  mapd:
-    image: mapd/mapd-ce-cpu:v4.4.2
+  omnisci:
+    image: omnisci/core-os-cpu:v4.6.1
     ports:
-      - 9090:9090
-      - 9091:9091
-      - 9092:9092
-      - 9093:9093
+      - 6273:6273
+      - 6274:6274
+      - 6278:6278
     environment:
-      - MAPD_HOST=mapd
-      - MAPD_PORT=9091
-      - MAPD_DATABASE=ibis_testing
-      - MAPD_USER=mapd
+      - OMNISCI_HOST=omnisci
+      - OMNISCI_PORT=6274
+      - OMNISCI_DATABASE=ibis_testing
+      - OMNISCI_USER=mapd
     volumes:
-      - ./mapd.conf:/mapd-storage/mapd.conf
+      - ./omnisci.conf:/omnisci-storage/omnisci.conf
 
   waiter:
     image: jwilder/dockerize
     command: |
-      dockerize -wait tcp://mapd:9091
+      dockerize -wait tcp://omnisci:6274
                 -wait tcp://mysql:3306
                 -wait tcp://postgres:5432
                 -wait tcp://impala:21050
