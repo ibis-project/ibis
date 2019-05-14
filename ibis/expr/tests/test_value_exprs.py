@@ -1460,3 +1460,33 @@ def test_window_unbounded_invalid(kind, begin, end):
     kwargs = {kind: (begin, end)}
     with pytest.raises(com.IbisInputError):
         ibis.window(**kwargs)
+
+
+@pytest.mark.parametrize(
+    ('left', 'right', 'expected'),
+    [
+        (ibis.literal(1), ibis.literal(1.0), dt.float64),
+        (ibis.literal('a'), ibis.literal('b'), dt.string),
+        (ibis.literal(1.0), ibis.literal(1), dt.float64),
+        (ibis.literal(1), ibis.literal(1), dt.int8),
+        (ibis.literal(1), ibis.literal(1000), dt.int16),
+        (ibis.literal(2 ** 16), ibis.literal(2 ** 17), dt.int32),
+        (ibis.literal(2 ** 50), ibis.literal(1000), dt.int64),
+        (ibis.literal([1, 2]), ibis.literal([1, 2]), dt.Array(dt.int8)),
+        (ibis.literal(['a']), ibis.literal([]), dt.Array(dt.string)),
+        (ibis.literal([]), ibis.literal(['a']), dt.Array(dt.string)),
+        (ibis.literal([]), ibis.literal([]), dt.Array(dt.null)),
+    ],
+)
+def test_nullif_type(left, right, expected):
+    assert left.nullif(right).type() == expected
+
+
+@pytest.mark.parametrize(
+    ('left', 'right'), [(ibis.literal(1), ibis.literal('a'))]
+)
+def test_nullif_fail(left, right):
+    with pytest.raises(com.IbisTypeError):
+        left.nullif(right)
+    with pytest.raises(com.IbisTypeError):
+        right.nullif(left)
