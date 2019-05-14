@@ -520,7 +520,15 @@ END"""
         f = table.l_quantity
 
         cases = [
-            (f.nullif(f == 0), 'nullif(`l_quantity`, `l_quantity` = 0)'),
+            (f.nullif(f), 'nullif(`l_quantity`, `l_quantity`)'),
+            (
+                (f == 0).nullif(f == 0),
+                'nullif(`l_quantity` = 0, `l_quantity` = 0)',
+            ),
+            (
+                (f != 0).nullif(f == 0),
+                'nullif(`l_quantity` != 0, `l_quantity` = 0)',
+            ),
             (f.fillna(0), 'isnull(`l_quantity`, CAST(0 AS decimal(12, 2)))'),
         ]
         self._check_expr_cases(cases)
