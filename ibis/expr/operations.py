@@ -395,7 +395,7 @@ class NullIf(ValueOp):
 
     arg = Arg(rlz.any)
     null_if_expr = Arg(rlz.any)
-    output_type = rlz.typeof('arg')
+    output_type = rlz.shape_like('args')
 
 
 class NullIfZero(ValueOp):
