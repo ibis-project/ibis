@@ -19,6 +19,7 @@ import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+import ibis.pandas.aggcontext as agg_ctx
 from ibis.compat import DatetimeTZDtype
 from ibis.pandas.core import (
     boolean_types,
@@ -567,19 +568,42 @@ def execute_variance_series(op, data, mask, aggcontext=None, **kwargs):
     )
 
 
-@execute_node.register((ops.Any, ops.All), pd.Series)
+@execute_node.register((ops.Any, ops.All), (pd.Series, SeriesGroupBy))
 def execute_any_all_series(op, data, aggcontext=None, **kwargs):
-    return aggcontext.agg(data, type(op).__name__.lower())
+    if isinstance(aggcontext, (agg_ctx.Summarize, agg_ctx.Transform)):
+        result = aggcontext.agg(data, type(op).__name__.lower())
+    else:
+        result = aggcontext.agg(
+            data, lambda data: getattr(data, type(op).__name__.lower())()
+        )
+    try:
+        return result.astype(bool)
+    except TypeError:
+        return result
 
 
-@execute_node.register(ops.NotAny, pd.Series)
+@execute_node.register(ops.NotAny, (pd.Series, SeriesGroupBy))
 def execute_notany_series(op, data, aggcontext=None, **kwargs):
-    return ~aggcontext.agg(data, 'any')
+    if isinstance(aggcontext, (agg_ctx.Summarize, agg_ctx.Transform)):
+        result = ~aggcontext.agg(data, 'any')
+    else:
+        result = aggcontext.agg(data, lambda data: ~data.any())
+    try:
+        return result.astype(bool)
+    except TypeError:
+        return result
 
 
-@execute_node.register(ops.NotAll, pd.Series)
+@execute_node.register(ops.NotAll, (pd.Series, SeriesGroupBy))
 def execute_notall_series(op, data, aggcontext=None, **kwargs):
-    return ~aggcontext.agg(data, 'all')
+    if isinstance(aggcontext, (agg_ctx.Summarize, agg_ctx.Transform)):
+        result = ~aggcontext.agg(data, 'all')
+    else:
+        result = aggcontext.agg(data, lambda data: ~data.all())
+    try:
+        return result.astype(bool)
+    except TypeError:
+        return result
 
 
 @execute_node.register(ops.Count, pd.DataFrame, type(None))
