@@ -91,7 +91,7 @@ from ibis.tests.backends import Csv, Pandas, Parquet
             id='cummax',
         ),
         param(
-            lambda t, win: (t.double_col == 0).cumany().over(win),
+            lambda t, win: (t.double_col == 0).any().over(win),
             lambda t: (
                 t.double_col.expanding()
                 .agg(lambda s: s.eq(0).any())
@@ -101,7 +101,7 @@ from ibis.tests.backends import Csv, Pandas, Parquet
             id='cumany',
         ),
         param(
-            lambda t, win: (t.double_col == 0).cumall().over(win),
+            lambda t, win: (t.double_col == 0).all().over(win),
             lambda t: (
                 t.double_col.expanding()
                 .agg(lambda s: s.eq(0).all())
