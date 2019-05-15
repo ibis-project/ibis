@@ -1322,26 +1322,18 @@ class ExprTranslator:
         return self.translate(literal)
 
     @classmethod
-    def rewrites(cls, klass, f=None):
+    def rewrites(cls, klass):
         def decorator(f):
             cls._rewrites[klass] = f
-
-        if f is None:
-            return decorator
-        else:
-            decorator(f)
             return f
+        return decorator
 
     @classmethod
-    def compiles(cls, klass, f=None):
+    def compiles(cls, klass):
         def decorator(f):
             cls._registry[klass] = f
-
-        if f is None:
-            return decorator
-        else:
-            decorator(f)
             return f
+        return decorator
 
 
 rewrites = ExprTranslator.rewrites
