@@ -558,7 +558,7 @@ def _any_all_no_op(expr):
 
 @compiles(ops.Any)
 def bigquery_compile_any(translator, expr):
-    return "LOGICAL_OR(({}))".format(
+    return "LOGICAL_OR({})".format(
         *map(translator.translate, expr.op().args)
     )
 
@@ -572,7 +572,7 @@ def bigquery_compile_notany(translator, expr):
 
 @compiles(ops.All)
 def bigquery_compile_all(translator, expr):
-    return "LOGICAL_AND(({}))".format(
+    return "LOGICAL_AND({})".format(
         *map(translator.translate, expr.op().args)
     )
 
