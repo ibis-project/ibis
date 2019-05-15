@@ -67,14 +67,25 @@ def execute_timestamp_truncate(op, data, **kwargs):
     return pd.Series(array, name=data.name)
 
 
+OFFSET_CLASS = {
+    "Y": pd.offsets.DateOffset,
+    "Q": pd.offsets.DateOffset,
+    "M": pd.offsets.DateOffset,
+    "W": pd.offsets.DateOffset,
+    # all other units are timedelta64s
+}
+
+
 @execute_node.register(ops.IntervalFromInteger, pd.Series)
 def execute_interval_from_integer_series(op, data, **kwargs):
-    resolution = '{}s'.format(op.resolution)
+    unit = op.unit
+    resolution = "{}s".format(op.resolution)
+    cls = OFFSET_CLASS.get(unit, None)
 
-    def convert_to_offset(n):
-        return pd.offsets.DateOffset(**{resolution: n})
-
-    return data.apply(convert_to_offset)
+    # fast path for timedelta conversion
+    if cls is None:
+        return data.astype("timedelta64[{}]".format(unit))
+    return data.apply(lambda n, cls=cls: cls(**{resolution: n}))
 
 
 @execute_node.register(ops.TimestampAdd, timestamp_types, timedelta_types)

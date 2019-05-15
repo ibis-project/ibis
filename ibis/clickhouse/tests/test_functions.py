@@ -103,10 +103,10 @@ def test_timestamp_now(con, translate):
 @pytest.mark.parametrize(
     ('unit', 'expected'),
     [
-        param('y', '2009-01-01', marks=pytest.mark.xfail),
+        ('y', '2009-01-01'),
         param('m', '2009-05-01', marks=pytest.mark.xfail),
-        param('d', '2009-05-17', marks=pytest.mark.xfail),
-        param('w', '2009-05-11', marks=pytest.mark.xfail),
+        ('d', '2009-05-17'),
+        ('w', '2009-05-11'),
         ('h', '2009-05-17 12:00:00'),
         ('minute', '2009-05-17 12:34:00'),
     ],
@@ -494,14 +494,6 @@ def test_numeric_builtins_work(con, alltypes, df, translate):
     tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.xfail(
-    raises=clickhouse_driver.errors.UnknownTypeError,
-    reason=(
-        'Newer clickhouse server uses Nullable(Nothing) type '
-        'for Null values which is currently unhandled by '
-        'clickhouse-driver'
-    ),
-)
 def test_null_column(alltypes, translate):
     t = alltypes
     nrows = t.count().execute()

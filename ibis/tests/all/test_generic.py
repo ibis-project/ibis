@@ -1,12 +1,18 @@
 import decimal
 
 import pytest
-from pytest import param
 
 import ibis
 import ibis.tests.util as tu
 from ibis import literal as L
-from ibis.tests.backends import MapD
+from ibis.tests.backends import (
+    BigQuery,
+    Clickhouse,
+    MapD,
+    MySQL,
+    PostgreSQL,
+    SQLite,
+)
 
 
 @pytest.mark.parametrize(
@@ -14,7 +20,13 @@ from ibis.tests.backends import MapD
     [
         (ibis.NA.fillna(5), 5),
         (L(5).fillna(10), 5),
-        pytest.param(L(5).nullif(5), None, marks=pytest.mark.xfail),
+        pytest.param(
+            L(5).nullif(5),
+            None,
+            marks=pytest.mark.xpass_backends(
+                [BigQuery, Clickhouse, MySQL, PostgreSQL, SQLite]
+            ),
+        ),
         (L(10).nullif(5), 10),
     ],
 )
@@ -71,20 +83,8 @@ def test_identical_to(backend, sorted_alltypes, con, sorted_df):
         ('int_col', (1, 2, 3)),
         ('string_col', ['1', '2', '3']),
         ('string_col', ('1', '2', '3')),
-        param(
-            'int_col',
-            {1},
-            marks=pytest.mark.xfail(
-                raises=TypeError, reason='Not yet implemented'
-            ),
-        ),
-        param(
-            'int_col',
-            frozenset({1}),
-            marks=pytest.mark.xfail(
-                raises=TypeError, reason='Not yet implemented'
-            ),
-        ),
+        ('int_col', {1}),
+        ('int_col', frozenset({1})),
     ],
 )
 @tu.skipif_unsupported
@@ -107,20 +107,8 @@ def test_isin(backend, sorted_alltypes, sorted_df, column, elements):
         ('int_col', (1, 2, 3)),
         ('string_col', ['1', '2', '3']),
         ('string_col', ('1', '2', '3')),
-        param(
-            'int_col',
-            {1},
-            marks=pytest.mark.xfail(
-                raises=TypeError, reason='Not yet implemented'
-            ),
-        ),
-        param(
-            'int_col',
-            frozenset({1}),
-            marks=pytest.mark.xfail(
-                raises=TypeError, reason='Not yet implemented'
-            ),
-        ),
+        ('int_col', {1}),
+        ('int_col', frozenset({1})),
     ],
 )
 @tu.skipif_unsupported
