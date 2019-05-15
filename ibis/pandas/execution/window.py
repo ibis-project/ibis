@@ -241,7 +241,8 @@ def execute_series_cumulative_sum_min_max(op, data, **kwargs):
 
 @execute_node.register(ops.CumulativeMean, (pd.Series, SeriesGroupBy))
 def execute_series_cumulative_mean(op, data, **kwargs):
-    # TODO: Doesn't handle the case where we've grouped and done a cumulative
+    # TODO: Doesn't handle the case where we've grouped/sorted by. Handling
+    # this here would probably require a refactor.
     return data.expanding().mean()
 
 
