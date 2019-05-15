@@ -299,9 +299,6 @@ def execute(
         params,
     )
 
-    # Call pre_execute, to allow clients to intercept the expression before
-    # computing anything *and* before associating leaf nodes with data. This
-    # allows clients to provide their own data for each leaf.
     if not clients:
         clients = list(find_backends(expr))
 
