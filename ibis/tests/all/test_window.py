@@ -4,7 +4,7 @@ from pytest import param
 import ibis
 import ibis.common as com
 import ibis.tests.util as tu
-from ibis.tests.backends import Csv, Impala, Pandas, Parquet, PostgreSQL
+from ibis.tests.backends import Csv, Impala, MapD, Pandas, Parquet, PostgreSQL
 
 
 @pytest.mark.parametrize(
@@ -19,6 +19,7 @@ from ibis.tests.backends import Csv, Impala, Pandas, Parquet, PostgreSQL
             lambda t, win: t.float_col.lead().over(win),
             lambda t: t.float_col.shift(-1),
             id='lead',
+            marks=pytest.mark.xfail_backends((MapD,)),
         ),
         param(
             lambda t, win: t.id.rank().over(win),
@@ -134,15 +135,13 @@ from ibis.tests.backends import Csv, Impala, Pandas, Parquet, PostgreSQL
             lambda gb: gb.float_col.cummax(),
             id='max',
         ),
-        # Impala-count starts with 1 but expected is 0
         param(
             lambda t, win: t.double_col.count().over(win),
             lambda gb: gb.double_col.cumcount(),
             id='count',
-            marks=pytest.mark.xfail_backends(
-                (Pandas, Csv, Parquet, Impala, PostgreSQL),
-                raises=AssertionError,
-            ),
+            marks=pytest.mark.xfail_backends((
+                Pandas, Csv, Parquet, Impala, PostgreSQL
+            )),
         ),
     ],
 )

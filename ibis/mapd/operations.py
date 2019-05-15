@@ -652,10 +652,11 @@ def _window(translator, expr):
     _unsupported_reductions = (
         ops.CMSMedian,
         ops.GroupConcat,
-        ops.HLLCardinality
+        ops.HLLCardinality,
+        ops.Count,  # enable this when `- 1` option is enable on OmniSciDB
     )
 
-    # TODO: enable this when `- 1` option is enable on OmniSci database
+    # TODO: enable this when `- 1` option is enable on OmniSciDB
     # _subtract_one = '({}) - 1'.format
     # _expr_transforms = {
     #     ops.RowNumber: _subtract_one,
