@@ -1092,7 +1092,7 @@ def flatten_predicate(expr):
 
 def is_analytic(expr, exclude_windows=False):
     def _is_analytic(op):
-        if isinstance(op, (ops.Reduction, ops.AnalyticOp)):
+        if isinstance(op, (ops.Reduction, ops.AnalyticOp, ops.Any, ops.All)):
             return True
         elif isinstance(op, ops.WindowOp) and exclude_windows:
             return False
