@@ -649,11 +649,13 @@ def _window(translator, expr):
         ops.NTile,
     )
 
-    _unsupported_reductions = (
+    _unsupported_win_ops = (
         ops.CMSMedian,
         ops.GroupConcat,
         ops.HLLCardinality,
         ops.Count,  # enable this when `- 1` option is enable on OmniSciDB
+        ops.All,  # TODO: change all to work as cumall
+        ops.Any,  # TODO: change any to work as cumany
     )
 
     # TODO: enable this when `- 1` option is enable on OmniSciDB
@@ -667,7 +669,7 @@ def _window(translator, expr):
 
     _expr_transforms = {}
 
-    if isinstance(window_op, _unsupported_reductions):
+    if isinstance(window_op, _unsupported_win_ops):
         raise com.UnsupportedOperationError(
             '{} is not supported in window functions'.format(type(window_op))
         )
