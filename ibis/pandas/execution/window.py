@@ -84,7 +84,13 @@ def execute_window_op(
 
     root, = op.root_tables()
     root_expr = root.to_expr()
-    data = execute(root_expr, scope=scope, aggcontext=aggcontext, **kwargs)
+    data = execute(
+        root_expr,
+        scope=scope,
+        clients=clients,
+        aggcontext=aggcontext,
+        **kwargs,
+    )
 
     following = window.following
     order_by = window._order_by
@@ -143,6 +149,18 @@ def execute_window_op(
         factory=OrderedDict,
     )
 
+    # operand inputs are coming in computed, but we need to recompute them in
+    # the case of a group by
+    if group_by:
+        operand_inputs = {
+            arg.op() for arg in operand.op().inputs if hasattr(arg, "op")
+        }
+        new_scope = OrderedDict(
+            (node, value)
+            for node, value in new_scope.items()
+            if node not in operand_inputs
+        )
+
     # figure out what the dtype of the operand is
     operand_type = operand.type()
     if isinstance(operand_type, dt.Integer) and operand_type.nullable:
@@ -158,10 +176,16 @@ def execute_window_op(
     # otherwise we're transforming
     if not grouping_keys and not ordering_keys:
         aggcontext = agg_ctx.Summarize()
-    elif isinstance(operand.op(), ops.Reduction) and ordering_keys:
+    elif (
+        isinstance(
+            operand.op(), (ops.Reduction, ops.CumulativeOp, ops.Any, ops.All)
+        )
+        and ordering_keys
+    ):
         # XXX(phillipc): What a horror show
         preceding = window.preceding
         if preceding is not None:
+            assert not isinstance(operand.op(), ops.CumulativeOp)
             aggcontext = agg_ctx.Moving(
                 preceding,
                 parent=source,
@@ -186,7 +210,13 @@ def execute_window_op(
             dtype=operand_dtype,
         )
 
-    result = execute(operand, scope=new_scope, aggcontext=aggcontext, **kwargs)
+    result = execute(
+        operand,
+        scope=new_scope,
+        aggcontext=aggcontext,
+        clients=clients,
+        **kwargs,
+    )
     series = post_process(result, data, ordering_keys, grouping_keys)
     assert len(data) == len(
         series
@@ -194,23 +224,33 @@ def execute_window_op(
     return series
 
 
-@execute_node.register(ops.CumulativeSum, (pd.Series, SeriesGroupBy))
-def execute_series_cumsum(op, data, **kwargs):
-    return data.cumsum()
+@execute_node.register(
+    (ops.CumulativeSum, ops.CumulativeMax, ops.CumulativeMin),
+    (pd.Series, SeriesGroupBy),
+)
+def execute_series_cumulative_sum_min_max(op, data, **kwargs):
+    typename = type(op).__name__
+    method_name = (
+        re.match(r"^Cumulative([A-Za-z_][A-Za-z0-9_]*)$", typename)
+        .group(1)
+        .lower()
+    )
+    method = getattr(data, "cum{}".format(method_name))
+    return method()
 
 
-@execute_node.register(ops.CumulativeMin, (pd.Series, SeriesGroupBy))
-def execute_series_cummin(op, data, **kwargs):
-    return data.cummin()
-
-
-@execute_node.register(ops.CumulativeMax, (pd.Series, SeriesGroupBy))
-def execute_series_cummax(op, data, **kwargs):
-    return data.cummax()
+@execute_node.register(ops.CumulativeMean, (pd.Series, SeriesGroupBy))
+def execute_series_cumulative_mean(op, data, **kwargs):
+    # TODO: Doesn't handle the case where we've grouped/sorted by. Handling
+    # this here would probably require a refactor.
+    return data.expanding().mean()
 
 
 @execute_node.register(ops.CumulativeOp, (pd.Series, SeriesGroupBy))
-def execute_series_cumulative_op(op, data, **kwargs):
+def execute_series_cumulative_op(op, data, aggcontext=None, **kwargs):
+    assert aggcontext is not None, "aggcontext is none in {} operation".format(
+        type(op)
+    )
     typename = type(op).__name__
     match = re.match(r'^Cumulative([A-Za-z_][A-Za-z0-9_]*)$', typename)
     if match is None:
@@ -224,7 +264,8 @@ def execute_series_cumulative_op(op, data, **kwargs):
         )
 
     dtype = op.to_expr().type().to_pandas()
-    result = agg_ctx.Cumulative(dtype=dtype).agg(data, operation_name.lower())
+    assert isinstance(aggcontext, agg_ctx.Cumulative), 'Got {}'.format(type())
+    result = aggcontext.agg(data, operation_name.lower())
 
     # all expanding window operations are required to be int64 or float64, so
     # we need to cast back to preserve the type of the operation

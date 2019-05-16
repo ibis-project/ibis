@@ -4,7 +4,6 @@ from pandas.util import testing as tm
 
 import ibis
 from ibis.file.client import FileDatabase
-from ibis.file.client import execute_and_reset as execute  # noqa: E402
 
 pytest.importorskip('tables')  # isort:skip
 
@@ -91,14 +90,11 @@ def test_read(hdf, data):
     expected = data['close']
     tm.assert_frame_equal(result, expected)
 
-    result = execute(closes)
-    tm.assert_frame_equal(result, expected)
-
 
 def test_insert(transformed, tmpdir):
 
     t = transformed
-    expected = execute(t)
+    expected = t.execute()
 
     tpath = tmpdir / 'new_dir'
     tpath.mkdir()
@@ -108,7 +104,7 @@ def test_insert(transformed, tmpdir):
     t = transformed[['time', 'ticker', 'avg']]
     c = ibis.hdf5.connect(tpath)
     c.insert('foo.h5', 'avg', t)
-    execute(t)
+    t.execute()
     assert path.exists()
 
     # readback

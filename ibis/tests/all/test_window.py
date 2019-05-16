@@ -92,7 +92,7 @@ from ibis.tests.backends import Csv, Impala, MapD, Pandas, Parquet, PostgreSQL
             id='cummax',
         ),
         param(
-            lambda t, win: (t.double_col == 0).cumany().over(win),
+            lambda t, win: (t.double_col == 0).any().over(win),
             lambda t: (
                 t.double_col.expanding()
                 .agg(lambda s: s.eq(0).any())
@@ -100,9 +100,12 @@ from ibis.tests.backends import Csv, Impala, MapD, Pandas, Parquet, PostgreSQL
                 .astype(bool)
             ),
             id='cumany',
+            marks=pytest.mark.xfail_backends(
+                [Impala], reason="Impala doesn't support logical reductions"
+            ),
         ),
         param(
-            lambda t, win: (t.double_col == 0).cumall().over(win),
+            lambda t, win: (t.double_col == 0).all().over(win),
             lambda t: (
                 t.double_col.expanding()
                 .agg(lambda s: s.eq(0).all())
@@ -110,6 +113,9 @@ from ibis.tests.backends import Csv, Impala, MapD, Pandas, Parquet, PostgreSQL
                 .astype(bool)
             ),
             id='cumall',
+            marks=pytest.mark.xfail_backends(
+                [Impala], reason="Impala doesn't support logical reductions"
+            ),
         ),
         param(
             lambda t, win: t.double_col.sum().over(win),

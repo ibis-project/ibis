@@ -8,6 +8,7 @@ import operator
 from collections import OrderedDict
 from operator import methodcaller
 
+import numpy as np
 import pandas as pd
 import toolz
 from multipledispatch import Dispatcher
@@ -114,6 +115,12 @@ def compute_projection_column_expr(expr, parent, data, scope=None, **kwargs):
     new_scope = toolz.merge(scope, additional_scope)
     result = execute(expr, scope=new_scope, **kwargs)
     assert result_name is not None, 'Column selection name is None'
+    if np.isscalar(result):
+        return pd.Series(
+            np.repeat(result, len(data.index)),
+            index=data.index,
+            name=result_name,
+        )
     return result.rename(result_name)
 
 
