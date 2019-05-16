@@ -35,7 +35,7 @@ build:
 
 start:
 # start all docker compose services
-	$(DOCKER) up -d --no-build ${SERVICES}
+	$(DOCKER) up --remove-orphans -d --no-build ${SERVICES}
 # wait for services to start
 	$(DOCKER_RUN) waiter
 

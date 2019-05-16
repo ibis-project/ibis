@@ -21,6 +21,7 @@ DATASET_ID = 'testing'
 @pytest.fixture(scope='module')
 def client():
     from ibis.bigquery.tests.conftest import connect
+
     return connect(PROJECT_ID, DATASET_ID)
 
 

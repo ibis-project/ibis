@@ -470,30 +470,6 @@ def compiles_string_to_timestamp(translator, expr):
     return 'PARSE_TIMESTAMP({}, {})'.format(fmt_string, arg_formatted)
 
 
-@rewrites(ops.Any)
-def bigquery_rewrite_any(expr):
-    arg, = expr.op().args
-    return arg.cast(dt.int64).sum() > 0
-
-
-@rewrites(ops.NotAny)
-def bigquery_rewrite_notany(expr):
-    arg, = expr.op().args
-    return arg.cast(dt.int64).sum() == 0
-
-
-@rewrites(ops.All)
-def bigquery_rewrite_all(expr):
-    arg, = expr.op().args
-    return (1 - arg.cast(dt.int64)).sum() == 0
-
-
-@rewrites(ops.NotAll)
-def bigquery_rewrite_notall(expr):
-    arg, = expr.op().args
-    return (1 - arg.cast(dt.int64)).sum() != 0
-
-
 class BigQueryTableSetFormatter(ImpalaTableSetFormatter):
     def _quote_identifier(self, name):
         if re.match(r'^[A-Za-z][A-Za-z_0-9]*$', name):
@@ -572,8 +548,43 @@ def compiles_approx(translator, expr):
     )
 
 
-class BigQueryDialect(impala_compiler.ImpalaDialect):
+@rewrites(ops.Any)
+@rewrites(ops.All)
+@rewrites(ops.NotAny)
+@rewrites(ops.NotAll)
+def _any_all_no_op(expr):
+    return expr
 
+
+@compiles(ops.Any)
+def bigquery_compile_any(translator, expr):
+    return "LOGICAL_OR({})".format(
+        *map(translator.translate, expr.op().args)
+    )
+
+
+@compiles(ops.NotAny)
+def bigquery_compile_notany(translator, expr):
+    return "LOGICAL_AND(NOT ({}))".format(
+        *map(translator.translate, expr.op().args)
+    )
+
+
+@compiles(ops.All)
+def bigquery_compile_all(translator, expr):
+    return "LOGICAL_AND({})".format(
+        *map(translator.translate, expr.op().args)
+    )
+
+
+@compiles(ops.NotAll)
+def bigquery_compile_notall(translator, expr):
+    return "LOGICAL_OR(NOT ({}))".format(
+        *map(translator.translate, expr.op().args)
+    )
+
+
+class BigQueryDialect(impala_compiler.ImpalaDialect):
     translator = BigQueryExprTranslator
 
 
