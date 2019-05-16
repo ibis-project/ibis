@@ -142,3 +142,6 @@ def execute_last_dataframe(op, result, **kwargs):
 def execute_last_series(_, result, **kwargs):
     """Reset the `result` :class:`~pandas.Series`."""
     return result.reset_index(drop=True)
+
+
+execute = Dispatcher("execute")

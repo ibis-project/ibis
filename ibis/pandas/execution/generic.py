@@ -42,6 +42,25 @@ def execute_node_literal_value_datatype(op, value, datatype, **kwargs):
     return value
 
 
+# Because True and 1 hash to the same value, if we have True or False in scope
+# keys while executing anything that should evaluate to 1 or 0 evaluates to
+# True or False respectively. This is a hack to work around that by casting the
+# bool to an integer.
+@execute_literal.register(ops.Literal, object, dt.Integer)
+def execute_node_literal_any_integer_datatype(op, value, datatype, **kwargs):
+    return int(value)
+
+
+@execute_literal.register(ops.Literal, object, dt.Boolean)
+def execute_node_literal_any_boolean_datatype(op, value, datatype, **kwargs):
+    return bool(value)
+
+
+@execute_literal.register(ops.Literal, object, dt.Floating)
+def execute_node_literal_any_floating_datatype(op, value, datatype, **kwargs):
+    return float(value)
+
+
 @execute_literal.register(ops.Literal, dt.DataType)
 def execute_node_literal_datatype(op, datatype, **kwargs):
     return op.value

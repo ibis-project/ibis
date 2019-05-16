@@ -36,10 +36,12 @@ IBIS_TYPE_TO_PANDAS_TYPE = {
     dt.int64: np.int64,
     dt.string: str,
     dt.timestamp: 'datetime64[ns]',
+    dt.boolean: np.bool_,
 }
 
 
 IBIS_TO_PYTHON_LITERAL_TYPES = {
+    dt.boolean: bool,
     dt.double: float,
     dt.float: float,
     dt.int64: int,

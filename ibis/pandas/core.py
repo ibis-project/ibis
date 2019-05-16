@@ -96,6 +96,7 @@ import ibis.pandas.aggcontext as agg_ctx
 import ibis.util
 from ibis.client import find_backends
 from ibis.pandas.dispatch import (
+    execute,
     execute_first,
     execute_literal,
     execute_node,
@@ -264,7 +265,8 @@ def toposort(expr: ir.Expr):
     return toposorted, parents
 
 
-def execute(
+@execute.register(ir.Expr)
+def main_execute(
     expr: ir.Expr,
     scope: Optional[Mapping] = None,
     aggcontext: Optional[agg_ctx.AggregationContext] = None,

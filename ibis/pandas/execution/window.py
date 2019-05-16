@@ -4,13 +4,11 @@ import operator
 import re
 from collections import OrderedDict
 
-import numpy as np
 import pandas as pd
 import toolz
 from pandas.core.groupby import SeriesGroupBy
 
 import ibis.common as com
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.window as win
 import ibis.pandas.aggcontext as agg_ctx
@@ -163,10 +161,7 @@ def execute_window_op(
 
     # figure out what the dtype of the operand is
     operand_type = operand.type()
-    if isinstance(operand_type, dt.Integer) and operand_type.nullable:
-        operand_dtype = np.float64
-    else:
-        operand_dtype = operand.type().to_pandas()
+    operand_dtype = operand_type.to_pandas()
 
     # no order by or group by: default summarization aggcontext
     #

@@ -220,11 +220,10 @@ import operator
 import warnings
 
 import pandas as pd
-from multipledispatch import Dispatcher
 
 import ibis
+import ibis.common as com
 import ibis.expr.datatypes as dt
-import ibis.expr.types as ir
 import ibis.util
 
 
@@ -281,23 +280,29 @@ class Transform(AggregationContext):
         return grouped_data.transform(function, *args, **kwargs)
 
 
-compute_window_spec = Dispatcher('compute_window_spec')
+@functools.singledispatch
+def compute_window_spec(dtype, obj):
+    raise com.IbisTypeError(
+        "Unknown dtype type {} and object {} for compute_window_spec".format(
+            dtype, obj
+        )
+    )
 
 
-@compute_window_spec.register(ir.Expr, dt.Interval)
-def compute_window_spec_interval(expr, dtype):
+@compute_window_spec.register(type(None))
+def compute_window_spec_none(_, obj):
+    return obj
+
+
+@compute_window_spec.register(dt.Interval)
+def compute_window_spec_interval(_, expr):
     value = ibis.pandas.execute(expr)
     return pd.tseries.frequencies.to_offset(value)
 
 
-@compute_window_spec.register(ir.Expr, dt.DataType)
-def compute_window_spec_expr(expr, _):
+@compute_window_spec.register(dt.DataType)
+def compute_window_spec_expr(_, expr):
     return ibis.pandas.execute(expr)
-
-
-@compute_window_spec.register(object, type(None))
-def compute_window_spec_default(obj, _):
-    return obj
 
 
 class Window(AggregationContext):
@@ -388,7 +393,10 @@ class Window(AggregationContext):
             + list(map(index.get_level_values, range(index.nlevels))),
             names=[frame.index.name] + index.names,
         )
-        return result
+        try:
+            return result.astype(self.dtype, copy=False)
+        except (TypeError, ValueError):
+            return result
 
 
 class Cumulative(Window):
@@ -404,8 +412,8 @@ class Moving(Window):
     def __init__(self, preceding, *args, **kwargs):
         from ibis.pandas.core import timedelta_types
 
-        dtype = getattr(preceding, 'type', lambda: None)()
-        preceding = compute_window_spec(preceding, dtype)
+        ibis_dtype = getattr(preceding, 'type', lambda: None)()
+        preceding = compute_window_spec(ibis_dtype, preceding)
         closed = (
             None
             if not isinstance(
