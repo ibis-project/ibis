@@ -951,7 +951,17 @@ class AlchemyQuery(Query):
             columns=cursor.proxy.keys(),
             coerce_float=True,
         )
-        return self.schema().apply_to(df)
+        df = self.schema().apply_to(df)
+        if GEO:
+            geom_col = None
+            for name, dtype in self.schema().items():
+                if isinstance(dtype, dt.GeoSpatial):
+                    geom_col = geom_col or name
+                    df[name] = df.apply(lambda x: shape.to_shape(x[name]), axis=1)
+            if geom_col:
+                df = geopandas.GeoDataFrame(df, geometry=geom_col)
+        return df
+
 
 
 class AlchemyDialect(Dialect):
