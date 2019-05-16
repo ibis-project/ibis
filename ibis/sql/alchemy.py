@@ -10,7 +10,14 @@ from sqlalchemy.dialects.mysql.base import MySQLDialect
 from sqlalchemy.dialects.postgresql.base import PGDialect as PostgreSQLDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from sqlalchemy.engine.interfaces import Dialect as SQLAlchemyDialect
-import geoalchemy2 as ga
+
+try:
+    import geoalchemy2 as ga
+    import geoalchemy2.shape as shape
+    import geopandas
+    GEO = True
+except ImportError:
+    GEO = False
 
 import ibis
 import ibis.common as com
@@ -42,8 +49,13 @@ _ibis_type_to_sqla = {
     dt.Int16: sa.SmallInteger,
     dt.Int32: sa.Integer,
     dt.Int64: sa.BigInteger,
-    dt.GeoSpatial: ga.Geometry,
 }
+
+if GEO:
+    # Geospatial types
+    _ibis_type_to_sqla.update({
+        dt.GeoSpatial: ga.Geometry
+    })
 
 
 def _to_sqla_type(itype, type_map=None):
@@ -116,17 +128,20 @@ def sa_double(_, satype, nullable=True):
     return dt.Double(nullable=nullable)
 
 
-@dt.dtype.register(SQLAlchemyDialect, ga.Geometry)
-def ga_geometry(_, gatype, nullable=True):
-    t = gatype.geometry_type
-    if t == 'POINT':
-        return dt.Point(nullable=nullable)
-    if t == 'LINESTRING':
-        return dt.LineString(nullable=nullable)
-    if t == 'POLYGON':
-        return dt.Polygon(nullable=nullable)
-    if t == 'MULTIPOLYGON':
-        return dt.MultiPolygon(nullable=nullable)
+if GEO:
+    @dt.dtype.register(SQLAlchemyDialect, ga.Geometry)
+    def ga_geometry(_, gatype, nullable=True):
+        t = gatype.geometry_type
+        if t == 'POINT':
+            return dt.Point(nullable=nullable)
+        if t == 'LINESTRING':
+            return dt.LineString(nullable=nullable)
+        if t == 'POLYGON':
+            return dt.Polygon(nullable=nullable)
+        if t == 'MULTIPOLYGON':
+            return dt.MultiPolygon(nullable=nullable)
+        else:
+            raise ValueError("Unrecognized geometry type: {}".format(t))
 
 
 POSTGRES_FIELD_TO_IBIS_UNIT = {
@@ -709,28 +724,32 @@ _window_functions = {
     ops.CumulativeMean: unary(sa.func.avg),
 }
 
-_geospatial_functions = {
-    ops.GeoArea: unary(sa.func.ST_Area),
-    ops.GeoContains: fixed_arity(sa.func.ST_Contains, 2),
-    ops.GeoDistance: fixed_arity(sa.func.ST_Contains, 2),
-    ops.GeoLength: unary(sa.func.ST_Length),
-    ops.GeoPerimeter: unary(sa.func.ST_Perimeter),
-    # ops.GeoMaxDistance: fixed_arity('ST_MAXDISTANCE', 2),
-    ops.GeoX: unary(sa.func.ST_X),
-    ops.GeoY: unary(sa.func.ST_Y),
-    # ops.GeoXMin: unary('ST_XMIN'),
-    # ops.GeoXMax: unary('ST_XMAX'),
-    # ops.GeoYMin: unary('ST_YMIN'),
-    # ops.GeoYMax: unary('ST_YMAX'),
-    # ops.GeoStartPoint: unary('ST_STARTPOINT'),
-    # ops.GeoEndPoint: unary('ST_ENDPOINT'),
-    # ops.GeoPointN: fixed_arity('ST_POINTN', 2),
-    ops.GeoNPoints: unary(sa.func.ST_NPoints),
-    # ops.GeoNRings: unary('ST_NRINGS'),
-    ops.GeoSRID: unary(sa.func.ST_SRID),
-}
+if GEO:
+    # TODO: Add functions for a lot of new ops, including
+    # ST_Buffer, ST_Azimuth, ST_Centroid, ST_CoveredBy,
+    # ST_ContainsProperly, ST_CRosses, ST_Difference
+    _geospatial_functions = {
+        ops.GeoArea: unary(sa.func.ST_Area),
+        ops.GeoContains: fixed_arity(sa.func.ST_Contains, 2),
+        ops.GeoDistance: fixed_arity(sa.func.ST_Contains, 2),
+        ops.GeoLength: unary(sa.func.ST_Length),
+        ops.GeoPerimeter: unary(sa.func.ST_Perimeter),
+        # ops.GeoMaxDistance: fixed_arity('ST_MAXDISTANCE', 2),
+        ops.GeoX: unary(sa.func.ST_X),
+        ops.GeoY: unary(sa.func.ST_Y),
+        # ops.GeoXMin: unary('ST_XMIN'),
+        # ops.GeoXMax: unary('ST_XMAX'),
+        # ops.GeoYMin: unary('ST_YMIN'),
+        # ops.GeoYMax: unary('ST_YMAX'),
+        # ops.GeoStartPoint: unary('ST_STARTPOINT'),
+        # ops.GeoEndPoint: unary('ST_ENDPOINT'),
+        # ops.GeoPointN: fixed_arity('ST_POINTN', 2),
+        ops.GeoNPoints: unary(sa.func.ST_NPoints),
+        # ops.GeoNRings: unary('ST_NRINGS'),
+        ops.GeoSRID: unary(sa.func.ST_SRID),
+    }
 
-_operation_registry.update(_geospatial_functions)
+    _operation_registry.update(_geospatial_functions)
 
 
 
