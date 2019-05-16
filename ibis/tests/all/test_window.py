@@ -101,7 +101,8 @@ from ibis.tests.backends import Csv, Impala, MapD, Pandas, Parquet, PostgreSQL
             ),
             id='cumany',
             marks=pytest.mark.xfail_backends(
-                [Impala], reason="Impala doesn't support logical reductions"
+                [Impala, MapD],
+                reason="Impala doesn't support logical reductions"
             ),
         ),
         param(
@@ -114,7 +115,8 @@ from ibis.tests.backends import Csv, Impala, MapD, Pandas, Parquet, PostgreSQL
             ),
             id='cumall',
             marks=pytest.mark.xfail_backends(
-                [Impala], reason="Impala doesn't support logical reductions"
+                [Impala, MapD],
+                reason="Impala doesn't support logical reductions"
             ),
         ),
         param(
