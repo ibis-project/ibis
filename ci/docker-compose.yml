@@ -77,14 +77,8 @@ services:
   omnisci:
     image: omnisci/core-os-cpu:v4.6.1
     ports:
-      - 6273:6273
       - 6274:6274
       - 6278:6278
-    environment:
-      - OMNISCI_HOST=omnisci
-      - OMNISCI_PORT=6274
-      - OMNISCI_DATABASE=ibis_testing
-      - OMNISCI_USER=mapd
     volumes:
       - ./omnisci.conf:/omnisci-storage/omnisci.conf
 

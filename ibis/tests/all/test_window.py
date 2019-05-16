@@ -4,7 +4,7 @@ from pytest import param
 import ibis
 import ibis.common as com
 import ibis.tests.util as tu
-from ibis.tests.backends import Csv, Impala, Pandas, Parquet
+from ibis.tests.backends import Csv, Impala, MapD, Pandas, Parquet, PostgreSQL
 
 
 @pytest.mark.parametrize(
@@ -19,6 +19,7 @@ from ibis.tests.backends import Csv, Impala, Pandas, Parquet
             lambda t, win: t.float_col.lead().over(win),
             lambda t: t.float_col.shift(-1),
             id='lead',
+            marks=pytest.mark.xfail_backends((MapD,)),
         ),
         param(
             lambda t, win: t.id.rank().over(win),
@@ -140,6 +141,14 @@ from ibis.tests.backends import Csv, Impala, Pandas, Parquet
             lambda gb: gb.float_col.cummax(),
             id='max',
         ),
+        param(
+            lambda t, win: t.double_col.count().over(win),
+            lambda gb: gb.double_col.cumcount(),
+            id='count',
+            marks=pytest.mark.xfail_backends((
+                Pandas, Csv, Parquet, Impala, PostgreSQL
+            )),
+        ),
     ],
 )
 @tu.skipif_unsupported
@@ -150,7 +159,7 @@ def test_window(backend, alltypes, df, con, result_fn, expected_fn):
         )
 
     expr = alltypes.mutate(
-        value=result_fn(
+        val=result_fn(
             alltypes,
             win=ibis.window(
                 following=0,
@@ -163,7 +172,8 @@ def test_window(backend, alltypes, df, con, result_fn, expected_fn):
     result = expr.execute().set_index('id').sort_index()
 
     column = expected_fn(df.sort_values('id').groupby('string_col'))
-    expected = df.assign(value=column).set_index('id').sort_index()
+    expected = df.assign(val=column).set_index('id').sort_index()
 
-    left, right = result.value, expected.value
+    left, right = result.val, expected.val
+
     backend.assert_series_equal(left, right)
