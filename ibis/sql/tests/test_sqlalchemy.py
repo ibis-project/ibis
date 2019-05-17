@@ -22,9 +22,8 @@ from sqlalchemy import types as sat  # noqa: E402
 
 import ibis
 import ibis.expr.datatypes as dt
-import ibis.expr.types as ir
 import ibis.sql.alchemy as alch  # noqa: E402
-from ibis.expr.tests.mocks import MockConnection
+from ibis.expr.tests.mocks import MockAlchemyConnection
 from ibis.sql.tests.test_compiler import ExprTestCases  # noqa: E402
 from ibis.tests.util import assert_equal
 
@@ -32,25 +31,6 @@ sa = pytest.importorskip('sqlalchemy')
 
 
 L = sa.literal
-
-
-class MockAlchemyConnection(MockConnection):
-    def __init__(self):
-        super().__init__()
-        self.meta = sa.MetaData()
-
-    def table(self, name):
-        schema = self._get_table_schema(name)
-        return self._inject_table(name, schema)
-
-    def _inject_table(self, name, schema):
-        if name in self.meta.tables:
-            table = self.meta.tables[name]
-        else:
-            table = alch.table_from_schema(name, self.meta, schema)
-
-        node = alch.AlchemyTable(table, self)
-        return ir.TableExpr(node)
 
 
 def _table_wrapper(name, tname=None):
@@ -227,7 +207,10 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
                 region.left_join(nation, ipred),
                 rt.join(nt, spred, isouter=True),
             ),
-            (region.outer_join(nation, ipred), rt.outerjoin(nt, spred)),
+            (
+                region.outer_join(nation, ipred),
+                rt.outerjoin(nt, spred, full=True)
+            ),
         ]
         for ibis_joined, joined_sqla in fully_mat_joins:
             expected = sa.select([joined_sqla])
@@ -244,7 +227,7 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
             ),
             (
                 region.outer_join(nation, ipred).projection(nation),
-                rt.outerjoin(nt, spred),
+                rt.outerjoin(nt, spred, full=True),
             ),
         ]
         for ibis_joined, joined_sqla in subselect_joins:
@@ -268,6 +251,21 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         expected = sa.select([sqla_joined])
 
         self._compare_sqla(joined, expected)
+
+    def test_full_outer_join(self):
+        """Testing full outer join separately due to previous issue with
+        outer join resulting in left outer join (issue #1773)"""
+        region = self.con.table('tpch_region')
+        nation = self.con.table('tpch_nation')
+
+        predicate = region.r_regionkey == nation.n_regionkey
+        joined = region.outer_join(
+            nation,
+            predicate
+        )
+        joined_sql_str = str(joined.compile())
+        assert 'full' in joined_sql_str.lower()
+        assert 'left' not in joined_sql_str.lower()
 
     def _sqla_tables(self, tables):
         result = []
