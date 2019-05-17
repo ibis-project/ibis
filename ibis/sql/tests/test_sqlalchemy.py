@@ -207,7 +207,10 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
                 region.left_join(nation, ipred),
                 rt.join(nt, spred, isouter=True),
             ),
-            (region.outer_join(nation, ipred), rt.outerjoin(nt, spred, full=True)),
+            (
+                region.outer_join(nation, ipred),
+                rt.outerjoin(nt, spred, full=True)
+            ),
         ]
         for ibis_joined, joined_sqla in fully_mat_joins:
             expected = sa.select([joined_sqla])

@@ -374,7 +374,8 @@ class BaseMockConnection(SQLClient, metaclass=abc.ABCMeta):
 
 class MockConnection(BaseMockConnection):
     # TODO: Refactor/rename to MockImpalaConnection
-    # TODO: Should some tests using MockImpalaConnection really use MockAlchemyConnection instead?
+    # TODO: Should some tests using MockImpalaConnection really use
+    #       MockAlchemyConnection instead?
     @property
     def dialect(self):
         from ibis.impala.compiler import ImpalaDialect
