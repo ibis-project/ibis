@@ -12,16 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import abc
+import pytest
+
 from ibis.client import SQLClient
 from ibis.expr.schema import Schema
+import ibis.expr.types as ir
+import ibis.sql.alchemy as alch  # noqa: E402
 
 
-class MockConnection(SQLClient):
+class BaseMockConnection(SQLClient, metaclass=abc.ABCMeta):
+    def __init__(self):
+        self.executed_queries = []
+
     @property
+    @abc.abstractmethod
     def dialect(self):
-        from ibis.impala.compiler import ImpalaDialect
+        pass
 
-        return ImpalaDialect
+    @abc.abstractmethod
+    def _build_ast(self, expr, context):
+        pass
 
     _tables = {
         'alltypes': [
@@ -345,19 +356,11 @@ class MockConnection(SQLClient):
         ],
     }
 
-    def __init__(self):
-        self.executed_queries = []
-
     def _get_table_schema(self, name):
         name = name.replace('`', '')
         return Schema.from_tuples(self._tables[name])
 
-    def _build_ast(self, expr, context):
-        from ibis.impala.compiler import build_ast
-
-        return build_ast(expr, context)
-
-    def execute(self, expr, limit=None, params=None):
+    def execute(self, expr, limit=None, params=None, **kwargs):
         ast = self._build_ast_ensure_limit(expr, limit, params=params)
         for query in ast.queries:
             self.executed_queries.append(query.compile())
@@ -367,6 +370,52 @@ class MockConnection(SQLClient):
         ast = self._build_ast_ensure_limit(expr, limit, params=params)
         queries = [q.compile() for q in ast.queries]
         return queries[0] if len(queries) == 1 else queries
+
+
+class MockConnection(BaseMockConnection):
+    # TODO: Refactor/rename to MockImpalaConnection
+    # TODO: Should some tests using MockImpalaConnection really use MockAlchemyConnection instead?
+    @property
+    def dialect(self):
+        from ibis.impala.compiler import ImpalaDialect
+
+        return ImpalaDialect
+
+    def _build_ast(self, expr, context):
+        from ibis.impala.compiler import build_ast
+
+        return build_ast(expr, context)
+
+
+class MockAlchemyConnection(BaseMockConnection):
+    def __init__(self):
+        super().__init__()
+        sa = pytest.importorskip('sqlalchemy')
+        self.meta = sa.MetaData()
+
+    def table(self, name, database=None):
+        schema = self._get_table_schema(name)
+        return self._inject_table(name, schema)
+
+    def _inject_table(self, name, schema):
+        if name in self.meta.tables:
+            table = self.meta.tables[name]
+        else:
+            table = alch.table_from_schema(name, self.meta, schema)
+
+        node = alch.AlchemyTable(table, self)
+        return ir.TableExpr(node)
+
+    @property
+    def dialect(self):
+        from ibis.sql.alchemy import AlchemyDialect
+
+        return AlchemyDialect
+
+    def _build_ast(self, expr, context):
+        from ibis.sql.alchemy import build_ast
+
+        return build_ast(expr, context)
 
 
 class GeoMockConnection(SQLClient):
