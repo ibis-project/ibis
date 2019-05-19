@@ -7,6 +7,7 @@ from pandas.core.groupby import SeriesGroupBy
 import ibis
 import ibis.expr.operations as ops
 from ibis.pandas.core import (
+    date_types,
     integer_types,
     numeric_types,
     timedelta_types,
@@ -229,3 +230,24 @@ def execute_day_of_week_name_series(op, data, **kwargs):
 @execute_node.register(ops.DayOfWeekName, SeriesGroupBy)
 def execute_day_of_week_name_series_group_by(op, data, **kwargs):
     return day_name(data.obj.dt).groupby(data.grouper.groupings)
+
+
+@execute_node.register(ops.DateSub, date_types, timedelta_types)
+@execute_node.register((ops.DateDiff, ops.DateSub), date_types, pd.Series)
+@execute_node.register(ops.DateSub, pd.Series, timedelta_types)
+@execute_node.register((ops.DateDiff, ops.DateSub), pd.Series, pd.Series)
+@execute_node.register(ops.DateDiff, date_types, date_types)
+@execute_node.register(ops.DateDiff, pd.Series, date_types)
+def execute_date_sub_diff(op, left, right, **kwargs):
+    return left - right
+
+
+@execute_node.register(ops.DateAdd, pd.Series, timedelta_types)
+@execute_node.register(ops.DateAdd, timedelta_types, pd.Series)
+@execute_node.register(ops.DateAdd, pd.Series, pd.Series)
+@execute_node.register(ops.DateAdd, date_types, timedelta_types)
+@execute_node.register(ops.DateAdd, timedelta_types, date_types)
+@execute_node.register(ops.DateAdd, date_types, pd.Series)
+@execute_node.register(ops.DateAdd, pd.Series, date_types)
+def execute_date_add(op, left, right, **kwargs):
+    return left + right

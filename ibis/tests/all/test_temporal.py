@@ -255,13 +255,17 @@ def test_strftime(backend, con, alltypes, df, ibis_pattern, pandas_pattern):
     backend.assert_series_equal(result, expected)
 
 
-unit_factors = {'s': int(1e9), 'ms': int(1e6), 'us': int(1e3)}
+unit_factors = {
+    's': int(1e9),
+    'ms': int(1e6),
+    'us': int(1e3),
+    'ns': 1,
+}
 
 
 @pytest.mark.parametrize(
     'unit',
     [
-        'D',
         's',
         'ms',
         param(
@@ -270,11 +274,11 @@ unit_factors = {'s': int(1e9), 'ms': int(1e6), 'us': int(1e3)}
                 (BigQuery, Csv, Impala, Pandas, Parquet)
             ),
         ),
-        param('ns', marks=pytest.mark.xfail),
+        param('ns', marks=pytest.mark.xpass_backends((Csv, Pandas, Parquet))),
     ],
 )
 @tu.skipif_unsupported
-def test_to_timestamp(backend, con, alltypes, df, unit):
+def test_to_timestamp(backend, con, unit):
     if unit not in backend.supported_to_timestamp_units:
         pytest.skip(
             'Unit {!r} not supported by {} to_timestamp'.format(unit, backend)
