@@ -145,6 +145,9 @@ def test_is_computable_input():
                 and self.value == other.value
             )
 
+        def __float__(self) -> float:
+            return self.value
+
     @execute_node.register(ops.Add, int, MyObject)
     def add_int_my_object(op, left, right, **kwargs):
         return left + right.value

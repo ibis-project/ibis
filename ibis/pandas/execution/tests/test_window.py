@@ -269,7 +269,7 @@ def test_batting_cumulative_partitioned(batting, batting_df, sort_kind):
 
     tm.assert_series_equal(
         result.set_index([group_by, order_by]).sort_index().cumulative,
-        expected.sort_index(),
+        expected.sort_index().astype("int64"),
     )
 
 

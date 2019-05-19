@@ -13,33 +13,41 @@ from inspect import Parameter, signature
 import numpy as np
 import pandas as pd
 import toolz
-from multipledispatch import Dispatcher
 from pandas.core.groupby import SeriesGroupBy
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.signature as sig
-from ibis.pandas.core import scalar_types
+from ibis.pandas.core import (
+    date_types,
+    time_types,
+    timedelta_types,
+    timestamp_types,
+)
 from ibis.pandas.dispatch import execute_node
 
-rule_to_python_type = Dispatcher(
-    'rule_to_python_type',
-    doc="""\
-Convert an ibis :class:`~ibis.expr.datatypes.DataType` into a pandas backend
-friendly ``multipledispatch`` signature.
 
-Parameters
-----------
-rule : DataType
-    The :class:`~ibis.expr.datatypes.DataType` subclass to map to a pandas
-    friendly type.
+@functools.singledispatch
+def rule_to_python_type(datatype):
+    """Convert an ibis :class:`~ibis.expr.datatypes.DataType` into a pandas
+    backend friendly ``multipledispatch`` signature.
 
-Returns
--------
-Union[Type[U], Tuple[Type[T], ...]]
-    A pandas-backend-friendly signature
-""",
-)
+    Parameters
+    ----------
+    rule : DataType
+        The :class:`~ibis.expr.datatypes.DataType` subclass to map to a pandas
+        friendly type.
+
+    Returns
+    -------
+    Union[Type[U], Tuple[Type[T], ...]]
+        A pandas-backend-friendly signature
+    """
+    raise NotImplementedError(
+        "Don't know how to convert type {} into a native Python type".format(
+            type(datatype)
+        )
+    )
 
 
 def arguments_from_signature(signature, *args, **kwargs):
@@ -92,11 +100,6 @@ def arguments_from_signature(signature, *args, **kwargs):
     return args, new_kwargs
 
 
-@rule_to_python_type.register(dt.DataType)
-def datatype_rule(rule):
-    return scalar_types
-
-
 @rule_to_python_type.register(dt.Array)
 def array_rule(rule):
     return (list,)
@@ -125,6 +128,31 @@ def int_rule(rule):
 @rule_to_python_type.register(dt.Floating)
 def float_rule(rule):
     return float, np.floating
+
+
+@rule_to_python_type.register(dt.Boolean)
+def bool_rule(rule):
+    return bool, np.bool_
+
+
+@rule_to_python_type.register(dt.Interval)
+def interval_rule(rule):
+    return timedelta_types
+
+
+@rule_to_python_type.register(dt.Date)
+def date_rule(rule):
+    return date_types
+
+
+@rule_to_python_type.register(dt.Timestamp)
+def timestamp_rule(rule):
+    return timestamp_types
+
+
+@rule_to_python_type.register(dt.Time)
+def time_rule(rule):
+    return time_types
 
 
 def nullable(datatype):
@@ -307,23 +335,6 @@ class udf:
             )
 
             # definitions
-            # Define an execution rule for a simple elementwise Series
-            # function
-            @execute_node.register(
-                UDFNode, *udf_signature(input_type, pin=None, klass=pd.Series)
-            )
-            @execute_node.register(
-                UDFNode,
-                *(
-                    rule_to_python_type(argtype) + nullable(argtype)
-                    for argtype in input_type
-                ),
-            )
-            def execute_udf_node(op, *args, **kwargs):
-                args, kwargs = arguments_from_signature(
-                    funcsig, *args, **kwargs
-                )
-                return func(*args, **kwargs)
 
             # Define an execution rule for elementwise operations on a
             # grouped Series
@@ -360,6 +371,24 @@ class udf:
                     signature(func), *arguments, **kwargs
                 )
                 return func(*args, **kwargs).groupby(groupings)
+
+            # Define an execution rule for a simple elementwise Series
+            # function
+            @execute_node.register(
+                UDFNode, *udf_signature(input_type, pin=None, klass=pd.Series)
+            )
+            @execute_node.register(
+                UDFNode,
+                *(
+                    rule_to_python_type(argtype) + nullable(argtype)
+                    for argtype in input_type
+                ),
+            )
+            def execute_udf_node(op, *args, **kwargs):
+                args, kwargs = arguments_from_signature(
+                    funcsig, *args, **kwargs
+                )
+                return func(*args, **kwargs)
 
             @functools.wraps(func)
             def wrapped(*args):

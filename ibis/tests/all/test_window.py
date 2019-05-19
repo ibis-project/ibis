@@ -4,7 +4,7 @@ from pytest import param
 import ibis
 import ibis.common as com
 import ibis.tests.util as tu
-from ibis.tests.backends import Csv, Impala, MapD, Pandas, Parquet, PostgreSQL
+from ibis.tests.backends import Csv, Impala, MapD, Pandas, Parquet
 
 
 @pytest.mark.parametrize(
@@ -143,11 +143,10 @@ from ibis.tests.backends import Csv, Impala, MapD, Pandas, Parquet, PostgreSQL
         ),
         param(
             lambda t, win: t.double_col.count().over(win),
-            lambda gb: gb.double_col.cumcount(),
+            # pandas doesn't including the current row, but following=0 implies
+            # that we must, so we add one to the pandas result
+            lambda gb: gb.double_col.cumcount() + 1,
             id='count',
-            marks=pytest.mark.xfail_backends((
-                Pandas, Csv, Parquet, Impala, PostgreSQL
-            )),
         ),
     ],
 )
@@ -170,7 +169,6 @@ def test_window(backend, alltypes, df, con, result_fn, expected_fn):
     )
 
     result = expr.execute().set_index('id').sort_index()
-
     column = expected_fn(df.sort_values('id').groupby('string_col'))
     expected = df.assign(val=column).set_index('id').sort_index()
 

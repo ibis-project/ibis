@@ -358,7 +358,6 @@ class PandasClient(client.Client):
         return PandasTable(name, schema, self).to_expr()
 
     def execute(self, query, params=None, limit='default', **kwargs):
-
         if limit != 'default':
             raise ValueError(
                 'limit parameter to execute is not yet implemented in the '
@@ -371,12 +370,9 @@ class PandasClient(client.Client):
                     type(query).__name__
                 )
             )
-        return execute_last(
-            query.op(),
-            execute(query, params=params, **kwargs),
-            params=params,
-            **kwargs,
-        )
+        result = execute(query, params=params, **kwargs)
+        query_op = query.op()
+        return execute_last(query_op, result, params=params, **kwargs)
 
     def compile(self, expr, *args, **kwargs):
         """Compile `expr`.

@@ -9,7 +9,10 @@ import pandas as pd
 import pandas.util.testing as tm  # noqa: E402
 import pytest
 
+import ibis
+import ibis.common as com
 import ibis.expr.datatypes as dt  # noqa: E402
+from ibis.pandas.udf import udf
 
 pytestmark = pytest.mark.pandas
 
@@ -199,3 +202,140 @@ def test_quantile_array_access(client, t, df):
     result = tuple(map(client.execute, expr))
     expected = tuple(df.float64_with_zeros.quantile([0.25, 0.5]))
     assert result == expected
+
+
+@pytest.mark.parametrize(
+    (
+        'left',
+        'right',
+        'expected_value',
+        'expected_type',
+        'left_dtype',
+        'right_dtype',
+    ),
+    [
+        (True, 1, True, bool, dt.boolean, dt.int64),
+        (True, 1.0, True, bool, dt.boolean, dt.float64),
+        (True, True, True, bool, dt.boolean, dt.boolean),
+        (False, 0, False, bool, dt.boolean, dt.int64),
+        (False, 0.0, False, bool, dt.boolean, dt.float64),
+        (False, False, False, bool, dt.boolean, dt.boolean),
+        (1, True, 1, int, dt.int64, dt.boolean),
+        (1, 1.0, 1, int, dt.int64, dt.float64),
+        (1, 1, 1, int, dt.int64, dt.int64),
+        (0, False, 0, int, dt.int64, dt.boolean),
+        (0, 0.0, 0, int, dt.int64, dt.float64),
+        (0, 0, 0, int, dt.int64, dt.int64),
+        (1.0, True, 1.0, float, dt.float64, dt.boolean),
+        (1.0, 1, 1.0, float, dt.float64, dt.int64),
+        (1.0, 1.0, 1.0, float, dt.float64, dt.float64),
+        (0.0, False, 0.0, float, dt.float64, dt.boolean),
+        (0.0, 0, 0.0, float, dt.float64, dt.int64),
+        (0.0, 0.0, 0.0, float, dt.float64, dt.float64),
+    ],
+)
+def test_execute_with_same_hash_value_in_scope(
+    left,
+    right,
+    expected_value,
+    expected_type,
+    left_dtype,
+    right_dtype,
+):
+    @udf.elementwise([left_dtype, right_dtype], left_dtype)
+    def my_func(x, y):
+        return x
+
+    expr = my_func(left, right)
+    result = ibis.pandas.execute(expr)
+    assert type(result) is expected_type
+    assert result == expected_value
+
+
+def test_ifelse_returning_bool():
+    one = ibis.literal(1)
+    two = ibis.literal(2)
+    true = ibis.literal(True)
+    false = ibis.literal(False)
+    expr = ibis.ifelse(one + one == two, true, false)
+    result = ibis.pandas.execute(expr)
+    assert result is True
+
+
+@pytest.mark.parametrize(
+    ('dtype', 'value'),
+    [
+        pytest.param(
+            dt.float64,
+            1,
+            marks=pytest.mark.xfail(
+                raises=NotImplementedError,
+                reason="Implicit casting for UDFs is not yet implemented",
+            ),
+            id='float_int',
+        ),
+        pytest.param(
+            dt.float64,
+            True,
+            marks=pytest.mark.xfail(
+                raises=com.IbisTypeError,
+                reason=(
+                    "Implicit casting from boolean to float is not "
+                    "implemented"
+                ),
+            ),
+            id='float_bool',
+        ),
+        pytest.param(
+            dt.int64,
+            1.0,
+            marks=pytest.mark.xfail(
+                raises=com.IbisTypeError,
+                reason=(
+                    "Implicit casting from float to int is not implemented"
+                ),
+            ),
+            id='int_float',
+        ),
+        pytest.param(
+            dt.int64,
+            True,
+            id='int_bool',
+            marks=pytest.mark.xfail(
+                raises=com.IbisTypeError,
+                reason=(
+                    "Implicit casting from boolean to int is not implemented"
+                ),
+            )
+        ),
+        pytest.param(
+            dt.boolean,
+            1.0,
+            marks=pytest.mark.xfail(
+                raises=com.IbisTypeError,
+                reason=(
+                    "Implicit casting from float to boolean is not implemented"
+                ),
+            ),
+            id='bool_float',
+        ),
+        pytest.param(
+            dt.boolean,
+            1,
+            marks=pytest.mark.xfail(
+                raises=NotImplementedError,
+                reason="Implicit casting for UDFs is not yet implemented",
+            ),
+            id='bool_int',
+        ),
+    ],
+)
+def test_signature_does_not_match_input_type(dtype, value):
+    @udf.elementwise([dtype], dtype)
+    def func(x):
+        return x
+
+    expr = func(value)
+    result = ibis.pandas.execute(expr)
+    assert type(result) == type(value)
+    assert result == value
