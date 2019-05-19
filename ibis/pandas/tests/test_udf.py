@@ -31,7 +31,7 @@ def t(con):
     return con.table('df')
 
 
-@udf.elementwise(input_type=[dt.string], output_type=dt.int64)
+@udf.elementwise(input_type=['string'], output_type='int64')
 def my_string_length(series, **kwargs):
     return series.str.len() * 2
 
@@ -61,7 +61,7 @@ def times_two(x, scope=None):
     return x * 2.0
 
 
-@udf.analytic(input_type=[dt.double], output_type=dt.double)
+@udf.analytic(input_type=['double'], output_type='double')
 def zscore(series):
     return (series - series.mean()) / series.std()
 
@@ -244,7 +244,7 @@ def test_compose_udfs():
 
 
 def test_udaf_window():
-    @udf.reduction([dt.double], dt.double)
+    @udf.reduction(['double'], 'double')
     def my_mean(series):
         return series.mean()
 

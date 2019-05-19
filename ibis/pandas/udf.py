@@ -318,6 +318,8 @@ class udf:
         ... def my_string_length(series):
         ...     return series.str.len() * 2
         """
+        input_type = list(map(dt.dtype, input_type))
+        output_type = dt.dtype(output_type)
 
         def wrapper(func):
             # validate that the input_type argument and the function signature
@@ -481,6 +483,8 @@ class udf:
         ibis.pandas.udf.reduction
         ibis.pandas.udf.analytic
         """
+        input_type = list(map(dt.dtype, input_type))
+        output_type = dt.dtype(output_type)
 
         def wrapper(func):
             funcsig = valid_function_signature(input_type, func)
