@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+"""Execution rules for generic ibis operations."""
 
 import collections
 import datetime

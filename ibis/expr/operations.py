@@ -2608,7 +2608,8 @@ class Date(UnaryOp):
 
 class TimestampFromUNIX(ValueOp):
     arg = Arg(rlz.any)
-    unit = Arg(rlz.isin({'s', 'ms', 'us'}))
+    # Only pandas-based backends support 'ns'
+    unit = Arg(rlz.isin({'s', 'ms', 'us', 'ns'}))
     output_type = rlz.shape_like('arg', dt.timestamp)
 
 
