@@ -333,6 +333,7 @@ class MapDClient(SQLClient):
         port=6274,
         database=None,
         protocol='binary',
+        sessionid=None,
         execution_type=EXECUTION_TYPE_CURSOR,
     ):
         """
@@ -346,6 +347,7 @@ class MapDClient(SQLClient):
         port : int
         database : str
         protocol : {'binary', 'http', 'https'}
+        sessionid: str
         execution_type : {
           EXECUTION_TYPE_ICP, EXECUTION_TYPE_ICP_GPU, EXECUTION_TYPE_CURSOR
         }
@@ -358,6 +360,7 @@ class MapDClient(SQLClient):
         self.port = port
         self.db_name = database
         self.protocol = protocol
+        self.sessionid = sessionid
 
         if execution_type not in (
             EXECUTION_TYPE_ICP,
@@ -376,6 +379,7 @@ class MapDClient(SQLClient):
             port=port,
             dbname=database,
             protocol=protocol,
+            sessionid=sessionid,
         )
 
     def __del__(self):
@@ -721,6 +725,7 @@ class MapDClient(SQLClient):
                 port=self.port,
                 database=name,
                 protocol=self.protocol,
+                sessionid=self.sessionid,
                 execution_type=self.execution_type,
             )
             return self.database_class(name, new_client)
@@ -756,6 +761,7 @@ class MapDClient(SQLClient):
                 port=self.port,
                 dbname=name,
                 protocol=self.protocol,
+                sessionid=self.sessionid,
             )
             self.db_name = name
 
