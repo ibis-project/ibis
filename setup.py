@@ -40,6 +40,8 @@ if VERSION == (3, 5):
 else:
     parquet_requires = ['pyarrow>=0.12.0']
 
+geospatial_requires = ['geoalchemy2', 'geopandas']
+
 all_requires = (
     impala_requires
     + postgres_requires
@@ -51,6 +53,7 @@ all_requires = (
     + bigquery_requires
     + hdf5_requires
     + parquet_requires
+    + geospatial_requires
 )
 
 develop_requires = all_requires + [
@@ -93,6 +96,7 @@ setup(
         'bigquery': bigquery_requires,
         'hdf5': hdf5_requires,
         'parquet': parquet_requires,
+        'geospatial': geospatial_requires,
     },
     description="Productivity-centric Python Big Data Framework",
     long_description=LONG_DESCRIPTION,
