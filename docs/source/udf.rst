@@ -37,7 +37,7 @@ Here's how to define an element-wise function:
    import ibis.expr.datatypes as dt
    from ibis.pandas import udf
 
-   @udf.elementwise(input_type=[dt.int64], output_type=.dtdouble)
+   @udf.elementwise(input_type=[dt.int64], output_type=dt.double)
    def add_one(x):
        return x + 1.0
 
@@ -57,7 +57,7 @@ Here's how to define a reduction function:
    import ibis.expr.datatypes as dt
    from ibis.pandas import udf
 
-   @udf.reduction(input_type=[dt.double], output_type=.dtdouble)
+   @udf.reduction(input_type=[dt.double], output_type=dt.double)
    def double_mean(series):
        return 2 * series.mean()
 
@@ -77,7 +77,7 @@ Here's how to define an analytic function:
    import ibis.expr.datatypes as dt
    from ibis.pandas import udf
 
-   @udf.analytic(input_type=[dt.double], output_type=.dtdouble)
+   @udf.analytic(input_type=[dt.double], output_type=dt.double)
    def zscore(series):
        return (series - series.mean()) / series.std()
 
