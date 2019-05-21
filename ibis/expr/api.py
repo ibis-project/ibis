@@ -116,6 +116,15 @@ __all__ = (
     'expr_list',
     'geo_area',
     'geo_contains',
+    'geo_contains_properly',
+    'geo_covers',
+    'geo_covered_by',
+    'geo_crosses',
+    'geo_disjoint',
+    'geo_equals',
+    'geo_intersects',
+    'geo_overlaps',
+    'geo_touches',
     'geo_distance',
     'geo_end_point',
     'geo_length',
@@ -132,6 +141,9 @@ __all__ = (
     'geo_y',
     'geo_y_max',
     'geo_y_min',
+    'geo_buffer',
+    'geo_centroid',
+    'geo_envelope',
     'greatest',
     'ifelse',
     'infer_dtype',
@@ -1604,6 +1616,162 @@ def geo_contains(left, right):
     return op.to_expr()
 
 
+def geo_contains_properly(left, right):
+    """
+    Check if the first geometry contains the second one,
+    with no common border points.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    contains_properly : bool scalar
+    """
+    op = ops.GeoContainsProperly(left, right)
+    return op.to_expr()
+
+
+def geo_covers(left, right):
+    """
+    Check if the first geometry covers the second one.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    covers : bool scalar
+    """
+    op = ops.GeoCovers(left, right)
+    return op.to_expr()
+
+
+def geo_covered_by(left, right):
+    """
+    Check if the first geometry is covered by the second one.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    covered_by : bool scalar
+    """
+    op = ops.GeoCoveredBy(left, right)
+    return op.to_expr()
+
+
+def geo_crosses(left, right):
+    """
+    Check if the geometries have some, but not all, interior points in common.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    crosses : bool scalar
+    """
+    op = ops.GeoCrosses(left, right)
+    return op.to_expr()
+
+
+def geo_disjoint(left, right):
+    """
+    Check if the geometries have no points in common.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    disjoint : bool scalar
+    """
+    op = ops.GeoDisjoint(left, right)
+    return op.to_expr()
+
+
+def geo_equals(left, right):
+    """
+    Check if the geometries are the same.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    equals : bool scalar
+    """
+    op = ops.GeoEquals(left, right)
+    return op.to_expr()
+
+
+def geo_intersects(left, right):
+    """
+    Check if the geometries share any points.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    intersects : bool scalar
+    """
+    op = ops.GeoIntersects(left, right)
+    return op.to_expr()
+
+
+def geo_overlaps(left, right):
+    """
+    Check if the geometries share space, are of the same dimension,
+    but are not completely contained by each other.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    overlaps : bool scalar
+    """
+    op = ops.GeoOverlaps(left, right)
+    return op.to_expr()
+
+
+def geo_touches(left, right):
+    """
+    Check if the geometries have at least one point in common,
+    but do not intersect.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    touches : bool scalar
+    """
+    op = ops.GeoTouches(left, right)
+    return op.to_expr()
+
+
 def geo_distance(left, right, use_spheroid=None):
     """
     Compute distance between two geo spatial data
@@ -1864,9 +2032,65 @@ def geo_srid(arg):
     return op.to_expr()
 
 
+def geo_buffer(arg):
+    """Returns a geometry that represents all points whose distance from this
+    Geometry is less than or equal to distance. Calculations are in the
+    Spatial Reference System of this Geometry.
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    buffer : geometry scalar
+    """
+    op = ops.GeoBuffer(arg)
+    return op.to_expr()
+
+
+def geo_centroid(arg):
+    """Returns the centroid of the geometry.
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    centroid : geometry scalar
+    """
+    op = ops.GeoCentroid(arg)
+    return op.to_expr()
+
+
+def geo_envelope(arg):
+    """Returns a geometry representing the bounding box of the arg.
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    envelope : geometry scalar
+    """
+    op = ops.GeoCentroid(arg)
+    return op.to_expr()
+
+
 _geospatial_value_methods = dict(
     area=geo_area,
     contains=geo_contains,
+    contains_properly=geo_contains_properly,
+    covers=geo_covers,
+    covered_by=geo_covered_by,
+    crosses=geo_crosses,
+    disjoint=geo_disjoint,
+    equals=geo_equals,
+    intersects=geo_intersects,
+    overlaps=geo_overlaps,
+    touches=geo_touches,
     distance=geo_distance,
     end_point=geo_end_point,
     length=geo_length,

@@ -3007,7 +3007,7 @@ class GeoCovers(GeoSpatialBinOp):
     output_type = rlz.shape_like('args', dt.boolean)
 
 
-class GeoConveredBy(GeoSpatialBinOp):
+class GeoCoveredBy(GeoSpatialBinOp):
     """Returns True if no point in Geometry/Geography A is
     outside Geometry/Geography B"""
 
