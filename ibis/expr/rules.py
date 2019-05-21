@@ -268,6 +268,10 @@ struct = value(dt.Struct)
 mapping = value(dt.Map(dt.any, dt.any))
 
 geospatial = value(dt.GeoSpatial)
+point = value(dt.Point)
+linestring = value(dt.LineString)
+polygon = value(dt.Polygon)
+multipolygon = value(dt.MultiPolygon)
 
 
 @validator

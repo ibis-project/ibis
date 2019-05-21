@@ -3203,3 +3203,50 @@ class GeoEnvelope(GeoSpatialUnOp):
     """
 
     output_type = rlz.shape_like('arg', dt.polygon)
+
+
+class GeoAzimuth(GeoSpatialBinOp):
+    """Returns the angle in radians from the horizontal of the vector defined
+    by pointA and pointB. Angle is computed clockwise from down-to-up:
+    on the clock: 12=0; 3=PI/2; 6=PI; 9=3PI/2.
+    """
+    left = Arg(rlz.point)
+    right = Arg(rlz.point)
+
+    output_type = rlz.shape_like('args', dt.float64)
+
+
+class GeoWithin(GeoSpatialBinOp):
+    """Returns True if the geometry A is completely inside geometry B"""
+
+    output_type = rlz.shape_like('args', dt.boolean)
+
+
+class GeoIntersection(GeoSpatialBinOp):
+    """Returns a geometry that represents the point set intersection of the Geometries."""
+
+    output_type = rlz.shape_like('args', dt.geometry)
+
+
+class GeoDifference(GeoSpatialBinOp):
+    """Returns a geometry that represents that part of geometry A
+    that does not intersect with geometry B
+    """
+
+    output_type = rlz.shape_like('args', dt.geometry)
+
+
+class GeoSimplify(GeoSpatialUnOp):
+    """Returns a simplified version of the given geometry."""
+
+    tolerance = Arg(rlz.floating)
+    preserve_collapsed = Arg(rlz.boolean)
+
+    output_type = rlz.shape_like('arg', dt.geometry)
+
+
+class GeoTransform(GeoSpatialUnOp):
+    """Returns a transformed version of the given geometry into a new SRID."""
+    srid = Arg(rlz.integer)
+
+    output_type = rlz.shape_like('arg', dt.geometry)

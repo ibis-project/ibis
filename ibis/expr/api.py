@@ -144,6 +144,12 @@ __all__ = (
     'geo_buffer',
     'geo_centroid',
     'geo_envelope',
+    'geo_azimuth',
+    'geo_within',
+    'geo_intersection',
+    'geo_difference',
+    'geo_simplify',
+    'geo_transform',
     'greatest',
     'ifelse',
     'infer_dtype',
@@ -2080,6 +2086,128 @@ def geo_envelope(arg):
     return op.to_expr()
 
 
+def geo_touches(left, right):
+    """
+    Check if the geometries have at least one point in common,
+    but do not intersect.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    touches : bool scalar
+    """
+    op = ops.GeoTouches(left, right)
+    return op.to_expr()
+
+
+def geo_within(left, right):
+    """
+    Check if the first geometry is completely inside of the second.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    within : bool scalar
+    """
+    op = ops.GeoWithin(left, right)
+    return op.to_expr()
+
+
+def geo_azimuth(left, right):
+    """
+    Check if the geometries have at least one point in common,
+    but do not intersect.
+
+    Parameters
+    ----------
+    left : point
+    right : point
+
+    Returns
+    -------
+    azimuth : float scalar
+    """
+    op = ops.GeoAzimuth(left, right)
+    return op.to_expr()
+
+
+def geo_intersection(left, right):
+    """
+    Return the intersection of two geometries.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    intersection : geometry scalar
+    """
+    op = ops.GeoIntersection(left, right)
+    return op.to_expr()
+
+
+def geo_difference(left, right):
+    """
+    Return the difference of two geometries.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    difference : geometry scalar
+    """
+    op = ops.GeoDifference(left, right)
+    return op.to_expr()
+
+
+def geo_simplify(arg, tolerance, preserve_collapsed):
+    """
+    Simplify a given geometry.
+
+    Parameters
+    ----------
+    arg : geometry
+    tolerance: float
+    preserved_collapsed: boolean
+
+    Returns
+    -------
+    simplified : geometry scalar
+    """
+    op = ops.GeoSimplify(arg, tolerance, preserve_collapsed)
+    return op.to_expr()
+
+
+def geo_transform(arg, srid):
+    """
+    Transform a geometry into a new SRID.
+
+    Parameters
+    ----------
+    arg : geometry
+    srid: integer
+
+    Returns
+    -------
+    transformed : geometry scalar
+    """
+    op = ops.GeoTransform(arg, srid)
+    return op.to_expr()
+
+
 _geospatial_value_methods = dict(
     area=geo_area,
     contains=geo_contains,
@@ -2108,6 +2236,12 @@ _geospatial_value_methods = dict(
     y_min=geo_y_min,
     y=geo_y,
     y_max=geo_y_max,
+    azimuth=geo_azimuth,
+    within=geo_within,
+    intersection=geo_intersection,
+    difference=geo_difference,
+    simplify=geo_simplify,
+    transform=geo_transform,
 )
 _geospatial_column_methods = dict()
 
