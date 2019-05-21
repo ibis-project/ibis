@@ -11,14 +11,6 @@ from sqlalchemy.dialects.postgresql.base import PGDialect as PostgreSQLDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from sqlalchemy.engine.interfaces import Dialect as SQLAlchemyDialect
 
-try:
-    import geoalchemy2 as ga
-    import geoalchemy2.shape as shape
-    import geopandas
-    GEO = True
-except ImportError:
-    GEO = False
-
 import ibis
 import ibis.common as com
 import ibis.expr.analysis as L
@@ -32,6 +24,16 @@ import ibis.sql.transforms as transforms
 import ibis.util as util
 from ibis.client import Database, Query, SQLClient
 from ibis.sql.compiler import Dialect, Select, TableSetFormatter, Union
+
+try:
+    import geoalchemy2 as ga
+    import geoalchemy2.shape as shape
+    import geopandas
+
+    GEO = True
+except ImportError:
+    GEO = False
+
 
 # TODO(cleanup)
 _ibis_type_to_sqla = {
@@ -78,7 +80,9 @@ def _to_sqla_type(itype, type_map=None):
         elif itype.geotype == 'geography':
             return ga.Geography
         else:
-            raise TypeError('Unexpected geospatial geotype {}'.format(itype.geotype))
+            raise TypeError(
+                'Unexpected geospatial geotype {}'.format(itype.geotype)
+            )
     else:
         return type_map[type(itype)]
 
@@ -130,6 +134,7 @@ def sa_double(_, satype, nullable=True):
 
 
 if GEO:
+
     @dt.dtype.register(SQLAlchemyDialect, ga.Geometry)
     def ga_geometry(_, gatype, nullable=True):
         t = gatype.geometry_type
@@ -771,11 +776,9 @@ if GEO:
         #   ST_Distance_Sphere
         #   ST_Dump
         #   ST_DumpPoints
-
     }
 
     _operation_registry.update(_geospatial_functions)
-
 
 
 for _k, _v in _binary_ops.items():
@@ -982,11 +985,12 @@ class AlchemyQuery(Query):
             for name, dtype in self.schema().items():
                 if isinstance(dtype, dt.GeoSpatial):
                     geom_col = geom_col or name
-                    df[name] = df.apply(lambda x: shape.to_shape(x[name]), axis=1)
+                    df[name] = df.apply(
+                        lambda x: shape.to_shape(x[name]), axis=1
+                    )
             if geom_col:
                 df = geopandas.GeoDataFrame(df, geometry=geom_col)
         return df
-
 
 
 class AlchemyDialect(Dialect):

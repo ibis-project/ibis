@@ -2086,24 +2086,6 @@ def geo_envelope(arg):
     return op.to_expr()
 
 
-def geo_touches(left, right):
-    """
-    Check if the geometries have at least one point in common,
-    but do not intersect.
-
-    Parameters
-    ----------
-    left : geometry
-    right : geometry
-
-    Returns
-    -------
-    touches : bool scalar
-    """
-    op = ops.GeoTouches(left, right)
-    return op.to_expr()
-
-
 def geo_within(left, right):
     """
     Check if the first geometry is completely inside of the second.

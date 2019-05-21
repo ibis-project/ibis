@@ -3172,15 +3172,6 @@ class GeoSRID(GeoSpatialUnOp):
     output_type = rlz.shape_like('args', dt.int64)
 
 
-class GeoAzimuth(GeoSpatialUnOp):
-    """Returns the angle in radians from the horizontal of the vector
-    defined by pointA and pointB. Angle is computed clockwise from down-to-up:
-    on the clock: 12=0; 3=PI/2; 6=PI; 9=3PI/2.
-    """
-
-    output_type = rlz.shape_like('args', dt.float64)
-
-
 class GeoBuffer(GeoSpatialUnOp):
     """Returns a geometry that represents all points whose distance from this
     Geometry is less than or equal to distance. Calculations are in the
@@ -3210,6 +3201,7 @@ class GeoAzimuth(GeoSpatialBinOp):
     by pointA and pointB. Angle is computed clockwise from down-to-up:
     on the clock: 12=0; 3=PI/2; 6=PI; 9=3PI/2.
     """
+
     left = Arg(rlz.point)
     right = Arg(rlz.point)
 
@@ -3223,7 +3215,9 @@ class GeoWithin(GeoSpatialBinOp):
 
 
 class GeoIntersection(GeoSpatialBinOp):
-    """Returns a geometry that represents the point set intersection of the Geometries."""
+    """Returns a geometry that represents the point set intersection
+    of the Geometries.
+    """
 
     output_type = rlz.shape_like('args', dt.geometry)
 
@@ -3247,6 +3241,7 @@ class GeoSimplify(GeoSpatialUnOp):
 
 class GeoTransform(GeoSpatialUnOp):
     """Returns a transformed version of the given geometry into a new SRID."""
+
     srid = Arg(rlz.integer)
 
     output_type = rlz.shape_like('arg', dt.geometry)
