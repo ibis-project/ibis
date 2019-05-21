@@ -2994,6 +2994,68 @@ class GeoContains(GeoSpatialBinOp):
     output_type = rlz.shape_like('args', dt.boolean)
 
 
+class GeoContainsProperly(GeoSpatialBinOp):
+    """Check if the first geo spatial data contains the second one,
+    and no boundary points are shared."""
+
+    output_type = rlz.shape_like('args', dt.boolean)
+
+
+class GeoCovers(GeoSpatialBinOp):
+    """Returns True if no point in Geometry B is outside Geometry A"""
+
+    output_type = rlz.shape_like('args', dt.boolean)
+
+
+class GeoConveredBy(GeoSpatialBinOp):
+    """Returns True if no point in Geometry/Geography A is
+    outside Geometry/Geography B"""
+
+    output_type = rlz.shape_like('args', dt.boolean)
+
+
+class GeoCrosses(GeoSpatialBinOp):
+    """Returns True if the supplied geometries have some, but not all,
+    interior points in common."""
+
+    output_type = rlz.shape_like('args', dt.boolean)
+
+
+class GeoDisjoint(GeoSpatialBinOp):
+    """Returns True if the Geometries do not “spatially intersect” -
+    if they do not share any space together."""
+
+    output_type = rlz.shape_like('args', dt.boolean)
+
+
+class GeoEquals(GeoSpatialBinOp):
+    """Returns True if the given geometries represent the same geometry."""
+
+    output_type = rlz.shape_like('args', dt.boolean)
+
+
+class GeoIntersects(GeoSpatialBinOp):
+    """Returns True if the Geometries/Geography “spatially intersect in 2D”
+    - (share any portion of space) and False if they don’t (they are Disjoint).
+    """
+
+    output_type = rlz.shape_like('args', dt.boolean)
+
+
+class GeoOverlaps(GeoSpatialBinOp):
+    """Returns True if the Geometries share space, are of the same dimension,
+    but are not completely contained by each other."""
+
+    output_type = rlz.shape_like('args', dt.boolean)
+
+
+class GeoTouches(GeoSpatialBinOp):
+    """Returns True if the geometries have at least one point in common,
+    but their interiors do not intersect."""
+
+    output_type = rlz.shape_like('args', dt.boolean)
+
+
 class GeoArea(GeoSpatialUnOp):
     """Area of the geo spatial data"""
 
@@ -3108,3 +3170,34 @@ class GeoSRID(GeoSpatialUnOp):
     """Returns the spatial reference identifier for the ST_Geometry"""
 
     output_type = rlz.shape_like('args', dt.int64)
+
+
+class GeoAzimuth(GeoSpatialUnOp):
+    """Returns the angle in radians from the horizontal of the vector
+    defined by pointA and pointB. Angle is computed clockwise from down-to-up:
+    on the clock: 12=0; 3=PI/2; 6=PI; 9=3PI/2.
+    """
+
+    output_type = rlz.shape_like('args', dt.float64)
+
+
+class GeoBuffer(GeoSpatialUnOp):
+    """Returns a geometry that represents all points whose distance from this
+    Geometry is less than or equal to distance. Calculations are in the
+    Spatial Reference System of this Geometry.
+    """
+
+    output_type = rlz.shape_like('args', dt.multipolygon)
+
+
+class GeoCentroid(GeoSpatialUnOp):
+    """Returns the geometric center of a geometry."""
+
+    output_type = rlz.shape_like('arg', dt.point)
+
+
+class GeoEnvelope(GeoSpatialUnOp):
+    """Returns a geometry representing the boundingbox of the supplied geometry.
+    """
+
+    output_type = rlz.shape_like('arg', dt.polygon)
