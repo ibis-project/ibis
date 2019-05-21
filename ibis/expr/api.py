@@ -1605,6 +1605,70 @@ def geo_area(arg, use_spheroid=None):
     return op.to_expr()
 
 
+def geo_as_binary(arg):
+    """
+    Get the geometry as well-known bytes (WKB) without the SRID data.
+
+    Parameters
+    ----------
+    arg : geometry or geography
+
+    Returns
+    -------
+    wkb : binary
+    """
+    op = ops.GeoAsBinary(arg)
+    return op.to_expr()
+
+
+def geo_as_ewkt(arg):
+    """
+    Get the geometry as well-known text (WKT) with the SRID data.
+
+    Parameters
+    ----------
+    arg : geometry or geography
+
+    Returns
+    -------
+    wkt : string
+    """
+    op = ops.GeoAsEWKT(arg)
+    return op.to_expr()
+
+
+def geo_as_text(arg):
+    """
+    Get the geometry as well-known text (WKT) without the SRID data.
+
+    Parameters
+    ----------
+    arg : geometry or geography
+
+    Returns
+    -------
+    wkt : string
+    """
+    op = ops.GeoAsText(arg)
+    return op.to_expr()
+
+
+def geo_as_ewkb(arg):
+    """
+    Get the geometry as well-known bytes (WKB) with the SRID data.
+
+    Parameters
+    ----------
+    arg : geometry or geography
+
+    Returns
+    -------
+    wkb : binary
+    """
+    op = ops.GeoAsEWKB(arg)
+    return op.to_expr()
+
+
 def geo_contains(left, right):
     """
     Check if the first geometry contains the second one
@@ -2192,6 +2256,10 @@ def geo_transform(arg, srid):
 
 _geospatial_value_methods = dict(
     area=geo_area,
+    as_binary=geo_as_binary,
+    as_ewkb=geo_as_ewkb,
+    as_ewkt=geo_as_ewkt,
+    as_text=geo_as_text,
     azimuth=geo_azimuth,
     buffer=geo_buffer,
     centroid=geo_centroid,

@@ -3245,3 +3245,35 @@ class GeoTransform(GeoSpatialUnOp):
     srid = Arg(rlz.integer)
 
     output_type = rlz.shape_like('arg', dt.geometry)
+
+
+class GeoAsBinary(GeoSpatialUnOp):
+    """Return the Well-Known Binary (WKB) representation of the
+    geometry/geography without SRID meta data.
+    """
+
+    output_type = rlz.shape_like('arg', dt.binary)
+
+
+class GeoAsEWKB(GeoSpatialUnOp):
+    """Return the Well-Known Binary (WKB) representation of the
+    geometry/geography with SRID meta data.
+    """
+
+    output_type = rlz.shape_like('arg', dt.binary)
+
+
+class GeoAsEWKT(GeoSpatialUnOp):
+    """Return the Well-Known Text (WKT) representation of the
+    geometry/geography with SRID meta data.
+    """
+
+    output_type = rlz.shape_like('arg', dt.string)
+
+
+class GeoAsText(GeoSpatialUnOp):
+    """Return the Well-Known Text (WKT) representation of the
+    geometry/geography without SRID metadata.
+    """
+
+    output_type = rlz.shape_like('arg', dt.string)

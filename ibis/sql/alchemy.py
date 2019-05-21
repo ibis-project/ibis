@@ -733,43 +733,43 @@ _window_functions = {
 if GEO:
     _geospatial_functions = {
         ops.GeoArea: unary(sa.func.ST_Area),
+        ops.GeoAsBinary: unary(sa.func.ST_AsBinary),
+        ops.GeoAsEWKB: unary(sa.func.ST_AsEWKB),
+        ops.GeoAsEWKT: unary(sa.func.ST_AsEWKT),
+        ops.GeoAsText: unary(sa.func.ST_AsText),
         ops.GeoAzimuth: fixed_arity(sa.func.ST_Azimuth, 2),
+        ops.GeoBuffer: fixed_arity(sa.func.ST_Buffer, 2),
+        ops.GeoCentroid: unary(sa.func.ST_Centroid),
         ops.GeoContains: fixed_arity(sa.func.ST_Contains, 2),
         ops.GeoContainsProperly: fixed_arity(sa.func.ST_Contains, 2),
         ops.GeoCovers: fixed_arity(sa.func.ST_Covers, 2),
         ops.GeoCoveredBy: fixed_arity(sa.func.ST_CoveredBy, 2),
         ops.GeoCrosses: fixed_arity(sa.func.ST_Crosses, 2),
-        ops.GeoDisjoint: fixed_arity(sa.func.ST_Disjoint, 2),
-        ops.GeoEquals: fixed_arity(sa.func.ST_Equals, 2),
-        ops.GeoIntersects: fixed_arity(sa.func.ST_Intersects, 2),
-        ops.GeoOverlaps: fixed_arity(sa.func.ST_Overlaps, 2),
-        ops.GeoTouches: fixed_arity(sa.func.ST_Touches, 2),
-        ops.GeoWithin: fixed_arity(sa.func.ST_Within, 2),
-        ops.GeoDistance: fixed_arity(sa.func.ST_Distance, 2),
-        ops.GeoIntersection: fixed_arity(sa.func.ST_Intersection, 2),
         ops.GeoDifference: fixed_arity(sa.func.ST_Difference, 2),
+        ops.GeoDisjoint: fixed_arity(sa.func.ST_Disjoint, 2),
+        ops.GeoDistance: fixed_arity(sa.func.ST_Distance, 2),
+        ops.GeoEnvelope: unary(sa.func.ST_Envelope),
+        ops.GeoEquals: fixed_arity(sa.func.ST_Equals, 2),
+        ops.GeoIntersection: fixed_arity(sa.func.ST_Intersection, 2),
+        ops.GeoIntersects: fixed_arity(sa.func.ST_Intersects, 2),
         ops.GeoLength: unary(sa.func.ST_Length),
+        ops.GeoNPoints: unary(sa.func.ST_NPoints),
+        ops.GeoOverlaps: fixed_arity(sa.func.ST_Overlaps, 2),
         ops.GeoPerimeter: unary(sa.func.ST_Perimeter),
+        ops.GeoSimplify: fixed_arity(sa.func.ST_Simplify, 3),
+        ops.GeoSRID: unary(sa.func.ST_SRID),
+        ops.GeoTouches: fixed_arity(sa.func.ST_Touches, 2),
+        ops.GeoTransform: fixed_arity(sa.func.ST_Transform, 2),
+        ops.GeoWithin: fixed_arity(sa.func.ST_Within, 2),
         ops.GeoX: unary(sa.func.ST_X),
         ops.GeoY: unary(sa.func.ST_Y),
-        ops.GeoNPoints: unary(sa.func.ST_NPoints),
-        ops.GeoSRID: unary(sa.func.ST_SRID),
-        ops.GeoBuffer: fixed_arity(sa.func.ST_Buffer, 2),
-        ops.GeoCentroid: unary(sa.func.ST_Centroid),
-        ops.GeoEnvelope: unary(sa.func.ST_Envelope),
-        ops.GeoSimplify: fixed_arity(sa.func.ST_Simplify, 3),
-        ops.GeoTransform: fixed_arity(sa.func.ST_Transform, 2),
         # Missing casts:
-        #   ST_AsBinary
-        #   ST_As_EWKB
-        #   ST_As_EWKT
         #   ST_As_GML
         #   ST_As_GeoJSON
         #   ST_As_KML
         #   ST_As_Raster
         #   ST_As_SVG
         #   ST_As_TWKB
-        #   ST_As_Text
         # Missing Geometric ops:
         #   ST_DFullyWithin
         #   ST_DWithin
