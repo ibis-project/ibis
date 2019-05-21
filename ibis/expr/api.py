@@ -2032,7 +2032,7 @@ def geo_srid(arg):
     return op.to_expr()
 
 
-def geo_buffer(arg):
+def geo_buffer(arg, radius):
     """Returns a geometry that represents all points whose distance from this
     Geometry is less than or equal to distance. Calculations are in the
     Spatial Reference System of this Geometry.
@@ -2040,12 +2040,13 @@ def geo_buffer(arg):
     Parameters
     ----------
     arg : geometry
+    radius: double
 
     Returns
     -------
     buffer : geometry scalar
     """
-    op = ops.GeoBuffer(arg)
+    op = ops.GeoBuffer(arg, radius)
     return op.to_expr()
 
 

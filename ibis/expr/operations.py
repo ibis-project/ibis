@@ -3187,7 +3187,9 @@ class GeoBuffer(GeoSpatialUnOp):
     Spatial Reference System of this Geometry.
     """
 
-    output_type = rlz.shape_like('args', dt.multipolygon)
+    radius = Arg(rlz.floating)
+
+    output_type = rlz.shape_like('args', dt.geometry)
 
 
 class GeoCentroid(GeoSpatialUnOp):

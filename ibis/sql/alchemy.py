@@ -748,7 +748,7 @@ if GEO:
         ops.GeoY: unary(sa.func.ST_Y),
         ops.GeoNPoints: unary(sa.func.ST_NPoints),
         ops.GeoSRID: unary(sa.func.ST_SRID),
-        ops.GeoBuffer: unary(sa.func.ST_Buffer),
+        ops.GeoBuffer: fixed_arity(sa.func.ST_Buffer, 2),
         ops.GeoCentroid: unary(sa.func.ST_Centroid),
         ops.GeoEnvelope: unary(sa.func.ST_Envelope),
     }
