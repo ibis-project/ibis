@@ -51,12 +51,6 @@ _ibis_type_to_sqla = {
     dt.Int64: sa.BigInteger,
 }
 
-if GEO:
-    # Geospatial types
-    _ibis_type_to_sqla.update({
-        dt.GeoSpatial: ga.Geometry
-    })
-
 
 def _to_sqla_type(itype, type_map=None):
     if type_map is None:
@@ -78,6 +72,13 @@ def _to_sqla_type(itype, type_map=None):
                 )
             )
         return sa.ARRAY(_to_sqla_type(ibis_type, type_map=type_map))
+    elif GEO and isinstance(itype, dt.GeoSpatial):
+        if itype.geotype == 'geometry':
+            return ga.Geometry
+        elif itype.geotype == 'geography':
+            return ga.Geography
+        else:
+            raise TypeError('Unexpected geospatial geotype {}'.format(itype.geotype))
     else:
         return type_map[type(itype)]
 
