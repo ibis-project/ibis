@@ -1,8 +1,14 @@
 [run]
-branch: True
-omit: ibis/tests/*,
-      ibis/*/tests/*,
-      ibis/cloudpickle.py
-      ibis/tasks.py
-      ibis/server.py
-      ibis/wire.py
+branch = True
+source = ibis
+
+[report]
+exclude_lines =
+    if self.debug:
+    pragma: no cover
+    raise NotImplementedError
+    if __name__ == .__main__.:
+ignore_errors = True
+omit =
+    _version.py
+    tests/*

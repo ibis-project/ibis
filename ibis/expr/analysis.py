@@ -12,13 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis.common import RelationError, ExpressionError, IbisTypeError
-from ibis.expr.datatypes import HasSchema
-from ibis.expr.window import window
-import ibis.expr.types as ir
-import ibis.expr.operations as ops
-import ibis.util as util
 import toolz
+
+import ibis.expr.types as ir
+import ibis.expr.lineage as lin
+import ibis.expr.operations as ops
+
+from ibis.expr.schema import HasSchema
+from ibis.expr.window import window
+
+from ibis.common import RelationError, ExpressionError, IbisTypeError
+
 
 # ---------------------------------------------------------------------
 # Some expression metaprogramming / graph transformations to support
@@ -26,43 +30,69 @@ import toolz
 
 
 def sub_for(expr, substitutions):
-    mapping = dict((repr(k.op()), v) for k, v in substitutions)
-    return _subs(expr, mapping)
+    mapping = {repr(k.op()): v for k, v in substitutions}
+    substitutor = Substitutor()
+    return substitutor.substitute(expr, mapping)
 
 
 def _expr_key(expr):
     try:
-        return repr(expr.op())
-    except AttributeError:
-        return expr
+        name = expr.get_name()
+    except (AttributeError, ExpressionError):
+        name = None
 
-
-@toolz.memoize(key=lambda args, kwargs: _expr_key(args[0]))
-def _subs(expr, mapping):
-    """Substitute expressions with other expressions
-    """
-    node = expr.op()
-    key = repr(node)
-    if key in mapping:
-        return mapping[key]
-    if node.blocks():
-        return expr
-
-    new_args = list(node.args)
-    unchanged = True
-    for i, arg in enumerate(new_args):
-        if isinstance(arg, ir.Expr):
-            new_arg = _subs(arg, mapping)
-            unchanged = unchanged and new_arg is arg
-            new_args[i] = new_arg
-    if unchanged:
-        return expr
     try:
-        new_node = type(node)(*new_args)
-    except IbisTypeError:
-        return expr
+        op = expr.op()
+    except AttributeError:
+        return expr, name
+    else:
+        return repr(op), name
 
-    return expr._factory(new_node, name=getattr(expr, '_name', None))
+
+class Substitutor(object):
+
+    def __init__(self):
+        cache = toolz.memoize(key=lambda args, kwargs: _expr_key(args[0]))
+        self.substitute = cache(self._substitute)
+
+    def _substitute(self, expr, mapping):
+        """Substitute expressions with other expressions.
+
+        Parameters
+        ----------
+        expr : ibis.expr.types.Expr
+        mapping : Dict, OrderedDict
+
+        Returns
+        -------
+        new_expr : ibis.expr.types.Expr
+        """
+        node = expr.op()
+        key = repr(node)
+        if key in mapping:
+            return mapping[key]
+        if node.blocks():
+            return expr
+
+        new_args = list(node.args)
+        unchanged = True
+        for i, arg in enumerate(new_args):
+            if isinstance(arg, ir.Expr):
+                new_arg = self.substitute(arg, mapping)
+                unchanged = unchanged and new_arg is arg
+                new_args[i] = new_arg
+        if unchanged:
+            return expr
+        try:
+            new_node = type(node)(*new_args)
+        except IbisTypeError:
+            return expr
+
+        try:
+            name = expr.get_name()
+        except ExpressionError:
+            name = None
+        return expr._factory(new_node, name=name)
 
 
 class ScalarAggregate(object):
@@ -75,17 +105,15 @@ class ScalarAggregate(object):
 
     def get_result(self):
         expr = self.expr
-
         subbed_expr = self._visit(expr)
 
         try:
             name = subbed_expr.get_name()
             named_expr = subbed_expr
-        except:
+        except ExpressionError:
             name = self.default_name
             named_expr = subbed_expr.name(self.default_name)
 
-        tables = list(self.memo.values())
         table = self.tables[0]
         for other in self.tables[1:]:
             table = table.cross_join(other)
@@ -93,7 +121,7 @@ class ScalarAggregate(object):
         return table.projection([named_expr]), name
 
     def _visit(self, expr):
-        if is_scalar_reduce(expr) and not has_multiple_bases(expr):
+        if is_scalar_reduction(expr) and not has_multiple_bases(expr):
             # An aggregation unit
             key = self._key(expr)
             if key not in self.memo:
@@ -129,47 +157,77 @@ class ScalarAggregate(object):
 
 
 def has_multiple_bases(expr):
-    return len(find_all_tables(expr)) > 1
+    return toolz.count(find_immediate_parent_tables(expr)) > 1
 
 
 def reduction_to_aggregation(expr, default_name='tmp'):
-    tables = find_all_tables(expr)
+    tables = list(find_immediate_parent_tables(expr))
 
     try:
         name = expr.get_name()
         named_expr = expr
-    except:
+    except ExpressionError:
         name = default_name
         named_expr = expr.name(default_name)
 
     if len(tables) == 1:
-        table = list(tables.values())[0]
+        table, = tables
         return table.aggregate([named_expr]), name
     else:
         return ScalarAggregate(expr, None, default_name).get_result()
 
 
-def find_all_tables(expr, memo=None):
-    if memo is None:
-        memo = {}
+def find_immediate_parent_tables(expr):
+    """Find every first occurrence of a :class:`ibis.expr.types.TableExpr`
+    object in `expr`.
 
-    node = expr.op()
+    Parameters
+    ----------
+    expr : ir.Expr
 
-    if isinstance(expr, ir.TableExpr):
-        key = id(node)
-        if key not in memo:
-            memo[key] = expr
-        return memo
+    Yields
+    ------
+    e : ir.Expr
 
-    for arg in node.flat_args():
-        if isinstance(arg, ir.Expr):
-            find_all_tables(arg, memo)
+    Notes
+    -----
+    This function does not traverse into TableExpr objects. This means that the
+    underlying PhysicalTable of a Selection will not be yielded, for example.
 
-    return memo
+    Examples
+    --------
+    >>> import ibis, toolz
+    >>> t = ibis.table([('a', 'int64')], name='t')
+    >>> expr = t.mutate(foo=t.a + 1)
+    >>> result = list(find_immediate_parent_tables(expr))
+    >>> len(result)
+    1
+    >>> result[0]  # doctest: +NORMALIZE_WHITESPACE
+    ref_0
+    UnboundTable[table]
+      name: t
+      schema:
+        a : int64
+    Selection[table]
+      table:
+        Table: ref_0
+      selections:
+        Table: ref_0
+        foo = Add[int64*]
+          left:
+            a = Column[int64*] 'a' from table
+              ref_0
+          right:
+            Literal[int8]
+              1
+    """
+    def finder(expr):
+        if isinstance(expr, ir.TableExpr):
+            return lin.halt, expr
+        else:
+            return lin.proceed, None
 
-
-def is_scalar_reduce(x):
-    return isinstance(x, ir.ScalarExpr) and ops.is_reduction(x)
+    return lin.traverse(finder, expr)
 
 
 def substitute_parents(expr, lift_memo=None, past_projection=True):
@@ -196,7 +254,7 @@ class ExprSimplifier(object):
     def get_result(self):
         expr = self.expr
         node = expr.op()
-        if isinstance(node, ir.Literal):
+        if isinstance(node, ops.Literal):
             return expr
 
         # For table column references, in the event that we're on top of a
@@ -267,7 +325,7 @@ class ExprSimplifier(object):
 
         op = expr.op()
 
-        if isinstance(op, ops.ValueNode):
+        if isinstance(op, ops.ValueOp):
             return self._sub(expr, block=block)
         elif isinstance(op, ops.Selection):
             result = self._lift_Selection(expr, block=block)
@@ -285,18 +343,15 @@ class ExprSimplifier(object):
 
     def _lift_TableColumn(self, expr, block=None):
         node = expr.op()
-
-        tnode = node.table.op()
-        root = _base_table(tnode)
-
+        root = node.table.op()
         result = expr
+
         if isinstance(root, ops.Selection):
             can_lift = False
 
             for val in root.selections:
                 if (isinstance(val.op(), ops.PhysicalTable) and
                         node.name in val.schema()):
-
                     can_lift = True
                     lifted_root = self.lift(val)
                 elif (isinstance(val.op(), ops.TableColumn) and
@@ -304,9 +359,6 @@ class ExprSimplifier(object):
                       node.name == val.get_name()):
                     can_lift = True
                     lifted_root = self.lift(val.op().table)
-
-                # XXX
-                # can_lift = False
 
             # HACK: If we've projected a join, do not lift the children
             # TODO: what about limits and other things?
@@ -335,7 +387,7 @@ class ExprSimplifier(object):
 
         unch = lifted_table is op.table
 
-        lifted_aggs, unch1 = self._lift_arg(op.agg_exprs, block=True)
+        lifted_aggs, unch1 = self._lift_arg(op.metrics, block=True)
         lifted_by, unch2 = self._lift_arg(op.by, block=True)
         lifted_having, unch3 = self._lift_arg(op.having, block=True)
 
@@ -424,6 +476,36 @@ def _base_table(table_node):
         return _base_table(table_node.table.op())
 
 
+def has_reduction(expr):
+    """Does `expr` contain a reduction?
+
+    Parameters
+    ----------
+    expr : ibis.expr.types.Expr
+        An ibis expression
+
+    Returns
+    -------
+    truth_value : bool
+        Whether or not there's at least one reduction in `expr`
+
+    Notes
+    -----
+    The ``isinstance(op, ops.TableNode)`` check in this function implies
+    that we only examine every non-table expression that precedes the first
+    table expression.
+    """
+    def fn(expr):
+        op = expr.op()
+        if isinstance(op, ops.TableNode):  # don't go below any table nodes
+            return lin.halt, None
+        if isinstance(op, ops.Reduction):
+            return lin.halt, True
+        return lin.proceed, None
+    reduction_status = lin.traverse(fn, expr)
+    return any(reduction_status)
+
+
 def apply_filter(expr, predicates):
     # This will attempt predicate pushdown in the cases where we can do it
     # easily and safely, to make both cleaner SQL and fewer referential errors
@@ -435,13 +517,16 @@ def apply_filter(expr, predicates):
         return _filter_selection(expr, predicates)
     elif isinstance(op, ops.Aggregation):
         # Potential fusion opportunity
+        # GH1344: We can't sub in things with correlated subqueries
         simplified_predicates = [
-            sub_for(predicate, [(expr, op.table)]) for predicate in predicates
+            sub_for(predicate, [(expr, op.table)])
+            if not has_reduction(predicate) else predicate
+            for predicate in predicates
         ]
 
         if op.table._is_valid(simplified_predicates):
             result = ops.Aggregation(
-                op.table, op.agg_exprs, by=op.by, having=op.having,
+                op.table, op.metrics, by=op.by, having=op.having,
                 predicates=op.predicates + simplified_predicates,
                 sort_keys=op.sort_keys)
 
@@ -472,15 +557,18 @@ def _filter_selection(expr, predicates):
         # Potential fusion opportunity. The predicates may need to be
         # rewritten in terms of the child table. This prevents the broken
         # ref issue (described in more detail in #59)
-        simplified_predicates = [sub_for(x, [(expr, op.table)])
-                                 for x in predicates]
+        simplified_predicates = [
+            sub_for(predicate, [(expr, op.table)])
+            if not has_reduction(predicate) else predicate
+            for predicate in predicates
+        ]
 
         if op.table._is_valid(simplified_predicates):
             result = ops.Selection(
                 op.table, [],
                 predicates=op.predicates + simplified_predicates,
                 sort_keys=op.sort_keys)
-            return ir.TableExpr(result)
+            return result.to_expr()
 
     can_pushdown = _can_pushdown(op, predicates)
 
@@ -488,14 +576,13 @@ def _filter_selection(expr, predicates):
         simplified_predicates = [substitute_parents(x) for x in predicates]
         fused_predicates = op.predicates + simplified_predicates
         result = ops.Selection(op.table,
-                               proj_exprs=op.selections,
+                               selections=op.selections,
                                predicates=fused_predicates,
                                sort_keys=op.sort_keys)
     else:
-        result = ops.Selection(expr, proj_exprs=[],
-                               predicates=predicates)
+        result = ops.Selection(expr, selections=[], predicates=predicates)
 
-    return ir.TableExpr(result)
+    return result.to_expr()
 
 
 def _can_pushdown(op, predicates):
@@ -512,12 +599,12 @@ def _can_pushdown(op, predicates):
     # 3) Appears in the selections in the projection (either is part of one of
     #    the entire tables or a single column selection)
 
-    can_pushdown = True
     for pred in predicates:
         validator = _PushdownValidate(op, pred)
         predicate_is_valid = validator.get_result()
-        can_pushdown = can_pushdown and predicate_is_valid
-    return can_pushdown
+        if not predicate_is_valid:
+            return False
+    return True
 
 
 class _PushdownValidate(object):
@@ -525,25 +612,20 @@ class _PushdownValidate(object):
     def __init__(self, parent, predicate):
         self.parent = parent
         self.pred = predicate
-
         self.validator = ExprValidator([self.parent.table])
 
-        self.valid = True
-
     def get_result(self):
-        self._walk(self.pred)
-        return self.valid
+        predicate = self.pred
+        return not has_reduction(predicate) and all(self._walk(predicate))
 
     def _walk(self, expr):
-        node = expr.op()
-        if isinstance(node, ops.TableColumn):
-            is_valid = self._validate_column(expr)
-            self.valid = self.valid and is_valid
+        def validate(expr):
+            op = expr.op()
+            if isinstance(op, ops.TableColumn):
+                return lin.proceed, self._validate_column(expr)
+            return lin.proceed, None
 
-        for arg in node.flat_args():
-            if isinstance(arg, ir.ValueExpr):
-                self._walk(arg)
-            # Skip other types of exprs
+        return lin.traverse(validate, expr, type=ir.ValueExpr)
 
     def _validate_column(self, expr):
         if isinstance(self.parent, ops.Selection):
@@ -572,10 +654,8 @@ class _PushdownValidate(object):
 
                 lifted_node = substitute_parents(expr).op()
 
-                is_valid = (col_table.is_ancestor(node.table) or
-                            col_table.is_ancestor(lifted_node.table))
-
-                # is_valid = True
+                is_valid = (col_table.equals(node.table.op()) or
+                            col_table.equals(lifted_node.table.op()))
 
         return is_valid
 
@@ -585,16 +665,6 @@ def _is_aliased(col_expr):
 
 
 def windowize_function(expr, w=None):
-    def _check_window(x):
-        # Hmm
-        arg, window = x.op().args
-        if isinstance(arg.op(), ops.RowNumber):
-            if len(window._order_by) == 0:
-                raise ExpressionError('RowNumber requires explicit '
-                                      'window sort')
-
-        return x
-
     def _windowize(x, w):
         if not isinstance(x.op(), ops.WindowOp):
             walked = _walk(x, w)
@@ -609,16 +679,15 @@ def windowize_function(expr, w=None):
                 walked = x
 
         op = walked.op()
-        if (isinstance(op, ops.AnalyticOp) or
-                getattr(op, '_reduction', False)):
+        if isinstance(op, ops.AnalyticOp) or getattr(op, '_reduction', False):
             if w is None:
                 w = window()
-            return _check_window(walked.over(w))
+            return walked.over(w)
         elif isinstance(op, ops.WindowOp):
             if w is not None:
-                return _check_window(walked.over(w))
+                return walked.over(w)
             else:
-                return _check_window(walked)
+                return walked
         else:
             return walked
 
@@ -680,9 +749,10 @@ class Projector(object):
 
     def get_result(self):
         roots = self.parent_roots
+        first_root = roots[0]
 
-        if len(roots) == 1 and isinstance(roots[0], ops.Selection):
-            fused_op = self._check_fusion(roots[0])
+        if len(roots) == 1 and isinstance(first_root, ops.Selection):
+            fused_op = self._check_fusion(first_root)
             if fused_op is not None:
                 return fused_op
 
@@ -704,7 +774,7 @@ class Projector(object):
 
             # a * projection
             if (isinstance(val, ir.TableExpr) and
-                (self.parent.op().is_ancestor(val) or
+                (self.parent.op().equals(val.op()) or
                  # gross we share the same table root. Better way to
                  # detect?
                  len(roots) == 1 and val._root_tables()[0] is roots[0])):
@@ -742,7 +812,7 @@ class Projector(object):
 def _maybe_resolve_exprs(table, exprs):
     try:
         return table._resolve(exprs)
-    except:
+    except (AttributeError, IbisTypeError):
         return None
 
 
@@ -777,11 +847,7 @@ class ExprValidator(object):
         return self.roots_shared(node) > 0
 
     def roots_shared(self, node):
-        count = 0
-        for root in self.roots:
-            if root.is_ancestor(node):
-                count += 1
-        return count
+        return sum(root.is_ancestor(node) for root in self.roots)
 
     def shares_some_roots(self, expr):
         expr_roots = expr._root_tables()
@@ -814,71 +880,22 @@ class ExprValidator(object):
                 'dependencies of the table expression.' % repr(expr))
 
 
-class CommonSubexpr(object):
-
-    def __init__(self, exprs):
-        self.parent_exprs = exprs
-
-    def validate(self, expr):
-        if isinstance(expr, ir.TableExpr):
-            if not self._check(expr):
-                return False
-
+def fully_originate_from(exprs, parents):
+    def finder(expr):
         op = expr.op()
 
-        for arg in op.flat_args():
-            if not isinstance(arg, ir.Expr):
-                continue
-            elif not isinstance(arg, ir.TableExpr):
-                if not self.validate(arg):
-                    return False
-            else:
-                # Table expression. Must be found in a parent table expr a
-                # blocking root of one of the parent tables
-                if not self._check(arg):
-                    return False
+        if isinstance(expr, ir.TableExpr):
+            return lin.proceed, expr
+        elif op.blocks():
+            return lin.halt, None
+        else:
+            return lin.proceed, None
 
-        return True
+    # unique table dependencies of exprs and parents
+    exprs_deps = set(lin.traverse(finder, exprs))
+    parents_deps = set(lin.traverse(finder, parents))
 
-    def _check(self, expr):
-        # Table dependency matches one of the parent exprs
-        is_valid = False
-        for parent in self.parent_exprs:
-            is_valid = is_valid or self._check_table(parent, expr)
-        return is_valid
-
-    def _check_table(self, parent, needle):
-        def _matches(expr):
-            op = expr.op()
-
-            if expr.equals(needle):
-                return True
-
-            if op.blocks():
-                return False
-
-            for arg in op.flat_args():
-                if not isinstance(arg, ir.Expr):
-                    continue
-                if _matches(arg):
-                    return True
-
-            return True
-
-        return _matches(parent)
-
-    def validate_all(self, exprs):
-        for expr in exprs:
-            self.assert_valid(expr)
-
-    def assert_valid(self, expr):
-        if not self.validate(expr):
-            msg = self._error_message(expr)
-            raise RelationError(msg)
-
-    def _error_message(self, expr):
-        return ('The expression %s does not fully originate from '
-                'dependencies of the table expression.' % repr(expr))
+    return exprs_deps <= parents_deps
 
 
 class FilterValidator(ExprValidator):
@@ -898,10 +915,14 @@ class FilterValidator(ExprValidator):
     def validate(self, expr):
         op = expr.op()
 
+        if (isinstance(expr, ir.BooleanColumn) and
+                isinstance(op, ops.TableColumn)):
+            return True
+
         is_valid = True
 
         if isinstance(op, ops.Contains):
-            value_valid = ExprValidator.validate(self, op.value)
+            value_valid = super(FilterValidator, self).validate(op.value)
             is_valid = value_valid
         else:
             roots_valid = []
@@ -909,13 +930,13 @@ class FilterValidator(ExprValidator):
                 if isinstance(arg, ir.ScalarExpr):
                     # arg_valid = True
                     pass
-                elif isinstance(arg, ops.TopKExpr):
+                elif isinstance(arg, ir.TopKExpr):
                     # TopK not subjected to further analysis for now
                     roots_valid.append(True)
-                elif isinstance(arg, (ir.ArrayExpr, ir.AnalyticExpr)):
+                elif isinstance(arg, (ir.ColumnExpr, ir.AnalyticExpr)):
                     roots_valid.append(self.shares_some_roots(arg))
                 elif isinstance(arg, ir.Expr):
-                    raise NotImplementedError
+                    raise NotImplementedError(repr((type(expr), type(arg))))
                 else:
                     # arg_valid = True
                     pass
@@ -926,48 +947,182 @@ class FilterValidator(ExprValidator):
 
 
 def find_source_table(expr):
-    # A more complex version of _find_base_table.
-    # TODO: Revisit/refactor this all at some point
-    node = expr.op()
+    """Find the first table expression observed for each argument that the
+    expression depends on
 
-    # First table expression observed for each argument that the expr
-    # depends on
-    first_tables = []
+    Parameters
+    ----------
+    expr : ir.Expr
 
-    def push_first(arg):
-        if not isinstance(arg, ir.Expr):
-            return
-        if isinstance(arg, ir.TableExpr):
-            first_tables.append(arg)
+    Returns
+    -------
+    table_expr : ir.TableExpr
+
+    Examples
+    --------
+    >>> import ibis
+    >>> t = ibis.table([('a', 'double'), ('b', 'string')], name='t')
+    >>> expr = t.mutate(c=t.a + 42.0)
+    >>> expr  # doctest: +NORMALIZE_WHITESPACE
+    ref_0
+    UnboundTable[table]
+      name: t
+      schema:
+        a : double
+        b : string
+    Selection[table]
+      table:
+        Table: ref_0
+      selections:
+        Table: ref_0
+        c = Add[double*]
+          left:
+            a = Column[double*] 'a' from table
+              ref_0
+          right:
+            Literal[double]
+              42.0
+    >>> find_source_table(expr)
+    UnboundTable[table]
+      name: t
+      schema:
+        a : double
+        b : string
+    >>> left = ibis.table([('a', 'int64'), ('b', 'string')])
+    >>> right = ibis.table([('c', 'int64'), ('d', 'string')])
+    >>> result = left.inner_join(right, left.a == right.c)
+    >>> find_source_table(result)  # doctest: +ELLIPSIS
+    Traceback (most recent call last):
+    ...
+    NotImplementedError: More than one base table not implemented
+    """
+    def finder(expr):
+        if isinstance(expr, ir.TableExpr):
+            return lin.halt, expr
         else:
-            collect(arg.op())
+            return lin.proceed, None
 
-    def collect(node):
-        for arg in node.flat_args():
-            push_first(arg)
-
-    collect(node)
-    options = util.unique_by_key(first_tables, id)
+    first_tables = lin.traverse(finder, expr.op().flat_args())
+    options = list(toolz.unique(first_tables, key=id))
 
     if len(options) > 1:
-        raise NotImplementedError
+        raise NotImplementedError('More than one base table not implemented')
 
     return options[0]
 
 
-def unwrap_ands(expr):
-    out_exprs = []
+def flatten_predicate(expr):
+    """Yield the expressions corresponding to the `And` nodes of a predicate.
 
-    def walk(expr):
-        op = expr.op()
-        if isinstance(op, ops.Comparison):
-            out_exprs.append(expr)
-        elif isinstance(op, ops.And):
-            walk(op.left)
-            walk(op.right)
+    Parameters
+    ----------
+    expr : ir.BooleanColumn
+
+    Returns
+    -------
+    exprs : List[ir.BooleanColumn]
+
+    Examples
+    --------
+    >>> import ibis
+    >>> t = ibis.table([('a', 'int64'), ('b', 'string')], name='t')
+    >>> filt = (t.a == 1) & (t.b == 'foo')
+    >>> predicates = flatten_predicate(filt)
+    >>> len(predicates)
+    2
+    >>> predicates[0]  # doctest: +NORMALIZE_WHITESPACE
+    ref_0
+    UnboundTable[table]
+      name: t
+      schema:
+        a : int64
+        b : string
+    Equals[boolean*]
+      left:
+        a = Column[int64*] 'a' from table
+          ref_0
+      right:
+        Literal[int64]
+          1
+    >>> predicates[1]  # doctest: +NORMALIZE_WHITESPACE
+    ref_0
+    UnboundTable[table]
+      name: t
+      schema:
+        a : int64
+        b : string
+    Equals[boolean*]
+      left:
+        b = Column[string*] 'b' from table
+          ref_0
+      right:
+        Literal[string]
+          foo
+    """
+    def predicate(expr):
+        if isinstance(expr.op(), ops.And):
+            return lin.proceed, None
         else:
-            raise Exception('Invalid predicate: {0!s}'
-                            .format(expr._repr()))
+            return lin.halt, expr
 
-    walk(expr)
-    return out_exprs
+    return list(lin.traverse(predicate, expr, type=ir.BooleanColumn))
+
+
+def is_analytic(expr, exclude_windows=False):
+    def _is_analytic(op):
+        if isinstance(op, (ops.Reduction, ops.AnalyticOp)):
+            return True
+        elif isinstance(op, ops.WindowOp) and exclude_windows:
+            return False
+
+        for arg in op.args:
+            if isinstance(arg, ir.Expr) and _is_analytic(arg.op()):
+                return True
+
+        return False
+
+    return _is_analytic(expr.op())
+
+
+def is_reduction(expr):
+    """Check whether an expression is a reduction or not
+
+    Aggregations yield typed scalar expressions, since the result of an
+    aggregation is a single value. When creating an table expression
+    containing a GROUP BY equivalent, we need to be able to easily check
+    that we are looking at the result of an aggregation.
+
+    As an example, the expression we are looking at might be something
+    like: foo.sum().log10() + bar.sum().log10()
+
+    We examine the operator DAG in the expression to determine if there
+    are aggregations present.
+
+    A bound aggregation referencing a separate table is a "false
+    aggregation" in a GROUP BY-type expression and should be treated a
+    literal, and must be computed as a separate query and stored in a
+    temporary variable (or joined, for bound aggregations with keys)
+
+    Parameters
+    ----------
+    expr : ir.Expr
+
+    Returns
+    -------
+    check output : bool
+    """
+    def has_reduction(op):
+        if getattr(op, '_reduction', False):
+            return True
+
+        for arg in op.args:
+            if isinstance(arg, ir.ScalarExpr) and has_reduction(arg.op()):
+                return True
+
+        return False
+
+    return has_reduction(expr.op() if isinstance(expr, ir.Expr) else expr)
+
+
+def is_scalar_reduction(expr):
+    return isinstance(expr, ir.ScalarExpr) and is_reduction(expr)

@@ -1,0 +1,37 @@
+channels:
+  - conda-forge
+dependencies:
+  - click
+  - clickhouse-cityhash
+  - clickhouse-driver>=0.0.8
+  - clickhouse-sqlalchemy
+  - cmake
+  - flake8
+  - google-cloud-bigquery>=1.0.0
+  - graphviz
+  - impyla>=0.14.0
+  - jinja2
+  - lz4
+  - multipledispatch
+  - numpy=1.12.0
+  - pandas=0.22
+  - plumbum
+  - psycopg2
+  - pyarrow>=0.6.0
+  - pymapd>=0.3.2
+  - pymysql
+  - pytest
+  - pytest-cov
+  - pytest-xdist
+  - python=3.5
+  - python-graphviz
+  - python-hdfs>=2.0.16
+  - pytz
+  - regex
+  - requests
+  - ruamel.yaml
+  - six
+  - sqlalchemy
+  - toolz
+  - xorg-libxpm
+  - xorg-libxrender

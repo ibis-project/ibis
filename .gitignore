@@ -9,7 +9,9 @@
 *.kdev4
 *.log
 *.swp
+*.swo
 *.pdb
+.idea
 
 # Compiled source
 *.a
@@ -46,12 +48,20 @@ Icon?
 docs/source/generated
 docs/source/generated-notebooks
 
+# Ibis testing data
+ci/ibis-testing-data*
+ci/ibis_testing.db
+
 # UDF testing generated files
-testing/udf/CMakeCache.txt
-testing/udf/CMakeFiles/
-testing/udf/Makefile
+ci/udf/CMakeCache.txt
+ci/udf/CMakeFiles/
+ci/udf/Makefile
 .cache/
 
 # test data
 scripts/ibis-testing*
 ibis_testing*
+.tox/
+.asv/
+.ipynb_checkpoints/
+.pytest_cache

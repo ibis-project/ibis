@@ -1,50 +1,33 @@
-# Copyright 2014 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-from posixpath import join as pjoin
 import re
 import six
-import threading
 import time
 import weakref
+import traceback
+import threading
 
-import hdfs
+from posixpath import join as pjoin
+from collections import deque
+
 import numpy as np
 import pandas as pd
 
+import ibis.util as util
 import ibis.common as com
-
-from ibis.config import options
-from ibis.client import (Query, AsyncQuery, Database,
-                         DatabaseEntity, SQLClient)
-from ibis.compat import lzip
-from ibis.filesystems import HDFS, WebHDFS
-from ibis.impala import udf, ddl
-from ibis.impala.compat import impyla, ImpylaError, HS2Error, TGetOperationStatusReq, TOperationState
-from ibis.impala.compiler import build_ast
-from ibis.util import log
-from ibis.sql.compiler import DDL
+import ibis.expr.types as ir
+import ibis.expr.rules as rlz
+import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.types as ir
-import ibis.util as util
 
-
-if six.PY2:
-    import Queue as queue
-else:
-    import queue
+from ibis.config import options
+from ibis.client import Query, Database, DatabaseEntity, SQLClient
+from ibis.compat import lzip, parse_version
+from ibis.filesystems import HDFS, WebHDFS
+from ibis.impala import udf, ddl
+from ibis.impala.compat import impyla, ImpylaError, HS2Error
+from ibis.impala.compiler import build_ast, ImpalaDialect
+from ibis.util import log
+from ibis.sql.compiler import DDL, DML
 
 
 class ImpalaDatabase(Database):
@@ -81,10 +64,10 @@ class ImpalaConnection(object):
         self.options = {}
 
         self.max_pool_size = pool_size
-        self._connections = None
+        self._connections = weakref.WeakSet()
 
-        self.reset_connection_pool()
-        self.ping()
+        self.connection_pool = deque(maxlen=pool_size)
+        self.connection_pool_size = 0
 
     def set_options(self, options):
         self.options.update(options)
@@ -93,15 +76,11 @@ class ImpalaConnection(object):
         """
         Close all open Impyla sessions
         """
-        self.reset_connection_pool()
+        self._connections.clear()
+        self.connection_pool.clear()
 
-    def reset_connection_pool(self):
-        if self._connections is not None:
-            for k, con in self._connections.items():
-                con.close()
-        self._connections = weakref.WeakValueDictionary()
-        self.connection_pool = queue.Queue(self.max_pool_size)
-        self.connection_pool_size = 0
+        for impyla_connection in self._connections:
+            impyla_connection.close()
 
     def set_database(self, name):
         self.database = name
@@ -113,23 +92,22 @@ class ImpalaConnection(object):
         elif key in self.options:
             del self.options[key]
 
-    def execute(self, query, async=False):
-        if isinstance(query, DDL):
+    def execute(self, query):
+        if isinstance(query, (DDL, DML)):
             query = query.compile()
 
         cursor = self._get_cursor()
         self.log(query)
 
         try:
-            cursor.execute(query, async=async)
-        except:
+            cursor.execute(query)
+        except Exception:
             cursor.release()
-
-            import traceback
-            buf = six.StringIO()
-            traceback.print_exc(file=buf)
-            self.error('Exception caused by {0}: {1}'.format(query,
-                                                             buf.getvalue()))
+            self.error(
+                'Exception caused by {}: {}'.format(
+                    query, traceback.format_exc()
+                )
+            )
             raise
 
         return cursor
@@ -147,45 +125,38 @@ class ImpalaConnection(object):
 
     def _get_cursor(self):
         try:
-            cur = self.connection_pool.get(False)
-            if (cur.database != self.database or
-                    cur.options != self.options):
-                cur = self._new_cursor()
-            cur.released = False
-
-            return cur
-        except queue.Empty:
+            cursor = self.connection_pool.popleft()
+        except IndexError:  # deque is empty
             if self.connection_pool_size < self.max_pool_size:
-                cursor = self._new_cursor()
-                self.connection_pool_size += 1
-                return cursor
-            else:
-                raise com.InternalError('Too many concurrent / hung queries')
+                return self._new_cursor()
+            raise com.InternalError('Too many concurrent / hung queries')
+        else:
+            if (cursor.database != self.database or
+                    cursor.options != self.options):
+                return self._new_cursor()
+            cursor.released = False
+            return cursor
 
     def _new_cursor(self):
         params = self.params.copy()
-        database = None
-        if self.database != 'default':
-            database = self.database
-        con = impyla.connect(database=database, **params)
+        con = impyla.connect(database=self.database, **params)
 
-        self._connections[id(con)] = con
+        self._connections.add(con)
 
         # make sure the connection works
-        cursor = con.cursor(convert_types=True, user=params.get('user'))
+        cursor = con.cursor(user=params.get('user'), convert_types=True)
         cursor.ping()
 
         wrapper = ImpalaCursor(cursor, self, con, self.database,
                                self.options.copy())
         wrapper.set_options()
-
         return wrapper
 
     def ping(self):
-        self._new_cursor()
+        self._get_cursor()._cursor.ping()
 
     def release(self, cur):
-        self.connection_pool.put(cur)
+        self.connection_pool.append(cur)
 
 
 class ImpalaCursor(object):
@@ -198,9 +169,14 @@ class ImpalaCursor(object):
         self.database = database
         self.options = options
         self.released = False
+        self.con.connection_pool_size += 1
 
     def __del__(self):
-        self._close_cursor()
+        try:
+            self._close_cursor()
+        except Exception:
+            pass
+
         with self.con.lock:
             self.con.connection_pool_size -= 1
 
@@ -227,7 +203,7 @@ class ImpalaCursor(object):
 
     def set_options(self):
         for k, v in self.options.items():
-            query = 'SET {0}={1}'.format(k, v)
+            query = 'SET {} = {!r}'.format(k, v)
             self._cursor.execute(query)
 
     @property
@@ -239,43 +215,12 @@ class ImpalaCursor(object):
             self.con.release(self)
             self.released = True
 
-    def execute(self, stmt, async=False):
+    def execute(self, stmt):
         self._cursor.execute_async(stmt)
-        if async:
-            return
-        else:
-            self._wait_synchronous()
+        self._wait_synchronous()
 
     def _wait_synchronous(self):
-        # Wait to finish, but cancel if KeyboardInterrupt
-        loop_start = time.time()
-
-        def _sleep_interval(start_time):
-            elapsed = time.time() - start_time
-            if elapsed < 0.05:
-                return 0.01
-            elif elapsed < 1.0:
-                return 0.05
-            elif elapsed < 10.0:
-                return 0.1
-            elif elapsed < 60.0:
-                return 0.5
-            return 1.0
-
-        cur = self._cursor
-        try:
-            while True:
-                status = self._get_status()
-                state = self._get_state_for_status(status)
-                if self._cursor._op_state_is_error(state):
-                    raise HS2Error(status.errorMessage)
-                if not cur._op_state_is_executing(state):
-                    break
-                time.sleep(_sleep_interval(loop_start))
-        except KeyboardInterrupt:
-            print('Canceling query')
-            self.cancel()
-            raise
+        self._cursor._wait_to_finish()
 
     def is_finished(self):
         return not self.is_executing()
@@ -295,24 +240,20 @@ class ImpalaCursor(object):
         else:
             return self._cursor.fetchall()
 
-    def _get_status(self):
-        op = self._cursor._last_operation
-        req = TGetOperationStatusReq(operationHandle=op.handle)
-        resp = op._rpc('GetOperationStatus', req)
-        return resp
-
-    def _get_state_for_status(self, status):
-        return TOperationState._VALUES_TO_NAMES[status.operationState]
-
 class ImpalaQuery(Query):
 
     def _fetch(self, cursor):
         batches = cursor.fetchall(columnar=True)
         names = [x[0] for x in cursor.description]
-        return _column_batches_to_dataframe(names, batches)
+        df = _column_batches_to_dataframe(names, batches)
 
-    def _db_type_to_dtype(self, db_type):
-        return _HS2_TTypeId_to_dtype[db_type]
+        # Ugly Hack for PY2 to ensure unicode values for string columns
+        if self.expr is not None:
+            # in case of metadata queries there is no expr and
+            # self.schema() would raise an exception
+            return self.schema().apply_to(df)
+
+        return df
 
 
 def _column_batches_to_dataframe(names, batches):
@@ -374,88 +315,6 @@ def _chunks_to_pandas_array(chunks):
     return target
 
 
-class ImpalaAsyncQuery(ImpalaQuery, AsyncQuery):
-
-    def __init__(self, client, ddl):
-        super(ImpalaAsyncQuery, self).__init__(client, ddl)
-        self._cursor = None
-        self._exception = None
-        self._execute_thread = None
-        self._execute_complete = False
-        self._operation_active = False
-
-    def __del__(self):
-        if self._cursor is not None:
-            self._cursor.release()
-
-    def execute(self):
-        if self._operation_active:
-            raise com.IbisError('operation already active')
-        con = self.client.con
-
-        # XXX: there is codegen overhead somewhere which causes execute_async
-        # to block, unfortunately. This threading hack works around it
-        def _async_execute():
-            try:
-                self._cursor = con.execute(self.compiled_ddl, async=True)
-            except Exception as e:
-                self._exception = e
-            self._execute_complete = True
-
-        self._execute_complete = False
-        self._operation_active = True
-        self._execute_thread = threading.Thread(target=_async_execute)
-        self._execute_thread.start()
-        return self
-
-    def _wait_execute(self):
-        if not self._operation_active:
-            raise com.IbisError('No active query')
-        if self._execute_thread.is_alive():
-            self._execute_thread.join()
-        elif self._exception is not None:
-            raise self._exception
-
-    def is_finished(self):
-        """
-        Return True if the operation is finished
-        """
-        from impala.error import ProgrammingError
-        self._wait_execute()
-        try:
-            return self._cursor.is_finished()
-        except ProgrammingError as e:
-            if 'state is not available' in e.args[0]:
-                return True
-            raise
-
-    def cancel(self):
-        """
-        Cancel the query (or attempt to)
-        """
-        self._wait_execute()
-        return self._cursor.cancel()
-
-    def status(self):
-        """
-        Retrieve Impala query status
-        """
-        self._wait_execute()
-        return self._cursor.status()
-
-    def wait(self, progress_bar=True):
-        raise NotImplementedError
-
-    def get_result(self):
-        """
-        Presuming the operation is completed, return the cursor result as would
-        be returned by the synchronous query API
-        """
-        self._wait_execute()
-        result = self._fetch(self._cursor)
-        return self._wrap_result(result)
-
-
 _HS2_TTypeId_to_dtype = {
     'BOOLEAN': 'bool',
     'TINYINT': 'int8',
@@ -473,17 +332,381 @@ _HS2_TTypeId_to_dtype = {
 }
 
 
+class ImpalaDatabaseTable(ops.DatabaseTable):
+    pass
+
+
+class ImpalaTable(ir.TableExpr, DatabaseEntity):
+
+    """
+    References a physical table in the Impala-Hive metastore
+    """
+
+    @property
+    def _qualified_name(self):
+        return self.op().args[0]
+
+    @property
+    def _unqualified_name(self):
+        return self._match_name()[1]
+
+    @property
+    def _client(self):
+        return self.op().args[2]
+
+    def _match_name(self):
+        m = ddl.fully_qualified_re.match(self._qualified_name)
+        if not m:
+            raise com.IbisError('Cannot determine database name from {0}'
+                                .format(self._qualified_name))
+        db, quoted, unquoted = m.groups()
+        return db, quoted or unquoted
+
+    @property
+    def _database(self):
+        return self._match_name()[0]
+
+    def compute_stats(self, incremental=False):
+        """
+        Invoke Impala COMPUTE STATS command to compute column, table, and
+        partition statistics.
+
+        See also ImpalaClient.compute_stats
+        """
+        return self._client.compute_stats(self._qualified_name,
+                                          incremental=incremental)
+
+    def invalidate_metadata(self):
+        self._client.invalidate_metadata(self._qualified_name)
+
+    def refresh(self):
+        self._client.refresh(self._qualified_name)
+
+    def metadata(self):
+        """
+        Return parsed results of DESCRIBE FORMATTED statement
+
+        Returns
+        -------
+        meta : TableMetadata
+        """
+        return self._client.describe_formatted(self._qualified_name)
+
+    describe_formatted = metadata
+
+    def files(self):
+        """
+        Return results of SHOW FILES statement
+        """
+        return self._client.show_files(self._qualified_name)
+
+    def drop(self):
+        """
+        Drop the table from the database
+        """
+        self._client.drop_table_or_view(self._qualified_name)
+
+    def truncate(self):
+        self._client.truncate_table(self._qualified_name)
+
+    def insert(self, obj=None, overwrite=False, partition=None,
+               values=None, validate=True, results=False):
+        """
+        Insert into Impala table. Wraps ImpalaClient.insert
+
+        Parameters
+        ----------
+        obj : TableExpr or pandas DataFrame
+        overwrite : boolean, default False
+          If True, will replace existing contents of table
+        partition : list or dict, optional
+          For partitioned tables, indicate the partition that's being inserted
+          into, either with an ordered list of partition keys or a dict of
+          partition field name to value. For example for the partition
+          (year=2007, month=7), this can be either (2007, 7) or {'year': 2007,
+          'month': 7}.
+        validate : boolean, default True
+          If True, do more rigorous validation that schema of table being
+          inserted is compatible with the existing table
+        results : boolean, default True
+          If True, return a ibis cursor. This is useful for getting stats on
+          inserts.
+
+        Examples
+        --------
+        >>> t.insert(table_expr)  # doctest: +SKIP
+
+        # Completely overwrite contents
+        >>> t.insert(table_expr, overwrite=True)  # doctest: +SKIP
+        """
+        if isinstance(obj, pd.DataFrame):
+            from ibis.impala.pandas_interop import write_temp_dataframe
+            writer, expr = write_temp_dataframe(self._client, obj)
+        else:
+            expr = obj
+
+        if values is not None:
+            raise NotImplementedError
+
+        if validate:
+            existing_schema = self.schema()
+            insert_schema = expr.schema()
+            if not insert_schema.equals(existing_schema):
+                _validate_compatible(insert_schema, existing_schema)
+
+        if partition is not None:
+            partition_schema = self.partition_schema()
+            partition_schema_names = frozenset(partition_schema.names)
+            expr = expr.projection([
+                column for column in expr.columns
+                if column not in partition_schema_names
+            ])
+        else:
+            partition_schema = None
+
+        ast = build_ast(expr, ImpalaDialect.make_context())
+        select = ast.queries[0]
+        statement = ddl.InsertSelect(self._qualified_name,
+                                     select,
+                                     partition=partition,
+                                     partition_schema=partition_schema,
+                                     overwrite=overwrite)
+        return self._execute(statement, results=results)
+
+    def load_data(self, path, overwrite=False, partition=None):
+        """
+        Wraps the LOAD DATA DDL statement. Loads data into an Impala table by
+        physically moving data files.
+
+        Parameters
+        ----------
+        path : string
+        overwrite : boolean, default False
+          Overwrite the existing data in the entire table or indicated
+          partition
+        partition : dict, optional
+          If specified, the partition must already exist
+
+        Returns
+        -------
+        query : ImpalaQuery
+        """
+        if partition is not None:
+            partition_schema = self.partition_schema()
+        else:
+            partition_schema = None
+
+        stmt = ddl.LoadData(self._qualified_name, path,
+                            partition=partition,
+                            partition_schema=partition_schema)
+
+        return self._execute(stmt)
+
+    @property
+    def name(self):
+        return self.op().name
+
+    def rename(self, new_name, database=None):
+        """
+        Rename table inside Impala. References to the old table are no longer
+        valid.
+
+        Parameters
+        ----------
+        new_name : string
+        database : string
+
+        Returns
+        -------
+        renamed : ImpalaTable
+        """
+        m = ddl.fully_qualified_re.match(new_name)
+        if not m and database is None:
+            database = self._database
+        statement = ddl.RenameTable(self._qualified_name, new_name,
+                                    new_database=database)
+        self._client._execute(statement)
+
+        op = self.op().change_name(statement.new_qualified_name)
+        return type(self)(op)
+
+    def _execute(self, stmt, results=False):
+        return self._client._execute(stmt, results=results)
+
+    @property
+    def is_partitioned(self):
+        """
+        True if the table is partitioned
+        """
+        return self.metadata().is_partitioned
+
+    def partition_schema(self):
+        """
+        For partitioned tables, return the schema (names and types) for the
+        partition columns
+
+        Returns
+        -------
+        partition_schema : ibis Schema
+        """
+        schema = self.schema()
+        name_to_type = dict(zip(schema.names, schema.types))
+
+        result = self.partitions()
+
+        partition_fields = []
+        for x in result.columns:
+            if x not in name_to_type:
+                break
+            partition_fields.append((x, name_to_type[x]))
+
+        pnames, ptypes = zip(*partition_fields)
+        return sch.Schema(pnames, ptypes)
+
+    def add_partition(self, spec, location=None):
+        """
+        Add a new table partition, creating any new directories in HDFS if
+        necessary.
+
+        Partition parameters can be set in a single DDL statement, or you can
+        use alter_partition to set them after the fact.
+
+        Returns
+        -------
+        None (for now)
+        """
+        part_schema = self.partition_schema()
+        stmt = ddl.AddPartition(self._qualified_name, spec, part_schema,
+                                location=location)
+        return self._execute(stmt)
+
+    def alter(self, location=None, format=None, tbl_properties=None,
+              serde_properties=None):
+        """
+        Change setting and parameters of the table.
+
+        Parameters
+        ----------
+        location : string, optional
+          For partitioned tables, you may want the alter_partition function
+        format : string, optional
+        tbl_properties : dict, optional
+        serde_properties : dict, optional
+
+        Returns
+        -------
+        None (for now)
+        """
+        def _run_ddl(**kwds):
+            stmt = ddl.AlterTable(self._qualified_name, **kwds)
+            return self._execute(stmt)
+
+        return self._alter_table_helper(_run_ddl, location=location,
+                                        format=format,
+                                        tbl_properties=tbl_properties,
+                                        serde_properties=serde_properties)
+
+    def set_external(self, is_external=True):
+        """
+        Toggle EXTERNAL table property.
+        """
+        self.alter(tbl_properties={'EXTERNAL': is_external})
+
+    def alter_partition(self, spec, location=None, format=None,
+                        tbl_properties=None,
+                        serde_properties=None):
+        """
+        Change setting and parameters of an existing partition
+
+        Parameters
+        ----------
+        spec : dict or list
+          The partition keys for the partition being modified
+        location : string, optional
+        format : string, optional
+        tbl_properties : dict, optional
+        serde_properties : dict, optional
+
+        Returns
+        -------
+        None (for now)
+        """
+        part_schema = self.partition_schema()
+
+        def _run_ddl(**kwds):
+            stmt = ddl.AlterPartition(self._qualified_name, spec,
+                                      part_schema, **kwds)
+            return self._execute(stmt)
+
+        return self._alter_table_helper(_run_ddl, location=location,
+                                        format=format,
+                                        tbl_properties=tbl_properties,
+                                        serde_properties=serde_properties)
+
+    def _alter_table_helper(self, f, **alterations):
+        results = []
+        for k, v in alterations.items():
+            if v is None:
+                continue
+            result = f(**{k: v})
+            results.append(result)
+        return results
+
+    def drop_partition(self, spec):
+        """
+        Drop an existing table partition
+        """
+        part_schema = self.partition_schema()
+        stmt = ddl.DropPartition(self._qualified_name, spec, part_schema)
+        return self._execute(stmt)
+
+    def partitions(self):
+        """
+        Return a pandas.DataFrame giving information about this table's
+        partitions. Raises an exception if the table is not partitioned.
+
+        Returns
+        -------
+        partitions : pandas.DataFrame
+        """
+        return self._client.list_partitions(self._qualified_name)
+
+    def stats(self):
+        """
+        Return results of SHOW TABLE STATS as a DataFrame. If not partitioned,
+        contains only one row
+
+        Returns
+        -------
+        stats : pandas.DataFrame
+        """
+        return self._client.table_stats(self._qualified_name)
+
+    def column_stats(self):
+        """
+        Return results of SHOW COLUMN STATS as a pandas DataFrame
+
+        Returns
+        -------
+        column_stats : pandas.DataFrame
+        """
+        return self._client.column_stats(self._qualified_name)
+
+
 class ImpalaClient(SQLClient):
 
     """
     An Ibis client interface that uses Impala
     """
 
+    dialect = ImpalaDialect
     database_class = ImpalaDatabase
-    sync_query = ImpalaQuery
-    async_query = ImpalaAsyncQuery
+    query_class = ImpalaQuery
+    table_class = ImpalaDatabaseTable
+    table_expr_class = ImpalaTable
 
     def __init__(self, con, hdfs_client=None, **params):
+        import hdfs
         self.con = con
 
         if isinstance(hdfs_client, hdfs.Client):
@@ -498,8 +721,8 @@ class ImpalaClient(SQLClient):
 
         self._ensured = False
 
-    def _build_ast(self, expr):
-        return build_ast(expr)
+    def _build_ast(self, expr, context):
+        return build_ast(expr, context)
 
     def _get_hdfs(self):
         if self._hdfs is None:
@@ -521,10 +744,6 @@ class ImpalaClient(SQLClient):
         if self._kudu is None:
             self._kudu = KuduImpalaInterface(self)
         return self._kudu
-
-    @property
-    def _table_expr_klass(self):
-        return ImpalaTable
 
     def close(self):
         """
@@ -719,32 +938,35 @@ class ImpalaClient(SQLClient):
         schema : ibis Schema
         """
         qualified_name = self._fully_qualified_name(table_name, database)
-        query = 'DESCRIBE {0}'.format(qualified_name)
-        tuples = self.con.fetchall(query)
+        query = 'DESCRIBE {}'.format(qualified_name)
 
-        names, types, comments = zip(*tuples)
+        # only pull out the first two columns which are names and types
+        pairs = [row[:2] for row in self.con.fetchall(query)]
 
-        ibis_types = []
-        for t in types:
-            t = t.lower()
-            t = udf.parse_type(t)
-            ibis_types.append(t)
+        names, types = zip(*pairs)
+        ibis_types = [udf.parse_type(type.lower()) for type in types]
+        names = [name.lower() for name in names]
 
-        names = [x.lower() for x in names]
-
-        return dt.Schema(names, ibis_types)
+        return sch.Schema(names, ibis_types)
 
     @property
     def client_options(self):
         return self.con.options
+
+    @property
+    def version(self):
+        with self._execute('select version()', results=True) as cur:
+            raw = self._get_list(cur)[0]
+
+        vstring = raw.split()[2]
+        return parse_version(vstring)
 
     def get_options(self):
         """
         Return current query options for the Impala session
         """
         query = 'SET'
-        tuples = self.con.fetchall(query)
-        return dict(tuples)
+        return dict(row[:2] for row in self.con.fetchall(query))
 
     def set_options(self, options):
         self.con.set_options(options)
@@ -792,7 +1014,7 @@ class ImpalaClient(SQLClient):
         expr : ibis TableExpr
         database : string, default None
         """
-        ast = self._build_ast(expr)
+        ast = self._build_ast(expr, ImpalaDialect.make_context())
         select = ast.queries[0]
         statement = ddl.CreateView(name, select, database=database)
         return self._execute(statement)
@@ -848,7 +1070,7 @@ class ImpalaClient(SQLClient):
 
         Examples
         --------
-        con.create_table('new_table_name', table_expr)
+        >>> con.create_table('new_table_name', table_expr)  # doctest: +SKIP
         """
         if like_parquet is not None:
             raise NotImplementedError
@@ -859,21 +1081,15 @@ class ImpalaClient(SQLClient):
                 writer, to_insert = write_temp_dataframe(self, obj)
             else:
                 to_insert = obj
-            ast = self._build_ast(to_insert)
+            ast = self._build_ast(to_insert, ImpalaDialect.make_context())
             select = ast.queries[0]
-
-            if partition is not None:
-                # Fairly certain this is currently the case
-                raise ValueError('partition not supported with '
-                                 'create-table-as-select. Create an '
-                                 'empty partitioned table instead '
-                                 'and insert into those partitions.')
 
             statement = ddl.CTAS(table_name, select,
                                  database=database,
                                  can_exist=force,
                                  format=format,
                                  external=external,
+                                 partition=partition,
                                  path=location)
         elif schema is not None:
             statement = ddl.CreateTableWithSchema(
@@ -1062,7 +1278,7 @@ class ImpalaClient(SQLClient):
         else:
             schema = self._get_table_schema(qualified_name)
             node = ImpalaTemporaryTable(qualified_name, schema, self)
-            t = self._table_expr_klass(node)
+            t = self.table_expr_class(node)
 
         # Compute number of rows in table for better default query planning
         cardinality = t.count().execute()
@@ -1140,7 +1356,9 @@ class ImpalaClient(SQLClient):
 
         Examples
         --------
-        con.drop_table('my_table', database='operations', force=True)
+        >>> table = 'my_table'
+        >>> db = 'operations'
+        >>> con.drop_table(table, database=db, force=True)  # doctest: +SKIP
         """
         statement = ddl.DropTable(table_name, database=database,
                                   must_exist=not force)
@@ -1167,7 +1385,7 @@ class ImpalaClient(SQLClient):
         except Exception as e:
             try:
                 self.drop_view(name, database=database)
-            except:
+            except Exception:
                 raise e
 
     def cache_table(self, table_name, database=None, pool='default'):
@@ -1183,7 +1401,10 @@ class ImpalaClient(SQLClient):
 
         Examples
         --------
-        con.cache_table('my_table', database='operations', pool='op_4GB_pool')
+        >>> table = 'my_table'
+        >>> db = 'operations'
+        >>> pool = 'op_4GB_pool'
+        >>> con.cache_table('my_table', database=db, pool=pool)  # noqa: E501 # doctest: +SKIP
         """
         statement = ddl.CacheTable(table_name, database=database, pool=pool)
         self._execute(statement)
@@ -1204,7 +1425,7 @@ class ImpalaClient(SQLClient):
         # all lowercase fields from Impala.
         names = [x.lower() for x in names]
 
-        return dt.Schema(names, ibis_types)
+        return sch.Schema(names, ibis_types)
 
     def create_function(self, func, name=None, database=None):
         """
@@ -1222,20 +1443,9 @@ class ImpalaClient(SQLClient):
         database = database or self.current_database
 
         if isinstance(func, udf.ImpalaUDF):
-            stmt = ddl.CreateFunction(func.lib_path, func.so_symbol,
-                                      func.input_type,
-                                      func.output,
-                                      name, database)
+            stmt = ddl.CreateUDF(func, name=name, database=database)
         elif isinstance(func, udf.ImpalaUDA):
-            stmt = ddl.CreateAggregateFunction(func.lib_path,
-                                               func.input_type,
-                                               func.output,
-                                               func.update_fn,
-                                               func.init_fn,
-                                               func.merge_fn,
-                                               func.serialize_fn,
-                                               func.finalize_fn,
-                                               name, database)
+            stmt = ddl.CreateUDA(func, name=name, database=database)
         else:
             raise TypeError(func)
         self._execute(stmt)
@@ -1344,12 +1554,9 @@ class ImpalaClient(SQLClient):
         return result
 
     def _get_udfs(self, cur, klass):
-        from ibis.expr.rules import varargs
-        from ibis.expr.datatypes import validate_type
-
         def _to_type(x):
             ibis_type = udf._impala_type_to_ibis(x.lower())
-            return validate_type(ibis_type)
+            return dt.dtype(ibis_type)
 
         tuples = cur.fetchall()
         if len(tuples) > 0:
@@ -1368,7 +1575,7 @@ class ImpalaClient(SQLClient):
                         inputs.append(t)
                     else:
                         t = _to_type(var)
-                        inputs = varargs(t)
+                        inputs = rlz.listof(t)
                         # TODO
                         # inputs.append(varargs(t))
                         break
@@ -1409,8 +1616,7 @@ class ImpalaClient(SQLClient):
         """
         return len(self.list_udas(database=database, like=name)) > 0
 
-    def compute_stats(self, name, database=None, incremental=False,
-                      async=False):
+    def compute_stats(self, name, database=None, incremental=False):
         """
         Issue COMPUTE STATS command for a given table
 
@@ -1422,10 +1628,6 @@ class ImpalaClient(SQLClient):
         incremental : boolean, default False
           If True, issue COMPUTE INCREMENTAL STATS
         """
-        # TODO async + cancellation
-        if async:
-            raise NotImplementedError
-
         maybe_inc = 'INCREMENTAL ' if incremental else ''
         cmd = 'COMPUTE {0}STATS'.format(maybe_inc)
 
@@ -1549,7 +1751,7 @@ class ImpalaClient(SQLClient):
                 adapted_types.append(typename)
         return names, adapted_types
 
-    def write_dataframe(self, df, path, format='csv', async=False):
+    def write_dataframe(self, df, path, format='csv'):
         """
         Write a pandas DataFrame to indicated file path (default: HDFS) in the
         indicated format
@@ -1560,17 +1762,12 @@ class ImpalaClient(SQLClient):
         path : string
           Absolute output path
         format : {'csv'}, default 'csv'
-        async : boolean, default False
-          Not yet supported
 
         Returns
         -------
         None (for now)
         """
         from ibis.impala.pandas_interop import DataFrameWriter
-
-        if async:
-            raise NotImplementedError
 
         writer = DataFrameWriter(self, df)
         return writer.write_csv(path)
@@ -1590,367 +1787,6 @@ class AggregateFunction(DatabaseEntity):
 
     def drop(self):
         pass
-
-
-class ImpalaTable(ir.TableExpr, DatabaseEntity):
-
-    """
-    References a physical table in the Impala-Hive metastore
-    """
-
-    @property
-    def _qualified_name(self):
-        return self.op().args[0]
-
-    @property
-    def _unqualified_name(self):
-        return self._match_name()[1]
-
-    @property
-    def _client(self):
-        return self.op().args[2]
-
-    def _match_name(self):
-        m = ddl.fully_qualified_re.match(self._qualified_name)
-        if not m:
-            raise com.IbisError('Cannot determine database name from {0}'
-                                .format(self._qualified_name))
-        db, quoted, unquoted = m.groups()
-        return db, quoted or unquoted
-
-    @property
-    def _database(self):
-        return self._match_name()[0]
-
-    def compute_stats(self, incremental=False, async=False):
-        """
-        Invoke Impala COMPUTE STATS command to compute column, table, and
-        partition statistics.
-
-        See also ImpalaClient.compute_stats
-        """
-        return self._client.compute_stats(self._qualified_name,
-                                          incremental=incremental,
-                                          async=async)
-
-    def invalidate_metadata(self):
-        self._client.invalidate_metadata(self._qualified_name)
-
-    def refresh(self):
-        self._client.refresh(self._qualified_name)
-
-    def metadata(self):
-        """
-        Return parsed results of DESCRIBE FORMATTED statement
-
-        Returns
-        -------
-        meta : TableMetadata
-        """
-        return self._client.describe_formatted(self._qualified_name)
-
-    describe_formatted = metadata
-
-    def files(self):
-        """
-        Return results of SHOW FILES statement
-        """
-        return self._client.show_files(self._qualified_name)
-
-    def drop(self):
-        """
-        Drop the table from the database
-        """
-        self._client.drop_table_or_view(self._qualified_name)
-
-    def insert(self, obj=None, overwrite=False, partition=None,
-               values=None, validate=True, results=False):
-        """
-        Insert into Impala table. Wraps ImpalaClient.insert
-
-        Parameters
-        ----------
-        obj : TableExpr or pandas DataFrame
-        overwrite : boolean, default False
-          If True, will replace existing contents of table
-        partition : list or dict, optional
-          For partitioned tables, indicate the partition that's being inserted
-          into, either with an ordered list of partition keys or a dict of
-          partition field name to value. For example for the partition
-          (year=2007, month=7), this can be either (2007, 7) or {'year': 2007,
-          'month': 7}.
-        validate : boolean, default True
-          If True, do more rigorous validation that schema of table being
-          inserted is compatible with the existing table
-        results : boolean, default True
-          If True, return a ibis cursor. This is useful for getting stats on
-          inserts.
-
-        Examples
-        --------
-        t.insert(table_expr)
-
-        # Completely overwrite contents
-        t.insert(table_expr, overwrite=True)
-        """
-        if isinstance(obj, pd.DataFrame):
-            from ibis.impala.pandas_interop import write_temp_dataframe
-            writer, expr = write_temp_dataframe(self._client, obj)
-        else:
-            expr = obj
-
-        if values is not None:
-            raise NotImplementedError
-
-        if partition is not None:
-            partition_schema = self.partition_schema()
-        else:
-            partition_schema = None
-
-        if validate:
-            existing_schema = self.schema()
-            insert_schema = expr.schema()
-            if not insert_schema.equals(existing_schema):
-                try:
-                    _validate_compatible(insert_schema, existing_schema)
-                except com.IbisInputError:
-                    partless_items = existing_schema.items()[:-1*len(partition_schema)]
-                    partless_names = [x[0] for x in partless_items]
-                    partless_types = [x[1] for x in partless_items]
-                    partless_schema = dt.Schema(partless_names, partless_types)
-                    _validate_compatible(insert_schema, partless_schema)
-
-        if partition is not None:
-            if set(partition_schema.names).intersection(expr.schema().names):
-                expr = expr.drop(partition_schema.names)
-
-        ast = build_ast(expr)
-        select = ast.queries[0]
-        statement = ddl.InsertSelect(self._qualified_name,
-                                     select,
-                                     partition=partition,
-                                     partition_schema=partition_schema,
-                                     overwrite=overwrite)
-        return self._execute(statement, results=results)
-
-    def load_data(self, path, overwrite=False, partition=None):
-        """
-        Wraps the LOAD DATA DDL statement. Loads data into an Impala table by
-        physically moving data files.
-
-        Parameters
-        ----------
-        path : string
-        overwrite : boolean, default False
-          Overwrite the existing data in the entire table or indicated
-          partition
-        partition : dict, optional
-          If specified, the partition must already exist
-
-        Returns
-        -------
-        query : ImpalaQuery
-        """
-        if partition is not None:
-            partition_schema = self.partition_schema()
-        else:
-            partition_schema = None
-
-        stmt = ddl.LoadData(self._qualified_name, path,
-                            partition=partition,
-                            partition_schema=partition_schema)
-
-        return self._execute(stmt)
-
-    @property
-    def name(self):
-        return self.op().name
-
-    def rename(self, new_name, database=None):
-        """
-        Rename table inside Impala. References to the old table are no longer
-        valid.
-
-        Parameters
-        ----------
-        new_name : string
-        database : string
-
-        Returns
-        -------
-        renamed : ImpalaTable
-        """
-        m = ddl.fully_qualified_re.match(new_name)
-        if not m and database is None:
-            database = self._database
-        statement = ddl.RenameTable(self._qualified_name, new_name,
-                                    new_database=database)
-        self._client._execute(statement)
-
-        op = self.op().change_name(statement.new_qualified_name)
-        return ImpalaTable(op)
-
-    def _execute(self, stmt, results=False):
-        return self._client._execute(stmt, results=results)
-
-    @property
-    def is_partitioned(self):
-        """
-        True if the table is partitioned
-        """
-        return self.metadata().is_partitioned
-
-    def partition_schema(self):
-        """
-        For partitioned tables, return the schema (names and types) for the
-        partition columns
-
-        Returns
-        -------
-        partition_schema : ibis Schema
-        """
-        schema = self.schema()
-        name_to_type = dict(zip(schema.names, schema.types))
-
-        result = self.partitions()
-
-        partition_fields = []
-        for x in result.columns:
-            if x not in name_to_type:
-                break
-            partition_fields.append((x, name_to_type[x]))
-
-        pnames, ptypes = zip(*partition_fields)
-        return dt.Schema(pnames, ptypes)
-
-    def add_partition(self, spec, location=None):
-        """
-        Add a new table partition, creating any new directories in HDFS if
-        necessary.
-
-        Partition parameters can be set in a single DDL statement, or you can
-        use alter_partition to set them after the fact.
-
-        Returns
-        -------
-        None (for now)
-        """
-        part_schema = self.partition_schema()
-        stmt = ddl.AddPartition(self._qualified_name, spec, part_schema,
-                                location=location)
-        return self._execute(stmt)
-
-    def alter(self, location=None, format=None, tbl_properties=None,
-              serde_properties=None):
-        """
-        Change setting and parameters of the table.
-
-        Parameters
-        ----------
-        location : string, optional
-          For partitioned tables, you may want the alter_partition function
-        format : string, optional
-        tbl_properties : dict, optional
-        serde_properties : dict, optional
-
-        Returns
-        -------
-        None (for now)
-        """
-        def _run_ddl(**kwds):
-            stmt = ddl.AlterTable(self._qualified_name, **kwds)
-            return self._execute(stmt)
-
-        return self._alter_table_helper(_run_ddl, location=location,
-                                        format=format,
-                                        tbl_properties=tbl_properties,
-                                        serde_properties=serde_properties)
-
-    def set_external(self, is_external=True):
-        """
-        Toggle EXTERNAL table property.
-        """
-        self.alter(tbl_properties={'EXTERNAL': is_external})
-
-    def alter_partition(self, spec, location=None, format=None,
-                        tbl_properties=None,
-                        serde_properties=None):
-        """
-        Change setting and parameters of an existing partition
-
-        Parameters
-        ----------
-        spec : dict or list
-          The partition keys for the partition being modified
-        location : string, optional
-        format : string, optional
-        tbl_properties : dict, optional
-        serde_properties : dict, optional
-
-        Returns
-        -------
-        None (for now)
-        """
-        part_schema = self.partition_schema()
-
-        def _run_ddl(**kwds):
-            stmt = ddl.AlterPartition(self._qualified_name, spec,
-                                      part_schema, **kwds)
-            return self._execute(stmt)
-
-        return self._alter_table_helper(_run_ddl, location=location,
-                                        format=format,
-                                        tbl_properties=tbl_properties,
-                                        serde_properties=serde_properties)
-
-    def _alter_table_helper(self, f, **alterations):
-        results = []
-        for k, v in alterations.items():
-            if v is None:
-                continue
-            result = f(**{k: v})
-            results.append(result)
-        return results
-
-    def drop_partition(self, spec):
-        """
-        Drop an existing table partition
-        """
-        part_schema = self.partition_schema()
-        stmt = ddl.DropPartition(self._qualified_name, spec, part_schema)
-        return self._execute(stmt)
-
-    def partitions(self):
-        """
-        Return a pandas.DataFrame giving information about this table's
-        partitions. Raises an exception if the table is not partitioned.
-
-        Returns
-        -------
-        partitions : pandas.DataFrame
-        """
-        return self._client.list_partitions(self._qualified_name)
-
-    def stats(self):
-        """
-        Return results of SHOW TABLE STATS as a DataFrame. If not partitioned,
-        contains only one row
-
-        Returns
-        -------
-        stats : pandas.DataFrame
-        """
-        return self._client.table_stats(self._qualified_name)
-
-    def column_stats(self):
-        """
-        Return results of SHOW COLUMN STATS as a pandas DataFrame
-
-        Returns
-        -------
-        column_stats : pandas.DataFrame
-        """
-        return self._client.column_stats(self._qualified_name)
 
 
 class ImpalaTemporaryTable(ops.DatabaseTable):
@@ -1976,7 +1812,7 @@ def _validate_compatible(from_schema, to_schema):
     for name in from_schema:
         lt = from_schema[name]
         rt = to_schema[name]
-        if not rt.can_implicit_cast(lt):
+        if not lt.castable(rt):
             raise com.IbisInputError('Cannot safely cast {0!r} to {1!r}'
                                      .format(lt, rt))
 
@@ -1984,6 +1820,7 @@ def _validate_compatible(from_schema, to_schema):
 def _split_signature(x):
     name, rest = x.split('(', 1)
     return name, rest[:-1]
+
 
 _arg_type = re.compile('(.*)\.\.\.|([^\.]*)')
 

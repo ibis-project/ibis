@@ -1,17 +1,3 @@
-# Copyright 2014 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.util as util
@@ -35,7 +21,7 @@ class Window(object):
     """
 
     def __init__(self, group_by=None, order_by=None,
-                 preceding=None, following=None):
+                 preceding=None, following=None, how='rows'):
         if group_by is None:
             group_by = []
 
@@ -54,42 +40,62 @@ class Window(object):
 
         self.preceding = _list_to_tuple(preceding)
         self.following = _list_to_tuple(following)
+        self.how = how
 
         self._validate_frame()
 
     def _validate_frame(self):
-        p_tuple = has_p = False
-        f_tuple = has_f = False
+        preceding_tuple = has_preceding = False
+        following_tuple = has_following = False
         if self.preceding is not None:
-            p_tuple = isinstance(self.preceding, tuple)
-            has_p = True
+            preceding_tuple = isinstance(self.preceding, tuple)
+            has_preceding = True
 
         if self.following is not None:
-            f_tuple = isinstance(self.following, tuple)
-            has_f = True
+            following_tuple = isinstance(self.following, tuple)
+            has_following = True
 
-        if ((p_tuple and has_f) or (f_tuple and has_p)):
-            raise com.IbisInputError('Can only specify one window side '
-                                     ' when you want an off-center '
-                                     'window')
-        elif p_tuple:
+        if ((preceding_tuple and has_following) or
+                (following_tuple and has_preceding)):
+            raise com.IbisInputError(
+                'Can only specify one window side when you want an '
+                'off-center window'
+            )
+        elif preceding_tuple:
             start, end = self.preceding
             if start is None:
                 assert end >= 0
             else:
                 assert start > end
-        elif f_tuple:
+        elif following_tuple:
             start, end = self.following
             if end is None:
                 assert start >= 0
             else:
                 assert start < end
         else:
-            if has_p and self.preceding < 0:
-                raise com.IbisInputError('Window offset must be positive')
+            if not isinstance(self.preceding, ir.Expr):
+                if has_preceding and self.preceding < 0:
+                    raise com.IbisInputError(
+                        "'preceding' must be positive, got {}".format(
+                            self.preceding
+                        )
+                    )
 
-            if has_f and self.following < 0:
-                raise com.IbisInputError('Window offset must be positive')
+            if not isinstance(self.following, ir.Expr):
+                if has_following and self.following < 0:
+                    raise com.IbisInputError(
+                        "'following' must be positive, got {}".format(
+                            self.following
+                        )
+                    )
+        if self.how not in {'rows', 'range'}:
+            raise com.IbisInputError(
+                "'how' must be 'rows' or 'range', got {}"
+                .format(
+                    self.how
+                )
+            )
 
     def bind(self, table):
         # Internal API, ensure that any unresolved expr references (as strings,
@@ -99,6 +105,13 @@ class Window(object):
         return self._replace(group_by=groups, order_by=sorts)
 
     def combine(self, window):
+        if self.how != window.how:
+            raise com.IbisInputError(
+                "Window types must match. Expecting '{}' Window, got '{}'"
+                .format(
+                    self.how.upper(), window.how.upper()
+                )
+            )
         kwds = dict(
             preceding=self.preceding or window.preceding,
             following=self.following or window.following,
@@ -116,7 +129,8 @@ class Window(object):
             group_by=kwds.get('group_by', self._group_by),
             order_by=kwds.get('order_by', self._order_by),
             preceding=kwds.get('preceding', self.preceding),
-            following=kwds.get('following', self.following)
+            following=kwds.get('following', self.following),
+            how=kwds.get('how', self.how)
         )
         return Window(**new_kwds)
 
@@ -128,37 +142,44 @@ class Window(object):
         if cache is None:
             cache = {}
 
-        if (self, other) in cache:
-            return cache[(self, other)]
-
-        if id(self) == id(other):
-            cache[(self, other)] = True
+        if self is other:
+            cache[self, other] = True
             return True
 
         if not isinstance(other, Window):
-            cache[(self, other)] = False
+            cache[self, other] = False
             return False
 
+        try:
+            return cache[self, other]
+        except KeyError:
+            pass
+
         if (len(self._group_by) != len(other._group_by) or
-                not ir.all_equal(self._group_by, other._group_by, cache=cache)):
-            cache[(self, other)] = False
+                not ops.all_equal(self._group_by, other._group_by,
+                                  cache=cache)):
+            cache[self, other] = False
             return False
 
         if (len(self._order_by) != len(other._order_by) or
-                not ir.all_equal(self._order_by, other._order_by, cache=cache)):
-            cache[(self, other)] = False
+                not ops.all_equal(self._order_by, other._order_by,
+                                  cache=cache)):
+            cache[self, other] = False
             return False
 
-        equal = (self.preceding == other.preceding and
-                self.following == other.following)
-        cache[(self, other)] = equal
+        equal = (
+            ops.all_equal(self.preceding, other.preceding, cache=cache) and
+            ops.all_equal(self.following, other.following, cache=cache)
+        )
+        cache[self, other] = equal
         return equal
 
 
 def window(preceding=None, following=None, group_by=None, order_by=None):
     """
     Create a window clause for use with window (analytic and aggregate)
-    functions.
+    functions. This ROW window clause aggregates adjacent rows based
+    on differences in row number.
 
     All window frames / ranges are inclusive.
 
@@ -181,7 +202,37 @@ def window(preceding=None, following=None, group_by=None, order_by=None):
     win : ibis Window
     """
     return Window(preceding=preceding, following=following,
-                  group_by=group_by, order_by=order_by)
+                  group_by=group_by, order_by=order_by, how='rows')
+
+
+def range_window(preceding=None, following=None, group_by=None, order_by=None):
+    """
+    Create a window clause for use with window (analytic and aggregate)
+    functions. This RANGE window clause aggregates rows based upon differences
+    in the value of the order-by expression.
+
+    All window frames / ranges are inclusive.
+
+    Parameters
+    ----------
+    preceding : int, tuple, or None, default None
+      Specify None for unbounded, 0 to include current row
+      tuple for off-center window
+    following : int, tuple, or None, default None
+      Specify None for unbounded, 0 to include current row
+      tuple for off-center window
+    group_by : expressions, default None
+      Either specify here or with TableExpr.group_by
+    order_by : expressions, default None
+      For analytic functions requiring an ordering, specify here, or let Ibis
+      determine the default ordering (for functions like rank)
+
+    Returns
+    -------
+    win : ibis Window
+    """
+    return Window(preceding=preceding, following=following,
+                  group_by=group_by, order_by=order_by, how='range')
 
 
 def cumulative_window(group_by=None, order_by=None):
@@ -206,14 +257,14 @@ def cumulative_window(group_by=None, order_by=None):
                   group_by=group_by, order_by=order_by)
 
 
-def trailing_window(periods, group_by=None, order_by=None):
+def trailing_window(rows, group_by=None, order_by=None):
     """
     Create a trailing window for use with aggregate window functions.
 
     Parameters
     ----------
-    periods : int
-      Number of trailing periods to include. 0 includes only the current period
+    rows : int
+      Number of trailing rows to include. 0 includes only the current row
     group_by : expressions, default None
       Either specify here or with TableExpr.group_by
     order_by : expressions, default None
@@ -224,8 +275,30 @@ def trailing_window(periods, group_by=None, order_by=None):
     -------
     win : ibis Window
     """
-    return Window(preceding=periods, following=0,
+    return Window(preceding=rows, following=0,
                   group_by=group_by, order_by=order_by)
+
+
+def trailing_range_window(preceding, order_by, group_by=None):
+    """
+    Create a trailing time window for use with aggregate window functions.
+
+    Parameters
+    ----------
+    preceding : float or expression of intervals, i.e.
+      1 * ibis.day() + 5 * ibis.hour()
+    order_by : expressions, default None
+      For analytic functions requiring an ordering, specify here, or let Ibis
+      determine the default ordering (for functions like rank)
+    group_by : expressions, default None
+      Either specify here or with TableExpr.group_by
+
+    Returns
+    -------
+    win: ibis Window
+    """
+    return Window(preceding=preceding, following=0,
+                  group_by=group_by, order_by=order_by, how='range')
 
 
 def propagate_down_window(expr, window):

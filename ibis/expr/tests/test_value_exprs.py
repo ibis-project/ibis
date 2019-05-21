@@ -1,42 +1,46 @@
-# Copyright 2014 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-import itertools
 import operator
+import os
+
+from collections import OrderedDict
+from operator import methodcaller
+from datetime import date, datetime, time
+
+import six
 
 import pytest
 
+import numpy as np
+
+import toolz
+
+from ibis import literal
+from ibis.compat import PY2, functools
 from ibis.common import IbisTypeError
-import ibis.expr.api as api
-import ibis.expr.datatypes as dt
-import ibis.expr.types as ir
-import ibis.expr.operations as ops
-import ibis
-
-from ibis.compat import unittest
-
 from ibis.tests.util import assert_equal
+
+import ibis
+import ibis.expr.api as api
+import ibis.expr.types as ir
+import ibis.expr.rules as rlz
+import ibis.expr.analysis as L
+import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
+
+from ibis.expr.signature import Argument as Arg
 
 
 def test_null():
     expr = ibis.literal(None)
     assert isinstance(expr, ir.NullScalar)
-    assert isinstance(expr.op(), ir.NullLiteral)
+    assert isinstance(expr.op(), ops.NullLiteral)
     assert expr._arg.value is None
 
     expr2 = ibis.null()
     assert_equal(expr, expr2)
+
+    assert expr is expr2
+    assert expr.type() is dt.null
+    assert expr2.type() is dt.null
 
 
 @pytest.mark.xfail(
@@ -68,22 +72,136 @@ def test_unicode():
 )
 def test_literal_cases(value, expected_type):
     expr = ibis.literal(value)
-    klass = dt.scalar_type(expected_type)
-    assert isinstance(expr, klass)
-    assert isinstance(expr.op(), ir.Literal)
+
+    assert isinstance(expr, ir.ScalarExpr)
+    assert expr.type() == dt.dtype(expected_type)
+
+    assert isinstance(expr.op(), ops.Literal)
     assert expr.op().value is value
+
+
+@pytest.mark.parametrize(
+    ['value', 'expected_type'],
+    [
+        (5, 'int16'),
+        (127, 'double'),
+        (128, 'int64'),
+        (32767, 'double'),
+        (32768, 'float'),
+        (2147483647, 'int64'),
+        (-5, 'int16'),
+        (-128, 'int32'),
+        (-129, 'int64'),
+        (-32769, 'float'),
+        (-2147483649, 'double'),
+        (1.5, 'double'),
+        ('foo', 'string'),
+    ]
+)
+def test_literal_with_different_type(value, expected_type):
+    expr = ibis.literal(value, type=expected_type)
+    assert expr.type().equals(dt.validate_type(expected_type))
+
+
+@pytest.mark.parametrize(
+    ['value', 'expected_type', 'expected_class'],
+    [
+        (list('abc'), 'array<string>', ir.ArrayScalar),
+        ([1, 2, 3], 'array<int8>', ir.ArrayScalar),
+        ({'a': 1, 'b': 2, 'c': 3}, 'map<string, int8>', ir.MapScalar),
+        ({1: 2, 3: 4, 5: 6}, 'map<int8, int8>', ir.MapScalar),
+        (
+            {'a': [1.0, 2.0], 'b': [], 'c': [3.0]},
+            'map<string, array<double>>',
+            ir.MapScalar
+        ),
+        (
+            OrderedDict([
+                ('a', 1),
+                ('b', list('abc')),
+                ('c', OrderedDict([('foo', [1.0, 2.0])]))
+            ]),
+            'struct<a: int8, b: array<string>, c: struct<foo: array<double>>>',
+            ir.StructScalar
+        )
+    ]
+)
+def test_literal_complex_types(value, expected_type, expected_class):
+    expr = ibis.literal(value)
+    expr_type = expr.type()
+    assert expr_type.equals(dt.validate_type(expected_type))
+    assert isinstance(expr, expected_class)
+    assert isinstance(expr.op(), ops.Literal)
+    assert expr.op().value is value
+
+
+def test_struct_operations():
+    value = OrderedDict([
+        ('a', 1),
+        ('b', list('abc')),
+        ('c', OrderedDict([('foo', [1.0, 2.0])]))
+    ])
+    expr = ibis.literal(value)
+    assert isinstance(expr, ir.StructValue)
+    assert isinstance(expr.b, ir.ArrayValue)
+    assert isinstance(expr.a.op(), ops.StructField)
+
+
+def test_simple_map_operations():
+    value = {'a': [1.0, 2.0], 'b': [], 'c': [3.0]}
+    value2 = {'a': [1.0, 2.0], 'c': [3.0], 'd': [4.0, 5.0]}
+    expr = ibis.literal(value)
+    expr2 = ibis.literal(value2)
+    assert isinstance(expr, ir.MapValue)
+    assert isinstance(expr.length().op(), ops.MapLength)
+    assert isinstance((expr + expr2).op(), ops.MapConcat)
+    assert isinstance((expr2 + expr).op(), ops.MapConcat)
+
+    default = ibis.literal([0.0])
+    assert isinstance(expr.get('d', default).op(), ops.MapValueOrDefaultForKey)
+
+    # test for an invalid default type, nulls are ok
+    with pytest.raises(ValueError):
+        expr.get('d', ibis.literal('foo'))
+
+    assert isinstance(expr.get('d', ibis.literal(None)).op(),
+                      ops.MapValueOrDefaultForKey)
+
+    assert isinstance(expr['b'].op(), ops.MapValueForKey)
+    assert isinstance(expr.keys().op(), ops.MapKeys)
+    assert isinstance(expr.values().op(), ops.MapValues)
+
+
+@pytest.mark.parametrize(
+    ['value', 'expected_type'],
+    [
+        (32767, 'int8'),
+        (32768, 'int16'),
+        (2147483647, 'int16'),
+        (2147483648, 'int32'),
+        ('foo', 'double'),
+    ]
+)
+def test_literal_with_different_type_failure(value, expected_type):
+    with pytest.raises(TypeError):
+        ibis.literal(value, type=expected_type)
 
 
 def test_literal_list():
     what = [1, 2, 1000]
-    expr = api.as_value_expr(what)
+    expr = api.literal(what)
 
-    assert isinstance(expr, ir.ArrayExpr)
-    assert isinstance(expr.op(), ir.ValueList)
-    assert isinstance(expr.op().values[2], ir.Int16Scalar)
+    assert isinstance(expr, ir.ArrayScalar)
 
     # it works!
     repr(expr)
+
+
+def test_literal_array():
+    what = []
+    expr = api.literal(what)
+    assert isinstance(expr, ir.ArrayValue)
+    assert expr.type().equals(dt.Array(dt.null))
 
 
 def test_mixed_arity(table):
@@ -91,23 +209,30 @@ def test_mixed_arity(table):
     expr = api.as_value_expr(what)
 
     values = expr.op().values
-    assert isinstance(values[1], ir.StringArray)
+    assert isinstance(values[1], ir.StringColumn)
 
     # it works!
     repr(expr)
 
 
-def test_isin_notin_list(table):
-    vals = [1, 2, 3]
+@pytest.mark.parametrize('container', [list, tuple, set, frozenset])
+def test_isin_notin_list(table, container):
+    values = container([1, 2, 3, 4])
 
-    expr = table.a.isin(vals)
-    not_expr = table.a.notin(vals)
+    expr = table.a.isin(values)
+    not_expr = table.a.notin(values)
 
-    assert isinstance(expr, ir.BooleanArray)
+    assert isinstance(expr, ir.BooleanColumn)
     assert isinstance(expr.op(), ops.Contains)
 
-    assert isinstance(not_expr, ir.BooleanArray)
+    assert isinstance(not_expr, ir.BooleanColumn)
     assert isinstance(not_expr.op(), ops.NotContains)
+
+
+def test_value_counts(table, string_col):
+    bool_clause = table[string_col].notin(['1', '4', '7'])
+    expr = table[bool_clause][string_col].value_counts()
+    assert isinstance(expr, ir.TableExpr)
 
 
 @pytest.mark.xfail(raises=AssertionError, reason='NYT')
@@ -133,7 +258,7 @@ def test_isin_notin_scalars():
     result = a.isin([1, 2])
     assert isinstance(result, ir.BooleanScalar)
 
-    result = a.notin([b, c])
+    result = a.notin([b, c, 3])
     assert isinstance(result, ir.BooleanScalar)
 
 
@@ -154,44 +279,45 @@ def test_scalar_isin_list_with_array(table):
     options = [table.a, table.b, table.c]
 
     expr = val.isin(options)
-    assert isinstance(expr, ir.BooleanArray)
+    assert isinstance(expr, ir.BooleanColumn)
 
     not_expr = val.notin(options)
-    assert isinstance(not_expr, ir.BooleanArray)
+    assert isinstance(not_expr, ir.BooleanColumn)
 
 
-@pytest.fixture
-def dtable(con):
-    return con.table('functional_alltypes')
-
-
-def test_distinct_basic(dtable):
-    expr = dtable.distinct()
+def test_distinct_basic(functional_alltypes):
+    expr = functional_alltypes.distinct()
     assert isinstance(expr.op(), ops.Distinct)
     assert isinstance(expr, ir.TableExpr)
-    assert expr.op().table is dtable
+    assert expr.op().table is functional_alltypes
 
-    expr = dtable.string_col.distinct()
-    assert isinstance(expr.op(), ops.DistinctArray)
+    expr = functional_alltypes.string_col.distinct()
+    assert isinstance(expr.op(), ops.DistinctColumn)
 
-    assert isinstance(expr, ir.StringArray)
+    assert isinstance(expr, ir.StringColumn)
 
 
 @pytest.mark.xfail(reason='NYT')
-def test_distinct_array_interactions(dtable):
+def test_distinct_array_interactions(functional_alltypes):
     # array cardinalities / shapes are likely to be different.
-    a = dtable.int_col.distinct()
-    b = dtable.bigint_col
+    a = functional_alltypes.int_col.distinct()
+    b = functional_alltypes.bigint_col
 
     with pytest.raises(ir.RelationError):
         a + b
 
 
-def test_distinct_count(dtable):
-    result = dtable.string_col.distinct().count()
-    expected = dtable.string_col.nunique().name('count')
-    assert_equal(result, expected)
+@pytest.mark.parametrize('where', [lambda t: None, lambda t: t.int_col != 0])
+def test_distinct_count(functional_alltypes, where):
+    result = functional_alltypes.string_col.distinct().count(
+        where=where(functional_alltypes)
+    )
     assert isinstance(result.op(), ops.CountDistinct)
+
+    expected = functional_alltypes.string_col.nunique(
+        where=where(functional_alltypes)
+    ).name('count')
+    assert result.equals(expected)
 
 
 def test_distinct_unnamed_array_expr():
@@ -208,13 +334,15 @@ def test_distinct_unnamed_array_expr():
     repr(expr)
 
 
-def test_distinct_count_numeric_types(dtable):
-    metric = dtable.bigint_col.distinct().count().name('unique_bigints')
-    dtable.group_by('string_col').aggregate(metric)
+def test_distinct_count_numeric_types(functional_alltypes):
+    metric = functional_alltypes.bigint_col.distinct().count().name(
+        'unique_bigints'
+    )
+    functional_alltypes.group_by('string_col').aggregate(metric)
 
 
-def test_nunique(dtable):
-    expr = dtable.string_col.nunique()
+def test_nunique(functional_alltypes):
+    expr = functional_alltypes.string_col.nunique()
     assert isinstance(expr.op(), ops.CountDistinct)
 
 
@@ -225,22 +353,44 @@ def test_project_with_distinct():
 
 def test_isnull(table):
     expr = table['g'].isnull()
-    assert isinstance(expr, api.BooleanArray)
+    assert isinstance(expr, ir.BooleanColumn)
     assert isinstance(expr.op(), ops.IsNull)
 
     expr = ibis.literal('foo').isnull()
-    assert isinstance(expr, api.BooleanScalar)
+    assert isinstance(expr, ir.BooleanScalar)
     assert isinstance(expr.op(), ops.IsNull)
 
 
 def test_notnull(table):
     expr = table['g'].notnull()
-    assert isinstance(expr, api.BooleanArray)
+    assert isinstance(expr, ir.BooleanColumn)
     assert isinstance(expr.op(), ops.NotNull)
 
     expr = ibis.literal('foo').notnull()
-    assert isinstance(expr, api.BooleanScalar)
+    assert isinstance(expr, ir.BooleanScalar)
     assert isinstance(expr.op(), ops.NotNull)
+
+
+@pytest.mark.parametrize('column', ['e', 'f'], ids=['float', 'double'])
+def test_isnan_isinf_column(table, column):
+    expr = table[column].isnan()
+    assert isinstance(expr, ir.BooleanColumn)
+    assert isinstance(expr.op(), ops.IsNan)
+
+    expr = table[column].isinf()
+    assert isinstance(expr, ir.BooleanColumn)
+    assert isinstance(expr.op(), ops.IsInf)
+
+
+@pytest.mark.parametrize('value', [1.3, np.nan, np.inf, -np.inf])
+def test_isnan_isinf_scalar(value):
+    expr = ibis.literal(value).isnan()
+    assert isinstance(expr, ir.BooleanScalar)
+    assert isinstance(expr.op(), ops.IsNan)
+
+    expr = ibis.literal(value).isinf()
+    assert isinstance(expr, ir.BooleanScalar)
+    assert isinstance(expr.op(), ops.IsInf)
 
 
 @pytest.mark.xfail(raises=AssertionError, reason='NYT')
@@ -261,7 +411,7 @@ def test_null_literal():
 )
 def test_cumulative_yield_array_types(table, column, operation):
     expr = getattr(getattr(table, column), operation)()
-    assert isinstance(expr, ir.ArrayExpr)
+    assert isinstance(expr, ir.ColumnExpr)
 
 
 @pytest.fixture(params=['ln', 'log', 'log2', 'log10'])
@@ -272,7 +422,7 @@ def log(request):
 @pytest.mark.parametrize('column', list('abcdef'))
 def test_log(table, log, column):
     result = log(table[column])
-    assert isinstance(result, api.DoubleArray)
+    assert isinstance(result, ir.FloatingColumn)
 
     # is this what we want?
     # assert result.get_name() == c
@@ -301,8 +451,8 @@ def test_log_boolean(table, log):
 
 
 def test_log_literal(log):
-    assert isinstance(log(ibis.literal(5)), api.DoubleScalar)
-    assert isinstance(log(ibis.literal(5.5)), api.DoubleScalar)
+    assert isinstance(log(ibis.literal(5)), ir.FloatingScalar)
+    assert isinstance(log(ibis.literal(5.5)), ir.FloatingScalar)
 
 
 @pytest.mark.xfail(raises=AssertionError, reason='NYT')
@@ -329,26 +479,32 @@ def test_cast_same_type_noop(table):
     c = table.g
     assert c.cast('string') is c
 
+    i = ibis.literal(5)
+    assert i.cast('int8') is i
+
 
 @pytest.mark.parametrize('type', ['int8', 'int32', 'double', 'float'])
 def test_string_to_number(table, type):
     casted = table.g.cast(type)
-    assert isinstance(casted, dt.array_type(type))
-
     casted_literal = ibis.literal('5').cast(type).name('bar')
-    assert isinstance(casted_literal, dt.scalar_type(type))
+
+    assert isinstance(casted, ir.ColumnExpr)
+    assert casted.type() == dt.dtype(type)
+
+    assert isinstance(casted_literal, ir.ScalarExpr)
+    assert casted_literal.type() == dt.dtype(type)
     assert casted_literal.get_name() == 'bar'
 
 
 @pytest.mark.parametrize('col', list('abcdefh'))
 def test_number_to_string_column(table, col):
     casted = table[col].cast('string')
-    assert isinstance(casted, api.StringArray)
+    assert isinstance(casted, ir.StringColumn)
 
 
 def test_number_to_string_scalar():
     casted_literal = ibis.literal(5).cast('string').name('bar')
-    assert isinstance(casted_literal, api.StringScalar)
+    assert isinstance(casted_literal, ir.StringScalar)
     assert casted_literal.get_name() == 'bar'
 
 
@@ -375,13 +531,32 @@ def test_negate(table, col):
 
 def test_negate_boolean_scalar():
     result = -ibis.literal(False)
-    assert isinstance(result, api.BooleanScalar)
+    assert isinstance(result, ir.BooleanScalar)
     assert isinstance(result.op(), ops.Negate)
 
 
 @pytest.mark.xfail(raises=AssertionError, reason='NYT')
 def test_isnull_notnull():
     assert False
+
+
+@pytest.mark.parametrize('column', [
+    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'
+])
+@pytest.mark.parametrize('how', [
+    None, 'first', 'last', 'heavy'
+])
+@pytest.mark.parametrize('condition_fn', [
+    lambda t: None,
+    lambda t: t.a > 8
+])
+def test_arbitrary(table, column, how, condition_fn):
+    col = table[column]
+    where = condition_fn(table)
+    expr = col.arbitrary(how=how, where=where)
+    assert expr.type() == col.type()
+    assert isinstance(expr, ir.ScalarExpr)
+    assert L.is_reduction(expr)
 
 
 @pytest.mark.parametrize(
@@ -396,8 +571,8 @@ def test_isnull_notnull():
 )
 def test_any_all_notany(table, column, operation):
     expr = operation(table[column])
-    assert isinstance(expr, api.BooleanScalar)
-    assert ops.is_reduction(expr)
+    assert isinstance(expr, ir.BooleanScalar)
+    assert L.is_reduction(expr)
 
 
 @pytest.mark.parametrize(
@@ -426,7 +601,7 @@ def test_numbers_compare_numeric_literal(table, operation, column, case):
     col = table[column]
 
     result = operation(col, case)
-    assert isinstance(result, api.BooleanArray)
+    assert isinstance(result, ir.BooleanColumn)
     assert isinstance(result.op(), ex_op_class[operation])
 
 
@@ -434,20 +609,21 @@ def test_boolean_comparisons(table):
     bool_col = table.h
 
     result = bool_col == True  # noqa
-    assert isinstance(result, api.BooleanArray)
+    assert isinstance(result, ir.BooleanColumn)
 
     result = bool_col == False  # noqa
-    assert isinstance(result, api.BooleanArray)
+    assert isinstance(result, ir.BooleanColumn)
 
 
 @pytest.mark.parametrize(
     'operation',
-    [operator.lt, operator.gt, operator.ge, operator.le, operator.eq, operator.ne]
+    [operator.lt, operator.gt, operator.ge, operator.le,
+     operator.eq, operator.ne]
 )
 def test_string_comparisons(table, operation):
     string_col = table.g
     result = operation(string_col, 'foo')
-    assert isinstance(result, api.BooleanArray)
+    assert isinstance(result, ir.BooleanColumn)
 
 
 @pytest.mark.parametrize(
@@ -458,25 +634,25 @@ def test_boolean_logical_ops(table, operation):
     expr = table.a > 0
 
     result = operation(expr, table.h)
-    assert isinstance(result, api.BooleanArray)
+    assert isinstance(result, ir.BooleanColumn)
 
     result = operation(expr, True)
     refl_result = operation(True, expr)
-    assert isinstance(result, api.BooleanArray)
-    assert isinstance(refl_result, api.BooleanArray)
+    assert isinstance(result, ir.BooleanColumn)
+    assert isinstance(refl_result, ir.BooleanColumn)
 
     true = ibis.literal(True)
     false = ibis.literal(False)
 
     result = operation(true, false)
-    assert isinstance(result, api.BooleanScalar)
+    assert isinstance(result, ir.BooleanScalar)
 
 
 def test_null_column():
     t = ibis.table([('a', 'string')], name='t')
     s = t.mutate(b=ibis.NA)
     assert s.b.type() == dt.null
-    assert isinstance(s.b, ir.NullArray)
+    assert isinstance(s.b, ir.NullColumn)
 
 
 def test_null_column_union():
@@ -508,15 +684,15 @@ def test_string_compare_numeric_literal(table):
 def test_between(table):
     result = table.f.between(0, 1)
 
-    assert isinstance(result, ir.BooleanArray)
+    assert isinstance(result, ir.BooleanColumn)
     assert isinstance(result.op(), ops.Between)
 
     # it works!
     result = table.g.between('a', 'f')
-    assert isinstance(result, ir.BooleanArray)
+    assert isinstance(result, ir.BooleanColumn)
 
     result = ibis.literal(1).between(table.a, table.c)
-    assert isinstance(result, ir.BooleanArray)
+    assert isinstance(result, ir.BooleanColumn)
 
     result = ibis.literal(7).between(5, 10)
     assert isinstance(result, ir.BooleanScalar)
@@ -595,18 +771,14 @@ def test_binop_string_type_error(table, operation):
 
         # technically this can overflow, but we allow it
         (operator.mul, 'd', 5, 'int64'),
-
-        (operator.sub, 'a', 0, 'int8'),
         (operator.sub, 'a', 5, 'int16'),
         (operator.sub, 'a', 100000, 'int32'),
         (operator.sub, 'a', -100000, 'int32'),
 
-
         (operator.sub, 'a', 1.5, 'double'),
-        (operator.sub, 'b', 0, 'int16'),
+
         (operator.sub, 'b', 5, 'int32'),
         (operator.sub, 'b', -5, 'int32'),
-        (operator.sub, 'c', 0, 'int32'),
         (operator.sub, 'c', 5, 'int64'),
         (operator.sub, 'c', -5, 'int64'),
 
@@ -619,42 +791,62 @@ def test_binop_string_type_error(table, operation):
         (operator.truediv, 'b', -5, 'double'),
         (operator.truediv, 'c', 5, 'double'),
 
-        (operator.pow, 'a', 0, 'int8'),
-        (operator.pow, 'b', 0, 'int16'),
-        (operator.pow, 'c', 0, 'int32'),
-        (operator.pow, 'd', 0, 'int64'),
+        (operator.pow, 'a', 0, 'double'),
+        (operator.pow, 'b', 0, 'double'),
+        (operator.pow, 'c', 0, 'double'),
+        (operator.pow, 'd', 0, 'double'),
         (operator.pow, 'e', 0, 'float'),
         (operator.pow, 'f', 0, 'double'),
 
-        (operator.pow, 'a', 2, 'int16'),
-        (operator.pow, 'b', 2, 'int32'),
-        (operator.pow, 'c', 2, 'int64'),
-        (operator.pow, 'd', 2, 'int64'),
+        (operator.pow, 'a', 2, 'double'),
+        (operator.pow, 'b', 2, 'double'),
+        (operator.pow, 'c', 2, 'double'),
+        (operator.pow, 'd', 2, 'double'),
 
         (operator.pow, 'a', 1.5, 'double'),
         (operator.pow, 'b', 1.5, 'double'),
         (operator.pow, 'c', 1.5, 'double'),
         (operator.pow, 'd', 1.5, 'double'),
 
+        (operator.pow, 'e', 2, 'float'),
+        (operator.pow, 'f', 2, 'double'),
+
         (operator.pow, 'a', -2, 'double'),
         (operator.pow, 'b', -2, 'double'),
         (operator.pow, 'c', -2, 'double'),
         (operator.pow, 'd', -2, 'double'),
-
-        (operator.pow, 'e', 2, 'float'),
-        (operator.pow, 'f', 2, 'double'),
-    ]
+    ],
+    ids=lambda arg: str(getattr(arg, '__name__', arg))
 )
 def test_literal_promotions(table, op, name, case, ex_type):
     col = table[name]
 
     result = op(col, case)
-    ex_class = dt.array_type(ex_type)
-    assert isinstance(result, ex_class)
+    assert result.type() == dt.dtype(ex_type)
 
     result = op(case, col)
-    ex_class = dt.array_type(ex_type)
-    assert isinstance(result, ex_class)
+    assert result.type() == dt.dtype(ex_type)
+
+
+@pytest.mark.parametrize(
+    ('op', 'left_fn', 'right_fn', 'ex_type'),
+    [
+        (operator.sub, lambda t: t['a'], lambda t: 0, 'int8'),
+        (operator.sub, lambda t: 0, lambda t: t['a'], 'int16'),
+        (operator.sub, lambda t: t['b'], lambda t: 0, 'int16'),
+        (operator.sub, lambda t: 0, lambda t: t['b'], 'int32'),
+        (operator.sub, lambda t: t['c'], lambda t: 0, 'int32'),
+        (operator.sub, lambda t: 0, lambda t: t['c'], 'int64'),
+    ],
+    ids=lambda arg: str(getattr(arg, '__name__', arg))
+)
+def test_zero_subtract_literal_promotions(table, op, left_fn, right_fn,
+                                          ex_type):
+    # in case of zero subtract the order of operands matters
+    left, right = left_fn(table), right_fn(table)
+    result = op(left, right)
+
+    assert result.type() == dt.dtype(ex_type)
 
 
 @pytest.mark.xfail(raises=AssertionError, reason='NYT')
@@ -741,3 +933,463 @@ def test_substitute_dict():
                 .when('b', table.bar)
                 .else_(ibis.NA).end())
     assert_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    'typ',
+    [
+        'array<map<string, array<array<double>>>>',
+        'string',
+        'double',
+        'float',
+        'int64',
+    ]
+)
+def test_not_without_boolean(typ):
+    t = ibis.table([('a', typ)], name='t')
+    c = t.a
+    with pytest.raises(TypeError):
+        ~c
+
+
+@pytest.mark.parametrize(
+    ('position', 'names'),
+    [
+        (0, 'foo'),
+        (1, 'bar'),
+        ([0], ['foo']),
+        ([1], ['bar']),
+        ([0, 1], ['foo', 'bar']),
+        ([1, 0], ['bar', 'foo']),
+    ]
+)
+@pytest.mark.parametrize(
+    'expr_func',
+    [
+        lambda t, args: t[args],
+        lambda t, args: t.sort_by(args),
+        lambda t, args: t.group_by(args).aggregate(bar_avg=t.bar.mean())
+    ]
+)
+def test_table_operations_with_integer_column(position, names, expr_func):
+    t = ibis.table([('foo', 'string'), ('bar', 'double')])
+    result = expr_func(t, position)
+    expected = expr_func(t, names)
+    assert result.equals(expected)
+
+
+@pytest.mark.parametrize(
+    'value',
+    [
+        'abcdefg',
+        ['a', 'b', 'c'],
+        [1, 2, 3],
+    ]
+)
+@pytest.mark.parametrize(
+    'operation',
+    [
+        'pow',
+        'sub',
+        'truediv',
+        'floordiv',
+        'mod',
+    ]
+)
+def test_generic_value_api_no_arithmetic(value, operation):
+    func = getattr(operator, operation)
+    expr = ibis.literal(value)
+    with pytest.raises(TypeError):
+        func(expr, expr)
+
+
+@pytest.mark.parametrize(
+    ('value', 'expected'),
+    [
+        (5, dt.int8),
+        (5.4, dt.double),
+        ('abc', dt.string),
+    ]
+)
+def test_fillna_null(value, expected):
+    assert ibis.NA.fillna(value).type().equals(expected)
+
+
+@pytest.mark.parametrize(
+    ('left', 'right'),
+    [
+        (literal('2017-04-01'), date(2017, 4, 2)),
+        (date(2017, 4, 2), literal('2017-04-01')),
+        (literal('2017-04-01 01:02:33'), datetime(2017, 4, 1, 1, 3, 34)),
+        (datetime(2017, 4, 1, 1, 3, 34), literal('2017-04-01 01:02:33')),
+    ]
+)
+@pytest.mark.parametrize(
+    'op',
+    [
+        operator.eq,
+        operator.ne,
+        operator.lt,
+        operator.le,
+        operator.gt,
+        operator.ge,
+        lambda left, right: ibis.timestamp(
+            '2017-04-01 00:02:34'
+        ).between(left, right),
+        lambda left, right: ibis.timestamp(
+            '2017-04-01'
+        ).cast(dt.date).between(left, right)
+    ]
+)
+def test_string_temporal_compare(op, left, right):
+    result = op(left, right)
+    assert result.type().equals(dt.boolean)
+
+
+@pytest.mark.parametrize(
+    ('value', 'type', 'expected_type_class'),
+    [
+        (2.21, 'decimal', dt.Decimal),
+        (3.14, 'double', dt.Double),
+        (4.2, 'int64', dt.Double),
+        (4, 'int64', dt.Int64),
+    ]
+)
+def test_decimal_modulo_output_type(value, type, expected_type_class):
+    t = ibis.table([('a', type)])
+    expr = t.a % value
+    assert isinstance(expr.type(), expected_type_class)
+
+
+@pytest.mark.parametrize(
+    ('left', 'right'),
+    [
+        (literal('10:00'), time(10, 0)),
+        (time(10, 0), literal('10:00')),
+    ]
+)
+@pytest.mark.parametrize(
+    'op',
+    [
+        operator.eq,
+        operator.ne,
+        operator.lt,
+        operator.le,
+        operator.gt,
+        operator.ge,
+    ]
+)
+@pytest.mark.skipif(PY2, reason="time comparsions not available on PY2")
+def test_time_compare(op, left, right):
+    result = op(left, right)
+    assert result.type().equals(dt.boolean)
+
+
+@pytest.mark.parametrize(
+    ('left', 'right'),
+    [
+        (literal('10:00'), date(2017, 4, 2)),
+        (literal('10:00'), datetime(2017, 4, 2, 1, 1)),
+        (literal('10:00'), literal('2017-04-01')),
+    ]
+)
+@pytest.mark.parametrize(
+    'op',
+    [
+        operator.eq,
+        operator.lt,
+        operator.le,
+        operator.gt,
+        operator.ge,
+    ]
+)
+def test_time_timestamp_invalid_compare(op, left, right):
+    result = op(left, right)
+    assert result.type().equals(dt.boolean)
+
+
+@pytest.mark.skipif(not PY2, reason="invalid compare of time on PY2")
+def test_time_invalid_compare_on_py2():
+
+    # we cannot actually compare datetime.time objects and literals
+    # in a deferred way in python 2, they short circuit in the CPython
+    result = operator.eq(time(10, 0), literal('10:00'))
+    assert not result
+
+
+def test_scalar_parameter_set():
+    value = ibis.param({dt.int64})
+
+    assert isinstance(value.op(), ops.ScalarParameter)
+    assert value.type().equals(dt.Set(dt.int64))
+
+
+def test_scalar_parameter_repr():
+    value = ibis.param(dt.timestamp).name('value')
+    assert repr(value) == 'value = ScalarParameter[timestamp]'
+
+    value_op = value.op()
+    assert repr(value_op) == "ScalarParameter(type=timestamp)"
+
+
+@pytest.mark.parametrize(
+    ('left', 'right', 'expected'),
+    [
+        (
+            # same value type, same name
+            ibis.param(dt.timestamp),
+            ibis.param(dt.timestamp),
+            False,
+        ),
+        (
+            # different value type, same name
+            ibis.param(dt.date),
+            ibis.param(dt.timestamp),
+            False,
+        ),
+        (
+            # same value type, different name
+            ibis.param(dt.timestamp),
+            ibis.param(dt.timestamp),
+            False,
+        ),
+        (
+            # different value type, different name
+            ibis.param(dt.date),
+            ibis.param(dt.timestamp),
+            False,
+        ),
+        (
+            # different Python class, left side is param
+            ibis.param(dt.timestamp),
+            dt.date,
+            False
+        ),
+        (
+            # different Python class, right side is param
+            dt.date,
+            ibis.param(dt.timestamp),
+            False
+        ),
+    ]
+)
+def test_scalar_parameter_compare(left, right, expected):
+    assert left.equals(right) == expected
+
+
+@pytest.mark.parametrize(
+    ('case', 'creator'),
+    [
+        (datetime.now(), toolz.compose(methodcaller('time'), ibis.timestamp)),
+        ('now', toolz.compose(methodcaller('time'), ibis.timestamp)),
+        (datetime.now().time(), ibis.time),
+        ('10:37', ibis.time),
+    ]
+)
+@pytest.mark.parametrize(
+    ('left', 'right'),
+    [
+        (1, 'a'),
+        ('a', 1),
+        (1.0, 2.0),
+        (['a'], [1]),
+    ]
+)
+@pytest.mark.xfail(PY2, reason='Not supported on Python 2')
+def test_between_time_failure_time(case, creator, left, right):
+    value = creator(case)
+    with pytest.raises(TypeError):
+        value.between(left, right)
+
+
+def test_custom_type_binary_operations():
+    class Foo(ir.ValueExpr):
+
+        def __add__(self, other):
+            op = self.op()
+            return type(op)(op.value + other).to_expr()
+
+        __radd__ = __add__
+
+    class FooNode(ops.ValueOp):
+        value = Arg(rlz.integer)
+
+        def output_type(self):
+            return functools.partial(Foo, dtype=dt.int64)
+
+    left = ibis.literal(2)
+    right = FooNode(3).to_expr()
+    result = left + right
+    assert isinstance(result, Foo)
+    assert isinstance(result.op(), FooNode)
+
+    left = FooNode(3).to_expr()
+    right = ibis.literal(2)
+    result = left + right
+    assert isinstance(result, Foo)
+    assert isinstance(result.op(), FooNode)
+
+
+def test_empty_array_as_argument():
+    class Foo(ir.Expr):
+        pass
+
+    class FooNode(ops.ValueOp):
+        value = Arg(rlz.value(dt.Array(dt.int64)))
+
+        def output_type(self):
+            return Foo
+
+    node = FooNode([])
+    value = node.value
+    expected = literal([]).cast(dt.Array(dt.int64))
+
+    assert value.type().equals(dt.Array(dt.null))
+    assert value.cast(dt.Array(dt.int64)).equals(expected)
+
+
+def test_struct_field_dir():
+    t = ibis.table([('struct_col', 'struct<my_field: string>')])
+    assert 'struct_col' in dir(t)
+    assert 'my_field' in dir(t.struct_col)
+
+
+def test_nullable_column_propagated():
+    t = ibis.table([
+        ('a', dt.Int32(nullable=True)),
+        ('b', dt.Int32(nullable=False)),
+        ('c', dt.String(nullable=False)),
+        ('d', dt.double),  # nullable by default
+        ('f', dt.Double(nullable=False))
+    ])
+
+    assert t.a.type().nullable is True
+    assert t.b.type().nullable is False
+    assert t.c.type().nullable is False
+    assert t.d.type().nullable is True
+    assert t.f.type().nullable is False
+
+    s = t.a + t.d
+    assert s.type().nullable is True
+
+    s = t.b + t.d
+    assert s.type().nullable is True
+
+    s = t.b + t.f
+    assert s.type().nullable is False
+
+
+@pytest.mark.parametrize(
+    'base_expr',
+    [
+        ibis.table([('interval_col', dt.Interval(unit='D'))]).interval_col,
+        ibis.second(42),
+    ]
+)
+def test_interval_negate(base_expr):
+    expr = -base_expr
+    expr2 = base_expr.negate()
+    expr3 = ibis.negate(base_expr)
+    assert isinstance(expr.op(), ops.Negate)
+    assert expr.equals(expr2)
+    assert expr.equals(expr3)
+
+
+def test_large_timestamp():
+    expr = ibis.timestamp('4567-02-03')
+    expected = datetime(year=4567, month=2, day=3)
+    result = expr.op().value
+    assert result == expected
+
+
+def test_map_get_broadcast():
+    t = ibis.table([('a', 'string')], name='t')
+    lookup_table = ibis.literal({'a': 1, 'b': 2})
+    expr = lookup_table.get(t.a)
+    assert isinstance(expr, ir.IntegerColumn)
+
+
+def test_map_getitem_broadcast():
+    t = ibis.table([('a', 'string')], name='t')
+    lookup_table = ibis.literal({'a': 1, 'b': 2})
+    expr = lookup_table[t.a]
+    assert isinstance(expr, ir.IntegerColumn)
+
+
+def test_map_keys_output_type():
+    mapping = ibis.literal({'a': 1, 'b': 2})
+    assert mapping.keys().type() == dt.Array(dt.string)
+
+
+def test_map_values_output_type():
+    mapping = ibis.literal({'a': 1, 'b': 2})
+    assert mapping.values().type() == dt.Array(dt.int8)
+
+
+def test_scalar_isin_map_keys():
+    mapping = ibis.literal({'a': 1, 'b': 2})
+    key = ibis.literal('a')
+    expr = key.isin(mapping.keys())
+    assert isinstance(expr, ir.BooleanScalar)
+
+
+def test_column_isin_map_keys():
+    t = ibis.table([('a', 'string')], name='t')
+    mapping = ibis.literal({'a': 1, 'b': 2})
+    expr = t.a.isin(mapping.keys())
+    assert isinstance(expr, ir.BooleanColumn)
+
+
+@pytest.mark.parametrize(
+    ('value', 'expected_type'),
+    [
+        (datetime.now(), dt.timestamp),
+        (datetime.now().date(), dt.date),
+        (datetime.now().time(), dt.time),
+    ]
+)
+def test_invalid_negate(value, expected_type):
+    expr = ibis.literal(value)
+    assert expr.type() == expected_type
+    with pytest.raises(TypeError):
+        -expr
+
+
+@pytest.mark.parametrize(
+    'type',
+    [
+        np.float16,
+        np.float32,
+        np.float64,
+        np.int16,
+        np.int32,
+        np.int64,
+        np.int64,
+        np.int8,
+        np.timedelta64,
+        np.uint16,
+        np.uint32,
+        np.uint64,
+        np.uint64,
+        np.uint8,
+        float,
+    ] + list(six.integer_types)
+)
+def test_valid_negate(type):
+    value = type(1)
+    expr = ibis.literal(value)
+    assert -expr is not None
+
+
+@pytest.mark.xfail(
+    reason='Type not supported in most backends',
+    raises=TypeError,
+)
+@pytest.mark.skipif(
+    os.name == 'nt',
+    reason='np.float128 not appear to exist on windows'
+)
+def test_valid_negate_float128():
+    value = np.float128(1)
+    expr = ibis.literal(value)
+    assert -expr is not None

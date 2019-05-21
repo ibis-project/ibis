@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis.tests.conftest import *  # noqa
-from ibis.expr.tests.mocks import MockConnection
+import collections
 
 import pytest
+
 import ibis
-import ibis.expr.datatypes as dt
+
+from ibis.expr.tests.mocks import MockConnection
 
 
 @pytest.fixture
@@ -31,17 +32,20 @@ def schema():
         ('f', 'double'),
         ('g', 'string'),
         ('h', 'boolean'),
+        ('i', 'timestamp'),
+        ('j', 'date'),
+        ('k', 'time'),
     ]
 
 
 @pytest.fixture
 def schema_dict(schema):
-    return dict(schema)
+    return collections.OrderedDict(schema)
 
 
 @pytest.fixture
 def table(schema):
-    return ibis.table(schema, name='schema')
+    return ibis.table(schema, name='table')
 
 
 @pytest.fixture(params=list('abcdh'))
@@ -64,6 +68,11 @@ def numeric_col(request):
     return request.param
 
 
+@pytest.fixture(params=list('g'))
+def string_col(request):
+    return request.param
+
+
 @pytest.fixture(params=list('abcdefgh'))
 def col(request):
     return request.param
@@ -72,3 +81,18 @@ def col(request):
 @pytest.fixture
 def con():
     return MockConnection()
+
+
+@pytest.fixture
+def alltypes(con):
+    return con.table('alltypes')
+
+
+@pytest.fixture
+def functional_alltypes(con):
+    return con.table('functional_alltypes')
+
+
+@pytest.fixture
+def lineitem(con):
+    return con.table('tpch_lineitem')

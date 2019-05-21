@@ -13,17 +13,16 @@
 # limitations under the License.
 
 
-from .client import SQLiteClient
-from .compiler import rewrites  # noqa
+from ibis.sql.sqlite.client import SQLiteClient
+from ibis.sql.sqlite.compiler import rewrites, dialect  # noqa: F401
 
 
-def compile(expr):
+def compile(expr, params=None):
     """
     Force compilation of expression for the SQLite target
     """
-    from .client import SQLiteDialect
     from ibis.sql.alchemy import to_sqlalchemy
-    return to_sqlalchemy(expr, dialect=SQLiteDialect)
+    return to_sqlalchemy(expr, dialect.make_context(params=params))
 
 
 def connect(path=None, create=False):

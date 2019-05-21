@@ -12,63 +12,121 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import getpass
+import psycopg2  # NOQA fail early if the driver is missing
+import contextlib
 import sqlalchemy as sa
 
-from ibis.client import Database
-from .compiler import PostgreSQLDialect
-import ibis.expr.types as ir
 import ibis.sql.alchemy as alch
+
+from ibis.sql.postgres.compiler import PostgreSQLDialect
 
 
 class PostgreSQLTable(alch.AlchemyTable):
     pass
 
 
-class PostgreSQLDatabase(Database):
+class PostgreSQLSchema(alch.AlchemyDatabaseSchema):
     pass
+
+
+class PostgreSQLDatabase(alch.AlchemyDatabase):
+    schema_class = PostgreSQLSchema
 
 
 class PostgreSQLClient(alch.AlchemyClient):
 
-    """
-    The Ibis PostgreSQL client class
+    """The Ibis PostgreSQL client class
+
+    Attributes
+    ----------
+    con : sqlalchemy.engine.Engine
     """
 
     dialect = PostgreSQLDialect
     database_class = PostgreSQLDatabase
+    table_class = PostgreSQLTable
 
-    def __init__(self, host=None, user=None, password=None, port=None,
-                 database=None, url=None, driver=None):
+    def __init__(self, host='localhost', user=None, password=None, port=5432,
+                 database='public', url=None, driver='psycopg2'):
         if url is None:
-            if user is not None:
-                if password is None:
-                    userpass = user
-                else:
-                    userpass = '{0}:{1}'.format(user, password)
+            if driver != 'psycopg2':
+                raise NotImplementedError(
+                    'psycopg2 is currently the only supported driver'
+                )
+            user = user or getpass.getuser()
+            url = sa.engine.url.URL('postgresql+psycopg2', host=host,
+                                    port=port, username=user,
+                                    password=password, database=database)
+        else:
+            url = sa.engine.url.make_url(url)
 
-                address = '{0}@{1}'.format(userpass, host)
-            else:
-                address = host
+        super(PostgreSQLClient, self).__init__(sa.create_engine(url))
+        self.database_name = url.database
 
-            if port is not None:
-                address = '{0}:{1}'.format(address, port)
+    @contextlib.contextmanager
+    def begin(self):
+        with super(PostgreSQLClient, self).begin() as bind:
+            previous_timezone = bind.execute('SHOW TIMEZONE').scalar()
+            bind.execute('SET TIMEZONE = UTC')
+            try:
+                yield bind
+            finally:
+                bind.execute("SET TIMEZONE = '{}'".format(previous_timezone))
 
-            if database is not None:
-                address = '{0}/{1}'.format(address, database)
+    def database(self, name=None):
+        """Connect to a database called `name`.
 
-            if driver is not None and driver != 'psycopg2':
-                raise NotImplementedError(driver)
+        Parameters
+        ----------
+        name : str, optional
+            The name of the database to connect to. If ``None``, return
+            the database named ``self.current_database``.
 
-            url = 'postgresql://{0}'.format(address)
+        Returns
+        -------
+        db : PostgreSQLDatabase
+            An :class:`ibis.sql.postgres.client.PostgreSQLDatabase` instance.
 
-        url = sa.engine.url.make_url(url)
-        self.name = url.database
-        self.database_name = 'public'
-        self.con = sa.create_engine(url)
-        self.meta = sa.MetaData(bind=self.con)
+        Notes
+        -----
+        This creates a new connection if `name` is both not ``None`` and not
+        equal to the current database.
+        """
+        if name == self.current_database or (
+            name is None and name != self.current_database
+        ):
+            return self.database_class(self.current_database, self)
+        else:
+            url = self.con.url
+            client_class = type(self)
+            new_client = client_class(
+                host=url.host,
+                user=url.username,
+                port=url.port,
+                password=url.password,
+                database=name,
+            )
+            return self.database_class(name, new_client)
+
+    def schema(self, name):
+        """Get a schema object from the current database for the schema named `name`.
+
+        Parameters
+        ----------
+        name : str
+
+        Returns
+        -------
+        schema : PostgreSQLSchema
+            An :class:`ibis.sql.postgres.client.PostgreSQLSchema` instance.
+
+        """
+        return self.database().schema(name)
 
     @property
     def current_database(self):
+        """The name of the current database this client is connected to."""
         return self.database_name
 
     def list_databases(self):
@@ -79,36 +137,56 @@ class PostgreSQLClient(alch.AlchemyClient):
             )
         ]
 
-    def set_database(self):
-        raise NotImplementedError
+    def list_schemas(self):
+        """List all the schemas in the current database."""
+        return self.inspector.get_schema_names()
+
+    def set_database(self, name):
+        raise NotImplementedError(
+            'Cannot set database with PostgreSQL client. To use a different'
+            ' database, use client.database({!r})'.format(name)
+        )
 
     @property
     def client(self):
         return self
 
-    def table(self, name, database=None):
-        """
-        Create a table expression that references a particular table in the
-        PostgreSQL database
+    def table(self, name, database=None, schema=None):
+        """Create a table expression that references a particular a table
+        called `name` in a PostgreSQL database called `database`.
 
         Parameters
         ----------
-        name : string
+        name : str
+            The name of the table to retrieve.
+        database : str, optional
+            The database in which the table referred to by `name` resides. If
+            ``None`` then the ``current_database`` is used.
+        schema : str, optional
+            The schema in which the table resides.  If ``None`` then the
+            `public` schema is assumed.
 
         Returns
         -------
         table : TableExpr
+            A table expression.
         """
-        alch_table = self._get_sqla_table(name)
-        node = PostgreSQLTable(alch_table, self)
-        return self._table_expr_klass(node)
+        if database is not None and database != self.current_database:
+            return (
+                self.database(name=database)
+                    .table(name=name, schema=schema)
+            )
+        else:
+            alch_table = self._get_sqla_table(name, schema=schema)
+            node = self.table_class(alch_table, self, self._schemas.get(name))
+            return self.table_expr_class(node)
 
-    def drop_table(self):
-        pass
-
-    def create_table(self, name, expr=None):
-        pass
-
-    @property
-    def _table_expr_klass(self):
-        return ir.TableExpr
+    def list_tables(self, like=None, database=None, schema=None):
+        if database is not None and database != self.current_database:
+            return (
+                self.database(name=database)
+                    .list_tables(like=like, schema=schema)
+            )
+        else:
+            parent = super(PostgreSQLClient, self)
+            return parent.list_tables(like=like, schema=schema)

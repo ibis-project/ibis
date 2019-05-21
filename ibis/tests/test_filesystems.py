@@ -1,35 +1,25 @@
-# Copyright 2014 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-from six import BytesIO
+import unittest
 
 from posixpath import join as pjoin
 from os import path as osp
 import os
 import shutil
 
+from six import BytesIO
+
 import pytest
 
 from ibis.filesystems import HDFS
-from ibis.compat import unittest
-from ibis.impala.tests.common import IbisTestEnv
+from ibis.impala.tests.conftest import IbisTestEnv
 import ibis.compat as compat
 import ibis.util as util
 import ibis
 
+pytest.importorskip('hdfs')
 
 ENV = IbisTestEnv()
+
+pytestmark = pytest.mark.hdfs
 
 
 class MockHDFS(HDFS):
@@ -71,7 +61,6 @@ class TestHDFSRandom(unittest.TestCase):
         assert result == '0.parq'
 
 
-@pytest.mark.hdfs
 class TestHDFSE2E(unittest.TestCase):
 
     @classmethod
@@ -84,15 +73,13 @@ class TestHDFSE2E(unittest.TestCase):
                                      port=cls.ENV.webhdfs_port,
                                      auth_mechanism=cls.ENV.auth_mechanism,
                                      verify=(cls.ENV.auth_mechanism
-                                             not in ['GSSAPI', 'LDAP']))
+                                             not in ['GSSAPI', 'LDAP']),
+                                     user=cls.ENV.webhdfs_user)
         cls.hdfs.mkdir(cls.tmp_dir)
 
     @classmethod
     def tearDownClass(cls):
-        try:
-            cls.hdfs.rmdir(cls.tmp_dir)
-        except:
-            pass
+        cls.hdfs.rmdir(cls.tmp_dir)
 
     def setUp(self):
         self.test_files = []
@@ -100,7 +87,6 @@ class TestHDFSE2E(unittest.TestCase):
 
     def tearDown(self):
         self._delete_test_files()
-        pass
 
     def _delete_test_files(self):
         for path in self.test_files:
@@ -205,8 +191,9 @@ class TestHDFSE2E(unittest.TestCase):
             self.hdfs.rm(fpath)
             assert not self.hdfs.exists(fpath)
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_overwrite_file(self):
-        pass
+        assert False
 
     def test_put_get_directory(self):
         local_dir = util.guid()
@@ -277,9 +264,10 @@ class TestHDFSE2E(unittest.TestCase):
         self.hdfs.get(remote_path, local_path)
         assert open(local_path, 'rb').read() == data
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_get_logging(self):
         # TODO write a test for this
-        pass
+        assert False
 
     def test_get_directory_nested_dirs(self):
         local_dir = util.guid()
@@ -405,7 +393,6 @@ class TestHDFSE2E(unittest.TestCase):
         return dirname
 
 
-@pytest.mark.hdfs
 @pytest.mark.superuser
 class TestSuperUserHDFSE2E(unittest.TestCase):
 
@@ -426,10 +413,7 @@ class TestSuperUserHDFSE2E(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        try:
-            cls.hdfs.rmdir(cls.tmp_dir)
-        except:
-            pass
+        cls.hdfs.rmdir(cls.tmp_dir)
 
     def setUp(self):
         self.test_files = []
@@ -437,7 +421,6 @@ class TestSuperUserHDFSE2E(unittest.TestCase):
 
     def tearDown(self):
         self._delete_test_files()
-        pass
 
     def _delete_test_files(self):
         for path in self.test_files:
@@ -532,7 +515,5 @@ def _get_all_files(path):
 
 
 def guidbytes():
-    if compat.PY3:
-        return util.guid().encode('utf8')
-    else:
-        return util.guid()
+    guid = util.guid()
+    return guid if compat.PY2 else guid.encode('utf8')

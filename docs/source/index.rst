@@ -29,7 +29,7 @@ natively within other systems like Apache Spark and Apache Impala (incubating).
 To learn more about Ibis's vision, roadmap, and updates, please follow
 http://ibis-project.org.
 
-Source code is on GitHub: http://github.com/cloudera/ibis
+Source code is on GitHub: https://github.com/ibis-project/ibis
 
 Install Ibis from PyPI with:
 
@@ -46,10 +46,13 @@ Or from `conda-forge <http://conda-forge.github.io>`_ with
 At this time, Ibis offers some level of support for the following systems:
 
 - `Apache Impala (incubating) <http://impala.io/>`_
-- `Apache Kudu (incubating) <http://getkudu.io>`_
-- Hadoop Distributed File System (HDFS)
-- PostgreSQL (Experimental)
-- SQLite
+- `Apache Kudu (incubating) <http://getkudu.io/>`_
+- `PostgreSQL <https://www.postgresql.org/>`_
+- `SQLite <https://www.sqlite.org/>`_
+- `Google BigQuery <https://cloud.google.com/bigquery/>`_
+- `Yandex Clickhouse <https://clickhouse.yandex/>`_
+- Direct execution of ibis expressions against `Pandas
+  <http://pandas.pydata.org/>`_ objects
 
 Coming from SQL? Check out :ref:`Ibis for SQL Programmers <sql>`.
 
@@ -64,29 +67,30 @@ Architecturally, Ibis features:
 
 SQL engine support needing code contributors:
 
-- Redshift
-- Vertica
-- Spark SQL
-- Presto
-- Hive
-- MySQL / MariaDB
-
-Since this is a young project, the documentation is definitely patchy in
-places, but this will improve as things progress.
+- `Redshift <https://aws.amazon.com/redshift/>`_
+- `Vertica <https://www.vertica.com/>`_
+- `Spark SQL <https://spark.apache.org/sql/>`_
+- `Presto <https://prestodb.io/>`_
+- `Hive <https://hive.apache.org/>`_
 
 .. toctree::
    :maxdepth: 1
 
    getting-started
    configuration
-   tutorial
    impala
+   tutorial
    api
    sql
-   release
+   udf
+   contributing
    developer
-   type-system
+   design
+   extending
+   backends
+   release
    legal
+
 
 Indices and tables
 ==================

@@ -15,7 +15,6 @@
 # This file may adapt small portions of https://github.com/mtth/hdfs (MIT
 # license), see the LICENSES directory.
 
-from posixpath import join as pjoin
 import posixpath
 
 import six
@@ -164,7 +163,7 @@ class HDFS(object):
                 continue
 
             buf = tf.extractfile(info)
-            abspath = pjoin(hdfs_path, info.path)
+            abspath = posixpath.join(hdfs_path, info.path)
             self.put(abspath, buf, verbose=verbose, overwrite=overwrite)
 
     def put_zipfile(self, hdfs_path, local_path):

@@ -14,6 +14,10 @@
 
 # User API for grouped data operations
 
+from __future__ import absolute_import
+
+import types
+
 import ibis.expr.analysis as L
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
@@ -29,6 +33,29 @@ def _resolve_exprs(table, exprs):
     return table._resolve(exprs)
 
 
+_function_types = tuple(
+    filter(
+        None,
+        (
+            types.BuiltinFunctionType,
+            types.BuiltinMethodType,
+            types.FunctionType,
+            types.LambdaType,
+            types.MethodType,
+            getattr(types, 'UnboundMethodType', None),
+        )
+    )
+)
+
+
+def _get_group_by_key(table, value):
+    if isinstance(value, six.string_types):
+        return table[value]
+    if isinstance(value, _function_types):
+        return value(table)
+    return value
+
+
 class GroupedTableExpr(object):
 
     """
@@ -40,7 +67,7 @@ class GroupedTableExpr(object):
     ):
         self.table = table
         self.by = util.promote_list(by if by is not None else []) + [
-            (table[v] if isinstance(v, six.string_types) else v).name(k)
+            _get_group_by_key(table, v).name(k)
             for k, v in sorted(expressions.items(), key=toolz.first)
         ]
         self._order_by = order_by or []
@@ -75,6 +102,7 @@ class GroupedTableExpr(object):
 
         Parameters
         ----------
+        expr : ibis.expr.types.Expr
 
         Returns
         -------
@@ -82,9 +110,10 @@ class GroupedTableExpr(object):
         """
         exprs = util.promote_list(expr)
         new_having = self._having + exprs
-        return GroupedTableExpr(self.table, self.by, having=new_having,
-                                order_by=self._order_by,
-                                window=self._window)
+        return GroupedTableExpr(
+            self.table, self.by,
+            having=new_having, order_by=self._order_by, window=self._window
+        )
 
     def order_by(self, expr):
         """
@@ -101,9 +130,10 @@ class GroupedTableExpr(object):
         """
         exprs = util.promote_list(expr)
         new_order = self._order_by + exprs
-        return GroupedTableExpr(self.table, self.by, having=self._having,
-                                order_by=new_order,
-                                window=self._window)
+        return GroupedTableExpr(
+            self.table, self.by,
+            having=self._having, order_by=new_order, window=self._window
+        )
 
     def mutate(self, exprs=None, **kwds):
         """
@@ -117,11 +147,54 @@ class GroupedTableExpr(object):
 
         Examples
         --------
-        >>> expr = (table
-                    .group_by('foo')
-                    .order_by(ibis.desc('bar'))
-                    .mutate(qux=lambda x: x.baz.lag(),
-                            qux2=table.baz.lead()))
+        >>> import ibis
+        >>> t = ibis.table([
+        ...     ('foo', 'string'),
+        ...     ('bar', 'string'),
+        ...     ('baz', 'double'),
+        ... ], name='t')
+        >>> t
+        UnboundTable[table]
+          name: t
+          schema:
+            foo : string
+            bar : string
+            baz : double
+        >>> expr = (t.group_by('foo')
+        ...          .order_by(ibis.desc('bar'))
+        ...          .mutate(qux=lambda x: x.baz.lag(),
+        ...                  qux2=t.baz.lead()))
+        >>> print(expr)  # doctest: +ELLIPSIS, +NORMALIZE_WHITESPACE
+        ref_0
+        UnboundTable[table]
+          name: t
+          schema:
+            foo : string
+            bar : string
+            baz : double
+        Selection[table]
+          table:
+            Table: ref_0
+          selections:
+            Table: ref_0
+            qux = WindowOp[double*]
+              qux = Lag[double*]
+                baz = Column[double*] 'baz' from table
+                  ref_0
+                offset:
+                  None
+                default:
+                  None
+              <ibis.expr.window.Window object at 0x...>
+            qux2 = WindowOp[double*]
+              qux2 = Lead[double*]
+                baz = Column[double*] 'baz' from table
+                  ref_0
+                offset:
+                  None
+                default:
+                  None
+              <ibis.expr.window.Window object at 0x...>
 
         Returns
         -------

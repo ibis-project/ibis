@@ -1,204 +1,224 @@
-# Copyright 2014 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import ibis
 
-from ibis.compat import unittest
+from ibis.expr.types import Expr
 from ibis.expr.format import ExprFormatter
-from ibis.expr.tests.mocks import MockConnection
 
 
-class TestExprFormatting(unittest.TestCase):
-    # Uncertain about how much we want to commit to unit tests around the
-    # particulars of the output at the moment.
+def test_format_custom_expr():
 
-    def setUp(self):
-        self.schema = [
-            ('a', 'int8'),
-            ('b', 'int16'),
-            ('c', 'int32'),
-            ('d', 'int64'),
-            ('e', 'float'),
-            ('f', 'double'),
-            ('g', 'string'),
-            ('h', 'boolean')
-        ]
-        self.schema_dict = dict(self.schema)
-        self.table = ibis.table(self.schema)
-        self.con = MockConnection()
+    class CustomExpr(Expr):
+        def _type_display(self):
+            return 'my-custom'
 
-    def test_format_table_column(self):
-        # GH #507
-        result = repr(self.table.f)
-        assert 'Column[array(double)]' in result
+    op = ibis.literal(5).op()
+    expr = CustomExpr(op)
 
-    def test_format_projection(self):
-        # This should produce a ref to the projection
-        proj = self.table[['c', 'a', 'f']]
-        repr(proj['a'])
+    result = repr(expr)
+    expected = 'Literal[my-custom]\n  5'
+    assert result == expected
 
-    def test_table_type_output(self):
-        foo = ibis.table(
-            [
-                ('job', 'string'),
-                ('dept_id', 'string'),
-                ('year', 'int32'),
-                ('y', 'double')
-            ], 'foo')
 
-        expr = foo.dept_id == foo.view().dept_id
-        result = repr(expr)
-        assert 'SelfReference[table]' in result
-        assert 'UnboundTable[table]' in result
+def test_format_table_column(table):
+    # GH #507
+    result = repr(table.f)
+    assert 'Column[double*]' in result
 
-    def test_memoize_aggregate_correctly(self):
-        table = self.table
 
-        agg_expr = (table['c'].sum() / table['c'].mean() - 1).name('analysis')
-        agg_exprs = [table['a'].sum().name('sum(a)'),
-                     table['b'].mean().name('mean(b)'), agg_expr]
+def test_format_projection(table):
+    # This should produce a ref to the projection
+    proj = table[['c', 'a', 'f']]
+    repr(proj['a'])
 
-        result = table.aggregate(agg_exprs, by=['g'])
 
-        formatter = ExprFormatter(result)
-        formatted = formatter.get_result()
+def test_table_type_output():
+    foo = ibis.table(
+        [
+            ('job', 'string'),
+            ('dept_id', 'string'),
+            ('year', 'int32'),
+            ('y', 'double')
+        ], 'foo')
 
-        alias = formatter.memo.get_alias(table)
-        assert formatted.count(alias) == 7
+    expr = foo.dept_id == foo.view().dept_id
+    result = repr(expr)
 
-    def test_aggregate_arg_names(self):
-        # Not sure how to test this *well*
+    assert 'SelfReference[table]' in result
+    assert 'UnboundTable[table]' in result
 
-        t = self.table
 
-        by_exprs = [t.g.name('key1'), t.f.round().name('key2')]
-        agg_exprs = [t.c.sum().name('c'), t.d.mean().name('d')]
+def test_memoize_aggregate_correctly(table):
+    agg_expr = (table['c'].sum() / table['c'].mean() - 1).name('analysis')
+    metrics = [
+        table['a'].sum().name('sum(a)'),
+        table['b'].mean().name('mean(b)'),
+        agg_expr,
+    ]
 
-        expr = self.table.group_by(by_exprs).aggregate(agg_exprs)
-        result = repr(expr)
-        assert 'metrics' in result
-        assert 'by' in result
+    result = table.aggregate(metrics, by=['g'])
 
-    def test_format_multiple_join_with_projection(self):
-        # Star schema with fact table
-        table = ibis.table([
-            ('c', 'int32'),
-            ('f', 'double'),
-            ('foo_id', 'string'),
-            ('bar_id', 'string'),
-        ], 'one')
+    formatter = ExprFormatter(result)
+    formatted = formatter.get_result()
 
-        table2 = ibis.table([
-            ('foo_id', 'string'),
-            ('value1', 'double')
-        ], 'two')
+    alias = formatter.memo.get_alias(table)
+    assert formatted.count(alias) == 7
 
-        table3 = ibis.table([
-            ('bar_id', 'string'),
-            ('value2', 'double')
-        ], 'three')
 
-        filtered = table[table['f'] > 0]
+def test_aggregate_arg_names(table):
+    # Not sure how to test this *well*
 
-        pred1 = filtered['foo_id'] == table2['foo_id']
-        pred2 = filtered['bar_id'] == table3['bar_id']
+    t = table
 
-        j1 = filtered.left_join(table2, [pred1])
-        j2 = j1.inner_join(table3, [pred2])
+    by_exprs = [t.g.name('key1'), t.f.round().name('key2')]
+    metrics = [t.c.sum().name('c'), t.d.mean().name('d')]
 
-        # Project out the desired fields
-        view = j2[[filtered, table2['value1'], table3['value2']]]
+    expr = t.group_by(by_exprs).aggregate(metrics)
+    result = repr(expr)
+    assert 'metrics' in result
+    assert 'by' in result
 
-        # it works!
-        repr(view)
 
-    def test_memoize_database_table(self):
-        table = self.con.table('test1')
-        table2 = self.con.table('test2')
+def test_format_multiple_join_with_projection():
+    # Star schema with fact table
+    table = ibis.table([
+        ('c', 'int32'),
+        ('f', 'double'),
+        ('foo_id', 'string'),
+        ('bar_id', 'string'),
+    ], 'one')
 
-        filter_pred = table['f'] > 0
-        table3 = table[filter_pred]
-        join_pred = table3['g'] == table2['key']
+    table2 = ibis.table([
+        ('foo_id', 'string'),
+        ('value1', 'double')
+    ], 'two')
 
-        joined = table2.inner_join(table3, [join_pred])
+    table3 = ibis.table([
+        ('bar_id', 'string'),
+        ('value2', 'double')
+    ], 'three')
 
-        met1 = (table3['f'] - table2['value']).mean().name('foo')
-        result = joined.aggregate([met1, table3['f'].sum().name('bar')],
-                                  by=[table3['g'], table2['key']])
+    filtered = table[table['f'] > 0]
 
-        formatted = repr(result)
-        assert formatted.count('test1') == 1
-        assert formatted.count('test2') == 1
+    pred1 = filtered['foo_id'] == table2['foo_id']
+    pred2 = filtered['bar_id'] == table3['bar_id']
 
-    def test_memoize_filtered_table(self):
-        airlines = ibis.table([('dest', 'string'),
-                               ('origin', 'string'),
-                               ('arrdelay', 'int32')], 'airlines')
+    j1 = filtered.left_join(table2, [pred1])
+    j2 = j1.inner_join(table3, [pred2])
 
-        dests = ['ORD', 'JFK', 'SFO']
-        t = airlines[airlines.dest.isin(dests)]
-        delay_filter = t.dest.topk(10, by=t.arrdelay.mean())
+    # Project out the desired fields
+    view = j2[[filtered, table2['value1'], table3['value2']]]
 
-        result = repr(delay_filter)
-        assert result.count('Selection') == 1
+    # it works!
+    repr(view)
 
-    def test_memoize_insert_sort_key(self):
-        table = self.con.table('airlines')
 
-        t = table['arrdelay', 'dest']
-        expr = (t.group_by('dest')
-                .mutate(dest_avg=t.arrdelay.mean(),
-                        dev=t.arrdelay - t.arrdelay.mean()))
+def test_memoize_database_table(con):
+    table = con.table('test1')
+    table2 = con.table('test2')
 
-        worst = (expr[expr.dev.notnull()]
-                 .sort_by(ibis.desc('dev'))
-                 .limit(10))
+    filter_pred = table['f'] > 0
+    table3 = table[filter_pred]
+    join_pred = table3['g'] == table2['key']
 
-        result = repr(worst)
-        assert result.count('airlines') == 1
+    joined = table2.inner_join(table3, [join_pred])
 
-    def test_named_value_expr_show_name(self):
-        expr = self.table.f * 2
-        expr2 = expr.name('baz')
+    met1 = (table3['f'] - table2['value']).mean().name('foo')
+    result = joined.aggregate([met1, table3['f'].sum().name('bar')],
+                              by=[table3['g'], table2['key']])
 
-        # it works!
-        repr(expr)
+    formatted = repr(result)
+    assert formatted.count('test1') == 1
+    assert formatted.count('test2') == 1
 
-        result2 = repr(expr2)
 
-        # not really committing to a particular output yet
-        assert 'baz' in result2
+def test_memoize_filtered_table():
+    airlines = ibis.table([('dest', 'string'),
+                           ('origin', 'string'),
+                           ('arrdelay', 'int32')], 'airlines')
 
-    def test_memoize_filtered_tables_in_join(self):
-        # related: GH #667
-        purchases = ibis.table([('region', 'string'),
-                                ('kind', 'string'),
-                                ('user', 'int64'),
-                                ('amount', 'double')], 'purchases')
+    dests = ['ORD', 'JFK', 'SFO']
+    t = airlines[airlines.dest.isin(dests)]
+    delay_filter = t.dest.topk(10, by=t.arrdelay.mean())
 
-        metric = purchases.amount.sum().name('total')
-        agged = (purchases.group_by(['region', 'kind'])
-                 .aggregate(metric))
+    result = repr(delay_filter)
+    assert result.count('Selection') == 1
 
-        left = agged[agged.kind == 'foo']
-        right = agged[agged.kind == 'bar']
 
-        cond = left.region == right.region
-        joined = (left.join(right, cond)
-                  [left, right.total.name('right_total')])
+def test_memoize_insert_sort_key(con):
+    table = con.table('airlines')
 
-        result = repr(joined)
+    t = table['arrdelay', 'dest']
+    expr = (t.group_by('dest')
+            .mutate(dest_avg=t.arrdelay.mean(),
+                    dev=t.arrdelay - t.arrdelay.mean()))
 
-        # Join, and one for each aggregation
-        assert result.count('predicates') == 3
+    worst = (expr[expr.dev.notnull()]
+             .sort_by(ibis.desc('dev'))
+             .limit(10))
+
+    result = repr(worst)
+    assert result.count('airlines') == 1
+
+
+def test_named_value_expr_show_name(table):
+    expr = table.f * 2
+    expr2 = expr.name('baz')
+
+    # it works!
+    repr(expr)
+
+    result2 = repr(expr2)
+
+    # not really committing to a particular output yet
+    assert 'baz' in result2
+
+
+def test_memoize_filtered_tables_in_join():
+    # related: GH #667
+    purchases = ibis.table([('region', 'string'),
+                            ('kind', 'string'),
+                            ('user', 'int64'),
+                            ('amount', 'double')], 'purchases')
+
+    metric = purchases.amount.sum().name('total')
+    agged = (purchases.group_by(['region', 'kind'])
+             .aggregate(metric))
+
+    left = agged[agged.kind == 'foo']
+    right = agged[agged.kind == 'bar']
+
+    cond = left.region == right.region
+    joined = (left.join(right, cond)
+              [left, right.total.name('right_total')])
+
+    result = repr(joined)
+
+    # Join, and one for each aggregation
+    assert result.count('predicates') == 3
+
+
+def test_argument_repr_shows_name():
+    t = ibis.table([('a', 'int64')], name='t')
+    expr = t.a.nullif(2)
+    result = repr(expr)
+    expected = """\
+ref_0
+UnboundTable[table]
+  name: t
+  schema:
+    a : int64
+
+NullIf[int64*]
+  a = Column[int64*] 'a' from table
+    ref_0
+  null_if_expr:
+    Literal[int8]
+      2"""
+    assert result == expected
+
+
+def test_scalar_parameter_formatting():
+    value = ibis.param('array<date>')
+    assert str(value) == 'ScalarParameter[array<date>]'
+
+    value = ibis.param('int64').name('my_param')
+    assert str(value) == 'my_param = ScalarParameter[int64]'
