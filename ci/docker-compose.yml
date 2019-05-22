@@ -2,7 +2,7 @@ version: '3'
 services:
 
   postgres:
-    image: postgres
+    image: mdillon/postgis
     hostname: postgres
     ports:
       - 5432:5432
