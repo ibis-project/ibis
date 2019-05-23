@@ -38,7 +38,7 @@ all_requires = (
     + parquet_requires
 )
 
-develop_requires = all_requires + ['click', 'flake8', 'mypy', 'pytest>=3']
+develop_requires = all_requires + ["click", 'flake8', 'mypy', 'pytest>=3']
 
 install_requires = [
     line.strip()
