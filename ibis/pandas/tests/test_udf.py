@@ -274,7 +274,7 @@ def test_udaf_window():
 def test_udaf_window_nan():
     df = pd.DataFrame(
         {
-            'a': np.arange(10, dtype=float).tolist(),
+            'a': np.arange(10, dtype=float),
             'b': [3.0, np.NaN] * 5,
             'key': list('ddeefffggh'),
         }
