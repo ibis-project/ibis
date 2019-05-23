@@ -285,7 +285,7 @@ def test_batting_rolling(batting, batting_df, sort_kind):
     more_values = (
         batting_df[columns]
         .sort_values('yearID', kind=sort_kind)
-        .G.rolling(5)
+        .G.rolling(5, min_periods=1)
         .sum()
     )
     expected = batting_df.assign(more_values=more_values)
@@ -308,14 +308,14 @@ def test_batting_rolling_partitioned(batting, batting_df, sort_kind):
         batting_df[columns]
         .set_index(order_by)
         .groupby(group_by)
-        .G.rolling(3)
+        .G.rolling(3, min_periods=1)
         .sum()
         .rename('rolled')
     )
 
     tm.assert_series_equal(
         result.set_index([group_by, order_by]).sort_index().rolled,
-        expected.sort_index(),
+        expected.sort_index().astype("int64"),
     )
 
 
