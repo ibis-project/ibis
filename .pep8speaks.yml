@@ -5,4 +5,8 @@ scanner:
     linter: flake8
 no_blank_comment: True
 message:
+  updated:  # Messages when a PR is updated
+      header: "Foo"
+      footer: "Bar"
   no_errors: "There are currently no linting issues detected in this pull request. Cheers! :beers: "
+only_mention_files_with_errors: False
