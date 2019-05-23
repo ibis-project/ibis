@@ -197,7 +197,7 @@ def parquet(tables, data_directory, ignore_missing_dependency, **params):
     type=click.File('rt'),
     default=str(SCRIPT_DIR / 'schema' / 'postgresql.sql'),
 )
-@click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
+@click.option('-t', '--tables', multiple=True, default=TEST_TABLES + ['geo'])
 @click.option('-d', '--data-directory', default=DATA_DIR)
 @click.option('-l', '--psql-path', type=click.Path(exists=True), default=None)
 def postgres(schema, tables, data_directory, psql_path, **params):
@@ -207,11 +207,31 @@ def postgres(schema, tables, data_directory, psql_path, **params):
     engine = init_database(
         'postgresql', params, schema, isolation_level='AUTOCOMMIT'
     )
+    if 'geo' in tables:
+        engine.execute("CREATE EXTENSION POSTGIS")
 
     query = "COPY {} FROM STDIN WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',')"
     database = params['database']
     for table in tables:
         src = data_directory / '{}.csv'.format(table)
+
+        # If we are loading the geo sample data, handle the data types
+        # specifically so that PostGIS understands them as geometries.
+        if table == 'geo':
+            from geoalchemy2 import Geometry, WKTElement
+            srid = 4326
+            df = pd.read_csv(src)
+            df = df[df.columns[1:]].applymap(
+                lambda x: WKTElement(x, srid=srid)
+            )
+            df.to_sql('geo', engine, dtype={
+                "geo_point": Geometry("POINT", srid=srid),
+                "geo_linestring": Geometry("LINESTRING", srid=srid),
+                "geo_polygon": Geometry("POLYGON", srid=srid),
+                "geo_multipolygon": Geometry("MULTIPOLYGON", srid=srid),
+            })
+            continue
+
         load = psql[
             '--host',
             params['host'],
