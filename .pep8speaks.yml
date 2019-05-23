@@ -3,3 +3,5 @@
 scanner:
     diff_only: True  # If True, errors caused by only the patch are shown
     linter: flake8
+message:
+  no_errors: "There are currently no PEP 8 issues detected in this Pull Request. Cheers! :beers: "
