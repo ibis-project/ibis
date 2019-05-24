@@ -38,6 +38,10 @@ def test_list_tables(con):
     assert len(con.list_tables(like='functional_alltypes')) == 1
 
 
+def test_sessionid_connection(session_con):
+    assert len(session_con.list_tables()) > 0
+
+
 def test_compile_verify(alltypes):
     supported_expr = alltypes.double_col.sum()
     assert supported_expr.verify()

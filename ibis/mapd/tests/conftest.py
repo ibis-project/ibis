@@ -1,5 +1,6 @@
 import os
 
+import pymapd
 import pytest
 
 import ibis
@@ -20,6 +21,23 @@ def con():
         user=OMNISCI_USER,
         password=OMNISCI_PASS,
         database=OMNISCI_DB,
+    )
+
+
+@pytest.fixture(scope='module')
+def session_con():
+    con = pymapd.connect(
+        host=OMNISCI_HOST,
+        port=OMNISCI_PORT,
+        user=OMNISCI_USER,
+        password=OMNISCI_PASS,
+        database=OMNISCI_DB,
+    )
+    sessionid = con._session
+    return ibis.mapd.connect(
+        host=OMNISCI_HOST,
+        port=OMNISCI_PORT,
+        sessionid=sessionid
     )
 
 
