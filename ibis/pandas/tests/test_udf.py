@@ -264,7 +264,29 @@ def test_udaf_window():
     result = expr.execute().sort_values(['key', 'a'])
     expected = df.sort_values(['key', 'a']).assign(
         rolled=lambda df: df.groupby('key')
-        .b.rolling(2)
+        .b.rolling(2, min_periods=1)
+        .mean()
+        .reset_index(level=0, drop=True)
+    )
+    tm.assert_frame_equal(result, expected)
+
+
+def test_udaf_window_nan():
+    df = pd.DataFrame(
+        {
+            'a': np.arange(10, dtype=float),
+            'b': [3.0, np.NaN] * 5,
+            'key': list('ddeefffggh'),
+        }
+    )
+    con = ibis.pandas.connect({'df': df})
+    t = con.table('df')
+    window = ibis.trailing_window(2, order_by='a', group_by='key')
+    expr = t.mutate(rolled=t.b.mean().over(window))
+    result = expr.execute().sort_values(['key', 'a'])
+    expected = df.sort_values(['key', 'a']).assign(
+        rolled=lambda d: d.groupby('key')
+        .b.rolling(2, min_periods=1)
         .mean()
         .reset_index(level=0, drop=True)
     )

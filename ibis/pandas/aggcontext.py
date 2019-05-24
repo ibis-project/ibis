@@ -421,7 +421,8 @@ class Moving(Window):
             )
             else 'both'
         )
-        super().__init__('rolling', preceding, *args, closed=closed, **kwargs)
+        super().__init__('rolling', preceding, *args, closed=closed,
+                         min_periods=1, **kwargs)
 
     def short_circuit_method(self, grouped_data, function):
         raise AttributeError('No short circuit method for rolling operations')
