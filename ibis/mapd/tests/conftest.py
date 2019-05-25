@@ -31,7 +31,7 @@ def session_con():
         port=OMNISCI_PORT,
         user=OMNISCI_USER,
         password=OMNISCI_PASS,
-        database=OMNISCI_DB,
+        dbname=OMNISCI_DB,
     )
     sessionid = con._session
     return ibis.mapd.connect(
