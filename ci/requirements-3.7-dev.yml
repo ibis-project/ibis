@@ -4,7 +4,7 @@ dependencies:
   - black
   - click
   - clickhouse-cityhash
-  - clickhouse-driver
+  - clickhouse-driver>=0.0.8
   - clickhouse-sqlalchemy
   - cmake
   - flake8
@@ -16,7 +16,7 @@ dependencies:
   - lz4
   - multipledispatch>=0.6.0
   - mypy
-  - numpy
+  - numpy>=1.11
   - pandas>=0.21
   - pip
   - plumbum
@@ -38,11 +38,11 @@ dependencies:
   - ruamel.yaml
   - sqlalchemy
   - thrift>=0.9.3
-  # required for impyla in case of py3
   - toolz
   - xorg-libxpm
   - xorg-libxrender
   - pip:
+    - pydata-google-auth
     - seed-isort-config
     # required for impyla in case of py3
     - thriftpy2
