@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import pathlib
+import sys
 
 from setuptools import find_packages, setup
 
@@ -12,18 +13,32 @@ Ibis is a productivity-centric Python big data framework.
 See http://docs.ibis-project.org
 """
 
-impala_requires = ['hdfs>=2.0.16', 'impyla>=0.14.0', 'sqlalchemy', 'requests']
+VERSION = sys.version_info.major, sys.version_info.minor
+
+impala_requires = ['hdfs>=2.0.16', 'sqlalchemy', 'requests']
+if VERSION == (3, 5):
+    impala_requires.append('impyla<0.14.2')
+else:
+    impala_requires.append('impyla>=0.15.0')
 
 sqlite_requires = ['sqlalchemy']
 postgres_requires = sqlite_requires + ['psycopg2']
 mysql_requires = sqlite_requires + ['pymysql']
-mapd_requires = ['pymapd>=0.8.2']
+
+if VERSION == (3, 5):
+    mapd_requires = ['pymapd>=0.8.3,<0.11.0']
+else:
+    mapd_requires = ['pymapd>=0.12.0']
 kerberos_requires = ['requests-kerberos']
 visualization_requires = ['graphviz']
 clickhouse_requires = ['clickhouse-driver>=0.0.8', 'clickhouse-cityhash']
 bigquery_requires = ['google-cloud-bigquery>=1.0.0', 'pydata-google-auth']
 hdf5_requires = ['tables>=3.0.0']
-parquet_requires = ['pyarrow>=0.6.0']
+
+if VERSION == (3, 5):
+    parquet_requires = ['pyarrow<0.12.0']
+else:
+    parquet_requires = ['pyarrow>=0.12.0']
 
 all_requires = (
     impala_requires
