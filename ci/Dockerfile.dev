@@ -19,7 +19,6 @@ RUN echo 'source activate ibis-env && exec "$@"' > activate.sh
 COPY . /ibis
 WORKDIR /ibis
 
-RUN bash /activate.sh python setup.py develop \
-  && bash /activate.sh pip install pydata-google-auth
+RUN bash /activate.sh python setup.py develop
 
 ENTRYPOINT ["bash", "/activate.sh"]

@@ -6,7 +6,7 @@ dependencies:
   - conda=4.5.11
   - click
   - clickhouse-cityhash
-  - clickhouse-driver
+  - clickhouse-driver>=0.0.8
   - clickhouse-sqlalchemy
   - cmake
   - flake8
@@ -18,7 +18,7 @@ dependencies:
   - lz4
   - multipledispatch>=0.6.0
   - mypy
-  - numpy
+  - numpy>=1.11
   - pandas>=0.21
   - pip
   - plumbum
@@ -27,7 +27,7 @@ dependencies:
   - pyarrow<0.12
   - pymapd>=0.8.3,<0.11.0
   - pymysql
-  - pytables
+  - pytables>=3.0.0
   - pytest
   - pytest-cov
   - pytest-xdist
@@ -46,4 +46,5 @@ dependencies:
   - xorg-libxpm
   - xorg-libxrender
   - pip:
+    - pydata-google-auth
     - seed-isort-config
