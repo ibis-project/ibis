@@ -38,7 +38,7 @@ def connect(
     port=6274,
     database=None,
     protocol='binary',
-    sessionid=None,
+    session_id=None,
     execution_type=EXECUTION_TYPE_CURSOR,
 ):
     """Create a MapDClient for use with Ibis
@@ -52,7 +52,7 @@ def connect(
     :param port: int
     :param database: str
     :param protocol: str
-    :param sessionid: str
+    :param session_id: str
     :param execution_type: int
     Returns
     -------
@@ -67,7 +67,7 @@ def connect(
         port=port,
         database=database,
         protocol=protocol,
-        sessionid=sessionid,
+        session_id=session_id,
         execution_type=execution_type,
     )
 

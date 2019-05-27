@@ -39,7 +39,7 @@ def test_list_tables(con):
 
 
 def test_sessionid_connection(session_con):
-    assert len(session_con.list_tables()) > 0
+    assert session_con.list_tables()
 
 
 def test_compile_verify(alltypes):
