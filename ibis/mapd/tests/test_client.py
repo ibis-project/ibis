@@ -41,7 +41,7 @@ def test_list_tables(con):
 
 
 @pytest.mark.skipif(sys.version_info < (3, 6), reason='must have pymapd>=12')
-def test_sessionid_connection(session_con):
+def test_session_id_connection(session_con):
     assert session_con.list_tables()
 
 
