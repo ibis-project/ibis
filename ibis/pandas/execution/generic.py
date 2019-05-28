@@ -305,6 +305,16 @@ def execute_cast_bool_to_timestamp(op, data, type, **kwargs):
     )
 
 
+@execute_node.register(ops.Cast, (np.bool_, bool), dt.Interval)
+def execute_cast_bool_to_interval(op, data, type, **kwargs):
+    raise TypeError(
+        'Casting boolean values to intervals does not make sense. If you '
+        'really want to cast boolean values to intervals please cast to '
+        'int64 first then to interval: '
+        "value.cast('int64').cast(ibis.expr.datatypes.Interval(...))"
+    )
+
+
 @execute_node.register(ops.Cast, integer_types + (str,), dt.Timestamp)
 def execute_cast_simple_literal_to_timestamp(op, data, type, **kwargs):
     """Cast integer and strings to timestamps"""

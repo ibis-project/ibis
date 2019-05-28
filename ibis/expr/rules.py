@@ -1,5 +1,6 @@
 import collections
 import enum
+import functools
 from contextlib import suppress
 from itertools import product, starmap
 
@@ -291,6 +292,7 @@ def client(arg):
 
 
 def promoter(fn):
+    @functools.wraps(fn)
     def wrapper(name_or_value, *args, **kwargs):
         if isinstance(name_or_value, str):
             return lambda self: fn(
