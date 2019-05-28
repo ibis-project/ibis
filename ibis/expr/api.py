@@ -2146,7 +2146,7 @@ def geo_envelope(arg):
     -------
     envelope : geometry scalar
     """
-    op = ops.GeoCentroid(arg)
+    op = ops.GeoEnvelope(arg)
     return op.to_expr()
 
 

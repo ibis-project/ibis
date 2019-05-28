@@ -1673,7 +1673,48 @@ def test_select_multipolygon_geodata(geotable):
 
 
 def test_geo_area(geotable, gdf):
-    expr = geotable['geo_multipolygon'].area()
+    expr = geotable.geo_multipolygon.area()
     result = expr.execute()
     expected = gp.GeoSeries(gdf.geo_multipolygon).area
     tm.assert_series_equal(result, expected, check_names=False)
+
+
+def test_geo_buffer(geotable, gdf):
+    expr = geotable.geo_linestring.buffer(1.0)
+    result = expr.execute()
+    expected = gp.GeoSeries(gdf.geo_linestring).buffer(1.0)
+    tm.assert_series_equal(
+        result.area, expected.area, check_names=False, check_less_precise=2
+    )
+
+
+def test_geo_contains(geotable):
+    expr = geotable.geo_point.buffer(1.0).contains(geotable.geo_point)
+    assert expr.execute().all()
+
+
+def test_geo_contains_properly(geotable):
+    expr = geotable.geo_point.buffer(1.0).contains_properly(geotable.geo_point)
+    assert expr.execute().all()
+
+
+def test_geo_covers(geotable):
+    expr = geotable.geo_point.buffer(1.0).covers(geotable.geo_point)
+    assert expr.execute().all()
+
+
+def test_geo_covered_by(geotable):
+    expr = geotable.geo_point.covered_by(geotable.geo_point.buffer(1.0))
+    assert expr.execute().all()
+
+
+def test_geo_envelope(geotable, gdf):
+    expr = geotable.geo_linestring.buffer(1.0).envelope()
+    result = expr.execute()
+    expected = gp.GeoSeries(gdf.geo_linestring).buffer(1.0).envelope
+    tm.assert_series_equal(result.area, expected.area, check_names=False)
+
+
+def test_geo_within(geotable):
+    expr = geotable.geo_point.within(geotable.geo_point.buffer(1.0))
+    assert expr.execute().all()
