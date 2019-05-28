@@ -30,6 +30,7 @@ dependencies:
   - pyarrow<0.12
   - pymapd>=0.8.3,<0.11.0
   - pymysql
+  - pyproj<2.0
   - pytables>=3.0.0
   - python=3.5
   - python-graphviz
