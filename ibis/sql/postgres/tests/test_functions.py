@@ -1623,9 +1623,8 @@ def test_load_geodata(con):
     assert isinstance(result, gp.GeoDataFrame)
 
 
-def test_select_point_geodata(con):
-    t = con.table('geo')
-    expr = t['geo_point']
+def test_select_point_geodata(geotable):
+    expr = geotable['geo_point']
     sqla_expr = expr.compile()
     compiled = str(sqla_expr.compile(compile_kwargs=dict(literal_binds=True)))
     expected = "SELECT ST_AsEWKB(t0.geo_point) AS geo_point \nFROM geo AS t0"
@@ -1634,9 +1633,8 @@ def test_select_point_geodata(con):
     assert data.geom_type.iloc[0] == 'Point'
 
 
-def test_select_linestring_geodata(con):
-    t = con.table('geo')
-    expr = t['geo_linestring']
+def test_select_linestring_geodata(geotable):
+    expr = geotable['geo_linestring']
     sqla_expr = expr.compile()
     compiled = str(sqla_expr.compile(compile_kwargs=dict(literal_binds=True)))
     expected = (
@@ -1648,9 +1646,8 @@ def test_select_linestring_geodata(con):
     assert data.geom_type.iloc[0] == 'LineString'
 
 
-def test_select_polygon_geodata(con):
-    t = con.table('geo')
-    expr = t['geo_polygon']
+def test_select_polygon_geodata(geotable):
+    expr = geotable['geo_polygon']
     sqla_expr = expr.compile()
     compiled = str(sqla_expr.compile(compile_kwargs=dict(literal_binds=True)))
     expected = (
@@ -1662,9 +1659,8 @@ def test_select_polygon_geodata(con):
     assert data.geom_type.iloc[0] == 'Polygon'
 
 
-def test_select_multipolygon_geodata(con):
-    t = con.table('geo')
-    expr = t['geo_multipolygon']
+def test_select_multipolygon_geodata(geotable):
+    expr = geotable['geo_multipolygon']
     sqla_expr = expr.compile()
     compiled = str(sqla_expr.compile(compile_kwargs=dict(literal_binds=True)))
     expected = (
@@ -1674,3 +1670,10 @@ def test_select_multipolygon_geodata(con):
     assert compiled == expected
     data = expr.execute()
     assert data.geom_type.iloc[0] == 'MultiPolygon'
+
+
+def test_geo_area(geotable, gdf):
+    expr = geotable['geo_multipolygon'].area()
+    result = expr.execute()
+    expected = gp.GeoSeries(gdf.geo_multipolygon).area
+    tm.assert_series_equal(result, expected, check_names=False)
