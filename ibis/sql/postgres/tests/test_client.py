@@ -72,6 +72,7 @@ def test_compile_verify(alltypes):
     assert supported_expr.verify()
 
 
+@pytest.mark.skip(reason="currently mismatching postgis tables")
 def test_database_layer(con, alltypes):
     db = con.database()
     t = db.functional_alltypes
