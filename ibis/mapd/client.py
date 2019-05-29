@@ -371,16 +371,26 @@ class MapDClient(SQLClient):
 
         self.execution_type = execution_type
 
-        self.con = pymapd.connect(
-            uri=uri,
-            user=user,
-            password=password,
-            host=host,
-            port=port,
-            dbname=database,
-            protocol=protocol,
-            sessionid=session_id,
-        )
+        if session_id:
+            if self.version < pkg_resources.parse_version('0.12.0'):
+                raise Exception('Must have pympad > 0.12 to use session ID')
+            self.con = pymapd.connect(
+                uri=uri,
+                host=host,
+                port=port,
+                protocol=protocol,
+                sessionid=session_id,
+            )
+        else:
+            self.con = pymapd.connect(
+                uri=uri,
+                user=user,
+                password=password,
+                host=host,
+                port=port,
+                dbname=database,
+                protocol=protocol,
+            )
 
     def __del__(self):
         self.close()
