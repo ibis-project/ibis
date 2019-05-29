@@ -43,6 +43,10 @@ def _validate_compatible(from_schema, to_schema):
     return
 
 
+class PyMapDVersionError(Exception):
+    pass
+
+
 class MapDDataType:
 
     __slots__ = 'typename', 'nullable'
@@ -373,7 +377,9 @@ class MapDClient(SQLClient):
 
         if session_id:
             if self.version < pkg_resources.parse_version('0.12.0'):
-                raise Exception('Must have pympad > 0.12 to use session ID')
+                raise PyMapDVersionError(
+                    'Must have pymapd > 0.12 to use session ID'
+                )
             self.con = pymapd.connect(
                 uri=uri,
                 host=host,
