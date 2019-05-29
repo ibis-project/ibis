@@ -1,7 +1,6 @@
-import sys
-
 import pandas as pd
 import pytest
+from pkg_resources import get_distribution, parse_version
 
 import ibis
 import ibis.common as com
@@ -40,9 +39,18 @@ def test_list_tables(con):
     assert len(con.list_tables(like='functional_alltypes')) == 1
 
 
-@pytest.mark.skipif(sys.version_info < (3, 6), reason='must have pymapd>=12')
+@pytest.mark.skipif(
+    parse_version(get_distribution('pymapd').version) < parse_version('0.12'),
+    reason='must have pymapd>=12 to connect to existing session'
+)
 def test_session_id_connection(session_con):
-    assert session_con.list_tables()
+    new_connection = ibis.mapd.connect(
+        protocol=session_con.protocol,
+        host=session_con.host,
+        port=session_con.port,
+        session_id=session_con.con._session
+    )
+    assert new_connection.list_tables()
 
 
 def test_compile_verify(alltypes):

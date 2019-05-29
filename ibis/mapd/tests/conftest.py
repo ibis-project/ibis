@@ -1,6 +1,5 @@
 import os
 
-import pymapd
 import pytest
 
 import ibis
@@ -10,12 +9,14 @@ OMNISCI_HOST = os.environ.get('IBIS_TEST_OMNISCI_HOST', 'localhost')
 OMNISCI_PORT = int(os.environ.get('IBIS_TEST_OMNISCI_PORT', 6274))
 OMNISCI_USER = os.environ.get('IBIS_TEST_OMNISCI_USER', 'mapd')
 OMNISCI_PASS = os.environ.get('IBIS_TEST_OMNISCI_PASSWORD', 'HyperInteractive')
+OMNISCI_PROTOCOL = os.environ.get('IBIS_TEST_OMNISCI_PROTOCOL', 'binary')
 OMNISCI_DB = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
 
 
 @pytest.fixture(scope='module')
 def con():
     return ibis.mapd.connect(
+        protocol=OMNISCI_PROTOCOL,
         host=OMNISCI_HOST,
         port=OMNISCI_PORT,
         user=OMNISCI_USER,
@@ -26,19 +27,15 @@ def con():
 
 @pytest.fixture(scope='module')
 def session_con():
-    con = pymapd.connect(
+    return ibis.mapd.connect(
+        protocol=OMNISCI_PROTOCOL,
         host=OMNISCI_HOST,
         port=OMNISCI_PORT,
         user=OMNISCI_USER,
         password=OMNISCI_PASS,
-        dbname=OMNISCI_DB,
+        database=OMNISCI_DB,
     )
-    session_id = con._session
-    return ibis.mapd.connect(
-        host=OMNISCI_HOST,
-        port=OMNISCI_PORT,
-        session_id=session_id
-    )
+    return session_con
 
 
 @pytest.fixture(scope='module')
