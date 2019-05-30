@@ -1490,3 +1490,53 @@ def test_nullif_fail(left, right):
         left.nullif(right)
     with pytest.raises(com.IbisTypeError):
         right.nullif(left)
+
+
+@pytest.mark.parametrize(
+    "join_method",
+    [
+        "left_join",
+        pytest.param(
+            "right_join",
+            marks=pytest.mark.xfail(
+                raises=AttributeError, reason="right_join is not an ibis API"
+            ),
+        ),
+        "inner_join",
+        "outer_join",
+        "asof_join",
+        pytest.param(
+            "semi_join",
+            marks=pytest.mark.xfail(
+                raises=com.IbisTypeError,
+                reason=(
+                    "semi_join only gives access to the left table's "
+                    "columns"
+                ),
+            ),
+        ),
+    ],
+)
+@pytest.mark.xfail(
+    raises=(com.IbisError, AttributeError),
+    reason="Select from unambiguous joins not implemented",
+)
+def test_select_on_unambiguous_join(join_method):
+    t = ibis.table([("a0", dt.int64), ("b1", dt.string)], name="t")
+    s = ibis.table([("a1", dt.int64), ("b2", dt.string)], name="s")
+    method = getattr(t, join_method)
+    join = method(s, t.b1 == s.b2)
+    expr1 = join["a0", "a1"]
+    expr2 = join[["a0", "a1"]]
+    expr3 = join.select(["a0", "a1"])
+    assert expr1.equals(expr2)
+    assert expr1.equals(expr3)
+
+
+def test_chained_select_on_join():
+    t = ibis.table([("a", dt.int64)], name="t")
+    s = ibis.table([("a", dt.int64), ("b", dt.string)], name="s")
+    join = t.join(s)[t.a, s.b]
+    expr1 = join["a", "b"]
+    expr2 = join.select(["a", "b"])
+    assert expr1.equals(expr2)
