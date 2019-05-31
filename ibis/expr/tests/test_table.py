@@ -18,7 +18,7 @@ from ibis.tests.util import assert_equal
 
 def test_empty_schema():
     table = api.table([], 'foo')
-    assert len(table.schema()) == 0
+    assert not table.schema()
 
 
 def test_columns(con):
@@ -1220,3 +1220,15 @@ def test_unbound_table_name():
     name = t.op().name
     match = re.match(r'^unbound_table_\d+$', name)
     assert match is not None
+
+
+def test_mutate_chain():
+    one = ibis.table([('a', 'string'), ('b', 'string')], name='t')
+    two = one.mutate(b=lambda t: t.b.fillna('Short Term'))
+    three = two.mutate(a=lambda t: t.a.fillna('Short Term'))
+    a, b = three.op().selections
+
+    # we can't fuse these correctly yet
+    assert isinstance(a.op(), ops.IfNull)
+    assert isinstance(b.op(), ops.TableColumn)
+    assert isinstance(b.op().table.op().selections[1].op(), ops.IfNull)

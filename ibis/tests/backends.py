@@ -308,7 +308,7 @@ class MySQL(Backend, RoundHalfToEven):
         return t.mutate(bool_col=t.bool_col == 1)
 
 
-class Clickhouse(Backend, RoundHalfToEven):
+class Clickhouse(UnorderedComparator, Backend, RoundHalfToEven):
     check_dtype = False
     supports_window_operations = False
     returned_timestamp_unit = 's'

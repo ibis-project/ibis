@@ -65,6 +65,10 @@ testfast:
 	PYTHONHASHSEED=${PYTHONHASHSEED} $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not (udf or impala or hdfs or bigquery)' -k 'not test_import_time' \
 	    --doctest-modules --doctest-ignore-import-errors ${PYTEST_OPTIONS}
 
+testlocal:
+	PYTHONHASHSEED=${PYTHONHASHSEED} pytest -n auto -m 'not (udf or impala or hdfs or bigquery or mysql or mapd or postgresql or clickhouse)' -k 'not test_import_time' \
+	    ${PYTEST_OPTIONS}
+
 docclean:
 	$(DOCKER_RUN) ibis-docs rm -rf /tmp/docs.ibis-project.org
 
