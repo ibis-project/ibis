@@ -73,7 +73,7 @@ builddoc:
 	$(DOCKER) build ibis-docs
 
 doc: builddoc docclean
-	$(DOCKER_RUN) ibis-docs ping -c 1 quickstart.cloudera
+	$(DOCKER_RUN) ibis-docs ping -c 1 impala
 	$(DOCKER_RUN) ibis-docs git clone --branch gh-pages https://github.com/ibis-project/docs.ibis-project.org /tmp/docs.ibis-project.org --depth 1
 	$(DOCKER_RUN) ibis-docs find /tmp/docs.ibis-project.org -maxdepth 1 ! -wholename /tmp/docs.ibis-project.org \
 	    ! -name '*.git' \

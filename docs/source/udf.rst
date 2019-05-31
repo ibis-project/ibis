@@ -106,18 +106,20 @@ Using ``add_one`` from above as an example, the following call will receive a
 
 .. code-block:: python
 
-   >>> import ibis
-   >>> import pandas as pd
-   >>> df = pd.DataFrame({'a': [1, 2, 3]})
-   >>> con = ibis.pandas.connect({'df': df})
-   >>> t = con.table('df')
-   >>> expr = add_one(t.a)
+   import ibis
+   import pandas as pd
+   df = pd.DataFrame({'a': [1, 2, 3]})
+   con = ibis.pandas.connect({'df': df})
+   t = con.table('df')
+   expr = add_one(t.a)
+   expr
 
 And this will receive the ``int`` 1:
 
 .. code-block:: python
 
-   >>> expr = add_one(1)
+   expr = add_one(1)
+   expr
 
 Since the pandas backend passes around ``**kwargs`` you can accept ``**kwargs``
 in your function:
@@ -175,47 +177,11 @@ Ibis will parse the source of the function and turn the resulting Python AST
 into JavaScript source code (technically, ECMAScript 2015). Most of the Python
 language is supported including classes, functions and generators.
 
-If you want to inspect the generated code you can look at the ``js`` property
-of the function.
-
-.. code-block:: python
-
-   >>> print(my_bigquery_add_one.js)
-   CREATE TEMPORARY FUNCTION my_bigquery_add_one(x FLOAT64)
-   RETURNS FLOAT64
-   LANGUAGE js AS """
-   'use strict';
-   function my_bigquery_add_one(x) {
-       return (x + 1.0);
-   }
-   return my_bigquery_add_one(x);
-   """;
-
 When you want to use this function you call it like any other Python
-function--only on an ibis expression:
+function--only it must be called on an ibis expression:
 
 .. code-block:: python
 
-   >>> import ibis
-   >>> t = ibis.table([('a', 'double')])
-   >>> expr = my_bigquery_add_one(t.a)
-   >>> print(ibis.bigquery.compile(expr))
-   CREATE TEMPORARY FUNCTION my_bigquery_add_one(x FLOAT64)
-   RETURNS FLOAT64
-   LANGUAGE js AS """
-   'use strict';
-   function my_bigquery_add_one(x) {
-       return (x + 1.0);
-   }
-   return my_bigquery_add_one(x);
-   """;
-
-   SELECT my_bigquery_add_one(`a`) AS `tmp`
-   FROM t0
-
-SQLite
-------
-
-.. _udf.sqlite:
-
-TODO
+   t = ibis.table([('a', 'double')])
+   expr = my_bigquery_add_one(t.a)
+   print(ibis.bigquery.compile(expr))

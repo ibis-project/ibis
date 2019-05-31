@@ -84,7 +84,6 @@ SQL engine support needing code contributors:
    sql
    udf
    contributing
-   developer
    design
    extending
    backends

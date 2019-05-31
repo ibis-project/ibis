@@ -3,6 +3,7 @@ services:
 
   postgres:
     image: postgres
+    hostname: postgres
     ports:
       - 5432:5432
     environment:
@@ -10,6 +11,7 @@ services:
 
   mysql:
     image: mariadb:10.2
+    hostname: mysql
     ports:
       - 3306:3306
     environment:
@@ -21,10 +23,6 @@ services:
   impala:
     image: ibisproject/impala:latest
     hostname: impala
-    networks:
-      default:
-        aliases:
-          - quickstart.cloudera
     environment:
       PGPASSWORD: postgres
     ports:
@@ -46,12 +44,14 @@ services:
 
   clickhouse:
     image: yandex/clickhouse-server:18.12
+    hostname: clickhouse
     ports:
       - 8123:8123
       - 9000:9000
 
   kudu-master:
     image: ibisproject/kudu:latest
+    hostname: kudu-master
     networks:
       default:
         aliases:
@@ -66,6 +66,7 @@ services:
 
   kudu-tserver:
     image: ibisproject/kudu:latest
+    hostname: kudu-tserver
     cap_add:
       - SYS_TIME
     ports:
@@ -76,6 +77,11 @@ services:
 
   omnisci:
     image: omnisci/core-os-cpu:v4.6.1
+    hostname: omnisci
+    networks:
+      default:
+        aliases:
+          - mapd
     ports:
       - 6274:6274
       - 6278:6278

@@ -747,8 +747,8 @@ As you would hope, the code is as follows:
 Join with ``SELECT *``
 ~~~~~~~~~~~~~~~~~~~~~~
 
-If you try to execute a join that has not been projected or aggregated, it will
-be *fully materialized*:
+If you try to compile or execute a join that has not been projected or
+aggregated, it will be *fully materialized*:
 
 .. ipython:: python
 
@@ -1054,12 +1054,6 @@ In Ibis this is:
    expr = (events.group_by('user_id')
            .aggregate(unique_events=metric))
    print(ibis.impala.compile(expr))
-
-You can also write:
-
-.. code-block:: python
-
-   events.event_type.distinct().count()
 
 Window functions
 ----------------
