@@ -2,6 +2,7 @@
 """
 
 import abc
+import operator
 from collections import OrderedDict
 from io import StringIO
 from itertools import chain
@@ -12,6 +13,7 @@ import ibis
 import ibis.common as com
 import ibis.expr.analysis as L
 import ibis.expr.analytics as analytics
+import ibis.expr.datatypes as dt
 import ibis.expr.format as fmt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
@@ -1326,6 +1328,7 @@ class ExprTranslator:
         def decorator(f):
             cls._rewrites[klass] = f
             return f
+
         return decorator
 
     @classmethod
@@ -1333,6 +1336,7 @@ class ExprTranslator:
         def decorator(f):
             cls._registry[klass] = f
             return f
+
         return decorator
 
 
@@ -1341,8 +1345,6 @@ rewrites = ExprTranslator.rewrites
 
 @rewrites(analytics.Bucket)
 def _bucket(expr):
-    import operator
-
     op = expr.op()
     stmt = ibis.case()
 
@@ -1426,6 +1428,14 @@ def _notall_expand(expr):
     arg = expr.op().args[0]
     t = ir.find_base_table(arg)
     return arg.sum() < t.count()
+
+
+@rewrites(ops.Cast)
+def _rewrite_cast(expr):
+    arg, to = expr.op().args
+    if isinstance(to, dt.Interval) and isinstance(arg.type(), dt.Integer):
+        return arg.to_interval(unit=to.unit)
+    return expr
 
 
 class Dialect:

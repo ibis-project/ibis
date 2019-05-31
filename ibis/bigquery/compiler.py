@@ -552,7 +552,7 @@ def compiles_approx(translator, expr):
 @rewrites(ops.All)
 @rewrites(ops.NotAny)
 @rewrites(ops.NotAll)
-def _any_all_no_op(expr):
+def bigquery_any_all_no_op(expr):
     return expr
 
 
