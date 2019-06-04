@@ -34,7 +34,7 @@ jobs:
     - script: conda install conda=$(conda.version)
       displayName: 'Install an appropriate conda version'
 
-    - script: conda create --name $(conda.env) python=$(python.version) numpy pandas pytables ruamel.yaml jinja2 pyarrow multipledispatch pymysql sqlalchemy psycopg2 graphviz click mock plumbum flake8
+    - script: conda create --name $(conda.env) python=$(python.version) numpy pandas pytables ruamel.yaml jinja2 pyarrow multipledispatch pymysql sqlalchemy psycopg2 graphviz click mock plumbum flake8 geopandas
       displayName: 'Create conda environment'
 
     - script: |
@@ -87,7 +87,7 @@ jobs:
 
     - script: |
         call activate $(conda.env)
-        python ci/datamgr.py postgres --psql-path="C:/Program Files/PostgreSQL/10/bin/psql.exe"
+        python ci/datamgr.py postgres --psql-path="C:/Program Files/PostgreSQL/10/bin/psql.exe" -t functional_alltypes -t diamonds -t batting -t awards_players
       displayName: 'Load PostgreSQL data'
 
     - script: |
@@ -102,7 +102,7 @@ jobs:
 
     - script: |
         call activate $(conda.env)
-        pytest --tb=short --junitxml="junit-$(python.version).xml" -n auto -m "not backend and not clickhouse and not impala and not hdfs and not bigquery and not mapd and not mysql" -ra ibis
+        pytest --tb=short --junitxml="junit-$(python.version).xml" -n auto -m "not backend and not clickhouse and not impala and not hdfs and not bigquery and not mapd and not mysql and not postgis" -ra ibis
       displayName: 'Run tests'
 
     # publish test results
