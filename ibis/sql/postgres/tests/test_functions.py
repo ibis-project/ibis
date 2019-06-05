@@ -1731,3 +1731,73 @@ def test_geo_envelope(geotable, gdf):
 def test_geo_within(geotable):
     expr = geotable.geo_point.within(geotable.geo_point.buffer(1.0))
     assert expr.execute().all()
+
+
+@pytest.mark.postgis
+def test_geo_disjoint(geotable):
+    expr = geotable.geo_point.disjoint(geotable.geo_point)
+    assert not expr.execute().any()
+
+
+@pytest.mark.postgis
+def test_geo_equals(geotable):
+    expr = geotable.geo_point.equals(geotable.geo_point)
+    assert expr.execute().all()
+
+
+@pytest.mark.postgis
+def test_geo_intersects(geotable):
+    expr = geotable.geo_point.intersects(geotable.geo_point.buffer(1.0))
+    assert expr.execute().all()
+
+
+@pytest.mark.postgis
+def test_geo_overlaps(geotable):
+    expr = geotable.geo_point.overlaps(geotable.geo_point.buffer(1.0))
+    assert not expr.execute().any()
+
+
+@pytest.mark.postgis
+def test_geo_touches(geotable):
+    expr = geotable.geo_point.touches(geotable.geo_linestring)
+    assert expr.execute().all()
+
+
+@pytest.mark.postgis
+def test_geo_distance(geotable, gdf):
+    expr = geotable.geo_point.distance(geotable.geo_multipolygon.centroid())
+    result = expr.execute()
+    expected = gdf.geo_point.distance(
+        gp.GeoSeries(gdf.geo_multipolygon).centroid
+    )
+    tm.assert_series_equal(result, expected, check_names=False)
+
+
+@pytest.mark.postgis
+def test_geo_length(geotable, gdf):
+    expr = geotable.geo_linestring.length()
+    result = expr.execute()
+    expected = gp.GeoSeries(gdf.geo_linestring).length
+    tm.assert_series_equal(result, expected, check_names=False)
+
+
+@pytest.mark.postgis
+def test_geo_n_points(geotable):
+    expr = geotable.geo_linestring.n_points()
+    result = expr.execute()
+    assert (result == 2).all()
+
+
+@pytest.mark.postgis
+def test_geo_perimeter(geotable):
+    expr = geotable.geo_multipolygon.perimeter()
+    result = expr.execute()
+    # Geopandas doesn't implement perimeter, so we do a simpler check.
+    assert (result > 0.0).all()
+
+
+@pytest.mark.postgis
+def test_geo_srid(geotable):
+    expr = geotable.geo_linestring.srid()
+    result = expr.execute()
+    assert (result == 4326).all()
