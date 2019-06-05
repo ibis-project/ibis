@@ -1829,3 +1829,19 @@ def test_geo_intersection(geotable, gdf):
     tm.assert_series_equal(
         result, expected, check_names=False, check_less_precise=2
     )
+
+
+@pytest.mark.postgis
+def test_geo_x(geotable, gdf):
+    expr = geotable.geo_point.x()
+    result = expr.execute()
+    expected = gp.GeoSeries(gdf.geo_point).x
+    tm.assert_series_equal(result, expected, check_names=False)
+
+
+@pytest.mark.postgis
+def test_geo_y(geotable, gdf):
+    expr = geotable.geo_point.y()
+    result = expr.execute()
+    expected = gp.GeoSeries(gdf.geo_point).y
+    tm.assert_series_equal(result, expected, check_names=False)
