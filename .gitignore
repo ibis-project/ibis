@@ -12,6 +12,7 @@
 *.swo
 *.pdb
 .idea
+.vscode
 
 # Compiled source
 *.a
