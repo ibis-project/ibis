@@ -169,9 +169,9 @@ class SparkClient(SQLClient):
     query_class = SparkQuery
     table_class = SparkTable
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         # TODO arguments
-        self._context = ps.SparkContext()
+        self._context = ps.SparkContext(**kwargs)
         self._session = ps.sql.SparkSession(self._context)
         self._catalog = self._session.catalog
 
