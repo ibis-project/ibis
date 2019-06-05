@@ -1118,7 +1118,8 @@ class AlchemyClient(SQLClient):
         tables : list of strings
         """
         inspector = self.inspector
-        names = inspector.get_table_names(schema=schema)
+        # inspector returns a mutable version of its names, so make a copy.
+        names = inspector.get_table_names(schema=schema).copy()
         names.extend(inspector.get_view_names(schema=schema))
         if like is not None:
             names = [x for x in names if like in x]
