@@ -242,6 +242,30 @@ def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
     backend.assert_series_equal(result, expected)
 
 
+@tu.skipif_unsupported
+def test_interval_add_cast_scalar(backend, alltypes):
+    timestamp_date = alltypes.timestamp_col.date()
+    delta = ibis.literal(10).cast("interval('D')")
+    expr = timestamp_date + delta
+    result = expr.execute()
+    expected = timestamp_date.execute() + pd.Timedelta(10, unit='D')
+    backend.assert_series_equal(result, expected)
+
+
+@tu.skipif_unsupported
+def test_interval_add_cast_column(backend, alltypes):
+    timestamp_date = alltypes.timestamp_col.date()
+    delta = alltypes.bigint_col.cast("interval('D')")
+    expr = timestamp_date + delta
+    result = expr.execute()
+    expected = (
+        timestamp_date.execute()
+        .add(alltypes.bigint_col.execute().astype("timedelta64[D]"))
+        .rename("tmp")
+    )
+    backend.assert_series_equal(result, expected)
+
+
 @pytest.mark.parametrize(
     ('ibis_pattern', 'pandas_pattern'), [('%Y%m%d', '%Y%m%d')]
 )
@@ -255,12 +279,7 @@ def test_strftime(backend, con, alltypes, df, ibis_pattern, pandas_pattern):
     backend.assert_series_equal(result, expected)
 
 
-unit_factors = {
-    's': int(1e9),
-    'ms': int(1e6),
-    'us': int(1e3),
-    'ns': 1,
-}
+unit_factors = {'s': int(1e9), 'ms': int(1e6), 'us': int(1e3), 'ns': 1}
 
 
 @pytest.mark.parametrize(

@@ -50,19 +50,19 @@ init: restart
 	$(MAKE) load
 
 testparallel:
-	PYTHONHASHSEED=${PYTHONHASHSEED} $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not udf' \
+	PYTHONHASHSEED=${PYTHONHASHSEED} $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not udf' -k 'not test_import_time' \
 	    --doctest-modules --doctest-ignore-import-errors ${PYTEST_OPTIONS}
 
 test:
-	PYTHONHASHSEED=${PYTHONHASHSEED} $(MAKEFILE_DIR)/ci/test.sh ${PYTEST_OPTIONS} \
+	PYTHONHASHSEED=${PYTHONHASHSEED} $(MAKEFILE_DIR)/ci/test.sh ${PYTEST_OPTIONS} -k 'not test_import_time' \
 	    --doctest-modules --doctest-ignore-import-errors
 
 testmost:
-	PYTHONHASHSEED=${PYTHONHASHSEED} $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not (udf or impala or hdfs)' \
+	PYTHONHASHSEED=${PYTHONHASHSEED} $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not (udf or impala or hdfs)' -k 'not test_import_time' \
 	    --doctest-modules --doctest-ignore-import-errors ${PYTEST_OPTIONS}
 
 testfast:
-	PYTHONHASHSEED=${PYTHONHASHSEED} $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not (udf or impala or hdfs or bigquery)' \
+	PYTHONHASHSEED=${PYTHONHASHSEED} $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not (udf or impala or hdfs or bigquery)' -k 'not test_import_time' \
 	    --doctest-modules --doctest-ignore-import-errors ${PYTEST_OPTIONS}
 
 docclean:

@@ -5,6 +5,7 @@ import pandas as pd
 from pandas.core.groupby import SeriesGroupBy
 
 import ibis
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.pandas.core import (
     date_types,
@@ -86,7 +87,46 @@ def execute_interval_from_integer_series(op, data, **kwargs):
     # fast path for timedelta conversion
     if cls is None:
         return data.astype("timedelta64[{}]".format(unit))
-    return data.apply(lambda n, cls=cls: cls(**{resolution: n}))
+    return data.apply(
+        lambda n, cls=cls, resolution=resolution: cls(**{resolution: n})
+    )
+
+
+@execute_node.register(ops.IntervalFromInteger, integer_types)
+def execute_interval_from_integer_integer_types(op, data, **kwargs):
+    unit = op.unit
+    resolution = "{}s".format(op.resolution)
+    cls = OFFSET_CLASS.get(unit, None)
+
+    if cls is None:
+        return pd.Timedelta(data, unit=unit)
+    return cls(**{resolution: data})
+
+
+@execute_node.register(ops.Cast, pd.Series, dt.Interval)
+def execute_cast_integer_to_interval_series(op, data, type, **kwargs):
+    to = op.to
+    unit = to.unit
+    resolution = "{}s".format(to.resolution)
+    cls = OFFSET_CLASS.get(unit, None)
+
+    if cls is None:
+        return data.astype("timedelta64[{}]".format(unit))
+    return data.apply(
+        lambda n, cls=cls, resolution=resolution: cls(**{resolution: n})
+    )
+
+
+@execute_node.register(ops.Cast, integer_types, dt.Interval)
+def execute_cast_integer_to_interval_integer_types(op, data, type, **kwargs):
+    to = op.to
+    unit = to.unit
+    resolution = "{}s".format(to.resolution)
+    cls = OFFSET_CLASS.get(unit, None)
+
+    if cls is None:
+        return pd.Timedelta(data, unit=unit)
+    return cls(**{resolution: data})
 
 
 @execute_node.register(ops.TimestampAdd, timestamp_types, timedelta_types)
