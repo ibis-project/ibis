@@ -1801,3 +1801,31 @@ def test_geo_srid(geotable):
     expr = geotable.geo_linestring.srid()
     result = expr.execute()
     assert (result == 4326).all()
+
+
+@pytest.mark.postgis
+def test_geo_difference(geotable, gdf):
+    expr = geotable.geo_linestring.buffer(1.0).difference(
+        geotable.geo_point.buffer(0.5)
+    ).area()
+    result = expr.execute()
+    expected = gp.GeoSeries(gdf.geo_linestring).buffer(1.0).difference(
+        gp.GeoSeries(gdf.geo_point).buffer(0.5)
+    ).area
+    tm.assert_series_equal(
+        result, expected, check_names=False, check_less_precise=2
+    )
+
+
+@pytest.mark.postgis
+def test_geo_intersection(geotable, gdf):
+    expr = geotable.geo_linestring.buffer(1.0).intersection(
+        geotable.geo_point.buffer(0.5)
+    ).area()
+    result = expr.execute()
+    expected = gp.GeoSeries(gdf.geo_linestring).buffer(1.0).intersection(
+        gp.GeoSeries(gdf.geo_point).buffer(0.5)
+    ).area
+    tm.assert_series_equal(
+        result, expected, check_names=False, check_less_precise=2
+    )
