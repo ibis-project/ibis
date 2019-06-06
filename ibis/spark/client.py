@@ -170,7 +170,6 @@ class SparkClient(SQLClient):
     table_class = SparkTable
 
     def __init__(self, **kwargs):
-        # TODO arguments
         self._context = ps.SparkContext(**kwargs)
         self._session = ps.sql.SparkSession(self._context)
         self._catalog = self._session.catalog
@@ -190,12 +189,9 @@ class SparkClient(SQLClient):
         result = comp.build_ast(expr, context)
         return result
 
-    def _execute(self, stmt):
+    def _execute(self, stmt, results=True):
         query = self._session.sql(stmt)
         return SparkCursor(query)
-
-    def database(self, name=None):
-        return self.database_class(name or self.current_database, self)
 
     @property
     def current_database(self):
