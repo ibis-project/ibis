@@ -10,6 +10,24 @@ def _sequence_to_tuple(x):
     return tuple(x) if util.is_iterable(x) else x
 
 
+def _determine_how(preceding):
+    if isinstance(preceding, tuple):
+        start, end = preceding
+        if start is None:
+            offset_type = type(end)
+        else:
+            offset_type = type(start)
+    else:
+        offset_type = type(preceding)
+
+    if isinstance(offset_type, type(int)):
+        how = 'rows'
+    else:
+        how = 'range'
+
+    return how
+
+
 class Window:
     """Class to encapsulate the details of a window frame.
 
@@ -310,13 +328,16 @@ def cumulative_window(group_by=None, order_by=None):
     )
 
 
-def trailing_window(rows, group_by=None, order_by=None):
+def trailing_window(preceding, group_by=None, order_by=None):
     """Create a trailing window for use with aggregate window functions.
 
     Parameters
     ----------
-    rows : int
-        Number of trailing rows to include. 0 includes only the current row
+    preceding : int, float or expression of intervals, i.e.
+        ibis.interval(days=1) + ibis.interval(hours=5)
+        Int indicates number of trailing rows to include;
+        0 includes only the current row.
+        Interval indicates a trailing range window.
     group_by : expressions, default None
         Either specify here or with TableExpr.group_by
     order_by : expressions, default None
@@ -328,8 +349,13 @@ def trailing_window(rows, group_by=None, order_by=None):
     Window
 
     """
+    how = _determine_how(preceding)
     return Window(
-        preceding=rows, following=0, group_by=group_by, order_by=order_by
+        preceding=preceding,
+        following=0,
+        group_by=group_by,
+        order_by=order_by,
+        how=how
     )
 
 
