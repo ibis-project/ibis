@@ -39,6 +39,7 @@ if VERSION == (3, 5):
     parquet_requires = ['pyarrow<0.12.0']
 else:
     parquet_requires = ['pyarrow>=0.12.0']
+spark_requires = ['pyspark>=2.4.3']
 
 all_requires = (
     impala_requires
@@ -51,6 +52,7 @@ all_requires = (
     + bigquery_requires
     + hdf5_requires
     + parquet_requires
+    + spark_requires
 )
 
 develop_requires = all_requires + ['click', 'flake8', 'mypy', 'pytest>=3']
@@ -85,6 +87,7 @@ setup(
         'bigquery': bigquery_requires,
         'hdf5': hdf5_requires,
         'parquet': parquet_requires,
+        'spark' : spark_requires,
     },
     description="Productivity-centric Python Big Data Framework",
     long_description=LONG_DESCRIPTION,
