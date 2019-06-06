@@ -15,6 +15,7 @@
 import pytest
 
 import ibis
+from ibis.expr.window import _determine_how
 from ibis.tests.util import assert_equal
 
 
@@ -174,3 +175,21 @@ def test_preceding_following_validate(alltypes):
 @pytest.mark.xfail(raises=AssertionError, reason='NYT')
 def test_window_equals(alltypes):
     assert False
+
+
+def test_determine_how():
+    preceding = (None, 5)
+    how = _determine_how(preceding)
+    assert how == 'rows'
+
+    preceding = (3, 1)
+    how = _determine_how(preceding)
+    assert how == 'rows'
+
+    preceding = 5
+    how = _determine_how(preceding)
+    assert how == 'rows'
+
+    preceding = ibis.interval(days=3)
+    how = _determine_how(preceding)
+    assert how == 'range'

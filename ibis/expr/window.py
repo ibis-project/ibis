@@ -20,7 +20,7 @@ def _determine_how(preceding):
     else:
         offset_type = type(preceding)
 
-    if isinstance(offset_type, type(int)):
+    if issubclass(offset_type, int):
         how = 'rows'
     else:
         how = 'range'
