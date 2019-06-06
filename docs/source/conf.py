@@ -36,22 +36,19 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.extlinks',
     'sphinx.ext.mathjax',
-    'numpydoc',
+    'sphinx.ext.napoleon',
     'nbsphinx',
     'IPython.sphinxext.ipython_directive',
     'IPython.sphinxext.ipython_console_highlighting',
     'releases',
 ]
-
+napoleon_google_docstring = False
+napoleon_numpy_docstring = True
 releases_github_path = "ibis-project/ibis"
 releases_unstable_prehistory = True
 releases_document_name = ["release"]
-
+ipython_warning_is_error = True
 autosummary_generate = glob.glob("*.rst")
-
-# autosummary_generate = True
-
-numpydoc_show_class_members = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

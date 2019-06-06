@@ -50,7 +50,7 @@ To see all internal Ibis activity (like queries being executed) set
 
 .. code-block:: python
 
-    ibis.options.verbose = True
+   ibis.options.verbose = True
 
 By default this information is sent to ``sys.stdout``, but you can set some
 other logging function:
@@ -58,7 +58,7 @@ other logging function:
 .. code-block:: python
 
    def cowsay(x):
-       print("Cow says: {0}".format(x))
+       print("Cow says: {}".format(x))
 
    ibis.options.verbose_log = cowsay
 

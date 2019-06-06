@@ -30,7 +30,7 @@ class KuduImpalaTestEnv(IbisTestEnv):
 
         # band-aid until Kudu support merged into Impala mainline
         self.test_host = os.getenv(
-            'IBIS_TEST_KIMPALA_HOST', 'quickstart.cloudera'
+            'IBIS_TEST_KIMPALA_HOST', 'impala'
         )
 
         # XXX

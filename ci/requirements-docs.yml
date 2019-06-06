@@ -4,7 +4,6 @@ matplotlib
 nbconvert
 nbsphinx
 nomkl
-numpydoc
 # must pin again otherwise strange things happen
 pyarrow>=0.12
 sphinx=2.0.1

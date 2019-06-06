@@ -49,15 +49,16 @@ Install dependencies for Ibis's Impala dialect:
   pip install ibis-framework[impala]
 
 To create an Ibis client, you must first connect your services and assemble the
-client using :func:`~ibis.impala.connect`:
+client using :func:`ibis.impala.connect`:
 
-.. code-block:: python
+.. ipython:: python
 
    import ibis
 
-   hdfs = ibis.hdfs_connect(host=webhdfs_host, port=webhdfs_port)
-   con = ibis.impala.connect(host=impala_host, port=impala_port,
-                             hdfs_client=hdfs)
+   hdfs = ibis.hdfs_connect(host='impala', port=50070)
+   con = ibis.impala.connect(
+       host='impala', database='ibis_testing', hdfs_client=hdfs
+   )
 
 Both method calls can take ``auth_mechanism='GSSAPI'`` or
 ``auth_mechanism='LDAP'`` to connect to Kerberos clusters.  Depending on your
@@ -77,10 +78,11 @@ Install dependencies for Ibis's SQLite dialect:
   pip install ibis-framework[sqlite]
 
 Create a client by passing a path to a SQLite database to
-:func:`~ibis.sqlite.connect`:
+:func:`ibis.sqlite.connect`:
 
 .. code-block:: python
 
+   >>> import ibis
    >>> ibis.sqlite.connect('path/to/my/sqlite.db')
 
 See http://blog.ibis-project.org/sqlite-crunchbase-quickstart/ for a quickstart
@@ -97,17 +99,21 @@ Install dependencies for Ibis's PostgreSQL dialect:
 
   pip install ibis-framework[postgres]
 
-Create a client by passing a connection string or individual parameters to
-:func:`~ibis.postgres.connect`:
+Create a client by passing a connection string to the ``url`` parameter or
+individual parameters to :func:`ibis.postgres.connect`:
 
-.. code-block:: python
+.. ipython:: python
 
-   >>> con = ibis.postgres.connect(
-   ...     'postgresql://user:pass@host:port/my_database'
-   ... )
-   >>> con = ibis.postgres.connect(
-   ...     user='bob', port=23569, database='ibis_testing'
-   ... )
+   con = ibis.postgres.connect(
+       url='postgresql://postgres:postgres@postgres:5432/ibis_testing'
+   )
+   con = ibis.postgres.connect(
+       user='postgres',
+       password='postgres',
+       host='postgres',
+       port=5432,
+       database='ibis_testing',
+   )
 
 .. _install.clickhouse:
 
@@ -121,12 +127,12 @@ Install dependencies for Ibis's Clickhouse dialect:
   pip install ibis-framework[clickhouse]
 
 Create a client by passing in database connection parameters such as ``host``,
-``port``, ``database``, and ``user`` to :func:`~ibis.clickhouse.connect`:
+``port``, ``database``, and ``user`` to :func:`ibis.clickhouse.connect`:
 
 
-.. code-block:: python
+.. ipython:: python
 
-   >>> con = ibis.clickhouse.connect(host='localhost', port=9000)
+   con = ibis.clickhouse.connect(host='clickhouse', port=9000)
 
 .. _install.bigquery:
 
@@ -159,8 +165,8 @@ project.
    will still be billed for any and all queries**.
 
 If you want to query data that lives in a different project than the billing
-project you can use the :meth:`~ibis.bigquery.client.BigQueryClient.database`
-method of :class:`~ibis.bigquery.client.BigQueryClient` objects:
+project you can use the :meth:`ibis.bigquery.client.BigQueryClient.database`
+method of :class:`ibis.bigquery.client.BigQueryClient` objects:
 
 .. code-block:: python
 
@@ -169,24 +175,27 @@ method of :class:`~ibis.bigquery.client.BigQueryClient` objects:
    >>> t.sweet_column.sum().execute()  # runs against the billing project
 
 `Pandas <https://pandas.pydata.org/>`_ Quickstart
-------------------------------------------------------
+-------------------------------------------------
 
-Ibis's Pandas backend is available on Ibis's core:
+Ibis's Pandas backend is available in core Ibis:
 
 Create a client by supplying a dictionary of DataFrames using
-:func:`~ibis.pandas.connect`. The keys become the table names:
+:func:`ibis.pandas.connect`. The keys become the table names:
 
-.. code-block:: python
+.. ipython:: python
 
-   >>> con = ibis.pandas.connect({
-   ...     'A': pandas.util.testing.makeDataFrame(),
-   ...     'B': pandas.util.testing.makeDataFrame()
-   ... })
+   import pandas as pd
+   con = ibis.pandas.connect(
+       {
+          'A': pd.util.testing.makeDataFrame(),
+          'B': pd.util.testing.makeDataFrame(),
+       }
+   )
 
 .. _install.mapd:
 
 `MapD <https://www.omnisci.com/>`_ Quickstart
-------------------------------------------------------
+---------------------------------------------
 
 Install dependencies for Ibis's MapD dialect:
 
@@ -196,19 +205,21 @@ Install dependencies for Ibis's MapD dialect:
 
 Create a client by passing in database connection parameters such as ``host``,
 ``port``, ``database``,  ``user`` and ``password`` to
-:func:`~ibis.mapd.connect`:
+:func:`ibis.mapd.connect`:
 
-.. code-block:: python
+.. ipython:: python
 
-   >>> con = ibis.mapd.connect(
-   ...     host='localhost', database='mapd', port=6274,
-   ...     user='mapd', password='HyperInteractive'
-   ... )
+   con = ibis.mapd.connect(
+       host='omnisci',
+       database='ibis_testing',
+       user='mapd',
+       password='HyperInteractive',
+   )
 
 .. _install.mysql:
 
 `MySQL <https://www.mysql.com/>`_ Quickstart
-------------------------------------------------------
+--------------------------------------------
 
 Install dependencies for Ibis's MySQL dialect:
 
@@ -217,16 +228,17 @@ Install dependencies for Ibis's MySQL dialect:
   pip install ibis-framework[mysql]
 
 Create a client by passing a connection string or individual parameters to
-:func:`~ibis.mysql.connect`:
+:func:`ibis.mysql.connect`:
 
-.. code-block:: python
+.. ipython:: python
 
-   >>> con = ibis.mysql.connect(
-   ...     'mysql://user:pass@host:port/my_database'
-   ... )
-   >>> con = ibis.mysql.connect(
-   ...     user='bob', port=23569, database='ibis_testing'
-   ... )
+   con = ibis.mysql.connect(url='mysql+pymysql://ibis:ibis@mysql/ibis_testing')
+   con = ibis.mysql.connect(
+       user='ibis',
+       password='ibis',
+       host='mysql',
+       database='ibis_testing',
+   )
 
 Learning Resources
 ------------------

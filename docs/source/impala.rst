@@ -17,38 +17,35 @@ While interoperability between the Hadoop / Spark ecosystems and pandas / the
 PyData stack is overall poor (but improving), we also show some ways that you
 can use pandas with Ibis and Impala.
 
-.. ipython:: python
-   :suppress:
-
-   import ibis
-   host = 'quickstart.cloudera'
-   hdfs = ibis.hdfs_connect(host=host)
-   client = ibis.impala.connect(host=host, hdfs_client=hdfs)
-
 The Impala client object
 ------------------------
 
 To use Ibis with Impala, you first must connect to a cluster using the
-``ibis.impala.connect`` function, *optionally* supplying an HDFS connection:
+:func:`ibis.impala.connect` function, optionally supplying an HDFS
+connection:
 
 .. code-block:: python
 
    import ibis
 
    hdfs = ibis.hdfs_connect(host=webhdfs_host, port=webhdfs_port)
-   client = ibis.impala.connect(host=impala_host, port=impala_port,
-                                hdfs_client=hdfs)
+   client = ibis.impala.connect(
+       host=impala_host, port=impala_port, hdfs_client=hdfs
+   )
+
+All IPython examples here use the following block of code to connect to impala
+using docker:
+
+.. ipython:: python
+
+   import ibis
+   host = 'impala'
+   hdfs = ibis.hdfs_connect(host=host)
+   client = ibis.impala.connect(host=host, hdfs_client=hdfs)
 
 You can accomplish many tasks directly through the client object, but we
-additionally provide to streamline tasks involving a single Impala table or
-database.
-
-If you're doing analytics on a single table, you can get going by using the
-``table`` method on the client:
-
-.. code-block:: python
-
-   table = client.table(table_name, database=db_name)
+additionally provide APIs to streamline tasks involving a single Impala table
+or database.
 
 Database and Table objects
 --------------------------
@@ -67,7 +64,7 @@ referencing a physical Impala table:
    table = client.table('functional_alltypes', database='ibis_testing')
 
 While you can get by fine with only table and client objects, Ibis has a notion
-of a "database object" that simplifies interactions with a single Impala
+of a database object that simplifies interactions with a single Impala
 database. It also gives you IPython tab completion of table names (that are
 valid Python variable names):
 
@@ -77,13 +74,6 @@ valid Python variable names):
    db
    table = db.functional_alltypes
    db.list_tables()
-
-So, these two lines of code are equivalent:
-
-.. code-block:: python
-
-   table1 = client.table(table_name, database=db)
-   table2 = db.table(table_name)
 
 ``ImpalaTable`` is a Python subclass of the more general Ibis ``TableExpr``
 that has additional Impala-specific methods. So you can use it interchangeably
@@ -118,9 +108,8 @@ For example:
    expr = fa.double_col.sum()
    expr.execute()
 
-For longer-running queries, if you press Control-C (or whatever triggers the
-Python ``KeyboardInterrupt`` on your system), Ibis will attempt to cancel the
-query in progress.
+For longer-running queries, Ibis will attempt to cancel the query in progress
+if an interrupt is received.
 
 Creating tables
 ---------------
@@ -186,13 +175,13 @@ can force a particular path with the ``location`` option.
 
 .. code-block:: python
 
+   from getpass import getuser
    schema = ibis.schema([('foo', 'string'),
                          ('year', 'int32'),
                          ('month', 'int16')])
    name = 'new_table'
-   location = '/home/wesm/new-table-data'
-   db.create_table(name, schema=schema,
-                   location=location)
+   location = '/home/{}/new-table-data'.format(getuser())
+   db.create_table(name, schema=schema, location=location)
 
 If the schema matches a known table schema, you can always use the ``schema``
 method to get a schema object:
@@ -323,23 +312,23 @@ files backing a table:
 
 .. code-block:: ipython
 
-    In [9]: ss = c.table('tpcds_parquet.store_sales')
+   In [9]: ss = c.table('tpcds_parquet.store_sales')
 
-    In [10]: ss.files()[:5]
-    Out[10]:
-                                                    path      size  \
-    0  hdfs://localhost:20500/test-warehouse/tpcds.st...  160.61KB
-    1  hdfs://localhost:20500/test-warehouse/tpcds.st...  123.88KB
-    2  hdfs://localhost:20500/test-warehouse/tpcds.st...  139.28KB
-    3  hdfs://localhost:20500/test-warehouse/tpcds.st...  139.60KB
-    4  hdfs://localhost:20500/test-warehouse/tpcds.st...   62.84KB
+   In [10]: ss.files()[:5]
+   Out[10]:
+                                                   path      size  \
+   0  hdfs://localhost:20500/test-warehouse/tpcds.st...  160.61KB
+   1  hdfs://localhost:20500/test-warehouse/tpcds.st...  123.88KB
+   2  hdfs://localhost:20500/test-warehouse/tpcds.st...  139.28KB
+   3  hdfs://localhost:20500/test-warehouse/tpcds.st...  139.60KB
+   4  hdfs://localhost:20500/test-warehouse/tpcds.st...   62.84KB
 
-                     partition
-    0  ss_sold_date_sk=2451803
-    1  ss_sold_date_sk=2451819
-    2  ss_sold_date_sk=2451772
-    3  ss_sold_date_sk=2451789
-    4  ss_sold_date_sk=2451741
+                    partition
+   0  ss_sold_date_sk=2451803
+   1  ss_sold_date_sk=2451819
+   2  ss_sold_date_sk=2451772
+   3  ss_sold_date_sk=2451789
+   4  ss_sold_date_sk=2451741
 
 Modifying table metadata
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -359,23 +348,27 @@ files, you could run the following command:
 
 .. code-block:: python
 
+   from getpass import getuser
+
    csv_props = {
        'serialization.format': ',',
-       'field.delim': ','
+       'field.delim': ',',
    }
-   data_dir = '/home/wesm/my-csv-files'
+   data_dir = '/home/{}/my-csv-files'.format(getuser())
 
-   table.alter(location=data_dir, format='text',
-               serde_properties=csv_props)
+   table.alter(location=data_dir, format='text', serde_properties=csv_props)
 
 If the table is partitioned, you can modify only the properties of a particular
 partition:
 
 .. code-block:: python
 
-   table.alter_partition({'year': 2007, 'month': 5},
-                         location=data_dir, format='text',
-                         serde_properties=csv_props)
+   table.alter_partition(
+       {'year': 2007, 'month': 5},
+       location=data_dir,
+       format='text',
+       serde_properties=csv_props
+   )
 
 Table statistics
 ----------------
@@ -447,34 +440,34 @@ depend, of course, on the last ``COMPUTE STATS`` call.
    3  hdfs://localhost:20500/test-warehouse/tpcds.st...
    4  hdfs://localhost:20500/test-warehouse/tpcds.st...
 
-  In [9]: cstats = ss.column_stats()
+   In [9]: cstats = ss.column_stats()
 
-  In [10]: cstats
-  Out[10]:
-                     Column          Type  #Distinct Values  #Nulls  Max Size  Avg Size
-  0         ss_sold_time_sk        BIGINT             13879      -1       NaN         8
-  1              ss_item_sk        BIGINT             17925      -1       NaN         8
-  2          ss_customer_sk        BIGINT             15207      -1       NaN         8
-  3             ss_cdemo_sk        BIGINT             16968      -1       NaN         8
-  4             ss_hdemo_sk        BIGINT              6220      -1       NaN         8
-  5              ss_addr_sk        BIGINT             14077      -1       NaN         8
-  6             ss_store_sk        BIGINT                 6      -1       NaN         8
-  7             ss_promo_sk        BIGINT               298      -1       NaN         8
-  8        ss_ticket_number           INT             15006      -1       NaN         4
-  9             ss_quantity           INT                99      -1       NaN         4
-  10      ss_wholesale_cost  DECIMAL(7,2)             10196      -1       NaN         4
-  11          ss_list_price  DECIMAL(7,2)             19393      -1       NaN         4
-  12         ss_sales_price  DECIMAL(7,2)             15594      -1       NaN         4
-  13    ss_ext_discount_amt  DECIMAL(7,2)             29772      -1       NaN         4
-  14     ss_ext_sales_price  DECIMAL(7,2)            102758      -1       NaN         4
-  15  ss_ext_wholesale_cost  DECIMAL(7,2)            125448      -1       NaN         4
-  16      ss_ext_list_price  DECIMAL(7,2)            141419      -1       NaN         4
-  17             ss_ext_tax  DECIMAL(7,2)             33837      -1       NaN         4
-  18          ss_coupon_amt  DECIMAL(7,2)             29772      -1       NaN         4
-  19            ss_net_paid  DECIMAL(7,2)            109981      -1       NaN         4
-  20    ss_net_paid_inc_tax  DECIMAL(7,2)            132286      -1       NaN         4
-  21          ss_net_profit  DECIMAL(7,2)            122436      -1       NaN         4
-  22        ss_sold_date_sk        BIGINT               120       0       NaN         8
+   In [10]: cstats
+   Out[10]:
+                      Column          Type  #Distinct Values  #Nulls  Max Size  Avg Size
+   0         ss_sold_time_sk        BIGINT             13879      -1       NaN         8
+   1              ss_item_sk        BIGINT             17925      -1       NaN         8
+   2          ss_customer_sk        BIGINT             15207      -1       NaN         8
+   3             ss_cdemo_sk        BIGINT             16968      -1       NaN         8
+   4             ss_hdemo_sk        BIGINT              6220      -1       NaN         8
+   5              ss_addr_sk        BIGINT             14077      -1       NaN         8
+   6             ss_store_sk        BIGINT                 6      -1       NaN         8
+   7             ss_promo_sk        BIGINT               298      -1       NaN         8
+   8        ss_ticket_number           INT             15006      -1       NaN         4
+   9             ss_quantity           INT                99      -1       NaN         4
+   10      ss_wholesale_cost  DECIMAL(7,2)             10196      -1       NaN         4
+   11          ss_list_price  DECIMAL(7,2)             19393      -1       NaN         4
+   12         ss_sales_price  DECIMAL(7,2)             15594      -1       NaN         4
+   13    ss_ext_discount_amt  DECIMAL(7,2)             29772      -1       NaN         4
+   14     ss_ext_sales_price  DECIMAL(7,2)            102758      -1       NaN         4
+   15  ss_ext_wholesale_cost  DECIMAL(7,2)            125448      -1       NaN         4
+   16      ss_ext_list_price  DECIMAL(7,2)            141419      -1       NaN         4
+   17             ss_ext_tax  DECIMAL(7,2)             33837      -1       NaN         4
+   18          ss_coupon_amt  DECIMAL(7,2)             29772      -1       NaN         4
+   19            ss_net_paid  DECIMAL(7,2)            109981      -1       NaN         4
+   20    ss_net_paid_inc_tax  DECIMAL(7,2)            132286      -1       NaN         4
+   21          ss_net_profit  DECIMAL(7,2)            122436      -1       NaN         4
+   22        ss_sold_date_sk        BIGINT               120       0       NaN         8
 
 
 ``REFRESH`` and ``INVALIDATE METADATA``
@@ -596,7 +589,7 @@ For example:
 
    In [6]: t.execute()
    Out[6]:
-	 bar  foo
+     bar  foo
    0   a    1
    1   b    2
    2   c    3
@@ -612,7 +605,7 @@ For example:
 
    In [11]: to_insert.execute()
    Out[11]:
-	 bar  foo
+     bar  foo
    0   a    1
    1   b    2
    2   c    3
@@ -620,19 +613,19 @@ For example:
 
    In [12]: to_insert.drop()
 
-.. .. ipython:: python
+.. ipython:: python
 
-..    import pandas as pd
-..    data = pd.DataFrame({'foo': [1, 2, 3, 4], 'bar': ['a', 'b', 'c', 'd']})
-..    db.create_table('pandas_table', data)
-..    t = db.pandas_table
-..    t.execute()
-..    t.drop()
-..    db.create_table('empty_for_insert', schema=t.schema())
-..    to_insert = db.empty_for_insert
-..    to_insert.insert(data)
-..    to_insert.execute()
-..    to_insert.drop()
+   import pandas as pd
+   data = pd.DataFrame({'foo': [1, 2, 3, 4], 'bar': ['a', 'b', 'c', 'd']})
+   db.create_table('pandas_table', data)
+   t = db.pandas_table
+   t.execute()
+   t.drop()
+   db.create_table('empty_for_insert', schema=t.schema())
+   to_insert = db.empty_for_insert
+   to_insert.insert(data)
+   to_insert.execute()
+   to_insert.drop()
 
 Using Impala UDFs in Ibis
 -------------------------
@@ -678,8 +671,9 @@ To make this function callable, we use ``ibis.impala.wrap_udf``:
    udf_db = 'ibis_testing'
    udf_name = 'fuzzy_equals'
 
-   fuzzy_equals = ibis.impala.wrap_udf(library, inputs, output,
-                                       symbol, name=udf_name)
+   fuzzy_equals = ibis.impala.wrap_udf(
+       library, inputs, output, symbol, name=udf_name
+   )
 
 In typical workflows, you will set up a UDF in Impala once then use it
 thenceforth. So the *first time* you do this, you need to create the UDF in
@@ -698,7 +692,7 @@ must take place each time you load your Ibis session.
 
 The object ``fuzzy_equals`` is callable and works with Ibis expressions:
 
-.. code-block:: python
+.. code-block:: ipython
 
    In [35]: db = c.database('ibis_testing')
 
@@ -725,11 +719,6 @@ use Ibis. If you have a lot of UDFs, I suggest you create a file with all of
 your wrapper declarations and user APIs that you load with your Ibis session to
 plug in all your own functions.
 
-Using aggregate functions (UDAs)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Coming soon.
-
 Adding documentation to new functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -745,20 +734,6 @@ Adding documentation to new functions
 
    Returns
    -------
-   is_approx_equal : boolean
+   bool
+
    """
-
-Adding UDF functions to Ibis types
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Coming soon.
-
-Installing the Impala UDF SDK on OS X and Linux
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Coming soon.
-
-Impala types to Ibis types
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Coming soon. See ``ibis.schema`` for now.

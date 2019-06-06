@@ -172,7 +172,7 @@ docs: &docs
         command: docker-compose run ibis-docs ci/load-data.sh
     - run:
         name: Ping the Notebook Impala Hostname
-        command: docker-compose run ibis-docs ping -c 1 quickstart.cloudera
+        command: docker-compose run ibis-docs ping -c 1 impala
     - run:
         name: Clone Documentation Repository
         command: docker-compose run ibis-docs git clone --branch gh-pages https://github.com/ibis-project/docs.ibis-project.org /tmp/docs.ibis-project.org

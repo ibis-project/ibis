@@ -6,7 +6,7 @@ docker-compose build ibis
 docker-compose build ibis-docs
 
 # TODO(kszucs): move the following commands in a single script
-docker-compose run --rm ibis-docs ping -c 1 quickstart.cloudera
+docker-compose run --rm ibis-docs ping -c 1 impala
 docker-compose run --rm ibis-docs rm -rf /tmp/docs.ibis-project.org
 docker-compose run --rm ibis-docs git clone \
     --branch gh-pages \

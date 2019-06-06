@@ -67,7 +67,7 @@ Examples of expressions include :class:`~ibis.expr.types.Int64Column`,
 
 Here's an example of each type of expression:
 
-.. code-block:: ipython
+.. ipython:: python
 
    import ibis
    t = ibis.table([('a', 'int64')])
@@ -91,42 +91,41 @@ Most nodes are defined in the :mod:`~ibis.expr.operations` module.
 Examples of nodes include :class:`~ibis.expr.operations.Add` and
 :class:`~ibis.expr.operations.Sum`.
 
-Nodes have two important members (and often these are the only members defined):
+Nodes (transitively) inherit from a class that allows node authors to define
+their node's input arguments directly in the class body.
 
-#. ``input_type``: a list of rules
-#. ``output_type``: a rule or method
+Additionally the ``output_type`` member of the class is a rule or method that
+defines the shape (scalar or column) and element type of the operation.
 
-The ``input_type`` member is a list of rules that defines the types of
-the inputs to the operation. This is sometimes called the signature.
+Each input argument's rule should be passed to the
+``ibis.expr.signature.Argument`` class (often aliased to ``Arg`` for
+convenience in the ibis codebase).
 
-The ``output_type`` member is a rule or a method that defines the output type
-of the operation. This is sometimes called the return type.
+An example of usage is a node that representats a logarithm operation:
 
-An example of ``input_type``/``output_type`` usage is the
-:class:`~ibis.expr.operations.Log` class:
+.. ipython:: python
 
-.. code-block:: ipython
+   import ibis.expr.rules as rlz
+   from ibis.expr.operations import ValueOp
+   from ibis.expr.signature import Argument as Arg
 
-   class Log(Node):
-
-       input_type = [
-           rules.double(),
-           rules.double(name='base', optional=True)
-       ]
-       output_type = rules.shape_like_arg(0, 'double')
+   class Log(ValueOp):
+       arg = Arg(rlz.double)  # A double scalar or column
+       base = Arg(rlz.double, default=None)  # Optional argument
+       output_type = rlz.typeof('arg')
 
 This class describes an operation called ``Log`` that takes one required
 argument: a double scalar or column, and one optional argument: a double scalar
-or column named ``base`` that defaults to nothing if not provided. The base
+or column named ``base`` that defaults to nothing if not provided. The ``base``
 argument is ``None`` by default so that the expression will behave as the
 underlying database does.
 
-These objects are instantiated when you use ibis APIs:
+Similar objects are instantiated when you use ibis APIs:
 
-.. code-block:: ipython
+.. ipython:: python
 
    import ibis
-   t = ibis.table([('a', 'double')])
+   t = ibis.table([('a', 'double')], name='t')
    log_1p = (1 + t.a).log()  # an Add and a Log are instantiated here
 
 .. _expr_vs_ops:
