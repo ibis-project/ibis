@@ -1,11 +1,11 @@
 import ibis.sql.compiler as comp
-from ibis.bigquery.compiler import (
-    BigQueryContext,
-    BigQueryExprTranslator,
-    BigQueryTableSetFormatter,
-    BigQueryUnion,
+from ibis.impala.compiler import (
+    ImpalaContext,
+    ImpalaDialect,
+    ImpalaExprTranslator,
+    ImpalaSelect,
+    ImpalaUnion,
 )
-from ibis.impala import compiler as impala_compiler
 
 
 class SparkSelectBuilder(comp.SelectBuilder):
@@ -14,7 +14,8 @@ class SparkSelectBuilder(comp.SelectBuilder):
         return SparkSelect
 
 
-SparkUnion = BigQueryUnion
+class SparkUnion(ImpalaUnion):
+    pass
 
 
 class SparkQueryBuilder(comp.QueryBuilder):
@@ -27,23 +28,17 @@ def build_ast(expr, context):
     return builder.get_result()
 
 
-SparkContext = BigQueryContext
+class SparkContext(ImpalaContext):
+    pass
 
 
-class SparkExprTranslator(BigQueryExprTranslator):
+class SparkExprTranslator(ImpalaExprTranslator):
     context_class = SparkContext
 
 
-SparkTableSetFormatter = BigQueryTableSetFormatter
-
-
-class SparkSelect(impala_compiler.ImpalaSelect):
+class SparkSelect(ImpalaSelect):
     translator = SparkExprTranslator
 
-    @property
-    def table_set_formatter(self):
-        return SparkTableSetFormatter
 
-
-class SparkDialect(impala_compiler.ImpalaDialect):
+class SparkDialect(ImpalaDialect):
     translator = SparkExprTranslator

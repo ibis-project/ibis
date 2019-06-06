@@ -16,13 +16,6 @@ def test_get_schema(client_simple):
     assert schema == ibis.schema([('foo', 'int64'),
                                   ('bar', 'string')])
 
-# TODO
-# def test_table(client_simple):
-
 
 def test_current_database(client_simple):
     assert client_simple.current_database == 'default'
-
-
-def test_create_set_database(client_simple):
-    pass
