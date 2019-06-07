@@ -117,10 +117,15 @@ from ibis.tests.backends import Clickhouse, MySQL, SQLite
 @pytest.mark.parametrize(
     ('ibis_cond', 'pandas_cond'),
     [
-        (lambda t: None, lambda t: slice(None)),
-        (
+        param(
+            lambda t: None,
+            lambda t: slice(None),
+            id='no_cond',
+        ),
+        param(
             lambda t: t.string_col.isin(['1', '7']),
             lambda t: t.string_col.isin(['1', '7']),
+            id='is_in',
         ),
     ],
 )
