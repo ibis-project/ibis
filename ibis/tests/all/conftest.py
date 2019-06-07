@@ -2,6 +2,7 @@ import operator
 
 import pytest
 
+import ibis.common as com
 from ibis.tests.backends import Backend
 
 
@@ -18,20 +19,100 @@ ALL_BACKENDS = sorted(subclasses(Backend), key=operator.attrgetter("__name__"))
 
 
 def pytest_runtest_call(item):
-    """Dynamically add an xfail marker for specific backends."""
-    for marker in list(item.iter_markers(name="xfail_backends")):
-        backend_types, = marker.args
-        if isinstance(item.funcargs["backend"], tuple(backend_types)):
-            item.add_marker(pytest.mark.xfail(**marker.kwargs))
-
-    for marker in list(item.iter_markers(name="xpass_backends")):
-        backend_types, = marker.args
+    """Dynamically add various custom markers."""
+    nodeid = item.nodeid
+    for marker in list(item.iter_markers(name="only_on_backends")):
+        backend_types, = map(tuple, marker.args)
         backend = item.funcargs["backend"]
         assert isinstance(backend, Backend), "backend has type {!r}".format(
             type(backend).__name__
         )
-        if not isinstance(backend, tuple(backend_types)):
-            item.add_marker(pytest.mark.xfail(**marker.kwargs))
+        if not isinstance(backend, backend_types):
+            pytest.skip(nodeid)
+
+    for marker in list(item.iter_markers(name="skip_backends")):
+        backend_types, = map(tuple, marker.args)
+        backend = item.funcargs["backend"]
+        assert isinstance(backend, Backend), "backend has type {!r}".format(
+            type(backend).__name__
+        )
+        if isinstance(backend, backend_types):
+            pytest.skip(nodeid)
+
+    for marker in list(item.iter_markers(name="skip_missing_feature")):
+        backend = item.funcargs["backend"]
+        features, = marker.args
+        missing_features = [
+            feature for feature in features if not getattr(backend, feature)
+        ]
+        if missing_features:
+            pytest.mark.skip(
+                ('Backend {} is missing features {} needed to run {}').format(
+                    type(backend).__name__, ', '.join(missing_features), nodeid
+                )
+            )
+
+    for marker in list(item.iter_markers(name="xfail_backends")):
+        backend_types, = map(tuple, marker.args)
+        backend = item.funcargs["backend"]
+        assert isinstance(backend, Backend), "backend has type {!r}".format(
+            type(backend).__name__
+        )
+        item.add_marker(
+            pytest.mark.xfail(
+                condition=isinstance(backend, backend_types),
+                reason='Backend {} does not pass this test'.format(
+                    type(backend).__name__
+                ),
+                **marker.kwargs,
+            )
+        )
+
+    for marker in list(item.iter_markers(name="xpass_backends")):
+        backend_types, = map(tuple, marker.args)
+        backend = item.funcargs["backend"]
+        assert isinstance(backend, Backend), "backend has type {!r}".format(
+            type(backend).__name__
+        )
+        item.add_marker(
+            pytest.mark.xfail(
+                condition=not isinstance(backend, backend_types),
+                reason='{} does not pass this test'.format(
+                    type(backend).__name__
+                ),
+                **marker.kwargs,
+            )
+        )
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_pyfunc_call(pyfuncitem):
+    """Dynamically add an xfail marker for specific backends."""
+    outcome = yield
+    try:
+        outcome.get_result()
+    except (
+        com.OperationNotDefinedError,
+        com.UnsupportedOperationError,
+        com.UnsupportedBackendType,
+        NotImplementedError,
+    ) as e:
+        markers = list(pyfuncitem.iter_markers(name="xfail_unsupported"))
+        assert (
+            len(markers) == 1
+        ), "More than one xfail_unsupported marker found on test {}".format(
+            pyfuncitem
+        )
+        marker, = markers
+        backend = pyfuncitem.funcargs["backend"]
+        assert isinstance(backend, Backend), "backend has type {!r}".format(
+            type(backend).__name__
+        )
+        pytest.xfail(
+            reason='{}: {}'.format(
+                type(backend).__name__, e
+            )
+        )
 
 
 pytestmark = pytest.mark.backend

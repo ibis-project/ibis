@@ -5,7 +5,6 @@ import pytest
 from numpy import testing
 
 import ibis
-import ibis.tests.util as tu
 from ibis.tests.backends import MapD
 
 # geo literals declaration
@@ -37,7 +36,7 @@ polygon_0 = ibis.literal(
         (lambda t: t['geo_point'].srid(), [0] * 5),
     ],
 )
-@tu.skipifnot_backend(MapD)
+@pytest.mark.only_on_backends([MapD])
 def test_geo_spatial_unops(backend, geo, expr_fn, expected):
     """Testing for geo spatial unary operations."""
     expr = expr_fn(geo)
@@ -68,7 +67,7 @@ def test_geo_spatial_unops(backend, geo, expr_fn, expected):
         ),
     ],
 )
-@tu.skipifnot_backend(MapD)
+@pytest.mark.only_on_backends([MapD])
 def test_geo_spatial_binops(backend, geo, fn, arg_left, arg_right, expected):
     """Testing for geo spatial binary operations."""
     left = arg_left(geo) if isfunction(arg_left) else arg_left
@@ -86,7 +85,7 @@ def test_geo_spatial_binops(backend, geo, fn, arg_left, arg_right, expected):
         (lambda t: t['geo_linestring'].start_point(), [False] * 5),
     ],
 )
-@tu.skipifnot_backend(MapD)
+@pytest.mark.only_on_backends([MapD])
 def test_get_point(backend, geo, expr_fn, expected):
     """Testing for geo spatial get point operations."""
     # a geo spatial data does not contain its boundary
@@ -97,7 +96,7 @@ def test_get_point(backend, geo, expr_fn, expected):
 
 
 @pytest.mark.parametrize(('arg', 'expected'), [(polygon_0, [1.98] * 5)])
-@tu.skipifnot_backend(MapD)
+@pytest.mark.only_on_backends([MapD])
 def test_area(backend, geo, arg, expected):
     """Testing for geo spatial area operation."""
     expr = geo[geo, arg.area().name('tmp')]
@@ -106,7 +105,7 @@ def test_area(backend, geo, arg, expected):
 
 
 @pytest.mark.parametrize(('arg', 'expected'), [(point_2.srid() == 4326, True)])
-@tu.skipifnot_backend(MapD)
+@pytest.mark.only_on_backends([MapD])
 def test_srid_literals(backend, geo, arg, expected):
     """Testing for geo spatial srid operation (from literal)."""
     result = geo[geo, arg.name('tmp')].execute()['tmp'][[0]]

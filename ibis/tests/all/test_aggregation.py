@@ -2,7 +2,6 @@ import numpy as np
 import pytest
 from pytest import param
 
-import ibis.tests.util as tu
 from ibis.tests.backends import Clickhouse, MySQL, SQLite
 
 
@@ -100,7 +99,7 @@ from ibis.tests.backends import Clickhouse, MySQL, SQLite
             lambda t, where: t.string_col.group_concat(','),
             lambda t, where: ','.join(t.string_col),
             id='string_col_group_concat',
-            marks=pytest.mark.xfail,
+            marks=pytest.mark.xfail(reason='Not yet implemented'),
         ),
         param(
             lambda t, where: t.double_col.arbitrary(how='first'),
@@ -124,7 +123,7 @@ from ibis.tests.backends import Clickhouse, MySQL, SQLite
         ),
     ],
 )
-@tu.skipif_unsupported
+@pytest.mark.xfail_unsupported
 def test_aggregation(
     backend, alltypes, df, result_fn, expected_fn, ibis_cond, pandas_cond
 ):

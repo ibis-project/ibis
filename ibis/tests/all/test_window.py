@@ -3,7 +3,6 @@ from pytest import param
 
 import ibis
 import ibis.common as com
-import ibis.tests.util as tu
 from ibis.tests.backends import Csv, Impala, MapD, Pandas, Parquet
 
 
@@ -100,9 +99,7 @@ from ibis.tests.backends import Csv, Impala, MapD, Pandas, Parquet
                 .astype(bool)
             ),
             id='cumany',
-            marks=pytest.mark.xfail_backends(
-                [Impala], reason="Impala doesn't support logical reductions"
-            ),
+            marks=pytest.mark.xfail_backends([Impala]),
         ),
         param(
             lambda t, win: (t.double_col == 0).all().over(win),
@@ -113,9 +110,7 @@ from ibis.tests.backends import Csv, Impala, MapD, Pandas, Parquet
                 .astype(bool)
             ),
             id='cumall',
-            marks=pytest.mark.xfail_backends(
-                [Impala], reason="Impala doesn't support logical reductions"
-            ),
+            marks=pytest.mark.xfail_backends([Impala]),
         ),
         param(
             lambda t, win: t.double_col.sum().over(win),
@@ -150,7 +145,7 @@ from ibis.tests.backends import Csv, Impala, MapD, Pandas, Parquet
         ),
     ],
 )
-@tu.skipif_unsupported
+@pytest.mark.xfail_unsupported
 def test_window(backend, alltypes, df, con, result_fn, expected_fn):
     if not backend.supports_window_operations:
         pytest.skip(
