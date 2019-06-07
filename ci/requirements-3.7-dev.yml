@@ -23,6 +23,7 @@ dependencies:
   - pre_commit
   - psycopg2
   - pyarrow>=0.12
+  - pydata-google-auth
   - pymapd>=0.12.0
   - pymysql
   - pytables>=3.0.0
@@ -38,11 +39,9 @@ dependencies:
   - ruamel.yaml
   - sqlalchemy
   - thrift>=0.9.3
+  - thriftpy2  # required for impyla in case of py3
   - toolz
   - xorg-libxpm
   - xorg-libxrender
   - pip:
-    - pydata-google-auth
     - seed-isort-config
-    # required for impyla in case of py3
-    - thriftpy2

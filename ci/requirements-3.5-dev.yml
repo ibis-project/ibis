@@ -2,6 +2,7 @@ channels:
   - conda-forge/label/cf201901
   - conda-forge
 dependencies:
+  #- black  # Python 3.5 cannot be used to run black
   # conda 4.5 because of python3.5
   - conda=4.5.11
   - click
@@ -25,6 +26,7 @@ dependencies:
   - pre_commit
   - psycopg2
   - pyarrow<0.12
+  - pydata-google-auth
   - pymapd>=0.8.3,<0.11.0
   - pymysql
   - pytables>=3.0.0
@@ -46,5 +48,4 @@ dependencies:
   - xorg-libxpm
   - xorg-libxrender
   - pip:
-    - pydata-google-auth
     - seed-isort-config

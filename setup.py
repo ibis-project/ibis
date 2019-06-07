@@ -53,7 +53,14 @@ all_requires = (
     + parquet_requires
 )
 
-develop_requires = all_requires + ['click', 'flake8', 'mypy', 'pytest>=3']
+develop_requires = all_requires + [
+    'click',
+    'flake8',
+    'isort',
+    'mypy',
+    'pre-commit',
+    'pytest>=3',
+]
 
 install_requires = [
     line.strip()
@@ -73,7 +80,8 @@ setup(
     python_requires='>=3.5',
     extras_require={
         'all': all_requires,
-        'develop': develop_requires,
+        'develop:python_version > "3.5"': develop_requires + ['black'],
+        'develop:python_version == "3.5"': develop_requires,
         'impala': impala_requires,
         'kerberos': kerberos_requires,
         'postgres': postgres_requires,
