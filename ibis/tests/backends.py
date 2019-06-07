@@ -402,7 +402,6 @@ class Impala(UnorderedComparator, Backend, RoundAwayFromZero):
 class Spark(Backend):
 
     def connect(self, data_directory):
-        self.dd = data_directory
         client = ibis.spark.connect()
 
         df_functional_alltypes = client._session.read.csv(

@@ -4,7 +4,6 @@ from ibis.impala.compiler import (
     ImpalaDialect,
     ImpalaExprTranslator,
     ImpalaSelect,
-    ImpalaUnion,
 )
 
 
@@ -14,8 +13,10 @@ class SparkSelectBuilder(comp.SelectBuilder):
         return SparkSelect
 
 
-class SparkUnion(ImpalaUnion):
-    pass
+class SparkUnion(comp.Union):
+    @staticmethod
+    def keyword(distinct):
+        return 'UNION DISTINCT' if distinct else 'UNION ALL'
 
 
 class SparkQueryBuilder(comp.QueryBuilder):
