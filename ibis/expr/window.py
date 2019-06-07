@@ -1,5 +1,7 @@
 """Encapsulation of SQL window clauses."""
 
+import numpy as np
+
 import ibis.common as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
@@ -20,10 +22,15 @@ def _determine_how(preceding):
     else:
         offset_type = type(preceding)
 
-    if issubclass(offset_type, int):
+    if issubclass(offset_type, (int, np.integer)):
         how = 'rows'
-    else:
+    elif issubclass(offset_type, ir.IntervalScalar):
         how = 'range'
+    else:
+        raise TypeError(
+            'Type {} is not supported for row- or range- based trailing '
+            'window operations'.format(offset_type)
+        )
 
     return how
 
