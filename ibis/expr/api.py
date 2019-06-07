@@ -3360,43 +3360,29 @@ def mutate(table, exprs=None, **mutations):
     >>> expr2 = table.mutate(new_columns)
     >>> expr.equals(expr2)
     True
+
     """
-    if exprs is None:
-        exprs = []
+    exprs = [] if exprs is None else util.promote_list(exprs)
+    exprs.extend(
+        (expr(table) if util.is_function(expr) else as_value_expr(expr)).name(
+            name
+        )
+        for name, expr in sorted(mutations.items(), key=operator.itemgetter(0))
+    )
+
+    by_name = collections.OrderedDict(
+        (expr.get_name(), expr) for expr in exprs
+    )
+    columns = table.columns
+    used = by_name.keys() & columns
+
+    if used:
+        proj_exprs = [
+            by_name.get(column, table[column]) for column in columns
+        ] + [expr for name, expr in by_name.items() if name not in used]
     else:
-        exprs = util.promote_list(exprs)
-
-    for k, v in sorted(mutations.items(), key=operator.itemgetter(0)):
-        if util.is_function(v):
-            v = v(table)
-        else:
-            v = as_value_expr(v)
-
-        exprs.append(v.name(k))
-
-    has_replacement = False
-    for expr in exprs:
-        if expr.get_name() in table:
-            has_replacement = True
-
-    if has_replacement:
-        by_name = dict((x.get_name(), x) for x in exprs)
-        used = set()
-        proj_exprs = []
-        for c in table.columns:
-            if c in by_name:
-                proj_exprs.append(by_name[c])
-                used.add(c)
-            else:
-                proj_exprs.append(c)
-
-        for x in exprs:
-            if x.get_name() not in used:
-                proj_exprs.append(x)
-
-        return table.projection(proj_exprs)
-    else:
-        return table.projection([table] + exprs)
+        proj_exprs = [table] + exprs
+    return table.projection(proj_exprs)
 
 
 def projection(table, exprs):
@@ -3497,7 +3483,6 @@ def projection(table, exprs):
         exprs = [exprs]
 
     projector = L.Projector(table, exprs)
-
     op = projector.get_result()
     return op.to_expr()
 

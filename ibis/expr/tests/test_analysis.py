@@ -56,7 +56,8 @@ def test_rewrite_past_projection(con):
     table5 = table[(table.f * 2).name('c'), table.f]
     expr = table5['c'] == 2
     result = L.substitute_parents(expr)
-    assert result is expr
+    expected = expr
+    assert result.equals(expected)
 
 
 def test_multiple_join_deeper_reference():
@@ -207,14 +208,11 @@ def test_fuse_filter_sort_by():
 
 def test_no_rewrite(con):
     table = con.table('test1')
-
-    # Substitution not fully possible if we depend on a new expr in a
-    # projection
     table4 = table[['c', (table['c'] * 2).name('foo')]]
     expr = table4['c'] == table4['foo']
     result = L.substitute_parents(expr)
-    expected = table['c'] == table4['foo']
-    assert_equal(result, expected)
+    expected = expr
+    assert result.equals(expected)
 
 
 # def test_projection_with_join_pushdown_rewrite_refs():
