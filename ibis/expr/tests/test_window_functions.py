@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import numpy as np
 import pytest
 
 import ibis
+from ibis.expr.window import _determine_how
 from ibis.tests.util import assert_equal
 
 
@@ -174,3 +176,35 @@ def test_preceding_following_validate(alltypes):
 @pytest.mark.xfail(raises=AssertionError, reason='NYT')
 def test_window_equals(alltypes):
     assert False
+
+
+def test_determine_how():
+    how = _determine_how((None, 5))
+    assert how == 'rows'
+
+    how = _determine_how((3, 1))
+    assert how == 'rows'
+
+    how = _determine_how(5)
+    assert how == 'rows'
+
+    how = _determine_how(np.int64(7))
+    assert how == 'rows'
+
+    how = _determine_how(ibis.interval(days=3))
+    assert how == 'range'
+
+    how = _determine_how(ibis.interval(months=5) + ibis.interval(days=10))
+    assert how == 'range'
+
+    with pytest.raises(TypeError):
+        _determine_how(8.9)
+
+    with pytest.raises(TypeError):
+        _determine_how('invalid preceding')
+
+    with pytest.raises(TypeError):
+        _determine_how({'start': 1, 'end': 2})
+
+    with pytest.raises(TypeError):
+        _determine_how([3, 5])
