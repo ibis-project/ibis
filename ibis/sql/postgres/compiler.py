@@ -29,6 +29,10 @@ _operation_registry = alch._operation_registry.copy()
 _operation_registry.update(alch._window_functions)
 
 
+class PostgresUDFNode(ops.ValueOp):
+    pass
+
+
 # TODO: substr and find are copied from SQLite, we should really have a
 # "base" set of SQL functions that are the most common APIs across the major
 # RDBMS
