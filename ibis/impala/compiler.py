@@ -378,6 +378,7 @@ def _format_window(translator, op, window):
         ops.Lead,
         ops.DenseRank,
         ops.MinRank,
+        ops.NTile,
         ops.PercentRank,
         ops.RowNumber,
     )

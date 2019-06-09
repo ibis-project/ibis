@@ -15,13 +15,13 @@ See http://docs.ibis-project.org
 
 VERSION = sys.version_info.major, sys.version_info.minor
 
-impala_requires = ['hdfs>=2.0.16', 'sqlalchemy', 'requests']
+impala_requires = ['hdfs>=2.0.16', 'sqlalchemy>=1.1', 'requests']
 if VERSION == (3, 5):
     impala_requires.append('impyla<0.14.2')
 else:
     impala_requires.append('impyla>=0.15.0')
 
-sqlite_requires = ['sqlalchemy']
+sqlite_requires = ['sqlalchemy>=1.1']
 postgres_requires = sqlite_requires + ['psycopg2']
 mysql_requires = sqlite_requires + ['pymysql']
 
