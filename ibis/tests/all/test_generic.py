@@ -3,7 +3,6 @@ import decimal
 import pytest
 
 import ibis
-import ibis.tests.util as tu
 from ibis import literal as L
 from ibis.tests.backends import (
     BigQuery,
@@ -30,7 +29,7 @@ from ibis.tests.backends import (
         (L(10).nullif(5), 10),
     ],
 )
-@tu.skipif_unsupported
+@pytest.mark.xfail_unsupported
 def test_fillna_nullif(backend, con, expr, expected):
     assert con.execute(expr) == expected
 
@@ -43,7 +42,7 @@ def test_fillna_nullif(backend, con, expr, expected):
         (ibis.coalesce(ibis.NA, ibis.NA, 3.14), 3.14),
     ],
 )
-@tu.skipif_unsupported
+@pytest.mark.xfail_unsupported
 def test_coalesce(backend, con, expr, expected):
     result = con.execute(expr)
 
@@ -56,8 +55,8 @@ def test_coalesce(backend, con, expr, expected):
         assert result == expected
 
 
-@tu.skipif_unsupported
-@tu.skipif_backend(MapD)
+@pytest.mark.xfail_unsupported
+@pytest.mark.skip_backends([MapD])
 def test_identical_to(backend, sorted_alltypes, con, sorted_df):
     df = sorted_df
     dt = df[['tinyint_col', 'double_col']]
@@ -87,8 +86,8 @@ def test_identical_to(backend, sorted_alltypes, con, sorted_df):
         ('int_col', frozenset({1})),
     ],
 )
-@tu.skipif_unsupported
-@tu.skipif_backend(MapD)
+@pytest.mark.xfail_unsupported
+@pytest.mark.skip_backends([MapD])
 def test_isin(backend, sorted_alltypes, sorted_df, column, elements):
     expr = sorted_alltypes[
         'id', sorted_alltypes[column].isin(elements).name('tmp')
@@ -111,8 +110,8 @@ def test_isin(backend, sorted_alltypes, sorted_df, column, elements):
         ('int_col', frozenset({1})),
     ],
 )
-@tu.skipif_unsupported
-@tu.skipif_backend(MapD)
+@pytest.mark.xfail_unsupported
+@pytest.mark.skip_backends([MapD])
 def test_notin(backend, sorted_alltypes, sorted_df, column, elements):
     expr = sorted_alltypes[
         'id', sorted_alltypes[column].notin(elements).name('tmp')
