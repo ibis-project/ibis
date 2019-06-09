@@ -1,4 +1,5 @@
 import functools
+import itertools
 import locale
 import platform
 import re
@@ -228,25 +229,32 @@ except AttributeError:
     )
 
 
-def tokenize_noop(scanner, token):
-    return token
-
-
 # translate strftime spec into mostly equivalent PostgreSQL spec
 _scanner = re.Scanner(
-    [(py, tokenize_noop) for py in _strftime_to_postgresql_rules.keys()]
+    # double quotes need to be escaped
+    [('"', lambda scanner, token: r'\"')]
     + [
-        # "%e" is in the C standard and Python actually generates this if your
-        # spec contains "%c" but we don't officially support it as a specifier
-        # so we need to special case it in the scanner
-        (r'%e', tokenize_noop),
-        # double quotes need to be escaped
-        (r'"', lambda scanner, token: re.escape(token)),
-        # spaces should be greedily consumed and kept
-        (r'\s+', tokenize_noop),
-        (r'[%s]' % re.escape(string.punctuation), tokenize_noop),
-        # everything else except double quotes and spaces
-        (r'[^%s\s]+' % re.escape(string.punctuation), tokenize_noop),
+        (
+            '|'.join(
+                map(
+                    '(?:{})'.format,
+                    itertools.chain(
+                        _strftime_to_postgresql_rules.keys(),
+                        [
+                            # "%e" is in the C standard and Python actually
+                            # generates this if your spec contains "%c" but we
+                            # don't officially support it as a specifier so we
+                            # need to special case it in the scanner
+                            '%e',
+                            r'\s+',
+                            r'[{}]'.format(re.escape(string.punctuation)),
+                            r'[^{}\s]+'.format(re.escape(string.punctuation)),
+                        ],
+                    ),
+                )
+            ),
+            lambda scanner, token: token,
+        )
     ]
 )
 
@@ -269,7 +277,6 @@ def _reduce_tokens(tokens, arg):
 
     # TODO: how much of a hack is this?
     for token in tokens:
-
         # we are a non-special token %A, %d, etc.
         if token in non_special_tokens:
             curtokens.append(_strftime_to_postgresql_rules[token])
@@ -277,7 +284,7 @@ def _reduce_tokens(tokens, arg):
         # we have a string like DD, to escape this we
         # surround it with double quotes
         elif token in _lexicon_values:
-            curtokens.append('"%s"' % token)
+            curtokens.append('"{}"'.format(token))
 
         # we have a token that needs special treatment
         elif token in _strftime_blacklist:
@@ -327,7 +334,8 @@ def _strftime(t, expr):
     arg, pattern = map(t.translate, expr.op().args)
     tokens, _ = _scanner.scan(pattern.value)
     reduced = _reduce_tokens(tokens, arg)
-    return functools.reduce(sa.sql.ColumnElement.concat, reduced)
+    result = functools.reduce(sa.sql.ColumnElement.concat, reduced)
+    return result
 
 
 class array_search(expression.FunctionElement):

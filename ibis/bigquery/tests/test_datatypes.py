@@ -9,6 +9,8 @@ from ibis.bigquery.datatypes import (
     ibis_type_to_bigquery_type,
 )
 
+pytestmark = pytest.mark.bigquery
+
 
 def test_no_ambiguities():
     ambs = ambiguities(ibis_type_to_bigquery_type.funcs)

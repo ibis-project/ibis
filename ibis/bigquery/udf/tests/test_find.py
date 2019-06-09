@@ -1,7 +1,11 @@
 import ast
 
+import pytest
+
 from ibis.bigquery.udf.find import find_names
 from ibis.util import is_iterable
+
+pytestmark = pytest.mark.bigquery
 
 
 def parse_expr(expr):
