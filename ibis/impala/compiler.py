@@ -1,4 +1,5 @@
 import datetime
+import itertools
 from io import StringIO
 from operator import add, mul, sub
 from typing import Optional
@@ -491,26 +492,21 @@ def unary(func_name):
     return fixed_arity(func_name, 1)
 
 
-def _reduction_format(translator, func_name, arg, args, where):
+def _reduction_format(translator, func_name, where, arg, *args):
     if where is not None:
         arg = where.ifelse(arg, ibis.NA)
 
     return '{}({})'.format(
-        func_name, ', '.join(map(translator.translate, [arg] + list(args)))
+        func_name,
+        ', '.join(map(translator.translate, itertools.chain([arg], args))),
     )
 
 
 def _reduction(func_name):
     def formatter(translator, expr):
         op = expr.op()
-
-        # HACK: support trailing arguments
-        where = op.where
-        args = [arg for arg in op.args if arg is not where]
-
-        return _reduction_format(
-            translator, func_name, args[0], args[1:], where
-        )
+        *args, where = op.args
+        return _reduction_format(translator, func_name, where, *args)
 
     return formatter
 
@@ -523,7 +519,7 @@ def _variance_like(func_name):
 
     def formatter(translator, expr):
         arg, how, where = expr.op().args
-        return _reduction_format(translator, func_names[how], arg, [], where)
+        return _reduction_format(translator, func_names[how], where, arg)
 
     return formatter
 
