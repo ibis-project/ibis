@@ -371,23 +371,20 @@ def _not_contains(t, expr):
 def _reduction(sa_func):
     def formatter(t, expr):
         op = expr.op()
+        *args, where = op.args
 
-        # HACK: support trailing arguments
-        arg, where = op.args[:2]
-
-        return _reduction_format(t, sa_func, arg, where)
+        return _reduction_format(t, sa_func, where, *args)
 
     return formatter
 
 
-def _reduction_format(t, sa_func, arg, where):
+def _reduction_format(t, sa_func, where, arg, *args):
     if where is not None:
-        case = where.ifelse(arg, ibis.NA)
-        arg = t.translate(case)
+        arg = t.translate(where.ifelse(arg, ibis.NA))
     else:
         arg = t.translate(arg)
 
-    return sa_func(arg)
+    return sa_func(arg, *map(t.translate, args))
 
 
 def _literal(t, expr):
@@ -612,7 +609,7 @@ _operation_registry = {
     ops.Min: _reduction(sa.func.min),
     ops.Max: _reduction(sa.func.max),
     ops.CountDistinct: _count_distinct,
-    ops.GroupConcat: fixed_arity(sa.func.group_concat, 2),
+    ops.GroupConcat: _reduction(sa.func.group_concat),
     ops.Between: fixed_arity(sa.between, 3),
     ops.IsNull: _is_null,
     ops.NotNull: _not_null,

@@ -19,6 +19,6 @@ RUN echo 'source activate ibis-env && exec "$@"' > activate.sh
 COPY . /ibis
 WORKDIR /ibis
 
-RUN bash /activate.sh python setup.py develop
+RUN bash /activate.sh pip install -e . --no-deps --ignore-installed --no-cache-dir
 
 ENTRYPOINT ["bash", "/activate.sh"]
