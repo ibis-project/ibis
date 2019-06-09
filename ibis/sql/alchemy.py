@@ -1,6 +1,5 @@
 import contextlib
 import functools
-import numbers
 import operator
 
 import pandas as pd
@@ -11,8 +10,6 @@ from sqlalchemy.dialects.mysql.base import MySQLDialect
 from sqlalchemy.dialects.postgresql.base import PGDialect as PostgreSQLDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from sqlalchemy.engine.interfaces import Dialect as SQLAlchemyDialect
-from sqlalchemy.ext.compiler import compiles as sa_compiles
-from sqlalchemy.sql.elements import Over as _Over
 
 import ibis
 import ibis.common as com
@@ -549,16 +546,20 @@ def _window(t, expr):
         ops.RowNumber,
     )
 
-    result = Over(
-        reduction,
-        partition_by=partition_by,
-        order_by=order_by,
-        preceding=window.preceding,
-        following=window.following,
-        allows_frame_clause=not isinstance(
-            window_op, frame_clause_not_allowed
-        ),
-        how=window.how,
+    how = {'range': 'range_'}.get(window.how, window.how)
+    preceding = window.preceding
+    additional_params = (
+        {}
+        if isinstance(window_op, frame_clause_not_allowed)
+        else {
+            how: (
+                -preceding if preceding is not None else preceding,
+                window.following,
+            )
+        }
+    )
+    result = reduction.over(
+        partition_by=partition_by, order_by=order_by, **additional_params
     )
 
     if isinstance(
@@ -1152,7 +1153,7 @@ class AlchemySelect(Select):
 
         if len(self.having) > 0:
             having_args = [self._translate(arg) for arg in self.having]
-            having_clause = _and_all(having_args)
+            having_clause = functools.reduce(sql.and_, having_args)
             fragment = fragment.having(having_clause)
 
         return fragment
@@ -1164,7 +1165,7 @@ class AlchemySelect(Select):
         args = [
             self._translate(pred, permit_subquery=True) for pred in self.where
         ]
-        clause = _and_all(args)
+        clause = functools.reduce(sql.and_, args)
         return fragment.where(clause)
 
     def _add_order_by(self, fragment):
@@ -1230,7 +1231,7 @@ class _AlchemyTableSet(TableSetFormatter):
         ):
             if len(preds):
                 sqla_preds = [self._translate(pred) for pred in preds]
-                onclause = _and_all(sqla_preds)
+                onclause = functools.reduce(sql.and_, sqla_preds)
             else:
                 onclause = None
 
@@ -1330,13 +1331,6 @@ def _can_lower_sort_column(table_set, expr):
         return False
 
 
-def _and_all(clauses):
-    result = clauses[0]
-    for clause in clauses[1:]:
-        result = sql.and_(result, clause)
-    return result
-
-
 class AlchemyProxy:
     """
     Wraps a SQLAlchemy ResultProxy and ensures that .close() is called on
@@ -1371,11 +1365,10 @@ def _nullifzero(expr):
 @compiles(ops.Divide)
 def _true_divide(t, expr):
     op = expr.op()
-    left, right = op.args
+    left, right = args = op.args
 
-    if util.all_of(op.args, ir.IntegerValue):
-        new_expr = left.div(right.cast('double'))
-        return t.translate(new_expr)
+    if util.all_of(args, ir.IntegerValue):
+        return t.translate(left.div(right.cast('double')))
 
     return fixed_arity(lambda x, y: x / y, 2)(t, expr)
 
@@ -1386,63 +1379,3 @@ def _sort_key(t, expr):
     by, ascending = expr.op().args
     sort_direction = sa.asc if ascending else sa.desc
     return sort_direction(t.translate(by))
-
-
-_valid_frame_types = numbers.Integral, str, type(None)
-
-
-class Over(_Over):
-    def __init__(
-        self,
-        element,
-        order_by=None,
-        partition_by=None,
-        preceding=None,
-        following=None,
-        allows_frame_clause=True,
-        how='rows',
-    ):
-        super().__init__(element, order_by=order_by, partition_by=partition_by)
-        if not isinstance(preceding, _valid_frame_types):
-            raise TypeError(
-                'preceding must be a string, integer or None, got %r'
-                % (type(preceding).__name__)
-            )
-        if not isinstance(following, _valid_frame_types):
-            raise TypeError(
-                'following must be a string, integer or None, got %r'
-                % (type(following).__name__)
-            )
-        self.preceding = preceding
-        self.following = following
-        self.allows_frame_clause = allows_frame_clause
-        self.how = how
-
-
-@sa_compiles(Over)
-def compile_over_with_frame(element, compiler, **kw):
-    clauses = ' '.join(
-        '{} BY {}'.format(word, compiler.process(clause, **kw))
-        for word, clause in (
-            ('PARTITION', element.partition_by),
-            ('ORDER', element.order_by),
-        )
-        if clause is not None and len(clause)
-    )
-    preceding = element.preceding
-    following = element.following
-
-    func = compiler.process(getattr(element, 'element', element.element), **kw)
-    if element.allows_frame_clause:
-        return (
-            '{} OVER ({}{}{} BETWEEN {} PRECEDING AND {} FOLLOWING)'
-        ).format(
-            func,
-            clauses,
-            ' ' if clauses else '',
-            element.how.upper(),
-            'UNBOUNDED' if preceding is None else preceding,
-            'UNBOUNDED' if following is None else following,
-        )
-    else:
-        return '{} OVER ({})'.format(func, clauses)
