@@ -1,6 +1,7 @@
 import ibis
 import ibis.common as com
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
 import ibis.impala.compiler as impala_compiler
 import ibis.sql.compiler as comp
 from ibis.impala.compiler import (
@@ -10,6 +11,7 @@ from ibis.impala.compiler import (
     ImpalaSelect,
     _reduction,
     fixed_arity,
+    unary,
 )
 
 
@@ -39,13 +41,36 @@ class SparkContext(ImpalaContext):
     pass
 
 
+def _array_literal_format(translator, expr):
+    translated_values = [
+        translator.translate(ibis.literal(x))
+        for x in expr.op().value
+    ]
+
+    return 'array({})'.format(
+        ', '.join(translated_values)
+    )
+
+
+def _literal(translator, expr):
+    try:
+        return impala_compiler._literal(translator, expr)
+    except NotImplementedError:
+        if isinstance(expr, ir.ArrayValue):
+            return _array_literal_format(translator, expr)
+        raise NotImplementedError(type(expr).__name__)
+
+
 _operation_registry = impala_compiler._operation_registry.copy()
 _operation_registry.update(
     {
+        ops.ArrayLength: unary('size'),
         ops.HLLCardinality: _reduction('approx_count_distinct'),
         ops.StrRight: fixed_arity('right', 2),
         ops.StringSplit: fixed_arity('SPLIT', 2),
         ops.RegexSearch: fixed_arity('rlike', 2),
+        ops.ArrayConcat: fixed_arity('concat', 2),
+        ops.Literal: _literal,
     }
 )
 

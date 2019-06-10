@@ -26,32 +26,30 @@ _DTYPE_TO_IBIS_TYPE = {
 }
 
 
-@dt.dtype.register(pt.StructField)
-def spark_field_to_ibis_dtype(field):
-    """Convert Spark SQL `StructField` to an ibis type."""
-    type_obj = field.dataType
-    typ = type(type_obj)
+@dt.dtype.register(pt.DataType)
+def spark_type_to_ibis_dtype(spark_type_obj):
+    """Convert Spark SQL types to ibis types."""
 
-    if typ is pt.DecimalType:
-        precision = type_obj.precision
-        scale = type_obj.scale
+    if isinstance(spark_type_obj, pt.DecimalType):
+        precision = spark_type_obj.precision
+        scale = spark_type_obj.scale
         ibis_type = dt.Decimal(precision, scale)
-    elif typ is pt.ArrayType:
-        value_type = dt.dtype(type_obj.elementType)
-        nullable = type_obj.containsNull
+    elif isinstance(spark_type_obj, pt.ArrayType):
+        value_type = dt.dtype(spark_type_obj.elementType)
+        nullable = spark_type_obj.containsNull
         ibis_type = dt.Array(value_type, nullable)
-    elif typ is pt.MapType:
-        key_type = dt.dtype(type_obj.keyType)
-        value_type = dt.dtype(type_obj.valueType)
-        nullable = type_obj.valueContainsNull
+    elif isinstance(spark_type_obj, pt.MapType):
+        key_type = dt.dtype(spark_type_obj.keyType)
+        value_type = dt.dtype(spark_type_obj.valueType)
+        nullable = spark_type_obj.valueContainsNull
         ibis_type = dt.Map(key_type, value_type, nullable)
-    elif typ is pt.StructType:
-        names = field.names
-        fields = field.fields
+    elif isinstance(spark_type_obj, pt.StructType):
+        names = spark_type_obj.names
+        fields = spark_type_obj.fields
         ibis_types = list(map(dt.dtype, fields))
         ibis_type = dt.Struct(names, ibis_types)
     else:
-        ibis_type = _DTYPE_TO_IBIS_TYPE.get(typ)
+        ibis_type = _DTYPE_TO_IBIS_TYPE.get(type(spark_type_obj))
 
     return ibis_type
 
@@ -59,17 +57,8 @@ def spark_field_to_ibis_dtype(field):
 @sch.infer.register(ps.sql.dataframe.DataFrame)
 def spark_dataframe_schema(df):
     """Infer the schema of a Spark SQL `DataFrame` object."""
-    fields = OrderedDict((el.name, dt.dtype(el)) for el in df.schema)
+    fields = OrderedDict((el.name, dt.dtype(el.dataType)) for el in df.schema)
 
-    # TODO
-    # partition_info = table._properties.get('timePartitioning', None)
-
-    # # We have a partitioned table
-    # if partition_info is not None:
-    #     partition_field = partition_info.get('field', NATIVE_PARTITION_COL)
-
-    #     # Only add a new column if it's not already a column in the schema
-    #     fields.setdefault(partition_field, dt.timestamp)
     return sch.schema(fields)
 
 
