@@ -19,6 +19,13 @@ def _determine_how(preceding):
             offset_type = type(end)
         else:
             offset_type = type(start)
+    elif isinstance(preceding, dict):
+        if 'rows' not in preceding:
+            raise KeyError("Expected 'rows' key in 'preceding' dictionary.")
+        if not isinstance(preceding['rows'], int):
+            raise TypeError("'Rows with max look-back' only supports integer "
+                            "row-based indexing.")
+        offset_type = type(preceding['rows'])
     else:
         offset_type = type(preceding)
 
@@ -71,7 +78,16 @@ class Window:
                 x = ops.SortKey(x).to_expr()
             self._order_by.append(x)
 
-        self.preceding = _sequence_to_tuple(preceding)
+        if isinstance(preceding, dict):
+            if 'rows' not in preceding or 'max_look_back' not in preceding:
+                raise KeyError("Expected 'rows' and 'max_look_back' keys "
+                               "in 'preceding' dictionary.")
+            self.preceding = preceding['rows']
+            self.max_look_back = preceding['max_look_back']
+        else:
+            self.preceding = _sequence_to_tuple(preceding)
+            self.max_look_back = None
+
         self.following = _sequence_to_tuple(following)
         self.how = how
 
@@ -162,6 +178,12 @@ class Window:
             raise com.IbisInputError(
                 "'how' must be 'rows' or 'range', got {}".format(self.how)
             )
+
+        if self.max_look_back is not None:
+            if not isinstance(self.max_look_back, ir.IntervalValue):
+                raise com.IbisInputError(
+                    "'max_look_back' must be specified as an interval"
+                )
 
     def bind(self, table):
         # Internal API, ensure that any unresolved expr references (as strings,

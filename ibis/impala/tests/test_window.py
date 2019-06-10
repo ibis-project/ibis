@@ -107,6 +107,13 @@ FROM ibis_testing.`alltypes`"""
             ibis.trailing_window(10),
             'rows between 10 preceding and current row',
         ),
+        (
+            ibis.trailing_window({
+                'rows': 3,
+                'max_look_back': ibis.interval(days=3)
+            }),
+            'rows between 3 preceding and current row',
+        ),
     ],
 )
 def test_window_frame_specs(con, window, frame):

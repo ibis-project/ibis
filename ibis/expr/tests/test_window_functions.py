@@ -197,14 +197,26 @@ def test_determine_how():
     how = _determine_how(ibis.interval(months=5) + ibis.interval(days=10))
     assert how == 'range'
 
+    how = _determine_how({
+        'rows': 3,
+        'max_look_back': ibis.interval(months=3)
+    })
+    assert how == 'rows'
+
     with pytest.raises(TypeError):
         _determine_how(8.9)
 
     with pytest.raises(TypeError):
         _determine_how('invalid preceding')
 
-    with pytest.raises(TypeError):
+    with pytest.raises(KeyError):
         _determine_how({'start': 1, 'end': 2})
+
+    with pytest.raises(TypeError):
+        _determine_how({
+            'rows': ibis.interval(days=3),
+            'max_look_back': ibis.interval(months=1)
+        })
 
     with pytest.raises(TypeError):
         _determine_how([3, 5])

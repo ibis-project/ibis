@@ -6,6 +6,7 @@ import pytest
 from pandas.util import testing as tm
 
 import ibis
+import ibis.common as com
 import ibis.expr.operations as ops
 from ibis.pandas.dispatch import pre_execute
 
@@ -291,6 +292,35 @@ def test_batting_rolling(batting, batting_df, sort_kind):
     expected = batting_df.assign(more_values=more_values)
 
     tm.assert_frame_equal(result[expected.columns], expected)
+
+
+def test_batting_rolling_with_mlb(batting, batting_df, sort_kind):
+    rows_with_mlb = {'rows': 5, 'max_look_back': ibis.interval(days=10)}
+    expr = batting.mutate(
+        more_values=lambda t: t.G.sum().over(
+            ibis.trailing_window(rows_with_mlb, order_by=t.yearID)
+        )
+    )
+    result = expr.execute()
+
+    columns = ['G', 'yearID']
+    more_values = (
+        batting_df[columns]
+        .sort_values('yearID', kind=sort_kind)
+        .G.rolling(5, min_periods=1)
+        .sum()
+    )
+    expected = batting_df.assign(more_values=more_values)
+
+    tm.assert_frame_equal(result[expected.columns], expected)
+
+    with pytest.raises(com.IbisInputError):
+        rows_with_mlb = {'rows': 5, 'max_look_back': 10}
+        batting.mutate(
+            more_values=lambda t: t.G.sum().over(
+                ibis.trailing_window(rows_with_mlb, order_by=t.yearID)
+            )
+        )
 
 
 def test_batting_rolling_partitioned(batting, batting_df, sort_kind):
