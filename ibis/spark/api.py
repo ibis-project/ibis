@@ -1,8 +1,5 @@
-from ibis.spark.compiler import dialect  # noqa:
-
-from ibis.spark.client import (  # noqa: F401; ImpalaDatabase,; ImpalaTable,
-    SparkClient,
-)
+from ibis.spark.client import SparkClient
+from ibis.spark.compiler import dialect  # noqa: F401
 
 
 def connect(**kwargs):
