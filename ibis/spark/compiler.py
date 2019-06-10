@@ -64,6 +64,7 @@ def _literal(translator, expr):
 _operation_registry = impala_compiler._operation_registry.copy()
 _operation_registry.update(
     {
+        ops.IfNull: fixed_arity('ifnull', 2),
         ops.ArrayLength: unary('size'),
         ops.HLLCardinality: _reduction('approx_count_distinct'),
         ops.StrRight: fixed_arity('right', 2),
