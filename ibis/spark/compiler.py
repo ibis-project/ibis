@@ -1,3 +1,5 @@
+import math
+
 import ibis
 import ibis.common as com
 import ibis.expr.operations as ops
@@ -41,6 +43,21 @@ class SparkContext(ImpalaContext):
     pass
 
 
+def _is_inf(translator, expr):
+    arg, = expr.op().args
+    return '{} = {} or {} = {}'.format(
+        *map(
+            translator.translate,
+            [
+                arg,
+                ibis.literal(math.inf, type='double'),
+                arg,
+                ibis.literal(-math.inf, type='double'),
+            ]
+        )
+    )
+
+
 def _array_literal_format(translator, expr):
     translated_values = [
         translator.translate(ibis.literal(x))
@@ -61,11 +78,26 @@ def _literal(translator, expr):
         raise NotImplementedError(type(expr).__name__)
 
 
+def _round(translator, expr):
+    op = expr.op()
+    arg, digits = op.args
+
+    arg_formatted = translator.translate(arg)
+
+    if digits is not None:
+        digits_formatted = translator.translate(digits)
+        return 'bround({}, {})'.format(arg_formatted, digits_formatted)
+    return 'bround({})'.format(arg_formatted)
+
+
 _operation_registry = impala_compiler._operation_registry.copy()
 _operation_registry.update(
     {
+        ops.IsNan: unary('isnan'),
+        ops.IsInf: _is_inf,
         ops.IfNull: fixed_arity('ifnull', 2),
         ops.ArrayLength: unary('size'),
+        ops.Round: _round,
         ops.HLLCardinality: _reduction('approx_count_distinct'),
         ops.StrRight: fixed_arity('right', 2),
         ops.StringSplit: fixed_arity('SPLIT', 2),

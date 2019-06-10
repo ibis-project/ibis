@@ -399,7 +399,7 @@ class Impala(UnorderedComparator, Backend, RoundAwayFromZero):
         )
 
 
-class Spark(Backend):
+class Spark(Backend, RoundHalfToEven):
 
     def connect(self, data_directory):
         client = ibis.spark.connect()

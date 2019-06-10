@@ -1,4 +1,5 @@
 import datetime
+import math
 from io import StringIO
 from operator import add, mul, sub
 from typing import Optional
@@ -630,10 +631,18 @@ def _string_literal_format(translator, expr):
 
 def _number_literal_format(translator, expr):
     value = expr.op().value
-    formatted = repr(value)
 
-    if formatted in {'nan', 'inf', '-inf'}:
-        return "CAST({!r} AS DOUBLE)".format(formatted)
+    if math.isfinite(value):
+        formatted = repr(value)
+    else:
+        if math.isnan(value):
+            formatted_val = 'NaN'
+        elif math.isinf(value):
+            if value > 0:
+                formatted_val = 'Infinity'
+            else:
+                formatted_val = '-Infinity'
+        formatted = "CAST({!r} AS DOUBLE)".format(formatted_val)
 
     return formatted
 
