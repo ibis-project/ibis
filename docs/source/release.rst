@@ -7,7 +7,6 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`/release-pre-1.0`
 
-* :release `1.1.0 <2019-06-09>`
 * :bug:`1819` Fix group_concat test and implementations
 * :support:`1820` Remove decorator hacks and add custom markers
 * :bug:`1818` Fix failing strftime tests on Python 3.7
