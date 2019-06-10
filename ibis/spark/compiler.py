@@ -107,3 +107,6 @@ class SparkSelect(ImpalaSelect):
 
 class SparkDialect(ImpalaDialect):
     translator = SparkExprTranslator
+
+
+dialect = SparkDialect

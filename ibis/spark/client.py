@@ -3,6 +3,7 @@ from collections import OrderedDict
 import pyspark as ps
 import pyspark.sql.types as pt
 import regex as re
+from pkg_resources import parse_version
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -187,8 +188,11 @@ class SparkClient(SQLClient):
         return self._catalog.currentDatabase()
 
     def _get_table_schema(self, table_name):
-        # TODO check if this is correct functionality
         return self.get_schema(table_name)
+
+    def _get_schema_using_query(self, query):
+        cur = self._execute(query, results=True)
+        return spark_dataframe_schema(cur.query)
 
     def list_tables(self, like=None, database=None):
         """
@@ -278,3 +282,7 @@ class SparkClient(SQLClient):
         df = self._session.table(table_name)
 
         return sch.infer(df)
+
+    @property
+    def version(self):
+        return parse_version(ps.__version__)

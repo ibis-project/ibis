@@ -433,30 +433,6 @@ class Spark(Backend):
 
         df_batting = client._session.read.csv(
             path=str(data_directory / 'batting.csv'),
-            # schema=ibis.schema([
-            #     ('playerID', 'string'),
-            #     ('yearID', 'int32'),
-            #     ('stint', 'int32'),
-            #     ('teamID', 'string'),
-            #     ('lgID', 'string'),
-            #     ('G', 'int32'),
-            #     ('AB', 'double'),
-            #     ('R', 'double'),
-            #     ('H', 'double'),
-            #     ('X2B', 'double'),
-            #     ('X3B', 'double'),
-            #     ('HR', 'double'),
-            #     ('RBI', 'double'),
-            #     ('SB', 'double'),
-            #     ('CS', 'double'),
-            #     ('BB', 'double'),
-            #     ('SO', 'double'),
-            #     ('IBB', 'double'),
-            #     ('HBP', 'double'),
-            #     ('SH', 'double'),
-            #     ('SF', 'double'),
-            #     ('GIDP', 'double'),
-            # ]),
             schema=pt.StructType([
                 pt.StructField('playerID', pt.StringType(), True),
                 pt.StructField('yearID', pt.IntegerType(), True),
@@ -487,14 +463,6 @@ class Spark(Backend):
 
         df_awards_players = client._session.read.csv(
             path=str(data_directory / 'awards_players.csv'),
-            # schema=ibis.schema([
-            #     ('playerID', 'string'),
-            #     ('awardID', 'string'),
-            #     ('yearID', 'int32'),
-            #     ('lgID', 'string'),
-            #     ('tie', 'string'),
-            #     ('notes', 'string'),
-            # ]),
             schema=pt.StructType([
                 pt.StructField('playerID', pt.StringType(), True),
                 pt.StructField('awardID', pt.StringType(), True),

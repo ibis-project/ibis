@@ -1,3 +1,5 @@
+from ibis.spark.compiler import dialect  # noqa:
+
 from ibis.spark.client import (  # noqa: F401; ImpalaDatabase,; ImpalaTable,
     SparkClient,
 )

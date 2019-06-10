@@ -69,8 +69,8 @@ def test_query_schema(backend, con, alltypes, expr_fn, expected):
 @tu.skipif_unsupported
 def test_sql(backend, con, alltypes, field):
 
-    if not hasattr(backend, 'sql') or not hasattr(
-        backend, '_get_schema_using_query'
+    if not hasattr(con, 'sql') or not hasattr(
+        con, '_get_schema_using_query'
     ):
         pytest.skip('Backend {} does not support sql method'.format(backend))
 
