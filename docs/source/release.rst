@@ -8,42 +8,42 @@ Release Notes
    notes for pre-1.0 versions of ibis can be found at :doc:`/release-pre-1.0`
 
 * :release:`1.1.0 <2019-06-09>`
-* :bug:`1819` Fix group_concat test and implementations
+* :bug:`1819 major` Fix group_concat test and implementations
 * :support:`1820` Remove decorator hacks and add custom markers
-* :bug:`1818` Fix failing strftime tests on Python 3.7
-* :bug:`1757` Remove unnecessary (and erroneous in some cases) frame clauses
+* :bug:`1818 major` Fix failing strftime tests on Python 3.7
+* :bug:`1757 major` Remove unnecessary (and erroneous in some cases) frame clauses
 * :support:`1814` Add development deps to setup.py
 * :feature:`1809` Conslidate trailing window functions
-* :bug:`1799` Chained mutate operations are buggy
+* :bug:`1799 major` Chained mutate operations are buggy
 * :support:`1805` Fix design and developer docs
 * :support:`1810` Pin sphinx version to 2.0.1
 * :feature:`1766` Call to_interval when casting integers to intervals
-* :bug:`1783` Allow projections from joins to attempt fusion
+* :bug:`1783 major` Allow projections from joins to attempt fusion
 * :feature:`1796` Add session feature to mapd client API
-* :bug:`1798` Fix Python 3.5 dependency versions
+* :bug:`1798 major` Fix Python 3.5 dependency versions
 * :feature:`1792` Add min periods parameter to Window
 * :support:`1793` Add pep8speaks integration
 * :support:`1821` Fix typo in UDF signature specification
 * :feature:`1785` Allow strings for types in pandas UDFs
 * :feature:`1790` Add missing date operations and struct field operation for the pandas backend
-* :bug:`1789` Fix compatibility and bugs associated with pandas toposort reimplementation
-* :bug:`1772` Fix outer_join generating LEFT join instead of FULL OUTER
+* :bug:`1789 major` Fix compatibility and bugs associated with pandas toposort reimplementation
+* :bug:`1772 major` Fix outer_join generating LEFT join instead of FULL OUTER
 * :feature:`1771` Add window operations to the OmniSci backend
 * :feature:`1758` Reimplement the pandas backend using topological sort
 * :support:`1779` Clean up most xpassing tests
-* :bug:`1782` NullIf should enforce that its arguments are castable to a common type
+* :bug:`1782 major` NullIf should enforce that its arguments are castable to a common type
 * :support:`1781` Update omnisci container version
 * :feature:`1778` Add marker for xfailing specific backends
 * :feature:`1777` Enable window function tests where possible
-* :bug:`1775` Fix conda create command in documentation
+* :bug:`1775 major` Fix conda create command in documentation
 * :support:`1776` Constrain PyMapD version to get passing builds
-* :bug:`1765` Fix preceding and following with ``None``
+* :bug:`1765 major` Fix preceding and following with ``None``
 * :support:`1763` Remove warnings and clean up some docstrings
 * :support:`1638` Add StringToTimestamp as unsupported
 * :feature:`1743` is_computable_arg dispatcher
 * :support:`1759` Add isort pre-commit hooks
 * :feature:`1753` Added float32 and geospatial types for create table from schema
-* :bug:`1661` PostgreSQL interval type not recognized
+* :bug:`1661 major` PostgreSQL interval type not recognized
 * :support:`1750` Add Python 3.5 testing back to CI
 * :support:`1700` Re-enable CI for building step
 * :support:`1749` Update README reference to MapD to say OmniSci
