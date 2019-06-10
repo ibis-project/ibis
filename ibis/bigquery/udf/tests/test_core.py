@@ -6,6 +6,8 @@ import pytest
 
 from ibis.bigquery.udf.core import PythonToJavaScriptTranslator, SymbolTable
 
+pytestmark = pytest.mark.bigquery
+
 
 def test_symbol_table():
     symbols = SymbolTable()

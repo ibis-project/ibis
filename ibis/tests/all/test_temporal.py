@@ -1,4 +1,3 @@
-import sys
 import warnings
 
 import numpy as np
@@ -252,14 +251,16 @@ def test_interval_add_cast_scalar(backend, alltypes):
 
 
 @pytest.mark.xfail_unsupported
-def test_interval_add_cast_column(backend, alltypes):
+def test_interval_add_cast_column(backend, alltypes, df):
     timestamp_date = alltypes.timestamp_col.date()
     delta = alltypes.bigint_col.cast("interval('D')")
-    expr = timestamp_date + delta
-    result = expr.execute()
+    expr = alltypes['id', (timestamp_date + delta).name('tmp')]
+    result = expr.execute().sort_values('id').reset_index().tmp
+    df = df.sort_values('id').reset_index(drop=True)
     expected = (
-        timestamp_date.execute()
-        .add(alltypes.bigint_col.execute().astype("timedelta64[D]"))
+        df['timestamp_col']
+        .dt.normalize()
+        .add(df.bigint_col.astype("timedelta64[D]"))
         .rename("tmp")
     )
     backend.assert_series_equal(result, expected)
@@ -388,14 +389,7 @@ def test_day_of_week_column_group_by(
     )
 
     # FIXME(#1536): Pandas backend should use query.schema().apply_to
-    backend.assert_frame_equal(
-        result,
-        expected,
-        check_dtype=False,
-        # python 2's handling of strings is annoying here wrt sqlalchemy's
-        # column name string subclass
-        check_column_type=sys.version_info.major != 2,
-    )
+    backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
 @pytest.mark.xfail_unsupported

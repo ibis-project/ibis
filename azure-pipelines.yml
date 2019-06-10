@@ -34,8 +34,13 @@ jobs:
     - script: conda install conda=$(conda.version)
       displayName: 'Install an appropriate conda version'
 
-    - script: conda create --name $(conda.env) python=$(python.version) numpy pandas pytables ruamel.yaml jinja2 pyarrow multipledispatch pymysql sqlalchemy psycopg2 graphviz click mock plumbum flake8 pytest-xdist
+    - script: conda create --name $(conda.env) python=$(python.version) numpy pandas pytables ruamel.yaml jinja2 pyarrow multipledispatch pymysql sqlalchemy psycopg2 graphviz click mock plumbum flake8
       displayName: 'Create conda environment'
+
+    - script: |
+        call activate $(conda.env)
+        pip install -U pytest pytest-xdist
+      displayName: 'Install latest pytest'
 
     - script: conda info
       displayName: 'Show conda info'
