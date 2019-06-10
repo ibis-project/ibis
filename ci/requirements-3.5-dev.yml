@@ -27,6 +27,7 @@ dependencies:
   - pyarrow<0.12
   - pymapd>=0.8.3,<0.11.0
   - pymysql
+  - pyspark>=2.4.3
   - pytables>=3.0.0
   - pytest
   - pytest-cov
