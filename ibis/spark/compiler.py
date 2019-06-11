@@ -1,3 +1,4 @@
+import itertools
 import math
 
 import ibis
@@ -69,13 +70,42 @@ def _array_literal_format(translator, expr):
     )
 
 
+def _struct_like_format(translator, expr, name):
+    translated_values = [
+        ("'{}'".format(name), translator.translate(ibis.literal(val)))
+        for (name, val) in expr.op().value.items()
+    ]
+
+    return '{}({})'.format(
+        name,
+        ', '.join(itertools.chain(*translated_values))
+    )
+
+
 def _literal(translator, expr):
     try:
         return impala_compiler._literal(translator, expr)
     except NotImplementedError:
         if isinstance(expr, ir.ArrayValue):
             return _array_literal_format(translator, expr)
+        elif isinstance(expr, ir.StructScalar):
+            return _struct_like_format(translator, expr, 'named_struct')
+        elif isinstance(expr, ir.MapScalar):
+            return _struct_like_format(translator, expr, 'map')
         raise NotImplementedError(type(expr).__name__)
+
+
+def _struct_field(translator, expr):
+    arg, field = expr.op().args
+    arg_formatted = translator.translate(arg)
+    return '{}.`{}`'.format(arg_formatted, field)
+
+
+def _map_value_for_key(translator, expr):
+    arg, field = expr.op().args
+    arg_formatted = translator.translate(arg)
+    field_formatted = translator.translate(ibis.literal(field))
+    return '{}[{}]'.format(arg_formatted, field_formatted)
 
 
 def _round(translator, expr):
@@ -96,6 +126,8 @@ _operation_registry.update(
         ops.IsNan: unary('isnan'),
         ops.IsInf: _is_inf,
         ops.IfNull: fixed_arity('ifnull', 2),
+        ops.StructField: _struct_field,
+        ops.MapValueForKey: _map_value_for_key,
         ops.ArrayLength: unary('size'),
         ops.Round: _round,
         ops.HLLCardinality: _reduction('approx_count_distinct'),

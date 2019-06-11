@@ -636,12 +636,12 @@ def _number_literal_format(translator, expr):
         formatted = repr(value)
     else:
         if math.isnan(value):
-            formatted_val = 'NaN'
+            formatted_val = "'NaN'"
         elif math.isinf(value):
             if value > 0:
-                formatted_val = 'Infinity'
+                formatted_val = "'Infinity'"
             else:
-                formatted_val = '-Infinity'
+                formatted_val = "'-Infinity'"
         formatted = "CAST({!r} AS DOUBLE)".format(formatted_val)
 
     return formatted
