@@ -30,9 +30,9 @@ try:
     import geoalchemy2.shape as shape
     import geopandas
 
-    GEO = True
+    geospatial_supported = True
 except ImportError:
-    GEO = False
+    geospatial_supported = False
 
 
 # TODO(cleanup)
@@ -74,7 +74,7 @@ def _to_sqla_type(itype, type_map=None):
                 )
             )
         return sa.ARRAY(_to_sqla_type(ibis_type, type_map=type_map))
-    elif GEO and isinstance(itype, dt.GeoSpatial):
+    elif geospatial_supported and isinstance(itype, dt.GeoSpatial):
         if itype.geotype == 'geometry':
             return ga.Geometry
         elif itype.geotype == 'geography':
@@ -133,7 +133,7 @@ def sa_double(_, satype, nullable=True):
     return dt.Double(nullable=nullable)
 
 
-if GEO:
+if geospatial_supported:
 
     @dt.dtype.register(SQLAlchemyDialect, ga.Geometry)
     def ga_geometry(_, gatype, nullable=True):
@@ -730,7 +730,7 @@ _window_functions = {
     ops.CumulativeMean: unary(sa.func.avg),
 }
 
-if GEO:
+if geospatial_supported:
     _geospatial_functions = {
         ops.GeoArea: unary(sa.func.ST_Area),
         ops.GeoAsBinary: unary(sa.func.ST_AsBinary),
@@ -980,7 +980,7 @@ class AlchemyQuery(Query):
             coerce_float=True,
         )
         df = self.schema().apply_to(df)
-        if GEO:
+        if geospatial_supported:
             geom_col = None
             for name, dtype in self.schema().items():
                 if isinstance(dtype, dt.GeoSpatial):
