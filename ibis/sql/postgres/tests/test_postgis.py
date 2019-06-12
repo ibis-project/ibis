@@ -99,6 +99,18 @@ def test_geo_covered_by(geotable):
     assert expr.execute().all()
 
 
+def test_geo_d_fully_within(geotable):
+    expr = geotable.geo_point.d_fully_within(
+        geotable.geo_point.buffer(1.0), 2.0
+    )
+    assert expr.execute().all()
+
+
+def test_geo_d_within(geotable):
+    expr = geotable.geo_point.d_within(geotable.geo_point.buffer(1.0), 1.0)
+    assert expr.execute().all()
+
+
 def test_geo_envelope(geotable, gdf):
     expr = geotable.geo_linestring.buffer(1.0).envelope()
     result = expr.execute()

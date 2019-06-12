@@ -749,9 +749,11 @@ if geospatial_supported:
         ops.GeoCovers: fixed_arity(sa.func.ST_Covers, 2),
         ops.GeoCoveredBy: fixed_arity(sa.func.ST_CoveredBy, 2),
         ops.GeoCrosses: fixed_arity(sa.func.ST_Crosses, 2),
+        ops.GeoDFullyWithin: fixed_arity(sa.func.ST_DFullyWithin, 3),
         ops.GeoDifference: fixed_arity(sa.func.ST_Difference, 2),
         ops.GeoDisjoint: fixed_arity(sa.func.ST_Disjoint, 2),
         ops.GeoDistance: fixed_arity(sa.func.ST_Distance, 2),
+        ops.GeoDWithin: fixed_arity(sa.func.ST_DWithin, 3),
         ops.GeoEnvelope: unary(sa.func.ST_Envelope),
         ops.GeoEquals: fixed_arity(sa.func.ST_Equals, 2),
         ops.GeoIntersection: fixed_arity(sa.func.ST_Intersection, 2),
@@ -775,8 +777,6 @@ if geospatial_supported:
         #   ST_As_SVG
         #   ST_As_TWKB
         # Missing Geometric ops:
-        #   ST_DFullyWithin
-        #   ST_DWithin
         #   ST_Distance_Sphere
         #   ST_Dump
         #   ST_DumpPoints

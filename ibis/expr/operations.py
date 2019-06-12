@@ -3189,6 +3189,24 @@ class GeoCentroid(GeoSpatialUnOp):
     output_type = rlz.shape_like('arg', dt.point)
 
 
+class GeoDFullyWithin(GeoSpatialBinOp):
+    """Returns True if the geometries are fully within the specified distance
+    of one another.
+    """
+    distance = Arg(rlz.floating)
+
+    output_type = rlz.shape_like('args', dt.boolean)
+
+
+class GeoDWithin(GeoSpatialBinOp):
+    """Returns True if the geometries are within the specified distance
+    of one another.
+    """
+    distance = Arg(rlz.floating)
+
+    output_type = rlz.shape_like('args', dt.boolean)
+
+
 class GeoEnvelope(GeoSpatialUnOp):
     """Returns a geometry representing the boundingbox of the supplied geometry.
     """

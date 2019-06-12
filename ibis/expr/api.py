@@ -127,8 +127,10 @@ __all__ = (
     'geo_covers',
     'geo_covered_by',
     'geo_crosses',
+    'geo_d_fully_within',
     'geo_disjoint',
     'geo_difference',
+    'geo_d_within',
     'geo_envelope',
     'geo_equals',
     'geo_intersection',
@@ -1759,6 +1761,25 @@ def geo_crosses(left, right):
     return op.to_expr()
 
 
+def geo_d_fully_within(left, right, distance):
+    """
+    Check if the first geometry is fully within a specified distance from
+    the second one.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+    distance: double
+
+    Returns
+    -------
+    d_fully_within : bool scalar
+    """
+    op = ops.GeoDFullyWithin(left, right, distance)
+    return op.to_expr()
+
+
 def geo_disjoint(left, right):
     """
     Check if the geometries have no points in common.
@@ -1773,6 +1794,25 @@ def geo_disjoint(left, right):
     disjoint : bool scalar
     """
     op = ops.GeoDisjoint(left, right)
+    return op.to_expr()
+
+
+def geo_d_within(left, right, distance):
+    """
+    Check if the first geometry is within a specified distance from
+    the second one.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+    distance: double
+
+    Returns
+    -------
+    d_within : bool scalar
+    """
+    op = ops.GeoDWithin(left, right, distance)
     return op.to_expr()
 
 
@@ -2272,9 +2312,11 @@ _geospatial_value_methods = dict(
     covers=geo_covers,
     covered_by=geo_covered_by,
     crosses=geo_crosses,
+    d_fully_within=geo_d_fully_within,
     difference=geo_difference,
     disjoint=geo_disjoint,
     distance=geo_distance,
+    d_within=geo_d_within,
     end_point=geo_end_point,
     envelope=geo_envelope,
     equals=geo_equals,
