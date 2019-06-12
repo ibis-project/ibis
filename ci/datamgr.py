@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import sys
 import tempfile
 import warnings
 import zipfile
@@ -207,7 +208,8 @@ def postgres(schema, tables, data_directory, psql_path, **params):
     engine = init_database(
         'postgresql', params, schema, isolation_level='AUTOCOMMIT'
     )
-    if 'geo' in tables:
+    use_postgis = 'geo' in tables and sys.version_info >= (3, 6)
+    if use_postgis:
         engine.execute("CREATE EXTENSION POSTGIS")
 
     query = "COPY {} FROM STDIN WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',')"
@@ -218,6 +220,8 @@ def postgres(schema, tables, data_directory, psql_path, **params):
         # If we are loading the geo sample data, handle the data types
         # specifically so that PostGIS understands them as geometries.
         if table == 'geo':
+            if not use_postgis:
+                continue
             from geoalchemy2 import Geometry, WKTElement
             srid = 4326
             df = pd.read_csv(src)
