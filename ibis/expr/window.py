@@ -1,5 +1,8 @@
 """Encapsulation of SQL window clauses."""
 
+import functools
+from collections import namedtuple
+
 import numpy as np
 
 import ibis.common as com
@@ -12,23 +15,11 @@ def _sequence_to_tuple(x):
     return tuple(x) if util.is_iterable(x) else x
 
 
-def _determine_how(preceding):
-    if isinstance(preceding, tuple):
-        start, end = preceding
-        if start is None:
-            offset_type = type(end)
-        else:
-            offset_type = type(start)
-    elif isinstance(preceding, dict):
-        if 'rows' not in preceding:
-            raise KeyError("Expected 'rows' key in 'preceding' dictionary.")
-        if not isinstance(preceding['rows'], int):
-            raise TypeError("'Rows with max look-back' only supports integer "
-                            "row-based indexing.")
-        offset_type = type(preceding['rows'])
-    else:
-        offset_type = type(preceding)
+RowsWithMaxLookback = namedtuple('RowsWithMaxLookback', 'rows max_lookback')
 
+
+def _determine_how(preceding):
+    offset_type = type(_get_preceding_value(preceding))
     if issubclass(offset_type, (int, np.integer)):
         how = 'rows'
     elif issubclass(offset_type, ir.IntervalScalar):
@@ -38,8 +29,41 @@ def _determine_how(preceding):
             'Type {} is not supported for row- or range- based trailing '
             'window operations'.format(offset_type)
         )
-
     return how
+
+
+@functools.singledispatch
+def _get_preceding_value(preceding):
+    raise TypeError(
+        "Type {} is not a valid type for 'preceding' "
+        "parameter".format(type(preceding))
+    )
+
+
+@_get_preceding_value.register(tuple)
+def _get_preceding_value_tuple(preceding):
+    start, end = preceding
+    if start is None:
+        preceding_value = end
+    else:
+        preceding_value = start
+    return preceding_value
+
+
+@_get_preceding_value.register(int)
+@_get_preceding_value.register(np.integer)
+@_get_preceding_value.register(ir.IntervalScalar)
+def _get_preceding_value_simple(preceding):
+    return preceding
+
+
+@_get_preceding_value.register(RowsWithMaxLookback)
+def _get_preceding_value_mlb(preceding):
+    preceding_value = preceding.rows
+    if not isinstance(preceding_value, int):
+        raise TypeError("'Rows with max look-back' only supports integer "
+                        "row-based indexing.")
+    return preceding_value
 
 
 class Window:
@@ -78,12 +102,9 @@ class Window:
                 x = ops.SortKey(x).to_expr()
             self._order_by.append(x)
 
-        if isinstance(preceding, dict):
-            if 'rows' not in preceding or 'max_look_back' not in preceding:
-                raise KeyError("Expected 'rows' and 'max_look_back' keys "
-                               "in 'preceding' dictionary.")
-            self.preceding = preceding['rows']
-            self.max_look_back = preceding['max_look_back']
+        if isinstance(preceding, RowsWithMaxLookback):
+            self.preceding = preceding.rows
+            self.max_look_back = preceding.max_lookback
         else:
             self.preceding = _sequence_to_tuple(preceding)
             self.max_look_back = None
@@ -260,6 +281,10 @@ class Window:
         ) and ops.all_equal(self.following, other.following, cache=cache)
         cache[self, other] = equal
         return equal
+
+
+def rows_with_max_lookback(rows, max_lookback):
+    return RowsWithMaxLookback(rows, max_lookback)
 
 
 def window(preceding=None, following=None, group_by=None, order_by=None):

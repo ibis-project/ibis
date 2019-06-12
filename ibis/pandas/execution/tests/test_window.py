@@ -8,6 +8,7 @@ from pandas.util import testing as tm
 import ibis
 import ibis.common as com
 import ibis.expr.operations as ops
+from ibis.expr.window import rows_with_max_lookback
 from ibis.pandas.dispatch import pre_execute
 
 execute = ibis.pandas.execute
@@ -295,7 +296,7 @@ def test_batting_rolling(batting, batting_df, sort_kind):
 
 
 def test_batting_rolling_with_mlb(batting, batting_df, sort_kind):
-    rows_with_mlb = {'rows': 5, 'max_look_back': ibis.interval(days=10)}
+    rows_with_mlb = rows_with_max_lookback(5, ibis.interval(days=10))
     expr = batting.mutate(
         more_values=lambda t: t.G.sum().over(
             ibis.trailing_window(rows_with_mlb, order_by=t.yearID)
@@ -315,7 +316,7 @@ def test_batting_rolling_with_mlb(batting, batting_df, sort_kind):
     tm.assert_frame_equal(result[expected.columns], expected)
 
     with pytest.raises(com.IbisInputError):
-        rows_with_mlb = {'rows': 5, 'max_look_back': 10}
+        rows_with_mlb = rows_with_max_lookback(5, 10)
         batting.mutate(
             more_values=lambda t: t.G.sum().over(
                 ibis.trailing_window(rows_with_mlb, order_by=t.yearID)

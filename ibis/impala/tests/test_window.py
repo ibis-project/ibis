@@ -3,6 +3,7 @@ import pytest
 import ibis
 import ibis.common as com
 from ibis import window
+from ibis.expr.window import rows_with_max_lookback
 from ibis.impala.compiler import to_sql  # noqa: E402
 from ibis.tests.util import assert_equal
 
@@ -108,10 +109,9 @@ FROM ibis_testing.`alltypes`"""
             'rows between 10 preceding and current row',
         ),
         (
-            ibis.trailing_window({
-                'rows': 3,
-                'max_look_back': ibis.interval(days=3)
-            }),
+            ibis.trailing_window(
+                rows_with_max_lookback(3, ibis.interval(days=3))
+            ),
             'rows between 3 preceding and current row',
         ),
     ],

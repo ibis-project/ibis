@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 import ibis
-from ibis.expr.window import _determine_how
+from ibis.expr.window import _determine_how, rows_with_max_lookback
 from ibis.tests.util import assert_equal
 
 
@@ -197,10 +197,7 @@ def test_determine_how():
     how = _determine_how(ibis.interval(months=5) + ibis.interval(days=10))
     assert how == 'range'
 
-    how = _determine_how({
-        'rows': 3,
-        'max_look_back': ibis.interval(months=3)
-    })
+    how = _determine_how(rows_with_max_lookback(3, ibis.interval(months=3)))
     assert how == 'rows'
 
     with pytest.raises(TypeError):
@@ -209,14 +206,15 @@ def test_determine_how():
     with pytest.raises(TypeError):
         _determine_how('invalid preceding')
 
-    with pytest.raises(KeyError):
-        _determine_how({'start': 1, 'end': 2})
+    with pytest.raises(TypeError):
+        _determine_how({'rows': 1, 'max_lookback': 2})
 
     with pytest.raises(TypeError):
-        _determine_how({
-            'rows': ibis.interval(days=3),
-            'max_look_back': ibis.interval(months=1)
-        })
+        _determine_how(
+            rows_with_max_lookback(
+                ibis.interval(days=3), ibis.interval(months=1)
+            )
+        )
 
     with pytest.raises(TypeError):
         _determine_how([3, 5])
