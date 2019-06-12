@@ -984,7 +984,9 @@ class AlchemyQuery(Query):
             coerce_float=True,
         )
         df = self.schema().apply_to(df)
-        if geospatial_supported:
+        # If the dataframe has contents and we support geospatial operations,
+        # convert the dataframe into a GeoDataFrame with shapely geometries.
+        if len(df) and geospatial_supported:
             geom_col = None
             for name, dtype in self.schema().items():
                 if isinstance(dtype, dt.GeoSpatial):

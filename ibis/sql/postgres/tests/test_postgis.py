@@ -14,6 +14,12 @@ def test_load_geodata(con):
     assert isinstance(result, gp.GeoDataFrame)
 
 
+def test_empty_select(geotable):
+    expr = geotable[geotable.geo_point.equals(geotable.geo_linestring)]
+    result = expr.execute()
+    assert len(result) == 0
+
+
 def test_select_point_geodata(geotable):
     expr = geotable['geo_point']
     sqla_expr = expr.compile()
