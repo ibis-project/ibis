@@ -1,7 +1,7 @@
-import geopandas as gp
 import pandas.util.testing as tm
 import pytest
 
+gp = pytest.importorskip('geopandas')
 sa = pytest.importorskip('sqlalchemy')
 pytest.importorskip('psycopg2')
 

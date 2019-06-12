@@ -11,9 +11,6 @@ dependencies:
   - clickhouse-sqlalchemy
   - cmake
   - flake8
-  - gdal=2.2
-  - geoalchemy2
-  - geopandas
   - google-cloud-bigquery>=1.0.0
   - graphviz
   - impyla<0.14.2
