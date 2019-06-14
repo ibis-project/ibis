@@ -4,7 +4,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pandas.util.testing as tm
-import pyspark.sql.types as pt
 import pytest
 from pkg_resources import parse_version
 
@@ -402,6 +401,8 @@ class Impala(UnorderedComparator, Backend, RoundAwayFromZero):
 class Spark(Backend, RoundHalfToEven):
 
     def connect(self, data_directory):
+        import pyspark.sql.types as pt
+
         client = ibis.spark.connect()
 
         df_functional_alltypes = client._session.read.csv(

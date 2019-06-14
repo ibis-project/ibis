@@ -35,9 +35,9 @@ import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.impala.compiler as impala_compiler
 import ibis.sql.compiler as comp
 import ibis.util as util
+from ibis.impala import compiler as impala_compiler
 from ibis.impala.compiler import (
     ImpalaContext,
     ImpalaDialect,
