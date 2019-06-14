@@ -9,5 +9,6 @@ def connect(**kwargs):
     https://spark.apache.org/docs/latest/api/python/_modules/pyspark/context.html#SparkContext
     """
     client = SparkClient(**kwargs)
+    client._session.conf.set('spark.sql.session.timeZone', 'UTC')
 
     return client

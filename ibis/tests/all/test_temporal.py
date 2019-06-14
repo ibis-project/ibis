@@ -20,6 +20,7 @@ from ibis.tests.backends import (
     Pandas,
     Parquet,
     PostgreSQL,
+    Spark,
     SQLite,
 )
 
@@ -56,6 +57,8 @@ def test_timestamp_extract(backend, alltypes, df, attr):
         'Y',
         'M',
         'D',
+        # Spark truncation to week truncates to different days than Pandas
+        # Pandas backend is probably doing this wrong
         param('W', marks=pytest.mark.xpass_backends((Csv, Pandas, Parquet))),
         'h',
         'm',
@@ -127,6 +130,7 @@ def test_date_truncate(backend, alltypes, df, unit):
     ],
 )
 @tu.skipif_unsupported
+@tu.skipif_backend(Spark)
 def test_integer_to_interval_timestamp(
     backend, con, alltypes, df, unit, displacement_type
 ):
@@ -153,6 +157,7 @@ def test_integer_to_interval_timestamp(
     'unit', ['Y', param('Q', marks=pytest.mark.xfail), 'M', 'W', 'D']
 )
 @tu.skipif_unsupported
+@tu.skipif_backend(Spark)
 def test_integer_to_interval_date(backend, con, alltypes, df, unit):
     interval = alltypes.int_col.to_interval(unit=unit)
     array = alltypes.date_string_col.split('/')
@@ -223,6 +228,7 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
                 )
             ),
             id='timestamp-subtract-timestamp',
+            marks=pytest.mark.xfail_backends([Spark])
         ),
         param(
             lambda t, be: t.timestamp_col.date() - ibis.date(date_value),
@@ -246,6 +252,8 @@ def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
     ('ibis_pattern', 'pandas_pattern'), [('%Y%m%d', '%Y%m%d')]
 )
 @tu.skipif_unsupported
+# Spark takes Java SimpleDateFormat instead of strftime
+@tu.skipif_backend(Spark)
 def test_strftime(backend, con, alltypes, df, ibis_pattern, pandas_pattern):
     expr = alltypes.timestamp_col.strftime(ibis_pattern)
     expected = df.timestamp_col.dt.strftime(pandas_pattern)
@@ -271,7 +279,7 @@ unit_factors = {
         param(
             'us',
             marks=pytest.mark.xpass_backends(
-                (BigQuery, Csv, Impala, Pandas, Parquet)
+                (BigQuery, Csv, Impala, Pandas, Parquet, Spark)
             ),
         ),
         param('ns', marks=pytest.mark.xpass_backends((Csv, Pandas, Parquet))),
