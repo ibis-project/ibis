@@ -246,6 +246,12 @@ def _timestamp_from_unix(translator, expr):
     return 'to_timestamp({})'.format(arg)
 
 
+def _string_concat(translator, expr):
+    return 'CONCAT({})'.format(
+        ', '.join(map(translator.translate, expr.op().arg))
+    )
+
+
 def _array_literal_format(translator, expr):
     translated_values = [
         translator.translate(ibis.literal(x))
@@ -346,6 +352,7 @@ _operation_registry.update(
         ops.StrRight: fixed_arity('right', 2),
         ops.StringSplit: fixed_arity('SPLIT', 2),
         ops.RegexSearch: fixed_arity('rlike', 2),
+        ops.StringConcat: _string_concat,
         ops.ArrayConcat: fixed_arity('concat', 2),
         ops.Cast: _cast,
         ops.ExtractYear: unary('year'),
