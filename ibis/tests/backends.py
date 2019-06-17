@@ -1,5 +1,6 @@
 import abc
 import os
+import sys
 from pathlib import Path
 from typing import Any, Callable, Mapping, Optional
 
@@ -315,6 +316,10 @@ class PostgreSQL(Backend, RoundHalfToEven):
         return ibis.postgres.connect(
             host=host, user=user, password=password, database=database
         )
+
+    def geo(self):
+        if sys.version_info >= (3, 6) and 'geo' in self.db.list_tables():
+            return self.db.geo
 
 
 class MapD(Backend):

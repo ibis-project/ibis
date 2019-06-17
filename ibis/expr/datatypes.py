@@ -640,6 +640,46 @@ class GeoSpatial(DataType):
         self.geotype = geotype
         self.srid = srid
 
+    def __str__(self) -> str:
+        geo_op = self.name.lower()
+        if self.geotype is not None:
+            geo_op += ':' + self.geotype
+        if self.srid is not None:
+            geo_op += ';' + str(self.srid)
+        return geo_op
+
+
+class Geometry(GeoSpatial):
+    """Geometry is used to cast from geography types."""
+
+    column = ir.GeoSpatialColumn
+    scalar = ir.GeoSpatialScalar
+
+    __slots__ = ()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.geotype = 'geometry'
+
+    def __str__(self) -> str:
+        return self.name.lower()
+
+
+class Geography(GeoSpatial):
+    """Geography is used to cast from geometry types."""
+
+    column = ir.GeoSpatialColumn
+    scalar = ir.GeoSpatialScalar
+
+    __slots__ = ()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.geotype = 'geography'
+
+    def __str__(self) -> str:
+        return self.name.lower()
+
 
 class Point(GeoSpatial):
     """A point described by two coordinates."""
@@ -1068,6 +1108,10 @@ class TypeParser:
 
         field : [a-zA-Z_][a-zA-Z_0-9]*
 
+        geography: "geography"
+
+        geometry: "geometry"
+
         point : "point"
               | "point" ";" srid
               | "point" ":" geotype
@@ -1203,6 +1247,12 @@ class TypeParser:
             return Struct(names, types)
 
         # geo spatial data type
+        elif self._accept(Tokens.GEOMETRY):
+            return Geometry()
+
+        elif self._accept(Tokens.GEOGRAPHY):
+            return Geography()
+
         elif self._accept(Tokens.POINT):
             geotype = None
             srid = None
@@ -1543,10 +1593,10 @@ def can_cast_variadic(
 
 
 # geo spatial data type
-@castable.register(Array, Point)
-@castable.register(Array, LineString)
-@castable.register(Array, Polygon)
-@castable.register(Array, MultiPolygon)
+# cast between same type, used to cast from/to geometry and geography
+@castable.register(Array, (Point, LineString, Polygon, MultiPolygon))
+@castable.register((Point, LineString, Polygon, MultiPolygon), Geometry)
+@castable.register((Point, LineString, Polygon, MultiPolygon), Geography)
 def can_cast_geospatial(source, target, **kwargs):
     return True
 
