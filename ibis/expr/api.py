@@ -98,6 +98,7 @@ from ibis.expr.types import (  # noqa
 from ibis.expr.window import (
     cumulative_window,
     range_window,
+    rows_with_max_lookback,
     trailing_range_window,
     trailing_window,
     window,
@@ -173,6 +174,7 @@ __all__ = (
     'prevent_rewrite',
     'range_window',
     'row_number',
+    'rows_with_max_lookback',
     'schema',
     'Schema',
     'sequence',

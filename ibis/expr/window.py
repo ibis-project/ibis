@@ -1,5 +1,8 @@
 """Encapsulation of SQL window clauses."""
 
+import functools
+from typing import NamedTuple, Union
+
 import numpy as np
 
 import ibis.common as com
@@ -12,16 +15,14 @@ def _sequence_to_tuple(x):
     return tuple(x) if util.is_iterable(x) else x
 
 
-def _determine_how(preceding):
-    if isinstance(preceding, tuple):
-        start, end = preceding
-        if start is None:
-            offset_type = type(end)
-        else:
-            offset_type = type(start)
-    else:
-        offset_type = type(preceding)
+RowsWithMaxLookback = NamedTuple('RowsWithMaxLookback',
+                                 [('rows', Union[int, np.integer]),
+                                  ('max_lookback', ir.IntervalValue)]
+                                 )
 
+
+def _determine_how(preceding):
+    offset_type = type(_get_preceding_value(preceding))
     if issubclass(offset_type, (int, np.integer)):
         how = 'rows'
     elif issubclass(offset_type, ir.IntervalScalar):
@@ -31,8 +32,41 @@ def _determine_how(preceding):
             'Type {} is not supported for row- or range- based trailing '
             'window operations'.format(offset_type)
         )
-
     return how
+
+
+@functools.singledispatch
+def _get_preceding_value(preceding):
+    raise TypeError(
+        "Type {} is not a valid type for 'preceding' "
+        "parameter".format(type(preceding))
+    )
+
+
+@_get_preceding_value.register(tuple)
+def _get_preceding_value_tuple(preceding):
+    start, end = preceding
+    if start is None:
+        preceding_value = end
+    else:
+        preceding_value = start
+    return preceding_value
+
+
+@_get_preceding_value.register(int)
+@_get_preceding_value.register(np.integer)
+@_get_preceding_value.register(ir.IntervalScalar)
+def _get_preceding_value_simple(preceding):
+    return preceding
+
+
+@_get_preceding_value.register(RowsWithMaxLookback)
+def _get_preceding_value_mlb(preceding):
+    preceding_value = preceding.rows
+    if not isinstance(preceding_value, (int, np.integer)):
+        raise TypeError("'Rows with max look-back' only supports integer "
+                        "row-based indexing.")
+    return preceding_value
 
 
 class Window:
@@ -71,7 +105,13 @@ class Window:
                 x = ops.SortKey(x).to_expr()
             self._order_by.append(x)
 
-        self.preceding = _sequence_to_tuple(preceding)
+        if isinstance(preceding, RowsWithMaxLookback):
+            self.preceding = preceding.rows
+            self.max_lookback = preceding.max_lookback
+        else:
+            self.preceding = _sequence_to_tuple(preceding)
+            self.max_lookback = None
+
         self.following = _sequence_to_tuple(following)
         self.how = how
 
@@ -163,6 +203,12 @@ class Window:
                 "'how' must be 'rows' or 'range', got {}".format(self.how)
             )
 
+        if self.max_lookback is not None:
+            if not isinstance(self.max_lookback, ir.IntervalValue):
+                raise com.IbisInputError(
+                    "'max_lookback' must be specified as an interval"
+                )
+
     def bind(self, table):
         # Internal API, ensure that any unresolved expr references (as strings,
         # say) are bound to the table being windowed
@@ -238,6 +284,11 @@ class Window:
         ) and ops.all_equal(self.following, other.following, cache=cache)
         cache[self, other] = equal
         return equal
+
+
+def rows_with_max_lookback(rows, max_lookback):
+    """Create a bound preceding value for use with trailing window functions"""
+    return RowsWithMaxLookback(rows, max_lookback)
 
 
 def window(preceding=None, following=None, group_by=None, order_by=None):
