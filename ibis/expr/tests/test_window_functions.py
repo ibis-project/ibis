@@ -200,6 +200,11 @@ def test_determine_how():
     how = _determine_how(rows_with_max_lookback(3, ibis.interval(months=3)))
     assert how == 'rows'
 
+    how = _determine_how(
+        rows_with_max_lookback(np.int64(7), ibis.interval(months=3))
+    )
+    assert how == 'rows'
+
     with pytest.raises(TypeError):
         _determine_how(8.9)
 

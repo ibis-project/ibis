@@ -1,7 +1,7 @@
 """Encapsulation of SQL window clauses."""
 
 import functools
-from collections import namedtuple
+from typing import NamedTuple, Union
 
 import numpy as np
 
@@ -15,7 +15,10 @@ def _sequence_to_tuple(x):
     return tuple(x) if util.is_iterable(x) else x
 
 
-RowsWithMaxLookback = namedtuple('RowsWithMaxLookback', 'rows max_lookback')
+RowsWithMaxLookback = NamedTuple('RowsWithMaxLookback',
+                                 [('rows', Union[int, np.integer]),
+                                  ('max_lookback', ir.IntervalValue)]
+                                 )
 
 
 def _determine_how(preceding):
@@ -60,7 +63,7 @@ def _get_preceding_value_simple(preceding):
 @_get_preceding_value.register(RowsWithMaxLookback)
 def _get_preceding_value_mlb(preceding):
     preceding_value = preceding.rows
-    if not isinstance(preceding_value, int):
+    if not isinstance(preceding_value, (int, np.integer)):
         raise TypeError("'Rows with max look-back' only supports integer "
                         "row-based indexing.")
     return preceding_value
@@ -104,10 +107,10 @@ class Window:
 
         if isinstance(preceding, RowsWithMaxLookback):
             self.preceding = preceding.rows
-            self.max_look_back = preceding.max_lookback
+            self.max_lookback = preceding.max_lookback
         else:
             self.preceding = _sequence_to_tuple(preceding)
-            self.max_look_back = None
+            self.max_lookback = None
 
         self.following = _sequence_to_tuple(following)
         self.how = how
@@ -200,10 +203,10 @@ class Window:
                 "'how' must be 'rows' or 'range', got {}".format(self.how)
             )
 
-        if self.max_look_back is not None:
-            if not isinstance(self.max_look_back, ir.IntervalValue):
+        if self.max_lookback is not None:
+            if not isinstance(self.max_lookback, ir.IntervalValue):
                 raise com.IbisInputError(
-                    "'max_look_back' must be specified as an interval"
+                    "'max_lookback' must be specified as an interval"
                 )
 
     def bind(self, table):
@@ -284,6 +287,7 @@ class Window:
 
 
 def rows_with_max_lookback(rows, max_lookback):
+    """Create a bound preceding value for use with trailing window functions"""
     return RowsWithMaxLookback(rows, max_lookback)
 
 
