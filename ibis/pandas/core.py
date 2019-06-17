@@ -295,7 +295,7 @@ def execute_bottom_up(
     ]
 
     # if we're unable to find data then raise an exception
-    if not scopes:
+    if not scopes and computable_args:
         raise com.UnboundExpressionError(
             'Unable to find data for expression:\n{}'.format(repr(expr))
         )

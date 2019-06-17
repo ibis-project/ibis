@@ -4,7 +4,6 @@ import pandas.util.testing as tm
 import pytest
 
 import ibis
-import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.pandas.udf import nullable, udf
@@ -90,12 +89,6 @@ def test_udf(t, df):
     tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.xfail(
-    raises=com.UnboundExpressionError,
-    reason=(
-        'Need to differentiate between zero argument functions and empty scope'
-    ),
-)
 def test_zero_argument_udf(con, t, df):
     expr = t.projection([a_single_number().name('foo')])
     result = ibis.pandas.execute(expr)
