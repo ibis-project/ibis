@@ -1,6 +1,7 @@
 import contextlib
 import functools
 import operator
+import sys
 
 import pandas as pd
 import sqlalchemy as sa
@@ -24,6 +25,19 @@ import ibis.sql.transforms as transforms
 import ibis.util as util
 from ibis.client import Database, Query, SQLClient
 from ibis.sql.compiler import Dialect, Select, TableSetFormatter, Union
+
+# Don't support geospatial operations on Python 3.5
+geospatial_supported = False
+if sys.version_info >= (3, 6):
+    try:
+        import geoalchemy2 as ga
+        import geoalchemy2.shape as shape
+        import geopandas
+
+        geospatial_supported = True
+    except ImportError:
+        pass
+
 
 # TODO(cleanup)
 _ibis_type_to_sqla = {
@@ -64,6 +78,15 @@ def _to_sqla_type(itype, type_map=None):
                 )
             )
         return sa.ARRAY(_to_sqla_type(ibis_type, type_map=type_map))
+    elif geospatial_supported and isinstance(itype, dt.GeoSpatial):
+        if itype.geotype == 'geometry':
+            return ga.Geometry
+        elif itype.geotype == 'geography':
+            return ga.Geography
+        else:
+            raise TypeError(
+                'Unexpected geospatial geotype {}'.format(itype.geotype)
+            )
     else:
         return type_map[type(itype)]
 
@@ -112,6 +135,23 @@ def sa_float(_, satype, nullable=True):
 @dt.dtype.register(PostgreSQLDialect, sa.dialects.postgresql.DOUBLE_PRECISION)
 def sa_double(_, satype, nullable=True):
     return dt.Double(nullable=nullable)
+
+
+if geospatial_supported:
+
+    @dt.dtype.register(SQLAlchemyDialect, ga.Geometry)
+    def ga_geometry(_, gatype, nullable=True):
+        t = gatype.geometry_type
+        if t == 'POINT':
+            return dt.Point(nullable=nullable)
+        if t == 'LINESTRING':
+            return dt.LineString(nullable=nullable)
+        if t == 'POLYGON':
+            return dt.Polygon(nullable=nullable)
+        if t == 'MULTIPOLYGON':
+            return dt.MultiPolygon(nullable=nullable)
+        else:
+            raise ValueError("Unrecognized geometry type: {}".format(t))
 
 
 POSTGRES_FIELD_TO_IBIS_UNIT = {
@@ -694,6 +734,56 @@ _window_functions = {
     ops.CumulativeMean: unary(sa.func.avg),
 }
 
+if geospatial_supported:
+    _geospatial_functions = {
+        ops.GeoArea: unary(sa.func.ST_Area),
+        ops.GeoAsBinary: unary(sa.func.ST_AsBinary),
+        ops.GeoAsEWKB: unary(sa.func.ST_AsEWKB),
+        ops.GeoAsEWKT: unary(sa.func.ST_AsEWKT),
+        ops.GeoAsText: unary(sa.func.ST_AsText),
+        ops.GeoAzimuth: fixed_arity(sa.func.ST_Azimuth, 2),
+        ops.GeoBuffer: fixed_arity(sa.func.ST_Buffer, 2),
+        ops.GeoCentroid: unary(sa.func.ST_Centroid),
+        ops.GeoContains: fixed_arity(sa.func.ST_Contains, 2),
+        ops.GeoContainsProperly: fixed_arity(sa.func.ST_Contains, 2),
+        ops.GeoCovers: fixed_arity(sa.func.ST_Covers, 2),
+        ops.GeoCoveredBy: fixed_arity(sa.func.ST_CoveredBy, 2),
+        ops.GeoCrosses: fixed_arity(sa.func.ST_Crosses, 2),
+        ops.GeoDFullyWithin: fixed_arity(sa.func.ST_DFullyWithin, 3),
+        ops.GeoDifference: fixed_arity(sa.func.ST_Difference, 2),
+        ops.GeoDisjoint: fixed_arity(sa.func.ST_Disjoint, 2),
+        ops.GeoDistance: fixed_arity(sa.func.ST_Distance, 2),
+        ops.GeoDWithin: fixed_arity(sa.func.ST_DWithin, 3),
+        ops.GeoEnvelope: unary(sa.func.ST_Envelope),
+        ops.GeoEquals: fixed_arity(sa.func.ST_Equals, 2),
+        ops.GeoIntersection: fixed_arity(sa.func.ST_Intersection, 2),
+        ops.GeoIntersects: fixed_arity(sa.func.ST_Intersects, 2),
+        ops.GeoLength: unary(sa.func.ST_Length),
+        ops.GeoNPoints: unary(sa.func.ST_NPoints),
+        ops.GeoOverlaps: fixed_arity(sa.func.ST_Overlaps, 2),
+        ops.GeoPerimeter: unary(sa.func.ST_Perimeter),
+        ops.GeoSimplify: fixed_arity(sa.func.ST_Simplify, 3),
+        ops.GeoSRID: unary(sa.func.ST_SRID),
+        ops.GeoTouches: fixed_arity(sa.func.ST_Touches, 2),
+        ops.GeoTransform: fixed_arity(sa.func.ST_Transform, 2),
+        ops.GeoWithin: fixed_arity(sa.func.ST_Within, 2),
+        ops.GeoX: unary(sa.func.ST_X),
+        ops.GeoY: unary(sa.func.ST_Y),
+        # Missing casts:
+        #   ST_As_GML
+        #   ST_As_GeoJSON
+        #   ST_As_KML
+        #   ST_As_Raster
+        #   ST_As_SVG
+        #   ST_As_TWKB
+        # Missing Geometric ops:
+        #   ST_Distance_Sphere
+        #   ST_Dump
+        #   ST_DumpPoints
+    }
+
+    _operation_registry.update(_geospatial_functions)
+
 
 for _k, _v in _binary_ops.items():
     _operation_registry[_k] = fixed_arity(_v, 2)
@@ -893,7 +983,20 @@ class AlchemyQuery(Query):
             columns=cursor.proxy.keys(),
             coerce_float=True,
         )
-        return self.schema().apply_to(df)
+        df = self.schema().apply_to(df)
+        # If the dataframe has contents and we support geospatial operations,
+        # convert the dataframe into a GeoDataFrame with shapely geometries.
+        if len(df) and geospatial_supported:
+            geom_col = None
+            for name, dtype in self.schema().items():
+                if isinstance(dtype, dt.GeoSpatial):
+                    geom_col = geom_col or name
+                    df[name] = df.apply(
+                        lambda x: shape.to_shape(x[name]), axis=1
+                    )
+            if geom_col:
+                df = geopandas.GeoDataFrame(df, geometry=geom_col)
+        return df
 
 
 class AlchemyDialect(Dialect):
@@ -1021,7 +1124,8 @@ class AlchemyClient(SQLClient):
         tables : list of strings
         """
         inspector = self.inspector
-        names = inspector.get_table_names(schema=schema)
+        # inspector returns a mutable version of its names, so make a copy.
+        names = inspector.get_table_names(schema=schema).copy()
         names.extend(inspector.get_view_names(schema=schema))
         if like is not None:
             names = [x for x in names if like in x]

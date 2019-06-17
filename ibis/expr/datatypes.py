@@ -585,6 +585,9 @@ class Map(Variadic):
 class GeoSpatial(DataType):
     __slots__ = 'geotype', 'srid'
 
+    column = ir.GeoSpatialColumn
+    scalar = ir.GeoSpatialScalar
+
     def __init__(
         self, geotype: str = None, srid: int = None, nullable: bool = True
     ):
@@ -678,6 +681,8 @@ timestamp = Timestamp()
 interval = Interval()
 category = Category()
 # geo spatial data type
+geometry = GeoSpatial()
+geography = GeoSpatial()
 point = Point()
 linestring = LineString()
 polygon = Polygon()

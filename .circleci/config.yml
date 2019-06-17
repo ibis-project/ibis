@@ -63,7 +63,7 @@ test: &test
         name: Execute Pytest
         command: |
           docker-compose run -e PYTHONHASHSEED=$PYTHONHASHSEED -e CIRCLECI=$CIRCLECI ibis \
-            pytest ibis -m "not udf" \
+            pytest ibis -m "${PYTEST_MARK_EXPRESSION}" \
                         -ra \
                         --numprocesses auto \
                         --doctest-modules \
@@ -213,18 +213,21 @@ jobs:
     environment:
       - PYTHONHASHSEED: 0
       - PYTHON_VERSION: 3.5
+      - PYTEST_MARK_EXPRESSION: "not udf and not postgis"
 
   python36_test:
     <<: *test
     environment:
       - PYTHONHASHSEED: "random"
       - PYTHON_VERSION: 3.6
+      - PYTEST_MARK_EXPRESSION: "not udf"
 
   python37_test:
     <<: *test
     environment:
       - PYTHONHASHSEED: "random"
       - PYTHON_VERSION: 3.7
+      - PYTEST_MARK_EXPRESSION: "not udf"
 
   python36_conda_build:
     <<: *build
