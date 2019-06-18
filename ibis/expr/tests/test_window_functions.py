@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import numpy as np
+import pandas as pd
 import pytest
 
 import ibis
@@ -198,6 +199,9 @@ def test_determine_how():
     assert how == 'range'
 
     how = _determine_how(rows_with_max_lookback(3, ibis.interval(months=3)))
+    assert how == 'rows'
+
+    how = _determine_how(rows_with_max_lookback(3, pd.Timedelta(days=3)))
     assert how == 'rows'
 
     how = _determine_how(
