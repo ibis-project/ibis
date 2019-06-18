@@ -208,7 +208,8 @@ class Window:
             if not isinstance(
                     self.max_lookback, (ir.IntervalValue, pd.Timedelta)):
                 raise com.IbisInputError(
-                    "'max_lookback' must be specified as an interval"
+                    "'max_lookback' must be specified as an interval "
+                    "or pandas.Timedelta object"
                 )
 
     def bind(self, table):
