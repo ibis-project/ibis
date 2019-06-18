@@ -29,7 +29,7 @@ dependencies:
   - pymapd>=0.12.0
   - pymysql
   - pytables>=3.0.0
-  - pytest
+  - pytest>=4.5
   - pytest-cov
   - pytest-xdist
   - python=3.6

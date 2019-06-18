@@ -46,6 +46,6 @@ dependencies:
   - pip:
     - seed-isort-config
     - pydata-google-auth
-    - pytest  # conda-forge only has <=3.8.1 for python 3.5
+    - pytest>=4.5  # conda-forge only has <=3.8.1 for python 3.5
     - pytest-cov
     - pytest-xdist
