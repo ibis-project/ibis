@@ -88,6 +88,7 @@ class Window:
         order_by=None,
         preceding=None,
         following=None,
+        max_lookback=None,
         how='rows',
     ):
         if group_by is None:
@@ -111,7 +112,7 @@ class Window:
             self.max_lookback = preceding.max_lookback
         else:
             self.preceding = _sequence_to_tuple(preceding)
-            self.max_lookback = None
+            self.max_lookback = max_lookback
 
         self.following = _sequence_to_tuple(following)
         self.how = how
@@ -227,9 +228,11 @@ class Window:
                     "Expecting '{}' Window, got '{}'"
                 ).format(self.how.upper(), window.how.upper())
             )
+        mlb = self.max_lookback
         kwds = dict(
             preceding=self.preceding or window.preceding,
             following=self.following or window.following,
+            max_lookback=mlb if mlb is not None else window.max_lookback,
             group_by=self._group_by + window._group_by,
             order_by=self._order_by + window._order_by,
         )
@@ -245,6 +248,7 @@ class Window:
             order_by=kwds.get('order_by', self._order_by),
             preceding=kwds.get('preceding', self.preceding),
             following=kwds.get('following', self.following),
+            max_lookback=kwds.get('max_lookback', self.max_lookback),
             how=kwds.get('how', self.how),
         )
         return Window(**new_kwds)

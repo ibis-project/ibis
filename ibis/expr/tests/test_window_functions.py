@@ -63,6 +63,18 @@ def test_combine_windows(alltypes):
     with pytest.raises(ibis.common.IbisInputError):
         w1.combine(w6)
 
+    w7 = ibis.trailing_window(
+        rows_with_max_lookback(3, ibis.interval(days=5))
+    )
+    w8 = ibis.trailing_window(
+        rows_with_max_lookback(5, ibis.interval(days=7))
+    )
+    w9 = w7.combine(w8)
+    expected = ibis.trailing_window(
+        rows_with_max_lookback(3, ibis.interval(days=5))
+    )
+    assert_equal(w9, expected)
+
 
 def test_over_auto_bind(alltypes):
     # GH #542
