@@ -90,6 +90,9 @@ def test_read(hdf, data):
     expected = data['close']
     tm.assert_frame_equal(result, expected)
 
+    result = closes.execute()
+    tm.assert_frame_equal(result, expected)
+
 
 def test_insert(transformed, tmpdir):
 

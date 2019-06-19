@@ -4,7 +4,6 @@ import pytest
 from pandas.util import testing as tm
 
 import ibis
-
 from ibis.file.client import FileDatabase
 
 pa = pytest.importorskip('pyarrow')  # isort:skip
@@ -85,6 +84,9 @@ def test_read(parquet, data):
 
     result = closes.execute()
     expected = data['close']
+    tm.assert_frame_equal(result, expected)
+
+    result = closes.execute()
     tm.assert_frame_equal(result, expected)
 
 
