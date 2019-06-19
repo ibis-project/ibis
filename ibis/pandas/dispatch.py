@@ -2,7 +2,6 @@ from __future__ import absolute_import
 
 from functools import partial
 
-import pandas as pd
 import toolz
 from multipledispatch import Dispatcher
 
@@ -34,8 +33,7 @@ def execute_node_without_scope(node, **kwargs):
 pre_execute = Dispatcher(
     'pre_execute',
     doc="""\
-Given a node and zero or more clients, compute a partial scope prior to
-execution.
+Given a node, compute a (possibly partial) scope prior to standard execution.
 
 Notes
 -----
@@ -58,25 +56,6 @@ def pre_execute_default(node, *clients, **kwargs):
 def pre_execute_multiple_clients(node, *clients, scope=None, **kwargs):
     return toolz.merge(
         scope, *map(partial(pre_execute, node, scope=scope, **kwargs), clients)
-    )
-
-
-execute_first = Dispatcher(
-    "execute_first", doc="Execute code before any nodes have been evaluated."
-)
-
-
-@execute_first.register(ops.Node)
-@execute_first.register(ops.Node, ibis.client.Client)
-def execute_first_default(node, *clients, **kwargs):
-    return {}
-
-
-@execute_first.register(ops.Node, [ibis.client.Client])
-def execute_first_multiple_clients(node, *clients, scope=None, **kwargs):
-    return toolz.merge(
-        scope,
-        *map(partial(execute_first, node, scope=scope, **kwargs), clients),
     )
 
 
@@ -117,31 +96,6 @@ data : object
 @post_execute.register(ops.Node, object)
 def post_execute_default(op, data, **kwargs):
     return data
-
-
-execute_last = Dispatcher(
-    "execute_last", doc="Execute code after all nodes have been evaluated."
-)
-
-
-@execute_last.register(ops.Node, object)
-def execute_last_default(_, result, **kwargs):
-    """Return the input result."""
-    return result
-
-
-@execute_last.register(ops.Node, pd.DataFrame)
-def execute_last_dataframe(op, result, **kwargs):
-    """Reset the `result` :class:`~pandas.DataFrame`."""
-    schema = op.to_expr().schema()
-    df = result.reset_index()
-    return df.loc[:, schema.names]
-
-
-@execute_last.register(ops.Node, pd.Series)
-def execute_last_series(_, result, **kwargs):
-    """Reset the `result` :class:`~pandas.Series`."""
-    return result.reset_index(drop=True)
 
 
 execute = Dispatcher("execute")
