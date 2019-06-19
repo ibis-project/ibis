@@ -76,6 +76,43 @@ def test_combine_windows(alltypes):
     assert_equal(w9, expected)
 
 
+def test_replace_window(alltypes):
+    t = alltypes
+    w1 = ibis.window(
+        preceding=5,
+        following=1,
+        group_by=t.a,
+        order_by=t.b
+    )
+    w2 = w1.group_by(t.c)
+    expected = ibis.window(
+        preceding=5,
+        following=1,
+        group_by=[t.a, t.c],
+        order_by=t.b
+    )
+    assert_equal(w2, expected)
+
+    w3 = w1.order_by(t.d)
+    expected = ibis.window(
+        preceding=5,
+        following=1,
+        group_by=t.a,
+        order_by=[t.b, t.d]
+    )
+    assert_equal(w3, expected)
+
+    w4 = ibis.trailing_window(
+        rows_with_max_lookback(3, ibis.interval(months=3))
+    )
+    w5 = w4.group_by(t.a)
+    expected = ibis.trailing_window(
+        rows_with_max_lookback(3, ibis.interval(months=3)),
+        group_by=t.a
+    )
+    assert_equal(w5, expected)
+
+
 def test_over_auto_bind(alltypes):
     # GH #542
     t = alltypes
@@ -186,9 +223,64 @@ def test_preceding_following_validate(alltypes):
             case()
 
 
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
 def test_window_equals(alltypes):
-    assert False
+    t = alltypes
+    w1 = ibis.window(
+        preceding=1,
+        following=2,
+        group_by=t.a,
+        order_by=t.b
+    )
+    w2 = ibis.window(
+        preceding=1,
+        following=2,
+        group_by=t.a,
+        order_by=t.b
+    )
+    assert w1.equals(w2)
+
+    w3 = ibis.window(
+        preceding=1,
+        following=2,
+        group_by=t.a,
+        order_by=t.c
+    )
+    assert not w1.equals(w3)
+
+    w4 = ibis.range_window(
+        preceding=ibis.interval(hours=3),
+        group_by=t.d
+    )
+    w5 = ibis.range_window(
+        preceding=ibis.interval(hours=3),
+        group_by=t.d
+    )
+    assert w4.equals(w5)
+
+    w6 = ibis.range_window(
+        preceding=ibis.interval(hours=1),
+        group_by=t.d
+    )
+    assert not w4.equals(w6)
+
+    w7 = ibis.trailing_window(
+        rows_with_max_lookback(3, ibis.interval(days=5)),
+        group_by=t.a,
+        order_by=t.b
+    )
+    w8 = ibis.trailing_window(
+        rows_with_max_lookback(3, ibis.interval(days=5)),
+        group_by=t.a,
+        order_by=t.b
+    )
+    assert w7.equals(w8)
+
+    w9 = ibis.trailing_window(
+        rows_with_max_lookback(3, ibis.interval(months=5)),
+        group_by=t.a,
+        order_by=t.b
+    )
+    assert not w7.equals(w9)
 
 
 def test_determine_how():
