@@ -288,7 +288,11 @@ class Window:
 
         equal = ops.all_equal(
             self.preceding, other.preceding, cache=cache
-        ) and ops.all_equal(self.following, other.following, cache=cache)
+        ) and ops.all_equal(
+            self.following, other.following, cache=cache
+        ) and ops.all_equal(
+            self.max_lookback, other.max_lookback, cache=cache
+        )
         cache[self, other] = equal
         return equal
 
