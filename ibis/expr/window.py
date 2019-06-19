@@ -4,6 +4,7 @@ import functools
 from typing import NamedTuple, Union
 
 import numpy as np
+import pandas as pd
 
 import ibis.common as com
 import ibis.expr.operations as ops
@@ -204,9 +205,11 @@ class Window:
             )
 
         if self.max_lookback is not None:
-            if not isinstance(self.max_lookback, ir.IntervalValue):
+            if not isinstance(
+                    self.max_lookback, (ir.IntervalValue, pd.Timedelta)):
                 raise com.IbisInputError(
-                    "'max_lookback' must be specified as an interval"
+                    "'max_lookback' must be specified as an interval "
+                    "or pandas.Timedelta object"
                 )
 
     def bind(self, table):
