@@ -17,6 +17,7 @@ import pandas as pd
 import pytest
 
 import ibis
+import ibis.common as com
 from ibis.expr.window import _determine_how, rows_with_max_lookback
 from ibis.tests.util import assert_equal
 
@@ -221,6 +222,25 @@ def test_preceding_following_validate(alltypes):
     for i, case in enumerate(error_cases):
         with pytest.raises(Exception):
             case()
+
+
+def test_max_rows_with_lookback_validate(alltypes):
+    t = alltypes
+    mlb = rows_with_max_lookback(3, ibis.interval(days=5))
+    window = ibis.trailing_window(mlb, order_by=t.i)
+    t.f.lag().over(window)
+
+    window = ibis.trailing_window(mlb)
+    with pytest.raises(com.IbisInputError):
+        t.f.lag().over(window)
+
+    window = ibis.trailing_window(mlb, order_by=t.a)
+    with pytest.raises(com.IbisInputError):
+        t.f.lag().over(window)
+
+    window = ibis.trailing_window(mlb, order_by=[t.i, t.a])
+    with pytest.raises(com.IbisInputError):
+        t.f.lag().over(window)
 
 
 def test_window_equals(alltypes):

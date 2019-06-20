@@ -295,25 +295,6 @@ def test_batting_rolling(batting, batting_df, sort_kind):
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
-def test_batting_rolling_with_mlb(batting, batting_df, sort_kind):
-    rows_with_mlb = rows_with_max_lookback(5, ibis.interval(days=10))
-    expr = batting.mutate(
-        more_values=lambda t: t.G.sum().over(
-            ibis.trailing_window(rows_with_mlb, order_by=t.yearID)
-        )
-    )
-    with pytest.raises(NotImplementedError):
-        expr.execute()
-
-    rows_with_mlb = rows_with_max_lookback(5, 10)
-    with pytest.raises(com.IbisInputError):
-        batting.mutate(
-            more_values=lambda t: t.G.sum().over(
-                ibis.trailing_window(rows_with_mlb, order_by=t.yearID)
-            )
-        )
-
-
 def test_batting_rolling_partitioned(batting, batting_df, sort_kind):
     t = batting
     group_by = 'playerID'
@@ -470,6 +451,31 @@ def test_window_with_preceding_expr():
     expr = t.value.mean().over(window)
     result = expr.execute()
     tm.assert_series_equal(result, expected)
+
+
+def test_window_with_mlb():
+    index = pd.date_range('20170501', '20170507')
+    data = np.random.randn(len(index), 3)
+    df = (pd.DataFrame(data, columns=list('abc'), index=index)
+          .rename_axis('time').reset_index(drop=False))
+    client = ibis.pandas.connect({'df': df})
+    t = client.table('df')
+    rows_with_mlb = rows_with_max_lookback(5, ibis.interval(days=10))
+    expr = t.mutate(
+        sum=lambda df: df.a.sum().over(
+            ibis.trailing_window(rows_with_mlb, order_by='time')
+        )
+    )
+    with pytest.raises(NotImplementedError):
+        expr.execute()
+
+    rows_with_mlb = rows_with_max_lookback(5, 10)
+    with pytest.raises(com.IbisInputError):
+        t.mutate(
+            sum=lambda df: df.a.sum().over(
+                ibis.trailing_window(rows_with_mlb, order_by='time')
+            )
+        )
 
 
 def test_window_has_pre_execute_scope():
