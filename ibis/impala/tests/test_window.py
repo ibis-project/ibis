@@ -124,11 +124,11 @@ FROM ibis_testing.`alltypes`"""
 
 
 def test_window_rows_with_max_lookback(con):
+    t = con.table('alltypes')
+    mlb = rows_with_max_lookback(3, ibis.interval(days=3))
+    w = ibis.trailing_window(mlb)
+    expr = t.a.sum().over(w)
     with pytest.raises(NotImplementedError):
-        t = con.table('alltypes')
-        mlb = rows_with_max_lookback(3, ibis.interval(days=3))
-        w = ibis.trailing_window(mlb)
-        expr = t.a.sum().over(w)
         to_sql(expr)
 
 

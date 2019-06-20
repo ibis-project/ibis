@@ -566,7 +566,7 @@ def _window(t, expr):
 
     if window.max_lookback is not None:
         raise NotImplementedError('Rows with max lookback is not implemented '
-                                  'for sqlalchemy backends.')
+                                  'for SQLAlchemy-based backends.')
 
     # Some analytic functions need to have the expression of interest in
     # the ORDER BY part of the window clause

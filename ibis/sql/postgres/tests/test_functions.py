@@ -888,12 +888,12 @@ def test_rolling_window(alltypes, func, df):
 
 
 def test_rolling_window_with_mlb(alltypes):
+    t = alltypes
+    window = ibis.trailing_window(
+        rows_with_max_lookback(3, ibis.interval(days=5))
+    )
+    expr = t['double_col'].sum().over(window)
     with pytest.raises(NotImplementedError):
-        t = alltypes
-        window = ibis.trailing_window(
-            rows_with_max_lookback(3, ibis.interval(days=5))
-        )
-        expr = t['double_col'].sum().over(window)
         expr.execute()
 
 

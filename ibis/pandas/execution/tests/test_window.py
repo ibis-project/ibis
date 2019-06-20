@@ -296,17 +296,17 @@ def test_batting_rolling(batting, batting_df, sort_kind):
 
 
 def test_batting_rolling_with_mlb(batting, batting_df, sort_kind):
-    with pytest.raises(NotImplementedError):
-        rows_with_mlb = rows_with_max_lookback(5, ibis.interval(days=10))
-        expr = batting.mutate(
-            more_values=lambda t: t.G.sum().over(
-                ibis.trailing_window(rows_with_mlb, order_by=t.yearID)
-            )
+    rows_with_mlb = rows_with_max_lookback(5, ibis.interval(days=10))
+    expr = batting.mutate(
+        more_values=lambda t: t.G.sum().over(
+            ibis.trailing_window(rows_with_mlb, order_by=t.yearID)
         )
+    )
+    with pytest.raises(NotImplementedError):
         expr.execute()
 
+    rows_with_mlb = rows_with_max_lookback(5, 10)
     with pytest.raises(com.IbisInputError):
-        rows_with_mlb = rows_with_max_lookback(5, 10)
         batting.mutate(
             more_values=lambda t: t.G.sum().over(
                 ibis.trailing_window(rows_with_mlb, order_by=t.yearID)
