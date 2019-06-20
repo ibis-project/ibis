@@ -15,8 +15,6 @@ import sqlalchemy as sa
 from plumbum import local
 from toolz import dissoc
 
-import ibis
-
 SCRIPT_DIR = Path(__file__).parent.absolute()
 DATA_DIR_NAME = 'ibis-testing-data'
 DATA_DIR = Path(
@@ -26,7 +24,30 @@ DATA_DIR = Path(
 TEST_TABLES = ['functional_alltypes', 'diamonds', 'batting', 'awards_players']
 
 
-logger = ibis.util.get_logger('datamgr')
+def get_logger(name, level=None, format=None, propagate=False):
+    logging.basicConfig()
+    handler = logging.StreamHandler()
+
+    if format is None:
+        format = (
+            '%(relativeCreated)6d '
+            '%(name)-20s '
+            '%(levelname)-8s '
+            '%(threadName)-25s '
+            '%(message)s'
+        )
+    handler.setFormatter(logging.Formatter(fmt=format))
+    logger = logging.getLogger(name)
+    logger.propagate = propagate
+    logger.setLevel(
+        level
+        or getattr(logging, os.environ.get('LOGLEVEL', 'WARNING').upper())
+    )
+    logger.addHandler(handler)
+    return logger
+
+
+logger = get_logger(Path(__file__).with_suffix('').name)
 
 
 def recreate_database(driver, params, **kwargs):

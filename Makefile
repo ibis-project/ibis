@@ -65,24 +65,24 @@ testfast:
 	PYTHONHASHSEED=${PYTHONHASHSEED} $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not (udf or impala or hdfs or bigquery)' -k 'not test_import_time' \
 	    --doctest-modules --doctest-ignore-import-errors ${PYTEST_OPTIONS}
 
-testlocal:
-	PYTHONHASHSEED=${PYTHONHASHSEED} pytest -n auto -m 'not (udf or impala or hdfs or bigquery or mysql or mapd or postgresql or clickhouse)' -k 'not test_import_time' \
-	    ${PYTEST_OPTIONS}
+fastopt:
+	@echo -m 'not (backend or bigquery or clickhouse or hdfs or impala or kudu or mapd or mysql or postgis or postgresql or superuser or udf)'
 
 docclean:
 	$(DOCKER_RUN) ibis-docs rm -rf /tmp/docs.ibis-project.org
 
 builddoc:
 # build the ibis-docs image
-	$(DOCKER) build ibis-docs
+	$(DOCKER_RUN) build ibis ibis-docs
 
 doc: builddoc docclean
 	$(DOCKER_RUN) ibis-docs ping -c 1 impala
 	$(DOCKER_RUN) ibis-docs git clone --branch gh-pages https://github.com/ibis-project/docs.ibis-project.org /tmp/docs.ibis-project.org --depth 1
-	$(DOCKER_RUN) ibis-docs find /tmp/docs.ibis-project.org -maxdepth 1 ! -wholename /tmp/docs.ibis-project.org \
+	$(DOCKER_RUN) ibis-docs find /tmp/docs.ibis-project.org \
+	    -maxdepth 1 \
+	    ! -wholename /tmp/docs.ibis-project.org \
 	    ! -name '*.git' \
-	    ! -name '.' \
-	    ! -name 'CNAME' \
+	    ! -name CNAME \
 	    ! -name '*.nojekyll' \
 	    -exec rm -rf {} \;
-	$(DOCKER_RUN) ibis-docs sphinx-build -b html docs/source /tmp/docs.ibis-project.org -W -T
+	$(DOCKER_RUN) ibis-docs sphinx-build -b html docs/source /tmp/docs.ibis-project.org -W -T -j auto

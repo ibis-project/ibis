@@ -108,11 +108,7 @@ def pytest_pyfunc_call(pyfuncitem):
         assert isinstance(backend, Backend), "backend has type {!r}".format(
             type(backend).__name__
         )
-        pytest.xfail(
-            reason='{}: {}'.format(
-                type(backend).__name__, e
-            )
-        )
+        pytest.xfail(reason='{}: {}'.format(type(backend).__name__, e))
 
 
 pytestmark = pytest.mark.backend
@@ -188,3 +184,4 @@ def geo_df(geo):
     # Currently geo is implemented just for MapD
     if geo is not None:
         return geo.execute(limit=None)
+    return None
