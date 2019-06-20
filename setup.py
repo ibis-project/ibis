@@ -62,6 +62,7 @@ develop_requires = all_requires + [
     'isort',
     'mypy',
     'pre-commit',
+    'pygit2',
     'pytest>=4.5',
 ]
 
