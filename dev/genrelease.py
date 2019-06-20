@@ -34,6 +34,8 @@ KEYWORD_MAP = {
     'supp': 'support',
     'test': 'support',
     'tst': 'support',
+    'rls': 'support',
+    'release': 'support',
 }
 
 
