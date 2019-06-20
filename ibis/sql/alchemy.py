@@ -564,6 +564,10 @@ def _window(t, expr):
         arg = _cumulative_to_window(t, arg, window)
         return t.translate(arg)
 
+    if window.max_lookback is not None:
+        raise NotImplementedError('Rows with max lookback is not implemented '
+                                  'for SQLAlchemy-based backends.')
+
     # Some analytic functions need to have the expression of interest in
     # the ORDER BY part of the window clause
     if isinstance(window_op, _require_order_by) and not window._order_by:

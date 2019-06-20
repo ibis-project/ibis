@@ -334,6 +334,10 @@ def _window(translator, expr):
 def _format_window(translator, op, window):
     components = []
 
+    if window.max_lookback is not None:
+        raise NotImplementedError('Rows with max lookback is not implemented '
+                                  'for Impala-based backends.')
+
     if len(window._group_by) > 0:
         partition_args = [translator.translate(x) for x in window._group_by]
         components.append('PARTITION BY {}'.format(', '.join(partition_args)))
