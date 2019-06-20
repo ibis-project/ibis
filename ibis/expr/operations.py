@@ -1026,7 +1026,7 @@ class WindowOp(ValueOp):
             window = window.bind(table)
 
         if window.max_lookback is not None:
-            error_msg = ("'max lookback windows must be ordered "
+            error_msg = ("'max lookback' windows must be ordered "
                          "by a timestamp column")
             if len(window._order_by) != 1:
                 raise com.IbisInputError(error_msg)
