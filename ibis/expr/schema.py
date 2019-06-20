@@ -36,7 +36,7 @@ class Schema:
             raise com.IntegrityError('Duplicate column names')
 
     def __repr__(self):
-        space = 2 + max(map(len, self.names))
+        space = 2 + max(map(len, self.names), default=0)
         return "ibis.Schema {{{}\n}}".format(
             util.indent(
                 ''.join(
