@@ -456,8 +456,8 @@ def test_window_with_preceding_expr():
 def test_window_with_mlb():
     index = pd.date_range('20170501', '20170507')
     data = np.random.randn(len(index), 3)
-    df = pd.DataFrame(data, columns=list('abc'), index=index)\
-        .rename_axis('time').reset_index(drop=False)
+    df = (pd.DataFrame(data, columns=list('abc'), index=index)
+          .rename_axis('time').reset_index(drop=False))
     client = ibis.pandas.connect({'df': df})
     t = client.table('df')
     rows_with_mlb = rows_with_max_lookback(5, ibis.interval(days=10))

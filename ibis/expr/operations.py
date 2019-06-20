@@ -1026,15 +1026,13 @@ class WindowOp(ValueOp):
             window = window.bind(table)
 
         if window.max_lookback is not None:
+            error_msg = ("'max lookback windows must be ordered "
+                         "by a timestamp column")
             if len(window._order_by) != 1:
-                raise com.IbisInputError(
-                    "'max lookback windows must be ordered by time"
-                )
+                raise com.IbisInputError(error_msg)
             order_var = window._order_by[0].op().args[0]
-            if not isinstance(order_var._dtype, dt.Timestamp):
-                raise com.IbisInputError(
-                    "'max lookback' windows must be ordered by time"
-                )
+            if not isinstance(order_var.type(), dt.Timestamp):
+                raise com.IbisInputError(error_msg)
 
         expr = propagate_down_window(expr, window)
         super().__init__(expr, window)
