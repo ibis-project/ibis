@@ -1540,3 +1540,34 @@ def test_chained_select_on_join():
     expr1 = join["a", "b"]
     expr2 = join.select(["a", "b"])
     assert expr1.equals(expr2)
+
+
+def test_repr_list_of_lists():
+    lit = ibis.literal([[1]])
+    result = repr(lit)
+    expected = """\
+Literal[array<array<int8>>]
+  [[1]]"""
+    assert result == expected
+
+
+def test_repr_list_of_lists_in_table():
+    t = ibis.table([('a', 'int64')], name='t')
+    lit = ibis.literal([[1]])
+    expr = t[t, lit.name('array_of_array')]
+    result = repr(expr)
+    expected = """\
+ref_0
+UnboundTable[table]
+  name: t
+  schema:
+    a : int64
+
+Selection[table]
+  table:
+    Table: ref_0
+  selections:
+    Table: ref_0
+    array_of_array = Literal[array<array<int8>>]
+      [[1]]"""
+    assert result == expected

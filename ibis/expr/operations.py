@@ -2901,6 +2901,15 @@ class Literal(ValueOp):
     def root_tables(self):
         return []
 
+    def __hash__(self) -> int:
+        """Return the hash of a literal value.
+
+        We override this method to make sure that we can handle things that
+        aren't eminently hashable like an ``array<array<int64>>``.
+
+        """
+        return hash(self.dtype._literal_value_hash_key(self.value))
+
 
 class NullLiteral(Literal):
     """Typeless NULL literal"""

@@ -25,6 +25,7 @@ from multipledispatch import Dispatcher
 
 import ibis.common as com
 import ibis.expr.types as ir
+from ibis import util
 
 
 class DataType:
@@ -111,6 +112,10 @@ class DataType:
 
     def column_type(self):
         return functools.partial(self.column, dtype=self)
+
+    def _literal_value_hash_key(self, value) -> int:
+        """Return a hash for `value`."""
+        return self, value
 
 
 class Any(DataType):
@@ -516,6 +521,22 @@ class Struct(DataType):
             ', '.join(itertools.starmap('{}: {}'.format, self.pairs.items())),
         )
 
+    def _literal_value_hash_key(self, value):
+        return self, _tuplize(value.items())
+
+
+def _tuplize(values):
+    """Recursively convert `values` to a tuple of tuples."""
+    def tuplize_iter(values):
+        yield from (
+            tuple(tuplize_iter(value))
+            if util.is_iterable(value)
+            else value
+            for value in values
+        )
+
+    return tuple(tuplize_iter(values))
+
 
 class Array(Variadic):
     scalar = ir.ArrayScalar
@@ -531,6 +552,9 @@ class Array(Variadic):
 
     def __str__(self) -> str:
         return '{}<{}>'.format(self.name.lower(), self.value_type)
+
+    def _literal_value_hash_key(self, value):
+        return self, _tuplize(value)
 
 
 class Set(Variadic):
@@ -580,6 +604,9 @@ class Map(Variadic):
         return '{}<{}, {}>'.format(
             self.name.lower(), self.key_type, self.value_type
         )
+
+    def _literal_value_hash_key(self, value):
+        return self, _tuplize(value.items())
 
 
 class GeoSpatial(DataType):

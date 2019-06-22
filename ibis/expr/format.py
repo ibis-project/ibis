@@ -166,17 +166,14 @@ class ExprFormatter:
     def _format_table(self, expr):
         table = expr.op()
         # format the schema
-        rows = ['name: {0!s}\nschema:'.format(table.name)]
+        rows = ['name: {}\nschema:'.format(table.name)]
         rows.extend(
-            [
-                '  %s : %s' % tup
-                for tup in zip(table.schema.names, table.schema.types)
-            ]
+            map('  {} : {}'.format, table.schema.names, table.schema.types)
         )
         opname = type(table).__name__
         type_display = self._get_type_display(expr)
-        opline = '%s[%s]' % (opname, type_display)
-        return '{0}\n{1}'.format(opline, self._indent('\n'.join(rows)))
+        opline = '{}[{}]'.format(opname, type_display)
+        return '{}\n{}'.format(opline, self._indent('\n'.join(rows)))
 
     def _format_column(self, expr):
         # HACK: if column is pulled from a Filter of another table, this parent
