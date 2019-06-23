@@ -200,9 +200,15 @@ def parquet(tables, data_directory, ignore_missing_dependency, **params):
 )
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES + ['geo'])
 @click.option('-d', '--data-directory', default=DATA_DIR)
-@click.option('-l', '--psql-path', type=click.Path(exists=True), default=None)
+@click.option(
+    '-l',
+    '--psql-path',
+    type=click.Path(exists=True),
+    required=os.name == 'nt',
+    default=None if os.name == 'nt' else '/usr/bin/psql',
+)
 def postgres(schema, tables, data_directory, psql_path, **params):
-    psql = local.get('psql', psql_path)
+    psql = local[psql_path]
     data_directory = Path(data_directory)
     logger.info('Initializing PostgreSQL...')
     engine = init_database(
@@ -223,17 +229,22 @@ def postgres(schema, tables, data_directory, psql_path, **params):
             if not use_postgis:
                 continue
             from geoalchemy2 import Geometry, WKTElement
+
             srid = 4326
             df = pd.read_csv(src)
             df = df[df.columns[1:]].applymap(
                 lambda x: WKTElement(x, srid=srid)
             )
-            df.to_sql('geo', engine, dtype={
-                "geo_point": Geometry("POINT", srid=srid),
-                "geo_linestring": Geometry("LINESTRING", srid=srid),
-                "geo_polygon": Geometry("POLYGON", srid=srid),
-                "geo_multipolygon": Geometry("MULTIPOLYGON", srid=srid),
-            })
+            df.to_sql(
+                'geo',
+                engine,
+                dtype={
+                    "geo_point": Geometry("POINT", srid=srid),
+                    "geo_linestring": Geometry("LINESTRING", srid=srid),
+                    "geo_polygon": Geometry("POLYGON", srid=srid),
+                    "geo_multipolygon": Geometry("MULTIPOLYGON", srid=srid),
+                },
+            )
             continue
 
         load = psql[
