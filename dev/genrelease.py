@@ -123,7 +123,7 @@ repo = pygit2.Repository(str(repo_path))
     show_default=True,
 )
 def main(release_version, from_, to, release_date, default_role):
-    title = "* :release:`{release} {date}`".format(
+    title = "* :release:`{release} <{date}>`".format(
         release=release_version, date=release_date
     )
     click.echo(title)

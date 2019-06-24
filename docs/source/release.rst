@@ -7,6 +7,24 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`/release-pre-1.0`
 
+* :release:`1.2.0 <2019-06-24>`
+* :feature:`1836` Add new geospatial functions to OmniSciDB backend
+* :support:`1847` Skip SQLAlchemy backend tests in connect method in backends.py
+* :bug:`1855 major` Fix call to psql causing failing CI
+* :bug:`1851 major` Fix nested array literal repr
+* :support:`1848` Validate order_by when using rows_with_max_lookback window
+* :bug:`1850 major` Fix repr of empty schema
+* :support:`1845` Generate release notes from commits
+* :support:`1844` Raise exception on backends where rows_with_max_lookback can't be implemented
+* :bug:`1843 major` Add max_lookback to window replace and combine functions
+* :bug:`1837 major` Partially revert #1758
+* :support:`1840` Tighter version spec for pytest
+* :feature:`1838` allow pandas timedelta in rows_with_max_lookback
+* :feature:`1825` Accept rows-with-max-lookback as preceding parameter
+* :feature:`1787` PostGIS support
+* :support:`1826` Allow passing a branch to ci/feedstock.py
+* :support:`-` Bugs go into feature releases
+* :support:`-` No space after :release:
 * :release:`1.1.0 <2019-06-09>`
 * :bug:`1819 major` Fix group_concat test and implementations
 * :support:`1820` Remove decorator hacks and add custom markers
