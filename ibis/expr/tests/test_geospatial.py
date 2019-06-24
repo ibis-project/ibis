@@ -45,6 +45,7 @@ def test_geo_ops_smoke(geo_table):
 
     # test ops
     point.srid()
+    point.set_srid(4326)
     point.x()
     point.y()
 

@@ -678,12 +678,18 @@ def cast(arg, target_type):
     if op.to.equals(arg.type()):
         # noop case if passed type is the same
         return arg
-    else:
-        result = op.to_expr()
-        if not arg.has_name():
-            return result
-        expr_name = 'cast({}, {})'.format(arg.get_name(), op.to)
-        return result.name(expr_name)
+
+    if isinstance(op.to, (dt.Geography, dt.Geometry)):
+        from_geotype = arg.type().geotype or 'geometry'
+        to_geotype = op.to.geotype
+        if from_geotype == to_geotype:
+            return arg
+
+    result = op.to_expr()
+    if not arg.has_name():
+        return result
+    expr_name = 'cast({}, {})'.format(arg.get_name(), op.to)
+    return result.name(expr_name)
 
 
 cast.__doc__ = """
@@ -2148,6 +2154,22 @@ def geo_srid(arg):
     return op.to_expr()
 
 
+def geo_set_srid(arg, srid):
+    """Set the spatial reference identifier for the ST_Geometry
+
+    Parameters
+    ----------
+    arg : geometry
+    srid : integer
+
+    Returns
+    -------
+    SetSRID : geometry
+    """
+    op = ops.GeoSetSRID(arg, srid)
+    return op.to_expr()
+
+
 def geo_buffer(arg, radius):
     """Returns a geometry that represents all points whose distance from this
     Geometry is less than or equal to distance. Calculations are in the
@@ -2331,6 +2353,7 @@ _geospatial_value_methods = dict(
     overlaps=geo_overlaps,
     perimeter=geo_perimeter,
     point_n=geo_point_n,
+    set_srid=geo_set_srid,
     simplify=geo_simplify,
     srid=geo_srid,
     start_point=geo_start_point,

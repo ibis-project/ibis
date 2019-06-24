@@ -3185,9 +3185,15 @@ class GeoNRings(GeoSpatialUnOp):
 
 
 class GeoSRID(GeoSpatialUnOp):
-    """Returns the spatial reference identifier for the ST_Geometry"""
+    """Returns the spatial reference identifier for the ST_Geometry."""
 
     output_type = rlz.shape_like('args', dt.int64)
+
+
+class GeoSetSRID(GeoSpatialUnOp):
+    """Set the spatial reference identifier for the ST_Geometry."""
+    srid = Arg(rlz.integer)
+    output_type = rlz.shape_like('args', dt.geometry)
 
 
 class GeoBuffer(GeoSpatialUnOp):
