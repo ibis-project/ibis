@@ -135,7 +135,7 @@ def con(backend):
 
 @pytest.fixture(scope='session')
 def alltypes(backend):
-    return backend.functional_alltypes()
+    return backend.functional_alltypes
 
 
 @pytest.fixture(scope='session')
@@ -145,17 +145,17 @@ def sorted_alltypes(alltypes):
 
 @pytest.fixture(scope='session')
 def batting(backend):
-    return backend.batting()
+    return backend.batting
 
 
 @pytest.fixture(scope='session')
 def awards_players(backend):
-    return backend.awards_players()
+    return backend.awards_players
 
 
 @pytest.fixture(scope='session')
 def geo(backend):
-    return backend.geo()
+    return backend.geo
 
 
 @pytest.fixture
