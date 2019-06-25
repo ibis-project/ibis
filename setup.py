@@ -41,7 +41,7 @@ else:
     parquet_requires = ['pyarrow>=0.12.0']
 spark_requires = ['pyspark>=2.4.3']
 
-geospatial_requires = ['geoalchemy2', 'geopandas']
+geospatial_requires = ['geoalchemy2', 'geopandas', 'shapely']
 
 all_requires = (
     impala_requires

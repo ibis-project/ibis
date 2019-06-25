@@ -4,7 +4,7 @@ import kudu
 import pandas as pd
 
 import ibis.expr.datatypes as dt
-from ibis.common import IbisError
+from ibis.common.exceptions import IbisError
 from ibis.expr.api import schema
 from ibis.impala import ddl
 

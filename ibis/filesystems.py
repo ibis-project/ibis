@@ -18,7 +18,7 @@
 import posixpath
 from functools import wraps as implements
 
-import ibis.common as com
+import ibis.common.exceptions as com
 from ibis.config import options
 
 

@@ -10,7 +10,7 @@ import pandas.util.testing as tm  # noqa: E402
 import pytest
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt  # noqa: E402
 from ibis.pandas.udf import udf
 

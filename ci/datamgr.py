@@ -412,13 +412,8 @@ def omnisci(schema, tables, data_directory, **params):
                 continue
             df.rename(columns={df_col: column}, inplace=True)
 
-        # load geospatial data
-        if table == 'geo':
-            conn.load_table_rowwise(
-                table, list(df.itertuples(index=False, name=None))
-            )
-        else:
-            conn.load_table_columnar(table, df)
+        load_method = 'rows' if table == 'geo' else 'columnar'
+        conn.load_table(table, df, method=load_method)
 
     conn.close()
 

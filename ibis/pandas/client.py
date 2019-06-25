@@ -14,7 +14,7 @@ from multipledispatch import Dispatcher
 from pkg_resources import parse_version
 
 import ibis.client as client
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch

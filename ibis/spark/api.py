@@ -1,4 +1,4 @@
-import ibis.common as com
+import ibis.common.exception as com
 from ibis.spark.client import SparkClient
 from ibis.spark.compiler import dialect  # noqa: F401
 

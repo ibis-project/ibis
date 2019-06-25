@@ -6,7 +6,7 @@ import pandas as pd
 from clickhouse_driver.client import Client as _DriverClient
 from pkg_resources import parse_version
 
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch

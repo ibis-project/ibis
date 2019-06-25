@@ -16,7 +16,7 @@ import csv
 import tempfile
 from posixpath import join as pjoin
 
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.schema as sch
 import ibis.util as util
 from ibis.config import options

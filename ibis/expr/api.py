@@ -11,7 +11,7 @@ import pandas as pd
 import toolz
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.analysis as _L
 import ibis.expr.analytics as _analytics
 import ibis.expr.datatypes as dt

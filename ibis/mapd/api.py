@@ -1,4 +1,4 @@
-import ibis.common as com
+import ibis.common.exceptions as com
 from ibis.config import options
 from ibis.mapd.client import EXECUTION_TYPE_CURSOR, MapDClient
 from ibis.mapd.compiler import compiles, dialect, rewrites  # noqa: F401

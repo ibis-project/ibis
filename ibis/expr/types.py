@@ -5,7 +5,7 @@ import webbrowser
 import numpy as np
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.config as config
 import ibis.util as util
 

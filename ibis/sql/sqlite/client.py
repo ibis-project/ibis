@@ -6,7 +6,7 @@ import os
 import regex as re
 import sqlalchemy as sa
 
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.sql.alchemy as alch
 from ibis.client import Database
 from ibis.sql.sqlite.compiler import SQLiteDialect

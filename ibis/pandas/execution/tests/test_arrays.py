@@ -6,7 +6,7 @@ import pytest
 from pytest import param
 
 import ibis
-from ibis.common import IbisTypeError
+from ibis.common.exceptions import IbisTypeError
 
 
 def test_array_length(t, df):

@@ -6,7 +6,7 @@ from contextlib import suppress
 
 import toolz
 
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 import ibis.expr.schema as sch

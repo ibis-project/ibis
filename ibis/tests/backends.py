@@ -317,7 +317,8 @@ class PostgreSQL(Backend, RoundHalfToEven):
             host=host, user=user, password=password, database=database
         )
 
-    def geo(self):
+    @property
+    def geo(self) -> Optional[ir.TableExpr]:
         if sys.version_info >= (3, 6) and 'geo' in self.db.list_tables():
             return self.db.geo
 

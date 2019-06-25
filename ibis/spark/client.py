@@ -3,7 +3,7 @@ import pyspark.sql.types as pt
 import regex as re
 from pkg_resources import parse_version
 
-import ibis.common as com
+import ibis.common.exception as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch

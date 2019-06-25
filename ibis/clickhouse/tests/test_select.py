@@ -3,7 +3,7 @@ import pandas.util.testing as tm
 import pytest
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
 
 driver = pytest.importorskip('clickhouse_driver')
 pytestmark = pytest.mark.clickhouse

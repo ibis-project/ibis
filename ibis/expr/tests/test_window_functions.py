@@ -17,7 +17,7 @@ import pandas as pd
 import pytest
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
 from ibis.expr.window import _determine_how, rows_with_max_lookback
 from ibis.tests.util import assert_equal
 
@@ -60,9 +60,9 @@ def test_combine_windows(alltypes):
     assert_equal(w5, expected)
 
     # Cannot combine windows of varying types.
-    w9 = ibis.range_window(preceding=5, following=5)
-    with pytest.raises(ibis.common.IbisInputError):
-        w1.combine(w9)
+    w6 = ibis.range_window(preceding=5, following=5)
+    with pytest.raises(ibis.common.exceptions.IbisInputError):
+        w1.combine(w6)
 
 
 def test_combine_windows_with_zero_offset():

@@ -10,7 +10,7 @@ from itertools import chain
 import toolz
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.analysis as L
 import ibis.expr.analytics as analytics
 import ibis.expr.datatypes as dt
