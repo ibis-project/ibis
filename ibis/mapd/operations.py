@@ -598,6 +598,7 @@ class ByteLength(ops.StringLength):
 
 # WINDOW
 
+
 def _window(translator, expr):
     op = expr.op()
 
@@ -698,7 +699,8 @@ def _shift_like(name, default_offset=None):
             )
         elif offset is not None or default_offset is not None:
             offset_formatted = (
-                translator.translate(offset) if offset is not None
+                translator.translate(offset)
+                if offset is not None
                 else str(default_offset)
             )
             return '{}({}, {})'.format(name, arg_formatted, offset_formatted)
@@ -779,7 +781,7 @@ _geospatial_ops = {
     ops.GeoNRings: unary('ST_NRINGS'),
     ops.GeoSRID: unary('ST_SRID'),
     ops.GeoTransform: fixed_arity('ST_TRANSFORM', 2),
-    ops.GeoSetSRID: fixed_arity('ST_SETSRID', 2)
+    ops.GeoSetSRID: fixed_arity('ST_SETSRID', 2),
 }
 
 # STRING

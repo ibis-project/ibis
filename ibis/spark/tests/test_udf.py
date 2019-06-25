@@ -3,7 +3,7 @@ import pandas.util.testing as tm
 import pytest
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.tests.backends import Spark

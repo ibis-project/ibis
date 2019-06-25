@@ -10,7 +10,7 @@ import itertools
 import pyspark.sql.functions as f
 import pyspark.sql.types as pt
 
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.signature as sig
 from ibis.pandas.udf import valid_function_signature

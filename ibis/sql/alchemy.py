@@ -971,7 +971,9 @@ class AlchemyExprTranslator(comp.ExprTranslator):
     context_class = AlchemyContext
 
     def name(self, translated, name, force=True):
-        return translated.label(name)
+        if hasattr(translated, 'label'):
+            return translated.label(name)
+        return translated
 
     def get_sqla_type(self, data_type):
         return _to_sqla_type(data_type, type_map=self._type_map)

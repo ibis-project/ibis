@@ -1,5 +1,7 @@
 from typing import Iterable
 
+import shapely
+
 import ibis.expr.types as ir
 from ibis.common import exceptions as ex
 
@@ -11,9 +13,7 @@ def _format_point_value(value: Iterable) -> str:
 
 def _format_linestring_value(value: Iterable) -> str:
     """Convert a iterable with a linestring to text."""
-    return ', '.join(
-        _format_point_value(point) for point in value
-    )
+    return ', '.join(_format_point_value(point) for point in value)
 
 
 def _format_polygon_value(value: Iterable) -> str:
@@ -35,14 +35,18 @@ def _format_geo_metadata(op, value: str, inline_metadata: bool = False) -> str:
     srid = op.args[1].srid
     geotype = op.args[1].geotype
 
-    if inline_metadata and srid:
-        value = "'SRID={};{}'".format(srid, value)
-    else:
-        value = "'{}'".format(value)
+    if inline_metadata:
+        value = "'{}{}'{}".format(
+            'SRID={};'.format(srid) if srid else '',
+            value,
+            '::{}'.format(geotype) if geotype else ''
+        )
+        return value
+    value = "'{}'".format(value)
 
     if geotype not in ('geometry', 'geography'):
-        if inline_metadata and srid:
-            return value
+        # default for not inline format
+        geotype = 'geometry'
 
     geofunc = 'ST_GeomFromText' if geotype == 'geometry' else 'ST_GeogFromText'
 
@@ -76,7 +80,9 @@ def translate_literal(expr, inline_metadata: bool = False) -> str:
     op = expr.op()
     value = op.value
 
-    if isinstance(expr, ir.PointScalar):
+    if isinstance(value, shapely.geometry.base.BaseGeometry):
+        result = value.wkt
+    elif isinstance(expr, ir.PointScalar):
         result = translate_point(value)
     elif isinstance(expr, ir.LineStringScalar):
         result = translate_linestring(value)
