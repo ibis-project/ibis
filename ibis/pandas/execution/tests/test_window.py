@@ -466,8 +466,10 @@ def test_window_with_mlb():
             ibis.trailing_window(rows_with_mlb, order_by='time')
         )
     )
-    with pytest.raises(NotImplementedError):
-        expr.execute()
+    result = expr.execute()
+    expected = df
+    expected['sum'] = expected.a.rolling(5, min_periods=1).sum()
+    tm.assert_frame_equal(result, expected)
 
     rows_with_mlb = rows_with_max_lookback(5, 10)
     with pytest.raises(com.IbisInputError):

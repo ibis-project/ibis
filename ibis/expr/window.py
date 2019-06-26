@@ -298,7 +298,15 @@ class Window:
 
 
 def rows_with_max_lookback(rows, max_lookback):
-    """Create a bound preceding value for use with trailing window functions"""
+    """Create a bound preceding value for use with trailing window functions
+
+    Notes
+    -----
+    This function is exposed for use by external clients, but Ibis itself does
+    not currently do anything with the max_lookback parameter in any of its
+    backends.
+
+    """
     return RowsWithMaxLookback(rows, max_lookback)
 
 
