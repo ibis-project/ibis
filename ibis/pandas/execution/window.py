@@ -90,10 +90,6 @@ def execute_window_op(
         **kwargs,
     )
 
-    if window.max_lookback is not None:
-        raise NotImplementedError('Rows with max lookback is not implemented '
-                                  'for pandas backend.')
-
     following = window.following
     order_by = window._order_by
 
