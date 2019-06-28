@@ -2,12 +2,12 @@ version: '3'
 services:
 
   postgres:
-    image: mdillon/postgis
+    image: shajekpivotal/postgres-9.5-postgis-2.5
     hostname: postgres
     ports:
       - 5432:5432
     environment:
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ''
 
   mysql:
     image: mariadb:10.2
