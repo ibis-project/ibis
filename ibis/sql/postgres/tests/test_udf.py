@@ -90,6 +90,7 @@ py_length_udf = ibis.sql.postgres.udf.api.existing_udf(
 # Tests
 
 def test_sql_length_udf_worked(table):
+    """Test creating ibis UDF object based on existing UDF in the database"""
     result_obj = table[
         table,
         custom_length_udf(table['user_name']).name('custom_len')
@@ -114,6 +115,8 @@ def mult_a_b(a, b):
 
 
 def test_func_to_udf_smoke(con_for_udf, table):
+    """Test creating a UDF in database based on Python function
+    and then creating an ibis UDF object based on that"""
     mult_a_b_udf = ibis.sql.postgres.udf.api.func_to_udf(
         con_for_udf.con,
         mult_a_b,
