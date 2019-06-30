@@ -938,11 +938,8 @@ def test_join_invalid_expr_type(con):
     invalid_right = left.foo_id
     join_key = ['bar_id']
 
-    with pytest.raises(TypeError) as e:
+    with pytest.raises(TypeError, match=type(invalid_right).__name__):
         left.inner_join(invalid_right, join_key)
-
-    message = str(e)
-    assert type(invalid_right).__name__ in message
 
 
 def test_join_non_boolean_expr(con):
