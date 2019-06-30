@@ -491,12 +491,12 @@ class Struct(DataType):
 
     @classmethod
     def from_tuples(
-        self,
+        cls,
         pairs: Sequence[Tuple[str, Union[str, DataType]]],
         nullable: bool = True,
     ) -> 'Struct':
         names, types = zip(*pairs)
-        return Struct(list(names), list(map(dtype, types)), nullable=nullable)
+        return cls(list(names), list(map(dtype, types)), nullable=nullable)
 
     @property
     def pairs(self) -> Mapping:

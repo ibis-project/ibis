@@ -471,3 +471,11 @@ def test_implicitly_uncastable_values(source, target, value):
 
 def test_no_infer_ambiguities():
     assert not ambiguities(dt.infer.funcs)
+
+
+def test_struct_datatype_subclass_from_tuples():
+    class MyStruct(dt.Struct):
+        pass
+
+    dtype = MyStruct.from_tuples([('a', 'int64')])
+    assert isinstance(dtype, MyStruct)
