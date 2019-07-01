@@ -164,16 +164,11 @@ class SparkClient(SQLClient):
         self._session = ps.sql.SparkSession(self._context)
         self._catalog = self._session.catalog
 
-    # TODO necessary?
     def close(self):
         """
         Close Spark connection and drop any temporary objects
         """
         self._context.stop()
-
-    def table(self, table_name, database=None):
-        t = super().table(table_name, database)
-        return t
 
     def _build_ast(self, expr, context):
         result = comp.build_ast(expr, context)
@@ -185,6 +180,9 @@ class SparkClient(SQLClient):
 
     @property
     def current_database(self):
+        """
+        String name of the current database.
+        """
         return self._catalog.currentDatabase()
 
     def _get_table_schema(self, table_name):
@@ -265,7 +263,6 @@ class SparkClient(SQLClient):
         return results
 
     def get_schema(self, table_name, database=None):
-        # TODO: Spark doesn't use database for its .table() method
         """
         Return a Schema object for the indicated table and database
 
@@ -273,12 +270,17 @@ class SparkClient(SQLClient):
         ----------
         table_name : string
           May be fully qualified
-        database : string, default None
+        database : string
+          Spark does not have a database argument for its table() method,
+          so this must be None
 
         Returns
         -------
         schema : ibis Schema
         """
+        if database is not None:
+            raise Exception('Spark does not support database param for table')
+
         df = self._session.table(table_name)
 
         return sch.infer(df)
