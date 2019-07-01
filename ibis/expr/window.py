@@ -108,8 +108,10 @@ class Window:
             self._order_by.append(x)
 
         if isinstance(preceding, RowsWithMaxLookback):
-            self.preceding = preceding.rows
-            self.max_lookback = preceding.max_lookback
+            # the offset interval is used as the 'preceding' value of a window
+            # while 'rows' is used to adjust the window created using offset
+            self.preceding = preceding.max_lookback
+            self.max_lookback = preceding.rows
         else:
             self.preceding = _sequence_to_tuple(preceding)
             self.max_lookback = max_lookback
@@ -207,7 +209,7 @@ class Window:
 
         if self.max_lookback is not None:
             if not isinstance(
-                    self.max_lookback, (ir.IntervalValue, pd.Timedelta)):
+                    self.preceding, (ir.IntervalValue, pd.Timedelta)):
                 raise com.IbisInputError(
                     "'max_lookback' must be specified as an interval "
                     "or pandas.Timedelta object"
@@ -228,11 +230,15 @@ class Window:
                     "Expecting '{}' Window, got '{}'"
                 ).format(self.how.upper(), window.how.upper())
             )
-        mlb = self.max_lookback
+        prec = self.preceding
         kwds = dict(
-            preceding=self.preceding or window.preceding,
+            preceding=(prec
+                       if (isinstance(prec, (int, np.integer)) and prec)
+                       or (not isinstance(prec, (int, np.integer))
+                           and prec is not None)
+                       else window.preceding),
             following=self.following or window.following,
-            max_lookback=mlb if mlb is not None else window.max_lookback,
+            max_lookback=self.max_lookback or window.max_lookback,
             group_by=self._group_by + window._group_by,
             order_by=self._order_by + window._order_by,
         )
@@ -298,15 +304,7 @@ class Window:
 
 
 def rows_with_max_lookback(rows, max_lookback):
-    """Create a bound preceding value for use with trailing window functions
-
-    Notes
-    -----
-    This function is exposed for use by external clients, but Ibis itself does
-    not currently do anything with the max_lookback parameter in any of its
-    backends.
-
-    """
+    """Create a bound preceding value for use with trailing window functions"""
     return RowsWithMaxLookback(rows, max_lookback)
 
 

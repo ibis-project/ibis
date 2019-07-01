@@ -230,11 +230,17 @@ import ibis.util
 class AggregationContext(abc.ABC):
     __slots__ = 'parent', 'group_by', 'order_by', 'dtype'
 
-    def __init__(self, parent=None, group_by=None, order_by=None, dtype=None):
+    def __init__(self,
+                 parent=None,
+                 group_by=None,
+                 order_by=None,
+                 dtype=None,
+                 max_lookback=None):
         self.parent = parent
         self.group_by = group_by
         self.order_by = order_by
         self.dtype = dtype
+        self.max_lookback = max_lookback
 
     @abc.abstractmethod
     def agg(self, grouped_data, function, *args, **kwargs):
@@ -314,6 +320,7 @@ class Window(AggregationContext):
             group_by=kwargs.pop('group_by', None),
             order_by=kwargs.pop('order_by', None),
             dtype=kwargs.pop('dtype'),
+            max_lookback=kwargs.pop('max_lookback', None),
         )
         self.construct_window = operator.methodcaller(kind, *args, **kwargs)
 
@@ -359,6 +366,14 @@ class Window(AggregationContext):
             else:
                 assert isinstance(function, str)
                 method = operator.methodcaller(function, *args, **kwargs)
+
+            max_lookback = self.max_lookback
+            if max_lookback is not None:
+                agg_method = method
+
+                def f(s):
+                    return agg_method(s.iloc[-max_lookback:])
+                method = operator.methodcaller('apply', f, raw=False)
 
         # get the DataFrame from which the operand originated (passed in when
         # constructing this context object in execute_node(ops.WindowOp))
@@ -409,7 +424,7 @@ class Cumulative(Window):
 class Moving(Window):
     __slots__ = ()
 
-    def __init__(self, preceding, *args, **kwargs):
+    def __init__(self, preceding, max_lookback, *args, **kwargs):
         from ibis.pandas.core import timedelta_types
 
         ibis_dtype = getattr(preceding, 'type', lambda: None)()
@@ -421,7 +436,8 @@ class Moving(Window):
             )
             else 'both'
         )
-        super().__init__('rolling', preceding, *args, closed=closed,
+        super().__init__('rolling', preceding, *args,
+                         max_lookback=max_lookback, closed=closed,
                          min_periods=1, **kwargs)
 
     def short_circuit_method(self, grouped_data, function):
