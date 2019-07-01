@@ -30,28 +30,27 @@ _DTYPE_TO_IBIS_TYPE = {
 def spark_field_to_ibis_dtype(field):
     """Convert Spark SQL `StructField` to an ibis type."""
     type_obj = field.dataType
-    typ = type(type_obj)
 
-    if typ is pt.DecimalType:
+    if isinstance(type_obj, pt.DecimalType):
         precision = type_obj.precision
         scale = type_obj.scale
         ibis_type = dt.Decimal(precision, scale)
-    elif typ is pt.ArrayType:
+    elif isinstance(type_obj, pt.ArrayType):
         value_type = dt.dtype(type_obj.elementType)
         nullable = type_obj.containsNull
         ibis_type = dt.Array(value_type, nullable)
-    elif typ is pt.MapType:
+    elif isinstance(type_obj, pt.MapType):
         key_type = dt.dtype(type_obj.keyType)
         value_type = dt.dtype(type_obj.valueType)
         nullable = type_obj.valueContainsNull
         ibis_type = dt.Map(key_type, value_type, nullable)
-    elif typ is pt.StructType:
+    elif isinstance(type_obj, pt.StructType):
         names = field.names
         fields = field.fields
         ibis_types = list(map(dt.dtype, fields))
         ibis_type = dt.Struct(names, ibis_types)
     else:
-        ibis_type = _DTYPE_TO_IBIS_TYPE.get(typ)
+        ibis_type = _DTYPE_TO_IBIS_TYPE.get(type(type_obj))
 
     return ibis_type
 
@@ -61,15 +60,6 @@ def spark_dataframe_schema(df):
     """Infer the schema of a Spark SQL `DataFrame` object."""
     fields = OrderedDict((el.name, dt.dtype(el)) for el in df.schema)
 
-    # TODO
-    # partition_info = table._properties.get('timePartitioning', None)
-
-    # # We have a partitioned table
-    # if partition_info is not None:
-    #     partition_field = partition_info.get('field', NATIVE_PARTITION_COL)
-
-    #     # Only add a new column if it's not already a column in the schema
-    #     fields.setdefault(partition_field, dt.timestamp)
     return sch.schema(fields)
 
 
@@ -170,21 +160,15 @@ class SparkClient(SQLClient):
     table_class = SparkTable
 
     def __init__(self, **kwargs):
-        # TODO arguments
         self._context = ps.SparkContext(**kwargs)
         self._session = ps.sql.SparkSession(self._context)
         self._catalog = self._session.catalog
 
-    # TODO necessary?
     def close(self):
         """
         Close Spark connection and drop any temporary objects
         """
         self._context.stop()
-
-    def table(self, table_name, database=None):
-        t = super().table(table_name, database)
-        return t
 
     def _build_ast(self, expr, context):
         result = comp.build_ast(expr, context)
@@ -199,10 +183,12 @@ class SparkClient(SQLClient):
 
     @property
     def current_database(self):
+        """
+        String name of the current database.
+        """
         return self._catalog.currentDatabase()
 
     def _get_table_schema(self, table_name):
-        # TODO check if this is correct functionality
         return self.get_schema(table_name)
 
     def list_tables(self, like=None, database=None):
@@ -276,7 +262,6 @@ class SparkClient(SQLClient):
         return results
 
     def get_schema(self, table_name, database=None):
-        # TODO: Spark doesn't use database for its .table() method
         """
         Return a Schema object for the indicated table and database
 
@@ -284,12 +269,17 @@ class SparkClient(SQLClient):
         ----------
         table_name : string
           May be fully qualified
-        database : string, default None
+        database : string
+          Spark does not have a database argument for its table() method,
+          so this must be None
 
         Returns
         -------
         schema : ibis Schema
         """
+        if database is not None:
+            raise Exception('Spark does not support database param for table')
+
         df = self._session.table(table_name)
 
         return sch.infer(df)

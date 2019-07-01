@@ -14,9 +14,7 @@ class SparkSelectBuilder(comp.SelectBuilder):
 
 
 class SparkUnion(comp.Union):
-    @staticmethod
-    def keyword(distinct):
-        return 'UNION DISTINCT' if distinct else 'UNION ALL'
+    pass
 
 
 class SparkQueryBuilder(comp.QueryBuilder):

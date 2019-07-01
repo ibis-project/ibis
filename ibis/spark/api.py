@@ -1,6 +1,4 @@
-from ibis.spark.client import (  # noqa: F401; ImpalaDatabase,; ImpalaTable,
-    SparkClient,
-)
+from ibis.spark.client import SparkClient
 
 
 def connect(**kwargs):
