@@ -13,6 +13,10 @@ from ibis.sql.postgres.client import PostgreSQLClient
 
 datatypes = ibis.expr.datatypes
 
+# mark test module as postgresql (for ability to easily exclude,
+# e.g. in conda build tests)
+pytestmark = pytest.mark.postgresql
+
 # Database setup (tables and UDFs)
 
 
