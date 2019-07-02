@@ -228,7 +228,7 @@ import ibis.util
 
 
 class AggregationContext(abc.ABC):
-    __slots__ = 'parent', 'group_by', 'order_by', 'dtype'
+    __slots__ = 'parent', 'group_by', 'order_by', 'dtype', 'max_lookback'
 
     def __init__(self,
                  parent=None,
