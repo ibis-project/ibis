@@ -371,9 +371,9 @@ class Window(AggregationContext):
             if max_lookback is not None:
                 agg_method = method
 
-                def f(s):
+                def sliced_agg(s):
                     return agg_method(s.iloc[-max_lookback:])
-                method = operator.methodcaller('apply', f, raw=False)
+                method = operator.methodcaller('apply', sliced_agg, raw=False)
 
         # get the DataFrame from which the operand originated (passed in when
         # constructing this context object in execute_node(ops.WindowOp))

@@ -22,6 +22,16 @@ RowsWithMaxLookback = NamedTuple('RowsWithMaxLookback',
                                  )
 
 
+def _choose_non_empty_val(first, second):
+    if isinstance(first, (int, np.integer)) and first:
+        non_empty_value = first
+    elif not isinstance(first, (int, np.integer)) and first is not None:
+        non_empty_value = first
+    else:
+        non_empty_value = second
+    return non_empty_value
+
+
 def _determine_how(preceding):
     offset_type = type(_get_preceding_value(preceding))
     if issubclass(offset_type, (int, np.integer)):
@@ -230,14 +240,10 @@ class Window:
                     "Expecting '{}' Window, got '{}'"
                 ).format(self.how.upper(), window.how.upper())
             )
-        prec = self.preceding
+
         kwds = dict(
-            preceding=(prec
-                       if (isinstance(prec, (int, np.integer)) and prec)
-                       or (not isinstance(prec, (int, np.integer))
-                           and prec is not None)
-                       else window.preceding),
-            following=self.following or window.following,
+            preceding=_choose_non_empty_val(self.preceding, window.preceding),
+            following=_choose_non_empty_val(self.following, window.following),
             max_lookback=self.max_lookback or window.max_lookback,
             group_by=self._group_by + window._group_by,
             order_by=self._order_by + window._order_by,

@@ -59,40 +59,60 @@ def test_combine_windows(alltypes):
     )
     assert_equal(w5, expected)
 
-    w6 = ibis.window(preceding=0, following=5)
-    w7 = ibis.window(preceding=7, following=10)
-    w8 = w6.combine(w7)
-    expected = ibis.window(preceding=7, following=5)
-    assert_equal(w8, expected)
-
     # Cannot combine windows of varying types.
     w9 = ibis.range_window(preceding=5, following=5)
     with pytest.raises(ibis.common.IbisInputError):
         w1.combine(w9)
 
-    w10 = ibis.trailing_range_window(
+
+def test_combine_windows_with_zero_offset():
+    w1 = ibis.window(preceding=0, following=5)
+    w2 = ibis.window(preceding=7, following=10)
+    w3 = w1.combine(w2)
+    expected = ibis.window(preceding=7, following=5)
+    assert_equal(w3, expected)
+
+    w4 = ibis.window(preceding=3, following=0)
+    w5 = w4.combine(w2)
+    expected = ibis.window(preceding=3, following=10)
+    assert_equal(w5, expected)
+
+
+def test_combine_window_with_interval_offset(alltypes):
+    t = alltypes
+    w1 = ibis.trailing_range_window(
         preceding=ibis.interval(days=3), order_by=t.e
     )
-    w11 = ibis.trailing_range_window(
+    w2 = ibis.trailing_range_window(
         preceding=ibis.interval(days=4), order_by=t.f
     )
-    w12 = w10.combine(w11)
+    w3 = w1.combine(w2)
     expected = ibis.trailing_range_window(
         preceding=ibis.interval(days=3), order_by=[t.e, t.f]
     )
-    assert_equal(w12, expected)
+    assert_equal(w3, expected)
 
-    w13 = ibis.trailing_window(
+    w4 = ibis.range_window(following=ibis.interval(days=5), order_by=t.e)
+    w5 = ibis.range_window(following=ibis.interval(days=7), order_by=t.f)
+    expected = ibis.range_window(
+        following=ibis.interval(days=5), order_by=[t.e, t.f]
+    )
+    w6 = w4.combine(w5)
+    assert_equal(w6, expected)
+
+
+def test_combine_window_with_max_lookback():
+    w1 = ibis.trailing_window(
         rows_with_max_lookback(3, ibis.interval(days=5))
     )
-    w14 = ibis.trailing_window(
+    w2 = ibis.trailing_window(
         rows_with_max_lookback(5, ibis.interval(days=7))
     )
-    w15 = w13.combine(w14)
+    w3 = w1.combine(w2)
     expected = ibis.trailing_window(
         rows_with_max_lookback(3, ibis.interval(days=5))
     )
-    assert_equal(w15, expected)
+    assert_equal(w3, expected)
 
 
 def test_replace_window(alltypes):
