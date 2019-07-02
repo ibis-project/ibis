@@ -463,12 +463,15 @@ def test_window_with_mlb():
     rows_with_mlb = rows_with_max_lookback(5, ibis.interval(days=10))
     expr = t.mutate(
         sum=lambda df: df.a.sum().over(
-            ibis.trailing_window(rows_with_mlb, order_by='time')
+            ibis.trailing_window(rows_with_mlb, order_by='time', group_by='b')
         )
     )
     result = expr.execute()
-    expected = df
-    expected['sum'] = expected.a.rolling(5, min_periods=1).sum()
+    expected = df.set_index('time')
+    gb_df = (expected.groupby(['b'])['a'].rolling('10d', closed='both')
+             .apply(lambda s: s.iloc[-5:].sum(), raw=False)
+             .sort_index(level=['time']).reset_index(drop=True))
+    expected = expected.reset_index(drop=False).assign(sum=gb_df)
     tm.assert_frame_equal(result, expected)
 
     rows_with_mlb = rows_with_max_lookback(5, 10)
