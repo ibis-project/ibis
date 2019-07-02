@@ -239,6 +239,8 @@ def postgres(schema, tables, data_directory, psql_path, **params):
     if use_postgis:
         engine.execute("CREATE EXTENSION POSTGIS")
 
+    engine.execute("CREATE EXTENSION IF NOT EXISTS PLPYTHONU")
+
     query = "COPY {} FROM STDIN WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',')"
     database = params['database']
     for table in tables:

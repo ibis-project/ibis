@@ -1,10 +1,14 @@
 """Test support for already-defined UDFs in Postgres"""
 
+import random
+import string
+
 import pytest
 
-import sqlalchemy.exc
+import pandas as pd
 import ibis.expr.datatypes
 import ibis.sql.postgres.udf.api
+from ibis.sql.postgres.client import PostgreSQLClient
 
 
 datatypes = ibis.expr.datatypes
@@ -12,7 +16,37 @@ datatypes = ibis.expr.datatypes
 # Database setup (tables and UDFs)
 
 
-test_schema = 'test'
+test_schema = None
+
+
+def gen_schema_name(basename='test'):
+    """Generate a random alpha string starting with 'test_' to be used as a
+    test schema name"""
+    schema_name = '{}_{}'.format(
+        basename,
+        ''.join([random.choice(string.ascii_lowercase) for i in range(6)])
+    )
+    return schema_name
+
+
+def create_test_schema(connection: PostgreSQLClient, max_tries=20):
+    """Create a random test schema, necessary to allow for parallel pytest
+    testing"""
+    schema_exists = True
+    tries = 0
+    while schema_exists and tries < max_tries:
+        new_name = gen_schema_name()
+        sql_check_schema = """SELECT count(schema_name) as n_recs
+        FROM information_schema.schemata
+        WHERE lower(schema_name) = lower('{}');""".format(new_name)
+        df_result = pd.read_sql(sql_check_schema, connection.con)
+        schema_exists = df_result['n_recs'].iloc[0] > 0
+        tries += 1
+    assert tries > 0
+    global test_schema
+    test_schema = new_name
+    connection.con.execute("CREATE SCHEMA {};".format(new_name))
+
 
 table_name = 'udf_test_users'
 
@@ -27,9 +61,7 @@ INSERT INTO {schema}.{table_name} VALUES
 (2, 'Judy', 4),
 (3, 'Jonathan', 8)
 ;
-""".format(table_name=table_name, schema=test_schema)
-
-sql_create_plpython = "CREATE EXTENSION plpythonu "
+"""
 
 sql_define_py_udf = """CREATE OR REPLACE FUNCTION {schema}.pylen(x varchar)
 RETURNS integer
@@ -37,7 +69,7 @@ LANGUAGE plpythonu
 AS
 $$
 return len(x)
-$$;""".format(schema=test_schema)
+$$;"""
 
 sql_define_udf = """CREATE OR REPLACE FUNCTION {schema}.custom_len(x varchar)
 RETURNS integer
@@ -45,21 +77,17 @@ LANGUAGE SQL
 AS
 $$
 SELECT length(x);
-$$;""".format(schema=test_schema)
+$$;"""
 
 
 @pytest.fixture
 def con_for_udf(con):
-    con.con.execute("DROP SCHEMA IF EXISTS {} CASCADE".format(test_schema))
-    con.con.execute("CREATE SCHEMA {}".format(test_schema))
-    con.con.execute(sql_table_setup)
-    con.con.execute(sql_define_udf)
-    try:
-        con.con.execute(sql_create_plpython)
-    except sqlalchemy.exc.ProgrammingError as e:
-        if '"plpythonu" already exists' not in str(e):
-            raise Exception('PL/Python extension creation failed') from e
-    con.con.execute(sql_define_py_udf)
+    create_test_schema(con)
+    con.con.execute(
+        sql_table_setup.format(table_name=table_name, schema=test_schema)
+    )
+    con.con.execute(sql_define_udf.format(schema=test_schema))
+    con.con.execute(sql_define_py_udf.format(schema=test_schema))
     yield con
     # teardown
     con.con.execute("DROP SCHEMA IF EXISTS {} CASCADE".format(test_schema))
@@ -69,28 +97,18 @@ def con_for_udf(con):
 def table(con_for_udf):
     return con_for_udf.table(table_name, schema=test_schema)
 
-
-# Create ibis UDF objects referring to UDFs already created in the database
-
-custom_length_udf = ibis.sql.postgres.udf.api.existing_udf(
-    'custom_len',
-    input_types=[ibis.expr.datatypes.String()],
-    output_type=ibis.expr.datatypes.Integer(),
-    schema=test_schema
-)
-
-py_length_udf = ibis.sql.postgres.udf.api.existing_udf(
-    'pylen',
-    input_types=[ibis.expr.datatypes.String()],
-    output_type=ibis.expr.datatypes.Integer(),
-    schema=test_schema
-)
-
-
 # Tests
+
 
 def test_sql_length_udf_worked(table):
     """Test creating ibis UDF object based on existing UDF in the database"""
+    # Create ibis UDF objects referring to UDFs already created in the database
+    custom_length_udf = ibis.sql.postgres.udf.api.existing_udf(
+        'custom_len',
+        input_types=[ibis.expr.datatypes.String()],
+        output_type=ibis.expr.datatypes.Integer(),
+        schema=test_schema
+    )
     result_obj = table[
         table,
         custom_length_udf(table['user_name']).name('custom_len')
@@ -100,6 +118,13 @@ def test_sql_length_udf_worked(table):
 
 
 def test_py_length_udf_worked(table):
+    # Create ibis UDF objects referring to UDFs already created in the database
+    py_length_udf = ibis.sql.postgres.udf.api.existing_udf(
+        'pylen',
+        input_types=[ibis.expr.datatypes.String()],
+        output_type=ibis.expr.datatypes.Integer(),
+        schema=test_schema
+    )
     result_obj = table[
         table,
         py_length_udf(table['user_name']).name('custom_len')
