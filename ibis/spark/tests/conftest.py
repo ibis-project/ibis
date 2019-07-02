@@ -5,6 +5,7 @@ import ibis
 
 @pytest.fixture(scope='session')
 def client():
+    pytest.importorskip('pyspark')
     client = ibis.spark.connect()
     df = client._session.createDataFrame([(1, 'a')], ['foo', 'bar'])
     df.createOrReplaceTempView('simple')
