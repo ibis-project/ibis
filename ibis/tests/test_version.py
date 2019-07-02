@@ -8,8 +8,8 @@ import ibis
 
 
 @pytest.mark.skipif(
-    bool(os.environ.get("CIRCLECI", os.environ.get("AZURECI", None))),
-    reason="Testing import time on Circle CI is flaky due to machine variance",
+    bool(os.environ.get("AZURECI")),
+    reason="Testing import time on CI is flaky due to machine variance",
 )
 def test_import_time():
     pb = pytest.importorskip("plumbum")

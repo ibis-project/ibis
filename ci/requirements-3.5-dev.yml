@@ -2,6 +2,7 @@ channels:
   - conda-forge/label/cf201901
   - conda-forge
 dependencies:
+  #- black  # Python 3.5 cannot be used to run black
   # conda 4.5 because of python3.5
   - conda=4.5.11
   - click
@@ -25,13 +26,11 @@ dependencies:
   - pre_commit
   - psycopg2
   - pyarrow<0.12
+  - pygit2
   - pymapd>=0.8.3,<0.11.0
   - pymysql
   - pyspark>=2.4.3
   - pytables>=3.0.0
-  - pytest
-  - pytest-cov
-  - pytest-xdist
   - python=3.5
   - python-graphviz
   - python-hdfs>=2.0.16
@@ -39,7 +38,7 @@ dependencies:
   - regex
   - requests
   - ruamel.yaml
-  - sqlalchemy
+  - sqlalchemy>=1.1
   - thrift>=0.9.3
   # required for impyla in case of py3
   - thriftpy
@@ -47,5 +46,8 @@ dependencies:
   - xorg-libxpm
   - xorg-libxrender
   - pip:
-    - pydata-google-auth
     - seed-isort-config
+    - pydata-google-auth
+    - pytest>=4.5  # conda-forge only has <=3.8.1 for python 3.5
+    - pytest-cov
+    - pytest-xdist

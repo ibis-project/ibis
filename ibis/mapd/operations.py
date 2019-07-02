@@ -54,8 +54,18 @@ def _cast(translator, expr):
     op = expr.op()
     arg, target = op.args
     arg_ = translator.translate(arg)
-    type_ = str(MapDDataType.from_ibis(target, nullable=False))
 
+    if isinstance(arg, ir.GeoSpatialValue):
+        # NOTE: CastToGeography expects geometry with SRID=4326
+        type_ = target.geotype.upper()
+
+        if type_ == 'GEOMETRY':
+            raise com.UnsupportedOperationError(
+                'OmnisciDB/MapD doesn\'t support yet convert '
+                + 'from GEOGRAPHY to GEOMETRY.'
+            )
+    else:
+        type_ = str(MapDDataType.from_ibis(target, nullable=False))
     return 'CAST({0!s} AS {1!s})'.format(arg_, type_)
 
 
@@ -812,6 +822,8 @@ _geospatial_ops = {
     ops.GeoNPoints: unary('ST_NPOINTS'),
     ops.GeoNRings: unary('ST_NRINGS'),
     ops.GeoSRID: unary('ST_SRID'),
+    ops.GeoTransform: fixed_arity('ST_TRANSFORM', 2),
+    ops.GeoSetSRID: fixed_arity('ST_SETSRID', 2)
 }
 
 # STRING

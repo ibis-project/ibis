@@ -140,3 +140,12 @@ def test_schema_subset():
 
     assert s1 >= s2
     assert s2 <= s1
+
+
+def test_empty_schema():
+    schema = ibis.schema([])
+    result = repr(schema)
+    expected = """\
+ibis.Schema {
+}"""
+    assert result == expected

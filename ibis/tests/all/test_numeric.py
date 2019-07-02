@@ -8,7 +8,6 @@ import pytest
 from pytest import param
 
 import ibis
-import ibis.tests.util as tu
 from ibis import literal as L
 from ibis.tests.backends import MapD
 
@@ -41,7 +40,7 @@ from ibis.tests.backends import MapD
         param(operator.methodcaller('isinf'), np.isinf, id='isinf'),
     ],
 )
-@tu.skipif_unsupported
+@pytest.mark.xfail_unsupported
 def test_isnan_isinf(
     backend,
     con,
@@ -87,8 +86,8 @@ def test_isnan_isinf(
         param(L(11) % 3, 11 % 3, id='mod'),
     ],
 )
-@tu.skipif_backend(MapD)
-@tu.skipif_unsupported
+@pytest.mark.skip_backends([MapD])
+@pytest.mark.xfail_unsupported
 def test_math_functions_literals(backend, con, alltypes, df, expr, expected):
     result = con.execute(expr)
 
@@ -136,7 +135,7 @@ def test_math_functions_literals(backend, con, alltypes, df, expr, expected):
         ),
     ],
 )
-@tu.skipif_unsupported
+@pytest.mark.xfail_unsupported
 def test_simple_math_functions_columns(
     backend, con, alltypes, df, expr_fn, expected_fn
 ):
@@ -181,7 +180,7 @@ def test_simple_math_functions_columns(
         ),
     ],
 )
-@tu.skipif_unsupported
+@pytest.mark.xfail_unsupported
 def test_complex_math_functions_columns(
     backend, con, alltypes, df, expr_fn, expected_fn
 ):
@@ -232,7 +231,7 @@ def test_complex_math_functions_columns(
         ),
     ],
 )
-@tu.skipif_unsupported
+@pytest.mark.xfail_unsupported
 def test_backend_specific_numerics(
     backend, con, df, alltypes, expr_fn, expected_fn
 ):

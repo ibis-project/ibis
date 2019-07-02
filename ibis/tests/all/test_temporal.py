@@ -1,4 +1,3 @@
-import sys
 import warnings
 
 import numpy as np
@@ -9,7 +8,6 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-import ibis.tests.util as tu
 from ibis.pandas.execution.temporal import day_name
 from ibis.tests.backends import (
     BigQuery,
@@ -25,7 +23,7 @@ from ibis.tests.backends import (
 
 
 @pytest.mark.parametrize('attr', ['year', 'month', 'day'])
-@tu.skipif_unsupported
+@pytest.mark.xfail_unsupported
 def test_date_extract(backend, alltypes, df, attr):
     expr = getattr(alltypes.timestamp_col.date(), attr)()
     expected = getattr(df.timestamp_col.dt, attr).astype('int32')
@@ -39,7 +37,7 @@ def test_date_extract(backend, alltypes, df, attr):
 @pytest.mark.parametrize(
     'attr', ['year', 'month', 'day', 'hour', 'minute', 'second']
 )
-@tu.skipif_unsupported
+@pytest.mark.xfail_unsupported
 def test_timestamp_extract(backend, alltypes, df, attr):
     expr = getattr(alltypes.timestamp_col, attr)()
     expected = getattr(df.timestamp_col.dt, attr).astype('int32')
@@ -65,8 +63,8 @@ def test_timestamp_extract(backend, alltypes, df, attr):
         'ns',
     ],
 )
-@tu.skipif_unsupported
-@tu.skipif_backend(MapD)
+@pytest.mark.xfail_unsupported
+@pytest.mark.skip_backends([MapD])
 def test_timestamp_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.truncate(unit)
 
@@ -88,7 +86,7 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
         param('W', marks=pytest.mark.xpass_backends((Csv, Pandas, Parquet))),
     ],
 )
-@tu.skipif_unsupported
+@pytest.mark.xfail_unsupported
 def test_date_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.date().truncate(unit)
 
@@ -126,7 +124,7 @@ def test_date_truncate(backend, alltypes, df, unit):
         ),
     ],
 )
-@tu.skipif_unsupported
+@pytest.mark.xfail_unsupported
 def test_integer_to_interval_timestamp(
     backend, con, alltypes, df, unit, displacement_type
 ):
@@ -152,7 +150,7 @@ def test_integer_to_interval_timestamp(
 @pytest.mark.parametrize(
     'unit', ['Y', param('Q', marks=pytest.mark.xfail), 'M', 'W', 'D']
 )
-@tu.skipif_unsupported
+@pytest.mark.xfail_unsupported
 def test_integer_to_interval_date(backend, con, alltypes, df, unit):
     interval = alltypes.int_col.to_interval(unit=unit)
     array = alltypes.date_string_col.split('/')
@@ -177,7 +175,7 @@ def test_integer_to_interval_date(backend, con, alltypes, df, unit):
 
 
 @pytest.mark.parametrize('unit', ['h', 'm', 's', 'ms', 'us'])
-@tu.skipif_unsupported
+@pytest.mark.xfail_unsupported
 def test_integer_to_interval_date_failure(backend, con, alltypes, df, unit):
     interval = alltypes.int_col.to_interval(unit=unit)
     array = alltypes.date_string_col.split('/')
@@ -231,7 +229,7 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
         ),
     ],
 )
-@tu.skipif_unsupported
+@pytest.mark.xfail_unsupported
 def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
     expr = expr_fn(alltypes, backend)
     expected = expected_fn(df, backend)
@@ -242,10 +240,36 @@ def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
     backend.assert_series_equal(result, expected)
 
 
+@pytest.mark.xfail_unsupported
+def test_interval_add_cast_scalar(backend, alltypes):
+    timestamp_date = alltypes.timestamp_col.date()
+    delta = ibis.literal(10).cast("interval('D')")
+    expr = timestamp_date + delta
+    result = expr.execute()
+    expected = timestamp_date.execute() + pd.Timedelta(10, unit='D')
+    backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.xfail_unsupported
+def test_interval_add_cast_column(backend, alltypes, df):
+    timestamp_date = alltypes.timestamp_col.date()
+    delta = alltypes.bigint_col.cast("interval('D')")
+    expr = alltypes['id', (timestamp_date + delta).name('tmp')]
+    result = expr.execute().sort_values('id').reset_index().tmp
+    df = df.sort_values('id').reset_index(drop=True)
+    expected = (
+        df['timestamp_col']
+        .dt.normalize()
+        .add(df.bigint_col.astype("timedelta64[D]"))
+        .rename("tmp")
+    )
+    backend.assert_series_equal(result, expected)
+
+
 @pytest.mark.parametrize(
     ('ibis_pattern', 'pandas_pattern'), [('%Y%m%d', '%Y%m%d')]
 )
-@tu.skipif_unsupported
+@pytest.mark.xfail_unsupported
 def test_strftime(backend, con, alltypes, df, ibis_pattern, pandas_pattern):
     expr = alltypes.timestamp_col.strftime(ibis_pattern)
     expected = df.timestamp_col.dt.strftime(pandas_pattern)
@@ -255,12 +279,7 @@ def test_strftime(backend, con, alltypes, df, ibis_pattern, pandas_pattern):
     backend.assert_series_equal(result, expected)
 
 
-unit_factors = {
-    's': int(1e9),
-    'ms': int(1e6),
-    'us': int(1e3),
-    'ns': 1,
-}
+unit_factors = {'s': int(1e9), 'ms': int(1e6), 'us': int(1e3), 'ns': 1}
 
 
 @pytest.mark.parametrize(
@@ -277,7 +296,7 @@ unit_factors = {
         param('ns', marks=pytest.mark.xpass_backends((Csv, Pandas, Parquet))),
     ],
 )
-@tu.skipif_unsupported
+@pytest.mark.xfail_unsupported
 def test_to_timestamp(backend, con, unit):
     if unit not in backend.supported_to_timestamp_units:
         pytest.skip(
@@ -311,7 +330,7 @@ def test_to_timestamp(backend, con, unit):
         ('2017-01-07', 5, 'Saturday'),
     ],
 )
-@tu.skipif_unsupported
+@pytest.mark.xfail_unsupported
 def test_day_of_week_scalar(backend, con, date, expected_index, expected_day):
     expr = ibis.literal(date).cast(dt.date)
     result_index = con.execute(expr.day_of_week.index())
@@ -321,7 +340,7 @@ def test_day_of_week_scalar(backend, con, date, expected_index, expected_day):
     assert result_day.lower() == expected_day.lower()
 
 
-@tu.skipif_unsupported
+@pytest.mark.xfail_unsupported
 def test_day_of_week_column(backend, con, alltypes, df):
     expr = alltypes.timestamp_col.day_of_week
 
@@ -351,7 +370,7 @@ def test_day_of_week_column(backend, con, alltypes, df):
         ),
     ],
 )
-@tu.skipif_unsupported
+@pytest.mark.xfail_unsupported
 def test_day_of_week_column_group_by(
     backend, con, alltypes, df, day_of_week_expr, day_of_week_pandas
 ):
@@ -370,18 +389,11 @@ def test_day_of_week_column_group_by(
     )
 
     # FIXME(#1536): Pandas backend should use query.schema().apply_to
-    backend.assert_frame_equal(
-        result,
-        expected,
-        check_dtype=False,
-        # python 2's handling of strings is annoying here wrt sqlalchemy's
-        # column name string subclass
-        check_column_type=sys.version_info.major != 2,
-    )
+    backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
-@tu.skipif_unsupported
-@tu.skipif_backend(MapD)
+@pytest.mark.xfail_unsupported
+@pytest.mark.skip_backends([MapD])
 def test_now(backend, con):
     expr = ibis.now()
     result = con.execute(expr)
@@ -393,8 +405,8 @@ def test_now(backend, con):
     assert result.year == pandas_now.year
 
 
-@tu.skipif_unsupported
-@tu.skipif_backend(MapD)
+@pytest.mark.xfail_unsupported
+@pytest.mark.skip_backends([MapD])
 def test_now_from_projection(backend, con, alltypes, df):
     n = 5
     expr = alltypes[[ibis.now().name('ts')]].limit(n)

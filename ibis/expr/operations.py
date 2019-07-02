@@ -1025,6 +1025,15 @@ class WindowOp(ValueOp):
         if table is not None:
             window = window.bind(table)
 
+        if window.max_lookback is not None:
+            error_msg = ("'max lookback' windows must be ordered "
+                         "by a timestamp column")
+            if len(window._order_by) != 1:
+                raise com.IbisInputError(error_msg)
+            order_var = window._order_by[0].op().args[0]
+            if not isinstance(order_var.type(), dt.Timestamp):
+                raise com.IbisInputError(error_msg)
+
         expr = propagate_down_window(expr, window)
         super().__init__(expr, window)
 
@@ -2892,6 +2901,15 @@ class Literal(ValueOp):
     def root_tables(self):
         return []
 
+    def __hash__(self) -> int:
+        """Return the hash of a literal value.
+
+        We override this method to make sure that we can handle things that
+        aren't eminently hashable like an ``array<array<int64>>``.
+
+        """
+        return hash(self.dtype._literal_value_hash_key(self.value))
+
 
 class NullLiteral(Literal):
     """Typeless NULL literal"""
@@ -2990,6 +3008,68 @@ class GeoDistance(GeoSpatialBinOp):
 
 class GeoContains(GeoSpatialBinOp):
     """Check if the first geo spatial data contains the second one"""
+
+    output_type = rlz.shape_like('args', dt.boolean)
+
+
+class GeoContainsProperly(GeoSpatialBinOp):
+    """Check if the first geo spatial data contains the second one,
+    and no boundary points are shared."""
+
+    output_type = rlz.shape_like('args', dt.boolean)
+
+
+class GeoCovers(GeoSpatialBinOp):
+    """Returns True if no point in Geometry B is outside Geometry A"""
+
+    output_type = rlz.shape_like('args', dt.boolean)
+
+
+class GeoCoveredBy(GeoSpatialBinOp):
+    """Returns True if no point in Geometry/Geography A is
+    outside Geometry/Geography B"""
+
+    output_type = rlz.shape_like('args', dt.boolean)
+
+
+class GeoCrosses(GeoSpatialBinOp):
+    """Returns True if the supplied geometries have some, but not all,
+    interior points in common."""
+
+    output_type = rlz.shape_like('args', dt.boolean)
+
+
+class GeoDisjoint(GeoSpatialBinOp):
+    """Returns True if the Geometries do not “spatially intersect” -
+    if they do not share any space together."""
+
+    output_type = rlz.shape_like('args', dt.boolean)
+
+
+class GeoEquals(GeoSpatialBinOp):
+    """Returns True if the given geometries represent the same geometry."""
+
+    output_type = rlz.shape_like('args', dt.boolean)
+
+
+class GeoIntersects(GeoSpatialBinOp):
+    """Returns True if the Geometries/Geography “spatially intersect in 2D”
+    - (share any portion of space) and False if they don’t (they are Disjoint).
+    """
+
+    output_type = rlz.shape_like('args', dt.boolean)
+
+
+class GeoOverlaps(GeoSpatialBinOp):
+    """Returns True if the Geometries share space, are of the same dimension,
+    but are not completely contained by each other."""
+
+    output_type = rlz.shape_like('args', dt.boolean)
+
+
+class GeoTouches(GeoSpatialBinOp):
+    """Returns True if the geometries have at least one point in common,
+    but their interiors do not intersect."""
 
     output_type = rlz.shape_like('args', dt.boolean)
 
@@ -3105,6 +3185,137 @@ class GeoNRings(GeoSpatialUnOp):
 
 
 class GeoSRID(GeoSpatialUnOp):
-    """Returns the spatial reference identifier for the ST_Geometry"""
+    """Returns the spatial reference identifier for the ST_Geometry."""
 
     output_type = rlz.shape_like('args', dt.int64)
+
+
+class GeoSetSRID(GeoSpatialUnOp):
+    """Set the spatial reference identifier for the ST_Geometry."""
+    srid = Arg(rlz.integer)
+    output_type = rlz.shape_like('args', dt.geometry)
+
+
+class GeoBuffer(GeoSpatialUnOp):
+    """Returns a geometry that represents all points whose distance from this
+    Geometry is less than or equal to distance. Calculations are in the
+    Spatial Reference System of this Geometry.
+    """
+
+    radius = Arg(rlz.floating)
+
+    output_type = rlz.shape_like('args', dt.geometry)
+
+
+class GeoCentroid(GeoSpatialUnOp):
+    """Returns the geometric center of a geometry."""
+
+    output_type = rlz.shape_like('arg', dt.point)
+
+
+class GeoDFullyWithin(GeoSpatialBinOp):
+    """Returns True if the geometries are fully within the specified distance
+    of one another.
+    """
+    distance = Arg(rlz.floating)
+
+    output_type = rlz.shape_like('args', dt.boolean)
+
+
+class GeoDWithin(GeoSpatialBinOp):
+    """Returns True if the geometries are within the specified distance
+    of one another.
+    """
+    distance = Arg(rlz.floating)
+
+    output_type = rlz.shape_like('args', dt.boolean)
+
+
+class GeoEnvelope(GeoSpatialUnOp):
+    """Returns a geometry representing the boundingbox of the supplied geometry.
+    """
+
+    output_type = rlz.shape_like('arg', dt.polygon)
+
+
+class GeoAzimuth(GeoSpatialBinOp):
+    """Returns the angle in radians from the horizontal of the vector defined
+    by pointA and pointB. Angle is computed clockwise from down-to-up:
+    on the clock: 12=0; 3=PI/2; 6=PI; 9=3PI/2.
+    """
+
+    left = Arg(rlz.point)
+    right = Arg(rlz.point)
+
+    output_type = rlz.shape_like('args', dt.float64)
+
+
+class GeoWithin(GeoSpatialBinOp):
+    """Returns True if the geometry A is completely inside geometry B"""
+
+    output_type = rlz.shape_like('args', dt.boolean)
+
+
+class GeoIntersection(GeoSpatialBinOp):
+    """Returns a geometry that represents the point set intersection
+    of the Geometries.
+    """
+
+    output_type = rlz.shape_like('args', dt.geometry)
+
+
+class GeoDifference(GeoSpatialBinOp):
+    """Returns a geometry that represents that part of geometry A
+    that does not intersect with geometry B
+    """
+
+    output_type = rlz.shape_like('args', dt.geometry)
+
+
+class GeoSimplify(GeoSpatialUnOp):
+    """Returns a simplified version of the given geometry."""
+
+    tolerance = Arg(rlz.floating)
+    preserve_collapsed = Arg(rlz.boolean)
+
+    output_type = rlz.shape_like('arg', dt.geometry)
+
+
+class GeoTransform(GeoSpatialUnOp):
+    """Returns a transformed version of the given geometry into a new SRID."""
+
+    srid = Arg(rlz.integer)
+
+    output_type = rlz.shape_like('arg', dt.geometry)
+
+
+class GeoAsBinary(GeoSpatialUnOp):
+    """Return the Well-Known Binary (WKB) representation of the
+    geometry/geography without SRID meta data.
+    """
+
+    output_type = rlz.shape_like('arg', dt.binary)
+
+
+class GeoAsEWKB(GeoSpatialUnOp):
+    """Return the Well-Known Binary (WKB) representation of the
+    geometry/geography with SRID meta data.
+    """
+
+    output_type = rlz.shape_like('arg', dt.binary)
+
+
+class GeoAsEWKT(GeoSpatialUnOp):
+    """Return the Well-Known Text (WKT) representation of the
+    geometry/geography with SRID meta data.
+    """
+
+    output_type = rlz.shape_like('arg', dt.string)
+
+
+class GeoAsText(GeoSpatialUnOp):
+    """Return the Well-Known Text (WKT) representation of the
+    geometry/geography without SRID metadata.
+    """
+
+    output_type = rlz.shape_like('arg', dt.string)

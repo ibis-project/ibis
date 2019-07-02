@@ -74,6 +74,9 @@ def test_read(csv, data):
     expected['time'] = expected['time'].astype(str)
     tm.assert_frame_equal(result, expected)
 
+    result = closes.execute()
+    tm.assert_frame_equal(result, expected)
+
 
 def test_read_with_projection(csv2, data):
 

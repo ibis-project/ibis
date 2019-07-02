@@ -20,8 +20,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.compat import CategoricalDtype, DatetimeTZDtype
-from ibis.pandas.core import execute
-from ibis.pandas.dispatch import execute_last
+from ibis.pandas.core import execute_and_reset
 
 try:
     infer_pandas_dtype = pd.api.types.infer_dtype
@@ -370,9 +369,7 @@ class PandasClient(client.Client):
                     type(query).__name__
                 )
             )
-        result = execute(query, params=params, **kwargs)
-        query_op = query.op()
-        return execute_last(query_op, result, params=params, **kwargs)
+        return execute_and_reset(query, params=params, **kwargs)
 
     def compile(self, expr, *args, **kwargs):
         """Compile `expr`.

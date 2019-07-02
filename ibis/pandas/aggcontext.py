@@ -268,7 +268,7 @@ class Summarize(AggregationContext):
                 'Object {} is not callable or a string'.format(function)
             )
 
-        return grouped_data.apply(
+        return grouped_data.agg(
             make_applied_function(function, args, kwargs)
         )
 

@@ -1,17 +1,19 @@
 """ Tests for geo spatial data types"""
 from inspect import isfunction
 
+import numpy as np
 import pytest
 from numpy import testing
 
 import ibis
-import ibis.tests.util as tu
 from ibis.tests.backends import MapD
 
 # geo literals declaration
 point_0 = ibis.literal((0, 0), type='point:geometry').name('p')
 point_1 = ibis.literal((1, 1), type='point:geometry').name('p')
 point_2 = ibis.literal((2, 2), type='point;4326:geometry').name('p')
+point_3 = ibis.literal((1, 1), type='point:geography').name('p')
+point_4 = ibis.literal((2, 2), type='point;4326:geography').name('p')
 polygon_0 = ibis.literal(
     (
         ((1, 0), (0, 1), (-1, 0), (0, -1), (1, 0)),
@@ -19,6 +21,9 @@ polygon_0 = ibis.literal(
     ),
     type='polygon',
 )
+
+# add here backends that support geo spatial types
+all_db_geo_supported = [MapD]
 
 
 @pytest.mark.parametrize(
@@ -37,7 +42,7 @@ polygon_0 = ibis.literal(
         (lambda t: t['geo_point'].srid(), [0] * 5),
     ],
 )
-@tu.skipifnot_backend(MapD)
+@pytest.mark.only_on_backends(all_db_geo_supported)
 def test_geo_spatial_unops(backend, geo, expr_fn, expected):
     """Testing for geo spatial unary operations."""
     expr = expr_fn(geo)
@@ -68,7 +73,7 @@ def test_geo_spatial_unops(backend, geo, expr_fn, expected):
         ),
     ],
 )
-@tu.skipifnot_backend(MapD)
+@pytest.mark.only_on_backends(all_db_geo_supported)
 def test_geo_spatial_binops(backend, geo, fn, arg_left, arg_right, expected):
     """Testing for geo spatial binary operations."""
     left = arg_left(geo) if isfunction(arg_left) else arg_left
@@ -86,7 +91,7 @@ def test_geo_spatial_binops(backend, geo, fn, arg_left, arg_right, expected):
         (lambda t: t['geo_linestring'].start_point(), [False] * 5),
     ],
 )
-@tu.skipifnot_backend(MapD)
+@pytest.mark.only_on_backends(all_db_geo_supported)
 def test_get_point(backend, geo, expr_fn, expected):
     """Testing for geo spatial get point operations."""
     # a geo spatial data does not contain its boundary
@@ -97,17 +102,117 @@ def test_get_point(backend, geo, expr_fn, expected):
 
 
 @pytest.mark.parametrize(('arg', 'expected'), [(polygon_0, [1.98] * 5)])
-@tu.skipifnot_backend(MapD)
+@pytest.mark.only_on_backends(all_db_geo_supported)
 def test_area(backend, geo, arg, expected):
     """Testing for geo spatial area operation."""
-    expr = geo[geo, arg.area().name('tmp')]
+    expr = geo[geo.id, arg.area().name('tmp')]
     result = expr.execute()['tmp']
     testing.assert_almost_equal(result, expected, decimal=2)
 
 
-@pytest.mark.parametrize(('arg', 'expected'), [(point_2.srid() == 4326, True)])
-@tu.skipifnot_backend(MapD)
-def test_srid_literals(backend, geo, arg, expected):
-    """Testing for geo spatial srid operation (from literal)."""
-    result = geo[geo, arg.name('tmp')].execute()['tmp'][[0]]
-    testing.assert_almost_equal(result, [expected], decimal=2)
+@pytest.mark.parametrize(
+    ('condition', 'expected'),
+    [
+        (lambda t: point_2.srid(), 4326),
+        (lambda t: point_0.srid(), 0),
+        (lambda t: t.geo_point.srid(), 0),
+        (lambda t: t.geo_linestring.srid(), 0),
+        (lambda t: t.geo_polygon.srid(), 0),
+        (lambda t: t.geo_multipolygon.srid(), 0),
+    ]
+)
+@pytest.mark.only_on_backends(all_db_geo_supported)
+def test_srid(backend, geo, condition, expected):
+    """Testing for geo spatial srid operation."""
+    expr = geo[geo.id, condition(geo).name('tmp')]
+    result = expr.execute()['tmp'][[0]]
+    assert np.all(result == expected)
+
+
+@pytest.mark.parametrize(
+    ('condition', 'expected'),
+    [
+        (lambda t: point_0.set_srid(4326).srid(), 4326),
+        (lambda t: point_0.set_srid(4326).set_srid(0).srid(), 0),
+        (lambda t: t.geo_point.set_srid(4326).srid(), 4326),
+        (lambda t: t.geo_linestring.set_srid(4326).srid(), 4326),
+        (lambda t: t.geo_polygon.set_srid(4326).srid(), 4326),
+        (lambda t: t.geo_multipolygon.set_srid(4326).srid(), 4326),
+    ]
+)
+@pytest.mark.only_on_backends(all_db_geo_supported)
+def test_set_srid(backend, geo, condition, expected):
+    """Testing for geo spatial set_srid operation."""
+    expr = geo[geo.id, condition(geo).name('tmp')]
+    result = expr.execute()['tmp'][[0]]
+    assert np.all(result == expected)
+
+
+@pytest.mark.parametrize(
+    ('condition', 'expected'),
+    [
+        (lambda t: point_0.set_srid(4326).transform(900913).srid(),
+         900913),
+        (lambda t: point_2.transform(900913).srid(),
+         900913),
+        (lambda t: t.geo_point.set_srid(4326).transform(900913).srid(),
+         900913),
+        (lambda t: t.geo_linestring.set_srid(4326).transform(900913).srid(),
+         900913),
+        (lambda t: t.geo_polygon.set_srid(4326).transform(900913).srid(),
+         900913),
+        (lambda t: t.geo_multipolygon.set_srid(4326).transform(900913).srid(),
+         900913),
+    ]
+)
+@pytest.mark.only_on_backends(all_db_geo_supported)
+@pytest.mark.xfail_unsupported
+def test_transform(backend, geo, condition, expected):
+    """Testing for geo spatial transform operation."""
+    expr = geo[geo.id, condition(geo).name('tmp')]
+    result = expr.execute()['tmp'][[0]]
+    assert np.all(result == expected)
+
+
+@pytest.mark.parametrize(
+    'expr_fn',
+    [
+        lambda t: t.geo_point.set_srid(4326),
+        lambda t: point_0.set_srid(4326),
+        lambda t: point_1.set_srid(4326),
+        lambda t: point_2,
+        lambda t: point_3.set_srid(4326),
+        lambda t: point_4,
+    ]
+)
+@pytest.mark.only_on_backends(all_db_geo_supported)
+@pytest.mark.xfail_unsupported
+def test_cast_geography(backend, geo, expr_fn):
+    """Testing for geo spatial transform operation."""
+    p = expr_fn(geo).cast('geography')
+    expr = geo[geo.id, p.distance(p).name('tmp')]
+    result = expr.execute()['tmp'][[0]]
+    # distance from a point to a same point should be 0
+    assert np.all(result == 0)
+
+
+@pytest.mark.parametrize(
+    'expr_fn',
+    [
+        lambda t: t.geo_point.set_srid(4326),
+        lambda t: point_0.set_srid(4326),
+        lambda t: point_1.set_srid(4326),
+        lambda t: point_2,
+        lambda t: point_3.set_srid(4326),
+        lambda t: point_4,
+    ]
+)
+@pytest.mark.only_on_backends(all_db_geo_supported)
+@pytest.mark.xfail_unsupported
+def test_cast_geometry(backend, geo, expr_fn):
+    """Testing for geo spatial transform operation."""
+    p = expr_fn(geo).cast('geometry')
+    expr = geo[geo.id, p.distance(p).name('tmp')]
+    result = expr.execute()['tmp'][[0]]
+    # distance from a point to a same point should be 0
+    assert np.all(result == 0)

@@ -98,6 +98,7 @@ from ibis.expr.types import (  # noqa
 from ibis.expr.window import (
     cumulative_window,
     range_window,
+    rows_with_max_lookback,
     trailing_range_window,
     trailing_window,
     window,
@@ -115,7 +116,28 @@ __all__ = (
     'Expr',
     'expr_list',
     'geo_area',
+    'geo_as_binary',
+    'geo_as_ewkb',
+    'geo_as_ewkt',
+    'geo_as_text',
+    'geo_azimuth',
+    'geo_buffer',
+    'geo_centroid',
     'geo_contains',
+    'geo_contains_properly',
+    'geo_covers',
+    'geo_covered_by',
+    'geo_crosses',
+    'geo_d_fully_within',
+    'geo_disjoint',
+    'geo_difference',
+    'geo_d_within',
+    'geo_envelope',
+    'geo_equals',
+    'geo_intersection',
+    'geo_intersects',
+    'geo_overlaps',
+    'geo_touches',
     'geo_distance',
     'geo_end_point',
     'geo_length',
@@ -124,14 +146,17 @@ __all__ = (
     'geo_n_rings',
     'geo_perimeter',
     'geo_point_n',
+    'geo_simplify',
     'geo_srid',
     'geo_start_point',
+    'geo_transform',
     'geo_x',
     'geo_x_max',
     'geo_x_min',
     'geo_y',
     'geo_y_max',
     'geo_y_min',
+    'geo_within',
     'greatest',
     'ifelse',
     'infer_dtype',
@@ -149,6 +174,7 @@ __all__ = (
     'prevent_rewrite',
     'range_window',
     'row_number',
+    'rows_with_max_lookback',
     'schema',
     'Schema',
     'sequence',
@@ -652,12 +678,18 @@ def cast(arg, target_type):
     if op.to.equals(arg.type()):
         # noop case if passed type is the same
         return arg
-    else:
-        result = op.to_expr()
-        if not arg.has_name():
-            return result
-        expr_name = 'cast({}, {})'.format(arg.get_name(), op.to)
-        return result.name(expr_name)
+
+    if isinstance(op.to, (dt.Geography, dt.Geometry)):
+        from_geotype = arg.type().geotype or 'geometry'
+        to_geotype = op.to.geotype
+        if from_geotype == to_geotype:
+            return arg
+
+    result = op.to_expr()
+    if not arg.has_name():
+        return result
+    expr_name = 'cast({}, {})'.format(arg.get_name(), op.to)
+    return result.name(expr_name)
 
 
 cast.__doc__ = """
@@ -1587,6 +1619,70 @@ def geo_area(arg, use_spheroid=None):
     return op.to_expr()
 
 
+def geo_as_binary(arg):
+    """
+    Get the geometry as well-known bytes (WKB) without the SRID data.
+
+    Parameters
+    ----------
+    arg : geometry or geography
+
+    Returns
+    -------
+    wkb : binary
+    """
+    op = ops.GeoAsBinary(arg)
+    return op.to_expr()
+
+
+def geo_as_ewkt(arg):
+    """
+    Get the geometry as well-known text (WKT) with the SRID data.
+
+    Parameters
+    ----------
+    arg : geometry or geography
+
+    Returns
+    -------
+    wkt : string
+    """
+    op = ops.GeoAsEWKT(arg)
+    return op.to_expr()
+
+
+def geo_as_text(arg):
+    """
+    Get the geometry as well-known text (WKT) without the SRID data.
+
+    Parameters
+    ----------
+    arg : geometry or geography
+
+    Returns
+    -------
+    wkt : string
+    """
+    op = ops.GeoAsText(arg)
+    return op.to_expr()
+
+
+def geo_as_ewkb(arg):
+    """
+    Get the geometry as well-known bytes (WKB) with the SRID data.
+
+    Parameters
+    ----------
+    arg : geometry or geography
+
+    Returns
+    -------
+    wkb : binary
+    """
+    op = ops.GeoAsEWKB(arg)
+    return op.to_expr()
+
+
 def geo_contains(left, right):
     """
     Check if the first geometry contains the second one
@@ -1601,6 +1697,200 @@ def geo_contains(left, right):
     contains : bool scalar
     """
     op = ops.GeoContains(left, right)
+    return op.to_expr()
+
+
+def geo_contains_properly(left, right):
+    """
+    Check if the first geometry contains the second one,
+    with no common border points.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    contains_properly : bool scalar
+    """
+    op = ops.GeoContainsProperly(left, right)
+    return op.to_expr()
+
+
+def geo_covers(left, right):
+    """
+    Check if the first geometry covers the second one.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    covers : bool scalar
+    """
+    op = ops.GeoCovers(left, right)
+    return op.to_expr()
+
+
+def geo_covered_by(left, right):
+    """
+    Check if the first geometry is covered by the second one.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    covered_by : bool scalar
+    """
+    op = ops.GeoCoveredBy(left, right)
+    return op.to_expr()
+
+
+def geo_crosses(left, right):
+    """
+    Check if the geometries have some, but not all, interior points in common.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    crosses : bool scalar
+    """
+    op = ops.GeoCrosses(left, right)
+    return op.to_expr()
+
+
+def geo_d_fully_within(left, right, distance):
+    """
+    Check if the first geometry is fully within a specified distance from
+    the second one.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+    distance: double
+
+    Returns
+    -------
+    d_fully_within : bool scalar
+    """
+    op = ops.GeoDFullyWithin(left, right, distance)
+    return op.to_expr()
+
+
+def geo_disjoint(left, right):
+    """
+    Check if the geometries have no points in common.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    disjoint : bool scalar
+    """
+    op = ops.GeoDisjoint(left, right)
+    return op.to_expr()
+
+
+def geo_d_within(left, right, distance):
+    """
+    Check if the first geometry is within a specified distance from
+    the second one.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+    distance: double
+
+    Returns
+    -------
+    d_within : bool scalar
+    """
+    op = ops.GeoDWithin(left, right, distance)
+    return op.to_expr()
+
+
+def geo_equals(left, right):
+    """
+    Check if the geometries are the same.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    equals : bool scalar
+    """
+    op = ops.GeoEquals(left, right)
+    return op.to_expr()
+
+
+def geo_intersects(left, right):
+    """
+    Check if the geometries share any points.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    intersects : bool scalar
+    """
+    op = ops.GeoIntersects(left, right)
+    return op.to_expr()
+
+
+def geo_overlaps(left, right):
+    """
+    Check if the geometries share space, are of the same dimension,
+    but are not completely contained by each other.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    overlaps : bool scalar
+    """
+    op = ops.GeoOverlaps(left, right)
+    return op.to_expr()
+
+
+def geo_touches(left, right):
+    """
+    Check if the geometries have at least one point in common,
+    but do not intersect.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    touches : bool scalar
+    """
+    op = ops.GeoTouches(left, right)
     return op.to_expr()
 
 
@@ -1864,25 +2154,218 @@ def geo_srid(arg):
     return op.to_expr()
 
 
+def geo_set_srid(arg, srid):
+    """Set the spatial reference identifier for the ST_Geometry
+
+    Parameters
+    ----------
+    arg : geometry
+    srid : integer
+
+    Returns
+    -------
+    SetSRID : geometry
+    """
+    op = ops.GeoSetSRID(arg, srid)
+    return op.to_expr()
+
+
+def geo_buffer(arg, radius):
+    """Returns a geometry that represents all points whose distance from this
+    Geometry is less than or equal to distance. Calculations are in the
+    Spatial Reference System of this Geometry.
+
+    Parameters
+    ----------
+    arg : geometry
+    radius: double
+
+    Returns
+    -------
+    buffer : geometry scalar
+    """
+    op = ops.GeoBuffer(arg, radius)
+    return op.to_expr()
+
+
+def geo_centroid(arg):
+    """Returns the centroid of the geometry.
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    centroid : geometry scalar
+    """
+    op = ops.GeoCentroid(arg)
+    return op.to_expr()
+
+
+def geo_envelope(arg):
+    """Returns a geometry representing the bounding box of the arg.
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    envelope : geometry scalar
+    """
+    op = ops.GeoEnvelope(arg)
+    return op.to_expr()
+
+
+def geo_within(left, right):
+    """
+    Check if the first geometry is completely inside of the second.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    within : bool scalar
+    """
+    op = ops.GeoWithin(left, right)
+    return op.to_expr()
+
+
+def geo_azimuth(left, right):
+    """
+    Check if the geometries have at least one point in common,
+    but do not intersect.
+
+    Parameters
+    ----------
+    left : point
+    right : point
+
+    Returns
+    -------
+    azimuth : float scalar
+    """
+    op = ops.GeoAzimuth(left, right)
+    return op.to_expr()
+
+
+def geo_intersection(left, right):
+    """
+    Return the intersection of two geometries.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    intersection : geometry scalar
+    """
+    op = ops.GeoIntersection(left, right)
+    return op.to_expr()
+
+
+def geo_difference(left, right):
+    """
+    Return the difference of two geometries.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    difference : geometry scalar
+    """
+    op = ops.GeoDifference(left, right)
+    return op.to_expr()
+
+
+def geo_simplify(arg, tolerance, preserve_collapsed):
+    """
+    Simplify a given geometry.
+
+    Parameters
+    ----------
+    arg : geometry
+    tolerance: float
+    preserved_collapsed: boolean
+
+    Returns
+    -------
+    simplified : geometry scalar
+    """
+    op = ops.GeoSimplify(arg, tolerance, preserve_collapsed)
+    return op.to_expr()
+
+
+def geo_transform(arg, srid):
+    """
+    Transform a geometry into a new SRID.
+
+    Parameters
+    ----------
+    arg : geometry
+    srid: integer
+
+    Returns
+    -------
+    transformed : geometry scalar
+    """
+    op = ops.GeoTransform(arg, srid)
+    return op.to_expr()
+
+
 _geospatial_value_methods = dict(
     area=geo_area,
+    as_binary=geo_as_binary,
+    as_ewkb=geo_as_ewkb,
+    as_ewkt=geo_as_ewkt,
+    as_text=geo_as_text,
+    azimuth=geo_azimuth,
+    buffer=geo_buffer,
+    centroid=geo_centroid,
     contains=geo_contains,
+    contains_properly=geo_contains_properly,
+    covers=geo_covers,
+    covered_by=geo_covered_by,
+    crosses=geo_crosses,
+    d_fully_within=geo_d_fully_within,
+    difference=geo_difference,
+    disjoint=geo_disjoint,
     distance=geo_distance,
+    d_within=geo_d_within,
     end_point=geo_end_point,
+    envelope=geo_envelope,
+    equals=geo_equals,
+    intersection=geo_intersection,
+    intersects=geo_intersects,
     length=geo_length,
     max_distance=geo_max_distance,
     n_points=geo_n_points,
     n_rings=geo_n_rings,
+    overlaps=geo_overlaps,
     perimeter=geo_perimeter,
     point_n=geo_point_n,
+    set_srid=geo_set_srid,
+    simplify=geo_simplify,
     srid=geo_srid,
     start_point=geo_start_point,
+    touches=geo_touches,
+    transform=geo_transform,
+    within=geo_within,
     x=geo_x,
     x_max=geo_x_max,
     x_min=geo_x_min,
-    y_min=geo_y_min,
     y=geo_y,
     y_max=geo_y_max,
+    y_min=geo_y_min,
 )
 _geospatial_column_methods = dict()
 
@@ -3360,43 +3843,29 @@ def mutate(table, exprs=None, **mutations):
     >>> expr2 = table.mutate(new_columns)
     >>> expr.equals(expr2)
     True
+
     """
-    if exprs is None:
-        exprs = []
+    exprs = [] if exprs is None else util.promote_list(exprs)
+    exprs.extend(
+        (expr(table) if util.is_function(expr) else as_value_expr(expr)).name(
+            name
+        )
+        for name, expr in sorted(mutations.items(), key=operator.itemgetter(0))
+    )
+
+    by_name = collections.OrderedDict(
+        (expr.get_name(), expr) for expr in exprs
+    )
+    columns = table.columns
+    used = by_name.keys() & columns
+
+    if used:
+        proj_exprs = [
+            by_name.get(column, table[column]) for column in columns
+        ] + [expr for name, expr in by_name.items() if name not in used]
     else:
-        exprs = util.promote_list(exprs)
-
-    for k, v in sorted(mutations.items(), key=operator.itemgetter(0)):
-        if util.is_function(v):
-            v = v(table)
-        else:
-            v = as_value_expr(v)
-
-        exprs.append(v.name(k))
-
-    has_replacement = False
-    for expr in exprs:
-        if expr.get_name() in table:
-            has_replacement = True
-
-    if has_replacement:
-        by_name = dict((x.get_name(), x) for x in exprs)
-        used = set()
-        proj_exprs = []
-        for c in table.columns:
-            if c in by_name:
-                proj_exprs.append(by_name[c])
-                used.add(c)
-            else:
-                proj_exprs.append(c)
-
-        for x in exprs:
-            if x.get_name() not in used:
-                proj_exprs.append(x)
-
-        return table.projection(proj_exprs)
-    else:
-        return table.projection([table] + exprs)
+        proj_exprs = [table] + exprs
+    return table.projection(proj_exprs)
 
 
 def projection(table, exprs):
@@ -3497,7 +3966,6 @@ def projection(table, exprs):
         exprs = [exprs]
 
     projector = L.Projector(table, exprs)
-
     op = projector.get_result()
     return op.to_expr()
 

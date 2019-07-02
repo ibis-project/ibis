@@ -43,6 +43,10 @@ def _validate_compatible(from_schema, to_schema):
     return
 
 
+class PyMapDVersionError(Exception):
+    pass
+
+
 class MapDDataType:
 
     __slots__ = 'typename', 'nullable'
@@ -333,6 +337,7 @@ class MapDClient(SQLClient):
         port=6274,
         database=None,
         protocol='binary',
+        session_id=None,
         execution_type=EXECUTION_TYPE_CURSOR,
     ):
         """
@@ -346,6 +351,7 @@ class MapDClient(SQLClient):
         port : int
         database : str
         protocol : {'binary', 'http', 'https'}
+        session_id: str
         execution_type : {
           EXECUTION_TYPE_ICP, EXECUTION_TYPE_ICP_GPU, EXECUTION_TYPE_CURSOR
         }
@@ -358,6 +364,7 @@ class MapDClient(SQLClient):
         self.port = port
         self.db_name = database
         self.protocol = protocol
+        self.session_id = session_id
 
         if execution_type not in (
             EXECUTION_TYPE_ICP,
@@ -368,15 +375,28 @@ class MapDClient(SQLClient):
 
         self.execution_type = execution_type
 
-        self.con = pymapd.connect(
-            uri=uri,
-            user=user,
-            password=password,
-            host=host,
-            port=port,
-            dbname=database,
-            protocol=protocol,
-        )
+        if session_id:
+            if self.version < pkg_resources.parse_version('0.12.0'):
+                raise PyMapDVersionError(
+                    'Must have pymapd > 0.12 to use session ID'
+                )
+            self.con = pymapd.connect(
+                uri=uri,
+                host=host,
+                port=port,
+                protocol=protocol,
+                sessionid=session_id,
+            )
+        else:
+            self.con = pymapd.connect(
+                uri=uri,
+                user=user,
+                password=password,
+                host=host,
+                port=port,
+                dbname=database,
+                protocol=protocol,
+            )
 
     def __del__(self):
         self.close()
@@ -721,6 +741,7 @@ class MapDClient(SQLClient):
                 port=self.port,
                 database=name,
                 protocol=self.protocol,
+                session_id=self.session_id,
                 execution_type=self.execution_type,
             )
             return self.database_class(name, new_client)
@@ -756,6 +777,7 @@ class MapDClient(SQLClient):
                 port=self.port,
                 dbname=name,
                 protocol=self.protocol,
+                session_id=self.session_id,
             )
             self.db_name = name
 

@@ -2,6 +2,7 @@ import pandas as pd
 import sqlalchemy as sa
 import sqlalchemy.dialects.mysql as mysql
 
+import ibis
 import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -151,6 +152,14 @@ def _interval_from_integer(t, expr):
 
     sa_arg = t.translate(arg)
     text_unit = expr.type().resolution.upper()
+
+    # XXX: Is there a better way to handle this? I.e. can we somehow use
+    # the existing bind parameter produced by translate and reuse its name in
+    # the string passed to sa.text?
+    if isinstance(sa_arg, sa.sql.elements.BindParameter):
+        return sa.text('INTERVAL :arg {}'.format(text_unit)).bindparams(
+            arg=sa_arg.value
+        )
     return sa.text('INTERVAL {} {}'.format(sa_arg, text_unit))
 
 
@@ -169,7 +178,10 @@ def _literal(t, expr):
                 'with INTERVAL offset {}'.format(expr.type().unit)
             )
         text_unit = expr.type().resolution.upper()
-        return sa.text('INTERVAL {} {}'.format(expr.op().value, text_unit))
+        value = expr.op().value
+        return sa.text('INTERVAL :value {}'.format(text_unit)).bindparams(
+            value=value
+        )
     elif isinstance(expr, ir.SetScalar):
         return list(map(sa.literal, expr.op().value))
     else:
@@ -252,3 +264,15 @@ class MySQLDialect(alch.AlchemyDialect):
 
 
 dialect = MySQLDialect
+
+
+@compiles(ops.GroupConcat)
+def mysql_compiles_group_concat(t, expr):
+    op = expr.op()
+    arg, sep, where = op.args
+    if where is not None:
+        case = where.ifelse(arg, ibis.NA)
+        arg = t.translate(case)
+    else:
+        arg = t.translate(arg)
+    return sa.func.group_concat(arg.op('SEPARATOR')(t.translate(sep)))
