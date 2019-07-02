@@ -253,12 +253,13 @@ def postgres(schema, tables, data_directory, psql_path, **params):
 
             srid = 4326
             df = pd.read_csv(src)
-            df = df[df.columns[1:]].applymap(
+            df[df.columns[1:]] = df[df.columns[1:]].applymap(
                 lambda x: WKTElement(x, srid=srid)
             )
             df.to_sql(
                 'geo',
                 engine,
+                index=False,
                 dtype={
                     "geo_point": Geometry("POINT", srid=srid),
                     "geo_linestring": Geometry("LINESTRING", srid=srid),
@@ -315,7 +316,7 @@ def sqlite(database, schema, tables, data_directory, **params):
 @cli.command()
 @click.option('-h', '--host', default='localhost')
 @click.option('-P', '--port', default=6274, type=int)
-@click.option('-u', '--user', default='mapd')
+@click.option('-u', '--user', default='admin')
 @click.option('-p', '--password', default='HyperInteractive')
 @click.option('-D', '--database', default='ibis_testing')
 @click.option('--protocol', default='binary')
@@ -335,13 +336,14 @@ def omnisci(schema, tables, data_directory, **params):
 
     # connection
     logger.info('Initializing OmniSci...')
-    if params['database'] != 'mapd':
+    default_db = 'omnisci'
+    if params['database'] != default_db:
         conn = pymapd.connect(
             host=params['host'],
             user=params['user'],
             password=params['password'],
             port=params['port'],
-            dbname='mapd',
+            dbname=default_db,
             protocol=params['protocol'],
         )
         database = params["database"]

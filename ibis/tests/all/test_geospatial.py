@@ -15,10 +15,7 @@ point_2 = ibis.literal((2, 2), type='point;4326:geometry').name('p')
 point_3 = ibis.literal((1, 1), type='point:geography').name('p')
 point_4 = ibis.literal((2, 2), type='point;4326:geography').name('p')
 polygon_0 = ibis.literal(
-    (
-        ((1, 0), (0, 1), (-1, 0), (0, -1), (1, 0)),
-        ((0.1, 0), (0, 0.1), (-0.1, 0), (0, -0.1), (0.1, 0)),
-    ),
+    (((30, 10), (40, 40), (20, 40), (10, 20), (30, 10)),),
     type='polygon',
 )
 
@@ -101,7 +98,7 @@ def test_get_point(backend, geo, expr_fn, expected):
     testing.assert_almost_equal(result, expected, decimal=2)
 
 
-@pytest.mark.parametrize(('arg', 'expected'), [(polygon_0, [1.98] * 5)])
+@pytest.mark.parametrize(('arg', 'expected'), [(polygon_0, [550.] * 5)])
 @pytest.mark.only_on_backends(all_db_geo_supported)
 def test_area(backend, geo, arg, expected):
     """Testing for geo spatial area operation."""
