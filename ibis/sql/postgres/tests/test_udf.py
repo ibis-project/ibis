@@ -15,7 +15,15 @@ datatypes = ibis.expr.datatypes
 
 # mark test module as postgresql (for ability to easily exclude,
 # e.g. in conda build tests)
-pytestmark = pytest.mark.postgresql
+# (Temporarily adding `postgis` marker so Azure Windows pipeline will exclude
+#     pl/python tests.
+#     TODO: update Windows pipeline to exclude postgres_extensions
+#     TODO: remove postgis marker below once Windows pipeline updated
+pytestmark = [
+    pytest.mark.postgresql,
+    pytest.mark.postgis,
+    pytest.mark.postgres_extensions,
+]
 
 # Database setup (tables and UDFs)
 
