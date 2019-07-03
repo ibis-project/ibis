@@ -162,9 +162,10 @@ class SparkClient(SQLClient):
         result = comp.build_ast(expr, context)
         return result
 
-    def _execute(self, stmt, results):
+    def _execute(self, stmt, results=False):
         query = self._session.sql(stmt)
-        return SparkCursor(query)
+        if results:
+            return SparkCursor(query)
 
     def database(self, name=None):
         return self.database_class(name or self.current_database, self)

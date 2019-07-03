@@ -22,16 +22,22 @@ def client():
             (
                 [1, 2],
                 [[3, 4], [5, 6]],
-                {(1, 3) : [[2, 4], [3, 5]]},
+                {'a' : [[2, 4], [3, 5]]},
             )
         ],
         [
             'list_of_ints',
             'list_of_list_of_ints',
-            'map_tuple_list_of_list_of_ints'
+            'map_string_list_of_list_of_ints'
         ]
     )
     df_nested_types.createOrReplaceTempView('nested_types')
+
+    df_complicated = client._session.createDataFrame(
+        [({(1, 3) : [[2, 4], [3, 5]]},)],
+        ['map_tuple_list_of_list_of_ints']
+    )
+    df_complicated.createOrReplaceTempView('complicated')
 
     return client
 
@@ -49,3 +55,8 @@ def struct(client):
 @pytest.fixture(scope='session')
 def nested_types(client):
     return client.table('nested_types')
+
+
+@pytest.fixture(scope='session')
+def complicated(client):
+    return client.table('complicated')
