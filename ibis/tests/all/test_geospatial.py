@@ -4,6 +4,7 @@ from inspect import isfunction
 import numpy as np
 import pytest
 from numpy import testing
+from pytest import param
 
 import ibis
 from ibis.tests.backends import MapD
@@ -15,8 +16,7 @@ point_2 = ibis.literal((2, 2), type='point;4326:geometry').name('p')
 point_3 = ibis.literal((1, 1), type='point:geography').name('p')
 point_4 = ibis.literal((2, 2), type='point;4326:geography').name('p')
 polygon_0 = ibis.literal(
-    (((30, 10), (40, 40), (20, 40), (10, 20), (30, 10)),),
-    type='polygon',
+    (((30, 10), (40, 40), (20, 40), (10, 20), (30, 10)),), type='polygon'
 )
 
 # add here backends that support geo spatial types
@@ -26,17 +26,36 @@ all_db_geo_supported = [MapD]
 @pytest.mark.parametrize(
     ('expr_fn', 'expected'),
     [
-        (lambda t: t['geo_linestring'].length(), [1.41] * 5),
-        (lambda t: t['geo_polygon'].perimeter(), [5.66] * 5),
-        (lambda t: t['geo_point'].x(), [0, 1, 2, 3, 4]),
-        (lambda t: t['geo_point'].y(), [0, 1, 2, 3, 4]),
-        (lambda t: t['geo_linestring'].x_min(), [0, 1, 2, 3, 4]),
-        (lambda t: t['geo_linestring'].x_max(), [1, 2, 3, 4, 5]),
-        (lambda t: t['geo_linestring'].y_min(), [0, 1, 2, 3, 4]),
-        (lambda t: t['geo_linestring'].y_max(), [1, 2, 3, 4, 5]),
-        (lambda t: t['geo_multipolygon'].n_points(), [12] * 5),
-        (lambda t: t['geo_multipolygon'].n_rings(), [4] * 5),
-        (lambda t: t['geo_point'].srid(), [0] * 5),
+        param(lambda t: t['geo_linestring'].length(), [1.41] * 5, id='length'),
+        param(
+            lambda t: t['geo_polygon'].perimeter(),
+            [96.34, 114.36, 10.24, 10.24, 10.24],
+            id='perimeter',
+        ),
+        param(lambda t: t['geo_point'].x(), [0, 1, 2, 3, 4], id='x'),
+        param(lambda t: t['geo_point'].y(), [0, 1, 2, 3, 4], id='y'),
+        param(
+            lambda t: t['geo_linestring'].x_min(), [0, 1, 2, 3, 4], id='x_min'
+        ),
+        param(
+            lambda t: t['geo_linestring'].x_max(), [1, 2, 3, 4, 5], id='x_max'
+        ),
+        param(
+            lambda t: t['geo_linestring'].y_min(), [0, 1, 2, 3, 4], id='y_min'
+        ),
+        param(
+            lambda t: t['geo_linestring'].y_max(), [1, 2, 3, 4, 5], id='y_max'
+        ),
+        param(
+            lambda t: t['geo_multipolygon'].n_points(),
+            [7, 11, 5, 5, 5],
+            id='n_points',
+        ),
+        param(
+            lambda t: t['geo_multipolygon'].n_rings(),
+            [2, 3, 1, 1, 1],
+            id='n_rings',
+        ),
     ],
 )
 @pytest.mark.only_on_backends(all_db_geo_supported)
@@ -83,9 +102,21 @@ def test_geo_spatial_binops(backend, geo, fn, arg_left, arg_right, expected):
 @pytest.mark.parametrize(
     ('expr_fn', 'expected'),
     [
-        (lambda t: t['geo_linestring'].end_point(), [False] * 5),
-        (lambda t: t['geo_linestring'].point_n(1), [False] * 5),
-        (lambda t: t['geo_linestring'].start_point(), [False] * 5),
+        param(
+            lambda t: t['geo_linestring'].end_point(),
+            [False, False, True, True, True],
+            id='end_point',
+        ),
+        param(
+            lambda t: t['geo_linestring'].point_n(1),
+            [False, False, True, True, True],
+            id='point_n',
+        ),
+        param(
+            lambda t: t['geo_linestring'].start_point(),
+            [False, False, True, True, True],
+            id='start_point',
+        ),
     ],
 )
 @pytest.mark.only_on_backends(all_db_geo_supported)
@@ -98,7 +129,7 @@ def test_get_point(backend, geo, expr_fn, expected):
     testing.assert_almost_equal(result, expected, decimal=2)
 
 
-@pytest.mark.parametrize(('arg', 'expected'), [(polygon_0, [550.] * 5)])
+@pytest.mark.parametrize(('arg', 'expected'), [(polygon_0, [550.0] * 5)])
 @pytest.mark.only_on_backends(all_db_geo_supported)
 def test_area(backend, geo, arg, expected):
     """Testing for geo spatial area operation."""
@@ -116,7 +147,7 @@ def test_area(backend, geo, arg, expected):
         (lambda t: t.geo_linestring.srid(), 0),
         (lambda t: t.geo_polygon.srid(), 0),
         (lambda t: t.geo_multipolygon.srid(), 0),
-    ]
+    ],
 )
 @pytest.mark.only_on_backends(all_db_geo_supported)
 def test_srid(backend, geo, condition, expected):
@@ -135,7 +166,7 @@ def test_srid(backend, geo, condition, expected):
         (lambda t: t.geo_linestring.set_srid(4326).srid(), 4326),
         (lambda t: t.geo_polygon.set_srid(4326).srid(), 4326),
         (lambda t: t.geo_multipolygon.set_srid(4326).srid(), 4326),
-    ]
+    ],
 )
 @pytest.mark.only_on_backends(all_db_geo_supported)
 def test_set_srid(backend, geo, condition, expected):
@@ -148,19 +179,27 @@ def test_set_srid(backend, geo, condition, expected):
 @pytest.mark.parametrize(
     ('condition', 'expected'),
     [
-        (lambda t: point_0.set_srid(4326).transform(900913).srid(),
-         900913),
-        (lambda t: point_2.transform(900913).srid(),
-         900913),
-        (lambda t: t.geo_point.set_srid(4326).transform(900913).srid(),
-         900913),
-        (lambda t: t.geo_linestring.set_srid(4326).transform(900913).srid(),
-         900913),
-        (lambda t: t.geo_polygon.set_srid(4326).transform(900913).srid(),
-         900913),
-        (lambda t: t.geo_multipolygon.set_srid(4326).transform(900913).srid(),
-         900913),
-    ]
+        (lambda t: point_0.set_srid(4326).transform(900913).srid(), 900913),
+        (lambda t: point_2.transform(900913).srid(), 900913),
+        (
+            lambda t: t.geo_point.set_srid(4326).transform(900913).srid(),
+            900913,
+        ),
+        (
+            lambda t: t.geo_linestring.set_srid(4326).transform(900913).srid(),
+            900913,
+        ),
+        (
+            lambda t: t.geo_polygon.set_srid(4326).transform(900913).srid(),
+            900913,
+        ),
+        (
+            lambda t: t.geo_multipolygon.set_srid(4326)
+            .transform(900913)
+            .srid(),
+            900913,
+        ),
+    ],
 )
 @pytest.mark.only_on_backends(all_db_geo_supported)
 @pytest.mark.xfail_unsupported
@@ -180,7 +219,7 @@ def test_transform(backend, geo, condition, expected):
         lambda t: point_2,
         lambda t: point_3.set_srid(4326),
         lambda t: point_4,
-    ]
+    ],
 )
 @pytest.mark.only_on_backends(all_db_geo_supported)
 @pytest.mark.xfail_unsupported
@@ -202,7 +241,7 @@ def test_cast_geography(backend, geo, expr_fn):
         lambda t: point_2,
         lambda t: point_3.set_srid(4326),
         lambda t: point_4,
-    ]
+    ],
 )
 @pytest.mark.only_on_backends(all_db_geo_supported)
 @pytest.mark.xfail_unsupported
