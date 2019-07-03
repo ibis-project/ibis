@@ -4,7 +4,7 @@ CWD="$(dirname "${0}")"
 
 declare -A argcommands=([sqlite]=sqlite
                         [parquet]="parquet -i"
-                        [postgres]='postgres --plpython'
+                        [postgres]=postgres
                         [clickhouse]=clickhouse
                         [omnisci]=omnisci
                         [mysql]=mysql

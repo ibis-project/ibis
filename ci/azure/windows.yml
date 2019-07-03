@@ -112,7 +112,7 @@ jobs:
 
     - script: |
         call activate $(conda.env)
-        python ci/datamgr.py postgres --psql-path="C:/Program Files/PostgreSQL/10/bin/psql.exe" -t functional_alltypes -t diamonds -t batting -t awards_players
+        python ci/datamgr.py postgres --no-plpython --psql-path="C:/Program Files/PostgreSQL/10/bin/psql.exe" -t functional_alltypes -t diamonds -t batting -t awards_players
       displayName: 'Load PostgreSQL data'
 
     - script: |

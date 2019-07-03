@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
 import contextlib
 import getpass
 
@@ -20,6 +21,7 @@ import sqlalchemy as sa
 
 import ibis.sql.alchemy as alch
 from ibis.sql.postgres.compiler import PostgreSQLDialect
+from ibis.sql.postgres.udf import func_to_udf
 
 
 class PostgreSQLTable(alch.AlchemyTable):
@@ -200,3 +202,34 @@ class PostgreSQLClient(alch.AlchemyClient):
         else:
             parent = super(PostgreSQLClient, self)
             return parent.list_tables(like=like, schema=schema)
+
+    def udf(self, in_types, out_type, schema=None, overwrite=False, name=None):
+        """Decorator that defines a PL/Python UDF in-database based on the
+        wrapped function and turns it into an ibis function expression.
+
+        Parameters
+        ----------
+        in_types : List[ibis.expr.datatypes.DataType]
+        out_type : ibis.expr.datatypes.DataType
+        schema : str
+            optionally specify the schema in which to define the UDF
+        overwrite : bool
+            replace UDF in database if already exists
+        name: str
+            name for the UDF to be defined in database
+
+        Returns
+        -------
+        wrapper : Callable that takes in a python function and returns
+            an ibis function
+        """
+        raise NotImplementedError
+        return functools.partial(
+            func_to_udf,
+            self,
+            in_types=in_types,
+            out_type=out_type,
+            schema=schema,
+            overwrite=overwrite,
+            name=name
+        )

@@ -231,8 +231,7 @@ def parquet(tables, data_directory, ignore_missing_dependency, **params):
 @click.option(
     '--plpython/--no-plpython',
     help='Create PL/Python extension in database',
-    is_flag=True,
-    default=False
+    default=True
 )
 def postgres(schema, tables, data_directory, psql_path, plpython, **params):
     psql = local[psql_path]
@@ -243,7 +242,7 @@ def postgres(schema, tables, data_directory, psql_path, plpython, **params):
     )
     use_postgis = 'geo' in tables and sys.version_info >= (3, 6)
     if use_postgis:
-        engine.execute("CREATE EXTENSION POSTGIS")
+        engine.execute("CREATE EXTENSION IF NOT EXISTS POSTGIS")
 
     if plpython:
         engine.execute("CREATE EXTENSION IF NOT EXISTS PLPYTHONU")

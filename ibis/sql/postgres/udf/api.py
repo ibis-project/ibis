@@ -3,7 +3,7 @@ from decimal import Decimal
 import collections
 import itertools
 
-import sqlalchemy
+import sqlalchemy as sa
 
 import ibis.expr.rules as rlz
 from ibis.expr import datatypes
@@ -84,8 +84,8 @@ def existing_udf(name,
                  input_types,
                  output_type,
                  schema=None,
-                 parameter_names=None):
-    """Create a ibis function that refers to an existing Postgres UDF already
+                 parameters=None):
+    """Create an ibis function that refers to an existing Postgres UDF already
     defined in database
 
     Parameters
@@ -94,21 +94,26 @@ def existing_udf(name,
     input_types : List[DataType]
     output_type : DataType
     schema: str - optionally specify the schema that the UDF is defined in
-    parameter_names: str - give names to the arguments of the UDF
+    parameters: List[str] - give names to the arguments of the UDF
 
     Returns
     -------
     wrapper : Callable
         The wrapped function
     """
-    if parameter_names is None:
-        parameter_names = ['v{}'.format(i) for i in range(len(input_types))]
-    else:
-        assert len(input_types) == len(parameter_names)
+    if parameters is None:
+        parameters = ['v{}'.format(i) for i in range(len(input_types))]
+    elif len(input_types) != len(parameters):
+        raise ValueError(
+            (
+                "Length mismatch in arguments to existing_udf: "
+                "len(input_types)={}, len(parameters)={}"
+            ).format(len(input_types), len(parameters))
+        )
 
     udf_node_fields = collections.OrderedDict([
         (name, Arg(rlz.value(type_)))
-        for name, type_ in zip(parameter_names, input_types)
+        for name, type_ in zip(parameters, input_types)
     ] + [
         (
             'output_type',
@@ -122,7 +127,7 @@ def existing_udf(name,
     udf_node = create_udf_node(name, udf_node_fields)
 
     def _translate_udf(t, expr):
-        func_obj = sqlalchemy.func
+        func_obj = sa.func
         if schema is not None:
             func_obj = getattr(func_obj, schema)
         func_obj = getattr(func_obj, name)
@@ -145,8 +150,8 @@ def func_to_udf(conn,
                 in_types=None,
                 out_type=None,
                 schema=None,
-                name=None,
-                overwrite=False):
+                overwrite=False,
+                name=None):
     """Defines a UDF in the database
 
     Parameters
@@ -157,8 +162,8 @@ def func_to_udf(conn,
     function signature
     out_type : DataType
     schema: str - optionally specify the schema in which to define the UDF
-    name: str - name for the UDF to be defined in database
     overwrite: bool - replace UDF in database if already exists
+    name: str - name for the UDF to be defined in database
 
     Returns
     -------
@@ -214,5 +219,5 @@ $$;
         input_types=in_types,
         output_type=out_type,
         schema=schema,
-        parameter_names=parameter_names
+        parameters=parameter_names
     )
