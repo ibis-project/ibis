@@ -53,6 +53,10 @@ with suppress(ImportError):
     # pip install ibis-framework[mapd]
     import ibis.mapd.api as mapd  # noqa: F401
 
+with suppress(ImportError):
+    # pip install ibis-framework[spark]
+    import ibis.spark.api as spark  # noqa: F401
+
 
 def hdfs_connect(
     host='localhost',

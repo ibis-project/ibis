@@ -39,6 +39,7 @@ if VERSION == (3, 5):
     parquet_requires = ['pyarrow<0.12.0']
 else:
     parquet_requires = ['pyarrow>=0.12.0']
+spark_requires = ['pyspark>=2.4.3']
 
 geospatial_requires = ['geoalchemy2', 'geopandas']
 
@@ -53,6 +54,7 @@ all_requires = (
     + bigquery_requires
     + hdf5_requires
     + parquet_requires
+    + spark_requires
     + geospatial_requires
 )
 
@@ -97,6 +99,7 @@ setup(
         'bigquery': bigquery_requires,
         'hdf5': hdf5_requires,
         'parquet': parquet_requires,
+        'spark' : spark_requires,
         'geospatial': geospatial_requires,
     },
     description="Productivity-centric Python Big Data Framework",
