@@ -13,13 +13,8 @@ class SparkSelectBuilder(comp.SelectBuilder):
         return SparkSelect
 
 
-class SparkUnion(comp.Union):
-    pass
-
-
 class SparkQueryBuilder(comp.QueryBuilder):
     select_builder = SparkSelectBuilder
-    union_class = SparkUnion
 
 
 def build_ast(expr, context):

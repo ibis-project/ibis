@@ -63,3 +63,7 @@ class IbisTypeError(TypeError, IbisError):
 
 class InputTypeError(IbisTypeError):
     pass
+
+
+class UnsupportedArgumentError(IbisError):
+    pass
