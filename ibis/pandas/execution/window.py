@@ -168,9 +168,11 @@ def execute_window_op(
         # XXX(phillipc): What a horror show
         preceding = window.preceding
         if preceding is not None:
+            max_lookback = window.max_lookback
             assert not isinstance(operand.op(), ops.CumulativeOp)
             aggcontext = agg_ctx.Moving(
                 preceding,
+                max_lookback,
                 parent=source,
                 group_by=grouping_keys,
                 order_by=ordering_keys,

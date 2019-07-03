@@ -22,12 +22,11 @@ def test_geo_literals_smoke(modifier):
     ibis.literal(polygon, type='polygon{}'.format(modifier))
 
     polygon1 = (
-        ((0, 0), (4, 0), (4, 4), (0, 4), (0, 0)),
-        ((1, 1), (2, 1), (2, 2), (1, 2), (1, 1)),
+        (0, 0), (1, 0), (0.5, 1), (0, 0)
     )
     polygon2 = (
-        ((10, 10), (14, 10), (14, 14), (10, 14), (10, 10)),
-        ((11, 11), (12, 11), (12, 12), (11, 12), (11, 11)),
+        ((35, 10), (45, 45), (15, 40), (10, 20), (35, 10)),
+        ((20, 30), (35, 35), (30, 20), (20, 30))
     )
     multipolygon = [polygon1, polygon2]
     ibis.literal(multipolygon, type='multipolygon{}'.format(modifier))

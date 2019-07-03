@@ -212,7 +212,7 @@ Create a client by passing in database connection parameters such as ``host``,
    con = ibis.mapd.connect(
        host='omnisci',
        database='ibis_testing',
-       user='mapd',
+       user='admin',
        password='HyperInteractive',
    )
 
