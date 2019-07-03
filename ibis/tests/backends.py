@@ -351,7 +351,7 @@ class MapD(Backend):
 
     @staticmethod
     def connect(data_directory: Path) -> ibis.client.Client:
-        user = os.environ.get('IBIS_TEST_OMNISCI_USER', 'mapd')
+        user = os.environ.get('IBIS_TEST_OMNISCI_USER', 'admin')
         password = os.environ.get(
             'IBIS_TEST_OMNISCI_PASSWORD', 'HyperInteractive'
         )

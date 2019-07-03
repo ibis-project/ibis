@@ -76,7 +76,7 @@ services:
       KUDU_MASTER: "false"
 
   omnisci:
-    image: omnisci/core-os-cpu:v4.6.1
+    image: omnisci/core-os-cpu:v4.7.0
     hostname: omnisci
     networks:
       default:
