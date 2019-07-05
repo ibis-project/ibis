@@ -1,7 +1,7 @@
 import contextlib
 import functools
-import numbers
 import operator
+import sys
 
 import pandas as pd
 import sqlalchemy as sa
@@ -11,8 +11,6 @@ from sqlalchemy.dialects.mysql.base import MySQLDialect
 from sqlalchemy.dialects.postgresql.base import PGDialect as PostgreSQLDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from sqlalchemy.engine.interfaces import Dialect as SQLAlchemyDialect
-from sqlalchemy.ext.compiler import compiles as sa_compiles
-from sqlalchemy.sql.elements import Over as _Over
 
 import ibis
 import ibis.common as com
@@ -27,6 +25,19 @@ import ibis.sql.transforms as transforms
 import ibis.util as util
 from ibis.client import Database, Query, SQLClient
 from ibis.sql.compiler import Dialect, Select, TableSetFormatter, Union
+
+# Don't support geospatial operations on Python 3.5
+geospatial_supported = False
+if sys.version_info >= (3, 6):
+    try:
+        import geoalchemy2 as ga
+        import geoalchemy2.shape as shape
+        import geopandas
+
+        geospatial_supported = True
+    except ImportError:
+        pass
+
 
 # TODO(cleanup)
 _ibis_type_to_sqla = {
@@ -67,6 +78,15 @@ def _to_sqla_type(itype, type_map=None):
                 )
             )
         return sa.ARRAY(_to_sqla_type(ibis_type, type_map=type_map))
+    elif geospatial_supported and isinstance(itype, dt.GeoSpatial):
+        if itype.geotype == 'geometry':
+            return ga.Geometry
+        elif itype.geotype == 'geography':
+            return ga.Geography
+        else:
+            raise TypeError(
+                'Unexpected geospatial geotype {}'.format(itype.geotype)
+            )
     else:
         return type_map[type(itype)]
 
@@ -115,6 +135,23 @@ def sa_float(_, satype, nullable=True):
 @dt.dtype.register(PostgreSQLDialect, sa.dialects.postgresql.DOUBLE_PRECISION)
 def sa_double(_, satype, nullable=True):
     return dt.Double(nullable=nullable)
+
+
+if geospatial_supported:
+
+    @dt.dtype.register(SQLAlchemyDialect, ga.Geometry)
+    def ga_geometry(_, gatype, nullable=True):
+        t = gatype.geometry_type
+        if t == 'POINT':
+            return dt.Point(nullable=nullable)
+        if t == 'LINESTRING':
+            return dt.LineString(nullable=nullable)
+        if t == 'POLYGON':
+            return dt.Polygon(nullable=nullable)
+        if t == 'MULTIPOLYGON':
+            return dt.MultiPolygon(nullable=nullable)
+        else:
+            raise ValueError("Unrecognized geometry type: {}".format(t))
 
 
 POSTGRES_FIELD_TO_IBIS_UNIT = {
@@ -374,23 +411,20 @@ def _not_contains(t, expr):
 def _reduction(sa_func):
     def formatter(t, expr):
         op = expr.op()
+        *args, where = op.args
 
-        # HACK: support trailing arguments
-        arg, where = op.args[:2]
-
-        return _reduction_format(t, sa_func, arg, where)
+        return _reduction_format(t, sa_func, where, *args)
 
     return formatter
 
 
-def _reduction_format(t, sa_func, arg, where):
+def _reduction_format(t, sa_func, where, arg, *args):
     if where is not None:
-        case = where.ifelse(arg, ibis.NA)
-        arg = t.translate(case)
+        arg = t.translate(where.ifelse(arg, ibis.NA))
     else:
         arg = t.translate(arg)
 
-    return sa_func(arg)
+    return sa_func(arg, *map(t.translate, args))
 
 
 def _literal(t, expr):
@@ -530,6 +564,10 @@ def _window(t, expr):
         arg = _cumulative_to_window(t, arg, window)
         return t.translate(arg)
 
+    if window.max_lookback is not None:
+        raise NotImplementedError('Rows with max lookback is not implemented '
+                                  'for SQLAlchemy-based backends.')
+
     # Some analytic functions need to have the expression of interest in
     # the ORDER BY part of the window clause
     if isinstance(window_op, _require_order_by) and not window._order_by:
@@ -539,12 +577,30 @@ def _window(t, expr):
 
     partition_by = list(map(t.translate, window._group_by))
 
-    result = Over(
-        reduction,
-        partition_by=partition_by,
-        order_by=order_by,
-        preceding=window.preceding,
-        following=window.following,
+    frame_clause_not_allowed = (
+        ops.Lag,
+        ops.Lead,
+        ops.DenseRank,
+        ops.MinRank,
+        ops.NTile,
+        ops.PercentRank,
+        ops.RowNumber,
+    )
+
+    how = {'range': 'range_'}.get(window.how, window.how)
+    preceding = window.preceding
+    additional_params = (
+        {}
+        if isinstance(window_op, frame_clause_not_allowed)
+        else {
+            how: (
+                -preceding if preceding is not None else preceding,
+                window.following,
+            )
+        }
+    )
+    result = reduction.over(
+        partition_by=partition_by, order_by=order_by, **additional_params
     )
 
     if isinstance(
@@ -597,7 +653,7 @@ _operation_registry = {
     ops.Min: _reduction(sa.func.min),
     ops.Max: _reduction(sa.func.max),
     ops.CountDistinct: _count_distinct,
-    ops.GroupConcat: fixed_arity(sa.func.group_concat, 2),
+    ops.GroupConcat: _reduction(sa.func.group_concat),
     ops.Between: fixed_arity(sa.between, 3),
     ops.IsNull: _is_null,
     ops.NotNull: _not_null,
@@ -681,6 +737,56 @@ _window_functions = {
     ops.CumulativeSum: unary(sa.func.sum),
     ops.CumulativeMean: unary(sa.func.avg),
 }
+
+if geospatial_supported:
+    _geospatial_functions = {
+        ops.GeoArea: unary(sa.func.ST_Area),
+        ops.GeoAsBinary: unary(sa.func.ST_AsBinary),
+        ops.GeoAsEWKB: unary(sa.func.ST_AsEWKB),
+        ops.GeoAsEWKT: unary(sa.func.ST_AsEWKT),
+        ops.GeoAsText: unary(sa.func.ST_AsText),
+        ops.GeoAzimuth: fixed_arity(sa.func.ST_Azimuth, 2),
+        ops.GeoBuffer: fixed_arity(sa.func.ST_Buffer, 2),
+        ops.GeoCentroid: unary(sa.func.ST_Centroid),
+        ops.GeoContains: fixed_arity(sa.func.ST_Contains, 2),
+        ops.GeoContainsProperly: fixed_arity(sa.func.ST_Contains, 2),
+        ops.GeoCovers: fixed_arity(sa.func.ST_Covers, 2),
+        ops.GeoCoveredBy: fixed_arity(sa.func.ST_CoveredBy, 2),
+        ops.GeoCrosses: fixed_arity(sa.func.ST_Crosses, 2),
+        ops.GeoDFullyWithin: fixed_arity(sa.func.ST_DFullyWithin, 3),
+        ops.GeoDifference: fixed_arity(sa.func.ST_Difference, 2),
+        ops.GeoDisjoint: fixed_arity(sa.func.ST_Disjoint, 2),
+        ops.GeoDistance: fixed_arity(sa.func.ST_Distance, 2),
+        ops.GeoDWithin: fixed_arity(sa.func.ST_DWithin, 3),
+        ops.GeoEnvelope: unary(sa.func.ST_Envelope),
+        ops.GeoEquals: fixed_arity(sa.func.ST_Equals, 2),
+        ops.GeoIntersection: fixed_arity(sa.func.ST_Intersection, 2),
+        ops.GeoIntersects: fixed_arity(sa.func.ST_Intersects, 2),
+        ops.GeoLength: unary(sa.func.ST_Length),
+        ops.GeoNPoints: unary(sa.func.ST_NPoints),
+        ops.GeoOverlaps: fixed_arity(sa.func.ST_Overlaps, 2),
+        ops.GeoPerimeter: unary(sa.func.ST_Perimeter),
+        ops.GeoSimplify: fixed_arity(sa.func.ST_Simplify, 3),
+        ops.GeoSRID: unary(sa.func.ST_SRID),
+        ops.GeoTouches: fixed_arity(sa.func.ST_Touches, 2),
+        ops.GeoTransform: fixed_arity(sa.func.ST_Transform, 2),
+        ops.GeoWithin: fixed_arity(sa.func.ST_Within, 2),
+        ops.GeoX: unary(sa.func.ST_X),
+        ops.GeoY: unary(sa.func.ST_Y),
+        # Missing casts:
+        #   ST_As_GML
+        #   ST_As_GeoJSON
+        #   ST_As_KML
+        #   ST_As_Raster
+        #   ST_As_SVG
+        #   ST_As_TWKB
+        # Missing Geometric ops:
+        #   ST_Distance_Sphere
+        #   ST_Dump
+        #   ST_DumpPoints
+    }
+
+    _operation_registry.update(_geospatial_functions)
 
 
 for _k, _v in _binary_ops.items():
@@ -881,7 +987,20 @@ class AlchemyQuery(Query):
             columns=cursor.proxy.keys(),
             coerce_float=True,
         )
-        return self.schema().apply_to(df)
+        df = self.schema().apply_to(df)
+        # If the dataframe has contents and we support geospatial operations,
+        # convert the dataframe into a GeoDataFrame with shapely geometries.
+        if len(df) and geospatial_supported:
+            geom_col = None
+            for name, dtype in self.schema().items():
+                if isinstance(dtype, dt.GeoSpatial):
+                    geom_col = geom_col or name
+                    df[name] = df.apply(
+                        lambda x: shape.to_shape(x[name]), axis=1
+                    )
+            if geom_col:
+                df = geopandas.GeoDataFrame(df, geometry=geom_col)
+        return df
 
 
 class AlchemyDialect(Dialect):
@@ -1009,7 +1128,8 @@ class AlchemyClient(SQLClient):
         tables : list of strings
         """
         inspector = self.inspector
-        names = inspector.get_table_names(schema=schema)
+        # inspector returns a mutable version of its names, so make a copy.
+        names = inspector.get_table_names(schema=schema).copy()
         names.extend(inspector.get_view_names(schema=schema))
         if like is not None:
             names = [x for x in names if like in x]
@@ -1138,7 +1258,7 @@ class AlchemySelect(Select):
 
         if len(self.having) > 0:
             having_args = [self._translate(arg) for arg in self.having]
-            having_clause = _and_all(having_args)
+            having_clause = functools.reduce(sql.and_, having_args)
             fragment = fragment.having(having_clause)
 
         return fragment
@@ -1150,7 +1270,7 @@ class AlchemySelect(Select):
         args = [
             self._translate(pred, permit_subquery=True) for pred in self.where
         ]
-        clause = _and_all(args)
+        clause = functools.reduce(sql.and_, args)
         return fragment.where(clause)
 
     def _add_order_by(self, fragment):
@@ -1216,7 +1336,7 @@ class _AlchemyTableSet(TableSetFormatter):
         ):
             if len(preds):
                 sqla_preds = [self._translate(pred) for pred in preds]
-                onclause = _and_all(sqla_preds)
+                onclause = functools.reduce(sql.and_, sqla_preds)
             else:
                 onclause = None
 
@@ -1316,13 +1436,6 @@ def _can_lower_sort_column(table_set, expr):
         return False
 
 
-def _and_all(clauses):
-    result = clauses[0]
-    for clause in clauses[1:]:
-        result = sql.and_(result, clause)
-    return result
-
-
 class AlchemyProxy:
     """
     Wraps a SQLAlchemy ResultProxy and ensures that .close() is called on
@@ -1357,11 +1470,10 @@ def _nullifzero(expr):
 @compiles(ops.Divide)
 def _true_divide(t, expr):
     op = expr.op()
-    left, right = op.args
+    left, right = args = op.args
 
-    if util.all_of(op.args, ir.IntegerValue):
-        new_expr = left.div(right.cast('double'))
-        return t.translate(new_expr)
+    if util.all_of(args, ir.IntegerValue):
+        return t.translate(left.div(right.cast('double')))
 
     return fixed_arity(lambda x, y: x / y, 2)(t, expr)
 
@@ -1372,49 +1484,3 @@ def _sort_key(t, expr):
     by, ascending = expr.op().args
     sort_direction = sa.asc if ascending else sa.desc
     return sort_direction(t.translate(by))
-
-
-_valid_frame_types = numbers.Integral, str, type(None)
-
-
-class Over(_Over):
-    def __init__(
-        self,
-        element,
-        order_by=None,
-        partition_by=None,
-        preceding=None,
-        following=None,
-    ):
-        super().__init__(element, order_by=order_by, partition_by=partition_by)
-        if not isinstance(preceding, _valid_frame_types):
-            raise TypeError(
-                'preceding must be a string, integer or None, got %r'
-                % (type(preceding).__name__)
-            )
-        if not isinstance(following, _valid_frame_types):
-            raise TypeError(
-                'following must be a string, integer or None, got %r'
-                % (type(following).__name__)
-            )
-        self.preceding = preceding if preceding is not None else 'UNBOUNDED'
-        self.following = following if following is not None else 'UNBOUNDED'
-
-
-@sa_compiles(Over)
-def compile_over_with_frame(element, compiler, **kw):
-    clauses = ' '.join(
-        '%s BY %s' % (word, compiler.process(clause, **kw))
-        for word, clause in (
-            ('PARTITION', element.partition_by),
-            ('ORDER', element.order_by),
-        )
-        if clause is not None and len(clause)
-    )
-    return '%s OVER (%s%sROWS BETWEEN %s PRECEDING AND %s FOLLOWING)' % (
-        compiler.process(getattr(element, 'element', element.element), **kw),
-        clauses,
-        ' ' if clauses else '',  # only add a space if we order by or group by
-        str(element.preceding).upper(),
-        str(element.following).upper(),
-    )

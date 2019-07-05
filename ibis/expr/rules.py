@@ -1,5 +1,6 @@
 import collections
 import enum
+import functools
 from contextlib import suppress
 from itertools import product, starmap
 
@@ -267,6 +268,10 @@ struct = value(dt.Struct)
 mapping = value(dt.Map(dt.any, dt.any))
 
 geospatial = value(dt.GeoSpatial)
+point = value(dt.Point)
+linestring = value(dt.LineString)
+polygon = value(dt.Polygon)
+multipolygon = value(dt.MultiPolygon)
 
 
 @validator
@@ -291,6 +296,7 @@ def client(arg):
 
 
 def promoter(fn):
+    @functools.wraps(fn)
     def wrapper(name_or_value, *args, **kwargs):
         if isinstance(name_or_value, str):
             return lambda self: fn(

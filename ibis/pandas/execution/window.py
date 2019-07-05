@@ -147,18 +147,6 @@ def execute_window_op(
         factory=OrderedDict,
     )
 
-    # operand inputs are coming in computed, but we need to recompute them in
-    # the case of a group by
-    if group_by:
-        operand_inputs = {
-            arg.op() for arg in operand.op().inputs if hasattr(arg, "op")
-        }
-        new_scope = OrderedDict(
-            (node, value)
-            for node, value in new_scope.items()
-            if node not in operand_inputs
-        )
-
     # figure out what the dtype of the operand is
     operand_type = operand.type()
     operand_dtype = operand_type.to_pandas()
@@ -180,9 +168,11 @@ def execute_window_op(
         # XXX(phillipc): What a horror show
         preceding = window.preceding
         if preceding is not None:
+            max_lookback = window.max_lookback
             assert not isinstance(operand.op(), ops.CumulativeOp)
             aggcontext = agg_ctx.Moving(
                 preceding,
+                max_lookback,
                 parent=source,
                 group_by=grouping_keys,
                 order_by=ordering_keys,

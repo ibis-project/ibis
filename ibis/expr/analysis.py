@@ -1,10 +1,11 @@
-from operator import methodcaller
+import operator
 
 import toolz
 
 import ibis.expr.lineage as lin
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+from ibis import util
 from ibis.common import ExpressionError, IbisTypeError, RelationError
 from ibis.expr.schema import HasSchema
 from ibis.expr.window import window
@@ -290,35 +291,36 @@ class ExprSimplifier:
         return result
 
     def _lift_arg(self, arg, block=None):
-        unchanged = [True]
+        changed = 0
 
-        def _lift(x):
-            if isinstance(x, ir.Expr):
-                lifted_arg = self.lift(x, block=block)
-                if lifted_arg is not x:
-                    unchanged[0] = False
+        def _lift(expr):
+            nonlocal changed
+
+            if isinstance(expr, ir.Expr):
+                lifted_arg = self.lift(expr, block=block)
+                changed += lifted_arg is not expr
             else:
                 # a string or some other thing
-                lifted_arg = x
+                lifted_arg = expr
             return lifted_arg
 
         if arg is None:
             return arg, True
 
-        if isinstance(arg, (tuple, list)):
-            result = [_lift(x) for x in arg]
+        if util.is_iterable(arg):
+            result = list(map(_lift, arg))
         else:
             result = _lift(arg)
 
-        return result, unchanged[0]
+        return result, not changed
 
     def lift(self, expr, block=None):
-        key = expr.op(), block
+        op, _ = key = expr.op(), block
 
-        if key in self.lift_memo:
+        try:
             return self.lift_memo[key]
-
-        op = expr.op()
+        except KeyError:
+            pass
 
         if isinstance(op, ops.ValueOp):
             return self._sub(expr, block=block)
@@ -343,26 +345,30 @@ class ExprSimplifier:
 
         if isinstance(root, ops.Selection):
             can_lift = False
+            all_simple_columns = all(
+                isinstance(sel.op(), ops.TableColumn)
+                and sel.op().name == sel.get_name()
+                for sel in root.selections
+                if isinstance(sel, ir.ValueExpr)
+                if sel.has_name()
+            )
 
             for val in root.selections:
+                value_op = val.op()
                 if (
-                    isinstance(val.op(), ops.PhysicalTable)
+                    isinstance(value_op, ops.PhysicalTable)
                     and node.name in val.schema()
                 ):
                     can_lift = True
                     lifted_root = self.lift(val)
                 elif (
-                    isinstance(val.op(), ops.TableColumn)
-                    and val.op().name == val.get_name()
+                    all_simple_columns
+                    and isinstance(val, ir.ValueExpr)
+                    and val.has_name()
                     and node.name == val.get_name()
                 ):
                     can_lift = True
-                    lifted_root = self.lift(val.op().table)
-
-            # HACK: If we've projected a join, do not lift the children
-            # TODO: what about limits and other things?
-            # if isinstance(root.table.op(), Join):
-            #     can_lift = False
+                    lifted_root = self.lift(value_op.table)
 
             if can_lift and not block:
                 lifted_node = ops.TableColumn(node.name, lifted_root)
@@ -375,14 +381,15 @@ class ExprSimplifier:
             block = self.block_projection
 
         op = expr.op()
+        table = op.table
 
         # as exposed in #544, do not lift the table inside (which may be
         # filtered or otherwise altered in some way) if blocking
 
         if block:
-            lifted_table = op.table
+            lifted_table = table
         else:
-            lifted_table = self.lift(op.table, block=True)
+            lifted_table = self.lift(table, block=True)
 
         unch = lifted_table is op.table
 
@@ -396,7 +403,7 @@ class ExprSimplifier:
             lifted_op = ops.Aggregation(
                 lifted_table, lifted_aggs, by=lifted_by, having=lifted_having
             )
-            result = ir.TableExpr(lifted_op)
+            result = lifted_op.to_expr()
         else:
             result = expr
 
@@ -430,7 +437,7 @@ class ExprSimplifier:
                 lifted_predicates,
                 lifted_sort_keys,
             )
-            result = ir.TableExpr(lifted_projection)
+            result = lifted_projection.to_expr()
         else:
             result = expr
 
@@ -748,72 +755,73 @@ class Projector:
         self.parent = parent
         self.input_exprs = proj_exprs
         self.resolved_exprs = [parent._ensure_expr(e) for e in proj_exprs]
-
-        node = self.parent.op()
-
-        if isinstance(node, ops.Selection):
-            roots = [node]
-        else:
-            roots = node.root_tables()
-
-        self.parent_roots = roots
-
-        clean_exprs = []
-
-        for expr in self.resolved_exprs:
-            # Perform substitution only if we share common roots
-            expr = windowize_function(expr)
-            clean_exprs.append(expr)
-
-        self.clean_exprs = clean_exprs
+        node = parent.op()
+        self.parent_roots = (
+            [node] if isinstance(node, ops.Selection) else node.root_tables()
+        )
+        self.clean_exprs = list(map(windowize_function, self.resolved_exprs))
 
     def get_result(self):
         roots = self.parent_roots
         first_root = roots[0]
 
         if len(roots) == 1 and isinstance(first_root, ops.Selection):
-            fused_op = self._check_fusion(first_root)
+            fused_op = self.try_fusion(first_root)
             if fused_op is not None:
                 return fused_op
 
         return ops.Selection(self.parent, self.clean_exprs)
 
-    def _check_fusion(self, root):
-        roots = root.table._root_tables()
-        validator = ExprValidator([root.table])
+    def try_fusion(self, root):
+        root_table = root.table
+        roots = root_table._root_tables()
+        validator = ExprValidator([root_table])
         fused_exprs = []
         can_fuse = False
+        clean_exprs = self.clean_exprs
 
-        resolved = _maybe_resolve_exprs(root.table, self.input_exprs)
+        if not isinstance(root_table.op(), ops.Join):
+            try:
+                resolved = root_table._resolve(self.input_exprs)
+            except (AttributeError, IbisTypeError):
+                resolved = clean_exprs
+        else:
+            # joins cannot be used to resolve expressions, but we still may be
+            # able to fuse columns from a projection off of a join. In that
+            # case, use the projection's input expressions as the columns with
+            # which to attempt fusion
+            resolved = clean_exprs
+
         if not resolved:
             return None
 
+        root_selections = root.selections
+        parent_op = self.parent.op()
         for val in resolved:
             # XXX
             lifted_val = substitute_parents(val)
 
             # a * projection
             if isinstance(val, ir.TableExpr) and (
-                self.parent.op().compatible_with(val.op())
+                parent_op.compatible_with(val.op())
                 # gross we share the same table root. Better way to
                 # detect?
                 or len(roots) == 1
                 and val._root_tables()[0] is roots[0]
             ):
                 can_fuse = True
-
                 have_root = False
-                for y in root.selections:
+                for root_sel in root_selections:
                     # Don't add the * projection twice
-                    if y.equals(root.table):
-                        fused_exprs.append(root.table)
+                    if root_sel.equals(root_table):
+                        fused_exprs.append(root_table)
                         have_root = True
                         continue
-                    fused_exprs.append(y)
+                    fused_exprs.append(root_sel)
 
                 # This was a filter, so implicitly a select *
-                if not have_root and len(root.selections) == 0:
-                    fused_exprs = [root.table] + fused_exprs
+                if not have_root and not root_selections:
+                    fused_exprs = [root_table] + fused_exprs
             elif validator.validate(lifted_val):
                 can_fuse = True
                 fused_exprs.append(lifted_val)
@@ -825,19 +833,11 @@ class Projector:
 
         if can_fuse:
             return ops.Selection(
-                root.table,
+                root_table,
                 fused_exprs,
                 predicates=root.predicates,
                 sort_keys=root.sort_keys,
             )
-        else:
-            return None
-
-
-def _maybe_resolve_exprs(table, exprs):
-    try:
-        return table._resolve(exprs)
-    except (AttributeError, IbisTypeError):
         return None
 
 
@@ -1024,7 +1024,7 @@ def find_source_table(expr):
             return lin.proceed, None
 
     first_tables = lin.traverse(finder, expr.op().flat_args())
-    options = list(toolz.unique(first_tables, key=methodcaller('op')))
+    options = list(toolz.unique(first_tables, key=operator.methodcaller('op')))
 
     if len(options) > 1:
         raise NotImplementedError('More than one base table not implemented')

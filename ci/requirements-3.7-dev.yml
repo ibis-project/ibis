@@ -8,6 +8,8 @@ dependencies:
   - clickhouse-sqlalchemy
   - cmake
   - flake8
+  - geoalchemy2
+  - geopandas
   - google-cloud-bigquery>=1.0.0
   - graphviz
   - impyla>=0.15.0
@@ -23,11 +25,13 @@ dependencies:
   - pre_commit
   - psycopg2
   - pyarrow>=0.12
+  - pydata-google-auth
+  - pygit2
   - pymapd>=0.12.0
   - pymysql
   - pyspark>=2.4.3
   - pytables>=3.0.0
-  - pytest
+  - pytest>=4.5
   - pytest-cov
   - pytest-xdist
   - python=3.7
@@ -37,13 +41,11 @@ dependencies:
   - regex
   - requests
   - ruamel.yaml
-  - sqlalchemy
+  - sqlalchemy>=1.1
   - thrift>=0.9.3
+  - thriftpy2  # required for impyla in case of py3
   - toolz
   - xorg-libxpm
   - xorg-libxrender
   - pip:
-    - pydata-google-auth
     - seed-isort-config
-    # required for impyla in case of py3
-    - thriftpy2

@@ -354,7 +354,7 @@ _operation_registry.update(
         ops.RegexSearch: _regex_search,
         ops.RegexExtract: _regex_extract,
         ops.RegexReplace: _regex_replace,
-        ops.GroupConcat: fixed_arity('STRING_AGG', 2),
+        ops.GroupConcat: _reduction('STRING_AGG'),
         ops.IfNull: fixed_arity('IFNULL', 2),
         ops.Cast: _cast,
         ops.StructField: _struct_field,
@@ -552,7 +552,7 @@ def compiles_approx(translator, expr):
 @rewrites(ops.All)
 @rewrites(ops.NotAny)
 @rewrites(ops.NotAll)
-def _any_all_no_op(expr):
+def bigquery_any_all_no_op(expr):
     return expr
 
 

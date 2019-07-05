@@ -3,10 +3,9 @@ from pkg_resources import parse_version
 
 import ibis
 import ibis.expr.datatypes as dt
-import ibis.tests.util as tu
 
 
-@tu.skipif_unsupported
+@pytest.mark.xfail_unsupported
 def test_version(backend, con):
     expected_type = (
         type(parse_version('1.0')),
@@ -66,12 +65,10 @@ def test_query_schema(backend, con, alltypes, expr_fn, expected):
         'timestamp_col',
     ],
 )
-@tu.skipif_unsupported
+@pytest.mark.xfail_unsupported
 def test_sql(backend, con, alltypes, field):
 
-    if not hasattr(con, 'sql') or not hasattr(
-        con, '_get_schema_using_query'
-    ):
+    if not hasattr(con, 'sql') or not hasattr(con, '_get_schema_using_query'):
         pytest.skip('Backend {} does not support sql method'.format(backend))
 
     result = con.sql(alltypes.compile())

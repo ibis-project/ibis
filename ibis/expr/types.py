@@ -2,6 +2,8 @@ import itertools
 import os
 import webbrowser
 
+import numpy as np
+
 import ibis
 import ibis.common as com
 import ibis.config as config
@@ -177,10 +179,7 @@ class Expr:
 
     @property
     def _factory(self):
-        def factory(arg, name=None):
-            return type(self)(arg, name=name)
-
-        return factory
+        return type(self)
 
     def execute(self, limit='default', params=None, **kwargs):
         """
@@ -472,18 +471,12 @@ class TableExpr(Expr):
 
     def _resolve(self, exprs):
         exprs = util.promote_list(exprs)
-
-        # Stash this helper method here for now
-        out_exprs = []
-        for expr in exprs:
-            expr = self._ensure_expr(expr)
-            out_exprs.append(expr)
-        return out_exprs
+        return list(map(self._ensure_expr, exprs))
 
     def _ensure_expr(self, expr):
         if isinstance(expr, str):
             return self[expr]
-        elif isinstance(expr, int):
+        elif isinstance(expr, (int, np.integer)):
             return self[self.schema().name_at_position(expr)]
         elif not isinstance(expr, Expr):
             return expr(self)

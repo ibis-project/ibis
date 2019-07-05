@@ -1,0 +1,274 @@
+parameters:
+  name: ''
+  vmImage: ''
+
+jobs:
+- job: ${{ parameters.name }}Test
+
+  pool:
+    vmImage: ${{ parameters.vmImage }}
+
+  variables:
+    AZURECI: 1
+    COMPOSE_FILE: ci/docker-compose.yml
+
+  strategy:
+    matrix:
+      py35:
+        PYTHONHASHSEED: "0"
+        PYTHON_MAJOR_VERSION: "3"
+        PYTHON_MINOR_VERSION: "5"
+        PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
+        PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
+        PYTEST_MARK_EXPRESSION: "not udf and not postgis"
+      py36:
+        PYTHONHASHSEED: "random"
+        PYTHON_MAJOR_VERSION: "3"
+        PYTHON_MINOR_VERSION: "6"
+        PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
+        PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
+        PYTEST_MARK_EXPRESSION: "not udf"
+      py37:
+        PYTHONHASHSEED: "random"
+        PYTHON_MAJOR_VERSION: "3"
+        PYTHON_MINOR_VERSION: "7"
+        PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
+        PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
+        PYTEST_MARK_EXPRESSION: "not udf"
+
+  steps:
+    - bash: |
+        if [ -n "${GCLOUD_SERVICE_KEY}" ]; then
+          mkdir -p /tmp/ibis
+          base64 --decode --ignore-garbage <<< "${GCLOUD_SERVICE_KEY}" > /tmp/ibis/gcloud-service-key.json
+        fi
+      env:
+        GCLOUD_SERVICE_KEY: $(GCLOUD_SERVICE_KEY)
+      displayName: 'Setup BigQuery credentials'
+      condition: eq(variables['System.PullRequest.IsFork'], 'False')
+
+    - bash: |
+        docker-compose up -d --no-build \
+          mysql \
+          postgres \
+          impala \
+          clickhouse \
+          omnisci \
+          kudu-tserver \
+          kudu-master
+      displayName: 'Start databases'
+
+    - bash: docker-compose run waiter
+      displayName: 'Wait for databases'
+
+    - bash: docker ps
+      displayName: 'Show running containers'
+
+    - bash: docker-compose build ibis
+      displayName: 'Build ibis image'
+
+    - bash: docker images
+      displayName: 'List docker images'
+
+    - bash: docker-compose run ibis flake8
+      displayName: 'Lint'
+
+    - bash: |
+        sudo mkdir -p /tmp/ibis/test-reports/pytest
+        mkdir -p /tmp/env
+      displayName: 'Make artifacts directories'
+
+    - bash: docker-compose run ibis conda list
+      displayName: 'Show packages in conda environment'
+
+    - bash: docker-compose run ibis conda list --export > /tmp/env/env.yml
+      displayName: 'Capture packages in conda environment'
+
+    - bash: docker-compose run -e LOGLEVEL=DEBUG ibis ci/load-data.sh
+      displayName: 'Load test datasets'
+
+    - bash: |
+        docker-compose run \
+          -e PYTHONHASHSEED=$PYTHONHASHSEED \
+          -e AZURECI=$AZURECI \
+          -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcloud-service-key.json \
+          ibis \
+          pytest ibis -m "${PYTEST_MARK_EXPRESSION}" \
+                      -ra \
+                      --numprocesses auto \
+                      --doctest-modules \
+                      --doctest-ignore-import-errors \
+                      --junitxml=/tmp/test-reports/pytest/junit.xml \
+                      --cov=ibis \
+                      --cov-report=xml:/tmp/test-reports/pytest-cov/coverage.xml
+      displayName: 'Run tests'
+
+    - bash: |
+        bash <(curl -s https://codecov.io/bash) \
+          -f /tmp/ibis/test-reports/pytest-cov/coverage.xml
+      displayName: 'Upload coverage'
+
+    - task: PublishTestResults@2
+      displayName: 'Publish test results from pytest JUnitXML'
+      inputs:
+        testResultsFiles: /tmp/ibis/test-reports/pytest/junit.xml
+        testRunTitle: 'Publish test results'
+        mergeTestResults: False
+      condition: succeededOrFailed()  # pass or fail, but not cancelled
+
+    - task: PublishPipelineArtifact@1
+      inputs:
+        path: /tmp/env/env.yml
+        artifact: LinuxCondaEnvironment$(PYTHON_NO_DOT_VERSION)
+      displayName: 'Publish Linux environment YAML to Azure'
+      condition: succeededOrFailed()  # pass or fail, but not cancelled
+
+- job: ${{ parameters.name }}BuildConda
+
+  pool:
+    vmImage: ${{ parameters.vmImage }}
+
+  variables:
+    PYTHON_VERSION: "3.7"
+    AZURECI: 1
+    COMPOSE_FILE: ci/docker-compose.yml
+
+  steps:
+    - bash: docker-compose build ibis
+      displayName: 'Build ibis image'
+
+    - bash: docker images
+      displayName: 'List docker images'
+
+    - bash: docker-compose run ibis ci/feedstock.py test
+      displayName: 'Clone, update and build conda-forge recipe'
+
+    - task: PublishPipelineArtifact@1
+      inputs:
+        path: /tmp/ibis/packages
+        artifact: LinuxCondaPackage
+      displayName: 'Publish conda package to Azure'
+      condition: and(succeeded(), eq(variables['System.PullRequest.IsFork'], 'False'))
+
+- job: ${{ parameters.name }}Benchmark
+
+  pool:
+    vmImage: ${{ parameters.vmImage }}
+
+  variables:
+    PYTHON_VERSION: "3.6"
+    AZURECI: 1
+    COMPOSE_FILE: ci/docker-compose.yml
+
+  steps:
+    - bash: docker-compose build ibis
+      displayName: 'Build Ibis Image'
+
+    - bash: docker-compose run ibis ci/benchmark.sh azure "$(Build.SourceVersion)"
+      displayName: 'Run Benchmark (ASV)'
+
+- job: ${{ parameters.name }}BuildDocs
+
+  pool:
+    vmImage: ${{ parameters.vmImage }}
+
+  variables:
+    PYTHON_VERSION: "3.6"
+    AZURECI: 1
+    COMPOSE_FILE: ci/docker-compose.yml
+
+  steps:
+    - bash: |
+        docker-compose up -d --no-build \
+          mysql \
+          postgres \
+          impala \
+          clickhouse \
+          omnisci \
+          kudu-master \
+          kudu-tserver
+      displayName: 'Start databases'
+
+    - bash: docker-compose run waiter
+      displayName: 'Wait for databases'
+
+    - bash: docker-compose build ibis ibis-docs
+      displayName: 'build ibis documentation image'
+
+    - bash: docker images
+      displayName: 'List docker images'
+
+    - bash: docker ps
+      displayName: 'Show running containers'
+
+    - bash: docker-compose run ibis-docs ci/load-data.sh
+      displayName: 'Load test datasets'
+
+    - bash: docker-compose run ibis-docs ping -c 1 impala
+      displayName: 'Ping the impala host used in the tutorial notebooks'
+
+    - bash: |
+        docker-compose run ibis-docs \
+          git clone --branch gh-pages \
+            https://github.com/cpcloud/docs.ibis-project.org \
+            /tmp/docs.ibis-project.org
+      displayName: 'Clone doc repo'
+
+    - bash: |
+        docker-compose run ibis-docs \
+          find /tmp/docs.ibis-project.org \
+            -maxdepth 1 \
+            # ignore the directory we're searching in itself
+            ! -wholename /tmp/docs.ibis-project.org \
+            # ignore git files
+            ! -name '*.git' \
+            # ignore the CNAME record
+            ! -name CNAME \
+            # ignore files ending in nojekyll
+            ! -name '*.nojekyll' \
+            -exec rm -rf {} \;
+      displayName: 'Clear out old docs'
+
+    - bash: docker-compose run ibis-docs conda list
+      displayName: 'Show the doc env'
+
+    - bash: |
+        docker-compose run ibis-docs \
+          sphinx-build -b html docs/source /tmp/docs.ibis-project.org -W -T
+      displayName: 'Build docs'
+
+    - task: PublishPipelineArtifact@1
+      inputs:
+        path: /tmp/ibis/docs.ibis-project.org
+        artifact: Documentation
+      displayName: 'Publish documentation to Azure'
+      condition: and(succeeded(), eq(variables['System.PullRequest.IsFork'], 'False'))
+
+    - bash: |
+        mkdir ~/.ssh
+        base64 --decode --ignore-garbage <<< "${IBIS_GH_TOKEN}" > ~/.ssh/id_rsa
+        chmod 700 ~/.ssh
+        chmod 600 ~/.ssh/id_rsa
+
+        # add github to known hosts
+        ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
+
+        sudo chown -R "${USER}":"${USER}" /tmp/ibis
+        pushd /tmp/ibis/docs.ibis-project.org
+
+        git remote set-url origin git@github.com:ibis-project/docs.ibis-project.org
+
+        git config user.name 'Ibis Documentation Bot'
+        git config user.email ''
+
+        # Add everything
+        git add --all .
+        git commit -m "Docs from ibis at $(Build.SourceVersion)"
+        git push --force origin gh-pages
+      displayName: 'Push docs to remote repo'
+      env:
+        IBIS_GH_TOKEN: $(IBIS_GH_TOKEN)
+      condition: |
+        and(eq(variables['System.PullRequest.IsFork'], 'False'),
+            eq(variables['Build.Repository.Name'], 'ibis-project/ibis'),
+            eq(variables['Build.SourceBranchName'], 'master'))

@@ -1,6 +1,6 @@
 """The pandas backend is a departure from the typical ibis backend in that it
 doesn't compile to anything, and the execution of the ibis expression
-is under the purview of ibis itself rather than executing SQL against a server.
+is under the purview of ibis itself rather than executing SQL on a server.
 
 Design
 ------
@@ -74,30 +74,28 @@ allows you to encode such logic. One might want to implement this using
 :class:`~ibis.expr.operations.ScalarParameter`, in which case the ``scope``
 passed to ``post_execute`` would be the bound values passed in at the time the
 ``execute`` method was called.
-
 """
 
-import collections
+from __future__ import absolute_import
+
 import datetime
 import functools
 import numbers
-from typing import Any, Mapping, Optional, Sequence
 
 import numpy as np
 import pandas as pd
 import toolz
+from multipledispatch import Dispatcher
 
 import ibis
+import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.window as win
 import ibis.pandas.aggcontext as agg_ctx
-import ibis.util
 from ibis.client import find_backends
 from ibis.pandas.dispatch import (
-    execute,
-    execute_first,
     execute_literal,
     execute_node,
     post_execute,
@@ -143,227 +141,282 @@ ibis.util.consume(
 )
 
 
-def get_node(obj):
-    """Attempt to get the underlying :class:`Node` instance from `obj`."""
-    try:
-        return obj.op()
-    except AttributeError:
-        return obj
-
-
-def dependencies(expr: ir.Expr):
-    """Compute the dependencies of an expression.
+def execute_with_scope(expr, scope, aggcontext=None, clients=None, **kwargs):
+    """Execute an expression `expr`, with data provided in `scope`.
 
     Parameters
     ----------
-    expr
-        An ibis expression
+    expr : ibis.expr.types.Expr
+        The expression to execute.
+    scope : collections.Mapping
+        A dictionary mapping :class:`~ibis.expr.operations.Node` subclass
+        instances to concrete data such as a pandas DataFrame.
+    aggcontext : Optional[ibis.pandas.aggcontext.AggregationContext]
 
     Returns
     -------
-    dict
-        Mapping from hashable objects to ibis expression inputs.
-
-    See Also
-    --------
-    is_computable_input
-    dependents
-
+    result : scalar, pd.Series, pd.DataFrame
     """
-    stack = [expr]
-    dependencies = collections.defaultdict(list)
+    op = expr.op()
 
-    while stack:
-        expr = stack.pop()
-        node = get_node(expr)
-        if isinstance(node, collections.abc.Hashable):
-            if not isinstance(node, ops.Node):
-                dependencies[node] = []
-            if node not in dependencies:
-                computable_inputs = [
-                    arg for arg in node.inputs if is_computable_input(arg)
-                ]
-                stack.extend(computable_inputs)
-                dependencies[node].extend(computable_inputs)
-    return dict(dependencies)
-
-
-def dependents(dependencies):
-    """Get dependents from dependencies.
-
-    Parameters
-    ----------
-    dependencies
-        A mapping from hashable objects to ibis expression inputs.
-
-    Returns
-    -------
-    dict
-        A mapping from hashable objects to expressions that depend on the keys.
-
-    See Also
-    --------
-    dependencies
-
-    """
-    dependents = collections.defaultdict(list)
-    for node in dependencies.keys():
-        dependents[node] = []
-
-    for node, deps in dependencies.items():
-        for dep in deps:
-            dependents[get_node(dep)].append(node.to_expr())
-    return dict(dependents)
-
-
-def toposort(expr: ir.Expr):
-    """Topologically sort the nodes that underly `expr`.
-
-    Parameters
-    ----------
-    expr
-        An ibis expression.
-
-    Returns
-    -------
-    Tuple
-        A tuple whose first element is the topologically sorted values required
-        to compute `expr` and whose second element is the dependencies of
-        `expr`.
-
-    """
-    # compute dependencies and dependents
-    parents = dependencies(expr)
-    children = dependents(parents)
-
-    # count the number of dependencies each node has
-    indegree = toolz.valmap(len, parents)
-
-    # queue up the nodes with no dependencies
-    queue = collections.deque(
-        node for node, count in indegree.items() if not count
-    )
-
-    toposorted = []
-
-    while queue:
-        node = queue.popleft()
-
-        # invariant: every element of the queue has indegree 0, i.e., no
-        # dependencies
-        assert not indegree[node]
-        toposorted.append(node)
-
-        # remove the node -> child edge for every child of node
-        for child in map(get_node, children[node]):
-            indegree[child] -= 1
-
-            # if we removed the last edge, enqueue the child
-            if not indegree[child]:
-                queue.append(child)
-
-    return toposorted, parents
-
-
-@execute.register(ir.Expr)
-def main_execute(
-    expr: ir.Expr,
-    scope: Optional[Mapping] = None,
-    aggcontext: Optional[agg_ctx.AggregationContext] = None,
-    clients: Sequence[ibis.client.Client] = (),
-    params: Optional[Mapping] = None,
-    **kwargs: Any
-):
-    """Execute an ibis expression against the pandas backend.
-
-    Parameters
-    ----------
-    expr
-    scope
-    aggcontext
-    clients
-    params
-
-    """
-    toposorted, dependencies = toposort(expr)
-    params = toolz.keymap(get_node, params if params is not None else {})
-
-    # Add to scope the objects that have no dependencies and are not ibis
-    # nodes. We have to filter out nodes for cases--such as zero argument
-    # UDFs--that do not have any dependencies yet still need to be evaluated.
-    full_scope = toolz.merge(
-        scope if scope is not None else {},
-        {
-            key: key
-            for key, parents in dependencies.items()
-            if not parents and not isinstance(key, ops.Node)
-        },
-        params,
-    )
-
-    if not clients:
+    # Call pre_execute, to allow clients to intercept the expression before
+    # computing anything *and* before associating leaf nodes with data. This
+    # allows clients to provide their own data for each leaf.
+    if clients is None:
         clients = list(find_backends(expr))
 
     if aggcontext is None:
         aggcontext = agg_ctx.Summarize()
 
-    # give backends a chance to inject scope if needed
-    execute_first_scope = execute_first(
-        expr.op(), *clients, scope=full_scope, aggcontext=aggcontext, **kwargs
+    pre_executed_scope = pre_execute(
+        op, *clients, scope=scope, aggcontext=aggcontext, **kwargs
     )
-    full_scope = toolz.merge(full_scope, execute_first_scope)
+    new_scope = toolz.merge(scope, pre_executed_scope)
+    result = execute_until_in_scope(
+        expr,
+        new_scope,
+        aggcontext=aggcontext,
+        clients=clients,
+        # XXX: we *explicitly* pass in scope and not new_scope here so that
+        # post_execute sees the scope of execute_with_scope, not the scope of
+        # execute_until_in_scope
+        post_execute_=functools.partial(
+            post_execute,
+            scope=scope,
+            aggcontext=aggcontext,
+            clients=clients,
+            **kwargs,
+        ),
+        **kwargs,
+    )
 
-    nodes = [node for node in toposorted if node not in full_scope]
+    return result
 
-    # compute the nodes that are not currently in scope
-    for node in nodes:
-        # allow clients to pre compute nodes as they like
-        pre_executed_scope = pre_execute(
-            node, *clients, scope=full_scope, aggcontext=aggcontext, **kwargs
+
+def execute_until_in_scope(
+    expr, scope, aggcontext=None, clients=None, post_execute_=None, **kwargs
+):
+    """Execute until our op is in `scope`.
+
+    Parameters
+    ----------
+    expr : ibis.expr.types.Expr
+    scope : Mapping
+    aggcontext : Optional[AggregationContext]
+    clients : List[ibis.client.Client]
+    kwargs : Mapping
+    """
+    # these should never be None
+    assert aggcontext is not None, 'aggcontext is None'
+    assert clients is not None, 'clients is None'
+    assert post_execute_ is not None, 'post_execute_ is None'
+
+    # base case: our op has been computed (or is a leaf data node), so
+    # return the corresponding value
+    op = expr.op()
+    if op in scope:
+        return scope[op]
+
+    new_scope = execute_bottom_up(
+        expr,
+        scope,
+        aggcontext=aggcontext,
+        post_execute_=post_execute_,
+        clients=clients,
+        **kwargs,
+    )
+    new_scope = toolz.merge(
+        new_scope, pre_execute(op, *clients, scope=scope, **kwargs)
+    )
+    return execute_until_in_scope(
+        expr,
+        new_scope,
+        aggcontext=aggcontext,
+        clients=clients,
+        post_execute_=post_execute_,
+        **kwargs,
+    )
+
+
+def execute_bottom_up(
+    expr, scope, aggcontext=None, post_execute_=None, clients=None, **kwargs
+):
+    """Execute `expr` bottom-up.
+
+    Parameters
+    ----------
+    expr : ibis.expr.types.Expr
+    scope : Mapping[ibis.expr.operations.Node, object]
+    aggcontext : Optional[ibis.pandas.aggcontext.AggregationContext]
+    kwargs : Dict[str, object]
+
+    Returns
+    -------
+    result : Mapping[
+        ibis.expr.operations.Node,
+        Union[pandas.Series, pandas.DataFrame, scalar_types]
+    ]
+        A mapping from node to the computed result of that Node
+    """
+    assert post_execute_ is not None, 'post_execute_ is None'
+    op = expr.op()
+
+    # if we're in scope then return the scope, this will then be passed back
+    # into execute_bottom_up, which will then terminate
+    if op in scope:
+        return scope
+    elif isinstance(op, ops.Literal):
+        # special case literals to avoid the overhead of dispatching
+        # execute_node
+        return {
+            op: execute_literal(
+                op, op.value, expr.type(), aggcontext=aggcontext, **kwargs
+            )
+        }
+
+    # figure out what arguments we're able to compute on based on the
+    # expressions inputs. things like expressions, None, and scalar types are
+    # computable whereas ``list``s are not
+    computable_args = [arg for arg in op.inputs if is_computable_input(arg)]
+
+    # recursively compute each node's arguments until we've changed type
+    scopes = [
+        execute_bottom_up(
+            arg,
+            scope,
+            aggcontext=aggcontext,
+            post_execute_=post_execute_,
+            clients=clients,
+            **kwargs,
         )
-        # merge the existing scope with whatever was returned from pre_execute
-        execute_scope = toolz.merge(full_scope, pre_executed_scope)
+        if hasattr(arg, 'op')
+        else {arg: arg}
+        for arg in computable_args
+    ]
 
-        # if after pre_execute our node is in scope, then there's nothing to do
-        # in this iteration
-        if node in execute_scope:
-            full_scope = execute_scope
-        else:
-            # If we're evaluating a literal then we can be a bit quicker about
-            # evaluating the dispatch graph
-            if isinstance(node, ops.Literal):
-                executor = execute_literal
-            else:
-                executor = execute_node
+    # if we're unable to find data then raise an exception
+    if not scopes and computable_args:
+        raise com.UnboundExpressionError(
+            'Unable to find data for expression:\n{}'.format(repr(expr))
+        )
 
-            # Gather the inputs we've already computed that the current node
-            # depends on
-            execute_args = [
-                full_scope[get_node(arg)] for arg in dependencies[node]
-            ]
+    # there should be exactly one dictionary per computable argument
+    assert len(computable_args) == len(scopes)
 
-            # execute the node with its inputs
-            execute_node_result = executor(
-                node,
-                *execute_args,
-                aggcontext=aggcontext,
-                scope=execute_scope,
-                clients=clients,
-                **kwargs,
-            )
+    new_scope = toolz.merge(scopes)
 
-            # last change to perform any additional computation on the result
-            # before it gets added to scope for the next node
-            full_scope[node] = post_execute(
-                node,
-                execute_node_result,
-                clients=clients,
-                aggcontext=aggcontext,
-                scope=full_scope,
-            )
+    # pass our computed arguments to this node's execute_node implementation
+    data = [
+        new_scope[arg.op()] if hasattr(arg, 'op') else arg
+        for arg in computable_args
+    ]
+    result = execute_node(
+        op,
+        *data,
+        scope=scope,
+        aggcontext=aggcontext,
+        clients=clients,
+        **kwargs,
+    )
+    computed = post_execute_(op, result)
+    return {op: computed}
 
-    # the last node in the toposorted graph is the root and maps to the desired
-    # result in scope
-    last_node = toposorted[-1]
-    result = full_scope[last_node]
+
+execute = Dispatcher('execute')
+
+
+@execute.register(ir.Expr)
+def main_execute(expr, params=None, scope=None, aggcontext=None, **kwargs):
+    """Execute an expression against data that are bound to it. If no data
+    are bound, raise an Exception.
+
+    Parameters
+    ----------
+    expr : ibis.expr.types.Expr
+        The expression to execute
+    params : Mapping[ibis.expr.types.Expr, object]
+        The data that an unbound parameter in `expr` maps to
+    scope : Mapping[ibis.expr.operations.Node, object]
+        Additional scope, mapping ibis operations to data
+    aggcontext : Optional[ibis.pandas.aggcontext.AggregationContext]
+        An object indicating how to compute aggregations. For example,
+        a rolling mean needs to be computed differently than the mean of a
+        column.
+    kwargs : Dict[str, object]
+        Additional arguments that can potentially be used by individual node
+        execution
+
+    Returns
+    -------
+    result : Union[
+        pandas.Series, pandas.DataFrame, ibis.pandas.core.simple_types
+    ]
+
+    Raises
+    ------
+    ValueError
+        * If no data are bound to the input expression
+    """
+    if scope is None:
+        scope = {}
+
+    if params is None:
+        params = {}
+
+    # TODO: make expresions hashable so that we can get rid of these .op()
+    # calls everywhere
+    params = {k.op() if hasattr(k, 'op') else k: v for k, v in params.items()}
+
+    new_scope = toolz.merge(scope, params)
+    return execute_with_scope(expr, new_scope, aggcontext=aggcontext, **kwargs)
+
+
+def execute_and_reset(
+    expr, params=None, scope=None, aggcontext=None, **kwargs
+):
+    """Execute an expression against data that are bound to it. If no data
+    are bound, raise an Exception.
+
+    Notes
+    -----
+    The difference between this function and :func:`~ibis.pandas.core.execute`
+    is that this function resets the index of the result, if the result has
+    an index.
+
+    Parameters
+    ----------
+    expr : ibis.expr.types.Expr
+        The expression to execute
+    params : Mapping[ibis.expr.types.Expr, object]
+        The data that an unbound parameter in `expr` maps to
+    scope : Mapping[ibis.expr.operations.Node, object]
+        Additional scope, mapping ibis operations to data
+    aggcontext : Optional[ibis.pandas.aggcontext.AggregationContext]
+        An object indicating how to compute aggregations. For example,
+        a rolling mean needs to be computed differently than the mean of a
+        column.
+    kwargs : Dict[str, object]
+        Additional arguments that can potentially be used by individual node
+        execution
+
+    Returns
+    -------
+    result : Union[
+        pandas.Series, pandas.DataFrame, ibis.pandas.core.simple_types
+    ]
+
+    Raises
+    ------
+    ValueError
+        * If no data are bound to the input expression
+    """
+    result = execute(
+        expr, params=params, scope=scope, aggcontext=aggcontext, **kwargs
+    )
+    if isinstance(result, pd.DataFrame):
+        schema = expr.schema()
+        df = result.reset_index()
+        return df.loc[:, schema.names]
+    elif isinstance(result, pd.Series):
+        return result.reset_index(drop=True)
     return result

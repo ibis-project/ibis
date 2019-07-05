@@ -23,7 +23,8 @@ DATA_DIR = Path(
 )
 
 
-logger = ibis.util.get_logger('impalamgr')
+logger = ibis.util.get_logger(Path(__file__).with_suffix('').name)
+
 
 ENV = IbisTestEnv()
 

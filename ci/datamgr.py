@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import sys
 import tempfile
 import warnings
 import zipfile
@@ -14,8 +15,6 @@ import sqlalchemy as sa
 from plumbum import local
 from toolz import dissoc
 
-import ibis
-
 SCRIPT_DIR = Path(__file__).parent.absolute()
 DATA_DIR_NAME = 'ibis-testing-data'
 DATA_DIR = Path(
@@ -25,7 +24,30 @@ DATA_DIR = Path(
 TEST_TABLES = ['functional_alltypes', 'diamonds', 'batting', 'awards_players']
 
 
-logger = ibis.util.get_logger('datamgr')
+def get_logger(name, level=None, format=None, propagate=False):
+    logging.basicConfig()
+    handler = logging.StreamHandler()
+
+    if format is None:
+        format = (
+            '%(relativeCreated)6d '
+            '%(name)-20s '
+            '%(levelname)-8s '
+            '%(threadName)-25s '
+            '%(message)s'
+        )
+    handler.setFormatter(logging.Formatter(fmt=format))
+    logger = logging.getLogger(name)
+    logger.propagate = propagate
+    logger.setLevel(
+        level
+        or getattr(logging, os.environ.get('LOGLEVEL', 'WARNING').upper())
+    )
+    logger.addHandler(handler)
+    return logger
+
+
+logger = get_logger(Path(__file__).with_suffix('').name)
 
 
 def recreate_database(driver, params, **kwargs):
@@ -197,21 +219,56 @@ def parquet(tables, data_directory, ignore_missing_dependency, **params):
     type=click.File('rt'),
     default=str(SCRIPT_DIR / 'schema' / 'postgresql.sql'),
 )
-@click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
+@click.option('-t', '--tables', multiple=True, default=TEST_TABLES + ['geo'])
 @click.option('-d', '--data-directory', default=DATA_DIR)
-@click.option('-l', '--psql-path', type=click.Path(exists=True), default=None)
+@click.option(
+    '-l',
+    '--psql-path',
+    type=click.Path(exists=True),
+    required=os.name == 'nt',
+    default=None if os.name == 'nt' else '/usr/bin/psql',
+)
 def postgres(schema, tables, data_directory, psql_path, **params):
-    psql = local.get('psql', psql_path)
+    psql = local[psql_path]
     data_directory = Path(data_directory)
     logger.info('Initializing PostgreSQL...')
     engine = init_database(
         'postgresql', params, schema, isolation_level='AUTOCOMMIT'
     )
+    use_postgis = 'geo' in tables and sys.version_info >= (3, 6)
+    if use_postgis:
+        engine.execute("CREATE EXTENSION POSTGIS")
 
     query = "COPY {} FROM STDIN WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',')"
     database = params['database']
     for table in tables:
         src = data_directory / '{}.csv'.format(table)
+
+        # If we are loading the geo sample data, handle the data types
+        # specifically so that PostGIS understands them as geometries.
+        if table == 'geo':
+            if not use_postgis:
+                continue
+            from geoalchemy2 import Geometry, WKTElement
+
+            srid = 4326
+            df = pd.read_csv(src)
+            df[df.columns[1:]] = df[df.columns[1:]].applymap(
+                lambda x: WKTElement(x, srid=srid)
+            )
+            df.to_sql(
+                'geo',
+                engine,
+                index=False,
+                dtype={
+                    "geo_point": Geometry("POINT", srid=srid),
+                    "geo_linestring": Geometry("LINESTRING", srid=srid),
+                    "geo_polygon": Geometry("POLYGON", srid=srid),
+                    "geo_multipolygon": Geometry("MULTIPOLYGON", srid=srid),
+                },
+            )
+            continue
+
         load = psql[
             '--host',
             params['host'],
@@ -259,7 +316,7 @@ def sqlite(database, schema, tables, data_directory, **params):
 @cli.command()
 @click.option('-h', '--host', default='localhost')
 @click.option('-P', '--port', default=6274, type=int)
-@click.option('-u', '--user', default='mapd')
+@click.option('-u', '--user', default='admin')
 @click.option('-p', '--password', default='HyperInteractive')
 @click.option('-D', '--database', default='ibis_testing')
 @click.option('--protocol', default='binary')
@@ -279,13 +336,14 @@ def omnisci(schema, tables, data_directory, **params):
 
     # connection
     logger.info('Initializing OmniSci...')
-    if params['database'] != 'mapd':
+    default_db = 'omnisci'
+    if params['database'] != default_db:
         conn = pymapd.connect(
             host=params['host'],
             user=params['user'],
             password=params['password'],
             port=params['port'],
-            dbname='mapd',
+            dbname=default_db,
             protocol=params['protocol'],
         )
         database = params["database"]

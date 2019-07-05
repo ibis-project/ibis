@@ -15,7 +15,7 @@ def dbpath(data_directory):
         return path
 
 
-@pytest.yield_fixture(scope='module')
+@pytest.fixture(scope='module')
 def con(dbpath):
     con = ibis.sqlite.connect(dbpath)
     try:

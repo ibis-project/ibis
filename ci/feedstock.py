@@ -30,17 +30,22 @@ def cli():
 
 default_repo = 'https://github.com/conda-forge/ibis-framework-feedstock'
 default_dest = os.path.join(tempfile.gettempdir(), 'ibis-framework-feedstock')
+default_branch = 'master'
 
 
 @cli.command()
 @click.argument('repo-uri', default=default_repo)
 @click.argument('destination', default=default_dest)
-def clone(repo_uri, destination):
-    if Path(destination).exists():
-        return
+@click.option('-b', '--branch', default=default_branch)
+def clone(repo_uri, destination, branch):
+    if not Path(destination).exists():
+        cmd = git['clone', repo_uri, destination]
+        cmd(
+            stdout=click.get_binary_stream('stdout'),
+            stderr=click.get_binary_stream('stderr'),
+        )
 
-    cmd = git['clone', repo_uri, destination]
-
+    cmd = git['-C', destination, 'checkout', branch]
     cmd(
         stdout=click.get_binary_stream('stdout'),
         stderr=click.get_binary_stream('stderr'),

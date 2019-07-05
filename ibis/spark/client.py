@@ -5,6 +5,7 @@ import pyspark.sql.types as pt
 import regex as re
 from pkg_resources import parse_version
 
+import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
@@ -47,7 +48,7 @@ def spark_type_to_ibis_dtype(spark_type_obj):
     elif isinstance(spark_type_obj, pt.StructType):
         names = spark_type_obj.names
         fields = spark_type_obj.fields
-        ibis_types = list(map(dt.dtype, fields))
+        ibis_types = [dt.dtype(f.dataType) for f in fields]
         ibis_type = dt.Struct(names, ibis_types)
     else:
         ibis_type = _DTYPE_TO_IBIS_TYPE.get(type(spark_type_obj))
@@ -121,23 +122,11 @@ class SparkCursor:
 
 
 class SparkQuery(Query):
-    def __init__(self, client, ddl):
-        super().__init__(client, ddl)
 
     def _fetch(self, cursor):
         df = cursor.query.toPandas()  # blocks until finished
         schema = self.schema()
         return schema.apply_to(df)
-
-    def execute(self):
-        # synchronous by default
-        with self.client._execute(
-            self.compiled_sql,
-            results=True,
-        ) as cur:
-            result = self._fetch(cur)
-
-        return self._wrap_result(result)
 
 
 class SparkDatabase(Database):
@@ -174,9 +163,13 @@ class SparkClient(SQLClient):
         result = comp.build_ast(expr, context)
         return result
 
-    def _execute(self, stmt, results=True):
+    def _execute(self, stmt, results=False):
         query = self._session.sql(stmt)
-        return SparkCursor(query)
+        if results:
+            return SparkCursor(query)
+
+    def database(self, name=None):
+        return self.database_class(name or self.current_database, self)
 
     @property
     def current_database(self):
@@ -279,7 +272,9 @@ class SparkClient(SQLClient):
         schema : ibis Schema
         """
         if database is not None:
-            raise Exception('Spark does not support database param for table')
+            raise com.UnsupportedArgumentError(
+                'Spark does not support database param for table'
+            )
 
         df = self._session.table(table_name)
 

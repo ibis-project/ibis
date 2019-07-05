@@ -4,6 +4,7 @@ import pytest
 from pytest import param
 
 import ibis
+import ibis.common as com
 
 pytestmark = pytest.mark.pandas
 
@@ -338,3 +339,79 @@ def test_keyed_asof_join_with_tolerance(
         tolerance=pd.Timedelta('2D'),
     )
     tm.assert_frame_equal(result[expected.columns], expected)
+
+
+@pytest.mark.parametrize(
+    "how",
+    [
+        "left",
+        pytest.param(
+            "right",
+            marks=pytest.mark.xfail(
+                raises=AttributeError, reason="right_join is not an ibis API"
+            ),
+        ),
+        "inner",
+        "outer",
+    ],
+)
+@pytest.mark.parametrize(
+    "func",
+    [
+        pytest.param(lambda join: join["a0", "a1"], id="tuple"),
+        pytest.param(lambda join: join[["a0", "a1"]], id="list"),
+        pytest.param(lambda join: join.select(["a0", "a1"]), id="select"),
+    ],
+)
+@pytest.mark.xfail(
+    raises=(com.IbisError, AttributeError),
+    reason="Select from unambiguous joins not implemented",
+)
+def test_select_on_unambiguous_join(how, func):
+    df_t = pd.DataFrame(dict(a0=[1, 2, 3], b1=list("aab")))
+    df_s = pd.DataFrame(dict(a1=[2, 3, 4], b2=list("abc")))
+    con = ibis.pandas.connect({"t": df_t, "s": df_s})
+    t = con.table("t")
+    s = con.table("s")
+    method = getattr(t, "{}_join".format(how))
+    join = method(s, t.b1 == s.b2)
+    expected = pd.merge(df_t, df_s, left_on=["b1"], right_on=["b2"], how=how)[
+        ["a0", "a1"]
+    ]
+    assert not expected.empty
+    expr = func(join)
+    result = expr.execute()
+    tm.assert_frame_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    "func",
+    [
+        pytest.param(lambda join: join["a0", "a1"], id="tuple"),
+        pytest.param(lambda join: join[["a0", "a1"]], id="list"),
+        pytest.param(lambda join: join.select(["a0", "a1"]), id="select"),
+    ],
+)
+@pytest.mark.xfail(
+    raises=(com.IbisError, AttributeError),
+    reason="Select from unambiguous joins not implemented",
+)
+@merge_asof_minversion
+def test_select_on_unambiguous_asof_join(func):
+    df_t = pd.DataFrame(
+        dict(a0=[1, 2, 3], b1=pd.date_range("20180101", periods=3))
+    )
+    df_s = pd.DataFrame(
+        dict(a1=[2, 3, 4], b2=pd.date_range("20171230", periods=3))
+    )
+    con = ibis.pandas.connect({"t": df_t, "s": df_s})
+    t = con.table("t")
+    s = con.table("s")
+    join = t.asof_join(s, t.b1 == s.b2)
+    expected = pd.merge_asof(df_t, df_s, left_on=["b1"], right_on=["b2"])[
+        ["a0", "a1"]
+    ]
+    assert not expected.empty
+    expr = func(join)
+    result = expr.execute()
+    tm.assert_frame_equal(result, expected)

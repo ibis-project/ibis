@@ -15,13 +15,13 @@ See http://docs.ibis-project.org
 
 VERSION = sys.version_info.major, sys.version_info.minor
 
-impala_requires = ['hdfs>=2.0.16', 'sqlalchemy', 'requests']
+impala_requires = ['hdfs>=2.0.16', 'sqlalchemy>=1.1', 'requests']
 if VERSION == (3, 5):
     impala_requires.append('impyla<0.14.2')
 else:
     impala_requires.append('impyla>=0.15.0')
 
-sqlite_requires = ['sqlalchemy']
+sqlite_requires = ['sqlalchemy>=1.1']
 postgres_requires = sqlite_requires + ['psycopg2']
 mysql_requires = sqlite_requires + ['pymysql']
 
@@ -41,6 +41,8 @@ else:
     parquet_requires = ['pyarrow>=0.12.0']
 spark_requires = ['pyspark>=2.4.3']
 
+geospatial_requires = ['geoalchemy2', 'geopandas']
+
 all_requires = (
     impala_requires
     + postgres_requires
@@ -53,9 +55,18 @@ all_requires = (
     + hdf5_requires
     + parquet_requires
     + spark_requires
+    + geospatial_requires
 )
 
-develop_requires = all_requires + ['click', 'flake8', 'mypy', 'pytest>=3']
+develop_requires = all_requires + [
+    'click',
+    'flake8',
+    'isort',
+    'mypy',
+    'pre-commit',
+    'pygit2',
+    'pytest>=4.5',
+]
 
 install_requires = [
     line.strip()
@@ -75,7 +86,8 @@ setup(
     python_requires='>=3.5',
     extras_require={
         'all': all_requires,
-        'develop': develop_requires,
+        'develop:python_version > "3.5"': develop_requires + ['black'],
+        'develop:python_version == "3.5"': develop_requires,
         'impala': impala_requires,
         'kerberos': kerberos_requires,
         'postgres': postgres_requires,
@@ -88,6 +100,7 @@ setup(
         'hdf5': hdf5_requires,
         'parquet': parquet_requires,
         'spark' : spark_requires,
+        'geospatial': geospatial_requires,
     },
     description="Productivity-centric Python Big Data Framework",
     long_description=LONG_DESCRIPTION,

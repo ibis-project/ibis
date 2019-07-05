@@ -3,6 +3,7 @@ import pytest
 import ibis
 import ibis.common as com
 from ibis import window
+from ibis.expr.window import rows_with_max_lookback
 from ibis.impala.compiler import to_sql  # noqa: E402
 from ibis.tests.util import assert_equal
 
@@ -106,7 +107,7 @@ FROM ibis_testing.`alltypes`"""
         (
             ibis.trailing_window(10),
             'rows between 10 preceding and current row',
-        ),
+        )
     ],
 )
 def test_window_frame_specs(con, window, frame):
@@ -120,6 +121,15 @@ FROM ibis_testing.`alltypes`"""
     expr = t.projection([t.d.sum().over(w2).name('foo')])
     expected = ex_template.format(frame.upper())
     assert_sql_equal(expr, expected)
+
+
+def test_window_rows_with_max_lookback(con):
+    t = con.table('alltypes')
+    mlb = rows_with_max_lookback(3, ibis.interval(days=3))
+    w = ibis.trailing_window(mlb, order_by=t.i)
+    expr = t.a.sum().over(w)
+    with pytest.raises(NotImplementedError):
+        to_sql(expr)
 
 
 @pytest.mark.parametrize(

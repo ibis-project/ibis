@@ -58,8 +58,18 @@ def alltypes(db):
 
 
 @pytest.fixture(scope='module')
+def geotable(con):
+    return con.table('geo')
+
+
+@pytest.fixture(scope='module')
 def df(alltypes):
     return alltypes.execute()
+
+
+@pytest.fixture(scope='module')
+def gdf(geotable):
+    return geotable.execute()
 
 
 @pytest.fixture(scope='module')

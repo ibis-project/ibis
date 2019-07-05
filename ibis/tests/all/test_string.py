@@ -3,7 +3,6 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-import ibis.tests.util as tu
 from ibis.tests.backends import Spark
 
 
@@ -209,7 +208,7 @@ def test_string_col_is_unicode(backend, alltypes, df):
         ),
     ],
 )
-@tu.skipif_unsupported
+@pytest.mark.xfail_unsupported
 def test_string(backend, alltypes, df, result_func, expected_func):
     expr = result_func(alltypes)
     result = expr.execute()

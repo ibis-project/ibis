@@ -25,6 +25,7 @@ from multipledispatch import Dispatcher
 
 import ibis.common as com
 import ibis.expr.types as ir
+from ibis import util
 
 
 class DataType:
@@ -111,6 +112,10 @@ class DataType:
 
     def column_type(self):
         return functools.partial(self.column, dtype=self)
+
+    def _literal_value_hash_key(self, value) -> int:
+        """Return a hash for `value`."""
+        return self, value
 
 
 class Any(DataType):
@@ -486,12 +491,12 @@ class Struct(DataType):
 
     @classmethod
     def from_tuples(
-        self,
+        cls,
         pairs: Sequence[Tuple[str, Union[str, DataType]]],
         nullable: bool = True,
     ) -> 'Struct':
         names, types = zip(*pairs)
-        return Struct(list(names), list(map(dtype, types)), nullable=nullable)
+        return cls(list(names), list(map(dtype, types)), nullable=nullable)
 
     @property
     def pairs(self) -> Mapping:
@@ -516,6 +521,22 @@ class Struct(DataType):
             ', '.join(itertools.starmap('{}: {}'.format, self.pairs.items())),
         )
 
+    def _literal_value_hash_key(self, value):
+        return self, _tuplize(value.items())
+
+
+def _tuplize(values):
+    """Recursively convert `values` to a tuple of tuples."""
+    def tuplize_iter(values):
+        yield from (
+            tuple(tuplize_iter(value))
+            if util.is_iterable(value)
+            else value
+            for value in values
+        )
+
+    return tuple(tuplize_iter(values))
+
 
 class Array(Variadic):
     scalar = ir.ArrayScalar
@@ -531,6 +552,9 @@ class Array(Variadic):
 
     def __str__(self) -> str:
         return '{}<{}>'.format(self.name.lower(), self.value_type)
+
+    def _literal_value_hash_key(self, value):
+        return self, _tuplize(value)
 
 
 class Set(Variadic):
@@ -581,9 +605,15 @@ class Map(Variadic):
             self.name.lower(), self.key_type, self.value_type
         )
 
+    def _literal_value_hash_key(self, value):
+        return self, _tuplize(value.items())
+
 
 class GeoSpatial(DataType):
     __slots__ = 'geotype', 'srid'
+
+    column = ir.GeoSpatialColumn
+    scalar = ir.GeoSpatialScalar
 
     def __init__(
         self, geotype: str = None, srid: int = None, nullable: bool = True
@@ -609,6 +639,46 @@ class GeoSpatial(DataType):
 
         self.geotype = geotype
         self.srid = srid
+
+    def __str__(self) -> str:
+        geo_op = self.name.lower()
+        if self.geotype is not None:
+            geo_op += ':' + self.geotype
+        if self.srid is not None:
+            geo_op += ';' + str(self.srid)
+        return geo_op
+
+
+class Geometry(GeoSpatial):
+    """Geometry is used to cast from geography types."""
+
+    column = ir.GeoSpatialColumn
+    scalar = ir.GeoSpatialScalar
+
+    __slots__ = ()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.geotype = 'geometry'
+
+    def __str__(self) -> str:
+        return self.name.lower()
+
+
+class Geography(GeoSpatial):
+    """Geography is used to cast from geometry types."""
+
+    column = ir.GeoSpatialColumn
+    scalar = ir.GeoSpatialScalar
+
+    __slots__ = ()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.geotype = 'geography'
+
+    def __str__(self) -> str:
+        return self.name.lower()
 
 
 class Point(GeoSpatial):
@@ -678,6 +748,8 @@ timestamp = Timestamp()
 interval = Interval()
 category = Category()
 # geo spatial data type
+geometry = GeoSpatial()
+geography = GeoSpatial()
 point = Point()
 linestring = LineString()
 polygon = Polygon()
@@ -1036,6 +1108,10 @@ class TypeParser:
 
         field : [a-zA-Z_][a-zA-Z_0-9]*
 
+        geography: "geography"
+
+        geometry: "geometry"
+
         point : "point"
               | "point" ";" srid
               | "point" ":" geotype
@@ -1171,6 +1247,12 @@ class TypeParser:
             return Struct(names, types)
 
         # geo spatial data type
+        elif self._accept(Tokens.GEOMETRY):
+            return Geometry()
+
+        elif self._accept(Tokens.GEOGRAPHY):
+            return Geography()
+
         elif self._accept(Tokens.POINT):
             geotype = None
             srid = None
@@ -1511,10 +1593,10 @@ def can_cast_variadic(
 
 
 # geo spatial data type
-@castable.register(Array, Point)
-@castable.register(Array, LineString)
-@castable.register(Array, Polygon)
-@castable.register(Array, MultiPolygon)
+# cast between same type, used to cast from/to geometry and geography
+@castable.register(Array, (Point, LineString, Polygon, MultiPolygon))
+@castable.register((Point, LineString, Polygon, MultiPolygon), Geometry)
+@castable.register((Point, LineString, Polygon, MultiPolygon), Geography)
 def can_cast_geospatial(source, target, **kwargs):
     return True
 

@@ -1,5 +1,3 @@
-import sys
-
 import pandas as pd
 import pandas.util.testing as tm
 import pytest
@@ -101,11 +99,7 @@ def test_subquery(alltypes, df):
     )
 
     result['count'] = result['count'].astype('int64')
-
-    check_column_type = sys.version_info.major >= 3
-    tm.assert_frame_equal(
-        result, expected, check_column_type=check_column_type
-    )
+    tm.assert_frame_equal(result, expected)
 
 
 def test_simple_scalar_aggregates(db, alltypes):

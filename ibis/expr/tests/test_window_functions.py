@@ -12,9 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import numpy as np
+import pandas as pd
 import pytest
 
 import ibis
+import ibis.common as com
+from ibis.expr.window import _determine_how, rows_with_max_lookback
 from ibis.tests.util import assert_equal
 
 
@@ -56,9 +60,96 @@ def test_combine_windows(alltypes):
     assert_equal(w5, expected)
 
     # Cannot combine windows of varying types.
-    w6 = ibis.range_window(preceding=5, following=5)
+    w9 = ibis.range_window(preceding=5, following=5)
     with pytest.raises(ibis.common.IbisInputError):
-        w1.combine(w6)
+        w1.combine(w9)
+
+
+def test_combine_windows_with_zero_offset():
+    w1 = ibis.window(preceding=0, following=5)
+    w2 = ibis.window(preceding=7, following=10)
+    w3 = w1.combine(w2)
+    expected = ibis.window(preceding=7, following=5)
+    assert_equal(w3, expected)
+
+    w4 = ibis.window(preceding=3, following=0)
+    w5 = w4.combine(w2)
+    expected = ibis.window(preceding=3, following=10)
+    assert_equal(w5, expected)
+
+
+def test_combine_window_with_interval_offset(alltypes):
+    t = alltypes
+    w1 = ibis.trailing_range_window(
+        preceding=ibis.interval(days=3), order_by=t.e
+    )
+    w2 = ibis.trailing_range_window(
+        preceding=ibis.interval(days=4), order_by=t.f
+    )
+    w3 = w1.combine(w2)
+    expected = ibis.trailing_range_window(
+        preceding=ibis.interval(days=3), order_by=[t.e, t.f]
+    )
+    assert_equal(w3, expected)
+
+    w4 = ibis.range_window(following=ibis.interval(days=5), order_by=t.e)
+    w5 = ibis.range_window(following=ibis.interval(days=7), order_by=t.f)
+    expected = ibis.range_window(
+        following=ibis.interval(days=5), order_by=[t.e, t.f]
+    )
+    w6 = w4.combine(w5)
+    assert_equal(w6, expected)
+
+
+def test_combine_window_with_max_lookback():
+    w1 = ibis.trailing_window(
+        rows_with_max_lookback(3, ibis.interval(days=5))
+    )
+    w2 = ibis.trailing_window(
+        rows_with_max_lookback(5, ibis.interval(days=7))
+    )
+    w3 = w1.combine(w2)
+    expected = ibis.trailing_window(
+        rows_with_max_lookback(3, ibis.interval(days=5))
+    )
+    assert_equal(w3, expected)
+
+
+def test_replace_window(alltypes):
+    t = alltypes
+    w1 = ibis.window(
+        preceding=5,
+        following=1,
+        group_by=t.a,
+        order_by=t.b
+    )
+    w2 = w1.group_by(t.c)
+    expected = ibis.window(
+        preceding=5,
+        following=1,
+        group_by=[t.a, t.c],
+        order_by=t.b
+    )
+    assert_equal(w2, expected)
+
+    w3 = w1.order_by(t.d)
+    expected = ibis.window(
+        preceding=5,
+        following=1,
+        group_by=t.a,
+        order_by=[t.b, t.d]
+    )
+    assert_equal(w3, expected)
+
+    w4 = ibis.trailing_window(
+        rows_with_max_lookback(3, ibis.interval(months=3))
+    )
+    w5 = w4.group_by(t.a)
+    expected = ibis.trailing_window(
+        rows_with_max_lookback(3, ibis.interval(months=3)),
+        group_by=t.a
+    )
+    assert_equal(w5, expected)
 
 
 def test_over_auto_bind(alltypes):
@@ -171,6 +262,130 @@ def test_preceding_following_validate(alltypes):
             case()
 
 
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
+def test_max_rows_with_lookback_validate(alltypes):
+    t = alltypes
+    mlb = rows_with_max_lookback(3, ibis.interval(days=5))
+    window = ibis.trailing_window(mlb, order_by=t.i)
+    t.f.lag().over(window)
+
+    window = ibis.trailing_window(mlb)
+    with pytest.raises(com.IbisInputError):
+        t.f.lag().over(window)
+
+    window = ibis.trailing_window(mlb, order_by=t.a)
+    with pytest.raises(com.IbisInputError):
+        t.f.lag().over(window)
+
+    window = ibis.trailing_window(mlb, order_by=[t.i, t.a])
+    with pytest.raises(com.IbisInputError):
+        t.f.lag().over(window)
+
+
 def test_window_equals(alltypes):
-    assert False
+    t = alltypes
+    w1 = ibis.window(
+        preceding=1,
+        following=2,
+        group_by=t.a,
+        order_by=t.b
+    )
+    w2 = ibis.window(
+        preceding=1,
+        following=2,
+        group_by=t.a,
+        order_by=t.b
+    )
+    assert w1.equals(w2)
+
+    w3 = ibis.window(
+        preceding=1,
+        following=2,
+        group_by=t.a,
+        order_by=t.c
+    )
+    assert not w1.equals(w3)
+
+    w4 = ibis.range_window(
+        preceding=ibis.interval(hours=3),
+        group_by=t.d
+    )
+    w5 = ibis.range_window(
+        preceding=ibis.interval(hours=3),
+        group_by=t.d
+    )
+    assert w4.equals(w5)
+
+    w6 = ibis.range_window(
+        preceding=ibis.interval(hours=1),
+        group_by=t.d
+    )
+    assert not w4.equals(w6)
+
+    w7 = ibis.trailing_window(
+        rows_with_max_lookback(3, ibis.interval(days=5)),
+        group_by=t.a,
+        order_by=t.b
+    )
+    w8 = ibis.trailing_window(
+        rows_with_max_lookback(3, ibis.interval(days=5)),
+        group_by=t.a,
+        order_by=t.b
+    )
+    assert w7.equals(w8)
+
+    w9 = ibis.trailing_window(
+        rows_with_max_lookback(3, ibis.interval(months=5)),
+        group_by=t.a,
+        order_by=t.b
+    )
+    assert not w7.equals(w9)
+
+
+def test_determine_how():
+    how = _determine_how((None, 5))
+    assert how == 'rows'
+
+    how = _determine_how((3, 1))
+    assert how == 'rows'
+
+    how = _determine_how(5)
+    assert how == 'rows'
+
+    how = _determine_how(np.int64(7))
+    assert how == 'rows'
+
+    how = _determine_how(ibis.interval(days=3))
+    assert how == 'range'
+
+    how = _determine_how(ibis.interval(months=5) + ibis.interval(days=10))
+    assert how == 'range'
+
+    how = _determine_how(rows_with_max_lookback(3, ibis.interval(months=3)))
+    assert how == 'rows'
+
+    how = _determine_how(rows_with_max_lookback(3, pd.Timedelta(days=3)))
+    assert how == 'rows'
+
+    how = _determine_how(
+        rows_with_max_lookback(np.int64(7), ibis.interval(months=3))
+    )
+    assert how == 'rows'
+
+    with pytest.raises(TypeError):
+        _determine_how(8.9)
+
+    with pytest.raises(TypeError):
+        _determine_how('invalid preceding')
+
+    with pytest.raises(TypeError):
+        _determine_how({'rows': 1, 'max_lookback': 2})
+
+    with pytest.raises(TypeError):
+        _determine_how(
+            rows_with_max_lookback(
+                ibis.interval(days=3), ibis.interval(months=1)
+            )
+        )
+
+    with pytest.raises(TypeError):
+        _determine_how([3, 5])
