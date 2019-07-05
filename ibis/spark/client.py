@@ -3,14 +3,18 @@ from collections import OrderedDict
 import pyspark as ps
 import pyspark.sql.types as pt
 import regex as re
+import toolz
 from pkg_resources import parse_version
 
 import ibis.common as com
 import ibis.expr.datatypes as dt
+import ibis.expr.lineage as lin
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis.client import Database, Query, SQLClient
 from ibis.spark import compiler as comp
+
+# from ibis.spark.udf import _udfs_dict
 
 _DTYPE_TO_IBIS_TYPE = {
     pt.NullType : dt.null,
@@ -121,7 +125,35 @@ class SparkCursor:
         """
 
 
+def find_spark_udf(expr):
+    if isinstance(expr.op(), comp.SparkUDFNode):
+        result = expr.op()
+    else:
+        result = None
+    return lin.proceed, result
+
+
 class SparkQuery(Query):
+
+    def execute(self):
+        udf_nodes = lin.traverse(find_spark_udf, self.expr)
+
+        # UDFs are uniquely identified by the name of the Node subclass we
+        # generate.
+        udf_nodes_unique = toolz.unique(
+            udf_nodes,
+            key=lambda node: type(node).__name__
+        )
+
+        # register UDFs in pyspark
+        for node in udf_nodes_unique:
+            self.client._session.udf.register(
+                type(node).__name__,
+                node.func,  # _udfs_dict[external_name],
+                # node.output_type # TODO convert to pyspark type
+            )
+
+        return super().execute()
 
     def _fetch(self, cursor):
         df = cursor.query.toPandas()  # blocks until finished

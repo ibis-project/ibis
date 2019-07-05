@@ -1,5 +1,6 @@
 from ibis.spark.client import SparkClient
 from ibis.spark.compiler import dialect  # noqa: F401
+from ibis.spark.udf import udf  # noqa: F401
 
 
 def connect(**kwargs):

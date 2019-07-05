@@ -49,6 +49,10 @@ from ibis.impala.compiler import (
 )
 
 
+class SparkUDFNode(ops.ValueOp):
+    pass
+
+
 class SparkSelectBuilder(comp.SelectBuilder):
     @property
     def _select_class(self):
