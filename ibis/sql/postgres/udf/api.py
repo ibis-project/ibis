@@ -1,4 +1,6 @@
+import ast
 import inspect
+from textwrap import dedent
 from decimal import Decimal
 import collections
 import itertools
@@ -145,6 +147,38 @@ def existing_udf(name,
     return wrapped
 
 
+class LineNums(ast.NodeVisitor):
+    """NodeVisitor for abstract syntax tree that notes the line numbers
+    of all decorator lines and (separately) all other node types"""
+    def __init__(self):
+        self.non_decorator_lines = list()
+        self.decorator_lines = list()
+
+    def visit_FunctionDef(self, node):
+        self.decorator_lines.extend(
+            [n.lineno for n in node.decorator_list]
+        )
+        for field1, node1 in ast.iter_fields(node):
+            if field1 != 'decorator_list' and isinstance(node1, ast.AST):
+                self.generic_visit(node1)
+
+    def generic_visit(self, node):
+        if hasattr(node, 'lineno'):
+            self.non_decorator_lines.append(node.lineno)
+        ast.NodeVisitor.generic_visit(self, node)
+
+
+def remove_decorators(funcdef_source):
+    """Given a string of source code defining a function, strip out all
+    decorator lines and return the resulting string"""
+    func_ast = ast.parse(funcdef_source)
+    visitor = LineNums()
+    visitor.visit(func_ast)
+    lines = funcdef_source.splitlines(keepends=True)
+    first_nondecorator = min(visitor.non_decorator_lines) - 1
+    return ''.join(lines[first_nondecorator:])
+
+
 def func_to_udf(conn,
                 python_func,
                 in_types=None,
@@ -200,7 +234,15 @@ $$;
         for name, type_ in zip(parameter_names, in_types)
     )
     return_type = get_sqltype(out_type)
-    func_definition = inspect.getsource(python_func)
+    # If function definition is indented extra,
+    # Postgres UDF will fail with indentation error.
+    # Also, need to remove decorators, because they
+    # won't be defined in the UDF body.
+    func_definition = remove_decorators(
+        dedent(
+            inspect.getsource(python_func)
+        )
+    )
     formatted_sql = template.format(
         replace=replace,
         schema_fragment=schema_fragment,
@@ -221,3 +263,47 @@ $$;
         schema=schema,
         parameters=parameter_names
     )
+
+
+class UdfDecorator(object):
+    """Instantiate a UDF decorator given everything but the Python
+    function to be decorated"""
+    def __init__(
+            self,
+            engine,
+            in_types,
+            out_type,
+            schema=None,
+            overwrite=False,
+            name=None):
+        """
+
+        Parameters
+        -----------
+        engine : sqlalchemy engine
+        in_types : List[DataType]
+        out_type : DataType
+        schema : str (optional)
+                The schema in which to define the UDF
+        overwrite :  bool  (optional)
+        name :  str (optional)
+                Name to define the UDF in the database. If None, define with
+                the name of the python function object.
+        """
+        self.engine = engine
+        self.in_types = in_types
+        self.out_type = out_type
+        self.schema = schema
+        self.overwrite = overwrite
+        self.name = name
+
+    def __call__(self, python_func):
+        return func_to_udf(
+            conn=self.engine,
+            python_func=python_func,
+            in_types=self.in_types,
+            out_type=self.out_type,
+            schema=self.schema,
+            overwrite=self.overwrite,
+            name=self.name
+        )

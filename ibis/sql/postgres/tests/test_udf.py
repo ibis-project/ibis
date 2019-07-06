@@ -8,6 +8,7 @@ import pytest
 import pandas as pd
 import ibis.expr.datatypes as dt
 from ibis.sql.postgres import existing_udf, func_to_udf
+from ibis.sql.postgres.udf.api import remove_decorators
 from ibis.sql.postgres.client import PostgreSQLClient
 
 
@@ -190,7 +191,6 @@ def test_func_to_udf_smoke(con_for_udf, test_schema, table):
     assert result['mult_result'].iloc[0] == 8
 
 
-@pytest.mark.xfail
 def test_client_udf_api(con_for_udf, test_schema, table):
     """Test creating a UDF in database based on Python function
     using an ibis client method."""
@@ -211,3 +211,22 @@ def test_client_udf_api(con_for_udf, test_schema, table):
     ]
     result = expr.execute()
     assert result['mult_result'].iloc[0] == 8
+
+
+def test_remove_decorators():
+    input_ = """\
+@mydeco1(1, 3)
+@mydeco2
+@mydeco3(
+    'dummy',
+    5,
+    None
+)
+def orig_func(x, y, z):
+    return x * y + z
+"""
+    expected = """\
+def orig_func(x, y, z):
+    return x * y + z
+"""
+    assert remove_decorators(input_) == expected

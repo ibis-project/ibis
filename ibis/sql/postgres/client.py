@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import functools
 import contextlib
 import getpass
 
@@ -21,7 +20,7 @@ import sqlalchemy as sa
 
 import ibis.sql.alchemy as alch
 from ibis.sql.postgres.compiler import PostgreSQLDialect
-from ibis.sql.postgres.udf import func_to_udf
+from ibis.sql.postgres.udf import UdfDecorator
 
 
 class PostgreSQLTable(alch.AlchemyTable):
@@ -223,10 +222,9 @@ class PostgreSQLClient(alch.AlchemyClient):
         wrapper : Callable that takes in a python function and returns
             an ibis function
         """
-        raise NotImplementedError
-        return functools.partial(
-            func_to_udf,
-            self,
+
+        return UdfDecorator(
+            engine=self.con,
             in_types=in_types,
             out_type=out_type,
             schema=schema,
