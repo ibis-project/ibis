@@ -12,7 +12,7 @@ import ibis.expr.schema as sch
 from ibis.client import Database, Query, SQLClient
 from ibis.spark import compiler as comp
 
-_DTYPE_TO_IBIS_TYPE = {
+_SPARK_TYPE_TO_IBIS_TYPE = {
     pt.NullType : dt.null,
     pt.StringType : dt.string,
     pt.BinaryType : dt.binary,
@@ -31,29 +31,37 @@ _DTYPE_TO_IBIS_TYPE = {
 @dt.dtype.register(pt.DataType)
 def spark_type_to_ibis_dtype(spark_type_obj):
     """Convert Spark SQL types to ibis types."""
+    return _SPARK_TYPE_TO_IBIS_TYPE.get(type(spark_type_obj))
 
-    if isinstance(spark_type_obj, pt.DecimalType):
-        precision = spark_type_obj.precision
-        scale = spark_type_obj.scale
-        ibis_type = dt.Decimal(precision, scale)
-    elif isinstance(spark_type_obj, pt.ArrayType):
-        value_type = dt.dtype(spark_type_obj.elementType)
-        nullable = spark_type_obj.containsNull
-        ibis_type = dt.Array(value_type, nullable)
-    elif isinstance(spark_type_obj, pt.MapType):
-        key_type = dt.dtype(spark_type_obj.keyType)
-        value_type = dt.dtype(spark_type_obj.valueType)
-        nullable = spark_type_obj.valueContainsNull
-        ibis_type = dt.Map(key_type, value_type, nullable)
-    elif isinstance(spark_type_obj, pt.StructType):
-        names = spark_type_obj.names
-        fields = spark_type_obj.fields
-        ibis_types = [dt.dtype(f.dataType) for f in fields]
-        ibis_type = dt.Struct(names, ibis_types)
-    else:
-        ibis_type = _DTYPE_TO_IBIS_TYPE.get(type(spark_type_obj))
 
-    return ibis_type
+@dt.dtype.register(pt.DecimalType)
+def spark_decimal_type_to_ibis_dtype(spark_type_obj):
+    precision = spark_type_obj.precision
+    scale = spark_type_obj.scale
+    return dt.Decimal(precision, scale)
+
+
+@dt.dtype.register(pt.ArrayType)
+def spark_array_type_to_ibis_dtype(spark_type_obj):
+    value_type = dt.dtype(spark_type_obj.elementType)
+    nullable = spark_type_obj.containsNull
+    return dt.Array(value_type, nullable)
+
+
+@dt.dtype.register(pt.MapType)
+def spark_map_type_to_ibis_dtype(spark_type_obj):
+    key_type = dt.dtype(spark_type_obj.keyType)
+    value_type = dt.dtype(spark_type_obj.valueType)
+    nullable = spark_type_obj.valueContainsNull
+    return dt.Map(key_type, value_type, nullable)
+
+
+@dt.dtype.register(pt.StructType)
+def spark_struct_type_to_ibis_dtype(spark_type_obj):
+    names = spark_type_obj.names
+    fields = spark_type_obj.fields
+    ibis_types = [dt.dtype(f.dataType) for f in fields]
+    return dt.Struct(names, ibis_types)
 
 
 @sch.infer.register(ps.sql.dataframe.DataFrame)
