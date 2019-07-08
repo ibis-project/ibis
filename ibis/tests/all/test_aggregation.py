@@ -136,12 +136,12 @@ def test_aggregation(
     ('result_fn', 'expected_fn'),
     [
         param(
-            lambda t, where: (
+            lambda t: (
                 t.groupby('bigint_col').aggregate(
                     tmp=lambda t: t.string_col.group_concat(',')
                 )
             ),
-            lambda t, where: (
+            lambda t: (
                 t.groupby('bigint_col')
                 .string_col.agg(lambda s: ','.join(s.values))
                 .rename('tmp')
@@ -151,21 +151,11 @@ def test_aggregation(
         )
     ],
 )
-@pytest.mark.parametrize(
-    ('ibis_cond', 'pandas_cond'),
-    [
-        (lambda t: None, lambda t: slice(None)),
-        (
-            lambda t: t.string_col.isin(['1', '7']),
-            lambda t: t.string_col.isin(['1', '7']),
-        ),
-    ],
-)
 @pytest.mark.xfail_unsupported
 def test_group_concat(
-    backend, alltypes, df, result_fn, expected_fn, ibis_cond, pandas_cond
+    backend, alltypes, df, result_fn, expected_fn,
 ):
-    expr = result_fn(alltypes, ibis_cond(alltypes))
+    expr = result_fn(alltypes)
     result = expr.execute()
-    expected = expected_fn(df, pandas_cond(df))
+    expected = expected_fn(df)
     assert set(result) == set(expected)
