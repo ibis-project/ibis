@@ -3,8 +3,6 @@ APIs for creating user-defined element-wise, reduction and analytic
 functions.
 """
 
-# from __future__ import absolute_import
-
 import collections
 import functools
 import itertools
@@ -14,18 +12,7 @@ import ibis.expr.signature as sig
 from ibis.pandas.udf import valid_function_signature
 from ibis.spark.compiler import SparkUDFNode, compiles
 
-# import operator
-# from inspect import Parameter, signature
-
-# import numpy as np
-# import pandas as pd
-# import toolz
-# from pandas.core.groupby import SeriesGroupBy
-
-
 _udf_name_cache = collections.defaultdict(itertools.count)
-
-# _udfs_dict = {}
 
 
 def create_udf_node(name, fields):
@@ -87,11 +74,13 @@ def udf(input_type, output_type):
             {
                 'signature': sig.TypeSignature.from_dtypes(input_type),
                 'output_type': output_type.column_type,
-                # 'func': func,
             },
         )
+        # Add func as a property. If added to the class namespace dict, it
+        # would be incorrectly used as a bound method, i.e.
+        # func(t.col1) would be a call to bound method func with t.col1
+        # interpreted as self.
         UDFNode.func = property(lambda self: func)
-        # _udfs_dict[UDFNode.__name__] = func
 
         @compiles(UDFNode)
         def compiles_udf_node(t, expr):

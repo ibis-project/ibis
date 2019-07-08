@@ -14,8 +14,6 @@ import ibis.expr.schema as sch
 from ibis.client import Database, Query, SQLClient
 from ibis.spark import compiler as comp
 
-# from ibis.spark.udf import _udfs_dict
-
 _DTYPE_TO_IBIS_TYPE = {
     pt.NullType : dt.null,
     pt.StringType : dt.string,
@@ -149,7 +147,7 @@ class SparkQuery(Query):
         for node in udf_nodes_unique:
             self.client._session.udf.register(
                 type(node).__name__,
-                node.func,  # _udfs_dict[external_name],
+                node.func,
                 # node.output_type # TODO convert to pyspark type
             )
 
