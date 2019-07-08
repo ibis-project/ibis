@@ -245,6 +245,14 @@ def _string_concat(translator, expr):
     )
 
 
+def _group_concat(translator, expr):
+    arg, sep = expr.op().arg, expr.op().sep
+    return 'concat_ws({}, collect_list({}))'.format(
+        translator.translate(sep),
+        translator.translate(arg)
+    )
+
+
 def _array_literal_format(translator, expr):
     translated_values = [
         translator.translate(ibis.literal(x))
@@ -347,6 +355,7 @@ _operation_registry.update(
         ops.RegexSearch: fixed_arity('rlike', 2),
         ops.StringConcat: _string_concat,
         ops.ArrayConcat: fixed_arity('concat', 2),
+        ops.GroupConcat: _group_concat,
         ops.Cast: _cast,
         ops.ExtractYear: unary('year'),
         ops.ExtractMonth: unary('month'),

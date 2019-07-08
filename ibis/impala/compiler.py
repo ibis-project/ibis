@@ -643,7 +643,7 @@ def _number_literal_format(translator, expr):
                 formatted_val = "'Infinity'"
             else:
                 formatted_val = "'-Infinity'"
-        formatted = "CAST({!r} AS DOUBLE)".format(formatted_val)
+        formatted = "CAST({} AS DOUBLE)".format(formatted_val)
 
     return formatted
 

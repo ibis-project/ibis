@@ -526,7 +526,12 @@ class Impala(UnorderedComparator, Backend, RoundAwayFromZero):
 
 class Spark(Backend, RoundHalfToEven):
 
-    def connect(self, data_directory):
+    @staticmethod
+    def skip_if_missing_dependencies() -> None:
+        pytest.importorskip('pyspark')
+
+    @staticmethod
+    def connect(data_directory):
         import pyspark.sql.types as pt
 
         client = ibis.spark.connect()
