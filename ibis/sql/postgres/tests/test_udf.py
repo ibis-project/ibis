@@ -1,15 +1,10 @@
 """Test support for already-defined UDFs in Postgres"""
 
-import random
-import string
-
 import pytest
 
-import pandas as pd
 import ibis.expr.datatypes as dt
 from ibis.sql.postgres import existing_udf, func_to_udf
 from ibis.sql.postgres.udf.api import remove_decorators
-from ibis.sql.postgres.client import PostgreSQLClient
 
 
 # mark test module as postgresql (for ability to easily exclude,
@@ -27,46 +22,31 @@ pytestmark = [
 # Database setup (tables and UDFs)
 
 
-def gen_schema_name(basename='test'):
-    """Generate a random alpha string starting with 'test_' to be used as a
-    test schema name"""
-    schema_name = '{}_{}'.format(
-        basename,
-        ''.join([random.choice(string.ascii_lowercase) for i in range(6)])
+@pytest.fixture(scope='session')
+def next_serial(con):
+    # `test_sequence` SEQUENCE is created in database in the
+    # load-data.sh --> datamgr.py#postgres step
+    # to avoid parallel attempts to create the same sequence (when testing
+    # run in parallel
+    serial_proxy = con.con.execute("SELECT nextval('test_sequence') as value;")
+    return serial_proxy.fetchone()['value']
+
+
+@pytest.fixture(scope='session')
+def test_schema(con, next_serial):
+    schema_name = 'udf_test_{}'.format(next_serial)
+    con.con.execute(
+        "CREATE SCHEMA IF NOT EXISTS {};".format(schema_name)
     )
     return schema_name
 
 
-def create_test_schema(connection: PostgreSQLClient, max_tries=20):
-    """Create a random test schema, necessary to allow for parallel pytest
-    testing"""
-    schema_exists = True
-    tries = 0
-    while schema_exists and tries < max_tries:
-        new_name = gen_schema_name()
-        sql_check_schema = """SELECT count(schema_name) as n_recs
-        FROM information_schema.schemata
-        WHERE lower(schema_name) = lower('{}');""".format(new_name)
-        df_result = pd.read_sql(sql_check_schema, connection.con)
-        schema_exists = df_result['n_recs'].iloc[0] > 0
-        tries += 1
-    assert tries > 0
-    test_schema = new_name
-    connection.con.execute("CREATE SCHEMA {};".format(new_name))
-    return test_schema
-
-
-@pytest.fixture
-def test_schema(con):
-    return create_test_schema(con)
-
-
-@pytest.fixture
+@pytest.fixture(scope='session')
 def table_name():
     return 'udf_test_users'
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def sql_table_setup(test_schema, table_name):
     return """DROP TABLE IF EXISTS {schema}.{table_name};
 CREATE TABLE {schema}.{table_name} (
@@ -82,7 +62,7 @@ INSERT INTO {schema}.{table_name} VALUES
 """.format(schema=test_schema, table_name=table_name)
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def sql_define_py_udf(test_schema):
     return """CREATE OR REPLACE FUNCTION {schema}.pylen(x varchar)
 RETURNS integer
@@ -93,7 +73,7 @@ return len(x)
 $$;""".format(schema=test_schema)
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def sql_define_udf(test_schema):
     return """CREATE OR REPLACE FUNCTION {schema}.custom_len(x varchar)
 RETURNS integer
@@ -104,7 +84,7 @@ SELECT length(x);
 $$;""".format(schema=test_schema)
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def con_for_udf(
         con,
         test_schema,
@@ -112,7 +92,6 @@ def con_for_udf(
         sql_define_udf,
         sql_define_py_udf
 ):
-    create_test_schema(con)
     con.con.execute(sql_table_setup)
     con.con.execute(sql_define_udf)
     con.con.execute(sql_define_py_udf)

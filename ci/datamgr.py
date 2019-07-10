@@ -240,6 +240,9 @@ def postgres(schema, tables, data_directory, psql_path, plpython, **params):
     engine = init_database(
         'postgresql', params, schema, isolation_level='AUTOCOMMIT'
     )
+
+    engine.execute("CREATE SEQUENCE IF NOT EXISTS test_sequence;")
+
     use_postgis = 'geo' in tables and sys.version_info >= (3, 6)
     if use_postgis:
         engine.execute("CREATE EXTENSION IF NOT EXISTS POSTGIS")
