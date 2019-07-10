@@ -331,7 +331,7 @@ class Window(AggregationContext):
         order_by = self.order_by
 
         # if we don't have a grouping key, just call into pandas
-        if not group_by:
+        if not group_by and not order_by:
             # the result of calling .rolling(...) in pandas
             windowed = self.construct_window(grouped_data)
 
@@ -377,7 +377,8 @@ class Window(AggregationContext):
 
         # get the DataFrame from which the operand originated (passed in when
         # constructing this context object in execute_node(ops.WindowOp))
-        frame = self.parent.obj
+        parent = self.parent
+        frame = getattr(parent, 'obj', parent)
         obj = getattr(grouped_data, 'obj', grouped_data)
 
         name = obj.name
@@ -392,8 +393,12 @@ class Window(AggregationContext):
         columns = group_by + order_by + [name]
         indexed_by_ordering = frame.loc[:, columns].set_index(order_by)
 
-        # regroup
-        grouped = indexed_by_ordering.groupby(group_by)[name]
+        # regroup if needed
+        if group_by:
+            grouped_frame = indexed_by_ordering.groupby(group_by)
+        else:
+            grouped_frame = indexed_by_ordering
+        grouped = grouped_frame[name]
 
         # perform the per-group rolling operation
         windowed = self.construct_window(grouped)
