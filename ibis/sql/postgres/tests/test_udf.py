@@ -157,7 +157,7 @@ def test_func_to_udf_smoke(con_for_udf, test_schema, table):
         (dt.int32, dt.int32),
         dt.int32,
         schema=test_schema,
-        overwrite=True
+        replace=True
     )
     table_filt = table.filter(table['user_id'] == 2)
     expr = table_filt[
@@ -177,7 +177,7 @@ def test_client_udf_api(con_for_udf, test_schema, table):
         [dt.int32, dt.int32],
         dt.int32,
         schema=test_schema,
-        overwrite=True)
+        replace=True)
     def multiply(a, b):
         return a * b
 

@@ -184,7 +184,7 @@ def func_to_udf(conn,
                 in_types=None,
                 out_type=None,
                 schema=None,
-                overwrite=False,
+                replace=False,
                 name=None):
     """Defines a UDF in the database
 
@@ -196,7 +196,7 @@ def func_to_udf(conn,
     function signature
     out_type : DataType
     schema: str - optionally specify the schema in which to define the UDF
-    overwrite: bool - replace UDF in database if already exists
+    replace: bool - replace UDF in database if already exists
     name: str - name for the UDF to be defined in database
 
     Returns
@@ -214,7 +214,7 @@ def func_to_udf(conn,
         raise NotImplementedError('inferring in_types not implemented')
     if out_type is None:
         raise NotImplementedError('inferring out_type not implemented')
-    replace = ' OR REPLACE ' if overwrite else ''
+    replace_text = ' OR REPLACE ' if replace else ''
     schema_fragment = (schema + '.') if schema else ''
     template = """CREATE {replace} FUNCTION
 {schema_fragment}{name}({signature})
@@ -244,7 +244,7 @@ $$;
         )
     )
     formatted_sql = template.format(
-        replace=replace,
+        replace=replace_text,
         schema_fragment=schema_fragment,
         name=internal_name,
         signature=postgres_signature,
@@ -274,7 +274,7 @@ class UdfDecorator(object):
             in_types,
             out_type,
             schema=None,
-            overwrite=False,
+            replace=False,
             name=None):
         """
 
@@ -285,7 +285,7 @@ class UdfDecorator(object):
         out_type : DataType
         schema : str (optional)
                 The schema in which to define the UDF
-        overwrite :  bool  (optional)
+        replace :  bool  (optional)
         name :  str (optional)
                 Name to define the UDF in the database. If None, define with
                 the name of the python function object.
@@ -294,7 +294,7 @@ class UdfDecorator(object):
         self.in_types = in_types
         self.out_type = out_type
         self.schema = schema
-        self.overwrite = overwrite
+        self.replace = replace
         self.name = name
 
     def __call__(self, python_func):
@@ -304,6 +304,6 @@ class UdfDecorator(object):
             in_types=self.in_types,
             out_type=self.out_type,
             schema=self.schema,
-            overwrite=self.overwrite,
+            replace=self.replace,
             name=self.name
         )

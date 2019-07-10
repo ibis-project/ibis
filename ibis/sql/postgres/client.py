@@ -202,7 +202,7 @@ class PostgreSQLClient(alch.AlchemyClient):
             parent = super(PostgreSQLClient, self)
             return parent.list_tables(like=like, schema=schema)
 
-    def udf(self, in_types, out_type, schema=None, overwrite=False, name=None):
+    def udf(self, in_types, out_type, schema=None, replace=False, name=None):
         """Decorator that defines a PL/Python UDF in-database based on the
         wrapped function and turns it into an ibis function expression.
 
@@ -212,7 +212,7 @@ class PostgreSQLClient(alch.AlchemyClient):
         out_type : ibis.expr.datatypes.DataType
         schema : str
             optionally specify the schema in which to define the UDF
-        overwrite : bool
+        replace : bool
             replace UDF in database if already exists
         name: str
             name for the UDF to be defined in database
@@ -228,6 +228,6 @@ class PostgreSQLClient(alch.AlchemyClient):
             in_types=in_types,
             out_type=out_type,
             schema=schema,
-            overwrite=overwrite,
+            replace=replace,
             name=name
         )
