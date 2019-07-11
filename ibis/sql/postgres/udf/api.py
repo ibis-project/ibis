@@ -130,8 +130,8 @@ def existing_udf(name,
 
 def func_to_udf(conn,
                 python_func,
-                in_types=None,
-                out_type=None,
+                in_types,
+                out_type,
                 schema=None,
                 replace=False,
                 name=None):
@@ -141,8 +141,7 @@ def func_to_udf(conn,
     ----------
     conn: sqlalchemy engine
     python_func: python function
-    in_types: List[DataType]; if left None, will try to infer datatypes from
-    function signature
+    in_types: List[DataType]
     out_type : DataType
     schema: str - optionally specify the schema in which to define the UDF
     replace: bool - replace UDF in database if already exists
@@ -159,10 +158,6 @@ def func_to_udf(conn,
         internal_name = name
     signature = inspect.signature(python_func)
     parameter_names = signature.parameters.keys()
-    if in_types is None:
-        raise NotImplementedError('inferring in_types not implemented')
-    if out_type is None:
-        raise NotImplementedError('inferring out_type not implemented')
     replace_text = ' OR REPLACE ' if replace else ''
     schema_fragment = (schema + '.') if schema else ''
     template = """CREATE {replace} FUNCTION
