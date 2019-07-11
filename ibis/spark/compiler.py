@@ -17,13 +17,6 @@ like `date_add`     |      YES      |      YES      |       NO      |
 arithmetic          |      YES      |       NO      |      YES      |
                     |_______________|_______________|_______________|
 
-
-OTHER TODO:
-  - Fix strftime to be consistent with Ibis standard strftime, instead of
-    Java SimpleDateFormat
-  - Fix DayOfWeekName rewrite to be consistent with strftime ^^
-  - Decide if automatically setting UTC timezone in api.py is desired
-
 '''
 
 
@@ -68,21 +61,6 @@ class SparkContext(ImpalaContext):
     pass
 
 
-def _is_inf(translator, expr):
-    arg, = expr.op().args
-    return '{} = {} or {} = {}'.format(
-        *map(
-            translator.translate,
-            [
-                arg,
-                ibis.literal(math.inf, type='double'),
-                arg,
-                ibis.literal(-math.inf, type='double'),
-            ]
-        )
-    )
-
-
 _sql_type_names = impala_compiler._sql_type_names.copy()
 
 _sql_type_names.update({
@@ -114,57 +92,6 @@ def _type_to_sql_string(tval):
         raise com.UnsupportedBackendType(name)
 
 
-def _timestamp_op(func):
-    def _formatter(translator, expr):
-        op = expr.op()
-        left, right = op.args
-        formatted_left = translator.translate(left)
-        formatted_right = translator.translate(right)
-        func_name = func
-
-        if isinstance(left, (ir.TimestampScalar, ir.DateValue)):
-            formatted_left = 'cast({} as timestamp)'.format(formatted_left)
-
-        if isinstance(right, (ir.TimestampScalar, ir.DateValue)):
-            formatted_right = 'cast({} as timestamp)'.format(formatted_right)
-
-        # Spark only supports date_add, date_sub, and add_months.
-        # date_add and date_sub are in days, add_months is in months.
-        # These ops set HH:MM:SS to zero, operating only on date.
-        #
-        # If we use the <timestamp> + INTERVAL <int> <unit> syntax,
-        # Spark only supports the second argument being a literal.
-        if func_name in ('date_add', 'date_sub'):
-            # if not isinstance(right, ir.IntervalScalar):
-            #     raise NotImplementedError('Interval columns not supported')
-
-            # mostly correct but only works with scalars
-            operator = '+' if func_name == 'date_add' else '-'
-            return '{} {} {}'.format(formatted_left, operator, formatted_right)
-
-            # incorrect but works with columns too
-            if isinstance(right.op(), ops.IntervalFromInteger):
-                unit = right.op().unit
-                value = right.op().arg.op().value
-            elif isinstance(right.op(), ops.Literal):
-                unit = right.op().dtype.unit
-                value = right.op().value
-            if unit in ('Y', 'M'):
-                func_name = 'add_months'
-                if func_name == 'date_sub':
-                    value *= -1
-                if unit == 'Y':
-                    value *= 12
-            elif unit in ('W', 'D'):
-                if unit == 'W':
-                    value *= 7
-            formatted_right = translator.translate(ibis.literal(value))
-
-        return '{}({}, {})'.format(func_name, formatted_left, formatted_right)
-
-    return _formatter
-
-
 def _timestamp_diff(translator, expr):
     op = expr.op()
     left, right = op.args
@@ -175,7 +102,7 @@ def _timestamp_diff(translator, expr):
         translator.translate(right)
     )
 
-    return '{} - {}'.format(
+    return '({} - {})'.format(
         casted_left, casted_right
     )
 
@@ -209,9 +136,9 @@ def _timestamp_truncate(translator, expr):
         )
 
     if unit == 'DAY':
-        return "date(date_trunc('{}', {}))".format(unit, arg_formatted)
+        return "date(date_trunc({!r}, {}))".format(unit, arg_formatted)
     else:
-        return "date_trunc('{}', {})".format(unit, arg_formatted)
+        return "date_trunc({!r}, {})".format(unit, arg_formatted)
 
 
 def _date_truncate(translator, expr):
@@ -226,7 +153,7 @@ def _date_truncate(translator, expr):
             '{!r} unit is not supported in date truncate'.format(unit)
         )
 
-    return "trunc({}, '{}')".format(arg_formatted, unit)
+    return "trunc({}, {!r})".format(arg_formatted, unit)
 
 
 def _timestamp_from_unix(translator, expr):
@@ -267,7 +194,7 @@ def _array_literal_format(translator, expr):
 def _struct_like_format(func):
     def formatter(translator, expr):
         translated_values = [
-            ("'{}'".format(name), translator.translate(ibis.literal(val)))
+            ('{!r}'.format(name), translator.translate(ibis.literal(val)))
             for (name, val) in expr.op().value.items()
         ]
 
@@ -343,7 +270,6 @@ _operation_registry = impala_compiler._operation_registry.copy()
 _operation_registry.update(
     {
         ops.IsNan: unary('isnan'),
-        ops.IsInf: _is_inf,
         ops.IfNull: fixed_arity('ifnull', 2),
         ops.StructField: _struct_field,
         ops.MapValueForKey: _map_value_for_key,
@@ -363,10 +289,6 @@ _operation_registry.update(
         ops.ExtractHour: unary('hour'),
         ops.ExtractMinute: unary('minute'),
         ops.ExtractSecond: unary('second'),
-        ops.DateAdd: _timestamp_op('date_add'),
-        ops.DateSub: _timestamp_op('date_sub'),
-        ops.TimestampAdd: _timestamp_op('date_add'),
-        ops.TimestampSub: _timestamp_op('date_sub'),
         ops.TimestampDiff: _timestamp_diff,
         ops.TimestampTruncate: _timestamp_truncate,
         ops.TimestampFromUNIX: _timestamp_from_unix,
@@ -403,22 +325,17 @@ def spark_compiles_arbitrary(translator, expr):
         )
 
 
-@compiles(ops.Strftime)
-def spark_compiles_strftime(translator, expr):
-    arg, format_string = expr.op().args
-
-    return 'date_format({}, {})'.format(
-        translator.translate(arg),
-        translator.translate(format_string)
-    )
-
-
-@rewrites(ops.DayOfWeekName)
-def spark_rewrites_day_of_week_name(expr):
+@compiles(ops.DayOfWeekName)
+def spark_compiles_day_of_week_name(translator, expr):
     arg = expr.op().arg
-    # TODO: if strftime gets rewritten to be compatible with ibis standard
-    # strftime, then 'EEEEE' needs to be rewritten to '%A'
-    return arg.strftime('EEEEE')
+    return 'date_format({}, {!r})'.format(translator.translate(arg), 'EEEE')
+
+
+@rewrites(ops.IsInf)
+def spark_rewrites_is_inf(expr):
+    arg = expr.op().arg
+    return (arg == ibis.literal(math.inf, type='double')) | \
+        (arg == ibis.literal(-math.inf, type='double'))
 
 
 class SparkSelect(ImpalaSelect):

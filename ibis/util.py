@@ -162,6 +162,8 @@ def convert_unit(value, unit, to, floor=True):
     Parameters
     ----------
     value : Union[numbers.Real, ibis.expr.types.NumericValue]
+    floor : Boolean
+        Flags whether or not to use floor division on `value` if necessary.
 
     Returns
     -------
