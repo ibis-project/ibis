@@ -1,47 +1,46 @@
-import ast
 import inspect
 from textwrap import dedent
-from decimal import Decimal
 import collections
 import itertools
 
 import sqlalchemy as sa
+from sqlalchemy.dialects.postgresql import dialect as sa_postgres_dialect
 
+from ibis import IbisError
 import ibis.expr.rules as rlz
-from ibis.expr import datatypes
 from ibis.expr.signature import Argument as Arg
-from ibis.sql.postgres.compiler import PostgresUDFNode, add_operation
+from ibis.sql.postgres.compiler import (
+    PostgresUDFNode,
+    add_operation,
+    PostgreSQLExprTranslator
+)
+from ibis.sql.alchemy import _to_sqla_type
 
 
 _udf_name_cache = collections.defaultdict(itertools.count)
 
 
-# type mapping based on: https://www.postgresql.org/docs/10/plpython-data.html
-sql_default_type = 'VARCHAR'
+class PostgresUDFError(IbisError):
+    pass
 
-pytype_sql = {
-    bool: 'BOOLEAN',
-    int: "INTEGER",
-    float: 'DOUBLE',
-    Decimal: 'NUMERIC',
-    bytes: 'BYTEA',
-    str: sql_default_type,
-}
 
-pytype_ibistype = {
-    bool: datatypes.Boolean(),
-    int: datatypes.Int32(),
-    float: datatypes.Float(),
-    Decimal: datatypes.Float(),
-    bytes: datatypes.Binary(),
-    str: datatypes.String(),
-}
+def ibis_to_pg_sa_type(ibis_type):
+    """Map an ibis DataType to a Postgres-compatible sqlalchemy type"""
+    return _to_sqla_type(
+        ibis_type,
+        type_map=PostgreSQLExprTranslator._type_map
+    )
 
-ibistype_pytype = {v: k for k, v in pytype_ibistype.items()}
-ibistype_sqltype = {
-    ibistype: pytype_sql[pytype]
-    for ibistype, pytype in ibistype_pytype.items()
-}
+
+def sa_type_to_postgres_str(sa_type):
+    """Map a Postgres-compatible sqlalchemy type to a Postgres-appropriate
+    string"""
+    return sa_type().compile(dialect=sa_postgres_dialect())
+
+
+def ibis_to_postgres_str(ibis_type):
+    """Map an ibis DataType to a Postgres-appropriate string"""
+    return sa_type_to_postgres_str(ibis_to_pg_sa_type(ibis_type))
 
 
 def create_udf_node(name, fields):
@@ -129,47 +128,6 @@ def existing_udf(name,
     return wrapped
 
 
-class LineNums(ast.NodeVisitor):
-    """NodeVisitor for abstract syntax tree that notes the line numbers
-    of all decorator lines and (separately) all other node types"""
-    def __init__(self):
-        self.first_non_decorator_line = None
-        self.decorator_lines = []
-
-    def visit_FunctionDef(self, node):
-        self.decorator_lines.extend(
-            n.lineno for n in node.decorator_list
-        )
-        for func_field, func_node in ast.iter_fields(node):
-            if (
-                    func_field != 'decorator_list'
-                    and isinstance(func_node, ast.AST)
-            ):
-                self.generic_visit(func_node)
-
-    def generic_visit(self, node):
-        if hasattr(node, 'lineno'):
-            if self.first_non_decorator_line is None:
-                self.first_non_decorator_line = node.lineno
-            else:
-                self.first_non_decorator_line = min(
-                    self.first_non_decorator_line,
-                    node.lineno
-                )
-        ast.NodeVisitor.generic_visit(self, node)
-
-
-def remove_decorators(funcdef_source):
-    """Given a string of source code defining a function, strip out all
-    decorator lines and return the resulting string"""
-    func_ast = ast.parse(funcdef_source)
-    visitor = LineNums()
-    visitor.visit(func_ast)
-    lines = funcdef_source.splitlines(keepends=True)
-    first_nondecorator = visitor.first_non_decorator_line - 1
-    return ''.join(lines[first_nondecorator:])
-
-
 def func_to_udf(conn,
                 python_func,
                 in_types=None,
@@ -220,20 +178,29 @@ $$;
     postgres_signature = ', '.join(
         '{name} {type}'.format(
             name=name,
-            type=ibistype_sqltype[type_],
+            type=ibis_to_postgres_str(type_),
         )
         for name, type_ in zip(parameter_names, in_types)
     )
-    return_type = ibistype_sqltype[out_type]
+    return_type = ibis_to_postgres_str(out_type)
     # If function definition is indented extra,
     # Postgres UDF will fail with indentation error.
     # Also, need to remove decorators, because they
     # won't be defined in the UDF body.
-    func_definition = remove_decorators(
-        dedent(
-            inspect.getsource(python_func)
-        )
+    func_definition = dedent(
+        inspect.getsource(python_func)
     )
+    if func_definition.strip().startswith('@'):
+        raise PostgresUDFError(
+            'Use of decorators on function to be turned into Postgres UDF '
+            'is not supported, because the body of the UDF must be wholly '
+            'self-contained. Since the decorator syntax does not first bind '
+            'the function name to the wrapped function but instead includes '
+            'the decorator(s). Therefore, the decorators themselves will '
+            'be included in the string coming from `inspect.getsource()`.  '
+            'Since the decorator objects are not defined, execution of the '
+            'UDF results in a NameError. '
+        )
     formatted_sql = template.format(
         replace=replace_text,
         schema_fragment=schema_fragment,

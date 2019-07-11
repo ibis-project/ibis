@@ -1,12 +1,13 @@
 """Test support for already-defined UDFs in Postgres"""
 
 import pytest
+import functools
 
 import ibis.expr.datatypes as dt
 from ibis.sql.postgres import existing_udf
 from ibis.sql.postgres.udf.api import (
     func_to_udf,
-    remove_decorators
+    PostgresUDFError
 )
 
 
@@ -176,17 +177,21 @@ def test_func_to_udf_smoke(con_for_udf, test_schema, table):
 def test_client_udf_api(con_for_udf, test_schema, table):
     """Test creating a UDF in database based on Python function
     using an ibis client method."""
-    @con_for_udf.udf(
-        [dt.int32, dt.int32],
-        dt.int32,
-        schema=test_schema,
-        replace=True)
+
     def multiply(a, b):
         return a * b
 
+    multiply_udf = con_for_udf.udf(
+        multiply,
+        [dt.int32, dt.int32],
+        dt.int32,
+        schema=test_schema,
+        replace=True
+    )
+
     table_filt = table.filter(table['user_id'] == 2)
     expr = table_filt[
-        multiply(
+        multiply_udf(
             table_filt['user_id'],
             table_filt['name_length']
         ).name('mult_result')
@@ -195,28 +200,26 @@ def test_client_udf_api(con_for_udf, test_schema, table):
     assert result['mult_result'].iloc[0] == 8
 
 
-def test_remove_decorators():
-    input_ = """\
-@mydeco1(1, 3)
-@mydeco2
-@mydeco3(
-    'dummy',
-    5,
-    None
-)
-def orig_func(x, y, z):
-    return x * y + z
-"""
-    expected = """\
-def orig_func(x, y, z):
-    return x * y + z
-"""
-    assert remove_decorators(input_) == expected
+def test_client_udf_decorator_fails(con_for_udf, test_schema):
+    """Test that UDF creation fails when creating a UDF based on a Python
+    function that has been defined with decorators. Decorators are not
+    currently supported, because the decorators end up in the body of the UDF
+    but are not defined in the body, therefore causing a NameError."""
 
+    def decorator(f):
+        @functools.wraps(f)
+        def wrapped(*args, **kwds):
+            return f(*args, **kwds)
+        return wrapped
 
-def test_remove_decorators_when_none_exist():
-    input_ = """\
-def orig_func(x, y, z):
-    return x * y + z
-"""
-    assert remove_decorators(input_) == input_
+    @decorator
+    def multiply(a, b):
+        return a * b
+
+    with pytest.raises(PostgresUDFError):
+        con_for_udf.udf(
+            multiply,
+            [dt.int32, dt.int32],
+            dt.int32,
+            schema=test_schema,
+            replace=True)
