@@ -20,7 +20,7 @@ import sqlalchemy as sa
 
 import ibis.sql.alchemy as alch
 from ibis.sql.postgres.compiler import PostgreSQLDialect
-from ibis.sql.postgres.udf import UdfDecorator
+from ibis.sql.postgres.udf import func_to_udf
 
 
 class PostgreSQLTable(alch.AlchemyTable):
@@ -223,11 +223,15 @@ class PostgreSQLClient(alch.AlchemyClient):
             an ibis function
         """
 
-        return UdfDecorator(
-            engine=self.con,
-            in_types=in_types,
-            out_type=out_type,
-            schema=schema,
-            replace=replace,
-            name=name
-        )
+        def udf_decorator(f):
+            return func_to_udf(
+                conn=self.con,
+                python_func=f,
+                in_types=in_types,
+                out_type=out_type,
+                schema=schema,
+                replace=replace,
+                name=name
+            )
+
+        return udf_decorator

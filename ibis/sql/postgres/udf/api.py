@@ -38,28 +38,10 @@ pytype_ibistype = {
 }
 
 ibistype_pytype = {v: k for k, v in pytype_ibistype.items()}
-
-
-def get_sqltype(type_):
-    """Map input to the string specifying the Postgres data type
-    (as is used in SQL defining UDF signatures)
-
-    :param type_: str, a Python data type,
-                  or an ibis DataType (instance or class)
-    :return: string symbol of Postgres data type
-    """
-    if isinstance(type_, str) and type_ in pytype_sql.values():
-        return type_
-    elif type_ in pytype_sql.keys():
-        return pytype_sql[type_]
-    elif type_ in ibistype_pytype:
-        return pytype_sql[ibistype_pytype[type_]]
-    elif type_ in set(map(type, ibistype_pytype.keys())):
-        return pytype_sql[ibistype_pytype[type_()]]
-    else:
-        raise ValueError(
-            "Postgres data type not defined for: {}".format(type_)
-        )
+ibistype_sqltype = {
+    ibistype: pytype_sql[pytype]
+    for ibistype, pytype in ibistype_pytype.items()
+}
 
 
 def create_udf_node(name, fields):
@@ -229,11 +211,11 @@ $$;
     postgres_signature = ', '.join(
         '{name} {type}'.format(
             name=name,
-            type=get_sqltype(type_),
+            type=ibistype_sqltype[type_],
         )
         for name, type_ in zip(parameter_names, in_types)
     )
-    return_type = get_sqltype(out_type)
+    return_type = ibistype_sqltype[out_type]
     # If function definition is indented extra,
     # Postgres UDF will fail with indentation error.
     # Also, need to remove decorators, because they
@@ -263,47 +245,3 @@ $$;
         schema=schema,
         parameters=parameter_names
     )
-
-
-class UdfDecorator(object):
-    """Instantiate a UDF decorator given everything but the Python
-    function to be decorated"""
-    def __init__(
-            self,
-            engine,
-            in_types,
-            out_type,
-            schema=None,
-            replace=False,
-            name=None):
-        """
-
-        Parameters
-        -----------
-        engine : sqlalchemy engine
-        in_types : List[DataType]
-        out_type : DataType
-        schema : str (optional)
-                The schema in which to define the UDF
-        replace :  bool  (optional)
-        name :  str (optional)
-                Name to define the UDF in the database. If None, define with
-                the name of the python function object.
-        """
-        self.engine = engine
-        self.in_types = in_types
-        self.out_type = out_type
-        self.schema = schema
-        self.replace = replace
-        self.name = name
-
-    def __call__(self, python_func):
-        return func_to_udf(
-            conn=self.engine,
-            python_func=python_func,
-            in_types=self.in_types,
-            out_type=self.out_type,
-            schema=self.schema,
-            replace=self.replace,
-            name=self.name
-        )
