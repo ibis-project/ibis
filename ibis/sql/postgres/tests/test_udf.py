@@ -209,3 +209,11 @@ def orig_func(x, y, z):
     return x * y + z
 """
     assert remove_decorators(input_) == expected
+
+
+def test_remove_decorators_when_none_exist():
+    input_ = """\
+def orig_func(x, y, z):
+    return x * y + z
+"""
+    assert remove_decorators(input_) == input_

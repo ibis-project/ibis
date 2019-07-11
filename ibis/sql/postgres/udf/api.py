@@ -133,20 +133,29 @@ class LineNums(ast.NodeVisitor):
     """NodeVisitor for abstract syntax tree that notes the line numbers
     of all decorator lines and (separately) all other node types"""
     def __init__(self):
-        self.non_decorator_lines = list()
-        self.decorator_lines = list()
+        self.first_non_decorator_line = None
+        self.decorator_lines = []
 
     def visit_FunctionDef(self, node):
         self.decorator_lines.extend(
-            [n.lineno for n in node.decorator_list]
+            n.lineno for n in node.decorator_list
         )
-        for field1, node1 in ast.iter_fields(node):
-            if field1 != 'decorator_list' and isinstance(node1, ast.AST):
-                self.generic_visit(node1)
+        for func_field, func_node in ast.iter_fields(node):
+            if (
+                    func_field != 'decorator_list'
+                    and isinstance(func_node, ast.AST)
+            ):
+                self.generic_visit(func_node)
 
     def generic_visit(self, node):
         if hasattr(node, 'lineno'):
-            self.non_decorator_lines.append(node.lineno)
+            if self.first_non_decorator_line is None:
+                self.first_non_decorator_line = node.lineno
+            else:
+                self.first_non_decorator_line = min(
+                    self.first_non_decorator_line,
+                    node.lineno
+                )
         ast.NodeVisitor.generic_visit(self, node)
 
 
@@ -157,7 +166,7 @@ def remove_decorators(funcdef_source):
     visitor = LineNums()
     visitor.visit(func_ast)
     lines = funcdef_source.splitlines(keepends=True)
-    first_nondecorator = min(visitor.non_decorator_lines) - 1
+    first_nondecorator = visitor.first_non_decorator_line - 1
     return ''.join(lines[first_nondecorator:])
 
 
