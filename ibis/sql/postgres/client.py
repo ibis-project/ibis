@@ -20,7 +20,7 @@ import sqlalchemy as sa
 
 import ibis.sql.alchemy as alch
 from ibis.sql.postgres.compiler import PostgreSQLDialect
-from ibis.sql.postgres.udf import func_to_udf
+from ibis.sql.postgres.udf.api import func_to_udf
 
 
 class PostgreSQLTable(alch.AlchemyTable):

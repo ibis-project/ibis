@@ -3,8 +3,11 @@
 import pytest
 
 import ibis.expr.datatypes as dt
-from ibis.sql.postgres import existing_udf, func_to_udf
-from ibis.sql.postgres.udf.api import remove_decorators
+from ibis.sql.postgres import existing_udf
+from ibis.sql.postgres.udf.api import (
+    func_to_udf,
+    remove_decorators
+)
 
 
 # mark test module as postgresql (for ability to easily exclude,
