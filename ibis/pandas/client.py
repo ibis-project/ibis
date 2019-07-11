@@ -329,7 +329,7 @@ def ibis_schema_apply_to(schema, df):
             # ugh, we can't compare dtypes coming from pandas, assume not equal
             not_equal = True
 
-        if not_equal or dtype == dt.string:
+        if not_equal or isinstance(dtype, dt.String):
             df[column] = convert(col_dtype, dtype, col)
 
     return df

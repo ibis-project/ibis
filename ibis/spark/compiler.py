@@ -118,57 +118,6 @@ def _type_to_sql_string(tval):
         raise com.UnsupportedBackendType(name)
 
 
-def _timestamp_op(func):
-    def _formatter(translator, expr):
-        op = expr.op()
-        left, right = op.args
-        formatted_left = translator.translate(left)
-        formatted_right = translator.translate(right)
-        func_name = func
-
-        if isinstance(left, (ir.TimestampScalar, ir.DateValue)):
-            formatted_left = 'cast({} as timestamp)'.format(formatted_left)
-
-        if isinstance(right, (ir.TimestampScalar, ir.DateValue)):
-            formatted_right = 'cast({} as timestamp)'.format(formatted_right)
-
-        # Spark only supports date_add, date_sub, and add_months.
-        # date_add and date_sub are in days, add_months is in months.
-        # These ops set HH:MM:SS to zero, operating only on date.
-        #
-        # If we use the <timestamp> + INTERVAL <int> <unit> syntax,
-        # Spark only supports the second argument being a literal.
-        if func_name in ('date_add', 'date_sub'):
-            # if not isinstance(right, ir.IntervalScalar):
-            #     raise NotImplementedError('Interval columns not supported')
-
-            # mostly correct but only works with scalars
-            operator = '+' if func_name == 'date_add' else '-'
-            return '{} {} {}'.format(formatted_left, operator, formatted_right)
-
-            # incorrect but works with columns too
-            if isinstance(right.op(), ops.IntervalFromInteger):
-                unit = right.op().unit
-                value = right.op().arg.op().value
-            elif isinstance(right.op(), ops.Literal):
-                unit = right.op().dtype.unit
-                value = right.op().value
-            if unit in ('Y', 'M'):
-                func_name = 'add_months'
-                if func_name == 'date_sub':
-                    value *= -1
-                if unit == 'Y':
-                    value *= 12
-            elif unit in ('W', 'D'):
-                if unit == 'W':
-                    value *= 7
-            formatted_right = translator.translate(ibis.literal(value))
-
-        return '{}({}, {})'.format(func_name, formatted_left, formatted_right)
-
-    return _formatter
-
-
 def _timestamp_diff(translator, expr):
     op = expr.op()
     left, right = op.args
@@ -367,10 +316,6 @@ _operation_registry.update(
         ops.ExtractHour: unary('hour'),
         ops.ExtractMinute: unary('minute'),
         ops.ExtractSecond: unary('second'),
-        ops.DateAdd: _timestamp_op('date_add'),
-        ops.DateSub: _timestamp_op('date_sub'),
-        ops.TimestampAdd: _timestamp_op('date_add'),
-        ops.TimestampSub: _timestamp_op('date_sub'),
         ops.TimestampDiff: _timestamp_diff,
         ops.TimestampTruncate: _timestamp_truncate,
         ops.TimestampFromUNIX: _timestamp_from_unix,
