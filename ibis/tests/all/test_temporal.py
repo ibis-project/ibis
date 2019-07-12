@@ -236,6 +236,7 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
     ],
 )
 @pytest.mark.xfail_unsupported
+@pytest.mark.skip_backends([Spark])
 def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
     expr = expr_fn(alltypes, backend)
     expected = expected_fn(df, backend)
@@ -247,6 +248,7 @@ def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
 
 
 @pytest.mark.xfail_unsupported
+@pytest.mark.skip_backends([Spark])
 def test_interval_add_cast_scalar(backend, alltypes):
     timestamp_date = alltypes.timestamp_col.date()
     delta = ibis.literal(10).cast("interval('D')")

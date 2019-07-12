@@ -1,3 +1,4 @@
+import inspect
 from collections import OrderedDict
 
 import ibis.expr.rules as rlz
@@ -101,19 +102,31 @@ class TypeSignature(OrderedDict):
         )
 
     def validate(self, *args, **kwargs):
-        result = []
-        for i, (name, argument) in enumerate(self.items()):
-            if i < len(args):
-                if name in kwargs:
-                    raise TypeError(
-                        'Got multiple values for argument {}'.format(name)
-                    )
-                value = argument.validate(args[i], name=name)
-            elif name in kwargs:
-                value = argument.validate(kwargs[name], name=name)
-            else:
-                value = argument.validate(name=name)
+        parameters = [
+            inspect.Parameter(
+                name,
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                default=_undefined
+            )
+            for (name, argument) in self.items()
+        ]
+        sig = inspect.Signature(parameters)
+        bindings = sig.bind(*args, **kwargs)
 
+        # The inspect.Parameter objects in parameters all have default
+        # value _undefined, which will be bound to all arguments that weren't
+        # passed in.
+        bindings.apply_defaults()
+
+        result = []
+        for (name, arg_value) in bindings.arguments.items():
+            argument = self[name]
+            # If this arg wasn't passed in: since argument.default has the
+            # correct value and _undefined was given as the default for the
+            # Parameter object corresponding to this argument, arg_value got
+            # the value _undefined when bindings.apply_defaults() was called,
+            # so the behavior of argument.validate here is correct.
+            value = argument.validate(arg_value, name=name)
             result.append((name, value))
 
         return result
