@@ -2,7 +2,7 @@ version: '3'
 services:
 
   postgres:
-    image: shajekpivotal/postgres-9.5-postgis-2.5
+    image: shajekpivotal/ibis-docker-postgres-9.5
     hostname: postgres
     ports:
       - 5432:5432
