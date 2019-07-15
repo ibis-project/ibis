@@ -3,7 +3,7 @@ from pytest import param
 
 import ibis
 import ibis.common as com
-from ibis.tests.backends import Csv, Impala, MapD, Pandas, Parquet
+from ibis.tests.backends import Csv, MapD, Pandas, Parquet
 
 
 @pytest.mark.parametrize(
@@ -99,7 +99,6 @@ from ibis.tests.backends import Csv, Impala, MapD, Pandas, Parquet
                 .astype(bool)
             ),
             id='cumany',
-            marks=pytest.mark.xfail_backends([Impala]),
         ),
         param(
             lambda t, win: (t.double_col == 0).all().over(win),
@@ -110,7 +109,6 @@ from ibis.tests.backends import Csv, Impala, MapD, Pandas, Parquet
                 .astype(bool)
             ),
             id='cumall',
-            marks=pytest.mark.xfail_backends([Impala]),
         ),
         param(
             lambda t, win: t.double_col.sum().over(win),

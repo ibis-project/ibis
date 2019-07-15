@@ -357,10 +357,10 @@ FROM alltypes"""
         bool_expr = t.f == 0
 
         cases = [
-            (bool_expr.any(), 'sum(`f` = 0) > 0'),
-            (-bool_expr.any(), 'sum(`f` = 0) = 0'),
-            (bool_expr.all(), 'sum(`f` = 0) = count(*)'),
-            (-bool_expr.all(), 'sum(`f` = 0) < count(*)'),
+            (bool_expr.any(), 'max(`f` = 0)'),
+            (-bool_expr.any(), 'max(`f` = 0) = FALSE'),
+            (bool_expr.all(), 'min(`f` = 0)'),
+            (-bool_expr.all(), 'min(`f` = 0) = FALSE'),
         ]
         self._check_expr_cases(cases)
 

@@ -2,6 +2,8 @@ import pytest
 
 import ibis
 
+pytestmark = pytest.mark.spark
+
 
 def test_list_databases(client):
     dbs = client.list_databases()
@@ -11,7 +13,10 @@ def test_list_databases(client):
 def test_list_tables(client):
     tables = client.list_tables()
     assert tables == [
+        'awards_players',
+        'batting',
         'complicated',
+        'functional_alltypes',
         'nested_types',
         'simple',
         'struct',
