@@ -3,6 +3,8 @@ import pandas.util.testing as tm
 import pytest
 
 import ibis
+import pyspark.sql.functions as F
+from pyspark.sql.window import Window
 
 @pytest.fixture(scope='session')
 def client():
@@ -21,7 +23,6 @@ def test_basic(client):
 
 
 def test_projection(client):
-    import ipdb; ipdb.set_trace()
     table = client.table('table1')
     result1 = table.mutate(v=table['id']).compile().toPandas()
 
@@ -46,5 +47,34 @@ def test_projection(client):
     tm.assert_frame_equal(result2, expected2)
 
 
-def test_udf(client):
+def test_aggregation(client):
     table = client.table('table1')
+    result = table.aggregate(table['id'].max()).compile()
+    expected = table.compile().agg(F.max('id'))
+
+    tm.assert_frame_equal(result.toPandas(), expected.toPandas())
+
+
+def test_groupby(client):
+    table = client.table('table1')
+    result = table.groupby('id').aggregate(table['id'].max()).compile()
+    expected = table.compile().groupby('id').agg(F.max('id'))
+
+    tm.assert_frame_equal(result.toPandas(), expected.toPandas())
+
+
+def test_window(client):
+    table = client.table('table1')
+    w = ibis.window()
+    result = table.mutate(grouped_demeaned = table['id'] - table['id'].mean().over(w)).compile()
+    result2 = table.groupby('id').mutate(grouped_demeaned = table['id'] - table['id'].mean()).compile()
+
+    spark_window = Window.partitionBy()
+    spark_table = table.compile()
+    expected = spark_table.withColumn(
+        'grouped_demeaned',
+        spark_table['id'] - F.mean(spark_table['id']).over(spark_window)
+    )
+
+    tm.assert_frame_equal(result.toPandas(), expected.toPandas())
+    tm.assert_frame_equal(result2.toPandas(), expected.toPandas())
