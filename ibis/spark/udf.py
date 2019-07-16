@@ -10,7 +10,7 @@ import itertools
 import pyspark.sql.types as pt
 from multipledispatch import Dispatcher
 from pyspark.sql.functions import PandasUDFType, pandas_udf
-from pyspark.sql.functions import udf as pyspark_udf
+from pyspark.sql.functions import udf as ps_udf
 
 import ibis.common as com
 import ibis.expr.datatypes as dt
@@ -77,53 +77,110 @@ def ibis_struct_dtype_to_spark_dtype(ibis_dtype_obj):
     return pt.StructType(fields)
 
 
-def validate_func_and_types(input_type, output_type, func):
-    _input_type = list(map(dt.dtype, input_type))
-    _output_type = dt.dtype(output_type)
+class SparkUDF:
+    base_class = SparkUDFNode
 
-    if not callable(func):
-        raise TypeError('func must be callable, got {}'.format(func))
+    def __init__(self, input_type, output_type):
+        self.input_type = list(map(dt.dtype, input_type))
+        self.output_type = dt.dtype(output_type)
+        self.spark_output_type = spark_dtype(self.output_type)
 
-    # validate that the input_type argument and the function signature
-    # match
-    _ = valid_function_signature(_input_type, func)
+    def validate_func_and_types(self, func):
+        if not callable(func):
+            raise TypeError('func must be callable, got {}'.format(func))
 
-    if not output_type.nullable:
-        raise com.IbisTypeError(
-            'Spark does not support non-nullable output types'
+        # validate that the input_type argument and the function signature
+        # match
+        _ = valid_function_signature(self.input_type, func)
+
+        if not self.output_type.nullable:
+            raise com.IbisTypeError(
+                'Spark does not support non-nullable output types'
+            )
+
+    def pyspark_udf(self, func):
+        return ps_udf(func, self.spark_output_type)
+
+    @property
+    def node_output_type(self):
+        return self.output_type.column_type
+
+    def create_udf_node(self, udf_func):
+        """Create a new UDF node type and adds a corresponding compile rule.
+
+        Parameters
+        ----------
+        udf_func : function
+            Should be the result of calling pyspark.sql.functions.udf or
+            pyspark.sql.functions.pandas_udf on the user-specified func
+
+        Returns
+        -------
+        result : type
+            A new SparkUDFNode or SparkUDAFNode subclass
+        """
+        name = udf_func.__name__
+        definition = next(_udf_name_cache[name])
+        external_name = '{}_{:d}'.format(name, definition)
+
+        UDFNode = type(
+            external_name,
+            (self.base_class,),
+            {
+                'signature': sig.TypeSignature.from_dtypes(self.input_type),
+                'output_type': self.node_output_type,
+            }
         )
 
-    return _input_type, _output_type
+        # Add udf_func as a property. If added to the class namespace dict, it
+        # would be incorrectly used as a bound method, i.e.
+        # udf_func(t.column) would be a call to bound method func with t.column
+        # interpreted as self.
+        UDFNode.udf_func = property(lambda self: udf_func)
+
+        @compiles(UDFNode)
+        def compiles_udf_node(t, expr):
+            return '{}({})'.format(
+                UDFNode.__name__,
+                ', '.join(map(t.translate, expr.op().args))
+            )
+
+        return UDFNode
+
+    def wrapper(self, func):
+        self.validate_func_and_types(func)
+        udf_func = self.pyspark_udf(func)
+        UDFNode = self.create_udf_node(udf_func)
+
+        @functools.wraps(func)
+        def wrapped(*args):
+            return UDFNode(*args).to_expr()
+
+        return wrapped
 
 
-def create_udf_node(name, fields, udf_func, base_class):
-    """Create a new UDF node type.
+class SparkPandasUDF(SparkUDF):
+    pandas_udf_type = PandasUDFType.SCALAR
 
-    Parameters
-    ----------
-    name : str
-        Then name of the UDF node
-    fields : OrderedDict
-        Mapping of class member name to definition
-    udf_func : function
-        Should be the result of calling pyspark.sql.functions.udf or
-        pyspark.sql.functions.pandas_udf on the user-specified func
-    base_class : Union[SparkUDFNode, SparkUDAFNode]
+    def validate_func_and_types(self, func):
+        if isinstance(self.spark_output_type, (pt.MapType, pt.StructType)):
+            raise com.IbisTypeError(
+                'Spark does not support MapType or StructType output \
+                    for Pandas UDFs'
+            )
+        super().validate_func_and_types(func)
 
-    Returns
-    -------
-    result : type
-        A new SparkUDFNode or SparkUDAFNode subclass
-    """
-    definition = next(_udf_name_cache[name])
-    external_name = '{}_{:d}'.format(name, definition)
-    UDFNode = type(external_name, (base_class,), fields)
-    # Add udf_func as a property. If added to the class namespace dict, it
-    # would be incorrectly used as a bound method, i.e.
-    # udf_func(t.column) would be a call to bound method func with t.column
-    # interpreted as self.
-    UDFNode.udf_func = property(lambda self: udf_func)
-    return UDFNode
+    def pyspark_udf(self, func):
+        return pandas_udf(func, self.spark_output_type, self.pandas_udf_type)
+
+
+class SparkPandasAggregateUDF(SparkPandasUDF):
+    base_class = SparkUDAFNode
+    pandas_udf_type = PandasUDFType.GROUPED_AGG
+
+    @property
+    def node_output_type(self):
+        return self.output_type.scalar_type
 
 
 class udf:
@@ -148,101 +205,31 @@ class udf:
         >>> from ibis.spark.udf import udf
         >>> @udf.elementwise(input_type=[dt.string], output_type=dt.int64)
         ... def my_string_length(x):
-        ...     return x.str.len() * 2
+        ...     return len(x) * 2
         """
-        def wrapper(func):
-            _input_type, _output_type = validate_func_and_types(
-                input_type, output_type, func
-            )
-
-            spark_output_type = spark_dtype(_output_type)
-            udf_func = pyspark_udf(func, spark_output_type)
-
-            # generate a new custom node
-            UDFNode = create_udf_node(
-                udf_func.__name__,
-                {
-                    'signature': sig.TypeSignature.from_dtypes(_input_type),
-                    'output_type': _output_type.column_type,
-                },
-                udf_func,
-                SparkUDFNode
-            )
-
-            @compiles(UDFNode)
-            def compiles_udf_node(t, expr):
-                return '{}({})'.format(
-                    UDFNode.__name__,
-                    ', '.join(map(t.translate, expr.op().args))
-                )
-
-            @functools.wraps(func)
-            def wrapped(*args):
-                return UDFNode(*args).to_expr()
-
-            return wrapped
-
-        return wrapper
+        return SparkUDF(input_type, output_type).wrapper
 
     @staticmethod
     def elementwise_pandas(input_type, output_type):
-        """Define a Pandas UDF (user-defined function) that operates element wise on a
-        Spark DataFrame.
+        """Define a Pandas UDF (user-defined function) that operates element-
+        wise on a Spark DataFrame. The content of the function should operate
+        on a pandas.Series.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> import ibis.expr.datatypes as dt
+        >>> from ibis.spark.udf import udf
+        >>> @udf.elementwise_pandas([dt.string], dt.int64)
+        ... def my_string_length(x):
+        ...     return x.str.len() * 2
         """
-        def wrapper(func):
-            _input_type, _output_type = validate_func_and_types(
-                input_type, output_type, func
-            )
-
-            spark_output_type = spark_dtype(_output_type)
-            if isinstance(spark_output_type, (pt.MapType, pt.StructType)):
-                raise com.IbisTypeError(
-                    'Spark does not support MapType or StructType output \
-                        for Pandas UDFs'
-                )
-            udf_func = pandas_udf(
-                func, spark_output_type, PandasUDFType.SCALAR
-            )
-
-            # generate a new custom node
-            UDFNode = create_udf_node(
-                func.__name__,
-                {
-                    'signature': sig.TypeSignature.from_dtypes(_input_type),
-                    'output_type': _output_type.column_type,
-                },
-                udf_func,
-                SparkUDFNode
-            )
-
-            @compiles(UDFNode)
-            def compiles_udf_node(t, expr):
-                return '{}({})'.format(
-                    UDFNode.__name__,
-                    ', '.join(map(t.translate, expr.op().args))
-                )
-
-            @functools.wraps(func)
-            def wrapped(*args):
-                return UDFNode(*args).to_expr()
-
-            return wrapped
-
-        return wrapper
+        return SparkPandasUDF(input_type, output_type).wrapper
 
     @staticmethod
     def reduction(input_type, output_type):
         """Define a user-defined reduction function that takes N pandas Series
         or scalar values as inputs and produces one row of output.
-
-        Parameters
-        ----------
-        input_type : List[ibis.expr.datatypes.DataType]
-            A list of the types found in :mod:`~ibis.expr.datatypes`. The
-            length of this list must match the number of arguments to the
-            function. Variadic arguments are not yet supported.
-        output_type : ibis.expr.datatypes.DataType
-            The return type of the function.
 
         Examples
         --------
@@ -253,43 +240,4 @@ class udf:
         ... def my_string_length_agg(series, **kwargs):
         ...     return (series.str.len() * 2).sum()
         """
-        def wrapper(func):
-            _input_type, _output_type = validate_func_and_types(
-                input_type, output_type, func
-            )
-
-            spark_output_type = spark_dtype(_output_type)
-            if isinstance(spark_output_type, (pt.MapType, pt.StructType)):
-                raise com.IbisTypeError(
-                    'Spark does not support MapType or StructType output \
-                        for Pandas UDFs'
-                )
-            udf_func = pandas_udf(
-                func, spark_output_type, PandasUDFType.GROUPED_AGG
-            )
-
-            # generate a new custom node
-            UDFNode = create_udf_node(
-                func.__name__,
-                {
-                    'signature': sig.TypeSignature.from_dtypes(_input_type),
-                    'output_type': _output_type.scalar_type,
-                },
-                udf_func,
-                SparkUDAFNode
-            )
-
-            @compiles(UDFNode)
-            def compiles_udf_node(t, expr):
-                return '{}({})'.format(
-                    UDFNode.__name__,
-                    ', '.join(map(t.translate, expr.op().args))
-                )
-
-            @functools.wraps(func)
-            def wrapped(*args):
-                return UDFNode(*args).to_expr()
-
-            return wrapped
-
-        return wrapper
+        return SparkPandasAggregateUDF(input_type, output_type).wrapper
