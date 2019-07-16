@@ -17,13 +17,6 @@ like `date_add`     |      YES      |      YES      |       NO      |
 arithmetic          |      YES      |       NO      |      YES      |
                     |_______________|_______________|_______________|
 
-
-OTHER TODO:
-  - Fix strftime to be consistent with Ibis standard strftime, instead of
-    Java SimpleDateFormat
-  - Fix DayOfWeekName rewrite to be consistent with strftime ^^
-  - Decide if automatically setting UTC timezone in api.py is desired
-
 '''
 
 
@@ -76,21 +69,6 @@ class SparkContext(ImpalaContext):
     pass
 
 
-def _is_inf(translator, expr):
-    arg, = expr.op().args
-    return '{} = {} or {} = {}'.format(
-        *map(
-            translator.translate,
-            [
-                arg,
-                ibis.literal(math.inf, type='double'),
-                arg,
-                ibis.literal(-math.inf, type='double'),
-            ]
-        )
-    )
-
-
 _sql_type_names = impala_compiler._sql_type_names.copy()
 
 _sql_type_names.update({
@@ -132,7 +110,7 @@ def _timestamp_diff(translator, expr):
         translator.translate(right)
     )
 
-    return '{} - {}'.format(
+    return '({} - {})'.format(
         casted_left, casted_right
     )
 
@@ -166,9 +144,9 @@ def _timestamp_truncate(translator, expr):
         )
 
     if unit == 'DAY':
-        return "date(date_trunc('{}', {}))".format(unit, arg_formatted)
+        return "date(date_trunc({!r}, {}))".format(unit, arg_formatted)
     else:
-        return "date_trunc('{}', {})".format(unit, arg_formatted)
+        return "date_trunc({!r}, {})".format(unit, arg_formatted)
 
 
 def _date_truncate(translator, expr):
@@ -183,7 +161,7 @@ def _date_truncate(translator, expr):
             '{!r} unit is not supported in date truncate'.format(unit)
         )
 
-    return "trunc({}, '{}')".format(arg_formatted, unit)
+    return "trunc({}, {!r})".format(arg_formatted, unit)
 
 
 def _timestamp_from_unix(translator, expr):
@@ -224,7 +202,7 @@ def _array_literal_format(translator, expr):
 def _struct_like_format(func):
     def formatter(translator, expr):
         translated_values = [
-            ("'{}'".format(name), translator.translate(ibis.literal(val)))
+            ('{!r}'.format(name), translator.translate(ibis.literal(val)))
             for (name, val) in expr.op().value.items()
         ]
 
@@ -300,7 +278,6 @@ _operation_registry = impala_compiler._operation_registry.copy()
 _operation_registry.update(
     {
         ops.IsNan: unary('isnan'),
-        ops.IsInf: _is_inf,
         ops.IfNull: fixed_arity('ifnull', 2),
         ops.StructField: _struct_field,
         ops.MapValueForKey: _map_value_for_key,
@@ -356,22 +333,17 @@ def spark_compiles_arbitrary(translator, expr):
         )
 
 
-@compiles(ops.Strftime)
-def spark_compiles_strftime(translator, expr):
-    arg, format_string = expr.op().args
-
-    return 'date_format({}, {})'.format(
-        translator.translate(arg),
-        translator.translate(format_string)
-    )
-
-
-@rewrites(ops.DayOfWeekName)
-def spark_rewrites_day_of_week_name(expr):
+@compiles(ops.DayOfWeekName)
+def spark_compiles_day_of_week_name(translator, expr):
     arg = expr.op().arg
-    # TODO: if strftime gets rewritten to be compatible with ibis standard
-    # strftime, then 'EEEEE' needs to be rewritten to '%A'
-    return arg.strftime('EEEEE')
+    return 'date_format({}, {!r})'.format(translator.translate(arg), 'EEEE')
+
+
+@rewrites(ops.IsInf)
+def spark_rewrites_is_inf(expr):
+    arg = expr.op().arg
+    return (arg == ibis.literal(math.inf, type='double')) | \
+        (arg == ibis.literal(-math.inf, type='double'))
 
 
 class SparkSelect(ImpalaSelect):
