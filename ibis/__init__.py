@@ -57,6 +57,9 @@ with suppress(ImportError):
     # pip install ibis-framework[spark]
     import ibis.spark.api as spark  # noqa: F401
 
+with suppress(ImportError):
+    import ibis.pyspark.api as pyspark
+
 
 def hdfs_connect(
     host='localhost',
