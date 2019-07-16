@@ -92,21 +92,6 @@ def _type_to_sql_string(tval):
         raise com.UnsupportedBackendType(name)
 
 
-def _timestamp_diff(translator, expr):
-    op = expr.op()
-    left, right = op.args
-    casted_left = 'cast(to_timestamp({}) as double)'.format(
-        translator.translate(left)
-    )
-    casted_right = 'cast(to_timestamp({}) as double)'.format(
-        translator.translate(right)
-    )
-
-    return '({} - {})'.format(
-        casted_left, casted_right
-    )
-
-
 _spark_date_unit_names = {
     'Y': 'YEAR',
     'Q': 'QUARTER',
@@ -194,7 +179,7 @@ def _array_literal_format(translator, expr):
 def _struct_like_format(func):
     def formatter(translator, expr):
         translated_values = [
-            ('{!r}'.format(name), translator.translate(ibis.literal(val)))
+            (repr(name), translator.translate(ibis.literal(val)))
             for (name, val) in expr.op().value.items()
         ]
 
@@ -289,7 +274,6 @@ _operation_registry.update(
         ops.ExtractHour: unary('hour'),
         ops.ExtractMinute: unary('minute'),
         ops.ExtractSecond: unary('second'),
-        ops.TimestampDiff: _timestamp_diff,
         ops.TimestampTruncate: _timestamp_truncate,
         ops.TimestampFromUNIX: _timestamp_from_unix,
         ops.DateTruncate: _date_truncate,
@@ -334,8 +318,7 @@ def spark_compiles_day_of_week_name(translator, expr):
 @rewrites(ops.IsInf)
 def spark_rewrites_is_inf(expr):
     arg = expr.op().arg
-    return (arg == ibis.literal(math.inf, type='double')) | \
-        (arg == ibis.literal(-math.inf, type='double'))
+    return (arg == ibis.literal(math.inf)) | (arg == ibis.literal(-math.inf))
 
 
 class SparkSelect(ImpalaSelect):
