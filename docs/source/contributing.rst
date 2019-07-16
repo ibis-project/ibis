@@ -47,7 +47,7 @@ Code of Conduct
 ---------------
 
 Ibis is governed by the
-[NumFOCUS code of conduct](https://numfocus.org/code-of-conduct),
+`NumFOCUS code of conduct <https://numfocus.org/code-of-conduct>`_,
 which in a short version is:
 
 - Be kind to others. Do not insult or put down others. Behave professionally.
