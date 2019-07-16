@@ -141,7 +141,7 @@ class SparkCursor:
 
 
 def find_spark_udf(expr):
-    if isinstance(expr.op(), comp.SparkUDFNode):
+    if isinstance(expr.op(), (comp.SparkUDFNode, comp.SparkUDAFNode)):
         result = expr.op()
     else:
         result = None
@@ -164,8 +164,7 @@ class SparkQuery(Query):
         for node in udf_nodes_unique:
             self.client._session.udf.register(
                 type(node).__name__,
-                node.func,
-                node.spark_type
+                node.udf_func,
             )
 
         return super().execute()

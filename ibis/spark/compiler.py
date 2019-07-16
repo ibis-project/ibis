@@ -53,6 +53,10 @@ class SparkUDFNode(ops.ValueOp):
     pass
 
 
+class SparkUDAFNode(ops.Reduction):
+    pass
+
+
 class SparkSelectBuilder(comp.SelectBuilder):
     @property
     def _select_class(self):
