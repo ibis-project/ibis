@@ -1407,27 +1407,25 @@ def _category_label(expr):
 @rewrites(ops.Any)
 def _any_expand(expr):
     arg = expr.op().args[0]
-    return arg.sum() > 0
+    return arg.max()
 
 
 @rewrites(ops.NotAny)
 def _notany_expand(expr):
     arg = expr.op().args[0]
-    return arg.sum() == 0
+    return arg.max() == 0
 
 
 @rewrites(ops.All)
 def _all_expand(expr):
     arg = expr.op().args[0]
-    t = ir.find_base_table(arg)
-    return arg.sum() == t.count()
+    return arg.min()
 
 
 @rewrites(ops.NotAll)
 def _notall_expand(expr):
     arg = expr.op().args[0]
-    t = ir.find_base_table(arg)
-    return arg.sum() < t.count()
+    return arg.min() == 0
 
 
 @rewrites(ops.Cast)

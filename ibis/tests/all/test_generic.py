@@ -10,6 +10,7 @@ from ibis.tests.backends import (
     MapD,
     MySQL,
     PostgreSQL,
+    Spark,
     SQLite,
 )
 
@@ -23,7 +24,7 @@ from ibis.tests.backends import (
             L(5).nullif(5),
             None,
             marks=pytest.mark.xpass_backends(
-                [BigQuery, Clickhouse, MySQL, PostgreSQL, SQLite]
+                [BigQuery, Clickhouse, MySQL, PostgreSQL, Spark, SQLite]
             ),
         ),
         (L(10).nullif(5), 10),

@@ -522,3 +522,14 @@ class Impala(UnorderedComparator, Backend, RoundAwayFromZero):
             hdfs_client=hdfs_client,
             database='ibis_testing',
         )
+
+
+class Spark(Backend, RoundHalfToEven):
+
+    @staticmethod
+    def skip_if_missing_dependencies() -> None:
+        pass
+
+    @staticmethod
+    def connect(data_directory):
+        return Spark.client_testing

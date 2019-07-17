@@ -1,8 +1,7 @@
-from collections import OrderedDict
-
 import pyspark as ps
 import pyspark.sql.types as pt
 import regex as re
+from pkg_resources import parse_version
 
 import ibis.common as com
 import ibis.expr.datatypes as dt
@@ -11,56 +10,75 @@ import ibis.expr.schema as sch
 from ibis.client import Database, Query, SQLClient
 from ibis.spark import compiler as comp
 
-_DTYPE_TO_IBIS_TYPE = {
-    pt.NullType : dt.null,
-    pt.StringType : dt.string,
-    pt.BinaryType : dt.binary,
-    pt.BooleanType : dt.boolean,
-    pt.DateType : dt.date,
-    pt.TimestampType : dt.timestamp,
-    pt.DoubleType : dt.double,
-    pt.FloatType : dt.float,
-    pt.ByteType : dt.int8,
-    pt.IntegerType : dt.int32,
-    pt.LongType : dt.int64,
-    pt.ShortType : dt.int16,
+# maps pyspark type class to ibis type class
+_SPARK_DTYPE_TO_IBIS_DTYPE = {
+    pt.NullType : dt.Null,
+    pt.StringType : dt.String,
+    pt.BinaryType : dt.Binary,
+    pt.BooleanType : dt.Boolean,
+    pt.DateType : dt.Date,
+    pt.DoubleType : dt.Double,
+    pt.FloatType : dt.Float,
+    pt.ByteType : dt.Int8,
+    pt.IntegerType : dt.Int32,
+    pt.LongType : dt.Int64,
+    pt.ShortType : dt.Int16,
 }
 
 
 @dt.dtype.register(pt.DataType)
-def spark_type_to_ibis_dtype(spark_type_obj):
-    """Convert Spark SQL types to ibis types."""
+def spark_dtype_to_ibis_dtype(spark_type_obj, nullable=True):
+    """Convert Spark SQL type objects to ibis type objects."""
+    ibis_type_class = _SPARK_DTYPE_TO_IBIS_DTYPE.get(type(spark_type_obj))
+    return ibis_type_class(nullable=nullable)
 
-    if isinstance(spark_type_obj, pt.DecimalType):
-        precision = spark_type_obj.precision
-        scale = spark_type_obj.scale
-        ibis_type = dt.Decimal(precision, scale)
-    elif isinstance(spark_type_obj, pt.ArrayType):
-        value_type = dt.dtype(spark_type_obj.elementType)
-        nullable = spark_type_obj.containsNull
-        ibis_type = dt.Array(value_type, nullable)
-    elif isinstance(spark_type_obj, pt.MapType):
-        key_type = dt.dtype(spark_type_obj.keyType)
-        value_type = dt.dtype(spark_type_obj.valueType)
-        nullable = spark_type_obj.valueContainsNull
-        ibis_type = dt.Map(key_type, value_type, nullable)
-    elif isinstance(spark_type_obj, pt.StructType):
-        names = spark_type_obj.names
-        fields = spark_type_obj.fields
-        ibis_types = [dt.dtype(f.dataType) for f in fields]
-        ibis_type = dt.Struct(names, ibis_types)
-    else:
-        ibis_type = _DTYPE_TO_IBIS_TYPE.get(type(spark_type_obj))
 
-    return ibis_type
+@dt.dtype.register(pt.TimestampType)
+def spark_timestamp_dtype_to_ibis_dtype(spark_type_obj, nullable=True):
+    return dt.Timestamp(nullable=nullable)
+
+
+@dt.dtype.register(pt.DecimalType)
+def spark_decimal_dtype_to_ibis_dtype(spark_type_obj, nullable=True):
+    precision = spark_type_obj.precision
+    scale = spark_type_obj.scale
+    return dt.Decimal(precision, scale, nullable=nullable)
+
+
+@dt.dtype.register(pt.ArrayType)
+def spark_array_dtype_to_ibis_dtype(spark_type_obj, nullable=True):
+    value_type = dt.dtype(
+        spark_type_obj.elementType,
+        nullable=spark_type_obj.containsNull
+    )
+    return dt.Array(value_type, nullable=nullable)
+
+
+@dt.dtype.register(pt.MapType)
+def spark_map_dtype_to_ibis_dtype(spark_type_obj, nullable=True):
+    key_type = dt.dtype(spark_type_obj.keyType)
+    value_type = dt.dtype(
+        spark_type_obj.valueType,
+        nullable=spark_type_obj.valueContainsNull
+    )
+    return dt.Map(key_type, value_type, nullable=nullable)
+
+
+@dt.dtype.register(pt.StructType)
+def spark_struct_dtype_to_ibis_dtype(spark_type_obj, nullable=True):
+    names = spark_type_obj.names
+    fields = spark_type_obj.fields
+    ibis_types = [dt.dtype(f.dataType, nullable=f.nullable) for f in fields]
+    return dt.Struct(names, ibis_types, nullable=nullable)
 
 
 @sch.infer.register(ps.sql.dataframe.DataFrame)
 def spark_dataframe_schema(df):
     """Infer the schema of a Spark SQL `DataFrame` object."""
-    fields = OrderedDict((el.name, dt.dtype(el.dataType)) for el in df.schema)
+    # df.schema is a pt.StructType
+    schema_struct = dt.dtype(df.schema)
 
-    return sch.schema(fields)
+    return sch.schema(schema_struct.names, schema_struct.types)
 
 
 class SparkCursor:
@@ -180,6 +198,10 @@ class SparkClient(SQLClient):
     def _get_table_schema(self, table_name):
         return self.get_schema(table_name)
 
+    def _get_schema_using_query(self, query):
+        cur = self._execute(query, results=True)
+        return spark_dataframe_schema(cur.query)
+
     def list_tables(self, like=None, database=None):
         """
         List tables in the current (or indicated) database. Like the SHOW
@@ -274,3 +296,7 @@ class SparkClient(SQLClient):
         df = self._session.table(table_name)
 
         return sch.infer(df)
+
+    @property
+    def version(self):
+        return parse_version(ps.__version__)

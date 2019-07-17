@@ -155,12 +155,15 @@ def is_iterable(o: Any) -> bool:
     )
 
 
-def convert_unit(value, unit, to):
+def convert_unit(value, unit, to, floor=True):
     """Convert `value`, is assumed to be in units of `unit`, to units of `to`.
+    If `floor` is true, then use floor division on `value` if necessary.
 
     Parameters
     ----------
     value : Union[numbers.Real, ibis.expr.types.NumericValue]
+    floor : Boolean
+        Flags whether or not to use floor division on `value` if necessary.
 
     Returns
     -------
@@ -213,7 +216,10 @@ def convert_unit(value, unit, to):
         return value * factor
 
     assert i > j
-    return value // factor
+    if floor:
+        return value // factor
+    else:
+        return value / factor
 
 
 def get_logger(name, level=None, format=None, propagate=False):

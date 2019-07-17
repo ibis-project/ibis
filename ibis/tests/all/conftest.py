@@ -3,7 +3,7 @@ import operator
 import pytest
 
 import ibis.common as com
-from ibis.tests.backends import Backend
+from ibis.tests.backends import Backend, Spark
 
 
 def subclasses(cls):
@@ -120,7 +120,9 @@ params_backend = [
 
 
 @pytest.fixture(params=params_backend, scope='session')
-def backend(request, data_directory):
+def backend(request, data_directory, spark_client_testing):
+    if request.param is Spark:
+        Spark.client_testing = spark_client_testing
     return request.param(data_directory)
 
 
