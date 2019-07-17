@@ -27,10 +27,13 @@ def spark_client_testing(data_directory):
     pytest.importorskip('pyspark')
 
     import pyspark.sql.types as pt
+    import numpy as np
+    import pandas as pd
 
     client = ibis.spark.connect()
+    s = client._session
 
-    df_functional_alltypes = client._session.read.csv(
+    df_functional_alltypes = s.read.csv(
         path=str(data_directory / 'functional_alltypes.csv'),
         schema=pt.StructType([
             pt.StructField('index', pt.IntegerType(), True),
@@ -57,7 +60,7 @@ def spark_client_testing(data_directory):
         "bool_col", df_functional_alltypes["bool_col"].cast("boolean"))
     df_functional_alltypes.createOrReplaceTempView('functional_alltypes')
 
-    df_batting = client._session.read.csv(
+    df_batting = s.read.csv(
         path=str(data_directory / 'batting.csv'),
         schema=pt.StructType([
             pt.StructField('playerID', pt.StringType(), True),
@@ -87,7 +90,7 @@ def spark_client_testing(data_directory):
     )
     df_batting.createOrReplaceTempView('batting')
 
-    df_awards_players = client._session.read.csv(
+    df_awards_players = s.read.csv(
         path=str(data_directory / 'awards_players.csv'),
         schema=pt.StructType([
             pt.StructField('playerID', pt.StringType(), True),
@@ -101,16 +104,16 @@ def spark_client_testing(data_directory):
     )
     df_awards_players.createOrReplaceTempView('awards_players')
 
-    df_simple = client._session.createDataFrame([(1, 'a')], ['foo', 'bar'])
+    df_simple = s.createDataFrame([(1, 'a')], ['foo', 'bar'])
     df_simple.createOrReplaceTempView('simple')
 
-    df_struct = client._session.createDataFrame(
+    df_struct = s.createDataFrame(
         [((1, 2, 'a'),)],
         ['struct_col']
     )
     df_struct.createOrReplaceTempView('struct')
 
-    df_nested_types = client._session.createDataFrame(
+    df_nested_types = s.createDataFrame(
         [
             (
                 [1, 2],
@@ -126,10 +129,33 @@ def spark_client_testing(data_directory):
     )
     df_nested_types.createOrReplaceTempView('nested_types')
 
-    df_complicated = client._session.createDataFrame(
+    df_complicated = s.createDataFrame(
         [({(1, 3) : [[2, 4], [3, 5]]},)],
         ['map_tuple_list_of_list_of_ints']
     )
     df_complicated.createOrReplaceTempView('complicated')
+
+    df_udf = s.createDataFrame(
+        [
+            ('a', 1, 4.0, 'a'),
+            ('b', 2, 5.0, 'a'),
+            ('c', 3, 6.0, 'b'),
+        ],
+        ['a', 'b', 'c', 'key']
+    )
+    df_udf.createOrReplaceTempView('udf')
+
+    df_udf_random = s.createDataFrame(
+        pd.DataFrame(
+            {
+                'a': np.arange(4, dtype=float).tolist()
+                + np.random.rand(3).tolist(),
+                'b': np.arange(4, dtype=float).tolist()
+                + np.random.rand(3).tolist(),
+                'key': list('ddeefff'),
+            }
+        )
+    )
+    df_udf_random.createOrReplaceTempView('udf_random')
 
     return client

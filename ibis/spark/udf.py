@@ -101,10 +101,6 @@ class SparkUDF:
     def pyspark_udf(self, func):
         return ps_udf(func, self.spark_output_type)
 
-    @property
-    def node_output_type(self):
-        return self.output_type.column_type
-
     def create_udf_node(self, udf_func):
         """Create a new UDF node type and adds a corresponding compile rule.
 
@@ -128,7 +124,7 @@ class SparkUDF:
             (self.base_class,),
             {
                 'signature': sig.TypeSignature.from_dtypes(self.input_type),
-                'output_type': self.node_output_type,
+                'return_type': self.output_type
             }
         )
 
@@ -142,7 +138,7 @@ class SparkUDF:
         def compiles_udf_node(t, expr):
             return '{}({})'.format(
                 UDFNode.__name__,
-                ', '.join(map(t.translate, expr.op().args))
+                ', '.join(map(t.translate, expr.op().args)),
             )
 
         return UDFNode
@@ -154,7 +150,12 @@ class SparkUDF:
 
         @functools.wraps(func)
         def wrapped(*args):
-            return UDFNode(*args).to_expr()
+            node = UDFNode(*args)
+            casted_args = [
+                arg.cast(typ) for arg, typ in zip(node.args, self.input_type)
+            ]
+            new_node = UDFNode(*casted_args)
+            return new_node.to_expr()
 
         return wrapped
 
@@ -165,8 +166,13 @@ class SparkPandasUDF(SparkUDF):
     def validate_func_and_types(self, func):
         if isinstance(self.spark_output_type, (pt.MapType, pt.StructType)):
             raise com.IbisTypeError(
-                'Spark does not support MapType or StructType output \
-                    for Pandas UDFs'
+                'Spark does not support MapType or StructType output for \
+Pandas UDFs'
+            )
+        if len(self.input_type) == 0:
+            raise com.UnsupportedArgumentError(
+                'Spark does not support 0-arg pandas UDFs. Instead, create \
+a 1-arg pandas UDF and ignore the arg in your function'
             )
         super().validate_func_and_types(func)
 
