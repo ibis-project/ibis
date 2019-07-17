@@ -12,8 +12,9 @@ from ibis.sql.compiler import Dialect
 import pyspark.sql.functions as F
 from pyspark.sql.window import Window
 
-_operation_registry = {
-}
+
+_operation_registry = {}
+
 
 class PysparkExprTranslator:
     _registry = _operation_registry
@@ -75,6 +76,18 @@ def compile_column(t, expr):
     return t.translate(op.table)[op.name]
 
 
+@compiles(ops.SelfReference)
+def compile_self_reference(t, expr):
+    op = expr.op()
+    return t.translate(op.table)
+
+
+@compiles(ops.Equals)
+def compile_equals(t, expr):
+    op = expr.op()
+    return t.translate(op.left) == t.translate(op.right)
+
+
 @compiles(ops.Multiply)
 def compile_multiply(t, expr):
     op = expr.op()
@@ -104,22 +117,15 @@ def compile_aggregation(t, expr):
 @compiles(ops.Max)
 def compile_max(t, expr):
     op = expr.op()
+    return F.max(t.translate(op.arg))
 
-    # TODO: Derive the UDF output type from schema
-    @F.pandas_udf('long', F.PandasUDFType.GROUPED_AGG)
-    def max(v):
-        return v.max()
-
-    src_column = t.translate(op.arg)
-    return max(src_column)
 
 
 @compiles(ops.Mean)
 def compile_mean(t, expr):
     op = expr.op()
-    src_column = t.translate(op.arg)
+    return F.mean(t.translate(op.arg))
 
-    return F.mean(src_column)
 
 
 @compiles(ops.WindowOp)
@@ -145,6 +151,22 @@ def compile_value_list(t, expr):
     return [t.translate(col) for col in op.values]
 
 
+@compiles(ops.InnerJoin)
+def compile_inner_join(t, expr):
+    return compile_join(t, expr, 'inner')
+
+
+def compile_join(t, expr, how):
+    op = expr.op()
+
+    left_df = t.translate(op.left)
+    right_df = t.translate(op.right)
+    # TODO: Handle multiple predicates
+    predicates = t.translate(op.predicates[0])
+
+    return left_df.join(right_df, predicates, how)
+
+
 # Cannot register with @compiles because window doesn't have an
 # op() object
 def compile_window(expr):
@@ -154,6 +176,7 @@ def compile_window(expr):
 
 
 t = PysparkExprTranslator()
+
 
 def translate(expr):
     return t.translate(expr)

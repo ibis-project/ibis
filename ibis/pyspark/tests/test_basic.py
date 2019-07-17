@@ -99,3 +99,12 @@ def test_selection(client):
     df = table.compile()
     tm.assert_frame_equal(result1.toPandas(), df[['id']].toPandas())
     tm.assert_frame_equal(result2.toPandas(), df[['id', 'id2']].toPandas())
+
+
+def test_join(client):
+    table = client.table('table1')
+    result = table.join(table, 'id').compile()
+    spark_table = table.compile()
+    expected = spark_table.join(spark_table, spark_table['id'] == spark_table['id'])
+
+    tm.assert_frame_equal(result.toPandas(), expected.toPandas())
