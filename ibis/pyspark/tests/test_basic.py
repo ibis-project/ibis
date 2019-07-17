@@ -78,3 +78,24 @@ def test_window(client):
 
     tm.assert_frame_equal(result.toPandas(), expected.toPandas())
     tm.assert_frame_equal(result2.toPandas(), expected.toPandas())
+
+
+def test_greatest(client):
+    table = client.table('table1')
+    result = table.mutate(greatest = ibis.greatest(table.id)).compile()
+    df = table.compile()
+    expected = table.compile().withColumn('greatest', df.id)
+
+    tm.assert_frame_equal(result.toPandas(), expected.toPandas())
+
+
+def test_selection(client):
+    table = client.table('table1')
+    table = table.mutate(id2=table['id'])
+
+    result1 = table[['id']].compile()
+    result2 = table[['id', 'id2']].compile()
+
+    df = table.compile()
+    tm.assert_frame_equal(result1.toPandas(), df[['id']].toPandas())
+    tm.assert_frame_equal(result2.toPandas(), df[['id', 'id2']].toPandas())

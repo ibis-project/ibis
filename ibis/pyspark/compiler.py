@@ -2,6 +2,7 @@ import ibis.common as com
 import ibis.sql.compiler as comp
 import ibis.expr.window as window
 import ibis.expr.operations as ops
+import ibis.expr.types as types
 
 
 from ibis.pyspark.operations import PysparkTable
@@ -54,11 +55,16 @@ def compile_datasource(t, expr):
 @compiles(ops.Selection)
 def compile_selection(t, expr):
     op = expr.op()
-    src_table = t.translate(op.selections[0])
-    for selection in op.selections[1:]:
-        column_name = selection.get_name()
-        column = t.translate(selection)
-        src_table = src_table.withColumn(column_name, column)
+
+    if isinstance(op.selections[0], types.ColumnExpr):
+        column_names = [expr.op().name for expr in op.selections]
+        src_table = t.translate(op.table)[column_names]
+    elif isinstance(op.selections[0], types.TableExpr):
+        src_table = t.translate(op.table)
+        for selection in op.selections[1:]:
+            column_name = selection.get_name()
+            column = t.translate(selection)
+            src_table = src_table.withColumn(column_name, column)
 
     return src_table
 
@@ -107,6 +113,7 @@ def compile_max(t, expr):
     src_column = t.translate(op.arg)
     return max(src_column)
 
+
 @compiles(ops.Mean)
 def compile_mean(t, expr):
     op = expr.op()
@@ -114,10 +121,29 @@ def compile_mean(t, expr):
 
     return F.mean(src_column)
 
+
 @compiles(ops.WindowOp)
 def compile_window_op(t, expr):
     op = expr.op()
     return t.translate(op.expr).over(compile_window(op.window))
+
+
+@compiles(ops.Greatest)
+def compile_greatest(t, expr):
+    op = expr.op()
+
+    src_columns = t.translate(op.arg)
+    if len(src_columns) == 1:
+        return src_columns[0]
+    else:
+        return F.greatest(*src_columns)
+
+
+@compiles(ops.ValueList)
+def compile_value_list(t, expr):
+    op = expr.op()
+    return [t.translate(col) for col in op.values]
+
 
 # Cannot register with @compiles because window doesn't have an
 # op() object
