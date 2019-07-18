@@ -1,31 +1,10 @@
 #!/usr/bin/env python
-#
-# Licensed to the Apache Software Foundation (ASF) under one or more
-# contributor license agreements.  See the NOTICE file distributed with
-# this work for additional information regarding copyright ownership.
-# The ASF licenses this file to You under the Apache License, Version 2.0
-# (the "License"); you may not use this file except in compliance with
-# the License.  You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-
-# Utility for creating well-formed pull request merges and pushing them to
-# Apache.
-#   usage: ./apache-pull_request_number-merge.py    (see config env vars below)
-#
-# Lightly modified from version of this script in incubator-parquet-format
 
 """Command line tool for merging PRs."""
 
 import collections
 import pathlib
+import sys
 import textwrap
 
 import click
@@ -81,7 +60,6 @@ def merge_pr(
     merge_message_pieces += commits
 
     commit_message = "\n".join(merge_message_pieces)
-    # PUT /repos/:owner/:repo/pulls/:number/merge
     resp = requests.put(
         "{GITHUB_API_BASE}/pulls/{pr_num:d}/merge".format(
             GITHUB_API_BASE=GITHUB_API_BASE, pr_num=pr_num
@@ -93,16 +71,16 @@ def merge_pr(
         ),
         auth=(github_user, password),
     )
-    resp.raise_for_status()
-    if resp.status_code == 200:
+    status_code = resp.status_code
+    if status_code == 200:
         resp_json = resp.json()
-        merged = resp_json["merged"]
-        assert merged is True, merged
-        click.echo(
-            "Pull request #{pr_num:d} successfully merged.".format(
-                pr_num=pr_num
-            )
-        )
+        assert resp_json["merged"]
+        click.echo(resp_json["message"])
+    elif status_code == 405 or status_code == 409:
+        resp_json = resp.json()
+        raise click.ClickException(resp_json["message"])
+    else:
+        resp.raise_for_status()
 
 
 @click.command()
@@ -167,20 +145,37 @@ def main(
             pull_request_number=pull_request_number,
         )
     )
-    resp.raise_for_status()
+    if resp.status_code == 404:
+        pr_json = resp.json()
+        message = pr_json.get("message", None)
+        if message is not None:
+            raise click.ClickException(
+                "PR {pull_request_number:d} does not exist.".format(
+                    pull_request_number=pull_request_number
+                )
+            )
+    else:
+        resp.raise_for_status()
+
     pr_json = resp.json()
 
-    message = pr_json.get("message", None)
-    if message is not None and message.lower() == "not found":
-        raise click.ClickException(
-            "PR {pull_request_number:d} does not exist.".format(
-                pull_request_number=pull_request_number
+    # no-op if already merged
+    if pr_json["merged"]:
+        click.echo(
+            "#{pr_num:d} already merged. Nothing to do.".format(
+                pr_num=pull_request_number
             )
         )
+        sys.exit(0)
 
     if not pr_json["mergeable"]:
         raise click.ClickException(
-            "Pull request {:d} cannot be merged in its current form."
+            (
+                "Pull request #{pr_num:d} cannot be merged in its current "
+                "form. See "
+                "https://github.com/ibis-project/ibis/pulls/{pr_num:d} for "
+                "more details."
+            ).format(pr_num=pull_request_number)
         )
 
     url = pr_json["url"]

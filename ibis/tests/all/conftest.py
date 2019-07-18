@@ -122,7 +122,7 @@ params_backend = [
 @pytest.fixture(params=params_backend, scope='session')
 def backend(request, data_directory, spark_client_testing):
     if request.param is Spark:
-        Spark.client_testing = request.getfixturevalue('spark_client_testing')
+        Spark.client_testing = spark_client_testing
     return request.param(data_directory)
 
 

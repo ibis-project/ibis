@@ -242,9 +242,9 @@ def test_batting_cumulative(batting, batting_df, sort_kind):
         .sort_values('yearID', kind=sort_kind)
         .G.expanding()
         .sum()
+        .astype('int64')
     )
     expected = batting_df.assign(more_values=more_values)
-
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
@@ -289,9 +289,9 @@ def test_batting_rolling(batting, batting_df, sort_kind):
         .sort_values('yearID', kind=sort_kind)
         .G.rolling(5, min_periods=1)
         .sum()
+        .astype('int64')
     )
     expected = batting_df.assign(more_values=more_values)
-
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
@@ -432,11 +432,18 @@ def test_project_list_scalar():
     )
 
 
-def test_window_with_preceding_expr():
-    index = pd.date_range('20180101', '20180110')
+@pytest.mark.parametrize(
+    'index',
+    [
+        pytest.param(lambda time: None, id='no_index'),
+        pytest.param(lambda time: time, id='index'),
+    ],
+)
+def test_window_with_preceding_expr(index):
+    time = pd.date_range('20180101', '20180110')
     start = 2
-    data = np.arange(start, start + len(index))
-    df = pd.DataFrame({'value': data, 'time': index}, index=index)
+    data = np.arange(start, start + len(time))
+    df = pd.DataFrame({'value': data, 'time': time}, index=index(time))
     client = ibis.pandas.connect({'df': df})
     t = client.table('df')
     expected = (
@@ -456,8 +463,11 @@ def test_window_with_preceding_expr():
 def test_window_with_mlb():
     index = pd.date_range('20170501', '20170507')
     data = np.random.randn(len(index), 3)
-    df = (pd.DataFrame(data, columns=list('abc'), index=index)
-          .rename_axis('time').reset_index(drop=False))
+    df = (
+        pd.DataFrame(data, columns=list('abc'), index=index)
+        .rename_axis('time')
+        .reset_index(drop=False)
+    )
     client = ibis.pandas.connect({'df': df})
     t = client.table('df')
     rows_with_mlb = rows_with_max_lookback(5, ibis.interval(days=10))
@@ -468,9 +478,13 @@ def test_window_with_mlb():
     )
     result = expr.execute()
     expected = df.set_index('time')
-    gb_df = (expected.groupby(['b'])['a'].rolling('10d', closed='both')
-             .apply(lambda s: s.iloc[-5:].sum(), raw=False)
-             .sort_index(level=['time']).reset_index(drop=True))
+    gb_df = (
+        expected.groupby(['b'])['a']
+        .rolling('10d', closed='both')
+        .apply(lambda s: s.iloc[-5:].sum(), raw=False)
+        .sort_index(level=['time'])
+        .reset_index(drop=True)
+    )
     expected = expected.reset_index(drop=False).assign(sum=gb_df)
     tm.assert_frame_equal(result, expected)
 
