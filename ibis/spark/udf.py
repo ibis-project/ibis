@@ -143,7 +143,7 @@ class SparkUDF:
 
         return UDFNode
 
-    def wrapper(self, func):
+    def __call__(self, func):
         self.validate_func_and_types(func)
         udf_func = self.pyspark_udf(func)
         UDFNode = self.create_udf_node(udf_func)
@@ -213,7 +213,7 @@ class udf:
         ... def my_string_length(x):
         ...     return len(x) * 2
         """
-        return SparkUDF(input_type, output_type).wrapper
+        return SparkUDF(input_type, output_type)
 
     @staticmethod
     def elementwise_pandas(input_type, output_type):
@@ -230,7 +230,7 @@ class udf:
         ... def my_string_length(x):
         ...     return x.str.len() * 2
         """
-        return SparkPandasUDF(input_type, output_type).wrapper
+        return SparkPandasUDF(input_type, output_type)
 
     @staticmethod
     def reduction(input_type, output_type):
@@ -246,4 +246,4 @@ class udf:
         ... def my_string_length_agg(series, **kwargs):
         ...     return (series.str.len() * 2).sum()
         """
-        return SparkPandasAggregateUDF(input_type, output_type).wrapper
+        return SparkPandasAggregateUDF(input_type, output_type)
