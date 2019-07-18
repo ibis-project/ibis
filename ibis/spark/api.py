@@ -1,6 +1,31 @@
+import ibis.common as com
 from ibis.spark.client import SparkClient
 from ibis.spark.compiler import dialect  # noqa: F401
 from ibis.spark.udf import udf  # noqa: F401
+
+
+def compile(expr, params=None):
+    """Force compilation of expression.
+
+    Returns
+    -------
+    str
+
+    """
+    from ibis.spark.compiler import to_sql
+
+    return to_sql(expr, dialect.make_context(params=params))
+
+
+def verify(expr, params=None):
+    """
+    Determine if expression can be successfully translated to execute on Impala
+    """
+    try:
+        compile(expr, params=params)
+        return True
+    except com.TranslationError:
+        return False
 
 
 def connect(**kwargs):
