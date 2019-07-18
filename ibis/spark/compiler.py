@@ -43,6 +43,32 @@ from ibis.impala.compiler import (
 )
 
 
+def build_ast(expr, context):
+    assert context is not None, 'context is None'
+    builder = SparkQueryBuilder(expr, context=context)
+    return builder.get_result()
+
+
+def _get_query(expr, context):
+    assert context is not None, 'context is None'
+    ast = build_ast(expr, context)
+    query = ast.queries[0]
+
+    return query
+
+
+def to_sql(expr, context=None):
+    if context is None:
+        context = SparkDialect.make_context()
+    assert context is not None, 'context is None'
+    query = _get_query(expr, context)
+    return query.compile()
+
+
+# ----------------------------------------------------------------------
+# Select compilation
+
+
 class SparkUDFNode(ops.ValueOp):
     def output_type(self):
         return rlz.shape_like(self.args, dtype=self.return_type)
@@ -61,11 +87,6 @@ class SparkSelectBuilder(comp.SelectBuilder):
 
 class SparkQueryBuilder(comp.QueryBuilder):
     select_builder = SparkSelectBuilder
-
-
-def build_ast(expr, context):
-    builder = SparkQueryBuilder(expr, context=context)
-    return builder.get_result()
 
 
 class SparkContext(ImpalaContext):
