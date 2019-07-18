@@ -190,12 +190,38 @@ def _struct_like_format(func):
     return formatter
 
 
+def _number_literal_format(translator, expr):
+    value = expr.op().value
+
+    if math.isfinite(value):
+        # Spark interprets dotted number literals as decimals, not floats.
+        # i.e. "select 1.0 as tmp" is a decimal(2,1), not a float or double
+        if isinstance(expr.op().dtype, dt.Float64):
+            formatted = "{}d".format(repr(value))
+        elif isinstance(expr.op().dtype, dt.Floating):
+            formatted = "CAST({} AS FLOAT)".format(repr(value))
+        else:
+            formatted = repr(value)
+    else:
+        if math.isnan(value):
+            formatted_val = 'NaN'
+        elif math.isinf(value):
+            if value > 0:
+                formatted_val = 'Infinity'
+            else:
+                formatted_val = '-Infinity'
+        formatted = "CAST({!r} AS DOUBLE)".format(formatted_val)
+
+    return formatted
+
+
 _literal_formatters = impala_compiler._literal_formatters.copy()
 
 _literal_formatters.update({
     'array': _array_literal_format,
     'struct': _struct_like_format('named_struct'),
     'map': _struct_like_format('map'),
+    'number': _number_literal_format
 })
 
 
