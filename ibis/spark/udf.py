@@ -91,7 +91,7 @@ class SparkUDF:
 
         # validate that the input_type argument and the function signature
         # match
-        _ = valid_function_signature(self.input_type, func)
+        valid_function_signature(self.input_type, func)
 
         if not self.output_type.nullable:
             raise com.IbisTypeError(
