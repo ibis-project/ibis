@@ -111,7 +111,7 @@ def table(con_for_udf, table_name, test_schema):
 # Tests
 
 
-def test_sql_length_udf_worked(test_schema, table):
+def test_existing_sql_udf(test_schema, table):
     """Test creating ibis UDF object based on existing UDF in the database"""
     # Create ibis UDF objects referring to UDFs already created in the database
     custom_length_udf = existing_udf(
@@ -127,7 +127,7 @@ def test_sql_length_udf_worked(test_schema, table):
     assert result['custom_len'].sum() == result['name_length'].sum()
 
 
-def test_py_length_udf_worked(test_schema, table):
+def test_existing_plpython_udf(test_schema, table):
     # Create ibis UDF objects referring to UDFs already created in the database
     py_length_udf = existing_udf(
         'pylen',
@@ -148,7 +148,7 @@ def mult_a_b(a, b):
     return a * b
 
 
-def test_func_to_udf_smoke(con_for_udf, test_schema, table):
+def test_func_to_udf(con_for_udf, test_schema, table):
     """Test creating a UDF in database based on Python function
     and then creating an ibis UDF object based on that"""
     mult_a_b_udf = func_to_udf(

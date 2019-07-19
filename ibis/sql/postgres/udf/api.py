@@ -53,7 +53,7 @@ def create_udf_node(name, fields):
 
     Returns
     -------
-    result : type
+    type
         A new PostgresUDFNode subclass
     """
     definition = next(_udf_name_cache[name])
@@ -75,7 +75,7 @@ def existing_udf(name, input_types, output_type, schema=None, parameters=None):
 
     Returns
     -------
-    wrapper : Callable
+    Callable
         The wrapped function
     """
     if parameters is None:
@@ -148,7 +148,8 @@ def func_to_udf(
 
     Returns
     -------
-    wrapper : Callable
+    Callable
+
         The ibis UDF object as a wrapped function
     """
     if name is None:
@@ -176,20 +177,20 @@ $$;
     return_type = ibis_to_postgres_str(out_type)
     # If function definition is indented extra,
     # Postgres UDF will fail with indentation error.
-    # Also, need to remove decorators, because they
-    # won't be defined in the UDF body.
     func_definition = dedent(inspect.getsource(python_func))
     if func_definition.strip().startswith('@'):
         raise PostgresUDFError(
-            'Use of decorators on function to be turned into Postgres UDF '
-            'is not supported, because the body of the UDF must be wholly '
-            'self-contained. Since the decorator syntax does not first bind '
-            'the function name to the wrapped function but instead includes '
-            'the decorator(s). Therefore, the decorators themselves will '
-            'be included in the string coming from `inspect.getsource()`.  '
-            'Since the decorator objects are not defined, execution of the '
-            'UDF results in a NameError. '
+            'Use of decorators on a function to be turned into Postgres UDF '
+            'is not supported. The body of the UDF must be wholly '
+            'self-contained. '
         )
+        # Since the decorator syntax does not first bind
+        # the function name to the wrapped function but instead includes
+        # the decorator(s). Therefore, the decorators themselves will
+        # be included in the string coming from `inspect.getsource()`.
+        # Since the decorator objects are not defined, execution of the
+        # UDF results in a NameError.
+
     formatted_sql = template.format(
         replace=replace_text,
         schema_fragment=schema_fragment,

@@ -210,6 +210,7 @@ class PostgreSQLClient(alch.AlchemyClient):
 
         Parameters
         ----------
+        pyfunc : function
         in_types : List[ibis.expr.datatypes.DataType]
         out_type : ibis.expr.datatypes.DataType
         schema : str
@@ -221,8 +222,10 @@ class PostgreSQLClient(alch.AlchemyClient):
 
         Returns
         -------
-        wrapper : Callable that takes in a python function and returns
-            an ibis function
+        Callable
+
+        Function that takes in ColumnExpr arguments and returns an instance
+        inheriting from PostgresUDFNode
         """
 
         return func_to_udf(
