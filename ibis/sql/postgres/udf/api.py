@@ -1,21 +1,20 @@
-import inspect
-from textwrap import dedent
 import collections
+import inspect
 import itertools
+from textwrap import dedent
 
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import dialect as sa_postgres_dialect
 
-from ibis import IbisError
 import ibis.expr.rules as rlz
+from ibis import IbisError
 from ibis.expr.signature import Argument as Arg
+from ibis.sql.alchemy import _to_sqla_type
 from ibis.sql.postgres.compiler import (
+    PostgreSQLExprTranslator,
     PostgresUDFNode,
     add_operation,
-    PostgreSQLExprTranslator
 )
-from ibis.sql.alchemy import _to_sqla_type
-
 
 _udf_name_cache = collections.defaultdict(itertools.count)
 
@@ -27,8 +26,7 @@ class PostgresUDFError(IbisError):
 def ibis_to_pg_sa_type(ibis_type):
     """Map an ibis DataType to a Postgres-compatible sqlalchemy type"""
     return _to_sqla_type(
-        ibis_type,
-        type_map=PostgreSQLExprTranslator._type_map
+        ibis_type, type_map=PostgreSQLExprTranslator._type_map
     )
 
 
@@ -63,11 +61,7 @@ def create_udf_node(name, fields):
     return type(external_name, (PostgresUDFNode,), fields)
 
 
-def existing_udf(name,
-                 input_types,
-                 output_type,
-                 schema=None,
-                 parameters=None):
+def existing_udf(name, input_types, output_type, schema=None, parameters=None):
     """Create an ibis function that refers to an existing Postgres UDF already
     defined in database
 
@@ -94,17 +88,20 @@ def existing_udf(name,
             ).format(len(input_types), len(parameters))
         )
 
-    udf_node_fields = collections.OrderedDict([
-        (name, Arg(rlz.value(type_)))
-        for name, type_ in zip(parameters, input_types)
-    ] + [
-        (
-            'output_type',
-            lambda self, output_type=output_type: rlz.shape_like(
-                self.args, dtype=output_type
+    udf_node_fields = collections.OrderedDict(
+        [
+            (name, Arg(rlz.value(type_)))
+            for name, type_ in zip(parameters, input_types)
+        ]
+        + [
+            (
+                'output_type',
+                lambda self, output_type=output_type: rlz.shape_like(
+                    self.args, dtype=output_type
+                ),
             )
-        )
-    ])
+        ]
+    )
     udf_node_fields['resolve_name'] = lambda self: name
 
     udf_node = create_udf_node(name, udf_node_fields)
@@ -128,13 +125,15 @@ def existing_udf(name,
     return wrapped
 
 
-def func_to_udf(conn,
-                python_func,
-                in_types,
-                out_type,
-                schema=None,
-                replace=False,
-                name=None):
+def func_to_udf(
+    conn,
+    python_func,
+    in_types,
+    out_type,
+    schema=None,
+    replace=False,
+    name=None,
+):
     """Defines a UDF in the database
 
     Parameters
@@ -171,10 +170,7 @@ $$;
 """
 
     postgres_signature = ', '.join(
-        '{name} {type}'.format(
-            name=name,
-            type=ibis_to_postgres_str(type_),
-        )
+        '{name} {type}'.format(name=name, type=ibis_to_postgres_str(type_))
         for name, type_ in zip(parameter_names, in_types)
     )
     return_type = ibis_to_postgres_str(out_type)
@@ -182,9 +178,7 @@ $$;
     # Postgres UDF will fail with indentation error.
     # Also, need to remove decorators, because they
     # won't be defined in the UDF body.
-    func_definition = dedent(
-        inspect.getsource(python_func)
-    )
+    func_definition = dedent(inspect.getsource(python_func))
     if func_definition.strip().startswith('@'):
         raise PostgresUDFError(
             'Use of decorators on function to be turned into Postgres UDF '
@@ -206,7 +200,7 @@ $$;
         # for internal_name, need to make sure this works if passing
         # name parameter
         internal_name=python_func.__name__,
-        args=', '.join(parameter_names)
+        args=', '.join(parameter_names),
     )
     conn.execute(formatted_sql)
     return existing_udf(
@@ -214,5 +208,5 @@ $$;
         input_types=in_types,
         output_type=out_type,
         schema=schema,
-        parameters=parameter_names
+        parameters=parameter_names,
     )

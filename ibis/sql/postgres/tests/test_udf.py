@@ -1,15 +1,12 @@
 """Test support for already-defined UDFs in Postgres"""
 
-import pytest
 import functools
+
+import pytest
 
 import ibis.expr.datatypes as dt
 from ibis.sql.postgres import existing_udf
-from ibis.sql.postgres.udf.api import (
-    func_to_udf,
-    PostgresUDFError
-)
-
+from ibis.sql.postgres.udf.api import PostgresUDFError, func_to_udf
 
 # mark test module as postgresql (for ability to easily exclude,
 # e.g. in conda build tests)
@@ -39,9 +36,7 @@ def next_serial(con):
 @pytest.fixture(scope='session')
 def test_schema(con, next_serial):
     schema_name = 'udf_test_{}'.format(next_serial)
-    con.con.execute(
-        "CREATE SCHEMA IF NOT EXISTS {};".format(schema_name)
-    )
+    con.con.execute("CREATE SCHEMA IF NOT EXISTS {};".format(schema_name))
     return schema_name
 
 
@@ -63,7 +58,9 @@ INSERT INTO {schema}.{table_name} VALUES
 (2, 'Judy', 4),
 (3, 'Jonathan', 8)
 ;
-""".format(schema=test_schema, table_name=table_name)
+""".format(
+        schema=test_schema, table_name=table_name
+    )
 
 
 @pytest.fixture(scope='session')
@@ -74,7 +71,9 @@ LANGUAGE plpythonu
 AS
 $$
 return len(x)
-$$;""".format(schema=test_schema)
+$$;""".format(
+        schema=test_schema
+    )
 
 
 @pytest.fixture(scope='session')
@@ -85,16 +84,14 @@ LANGUAGE SQL
 AS
 $$
 SELECT length(x);
-$$;""".format(schema=test_schema)
+$$;""".format(
+        schema=test_schema
+    )
 
 
 @pytest.fixture(scope='session')
 def con_for_udf(
-        con,
-        test_schema,
-        sql_table_setup,
-        sql_define_udf,
-        sql_define_py_udf
+    con, test_schema, sql_table_setup, sql_define_udf, sql_define_py_udf
 ):
     con.con.execute(sql_table_setup)
     con.con.execute(sql_define_udf)
@@ -110,6 +107,7 @@ def con_for_udf(
 def table(con_for_udf, table_name, test_schema):
     return con_for_udf.table(table_name, schema=test_schema)
 
+
 # Tests
 
 
@@ -120,11 +118,10 @@ def test_sql_length_udf_worked(test_schema, table):
         'custom_len',
         input_types=[dt.string],
         output_type=dt.int32,
-        schema=test_schema
+        schema=test_schema,
     )
     result_obj = table[
-        table,
-        custom_length_udf(table['user_name']).name('custom_len')
+        table, custom_length_udf(table['user_name']).name('custom_len')
     ]
     result = result_obj.execute()
     assert result['custom_len'].sum() == result['name_length'].sum()
@@ -136,11 +133,10 @@ def test_py_length_udf_worked(test_schema, table):
         'pylen',
         input_types=[dt.string],
         output_type=dt.int32,
-        schema=test_schema
+        schema=test_schema,
     )
     result_obj = table[
-        table,
-        py_length_udf(table['user_name']).name('custom_len')
+        table, py_length_udf(table['user_name']).name('custom_len')
     ]
     result = result_obj.execute()
     assert result['custom_len'].sum() == result['name_length'].sum()
@@ -161,14 +157,13 @@ def test_func_to_udf_smoke(con_for_udf, test_schema, table):
         (dt.int32, dt.int32),
         dt.int32,
         schema=test_schema,
-        replace=True
+        replace=True,
     )
     table_filt = table.filter(table['user_id'] == 2)
     expr = table_filt[
-        mult_a_b_udf(
-            table_filt['user_id'],
-            table_filt['name_length']
-        ).name('mult_result')
+        mult_a_b_udf(table_filt['user_id'], table_filt['name_length']).name(
+            'mult_result'
+        )
     ]
     result = expr.execute()
     assert result['mult_result'].iloc[0] == 8
@@ -186,15 +181,14 @@ def test_client_udf_api(con_for_udf, test_schema, table):
         [dt.int32, dt.int32],
         dt.int32,
         schema=test_schema,
-        replace=True
+        replace=True,
     )
 
     table_filt = table.filter(table['user_id'] == 2)
     expr = table_filt[
-        multiply_udf(
-            table_filt['user_id'],
-            table_filt['name_length']
-        ).name('mult_result')
+        multiply_udf(table_filt['user_id'], table_filt['name_length']).name(
+            'mult_result'
+        )
     ]
     result = expr.execute()
     assert result['mult_result'].iloc[0] == 8
@@ -210,6 +204,7 @@ def test_client_udf_decorator_fails(con_for_udf, test_schema):
         @functools.wraps(f)
         def wrapped(*args, **kwds):
             return f(*args, **kwds)
+
         return wrapped
 
     @decorator
@@ -222,4 +217,5 @@ def test_client_udf_decorator_fails(con_for_udf, test_schema):
             [dt.int32, dt.int32],
             dt.int32,
             schema=test_schema,
-            replace=True)
+            replace=True,
+        )
