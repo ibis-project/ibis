@@ -3,6 +3,7 @@ import pytest
 import ibis
 
 pytestmark = pytest.mark.spark
+pytest.importorskip('pyspark')
 
 
 @pytest.fixture(scope='session')
