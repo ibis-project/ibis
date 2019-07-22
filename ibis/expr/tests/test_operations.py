@@ -110,3 +110,21 @@ def test_custom_table_expr():
     node = SpecialTable('foo', ibis.schema([('a', 'int64')]), con)
     expr = node.to_expr()
     assert isinstance(expr, MyTableExpr)
+
+
+@pytest.fixture(scope='session')
+def dummy_op():
+    class DummyOp(ops.ValueOp):
+        arg = Arg(rlz.any)
+
+    return DummyOp
+
+
+def test_too_many_args_not_allowed(dummy_op):
+    with pytest.raises(TypeError):
+        dummy_op(1, 2)
+
+
+def test_too_few_args_not_allowed(dummy_op):
+    with pytest.raises(TypeError):
+        dummy_op()
