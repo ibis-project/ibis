@@ -19,7 +19,7 @@ dependencies:
   - multipledispatch>=0.6.0
   - mypy
   - numpy>=1.11
-  - pandas>=0.21
+  - pandas>=0.21,<0.25
   - pip
   - plumbum
   - pre_commit
