@@ -4,7 +4,7 @@ import pytest
 @pytest.fixture(scope='session')
 def client(data_directory):
     pytest.importorskip('pyspark')
-    from ...spark_testing_client import get_spark_testing_client as client
+    from ibis.tests.all.conftest import get_spark_testing_client as client
     return client(data_directory)
 
 
