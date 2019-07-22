@@ -2,8 +2,11 @@ import pytest
 
 
 @pytest.fixture(scope='session')
-def client(spark_client_testing):
-    return spark_client_testing
+def client():
+    pytest.importorskip('pyspark')
+    pytest.importorskip('conftest')
+    from conftest import get_spark_testing_client
+    return get_spark_testing_client()
 
 
 @pytest.fixture(scope='session')

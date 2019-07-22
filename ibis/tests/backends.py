@@ -528,8 +528,10 @@ class Spark(Backend, RoundHalfToEven):
 
     @staticmethod
     def skip_if_missing_dependencies() -> None:
-        pass
+        pytest.importorskip('pyspark')
+        pytest.importorskip('conftest')
 
     @staticmethod
     def connect(data_directory):
-        return Spark.client_testing
+        from conftest import get_spark_testing_client
+        return get_spark_testing_client()
