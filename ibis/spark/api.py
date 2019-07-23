@@ -28,13 +28,13 @@ def verify(expr, params=None):
         return False
 
 
-def connect(**kwargs):
+def connect(spark_session):
     """
     Create a `SparkClient` for use with Ibis. Pipes **kwargs into SparkClient,
     which pipes them into SparkContext. See documentation for SparkContext:
     https://spark.apache.org/docs/latest/api/python/_modules/pyspark/context.html#SparkContext
     """
-    client = SparkClient(**kwargs)
+    client = SparkClient(spark_session)
 
     # Spark internally stores timestamps as UTC values, and timestamp data that
     # is brought in without a specified time zone is converted as local time to

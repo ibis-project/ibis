@@ -198,8 +198,27 @@ def geo_df(geo):
 
 _spark_testing_client = None
 
-
 def get_spark_testing_client(data_directory):
+    global _spark_testing_client
+    if _spark_testing_client is None:
+        _spark_testing_client = get_common_spark_testing_client(
+            data_directory,
+            lambda: ibis.spark.connect()
+        )
+    return _spark_testing_client
+
+
+def get_pyspark_testing_client(data_directory):
+    global _pyspark_testing_client
+    if _pyspark_testing_client is None:
+        _pyspark_testing_client = get_common_spark_testing_client(
+            data_directory,
+            lambda: ibis.pyspark.connect()
+        )
+    return _pyspark_testing_client
+
+
+def get_common_spark_testing_client(data_directory, connect):
     global _spark_testing_client
 
     if _spark_testing_client is not None:
@@ -208,7 +227,7 @@ def get_spark_testing_client(data_directory):
     pytest.importorskip('pyspark')
     import pyspark.sql.types as pt
 
-    _spark_testing_client = ibis.spark.connect()
+    _spark_testing_client = connect()
     s = _spark_testing_client._session
 
     df_functional_alltypes = s.read.csv(

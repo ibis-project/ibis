@@ -1,6 +1,7 @@
-from ibis.spark.client import SparkClient
-from ibis.pyspark.operations import PysparkTable
 from ibis.pyspark.compiler import translate
+from ibis.pyspark.operations import PysparkTable
+from ibis.spark.client import SparkClient
+
 
 class PysparkClient(SparkClient):
     """
@@ -15,5 +16,5 @@ class PysparkClient(SparkClient):
         """
         return translate(expr)
 
-    def execute(self, df, params=None, limit='default', **kwargs):
-        return df.toPandas()
+    def execute(self, expr, params=None, limit='default', **kwargs):
+        return self.compile(expr).toPandas()
