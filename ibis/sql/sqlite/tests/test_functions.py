@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import pandas.util.testing as tm  # noqa: E402
 import pytest
+from pandas.core.dtypes.dtypes import CategoricalDtype
 
 import ibis  # noqa: E402
 import ibis.config as config  # noqa: E402
@@ -426,7 +427,7 @@ def test_category_label(alltypes, df):
 
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
-        result = result.astype('category', ordered=True)
+        result = result.astype(CategoricalDtype(ordered=True))
 
     result.name = 'double_col'
 
