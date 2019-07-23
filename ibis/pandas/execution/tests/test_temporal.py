@@ -90,13 +90,14 @@ def test_cast_datetime_strings_to_timestamp(t, df, column):
     ['plain_datetimes_naive', 'plain_datetimes_ny', 'plain_datetimes_utc'],
 )
 def test_cast_integer_to_temporal_type(t, df, column):
-    expr = t.plain_int64.cast(t[column].type())
+    column_type = t[column].type()
+    expr = t.plain_int64.cast(column_type)
     result = expr.execute()
     expected = pd.Series(
         pd.to_datetime(df.plain_int64.values, unit='ns').values,
         index=df.index,
         name='plain_int64',
-    ).dt.tz_localize(t[column].type().timezone)
+    ).dt.tz_localize(column_type.timezone)
     tm.assert_series_equal(result, expected)
 
 
@@ -113,33 +114,33 @@ def test_cast_integer_to_date(t, df):
 
 def test_times_ops(t, df):
     result = t.plain_datetimes_naive.time().between('10:00', '10:00').execute()
-    expected = np.zeros(len(df), dtype=bool)
-    tm.assert_numpy_array_equal(result, expected)
+    expected = pd.Series(np.zeros(len(df), dtype=bool))
+    tm.assert_series_equal(result, expected)
 
     result = t.plain_datetimes_naive.time().between('01:00', '02:00').execute()
-    expected = np.ones(len(df), dtype=bool)
-    tm.assert_numpy_array_equal(result, expected)
+    expected = pd.Series(np.ones(len(df), dtype=bool))
+    tm.assert_series_equal(result, expected)
 
 
 @pytest.mark.parametrize(
-    'tz, rconstruct',
+    ('tz', 'rconstruct'),
     [('US/Eastern', np.zeros), ('UTC', np.ones), (None, np.ones)],
 )
 @pytest.mark.parametrize(
     'column', ['plain_datetimes_utc', 'plain_datetimes_naive']
 )
 def test_times_ops_with_tz(t, df, tz, rconstruct, column):
-    expected = rconstruct(len(df), dtype=bool)
-
-    expr = t[column].time().between('01:00', '02:00', timezone=tz)
+    expected = pd.Series(rconstruct(len(df), dtype=bool))
+    time = t[column].time()
+    expr = time.between('01:00', '02:00', timezone=tz)
     result = expr.execute()
-    tm.assert_numpy_array_equal(result, expected)
+    tm.assert_series_equal(result, expected)
 
     # Test that casting behavior is the same as using the timezone kwarg
     ts = t[column].cast(dt.Timestamp(timezone=tz))
     expr = ts.time().between('01:00', '02:00')
     result = expr.execute()
-    tm.assert_numpy_array_equal(result, expected)
+    tm.assert_series_equal(result, expected)
 
 
 @pytest.mark.parametrize(

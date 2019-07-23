@@ -3,7 +3,6 @@ import math
 import operator
 import sqlite3
 import uuid
-import warnings
 
 import numpy as np
 import pandas as pd
@@ -410,10 +409,7 @@ def test_bucket(alltypes, df, func, expected_func):
     expr = func(alltypes.double_col)
     result = expr.execute()
     expected = expected_func(df.double_col)
-
-    with warnings.catch_warnings():
-        warnings.simplefilter('ignore')
-        expected = expected.astype('category')
+    expected = pd.Series(pd.Categorical(expected))
 
     tm.assert_series_equal(result, expected, check_names=False)
 
@@ -423,10 +419,7 @@ def test_category_label(alltypes, df):
     labels = ['a', 'b', 'c', 'd']
     expr = alltypes.double_col.bucket(bins).label(labels)
     result = expr.execute()
-
-    with warnings.catch_warnings():
-        warnings.simplefilter('ignore')
-        result = result.astype('category', ordered=True)
+    result = pd.Series(pd.Categorical(result, ordered=True))
 
     result.name = 'double_col'
 
