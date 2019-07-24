@@ -584,7 +584,7 @@ def test_category_label(alltypes, df):
 
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
-        result = result.astype('category', ordered=True)
+    result = pd.Series(pd.Categorical(result, ordered=True))
 
     result.name = 'double_col'
 
@@ -891,7 +891,7 @@ def test_rolling_window_with_mlb(alltypes):
     t = alltypes
     window = ibis.trailing_window(
         preceding=rows_with_max_lookback(3, ibis.interval(days=5)),
-        order_by=t.timestamp_col
+        order_by=t.timestamp_col,
     )
     expr = t['double_col'].sum().over(window)
     with pytest.raises(NotImplementedError):

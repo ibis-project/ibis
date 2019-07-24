@@ -54,7 +54,7 @@ def execute_between_time(op, data, lower, upper, **kwargs):
     indexer = pd.DatetimeIndex(data).indexer_between_time(lower, upper)
     result = np.zeros(len(data), dtype=np.bool_)
     result[indexer] = True
-    return result
+    return pd.Series(result)
 
 
 @execute_node.register(ops.Date, pd.Series)

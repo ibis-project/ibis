@@ -105,7 +105,7 @@ def execute_cast_series_array(op, data, type, **kwargs):
 
 @execute_node.register(ops.Cast, pd.Series, dt.Timestamp)
 def execute_cast_series_timestamp(op, data, type, **kwargs):
-    arg = op.args[0]
+    arg = op.arg
     from_type = arg.type()
 
     if from_type.equals(type):  # noop cast
@@ -119,9 +119,13 @@ def execute_cast_series_timestamp(op, data, type, **kwargs):
         )
 
     if isinstance(from_type, (dt.String, dt.Integer)):
-        timestamps = pd.to_datetime(
-            data.values, infer_datetime_format=True, unit='ns'
-        ).tz_localize(tz)
+        timestamps = pd.to_datetime(data.values, infer_datetime_format=True)
+        if getattr(timestamps.dtype, "tz", None) is not None:
+            method_name = "tz_convert"
+        else:
+            method_name = "tz_localize"
+        method = getattr(timestamps, method_name)
+        timestamps = method(tz)
         return pd.Series(timestamps, index=data.index, name=data.name)
 
     raise TypeError("Don't know how to cast {} to {}".format(from_type, type))
