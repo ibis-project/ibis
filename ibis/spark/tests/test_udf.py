@@ -10,6 +10,7 @@ from ibis.spark.udf import udf
 from ibis.tests.backends import Backend
 
 pytestmark = pytest.mark.spark
+pytest.importorskip('pyspark')
 
 
 @pytest.fixture(scope='session')
@@ -142,7 +143,6 @@ my_string_length_fns = [my_string_length, my_string_length_pandas]
 # tests
 
 def test_spark_dtype_to_ibis_dtype():
-    pytest.importorskip('pyspark')
     from ibis.spark.client import _SPARK_DTYPE_TO_IBIS_DTYPE
     assert len(_SPARK_DTYPE_TO_IBIS_DTYPE.keys()) == \
         len(set(_SPARK_DTYPE_TO_IBIS_DTYPE.values()))
