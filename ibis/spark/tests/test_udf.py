@@ -28,6 +28,26 @@ def df(t):
 
 
 @pytest.fixture(scope='session')
+def t_nan(con):
+    return con.table('udf_nan')
+
+
+@pytest.fixture(scope='session')
+def df_nan(t_nan):
+    return t_nan.execute()
+
+
+@pytest.fixture(scope='session')
+def t_null(con):
+    return con.table('udf_null')
+
+
+@pytest.fixture(scope='session')
+def df_null(t_null):
+    return t_null.execute()
+
+
+@pytest.fixture(scope='session')
 def t_random(con):
     return con.table('udf_random')
 
@@ -108,7 +128,9 @@ def my_corr(lhs, rhs, **kwargs):
     output_type=dt.Array(dt.double),
 )
 def quantiles(series, quantiles):
-    return list(series.quantile(quantiles))
+    # quantiles gets broadcasted by Spark, i.e.
+    # [0.5, 0.6] -> pd.Series([[0.5, 0.6], [0.5, 0.6], ...])
+    return list(series.quantile(quantiles[0]))
 
 
 add_one_fns = [add_one, add_one_pandas]
@@ -202,7 +224,7 @@ def test_multiple_argument_udf_group_by(con, t, df, fn):
 
 
 # Spark doesn't support pandas_udf GROUPED_AGG in spark.sql(). See SPARK-28422
-@pytest.mark.skip
+@pytest.mark.xfail
 def test_udaf(con, t, df):
     expr = my_string_length_sum(t.a)
 
@@ -278,27 +300,19 @@ def test_compose_udfs(t_random, df_random, times_two_fn, add_one_fn):
     tm.assert_series_equal(expected, result)
 
 
-@pytest.mark.skip
-def test_udaf_window():
+# Spark doesn't support pandas_udf with bounded windows. See Spark-24561
+@pytest.mark.xfail
+def test_udaf_window(con, t_random, df_random):
     @udf.reduction(['double'], 'double')
     def my_mean(series):
         return series.mean()
 
-    # df = pd.DataFrame(
-    #     {
-    #         'a': np.arange(4, dtype=float).tolist()
-    #         + np.random.rand(3).tolist(),
-    #         'b': np.arange(4, dtype=float).tolist()
-    #         + np.random.rand(3).tolist(),
-    #         'key': list('ddeefff'),
-    #     }
-    # )
-    con = ibis.pandas.connect({'df': df})
-    t = con.table('df')
     window = ibis.trailing_window(2, order_by='a', group_by='key')
-    expr = t.mutate(rolled=my_mean(t.b).over(window))
-    result = expr.execute().sort_values(['key', 'a'])
-    expected = df.sort_values(['key', 'a']).assign(
+    expr = t_random.mutate(
+        rolled=my_mean(t_random.b).over(window)
+    ).sort_by(['key', 'a'])
+    result = expr.execute()
+    expected = df_random.sort_values(['key', 'a']).assign(
         rolled=lambda df: df.groupby('key')
         .b.rolling(2, min_periods=1)
         .mean()
@@ -307,21 +321,31 @@ def test_udaf_window():
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.skip
-def test_udaf_window_nan():
-    # df = pd.DataFrame(
-    #     {
-    #         'a': np.arange(10, dtype=float),
-    #         'b': [3.0, np.NaN] * 5,
-    #         'key': list('ddeefffggh'),
-    #     }
-    # )
-    con = ibis.pandas.connect({'df': df})
-    t = con.table('df')
+# Spark functions like mean() return NaN if any input is NaN, unlike pandas
+# which ignores NaN values. Spark ignores Null values, not NaN
+@pytest.mark.xfail
+def test_udaf_window_nan(con, t_nan, df_nan):
     window = ibis.trailing_window(2, order_by='a', group_by='key')
-    expr = t.mutate(rolled=t.b.mean().over(window))
-    result = expr.execute().sort_values(['key', 'a'])
-    expected = df.sort_values(['key', 'a']).assign(
+    expr = t_nan.mutate(
+        rolled=t_nan.b.mean().over(window)
+    ).sort_by(['key', 'a'])
+    result = expr.execute()
+    expected = df_nan.sort_values(['key', 'a']).assign(
+        rolled=lambda d: d.groupby('key')
+        .b.rolling(2, min_periods=1)
+        .mean()
+        .reset_index(level=0, drop=True)
+    )
+    tm.assert_frame_equal(result, expected)
+
+
+def test_udaf_window_null(con, t_null, df_null):
+    window = ibis.trailing_window(2, order_by='a', group_by='key')
+    expr = t_null.mutate(
+        rolled=t_null.b.mean().over(window)
+    ).sort_by(['key', 'a'])
+    result = expr.execute()
+    expected = df_null.sort_values(['key', 'a']).assign(
         rolled=lambda d: d.groupby('key')
         .b.rolling(2, min_periods=1)
         .mean()
@@ -331,7 +355,7 @@ def test_udaf_window_nan():
 
 
 # Spark doesn't support pandas_udf GROUPED_AGG in spark.sql(). See SPARK-28422
-@pytest.mark.skip
+@pytest.mark.xfail
 def test_array_return_type_reduction(con, t, df, qs):
     expr = quantiles(t.b, qs)
     result = expr.execute()
@@ -339,10 +363,10 @@ def test_array_return_type_reduction(con, t, df, qs):
     assert result == expected.tolist()
 
 
-@pytest.mark.skip
-def test_array_return_type_reduction_window(con, t, df, qs):
-    expr = quantiles(t.b, qs).over(ibis.window())
+def test_array_return_type_reduction_window(con, t_random, df_random, qs):
+    expr = quantiles(t_random.b, qs).over(ibis.window())
     result = expr.execute()
-    expected_raw = df.b.quantile(qs).tolist()
-    expected = pd.Series([expected_raw] * len(df))
+    expected_raw = df_random.b.quantile(qs).tolist()
+    expected = pd.Series([expected_raw] * len(df_random))
+    expected = Backend.default_series_rename(expected)
     tm.assert_series_equal(result, expected)

@@ -145,6 +145,30 @@ def spark_client_testing(data_directory):
     )
     df_udf.createOrReplaceTempView('udf')
 
+    df_udf_nan = s.createDataFrame(
+        pd.DataFrame(
+            {
+                'a': np.arange(10, dtype=float),
+                'b': [3.0, np.NaN] * 5,
+                'key': list('ddeefffggh'),
+            }
+        )
+    )
+    df_udf_nan.createOrReplaceTempView('udf_nan')
+
+    df_udf_null = s.createDataFrame(
+        [
+            (
+                float(i),
+                None if i % 2 else 3.0,
+                'ddeefffggh'[i]
+            )
+            for i in range(10)
+        ],
+        ['a', 'b', 'key']
+    )
+    df_udf_null.createOrReplaceTempView('udf_null')
+
     df_udf_random = s.createDataFrame(
         pd.DataFrame(
             {

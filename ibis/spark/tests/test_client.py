@@ -21,7 +21,9 @@ def test_list_tables(client):
         'simple',
         'struct',
         'udf',
-        'udf_random'
+        'udf_nan',
+        'udf_null',
+        'udf_random',
     ]
 
 
