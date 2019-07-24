@@ -1602,20 +1602,19 @@ _add_methods(ir.NumericColumn, _numeric_column_methods)
 # GeoSpatial API
 
 
-def geo_area(arg, use_spheroid=None):
+def geo_area(arg):
     """
     Compute area of a geo spatial data
 
     Parameters
     ----------
     arg : geometry or geography
-    use_spheroid:  default None
 
     Returns
     -------
     area : double scalar
     """
-    op = ops.GeoArea(arg, use_spheroid)
+    op = ops.GeoArea(arg)
     return op.to_expr()
 
 
@@ -1894,7 +1893,7 @@ def geo_touches(left, right):
     return op.to_expr()
 
 
-def geo_distance(left, right, use_spheroid=None):
+def geo_distance(left, right):
     """
     Compute distance between two geo spatial data
 
@@ -1902,47 +1901,44 @@ def geo_distance(left, right, use_spheroid=None):
     ----------
     left : geometry or geography
     right : geometry or geography
-    use_spheroid : default None
 
     Returns
     -------
     distance : double scalar
     """
-    op = ops.GeoDistance(left, right, use_spheroid)
+    op = ops.GeoDistance(left, right)
     return op.to_expr()
 
 
-def geo_length(arg, use_spheroid=None):
+def geo_length(arg):
     """
     Compute length of a geo spatial data
 
     Parameters
     ----------
     arg : geometry or geography
-    use_spheroid : default None
 
     Returns
     -------
     length : double scalar
     """
-    op = ops.GeoLength(arg, use_spheroid)
+    op = ops.GeoLength(arg)
     return op.to_expr()
 
 
-def geo_perimeter(arg, use_spheroid=None):
+def geo_perimeter(arg):
     """
     Compute perimeter of a geo spatial data
 
     Parameters
     ----------
     arg : geometry or geography
-    use_spheroid : default None
 
     Returns
     -------
     perimeter : double scalar
     """
-    op = ops.GeoPerimeter(arg, use_spheroid)
+    op = ops.GeoPerimeter(arg)
     return op.to_expr()
 
 
