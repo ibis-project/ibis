@@ -6,11 +6,12 @@ import ibis
 import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-from ibis.spark.udf import udf
 from ibis.tests.backends import Backend
 
 pytestmark = pytest.mark.spark
+
 pytest.importorskip('pyspark')
+from ibis.spark.udf import udf  # noqa: E402, isort:skip
 
 
 @pytest.fixture(scope='session')
