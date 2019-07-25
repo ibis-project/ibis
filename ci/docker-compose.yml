@@ -102,7 +102,7 @@ services:
                 -wait tcp://kudu-tserver:8050
                 -wait tcp://clickhouse:9000
                 -wait-retry-interval 5s
-                -timeout 5m
+                -timeout 10m
 
   ibis:
     image: ibis:${PYTHON_VERSION:-3.6}
