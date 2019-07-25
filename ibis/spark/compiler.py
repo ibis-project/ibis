@@ -42,6 +42,32 @@ from ibis.impala.compiler import (
 )
 
 
+def build_ast(expr, context):
+    assert context is not None, 'context is None'
+    builder = SparkQueryBuilder(expr, context=context)
+    return builder.get_result()
+
+
+def _get_query(expr, context):
+    assert context is not None, 'context is None'
+    ast = build_ast(expr, context)
+    query = ast.queries[0]
+
+    return query
+
+
+def to_sql(expr, context=None):
+    if context is None:
+        context = SparkDialect.make_context()
+    assert context is not None, 'context is None'
+    query = _get_query(expr, context)
+    return query.compile()
+
+
+# ----------------------------------------------------------------------
+# Select compilation
+
+
 class SparkSelectBuilder(comp.SelectBuilder):
     @property
     def _select_class(self):
@@ -50,11 +76,6 @@ class SparkSelectBuilder(comp.SelectBuilder):
 
 class SparkQueryBuilder(comp.QueryBuilder):
     select_builder = SparkSelectBuilder
-
-
-def build_ast(expr, context):
-    builder = SparkQueryBuilder(expr, context=context)
-    return builder.get_result()
 
 
 class SparkContext(ImpalaContext):
@@ -190,12 +211,38 @@ def _struct_like_format(func):
     return formatter
 
 
+def _number_literal_format(translator, expr):
+    value = expr.op().value
+
+    if math.isfinite(value):
+        # Spark interprets dotted number literals as decimals, not floats.
+        # i.e. "select 1.0 as tmp" is a decimal(2,1), not a float or double
+        if isinstance(expr.op().dtype, dt.Float64):
+            formatted = "{}d".format(repr(value))
+        elif isinstance(expr.op().dtype, dt.Floating):
+            formatted = "CAST({} AS FLOAT)".format(repr(value))
+        else:
+            formatted = repr(value)
+    else:
+        if math.isnan(value):
+            formatted_val = 'NaN'
+        elif math.isinf(value):
+            if value > 0:
+                formatted_val = 'Infinity'
+            else:
+                formatted_val = '-Infinity'
+        formatted = "CAST({!r} AS DOUBLE)".format(formatted_val)
+
+    return formatted
+
+
 _literal_formatters = impala_compiler._literal_formatters.copy()
 
 _literal_formatters.update({
     'array': _array_literal_format,
     'struct': _struct_like_format('named_struct'),
     'map': _struct_like_format('map'),
+    'number': _number_literal_format
 })
 
 
