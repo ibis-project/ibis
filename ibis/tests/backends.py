@@ -532,5 +532,5 @@ class Spark(Backend, RoundHalfToEven):
 
     @staticmethod
     def connect(data_directory):
-        from ibis.tests.all.conftest import get_spark_testing_client as client
-        return client(data_directory)
+        from ibis.tests.all.conftest import get_spark_testing_client
+        return get_spark_testing_client(data_directory)

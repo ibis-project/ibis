@@ -10,23 +10,24 @@ pytest.importorskip('pyspark')
 def expr():
     schema = ibis.schema(
         [
-            ('foo', 'int64'),
-            ('bar', 'string')
+            ('c1', 'int64'),
+            ('c2', 'string')
         ]
     )
     t = ibis.table(
         schema, name='tbl'
     )
     expr = t.projection(
-        ['bar', (t.foo + 1).name('new_foo')]
+        ['c2', (t.c1 + 1).name('c3')]
     ).mutate(
-        bar_len=t.bar.length()
+        c4=t.c2.length()
     )
     return expr
 
 
 def test_compile(client, expr):
-    assert client.compile(expr) == ibis.spark.compile(expr)
+    expected = 'SELECT `c2`, `c1` + 1 AS `c3`, length(`c2`) AS `c4`\nFROM tbl'
+    assert client.compile(expr) == ibis.spark.compile(expr) == expected
 
 
 def test_verify(expr):
