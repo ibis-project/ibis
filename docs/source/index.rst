@@ -70,7 +70,7 @@ SQL engine support needing code contributors:
 - `Redshift <https://aws.amazon.com/redshift/>`_
 - `Vertica <https://www.vertica.com/>`_
 - `Spark SQL <https://spark.apache.org/sql/>`_
-- `Presto <https://prestodb.io/>`_
+- `Presto <https://prestosql.io/>`_
 - `Hive <https://hive.apache.org/>`_
 
 .. toctree::
