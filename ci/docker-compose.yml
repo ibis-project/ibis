@@ -41,6 +41,8 @@ services:
       - 25000:25000
       - 25010:25010
       - 25020:25020
+    depends_on:
+      - "waiter-postgres"
 
   clickhouse:
     image: yandex/clickhouse-server:18.12
@@ -103,6 +105,13 @@ services:
                 -wait tcp://clickhouse:9000
                 -wait-retry-interval 5s
                 -timeout 10m
+
+  waiter-postgres:
+    image: jwilder/dockerize
+    command: |
+      dockerize -wait tcp://postgres:5432
+    depends_on:
+      - "postgres"
 
   ibis:
     image: ibis:${PYTHON_VERSION:-3.6}
