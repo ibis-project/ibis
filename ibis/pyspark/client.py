@@ -1,3 +1,4 @@
+import ibis.expr.types as types
 from ibis.pyspark.compiler import translate
 from ibis.pyspark.operations import PysparkTable
 from ibis.spark.client import SparkClient
@@ -17,4 +18,10 @@ class PysparkClient(SparkClient):
         return translate(expr)
 
     def execute(self, expr, params=None, limit='default', **kwargs):
-        return self.compile(expr).toPandas()
+
+        if isinstance(expr, types.TableExpr):
+            return self.compile(expr).toPandas()
+        elif isinstance(expr, types.ScalarExpr):
+            return self.compile(expr).toPandas().iloc[0, 0]
+        else:
+            raise ValueError("Unexpected type: ", type(expr))

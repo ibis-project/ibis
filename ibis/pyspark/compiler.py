@@ -1,17 +1,14 @@
-import ibis.common as com
-import ibis.sql.compiler as comp
-import ibis.expr.window as window
-import ibis.expr.operations as ops
-import ibis.expr.types as types
-
-
-from ibis.pyspark.operations import PysparkTable
-
-from ibis.sql.compiler import Dialect
+import collections
+import functools
 
 import pyspark.sql.functions as F
 from pyspark.sql.window import Window
 
+import ibis.common as com
+import ibis.expr.operations as ops
+import ibis.expr.types as types
+from ibis.pyspark.operations import PysparkTable
+from ibis.sql.compiler import Dialect
 
 _operation_registry = {}
 
@@ -27,13 +24,13 @@ class PysparkExprTranslator:
 
         return decorator
 
-    def translate(self, expr):
+    def translate(self, expr, **kwargs):
         # The operation node type the typed expression wraps
         op = expr.op()
 
         if type(op) in self._registry:
             formatter = self._registry[type(op)]
-            return formatter(self, expr)
+            return formatter(self, expr, **kwargs)
         else:
             raise com.OperationNotDefinedError(
                 'No translation rule for {}'.format(type(op))
@@ -45,6 +42,7 @@ class PysparkDialect(Dialect):
 
 
 compiles = PysparkExprTranslator.compiles
+
 
 @compiles(PysparkTable)
 def compile_datasource(t, expr):
@@ -88,6 +86,18 @@ def compile_equals(t, expr):
     return t.translate(op.left) == t.translate(op.right)
 
 
+@compiles(ops.Greater)
+def compile_greater(t, expr):
+    op = expr.op()
+    return t.translate(op.left) > t.translate(op.right)
+
+
+@compiles(ops.GreaterEqual)
+def compile_greater_equal(t, expr):
+    op = expr.op()
+    return t.translate(op.left) >= t.translate(op.right)
+
+
 @compiles(ops.Multiply)
 def compile_multiply(t, expr):
     op = expr.op()
@@ -100,12 +110,28 @@ def compile_subtract(t, expr):
     return t.translate(op.left) - t.translate(op.right)
 
 
+@compiles(ops.Literal)
+def compile_literal(t, expr):
+    value = expr.op().value
+
+    if isinstance(value, collections.abc.Set):
+        # Don't wrap set with F.lit
+        if isinstance(value, frozenset):
+            # Spark doens't like frozenset
+            return set(value)
+        else:
+            return value
+    else:
+        return F.lit(expr.op().value)
+
+
 @compiles(ops.Aggregation)
 def compile_aggregation(t, expr):
     op = expr.op()
 
     src_table = t.translate(op.table)
-    aggs = [t.translate(m) for m in op.metrics]
+    aggs = [t.translate(m, context="agg")
+            for m in op.metrics]
 
     if op.by:
         bys = [t.translate(b) for b in op.by]
@@ -114,18 +140,127 @@ def compile_aggregation(t, expr):
         return src_table.agg(*aggs)
 
 
-@compiles(ops.Max)
-def compile_max(t, expr):
-    op = expr.op()
-    return F.max(t.translate(op.arg))
+@compiles(ops.Contains)
+def compile_contains(t, expr):
+    col = t.translate(expr.op().value)
+    return col.isin(t.translate(expr.op().options))
 
+
+def compile_aggregator(t, expr, fn, context=None):
+    op = expr.op()
+    src_col = t.translate(op.arg)
+
+    if getattr(op, "where", None) is not None:
+        condition = t.translate(op.where)
+        src_col = F.when(condition, src_col)
+
+    col = fn(src_col)
+    if context:
+        return col
+    else:
+        return t.translate(expr.op().arg.op().table).select(col)
+
+
+@compiles(ops.GroupConcat)
+def compile_group_concat(t, expr, context=None):
+    sep = expr.op().sep.op().value
+
+    def fn(col):
+        return F.concat_ws(sep, F.collect_list(col))
+    return compile_aggregator(t, expr, fn, context)
+
+
+@compiles(ops.Any)
+def compile_any(t, expr, context=None):
+    return compile_aggregator(t, expr, F.max, context)
+
+
+@compiles(ops.NotAny)
+def compile_notany(t, expr, context=None):
+
+    def fn(col):
+        return ~F.max(col)
+    return compile_aggregator(t, expr, fn, context)
+
+
+@compiles(ops.All)
+def compile_all(t, expr, context=None):
+    return compile_aggregator(t, expr, F.min, context)
+
+
+@compiles(ops.NotAll)
+def compile_notall(t, expr, context=None):
+
+    def fn(col):
+        return ~F.min(col)
+    return compile_aggregator(t, expr, fn, context)
+
+
+@compiles(ops.Count)
+def compile_count(t, expr, context=None):
+    return compile_aggregator(t, expr, F.count, context)
+
+
+@compiles(ops.Max)
+def compile_max(t, expr, context=None):
+    return compile_aggregator(t, expr, F.max, context)
+
+
+@compiles(ops.Min)
+def compile_min(t, expr, context=None):
+    return compile_aggregator(t, expr, F.min, context)
 
 
 @compiles(ops.Mean)
-def compile_mean(t, expr):
-    op = expr.op()
-    return F.mean(t.translate(op.arg))
+def compile_mean(t, expr, context=None):
+    return compile_aggregator(t, expr, F.mean, context)
 
+
+@compiles(ops.Sum)
+def compile_sum(t, expr, context=None):
+    return compile_aggregator(t, expr, F.sum, context)
+
+
+@compiles(ops.StandardDev)
+def compile_std(t, expr, context=None):
+    how = expr.op().how
+
+    if how == 'sample':
+        fn = F.stddev_samp
+    elif how == 'pop':
+        fn = F.stddev_pop
+    else:
+        raise AssertionError("Unexpected how: {}".format(how))
+
+    return compile_aggregator(t, expr, fn, context)
+
+
+@compiles(ops.Variance)
+def compile_variance(t, expr, context=None):
+    how = expr.op().how
+
+    if how == 'sample':
+        fn = F.var_samp
+    elif how == 'pop':
+        fn = F.var_pop
+    else:
+        raise AssertionError("Unexpected how: {}".format(how))
+
+    return compile_aggregator(t, expr, fn, context)
+
+
+@compiles(ops.Arbitrary)
+def compile_arbitrary(t, expr, context=None):
+    how = expr.op().how
+
+    if how == 'first':
+        fn = functools.partial(F.first, ignorenulls=True)
+    elif how == 'last':
+        fn = functools.partial(F.last, ignorenulls=True)
+    else:
+        raise NotImplementedError
+
+    return compile_aggregator(t, expr, fn, context)
 
 
 @compiles(ops.WindowOp)
@@ -170,7 +305,6 @@ def compile_join(t, expr, how):
 # Cannot register with @compiles because window doesn't have an
 # op() object
 def compile_window(expr):
-    window = expr
     spark_window = Window.partitionBy()
     return spark_window
 

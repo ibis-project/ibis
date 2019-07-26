@@ -1,16 +1,23 @@
 import pandas as pd
 import pandas.util.testing as tm
+import pyspark.sql.functions as F
 import pytest
+from pyspark.sql import SparkSession
+from pyspark.sql.window import Window
 
 import ibis
-import pyspark.sql.functions as F
-from pyspark.sql.window import Window
+
 
 @pytest.fixture(scope='session')
 def client():
-    client = ibis.pyspark.connect()
+    session = SparkSession.builder.getOrCreate()
+    client = ibis.pyspark.connect(session)
     df = client._session.range(0, 10)
+    df = df.withColumn("str_col", F.lit('value'))
     df.createTempView('table1')
+
+    df1 = client._session.createDataFrame([(True,), (False,)]).toDF('v')
+    df1.createTempView('table2')
     return client
 
 
@@ -33,7 +40,10 @@ def test_projection(client):
         }
     )
 
-    result2 = table.mutate(v=table['id']).mutate(v2=table['id']).compile().toPandas()
+    result2 = (
+        table.mutate(v=table['id']).mutate(v2=table['id'])
+        .compile().toPandas()
+    )
 
     expected2 = pd.DataFrame(
         {
@@ -45,6 +55,12 @@ def test_projection(client):
 
     tm.assert_frame_equal(result1, expected1)
     tm.assert_frame_equal(result2, expected2)
+
+
+def test_aggregation_col(client):
+    table = client.table('table1')
+    result = table['id'].count().execute()
+    assert result == table.compile().count()
 
 
 def test_aggregation(client):
@@ -66,8 +82,19 @@ def test_groupby(client):
 def test_window(client):
     table = client.table('table1')
     w = ibis.window()
-    result = table.mutate(grouped_demeaned = table['id'] - table['id'].mean().over(w)).compile()
-    result2 = table.groupby('id').mutate(grouped_demeaned = table['id'] - table['id'].mean()).compile()
+    result = (
+        table
+        .mutate(
+            grouped_demeaned=table['id'] - table['id'].mean().over(w))
+        .compile()
+    )
+    result2 = (
+        table
+        .groupby('id')
+        .mutate(
+            grouped_demeaned=table['id'] - table['id'].mean())
+        .compile()
+    )
 
     spark_window = Window.partitionBy()
     spark_table = table.compile()
@@ -82,7 +109,11 @@ def test_window(client):
 
 def test_greatest(client):
     table = client.table('table1')
-    result = table.mutate(greatest = ibis.greatest(table.id)).compile()
+    result = (
+        table
+        .mutate(greatest=ibis.greatest(table.id))
+        .compile()
+    )
     df = table.compile()
     expected = table.compile().withColumn('greatest', df.id)
 
@@ -105,6 +136,9 @@ def test_join(client):
     table = client.table('table1')
     result = table.join(table, 'id').compile()
     spark_table = table.compile()
-    expected = spark_table.join(spark_table, spark_table['id'] == spark_table['id'])
+    expected = (
+        spark_table
+        .join(spark_table, spark_table['id'] == spark_table['id'])
+    )
 
     tm.assert_frame_equal(result.toPandas(), expected.toPandas())
