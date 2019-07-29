@@ -7,6 +7,7 @@ from pandas.util import testing as tm
 
 import ibis
 import ibis.common as com
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.expr.window import rows_with_max_lookback
 from ibis.pandas.dispatch import pre_execute
@@ -519,3 +520,12 @@ def test_window_has_pre_execute_scope():
     # twice in window op when calling execute on the ops.Lag node at the
     # beginning of execute and once before the actual computation
     assert called[0] == 3
+
+
+def test_window_grouping_key_has_scope(t, df):
+    param = ibis.param(dt.string)
+    window = ibis.window(group_by=t.dup_strings + param)
+    expr = t.plain_int64.mean().over(window)
+    result = expr.execute(params={param: "a"})
+    expected = df.groupby(df.dup_strings + "a").plain_int64.transform("mean")
+    tm.assert_series_equal(result, expected)

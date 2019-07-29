@@ -107,7 +107,9 @@ def execute_window_op(
     grouping_keys = [
         key_op.name
         if isinstance(key_op, ops.TableColumn)
-        else execute(key, aggcontext=aggcontext, **kwargs)
+        else execute(
+            key, scope=scope, clients=clients, aggcontext=aggcontext, **kwargs
+        )
         for key, key_op in zip(
             group_by, map(operator.methodcaller('op'), group_by)
         )

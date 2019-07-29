@@ -2943,6 +2943,10 @@ class ScalarParameter(ValueOp):
             and self.dtype.equals(other.dtype, cache=cache)
         )
 
+    @property
+    def inputs(self):
+        return ()
+
     def root_tables(self):
         return []
 
