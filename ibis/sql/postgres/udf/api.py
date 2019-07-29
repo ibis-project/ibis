@@ -125,8 +125,8 @@ def existing_udf(name, input_types, output_type, schema=None, parameters=None):
     return wrapped
 
 
-def func_to_udf(
-    conn,
+def udf(
+    client,
     python_func,
     in_types,
     out_type,
@@ -138,7 +138,7 @@ def func_to_udf(
 
     Parameters
     ----------
-    conn: sqlalchemy engine
+    client: PostgreSQLClient
     python_func: python function
     in_types: List[DataType]
     out_type : DataType
@@ -203,7 +203,7 @@ $$;
         internal_name=python_func.__name__,
         args=', '.join(parameter_names),
     )
-    conn.execute(formatted_sql)
+    client.con.execute(formatted_sql)
     return existing_udf(
         name=internal_name,
         input_types=in_types,

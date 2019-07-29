@@ -5,8 +5,8 @@ import functools
 import pytest
 
 import ibis.expr.datatypes as dt
-from ibis.sql.postgres import existing_udf
-from ibis.sql.postgres.udf.api import PostgresUDFError, func_to_udf
+from ibis.sql.postgres import existing_udf, udf
+from ibis.sql.postgres.udf.api import PostgresUDFError
 
 # mark test module as postgresql (for ability to easily exclude,
 # e.g. in conda build tests)
@@ -148,11 +148,11 @@ def mult_a_b(a, b):
     return a * b
 
 
-def test_func_to_udf(con_for_udf, test_schema, table):
+def test_udf(con_for_udf, test_schema, table):
     """Test creating a UDF in database based on Python function
     and then creating an ibis UDF object based on that"""
-    mult_a_b_udf = func_to_udf(
-        con_for_udf.con,
+    mult_a_b_udf = udf(
+        con_for_udf,
         mult_a_b,
         (dt.int32, dt.int32),
         dt.int32,

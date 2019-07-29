@@ -19,8 +19,8 @@ import psycopg2  # NOQA fail early if the driver is missing
 import sqlalchemy as sa
 
 import ibis.sql.alchemy as alch
+from ibis.sql.postgres import udf
 from ibis.sql.postgres.compiler import PostgreSQLDialect
-from ibis.sql.postgres.udf.api import func_to_udf
 
 
 class PostgreSQLTable(alch.AlchemyTable):
@@ -228,8 +228,8 @@ class PostgreSQLClient(alch.AlchemyClient):
         inheriting from PostgresUDFNode
         """
 
-        return func_to_udf(
-            conn=self.con,
+        return udf(
+            client=self,
             python_func=pyfunc,
             in_types=in_types,
             out_type=out_type,
