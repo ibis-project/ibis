@@ -19,6 +19,7 @@ import psycopg2  # NOQA fail early if the driver is missing
 import sqlalchemy as sa
 
 import ibis.sql.alchemy as alch
+from ibis.sql.postgres import udf
 from ibis.sql.postgres.compiler import PostgreSQLDialect
 
 
@@ -200,3 +201,39 @@ class PostgreSQLClient(alch.AlchemyClient):
         else:
             parent = super(PostgreSQLClient, self)
             return parent.list_tables(like=like, schema=schema)
+
+    def udf(
+        self, pyfunc, in_types, out_type, schema=None, replace=False, name=None
+    ):
+        """Decorator that defines a PL/Python UDF in-database based on the
+        wrapped function and turns it into an ibis function expression.
+
+        Parameters
+        ----------
+        pyfunc : function
+        in_types : List[ibis.expr.datatypes.DataType]
+        out_type : ibis.expr.datatypes.DataType
+        schema : str
+            optionally specify the schema in which to define the UDF
+        replace : bool
+            replace UDF in database if already exists
+        name: str
+            name for the UDF to be defined in database
+
+        Returns
+        -------
+        Callable
+
+        Function that takes in ColumnExpr arguments and returns an instance
+        inheriting from PostgresUDFNode
+        """
+
+        return udf(
+            client=self,
+            python_func=pyfunc,
+            in_types=in_types,
+            out_type=out_type,
+            schema=schema,
+            replace=replace,
+            name=name,
+        )

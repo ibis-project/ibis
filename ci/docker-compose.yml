@@ -2,12 +2,12 @@ version: '3'
 services:
 
   postgres:
-    image: mdillon/postgis
+    image: shajekpivotal/ibis-docker-postgres-9.5
     hostname: postgres
     ports:
       - 5432:5432
     environment:
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ''
 
   mysql:
     image: mariadb:10.2
@@ -41,6 +41,8 @@ services:
       - 25000:25000
       - 25010:25010
       - 25020:25020
+    depends_on:
+      - "waiter-postgres"
 
   clickhouse:
     image: yandex/clickhouse-server:18.12
@@ -102,7 +104,14 @@ services:
                 -wait tcp://kudu-tserver:8050
                 -wait tcp://clickhouse:9000
                 -wait-retry-interval 5s
-                -timeout 5m
+                -timeout 10m
+
+  waiter-postgres:
+    image: jwilder/dockerize
+    command: |
+      dockerize -wait tcp://postgres:5432
+    depends_on:
+      - "postgres"
 
   ibis:
     image: ibis:${PYTHON_VERSION:-3.6}

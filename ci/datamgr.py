@@ -228,16 +228,27 @@ def parquet(tables, data_directory, ignore_missing_dependency, **params):
     required=os.name == 'nt',
     default=None if os.name == 'nt' else '/usr/bin/psql',
 )
-def postgres(schema, tables, data_directory, psql_path, **params):
+@click.option(
+    '--plpython/--no-plpython',
+    help='Create PL/Python extension in database',
+    default=True
+)
+def postgres(schema, tables, data_directory, psql_path, plpython, **params):
     psql = local[psql_path]
     data_directory = Path(data_directory)
     logger.info('Initializing PostgreSQL...')
     engine = init_database(
         'postgresql', params, schema, isolation_level='AUTOCOMMIT'
     )
+
+    engine.execute("CREATE SEQUENCE IF NOT EXISTS test_sequence;")
+
     use_postgis = 'geo' in tables and sys.version_info >= (3, 6)
     if use_postgis:
-        engine.execute("CREATE EXTENSION POSTGIS")
+        engine.execute("CREATE EXTENSION IF NOT EXISTS POSTGIS")
+
+    if plpython:
+        engine.execute("CREATE EXTENSION IF NOT EXISTS PLPYTHONU")
 
     query = "COPY {} FROM STDIN WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',')"
     database = params['database']
