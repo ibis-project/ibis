@@ -511,6 +511,12 @@ class MapDClient(SQLClient):
 
         return sch.Schema(names, ibis_types)
 
+    def _get_schema_using_validator(self, query):
+        result = self.con._client.sql_validate(self.con._session, query)
+        return sch.Schema.from_tuples((r, MapDDataType._mapd_to_ibis_dtypes[
+            pymapd_dtype._VALUES_TO_NAMES[result[r].col_type.type]])
+            for r in result)
+
     def _get_table_schema(self, table_name, database=None):
         """
 
@@ -529,14 +535,14 @@ class MapDClient(SQLClient):
             database, table_name = table_name_
         return self.get_schema(table_name, database)
 
-    def _execute(self, query, results=True):
+    def _execute(self, query, results=True, limit=None, **kwargs):
         """
 
         query:
         :return:
         """
         if isinstance(query, (DDL, DML)):
-            query = query.compile()
+            query = query.compile(limit=None, **kwargs)
 
         if self.execution_type == EXECUTION_TYPE_ICP:
             execute = self.con.select_ipc
@@ -923,10 +929,11 @@ class MapDClient(SQLClient):
         -------
         table : TableExpr
         """
-        # Get the schema by adding a LIMIT 0 on to the end of the query. If
-        # there is already a limit in the query, we find and remove it
-        limited_query = 'SELECT * FROM ({}) t0 LIMIT 1'.format(query)
-        schema = self._get_schema_using_query(limited_query)
+        # Remove `;` + `--` (comment)
+        query = re.sub(r'\s*;\s*--', '\n--', query.strip())
+        # Remove trailing ;
+        query = re.sub(r'\s*;\s*$', '', query.strip())
+        schema = self._get_schema_using_validator(query)
         return ops.SQLQueryResult(query, schema, self).to_expr()
 
     @property

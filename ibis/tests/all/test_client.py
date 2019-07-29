@@ -51,26 +51,20 @@ def test_query_schema(backend, con, alltypes, expr_fn, expected):
 
 
 @pytest.mark.parametrize(
-    'field',
+    'sql',
     [
-        'bool_col',
-        'tinyint_col',
-        'smallint_col',
-        'int_col',
-        'bigint_col',
-        'float_col',
-        'double_col',
-        'date_string_col',
-        'string_col',
-        'timestamp_col',
+        'select * from functional_alltypes limit 10',
+        'select * from functional_alltypes \nlimit 10\n',
+        'select * from functional_alltypes limit 10--test',
+        'select * from functional_alltypes \nlimit 10\n;',
+        'select * from functional_alltypes \nlimit 10;',
+        'select * from functional_alltypes \nlimit 10;--test',
     ],
 )
 @pytest.mark.xfail_unsupported
-def test_sql(backend, con, alltypes, field):
-
+def test_sql(backend, con, sql):
     if not hasattr(con, 'sql') or not hasattr(con, '_get_schema_using_query'):
         pytest.skip('Backend {} does not support sql method'.format(backend))
 
-    result = con.sql(alltypes.compile())
-    assert hasattr(result, field)
-    assert hasattr(alltypes, field)
+    # execute the expression using SQL query
+    con.sql(sql).execute()
