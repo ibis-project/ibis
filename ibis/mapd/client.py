@@ -876,7 +876,7 @@ class MapDClient(SQLClient):
     def version(self):
         # pymapd doesn't have __version__
         dist = pkg_resources.get_distribution('pymapd')
-        return pkg_resources.parse_version(dist.version) 
+        return pkg_resources.parse_version(dist.version)
 
 
 @dt.dtype.register(MapDDataType)
