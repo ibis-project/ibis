@@ -1,4 +1,3 @@
-import string
 import pandas as pd
 import pkg_resources
 import pymapd
