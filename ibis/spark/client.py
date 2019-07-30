@@ -141,9 +141,8 @@ class SparkCursor:
 
 
 def find_spark_udf(expr):
-    if isinstance(expr.op(), (comp.SparkUDFNode, comp.SparkUDAFNode)):
-        result = expr.op()
-    else:
+    result = expr.op()
+    if not isinstance(result, (comp.SparkUDFNode, comp.SparkUDAFNode)):
         result = None
     return lin.proceed, result
 

@@ -1,5 +1,7 @@
 import pandas as pd
 import pandas.util.testing as tm
+import py4j
+import pyspark as ps
 import pytest
 
 import ibis
@@ -93,22 +95,22 @@ def my_string_length(s, **kwargs):
 
 # elementwise pandas UDFs
 
-@udf.elementwise_pandas([dt.double], dt.double)
+@udf.elementwise.pandas([dt.double], dt.double)
 def add_one_pandas(x):
     return x + 1.0
 
 
-@udf.elementwise_pandas([dt.double], dt.double)
+@udf.elementwise.pandas([dt.double], dt.double)
 def times_two_pandas(x, scope=None):
     return x * 2.0
 
 
-@udf.elementwise_pandas([dt.double, dt.double], dt.double)
+@udf.elementwise.pandas([dt.double, dt.double], dt.double)
 def my_add_pandas(series1, series2, *kwargs):
     return series1 + series2
 
 
-@udf.elementwise_pandas(input_type=['string'], output_type='int64')
+@udf.elementwise.pandas(input_type=['string'], output_type='int64')
 def my_string_length_pandas(series, **kwargs):
     return series.str.len() * 2
 
@@ -261,11 +263,10 @@ def test_udaf_groupby(con, t_random, df_random):
 
 
 def test_nullable_output_not_allowed():
+    d = dt.dtype('array<string>')
+    d.nullable = False
+
     with pytest.raises(com.IbisTypeError):
-
-        d = dt.dtype('array<string>')
-        d.nullable = False
-
         @udf.elementwise([dt.string], d)
         def str_func(x):
             pass
@@ -302,7 +303,7 @@ def test_compose_udfs(t_random, df_random, times_two_fn, add_one_fn):
 
 
 # Spark doesn't support pandas_udf with bounded windows. See Spark-24561
-@pytest.mark.xfail
+@pytest.mark.xfail(raises=ps.sql.utils.AnalysisException)
 def test_udaf_window(con, t_random, df_random):
     @udf.reduction(['double'], 'double')
     def my_mean(series):
@@ -356,7 +357,7 @@ def test_udaf_window_null(con, t_null, df_null):
 
 
 # Spark doesn't support pandas_udf GROUPED_AGG in spark.sql(). See SPARK-28422
-@pytest.mark.xfail
+@pytest.mark.xfail(raises=py4j.protocol.Py4JJavaError)
 def test_array_return_type_reduction(con, t, df, qs):
     expr = quantiles(t.b, qs)
     result = expr.execute()

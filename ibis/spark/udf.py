@@ -7,10 +7,8 @@ import collections
 import functools
 import itertools
 
+import pyspark.sql.functions as f
 import pyspark.sql.types as pt
-from multipledispatch import Dispatcher
-from pyspark.sql.functions import PandasUDFType, pandas_udf
-from pyspark.sql.functions import udf as ps_udf
 
 import ibis.common as com
 import ibis.expr.datatypes as dt
@@ -21,11 +19,11 @@ from ibis.spark.compiler import SparkUDAFNode, SparkUDFNode, compiles
 
 _udf_name_cache = collections.defaultdict(itertools.count)
 
-_IBIS_DTYPE_TO_SPARK_DTYPE = dict(
-    reversed(t) for t in _SPARK_DTYPE_TO_IBIS_DTYPE.items()
-)
+_IBIS_DTYPE_TO_SPARK_DTYPE = {
+    v: k for k, v in _SPARK_DTYPE_TO_IBIS_DTYPE.items()
+}
 
-spark_dtype = Dispatcher('spark_dtype')
+spark_dtype = functools.singledispatch('spark_dtype')
 
 
 @spark_dtype.register(object)
@@ -72,7 +70,7 @@ def ibis_struct_dtype_to_spark_dtype(ibis_dtype_obj):
     spark_types = list(map(spark_dtype, ibis_dtype_obj.types))
     fields = [
         pt.StructField(n, t, t.nullable)
-        for (n, t) in zip(names, spark_types)
+        for n, t in zip(names, spark_types)
     ]
     return pt.StructType(fields)
 
@@ -99,7 +97,7 @@ class SparkUDF:
             )
 
     def pyspark_udf(self, func):
-        return ps_udf(func, self.spark_output_type)
+        return f.udf(func, self.spark_output_type)
 
     def create_udf_node(self, udf_func):
         """Create a new UDF node type and adds a corresponding compile rule.
@@ -132,7 +130,7 @@ class SparkUDF:
         # would be incorrectly used as a bound method, i.e.
         # udf_func(t.column) would be a call to bound method func with t.column
         # interpreted as self.
-        UDFNode.udf_func = property(lambda self: udf_func)
+        UDFNode.udf_func = property(lambda self, udf_func=udf_func: udf_func)
 
         @compiles(UDFNode)
         def compiles_udf_node(t, expr):
@@ -161,7 +159,7 @@ class SparkUDF:
 
 
 class SparkPandasUDF(SparkUDF):
-    pandas_udf_type = PandasUDFType.SCALAR
+    pandas_udf_type = f.PandasUDFType.SCALAR
 
     def validate_func_and_types(self, func):
         if isinstance(self.spark_output_type, (pt.MapType, pt.StructType)):
@@ -169,7 +167,7 @@ class SparkPandasUDF(SparkUDF):
                 'Spark does not support MapType or StructType output for \
 Pandas UDFs'
             )
-        if len(self.input_type) == 0:
+        if not self.input_type:
             raise com.UnsupportedArgumentError(
                 'Spark does not support 0-arg pandas UDFs. Instead, create \
 a 1-arg pandas UDF and ignore the arg in your function'
@@ -177,60 +175,60 @@ a 1-arg pandas UDF and ignore the arg in your function'
         super().validate_func_and_types(func)
 
     def pyspark_udf(self, func):
-        return pandas_udf(func, self.spark_output_type, self.pandas_udf_type)
+        return f.pandas_udf(func, self.spark_output_type, self.pandas_udf_type)
 
 
 class SparkPandasAggregateUDF(SparkPandasUDF):
     base_class = SparkUDAFNode
-    pandas_udf_type = PandasUDFType.GROUPED_AGG
-
-    @property
-    def node_output_type(self):
-        return self.output_type.scalar_type
+    pandas_udf_type = f.PandasUDFType.GROUPED_AGG
 
 
 class udf:
-    @staticmethod
-    def elementwise(input_type, output_type):
-        """Define a UDF (user-defined function) that operates element wise on a
-        Spark DataFrame.
+    class elementwise:
+        def __init__(self, input_type, output_type):
+            self._input_type = input_type
+            self._output_type = output_type
 
-        Parameters
-        ----------
-        input_type : List[ibis.expr.datatypes.DataType]
-            A list of the types found in :mod:`~ibis.expr.datatypes`. The
-            length of this list must match the number of arguments to the
-            function. Variadic arguments are not yet supported.
-        output_type : ibis.expr.datatypes.DataType
-            The return type of the function.
+        def __call__(self, func):
+            """Define a UDF (user-defined function) that operates element wise
+            on a Spark DataFrame.
 
-        Examples
-        --------
-        >>> import ibis
-        >>> import ibis.expr.datatypes as dt
-        >>> from ibis.spark.udf import udf
-        >>> @udf.elementwise(input_type=[dt.string], output_type=dt.int64)
-        ... def my_string_length(x):
-        ...     return len(x) * 2
-        """
-        return SparkUDF(input_type, output_type)
+            Parameters
+            ----------
+            input_type : List[ibis.expr.datatypes.DataType]
+                A list of the types found in :mod:`~ibis.expr.datatypes`. The
+                length of this list must match the number of arguments to the
+                function. Variadic arguments are not yet supported.
+            output_type : ibis.expr.datatypes.DataType
+                The return type of the function.
 
-    @staticmethod
-    def elementwise_pandas(input_type, output_type):
-        """Define a Pandas UDF (user-defined function) that operates element-
-        wise on a Spark DataFrame. The content of the function should operate
-        on a pandas.Series.
+            Examples
+            --------
+            >>> import ibis
+            >>> import ibis.expr.datatypes as dt
+            >>> from ibis.spark.udf import udf
+            >>> @udf.elementwise(input_type=[dt.string], output_type=dt.int64)
+            ... def my_string_length(x):
+            ...     return len(x) * 2
+            """
+            return SparkUDF(self._input_type, self._output_type)(func)
 
-        Examples
-        --------
-        >>> import ibis
-        >>> import ibis.expr.datatypes as dt
-        >>> from ibis.spark.udf import udf
-        >>> @udf.elementwise_pandas([dt.string], dt.int64)
-        ... def my_string_length(x):
-        ...     return x.str.len() * 2
-        """
-        return SparkPandasUDF(input_type, output_type)
+        @staticmethod
+        def pandas(input_type, output_type):
+            """Define a Pandas UDF (user-defined function) that operates
+            element-wise on a Spark DataFrame. The content of the function
+            should operate on a pandas.Series.
+
+            Examples
+            --------
+            >>> import ibis
+            >>> import ibis.expr.datatypes as dt
+            >>> from ibis.spark.udf import udf
+            >>> @udf.elementwise.pandas([dt.string], dt.int64)
+            ... def my_string_length(x):
+            ...     return x.str.len() * 2
+            """
+            return SparkPandasUDF(input_type, output_type)
 
     @staticmethod
     def reduction(input_type, output_type):

@@ -33,7 +33,6 @@ import ibis.sql.compiler as comp
 import ibis.util as util
 from ibis.impala import compiler as impala_compiler
 from ibis.impala.compiler import (
-    ImpalaContext,
     ImpalaDialect,
     ImpalaExprTranslator,
     ImpalaSelect,
@@ -89,8 +88,9 @@ class SparkQueryBuilder(comp.QueryBuilder):
     select_builder = SparkSelectBuilder
 
 
-class SparkContext(ImpalaContext):
-    pass
+class SparkContext(comp.QueryContext):
+    def _to_sql(self, expr, ctx):
+        return to_sql(expr, ctx)
 
 
 _sql_type_names = impala_compiler._sql_type_names.copy()
