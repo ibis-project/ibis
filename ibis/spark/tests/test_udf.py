@@ -1,18 +1,17 @@
 import pandas as pd
 import pandas.util.testing as tm
-import py4j
-import pyspark as ps
 import pytest
 
 import ibis
 import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-from ibis.tests.backends import Backend
+from ibis.tests.backends import Spark
 
 pytestmark = pytest.mark.spark
 
-pytest.importorskip('pyspark')
+py4j = pytest.importorskip('py4j')
+ps = pytest.importorskip('pyspark')
 from ibis.spark.udf import udf  # noqa: E402, isort:skip
 
 
@@ -143,8 +142,6 @@ my_add_fns = [my_add, my_add_pandas]
 my_string_length_fns = [my_string_length, my_string_length_pandas]
 
 
-# tests
-
 def test_spark_dtype_to_ibis_dtype():
     from ibis.spark.client import _SPARK_DTYPE_TO_IBIS_DTYPE
     assert len(_SPARK_DTYPE_TO_IBIS_DTYPE.keys()) == \
@@ -161,7 +158,7 @@ def test_udf(t, df, fn):
 
     result = expr.execute()
     expected = df.a.str.len().mul(2)
-    expected = Backend.default_series_rename(expected)
+    expected = Spark.default_series_rename(expected)
     tm.assert_series_equal(result, expected)
 
 
@@ -202,7 +199,7 @@ def test_multiple_argument_udf(con, t, df, fn):
 
     result = expr.execute()
     expected = df.b + df.c
-    expected = Backend.default_series_rename(expected)
+    expected = Spark.default_series_rename(expected)
     tm.assert_series_equal(result, expected)
 
 
@@ -235,7 +232,7 @@ def test_udaf(con, t, df):
 
     result = expr.execute()
     expected = t.a.execute().str.len().mul(2).sum()
-    expected = Backend.default_series_rename(expected)
+    expected = Spark.default_series_rename(expected)
     assert result == expected
 
 
@@ -298,7 +295,7 @@ def test_compose_udfs(t_random, df_random, times_two_fn, add_one_fn):
     expr = times_two_fn(add_one_fn(t_random.a))
     result = expr.execute()
     expected = df_random.a.add(1.0).mul(2.0)
-    expected = Backend.default_series_rename(expected)
+    expected = Spark.default_series_rename(expected)
     tm.assert_series_equal(expected, result)
 
 
@@ -325,7 +322,7 @@ def test_udaf_window(con, t_random, df_random):
 
 # Spark functions like mean() return NaN if any input is NaN, unlike pandas
 # which ignores NaN values. Spark ignores Null values, not NaN
-@pytest.mark.xfail
+@pytest.mark.xfail(raises=AssertionError)
 def test_udaf_window_nan(con, t_nan, df_nan):
     window = ibis.trailing_window(2, order_by='a', group_by='key')
     expr = t_nan.mutate(
@@ -357,7 +354,7 @@ def test_udaf_window_null(con, t_null, df_null):
 
 
 # Spark doesn't support pandas_udf GROUPED_AGG in spark.sql(). See SPARK-28422
-@pytest.mark.xfail(raises=py4j.protocol.Py4JJavaError)
+@pytest.mark.xfail(raises=py4j.protocol.Py4JJavaError)  # noqa: F821
 def test_array_return_type_reduction(con, t, df, qs):
     expr = quantiles(t.b, qs)
     result = expr.execute()
@@ -370,5 +367,5 @@ def test_array_return_type_reduction_window(con, t_random, df_random, qs):
     result = expr.execute()
     expected_raw = df_random.b.quantile(qs).tolist()
     expected = pd.Series([expected_raw] * len(df_random))
-    expected = Backend.default_series_rename(expected)
+    expected = Spark.default_series_rename(expected)
     tm.assert_series_equal(result, expected)
