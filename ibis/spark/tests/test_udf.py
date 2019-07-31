@@ -354,7 +354,7 @@ def test_udaf_window_null(con, t_null, df_null):
 
 
 # Spark doesn't support pandas_udf GROUPED_AGG in spark.sql(). See SPARK-28422
-@pytest.mark.xfail(raises=py4j.protocol.Py4JJavaError)  # noqa: F821
+@pytest.mark.xfail(raises=py4j.protocol.Py4JJavaError)
 def test_array_return_type_reduction(con, t, df, qs):
     expr = quantiles(t.b, qs)
     result = expr.execute()
