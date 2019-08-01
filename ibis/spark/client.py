@@ -205,12 +205,11 @@ class SparkTable(ir.TableExpr):
         >>> t.insert(table_expr, overwrite=True)  # doctest: +SKIP
         """
         if isinstance(obj, pd.DataFrame):
-            raise NotImplementedError
-            # from ibis.spark.pandas_interop import write_temp_dataframe
+            spark_df = self._session.createDataFrame(obj)
+            spark_df.insertInto(self.name, overwrite=overwrite)
+            return
 
-            # writer, expr = write_temp_dataframe(self._client, obj)
-        else:
-            expr = obj
+        expr = obj
 
         if values is not None:
             raise NotImplementedError
@@ -490,7 +489,7 @@ class SparkClient(SQLClient):
           particular schema
         database : string, default None (optional)
         force : boolean, default False
-          Do not create table if table with indicated name already exists
+          If true, create table if table with indicated name already exists
         format : {'parquet'}
         location : string, default None
           Specify the directory location where Spark reads and writes files
@@ -501,14 +500,18 @@ class SparkClient(SQLClient):
         """
         if obj is not None:
             if isinstance(obj, pd.DataFrame):
-                raise NotImplementedError
-                # from ibis.spark.pandas_interop import write_temp_dataframe
+                spark_df = self._session.createDataFrame(obj)
+                mode = 'error'
+                if force:
+                    mode = 'overwrite'
+                spark_df.write.saveAsTable(
+                    table_name,
+                    format=format,
+                    mode=mode,
+                )
+                return self.table(table_name, database=database)
 
-                # writer, to_insert = write_temp_dataframe(self, obj)
-            else:
-                to_insert = obj
-
-            ast = self._build_ast(to_insert, SparkDialect.make_context())
+            ast = self._build_ast(obj, SparkDialect.make_context())
             select = ast.queries[0]
 
             statement = ddl.CTAS(
