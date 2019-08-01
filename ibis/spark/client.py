@@ -205,9 +205,10 @@ class SparkTable(ir.TableExpr):
         >>> t.insert(table_expr, overwrite=True)  # doctest: +SKIP
         """
         if isinstance(obj, pd.DataFrame):
-            from ibis.impala.pandas_interop import write_temp_dataframe
+            raise NotImplementedError
+            # from ibis.spark.pandas_interop import write_temp_dataframe
 
-            writer, expr = write_temp_dataframe(self._client, obj)
+            # writer, expr = write_temp_dataframe(self._client, obj)
         else:
             expr = obj
 
@@ -288,7 +289,41 @@ class SparkClient(SQLClient):
     def log(self, msg):
         log(msg)
 
+    def table(self, name, database=None):
+        """
+        Create a table expression that references a particular table or view
+        in the database.
+
+        Parameters
+        ----------
+        name : string
+        database : string, optional
+
+        Returns
+        -------
+        table : TableExpr
+        """
+        qualified_name = self._fully_qualified_name(name, database)
+        if not database:
+            try:
+                self._session.table(qualified_name)
+            except ps.sql.utils.AnalysisException:
+                qualified_name = self._fully_qualified_name(
+                    name, self.current_database
+                )
+                try:
+                    self._session.table(qualified_name)
+                except ps.sql.utils.AnalysisException as e:
+                    raise e
+        schema = self._get_table_schema(qualified_name)
+        node = self.table_class(qualified_name, schema, self)
+        return self.table_expr_class(node)
+
     def _fully_qualified_name(self, name, database):
+        if ddl._is_fully_qualified(name):
+            return name
+        if database:
+            return '{0}.`{1}`'.format(database, name)
         return name
 
     def list_functions(self, database=None):
@@ -466,9 +501,10 @@ class SparkClient(SQLClient):
         """
         if obj is not None:
             if isinstance(obj, pd.DataFrame):
-                from ibis.impala.pandas_interop import write_temp_dataframe
+                raise NotImplementedError
+                # from ibis.spark.pandas_interop import write_temp_dataframe
 
-                writer, to_insert = write_temp_dataframe(self, obj)
+                # writer, to_insert = write_temp_dataframe(self, obj)
             else:
                 to_insert = obj
 

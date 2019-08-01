@@ -10,8 +10,6 @@ from ibis.tests.util import assert_equal
 
 pytestmark = pytest.mark.spark
 
-from ibis.impala.compat import HS2Error  # noqa: E402, isort:skip
-
 
 def test_create_exists_view(con, alltypes, temp_view):
     tmp_name = temp_view
@@ -86,11 +84,7 @@ def test_truncate_table(con, alltypes, temp_table):
     table_name = temp_table
     con.create_table(table_name, obj=expr)
 
-    try:
-        con.truncate_table(table_name)
-    except HS2Error as e:
-        if 'AnalysisException' in e.args[0]:
-            pytest.skip('TRUNCATE not available in this version of Impala')
+    con.truncate_table(table_name)
 
     t = con.table(table_name)
     nrows = t.count().execute()
