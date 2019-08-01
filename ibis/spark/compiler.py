@@ -24,7 +24,7 @@ import itertools
 import math
 
 import ibis
-import ibis.common.exception as com
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
