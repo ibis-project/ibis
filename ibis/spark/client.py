@@ -1,3 +1,4 @@
+import pandas as pd
 import pyspark as ps
 import pyspark.sql.types as pt
 import regex as re
@@ -7,8 +8,12 @@ import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
+import ibis.expr.types as ir
 from ibis.client import Database, Query, SQLClient
 from ibis.spark import compiler as comp
+from ibis.spark import ddl
+from ibis.spark.compiler import SparkDialect, build_ast
+from ibis.util import log
 
 # maps pyspark type class to ibis type class
 _SPARK_DTYPE_TO_IBIS_DTYPE = {
@@ -150,8 +155,83 @@ class SparkDatabase(Database):
     pass
 
 
-class SparkTable(ops.DatabaseTable):
+class SparkDatabaseTable(ops.DatabaseTable):
     pass
+
+
+class SparkTable(ir.TableExpr):
+
+    @property
+    def _qualified_name(self):
+        return self.op().args[0]
+
+    @property
+    def _client(self):
+        return self.op().source
+
+    def _execute(self, stmt):
+        return self._client._execute(stmt)
+
+    def drop(self):
+        """
+        Drop the table from the database
+        """
+        self._client.drop_table_or_view(self._qualified_name)
+
+    def insert(
+        self,
+        obj=None,
+        overwrite=False,
+        values=None,
+        validate=True,
+    ):
+        """
+        Insert into Spark table.
+
+        Parameters
+        ----------
+        obj : TableExpr or pandas DataFrame
+        overwrite : boolean, default False
+          If True, will replace existing contents of table
+        validate : boolean, default True
+          If True, do more rigorous validation that schema of table being
+          inserted is compatible with the existing table
+
+        Examples
+        --------
+        >>> t.insert(table_expr)  # doctest: +SKIP
+
+        # Completely overwrite contents
+        >>> t.insert(table_expr, overwrite=True)  # doctest: +SKIP
+        """
+        if isinstance(obj, pd.DataFrame):
+            from ibis.impala.pandas_interop import write_temp_dataframe
+
+            writer, expr = write_temp_dataframe(self._client, obj)
+        else:
+            expr = obj
+
+        if values is not None:
+            raise NotImplementedError
+
+        if validate:
+            existing_schema = self.schema()
+            insert_schema = expr.schema()
+            if not insert_schema.equals(existing_schema):
+                _validate_compatible(insert_schema, existing_schema)
+
+        ast = build_ast(expr, SparkDialect.make_context())
+        select = ast.queries[0]
+        statement = ddl.InsertSelect(
+            self._qualified_name,
+            select,
+            overwrite=overwrite,
+        )
+        return self._execute(statement.compile())
+
+    @property
+    def name(self):
+        return self.op().name
 
 
 class SparkClient(SQLClient):
@@ -163,10 +243,13 @@ class SparkClient(SQLClient):
     dialect = comp.SparkDialect
     database_class = SparkDatabase
     query_class = SparkQuery
-    table_class = SparkTable
+    table_class = SparkDatabaseTable
+    table_expr_class = SparkTable
 
     def __init__(self, **kwargs):
         self._context = ps.SparkContext(**kwargs)
+        # builder = ps.sql.SparkSession.builder.enableHiveSupport()
+        # self._session = builder.getOrCreate()
         self._session = ps.sql.SparkSession(self._context)
         self._catalog = self._session.catalog
 
@@ -202,6 +285,15 @@ class SparkClient(SQLClient):
         cur = self._execute(query, results=True)
         return spark_dataframe_schema(cur.query)
 
+    def log(self, msg):
+        log(msg)
+
+    def _fully_qualified_name(self, name, database):
+        return name
+
+    def list_functions(self, database=None):
+        return self._catalog.listFunctions(dbName=None)
+
     def list_tables(self, like=None, database=None):
         """
         List tables in the current (or indicated) database. Like the SHOW
@@ -221,9 +313,9 @@ class SparkClient(SQLClient):
         results = [t.name for t in self._catalog.listTables(dbName=database)]
         if like:
             results = [
-                database_name
-                for database_name in results
-                if re.match(like, database_name) is not None
+                table_name
+                for table_name in results
+                if re.match(like, table_name) is not None
             ]
 
         return results
@@ -272,6 +364,44 @@ class SparkClient(SQLClient):
 
         return results
 
+    def create_database(self, name, path=None, force=False):
+        """
+        Create a new Spark database
+
+        Parameters
+        ----------
+        name : string
+          Database name
+        path : string, default None
+          Path where to store the database data; otherwise uses Spark
+          default
+        """
+        statement = ddl.CreateDatabase(name, path=path, can_exist=force)
+        return self._execute(statement.compile())
+
+    def drop_database(self, name, force=False):
+        """Drop a Spark database.
+
+        Parameters
+        ----------
+        name : string
+          Database name
+        force : bool, default False
+          If False and there are any tables in this database, raises an
+          IntegrityError and Spark throws exception if database does not exist
+        """
+        if not force:
+            tables = self.list_tables(database=name)
+            functions = self.list_functions(database=name)
+            if len(tables) > 0 or len(functions) > 0:
+                raise com.IntegrityError(
+                    'Database {0} must be empty before '
+                    'being dropped, or set '
+                    'force=True'.format(name)
+                )
+        statement = ddl.DropDatabase(name, must_exist=not force, cascade=force)
+        return self._execute(statement.compile())
+
     def get_schema(self, table_name, database=None):
         """
         Return a Schema object for the indicated table and database
@@ -300,3 +430,190 @@ class SparkClient(SQLClient):
     @property
     def version(self):
         return parse_version(ps.__version__)
+
+    def create_table(
+        self,
+        table_name,
+        obj=None,
+        schema=None,
+        database=None,
+        force=False,
+        # HDFS options
+        format='parquet',
+        location=None,
+    ):
+        """
+        Create a new table in Spark using an Ibis table expression.
+
+        Parameters
+        ----------
+        table_name : string
+        obj : TableExpr or pandas.DataFrame, optional
+          If passed, creates table from select statement results
+        schema : ibis.Schema, optional
+          Mutually exclusive with obj, creates an empty table with a
+          particular schema
+        database : string, default None (optional)
+        force : boolean, default False
+          Do not create table if table with indicated name already exists
+        format : {'parquet'}
+        location : string, default None
+          Specify the directory location where Spark reads and writes files
+          for the table
+        Examples
+        --------
+        >>> con.create_table('new_table_name', table_expr)  # doctest: +SKIP
+        """
+        if obj is not None:
+            if isinstance(obj, pd.DataFrame):
+                from ibis.impala.pandas_interop import write_temp_dataframe
+
+                writer, to_insert = write_temp_dataframe(self, obj)
+            else:
+                to_insert = obj
+
+            ast = self._build_ast(to_insert, SparkDialect.make_context())
+            select = ast.queries[0]
+
+            statement = ddl.CTAS(
+                table_name,
+                select,
+                database=database,
+                can_exist=force,
+                format=format,
+                path=location,
+            )
+        elif schema is not None:
+            statement = ddl.CreateTableWithSchema(
+                table_name,
+                schema,
+                database=database,
+                format=format,
+                can_exist=force,
+                path=location,
+            )
+        else:
+            raise com.IbisError('Must pass expr or schema')
+
+        return self._execute(statement.compile())
+
+    def create_view(
+        self,
+        name,
+        expr,
+        database=None,
+        or_replace=True,
+        global_view=False,
+        temporary=True,
+    ):
+        """
+        Create a Spark view from a table expression
+
+        Parameters
+        ----------
+        name : string
+        expr : ibis TableExpr
+        database : string, default None
+        """
+        ast = self._build_ast(expr, SparkDialect.make_context())
+        select = ast.queries[0]
+        statement = ddl.CreateView(
+            name,
+            select,
+            database=database,
+            or_replace=or_replace,
+            global_view=global_view,
+            temporary=temporary,
+        )
+        return self._execute(statement.compile())
+
+    def drop_table(self, name, database=None, force=False):
+        self.drop_table_or_view(name, database, force)
+
+    def drop_view(self, name, database=None, force=False):
+        self.drop_table_or_view(name, database, force)
+
+    def drop_table_or_view(self, name, database=None, force=False):
+        """
+        Drop a Spark table or view
+
+        Parameters
+        ----------
+        name : string
+        database : string, default None (optional)
+        force : boolean, default False
+          Database may throw exception if table does not exist
+
+        Examples
+        --------
+        >>> table = 'my_table'
+        >>> db = 'operations'
+        >>> con.drop_table_or_view(table, db, force=True)  # doctest: +SKIP
+        """
+        statement = ddl.DropTable(
+            name, database=database, must_exist=not force
+        )
+        self._execute(statement.compile())
+
+    def exists_table(self, name, database=None):
+        """
+        Determine if the indicated table or view exists
+
+        Parameters
+        ----------
+        name : string
+        database : string, default None
+
+        Returns
+        -------
+        if_exists : boolean
+        """
+        return len(self.list_tables(like=name, database=database)) > 0
+
+    def insert(
+        self,
+        table_name,
+        obj=None,
+        database=None,
+        overwrite=False,
+        values=None,
+        validate=True,
+    ):
+        """
+        Insert into existing table.
+
+        See SparkTable.insert for other parameters.
+
+        Parameters
+        ----------
+        table_name : string
+        database : string, default None
+
+        Examples
+        --------
+        >>> table = 'my_table'
+        >>> con.insert(table, table_expr)  # doctest: +SKIP
+
+        # Completely overwrite contents
+        >>> con.insert(table, table_expr, overwrite=True)  # doctest: +SKIP
+        """
+        table = self.table(table_name, database=database)
+        return table.insert(
+            obj=obj,
+            overwrite=overwrite,
+            values=values,
+            validate=validate,
+        )
+
+
+def _validate_compatible(from_schema, to_schema):
+    if set(from_schema.names) != set(to_schema.names):
+        raise com.IbisInputError('Schemas have different names')
+
+    for name in from_schema:
+        lt = from_schema[name]
+        rt = to_schema[name]
+        if not lt.castable(rt):
+            raise com.IbisInputError(
+                'Cannot safely cast {0!r} to {1!r}'.format(lt, rt)
+            )

@@ -7,12 +7,12 @@ pytestmark = pytest.mark.spark
 
 def test_list_databases(client):
     dbs = client.list_databases()
-    assert dbs == ['default']
+    assert dbs == ['default', 'ibis_testing']
 
 
 def test_list_tables(client):
     tables = client.list_tables()
-    assert tables == [
+    for t in [
         'awards_players',
         'batting',
         'complicated',
@@ -20,7 +20,8 @@ def test_list_tables(client):
         'nested_types',
         'simple',
         'struct',
-    ]
+    ]:
+        assert t in tables
 
 
 def test_get_schema(client):
@@ -86,4 +87,4 @@ def test_table_complicated(complicated):
 
 
 def test_current_database(client):
-    assert client.current_database == 'default'
+    assert client.current_database == 'ibis_testing'
