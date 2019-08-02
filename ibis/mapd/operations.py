@@ -164,7 +164,13 @@ def _reduction(func_name, sql_func_name=None, sql_signature='{}({})'):
 
         # HACK: support trailing arguments
         where = op.where
-        args = [arg for arg in op.args if arg is not where]
+        args = []
+
+        for arg in op.args:
+            if arg is not where:
+                if arg.type().equals(dt.boolean):
+                    arg = arg.ifelse(1, 0)
+                args.append(arg)
 
         return _reduction_format(
             translator,
@@ -858,6 +864,10 @@ _agg_ops = {
     ops.HLLCardinality: approx_count_distinct,
     ops.DistinctColumn: unary_prefix_op('distinct'),
     ops.Arbitrary: _arbitrary,
+    ops.Sum: _reduction('sum'),
+    ops.Mean: _reduction('avg'),
+    ops.Min: _reduction('min'),
+    ops.Max: _reduction('max'),
 }
 
 # GENERAL

@@ -1,3 +1,5 @@
+import re
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -160,3 +162,19 @@ def test_arbitrary_none(alltypes, df_alltypes, result_fn, expected_fn):
     result = expr.execute()
     expected = expected_fn(df_alltypes)
     np.testing.assert_allclose(result, expected)
+
+
+@pytest.mark.parametrize(
+    ('ibis_op', 'sql_op'),
+    [('sum', 'sum'), ('mean', 'avg'), ('max', 'max'), ('min', 'min')],
+)
+def test_agg_with_bool(alltypes, ibis_op, sql_op):
+    regex = re.compile(r'\s{2}|\n')
+
+    expr = getattr(alltypes.bool_col, ibis_op)()
+    sql_check = (
+        'SELECT {}(CASE WHEN "bool_col" THEN 1 ELSE 0 END) AS "{}"'
+        'FROM functional_alltypes'
+    ).format(sql_op, ibis_op)
+
+    assert regex.sub('', expr.compile()) == regex.sub('', sql_check)
