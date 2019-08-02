@@ -6,7 +6,7 @@ import pytest
 from multipledispatch.conflict import ambiguities
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.pandas.client import PandasClient

@@ -6,7 +6,7 @@ import pytest
 from pandas.util import testing as tm
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.expr.window import rows_with_max_lookback
@@ -332,7 +332,7 @@ def test_batting_rolling_partitioned(batting, batting_df, sort_kind):
 def test_window_failure_mode(batting, batting_df, window):
     # can't have order by without a following value of 0
     expr = batting.mutate(more_values=batting.G.sum().over(window))
-    with pytest.raises(ibis.common.OperationNotDefinedError):
+    with pytest.raises(ibis.common.exceptions.OperationNotDefinedError):
         expr.execute()
 
 

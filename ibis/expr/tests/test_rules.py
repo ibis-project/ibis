@@ -7,7 +7,7 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
-from ibis.common import IbisTypeError
+from ibis.common.exceptions import IbisTypeError
 
 table = ibis.table(
     [('int_col', 'int64'), ('string_col', 'string'), ('double_col', 'double')]

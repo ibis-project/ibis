@@ -23,7 +23,7 @@ import pandas as pd
 import toolz
 from multipledispatch import Dispatcher
 
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.types as ir
 from ibis import util
 

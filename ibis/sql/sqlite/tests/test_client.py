@@ -6,7 +6,7 @@ import pandas.util.testing as tm
 import pytest
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.types as ir
 from ibis.util import guid
 

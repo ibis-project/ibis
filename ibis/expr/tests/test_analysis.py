@@ -1,7 +1,7 @@
 import pytest
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.analysis as L
 import ibis.expr.operations as ops
 from ibis.tests.util import assert_equal

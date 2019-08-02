@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
 from ibis.tests.backends import Backend
 
 
@@ -154,6 +154,12 @@ def awards_players(backend):
 
 @pytest.fixture(scope='session')
 def geo(backend):
+    if backend.geo is None:
+        pytest.skip(
+            'Geo Spatial type not supported for {} backend.'.format(
+                backend.name
+            )
+        )
     return backend.geo
 
 

@@ -6,7 +6,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
-from ibis.common import IbisTypeError
+from ibis.common.exceptions import IbisTypeError
 from ibis.expr.signature import Argument as Arg
 
 

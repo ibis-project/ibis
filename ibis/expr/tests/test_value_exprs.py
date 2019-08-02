@@ -11,7 +11,7 @@ import pytest
 import toolz
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.analysis as L
 import ibis.expr.api as api
 import ibis.expr.datatypes as dt
@@ -19,7 +19,7 @@ import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 from ibis import literal
-from ibis.common import IbisTypeError
+from ibis.common.exceptions import IbisTypeError
 from ibis.expr.signature import Argument as Arg
 from ibis.tests.util import assert_equal
 
@@ -700,7 +700,7 @@ def test_null_column():
 def test_null_column_union():
     s = ibis.table([('a', 'string'), ('b', 'double')])
     t = ibis.table([('a', 'string')])
-    with pytest.raises(ibis.common.RelationError):
+    with pytest.raises(ibis.common.exceptions.RelationError):
         s.union(t.mutate(b=ibis.NA))  # needs a type
     assert s.union(t.mutate(b=ibis.NA.cast('double'))).schema() == s.schema()
 

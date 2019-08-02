@@ -13,7 +13,7 @@ from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from sqlalchemy.engine.interfaces import Dialect as SQLAlchemyDialect
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -768,6 +768,7 @@ if geospatial_supported:
         ops.GeoPerimeter: unary(sa.func.ST_Perimeter),
         ops.GeoSimplify: fixed_arity(sa.func.ST_Simplify, 3),
         ops.GeoSRID: unary(sa.func.ST_SRID),
+        ops.GeoSetSRID: fixed_arity(sa.func.ST_SetSRID, 2),
         ops.GeoTouches: fixed_arity(sa.func.ST_Touches, 2),
         ops.GeoTransform: fixed_arity(sa.func.ST_Transform, 2),
         ops.GeoWithin: fixed_arity(sa.func.ST_Within, 2),

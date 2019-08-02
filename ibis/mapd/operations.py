@@ -1,10 +1,10 @@
 import warnings
-from copy import copy
 from datetime import date, datetime
 from io import StringIO
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
+import ibis.common.geospatial as geo
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
@@ -358,63 +358,13 @@ def _cross_join(translator, expr):
     return translator.translate(left.join(right, ibis.literal(True)))
 
 
-def _format_point_value(value):
-    return ' '.join(str(v) for v in value)
-
-
-def _format_linestring_value(value):
-    return ', '.join(
-        '{}'.format(_format_point_value(point)) for point in value
-    )
-
-
-def _format_polygon_value(value):
-    return ', '.join(
-        '({})'.format(_format_linestring_value(line)) for line in value
-    )
-
-
-def _format_multipolygon_value(value):
-    return ', '.join(
-        '({})'.format(_format_polygon_value(polygon)) for polygon in value
-    )
-
-
-def _format_geo_metadata(op, value):
-    value = copy(value)
-    srid = op.args[1].srid
-    geotype = op.args[1].geotype
-
-    if geotype is None or geotype not in ('geometry', 'geography'):
-        return "'{}'".format(value)
-
-    if geotype == 'geography':
-        geofunc = 'ST_GeogFromText'
-    else:
-        geofunc = 'ST_GeomFromText'
-
-    return "{}('{}'{})".format(
-        geofunc, value, ', {}'.format(srid) if srid else ''
-    )
-
-
 def literal(translator, expr):
     op = expr.op()
     value = op.value
 
     # geo spatial data type
-    if isinstance(expr, ir.PointScalar):
-        result = "POINT({0})".format(_format_point_value(value))
-        return _format_geo_metadata(op, result)
-    elif isinstance(expr, ir.LineStringScalar):
-        result = "LINESTRING({0})".format(_format_linestring_value(value))
-        return _format_geo_metadata(op, result)
-    elif isinstance(expr, ir.PolygonScalar):
-        result = "POLYGON({0!s})".format(_format_polygon_value(value))
-        return _format_geo_metadata(op, result)
-    elif isinstance(expr, ir.MultiPolygonScalar):
-        result = "MULTIPOLYGON({0})".format(_format_multipolygon_value(value))
-        return _format_geo_metadata(op, result)
+    if isinstance(expr, ir.GeoSpatialScalar):
+        return geo.translate_literal(expr)
     # primitive data type
     elif isinstance(expr, ir.BooleanValue):
         return '1' if value else '0'

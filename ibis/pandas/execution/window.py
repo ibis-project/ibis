@@ -8,7 +8,7 @@ import pandas as pd
 import toolz
 from pandas.core.groupby import SeriesGroupBy
 
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.window as win
 import ibis.pandas.aggcontext as agg_ctx

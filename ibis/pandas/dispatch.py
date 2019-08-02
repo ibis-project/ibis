@@ -6,7 +6,7 @@ import toolz
 from multipledispatch import Dispatcher
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 
 # Individual operation execution

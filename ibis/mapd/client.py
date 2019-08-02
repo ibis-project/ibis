@@ -1,3 +1,5 @@
+import sys
+
 import pandas as pd
 import pkg_resources
 import pymapd
@@ -5,7 +7,7 @@ import regex as re
 from pymapd._parsers import _extract_column_details
 from pymapd.cursor import Cursor
 
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
@@ -16,11 +18,27 @@ from ibis.mapd.compiler import MapDDialect, build_ast
 from ibis.sql.compiler import DDL, DML
 from ibis.util import log
 
+if sys.version_info >= (3, 6):
+    from pymapd.dtypes import TDatumType as pymapd_dtype
+else:
+    pymapd_dtype = None
+
 try:
     from cudf.dataframe.dataframe import DataFrame as GPUDataFrame
 except ImportError:
     GPUDataFrame = None
 
+# used to check if geopandas and shapely is available
+FULL_GEO_SUPPORTED = False
+try:
+    # supported just for python >= 3.6
+    if sys.version_info >= (3, 6):
+        import geopandas
+        import shapely.wkt
+
+        FULL_GEO_SUPPORTED = True
+except ImportError:
+    ...
 
 EXECUTION_TYPE_ICP = 1
 EXECUTION_TYPE_ICP_GPU = 2
@@ -141,7 +159,7 @@ class MapDDataType:
         return cls(typename, nullable=nullable)
 
 
-class MapDCursor:
+class MapDDefaultCursor:
     """Cursor to allow the MapD client to reuse machinery in ibis/client.py
     """
 
@@ -165,6 +183,51 @@ class MapDCursor:
 
     def __exit__(self, exc_type, exc_value, traceback):
         pass
+
+
+class MapDGeoCursor(MapDDefaultCursor):
+    """Cursor to allow the MapD client to reuse machinery in ibis/client.py
+    for Geo Spatial data
+    """
+
+    def to_df(self):
+        cursor = self.cursor
+        cursor_description = cursor.description
+
+        if not isinstance(cursor, Cursor):
+            if cursor is None:
+                return geopandas.GeoDataFrame([])
+            return cursor
+
+        col_names = [c.name for c in cursor_description]
+        result = pd.DataFrame(cursor.fetchall(), columns=col_names)
+
+        # get geo types from pymapd
+        geotypes = (
+            pymapd_dtype.POINT,
+            pymapd_dtype.LINESTRING,
+            pymapd_dtype.POLYGON,
+            pymapd_dtype.MULTIPOLYGON,
+            pymapd_dtype.GEOMETRY,
+            pymapd_dtype.GEOGRAPHY,
+        )
+
+        geo_column = None
+
+        for d in cursor_description:
+            field_name = d.name
+            if d.type_code in geotypes:
+                # use the first geo column found as default geometry
+                # geopandas doesn't allow multiple GeoSeries
+                # to specify other column as a geometry on a GeoDataFrame
+                # use something like: df.set_geometry('buffers').plot()
+                geo_column = geo_column or field_name
+                result[field_name] = result[field_name].apply(
+                    shapely.wkt.loads
+                )
+        if geo_column:
+            result = geopandas.GeoDataFrame(result, geometry=geo_column)
+        return result
 
 
 class MapDQuery(Query):
@@ -482,8 +545,10 @@ class MapDClient(SQLClient):
         else:
             execute = self.con.cursor().execute
 
+        cursor = MapDGeoCursor if FULL_GEO_SUPPORTED else MapDDefaultCursor
+
         try:
-            result = MapDCursor(execute(query))
+            result = cursor(execute(query))
         except Exception as e:
             raise Exception('{}: {}'.format(e, query))
 

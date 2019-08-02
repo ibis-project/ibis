@@ -13,9 +13,11 @@ from sqlalchemy.sql import expression
 from sqlalchemy.sql.functions import GenericFunction
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
+import ibis.common.geospatial as geo
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
 import ibis.sql.alchemy as alch
 from ibis.sql.alchemy import (
     _get_sqla_table,
@@ -588,12 +590,17 @@ def _string_join(t, expr):
 
 def _literal(t, expr):
     dtype = expr.type()
-    value = expr.op().value
+    op = expr.op()
+    value = op.value
 
     if isinstance(dtype, dt.Interval):
         return sa.text("INTERVAL '{} {}'".format(value, dtype.resolution))
     elif isinstance(dtype, dt.Set):
         return list(map(sa.literal, value))
+    # geo spatial data type
+    elif isinstance(expr, ir.GeoSpatialScalar):
+        # inline_metadata ex: 'SRID=4326;POINT( ... )'
+        return sa.text(geo.translate_literal(expr, inline_metadata=True))
     else:
         return sa.literal(value)
 

@@ -13,7 +13,7 @@
 
 import re
 
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz

@@ -3,7 +3,7 @@ from functools import partial
 import pytest
 from toolz import identity
 
-from ibis.common import IbisTypeError
+from ibis.common.exceptions import IbisTypeError
 from ibis.expr.signature import Annotable, Argument, TypeSignature
 
 

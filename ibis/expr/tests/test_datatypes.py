@@ -7,7 +7,7 @@ from multipledispatch.conflict import ambiguities
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.common import IbisTypeError
+from ibis.common.exceptions import IbisTypeError
 
 
 def test_validate_type():

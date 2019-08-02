@@ -2,7 +2,7 @@ import pytest
 from pytest import param
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
 from ibis.tests.backends import Csv, MapD, Pandas, Parquet
 
 
