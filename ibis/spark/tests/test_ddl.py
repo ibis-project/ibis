@@ -207,22 +207,18 @@ def test_drop_view(con, alltypes, created_view):
     assert not con.exists_table(created_view)
 
 
-# TODO implement
-@pytest.mark.xfail
-def test_rename_table(con, temp_database):
-    tmp_db = temp_database
-
+def test_rename_table(con, alltypes):
     orig_name = 'tmp_rename_test'
-    con.create_table(orig_name, con.table('tpch_region'))
+    con.create_table(orig_name, alltypes)
     table = con.table(orig_name)
 
     old_name = table.name
 
     new_name = 'rename_test'
-    renamed = table.rename(new_name, database=tmp_db)
+    renamed = table.rename(new_name)
     renamed.execute()
 
-    t = con.table(new_name, database=tmp_db)
+    t = con.table(new_name)
     assert_equal(renamed, t)
 
     assert table.name == old_name

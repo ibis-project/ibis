@@ -165,6 +165,21 @@ class SparkTable(ir.TableExpr):
     def _qualified_name(self):
         return self.op().args[0]
 
+    def _match_name(self):
+        m = ddl.fully_qualified_re.match(self._qualified_name)
+        if not m:
+            return None, self._qualified_name
+        db, quoted, unquoted = m.groups()
+        return db, quoted or unquoted
+
+    @property
+    def _database(self):
+        return self._match_name()[0]
+
+    @property
+    def _unqualified_name(self):
+        return self._match_name()[1]
+
     @property
     def name(self):
         return self.op().name
@@ -247,6 +262,30 @@ class SparkTable(ir.TableExpr):
         )
         return self._execute(statement.compile())
 
+    def rename(self, new_name):
+        """
+        Rename table inside Spark. References to the old table are no longer
+        valid. Spark does not support moving tables across databases using
+        rename.
+
+        Parameters
+        ----------
+        new_name : string
+
+        Returns
+        -------
+        renamed : SparkTable
+        """
+        new_qualified_name = _fully_qualified_name(new_name, self._database)
+
+        statement = ddl.RenameTable(
+            self._qualified_name, new_name
+        )
+        self._client._execute(statement.compile())
+
+        op = self.op().change_name(new_qualified_name)
+        return type(self)(op)
+
 
 class SparkClient(SQLClient):
 
@@ -316,12 +355,12 @@ class SparkClient(SQLClient):
         -------
         table : TableExpr
         """
-        qualified_name = self._fully_qualified_name(name, database)
+        qualified_name = _fully_qualified_name(name, database)
         if not database:
             try:
                 self._session.table(qualified_name)
             except ps.sql.utils.AnalysisException:
-                qualified_name = self._fully_qualified_name(
+                qualified_name = _fully_qualified_name(
                     name, self.current_database
                 )
                 try:
@@ -331,13 +370,6 @@ class SparkClient(SQLClient):
         schema = self._get_table_schema(qualified_name)
         node = self.table_class(qualified_name, schema, self)
         return self.table_expr_class(node)
-
-    def _fully_qualified_name(self, name, database):
-        if ddl._is_fully_qualified(name):
-            return name
-        if database:
-            return '{0}.`{1}`'.format(database, name)
-        return name
 
     def list_functions(self, database=None):
         return self._catalog.listFunctions(dbName=None)
@@ -685,10 +717,18 @@ class SparkClient(SQLClient):
         """
         maybe_noscan = ' NOSCAN' if noscan else ''
         stmt = 'ANALYZE TABLE {0} COMPUTE STATISTICS{1}'.format(
-            self._fully_qualified_name(name, database),
+            _fully_qualified_name(name, database),
             maybe_noscan
         )
         return self._execute(stmt)
+
+
+def _fully_qualified_name(name, database):
+    if ddl._is_fully_qualified(name):
+        return name
+    if database:
+        return '{0}.`{1}`'.format(database, name)
+    return name
 
 
 def _validate_compatible(from_schema, to_schema):

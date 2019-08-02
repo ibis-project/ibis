@@ -335,3 +335,56 @@ class InsertSelect(SparkDML):
         return '{0} {1}\n{2}'.format(
             cmd, scoped_name, select_query
         )
+
+
+class AlterTable(SparkDDL):
+    def __init__(
+        self,
+        table,
+        location=None,
+        format=None,
+        tbl_properties=None,
+    ):
+        self.table = table
+        self.location = location
+        self.format = _sanitize_format(format)
+        self.tbl_properties = tbl_properties
+
+    def _wrap_command(self, cmd):
+        return 'ALTER TABLE {}'.format(cmd)
+
+    def _format_properties(self, prefix=''):
+        tokens = []
+
+        if self.location is not None:
+            tokens.append("LOCATION '{}'".format(self.location))
+
+        if self.format is not None:
+            tokens.append("FILEFORMAT {}".format(self.format))
+
+        if self.tbl_properties is not None:
+            tokens.append(format_tblproperties(self.tbl_properties))
+
+        if len(tokens) > 0:
+            return '\n{}{}'.format(prefix, '\n'.join(tokens))
+        else:
+            return ''
+
+    def compile(self):
+        props = self._format_properties()
+        action = '{} SET {}'.format(self.table, props)
+        return self._wrap_command(action)
+
+
+class RenameTable(AlterTable):
+    def __init__(
+        self, old_name, new_name
+    ):
+        self.old_name = old_name
+        self.new_name = new_name
+
+    def compile(self):
+        cmd = '{} RENAME TO {}'.format(
+            self.old_name, self.new_name
+        )
+        return self._wrap_command(cmd)
