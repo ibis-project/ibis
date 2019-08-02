@@ -302,6 +302,19 @@ class DropDatabase(DropObject):
         return self.name
 
 
+class TruncateTable(SparkDDL):
+
+    _object_type = 'TABLE'
+
+    def __init__(self, table_name, database=None):
+        self.table_name = table_name
+        self.database = database
+
+    def compile(self):
+        name = self._get_scoped_name(self.table_name, self.database)
+        return 'TRUNCATE TABLE {}'.format(name)
+
+
 class InsertSelect(SparkDML):
     def __init__(
         self,

@@ -76,8 +76,6 @@ def test_drop_table_not_exist(con):
     con.drop_table(non_existent_table, force=True)
 
 
-# TODO implement
-@pytest.mark.xfail
 def test_truncate_table(con, alltypes, temp_table):
     expr = alltypes.limit(1)
 
@@ -91,8 +89,6 @@ def test_truncate_table(con, alltypes, temp_table):
     assert not nrows
 
 
-# TODO implement
-@pytest.mark.xfail
 def test_truncate_table_expression(con, alltypes, temp_table):
     expr = alltypes.limit(1)
 

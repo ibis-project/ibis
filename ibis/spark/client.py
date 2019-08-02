@@ -178,6 +178,9 @@ class SparkTable(ir.TableExpr):
         """
         self._client.drop_table_or_view(self._qualified_name)
 
+    def truncate(self):
+        self._client.truncate_table(self._qualified_name)
+
     def insert(
         self,
         obj=None,
@@ -608,6 +611,18 @@ class SparkClient(SQLClient):
         if_exists : boolean
         """
         return len(self.list_tables(like=name, database=database)) > 0
+
+    def truncate_table(self, table_name, database=None):
+        """
+        Delete all rows from, but do not drop, an existing table
+
+        Parameters
+        ----------
+        table_name : string
+        database : string, default None (optional)
+        """
+        statement = ddl.TruncateTable(table_name, database=database)
+        self._execute(statement.compile())
 
     def insert(
         self,
