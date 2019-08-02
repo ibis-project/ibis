@@ -1,10 +1,12 @@
 import pyspark as ps
 import pyspark.sql.types as pt
 import regex as re
+import toolz
 from pkg_resources import parse_version
 
 import ibis.common as com
 import ibis.expr.datatypes as dt
+import ibis.expr.lineage as lin
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis.client import Database, Query, SQLClient
@@ -27,47 +29,47 @@ _SPARK_DTYPE_TO_IBIS_DTYPE = {
 
 
 @dt.dtype.register(pt.DataType)
-def spark_dtype_to_ibis_dtype(spark_type_obj, nullable=True):
+def spark_dtype_to_ibis_dtype(spark_dtype_obj, nullable=True):
     """Convert Spark SQL type objects to ibis type objects."""
-    ibis_type_class = _SPARK_DTYPE_TO_IBIS_DTYPE.get(type(spark_type_obj))
+    ibis_type_class = _SPARK_DTYPE_TO_IBIS_DTYPE.get(type(spark_dtype_obj))
     return ibis_type_class(nullable=nullable)
 
 
 @dt.dtype.register(pt.TimestampType)
-def spark_timestamp_dtype_to_ibis_dtype(spark_type_obj, nullable=True):
+def spark_timestamp_dtype_to_ibis_dtype(spark_dtype_obj, nullable=True):
     return dt.Timestamp(nullable=nullable)
 
 
 @dt.dtype.register(pt.DecimalType)
-def spark_decimal_dtype_to_ibis_dtype(spark_type_obj, nullable=True):
-    precision = spark_type_obj.precision
-    scale = spark_type_obj.scale
+def spark_decimal_dtype_to_ibis_dtype(spark_dtype_obj, nullable=True):
+    precision = spark_dtype_obj.precision
+    scale = spark_dtype_obj.scale
     return dt.Decimal(precision, scale, nullable=nullable)
 
 
 @dt.dtype.register(pt.ArrayType)
-def spark_array_dtype_to_ibis_dtype(spark_type_obj, nullable=True):
+def spark_array_dtype_to_ibis_dtype(spark_dtype_obj, nullable=True):
     value_type = dt.dtype(
-        spark_type_obj.elementType,
-        nullable=spark_type_obj.containsNull
+        spark_dtype_obj.elementType,
+        nullable=spark_dtype_obj.containsNull
     )
     return dt.Array(value_type, nullable=nullable)
 
 
 @dt.dtype.register(pt.MapType)
-def spark_map_dtype_to_ibis_dtype(spark_type_obj, nullable=True):
-    key_type = dt.dtype(spark_type_obj.keyType)
+def spark_map_dtype_to_ibis_dtype(spark_dtype_obj, nullable=True):
+    key_type = dt.dtype(spark_dtype_obj.keyType)
     value_type = dt.dtype(
-        spark_type_obj.valueType,
-        nullable=spark_type_obj.valueContainsNull
+        spark_dtype_obj.valueType,
+        nullable=spark_dtype_obj.valueContainsNull
     )
     return dt.Map(key_type, value_type, nullable=nullable)
 
 
 @dt.dtype.register(pt.StructType)
-def spark_struct_dtype_to_ibis_dtype(spark_type_obj, nullable=True):
-    names = spark_type_obj.names
-    fields = spark_type_obj.fields
+def spark_struct_dtype_to_ibis_dtype(spark_dtype_obj, nullable=True):
+    names = spark_dtype_obj.names
+    fields = spark_dtype_obj.fields
     ibis_types = [dt.dtype(f.dataType, nullable=f.nullable) for f in fields]
     return dt.Struct(names, ibis_types, nullable=nullable)
 
@@ -138,7 +140,33 @@ class SparkCursor:
         """
 
 
+def find_spark_udf(expr):
+    result = expr.op()
+    if not isinstance(result, (comp.SparkUDFNode, comp.SparkUDAFNode)):
+        result = None
+    return lin.proceed, result
+
+
 class SparkQuery(Query):
+
+    def execute(self):
+        udf_nodes = lin.traverse(find_spark_udf, self.expr)
+
+        # UDFs are uniquely identified by the name of the Node subclass we
+        # generate.
+        udf_nodes_unique = toolz.unique(
+            udf_nodes,
+            key=lambda node: type(node).__name__
+        )
+
+        # register UDFs in pyspark
+        for node in udf_nodes_unique:
+            self.client._session.udf.register(
+                type(node).__name__,
+                node.udf_func,
+            )
+
+        return super().execute()
 
     def _fetch(self, cursor):
         df = cursor.query.toPandas()  # blocks until finished

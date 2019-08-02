@@ -20,6 +20,10 @@ def test_list_tables(client):
         'nested_types',
         'simple',
         'struct',
+        'udf',
+        'udf_nan',
+        'udf_null',
+        'udf_random',
     ]
 
 
