@@ -1,3 +1,4 @@
+import os
 from posixpath import join as pjoin
 
 import pytest
@@ -36,19 +37,19 @@ def test_drop_non_empty_database(con, alltypes, temp_table_db):
 
 # TODO implement
 @pytest.mark.xfail
-def test_create_database_with_location(con, tmp_dir, hdfs):
+def test_create_database_with_location(con, tmp_dir):
     base = pjoin(tmp_dir, util.guid())
     name = '__ibis_test_{}'.format(util.guid())
     tmp_path = pjoin(base, name)
 
     con.create_database(name, path=tmp_path)
     try:
-        assert hdfs.exists(base)
+        assert os.path.exists(base)
     finally:
         try:
             con.drop_database(name)
         finally:
-            hdfs.rmdir(base)
+            os.rmdir(base)
 
 
 # TODO implement
@@ -181,15 +182,16 @@ def test_insert_validate_types(con, alltypes, test_data_db, temp_table):
         t.insert(limit_expr)
 
 
-# TODO implement
-@pytest.mark.xfail
-def test_compute_stats(con):
-    t = con.table('functional_alltypes')
-
-    t.compute_stats()
-    t.compute_stats(incremental=True)
-
-    con.compute_stats('functional_alltypes')
+def test_compute_stats(con, alltypes):
+    name = 'functional_alltypes_table'
+    try:
+        con.create_table(name, alltypes)
+        t = con.table(name)
+        t.compute_stats()
+        t.compute_stats(noscan=True)
+        con.compute_stats(name)
+    finally:
+        con.drop_table(name, force=True)
 
 
 @pytest.fixture

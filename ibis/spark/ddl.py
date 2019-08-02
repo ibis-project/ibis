@@ -193,7 +193,6 @@ class CreateView(CTAS):
         select,
         database=None,
         or_replace=True,
-        global_view=False,
         temporary=False,
     ):
         super().__init__(
@@ -202,7 +201,6 @@ class CreateView(CTAS):
             database=database,
         )
         self.or_replace = or_replace
-        self.global_view = global_view
         self.temporary = temporary
 
     @property
@@ -221,9 +219,6 @@ class CreateView(CTAS):
         return 'OR REPLACE ' if self.or_replace else ''
 
     def _view_clause(self):
-        if self.global_view:
-            assert self.temporary
-            return 'GLOBAL TEMPORARY '
         if self.temporary:
             return 'TEMPORARY '
         return ''

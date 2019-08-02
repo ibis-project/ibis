@@ -166,11 +166,26 @@ class SparkTable(ir.TableExpr):
         return self.op().args[0]
 
     @property
+    def name(self):
+        return self.op().name
+
+    @property
     def _client(self):
         return self.op().source
 
     def _execute(self, stmt):
         return self._client._execute(stmt)
+
+    def compute_stats(self, noscan=False):
+        """
+        Invoke Spark ANALYZE TABLE <tbl> COMPUTE STATISTICS command to
+        compute column, table, and partition statistics.
+
+        See also SparkClient.compute_stats
+        """
+        return self._client.compute_stats(
+            self._qualified_name, noscan=noscan
+        )
 
     def drop(self):
         """
@@ -231,10 +246,6 @@ class SparkTable(ir.TableExpr):
             overwrite=overwrite,
         )
         return self._execute(statement.compile())
-
-    @property
-    def name(self):
-        return self.op().name
 
 
 class SparkClient(SQLClient):
@@ -545,7 +556,6 @@ class SparkClient(SQLClient):
         expr,
         database=None,
         or_replace=True,
-        global_view=False,
         temporary=True,
     ):
         """
@@ -556,6 +566,8 @@ class SparkClient(SQLClient):
         name : string
         expr : ibis TableExpr
         database : string, default None
+        or_replace : boolean, default True
+          Replace an existing view of the same name if it exists
         """
         ast = self._build_ast(expr, SparkDialect.make_context())
         select = ast.queries[0]
@@ -564,7 +576,6 @@ class SparkClient(SQLClient):
             select,
             database=database,
             or_replace=or_replace,
-            global_view=global_view,
             temporary=temporary,
         )
         return self._execute(statement.compile())
@@ -658,6 +669,26 @@ class SparkClient(SQLClient):
             values=values,
             validate=validate,
         )
+
+    def compute_stats(self, name, database=None, noscan=False):
+        """
+        Issue COMPUTE STATISTICS command for a given table
+
+        Parameters
+        ----------
+        name : string
+          Can be fully qualified (with database name)
+        database : string, optional
+        noscan : boolean, default False
+          If True, collect only basic statistics for the table (number of
+          rows, size in bytes).
+        """
+        maybe_noscan = ' NOSCAN' if noscan else ''
+        stmt = 'ANALYZE TABLE {0} COMPUTE STATISTICS{1}'.format(
+            self._fully_qualified_name(name, database),
+            maybe_noscan
+        )
+        return self._execute(stmt)
 
 
 def _validate_compatible(from_schema, to_schema):
