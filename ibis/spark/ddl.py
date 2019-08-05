@@ -1,4 +1,4 @@
-import ibis.impala.ddl as impala_ddl
+from ibis.impala import ddl as impala_ddl
 from ibis.impala.compiler import quote_identifier
 from ibis.impala.ddl import (  # noqa: F401
     _is_fully_qualified,
