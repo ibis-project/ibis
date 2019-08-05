@@ -4,7 +4,7 @@ from posixpath import join as pjoin
 import pytest
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.util as util
 from ibis.tests.util import assert_equal
 

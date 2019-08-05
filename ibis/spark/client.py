@@ -570,8 +570,39 @@ class SparkClient(SQLClient):
         -------
         schema : ibis Schema
         """
-        df_schema = self._session.read.csv(path, header=header).schema
-        return sch.infer(df_schema)
+        df = self._session.read.csv(path, header=header, inferSchema=True)
+        return spark_dataframe_schema(df)
+
+    def table_or_temp_view_from_csv(
+        self,
+        name,
+        path,
+        schema=None,
+        database=None,
+        force=False,
+        temp_view=False,
+        header=True,
+        format='parquet',
+    ):
+        if schema:
+            df = self._session.read.csv(path, schema=schema, header=header)
+        else:
+            df = self._session.read.csv(path, header=header, inferSchema=True)
+
+        if temp_view:
+            if force:
+                df.createOrReplaceTempView(name)
+            else:
+                df.createTempView(name)
+        else:
+            mode = 'error'
+            if force:
+                mode = 'overwrite'
+            df.write.saveAsTable(
+                name,
+                format=format,
+                mode=mode,
+            )
 
     @property
     def version(self):
@@ -612,6 +643,8 @@ class SparkClient(SQLClient):
         """
         if obj is not None:
             if isinstance(obj, pd.DataFrame):
+                assert location is None, 'Spark does not support saveAsTable \
+with external location'
                 spark_df = self._session.createDataFrame(obj)
                 mode = 'error'
                 if force:
@@ -621,7 +654,7 @@ class SparkClient(SQLClient):
                     format=format,
                     mode=mode,
                 )
-                return self.table(table_name, database=database)
+                return
 
             ast = self._build_ast(obj, SparkDialect.make_context())
             select = ast.queries[0]
