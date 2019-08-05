@@ -222,7 +222,7 @@ import warnings
 import pandas as pd
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.util
 

@@ -41,6 +41,7 @@ dependencies:
   - regex
   - requests
   - ruamel.yaml
+  - shapely
   - sqlalchemy>=1.1
   - thrift>=0.9.3
   - thriftpy2  # required for impyla in case of py3

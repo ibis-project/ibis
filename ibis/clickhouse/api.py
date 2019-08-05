@@ -1,4 +1,4 @@
-import ibis.common as com
+import ibis.common.exceptions as com
 from ibis.clickhouse.client import ClickhouseClient
 from ibis.clickhouse.compiler import dialect
 from ibis.config import options

@@ -1,6 +1,6 @@
 import abc
 
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir

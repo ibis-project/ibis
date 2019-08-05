@@ -12,7 +12,7 @@ from multipledispatch import Dispatcher
 from pkg_resources import parse_version
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.lineage as lin
 import ibis.expr.operations as ops

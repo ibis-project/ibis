@@ -5,7 +5,7 @@ gp = pytest.importorskip('geopandas')
 sa = pytest.importorskip('sqlalchemy')
 pytest.importorskip('psycopg2')
 
-pytestmark = pytest.mark.postgis
+pytestmark = [pytest.mark.postgis, pytest.mark.postgres_extensions]
 
 
 def test_load_geodata(con):

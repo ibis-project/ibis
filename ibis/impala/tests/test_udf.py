@@ -7,13 +7,13 @@ import pandas as pd
 import pytest
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rules
 import ibis.expr.types as ir
 import ibis.impala as api  # noqa: E402
 import ibis.util as util
-from ibis.common import IbisTypeError
+from ibis.common.exceptions import IbisTypeError
 from ibis.expr.tests.mocks import MockConnection
 from ibis.impala import ddl  # noqa: E402
 

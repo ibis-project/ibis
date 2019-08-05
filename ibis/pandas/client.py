@@ -14,7 +14,7 @@ from multipledispatch import Dispatcher
 from pkg_resources import parse_version
 
 import ibis.client as client
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
@@ -329,7 +329,7 @@ def ibis_schema_apply_to(schema, df):
             # ugh, we can't compare dtypes coming from pandas, assume not equal
             not_equal = True
 
-        if not_equal or dtype == dt.string:
+        if not_equal or isinstance(dtype, dt.String):
             df[column] = convert(col_dtype, dtype, col)
 
     return df

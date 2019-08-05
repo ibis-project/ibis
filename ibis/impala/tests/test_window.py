@@ -1,7 +1,7 @@
 import pytest
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
 from ibis import window
 from ibis.expr.window import rows_with_max_lookback
 from ibis.impala.compiler import to_sql  # noqa: E402

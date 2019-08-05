@@ -4,7 +4,7 @@ import functools
 from contextlib import suppress
 from itertools import product, starmap
 
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir

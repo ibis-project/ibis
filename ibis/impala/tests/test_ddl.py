@@ -3,7 +3,7 @@ from posixpath import join as pjoin
 import pytest
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.util as util

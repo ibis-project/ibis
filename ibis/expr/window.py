@@ -6,7 +6,7 @@ from typing import NamedTuple, Union
 import numpy as np
 import pandas as pd
 
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util

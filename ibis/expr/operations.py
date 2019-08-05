@@ -6,7 +6,7 @@ from contextlib import suppress
 
 import toolz
 
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
@@ -2942,6 +2942,10 @@ class ScalarParameter(ValueOp):
             and self.counter == other.counter
             and self.dtype.equals(other.dtype, cache=cache)
         )
+
+    @property
+    def inputs(self):
+        return ()
 
     def root_tables(self):
         return []

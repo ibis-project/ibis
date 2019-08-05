@@ -1,6 +1,6 @@
 from io import StringIO
 
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.sql.compiler as comp
 import ibis.util as util

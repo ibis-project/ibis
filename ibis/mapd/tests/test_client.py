@@ -3,7 +3,7 @@ import pytest
 from pkg_resources import get_distribution, parse_version
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.types as ir
 from ibis.tests.util import assert_equal
 

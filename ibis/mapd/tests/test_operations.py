@@ -1,3 +1,5 @@
+import re
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -118,33 +120,6 @@ def test_timestamp_col(alltypes):
     alltypes[alltypes.timestamp_col < '2000-03-01'].execute()
 
 
-def test_literal_geospatial():
-    # point
-    point_0 = (0, 0)
-    point = ibis.literal(point_0, type='point')
-    assert ibis.mapd.compile(point) == "SELECT 'POINT(0 0)' AS tmp"
-
-    # line
-    line_0 = [point_0, point_0]
-    line = ibis.literal(line_0, type='linestring')
-    assert ibis.mapd.compile(line) == "SELECT 'LINESTRING(0 0, 0 0)' AS tmp"
-
-    # polygon
-    polygon_0 = [tuple(line_0), tuple(line_0)]
-    polygon = ibis.literal(polygon_0, type='polygon')
-    assert ibis.mapd.compile(polygon) == (
-        "SELECT 'POLYGON((0 0, 0 0), (0 0, 0 0))' AS tmp"
-    )
-
-    # multipolygon
-    mpolygon_0 = [tuple(polygon_0), tuple(polygon_0)]
-    mpolygon = ibis.literal(mpolygon_0, type='multipolygon')
-    assert ibis.mapd.compile(mpolygon) == (
-        "SELECT 'MULTIPOLYGON(((0 0, 0 0), (0 0, 0 0)), "
-        "((0 0, 0 0), (0 0, 0 0)))' AS tmp"
-    )
-
-
 @pytest.mark.parametrize(
     ('result_fn', 'expected_fn'),
     [
@@ -160,3 +135,19 @@ def test_arbitrary_none(alltypes, df_alltypes, result_fn, expected_fn):
     result = expr.execute()
     expected = expected_fn(df_alltypes)
     np.testing.assert_allclose(result, expected)
+
+
+@pytest.mark.parametrize(
+    ('ibis_op', 'sql_op'),
+    [('sum', 'sum'), ('mean', 'avg'), ('max', 'max'), ('min', 'min')],
+)
+def test_agg_with_bool(alltypes, ibis_op, sql_op):
+    regex = re.compile(r'\s{2}|\n')
+
+    expr = getattr(alltypes.bool_col, ibis_op)()
+    sql_check = (
+        'SELECT {}(CASE WHEN "bool_col" THEN 1 ELSE 0 END) AS "{}"'
+        'FROM functional_alltypes'
+    ).format(sql_op, ibis_op)
+
+    assert regex.sub('', expr.compile()) == regex.sub('', sql_check)

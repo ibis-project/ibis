@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from io import StringIO
 
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.sql.transforms as transforms

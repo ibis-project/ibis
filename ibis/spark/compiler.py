@@ -24,15 +24,15 @@ import itertools
 import math
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 import ibis.sql.compiler as comp
 import ibis.util as util
 from ibis.impala import compiler as impala_compiler
 from ibis.impala.compiler import (
-    ImpalaContext,
     ImpalaDialect,
     ImpalaExprTranslator,
     ImpalaSelect,
@@ -68,6 +68,16 @@ def to_sql(expr, context=None):
 # Select compilation
 
 
+class SparkUDFNode(ops.ValueOp):
+    def output_type(self):
+        return rlz.shape_like(self.args, dtype=self.return_type)
+
+
+class SparkUDAFNode(ops.Reduction):
+    def output_type(self):
+        return self.return_type.scalar_type()
+
+
 class SparkSelectBuilder(comp.SelectBuilder):
     @property
     def _select_class(self):
@@ -78,8 +88,9 @@ class SparkQueryBuilder(comp.QueryBuilder):
     select_builder = SparkSelectBuilder
 
 
-class SparkContext(ImpalaContext):
-    pass
+class SparkContext(comp.QueryContext):
+    def _to_sql(self, expr, ctx):
+        return to_sql(expr, ctx)
 
 
 _sql_type_names = impala_compiler._sql_type_names.copy()

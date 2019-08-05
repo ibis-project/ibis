@@ -6,7 +6,7 @@ import pytest
 import pytz
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.config as config
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir

@@ -3,7 +3,7 @@ import operator
 import toolz
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
 from ibis.pandas.core import execute
 
 

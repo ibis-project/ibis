@@ -36,7 +36,7 @@ IBIS_TEST_POSTGRES_DB = os.environ.get(
 )
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def con():
     return ibis.postgres.connect(
         host=PG_HOST,

@@ -1,9 +1,11 @@
 import operator
 
+import numpy as np
+import pandas as pd
 import pytest
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
 from ibis.tests.backends import Backend
 
 
@@ -152,6 +154,12 @@ def awards_players(backend):
 
 @pytest.fixture(scope='session')
 def geo(backend):
+    if backend.geo is None:
+        pytest.skip(
+            'Geo Spatial type not supported for {} backend.'.format(
+                backend.name
+            )
+        )
     return backend.geo
 
 
@@ -304,5 +312,52 @@ def get_spark_testing_client(data_directory):
         ['map_tuple_list_of_list_of_ints']
     )
     df_complicated.createOrReplaceTempView('complicated')
+
+    df_udf = s.createDataFrame(
+        [
+            ('a', 1, 4.0, 'a'),
+            ('b', 2, 5.0, 'a'),
+            ('c', 3, 6.0, 'b'),
+        ],
+        ['a', 'b', 'c', 'key']
+    )
+    df_udf.createOrReplaceTempView('udf')
+
+    df_udf_nan = s.createDataFrame(
+        pd.DataFrame(
+            {
+                'a': np.arange(10, dtype=float),
+                'b': [3.0, np.NaN] * 5,
+                'key': list('ddeefffggh'),
+            }
+        )
+    )
+    df_udf_nan.createOrReplaceTempView('udf_nan')
+
+    df_udf_null = s.createDataFrame(
+        [
+            (
+                float(i),
+                None if i % 2 else 3.0,
+                'ddeefffggh'[i]
+            )
+            for i in range(10)
+        ],
+        ['a', 'b', 'key']
+    )
+    df_udf_null.createOrReplaceTempView('udf_null')
+
+    df_udf_random = s.createDataFrame(
+        pd.DataFrame(
+            {
+                'a': np.arange(4, dtype=float).tolist()
+                + np.random.rand(3).tolist(),
+                'b': np.arange(4, dtype=float).tolist()
+                + np.random.rand(3).tolist(),
+                'key': list('ddeefff'),
+            }
+        )
+    )
+    df_udf_random.createOrReplaceTempView('udf_random')
 
     return _spark_testing_client

@@ -4,14 +4,14 @@ import re
 import pytest
 
 import ibis
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.config as config
 import ibis.expr.analysis as L
 import ibis.expr.api as api
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.common import ExpressionError, RelationError
+from ibis.common.exceptions import ExpressionError, RelationError
 from ibis.expr.types import ColumnExpr, TableExpr
 from ibis.tests.util import assert_equal
 
