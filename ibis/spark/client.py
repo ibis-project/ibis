@@ -286,6 +286,28 @@ class SparkTable(ir.TableExpr):
         op = self.op().change_name(new_qualified_name)
         return type(self)(op)
 
+    def alter(
+        self,
+        tbl_properties=None,
+    ):
+        """
+        Change setting and parameters of the table.
+
+        Parameters
+        ----------
+        tbl_properties : dict, optional
+
+        Returns
+        -------
+        None (for now)
+        """
+
+        stmt = ddl.AlterTable(
+            self._qualified_name,
+            tbl_properties=tbl_properties
+        )
+        return self._execute(stmt.compile())
+
 
 class SparkClient(SQLClient):
 
@@ -301,8 +323,6 @@ class SparkClient(SQLClient):
 
     def __init__(self, **kwargs):
         self._context = ps.SparkContext(**kwargs)
-        # builder = ps.sql.SparkSession.builder.enableHiveSupport()
-        # self._session = builder.getOrCreate()
         self._session = ps.sql.SparkSession(self._context)
         self._catalog = self._session.catalog
 

@@ -66,6 +66,11 @@ def _random_identifier(suffix):
     return '__ibis_test_{}_{}'.format(suffix, util.guid())
 
 
+@pytest.fixture(scope='session')
+def tmp_dir():
+    return '/tmp/__ibis_test_{}'.format(util.guid())
+
+
 @pytest.fixture
 def temp_database(con, test_data_db):
     name = _random_identifier('database')

@@ -56,56 +56,6 @@ LIMIT 10"""
     assert result == expected
 
 
-# TODO implement
-@pytest.mark.xfail
-def test_load_data_unpartitioned():
-    path = '/path/to/data'
-    stmt = ddl.LoadData('functional_alltypes', path, database='foo')
-
-    result = stmt.compile()
-    expected = (
-        "LOAD DATA INPATH '/path/to/data' "
-        "INTO TABLE foo.`functional_alltypes`"
-    )
-    assert result == expected
-
-    stmt.overwrite = True
-    result = stmt.compile()
-    expected = (
-        "LOAD DATA INPATH '/path/to/data' "
-        "OVERWRITE INTO TABLE foo.`functional_alltypes`"
-    )
-    assert result == expected
-
-
-# TODO implement
-@pytest.mark.xfail
-def test_load_data_partitioned():
-    path = '/path/to/data'
-    part = {'year': 2007, 'month': 7}
-    part_schema = ibis.schema([('year', 'int32'), ('month', 'int32')])
-    stmt = ddl.LoadData(
-        'functional_alltypes',
-        path,
-        database='foo',
-        partition=part,
-        partition_schema=part_schema,
-    )
-
-    result = stmt.compile()
-    expected = """\
-LOAD DATA INPATH '/path/to/data' INTO TABLE foo.`functional_alltypes`
-PARTITION (year=2007, month=7)"""
-    assert result == expected
-
-    stmt.overwrite = True
-    result = stmt.compile()
-    expected = """\
-LOAD DATA INPATH '/path/to/data' OVERWRITE INTO TABLE foo.`functional_alltypes`
-PARTITION (year=2007, month=7)"""
-    assert result == expected
-
-
 @pytest.mark.xfail(raises=AssertionError, reason='NYT')
 def test_select_overwrite():
     assert False
@@ -135,130 +85,17 @@ def table_name():
     return 'tbl'
 
 
-# TODO implement
-@pytest.mark.xfail
-def test_add_partition(part_schema, table_name):
-    stmt = ddl.AddPartition(
-        table_name, {'year': 2007, 'month': 4}, part_schema
-    )
-
-    result = stmt.compile()
-    expected = 'ALTER TABLE tbl ADD PARTITION (year=2007, month=4)'
-    assert result == expected
-
-
-# TODO implement
-@pytest.mark.xfail
-def test_add_partition_string_key():
-    part_schema = ibis.schema([('foo', 'int32'), ('bar', 'string')])
-    stmt = ddl.AddPartition('tbl', {'foo': 5, 'bar': 'qux'}, part_schema)
-
-    result = stmt.compile()
-    expected = 'ALTER TABLE tbl ADD PARTITION (foo=5, bar="qux")'
-    assert result == expected
-
-
-# TODO implement
-@pytest.mark.xfail
-def test_drop_partition(part_schema, table_name):
-    stmt = ddl.DropPartition(
-        table_name, {'year': 2007, 'month': 4}, part_schema
-    )
-
-    result = stmt.compile()
-    expected = 'ALTER TABLE tbl DROP PARTITION (year=2007, month=4)'
-    assert result == expected
-
-
-# TODO implement
-@pytest.mark.xfail
-def test_add_partition_with_props(part_schema, table_name):
-    props = dict(location='/users/foo/my-data')
-    stmt = ddl.AddPartition(
-        table_name, {'year': 2007, 'month': 4}, part_schema, **props
-    )
-
-    result = stmt.compile()
-    expected = """\
-ALTER TABLE tbl ADD PARTITION (year=2007, month=4)
-LOCATION '/users/foo/my-data'"""
-    assert result == expected
-
-
-# TODO implement
-@pytest.mark.xfail
-def test_alter_partition_properties(part_schema, table_name):
-    part = {'year': 2007, 'month': 4}
-
-    def _get_ddl_string(props):
-        stmt = ddl.AlterPartition(table_name, part, part_schema, **props)
-        return stmt.compile()
-
-    result = _get_ddl_string({'location': '/users/foo/my-data'})
-    expected = """\
-ALTER TABLE tbl PARTITION (year=2007, month=4)
-SET LOCATION '/users/foo/my-data'"""
-    assert result == expected
-
-    result = _get_ddl_string({'format': 'avro'})
-    expected = """\
-ALTER TABLE tbl PARTITION (year=2007, month=4)
-SET FILEFORMAT AVRO"""
-    assert result == expected
-
-    result = _get_ddl_string({'tbl_properties': {'bar': 2, 'foo': '1'}})
-    expected = """\
-ALTER TABLE tbl PARTITION (year=2007, month=4)
-SET TBLPROPERTIES (
-  'bar'='2',
-  'foo'='1'
-)"""
-    assert result == expected
-
-    result = _get_ddl_string({'serde_properties': {'baz': 3}})
-    expected = """\
-ALTER TABLE tbl PARTITION (year=2007, month=4)
-SET SERDEPROPERTIES (
-  'baz'='3'
-)"""
-    assert result == expected
-
-
-# TODO implement
-@pytest.mark.xfail
 def test_alter_table_properties(part_schema, table_name):
-    part = {'year': 2007, 'month': 4}
-
-    def _get_ddl_string(props):
-        stmt = ddl.AlterPartition(table_name, part, part_schema, **props)
-        return stmt.compile()
-
-    result = _get_ddl_string({'location': '/users/foo/my-data'})
+    stmt = ddl.AlterTable(
+        'tbl',
+        {'bar': 2, 'foo': '1'},
+    )
+    result = stmt.compile()
     expected = """\
-ALTER TABLE tbl PARTITION (year=2007, month=4)
-SET LOCATION '/users/foo/my-data'"""
-    assert result == expected
-
-    result = _get_ddl_string({'format': 'avro'})
-    expected = """\
-ALTER TABLE tbl PARTITION (year=2007, month=4)
-SET FILEFORMAT AVRO"""
-    assert result == expected
-
-    result = _get_ddl_string({'tbl_properties': {'bar': 2, 'foo': '1'}})
-    expected = """\
-ALTER TABLE tbl PARTITION (year=2007, month=4)
-SET TBLPROPERTIES (
+ALTER TABLE tbl SET
+TBLPROPERTIES (
   'bar'='2',
   'foo'='1'
-)"""
-    assert result == expected
-
-    result = _get_ddl_string({'serde_properties': {'baz': 3}})
-    expected = """\
-ALTER TABLE tbl PARTITION (year=2007, month=4)
-SET SERDEPROPERTIES (
-  'baz'='3'
 )"""
     assert result == expected
 
@@ -321,60 +158,6 @@ LOCATION '{0}'""".format(
     assert result == expected
 
 
-# TODO implement
-@pytest.mark.xfail
-def test_create_table_like_parquet():
-    directory = '/path/to/'
-    path = '/path/to/parquetfile'
-    statement = ddl.CreateTableParquet(
-        'new_table',
-        directory,
-        example_file=path,
-        can_exist=True,
-        database='foo',
-    )
-
-    result = statement.compile()
-    expected = """\
-CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
-LIKE PARQUET '{0}'
-USING PARQUET
-LOCATION '{1}'""".format(
-        path, directory
-    )
-
-    assert result == expected
-
-
-# TODO implement
-@pytest.mark.xfail
-def test_create_table_parquet_like_other():
-    # alternative to "LIKE PARQUET"
-    directory = '/path/to/'
-    example_table = 'db.other'
-
-    statement = ddl.CreateTableParquet(
-        'new_table',
-        directory,
-        example_table=example_table,
-        can_exist=True,
-        database='foo',
-    )
-
-    result = statement.compile()
-    expected = """\
-CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
-LIKE {0}
-USING PARQUET
-LOCATION '{1}'""".format(
-        example_table, directory
-    )
-
-    assert result == expected
-
-
-# TODO implement
-@pytest.mark.xfail
 def test_create_table_parquet_with_schema():
     directory = '/path/to/'
 
@@ -382,18 +165,18 @@ def test_create_table_parquet_with_schema():
         [('foo', 'string'), ('bar', 'int8'), ('baz', 'int16')]
     )
 
-    statement = ddl.CreateTableParquet(
+    statement = ddl.CreateTableWithSchema(
         'new_table',
-        directory,
-        schema=schema,
-        external=True,
-        can_exist=True,
+        schema,
         database='foo',
+        format='parquet',
+        can_exist=True,
+        path=directory,
     )
 
     result = statement.compile()
     expected = """\
-CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
+CREATE TABLE IF NOT EXISTS foo.`new_table`
 (`foo` string,
  `bar` tinyint,
  `baz` smallint)
@@ -402,111 +185,6 @@ LOCATION '{0}'""".format(
         directory
     )
 
-    assert result == expected
-
-
-# TODO implement
-@pytest.mark.xfail
-def test_create_table_delimited():
-    path = '/path/to/files/'
-    schema = ibis.schema(
-        [
-            ('a', 'string'),
-            ('b', 'int32'),
-            ('c', 'double'),
-            ('d', 'decimal(12, 2)'),
-        ]
-    )
-
-    stmt = ddl.CreateTableDelimited(
-        'new_table',
-        path,
-        schema,
-        delimiter='|',
-        escapechar='\\',
-        lineterminator='\0',
-        database='foo',
-        can_exist=True,
-    )
-
-    result = stmt.compile()
-    expected = """\
-CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
-(`a` string,
- `b` int,
- `c` double,
- `d` decimal(12, 2))
-ROW FORMAT DELIMITED
-FIELDS TERMINATED BY '|'
-ESCAPED BY '\\'
-LINES TERMINATED BY '\0'
-LOCATION '{0}'""".format(
-        path
-    )
-    assert result == expected
-
-
-# TODO implement
-@pytest.mark.xfail
-def test_create_external_table_avro():
-    path = '/path/to/files/'
-
-    avro_schema = {
-        'fields': [
-            {'name': 'a', 'type': 'string'},
-            {'name': 'b', 'type': 'int'},
-            {'name': 'c', 'type': 'double'},
-            {
-                "type": "bytes",
-                "logicalType": "decimal",
-                "precision": 4,
-                "scale": 2,
-                'name': 'd',
-            },
-        ],
-        'name': 'my_record',
-        'type': 'record',
-    }
-
-    stmt = ddl.CreateTableAvro(
-        'new_table', path, avro_schema, database='foo', can_exist=True
-    )
-
-    result = stmt.compile()
-    expected = (
-        """\
-CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
-USING AVRO
-LOCATION '%s'
-TBLPROPERTIES (
-  'avro.schema.literal'='{
-  "fields": [
-    {
-      "name": "a",
-      "type": "string"
-    },
-    {
-      "name": "b",
-      "type": "int"
-    },
-    {
-      "name": "c",
-      "type": "double"
-    },
-    {
-      "logicalType": "decimal",
-      "name": "d",
-      "precision": 4,
-      "scale": 2,
-      "type": "bytes"
-    }
-  ],
-  "name": "my_record",
-  "type": "record"
-}'
-)"""
-        % path
-    )
     assert result == expected
 
 
@@ -538,23 +216,6 @@ SELECT *
 FROM functional_alltypes
 WHERE `bigint_col` > 0"""
     assert result == expected
-
-
-# TODO implement
-@pytest.mark.xfail
-def test_avro_other_formats(t):
-    statement = _create_table('tname', t, format='avro', can_exist=True)
-    result = statement.compile()
-    expected = """\
-CREATE TABLE IF NOT EXISTS `tname`
-USING AVRO
-AS
-SELECT *
-FROM functional_alltypes"""
-    assert result == expected
-
-    with pytest.raises(ValueError):
-        _create_table('tname', t, format='foo')
 
 
 @pytest.mark.xfail(raises=AssertionError, reason='NYT')

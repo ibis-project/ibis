@@ -5,7 +5,6 @@ import pytest
 
 import ibis
 import ibis.common as com
-import ibis.expr.types as ir
 import ibis.util as util
 from ibis.tests.util import assert_equal
 
@@ -35,8 +34,6 @@ def test_drop_non_empty_database(con, alltypes, temp_table_db):
         con.drop_database(temp_database)
 
 
-# TODO implement
-@pytest.mark.xfail
 def test_create_database_with_location(con, tmp_dir):
     base = pjoin(tmp_dir, util.guid())
     name = '__ibis_test_{}'.format(util.guid())
@@ -47,15 +44,13 @@ def test_create_database_with_location(con, tmp_dir):
         assert os.path.exists(base)
     finally:
         try:
-            con.drop_database(name)
+            con.drop_database(name, force=True)
         finally:
             os.rmdir(base)
 
 
-# TODO implement
-@pytest.mark.xfail
 def test_create_table_with_location_execute(
-    con, hdfs, tmp_dir, alltypes, test_data_db, temp_table
+    con, tmp_dir, alltypes, test_data_db, temp_table
 ):
     base = pjoin(tmp_dir, util.guid())
     name = 'test_{}'.format(util.guid())
@@ -67,7 +62,7 @@ def test_create_table_with_location_execute(
     con.create_table(
         table_name, obj=expr, location=tmp_path, database=test_data_db
     )
-    assert hdfs.exists(tmp_path)
+    assert os.path.exists(tmp_path)
 
 
 def test_drop_table_not_exist(con):
@@ -230,90 +225,35 @@ def path_uuid():
 
 
 @pytest.fixture
-def table(con, tmp_db, tmp_dir, path_uuid):
+def table(con, temp_database, tmp_dir, path_uuid):
     table_name = 'table_{}'.format(util.guid())
     fake_path = pjoin(tmp_dir, path_uuid)
     schema = ibis.schema([('foo', 'string'), ('bar', 'int64')])
     con.create_table(
         table_name,
-        database=tmp_db,
+        database=temp_database,
         schema=schema,
         format='parquet',
         location=fake_path,
     )
     try:
-        yield con.table(table_name, database=tmp_db)
+        yield con.table(table_name, database=temp_database)
     finally:
-        con.drop_table(table_name, database=tmp_db)
+        con.drop_table(table_name, database=temp_database)
 
 
-# TODO implement
-@pytest.mark.xfail
-def test_change_location(con, table, tmp_dir, path_uuid):
-    old_loc = table.metadata().location
-
-    new_path = pjoin(tmp_dir, 'new-path')
-    table.alter(location=new_path)
-
-    new_loc = table.metadata().location
-    assert new_loc == old_loc.replace(path_uuid, 'new-path')
-
-
-# TODO implement
-@pytest.mark.xfail
 def test_change_properties(con, table):
     props = {'foo': '1', 'bar': '2'}
 
     table.alter(tbl_properties=props)
-    tbl_props = table.metadata().tbl_properties
-    for k, v in props.items():
-        assert v == tbl_props[k]
-
-    table.alter(serde_properties=props)
-    serde_props = table.metadata().serde_properties
-    for k, v in props.items():
-        assert v == serde_props[k]
-
-
-# TODO implement
-@pytest.mark.xfail
-def test_change_format(con, table):
-    table.alter(format='avro')
-
-    meta = table.metadata()
-    assert 'Avro' in meta.hive_format
-
-
-# TODO implement
-@pytest.mark.xfail
-def test_query_avro(con, test_data_dir, tmp_db):
-    hdfs_path = pjoin(test_data_dir, 'avro/tpch_region_avro')
-
-    avro_schema = {
-        "fields": [
-            {"type": ["int", "null"], "name": "R_REGIONKEY"},
-            {"type": ["string", "null"], "name": "R_NAME"},
-            {"type": ["string", "null"], "name": "R_COMMENT"},
-        ],
-        "type": "record",
-        "name": "a",
-    }
-
-    table = con.avro_file(hdfs_path, avro_schema, database=tmp_db)
-
-    name = table.op().name
-    assert name.startswith('{}.'.format(tmp_db))
-
-    # table exists
-    assert con.exists_table(name, database=tmp_db)
-
-    expr = table.r_name.value_counts()
-    expr.execute()
-
-    assert table.count().execute() == 5
-
-    df = table.execute()
-    assert len(df) == 5
+    tbl_props_rows = con.raw_sql(
+        "show tblproperties {}".format(table.name),
+        results=True
+    ).fetchall()
+    for row in tbl_props_rows:
+        key = row.key
+        value = row.value
+        assert value == props[key]
 
 
 def test_create_table_reserved_identifier(con, alltypes):
@@ -334,56 +274,3 @@ def test_create_table_reserved_identifier(con, alltypes):
 @pytest.mark.xfail(raises=AssertionError, reason='NYT')
 def test_query_text_file_regex():
     assert False
-
-
-# TODO implement
-@pytest.mark.xfail
-def test_query_delimited_file_directory(con, test_data_dir, tmp_db):
-    hdfs_path = pjoin(test_data_dir, 'csv')
-
-    schema = ibis.schema(
-        [('foo', 'string'), ('bar', 'double'), ('baz', 'int8')]
-    )
-    name = 'delimited_table_test1'
-    table = con.delimited_file(
-        hdfs_path, schema, name=name, database=tmp_db, delimiter=','
-    )
-
-    expr = (
-        table[table.bar > 0]
-        .group_by('foo')
-        .aggregate(
-            [
-                table.bar.sum().name('sum(bar)'),
-                table.baz.sum().name('mean(baz)'),
-            ]
-        )
-    )
-    assert expr.execute() is not None
-
-
-# TODO implement
-@pytest.mark.xfail
-def test_varchar_char_support(temp_char_table):
-    assert isinstance(temp_char_table['group1'], ir.StringValue)
-    assert isinstance(temp_char_table['group2'], ir.StringValue)
-
-
-# TODO implement
-@pytest.mark.xfail
-def test_temp_table_concurrency(con, test_data_dir):
-    # we don't install futures on windows in CI and we can't run this test
-    # there anyway so we import here
-    import concurrent.futures
-    from concurrent.futures import as_completed
-
-    def limit_10(i, hdfs_path):
-        t = con.parquet_file(hdfs_path)
-        return t.sort_by(t.r_regionkey).limit(1, offset=i).execute()
-
-    nthreads = 4
-    hdfs_path = pjoin(test_data_dir, 'parquet/tpch_region')
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=nthreads) as e:
-        futures = [e.submit(limit_10, i, hdfs_path) for i in range(nthreads)]
-    assert all(map(len, (future.result() for future in as_completed(futures))))

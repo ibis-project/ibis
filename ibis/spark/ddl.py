@@ -134,20 +134,14 @@ class CreateTable(CreateDDL):
 
 
 class CreateTableWithSchema(CreateTable):
-    def __init__(self, table_name, schema, table_format=None, **kwargs):
+    def __init__(self, table_name, schema, **kwargs):
         super().__init__(table_name, **kwargs)
         self.schema = schema
-        self.table_format = table_format
 
     @property
     def _pieces(self):
         yield format_schema(self.schema)
-
-        if self.table_format is not None:
-            yield '\n'.join(self.table_format.to_ddl())
-        else:
-            yield self._storage()
-
+        yield self._storage()
         yield self._location()
 
 
@@ -341,13 +335,9 @@ class AlterTable(SparkDDL):
     def __init__(
         self,
         table,
-        location=None,
-        format=None,
         tbl_properties=None,
     ):
         self.table = table
-        self.location = location
-        self.format = _sanitize_format(format)
         self.tbl_properties = tbl_properties
 
     def _wrap_command(self, cmd):
@@ -355,12 +345,6 @@ class AlterTable(SparkDDL):
 
     def _format_properties(self, prefix=''):
         tokens = []
-
-        if self.location is not None:
-            tokens.append("LOCATION '{}'".format(self.location))
-
-        if self.format is not None:
-            tokens.append("FILEFORMAT {}".format(self.format))
 
         if self.tbl_properties is not None:
             tokens.append(format_tblproperties(self.tbl_properties))
@@ -372,7 +356,7 @@ class AlterTable(SparkDDL):
 
     def compile(self):
         props = self._format_properties()
-        action = '{} SET {}'.format(self.table, props)
+        action = '{} SET{}'.format(self.table, props)
         return self._wrap_command(action)
 
 
