@@ -1,49 +1,11 @@
-import re
-
+import ibis.impala.ddl as impala_ddl
 from ibis.impala.compiler import quote_identifier
+from ibis.impala.ddl import (  # noqa: F401
+    _is_fully_qualified,
+    _is_quoted,
+    fully_qualified_re,
+)
 from ibis.spark.compiler import _type_to_sql_string
-from ibis.sql.compiler import DDL, DML
-
-fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
-
-
-def _is_fully_qualified(x):
-    return bool(fully_qualified_re.search(x))
-
-
-def _is_quoted(x):
-    regex = re.compile(r"(?:`(.*)`|(.*))")
-    quoted, _ = regex.match(x).groups()
-    return quoted is not None
-
-
-class SparkQualifiedSQLStatement:
-    def _get_scoped_name(self, obj_name, database):
-        if database:
-            scoped_name = '{}.`{}`'.format(database, obj_name)
-        else:
-            if not _is_fully_qualified(obj_name):
-                if _is_quoted(obj_name):
-                    return obj_name
-                else:
-                    return '`{}`'.format(obj_name)
-            else:
-                return obj_name
-        return scoped_name
-
-
-class SparkDDL(DDL, SparkQualifiedSQLStatement):
-    pass
-
-
-class SparkDML(DML, SparkQualifiedSQLStatement):
-    pass
-
-
-class CreateDDL(SparkDDL):
-    def _if_exists(self):
-        return 'IF NOT EXISTS ' if self.can_exist else ''
-
 
 _format_aliases = {'TEXTFILE': 'TEXT'}
 
@@ -82,15 +44,9 @@ def _format_properties(props):
     return '(\n{}\n)'.format(',\n'.join(tokens))
 
 
-class CreateTable(CreateDDL):
+class CreateTable(impala_ddl.CreateTable):
 
-    """
-
-    Parameters
-    ----------
-    partition :
-
-    """
+    """Create a table"""
 
     def __init__(
         self,
@@ -101,36 +57,20 @@ class CreateTable(CreateDDL):
         path=None,
         tbl_properties=None,
     ):
-        self.table_name = table_name
-        self.database = database
-        self.path = path
-        self.can_exist = can_exist
-        self.format = _sanitize_format(format)
-        self.tbl_properties = tbl_properties
-
-    @property
-    def _prefix(self):
-        return 'CREATE TABLE'
-
-    def _create_line(self):
-        scoped_name = self._get_scoped_name(self.table_name, self.database)
-        return '{} {}{}'.format(self._prefix, self._if_exists(), scoped_name)
-
-    def _location(self):
-        return "LOCATION '{}'".format(self.path) if self.path else None
+        super().__init__(
+            table_name,
+            database=database,
+            external=False,
+            format=format,
+            can_exist=can_exist,
+            partition=None,
+            path=path,
+            tbl_properties=tbl_properties,
+        )
 
     def _storage(self):
         # By the time we're here, we have a valid format
         return 'USING {}'.format(self.format)
-
-    @property
-    def pieces(self):
-        yield self._create_line()
-        for piece in filter(None, self._pieces):
-            yield piece
-
-    def compile(self):
-        return '\n'.join(self.pieces)
 
 
 class CreateTableWithSchema(CreateTable):
@@ -193,8 +133,8 @@ class CreateView(CTAS):
             table_name,
             select,
             database=database,
+            can_exist=or_replace,
         )
-        self.or_replace = or_replace
         self.temporary = temporary
 
     @property
@@ -206,15 +146,16 @@ class CreateView(CTAS):
     def _prefix(self):
         return 'CREATE {}{}VIEW'.format(
             self._or_replace_clause(),
-            self._view_clause()
+            self._temporary_clause()
         )
 
     def _or_replace_clause(self):
-        return 'OR REPLACE ' if self.or_replace else ''
+        return 'OR REPLACE ' if self.can_exist else ''
 
-    def _view_clause(self):
-        if self.temporary:
-            return 'TEMPORARY '
+    def _temporary_clause(self):
+        return 'TEMPORARY ' if self.temporary else ''
+
+    def _if_exists(self):
         return ''
 
 
@@ -232,44 +173,16 @@ def _format_schema_element(name, t):
     )
 
 
-class CreateDatabase(CreateDDL):
-    def __init__(self, name, path=None, can_exist=False):
-        self.name = name
-        self.path = path
-        self.can_exist = can_exist
-
-    def compile(self):
-        name = quote_identifier(self.name)
-
-        create_decl = 'CREATE DATABASE'
-        create_line = '{} {}{}'.format(create_decl, self._if_exists(), name)
-        if self.path is not None:
-            create_line += "\nLOCATION '{}'".format(self.path)
-
-        return create_line
+class CreateDatabase(impala_ddl.CreateDatabase):
+    pass
 
 
-class DropObject(SparkDDL):
-    def __init__(self, must_exist=True):
-        self.must_exist = must_exist
-
-    def compile(self):
-        if_exists = '' if self.must_exist else 'IF EXISTS '
-        object_name = self._object_name()
-        return 'DROP {} {}{}'.format(self._object_type, if_exists, object_name)
+class DropObject(impala_ddl.DropObject):
+    pass
 
 
-class DropTable(DropObject):
-
-    _object_type = 'TABLE'
-
-    def __init__(self, table_name, database=None, must_exist=True):
-        super().__init__(must_exist=must_exist)
-        self.table_name = table_name
-        self.database = database
-
-    def _object_name(self):
-        return self._get_scoped_name(self.table_name, self.database)
+class DropTable(impala_ddl.DropTable):
+    pass
 
 
 class DropDatabase(DropObject):
@@ -281,30 +194,21 @@ class DropDatabase(DropObject):
         self.name = name
         self.cascade = cascade
 
+    def _object_name(self):
+        return self.name
+
     def compile(self):
         if self.cascade:
             return '{} CASCADE'.format(super().compile())
         else:
             return super().compile()
 
-    def _object_name(self):
-        return self.name
+
+class TruncateTable(impala_ddl.TruncateTable):
+    pass
 
 
-class TruncateTable(SparkDDL):
-
-    _object_type = 'TABLE'
-
-    def __init__(self, table_name, database=None):
-        self.table_name = table_name
-        self.database = database
-
-    def compile(self):
-        name = self._get_scoped_name(self.table_name, self.database)
-        return 'TRUNCATE TABLE {}'.format(name)
-
-
-class InsertSelect(SparkDML):
+class InsertSelect(impala_ddl.InsertSelect):
     def __init__(
         self,
         table_name,
@@ -312,11 +216,14 @@ class InsertSelect(SparkDML):
         database=None,
         overwrite=False,
     ):
-        self.table_name = table_name
-        self.database = database
-        self.select = select_expr
-
-        self.overwrite = overwrite
+        super().__init__(
+            table_name,
+            select_expr,
+            database=database,
+            partition=None,
+            partition_schema=None,
+            overwrite=overwrite,
+        )
 
     def compile(self):
         if self.overwrite:
@@ -331,28 +238,19 @@ class InsertSelect(SparkDML):
         )
 
 
-class AlterTable(SparkDDL):
+class AlterTable(impala_ddl.AlterTable):
     def __init__(
         self,
         table,
         tbl_properties=None,
     ):
-        self.table = table
-        self.tbl_properties = tbl_properties
-
-    def _wrap_command(self, cmd):
-        return 'ALTER TABLE {}'.format(cmd)
-
-    def _format_properties(self, prefix=''):
-        tokens = []
-
-        if self.tbl_properties is not None:
-            tokens.append(format_tblproperties(self.tbl_properties))
-
-        if len(tokens) > 0:
-            return '\n{}{}'.format(prefix, '\n'.join(tokens))
-        else:
-            return ''
+        super().__init__(
+            table,
+            location=None,
+            format=None,
+            tbl_properties=tbl_properties,
+            serde_properties=None,
+        )
 
     def compile(self):
         props = self._format_properties()
@@ -360,15 +258,10 @@ class AlterTable(SparkDDL):
         return self._wrap_command(action)
 
 
-class RenameTable(AlterTable):
+class RenameTable(impala_ddl.RenameTable):
     def __init__(
         self, old_name, new_name
     ):
-        self.old_name = old_name
-        self.new_name = new_name
-
-    def compile(self):
-        cmd = '{} RENAME TO {}'.format(
-            self.old_name, self.new_name
+        super().__init__(
+            old_name, new_name, old_database=None, new_database=None
         )
-        return self._wrap_command(cmd)
