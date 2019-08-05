@@ -817,3 +817,39 @@ def test_table_distinct(t, df):
     result = expr.execute()
     expected = df[['dup_strings']].drop_duplicates()
     tm.assert_frame_equal(result, expected)
+
+
+@pytest.mark.parametrize("distinct", [True, False])
+def test_union(client, df1, distinct):
+    t = client.table('df1')
+    expr = t.union(t, distinct=distinct)
+    result = expr.execute()
+    expected = (
+        df1 if distinct else pd.concat([df1, df1], axis=0, ignore_index=True)
+    )
+    tm.assert_frame_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    "distinct",
+    [
+        pytest.param(
+            True,
+            marks=pytest.mark.xfail(
+                raises=TypeError,
+                reason=(
+                    "Pandas cannot compute the distinct element of an "
+                    "array column"
+                ),
+            ),
+        ),
+        False,
+    ],
+)
+def test_union_with_list_types(t, df, distinct):
+    expr = t.union(t, distinct=distinct)
+    result = expr.execute()
+    expected = (
+        df if distinct else pd.concat([df, df], axis=0, ignore_index=True)
+    )
+    tm.assert_frame_equal(result, expected)
