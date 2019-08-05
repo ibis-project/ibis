@@ -527,6 +527,24 @@ class SparkClient(SQLClient):
 
         return sch.infer(df)
 
+    def schema_from_csv(self, path, header=True):
+        """
+        Return a Schema object for the indicated csv file. Spark goes through
+        the file once to determine the schema.
+
+        Parameters
+        ----------
+        path : string
+        header : boolean, default True
+          Sets whether Spark reads the first line of the csv file as header
+
+        Returns
+        -------
+        schema : ibis Schema
+        """
+        df_schema = self._session.read.csv(path, header=header).schema
+        return sch.infer(df_schema)
+
     @property
     def version(self):
         return parse_version(ps.__version__)
