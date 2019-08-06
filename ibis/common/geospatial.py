@@ -39,18 +39,16 @@ def _format_geo_metadata(op, value: str, inline_metadata: bool = False) -> str:
         value = "'{}{}'{}".format(
             'SRID={};'.format(srid) if srid else '',
             value,
-            '::{}'.format(geotype) if geotype else ''
+            '::{}'.format(geotype) if geotype else '',
         )
         return value
-    value = "'{}'".format(value)
 
-    if geotype not in ('geometry', 'geography'):
-        # default for not inline format
-        geotype = 'geometry'
+    geofunc = (
+        'ST_GeogFromText' if geotype == 'geography' else 'ST_GeomFromText'
+    )
 
-    geofunc = 'ST_GeomFromText' if geotype == 'geometry' else 'ST_GeogFromText'
-
-    if srid and not inline_metadata:
+    value = repr(value)
+    if srid:
         value += ', {}'.format(srid)
 
     return "{}({})".format(geofunc, value)
