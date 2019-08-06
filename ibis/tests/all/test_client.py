@@ -55,10 +55,6 @@ def test_query_schema(backend, con, alltypes, expr_fn, expected):
     [
         'select * from functional_alltypes limit 10',
         'select * from functional_alltypes \nlimit 10\n',
-        'select * from functional_alltypes limit 10--test',
-        'select * from functional_alltypes \nlimit 10\n;',
-        'select * from functional_alltypes \nlimit 10;',
-        'select * from functional_alltypes \nlimit 10;--test',
     ],
 )
 @pytest.mark.xfail_unsupported

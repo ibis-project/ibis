@@ -41,14 +41,14 @@ def test_list_tables(con):
 
 @pytest.mark.skipif(
     parse_version(get_distribution('pymapd').version) < parse_version('0.12'),
-    reason='must have pymapd>=12 to connect to existing session'
+    reason='must have pymapd>=12 to connect to existing session',
 )
 def test_session_id_connection(session_con):
     new_connection = ibis.mapd.connect(
         protocol=session_con.protocol,
         host=session_con.host,
         port=session_con.port,
-        session_id=session_con.con._session
+        session_id=session_con.con._session,
     )
     assert new_connection.list_tables()
 
@@ -133,3 +133,18 @@ def test_create_table_schema(con):
         assert isinstance(t.w, ir.MultiPolygonColumn)
     finally:
         con.drop_table(t_name)
+
+
+@pytest.mark.parametrize(
+    'sql',
+    [
+        'select * from functional_alltypes limit 10--test',
+        'select * from functional_alltypes \nlimit 10\n;',
+        'select * from functional_alltypes \nlimit 10;',
+        'select * from functional_alltypes \nlimit 10;--test',
+    ],
+)
+@pytest.mark.xfail_unsupported
+def test_sql(con, sql):
+    # execute the expression using SQL query
+    con.sql(sql).execute()
