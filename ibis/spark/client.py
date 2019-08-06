@@ -573,7 +573,7 @@ class SparkClient(SQLClient):
         df = self._session.read.csv(path, header=header, inferSchema=True)
         return spark_dataframe_schema(df)
 
-    def table_or_temp_view_from_csv(
+    def create_table_or_temp_view_from_csv(
         self,
         name,
         path,
@@ -595,11 +595,15 @@ class SparkClient(SQLClient):
             else:
                 df.createTempView(name)
         else:
+            qualified_name = _fully_qualified_name(
+                name,
+                database or self.current_database
+            )
             mode = 'error'
             if force:
                 mode = 'overwrite'
             df.write.saveAsTable(
-                name,
+                qualified_name,
                 format=format,
                 mode=mode,
             )
