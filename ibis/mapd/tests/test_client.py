@@ -1,3 +1,5 @@
+import sys
+
 import pandas as pd
 import pytest
 from pkg_resources import get_distribution, parse_version
@@ -144,7 +146,10 @@ def test_create_table_schema(con):
         'select * from functional_alltypes \nlimit 10;--test',
     ],
 )
-@pytest.mark.xfail_unsupported
+@pytest.mark.skipif(
+    sys.version_info < (3, 6),
+    reason='`sql` method just available for Python 3.6 or greater.',
+)
 def test_sql(con, sql):
     # execute the expression using SQL query
     con.sql(sql).execute()

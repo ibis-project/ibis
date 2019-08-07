@@ -929,6 +929,10 @@ class MapDClient(SQLClient):
         -------
         table : TableExpr
         """
+        if pymapd_dtype is None:
+            raise com.UnsupportedOperationError(
+                'This method is available just on Python version >= 3.6.'
+            )
         # Remove `;` + `--` (comment)
         query = re.sub(r'\s*;\s*--', '\n--', query.strip())
         # Remove trailing ;
