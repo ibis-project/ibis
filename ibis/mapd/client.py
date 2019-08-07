@@ -535,14 +535,14 @@ class MapDClient(SQLClient):
             database, table_name = table_name_
         return self.get_schema(table_name, database)
 
-    def _execute(self, query, results=True, limit=None, **kwargs):
+    def _execute(self, query, results=True):
         """
 
         query:
         :return:
         """
         if isinstance(query, (DDL, DML)):
-            query = query.compile(limit=None, **kwargs)
+            query = query.compile()
 
         if self.execution_type == EXECUTION_TYPE_ICP:
             execute = self.con.select_ipc
