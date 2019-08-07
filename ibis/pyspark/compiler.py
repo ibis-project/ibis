@@ -3,6 +3,7 @@ import enum
 import functools
 
 import pyspark.sql.functions as F
+from pyspark.sql.functions import pandas_udf, PandasUDFType
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
@@ -96,6 +97,15 @@ def compile_column(t, expr, scope, **kwargs):
     op = expr.op()
     table = compile_with_scope(t, op.table, scope)
     return table[op.name]
+
+
+@compiles(ops.DistinctColumn)
+def compile_distinct(t, expr, scope, **kwargs):
+    op = expr.op()
+    root_table_expr = op.root_tables()[0].to_expr()
+    src_table = compile_with_scope(t, root_table_expr, scope)
+    src_column_name = op.arg.get_name()
+    return src_table.select(src_column_name).distinct()[src_column_name]
 
 
 @compiles(ops.SelfReference)
@@ -495,6 +505,266 @@ def compile_isinf(t, expr, scope, **kwargs):
 
     src_column = t.translate(op.arg, scope)
     return (src_column == float('inf')) | (src_column == float('-inf'))
+
+
+@compiles(ops.Uppercase)
+def compile_uppercase(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    @pandas_udf('string', PandasUDFType.SCALAR)
+    def upper(v):
+        return v.str.upper()
+
+    src_column = t.translate(op.arg, scope)
+    return upper(src_column)
+
+
+@compiles(ops.Lowercase)
+def compile_lowercase(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    @pandas_udf('string', PandasUDFType.SCALAR)
+    def lower(v):
+        return v.str.lower()
+
+    src_column = t.translate(op.arg, scope)
+    return lower(src_column)
+
+
+@compiles(ops.Reverse)
+def compile_reverse(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    @pandas_udf('string', PandasUDFType.SCALAR)
+    def reverse(s):
+        return s.str[::-1]
+
+    src_column = t.translate(op.arg, scope)
+    return reverse(src_column)
+
+
+@compiles(ops.Strip)
+def compile_strip(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    @pandas_udf('string', PandasUDFType.SCALAR)
+    def strip(s):
+        return s.str.strip()
+
+    src_column = t.translate(op.arg, scope)
+    return strip(src_column)
+
+
+@compiles(ops.LStrip)
+def compile_lstrip(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    @pandas_udf('string', PandasUDFType.SCALAR)
+    def lstrip(s):
+        return s.str.lstrip()
+
+    src_column = t.translate(op.arg, scope)
+    return lstrip(src_column)
+
+
+@compiles(ops.RStrip)
+def compile_rstrip(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    @pandas_udf('string', PandasUDFType.SCALAR)
+    def rstrip(s):
+        return s.str.lstrip()
+
+    src_column = t.translate(op.arg, scope)
+    return rstrip(src_column)
+
+
+@compiles(ops.Capitalize)
+def compile_capitalize(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    @pandas_udf('string', PandasUDFType.SCALAR)
+    def capitalize(s):
+        return s.str.capitalize()
+
+    src_column = t.translate(op.arg, scope)
+    return capitalize(src_column)
+
+
+@compiles(ops.Substring)
+def compile_substring(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    @F.udf('string')
+    def substring(s, start, length):
+        end = start + length
+        return s[start:end]
+
+    src_column = t.translate(op.arg, scope)
+    start_column = t.translate(op.start, scope)
+    length_column = t.translate(op.length, scope)
+    return substring(src_column, start_column, length_column)
+
+
+@compiles(ops.StringLength)
+def compile_string_length(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    @pandas_udf('int', PandasUDFType.SCALAR)
+    def length(s):
+        return s.str.len()
+
+    src_column = t.translate(op.arg, scope)
+    return length(src_column)
+
+
+@compiles(ops.StrRight)
+def compile_str_right(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    @F.udf('string')
+    def str_right(s, nchars):
+        return s[-nchars:]
+
+    src_column = t.translate(op.arg, scope)
+    nchars_column = t.translate(op.nchars, scope)
+    return str_right(src_column, nchars_column)
+
+
+@compiles(ops.Repeat)
+def compile_repeat(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    @F.udf('string')
+    def repeat(s, times):
+        return s * times
+
+    src_column = t.translate(op.arg, scope)
+    times_column = t.translate(op.times, scope)
+    return repeat(src_column, times_column)
+
+
+@compiles(ops.StringFind)
+def compile_string_find(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    @F.udf('long')
+    def str_find(s, substr, start, end):
+        return s.find(substr, start, end)
+
+    src_column = t.translate(op.arg, scope)
+    substr_column = t.translate(op.substr, scope)
+    start_column = t.translate(op.start, scope) if op.start else F.lit(None)
+    end_column = t.translate(op.end, scope) if op.end else F.lit(None)
+    return str_find(src_column, substr_column, start_column, end_column)
+
+
+@compiles(ops.Translate)
+def compile_translate(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    src_column = t.translate(op.arg, scope)
+    from_str = op.from_str.op().value
+    to_str = op.to_str.op().value
+    return F.translate(src_column, from_str, to_str)
+
+
+@compiles(ops.LPad)
+def compile_lpad(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    src_column = t.translate(op.arg, scope)
+    length = op.length.op().value
+    pad = op.pad.op().value
+    return F.lpad(src_column, length, pad)
+
+
+@compiles(ops.RPad)
+def compile_rpad(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    src_column = t.translate(op.arg, scope)
+    length = op.length.op().value
+    pad = op.pad.op().value
+    return F.rpad(src_column, length, pad)
+
+
+@compiles(ops.StringJoin)
+def compile_string_join(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    @F.udf('string')
+    def join(sep, arr):
+        return sep.join(arr)
+
+    sep_column = t.translate(op.sep, scope)
+    arg = t.translate(op.arg, scope)
+    return join(sep_column, F.array(arg))
+
+
+@compiles(ops.RegexSearch)
+def compile_regex_search(t, expr, scope, **kwargs):
+    import re
+    op = expr.op()
+
+    @F.udf('boolean')
+    def regex_search(s, pattern):
+        return True if re.search(pattern, s) else False
+
+    src_column = t.translate(op.arg, scope)
+    pattern = t.translate(op.pattern, scope)
+    return regex_search(src_column, pattern)
+
+
+@compiles(ops.RegexExtract)
+def compile_regex_extract(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    src_column = t.translate(op.arg, scope)
+    pattern = op.pattern.op().value
+    idx = op.index.op().value
+    return F.regexp_extract(src_column, pattern, idx)
+
+
+@compiles(ops.RegexReplace)
+def compile_regex_replace(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    src_column = t.translate(op.arg, scope)
+    pattern = op.pattern.op().value
+    replacement = op.replacement.op().value
+    return F.regexp_replace(src_column, pattern, replacement)
+
+
+@compiles(ops.StringReplace)
+def compile_string_replace(t, expr, scope, **kwargs):
+    return compile_regex_replace(t, expr)
+
+
+@compiles(ops.StringSplit)
+def compile_string_split(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    src_column = t.translate(op.arg, scope)
+    delimiter = op.delimiter.op().value
+    return F.split(src_column, delimiter)
+
+
+@compiles(ops.StringAscii)
+def compile_string_ascii(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    src_column = t.translate(op.arg, scope)
+    return F.ascii(src_column)
+
+
+@compiles(ops.StringSQLLike)
+def compile_string_like(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    src_column = t.translate(op.arg, scope)
+    pattern = op.pattern.op().value
+    return src_column.like(pattern)
 
 
 @compiles(ops.ValueList)
