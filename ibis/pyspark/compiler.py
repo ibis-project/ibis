@@ -2,10 +2,10 @@ import collections
 import functools
 
 import pyspark.sql.functions as F
-from pyspark.sql.functions import pandas_udf, PandasUDFType
+from pyspark.sql.functions import PandasUDFType, pandas_udf
 from pyspark.sql.window import Window
 
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as types
 from ibis.pyspark.operations import PysparkTable
