@@ -551,7 +551,8 @@ class Spark(Backend, RoundHalfToEven):
         return self.connection.table('awards_players')
 
 
-class PySpark(Backend, RoundHalfToEven):
+class PySpark(Backend, RoundAwayFromZero):
+
     @staticmethod
     def skip_if_missing_dependencies() -> None:
         pytest.importorskip('pyspark')

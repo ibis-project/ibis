@@ -2,6 +2,7 @@ import collections
 import functools
 
 import pyspark.sql.functions as F
+from pyspark.sql.functions import pandas_udf, PandasUDFType
 from pyspark.sql.window import Window
 
 import ibis.common as com
@@ -55,17 +56,19 @@ def compile_datasource(t, expr):
 def compile_selection(t, expr):
     op = expr.op()
 
-    if isinstance(op.selections[0], types.ColumnExpr):
-        column_names = [expr.op().name for expr in op.selections]
-        src_table = t.translate(op.table)[column_names]
-    elif isinstance(op.selections[0], types.TableExpr):
-        src_table = t.translate(op.table)
-        for selection in op.selections[1:]:
+    src_table = t.translate(op.table)
+    col_names_in_selection_order = []
+    for selection in op.selections:
+        if isinstance(selection, types.TableExpr):
+            col_names_in_selection_order.extend(selection.columns)
+        elif isinstance(selection, types.ColumnExpr):
             column_name = selection.get_name()
-            column = t.translate(selection)
-            src_table = src_table.withColumn(column_name, column)
+            col_names_in_selection_order.append(column_name)
+            if column_name not in src_table.columns:
+                column = t.translate(selection)
+                src_table = src_table.withColumn(column_name, column)
 
-    return src_table
+    return src_table[col_names_in_selection_order]
 
 
 @compiles(ops.TableColumn)
@@ -278,6 +281,185 @@ def compile_greatest(t, expr):
         return src_columns[0]
     else:
         return F.greatest(*src_columns)
+
+
+@compiles(ops.Least)
+def compile_least(t, expr):
+    op = expr.op()
+
+    src_columns = t.translate(op.arg)
+    if len(src_columns) == 1:
+        return src_columns[0]
+    else:
+        return F.least(*src_columns)
+
+
+@compiles(ops.Abs)
+def compile_abs(t, expr):
+    op = expr.op()
+
+    src_column = t.translate(op.arg)
+    return F.abs(src_column)
+
+
+@compiles(ops.Round)
+def compile_round(t, expr):
+    op = expr.op()
+
+    src_column = t.translate(op.arg)
+    scale = op.digits.op().value if op.digits is not None else 0
+    rounded = F.round(src_column, scale=scale)
+    if scale == 0:
+        rounded = rounded.astype('long')
+    return rounded
+
+
+@compiles(ops.Ceil)
+def compile_ceil(t, expr):
+    op = expr.op()
+
+    src_column = t.translate(op.arg)
+    return F.ceil(src_column)
+
+
+@compiles(ops.Floor)
+def compile_floor(t, expr):
+    op = expr.op()
+
+    src_column = t.translate(op.arg)
+    return F.floor(src_column)
+
+
+@compiles(ops.Exp)
+def compile_exp(t, expr):
+    op = expr.op()
+
+    src_column = t.translate(op.arg)
+    return F.exp(src_column)
+
+
+@compiles(ops.Sign)
+def compile_sign(t, expr):
+    op = expr.op()
+
+    src_column = t.translate(op.arg)
+
+    return F.when(src_column == 0, F.lit(0.0)) \
+        .otherwise(F.when(src_column > 0, F.lit(1.0)).otherwise(-1.0))
+
+
+@compiles(ops.Sqrt)
+def compile_sqrt(t, expr):
+    op = expr.op()
+
+    src_column = t.translate(op.arg)
+    return F.sqrt(src_column)
+
+
+@compiles(ops.Log)
+def compile_log(t, expr):
+    op = expr.op()
+
+    src_column = t.translate(op.arg)
+    return F.log(float(op.base.op().value), src_column)
+
+
+@compiles(ops.Ln)
+def compile_ln(t, expr):
+    op = expr.op()
+
+    src_column = t.translate(op.arg)
+    return F.log(src_column)
+
+
+@compiles(ops.Log2)
+def compile_log2(t, expr):
+    op = expr.op()
+
+    src_column = t.translate(op.arg)
+    return F.log2(src_column)
+
+
+@compiles(ops.Log10)
+def compile_log10(t, expr):
+    op = expr.op()
+
+    src_column = t.translate(op.arg)
+    return F.log10(src_column)
+
+
+@compiles(ops.Modulus)
+def compile_modulus(t, expr):
+    op = expr.op()
+
+    left = t.translate(op.left)
+    right = t.translate(op.right)
+    return left % right
+
+
+@compiles(ops.Negate)
+def compile_negate(t, expr):
+    op = expr.op()
+
+    src_column = t.translate(op.arg)
+    return -src_column
+
+
+@compiles(ops.Add)
+def compile_add(t, expr):
+    op = expr.op()
+
+    left = t.translate(op.left)
+    right = t.translate(op.right)
+    return left + right
+
+
+@compiles(ops.Divide)
+def compile_divide(t, expr):
+    op = expr.op()
+
+    left = t.translate(op.left)
+    right = t.translate(op.right)
+    return left / right
+
+
+@compiles(ops.FloorDivide)
+def compile_floor_divide(t, expr):
+    op = expr.op()
+
+    left = t.translate(op.left)
+    right = t.translate(op.right)
+    return F.floor(left / right)
+
+
+@compiles(ops.Power)
+def compile_power(t, expr):
+    op = expr.op()
+
+    left = t.translate(op.left)
+    right = t.translate(op.right)
+    return F.pow(left, right)
+
+
+@compiles(ops.IsNan)
+def compile_isnan(t, expr):
+    op = expr.op()
+
+    src_column = t.translate(op.arg)
+    return F.isnan(src_column)
+
+
+@compiles(ops.IsInf)
+def compile_isinf(t, expr):
+    import numpy as np
+    op = expr.op()
+
+    @pandas_udf('boolean', PandasUDFType.SCALAR)
+    def isinf(v):
+        return np.isinf(v)
+
+    src_column = t.translate(op.arg)
+    return isinf(src_column)
 
 
 @compiles(ops.ValueList)

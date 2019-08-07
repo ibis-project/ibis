@@ -24,7 +24,7 @@ def client():
 def test_basic(client):
     table = client.table('table1')
     result = table.compile().toPandas()
-    expected = pd.DataFrame({'id': range(0, 10)})
+    expected = pd.DataFrame({'id': range(0, 10), 'str_col': 'value'})
 
     tm.assert_frame_equal(result, expected)
 
@@ -36,6 +36,7 @@ def test_projection(client):
     expected1 = pd.DataFrame(
         {
             'id': range(0, 10),
+            'str_col': 'value',
             'v': range(0, 10)
         }
     )
@@ -48,6 +49,7 @@ def test_projection(client):
     expected2 = pd.DataFrame(
         {
             'id': range(0, 10),
+            'str_col': 'value',
             'v': range(0, 10),
             'v2': range(0, 10)
         }
@@ -126,10 +128,18 @@ def test_selection(client):
 
     result1 = table[['id']].compile()
     result2 = table[['id', 'id2']].compile()
+    result3 = table[[table, (table.id + 1).name('plus1')]].compile()
+    result4 = table[[(table.id + 1).name('plus1'), table]].compile()
 
     df = table.compile()
     tm.assert_frame_equal(result1.toPandas(), df[['id']].toPandas())
     tm.assert_frame_equal(result2.toPandas(), df[['id', 'id2']].toPandas())
+    tm.assert_frame_equal(result3.toPandas(),
+                          df[[df.columns]].withColumn('plus1', df.id + 1)
+                          .toPandas())
+    tm.assert_frame_equal(result4.toPandas(),
+                          df.withColumn('plus1', df.id + 1)
+                          [['plus1', *df.columns]].toPandas())
 
 
 def test_join(client):

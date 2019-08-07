@@ -3,6 +3,8 @@ from ibis.pyspark.compiler import translate
 from ibis.pyspark.operations import PysparkTable
 from ibis.spark.client import SparkClient
 
+from pyspark.sql.column import Column
+
 
 class PysparkClient(SparkClient):
     """
@@ -21,7 +23,17 @@ class PysparkClient(SparkClient):
 
         if isinstance(expr, types.TableExpr):
             return self.compile(expr).toPandas()
+        elif isinstance(expr, types.ColumnExpr):
+            # expression must be named for the projection
+            expr = expr.name('tmp')
+            return self.compile(expr.to_projection()).toPandas()['tmp']
         elif isinstance(expr, types.ScalarExpr):
-            return self.compile(expr).toPandas().iloc[0, 0]
+            compiled = self.compile(expr)
+            if isinstance(compiled, Column):
+                # attach result column to a fake DataFrame and
+                # select the result
+                compiled = self._session.range(0, 1) \
+                    .select(compiled)
+            return compiled.toPandas().iloc[0, 0]
         else:
             raise ValueError("Unexpected type: ", type(expr))

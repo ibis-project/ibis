@@ -58,7 +58,7 @@ with suppress(ImportError):
     import ibis.spark.api as spark  # noqa: F401
 
 with suppress(ImportError):
-    import ibis.pyspark.api as pyspark
+    import ibis.pyspark.api as pyspark  # noqa: F401
 
 
 def hdfs_connect(
