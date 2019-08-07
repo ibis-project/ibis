@@ -1,9 +1,17 @@
+import sys
 from typing import Iterable
-
-import shapely
 
 import ibis.expr.types as ir
 from ibis.common import exceptions as ex
+
+IS_SHAPELY_AVAILABLE = False
+try:
+    if sys.version_info >= (3, 6):
+        import shapely
+
+        IS_SHAPELY_AVAILABLE = True
+except ImportError:
+    ...
 
 
 def _format_point_value(value: Iterable) -> str:
@@ -78,7 +86,9 @@ def translate_literal(expr, inline_metadata: bool = False) -> str:
     op = expr.op()
     value = op.value
 
-    if isinstance(value, shapely.geometry.base.BaseGeometry):
+    if IS_SHAPELY_AVAILABLE and isinstance(
+        value, shapely.geometry.base.BaseGeometry
+    ):
         result = value.wkt
     elif isinstance(expr, ir.PointScalar):
         result = translate_point(value)
