@@ -475,18 +475,9 @@ class SparkClient(SQLClient):
         name : string
           Database name
         force : bool, default False
-          If False and there are any tables in this database, raises an
-          IntegrityError and Spark throws exception if database does not exist
+          If False, Spark throws exception if database is not empty or
+          database does not exist
         """
-        if not force:
-            tables = self.list_tables(database=name)
-            functions = self.list_functions(database=name)
-            if len(tables) > 0 or len(functions) > 0:
-                raise com.IntegrityError(
-                    'Database {0} must be empty before '
-                    'being dropped, or set '
-                    'force=True'.format(name)
-                )
         statement = ddl.DropDatabase(name, must_exist=not force, cascade=force)
         return self._execute(statement.compile())
 
@@ -660,8 +651,8 @@ with external location'
         name,
         expr,
         database=None,
-        or_replace=True,
-        temporary=True,
+        or_replace=False,
+        temporary=False,
     ):
         """
         Create a Spark view from a table expression
@@ -671,8 +662,9 @@ with external location'
         name : string
         expr : ibis TableExpr
         database : string, default None
-        or_replace : boolean, default True
+        or_replace : boolean, default False
           Replace an existing view of the same name if it exists
+        temporary : boolean, default False
         """
         ast = self._build_ast(expr, SparkDialect.make_context())
         select = ast.queries[0]

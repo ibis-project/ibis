@@ -143,7 +143,7 @@ my_string_length_fns = [my_string_length, my_string_length_pandas]
 
 
 def test_spark_dtype_to_ibis_dtype():
-    from ibis.spark.client import _SPARK_DTYPE_TO_IBIS_DTYPE
+    from ibis.spark.datatypes import _SPARK_DTYPE_TO_IBIS_DTYPE
     assert len(_SPARK_DTYPE_TO_IBIS_DTYPE.keys()) == \
         len(set(_SPARK_DTYPE_TO_IBIS_DTYPE.values()))
 
