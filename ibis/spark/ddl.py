@@ -204,6 +204,21 @@ class DropDatabase(DropObject):
             return super().compile()
 
 
+class DropFunction(DropObject):
+
+    _object_type = 'TEMPORARY FUNCTION'
+
+    def __init__(
+        self, name, must_exist=True
+    ):
+        super().__init__(must_exist=must_exist)
+        self.name = name
+        self.must_exist = must_exist
+
+    def _object_name(self):
+        return self.name
+
+
 class TruncateTable(impala_ddl.TruncateTable):
     pass
 

@@ -98,10 +98,10 @@ class SparkQuery(Query):
 
         # UDFs are uniquely identified by the name of the Node subclass we
         # generate.
-        udf_nodes_unique = toolz.unique(
+        udf_nodes_unique = list(toolz.unique(
             udf_nodes,
             key=lambda node: type(node).__name__
-        )
+        ))
 
         # register UDFs in pyspark
         for node in udf_nodes_unique:
@@ -110,7 +110,13 @@ class SparkQuery(Query):
                 node.udf_func,
             )
 
-        return super().execute()
+        result = super().execute()
+
+        for node in udf_nodes_unique:
+            stmt = ddl.DropFunction(type(node).__name__, must_exist=True)
+            self.client._execute(stmt.compile())
+
+        return result
 
     def _fetch(self, cursor):
         df = cursor.query.toPandas()  # blocks until finished
@@ -359,9 +365,6 @@ class SparkClient(SQLClient):
         schema = self._get_table_schema(qualified_name)
         node = self.table_class(qualified_name, schema, self)
         return self.table_expr_class(node)
-
-    def list_functions(self, database=None):
-        return self._catalog.listFunctions(dbName=None)
 
     def list_tables(self, like=None, database=None):
         """
