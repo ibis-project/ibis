@@ -5,6 +5,7 @@ import functools
 import itertools
 import numbers
 import re
+import sys
 import typing
 from typing import Any as GenericAny
 from typing import (
@@ -26,6 +27,14 @@ from multipledispatch import Dispatcher
 import ibis.common.exceptions as com
 import ibis.expr.types as ir
 from ibis import util
+
+IS_SHAPELY_AVAILABLE = False
+try:
+    if sys.version_info >= (3, 6):
+        import shapely.geometry
+        IS_SHAPELY_AVAILABLE = True
+except ImportError:
+    ...
 
 
 class DataType:
@@ -647,6 +656,18 @@ class GeoSpatial(DataType):
         if self.srid is not None:
             geo_op += ';' + str(self.srid)
         return geo_op
+
+    def _literal_value_hash_key(self, value):
+        if IS_SHAPELY_AVAILABLE:
+            geo_shapes = (
+                shapely.geometry.Point,
+                shapely.geometry.LineString,
+                shapely.geometry.Polygon,
+                shapely.geometry.MultiPolygon
+            )
+            if isinstance(value, geo_shapes):
+                return self, value.wkt
+        return self, value
 
 
 class Geometry(GeoSpatial):
@@ -1477,6 +1498,28 @@ def infer_boolean(value: bool) -> Boolean:
 @infer.register((type(None), Null))
 def infer_null(value: Optional[Null]) -> Null:
     return null
+
+
+if IS_SHAPELY_AVAILABLE:
+    @infer.register(shapely.geometry.Point)
+    def infer_shapely_point(value: shapely.geometry.Point) -> Point:
+        return point
+
+    @infer.register(shapely.geometry.LineString)
+    def infer_shapely_linestring(
+        value: shapely.geometry.LineString
+    ) -> LineString:
+        return linestring
+
+    @infer.register(shapely.geometry.Polygon)
+    def infer_shapely_polygon(value: shapely.geometry.Polygon) -> Polygon:
+        return polygon
+
+    @infer.register(shapely.geometry.MultiPolygon)
+    def infer_shapely_multipolygon(
+        value: shapely.geometry.MultiPolygon
+    ) -> MultiPolygon:
+        return multipolygon
 
 
 castable = Dispatcher('castable')
