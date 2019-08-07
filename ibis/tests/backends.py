@@ -323,7 +323,7 @@ class PostgreSQL(Backend, RoundHalfToEven):
             return self.db.geo
 
 
-class MapD(Backend):
+class OmniSciDB(Backend):
     check_dtype = False
     check_names = False
     supports_window_operations = True
@@ -352,13 +352,15 @@ class MapD(Backend):
 
     @staticmethod
     def connect(data_directory: Path) -> ibis.client.Client:
-        user = os.environ.get('IBIS_TEST_OMNISCI_USER', 'admin')
+        user = os.environ.get('IBIS_TEST_OMNISCIDB_USER', 'admin')
         password = os.environ.get(
-            'IBIS_TEST_OMNISCI_PASSWORD', 'HyperInteractive'
+            'IBIS_TEST_OMNISCIDB_PASSWORD', 'HyperInteractive'
         )
-        host = os.environ.get('IBIS_TEST_OMNISCI_HOST', 'localhost')
-        database = os.environ.get('IBIS_TEST_OMNISCI_DATABASE', 'ibis_testing')
-        return ibis.mapd.connect(
+        host = os.environ.get('IBIS_TEST_OMNISCIDB_HOST', 'localhost')
+        database = os.environ.get(
+            'IBIS_TEST_OMNISCIDB_DATABASE', 'ibis_testing'
+        )
+        return ibis.omniscidb.connect(
             host=host, user=user, password=password, database=database
         )
 

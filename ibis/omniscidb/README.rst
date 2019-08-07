@@ -1,13 +1,13 @@
-MapD (OmniSci) IBIS backend
+OmniSciDB IBIS backend
 =================
 
-In this document it would be explained the main aspects of `ibis` backend and
-`MapD ibis` backend implementation.
+In this document it would be explained the main aspects of `ibis` and
+`omniscidb` backend implementation.
 
 Modules
 -------
 
-MapD backend has 5 modules, which 3 of them are the main modules:
+omniscidb backend has 5 modules, which 3 of them are the main modules:
 
 - `api`
 - `client`
@@ -25,8 +25,8 @@ the follow code into `ibi.__init__`:
 .. code-block:: python
 
     with suppress(ImportError):
-        # pip install ibis-framework[mapd]
-        import ibis.mapd.api as mapd
+        # pip install ibis-framework[omniscidb]
+        import ibis.omniscidb.api as omniscidb
 
 Basically, there is 3 function on `api` module>
 
@@ -38,16 +38,16 @@ Basically, there is 3 function on `api` module>
 
 .. code-block:: python
 
-    t = mapd_cli.table('flights_2008_10k')
+    t = omniscidb_cli.table('flights_2008_10k')
     proj = t['arrtime', 'arrdelay']
-    print(ibis.mapd.compile(proj))
+    print(ibis.omniscidb.compile(proj))
 
-`connect` method instantiates a `MapDClient` object that connect to the `MapD`
+`connect` method instantiates a `MapDClient` object that connect to the `omniscidb`
 database specified:
 
 .. code-block:: python
 
-    mapd_cli = ibis.mapd.connect(
+    omniscidb_cli = ibis.omniscidb.connect(
         host='localhost', user='admin', password='HyperInteractive',
         port=6274, database='omnisci'
     )
@@ -56,14 +56,14 @@ database specified:
 
 .. code-block:: python
 
-    t = mapd_cli.table('flights_2008_10k')
+    t = omniscidb_cli.table('flights_2008_10k')
     proj = t['arrtime', 'arrdelay']
-    assert ibis.mapd.verify(proj) == True
+    assert ibis.omniscidb.verify(proj) == True
 
 client
 ------
 
-`client` module has the main classes to handle connection to the `MapD`
+`client` module has the main classes to handle connection to the `omniscidb`
 database.
 
 The main classes are:
@@ -86,7 +86,7 @@ Its main methods are:
 
 `from_ibis` method ... # @TODO
 
-`MapDClient` class is used to connect to `MapD` database and manipulation data
+`MapDClient` class is used to connect to `omniscidb` database and manipulation data
 expression. Its main methods are:
 
 - __init__
@@ -220,7 +220,7 @@ identifiers
 
 `identifiers` module keep a set of identifiers (`_identifiers`) to be used
 inside `quote_identifier` function (inside the same module). `_identifiers` is
-a set of reserved words from `MapD` language.
+a set of reserved words from `omniscidb` language.
 
 `quote_identifiers` is used to put quotes around the string sent if the string
 match to specific criteria.
@@ -230,7 +230,7 @@ Timestamp/Date operations
 
 **Interval:**
 
-MapD Interval statement allow just the follow date/time attribute: YEAR, DAY,
+omniscidb Interval statement allow just the follow date/time attribute: YEAR, DAY,
 MONTH, HOUR, MINUTE, SECOND
 
 To use the interval statement, it is necessary use a `integer literal/constant`
@@ -243,7 +243,7 @@ and use the `to_interval` method:
 .. code-block:: Sql
 
     SELECT TIMESTAMPADD(YEAR, 1, "arr_timestamp") AS tmp
-    FROM mapd.flights_2008_10k
+    FROM omniscidb.flights_2008_10k
 
 Another way to use intervals is using `ibis.interval(years=1)`
 
@@ -255,7 +255,7 @@ To extract a date part information from a timestamp, `extract` would be used:
 
     >>> t['arr_timestamp'].extract('YEAR')
 
-The `extract` method is just available on `ibis.mapd` backend.
+The `extract` method is just available on `ibis.omniscidb` backend.
 
 The operators allowed are: YEAR, QUARTER, MONTH, DAY, HOUR, MINUTE, SECOND,
 DOW, ISODOW, DOY, EPOCH, QUARTERDAY, WEEK
@@ -279,22 +279,22 @@ The result should be:
 .. code-block:: Sql
 
     SELECT EXTRACT(YEAR FROM "arr_timestamp") AS tmp
-    FROM mapd.flights_2008_10k
+    FROM omniscidb.flights_2008_10k
 
     SELECT EXTRACT(MONTH FROM "arr_timestamp") AS tmp
-    FROM mapd.flights_2008_10k
+    FROM omniscidb.flights_2008_10k
 
     SELECT EXTRACT(DAY FROM "arr_timestamp") AS tmp
-    FROM mapd.flights_2008_10k
+    FROM omniscidb.flights_2008_10k
 
     SELECT EXTRACT(HOUR FROM "arr_timestamp") AS tmp
-    FROM mapd.flights_2008_10k
+    FROM omniscidb.flights_2008_10k
 
     SELECT EXTRACT(MINUTE FROM "arr_timestamp") AS tmp
-    FROM mapd.flights_2008_10k
+    FROM omniscidb.flights_2008_10k
 
     SELECT EXTRACT(SECOND FROM "arr_timestamp") AS tmp
-    FROM mapd.flights_2008_10k
+    FROM omniscidb.flights_2008_10k
 
 **Timestap/Date Truncate**
 
@@ -313,7 +313,7 @@ String operations
 -----------------
 
 - `byte_length` is not part of `ibis` `string` operations, it will work just
-for `mapd` backend.
+for `omniscidb` backend.
 
 `Not` operation can be done using `~` operator:
 
@@ -362,7 +362,7 @@ New implementations on `ibis` core:
 Issues appointed:
 
 - `Ibis` `CASE` statement wasn't allowing input and output with different types (https://github.com/ibis-project/ibis/issues/93 )
-- At this time, not all MapD `date parts` are available on `ibis` (https://github.com/ibis-project/ibis/issues/1430 )
+- At this time, not all omniscidb `date parts` are available on `ibis` (https://github.com/ibis-project/ibis/issues/1430 )
 
 
 Pull Requests:

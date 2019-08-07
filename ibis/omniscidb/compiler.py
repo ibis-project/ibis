@@ -8,14 +8,14 @@ import ibis.util as util
 from ibis.expr.api import _add_methods, _binop_expr, _unary_op
 from ibis.impala import compiler as impala_compiler
 
-from . import operations as mapd_ops
+from . import operations as omniscidb_ops
 from .identifiers import quote_identifier  # noqa: F401
 from .operations import _type_to_sql_string  # noqa: F401
 
 
 def build_ast(expr, context):
     assert context is not None, 'context is None'
-    builder = MapDQueryBuilder(expr, context=context)
+    builder = OmniSciDBQueryBuilder(expr, context=context)
     return builder.get_result()
 
 
@@ -29,40 +29,40 @@ def _get_query(expr, context):
 
 def to_sql(expr, context=None):
     if context is None:
-        context = MapDDialect.make_context()
+        context = OmniSciDBDialect.make_context()
     assert context is not None, 'context is None'
     query = _get_query(expr, context)
     return query.compile()
 
 
-class MapDSelectBuilder(compiles.SelectBuilder):
+class OmniSciDBSelectBuilder(compiles.SelectBuilder):
     """
 
     """
 
     @property
     def _select_class(self):
-        return MapDSelect
+        return OmniSciDBSelect
 
     def _convert_group_by(self, exprs):
         return exprs
 
 
-class MapDQueryBuilder(compiles.QueryBuilder):
+class OmniSciDBQueryBuilder(compiles.QueryBuilder):
     """
 
     """
 
-    select_builder = MapDSelectBuilder
+    select_builder = OmniSciDBSelectBuilder
     union_class = None
 
     def _make_union(self):
         raise com.UnsupportedOperationError(
-            "MapD backend doesn't support Union operation"
+            "OmniSciDB backend doesn't support Union operation"
         )
 
 
-class MapDQueryContext(compiles.QueryContext):
+class OmniSciDBQueryContext(compiles.QueryContext):
     """
 
     """
@@ -74,18 +74,18 @@ class MapDQueryContext(compiles.QueryContext):
         return to_sql(expr, context=ctx)
 
 
-class MapDSelect(compiles.Select):
+class OmniSciDBSelect(compiles.Select):
     """
 
     """
 
     @property
     def translator(self):
-        return MapDExprTranslator
+        return OmniSciDBExprTranslator
 
     @property
     def table_set_formatter(self):
-        return MapDTableSetFormatter
+        return OmniSciDBTableSetFormatter
 
     def format_select_set(self):
         return super().format_select_set()
@@ -124,7 +124,7 @@ class MapDSelect(compiles.Select):
         return buf.getvalue()
 
 
-class MapDTableSetFormatter(compiles.TableSetFormatter):
+class OmniSciDBTableSetFormatter(compiles.TableSetFormatter):
     """
 
     """
@@ -199,68 +199,69 @@ class MapDTableSetFormatter(compiles.TableSetFormatter):
         return name
 
 
-class MapDExprTranslator(compiles.ExprTranslator):
+class OmniSciDBExprTranslator(compiles.ExprTranslator):
     """
 
     """
 
-    _registry = mapd_ops._operation_registry
+    _registry = omniscidb_ops._operation_registry
     _rewrites = impala_compiler.ImpalaExprTranslator._rewrites.copy()
 
-    context_class = MapDQueryContext
+    context_class = OmniSciDBQueryContext
 
     def name(self, translated, name, force=True):
-        return mapd_ops._name_expr(translated, name)
+        return omniscidb_ops._name_expr(translated, name)
 
 
-class MapDDialect(compiles.Dialect):
+class OmniSciDBDialect(compiles.Dialect):
     """
 
     """
 
-    translator = MapDExprTranslator
+    translator = OmniSciDBExprTranslator
 
 
-dialect = MapDDialect
-compiles = MapDExprTranslator.compiles
-rewrites = MapDExprTranslator.rewrites
+dialect = OmniSciDBDialect
+compiles = OmniSciDBExprTranslator.compiles
+rewrites = OmniSciDBExprTranslator.rewrites
 
-mapd_reg = mapd_ops._operation_registry
+omniscidb_reg = omniscidb_ops._operation_registry
 
 
 @rewrites(ops.All)
-def mapd_rewrite_all(expr):
-    return mapd_ops._all(expr)
+def omniscidb_rewrite_all(expr):
+    return omniscidb_ops._all(expr)
 
 
 @rewrites(ops.Any)
-def mapd_rewrite_any(expr):
-    return mapd_ops._any(expr)
+def omniscidb_rewrite_any(expr):
+    return omniscidb_ops._any(expr)
 
 
 @rewrites(ops.NotAll)
-def mapd_rewrite_not_all(expr):
-    return mapd_ops._not_all(expr)
+def omniscidb_rewrite_not_all(expr):
+    return omniscidb_ops._not_all(expr)
 
 
 @rewrites(ops.NotAny)
-def mapd_rewrite_not_any(expr):
-    return mapd_ops._not_any(expr)
+def omniscidb_rewrite_not_any(expr):
+    return omniscidb_ops._not_any(expr)
 
 
 _add_methods(
     ir.NumericValue,
     dict(
         conv_4326_900913_x=_unary_op(
-            'conv_4326_900913_x', mapd_ops.Conv_4326_900913_X
+            'conv_4326_900913_x', omniscidb_ops.Conv_4326_900913_X
         ),
         conv_4326_900913_y=_unary_op(
-            'conv_4326_900913_y', mapd_ops.Conv_4326_900913_Y
+            'conv_4326_900913_y', omniscidb_ops.Conv_4326_900913_Y
         ),
-        truncate=_binop_expr('truncate', mapd_ops.NumericTruncate),
+        truncate=_binop_expr('truncate', omniscidb_ops.NumericTruncate),
     ),
 )
 
 _add_methods(
-    ir.StringValue, dict(byte_length=_unary_op('length', mapd_ops.ByteLength))
+    ir.StringValue,
+    dict(byte_length=_unary_op('length', omniscidb_ops.ByteLength)),
 )

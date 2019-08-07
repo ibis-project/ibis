@@ -192,25 +192,25 @@ Create a client by supplying a dictionary of DataFrames using
        }
    )
 
-.. _install.mapd:
+.. _install.omniscidb:
 
-`MapD <https://www.omnisci.com/>`_ Quickstart
----------------------------------------------
+`omniscidb <https://www.omnisci.com/>`_ Quickstart
+--------------------------------------------------
 
-Install dependencies for Ibis's MapD dialect:
+Install dependencies for Ibis's omniscidb dialect:
 
 ::
 
-  pip install ibis-framework[mapd]
+  pip install ibis-framework[omniscidb]
 
 Create a client by passing in database connection parameters such as ``host``,
 ``port``, ``database``,  ``user`` and ``password`` to
-:func:`ibis.mapd.connect`:
+:func:`ibis.omniscidb.connect`:
 
 .. ipython:: python
 
-   con = ibis.mapd.connect(
-       host='omnisci',
+   con = ibis.omniscidb.connect(
+       host='omniscidb',
        database='ibis_testing',
        user='admin',
        password='HyperInteractive',

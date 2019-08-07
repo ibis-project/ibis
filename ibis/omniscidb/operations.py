@@ -11,7 +11,7 @@ import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis.impala import compiler as impala_compiler
-from ibis.mapd.identifiers import quote_identifier
+from ibis.omniscidb.identifiers import quote_identifier
 
 _sql_type_names = {
     'boolean': 'boolean',
@@ -49,7 +49,7 @@ def _type_to_sql_string(tval):
 
 
 def _cast(translator, expr):
-    from ibis.mapd.client import MapDDataType
+    from ibis.omniscidb.client import OmniSciDBDataType
 
     op = expr.op()
     arg, target = op.args
@@ -61,11 +61,11 @@ def _cast(translator, expr):
 
         if type_ == 'GEOMETRY':
             raise com.UnsupportedOperationError(
-                'OmnisciDB/MapD doesn\'t support yet convert '
+                'OmnisciDB/OmniSciDB doesn\'t support yet convert '
                 + 'from GEOGRAPHY to GEOMETRY.'
             )
     else:
-        type_ = str(MapDDataType.from_ibis(target, nullable=False))
+        type_ = str(OmniSciDBDataType.from_ibis(target, nullable=False))
     return 'CAST({0!s} AS {1!s})'.format(arg_, type_)
 
 
@@ -303,7 +303,7 @@ def _interval_format(translator, expr):
     dtype = expr.type()
     if dtype.unit in {'ms', 'us', 'ns'}:
         raise com.UnsupportedOperationError(
-            "MapD doesn't support subsecond interval resolutions"
+            "OmniSciDB doesn't support subsecond interval resolutions"
         )
 
     return '{1}, (sign){0}'.format(expr.op().value, dtype.resolution.upper())
@@ -316,7 +316,7 @@ def _interval_from_integer(translator, expr):
     dtype = expr.type()
     if dtype.unit in {'ms', 'us', 'ns'}:
         raise com.UnsupportedOperationError(
-            "MapD doesn't support subsecond interval resolutions"
+            "OmniSciDB doesn't support subsecond interval resolutions"
         )
 
     arg_ = translator.translate(arg)
@@ -424,13 +424,13 @@ def _where(translator, expr):
 
 
 def raise_unsupported_expr_error(expr):
-    msg = "MapD backend doesn't support {} operation!"
+    msg = "OmniSciDB backend doesn't support {} operation!"
     op = expr.op()
     raise com.UnsupportedOperationError(msg.format(type(op)))
 
 
 def raise_unsupported_op_error(translator, expr, *args):
-    msg = "MapD backend doesn't support {} operation!"
+    msg = "OmniSciDB backend doesn't support {} operation!"
     op = expr.op()
     raise com.UnsupportedOperationError(msg.format(type(op)))
 
@@ -551,7 +551,7 @@ def _arbitrary(translator, expr):
 
     if how not in (None, 'last'):
         raise com.UnsupportedOperationError(
-            '{!r} value not supported for arbitrary in MapD'.format(how)
+            '{!r} value not supported for arbitrary in OmniSciDB'.format(how)
         )
 
     if where is not None:
@@ -643,12 +643,12 @@ def _window(translator, expr):
 
     if window.preceding is not None:
         raise com.UnsupportedOperationError(
-            'Window preceding is not supported by OmniSci/MapD backend yet'
+            'Window preceding is not supported by OmniSciDB backend yet'
         )
 
     if window.following is not None and window.following != 0:
         raise com.UnsupportedOperationError(
-            'Window following is not supported by OmniSci/MapD backend yet'
+            'Window following is not supported by OmniSciDB backend yet'
         )
     window.following = None
 
@@ -712,7 +712,6 @@ def _shift_like(name, default_offset=None):
 
 # operation map
 
-# https://www.mapd.com/docs/latest/mapd-core-guide/dml/
 _binary_infix_ops = {
     # math
     ops.Power: fixed_arity('power', 2),
@@ -727,7 +726,7 @@ _comparison_ops = {}
 
 # MATH
 _math_ops = {
-    ops.Degrees: unary('degrees'),  # MapD function
+    ops.Degrees: unary('degrees'),  # OmniSciDB function
     ops.Modulus: fixed_arity('mod', 2),
     ops.Pi: fixed_arity('pi', 0),
     ops.Radians: unary('radians'),

@@ -9,7 +9,7 @@ import ibis.common.exceptions as com
 import ibis.expr.types as ir
 from ibis.tests.util import assert_equal
 
-pytestmark = pytest.mark.mapd
+pytestmark = pytest.mark.omniscidb
 pytest.importorskip('pymapd')
 
 
@@ -46,7 +46,7 @@ def test_list_tables(con):
     reason='must have pymapd>=12 to connect to existing session',
 )
 def test_session_id_connection(session_con):
-    new_connection = ibis.mapd.connect(
+    new_connection = ibis.omniscidb.connect(
         protocol=session_con.protocol,
         host=session_con.host,
         port=session_con.port,
@@ -72,7 +72,7 @@ def test_database_layer(con, alltypes):
 def test_compile_toplevel():
     t = ibis.table([('foo', 'double')], name='t0')
     expr = t.foo.sum()
-    result = ibis.mapd.compile(expr)
+    result = ibis.omniscidb.compile(expr)
     expected = 'SELECT sum("foo") AS "sum"\nFROM t0'  # noqa
     assert str(result) == expected
 

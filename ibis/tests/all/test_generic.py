@@ -7,8 +7,8 @@ from ibis import literal as L
 from ibis.tests.backends import (
     BigQuery,
     Clickhouse,
-    MapD,
     MySQL,
+    OmniSciDB,
     PostgreSQL,
     Spark,
     SQLite,
@@ -44,7 +44,7 @@ def test_fillna_nullif(backend, con, expr, expected):
     ],
 )
 @pytest.mark.xfail_unsupported
-@pytest.mark.skip_backends((MapD,))  # OmniSciDB issue #375
+@pytest.mark.skip_backends((OmniSciDB,))  # OmniSciDB issue #375
 def test_coalesce(backend, con, expr, expected):
     result = con.execute(expr)
 

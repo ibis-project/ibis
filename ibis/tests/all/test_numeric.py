@@ -9,7 +9,7 @@ from pytest import param
 
 import ibis
 from ibis import literal as L
-from ibis.tests.backends import MapD
+from ibis.tests.backends import OmniSciDB
 
 
 @pytest.mark.parametrize(
@@ -86,7 +86,7 @@ def test_isnan_isinf(
         param(L(11) % 3, 11 % 3, id='mod'),
     ],
 )
-@pytest.mark.skip_backends([MapD])
+@pytest.mark.skip_backends([OmniSciDB])
 @pytest.mark.xfail_unsupported
 def test_math_functions_literals(backend, con, alltypes, df, expr, expected):
     result = con.execute(expr)

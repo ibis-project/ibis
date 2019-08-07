@@ -5,35 +5,39 @@ import pytest
 import ibis
 import ibis.util as util
 
-OMNISCI_HOST = os.environ.get('IBIS_TEST_OMNISCI_HOST', 'localhost')
-OMNISCI_PORT = int(os.environ.get('IBIS_TEST_OMNISCI_PORT', 6274))
-OMNISCI_USER = os.environ.get('IBIS_TEST_OMNISCI_USER', 'admin')
-OMNISCI_PASS = os.environ.get('IBIS_TEST_OMNISCI_PASSWORD', 'HyperInteractive')
-OMNISCI_PROTOCOL = os.environ.get('IBIS_TEST_OMNISCI_PROTOCOL', 'binary')
-OMNISCI_DB = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
+OMNISCIDB_HOST = os.environ.get('IBIS_TEST_OMNISCIDB_HOST', 'localhost')
+OMNISCIDB_PORT = int(os.environ.get('IBIS_TEST_OMNISCIDB_PORT', 6274))
+OMNISCIDB_USER = os.environ.get('IBIS_TEST_OMNISCIDB_USER', 'admin')
+OMNISCIDB_PASS = os.environ.get(
+    'IBIS_TEST_OMNISCIDB_PASSWORD', 'HyperInteractive'
+)
+OMNISCIDB_PROTOCOL = os.environ.get(
+    'IBIS_TEST_OMNISCIDB_PROTOCOL', 'binary'
+)
+OMNISCIDB_DB = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
 
 
 @pytest.fixture(scope='module')
 def con():
-    return ibis.mapd.connect(
-        protocol=OMNISCI_PROTOCOL,
-        host=OMNISCI_HOST,
-        port=OMNISCI_PORT,
-        user=OMNISCI_USER,
-        password=OMNISCI_PASS,
-        database=OMNISCI_DB,
+    return ibis.omniscidb.connect(
+        protocol=OMNISCIDB_PROTOCOL,
+        host=OMNISCIDB_HOST,
+        port=OMNISCIDB_PORT,
+        user=OMNISCIDB_USER,
+        password=OMNISCIDB_PASS,
+        database=OMNISCIDB_DB,
     )
 
 
 @pytest.fixture(scope='module')
 def session_con():
-    return ibis.mapd.connect(
-        protocol=OMNISCI_PROTOCOL,
-        host=OMNISCI_HOST,
-        port=OMNISCI_PORT,
-        user=OMNISCI_USER,
-        password=OMNISCI_PASS,
-        database=OMNISCI_DB,
+    return ibis.omniscidb.connect(
+        protocol=OMNISCIDB_PROTOCOL,
+        host=OMNISCIDB_HOST,
+        port=OMNISCIDB_PORT,
+        user=OMNISCIDB_USER,
+        password=OMNISCIDB_PASS,
+        database=OMNISCIDB_DB,
     )
     return session_con
 
@@ -64,9 +68,9 @@ def translate():
 
     :return:
     """
-    from ibis.mapd.compiler import MapDDialect
+    from ibis.omniscidb.compiler import OmniSciDBDialect
 
-    dialect = MapDDialect()
+    dialect = OmniSciDBDialect()
     context = dialect.make_context()
     return lambda expr: dialect.translator(expr, context).get_result()
 
@@ -87,7 +91,7 @@ def temp_table(con):
 
 @pytest.fixture(scope='session')
 def test_data_db():
-    return OMNISCI_DB
+    return OMNISCIDB_DB
 
 
 @pytest.fixture

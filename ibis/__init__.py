@@ -50,8 +50,8 @@ with suppress(ImportError):
     import ibis.bigquery.api as bigquery  # noqa: F401
 
 with suppress(ImportError):
-    # pip install ibis-framework[mapd]
-    import ibis.mapd.api as mapd  # noqa: F401
+    # pip install ibis-framework[omniscidb]
+    import ibis.omniscidb.api as omniscidb  # noqa: F401
 
 with suppress(ImportError):
     # pip install ibis-framework[spark]

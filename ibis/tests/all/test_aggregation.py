@@ -111,11 +111,7 @@ from ibis.tests.backends import Clickhouse, MapD, MySQL, SQLite
 @pytest.mark.parametrize(
     ('ibis_cond', 'pandas_cond'),
     [
-        param(
-            lambda t: None,
-            lambda t: slice(None),
-            id='no_cond',
-        ),
+        param(lambda t: None, lambda t: slice(None), id='no_cond'),
         param(
             lambda t: t.string_col.isin(['1', '7']),
             lambda t: t.string_col.isin(['1', '7']),
@@ -153,9 +149,7 @@ def test_aggregation(
     ],
 )
 @pytest.mark.xfail_unsupported
-def test_group_concat(
-    backend, alltypes, df, result_fn, expected_fn,
-):
+def test_group_concat(backend, alltypes, df, result_fn, expected_fn):
     expr = result_fn(alltypes)
     result = expr.execute()
     expected = expected_fn(df)

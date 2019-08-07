@@ -54,7 +54,7 @@ jobs:
           waiter-postgres \
           impala \
           clickhouse \
-          omnisci \
+          omniscidb \
           kudu-tserver \
           kudu-master
       displayName: 'Start databases'
@@ -185,7 +185,7 @@ jobs:
           postgres \
           impala \
           clickhouse \
-          omnisci \
+          omniscidb \
           kudu-master \
           kudu-tserver
       displayName: 'Start databases'

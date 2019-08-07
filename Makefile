@@ -8,7 +8,7 @@ COMPOSE_FILE := "$(MAKEFILE_DIR)/ci/docker-compose.yml"
 DOCKER := docker-compose -f $(COMPOSE_FILE)
 DOCKER_RUN := PYTHON_VERSION=${PYTHON_VERSION} $(DOCKER) run --rm
 PYTEST_OPTIONS :=
-SERVICES := omnisci postgres waiter-postgres mysql clickhouse impala kudu-master kudu-tserver
+SERVICES := omniscidb postgres waiter-postgres mysql clickhouse impala kudu-master kudu-tserver
 
 clean:
 	python setup.py clean
@@ -66,7 +66,7 @@ testfast:
 	    --doctest-modules --doctest-ignore-import-errors ${PYTEST_OPTIONS}
 
 fastopt:
-	@echo -m 'not (backend or bigquery or clickhouse or hdfs or impala or kudu or mapd or mysql or postgis or postgresql or superuser or udf)'
+	@echo -m 'not (backend or bigquery or clickhouse or hdfs or impala or kudu or omniscidb or mysql or postgis or postgresql or superuser or udf)'
 
 docclean:
 	$(DOCKER_RUN) ibis-docs rm -rf /tmp/docs.ibis-project.org

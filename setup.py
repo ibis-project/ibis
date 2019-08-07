@@ -26,9 +26,9 @@ postgres_requires = sqlite_requires + ['psycopg2']
 mysql_requires = sqlite_requires + ['pymysql']
 
 if VERSION == (3, 5):
-    mapd_requires = ['pymapd>=0.8.3,<0.11.0']
+    omniscidb_requires = ['pymapd>=0.8.3,<0.11.0']
 else:
-    mapd_requires = ['pymapd>=0.12.0']
+    omniscidb_requires = ['pymapd>=0.12.0']
 kerberos_requires = ['requests-kerberos']
 visualization_requires = ['graphviz']
 clickhouse_requires = ['clickhouse-driver>=0.0.8', 'clickhouse-cityhash']
@@ -46,7 +46,7 @@ geospatial_requires = ['geoalchemy2', 'geopandas', 'shapely']
 all_requires = (
     impala_requires
     + postgres_requires
-    + mapd_requires
+    + omniscidb_requires
     + mysql_requires
     + kerberos_requires
     + visualization_requires
@@ -91,7 +91,7 @@ setup(
         'impala': impala_requires,
         'kerberos': kerberos_requires,
         'postgres': postgres_requires,
-        'mapd': mapd_requires,
+        'omniscidb': omniscidb_requires,
         'mysql': mysql_requires,
         'sqlite': sqlite_requires,
         'visualization': visualization_requires,
