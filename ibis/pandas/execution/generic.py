@@ -759,9 +759,10 @@ def execute_series_distinct(op, data, **kwargs):
     return pd.Series(data.unique(), name=data.name)
 
 
-@execute_node.register(ops.Union, pd.DataFrame, pd.DataFrame)
-def execute_union_dataframe_dataframe(op, left, right, **kwargs):
-    return pd.concat([left, right], axis=0)
+@execute_node.register(ops.Union, pd.DataFrame, pd.DataFrame, bool)
+def execute_union_dataframe_dataframe(op, left, right, distinct, **kwargs):
+    result = pd.concat([left, right], axis=0)
+    return result.drop_duplicates() if distinct else result
 
 
 @execute_node.register(ops.IsNull, pd.Series)
