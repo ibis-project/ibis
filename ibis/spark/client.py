@@ -1,6 +1,5 @@
 import pandas as pd
 import pyspark as ps
-import pyspark.sql.types as pt
 import regex as re
 import toolz
 from pkg_resources import parse_version
@@ -15,68 +14,8 @@ from ibis.client import Database, Query, SQLClient
 from ibis.spark import compiler as comp
 from ibis.spark import ddl
 from ibis.spark.compiler import SparkDialect, build_ast
+from ibis.spark.datatypes import spark_dtype
 from ibis.util import log
-
-# maps pyspark type class to ibis type class
-_SPARK_DTYPE_TO_IBIS_DTYPE = {
-    pt.NullType : dt.Null,
-    pt.StringType : dt.String,
-    pt.BinaryType : dt.Binary,
-    pt.BooleanType : dt.Boolean,
-    pt.DateType : dt.Date,
-    pt.DoubleType : dt.Double,
-    pt.FloatType : dt.Float,
-    pt.ByteType : dt.Int8,
-    pt.IntegerType : dt.Int32,
-    pt.LongType : dt.Int64,
-    pt.ShortType : dt.Int16,
-}
-
-
-@dt.dtype.register(pt.DataType)
-def spark_dtype_to_ibis_dtype(spark_dtype_obj, nullable=True):
-    """Convert Spark SQL type objects to ibis type objects."""
-    ibis_type_class = _SPARK_DTYPE_TO_IBIS_DTYPE.get(type(spark_dtype_obj))
-    return ibis_type_class(nullable=nullable)
-
-
-@dt.dtype.register(pt.TimestampType)
-def spark_timestamp_dtype_to_ibis_dtype(spark_dtype_obj, nullable=True):
-    return dt.Timestamp(nullable=nullable)
-
-
-@dt.dtype.register(pt.DecimalType)
-def spark_decimal_dtype_to_ibis_dtype(spark_dtype_obj, nullable=True):
-    precision = spark_dtype_obj.precision
-    scale = spark_dtype_obj.scale
-    return dt.Decimal(precision, scale, nullable=nullable)
-
-
-@dt.dtype.register(pt.ArrayType)
-def spark_array_dtype_to_ibis_dtype(spark_dtype_obj, nullable=True):
-    value_type = dt.dtype(
-        spark_dtype_obj.elementType,
-        nullable=spark_dtype_obj.containsNull
-    )
-    return dt.Array(value_type, nullable=nullable)
-
-
-@dt.dtype.register(pt.MapType)
-def spark_map_dtype_to_ibis_dtype(spark_dtype_obj, nullable=True):
-    key_type = dt.dtype(spark_dtype_obj.keyType)
-    value_type = dt.dtype(
-        spark_dtype_obj.valueType,
-        nullable=spark_dtype_obj.valueContainsNull
-    )
-    return dt.Map(key_type, value_type, nullable=nullable)
-
-
-@dt.dtype.register(pt.StructType)
-def spark_struct_dtype_to_ibis_dtype(spark_dtype_obj, nullable=True):
-    names = spark_dtype_obj.names
-    fields = spark_dtype_obj.fields
-    ibis_types = [dt.dtype(f.dataType, nullable=f.nullable) for f in fields]
-    return dt.Struct(names, ibis_types, nullable=nullable)
 
 
 @sch.infer.register(ps.sql.dataframe.DataFrame)
@@ -389,6 +328,15 @@ class SparkClient(SQLClient):
     def log(self, msg):
         log(msg)
 
+    def _get_jtable(self, name, database=None):
+        try:
+            jtable = self._catalog._jcatalog.getTable(
+                _fully_qualified_name(name, database)
+            )
+        except ps.sql.utils.AnalysisException as e:
+            raise com.IbisInputError(str(e)) from e
+        return jtable
+
     def table(self, name, database=None):
         """
         Create a table expression that references a particular table or view
@@ -403,18 +351,11 @@ class SparkClient(SQLClient):
         -------
         table : TableExpr
         """
+        jtable = self._get_jtable(name, database)
+        name, database = jtable.name(), jtable.database()
+
         qualified_name = _fully_qualified_name(name, database)
-        if not database:
-            try:
-                self._session.table(qualified_name)
-            except ps.sql.utils.AnalysisException:
-                qualified_name = _fully_qualified_name(
-                    name, self.current_database
-                )
-                try:
-                    self._session.table(qualified_name)
-                except ps.sql.utils.AnalysisException as e:
-                    raise e
+
         schema = self._get_table_schema(qualified_name)
         node = self.table_class(qualified_name, schema, self)
         return self.table_expr_class(node)
@@ -448,26 +389,30 @@ class SparkClient(SQLClient):
 
         return results
 
-    def set_database(self, name):
+    def exists_table(self, name, database=None):
         """
-        Set the default database scope for client
-        """
-        self._catalog.setCurrentDatabase(name)
-
-    def exists_database(self, name):
-        """
-        Checks if a given database exists
+        Determine if the indicated table or view exists
 
         Parameters
         ----------
         name : string
-          Database name
+        database : string, default None
 
         Returns
         -------
         if_exists : boolean
         """
-        return bool(self.list_databases(like=name))
+        try:
+            self._get_jtable(name, database)
+            return True
+        except com.IbisInputError:
+            return False
+
+    def set_database(self, name):
+        """
+        Set the default database scope for client
+        """
+        self._catalog.setCurrentDatabase(name)
 
     def list_databases(self, like=None):
         """
@@ -491,6 +436,21 @@ class SparkClient(SQLClient):
             ]
 
         return results
+
+    def exists_database(self, name):
+        """
+        Checks if a given database exists
+
+        Parameters
+        ----------
+        name : string
+          Database name
+
+        Returns
+        -------
+        if_exists : boolean
+        """
+        return bool(self.list_databases(like=name))
 
     def create_database(self, name, path=None, force=False):
         """
@@ -555,22 +515,25 @@ class SparkClient(SQLClient):
 
         return sch.infer(df)
 
-    def schema_from_csv(self, path, header=True):
+    def schema_from_csv(self, path, **kwargs):
         """
         Return a Schema object for the indicated csv file. Spark goes through
-        the file once to determine the schema.
+        the file once to determine the schema. See documentation for
+        `pyspark.sql.DataFrameReader` for kwargs.
 
         Parameters
         ----------
         path : string
-        header : boolean, default True
-          Sets whether Spark reads the first line of the csv file as header
 
         Returns
         -------
         schema : ibis Schema
         """
-        df = self._session.read.csv(path, header=header, inferSchema=True)
+        options = _read_csv_defaults.copy()
+        options.update(kwargs)
+        options['inferSchema'] = True
+
+        df = self._session.read.csv(path, **options)
         return spark_dataframe_schema(df)
 
     def create_table_or_temp_view_from_csv(
@@ -581,13 +544,20 @@ class SparkClient(SQLClient):
         database=None,
         force=False,
         temp_view=False,
-        header=True,
         format='parquet',
+        **kwargs
     ):
+        options = _read_csv_defaults.copy()
+        options.update(kwargs)
+
         if schema:
-            df = self._session.read.csv(path, schema=schema, header=header)
+            assert ('inferSchema', True) not in options.items()
+            schema = spark_dtype(schema)
+            options['schema'] = schema
         else:
-            df = self._session.read.csv(path, header=header, inferSchema=True)
+            options['inferSchema'] = True
+
+        df = self._session.read.csv(path, **options)
 
         if temp_view:
             if force:
@@ -743,21 +713,6 @@ with external location'
         )
         self._execute(statement.compile())
 
-    def exists_table(self, name, database=None):
-        """
-        Determine if the indicated table or view exists
-
-        Parameters
-        ----------
-        name : string
-        database : string, default None
-
-        Returns
-        -------
-        if_exists : boolean
-        """
-        return len(self.list_tables(like=name, database=database)) > 0
-
     def truncate_table(self, table_name, database=None):
         """
         Delete all rows from, but do not drop, an existing table
@@ -845,3 +800,11 @@ def _validate_compatible(from_schema, to_schema):
             raise com.IbisInputError(
                 'Cannot safely cast {0!r} to {1!r}'.format(lt, rt)
             )
+
+
+_read_csv_defaults = {
+    'header' : True,
+    'multiLine' : True,
+    'mode' : 'FAILFAST',
+    'escape' : '"',
+}
