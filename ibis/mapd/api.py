@@ -1,4 +1,5 @@
 import ibis.common.exceptions as com
+import ibis.config as cf
 from ibis.config import options
 from ibis.mapd.client import EXECUTION_TYPE_CURSOR, MapDClient
 from ibis.mapd.compiler import compiles, dialect, rewrites  # noqa: F401
@@ -73,5 +74,9 @@ def connect(
 
     if options.default_backend is None:
         options.default_backend = client
+
+    with cf.config_prefix('sql'):
+        k = 'default_limit'
+        cf.set_option(k, None)
 
     return client

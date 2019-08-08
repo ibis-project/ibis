@@ -511,6 +511,12 @@ class MapDClient(SQLClient):
 
         return sch.Schema(names, ibis_types)
 
+    def _get_schema_using_validator(self, query):
+        result = self.con._client.sql_validate(self.con._session, query)
+        return sch.Schema.from_tuples((r, MapDDataType._mapd_to_ibis_dtypes[
+            pymapd_dtype._VALUES_TO_NAMES[result[r].col_type.type]])
+            for r in result)
+
     def _get_table_schema(self, table_name, database=None):
         """
 
@@ -923,10 +929,15 @@ class MapDClient(SQLClient):
         -------
         table : TableExpr
         """
-        # Get the schema by adding a LIMIT 0 on to the end of the query. If
-        # there is already a limit in the query, we find and remove it
-        limited_query = 'SELECT * FROM ({}) t0 LIMIT 1'.format(query)
-        schema = self._get_schema_using_query(limited_query)
+        if pymapd_dtype is None:
+            raise com.UnsupportedOperationError(
+                'This method is available just on Python version >= 3.6.'
+            )
+        # Remove `;` + `--` (comment)
+        query = re.sub(r'\s*;\s*--', '\n--', query.strip())
+        # Remove trailing ;
+        query = re.sub(r'\s*;\s*$', '', query.strip())
+        schema = self._get_schema_using_validator(query)
         return ops.SQLQueryResult(query, schema, self).to_expr()
 
     @property
