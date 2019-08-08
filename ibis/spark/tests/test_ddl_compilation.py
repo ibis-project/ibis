@@ -106,63 +106,6 @@ def expr(t):
     return t[t.bigint_col > 0]
 
 
-def test_create_table_with_location_compile():
-    path = '/path/to/table'
-    schema = ibis.schema(
-        [('foo', 'string'), ('bar', 'int8'), ('baz', 'int16')]
-    )
-    statement = ddl.CreateTableWithSchema(
-        'another_table',
-        schema,
-        can_exist=False,
-        format='parquet',
-        path=path,
-        database='foo',
-    )
-    result = statement.compile()
-
-    expected = """\
-CREATE TABLE foo.`another_table`
-(`foo` string,
- `bar` tinyint,
- `baz` smallint)
-USING PARQUET
-LOCATION '{0}'""".format(
-        path
-    )
-    assert result == expected
-
-
-def test_create_table_parquet_with_schema():
-    directory = '/path/to/'
-
-    schema = ibis.schema(
-        [('foo', 'string'), ('bar', 'int8'), ('baz', 'int16')]
-    )
-
-    statement = ddl.CreateTableWithSchema(
-        'new_table',
-        schema,
-        database='foo',
-        format='parquet',
-        can_exist=True,
-        path=directory,
-    )
-
-    result = statement.compile()
-    expected = """\
-CREATE TABLE IF NOT EXISTS foo.`new_table`
-(`foo` string,
- `bar` tinyint,
- `baz` smallint)
-USING PARQUET
-LOCATION '{0}'""".format(
-        directory
-    )
-
-    assert result == expected
-
-
 def test_create_table_parquet(expr):
     statement = _create_table(
         'some_table', expr, database='bar', can_exist=False
