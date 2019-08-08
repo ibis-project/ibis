@@ -33,7 +33,8 @@ def test_select_basics(t):
     name = 'testing123456'
 
     expr = t.limit(10)
-    select, _ = _get_select(expr, SparkDialect.make_context())
+    ast = build_ast(expr, SparkDialect.make_context())
+    select = ast.queries[0]
 
     stmt = ddl.InsertSelect(name, select, database='foo')
     result = stmt.compile()
@@ -103,32 +104,6 @@ TBLPROPERTIES (
 @pytest.fixture
 def expr(t):
     return t[t.bigint_col > 0]
-
-
-def test_create_external_table_as(mockcon):
-    path = '/path/to/table'
-    select, _ = _get_select(
-        mockcon.table('test1'), SparkDialect.make_context()
-    )
-    statement = ddl.CTAS(
-        'another_table',
-        select,
-        can_exist=False,
-        path=path,
-        database='foo',
-    )
-    result = statement.compile()
-
-    expected = """\
-CREATE TABLE foo.`another_table`
-USING PARQUET
-LOCATION '{0}'
-AS
-SELECT *
-FROM test1""".format(
-        path
-    )
-    assert result == expected
 
 
 def test_create_table_with_location_compile():
@@ -236,10 +211,3 @@ def _create_table(
         can_exist=can_exist,
     )
     return statement
-
-
-def _get_select(expr, context):
-    ast = build_ast(expr, context)
-    select = ast.queries[0]
-    context = ast.context
-    return select, context

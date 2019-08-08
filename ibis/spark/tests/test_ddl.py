@@ -9,6 +9,7 @@ import ibis.util as util
 from ibis.tests.util import assert_equal
 
 pytestmark = pytest.mark.spark
+ps = pytest.importorskip('pyspark')
 
 
 def test_create_exists_view(con, alltypes, temp_view):
@@ -17,7 +18,7 @@ def test_create_exists_view(con, alltypes, temp_view):
 
     expr = alltypes.group_by('string_col').size()
 
-    con.create_view(tmp_name, expr)
+    con.create_view(tmp_name, expr, temporary=True)
     assert con.exists_table(tmp_name)
 
     # just check it works for now
@@ -30,7 +31,7 @@ def test_drop_non_empty_database(con, alltypes, temp_table_db):
     con.create_table(temp_table, alltypes, database=temp_database)
     assert con.exists_table(temp_table, database=temp_database)
 
-    with pytest.raises(com.IntegrityError):
+    with pytest.raises(ps.sql.utils.AnalysisException):
         con.drop_database(temp_database)
 
 
@@ -47,22 +48,6 @@ def test_create_database_with_location(con, tmp_dir):
             con.drop_database(name, force=True)
         finally:
             os.rmdir(base)
-
-
-def test_create_table_with_location_execute(
-    con, tmp_dir, alltypes, test_data_db, temp_table
-):
-    base = pjoin(tmp_dir, util.guid())
-    name = 'test_{}'.format(util.guid())
-    tmp_path = pjoin(base, name)
-
-    expr = alltypes
-    table_name = temp_table
-
-    con.create_table(
-        table_name, obj=expr, location=tmp_path, database=test_data_db
-    )
-    assert os.path.exists(tmp_path)
 
 
 def test_drop_table_not_exist(con):
@@ -193,7 +178,7 @@ def test_compute_stats(con, alltypes):
 def created_view(con, alltypes):
     name = util.guid()
     expr = alltypes.limit(10)
-    con.create_view(name, expr)
+    con.create_view(name, expr, temporary=True)
     return name
 
 
@@ -220,21 +205,14 @@ def test_rename_table(con, alltypes):
 
 
 @pytest.fixture
-def path_uuid():
-    return 'change-location-{0}'.format(util.guid())
-
-
-@pytest.fixture
-def table(con, temp_database, tmp_dir, path_uuid):
+def table(con, temp_database):
     table_name = 'table_{}'.format(util.guid())
-    fake_path = pjoin(tmp_dir, path_uuid)
     schema = ibis.schema([('foo', 'string'), ('bar', 'int64')])
     con.create_table(
         table_name,
         database=temp_database,
         schema=schema,
         format='parquet',
-        location=fake_path,
     )
     try:
         yield con.table(table_name, database=temp_database)

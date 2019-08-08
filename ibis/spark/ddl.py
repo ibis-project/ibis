@@ -54,7 +54,6 @@ class CreateTable(impala_ddl.CreateTable):
         database=None,
         format='parquet',
         can_exist=False,
-        path=None,
         tbl_properties=None,
     ):
         super().__init__(
@@ -64,7 +63,6 @@ class CreateTable(impala_ddl.CreateTable):
             format=format,
             can_exist=can_exist,
             partition=None,
-            path=path,
             tbl_properties=tbl_properties,
         )
 
@@ -82,7 +80,6 @@ class CreateTableWithSchema(CreateTable):
     def _pieces(self):
         yield format_schema(self.schema)
         yield self._storage()
-        yield self._location()
 
 
 class CTAS(CreateTable):
@@ -98,21 +95,18 @@ class CTAS(CreateTable):
         database=None,
         format='parquet',
         can_exist=False,
-        path=None,
     ):
         super().__init__(
             table_name,
             database=database,
             format=format,
             can_exist=can_exist,
-            path=path,
         )
         self.select = select
 
     @property
     def _pieces(self):
         yield self._storage()
-        yield self._location()
         yield 'AS'
         yield self.select.compile()
 
@@ -126,14 +120,14 @@ class CreateView(CTAS):
         table_name,
         select,
         database=None,
-        or_replace=True,
+        can_exist=False,
         temporary=False,
     ):
         super().__init__(
             table_name,
             select,
             database=database,
-            can_exist=or_replace,
+            can_exist=can_exist,
         )
         self.temporary = temporary
 
@@ -177,15 +171,11 @@ class CreateDatabase(impala_ddl.CreateDatabase):
     pass
 
 
-class DropObject(impala_ddl.DropObject):
-    pass
-
-
 class DropTable(impala_ddl.DropTable):
     pass
 
 
-class DropDatabase(DropObject):
+class DropDatabase(impala_ddl.DropObject):
 
     _object_type = 'DATABASE'
 
@@ -198,13 +188,14 @@ class DropDatabase(DropObject):
         return self.name
 
     def compile(self):
+        compiled = super().compile()
         if self.cascade:
-            return '{} CASCADE'.format(super().compile())
+            return '{} CASCADE'.format(compiled)
         else:
-            return super().compile()
+            return compiled
 
 
-class DropFunction(DropObject):
+class DropFunction(impala_ddl.DropObject):
 
     _object_type = 'TEMPORARY FUNCTION'
 

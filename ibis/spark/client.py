@@ -585,7 +585,6 @@ class SparkClient(SQLClient):
         force=False,
         # HDFS options
         format='parquet',
-        location=None,
     ):
         """
         Create a new table in Spark using an Ibis table expression.
@@ -602,17 +601,13 @@ class SparkClient(SQLClient):
         force : boolean, default False
           If true, create table if table with indicated name already exists
         format : {'parquet'}
-        location : string, default None
-          Specify the directory location where Spark reads and writes files
-          for the table
+
         Examples
         --------
         >>> con.create_table('new_table_name', table_expr)  # doctest: +SKIP
         """
         if obj is not None:
             if isinstance(obj, pd.DataFrame):
-                assert location is None, 'Spark does not support saveAsTable \
-with external location'
                 spark_df = self._session.createDataFrame(obj)
                 mode = 'error'
                 if force:
@@ -633,7 +628,6 @@ with external location'
                 database=database,
                 can_exist=force,
                 format=format,
-                path=location,
             )
         elif schema is not None:
             statement = ddl.CreateTableWithSchema(
@@ -642,7 +636,6 @@ with external location'
                 database=database,
                 format=format,
                 can_exist=force,
-                path=location,
             )
         else:
             raise com.IbisError('Must pass expr or schema')
@@ -654,7 +647,7 @@ with external location'
         name,
         expr,
         database=None,
-        or_replace=False,
+        can_exist=False,
         temporary=False,
     ):
         """
@@ -665,7 +658,7 @@ with external location'
         name : string
         expr : ibis TableExpr
         database : string, default None
-        or_replace : boolean, default False
+        can_exist : boolean, default False
           Replace an existing view of the same name if it exists
         temporary : boolean, default False
         """
@@ -675,7 +668,7 @@ with external location'
             name,
             select,
             database=database,
-            or_replace=or_replace,
+            can_exist=can_exist,
             temporary=temporary,
         )
         return self._execute(statement.compile())

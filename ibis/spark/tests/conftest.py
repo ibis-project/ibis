@@ -3,7 +3,6 @@ import os
 import pytest
 
 import ibis.util as util
-from ibis.expr.tests.mocks import MockConnection
 from ibis.tests.all.conftest import get_spark_testing_client
 
 
@@ -120,8 +119,3 @@ def temp_view_db(con, temp_database):
     finally:
         assert con.exists_table(name, database=temp_database), name
         con.drop_view(name, database=temp_database)
-
-
-@pytest.fixture
-def mockcon():
-    return MockConnection()
