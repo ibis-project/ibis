@@ -37,21 +37,24 @@ def test_projection(client):
         {
             'id': range(0, 10),
             'str_col': 'value',
-            'v': range(0, 10)
+            'v': range(0, 10),
         }
     )
 
     result2 = (
-        table.mutate(v=table['id']).mutate(v2=table['id'])
+        table
+        .mutate(v=table['id'])
+        .mutate(v2=table['id'])
+        .mutate(id=table['id'] * 2)
         .compile().toPandas()
     )
 
     expected2 = pd.DataFrame(
         {
-            'id': range(0, 10),
+            'id': range(0, 20, 2),
             'str_col': 'value',
             'v': range(0, 10),
-            'v2': range(0, 10)
+            'v2': range(0, 10),
         }
     )
 
@@ -124,7 +127,7 @@ def test_greatest(client):
 
 def test_selection(client):
     table = client.table('table1')
-    table = table.mutate(id2=table['id'])
+    table = table.mutate(id2=table['id'] * 2)
 
     result1 = table[['id']].compile()
     result2 = table[['id', 'id2']].compile()

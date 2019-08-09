@@ -1,26 +1,30 @@
-import ibis.expr.types as types
-from ibis.pyspark.compiler import translate
-from ibis.pyspark.operations import PysparkTable
-from ibis.spark.client import SparkClient
-
 from pyspark.sql.column import Column
 
+import ibis.common.exceptions as com
+import ibis.expr.types as types
+from ibis.pyspark.compiler import PySparkExprTranslator
+from ibis.pyspark.operations import PySparkTable
+from ibis.spark.client import SparkClient
 
-class PysparkClient(SparkClient):
+
+class PySparkClient(SparkClient):
     """
-    An ibis client that uses Pyspark SQL Dataframe
+    An ibis client that uses PySpark SQL Dataframe
     """
 
     dialect = None
-    table_class = PysparkTable
+    table_class = PySparkTable
+
+    def __init__(self, session):
+        super().__init__(session)
+        self.translator = PySparkExprTranslator()
 
     def compile(self, expr, *args, **kwargs):
-        """Compile an ibis expression to a Pyspark DataFrame object
+        """Compile an ibis expression to a PySpark DataFrame object
         """
-        return translate(expr)
+        return self.translator.translate(expr)
 
     def execute(self, expr, params=None, limit='default', **kwargs):
-
         if isinstance(expr, types.TableExpr):
             return self.compile(expr).toPandas()
         elif isinstance(expr, types.ColumnExpr):
@@ -32,8 +36,8 @@ class PysparkClient(SparkClient):
             if isinstance(compiled, Column):
                 # attach result column to a fake DataFrame and
                 # select the result
-                compiled = self._session.range(0, 1) \
-                    .select(compiled)
+                compiled = self._session.range(0, 1).select(compiled)
             return compiled.toPandas().iloc[0, 0]
         else:
-            raise ValueError("Unexpected type: ", type(expr))
+            raise com.IbisError(
+                "Cannot execute expression of type: {}".format(type(expr)))

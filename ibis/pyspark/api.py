@@ -1,4 +1,4 @@
-from ibis.pyspark.client import PysparkClient
+from ibis.pyspark.client import PySparkClient
 
 
 def connect(session):
@@ -7,7 +7,7 @@ def connect(session):
     which pipes them into SparkContext. See documentation for SparkContext:
     https://spark.apache.org/docs/latest/api/python/_modules/pyspark/context.html#SparkContext
     """
-    client = PysparkClient(session)
+    client = PySparkClient(session)
 
     # Spark internally stores timestamps as UTC values, and timestamp data that
     # is brought in without a specified time zone is converted as local time to

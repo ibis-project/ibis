@@ -552,7 +552,6 @@ class Spark(Backend, RoundHalfToEven):
 
 
 class PySpark(Backend, RoundAwayFromZero):
-
     @staticmethod
     def skip_if_missing_dependencies() -> None:
         pytest.importorskip('pyspark')
