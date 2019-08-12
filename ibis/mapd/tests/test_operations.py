@@ -151,3 +151,14 @@ def test_agg_with_bool(alltypes, ibis_op, sql_op):
     ).format(sql_op, ibis_op)
 
     assert regex.sub('', expr.compile()) == regex.sub('', sql_check)
+
+
+@pytest.mark.parametrize(
+    'expr_fn',
+    [
+        lambda t: t.float_col.mean(where=t.date_string_col == '11/01/10'),
+        lambda t: t.float_col.bucket([0, 1, 3]).name('bucket'),
+    ],
+)
+def test_expr_with_null_literal(alltypes, expr_fn):
+    expr_fn(alltypes).execute()
