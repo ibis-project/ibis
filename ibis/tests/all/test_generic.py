@@ -38,9 +38,21 @@ def test_fillna_nullif(backend, con, expr, expected):
 @pytest.mark.parametrize(
     ('expr', 'expected'),
     [
-        (ibis.coalesce(5, None, 4), 5),
-        (ibis.coalesce(ibis.NA, 4, ibis.NA), 4),
-        (ibis.coalesce(ibis.NA, ibis.NA, 3.14), 3.14),
+        pytest.param(
+            ibis.coalesce(5, None, 4),
+            5,
+            marks=pytest.mark.skip_backends((MapD,)),  # OmniSciDB issue #375
+        ),
+        pytest.param(
+            ibis.coalesce(ibis.NA, 4, ibis.NA),
+            4,
+            marks=pytest.mark.skip_backends((MapD,)),  # OmniSciDB issue #375
+        ),
+        pytest.param(
+            ibis.coalesce(ibis.NA, ibis.NA, 3.14),
+            3.14,
+            marks=pytest.mark.skip_backends((MapD,)),  # OmniSciDB issue #375
+        ),
     ],
 )
 @pytest.mark.xfail_unsupported

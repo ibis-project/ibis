@@ -825,7 +825,7 @@ _agg_ops = {
 # GENERAL
 _general_ops = {
     ops.Literal: literal,
-    ops.NullLiteral: lambda *args: 'CAST(NULL AS FLOAT)',
+    ops.NullLiteral: lambda *args: 'NULL',
     ops.ValueList: _value_list,
     ops.Cast: _cast,
     ops.Where: _where,
