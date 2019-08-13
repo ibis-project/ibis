@@ -67,22 +67,15 @@ class CreateTable(impala_ddl.CreateTable):
         )
 
     def _storage(self):
-        # By the time we're here, we have a valid format
         return 'USING {}'.format(self.format)
 
 
-class CreateTableWithSchema(CreateTable):
-    def __init__(self, table_name, schema, **kwargs):
-        super().__init__(table_name, **kwargs)
-        self.schema = schema
-
-    @property
-    def _pieces(self):
-        yield format_schema(self.schema)
-        yield self._storage()
+class CreateTableWithSchema(impala_ddl.CreateTableWithSchema):
+    def _storage(self):
+        return 'USING {}'.format(self.format)
 
 
-class CTAS(CreateTable):
+class CTAS(impala_ddl.CTAS):
 
     """
     Create Table As Select
@@ -98,17 +91,15 @@ class CTAS(CreateTable):
     ):
         super().__init__(
             table_name,
+            select,
             database=database,
             format=format,
             can_exist=can_exist,
         )
         self.select = select
 
-    @property
-    def _pieces(self):
-        yield self._storage()
-        yield 'AS'
-        yield self.select.compile()
+    def _storage(self):
+        return 'USING {}'.format(self.format)
 
 
 class CreateView(CTAS):
