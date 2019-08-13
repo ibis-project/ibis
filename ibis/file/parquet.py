@@ -29,14 +29,17 @@ _arrow_dtypes = {
     'string': dt.String,
     'binary': dt.Binary,
     'bool': dt.Boolean,
-    'timestamp[ns]': dt.Timestamp,
-    'timestamp[us]': dt.Timestamp,
 }
 
 
 @dt.dtype.register(pa.DataType)
 def pa_dtype(arrow_type, nullable=True):
     return _arrow_dtypes[str(arrow_type)](nullable=nullable)
+
+
+@dt.dtype.register(pa.lib.TimestampType)
+def pa_timestamp_type(arrow_type, nullable=True):
+    return dt.Timestamp(arrow_type.tz, nullable=nullable)
 
 
 @sch.infer.register(pq.ParquetSchema)
