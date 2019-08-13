@@ -27,6 +27,9 @@ pa = pytest.importorskip('pyarrow')  # noqa: E402
         (pa.float64(), dt.float64),
         (pa.string(), dt.string),
         (pa.timestamp('ns'), dt.timestamp),
+        (pa.timestamp('us'), dt.timestamp),
+        (pa.timestamp('ns', 'UTC'), dt.Timestamp('UTC')),
+        (pa.timestamp('us', 'Europe/Paris'), dt.Timestamp('Europe/Paris')),
     ],
     ids=lambda x: str(x),
 )
