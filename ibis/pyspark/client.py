@@ -22,7 +22,7 @@ class PySparkClient(SparkClient):
     def compile(self, expr, *args, **kwargs):
         """Compile an ibis expression to a PySpark DataFrame object
         """
-        return self.translator.translate(expr)
+        return self.translator.translate(expr, scope={})
 
     def execute(self, expr, params=None, limit='default', **kwargs):
         if isinstance(expr, types.TableExpr):
