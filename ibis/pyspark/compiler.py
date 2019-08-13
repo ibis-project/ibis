@@ -3,7 +3,6 @@ import enum
 import functools
 
 import pyspark.sql.functions as F
-from pyspark.sql.window import Window
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
@@ -71,6 +70,11 @@ def compile_datasource(t, expr, scope):
 def compile_selection(t, expr, scope, **kwargs):
     # Cache compile results for tables
     op = expr.op()
+
+    # TODO: Support predicates and sort_keys
+    if len(op.predicates) > 0 or len(op.sort_keys) > 0:
+        raise NotImplementedError(
+            "predicates and sort_keys are not supported with Selection")
 
     src_table = compile_with_scope(t, op.table, scope)
     col_names_in_selection_order = []
@@ -301,14 +305,6 @@ def compile_arbitrary(t, expr, scope, context=None, **kwargs):
     return compile_aggregator(t, expr, scope, fn, context)
 
 
-@compiles(ops.WindowOp)
-def compile_window_op(t, expr, scope, **kwargs):
-    op = expr.op()
-
-    return (t.translate(op.expr, scope, context=AggregationContext.WINDOW)
-            .over(compile_window(op.window, scope)))
-
-
 @compiles(ops.Greatest)
 def compile_greatest(t, expr, scope, **kwargs):
     op = expr.op()
@@ -516,10 +512,3 @@ def compile_join(t, expr, scope, how):
     predicates = t.translate(op.predicates[0], scope)
 
     return left_df.join(right_df, predicates, how)
-
-
-# Cannot register with @compiles because window doesn't have an
-# op() object
-def compile_window(expr, scope):
-    spark_window = Window.partitionBy()
-    return spark_window

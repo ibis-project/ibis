@@ -91,6 +91,7 @@ def test_groupby(client):
     tm.assert_frame_equal(result.toPandas(), expected.toPandas())
 
 
+@pytest.mark.xfail
 def test_window(client):
     import pyspark.sql.functions as F
     from pyspark.sql.window import Window

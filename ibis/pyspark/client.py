@@ -12,7 +12,6 @@ class PySparkClient(SparkClient):
     An ibis client that uses PySpark SQL Dataframe
     """
 
-    dialect = None
     table_class = PySparkTable
 
     def __init__(self, session):
@@ -41,3 +40,7 @@ class PySparkClient(SparkClient):
         else:
             raise com.IbisError(
                 "Cannot execute expression of type: {}".format(type(expr)))
+
+    def sql(self, query):
+        raise NotImplementedError(
+            "PySpark backend doesn't support sql query")

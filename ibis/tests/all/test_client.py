@@ -3,7 +3,7 @@ from pkg_resources import parse_version
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.tests.backends import BigQuery
+from ibis.tests.backends import BigQuery, PySpark
 
 
 @pytest.mark.xfail_unsupported
@@ -25,6 +25,7 @@ def test_version(backend, con):
         ),
     ],
 )
+@pytest.mark.xfail_backends((PySpark,))
 def test_query_schema(backend, con, alltypes, expr_fn, expected):
     if not hasattr(con, '_build_ast'):
         pytest.skip(
