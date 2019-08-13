@@ -509,7 +509,7 @@ class SparkClient(SQLClient):
 
         return sch.infer(df)
 
-    def schema_from_csv(self, path, **kwargs):
+    def _schema_from_csv(self, path, **kwargs):
         """
         Return a Schema object for the indicated csv file. Spark goes through
         the file once to determine the schema. See documentation for
@@ -530,7 +530,7 @@ class SparkClient(SQLClient):
         df = self._session.read.csv(path, **options)
         return spark_dataframe_schema(df)
 
-    def create_table_or_temp_view_from_csv(
+    def _create_table_or_temp_view_from_csv(
         self,
         name,
         path,
