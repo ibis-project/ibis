@@ -252,3 +252,35 @@ def test_create_table_reserved_identifier(con, alltypes):
 @pytest.mark.xfail(raises=AssertionError, reason='NYT')
 def test_query_text_file_regex():
     assert False
+
+
+@pytest.fixture(scope='session')
+def awards_players_filename(data_directory):
+    return str(data_directory / 'awards_players.csv')
+
+
+awards_players_schema = ibis.schema(
+    [
+        ('playerID', 'string'),
+        ('awardID', 'string'),
+        ('yearID', 'int32'),
+        ('lgID', 'string'),
+        ('tie', 'string'),
+        ('notes', 'string'),
+    ]
+)
+
+
+def test_schema_from_csv(con, awards_players_filename):
+    schema = con._schema_from_csv(awards_players_filename)
+    assert schema.equals(awards_players_schema)
+
+
+def test_create_table_or_temp_view_from_csv(con, awards_players_filename):
+    con._create_table_or_temp_view_from_csv(
+        'awards',
+        awards_players_filename
+    )
+    table = con.table('awards')
+    assert table.schema().equals(awards_players_schema)
+    assert table.count().execute() == 6078
