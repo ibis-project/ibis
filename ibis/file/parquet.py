@@ -37,12 +37,9 @@ def pa_dtype(arrow_type, nullable=True):
     return _arrow_dtypes[str(arrow_type)](nullable=nullable)
 
 
-@dt.dtype.register(pa.TimestampType)
+@dt.dtype.register(pa.lib.TimestampType)
 def pa_timestamp_type(arrow_type, nullable=True):
-    tz = arrow_type.tz
-    if tz is not None:
-        return dt.Timestamp(tz, nullable=nullable)
-    return dt.Timestamp(nullable=nullable)
+    return dt.Timestamp(arrow_type.tz, nullable=nullable)
 
 
 @sch.infer.register(pq.ParquetSchema)
