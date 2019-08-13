@@ -7,6 +7,9 @@ from pyspark.sql.window import Window
 
 import ibis
 
+pytestmark = pytest.mark.pyspark
+pytest.importorskip('pyspark')
+
 
 @pytest.fixture(scope='session')
 def client():
