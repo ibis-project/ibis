@@ -993,20 +993,8 @@ class AlchemyQuery(Query):
             columns=cursor.proxy.keys(),
             coerce_float=True,
         )
-        df = self.schema().apply_to(df)
-        # If the dataframe has contents and we support geospatial operations,
-        # convert the dataframe into a GeoDataFrame with shapely geometries.
-        if len(df) and geospatial_supported:
-            geom_col = None
-            for name, dtype in self.schema().items():
-                if isinstance(dtype, dt.GeoSpatial):
-                    geom_col = geom_col or name
-                    df[name] = df.apply(
-                        lambda x: shape.to_shape(x[name]), axis=1
-                    )
-            if geom_col:
-                df = geopandas.GeoDataFrame(df, geometry=geom_col)
-        return df
+        schema = self.schema()
+        return _maybe_to_geodataframe(schema.apply_to(df), schema)
 
 
 class AlchemyDialect(Dialect):
@@ -1520,3 +1508,22 @@ def _sort_key(t, expr):
     by, ascending = expr.op().args
     sort_direction = sa.asc if ascending else sa.desc
     return sort_direction(t.translate(by))
+
+
+def _maybe_to_geodataframe(df, schema):
+    """
+    If the required libraries for geospatial support are installed, and if a
+    geospatial column is present in the dataframe, convert it to a
+    GeoDataFrame.
+    """
+    def to_shapely(row, name):
+        return shape.to_shape(row[name]) if row[name] is not None else None
+    if len(df) and geospatial_supported:
+        geom_col = None
+        for name, dtype in schema.items():
+            if isinstance(dtype, dt.GeoSpatial):
+                geom_col = geom_col or name
+                df[name] = df.apply(lambda x: to_shapely(x, name), axis=1)
+        if geom_col:
+            df = geopandas.GeoDataFrame(df, geometry=geom_col)
+    return df
