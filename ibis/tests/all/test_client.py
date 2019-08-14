@@ -3,6 +3,7 @@ from pkg_resources import parse_version
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis.tests.backends import BigQuery
 
 
 @pytest.mark.xfail_unsupported
@@ -57,6 +58,7 @@ def test_query_schema(backend, con, alltypes, expr_fn, expected):
         'select * from functional_alltypes \nlimit 10\n',
     ],
 )
+@pytest.mark.xfail_backends((BigQuery,))
 @pytest.mark.xfail_unsupported
 def test_sql(backend, con, sql):
     if not hasattr(con, 'sql') or not hasattr(con, '_get_schema_using_query'):
