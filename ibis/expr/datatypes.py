@@ -663,6 +663,8 @@ class GeoSpatial(DataType):
                 shapely.geometry.Point,
                 shapely.geometry.LineString,
                 shapely.geometry.Polygon,
+                shapely.geometry.MultiLineString,
+                shapely.geometry.MultiPoint,
                 shapely.geometry.MultiPolygon
             )
             if isinstance(value, geo_shapes):
@@ -732,6 +734,24 @@ class Polygon(GeoSpatial):
     __slots__ = ()
 
 
+class MultiLineString(GeoSpatial):
+    """A set of one or more line strings."""
+
+    scalar = ir.MultiLineStringScalar
+    column = ir.MultiLineStringColumn
+
+    __slots__ = ()
+
+
+class MultiPoint(GeoSpatial):
+    """A set of one or more points."""
+
+    scalar = ir.MultiPointScalar
+    column = ir.MultiPointColumn
+
+    __slots__ = ()
+
+
 class MultiPolygon(GeoSpatial):
     """A set of one or more polygons."""
 
@@ -774,6 +794,8 @@ geography = GeoSpatial()
 point = Point()
 linestring = LineString()
 polygon = Polygon()
+multilinestring = MultiLineString()
+multipoint = MultiPoint()
 multipolygon = MultiPolygon()
 
 
@@ -837,8 +859,10 @@ class Tokens:
     POINT = 24
     LINESTRING = 25
     POLYGON = 26
-    MULTIPOLYGON = 27
-    SEMICOLON = 28
+    MULTILINESTRING = 27
+    MULTIPOINT = 28
+    MULTIPOLYGON = 29
+    SEMICOLON = 30
 
     @staticmethod
     def name(value):
@@ -1148,6 +1172,15 @@ class TypeParser:
                 | "polygon" ":" geotype
                 | "polygon" ";" srid ":" geotype
 
+        multilinestring : "multilinestring"
+                   | "multilinestring" ";" srid
+                   | "multilinestring" ":" geotype
+                   | "multilinestring" ";" srid ":" geotype
+
+        multipoint : "multipoint"
+                   | "multipoint" ";" srid
+                   | "multipoint" ":" geotype
+                   | "multipoint" ";" srid ":" geotype
 
         multipolygon : "multipolygon"
                      | "multipolygon" ";" srid
@@ -1324,6 +1357,40 @@ class TypeParser:
                     geotype = 'geometry'
 
             return Polygon(geotype=geotype, srid=srid)
+
+        elif self._accept(Tokens.MULTILINESTRING):
+            geotype = None
+            srid = None
+
+            if self._accept(Tokens.SEMICOLON):
+                self._expect(Tokens.INTEGER)
+                assert self.tok is not None
+                srid = self.tok.value
+
+            if self._accept(Tokens.COLON):
+                if self._accept(Tokens.GEOGRAPHY):
+                    geotype = 'geography'
+                elif self._accept(Tokens.GEOMETRY):
+                    geotype = 'geometry'
+
+            return MultiLineString(geotype=geotype, srid=srid)
+
+        elif self._accept(Tokens.MULTIPOINT):
+            geotype = None
+            srid = None
+
+            if self._accept(Tokens.SEMICOLON):
+                self._expect(Tokens.INTEGER)
+                assert self.tok is not None
+                srid = self.tok.value
+
+            if self._accept(Tokens.COLON):
+                if self._accept(Tokens.GEOGRAPHY):
+                    geotype = 'geography'
+                elif self._accept(Tokens.GEOMETRY):
+                    geotype = 'geometry'
+
+            return MultiPoint(geotype=geotype, srid=srid)
 
         elif self._accept(Tokens.MULTIPOLYGON):
             geotype = None
@@ -1515,6 +1582,18 @@ if IS_SHAPELY_AVAILABLE:
     def infer_shapely_polygon(value: shapely.geometry.Polygon) -> Polygon:
         return polygon
 
+    @infer.register(shapely.geometry.MultiLineString)
+    def infer_shapely_multilinestring(
+        value: shapely.geometry.MultiLineString
+    ) -> MultiLineString:
+        return multilinestring
+
+    @infer.register(shapely.geometry.MultiPoint)
+    def infer_shapely_multipoint(
+        value: shapely.geometry.MultiPoint
+    ) -> MultiPoint:
+        return multipoint
+
     @infer.register(shapely.geometry.MultiPolygon)
     def infer_shapely_multipolygon(
         value: shapely.geometry.MultiPolygon
@@ -1637,9 +1716,18 @@ def can_cast_variadic(
 
 # geo spatial data type
 # cast between same type, used to cast from/to geometry and geography
-@castable.register(Array, (Point, LineString, Polygon, MultiPolygon))
-@castable.register((Point, LineString, Polygon, MultiPolygon), Geometry)
-@castable.register((Point, LineString, Polygon, MultiPolygon), Geography)
+@castable.register(
+    Array,
+    (Point, LineString, Polygon, MultiLineString, MultiPoint, MultiPolygon)
+)
+@castable.register(
+    (Point, LineString, Polygon, MultiLineString, MultiPoint, MultiPolygon),
+    Geometry
+)
+@castable.register(
+    (Point, LineString, Polygon, MultiLineString, MultiPoint, MultiPolygon),
+    Geography
+)
 def can_cast_geospatial(source, target, **kwargs):
     return True
 

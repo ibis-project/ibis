@@ -271,6 +271,8 @@ geospatial = value(dt.GeoSpatial)
 point = value(dt.Point)
 linestring = value(dt.LineString)
 polygon = value(dt.Polygon)
+multilinestring = value(dt.MultiLineString)
+multipoint = value(dt.MultiPoint)
 multipolygon = value(dt.MultiPolygon)
 
 

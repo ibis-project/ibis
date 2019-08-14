@@ -149,6 +149,10 @@ if geospatial_supported:
             return dt.LineString(nullable=nullable)
         if t == 'POLYGON':
             return dt.Polygon(nullable=nullable)
+        if t == 'MULTILINESTRING':
+            return dt.MultiLineString(nullable=nullable)
+        if t == 'MULTIPOINT':
+            return dt.MultiPoint(nullable=nullable)
         if t == 'MULTIPOLYGON':
             return dt.MultiPolygon(nullable=nullable)
         else:

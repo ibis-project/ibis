@@ -31,6 +31,20 @@ def _format_polygon_value(value: Iterable) -> str:
     )
 
 
+def _format_multilinestring_value(value: Iterable) -> str:
+    """Convert a iterable with a multilinestring to text."""
+    return ', '.join(
+        '({})'.format(_format_linestring_value(line)) for line in value
+    )
+
+
+def _format_multipoint_value(value: Iterable) -> str:
+    """Convert a iterable with a multipoint to text."""
+    return ', '.join(
+        '({})'.format(_format_point_value(point)) for point in value
+    )
+
+
 def _format_multipolygon_value(value: Iterable) -> str:
     """Convert a iterable with a multipolygon to text."""
     return ', '.join(
@@ -77,6 +91,16 @@ def translate_polygon(value: Iterable) -> str:
     return "POLYGON ({})".format(_format_polygon_value(value))
 
 
+def translate_multilinestring(value: Iterable) -> str:
+    """Translate a multilinestring to WKT."""
+    return "MULTILINESTRING ({})".format(_format_multilinestring_value(value))
+
+
+def translate_multipoint(value: Iterable) -> str:
+    """Translate a multipoint to WKT."""
+    return "MULTIPOINT ({})".format(_format_multipoint_value(value))
+
+
 def translate_multipolygon(value: Iterable) -> str:
     """Translate a multipolygon to WKT."""
     return "MULTIPOLYGON ({})".format(_format_multipolygon_value(value))
@@ -96,6 +120,10 @@ def translate_literal(expr, inline_metadata: bool = False) -> str:
         result = translate_linestring(value)
     elif isinstance(expr, ir.PolygonScalar):
         result = translate_polygon(value)
+    elif isinstance(expr, ir.MultiLineString):
+        result = translate_multilinestring(value)
+    elif isinstance(expr, ir.MultiPoint):
+        result = translate_multipoint(value)
     elif isinstance(expr, ir.MultiPolygonScalar):
         result = translate_multipolygon(value)
     else:
