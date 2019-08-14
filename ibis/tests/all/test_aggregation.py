@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from pytest import param
 
-from ibis.tests.backends import Clickhouse, MapD, MySQL, SQLite
+from ibis.tests.backends import Clickhouse, MySQL, OmniSciDB, SQLite
 
 
 @pytest.mark.parametrize(
@@ -12,7 +12,8 @@ from ibis.tests.backends import Clickhouse, MapD, MySQL, SQLite
             lambda t, where: t.bool_col.count(where=where),
             lambda t, where: len(t.bool_col[where].dropna()),
             id='count',
-            marks=pytest.mark.skip_backends((MapD,)),  # OmniSciDB issue #375
+            # OmniSciDB issue #375
+            marks=pytest.mark.skip_backends((OmniSciDB,)),
         ),
         param(
             lambda t, where: t.bool_col.any(),
