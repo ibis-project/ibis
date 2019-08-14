@@ -1139,7 +1139,7 @@ class ImpalaClient(SQLClient):
         obj : TableExpr or pandas.DataFrame, optional
           If passed, creates table from select statement results
         schema : ibis.Schema, optional
-          Mutually exclusive with expr, creates an empty table with a
+          Mutually exclusive with obj, creates an empty table with a
           particular schema
         database : string, default None (optional)
         force : boolean, default False
@@ -1196,7 +1196,7 @@ class ImpalaClient(SQLClient):
                 partition=partition,
             )
         else:
-            raise com.IbisError('Must pass expr or schema')
+            raise com.IbisError('Must pass obj or schema')
 
         return self._execute(statement)
 

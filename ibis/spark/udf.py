@@ -14,65 +14,10 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.signature as sig
 from ibis.pandas.udf import valid_function_signature
-from ibis.spark.client import _SPARK_DTYPE_TO_IBIS_DTYPE
 from ibis.spark.compiler import SparkUDAFNode, SparkUDFNode, compiles
+from ibis.spark.datatypes import spark_dtype
 
 _udf_name_cache = collections.defaultdict(itertools.count)
-
-_IBIS_DTYPE_TO_SPARK_DTYPE = {
-    v: k for k, v in _SPARK_DTYPE_TO_IBIS_DTYPE.items()
-}
-
-spark_dtype = functools.singledispatch('spark_dtype')
-
-
-@spark_dtype.register(object)
-def default(value, **kwargs) -> pt.DataType:
-    raise com.IbisTypeError('Value {!r} is not a valid datatype'.format(value))
-
-
-@spark_dtype.register(pt.DataType)
-def from_spark_dtype(value: pt.DataType) -> pt.DataType:
-    return value
-
-
-@spark_dtype.register(dt.DataType)
-def ibis_dtype_to_spark_dtype(ibis_dtype_obj):
-    """Convert ibis types types to Spark SQL."""
-    return _IBIS_DTYPE_TO_SPARK_DTYPE.get(type(ibis_dtype_obj))()
-
-
-@spark_dtype.register(dt.Decimal)
-def ibis_decimal_dtype_to_spark_dtype(ibis_dtype_obj):
-    precision = ibis_dtype_obj.precision
-    scale = ibis_dtype_obj.scale
-    return pt.DecimalType(precision, scale)
-
-
-@spark_dtype.register(dt.Array)
-def ibis_array_dtype_to_spark_dtype(ibis_dtype_obj):
-    element_type = spark_dtype(ibis_dtype_obj.value_type)
-    contains_null = ibis_dtype_obj.value_type.nullable
-    return pt.ArrayType(element_type, contains_null)
-
-
-@spark_dtype.register(dt.Map)
-def ibis_map_dtype_to_spark_dtype(ibis_dtype_obj):
-    key_type = spark_dtype(ibis_dtype_obj.key_type)
-    value_type = spark_dtype(ibis_dtype_obj.value_type)
-    value_contains_null = ibis_dtype_obj.value_type.nullable
-    return pt.MapType(key_type, value_type, value_contains_null)
-
-
-@spark_dtype.register(dt.Struct)
-def ibis_struct_dtype_to_spark_dtype(ibis_dtype_obj):
-    names = ibis_dtype_obj.names
-    spark_types = list(map(spark_dtype, ibis_dtype_obj.types))
-    fields = [
-        pt.StructField(n, t, t.nullable)
-        for n, t in zip(names, spark_types)
-    ]
-    return pt.StructType(fields)
 
 
 class SparkUDF:
