@@ -38,24 +38,13 @@ def test_fillna_nullif(backend, con, expr, expected):
 @pytest.mark.parametrize(
     ('expr', 'expected'),
     [
-        pytest.param(
-            ibis.coalesce(5, None, 4),
-            5,
-            marks=pytest.mark.xfail_backends((MapD,)),  # OmniSciDB issue #375
-        ),
-        pytest.param(
-            ibis.coalesce(ibis.NA, 4, ibis.NA),
-            4,
-            marks=pytest.mark.xfail_backends((MapD,)),  # OmniSciDB issue #375
-        ),
-        pytest.param(
-            ibis.coalesce(ibis.NA, ibis.NA, 3.14),
-            3.14,
-            marks=pytest.mark.xfail_backends((MapD,)),  # OmniSciDB issue #375
-        ),
+        (ibis.coalesce(5, None, 4), 5),
+        (ibis.coalesce(ibis.NA, 4, ibis.NA), 4),
+        (ibis.coalesce(ibis.NA, ibis.NA, 3.14), 3.14),
     ],
 )
 @pytest.mark.xfail_unsupported
+@pytest.mark.skip_backends((MapD,))  # OmniSciDB issue #375
 def test_coalesce(backend, con, expr, expected):
     result = con.execute(expr)
 
@@ -69,7 +58,6 @@ def test_coalesce(backend, con, expr, expected):
 
 
 @pytest.mark.xfail_unsupported
-@pytest.mark.skip_backends([MapD])
 def test_identical_to(backend, sorted_alltypes, con, sorted_df):
     df = sorted_df
     dt = df[['tinyint_col', 'double_col']]
@@ -100,7 +88,6 @@ def test_identical_to(backend, sorted_alltypes, con, sorted_df):
     ],
 )
 @pytest.mark.xfail_unsupported
-@pytest.mark.skip_backends([MapD])
 def test_isin(backend, sorted_alltypes, sorted_df, column, elements):
     expr = sorted_alltypes[
         'id', sorted_alltypes[column].isin(elements).name('tmp')
@@ -124,7 +111,6 @@ def test_isin(backend, sorted_alltypes, sorted_df, column, elements):
     ],
 )
 @pytest.mark.xfail_unsupported
-@pytest.mark.skip_backends([MapD])
 def test_notin(backend, sorted_alltypes, sorted_df, column, elements):
     expr = sorted_alltypes[
         'id', sorted_alltypes[column].notin(elements).name('tmp')
