@@ -560,3 +560,15 @@ class PySpark(Backend, RoundAwayFromZero):
     def connect(data_directory):
         from ibis.tests.all.conftest import get_pyspark_testing_client
         return get_pyspark_testing_client(data_directory)
+
+    @property
+    def functional_alltypes(self) -> ir.TableExpr:
+        return self.connection.table('functional_alltypes')
+
+    @property
+    def batting(self) -> ir.TableExpr:
+        return self.connection.table('batting')
+
+    @property
+    def awards_players(self) -> ir.TableExpr:
+        return self.connection.table('awards_players')
