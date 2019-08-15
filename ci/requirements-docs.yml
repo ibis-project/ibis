@@ -1,5 +1,6 @@
 ipython
 jupyter
+libiconv  # see https://github.com/jupyter/repo2docker/issues/758
 matplotlib
 nbconvert
 nbsphinx

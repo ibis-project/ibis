@@ -1,7 +1,3 @@
-# https://www.mapd.com/docs/latest/mapd-core-guide/tables/
-# https://www.mapd.com/docs/latest/mapd-core-guide/views/
-# https://www.mapd.com/docs/latest/mapd-core-guide/data-definition/
-# https://www.mapd.com/docs/latest/mapd-core-guide/loading-data/#copy-from
 _ddl = frozenset(
     {
         'alter',  # database, table, user, view
@@ -49,7 +45,6 @@ _ddl = frozenset(
     }
 )
 
-# https://www.mapd.com/docs/latest/mapd-core-guide/dml/
 _dml = frozenset(
     {
         'all',  # select, select/limit
@@ -102,8 +97,6 @@ _dml = frozenset(
     }
 )
 
-# https://www.mapd.com/docs/latest/mapd-core-guide/tables/
-# https://www.mapd.com/docs/latest/mapd-core-guide/fixed-encoding/
 _data_type = frozenset(
     {
         'bigint',

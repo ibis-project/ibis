@@ -77,23 +77,20 @@ services:
     environment:
       KUDU_MASTER: "false"
 
-  omnisci:
+  omniscidb:
     image: omnisci/core-os-cpu:v4.7.0
-    hostname: omnisci
-    networks:
-      default:
-        aliases:
-          - mapd
+    hostname: omniscidb
+
     ports:
       - 6274:6274
       - 6278:6278
     volumes:
-      - ./omnisci.conf:/omnisci-storage/omnisci.conf
+      - ./omniscidb.conf:/omnisci-storage/omnisci.conf
 
   waiter:
     image: jwilder/dockerize
     command: |
-      dockerize -wait tcp://omnisci:6274
+      dockerize -wait tcp://omniscidb:6274
                 -wait tcp://mysql:3306
                 -wait tcp://postgres:5432
                 -wait tcp://impala:21050

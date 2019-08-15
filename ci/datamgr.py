@@ -335,11 +335,11 @@ def sqlite(database, schema, tables, data_directory, **params):
     '-S',
     '--schema',
     type=click.File('rt'),
-    default=str(SCRIPT_DIR / 'schema' / 'omnisci.sql'),
+    default=str(SCRIPT_DIR / 'schema' / 'omniscidb.sql'),
 )
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES + ['geo'])
 @click.option('-d', '--data-directory', default=DATA_DIR)
-def omnisci(schema, tables, data_directory, **params):
+def omniscidb(schema, tables, data_directory, **params):
     import pymapd
 
     data_directory = Path(data_directory)

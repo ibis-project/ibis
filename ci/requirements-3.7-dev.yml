@@ -15,6 +15,7 @@ dependencies:
   - impyla>=0.15.0
   - isort
   - jinja2
+  - libiconv  # see https://github.com/jupyter/repo2docker/issues/758
   - lz4
   - multipledispatch>=0.6.0
   - mypy

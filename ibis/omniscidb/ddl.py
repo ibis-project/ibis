@@ -17,24 +17,24 @@ def _is_quoted(x):
     return quoted is not None
 
 
-class MapDQualifiedSQLStatement:
+class OmniSciDBQualifiedSQLStatement:
     def _get_scoped_name(self, obj_name, database):  # noqa: F401
         return obj_name
 
 
-class MapDDDL(DDL, MapDQualifiedSQLStatement):
+class OmniSciDBDDL(DDL, OmniSciDBQualifiedSQLStatement):
     pass
 
 
-class MapDDML(DML, MapDQualifiedSQLStatement):
+class OmniSciDBDML(DML, OmniSciDBQualifiedSQLStatement):
     pass
 
 
-class CreateDDL(MapDDDL):
+class CreateDDL(OmniSciDBDDL):
     """Create DDL"""
 
 
-class DropObject(MapDDDL):
+class DropObject(OmniSciDBDDL):
     def __init__(self, must_exist=True):
         self.must_exist = must_exist
 
@@ -171,7 +171,7 @@ class DropView(DropTable):
 # USER
 
 
-class AlterUser(MapDDDL):
+class AlterUser(OmniSciDBDDL):
     """Create user"""
 
     def __init__(
@@ -210,7 +210,7 @@ class AlterUser(MapDDDL):
         return '\n'.join(self.pieces)
 
 
-class CreateUser(MapDDDL):
+class CreateUser(OmniSciDBDDL):
     """Create user"""
 
     def __init__(self, name, password, database=None, is_super=False):
@@ -230,7 +230,7 @@ class CreateUser(MapDDDL):
         return '\n'.join(self.pieces)
 
 
-class DropUser(MapDDDL):
+class DropUser(OmniSciDBDDL):
     """Create user"""
 
     def __init__(self, name, database=None):
@@ -245,7 +245,7 @@ class DropUser(MapDDDL):
         return '\n'.join(self.pieces)
 
 
-class AlterTable(MapDDDL):
+class AlterTable(OmniSciDBDDL):
     def __init__(self, table, tbl_properties=None):
         self.table = table
         self.tbl_properties = tbl_properties
@@ -299,7 +299,7 @@ class RenameTable(AlterTable):
         return self._wrap_command(cmd)
 
 
-class TruncateTable(MapDDDL):
+class TruncateTable(OmniSciDBDDL):
 
     _object_type = 'TABLE'
 
@@ -312,7 +312,7 @@ class TruncateTable(MapDDDL):
         return 'TRUNCATE TABLE {}'.format(name)
 
 
-class CacheTable(MapDDDL):
+class CacheTable(OmniSciDBDDL):
     def __init__(self, table_name, database=None, pool='default'):
         self.table_name = table_name
         self.database = database
@@ -368,7 +368,7 @@ def _format_schema_element(name, t):
     )
 
 
-class InsertPandas(MapDDML):
+class InsertPandas(OmniSciDBDML):
     def __init__(self, table_name, df, insert_index=False, database=None):
         self.table_name = table_name
         self.database = database

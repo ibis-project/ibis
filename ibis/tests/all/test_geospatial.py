@@ -7,7 +7,7 @@ from numpy import testing
 from pytest import param
 
 import ibis
-from ibis.tests.backends import MapD, PostgreSQL
+from ibis.tests.backends import OmniSciDB, PostgreSQL
 
 pytestmark = pytest.mark.skipif(
     sys.version_info < (3, 6),
@@ -36,7 +36,7 @@ polygon_0 = ibis.literal(
 ).name('p')
 
 # add here backends that support geo spatial types
-all_db_geo_supported = [MapD, PostgreSQL]
+all_db_geo_supported = [OmniSciDB, PostgreSQL]
 
 # test input data with shapely geometries
 shp_point_0 = shapely.geometry.Point(0, 0)
@@ -59,7 +59,7 @@ shp_multipolygon_0 = shapely.geometry.MultiPolygon([shp_polygon_0])
         (
             point_0,
             {
-                'mapd': "ST_GeomFromText('POINT (0 0)')",
+                'omniscidb': "ST_GeomFromText('POINT (0 0)')",
                 'postgres': "'POINT (0 0)'",
             },
         ),
@@ -68,49 +68,49 @@ shp_multipolygon_0 = shapely.geometry.MultiPolygon([shp_polygon_0])
         (
             point_0_4326,
             {
-                'mapd': "ST_GeomFromText('POINT (0 0)', 4326)",
+                'omniscidb': "ST_GeomFromText('POINT (0 0)', 4326)",
                 'postgres': "'SRID=4326;POINT (0 0)'",
             },
         ),
         (
             point_geom_0,
             {
-                'mapd': "ST_GeomFromText('POINT (0 0)', 4326)",
+                'omniscidb': "ST_GeomFromText('POINT (0 0)', 4326)",
                 'postgres': "'SRID=4326;POINT (0 0)'::geometry",
             },
         ),
         (
             point_geom_1,
             {
-                'mapd': "ST_GeomFromText('POINT (1 1)', 4326)",
+                'omniscidb': "ST_GeomFromText('POINT (1 1)', 4326)",
                 'postgres': "'SRID=4326;POINT (1 1)'::geometry",
             },
         ),
         (
             point_geom_2,
             {
-                'mapd': "ST_GeomFromText('POINT (2 2)', 4326)",
+                'omniscidb': "ST_GeomFromText('POINT (2 2)', 4326)",
                 'postgres': "'SRID=4326;POINT (2 2)'::geometry",
             },
         ),
         (
             point_geog_0,
             {
-                'mapd': "ST_GeogFromText('POINT (0 0)', 4326)",
+                'omniscidb': "ST_GeogFromText('POINT (0 0)', 4326)",
                 'postgres': "'SRID=4326;POINT (0 0)'::geography",
             },
         ),
         (
             point_geog_1,
             {
-                'mapd': "ST_GeogFromText('POINT (1 1)', 4326)",
+                'omniscidb': "ST_GeogFromText('POINT (1 1)', 4326)",
                 'postgres': "'SRID=4326;POINT (1 1)'::geography",
             },
         ),
         (
             point_geog_2,
             {
-                'mapd': "ST_GeogFromText('POINT (2 2)', 4326)",
+                'omniscidb': "ST_GeogFromText('POINT (2 2)', 4326)",
                 'postgres': "'SRID=4326;POINT (2 2)'::geography",
             },
         ),
@@ -132,49 +132,51 @@ def test_literal_geospatial_explicit(backend, con, expr, expected):
         (
             shp_point_0,
             {
-                'mapd': "ST_GeomFromText('POINT (0 0)')",
+                'omniscidb': "ST_GeomFromText('POINT (0 0)')",
                 'postgres': "'POINT (0 0)'",
             },
         ),
         (
             shp_point_1,
             {
-                'mapd': "ST_GeomFromText('POINT (1 1)')",
+                'omniscidb': "ST_GeomFromText('POINT (1 1)')",
                 'postgres': "'POINT (1 1)'",
             },
         ),
         (
             shp_point_2,
             {
-                'mapd': "ST_GeomFromText('POINT (2 2)')",
+                'omniscidb': "ST_GeomFromText('POINT (2 2)')",
                 'postgres': "'POINT (2 2)'",
             },
         ),
         (
             shp_linestring_0,
             {
-                'mapd': "ST_GeomFromText('LINESTRING (0 0, 1 1, 2 2)')",
+                'omniscidb': "ST_GeomFromText('LINESTRING (0 0, 1 1, 2 2)')",
                 'postgres': "'LINESTRING (0 0, 1 1, 2 2)'",
             },
         ),
         (
             shp_linestring_1,
             {
-                'mapd': "ST_GeomFromText('LINESTRING (2 2, 1 1, 0 0)')",
+                'omniscidb': "ST_GeomFromText('LINESTRING (2 2, 1 1, 0 0)')",
                 'postgres': "'LINESTRING (2 2, 1 1, 0 0)'",
             },
         ),
         (
             shp_polygon_0,
             {
-                'mapd': "ST_GeomFromText('POLYGON ((0 0, 1 1, 2 2, 0 0))')",
+                'omniscidb': (
+                    "ST_GeomFromText('POLYGON ((0 0, 1 1, 2 2, 0 0))')"
+                ),
                 'postgres': "'POLYGON ((0 0, 1 1, 2 2, 0 0))'",
             },
         ),
         (
             shp_multipolygon_0,
             {
-                'mapd': (
+                'omniscidb': (
                     "ST_GeomFromText('MULTIPOLYGON (((0 0, 1 1, 2 2, 0 0)))')"
                 ),
                 'postgres': "'MULTIPOLYGON (((0 0, 1 1, 2 2, 0 0)))'",
@@ -249,7 +251,7 @@ def test_geo_spatial_unops(backend, geo, expr_fn, expected):
         param(
             lambda t: t['geo_linestring'].contains(point_geom_1),
             {
-                'mapd': [False] * 5,
+                'omniscidb': [False] * 5,
                 'postgres': [False] * 5,  # not contains the border
             },
             id='contains',
@@ -257,7 +259,7 @@ def test_geo_spatial_unops(backend, geo, expr_fn, expected):
         param(
             lambda t: t['geo_linestring'].distance(point_geom_0),
             {
-                'mapd': [0.0, 1.41, 2.82, 4.24, 5.66],
+                'omniscidb': [0.0, 1.41, 2.82, 4.24, 5.66],
                 'postgres': [0.0, 1.41, 2.82, 4.24, 5.66],
             },
             id='distance',
@@ -265,7 +267,7 @@ def test_geo_spatial_unops(backend, geo, expr_fn, expected):
         param(
             lambda t: t['geo_linestring'].max_distance(point_geom_0),
             {
-                'mapd': [1.41, 2.82, 4.24, 5.66, 7.08],
+                'omniscidb': [1.41, 2.82, 4.24, 5.66, 7.08],
                 'postgres': [1.41, 2.82, 4.24, 5.66, 7.08],
             },
             id='max_distance',
@@ -324,12 +326,18 @@ def test_area(backend, geo, arg, expected):
 @pytest.mark.parametrize(
     ('condition', 'expected'),
     [
-        (lambda t: point_geom_2.srid(), {'mapd': 4326, 'postgres': 4326}),
-        (lambda t: point_geom_0.srid(), {'mapd': 4326, 'postgres': 4326}),
-        (lambda t: t.geo_point.srid(), {'mapd': 0, 'postgres': 4326}),
-        (lambda t: t.geo_linestring.srid(), {'mapd': 0, 'postgres': 4326}),
-        (lambda t: t.geo_polygon.srid(), {'mapd': 0, 'postgres': 4326}),
-        (lambda t: t.geo_multipolygon.srid(), {'mapd': 0, 'postgres': 4326}),
+        (lambda t: point_geom_2.srid(), {'omniscidb': 4326, 'postgres': 4326}),
+        (lambda t: point_geom_0.srid(), {'omniscidb': 4326, 'postgres': 4326}),
+        (lambda t: t.geo_point.srid(), {'omniscidb': 0, 'postgres': 4326}),
+        (
+            lambda t: t.geo_linestring.srid(),
+            {'omniscidb': 0, 'postgres': 4326},
+        ),
+        (lambda t: t.geo_polygon.srid(), {'omniscidb': 0, 'postgres': 4326}),
+        (
+            lambda t: t.geo_multipolygon.srid(),
+            {'omniscidb': 0, 'postgres': 4326},
+        ),
     ],
 )
 @pytest.mark.only_on_backends(all_db_geo_supported)

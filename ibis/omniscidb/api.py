@@ -1,20 +1,20 @@
 import ibis.common.exceptions as com
 import ibis.config as cf
 from ibis.config import options
-from ibis.mapd.client import EXECUTION_TYPE_CURSOR, MapDClient
-from ibis.mapd.compiler import compiles, dialect, rewrites  # noqa: F401
+from ibis.omniscidb.client import EXECUTION_TYPE_CURSOR, OmniSciDBClient
+from ibis.omniscidb.compiler import compiles, dialect, rewrites  # noqa: F401
 
 
 def compile(expr, params=None):
     """
     Force compilation of expression as though it were an expression depending
-    on MapD. Note you can also call expr.compile()
+    on OmniSciDB. Note you can also call expr.compile()
 
     Returns
     -------
     compiled : string
     """
-    from ibis.mapd.compiler import to_sql
+    from ibis.omniscidb.compiler import to_sql
 
     return to_sql(expr, dialect.make_context(params=params))
 
@@ -22,7 +22,7 @@ def compile(expr, params=None):
 def verify(expr, params=None):
     """
     Determine if expression can be successfully translated to execute on
-    MapD
+    OmniSciDB
     """
     try:
         compile(expr, params=params)
@@ -42,7 +42,7 @@ def connect(
     session_id=None,
     execution_type=EXECUTION_TYPE_CURSOR,
 ):
-    """Create a MapDClient for use with Ibis
+    """Create a OmniSciDBClient for use with Ibis
 
     Parameters could be
 
@@ -57,10 +57,10 @@ def connect(
     :param execution_type: int
     Returns
     -------
-    MapDClient
+    OmniSciDBClient
 
     """
-    client = MapDClient(
+    client = OmniSciDBClient(
         uri=uri,
         user=user,
         password=password,

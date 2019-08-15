@@ -3,7 +3,7 @@ from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
-from ibis.tests.backends import Csv, MapD, Pandas, Parquet
+from ibis.tests.backends import Csv, OmniSciDB, Pandas, Parquet
 
 
 @pytest.mark.parametrize(
@@ -18,7 +18,7 @@ from ibis.tests.backends import Csv, MapD, Pandas, Parquet
             lambda t, win: t.float_col.lead().over(win),
             lambda t: t.float_col.shift(-1),
             id='lead',
-            marks=pytest.mark.xfail_backends((MapD,)),
+            marks=pytest.mark.xfail_backends((OmniSciDB,)),
         ),
         param(
             lambda t, win: t.id.rank().over(win),

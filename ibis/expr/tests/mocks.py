@@ -13,12 +13,13 @@
 # limitations under the License.
 
 import abc
+
 import pytest
 
-from ibis.client import SQLClient
-from ibis.expr.schema import Schema
 import ibis.expr.types as ir
 import ibis.sql.alchemy as alch  # noqa: E402
+from ibis.client import SQLClient
+from ibis.expr.schema import Schema
 
 
 class BaseMockConnection(SQLClient, metaclass=abc.ABCMeta):
@@ -422,9 +423,9 @@ class MockAlchemyConnection(BaseMockConnection):
 class GeoMockConnection(SQLClient):
     @property
     def dialect(self):
-        from ibis.mapd.compiler import MapDDialect
+        from ibis.omniscidb.compiler import OmniSciDBDialect
 
-        return MapDDialect
+        return OmniSciDBDialect
 
     _tables = {
         'geo': [
@@ -444,7 +445,7 @@ class GeoMockConnection(SQLClient):
         return Schema.from_tuples(self._tables[name])
 
     def _build_ast(self, expr, context):
-        from ibis.mapd.compiler import build_ast
+        from ibis.omniscidb.compiler import build_ast
 
         return build_ast(expr, context)
 

@@ -7,7 +7,7 @@ from pytest import param
 
 import ibis
 
-pytestmark = pytest.mark.mapd
+pytestmark = pytest.mark.omniscidb
 pytest.importorskip('pymapd')
 
 
