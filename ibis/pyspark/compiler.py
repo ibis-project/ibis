@@ -72,7 +72,7 @@ def compile_selection(t, expr, scope, **kwargs):
     op = expr.op()
 
     # TODO: Support predicates and sort_keys
-    if len(op.predicates) > 0 or len(op.sort_keys) > 0:
+    if op.predicates or op.sort_keys:
         raise NotImplementedError(
             "predicates and sort_keys are not supported with Selection")
 
@@ -192,6 +192,11 @@ def compile_aggregator(t, expr, scope, fn, context=None, **kwargs):
     if context:
         return col
     else:
+        # We are trying to compile a expr such as some_col.max()
+        # to a Spark expression.
+        # Here we get the root table df of that column and compile
+        # the expr to:
+        # df.select(max(some_col))
         return t.translate(expr.op().arg.op().table, scope).select(col)
 
 

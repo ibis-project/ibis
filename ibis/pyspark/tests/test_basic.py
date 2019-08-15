@@ -3,13 +3,14 @@ import pandas.util.testing as tm
 import pytest
 
 import ibis
+import ibis.common.exceptions as comm
 
+pytest.importorskip('pyspark')
 pytestmark = pytest.mark.pyspark
 
 
 @pytest.fixture(scope='session')
 def client():
-    pytest.importorskip('pyspark')
     from pyspark.sql import SparkSession
     import pyspark.sql.functions as F
 
@@ -91,7 +92,10 @@ def test_groupby(client):
     tm.assert_frame_equal(result.toPandas(), expected.toPandas())
 
 
-@pytest.mark.xfail
+@pytest.mark.xfail(
+    reason='This is not implemented yet',
+    raises=comm.OperationNotDefinedError
+)
 def test_window(client):
     import pyspark.sql.functions as F
     from pyspark.sql.window import Window
@@ -156,13 +160,17 @@ def test_selection(client):
                           [['plus1', *df.columns]].toPandas())
 
 
+@pytest.mark.xfail(
+    reason='Join is not fully implemented',
+    raises=AssertionError
+)
 def test_join(client):
     table = client.table('table1')
-    result = table.join(table, 'id').compile()
+    result = table.join(table, ['id', 'str_col']).compile()
     spark_table = table.compile()
     expected = (
         spark_table
-        .join(spark_table, spark_table['id'] == spark_table['id'])
+        .join(spark_table, ['id', 'str_col'])
     )
 
     tm.assert_frame_equal(result.toPandas(), expected.toPandas())
