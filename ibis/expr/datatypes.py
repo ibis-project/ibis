@@ -971,6 +971,8 @@ _TYPE_RULES = collections.OrderedDict(
                 'point',
                 'linestring',
                 'polygon',
+                'multilinestring',
+                'multipoint',
                 'multipolygon',
             ),
             (
@@ -979,6 +981,8 @@ _TYPE_RULES = collections.OrderedDict(
                 Tokens.POINT,
                 Tokens.LINESTRING,
                 Tokens.POLYGON,
+                Tokens.MULTILINESTRING,
+                Tokens.MULTIPOINT,
                 Tokens.MULTIPOLYGON,
             ),
         )

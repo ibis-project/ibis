@@ -84,6 +84,8 @@ lineBC = [pointB, pointC]
 lineCA = [pointC, pointA]
 polygon1 = [lineAB, lineBC, lineCA]
 polygon2 = [lineAB, lineBC, lineCA]
+multilinestring = [lineAB, lineBC, lineCA]
+multipoint = [pointA, pointB, pointC]
 multipolygon1 = [polygon1, polygon2]
 
 
@@ -109,6 +111,10 @@ multipolygon1 = [polygon1, polygon2]
         (tuple(lineAB), 'linestring'),
         (list(polygon1), 'polygon'),
         (tuple(polygon1), 'polygon'),
+        (list(multilinestring), 'multilinestring'),
+        (tuple(multilinestring), 'multilinestring'),
+        (list(multipoint), 'multipoint'),
+        (tuple(multipoint), 'multipoint'),
         (list(multipolygon1), 'multipolygon'),
         (tuple(multipolygon1), 'multipolygon'),
     ],
