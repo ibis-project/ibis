@@ -1720,18 +1720,12 @@ def can_cast_variadic(
 
 # geo spatial data type
 # cast between same type, used to cast from/to geometry and geography
-@castable.register(
-    Array,
-    (Point, LineString, Polygon, MultiLineString, MultiPoint, MultiPolygon)
+GEO_TYPES = (
+    Point, LineString, Polygon, MultiLineString, MultiPoint, MultiPolygon
 )
-@castable.register(
-    (Point, LineString, Polygon, MultiLineString, MultiPoint, MultiPolygon),
-    Geometry
-)
-@castable.register(
-    (Point, LineString, Polygon, MultiLineString, MultiPoint, MultiPolygon),
-    Geography
-)
+@castable.register(Array, GEO_TYPES)
+@castable.register(GEO_TYPES, Geometry)
+@castable.register(GEO_TYPES, Geography)
 def can_cast_geospatial(source, target, **kwargs):
     return True
 
