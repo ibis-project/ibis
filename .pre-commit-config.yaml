@@ -7,19 +7,11 @@ repos:
     rev: v4.3.17
     hooks:
       - id: isort
-  - repo: https://github.com/ambv/black
-    # we need to use this commit or later, to pickup the fix that splits
-    # trailing comma syntax into call vs def, both of which weren't implemented
-    # until python 3.6 (3.5 has just the call syntax) and we need to support
-    # 3.5 for a few months.
-    rev: cea13f498418784e22f8fbd78db3f9240a2bad11
+  - repo: https://github.com/psf/black
+    rev: 40e8b3a231bade22d838858435a33d60a8325306
     hooks:
       - id: black
-        # a side effect of black running exclude filters and then include
-        # filters (the built-in black behavior) is that a command line such as
-        # black --exclude foo.py foo.py will still format foo.py. We avoid this
-        # in pre-commit by not passing staged files.
-        pass_filenames: false
+        exclude: (ibis/_version|versioneer).py
   - repo: git://github.com/pre-commit/pre-commit-hooks
     rev: v2.1.0
     hooks:
