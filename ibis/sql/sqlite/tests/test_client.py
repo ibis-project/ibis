@@ -6,7 +6,6 @@ import pandas.util.testing as tm
 import pytest
 
 import ibis
-import ibis.common.exceptions as com
 import ibis.expr.types as ir
 from ibis.util import guid
 
@@ -19,12 +18,11 @@ pytestmark = pytest.mark.sqlite
 def test_file_not_exist_and_create():
     path = '__ibis_tmp_{}.db'.format(guid())
 
-    with pytest.raises(com.IbisError):
+    with pytest.raises(FileNotFoundError):
         ibis.sqlite.connect(path)
 
-    con = ibis.sqlite.connect(path, create=True)
+    ibis.sqlite.connect(path, create=True)
     assert os.path.exists(path)
-    con.con.dispose()
     os.remove(path)
 
 

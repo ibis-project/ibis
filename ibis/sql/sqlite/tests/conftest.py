@@ -17,11 +17,7 @@ def dbpath(data_directory):
 
 @pytest.fixture(scope='module')
 def con(dbpath):
-    con = ibis.sqlite.connect(dbpath)
-    try:
-        yield con
-    finally:
-        con.con.dispose()
+    return ibis.sqlite.connect(dbpath)
 
 
 @pytest.fixture(scope='module')
