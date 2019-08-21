@@ -389,7 +389,16 @@ class SQLiteClient(alch.AlchemyClient):
         -------
         table : TableExpr
         """
-        alch_table = self._get_sqla_table(name, schema=database)
+        try:
+            alch_table = self._get_sqla_table(name, schema=database)
+        except sa.exc.NoSuchTableError as e:
+            if database is not None:
+                raise e
+
+            alch_table = self._get_sqla_table(
+                name, schema=self.database_name
+            )
+
         node = self.table_class(alch_table, self)
         return self.table_expr_class(node)
 
