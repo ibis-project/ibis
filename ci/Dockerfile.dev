@@ -8,13 +8,13 @@ RUN apt-get -qq update --yes \
 ARG PYTHON
 ADD ci/requirements-$PYTHON-dev.yml /
 
-RUN conda config --add channels conda-forge \
-  && conda update --all --yes --quiet \
-  && conda env create --name ibis-env --file /requirements-$PYTHON-dev.yml \
-  && conda install --yes conda-build \
-  && conda clean --all --yes
+RUN /opt/conda/bin/conda config --add channels conda-forge \
+  && /opt/conda/bin/conda update --all --yes --quiet \
+  && /opt/conda/bin/conda env create --name ibis-env --file /requirements-$PYTHON-dev.yml \
+  && /opt/conda/bin/conda install --yes conda-build \
+  && /opt/conda/bin/conda clean --all --yes
 
-RUN echo 'source activate ibis-env && exec "$@"' > activate.sh
+RUN echo 'source /opt/conda/bin/activate ibis-env && exec "$@"' > activate.sh
 
 COPY . /ibis
 WORKDIR /ibis
