@@ -21,9 +21,12 @@ def test_file_not_exist_and_create():
     with pytest.raises(FileNotFoundError):
         ibis.sqlite.connect(path)
 
-    ibis.sqlite.connect(path, create=True)
-    assert os.path.exists(path)
-    os.remove(path)
+    con = ibis.sqlite.connect(path, create=True)
+    try:
+        assert os.path.exists(path)
+    finally:
+        con.con.dispose()
+        os.remove(path)
 
 
 def test_table(con):
