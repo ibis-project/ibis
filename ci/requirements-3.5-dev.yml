@@ -21,6 +21,7 @@ dependencies:
   - multipledispatch>=0.6.0
   - mypy
   - numpy>=1.11
+  - openjdk=8
   - pandas>=0.21
   - pip
   - plumbum
