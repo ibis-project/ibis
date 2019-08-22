@@ -1723,6 +1723,8 @@ def can_cast_variadic(
 GEO_TYPES = (
     Point, LineString, Polygon, MultiLineString, MultiPoint, MultiPolygon
 )
+
+
 @castable.register(Array, GEO_TYPES)
 @castable.register(GEO_TYPES, Geometry)
 @castable.register(GEO_TYPES, Geography)
