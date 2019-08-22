@@ -2,7 +2,7 @@ import contextlib
 import functools
 import operator
 import sys
-from typing import List, MutableMapping, Optional
+from typing import List, Optional
 
 import pandas as pd
 import sqlalchemy as sa
@@ -1048,9 +1048,7 @@ class AlchemyClient(SQLClient):
         self.meta = sa.MetaData(bind=con)
         self._inspector = sa.inspect(con)
         self._reflection_cache_is_dirty = False
-        self._schemas = (
-            {}
-        )  # type: MutableMapping[str, sch.Schema]  # noqa: F401
+        self._schemas = {}
 
     @property
     def inspector(self):
