@@ -153,3 +153,8 @@ def test_create_table_schema(con):
 def test_sql(con, sql):
     # execute the expression using SQL query
     con.sql(sql).execute()
+
+
+def test_explain(con, alltypes):
+    # execute the expression using SQL query
+    con.explain(alltypes)

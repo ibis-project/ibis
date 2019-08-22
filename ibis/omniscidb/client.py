@@ -502,6 +502,10 @@ class OmniSciDBClient(SQLClient):
         # OmniSciDB raises error sometimes with qualified names
         return name
 
+    def _get_list(self, cur):
+        tuples = cur.cursor.fetchall()
+        return [v[0] for v in tuples]
+
     def _get_schema_using_query(self, query):
         with self._execute(query, results=True) as result:
             # resets the state of the cursor and closes operation
