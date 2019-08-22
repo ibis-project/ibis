@@ -294,10 +294,10 @@ class SparkClient(SQLClient):
     table_class = SparkDatabaseTable
     table_expr_class = SparkTable
 
-    def __init__(self, **kwargs):
-        self._context = ps.SparkContext(**kwargs)
-        self._session = ps.sql.SparkSession(self._context)
-        self._catalog = self._session.catalog
+    def __init__(self, session):
+        self._context = session.sparkContext
+        self._session = session
+        self._catalog = session.catalog
 
     def close(self):
         """
