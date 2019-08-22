@@ -2,6 +2,7 @@ import contextlib
 import functools
 import operator
 import sys
+from typing import List, Optional
 
 import pandas as pd
 import sqlalchemy as sa
@@ -256,7 +257,7 @@ def schema_from_table(table, schema=None):
     return sch.schema(pairs)
 
 
-def table_from_schema(name, meta, schema):
+def table_from_schema(name, meta, schema, database: Optional[str] = None):
     # Convert Ibis schema to SQLA table
     columns = []
 
@@ -265,7 +266,7 @@ def table_from_schema(name, meta, schema):
         column = sa.Column(colname, satype, nullable=dtype.nullable)
         columns.append(column)
 
-    return sa.Table(name, meta, *columns)
+    return sa.Table(name, meta, schema=database, *columns)
 
 
 def _variance_reduction(func_name):
@@ -565,8 +566,10 @@ def _window(t, expr):
         return t.translate(arg)
 
     if window.max_lookback is not None:
-        raise NotImplementedError('Rows with max lookback is not implemented '
-                                  'for SQLAlchemy-based backends.')
+        raise NotImplementedError(
+            'Rows with max lookback is not implemented '
+            'for SQLAlchemy-based backends.'
+        )
 
     # Some analytic functions need to have the expression of interest in
     # the ORDER BY part of the window clause
@@ -1039,7 +1042,7 @@ class AlchemyClient(SQLClient):
     dialect = AlchemyDialect
     query_class = AlchemyQuery
 
-    def __init__(self, con):
+    def __init__(self, con: sa.engine.Engine) -> None:
         super().__init__()
         self.con = con
         self.meta = sa.MetaData(bind=con)
@@ -1079,7 +1082,9 @@ class AlchemyClient(SQLClient):
             schema = expr.schema()
 
         self._schemas[self._fully_qualified_name(name, database)] = schema
-        t = table_from_schema(name, self.meta, schema)
+        t = self._table_from_schema(
+            name, schema, database=database or self.current_database
+        )
 
         with self.begin() as bind:
             t.create(bind=bind)
@@ -1088,15 +1093,34 @@ class AlchemyClient(SQLClient):
                     t.insert().from_select(list(expr.columns), expr.compile())
                 )
 
+    def _columns_from_schema(
+        self, name: str, schema: sch.Schema
+    ) -> List[sa.Column]:
+        return [
+            sa.Column(colname, _to_sqla_type(dtype), nullable=dtype.nullable)
+            for colname, dtype in zip(schema.names, schema.types)
+        ]
+
+    def _table_from_schema(
+        self, name: str, schema: sch.Schema, database: Optional[str] = None
+    ) -> sa.Table:
+        columns = self._columns_from_schema(name, schema)
+        return sa.Table(name, self.meta, *columns)
+
     @invalidates_reflection_cache
-    def drop_table(self, table_name, database=None, force=False):
-        if database is not None and database != self.engine.url.database:
+    def drop_table(
+        self,
+        table_name: str,
+        database: Optional[str] = None,
+        force: bool = False,
+    ) -> None:
+        if database is not None and database != self.con.url.database:
             raise NotImplementedError(
                 'Dropping tables from a different database is not yet '
                 'implemented'
             )
 
-        t = sa.Table(table_name, self.meta)
+        t = self._get_sqla_table(table_name, schema=database, autoload=False)
         t.drop(checkfirst=force)
 
         assert (
@@ -1112,23 +1136,33 @@ class AlchemyClient(SQLClient):
         except KeyError:  # schemas won't be cached if created with raw_sql
             pass
 
-    def truncate_table(self, table_name, database=None):
-        self.meta.tables[table_name].delete().execute()
+    def truncate_table(
+        self, table_name: str, database: Optional[str] = None
+    ) -> None:
+        t = self._get_sqla_table(table_name, schema=database)
+        t.delete().execute()
 
-    def list_tables(self, like=None, database=None, schema=None):
-        """
-        List tables/views in the current (or indicated) database.
+    def list_tables(
+        self,
+        like: Optional[str] = None,
+        database: Optional[str] = None,
+        schema: Optional[str] = None,
+    ) -> List[str]:
+        """List tables/views in the current or indicated database.
 
         Parameters
         ----------
-        like : string, default None
-          Checks for this string contained in name
-        database : string, default None
-          If not passed, uses the current/default database
+        like
+            Checks for this string contained in name
+        database
+            If not passed, uses the current database
+        schema
+            The schema namespace that tables should be listed from
 
         Returns
         -------
-        tables : list of strings
+        List[str]
+
         """
         inspector = self.inspector
         # inspector returns a mutable version of its names, so make a copy.
@@ -1138,19 +1172,18 @@ class AlchemyClient(SQLClient):
             names = [x for x in names if like in x]
         return sorted(names)
 
-    def _execute(self, query, results=True):
-        with self.begin() as con:
-            return AlchemyProxy(con.execute(query))
+    def _execute(self, query: str, results: bool = True):
+        return AlchemyProxy(self.con.execute(query))
 
     @invalidates_reflection_cache
-    def raw_sql(self, query, results=False):
+    def raw_sql(self, query: str, results: bool = False):
         return super().raw_sql(query, results=results)
 
     def _build_ast(self, expr, context):
         return build_ast(expr, context)
 
-    def _get_sqla_table(self, name, schema=None):
-        return sa.Table(name, self.meta, schema=schema, autoload=True)
+    def _get_sqla_table(self, name, schema=None, autoload=True):
+        return sa.Table(name, self.meta, schema=schema, autoload=autoload)
 
     def _sqla_table_to_expr(self, table):
         node = self.table_class(table, self)

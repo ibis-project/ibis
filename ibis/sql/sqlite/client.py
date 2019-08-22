@@ -1,12 +1,13 @@
+import errno
 import functools
 import inspect
 import math
 import os
+from typing import Optional
 
 import regex as re
 import sqlalchemy as sa
 
-import ibis.common.exceptions as com
 import ibis.sql.alchemy as alch
 from ibis.client import Database
 from ibis.sql.sqlite.compiler import SQLiteDialect
@@ -312,19 +313,16 @@ def _register_aggregate(agg, con):
 
 
 class SQLiteClient(alch.AlchemyClient):
-
-    """
-    The Ibis SQLite client class
-    """
+    """The Ibis SQLite client class."""
 
     dialect = SQLiteDialect
     database_class = SQLiteDatabase
     table_class = SQLiteTable
 
     def __init__(self, path=None, create=False):
-        super().__init__(sa.create_engine('sqlite://'))
+        super().__init__(sa.create_engine("sqlite://"))
         self.name = path
-        self.database_name = 'base'
+        self.database_name = "base"
 
         if path is not None:
             self.attach(self.database_name, path, create=create)
@@ -336,7 +334,7 @@ class SQLiteClient(alch.AlchemyClient):
             self.con.run_callable(functools.partial(_register_aggregate, agg))
 
     @property
-    def current_database(self):
+    def current_database(self) -> Optional[str]:
         return self.database_name
 
     def list_databases(self):
@@ -344,10 +342,10 @@ class SQLiteClient(alch.AlchemyClient):
             'Listing databases in SQLite is not implemented'
         )
 
-    def set_database(self, name):
+    def set_database(self, name: str) -> None:
         raise NotImplementedError('set_database is not implemented for SQLite')
 
-    def attach(self, name, path, create=False):
+    def attach(self, name, path, create: bool = False) -> None:
         """Connect another SQLite database file
 
         Parameters
@@ -359,20 +357,31 @@ class SQLiteClient(alch.AlchemyClient):
         create : boolean, optional
             If file does not exist, create file if True otherwise raise an
             Exception
+
         """
         if not os.path.exists(path) and not create:
-            raise com.IbisError('File {!r} does not exist'.format(path))
+            raise FileNotFoundError(
+                errno.ENOENT, os.strerror(errno.ENOENT), path
+            )
 
+        quoted_name = self.con.dialect.identifier_preparer.quote(name)
         self.raw_sql(
             "ATTACH DATABASE {path!r} AS {name}".format(
-                path=path,
-                name=self.con.dialect.identifier_preparer.quote(name),
+                path=path, name=quoted_name
             )
         )
 
     @property
     def client(self):
         return self
+
+    def _get_sqla_table(self, name, schema=None, autoload=True):
+        return sa.Table(
+            name,
+            self.meta,
+            schema=schema or self.current_database,
+            autoload=autoload,
+        )
 
     def table(self, name, database=None):
         """
@@ -387,7 +396,8 @@ class SQLiteClient(alch.AlchemyClient):
 
         Returns
         -------
-        table : TableExpr
+        TableExpr
+
         """
         alch_table = self._get_sqla_table(name, schema=database)
         node = self.table_class(alch_table, self)
@@ -397,3 +407,9 @@ class SQLiteClient(alch.AlchemyClient):
         if database is None:
             database = self.database_name
         return super().list_tables(like, schema=database)
+
+    def _table_from_schema(
+        self, name, schema, database: Optional[str] = None
+    ) -> sa.Table:
+        columns = self._columns_from_schema(name, schema)
+        return sa.Table(name, self.meta, schema=database, *columns)

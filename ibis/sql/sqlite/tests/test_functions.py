@@ -628,8 +628,8 @@ def test_materialized_join(con):
     con.raw_sql('CREATE TABLE mj2 (id2 INTEGER, val2 REAL)')
     con.raw_sql('INSERT INTO mj2 VALUES (1, 15), (2, 25)')
 
-    t1 = con.table('mj1')
-    t2 = con.table('mj2')
+    t1 = con.table('mj1', database="main")
+    t2 = con.table('mj2', database="main")
     joined = t1.join(t2, t1.id1 == t2.id2).materialize()
     result = joined.val2.execute()
     assert len(result) == 2

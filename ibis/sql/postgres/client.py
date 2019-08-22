@@ -1,19 +1,6 @@
-# Copyright 2015 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import contextlib
 import getpass
+from typing import Optional
 
 import psycopg2  # NOQA fail early if the driver is missing
 import sqlalchemy as sa
@@ -50,21 +37,20 @@ class PostgreSQLClient(alch.AlchemyClient):
 
     def __init__(
         self,
-        host='localhost',
-        user=None,
-        password=None,
-        port=5432,
-        database='public',
-        url=None,
-        driver='psycopg2',
+        host: str = 'localhost',
+        user: str = getpass.getuser(),
+        password: Optional[str] = None,
+        port: int = 5432,
+        database: str = 'public',
+        url: Optional[str] = None,
+        driver: str = 'psycopg2',
     ):
         if url is None:
             if driver != 'psycopg2':
                 raise NotImplementedError(
                     'psycopg2 is currently the only supported driver'
                 )
-            user = user or getpass.getuser()
-            url = sa.engine.url.URL(
+            sa_url = sa.engine.url.URL(
                 'postgresql+psycopg2',
                 host=host,
                 port=port,
@@ -73,10 +59,10 @@ class PostgreSQLClient(alch.AlchemyClient):
                 database=database,
             )
         else:
-            url = sa.engine.url.make_url(url)
+            sa_url = sa.engine.url.make_url(url)
 
-        super().__init__(sa.create_engine(url))
-        self.database_name = url.database
+        super().__init__(sa.create_engine(sa_url))
+        self.database_name = sa_url.database
 
     @contextlib.contextmanager
     def begin(self):
