@@ -48,7 +48,7 @@ jobs:
     - script: conda update --all conda=$(conda.version)
       displayName: 'Update conda and install an appropriate version'
 
-    - script: conda create --name $(conda.env) python=$(python.version) numpy pandas pytables ruamel.yaml jinja2 pyarrow multipledispatch pymysql sqlalchemy psycopg2 graphviz click mock plumbum geopandas toolz regex
+    - script: conda create --name $(conda.env) python=$(python.version) numpy pandas pytables ruamel.yaml jinja2 pyarrow multipledispatch pymysql "sqlalchemy<1.3.6" psycopg2 graphviz click mock plumbum geopandas toolz regex
       displayName: 'Create conda environment'
 
     - script: |
