@@ -504,7 +504,7 @@ class OmniSciDBClient(SQLClient):
 
     def _get_list(self, cur):
         tuples = cur.cursor.fetchall()
-        return list(map(lambda v: v[0], tuples))
+        return [v[0] for v in tuples]
 
     def _get_schema_using_query(self, query):
         with self._execute(query, results=True) as result:
