@@ -869,6 +869,36 @@ class PolygonColumn(GeoSpatialColumn, PolygonValue):
     pass  # noqa: E701,E302
 
 
+class MultiLineStringValue(GeoSpatialValue):
+    pass  # noqa: E701,E302
+
+
+class MultiLineStringScalar(
+    GeoSpatialScalar,
+    MultiLineStringValue
+):  # noqa: E302
+    pass  # noqa: E701
+
+
+class MultiLineStringColumn(
+    GeoSpatialColumn,
+    MultiLineStringValue
+):  # noqa: E302
+    pass  # noqa: E701
+
+
+class MultiPointValue(GeoSpatialValue):
+    pass  # noqa: E701,E302
+
+
+class MultiPointScalar(GeoSpatialScalar, MultiPointValue):  # noqa: E302
+    pass  # noqa: E701
+
+
+class MultiPointColumn(GeoSpatialColumn, MultiPointValue):  # noqa: E302
+    pass  # noqa: E701
+
+
 class MultiPolygonValue(GeoSpatialValue):
     pass  # noqa: E701,E302
 

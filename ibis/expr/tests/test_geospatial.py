@@ -21,6 +21,16 @@ def test_geo_literals_smoke(modifier):
     ]
     ibis.literal(polygon, type='polygon{}'.format(modifier))
 
+    point1 = (0, 1)
+    point2 = (2, 3)
+    multipoint = [point1, point2]
+    ibis.literal(multipoint, type='multipoint{}'.format(modifier))
+
+    linestring1 = [(0, 1), (2, 3)]
+    linestring2 = [(4, 5), (6, 7)]
+    multilinestring = [linestring1, linestring2]
+    ibis.literal(multilinestring, type='multilinestring{}'.format(modifier))
+
     polygon1 = (
         (0, 0), (1, 0), (0.5, 1), (0, 0)
     )
@@ -41,6 +51,8 @@ def test_geo_ops_smoke(geo_table):
     linestring = t.geo_linestring
     polygon = t.geo_polygon
     multipolygon = t.geo_multipolygon
+    # TODO: the mock tests don't support multipoint and multilinestring yet,
+    # but once they do, add some more tests here.
 
     # test ops
     point.srid()
