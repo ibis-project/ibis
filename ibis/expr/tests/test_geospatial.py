@@ -180,4 +180,4 @@ def test_geo_literals_smoke(backend, shape, value, modifier, expected):
 def test_geo_ops_smoke(backend, fn_expr):
     """Smoke tests for geo spatial operations."""
     geo_table = backend.table('geo')
-    fn_expr(geo_table).compile()
+    assert fn_expr(geo_table).compile() != ''
