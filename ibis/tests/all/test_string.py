@@ -78,19 +78,19 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.string_col.re_search(r'\d+'),
             lambda t: t.string_col.str.contains(r'\d+'),
             id='re_search_spark',
-            marks=pytest.mark.xpass_backends((PySpark,)),
+            marks=pytest.mark.xfail_backends((Clickhouse, Impala, Spark,)),
         ),
         param(
             lambda t: t.string_col.re_extract(r'(\d+)', 0),
             lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
             id='re_extract_spark',
-            marks=pytest.mark.xpass_backends((PySpark,)),
+            marks=pytest.mark.xfail_backends((Clickhouse, Impala, Spark,)),
         ),
         param(
             lambda t: t.string_col.re_replace(r'\d+', 'a'),
             lambda t: t.string_col.str.replace(r'\d+', 'a'),
             id='re_replace_spark',
-            marks=pytest.mark.xpass_backends((PySpark,)),
+            marks=pytest.mark.xfail_backends((Clickhouse, Impala, Spark,)),
         ),
         param(
             lambda t: t.string_col.repeat(2),
