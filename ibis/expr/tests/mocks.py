@@ -420,42 +420,51 @@ class MockAlchemyConnection(BaseMockConnection):
         return build_ast(expr, context)
 
 
-class GeoMockConnection(SQLClient):
+GEO_TABLE = {
+    'geo': [
+        ('id', 'int32'),
+        ('geo_point', 'point'),
+        ('geo_linestring', 'linestring'),
+        ('geo_polygon', 'polygon'),
+        ('geo_multipolygon', 'multipolygon'),
+    ]
+}
+
+
+class GeoMockConnectionPostGIS(MockAlchemyConnection):
+    _tables = GEO_TABLE
+
+    def __init__(self):
+        super().__init__()
+        self.executed_queries = []
+
+    def _get_table_schema(self, name):
+        return Schema.from_tuples(self._tables[name])
+
+    @property
+    def dialect(self):
+        from ibis.sql.postgres.compiler import PostgreSQLDialect
+
+        return PostgreSQLDialect
+
+
+class GeoMockConnectionOmniSciDB(SQLClient):
+    _tables = GEO_TABLE
+
+    def __init__(self):
+        super().__init__()
+        self.executed_queries = []
+
+    def _get_table_schema(self, name):
+        return Schema.from_tuples(self._tables[name])
+
     @property
     def dialect(self):
         from ibis.omniscidb.compiler import OmniSciDBDialect
 
         return OmniSciDBDialect
 
-    _tables = {
-        'geo': [
-            ('id', 'int32'),
-            ('geo_point', 'point'),
-            ('geo_linestring', 'linestring'),
-            ('geo_polygon', 'polygon'),
-            ('geo_multipolygon', 'multipolygon'),
-        ]
-    }
-
-    def __init__(self):
-        self.executed_queries = []
-
-    def _get_table_schema(self, name):
-        # name = name.replace('`', '')
-        return Schema.from_tuples(self._tables[name])
-
     def _build_ast(self, expr, context):
         from ibis.omniscidb.compiler import build_ast
 
         return build_ast(expr, context)
-
-    def execute(self, expr, limit=None, params=None):
-        ast = self._build_ast_ensure_limit(expr, limit, params=params)
-        for query in ast.queries:
-            self.executed_queries.append(query.compile())
-        return None
-
-    def compile(self, expr, limit=None, params=None):
-        ast = self._build_ast_ensure_limit(expr, limit, params=params)
-        queries = [q.compile() for q in ast.queries]
-        return queries[0] if len(queries) == 1 else queries

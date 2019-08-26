@@ -1,5 +1,5 @@
 import sys
-from typing import Iterable
+from typing import Iterable, TypeVar
 
 import ibis.expr.types as ir
 from ibis.common import exceptions as ex
@@ -13,42 +13,75 @@ try:
 except ImportError:
     ...
 
+NumberType = TypeVar('NumberType', int, float)
+# Geometry primitives (2D)
+PointType = Iterable[NumberType]
+LineStringType = Iterable[PointType]
+PolygonType = Iterable[LineStringType]
+# Multipart geometries (2D)
+MultiPointType = Iterable[PointType]
+MultiLineStringType = Iterable[LineStringType]
+MultiPolygonType = Iterable[PolygonType]
 
-def _format_point_value(value: Iterable) -> str:
+
+def _format_point_value(value: PointType) -> str:
     """Convert a iterable with a point to text."""
     return ' '.join(str(v) for v in value)
 
 
-def _format_linestring_value(value: Iterable) -> str:
+def _format_linestring_value(value: LineStringType, nested=False) -> str:
     """Convert a iterable with a linestring to text."""
-    return ', '.join(_format_point_value(point) for point in value)
+    template = '({})' if nested else '{}'
+    if not isinstance(value[0], (tuple, list)):
+        msg = '{} structure expected: LineStringType'.format(
+            'Data' if not nested else 'Inner data'
+        )
+        raise ex.IbisInputError(msg)
+    return template.format(
+        ', '.join(_format_point_value(point) for point in value)
+    )
 
 
-def _format_polygon_value(value: Iterable) -> str:
+def _format_polygon_value(value: PolygonType, nested=False) -> str:
     """Convert a iterable with a polygon to text."""
-    return ', '.join(
-        '({})'.format(_format_linestring_value(line)) for line in value
+    template = '({})' if nested else '{}'
+    if not isinstance(value[0][0], (tuple, list)):
+        msg = '{} data structure expected: PolygonType'.format(
+            'Data' if not nested else 'Inner data'
+        )
+        raise ex.IbisInputError(msg)
+
+    return template.format(
+        ', '.join(
+            _format_linestring_value(line, nested=True) for line in value
+        )
     )
 
 
-def _format_multilinestring_value(value: Iterable) -> str:
-    """Convert a iterable with a multilinestring to text."""
-    return ', '.join(
-        '({})'.format(_format_linestring_value(line)) for line in value
-    )
-
-
-def _format_multipoint_value(value: Iterable) -> str:
+def _format_multipoint_value(value: MultiPointType) -> str:
     """Convert a iterable with a multipoint to text."""
+    if not isinstance(value[0], (tuple, list)):
+        raise ex.IbisInputError('Data structure expected: MultiPointType')
     return ', '.join(
         '({})'.format(_format_point_value(point)) for point in value
     )
 
 
-def _format_multipolygon_value(value: Iterable) -> str:
-    """Convert a iterable with a multipolygon to text."""
+def _format_multilinestring_value(value: MultiLineStringType) -> str:
+    """Convert a iterable with a multilinestring to text."""
+    if not isinstance(value[0][0], (tuple, list)):
+        raise ex.IbisInputError('Data structure expected: MultiLineStringType')
     return ', '.join(
-        '({})'.format(_format_polygon_value(polygon)) for polygon in value
+        '({})'.format(_format_linestring_value(line)) for line in value
+    )
+
+
+def _format_multipolygon_value(value: MultiPolygonType) -> str:
+    """Convert a iterable with a multipolygon to text."""
+    if not isinstance(value[0][0], (tuple, list)):
+        raise ex.IbisInputError('Data structure expected: MultiPolygonType')
+    return ', '.join(
+        _format_polygon_value(polygon, nested=True) for polygon in value
     )
 
 
@@ -120,9 +153,9 @@ def translate_literal(expr, inline_metadata: bool = False) -> str:
         result = translate_linestring(value)
     elif isinstance(expr, ir.PolygonScalar):
         result = translate_polygon(value)
-    elif isinstance(expr, ir.MultiLineString):
+    elif isinstance(expr, ir.MultiLineStringScalar):
         result = translate_multilinestring(value)
-    elif isinstance(expr, ir.MultiPoint):
+    elif isinstance(expr, ir.MultiPointScalar):
         result = translate_multipoint(value)
     elif isinstance(expr, ir.MultiPolygonScalar):
         result = translate_multipolygon(value)

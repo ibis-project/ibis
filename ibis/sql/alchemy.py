@@ -85,9 +85,7 @@ def _to_sqla_type(itype, type_map=None):
         elif itype.geotype == 'geography':
             return ga.Geography
         else:
-            raise TypeError(
-                'Unexpected geospatial geotype {}'.format(itype.geotype)
-            )
+            return ga.types._GISType
     else:
         return type_map[type(itype)]
 
@@ -140,7 +138,7 @@ def sa_double(_, satype, nullable=True):
 
 if geospatial_supported:
 
-    @dt.dtype.register(SQLAlchemyDialect, ga.Geometry)
+    @dt.dtype.register(SQLAlchemyDialect, (ga.Geometry, ga.types._GISType))
     def ga_geometry(_, gatype, nullable=True):
         t = gatype.geometry_type
         if t == 'POINT':
@@ -155,6 +153,8 @@ if geospatial_supported:
             return dt.MultiPoint(nullable=nullable)
         if t == 'MULTIPOLYGON':
             return dt.MultiPolygon(nullable=nullable)
+        if t == 'GEOMETRY':
+            return dt.Geometry(nullable=nullable)
         else:
             raise ValueError("Unrecognized geometry type: {}".format(t))
 

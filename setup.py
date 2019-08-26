@@ -15,13 +15,13 @@ See http://docs.ibis-project.org
 
 VERSION = sys.version_info.major, sys.version_info.minor
 
-impala_requires = ['hdfs>=2.0.16', 'sqlalchemy>=1.1', 'requests']
+impala_requires = ['hdfs>=2.0.16', 'sqlalchemy>=1.1,<1.3.7', 'requests']
 if VERSION == (3, 5):
     impala_requires.append('impyla<0.14.2')
 else:
     impala_requires.append('impyla>=0.15.0')
 
-sqlite_requires = ['sqlalchemy>=1.1']
+sqlite_requires = ['sqlalchemy>=1.1,<1.3.7']
 postgres_requires = sqlite_requires + ['psycopg2']
 mysql_requires = sqlite_requires + ['pymysql']
 
@@ -99,7 +99,7 @@ setup(
         'bigquery': bigquery_requires,
         'hdf5': hdf5_requires,
         'parquet': parquet_requires,
-        'spark' : spark_requires,
+        'spark': spark_requires,
         'geospatial': geospatial_requires,
     },
     description="Productivity-centric Python Big Data Framework",
