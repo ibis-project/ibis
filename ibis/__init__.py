@@ -40,6 +40,10 @@ with suppress(ImportError):
     import ibis.sql.postgres.api as postgres  # noqa: F401
 
 with suppress(ImportError):
+    # pip install ibis-framework[mssql]
+    import ibis.sql.mssql.api as mssql  # noqa: F401
+
+with suppress(ImportError):
     # pip install ibis-framework[mysql]
     import ibis.sql.mysql.api as mysql  # noqa: F401
 

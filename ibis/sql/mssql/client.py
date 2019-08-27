@@ -128,7 +128,7 @@ class MSSQLClient(alch.AlchemyClient):
         return self.database_name
 
     def list_databases(self):
-        return [row.Database for row in self.con.execute('SHOW DATABASES')]
+        return [row.name for row in self.con.execute('SELECT name FROM master.dbo.sysdatabases')]
 
     def list_schemas(self):
         """List all the schemas in the current database."""
@@ -136,7 +136,7 @@ class MSSQLClient(alch.AlchemyClient):
 
     def set_database(self, name):
         raise NotImplementedError(
-            'Cannot set database with MySQL client. To use a different'
+            'Cannot set database with MSSQL client. To use a different'
             ' database, use client.database({!r})'.format(name)
         )
 

@@ -53,8 +53,9 @@ def connect(
         password=None,
         port=1433,
         database=None,
-        url=None,
         driver='pyodbc',
+        odbc_driver=None,
+        url=None,
 ):
     """Create an Ibis client located at `user`:`password`@`host`:`port`
     connected to a MSSQL database named `database`.

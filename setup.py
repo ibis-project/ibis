@@ -20,6 +20,7 @@ impala_requires.append('impyla>=0.15.0')
 
 sqlite_requires = ['sqlalchemy>=1.1,<1.3.7']
 postgres_requires = sqlite_requires + ['psycopg2']
+mssql_requires = sqlite_requires + ['pyodbc']
 mysql_requires = sqlite_requires + ['pymysql']
 
 omniscidb_requires = ['pymapd>=0.12.0']
@@ -41,6 +42,7 @@ all_requires = (
     impala_requires
     + postgres_requires
     + omniscidb_requires
+    + mssql_requires
     + mysql_requires
     + kerberos_requires
     + visualization_requires
@@ -87,6 +89,7 @@ setup(
         'kerberos': kerberos_requires,
         'postgres': postgres_requires,
         'omniscidb': omniscidb_requires,
+        'mssql': mssql_requires,
         'mysql': mysql_requires,
         'sqlite': sqlite_requires,
         'visualization': visualization_requires,
