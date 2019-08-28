@@ -1,22 +1,25 @@
+import pyodbc
+import sqlalchemy.dialects.mssql as mssql
+
 import ibis.sql.alchemy as alch
+import ibis.expr.datatypes as dt
 
 
 class MSSQLExprTranslator(alch.AlchemyExprTranslator):
-    pass
     # _registry = _operation_registry
-    # _rewrites = alch.AlchemyExprTranslator._rewrites.copy()
-    # _type_map = alch.AlchemyExprTranslator._type_map.copy()
-    # _type_map.update(
-    #     {
-    #         dt.Boolean: mysql.BOOLEAN,
-    #         dt.Int8: mysql.TINYINT,
-    #         dt.Int32: mysql.INTEGER,
-    #         dt.Int64: mysql.BIGINT,
-    #         dt.Double: mysql.DOUBLE,
-    #         dt.Float: mysql.FLOAT,
-    #         dt.String: mysql.VARCHAR,
-    #     }
-    # )
+    _rewrites = alch.AlchemyExprTranslator._rewrites.copy()
+    _type_map = alch.AlchemyExprTranslator._type_map.copy()
+    _type_map.update(
+        {
+            dt.Boolean: pyodbc.SQL_BIT,
+            dt.Int8: mssql.TINYINT,
+            dt.Int32: mssql.INTEGER,
+            dt.Int64: mssql.BIGINT,
+            dt.Double: mssql.REAL,
+            dt.Float: mssql.REAL,
+            dt.String: mssql.VARCHAR,
+        }
+    )
 
 
 rewrites = MSSQLExprTranslator.rewrites
