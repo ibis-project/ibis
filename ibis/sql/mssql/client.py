@@ -4,11 +4,16 @@ import warnings
 
 import pyodbc # NOQA fail early if the driver is missing
 import sqlalchemy as sa
-import sqlalchemy.dialects.mssql as mssql
+from sqlalchemy.dialects.mssql.pyodbc import MSDialect_pyodbc
 
 import ibis.expr.datatypes as dt
 import ibis.sql.alchemy as alch
 from ibis.sql.mssql.compiler import MSSQLDialect
+
+
+@dt.dtype.register(MSDialect_pyodbc, sa.dialects.mssql.BIT)
+def sa_boolean(_, satype, nullable=True):
+    return dt.Boolean(nullable=nullable)
 
 
 class MSSQLTable(alch.AlchemyTable):
@@ -164,7 +169,12 @@ class MSSQLClient(alch.AlchemyClient):
         table : TableExpr
             A table expression.
         """
-        pass
+        if database is not None and database != self.current_database:
+            return self.database(name=database).table(name=name, schema=schema)
+        else:
+            alch_table = self._get_sqla_table(name, schema=schema)
+            node = self.table_class(alch_table, self, self._schemas.get(name))
+            return self.table_expr_class(node)
 
     def list_tables(self, like=None, database=None, schema=None):
         if database is not None and database != self.current_database:
