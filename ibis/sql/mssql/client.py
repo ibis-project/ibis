@@ -11,6 +11,11 @@ import ibis.sql.alchemy as alch
 from ibis.sql.mssql.compiler import MSSQLDialect
 
 
+@dt.dtype.register(MSDialect_pyodbc, sa.dialects.mssql.UNIQUEIDENTIFIER)
+def sa_string(_, satype, nullable=True):
+    return dt.String(nullable=nullable)
+
+
 @dt.dtype.register(MSDialect_pyodbc, sa.dialects.mssql.BIT)
 def sa_boolean(_, satype, nullable=True):
     return dt.Boolean(nullable=nullable)
@@ -133,7 +138,9 @@ class MSSQLClient(alch.AlchemyClient):
         return self.database_name
 
     def list_databases(self):
-        return [row.name for row in self.con.execute('SELECT name FROM master.dbo.sysdatabases')]
+        return [row.name for row in self.con.execute(
+            'SELECT name FROM master.dbo.sysdatabases'
+        )]
 
     def list_schemas(self):
         """List all the schemas in the current database."""
