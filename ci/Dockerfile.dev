@@ -1,8 +1,15 @@
 FROM continuumio/miniconda3
 
+# MSSQL Driver Setup
+RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
+  && curl https://packages.microsoft.com/config/debian/10/prod.list > /etc/apt/sources.list.d/mssql-release.list
+
+ENV ACCEPT_EULA=Y
+
 RUN apt-get -qq update --yes \
  && apt-get -qq install --yes --no-install-recommends \
     build-essential git make clang libboost-dev postgresql-client ca-certificates \
+    msodbcsql17 \
  && rm -rf /var/lib/apt/lists/*
 
 ARG PYTHON

@@ -9,6 +9,15 @@ services:
     environment:
       POSTGRES_PASSWORD: ''
 
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2017-latest
+    hostname: mssql
+    ports:
+      - 1433:1433
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: Rootm3plz
+
   mysql:
     image: mariadb:10.2
     hostname: mysql
@@ -80,7 +89,6 @@ services:
   omniscidb:
     image: omnisci/core-os-cpu:v4.7.0
     hostname: omniscidb
-
     ports:
       - 6274:6274
       - 6278:6278
@@ -91,6 +99,7 @@ services:
     image: jwilder/dockerize
     command: |
       dockerize -wait tcp://omniscidb:6274
+                -waut tcp://mssql:1433
                 -wait tcp://mysql:3306
                 -wait tcp://postgres:5432
                 -wait tcp://impala:21050
