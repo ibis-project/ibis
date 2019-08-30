@@ -511,36 +511,24 @@ def compile_isinf(t, expr, scope, **kwargs):
 def compile_uppercase(t, expr, scope, **kwargs):
     op = expr.op()
 
-    @pandas_udf('string', PandasUDFType.SCALAR)
-    def upper(v):
-        return v.str.upper()
-
     src_column = t.translate(op.arg, scope)
-    return upper(src_column)
+    return F.upper(src_column)
 
 
 @compiles(ops.Lowercase)
 def compile_lowercase(t, expr, scope, **kwargs):
     op = expr.op()
 
-    @pandas_udf('string', PandasUDFType.SCALAR)
-    def lower(v):
-        return v.str.lower()
-
     src_column = t.translate(op.arg, scope)
-    return lower(src_column)
+    return F.lower(src_column)
 
 
 @compiles(ops.Reverse)
 def compile_reverse(t, expr, scope, **kwargs):
     op = expr.op()
 
-    @pandas_udf('string', PandasUDFType.SCALAR)
-    def reverse(s):
-        return s.str[::-1]
-
     src_column = t.translate(op.arg, scope)
-    return reverse(src_column)
+    return F.reverse(src_column)
 
 
 @compiles(ops.Strip)
@@ -610,12 +598,8 @@ def compile_substring(t, expr, scope, **kwargs):
 def compile_string_length(t, expr, scope, **kwargs):
     op = expr.op()
 
-    @pandas_udf('int', PandasUDFType.SCALAR)
-    def length(s):
-        return s.str.len()
-
     src_column = t.translate(op.arg, scope)
-    return length(src_column)
+    return F.length(src_column)
 
 
 @compiles(ops.StrRight)
