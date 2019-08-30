@@ -161,3 +161,28 @@ def test_join(client):
     )
 
     tm.assert_frame_equal(result.toPandas(), expected.toPandas())
+
+
+def test_filter(client):
+    table = client.table('table1')
+    filtered1 = table.filter(table.id < 5)
+    filtered2 = table.filter(table.id != 5)
+    filtered3 = table.filter([table.id < 5, table.str_col == 'na'])
+    filtered4 = table.filter((table.id > 3) & (table.id < 11))
+    filtered5 = table.filter((table.id == 3) | (table.id == 5))
+
+    result1 = filtered1.compile()
+    result2 = filtered2.compile()
+    result3 = filtered3.compile()
+    result4 = filtered4.compile()
+    result5 = filtered5.compile()
+
+    df = table.compile()
+    tm.assert_frame_equal(result1.toPandas(), df[df.id < 5].toPandas())
+    tm.assert_frame_equal(result2.toPandas(), df[df.id != 5].toPandas())
+    tm.assert_frame_equal(result3.toPandas(),
+                          df[df.id < 5][df.str_col == 'na'].toPandas())
+    tm.assert_frame_equal(result4.toPandas(),
+                          df[(df.id > 3) & (df.id < 11)].toPandas())
+    tm.assert_frame_equal(result5.toPandas(),
+                          df[(df.id == 3) | (df.id == 5)].toPandas())
