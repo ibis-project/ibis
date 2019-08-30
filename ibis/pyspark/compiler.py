@@ -3,7 +3,6 @@ import enum
 import functools
 
 import pyspark.sql.functions as F
-from pyspark.sql.functions import pandas_udf, PandasUDFType
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
