@@ -535,48 +535,32 @@ def compile_reverse(t, expr, scope, **kwargs):
 def compile_strip(t, expr, scope, **kwargs):
     op = expr.op()
 
-    @pandas_udf('string', PandasUDFType.SCALAR)
-    def strip(s):
-        return s.str.strip()
-
     src_column = t.translate(op.arg, scope)
-    return strip(src_column)
+    return F.trim(src_column)
 
 
 @compiles(ops.LStrip)
 def compile_lstrip(t, expr, scope, **kwargs):
     op = expr.op()
 
-    @pandas_udf('string', PandasUDFType.SCALAR)
-    def lstrip(s):
-        return s.str.lstrip()
-
     src_column = t.translate(op.arg, scope)
-    return lstrip(src_column)
+    return F.ltrim(src_column)
 
 
 @compiles(ops.RStrip)
 def compile_rstrip(t, expr, scope, **kwargs):
     op = expr.op()
 
-    @pandas_udf('string', PandasUDFType.SCALAR)
-    def rstrip(s):
-        return s.str.lstrip()
-
     src_column = t.translate(op.arg, scope)
-    return rstrip(src_column)
+    return F.rtrim(src_column)
 
 
 @compiles(ops.Capitalize)
 def compile_capitalize(t, expr, scope, **kwargs):
     op = expr.op()
 
-    @pandas_udf('string', PandasUDFType.SCALAR)
-    def capitalize(s):
-        return s.str.capitalize()
-
     src_column = t.translate(op.arg, scope)
-    return capitalize(src_column)
+    return F.initcap(src_column)
 
 
 @compiles(ops.Substring)
