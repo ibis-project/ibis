@@ -3,7 +3,8 @@ from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
-from ibis.tests.backends import Csv, OmniSciDB, Pandas, Parquet
+from ibis.tests.backends import Csv, Impala, OmniSciDB, Pandas, Parquet, \
+    PostgreSQL, PySpark, Spark
 
 
 @pytest.mark.parametrize(
@@ -15,9 +16,47 @@ from ibis.tests.backends import Csv, OmniSciDB, Pandas, Parquet
             id='lag',
         ),
         param(
+            lambda t, win: t.float_col.lag(2).over(win),
+            lambda t: t.float_col.shift(2),
+            id='lag_with_offset',
+        ),
+        param(
+            # default kwarg not supported in OmniSciDB
+            lambda t, win: t.float_col.lag(default=0).over(win),
+            lambda t: t.float_col.shift(1, fill_value=0),
+            id='lag_with_default',
+            marks=pytest.mark.xfail_backends((OmniSciDB,)),
+        ),
+        param(
+            # default kwarg not supported in OmniSciDB
+            lambda t, win: t.float_col.lag(2, default=0).over(win),
+            lambda t: t.float_col.shift(2, fill_value=0),
+            id='lag_with_offset_and_default',
+            marks=pytest.mark.xfail_backends((OmniSciDB,)),
+        ),
+        param(
             lambda t, win: t.float_col.lead().over(win),
             lambda t: t.float_col.shift(-1),
             id='lead',
+            marks=pytest.mark.xfail_backends((OmniSciDB,)),
+        ),
+        param(
+            lambda t, win: t.float_col.lead(2).over(win),
+            lambda t: t.float_col.shift(-2),
+            id='lead_with_offset',
+        ),
+        param(
+            # default kwarg not supported in OmniSciDB
+            lambda t, win: t.float_col.lead(default=0).over(win),
+            lambda t: t.float_col.shift(-1, fill_value=0),
+            id='lead_with_default',
+            marks=pytest.mark.xfail_backends((OmniSciDB,)),
+        ),
+        param(
+            # default kwarg not supported in OmniSciDB
+            lambda t, win: t.float_col.lead(2, default=0).over(win),
+            lambda t: t.float_col.shift(-2, fill_value=0),
+            id='lead_with_offset_and_default',
             marks=pytest.mark.xfail_backends((OmniSciDB,)),
         ),
         param(
@@ -40,7 +79,7 @@ from ibis.tests.backends import Csv, OmniSciDB, Pandas, Parquet
             lambda t: t.id.rank(pct=True),
             id='percent_rank',
             marks=pytest.mark.xpass_backends(
-                [Csv, Pandas, Parquet], raises=AssertionError
+                [Csv, Pandas, Parquet, PySpark], raises=AssertionError
             ),
         ),
         param(
@@ -101,6 +140,19 @@ from ibis.tests.backends import Csv, OmniSciDB, Pandas, Parquet
             id='cumany',
         ),
         param(
+            # notany() over window not supported in Impala, PostgreSQL,
+            # and Spark backends
+            lambda t, win: (t.double_col == 0).notany().over(win),
+            lambda t: (
+                t.double_col.expanding()
+                .agg(lambda s: ~s.eq(0).any())
+                .reset_index(drop=True, level=0)
+                .astype(bool)
+            ),
+            id='cumnotany',
+            marks=pytest.mark.xfail_backends((Impala, PostgreSQL, Spark,)),
+        ),
+        param(
             lambda t, win: (t.double_col == 0).all().over(win),
             lambda t: (
                 t.double_col.expanding()
@@ -109,6 +161,19 @@ from ibis.tests.backends import Csv, OmniSciDB, Pandas, Parquet
                 .astype(bool)
             ),
             id='cumall',
+        ),
+        param(
+            # notall() over window not supported in Impala, PostgreSQL,
+            # and Spark backends
+            lambda t, win: (t.double_col == 0).notall().over(win),
+            lambda t: (
+                t.double_col.expanding()
+                .agg(lambda s: ~s.eq(0).all())
+                .reset_index(drop=True, level=0)
+                .astype(bool)
+            ),
+            id='cumnotall',
+            marks=pytest.mark.xfail_backends((Impala, PostgreSQL, Spark,)),
         ),
         param(
             lambda t, win: t.double_col.sum().over(win),
