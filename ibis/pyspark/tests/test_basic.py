@@ -3,7 +3,6 @@ import pandas.util.testing as tm
 import pytest
 
 import ibis
-import ibis.common.exceptions as comm
 
 pytest.importorskip('pyspark')
 pytestmark = pytest.mark.pyspark
@@ -92,10 +91,6 @@ def test_groupby(client):
     tm.assert_frame_equal(result.toPandas(), expected.toPandas())
 
 
-@pytest.mark.xfail(
-    reason='This is not implemented yet',
-    raises=comm.OperationNotDefinedError
-)
 def test_window(client):
     import pyspark.sql.functions as F
     from pyspark.sql.window import Window
@@ -108,13 +103,6 @@ def test_window(client):
             grouped_demeaned=table['id'] - table['id'].mean().over(w))
         .compile()
     )
-    result2 = (
-        table
-        .groupby('id')
-        .mutate(
-            grouped_demeaned=table['id'] - table['id'].mean())
-        .compile()
-    )
 
     spark_window = Window.partitionBy()
     spark_table = table.compile()
@@ -124,7 +112,6 @@ def test_window(client):
     )
 
     tm.assert_frame_equal(result.toPandas(), expected.toPandas())
-    tm.assert_frame_equal(result2.toPandas(), expected.toPandas())
 
 
 def test_greatest(client):
