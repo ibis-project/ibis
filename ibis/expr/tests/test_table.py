@@ -1,7 +1,9 @@
 import pickle
 import re
 
+import pandas as pd
 import pytest
+from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
@@ -695,6 +697,59 @@ def test_asof_join_with_by():
     assert by.left.op().name == by.right.op().name == 'key'
 
 
+@pytest.mark.parametrize(
+    ('ibis_interval', 'timedelta_interval'),
+    [
+        [ibis.interval(days=2), pd.Timedelta('2 days')],
+        [ibis.interval(hours=5), pd.Timedelta('5 hours')],
+        [ibis.interval(minutes=7), pd.Timedelta('7 minutes')],
+        [ibis.interval(seconds=9), pd.Timedelta('7 seconds')],
+        [ibis.interval(milliseconds=9), pd.Timedelta('9 milliseconds')],
+        [ibis.interval(microseconds=11), pd.Timedelta('11 microseconds')],
+        [ibis.interval(nanoseconds=17), pd.Timedelta('17 nanoseconds')],
+        param(
+            ibis.interval(weeks=3),
+            pd.Timedelta('3 W'),
+            id='weeks',
+            marks=pytest.mark.xfail(
+                reason='Week conversion from Timedelta to ibis interval '
+                'not supported'
+            ),
+        ),
+        param(
+            ibis.interval(years=3),
+            pd.Timedelta('3 Y'),
+            id='years',
+            marks=pytest.mark.xfail(
+                reason='Year conversion from Timedelta to ibis interval '
+                'not supported'
+            ),
+        ),
+    ],
+)
+def test_asof_join_with_tolerance(ibis_interval, timedelta_interval):
+    left = ibis.table(
+        [('time', 'int32'), ('key', 'int32'), ('value', 'double')]
+    )
+    right = ibis.table(
+        [('time', 'int32'), ('key', 'int32'), ('value2', 'double')]
+    )
+
+    joined = api.asof_join(left, right, 'time', tolerance=ibis_interval)
+    tolerance = joined.op().tolerance
+    assert_equal(tolerance, ibis_interval)
+
+    joined = api.asof_join(left, right, 'time', tolerance=timedelta_interval)
+    tolerance = joined.op().tolerance
+
+    assert isinstance(tolerance, ir.IntervalScalar)
+    assert isinstance(tolerance.op(), ops.Literal)
+
+    ibis_interval_unit = ibis_interval.op().dtype.unit
+    timedelta_unit = tolerance.op().dtype.unit
+    assert timedelta_unit == ibis_interval_unit
+
+
 def test_equijoin_schema_merge():
     table1 = ibis.table([('key1', 'string'), ('value1', 'double')])
     table2 = ibis.table([('key2', 'string'), ('stuff', 'int32')])
@@ -1064,7 +1119,7 @@ def test_cannot_use_existence_expression_in_join(table):
 
 
 def test_not_exists_predicate(t1, t2):
-    cond = -(t1.key1 == t2.key1).any()
+    cond = -((t1.key1 == t2.key1).any())
     assert isinstance(cond.op(), ops.NotAny)
 
 

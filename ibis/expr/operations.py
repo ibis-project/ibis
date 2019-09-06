@@ -3,6 +3,7 @@ import functools
 import itertools
 import operator
 from contextlib import suppress
+from typing import List
 
 import toolz
 
@@ -1026,8 +1027,10 @@ class WindowOp(ValueOp):
             window = window.bind(table)
 
         if window.max_lookback is not None:
-            error_msg = ("'max lookback' windows must be ordered "
-                         "by a timestamp column")
+            error_msg = (
+                "'max lookback' windows must be ordered "
+                "by a timestamp column"
+            )
             if len(window._order_by) != 1:
                 raise com.IbisInputError(error_msg)
             order_var = window._order_by[0].op().args[0]
@@ -1730,6 +1733,13 @@ class AsOfJoin(Join):
         super().__init__(left, right, predicates)
         self.by = _clean_join_predicates(self.left, self.right, by)
         self.tolerance = tolerance
+        self._validate_args(['by', 'tolerance'])
+
+    def _validate_args(self, args: List[str]):
+        for arg in args:
+            argument = self.signature[arg]
+            value = argument.validate(getattr(self, arg))
+            setattr(self, arg, value)
 
 
 class Union(TableNode, HasSchema):
@@ -3196,6 +3206,7 @@ class GeoSRID(GeoSpatialUnOp):
 
 class GeoSetSRID(GeoSpatialUnOp):
     """Set the spatial reference identifier for the ST_Geometry."""
+
     srid = Arg(rlz.integer)
     output_type = rlz.shape_like('args', dt.geometry)
 
@@ -3221,6 +3232,7 @@ class GeoDFullyWithin(GeoSpatialBinOp):
     """Returns True if the geometries are fully within the specified distance
     of one another.
     """
+
     distance = Arg(rlz.floating)
 
     output_type = rlz.shape_like('args', dt.boolean)
@@ -3230,6 +3242,7 @@ class GeoDWithin(GeoSpatialBinOp):
     """Returns True if the geometries are within the specified distance
     of one another.
     """
+
     distance = Arg(rlz.floating)
 
     output_type = rlz.shape_like('args', dt.boolean)

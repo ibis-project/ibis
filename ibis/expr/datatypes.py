@@ -32,6 +32,7 @@ IS_SHAPELY_AVAILABLE = False
 try:
     if sys.version_info >= (3, 6):
         import shapely.geometry
+
         IS_SHAPELY_AVAILABLE = True
 except ImportError:
     ...
@@ -405,6 +406,21 @@ class Interval(DataType):
         ns='nanosecond',
     )
 
+    _timedelta_to_interval_units = dict(
+        days='D',
+        hours='h',
+        minutes='m',
+        seconds='s',
+        milliseconds='ms',
+        microseconds='us',
+        nanoseconds='ns',
+    )
+
+    def _convert_timedelta_unit_to_interval_unit(self, unit: str):
+        if unit not in self._timedelta_to_interval_units:
+            raise ValueError
+        return self._timedelta_to_interval_units[unit]
+
     def __init__(
         self,
         unit: str = 's',
@@ -413,7 +429,10 @@ class Interval(DataType):
     ) -> None:
         super().__init__(nullable=nullable)
         if unit not in self._units:
-            raise ValueError('Unsupported interval unit `{}`'.format(unit))
+            try:
+                unit = self._convert_timedelta_unit_to_interval_unit(unit)
+            except ValueError:
+                raise ValueError('Unsupported interval unit `{}`'.format(unit))
 
         if value_type is None:
             value_type = int32
@@ -536,11 +555,10 @@ class Struct(DataType):
 
 def _tuplize(values):
     """Recursively convert `values` to a tuple of tuples."""
+
     def tuplize_iter(values):
         yield from (
-            tuple(tuplize_iter(value))
-            if util.is_iterable(value)
-            else value
+            tuple(tuplize_iter(value)) if util.is_iterable(value) else value
             for value in values
         )
 
@@ -665,7 +683,7 @@ class GeoSpatial(DataType):
                 shapely.geometry.Polygon,
                 shapely.geometry.MultiLineString,
                 shapely.geometry.MultiPoint,
-                shapely.geometry.MultiPolygon
+                shapely.geometry.MultiPolygon,
             )
             if isinstance(value, geo_shapes):
                 return self, value.wkt
@@ -1422,6 +1440,17 @@ dtype = Dispatcher('dtype')
 validate_type = dtype
 
 
+def _get_timedelta_units(timedelta: datetime.timedelta) -> List[str]:
+    unit_fields = timedelta.components._fields
+    time_units = []
+    [
+        time_units.append(field)
+        for field in unit_fields
+        if getattr(timedelta.components, field) > 0
+    ]
+    return time_units
+
+
 @dtype.register(object)
 def default(value, **kwargs) -> DataType:
     raise com.IbisTypeError('Value {!r} is not a valid datatype'.format(value))
@@ -1536,7 +1565,14 @@ def infer_timestamp(value: datetime.datetime) -> Timestamp:
 
 @infer.register(datetime.timedelta)
 def infer_interval(value: datetime.timedelta) -> Interval:
-    return interval
+    time_units = _get_timedelta_units(value)
+    # we can attempt a conversion in the simplest case, i.e. there is exactly
+    # one unit (e.g. pd.Timedelta('2 days') vs. pd.Timedelta('2 days 3 hours')
+    if len(time_units) == 1:
+        unit = time_units[0]
+        return Interval(unit)
+    else:
+        return interval
 
 
 @infer.register(str)
@@ -1572,13 +1608,14 @@ def infer_null(value: Optional[Null]) -> Null:
 
 
 if IS_SHAPELY_AVAILABLE:
+
     @infer.register(shapely.geometry.Point)
     def infer_shapely_point(value: shapely.geometry.Point) -> Point:
         return point
 
     @infer.register(shapely.geometry.LineString)
     def infer_shapely_linestring(
-        value: shapely.geometry.LineString
+        value: shapely.geometry.LineString,
     ) -> LineString:
         return linestring
 
@@ -1588,19 +1625,19 @@ if IS_SHAPELY_AVAILABLE:
 
     @infer.register(shapely.geometry.MultiLineString)
     def infer_shapely_multilinestring(
-        value: shapely.geometry.MultiLineString
+        value: shapely.geometry.MultiLineString,
     ) -> MultiLineString:
         return multilinestring
 
     @infer.register(shapely.geometry.MultiPoint)
     def infer_shapely_multipoint(
-        value: shapely.geometry.MultiPoint
+        value: shapely.geometry.MultiPoint,
     ) -> MultiPoint:
         return multipoint
 
     @infer.register(shapely.geometry.MultiPolygon)
     def infer_shapely_multipolygon(
-        value: shapely.geometry.MultiPolygon
+        value: shapely.geometry.MultiPolygon,
     ) -> MultiPolygon:
         return multipolygon
 
@@ -1721,7 +1758,12 @@ def can_cast_variadic(
 # geo spatial data type
 # cast between same type, used to cast from/to geometry and geography
 GEO_TYPES = (
-    Point, LineString, Polygon, MultiLineString, MultiPoint, MultiPolygon
+    Point,
+    LineString,
+    Polygon,
+    MultiLineString,
+    MultiPoint,
+    MultiPolygon,
 )
 
 
