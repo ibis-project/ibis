@@ -854,8 +854,7 @@ def compile_window_op(t, expr, scope, **kwargs):
     return result
 
 
-@compiles(ops.Lag)
-def compile_lag(t, expr, scope, *, window, **kwargs):
+def _handle_shift_operation(t, expr, scope, fn, *, window, **kwargs):
     op = expr.op()
 
     src_column = t.translate(op.arg, scope)
@@ -863,23 +862,21 @@ def compile_lag(t, expr, scope, *, window, **kwargs):
     offset = op.offset.op().value if op.offset is not None else op.offset
 
     if offset:
-        return F.lag(src_column, count=offset, default=default).over(window)
+        return fn(src_column, count=offset, default=default).over(window)
     else:
-        return F.lag(src_column, default=default).over(window)
+        return fn(src_column, default=default).over(window)
+
+
+@compiles(ops.Lag)
+def compile_lag(t, expr, scope, *, window, **kwargs):
+    return _handle_shift_operation(t, expr, scope, F.lag, window=window,
+                                   **kwargs)
 
 
 @compiles(ops.Lead)
 def compile_lead(t, expr, scope, *, window, **kwargs):
-    op = expr.op()
-
-    src_column = t.translate(op.arg, scope)
-    default = op.default.op().value if op.default is not None else op.default
-    offset = op.offset.op().value if op.offset is not None else op.offset
-
-    if offset:
-        return F.lead(src_column, count=offset, default=default).over(window)
-    else:
-        return F.lead(src_column, default=default).over(window)
+    return _handle_shift_operation(t, expr, scope, F.lead, window=window,
+                                   **kwargs)
 
 
 @compiles(ops.MinRank)
@@ -928,33 +925,32 @@ def compile_row_number(t, expr, scope, *, window, **kwargs):
     return F.row_number().over(window).astype('long') - F.lit(1)
 
 
-@compiles(ops.CumulativeSum)
-def compile_cumulative_sum(t, expr, scope, *, window, **kwargs):
+def _handle_cumulative_operation(t, expr, scope, fn, *, window, **kwargs):
     op = expr.op()
 
     src_column = t.translate(op.arg, scope)
-    return F.sum(src_column).over(window)
+    return fn(src_column).over(window)
+
+
+@compiles(ops.CumulativeSum)
+def compile_cumulative_sum(t, expr, scope, *, window, **kwargs):
+    return _handle_cumulative_operation(t, expr, scope, F.sum, window=window,
+                                        **kwargs)
 
 
 @compiles(ops.CumulativeMean)
 def compile_cumulative_mean(t, expr, scope, *, window, **kwargs):
-    op = expr.op()
-
-    src_column = t.translate(op.arg, scope)
-    return F.mean(src_column).over(window)
+    return _handle_cumulative_operation(t, expr, scope, F.mean, window=window,
+                                        **kwargs)
 
 
 @compiles(ops.CumulativeMin)
 def compile_cumulative_min(t, expr, scope, *, window, **kwargs):
-    op = expr.op()
-
-    src_column = t.translate(op.arg, scope)
-    return F.min(src_column).over(window)
+    return _handle_cumulative_operation(t, expr, scope, F.min, window=window,
+                                        **kwargs)
 
 
 @compiles(ops.CumulativeMax)
 def compile_cumulative_max(t, expr, scope, *, window, **kwargs):
-    op = expr.op()
-
-    src_column = t.translate(op.arg, scope)
-    return F.max(src_column).over(window)
+    return _handle_cumulative_operation(t, expr, scope, F.max, window=window,
+                                        **kwargs)

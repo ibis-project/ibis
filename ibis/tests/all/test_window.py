@@ -3,8 +3,8 @@ from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
-from ibis.tests.backends import Csv, Impala, OmniSciDB, Pandas, Parquet, \
-    PostgreSQL, PySpark, Spark
+from ibis.tests.backends import (Csv, Impala, OmniSciDB, Pandas, Parquet,
+                                 PostgreSQL, PySpark, Spark)
 
 
 @pytest.mark.parametrize(
