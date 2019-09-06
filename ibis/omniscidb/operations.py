@@ -764,7 +764,6 @@ _geospatial_ops = {
     ops.GeoArea: unary('ST_AREA'),
     ops.GeoContains: fixed_arity('ST_CONTAINS', 2),
     ops.GeoDistance: fixed_arity('ST_DISTANCE', 2),
-    ops.GeoDFullyWithin: fixed_arity('ST_DFULLYWITHIN', 3),
     ops.GeoDisjoint: fixed_arity('ST_DISJOINT', 2),
     ops.GeoDWithin: fixed_arity('ST_DWITHIN', 3),
     ops.GeoEndPoint: unary('ST_ENDPOINT'),
