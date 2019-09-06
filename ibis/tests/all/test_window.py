@@ -16,48 +16,10 @@ from ibis.tests.backends import Csv, Impala, OmniSciDB, Pandas, Parquet, \
             id='lag',
         ),
         param(
-            lambda t, win: t.float_col.lag(2).over(win),
-            lambda t: t.float_col.shift(2),
-            id='lag_with_offset',
-        ),
-        param(
-            # default kwarg not supported in OmniSciDB
-            lambda t, win: t.float_col.lag(default=0).over(win),
-            lambda t: t.float_col.shift(1, fill_value=0),
-            id='lag_with_default',
-            marks=pytest.mark.skip_backends((OmniSciDB,)),
-        ),
-        param(
-            # default kwarg not supported in OmniSciDB
-            lambda t, win: t.float_col.lag(2, default=0).over(win),
-            lambda t: t.float_col.shift(2, fill_value=0),
-            id='lag_with_offset_and_default',
-            marks=pytest.mark.skip_backends((OmniSciDB,)),
-        ),
-        param(
             lambda t, win: t.float_col.lead().over(win),
             lambda t: t.float_col.shift(-1),
             id='lead',
             marks=pytest.mark.xfail_backends((OmniSciDB,)),
-        ),
-        param(
-            lambda t, win: t.float_col.lead(2).over(win),
-            lambda t: t.float_col.shift(-2),
-            id='lead_with_offset',
-        ),
-        param(
-            # default kwarg not supported in OmniSciDB
-            lambda t, win: t.float_col.lead(default=0).over(win),
-            lambda t: t.float_col.shift(-1, fill_value=0),
-            id='lead_with_default',
-            marks=pytest.mark.skip_backends((OmniSciDB,)),
-        ),
-        param(
-            # default kwarg not supported in OmniSciDB
-            lambda t, win: t.float_col.lead(2, default=0).over(win),
-            lambda t: t.float_col.shift(-2, fill_value=0),
-            id='lead_with_offset_and_default',
-            marks=pytest.mark.skip_backends((OmniSciDB,)),
         ),
         param(
             lambda t, win: t.id.rank().over(win),
