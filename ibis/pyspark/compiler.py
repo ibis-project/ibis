@@ -73,7 +73,7 @@ def compile_selection(t, expr, scope, **kwargs):
     # Cache compile results for tables
     op = expr.op()
 
-    # TODO: Support sort_keys
+    # TODO: Support sort_keys (see issue #1957)
     if op.sort_keys:
         raise NotImplementedError(
             "predicates and sort_keys are not supported with Selection")
