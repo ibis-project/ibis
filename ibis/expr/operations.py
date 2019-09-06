@@ -1628,8 +1628,19 @@ class Join(TableNode):
 
         overlap = set(sleft.names) & set(sright.names)
         if overlap:
+            if hasattr(left.op(), 'name'):
+                left_name = left.op().name
+            else:
+                left_name = '<Left Node>'
+
+            if hasattr(right.op(), 'name'):
+                right_name = right.op().name
+            else:
+                right_name = '<Right Node>'
+
             raise com.RelationError(
-                'Joined tables have overlapping names: %s' % str(list(overlap))
+                'Joined tables: %s and %s have overlapping names: %s' %
+                (str(left_name), str(right_name), str(list(overlap)))
             )
 
         return sleft.append(sright)
