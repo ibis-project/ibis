@@ -207,16 +207,12 @@ def test_literal_geospatial_inferred(backend, con, shp, expected):
         (
             shp_multilinestring_0,
             {
-                'postgres':
-                    "'MULTILINESTRING ((0 0, 1 1, 2 2), (2 2, 1 1, 0 0))'",
+                'postgres': (
+                    "'MULTILINESTRING ((0 0, 1 1, 2 2), (2 2, 1 1, 0 0))'"
+                )
             },
         ),
-        (
-            shp_multipoint_0,
-            {
-                'postgres': "'MULTIPOINT (0 0, 1 1, 2 2)'",
-            },
-        ),
+        (shp_multipoint_0, {'postgres': "'MULTIPOINT (0 0, 1 1, 2 2)'"}),
     ],
 )
 @pytest.mark.only_on_backends(PostgreSQL)
@@ -287,6 +283,30 @@ def test_geo_spatial_unops(backend, geo, expr_fn, expected):
                 'postgres': [False] * 5,  # not contains the border
             },
             id='contains',
+        ),
+        param(
+            lambda t: t['geo_linestring'].disjoint(point_geom_0),
+            {
+                'omniscidb': [False, True, True, True, True],
+                'postgres': [False, True, True, True, True],
+            },
+            id='disjoint',
+        ),
+        param(
+            lambda t: t['geo_point'].d_within(point_geom_1, 2.0),
+            {
+                'omniscidb': [True, True, True, False, False],
+                'postgres': [True, True, True, False, False],
+            },
+            id='d_within',
+        ),
+        param(
+            lambda t: t['geo_linestring'].intersects(point_geom_0),
+            {
+                'omniscidb': [True, False, False, False, False],
+                'postgres': [True, False, False, False, False],
+            },
+            id='intersects',
         ),
         param(
             lambda t: t['geo_linestring'].distance(point_geom_0),
