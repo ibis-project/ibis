@@ -161,7 +161,7 @@ def execute_cast_series_date(op, data, type, **kwargs):
 
     if isinstance(from_type, dt.Integer):
         return pd.Series(
-            pd.to_datetime(data.values, box=False, unit='D'),
+            pd.to_datetime(data.values, unit='D').values,
             index=data.index,
             name=data.name,
         )
@@ -1012,7 +1012,7 @@ def wrap_case_result(raw, expr):
             raw_1d, dtype=constants.IBIS_TYPE_TO_PANDAS_TYPE[expr.type()]
         )
     if result.size == 1 and isinstance(expr, ir.ScalarExpr):
-        return result.item()
+        return result.iloc[0].item()
     return result
 
 
