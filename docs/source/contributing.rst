@@ -36,6 +36,18 @@ Contributor `Krisztián Szűcs <https://github.com/kszucs>`_ has spent many hour
 crafting an easy-to-use `docker-compose <https://docs.docker.com/compose/>`_
 setup that enables ibis developers to get up and running quickly.
 
+For those unfamiliar with ``docker``, and ``docker-compose``, here are some
+rough steps on how to get things set up:
+
+    - Install ``docker-compose`` with ``pip install docker-compose``
+    - Install `docker <https://docs.docker.com/install/>`_
+
+      - Be sure to follow the
+        `post-install instructions
+        <https://docs.docker.com/install/linux/linux-postinstall/>`_
+        if you are running on Linux.
+
+
 Here are the steps to start database services and run the test suite:
 
 .. code-block:: sh
