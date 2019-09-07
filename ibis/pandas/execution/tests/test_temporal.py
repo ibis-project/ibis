@@ -147,6 +147,7 @@ def test_times_ops_with_tz(t, df, tz, rconstruct, column):
     ('op', 'expected'),
     [
         param(lambda x, y: x + y, lambda x, y: x.values * 2, id='add'),
+        param(lambda x, y: x - y, lambda x, y: x.values - y.values, id='sub'),
         param(lambda x, y: x * 2, lambda x, y: x.values * 2, id='mul'),
         param(
             lambda x, y: x // 2,
