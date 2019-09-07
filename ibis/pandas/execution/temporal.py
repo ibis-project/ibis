@@ -184,7 +184,9 @@ def execute_timestamp_sub_series_timedelta(op, left, right, **kwargs):
 
 
 @execute_node.register(
-    (ops.TimestampDiff, ops.TimestampSub), pd.Series, pd.Series
+    (ops.TimestampDiff, ops.TimestampSub, ops.IntervalSubtract),
+    pd.Series,
+    pd.Series
 )
 def execute_timestamp_diff_sub_series_series(op, left, right, **kwargs):
     return left - right
