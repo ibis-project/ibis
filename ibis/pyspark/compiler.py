@@ -73,8 +73,8 @@ def compile_selection(t, expr, scope, **kwargs):
     # Cache compile results for tables
     op = expr.op()
 
-    # TODO: Support predicates and sort_keys
-    if op.predicates or op.sort_keys:
+    # TODO: Support sort_keys (see issue #1957)
+    if op.sort_keys:
         raise NotImplementedError(
             "predicates and sort_keys are not supported with Selection")
 
@@ -90,7 +90,14 @@ def compile_selection(t, expr, scope, **kwargs):
             column = t.translate(selection, scope=scope)
             src_table = src_table.withColumn(column_name, column)
 
-    return src_table[col_names_in_selection_order]
+    if col_names_in_selection_order:
+        src_table = src_table[col_names_in_selection_order]
+
+    for predicate in op.predicates:
+        col = t.translate(predicate, scope)
+        src_table = src_table[col]
+
+    return src_table
 
 
 @compiles(ops.TableColumn)
@@ -115,10 +122,28 @@ def compile_self_reference(t, expr, scope, **kwargs):
     return t.translate(op.table, scope)
 
 
+@compiles(ops.And)
+def compile_and(t, expr, scope, **kwargs):
+    op = expr.op()
+    return t.translate(op.left, scope) & t.translate(op.right, scope)
+
+
+@compiles(ops.Or)
+def compile_or(t, expr, scope, **kwargs):
+    op = expr.op()
+    return t.translate(op.left, scope) | t.translate(op.right, scope)
+
+
 @compiles(ops.Equals)
 def compile_equals(t, expr, scope, **kwargs):
     op = expr.op()
     return t.translate(op.left, scope) == t.translate(op.right, scope)
+
+
+@compiles(ops.NotEquals)
+def compile_not_equals(t, expr, scope, **kwargs):
+    op = expr.op()
+    return t.translate(op.left, scope) != t.translate(op.right, scope)
 
 
 @compiles(ops.Greater)
@@ -131,6 +156,18 @@ def compile_greater(t, expr, scope, **kwargs):
 def compile_greater_equal(t, expr, scope, **kwargs):
     op = expr.op()
     return t.translate(op.left, scope) >= t.translate(op.right, scope)
+
+
+@compiles(ops.Less)
+def compile_less(t, expr, scope, **kwargs):
+    op = expr.op()
+    return t.translate(op.left, scope) < t.translate(op.right, scope)
+
+
+@compiles(ops.LessEqual)
+def compile_less_equal(t, expr, scope, **kwargs):
+    op = expr.op()
+    return t.translate(op.left, scope) <= t.translate(op.right, scope)
 
 
 @compiles(ops.Multiply)
