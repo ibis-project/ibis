@@ -749,7 +749,7 @@ def test_asof_join_with_by():
         ),
         param(
             ibis.interval(years=3),
-            pd.Timedelta('3 Y'),
+            pd.Timedelta('3', unit='Y'),
             id='years',
             marks=pytest.mark.xfail(
                 reason='Year conversion from Timedelta to ibis interval '
