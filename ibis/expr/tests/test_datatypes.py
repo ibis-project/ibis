@@ -367,7 +367,7 @@ def test_time_valid():
         ('foo', dt.string),
         (datetime.date.today(), dt.date),
         (datetime.datetime.now(), dt.timestamp),
-        (datetime.timedelta(days=3), dt.interval),
+        (datetime.timedelta(days=3), dt.Interval(unit='D')),
         # numeric types
         (5, dt.int8),
         (5, dt.int8),
