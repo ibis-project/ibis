@@ -195,12 +195,12 @@ def compile_aggregator(t, expr, scope, fn, context=None, **kwargs):
     op = expr.op()
     src_col = t.translate(op.arg, scope)
 
-    if getattr(op, "where", None) is not None:
+    if getattr(op, 'where', None) is not None:
         condition = t.translate(op.where, scope)
         src_col = F.when(condition, src_col)
 
     col = fn(src_col)
-    if context or "window" in kwargs:
+    if context or 'window' in kwargs:
         return col
     else:
         # We are trying to compile a expr such as some_col.max()
@@ -224,8 +224,8 @@ def compile_group_concat(t, expr, scope, context=None, **kwargs):
 def compile_any(t, expr, scope, context=None, **kwargs):
 
     def fn(col):
-        if "window" in kwargs:
-            window = kwargs["window"]
+        if 'window' in kwargs:
+            window = kwargs['window']
             return F.max(col).over(window)
         else:
             return F.max(col)
@@ -237,8 +237,8 @@ def compile_any(t, expr, scope, context=None, **kwargs):
 def compile_notany(t, expr, scope, context=None, **kwargs):
 
     def fn(col):
-        if "window" in kwargs:
-            window = kwargs["window"]
+        if 'window' in kwargs:
+            window = kwargs['window']
             return ~F.max(col).over(window)
         else:
             return ~F.max(col)
@@ -250,8 +250,8 @@ def compile_notany(t, expr, scope, context=None, **kwargs):
 def compile_all(t, expr, scope, context=None, **kwargs):
 
     def fn(col):
-        if "window" in kwargs:
-            window = kwargs["window"]
+        if 'window' in kwargs:
+            window = kwargs['window']
             return F.min(col).over(window)
         else:
             return F.min(col)
@@ -263,8 +263,8 @@ def compile_all(t, expr, scope, context=None, **kwargs):
 def compile_notall(t, expr, scope, context=None, **kwargs):
 
     def fn(col):
-        if "window" in kwargs:
-            window = kwargs["window"]
+        if 'window' in kwargs:
+            window = kwargs['window']
             return ~F.min(col).over(window)
         else:
             return ~F.min(col)
@@ -276,8 +276,8 @@ def compile_notall(t, expr, scope, context=None, **kwargs):
 def compile_count(t, expr, scope, context=None, **kwargs):
 
     def fn(col):
-        if "window" in kwargs:
-            window = kwargs["window"]
+        if 'window' in kwargs:
+            window = kwargs['window']
             return F.count(col).over(window)
         else:
             return F.count(col)
@@ -289,8 +289,8 @@ def compile_count(t, expr, scope, context=None, **kwargs):
 def compile_max(t, expr, scope, context=None, **kwargs):
 
     def fn(col):
-        if "window" in kwargs:
-            window = kwargs["window"]
+        if 'window' in kwargs:
+            window = kwargs['window']
             return F.max(col).over(window)
         else:
             return F.max(col)
@@ -302,8 +302,8 @@ def compile_max(t, expr, scope, context=None, **kwargs):
 def compile_min(t, expr, scope, context=None, **kwargs):
 
     def fn(col):
-        if "window" in kwargs:
-            window = kwargs["window"]
+        if 'window' in kwargs:
+            window = kwargs['window']
             return F.min(col).over(window)
         else:
             return F.min(col)
@@ -315,8 +315,8 @@ def compile_min(t, expr, scope, context=None, **kwargs):
 def compile_mean(t, expr, scope, context=None, **kwargs):
 
     def fn(col):
-        if "window" in kwargs:
-            window = kwargs["window"]
+        if 'window' in kwargs:
+            window = kwargs['window']
             return F.mean(col).over(window)
         else:
             return F.mean(col)
@@ -328,8 +328,8 @@ def compile_mean(t, expr, scope, context=None, **kwargs):
 def compile_sum(t, expr, scope, context=None, **kwargs):
 
     def fn(col):
-        if "window" in kwargs:
-            window = kwargs["window"]
+        if 'window' in kwargs:
+            window = kwargs['window']
             return F.sum(col).over(window)
         else:
             return F.sum(col)
@@ -891,9 +891,9 @@ def compile_dense_rank(t, expr, scope, *, window, **kwargs):
 
 @compiles(ops.PercentRank)
 def compile_percent_rank(t, expr, scope, *, window, **kwargs):
-    raise NotImplementedError("Pyspark percent_rank() function indexes from 0 "
-                              "instead of 1, and does not match expected "
-                              "output of ibis expressions.")
+    raise NotImplementedError('Pyspark percent_rank() function indexes from 0 '
+                              'instead of 1, and does not match expected '
+                              'output of ibis expressions.')
 
 
 @compiles(ops.NTile)
