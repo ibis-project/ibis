@@ -1,6 +1,7 @@
 import pandas as pd
 import pandas.util.testing as tm
 import pytest
+from pytest import param
 
 import ibis
 
@@ -159,5 +160,29 @@ def test_join(client):
         spark_table
         .join(spark_table, ['id', 'str_col'])
     )
+
+    tm.assert_frame_equal(result.toPandas(), expected.toPandas())
+
+
+@pytest.mark.parametrize(
+    ('filter_fn', 'expected_fn'),
+    [
+        param(lambda t: t.filter(t.id < 5), lambda df: df[df.id < 5]),
+        param(lambda t: t.filter(t.id != 5), lambda df: df[df.id != 5]),
+        param(lambda t: t.filter([t.id < 5, t.str_col == 'na']),
+              lambda df: df[df.id < 5][df.str_col == 'na']),
+        param(lambda t: t.filter((t.id > 3) & (t.id < 11)),
+              lambda df: df[(df.id > 3) & (df.id < 11)]),
+        param(lambda t: t.filter((t.id == 3) | (t.id == 5)),
+              lambda df: df[(df.id == 3) | (df.id == 5)])
+    ]
+)
+def test_filter(client, filter_fn, expected_fn):
+    table = client.table('table1')
+
+    result = filter_fn(table).compile()
+
+    df = table.compile()
+    expected = expected_fn(df)
 
     tm.assert_frame_equal(result.toPandas(), expected.toPandas())
