@@ -1441,12 +1441,20 @@ validate_type = dtype
 
 
 def _get_timedelta_units(timedelta: datetime.timedelta) -> List[str]:
-    unit_fields = timedelta.components._fields
+    # pandas Timedelta has more granularity
+    if hasattr(timedelta, 'components'):
+        unit_fields = timedelta.components._fields
+        base_object = timedelta.components
+    # datetime.timedelta only stores days, seconds, and microseconds internally
+    else:
+        unit_fields = ['days', 'seconds', 'microseconds']
+        base_object = timedelta
+
     time_units = []
     [
         time_units.append(field)
         for field in unit_fields
-        if getattr(timedelta.components, field) > 0
+        if getattr(base_object, field) > 0
     ]
     return time_units
 

@@ -1,3 +1,4 @@
+import datetime
 import pickle
 import re
 
@@ -701,15 +702,45 @@ def test_asof_join_with_by():
     ('ibis_interval', 'timedelta_interval'),
     [
         [ibis.interval(days=2), pd.Timedelta('2 days')],
+        [ibis.interval(days=2), datetime.timedelta(days=2)],
         [ibis.interval(hours=5), pd.Timedelta('5 hours')],
         [ibis.interval(minutes=7), pd.Timedelta('7 minutes')],
         [ibis.interval(seconds=9), pd.Timedelta('7 seconds')],
-        [ibis.interval(milliseconds=9), pd.Timedelta('9 milliseconds')],
-        [ibis.interval(microseconds=11), pd.Timedelta('11 microseconds')],
+        [ibis.interval(seconds=9), datetime.timedelta(seconds=9)],
+        [ibis.interval(milliseconds=11), pd.Timedelta('11 milliseconds')],
+        [ibis.interval(microseconds=15), pd.Timedelta('15 microseconds')],
+        [ibis.interval(microseconds=15), datetime.timedelta(microseconds=15)],
         [ibis.interval(nanoseconds=17), pd.Timedelta('17 nanoseconds')],
         param(
+            ibis.interval(hours=5),
+            datetime.timedelta(hours=5),
+            id='dateime hours',
+            marks=pytest.mark.xfail(
+                reason='Hour conversion from datetime.timedelta to ibis '
+                'interval not supported'
+            ),
+        ),
+        param(
+            ibis.interval(minutes=7),
+            datetime.timedelta(minutes=7),
+            id='dateime minutes',
+            marks=pytest.mark.xfail(
+                reason='Minute conversion from datetime.timedelta to ibis '
+                'interval not supported'
+            ),
+        ),
+        param(
+            ibis.interval(milliseconds=11),
+            datetime.timedelta(milliseconds=11),
+            id='dateime milliseconds',
+            marks=pytest.mark.xfail(
+                reason='Millisecond conversion from datetime.timedelta to '
+                'ibis interval not supported'
+            ),
+        ),
+        param(
             ibis.interval(weeks=3),
-            pd.Timedelta('3 W'),
+            pd.Timedelta('3', unit='W'),
             id='weeks',
             marks=pytest.mark.xfail(
                 reason='Week conversion from Timedelta to ibis interval '
