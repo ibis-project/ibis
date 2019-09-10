@@ -185,7 +185,7 @@ def test_verbose_log_queries(con, test_data_db):
             con.table('tpch_orders', database=test_data_db)
 
     assert len(queries) == 1
-    query, = queries
+    (query,) = queries
     expected = 'DESCRIBE {}.`tpch_orders`'.format(test_data_db)
     assert query == expected
 

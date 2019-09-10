@@ -11,9 +11,7 @@ OMNISCIDB_USER = os.environ.get('IBIS_TEST_OMNISCIDB_USER', 'admin')
 OMNISCIDB_PASS = os.environ.get(
     'IBIS_TEST_OMNISCIDB_PASSWORD', 'HyperInteractive'
 )
-OMNISCIDB_PROTOCOL = os.environ.get(
-    'IBIS_TEST_OMNISCIDB_PROTOCOL', 'binary'
-)
+OMNISCIDB_PROTOCOL = os.environ.get('IBIS_TEST_OMNISCIDB_PROTOCOL', 'binary')
 OMNISCIDB_DB = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
 
 

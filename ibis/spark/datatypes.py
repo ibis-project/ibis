@@ -8,17 +8,17 @@ from ibis.expr.schema import Schema
 
 # maps pyspark type class to ibis type class
 _SPARK_DTYPE_TO_IBIS_DTYPE = {
-    pt.NullType : dt.Null,
-    pt.StringType : dt.String,
-    pt.BinaryType : dt.Binary,
-    pt.BooleanType : dt.Boolean,
-    pt.DateType : dt.Date,
-    pt.DoubleType : dt.Double,
-    pt.FloatType : dt.Float,
-    pt.ByteType : dt.Int8,
-    pt.IntegerType : dt.Int32,
-    pt.LongType : dt.Int64,
-    pt.ShortType : dt.Int16,
+    pt.NullType: dt.Null,
+    pt.StringType: dt.String,
+    pt.BinaryType: dt.Binary,
+    pt.BooleanType: dt.Boolean,
+    pt.DateType: dt.Date,
+    pt.DoubleType: dt.Double,
+    pt.FloatType: dt.Float,
+    pt.ByteType: dt.Int8,
+    pt.IntegerType: dt.Int32,
+    pt.LongType: dt.Int64,
+    pt.ShortType: dt.Int16,
 }
 
 
@@ -44,8 +44,7 @@ def spark_decimal_dtype_to_ibis_dtype(spark_dtype_obj, nullable=True):
 @dt.dtype.register(pt.ArrayType)
 def spark_array_dtype_to_ibis_dtype(spark_dtype_obj, nullable=True):
     value_type = dt.dtype(
-        spark_dtype_obj.elementType,
-        nullable=spark_dtype_obj.containsNull
+        spark_dtype_obj.elementType, nullable=spark_dtype_obj.containsNull
     )
     return dt.Array(value_type, nullable=nullable)
 
@@ -54,8 +53,7 @@ def spark_array_dtype_to_ibis_dtype(spark_dtype_obj, nullable=True):
 def spark_map_dtype_to_ibis_dtype(spark_dtype_obj, nullable=True):
     key_type = dt.dtype(spark_dtype_obj.keyType)
     value_type = dt.dtype(
-        spark_dtype_obj.valueType,
-        nullable=spark_dtype_obj.valueContainsNull
+        spark_dtype_obj.valueType, nullable=spark_dtype_obj.valueContainsNull
     )
     return dt.Map(key_type, value_type, nullable=nullable)
 
@@ -120,9 +118,6 @@ def ibis_map_dtype_to_spark_dtype(ibis_dtype_obj):
 def ibis_struct_dtype_to_spark_dtype(ibis_dtype_obj):
     fields = [
         pt.StructField(n, spark_dtype(t), t.nullable)
-        for n, t in zip(
-            ibis_dtype_obj.names,
-            ibis_dtype_obj.types
-        )
+        for n, t in zip(ibis_dtype_obj.names, ibis_dtype_obj.types)
     ]
     return pt.StructType(fields)

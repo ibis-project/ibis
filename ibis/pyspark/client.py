@@ -39,8 +39,8 @@ class PySparkClient(SparkClient):
             return compiled.toPandas().iloc[0, 0]
         else:
             raise com.IbisError(
-                "Cannot execute expression of type: {}".format(type(expr)))
+                "Cannot execute expression of type: {}".format(type(expr))
+            )
 
     def sql(self, query):
-        raise NotImplementedError(
-            "PySpark backend doesn't support sql query")
+        raise NotImplementedError("PySpark backend doesn't support sql query")

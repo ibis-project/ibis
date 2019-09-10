@@ -580,7 +580,7 @@ def test_negate(table, col):
 
 
 def test_negate_boolean_scalar():
-    result = -ibis.literal(False)
+    result = -(ibis.literal(False))
     assert isinstance(result, ir.BooleanScalar)
     assert isinstance(result.op(), ops.Negate)
 
@@ -793,7 +793,7 @@ def test_binop_string_type_error(table, operation):
         (operator.mul, 'a', 0, 'int8'),
         (operator.mul, 'a', 5, 'int16'),
         (operator.mul, 'a', 2 ** 24, 'int32'),
-        (operator.mul, 'a', -2 ** 24 + 1, 'int32'),
+        (operator.mul, 'a', -(2 ** 24) + 1, 'int32'),
         (operator.mul, 'a', 1.5, 'double'),
         (operator.mul, 'b', 0, 'int16'),
         (operator.mul, 'b', 5, 'int32'),

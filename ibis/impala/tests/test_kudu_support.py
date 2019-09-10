@@ -29,9 +29,7 @@ class KuduImpalaTestEnv(IbisTestEnv):
         super().__init__()
 
         # band-aid until Kudu support merged into Impala mainline
-        self.test_host = os.getenv(
-            'IBIS_TEST_KIMPALA_HOST', 'impala'
-        )
+        self.test_host = os.getenv('IBIS_TEST_KIMPALA_HOST', 'impala')
 
         # XXX
         self.impala_host = self.test_host

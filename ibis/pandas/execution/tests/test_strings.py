@@ -58,7 +58,7 @@ pytestmark = pytest.mark.pandas
             id='contains',
         ),
         param(
-            lambda s: ~s.contains('a'),
+            lambda s: ~(s.contains('a')),
             lambda s: ~s.str.contains('a', regex=False),
             id='not_contains',
         ),

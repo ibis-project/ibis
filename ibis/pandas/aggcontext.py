@@ -230,12 +230,14 @@ import ibis.util
 class AggregationContext(abc.ABC):
     __slots__ = 'parent', 'group_by', 'order_by', 'dtype', 'max_lookback'
 
-    def __init__(self,
-                 parent=None,
-                 group_by=None,
-                 order_by=None,
-                 dtype=None,
-                 max_lookback=None):
+    def __init__(
+        self,
+        parent=None,
+        group_by=None,
+        order_by=None,
+        dtype=None,
+        max_lookback=None,
+    ):
         self.parent = parent
         self.group_by = group_by
         self.order_by = order_by
@@ -274,9 +276,7 @@ class Summarize(AggregationContext):
                 'Object {} is not callable or a string'.format(function)
             )
 
-        return grouped_data.agg(
-            make_applied_function(function, args, kwargs)
-        )
+        return grouped_data.agg(make_applied_function(function, args, kwargs))
 
 
 class Transform(AggregationContext):
@@ -373,6 +373,7 @@ class Window(AggregationContext):
 
                 def sliced_agg(s):
                     return agg_method(s.iloc[-max_lookback:])
+
                 method = operator.methodcaller('apply', sliced_agg, raw=False)
 
         # get the DataFrame from which the operand originated (passed in when
@@ -441,9 +442,15 @@ class Moving(Window):
             )
             else 'both'
         )
-        super().__init__('rolling', preceding, *args,
-                         max_lookback=max_lookback, closed=closed,
-                         min_periods=1, **kwargs)
+        super().__init__(
+            'rolling',
+            preceding,
+            *args,
+            max_lookback=max_lookback,
+            closed=closed,
+            min_periods=1,
+            **kwargs,
+        )
 
     def short_circuit_method(self, grouped_data, function):
         raise AttributeError('No short circuit method for rolling operations')

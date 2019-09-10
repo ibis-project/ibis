@@ -232,7 +232,7 @@ def udf_signature(input_type, pin, klass):
         return ()
 
     if nargs == 1:
-        r, = input_type
+        (r,) = input_type
         result = (klass,) + rule_to_python_type(r) + nullable(r)
         return (result,)
 

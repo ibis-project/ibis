@@ -874,15 +874,13 @@ class MultiLineStringValue(GeoSpatialValue):
 
 
 class MultiLineStringScalar(
-    GeoSpatialScalar,
-    MultiLineStringValue
+    GeoSpatialScalar, MultiLineStringValue
 ):  # noqa: E302
     pass  # noqa: E701
 
 
 class MultiLineStringColumn(
-    GeoSpatialColumn,
-    MultiLineStringValue
+    GeoSpatialColumn, MultiLineStringValue
 ):  # noqa: E302
     pass  # noqa: E701
 

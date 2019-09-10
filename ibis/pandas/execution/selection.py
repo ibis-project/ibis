@@ -90,8 +90,7 @@ def compute_projection_column_expr(expr, parent, data, scope=None, **kwargs):
 
         if not isinstance(parent_table_op, ops.Join):
             raise KeyError(name)
-
-        root_table, = op.root_tables()
+        (root_table,) = op.root_tables()
         left_root, right_root = ops.distinct_roots(
             parent_table_op.left, parent_table_op.right
         )

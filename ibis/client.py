@@ -281,12 +281,12 @@ def validate_backends(backends):
 
 
 def execute(expr, limit='default', params=None, **kwargs):
-    backend, = validate_backends(list(find_backends(expr)))
+    (backend,) = validate_backends(list(find_backends(expr)))
     return backend.execute(expr, limit=limit, params=params, **kwargs)
 
 
 def compile(expr, limit=None, params=None, **kwargs):
-    backend, = validate_backends(list(find_backends(expr)))
+    (backend,) = validate_backends(list(find_backends(expr)))
     return backend.compile(expr, limit=limit, params=params, **kwargs)
 
 

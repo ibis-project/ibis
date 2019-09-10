@@ -3,6 +3,7 @@ from contextlib import suppress
 import ibis.config_init  # noqa: F401
 import ibis.expr.api as api  # noqa: F401
 import ibis.expr.types as ir  # noqa: F401
+
 # pandas backend is mandatory
 import ibis.pandas.api as pandas  # noqa: F401
 import ibis.util as util  # noqa: F401

@@ -1026,8 +1026,10 @@ class WindowOp(ValueOp):
             window = window.bind(table)
 
         if window.max_lookback is not None:
-            error_msg = ("'max lookback' windows must be ordered "
-                         "by a timestamp column")
+            error_msg = (
+                "'max lookback' windows must be ordered "
+                "by a timestamp column"
+            )
             if len(window._order_by) != 1:
                 raise com.IbisInputError(error_msg)
             order_var = window._order_by[0].op().args[0]
@@ -3196,6 +3198,7 @@ class GeoSRID(GeoSpatialUnOp):
 
 class GeoSetSRID(GeoSpatialUnOp):
     """Set the spatial reference identifier for the ST_Geometry."""
+
     srid = Arg(rlz.integer)
     output_type = rlz.shape_like('args', dt.geometry)
 
@@ -3221,6 +3224,7 @@ class GeoDFullyWithin(GeoSpatialBinOp):
     """Returns True if the geometries are fully within the specified distance
     of one another.
     """
+
     distance = Arg(rlz.floating)
 
     output_type = rlz.shape_like('args', dt.boolean)
@@ -3230,6 +3234,7 @@ class GeoDWithin(GeoSpatialBinOp):
     """Returns True if the geometries are within the specified distance
     of one another.
     """
+
     distance = Arg(rlz.floating)
 
     output_type = rlz.shape_like('args', dt.boolean)

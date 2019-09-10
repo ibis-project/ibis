@@ -67,8 +67,8 @@ class SparkUDF:
             (self.base_class,),
             {
                 'signature': sig.TypeSignature.from_dtypes(self.input_type),
-                'return_type': self.output_type
-            }
+                'return_type': self.output_type,
+            },
         )
 
         # Add udf_func as a property. If added to the class namespace dict, it
@@ -80,8 +80,7 @@ class SparkUDF:
         @compiles(UDFNode)
         def compiles_udf_node(t, expr):
             return '{}({})'.format(
-                UDFNode.__name__,
-                ', '.join(map(t.translate, expr.op().args)),
+                UDFNode.__name__, ', '.join(map(t.translate, expr.op().args))
             )
 
         return UDFNode
