@@ -104,6 +104,32 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
 
         assert_equal(schema, expected)
 
+    def test_sqla_postgres_schema_conversion(self):
+        typespec = [
+            # name, type, nullable
+            ('json', sa.dialects.postgresql.JSON, True, dt.any),
+            ('jsonb', sa.dialects.postgresql.JSONB, True, dt.any),
+            ('uuid', sa.dialects.postgresql.UUID, True, dt.any),
+        ]
+
+        sqla_types = []
+        ibis_types = []
+        for name, t, nullable, ibis_type in typespec:
+            sqla_type = sa.Column(name, t, nullable=nullable)
+            sqla_types.append(sqla_type)
+            ibis_types.append((name, ibis_type(nullable=nullable)))
+
+        # Create a table with placeholder stubs for JSON, JSONB, and UUID.
+        engine = sa.create_engine('postgresql://')
+        table = sa.Table('tname', sa.MetaData(bind=engine), *sqla_types)
+
+        # Check that we can correctly create a schema with dt.any for the
+        # missing types.
+        schema = alch.schema_from_table(table)
+        expected = ibis.schema(ibis_types)
+
+        assert_equal(schema, expected)
+
     @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_ibis_to_sqla_conversion(self):
         assert False
