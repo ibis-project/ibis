@@ -20,6 +20,7 @@ Release Notes
 * :bug:`2057` Fix datamgr.py fail if IBIS_TEST_OMNISCIDB_DATABASE=omnisci
 * :bug:`2061` CI: Fix CI builds related to new pandas 1.0 compatibility
 * :feature:`1976` Add DenseRank, RowNumber, MinRank, Count, PercentRank/CumeDist window operations to OmniSciDB
+* :feature:`1964` Remove execution_type parameter and add gpu_device: int and ipc: bool for OmniSciDB backend; Fix categorical data type issue when using cudf.DataFrame output
 * :bug:`2055` Fix "cudf" import on OmniSciDB backend
 * :feature:`2052` added possibility to run tests for separate backend via `make test BACKENDS=[YOUR BACKEND]`
 * :bug:`2056` Fix data map for int8 on OmniSciDB backend
