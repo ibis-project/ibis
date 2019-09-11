@@ -1,9 +1,11 @@
 import datetime
 from collections import OrderedDict
 
+import pandas as pd
 import pytest
 import pytz
 from multipledispatch.conflict import ambiguities
+from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -368,6 +370,12 @@ def test_time_valid():
         (datetime.date.today(), dt.date),
         (datetime.datetime.now(), dt.timestamp),
         (datetime.timedelta(days=3), dt.Interval(unit='D')),
+        (pd.Timedelta('5 hours'), dt.Interval(unit='h')),
+        (pd.Timedelta('7 minutes'), dt.Interval(unit='m')),
+        (datetime.timedelta(seconds=9), dt.Interval(unit='s')),
+        (pd.Timedelta('11 milliseconds'), dt.Interval(unit='ms')),
+        (datetime.timedelta(microseconds=15), dt.Interval(unit='us')),
+        (pd.Timedelta('17 nanoseconds'), dt.Interval(unit='ns')),
         # numeric types
         (5, dt.int8),
         (5, dt.int8),
@@ -415,6 +423,51 @@ def test_time_valid():
                         dt.Struct.from_tuples([('foo', dt.Array(dt.double))]),
                     ),
                 ]
+            ),
+        ),
+        param(
+            datetime.timedelta(hours=5),
+            dt.Interval(unit='h'),
+            id='dateime hours',
+            marks=pytest.mark.xfail(
+                reason='Hour conversion from datetime.timedelta to ibis '
+                'interval not supported'
+            ),
+        ),
+        param(
+            datetime.timedelta(minutes=7),
+            dt.Interval(unit='m'),
+            id='dateime minutes',
+            marks=pytest.mark.xfail(
+                reason='Minute conversion from datetime.timedelta to ibis '
+                'interval not supported'
+            ),
+        ),
+        param(
+            datetime.timedelta(milliseconds=11),
+            dt.Interval(unit='ms'),
+            id='dateime milliseconds',
+            marks=pytest.mark.xfail(
+                reason='Millisecond conversion from datetime.timedelta to '
+                'ibis interval not supported'
+            ),
+        ),
+        param(
+            pd.Timedelta('3', unit='W'),
+            dt.Interval(unit='W'),
+            id='weeks',
+            marks=pytest.mark.xfail(
+                reason='Week conversion from Timedelta to ibis interval '
+                'not supported'
+            ),
+        ),
+        param(
+            pd.Timedelta('3', unit='Y'),
+            dt.Interval(unit='Y'),
+            id='years',
+            marks=pytest.mark.xfail(
+                reason='Year conversion from Timedelta to ibis interval '
+                'not supported'
             ),
         ),
     ],

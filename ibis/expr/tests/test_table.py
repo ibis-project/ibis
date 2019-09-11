@@ -4,7 +4,6 @@ import re
 
 import pandas as pd
 import pytest
-from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
@@ -704,58 +703,16 @@ def test_asof_join_with_by():
         [ibis.interval(days=2), pd.Timedelta('2 days')],
         [ibis.interval(days=2), datetime.timedelta(days=2)],
         [ibis.interval(hours=5), pd.Timedelta('5 hours')],
+        [ibis.interval(hours=5), datetime.timedelta(hours=5)],
         [ibis.interval(minutes=7), pd.Timedelta('7 minutes')],
-        [ibis.interval(seconds=9), pd.Timedelta('7 seconds')],
+        [ibis.interval(minutes=7), datetime.timedelta(minutes=7)],
+        [ibis.interval(seconds=9), pd.Timedelta('9 seconds')],
         [ibis.interval(seconds=9), datetime.timedelta(seconds=9)],
         [ibis.interval(milliseconds=11), pd.Timedelta('11 milliseconds')],
+        [ibis.interval(milliseconds=11), datetime.timedelta(milliseconds=11)],
         [ibis.interval(microseconds=15), pd.Timedelta('15 microseconds')],
         [ibis.interval(microseconds=15), datetime.timedelta(microseconds=15)],
         [ibis.interval(nanoseconds=17), pd.Timedelta('17 nanoseconds')],
-        param(
-            ibis.interval(hours=5),
-            datetime.timedelta(hours=5),
-            id='dateime hours',
-            marks=pytest.mark.xfail(
-                reason='Hour conversion from datetime.timedelta to ibis '
-                'interval not supported'
-            ),
-        ),
-        param(
-            ibis.interval(minutes=7),
-            datetime.timedelta(minutes=7),
-            id='dateime minutes',
-            marks=pytest.mark.xfail(
-                reason='Minute conversion from datetime.timedelta to ibis '
-                'interval not supported'
-            ),
-        ),
-        param(
-            ibis.interval(milliseconds=11),
-            datetime.timedelta(milliseconds=11),
-            id='dateime milliseconds',
-            marks=pytest.mark.xfail(
-                reason='Millisecond conversion from datetime.timedelta to '
-                'ibis interval not supported'
-            ),
-        ),
-        param(
-            ibis.interval(weeks=3),
-            pd.Timedelta('3', unit='W'),
-            id='weeks',
-            marks=pytest.mark.xfail(
-                reason='Week conversion from Timedelta to ibis interval '
-                'not supported'
-            ),
-        ),
-        param(
-            ibis.interval(years=3),
-            pd.Timedelta('3', unit='Y'),
-            id='years',
-            marks=pytest.mark.xfail(
-                reason='Year conversion from Timedelta to ibis interval '
-                'not supported'
-            ),
-        ),
     ],
 )
 def test_asof_join_with_tolerance(ibis_interval, timedelta_interval):
@@ -772,13 +729,8 @@ def test_asof_join_with_tolerance(ibis_interval, timedelta_interval):
 
     joined = api.asof_join(left, right, 'time', tolerance=timedelta_interval)
     tolerance = joined.op().tolerance
-
     assert isinstance(tolerance, ir.IntervalScalar)
     assert isinstance(tolerance.op(), ops.Literal)
-
-    ibis_interval_unit = ibis_interval.op().dtype.unit
-    timedelta_unit = tolerance.op().dtype.unit
-    assert timedelta_unit == ibis_interval_unit
 
 
 def test_equijoin_schema_merge():
