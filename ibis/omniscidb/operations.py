@@ -798,12 +798,14 @@ def _shift_like(name, default_offset=None):
 
     return formatter
 
+
 def _null_if_zero(translator, expr):
     op = expr.op()
     arg = op.args[0]
     arg_ = translator.translate(arg)
     return 'nullif({0}, 0)'.format(arg_)
 # operation map
+
 
 _binary_infix_ops = {
     # math
