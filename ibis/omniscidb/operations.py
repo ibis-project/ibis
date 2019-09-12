@@ -798,7 +798,11 @@ def _shift_like(name, default_offset=None):
 
     return formatter
 
-
+def _null_if_zero(translator, expr):
+    op = expr.op()
+    arg = op.args[0]
+    arg_ = translator.translate(arg)
+    return 'nullif({0}, 0)'.format(arg_)
 # operation map
 
 _binary_infix_ops = {
@@ -922,6 +926,7 @@ _general_ops = {
     ops.Where: _where,
     ops.TableColumn: _table_column,
     ops.CrossJoin: _cross_join,
+    ops.NullIfZero: _null_if_zero,
 }
 
 # WINDOW
@@ -957,8 +962,6 @@ _unsupported_ops = [
     ops.NTile,
     ops.NthValue,
     ops.GroupConcat,
-    ops.NullIf,
-    ops.NullIfZero,
     ops.IsInf,
     ops.IsNan,
     ops.IfNull,
@@ -988,9 +991,6 @@ _unsupported_ops = [
     # Numeric
     ops.Least,
     ops.Greatest,
-    ops.Log2,
-    ops.Log,
-    ops.Round,
     # date/time/timestamp
     ops.TimestampFromUNIX,
     ops.Date,
