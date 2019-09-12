@@ -139,9 +139,6 @@ def test_selection(client):
     )
 
 
-@pytest.mark.xfail(
-    reason='Join is not fully implemented', raises=AssertionError
-)
 def test_join(client):
     table = client.table('table1')
     result = table.join(table, ['id', 'str_col']).compile()

@@ -10,7 +10,7 @@ def left(batting):
 
 @pytest.fixture(scope='module')
 def right(awards_players):
-    return awards_players[awards_players.lgID == 'NL']
+    return awards_players[awards_players.lgID == 'NL'].drop(['yearID', 'lgID'])
 
 
 @pytest.fixture(scope='module')
@@ -23,7 +23,6 @@ def right_df(right):
     return right.execute()
 
 
-@pytest.mark.skip
 @pytest.mark.parametrize(
     'how',
     [
@@ -45,18 +44,18 @@ def right_df(right):
         ),
     ],
 )
+@pytest.mark.xfail_unsupported
 def test_join_project_left_table(
     backend, con, left, right, left_df, right_df, how
 ):
     predicate = ['playerID']
+    result_order = ['playerID', 'yearID', 'lgID', 'stint']
     expr = left.join(right, predicate, how=how)[left]
-
-    with backend.skip_unsupported():
-        result = expr.execute()
+    result = expr.execute().sort_values(result_order)
 
     joined = pd.merge(
         left_df, right_df, how=how, on=predicate, suffixes=('', '_y')
-    )
+    ).sort_values(result_order)
     expected = joined[list(left.columns)]
 
     backend.assert_frame_equal(
