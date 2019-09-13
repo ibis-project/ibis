@@ -161,7 +161,7 @@ def execute_cast_series_date(op, data, type, **kwargs):
 
     if isinstance(from_type, dt.Integer):
         return pd.Series(
-            pd.to_datetime(data.values, box=False, unit='D'),
+            pd.to_datetime(data.values, unit='D').values,
             index=data.index,
             name=data.name,
         )
@@ -618,9 +618,9 @@ def execute_any_all_series(op, data, aggcontext=None, **kwargs):
 @execute_node.register(ops.NotAny, (pd.Series, SeriesGroupBy))
 def execute_notany_series(op, data, aggcontext=None, **kwargs):
     if isinstance(aggcontext, (agg_ctx.Summarize, agg_ctx.Transform)):
-        result = ~aggcontext.agg(data, 'any')
+        result = ~(aggcontext.agg(data, 'any'))
     else:
-        result = aggcontext.agg(data, lambda data: ~data.any())
+        result = aggcontext.agg(data, lambda data: ~(data.any()))
     try:
         return result.astype(bool)
     except TypeError:
@@ -630,9 +630,9 @@ def execute_notany_series(op, data, aggcontext=None, **kwargs):
 @execute_node.register(ops.NotAll, (pd.Series, SeriesGroupBy))
 def execute_notall_series(op, data, aggcontext=None, **kwargs):
     if isinstance(aggcontext, (agg_ctx.Summarize, agg_ctx.Transform)):
-        result = ~aggcontext.agg(data, 'all')
+        result = ~(aggcontext.agg(data, 'all'))
     else:
-        result = aggcontext.agg(data, lambda data: ~data.all())
+        result = aggcontext.agg(data, lambda data: ~(data.all()))
     try:
         return result.astype(bool)
     except TypeError:
@@ -816,7 +816,7 @@ def execute_node_contains_series_sequence(op, data, elements, **kwargs):
     ops.NotContains, pd.Series, (collections.abc.Sequence, collections.abc.Set)
 )
 def execute_node_not_contains_series_sequence(op, data, elements, **kwargs):
-    return ~data.isin(elements)
+    return ~(data.isin(elements))
 
 
 # Series, Series, Series
@@ -959,8 +959,7 @@ def compute_row_reduction(func, value, **kwargs):
     final_sizes = {len(x) for x in value if isinstance(x, Sized)}
     if not final_sizes:
         return func(value)
-
-    final_size, = final_sizes
+    (final_size,) = final_sizes
     raw = func(list(map(promote_to_sequence(final_size), value)), **kwargs)
     return pd.Series(raw).squeeze()
 
@@ -1012,7 +1011,7 @@ def wrap_case_result(raw, expr):
             raw_1d, dtype=constants.IBIS_TYPE_TO_PANDAS_TYPE[expr.type()]
         )
     if result.size == 1 and isinstance(expr, ir.ScalarExpr):
-        return result.item()
+        return result.iloc[0].item()
     return result
 
 

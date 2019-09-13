@@ -209,10 +209,7 @@ def table(con, temp_database):
     table_name = 'table_{}'.format(util.guid())
     schema = ibis.schema([('foo', 'string'), ('bar', 'int64')])
     con.create_table(
-        table_name,
-        database=temp_database,
-        schema=schema,
-        format='parquet',
+        table_name, database=temp_database, schema=schema, format='parquet'
     )
     try:
         yield con.table(table_name, database=temp_database)
@@ -225,8 +222,7 @@ def test_change_properties(con, table):
 
     table.alter(tbl_properties=props)
     tbl_props_rows = con.raw_sql(
-        "show tblproperties {}".format(table.name),
-        results=True
+        "show tblproperties {}".format(table.name), results=True
     ).fetchall()
     for row in tbl_props_rows:
         key = row.key
@@ -277,10 +273,7 @@ def test_schema_from_csv(con, awards_players_filename):
 
 
 def test_create_table_or_temp_view_from_csv(con, awards_players_filename):
-    con._create_table_or_temp_view_from_csv(
-        'awards',
-        awards_players_filename
-    )
+    con._create_table_or_temp_view_from_csv('awards', awards_players_filename)
     table = con.table('awards')
     assert table.schema().equals(awards_players_schema)
     assert table.count().execute() == 6078

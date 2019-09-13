@@ -1,9 +1,9 @@
 import pandas as pd
 import pandas.util.testing as tm
 import pytest
+from pytest import param
 
 import ibis
-import ibis.common.exceptions as comm
 
 pytest.importorskip('pyspark')
 pytestmark = pytest.mark.pyspark
@@ -38,19 +38,15 @@ def test_projection(client):
     result1 = table.mutate(v=table['id']).compile().toPandas()
 
     expected1 = pd.DataFrame(
-        {
-            'id': range(0, 10),
-            'str_col': 'value',
-            'v': range(0, 10),
-        }
+        {'id': range(0, 10), 'str_col': 'value', 'v': range(0, 10)}
     )
 
     result2 = (
-        table
-        .mutate(v=table['id'])
+        table.mutate(v=table['id'])
         .mutate(v2=table['id'])
         .mutate(id=table['id'] * 2)
-        .compile().toPandas()
+        .compile()
+        .toPandas()
     )
 
     expected2 = pd.DataFrame(
@@ -92,48 +88,29 @@ def test_groupby(client):
     tm.assert_frame_equal(result.toPandas(), expected.toPandas())
 
 
-@pytest.mark.xfail(
-    reason='This is not implemented yet',
-    raises=comm.OperationNotDefinedError
-)
 def test_window(client):
     import pyspark.sql.functions as F
     from pyspark.sql.window import Window
 
     table = client.table('table1')
     w = ibis.window()
-    result = (
-        table
-        .mutate(
-            grouped_demeaned=table['id'] - table['id'].mean().over(w))
-        .compile()
-    )
-    result2 = (
-        table
-        .groupby('id')
-        .mutate(
-            grouped_demeaned=table['id'] - table['id'].mean())
-        .compile()
-    )
+    result = table.mutate(
+        grouped_demeaned=table['id'] - table['id'].mean().over(w)
+    ).compile()
 
     spark_window = Window.partitionBy()
     spark_table = table.compile()
     expected = spark_table.withColumn(
         'grouped_demeaned',
-        spark_table['id'] - F.mean(spark_table['id']).over(spark_window)
+        spark_table['id'] - F.mean(spark_table['id']).over(spark_window),
     )
 
     tm.assert_frame_equal(result.toPandas(), expected.toPandas())
-    tm.assert_frame_equal(result2.toPandas(), expected.toPandas())
 
 
 def test_greatest(client):
     table = client.table('table1')
-    result = (
-        table
-        .mutate(greatest=ibis.greatest(table.id))
-        .compile()
-    )
+    result = table.mutate(greatest=ibis.greatest(table.id)).compile()
     df = table.compile()
     expected = table.compile().withColumn('greatest', df.id)
 
@@ -152,25 +129,53 @@ def test_selection(client):
     df = table.compile()
     tm.assert_frame_equal(result1.toPandas(), df[['id']].toPandas())
     tm.assert_frame_equal(result2.toPandas(), df[['id', 'id2']].toPandas())
-    tm.assert_frame_equal(result3.toPandas(),
-                          df[[df.columns]].withColumn('plus1', df.id + 1)
-                          .toPandas())
-    tm.assert_frame_equal(result4.toPandas(),
-                          df.withColumn('plus1', df.id + 1)
-                          [['plus1', *df.columns]].toPandas())
+    tm.assert_frame_equal(
+        result3.toPandas(),
+        df[[df.columns]].withColumn('plus1', df.id + 1).toPandas(),
+    )
+    tm.assert_frame_equal(
+        result4.toPandas(),
+        df.withColumn('plus1', df.id + 1)[['plus1', *df.columns]].toPandas(),
+    )
 
 
 @pytest.mark.xfail(
-    reason='Join is not fully implemented',
-    raises=AssertionError
+    reason='Join is not fully implemented', raises=AssertionError
 )
 def test_join(client):
     table = client.table('table1')
     result = table.join(table, ['id', 'str_col']).compile()
     spark_table = table.compile()
-    expected = (
-        spark_table
-        .join(spark_table, ['id', 'str_col'])
-    )
+    expected = spark_table.join(spark_table, ['id', 'str_col'])
+
+    tm.assert_frame_equal(result.toPandas(), expected.toPandas())
+
+
+@pytest.mark.parametrize(
+    ('filter_fn', 'expected_fn'),
+    [
+        param(lambda t: t.filter(t.id < 5), lambda df: df[df.id < 5]),
+        param(lambda t: t.filter(t.id != 5), lambda df: df[df.id != 5]),
+        param(
+            lambda t: t.filter([t.id < 5, t.str_col == 'na']),
+            lambda df: df[df.id < 5][df.str_col == 'na'],
+        ),
+        param(
+            lambda t: t.filter((t.id > 3) & (t.id < 11)),
+            lambda df: df[(df.id > 3) & (df.id < 11)],
+        ),
+        param(
+            lambda t: t.filter((t.id == 3) | (t.id == 5)),
+            lambda df: df[(df.id == 3) | (df.id == 5)],
+        ),
+    ],
+)
+def test_filter(client, filter_fn, expected_fn):
+    table = client.table('table1')
+
+    result = filter_fn(table).compile()
+
+    df = table.compile()
+    expected = expected_fn(df)
 
     tm.assert_frame_equal(result.toPandas(), expected.toPandas())

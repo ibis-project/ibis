@@ -394,7 +394,7 @@ def execute_string_group_by_find_in_set(op, needle, haystack, **kwargs):
         return ibis.util.safe_index(haystack, needle)
 
     try:
-        collection_type, = frozenset(map(type, series_in_haystack))
+        (collection_type,) = frozenset(map(type, series_in_haystack))
     except ValueError:
         raise ValueError('Mixing Series and SeriesGroupBy is not allowed')
 

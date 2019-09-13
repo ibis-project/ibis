@@ -107,7 +107,7 @@ FROM ibis_testing.`alltypes`"""
         (
             ibis.trailing_window(10),
             'rows between 10 preceding and current row',
-        )
+        ),
     ],
 )
 def test_window_frame_specs(con, window, frame):

@@ -705,7 +705,7 @@ class ExprTestCases:
         alltypes = self.con.table('functional_alltypes')
         t = alltypes.limit(100)
         t2 = t.view()
-        return t[-(t.string_col == t2.string_col).any()]
+        return t[-((t.string_col == t2.string_col).any())]
 
     def _case_limit_cte_extract(self):
         alltypes = self.con.table('functional_alltypes')

@@ -95,9 +95,7 @@ class SparkContext(comp.QueryContext):
 
 _sql_type_names = impala_compiler._sql_type_names.copy()
 
-_sql_type_names.update({
-    'date': 'date',
-})
+_sql_type_names.update({'date': 'date'})
 
 
 def _cast(translator, expr):
@@ -124,20 +122,19 @@ def _type_to_sql_string(tval):
         raise com.UnsupportedBackendType(name)
 
 
-_spark_date_unit_names = {
-    'Y': 'YEAR',
-    'Q': 'QUARTER',
-}
+_spark_date_unit_names = {'Y': 'YEAR', 'Q': 'QUARTER'}
 
 _spark_timestamp_unit_names = _spark_date_unit_names.copy()
-_spark_timestamp_unit_names.update({
-    'M': 'MONTH',
-    'W': 'WEEK',
-    'D': 'DAY',
-    'h': 'HOUR',
-    'm': 'MINUTE',
-    's': 'SECOND'
-})
+_spark_timestamp_unit_names.update(
+    {
+        'M': 'MONTH',
+        'W': 'WEEK',
+        'D': 'DAY',
+        'h': 'HOUR',
+        'm': 'MINUTE',
+        's': 'SECOND',
+    }
+)
 
 
 def _timestamp_truncate(translator, expr):
@@ -192,20 +189,16 @@ def _string_concat(translator, expr):
 def _group_concat(translator, expr):
     arg, sep = expr.op().arg, expr.op().sep
     return 'concat_ws({}, collect_list({}))'.format(
-        translator.translate(sep),
-        translator.translate(arg)
+        translator.translate(sep), translator.translate(arg)
     )
 
 
 def _array_literal_format(translator, expr):
     translated_values = [
-        translator.translate(ibis.literal(x))
-        for x in expr.op().value
+        translator.translate(ibis.literal(x)) for x in expr.op().value
     ]
 
-    return 'array({})'.format(
-        ', '.join(translated_values)
-    )
+    return 'array({})'.format(', '.join(translated_values))
 
 
 def _struct_like_format(func):
@@ -216,9 +209,9 @@ def _struct_like_format(func):
         ]
 
         return '{}({})'.format(
-            func,
-            ', '.join(itertools.chain(*translated_values))
+            func, ', '.join(itertools.chain(*translated_values))
         )
+
     return formatter
 
 
@@ -249,12 +242,14 @@ def _number_literal_format(translator, expr):
 
 _literal_formatters = impala_compiler._literal_formatters.copy()
 
-_literal_formatters.update({
-    'array': _array_literal_format,
-    'struct': _struct_like_format('named_struct'),
-    'map': _struct_like_format('map'),
-    'number': _number_literal_format
-})
+_literal_formatters.update(
+    {
+        'array': _array_literal_format,
+        'struct': _struct_like_format('named_struct'),
+        'map': _struct_like_format('map'),
+        'number': _number_literal_format,
+    }
+)
 
 
 def _literal(translator, expr):

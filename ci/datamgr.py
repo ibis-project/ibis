@@ -231,7 +231,7 @@ def parquet(tables, data_directory, ignore_missing_dependency, **params):
 @click.option(
     '--plpython/--no-plpython',
     help='Create PL/Python extension in database',
-    default=True
+    default=True,
 )
 def postgres(schema, tables, data_directory, psql_path, plpython, **params):
     psql = local[psql_path]

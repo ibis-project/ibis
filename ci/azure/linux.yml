@@ -104,10 +104,11 @@ jobs:
                       --cov-report=xml:/tmp/test-reports/pytest-cov/coverage.xml
       displayName: 'Run tests'
 
-    - bash: |
-        bash <(curl -s https://codecov.io/bash) \
-          -f /tmp/ibis/test-reports/pytest-cov/coverage.xml
-      displayName: 'Upload coverage'
+    # See #1954
+    # - bash: |
+    #     bash <(curl -s https://codecov.io/bash) \
+    #       -f /tmp/ibis/test-reports/pytest-cov/coverage.xml
+    #   displayName: 'Upload coverage'
 
     - task: PublishTestResults@2
       displayName: 'Publish test results from pytest JUnitXML'

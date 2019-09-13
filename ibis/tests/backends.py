@@ -30,9 +30,9 @@ class RoundAwayFromZero(RoundingConvention):
     @staticmethod
     def round(series: pd.Series, decimals: int = 0) -> pd.Series:
         if not decimals:
-            return (-np.sign(series) * np.ceil(-series.abs() - 0.5)).astype(
-                np.int64
-            )
+            return (
+                -(np.sign(series)) * np.ceil(-(series.abs()) - 0.5)
+            ).astype(np.int64)
         return series.round(decimals=decimals)
 
 
@@ -528,7 +528,6 @@ class Impala(UnorderedComparator, Backend, RoundAwayFromZero):
 
 
 class Spark(Backend, RoundHalfToEven):
-
     @staticmethod
     def skip_if_missing_dependencies() -> None:
         pytest.importorskip('pyspark')
@@ -536,6 +535,7 @@ class Spark(Backend, RoundHalfToEven):
     @staticmethod
     def connect(data_directory):
         from ibis.tests.all.conftest import get_spark_testing_client
+
         return get_spark_testing_client(data_directory)
 
     @property
@@ -559,6 +559,7 @@ class PySpark(Backend, RoundAwayFromZero):
     @staticmethod
     def connect(data_directory):
         from ibis.tests.all.conftest import get_pyspark_testing_client
+
         return get_pyspark_testing_client(data_directory)
 
     @property

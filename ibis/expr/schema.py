@@ -33,7 +33,12 @@ class Schema:
         self._name_locs = dict((v, i) for i, v in enumerate(self.names))
 
         if len(self._name_locs) < len(self.names):
-            raise com.IntegrityError('Duplicate column names')
+            duplicate_names = list(self.names)
+            for v in self._name_locs.keys():
+                duplicate_names.remove(v)
+            raise com.IntegrityError(
+                'Duplicate column name(s): {}'.format(duplicate_names)
+            )
 
     def __repr__(self):
         space = 2 + max(map(len, self.names), default=0)

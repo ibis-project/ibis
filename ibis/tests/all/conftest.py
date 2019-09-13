@@ -25,7 +25,7 @@ def pytest_runtest_call(item):
     """Dynamically add various custom markers."""
     nodeid = item.nodeid
     for marker in list(item.iter_markers(name="only_on_backends")):
-        backend_types, = map(tuple, marker.args)
+        (backend_types,) = map(tuple, marker.args)
         backend = item.funcargs["backend"]
         assert isinstance(backend, Backend), "backend has type {!r}".format(
             type(backend).__name__
@@ -34,7 +34,7 @@ def pytest_runtest_call(item):
             pytest.skip(nodeid)
 
     for marker in list(item.iter_markers(name="skip_backends")):
-        backend_types, = map(tuple, marker.args)
+        (backend_types,) = map(tuple, marker.args)
         backend = item.funcargs["backend"]
         assert isinstance(backend, Backend), "backend has type {!r}".format(
             type(backend).__name__
@@ -44,19 +44,19 @@ def pytest_runtest_call(item):
 
     for marker in list(item.iter_markers(name="skip_missing_feature")):
         backend = item.funcargs["backend"]
-        features, = marker.args
+        (features,) = marker.args
         missing_features = [
             feature for feature in features if not getattr(backend, feature)
         ]
         if missing_features:
             pytest.mark.skip(
-                ('Backend {} is missing features {} needed to run {}').format(
+                'Backend {} is missing features {} needed to run {}'.format(
                     type(backend).__name__, ', '.join(missing_features), nodeid
                 )
             )
 
     for marker in list(item.iter_markers(name="xfail_backends")):
-        backend_types, = map(tuple, marker.args)
+        (backend_types,) = map(tuple, marker.args)
         backend = item.funcargs["backend"]
         assert isinstance(backend, Backend), "backend has type {!r}".format(
             type(backend).__name__
@@ -72,7 +72,7 @@ def pytest_runtest_call(item):
         )
 
     for marker in list(item.iter_markers(name="xpass_backends")):
-        backend_types, = map(tuple, marker.args)
+        (backend_types,) = map(tuple, marker.args)
         backend = item.funcargs["backend"]
         assert isinstance(backend, Backend), "backend has type {!r}".format(
             type(backend).__name__
@@ -106,7 +106,7 @@ def pytest_pyfunc_call(pyfuncitem):
         ), "More than one xfail_unsupported marker found on test {}".format(
             pyfuncitem
         )
-        marker, = markers
+        (marker,) = markers
         backend = pyfuncitem.funcargs["backend"]
         assert isinstance(backend, Backend), "backend has type {!r}".format(
             type(backend).__name__
@@ -204,8 +204,7 @@ def get_spark_testing_client(data_directory):
     global _spark_testing_client
     if _spark_testing_client is None:
         _spark_testing_client = get_common_spark_testing_client(
-            data_directory,
-            lambda session: ibis.spark.connect(session)
+            data_directory, lambda session: ibis.spark.connect(session)
         )
     return _spark_testing_client
 
@@ -214,8 +213,7 @@ def get_pyspark_testing_client(data_directory):
     global _pyspark_testing_client
     if _pyspark_testing_client is None:
         _pyspark_testing_client = get_common_spark_testing_client(
-            data_directory,
-            lambda session: ibis.pyspark.connect(session)
+            data_directory, lambda session: ibis.pyspark.connect(session)
         )
     return _pyspark_testing_client
 

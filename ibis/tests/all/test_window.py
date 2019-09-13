@@ -3,7 +3,16 @@ from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
-from ibis.tests.backends import Csv, OmniSciDB, Pandas, Parquet
+from ibis.tests.backends import (
+    Csv,
+    Impala,
+    OmniSciDB,
+    Pandas,
+    Parquet,
+    PostgreSQL,
+    PySpark,
+    Spark,
+)
 
 
 @pytest.mark.parametrize(
@@ -40,7 +49,7 @@ from ibis.tests.backends import Csv, OmniSciDB, Pandas, Parquet
             lambda t: t.id.rank(pct=True),
             id='percent_rank',
             marks=pytest.mark.xpass_backends(
-                [Csv, Pandas, Parquet], raises=AssertionError
+                [Csv, Pandas, Parquet, PySpark], raises=AssertionError
             ),
         ),
         param(
@@ -101,6 +110,19 @@ from ibis.tests.backends import Csv, OmniSciDB, Pandas, Parquet
             id='cumany',
         ),
         param(
+            # notany() over window not supported in Impala, PostgreSQL,
+            # and Spark backends
+            lambda t, win: (t.double_col == 0).notany().over(win),
+            lambda t: (
+                t.double_col.expanding()
+                .agg(lambda s: ~s.eq(0).any())
+                .reset_index(drop=True, level=0)
+                .astype(bool)
+            ),
+            id='cumnotany',
+            marks=pytest.mark.xfail_backends((Impala, PostgreSQL, Spark)),
+        ),
+        param(
             lambda t, win: (t.double_col == 0).all().over(win),
             lambda t: (
                 t.double_col.expanding()
@@ -109,6 +131,19 @@ from ibis.tests.backends import Csv, OmniSciDB, Pandas, Parquet
                 .astype(bool)
             ),
             id='cumall',
+        ),
+        param(
+            # notall() over window not supported in Impala, PostgreSQL,
+            # and Spark backends
+            lambda t, win: (t.double_col == 0).notall().over(win),
+            lambda t: (
+                t.double_col.expanding()
+                .agg(lambda s: ~s.eq(0).all())
+                .reset_index(drop=True, level=0)
+                .astype(bool)
+            ),
+            id='cumnotall',
+            marks=pytest.mark.xfail_backends((Impala, PostgreSQL, Spark)),
         ),
         param(
             lambda t, win: t.double_col.sum().over(win),

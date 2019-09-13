@@ -8,20 +8,9 @@ pytest.importorskip('pyspark')
 
 @pytest.fixture(scope='session')
 def expr():
-    schema = ibis.schema(
-        [
-            ('c1', 'int64'),
-            ('c2', 'string')
-        ]
-    )
-    t = ibis.table(
-        schema, name='tbl'
-    )
-    expr = t.projection(
-        ['c2', (t.c1 + 1).name('c3')]
-    ).mutate(
-        c4=t.c2.length()
-    )
+    schema = ibis.schema([('c1', 'int64'), ('c2', 'string')])
+    t = ibis.table(schema, name='tbl')
+    expr = t.projection(['c2', (t.c1 + 1).name('c3')]).mutate(c4=t.c2.length())
     return expr
 
 

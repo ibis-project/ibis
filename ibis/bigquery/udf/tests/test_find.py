@@ -14,7 +14,7 @@ def parse_expr(expr):
 
 
 def parse_stmt(stmt):
-    body, = ast.parse(stmt).body
+    (body,) = ast.parse(stmt).body
     return body
 
 

@@ -106,7 +106,7 @@ class TypeSignature(OrderedDict):
             inspect.Parameter(
                 name,
                 inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                default=_undefined
+                default=_undefined,
             )
             for (name, argument) in self.items()
         ]

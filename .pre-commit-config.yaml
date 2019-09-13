@@ -3,8 +3,8 @@ repos:
     rev: v1.9.2
     hooks:
       - id: seed-isort-config
-  - repo: https://github.com/pre-commit/mirrors-isort
-    rev: v4.3.17
+  - repo: https://github.com/timothycrosley/isort
+    rev: 18ad293fc9d1852776afe35015a932b68d26fb14
     hooks:
       - id: isort
   - repo: https://github.com/psf/black

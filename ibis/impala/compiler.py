@@ -336,8 +336,10 @@ def _format_window(translator, op, window):
     components = []
 
     if window.max_lookback is not None:
-        raise NotImplementedError('Rows with max lookback is not implemented '
-                                  'for Impala-based backends.')
+        raise NotImplementedError(
+            'Rows with max lookback is not implemented '
+            'for Impala-based backends.'
+        )
 
     if len(window._group_by) > 0:
         partition_args = [translator.translate(x) for x in window._group_by]
@@ -483,7 +485,7 @@ def _negate(translator, expr):
 
 
 def _not(translator, expr):
-    arg, = expr.op().args
+    (arg,) = expr.op().args
     formatted_arg = translator.translate(arg)
     if _needs_parens(arg):
         formatted_arg = _parenthesize(formatted_arg)
@@ -851,12 +853,12 @@ def _extract_field(sql_attr):
 
 
 def _day_of_week_index(t, expr):
-    arg, = expr.op().args
+    (arg,) = expr.op().args
     return 'pmod(dayofweek({}) - 2, 7)'.format(t.translate(arg))
 
 
 def _day_of_week_name(t, expr):
-    arg, = expr.op().args
+    (arg,) = expr.op().args
     return 'dayname({})'.format(t.translate(arg))
 
 
@@ -1128,7 +1130,7 @@ def _string_like(translator, expr):
 
 
 def _sign(translator, expr):
-    arg, = expr.op().args
+    (arg,) = expr.op().args
     translated_arg = translator.translate(arg)
     translated_type = _type_to_sql_string(expr.type())
     if expr.type() != dt.float:

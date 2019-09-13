@@ -115,10 +115,7 @@ class CreateView(CTAS):
         temporary=False,
     ):
         super().__init__(
-            table_name,
-            select,
-            database=database,
-            can_exist=can_exist,
+            table_name, select, database=database, can_exist=can_exist
         )
         self.temporary = temporary
 
@@ -130,8 +127,7 @@ class CreateView(CTAS):
     @property
     def _prefix(self):
         return 'CREATE {}{}VIEW'.format(
-            self._or_replace_clause(),
-            self._temporary_clause()
+            self._or_replace_clause(), self._temporary_clause()
         )
 
     def _or_replace_clause(self):
@@ -190,9 +186,7 @@ class DropFunction(impala_ddl.DropObject):
 
     _object_type = 'TEMPORARY FUNCTION'
 
-    def __init__(
-        self, name, must_exist=True
-    ):
+    def __init__(self, name, must_exist=True):
         super().__init__(must_exist=must_exist)
         self.name = name
         self.must_exist = must_exist
@@ -207,11 +201,7 @@ class TruncateTable(impala_ddl.TruncateTable):
 
 class InsertSelect(impala_ddl.InsertSelect):
     def __init__(
-        self,
-        table_name,
-        select_expr,
-        database=None,
-        overwrite=False,
+        self, table_name, select_expr, database=None, overwrite=False
     ):
         super().__init__(
             table_name,
@@ -230,17 +220,11 @@ class InsertSelect(impala_ddl.InsertSelect):
 
         select_query = self.select.compile()
         scoped_name = self._get_scoped_name(self.table_name, self.database)
-        return '{0} {1}\n{2}'.format(
-            cmd, scoped_name, select_query
-        )
+        return '{0} {1}\n{2}'.format(cmd, scoped_name, select_query)
 
 
 class AlterTable(impala_ddl.AlterTable):
-    def __init__(
-        self,
-        table,
-        tbl_properties=None,
-    ):
+    def __init__(self, table, tbl_properties=None):
         super().__init__(
             table,
             location=None,
@@ -256,9 +240,7 @@ class AlterTable(impala_ddl.AlterTable):
 
 
 class RenameTable(impala_ddl.RenameTable):
-    def __init__(
-        self, old_name, new_name
-    ):
+    def __init__(self, old_name, new_name):
         super().__init__(
             old_name, new_name, old_database=None, new_database=None
         )

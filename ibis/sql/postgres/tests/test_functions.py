@@ -808,7 +808,7 @@ def test_not_exists(alltypes, df):
     t = alltypes
     t2 = t.view()
 
-    expr = t[~(t.string_col == t2.string_col).any()]
+    expr = t[~((t.string_col == t2.string_col).any())]
     result = expr.execute()
 
     left, right = df, t2.execute()
@@ -1277,7 +1277,7 @@ def test_anti_join(t, s):
     result = expr.compile().compile(compile_kwargs=dict(literal_binds=True))
     expected = sa.select([sa.column('id'), sa.column('name')]).select_from(
         sa.select([t_a.c.id, t_a.c.name]).where(
-            ~sa.exists(sa.select([1]).where(t_a.c.id == s_a.c.id))
+            ~(sa.exists(sa.select([1]).where(t_a.c.id == s_a.c.id)))
         )
     )
     assert str(result) == str(expected)
