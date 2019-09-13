@@ -114,7 +114,7 @@ def _strftime(t, expr):
 
 def _strftime_int(fmt):
     def translator(t, expr):
-        arg, = expr.op().args
+        (arg,) = expr.op().args
         sa_arg = t.translate(arg)
         return sa.cast(sa.func.strftime(fmt, sa_arg), sa.INTEGER)
 
@@ -149,7 +149,7 @@ def _now(t, expr):
 
 
 def _millisecond(t, expr):
-    arg, = expr.op().args
+    (arg,) = expr.op().args
     sa_arg = t.translate(arg)
     fractional_second = sa.func.strftime('%f', sa_arg)
     return (fractional_second * 1000) % 1000

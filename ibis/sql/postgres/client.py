@@ -2,12 +2,13 @@ import contextlib
 import getpass
 from typing import Optional
 
-import psycopg2  # NOQA fail early if the driver is missing
 import sqlalchemy as sa
 
 import ibis.sql.alchemy as alch
 from ibis.sql.postgres import udf
 from ibis.sql.postgres.compiler import PostgreSQLDialect
+
+import psycopg2  # NOQA fail early if the driver is missing
 
 
 class PostgreSQLTable(alch.AlchemyTable):

@@ -67,6 +67,7 @@ def qs(request):
 
 # elementwise UDFs
 
+
 @udf.elementwise([], dt.int64)
 def a_single_number(**kwargs):
     return 1
@@ -94,6 +95,7 @@ def my_string_length(s, **kwargs):
 
 # elementwise pandas UDFs
 
+
 @udf.elementwise.pandas([dt.double], dt.double)
 def add_one_pandas(x):
     return x + 1.0
@@ -115,6 +117,7 @@ def my_string_length_pandas(series, **kwargs):
 
 
 # reduction UDFs
+
 
 @udf.reduction(input_type=[dt.string], output_type=dt.int64)
 def my_string_length_sum(series, **kwargs):
@@ -144,13 +147,13 @@ my_string_length_fns = [my_string_length, my_string_length_pandas]
 
 def test_spark_dtype_to_ibis_dtype():
     from ibis.spark.datatypes import _SPARK_DTYPE_TO_IBIS_DTYPE
-    assert len(_SPARK_DTYPE_TO_IBIS_DTYPE.keys()) == \
-        len(set(_SPARK_DTYPE_TO_IBIS_DTYPE.values()))
+
+    assert len(_SPARK_DTYPE_TO_IBIS_DTYPE.keys()) == len(
+        set(_SPARK_DTYPE_TO_IBIS_DTYPE.values())
+    )
 
 
-@pytest.mark.parametrize(
-    'fn', my_string_length_fns
-)
+@pytest.mark.parametrize('fn', my_string_length_fns)
 def test_udf(t, df, fn):
     expr = fn(t.a)
 
@@ -169,27 +172,21 @@ def test_zero_argument_udf(con, t, df):
     tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.parametrize(
-    'fn', my_add_fns
-)
+@pytest.mark.parametrize('fn', my_add_fns)
 def test_elementwise_udf_with_non_vectors(con, fn):
     expr = fn(1.0, 2.0)
     result = con.execute(expr)
     assert result == 3.0
 
 
-@pytest.mark.parametrize(
-    'fn', my_add_fns
-)
+@pytest.mark.parametrize('fn', my_add_fns)
 def test_elementwise_udf_with_non_vectors_upcast(con, fn):
     expr = fn(1, 2)
     result = con.execute(expr)
     assert result == 3.0
 
 
-@pytest.mark.parametrize(
-    'fn', my_add_fns
-)
+@pytest.mark.parametrize('fn', my_add_fns)
 def test_multiple_argument_udf(con, t, df, fn):
     expr = fn(t.b, t.c)
 
@@ -203,13 +200,9 @@ def test_multiple_argument_udf(con, t, df, fn):
     tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.parametrize(
-    'fn', my_add_fns
-)
+@pytest.mark.parametrize('fn', my_add_fns)
 def test_multiple_argument_udf_group_by(con, t, df, fn):
-    expr = t.groupby(t.key).aggregate(
-        my_add=fn(t.b, t.c).sum()
-    ).sort_by('key')
+    expr = t.groupby(t.key).aggregate(my_add=fn(t.b, t.c).sum()).sort_by('key')
 
     assert isinstance(expr, ir.TableExpr)
     assert isinstance(expr.my_add, ir.ColumnExpr)
@@ -237,9 +230,11 @@ def test_udaf(con, t, df):
 
 
 def test_udaf_groupby(con, t_random, df_random):
-    expr = t_random.groupby(t_random.key).aggregate(
-        my_corr=my_corr(t_random.a, t_random.b)
-    ).sort_by('key')
+    expr = (
+        t_random.groupby(t_random.key)
+        .aggregate(my_corr=my_corr(t_random.a, t_random.b))
+        .sort_by('key')
+    )
 
     assert isinstance(expr, ir.TableExpr)
 
@@ -264,6 +259,7 @@ def test_nullable_output_not_allowed():
     d.nullable = False
 
     with pytest.raises(com.IbisTypeError):
+
         @udf.elementwise([dt.string], d)
         def str_func(x):
             pass
@@ -285,12 +281,8 @@ def test_pandas_udf_zero_args_not_allowed():
             pass
 
 
-@pytest.mark.parametrize(
-    'times_two_fn', times_two_fns
-)
-@pytest.mark.parametrize(
-    'add_one_fn', add_one_fns
-)
+@pytest.mark.parametrize('times_two_fn', times_two_fns)
+@pytest.mark.parametrize('add_one_fn', add_one_fns)
 def test_compose_udfs(t_random, df_random, times_two_fn, add_one_fn):
     expr = times_two_fn(add_one_fn(t_random.a))
     result = expr.execute()
@@ -307,9 +299,9 @@ def test_udaf_window(con, t_random, df_random):
         return series.mean()
 
     window = ibis.trailing_window(2, order_by='a', group_by='key')
-    expr = t_random.mutate(
-        rolled=my_mean(t_random.b).over(window)
-    ).sort_by(['key', 'a'])
+    expr = t_random.mutate(rolled=my_mean(t_random.b).over(window)).sort_by(
+        ['key', 'a']
+    )
     result = expr.execute()
     expected = df_random.sort_values(['key', 'a']).assign(
         rolled=lambda df: df.groupby('key')
@@ -325,9 +317,9 @@ def test_udaf_window(con, t_random, df_random):
 @pytest.mark.xfail(raises=AssertionError)
 def test_udaf_window_nan(con, t_nan, df_nan):
     window = ibis.trailing_window(2, order_by='a', group_by='key')
-    expr = t_nan.mutate(
-        rolled=t_nan.b.mean().over(window)
-    ).sort_by(['key', 'a'])
+    expr = t_nan.mutate(rolled=t_nan.b.mean().over(window)).sort_by(
+        ['key', 'a']
+    )
     result = expr.execute()
     expected = df_nan.sort_values(['key', 'a']).assign(
         rolled=lambda d: d.groupby('key')
@@ -340,9 +332,9 @@ def test_udaf_window_nan(con, t_nan, df_nan):
 
 def test_udaf_window_null(con, t_null, df_null):
     window = ibis.trailing_window(2, order_by='a', group_by='key')
-    expr = t_null.mutate(
-        rolled=t_null.b.mean().over(window)
-    ).sort_by(['key', 'a'])
+    expr = t_null.mutate(rolled=t_null.b.mean().over(window)).sort_by(
+        ['key', 'a']
+    )
     result = expr.execute()
     expected = df_null.sort_values(['key', 'a']).assign(
         rolled=lambda d: d.groupby('key')

@@ -32,6 +32,7 @@ IS_SHAPELY_AVAILABLE = False
 try:
     if sys.version_info >= (3, 6):
         import shapely.geometry
+
         IS_SHAPELY_AVAILABLE = True
 except ImportError:
     ...
@@ -536,11 +537,10 @@ class Struct(DataType):
 
 def _tuplize(values):
     """Recursively convert `values` to a tuple of tuples."""
+
     def tuplize_iter(values):
         yield from (
-            tuple(tuplize_iter(value))
-            if util.is_iterable(value)
-            else value
+            tuple(tuplize_iter(value)) if util.is_iterable(value) else value
             for value in values
         )
 
@@ -665,7 +665,7 @@ class GeoSpatial(DataType):
                 shapely.geometry.Polygon,
                 shapely.geometry.MultiLineString,
                 shapely.geometry.MultiPoint,
-                shapely.geometry.MultiPolygon
+                shapely.geometry.MultiPolygon,
             )
             if isinstance(value, geo_shapes):
                 return self, value.wkt
@@ -1572,13 +1572,14 @@ def infer_null(value: Optional[Null]) -> Null:
 
 
 if IS_SHAPELY_AVAILABLE:
+
     @infer.register(shapely.geometry.Point)
     def infer_shapely_point(value: shapely.geometry.Point) -> Point:
         return point
 
     @infer.register(shapely.geometry.LineString)
     def infer_shapely_linestring(
-        value: shapely.geometry.LineString
+        value: shapely.geometry.LineString,
     ) -> LineString:
         return linestring
 
@@ -1588,19 +1589,19 @@ if IS_SHAPELY_AVAILABLE:
 
     @infer.register(shapely.geometry.MultiLineString)
     def infer_shapely_multilinestring(
-        value: shapely.geometry.MultiLineString
+        value: shapely.geometry.MultiLineString,
     ) -> MultiLineString:
         return multilinestring
 
     @infer.register(shapely.geometry.MultiPoint)
     def infer_shapely_multipoint(
-        value: shapely.geometry.MultiPoint
+        value: shapely.geometry.MultiPoint,
     ) -> MultiPoint:
         return multipoint
 
     @infer.register(shapely.geometry.MultiPolygon)
     def infer_shapely_multipolygon(
-        value: shapely.geometry.MultiPolygon
+        value: shapely.geometry.MultiPolygon,
     ) -> MultiPolygon:
         return multipolygon
 
@@ -1721,7 +1722,12 @@ def can_cast_variadic(
 # geo spatial data type
 # cast between same type, used to cast from/to geometry and geography
 GEO_TYPES = (
-    Point, LineString, Polygon, MultiLineString, MultiPoint, MultiPolygon
+    Point,
+    LineString,
+    Polygon,
+    MultiLineString,
+    MultiPoint,
+    MultiPolygon,
 )
 
 

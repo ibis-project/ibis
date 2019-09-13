@@ -567,7 +567,7 @@ def test_not_exists_works(alltypes):
     t = alltypes
     t2 = t.view()
 
-    expr = t[-(t.string_col == t2.string_col).any()]
+    expr = t[-((t.string_col == t2.string_col).any())]
     expr.execute()
 
 

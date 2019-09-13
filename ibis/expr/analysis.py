@@ -169,7 +169,7 @@ def reduction_to_aggregation(expr, default_name='tmp'):
         named_expr = expr.name(default_name)
 
     if len(tables) == 1:
-        table, = tables
+        (table,) = tables
         return table.aggregate([named_expr]), name
     else:
         return ScalarAggregate(expr, None, default_name).get_result()

@@ -250,8 +250,8 @@ def test_reduction(t, df, reduction, where):
     [
         lambda x: x.any(),
         lambda x: x.all(),
-        lambda x: ~x.any(),
-        lambda x: ~x.all(),
+        lambda x: ~(x.any()),
+        lambda x: ~(x.all()),
     ],
 )
 def test_boolean_aggregation(t, df, reduction):

@@ -199,7 +199,7 @@ def _string_join(translator, expr):
 
 
 def _string_ascii(translator, expr):
-    arg, = expr.op().args
+    (arg,) = expr.op().args
     return 'TO_CODE_POINTS({})[SAFE_OFFSET(0)]'.format(
         translator.translate(arg)
     )
@@ -494,7 +494,7 @@ def identical_to(expr):
 
 @rewrites(ops.Log2)
 def log2(expr):
-    arg, = expr.op().args
+    (arg,) = expr.op().args
     return arg.log(2)
 
 
@@ -558,9 +558,7 @@ def bigquery_any_all_no_op(expr):
 
 @compiles(ops.Any)
 def bigquery_compile_any(translator, expr):
-    return "LOGICAL_OR({})".format(
-        *map(translator.translate, expr.op().args)
-    )
+    return "LOGICAL_OR({})".format(*map(translator.translate, expr.op().args))
 
 
 @compiles(ops.NotAny)
@@ -572,9 +570,7 @@ def bigquery_compile_notany(translator, expr):
 
 @compiles(ops.All)
 def bigquery_compile_all(translator, expr):
-    return "LOGICAL_AND({})".format(
-        *map(translator.translate, expr.op().args)
-    )
+    return "LOGICAL_AND({})".format(*map(translator.translate, expr.op().args))
 
 
 @compiles(ops.NotAll)

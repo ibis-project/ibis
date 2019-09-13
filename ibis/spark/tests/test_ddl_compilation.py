@@ -87,10 +87,7 @@ def table_name():
 
 
 def test_alter_table_properties(part_schema, table_name):
-    stmt = ddl.AlterTable(
-        'tbl',
-        {'bar': 2, 'foo': '1'},
-    )
+    stmt = ddl.AlterTable('tbl', {'bar': 2, 'foo': '1'})
     result = stmt.compile()
     expected = """\
 ALTER TABLE tbl SET

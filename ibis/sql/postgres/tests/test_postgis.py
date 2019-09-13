@@ -48,8 +48,7 @@ def test_select_polygon_geodata(geotable):
     sqla_expr = expr.compile()
     compiled = str(sqla_expr.compile(compile_kwargs=dict(literal_binds=True)))
     expected = (
-        "SELECT ST_AsEWKB(t0.geo_polygon) AS geo_polygon \n"
-        "FROM geo AS t0"
+        "SELECT ST_AsEWKB(t0.geo_polygon) AS geo_polygon \n" "FROM geo AS t0"
     )
     assert compiled == expected
     data = expr.execute()
@@ -190,26 +189,36 @@ def test_geo_srid(geotable):
 
 
 def test_geo_difference(geotable, gdf):
-    expr = geotable.geo_linestring.buffer(1.0).difference(
-        geotable.geo_point.buffer(0.5)
-    ).area()
+    expr = (
+        geotable.geo_linestring.buffer(1.0)
+        .difference(geotable.geo_point.buffer(0.5))
+        .area()
+    )
     result = expr.execute()
-    expected = gp.GeoSeries(gdf.geo_linestring).buffer(1.0).difference(
-        gp.GeoSeries(gdf.geo_point).buffer(0.5)
-    ).area
+    expected = (
+        gp.GeoSeries(gdf.geo_linestring)
+        .buffer(1.0)
+        .difference(gp.GeoSeries(gdf.geo_point).buffer(0.5))
+        .area
+    )
     tm.assert_series_equal(
         result, expected, check_names=False, check_less_precise=2
     )
 
 
 def test_geo_intersection(geotable, gdf):
-    expr = geotable.geo_linestring.buffer(1.0).intersection(
-        geotable.geo_point.buffer(0.5)
-    ).area()
+    expr = (
+        geotable.geo_linestring.buffer(1.0)
+        .intersection(geotable.geo_point.buffer(0.5))
+        .area()
+    )
     result = expr.execute()
-    expected = gp.GeoSeries(gdf.geo_linestring).buffer(1.0).intersection(
-        gp.GeoSeries(gdf.geo_point).buffer(0.5)
-    ).area
+    expected = (
+        gp.GeoSeries(gdf.geo_linestring)
+        .buffer(1.0)
+        .intersection(gp.GeoSeries(gdf.geo_point).buffer(0.5))
+        .area
+    )
     tm.assert_series_equal(
         result, expected, check_names=False, check_less_precise=2
     )

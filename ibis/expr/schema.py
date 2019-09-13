@@ -37,7 +37,8 @@ class Schema:
             for v in self._name_locs.keys():
                 duplicate_names.remove(v)
             raise com.IntegrityError(
-                'Duplicate column name(s): {}'.format(duplicate_names))
+                'Duplicate column name(s): {}'.format(duplicate_names)
+            )
 
     def __repr__(self):
         space = 2 + max(map(len, self.names), default=0)
