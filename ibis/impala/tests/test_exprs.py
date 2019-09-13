@@ -209,9 +209,9 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
 
     def test_negate(self):
         cases = [
-            (-self.table['a'], '-`a`'),
-            (-self.table['f'], '-`f`'),
-            (-self.table['h'], 'NOT `h`'),
+            (-(self.table['a']), '-`a`'),
+            (-(self.table['f']), '-`f`'),
+            (-(self.table['h']), 'NOT `h`'),
         ]
         self._check_expr_cases(cases)
 
@@ -358,9 +358,9 @@ FROM alltypes"""
 
         cases = [
             (bool_expr.any(), 'max(`f` = 0)'),
-            (-bool_expr.any(), 'max(`f` = 0) = FALSE'),
+            (-(bool_expr.any()), 'max(`f` = 0) = FALSE'),
             (bool_expr.all(), 'min(`f` = 0)'),
-            (-bool_expr.all(), 'min(`f` = 0) = FALSE'),
+            (-(bool_expr.all()), 'min(`f` = 0) = FALSE'),
         ]
         self._check_expr_cases(cases)
 
@@ -1574,7 +1574,7 @@ def test_analytic_functions(alltypes):
 def test_anti_join_self_reference_works(con, alltypes):
     t = alltypes.limit(100)
     t2 = t.view()
-    case = t[-(t.string_col == t2.string_col).any()]
+    case = t[-((t.string_col == t2.string_col).any())]
     con.explain(case)
 
 

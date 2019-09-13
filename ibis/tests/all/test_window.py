@@ -3,8 +3,16 @@ from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
-from ibis.tests.backends import (Csv, Impala, OmniSciDB, Pandas, Parquet,
-                                 PostgreSQL, PySpark, Spark)
+from ibis.tests.backends import (
+    Csv,
+    Impala,
+    OmniSciDB,
+    Pandas,
+    Parquet,
+    PostgreSQL,
+    PySpark,
+    Spark,
+)
 
 
 @pytest.mark.parametrize(
@@ -112,7 +120,7 @@ from ibis.tests.backends import (Csv, Impala, OmniSciDB, Pandas, Parquet,
                 .astype(bool)
             ),
             id='cumnotany',
-            marks=pytest.mark.xfail_backends((Impala, PostgreSQL, Spark,)),
+            marks=pytest.mark.xfail_backends((Impala, PostgreSQL, Spark)),
         ),
         param(
             lambda t, win: (t.double_col == 0).all().over(win),
@@ -135,7 +143,7 @@ from ibis.tests.backends import (Csv, Impala, OmniSciDB, Pandas, Parquet,
                 .astype(bool)
             ),
             id='cumnotall',
-            marks=pytest.mark.xfail_backends((Impala, PostgreSQL, Spark,)),
+            marks=pytest.mark.xfail_backends((Impala, PostgreSQL, Spark)),
         ),
         param(
             lambda t, win: t.double_col.sum().over(win),

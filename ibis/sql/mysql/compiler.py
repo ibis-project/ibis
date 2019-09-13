@@ -44,7 +44,7 @@ def _string_find(t, expr):
 
 
 def _capitalize(t, expr):
-    arg, = expr.op().args
+    (arg,) = expr.op().args
     sa_arg = t.translate(arg)
     return sa.func.concat(
         sa.func.ucase(sa.func.left(sa_arg, 1)), sa.func.substring(sa_arg, 2)
@@ -53,7 +53,7 @@ def _capitalize(t, expr):
 
 def _extract(fmt):
     def translator(t, expr):
-        arg, = expr.op().args
+        (arg,) = expr.op().args
         sa_arg = t.translate(arg)
         return sa.extract(fmt, sa_arg)
 

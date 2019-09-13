@@ -92,22 +92,19 @@ def find_spark_udf(expr):
 
 
 class SparkQuery(Query):
-
     def execute(self):
         udf_nodes = lin.traverse(find_spark_udf, self.expr)
 
         # UDFs are uniquely identified by the name of the Node subclass we
         # generate.
-        udf_nodes_unique = list(toolz.unique(
-            udf_nodes,
-            key=lambda node: type(node).__name__
-        ))
+        udf_nodes_unique = list(
+            toolz.unique(udf_nodes, key=lambda node: type(node).__name__)
+        )
 
         # register UDFs in pyspark
         for node in udf_nodes_unique:
             self.client._session.udf.register(
-                type(node).__name__,
-                node.udf_func,
+                type(node).__name__, node.udf_func
             )
 
         result = super().execute()
@@ -133,7 +130,6 @@ class SparkDatabaseTable(ops.DatabaseTable):
 
 
 class SparkTable(ir.TableExpr):
-
     @property
     def _qualified_name(self):
         return self.op().args[0]
@@ -171,9 +167,7 @@ class SparkTable(ir.TableExpr):
 
         See also SparkClient.compute_stats
         """
-        return self._client.compute_stats(
-            self._qualified_name, noscan=noscan
-        )
+        return self._client.compute_stats(self._qualified_name, noscan=noscan)
 
     def drop(self):
         """
@@ -184,13 +178,7 @@ class SparkTable(ir.TableExpr):
     def truncate(self):
         self._client.truncate_table(self._qualified_name)
 
-    def insert(
-        self,
-        obj=None,
-        overwrite=False,
-        values=None,
-        validate=True,
-    ):
+    def insert(self, obj=None, overwrite=False, values=None, validate=True):
         """
         Insert into Spark table.
 
@@ -229,9 +217,7 @@ class SparkTable(ir.TableExpr):
         ast = build_ast(expr, SparkDialect.make_context())
         select = ast.queries[0]
         statement = ddl.InsertSelect(
-            self._qualified_name,
-            select,
-            overwrite=overwrite,
+            self._qualified_name, select, overwrite=overwrite
         )
         return self._execute(statement.compile())
 
@@ -251,18 +237,13 @@ class SparkTable(ir.TableExpr):
         """
         new_qualified_name = _fully_qualified_name(new_name, self._database)
 
-        statement = ddl.RenameTable(
-            self._qualified_name, new_name
-        )
+        statement = ddl.RenameTable(self._qualified_name, new_name)
         self._client._execute(statement.compile())
 
         op = self.op().change_name(new_qualified_name)
         return type(self)(op)
 
-    def alter(
-        self,
-        tbl_properties=None,
-    ):
+    def alter(self, tbl_properties=None):
         """
         Change setting and parameters of the table.
 
@@ -276,8 +257,7 @@ class SparkTable(ir.TableExpr):
         """
 
         stmt = ddl.AlterTable(
-            self._qualified_name,
-            tbl_properties=tbl_properties
+            self._qualified_name, tbl_properties=tbl_properties
         )
         return self._execute(stmt.compile())
 
@@ -560,17 +540,12 @@ class SparkClient(SQLClient):
                 df.createTempView(name)
         else:
             qualified_name = _fully_qualified_name(
-                name,
-                database or self.current_database
+                name, database or self.current_database
             )
             mode = 'error'
             if force:
                 mode = 'overwrite'
-            df.write.saveAsTable(
-                qualified_name,
-                format=format,
-                mode=mode,
-            )
+            df.write.saveAsTable(qualified_name, format=format, mode=mode)
 
     @property
     def version(self):
@@ -613,9 +588,7 @@ class SparkClient(SQLClient):
                 if force:
                     mode = 'overwrite'
                 spark_df.write.saveAsTable(
-                    table_name,
-                    format=format,
-                    mode=mode,
+                    table_name, format=format, mode=mode
                 )
                 return
 
@@ -643,12 +616,7 @@ class SparkClient(SQLClient):
         return self._execute(statement.compile())
 
     def create_view(
-        self,
-        name,
-        expr,
-        database=None,
-        can_exist=False,
-        temporary=False,
+        self, name, expr, database=None, can_exist=False, temporary=False
     ):
         """
         Create a Spark view from a table expression
@@ -742,10 +710,7 @@ class SparkClient(SQLClient):
         """
         table = self.table(table_name, database=database)
         return table.insert(
-            obj=obj,
-            overwrite=overwrite,
-            values=values,
-            validate=validate,
+            obj=obj, overwrite=overwrite, values=values, validate=validate
         )
 
     def compute_stats(self, name, database=None, noscan=False):
@@ -763,8 +728,7 @@ class SparkClient(SQLClient):
         """
         maybe_noscan = ' NOSCAN' if noscan else ''
         stmt = 'ANALYZE TABLE {0} COMPUTE STATISTICS{1}'.format(
-            _fully_qualified_name(name, database),
-            maybe_noscan
+            _fully_qualified_name(name, database), maybe_noscan
         )
         return self._execute(stmt)
 
@@ -791,8 +755,8 @@ def _validate_compatible(from_schema, to_schema):
 
 
 _read_csv_defaults = {
-    'header' : True,
-    'multiLine' : True,
-    'mode' : 'FAILFAST',
-    'escape' : '"',
+    'header': True,
+    'multiLine': True,
+    'mode': 'FAILFAST',
+    'escape': '"',
 }

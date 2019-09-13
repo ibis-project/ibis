@@ -19,6 +19,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.sql.alchemy as alch
+
 # used for literal translate
 from ibis.sql.alchemy import (
     _get_sqla_table,
@@ -68,7 +69,7 @@ def _string_find(t, expr):
 
 def _extract(fmt):
     def translator(t, expr):
-        arg, = expr.op().args
+        (arg,) = expr.op().args
         sa_arg = t.translate(arg)
         return sa.cast(sa.extract(fmt, sa_arg), sa.SMALLINT)
 
@@ -78,14 +79,14 @@ def _extract(fmt):
 def _second(t, expr):
     # extracting the second gives us the fractional part as well, so smash that
     # with a cast to SMALLINT
-    sa_arg, = map(t.translate, expr.op().args)
+    (sa_arg,) = map(t.translate, expr.op().args)
     return sa.cast(sa.func.FLOOR(sa.extract('second', sa_arg)), sa.SMALLINT)
 
 
 def _millisecond(t, expr):
     # we get total number of milliseconds including seconds with extract so we
     # mod 1000
-    sa_arg, = map(t.translate, expr.op().args)
+    (sa_arg,) = map(t.translate, expr.op().args)
     return sa.cast(sa.extract('millisecond', sa_arg), sa.SMALLINT) % 1000
 
 
@@ -128,13 +129,13 @@ def _timestamp_add(t, expr):
 
 
 def _is_nan(t, expr):
-    arg, = expr.op().args
+    (arg,) = expr.op().args
     sa_arg = t.translate(arg)
     return sa_arg == float('nan')
 
 
 def _is_inf(t, expr):
-    arg, = expr.op().args
+    (arg,) = expr.op().args
     sa_arg = t.translate(arg)
     inf = float('inf')
     return sa.or_(sa_arg == inf, sa_arg == -inf)
@@ -162,7 +163,7 @@ def _cast(t, expr):
 
 
 def _typeof(t, expr):
-    arg, = expr.op().args
+    (arg,) = expr.op().args
     sa_arg = t.translate(arg)
     typ = sa.cast(sa.func.pg_typeof(sa_arg), sa.TEXT)
 
@@ -607,14 +608,14 @@ def _literal(t, expr):
 
 
 def _day_of_week_index(t, expr):
-    sa_arg, = map(t.translate, expr.op().args)
+    (sa_arg,) = map(t.translate, expr.op().args)
     return sa.cast(
         sa.cast(sa.extract('dow', sa_arg) + 6, sa.SMALLINT) % 7, sa.SMALLINT
     )
 
 
 def _day_of_week_name(t, expr):
-    sa_arg, = map(t.translate, expr.op().args)
+    (sa_arg,) = map(t.translate, expr.op().args)
     return sa.func.trim(sa.func.to_char(sa_arg, 'Day'))
 
 

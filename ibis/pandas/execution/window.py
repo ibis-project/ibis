@@ -79,8 +79,7 @@ def execute_window_op(
         operand_op, *clients, scope=scope, aggcontext=aggcontext, **kwargs
     )
     scope = toolz.merge(scope, pre_executed_scope)
-
-    root, = op.root_tables()
+    (root,) = op.root_tables()
     root_expr = root.to_expr()
     data = execute(
         root_expr,
@@ -244,7 +243,7 @@ def execute_series_cumulative_op(op, data, aggcontext=None, **kwargs):
         raise ValueError('Unknown operation {}'.format(typename))
 
     try:
-        operation_name, = match.groups()
+        (operation_name,) = match.groups()
     except ValueError:
         raise ValueError(
             'More than one operation name found in {} class'.format(typename)

@@ -16,10 +16,10 @@ def _sequence_to_tuple(x):
     return tuple(x) if util.is_iterable(x) else x
 
 
-RowsWithMaxLookback = NamedTuple('RowsWithMaxLookback',
-                                 [('rows', Union[int, np.integer]),
-                                  ('max_lookback', ir.IntervalValue)]
-                                 )
+RowsWithMaxLookback = NamedTuple(
+    'RowsWithMaxLookback',
+    [('rows', Union[int, np.integer]), ('max_lookback', ir.IntervalValue)],
+)
 
 
 def _choose_non_empty_val(first, second):
@@ -75,8 +75,10 @@ def _get_preceding_value_simple(preceding):
 def _get_preceding_value_mlb(preceding):
     preceding_value = preceding.rows
     if not isinstance(preceding_value, (int, np.integer)):
-        raise TypeError("'Rows with max look-back' only supports integer "
-                        "row-based indexing.")
+        raise TypeError(
+            "'Rows with max look-back' only supports integer "
+            "row-based indexing."
+        )
     return preceding_value
 
 
@@ -219,7 +221,8 @@ class Window:
 
         if self.max_lookback is not None:
             if not isinstance(
-                    self.preceding, (ir.IntervalValue, pd.Timedelta)):
+                self.preceding, (ir.IntervalValue, pd.Timedelta)
+            ):
                 raise com.IbisInputError(
                     "'max_lookback' must be specified as an interval "
                     "or pandas.Timedelta object"
@@ -298,12 +301,12 @@ class Window:
             cache[self, other] = False
             return False
 
-        equal = ops.all_equal(
-            self.preceding, other.preceding, cache=cache
-        ) and ops.all_equal(
-            self.following, other.following, cache=cache
-        ) and ops.all_equal(
-            self.max_lookback, other.max_lookback, cache=cache
+        equal = (
+            ops.all_equal(self.preceding, other.preceding, cache=cache)
+            and ops.all_equal(self.following, other.following, cache=cache)
+            and ops.all_equal(
+                self.max_lookback, other.max_lookback, cache=cache
+            )
         )
         cache[self, other] = equal
         return equal
@@ -436,7 +439,7 @@ def trailing_window(preceding, group_by=None, order_by=None):
         following=0,
         group_by=group_by,
         order_by=order_by,
-        how=how
+        how=how,
     )
 
 

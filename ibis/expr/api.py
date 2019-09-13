@@ -4089,6 +4089,6 @@ def prevent_rewrite(expr, client=None):
     sql_query_result : ir.TableExpr
     """
     if client is None:
-        client, = ibis.client.find_backends(expr)
+        (client,) = ibis.client.find_backends(expr)
     query = client.compile(expr)
     return ops.SQLQueryResult(query, expr.schema(), client).to_expr()

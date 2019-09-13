@@ -209,7 +209,7 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
             ),
             (
                 region.outer_join(nation, ipred),
-                rt.outerjoin(nt, spred, full=True)
+                rt.outerjoin(nt, spred, full=True),
             ),
         ]
         for ibis_joined, joined_sqla in fully_mat_joins:
@@ -259,10 +259,7 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         nation = self.con.table('tpch_nation')
 
         predicate = region.r_regionkey == nation.n_regionkey
-        joined = region.outer_join(
-            nation,
-            predicate
-        )
+        joined = region.outer_join(nation, predicate)
         joined_sql_str = str(joined.compile())
         assert 'full' in joined_sql_str.lower()
         assert 'left' not in joined_sql_str.lower()

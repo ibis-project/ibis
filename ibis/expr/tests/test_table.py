@@ -1064,7 +1064,7 @@ def test_cannot_use_existence_expression_in_join(table):
 
 
 def test_not_exists_predicate(t1, t2):
-    cond = -(t1.key1 == t2.key1).any()
+    cond = -((t1.key1 == t2.key1).any())
     assert isinstance(cond.op(), ops.NotAny)
 
 

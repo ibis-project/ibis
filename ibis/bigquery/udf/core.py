@@ -162,7 +162,7 @@ class PythonToJavaScriptTranslator:
     @semicolon
     def visit_Assign(self, node):
         try:
-            target, = node.targets
+            (target,) = node.targets
         except ValueError:
             raise NotImplementedError(
                 'Only single assignment supported for now'
@@ -495,7 +495,7 @@ class PythonToJavaScriptTranslator:
         [[1, 4], [2, 5], [3, 6]]].map(([x, y]) => x + y)
         """
         try:
-            generator, = node.generators
+            (generator,) = node.generators
         except ValueError:
             raise NotImplementedError(
                 'Only single loop comprehensions are allowed'

@@ -510,7 +510,7 @@ def _translate_case(t, cases, results, default):
 
 def _negate(t, expr):
     op = expr.op()
-    arg, = map(t.translate, op.args)
+    (arg,) = map(t.translate, op.args)
     return sa.not_(arg) if isinstance(expr, ir.BooleanValue) else -arg
 
 
@@ -1382,7 +1382,7 @@ class _AlchemyTableSet(TableSetFormatter):
                 )
             elif jtype is ops.LeftAntiJoin:
                 result = sa.select([result]).where(
-                    ~sa.exists(sa.select([1]).where(onclause))
+                    ~(sa.exists(sa.select([1]).where(onclause)))
                 )
             else:
                 raise NotImplementedError(jtype)
@@ -1520,8 +1520,10 @@ def _maybe_to_geodataframe(df, schema):
     geospatial column is present in the dataframe, convert it to a
     GeoDataFrame.
     """
+
     def to_shapely(row, name):
         return shape.to_shape(row[name]) if row[name] is not None else None
+
     if len(df) and geospatial_supported:
         geom_col = None
         for name, dtype in schema.items():

@@ -572,7 +572,7 @@ class TestUDFDDL(unittest.TestCase):
                     "\nmerge_fn='Merge'"
                 )
                 + serialize
-                + ("\nfinalize_fn='Finalize'")
+                + "\nfinalize_fn='Finalize'"
             )
 
         for ser in [True, False]:

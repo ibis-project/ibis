@@ -235,12 +235,7 @@ def test_quantile_array_access(client, t, df):
     ],
 )
 def test_execute_with_same_hash_value_in_scope(
-    left,
-    right,
-    expected_value,
-    expected_type,
-    left_dtype,
-    right_dtype,
+    left, right, expected_value, expected_type, left_dtype, right_dtype
 ):
     @udf.elementwise([left_dtype, right_dtype], left_dtype)
     def my_func(x, y):
@@ -291,9 +286,7 @@ def test_ifelse_returning_bool():
             1.0,
             marks=pytest.mark.xfail(
                 raises=com.IbisTypeError,
-                reason=(
-                    "Implicit casting from float to int is not implemented"
-                ),
+                reason="Implicit casting from float to int is not implemented",
             ),
             id='int_float',
         ),
@@ -306,7 +299,7 @@ def test_ifelse_returning_bool():
                 reason=(
                     "Implicit casting from boolean to int is not implemented"
                 ),
-            )
+            ),
         ),
         pytest.param(
             dt.boolean,

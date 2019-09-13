@@ -26,14 +26,7 @@ def test_list_tables(client):
 
 def test_get_schema(client):
     schema = client.get_schema('simple')
-    assert schema.equals(
-        ibis.schema(
-            [
-                ('foo', 'int64'),
-                ('bar', 'string')
-            ]
-        )
-    )
+    assert schema.equals(ibis.schema([('foo', 'int64'), ('bar', 'string')]))
 
 
 def test_table_simple(client):
@@ -62,8 +55,8 @@ def test_table_nested_types(nested_types):
                 ('list_of_list_of_ints', 'array<array<int64>>'),
                 (
                     'map_string_list_of_list_of_ints',
-                    'map<string, array<array<int64>>>'
-                )
+                    'map<string, array<array<int64>>>',
+                ),
             ]
         )
     )
@@ -77,7 +70,7 @@ def test_table_complicated(complicated):
             [
                 (
                     'map_tuple_list_of_list_of_ints',
-                    'map<struct<_1: int64, _2: int64>, array<array<int64>>>'
+                    'map<struct<_1: int64, _2: int64>, array<array<int64>>>',
                 )
             ]
         )
