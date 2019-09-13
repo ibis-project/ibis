@@ -3,6 +3,7 @@ import functools
 import itertools
 import operator
 from contextlib import suppress
+from typing import List
 
 import toolz
 
@@ -1732,6 +1733,13 @@ class AsOfJoin(Join):
         super().__init__(left, right, predicates)
         self.by = _clean_join_predicates(self.left, self.right, by)
         self.tolerance = tolerance
+        self._validate_args(['by', 'tolerance'])
+
+    def _validate_args(self, args: List[str]):
+        for arg in args:
+            argument = self.signature[arg]
+            value = argument.validate(getattr(self, arg))
+            setattr(self, arg, value)
 
 
 class Union(TableNode, HasSchema):
