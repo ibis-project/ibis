@@ -406,6 +406,21 @@ class Interval(DataType):
         ns='nanosecond',
     )
 
+    _timedelta_to_interval_units = dict(
+        days='D',
+        hours='h',
+        minutes='m',
+        seconds='s',
+        milliseconds='ms',
+        microseconds='us',
+        nanoseconds='ns',
+    )
+
+    def _convert_timedelta_unit_to_interval_unit(self, unit: str):
+        if unit not in self._timedelta_to_interval_units:
+            raise ValueError
+        return self._timedelta_to_interval_units[unit]
+
     def __init__(
         self,
         unit: str = 's',
@@ -414,7 +429,10 @@ class Interval(DataType):
     ) -> None:
         super().__init__(nullable=nullable)
         if unit not in self._units:
-            raise ValueError('Unsupported interval unit `{}`'.format(unit))
+            try:
+                unit = self._convert_timedelta_unit_to_interval_unit(unit)
+            except ValueError:
+                raise ValueError('Unsupported interval unit `{}`'.format(unit))
 
         if value_type is None:
             value_type = int32
@@ -1422,6 +1440,25 @@ dtype = Dispatcher('dtype')
 validate_type = dtype
 
 
+def _get_timedelta_units(timedelta: datetime.timedelta) -> List[str]:
+    # pandas Timedelta has more granularity
+    if hasattr(timedelta, 'components'):
+        unit_fields = timedelta.components._fields
+        base_object = timedelta.components
+    # datetime.timedelta only stores days, seconds, and microseconds internally
+    else:
+        unit_fields = ['days', 'seconds', 'microseconds']
+        base_object = timedelta
+
+    time_units = []
+    [
+        time_units.append(field)
+        for field in unit_fields
+        if getattr(base_object, field) > 0
+    ]
+    return time_units
+
+
 @dtype.register(object)
 def default(value, **kwargs) -> DataType:
     raise com.IbisTypeError('Value {!r} is not a valid datatype'.format(value))
@@ -1536,7 +1573,14 @@ def infer_timestamp(value: datetime.datetime) -> Timestamp:
 
 @infer.register(datetime.timedelta)
 def infer_interval(value: datetime.timedelta) -> Interval:
-    return interval
+    time_units = _get_timedelta_units(value)
+    # we can attempt a conversion in the simplest case, i.e. there is exactly
+    # one unit (e.g. pd.Timedelta('2 days') vs. pd.Timedelta('2 days 3 hours')
+    if len(time_units) == 1:
+        unit = time_units[0]
+        return Interval(unit)
+    else:
+        return interval
 
 
 @infer.register(str)

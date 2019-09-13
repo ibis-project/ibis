@@ -1,6 +1,8 @@
+import datetime
 import pickle
 import re
 
+import pandas as pd
 import pytest
 
 import ibis
@@ -693,6 +695,42 @@ def test_asof_join_with_by():
     joined = api.asof_join(left, right, 'time', by='key')
     by = joined.op().by[0].op()
     assert by.left.op().name == by.right.op().name == 'key'
+
+
+@pytest.mark.parametrize(
+    ('ibis_interval', 'timedelta_interval'),
+    [
+        [ibis.interval(days=2), pd.Timedelta('2 days')],
+        [ibis.interval(days=2), datetime.timedelta(days=2)],
+        [ibis.interval(hours=5), pd.Timedelta('5 hours')],
+        [ibis.interval(hours=5), datetime.timedelta(hours=5)],
+        [ibis.interval(minutes=7), pd.Timedelta('7 minutes')],
+        [ibis.interval(minutes=7), datetime.timedelta(minutes=7)],
+        [ibis.interval(seconds=9), pd.Timedelta('9 seconds')],
+        [ibis.interval(seconds=9), datetime.timedelta(seconds=9)],
+        [ibis.interval(milliseconds=11), pd.Timedelta('11 milliseconds')],
+        [ibis.interval(milliseconds=11), datetime.timedelta(milliseconds=11)],
+        [ibis.interval(microseconds=15), pd.Timedelta('15 microseconds')],
+        [ibis.interval(microseconds=15), datetime.timedelta(microseconds=15)],
+        [ibis.interval(nanoseconds=17), pd.Timedelta('17 nanoseconds')],
+    ],
+)
+def test_asof_join_with_tolerance(ibis_interval, timedelta_interval):
+    left = ibis.table(
+        [('time', 'int32'), ('key', 'int32'), ('value', 'double')]
+    )
+    right = ibis.table(
+        [('time', 'int32'), ('key', 'int32'), ('value2', 'double')]
+    )
+
+    joined = api.asof_join(left, right, 'time', tolerance=ibis_interval)
+    tolerance = joined.op().tolerance
+    assert_equal(tolerance, ibis_interval)
+
+    joined = api.asof_join(left, right, 'time', tolerance=timedelta_interval)
+    tolerance = joined.op().tolerance
+    assert isinstance(tolerance, ir.IntervalScalar)
+    assert isinstance(tolerance.op(), ops.Literal)
 
 
 def test_equijoin_schema_merge():
