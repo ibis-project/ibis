@@ -2,10 +2,12 @@ import pandas as pd
 import pytest
 from pytest import param
 
-from ibis.tests.backends import Pandas, PySpark
+from ibis.tests.backends import Csv, Impala, Pandas, PySpark
 
 # add here backends that passes join tests
 all_db_join_supported = [Pandas, PySpark]
+
+all_db_join_unsupported = [Csv, Impala]
 
 
 @pytest.fixture(scope='module')
@@ -16,16 +18,6 @@ def left(batting):
 @pytest.fixture(scope='module')
 def right(awards_players):
     return awards_players[awards_players.lgID == 'NL'].drop(['yearID', 'lgID'])
-
-
-@pytest.fixture(scope='module')
-def left_df(left):
-    return left.execute()
-
-
-@pytest.fixture(scope='module')
-def right_df(right):
-    return right.execute()
 
 
 @pytest.mark.parametrize(
@@ -50,10 +42,13 @@ def right_df(right):
     ],
 )
 @pytest.mark.only_on_backends(all_db_join_supported)
+# Csv is a subclass of Pandas so need to skip it explicited
+@pytest.mark.skip_backends([Csv])
 @pytest.mark.xfail_unsupported
-def test_join_project_left_table(
-    backend, con, left, right, left_df, right_df, how
-):
+def test_join_project_left_table(backend, con, left, right, how):
+
+    left_df = left.execute()
+    right_df = right.execute()
     predicate = ['playerID']
     result_order = ['playerID', 'yearID', 'lgID', 'stint']
     expr = left.join(right, predicate, how=how)[left]
