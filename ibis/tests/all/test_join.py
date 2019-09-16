@@ -8,16 +8,6 @@ from ibis.tests.backends import Csv, Pandas, PySpark
 all_db_join_supported = [Pandas, PySpark]
 
 
-@pytest.fixture(scope='module')
-def left(batting):
-    return batting[batting.yearID == 2015]
-
-
-@pytest.fixture(scope='module')
-def right(awards_players):
-    return awards_players[awards_players.lgID == 'NL'].drop(['yearID', 'lgID'])
-
-
 @pytest.mark.parametrize(
     'how',
     [
@@ -43,7 +33,12 @@ def right(awards_players):
 # Csv is a subclass of Pandas so need to skip it explicited
 @pytest.mark.skip_backends([Csv])
 @pytest.mark.xfail_unsupported
-def test_join_project_left_table(backend, con, left, right, how):
+def test_join_project_left_table(backend, con, batting, awards_players, how):
+
+    left = batting[batting.yearID == 2015]
+    right = awards_players[awards_players.lgID == 'NL'].drop(
+        ['yearID', 'lgID']
+    )
 
     left_df = left.execute()
     right_df = right.execute()

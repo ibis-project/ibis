@@ -69,7 +69,7 @@ class CSVClient(FileClient):
         sample = _read_csv(f, schema=schema, header=0, nrows=50, **kwargs)
 
         # infer sample's schema and define table
-        schema = sch.infer(sample)
+        schema = sch.infer(sample, schema=schema)
         table = self.table_class(name, schema, self, **kwargs).to_expr()
 
         self.dictionary[name] = f

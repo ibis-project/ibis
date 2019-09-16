@@ -554,6 +554,14 @@ class Impala(UnorderedComparator, Backend, RoundAwayFromZero):
             database='ibis_testing',
         )
 
+    @property
+    def batting(self) -> ir.TableExpr:
+        return None
+
+    @property
+    def awards_players(self) -> ir.TableExpr:
+        return None
+
 
 class Spark(Backend, RoundHalfToEven):
     @staticmethod
