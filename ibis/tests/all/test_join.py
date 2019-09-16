@@ -2,6 +2,11 @@ import pandas as pd
 import pytest
 from pytest import param
 
+from ibis.tests.backends import Csv, MySQL, PostgreSQL, SQLite
+
+# add here backends that passes join tests
+all_db_join_unsupported = [Csv, MySQL, PostgreSQL, SQLite]
+
 
 @pytest.fixture(scope='module')
 def left(batting):
@@ -44,6 +49,7 @@ def right_df(right):
         ),
     ],
 )
+@pytest.mark.skip_backends([])
 @pytest.mark.xfail_unsupported
 def test_join_project_left_table(
     backend, con, left, right, left_df, right_df, how
