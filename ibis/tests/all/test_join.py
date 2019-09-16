@@ -2,12 +2,10 @@ import pandas as pd
 import pytest
 from pytest import param
 
-from ibis.tests.backends import Csv, Impala, Pandas, PySpark
+from ibis.tests.backends import Csv, Pandas, PySpark
 
 # add here backends that passes join tests
 all_db_join_supported = [Pandas, PySpark]
-
-all_db_join_unsupported = [Csv, Impala]
 
 
 @pytest.fixture(scope='module')
