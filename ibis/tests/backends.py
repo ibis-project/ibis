@@ -219,6 +219,34 @@ class Csv(Pandas):
         )
         return self.connection.table('functional_alltypes', schema=schema)
 
+    @property
+    def batting(self) -> ir.TableExpr:
+        schema = ibis.schema(
+            [
+                ('lgID', dt.string),
+                ('G', dt.float64),
+                ('AB', dt.float64),
+                ('R', dt.float64),
+                ('H', dt.float64),
+                ('X2B', dt.float64),
+                ('X3B', dt.float64),
+                ('HR', dt.float64),
+                ('RBI', dt.float64),
+                ('SB', dt.float64),
+                ('CS', dt.float64),
+                ('BB', dt.float64),
+                ('SO', dt.float64),
+            ]
+        )
+        return self.connection.table('batting', schema=schema)
+
+    @property
+    def awards_players(self) -> ir.TableExpr:
+        schema = ibis.schema(
+            [('lgID', dt.string), ('tie', dt.string), ('notes', dt.string)]
+        )
+        return self.connection.table('awards_players', schema=schema)
+
 
 class Parquet(Pandas):
     check_names = False
@@ -525,6 +553,14 @@ class Impala(UnorderedComparator, Backend, RoundAwayFromZero):
             hdfs_client=hdfs_client,
             database='ibis_testing',
         )
+
+    @property
+    def batting(self) -> ir.TableExpr:
+        return None
+
+    @property
+    def awards_players(self) -> ir.TableExpr:
+        return None
 
 
 class Spark(Backend, RoundHalfToEven):

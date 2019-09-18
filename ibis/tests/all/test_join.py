@@ -2,28 +2,12 @@ import pandas as pd
 import pytest
 from pytest import param
 
+from ibis.tests.backends import Csv, Pandas, PySpark
 
-@pytest.fixture(scope='module')
-def left(batting):
-    return batting[batting.yearID == 2015]
-
-
-@pytest.fixture(scope='module')
-def right(awards_players):
-    return awards_players[awards_players.lgID == 'NL']
+# add here backends that passes join tests
+all_db_join_supported = [Pandas, PySpark]
 
 
-@pytest.fixture(scope='module')
-def left_df(left):
-    return left.execute()
-
-
-@pytest.fixture(scope='module')
-def right_df(right):
-    return right.execute()
-
-
-@pytest.mark.skip
 @pytest.mark.parametrize(
     'how',
     [
@@ -45,18 +29,27 @@ def right_df(right):
         ),
     ],
 )
-def test_join_project_left_table(
-    backend, con, left, right, left_df, right_df, how
-):
-    predicate = ['playerID']
-    expr = left.join(right, predicate, how=how)[left]
+@pytest.mark.only_on_backends(all_db_join_supported)
+# Csv is a subclass of Pandas so need to skip it explicited
+@pytest.mark.skip_backends([Csv])
+@pytest.mark.xfail_unsupported
+def test_join_project_left_table(backend, con, batting, awards_players, how):
 
-    with backend.skip_unsupported():
-        result = expr.execute()
+    left = batting[batting.yearID == 2015]
+    right = awards_players[awards_players.lgID == 'NL'].drop(
+        ['yearID', 'lgID']
+    )
+
+    left_df = left.execute()
+    right_df = right.execute()
+    predicate = ['playerID']
+    result_order = ['playerID', 'yearID', 'lgID', 'stint']
+    expr = left.join(right, predicate, how=how)[left]
+    result = expr.execute().sort_values(result_order)
 
     joined = pd.merge(
         left_df, right_df, how=how, on=predicate, suffixes=('', '_y')
-    )
+    ).sort_values(result_order)
     expected = joined[list(left.columns)]
 
     backend.assert_frame_equal(
