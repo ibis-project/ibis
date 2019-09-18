@@ -840,15 +840,39 @@ def compile_inner_join(t, expr, scope, **kwargs):
     return compile_join(t, expr, scope, 'inner')
 
 
+@compiles(ops.LeftJoin)
+def compile_left_join(t, expr, scope, **kwargs):
+    return compile_join(t, expr, scope, 'left')
+
+
+@compiles(ops.RightJoin)
+def compile_right_join(t, expr, scope, **kwargs):
+    return compile_join(t, expr, scope, 'right')
+
+
+@compiles(ops.OuterJoin)
+def compile_outer_join(t, expr, scope, **kwargs):
+    return compile_join(t, expr, scope, 'outer')
+
+
 def compile_join(t, expr, scope, how):
     op = expr.op()
 
     left_df = t.translate(op.left, scope)
     right_df = t.translate(op.right, scope)
-    # TODO: Handle multiple predicates
-    predicates = t.translate(op.predicates[0], scope)
 
-    return left_df.join(right_df, predicates, how)
+    pred_columns = []
+    for pred in op.predicates:
+        pred_op = pred.op()
+        if not isinstance(pred_op, ops.Equals):
+            raise NotImplementedError(
+                "Only equality predicate is supported, but got {}".format(
+                    type(pred_op)
+                )
+            )
+        pred_columns.append(pred_op.left.get_name())
+
+    return left_df.join(right_df, pred_columns, how)
 
 
 @compiles(ops.WindowOp)
