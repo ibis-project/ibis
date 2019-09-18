@@ -30,7 +30,8 @@ all_db_join_supported = [Pandas, PySpark]
     ],
 )
 @pytest.mark.only_on_backends(all_db_join_supported)
-# Csv is a subclass of Pandas so need to skip it explicited
+# Csv is a subclass of Pandas so need to skip it explicitly.
+# BigQuery is also not skipped for unknown reason.
 @pytest.mark.skip_backends([Csv, BigQuery])
 @pytest.mark.xfail_unsupported
 def test_join_project_left_table(backend, con, batting, awards_players, how):
