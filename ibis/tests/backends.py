@@ -519,6 +519,14 @@ class BigQuery(UnorderedComparator, Backend, RoundAwayFromZero):
             )
         return bigquery_connect(project_id, dataset_id='testing')
 
+    @property
+    def batting(self) -> ir.TableExpr:
+        return None
+
+    @property
+    def awards_players(self) -> ir.TableExpr:
+        return None
+
 
 class Impala(UnorderedComparator, Backend, RoundAwayFromZero):
     supports_arrays = True
