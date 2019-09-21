@@ -7,8 +7,10 @@ import pyspark.sql.functions as F
 from pyspark.sql import Window
 
 import ibis.common.exceptions as com
+import ibis.expr.datatypes as dtypes
 import ibis.expr.operations as ops
 import ibis.expr.types as types
+from ibis import interval
 from ibis.pyspark.operations import PySparkTable
 from ibis.spark.compiler import SparkContext, SparkDialect
 
@@ -100,7 +102,8 @@ def compile_selection(t, expr, scope, **kwargs):
     for selection in op.selections:
         if isinstance(selection, types.TableExpr):
             col_names_in_selection_order.extend(selection.columns)
-        elif isinstance(selection, types.ColumnExpr):
+        elif (isinstance(selection, types.ColumnExpr)
+              or isinstance(selection, types.ScalarExpr)):
             column_name = selection.get_name()
             col_names_in_selection_order.append(column_name)
             column = t.translate(selection, scope=scope)
@@ -136,6 +139,35 @@ def compile_distinct(t, expr, scope, **kwargs):
 def compile_self_reference(t, expr, scope, **kwargs):
     op = expr.op()
     return t.translate(op.table, scope)
+
+
+@compiles(ops.Cast)
+def compile_cast(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    if isinstance(op.to, dtypes.Interval):
+        if isinstance(op.arg.op(), ops.Literal):
+            return interval(op.arg.op().value, op.to.unit)
+        else:
+            raise com.UnsupportedArgumentError(
+                'Casting to intervals is only supported for literals '
+                'in the PySpark backend. {} not allowed.'.format(type(op.arg))
+            )
+
+    src_column = t.translate(op.arg, scope)
+    return src_column.cast(op.to.name)
+
+
+@compiles(ops.Limit)
+def compile_limit(t, expr, scope, **kwargs):
+    op = expr.op()
+    df = compile_with_scope(t, op.table, scope)
+    if op.offset != 0:
+        raise com.UnsupportedArgumentError(
+            'PySpark backend does not support non-zero offset is for '
+            'limit operation. Got offset {}.'.format(op.offset)
+        )
+    return df.limit(op.n)
 
 
 @compiles(ops.And)
@@ -218,6 +250,13 @@ def compile_literal(t, expr, scope, raw=False, **kwargs):
         return F.lit(expr.op().value)
 
 
+def _compile_agg(t, scope, agg_expr, context):
+    agg = t.translate(agg_expr, scope, context=context)
+    if agg_expr.has_name():
+        return agg.alias(agg_expr.get_name())
+    return agg
+
+
 @compiles(ops.Aggregation)
 def compile_aggregation(t, expr, scope, **kwargs):
     op = expr.op()
@@ -226,12 +265,12 @@ def compile_aggregation(t, expr, scope, **kwargs):
 
     if op.by:
         context = AggregationContext.GROUP
-        aggs = [t.translate(m, scope, context=context) for m in op.metrics]
+        aggs = [_compile_agg(t, scope, m, context) for m in op.metrics]
         bys = [t.translate(b, scope) for b in op.by]
         return src_table.groupby(*bys).agg(*aggs)
     else:
         context = AggregationContext.ENTIRE
-        aggs = [t.translate(m, scope, context=context) for m in op.metrics]
+        aggs = [_compile_agg(t, scope, m, context) for m in op.metrics]
         return src_table.agg(*aggs)
 
 
@@ -827,6 +866,14 @@ def compile_string_split(t, expr, scope, **kwargs):
     return F.split(src_column, delimiter)
 
 
+@compiles(ops.StringConcat)
+def compile_string_concat(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    src_columns = t.translate(op.arg, scope)
+    return F.concat(*src_columns)
+
+
 @compiles(ops.StringAscii)
 def compile_string_ascii(t, expr, scope, **kwargs):
     op = expr.op()
@@ -957,7 +1004,7 @@ def compile_dense_rank(t, expr, scope, *, window, **kwargs):
 
 @compiles(ops.PercentRank)
 def compile_percent_rank(t, expr, scope, *, window, **kwargs):
-    raise NotImplementedError(
+    raise com.UnsupportedOperationError(
         'Pyspark percent_rank() function indexes from 0 '
         'instead of 1, and does not match expected '
         'output of ibis expressions.'
@@ -1026,6 +1073,312 @@ def compile_cumulative_max(t, expr, scope, *, window, **kwargs):
     return _handle_cumulative_operation(
         t, expr, scope, F.max, window=window, **kwargs
     )
+
+
+# -------------------------- Temporal Operations ----------------------------
+
+# Ibis value to PySpark value
+_time_unit_mapping = {
+    'Y': 'year',
+    'Q': 'quarter',
+    'M': 'month',
+    'W': 'week',
+    'D': 'day',
+    'h': 'hour',
+    'm': 'minute',
+    's': 'second'
+}
+
+# PySpark value to (Ibis value, day of week name)
+_day_of_week_mapping = {
+    1: (6, 'Sunday'),
+    2: (0, 'Monday'),
+    3: (1, 'Tuesday'),
+    4: (2, 'Wednesday'),
+    5: (3, 'Thursday'),
+    6: (4, 'Friday'),
+    7: (5, 'Saturday')
+}
+
+
+def _get_ibis_day_of_week_index(pyspark_index):
+    return _day_of_week_mapping[pyspark_index][0]
+
+
+def _get_day_of_week_name(pyspark_index):
+    return _day_of_week_mapping[pyspark_index][1]
+
+
+@compiles(ops.Date)
+def compile_date(t, expr, scope, **kwargs):
+    op = expr.op()
+    src_column = t.translate(op.arg, scope)
+    return F.to_date(src_column).cast('timestamp')
+
+
+def _extract_x_from_datetime(t, expr, scope, extract_fn, **kwargs):
+    op = expr.op()
+    date_col = t.translate(op.arg, scope)
+    return extract_fn(date_col)
+
+
+@compiles(ops.ExtractYear)
+def compile_extract_year(t, expr, scope, **kwargs):
+    return _extract_x_from_datetime(t, expr, scope, F.year, **kwargs)
+
+
+@compiles(ops.ExtractMonth)
+def compile_extract_month(t, expr, scope, **kwargs):
+    return _extract_x_from_datetime(t, expr, scope, F.month, **kwargs)
+
+
+@compiles(ops.ExtractDay)
+def compile_extract_day(t, expr, scope, **kwargs):
+    return _extract_x_from_datetime(t, expr, scope, F.dayofmonth, **kwargs)
+
+
+@compiles(ops.ExtractHour)
+def compile_extract_hour(t, expr, scope, **kwargs):
+    return _extract_x_from_datetime(t, expr, scope, F.hour, **kwargs)
+
+
+@compiles(ops.ExtractMinute)
+def compile_extract_minute(t, expr, scope, **kwargs):
+    return _extract_x_from_datetime(t, expr, scope, F.minute, **kwargs)
+
+
+@compiles(ops.ExtractSecond)
+def compile_extract_second(t, expr, scope, **kwargs):
+    return _extract_x_from_datetime(t, expr, scope, F.second, **kwargs)
+
+
+@compiles(ops.ExtractMillisecond)
+def compile_extract_millisecond(t, expr, scope, **kwargs):
+    raise com.UnsupportedOperationError(
+        'PySpark backend does not support extracting milliseconds.'
+    )
+
+
+@compiles(ops.DateTruncate)
+def compile_date_truncate(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    try:
+        unit = _time_unit_mapping[op.unit]
+    except KeyError:
+        raise com.UnsupportedOperationError(
+            '{!r} unit is not supported in timestamp truncate'.format(op.unit)
+        )
+
+    src_column = t.translate(op.arg, scope)
+    return F.date_trunc(unit, src_column)
+
+
+@compiles(ops.TimestampTruncate)
+def compile_timestamp_truncate(t, expr, scope, **kwargs):
+    return compile_date_truncate(t, expr, scope, **kwargs)
+
+
+@compiles(ops.Strftime)
+def compile_strftime(t, expr, scope, **kwargs):
+    raise com.UnsupportedOperationError(
+        'PySpark uses Java SimpleDateFormat and does not support strftime.'
+    )
+
+
+@compiles(ops.TimestampFromUNIX)
+def compile_timestamp_from_unix(t, expr, scope, **kwargs):
+    op = expr.op()
+    unixtime = t.translate(op.arg, scope)
+    if not op.unit:
+        return F.to_timestamp(F.from_unixtime(unixtime))
+    elif op.unit == 's':
+        fmt = 'yyyy-MM-dd HH:mm:ss'
+        return F.to_timestamp(F.from_unixtime(unixtime, fmt), fmt)
+    else:
+        raise com.UnsupportedArgumentError(
+            'PySpark backend does not support timestamp from unix time with '
+            'unit {}. Supported unit is s.'.format(op.unit)
+        )
+
+
+@compiles(ops.TimestampNow)
+def compile_timestamp_now(t, expr, scope, **kwargs):
+    return F.current_timestamp()
+
+
+@compiles(ops.StringToTimestamp)
+def compile_string_to_timestamp(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    src_column = t.translate(op.arg, scope)
+    fmt = op.format_str.op().value
+
+    if op.timezone is not None and op.timezone.op().value != "UTC":
+        raise com.UnsupportedArgumentError(
+            'PySpark backend only supports timezone UTC for converting string '
+            'to timestamp.'
+        )
+
+    return F.to_timestamp(src_column, fmt)
+
+
+@compiles(ops.DayOfWeekIndex)
+def compile_day_of_week_index(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    @F.udf('short')
+    def map_index(pyspark_index):
+        return _get_ibis_day_of_week_index(pyspark_index)
+
+    src_column = t.translate(op.arg, scope)
+    return map_index(F.dayofweek(src_column))
+
+
+@compiles(ops.DayOfWeekName)
+def compiles_day_of_week_name(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    @F.udf('string')
+    def map_name(pyspark_index):
+        return _get_day_of_week_name(pyspark_index)
+
+    src_column = t.translate(op.arg, scope)
+    return map_name(F.dayofweek(src_column))
+
+
+def _get_interval_col(t, interval_ibis_expr, scope, allowed_units=None):
+    # if interval expression is a binary op, translate expression into
+    # an interval column and return
+    if isinstance(interval_ibis_expr.op(), ops.IntervalBinaryOp):
+        return t.translate(interval_ibis_expr, scope)
+
+    # otherwise, translate expression into a literal op and construct
+    # interval column from literal value and dtype
+    if isinstance(interval_ibis_expr.op(), ops.Literal):
+        op = interval_ibis_expr.op()
+    else:
+        op = t.translate(interval_ibis_expr, scope).op()
+
+    dtype = op.dtype
+    if not isinstance(dtype, dtypes.Interval):
+        raise com.UnsupportedArgumentError(
+            '{} expression cannot be converted to interval column. '
+            'Must be Interval dtype.'.format(dtype)
+        )
+    if allowed_units and dtype.unit not in allowed_units:
+        raise com.UnsupportedArgumentError(
+            'Interval unit "{}" is not allowed. Allowed units are: '
+            '{}'.format(dtype.unit, allowed_units)
+        )
+    return F.expr('INTERVAL {} {}'.format(
+        op.value, _time_unit_mapping[dtype.unit]
+    ))
+
+
+def _compile_datetime_binop(t, expr, scope, fn, allowed_units, **kwargs):
+    op = expr.op()
+
+    left = t.translate(op.left, scope)
+    right = _get_interval_col(t, op.right, scope, allowed_units)
+
+    return fn(left, right)
+
+
+@compiles(ops.DateAdd)
+def compile_date_add(t, expr, scope, **kwargs):
+    allowed_units = ['Y', 'W', 'M', 'D']
+    return _compile_datetime_binop(
+        t, expr, scope, (lambda l, r: (l + r).cast('timestamp')),
+        allowed_units, **kwargs
+    )
+
+
+@compiles(ops.DateSub)
+def compile_date_sub(t, expr, scope, **kwargs):
+    allowed_units = ['Y', 'W', 'M', 'D']
+    return _compile_datetime_binop(
+        t, expr, scope, (lambda l, r: (l - r).cast('timestamp')),
+        allowed_units, **kwargs
+    )
+
+
+@compiles(ops.DateDiff)
+def compile_date_diff(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    left = t.translate(op.left, scope)
+    right = t.translate(op.right, scope)
+    return F.datediff(left, right)
+
+
+@compiles(ops.TimestampAdd)
+def compile_timestamp_add(t, expr, scope, **kwargs):
+    allowed_units = ['Y', 'W', 'M', 'D', 'h', 'm', 's']
+    return _compile_datetime_binop(
+        t, expr, scope, (lambda l, r: (l + r).cast('timestamp')),
+        allowed_units, **kwargs
+    )
+
+
+@compiles(ops.TimestampSub)
+def compile_timestamp_sub(t, expr, scope, **kwargs):
+    allowed_units = ['Y', 'W', 'M', 'D', 'h', 'm', 's']
+    return _compile_datetime_binop(
+        t, expr, scope, (lambda l, r: (l - r).cast('timestamp')),
+        allowed_units, **kwargs
+    )
+
+
+@compiles(ops.TimestampDiff)
+def compile_timestamp_diff(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    left = t.translate(op.left, scope)
+    right = t.translate(op.right, scope)
+    return F.datediff(left, right) - F.lit(1)
+
+
+def _compile_interval_binop(t, expr, scope, fn, **kwargs):
+    op = expr.op()
+
+    left = _get_interval_col(t, op.left, scope)
+    right = _get_interval_col(t, op.right, scope)
+
+    return fn(left, right)
+
+
+@compiles(ops.IntervalAdd)
+def compile_interval_add(t, expr, scope, **kwargs):
+    return _compile_interval_binop(
+        t, expr, scope, (lambda l, r: l + r), **kwargs
+    )
+
+
+@compiles(ops.IntervalSubtract)
+def compile_interval_subtract(t, expr, scope, **kwargs):
+    return _compile_interval_binop(
+        t, expr, scope, (lambda l, r: l - r), **kwargs
+    )
+
+
+@compiles(ops.IntervalFromInteger)
+def compile_interval_from_integer(t, expr, scope, **kwargs):
+    raise com.UnsupportedOperationError(
+        'Interval from integer column is unsupported for the PySpark backend.'
+    )
+
+
+# -------------------------- Array Operations ----------------------------
+
+
+@compiles(ops.ArrayIndex)
+def compile_array_index(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    src_column = t.translate(op.arg, scope)
+    index = op.index.op().value + 1
+    return F.element_at(src_column, index)
 
 
 class PySparkDialect(SparkDialect):

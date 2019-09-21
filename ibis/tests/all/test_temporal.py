@@ -3,6 +3,7 @@ import warnings
 import numpy as np
 import pandas as pd
 import pandas.util.testing as tm
+from pandas.api.types import is_timedelta64_dtype
 import pytest
 from pytest import param
 
@@ -18,6 +19,7 @@ from ibis.tests.backends import (
     Pandas,
     Parquet,
     PostgreSQL,
+    PySpark,
     Spark,
     SQLite,
 )
@@ -203,6 +205,15 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
             id='timestamp-add-interval',
         ),
         param(
+            lambda t, be: t.timestamp_col + (
+                ibis.interval(days=4) - ibis.interval(days=2)
+            ),
+            lambda t, be: t.timestamp_col + (
+                pd.Timedelta(days=4) - pd.Timedelta(days=2)
+            ),
+            id='timestamp-add-interval-binop',
+        ),
+        param(
             lambda t, be: t.timestamp_col - ibis.interval(days=17),
             lambda t, be: t.timestamp_col - pd.Timedelta(days=17),
             id='timestamp-subtract-interval',
@@ -244,6 +255,10 @@ def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
     result = con.execute(expr)
     expected = backend.default_series_rename(expected)
 
+    # PySpark backend returns diff in days, no support for timedelta
+    if is_timedelta64_dtype(expected.dtype) and isinstance(backend, PySpark):
+        expected = expected.apply(lambda dt: dt.days).astype('int32')
+
     backend.assert_series_equal(result, expected)
 
 
@@ -259,6 +274,8 @@ def test_interval_add_cast_scalar(backend, alltypes):
 
 
 @pytest.mark.xfail_unsupported
+# PySpark does not support casting columns to intervals
+@pytest.mark.xfail_backends([PySpark])
 @pytest.mark.skip_backends([Spark])
 def test_interval_add_cast_column(backend, alltypes, df):
     timestamp_date = alltypes.timestamp_col.date()
