@@ -27,7 +27,6 @@ from ibis.tests.backends import (
             lambda t, win: t.float_col.lead().over(win),
             lambda t: t.float_col.shift(-1),
             id='lead',
-            marks=pytest.mark.xfail_backends((OmniSciDB,)),
         ),
         param(
             lambda t, win: t.id.rank().over(win),
@@ -49,7 +48,8 @@ from ibis.tests.backends import (
             lambda t: t.id.rank(pct=True),
             id='percent_rank',
             marks=pytest.mark.xpass_backends(
-                [Csv, Pandas, Parquet, PySpark], raises=AssertionError
+                [Csv, Pandas, Parquet, PySpark, OmniSciDB],
+                raises=AssertionError,
             ),
         ),
         param(
