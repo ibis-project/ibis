@@ -182,6 +182,17 @@ def test_filter(client, filter_fn, expected_fn):
     tm.assert_frame_equal(result.toPandas(), expected.toPandas())
 
 
+def test_cast(client):
+    table = client.table('table1')
+
+    result = table.mutate(id_string=table.id.cast('string')).compile()
+
+    df = table.compile()
+    df = df.withColumn('id_string', df.id.cast('string'))
+
+    tm.assert_frame_equal(result.toPandas(), df.toPandas())
+
+
 @pytest.mark.parametrize(
     'fn',
     [

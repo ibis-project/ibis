@@ -3,7 +3,6 @@ import warnings
 import numpy as np
 import pandas as pd
 import pandas.util.testing as tm
-from pandas.api.types import is_timedelta64_dtype
 import pytest
 from pytest import param
 
@@ -254,10 +253,6 @@ def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
 
     result = con.execute(expr)
     expected = backend.default_series_rename(expected)
-
-    # PySpark backend returns diff in days, no support for timedelta
-    if is_timedelta64_dtype(expected.dtype) and isinstance(backend, PySpark):
-        expected = expected.apply(lambda dt: dt.days).astype('int32')
 
     backend.assert_series_equal(result, expected)
 

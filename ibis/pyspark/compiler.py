@@ -4,6 +4,7 @@ import functools
 import operator
 
 import pyspark.sql.functions as F
+from pyspark.sql.functions import pandas_udf, PandasUDFType
 from pyspark.sql import Window
 
 import ibis.common.exceptions as com
@@ -102,8 +103,7 @@ def compile_selection(t, expr, scope, **kwargs):
     for selection in op.selections:
         if isinstance(selection, types.TableExpr):
             col_names_in_selection_order.extend(selection.columns)
-        elif (isinstance(selection, types.ColumnExpr)
-              or isinstance(selection, types.ScalarExpr)):
+        elif isinstance(selection, (types.ColumnExpr, types.ScalarExpr)):
             column_name = selection.get_name()
             col_names_in_selection_order.append(column_name)
             column = t.translate(selection, scope=scope)
@@ -250,7 +250,7 @@ def compile_literal(t, expr, scope, raw=False, **kwargs):
         return F.lit(expr.op().value)
 
 
-def _compile_agg(t, scope, agg_expr, context):
+def _compile_agg(t, agg_expr, scope, context):
     agg = t.translate(agg_expr, scope, context=context)
     if agg_expr.has_name():
         return agg.alias(agg_expr.get_name())
@@ -265,12 +265,12 @@ def compile_aggregation(t, expr, scope, **kwargs):
 
     if op.by:
         context = AggregationContext.GROUP
-        aggs = [_compile_agg(t, scope, m, context) for m in op.metrics]
+        aggs = [_compile_agg(t, m, scope, context) for m in op.metrics]
         bys = [t.translate(b, scope) for b in op.by]
         return src_table.groupby(*bys).agg(*aggs)
     else:
         context = AggregationContext.ENTIRE
-        aggs = [_compile_agg(t, scope, m, context) for m in op.metrics]
+        aggs = [_compile_agg(t, m, scope, context) for m in op.metrics]
         return src_table.agg(*aggs)
 
 
@@ -1181,9 +1181,15 @@ def compile_timestamp_truncate(t, expr, scope, **kwargs):
 
 @compiles(ops.Strftime)
 def compile_strftime(t, expr, scope, **kwargs):
-    raise com.UnsupportedOperationError(
-        'PySpark uses Java SimpleDateFormat and does not support strftime.'
-    )
+    op = expr.op()
+    format_str = op.format_str.op().value
+
+    @pandas_udf('string', PandasUDFType.SCALAR)
+    def strftime(timestamps):
+        return timestamps.dt.strftime(format_str)
+
+    src_column = t.translate(op.arg, scope)
+    return strftime(src_column)
 
 
 @compiles(ops.TimestampFromUNIX)
@@ -1305,11 +1311,10 @@ def compile_date_sub(t, expr, scope, **kwargs):
 
 @compiles(ops.DateDiff)
 def compile_date_diff(t, expr, scope, **kwargs):
-    op = expr.op()
-
-    left = t.translate(op.left, scope)
-    right = t.translate(op.right, scope)
-    return F.datediff(left, right)
+    raise com.UnsupportedOperationError(
+        'PySpark backend does not support DateDiff as there is no '
+        'timedelta type.'
+    )
 
 
 @compiles(ops.TimestampAdd)
@@ -1332,11 +1337,10 @@ def compile_timestamp_sub(t, expr, scope, **kwargs):
 
 @compiles(ops.TimestampDiff)
 def compile_timestamp_diff(t, expr, scope, **kwargs):
-    op = expr.op()
-
-    left = t.translate(op.left, scope)
-    right = t.translate(op.right, scope)
-    return F.datediff(left, right) - F.lit(1)
+    raise com.UnsupportedOperationError(
+        'PySpark backend does not support TimestampDiff as there is no '
+        'timedelta type.'
+    )
 
 
 def _compile_interval_binop(t, expr, scope, fn, **kwargs):
