@@ -1097,7 +1097,7 @@ def compile_date(t, expr, scope, **kwargs):
     return F.to_date(src_column).cast('timestamp')
 
 
-def _extract_x_from_datetime(t, expr, scope, extract_fn, **kwargs):
+def _extract_component_from_datetime(t, expr, scope, extract_fn, **kwargs):
     op = expr.op()
     date_col = t.translate(op.arg, scope)
     return extract_fn(date_col)
@@ -1105,32 +1105,34 @@ def _extract_x_from_datetime(t, expr, scope, extract_fn, **kwargs):
 
 @compiles(ops.ExtractYear)
 def compile_extract_year(t, expr, scope, **kwargs):
-    return _extract_x_from_datetime(t, expr, scope, F.year, **kwargs)
+    return _extract_component_from_datetime(t, expr, scope, F.year, **kwargs)
 
 
 @compiles(ops.ExtractMonth)
 def compile_extract_month(t, expr, scope, **kwargs):
-    return _extract_x_from_datetime(t, expr, scope, F.month, **kwargs)
+    return _extract_component_from_datetime(t, expr, scope, F.month, **kwargs)
 
 
 @compiles(ops.ExtractDay)
 def compile_extract_day(t, expr, scope, **kwargs):
-    return _extract_x_from_datetime(t, expr, scope, F.dayofmonth, **kwargs)
+    return _extract_component_from_datetime(
+        t, expr, scope, F.dayofmonth, **kwargs
+    )
 
 
 @compiles(ops.ExtractHour)
 def compile_extract_hour(t, expr, scope, **kwargs):
-    return _extract_x_from_datetime(t, expr, scope, F.hour, **kwargs)
+    return _extract_component_from_datetime(t, expr, scope, F.hour, **kwargs)
 
 
 @compiles(ops.ExtractMinute)
 def compile_extract_minute(t, expr, scope, **kwargs):
-    return _extract_x_from_datetime(t, expr, scope, F.minute, **kwargs)
+    return _extract_component_from_datetime(t, expr, scope, F.minute, **kwargs)
 
 
 @compiles(ops.ExtractSecond)
 def compile_extract_second(t, expr, scope, **kwargs):
-    return _extract_x_from_datetime(t, expr, scope, F.second, **kwargs)
+    return _extract_component_from_datetime(t, expr, scope, F.second, **kwargs)
 
 
 @compiles(ops.ExtractMillisecond)
