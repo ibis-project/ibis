@@ -1089,25 +1089,6 @@ _time_unit_mapping = {
     's': 'second'
 }
 
-# PySpark value to (Ibis value, day of week name)
-_day_of_week_mapping = {
-    1: (6, 'Sunday'),
-    2: (0, 'Monday'),
-    3: (1, 'Tuesday'),
-    4: (2, 'Wednesday'),
-    5: (3, 'Thursday'),
-    6: (4, 'Friday'),
-    7: (5, 'Saturday')
-}
-
-
-def _get_ibis_day_of_week_index(pyspark_index):
-    return _day_of_week_mapping[pyspark_index][0]
-
-
-def _get_day_of_week_name(pyspark_index):
-    return _day_of_week_mapping[pyspark_index][1]
-
 
 @compiles(ops.Date)
 def compile_date(t, expr, scope, **kwargs):
@@ -1233,24 +1214,24 @@ def compile_string_to_timestamp(t, expr, scope, **kwargs):
 def compile_day_of_week_index(t, expr, scope, **kwargs):
     op = expr.op()
 
-    @F.udf('short')
-    def map_index(pyspark_index):
-        return _get_ibis_day_of_week_index(pyspark_index)
+    @pandas_udf('short', PandasUDFType.SCALAR)
+    def day_of_week(s):
+        return s.dt.dayofweek
 
     src_column = t.translate(op.arg, scope)
-    return map_index(F.dayofweek(src_column))
+    return day_of_week(src_column.cast('timestamp'))
 
 
 @compiles(ops.DayOfWeekName)
 def compiles_day_of_week_name(t, expr, scope, **kwargs):
     op = expr.op()
 
-    @F.udf('string')
-    def map_name(pyspark_index):
-        return _get_day_of_week_name(pyspark_index)
+    @pandas_udf('string', PandasUDFType.SCALAR)
+    def day_name(s):
+        return s.dt.day_name()
 
     src_column = t.translate(op.arg, scope)
-    return map_name(F.dayofweek(src_column))
+    return day_name(src_column.cast('timestamp'))
 
 
 def _get_interval_col(t, interval_ibis_expr, scope, allowed_units=None):
