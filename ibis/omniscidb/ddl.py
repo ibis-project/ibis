@@ -18,6 +18,7 @@ def _is_quoted(x):
     quoted, _ = regex.match(x).groups()
     return quoted is not None
 
+
 def _bool_str(x):
     return 'true' if x else 'false'
 
@@ -553,8 +554,6 @@ class LoadData(OmniSciDBDDL):
     def compile(self):
         scoped_name = self._get_scoped_name(self.table_name, self.database)
         return "COPY {} FROM '{}' WITH (header = '{}', quoted = '{}')".format(
-            scoped_name,
-			self.path, 
-			_bool_str(self.header), 
-			_bool_str(self.quoted)
-    	)
+            scoped_name, self.path,
+            _bool_str(self.header), _bool_str(self.quoted)
+        )
