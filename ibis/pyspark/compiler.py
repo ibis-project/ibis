@@ -161,12 +161,12 @@ def compile_cast(t, expr, scope, **kwargs):
 @compiles(ops.Limit)
 def compile_limit(t, expr, scope, **kwargs):
     op = expr.op()
-    df = compile_with_scope(t, op.table, scope)
     if op.offset != 0:
         raise com.UnsupportedArgumentError(
             'PySpark backend does not support non-zero offset is for '
             'limit operation. Got offset {}.'.format(op.offset)
         )
+    df = compile_with_scope(t, op.table, scope)
     return df.limit(op.n)
 
 
