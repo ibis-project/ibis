@@ -394,15 +394,15 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
 
     def read_csv(self, path, header=True, quoted=True):
         """
-        Wraps the COPY FROM DML statement
-		Loads data into an Omniscidb table from CSV files
+        Wraps the COPY FROM DML statement.
+        Loads data into an Omniscidb table from CSV files
 
         Parameters
         ----------
         path : string
           Path to the imput data file
         header : boolean, optional, default True
-          Indicating whether the input file has a header line in Line 1 that should be skipped
+          Indicating whether the input file has a header line
         quoted : boolean, optional, default True
           Indicating whether the input file contains quoted fields
 
