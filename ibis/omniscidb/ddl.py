@@ -18,6 +18,9 @@ def _is_quoted(x):
     quoted, _ = regex.match(x).groups()
     return quoted is not None
 
+def _bool_str(x):
+    return 'true' if x else 'false'
+
 
 class OmniSciDBQualifiedSQLStatement:
     """OmniSciDBQualifiedSQLStatement."""
@@ -525,3 +528,32 @@ class InsertPandas(OmniSciDBDML):
     def compile(self):
         """Compile the Insert expression."""
         return '\n'.join(self.pieces)
+
+
+class LoadData(OmniSciDBDDL):
+
+    """
+    Generate DDL for LOAD DATA command. Cannot be cancelled
+    """
+
+    def __init__(
+        self,
+        table_name,
+        path,
+        delimiter=',',
+        header=True,
+        quoted=True,
+        database=None
+    ):
+        self.table_name = table_name
+        self.database = database
+        self.path = path
+        self.delimiter = delimiter
+        self.header = header
+        self.quoted = quoted
+
+    def compile(self):
+        scoped_name = self._get_scoped_name(self.table_name, self.database)
+        return "COPY {} FROM '{}' WITH (delimiter = '{}', header = '{}', quoted = '{}')".format(
+            scoped_name, self.path, self.delimiter, _bool_str(self.header), _bool_str(self.quoted)
+    )
