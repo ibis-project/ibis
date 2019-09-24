@@ -392,17 +392,15 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         stmt = ddl.LoadData(self._qualified_name, df)
         return self._execute(stmt)
 
-    def load_data(self, path, delimiter, header=True, quoted=True):
+    def read_csv(self, path, header=True, quoted=True):
         """
-        Wraps the LOAD DATA DDL statement. Loads data into an Omniscidb table by
-        physically moving data files.
+        Wraps the COPY FROM DML statement
+		Loads data into an Omniscidb table from CSV files
 
         Parameters
         ----------
         path : string
           Path to the imput data file
-        delimiter : string
-          A single-character string for the delimiter between input fields
         header : boolean, optional, default True
           Indicating whether the input file has a header line in Line 1 that should be skipped
         quoted : boolean, optional, default True
@@ -412,7 +410,7 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         -------
         query : OmniSciDBQuery
         """
-        stmt = ddl.LoadData(self._qualified_name, path, delimiter, header, quoted)
+        stmt = ddl.LoadData(self._qualified_name, path, header, quoted)
         return self._execute(stmt)
 
     @property
