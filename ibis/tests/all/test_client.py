@@ -1,3 +1,4 @@
+import pandas as pd
 import pytest
 from pkg_resources import parse_version
 
@@ -9,6 +10,35 @@ from ibis.tests.backends import BigQuery, Impala, PySpark, Spark
 @pytest.fixture
 def new_schema():
     return ibis.schema([('a', 'string'), ('b', 'bool'), ('c', 'int32')])
+
+
+@pytest.mark.xfail_unsupported
+def test_load_data_sqlalchemy(backend, con, temp_table):
+    if not isinstance(con.dialect(), ibis.sql.alchemy.AlchemyDialect):
+        pytest.skip('{} is not a SQL Alchemy Client.'.format(backend.name))
+
+    sch = ibis.schema(
+        [
+            ('first_name', 'string'),
+            ('last_name', 'string'),
+            ('department_name', 'string'),
+            ('salary', 'float64'),
+        ]
+    )
+
+    df = pd.DataFrame(
+        {
+            'first_name': ['A', 'B', 'C'],
+            'last_name': ['D', 'E', 'F'],
+            'department_name': ['AA', 'BB', 'CC'],
+            'salary': [100.0, 200.0, 300.0],
+        }
+    )
+    con.create_table(temp_table, schema=sch)
+    con.load_data(temp_table, df, if_exists='append')
+    result = con.table(temp_table).execute()
+
+    backend.assert_frame_equal(df, result)
 
 
 @pytest.mark.xfail_unsupported

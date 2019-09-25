@@ -1196,7 +1196,7 @@ class OmniSciDBClient(SQLClient):
         """
         _database = self.db_name
         self.set_database(database)
-        self.con.load_table(table_name, obj, **kwargs)
+        self.con.load_table(table_name, obj)
         self.set_database(_database)
 
     @property
