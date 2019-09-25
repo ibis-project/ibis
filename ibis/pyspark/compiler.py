@@ -10,6 +10,11 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as types
 from ibis.pyspark.operations import PySparkTable
+from ibis.spark.compiler import SparkContext, SparkDialect
+
+
+class PySparkContext(SparkContext):
+    pass
 
 
 class AggregationContext(enum.Enum):
@@ -20,6 +25,7 @@ class AggregationContext(enum.Enum):
 
 class PySparkExprTranslator:
     _registry = {}
+    context_class = PySparkContext
 
     @classmethod
     def compiles(cls, klass):
@@ -33,7 +39,9 @@ class PySparkExprTranslator:
         # The operation node type the typed expression wraps
         op = expr.op()
 
-        if type(op) in self._registry:
+        if op in scope:
+            return scope[op]
+        elif type(op) in self._registry:
             formatter = self._registry[type(op)]
             return formatter(self, expr, scope, **kwargs)
         else:
@@ -66,6 +74,13 @@ def compile_datasource(t, expr, scope):
     op = expr.op()
     name, _, client = op.args
     return client._session.table(name)
+
+
+@compiles(ops.SQLQueryResult)
+def compile_sql_query_result(t, expr, scope, **kwargs):
+    op = expr.op()
+    query, _, client = op.args
+    return client._session.sql(query)
 
 
 @compiles(ops.Selection)
@@ -1011,3 +1026,10 @@ def compile_cumulative_max(t, expr, scope, *, window, **kwargs):
     return _handle_cumulative_operation(
         t, expr, scope, F.max, window=window, **kwargs
     )
+
+
+class PySparkDialect(SparkDialect):
+    translator = PySparkExprTranslator
+
+
+dialect = PySparkDialect

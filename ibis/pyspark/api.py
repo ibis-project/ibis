@@ -1,4 +1,5 @@
 from ibis.pyspark.client import PySparkClient
+from ibis.pyspark.compiler import dialect  # noqa: F401
 
 
 def connect(session):
