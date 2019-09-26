@@ -18,6 +18,7 @@ from ibis.tests.backends import (
     Pandas,
     Parquet,
     PostgreSQL,
+    PySpark,
     Spark,
     SQLite,
 )
@@ -203,6 +204,15 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
             id='timestamp-add-interval',
         ),
         param(
+            lambda t, be: t.timestamp_col + (
+                ibis.interval(days=4) - ibis.interval(days=2)
+            ),
+            lambda t, be: t.timestamp_col + (
+                pd.Timedelta(days=4) - pd.Timedelta(days=2)
+            ),
+            id='timestamp-add-interval-binop',
+        ),
+        param(
             lambda t, be: t.timestamp_col - ibis.interval(days=17),
             lambda t, be: t.timestamp_col - pd.Timedelta(days=17),
             id='timestamp-subtract-interval',
@@ -259,6 +269,8 @@ def test_interval_add_cast_scalar(backend, alltypes):
 
 
 @pytest.mark.xfail_unsupported
+# PySpark does not support casting columns to intervals
+@pytest.mark.xfail_backends([PySpark])
 @pytest.mark.skip_backends([Spark])
 def test_interval_add_cast_column(backend, alltypes, df):
     timestamp_date = alltypes.timestamp_col.date()
