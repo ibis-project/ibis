@@ -59,7 +59,7 @@ jobs:
           kudu-master
       displayName: 'Start databases'
 
-    - bash: ./check-services.sh
+    - bash: ./ci/check-services.sh
       displayName: 'Wait for databases'
 
     - bash: docker ps
@@ -191,7 +191,7 @@ jobs:
           kudu-tserver
       displayName: 'Start databases'
 
-    - bash: ./check-services.sh
+    - bash: ./ci/check-services.sh
       displayName: 'Wait for databases'
 
     - bash: docker-compose build ibis ibis-docs
