@@ -9,26 +9,6 @@ pytest.importorskip('pyspark')
 pytestmark = pytest.mark.pyspark
 
 
-@pytest.fixture(scope='session')
-def client():
-    from pyspark.sql import SparkSession
-
-    session = SparkSession.builder.getOrCreate()
-    client = ibis.pyspark.connect(session)
-
-    df = client._session.createDataFrame(
-        [
-            ['k1', [1, 2, 3], ['a']],
-            ['k2', [4, 5], ['test1', 'test2', 'test3']],
-            ['k3', [6], ['w', 'x', 'y', 'z']],
-            ['k1', [], ['cat', 'dog']]
-        ],
-        ['key', 'array_int', 'array_str']
-    )
-    df.createTempView('array_table')
-    return client
-
-
 def test_array_length(client):
     table = client.table('array_table')
 
