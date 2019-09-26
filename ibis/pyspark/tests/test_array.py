@@ -25,12 +25,12 @@ def client():
         ],
         ['key', 'array_int', 'array_str']
     )
-    df.createTempView('table1')
+    df.createTempView('array_table')
     return client
 
 
 def test_array_length(client):
-    table = client.table('table1')
+    table = client.table('array_table')
 
     result = table.mutate(length=table.array_int.length()).compile()
 
@@ -84,7 +84,7 @@ def test_array_length_scalar(client):
     ],
 )
 def test_array_slice(client, start, stop):
-    table = client.table('table1')
+    table = client.table('array_table')
 
     result = table.mutate(sliced=table.array_int[start:stop]).compile()
 
@@ -138,7 +138,7 @@ def test_array_slice_scalar(client, start, stop):
 
 @pytest.mark.parametrize('index', [1, 3, 4, 11, -11])
 def test_array_index(client, index):
-    table = client.table('table1')
+    table = client.table('array_table')
     expr = table[table.array_int[index].name('indexed')]
     result = expr.execute()
 
@@ -165,7 +165,7 @@ def test_array_index_scalar(client, index):
 
 @pytest.mark.parametrize('op', [lambda x, y: x + y, lambda x, y: y + x])
 def test_array_concat(client, op):
-    table = client.table('table1')
+    table = client.table('array_table')
     x = table.array_int.cast('array<string>')
     y = table.array_str
     expr = op(x, y)
@@ -193,7 +193,7 @@ def test_array_concat_scalar(client, op):
 @pytest.mark.parametrize('n', [1, 3, 4, 7, -2])  # negative returns empty list
 @pytest.mark.parametrize('mul', [lambda x, n: x * n, lambda x, n: n * x])
 def test_array_repeat(client, n, mul):
-    table = client.table('table1')
+    table = client.table('array_table')
 
     expr = table.projection([mul(table.array_int, n).name('repeated')])
     result = expr.execute()
@@ -215,7 +215,7 @@ def test_array_repeat_scalar(client, n, mul):
 
 
 def test_array_collect(client):
-    table = client.table('table1')
+    table = client.table('array_table')
     expr = table.group_by(table.key).aggregate(
         collected=table.array_int.collect()
     )
