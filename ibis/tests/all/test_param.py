@@ -56,7 +56,7 @@ def test_timestamp_accepts_date_literals(backend, alltypes):
     assert expr.compile(params=params) is not None
 
 
-@pytest.mark.xfail_backend([PySpark])
+@pytest.mark.xfail_backends([PySpark])
 @pytest.mark.xfail_unsupported
 def test_scalar_param_array(backend, con):
     value = [1, 2, 3]
