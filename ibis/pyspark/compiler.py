@@ -14,7 +14,8 @@ import ibis.expr.types as types
 from ibis import interval
 from ibis.pyspark.operations import PySparkTable
 from ibis.spark.compiler import SparkContext, SparkDialect
-from ibis.spark.datatypes import ibis_array_dtype_to_spark_dtype
+from ibis.spark.datatypes import ibis_array_dtype_to_spark_dtype, \
+    ibis_dtype_to_spark_dtype
 
 
 class PySparkContext(SparkContext):
@@ -172,7 +173,7 @@ def compile_cast(t, expr, scope, **kwargs):
     if isinstance(op.to, dtypes.Array):
         cast_type = ibis_array_dtype_to_spark_dtype(op.to)
     else:
-        cast_type = op.to.name
+        cast_type = ibis_dtype_to_spark_dtype(op.to)
 
     src_column = t.translate(op.arg, scope)
     return src_column.cast(cast_type)
