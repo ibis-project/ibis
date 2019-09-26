@@ -4,6 +4,7 @@ import pytest
 from pytest import param
 
 import ibis
+import ibis.common.exceptions as com
 
 pytest.importorskip('pyspark')
 pytestmark = pytest.mark.pyspark
@@ -20,7 +21,10 @@ def client():
     df = df.withColumn("str_col", F.lit('value'))
     df.createTempView('table1')
 
-    df1 = client._session.createDataFrame([(True,), (False,)]).toDF('v')
+    df1 = client._session.createDataFrame(
+        [['2018-01-02'], ['2018-01-03'], ['2018-01-04']],
+        ['date_str']
+    )
     df1.createTempView('table2')
     return client
 
@@ -73,7 +77,7 @@ def test_aggregation(client):
 
     table = client.table('table1')
     result = table.aggregate(table['id'].max()).compile()
-    expected = table.compile().agg(F.max('id'))
+    expected = table.compile().agg(F.max('id').alias('max'))
 
     tm.assert_frame_equal(result.toPandas(), expected.toPandas())
 
@@ -83,7 +87,7 @@ def test_groupby(client):
 
     table = client.table('table1')
     result = table.groupby('id').aggregate(table['id'].max()).compile()
-    expected = table.compile().groupby('id').agg(F.max('id'))
+    expected = table.compile().groupby('id').agg(F.max('id').alias('max'))
 
     tm.assert_frame_equal(result.toPandas(), expected.toPandas())
 
@@ -176,3 +180,47 @@ def test_filter(client, filter_fn, expected_fn):
     expected = expected_fn(df)
 
     tm.assert_frame_equal(result.toPandas(), expected.toPandas())
+
+
+def test_cast(client):
+    table = client.table('table1')
+
+    result = table.mutate(id_string=table.id.cast('string')).compile()
+
+    df = table.compile()
+    df = df.withColumn('id_string', df.id.cast('string'))
+
+    tm.assert_frame_equal(result.toPandas(), df.toPandas())
+
+
+@pytest.mark.parametrize(
+    'fn',
+    [
+        param(lambda t: t.date_str.to_timestamp('yyyy-MM-dd')),
+        param(lambda t: t.date_str.to_timestamp('yyyy-MM-dd', timezone='UTC'))
+    ],
+)
+def test_string_to_timestamp(client, fn):
+    import pyspark.sql.functions as F
+    table = client.table('table2')
+
+    result = table.mutate(date=fn(table)).compile()
+
+    df = table.compile()
+    expected = df.withColumn(
+        'date',
+        F.to_date(df.date_str, 'yyyy-MM-dd').alias('date')
+    )
+    expected_pdf = expected.toPandas()
+    expected_pdf['date'] = pd.to_datetime(expected_pdf['date'])
+
+    tm.assert_frame_equal(result.toPandas(), expected_pdf)
+
+
+def test_string_to_timestamp_tz_error(client):
+    table = client.table('table2')
+
+    with pytest.raises(com.UnsupportedArgumentError):
+        table.mutate(
+            date=table.date_str.to_timestamp('yyyy-MM-dd', 'non-utc-timezone')
+        ).compile()

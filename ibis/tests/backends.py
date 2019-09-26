@@ -596,6 +596,8 @@ class Spark(Backend, RoundHalfToEven):
 
 
 class PySpark(Backend, RoundAwayFromZero):
+    supported_to_timestamp_units = {'s'}
+
     @staticmethod
     def skip_if_missing_dependencies() -> None:
         pytest.importorskip('pyspark')
