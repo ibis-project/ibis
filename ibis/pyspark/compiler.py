@@ -14,6 +14,7 @@ import ibis.expr.types as types
 from ibis import interval
 from ibis.pyspark.operations import PySparkTable
 from ibis.spark.compiler import SparkContext, SparkDialect
+from ibis.spark.datatypes import ibis_array_dtype_to_spark_dtype
 
 
 class PySparkContext(SparkContext):
@@ -168,8 +169,13 @@ def compile_cast(t, expr, scope, **kwargs):
                 'in the PySpark backend. {} not allowed.'.format(type(op.arg))
             )
 
+    if isinstance(op.to, dtypes.Array):
+        cast_type = ibis_array_dtype_to_spark_dtype(op.to)
+    else:
+        cast_type = op.to.name
+
     src_column = t.translate(op.arg, scope)
-    return src_column.cast(op.to.name)
+    return src_column.cast(cast_type)
 
 
 @compiles(ops.Limit)
@@ -260,6 +266,8 @@ def compile_literal(t, expr, scope, raw=False, **kwargs):
             return set(value)
         else:
             return value
+    elif isinstance(value, list):
+        return F.array(*[F.lit(v) for v in value])
     else:
         return F.lit(expr.op().value)
 
@@ -1380,6 +1388,29 @@ def compile_interval_from_integer(t, expr, scope, **kwargs):
 # -------------------------- Array Operations ----------------------------
 
 
+@compiles(ops.ArrayLength)
+def compile_array_length(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    src_column = t.translate(op.arg, scope)
+    return F.size(src_column)
+
+
+@compiles(ops.ArraySlice)
+def compile_array_slice(t, expr, scope, **kwargs):
+    op = expr.op()
+    start = op.start.op().value if op.start is not None else op.start
+    stop = op.stop.op().value if op.stop is not None else op.stop
+    spark_type = ibis_array_dtype_to_spark_dtype(op.arg.type())
+
+    @F.udf(spark_type)
+    def slice(array):
+        return array[start:stop]
+
+    src_column = t.translate(op.arg, scope)
+    return slice(src_column)
+
+
 @compiles(ops.ArrayIndex)
 def compile_array_index(t, expr, scope, **kwargs):
     op = expr.op()
@@ -1387,6 +1418,40 @@ def compile_array_index(t, expr, scope, **kwargs):
     src_column = t.translate(op.arg, scope)
     index = op.index.op().value + 1
     return F.element_at(src_column, index)
+
+
+@compiles(ops.ArrayConcat)
+def compile_array_concat(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    left = t.translate(op.left, scope)
+    right = t.translate(op.right, scope)
+    return F.concat(left, right)
+
+
+@compiles(ops.ArrayRepeat)
+def compile_array_repeat(t, expr, scope, **kwargs):
+    op = expr.op()
+    times = op.times.op().value
+    spark_type = ibis_array_dtype_to_spark_dtype(op.arg.type())
+
+    @F.udf(spark_type)
+    def repeat(array):
+        return array * times
+
+    src_column = t.translate(op.arg, scope)
+    return repeat(src_column)
+
+
+@compiles(ops.ArrayCollect)
+def compile_array_collect(t, expr, scope, **kwargs):
+    op = expr.op()
+
+    src_column = t.translate(op.arg, scope)
+    return F.collect_list(src_column)
+
+
+# --------------------------- Null Operations -----------------------------
 
 
 @compiles(ops.NullLiteral)
