@@ -53,7 +53,12 @@ class PySparkExprTranslator:
             )
 
 
+class PySparkDialect(SparkDialect):
+    translator = PySparkExprTranslator
+
+
 compiles = PySparkExprTranslator.compiles
+dialect = PySparkDialect
 
 
 def compile_with_scope(t, expr, scope):
@@ -88,14 +93,7 @@ def compile_sql_query_result(t, expr, scope, **kwargs):
 
 @compiles(ops.Selection)
 def compile_selection(t, expr, scope, **kwargs):
-    # Cache compile results for tables
     op = expr.op()
-
-    # TODO: Support sort_keys (see issue #1957)
-    if op.sort_keys:
-        raise NotImplementedError(
-            "predicates and sort_keys are not supported with Selection"
-        )
 
     src_table = compile_with_scope(t, op.table, scope)
     col_names_in_selection_order = []
@@ -116,7 +114,23 @@ def compile_selection(t, expr, scope, **kwargs):
         col = t.translate(predicate, scope)
         src_table = src_table[col]
 
-    return src_table
+    if op.sort_keys:
+        sort_cols = [compile_with_scope(t, key, scope) for key in op.sort_keys]
+
+        return src_table.sort(*sort_cols)
+    else:
+        return src_table
+
+
+@compiles(ops.SortKey)
+def compile_sort_key(t, expr, scope, **kwargs):
+    op = expr.op()
+    col = compile_with_scope(t, op.expr, scope)
+
+    if op.ascending:
+        return col.asc()
+    else:
+        return col.desc()
 
 
 @compiles(ops.TableColumn)
@@ -279,6 +293,13 @@ def compile_contains(t, expr, scope, **kwargs):
     op = expr.op()
     col = t.translate(op.value, scope)
     return col.isin(t.translate(op.options, scope))
+
+
+@compiles(ops.NotContains)
+def compile_not_contains(t, expr, scope, **kwargs):
+    op = expr.op()
+    col = t.translate(op.value, scope)
+    return ~(col.isin(t.translate(op.options, scope)))
 
 
 def compile_aggregator(t, expr, scope, fn, context=None, **kwargs):
@@ -1368,8 +1389,22 @@ def compile_array_index(t, expr, scope, **kwargs):
     return F.element_at(src_column, index)
 
 
-class PySparkDialect(SparkDialect):
-    translator = PySparkExprTranslator
+@compiles(ops.NullLiteral)
+def compile_null_literal(t, expr, scope):
+    return F.lit(None)
 
 
-dialect = PySparkDialect
+@compiles(ops.IfNull)
+def compile_if_null(t, expr, scope, **kwargs):
+    op = expr.op()
+    col = compile_with_scope(t, op.arg, scope)
+    ifnull_col = compile_with_scope(t, op.ifnull_expr, scope)
+    return F.when(col.isNull(), ifnull_col).otherwise(col)
+
+
+@compiles(ops.NullIf)
+def compile_null_if(t, expr, scope, **kwargs):
+    op = expr.op()
+    col = compile_with_scope(t, op.arg, scope)
+    nullif_col = compile_with_scope(t, op.null_if_expr, scope)
+    return F.when(col == nullif_col, F.lit(None)).otherwise(col)
