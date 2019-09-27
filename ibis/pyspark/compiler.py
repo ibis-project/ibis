@@ -1433,15 +1433,10 @@ def compile_array_concat(t, expr, scope, **kwargs):
 @compiles(ops.ArrayRepeat)
 def compile_array_repeat(t, expr, scope, **kwargs):
     op = expr.op()
-    times = op.times.op().value
-    spark_type = ibis_array_dtype_to_spark_dtype(op.arg.type())
-
-    @F.udf(spark_type)
-    def repeat(array):
-        return array * times
 
     src_column = t.translate(op.arg, scope)
-    return repeat(src_column)
+    times = op.times.op().value
+    return F.flatten(F.array_repeat(src_column, times))
 
 
 @compiles(ops.ArrayCollect)
