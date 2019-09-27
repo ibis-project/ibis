@@ -10,6 +10,7 @@ from ibis.tests.backends import (
     MySQL,
     OmniSciDB,
     PostgreSQL,
+    PySpark,
     Spark,
     SQLite,
 )
@@ -24,7 +25,15 @@ from ibis.tests.backends import (
             L(5).nullif(5),
             None,
             marks=pytest.mark.xpass_backends(
-                [BigQuery, Clickhouse, MySQL, PostgreSQL, Spark, SQLite]
+                [
+                    BigQuery,
+                    Clickhouse,
+                    MySQL,
+                    PostgreSQL,
+                    Spark,
+                    SQLite,
+                    PySpark,
+                ]
             ),
         ),
         (L(10).nullif(5), 10),
