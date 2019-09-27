@@ -21,9 +21,10 @@ import pytest
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
+import ibis.sql.alchemy as alch  # noqa: E402
 from ibis.tests.util import assert_equal
 
-pytest.importorskip('sqlalchemy')
+sa = pytest.importorskip('sqlalchemy')
 pytest.importorskip('psycopg2')
 
 pytestmark = pytest.mark.postgresql
@@ -134,6 +135,33 @@ def test_schema_table():
     schema = con.schema('information_schema')
 
     assert isinstance(schema['tables'], ir.TableExpr)
+
+
+def test_schema_unsupported_type_conversion():
+    typespec = [
+        # name, type, nullable
+        ('json', sa.dialects.postgresql.JSON, True, dt.any),
+        ('jsonb', sa.dialects.postgresql.JSONB, True, dt.any),
+        ('uuid', sa.dialects.postgresql.UUID, True, dt.any),
+    ]
+
+    sqla_types = []
+    ibis_types = []
+    for name, t, nullable, ibis_type in typespec:
+        sqla_type = sa.Column(name, t, nullable=nullable)
+        sqla_types.append(sqla_type)
+        ibis_types.append((name, ibis_type(nullable=nullable)))
+
+    # Create a table with placeholder stubs for JSON, JSONB, and UUID.
+    engine = sa.create_engine('postgresql://')
+    table = sa.Table('tname', sa.MetaData(bind=engine), *sqla_types)
+
+    # Check that we can correctly create a schema with dt.any for the
+    # missing types.
+    schema = alch.schema_from_table(table)
+    expected = ibis.schema(ibis_types)
+
+    assert_equal(schema, expected)
 
 
 def test_interval_films_schema(con):
