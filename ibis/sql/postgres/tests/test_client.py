@@ -137,12 +137,12 @@ def test_schema_table():
     assert isinstance(schema['tables'], ir.TableExpr)
 
 
-def test_schema_unsupported_type_conversion():
+def test_schema_type_conversion():
     typespec = [
         # name, type, nullable
-        ('json', sa.dialects.postgresql.JSON, True, dt.any),
-        ('jsonb', sa.dialects.postgresql.JSONB, True, dt.any),
-        ('uuid', sa.dialects.postgresql.UUID, True, dt.any),
+        ('json', sa.dialects.postgresql.JSON, True, dt.JSON),
+        ('jsonb', sa.dialects.postgresql.JSONB, True, dt.JSONB),
+        ('uuid', sa.dialects.postgresql.UUID, True, dt.UUID),
     ]
 
     sqla_types = []

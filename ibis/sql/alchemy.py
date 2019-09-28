@@ -138,17 +138,17 @@ def sa_double(_, satype, nullable=True):
 
 @dt.dtype.register(PostgreSQLDialect, sa.dialects.postgresql.UUID)
 def sa_uuid(_, satype, nullable=True):
-    return dt.Any(nullable=nullable)
+    return dt.UUID(nullable=nullable)
 
 
 @dt.dtype.register(PostgreSQLDialect, sa.dialects.postgresql.JSON)
 def sa_json(_, satype, nullable=True):
-    return dt.Any(nullable=nullable)
+    return dt.JSON(nullable=nullable)
 
 
 @dt.dtype.register(PostgreSQLDialect, sa.dialects.postgresql.JSONB)
 def sa_jsonb(_, satype, nullable=True):
-    return dt.Any(nullable=nullable)
+    return dt.JSONB(nullable=nullable)
 
 
 if geospatial_supported:
