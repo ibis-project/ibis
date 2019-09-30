@@ -794,6 +794,30 @@ class MapColumn(AnyColumn, MapValue):
     pass  # noqa: E701,E302
 
 
+class JSONValue(StringValue):
+    pass  # noqa: E701,E302
+
+
+class JSONScalar(StringScalar, JSONValue):
+    pass  # noqa: E701,E302
+
+
+class JSONColumn(StringColumn, JSONValue):
+    pass  # noqa: E701,E302
+
+
+class JSONBValue(BinaryValue):
+    pass  # noqa: E701,E302
+
+
+class JSONBScalar(BinaryScalar, JSONBValue):
+    pass  # noqa: E701,E302
+
+
+class JSONBColumn(BinaryColumn, JSONBValue):
+    pass  # noqa: E701,E302
+
+
 class StructValue(AnyValue):
     def __dir__(self):
         return sorted(
@@ -907,6 +931,18 @@ class MultiPolygonScalar(GeoSpatialScalar, MultiPolygonValue):  # noqa: E302
 
 class MultiPolygonColumn(GeoSpatialColumn, MultiPolygonValue):  # noqa: E302
     pass  # noqa: E701
+
+
+class UUIDValue(StringValue):
+    pass  # noqa: E701,E302
+
+
+class UUIDScalar(StringScalar, UUIDValue):
+    pass  # noqa: E701,E302
+
+
+class UUIDColumn(StringColumn, UUIDValue):
+    pass  # noqa: E701,E302
 
 
 class ListExpr(ColumnExpr, AnyValue):
