@@ -10,27 +10,8 @@ pytest.importorskip('pyspark')
 pytestmark = pytest.mark.pyspark
 
 
-@pytest.fixture(scope='session')
-def client():
-    from pyspark.sql import SparkSession
-    import pyspark.sql.functions as F
-
-    session = SparkSession.builder.getOrCreate()
-    client = ibis.pyspark.connect(session)
-    df = client._session.range(0, 10)
-    df = df.withColumn("str_col", F.lit('value'))
-    df.createTempView('table1')
-
-    df1 = client._session.createDataFrame(
-        [['2018-01-02'], ['2018-01-03'], ['2018-01-04']],
-        ['date_str']
-    )
-    df1.createTempView('table2')
-    return client
-
-
 def test_basic(client):
-    table = client.table('table1')
+    table = client.table('basic_table')
     result = table.compile().toPandas()
     expected = pd.DataFrame({'id': range(0, 10), 'str_col': 'value'})
 
@@ -38,7 +19,7 @@ def test_basic(client):
 
 
 def test_projection(client):
-    table = client.table('table1')
+    table = client.table('basic_table')
     result1 = table.mutate(v=table['id']).compile().toPandas()
 
     expected1 = pd.DataFrame(
@@ -67,7 +48,7 @@ def test_projection(client):
 
 
 def test_aggregation_col(client):
-    table = client.table('table1')
+    table = client.table('basic_table')
     result = table['id'].count().execute()
     assert result == table.compile().count()
 
@@ -75,7 +56,7 @@ def test_aggregation_col(client):
 def test_aggregation(client):
     import pyspark.sql.functions as F
 
-    table = client.table('table1')
+    table = client.table('basic_table')
     result = table.aggregate(table['id'].max()).compile()
     expected = table.compile().agg(F.max('id').alias('max'))
 
@@ -85,7 +66,7 @@ def test_aggregation(client):
 def test_groupby(client):
     import pyspark.sql.functions as F
 
-    table = client.table('table1')
+    table = client.table('basic_table')
     result = table.groupby('id').aggregate(table['id'].max()).compile()
     expected = table.compile().groupby('id').agg(F.max('id').alias('max'))
 
@@ -96,7 +77,7 @@ def test_window(client):
     import pyspark.sql.functions as F
     from pyspark.sql.window import Window
 
-    table = client.table('table1')
+    table = client.table('basic_table')
     w = ibis.window()
     result = table.mutate(
         grouped_demeaned=table['id'] - table['id'].mean().over(w)
@@ -113,7 +94,7 @@ def test_window(client):
 
 
 def test_greatest(client):
-    table = client.table('table1')
+    table = client.table('basic_table')
     result = table.mutate(greatest=ibis.greatest(table.id)).compile()
     df = table.compile()
     expected = table.compile().withColumn('greatest', df.id)
@@ -122,7 +103,7 @@ def test_greatest(client):
 
 
 def test_selection(client):
-    table = client.table('table1')
+    table = client.table('basic_table')
     table = table.mutate(id2=table['id'] * 2)
 
     result1 = table[['id']].compile()
@@ -144,7 +125,7 @@ def test_selection(client):
 
 
 def test_join(client):
-    table = client.table('table1')
+    table = client.table('basic_table')
     result = table.join(table, ['id', 'str_col']).compile()
     spark_table = table.compile()
     expected = spark_table.join(spark_table, ['id', 'str_col'])
@@ -172,7 +153,7 @@ def test_join(client):
     ],
 )
 def test_filter(client, filter_fn, expected_fn):
-    table = client.table('table1')
+    table = client.table('basic_table')
 
     result = filter_fn(table).compile()
 
@@ -183,7 +164,7 @@ def test_filter(client, filter_fn, expected_fn):
 
 
 def test_cast(client):
-    table = client.table('table1')
+    table = client.table('basic_table')
 
     result = table.mutate(id_string=table.id.cast('string')).compile()
 
@@ -202,7 +183,7 @@ def test_cast(client):
 )
 def test_string_to_timestamp(client, fn):
     import pyspark.sql.functions as F
-    table = client.table('table2')
+    table = client.table('date_table')
 
     result = table.mutate(date=fn(table)).compile()
 
@@ -218,7 +199,7 @@ def test_string_to_timestamp(client, fn):
 
 
 def test_string_to_timestamp_tz_error(client):
-    table = client.table('table2')
+    table = client.table('date_table')
 
     with pytest.raises(com.UnsupportedArgumentError):
         table.mutate(
