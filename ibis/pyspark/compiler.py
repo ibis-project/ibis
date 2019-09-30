@@ -14,8 +14,10 @@ import ibis.expr.types as types
 from ibis import interval
 from ibis.pyspark.operations import PySparkTable
 from ibis.spark.compiler import SparkContext, SparkDialect
-from ibis.spark.datatypes import ibis_array_dtype_to_spark_dtype, \
+from ibis.spark.datatypes import (
+    ibis_array_dtype_to_spark_dtype,
     ibis_dtype_to_spark_dtype
+)
 
 
 class PySparkContext(SparkContext):
@@ -1405,11 +1407,11 @@ def compile_array_slice(t, expr, scope, **kwargs):
     spark_type = ibis_array_dtype_to_spark_dtype(op.arg.type())
 
     @F.udf(spark_type)
-    def slice(array):
+    def array_slice(array):
         return array[start:stop]
 
     src_column = t.translate(op.arg, scope)
-    return slice(src_column)
+    return array_slice(src_column)
 
 
 @compiles(ops.ArrayIndex)
