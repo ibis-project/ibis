@@ -3066,10 +3066,73 @@ class GeoEquals(GeoSpatialBinOp):
     output_type = rlz.shape_like('args', dt.boolean)
 
 
+class GeoGeometryN(GeoSpatialUnOp):
+    """Returns the Nth Geometry of a Multi geometry."""
+
+    n = Arg(rlz.integer)
+
+    output_type = rlz.shape_like('args', dt.geometry)
+
+
+class GeoGeometryType(GeoSpatialUnOp):
+    """Returns the type of the geometry."""
+
+    output_type = rlz.shape_like('args', dt.string)
+
+
 class GeoIntersects(GeoSpatialBinOp):
     """Returns True if the Geometries/Geography “spatially intersect in 2D”
     - (share any portion of space) and False if they don’t (they are Disjoint).
     """
+
+    output_type = rlz.shape_like('args', dt.boolean)
+
+
+class GeoIsValid(GeoSpatialUnOp):
+    """Returns true if the geometry is well-formed"""
+
+    output_type = rlz.shape_like('args', dt.boolean)
+
+
+class GeoLineLocatePoint(GeoSpatialBinOp):
+    """Returns a float between zero and one representing the location of the
+    closest point on the linestring to the given point, as a fraction of the
+    total 2d line length.
+    """
+
+    left = Arg(rlz.linestring)
+    right = Arg(rlz.point)
+
+    output_type = rlz.shape_like('args', dt.halffloat)
+
+
+class GeoLineMerge(GeoSpatialUnOp):
+    """Returns a (set of) LineString(s) formed by sewing together the
+    constituent line work of a multilinestring. If a geometry other than
+    a linestring or multilinestring is given, this will return an empty
+    geometry collection."""
+
+    output_type = rlz.shape_like('args', dt.geometry)
+
+
+class GeoLineSubstring(GeoSpatialUnOp):
+    """Return a linestring that is a substring of the input one, starting
+    and ending at the given fractions of the total 2d length. The second
+    and third arguments are floating point values between zero and one.
+    This only works with linestrings.
+    """
+
+    arg = Arg(rlz.linestring)
+
+    start = Arg(rlz.floating)
+    end = Arg(rlz.floating)
+
+    output_type = rlz.shape_like('args', dt.linestring)
+
+
+class GeoOrderingEquals(GeoSpatialBinOp):
+    """Returns true if the two geometries are equal and the coordinates
+    are in the same order."""
 
     output_type = rlz.shape_like('args', dt.boolean)
 
@@ -3172,7 +3235,6 @@ class GeoEndPoint(GeoSpatialUnOp):
     output_type = rlz.shape_like('arg', dt.point)
 
 
-# TODO: https://postgis.net/docs/ST_PointN.html
 class GeoPointN(GeoSpatialUnOp):
     """Return the Nth point in a single linestring in the geometry.
     Negative values are counted backwards from the end of the LineString,

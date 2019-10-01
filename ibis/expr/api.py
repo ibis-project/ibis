@@ -1846,6 +1846,39 @@ def geo_equals(left, right):
     return op.to_expr()
 
 
+def geo_geometry_n(arg, n):
+    """
+    Get the 1-based Nth geometry of a multi geometry.
+
+    Parameters
+    ----------
+    arg : geometry
+    n : integer
+
+    Returns
+    -------
+    geom : geometry scalar
+    """
+    op = ops.GeoGeometryN(arg, n)
+    return op.to_expr()
+
+
+def geo_geometry_type(arg):
+    """
+    Get the type of a geometry.
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    type : string scalar
+    """
+    op = ops.GeoGeometryType(arg)
+    return op.to_expr()
+
+
 def geo_intersects(left, right):
     """
     Check if the geometries share any points.
@@ -1860,6 +1893,95 @@ def geo_intersects(left, right):
     intersects : bool scalar
     """
     op = ops.GeoIntersects(left, right)
+    return op.to_expr()
+
+
+def geo_is_valid(arg):
+    """
+    Check if the geometry is valid.
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    valid : bool scalar
+    """
+    op = ops.GeoIsValid(arg)
+    return op.to_expr()
+
+
+def geo_line_locate_point(left, right):
+    """Returns a float between zero and one representing the location of the
+    closest point on the linestring to the given point, as a fraction of the
+    total 2d line length.
+
+    Parameters
+    ----------
+    left : linestring
+    right: point
+
+    Returns
+    -------
+    distance: float scalar
+    """
+    op = ops.GeoLineLocatePoint(left, right)
+    return op.to_expr()
+
+
+def geo_line_merge(arg):
+    """Returns a (set of) LineString(s) formed by sewing together the
+    constituent line work of a multilinestring. If a geometry other than
+    a linestring or multilinestring is given, this will return an empty
+    geometry collection.
+
+    Parameters
+    ----------
+    arg : (multi)linestring
+
+    Returns
+    -------
+    merged: geometry scalar
+    """
+    op = ops.GeoLineMerge(arg)
+    return op.to_expr()
+
+
+def geo_line_substring(arg, start, end):
+    """Return a linestring that is a substring of the input one, starting
+    and ending at the given fractions of the total 2d length. The second
+    and third arguments are floating point values between zero and one.
+    This only works with linestrings.
+
+    Parameters
+    ----------
+    arg: linestring
+    start: float
+    end: float
+
+    Returns
+    -------
+    substring: linestring scalar
+    """
+    op = ops.GeoLineSubstring(arg, start, end)
+    return op.to_expr()
+
+
+def geo_ordering_equals(left, right):
+    """Returns true if the two geometries are equal and the coordinates
+    are in the same order.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    ordering_equals : bool scalar
+    """
+    op = ops.GeoOrderingEquals(left, right)
     return op.to_expr()
 
 
@@ -2346,12 +2468,19 @@ _geospatial_value_methods = dict(
     end_point=geo_end_point,
     envelope=geo_envelope,
     equals=geo_equals,
+    geometry_n=geo_geometry_n,
+    geometry_type=geo_geometry_type,
     intersection=geo_intersection,
     intersects=geo_intersects,
+    is_valid=geo_is_valid,
+    line_locate_point=geo_line_locate_point,
+    line_merge=geo_line_merge,
+    line_substring=geo_line_substring,
     length=geo_length,
     max_distance=geo_max_distance,
     n_points=geo_n_points,
     n_rings=geo_n_rings,
+    ordering_equals=geo_ordering_equals,
     overlaps=geo_overlaps,
     perimeter=geo_perimeter,
     point_n=geo_point_n,
