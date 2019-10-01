@@ -1,3 +1,4 @@
+import toolz
 from pyspark.sql.column import Column
 
 import ibis.common.exceptions as com
@@ -19,20 +20,28 @@ class PySparkClient(SparkClient):
         super().__init__(session)
         self.translator = PySparkExprTranslator()
 
-    def compile(self, expr, params=None, *args, **kwargs):
+    def compile(self, expr, params=None, scope=None, *args, **kwargs):
         """Compile an ibis expression to a PySpark DataFrame object
         """
 
-        # Insert params in scope
-        if params is None:
+        if scope is None:
             scope = {}
-        else:
-            scope = dict(
-                (param.op(), raw_value) for param, raw_value in params.items()
-            )
-        return self.translator.translate(expr, scope=scope)
 
-    def execute(self, expr, params=None, limit='default', **kwargs):
+        if params is None:
+            params = {}
+
+        # Insert params in scope
+        params = dict(
+            (param.op(), raw_value) for param, raw_value in params.items()
+        )
+
+        new_scope = toolz.merge(scope, params)
+
+        return self.translator.translate(expr, scope=new_scope)
+
+    def execute(
+        self, expr, params=None, scope=None, limit='default', **kwargs
+    ):
         if isinstance(expr, types.TableExpr):
             return self.compile(expr, params, **kwargs).toPandas()
         elif isinstance(expr, types.ColumnExpr):
