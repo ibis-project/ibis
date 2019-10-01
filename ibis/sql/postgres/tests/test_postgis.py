@@ -138,8 +138,51 @@ def test_geo_equals(geotable):
     assert expr.execute().all()
 
 
+def test_geo_geometry_n(geotable, gdf):
+    expr = geotable.geo_multipolygon.geometry_n(1)  # PostGIS is one-indexed.
+    result = expr.execute()
+    first_polygon = gdf.apply(lambda x: list(x.geo_multipolygon)[0], axis=1)
+    for a, b in zip(result, first_polygon):
+        assert a.equals(b)
+
+
+def test_geo_geometry_type(geotable):
+    expr = geotable.geo_point.geometry_type()
+    assert (expr.execute() == 'ST_Point').all()
+    expr = geotable.geo_multipolygon.geometry_type()
+    assert (expr.execute() == 'ST_MultiPolygon').all()
+
+
 def test_geo_intersects(geotable):
     expr = geotable.geo_point.intersects(geotable.geo_point.buffer(1.0))
+    assert expr.execute().all()
+
+
+def test_geo_is_valid(geotable):
+    expr = geotable.geo_point.is_valid()
+    assert expr.execute().all()
+
+
+def test_geo_line_locate_point(geotable):
+    expr = geotable.geo_linestring.line_locate_point(geotable.geo_point)
+    assert (expr.execute() == 0).all()
+
+
+def test_geo_line_merge(geotable, gdf):
+    expr = geotable.geo_linestring.line_merge()
+    expected = gp.GeoSeries(gdf.geo_linestring)
+    tm.assert_series_equal(expr.execute().length, expected.length)
+
+
+def test_geo_line_substring(geotable, gdf):
+    expr = geotable.geo_linestring.line_substring(0.25, 0.75)
+    result = expr.execute()
+    expected = gp.GeoSeries(gdf.geo_linestring)
+    tm.assert_series_equal(expected.length / 2.0, result.length)
+
+
+def test_geo_ordering_equals(geotable):
+    expr = geotable.geo_point.ordering_equals(geotable.geo_point)
     assert expr.execute().all()
 
 
