@@ -280,13 +280,27 @@ def validate_backends(backends):
     return backends
 
 
-def execute(expr, limit='default', params=None, **kwargs):
-    (backend,) = validate_backends(list(find_backends(expr)))
+def execute(expr, limit='default', params=None, client=None, **kwargs):
+    if client is not None:
+        explicit_backend = [client]
+    else:
+        explicit_backend = []
+
+    (backend,) = validate_backends(
+        list(find_backends(expr)) + explicit_backend
+    )
     return backend.execute(expr, limit=limit, params=params, **kwargs)
 
 
-def compile(expr, limit=None, params=None, **kwargs):
-    (backend,) = validate_backends(list(find_backends(expr)))
+def compile(expr, limit=None, params=None, client=None, **kwargs):
+    if client is not None:
+        explicit_backend = [client]
+    else:
+        explicit_backend = []
+
+    (backend,) = validate_backends(
+        list(find_backends(expr)) + explicit_backend
+    )
     return backend.compile(expr, limit=limit, params=params, **kwargs)
 
 

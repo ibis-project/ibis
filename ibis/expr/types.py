@@ -181,7 +181,7 @@ class Expr:
     def _factory(self):
         return type(self)
 
-    def execute(self, limit='default', params=None, **kwargs):
+    def execute(self, limit='default', params=None, client=None, **kwargs):
         """
         If this expression is based on physical tables in a database backend,
         execute it against that backend.
@@ -192,6 +192,12 @@ class Expr:
           Pass an integer to effect a specific row limit. limit=None means "no
           limit". The default is whatever is in ibis.options.
 
+        client : ibis.Client or None, default None
+          Pass an ibis Client to execute this expression with. This is used
+          when the expression is not associated with a particular client. If
+          the expression is already associated with a client, setting this
+          param will cause an exception.
+
         Returns
         -------
         result : expression-dependent
@@ -199,9 +205,11 @@ class Expr:
         """
         from ibis.client import execute
 
-        return execute(self, limit=limit, params=params, **kwargs)
+        return execute(
+            self, limit=limit, params=params, client=client, **kwargs
+        )
 
-    def compile(self, limit=None, params=None):
+    def compile(self, limit=None, params=None, client=None):
         """
         Compile expression to whatever execution target, to verify
 
@@ -212,7 +220,7 @@ class Expr:
         """
         from ibis.client import compile
 
-        return compile(self, limit=limit, params=params)
+        return compile(self, limit=limit, params=params, client=client)
 
     def verify(self):
         """
