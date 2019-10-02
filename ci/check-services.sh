@@ -14,7 +14,7 @@ else
     echo "=============================================================="
     echo "docker ${s} log"
     echo "=============================================================="
-    docker logs --details $(docker ps -aqf "name=docker_${s}_1")
+    docker logs --details $(docker ps -aqf "name=ci_${s}_1")
   done
 
 fi
