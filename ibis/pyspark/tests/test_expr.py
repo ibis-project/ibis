@@ -3,7 +3,6 @@ import pytest
 
 import ibis
 import ibis.expr.operations as ops
-from ibis.pyspark.compiler import compiles
 
 pytest.importorskip('pyspark')
 
@@ -12,12 +11,14 @@ class UnboundDatabaseTable(ops.UnboundTable):
     """Test-only unbound database table."""
 
 
-@compiles(UnboundDatabaseTable)
-def compile_unbound_database_table(t, expr, scope):
-    return t.session.table(expr.op().name)
-
-
 def test_execute(client):
+    # Conditional imports
+    from ibis.pyspark.compiler import compiles
+
+    @compiles(UnboundDatabaseTable)
+    def compile_unbound_database_table(t, expr, scope):
+        return t.session.table(expr.op().name)
+
     table1 = UnboundDatabaseTable(
         name='basic_table',
         schema=ibis.schema([('value', 'string'), ('str_col', 'string')]),
