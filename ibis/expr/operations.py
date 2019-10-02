@@ -3151,6 +3151,21 @@ class GeoTouches(GeoSpatialBinOp):
     output_type = rlz.shape_like('args', dt.boolean)
 
 
+class GeoUnaryUnion(Reduction):
+    """Returns the pointwise union of the geometries in the column."""
+
+    arg = Arg(rlz.column(rlz.geospatial))
+
+    def output_type(self):
+        return dt.geometry.scalar_type()
+
+
+class GeoUnion(GeoSpatialBinOp):
+    """Returns the pointwise union of the two geometries."""
+
+    output_type = rlz.shape_like('args', dt.geometry)
+
+
 class GeoArea(GeoSpatialUnOp):
     """Area of the geo spatial data"""
 

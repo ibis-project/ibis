@@ -1,5 +1,6 @@
 import pandas.util.testing as tm
 import pytest
+from numpy import testing
 
 gp = pytest.importorskip('geopandas')
 sa = pytest.importorskip('sqlalchemy')
@@ -264,6 +265,24 @@ def test_geo_intersection(geotable, gdf):
     )
     tm.assert_series_equal(
         result, expected, check_names=False, check_less_precise=2
+    )
+
+
+def test_geo_unary_union(geotable, gdf):
+    expr = geotable.geo_polygon.unary_union().area()
+    expected = gp.GeoSeries(gdf.geo_polygon).unary_union.area
+    testing.assert_almost_equal(expr.execute(), expected, decimal=2)
+
+
+def test_geo_union(geotable, gdf):
+    expr = geotable.geo_polygon.union(geotable.geo_multipolygon).area()
+    expected = (
+        gp.GeoSeries(gdf.geo_polygon)
+        .union(gp.GeoSeries(gdf.geo_multipolygon))
+        .area
+    )
+    tm.assert_series_equal(
+        expr.execute(), expected, check_names=False, check_less_precise=2
     )
 
 

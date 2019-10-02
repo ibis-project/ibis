@@ -2089,6 +2089,42 @@ def geo_max_distance(left, right):
     return op.to_expr()
 
 
+def geo_unary_union(arg):
+    """Returns the pointwise union of the two geometries.
+    This corresponds to the aggregate version of the PostGIS ST_Union.
+    We give it a different name (following the corresponding method
+    in GeoPandas) to avoid name conflicts with the non-aggregate version.
+
+    Parameters
+    ----------
+    arg : geometry column
+
+    Returns
+    -------
+    union : geometry scalar
+    """
+    expr = ops.GeoUnaryUnion(arg).to_expr()
+    expr = expr.name('union')
+    return expr
+
+
+def geo_union(left, right):
+    """Returns the pointwise union of the two geometries.
+    This corresponds to the non-aggregate version the PostGIS ST_Union.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    union : geometry scalar
+    """
+    op = ops.GeoUnion(left, right)
+    return op.to_expr()
+
+
 def geo_x(arg):
     """Return the X coordinate of the point, or NULL if not available.
     Input must be a point
@@ -2490,6 +2526,7 @@ _geospatial_value_methods = dict(
     start_point=geo_start_point,
     touches=geo_touches,
     transform=geo_transform,
+    union=geo_union,
     within=geo_within,
     x=geo_x,
     x_max=geo_x_max,
@@ -2498,7 +2535,7 @@ _geospatial_value_methods = dict(
     y_max=geo_y_max,
     y_min=geo_y_min,
 )
-_geospatial_column_methods = dict()
+_geospatial_column_methods = dict(unary_union=geo_unary_union)
 
 _add_methods(ir.GeoSpatialValue, _geospatial_value_methods)
 _add_methods(ir.GeoSpatialColumn, _geospatial_column_methods)

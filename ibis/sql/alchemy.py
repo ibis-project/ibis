@@ -785,6 +785,8 @@ if geospatial_supported:
         ops.GeoSetSRID: fixed_arity(sa.func.ST_SetSRID, 2),
         ops.GeoTouches: fixed_arity(sa.func.ST_Touches, 2),
         ops.GeoTransform: fixed_arity(sa.func.ST_Transform, 2),
+        ops.GeoUnaryUnion: unary(sa.func.ST_Union),
+        ops.GeoUnion: fixed_arity(sa.func.ST_Union, 2),
         ops.GeoWithin: fixed_arity(sa.func.ST_Within, 2),
         ops.GeoX: unary(sa.func.ST_X),
         ops.GeoY: unary(sa.func.ST_Y),
@@ -802,7 +804,6 @@ if geospatial_supported:
         #   ST_GeomFromEWKB
         #   ST_GeomFromEWKT
         #   ST_GeomFromText
-        #   ST_Union
     }
 
     _operation_registry.update(_geospatial_functions)
