@@ -3,7 +3,7 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.tests.backends import Clickhouse, Impala, PySpark, Spark
+from ibis.tests.backends import Clickhouse, Impala, PostgreSQL, PySpark, Spark
 
 
 def test_string_col_is_unicode(backend, alltypes, df):
@@ -233,3 +233,15 @@ def test_string(backend, alltypes, df, result_func, expected_func):
 
     expected = backend.default_series_rename(expected_func(df))
     backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    'data, data_type',
+    [param('123e4567-e89b-12d3-a456-426655440000', 'uuid', id='uuid')],
+)
+@pytest.mark.only_on_backends([PostgreSQL])
+def test_special_strings(backend, con, alltypes, data, data_type):
+    lit = ibis.literal(data, type=data_type).name('tmp')
+    expr = alltypes[[alltypes.id, lit]].head(1)
+    df = expr.execute()
+    assert df['tmp'].iloc[0] == data
