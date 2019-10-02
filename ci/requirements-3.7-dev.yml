@@ -1,7 +1,6 @@
 channels:
   - conda-forge
 dependencies:
-  - black
   - click
   - clickhouse-cityhash
   - clickhouse-driver>=0.0.8
@@ -13,7 +12,6 @@ dependencies:
   - google-cloud-bigquery>=1.0.0
   - graphviz
   - impyla>=0.15.0
-  - isort
   - jinja2
   - libiconv  # see https://github.com/jupyter/repo2docker/issues/758
   - lz4
@@ -51,4 +49,7 @@ dependencies:
   - xorg-libxpm
   - xorg-libxrender
   - pip:
+    # see .pre-commit-config.yaml, we pin to specific versions of black and isort
+    - git+git://github.com/psf/black@40e8b3a231bade22d838858435a33d60a8325306#egg=black
+    - git+git://github.com/timothycrosley/isort@18ad293fc9d1852776afe35015a932b68d26fb14#egg=isort
     - seed-isort-config
