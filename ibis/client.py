@@ -281,17 +281,17 @@ def validate_backends(backends):
 
 
 def execute(expr, limit='default', params=None, client=None, **kwargs):
-    additional_backend = [client] if client is not None else []
+    additional_backend = {client} if client is not None else set()
     (backend,) = validate_backends(
-        list(find_backends(expr)) + additional_backend
+        set(find_backends(expr)).union(additional_backend)
     )
     return backend.execute(expr, limit=limit, params=params, **kwargs)
 
 
 def compile(expr, limit=None, params=None, client=None, **kwargs):
-    additional_backend = [client] if client is not None else []
+    additional_backend = {client} if client is not None else set()
     (backend,) = validate_backends(
-        list(find_backends(expr)) + additional_backend
+        set(find_backends(expr)).union(additional_backend)
     )
     return backend.compile(expr, limit=limit, params=params, **kwargs)
 

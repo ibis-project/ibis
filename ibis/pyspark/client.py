@@ -18,7 +18,7 @@ class PySparkClient(SparkClient):
 
     def __init__(self, session):
         super().__init__(session)
-        self.translator = PySparkExprTranslator()
+        self.translator = PySparkExprTranslator(session)
 
     def compile(self, expr, params=None, scope=None, *args, **kwargs):
         """Compile an ibis expression to a PySpark DataFrame object
