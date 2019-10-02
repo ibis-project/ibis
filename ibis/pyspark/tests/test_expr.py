@@ -1,8 +1,11 @@
 import pandas.testing as mct
+import pytest
 
 import ibis
 import ibis.expr.operations as ops
 from ibis.pyspark.compiler import compiles
+
+pytest.importorskip('pyspark')
 
 
 class UnboundDatabaseTable(ops.UnboundTable):
