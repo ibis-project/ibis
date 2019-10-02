@@ -100,7 +100,7 @@ def sa_boolean(_, satype, nullable=True):
     return dt.Boolean(nullable=nullable)
 
 
-@dt.dtype.register(MySQLDialect, sa.types.Numeric)
+@dt.dtype.register(MySQLDialect, sa.dialects.mysql.NUMERIC)
 def sa_mysql_numeric(_, satype, nullable=True):
     # https://dev.mysql.com/doc/refman/8.0/en/fixed-point-types.html
     return dt.Decimal(
@@ -108,7 +108,7 @@ def sa_mysql_numeric(_, satype, nullable=True):
     )
 
 
-@dt.dtype.register(PostgreSQLDialect, sa.types.Numeric)
+@dt.dtype.register(PostgreSQLDialect, sa.dialects.postgresql.NUMERIC)
 def sa_postgres_numeric(_, satype, nullable=True):
     # PostgreSQL allows any precision for numeric values if not specified,
     # up to the implementation limit. Here, default to the maximum value that
@@ -119,8 +119,8 @@ def sa_postgres_numeric(_, satype, nullable=True):
     )
 
 
-@dt.dtype.register(SQLAlchemyDialect, sa.types.Numeric)
-def sa_numeric(_, satype, nullable=True):
+@dt.dtype.register(SQLiteDialect, sa.dialects.sqlite.NUMERIC)
+def sa_sqlite_numeric(_, satype, nullable=True):
     return dt.Decimal(satype.precision, satype.scale, nullable=nullable)
 
 
