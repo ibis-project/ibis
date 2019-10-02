@@ -636,6 +636,23 @@ class Map(Variadic):
         return self, _tuplize(value.items())
 
 
+class JSON(String):
+    """JSON (JavaScript Object Notation) text format."""
+
+    scalar = ir.JSONScalar
+    column = ir.JSONColumn
+
+
+class JSONB(Binary):
+    """JSON (JavaScript Object Notation) data stored as a binary
+    representation, which eliminates whitespace, duplicate keys,
+    and key ordering.
+    """
+
+    scalar = ir.JSONBScalar
+    column = ir.JSONBColumn
+
+
 class GeoSpatial(DataType):
     __slots__ = 'geotype', 'srid'
 
@@ -779,6 +796,17 @@ class MultiPolygon(GeoSpatial):
     __slots__ = ()
 
 
+class UUID(String):
+    """A universally unique identifier (UUID) is a 128-bit number used to
+    identify information in computer systems.
+    """
+
+    scalar = ir.UUIDScalar
+    column = ir.UUIDColumn
+
+    __slots__ = ()
+
+
 # ---------------------------------------------------------------------
 any = Any()
 null = Null()
@@ -815,7 +843,11 @@ polygon = Polygon()
 multilinestring = MultiLineString()
 multipoint = MultiPoint()
 multipolygon = MultiPolygon()
-
+# json
+json = JSON()
+jsonb = JSONB()
+# special string based data type
+uuid = UUID()
 
 _primitive_types = [
     ('any', any),
@@ -881,6 +913,9 @@ class Tokens:
     MULTIPOINT = 28
     MULTIPOLYGON = 29
     SEMICOLON = 30
+    JSON = 31
+    JSONB = 32
+    UUID = 33
 
     @staticmethod
     def name(value):
@@ -890,7 +925,6 @@ class Tokens:
 _token_names = dict(
     (getattr(Tokens, n), n) for n in dir(Tokens) if n.isalpha() and n.isupper()
 )
-
 
 Token = collections.namedtuple('Token', ('type', 'value'))
 
@@ -1004,6 +1038,22 @@ _TYPE_RULES = collections.OrderedDict(
                 Tokens.MULTIPOLYGON,
             ),
         )
+    ]
+    + [
+        # json data type
+        (
+            '(?P<{}>{})'.format(token.upper(), token),
+            lambda token, toktype=toktype: Token(toktype, token),
+        )
+        for token, toktype in zip(
+            # note: `jsonb` should be first to avoid conflict with `json`
+            ('jsonb', 'json'),
+            (Tokens.JSONB, Tokens.JSON),
+        )
+    ]
+    + [
+        # special string based data types
+        ('(?P<UUID>uuid)', lambda token: Token(Tokens.UUID, token))
     ]
     + [
         # integers, for decimal spec
@@ -1209,6 +1259,12 @@ class TypeParser:
                      | "multipolygon" ":" geotype
                      | "multipolygon" ";" srid ":" geotype
 
+        json : "json"
+
+        jsonb : "jsonb"
+
+        uuid : "uuid"
+
         """
         if self._accept(Tokens.PRIMITIVE):
             assert self.tok is not None
@@ -1322,6 +1378,13 @@ class TypeParser:
             self._expect(Tokens.RBRACKET)
             return Struct(names, types)
 
+        # json data types
+        elif self._accept(Tokens.JSON):
+            return JSON()
+
+        elif self._accept(Tokens.JSONB):
+            return JSONB()
+
         # geo spatial data type
         elif self._accept(Tokens.GEOMETRY):
             return Geometry()
@@ -1430,6 +1493,10 @@ class TypeParser:
                     geotype = 'geometry'
 
             return MultiPolygon(geotype=geotype, srid=srid)
+
+        # special string based data types
+        elif self._accept(Tokens.UUID):
+            return UUID()
 
         else:
             raise SyntaxError('Type cannot be parsed: {}'.format(self.text))
@@ -1763,6 +1830,16 @@ def can_cast_variadic(
     return castable(source.value_type, target.value_type)
 
 
+@castable.register(JSON, JSON)
+def can_cast_json(source, target, **kwargs):
+    return True
+
+
+@castable.register(JSONB, JSONB)
+def can_cast_jsonb(source, target, **kwargs):
+    return True
+
+
 # geo spatial data type
 # cast between same type, used to cast from/to geometry and geography
 GEO_TYPES = (
@@ -1779,6 +1856,11 @@ GEO_TYPES = (
 @castable.register(GEO_TYPES, Geometry)
 @castable.register(GEO_TYPES, Geography)
 def can_cast_geospatial(source, target, **kwargs):
+    return True
+
+
+@castable.register(UUID, UUID)
+def can_cast_special_string(source, target, **kwargs):
     return True
 
 
