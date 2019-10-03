@@ -119,8 +119,9 @@ def sa_postgres_numeric(_, satype, nullable=True):
     )
 
 
+@dt.dtype.register(SQLAlchemyDialect, sa.types.Numeric)
 @dt.dtype.register(SQLiteDialect, sa.dialects.sqlite.NUMERIC)
-def sa_sqlite_numeric(_, satype, nullable=True):
+def sa_numeric(_, satype, nullable=True):
     return dt.Decimal(satype.precision, satype.scale, nullable=nullable)
 
 
