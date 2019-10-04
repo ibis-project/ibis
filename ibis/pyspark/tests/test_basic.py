@@ -178,19 +178,19 @@ def test_cast(client):
     'fn',
     [
         param(lambda t: t.date_str.to_timestamp('yyyy-MM-dd')),
-        param(lambda t: t.date_str.to_timestamp('yyyy-MM-dd', timezone='UTC'))
+        param(lambda t: t.date_str.to_timestamp('yyyy-MM-dd', timezone='UTC')),
     ],
 )
 def test_string_to_timestamp(client, fn):
     import pyspark.sql.functions as F
+
     table = client.table('date_table')
 
     result = table.mutate(date=fn(table)).compile()
 
     df = table.compile()
     expected = df.withColumn(
-        'date',
-        F.to_date(df.date_str, 'yyyy-MM-dd').alias('date')
+        'date', F.to_date(df.date_str, 'yyyy-MM-dd').alias('date')
     )
     expected_pdf = expected.toPandas()
     expected_pdf['date'] = pd.to_datetime(expected_pdf['date'])
