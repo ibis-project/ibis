@@ -76,7 +76,7 @@ jobs:
 
     - bash: docker-compose run ibis black --check .
       displayName: 'Ensure black formatting'
-      condition: ne($PYTHON_NO_DOT_VERSION, '35')
+      condition: ne(variables['PYTHON_NO_DOT_VERSION'], '35')
 
     - bash: |
         sudo mkdir -p /tmp/ibis/test-reports/pytest
