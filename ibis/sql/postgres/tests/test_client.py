@@ -224,30 +224,3 @@ def test_unsupported_intervals(con):
     assert t["a"].type() == dt.Interval("Y")
     assert t["b"].type() == dt.Interval("M")
     assert t["g"].type() == dt.Interval("M")
-
-
-def test_default_numeric_precision_and_scale():
-    typespec = [
-        # name, sqlalchemy type, ibis type
-        ('n1', sa.dialects.postgresql.NUMERIC, dt.Decimal(1000, 0)),
-        ('n2', sa.dialects.postgresql.NUMERIC(5), dt.Decimal(5, 0)),
-        ('n3', sa.dialects.postgresql.NUMERIC(None, 4), dt.Decimal(1000, 4)),
-        ('n4', sa.dialects.postgresql.NUMERIC(10, 2), dt.Decimal(10, 2)),
-    ]
-
-    sqla_types = []
-    ibis_types = []
-    for name, t, ibis_type in typespec:
-        sqla_type = sa.Column(name, t, nullable=True)
-        sqla_types.append(sqla_type)
-        ibis_types.append((name, ibis_type(nullable=True)))
-
-    # Create a table with the numeric types.
-    engine = sa.create_engine('postgresql://')
-    table = sa.Table('tname', sa.MetaData(bind=engine), *sqla_types)
-
-    # Check that we can correctly recover the default precision and scale.
-    schema = alch.schema_from_table(table)
-    expected = ibis.schema(ibis_types)
-
-    assert_equal(schema, expected)

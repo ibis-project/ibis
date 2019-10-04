@@ -9,7 +9,32 @@ from pytest import param
 
 import ibis
 from ibis import literal as L
-from ibis.tests.backends import OmniSciDB
+from ibis.tests.backends import MySQL, OmniSciDB, PostgreSQL
+
+
+@pytest.fixture
+def df_decimal():
+    return pd.DataFrame(
+        {
+            'n1': [
+                decimal.Decimal('12.1234'),
+                decimal.Decimal('333.878787'),
+                decimal.Decimal('1090.4949'),
+            ],
+            'n2': [
+                decimal.Decimal('5454.0904'),
+                decimal.Decimal('904.889282'),
+                decimal.Decimal('9893.09022'),
+            ],
+        }
+    )
+
+
+@pytest.fixture
+def sch_decimal():
+    return ibis.schema(
+        [('index', 'int64'), ('n1', 'decimal'), ('n2', 'decimal')]
+    )
 
 
 @pytest.mark.parametrize(
@@ -321,3 +346,26 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
     expected = backend.default_series_rename(df[column].div(denominator))
     result = expr.execute()
     backend.assert_series_equal(result, expected)
+
+
+# just for sqlalchemy based backend
+@pytest.mark.only_on_backends([PostgreSQL, MySQL])
+def test_default_numeric_precision_and_scale(
+    con, backend, df_decimal, sch_decimal
+):
+    table_name = 'test_decimal'
+
+    con.drop_table(table_name, force=True)
+    con.create_table(table_name, schema=sch_decimal)
+    # TODO: replace that for `load_data` when it is implemented for sqlalchemy
+    df_decimal.to_sql(table_name, con.con, if_exists='append')
+    t = con.table(table_name)
+
+    # test from database
+    assert t.n1.type().precision == 9
+    assert t.n1.type().scale == 0
+
+    # test literal
+    expr = t[[ibis.literal(9.2, type='decimal').name('tmp')]]
+    assert expr.tmp.type().precision == 9
+    assert expr.tmp.type().scale == 0
