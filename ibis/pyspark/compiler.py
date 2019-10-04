@@ -4,8 +4,8 @@ import functools
 import operator
 
 import pyspark.sql.functions as F
-from pyspark.sql.functions import pandas_udf, PandasUDFType
 from pyspark.sql import Window
+from pyspark.sql.functions import PandasUDFType, pandas_udf
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dtypes
@@ -16,7 +16,7 @@ from ibis.pyspark.operations import PySparkTable
 from ibis.spark.compiler import SparkContext, SparkDialect
 from ibis.spark.datatypes import (
     ibis_array_dtype_to_spark_dtype,
-    ibis_dtype_to_spark_dtype
+    ibis_dtype_to_spark_dtype,
 )
 
 
@@ -1118,7 +1118,7 @@ _time_unit_mapping = {
     'D': 'day',
     'h': 'hour',
     'm': 'minute',
-    's': 'second'
+    's': 'second',
 }
 
 
@@ -1292,9 +1292,9 @@ def _get_interval_col(t, interval_ibis_expr, scope, allowed_units=None):
             'Interval unit "{}" is not allowed. Allowed units are: '
             '{}'.format(dtype.unit, allowed_units)
         )
-    return F.expr('INTERVAL {} {}'.format(
-        op.value, _time_unit_mapping[dtype.unit]
-    ))
+    return F.expr(
+        'INTERVAL {} {}'.format(op.value, _time_unit_mapping[dtype.unit])
+    )
 
 
 def _compile_datetime_binop(t, expr, scope, fn, allowed_units, **kwargs):
@@ -1310,8 +1310,12 @@ def _compile_datetime_binop(t, expr, scope, fn, allowed_units, **kwargs):
 def compile_date_add(t, expr, scope, **kwargs):
     allowed_units = ['Y', 'W', 'M', 'D']
     return _compile_datetime_binop(
-        t, expr, scope, (lambda l, r: (l + r).cast('timestamp')),
-        allowed_units, **kwargs
+        t,
+        expr,
+        scope,
+        (lambda l, r: (l + r).cast('timestamp')),
+        allowed_units,
+        **kwargs,
     )
 
 
@@ -1319,8 +1323,12 @@ def compile_date_add(t, expr, scope, **kwargs):
 def compile_date_sub(t, expr, scope, **kwargs):
     allowed_units = ['Y', 'W', 'M', 'D']
     return _compile_datetime_binop(
-        t, expr, scope, (lambda l, r: (l - r).cast('timestamp')),
-        allowed_units, **kwargs
+        t,
+        expr,
+        scope,
+        (lambda l, r: (l - r).cast('timestamp')),
+        allowed_units,
+        **kwargs,
     )
 
 
@@ -1336,8 +1344,12 @@ def compile_date_diff(t, expr, scope, **kwargs):
 def compile_timestamp_add(t, expr, scope, **kwargs):
     allowed_units = ['Y', 'W', 'M', 'D', 'h', 'm', 's']
     return _compile_datetime_binop(
-        t, expr, scope, (lambda l, r: (l + r).cast('timestamp')),
-        allowed_units, **kwargs
+        t,
+        expr,
+        scope,
+        (lambda l, r: (l + r).cast('timestamp')),
+        allowed_units,
+        **kwargs,
     )
 
 
@@ -1345,8 +1357,12 @@ def compile_timestamp_add(t, expr, scope, **kwargs):
 def compile_timestamp_sub(t, expr, scope, **kwargs):
     allowed_units = ['Y', 'W', 'M', 'D', 'h', 'm', 's']
     return _compile_datetime_binop(
-        t, expr, scope, (lambda l, r: (l - r).cast('timestamp')),
-        allowed_units, **kwargs
+        t,
+        expr,
+        scope,
+        (lambda l, r: (l - r).cast('timestamp')),
+        allowed_units,
+        **kwargs,
     )
 
 
