@@ -1,4 +1,4 @@
-.PHONY: all clean develop typecheck stop build start load restart init test testmost testfast testparams docclean doc
+.PHONY: all clean develop typecheck stop build start load restart init test testmost testfast testparams docclean doc black
 
 SHELL := /bin/bash
 MAKEFILE_DIR = $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
@@ -86,3 +86,7 @@ doc: builddoc docclean
 	    ! -name '*.nojekyll' \
 	    -exec rm -rf {} \;
 	$(DOCKER_RUN) ibis-docs sphinx-build -b html docs/source /tmp/docs.ibis-project.org -W -T -j auto
+
+black:
+# check that black formatting would not be applied
+	black --check .

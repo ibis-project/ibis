@@ -204,12 +204,10 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
             id='timestamp-add-interval',
         ),
         param(
-            lambda t, be: t.timestamp_col + (
-                ibis.interval(days=4) - ibis.interval(days=2)
-            ),
-            lambda t, be: t.timestamp_col + (
-                pd.Timedelta(days=4) - pd.Timedelta(days=2)
-            ),
+            lambda t, be: t.timestamp_col
+            + (ibis.interval(days=4) - ibis.interval(days=2)),
+            lambda t, be: t.timestamp_col
+            + (pd.Timedelta(days=4) - pd.Timedelta(days=2)),
             id='timestamp-add-interval-binop',
         ),
         param(

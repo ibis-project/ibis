@@ -15,8 +15,9 @@ def test_array_length(client):
     result = table.mutate(length=table.array_int.length()).compile()
 
     expected = table.compile().toPandas()
-    expected['length'] = expected['array_int'].map(
-        lambda a: len(a)).astype('int32')
+    expected['length'] = (
+        expected['array_int'].map(lambda a: len(a)).astype('int32')
+    )
     tm.assert_frame_equal(result.toPandas(), expected)
 
 
@@ -153,8 +154,7 @@ def test_array_concat(client, op):
 
     df = table.compile().toPandas()
     expected = op(
-        df.array_int.apply(lambda x: list(map(str, x))),
-        df.array_str,
+        df.array_int.apply(lambda x: list(map(str, x))), df.array_str
     ).rename('tmp')
     tm.assert_series_equal(result, expected)
 
@@ -204,8 +204,8 @@ def test_array_collect(client):
     df = table.compile().toPandas()
     expected = (
         df.groupby('key')
-          .array_int.apply(list)
-          .reset_index()
-          .rename(columns={'array_int': 'collected'})
+        .array_int.apply(list)
+        .reset_index()
+        .rename(columns={'array_int': 'collected'})
     )
     tm.assert_frame_equal(result, expected)
