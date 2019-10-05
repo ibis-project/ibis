@@ -9,7 +9,14 @@ from pytest import param
 
 import ibis
 from ibis import literal as L
+from ibis.expr import datatypes as dt
 from ibis.tests.backends import MySQL, OmniSciDB, PostgreSQL
+from ibis.tests.util import assert_equal
+
+try:
+    import sqlalchemy as sa
+except ImportError:
+    sa = None
 
 
 @pytest.fixture
@@ -348,24 +355,53 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
     backend.assert_series_equal(result, expected)
 
 
-# just for sqlalchemy based backend
+@pytest.mark.skipif(
+    sa is None, reason="Tests available for sqlalchemy based backend"
+)
+@pytest.mark.parametrize(
+    'dialects, default_precisions, default_scales',
+    [
+        (
+            {'postgres': sa.dialects.postgresql, 'mysql': sa.dialects.mysql},
+            {'postgres': 1000, 'mysql': 10},
+            {'postgres': 0, 'mysql': 0},
+        )
+    ],
+)
 @pytest.mark.only_on_backends([PostgreSQL, MySQL])
-def test_default_numeric_precision_and_scale(
-    con, backend, df_decimal, sch_decimal
+def test_sa_default_numeric_precision_and_scale(
+    con, backend, dialects, default_precisions, default_scales
 ):
-    table_name = 'test_decimal'
+    # TODO: find a better way to access ibis.sql.alchemy
+    import ibis.sql.alchemy as alch
 
+    dialect = dialects[backend.name]
+    default_precision = default_precisions[backend.name]
+    default_scale = default_scales[backend.name]
+
+    typespec = [
+        # name, sqlalchemy type, ibis type
+        ('n1', dialect.NUMERIC, dt.Decimal(default_precision, default_scale)),
+        ('n2', dialect.NUMERIC(5), dt.Decimal(5, default_scale)),
+        ('n3', dialect.NUMERIC(None, 4), dt.Decimal(default_precision, 4)),
+        ('n4', dialect.NUMERIC(10, 2), dt.Decimal(10, 2)),
+    ]
+
+    sqla_types = []
+    ibis_types = []
+    for name, t, ibis_type in typespec:
+        sqla_type = sa.Column(name, t, nullable=True)
+        sqla_types.append(sqla_type)
+        ibis_types.append((name, ibis_type(nullable=True)))
+
+    # Create a table with the numeric types.
+    table_name = 'test_sa_default_param_decimal'
+    engine = con.con
+    table = sa.Table(table_name, sa.MetaData(bind=engine), *sqla_types)
+
+    # Check that we can correctly recover the default precision and scale.
+    schema = alch.schema_from_table(table)
+    expected = ibis.schema(ibis_types)
+
+    assert_equal(schema, expected)
     con.drop_table(table_name, force=True)
-    con.create_table(table_name, schema=sch_decimal)
-    # TODO: replace that for `load_data` when it is implemented for sqlalchemy
-    df_decimal.to_sql(table_name, con.con, if_exists='append')
-    t = con.table(table_name)
-
-    # test from database
-    assert t.n1.type().precision == 9
-    assert t.n1.type().scale == 0
-
-    # test literal
-    expr = t[[ibis.literal(9.2, type='decimal').name('tmp')]]
-    assert expr.tmp.type().precision == 9
-    assert expr.tmp.type().scale == 0
