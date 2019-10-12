@@ -73,6 +73,9 @@ jobs:
     - bash: docker-compose run ibis flake8
       displayName: 'Lint'
 
+    - bash: docker-compose run ibis pydocstyle
+      displayName: "Docstring check"
+
     - bash: docker-compose run ibis black --check .
       displayName: 'Ensure black formatting'
       condition: ne(variables['PYTHON_NO_DOT_VERSION'], '35')

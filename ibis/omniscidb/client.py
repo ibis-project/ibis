@@ -1,3 +1,4 @@
+"""Ibis OmniSciDB Client."""
 import sys
 
 import pandas as pd
@@ -62,10 +63,13 @@ def _validate_compatible(from_schema, to_schema):
 
 
 class PyMapDVersionError(Exception):
+    """PyMapD version error exception."""
+
     pass
 
 
 class OmniSciDBDataType:
+    """OmniSciDB Backend Data Type."""
 
     __slots__ = 'typename', 'nullable'
 
@@ -125,26 +129,62 @@ class OmniSciDBDataType:
         self.nullable = nullable
 
     def __str__(self):
+        """Return the data type name."""
         if self.nullable:
             return 'Nullable({})'.format(self.typename)
         else:
             return self.typename
 
     def __repr__(self):
+        """Return the backend name and the datatype name."""
         return '<OmniSciDB {}>'.format(str(self))
 
     @classmethod
-    def parse(cls, spec):
+    def parse(cls, spec: str):
+        """Return a OmniSciDBDataType related to the given data type name.
+
+        Parameters
+        ----------
+        spec : string
+
+        Returns
+        -------
+        OmniSciDBDataType
+        """
         if spec.startswith('Nullable'):
             return cls(spec[9:-1], nullable=True)
         else:
             return cls(spec)
 
     def to_ibis(self):
+        """
+        Return the Ibis data type correspondent to the current OmniSciDB type.
+
+        Returns
+        -------
+        ibis.expr.datatypes.DataType
+        """
         return self.dtypes[self.typename](nullable=self.nullable)
 
     @classmethod
     def from_ibis(cls, dtype, nullable=None):
+        """
+        Return a OmniSciDBDataType correspondent to the given Ibis data type.
+
+        Parameters
+        ----------
+        dtype : ibis.expr.datatypes.DataType
+        nullable : bool
+
+        Returns
+        -------
+        OmniSciDBDataType
+
+        Raises
+        ------
+        NotImplementedError
+            if the given data type was not implemented.
+        """
         dtype_ = type(dtype)
         if dtype_ in cls.ibis_dtypes:
             typename = cls.ibis_dtypes[dtype_]
@@ -159,13 +199,18 @@ class OmniSciDBDataType:
 
 
 class OmniSciDBDefaultCursor:
-    """Cursor to allow the OmniSciDB client to reuse machinery in ibis/client.py
-    """
+    """Default cursor that exports a result to Pandas Data Frame."""
 
     def __init__(self, cursor):
         self.cursor = cursor
 
     def to_df(self):
+        """Convert the cursor to a data frame.
+
+        Returns
+        -------
+        dataframe : pandas.DataFrame
+        """
         if isinstance(self.cursor, Cursor):
             col_names = [c.name for c in self.cursor.description]
             result = pd.DataFrame(self.cursor.fetchall(), columns=col_names)
@@ -177,19 +222,24 @@ class OmniSciDBDefaultCursor:
         return result
 
     def __enter__(self):
-        # For compatibility when constructed from Query.execute()
+        """For compatibility when constructed from Query.execute()."""
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
+        """Exit when using `with` statement."""
         pass
 
 
 class OmniSciDBGeoCursor(OmniSciDBDefaultCursor):
-    """Cursor to allow the OmniSciDB client to reuse machinery in ibis/client.py
-    for Geo Spatial data
-    """
+    """Cursor that exports result to GeoPandas Data Frame."""
 
     def to_df(self):
+        """Convert the cursor to a data frame.
+
+        Returns
+        -------
+        dataframe : pandas.DataFrame
+        """
         cursor = self.cursor
         cursor_description = cursor.description
 
@@ -230,9 +280,7 @@ class OmniSciDBGeoCursor(OmniSciDBDefaultCursor):
 
 
 class OmniSciDBQuery(Query):
-    """
-
-    """
+    """OmniSciDB Query class."""
 
     def _fetch(self, cursor):
         # check if cursor is a pymapd cursor.Cursor
@@ -240,10 +288,7 @@ class OmniSciDBQuery(Query):
 
 
 class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
-
-    """
-    References a physical table in the OmniSciDB metastore
-    """
+    """References a physical table in the OmniSciDB metastore."""
 
     @property
     def _qualified_name(self):
@@ -272,35 +317,70 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
     def _database(self):
         return self._match_name()[0]
 
+    @com.mark_as_unsupported
     def invalidate_metadata(self):
-        self._client.invalidate_metadata(self._qualified_name)
+        """Invalidate table metadata.
 
+        Raises
+        ------
+        common.exceptions.UnsupportedOperationError
+        """
+
+    @com.mark_as_unsupported
     def refresh(self):
-        self._client.refresh(self._qualified_name)
+        """Refresh table metadata.
+
+        Raises
+        ------
+        common.exceptions.UnsupportedOperationError
+        """
 
     def metadata(self):
         """
-        Return parsed results of DESCRIBE FORMATTED statement
+        Return parsed results of DESCRIBE FORMATTED statement.
 
         Returns
         -------
-        meta : TableMetadata
+        metadata : pandas.DataFrame
         """
-        return self._client.describe_formatted(self._qualified_name)
+        return pd.DataFrame(
+            [
+                (
+                    col.name,
+                    OmniSciDBDataType.parse(col.type),
+                    col.precision,
+                    col.scale,
+                    col.comp_param,
+                    col.encoding,
+                )
+                for col in self._client.con.get_table_details(
+                    self._qualified_name
+                )
+            ],
+            columns=[
+                'column_name',
+                'type',
+                'precision',
+                'scale',
+                'comp_param',
+                'encoding',
+            ],
+        )
 
     describe_formatted = metadata
 
     def drop(self):
-        """
-        Drop the table from the database
-        """
+        """Drop the table from the database."""
         self._client.drop_table_or_view(self._qualified_name)
 
     def truncate(self):
+        """Delete all rows from, but do not drop, an existing table."""
         self._client.truncate_table(self._qualified_name)
 
     def load_data(self, df):
         """
+        Load a data frame into database.
+
         Wraps the LOAD DATA DDL statement. Loads data into an OmniSciDB table
         from pandas.DataFrame or pyarrow.Table
 
@@ -316,13 +396,18 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         return self._execute(stmt)
 
     @property
-    def name(self):
+    def name(self) -> str:
+        """Return the operation name.
+
+        Returns
+        -------
+        str
+        """
         return self.op().name
 
     def rename(self, new_name, database=None):
         """
-        Rename table inside OmniSciDB. References to the old table are no
-        longer valid.
+        Rename table to a given name.
 
         Parameters
         ----------
@@ -361,7 +446,7 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         -------
         None (for now)
         """
-
+        # internal function that runs DDL operation
         def _run_ddl(**kwds):
             stmt = ddl.AlterTable(self._qualified_name, **kwds)
             return self._execute(stmt)
@@ -381,9 +466,7 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
 
 
 class OmniSciDBClient(SQLClient):
-    """
-
-    """
+    """Client class for OmniSciDB backend."""
 
     database_class = Database
     query_class = OmniSciDBQuery
@@ -392,32 +475,38 @@ class OmniSciDBClient(SQLClient):
 
     def __init__(
         self,
-        uri=None,
-        user=None,
-        password=None,
-        host=None,
-        port=6274,
-        database=None,
-        protocol='binary',
-        session_id=None,
-        execution_type=EXECUTION_TYPE_CURSOR,
+        uri: str = None,
+        user: str = None,
+        password: str = None,
+        host: str = None,
+        port: str = 6274,
+        database: str = None,
+        protocol: str = 'binary',
+        session_id: str = None,
+        execution_type: str = EXECUTION_TYPE_CURSOR,
     ):
-        """
+        """Initialize OmniSciDB Client.
 
         Parameters
         ----------
-        uri : str
-        user : str
-        password : str
-        host : str
-        port : int
-        database : str
-        protocol : {'binary', 'http', 'https'}
-        session_id: str
+        uri : str, optional
+        user : str, optional
+        password : str, optional
+        host : str, optional
+        port : int, default 6274
+        database : str, optional
+        protocol : {'binary', 'http', 'https'}, default binary
+        session_id: str, optional
         execution_type : {
           EXECUTION_TYPE_ICP, EXECUTION_TYPE_ICP_GPU, EXECUTION_TYPE_CURSOR
-        }
+        }, default EXECUTION_TYPE_CURSOR
 
+        Raises
+        ------
+        Exception
+            if the given execution_type is not valid.
+        PyMapDVersionError
+            if session_id is given but pymapd version is less or equal to 0.12
         """
         self.uri = uri
         self.user = user
@@ -461,20 +550,29 @@ class OmniSciDBClient(SQLClient):
             )
 
     def __del__(self):
+        """Close the connection when instance is deleted."""
         self.close()
 
     def __enter__(self, **kwargs):
+        """Update internal attributes when using `with` statement."""
         self.__dict__.update(**kwargs)
         return self
 
     def __exit__(self, *args):
+        """Close the connection when exits the `with` statement."""
         self.close()
 
-    def log(self, msg):
+    def log(self, msg: str):
+        """Print or log a message.
+
+        Parameters
+        ----------
+        msg : string
+        """
         log(msg)
 
     def close(self):
-        """Close OmniSciDB connection and drop any temporary objects"""
+        """Close OmniSciDB connection and drop any temporary objects."""
         self.con.close()
 
     def _adapt_types(self, descr):
@@ -488,13 +586,6 @@ class OmniSciDBClient(SQLClient):
         return names, adapted_types
 
     def _build_ast(self, expr, context):
-        """
-        Required.
-
-        expr:
-        context:
-        :return:
-        """
         result = build_ast(expr, context)
         return result
 
@@ -529,7 +620,7 @@ class OmniSciDBClient(SQLClient):
         )
 
     def _get_table_schema(self, table_name, database=None):
-        """
+        """Get table schema.
 
         Parameters
         ----------
@@ -539,7 +630,6 @@ class OmniSciDBClient(SQLClient):
         Returns
         -------
         schema : ibis Schema
-
         """
         table_name_ = table_name.split('.')
         if len(table_name_) == 2:
@@ -547,10 +637,20 @@ class OmniSciDBClient(SQLClient):
         return self.get_schema(table_name, database)
 
     def _execute(self, query, results=True):
-        """
+        """Execute a query.
 
-        query:
-        :return:
+        Paramters
+        ---------
+        query : DDL or DML or string
+
+        Returns
+        -------
+        result : pandas.DataFrame
+
+        Raises
+        ------
+        Exception
+            if execution method fails.
         """
         if isinstance(query, (DDL, DML)):
             query = query.compile()
@@ -578,7 +678,7 @@ class OmniSciDBClient(SQLClient):
 
     def create_database(self, name, owner=None):
         """
-        Create a new OmniSciDB database
+        Create a new OmniSciDB database.
 
         Parameters
         ----------
@@ -588,9 +688,42 @@ class OmniSciDBClient(SQLClient):
         statement = ddl.CreateDatabase(name, owner=owner)
         self._execute(statement)
 
+    def describe_formatted(self, name: str) -> pd.DataFrame:
+        """Describe a given table name.
+
+        Parameters
+        ----------
+        name : string
+
+        Returns
+        -------
+        pandas.DataFrame
+        """
+        return pd.DataFrame(
+            [
+                (
+                    col.name,
+                    OmniSciDBDataType.parse(col.type),
+                    col.precision,
+                    col.scale,
+                    col.comp_param,
+                    col.encoding,
+                )
+                for col in self.con.get_table_details(name)
+            ],
+            columns=[
+                'column_name',
+                'type',
+                'precision',
+                'scale',
+                'comp_param',
+                'encoding',
+            ],
+        )
+
     def drop_database(self, name, force=False):
         """
-        Drop an OmniSciDB database
+        Drop an OmniSciDB database.
 
         Parameters
         ----------
@@ -599,6 +732,11 @@ class OmniSciDBClient(SQLClient):
         force : boolean, default False
           If False and there are any tables in this database, raises an
           IntegrityError
+
+        Raises
+        ------
+        ibis.common.exceptions.IntegrityError
+            if given database has tables and force is not define as True
         """
         tables = []
 
@@ -615,7 +753,7 @@ class OmniSciDBClient(SQLClient):
 
     def create_user(self, name, password, is_super=False):
         """
-        Create a new OmniSciDB user
+        Create a new OmniSciDB user.
 
         Parameters
         ----------
@@ -635,7 +773,7 @@ class OmniSciDBClient(SQLClient):
         self, name, password=None, is_super=None, insert_access=None
     ):
         """
-        Alter OmniSciDB user parameters
+        Alter OmniSciDB user parameters.
 
         Parameters
         ----------
@@ -659,25 +797,25 @@ class OmniSciDBClient(SQLClient):
 
     def drop_user(self, name):
         """
-        Drop an OmniSciDB user
+        Drop a given user.
 
         Parameters
         ----------
         name : string
-          Database name
+          User name
         """
         statement = ddl.DropUser(name)
         self._execute(statement)
 
     def create_view(self, name, expr, database=None):
         """
-        Create an OmniSciDB view from a table expression
+        Create a view with a given name from a table expression.
 
         Parameters
         ----------
         name : string
         expr : ibis TableExpr
-        database : string, default None
+        database : string, optional
         """
         ast = self._build_ast(expr, OmniSciDBDialect.make_context())
         select = ast.queries[0]
@@ -686,7 +824,7 @@ class OmniSciDBClient(SQLClient):
 
     def drop_view(self, name, database=None):
         """
-        Drop an OmniSciDB view
+        Drop a given view.
 
         Parameters
         ----------
@@ -700,7 +838,7 @@ class OmniSciDBClient(SQLClient):
         self, table_name, obj=None, schema=None, database=None, max_rows=None
     ):
         """
-        Create a new table in OmniSciDB using an Ibis table expression.
+        Create a new table from an Ibis table expression.
 
         Parameters
         ----------
@@ -710,8 +848,8 @@ class OmniSciDBClient(SQLClient):
         schema : ibis.Schema, optional
           Mutually exclusive with expr, creates an empty table with a
           particular schema
-        database : string, default None (optional)
-        max_rows : int, Default None
+        database : string, optional
+        max_rows : int, optional
           Set the maximum number of rows allowed in a table to create a capped
           collection. When this limit is reached, the oldest fragment is
           removed. Default = 2^62.
@@ -741,14 +879,12 @@ class OmniSciDBClient(SQLClient):
         else:
             raise com.IbisError('Must pass expr or schema')
 
-        result = self._execute(statement, False)
-
+        self._execute(statement, False)
         self.set_database(_database)
-        return result
 
     def drop_table(self, table_name, database=None, force=False):
         """
-        Drop an OmniSciDB table
+        Drop a given table.
 
         Parameters
         ----------
@@ -774,19 +910,31 @@ class OmniSciDBClient(SQLClient):
 
     def truncate_table(self, table_name, database=None):
         """
-        Delete all rows from, but do not drop, an existing table
+        Delete all rows from, but do not drop, an existing table.
 
         Parameters
         ----------
         table_name : string
-        database : string, default None (optional)
+        database : string, optional
         """
         statement = ddl.TruncateTable(table_name, database=database)
         self._execute(statement, False)
 
-    def drop_table_or_view(self, name, database=None, force=False):
-        """
-        Attempt to drop a relation that may be a view or table
+    def drop_table_or_view(
+        self, name: str, database: str = None, force: bool = False
+    ):
+        """Attempt to drop a relation that may be a view or table.
+
+        Parameters
+        ----------
+        name : str
+        database : str, optional
+        force : bool, optional
+
+        Raises
+        ------
+        Exception
+            if the drop operation fails.
         """
         try:
             self.drop_table(name, database=database)
@@ -797,7 +945,7 @@ class OmniSciDBClient(SQLClient):
                 raise e
 
     def database(self, name=None):
-        """Connect to a database called `name`.
+        """Connect to a given database.
 
         Parameters
         ----------
@@ -833,7 +981,8 @@ class OmniSciDBClient(SQLClient):
             return self.database_class(name, new_client)
 
     def load_data(self, table_name, obj, database=None, **kwargs):
-        """
+        """Load data into a given table.
+
         Wraps the LOAD DATA DDL statement. Loads data into an OmniSciDB table
         by physically moving data files.
 
@@ -841,7 +990,7 @@ class OmniSciDBClient(SQLClient):
         ----------
         table_name : string
         obj: pandas.DataFrame or pyarrow.Table
-        database : string, default None (optional)
+        database : string, optional
         """
         _database = self.db_name
         self.set_database(database)
@@ -850,9 +999,16 @@ class OmniSciDBClient(SQLClient):
 
     @property
     def current_database(self):
+        """Get the current database name."""
         return self.db_name
 
-    def set_database(self, name):
+    def set_database(self, name: str):
+        """Set a given database for the current connect.
+
+        Parameters
+        ----------
+        name : string
+        """
         if self.db_name != name and name is not None:
             self.con.close()
             self.con = pymapd.connect(
@@ -867,15 +1023,37 @@ class OmniSciDBClient(SQLClient):
             )
             self.db_name = name
 
-    def exists_database(self, name):
-        raise NotImplementedError()
+    @com.mark_as_unsupported
+    def exists_database(self, name: str):
+        """Check if the given database exists.
 
-    def list_databases(self, like=None):
-        raise NotImplementedError()
+        Parameters
+        ----------
+        name : str
 
-    def exists_table(self, name, database=None):
+        Raises
+        ------
+        NotImplementedError
+            Method not supported yet.
         """
-        Determine if the indicated table or view exists
+
+    @com.mark_as_unsupported
+    def list_databases(self, like: str = None):
+        """List all databases.
+
+        Parameters
+        ----------
+        like : str, optional
+
+        Raises
+        ------
+        NotImplementedError
+            Method not supported yet.
+        """
+
+    def exists_table(self, name: str, database: str = None):
+        """
+        Determine if the indicated table or view exists.
 
         Parameters
         ----------
@@ -888,7 +1066,18 @@ class OmniSciDBClient(SQLClient):
         """
         return bool(self.list_tables(like=name, database=database))
 
-    def list_tables(self, like=None, database=None):
+    def list_tables(self, like: str = None, database: str = None) -> list:
+        """List all tables inside given or current database.
+
+        Parameters
+        ----------
+        like : str, optional
+        database : str, optional
+
+        Returns
+        -------
+        list
+        """
         _database = None
 
         if not self.db_name == database:
@@ -907,7 +1096,7 @@ class OmniSciDBClient(SQLClient):
 
     def get_schema(self, table_name, database=None):
         """
-        Return a Schema object for the indicated table and database
+        Return a Schema object for the given table and database.
 
         Parameters
         ----------
@@ -933,12 +1122,13 @@ class OmniSciDBClient(SQLClient):
             ]
         )
 
-    def sql(self, query):
+    def sql(self, query: str):
         """
-        Convert a SQL query to an Ibis table expression
+        Convert a SQL query to an Ibis table expression.
 
         Parameters
         ----------
+        query : string
 
         Returns
         -------
@@ -957,6 +1147,13 @@ class OmniSciDBClient(SQLClient):
 
     @property
     def version(self):
+        """Return the backend library version.
+
+        Returns
+        -------
+        string
+            Version of the backend library.
+        """
         # pymapd doesn't have __version__
         dist = pkg_resources.get_distribution('pymapd')
         return pkg_resources.parse_version(dist.version)
@@ -965,9 +1162,14 @@ class OmniSciDBClient(SQLClient):
 @dt.dtype.register(OmniSciDBDataType)
 def omniscidb_to_ibis_dtype(omniscidb_dtype):
     """
-    Register OmniSciDB Data Types
+    Register OmniSciDB Data Types.
 
-    omniscidb_dtype:
-    :return:
+    Parameters
+    ----------
+    omniscidb_dtype : OmniSciDBDataType
+
+    Returns
+    -------
+    ibis.expr.datatypes.DataType
     """
     return omniscidb_dtype.to_ibis()

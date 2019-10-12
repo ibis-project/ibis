@@ -215,7 +215,7 @@ def test_literal_geospatial_inferred(backend, con, shp, expected):
         (shp_multipoint_0, {'postgres': "'MULTIPOINT (0 0, 1 1, 2 2)'"}),
     ],
 )
-@pytest.mark.only_on_backends(PostgreSQL)
+@pytest.mark.only_on_backends([PostgreSQL])
 @pytest.mark.xfail_unsupported
 def test_literal_multi_geospatial_inferred(backend, con, shp, expected):
     result = str(con.compile(ibis.literal(shp)))

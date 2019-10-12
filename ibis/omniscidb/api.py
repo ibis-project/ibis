@@ -1,3 +1,6 @@
+"""OmniSciDB API module."""
+
+import ibis
 import ibis.common.exceptions as com
 import ibis.config as cf
 from ibis.config import options
@@ -5,10 +8,15 @@ from ibis.omniscidb.client import EXECUTION_TYPE_CURSOR, OmniSciDBClient
 from ibis.omniscidb.compiler import compiles, dialect, rewrites  # noqa: F401
 
 
-def compile(expr, params=None):
-    """
-    Force compilation of expression as though it were an expression depending
-    on OmniSciDB. Note you can also call expr.compile()
+def compile(expr: ibis.Expr, params=None):
+    """Compile a given expression.
+
+    Note you can also call expr.compile().
+
+    Parameters
+    ----------
+    expr : ibis.Expr
+    params : dict
 
     Returns
     -------
@@ -19,10 +27,17 @@ def compile(expr, params=None):
     return to_sql(expr, dialect.make_context(params=params))
 
 
-def verify(expr, params=None):
-    """
-    Determine if expression can be successfully translated to execute on
-    OmniSciDB
+def verify(expr: ibis.Expr, params: dict = None) -> bool:
+    """Check if a given expression can be successfully translated.
+
+    Parameters
+    ----------
+    expr : ibis.Expr
+    params : dict, optional
+
+    Returns
+    -------
+    bool
     """
     try:
         compile(expr, params=params)
@@ -42,23 +57,23 @@ def connect(
     session_id=None,
     execution_type=EXECUTION_TYPE_CURSOR,
 ):
-    """Create a OmniSciDBClient for use with Ibis
+    """Create a client for OmniSciDB backend.
 
-    Parameters could be
+    Parameters
+    ----------
+    uri : str
+    user : str
+    password : str
+    host : str
+    port : int
+    database : str
+    protocol : str
+    session_id : str
+    execution_type : int
 
-    :param uri: str
-    :param user: str
-    :param password: str
-    :param host: str
-    :param port: int
-    :param database: str
-    :param protocol: str
-    :param session_id: str
-    :param execution_type: int
     Returns
     -------
     OmniSciDBClient
-
     """
     client = OmniSciDBClient(
         uri=uri,

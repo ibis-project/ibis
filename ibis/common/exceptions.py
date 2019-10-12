@@ -1,3 +1,4 @@
+"""Module for exceptions."""
 # Copyright 2014 Cloudera Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,59 +12,89 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import Callable
 
 
 class IbisError(Exception):
-    pass
+    """IbisError."""
 
 
 class InternalError(IbisError):
-    pass
+    """InternalError."""
 
 
 class IntegrityError(IbisError):
-    pass
+    """IntegrityError."""
 
 
 class ExpressionError(IbisError):
-    pass
+    """ExpressionError."""
 
 
 class RelationError(ExpressionError):
-    pass
+    """RelationError."""
 
 
 class TranslationError(IbisError):
-    pass
+    """TranslationError."""
 
 
 class OperationNotDefinedError(TranslationError):
-    pass
+    """OperationNotDefinedError."""
 
 
 class UnsupportedOperationError(TranslationError):
-    pass
+    """UnsupportedOperationError."""
 
 
 class UnsupportedBackendType(TranslationError):
-    pass
+    """UnsupportedBackendType."""
 
 
 class UnboundExpressionError(ValueError, IbisError):
-    pass
+    """UnboundExpressionError."""
 
 
 class IbisInputError(ValueError, IbisError):
-    pass
+    """IbisInputError."""
 
 
 class IbisTypeError(TypeError, IbisError):
-    pass
+    """IbisTypeError."""
 
 
 class InputTypeError(IbisTypeError):
-    pass
+    """InputTypeError."""
 
 
 class UnsupportedArgumentError(IbisError):
-    pass
+    """UnsupportedArgumentError."""
+
+
+def mark_as_unsupported(f: Callable) -> Callable:
+    """Decorate an unsupported method.
+
+    Parameters
+    ----------
+    f : callable
+
+    Returns
+    -------
+    callable
+
+    Raises
+    ------
+    UnsupportedOperationError
+    """
+    # function that raises UnsupportedOperationError
+    def _mark_as_unsupported(self):
+        raise UnsupportedOperationError(
+            'Method `{}` are unsupported by class `{}`.'.format(
+                f.__name__, self.__class__.__name__
+            )
+        )
+
+    _mark_as_unsupported.__doc__ = f.__doc__
+    _mark_as_unsupported.__name__ = f.__name__
+
+    return _mark_as_unsupported

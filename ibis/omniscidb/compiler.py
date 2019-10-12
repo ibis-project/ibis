@@ -1,5 +1,7 @@
+"""OmniSciDB Compiler module."""
 from io import StringIO
 
+import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
@@ -13,13 +15,26 @@ from .identifiers import quote_identifier  # noqa: F401
 from .operations import _type_to_sql_string  # noqa: F401
 
 
-def build_ast(expr, context):
+def build_ast(
+    expr: ibis.Expr, context: ibis.sql.compiler.QueryContext
+) -> ibis.sql.compiler.QueryAST:
+    """Build AST from given expression.
+
+    Parameters
+    ----------
+    expr : ibis.Expr
+    context : ibis.sql.compiler.QueryContext
+
+    Returns
+    -------
+    ibis.sql.compiler.QueryAST
+    """
     assert context is not None, 'context is None'
     builder = OmniSciDBQueryBuilder(expr, context=context)
     return builder.get_result()
 
 
-def _get_query(expr, context):
+def _get_query(expr: ibis.Expr, context: ibis.sql.compiler.QueryContext):
     assert context is not None, 'context is None'
     ast = build_ast(expr, context)
     query = ast.queries[0]
@@ -27,7 +42,20 @@ def _get_query(expr, context):
     return query
 
 
-def to_sql(expr, context=None):
+def to_sql(
+    expr: ibis.Expr, context: ibis.sql.compiler.QueryContext = None
+) -> str:
+    """Convert expression to SQL statement.
+
+    Parameters
+    ----------
+    expr : ibis.Expr
+    context : ibis.sql.compiler.QueryContext, optional
+
+    Returns
+    -------
+    str
+    """
     if context is None:
         context = OmniSciDBDialect.make_context()
     assert context is not None, 'context is None'
@@ -36,9 +64,7 @@ def to_sql(expr, context=None):
 
 
 class OmniSciDBSelectBuilder(compiles.SelectBuilder):
-    """
-
-    """
+    """OmniSciDB Select Builder class."""
 
     @property
     def _select_class(self):
@@ -49,9 +75,7 @@ class OmniSciDBSelectBuilder(compiles.SelectBuilder):
 
 
 class OmniSciDBQueryBuilder(compiles.QueryBuilder):
-    """
-
-    """
+    """OmniSciDB Query Builder class."""
 
     select_builder = OmniSciDBSelectBuilder
     union_class = None
@@ -63,9 +87,7 @@ class OmniSciDBQueryBuilder(compiles.QueryBuilder):
 
 
 class OmniSciDBQueryContext(compiles.QueryContext):
-    """
-
-    """
+    """OmniSciDB Query Context class."""
 
     always_alias = False
 
@@ -75,22 +97,44 @@ class OmniSciDBQueryContext(compiles.QueryContext):
 
 
 class OmniSciDBSelect(compiles.Select):
-    """
-
-    """
+    """OmniSciDB Select class."""
 
     @property
     def translator(self):
+        """Return the translator class.
+
+        Returns
+        -------
+        OmniSciDBExprTranslator
+        """
         return OmniSciDBExprTranslator
 
     @property
     def table_set_formatter(self):
+        """Return the Table Set Formatter.
+
+        Returns
+        -------
+        OmniSciDBTableSetFormatter
+        """
         return OmniSciDBTableSetFormatter
 
-    def format_select_set(self):
+    def format_select_set(self) -> str:
+        """Format the select clause.
+
+        Returns
+        -------
+        string
+        """
         return super().format_select_set()
 
-    def format_group_by(self):
+    def format_group_by(self) -> str:
+        """Format the group by clause.
+
+        Returns
+        -------
+        string
+        """
         if not self.group_by:
             # There is no aggregation, nothing to see here
             return None
@@ -111,6 +155,12 @@ class OmniSciDBSelect(compiles.Select):
         return '\n'.join(lines)
 
     def format_limit(self):
+        """Format the limit clause.
+
+        Returns
+        -------
+        string
+        """
         if not self.limit:
             return None
 
@@ -125,9 +175,7 @@ class OmniSciDBSelect(compiles.Select):
 
 
 class OmniSciDBTableSetFormatter(compiles.TableSetFormatter):
-    """
-
-    """
+    """OmniSciDB Table Set Formatter class."""
 
     _join_names = {
         ops.InnerJoin: 'JOIN',
@@ -136,9 +184,16 @@ class OmniSciDBTableSetFormatter(compiles.TableSetFormatter):
     }
 
     def get_result(self):
-        # Got to unravel the join stack; the nesting order could be
-        # arbitrary, so we do a depth first search and push the join tokens
-        # and predicates onto a flat list, then format them
+        """Get a formatted string for the expression.
+
+        Got to unravel the join stack; the nesting order could be
+        arbitrary, so we do a depth first search and push the join tokens
+        and predicates onto a flat list, then format them
+
+        Returns
+        -------
+        string
+        """
         op = self.expr.op()
 
         if isinstance(op, ops.Join):
@@ -200,23 +255,33 @@ class OmniSciDBTableSetFormatter(compiles.TableSetFormatter):
 
 
 class OmniSciDBExprTranslator(compiles.ExprTranslator):
-    """
-
-    """
+    """OmniSciDB Expr Translator class."""
 
     _registry = omniscidb_ops._operation_registry
     _rewrites = impala_compiler.ImpalaExprTranslator._rewrites.copy()
 
     context_class = OmniSciDBQueryContext
 
-    def name(self, translated, name, force=True):
+    def name(self, translated: str, name: str, force=True):
+        """Define name for the expression.
+
+        Parameters
+        ----------
+        translated : str
+            translated expresion
+        name : str
+        force : bool, optional
+            if True force the new name, by default True
+
+        Returns
+        -------
+        str
+        """
         return omniscidb_ops._name_expr(translated, name)
 
 
 class OmniSciDBDialect(compiles.Dialect):
-    """
-
-    """
+    """OmniSciDB Dialect class."""
 
     translator = OmniSciDBExprTranslator
 
@@ -229,22 +294,62 @@ omniscidb_reg = omniscidb_ops._operation_registry
 
 
 @rewrites(ops.All)
-def omniscidb_rewrite_all(expr):
+def omniscidb_rewrite_all(expr: ibis.Expr) -> ibis.Expr:
+    """Rewrite All operation.
+
+    Parameters
+    ----------
+    expr : ibis.Expr
+
+    Returns
+    -------
+    [type]
+    """
     return omniscidb_ops._all(expr)
 
 
 @rewrites(ops.Any)
-def omniscidb_rewrite_any(expr):
+def omniscidb_rewrite_any(expr: ibis.Expr) -> ibis.Expr:
+    """Rewrite Any operation.
+
+    Parameters
+    ----------
+    expr : ibis.Expr
+
+    Returns
+    -------
+    ibis.Expr
+    """
     return omniscidb_ops._any(expr)
 
 
 @rewrites(ops.NotAll)
-def omniscidb_rewrite_not_all(expr):
+def omniscidb_rewrite_not_all(expr: ibis.Expr) -> ibis.Expr:
+    """Rewrite Not All operation.
+
+    Parameters
+    ----------
+    expr : ibis.Expr
+
+    Returns
+    -------
+    ibis.Expr
+    """
     return omniscidb_ops._not_all(expr)
 
 
 @rewrites(ops.NotAny)
-def omniscidb_rewrite_not_any(expr):
+def omniscidb_rewrite_not_any(expr: ibis.Expr) -> ibis.Expr:
+    """Rewrite Not Any operation.
+
+    Parameters
+    ----------
+    expr : ibis.Expr
+
+    Returns
+    -------
+    ibis.Expr
+    """
     return omniscidb_ops._not_any(expr)
 
 

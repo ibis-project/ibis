@@ -26,6 +26,7 @@ dependencies:
   - psycopg2
   - pyarrow>=0.12
   - pydata-google-auth
+  - pydocstyle=4.0.1
   - pygit2
   - pymapd>=0.12.0
   - pymysql

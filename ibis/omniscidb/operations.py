@@ -1,6 +1,8 @@
+"""OmniSciDB operations module."""
 import warnings
 from datetime import date, datetime
 from io import StringIO
+from typing import Callable
 
 import ibis
 import ibis.common.exceptions as com
@@ -121,7 +123,24 @@ def _parenthesize(translator, expr):
         return what_
 
 
-def fixed_arity(func_name, arity):
+def fixed_arity(func_name: str, arity: int) -> Callable:
+    """Create a translator for a given arity.
+
+    Parameters
+    ----------
+    func_name : str
+    arity : 1
+
+    Returns
+    -------
+    function
+
+    Raises
+    ------
+    com.UnsupportedOperationError
+        If the arity is not compatible if the parameters of the expression.
+    """
+    # formatter function
     def formatter(translator, expr):
         op = expr.op()
         arg_count = len(op.args)
@@ -134,7 +153,17 @@ def fixed_arity(func_name, arity):
     return formatter
 
 
-def unary(func_name):
+def unary(func_name: str) -> Callable:
+    """Create a translator for a unary operation.
+
+    Parameters
+    ----------
+    func_name : str
+
+    Returns
+    -------
+    function
+    """
     return fixed_arity(func_name, 1)
 
 
@@ -200,7 +229,18 @@ def _variance_like(func):
     return formatter
 
 
-def unary_prefix_op(prefix_op):
+def unary_prefix_op(prefix_op: str) -> Callable:
+    """Create a unary translator with a prefix.
+
+    Parameters
+    ----------
+    prefix_op : str
+
+    Returns
+    -------
+    function
+    """
+    # formatter function
     def formatter(translator, expr):
         op = expr.op()
         arg = _parenthesize(translator, op.args[0])
@@ -211,7 +251,18 @@ def unary_prefix_op(prefix_op):
     return formatter
 
 
-def binary_infix_op(infix_sym):
+def binary_infix_op(infix_sym: str) -> Callable:
+    """Create a binary infix translator.
+
+    Parameters
+    ----------
+    infix_sym : str
+
+    Returns
+    -------
+    function
+    """
+    # formatter function
     def formatter(translator, expr):
         op = expr.op()
 
@@ -358,7 +409,26 @@ def _cross_join(translator, expr):
     return translator.translate(left.join(right, ibis.literal(True)))
 
 
-def literal(translator, expr):
+def literal(translator, expr: ibis.expr.operations.Literal) -> str:
+    """Create a translator for literal operations.
+
+    Parameters
+    ----------
+    translator : ibis.omniscidb.compiler.OmniSciDBExprTranslator
+    expr : ibis.expr.operations.Literal
+
+    Returns
+    -------
+    translated : str
+
+    Raises
+    ------
+    Exception
+        if a TimestampValue expr is given and its value is a datetime and
+        the format is invalid.
+    NotImplementedError
+        if the given literal expression is not recognized.
+    """
     op = expr.op()
     value = op.value
 
@@ -423,13 +493,33 @@ def _where(translator, expr):
     return translator.translate(expr)
 
 
-def raise_unsupported_expr_error(expr):
+def raise_unsupported_expr_error(expr: ibis.Expr):
+    """Raise an unsupported expression error for given expression.
+
+    Parameters
+    ----------
+    expr : ibis.Expr
+
+    Raises
+    ------
+    com.UnsupportedOperationError
+    """
     msg = "OmniSciDB backend doesn't support {} operation!"
     op = expr.op()
     raise com.UnsupportedOperationError(msg.format(type(op)))
 
 
 def raise_unsupported_op_error(translator, expr, *args):
+    """Raise an unsupported operation error for given expression.
+
+    Parameters
+    ----------
+    expr : ibis.Expr
+
+    Raises
+    ------
+    com.UnsupportedOperationError
+    """
     msg = "OmniSciDB backend doesn't support {} operation!"
     op = expr.op()
     raise com.UnsupportedOperationError(msg.format(type(op)))
@@ -441,6 +531,8 @@ def _name_expr(formatted_expr, quoted_name):
 
 
 class CaseFormatter:
+    """Case Formatter class."""
+
     def __init__(self, translator, base, cases, results, default):
         self.translator = translator
         self.base = base
@@ -457,9 +549,11 @@ class CaseFormatter:
         return self.translator.translate(expr)
 
     def get_result(self):
-        """
+        """Return the CASE statement formatted.
 
-        :return:
+        Results
+        -------
+        str
         """
         self.buf.seek(0)
 
@@ -564,7 +658,7 @@ def _arbitrary(translator, expr):
 
 
 class NumericTruncate(ops.NumericBinaryOp):
-    """Truncates x to y decimal places"""
+    """Truncates x to y decimal places."""
 
     output_type = rlz.shape_like('left', ops.dt.float)
 
@@ -573,18 +667,13 @@ class NumericTruncate(ops.NumericBinaryOp):
 
 
 class Conv_4326_900913_X(ops.UnaryOp):
-    """
-    Converts WGS-84 latitude to WGS-84 Web Mercator x coordinate.
-    """
+    """Converts WGS-84 latitude to WGS-84 Web Mercator x coordinate."""
 
     output_type = rlz.shape_like('arg', ops.dt.float)
 
 
 class Conv_4326_900913_Y(ops.UnaryOp):
-    """
-    Converts WGS-84 longitude to WGS-84 Web Mercator y coordinate.
-
-    """
+    """Converts WGS-84 longitude to WGS-84 Web Mercator y coordinate."""
 
     output_type = rlz.shape_like('arg', ops.dt.float)
 
@@ -593,7 +682,7 @@ class Conv_4326_900913_Y(ops.UnaryOp):
 
 
 class ByteLength(ops.StringLength):
-    """Returns the length of a string in bytes length"""
+    """Returns the length of a string in bytes length."""
 
 
 # WINDOW

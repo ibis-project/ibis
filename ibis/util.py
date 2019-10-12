@@ -1,3 +1,4 @@
+"""Ibis util functions."""
 import collections
 import functools
 import itertools
@@ -28,15 +29,43 @@ V = TypeVar("V")
 
 
 def guid() -> str:
+    """Return a uuid4 hexadecimal value.
+
+    Returns
+    -------
+    string
+    """
     return uuid4().hex
 
 
 def indent(text: str, spaces: int) -> str:
+    """Apply an indentation using the given spaces into the given text.
+
+    Parameters
+    ----------
+    text : string
+    spaces : string
+
+    Returns
+    -------
+    string
+    """
     prefix = ' ' * spaces
     return ''.join(prefix + line for line in text.splitlines(True))
 
 
 def is_one_of(values: Sequence[T], t: Type[U]) -> Iterator[bool]:
+    """Check if the type of each value is the same of the given type.
+
+    Parameters
+    ----------
+    values : list or tuple
+    t : type
+
+    Returns
+    -------
+    tuple
+    """
     return (isinstance(x, t) for x in values)
 
 
@@ -45,17 +74,47 @@ all_of = toolz.compose(all, is_one_of)
 
 
 def promote_list(val: Union[V, List[V]]) -> List[V]:
+    """Ensure that the value is a list.
+
+    Parameters
+    ----------
+    val : list or object
+
+    Returns
+    -------
+    list
+    """
     if not isinstance(val, list):
         val = [val]
     return val
 
 
 def is_function(v: Any) -> bool:
+    """Check if the given object is a function.
+
+    Parameters
+    ----------
+    v : object
+
+    Returns
+    -------
+    bool
+    """
     return isinstance(v, (types.FunctionType, types.LambdaType))
 
 
 def adjoin(space: int, *lists: Sequence[str]) -> str:
-    """Glue together two sets of strings using `space`."""
+    """Glue together two sets of strings using `space`.
+
+    Parameters
+    ----------
+    space : int
+    lists : list or tuple
+
+    Returns
+    -------
+    string
+    """
     lengths = [max(map(len, x)) + space for x in lists[:-1]]
 
     # not the last one
@@ -72,7 +131,12 @@ def adjoin(space: int, *lists: Sequence[str]) -> str:
 
 
 def log(msg: str) -> None:
-    """Log `msg` using ``options.verbose_log`` if set, otherwise ``print``."""
+    """Log `msg` using ``options.verbose_log`` if set, otherwise ``print``.
+
+    Parameters
+    ----------
+    msg : string
+    """
     if options.verbose:
         (options.verbose_log or print)(msg)
 
@@ -82,26 +146,27 @@ def approx_equal(a: Real, b: Real, eps: Real):
 
     Parameters
     ----------
-    a
-    b
-    eps
+    a : real
+    b : real
+    eps : real
 
-    Returns
-    -------
-    bool
-
+    Raises
+    ------
+    AssertionError
     """
     assert abs(a - b) < eps
 
 
-def safe_index(elements: Sequence[T], value: T):
-    """Find the location of `value` in `elements`, return -1 if `value` is
-    not found instead of raising ``ValueError``.
+def safe_index(elements: Sequence[T], value: T) -> int:
+    """Find the location of `value` in `elements`.
+
+    Return -1 if `value` is not found instead of raising ``ValueError``.
 
     Parameters
     ----------
-    elements
-    value
+    elements : list or tuple
+    value : int
+        Index of the given sequence/elements
 
     Returns
     -------
@@ -127,7 +192,7 @@ def is_iterable(o: Any) -> bool:
 
     Parameters
     ----------
-    o
+    o : object
         Any python object
 
     Returns
@@ -156,7 +221,9 @@ def is_iterable(o: Any) -> bool:
 
 
 def convert_unit(value, unit, to, floor=True):
-    """Convert `value`, is assumed to be in units of `unit`, to units of `to`.
+    """Convert a value between different units.
+
+    Convert `value`, is assumed to be in units of `unit`, to units of `to`.
     If `floor` is true, then use floor division on `value` if necessary.
 
     Parameters
@@ -222,7 +289,22 @@ def convert_unit(value, unit, to, floor=True):
         return value / factor
 
 
-def get_logger(name, level=None, format=None, propagate=False):
+def get_logger(
+    name: str, level: str = None, format: str = None, propagate: bool = False
+) -> logging.Logger:
+    """Get a logger.
+
+    Parameters
+    ----------
+    name : string
+    level : string
+    format : string
+    propagate : bool, default False
+
+    Returns
+    -------
+    logging.Logger
+    """
     logging.basicConfig()
     handler = logging.StreamHandler()
 
@@ -247,7 +329,13 @@ def get_logger(name, level=None, format=None, propagate=False):
 
 # taken from the itertools documentation
 def consume(iterator: Iterator[T], n: Optional[int] = None) -> None:
-    """Advance the iterator n-steps ahead. If n is None, consume entirely."""
+    """Advance the iterator n-steps ahead. If n is None, consume entirely.
+
+    Parameters
+    ----------
+    iterator : list or tuple
+    n : int, optional
+    """
     # Use functions that consume iterators at C speed.
     if n is None:
         # feed the entire iterator into a zero-length deque

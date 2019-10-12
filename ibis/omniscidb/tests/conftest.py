@@ -1,5 +1,8 @@
+"""OmniSciDB test configuration module."""
 import os
+import typing
 
+import pandas
 import pytest
 
 import ibis
@@ -17,6 +20,12 @@ OMNISCIDB_DB = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
 
 @pytest.fixture(scope='module')
 def con():
+    """Define a connection fixture.
+
+    Returns
+    -------
+    ibis.omniscidb.OmniSciDBClient
+    """
     return ibis.omniscidb.connect(
         protocol=OMNISCIDB_PROTOCOL,
         host=OMNISCIDB_HOST,
@@ -29,6 +38,8 @@ def con():
 
 @pytest.fixture(scope='module')
 def session_con():
+    """Define a session connection fixture."""
+    # TODO: fix return issue
     return ibis.omniscidb.connect(
         protocol=OMNISCIDB_PROTOCOL,
         host=OMNISCIDB_HOST,
@@ -41,30 +52,73 @@ def session_con():
 
 
 @pytest.fixture(scope='module')
-def alltypes(con):
+def alltypes(con) -> ibis.expr.types.TableExpr:
+    """Define a functional_alltypes table fixture.
+
+    Parameters
+    ----------
+    con : ibis.omniscidb.OmniSciDBClient
+
+    Returns
+    -------
+    ibis.expr.types.TableExpr
+    """
     return con.table('functional_alltypes')
 
 
 @pytest.fixture(scope='module')
-def awards_players(con):
+def awards_players(con) -> ibis.expr.types.TableExpr:
+    """Define a awards_players table fixture.
+
+    Parameters
+    ----------
+    con : ibis.omniscidb.OmniSciDBClient
+
+    Returns
+    -------
+    ibis.expr.types.TableExpr
+    """
     return con.table('awards_players')
 
 
 @pytest.fixture(scope='module')
-def batting(con):
+def batting(con) -> ibis.expr.types.TableExpr:
+    """Define a awards_players table fixture.
+
+    Parameters
+    ----------
+    con : ibis.omniscidb.OmniSciDBClient
+
+    Returns
+    -------
+    ibis.expr.types.TableExpr
+    """
     return con.table('batting')
 
 
 @pytest.fixture(scope='module')
-def df_alltypes(alltypes):
+def df_alltypes(alltypes: ibis.expr.types.TableExpr) -> pandas.DataFrame:
+    """Return all the data for functional_alltypes table.
+
+    Parameters
+    ----------
+    alltypes : ibis.expr.types.TableExpr
+        [description]
+
+    Returns
+    -------
+    pandas.DataFrame
+    """
     return alltypes.execute()
 
 
 @pytest.fixture
-def translate():
-    """
+def translate() -> typing.Callable:
+    """Create a translator function.
 
-    :return:
+    Returns
+    -------
+    function
     """
     from ibis.omniscidb.compiler import OmniSciDBDialect
 
@@ -78,7 +132,17 @@ def _random_identifier(suffix):
 
 
 @pytest.fixture
-def temp_table(con):
+def temp_table(con) -> str:
+    """Return a temporary table name.
+
+    Parameters
+    ----------
+    con : ibis.omniscidb.OmniSciDBClient
+
+    Yields
+    ------
+    name : string
+    """
     name = _random_identifier('table')
     try:
         yield name
@@ -88,12 +152,24 @@ def temp_table(con):
 
 
 @pytest.fixture(scope='session')
-def test_data_db():
+def test_data_db() -> str:
+    """Return the database name."""
     return OMNISCIDB_DB
 
 
 @pytest.fixture
-def temp_database(con, test_data_db):
+def temp_database(con, test_data_db: str) -> str:
+    """Create a temporary database.
+
+    Parameters
+    ----------
+    con : ibis.omniscidb.OmniSciDBClient
+    test_data_db : str
+
+    Returns
+    -------
+    str
+    """
     name = _random_identifier('database')
     con.create_database(name)
     try:
