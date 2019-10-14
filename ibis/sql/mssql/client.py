@@ -2,7 +2,7 @@ import contextlib
 import getpass
 
 
-import pyodbc # NOQA fail early if the driver is missing
+import pyodbc  # NOQA fail early if the driver is missing
 import sqlalchemy as sa
 from sqlalchemy.dialects.mssql.pyodbc import MSDialect_pyodbc
 
@@ -47,14 +47,14 @@ class MSSQLClient(alch.AlchemyClient):
     table_class = MSSQLTable
 
     def __init__(
-            self,
-            host='localhost',
-            user=None,
-            password=None,
-            port=1433,
-            database='mssql',
-            url=None,
-            driver='pyodbc'
+        self,
+        host='localhost',
+        user=None,
+        password=None,
+        port=1433,
+        database='mssql',
+        url=None,
+        driver='pyodbc',
     ):
         if url is None:
             if driver != 'pyodbc':
@@ -138,9 +138,12 @@ class MSSQLClient(alch.AlchemyClient):
         return self.database_name
 
     def list_databases(self):
-        return [row.name for row in self.con.execute(
-            'SELECT name FROM master.dbo.sysdatabases'
-        )]
+        return [
+            row.name
+            for row in self.con.execute(
+                'SELECT name FROM master.dbo.sysdatabases'
+            )
+        ]
 
     def list_schemas(self):
         """List all the schemas in the current database."""

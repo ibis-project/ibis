@@ -3,7 +3,7 @@ from ibis.sql.mssql.client import MSSQLClient
 from ibis.sql.mssql.compiler import (  # noqa: F401, E501
     compiles,
     dialect,
-    rewrites
+    rewrites,
 )
 
 
@@ -48,14 +48,14 @@ def compile(expr, params=None):
 
 
 def connect(
-        host='localhost',
-        user=None,
-        password=None,
-        port=1433,
-        database=None,
-        driver='pyodbc',
-        odbc_driver=None,
-        url=None,
+    host='localhost',
+    user=None,
+    password=None,
+    port=1433,
+    database=None,
+    driver='pyodbc',
+    odbc_driver=None,
+    url=None,
 ):
     """Create an Ibis client located at `user`:`password`@`host`:`port`
     connected to a MSSQL database named `database`.
