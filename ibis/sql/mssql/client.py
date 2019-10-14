@@ -1,6 +1,6 @@
 import contextlib
 import getpass
-import warnings
+
 
 import pyodbc # NOQA fail early if the driver is missing
 import sqlalchemy as sa
