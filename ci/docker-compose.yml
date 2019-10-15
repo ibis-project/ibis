@@ -9,6 +9,15 @@ services:
     environment:
       POSTGRES_PASSWORD: ''
 
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2017-latest
+    hostname: mssql
+    ports:
+      - 1433:1433
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: Ibis_MSSQL_2017
+
   mysql:
     image: mariadb:10.4.12
     hostname: mysql
