@@ -3089,13 +3089,16 @@ class GeoIntersects(GeoSpatialBinOp):
 
 
 class GeoIsValid(GeoSpatialUnOp):
-    """Returns true if the geometry is well-formed"""
+    """Returns true if the geometry is well-formed."""
 
     output_type = rlz.shape_like('args', dt.boolean)
 
 
 class GeoLineLocatePoint(GeoSpatialBinOp):
-    """Returns a float between zero and one representing the location of the
+    """
+    Locate the distance a point falls along the length of a line.
+
+    Returns a float between zero and one representing the location of the
     closest point on the linestring to the given point, as a fraction of the
     total 2d line length.
     """
@@ -3107,16 +3110,23 @@ class GeoLineLocatePoint(GeoSpatialBinOp):
 
 
 class GeoLineMerge(GeoSpatialUnOp):
-    """Returns a (set of) LineString(s) formed by sewing together the
+    """
+    Merge a MultiLineString into a LineString.
+
+    Returns a (set of) LineString(s) formed by sewing together the
     constituent line work of a multilinestring. If a geometry other than
     a linestring or multilinestring is given, this will return an empty
-    geometry collection."""
+    geometry collection.
+    """
 
     output_type = rlz.shape_like('args', dt.geometry)
 
 
 class GeoLineSubstring(GeoSpatialUnOp):
-    """Return a linestring that is a substring of the input one, starting
+    """
+    Clip a substring from a LineString.
+
+    Returns a linestring that is a substring of the input one, starting
     and ending at the given fractions of the total 2d length. The second
     and third arguments are floating point values between zero and one.
     This only works with linestrings.
@@ -3131,8 +3141,12 @@ class GeoLineSubstring(GeoSpatialUnOp):
 
 
 class GeoOrderingEquals(GeoSpatialBinOp):
-    """Returns true if the two geometries are equal and the coordinates
-    are in the same order."""
+    """
+    Check if two geometries are equal and have the same point ordering.
+
+    Returns true if the two geometries are equal and the coordinates
+    are in the same order.
+    """
 
     output_type = rlz.shape_like('args', dt.boolean)
 

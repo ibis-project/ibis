@@ -1922,7 +1922,10 @@ def geo_is_valid(arg):
 
 
 def geo_line_locate_point(left, right):
-    """Returns a float between zero and one representing the location of the
+    """
+    Locate the distance a point falls along the length of a line.
+
+    Returns a float between zero and one representing the location of the
     closest point on the linestring to the given point, as a fraction of the
     total 2d line length.
 
@@ -1940,9 +1943,12 @@ def geo_line_locate_point(left, right):
 
 
 def geo_line_merge(arg):
-    """Returns a (set of) LineString(s) formed by sewing together the
-    constituent line work of a multilinestring. If a geometry other than
-    a linestring or multilinestring is given, this will return an empty
+    """
+    Merge a MultiLineString into a LineString.
+
+    Returns a (set of) LineString(s) formed by sewing together the
+    constituent line work of a MultiLineString. If a geometry other than
+    a LineString or MultiLineString is given, this will return an empty
     geometry collection.
 
     Parameters
@@ -1958,7 +1964,10 @@ def geo_line_merge(arg):
 
 
 def geo_line_substring(arg, start, end):
-    """Return a linestring that is a substring of the input one, starting
+    """
+    Clip a substring from a LineString.
+
+    Returns a linestring that is a substring of the input one, starting
     and ending at the given fractions of the total 2d length. The second
     and third arguments are floating point values between zero and one.
     This only works with linestrings.
@@ -1978,7 +1987,10 @@ def geo_line_substring(arg, start, end):
 
 
 def geo_ordering_equals(left, right):
-    """Returns true if the two geometries are equal and the coordinates
+    """
+    Check if two geometries are equal and have the same point ordering.
+
+    Returns true if the two geometries are equal and the coordinates
     are in the same order.
 
     Parameters
@@ -2099,7 +2111,9 @@ def geo_max_distance(left, right):
 
 
 def geo_unary_union(arg):
-    """Returns the pointwise union of the two geometries.
+    """
+    Aggregate a set of geometries into a union.
+
     This corresponds to the aggregate version of the PostGIS ST_Union.
     We give it a different name (following the corresponding method
     in GeoPandas) to avoid name conflicts with the non-aggregate version.
@@ -2118,7 +2132,10 @@ def geo_unary_union(arg):
 
 
 def geo_union(left, right):
-    """Returns the pointwise union of the two geometries.
+    """
+    Merge two geometries into a union geometry.
+
+    Returns the pointwise union of the two geometries.
     This corresponds to the non-aggregate version the PostGIS ST_Union.
 
     Parameters
