@@ -14,7 +14,7 @@ def compile(expr, params=None):
     ----------
     expr : ibis.expr.types.Expr
         The ibis expression to compile
-    params : dict or None
+    params : dict, optional
         ``dict`` mapping :class:`ibis.expr.types.ScalarParameter` objects to
         values
 
@@ -57,17 +57,16 @@ def connect(
     odbc_driver=None,
     url=None,
 ):
-    """Create an Ibis client located at `user`:`password`@`host`:`port`
-    connected to a MSSQL database named `database`.
+    """Create an Ibis client connected to a MSSQL database.
 
     Parameters
     ----------
     host : string, default 'localhost'
-    user : string, default None
-    password : string, default None
+    user : string, optional
+    password : string, optional
     port : string or integer, default 1433
-    database : string, default None
-    url : string, default None
+    database : string, optional
+    url : string, optional
         Complete SQLAlchemy connection string. If passed, the other connection
         arguments are ignored.
     driver : string, default 'pyodbc'

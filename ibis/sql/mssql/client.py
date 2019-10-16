@@ -34,8 +34,7 @@ class MSSQLDatabase(alch.AlchemyDatabase):
 
 
 class MSSQLClient(alch.AlchemyClient):
-
-    """The Ibis MSSQL client class
+    """The Ibis MSSQL client class.
 
     Attributes
     ----------
@@ -77,6 +76,7 @@ class MSSQLClient(alch.AlchemyClient):
 
     @contextlib.contextmanager
     def begin(self):
+        """Start transaction with client to database."""
         with super().begin() as bind:
             # set timezone utc
             yield bind
@@ -87,7 +87,7 @@ class MSSQLClient(alch.AlchemyClient):
 
         Parameters
         ----------
-        name : str, optional
+        name : string, optional
             The name of the database to connect to. If ``None``, return
             the database named ``self.current_database``.
 
@@ -122,7 +122,7 @@ class MSSQLClient(alch.AlchemyClient):
 
         Parameters
         ----------
-        name : str
+        name : string
 
         Returns
         -------
@@ -134,10 +134,11 @@ class MSSQLClient(alch.AlchemyClient):
 
     @property
     def current_database(self):
-        """The name of the current database this client is connected to."""
+        """Database client is currently connected to."""
         return self.database_name
 
     def list_databases(self):
+        """List all databases for client to connect to."""
         return [
             row.name
             for row in self.con.execute(
@@ -150,6 +151,7 @@ class MSSQLClient(alch.AlchemyClient):
         return self.inspector.get_schema_names()
 
     def set_database(self, name):
+        """Set current database that client is connected to."""
         raise NotImplementedError(
             'Cannot set database with MSSQL client. To use a different'
             ' database, use client.database({!r})'.format(name)
@@ -160,17 +162,16 @@ class MSSQLClient(alch.AlchemyClient):
         return self
 
     def table(self, name, database=None, schema=None):
-        """Create a table expression that references a particular a table
-        called `name` in a MySQL database called `database`.
+        """Create an expression that references a particular table.
 
         Parameters
         ----------
-        name : str
+        name : string
             The name of the table to retrieve.
-        database : str, optional
+        database : string, optional
             The database in which the table referred to by `name` resides. If
             ``None`` then the ``current_database`` is used.
-        schema : str, optional
+        schema : string, optional
             The schema in which the table resides.  If ``None`` then the
             `public` schema is assumed.
 
@@ -187,6 +188,7 @@ class MSSQLClient(alch.AlchemyClient):
             return self.table_expr_class(node)
 
     def list_tables(self, like=None, database=None, schema=None):
+        """List tables avilable in current database."""
         if database is not None and database != self.current_database:
             return self.database(name=database).list_tables(
                 like=like, schema=schema
