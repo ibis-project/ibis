@@ -802,10 +802,17 @@ if geospatial_supported:
         ops.GeoDWithin: fixed_arity(sa.func.ST_DWithin, 3),
         ops.GeoEnvelope: unary(sa.func.ST_Envelope),
         ops.GeoEquals: fixed_arity(sa.func.ST_Equals, 2),
+        ops.GeoGeometryN: fixed_arity(sa.func.ST_GeometryN, 2),
+        ops.GeoGeometryType: unary(sa.func.ST_GeometryType),
         ops.GeoIntersection: fixed_arity(sa.func.ST_Intersection, 2),
         ops.GeoIntersects: fixed_arity(sa.func.ST_Intersects, 2),
+        ops.GeoIsValid: unary(sa.func.ST_IsValid),
+        ops.GeoLineLocatePoint: fixed_arity(sa.func.ST_LineLocatePoint, 2),
+        ops.GeoLineMerge: unary(sa.func.ST_LineMerge),
+        ops.GeoLineSubstring: fixed_arity(sa.func.ST_LineSubstring, 3),
         ops.GeoLength: unary(sa.func.ST_Length),
         ops.GeoNPoints: unary(sa.func.ST_NPoints),
+        ops.GeoOrderingEquals: fixed_arity(sa.func.ST_OrderingEquals, 2),
         ops.GeoOverlaps: fixed_arity(sa.func.ST_Overlaps, 2),
         ops.GeoPerimeter: unary(sa.func.ST_Perimeter),
         ops.GeoSimplify: fixed_arity(sa.func.ST_Simplify, 3),
@@ -813,20 +820,25 @@ if geospatial_supported:
         ops.GeoSetSRID: fixed_arity(sa.func.ST_SetSRID, 2),
         ops.GeoTouches: fixed_arity(sa.func.ST_Touches, 2),
         ops.GeoTransform: fixed_arity(sa.func.ST_Transform, 2),
+        ops.GeoUnaryUnion: unary(sa.func.ST_Union),
+        ops.GeoUnion: fixed_arity(sa.func.ST_Union, 2),
         ops.GeoWithin: fixed_arity(sa.func.ST_Within, 2),
         ops.GeoX: unary(sa.func.ST_X),
         ops.GeoY: unary(sa.func.ST_Y),
-        # Missing casts:
-        #   ST_As_GML
-        #   ST_As_GeoJSON
-        #   ST_As_KML
-        #   ST_As_Raster
-        #   ST_As_SVG
-        #   ST_As_TWKB
-        # Missing Geometric ops:
+        # Missing Geospatial ops:
+        #   ST_AsGML
+        #   ST_AsGeoJSON
+        #   ST_AsKML
+        #   ST_AsRaster
+        #   ST_AsSVG
+        #   ST_AsTWKB
         #   ST_Distance_Sphere
         #   ST_Dump
         #   ST_DumpPoints
+        #   ST_GeogFromText
+        #   ST_GeomFromEWKB
+        #   ST_GeomFromEWKT
+        #   ST_GeomFromText
     }
 
     _operation_registry.update(_geospatial_functions)

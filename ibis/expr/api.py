@@ -140,8 +140,15 @@ __all__ = (
     'geo_d_within',
     'geo_envelope',
     'geo_equals',
+    'geo_geometry_n',
+    'geo_geometry_type',
     'geo_intersection',
     'geo_intersects',
+    'geo_is_valid',
+    'geo_line_locate_point',
+    'geo_line_merge',
+    'geo_line_substring',
+    'geo_ordering_equals',
     'geo_overlaps',
     'geo_touches',
     'geo_distance',
@@ -156,13 +163,15 @@ __all__ = (
     'geo_srid',
     'geo_start_point',
     'geo_transform',
+    'geo_unary_union',
+    'geo_union',
+    'geo_within',
     'geo_x',
     'geo_x_max',
     'geo_x_min',
     'geo_y',
     'geo_y_max',
     'geo_y_min',
-    'geo_within',
     'greatest',
     'ifelse',
     'infer_dtype',
@@ -1846,6 +1855,39 @@ def geo_equals(left, right):
     return op.to_expr()
 
 
+def geo_geometry_n(arg, n):
+    """
+    Get the 1-based Nth geometry of a multi geometry.
+
+    Parameters
+    ----------
+    arg : geometry
+    n : integer
+
+    Returns
+    -------
+    geom : geometry scalar
+    """
+    op = ops.GeoGeometryN(arg, n)
+    return op.to_expr()
+
+
+def geo_geometry_type(arg):
+    """
+    Get the type of a geometry.
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    type : string scalar
+    """
+    op = ops.GeoGeometryType(arg)
+    return op.to_expr()
+
+
 def geo_intersects(left, right):
     """
     Check if the geometries share any points.
@@ -1860,6 +1902,107 @@ def geo_intersects(left, right):
     intersects : bool scalar
     """
     op = ops.GeoIntersects(left, right)
+    return op.to_expr()
+
+
+def geo_is_valid(arg):
+    """
+    Check if the geometry is valid.
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    valid : bool scalar
+    """
+    op = ops.GeoIsValid(arg)
+    return op.to_expr()
+
+
+def geo_line_locate_point(left, right):
+    """
+    Locate the distance a point falls along the length of a line.
+
+    Returns a float between zero and one representing the location of the
+    closest point on the linestring to the given point, as a fraction of the
+    total 2d line length.
+
+    Parameters
+    ----------
+    left : linestring
+    right: point
+
+    Returns
+    -------
+    distance: float scalar
+    """
+    op = ops.GeoLineLocatePoint(left, right)
+    return op.to_expr()
+
+
+def geo_line_merge(arg):
+    """
+    Merge a MultiLineString into a LineString.
+
+    Returns a (set of) LineString(s) formed by sewing together the
+    constituent line work of a MultiLineString. If a geometry other than
+    a LineString or MultiLineString is given, this will return an empty
+    geometry collection.
+
+    Parameters
+    ----------
+    arg : (multi)linestring
+
+    Returns
+    -------
+    merged: geometry scalar
+    """
+    op = ops.GeoLineMerge(arg)
+    return op.to_expr()
+
+
+def geo_line_substring(arg, start, end):
+    """
+    Clip a substring from a LineString.
+
+    Returns a linestring that is a substring of the input one, starting
+    and ending at the given fractions of the total 2d length. The second
+    and third arguments are floating point values between zero and one.
+    This only works with linestrings.
+
+    Parameters
+    ----------
+    arg: linestring
+    start: float
+    end: float
+
+    Returns
+    -------
+    substring: linestring scalar
+    """
+    op = ops.GeoLineSubstring(arg, start, end)
+    return op.to_expr()
+
+
+def geo_ordering_equals(left, right):
+    """
+    Check if two geometries are equal and have the same point ordering.
+
+    Returns true if the two geometries are equal and the coordinates
+    are in the same order.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    ordering_equals : bool scalar
+    """
+    op = ops.GeoOrderingEquals(left, right)
     return op.to_expr()
 
 
@@ -1964,6 +2107,47 @@ def geo_max_distance(left, right):
     MaxDistance : double scalar
     """
     op = ops.GeoMaxDistance(left, right)
+    return op.to_expr()
+
+
+def geo_unary_union(arg):
+    """
+    Aggregate a set of geometries into a union.
+
+    This corresponds to the aggregate version of the PostGIS ST_Union.
+    We give it a different name (following the corresponding method
+    in GeoPandas) to avoid name conflicts with the non-aggregate version.
+
+    Parameters
+    ----------
+    arg : geometry column
+
+    Returns
+    -------
+    union : geometry scalar
+    """
+    expr = ops.GeoUnaryUnion(arg).to_expr()
+    expr = expr.name('union')
+    return expr
+
+
+def geo_union(left, right):
+    """
+    Merge two geometries into a union geometry.
+
+    Returns the pointwise union of the two geometries.
+    This corresponds to the non-aggregate version the PostGIS ST_Union.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    union : geometry scalar
+    """
+    op = ops.GeoUnion(left, right)
     return op.to_expr()
 
 
@@ -2346,12 +2530,19 @@ _geospatial_value_methods = dict(
     end_point=geo_end_point,
     envelope=geo_envelope,
     equals=geo_equals,
+    geometry_n=geo_geometry_n,
+    geometry_type=geo_geometry_type,
     intersection=geo_intersection,
     intersects=geo_intersects,
+    is_valid=geo_is_valid,
+    line_locate_point=geo_line_locate_point,
+    line_merge=geo_line_merge,
+    line_substring=geo_line_substring,
     length=geo_length,
     max_distance=geo_max_distance,
     n_points=geo_n_points,
     n_rings=geo_n_rings,
+    ordering_equals=geo_ordering_equals,
     overlaps=geo_overlaps,
     perimeter=geo_perimeter,
     point_n=geo_point_n,
@@ -2361,6 +2552,7 @@ _geospatial_value_methods = dict(
     start_point=geo_start_point,
     touches=geo_touches,
     transform=geo_transform,
+    union=geo_union,
     within=geo_within,
     x=geo_x,
     x_max=geo_x_max,
@@ -2369,7 +2561,7 @@ _geospatial_value_methods = dict(
     y_max=geo_y_max,
     y_min=geo_y_min,
 )
-_geospatial_column_methods = dict()
+_geospatial_column_methods = dict(unary_union=geo_unary_union)
 
 _add_methods(ir.GeoSpatialValue, _geospatial_value_methods)
 _add_methods(ir.GeoSpatialColumn, _geospatial_column_methods)
