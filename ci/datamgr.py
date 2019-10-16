@@ -419,6 +419,31 @@ def omniscidb(schema, tables, data_directory, **params):
 
 @cli.command()
 @click.option('-h', '--host', default='localhost')
+@click.option('-P', '--port', default=1433, type=int)
+@click.option('-u', '--user', default='sa')
+@click.option('-p', '--password', default='Ibis_MSSQL_2017')
+@click.option('-D', '--database', default='ibis_testing')
+@click.option(
+    '-S',
+    '--schema',
+    type=click.File('rt'),
+    default=str(SCRIPT_DIR / 'schema' / 'mssql.sql'),
+)
+@click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
+@click.option('-d', '--data-directory', default=DATA_DIR)
+def mssql(schema, tables, data_directory, **params):
+    data_directory = Path(data_directory)
+    logger.info('Initializing MSSQL...')
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        engine = init_database(
+            'mysql+pyodbc', params, schema, isolation_level='AUTOCOMMIT'
+        )
+    insert_tables(engine, tables, data_directory)
+
+
+@cli.command()
+@click.option('-h', '--host', default='localhost')
 @click.option('-P', '--port', default=3306, type=int)
 @click.option('-u', '--user', default='ibis')
 @click.option('-p', '--password', default='ibis')
