@@ -407,6 +407,32 @@ class OmniSciDB(Backend, RoundAwayFromZero):
         return self.db.geo
 
 
+class MSSQL(Backend):
+    check_dtype = False
+    supports_window_operations = False
+
+    @staticmethod
+    def skip_if_missing_dependencies() -> None:
+        pytest.importorskip('pyodbc')
+
+    @staticmethod
+    def connect(data_directory: Path) -> ibis.client.Client:
+        user = os.environ.get('IBIS_TEST_MSSQL_USER', 'sa')
+        password = os.environ.get(
+            'IBIS_TEST_MSSQL_PASSWORD', 'Ibis_MSSQL_2017'
+        )
+        host = os.environ.get('IBIS_TEST_MSSQL_HOST', 'mssql')
+        port = os.environ.get('IBIS_TEST_MSSQL_PORT', 1433)
+        database = os.environ.get('IBIS_TEST_MSSQL_DATABASE', 'ibis_testing')
+        return ibis.mssql.connect(
+            host=host,
+            port=port,
+            user=user,
+            password=password,
+            database=database,
+        )
+
+
 class MySQL(Backend, RoundHalfToEven):
     # mysql has the same rounding behavior as postgres
     check_dtype = False
