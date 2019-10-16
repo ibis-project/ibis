@@ -51,9 +51,10 @@ class MSSQLClient(alch.AlchemyClient):
         user=None,
         password=None,
         port=1433,
-        database='mssql',
+        database='master',
         url=None,
         driver='pyodbc',
+        odbc_driver='ODBC Driver 17 for SQL Server',
     ):
         if url is None:
             if driver != 'pyodbc':
@@ -68,6 +69,7 @@ class MSSQLClient(alch.AlchemyClient):
                 username=user,
                 password=password,
                 database=database,
+                query={'driver': odbc_driver},
             )
         else:
             url = sa.engine.url.make_url(url)

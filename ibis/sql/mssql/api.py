@@ -29,19 +29,18 @@ def compile(expr, params=None):
     >>> host = os.environ.get('IBIS_TEST_MSSQL_HOST', 'localhost')
     >>> user = os.environ.get('IBIS_TEST_MSSQL_USER', getpass.getuser())
     >>> password = os.environ.get('IBIS_TEST_MSSQL_PASSWORD')
-    >>> database = os.environ.get('IBIS_TEST_MSSQL_DATABASE',
-    ...                           'ibis_testing')
+    >>> database = os.environ.get('IBIS_TEST_MSSQL_DATABASE', 'master')
     >>> con = connect(
     ...     database=database,
     ...     host=host,
     ...     user=user,
-    ...     password=password
+    ...     password=password,
     ... )
     >>> t = con.table('functional_alltypes')
     >>> expr = t.double_col + 1
     >>> sqla = compile(expr)
     >>> print(str(sqla))  # doctest: +NORMALIZE_WHITESPACE
-    SELECT t0.double_col + %(param_1)s AS tmp
+    SELECT t0.double_col + ? AS tmp
     FROM functional_alltypes AS t0
     """
     return to_sqlalchemy(expr, dialect.make_context(params=params))
@@ -52,9 +51,9 @@ def connect(
     user=None,
     password=None,
     port=1433,
-    database=None,
+    database='master',
     driver='pyodbc',
-    odbc_driver=None,
+    odbc_driver='ODBC Driver 17 for SQL Server',
     url=None,
 ):
     """Create an Ibis client connected to a MSSQL database.
@@ -65,11 +64,12 @@ def connect(
     user : string, optional
     password : string, optional
     port : string or integer, default 1433
-    database : string, optional
+    database : string, default 'master'
     url : string, optional
         Complete SQLAlchemy connection string. If passed, the other connection
         arguments are ignored.
     driver : string, default 'pyodbc'
+    odbc_driver : string, default 'ODBC Driver 17 for SQL Server'
 
     Returns
     -------
@@ -82,8 +82,7 @@ def connect(
     >>> host = os.environ.get('IBIS_TEST_MSSQL_HOST', 'localhost')
     >>> user = os.environ.get('IBIS_TEST_MSSQL_USER', getpass.getuser())
     >>> password = os.environ.get('IBIS_TEST_MSSQL_PASSWORD')
-    >>> database = os.environ.get('IBIS_TEST_MSSQL_DATABASE',
-    ...                           'ibis_testing')
+    >>> database = os.environ.get('IBIS_TEST_MSSQL_DATABASE', 'master')
     >>> con = connect(
     ...     database=database,
     ...     host=host,
@@ -121,4 +120,5 @@ def connect(
         database=database,
         url=url,
         driver=driver,
+        odbc_driver=odbc_driver,
     )

@@ -1,74 +1,74 @@
 DROP TABLE IF EXISTS diamonds;
 
 CREATE TABLE diamonds (
-    carat FLOAT,
-    cut TEXT,
-    color TEXT,
-    clarity TEXT,
-    depth FLOAT,
-    `table` FLOAT,
+    carat REAL,
+    cut NTEXT,
+    color NTEXT,
+    clarity NTEXT,
+    depth REAL,
+    "table" REAL,
     price BIGINT,
-    x FLOAT,
-    y FLOAT,
-    z FLOAT
-) -- mssql equivalent? -- DEFAULT CHARACTER SET = utf8;
+    x REAL,
+    y REAL,
+    z REAL
+)
 
 DROP TABLE IF EXISTS batting;
 
 CREATE TABLE batting (
-    `playerID` VARCHAR(255),
-    `yearID` BIGINT,
+    "playerID" VARCHAR(255),
+    "yearID" BIGINT,
     stint BIGINT,
-    `teamID` VARCHAR(7),
-    `lgID` VARCHAR(7),
-    `G` BIGINT,
-    `AB` BIGINT,
-    `R` BIGINT,
-    `H` BIGINT,
-    `X2B` BIGINT,
-    `X3B` BIGINT,
-    `HR` BIGINT,
-    `RBI` BIGINT,
-    `SB` BIGINT,
-    `CS` BIGINT,
-    `BB` BIGINT,
-    `SO` BIGINT,
-    `IBB` BIGINT,
-    `HBP` BIGINT,
-    `SH` BIGINT,
-    `SF` BIGINT,
-    `GIDP` BIGINT
-) -- mssql equivalent? -- DEFAULT CHARACTER SET = utf8;
+    "teamID" VARCHAR(7),
+    "lgID" VARCHAR(7),
+    "G" BIGINT,
+    "AB" BIGINT,
+    "R" BIGINT,
+    "H" BIGINT,
+    "X2B" BIGINT,
+    "X3B" BIGINT,
+    "HR" BIGINT,
+    "RBI" BIGINT,
+    "SB" BIGINT,
+    "CS" BIGINT,
+    "BB" BIGINT,
+    "SO" BIGINT,
+    "IBB" BIGINT,
+    "HBP" BIGINT,
+    "SH" BIGINT,
+    "SF" BIGINT,
+    "GIDP" BIGINT
+)
 
 DROP TABLE IF EXISTS awards_players;
 
 CREATE TABLE awards_players (
-    `playerID` VARCHAR(255),
-    `awardID` VARCHAR(255),
-    `yearID` BIGINT,
-    `lgID` VARCHAR(7),
+    "playerID" VARCHAR(255),
+    "awardID" VARCHAR(255),
+    "yearID" BIGINT,
+    "lgID" VARCHAR(7),
     tie VARCHAR(7),
     notes VARCHAR(255)
-) -- DEFAULT CHARACTER SET = utf8;
+)
 
 DROP TABLE IF EXISTS functional_alltypes;
 
 CREATE TABLE functional_alltypes (
-    `index` BIGINT,
-    `Unnamed: 0` BIGINT,
+    "index" BIGINT,
+    "Unnamed: 0" BIGINT,
     id INTEGER,
-    bool_col BOOLEAN,
-    tinyint_col TINYINT,
+    bool_col BIT,
+    tinyint_col SMALLINT, -- TINYINT is int64?
     smallint_col SMALLINT,
     int_col INTEGER,
     bigint_col BIGINT,
-    float_col FLOAT,
-    double_col DOUBLE,
-    date_string_col TEXT,
-    string_col TEXT,
-    timestamp_col TIMESTAMP,
+    float_col REAL,
+    double_col DOUBLE PRECISION,
+    date_string_col NTEXT,
+    string_col NTEXT,
+    timestamp_col DATETIME,
     year INTEGER,
     month INTEGER
-) -- mssql equivalent? -- DEFAULT CHARACTER SET = utf8;
+)
 
-CREATE INDEX `ix_functional_alltypes_index` ON functional_alltypes (`index`);
+CREATE INDEX "ix_functional_alltypes_index" ON functional_alltypes ("index");

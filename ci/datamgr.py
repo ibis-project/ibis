@@ -420,9 +420,9 @@ def omniscidb(schema, tables, data_directory, **params):
 @cli.command()
 @click.option('-h', '--host', default='localhost')
 @click.option('-P', '--port', default=1433, type=int)
-@click.option('-u', '--user', default='sa')
+@click.option('-u', '--user', default='SA')
 @click.option('-p', '--password', default='Ibis_MSSQL_2017')
-@click.option('-D', '--database', default='ibis_testing')
+@click.option('-D', '--database', default='master')
 @click.option(
     '-S',
     '--schema',
@@ -436,8 +436,13 @@ def mssql(schema, tables, data_directory, **params):
     logger.info('Initializing MSSQL...')
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
+        params['query'] = {'driver': 'ODBC Driver 17 for SQL Server'}
         engine = init_database(
-            'mysql+pyodbc', params, schema, isolation_level='AUTOCOMMIT'
+            'mssql+pyodbc',
+            params,
+            schema,
+            isolation_level='AUTOCOMMIT',
+            recreate=False,
         )
     insert_tables(engine, tables, data_directory)
 
