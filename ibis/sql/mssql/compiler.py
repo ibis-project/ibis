@@ -5,8 +5,11 @@ import ibis.sql.alchemy as alch
 import ibis.expr.datatypes as dt
 
 
+_operation_registry = alch._operation_registry.copy()
+
+
 class MSSQLExprTranslator(alch.AlchemyExprTranslator):
-    # _registry = _operation_registry
+    _registry = _operation_registry
     _rewrites = alch.AlchemyExprTranslator._rewrites.copy()
     _type_map = alch.AlchemyExprTranslator._type_map.copy()
     _type_map.update(
