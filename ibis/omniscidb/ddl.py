@@ -405,3 +405,30 @@ class InsertPandas(OmniSciDBDML):
 
     def compile(self):
         return '\n'.join(self.pieces)
+
+
+class CreateTableFromCSV(OmniSciDBDDL):
+
+    """
+    Generate DDL for LOAD DATA command. Cannot be cancelled
+    """
+
+    def __init__(
+        self,
+        table_name,
+        path,
+        database=None
+    ):
+        self.table_name = table_name
+        self.database = database
+        self.path = path
+
+    def compile(self):
+        scoped_name = self._get_scoped_name(self.table_name, self.database)
+        fd = open(self.path, 'r')
+        fields = fd.readline()
+        fd.close()
+
+        return "CREATE TABLE {} ({}) WITH (storage_type='CSV:{}')".format(
+            scoped_name, fields, self.path
+        )
