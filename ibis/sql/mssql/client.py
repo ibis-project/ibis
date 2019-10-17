@@ -1,5 +1,6 @@
 import contextlib
 import getpass
+import datetime
 
 
 import pyodbc  # NOQA fail early if the driver is missing
@@ -8,6 +9,8 @@ from sqlalchemy.dialects.mssql.pyodbc import MSDialect_pyodbc
 
 import ibis.expr.datatypes as dt
 import ibis.sql.alchemy as alch
+import ibis.expr.schema as sch
+import ibis.expr.operations as ops
 from ibis.sql.mssql.compiler import MSSQLDialect
 
 
@@ -198,3 +201,34 @@ class MSSQLClient(alch.AlchemyClient):
         else:
             parent = super(MSSQLClient, self)
             return parent.list_tables(like=like, schema=schema)
+
+    def sql(self, query):
+        """
+        Convert a MSSQL query to an Ibis table expression
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        table : TableExpr
+        """
+        limited_query = 'SELECT TOP 0 * FROM ({}) t0'.format(query)
+        schema = self._get_schema_using_query(limited_query)
+        return ops.SQLQueryResult(query, schema, self).to_expr()
+
+    def _get_schema_using_query(self, limited_query):
+        type_map = {
+            int: 'int64',
+            bool: 'boolean',
+            float: 'float64',
+            str: 'string',
+            datetime.datetime: 'timestamp',
+        }
+
+        with self._execute(limited_query, results=True) as cur:
+            names = [row[0] for row in cur.proxy._cursor_description()]
+            ibis_types = [
+                type_map[row[1]] for row in cur.proxy._cursor_description()
+            ]
+        return sch.Schema(names, ibis_types)
