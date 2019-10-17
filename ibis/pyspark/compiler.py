@@ -43,6 +43,18 @@ class PySparkExprTranslator:
         return decorator
 
     def translate(self, expr, scope, **kwargs):
+        """
+        Translate Ibis expression into a PySpark object.
+
+        All translated expressions are cached within scope. If an expression is
+        found within scope, it's returned. Otherwise, the it's translated and
+        cached for future reference.
+
+        :param expr: ibis expression
+        :param scope: dictionary mapping from operation to translated result
+        :param kwargs: parameters passed as keyword args (e.g. window)
+        :return: translated PySpark DataFrame or Column object
+        """
         # The operation node type the typed expression wraps
         op = expr.op()
 
