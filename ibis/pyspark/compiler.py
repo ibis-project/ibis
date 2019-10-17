@@ -50,7 +50,9 @@ class PySparkExprTranslator:
             return scope[op]
         elif type(op) in self._registry:
             formatter = self._registry[type(op)]
-            return formatter(self, expr, scope, **kwargs)
+            result = formatter(self, expr, scope, **kwargs)
+            scope[op] = result
+            return result
         else:
             raise com.OperationNotDefinedError(
                 'No translation rule for {}'.format(type(op))
@@ -63,22 +65,6 @@ class PySparkDialect(SparkDialect):
 
 compiles = PySparkExprTranslator.compiles
 dialect = PySparkDialect
-
-
-def compile_with_scope(t, expr, scope):
-    """Compile a expression and put the result in scope.
-
-       If the expression is already in scope, return it.
-    """
-    op = expr.op()
-
-    if op in scope:
-        result = scope[op]
-    else:
-        result = t.translate(expr, scope)
-        scope[op] = result
-
-    return result
 
 
 @compiles(PySparkTable)
@@ -99,7 +85,7 @@ def compile_sql_query_result(t, expr, scope, **kwargs):
 def compile_selection(t, expr, scope, **kwargs):
     op = expr.op()
 
-    src_table = compile_with_scope(t, op.table, scope)
+    src_table = t.translate(op.table, scope)
     col_names_in_selection_order = []
 
     for selection in op.selections:
@@ -119,7 +105,7 @@ def compile_selection(t, expr, scope, **kwargs):
         src_table = src_table[col]
 
     if op.sort_keys:
-        sort_cols = [compile_with_scope(t, key, scope) for key in op.sort_keys]
+        sort_cols = [t.translate(key, scope) for key in op.sort_keys]
 
         return src_table.sort(*sort_cols)
     else:
@@ -129,7 +115,7 @@ def compile_selection(t, expr, scope, **kwargs):
 @compiles(ops.SortKey)
 def compile_sort_key(t, expr, scope, **kwargs):
     op = expr.op()
-    col = compile_with_scope(t, op.expr, scope)
+    col = t.translate(op.expr, scope)
 
     if op.ascending:
         return col.asc()
@@ -140,7 +126,7 @@ def compile_sort_key(t, expr, scope, **kwargs):
 @compiles(ops.TableColumn)
 def compile_column(t, expr, scope, **kwargs):
     op = expr.op()
-    table = compile_with_scope(t, op.table, scope)
+    table = t.translate(op.table, scope)
     return table[op.name]
 
 
@@ -148,7 +134,7 @@ def compile_column(t, expr, scope, **kwargs):
 def compile_distinct(t, expr, scope, **kwargs):
     op = expr.op()
     root_table_expr = op.root_tables()[0].to_expr()
-    src_table = compile_with_scope(t, root_table_expr, scope)
+    src_table = t.translate(root_table_expr, scope)
     src_column_name = op.arg.get_name()
     return src_table.select(src_column_name).distinct()[src_column_name]
 
@@ -189,7 +175,7 @@ def compile_limit(t, expr, scope, **kwargs):
             'PySpark backend does not support non-zero offset is for '
             'limit operation. Got offset {}.'.format(op.offset)
         )
-    df = compile_with_scope(t, op.table, scope)
+    df = t.translate(op.table, scope)
     return df.limit(op.n)
 
 
@@ -979,7 +965,7 @@ def compile_window_op(t, expr, scope, **kwargs):
     grouping_keys = [
         key_op.name
         if isinstance(key_op, ops.TableColumn)
-        else compile_with_scope(t, key, scope)
+        else t.translate(key, scope)
         for key, key_op in zip(
             group_by, map(operator.methodcaller('op'), group_by)
         )
@@ -1476,14 +1462,14 @@ def compile_null_literal(t, expr, scope):
 @compiles(ops.IfNull)
 def compile_if_null(t, expr, scope, **kwargs):
     op = expr.op()
-    col = compile_with_scope(t, op.arg, scope)
-    ifnull_col = compile_with_scope(t, op.ifnull_expr, scope)
+    col = t.translate(op.arg, scope)
+    ifnull_col = t.translate(op.ifnull_expr, scope)
     return F.when(col.isNull(), ifnull_col).otherwise(col)
 
 
 @compiles(ops.NullIf)
 def compile_null_if(t, expr, scope, **kwargs):
     op = expr.op()
-    col = compile_with_scope(t, op.arg, scope)
-    nullif_col = compile_with_scope(t, op.null_if_expr, scope)
+    col = t.translate(op.arg, scope)
+    nullif_col = t.translate(op.null_if_expr, scope)
     return F.when(col == nullif_col, F.lit(None)).otherwise(col)
