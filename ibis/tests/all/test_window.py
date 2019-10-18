@@ -227,11 +227,16 @@ def test_bounded_following_window(backend, alltypes, df, con):
     # simulate forward looking window aggregation
     gdf = df.sort_values('id').groupby('string_col')
     gdf.id = gdf.apply(lambda t: t.id.shift(-2))
-    expected = df.assign(
-        val=gdf.id.rolling(3, min_periods=1)
-        .mean().sort_index(level=1)
-        .reset_index(drop=True)
-    ).set_index('id').sort_index()
+    expected = (
+        df.assign(
+            val=gdf.id.rolling(3, min_periods=1)
+            .mean()
+            .sort_index(level=1)
+            .reset_index(drop=True)
+        )
+        .set_index('id')
+        .sort_index()
+    )
 
     # discard first 2 rows of each group to account for the shift
     n = len(gdf) * 2
@@ -261,10 +266,16 @@ def test_bounded_preceding_window(backend, alltypes, df, con):
 
     result = expr.execute().set_index('id').sort_index()
     gdf = df.sort_values('id').groupby('string_col')
-    expected = df.assign(
-        val=gdf.double_col.rolling(3, min_periods=1).sum()
-        .sort_index(level=1).reset_index(drop=True)
-    ).set_index('id').sort_index()
+    expected = (
+        df.assign(
+            val=gdf.double_col.rolling(3, min_periods=1)
+            .sum()
+            .sort_index(level=1)
+            .reset_index(drop=True)
+        )
+        .set_index('id')
+        .sort_index()
+    )
 
     left, right = result.val, expected.val
 

@@ -993,11 +993,13 @@ def compile_window_op(t, expr, scope, **kwargs):
 
     if not isinstance(operand.op(), ops.ShiftBase):
         start = (
-            - window.preceding if window.preceding is not None
+            -window.preceding
+            if window.preceding is not None
             else Window.unboundedPreceding
         )
         end = (
-            window.following if window.following is not None
+            window.following
+            if window.following is not None
             else Window.unboundedFollowing
         )
         pyspark_window = pyspark_window.rowsBetween(start, end)
