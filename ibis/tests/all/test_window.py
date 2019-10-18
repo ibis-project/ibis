@@ -203,3 +203,69 @@ def test_window(backend, alltypes, df, con, result_fn, expected_fn):
     left, right = result.val, expected.val
 
     backend.assert_series_equal(left, right)
+
+
+@pytest.mark.xfail_unsupported
+def test_bounded_following_window(backend, alltypes, df, con):
+    if not backend.supports_window_operations:
+        pytest.skip(
+            'Backend {} does not support window operations'.format(backend)
+        )
+
+    window = ibis.window(
+        preceding=0,
+        following=2,
+        group_by=[alltypes.string_col],
+        order_by=[alltypes.id],
+    )
+
+    expr = alltypes.mutate(val=alltypes.id.mean().over(window))
+
+    result = expr.execute().set_index('id').sort_index()
+
+    # shift id column before applying Pandas rolling window summarizer to
+    # simulate forward looking window aggregation
+    gdf = df.sort_values('id').groupby('string_col')
+    gdf.id = gdf.apply(lambda t: t.id.shift(-2))
+    expected = df.assign(
+        val=gdf.id.rolling(3, min_periods=1)
+        .mean().sort_index(level=1)
+        .reset_index(drop=True)
+    ).set_index('id').sort_index()
+
+    # discard first 2 rows of each group to account for the shift
+    n = len(gdf) * 2
+    left, right = result.val.shift(-n), expected.val.shift(-n)
+
+    backend.assert_series_equal(left, right)
+
+
+# TODO (ISSUE #2000): fix Csv, Pandas, and Parquet backends to have
+#                     inclusive preceding window boundary
+@pytest.mark.xfail_backends([Csv, Pandas, Parquet])
+@pytest.mark.xfail_unsupported
+def test_bounded_preceding_window(backend, alltypes, df, con):
+    if not backend.supports_window_operations:
+        pytest.skip(
+            'Backend {} does not support window operations'.format(backend)
+        )
+
+    window = ibis.window(
+        preceding=2,
+        following=0,
+        group_by=[alltypes.string_col],
+        order_by=[alltypes.id],
+    )
+
+    expr = alltypes.mutate(val=alltypes.double_col.sum().over(window))
+
+    result = expr.execute().set_index('id').sort_index()
+    gdf = df.sort_values('id').groupby('string_col')
+    expected = df.assign(
+        val=gdf.double_col.rolling(3, min_periods=1).sum()
+        .sort_index(level=1).reset_index(drop=True)
+    ).set_index('id').sort_index()
+
+    left, right = result.val, expected.val
+
+    backend.assert_series_equal(left, right)
