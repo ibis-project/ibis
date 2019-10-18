@@ -991,6 +991,8 @@ def compile_window_op(t, expr, scope, **kwargs):
 
     pyspark_window = Window.partitionBy(grouping_keys).orderBy(ordering_keys)
 
+    # If the operand is a shift op (e.g. lead, lag), Spark will set the window
+    # bounds. Only set window bounds here if not a shift operation.
     if not isinstance(operand.op(), ops.ShiftBase):
         start = (
             -window.preceding
