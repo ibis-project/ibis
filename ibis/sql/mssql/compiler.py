@@ -9,7 +9,7 @@ import ibis.expr.operations as ops
 import ibis.common.exceptions as com
 
 # used for literal translate
-from ibis.sql.alchemy import unary, fixed_arity, infix_op
+from ibis.sql.alchemy import unary, fixed_arity
 
 
 def raise_unsupported_op_error(translator, expr, *args):
@@ -35,6 +35,7 @@ def _reduction(func_name, cast_type='int32'):
         return func(t.translate(arg))
 
     return reduction_compiler
+
 
 # String
 # TODO: substr and find are copied from SQLite, we should really have a
@@ -93,7 +94,11 @@ def _extract(fmt):
     def translator(t, expr):
         (arg,) = expr.op().args
         sa_arg = t.translate(arg)
-        return sa.cast(sa.func.datepart(fmt, sa_arg), sa.SMALLINT)
+        # sa.literal_column is used becuase it makes the argument pass
+        # in NOT as a parameter
+        return sa.cast(
+            sa.func.datepart(sa.literal_column(fmt), sa_arg), sa.SMALLINT
+        )
 
     return translator
 
@@ -141,13 +146,13 @@ _operation_registry.update(
         ops.Sqrt: unary(sa.func.sqrt),
         ops.Tan: unary(sa.func.tan),
         # timestamp methods
-        # ops.ExtractYear: _extract('year'),
-        # ops.ExtractMonth: _extract('month'),
-        # ops.ExtractDay: _extract('day'),
-        # ops.ExtractHour: _extract('hour'),
-        # ops.ExtractMinute: _extract('minute'),
-        # ops.ExtractSecond: _extract('second'),
-        # ops.ExtractMillisecond: _extract('millisecond'),
+        ops.ExtractYear: _extract('year'),
+        ops.ExtractMonth: _extract('month'),
+        ops.ExtractDay: _extract('day'),
+        ops.ExtractHour: _extract('hour'),
+        ops.ExtractMinute: _extract('minute'),
+        ops.ExtractSecond: _extract('second'),
+        ops.ExtractMillisecond: _extract('millisecond'),
     }
 )
 
