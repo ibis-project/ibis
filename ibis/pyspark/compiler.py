@@ -320,15 +320,18 @@ def compile_aggregator(t, expr, scope, fn, context=None, **kwargs):
         src_col = F.when(condition, src_col)
 
     col = fn(src_col)
-    if context or 'window' in kwargs:
-        return col
-    else:
+    if context is None:
         # We are trying to compile a expr such as some_col.max()
         # to a Spark expression.
         # Here we get the root table df of that column and compile
         # the expr to:
         # df.select(max(some_col))
         return t.translate(expr.op().arg.op().table, scope).select(col)
+    elif context == AggregationContext.WINDOW:
+        window = kwargs['window']
+        return col.over(window)
+    else:
+        return col
 
 
 @compiles(ops.GroupConcat)
@@ -343,110 +346,77 @@ def compile_group_concat(t, expr, scope, context=None, **kwargs):
 
 @compiles(ops.Any)
 def compile_any(t, expr, scope, context=None, **kwargs):
-    def fn(col):
-        if 'window' in kwargs:
-            window = kwargs['window']
-            return F.max(col).over(window)
-        else:
-            return F.max(col)
-
-    return compile_aggregator(t, expr, scope, fn, context, **kwargs)
+    return compile_aggregator(t, expr, scope, F.max, context, **kwargs)
 
 
 @compiles(ops.NotAny)
-def compile_notany(t, expr, scope, context=None, **kwargs):
-    def fn(col):
-        if 'window' in kwargs:
-            window = kwargs['window']
-            return ~F.max(col).over(window)
-        else:
+def compile_notany(t, expr, scope, *, context=None, window=None, **kwargs):
+    # The code here is a little ugly because the translation are different
+    # with different context.
+    # When translating col.notany() (context is None), we returns the dataframe
+    # so we need to negate the aggregator, i.e., df.select(~F.max(col))
+    # When traslating col.notany().over(w), we need to negate the result
+    # after the window translation, i.e., ~(F.max(col).over(w))
+
+    if context is None:
+
+        def fn(col):
             return ~(F.max(col))
 
-    return compile_aggregator(t, expr, scope, fn, context, **kwargs)
+        return compile_aggregator(t, expr, scope, fn, context, **kwargs)
+    else:
+        return ~compile_any(
+            t, expr, scope, context=context, window=window, **kwargs
+        )
 
 
 @compiles(ops.All)
 def compile_all(t, expr, scope, context=None, **kwargs):
-    def fn(col):
-        if 'window' in kwargs:
-            window = kwargs['window']
-            return F.min(col).over(window)
-        else:
-            return F.min(col)
-
-    return compile_aggregator(t, expr, scope, fn, context, **kwargs)
+    return compile_aggregator(t, expr, scope, F.min, context, **kwargs)
 
 
 @compiles(ops.NotAll)
-def compile_notall(t, expr, scope, context=None, **kwargs):
-    def fn(col):
-        if 'window' in kwargs:
-            window = kwargs['window']
-            return ~F.min(col).over(window)
-        else:
+def compile_notall(t, expr, scope, *, context=None, window=None, **kwargs):
+    # See comments for opts.NotAny for reasoning for the if/else
+    if context is None:
+
+        def fn(col):
             return ~(F.min(col))
 
-    return compile_aggregator(t, expr, scope, fn, context, **kwargs)
+        return compile_aggregator(t, expr, scope, fn, context, **kwargs)
+    else:
+        return ~compile_all(
+            t, expr, scope, context=context, window=window, **kwargs
+        )
 
 
 @compiles(ops.Count)
 def compile_count(t, expr, scope, context=None, **kwargs):
-    def fn(col):
-        if 'window' in kwargs:
-            window = kwargs['window']
-            return F.count(col).over(window)
-        else:
-            return F.count(col)
-
-    return compile_aggregator(t, expr, scope, fn, context, **kwargs)
+    return compile_aggregator(t, expr, scope, F.count, context, **kwargs)
 
 
 @compiles(ops.Max)
+@compiles(ops.CumulativeMax)
 def compile_max(t, expr, scope, context=None, **kwargs):
-    def fn(col):
-        if 'window' in kwargs:
-            window = kwargs['window']
-            return F.max(col).over(window)
-        else:
-            return F.max(col)
-
-    return compile_aggregator(t, expr, scope, fn, context, **kwargs)
+    return compile_aggregator(t, expr, scope, F.max, context, **kwargs)
 
 
 @compiles(ops.Min)
+@compiles(ops.CumulativeMin)
 def compile_min(t, expr, scope, context=None, **kwargs):
-    def fn(col):
-        if 'window' in kwargs:
-            window = kwargs['window']
-            return F.min(col).over(window)
-        else:
-            return F.min(col)
-
-    return compile_aggregator(t, expr, scope, fn, context, **kwargs)
+    return compile_aggregator(t, expr, scope, F.min, context, **kwargs)
 
 
 @compiles(ops.Mean)
+@compiles(ops.CumulativeMean)
 def compile_mean(t, expr, scope, context=None, **kwargs):
-    def fn(col):
-        if 'window' in kwargs:
-            window = kwargs['window']
-            return F.mean(col).over(window)
-        else:
-            return F.mean(col)
-
-    return compile_aggregator(t, expr, scope, fn, context, **kwargs)
+    return compile_aggregator(t, expr, scope, F.mean, context, **kwargs)
 
 
 @compiles(ops.Sum)
+@compiles(ops.CumulativeSum)
 def compile_sum(t, expr, scope, context=None, **kwargs):
-    def fn(col):
-        if 'window' in kwargs:
-            window = kwargs['window']
-            return F.sum(col).over(window)
-        else:
-            return F.sum(col)
-
-    return compile_aggregator(t, expr, scope, fn, context, **kwargs)
+    return compile_aggregator(t, expr, scope, F.sum, context, **kwargs)
 
 
 @compiles(ops.StandardDev)
@@ -989,6 +959,7 @@ def compile_window_op(t, expr, scope, **kwargs):
         for key in map(operator.methodcaller('op'), order_by)
     ]
 
+    context = AggregationContext.WINDOW
     pyspark_window = Window.partitionBy(grouping_keys).orderBy(ordering_keys)
 
     # If the operand is a shift op (e.g. lead, lag), Spark will set the window
@@ -1006,7 +977,9 @@ def compile_window_op(t, expr, scope, **kwargs):
         )
         pyspark_window = pyspark_window.rowsBetween(start, end)
 
-    result = t.translate(operand, scope, window=pyspark_window)
+    result = t.translate(
+        operand, scope, window=pyspark_window, context=context
+    )
 
     return result
 
@@ -1040,12 +1013,12 @@ def compile_lead(t, expr, scope, *, window, **kwargs):
 
 @compiles(ops.MinRank)
 def compile_rank(t, expr, scope, *, window, **kwargs):
-    return F.rank().over(window).astype('long') - F.lit(1)
+    return F.rank().over(window).astype('long') - 1
 
 
 @compiles(ops.DenseRank)
 def compile_dense_rank(t, expr, scope, *, window, **kwargs):
-    return F.dense_rank().over(window).astype('long') - F.lit(1)
+    return F.dense_rank().over(window).astype('long') - 1
 
 
 @compiles(ops.PercentRank)
@@ -1060,7 +1033,6 @@ def compile_percent_rank(t, expr, scope, *, window, **kwargs):
 @compiles(ops.NTile)
 def compile_ntile(t, expr, scope, *, window, **kwargs):
     op = expr.op()
-
     buckets = op.buckets.op().value
     return F.ntile(buckets).over(window)
 
@@ -1068,7 +1040,6 @@ def compile_ntile(t, expr, scope, *, window, **kwargs):
 @compiles(ops.FirstValue)
 def compile_first_value(t, expr, scope, *, window, **kwargs):
     op = expr.op()
-
     src_column = t.translate(op.arg, scope)
     return F.first(src_column).over(window)
 
@@ -1076,49 +1047,13 @@ def compile_first_value(t, expr, scope, *, window, **kwargs):
 @compiles(ops.LastValue)
 def compile_last_value(t, expr, scope, *, window, **kwargs):
     op = expr.op()
-
     src_column = t.translate(op.arg, scope)
     return F.last(src_column).over(window)
 
 
 @compiles(ops.RowNumber)
 def compile_row_number(t, expr, scope, *, window, **kwargs):
-    return F.row_number().over(window).astype('long') - F.lit(1)
-
-
-def _handle_cumulative_operation(t, expr, scope, fn, *, window, **kwargs):
-    op = expr.op()
-
-    src_column = t.translate(op.arg, scope)
-    return fn(src_column).over(window)
-
-
-@compiles(ops.CumulativeSum)
-def compile_cumulative_sum(t, expr, scope, *, window, **kwargs):
-    return _handle_cumulative_operation(
-        t, expr, scope, F.sum, window=window, **kwargs
-    )
-
-
-@compiles(ops.CumulativeMean)
-def compile_cumulative_mean(t, expr, scope, *, window, **kwargs):
-    return _handle_cumulative_operation(
-        t, expr, scope, F.mean, window=window, **kwargs
-    )
-
-
-@compiles(ops.CumulativeMin)
-def compile_cumulative_min(t, expr, scope, *, window, **kwargs):
-    return _handle_cumulative_operation(
-        t, expr, scope, F.min, window=window, **kwargs
-    )
-
-
-@compiles(ops.CumulativeMax)
-def compile_cumulative_max(t, expr, scope, *, window, **kwargs):
-    return _handle_cumulative_operation(
-        t, expr, scope, F.max, window=window, **kwargs
-    )
+    return F.row_number().over(window).cast('long') - 1
 
 
 # -------------------------- Temporal Operations ----------------------------
