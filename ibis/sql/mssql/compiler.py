@@ -9,7 +9,7 @@ import ibis.expr.operations as ops
 import ibis.common.exceptions as com
 
 # used for literal translate
-from ibis.sql.alchemy import unary, fixed_arity
+from ibis.sql.alchemy import unary, fixed_arity, infix_op
 
 
 def raise_unsupported_op_error(translator, expr, *args):
@@ -18,6 +18,7 @@ def raise_unsupported_op_error(translator, expr, *args):
     raise com.UnsupportedOperationError(msg.format(type(op)))
 
 
+# Aggregation
 # coppied from postgresql compiler
 # support for of bit columns in aggregate methods
 def _reduction(func_name, cast_type='int32'):
@@ -35,7 +36,7 @@ def _reduction(func_name, cast_type='int32'):
 
     return reduction_compiler
 
-
+# String
 # TODO: substr and find are copied from SQLite, we should really have a
 # "base" set of SQL functions that are the most common APIs across the major
 # RDBMS
@@ -54,6 +55,20 @@ def _substr(t, expr):
         return f(sa_arg, sa_start + 1, sa_length)
 
 
+def _string_find(t, expr):
+    arg, substr, start, _ = expr.op().args
+
+    sa_arg = t.translate(arg)
+    sa_substr = t.translate(substr)
+
+    if start is not None:
+        sa_start = t.translate(start)
+        return sa.func.charindex(sa_substr, sa_arg, sa_start) - 1
+
+    return sa.func.charindex(sa_substr, sa_arg) - 1
+
+
+# Numerical
 def _log(t, expr):
     arg, base = expr.op().args
     sa_arg = t.translate(arg)
@@ -68,6 +83,21 @@ def _log(t, expr):
     return sa.func.log(sa_arg)
 
 
+def _floor_divide(t, expr):
+    left, right = map(t.translate, expr.op().args)
+    return sa.func.floor(left / right)
+
+
+# Date & Datetimes
+def _extract(fmt):
+    def translator(t, expr):
+        (arg,) = expr.op().args
+        sa_arg = t.translate(arg)
+        return sa.cast(sa.func.datepart(fmt, sa_arg), sa.SMALLINT)
+
+    return translator
+
+
 _operation_registry = alch._operation_registry.copy()
 
 
@@ -79,32 +109,67 @@ _operation_registry.update(
         ops.Sum: _reduction('sum'),
         ops.Mean: _reduction('avg', 'float64'),
         # string methods
+        ops.LStrip: unary(sa.func.ltrim),
+        ops.Lowercase: unary(sa.func.lower),
+        ops.RStrip: unary(sa.func.rtrim),
+        ops.Repeat: fixed_arity(sa.func.replicate, 2),
+        ops.Reverse: unary(sa.func.reverse),
+        ops.StringFind: _string_find,
+        ops.StringLength: unary(sa.func.length),
+        ops.StringReplace: fixed_arity(sa.func.replace, 3),
+        ops.Strip: unary(sa.func.trim),
         ops.Substring: _substr,
+        ops.Uppercase: unary(sa.func.upper),
         # math
-        ops.Log: _log,
-        ops.Log2: unary(lambda x: sa.func.log(x, 2)),
-        ops.Log10: unary(lambda x: sa.func.log10(x)),
-        ops.Ln: unary(lambda x: sa.func.log(x)),
-        ops.Sin: unary(lambda x: sa.func.sin(x)),
-        ops.Cos: unary(lambda x: sa.func.cos(x)),
-        ops.Tan: unary(lambda x: sa.func.tan(x)),
+        ops.Abs: unary(sa.func.abs),
+        ops.Acos: unary(sa.func.acos),
+        ops.Asin: unary(sa.func.asin),
         ops.Atan2: fixed_arity(sa.func.atn2, 2),
-        ops.Asin: unary(lambda x: sa.func.asin(x)),
-        ops.Acos: unary(lambda x: sa.func.acos(x)),
-        ops.Atan: unary(lambda x: sa.func.atan(x)),
-        ops.Ceil: unary(lambda x: sa.func.ceiling(x)),
+        ops.Atan: unary(sa.func.atan),
+        ops.Ceil: unary(sa.func.ceiling),
+        ops.Cos: unary(sa.func.cos),
+        ops.Exp: unary(sa.func.exp),
+        ops.Floor: unary(sa.func.floor),
+        ops.FloorDivide: _floor_divide,
+        ops.Ln: unary(sa.func.log),
+        ops.Log10: unary(sa.func.log10),
+        ops.Log2: unary(lambda x: sa.func.log(x, 2)),
+        ops.Log: _log,
         ops.Power: fixed_arity(sa.func.power, 2),
+        ops.Sign: unary(sa.func.sign),
+        ops.Sin: unary(sa.func.sin),
+        ops.Sqrt: unary(sa.func.sqrt),
+        ops.Tan: unary(sa.func.tan),
+        # timestamp methods
+        # ops.ExtractYear: _extract('year'),
+        # ops.ExtractMonth: _extract('month'),
+        # ops.ExtractDay: _extract('day'),
+        # ops.ExtractHour: _extract('hour'),
+        # ops.ExtractMinute: _extract('minute'),
+        # ops.ExtractSecond: _extract('second'),
+        # ops.ExtractMillisecond: _extract('millisecond'),
     }
 )
 
 
 _unsupported_ops = [
-    # generic/aggregation
+    # miscellaneous
     ops.Least,
     ops.Greatest,
     # string
     ops.LPad,
     ops.RPad,
+    ops.Capitalize,
+    ops.RegexSearch,
+    ops.RegexExtract,
+    ops.RegexReplace,
+    ops.StringAscii,
+    ops.StringSQLLike,
+    # aggregate methods
+    ops.CumulativeMax,
+    ops.CumulativeMin,
+    ops.CumulativeMean,
+    ops.CumulativeSum,
 ]
 
 
@@ -122,8 +187,8 @@ class MSSQLExprTranslator(alch.AlchemyExprTranslator):
             dt.Int8: mssql.TINYINT,
             dt.Int32: mssql.INTEGER,
             dt.Int64: mssql.BIGINT,
-            dt.Double: mssql.REAL,
             dt.Float: mssql.REAL,
+            dt.Double: mssql.REAL,
             dt.String: mssql.VARCHAR,
         }
     )
