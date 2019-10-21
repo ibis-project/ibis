@@ -131,9 +131,11 @@ def _truncate(units):
         valid_unit = units.get(unit)
         return sa.func.dateadd(
             sa.literal_column(valid_unit),
-            sa.func.datediff(sa.literal_column(valid_unit), 0, sa_arg),
-            0,
-        )
+            sa.func.datediff(
+                sa.literal_column(valid_unit),
+                0,
+                sa_arg),
+            0)
 
     return truncator
 
