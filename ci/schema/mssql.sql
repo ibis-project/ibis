@@ -2,9 +2,9 @@ DROP TABLE IF EXISTS diamonds;
 
 CREATE TABLE diamonds (
     carat REAL,
-    cut NTEXT,
-    color NTEXT,
-    clarity NTEXT,
+    cut NVARCHAR(MAX),
+    color NVARCHAR(MAX),
+    clarity NVARCHAR(MAX),
     depth REAL,
     "table" REAL,
     price BIGINT,
@@ -16,11 +16,11 @@ CREATE TABLE diamonds (
 DROP TABLE IF EXISTS batting;
 
 CREATE TABLE batting (
-    "playerID" VARCHAR(255),
+    "playerID" NVARCHAR(255),
     "yearID" BIGINT,
     stint BIGINT,
-    "teamID" VARCHAR(7),
-    "lgID" VARCHAR(7),
+    "teamID" NVARCHAR(7),
+    "lgID" NVARCHAR(7),
     "G" BIGINT,
     "AB" BIGINT,
     "R" BIGINT,
@@ -43,12 +43,12 @@ CREATE TABLE batting (
 DROP TABLE IF EXISTS awards_players;
 
 CREATE TABLE awards_players (
-    "playerID" VARCHAR(255),
-    "awardID" VARCHAR(255),
+    "playerID" NVARCHAR(255),
+    "awardID" NVARCHAR(255),
     "yearID" BIGINT,
-    "lgID" VARCHAR(7),
-    tie VARCHAR(7),
-    notes VARCHAR(255)
+    "lgID" NVARCHAR(7),
+    tie NVARCHAR(7),
+    notes NVARCHAR(255)
 )
 
 DROP TABLE IF EXISTS functional_alltypes;
@@ -64,8 +64,8 @@ CREATE TABLE functional_alltypes (
     bigint_col BIGINT,
     float_col REAL,
     double_col DOUBLE PRECISION,
-    date_string_col NTEXT,
-    string_col NTEXT,
+    date_string_col NVARCHAR(MAX),
+    string_col NVARCHAR(MAX),
     timestamp_col DATETIME,
     year INTEGER,
     month INTEGER

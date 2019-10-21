@@ -6,12 +6,16 @@ import sqlalchemy.dialects.mssql as mssql
 import ibis.sql.alchemy as alch
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.common.exceptions as com
 
 # used for literal translate
-from ibis.sql.alchemy import (
-    unary,
-    fixed_arity
-)
+from ibis.sql.alchemy import unary, fixed_arity
+
+
+def raise_unsupported_op_error(translator, expr, *args):
+    msg = "SQLServer backend doesn't support {} operation!"
+    op = expr.op()
+    raise com.UnsupportedOperationError(msg.format(type(op)))
 
 
 # coppied from postgresql compiler
@@ -67,28 +71,45 @@ def _log(t, expr):
 _operation_registry = alch._operation_registry.copy()
 
 
-_operation_registry.update({
-    # aggregate methods
-    ops.Max: _reduction('max'),
-    ops.Min: _reduction('min'),
-    ops.Sum: _reduction('sum'),
-    ops.Mean: _reduction('avg', 'float64'),
-    # string methods
-    ops.Substring: _substr,
-    # math
-    ops.Log: _log,
-    ops.Log2: unary(lambda x: sa.func.log(x, 2)),
-    ops.Log10: unary(lambda x: sa.func.log10(x)),
-    ops.Ln: unary(lambda x: sa.func.log(x)),
-    ops.Sin: unary(lambda x: sa.func.sin(x)),
-    ops.Cos: unary(lambda x: sa.func.cos(x)),
-    ops.Tan: unary(lambda x: sa.func.tan(x)),
-    ops.Asin: unary(lambda x: sa.func.asin(x)),
-    ops.Acos: unary(lambda x: sa.func.acos(x)),
-    ops.Atan: unary(lambda x: sa.func.atan(x)),
-    ops.Ceil: unary(lambda x: sa.func.ceiling(x)),
-    ops.Power: fixed_arity(sa.func.power, 2),
-})
+_operation_registry.update(
+    {
+        # aggregate methods
+        ops.Max: _reduction('max'),
+        ops.Min: _reduction('min'),
+        ops.Sum: _reduction('sum'),
+        ops.Mean: _reduction('avg', 'float64'),
+        # string methods
+        ops.Substring: _substr,
+        # math
+        ops.Log: _log,
+        ops.Log2: unary(lambda x: sa.func.log(x, 2)),
+        ops.Log10: unary(lambda x: sa.func.log10(x)),
+        ops.Ln: unary(lambda x: sa.func.log(x)),
+        ops.Sin: unary(lambda x: sa.func.sin(x)),
+        ops.Cos: unary(lambda x: sa.func.cos(x)),
+        ops.Tan: unary(lambda x: sa.func.tan(x)),
+        ops.Atan2: fixed_arity(sa.func.atn2, 2),
+        ops.Asin: unary(lambda x: sa.func.asin(x)),
+        ops.Acos: unary(lambda x: sa.func.acos(x)),
+        ops.Atan: unary(lambda x: sa.func.atan(x)),
+        ops.Ceil: unary(lambda x: sa.func.ceiling(x)),
+        ops.Power: fixed_arity(sa.func.power, 2),
+    }
+)
+
+
+_unsupported_ops = [
+    # generic/aggregation
+    ops.Least,
+    ops.Greatest,
+    # string
+    ops.LPad,
+    ops.RPad,
+]
+
+
+_unsupported_ops = {k: raise_unsupported_op_error for k in _unsupported_ops}
+_operation_registry.update(_unsupported_ops)
 
 
 class MSSQLExprTranslator(alch.AlchemyExprTranslator):
