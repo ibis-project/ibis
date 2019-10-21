@@ -90,6 +90,27 @@ def _floor_divide(t, expr):
 
 
 # Date & Datetimes
+_date_units = {
+    'Y': 'YEAR',
+    'Q': 'QUARTER',
+    'W': 'WEEK',
+    'M': 'MONTH',
+    'D': 'DAY',
+}
+
+
+_timestamp_units = {
+    'us': 'MICROSECOND',
+    'ms': 'MILLISECOND',
+    's': 'SECOND',
+    'm': 'MINUTE',
+    'h': 'HOUR',
+}
+
+_time_units = _timestamp_units.copy()
+_timestamp_units.update(_date_units)
+
+
 def _extract(fmt):
     def translator(t, expr):
         (arg,) = expr.op().args
@@ -101,6 +122,20 @@ def _extract(fmt):
         )
 
     return translator
+
+
+def _truncate(units):
+    def truncator(t, expr):
+        arg, unit = expr.op().args
+        sa_arg = t.translate(arg)
+        valid_unit = units.get(unit)
+        return sa.func.dateadd(
+            sa.literal_column(valid_unit),
+            sa.func.datediff(sa.literal_column(valid_unit), 0, sa_arg),
+            0,
+        )
+
+    return truncator
 
 
 _operation_registry = alch._operation_registry.copy()
@@ -146,6 +181,8 @@ _operation_registry.update(
         ops.Sqrt: unary(sa.func.sqrt),
         ops.Tan: unary(sa.func.tan),
         # timestamp methods
+        ops.TimestampNow: fixed_arity(sa.func.GETDATE, 0),
+        ops.TimestampTruncate: _truncate(_timestamp_units),
         ops.ExtractYear: _extract('year'),
         ops.ExtractMonth: _extract('month'),
         ops.ExtractDay: _extract('day'),
