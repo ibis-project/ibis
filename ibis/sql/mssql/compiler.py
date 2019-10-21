@@ -9,7 +9,8 @@ import ibis.expr.operations as ops
 
 # used for literal translate
 from ibis.sql.alchemy import (
-    unary
+    unary,
+    fixed_arity
 )
 
 
@@ -86,6 +87,7 @@ _operation_registry.update({
     ops.Acos: unary(lambda x: sa.func.acos(x)),
     ops.Atan: unary(lambda x: sa.func.atan(x)),
     ops.Ceil: unary(lambda x: sa.func.ceiling(x)),
+    ops.Power: fixed_arity(sa.func.power, 2),
 })
 
 
