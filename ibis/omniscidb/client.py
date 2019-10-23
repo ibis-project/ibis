@@ -696,7 +696,7 @@ class OmniSciDBClient(SQLClient):
         statement = ddl.DropView(name, database=database)
         self._execute(statement, False)
 
-    def create_table_from_csv(self, table_name, path, database=None):
+    def create_table_from_csv(self, path, table_name, schema, database=None):
         """
         Wraps the CRREATE TABLE WITH  DML statement.
         Loads data into an Omniscidb table from CSV files
@@ -704,13 +704,17 @@ class OmniSciDBClient(SQLClient):
         Parameters
         ----------
         path : string
-          Path to the imput data file
-
+          Path to the imput CSV file
+        table_name : string
+          Table name to create and load data
+        schema : ibis.Schema
+          Column description
+        database : string, optional 
         Returns
         -------
         query : OmniSciDBQuery
         """
-        stmt = ddl.CreateTableFromCSV(table_name, path, database)
+        stmt = ddl.CreateTableFromCSV(path, table_name, schema, database)
         return self._execute(stmt)
 
     def create_table(

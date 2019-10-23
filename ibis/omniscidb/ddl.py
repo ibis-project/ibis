@@ -415,20 +415,18 @@ class CreateTableFromCSV(OmniSciDBDDL):
 
     def __init__(
         self,
-        table_name,
         path,
+        table_name,
+        schema,
         database=None
     ):
-        self.table_name = table_name
-        self.database = database
         self.path = path
+        self.table_name = table_name
+        self.schema = schema
+        self.database = database
 
     def compile(self):
         scoped_name = self._get_scoped_name(self.table_name, self.database)
-        fd = open(self.path, 'r')
-        fields = fd.readline()
-        fd.close()
-
-        return "CREATE TABLE {} ({}) WITH (storage_type='CSV:{}')".format(
-            scoped_name, fields, self.path
+        return "CREATE TABLE {} {} WITH (storage_type='CSV:{}')".format(
+            scoped_name, format_schema(self.schema), self.path
         )
