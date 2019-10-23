@@ -7,7 +7,7 @@ dependencies:
   - conda=4.5.11
   - click
   - clickhouse-cityhash
-  - clickhouse-driver>=0.0.8
+  - clickhouse-driver>=0.0.8,<0.1.2
   - clickhouse-sqlalchemy
   - cmake
   - flake8
