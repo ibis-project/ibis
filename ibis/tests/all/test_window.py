@@ -245,22 +245,36 @@ def test_bounded_following_window(backend, alltypes, df, con):
     backend.assert_series_equal(left, right)
 
 
-# TODO (ISSUE #2000): fix Csv, Pandas, and Parquet backends to have
-#                     inclusive preceding window boundary
-@pytest.mark.xfail_backends([Csv, Pandas, Parquet])
+@pytest.mark.parametrize(
+    'window_fn',
+    [
+        param(
+            lambda t: ibis.window(
+                preceding=2,
+                following=0,
+                group_by=[t.string_col],
+                order_by=[t.id]
+            ),
+            id='preceding-2-following-0',
+        ),
+        param(
+            lambda t: ibis.trailing_window(
+                preceding=2,
+                group_by=[t.string_col],
+                order_by=[t.id]
+            ),
+            id='trailing-2',
+        ),
+    ]
+)
 @pytest.mark.xfail_unsupported
-def test_bounded_preceding_window(backend, alltypes, df, con):
+def test_bounded_preceding_windows(backend, alltypes, df, con, window_fn):
     if not backend.supports_window_operations:
         pytest.skip(
             'Backend {} does not support window operations'.format(backend)
         )
 
-    window = ibis.window(
-        preceding=2,
-        following=0,
-        group_by=[alltypes.string_col],
-        order_by=[alltypes.id],
-    )
+    window = window_fn(alltypes)
 
     expr = alltypes.mutate(val=alltypes.double_col.sum().over(window))
 

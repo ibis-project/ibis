@@ -297,18 +297,17 @@ def compute_window_spec(dtype, obj):
 
 @compute_window_spec.register(type(None))
 def compute_window_spec_none(_, obj):
-    return obj
+    # Window spec in ibis is an inclusive window bound. A bound of 0 indicates
+    # the current row.
+    # Window spec in Pandas indicates window size. Therefore, we must add 1
+    # to the ibis window bound to get the expected behavior.
+    return obj + 1
 
 
 @compute_window_spec.register(dt.Interval)
 def compute_window_spec_interval(_, expr):
     value = ibis.pandas.execute(expr)
     return pd.tseries.frequencies.to_offset(value)
-
-
-@compute_window_spec.register(dt.DataType)
-def compute_window_spec_expr(_, expr):
-    return ibis.pandas.execute(expr)
 
 
 class Window(AggregationContext):

@@ -305,7 +305,7 @@ def test_udaf_window(con, t_random, df_random):
     result = expr.execute()
     expected = df_random.sort_values(['key', 'a']).assign(
         rolled=lambda df: df.groupby('key')
-        .b.rolling(2, min_periods=1)
+        .b.rolling(3, min_periods=1)
         .mean()
         .reset_index(level=0, drop=True)
     )
@@ -323,7 +323,7 @@ def test_udaf_window_nan(con, t_nan, df_nan):
     result = expr.execute()
     expected = df_nan.sort_values(['key', 'a']).assign(
         rolled=lambda d: d.groupby('key')
-        .b.rolling(2, min_periods=1)
+        .b.rolling(3, min_periods=1)
         .mean()
         .reset_index(level=0, drop=True)
     )
@@ -338,7 +338,7 @@ def test_udaf_window_null(con, t_null, df_null):
     result = expr.execute()
     expected = df_null.sort_values(['key', 'a']).assign(
         rolled=lambda d: d.groupby('key')
-        .b.rolling(2, min_periods=1)
+        .b.rolling(3, min_periods=1)
         .mean()
         .reset_index(level=0, drop=True)
     )
