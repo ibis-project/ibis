@@ -253,19 +253,17 @@ def test_bounded_following_window(backend, alltypes, df, con):
                 preceding=2,
                 following=0,
                 group_by=[t.string_col],
-                order_by=[t.id]
+                order_by=[t.id],
             ),
             id='preceding-2-following-0',
         ),
         param(
             lambda t: ibis.trailing_window(
-                preceding=2,
-                group_by=[t.string_col],
-                order_by=[t.id]
+                preceding=2, group_by=[t.string_col], order_by=[t.id]
             ),
             id='trailing-2',
         ),
-    ]
+    ],
 )
 @pytest.mark.xfail_unsupported
 def test_bounded_preceding_windows(backend, alltypes, df, con, window_fn):
