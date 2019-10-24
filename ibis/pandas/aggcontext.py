@@ -297,6 +297,8 @@ def compute_window_spec(dtype, obj):
 
 @compute_window_spec.register(type(None))
 def compute_window_spec_none(_, obj):
+    # Only used for row-based windows:
+    #
     # Window spec in ibis is an inclusive window bound. A bound of 0 indicates
     # the current row.
     # Window spec in Pandas indicates window size. Therefore, we must add 1
