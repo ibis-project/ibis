@@ -51,7 +51,6 @@ jobs:
         docker-compose up -d --no-build \
           mysql \
           postgres \
-          waiter-postgres \
           impala \
           clickhouse \
           omniscidb \
