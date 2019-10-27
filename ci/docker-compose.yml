@@ -42,7 +42,16 @@ services:
       - 25010:25010
       - 25020:25020
     depends_on:
-      - "waiter-postgres"
+      - postgres
+    # as postgres restart some times until be ready,
+    # dockerize -wait could finish before postgres
+    # be indead ready.
+    # Using sleep 40 seconds before in fact start
+    # helps to ensure postgres will be available.
+    entrypoint:
+      - bash
+      - -c
+      - "sleep 40 && supervisord -c /etc/supervisord.conf -n"
 
   clickhouse:
     image: yandex/clickhouse-server:18.12
@@ -102,13 +111,6 @@ services:
                 -wait tcp://clickhouse:9000
                 -wait-retry-interval 5s
                 -timeout 10m
-
-  waiter-postgres:
-    image: jwilder/dockerize
-    command: |
-      dockerize -wait tcp://postgres:5432
-    depends_on:
-      - "postgres"
 
   ibis:
     image: ibis:${PYTHON_VERSION:-3.6}
