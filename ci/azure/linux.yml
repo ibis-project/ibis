@@ -73,7 +73,8 @@ jobs:
     - bash: docker-compose run ibis flake8
       displayName: 'Lint'
 
-    - bash: docker-compose run ibis pydocstyle
+    # TODO: change match-dir when docstrings are fixed for other backends
+    - bash: docker-compose run ibis pydocstyle --match-dir=(ibis|omniscidb)
       displayName: "Docstring check"
 
     - bash: docker-compose run ibis black --check .
