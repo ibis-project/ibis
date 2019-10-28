@@ -410,7 +410,7 @@ class InsertPandas(OmniSciDBDML):
 class CreateTableFromCSV(OmniSciDBDDL):
 
     """
-    Generate DDL for LOAD DATA command. Cannot be cancelled
+    Generate DDL for CREATE TABLE WITH statement. Cannot be cancelled
     """
 
     def __init__(

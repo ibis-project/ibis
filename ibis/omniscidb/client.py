@@ -704,12 +704,12 @@ class OmniSciDBClient(SQLClient):
         Parameters
         ----------
         path : string
-          Path to the imput CSV file
+          Path to the input CSV file
         table_name : string
           Table name to create and load data
         schema : ibis.Schema
           Column description
-        database : string, optional 
+        database : string, optional
         Returns
         -------
         query : OmniSciDBQuery
