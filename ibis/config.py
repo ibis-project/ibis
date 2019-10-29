@@ -1,3 +1,4 @@
+"""Ibis configuration module."""
 # This file has been adapted from pandas/core/config.py. pandas 3-clause BSD
 # license. See LICENSES/pandas
 #
@@ -22,6 +23,7 @@ import re
 import warnings
 from collections import namedtuple
 from contextlib import contextmanager
+from typing import Callable
 
 DeprecatedOption = namedtuple('DeprecatedOption', 'key msg rkey removal_ver')
 RegisteredOption = namedtuple(
@@ -35,12 +37,14 @@ _reserved_keys = ['all']  # keys which have a special meaning
 
 
 class OptionError(AttributeError, KeyError):
+    """Exception for ibis.options.
 
-    """Exception for ibis.options, backwards compatible with KeyError
-    checks"""
+    Backwards compatible with KeyError checks.
+    """
+
+    pass
 
 
-#
 # User API
 
 
@@ -132,23 +136,39 @@ def _reset_option(pat, silent=False):
 
 
 def get_default_val(pat):
+    """Return the default value for given pattern.
+
+    Parameters
+    ----------
+    pat : string
+
+    Returns
+    -------
+    RegisteredOption (namedtuple) if key is deprecated, None otherwise
+    """
     key = _get_single_key(pat, silent=True)
     return _get_registered_option(key).defval
 
 
 class DictWrapper:
-
-    """ provide attribute-style access to a nested dict
-    """
+    """Provide attribute-style access to a nested dict."""
 
     def __init__(self, d, prefix=""):
         object.__setattr__(self, "d", d)
         object.__setattr__(self, "prefix", prefix)
 
     def __repr__(self):
+        """Return the dictionary as formatted string."""
         return pprint.pformat(self.d)
 
     def __setattr__(self, key, val):
+        """Set given value for the given attribute name (key).
+
+        Parameters
+        ----------
+        key : string
+        val : object
+        """
         prefix = self.prefix
         if prefix:
             prefix += "."
@@ -162,6 +182,16 @@ class DictWrapper:
             raise OptionError("You can only set the value of existing options")
 
     def __getattr__(self, key):
+        """Get value for the given attribute name.
+
+        Parameters
+        ----------
+        key : str
+
+        Returns
+        -------
+        object
+        """
         prefix = self.prefix
         if prefix:
             prefix += "."
@@ -178,28 +208,38 @@ class DictWrapper:
             return _get_option(prefix)
 
     def __dir__(self):
+        """Return all dictionary keys sorted."""
         return sorted(self.d.keys())
 
 
-# For user convenience,  we'd like to have the available options described
-# in the docstring. For dev convenience we'd like to generate the docstrings
-# dynamically instead of maintaining them by hand. To this, we use the
-# class below which wraps functions inside a callable, and converts
-# __doc__ into a propery function. The doctsrings below are templates
-# using the py2.6+ advanced formatting syntax to plug in a concise list
-# of options, and option descriptions.
-
-
 class CallableDynamicDoc:
+    """Convert __doc__ into a property function.
+
+    For user convenience,  we'd like to have the available options described
+    in the docstring. For dev convenience we'd like to generate the docstrings
+    dynamically instead of maintaining them by hand. To this, we use this
+    class which wraps functions inside a callable, and converts
+    __doc__ into a property function. The doctsrings below are templates
+    using the py2.6+ advanced formatting syntax to plug in a concise list
+    of options, and option descriptions.
+    """
+
     def __init__(self, func, doc_tmpl):
         self.__doc_tmpl__ = doc_tmpl
         self.__func__ = func
 
     def __call__(self, *args, **kwds):
+        """Call the the function defined when the object was initialized."""
         return self.__func__(*args, **kwds)
 
     @property
-    def __doc__(self):
+    def __doc__(self) -> str:
+        """Create automatically a documentation using a template.
+
+        Returns
+        -------
+        string
+        """
         opts_desc = _describe_option('all', _print_desc=False)
         opts_list = pp_options_list(list(_registered_options.keys()))
         return self.__doc_tmpl__.format(
@@ -316,10 +356,11 @@ options = DictWrapper(_global_config)
 
 
 class option_context:
-
     """
     Context manager to temporarily set options in the `with` statement context.
+
     You need to invoke as ``option_context(pat, val, [(pat, val), ...])``.
+
     Examples
     --------
     >>> with option_context('interactive', True):
@@ -339,6 +380,7 @@ class option_context:
         self.ops = list(zip(args[::2], args[1::2]))
 
     def __enter__(self):
+        """Create a backup of current options and define new ones."""
         undo = []
         for pat, val in self.ops:
             undo.append((pat, _get_option(pat, silent=True)))
@@ -349,26 +391,31 @@ class option_context:
             _set_option(pat, val, silent=True)
 
     def __exit__(self, *args):
+        """Rollback the options values defined before `with` statement."""
         if self.undo:
             for pat, val in self.undo:
                 _set_option(pat, val, silent=True)
 
 
 def register_option(key, defval, doc='', validator=None, cb=None):
-    """Register an option in the package-wide ibis config object
+    """Register an option in the package-wide ibis config object.
+
     Parameters
     ----------
-    key       - a fully-qualified key, e.g. "x.y.option - z".
-    defval    - the default value of the option
-    doc       - a string description of the option
-    validator - a function of a single argument, should raise `ValueError` if
-                called with a value which is not a legal value for the option.
-    cb        - a function of a single argument "key", which is called
-                immediately after an option value is set/reset. key is
-                the full name of the option.
-    Returns
-    -------
-    Nothing.
+    key
+        a fully-qualified key, e.g. "x.y.option - z".
+    defval
+        the default value of the option
+    doc
+        a string description of the option
+    validator
+        a function of a single argument, should raise `ValueError` if
+        called with a value which is not a legal value for the option.
+    cb
+        a function of a single argument "key", which is called
+        immediately after an option value is set/reset. key is
+        the full name of the option.
+
     Raises
     ------
     ValueError if `validator` is specified and `defval` is not a valid value.
@@ -421,37 +468,41 @@ def register_option(key, defval, doc='', validator=None, cb=None):
     )
 
 
-def deprecate_option(key, msg=None, rkey=None, removal_ver=None):
-    """
-    Mark option `key` as deprecated, if code attempts to access this option,
-    a warning will be produced, using `msg` if given, or a default message
-    if not.
+def deprecate_option(
+    key: str, msg: str = None, rkey: str = None, removal_ver: str = None
+):
+    """Mark option `key` as deprecated.
+
+    If code attempts to access this option, a warning will be produced,
+    using `msg` if given, or a default message if not.
+
     if `rkey` is given, any access to the key will be re-routed to `rkey`.
     Neither the existence of `key` nor that if `rkey` is checked. If they
     do not exist, any subsequence access will fail as usual, after the
     deprecation warning is given.
+
     Parameters
     ----------
-    key - the name of the option to be deprecated. must be a fully-qualified
-          option name (e.g "x.y.z.rkey").
-    msg - (Optional) a warning message to output when the key is referenced.
-          if no message is given a default message will be emitted.
-    rkey - (Optional) the name of an option to reroute access to.
-           If specified, any referenced `key` will be re-routed to `rkey`
-           including set/get/reset.
-           rkey must be a fully-qualified option name (e.g "x.y.z.rkey").
-           used by the default message if no `msg` is specified.
-    removal_ver - (Optional) specifies the version in which this option will
-                  be removed. used by the default message if no `msg`
-                  is specified.
-    Returns
-    -------
-    Nothing
+    key : string
+        the name of the option to be deprecated. must be a fully-qualified
+        option name (e.g "x.y.z.rkey").
+    msg : string, optional
+        a warning message to output when the key is referenced.
+        if no message is given a default message will be emitted.
+    rkey : string, optional
+        the name of an option to reroute access to.
+        If specified, any referenced `key` will be re-routed to `rkey`
+        including set/get/reset. rkey must be a fully-qualified option name
+        (e.g "x.y.z.rkey"). used by the default message if no `msg` is
+        specified.
+    removal_ver : string, optional
+        specifies the version in which this option will be removed. used by
+        the default message if no `msg` is specified.
+
     Raises
     ------
     OptionError - if key has already been deprecated.
     """
-
     key = key.lower()
 
     if key in _deprecated_options:
@@ -462,15 +513,22 @@ def deprecate_option(key, msg=None, rkey=None, removal_ver=None):
     _deprecated_options[key] = DeprecatedOption(key, msg, rkey, removal_ver)
 
 
-#
 # functions internal to the module
 
 
-def _select_options(pat):
-    """returns a list of keys matching `pat`
-    if pat=="all", returns all registered options
-    """
+def _select_options(pat: str) -> list:
+    """Return a list of keys matching `pat`.
 
+    Parameters
+    ----------
+    pat : string
+
+    if pat=="all", returns all registered options
+
+    Returns
+    -------
+    list
+    """
     # short-circuit for exact key
     if pat in _registered_options:
         return [pat]
@@ -483,7 +541,17 @@ def _select_options(pat):
     return [k for k in keys if re.search(pat, k, re.I)]
 
 
-def _get_root(key):
+def _get_root(key: str) -> tuple:
+    """Return the parent node of an option.
+
+    Parameters
+    ----------
+    key : string
+
+    Returns
+    -------
+    tuple
+    """
     path = key.split('.')
     cursor = _global_config
     for p in path[:-1]:
@@ -491,21 +559,34 @@ def _get_root(key):
     return cursor, path[-1]
 
 
-def _is_deprecated(key):
-    """ Returns True if the given option has been deprecated """
+def _is_deprecated(key: str) -> bool:
+    """Check if the option is deprecated.
 
+    Parameters
+    ----------
+    key : string
+
+    Returns
+    -------
+    bool
+        Return True if the given option has been deprecated
+    """
     key = key.lower()
     return key in _deprecated_options
 
 
-def _get_deprecated_option(key):
+def _get_deprecated_option(key: str):
     """
-    Retrieves the metadata for a deprecated option, if `key` is deprecated.
+    Retrieve the metadata for a deprecated option, if `key` is deprecated.
+
+    Parameters
+    ----------
+    key : string
+
     Returns
     -------
     DeprecatedOption (namedtuple) if key is deprecated, None otherwise
     """
-
     try:
         d = _deprecated_options[key]
     except KeyError:
@@ -514,9 +595,14 @@ def _get_deprecated_option(key):
         return d
 
 
-def _get_registered_option(key):
+def _get_registered_option(key: str):
     """
-    Retrieves the option metadata if `key` is a registered option.
+    Retrieve the option metadata if `key` is a registered option.
+
+    Parameters
+    ----------
+    key : string
+
     Returns
     -------
     RegisteredOption (namedtuple) if key is deprecated, None otherwise
@@ -524,12 +610,16 @@ def _get_registered_option(key):
     return _registered_options.get(key)
 
 
-def _translate_key(key):
-    """
-    if key id deprecated and a replacement key defined, will return the
-    replacement key, otherwise returns `key` as - is
-    """
+def _translate_key(key: str):
+    """Translate a key if necessary.
 
+    If key id deprecated and a replacement key defined, will return the
+    replacement key, otherwise returns `key` as - is
+
+    Parameters
+    ----------
+    key : string
+    """
     d = _get_deprecated_option(key)
     if d:
         return d.rkey or key
@@ -539,12 +629,13 @@ def _translate_key(key):
 
 def _warn_if_deprecated(key):
     """
-    Checks if `key` is a deprecated option and if so, prints a warning.
+    Check if `key` is a deprecated option and if so, prints a warning.
+
     Returns
     -------
-    bool - True if `key` is deprecated, False otherwise.
+    bool
+        True if `key` is deprecated, False otherwise.
     """
-
     d = _get_deprecated_option(key)
     if d:
         if d.msg:
@@ -564,8 +655,17 @@ def _warn_if_deprecated(key):
     return False
 
 
-def _build_option_description(k):
-    """Builds a formatted description of a registered option and prints it."""
+def _build_option_description(k: str) -> str:
+    """Build a formatted description of a registered option and prints it.
+
+    Parameters
+    ----------
+    k : string
+
+    Returns
+    -------
+    str
+    """
     o = _get_registered_option(k)
     d = _get_deprecated_option(k)
 
@@ -596,9 +696,20 @@ def _build_option_description(k):
     return ''.join(buf)
 
 
-def pp_options_list(keys, width=80, _print=False):
-    """ Builds a concise listing of available options, grouped by prefix """
+def pp_options_list(keys: str, width: int = 80, _print: bool = False) -> str:
+    """
+    Build a concise listing of available options, grouped by prefix.
 
+    Parameters
+    ----------
+    keys : string
+    width : int
+    _print : bool
+
+    Returns
+    -------
+    string
+    """
     from textwrap import wrap
     from itertools import groupby
 
@@ -631,17 +742,21 @@ def pp_options_list(keys, width=80, _print=False):
         return s
 
 
-#
 # helpers
 
 
 @contextmanager
 def config_prefix(prefix):
-    """contextmanager for multiple invocations of API  with a common prefix
+    """Create a Context Manager for multiple invocations using a common prefix.
+
+    Context Manager for multiple invocations of API  with a common prefix
     supported API functions: (register / get / set )__option
+
     Warning: This is not thread - safe, and won't work properly if you import
     the API functions into your module using the "from x import y" construct.
-    Example:
+
+    Examples
+    --------
     import ibis.config as cf
     with cf.config_prefix("display.font"):
         cf.register_option("color", "red")
@@ -650,13 +765,12 @@ def config_prefix(prefix):
         cf.get_option(size)
         ...
         etc'
+
     will register options "display.font.color", "display.font.size", set the
     value of "display.font.size"... and so on.
     """
-
     # Note: reset_option relies on set_option, and on key directly
     # it does not fit in to this monkey-patching scheme
-
     global register_option, get_option, set_option, reset_option
 
     def wrap(func):
@@ -669,10 +783,13 @@ def config_prefix(prefix):
     _register_option = register_option
     _get_option = get_option
     _set_option = set_option
+
     set_option = wrap(set_option)
     get_option = wrap(get_option)
     register_option = wrap(register_option)
+
     yield None
+
     set_option = _set_option
     get_option = _get_option
     register_option = _register_option
@@ -682,33 +799,44 @@ def config_prefix(prefix):
 # arg in register_option
 
 
-def is_type_factory(_type):
-    """
+def is_type_factory(_type) -> Callable:
+    """Create a function that checks the type of an object.
+
+    The function returned check if the type of a given object is the same of
+    the type `_type` given to the function factory.
+
     Parameters
     ----------
-    `_type` - a type to be compared against (e.g. type(x) == `_type`)
+    _type
+        a type to be compared against (e.g. type(x) == `_type`)
+
     Returns
     -------
-    validator - a function of a single argument x , which returns the
-                True if type(x) is equal to `_type`
+    validator : function
+        a function of a single argument x , which returns the
+        True if type(x) is equal to `_type`.
     """
-
+    # checking function
     def inner(x):
+        """Check if the type of a given object is equals to the given type."""
         if type(x) != _type:
             raise ValueError("Value must have type '%s'" % str(_type))
 
     return inner
 
 
-def is_instance_factory(_type):
-    """
+def is_instance_factory(_type) -> Callable:
+    """Create a function that checks if an object is instance of a given type.
+
     Parameters
     ----------
     `_type` - the type to be checked against
+
     Returns
     -------
-    validator - a function of a single argument x , which returns the
-                True if x is an instance of `_type`
+    validator : function
+        a function of a single argument x , which returns the
+        True if x is an instance of `_type`
     """
     if isinstance(_type, (tuple, list)):
         _type = tuple(_type)
@@ -723,8 +851,33 @@ def is_instance_factory(_type):
     return inner
 
 
-def is_one_of_factory(legal_values):
+def is_one_of_factory(legal_values: list) -> Callable:
+    """
+    Create a function that check if a given value is in the given list.
+
+    Parameters
+    ----------
+    legal_values : list
+
+    Returns
+    -------
+    validator : function
+    """
+    # checking function
     def inner(x):
+        """
+        Check if the given value is in the list given to the factory function.
+
+        Parameters
+        ----------
+        x : object
+
+        Raises
+        ------
+        ValueError
+            If the given value is not in the list given to the factory
+            function.
+        """
         if x not in legal_values:
             pp_values = map(str, legal_values)
             raise ValueError(

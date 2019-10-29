@@ -1,3 +1,5 @@
+"""OmniSci reserved words."""
+
 _ddl = frozenset(
     {
         'alter',  # database, table, user, view
@@ -134,6 +136,12 @@ _special_chars = (' ', '*')
 
 
 def quote_identifier(name, quotechar='"', force=False):
+    """Quote a word when necessary or forced.
+
+    Returns
+    -------
+    string
+    """
     if (
         force or any(c in name for c in _special_chars) or name in _identifiers
     ) and quotechar not in name:

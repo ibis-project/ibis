@@ -1,3 +1,4 @@
+"""Ibis generic client classes and functions."""
 import abc
 
 import ibis.common.exceptions as com
@@ -10,13 +11,16 @@ from ibis.config import options
 
 
 class Client:
+    """Generic Ibis client."""
+
     pass
 
 
 class Query:
+    """Abstraction for DML query execution.
 
-    """Abstraction for DML query execution to enable queries, progress,
-    cancellation and more (for backends supporting such functionality).
+    This class enables queries, progress, and more
+    (for backends supporting such functionality).
     """
 
     def __init__(self, client, sql, **kwargs):
@@ -36,6 +40,15 @@ class Query:
         self.extra_options = kwargs
 
     def execute(self):
+        """Execute a DML expression.
+
+        Returns
+        -------
+        output : input type dependent
+          Table expressions: pandas.DataFrame
+          Array expressions: pandas.Series
+          Scalar expressions: Python scalar value
+        """
         # synchronous by default
         with self.client._execute(self.compiled_sql, results=True) as cur:
             result = self._fetch(cur)
@@ -51,7 +64,17 @@ class Query:
         raise NotImplementedError
 
     def schema(self):
+        """Return the schema of the expression.
 
+        Returns
+        -------
+        Schema
+
+        Raises
+        ------
+        ValueError
+            if self.expr doesn't have a schema.
+        """
         if isinstance(self.expr, (ir.TableExpr, ir.ExprList, sch.HasSchema)):
             return self.expr.schema()
         elif isinstance(self.expr, ir.ValueExpr):
@@ -64,6 +87,7 @@ class Query:
 
 
 class SQLClient(Client, metaclass=abc.ABCMeta):
+    """Generic SQL client."""
 
     dialect = comp.Dialect
     query_class = Query
@@ -71,9 +95,10 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
     table_expr_class = ir.TableExpr
 
     def table(self, name, database=None):
-        """
+        """Create a table expression.
+
         Create a table expression that references a particular table in the
-        database
+        database.
 
         Parameters
         ----------
@@ -91,13 +116,15 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
 
     @property
     def current_database(self):
+        """Return the current database."""
         return self.con.database
 
     def database(self, name=None):
-        """
+        """Create a database object.
+
         Create a Database object for a given database name that can be used for
         exploring and manipulating the objects (tables, functions, views, etc.)
-        inside
+        inside.
 
         Parameters
         ----------
@@ -125,11 +152,11 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
             cur.release()
 
     def sql(self, query):
-        """
-        Convert a SQL query to an Ibis table expression
+        """Convert a SQL query to an Ibis table expression.
 
         Parameters
         ----------
+        query : string
 
         Returns
         -------
@@ -142,10 +169,10 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         return ops.SQLQueryResult(query, schema, self).to_expr()
 
     def raw_sql(self, query, results=False):
-        """
-        Execute a given query string. Could have unexpected results if the
-        query modifies the behavior of the session in a way unknown to Ibis; be
-        careful.
+        """Execute a given query string.
+
+        Could have unexpected results if the query modifies the behavior of
+        the session in a way unknown to Ibis; be careful.
 
         Parameters
         ----------
@@ -162,7 +189,8 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         return self._execute(query, results=results)
 
     def execute(self, expr, params=None, limit='default', **kwargs):
-        """
+        """Compile and execute the given Ibis expression.
+
         Compile and execute Ibis expression using this backend client
         interface, returning results in-memory in the appropriate object type
 
@@ -190,8 +218,10 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         return query.execute()
 
     def compile(self, expr, params=None, limit=None):
-        """
-        Translate expression to one or more queries according to backend target
+        """Translate expression.
+
+        Translate expression to one or more queries according to
+        backend target.
 
         Returns
         -------
@@ -224,7 +254,8 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         return query_ast
 
     def explain(self, expr, params=None):
-        """
+        """Explain expression.
+
         Query for and return the query plan associated with the indicated
         expression or SQL query.
 
@@ -257,16 +288,34 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
 
 
 class QueryPipeline:
-    """
-    Execute a series of queries, and capture any result sets generated
+    """Execute a series of queries, and capture any result sets generated.
 
-    Note: No query pipelines have yet been implemented
+    Note: No query pipelines have yet been implemented.
     """
 
     pass
 
 
-def validate_backends(backends):
+def validate_backends(backends) -> list:
+    """Validate bacckends.
+
+    Parameters
+    ----------
+    backends
+
+    Returns
+    -------
+    list
+        A list containing a specified backend or the default backend.
+
+    Raises
+    ------
+    ibis.common.exceptions.IbisError
+        If no backend is specified and
+        if there is no default backend specified.
+    ValueError
+        if there are more than one backend specified.
+    """
     if not backends:
         default = options.default_backend
         if default is None:
@@ -280,17 +329,57 @@ def validate_backends(backends):
     return backends
 
 
-def execute(expr, limit='default', params=None, **kwargs):
+def execute(expr, limit: str = 'default', params: dict = None, **kwargs):
+    """Execute given expression using the backend available.
+
+    Parameters
+    ----------
+    expr : Expr
+    limit : string
+    params : dict
+    kwargs : dict
+
+    Returns
+    -------
+    output : input type dependent
+      Table expressions: pandas.DataFrame
+      Array expressions: pandas.Series
+      Scalar expressions: Python scalar value
+    """
     (backend,) = validate_backends(list(find_backends(expr)))
     return backend.execute(expr, limit=limit, params=params, **kwargs)
 
 
-def compile(expr, limit=None, params=None, **kwargs):
+def compile(expr, limit: str = None, params: dict = None, **kwargs) -> str:
+    """Translate given expression.
+
+    Parameters
+    ----------
+    expr : Expr
+    limit : string
+    params : dict
+    kwargs : dict
+
+    Returns
+    -------
+    expression_translated : string
+    """
     (backend,) = validate_backends(list(find_backends(expr)))
     return backend.compile(expr, limit=limit, params=params, **kwargs)
 
 
 def find_backends(expr):
+    """Find backends.
+
+    Parameters
+    ----------
+    expr : Expr
+
+    Returns
+    -------
+    client : Client
+        Backend found.
+    """
     seen_backends = set()
 
     stack = [expr.op()]
@@ -312,29 +401,79 @@ def find_backends(expr):
 
 
 class Database:
+    """Generic Database class."""
+
     def __init__(self, name, client):
+        """Initialize the new object."""
         self.name = name
         self.client = client
 
-    def __repr__(self):
+    def __repr__(self) -> str:
+        """Return type name and the name of the database."""
         return '{}({!r})'.format(type(self).__name__, self.name)
 
-    def __dir__(self):
+    def __dir__(self) -> set:
+        """Return a set of attributes and tables available for the database.
+
+        Returns
+        -------
+        set
+            A set of the attributes and tables available for the database.
+        """
         attrs = dir(type(self))
         unqualified_tables = [self._unqualify(x) for x in self.tables]
         return sorted(frozenset(attrs + unqualified_tables))
 
-    def __contains__(self, key):
+    def __contains__(self, key: str) -> bool:
+        """
+        Check if the given table (key) is available for the current database.
+
+        Parameters
+        ----------
+        key : string
+
+        Returns
+        -------
+        bool
+            True if the given key (table name) is available for the current
+            database.
+        """
         return key in self.tables
 
     @property
-    def tables(self):
+    def tables(self) -> list:
+        """Return a list with all available tables.
+
+        Returns
+        -------
+        list
+        """
         return self.list_tables()
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> ir.TableExpr:
+        """Return a TableExpr for the given table name (key).
+
+        Parameters
+        ----------
+        key : string
+
+        Returns
+        -------
+        TableExpr
+        """
         return self.table(key)
 
-    def __getattr__(self, key):
+    def __getattr__(self, key: str) -> ir.TableExpr:
+        """Return a TableExpr for the given table name (key).
+
+        Parameters
+        ----------
+        key : string
+
+        Returns
+        -------
+        TableExpr
+        """
         return self.table(key)
 
     def _qualify(self, value):
@@ -343,24 +482,29 @@ class Database:
     def _unqualify(self, value):
         return value
 
-    def drop(self, force=False):
-        """
-        Drop the database
+    def drop(self, force: bool = False):
+        """Drop the database.
 
         Parameters
         ----------
-        drop : boolean, default False
-          Drop any objects if they exist, and do not fail if the databaes does
-          not exist
+        force : boolean, default False
+          If True, Drop any objects if they exist, and do not fail if the
+          databaes does not exist.
         """
         self.client.drop_database(self.name, force=force)
 
-    def namespace(self, ns):
+    def namespace(self, ns: str):
         """
+        Create a database namespace for accessing objects with common prefix.
+
         Creates a derived Database instance for collections of objects having a
         common prefix. For example, for tables fooa, foob, and fooc, creating
         the "foo" namespace would enable you to reference those objects as a,
         b, and c, respectively.
+
+        Parameters
+        ----------
+        ns : string
 
         Returns
         -------
@@ -368,9 +512,12 @@ class Database:
         """
         return DatabaseNamespace(self, ns)
 
-    def table(self, name):
-        """
-        Return a table expression referencing a table in this database
+    def table(self, name: str) -> ir.TableExpr:
+        """Return a table expression referencing a table in this database.
+
+        Parameters
+        ----------
+        name : string
 
         Returns
         -------
@@ -379,31 +526,59 @@ class Database:
         qualified_name = self._qualify(name)
         return self.client.table(qualified_name, self.name)
 
-    def list_tables(self, like=None):
+    def list_tables(self, like: str = None) -> list:
+        """Return a list of all tables available for the current database.
+
+        Parameters
+        ----------
+        like : string, default None
+          e.g. 'foo*' to match all tables starting with 'foo'.
+
+        Returns
+        -------
+        list
+            A list with all tables available for the current database.
+        """
         return self.client.list_tables(
             like=self._qualify_like(like), database=self.name
         )
 
-    def _qualify_like(self, like):
+    def _qualify_like(self, like: str) -> str:
         return like
 
 
 class DatabaseNamespace(Database):
+    """Database Namespace class."""
+
     def __init__(self, parent, namespace):
+        """Initialize the Database Namespace object."""
         self.parent = parent
         self.namespace = namespace
 
-    def __repr__(self):
+    def __repr__(self) -> str:
+        """Return the database typename and database and namespace name."""
         return "{}(database={!r}, namespace={!r})".format(
             type(self).__name__, self.name, self.namespace
         )
 
     @property
     def client(self):
+        """Return the client.
+
+        Returns
+        -------
+        client : Client
+        """
         return self.parent.client
 
     @property
-    def name(self):
+    def name(self) -> str:
+        """Return the name of the database.
+
+        Returns
+        -------
+        name : string
+        """
         return self.parent.name
 
     def _qualify(self, value):
@@ -420,9 +595,14 @@ class DatabaseNamespace(Database):
 
 
 class DatabaseEntity:
+    """Database Entity class."""
+
     pass
 
 
 class View(DatabaseEntity):
+    """View class."""
+
     def drop(self):
+        """Drop method."""
         pass

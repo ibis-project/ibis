@@ -1,3 +1,4 @@
+"""Initialize Ibis module."""
 from contextlib import suppress
 
 import ibis.config_init  # noqa: F401

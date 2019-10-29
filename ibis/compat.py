@@ -1,3 +1,4 @@
+"""Module for compatible functions."""
 import operator
 
 import toolz

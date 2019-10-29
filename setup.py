@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+"""Ibis setup module."""
 import pathlib
 import sys
 
@@ -63,6 +63,7 @@ all_requires = (
 
 develop_requires = all_requires + [
     'click',
+    'pydocstyle==4.0.1',
     'flake8',
     'isort',
     'mypy',

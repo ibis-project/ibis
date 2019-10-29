@@ -1,5 +1,7 @@
+"""Module for DDL operations."""
 import re
 
+import ibis
 from ibis.sql.compiler import DDL, DML
 
 from .compiler import _type_to_sql_string, quote_identifier
@@ -18,37 +20,45 @@ def _is_quoted(x):
 
 
 class OmniSciDBQualifiedSQLStatement:
+    """OmniSciDBQualifiedSQLStatement."""
+
     def _get_scoped_name(self, obj_name, database):  # noqa: F401
         return obj_name
 
 
 class OmniSciDBDDL(DDL, OmniSciDBQualifiedSQLStatement):
-    pass
+    """OmniSciDB DDL class."""
 
 
 class OmniSciDBDML(DML, OmniSciDBQualifiedSQLStatement):
-    pass
+    """OmniSciDB DML class."""
 
 
 class CreateDDL(OmniSciDBDDL):
-    """Create DDL"""
+    """Create DDL."""
 
 
 class DropObject(OmniSciDBDDL):
+    """Drop object class."""
+
     def __init__(self, must_exist=True):
+        """Initialize the drop object operation."""
         self.must_exist = must_exist
 
     def compile(self):
+        """Compile the drop object operation."""
         if_exists = '' if self.must_exist else 'IF EXISTS '
         object_name = self._object_name()
         return 'DROP {} {}{}'.format(self._object_type, if_exists, object_name)
 
 
 class DropTable(DropObject):
+    """Drop table class."""
 
     _object_type = 'TABLE'
 
     def __init__(self, table_name, database=None, must_exist=True):
+        """Initialize the drop table object."""
         super().__init__(must_exist=must_exist)
         self.table_name = table_name
         self.database = database
@@ -66,12 +76,12 @@ def _format_properties(props):
 
 
 class CreateTable(CreateDDL):
-    """
+    """Create Table class.
 
     Parameters
     ----------
-    table_name : str
-    database : str
+    table_name : string
+    database : string
     """
 
     def __init__(self, table_name, database=None):
@@ -87,15 +97,29 @@ class CreateTable(CreateDDL):
 
     @property
     def pieces(self):
+        """Get all the pieces of the Create Table expression.
+
+        Yields
+        ------
+        string
+        """
         yield self._create_line()
         for piece in filter(None, self._pieces):
             yield piece
 
     def compile(self):
+        """Compile the create table expression.
+
+        Returns
+        -------
+        string
+        """
         return '\n'.join(self.pieces)
 
 
 class CreateTableWithSchema(CreateTable):
+    """Create Table With Schema class."""
+
     def __init__(self, table_name, schema, database=None, max_rows=None):
         self.table_name = table_name
         self.database = database
@@ -104,6 +128,12 @@ class CreateTableWithSchema(CreateTable):
 
     @property
     def with_params(self):
+        """Return the parameters for `with` clause.
+
+        Returns
+        -------
+        string
+        """
         return dict(max_rows=self.max_rows)
 
     @property
@@ -125,9 +155,7 @@ class CreateTableWithSchema(CreateTable):
 
 
 class CTAS(CreateTable):
-    """
-    Create Table As Select
-    """
+    """Create Table As Select."""
 
     def __init__(self, table_name, select, database=None):
         self.table_name = table_name
@@ -149,7 +177,7 @@ class CTAS(CreateTable):
 
 
 class CreateView(CTAS):
-    """Create a view"""
+    """Create a view."""
 
     def __init__(self, table_name, select, database=None):
         super().__init__(table_name, select, database=database)
@@ -165,6 +193,8 @@ class CreateView(CTAS):
 
 
 class DropView(DropTable):
+    """Drop View class."""
+
     _object_type = 'VIEW'
 
 
@@ -172,7 +202,7 @@ class DropView(DropTable):
 
 
 class AlterUser(OmniSciDBDDL):
-    """Create user"""
+    """Create user."""
 
     def __init__(
         self,
@@ -202,16 +232,23 @@ class AlterUser(OmniSciDBDDL):
 
     @property
     def pieces(self):
+        """Get all the pieces for the Alter User expression."""
         yield 'ALTER USER {} ('.format(self.name)
         yield ','.join(self._params)
         yield ')'
 
     def compile(self):
+        """Compile the Alter User expression.
+
+        Returns
+        -------
+        string
+        """
         return '\n'.join(self.pieces)
 
 
 class CreateUser(OmniSciDBDDL):
-    """Create user"""
+    """Create user."""
 
     def __init__(self, name, password, database=None, is_super=False):
         self.name = name
@@ -221,17 +258,29 @@ class CreateUser(OmniSciDBDDL):
 
     @property
     def pieces(self):
+        """Get all the pieces for the Create User expression.
+
+        Yields
+        ------
+        string
+        """
         yield 'CREATE USER {} ('.format(self.name)
         yield "  password='{}',".format(self.password)
         yield "  is_super='{}'".format('true' if self.is_super else 'false')
         yield ')'
 
     def compile(self):
+        """Compile the Create User expression.
+
+        Returns
+        -------
+        string
+        """
         return '\n'.join(self.pieces)
 
 
 class DropUser(OmniSciDBDDL):
-    """Create user"""
+    """Drop user."""
 
     def __init__(self, name, database=None):
         self.name = name
@@ -239,13 +288,27 @@ class DropUser(OmniSciDBDDL):
 
     @property
     def pieces(self):
+        """Get all the pieces for the Drop User expression.
+
+        Yields
+        ------
+        string
+        """
         yield 'DROP USER {}'.format(self.name)
 
     def compile(self):
+        """Compile the Drop User expression.
+
+        Returns
+        -------
+        string
+        """
         return '\n'.join(self.pieces)
 
 
 class AlterTable(OmniSciDBDDL):
+    """Alter Table class."""
+
     def __init__(self, table, tbl_properties=None):
         self.table = table
         self.tbl_properties = tbl_properties
@@ -266,12 +329,20 @@ class AlterTable(OmniSciDBDDL):
             return ''
 
     def compile(self):
+        """Compile the Alter Table expression.
+
+        Returns
+        -------
+        string
+        """
         props = self._format_properties()
         action = '{} SET {}'.format(self.table, props)
         return self._wrap_command(action)
 
 
 class RenameTable(AlterTable):
+    """Rename Table class."""
+
     def __init__(
         self, old_name, new_name, old_database=None, new_database=None
     ):
@@ -293,6 +364,12 @@ class RenameTable(AlterTable):
         self.new_qualified_name = new_qualified_name
 
     def compile(self):
+        """Compile the Rename Table expression.
+
+        Returns
+        -------
+        string
+        """
         cmd = '{} RENAME TO {}'.format(
             self.old_qualified_name, self.new_qualified_name
         )
@@ -300,6 +377,7 @@ class RenameTable(AlterTable):
 
 
 class TruncateTable(OmniSciDBDDL):
+    """Truncate Table class."""
 
     _object_type = 'TABLE'
 
@@ -308,17 +386,31 @@ class TruncateTable(OmniSciDBDDL):
         self.database = database
 
     def compile(self):
+        """Compile Truncate Table class.
+
+        Returns
+        -------
+        string
+        """
         name = self._get_scoped_name(self.table_name, self.database)
         return 'TRUNCATE TABLE {}'.format(name)
 
 
 class CacheTable(OmniSciDBDDL):
+    """Cache Table class."""
+
     def __init__(self, table_name, database=None, pool='default'):
         self.table_name = table_name
         self.database = database
         self.pool = pool
 
     def compile(self):
+        """Compile Cache Table class.
+
+        Returns
+        -------
+        string
+        """
         scoped_name = self._get_scoped_name(self.table_name, self.database)
         return "ALTER TABLE {} SET CACHED IN '{}'".format(
             scoped_name, self.pool
@@ -326,11 +418,19 @@ class CacheTable(OmniSciDBDDL):
 
 
 class CreateDatabase(CreateDDL):
+    """Create Database class."""
+
     def __init__(self, name, owner=None):
         self.name = name
         self.owner = owner
 
     def compile(self):
+        """Compile Create Database expression.
+
+        Returns
+        -------
+        string
+        """
         name = quote_identifier(self.name)
 
         cmd = 'CREATE DATABASE'
@@ -343,6 +443,7 @@ class CreateDatabase(CreateDDL):
 
 
 class DropDatabase(DropObject):
+    """Drop Database class."""
 
     _object_type = 'DATABASE'
 
@@ -354,7 +455,17 @@ class DropDatabase(DropObject):
         return self.name
 
 
-def format_schema(schema):
+def format_schema(schema: ibis.expr.schema.Schema):
+    """Get a formatted string for a given schema.
+
+    Parameters
+    ----------
+    schema : ibis.expr.schema.Schema
+
+    Returns
+    -------
+    string
+    """
     elements = [
         _format_schema_element(name, t)
         for name, t in zip(schema.names, schema.types)
@@ -369,6 +480,8 @@ def _format_schema_element(name, t):
 
 
 class InsertPandas(OmniSciDBDML):
+    """Insert Data from Pandas class."""
+
     def __init__(self, table_name, df, insert_index=False, database=None):
         self.table_name = table_name
         self.database = database
@@ -394,6 +507,12 @@ class InsertPandas(OmniSciDBDML):
 
     @property
     def pieces(self):
+        """Get all the pieces for the Insert expression.
+
+        Yields
+        ------
+        string
+        """
         cmd = 'INSERT INTO'
 
         fields = self._get_field_names()
@@ -404,4 +523,5 @@ class InsertPandas(OmniSciDBDML):
             yield '{} ({});'.format(stmt, ','.join(values))
 
     def compile(self):
+        """Compile the Insert expression."""
         return '\n'.join(self.pieces)
