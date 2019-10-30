@@ -538,12 +538,7 @@ class LoadData(OmniSciDBDDL):
     """
 
     def __init__(
-        self,
-        table_name,
-        path,
-        header=True,
-        quoted=True,
-        database=None
+        self, table_name, path, header=True, quoted=True, database=None
     ):
         self.table_name = table_name
         self.database = database
@@ -554,6 +549,8 @@ class LoadData(OmniSciDBDDL):
     def compile(self):
         scoped_name = self._get_scoped_name(self.table_name, self.database)
         return "COPY {} FROM '{}' WITH (header = '{}', quoted = '{}')".format(
-            scoped_name, self.path,
-            _bool_str(self.header), _bool_str(self.quoted)
+            scoped_name,
+            self.path,
+            _bool_str(self.header),
+            _bool_str(self.quoted),
         )
