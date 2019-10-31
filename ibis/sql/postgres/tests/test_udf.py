@@ -4,6 +4,7 @@ import functools
 
 import pytest
 
+import ibis
 import ibis.expr.datatypes as dt
 from ibis.sql.postgres import existing_udf, udf
 from ibis.sql.postgres.udf.api import PostgresUDFError
@@ -167,6 +168,30 @@ def test_udf(con_for_udf, test_schema, table):
     ]
     result = expr.execute()
     assert result['mult_result'].iloc[0] == 8
+
+
+def pysplit(text, split):
+    return text.split(split)
+
+
+def test_array_type(con_for_udf, test_schema, table):
+    """Test that usage of Array types work
+    Other scalar types can be represented either by the class or an instance,
+    but Array types work differently. Array types must be an instance,
+    because the Array class must be instantiated specifying the datatype
+    of the elements of the array.
+    """
+    pysplit_udf = udf(
+        con_for_udf,
+        pysplit,
+        (dt.string, dt.string),
+        dt.Array(dt.string),
+        schema=test_schema,
+        replace=True,
+    )
+    splitter = ibis.literal(' ', dt.string)
+    result = pysplit_udf(table['user_name'], splitter).name('split_name')
+    result.execute()
 
 
 def test_client_udf_api(con_for_udf, test_schema, table):

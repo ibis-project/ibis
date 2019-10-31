@@ -33,7 +33,9 @@ def ibis_to_pg_sa_type(ibis_type):
 def sa_type_to_postgres_str(sa_type):
     """Map a Postgres-compatible sqlalchemy type to a Postgres-appropriate
     string"""
-    return sa_type().compile(dialect=sa_postgres_dialect())
+    if callable(sa_type):
+        sa_type = sa_type()
+    return sa_type.compile(dialect=sa_postgres_dialect())
 
 
 def ibis_to_postgres_str(ibis_type):
