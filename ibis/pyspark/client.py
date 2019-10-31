@@ -1,3 +1,4 @@
+"""PySpark backend client module."""
 from pyspark.sql.column import Column
 
 import ibis.common.exceptions as com
@@ -8,9 +9,7 @@ from ibis.spark.client import SparkClient
 
 
 class PySparkClient(SparkClient):
-    """
-    An ibis client that uses PySpark SQL Dataframe
-    """
+    """An ibis client that uses PySpark SQL Dataframe."""
 
     dialect = PySparkDialect
     table_class = PySparkTable
@@ -20,9 +19,7 @@ class PySparkClient(SparkClient):
         self.translator = PySparkExprTranslator()
 
     def compile(self, expr, params=None, *args, **kwargs):
-        """Compile an ibis expression to a PySpark DataFrame object
-        """
-
+        """Compile an ibis expression to a PySpark DataFrame object."""
         # Insert params in scope
         if params is None:
             scope = {}
@@ -33,6 +30,7 @@ class PySparkClient(SparkClient):
         return self.translator.translate(expr, scope=scope)
 
     def execute(self, expr, params=None, limit='default', **kwargs):
+        """Execute given expression using PySpark."""
         if isinstance(expr, types.TableExpr):
             return self.compile(expr, params, **kwargs).toPandas()
         elif isinstance(expr, types.ColumnExpr):

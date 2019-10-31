@@ -1,3 +1,4 @@
+"""PySpark backend test configuration module."""
 import pytest
 
 import ibis
@@ -5,6 +6,7 @@ import ibis
 
 @pytest.fixture(scope='session')
 def client():
+    """Create a fixture for PySpark client."""
     from pyspark.sql import SparkSession
     import pyspark.sql.functions as F
 
