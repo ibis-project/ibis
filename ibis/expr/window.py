@@ -420,7 +420,8 @@ def trailing_window(preceding, group_by=None, order_by=None):
     preceding : int, float or expression of intervals, i.e.
         ibis.interval(days=1) + ibis.interval(hours=5)
         Int indicates number of trailing rows to include;
-        0 includes only the current row.
+        0 includes only the current row, 1 includes the current row and one
+        preceding row.
         Interval indicates a trailing range window.
     group_by : expressions, default None
         Either specify here or with TableExpr.group_by

@@ -288,7 +288,7 @@ def test_batting_rolling(batting, batting_df, sort_kind):
     more_values = (
         batting_df[columns]
         .sort_values('yearID', kind=sort_kind)
-        .G.rolling(5, min_periods=1)
+        .G.rolling(6, min_periods=1)
         .sum()
         .astype('int64')
     )
@@ -311,7 +311,7 @@ def test_batting_rolling_partitioned(batting, batting_df, sort_kind):
         batting_df[columns]
         .set_index(order_by)
         .groupby(group_by)
-        .G.rolling(3, min_periods=1)
+        .G.rolling(4, min_periods=1)
         .sum()
         .rename('rolled')
     )
