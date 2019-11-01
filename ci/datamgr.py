@@ -441,7 +441,7 @@ def mssql(schema, tables, data_directory, **params):
             'mssql+pyodbc',
             params,
             schema,
-            isolation_level='AUTOCOMMIT',
+            connect_args={'autocommit': False},
             recreate=False,
         )
     insert_tables(engine, tables, data_directory)
