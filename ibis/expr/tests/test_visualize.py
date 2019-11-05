@@ -144,3 +144,10 @@ def test_asof_join():
     result = joined[left, right.foo]
     graph = viz.to_graph(result)
     assert key(result) in graph.source
+
+
+def test_html_escape():
+    # Check that we correctly escape HTML <> characters in the graphviz
+    # representation. If an error is thrown, _repr_png_ returns None.
+    expr = ibis.table([('<a & b>', ibis.expr.datatypes.Array('string'))])
+    assert expr._repr_png_() is not None
