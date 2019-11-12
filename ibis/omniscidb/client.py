@@ -377,7 +377,7 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         """Delete all rows from, but do not drop, an existing table."""
         self._client.truncate_table(self._qualified_name)
 
-    def load_data(self, df):
+    def load_data(self, source, **kwargs):
         """
         Load a data frame into database.
 
@@ -392,7 +392,7 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         -------
         query : OmniSciDBQuery
         """
-        stmt = ddl.LoadData(self._qualified_name, df)
+        stmt = ddl.LoadData(self._qualified_name, source, **kwargs)
         return self._execute(stmt)
 
     def read_csv(self, path, header=True, quoted=True):

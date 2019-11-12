@@ -537,20 +537,28 @@ class LoadData(OmniSciDBDDL):
     Generate DDL for LOAD DATA command. Cannot be cancelled
     """
 
-    def __init__(
-        self, table_name, path, header=True, quoted=True, database=None
-    ):
+    def __init__(self, table_name, source, **kwargs):
         self.table_name = table_name
-        self.database = database
-        self.path = path
-        self.header = header
-        self.quoted = quoted
+        self.source = source
+        self.options = kwargs
+
+    def _get_options(self):
+        if self.kwargs:
+            return (
+                ' WITH('.join('%s=%r' % x for x in self.options.iteritems())
+                + ')'
+            )
+        else:
+            return ''
 
     def compile(self):
-        scoped_name = self._get_scoped_name(self.table_name, self.database)
-        return "COPY {} FROM '{}' WITH (header = '{}', quoted = '{}')".format(
-            scoped_name,
-            self.path,
-            _bool_str(self.header),
-            _bool_str(self.quoted),
-        )
+        if isinstance(self.source, str):
+            return "COPY {} FROM '{}'{})".format(
+                self.table_name, self.source, self._get_options()
+            )
+        else:
+            raise NotImplementedError(
+                'Load data from the {} not implemented'.format(
+                    type(self.source)
+                )
+            )
