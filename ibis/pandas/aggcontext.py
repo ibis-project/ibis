@@ -216,10 +216,13 @@ Ibis
 
 import abc
 import functools
+import itertools
 import operator
 import warnings
 
+import numpy as np
 import pandas as pd
+from pandas.core.groupby import SeriesGroupBy
 
 import ibis
 import ibis.common.exceptions as com
@@ -361,6 +364,7 @@ class Window(AggregationContext):
         else:
             # do mostly the same thing as if we did NOT have a grouping key,
             # but don't call the callable just yet. See below where we call it.
+
             if callable(function):
                 method = operator.methodcaller(
                     'apply', make_applied_function(function, args, kwargs)
@@ -378,48 +382,104 @@ class Window(AggregationContext):
 
                 method = operator.methodcaller('apply', sliced_agg, raw=False)
 
-        # get the DataFrame from which the operand originated (passed in when
-        # constructing this context object in execute_node(ops.WindowOp))
-        parent = self.parent
-        frame = getattr(parent, 'obj', parent)
-        obj = getattr(grouped_data, 'obj', grouped_data)
+        if callable(function):
+            # Use custom logic to computing rolling window UDF instead of
+            # using pandas's rolling function.
+            # This is because pandas's rolling function doesn't support
+            # multi param UDFs.
 
-        name = obj.name
-        if frame[name] is not obj:
-            name = "{}_{}".format(name, ibis.util.guid())
-            frame[name] = obj
+            # Data is used to compute window bounds for each row.
+            data = grouped_data.obj
 
-        # set the index to our order_by keys and append it to the existing
-        # index
-        # TODO: see if we can do this in the caller, when the context
-        # is constructed rather than pulling out the data
-        columns = group_by + order_by + [name]
-        indexed_by_ordering = frame.loc[:, columns].set_index(order_by)
+            def create_valid_inputs(grouped_series, valid_window_size):
+                # create a generator for each input series
+                # the generator will yield a slice of the
+                # input series for each valid window
+                series = grouped_series.obj
+                for i in valid_window_size.index:
+                    yield series[i - valid_window_size[i] + 1 : i + 1]
 
-        # regroup if needed
-        if group_by:
-            grouped_frame = indexed_by_ordering.groupby(group_by)
-        else:
-            grouped_frame = indexed_by_ordering
-        grouped = grouped_frame[name]
+            # Compute window indices and manually roll
+            # over the window
+            windowed = self.construct_window(grouped_data)
+            window_size = windowed.apply(len, raw=True)
 
-        # perform the per-group rolling operation
-        windowed = self.construct_window(grouped)
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "ignore", message=".+raw=True.+", category=FutureWarning
+            # If an window has only nan values, we output nan for
+            # the window result. This follows pandas rolling apply
+            # behavior.
+            window_size = window_size.reset_index(drop=True)
+            mask = ~(window_size.isna())
+            valid_window_size = window_size[~(window_size.isna())].astype('i8')
+
+            # If there is no args, then the UDF only takes a single
+            # input which is defined by grouped_data
+            # This is a complication due to the lack of standard
+            # way to pass multiple input Series/SeriesGroupBy
+            # to AggregationContext.agg()
+            inputs = args if len(args) > 0 else [grouped_data]
+
+            input_gens = list(
+                create_valid_inputs(arg, valid_window_size)
+                if isinstance(arg, SeriesGroupBy)
+                else itertools.repeat(arg)
+                for arg in inputs
             )
-            result = method(windowed)
-        index = result.index
-        result.index = pd.MultiIndex.from_arrays(
-            [frame.index]
-            + list(map(index.get_level_values, range(index.nlevels))),
-            names=[frame.index.name] + index.names,
-        )
-        try:
-            return result.astype(self.dtype, copy=False)
-        except (TypeError, ValueError):
-            return result
+
+            valid_result = pd.Series(
+                function(*(next(gen) for gen in input_gens))
+                for i in valid_window_size.index
+            )
+            valid_result.index = valid_window_size.index
+            result = pd.Series(np.repeat(None, len(data)))
+            result[mask] = valid_result
+            result.index = data.index
+            try:
+                return result.astype(self.dtype, copy=False)
+            except (TypeError, ValueError):
+                return result
+        else:
+            # get the DataFrame from which the operand originated
+            # (passed in when constructing this context object in
+            # execute_node(ops.WindowOp))
+            parent = self.parent
+            frame = getattr(parent, 'obj', parent)
+            obj = getattr(grouped_data, 'obj', grouped_data)
+            name = obj.name
+            if frame[name] is not obj:
+                name = "{}_{}".format(name, ibis.util.guid())
+                frame[name] = obj
+
+            # set the index to our order_by keys and append it to the existing
+            # index
+            # TODO: see if we can do this in the caller, when the context
+            # is constructed rather than pulling out the data
+            columns = group_by + order_by + [name]
+            indexed_by_ordering = frame.loc[:, columns].set_index(order_by)
+
+            # regroup if needed
+            if group_by:
+                grouped_frame = indexed_by_ordering.groupby(group_by)
+            else:
+                grouped_frame = indexed_by_ordering
+            grouped = grouped_frame[name]
+
+            # perform the per-group rolling operation
+            windowed = self.construct_window(grouped)
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore", message=".+raw=True.+", category=FutureWarning
+                )
+                result = method(windowed)
+            index = result.index
+            result.index = pd.MultiIndex.from_arrays(
+                [frame.index]
+                + list(map(index.get_level_values, range(index.nlevels))),
+                names=[frame.index.name] + index.names,
+            )
+            try:
+                return result.astype(self.dtype, copy=False)
+            except (TypeError, ValueError):
+                return result
 
 
 class Cumulative(Window):

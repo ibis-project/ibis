@@ -18,6 +18,7 @@ from pandas.core.groupby import SeriesGroupBy
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.signature as sig
+from ibis.pandas.aggcontext import Window
 from ibis.pandas.core import (
     date_types,
     time_types,
@@ -530,25 +531,33 @@ class udf:
                 #
                 # If the argument is not a SeriesGroupBy then keep
                 # repeating it until all groups are exhausted.
+
                 aggcontext = kwargs.pop('aggcontext', None)
                 assert aggcontext is not None, 'aggcontext is None'
-                iters = (
-                    (data for _, data in arg)
-                    if isinstance(arg, SeriesGroupBy)
-                    else itertools.repeat(arg)
-                    for arg in args[1:]
-                )
-                funcsig = signature(func)
 
-                def aggregator(first, *rest, **kwargs):
-                    # map(next, *rest) gets the inputs for the next group
-                    # TODO: might be inefficient to do this on every call
-                    args, kwargs = arguments_from_signature(
-                        funcsig, first, *map(next, rest), **kwargs
+                if isinstance(aggcontext, Window):
+                    result = aggcontext.agg(args[0], func, *args, **kwargs)
+                else:
+                    iters = (
+                        (data for _, data in arg)
+                        if isinstance(arg, SeriesGroupBy)
+                        else itertools.repeat(arg)
+                        for arg in args[1:]
                     )
-                    return func(*args, **kwargs)
+                    funcsig = signature(func)
 
-                result = aggcontext.agg(args[0], aggregator, *iters, **kwargs)
+                    def aggregator(first, *rest, **kwargs):
+                        # map(next, *rest) gets the inputs for the next group
+                        # TODO: might be inefficient to do this on every call
+                        args, kwargs = arguments_from_signature(
+                            funcsig, first, *map(next, rest), **kwargs
+                        )
+                        return func(*args, **kwargs)
+
+                    result = aggcontext.agg(
+                        args[0], aggregator, *iters, **kwargs
+                    )
+
                 return result
 
             @functools.wraps(func)

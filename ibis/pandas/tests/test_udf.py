@@ -41,6 +41,11 @@ def my_add(series1, series2, *kwargs):
     return series1 + series2
 
 
+@udf.reduction(['double'], 'double')
+def my_mean(series):
+    return series.mean()
+
+
 @udf.reduction(input_type=[dt.string], output_type=dt.int64)
 def my_string_length_sum(series, **kwargs):
     return (series.str.len() * 2).sum()
@@ -244,10 +249,6 @@ def test_compose_udfs():
 
 
 def test_udaf_window():
-    @udf.reduction(['double'], 'double')
-    def my_mean(series):
-        return series.mean()
-
     df = pd.DataFrame(
         {
             'a': np.arange(4, dtype=float).tolist()
@@ -271,6 +272,53 @@ def test_udaf_window():
     tm.assert_frame_equal(result, expected)
 
 
+def test_udaf_window_multi_params():
+    @udf.reduction(['double', 'double'], 'double')
+    def my_wm(v, w):
+        print("v")
+        print(v)
+        print("w")
+        print(w)
+        return np.average(v, weights=w)
+
+    df = pd.DataFrame(
+        {
+            'a': np.arange(4, 0, dtype=float, step=-1).tolist()
+            + np.random.rand(3).tolist(),
+            'b': np.arange(4, dtype=float).tolist()
+            + np.random.rand(3).tolist(),
+            'c': np.arange(4, dtype=float).tolist()
+            + np.random.rand(3).tolist(),
+            'd': np.repeat(1, 7),
+            'key': list('deefefd'),
+        }
+    )
+    con = ibis.pandas.connect({'df': df})
+    t = con.table('df')
+    window = ibis.trailing_window(2, order_by='a', group_by='key')
+    expr = t.mutate(
+        wm_b=my_wm(t.b, t.d).over(window), wm_c=my_wm(t.c, t.d).over(window)
+    )
+    result = expr.execute().sort_values(['key', 'a'])
+    expected = (
+        df.sort_values(['key', 'a'])
+        .assign(
+            wm_b=lambda df: df.groupby('key')
+            .b.rolling(3, min_periods=1)
+            .mean()
+            .reset_index(level=0, drop=True)
+        )
+        .assign(
+            wm_c=lambda df: df.groupby('key')
+            .c.rolling(3, min_periods=1)
+            .mean()
+            .reset_index(level=0, drop=True)
+        )
+    )
+
+    tm.assert_frame_equal(result, expected)
+
+
 def test_udaf_window_nan():
     df = pd.DataFrame(
         {
@@ -282,7 +330,7 @@ def test_udaf_window_nan():
     con = ibis.pandas.connect({'df': df})
     t = con.table('df')
     window = ibis.trailing_window(2, order_by='a', group_by='key')
-    expr = t.mutate(rolled=t.b.mean().over(window))
+    expr = t.mutate(rolled=my_mean(t.b).over(window))
     result = expr.execute().sort_values(['key', 'a'])
     expected = df.sort_values(['key', 'a']).assign(
         rolled=lambda d: d.groupby('key')
