@@ -8,6 +8,7 @@ Release Notes
    notes for pre-1.0 versions of ibis can be found at :doc:`/release-pre-1.0`
 
 * :release:`1.2.1 <pending>`
+* :bug:`2030` Fix LinuxBuildDocs issue related to semantic_version, fix doc section inside Makefile and skip mysql tzinfo on CI
 * :bug:`2009` Fix pandas backend to treat trailing_window preceding arg as window bound rather than window size (e.g. preceding=0 now indicates current row rather than window size 0)
 * :release:`1.2.0 <2019-06-24>`
 * :feature:`1836` Add new geospatial functions to OmniSciDB backend
