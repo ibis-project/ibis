@@ -13,7 +13,7 @@ for service in $@; do
         add_wait "-wait tcp://omniscidb:6274"
         ;;
     mysql)
-        add_wait "-wait tcp://mysql:3306"
+        add_wait "-wait tcp://mysql:3307"
         ;;
     postgres)
         add_wait "-wait tcp://postgres:5432"

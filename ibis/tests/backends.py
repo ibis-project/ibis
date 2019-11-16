@@ -448,7 +448,7 @@ class MySQL(Backend, RoundHalfToEven):
         user = os.environ.get('IBIS_TEST_MYSQL_USER', 'ibis')
         password = os.environ.get('IBIS_TEST_MYSQL_PASSWORD', 'ibis')
         host = os.environ.get('IBIS_TEST_MYSQL_HOST', 'localhost')
-        port = os.environ.get('IBIS_TEST_MYSQL_PORT', 3306)
+        port = os.environ.get('IBIS_TEST_MYSQL_PORT', 3307)
         database = os.environ.get('IBIS_TEST_MYSQL_DATABASE', 'ibis_testing')
         return ibis.mysql.connect(
             host=host,
