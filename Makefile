@@ -73,19 +73,21 @@ docclean:
 
 builddoc:
 # build the ibis-docs image
-	$(DOCKER_RUN) build ibis ibis-docs
+	$(DOCKER) build ibis ibis-docs
 
 doc: builddoc docclean
 	$(DOCKER_RUN) ibis-docs ping -c 1 impala
+	$(DOCKER_RUN) ibis-docs rm -rf /tmp/docs.ibis-project.org
 	$(DOCKER_RUN) ibis-docs git clone --branch gh-pages https://github.com/ibis-project/docs.ibis-project.org /tmp/docs.ibis-project.org --depth 1
 	$(DOCKER_RUN) ibis-docs find /tmp/docs.ibis-project.org \
 	    -maxdepth 1 \
 	    ! -wholename /tmp/docs.ibis-project.org \
 	    ! -name '*.git' \
+	    ! -name '.' \
 	    ! -name CNAME \
 	    ! -name '*.nojekyll' \
 	    -exec rm -rf {} \;
-	$(DOCKER_RUN) ibis-docs sphinx-build -b html docs/source /tmp/docs.ibis-project.org -W -T -j auto
+	$(DOCKER_RUN) ibis-docs sphinx-build -b html docs/source /tmp/docs.ibis-project.org -W -T
 
 black:
 # check that black formatting would not be applied

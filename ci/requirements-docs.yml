@@ -10,3 +10,5 @@ pyarrow>=0.12
 sphinx=2.0.1
 sphinx-releases
 sphinx_rtd_theme
+# https://github.com/ibis-project/ibis/issues/2027
+semantic_version<2.7
