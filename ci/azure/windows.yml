@@ -89,7 +89,7 @@ jobs:
     - script: '"C:\\Program Files\\MariaDB 10.3\\bin\\mysql" --defaults-extra-file=ci/mysql.conf -u root -e "CREATE OR REPLACE USER ibis@localhost IDENTIFIED BY ''ibis''"'
       displayName: 'Create ibis user and password in MySQL database'
 
-    - script: '"C:\\Program Files\\MariaDB 10.3\\bin\\mysql" -u root -e "GRANT ALL PRIVILEGES ON *.* TO ibis@localhost"'
+    - script: '"C:\\Program Files\\MariaDB 10.3\\bin\\mysql" -u root --port 3307 -e "GRANT ALL PRIVILEGES ON *.* TO ibis@localhost"'
       displayName: 'Setup privileges for ibis user in MySQL'
 
     - script: choco install -y postgresql10 --params '/Password:postgres'
