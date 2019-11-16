@@ -65,7 +65,7 @@ class MySQLClient(alch.AlchemyClient):
         host='localhost',
         user=None,
         password=None,
-        port=3307,
+        port=3306,
         database='mysql',
         url=None,
         driver='pymysql',

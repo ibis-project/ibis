@@ -13,7 +13,7 @@ services:
     image: mariadb:10.2
     hostname: mysql
     ports:
-      - 3307:3307
+      - 3307:3306
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: 1
       MYSQL_DATABASE: ibis_testing
@@ -91,7 +91,7 @@ services:
       KUDU_MASTER: "false"
 
   omniscidb:
-    image: omnisci/core-os-cpu:v5.0.0
+    image: omnisci/core-os-cpu:v4.7.0
     hostname: omniscidb
 
     ports:
@@ -104,7 +104,7 @@ services:
     image: jwilder/dockerize
     command: |
       dockerize -wait tcp://omniscidb:6274
-                -wait tcp://mysql:3307
+                -wait tcp://mysql:3306
                 -wait tcp://postgres:5432
                 -wait tcp://impala:21050
                 -wait tcp://impala:50070

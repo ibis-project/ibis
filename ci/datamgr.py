@@ -420,7 +420,7 @@ def omniscidb(schema, tables, data_directory, **params):
 
 @cli.command()
 @click.option('-h', '--host', default='localhost')
-@click.option('-P', '--port', default=3307, type=int)
+@click.option('-P', '--port', default=3306, type=int)
 @click.option('-u', '--user', default='ibis')
 @click.option('-p', '--password', default='ibis')
 @click.option('-D', '--database', default='ibis_testing')

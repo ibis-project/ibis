@@ -232,12 +232,11 @@ Create a client by passing a connection string or individual parameters to
 
 .. ipython:: python
 
-   con = ibis.mysql.connect(url='mysql+pymysql://ibis:ibis@mysql:3307/ibis_testing')
+   con = ibis.mysql.connect(url='mysql+pymysql://ibis:ibis@mysql/ibis_testing')
    con = ibis.mysql.connect(
        user='ibis',
        password='ibis',
        host='mysql',
-       port=3307,
        database='ibis_testing',
    )
 
