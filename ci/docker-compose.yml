@@ -21,8 +21,6 @@ services:
       MYSQL_PASSWORD: ibis
       # see: https://github.com/docker-library/mariadb/issues/262
       MYSQL_INITDB_SKIP_TZINFO: 1
-    volumes:
-      - ./mysql.conf:/etc/mysql/conf.d/ibis.cnf
 
   impala:
     image: ibisproject/impala:latest
