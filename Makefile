@@ -83,7 +83,7 @@ doc: builddoc docclean
 	    -maxdepth 1 \
 	    ! -wholename /tmp/docs.ibis-project.org \
 	    ! -name '*.git' \
-		! -name '.' \
+        ! -name '.' \
 	    ! -name CNAME \
 	    ! -name '*.nojekyll' \
 	    -exec rm -rf {} \;

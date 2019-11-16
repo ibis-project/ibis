@@ -7,7 +7,7 @@ nbsphinx
 nomkl
 # must pin again otherwise strange things happen
 pyarrow>=0.12
-sphinx
+sphinx=2.0.1
 sphinx-releases
 sphinx_rtd_theme
 # https://github.com/ibis-project/ibis/issues/2027

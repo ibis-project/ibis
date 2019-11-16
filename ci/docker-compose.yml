@@ -91,7 +91,7 @@ services:
       KUDU_MASTER: "false"
 
   omniscidb:
-    image: omnisci/core-os-cpu:v4.8.1
+    image: omnisci/core-os-cpu:v5.0.0
     hostname: omniscidb
 
     ports:
