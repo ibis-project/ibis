@@ -1,4 +1,5 @@
 import tempfile
+from html import escape
 
 import graphviz as gv
 
@@ -42,7 +43,9 @@ def get_type(expr):
 
     return (
         ''.join(
-            '<BR ALIGN="LEFT" />  <I>{}</I>: {}'.format(name, type)
+            '<BR ALIGN="LEFT" />  <I>{}</I>: {}'.format(
+                escape(name), escape(str(type))
+            )
             for name, type in zip(schema.names, schema.types)
         )
         + '<BR ALIGN="LEFT" />'
@@ -53,7 +56,7 @@ def get_label(expr, argname=None):
     import ibis.expr.operations as ops
 
     node = expr.op()
-    typename = get_type(expr)
+    typename = get_type(expr)  # Already an escaped string
     name = type(node).__name__
     nodename = getattr(node, 'name', argname)
     if nodename is not None:
@@ -61,13 +64,13 @@ def get_label(expr, argname=None):
             label_fmt = '<<I>{}</I>: <B>{}</B>{}>'
         else:
             label_fmt = '<<I>{}</I>: <B>{}</B> \u27f6 {}>'
-        label = label_fmt.format(nodename, name, typename)
+        label = label_fmt.format(escape(nodename), escape(name), typename)
     else:
         if isinstance(node, ops.TableNode):
             label_fmt = '<<B>{}</B>{}>'
         else:
             label_fmt = '<<B>{}</B> \u27f6 {}>'
-        label = label_fmt.format(name, typename)
+        label = label_fmt.format(escape(name), typename)
     return label
 
 
