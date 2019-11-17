@@ -8,6 +8,7 @@ Release Notes
    notes for pre-1.0 versions of ibis can be found at :doc:`/release-pre-1.0`
 
 * :release:`1.2.1 <pending>`
+* :support:`2031` Change omniscidb image tag from v4.7.0 to v5.0.0 on docker-compose recipe
 * :bug:`2030` Pin "semantic_version" to "<2.7" in the docs build CI, fix "builddoc" and "doc" section inside "Makefile" and skip mysql tzinfo on CI to allow to run MySQL using docker container on a hard disk drive.
 * :bug:`2009` Fix pandas backend to treat trailing_window preceding arg as window bound rather than window size (e.g. preceding=0 now indicates current row rather than window size 0)
 * :release:`1.2.0 <2019-06-24>`
