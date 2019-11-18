@@ -135,11 +135,14 @@ will have to generate an application-specific password by following this
 You will then use that generated password on the command line for the ``-P``
 argument.
 
+Access the `Ibis "Merging PRs" wiki <https://github.com/ibis-project/ibis/wiki/Merging-PRs>`_ page
+for more information.
 
 Releasing
 ~~~~~~~~~
 
-TODO
+Access the `Ibis "Releasing" wiki <https://github.com/ibis-project/ibis/wiki/Releasing-Ibis>`_ page
+for more information.
 
 
 ***************

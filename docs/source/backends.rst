@@ -27,20 +27,12 @@ Generally speaking these backends also need to handle their own execution.
 They work by translating each node into a string, and passing the generated
 string to the database through a driver API.
 
-Impala
-******
-
-TODO
-
-Clickhouse
-**********
-
-TODO
-
-BigQuery
-********
-
-TODO
+- `Apache Impala <https://impala.apache.org/>`_
+- `Yandex Clickhouse <https://clickhouse.yandex/>`_
+- `Google BigQuery <https://cloud.google.com/bigquery/>`_
+- `Hadoop Distributed File System (HDFS) <https://hadoop.apache.org/>`_
+- `OmniSciDB <https://www.omnisci.com/>`_ (Experimental)
+- `PySpark/Spark SQL <https://spark.apache.org/sql/>`_ (Experimental)
 
 .. _expression_generating_backends:
 
@@ -56,15 +48,9 @@ an expression. These backends tend to execute their expressions directly
 through the driver APIs provided by SQLAlchemy (or one of its transitive
 dependencies).
 
-SQLite
-******
-
-TODO
-
-PostgreSQL
-**********
-
-TODO
+- `PostgreSQL <https://www.postgresql.org/>`_
+- `SQLite <https://www.sqlite.org/>`_
+- `MySQL <https://www.mysql.com/>`_ (Experimental)
 
 .. _direct_execution_backends:
 
@@ -75,7 +61,4 @@ The only existing backend that directly executes ibis expressions is the pandas
 backend. A full description of the implementation can be found in the module
 docstring of the pandas backend located in ``ibis/pandas/execution/core.py``.
 
-Pandas
-******
-
-TODO
+- `Pandas <http://pandas.pydata.org/>`_

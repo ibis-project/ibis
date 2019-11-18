@@ -47,12 +47,16 @@ At this time, Ibis offers some level of support for the following systems:
 
 - `Apache Impala <https://impala.apache.org/>`_
 - `Apache Kudu <https://kudu.apache.org/>`_
+- `Hadoop Distributed File System (HDFS) <https://hadoop.apache.org/>`_
 - `PostgreSQL <https://www.postgresql.org/>`_
+- `MySQL <https://www.mysql.com/>`_ (Experimental)
 - `SQLite <https://www.sqlite.org/>`_
 - `Google BigQuery <https://cloud.google.com/bigquery/>`_
 - `Yandex Clickhouse <https://clickhouse.yandex/>`_
 - Direct execution of ibis expressions against `Pandas
   <http://pandas.pydata.org/>`_ objects
+- `OmniSciDB <https://www.omnisci.com/>`_ (Experimental)
+- `PySpark/Spark SQL <https://spark.apache.org/sql/>`_ (Experimental)
 
 Coming from SQL? Check out :ref:`Ibis for SQL Programmers <sql>`.
 
@@ -69,7 +73,6 @@ SQL engine support needing code contributors:
 
 - `Redshift <https://aws.amazon.com/redshift/>`_
 - `Vertica <https://www.vertica.com/>`_
-- `Spark SQL <https://spark.apache.org/sql/>`_
 - `Presto <https://prestosql.io/>`_
 - `Hive <https://hive.apache.org/>`_
 
