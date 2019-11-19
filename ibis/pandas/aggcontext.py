@@ -222,6 +222,7 @@ import warnings
 
 import numpy as np
 import pandas as pd
+from pandas import Series
 from pandas.core.groupby import SeriesGroupBy
 
 import ibis
@@ -389,13 +390,13 @@ class Window(AggregationContext):
             # multi param UDFs.
 
             # Data is used to compute window bounds for each row.
-            data = grouped_data.obj
+            data = getattr(grouped_data, 'obj', grouped_data)
 
             def create_valid_inputs(grouped_series, valid_window_size):
                 # create a generator for each input series
                 # the generator will yield a slice of the
                 # input series for each valid window
-                series = grouped_series.obj
+                series = getattr(grouped_series, 'obj', grouped_series)
                 for i in valid_window_size.index:
                     yield series[i - valid_window_size[i] + 1 : i + 1]
 
@@ -420,7 +421,7 @@ class Window(AggregationContext):
 
             input_gens = list(
                 create_valid_inputs(arg, valid_window_size)
-                if isinstance(arg, SeriesGroupBy)
+                if isinstance(arg, (Series, SeriesGroupBy))
                 else itertools.repeat(arg)
                 for arg in inputs
             )
