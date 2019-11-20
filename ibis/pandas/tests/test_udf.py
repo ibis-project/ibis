@@ -272,6 +272,44 @@ def test_udaf_window():
     tm.assert_frame_equal(result, expected)
 
 
+def test_udaf_window_interval():
+    @udf.reduction(['double'], 'double')
+    def my_mean(series):
+        return series.mean()
+
+    df = pd.DataFrame(
+        {
+            "time": pd.date_range(
+                start='20190105', end='20190101', freq='-1D'
+            ),
+            "key": [1, 2, 1, 2, 1],
+            "value": np.arange(5),
+        }
+    )
+
+    con = ibis.pandas.connect({'df': df})
+    t = con.table('df')
+    window = ibis.trailing_range_window(
+        ibis.interval(days=2), order_by='time', group_by='key'
+    )
+
+    expr = t.mutate(rolled=my_mean(t.value).over(window))
+
+    result = expr.execute().sort_values(['time', 'key']).reset_index(drop=True)
+    expected = (
+        df.sort_values(['time', 'key'])
+        .set_index('time')
+        .assign(
+            rolled=lambda df: df.groupby('key')
+            .value.rolling('2D', closed='both')
+            .mean()
+            .reset_index(level=0, drop=True)
+        )
+    ).reset_index(drop=False)
+
+    tm.assert_frame_equal(result, expected)
+
+
 def test_udaf_window_multi_params():
     @udf.reduction(['double', 'double'], 'double')
     def my_wm(v, w):

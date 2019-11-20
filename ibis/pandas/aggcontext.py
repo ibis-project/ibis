@@ -383,15 +383,39 @@ class Window(AggregationContext):
 
                 method = operator.methodcaller('apply', sliced_agg, raw=False)
 
+        # get the DataFrame from which the operand originated
+        # (passed in when constructing this context object in
+        # execute_node(ops.WindowOp))
+        parent = self.parent
+        frame = getattr(parent, 'obj', parent)
+        obj = getattr(grouped_data, 'obj', grouped_data)
+        name = obj.name
+        if frame[name] is not obj:
+            name = "{}_{}".format(name, ibis.util.guid())
+            frame[name] = obj
+
+        # set the index to our order_by keys and append it to the existing
+        # index
+        # TODO: see if we can do this in the caller, when the context
+        # is constructed rather than pulling out the data
+        columns = group_by + order_by + [name]
+        indexed_by_ordering = frame.loc[:, columns].set_index(order_by)
+
+        # regroup if needed
+        if group_by:
+            grouped_frame = indexed_by_ordering.groupby(group_by)
+        else:
+            grouped_frame = indexed_by_ordering
+        grouped = grouped_frame[name]
+
+        # perform the per-group rolling operation
+        windowed = self.construct_window(grouped)
+
         if callable(function):
             # Use custom logic to computing rolling window UDF instead of
             # using pandas's rolling function.
             # This is because pandas's rolling function doesn't support
             # multi param UDFs.
-
-            # Data is used to compute window bounds for each row.
-            data = getattr(grouped_data, 'obj', grouped_data)
-
             def create_valid_inputs(grouped_series, valid_window_size):
                 # create a generator for each input series
                 # the generator will yield a slice of the
@@ -402,7 +426,6 @@ class Window(AggregationContext):
 
             # Compute window indices and manually roll
             # over the window
-            windowed = self.construct_window(grouped_data)
             window_size = windowed.apply(len, raw=True)
 
             # If an window has only nan values, we output nan for
@@ -431,41 +454,15 @@ class Window(AggregationContext):
                 for i in valid_window_size.index
             )
             valid_result.index = valid_window_size.index
-            result = pd.Series(np.repeat(None, len(data)))
+            result = pd.Series(np.repeat(None, len(obj)))
             result[mask] = valid_result
-            result.index = data.index
+            result.index = obj.index
             try:
                 return result.astype(self.dtype, copy=False)
             except (TypeError, ValueError):
                 return result
         else:
-            # get the DataFrame from which the operand originated
-            # (passed in when constructing this context object in
-            # execute_node(ops.WindowOp))
-            parent = self.parent
-            frame = getattr(parent, 'obj', parent)
-            obj = getattr(grouped_data, 'obj', grouped_data)
-            name = obj.name
-            if frame[name] is not obj:
-                name = "{}_{}".format(name, ibis.util.guid())
-                frame[name] = obj
 
-            # set the index to our order_by keys and append it to the existing
-            # index
-            # TODO: see if we can do this in the caller, when the context
-            # is constructed rather than pulling out the data
-            columns = group_by + order_by + [name]
-            indexed_by_ordering = frame.loc[:, columns].set_index(order_by)
-
-            # regroup if needed
-            if group_by:
-                grouped_frame = indexed_by_ordering.groupby(group_by)
-            else:
-                grouped_frame = indexed_by_ordering
-            grouped = grouped_frame[name]
-
-            # perform the per-group rolling operation
-            windowed = self.construct_window(grouped)
             with warnings.catch_warnings():
                 warnings.filterwarnings(
                     "ignore", message=".+raw=True.+", category=FutureWarning
