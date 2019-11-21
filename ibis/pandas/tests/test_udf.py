@@ -1,3 +1,5 @@
+import collections
+
 import numpy as np
 import pandas as pd
 import pandas.util.testing as tm
@@ -273,18 +275,19 @@ def test_udaf_window():
 
 
 def test_udaf_window_interval():
-    @udf.reduction(['double'], 'double')
-    def my_mean(series):
-        return series.mean()
-
     df = pd.DataFrame(
-        {
-            "time": pd.date_range(
-                start='20190105', end='20190101', freq='-1D'
-            ),
-            "key": [1, 2, 1, 2, 1],
-            "value": np.arange(5),
-        }
+        collections.OrderedDict(
+            [
+                (
+                    "time",
+                    pd.date_range(
+                        start='20190105', end='20190101', freq='-1D'
+                    ),
+                ),
+                ("key", [1, 2, 1, 2, 1]),
+                ("value", np.arange(5)),
+            ]
+        )
     )
 
     con = ibis.pandas.connect({'df': df})

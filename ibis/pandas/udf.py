@@ -101,6 +101,29 @@ def arguments_from_signature(signature, *args, **kwargs):
     return args, new_kwargs
 
 
+def create_gens_from_args_groupby(args):
+    """ Create generators for each args for groupby udaf.
+
+    If the arg is SeriesGroupBy, return a generator that outputs each group.
+    If the arg is not SeriesGroupBy, return a generator that repeats the arg.
+
+    Parameters
+    ----------
+    args : Tuple[object...]
+
+    Returns
+    -------
+    Tuple[Generator]
+    """
+    iters = (
+        (data for _, data in arg)
+        if isinstance(arg, SeriesGroupBy)
+        else itertools.repeat(arg)
+        for arg in args
+    )
+    return iters
+
+
 @rule_to_python_type.register(dt.Array)
 def array_rule(rule):
     return (list,)
@@ -531,21 +554,19 @@ class udf:
                 #
                 # If the argument is not a SeriesGroupBy then keep
                 # repeating it until all groups are exhausted.
-
                 aggcontext = kwargs.pop('aggcontext', None)
                 assert aggcontext is not None, 'aggcontext is None'
 
                 if isinstance(aggcontext, Window):
+                    # Call the func differently for Window because of
+                    # the custom rolling logic.
                     result = aggcontext.agg(args[0], func, *args, **kwargs)
                 else:
-                    iters = (
-                        (data for _, data in arg)
-                        if isinstance(arg, SeriesGroupBy)
-                        else itertools.repeat(arg)
-                        for arg in args[1:]
-                    )
+                    iters = create_gens_from_args_groupby(args[1:])
                     funcsig = signature(func)
 
+                    # TODO: Unify calling convension here to be more like
+                    # window
                     def aggregator(first, *rest, **kwargs):
                         # map(next, *rest) gets the inputs for the next group
                         # TODO: might be inefficient to do this on every call

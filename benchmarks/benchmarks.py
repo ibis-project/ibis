@@ -203,10 +203,10 @@ class PandasBackend:
         def my_mean(series):
             return series.mean()
 
-        self.low_card_grouped_rolling_udf = my_mean(t.value).over(
+        self.low_card_grouped_rolling_udf_mean = my_mean(t.value).over(
             low_card_rolling_window
         )
-        self.high_card_grouped_rolling_udf = my_mean(t.value).over(
+        self.high_card_grouped_rolling_udf_mean = my_mean(t.value).over(
             high_card_rolling_window
         )
 
@@ -223,6 +223,18 @@ class PandasBackend:
         )
         self.high_card_window_analytics_udf = my_zscore(t.value).over(
             high_card_window
+        )
+
+        @udf.reduction(['double', 'double'], 'double')
+        def my_wm(v, w):
+            return np.average(v, weights=w)
+
+        self.low_card_grouped_rolling_udf_wm = my_wm(t.value, t.value).over(
+            low_card_rolling_window
+        )
+
+        self.high_card_grouped_rolling_udf_wm = my_wm(t.value, t.value).over(
+            low_card_rolling_window
         )
 
     def time_high_cardinality_group_by(self):
@@ -264,5 +276,8 @@ class PandasBackend:
     def time_low_card_window_analytics_udf(self):
         self.low_card_window_analytics_udf.execute()
 
-    def time_high_card_window_analytics_udf(self):
-        self.high_card_window_analytics_udf.execute()
+    def time_high_card_grouped_rolling_udf_wm(self):
+        self.high_card_grouped_rolling_udf_wm.execute()
+
+    def time_low_card_grouped_rolling_udf_wm(self):
+        self.low_card_grouped_rolling_udf_wm.execute()

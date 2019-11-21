@@ -218,11 +218,9 @@ import abc
 import functools
 import itertools
 import operator
-import warnings
 
 import numpy as np
 import pandas as pd
-from pandas import Series
 from pandas.core.groupby import SeriesGroupBy
 
 import ibis
@@ -365,7 +363,6 @@ class Window(AggregationContext):
         else:
             # do mostly the same thing as if we did NOT have a grouping key,
             # but don't call the callable just yet. See below where we call it.
-
             if callable(function):
                 method = operator.methodcaller(
                     'apply', make_applied_function(function, args, kwargs)
@@ -435,9 +432,7 @@ class Window(AggregationContext):
                 drop=True
             )
             mask = ~(raw_window_size.isna())
-            window_size = raw_window_size[~(raw_window_size.isna())].astype(
-                'i8'
-            )
+            window_size = raw_window_size[mask].astype('i8')
             window_size_array = window_size.values
 
             # If there is no args, then the UDF only takes a single
@@ -449,7 +444,7 @@ class Window(AggregationContext):
 
             input_gens = list(
                 create_input_gen(arg, window_size)
-                if isinstance(arg, (Series, SeriesGroupBy))
+                if isinstance(arg, (pd.Series, SeriesGroupBy))
                 else itertools.repeat(arg)
                 for arg in inputs
             )
@@ -465,11 +460,7 @@ class Window(AggregationContext):
             result[mask] = valid_result
             result.index = obj.index
         else:
-            with warnings.catch_warnings():
-                warnings.filterwarnings(
-                    "ignore", message=".+raw=True.+", category=FutureWarning
-                )
-                result = method(windowed)
+            result = method(windowed)
             index = result.index
             result.index = pd.MultiIndex.from_arrays(
                 [frame.index]
