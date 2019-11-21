@@ -416,24 +416,29 @@ class Window(AggregationContext):
             # using pandas's rolling function.
             # This is because pandas's rolling function doesn't support
             # multi param UDFs.
-            def create_valid_inputs(grouped_series, valid_window_size):
+            def create_input_gen(grouped_series, window_size):
                 # create a generator for each input series
                 # the generator will yield a slice of the
                 # input series for each valid window
-                series = getattr(grouped_series, 'obj', grouped_series)
-                for i in valid_window_size.index:
-                    yield series[i - valid_window_size[i] + 1 : i + 1]
+                data = getattr(grouped_series, 'obj', grouped_series).values
+                window_size_array = window_size.values
+                for i in range(len(window_size_array)):
+                    k = window_size.index[i]
+                    yield data[k - window_size_array[i] + 1 : k + 1]
 
             # Compute window indices and manually roll
-            # over the window
-            window_size = windowed.apply(len, raw=True)
-
+            # over the window.
             # If an window has only nan values, we output nan for
             # the window result. This follows pandas rolling apply
             # behavior.
-            window_size = window_size.reset_index(drop=True)
-            mask = ~(window_size.isna())
-            valid_window_size = window_size[~(window_size.isna())].astype('i8')
+            raw_window_size = windowed.apply(len, raw=True).reset_index(
+                drop=True
+            )
+            mask = ~(raw_window_size.isna())
+            window_size = raw_window_size[~(raw_window_size.isna())].astype(
+                'i8'
+            )
+            window_size_array = window_size.values
 
             # If there is no args, then the UDF only takes a single
             # input which is defined by grouped_data
@@ -443,7 +448,7 @@ class Window(AggregationContext):
             inputs = args if len(args) > 0 else [grouped_data]
 
             input_gens = list(
-                create_valid_inputs(arg, valid_window_size)
+                create_input_gen(arg, window_size)
                 if isinstance(arg, (Series, SeriesGroupBy))
                 else itertools.repeat(arg)
                 for arg in inputs
@@ -451,18 +456,15 @@ class Window(AggregationContext):
 
             valid_result = pd.Series(
                 function(*(next(gen) for gen in input_gens))
-                for i in valid_window_size.index
+                for i in range(len(window_size_array))
             )
-            valid_result.index = valid_window_size.index
+
+            valid_result = pd.Series(valid_result)
+            valid_result.index = window_size.index
             result = pd.Series(np.repeat(None, len(obj)))
             result[mask] = valid_result
             result.index = obj.index
-            try:
-                return result.astype(self.dtype, copy=False)
-            except (TypeError, ValueError):
-                return result
         else:
-
             with warnings.catch_warnings():
                 warnings.filterwarnings(
                     "ignore", message=".+raw=True.+", category=FutureWarning
@@ -474,10 +476,11 @@ class Window(AggregationContext):
                 + list(map(index.get_level_values, range(index.nlevels))),
                 names=[frame.index.name] + index.names,
             )
-            try:
-                return result.astype(self.dtype, copy=False)
-            except (TypeError, ValueError):
-                return result
+
+        try:
+            return result.astype(self.dtype, copy=False)
+        except (TypeError, ValueError):
+            return result
 
 
 class Cumulative(Window):

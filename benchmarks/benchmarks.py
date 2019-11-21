@@ -139,7 +139,7 @@ class Compilation(Suite):
 class PandasBackend:
     def setup(self):
         n = 30 * int(2e5)
-        data = pd.DataFrame(
+        self.data = pd.DataFrame(
             {
                 'key': np.random.choice(16000, size=n),
                 'low_card_key': np.random.choice(30, size=n),
@@ -156,7 +156,7 @@ class PandasBackend:
             }
         )
 
-        t = ibis.pandas.connect({'df': data}).table('df')
+        t = ibis.pandas.connect({'df': self.data}).table('df')
 
         self.high_card_group_by = t.groupby(t.key).aggregate(
             avg_value=t.value.mean()

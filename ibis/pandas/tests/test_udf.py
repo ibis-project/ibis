@@ -313,10 +313,6 @@ def test_udaf_window_interval():
 def test_udaf_window_multi_params():
     @udf.reduction(['double', 'double'], 'double')
     def my_wm(v, w):
-        print("v")
-        print(v)
-        print("w")
-        print(w)
         return np.average(v, weights=w)
 
     df = pd.DataFrame(
@@ -373,7 +369,7 @@ def test_udaf_window_nan():
     expected = df.sort_values(['key', 'a']).assign(
         rolled=lambda d: d.groupby('key')
         .b.rolling(3, min_periods=1)
-        .mean()
+        .apply(lambda x: x.mean(), raw=True)
         .reset_index(level=0, drop=True)
     )
     tm.assert_frame_equal(result, expected)
