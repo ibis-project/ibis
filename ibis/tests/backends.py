@@ -1,6 +1,5 @@
 import abc
 import os
-import sys
 from pathlib import Path
 from typing import Any, Callable, Mapping, Optional
 
@@ -347,7 +346,7 @@ class PostgreSQL(Backend, RoundHalfToEven):
 
     @property
     def geo(self) -> Optional[ir.TableExpr]:
-        if sys.version_info >= (3, 6) and 'geo' in self.db.list_tables():
+        if 'geo' in self.db.list_tables():
             return self.db.geo
 
 

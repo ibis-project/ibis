@@ -1,6 +1,4 @@
 """ Tests for geo spatial data types"""
-import sys
-
 import numpy as np
 import pytest
 from numpy import testing
@@ -9,10 +7,6 @@ from pytest import param
 import ibis
 from ibis.tests.backends import OmniSciDB, PostgreSQL
 
-pytestmark = pytest.mark.skipif(
-    sys.version_info < (3, 6),
-    reason='Geo Spatial support available just for Python >= 3.6',
-)
 geopandas = pytest.importorskip('geopandas')
 shapely = pytest.importorskip('shapely')
 shapely_wkt = pytest.importorskip('shapely.wkt')
