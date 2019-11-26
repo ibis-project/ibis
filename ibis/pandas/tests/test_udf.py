@@ -159,7 +159,7 @@ def test_udaf_analytic(con, t, df):
     tm.assert_series_equal(result, expected)
 
 
-def test_udaf_analytic_group_by(con, t, df):
+def test_udaf_analytic_groupby(con, t, df):
     expr = zscore(t.c).over(ibis.window(group_by=t.key))
 
     assert isinstance(expr, ir.ColumnExpr)
