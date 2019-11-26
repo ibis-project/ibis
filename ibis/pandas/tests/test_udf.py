@@ -113,7 +113,7 @@ def test_multiple_argument_udf(con, t, df):
     tm.assert_series_equal(result, expected)
 
 
-def test_multiple_argument_udf_group_by(con, t, df):
+def test_multiple_argument_udf_groupby(con, t, df):
     expr = t.groupby(t.key).aggregate(my_add=my_add(t.b, t.c).sum())
 
     assert isinstance(expr, ir.TableExpr)
