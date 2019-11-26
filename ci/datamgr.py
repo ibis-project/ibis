@@ -1,7 +1,9 @@
 #!/usr/bin/env python
+
 import json
 import logging
 import os
+import sys
 import tempfile
 import warnings
 import zipfile
@@ -241,7 +243,7 @@ def postgres(schema, tables, data_directory, psql_path, plpython, **params):
 
     engine.execute("CREATE SEQUENCE IF NOT EXISTS test_sequence;")
 
-    use_postgis = 'geo' in tables
+    use_postgis = 'geo' in tables and sys.version_info >= (3, 6)
     if use_postgis:
         engine.execute("CREATE EXTENSION IF NOT EXISTS POSTGIS")
 

@@ -14,6 +14,13 @@ jobs:
 
   strategy:
     matrix:
+      py35:
+        PYTHONHASHSEED: "0"
+        PYTHON_MAJOR_VERSION: "3"
+        PYTHON_MINOR_VERSION: "5"
+        PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
+        PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
+        PYTEST_MARK_EXPRESSION: "not udf and not postgis"
       py36:
         PYTHONHASHSEED: "random"
         PYTHON_MAJOR_VERSION: "3"
@@ -72,6 +79,7 @@ jobs:
 
     - bash: docker-compose run ibis black --check .
       displayName: 'Ensure black formatting'
+      condition: ne(variables['PYTHON_NO_DOT_VERSION'], '35')
 
     - bash: |
         sudo mkdir -p /tmp/ibis/test-reports/pytest

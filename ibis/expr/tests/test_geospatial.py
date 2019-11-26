@@ -1,10 +1,17 @@
 """ Tests for geo spatial data types"""
+import sys
+
 import pytest
 
 import ibis
 from ibis.expr.tests.mocks import (
     GeoMockConnectionOmniSciDB,
     GeoMockConnectionPostGIS,
+)
+
+pytestmark = pytest.mark.skipif(
+    sys.version_info < (3, 6),
+    reason='Geo Spatial support available just for Python >= 3.6',
 )
 
 pytest.importorskip('geoalchemy2')

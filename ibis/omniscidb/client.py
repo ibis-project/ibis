@@ -1,11 +1,12 @@
 """Ibis OmniSciDB Client."""
+import sys
+
 import pandas as pd
 import pkg_resources
 import pymapd
 import regex as re
 from pymapd._parsers import _extract_column_details
 from pymapd.cursor import Cursor
-from pymapd.dtypes import TDatumType as pymapd_dtype
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -18,6 +19,11 @@ from ibis.omniscidb.compiler import OmniSciDBDialect, build_ast
 from ibis.sql.compiler import DDL, DML
 from ibis.util import log
 
+if sys.version_info >= (3, 6):
+    from pymapd.dtypes import TDatumType as pymapd_dtype
+else:
+    pymapd_dtype = None
+
 try:
     from cudf.dataframe.dataframe import DataFrame as GPUDataFrame
 except ImportError:
@@ -26,10 +32,12 @@ except ImportError:
 # used to check if geopandas and shapely is available
 FULL_GEO_SUPPORTED = False
 try:
-    import geopandas
-    import shapely.wkt
+    # supported just for python >= 3.6
+    if sys.version_info >= (3, 6):
+        import geopandas
+        import shapely.wkt
 
-    FULL_GEO_SUPPORTED = True
+        FULL_GEO_SUPPORTED = True
 except ImportError:
     ...
 
@@ -1126,6 +1134,10 @@ class OmniSciDBClient(SQLClient):
         -------
         table : TableExpr
         """
+        if pymapd_dtype is None:
+            raise com.UnsupportedOperationError(
+                'This method is available just on Python version >= 3.6.'
+            )
         # Remove `;` + `--` (comment)
         query = re.sub(r'\s*;\s*--', '\n--', query.strip())
         # Remove trailing ;
