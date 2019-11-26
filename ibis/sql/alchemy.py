@@ -1,7 +1,6 @@
 import contextlib
 import functools
 import operator
-import sys
 from typing import List, Optional
 
 import pandas as pd
@@ -27,17 +26,15 @@ import ibis.util as util
 from ibis.client import Database, Query, SQLClient
 from ibis.sql.compiler import Dialect, Select, TableSetFormatter, Union
 
-# Don't support geospatial operations on Python 3.5
 geospatial_supported = False
-if sys.version_info >= (3, 6):
-    try:
-        import geoalchemy2 as ga
-        import geoalchemy2.shape as shape
-        import geopandas
+try:
+    import geoalchemy2 as ga
+    import geoalchemy2.shape as shape
+    import geopandas
 
-        geospatial_supported = True
-    except ImportError:
-        pass
+    geospatial_supported = True
+except ImportError:
+    pass
 
 
 # TODO(cleanup)

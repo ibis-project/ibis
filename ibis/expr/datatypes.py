@@ -5,7 +5,6 @@ import functools
 import itertools
 import numbers
 import re
-import sys
 import typing
 from typing import Any as GenericAny
 from typing import (
@@ -30,10 +29,9 @@ from ibis import util
 
 IS_SHAPELY_AVAILABLE = False
 try:
-    if sys.version_info >= (3, 6):
-        import shapely.geometry
+    import shapely.geometry
 
-        IS_SHAPELY_AVAILABLE = True
+    IS_SHAPELY_AVAILABLE = True
 except ImportError:
     ...
 

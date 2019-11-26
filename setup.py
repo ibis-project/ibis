@@ -16,19 +16,13 @@ See http://docs.ibis-project.org
 VERSION = sys.version_info.major, sys.version_info.minor
 
 impala_requires = ['hdfs>=2.0.16', 'sqlalchemy>=1.1,<1.3.7', 'requests']
-if VERSION == (3, 5):
-    impala_requires.append('impyla<0.14.2')
-else:
-    impala_requires.append('impyla>=0.15.0')
+impala_requires.append('impyla>=0.15.0')
 
 sqlite_requires = ['sqlalchemy>=1.1,<1.3.7']
 postgres_requires = sqlite_requires + ['psycopg2']
 mysql_requires = sqlite_requires + ['pymysql']
 
-if VERSION == (3, 5):
-    omniscidb_requires = ['pymapd>=0.8.3,<0.11.0']
-else:
-    omniscidb_requires = ['pymapd>=0.12.0']
+omniscidb_requires = ['pymapd>=0.12.0']
 kerberos_requires = ['requests-kerberos']
 visualization_requires = ['graphviz']
 clickhouse_requires = [
@@ -38,10 +32,7 @@ clickhouse_requires = [
 bigquery_requires = ['google-cloud-bigquery>=1.0.0', 'pydata-google-auth']
 hdf5_requires = ['tables>=3.0.0']
 
-if VERSION == (3, 5):
-    parquet_requires = ['pyarrow<0.12.0']
-else:
-    parquet_requires = ['pyarrow>=0.12.0']
+parquet_requires = ['pyarrow>=0.12.0']
 spark_requires = ['pyspark>=2.4.3']
 
 geospatial_requires = ['geoalchemy2', 'geopandas', 'shapely']
@@ -62,6 +53,7 @@ all_requires = (
 )
 
 develop_requires = all_requires + [
+    'black',
     'click',
     'pydocstyle==4.0.1',
     'flake8',
@@ -87,11 +79,10 @@ setup(
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     install_requires=install_requires,
-    python_requires='>=3.5',
+    python_requires='>=3.6',
     extras_require={
         'all': all_requires,
-        'develop:python_version > "3.5"': develop_requires + ['black'],
-        'develop:python_version == "3.5"': develop_requires,
+        'develop': develop_requires,
         'impala': impala_requires,
         'kerberos': kerberos_requires,
         'postgres': postgres_requires,
