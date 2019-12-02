@@ -1011,7 +1011,7 @@ class OmniSciDBClient(SQLClient):
                 port=self.port,
                 dbname=name,
                 protocol=self.protocol,
-                session_id=self.session_id,
+                sessionid=self.session_id,
             )
             self.db_name = name
 
