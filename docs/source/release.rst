@@ -8,6 +8,7 @@ Release Notes
    notes for pre-1.0 versions of ibis can be found at :doc:`/release-pre-1.0`
 
 * :release:`1.2.1 <pending>`
+* :feature:`2044` Implemented covariance for bigquery backend
 * :support:`2037` Drop support for Python 3.5
 * :bug:`2023` HTML escape column names and types in png repr.
 * :support:`2031` Change omniscidb image tag from v4.7.0 to v5.0.0 on docker-compose recipe

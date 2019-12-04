@@ -476,6 +476,27 @@ FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
     assert result == expected
 
 
+def test_cov(alltypes):
+    d = alltypes.double_col
+    expr = d.cov(d)
+    result = expr.compile()
+    expected = """\
+SELECT COVAR_SAMP(`double_col`, `double_col`) AS `tmp`
+FROM `ibis-gbq.testing.functional_alltypes`"""
+    assert result == expected
+
+    expr = d.cov(d, how='pop')
+    result = expr.compile()
+    expected = """\
+SELECT COVAR_POP(`double_col`, `double_col`) AS `tmp`
+FROM `ibis-gbq.testing.functional_alltypes`"""
+    assert result == expected
+
+    expr = d.cov(d, how='error')
+    with pytest.raises(ValueError):
+        expr.compile()
+
+
 @pytest.mark.parametrize(
     ('unit', 'expected_unit', 'expected_func'),
     [
