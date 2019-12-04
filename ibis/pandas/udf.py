@@ -9,6 +9,7 @@ import functools
 import itertools
 import operator
 from inspect import Parameter, signature
+from typing import Any, Tuple
 
 import numpy as np
 import pandas as pd
@@ -101,11 +102,26 @@ def arguments_from_signature(signature, *args, **kwargs):
     return args, new_kwargs
 
 
-def create_gens_from_args_groupby(args):
+def create_gens_from_args_groupby(args: Tuple[Any]):
     """ Create generators for each args for groupby udaf.
 
-    If the arg is SeriesGroupBy, return a generator that outputs each group.
-    If the arg is not SeriesGroupBy, return a generator that repeats the arg.
+    Args can be one of two things:
+
+    If the arg is SeriesGroupBy, it's data passed to the user function.
+    In this case, return a generator that outputs each group.
+
+    If the arg is not SeriesGroupBy, it's user specified params.
+    In this case, return a generator that repeats the arg.
+
+    E.g,
+    @udf.aggregation(...)
+    def foo(col, my_arg):
+        if my_arg == 'something':
+            # Do something
+            ...
+        elif my_arg == 'something else':
+            # Do something else
+            ...
 
     Parameters
     ----------

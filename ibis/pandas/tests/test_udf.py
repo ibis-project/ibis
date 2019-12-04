@@ -313,7 +313,7 @@ def test_udaf_window_interval():
     tm.assert_frame_equal(result, expected)
 
 
-def test_udaf_window_multi_params():
+def test_udaf_window_multi_args():
     @udf.reduction(['double', 'double'], 'double')
     def my_wm(v, w):
         return np.average(v, weights=w)
