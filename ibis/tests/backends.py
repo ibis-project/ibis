@@ -423,7 +423,7 @@ class MSSQL(Backend):
         )
         host = os.environ.get('IBIS_TEST_MSSQL_HOST', 'mssql')
         port = os.environ.get('IBIS_TEST_MSSQL_PORT', 1433)
-        database = os.environ.get('IBIS_TEST_MSSQL_DATABASE', 'ibis_testing')
+        database = os.environ.get('IBIS_TEST_MSSQL_DATABASE', 'master')
         return ibis.mssql.connect(
             host=host,
             port=port,
