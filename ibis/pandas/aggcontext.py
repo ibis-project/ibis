@@ -314,6 +314,92 @@ def compute_window_spec_interval(_, expr):
     return pd.tseries.frequencies.to_offset(value)
 
 
+def _window_agg_built_in(
+    frame, windowed, function, max_lookback, *args, **kwargs
+):
+    """Apply window aggregation with built-in aggregators.
+    """
+    assert isinstance(function, str)
+    method = operator.methodcaller(function, *args, **kwargs)
+
+    if max_lookback is not None:
+        agg_method = method
+
+        def sliced_agg(s):
+            return agg_method(s.iloc[-max_lookback:])
+
+        method = operator.methodcaller('apply', sliced_agg, raw=False)
+
+    result = method(windowed)
+    index = result.index
+    result.index = pd.MultiIndex.from_arrays(
+        [frame.index]
+        + list(map(index.get_level_values, range(index.nlevels))),
+        names=[frame.index.name] + index.names,
+    )
+    return result
+
+
+def _window_agg_udf(
+    grouped_data, windowed, function, dtype, max_lookback, *args, **kwargs
+):
+    """Apply window aggregation with UDFs.
+    """
+    # Use custom logic to computing rolling window UDF instead of
+    # using pandas's rolling function.
+    # This is because pandas's rolling function doesn't support
+    # multi param UDFs.
+
+    def create_input_gen(grouped_series, window_size):
+        # create a generator for each input series
+        # the generator will yield a slice of the
+        # input series for each valid window
+        data = getattr(grouped_series, 'obj', grouped_series).values
+        window_size_array = window_size.values
+        for i in range(len(window_size_array)):
+            k = window_size.index[i]
+            yield data[k - window_size_array[i] + 1 : k + 1]
+
+    obj = getattr(grouped_data, 'obj', grouped_data)
+
+    # Compute window indices and manually roll
+    # over the window.
+    # If an window has only nan values, we output nan for
+    # the window result. This follows pandas rolling apply
+    # behavior.
+    raw_window_size = windowed.apply(len, raw=True).reset_index(drop=True)
+    mask = ~(raw_window_size.isna())
+    window_size = raw_window_size[mask].astype('i8')
+    window_size_array = window_size.values
+
+    # If there is no args, then the UDF only takes a single
+    # input which is defined by grouped_data
+    # This is a complication due to the lack of standard
+    # way to pass multiple input Series/SeriesGroupBy
+    # to AggregationContext.agg()
+    inputs = args if len(args) > 0 else [grouped_data]
+
+    input_gens = list(
+        create_input_gen(arg, window_size)
+        if isinstance(arg, (pd.Series, SeriesGroupBy))
+        else itertools.repeat(arg)
+        for arg in inputs
+    )
+
+    valid_result = pd.Series(
+        function(*(next(gen) for gen in input_gens))
+        for i in range(len(window_size_array))
+    )
+
+    valid_result = pd.Series(valid_result)
+    valid_result.index = window_size.index
+    result = pd.Series(index=mask.index, dtype=dtype)
+    result[mask] = valid_result
+    result.index = obj.index
+
+    return result
+
+
 class Window(AggregationContext):
     __slots__ = ('construct_window',)
 
@@ -326,83 +412,6 @@ class Window(AggregationContext):
             max_lookback=kwargs.pop('max_lookback', None),
         )
         self.construct_window = operator.methodcaller(kind, *args, **kwargs)
-
-    def _agg_built_in(self, frame, windowed, function, *args, **kwargs):
-        assert isinstance(function, str)
-        method = operator.methodcaller(function, *args, **kwargs)
-
-        max_lookback = self.max_lookback
-        if max_lookback is not None:
-            agg_method = method
-
-            def sliced_agg(s):
-                return agg_method(s.iloc[-max_lookback:])
-
-            method = operator.methodcaller('apply', sliced_agg, raw=False)
-
-        result = method(windowed)
-        index = result.index
-        result.index = pd.MultiIndex.from_arrays(
-            [frame.index]
-            + list(map(index.get_level_values, range(index.nlevels))),
-            names=[frame.index.name] + index.names,
-        )
-        return result
-
-    def _agg_udf(self, grouped_data, windowed, function, *args, **kwargs):
-        # Use custom logic to computing rolling window UDF instead of
-        # using pandas's rolling function.
-        # This is because pandas's rolling function doesn't support
-        # multi param UDFs.
-
-        def create_input_gen(grouped_series, window_size):
-            # create a generator for each input series
-            # the generator will yield a slice of the
-            # input series for each valid window
-            data = getattr(grouped_series, 'obj', grouped_series).values
-            window_size_array = window_size.values
-            for i in range(len(window_size_array)):
-                k = window_size.index[i]
-                yield data[k - window_size_array[i] + 1 : k + 1]
-
-        obj = getattr(grouped_data, 'obj', grouped_data)
-
-        # Compute window indices and manually roll
-        # over the window.
-        # If an window has only nan values, we output nan for
-        # the window result. This follows pandas rolling apply
-        # behavior.
-        raw_window_size = windowed.apply(len, raw=True).reset_index(drop=True)
-        mask = ~(raw_window_size.isna())
-        window_size = raw_window_size[mask].astype('i8')
-        window_size_array = window_size.values
-
-        # If there is no args, then the UDF only takes a single
-        # input which is defined by grouped_data
-        # This is a complication due to the lack of standard
-        # way to pass multiple input Series/SeriesGroupBy
-        # to AggregationContext.agg()
-        inputs = args if len(args) > 0 else [grouped_data]
-
-        input_gens = list(
-            create_input_gen(arg, window_size)
-            if isinstance(arg, (pd.Series, SeriesGroupBy))
-            else itertools.repeat(arg)
-            for arg in inputs
-        )
-
-        valid_result = pd.Series(
-            function(*(next(gen) for gen in input_gens))
-            for i in range(len(window_size_array))
-        )
-
-        valid_result = pd.Series(valid_result)
-        valid_result.index = window_size.index
-        result = pd.Series(index=mask.index, dtype=self.dtype)
-        result[mask] = valid_result
-        result.index = obj.index
-
-        return result
 
     def agg(self, grouped_data, function, *args, **kwargs):
         # avoid a pandas warning about numpy arrays being passed through
@@ -437,7 +446,7 @@ class Window(AggregationContext):
                     raw=True,
                 )
         else:
-            # get the DataFrame from which the operand originated
+            # Get the DataFrame from which the operand originated
             # (passed in when constructing this context object in
             # execute_node(ops.WindowOp))
             parent = self.parent
@@ -466,12 +475,23 @@ class Window(AggregationContext):
             windowed = self.construct_window(grouped)
 
             if callable(function):
-                result = self._agg_udf(
-                    grouped_data, windowed, function, *args, **kwargs
+                result = _window_agg_udf(
+                    grouped_data,
+                    windowed,
+                    function,
+                    self.dtype,
+                    self.max_lookback,
+                    *args,
+                    **kwargs,
                 )
             else:
-                result = self._agg_built_in(
-                    frame, windowed, function, *args, **kwargs
+                result = _window_agg_built_in(
+                    frame,
+                    windowed,
+                    function,
+                    self.max_lookback,
+                    *args,
+                    **kwargs,
                 )
             try:
                 return result.astype(self.dtype, copy=False)
