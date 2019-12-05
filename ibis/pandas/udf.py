@@ -19,7 +19,7 @@ from pandas.core.groupby import SeriesGroupBy
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.signature as sig
-import ibis.udf
+import ibis.udf.vectorized
 from ibis.pandas.aggcontext import Window
 from ibis.pandas.client import PandasClient
 from ibis.pandas.core import (
@@ -360,7 +360,7 @@ class udf:
         ... def my_string_length(series):
         ...     return series.str.len() * 2
         """
-        return ibis.udf.elementwise(input_type, output_type)
+        return ibis.udf.vectorized.elementwise(input_type, output_type)
 
     @staticmethod
     def reduction(input_type, output_type):

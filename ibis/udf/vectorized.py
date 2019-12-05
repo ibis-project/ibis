@@ -1,6 +1,4 @@
-"""Top level APIs for defining UDFs that works for multiple backends.
-
-This *currently* mimics ibis.pandas.udf API.
+"""Top level APIs for defining vectorized UDFs.
 
 Warning: This is an experimental module and API here can change without notice.
 Do not use directly.
@@ -28,6 +26,8 @@ class UserDefinedFunction(object):
 
 
 def elementwise(input_type, output_type):
+    """ Element wise vectorized UDFs.
+    """
     input_type = list(map(dt.dtype, input_type))
     output_type = dt.dtype(output_type)
 
