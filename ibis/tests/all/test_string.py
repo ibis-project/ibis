@@ -3,7 +3,14 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.tests.backends import Clickhouse, Impala, PostgreSQL, PySpark, Spark
+from ibis.tests.backends import (
+    Clickhouse,
+    Impala,
+    MSSQL,
+    PostgreSQL,
+    PySpark,
+    Spark,
+)
 
 
 def test_string_col_is_unicode(backend, alltypes, df):
@@ -22,6 +29,7 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.string_col.contains('6'),
             lambda t: t.string_col.str.contains('6'),
             id='contains',
+            marks=pytest.mark.xfail_backends((MSSQL,)),
         ),
         param(
             lambda t: t.string_col.like('6%'),

@@ -10,7 +10,7 @@ from pytest import param
 import ibis
 from ibis import literal as L
 from ibis.expr import datatypes as dt
-from ibis.tests.backends import MySQL, OmniSciDB, PostgreSQL
+from ibis.tests.backends import MSSQL, MySQL, OmniSciDB, PostgreSQL
 from ibis.tests.util import assert_equal
 
 try:
@@ -205,6 +205,7 @@ def test_simple_math_functions_columns(
             lambda t: t.double_col.add(1).log(2),
             lambda t: np.log2(t.double_col + 1),
             id='log2',
+            marks=pytest.mark.xfail_backends((MSSQL,)),
         ),
         param(
             lambda t: t.double_col.add(1).ln(),
@@ -310,6 +311,7 @@ def test_binary_arithmetic_operations(backend, alltypes, df, op):
     )
 
 
+@pytest.mark.skip_backends((MSSQL,))
 def test_mod(backend, alltypes, df):
     expr = operator.mod(alltypes.smallint_col, alltypes.smallint_col + 1)
 
@@ -320,6 +322,7 @@ def test_mod(backend, alltypes, df):
     backend.assert_series_equal(result, expected, check_dtype=False)
 
 
+@pytest.mark.skip_backends((MSSQL,))
 def test_floating_mod(backend, alltypes, df):
     if not backend.supports_floating_modulus:
         pytest.skip(

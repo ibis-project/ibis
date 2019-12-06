@@ -2,7 +2,14 @@ import numpy as np
 import pytest
 from pytest import param
 
-from ibis.tests.backends import Clickhouse, MySQL, PostgreSQL, PySpark, SQLite
+from ibis.tests.backends import (
+    Clickhouse,
+    MSSQL,
+    MySQL,
+    PostgreSQL,
+    PySpark,
+    SQLite
+)
 
 
 @pytest.mark.parametrize(
@@ -12,6 +19,7 @@ from ibis.tests.backends import Clickhouse, MySQL, PostgreSQL, PySpark, SQLite
             lambda t, where: t.bool_col.count(where=where),
             lambda t, where: len(t.bool_col[where].dropna()),
             id='count',
+            marks=pytest.mark.skip_backends((MSSQL,)),
         ),
         param(
             lambda t, where: t.bool_col.any(),
@@ -22,11 +30,13 @@ from ibis.tests.backends import Clickhouse, MySQL, PostgreSQL, PySpark, SQLite
             lambda t, where: t.bool_col.notany(),
             lambda t, where: ~t.bool_col.any(),
             id='notany',
+            marks=pytest.mark.xfail_backends((MSSQL,)),
         ),
         param(
             lambda t, where: -t.bool_col.any(),
             lambda t, where: ~t.bool_col.any(),
             id='any_negate',
+            marks=pytest.mark.xfail_backends((MSSQL,)),
         ),
         param(
             lambda t, where: t.bool_col.all(),
@@ -37,11 +47,13 @@ from ibis.tests.backends import Clickhouse, MySQL, PostgreSQL, PySpark, SQLite
             lambda t, where: t.bool_col.notall(),
             lambda t, where: ~t.bool_col.all(),
             id='notall',
+            marks=pytest.mark.xfail_backends((MSSQL,)),
         ),
         param(
             lambda t, where: -t.bool_col.all(),
             lambda t, where: ~t.bool_col.all(),
             id='all_negate',
+            marks=pytest.mark.xfail_backends((MSSQL,)),
         ),
         param(
             lambda t, where: t.double_col.sum(),
@@ -52,6 +64,7 @@ from ibis.tests.backends import Clickhouse, MySQL, PostgreSQL, PySpark, SQLite
             lambda t, where: t.double_col.mean(),
             lambda t, where: t.double_col.mean(),
             id='mean',
+            marks=pytest.mark.xfail_backends((MSSQL,)),
         ),
         param(
             lambda t, where: t.double_col.min(),
@@ -144,6 +157,7 @@ def test_aggregation(
                 .reset_index()
             ),
             id='group_concat',
+            marks=pytest.mark.skip_backends((MSSQL,)),
         )
     ],
 )

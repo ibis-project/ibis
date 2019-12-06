@@ -407,7 +407,7 @@ class OmniSciDB(Backend, RoundAwayFromZero):
         return self.db.geo
 
 
-class MSSQL(Backend):
+class MSSQL(Backend, RoundAwayFromZero):
     check_dtype = False
     supports_window_operations = False
 

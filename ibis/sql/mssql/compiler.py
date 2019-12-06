@@ -70,45 +70,9 @@ def _string_find(t, expr):
 
 
 # Numerical
-def _log(t, expr):
-    arg, base = expr.op().args
-    sa_arg = t.translate(arg)
-    if base is not None:
-        sa_base = t.translate(base)
-        return sa.cast(
-            sa.func.log(
-                sa.cast(sa_arg, sa.NUMERIC), sa.cast(sa_base, sa.NUMERIC)
-            ),
-            t.get_sqla_type(expr.type()),
-        )
-    return sa.func.log(sa_arg)
-
-
 def _floor_divide(t, expr):
     left, right = map(t.translate, expr.op().args)
     return sa.func.floor(left / right)
-
-
-# Date & Datetimes
-_date_units = {
-    'Y': 'YEAR',
-    'Q': 'QUARTER',
-    'W': 'WEEK',
-    'M': 'MONTH',
-    'D': 'DAY',
-}
-
-
-_timestamp_units = {
-    'us': 'MICROSECOND',
-    'ms': 'MILLISECOND',
-    's': 'SECOND',
-    'm': 'MINUTE',
-    'h': 'HOUR',
-}
-
-_time_units = _timestamp_units.copy()
-_timestamp_units.update(_date_units)
 
 
 def _extract(fmt):
@@ -124,28 +88,12 @@ def _extract(fmt):
     return translator
 
 
-def _truncate(units):
-    def truncator(t, expr):
-        arg, unit = expr.op().args
-        sa_arg = t.translate(arg)
-        valid_unit = units.get(unit)
-        return sa.func.dateadd(
-            sa.literal_column(valid_unit),
-            sa.func.datediff(
-                sa.literal_column(valid_unit),
-                0,
-                sa_arg),
-            0)
-
-    return truncator
-
-
 _operation_registry = alch._operation_registry.copy()
-
 
 _operation_registry.update(
     {
         # aggregate methods
+        ops.Count: _reduction(sa.func.count),
         ops.Max: _reduction('max'),
         ops.Min: _reduction('min'),
         ops.Sum: _reduction('sum'),
@@ -170,13 +118,8 @@ _operation_registry.update(
         ops.Atan: unary(sa.func.atan),
         ops.Ceil: unary(sa.func.ceiling),
         ops.Cos: unary(sa.func.cos),
-        ops.Exp: unary(sa.func.exp),
         ops.Floor: unary(sa.func.floor),
         ops.FloorDivide: _floor_divide,
-        ops.Ln: unary(sa.func.log),
-        ops.Log10: unary(sa.func.log10),
-        ops.Log2: unary(lambda x: sa.func.log(x, 2)),
-        ops.Log: _log,
         ops.Power: fixed_arity(sa.func.power, 2),
         ops.Sign: unary(sa.func.sign),
         ops.Sin: unary(sa.func.sin),
@@ -184,7 +127,6 @@ _operation_registry.update(
         ops.Tan: unary(sa.func.tan),
         # timestamp methods
         ops.TimestampNow: fixed_arity(sa.func.GETDATE, 0),
-        ops.TimestampTruncate: _truncate(_timestamp_units),
         ops.ExtractYear: _extract('year'),
         ops.ExtractMonth: _extract('month'),
         ops.ExtractDay: _extract('day'),
@@ -197,10 +139,23 @@ _operation_registry.update(
 
 
 _unsupported_ops = [
+    # standard operations
+    ops.NotContains,
+    ops.NullIf,
+    ops.NotAny,
     # miscellaneous
     ops.Least,
     ops.Greatest,
+    # numeric
+    ops.Round,
+    ops.Log2,
+    ops.Ln,
+    ops.Log10,
+    ops.Log,
+    ops.Exp,
+    ops.Modulus,
     # string
+    ops.Contains,
     ops.LPad,
     ops.RPad,
     ops.Capitalize,
@@ -214,6 +169,8 @@ _unsupported_ops = [
     ops.CumulativeMin,
     ops.CumulativeMean,
     ops.CumulativeSum,
+    # datetime methods
+    ops.TimestampTruncate,
 ]
 
 
