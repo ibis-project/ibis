@@ -330,9 +330,10 @@ def _window_agg_built_in(
     method = operator.methodcaller(function, *args, **kwargs)
 
     if max_lookback is not None:
+        agg_method = method
 
         def sliced_agg(s):
-            return method(s.iloc[-max_lookback:], *args, **kwargs)
+            return agg_method(s.iloc[-max_lookback:])
 
         method = operator.methodcaller('apply', sliced_agg, raw=False)
 
