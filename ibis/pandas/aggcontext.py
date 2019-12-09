@@ -327,15 +327,14 @@ def _window_agg_built_in(
     """Apply window aggregation with built-in aggregators.
     """
     assert isinstance(function, str)
+    method = operator.methodcaller(function, *args, **kwargs)
 
     if max_lookback is not None:
 
         def sliced_agg(s):
-            return function(s.iloc[-max_lookback:], *args, **kwargs)
+            return method(s.iloc[-max_lookback:], *args, **kwargs)
 
         method = operator.methodcaller('apply', sliced_agg, raw=False)
-    else:
-        method = operator.methodcaller(function, *args, **kwargs)
 
     result = method(windowed)
     index = result.index

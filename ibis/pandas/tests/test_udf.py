@@ -259,7 +259,7 @@ def test_compose_udfs(t2, df2):
 
 def test_udaf_window(t2, df2):
     window = ibis.trailing_window(2, order_by='a', group_by='key')
-    expr = t.mutate(rolled=my_mean(t.b).over(window))
+    expr = t2.mutate(rolled=my_mean(t2.b).over(window))
     result = expr.execute().sort_values(['key', 'a'])
     expected = df2.sort_values(['key', 'a']).assign(
         rolled=lambda df: df.groupby('key')
