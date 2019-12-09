@@ -218,7 +218,9 @@ import abc
 import functools
 import itertools
 import operator
+from typing import Any, Callable, Dict, Iterator, Tuple
 
+import numpy as np
 import pandas as pd
 from pandas.core.groupby import SeriesGroupBy
 
@@ -315,20 +317,25 @@ def compute_window_spec_interval(_, expr):
 
 
 def _window_agg_built_in(
-    frame, windowed, function, max_lookback, *args, **kwargs
-):
+    frame: pd.DataFrame,
+    windowed: pd.core.window._Window,
+    function: str,
+    max_lookback: int,
+    *args: Tuple[Any],
+    **kwargs: Dict[str, Any]
+) -> pd.Series:
     """Apply window aggregation with built-in aggregators.
     """
     assert isinstance(function, str)
-    method = operator.methodcaller(function, *args, **kwargs)
 
     if max_lookback is not None:
-        agg_method = method
 
         def sliced_agg(s):
-            return agg_method(s.iloc[-max_lookback:])
+            return function(s.iloc[-max_lookback:], *args, **kwargs)
 
         method = operator.methodcaller('apply', sliced_agg, raw=False)
+    else:
+        method = operator.methodcaller(function, *args, **kwargs)
 
     result = method(windowed)
     index = result.index
@@ -341,16 +348,26 @@ def _window_agg_built_in(
 
 
 def _window_agg_udf(
-    grouped_data, windowed, function, dtype, max_lookback, *args, **kwargs
-):
+    grouped_data: pd.core.groupby.generic.SeriesGroupBy,
+    windowed: pd.core.window._Window,
+    function: Callable,
+    dtype: np.dtype,
+    max_lookback: int,
+    *args: Tuple[Any],
+    **kwargs: Dict[str, Any]
+) -> pd.Series:
     """Apply window aggregation with UDFs.
-    """
-    # Use custom logic to computing rolling window UDF instead of
-    # using pandas's rolling function.
-    # This is because pandas's rolling function doesn't support
-    # multi param UDFs.
 
-    def create_input_gen(grouped_series, window_size):
+    Notes:
+    Use custom logic to computing rolling window UDF instead of
+    using pandas's rolling function.
+    This is because pandas's rolling function doesn't support
+    multi param UDFs.
+    """
+
+    def create_input_iter(
+        grouped_series: pd.core.groupby.generic.SeriesGroupBy, window_size: int
+    ) -> Iterator[np.ndarray]:
         # create a generator for each input series
         # the generator will yield a slice of the
         # input series for each valid window
@@ -379,15 +396,15 @@ def _window_agg_udf(
     # to AggregationContext.agg()
     inputs = args if len(args) > 0 else [grouped_data]
 
-    input_gens = list(
-        create_input_gen(arg, window_size)
+    input_iters = list(
+        create_input_iter(arg, window_size)
         if isinstance(arg, (pd.Series, SeriesGroupBy))
         else itertools.repeat(arg)
         for arg in inputs
     )
 
     valid_result = pd.Series(
-        function(*(next(gen) for gen in input_gens))
+        function(*(next(gen) for gen in input_iters))
         for i in range(len(window_size_array))
     )
 
@@ -454,7 +471,7 @@ class Window(AggregationContext):
             obj = getattr(grouped_data, 'obj', grouped_data)
             name = obj.name
             if frame[name] is not obj:
-                name = "{}_{}".format(name, ibis.util.guid())
+                name = f"{name}_{ibis.util.guid()}"
                 frame[name] = obj
 
             # set the index to our order_by keys and append it to the existing
@@ -462,7 +479,7 @@ class Window(AggregationContext):
             # TODO: see if we can do this in the caller, when the context
             # is constructed rather than pulling out the data
             columns = group_by + order_by + [name]
-            indexed_by_ordering = frame.loc[:, columns].set_index(order_by)
+            indexed_by_ordering = frame[columns].set_index(order_by)
 
             # regroup if needed
             if group_by:

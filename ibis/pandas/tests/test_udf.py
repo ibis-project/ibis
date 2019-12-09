@@ -24,13 +24,31 @@ def df():
 
 
 @pytest.fixture
-def con(df):
-    return ibis.pandas.connect({'df': df})
+def df2():
+    return pd.DataFrame(
+        {
+            'a': np.arange(4, dtype=float).tolist()
+            + np.random.rand(3).tolist(),
+            'b': np.arange(4, dtype=float).tolist()
+            + np.random.rand(3).tolist(),
+            'key': list('ddeefff'),
+        }
+    )
+
+
+@pytest.fixture
+def con(df, df2):
+    return ibis.pandas.connect({'df': df, 'df2': df2})
 
 
 @pytest.fixture
 def t(con):
     return con.table('df')
+
+
+@pytest.fixture
+def t2(con):
+    return con.table('df2')
 
 
 @udf.elementwise(input_type=['string'], output_type='int64')
@@ -232,40 +250,18 @@ def test_udf_parameter_mismatch():
             pass
 
 
-def test_compose_udfs():
-    df = pd.DataFrame(
-        {
-            'a': np.arange(4, dtype=float).tolist()
-            + np.random.rand(3).tolist(),
-            'b': np.arange(4, dtype=float).tolist()
-            + np.random.rand(3).tolist(),
-            'key': list('ddeefff'),
-        }
-    )
-    con = ibis.pandas.connect({'df': df})
-    t = con.table('df')
-    expr = times_two(add_one(t.a))
+def test_compose_udfs(t2, df2):
+    expr = times_two(add_one(t2.a))
     result = expr.execute()
-    expected = df.a.add(1.0).mul(2.0)
+    expected = df2.a.add(1.0).mul(2.0)
     tm.assert_series_equal(expected, result)
 
 
-def test_udaf_window():
-    df = pd.DataFrame(
-        {
-            'a': np.arange(4, dtype=float).tolist()
-            + np.random.rand(3).tolist(),
-            'b': np.arange(4, dtype=float).tolist()
-            + np.random.rand(3).tolist(),
-            'key': list('ddeefff'),
-        }
-    )
-    con = ibis.pandas.connect({'df': df})
-    t = con.table('df')
+def test_udaf_window(t2, df2):
     window = ibis.trailing_window(2, order_by='a', group_by='key')
     expr = t.mutate(rolled=my_mean(t.b).over(window))
     result = expr.execute().sort_values(['key', 'a'])
-    expected = df.sort_values(['key', 'a']).assign(
+    expected = df2.sort_values(['key', 'a']).assign(
         rolled=lambda df: df.groupby('key')
         .b.rolling(3, min_periods=1)
         .mean()
@@ -313,7 +309,9 @@ def test_udaf_window_interval():
     tm.assert_frame_equal(result, expected)
 
 
-def test_udaf_window_multi_args():
+def test_multiple_argument_udaf_window():
+    # PR 2035
+
     @udf.reduction(['double', 'double'], 'double')
     def my_wm(v, w):
         return np.average(v, weights=w)
