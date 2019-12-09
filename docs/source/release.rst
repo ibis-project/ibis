@@ -9,6 +9,7 @@ Release Notes
 
 * :release:`1.2.1 <pending>`
 * :feature:`2044` Implemented covariance for bigquery backend
+* :bug:`2041` Change pymapd connection parameter from "session_id" to "sessionid"
 * :support:`2037` Drop support for Python 3.5
 * :bug:`2023` HTML escape column names and types in png repr.
 * :support:`2031` Change omniscidb image tag from v4.7.0 to v5.0.0 on docker-compose recipe
