@@ -65,6 +65,10 @@ testfast:
 	PYTHONHASHSEED=${PYTHONHASHSEED} $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not (udf or impala or hdfs or bigquery)' -k 'not test_import_time' \
 	    --doctest-modules --doctest-ignore-import-errors ${PYTEST_OPTIONS}
 
+testpandas:
+	PYTHONHASHSEED=${PYTHONHASHSEED} $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'pandas' -k 'not test_import_time' \
+	    --doctest-modules --doctest-ignore-import-errors ${PYTEST_OPTIONS}
+
 testspark:
 	PYTHONHASHSEED=${PYTHONHASHSEED} $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'pyspark' -k 'not test_import_time' \
 	    --doctest-modules --doctest-ignore-import-errors ${PYTEST_OPTIONS}
