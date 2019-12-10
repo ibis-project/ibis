@@ -222,7 +222,6 @@ from typing import Any, Callable, Dict, Iterator, Tuple, Union
 
 import numpy as np
 import pandas as pd
-from pandas import Series
 from pandas.core.groupby import SeriesGroupBy
 
 import ibis
@@ -393,25 +392,25 @@ def _window_agg_udf(
     # If there is no args, then the UDF only takes a single
     # input which is defined by grouped_data
     # This is a complication due to the lack of standard
-    # way to pass multiple input Series/SeriesGroupBy
+    # way to pass multiple input pd.Series/SeriesGroupBy
     # to AggregationContext.agg()
     inputs = args if len(args) > 0 else [grouped_data]
 
     input_iters = list(
         create_input_iter(arg, window_size)
-        if isinstance(arg, (Series, SeriesGroupBy))
+        if isinstance(arg, (pd.Series, SeriesGroupBy))
         else itertools.repeat(arg)
         for arg in inputs
     )
 
-    valid_result = Series(
+    valid_result = pd.Series(
         function(*(next(gen) for gen in input_iters))
         for i in range(len(window_size_array))
     )
 
-    valid_result = Series(valid_result)
+    valid_result = pd.Series(valid_result)
     valid_result.index = window_size.index
-    result = Series(index=mask.index, dtype=dtype)
+    result = pd.Series(index=mask.index, dtype=dtype)
     result[mask] = valid_result
     result.index = obj.index
 
@@ -433,11 +432,11 @@ class Window(AggregationContext):
 
     def agg(
         self,
-        grouped_data: Union[Series, SeriesGroupBy],
+        grouped_data: Union[pd.Series, SeriesGroupBy],
         function: Union[str, Callable],
         *args: Tuple[Any],
         **kwargs: Dict[str, Any]
-    ) -> Series:
+    ) -> pd.Series:
         # avoid a pandas warning about numpy arrays being passed through
         # directly
         group_by = self.group_by
@@ -479,7 +478,7 @@ class Window(AggregationContext):
             name = obj.name
             if frame[name] is not obj:
                 name = f"{name}_{ibis.util.guid()}"
-                frame = frame.assign(name=obj)
+                frame = frame.assign(**{name: obj})
 
             # set the index to our order_by keys and append it to the existing
             # index
