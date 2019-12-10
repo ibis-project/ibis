@@ -216,10 +216,13 @@ Ibis
 
 import abc
 import functools
+import itertools
 import operator
-import warnings
+from typing import Any, Callable, Dict, Iterator, Tuple, Union
 
+import numpy as np
 import pandas as pd
+from pandas.core.groupby import SeriesGroupBy
 
 import ibis
 import ibis.common.exceptions as com
@@ -313,6 +316,107 @@ def compute_window_spec_interval(_, expr):
     return pd.tseries.frequencies.to_offset(value)
 
 
+def _window_agg_built_in(
+    frame: pd.DataFrame,
+    windowed: pd.core.window._Window,
+    function: str,
+    max_lookback: int,
+    *args: Tuple[Any],
+    **kwargs: Dict[str, Any]
+) -> pd.Series:
+    """Apply window aggregation with built-in aggregators.
+    """
+    assert isinstance(function, str)
+    method = operator.methodcaller(function, *args, **kwargs)
+
+    if max_lookback is not None:
+        agg_method = method
+
+        def sliced_agg(s):
+            return agg_method(s.iloc[-max_lookback:])
+
+        method = operator.methodcaller('apply', sliced_agg, raw=False)
+
+    result = method(windowed)
+    index = result.index
+    result.index = pd.MultiIndex.from_arrays(
+        [frame.index]
+        + list(map(index.get_level_values, range(index.nlevels))),
+        names=[frame.index.name] + index.names,
+    )
+    return result
+
+
+def _window_agg_udf(
+    grouped_data: SeriesGroupBy,
+    windowed: pd.core.window._Window,
+    function: Callable,
+    dtype: np.dtype,
+    max_lookback: int,
+    *args: Tuple[Any],
+    **kwargs: Dict[str, Any]
+) -> pd.Series:
+    """Apply window aggregation with UDFs.
+
+    Notes:
+    Use custom logic to computing rolling window UDF instead of
+    using pandas's rolling function.
+    This is because pandas's rolling function doesn't support
+    multi param UDFs.
+    """
+
+    def create_input_iter(
+        grouped_series: SeriesGroupBy, window_size: int
+    ) -> Iterator[np.ndarray]:
+        # create a generator for each input series
+        # the generator will yield a slice of the
+        # input series for each valid window
+        data = getattr(grouped_series, 'obj', grouped_series).values
+        window_size_array = window_size.values
+        for i in range(len(window_size_array)):
+            k = window_size.index[i]
+            yield data[k - window_size_array[i] + 1 : k + 1]
+
+    obj = getattr(grouped_data, 'obj', grouped_data)
+
+    # Compute window indices and manually roll
+    # over the window.
+    # If an window has only nan values, we output nan for
+    # the window result. This follows pandas rolling apply
+    # behavior.
+    raw_window_size = windowed.apply(len, raw=True).reset_index(drop=True)
+    mask = ~(raw_window_size.isna())
+    window_size = raw_window_size[mask].astype('i8')
+    window_size_array = window_size.values
+
+    # If there is no args, then the UDF only takes a single
+    # input which is defined by grouped_data
+    # This is a complication due to the lack of standard
+    # way to pass multiple input pd.Series/SeriesGroupBy
+    # to AggregationContext.agg()
+    inputs = args if len(args) > 0 else [grouped_data]
+
+    input_iters = list(
+        create_input_iter(arg, window_size)
+        if isinstance(arg, (pd.Series, SeriesGroupBy))
+        else itertools.repeat(arg)
+        for arg in inputs
+    )
+
+    valid_result = pd.Series(
+        function(*(next(gen) for gen in input_iters))
+        for i in range(len(window_size_array))
+    )
+
+    valid_result = pd.Series(valid_result)
+    valid_result.index = window_size.index
+    result = pd.Series(index=mask.index, dtype=dtype)
+    result[mask] = valid_result
+    result.index = obj.index
+
+    return result
+
+
 class Window(AggregationContext):
     __slots__ = ('construct_window',)
 
@@ -326,7 +430,13 @@ class Window(AggregationContext):
         )
         self.construct_window = operator.methodcaller(kind, *args, **kwargs)
 
-    def agg(self, grouped_data, function, *args, **kwargs):
+    def agg(
+        self,
+        grouped_data: Union[pd.Series, SeriesGroupBy],
+        function: Union[str, Callable],
+        *args: Tuple[Any],
+        **kwargs: Dict[str, Any]
+    ) -> pd.Series:
         # avoid a pandas warning about numpy arrays being passed through
         # directly
         group_by = self.group_by
@@ -359,67 +469,57 @@ class Window(AggregationContext):
                     raw=True,
                 )
         else:
-            # do mostly the same thing as if we did NOT have a grouping key,
-            # but don't call the callable just yet. See below where we call it.
+            # Get the DataFrame from which the operand originated
+            # (passed in when constructing this context object in
+            # execute_node(ops.WindowOp))
+            parent = self.parent
+            frame = getattr(parent, 'obj', parent)
+            obj = getattr(grouped_data, 'obj', grouped_data)
+            name = obj.name
+            if frame[name] is not obj:
+                name = f"{name}_{ibis.util.guid()}"
+                frame = frame.assign(**{name: obj})
+
+            # set the index to our order_by keys and append it to the existing
+            # index
+            # TODO: see if we can do this in the caller, when the context
+            # is constructed rather than pulling out the data
+            columns = group_by + order_by + [name]
+            indexed_by_ordering = frame[columns].set_index(order_by)
+
+            # regroup if needed
+            if group_by:
+                grouped_frame = indexed_by_ordering.groupby(group_by)
+            else:
+                grouped_frame = indexed_by_ordering
+            grouped = grouped_frame[name]
+
+            # perform the per-group rolling operation
+            windowed = self.construct_window(grouped)
+
             if callable(function):
-                method = operator.methodcaller(
-                    'apply', make_applied_function(function, args, kwargs)
+                result = _window_agg_udf(
+                    grouped_data,
+                    windowed,
+                    function,
+                    self.dtype,
+                    self.max_lookback,
+                    *args,
+                    **kwargs,
                 )
             else:
-                assert isinstance(function, str)
-                method = operator.methodcaller(function, *args, **kwargs)
-
-            max_lookback = self.max_lookback
-            if max_lookback is not None:
-                agg_method = method
-
-                def sliced_agg(s):
-                    return agg_method(s.iloc[-max_lookback:])
-
-                method = operator.methodcaller('apply', sliced_agg, raw=False)
-
-        # get the DataFrame from which the operand originated (passed in when
-        # constructing this context object in execute_node(ops.WindowOp))
-        parent = self.parent
-        frame = getattr(parent, 'obj', parent)
-        obj = getattr(grouped_data, 'obj', grouped_data)
-
-        name = obj.name
-        if frame[name] is not obj:
-            name = "{}_{}".format(name, ibis.util.guid())
-            frame[name] = obj
-
-        # set the index to our order_by keys and append it to the existing
-        # index
-        # TODO: see if we can do this in the caller, when the context
-        # is constructed rather than pulling out the data
-        columns = group_by + order_by + [name]
-        indexed_by_ordering = frame.loc[:, columns].set_index(order_by)
-
-        # regroup if needed
-        if group_by:
-            grouped_frame = indexed_by_ordering.groupby(group_by)
-        else:
-            grouped_frame = indexed_by_ordering
-        grouped = grouped_frame[name]
-
-        # perform the per-group rolling operation
-        windowed = self.construct_window(grouped)
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "ignore", message=".+raw=True.+", category=FutureWarning
-            )
-            result = method(windowed)
-        index = result.index
-        result.index = pd.MultiIndex.from_arrays(
-            [frame.index]
-            + list(map(index.get_level_values, range(index.nlevels))),
-            names=[frame.index.name] + index.names,
-        )
-        try:
-            return result.astype(self.dtype, copy=False)
-        except (TypeError, ValueError):
-            return result
+                result = _window_agg_built_in(
+                    frame,
+                    windowed,
+                    function,
+                    self.max_lookback,
+                    *args,
+                    **kwargs,
+                )
+            try:
+                return result.astype(self.dtype, copy=False)
+            except (TypeError, ValueError):
+                return result
 
 
 class Cumulative(Window):

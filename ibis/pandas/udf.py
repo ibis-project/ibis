@@ -9,6 +9,7 @@ import functools
 import itertools
 import operator
 from inspect import Parameter, signature
+from typing import Any, Tuple
 
 import numpy as np
 import pandas as pd
@@ -18,6 +19,7 @@ from pandas.core.groupby import SeriesGroupBy
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.signature as sig
+from ibis.pandas.aggcontext import Window
 from ibis.pandas.core import (
     date_types,
     time_types,
@@ -98,6 +100,44 @@ def arguments_from_signature(signature, *args, **kwargs):
         }
     }
     return args, new_kwargs
+
+
+def create_gens_from_args_groupby(args: Tuple[Any]):
+    """ Create generators for each args for groupby udaf.
+
+    Args can be one of two things:
+
+    If the arg is SeriesGroupBy, it's data passed to the user function.
+    In this case, return a generator that outputs each group.
+
+    If the arg is not SeriesGroupBy, it's user specified params.
+    In this case, return a generator that repeats the arg.
+
+    E.g,
+    @udf.aggregation(...)
+    def foo(col, my_arg):
+        if my_arg == 'something':
+            # Do something
+            ...
+        elif my_arg == 'something else':
+            # Do something else
+            ...
+
+    Parameters
+    ----------
+    args : Tuple[object...]
+
+    Returns
+    -------
+    Tuple[Generator]
+    """
+    iters = (
+        (data for _, data in arg)
+        if isinstance(arg, SeriesGroupBy)
+        else itertools.repeat(arg)
+        for arg in args
+    )
+    return iters
 
 
 @rule_to_python_type.register(dt.Array)
@@ -532,23 +572,29 @@ class udf:
                 # repeating it until all groups are exhausted.
                 aggcontext = kwargs.pop('aggcontext', None)
                 assert aggcontext is not None, 'aggcontext is None'
-                iters = (
-                    (data for _, data in arg)
-                    if isinstance(arg, SeriesGroupBy)
-                    else itertools.repeat(arg)
-                    for arg in args[1:]
-                )
-                funcsig = signature(func)
 
-                def aggregator(first, *rest, **kwargs):
-                    # map(next, *rest) gets the inputs for the next group
-                    # TODO: might be inefficient to do this on every call
-                    args, kwargs = arguments_from_signature(
-                        funcsig, first, *map(next, rest), **kwargs
+                if isinstance(aggcontext, Window):
+                    # Call the func differently for Window because of
+                    # the custom rolling logic.
+                    result = aggcontext.agg(args[0], func, *args, **kwargs)
+                else:
+                    iters = create_gens_from_args_groupby(args[1:])
+                    funcsig = signature(func)
+
+                    # TODO: Unify calling convension here to be more like
+                    # window
+                    def aggregator(first, *rest, **kwargs):
+                        # map(next, *rest) gets the inputs for the next group
+                        # TODO: might be inefficient to do this on every call
+                        args, kwargs = arguments_from_signature(
+                            funcsig, first, *map(next, rest), **kwargs
+                        )
+                        return func(*args, **kwargs)
+
+                    result = aggcontext.agg(
+                        args[0], aggregator, *iters, **kwargs
                     )
-                    return func(*args, **kwargs)
 
-                result = aggcontext.agg(args[0], aggregator, *iters, **kwargs)
                 return result
 
             @functools.wraps(func)
