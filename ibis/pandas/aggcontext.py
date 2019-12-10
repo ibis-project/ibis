@@ -218,10 +218,11 @@ import abc
 import functools
 import itertools
 import operator
-from typing import Any, Callable, Dict, Iterator, Tuple
+from typing import Any, Callable, Dict, Iterator, Tuple, Union
 
 import numpy as np
 import pandas as pd
+from pandas import Series
 from pandas.core.groupby import SeriesGroupBy
 
 import ibis
@@ -348,7 +349,7 @@ def _window_agg_built_in(
 
 
 def _window_agg_udf(
-    grouped_data: pd.core.groupby.generic.SeriesGroupBy,
+    grouped_data: SeriesGroupBy,
     windowed: pd.core.window._Window,
     function: Callable,
     dtype: np.dtype,
@@ -366,7 +367,7 @@ def _window_agg_udf(
     """
 
     def create_input_iter(
-        grouped_series: pd.core.groupby.generic.SeriesGroupBy, window_size: int
+        grouped_series: SeriesGroupBy, window_size: int
     ) -> Iterator[np.ndarray]:
         # create a generator for each input series
         # the generator will yield a slice of the
@@ -398,19 +399,19 @@ def _window_agg_udf(
 
     input_iters = list(
         create_input_iter(arg, window_size)
-        if isinstance(arg, (pd.Series, SeriesGroupBy))
+        if isinstance(arg, (Series, SeriesGroupBy))
         else itertools.repeat(arg)
         for arg in inputs
     )
 
-    valid_result = pd.Series(
+    valid_result = Series(
         function(*(next(gen) for gen in input_iters))
         for i in range(len(window_size_array))
     )
 
-    valid_result = pd.Series(valid_result)
+    valid_result = Series(valid_result)
     valid_result.index = window_size.index
-    result = pd.Series(index=mask.index, dtype=dtype)
+    result = Series(index=mask.index, dtype=dtype)
     result[mask] = valid_result
     result.index = obj.index
 
@@ -430,7 +431,13 @@ class Window(AggregationContext):
         )
         self.construct_window = operator.methodcaller(kind, *args, **kwargs)
 
-    def agg(self, grouped_data, function, *args, **kwargs):
+    def agg(
+        self,
+        grouped_data: Union[Series, SeriesGroupBy],
+        function: Union[str, Callable],
+        *args: Tuple[Any],
+        **kwargs: Dict[str, Any]
+    ) -> Series:
         # avoid a pandas warning about numpy arrays being passed through
         # directly
         group_by = self.group_by
@@ -472,7 +479,7 @@ class Window(AggregationContext):
             name = obj.name
             if frame[name] is not obj:
                 name = f"{name}_{ibis.util.guid()}"
-                frame[name] = obj
+                frame = frame.assign(name=obj)
 
             # set the index to our order_by keys and append it to the existing
             # index

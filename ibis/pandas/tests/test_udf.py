@@ -250,6 +250,15 @@ def test_udf_parameter_mismatch():
             pass
 
 
+def test_udf_error(t):
+    @udf.elementwise(input_type=[dt.double], output_type=dt.double)
+    def error_udf(s):
+        raise ValueError('xxx')
+
+    with pytest.raises(ValueError):
+        error_udf(t.c).execute()
+
+
 def test_compose_udfs(t2, df2):
     expr = times_two(add_one(t2.a))
     result = expr.execute()
@@ -331,8 +340,11 @@ def test_multiple_argument_udaf_window():
     con = ibis.pandas.connect({'df': df})
     t = con.table('df')
     window = ibis.trailing_window(2, order_by='a', group_by='key')
+    window2 = ibis.trailing_window(1, order_by='b', group_by='key')
     expr = t.mutate(
-        wm_b=my_wm(t.b, t.d).over(window), wm_c=my_wm(t.c, t.d).over(window)
+        wm_b=my_wm(t.b, t.d).over(window),
+        wm_c=my_wm(t.c, t.d).over(window),
+        wm_c2=my_wm(t.c, t.d).over(window2),
     )
     result = expr.execute().sort_values(['key', 'a'])
     expected = (
@@ -350,6 +362,13 @@ def test_multiple_argument_udaf_window():
             .reset_index(level=0, drop=True)
         )
     )
+    expected = expected.sort_values(['key', 'b']).assign(
+        wm_c2=lambda df: df.groupby('key')
+        .c.rolling(2, min_periods=1)
+        .mean()
+        .reset_index(level=0, drop=True)
+    )
+    expected = expected.sort_values(['key', 'a'])
 
     tm.assert_frame_equal(result, expected)
 
