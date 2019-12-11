@@ -32,6 +32,7 @@ Ibis currently provides tools for interacting with the following systems:
 - [Apache Kudu](https://kudu.apache.org/)
 - [Hadoop Distributed File System (HDFS)](https://hadoop.apache.org/)
 - [PostgreSQL](https://www.postgresql.org/)
+- [MSSQL](https://www.microsoft.com/en-us/sql-server/)
 - [MySQL](https://www.mysql.com/) (Experimental)
 - [SQLite](https://www.sqlite.org/)
 - [Pandas](https://pandas.pydata.org/) [DataFrames](http://pandas.pydata.org/pandas-docs/stable/dsintro.html#dataframe) (Experimental)

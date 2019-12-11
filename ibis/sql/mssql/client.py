@@ -193,7 +193,23 @@ class MSSQLClient(alch.AlchemyClient):
             return self.table_expr_class(node)
 
     def list_tables(self, like=None, database=None, schema=None):
-        """List tables avilable in current database."""
+        """
+        List tables avilable in current database
+
+        Parameters
+        ----------
+        like : string, default None
+          e.g. 'foo*' to match all tables starting with 'foo'.
+        database : string, default None
+          Specific database to list available tables
+        schema : string, default None
+          Specific schema to list available tables
+
+        Returns
+        -------
+        list
+            A list with all tables available for the current database.
+        """
         if database is not None and database != self.current_database:
             return self.database(name=database).list_tables(
                 like=like, schema=schema
@@ -208,6 +224,8 @@ class MSSQLClient(alch.AlchemyClient):
 
         Parameters
         ----------
+        query: string
+           SQL query to execute on connection
 
         Returns
         -------

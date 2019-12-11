@@ -140,6 +140,27 @@ Executing expressions
 
 .. _api.postgres:
 
+MSSQL client
+-----------------
+.. currentmodule:: ibis.sql.mssql.api
+
+The MSSQL client is accessible through the ``ibis.mssql`` namespace.
+
+Use ``ibis.mssql.connect`` with a SQLAlchemy-compatible connection string to
+create a client.
+
+.. autosummary::
+   :toctree: generated/
+
+   connect
+   MSSQLClient.database
+   MSSQLClient.list_tables
+   MSSQLClient.list_databases
+   MSSQLClient.table
+   MSSQLClient.sql
+
+.. _api.postgres:
+
 PostgreSQL client
 -----------------
 .. currentmodule:: ibis.sql.postgres.api

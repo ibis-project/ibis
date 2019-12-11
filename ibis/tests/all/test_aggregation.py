@@ -64,7 +64,6 @@ from ibis.tests.backends import (
             lambda t, where: t.double_col.mean(),
             lambda t, where: t.double_col.mean(),
             id='mean',
-            # marks=pytest.mark.xfail_backends((MSSQL,)),
         ),
         param(
             lambda t, where: t.double_col.min(),
@@ -157,7 +156,7 @@ def test_aggregation(
                 .reset_index()
             ),
             id='group_concat',
-            marks=pytest.mark.skip_backends((MSSQL,)),
+            marks=pytest.mark.xfail_backends((MSSQL,)),
         )
     ],
 )

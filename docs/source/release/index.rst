@@ -15,6 +15,7 @@ Release Notes
 * :feature:`2186` ZeroIfNull and NullIfZero implementation for OmniSciDB  
 * :bug:`2157` Fix interactive mode returning a expression instead of the value when used in Jupyter
 * :feature:`2093` IsNan implementation for OmniSciDB
+* :feature:`1997` Add initial sql server backend support
 * :feature:`2094` [OmnisciDB] Support add_columns and drop_columns for OmnisciDB table
 * :bug:`2127` Fix PySpark error when doing alias after selection
 * :feature:`2175` Create ExtractQuarter operation and add its support to Clickhouse, CSV, Impala, MySQL, OmniSciDB, Pandas, Parquet, PostgreSQL, PySpark, SQLite and Spark

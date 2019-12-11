@@ -311,7 +311,7 @@ def test_binary_arithmetic_operations(backend, alltypes, df, op):
     )
 
 
-@pytest.mark.skip_backends((MSSQL,))
+@pytest.mark.xfail_backends((MSSQL,))
 def test_mod(backend, alltypes, df):
     expr = operator.mod(alltypes.smallint_col, alltypes.smallint_col + 1)
 
@@ -322,7 +322,7 @@ def test_mod(backend, alltypes, df):
     backend.assert_series_equal(result, expected, check_dtype=False)
 
 
-@pytest.mark.skip_backends((MSSQL,))
+@pytest.mark.xfail_backends((MSSQL,))
 def test_floating_mod(backend, alltypes, df):
     if not backend.supports_floating_modulus:
         pytest.skip(
