@@ -64,7 +64,7 @@ from ibis.tests.backends import (
             lambda t, where: t.double_col.mean(),
             lambda t, where: t.double_col.mean(),
             id='mean',
-            marks=pytest.mark.xfail_backends((MSSQL,)),
+            # marks=pytest.mark.xfail_backends((MSSQL,)),
         ),
         param(
             lambda t, where: t.double_col.min(),
