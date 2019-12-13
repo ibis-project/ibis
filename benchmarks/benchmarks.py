@@ -3,6 +3,7 @@ import pandas as pd
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis.pandas.udf import udf
 
 
 def make_t(name='t'):
@@ -138,7 +139,7 @@ class Compilation(Suite):
 class PandasBackend:
     def setup(self):
         n = 30 * int(2e5)
-        data = pd.DataFrame(
+        self.data = pd.DataFrame(
             {
                 'key': np.random.choice(16000, size=n),
                 'low_card_key': np.random.choice(30, size=n),
@@ -155,7 +156,7 @@ class PandasBackend:
             }
         )
 
-        t = ibis.pandas.connect({'df': data}).table('df')
+        t = ibis.pandas.connect({'df': self.data}).table('df')
 
         self.high_card_group_by = t.groupby(t.key).aggregate(
             avg_value=t.value.mean()
@@ -180,19 +181,61 @@ class PandasBackend:
             ['low_card_key', 'key', 'value']
         ].sort_by(['low_card_key', 'key'])
 
-        low_card_window = ibis.trailing_range_window(
+        low_card_rolling_window = ibis.trailing_range_window(
             ibis.interval(days=2),
             order_by=t.repeated_timestamps,
             group_by=t.low_card_key,
         )
-        self.low_card_grouped_rolling = t.value.mean().over(low_card_window)
+        self.low_card_grouped_rolling = t.value.mean().over(
+            low_card_rolling_window
+        )
 
-        high_card_window = ibis.trailing_range_window(
+        high_card_rolling_window = ibis.trailing_range_window(
             ibis.interval(days=2),
             order_by=t.repeated_timestamps,
             group_by=t.key,
         )
-        self.high_card_grouped_rolling = t.value.mean().over(high_card_window)
+        self.high_card_grouped_rolling = t.value.mean().over(
+            high_card_rolling_window
+        )
+
+        @udf.reduction(['double'], 'double')
+        def my_mean(series):
+            return series.mean()
+
+        self.low_card_grouped_rolling_udf_mean = my_mean(t.value).over(
+            low_card_rolling_window
+        )
+        self.high_card_grouped_rolling_udf_mean = my_mean(t.value).over(
+            high_card_rolling_window
+        )
+
+        @udf.analytic(['double'], 'double')
+        def my_zscore(series):
+            return (series - series.mean()) / series.std()
+
+        low_card_window = ibis.window(group_by=t.low_card_key)
+
+        high_card_window = ibis.window(group_by=t.key)
+
+        self.low_card_window_analytics_udf = my_zscore(t.value).over(
+            low_card_window
+        )
+        self.high_card_window_analytics_udf = my_zscore(t.value).over(
+            high_card_window
+        )
+
+        @udf.reduction(['double', 'double'], 'double')
+        def my_wm(v, w):
+            return np.average(v, weights=w)
+
+        self.low_card_grouped_rolling_udf_wm = my_wm(t.value, t.value).over(
+            low_card_rolling_window
+        )
+
+        self.high_card_grouped_rolling_udf_wm = my_wm(t.value, t.value).over(
+            low_card_rolling_window
+        )
 
     def time_high_cardinality_group_by(self):
         self.high_card_group_by.execute()
@@ -223,3 +266,18 @@ class PandasBackend:
 
     def time_high_card_grouped_rolling(self):
         self.high_card_grouped_rolling.execute()
+
+    def time_low_card_grouped_rolling_udf(self):
+        self.low_card_grouped_rolling_udf.execute()
+
+    def time_high_card_grouped_rolling_udf(self):
+        self.high_card_grouped_rolling_udf.execute()
+
+    def time_low_card_window_analytics_udf(self):
+        self.low_card_window_analytics_udf.execute()
+
+    def time_high_card_grouped_rolling_udf_wm(self):
+        self.high_card_grouped_rolling_udf_wm.execute()
+
+    def time_low_card_grouped_rolling_udf_wm(self):
+        self.low_card_grouped_rolling_udf_wm.execute()
