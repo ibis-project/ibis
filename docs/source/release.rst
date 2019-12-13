@@ -8,6 +8,7 @@ Release Notes
    notes for pre-1.0 versions of ibis can be found at :doc:`/release-pre-1.0`
 
 * :release:`1.2.1 <pending>`
+* :feature:`2044` Implemented covariance for bigquery backend
 * :feature:`2035` Add support for  multi arguments window UDAF for the pandas backend
 * :bug:`2041` Change pymapd connection parameter from "session_id" to "sessionid"
 * :support:`2037` Drop support for Python 3.5

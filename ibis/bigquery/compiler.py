@@ -548,6 +548,29 @@ def compiles_approx(translator, expr):
     )
 
 
+@compiles(ops.Covariance)
+def compiles_covar(translator, expr):
+    expr = expr.op()
+    left = expr.left
+    right = expr.right
+    where = expr.where
+
+    if expr.how == 'sample':
+        how = 'SAMP'
+    elif expr.how == 'pop':
+        how = 'POP'
+    else:
+        raise ValueError(
+            "Covariance with how={!r} is not supported.".format(how)
+        )
+
+    if where is not None:
+        left = where.ifelse(left, ibis.NA)
+        right = where.ifelse(right, ibis.NA)
+
+    return "COVAR_{}({}, {})".format(how, left, right)
+
+
 @rewrites(ops.Any)
 @rewrites(ops.All)
 @rewrites(ops.NotAny)
