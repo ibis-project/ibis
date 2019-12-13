@@ -3450,3 +3450,12 @@ class ElementWiseUDF(ValueOp):
 
     def output_type(self):
         return self._output_type.column_type()
+
+    def root_tables(self):
+        result = list(
+            toolz.unique(
+                toolz.concat(arg._root_tables() for arg in self.func_args)
+            )
+        )
+
+        return result
