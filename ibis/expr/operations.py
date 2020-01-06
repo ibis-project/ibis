@@ -3429,7 +3429,7 @@ class GeoAsText(GeoSpatialUnOp):
     output_type = rlz.shape_like('arg', dt.string)
 
 
-class ElementWiseUDF(ValueOp):
+class ElementWiseVectorizedUDF(ValueOp):
     """Node for element wise UDF.
     """
 

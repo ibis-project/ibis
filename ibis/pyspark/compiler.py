@@ -1441,7 +1441,7 @@ def compile_null_if(t, expr, scope, **kwargs):
 # ------------------------- User defined function ------------------------
 
 
-@compiles(ops.ElementWiseUDF)
+@compiles(ops.ElementWiseVectorizedUDF)
 def compile_elementwise_udf(t, expr, scope):
     op = expr.op()
     spark_output_type = ibis_dtype_to_spark_dtype(op._output_type)

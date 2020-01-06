@@ -1,11 +1,12 @@
 """Top level APIs for defining vectorized UDFs.
 
 Warning: This is an experimental module and API here can change without notice.
-Do not use directly.
+
+DO NOT USE DIRECTLY.
 """
 
 import ibis.expr.datatypes as dt
-from ibis.expr.operations import ElementWiseUDF
+from ibis.expr.operations import ElementWiseVectorizedUDF
 
 
 class UserDefinedFunction(object):
@@ -33,7 +34,7 @@ def elementwise(input_type, output_type):
 
     def wrapper(func):
         return UserDefinedFunction(
-            func, ElementWiseUDF, input_type, output_type
+            func, ElementWiseVectorizedUDF, input_type, output_type
         )
 
     return wrapper

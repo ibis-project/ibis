@@ -528,8 +528,8 @@ class udf:
         return wrapper
 
 
-@pre_execute.register(ops.ElementWiseUDF)
-@pre_execute.register(ops.ElementWiseUDF, PandasClient)
+@pre_execute.register(ops.ElementWiseVectorizedUDF)
+@pre_execute.register(ops.ElementWiseVectorizedUDF, PandasClient)
 def pre_execute_elementwise_udf(
     op, *clients, scope=None, aggcontet=None, **kwargs
 ):
@@ -549,7 +549,7 @@ def pre_execute_elementwise_udf(
 
     @toolz.compose(
         *(
-            execute_node.register(ops.ElementWiseUDF, *types)
+            execute_node.register(ops.ElementWiseVectorizedUDF, *types)
             for types in group_by_signatures
         )
     )
@@ -578,11 +578,11 @@ def pre_execute_elementwise_udf(
     # Define an execution rule for a simple elementwise Series
     # function
     @execute_node.register(
-        ops.ElementWiseUDF,
+        ops.ElementWiseVectorizedUDF,
         *udf_signature(input_type, pin=None, klass=pd.Series),
     )
     @execute_node.register(
-        ops.ElementWiseUDF,
+        ops.ElementWiseVectorizedUDF,
         *(
             rule_to_python_type(argtype) + nullable(argtype)
             for argtype in input_type

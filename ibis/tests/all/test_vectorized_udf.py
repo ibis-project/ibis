@@ -10,8 +10,8 @@ def add_one(s):
     return s + 1
 
 
-@pytest.mark.xfail_unsupported
 @pytest.mark.only_on_backends([Pandas, PySpark])
+@pytest.mark.xfail_unsupported
 def test_elementwise_udf(backend, alltypes, df):
     result = add_one(alltypes['double_col']).execute()
     expected = add_one.func(df['double_col'])
