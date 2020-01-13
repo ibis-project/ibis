@@ -3433,9 +3433,9 @@ class ElementWiseVectorizedUDF(ValueOp):
     """Node for element wise UDF.
     """
 
-    func = Arg(rlz.noop)
-    func_args = Arg(rlz.noop)
-    input_type = Arg(rlz.noop)
+    func = Arg(callable)
+    func_args = Arg(list)
+    input_type = Arg(rlz.shape_like('func_args'))
     _output_type = Arg(rlz.noop)
 
     def __init__(self, func, args, input_type, output_type):
