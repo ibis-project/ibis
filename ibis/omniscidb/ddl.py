@@ -532,10 +532,7 @@ class InsertPandas(OmniSciDBDML):
 
 
 class LoadData(OmniSciDBDDL):
-
-    """
-    Generate DDL for LOAD DATA command. Cannot be cancelled
-    """
+    """Generate DDL for LOAD DATA command. Cannot be cancelled."""
 
     def __init__(self, table_name, source, **kwargs):
         self.table_name = table_name
@@ -552,6 +549,7 @@ class LoadData(OmniSciDBDDL):
             return ''
 
     def compile(self):
+        """Compile the LoadData expression."""
         if isinstance(self.source, str):
             return "COPY {} FROM '{}'{})".format(
                 self.table_name, self.source, self._get_options()
