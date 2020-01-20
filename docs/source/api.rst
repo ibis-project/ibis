@@ -174,6 +174,66 @@ Use ``ibis.sqlite.connect`` to create a SQLite client.
    SQLiteClient.list_tables
    SQLiteClient.table
 
+.. _api.mysql:
+
+MySQL client (Experimental)
+---------------------------
+.. currentmodule:: ibis.sql.mysql.api
+
+The MySQL client is accessible through the ``ibis.mysql`` namespace.
+
+Use ``ibis.mysql.connect`` with a SQLAlchemy-compatible connection string to
+create a client.
+
+.. autosummary::
+   :toctree: generated/
+
+   connect
+   MySQLClient.database
+   MySQLClient.list_databases
+   MySQLClient.list_tables
+   MySQLClient.table
+
+.. _api.omniscidb:
+
+OmniSciDB client (Experimental)
+-------------------------------
+.. currentmodule:: ibis.omniscidb.api
+
+The OmniSciDB client is accessible through the ``ibis.omniscidb`` namespace.
+
+Use ``ibis.omniscidb.connect`` to create a client.
+
+.. autosummary::
+   :toctree: generated/
+
+   compile
+   connect
+   verify
+   OmniSciDBClient.alter_user
+   OmniSciDBClient.close
+   OmniSciDBClient.create_database
+   OmniSciDBClient.create_table
+   OmniSciDBClient.create_user
+   OmniSciDBClient.create_view
+   OmniSciDBClient.database
+   OmniSciDBClient.describe_formatted
+   OmniSciDBClient.drop_database
+   OmniSciDBClient.drop_table
+   OmniSciDBClient.drop_table_or_view
+   OmniSciDBClient.drop_user
+   OmniSciDBClient.drop_view
+   OmniSciDBClient.exists_table
+   OmniSciDBClient.get_schema
+   OmniSciDBClient.list_tables
+   OmniSciDBClient.load_data
+   OmniSciDBClient.log
+   OmniSciDBClient.set_database
+   OmniSciDBClient.sql
+   OmniSciDBClient.table
+   OmniSciDBClient.truncate_table
+   OmniSciDBClient.version
+
 .. _api.hdfs:
 
 HDFS
@@ -199,8 +259,48 @@ HDFS.
    HDFS.size
    HDFS.status
 
+.. _api.spark:
+
+SparkSQL client (Experimental)
+------------------------------
+.. currentmodule:: ibis.spark.api
+
+The Spark SQL client is accessible through the ``ibis.spark`` namespace.
+
+Use ``ibis.spark.connect`` to create a client.
+
+.. autosummary::
+   :toctree: generated/
+
+   connect
+   SparkClient.database
+   SparkClient.list_databases
+   SparkClient.list_tables
+   SparkClient.table
+
+.. _api.pyspark:
+
+PySpark client (Experimental)
+-----------------------------
+.. currentmodule:: ibis.pyspark.api
+
+The PySpark client is accessible through the ``ibis.pyspark`` namespace.
+
+Use ``ibis.pyspark.connect`` to create a client.
+
+.. autosummary::
+   :toctree: generated/
+
+   connect
+   PySparkClient.database
+   PySparkClient.list_databases
+   PySparkClient.list_tables
+   PySparkClient.table
+
 Top-level expression APIs
 -------------------------
+
+.. currentmodule:: ibis
 
 These methods are available directly in the ``ibis`` module namespace.
 
@@ -606,3 +706,74 @@ Decimal methods
 
    DecimalValue.precision
    DecimalValue.scale
+
+.. _api.geospatial:
+
+Geospatial methods
+-------------------
+
+Scalar or column methods
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   GeoSpatialValue.area
+   GeoSpatialValue.as_binary
+   GeoSpatialValue.as_ewkb
+   GeoSpatialValue.as_ewkt
+   GeoSpatialValue.as_text
+   GeoSpatialValue.azimuth
+   GeoSpatialValue.buffer
+   GeoSpatialValue.centroid
+   GeoSpatialValue.contains
+   GeoSpatialValue.contains_properly
+   GeoSpatialValue.covers
+   GeoSpatialValue.covered_by
+   GeoSpatialValue.crosses
+   GeoSpatialValue.d_fully_within
+   GeoSpatialValue.d_within
+   GeoSpatialValue.difference
+   GeoSpatialValue.disjoint
+   GeoSpatialValue.distance
+   GeoSpatialValue.end_point
+   GeoSpatialValue.envelope
+   GeoSpatialValue.equals
+   GeoSpatialValue.geometry_n
+   GeoSpatialValue.geometry_type
+   GeoSpatialValue.intersection
+   GeoSpatialValue.intersects
+   GeoSpatialValue.is_valid
+   GeoSpatialValue.line_locate_point
+   GeoSpatialValue.line_merge
+   GeoSpatialValue.line_substring
+   GeoSpatialValue.length
+   GeoSpatialValue.max_distance
+   GeoSpatialValue.n_points
+   GeoSpatialValue.n_rings
+   GeoSpatialValue.ordering_equals
+   GeoSpatialValue.overlaps
+   GeoSpatialValue.perimeter
+   GeoSpatialValue.point_n
+   GeoSpatialValue.set_srid
+   GeoSpatialValue.simplify
+   GeoSpatialValue.srid
+   GeoSpatialValue.start_point
+   GeoSpatialValue.touches
+   GeoSpatialValue.transform
+   GeoSpatialValue.union
+   GeoSpatialValue.within
+   GeoSpatialValue.x
+   GeoSpatialValue.x_max
+   GeoSpatialValue.x_min
+   GeoSpatialValue.y
+   GeoSpatialValue.y_max
+   GeoSpatialValue.y_min
+
+Column methods
+~~~~~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   GeoSpatialColumn.unary_union
