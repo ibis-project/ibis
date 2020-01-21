@@ -9,6 +9,7 @@ Release Notes
 
 * :release:`1.2.1 <pending>`
 * :support:`2034` Add initial documentation for OmniSciDB, MySQL, PySpark and SparkSQL backends, add initial documentation for geospatial methods and add links to Ibis wiki page
+* :bug:`2050` CI: Drop table only if it exists
 * :feature:`2044` Implemented covariance for bigquery backend
 * :feature:`2035` Add support for  multi arguments window UDAF for the pandas backend
 * :bug:`2041` Change pymapd connection parameter from "session_id" to "sessionid"
