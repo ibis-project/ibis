@@ -356,7 +356,7 @@ def omniscidb(schema, tables, data_directory, **params):
             protocol=params['protocol'],
         )
         database = params["database"]
-        stmt = "DROP DATABASE {}".format(database)
+        stmt = "DROP DATABASE IF EXISTS {}".format(database)
         try:
             conn.execute(stmt)
         except Exception:
