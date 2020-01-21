@@ -17,6 +17,8 @@ point_0_4326 = ibis.literal((0, 0), type='point;4326').name('tmp')
 
 point_geom_0 = ibis.literal((0, 0), type='point;4326:geometry').name('p')
 point_geom_1 = ibis.literal((1, 1), type='point;4326:geometry').name('p')
+point_geom_0_srid0 = ibis.literal((0, 0), type='point;0:geometry').name('p')
+point_geom_1_srid0 = ibis.literal((1, 1), type='point;0:geometry').name('p')
 point_geom_2 = ibis.literal((2, 2), type='point;4326:geometry').name('p')
 point_geog_0 = ibis.literal((0, 0), type='point;4326:geography').name('p')
 point_geog_1 = ibis.literal((1, 1), type='point;4326:geography').name('p')
@@ -271,15 +273,15 @@ def test_geo_spatial_unops(backend, geo, expr_fn, expected):
     ('expr_fn', 'expected'),
     [
         param(
-            lambda t: t['geo_linestring'].contains(point_geom_1),
+            lambda t: t['geo_linestring'].contains(point_geom_1_srid0),
             {
-                'omniscidb': [False] * 5,
+                'omniscidb': [True, True, False, False, False],
                 'postgres': [False] * 5,  # not contains the border
             },
             id='contains',
         ),
         param(
-            lambda t: t['geo_linestring'].disjoint(point_geom_0),
+            lambda t: t['geo_linestring'].disjoint(point_geom_0_srid0),
             {
                 'omniscidb': [False, True, True, True, True],
                 'postgres': [False, True, True, True, True],
@@ -287,7 +289,7 @@ def test_geo_spatial_unops(backend, geo, expr_fn, expected):
             id='disjoint',
         ),
         param(
-            lambda t: t['geo_point'].d_within(point_geom_1, 2.0),
+            lambda t: t['geo_point'].d_within(point_geom_1_srid0, 2.0),
             {
                 'omniscidb': [True, True, True, False, False],
                 'postgres': [True, True, True, False, False],
@@ -295,7 +297,7 @@ def test_geo_spatial_unops(backend, geo, expr_fn, expected):
             id='d_within',
         ),
         param(
-            lambda t: t['geo_linestring'].intersects(point_geom_0),
+            lambda t: t['geo_linestring'].intersects(point_geom_0_srid0),
             {
                 'omniscidb': [True, False, False, False, False],
                 'postgres': [True, False, False, False, False],
@@ -303,7 +305,7 @@ def test_geo_spatial_unops(backend, geo, expr_fn, expected):
             id='intersects',
         ),
         param(
-            lambda t: t['geo_linestring'].distance(point_geom_0),
+            lambda t: t['geo_linestring'].distance(point_geom_0_srid0),
             {
                 'omniscidb': [0.0, 1.41, 2.82, 4.24, 5.66],
                 'postgres': [0.0, 1.41, 2.82, 4.24, 5.66],
@@ -311,7 +313,7 @@ def test_geo_spatial_unops(backend, geo, expr_fn, expected):
             id='distance',
         ),
         param(
-            lambda t: t['geo_linestring'].max_distance(point_geom_0),
+            lambda t: t['geo_linestring'].max_distance(point_geom_0_srid0),
             {
                 'omniscidb': [1.41, 2.82, 4.24, 5.66, 7.08],
                 'postgres': [1.41, 2.82, 4.24, 5.66, 7.08],
