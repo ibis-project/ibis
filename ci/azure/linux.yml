@@ -40,37 +40,29 @@ jobs:
       displayName: 'Setup BigQuery credentials'
       condition: eq(variables['System.PullRequest.IsFork'], 'False')
 
-    - bash: |
-        docker-compose up -d --no-build \
-          mysql \
-          postgres \
-          impala \
-          clickhouse \
-          omniscidb \
-          kudu-tserver \
-          kudu-master
+    - bash: make start
       displayName: 'Start databases'
 
-    - bash: ./ci/check-services.sh
+    - bash: make wait
       displayName: 'Wait for databases'
 
     - bash: docker ps
       displayName: 'Show running containers'
 
-    - bash: docker-compose build ibis
+    - bash: make build PYTHON_VERSION=$PYTHON_VERSION
       displayName: 'Build ibis image'
 
     - bash: docker images
       displayName: 'List docker images'
 
-    - bash: docker-compose run ibis flake8
+    - bash: make docker_lint
       displayName: 'Lint'
 
     # TODO: change match-dir when docstrings are fixed for other backends
     - bash: docker-compose run ibis pydocstyle --match-dir="(ibis|omniscidb)"
       displayName: "Docstring check"
 
-    - bash: docker-compose run ibis black --check .
+    - bash: make docker_black
       displayName: 'Ensure black formatting'
 
     - bash: |
@@ -78,13 +70,13 @@ jobs:
         mkdir -p /tmp/env
       displayName: 'Make artifacts directories'
 
-    - bash: docker-compose run ibis conda list
+    - bash: make docker_run DOCKER_RUN_COMMAND="conda list"
       displayName: 'Show packages in conda environment'
 
-    - bash: docker-compose run ibis conda list --export > /tmp/env/env.yml
+    - bash: make docker_run DOCKER_RUN_COMMAND="conda list --export > /tmp/env/env.yml"
       displayName: 'Capture packages in conda environment'
 
-    - bash: docker-compose run -e LOGLEVEL=DEBUG ibis ci/load-data.sh
+    - bash: make load
       displayName: 'Load test datasets'
 
     - bash: |
@@ -135,13 +127,13 @@ jobs:
     COMPOSE_FILE: ci/docker-compose.yml
 
   steps:
-    - bash: docker-compose build ibis
+    - bash: make build PYTHON_VERSION=$PYTHON_VERSION
       displayName: 'Build ibis image'
 
     - bash: docker images
       displayName: 'List docker images'
 
-    - bash: docker-compose run ibis ci/feedstock.py test
+    - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="ci/feedstock.py test"
       displayName: 'Clone, update and build conda-forge recipe'
 
     - task: PublishPipelineArtifact@1
@@ -162,10 +154,10 @@ jobs:
     COMPOSE_FILE: ci/docker-compose.yml
 
   steps:
-    - bash: docker-compose build ibis
+    - bash: make build
       displayName: 'Build Ibis Image'
 
-    - bash: docker-compose run ibis ci/benchmark.sh azure "$(Build.SourceVersion)"
+    - bash: make docker_run DOCKER_RUN_COMMAND='ci/benchmark.sh azure "$(Build.SourceVersion)"'
       displayName: 'Run Benchmark (ASV)'
 
 - job: ${{ parameters.name }}BuildDocs
@@ -179,21 +171,13 @@ jobs:
     COMPOSE_FILE: ci/docker-compose.yml
 
   steps:
-    - bash: |
-        docker-compose up -d --no-build \
-          mysql \
-          postgres \
-          impala \
-          clickhouse \
-          omniscidb \
-          kudu-master \
-          kudu-tserver
+    - bash: make start
       displayName: 'Start databases'
 
-    - bash: ./ci/check-services.sh
+    - bash: make wait
       displayName: 'Wait for databases'
 
-    - bash: docker-compose build ibis ibis-docs
+    - bash: make builddoc
       displayName: 'build ibis documentation image'
 
     - bash: docker images
@@ -202,17 +186,16 @@ jobs:
     - bash: docker ps
       displayName: 'Show running containers'
 
-    - bash: docker-compose run ibis-docs ci/load-data.sh
+    - bash: make docker_docs_run DOCKER_RUN_COMMAND="ci/load-data.sh"
       displayName: 'Load test datasets'
 
-    - bash: docker-compose run ibis-docs ping -c 1 impala
+    - bash: make docker_docs_run DOCKER_RUN_COMMAND="ping -c 1 impala"
       displayName: 'Ping the impala host used in the tutorial notebooks'
 
     - bash: |
-        docker-compose run ibis-docs \
-          git clone --branch gh-pages \
-            https://github.com/cpcloud/docs.ibis-project.org \
-            /tmp/docs.ibis-project.org
+        make docker_docs_run DOCKER_RUN_COMMAND="git clone --branch gh-pages \
+          https://github.com/cpcloud/docs.ibis-project.org \
+          /tmp/docs.ibis-project.org"
       displayName: 'Clone doc repo'
 
     - bash: |
@@ -230,12 +213,12 @@ jobs:
             -exec rm -rf {} \;
       displayName: 'Clear out old docs'
 
-    - bash: docker-compose run ibis-docs conda list
+    - bash: make docker_docs_run DOCKER_RUN_COMMAND="conda list"
       displayName: 'Show the doc env'
 
     - bash: |
-        docker-compose run ibis-docs \
-          sphinx-build -b html docs/source /tmp/docs.ibis-project.org -W -T
+        make docker_docs_run DOCKER_RUN_COMMAND="sphinx-build -b html
+          docs/source /tmp/docs.ibis-project.org -W -T"
       displayName: 'Build docs'
 
     - task: PublishPipelineArtifact@1

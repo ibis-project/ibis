@@ -4,11 +4,43 @@ SHELL := /bin/bash
 MAKEFILE_DIR = $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 PYTHON_VERSION := 3.6
 PYTHONHASHSEED := "random"
+
+# docker specific
 COMPOSE_FILE := "$(MAKEFILE_DIR)/ci/docker-compose.yml"
-DOCKER := docker-compose -f $(COMPOSE_FILE)
-DOCKER_RUN := PYTHON_VERSION=${PYTHON_VERSION} $(DOCKER) run --rm
-PYTEST_OPTIONS :=
+DOCKER := PYTHON_VERSION=$(PYTHON_VERSION) docker-compose -f $(COMPOSE_FILE)
+DOCKER_UP := $(DOCKER) up --remove-orphans -d --no-build
+DOCKER_RUN := $(DOCKER) run --rm
+DOCKER_BUILD := $(DOCKER) build
+DOCKER_STOP := $(DOCKER) rm --force --stop
+
+DOCKER_RUN_COMMAND := echo "you should do 'make docker_run DOCKER_RUN_COMMAND=[you command]'"
 SERVICES := omniscidb postgres mysql clickhouse impala kudu-master kudu-tserver
+
+WAITER_COMMAND := $(shell $(MAKEFILE_DIR)/ci/dockerize.sh $(SERVICES))
+
+# tests specific
+PYTEST_MARKERS := $(shell $(MAKEFILE_DIR)/ci/pytest-markers-for-services.sh $(SERVICES))
+PYTEST_DOCTEST_OPTIONS := --doctest-modules --doctest-ignore-import-errors
+
+REMOVE_COMPILED_PYTHON_SCRIPTS := (find /ibis -name "*.py[co]" -delete > /dev/null 2>&1 || true)
+
+LOGLEVEL := WARNING
+PYTEST_OPTIONS :=
+
+
+## Targets for code checks
+
+typecheck:
+	@mypy --ignore-missing-imports $(MAKEFILE_DIR)/ibis
+
+lint:
+	flake8
+
+black:
+	# check that black formatting would not be applied
+	black --check .
+
+## Targets for setup development environment
 
 clean:
 	python setup.py clean
@@ -19,69 +51,89 @@ develop: clean
 	python setup.py develop
 	pre-commit install
 
-typecheck:
-	@mypy --ignore-missing-imports $(MAKEFILE_DIR)/ibis
 
-lint:
-	flake8
+## DOCKER specific targets
+
+# Targets for code checks inside containers
+
+docker_lint: build
+	$(DOCKER_RUN) ibis flake8
+
+docker_black: build
+	$(DOCKER_RUN) ibis black --check .
+
+# Targets for manipulating docker's containers
 
 stop:
-# stop all running docker compose services
-	$(DOCKER) rm --force --stop ${SERVICES}
-
-build:
-# build the ibis image
-	$(DOCKER) build --pull ibis
+	# stop all running docker compose services and remove its
+	$(DOCKER_STOP) $(SERVICES)
 
 start:
-# start all docker compose services
-	$(DOCKER) up --remove-orphans -d --no-build ${SERVICES}
-# wait for services to start
-	$(DOCKER_RUN) waiter
+	# start all docker compose services
+	$(DOCKER_UP) $(SERVICES)
+
+build:
+	# build the ibis image
+	$(DOCKER_BUILD) ibis
+
+wait:
+	# wait for services to start
+	$(DOCKER_RUN) waiter $(WAITER_COMMAND)
+	DOCKER_CODE=$(shell echo $$?) ./ci/check-services.sh $(SERVICES)
 
 load:
-	$(DOCKER_RUN) -e LOGLEVEL ibis ci/load-data.sh
+	# load datasets for testing purpose
+	$(DOCKER_RUN) -e LOGLEVEL=$(LOGLEVEL) ibis ci/load-data.sh $(SERVICES)
 
 restart: stop
 	$(MAKE) start
+	$(MAKE) wait
 
 init: restart
 	$(MAKE) build
 	$(MAKE) load
 
-testparallel:
-	PYTHONHASHSEED=${PYTHONHASHSEED} $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not udf' -k 'not test_import_time' \
-	    --doctest-modules --doctest-ignore-import-errors ${PYTEST_OPTIONS}
+# Targets for testing ibis inside docker's containers
 
 test:
-	PYTHONHASHSEED=${PYTHONHASHSEED} $(MAKEFILE_DIR)/ci/test.sh ${PYTEST_OPTIONS} -k 'not test_import_time' \
-	    --doctest-modules --doctest-ignore-import-errors
+	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
+		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) ${PYTEST_MARKERS} -k 'not test_import_time'"
+
+testall:
+	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
+		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) -k 'not test_import_time'"
+
+testparallel: init
+	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
+		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) -n auto -m 'not udf' -k 'not test_import_time'"
 
 testmost:
-	PYTHONHASHSEED=${PYTHONHASHSEED} $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not (udf or impala or hdfs)' -k 'not test_import_time' \
-	    --doctest-modules --doctest-ignore-import-errors ${PYTEST_OPTIONS}
+	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
+		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) -n auto -m 'not (udf or impala or hdfs)' -k 'not test_import_time'"
 
 testfast:
-	PYTHONHASHSEED=${PYTHONHASHSEED} $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not (udf or impala or hdfs or bigquery)' -k 'not test_import_time' \
-	    --doctest-modules --doctest-ignore-import-errors ${PYTEST_OPTIONS}
+	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
+		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) -n auto -m 'not (udf or impala or hdfs or bigquery)' -k 'not test_import_time'"
 
 testpandas:
-	PYTHONHASHSEED=${PYTHONHASHSEED} $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'pandas' -k 'not test_import_time' \
-	    --doctest-modules --doctest-ignore-import-errors ${PYTEST_OPTIONS}
+	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
+		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) -n auto -m 'pandas' -k 'not test_import_time'"
 
 testspark:
-	PYTHONHASHSEED=${PYTHONHASHSEED} $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'pyspark' -k 'not test_import_time' \
-	    --doctest-modules --doctest-ignore-import-errors ${PYTEST_OPTIONS}
+	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
+		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) -n auto -m 'pyspark' -k 'not test_import_time'"
 
 fastopt:
 	@echo -m 'not (backend or bigquery or clickhouse or hdfs or impala or kudu or omniscidb or mysql or postgis or postgresql or superuser or udf)'
 
+# Targets for documentation builds
+
 docclean:
 	$(DOCKER_RUN) ibis-docs rm -rf /tmp/docs.ibis-project.org
 
-builddoc:
-# build the ibis-docs image
-	$(DOCKER) build ibis ibis-docs
+builddoc: build
+	# build the ibis-docs image
+	$(DOCKER_BUILD) ibis-docs
 
 doc: builddoc docclean
 	$(DOCKER_RUN) ibis-docs ping -c 1 impala
@@ -97,6 +149,10 @@ doc: builddoc docclean
 	    -exec rm -rf {} \;
 	$(DOCKER_RUN) ibis-docs sphinx-build -b html docs/source /tmp/docs.ibis-project.org -W -T
 
-black:
-# check that black formatting would not be applied
-	black --check .
+# Targets for run commands inside ibis and ibis-docs containers
+
+docker_run: build
+	$(DOCKER_RUN) ibis $(DOCKER_RUN_COMMAND)
+
+docker_docs_run: builddoc
+	$(DOCKER_RUN) ibis-docs $(DOCKER_RUN_COMMAND)

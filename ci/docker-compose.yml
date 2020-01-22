@@ -100,19 +100,6 @@ services:
 
   waiter:
     image: jwilder/dockerize
-    command: |
-      dockerize -wait tcp://omniscidb:6274
-                -wait tcp://mysql:3306
-                -wait tcp://postgres:5432
-                -wait tcp://impala:21050
-                -wait tcp://impala:50070
-                -wait tcp://kudu-master:7051
-                -wait tcp://kudu-master:8051
-                -wait tcp://kudu-tserver:7050
-                -wait tcp://kudu-tserver:8050
-                -wait tcp://clickhouse:9000
-                -wait-retry-interval 5s
-                -timeout 10m
 
   ibis:
     image: ibis:${PYTHON_VERSION:-3.6}
