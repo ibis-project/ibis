@@ -2,13 +2,13 @@
 
 SERVICES=$@
 
-PYTEST_MARKERS="-m"
+PYTEST_MARKERS=""
 
 for s in ${SERVICES[@]}
   do
-    if [ "$PYTEST_MARKERS" == "-m" ]
+    if [ "$PYTEST_MARKERS" == "" ]
     then
-      PYTEST_MARKERS="${PYTEST_MARKERS} ${s}"
+      PYTEST_MARKERS="-m ${PYTEST_MARKERS} ${s}"
     else
       PYTEST_MARKERS="${PYTEST_MARKERS} or ${s}"
     fi
