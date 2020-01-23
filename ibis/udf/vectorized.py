@@ -10,6 +10,11 @@ from ibis.expr.operations import ElementWiseVectorizedUDF
 
 
 class UserDefinedFunction(object):
+    """ Class representing a user defined function.
+
+    This class Implements __call__ that returns an ibis expr for the UDF.
+    """
+
     def __init__(self, func, func_type, input_type, output_type):
         self.func = func
         self.func_type = func_type

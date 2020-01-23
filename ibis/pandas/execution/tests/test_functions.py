@@ -271,50 +271,19 @@ def test_ifelse_returning_bool():
         pytest.param(
             dt.float64,
             True,
-            marks=pytest.mark.skip(
+            marks=pytest.mark.xfail(
+                raises=NotImplementedError,
                 reason=(
                     "Implicit casting from boolean to float is not "
                     "implemented"
-                )
+                ),
             ),
             id='float_bool',
         ),
-        pytest.param(
-            dt.int64,
-            1.0,
-            marks=pytest.mark.skip(
-                reason="Implicit casting from float to int is not implemented"
-            ),
-            id='int_float',
-        ),
-        pytest.param(
-            dt.int64,
-            True,
-            id='int_bool',
-            marks=pytest.mark.skip(
-                reason=(
-                    "Implicit casting from boolean to int is not implemented"
-                )
-            ),
-        ),
-        pytest.param(
-            dt.boolean,
-            1.0,
-            marks=pytest.mark.skip(
-                reason=(
-                    "Implicit casting from float to boolean is not implemented"
-                )
-            ),
-            id='bool_float',
-        ),
-        pytest.param(
-            dt.boolean,
-            1,
-            marks=pytest.mark.skip(
-                reason="Implicit casting for UDFs is not yet implemented"
-            ),
-            id='bool_int',
-        ),
+        pytest.param(dt.int64, 1.0, id='int_float'),
+        pytest.param(dt.int64, True, id='int_bool'),
+        pytest.param(dt.boolean, 1.0, id='bool_float'),
+        pytest.param(dt.boolean, 1, id='bool_int'),
     ],
 )
 def test_signature_does_not_match_input_type(dtype, value):
