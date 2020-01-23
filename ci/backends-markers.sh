@@ -1,10 +1,10 @@
 #!/bin/bash -e
 
-SERVICES=$@
+BACKENDS=$@
 
 PYTEST_MARKERS=""
 
-for s in ${SERVICES[@]}
+for s in ${BACKENDS[@]}
   do
     if [ "$PYTEST_MARKERS" == "" ]
     then

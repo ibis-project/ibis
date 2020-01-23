@@ -14,13 +14,16 @@ DOCKER_BUILD := $(DOCKER) build
 DOCKER_STOP := $(DOCKER) rm --force --stop
 
 DOCKER_RUN_COMMAND := echo "you should do 'make docker_run DOCKER_RUN_COMMAND=[you command]'"
+
+BACKENDS := clickhouse impala kudu-master kudu-tserver mysql omniscidb parquet postgres sqlite
 SERVICES := omniscidb postgres mysql clickhouse impala kudu-master kudu-tserver
 LOADS := sqlite parquet postgres clickhouse omniscidb mysql impala
 
-WAITER_COMMAND := $(shell $(MAKEFILE_DIR)/ci/dockerize.sh $(SERVICES))
+CURRENT_SERVICES := $(shell $(MAKEFILE_DIR)/ci/backends-to-start.sh "$(BACKENDS)" "$(SERVICES)")
+WAITER_COMMAND := $(shell $(MAKEFILE_DIR)/ci/dockerize.sh $(CURRENT_SERVICES))
 
 # tests specific
-PYTEST_MARKERS := $(shell $(MAKEFILE_DIR)/ci/pytest-markers-for-services.sh $(SERVICES))
+PYTEST_MARKERS := $(shell $(MAKEFILE_DIR)/ci/backends-markers.sh $(BACKENDS))
 PYTEST_DOCTEST_OPTIONS := --doctest-modules --doctest-ignore-import-errors
 
 REMOVE_COMPILED_PYTHON_SCRIPTS := (find /ibis -name "*.py[co]" -delete > /dev/null 2>&1 || true)
@@ -67,11 +70,11 @@ docker_black: build
 
 stop:
 	# stop all running docker compose services and remove its
-	$(DOCKER_STOP) $(SERVICES)
+	$(DOCKER_STOP) $(CURRENT_SERVICES)
 
 start:
 	# start all docker compose services
-	$(DOCKER_UP) $(SERVICES)
+	$(DOCKER_UP) $(CURRENT_SERVICES)
 
 build:
 	# build the ibis image
@@ -80,11 +83,11 @@ build:
 wait:
 	# wait for services to start
 	$(DOCKER_RUN) waiter $(WAITER_COMMAND)
-	DOCKER_CODE=$(shell echo $$?) ./ci/check-services.sh $(SERVICES)
+	DOCKER_CODE=$(shell echo $$?) ./ci/check-services.sh $(CURRENT_SERVICES)
 
 load:
 	# load datasets for testing purpose
-	$(DOCKER_RUN) -e LOGLEVEL=$(LOGLEVEL) ibis ./ci/load-data.sh $(LOADS)
+	$(DOCKER_RUN) -e LOGLEVEL=$(LOGLEVEL) ibis ./ci/load-data.sh $(BACKENDS)
 
 restart: stop
 	$(MAKE) start
@@ -96,7 +99,7 @@ init: restart
 
 # Targets for testing ibis inside docker's containers
 
-test:
+test: init
 	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
 		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) ${PYTEST_MARKERS} -k 'not test_import_time'"
 
