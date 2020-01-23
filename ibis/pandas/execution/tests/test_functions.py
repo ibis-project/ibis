@@ -10,7 +10,6 @@ import pandas.util.testing as tm  # noqa: E402
 import pytest
 
 import ibis
-import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt  # noqa: E402
 from ibis.pandas.udf import udf
 
@@ -273,7 +272,7 @@ def test_ifelse_returning_bool():
             dt.float64,
             True,
             marks=pytest.mark.xfail(
-                raises=com.IbisTypeError,
+                raises=NotImplementedError,
                 reason=(
                     "Implicit casting from boolean to float is not "
                     "implemented"
@@ -281,46 +280,10 @@ def test_ifelse_returning_bool():
             ),
             id='float_bool',
         ),
-        pytest.param(
-            dt.int64,
-            1.0,
-            marks=pytest.mark.xfail(
-                raises=com.IbisTypeError,
-                reason="Implicit casting from float to int is not implemented",
-            ),
-            id='int_float',
-        ),
-        pytest.param(
-            dt.int64,
-            True,
-            id='int_bool',
-            marks=pytest.mark.xfail(
-                raises=com.IbisTypeError,
-                reason=(
-                    "Implicit casting from boolean to int is not implemented"
-                ),
-            ),
-        ),
-        pytest.param(
-            dt.boolean,
-            1.0,
-            marks=pytest.mark.xfail(
-                raises=com.IbisTypeError,
-                reason=(
-                    "Implicit casting from float to boolean is not implemented"
-                ),
-            ),
-            id='bool_float',
-        ),
-        pytest.param(
-            dt.boolean,
-            1,
-            marks=pytest.mark.xfail(
-                raises=NotImplementedError,
-                reason="Implicit casting for UDFs is not yet implemented",
-            ),
-            id='bool_int',
-        ),
+        pytest.param(dt.int64, 1.0, id='int_float'),
+        pytest.param(dt.int64, True, id='int_bool'),
+        pytest.param(dt.boolean, 1.0, id='bool_float'),
+        pytest.param(dt.boolean, 1, id='bool_int'),
     ],
 )
 def test_signature_does_not_match_input_type(dtype, value):

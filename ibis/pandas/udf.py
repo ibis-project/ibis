@@ -19,14 +19,16 @@ from pandas.core.groupby import SeriesGroupBy
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.signature as sig
+import ibis.udf.vectorized
 from ibis.pandas.aggcontext import Window
+from ibis.pandas.client import PandasClient
 from ibis.pandas.core import (
     date_types,
     time_types,
     timedelta_types,
     timestamp_types,
 )
-from ibis.pandas.dispatch import execute_node
+from ibis.pandas.dispatch import execute_node, pre_execute
 
 
 @functools.singledispatch
@@ -358,87 +360,7 @@ class udf:
         ... def my_string_length(series):
         ...     return series.str.len() * 2
         """
-        input_type = list(map(dt.dtype, input_type))
-        output_type = dt.dtype(output_type)
-
-        def wrapper(func):
-            # validate that the input_type argument and the function signature
-            # match
-            funcsig = valid_function_signature(input_type, func)
-
-            # generate a new custom node
-            UDFNode = type(
-                func.__name__,
-                (ops.ValueOp,),
-                {
-                    'signature': sig.TypeSignature.from_dtypes(input_type),
-                    'output_type': output_type.column_type,
-                },
-            )
-
-            # definitions
-
-            # Define an execution rule for elementwise operations on a
-            # grouped Series
-            nargs = len(input_type)
-            group_by_signatures = [
-                udf_signature(input_type, pin=pin, klass=SeriesGroupBy)
-                for pin in range(nargs)
-            ]
-
-            @toolz.compose(
-                *(
-                    execute_node.register(UDFNode, *types)
-                    for types in group_by_signatures
-                )
-            )
-            def execute_udf_node_groupby(op, *args, **kwargs):
-                groupers = [
-                    grouper
-                    for grouper in (
-                        getattr(arg, 'grouper', None) for arg in args
-                    )
-                    if grouper is not None
-                ]
-
-                # all grouping keys must be identical
-                assert all(groupers[0] == grouper for grouper in groupers[1:])
-
-                # we're performing a scalar operation on grouped column, so
-                # perform the operation directly on the underlying Series
-                # and regroup after it's finished
-                arguments = [getattr(arg, 'obj', arg) for arg in args]
-                groupings = groupers[0].groupings
-                args, kwargs = arguments_from_signature(
-                    signature(func), *arguments, **kwargs
-                )
-                return func(*args, **kwargs).groupby(groupings)
-
-            # Define an execution rule for a simple elementwise Series
-            # function
-            @execute_node.register(
-                UDFNode, *udf_signature(input_type, pin=None, klass=pd.Series)
-            )
-            @execute_node.register(
-                UDFNode,
-                *(
-                    rule_to_python_type(argtype) + nullable(argtype)
-                    for argtype in input_type
-                ),
-            )
-            def execute_udf_node(op, *args, **kwargs):
-                args, kwargs = arguments_from_signature(
-                    funcsig, *args, **kwargs
-                )
-                return func(*args, **kwargs)
-
-            @functools.wraps(func)
-            def wrapped(*args):
-                return UDFNode(*args).to_expr()
-
-            return wrapped
-
-        return wrapper
+        return ibis.udf.vectorized.elementwise(input_type, output_type)
 
     @staticmethod
     def reduction(input_type, output_type):
@@ -604,3 +526,73 @@ class udf:
             return wrapped
 
         return wrapper
+
+
+@pre_execute.register(ops.ElementWiseVectorizedUDF)
+@pre_execute.register(ops.ElementWiseVectorizedUDF, PandasClient)
+def pre_execute_elementwise_udf(
+    op, *clients, scope=None, aggcontet=None, **kwargs
+):
+    """Register execution rules for elementwise UDFs.
+    """
+    input_type = op.input_type
+
+    # definitions
+
+    # Define an execution rule for elementwise operations on a
+    # grouped Series
+    nargs = len(input_type)
+    group_by_signatures = [
+        udf_signature(input_type, pin=pin, klass=SeriesGroupBy)
+        for pin in range(nargs)
+    ]
+
+    @toolz.compose(
+        *(
+            execute_node.register(ops.ElementWiseVectorizedUDF, *types)
+            for types in group_by_signatures
+        )
+    )
+    def execute_udf_node_groupby(op, *args, **kwargs):
+        func = op.func
+
+        groupers = [
+            grouper
+            for grouper in (getattr(arg, 'grouper', None) for arg in args)
+            if grouper is not None
+        ]
+
+        # all grouping keys must be identical
+        assert all(groupers[0] == grouper for grouper in groupers[1:])
+
+        # we're performing a scalar operation on grouped column, so
+        # perform the operation directly on the underlying Series
+        # and regroup after it's finished
+        arguments = [getattr(arg, 'obj', arg) for arg in args]
+        groupings = groupers[0].groupings
+        args, kwargs = arguments_from_signature(
+            signature(func), *arguments, **kwargs
+        )
+        return func(*args, **kwargs).groupby(groupings)
+
+    # Define an execution rule for a simple elementwise Series
+    # function
+    @execute_node.register(
+        ops.ElementWiseVectorizedUDF,
+        *udf_signature(input_type, pin=None, klass=pd.Series),
+    )
+    @execute_node.register(
+        ops.ElementWiseVectorizedUDF,
+        *(
+            rule_to_python_type(argtype) + nullable(argtype)
+            for argtype in input_type
+        ),
+    )
+    def execute_udf_node(op, *args, **kwargs):
+        func = op.func
+        funcsig = valid_function_signature(input_type, func)
+
+        args, kwargs = arguments_from_signature(funcsig, *args, **kwargs)
+        return func(*args, **kwargs)
+
+    return scope
