@@ -15,6 +15,7 @@ DOCKER_STOP := $(DOCKER) rm --force --stop
 
 DOCKER_RUN_COMMAND := echo "you should do 'make docker_run DOCKER_RUN_COMMAND=[you command]'"
 SERVICES := omniscidb postgres mysql clickhouse impala kudu-master kudu-tserver
+LOADS := sqlite parquet postgres clickhouse omniscidb mysql impala
 
 WAITER_COMMAND := $(shell $(MAKEFILE_DIR)/ci/dockerize.sh $(SERVICES))
 
@@ -83,7 +84,7 @@ wait:
 
 load:
 	# load datasets for testing purpose
-	$(DOCKER_RUN) -e LOGLEVEL=$(LOGLEVEL) ibis ci/load-data.sh $(SERVICES)
+	$(DOCKER_RUN) -e LOGLEVEL=$(LOGLEVEL) ibis ./ci/load-data.sh $(LOADS)
 
 restart: stop
 	$(MAKE) start
