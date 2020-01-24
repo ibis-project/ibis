@@ -40,10 +40,10 @@ jobs:
       displayName: 'Setup BigQuery credentials'
       condition: eq(variables['System.PullRequest.IsFork'], 'False')
 
-    - bash: make start
+    - bash: make start PYTHON_VERSION=$PYTHON_VERSION
       displayName: 'Start databases'
 
-    - bash: make wait
+    - bash: make wait PYTHON_VERSION=$PYTHON_VERSION
       displayName: 'Wait for databases'
 
     - bash: docker ps
@@ -55,14 +55,14 @@ jobs:
     - bash: docker images
       displayName: 'List docker images'
 
-    - bash: make docker_lint
+    - bash: make docker_lint PYTHON_VERSION=$PYTHON_VERSION
       displayName: 'Lint'
 
     # TODO: change match-dir when docstrings are fixed for other backends
     - bash: docker-compose run ibis pydocstyle --match-dir="(ibis|omniscidb)"
       displayName: "Docstring check"
 
-    - bash: make docker_black
+    - bash: make docker_black PYTHON_VERSION=$PYTHON_VERSION
       displayName: 'Ensure black formatting'
 
     - bash: |
@@ -70,13 +70,13 @@ jobs:
         mkdir -p /tmp/env
       displayName: 'Make artifacts directories'
 
-    - bash: make docker_run DOCKER_RUN_COMMAND="conda list"
+    - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="conda list"
       displayName: 'Show packages in conda environment'
 
-    - bash: make docker_run DOCKER_RUN_COMMAND="conda list --export > /tmp/env/env.yml"
+    - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="conda list --export > /tmp/env/env.yml"
       displayName: 'Capture packages in conda environment'
 
-    - bash: make load
+    - bash: make load PYTHON_VERSION=$PYTHON_VERSION
       displayName: 'Load test datasets'
 
     - bash: |
@@ -154,10 +154,10 @@ jobs:
     COMPOSE_FILE: ci/docker-compose.yml
 
   steps:
-    - bash: make build
+    - bash: make build PYTHON_VERSION=$PYTHON_VERSION
       displayName: 'Build Ibis Image'
 
-    - bash: make docker_run DOCKER_RUN_COMMAND='ci/benchmark.sh azure "$(Build.SourceVersion)"'
+    - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND='ci/benchmark.sh azure "$(Build.SourceVersion)"'
       displayName: 'Run Benchmark (ASV)'
 
 - job: ${{ parameters.name }}BuildDocs
@@ -171,13 +171,13 @@ jobs:
     COMPOSE_FILE: ci/docker-compose.yml
 
   steps:
-    - bash: make start
+    - bash: make start PYTHON_VERSION=$PYTHON_VERSION
       displayName: 'Start databases'
 
-    - bash: make wait
+    - bash: make wait PYTHON_VERSION=$PYTHON_VERSION
       displayName: 'Wait for databases'
 
-    - bash: make builddoc
+    - bash: make builddoc PYTHON_VERSION=$PYTHON_VERSION
       displayName: 'build ibis documentation image'
 
     - bash: docker images
@@ -186,14 +186,14 @@ jobs:
     - bash: docker ps
       displayName: 'Show running containers'
 
-    - bash: make docker_docs_run DOCKER_RUN_COMMAND="ci/load-data.sh"
+    - bash: make docker_docs_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="ci/load-data.sh"
       displayName: 'Load test datasets'
 
-    - bash: make docker_docs_run DOCKER_RUN_COMMAND="ping -c 1 impala"
+    - bash: make docker_docs_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="ping -c 1 impala"
       displayName: 'Ping the impala host used in the tutorial notebooks'
 
     - bash: |
-        make docker_docs_run DOCKER_RUN_COMMAND="git clone --branch gh-pages \
+        make docker_docs_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="git clone --branch gh-pages \
           https://github.com/cpcloud/docs.ibis-project.org \
           /tmp/docs.ibis-project.org"
       displayName: 'Clone doc repo'
@@ -213,11 +213,11 @@ jobs:
             -exec rm -rf {} \;
       displayName: 'Clear out old docs'
 
-    - bash: make docker_docs_run DOCKER_RUN_COMMAND="conda list"
+    - bash: make docker_docs_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="conda list"
       displayName: 'Show the doc env'
 
     - bash: |
-        make docker_docs_run DOCKER_RUN_COMMAND="sphinx-build -b html \
+        make docker_docs_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="sphinx-build -b html \
           docs/source /tmp/docs.ibis-project.org -W -T"
       displayName: 'Build docs'
 
