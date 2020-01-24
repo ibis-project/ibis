@@ -2,7 +2,7 @@
 
 SHELL := /bin/bash
 MAKEFILE_DIR = $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
-PYTHON_VERSION := 3.6
+PYTHON_VERSION := 3.6 # or you can use '3.7'
 PYTHONHASHSEED := "random"
 
 # docker specific
@@ -13,23 +13,29 @@ DOCKER_RUN := $(DOCKER) run --rm
 DOCKER_BUILD := $(DOCKER) build
 DOCKER_STOP := $(DOCKER) rm --force --stop
 
+# command to be executed inside docker container
 DOCKER_RUN_COMMAND := echo "you should do 'make docker_run DOCKER_RUN_COMMAND=[you command]'"
 
+# all backends that ibis using
 BACKENDS := clickhouse impala kudu-master kudu-tserver mysql omniscidb parquet postgres sqlite
+
+# backends which are implemented as containers and can be launched through the `docker-compose`
 SERVICES := omniscidb postgres mysql clickhouse impala kudu-master kudu-tserver
+
+# the variable contains backends for which test datasets can be automatically loaded
 LOADS := sqlite parquet postgres clickhouse omniscidb mysql impala
 
 CURRENT_SERVICES := $(shell $(MAKEFILE_DIR)/ci/backends-to-start.sh "$(BACKENDS)" "$(SERVICES)")
 WAITER_COMMAND := $(shell $(MAKEFILE_DIR)/ci/dockerize.sh $(CURRENT_SERVICES))
 
-# tests specific
+# pytest specific options
 PYTEST_MARKERS := $(shell $(MAKEFILE_DIR)/ci/backends-markers.sh $(BACKENDS))
 PYTEST_DOCTEST_OPTIONS := --doctest-modules --doctest-ignore-import-errors
+PYTEST_OPTIONS :=
 
 REMOVE_COMPILED_PYTHON_SCRIPTS := (find /ibis -name "*.py[co]" -delete > /dev/null 2>&1 || true)
 
 LOGLEVEL := WARNING
-PYTEST_OPTIONS :=
 
 
 ## Targets for code checks
@@ -100,16 +106,17 @@ init: restart
 # Targets for testing ibis inside docker's containers
 
 test: init
+	# use the target to run backend specific tests
 	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
 		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) ${PYTEST_MARKERS} -k 'not test_import_time'"
+
+testparallel: init
+	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
+		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) ${PYTEST_MARKERS} -n auto -m 'not udf' -k 'not test_import_time'"
 
 testall:
 	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
 		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) -k 'not test_import_time'"
-
-testparallel: init
-	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
-		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) -n auto -m 'not udf' -k 'not test_import_time'"
 
 testmost:
 	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \

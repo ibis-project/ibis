@@ -8,7 +8,7 @@
 #  $ ./ci/backends-to-start.sh param1 param2
 # * param1: string of backends
 # * param2: string of backends, which then need to launched by `docker-compose`
-#     (as docker's services) before testing them
+#     (as docker's services) before working with them
 #
 # Example:
 # current_backends=`./ci/backends-to-start.sh "omniscidb impala parquet" "omniscidb impala"`  && echo $current_backends
