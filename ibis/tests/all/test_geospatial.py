@@ -273,11 +273,16 @@ def test_geo_spatial_unops(backend, geo, expr_fn, expected):
     ('expr_fn', 'expected'),
     [
         param(
-            # there is no explicit definition srid in the table, backends set different default srid,
+            # there is no explicit definition srid in the table,
+            # backends set different default srid,
             # so use points with relevant srid
             {
-                'omniscidb': lambda t: t['geo_linestring'].contains(point_geom_1_srid0),
-                'postgres': lambda t: t['geo_linestring'].contains(point_geom_1),
+                'omniscidb': lambda t: t['geo_linestring'].contains(
+                    point_geom_1_srid0
+                ),
+                'postgres': lambda t: t['geo_linestring'].contains(
+                    point_geom_1
+                ),
             },
             {
                 'omniscidb': [True, True, False, False, False],
@@ -287,8 +292,12 @@ def test_geo_spatial_unops(backend, geo, expr_fn, expected):
         ),
         param(
             {
-                'omniscidb': lambda t: t['geo_linestring'].disjoint(point_geom_0_srid0),
-                'postgres': lambda t: t['geo_linestring'].disjoint(point_geom_0),
+                'omniscidb': lambda t: t['geo_linestring'].disjoint(
+                    point_geom_0_srid0
+                ),
+                'postgres': lambda t: t['geo_linestring'].disjoint(
+                    point_geom_0
+                ),
             },
             {
                 'omniscidb': [False, True, True, True, True],
@@ -298,8 +307,12 @@ def test_geo_spatial_unops(backend, geo, expr_fn, expected):
         ),
         param(
             {
-                'omniscidb': lambda t: t['geo_linestring'].d_within(point_geom_1_srid0, 2.0),
-                'postgres': lambda t: t['geo_linestring'].d_within(point_geom_1, 2.0),
+                'omniscidb': lambda t: t['geo_linestring'].d_within(
+                    point_geom_1_srid0, 2.0
+                ),
+                'postgres': lambda t: t['geo_linestring'].d_within(
+                    point_geom_1, 2.0
+                ),
             },
             {
                 'omniscidb': [True, True, True, False, False],
@@ -309,8 +322,12 @@ def test_geo_spatial_unops(backend, geo, expr_fn, expected):
         ),
         param(
             {
-                'omniscidb': lambda t: t['geo_linestring'].intersects(point_geom_0_srid0),
-                'postgres': lambda t: t['geo_linestring'].intersects(point_geom_0),
+                'omniscidb': lambda t: t['geo_linestring'].intersects(
+                    point_geom_0_srid0
+                ),
+                'postgres': lambda t: t['geo_linestring'].intersects(
+                    point_geom_0
+                ),
             },
             {
                 'omniscidb': [True, False, False, False, False],
@@ -320,8 +337,12 @@ def test_geo_spatial_unops(backend, geo, expr_fn, expected):
         ),
         param(
             {
-                'omniscidb': lambda t: t['geo_linestring'].distance(point_geom_0_srid0),
-                'postgres': lambda t: t['geo_linestring'].distance(point_geom_0),
+                'omniscidb': lambda t: t['geo_linestring'].distance(
+                    point_geom_0_srid0
+                ),
+                'postgres': lambda t: t['geo_linestring'].distance(
+                    point_geom_0
+                ),
             },
             {
                 'omniscidb': [0.0, 1.41, 2.82, 4.24, 5.66],
@@ -331,8 +352,12 @@ def test_geo_spatial_unops(backend, geo, expr_fn, expected):
         ),
         param(
             {
-                'omniscidb': lambda t: t['geo_linestring'].max_distance(point_geom_0_srid0),
-                'postgres': lambda t: t['geo_linestring'].max_distance(point_geom_0),
+                'omniscidb': lambda t: t['geo_linestring'].max_distance(
+                    point_geom_0_srid0
+                ),
+                'postgres': lambda t: t['geo_linestring'].max_distance(
+                    point_geom_0
+                ),
             },
             {
                 'omniscidb': [1.41, 2.82, 4.24, 5.66, 7.08],
