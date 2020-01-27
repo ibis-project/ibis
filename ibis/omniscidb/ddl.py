@@ -19,10 +19,6 @@ def _is_quoted(x):
     return quoted is not None
 
 
-def _bool_str(x):
-    return 'true' if x else 'false'
-
-
 class OmniSciDBQualifiedSQLStatement:
     """OmniSciDBQualifiedSQLStatement."""
 
@@ -542,7 +538,7 @@ class LoadData(OmniSciDBDDL):
     def _get_options(self):
         if self.kwargs:
             return (
-                ' WITH('.join('%s=%r' % x for x in self.options.iteritems())
+                'WITH (' + ', '.join('%s=%r' % x for x in options.items())
                 + ')'
             )
         else:
@@ -551,7 +547,7 @@ class LoadData(OmniSciDBDDL):
     def compile(self):
         """Compile the LoadData expression."""
         if isinstance(self.source, str):
-            return "COPY {} FROM '{}'{})".format(
+            return "COPY {} FROM '{}' {})".format(
                 self.table_name, self.source, self._get_options()
             )
         else:
