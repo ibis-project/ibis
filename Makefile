@@ -2,7 +2,12 @@
 
 SHELL := /bin/bash
 MAKEFILE_DIR = $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
-PYTHON_VERSION := 3.6 # or you can use '3.7'
+
+# from PYTHON_VERSION depends which `./ci/requirements-$PYTHON_VERSION-dev` file
+# will be used for creating ibis image (see for additional info: `./ci/Dockerfile.dev`
+# and `./ci/docker-compose.yml`)
+# you can use `3.6` or `3.7` for now
+PYTHON_VERSION := 3.6
 PYTHONHASHSEED := "random"
 
 # docker specific
