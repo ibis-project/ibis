@@ -20,7 +20,7 @@ from ibis.util import log
 
 try:
     from cudf.dataframe.dataframe import DataFrame as GPUDataFrame
-except ImportError:
+except (ImportError, OSError):
     GPUDataFrame = None
 
 # used to check if geopandas and shapely is available
