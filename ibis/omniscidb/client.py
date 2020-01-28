@@ -66,6 +66,8 @@ class OmniSciDBDataType:
     __slots__ = 'typename', 'nullable'
 
     # using impala.client._HS2_TTypeId_to_dtype as reference
+    # NOTE: any updates here should be reflected to
+    #       omniscidb.operations._sql_type_names
     dtypes = {
         'BIGINT': dt.int64,
         'BOOL': dt.Boolean,
@@ -89,6 +91,8 @@ class OmniSciDBDataType:
 
     ibis_dtypes = {v: k for k, v in dtypes.items()}
 
+    # NOTE: any updates here should be reflected to
+    #       omniscidb.operations._sql_type_names
     _omniscidb_to_ibis_dtypes = {
         'BIGINT': 'int64',
         'BOOLEAN': 'Boolean',
@@ -107,6 +111,7 @@ class OmniSciDBDataType:
         'TEXT': 'string',
         'TIME': 'time',
         'TIMESTAMP': 'timestamp',
+        'TINYINT': 'int8',
         'VARCHAR': 'string',
         'POINT': 'point',
         'LINESTRING': 'linestring',
