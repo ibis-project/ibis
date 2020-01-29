@@ -61,8 +61,23 @@ Here are the steps to start database services and run the test suite:
 .. code-block:: sh
 
    make --directory ibis init
-   make --directory ibis testparallel
+   make --directory ibis testall
 
+Also you can run tests for a specific backend:
+
+.. code-block:: sh
+
+   make --directory ibis testparallel BACKENDS='omniscidb impala'
+
+or start database services for a specific backend:
+
+.. code-block:: sh
+
+   make --directory ibis init BACKENDS='omniscidb impala'
+
+.. note::
+   make for targets `test` and `testparallel` automatically do restart of
+   services (as a prerequisite)
 
 You can also run ``pytest`` tests on the command line if you are not testing
 integration with running database services. For example, to run all the tests

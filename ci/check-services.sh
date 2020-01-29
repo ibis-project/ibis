@@ -1,14 +1,15 @@
 #!/bin/bash
 
-docker-compose up --exit-code-from waiter waiter 2> /dev/null
+SERVICES=$@
 
-DOCKER_CODE=$?
+echo "DOCKER_CODE: ${DOCKER_CODE}"
+echo "SERVICES: ${SERVICES}"
 
 if [ $DOCKER_CODE -eq 0 ]
 then
   echo "[II] Done."
 else
-  for s in 'clickhouse' 'impala' 'kudu-master' 'kudu-tserver' 'mysql' 'omniscidb' 'postgres'
+  for s in ${SERVICES}
   do
     docker container ls
     echo "=============================================================="
