@@ -9,6 +9,7 @@ Release Notes
 
 * :feature:`2048` Introduce a top level vectorized UDF module (experimental). Implement element-wise UDF for pandas and PySpark backend.
 * :release:`1.2.1 <pending>`
+* :bug:`2055` Fix "cudf" import on OmniSciDB backend
 * :support:`2034` Add initial documentation for OmniSciDB, MySQL, PySpark and SparkSQL backends, add initial documentation for geospatial methods and add links to Ibis wiki page
 * :bug:`2050` CI: Drop table only if it exists
 * :feature:`2044` Implement covariance for bigquery backend
