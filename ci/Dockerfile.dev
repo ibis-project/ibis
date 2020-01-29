@@ -5,12 +5,12 @@ RUN apt-get -qq update --yes \
     build-essential git make clang libboost-dev postgresql-client ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
-ARG PYTHON
-ADD ci/requirements-$PYTHON-dev.yml /
+ARG PYTHON_VERSION
+ADD ci/requirements-$PYTHON_VERSION-dev.yml /
 
 RUN /opt/conda/bin/conda config --add channels conda-forge \
   && /opt/conda/bin/conda update --all --yes --quiet \
-  && /opt/conda/bin/conda env create --name ibis-env --file /requirements-$PYTHON-dev.yml \
+  && /opt/conda/bin/conda env create --name ibis-env --file /requirements-$PYTHON_VERSION-dev.yml \
   && /opt/conda/bin/conda install --yes conda-build \
   && /opt/conda/bin/conda clean --all --yes
 

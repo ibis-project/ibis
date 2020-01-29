@@ -112,7 +112,7 @@ services:
       context: ..
       dockerfile: ci/Dockerfile.dev
       args:
-        PYTHON: ${PYTHON_VERSION:-3.6}
+        PYTHON_VERSION: ${PYTHON_VERSION:-3.6}
 
   ibis-docs:
     image: ibis-docs:${PYTHON_VERSION:-3.6}
@@ -125,4 +125,4 @@ services:
       context: ..
       dockerfile: ci/Dockerfile.docs
       args:
-        PYTHON: ${PYTHON_VERSION:-3.6}
+        PYTHON_VERSION: ${PYTHON_VERSION:-3.6}
