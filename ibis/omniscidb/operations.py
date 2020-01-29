@@ -22,7 +22,7 @@ _sql_type_names = {
     'double': 'double',
     'float32': 'float',
     'float64': 'double',
-    'int8': 'smallint',
+    'int8': 'tinyint',
     'int16': 'smallint',
     'int32': 'int',
     'int64': 'bigint',
