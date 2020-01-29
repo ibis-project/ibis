@@ -368,6 +368,8 @@ def omniscidb(schema, tables, data_directory, **params):
         except Exception:
             logger.exception('OmniSci DDL statement %r failed', stmt)
         conn.close()
+    else:
+        database = default_db
 
     conn = pymapd.connect(
         host=params['host'],
