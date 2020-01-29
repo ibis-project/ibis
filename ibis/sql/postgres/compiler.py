@@ -607,6 +607,10 @@ def _literal(t, expr):
         return sa.literal(value)
 
 
+def _random(t, expr):
+    return sa.func.random()
+
+
 def _day_of_week_index(t, expr):
     (sa_arg,) = map(t.translate, expr.op().args)
     return sa.cast(
@@ -682,6 +686,7 @@ _operation_registry.update(
         ops.Max: _reduction('max'),
         ops.Variance: _variance_reduction('var'),
         ops.StandardDev: _variance_reduction('stddev'),
+        ops.Random: _random,
         # now is in the timezone of the server, but we want UTC
         ops.TimestampNow: lambda *args: sa.func.timezone('UTC', sa.func.now()),
         ops.CumulativeAll: unary(sa.func.bool_and),

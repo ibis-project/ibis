@@ -187,6 +187,7 @@ __all__ = (
     'param',
     'pi',
     'prevent_rewrite',
+    'random',
     'range_window',
     'row_number',
     'rows_with_max_lookback',
@@ -1341,6 +1342,11 @@ def clip(arg, lower=None, upper=None):
         raise ValueError("at least one of lower and " "upper must be provided")
 
     op = ops.Clip(arg, lower, upper)
+    return op.to_expr()
+
+
+def random():
+    op = ops.Random()
     return op.to_expr()
 
 

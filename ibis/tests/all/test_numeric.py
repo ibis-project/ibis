@@ -405,3 +405,11 @@ def test_sa_default_numeric_precision_and_scale(
 
     assert_equal(schema, expected)
     con.drop_table(table_name, force=True)
+
+
+@pytest.mark.only_on_backends([PostgreSQL, MySQL])
+def test_random_seed(backend, con):
+    expr = ibis.random()
+    result = con.execute(expr)
+    assert isinstance(result, float)
+    assert 0 <= result < 1
