@@ -536,9 +536,9 @@ class LoadData(OmniSciDBDDL):
         self.options = kwargs
 
     def _get_options(self):
-        if self.kwargs:
+        if self.options:
             return (
-                'WITH (' + ', '.join('%s=%r' % x for x in options.items())
+                'WITH (' + ', '.join("%s='%s'" % x for x in self.options.items())
                 + ')'
             )
         else:
@@ -547,7 +547,7 @@ class LoadData(OmniSciDBDDL):
     def compile(self):
         """Compile the LoadData expression."""
         if isinstance(self.source, str):
-            return "COPY {} FROM '{}' {})".format(
+            return "COPY {} FROM '{}' {}".format(
                 self.table_name, self.source, self._get_options()
             )
         else:
