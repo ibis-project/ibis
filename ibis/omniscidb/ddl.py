@@ -537,9 +537,9 @@ class LoadData(OmniSciDBDDL):
 
     def _get_options(self):
         if self.options:
-            return (
-                'WITH (' + ', '.join("%s='%s'" % x
-                                     for x in self.options.items()) + ')')
+            return 'WITH ({})'.format(
+                ', '.join("%s='%s'" % x for x in self.options.items())
+            )
         else:
             return ''
 
