@@ -461,15 +461,6 @@ def test_time_valid():
                 'not supported'
             ),
         ),
-        param(
-            pd.Timedelta('3', unit='Y'),
-            dt.Interval(unit='Y'),
-            id='years',
-            marks=pytest.mark.xfail(
-                reason='Year conversion from Timedelta to ibis interval '
-                'not supported'
-            ),
-        ),
     ],
 )
 def test_infer_dtype(value, expected_dtype):
