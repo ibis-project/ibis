@@ -346,7 +346,9 @@ def omniscidb(schema, tables, data_directory, **params):
     # connection
     logger.info('Initializing OmniSci...')
     default_db = 'omnisci'
-    if params['database'] != default_db:
+    database = params["database"]
+
+    if database != default_db:
         conn = pymapd.connect(
             host=params['host'],
             user=params['user'],
@@ -355,7 +357,6 @@ def omniscidb(schema, tables, data_directory, **params):
             dbname=default_db,
             protocol=params['protocol'],
         )
-        database = params["database"]
         stmt = "DROP DATABASE IF EXISTS {}".format(database)
         try:
             conn.execute(stmt)
@@ -368,8 +369,6 @@ def omniscidb(schema, tables, data_directory, **params):
         except Exception:
             logger.exception('OmniSci DDL statement %r failed', stmt)
         conn.close()
-    else:
-        database = default_db
 
     conn = pymapd.connect(
         host=params['host'],
