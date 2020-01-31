@@ -9,6 +9,7 @@ Release Notes
 
 * :feature:`2048` Introduce a top level vectorized UDF module (experimental). Implement element-wise UDF for pandas and PySpark backend.
 * :release:`1.2.1 <pending>`
+* :bug:`2061` Fix CI build errors
 * :feature:`1976` Add DenseRank, RowNumber, MinRank, Count, PercentRank/CumeDist window operations to OmniSciDB
 * :bug:`2055` Fix "cudf" import on OmniSciDB backend
 * :feature:`2052` added possibility to run tests for separate backend via `make test BACKENDS=[YOUR BACKEND]`
