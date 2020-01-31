@@ -191,6 +191,9 @@ def test_udaf_analytic_groupby(con, t, df):
     tm.assert_series_equal(result, expected)
 
 
+@pytest.mark.xfail(
+    reason="https://github.com/ibis-project/ibis/issues/2063", strict=False
+)
 def test_udaf_groupby():
     df = pd.DataFrame(
         {
@@ -373,6 +376,9 @@ def test_multiple_argument_udaf_window():
     tm.assert_frame_equal(result, expected)
 
 
+@pytest.mark.xfail(
+    reason="https://github.com/ibis-project/ibis/issues/2063", strict=False
+)
 def test_udaf_window_nan():
     df = pd.DataFrame(
         {

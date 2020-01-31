@@ -109,8 +109,10 @@ def test_create_table_schema(con):
         [
             ('a', 'float'),
             ('b', 'double'),
-            ('c', 'int32'),
-            ('d', 'int64'),
+            ('c', 'int8'),
+            ('d', 'int16'),
+            ('e', 'int32'),
+            ('f', 'int64'),
             ('x', 'point'),
             ('y', 'linestring'),
             ('z', 'polygon'),
@@ -123,14 +125,8 @@ def test_create_table_schema(con):
     try:
         t = con.table(t_name)
 
-        assert isinstance(t.a, ir.FloatingColumn)
-        assert isinstance(t.b, ir.FloatingColumn)
-        assert isinstance(t.c, ir.IntegerColumn)
-        assert isinstance(t.d, ir.IntegerColumn)
-        assert isinstance(t.x, ir.PointColumn)
-        assert isinstance(t.y, ir.LineStringColumn)
-        assert isinstance(t.z, ir.PolygonColumn)
-        assert isinstance(t.w, ir.MultiPolygonColumn)
+        for k, i_type in t.schema().items():
+            assert schema[k] == i_type
     finally:
         con.drop_table(t_name)
 

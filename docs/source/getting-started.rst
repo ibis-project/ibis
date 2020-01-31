@@ -187,8 +187,8 @@ Create a client by supplying a dictionary of DataFrames using
    import pandas as pd
    con = ibis.pandas.connect(
        {
-          'A': pd.util.testing.makeDataFrame(),
-          'B': pd.util.testing.makeDataFrame(),
+          'A': pd._testing.makeDataFrame(),
+          'B': pd._testing.makeDataFrame(),
        }
    )
 

@@ -22,7 +22,7 @@ _sql_type_names = {
     'double': 'double',
     'float32': 'float',
     'float64': 'double',
-    'int8': 'smallint',
+    'int8': 'tinyint',
     'int16': 'smallint',
     'int32': 'int',
     'int64': 'bigint',
@@ -685,9 +685,6 @@ class ByteLength(ops.StringLength):
     """Returns the length of a string in bytes length."""
 
 
-# WINDOW
-
-
 def _window(translator, expr):
     op = expr.op()
 
@@ -709,21 +706,17 @@ def _window(translator, expr):
         ops.CMSMedian,
         ops.GroupConcat,
         ops.HLLCardinality,
-        ops.Count,  # enable this when `- 1` option is enable on OmniSciDB
         ops.All,  # TODO: change all to work as cumall
         ops.Any,  # TODO: change any to work as cumany
     )
 
-    # TODO: enable this when `- 1` option is enable on OmniSciDB
-    # _subtract_one = '({}) - 1'.format
-    # _expr_transforms = {
-    #     ops.RowNumber: _subtract_one,
-    #     ops.DenseRank: _subtract_one,
-    #     ops.MinRank: _subtract_one,
-    #     ops.NTile: _subtract_one,
-    # }
-
-    _expr_transforms = {}
+    _subtract_one = '{} - 1'.format
+    _expr_transforms = {
+        ops.DenseRank: _subtract_one,
+        ops.MinRank: _subtract_one,
+        ops.NTile: _subtract_one,
+        ops.RowNumber: _subtract_one,
+    }
 
     if isinstance(window_op, _unsupported_win_ops):
         raise com.UnsupportedOperationError(
@@ -795,6 +788,17 @@ def _shift_like(name, default_offset=None):
             return '{}({}, {})'.format(name, arg_formatted, offset_formatted)
         else:
             return '{}({})'.format(name, arg_formatted)
+
+    return formatter
+
+
+def _window_op_one_param(name):
+    def formatter(translator, expr):
+        op = expr.op()
+        _, parameter = op.args
+        # arg_formatted = translator.translate(arg)
+        parameter_formatted = translator.translate(parameter)
+        return '{}({})'.format(name, parameter_formatted)
 
     return formatter
 
@@ -927,12 +931,17 @@ _general_ops = {
 # WINDOW
 # RowNumber, and rank functions starts with 0 in Ibis-land
 _window_ops = {
-    ops.WindowOp: _window,
-    ops.Lead: _shift_like('lead', 1),
+    ops.DenseRank: lambda *args: 'dense_rank()',
     ops.FirstValue: unary('first_value'),
     ops.LastValue: unary('last_value'),
     ops.Lag: _shift_like('lag'),
-    ops.Lead: _shift_like('lead'),
+    ops.Lead: _shift_like('lead', 1),
+    ops.MinRank: lambda *args: 'rank()',
+    # cume_dist vs percent_rank
+    # https://github.com/ibis-project/ibis/issues/1975
+    ops.PercentRank: lambda *args: 'cume_dist()',
+    ops.RowNumber: lambda *args: 'row_number()',
+    ops.WindowOp: _window,
 }
 
 # UNSUPPORTED OPERATIONS
@@ -949,11 +958,6 @@ _unsupported_ops = [
     ops.CumulativeAny,
     ops.CumulativeAll,
     ops.IdenticalTo,
-    ops.RankBase,  # TODO: it currently doesn't allow `- 1`
-    ops.RowNumber,  # TODO: it currently doesn't allow `- 1`
-    ops.DenseRank,  # TODO: it currently doesn't allow `- 1`
-    ops.MinRank,  # TODO: it currently doesn't allow `- 1`
-    ops.PercentRank,  # TODO: it currently doesn't allow `- 1`
     ops.NTile,
     ops.NthValue,
     ops.GroupConcat,
