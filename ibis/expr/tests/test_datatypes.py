@@ -462,7 +462,7 @@ def test_time_valid():
             ),
         ),
         param(
-            pd.Timedelta('3', unit='Y'),
+            None,
             dt.Interval(unit='Y'),
             id='years',
             marks=pytest.mark.xfail(

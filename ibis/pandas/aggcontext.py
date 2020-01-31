@@ -318,7 +318,7 @@ def compute_window_spec_interval(_, expr):
 
 def _window_agg_built_in(
     frame: pd.DataFrame,
-    windowed: pd.core.window._Window,
+    windowed: pd.core.window.Window,
     function: str,
     max_lookback: int,
     *args: Tuple[Any],
@@ -349,7 +349,7 @@ def _window_agg_built_in(
 
 def _window_agg_udf(
     grouped_data: SeriesGroupBy,
-    windowed: pd.core.window._Window,
+    windowed: pd.core.window.Window,
     function: Callable,
     dtype: np.dtype,
     max_lookback: int,
