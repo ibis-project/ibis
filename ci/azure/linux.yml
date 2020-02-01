@@ -186,7 +186,7 @@ jobs:
     - bash: docker ps
       displayName: 'Show running containers'
 
-    - bash: make docker_docs_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="ci/load-data.sh"
+    - bash: make load PYTHON_VERSION=$PYTHON_VERSION
       displayName: 'Load test datasets'
 
     - bash: make docker_docs_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="ping -c 1 impala"
