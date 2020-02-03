@@ -32,7 +32,7 @@ done
 i=0
 for backend in ${BACKENDS[@]}
 do
-    if [[ ${SERVICES_START[${backend}]} ]]; then
+    if [[ ${USER_REQUESTED_BACKENDS_LOOKUP[${backend}]} ]]; then
         CHOSEN_BACKENDS[${i}]=${backend}
         ((i++))
     fi
