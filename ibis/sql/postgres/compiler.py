@@ -590,6 +590,10 @@ def _string_join(t, expr):
     return sa.func.concat_ws(t.translate(sep), *map(t.translate, elements))
 
 
+def _string_concat(t, expr):
+    return sa.func.concat(*map(t.translate, expr.op().arg))
+
+
 def _literal(t, expr):
     dtype = expr.type()
     op = expr.op()
@@ -649,12 +653,20 @@ _operation_registry.update(
         ops.StringSplit: fixed_arity(sa.func.string_to_array, 2),
         ops.StringJoin: _string_join,
         ops.FindInSet: _find_in_set,
+        ops.StringConcat: _string_concat,
         # math
         ops.Log: _log,
         ops.Log2: unary(lambda x: sa.func.log(2, x)),
         ops.Log10: unary(sa.func.log),
         ops.Round: _round,
         ops.Modulus: _mod,
+        ops.Sin: unary(sa.func.sin),
+        ops.Cos: unary(sa.func.cos),
+        ops.Tan: unary(sa.func.tan),
+        ops.Asin: unary(sa.func.asin),
+        ops.Acos: unary(sa.func.acos),
+        ops.Atan: unary(sa.func.atan),
+        ops.Degrees: unary(sa.func.degrees),
         # dates and times
         ops.Date: unary(lambda x: sa.cast(x, sa.Date)),
         ops.DateTruncate: _timestamp_truncate,
