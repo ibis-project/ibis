@@ -392,7 +392,8 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         stmt = ddl.LoadData(self._qualified_name, df)
         return self._execute(stmt)
 
-    def read_csv(self, path, header=True, quoted=True, delimiter=','):
+    def read_csv(self, path: str, header: bool = True,
+                 quoted: bool = True, delimiter: str = ','):
         """
         Load data into an Omniscidb table from CSV file.
 
@@ -400,13 +401,13 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
 
         Parameters
         ----------
-        path : string
+        path : str
           Path to the input data file
-        header : boolean, optional, default True
+        header : bool, optional, default True
           Indicating whether the input file has a header line
-        quoted : boolean, optional, default True
+        quoted : bool, optional, default True
           Indicating whether the input file contains quoted fields
-        delimiter : string, optional, default ','
+        delimiter : str, optional, default ','
 
         Returns
         -------
