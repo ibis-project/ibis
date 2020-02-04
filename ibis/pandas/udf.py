@@ -542,16 +542,9 @@ def pre_execute_elementwise_udf(
     # Define an execution rule for elementwise operations on a
     # grouped Series
     nargs = len(input_type)
-    group_by_signatures = [
-        udf_signature(input_type, pin=pin, klass=SeriesGroupBy)
-        for pin in range(nargs)
-    ]
 
-    @toolz.compose(
-        *(
-            execute_node.register(ops.ElementWiseVectorizedUDF, *types)
-            for types in group_by_signatures
-        )
+    @execute_node.register(
+        ops.ElementWiseVectorizedUDF, *(itertools.repeat(SeriesGroupBy, nargs))
     )
     def execute_udf_node_groupby(op, *args, **kwargs):
         func = op.func
@@ -578,15 +571,10 @@ def pre_execute_elementwise_udf(
     # Define an execution rule for a simple elementwise Series
     # function
     @execute_node.register(
-        ops.ElementWiseVectorizedUDF,
-        *udf_signature(input_type, pin=None, klass=pd.Series),
+        ops.ElementWiseVectorizedUDF, *(itertools.repeat(pd.Series, nargs))
     )
     @execute_node.register(
-        ops.ElementWiseVectorizedUDF,
-        *(
-            rule_to_python_type(argtype) + nullable(argtype)
-            for argtype in input_type
-        ),
+        ops.ElementWiseVectorizedUDF, *(itertools.repeat(object, nargs))
     )
     def execute_udf_node(op, *args, **kwargs):
         func = op.func
