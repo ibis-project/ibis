@@ -9,6 +9,7 @@ Release Notes
 
 * :feature:`2048` Introduce a top level vectorized UDF module (experimental). Implement element-wise UDF for pandas and PySpark backend.
 * :release:`1.2.1 <pending>`
+* :bug:`2069` Fix load data stage for Linux CI
 * :bug:`2057` Fix datamgr.py fail if IBIS_TEST_OMNISCIDB_DATABASE=omnisci
 * :bug:`2061` CI: Fix CI builds related to new pandas 1.0 compatibility
 * :feature:`1976` Add DenseRank, RowNumber, MinRank, Count, PercentRank/CumeDist window operations to OmniSciDB
