@@ -192,7 +192,7 @@ def test_udaf_analytic_groupby(con, t, df):
 
 
 @pytest.mark.xfail(
-    reason="https://github.com/ibis-project/ibis/issues/2063", strict=False
+    reason="https://github.com/pandas-dev/pandas/issues/31760", strict=False
 )
 def test_udaf_groupby():
     df = pd.DataFrame(
@@ -377,7 +377,7 @@ def test_multiple_argument_udaf_window():
 
 
 @pytest.mark.xfail(
-    reason="https://github.com/ibis-project/ibis/issues/2063", strict=False
+    reason="https://github.com/pandas-dev/pandas/issues/31754", strict=False
 )
 def test_udaf_window_nan():
     df = pd.DataFrame(
