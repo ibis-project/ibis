@@ -275,7 +275,7 @@ def test_geo_spatial_unops(backend, geo, expr_fn, expected):
         param(
             lambda t: t['geo_linestring'].contains(point_geom_1_srid0),
             {
-                'omniscidb': [ True,  True, False, False, False],
+                'omniscidb': [True, True, False, False, False],
                 'postgres': [False] * 5,  # not contains the border
             },
             id='contains',
@@ -377,15 +377,9 @@ def test_area(backend, geo, arg, expected):
         (lambda t: point_geom_2.srid(), {'omniscidb': 4326, 'postgres': 4326}),
         (lambda t: point_geom_0.srid(), {'omniscidb': 4326, 'postgres': 4326}),
         (lambda t: t.geo_point.srid(), {'omniscidb': 0, 'postgres': 0}),
-        (
-            lambda t: t.geo_linestring.srid(),
-            {'omniscidb': 0, 'postgres': 0},
-        ),
+        (lambda t: t.geo_linestring.srid(), {'omniscidb': 0, 'postgres': 0}),
         (lambda t: t.geo_polygon.srid(), {'omniscidb': 0, 'postgres': 0}),
-        (
-            lambda t: t.geo_multipolygon.srid(),
-            {'omniscidb': 0, 'postgres': 0},
-        ),
+        (lambda t: t.geo_multipolygon.srid(), {'omniscidb': 0, 'postgres': 0}),
     ],
 )
 @pytest.mark.only_on_backends(all_db_geo_supported)
