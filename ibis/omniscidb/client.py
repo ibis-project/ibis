@@ -392,8 +392,13 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         stmt = ddl.LoadData(self._qualified_name, df)
         return self._execute(stmt)
 
-    def read_csv(self, path: str, header: bool = True,
-                 quoted: bool = True, delimiter: str = ','):
+    def read_csv(
+        self,
+        path: str,
+        header: bool = True,
+        quoted: bool = True,
+        delimiter: str = ',',
+    ):
         """
         Load data into an Omniscidb table from CSV file.
 
