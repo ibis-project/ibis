@@ -21,7 +21,6 @@ import ibis.expr.operations as ops
 import ibis.expr.signature as sig
 import ibis.udf.vectorized
 from ibis.pandas.aggcontext import Window
-from ibis.pandas.client import PandasClient
 from ibis.pandas.core import (
     date_types,
     time_types,
@@ -529,10 +528,8 @@ class udf:
 
 
 @pre_execute.register(ops.ElementWiseVectorizedUDF)
-@pre_execute.register(ops.ElementWiseVectorizedUDF, PandasClient)
-def pre_execute_elementwise_udf(
-    op, *clients, scope=None, aggcontet=None, **kwargs
-):
+@pre_execute.register(ops.ElementWiseVectorizedUDF, ibis.client.Client)
+def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
     """Register execution rules for elementwise UDFs.
     """
     input_type = op.input_type
