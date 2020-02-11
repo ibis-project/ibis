@@ -188,7 +188,7 @@ def execute_with_scope(expr, scope, aggcontext=None, clients=None, **kwargs):
             **kwargs,
         ),
         **kwargs,
-    )
+    )[op]
 
     return result
 
@@ -215,55 +215,6 @@ def execute_until_in_scope(
     # return the corresponding value
     op = expr.op()
     if op in scope:
-        return scope[op]
-
-    new_scope = execute_bottom_up(
-        expr,
-        scope,
-        aggcontext=aggcontext,
-        post_execute_=post_execute_,
-        clients=clients,
-        **kwargs,
-    )
-    new_scope = toolz.merge(
-        new_scope, pre_execute(op, *clients, scope=scope, **kwargs)
-    )
-    return execute_until_in_scope(
-        expr,
-        new_scope,
-        aggcontext=aggcontext,
-        clients=clients,
-        post_execute_=post_execute_,
-        **kwargs,
-    )
-
-
-def execute_bottom_up(
-    expr, scope, aggcontext=None, post_execute_=None, clients=None, **kwargs
-):
-    """Execute `expr` bottom-up.
-
-    Parameters
-    ----------
-    expr : ibis.expr.types.Expr
-    scope : Mapping[ibis.expr.operations.Node, object]
-    aggcontext : Optional[ibis.pandas.aggcontext.AggregationContext]
-    kwargs : Dict[str, object]
-
-    Returns
-    -------
-    result : Mapping[
-        ibis.expr.operations.Node,
-        Union[pandas.Series, pandas.DataFrame, scalar_types]
-    ]
-        A mapping from node to the computed result of that Node
-    """
-    assert post_execute_ is not None, 'post_execute_ is None'
-    op = expr.op()
-
-    # if we're in scope then return the scope, this will then be passed back
-    # into execute_bottom_up, which will then terminate
-    if op in scope:
         return scope
     elif isinstance(op, ops.Literal):
         # special case literals to avoid the overhead of dispatching
@@ -274,6 +225,16 @@ def execute_bottom_up(
             )
         }
 
+    pre_executed_scope = pre_execute(
+        op, *clients, scope=scope, aggcontext=aggcontext, **kwargs
+    )
+    new_scope = toolz.merge(scope, pre_executed_scope)
+
+    # Short circuit: if pre_execute puts op in scope, then we don't need to
+    # execute its computable_args
+    if op in new_scope:
+        return new_scope
+
     # figure out what arguments we're able to compute on based on the
     # expressions inputs. things like expressions, None, and scalar types are
     # computable whereas ``list``s are not
@@ -281,9 +242,9 @@ def execute_bottom_up(
 
     # recursively compute each node's arguments until we've changed type
     scopes = [
-        execute_bottom_up(
+        execute_until_in_scope(
             arg,
-            scope,
+            new_scope,
             aggcontext=aggcontext,
             post_execute_=post_execute_,
             clients=clients,
@@ -303,7 +264,7 @@ def execute_bottom_up(
     # there should be exactly one dictionary per computable argument
     assert len(computable_args) == len(scopes)
 
-    new_scope = toolz.merge(scopes)
+    new_scope = toolz.merge(new_scope, *scopes)
 
     # pass our computed arguments to this node's execute_node implementation
     data = [
