@@ -43,7 +43,7 @@ dependencies:
   - pytz
   - regex
   - requests
-  - rtree<0.9
+  - rtree
   - ruamel.yaml
   - shapely
   - sqlalchemy>=1.1
