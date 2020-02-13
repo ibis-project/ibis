@@ -7,6 +7,7 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`/release-pre-1.0`
 
+* :support:`2077` Change omniscidb image tag from v5.0.0 to v5.1.0 on docker-compose recipe
 * :support:`2075` Disable Postgres tests on Windows CI.
 * :feature:`2048` Introduce a top level vectorized UDF module (experimental). Implement element-wise UDF for pandas and PySpark backend.
 * :release:`1.2.1 <pending>`
