@@ -31,6 +31,7 @@ SERVICES := omniscidb postgres mysql clickhouse impala kudu-master kudu-tserver
 LOADS := sqlite parquet postgres clickhouse omniscidb mysql impala
 
 CURRENT_SERVICES := $(shell $(MAKEFILE_DIR)/ci/backends-to-start.sh "$(BACKENDS)" "$(SERVICES)")
+CURRENT_LOADS := $(shell $(MAKEFILE_DIR)/ci/backends-to-start.sh "$(BACKENDS)" "$(LOADS)")
 WAITER_COMMAND := $(shell $(MAKEFILE_DIR)/ci/dockerize.sh $(CURRENT_SERVICES))
 
 # pytest specific options
@@ -98,7 +99,7 @@ wait:
 
 load:
 	# load datasets for testing purpose
-	$(DOCKER_RUN) -e LOGLEVEL=$(LOGLEVEL) ibis ./ci/load-data.sh $(BACKENDS)
+	$(DOCKER_RUN) -e LOGLEVEL=$(LOGLEVEL) ibis ./ci/load-data.sh $(CURRENT_LOADS)
 
 restart: stop
 	$(MAKE) start

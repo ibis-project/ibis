@@ -185,7 +185,7 @@ def download(repo_url, directory):
 @cli.command()
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
 @click.option('-d', '--data-directory', default=DATA_DIR)
-@click.option('-i', '--ignore-missing-dependency', is_flag=True, default=False)
+@click.option('-i', '--ignore-missing-dependency', is_flag=True, default=True)
 def parquet(tables, data_directory, ignore_missing_dependency, **params):
     try:
         import pyarrow as pa  # noqa: F401
