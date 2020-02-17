@@ -75,8 +75,8 @@ DROP TABLE IF EXISTS geo;
 
 CREATE TABLE geo (
   id INTEGER,
-  geo_point POINT,
-  geo_linestring LINESTRING,
-  geo_polygon POLYGON,
-  geo_multipolygon MULTIPOLYGON
+  geo_point GEOMETRY(POINT, 0),
+  geo_linestring GEOMETRY(LINESTRING, 0),
+  geo_polygon GEOMETRY(POLYGON, 0),
+  geo_multipolygon GEOMETRY(MULTIPOLYGON, 0)
 );
