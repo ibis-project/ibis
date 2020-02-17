@@ -389,7 +389,11 @@ class OmniSciDB(Backend):
             'IBIS_TEST_OMNISCIDB_DATABASE', 'ibis_testing'
         )
         return ibis.omniscidb.connect(
-            host=host, port = port, user=user, password=password, database=database
+            host=host,
+            port=port,
+            user=user,
+            password=password,
+            database=database,
         )
 
     @property
