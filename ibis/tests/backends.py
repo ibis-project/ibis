@@ -384,11 +384,12 @@ class OmniSciDB(Backend):
             'IBIS_TEST_OMNISCIDB_PASSWORD', 'HyperInteractive'
         )
         host = os.environ.get('IBIS_TEST_OMNISCIDB_HOST', 'localhost')
+        port = os.environ.get('IBIS_TEST_OMNISCIDB_PORT', '6274')
         database = os.environ.get(
             'IBIS_TEST_OMNISCIDB_DATABASE', 'ibis_testing'
         )
         return ibis.omniscidb.connect(
-            host=host, user=user, password=password, database=database
+            host=host, port = port, user=user, password=password, database=database
         )
 
     @property
