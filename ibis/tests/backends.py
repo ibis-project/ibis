@@ -336,12 +336,19 @@ class PostgreSQL(Backend, RoundHalfToEven):
         host = os.environ.get(
             'IBIS_TEST_POSTGRES_HOST', os.environ.get('PGHOST', 'localhost')
         )
+        port = os.environ.get(
+            'IBIS_TEST_POSTGRES_PORT', os.environ.get('PGPORT', '5432')
+        )
         database = os.environ.get(
             'IBIS_TEST_POSTGRES_DATABASE',
             os.environ.get('PGDATABASE', 'ibis_testing'),
         )
         return ibis.postgres.connect(
-            host=host, user=user, password=password, database=database
+            host=host,
+            port=port,
+            user=user,
+            password=password,
+            database=database,
         )
 
     @property
