@@ -229,7 +229,7 @@ def test_geo_perimeter(geotable):
 def test_geo_srid(geotable):
     expr = geotable.geo_linestring.srid()
     result = expr.execute()
-    assert (result == 4326).all()
+    assert (result == 0).all()
 
 
 def test_geo_difference(geotable, gdf):
