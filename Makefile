@@ -82,6 +82,10 @@ docker_lint: build
 docker_black: build
 	$(DOCKER_RUN) ibis black --check .
 
+docker_check_pre_commit_hooks: build
+    # check if all pre-commit hooks are passing inside ibis container
+    $(DOCKER_RUN) pre-commit run --all-files
+
 # Targets for manipulating docker's containers
 
 stop:

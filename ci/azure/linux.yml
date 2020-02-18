@@ -62,7 +62,7 @@ jobs:
     - bash: docker-compose run ibis pydocstyle --match-dir="(ibis|omniscidb)"
       displayName: "Docstring check"
 
-    - bash: docker-compose run ibis make check_pre_commit_hooks
+    - bash: make docker_check_pre_commit_hooks PYTHON_VERSION=$PYTHON_VERSION
       displayName: 'Ensure all pre-commit hooks checking are passing.'
 
     - bash: |
