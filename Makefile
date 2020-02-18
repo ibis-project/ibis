@@ -56,6 +56,10 @@ black:
 	# check that black formatting would not be applied
 	black --check .
 
+check_pre_commit_hooks:
+	# check if all pre-commit hooks are passing
+	pre-commit run --all-files
+
 ## Targets for setup development environment
 
 clean:
