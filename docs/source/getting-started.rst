@@ -216,6 +216,10 @@ Create a client by passing in database connection parameters such as ``host``,
        password='HyperInteractive',
    )
 
+Note: OmniSciDB backend support is tested against the latest development
+release of their database using the ``omnisci/core-os-cpu-dev:latest``
+Docker image. Some features may not work on earlier releases.
+
 .. _install.mysql:
 
 `MySQL <https://www.mysql.com/>`_ Quickstart
