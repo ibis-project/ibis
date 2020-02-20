@@ -13,27 +13,10 @@ import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis.impala import compiler as impala_compiler
+from ibis.omniscidb import dtypes as omniscidb_dtypes
 from ibis.omniscidb.identifiers import quote_identifier
 
-_sql_type_names = {
-    'boolean': 'boolean',
-    'date': 'date',
-    'decimal': 'decimal',
-    'double': 'double',
-    'float32': 'float',
-    'float64': 'double',
-    'int8': 'tinyint',
-    'int16': 'smallint',
-    'int32': 'int',
-    'int64': 'bigint',
-    'linestring': 'linestring',
-    'multipolygon': 'multipolygon',
-    'point': 'point',
-    'polygon': 'polygon',
-    'string': 'text',
-    'time': 'time',
-    'timestamp': 'timestamp',
-}
+_sql_type_names = omniscidb_dtypes.ibis_dtypes_str_to_sql
 
 
 def _is_floating(*args):

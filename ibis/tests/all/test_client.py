@@ -3,7 +3,15 @@ from pkg_resources import parse_version
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.tests.backends import BigQuery
+from ibis.tests.backends import (
+    BigQuery,
+    Clickhouse,
+    Csv,
+    Impala,
+    Pandas,
+    PySpark,
+    Spark,
+)
 
 
 @pytest.mark.xfail_unsupported
@@ -66,3 +74,26 @@ def test_sql(backend, con, sql):
 
     # execute the expression using SQL query
     con.sql(sql).execute()
+
+
+@pytest.mark.xfail_unsupported
+@pytest.mark.xfail_backends([Clickhouse, Csv, Pandas, Impala, PySpark, Spark])
+def test_nullable_input_output(con, backend, temp_table):
+    # - Clickhouse, CSVClient and Pandas don't have methods
+    #   create_table or drop_table yet.
+    # - Impala, PySpark and Spark non-nullable issues #2138 and #2137
+    sch = ibis.schema(
+        [
+            ('foo', 'int64'),
+            ('bar', ibis.expr.datatypes.int64(nullable=False)),
+            ('baz', 'boolean*'),
+        ]
+    )
+
+    con.create_table(temp_table, schema=sch)
+
+    t = con.table(temp_table)
+
+    assert t.schema().types[0].nullable
+    assert not t.schema().types[1].nullable
+    assert t.schema().types[2].nullable

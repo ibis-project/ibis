@@ -6,7 +6,12 @@ import pytest
 
 import ibis
 import ibis.common.exceptions as com
+import ibis.util as util
 from ibis.tests.backends import Backend
+
+
+def _random_identifier(suffix):
+    return '__ibis_test_{}_{}'.format(suffix, util.guid())
 
 
 def subclasses(cls):
@@ -366,3 +371,24 @@ def get_common_spark_testing_client(data_directory, connect):
     df_udf_random.createOrReplaceTempView('udf_random')
 
     return _spark_testing_client
+
+
+@pytest.fixture
+def temp_table(con: ibis.client.Client) -> str:
+    """
+    Return a temporary table name.
+
+    Parameters
+    ----------
+    con : ibis.client.Client
+
+    Yields
+    ------
+    name : string
+        Random table name for a temporary usage.
+    """
+    name = _random_identifier('table')
+    try:
+        yield name
+    finally:
+        con.drop_table(name)

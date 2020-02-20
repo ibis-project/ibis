@@ -4,10 +4,8 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
 import ibis
-import ibis.expr.schema as sch
+from ibis.omniscidb.compiler import _type_to_sql_string, quote_identifier
 from ibis.sql.compiler import DDL, DML
-
-from .compiler import _type_to_sql_string, quote_identifier
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
 
@@ -20,6 +18,21 @@ def _is_quoted(x):
     regex = re.compile(r"(?:`(.*)`|(.*))")
     quoted, _ = regex.match(x).groups()
     return quoted is not None
+
+
+def _bool2str(v: bool) -> str:
+    """
+    Convert a bool value to a OmniSciDB bool value.
+
+    Parameters
+    ----------
+    v : bool
+
+    Returns
+    -------
+    str
+    """
+    return str(bool(v)).lower()
 
 
 class OmniSciDBQualifiedSQLStatement:
@@ -70,14 +83,6 @@ class DropTable(DropObject):
         return self._get_scoped_name(self.table_name, self.database)
 
 
-def _format_properties(props):
-    tokens = []
-    for k, v in sorted(props.items()):
-        tokens.append("  '{}'='{}'".format(k, v))
-
-    return '(\n{}\n)'.format(',\n'.join(tokens))
-
-
 class CreateTable(CreateDDL):
     """Create Table class.
 
@@ -126,16 +131,36 @@ class CreateTableWithSchema(CreateTable):
     def __init__(
         self,
         table_name: str,
-        schema: sch.Schema,
+        schema: ibis.Schema,
         database: Optional[str] = None,
         max_rows: Optional[int] = None,
         fragment_size: Optional[int] = None,
+        is_temporary: bool = False,
     ):
+        """
+        Initialize CreateTableWithSchema.
+
+        Parameters
+        ----------
+        table_name : str
+        schema : ibis.Schema
+        database : str, optional, defaul None
+        max_rows : int, optional, defaul None
+        fragment_size : int, optional, defaul None
+        is_temporary : bool, default False
+        """
         self.table_name = table_name
         self.database = database
         self.schema = schema
         self.max_rows = max_rows
         self.fragment_size = fragment_size
+        self.is_temporary = is_temporary
+
+    @property
+    def _prefix(self):
+        return 'CREATE {}TABLE'.format(
+            'TEMPORARY ' if self.is_temporary else ''
+        )
 
     @property
     def with_params(self) -> Dict[str, Any]:
@@ -209,7 +234,7 @@ class DropView(DropTable):
     _object_type = 'VIEW'
 
 
-# USER
+# DDL User classes
 
 
 class AlterUser(OmniSciDBDDL):
@@ -317,38 +342,17 @@ class DropUser(OmniSciDBDDL):
         return '\n'.join(self.pieces)
 
 
+# DDL Table classes
+
+
 class AlterTable(OmniSciDBDDL):
     """Alter Table class."""
 
-    def __init__(self, table, tbl_properties=None):
-        self.table = table
-        self.tbl_properties = tbl_properties
+    def __init__(self, args, **kwargs):
+        raise NotImplementedError('Not implemented yet.')
 
     def _wrap_command(self, cmd):
         return 'ALTER TABLE {}'.format(cmd)
-
-    def _format_properties(self, prefix=''):
-        tokens = []
-
-        if self.tbl_properties is not None:
-            # tokens.append(format_tblproperties(self.tbl_properties))
-            pass
-
-        if len(tokens) > 0:
-            return '\n{}{}'.format(prefix, '\n'.join(tokens))
-        else:
-            return ''
-
-    def compile(self):
-        """Compile the Alter Table expression.
-
-        Returns
-        -------
-        string
-        """
-        props = self._format_properties()
-        action = '{} SET {}'.format(self.table, props)
-        return self._wrap_command(action)
 
 
 class RenameTable(AlterTable):
@@ -478,15 +482,19 @@ def format_schema(schema: ibis.expr.schema.Schema):
     string
     """
     elements = [
-        _format_schema_element(name, t)
-        for name, t in zip(schema.names, schema.types)
+        _format_schema_element(name, tp, nullable)
+        for name, tp, nullable in zip(
+            schema.names, schema.types, [t.nullable for t in schema.types]
+        )
     ]
     return '({})'.format(',\n '.join(elements))
 
 
-def _format_schema_element(name, t):
-    return '{} {}'.format(
-        quote_identifier(name, force=False), _type_to_sql_string(t)
+def _format_schema_element(name, tp, nullable):
+    return '{} {} {}'.format(
+        quote_identifier(name, force=False),
+        _type_to_sql_string(tp),
+        'NOT NULL' if not nullable else '',
     )
 
 

@@ -142,6 +142,7 @@ def temp_table(con) -> str:
     Yields
     ------
     name : string
+        Random table name for a temporary usage.
     """
     name = _random_identifier('table')
     try:
@@ -149,6 +150,27 @@ def temp_table(con) -> str:
     finally:
         assert con.exists_table(name), name
         con.drop_table(name)
+
+
+@pytest.fixture
+def temp_view(con) -> str:
+    """Return a temporary view name.
+
+    Parameters
+    ----------
+    con : ibis.omniscidb.OmniSciDBClient
+
+    Yields
+    ------
+    name : string
+        Random view name for a temporary usage.
+    """
+    name = _random_identifier('view')
+    try:
+        yield name
+    finally:
+        assert con.exists_table(name), name
+        con.drop_view(name)
 
 
 @pytest.fixture(scope='session')
