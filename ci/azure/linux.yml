@@ -62,8 +62,8 @@ jobs:
     - bash: docker-compose run ibis pydocstyle --match-dir="(ibis|omniscidb)"
       displayName: "Docstring check"
 
-    - bash: make docker_black PYTHON_VERSION=$PYTHON_VERSION
-      displayName: 'Ensure black formatting'
+    - bash: make docker_check_pre_commit_hooks PYTHON_VERSION=$PYTHON_VERSION
+      displayName: 'Ensure all pre-commit hooks checking are passing.'
 
     - bash: |
         sudo mkdir -p /tmp/ibis/test-reports/pytest

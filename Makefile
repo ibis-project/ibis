@@ -56,6 +56,10 @@ black:
 	# check that black formatting would not be applied
 	black --check .
 
+check_pre_commit_hooks:
+	# check if all pre-commit hooks are passing
+	pre-commit run --all-files
+
 ## Targets for setup development environment
 
 clean:
@@ -77,6 +81,10 @@ docker_lint: build
 
 docker_black: build
 	$(DOCKER_RUN) ibis black --check .
+
+docker_check_pre_commit_hooks: build
+	# check if all pre-commit hooks are passing inside ibis container
+	$(DOCKER_RUN) ibis pre-commit run --all-files
 
 # Targets for manipulating docker's containers
 
