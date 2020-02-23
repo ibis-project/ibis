@@ -1,4 +1,7 @@
 """Ibis OmniSciDB Client."""
+from pathlib import Path
+from typing import Union
+
 import pandas as pd
 import pkg_resources
 import pymapd
@@ -394,7 +397,7 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
 
     def read_csv(
         self,
-        path: str,
+        path: Union[str, Path],
         header: bool = True,
         quoted: bool = True,
         delimiter: str = ',',
@@ -406,7 +409,7 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
 
         Parameters
         ----------
-        path : str
+        path : str or pathlib.Path
           Path to the input data file
         header : bool, optional, default True
           Indicating whether the input file has a header line

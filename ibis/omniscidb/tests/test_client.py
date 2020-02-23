@@ -1,3 +1,5 @@
+import pathlib
+
 import pandas as pd
 import pytest
 from pkg_resources import get_distribution, parse_version
@@ -150,11 +152,15 @@ def test_explain(con, alltypes):
     con.explain(alltypes)
 
 
-def test_read_csv(con):
+@pytest.mark.parametrize(
+    'filename',
+    [
+        "/omnisci/test_read_csv.csv",
+        pathlib.Path("/omnisci/test_read_csv.csv"),
+    ],
+)
+def test_read_csv(con, filename):
     t_name = "test_read_csv"
-
-    # omnisci specific
-    filename = "/omnisci/test_read_csv.csv"
 
     con.drop_table(t_name, force=True)
     schema = ibis.schema(
@@ -178,7 +184,8 @@ def test_read_csv(con):
     )
     con.create_table(t_name, schema=schema)
 
-    # prepare csv file inside omnisci docker container for read_csv test
+    # prepare csv file inside omnisci docker container
+    # if the file exists, then it will be overwritten
     con._execute(
         "COPY (SELECT * FROM functional_alltypes) TO '{}'".format(filename)
     )

@@ -545,13 +545,6 @@ class LoadData(OmniSciDBDDL):
 
     def compile(self):
         """Compile the LoadData expression."""
-        if isinstance(self.source, str):
-            return "COPY {} FROM '{}' {}".format(
-                self.table_name, self.source, self._get_options()
-            )
-        else:
-            raise NotImplementedError(
-                'Load data from the {} not implemented'.format(
-                    type(self.source)
-                )
-            )
+        return "COPY {} FROM '{}' {}".format(
+            self.table_name, self.source, self._get_options()
+        )
