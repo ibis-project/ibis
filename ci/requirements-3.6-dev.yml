@@ -13,7 +13,6 @@ dependencies:
   - google-cloud-bigquery>=1.0.0
   - graphviz
   - impyla>=0.15.0
-  - isort=4.3.21
   - jinja2
   - libiconv  # see https://github.com/jupyter/repo2docker/issues/758
   - lz4
@@ -24,7 +23,7 @@ dependencies:
   - pandas>=0.21
   - pip
   - plumbum
-  - pre_commit
+  - pre-commit
   - psycopg2
   - pyarrow>=0.12
   - pydata-google-auth
@@ -43,7 +42,7 @@ dependencies:
   - pytz
   - regex
   - requests
-  - rtree<0.9
+  - rtree
   - ruamel.yaml
   - shapely
   - sqlalchemy>=1.1
@@ -53,5 +52,7 @@ dependencies:
   - xorg-libxpm
   - xorg-libxrender
   - pip:
-      # see .pre-commit-config.yaml, we pin to specific versions of black and isort
+      # see .pre-commit-config.yaml, isort pinned
       - seed-isort-config
+      # we should try using isort release that will be next after 4.3.21-2
+      - git+git://github.com/timothycrosley/isort@18ad293fc9d1852776afe35015a932b68d26fb14#egg=isort

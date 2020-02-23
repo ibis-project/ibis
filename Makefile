@@ -31,6 +31,7 @@ SERVICES := omniscidb postgres mysql clickhouse impala kudu-master kudu-tserver
 LOADS := sqlite parquet postgres clickhouse omniscidb mysql impala
 
 CURRENT_SERVICES := $(shell $(MAKEFILE_DIR)/ci/backends-to-start.sh "$(BACKENDS)" "$(SERVICES)")
+CURRENT_LOADS := $(shell $(MAKEFILE_DIR)/ci/backends-to-start.sh "$(BACKENDS)" "$(LOADS)")
 WAITER_COMMAND := $(shell $(MAKEFILE_DIR)/ci/dockerize.sh $(CURRENT_SERVICES))
 
 # pytest specific options
@@ -55,6 +56,10 @@ black:
 	# check that black formatting would not be applied
 	black --check .
 
+check_pre_commit_hooks:
+	# check if all pre-commit hooks are passing
+	pre-commit run --all-files
+
 ## Targets for setup development environment
 
 clean:
@@ -77,6 +82,10 @@ docker_lint: build
 docker_black: build
 	$(DOCKER_RUN) ibis black --check .
 
+docker_check_pre_commit_hooks: build
+	# check if all pre-commit hooks are passing inside ibis container
+	$(DOCKER_RUN) ibis pre-commit run --all-files
+
 # Targets for manipulating docker's containers
 
 stop:
@@ -98,7 +107,7 @@ wait:
 
 load:
 	# load datasets for testing purpose
-	$(DOCKER_RUN) -e LOGLEVEL=$(LOGLEVEL) ibis ./ci/load-data.sh $(BACKENDS)
+	$(DOCKER_RUN) -e LOGLEVEL=$(LOGLEVEL) ibis ./ci/load-data.sh $(CURRENT_LOADS)
 
 restart: stop
 	$(MAKE) start

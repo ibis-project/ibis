@@ -21,7 +21,6 @@ import ibis.expr.operations as ops
 import ibis.expr.signature as sig
 import ibis.udf.vectorized
 from ibis.pandas.aggcontext import Window
-from ibis.pandas.client import PandasClient
 from ibis.pandas.core import (
     date_types,
     time_types,
@@ -529,10 +528,8 @@ class udf:
 
 
 @pre_execute.register(ops.ElementWiseVectorizedUDF)
-@pre_execute.register(ops.ElementWiseVectorizedUDF, PandasClient)
-def pre_execute_elementwise_udf(
-    op, *clients, scope=None, aggcontet=None, **kwargs
-):
+@pre_execute.register(ops.ElementWiseVectorizedUDF, ibis.client.Client)
+def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
     """Register execution rules for elementwise UDFs.
     """
     input_type = op.input_type
@@ -542,16 +539,9 @@ def pre_execute_elementwise_udf(
     # Define an execution rule for elementwise operations on a
     # grouped Series
     nargs = len(input_type)
-    group_by_signatures = [
-        udf_signature(input_type, pin=pin, klass=SeriesGroupBy)
-        for pin in range(nargs)
-    ]
 
-    @toolz.compose(
-        *(
-            execute_node.register(ops.ElementWiseVectorizedUDF, *types)
-            for types in group_by_signatures
-        )
+    @execute_node.register(
+        ops.ElementWiseVectorizedUDF, *(itertools.repeat(SeriesGroupBy, nargs))
     )
     def execute_udf_node_groupby(op, *args, **kwargs):
         func = op.func
@@ -578,15 +568,10 @@ def pre_execute_elementwise_udf(
     # Define an execution rule for a simple elementwise Series
     # function
     @execute_node.register(
-        ops.ElementWiseVectorizedUDF,
-        *udf_signature(input_type, pin=None, klass=pd.Series),
+        ops.ElementWiseVectorizedUDF, *(itertools.repeat(pd.Series, nargs))
     )
     @execute_node.register(
-        ops.ElementWiseVectorizedUDF,
-        *(
-            rule_to_python_type(argtype) + nullable(argtype)
-            for argtype in input_type
-        ),
+        ops.ElementWiseVectorizedUDF, *(itertools.repeat(object, nargs))
     )
     def execute_udf_node(op, *args, **kwargs):
         func = op.func

@@ -31,6 +31,7 @@ def df2():
             + np.random.rand(3).tolist(),
             'b': np.arange(4, dtype=float).tolist()
             + np.random.rand(3).tolist(),
+            'c': np.arange(7, dtype=int).tolist(),
             'key': list('ddeefff'),
         }
     )
@@ -192,7 +193,7 @@ def test_udaf_analytic_groupby(con, t, df):
 
 
 @pytest.mark.xfail(
-    reason="https://github.com/ibis-project/ibis/issues/2063", strict=False
+    reason="https://github.com/pandas-dev/pandas/issues/31760", strict=False
 )
 def test_udaf_groupby():
     df = pd.DataFrame(
@@ -377,7 +378,7 @@ def test_multiple_argument_udaf_window():
 
 
 @pytest.mark.xfail(
-    reason="https://github.com/ibis-project/ibis/issues/2063", strict=False
+    reason="https://github.com/pandas-dev/pandas/issues/31754", strict=False
 )
 def test_udaf_window_nan():
     df = pd.DataFrame(
@@ -418,4 +419,43 @@ def test_array_return_type_reduction_window(con, t, df, qs):
     result = expr.execute()
     expected_raw = df.b.quantile(qs).tolist()
     expected = pd.Series([expected_raw] * len(df))
+    tm.assert_series_equal(result, expected)
+
+
+def test_elementwise_udf_with_many_args(t2):
+    @udf.elementwise(
+        input_type=[dt.double] * 16 + [dt.int32] * 8, output_type=dt.double
+    )
+    def my_udf(
+        c1,
+        c2,
+        c3,
+        c4,
+        c5,
+        c6,
+        c7,
+        c8,
+        c9,
+        c10,
+        c11,
+        c12,
+        c13,
+        c14,
+        c15,
+        c16,
+        c17,
+        c18,
+        c19,
+        c20,
+        c21,
+        c22,
+        c23,
+        c24,
+    ):
+        return c1
+
+    expr = my_udf(*([t2.a] * 8 + [t2.b] * 8 + [t2.c] * 8))
+    result = expr.execute()
+    expected = t2.a.execute()
+
     tm.assert_series_equal(result, expected)
