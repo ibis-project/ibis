@@ -4,7 +4,7 @@ dependencies:
   - black=19.10b0
   - click
   - clickhouse-cityhash
-  - clickhouse-driver>=0.0.8,<0.1.2
+  - clickhouse-driver>=0.1.3
   - clickhouse-sqlalchemy
   - cmake
   - flake8
