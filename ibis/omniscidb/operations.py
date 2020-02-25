@@ -374,6 +374,16 @@ def _interval_from_integer(translator, expr):
     return '{}, (sign){}'.format(dtype.resolution.upper(), arg_)
 
 
+def _todate_workaround(translator, expr):
+    op = expr.op()
+    arg_expr = op.args
+    if isinstance(arg_expr, tuple):
+        arg = ', '.join(map(translator.translate, arg_expr))
+    else:
+        arg = translator.translate(arg_expr)
+    return 'CAST({} AS date)'.format(arg)
+
+
 def _timestamp_op(func, op_sign='+'):
     def _formatter(translator, expr):
         op = expr.op()
@@ -477,7 +487,7 @@ def literal(translator, expr: ibis.expr.operations.Literal) -> str:
     elif isinstance(expr, ir.DateValue):
         if isinstance(value, date):
             value = value.strftime('%Y-%m-%d')
-        return "toDate('{0!s}')".format(value)
+        return "CAST('{0!s}' as date)".format(value)
     # array data type
     elif isinstance(expr, ir.ArrayValue):
         return str(list(value))
@@ -904,6 +914,7 @@ _date_ops = {
     ops.DateSub: _timestamp_op('TIMESTAMPADD', '-'),
     ops.TimestampAdd: _timestamp_op('TIMESTAMPADD'),
     ops.TimestampSub: _timestamp_op('TIMESTAMPADD', '-'),
+    ops.Date: _todate_workaround,
 }
 
 # AGGREGATION/REDUCTION
@@ -997,7 +1008,6 @@ _unsupported_ops = [
     ops.Round,
     # date/time/timestamp
     ops.TimestampFromUNIX,
-    ops.Date,
     ops.TimeTruncate,
     ops.TimestampDiff,
     ops.DayOfWeekIndex,
