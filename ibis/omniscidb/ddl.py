@@ -3,6 +3,7 @@ import re
 
 import ibis
 from ibis.sql.compiler import DDL, DML
+from ibis.common.exceptions import UnsupportedBackendType
 
 from .compiler import _type_to_sql_string, quote_identifier
 
@@ -339,6 +340,42 @@ class AlterTable(OmniSciDBDDL):
         action = '{} SET {}'.format(self.table, props)
         return self._wrap_command(action)
 
+class AddColumn(AlterTable):
+    """Add Column class."""
+
+    def __init__(self, table_name, column_name, data_type):
+        super().__init__(table_name)
+        self.column_name = column_name
+        self.data_type = data_type
+
+    def compile(self):
+        """Compile the Add Column expression.
+        Returns
+        -------
+        string
+        """
+        unsupported_types = ['POINT', 'LINESTRING', 'POLYGON', 'MULTIPOLYGON']
+        if self.data_type in unsupported_types:
+            raise UnsupportedBackendType('The given type is not supported by the backend')
+        else:
+            cmd = '{} ADD COLUMN {} {};'.format(self.table, self.column_name, self.data_type)
+            return self._wrap_command(cmd)
+
+class DropColumn(AlterTable):
+    """Drop Column class."""
+
+    def __init__(self, table_name, column_name):
+        super().__init__(table_name)
+        self.column_name = column_name
+
+    def compile(self):
+        """Compile the Drop Column expression.
+        Returns
+        -------
+        string
+        """
+        cmd = '{} DROP COLUMN {};'.format(self.table, self.column_name)
+        return self._wrap_command(cmd)
 
 class RenameTable(AlterTable):
     """Rename Table class."""

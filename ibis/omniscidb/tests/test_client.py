@@ -103,6 +103,72 @@ def test_union_op(alltypes):
     with pytest.raises(com.UnsupportedOperationError):
         expr.compile()
 
+def test_add_column(con):
+    table_name = 'my_table'
+
+    con.drop_table(table_name, force=True)
+
+    schema = ibis.schema(
+        [
+            ('a', 'float'),
+            ('b', 'int8'),
+        ]
+    )
+
+    con.create_table(table_name, schema=schema)
+
+    column_name = 'c'
+    data_type = 'DOUBLE'
+    con.add_column(table_name, column_name, data_type)
+
+    schema_for_check = ibis.schema(
+        [
+            ('a', 'float'),
+            ('b', 'int8'),
+            ('c', 'double'),
+        ]
+    )
+
+    try:
+        t = con.table(table_name)
+
+        for k, i_type in t.schema().items():
+            assert schema_for_check[k] == i_type
+    finally:
+        con.drop_table(table_name)
+
+def test_drop_column(con):
+    table_name = 'my_table'
+
+    con.drop_table(table_name, force=True)
+
+    schema = ibis.schema(
+        [
+            ('a', 'float'),
+            ('b', 'double'),
+            ('c', 'int8'),
+        ]
+    )
+
+    con.create_table(table_name, schema=schema)
+
+    column_name = 'a'
+    con.drop_column(table_name, column_name)
+
+    schema_for_check = ibis.schema(
+        [
+            ('b', 'double'),
+            ('c', 'int8'),
+        ]
+    )
+
+    try:
+        t = con.table(table_name)
+
+        for k, i_type in t.schema().items():
+            assert schema_for_check[k] == i_type
+    finally:
+        con.drop_table(table_name)
 
 def test_create_table_schema(con):
     t_name = 'mytable'
