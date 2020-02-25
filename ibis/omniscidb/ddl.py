@@ -385,6 +385,7 @@ class DropColumn(AlterTable):
         cmd = '{} DROP COLUMN {};'.format(self.table, self.column_name)
         return self._wrap_command(cmd)
 
+
 class RenameTable(AlterTable):
     """Rename Table class."""
 
