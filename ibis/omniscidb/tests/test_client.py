@@ -171,7 +171,7 @@ def test_drop_column(con):
             assert schema_for_check[k] == i_type
     finally:
         con.drop_table(table_name)
-        
+
 
 def test_create_table_schema(con):
     t_name = 'mytable'
