@@ -103,6 +103,7 @@ def test_union_op(alltypes):
     with pytest.raises(com.UnsupportedOperationError):
         expr.compile()
 
+
 def test_add_column(con):
     table_name = 'my_table'
 
@@ -137,6 +138,7 @@ def test_add_column(con):
     finally:
         con.drop_table(table_name)
 
+
 def test_drop_column(con):
     table_name = 'my_table'
 
@@ -169,6 +171,7 @@ def test_drop_column(con):
             assert schema_for_check[k] == i_type
     finally:
         con.drop_table(table_name)
+        
 
 def test_create_table_schema(con):
     t_name = 'mytable'

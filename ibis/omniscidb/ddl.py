@@ -340,6 +340,7 @@ class AlterTable(OmniSciDBDDL):
         action = '{} SET {}'.format(self.table, props)
         return self._wrap_command(action)
 
+
 class AddColumn(AlterTable):
     """Add Column class."""
 
@@ -354,12 +355,19 @@ class AddColumn(AlterTable):
         -------
         string
         """
-        unsupported_types = ['POINT', 'LINESTRING', 'POLYGON', 'MULTIPOLYGON']
+        unsupported_types = ['POINT',
+                             'LINESTRING',
+                             'POLYGON',
+                             'MULTIPOLYGON']
         if self.data_type in unsupported_types:
-            raise UnsupportedBackendType('The given type is not supported by the backend')
+            raise UnsupportedBackendType(
+                'The given type is not supported by the backend')
         else:
-            cmd = '{} ADD COLUMN {} {};'.format(self.table, self.column_name, self.data_type)
+            cmd = '{} ADD COLUMN {} {};'.format(self.table,
+                                                self.column_name,
+                                                self.data_type)
             return self._wrap_command(cmd)
+
 
 class DropColumn(AlterTable):
     """Drop Column class."""
