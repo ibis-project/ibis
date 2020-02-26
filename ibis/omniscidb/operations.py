@@ -273,6 +273,9 @@ def _extract_field(sql_attr):
     return extract_field_formatter
 
 
+# MATH
+
+
 def _log_common(translator, arg, base=None):
     if isinstance(arg, tuple):
         args_ = ', '.join(map(translator.translate, arg))
