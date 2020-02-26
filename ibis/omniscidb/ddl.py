@@ -351,6 +351,7 @@ class AddColumn(AlterTable):
 
     def compile(self):
         """Compile the Add Column expression.
+
         Returns
         -------
         string
@@ -378,6 +379,7 @@ class DropColumn(AlterTable):
 
     def compile(self):
         """Compile the Drop Column expression.
+        
         Returns
         -------
         string

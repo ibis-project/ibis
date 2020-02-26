@@ -996,11 +996,13 @@ class OmniSciDBClient(SQLClient):
     def add_column(self, table_name, column_name, data_type):
         """
         Add a given column.
+
         Parameters
         ----------
         table_name : string
         column_name : string
         data_type : string
+
         Examples
         --------
         >>> table_name = 'my_table'
@@ -1008,24 +1010,24 @@ class OmniSciDBClient(SQLClient):
         >>> data_type = 'INT'
         >>> con.add_column(table_name, column_name, data_type)
         """
-
         statement = ddl.AddColumn(table_name, column_name, data_type)
         self._execute(statement, False)
 
     def drop_column(self, table_name, column_name):
         """
         Drop a given column.
+
         Parameters
         ----------
         table_name : string
         column_name : string
+
         Examples
         --------
         >>> table_name = 'my_table'
         >>> column_name = 'my_column'
         >>> con.drop_column(table_name, column_name)
         """
-
         statement = ddl.DropColumn(table_name, column_name)
         self._execute(statement, False)
 
