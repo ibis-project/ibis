@@ -402,6 +402,26 @@ def _timestamp_op(func, op_sign='+'):
     return _formatter
 
 
+def _datadiff_workaround(date_part='day', op_sign='+'):
+    def _formatter(translator, expr):
+        op = expr.op()
+        left, right = op.args
+
+        formatted_left = translator.translate(left)
+        formatted_right = translator.translate(right)
+
+        if isinstance(left, ir.DateValue):
+            formatted_left = 'CAST({} as timestamp)'.format(formatted_left)
+
+        return "datediff('{}', {}, {})".format(
+            date_part,
+            formatted_right.replace('(sign)', op_sign),
+            formatted_left
+        )
+
+    return _formatter
+
+
 def _set_literal_format(translator, expr):
     value_type = expr.type().value_type
 
@@ -914,6 +934,7 @@ _date_ops = {
     ops.DateSub: _timestamp_op('TIMESTAMPADD', '-'),
     ops.TimestampAdd: _timestamp_op('TIMESTAMPADD'),
     ops.TimestampSub: _timestamp_op('TIMESTAMPADD', '-'),
+    ops.DateDiff: _datadiff_workaround(),
     ops.Date: _todate_workaround,
 }
 
