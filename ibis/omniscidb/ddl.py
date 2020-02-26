@@ -3,7 +3,7 @@ import re
 
 import ibis
 from ibis.sql.compiler import DDL, DML
-from ibis.common.exceptions import UnsupportedBackendType
+from ibis.common.exceptions import IbisInputError
 
 from .compiler import _type_to_sql_string, quote_identifier
 
@@ -344,10 +344,30 @@ class AlterTable(OmniSciDBDDL):
 class AddColumn(AlterTable):
     """Add Column class."""
 
-    def __init__(self, table_name, column_name, data_type):
+    def __init__(self, table_name, **column_names_with_types):
         super().__init__(table_name)
         self.column_name = column_name
-        self.data_type = data_type
+        self.dict_cols_with_types = {}
+        for key, value in column_names_with_types.items():
+            self.dict_cols_with_types[key] = value
+
+    def _pieces(self):
+        col_count = len(self.dict_cols_with_types)
+        if col_count == 0:
+            raise IbisInputError('No column requested to add.')
+        elif col_count == 1:
+            column_name = list(self.dict_cols_with_types.keys())[-1]
+            yield '{} ADD COLUMN {} {};'.format(
+                self.table, column_name, dict_cols_with_types[column_name])
+        else:
+            yield '{} ADD ('.format(self.table)
+            iteration_idx = 0
+            for col, d_type in self.dict_cols_with_types.items():
+                if iteration_idx != col_count - 1:
+                    yield '{} {});'.format(col, d_type)
+                else:
+                    yield '{} {},'.format(col, d_type)
+                iteration_idx += 1
 
     def compile(self):
         """Compile the Add Column expression.
@@ -356,26 +376,34 @@ class AddColumn(AlterTable):
         -------
         string
         """
-        unsupported_types = ['POINT',
-                             'LINESTRING',
-                             'POLYGON',
-                             'MULTIPOLYGON']
-        if self.data_type in unsupported_types:
-            raise UnsupportedBackendType(
-                'The given type is not supported by the backend')
-        else:
-            cmd = '{} ADD COLUMN {} {};'.format(self.table,
-                                                self.column_name,
-                                                self.data_type)
-            return self._wrap_command(cmd)
+        cmd = _pieces()
+        return self._wrap_command(cmd)
 
 
 class DropColumn(AlterTable):
     """Drop Column class."""
 
-    def __init__(self, table_name, column_name):
+    def __init__(self, table_name, *column_names):
         super().__init__(table_name)
-        self.column_name = column_name
+        self.column_names = []
+        for col in column_names:
+            self.column_names.append(col)
+
+    def _pieces(self):
+        col_count = len(self.column_names)
+        if col_count == 0:
+            raise IbisInputError('No column requested to drop.')
+        elif col_count == 1:
+            yield '{} DROP COLUMN {};'.format(
+                self.table, self.column_names[-1])
+        else:
+            iteration_idx = 0
+            for col in self.column_names:
+                if iteration_idx != col_count - 1:
+                    yield 'DROP {};'.format(self.table, col)
+                else:
+                    yield '{} DROP {},'.format(self.table, col)
+                iteration_idx += 1
 
     def compile(self):
         """Compile the Drop Column expression.
@@ -384,7 +412,7 @@ class DropColumn(AlterTable):
         -------
         string
         """
-        cmd = '{} DROP COLUMN {};'.format(self.table, self.column_name)
+        cmd = self._pieces()
         return self._wrap_command(cmd)
 
 

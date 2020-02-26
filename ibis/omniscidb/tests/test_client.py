@@ -118,9 +118,7 @@ def test_add_column(con):
 
     con.create_table(table_name, schema=schema)
 
-    column_name = 'c'
-    data_type = 'DOUBLE'
-    con.add_column(table_name, column_name, data_type)
+    con.add_column(table_name, c='DOUBLE')
 
     schema_for_check = ibis.schema(
         [
