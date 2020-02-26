@@ -416,7 +416,7 @@ def _datadiff_workaround(date_part='day', op_sign='+'):
         return "datediff('{}', {}, {})".format(
             date_part,
             formatted_right.replace('(sign)', op_sign),
-            formatted_left
+            formatted_left,
         )
 
     return _formatter
