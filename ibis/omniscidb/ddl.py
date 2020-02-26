@@ -346,7 +346,6 @@ class AddColumn(AlterTable):
 
     def __init__(self, table_name, **column_names_with_types):
         super().__init__(table_name)
-        self.column_name = column_name
         self.dict_cols_with_types = {}
         for key, value in column_names_with_types.items():
             self.dict_cols_with_types[key] = value
@@ -400,9 +399,9 @@ class DropColumn(AlterTable):
             iteration_idx = 0
             for col in self.column_names:
                 if iteration_idx != col_count - 1:
-                    yield '{} DROP {},'.format(self.table, col)
+                    yield 'DROP {}, '.format(col)
                 else:
-                    yield 'DROP {};'.format(self.table, col)
+                    yield 'DROP {};'.format(col)
                 iteration_idx += 1
 
     def compile(self):
