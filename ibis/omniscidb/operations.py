@@ -402,6 +402,28 @@ def _timestamp_op(func, op_sign='+'):
     return _formatter
 
 
+def _timestampdiff_workaround(date_part='second', op_sign='+'):
+    def _formatter(translator, expr):
+        op = expr.op()
+        left, right = op.args
+
+        formatted_left = translator.translate(left)
+        formatted_right = translator.translate(right)
+
+        if isinstance(left, (ir.DateValue, ir.TimestampValue)):
+            formatted_left = 'CAST({} as timestamp)'.format(formatted_left)
+        if isinstance(right, (ir.DateValue, ir.TimestampValue)):
+            formatted_right = 'CAST({} as timestamp)'.format(formatted_right)
+
+        return "timestampdiff({}, {}, {})".format(
+            date_part,
+            formatted_right.replace('(sign)', op_sign),
+            formatted_left,
+        )
+
+    return _formatter
+
+
 def _datadiff_workaround(date_part='day', op_sign='+'):
     def _formatter(translator, expr):
         op = expr.op()
@@ -410,8 +432,10 @@ def _datadiff_workaround(date_part='day', op_sign='+'):
         formatted_left = translator.translate(left)
         formatted_right = translator.translate(right)
 
-        if isinstance(left, ir.DateValue):
-            formatted_left = 'CAST({} as timestamp)'.format(formatted_left)
+        if isinstance(left, (ir.DateValue, ir.TimestampValue)):
+            formatted_left = 'CAST({} as date)'.format(formatted_left)
+        if isinstance(right, (ir.DateValue, ir.TimestampValue)):
+            formatted_right = 'CAST({} as date)'.format(formatted_right)
 
         return "datediff('{}', {}, {})".format(
             date_part,
@@ -934,6 +958,7 @@ _date_ops = {
     ops.DateSub: _timestamp_op('TIMESTAMPADD', '-'),
     ops.TimestampAdd: _timestamp_op('TIMESTAMPADD'),
     ops.TimestampSub: _timestamp_op('TIMESTAMPADD', '-'),
+    ops.TimestampDiff: _timestampdiff_workaround(),
     ops.DateDiff: _datadiff_workaround(),
     ops.Date: _todate_workaround,
 }
@@ -1030,7 +1055,6 @@ _unsupported_ops = [
     # date/time/timestamp
     ops.TimestampFromUNIX,
     ops.TimeTruncate,
-    ops.TimestampDiff,
     ops.DayOfWeekIndex,
     ops.DayOfWeekName,
     # table
