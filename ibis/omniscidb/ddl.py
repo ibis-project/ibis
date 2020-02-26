@@ -379,7 +379,7 @@ class DropColumn(AlterTable):
 
     def compile(self):
         """Compile the Drop Column expression.
-        
+
         Returns
         -------
         string
