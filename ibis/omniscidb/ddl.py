@@ -2,8 +2,8 @@
 import re
 
 import ibis
-from ibis.sql.compiler import DDL, DML
 from ibis.common.exceptions import IbisInputError
+from ibis.sql.compiler import DDL, DML
 
 from .compiler import _type_to_sql_string, quote_identifier
 
@@ -344,10 +344,10 @@ class AlterTable(OmniSciDBDDL):
 class AddColumn(AlterTable):
     """Add Column class."""
 
-    def __init__(self, table_name, **column_names_with_types):
+    def __init__(self, table_name, **columns_with_types):
         super().__init__(table_name)
         self.dict_cols_with_types = {}
-        for key, value in column_names_with_types.items():
+        for key, value in columns_with_types.items():
             self.dict_cols_with_types[key] = value
 
     def _pieces(self):
@@ -357,7 +357,8 @@ class AddColumn(AlterTable):
         elif col_count == 1:
             column_name = list(self.dict_cols_with_types.keys())[-1]
             yield '{} ADD COLUMN {} {};'.format(
-                self.table, column_name, dict_cols_with_types[column_name])
+                self.table, column_name, self.dict_cols_with_types[column_name]
+            )
         else:
             yield '{} ADD ('.format(self.table)
             iteration_idx = 0
@@ -375,7 +376,7 @@ class AddColumn(AlterTable):
         -------
         string
         """
-        cmd = "".join(_pieces())
+        cmd = "".join(self._pieces())
         return self._wrap_command(cmd)
 
 
@@ -394,8 +395,10 @@ class DropColumn(AlterTable):
             raise IbisInputError('No column requested to drop.')
         elif col_count == 1:
             yield '{} DROP COLUMN {};'.format(
-                self.table, self.column_names[-1])
+                self.table, self.column_names[-1]
+            )
         else:
+            yield '{} '.format(self.table)
             iteration_idx = 0
             for col in self.column_names:
                 if iteration_idx != col_count - 1:

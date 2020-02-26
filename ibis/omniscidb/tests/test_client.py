@@ -109,23 +109,14 @@ def test_add_column(con):
 
     con.drop_table(table_name, force=True)
 
-    schema = ibis.schema(
-        [
-            ('a', 'float'),
-            ('b', 'int8')
-        ]
-    )
+    schema = ibis.schema([('a', 'float'), ('b', 'int8')])
 
     con.create_table(table_name, schema=schema)
 
     con.add_column(table_name, c='DOUBLE')
 
     schema_for_check = ibis.schema(
-        [
-            ('a', 'float'),
-            ('b', 'int8'),
-            ('c', 'double')
-        ]
+        [('a', 'float'), ('b', 'int8'), ('c', 'double')]
     )
 
     try:
@@ -142,25 +133,14 @@ def test_drop_column(con):
 
     con.drop_table(table_name, force=True)
 
-    schema = ibis.schema(
-        [
-            ('a', 'float'),
-            ('b', 'double'),
-            ('c', 'int8')
-        ]
-    )
+    schema = ibis.schema([('a', 'float'), ('b', 'double'), ('c', 'int8')])
 
     con.create_table(table_name, schema=schema)
 
     column_name = 'a'
     con.drop_column(table_name, column_name)
 
-    schema_for_check = ibis.schema(
-        [
-            ('b', 'double'),
-            ('c', 'int8')
-        ]
-    )
+    schema_for_check = ibis.schema([('b', 'double'), ('c', 'int8')])
 
     try:
         t = con.table(table_name)

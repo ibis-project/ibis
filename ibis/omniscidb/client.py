@@ -1005,7 +1005,8 @@ class OmniSciDBClient(SQLClient):
         Examples
         --------
         >>> table_name = 'my_table'
-        >>> columns_with_types = my_column_1 = 'INTEGER', my_column_2 = 'DOUBLE'
+        >>> columns_with_types = my_column_1 = 'INTEGER',
+                                 my_column_2 = 'DOUBLE'
         >>> con.add_column(table_name, **columns_with_types)
         """
         statement = ddl.AddColumn(table_name, **columns_with_types)
