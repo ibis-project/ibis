@@ -364,9 +364,9 @@ class AddColumn(AlterTable):
             iteration_idx = 0
             for col, d_type in self.dict_cols_with_types.items():
                 if iteration_idx != col_count - 1:
-                    yield '{} {});'.format(col, d_type)
+                    yield '{} {}, '.format(col, d_type)
                 else:
-                    yield '{} {},'.format(col, d_type)
+                    yield '{} {});'.format(col, d_type)
                 iteration_idx += 1
 
     def compile(self):
@@ -376,7 +376,7 @@ class AddColumn(AlterTable):
         -------
         string
         """
-        cmd = _pieces()
+        cmd = "".join(_pieces())
         return self._wrap_command(cmd)
 
 
@@ -400,9 +400,9 @@ class DropColumn(AlterTable):
             iteration_idx = 0
             for col in self.column_names:
                 if iteration_idx != col_count - 1:
-                    yield 'DROP {};'.format(self.table, col)
-                else:
                     yield '{} DROP {},'.format(self.table, col)
+                else:
+                    yield 'DROP {};'.format(self.table, col)
                 iteration_idx += 1
 
     def compile(self):
@@ -412,7 +412,7 @@ class DropColumn(AlterTable):
         -------
         string
         """
-        cmd = self._pieces()
+        cmd = "".join(self._pieces())
         return self._wrap_command(cmd)
 
 
