@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import pandas.util.testing as tm
 import pytest
@@ -205,3 +206,21 @@ def test_string_to_timestamp_tz_error(client):
         table.mutate(
             date=table.date_str.to_timestamp('yyyy-MM-dd', 'non-utc-timezone')
         ).compile()
+
+
+def test_isnull(client):
+    table = client.table('nan_table')
+    result = table[table.toy.isnull()].compile().toPandas()
+    expected = pd.DataFrame({'age': np.NaN, 'name': ['Alfred'], 'toy': None})
+
+    tm.assert_frame_equal(result, expected)
+
+
+def test_notnull(client):
+    table = client.table('nan_table')
+    result = table[table.toy.notnull()].compile().toPandas()
+    expected = pd.DataFrame(
+        {'age': [6.0], 'name': ['Batman'], 'toy': ['motocycle']}
+    )
+
+    tm.assert_frame_equal(result, expected)

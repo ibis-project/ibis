@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 
 import ibis
@@ -14,6 +15,12 @@ def client():
     df = client._session.range(0, 10)
     df = df.withColumn("str_col", F.lit('value'))
     df.createTempView('basic_table')
+
+    df_nans = client._session.createDataFrame(
+        [[np.NaN, 'Alfred', None], [6.0, 'Batman', 'motocycle']],
+        ['age', 'name', 'toy'],
+    )
+    df_nans.createTempView('nan_table')
 
     df_dates = client._session.createDataFrame(
         [['2018-01-02'], ['2018-01-03'], ['2018-01-04']], ['date_str']

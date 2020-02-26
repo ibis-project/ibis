@@ -1438,6 +1438,20 @@ def compile_null_if(t, expr, scope, **kwargs):
     return F.when(col == nullif_col, F.lit(None)).otherwise(col)
 
 
+@compiles(ops.IsNull)
+def compile_is_null(t, expr, scope, **kwargs):
+    op = expr.op()
+    col = t.translate(op.arg, scope)
+    return F.isnull(col)
+
+
+@compiles(ops.NotNull)
+def compile_not_null(t, expr, scope, **kwargs):
+    op = expr.op()
+    col = t.translate(op.arg, scope)
+    return ~F.isnull(col)
+
+
 # ------------------------- User defined function ------------------------
 
 
