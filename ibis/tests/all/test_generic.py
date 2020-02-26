@@ -28,6 +28,7 @@ from ibis.tests.backends import (
                     BigQuery,
                     Clickhouse,
                     MySQL,
+                    OmniSciDB,
                     PostgreSQL,
                     Spark,
                     SQLite,
