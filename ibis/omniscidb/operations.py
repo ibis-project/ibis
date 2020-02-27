@@ -374,7 +374,7 @@ def _interval_from_integer(translator, expr):
     return '{}, (sign){}'.format(dtype.resolution.upper(), arg_)
 
 
-def _todate_workaround(translator, expr):
+def _todate(translator, expr):
     op = expr.op()
     arg_expr = op.args
     if isinstance(arg_expr, tuple):
@@ -402,7 +402,7 @@ def _timestamp_op(func, op_sign='+'):
     return _formatter
 
 
-def _timestampdiff_workaround(date_part='second', op_sign='+'):
+def _timestampdiff(date_part='second', op_sign='+'):
     def _formatter(translator, expr):
         op = expr.op()
         left, right = op.args
@@ -424,7 +424,7 @@ def _timestampdiff_workaround(date_part='second', op_sign='+'):
     return _formatter
 
 
-def _datadiff_workaround(date_part='day', op_sign='+'):
+def _datadiff(date_part='day', op_sign='+'):
     def _formatter(translator, expr):
         op = expr.op()
         left, right = op.args
@@ -958,9 +958,9 @@ _date_ops = {
     ops.DateSub: _timestamp_op('TIMESTAMPADD', '-'),
     ops.TimestampAdd: _timestamp_op('TIMESTAMPADD'),
     ops.TimestampSub: _timestamp_op('TIMESTAMPADD', '-'),
-    ops.TimestampDiff: _timestampdiff_workaround(),
-    ops.DateDiff: _datadiff_workaround(),
-    ops.Date: _todate_workaround,
+    ops.TimestampDiff: _timestampdiff(),
+    ops.DateDiff: _datadiff(),
+    ops.Date: _todate,
 }
 
 # AGGREGATION/REDUCTION
