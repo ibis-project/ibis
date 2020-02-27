@@ -1,6 +1,6 @@
 """Ibis OmniSciDB Client."""
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 
 import pandas as pd
 import pkg_resources
@@ -398,9 +398,9 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
     def read_csv(
         self,
         path: Union[str, Path],
-        header: bool = True,
-        quotechar: str = '"',
-        delimiter: str = ',',
+        header: Optional[bool] = True,
+        quotechar: Optional[str] = '"',
+        delimiter: Optional[str] = ',',
     ):
         """
         Load data into an Omniscidb table from CSV file.
@@ -424,7 +424,7 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         kwargs = {
             'header': header,
             'quote': quotechar,
-            'quoted': True if quotechar != '' else False,
+            'quoted': bool(quotechar),
             'delimiter': delimiter,
         }
         stmt = ddl.LoadData(self._qualified_name, path, **kwargs)
