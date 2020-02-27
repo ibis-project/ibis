@@ -15,6 +15,7 @@ Release Notes
 * :feature:`2060` Add initial support for ibis.random function
 * :support:`2107` Added fragment_size to table creation for OmniSciDB
 * :feature:`2117` Add non-nullable info to schema output
+* :feature:`2083` fillna and nullif implementations for OmnisciDB
 * :support:`2096` Added round() support for OmniSciDB
 * :feature:`2125` [OmniSciDB] Add support for within, d_fully_within and point
 * :feature:`2086` OmniSciDB - Refactor DDL and Client; Add temporary parameter to create_table and "force" parameter to drop_view
