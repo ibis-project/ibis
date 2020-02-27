@@ -446,7 +446,7 @@ def _cross_join(translator, expr):
     return translator.translate(left.join(right, ibis.literal(True)))
 
 
-def _ifnull_workaround(translator, expr):
+def _ifnull(translator, expr):
     col_expr, value_expr = expr.op().args
     if isinstance(col_expr, ir.DecimalValue) and isinstance(
         value_expr, ir.IntegerValue
@@ -986,7 +986,7 @@ _general_ops = {
     ops.Where: _where,
     ops.TableColumn: _table_column,
     ops.CrossJoin: _cross_join,
-    ops.IfNull: _ifnull_workaround,
+    ops.IfNull: _ifnull,
     ops.NullIf: fixed_arity('nullif', 2),
 }
 
