@@ -1,18 +1,18 @@
 import pandas as pd
 import pytest
-from pytest import param
 from pkg_resources import get_distribution, parse_version
+from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.types as ir
-from ibis.tests.util import assert_equal
+from ibis import literal as L
 from ibis.omniscidb.client import (
+    EXECUTION_TYPE_CURSOR,
     EXECUTION_TYPE_ICP,
     EXECUTION_TYPE_ICP_GPU,
-    EXECUTION_TYPE_CURSOR,
 )
-from ibis import literal as L
+from ibis.tests.util import assert_equal
 
 enable_cudf = True
 try:
