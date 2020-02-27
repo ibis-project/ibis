@@ -104,7 +104,15 @@ def test_union_op(alltypes):
         expr.compile()
 
 
-def test_add_column_zero(con):
+@pytest.mark.parametrize(
+    'dict_cols_with_types',
+    [
+        {},
+        {'c': 'DOUBLE'},
+        {'c': 'DOUBLE', 'd': 'TEXT', 'e': 'POINT', 'f': 'POLYGON'},
+    ],
+)
+def test_add_column(con, dict_cols_with_types):
     table_name = 'my_table'
 
     con.drop_table(table_name, force=True)
@@ -113,137 +121,99 @@ def test_add_column_zero(con):
 
     con.create_table(table_name, schema=schema)
 
-    dict_cols_with_types = {}
+    col_count = len(dict_cols_with_types)
 
-    isException = False
-    try:
-        con.add_column(table_name, dict_cols_with_types)
-    except com.IbisInputError:
-        isException = True
-    finally:
-        con.drop_table(table_name)
+    if col_count == 0:
+        isException = False
+        try:
+            con.add_column(table_name, dict_cols_with_types)
+        except com.IbisInputError:
+            isException = True
+        finally:
+            con.drop_table(table_name)
 
-    if not isException:
-        assert False
+        if not isException:
+            assert False
+    elif col_count == 1:
+        schema_for_check = ibis.schema(
+            [('a', 'float'), ('b', 'int8'), ('c', 'double')]
+        )
+
+        try:
+            t = con.table(table_name)
+
+            for k, i_type in t.schema().items():
+                assert schema_for_check[k] == i_type
+        finally:
+            con.drop_table(table_name)
+    else:
+        schema_for_check = ibis.schema(
+            [
+                ('a', 'float'),
+                ('b', 'int8'),
+                ('c', 'double'),
+                ('d', 'string'),
+                ('e', 'point'),
+                ('f', 'polygon'),
+            ]
+        )
+
+        try:
+            t = con.table(table_name)
+
+            for k, i_type in t.schema().items():
+                assert schema_for_check[k] == i_type
+        finally:
+            con.drop_table(table_name)
 
 
-def test_add_column_one(con):
+@pytest.mark.parametrize('column_names', [[], ['a'], ['a', 'b', 'c']])
+def test_drop_column_zero(con, column_names):
     table_name = 'my_table'
 
     con.drop_table(table_name, force=True)
 
-    schema = ibis.schema([('a', 'float'), ('b', 'int8')])
-
-    con.create_table(table_name, schema=schema)
-
-    dict_cols_with_types = {'c': 'DOUBLE'}
-    con.add_column(table_name, dict_cols_with_types)
-
-    schema_for_check = ibis.schema(
-        [('a', 'float'), ('b', 'int8'), ('c', 'double')]
+    schema = ibis.schema(
+        [('a', 'polygon'), ('b', 'point'), ('c', 'int8'), ('d', 'double')]
     )
 
-    try:
-        t = con.table(table_name)
-
-        for k, i_type in t.schema().items():
-            assert schema_for_check[k] == i_type
-    finally:
-        con.drop_table(table_name)
-
-
-def test_add_column_several(con):
-    table_name = 'my_table'
-
-    con.drop_table(table_name, force=True)
-
-    schema = ibis.schema([('a', 'float'), ('b', 'int8')])
-
     con.create_table(table_name, schema=schema)
 
-    dict_cols_with_types = {'c': 'DOUBLE', 'd': 'TEXT'}
-    con.add_column(table_name, dict_cols_with_types)
+    col_count = len(column_names)
 
-    schema_for_check = ibis.schema(
-        [('a', 'float'), ('b', 'int8'), ('c', 'double'), ('d', 'string')]
-    )
+    if col_count == 0:
+        isException = False
+        try:
+            con.drop_column(table_name, column_names)
+        except com.IbisInputError:
+            isException = True
+        finally:
+            con.drop_table(table_name)
 
-    try:
-        t = con.table(table_name)
+        if not isException:
+            assert False
+    elif col_count == 1:
+        schema_for_check = ibis.schema(
+            [('b', 'double'), ('c', 'int8'), ('d', 'double')]
+        )
 
-        for k, i_type in t.schema().items():
-            assert schema_for_check[k] == i_type
-    finally:
-        con.drop_table(table_name)
+        try:
+            t = con.table(table_name)
 
+            for k, i_type in t.schema().items():
+                assert schema_for_check[k] == i_type
+        finally:
+            con.drop_table(table_name)
+    else:
+        schema_for_check = ibis.schema([('d', 'double')])
 
-def test_drop_column_zero(con):
-    table_name = 'my_table'
+        try:
+            t = con.table(table_name)
 
-    con.drop_table(table_name, force=True)
-
-    schema = ibis.schema([('a', 'float'), ('b', 'double'), ('c', 'int8')])
-
-    con.create_table(table_name, schema=schema)
-
-    column_names = []
-
-    isException = False
-    try:
-        con.drop_column(table_name, column_names)
-    except com.IbisInputError:
-        isException = True
-    finally:
-        con.drop_table(table_name)
-
-    if not isException:
-        assert False
-
-
-def test_drop_column_one(con):
-    table_name = 'my_table'
-
-    con.drop_table(table_name, force=True)
-
-    schema = ibis.schema([('a', 'float'), ('b', 'double'), ('c', 'int8')])
-
-    con.create_table(table_name, schema=schema)
-
-    column_names = ['a']
-    con.drop_column(table_name, column_names)
-
-    schema_for_check = ibis.schema([('b', 'double'), ('c', 'int8')])
-
-    try:
-        t = con.table(table_name)
-
-        for k, i_type in t.schema().items():
-            assert schema_for_check[k] == i_type
-    finally:
-        con.drop_table(table_name)
-
-
-def test_drop_column_several(con):
-    table_name = 'my_table'
-
-    con.drop_table(table_name, force=True)
-
-    schema = ibis.schema([('a', 'float'), ('b', 'double'), ('c', 'int8')])
-
-    con.create_table(table_name, schema=schema)
-
-    column_names = ['a', 'b']
-    con.drop_column(table_name, column_names)
-
-    schema_for_check = ibis.schema([('c', 'int8')])
-
-    try:
-        t = con.table(table_name)
-
-        for k, i_type in t.schema().items():
-            assert schema_for_check[k] == i_type
-    finally:
-        con.drop_table(table_name)
+            for k, i_type in t.schema().items():
+                assert schema_for_check[k] == i_type
+        finally:
+            con.drop_table(table_name)
 
 
 def test_create_table_schema(con):
