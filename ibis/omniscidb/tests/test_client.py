@@ -168,7 +168,7 @@ def test_add_column(con, dict_cols_with_types):
 
 
 @pytest.mark.parametrize('column_names', [[], ['a'], ['a', 'b', 'c']])
-def test_drop_column_zero(con, column_names):
+def test_drop_column(con, column_names):
     table_name = 'my_table'
 
     con.drop_table(table_name, force=True)
@@ -194,7 +194,7 @@ def test_drop_column_zero(con, column_names):
             assert False
     elif col_count == 1:
         schema_for_check = ibis.schema(
-            [('b', 'double'), ('c', 'int8'), ('d', 'double')]
+            [('b', 'point'), ('c', 'int8'), ('d', 'double')]
         )
 
         try:
