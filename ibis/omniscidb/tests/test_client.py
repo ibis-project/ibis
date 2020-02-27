@@ -193,7 +193,7 @@ def test_read_csv(con, filename):
     try:
         db = con.database()
         table = db.table(t_name)
-        table.read_csv(filename, header=False, quoted=True, delimiter=",")
+        table.read_csv(filename, header=False, quotechar='"', delimiter=",")
 
         df_read_csv = table.execute()
         df_expected = db.table("functional_alltypes").execute()

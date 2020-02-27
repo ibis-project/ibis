@@ -399,7 +399,7 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         self,
         path: Union[str, Path],
         header: bool = True,
-        quoted: bool = True,
+        quotechar: str = '"',
         delimiter: str = ',',
     ):
         """
@@ -413,8 +413,8 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
           Path to the input data file
         header : bool, optional, default True
           Indicating whether the input file has a header line
-        quoted : bool, optional, default True
-          Indicating whether the input file contains quoted fields
+        quotechar : str, optional, default '"'
+          The character used to denote the start and end of a quoted item.
         delimiter : str, optional, default ','
 
         Returns
@@ -423,7 +423,8 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         """
         kwargs = {
             'header': header,
-            'quoted': quoted,
+            'quote': quotechar,
+            'qouted': True if quotechar != '' else False,
             'delimiter': delimiter,
         }
         stmt = ddl.LoadData(self._qualified_name, path, **kwargs)
