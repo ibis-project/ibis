@@ -344,30 +344,20 @@ class AlterTable(OmniSciDBDDL):
 class AddColumn(AlterTable):
     """Add Column class."""
 
-    def __init__(self, table_name, **columns_with_types):
+    def __init__(self, table_name, columns_with_types):
         super().__init__(table_name)
-        self.dict_cols_with_types = {}
-        for key, value in columns_with_types.items():
-            self.dict_cols_with_types[key] = value
+        self.dict_cols_with_types = columns_with_types
 
     def _pieces(self):
-        col_count = len(self.dict_cols_with_types)
-        if col_count == 0:
+        if len(self.dict_cols_with_types) == 0:
             raise IbisInputError('No column requested to add.')
-        elif col_count == 1:
-            column_name = list(self.dict_cols_with_types.keys())[-1]
-            yield '{} ADD COLUMN {} {};'.format(
-                self.table, column_name, self.dict_cols_with_types[column_name]
-            )
-        else:
-            yield '{} ADD ('.format(self.table)
-            iteration_idx = 0
-            for col, d_type in self.dict_cols_with_types.items():
-                if iteration_idx != col_count - 1:
-                    yield '{} {}, '.format(col, d_type)
-                else:
-                    yield '{} {});'.format(col, d_type)
-                iteration_idx += 1
+
+        sep = ''
+        yield '{} ADD ('.format(self.table)
+        for col, d_type in self.dict_cols_with_types.items():
+            yield '{} {} {}'.format(sep, col, d_type)
+            sep = ','
+        yield ');'
 
     def compile(self):
         """Compile the Add Column expression.
@@ -383,29 +373,20 @@ class AddColumn(AlterTable):
 class DropColumn(AlterTable):
     """Drop Column class."""
 
-    def __init__(self, table_name, *column_names):
+    def __init__(self, table_name, column_names):
         super().__init__(table_name)
-        self.column_names = []
-        for col in column_names:
-            self.column_names.append(col)
+        self.column_names = column_names
 
     def _pieces(self):
-        col_count = len(self.column_names)
-        if col_count == 0:
+        if len(self.column_names) == 0:
             raise IbisInputError('No column requested to drop.')
-        elif col_count == 1:
-            yield '{} DROP COLUMN {};'.format(
-                self.table, self.column_names[-1]
-            )
-        else:
-            yield '{} '.format(self.table)
-            iteration_idx = 0
-            for col in self.column_names:
-                if iteration_idx != col_count - 1:
-                    yield 'DROP {}, '.format(col)
-                else:
-                    yield 'DROP {};'.format(col)
-                iteration_idx += 1
+
+        sep = ''
+        yield '{}'.format(self.table)
+        for col in self.column_names:
+            yield '{} DROP {}'.format(sep, col)
+            sep = ','
+        yield ';'
 
     def compile(self):
         """Compile the Drop Column expression.

@@ -104,7 +104,7 @@ def test_union_op(alltypes):
         expr.compile()
 
 
-def test_add_column(con):
+def test_add_column_zero(con):
     table_name = 'my_table'
 
     con.drop_table(table_name, force=True)
@@ -113,7 +113,31 @@ def test_add_column(con):
 
     con.create_table(table_name, schema=schema)
 
-    con.add_column(table_name, c='DOUBLE')
+    dict_cols_with_types = {}
+
+    isException = False
+    try:
+        con.add_column(table_name, dict_cols_with_types)
+    except com.IbisInputError:
+        isException = True
+    finally:
+        con.drop_table(table_name)
+
+    if not isException:
+        assert False
+
+
+def test_add_column_one(con):
+    table_name = 'my_table'
+
+    con.drop_table(table_name, force=True)
+
+    schema = ibis.schema([('a', 'float'), ('b', 'int8')])
+
+    con.create_table(table_name, schema=schema)
+
+    dict_cols_with_types = {'c': 'DOUBLE'}
+    con.add_column(table_name, dict_cols_with_types)
 
     schema_for_check = ibis.schema(
         [('a', 'float'), ('b', 'int8'), ('c', 'double')]
@@ -128,7 +152,32 @@ def test_add_column(con):
         con.drop_table(table_name)
 
 
-def test_drop_column(con):
+def test_add_column_several(con):
+    table_name = 'my_table'
+
+    con.drop_table(table_name, force=True)
+
+    schema = ibis.schema([('a', 'float'), ('b', 'int8')])
+
+    con.create_table(table_name, schema=schema)
+
+    dict_cols_with_types = {'c': 'DOUBLE', 'd': 'TEXT'}
+    con.add_column(table_name, dict_cols_with_types)
+
+    schema_for_check = ibis.schema(
+        [('a', 'float'), ('b', 'int8'), ('c', 'double'), ('d', 'string')]
+    )
+
+    try:
+        t = con.table(table_name)
+
+        for k, i_type in t.schema().items():
+            assert schema_for_check[k] == i_type
+    finally:
+        con.drop_table(table_name)
+
+
+def test_drop_column_zero(con):
     table_name = 'my_table'
 
     con.drop_table(table_name, force=True)
@@ -137,10 +186,56 @@ def test_drop_column(con):
 
     con.create_table(table_name, schema=schema)
 
-    column_name = 'a'
-    con.drop_column(table_name, column_name)
+    column_names = []
+
+    isException = False
+    try:
+        con.drop_column(table_name, column_names)
+    except com.IbisInputError:
+        isException = True
+    finally:
+        con.drop_table(table_name)
+
+    if not isException:
+        assert False
+
+
+def test_drop_column_one(con):
+    table_name = 'my_table'
+
+    con.drop_table(table_name, force=True)
+
+    schema = ibis.schema([('a', 'float'), ('b', 'double'), ('c', 'int8')])
+
+    con.create_table(table_name, schema=schema)
+
+    column_names = ['a']
+    con.drop_column(table_name, column_names)
 
     schema_for_check = ibis.schema([('b', 'double'), ('c', 'int8')])
+
+    try:
+        t = con.table(table_name)
+
+        for k, i_type in t.schema().items():
+            assert schema_for_check[k] == i_type
+    finally:
+        con.drop_table(table_name)
+
+
+def test_drop_column_several(con):
+    table_name = 'my_table'
+
+    con.drop_table(table_name, force=True)
+
+    schema = ibis.schema([('a', 'float'), ('b', 'double'), ('c', 'int8')])
+
+    con.create_table(table_name, schema=schema)
+
+    column_names = ['a', 'b']
+    con.drop_column(table_name, column_names)
+
+    schema_for_check = ibis.schema([('c', 'int8')])
 
     try:
         t = con.table(table_name)

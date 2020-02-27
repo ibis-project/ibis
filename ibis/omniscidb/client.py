@@ -993,41 +993,42 @@ class OmniSciDBClient(SQLClient):
         self._execute(statement, False)
         self.set_database(_database)
 
-    def add_column(self, table_name, **columns_with_types):
+    def add_column(self, table_name, dict_columns_with_types):
         """
         Add a given column(s).
 
         Parameters
         ----------
         table_name : string
-        columns_with_types : keyworded arguments (column(s) with type(s))
+        dict_columns_with_types : dictionary
 
         Examples
         --------
         >>> table_name = 'my_table'
-        >>> columns_with_types = my_column_1 = 'INTEGER',
-                                 my_column_2 = 'DOUBLE'
-        >>> con.add_column(table_name, **columns_with_types)
+        >>> dict_columns_with_types = {'my_column_1': 'INTEGER',
+                                       'my_column_2': 'DOUBLE}
+        >>> con.add_column(table_name,
+                           dict_columns_with_types)  # doctest: +SKIP
         """
-        statement = ddl.AddColumn(table_name, **columns_with_types)
+        statement = ddl.AddColumn(table_name, dict_columns_with_types)
         self._execute(statement, False)
 
-    def drop_column(self, table_name, *column_names):
+    def drop_column(self, table_name, column_names):
         """
         Drop a given column(s).
 
         Parameters
         ----------
         table_name : string
-        column_names : string(s)
+        column_names : list
 
         Examples
         --------
         >>> table_name = 'my_table'
-        >>> column_names = 'my_column_1', 'my_column_2'
-        >>> con.drop_column(table_name, *column_names)
+        >>> column_names = ['my_column_1', 'my_column_2']
+        >>> con.drop_column(table_name, column_names)  # doctest: +SKIP
         """
-        statement = ddl.DropColumn(table_name, *column_names)
+        statement = ddl.DropColumn(table_name, column_names)
         self._execute(statement, False)
 
     def truncate_table(self, table_name, database=None):
