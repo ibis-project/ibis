@@ -424,7 +424,7 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         kwargs = {
             'header': header,
             'quote': quotechar,
-            'qouted': True if quotechar != '' else False,
+            'quoted': True if quotechar != '' else False,
             'delimiter': delimiter,
         }
         stmt = ddl.LoadData(self._qualified_name, path, **kwargs)
