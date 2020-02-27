@@ -344,9 +344,9 @@ class AlterTable(OmniSciDBDDL):
 class AddColumn(AlterTable):
     """Add Column class."""
 
-    def __init__(self, table_name, columns_with_types):
+    def __init__(self, table_name, cols_with_types):
         super().__init__(table_name)
-        self.dict_cols_with_types = columns_with_types
+        self.dict_cols_with_types = cols_with_types
 
     def _pieces(self):
         if len(self.dict_cols_with_types) == 0:

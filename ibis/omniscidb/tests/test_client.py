@@ -105,14 +105,14 @@ def test_union_op(alltypes):
 
 
 @pytest.mark.parametrize(
-    'dict_cols_with_types',
+    'cols_with_types',
     [
         {},
         {'c': 'DOUBLE'},
         {'c': 'DOUBLE', 'd': 'TEXT', 'e': 'POINT', 'f': 'POLYGON'},
     ],
 )
-def test_add_column(con, dict_cols_with_types):
+def test_add_column(con, cols_with_types):
     table_name = 'my_table'
 
     con.drop_table(table_name, force=True)
@@ -121,12 +121,12 @@ def test_add_column(con, dict_cols_with_types):
 
     con.create_table(table_name, schema=schema)
 
-    col_count = len(dict_cols_with_types)
+    col_count = len(cols_with_types)
 
     if col_count == 0:
         isException = False
         try:
-            con.add_column(table_name, dict_cols_with_types)
+            con.add_column(table_name, cols_with_types)
         except com.IbisInputError:
             isException = True
         finally:
@@ -135,7 +135,7 @@ def test_add_column(con, dict_cols_with_types):
         if not isException:
             assert False
     elif col_count == 1:
-        con.add_column(table_name, dict_cols_with_types)
+        con.add_column(table_name, cols_with_types)
 
         schema_for_check = ibis.schema(
             [('a', 'float'), ('b', 'int8'), ('c', 'double')]
@@ -149,7 +149,7 @@ def test_add_column(con, dict_cols_with_types):
         finally:
             con.drop_table(table_name)
     else:
-        con.add_column(table_name, dict_cols_with_types)
+        con.add_column(table_name, cols_with_types)
 
         schema_for_check = ibis.schema(
             [
