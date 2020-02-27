@@ -135,6 +135,8 @@ def test_add_column(con, dict_cols_with_types):
         if not isException:
             assert False
     elif col_count == 1:
+        con.add_column(table_name, dict_cols_with_types)
+
         schema_for_check = ibis.schema(
             [('a', 'float'), ('b', 'int8'), ('c', 'double')]
         )
@@ -147,6 +149,8 @@ def test_add_column(con, dict_cols_with_types):
         finally:
             con.drop_table(table_name)
     else:
+        con.add_column(table_name, dict_cols_with_types)
+
         schema_for_check = ibis.schema(
             [
                 ('a', 'float'),
@@ -193,6 +197,8 @@ def test_drop_column(con, column_names):
         if not isException:
             assert False
     elif col_count == 1:
+        con.drop_column(table_name, column_names)
+
         schema_for_check = ibis.schema(
             [('b', 'point'), ('c', 'int8'), ('d', 'double')]
         )
@@ -205,6 +211,8 @@ def test_drop_column(con, column_names):
         finally:
             con.drop_table(table_name)
     else:
+        con.drop_column(table_name, column_names)
+
         schema_for_check = ibis.schema([('d', 'double')])
 
         try:
