@@ -238,13 +238,13 @@ class OmniSciDBGeoCursor(OmniSciDBDefaultCursor):
         dataframe : pandas.DataFrame
         """
         cursor = self.cursor
-        cursor_description = cursor.description
 
         if not isinstance(cursor, Cursor):
             if cursor is None:
                 return geopandas.GeoDataFrame([])
             return cursor
 
+        cursor_description = cursor.description
         col_names = [c.name for c in cursor_description]
         result = pd.DataFrame(cursor.fetchall(), columns=col_names)
 

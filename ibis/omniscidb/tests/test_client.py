@@ -1,14 +1,55 @@
 import pandas as pd
 import pytest
+from pytest import param
 from pkg_resources import get_distribution, parse_version
 
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.types as ir
 from ibis.tests.util import assert_equal
+from ibis.omniscidb.client import (
+    EXECUTION_TYPE_ICP,
+    EXECUTION_TYPE_ICP_GPU,
+    EXECUTION_TYPE_CURSOR,
+)
+from ibis import literal as L
+
+enable_cudf = True
+try:
+    import cudf
+except ImportError:
+    enable_cudf = False
+
 
 pytestmark = pytest.mark.omniscidb
 pytest.importorskip('pymapd')
+
+
+@pytest.mark.parametrize(
+    'execution_type',
+    [
+        param(EXECUTION_TYPE_ICP, id='type-ipc',),
+        param(
+            EXECUTION_TYPE_ICP_GPU,
+            id='type-ipc-gpu',
+            marks=pytest.mark.skipif(
+                not enable_cudf,
+                reason="The 'cudf' package is required for "
+                "EXECUTION_TYPE_ICP_GPU",
+            ),
+        ),
+        param(EXECUTION_TYPE_CURSOR, id='type-cursor'),
+    ],
+)
+def test_execution_types(session_con, execution_type):
+    connection = ibis.omniscidb.connect(
+        protocol=session_con.protocol,
+        host=session_con.host,
+        port=session_con.port,
+        session_id=session_con.con._session,
+        execution_type=execution_type,
+    )
+    assert connection.execute(L(5)) == 5
 
 
 def test_table(alltypes):
