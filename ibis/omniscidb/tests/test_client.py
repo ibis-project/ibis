@@ -16,7 +16,7 @@ from ibis import literal as L
 
 enable_cudf = True
 try:
-    import cudf
+    import cudf  # noqa
 except ImportError:
     enable_cudf = False
 
