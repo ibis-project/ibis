@@ -46,7 +46,7 @@ jobs:
     - script: conda update --all conda=$(conda.version)
       displayName: 'Update conda and install an appropriate version'
 
-    - script: conda create --name $(conda.env) python=$(python.version) numpy pandas pytables ruamel.yaml jinja2 pyarrow multipledispatch pymysql "sqlalchemy>=1.1" psycopg2 graphviz click mock plumbum geopandas toolz regex
+    - script: conda create --name $(conda.env) python=$(python.version) numpy pandas pytables ruamel.yaml jinja2 pyarrow multipledispatch pymysql "sqlalchemy>=1.1" psycopg2 graphviz click mock plumbum geopandas toolz regex pymapd
       displayName: 'Create conda environment'
 
     - script: |
@@ -80,6 +80,11 @@ jobs:
         call activate $(conda.env)
         python -c "import pandas"
       displayName: 'Import pandas'
+
+    - script: |
+        call activate $(conda.env)
+        python -c "import pymapd"
+      displayName: 'Import pymapd'
 
     - script: choco install -y mariadb --version=10.3.16
       displayName: 'Install mariadb (mysql) from chocolatey'
