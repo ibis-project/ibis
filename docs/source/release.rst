@@ -7,12 +7,16 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`/release-pre-1.0`
 
+* :bug:`2089` Pin "clickhouse-driver" to ">=0.1.3"
+* :release:`1.3.0 <pending>`
 * :support:`2077` Change omniscidb image tag from v5.0.0 to v5.1.0 on docker-compose recipe
 * :feature:`2071` Improve many arguments UDF performance in pandas backend.
 * :support:`2075` Disable Postgres tests on Windows CI.
 * :feature:`2048` Introduce a top level vectorized UDF module (experimental). Implement element-wise UDF for pandas and PySpark backend.
-* :release:`1.2.1 <pending>`
 * :bug:`2069` Fix load data stage for Linux CI
+* :support:`2066` SUPP: Add support to Python 3.8
+* :support:`2075` Disable Postgres tests on Windows CI.
+* :feature:`2048` Introduce a top level vectorized UDF module (experimental). Implement element-wise UDF for pandas and PySpark backend.
 * :bug:`2057` Fix datamgr.py fail if IBIS_TEST_OMNISCIDB_DATABASE=omnisci
 * :bug:`2061` CI: Fix CI builds related to new pandas 1.0 compatibility
 * :feature:`1976` Add DenseRank, RowNumber, MinRank, Count, PercentRank/CumeDist window operations to OmniSciDB

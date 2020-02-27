@@ -169,7 +169,7 @@ class HDFS:
         resource,
         overwrite: bool = False,
         verbose: bool = None,
-        **kwargs
+        **kwargs,
     ) -> str:
         """
         Write file or directory to HDFS.
@@ -587,7 +587,7 @@ class WebHDFS(HDFS):
         resource,
         overwrite: bool = False,
         verbose: bool = None,
-        **kwargs
+        **kwargs,
     ):
         """
         Write file or directory to HDFS.
@@ -629,7 +629,7 @@ class WebHDFS(HDFS):
         local_path: str,
         overwrite: bool = False,
         verbose: bool = None,
-        **kwargs
+        **kwargs,
     ) -> str:
         """
         Download remote file or directory to the local filesystem.

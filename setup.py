@@ -26,7 +26,7 @@ omniscidb_requires = ['pymapd>=0.12.0']
 kerberos_requires = ['requests-kerberos']
 visualization_requires = ['graphviz']
 clickhouse_requires = [
-    'clickhouse-driver>=0.0.8,<0.1.2',
+    'clickhouse-driver>=0.1.3',
     'clickhouse-cityhash',
 ]
 bigquery_requires = ['google-cloud-bigquery>=1.0.0', 'pydata-google-auth']

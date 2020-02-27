@@ -322,7 +322,7 @@ def _window_agg_built_in(
     function: str,
     max_lookback: int,
     *args: Tuple[Any],
-    **kwargs: Dict[str, Any]
+    **kwargs: Dict[str, Any],
 ) -> pd.Series:
     """Apply window aggregation with built-in aggregators.
     """
@@ -354,7 +354,7 @@ def _window_agg_udf(
     dtype: np.dtype,
     max_lookback: int,
     *args: Tuple[Any],
-    **kwargs: Dict[str, Any]
+    **kwargs: Dict[str, Any],
 ) -> pd.Series:
     """Apply window aggregation with UDFs.
 
@@ -435,7 +435,7 @@ class Window(AggregationContext):
         grouped_data: Union[pd.Series, SeriesGroupBy],
         function: Union[str, Callable],
         *args: Tuple[Any],
-        **kwargs: Dict[str, Any]
+        **kwargs: Dict[str, Any],
     ) -> pd.Series:
         # avoid a pandas warning about numpy arrays being passed through
         # directly

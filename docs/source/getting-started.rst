@@ -120,7 +120,7 @@ individual parameters to :func:`ibis.postgres.connect`:
 `Clickhouse <https://clickhouse.yandex/>`_ Quickstart
 -----------------------------------------------------
 
-Install dependencies for Ibis's Clickhouse dialect:
+Install dependencies for Ibis's Clickhouse dialect(minimal supported version is `0.1.3`):
 
 ::
 
