@@ -7,33 +7,109 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`/release-pre-1.0`
 
-* :bug:`2089` Pin "clickhouse-driver" to ">=0.1.3"
-* :release:`1.3.0 <pending>`
+* :release:`1.3.0 <2020-02-27>`
+* :support:`2066` Add support to Python 3.8
+* :bug:`2089 major` Pin "clickhouse-driver" to ">=0.1.3"
+* :support:`2079` Pin back version of isort
+* :support:`2082` Use user-defined port variables for Omnisci and PostgreSQL tests
 * :support:`2077` Change omniscidb image tag from v5.0.0 to v5.1.0 on docker-compose recipe
+* :support:`2051` [Omnisci] The same SRIDs for test_geo_spatial_binops
+* :support:`2078` Unpin rtree version
 * :feature:`2071` Improve many arguments UDF performance in pandas backend.
+* :bug:`2069 major` Fix load data stage for Linux CI
+* :support:`2074` Link pandas issues with xfail tests in pandas/tests/test_udf.py
 * :support:`2075` Disable Postgres tests on Windows CI.
-* :feature:`2048` Introduce a top level vectorized UDF module (experimental). Implement element-wise UDF for pandas and PySpark backend.
-* :bug:`2069` Fix load data stage for Linux CI
-* :support:`2066` SUPP: Add support to Python 3.8
-* :support:`2075` Disable Postgres tests on Windows CI.
-* :feature:`2048` Introduce a top level vectorized UDF module (experimental). Implement element-wise UDF for pandas and PySpark backend.
-* :bug:`2057` Fix datamgr.py fail if IBIS_TEST_OMNISCIDB_DATABASE=omnisci
-* :bug:`2061` CI: Fix CI builds related to new pandas 1.0 compatibility
+* :support:`2068` use conda for installation black and isort tools
+* :bug:`2057 major` Fix datamgr.py fail if IBIS_TEST_OMNISCIDB_DATABASE=omnisci
+* :support:`2061` CI: Fix CI builds related to new pandas 1.0 compatibility
+* :support:`2056` Fix data map for int8 on OmniSciDB backend
 * :feature:`1976` Add DenseRank, RowNumber, MinRank, Count, PercentRank/CumeDist window operations to OmniSciDB
-* :feature:`1964` Remove execution_type parameter and add gpu_device: int and ipc: bool for OmniSciDB backend; Fix categorical data type issue when using cudf.DataFrame output
-* :bug:`2055` Fix "cudf" import on OmniSciDB backend
-* :feature:`2052` added possibility to run tests for separate backend via `make test BACKENDS=[YOUR BACKEND]`
-* :bug:`2056` Fix data map for int8 on OmniSciDB backend
+* :support:`2052` Add possibility to run tests for separate backend via `make test BACKENDS=[YOUR BACKEND]`
+* :support:`2055` Fix "cudf" import on OmniSciDB backend
+* :feature:`2047` Introduce a top level vectorized UDF module (experimental). Implement element-wise UDF for pandas and PySpark backend.
+* :support:`2050` CI: Drop table only if it exists (OmniSciDB)
 * :support:`2034` Add initial documentation for OmniSciDB, MySQL, PySpark and SparkSQL backends, add initial documentation for geospatial methods and add links to Ibis wiki page
-* :bug:`2050` CI: Drop table only if it exists
-* :feature:`2044` Implement covariance for bigquery backend
+* :support:`2044` Implement covariance for bigquery backend
 * :feature:`2035` Add support for  multi arguments window UDAF for the pandas backend
-* :bug:`2041` Change pymapd connection parameter from "session_id" to "sessionid"
+* :bug:`2041 major` Change pymapd connection parameter from "session_id" to "sessionid"
+* :support:`2046` Add Spark to supported backends list
+* :support:`2043` Ping dependency of rtree to fix CI failure
 * :support:`2037` Drop support for Python 3.5
-* :bug:`2023` HTML escape column names and types in png repr.
+* :support:`2023` HTML escape column names and types in png repr.
+* :support:`1991` Add geospatial tutorial notebook
 * :support:`2031` Change omniscidb image tag from v4.7.0 to v5.0.0 on docker-compose recipe
-* :bug:`2030` Pin "semantic_version" to "<2.7" in the docs build CI, fix "builddoc" and "doc" section inside "Makefile" and skip mysql tzinfo on CI to allow to run MySQL using docker container on a hard disk drive.
-* :bug:`2009` Fix pandas backend to treat trailing_window preceding arg as window bound rather than window size (e.g. preceding=0 now indicates current row rather than window size 0)
+* :support:`2030` Pin "semantic_version" to "<2.7" in the docs build CI, fix "builddoc" and "doc" section inside "Makefile" and skip mysql tzinfo on CI to allow to run MySQL using docker container on a hard disk drive.
+* :bug:`2009 major` Fix pandas backend to treat trailing_window preceding arg as window bound rather than window size (e.g. preceding=0 now indicates current row rather than window size 0)
+* :feature:`2004` Clean up window translation logic in pyspark backend
+* :bug:`2015 major` Fix handling of Array types in Postgres UDF
+* :feature:`1996` Add docstring check to CI for an initial subset files
+* :bug:`2010 major` Fix pydocstyle config
+* :support:`2012` Fixed impala start up issues
+* :feature:`2001` Pyspark backend bounded windows
+* :bug:`2006 major` Pinning clickhouse-driver<0.1.2
+* :support:`1999` cache all ops in translate()
+* :feature:`1987` Add more POSTGIS operations
+* :feature:`1969` SQLAlchemy Default precision and scale to decimal types for PostgreSQL and MySQL
+* :support:`1988` Add black step to CI
+* :support:`1962` Json UUID any
+* :bug:`1984 major` Fix CI log for database
+* :feature:`1983` Add support for array operations in PySpark backend
+* :feature:`1978` Implement sort, if_null, null_if and notin for PySpark backend
+* :support:`1982` Add log for database services
+* :feature:`1974` Add support for date/time operations in PySpark backend
+* :feature:`1973` Add support for params, query_schema, and sql in PySpark backend
+* :support:`1972` Fix BigQuery backend fixture so batting and awards_players fixture re…
+* :support:`1971` Disable BigQuery explicitly in all/test_join.py
+* :feature:`1967` Implement join for PySpark backend
+* :feature:`1952` Validate AsOfJoin tolerance and attempt interval unit conversion
+* :support:`1963` Re-formatting all files using pre-commit hook
+* :support:`1961` Disable codecov report upload during CI builds
+* :support:`1960` Developer doc enhancements
+* :feature:`1943` filter for PySpark backend
+* :feature:`1945` window operations for pyspark backend
+* :support:`1958` Missing geospatial ops for OmniSciDB
+* :feature:`1951` Implement IntervalSub for pandas backend
+* :support:`1950` Remove pandas deprecation warnings
+* :support:`1948` Add developer docs to get docker setup
+* :support:`1949` More informative IntegrityError on duplicate columns
+* :feature:`1942` PySpark backend string and column ops
+* :support:`1928` Improve geospatial literals and smoke tests
+* :support:`1925` PostGIS enhancements
+* :bug:`1933 major` Fixes explain operation
+* :feature:`1913` PySpark backend
+* :bug:`1937 major` Fix incorrect assumptions about attached SQLite databases
+* :bug:`1938 major` Upgrade to JDK11
+* :support:`1866` Rename mapd to omniscidb backend
+* :support:`1926` Fix failing BigQuery tests
+* :feature:`1908` DDL support for Spark backend
+* :support:`1917` Added missing null literal op
+* :feature:`1923` Support timezone aware arrow timestamps
+* :bug:`1903 major` `sql` method doesn't work when the query uses LIMIT clause
+* :feature:`1860` Add shapely geometries as input for literals
+* :bug:`1910 major` Fix union implementation
+* :bug:`1912 major` Fix failing com imports on master
+* :feature:`1858` Add geopandas as output for omniscidb
+* :bug:`1901 major` OmniSci/MapD - Fix reduction for bool
+* :feature:`1885` Spark UDFs
+* :feature:`1871` Add support for Postgres UDFs
+* :bug:`1899 major` Pass scope to grouping execution in the pandas backend
+* :support:`1895` Update link to Presto website
+* :support:`1896` Removing linting from windows
+* :bug:`1888 major` Fix various Spark backend issues
+* :bug:`1891 major` Make Nodes enforce the proper signature
+* :bug:`1893 major` Fix according to bug in pd.to_datetime when passing the unit flag
+* :feature:`1830` Spark tests
+* :support:`1884` Fix link to NUMFOCUS CoC
+* :bug:`1883 major` Fix small formatting buglet in PR merge tool
+* :support:`1882` Added CoC section
+* :bug:`1876 major` Fix the case where we do not have an index when using preceding with intervals
+* :feature:`1807` Spark client
+* :bug:`1872 major` Fixed issues with geo data
+* :feature:`1868` Use pandas rolling apply to implement rows_with_max_lookback
+* :bug:`1869 major` Remove -x from pytest call in linux CI
+* :bug:`1867 major` Fix return type of Struct.from_tuples
+* :support:`1859` Remove pandas exception for rows_with_max_lookback
+* :support:`1856` Move CI pipelines to Azure
 * :release:`1.2.0 <2019-06-24>`
 * :feature:`1836` Add new geospatial functions to OmniSciDB backend
 * :support:`1847` Skip SQLAlchemy backend tests in connect method in backends.py
