@@ -105,17 +105,14 @@ def test_union_op(alltypes):
 
 
 @pytest.mark.parametrize(
-    'cols_with_types', 'nullables', 'defaults',
+    'cols_with_types',
     [
-        ({}, None, None),
-        ({'c': 'float64'}, None, [1.0]),
-        ({'c': 'float64'}, [True], None),
-        ({'c': 'float64', 'd': 'string', 'e': 'point', 'f': 'polygon'},
-         None,
-         None)
+        {},
+        {'c': 'float64'},
+        {'c': 'float64', 'd': 'string', 'e': 'point', 'f': 'polygon'},
     ],
 )
-def test_add_column(con, cols_with_types, nullables, defaults):
+def test_add_column(con, cols_with_types):
     table_name = 'my_table'
 
     con.drop_table(table_name, force=True)
