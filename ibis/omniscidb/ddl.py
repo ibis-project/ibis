@@ -351,12 +351,12 @@ class AddColumn(AlterTable):
                  nullables=None,
                  defaults=None,
                  extras=None):
-        if len(self.dict_cols_with_types) == 0:
+        if len(cols_with_types) == 0:
             raise com.IbisInputError('No column requested to add.')
         else:
             self.col_count = len(cols_with_types)
         super().__init__(table_name)
-        self.dict_cols_with_types = cols_with_types
+        self.cols_with_types = cols_with_types
 
         if nullables is None:
             self.nullables = [None] * self.col_count
@@ -384,7 +384,7 @@ class AddColumn(AlterTable):
         idx = 0
         sep = ''
         yield '{} ADD ('.format(self.table)
-        for col, d_type in self.dict_cols_with_types.items():
+        for col, d_type in self.cols_with_types.items():
             yield '{} {} {} {} {}'.format(
                 sep,
                 col,
@@ -412,7 +412,7 @@ class DropColumn(AlterTable):
     """Drop Column class."""
 
     def __init__(self, table_name, column_names):
-        if len(self.column_names) == 0:
+        if len(column_names) == 0:
             raise com.IbisInputError('No column requested to drop.')
         super().__init__(table_name)
         self.column_names = column_names
