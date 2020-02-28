@@ -115,7 +115,7 @@ def test_union_op(alltypes):
          None)
     ],
 )
-def test_add_column(con, cols_with_types):
+def test_add_column(con, cols_with_types, nullables, defaults):
     table_name = 'my_table'
 
     con.drop_table(table_name, force=True)
