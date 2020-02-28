@@ -9,6 +9,7 @@ Release Notes
 
 * :bug:`2089` Pin "clickhouse-driver" to ">=0.1.3"
 * :release:`1.3.0 <pending>`
+* :feature:`2062` Implement read_csv for omniscidb backend
 * :support:`2077` Change omniscidb image tag from v5.0.0 to v5.1.0 on docker-compose recipe
 * :feature:`2071` Improve many arguments UDF performance in pandas backend.
 * :support:`2075` Disable Postgres tests on Windows CI.
