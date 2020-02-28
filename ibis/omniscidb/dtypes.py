@@ -1,4 +1,4 @@
-"""OmniSciDB data types and SQL dtypes compatibility."""
+"""OmniSciDB data types and SQL data types compatibility."""
 import ibis.expr.datatypes as dt
 
 sql_to_ibis_dtypes = {

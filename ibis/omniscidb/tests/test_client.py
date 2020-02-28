@@ -105,11 +105,14 @@ def test_union_op(alltypes):
 
 
 @pytest.mark.parametrize(
-    'cols_with_types',
+    ('cols_with_types', 'nullables', 'defaults')
     [
-        {},
-        {'c': 'float64'},
-        {'c': 'float64', 'd': 'string', 'e': 'point', 'f': 'polygon'},
+        ({}, None, None),
+        ({'c': 'float64'}, None, [1.0]),
+        ({'c': 'float64'}, [True], None),
+        ({'c': 'float64', 'd': 'string', 'e': 'point', 'f': 'polygon'},
+         None,
+         None)
     ],
 )
 def test_add_column(con, cols_with_types):
@@ -121,19 +124,18 @@ def test_add_column(con, cols_with_types):
 
     con.create_table(table_name, schema=schema)
 
+    tbl = con.table(table_name)
+
     if len(cols_with_types) == 0:
         with pytest.raises(com.IbisInputError):
-            con.add_column(table_name, cols_with_types)
+            tbl.add_column(cols_with_types)
         return con.drop_table(table_name)
-
-    con.add_column(table_name, cols_with_types)
 
     schema_new_cols = ibis.schema(cols_with_types.items())
     old_schema_with_new_cols = schema.append(schema_new_cols)
 
     try:
-        t = con.table(table_name)
-        assert t.schema() == old_schema_with_new_cols
+        assert tbl.schema() == old_schema_with_new_cols
     finally:
         con.drop_table(table_name)
 
@@ -150,18 +152,17 @@ def test_drop_column(con, column_names):
 
     con.create_table(table_name, schema=schema)
 
+    tbl = con.table(table_name)
+
     if len(column_names) == 0:
         with pytest.raises(com.IbisInputError):
-            con.drop_column(table_name, column_names)
+            tbl.drop_column(column_names)
         return con.drop_table(table_name)
-
-    con.drop_column(table_name, column_names)
 
     schema_with_dropped_cols = schema.delete(column_names)
 
     try:
-        t = con.table(table_name)
-        assert t.schema() == schema_with_dropped_cols
+        assert tbl.schema() == schema_with_dropped_cols
     finally:
         con.drop_table(table_name)
 

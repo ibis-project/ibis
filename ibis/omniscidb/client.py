@@ -433,6 +433,47 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
             results.append(result)
         return results
 
+    def add_column(self,
+                   cols_with_types,
+                   nullables=None,
+                   defaults=None,
+                   extras=None):
+        """
+        Add a given column(s).
+
+        Parameters
+        ----------
+        cols_with_types : dictionary
+            Set dictionary of column(s) with type(s) to add into table,
+            where key is column name and value is column type
+        nullables : list, optional
+            Set list of boolean values for new columns
+            that could be nullable, by default None
+        defaults : list, optional
+            Set list of values for the new columns, by default None
+        extras : list, optional
+            Set extra parameters for the new columns, by default None
+        """
+        statement = ddl.AddColumn(self._qualified_name,
+                                  cols_with_types,
+                                  nullables=nullables,
+                                  defaults=defaults,
+                                  extras=extras)
+        self._client._execute(statement, False)
+
+    def drop_column(self, column_names):
+        """
+        Drop a given column(s).
+
+        Parameters
+        ----------
+        column_names : list
+            Set list of columns to drop from table
+        """
+        statement = ddl.DropColumn(self._qualified_name,
+                                   column_names)
+        self._client._execute(statement, False)
+
 
 class OmniSciDBClient(SQLClient):
     """Client class for OmniSciDB backend."""
@@ -946,59 +987,6 @@ class OmniSciDBClient(SQLClient):
         )
         self._execute(statement, False)
         self.set_database(_database)
-
-    def add_column(self,
-                   table_name,
-                   cols_with_types,
-                   nullables=None,
-                   defaults=None,
-                   extras=None):
-        """
-        Add a given column(s).
-
-        Parameters
-        ----------
-        table_name : string
-        cols_with_types : dictionary
-        nullables : list, optional
-            Set list of boolean values for new columns
-            that could be nullable, by default None
-        defaults : list, optional
-            Set list of values the new columns, by default None
-        extras : list, optional
-            Set extra parameters for new columns, by default None
-
-        Examples
-        --------
-        >>> table_name = 'my_table'
-        >>> cols_with_types = {'my_column_1': 'INTEGER',
-        ...                    'my_column_2': 'DOUBLE'}
-        >>> con.add_column(table_name, cols_with_types)  # doctest: +SKIP
-        """
-        statement = ddl.AddColumn(table_name,
-                                  cols_with_types,
-                                  nullables=nullables,
-                                  defaults=defaults,
-                                  extras=extras)
-        self._execute(statement, False)
-
-    def drop_column(self, table_name, column_names):
-        """
-        Drop a given column(s).
-
-        Parameters
-        ----------
-        table_name : string
-        column_names : list
-
-        Examples
-        --------
-        >>> table_name = 'my_table'
-        >>> column_names = ['my_column_1', 'my_column_2']
-        >>> con.drop_column(table_name, column_names)  # doctest: +SKIP
-        """
-        statement = ddl.DropColumn(table_name, column_names)
-        self._execute(statement, False)
 
     def truncate_table(self, table_name, database=None):
         """
