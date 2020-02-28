@@ -2,10 +2,11 @@
 import re
 
 import ibis
-from ibis.common.exceptions import IbisInputError
+from ibis.common import exceptions as com
+from ibis.omniscidb import dtypes as omniscidb_dtypes
+from .compiler import _type_to_sql_string, quote_identifier
 from ibis.sql.compiler import DDL, DML
 
-from .compiler import _type_to_sql_string, quote_identifier
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
 
@@ -344,18 +345,55 @@ class AlterTable(OmniSciDBDDL):
 class AddColumn(AlterTable):
     """Add Column class."""
 
-    def __init__(self, table_name, cols_with_types):
+    def __init__(self,
+                 table_name,
+                 cols_with_types,
+                 nullables=nullables,
+                 defaults=defaults,
+                 extras=extras):
+        if len(self.dict_cols_with_types) == 0:
+            raise com.IbisInputError('No column requested to add.')
+        else:
+            self.col_count = len(cols_with_types)
         super().__init__(table_name)
         self.dict_cols_with_types = cols_with_types
 
-    def _pieces(self):
-        if len(self.dict_cols_with_types) == 0:
-            raise IbisInputError('No column requested to add.')
+        if nullables is None:
+            self.nullables = [None] * self.col_count
+        else:
+            self.nullables = nullables
 
+        if defaults is None:
+            self.defaults = [None] * self.col_count
+        else:
+            self.defaults = defaults
+
+        if extras is None:
+            self.extras = [None] * self.col_count
+        else:
+            self.extras = extras
+
+    def _pieces(self):
+        def convert_default_value(value):
+            if isinstance(value, bool):
+                return "'t'" if value else "'f'"
+            if isinstance(value, (int, float)):
+                return value
+            return quote_identifier(value, force=True)
+
+        idx = 0
         sep = ''
         yield '{} ADD ('.format(self.table)
         for col, d_type in self.dict_cols_with_types.items():
-            yield '{} {} {}'.format(sep, col, d_type)
+            yield '{} {} {} {} {}'.format(
+                sep,
+                col,
+                omniscidb_dtypes.ibis_str_dtypes_to_sql[d_type],
+                'NOT NULL' if not self.nullables[idx] and
+                not self.defaults[idx] else '',
+                'DEFAULT {}'.format(convert_default_value(self.defaults[idx]))
+                if self.defaults[idx]
+                else '')
             sep = ','
         yield ');'
 
@@ -374,13 +412,12 @@ class DropColumn(AlterTable):
     """Drop Column class."""
 
     def __init__(self, table_name, column_names):
+        if len(self.column_names) == 0:
+            raise com.IbisInputError('No column requested to drop.')
         super().__init__(table_name)
         self.column_names = column_names
 
     def _pieces(self):
-        if len(self.column_names) == 0:
-            raise IbisInputError('No column requested to drop.')
-
         sep = ''
         yield '{}'.format(self.table)
         for col in self.column_names:

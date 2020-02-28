@@ -16,6 +16,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.client import Database, DatabaseEntity, Query, SQLClient
 from ibis.omniscidb import ddl
+from ibis.omniscidb import dtypes as omniscidb_dtypes
 from ibis.omniscidb.compiler import OmniSciDBDialect, build_ast
 from ibis.sql.compiler import DDL, DML
 from ibis.util import log
@@ -65,58 +66,11 @@ class OmniSciDBDataType:
     __slots__ = 'typename', 'nullable'
 
     # using impala.client._HS2_TTypeId_to_dtype as reference
-    # NOTE: any updates here should be reflected to
-    #       omniscidb.operations._sql_type_names
-    dtypes = {
-        'BIGINT': dt.int64,
-        'BOOL': dt.Boolean,
-        'DATE': dt.date,
-        'DECIMAL': dt.Decimal(18, 9),
-        'DOUBLE': dt.double,
-        'FLOAT': dt.float32,
-        'INT': dt.int32,
-        'LINESTRING': dt.linestring,
-        'MULTIPOLYGON': dt.multipolygon,
-        'NULL': dt.Null,
-        'NUMERIC': dt.Decimal(18, 9),
-        'POINT': dt.point,
-        'POLYGON': dt.polygon,
-        'SMALLINT': dt.int16,
-        'STR': dt.string,
-        'TIME': dt.time,
-        'TIMESTAMP': dt.timestamp,
-        'TINYINT': dt.int8,
-    }
+    dtypes = omniscidb_dtypes.sql_to_ibis_dtypes
 
     ibis_dtypes = {v: k for k, v in dtypes.items()}
 
-    # NOTE: any updates here should be reflected to
-    #       omniscidb.operations._sql_type_names
-    _omniscidb_to_ibis_dtypes = {
-        'BIGINT': 'int64',
-        'BOOLEAN': 'Boolean',
-        'BOOL': 'Boolean',
-        'CHAR': 'string',
-        'DATE': 'date',
-        'DECIMAL': 'decimal',
-        'DOUBLE': 'double',
-        'INT': 'int32',
-        'INTEGER': 'int32',
-        'FLOAT': 'float32',
-        'NUMERIC': 'float64',
-        'REAL': 'float32',
-        'SMALLINT': 'int16',
-        'STR': 'string',
-        'TEXT': 'string',
-        'TIME': 'time',
-        'TIMESTAMP': 'timestamp',
-        'TINYINT': 'int8',
-        'VARCHAR': 'string',
-        'POINT': 'point',
-        'LINESTRING': 'linestring',
-        'POLYGON': 'polygon',
-        'MULTIPOLYGON': 'multipolygon',
-    }
+    _omniscidb_to_ibis_dtypes = omniscidb_dtypes.sql_to_ibis_str_dtypes
 
     def __init__(self, typename, nullable=True):
         if typename not in self.dtypes:
@@ -993,7 +947,12 @@ class OmniSciDBClient(SQLClient):
         self._execute(statement, False)
         self.set_database(_database)
 
-    def add_column(self, table_name, cols_with_types):
+    def add_column(self,
+                   table_name,
+                   cols_with_types,
+                   nullables=None,
+                   defaults=None,
+                   extras=None):
         """
         Add a given column(s).
 
@@ -1001,6 +960,13 @@ class OmniSciDBClient(SQLClient):
         ----------
         table_name : string
         cols_with_types : dictionary
+        nullables : list, optional
+            Set list of boolean values for new columns
+            that could be nullable, by default None
+        defaults : list, optional
+            Set list of values the new columns, by default None
+        extras : list, optional
+            Set extra parameters for new columns, by default None
 
         Examples
         --------
@@ -1009,7 +975,11 @@ class OmniSciDBClient(SQLClient):
         ...                    'my_column_2': 'DOUBLE'}
         >>> con.add_column(table_name, cols_with_types)  # doctest: +SKIP
         """
-        statement = ddl.AddColumn(table_name, cols_with_types)
+        statement = ddl.AddColumn(table_name,
+                                  cols_with_types,
+                                  nullables=nullables,
+                                  defaults=defaults,
+                                  extras=extras)
         self._execute(statement, False)
 
     def drop_column(self, table_name, column_names):
