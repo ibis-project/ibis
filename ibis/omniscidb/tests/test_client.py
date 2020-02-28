@@ -7,10 +7,8 @@ from pkg_resources import get_distribution, parse_version
 
 import ibis
 import ibis.common.exceptions as com
-import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.tests.util import assert_equal
-from ibis.omniscidb.dtypes import ibis_dtypes_to_sql
 
 pymapd = pytest.importorskip('pymapd')
 

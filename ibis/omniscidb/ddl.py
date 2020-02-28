@@ -348,9 +348,9 @@ class AddColumn(AlterTable):
     def __init__(self,
                  table_name,
                  cols_with_types,
-                 nullables=nullables,
-                 defaults=defaults,
-                 extras=extras):
+                 nullables=None,
+                 defaults=None,
+                 extras=None):
         if len(self.dict_cols_with_types) == 0:
             raise com.IbisInputError('No column requested to add.')
         else:
