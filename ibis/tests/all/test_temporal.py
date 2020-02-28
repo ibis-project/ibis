@@ -68,7 +68,6 @@ def test_timestamp_extract(backend, alltypes, df, attr):
     ],
 )
 @pytest.mark.xfail_unsupported
-@pytest.mark.skip_backends([OmniSciDB])
 def test_timestamp_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.truncate(unit)
 
