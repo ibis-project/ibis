@@ -3,7 +3,14 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.tests.backends import Clickhouse, Impala, PostgreSQL, PySpark, Spark
+from ibis.tests.backends import (
+    Clickhouse,
+    Impala,
+    OmniSciDB,
+    PostgreSQL,
+    PySpark,
+    Spark,
+)
 
 
 def test_string_col_is_unicode(backend, alltypes, df):
@@ -60,7 +67,9 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.string_col.re_search(r'\\d+'),
             lambda t: t.string_col.str.contains(r'\d+'),
             id='re_search_spark',
-            marks=pytest.mark.xpass_backends((Clickhouse, Impala, Spark)),
+            marks=pytest.mark.xpass_backends(
+                (Clickhouse, Impala, Spark, OmniSciDB)
+            ),
         ),
         param(
             lambda t: t.string_col.re_extract(r'(\\d+)', 0),
