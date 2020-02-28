@@ -128,6 +128,8 @@ def test_add_column(con, cols_with_types):
             tbl.add_column(cols_with_types)
         return con.drop_table(table_name)
 
+    tbl.add_column(cols_with_types)
+
     schema_new_cols = ibis.schema(cols_with_types.items())
     old_schema_with_new_cols = schema.append(schema_new_cols)
 
@@ -155,6 +157,8 @@ def test_drop_column(con, column_names):
         with pytest.raises(com.IbisInputError):
             tbl.drop_column(column_names)
         return con.drop_table(table_name)
+
+    tbl.drop_column(column_names)
 
     schema_with_dropped_cols = schema.delete(column_names)
 
