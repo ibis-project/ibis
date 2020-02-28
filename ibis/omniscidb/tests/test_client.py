@@ -1,5 +1,7 @@
 import pathlib
+from typing import Optional
 
+import mock
 import pandas as pd
 import pytest
 from pkg_resources import get_distribution, parse_version
@@ -9,8 +11,9 @@ import ibis.common.exceptions as com
 import ibis.expr.types as ir
 from ibis.tests.util import assert_equal
 
+pymapd = pytest.importorskip('pymapd')
+
 pytestmark = pytest.mark.omniscidb
-pytest.importorskip('pymapd')
 
 
 def test_table(alltypes):
@@ -201,3 +204,54 @@ def test_read_csv(con, filename):
         pd.testing.assert_frame_equal(df_expected, df_read_csv)
     finally:
         con.drop_table(t_name)
+
+
+@pytest.mark.parametrize('ipc', [None, True, False])
+@pytest.mark.parametrize('gpu_device', [None, 1])
+def test_cpu_execution_type(
+    mocker, con, ipc: Optional[bool], gpu_device: Optional[int]
+):
+    """Test the combination of ipc and gpu_device parameters for connection."""
+    connection_info = {
+        'host': con.host,
+        'port': con.port,
+        'user': con.user,
+        'password': con.password,
+        'database': con.db_name,
+        'protocol': con.protocol,
+        'ipc': ipc,
+        'gpu_device': gpu_device,
+    }
+
+    if gpu_device and ipc is False:
+        # test exception
+        with pytest.raises(ibis.common.exceptions.IbisInputError):
+            ibis.omniscidb.connect(**connection_info)
+        return
+
+    mocked_methods = []
+
+    for mock_method_name in ('select_ipc', 'select_ipc_gpu'):
+        mocked_method = mock.patch.object(
+            pymapd.connection.Connection,
+            mock_method_name,
+            new=lambda *args, **kwargs: pd.DataFrame({'string_col': ['1']}),
+        )
+
+        mocked_method.start()
+        mocked_methods.append(mocked_method)
+
+    new_con = ibis.omniscidb.connect(**connection_info)
+    assert new_con is not None
+    assert new_con.ipc == ipc
+    assert new_con.gpu_device == gpu_device
+
+    expr = new_con.table('functional_alltypes')
+    expr = expr[['string_col']].limit(1)
+
+    assert expr.execute(ipc=True).shape[0] == 1
+    assert expr.execute(ipc=False).shape[0] == 1
+    assert expr.execute(ipc=None).shape[0] == 1
+
+    for mocked_method in mocked_methods:
+        mocked_method.stop()
