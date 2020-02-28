@@ -7,7 +7,6 @@ from ibis.omniscidb import dtypes as omniscidb_dtypes
 from ibis.omniscidb.compiler import _type_to_sql_string, quote_identifier
 from ibis.sql.compiler import DDL, DML
 
-
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
 
 
@@ -345,12 +344,14 @@ class AlterTable(OmniSciDBDDL):
 class AddColumn(AlterTable):
     """Add Column class."""
 
-    def __init__(self,
-                 table_name,
-                 cols_with_types,
-                 nullables=None,
-                 defaults=None,
-                 extras=None):
+    def __init__(
+        self,
+        table_name,
+        cols_with_types,
+        nullables=None,
+        defaults=None,
+        extras=None,
+    ):
         if len(cols_with_types) == 0:
             raise com.IbisInputError('No column requested to add.')
         else:
@@ -385,16 +386,18 @@ class AddColumn(AlterTable):
         sep = ''
         yield '{} ADD ('.format(self.table)
         for col, d_type in self.cols_with_types.items():
-            yield '{} {} {} {} {}'.format(
+            yield '{}{} {} {} {}'.format(
                 sep,
                 col,
                 omniscidb_dtypes.ibis_str_dtypes_to_sql[d_type],
-                'NOT NULL' if not self.nullables[idx] and
-                not self.defaults[idx] else '',
+                'NOT NULL'
+                if not self.nullables[idx] and not self.defaults[idx]
+                else '',
                 'DEFAULT {}'.format(convert_default_value(self.defaults[idx]))
                 if self.defaults[idx]
-                else '')
-            sep = ','
+                else '',
+            )
+            sep = ', '
         yield ');'
 
     def compile(self):

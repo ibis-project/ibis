@@ -121,20 +121,22 @@ def test_add_column(con, cols_with_types):
 
     con.create_table(table_name, schema=schema)
 
-    tbl = con.table(table_name)
+    aux_tbl = con.table(table_name)
 
     if len(cols_with_types) == 0:
         with pytest.raises(com.IbisInputError):
-            tbl.add_column(cols_with_types)
+            aux_tbl.add_column(cols_with_types)
         return con.drop_table(table_name)
 
-    tbl.add_column(cols_with_types)
+    aux_tbl.add_column(cols_with_types)
+
+    res_tbl = con.table(table_name)
 
     schema_new_cols = ibis.schema(cols_with_types.items())
     old_schema_with_new_cols = schema.append(schema_new_cols)
 
     try:
-        assert tbl.schema() == old_schema_with_new_cols
+        assert res_tbl.schema() == old_schema_with_new_cols
     finally:
         con.drop_table(table_name)
 
@@ -151,19 +153,21 @@ def test_drop_column(con, column_names):
 
     con.create_table(table_name, schema=schema)
 
-    tbl = con.table(table_name)
+    aux_tbl = con.table(table_name)
 
     if len(column_names) == 0:
         with pytest.raises(com.IbisInputError):
-            tbl.drop_column(column_names)
+            aux_tbl.drop_column(column_names)
         return con.drop_table(table_name)
 
-    tbl.drop_column(column_names)
+    aux_tbl.drop_column(column_names)
+
+    res_tbl = con.table(table_name)
 
     schema_with_dropped_cols = schema.delete(column_names)
 
     try:
-        assert tbl.schema() == schema_with_dropped_cols
+        assert res_tbl.schema() == schema_with_dropped_cols
     finally:
         con.drop_table(table_name)
 
