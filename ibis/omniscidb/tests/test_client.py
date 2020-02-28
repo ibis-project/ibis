@@ -105,7 +105,7 @@ def test_union_op(alltypes):
 
 
 @pytest.mark.parametrize(
-    'cols_with_types', 'nullables', 'defaults'
+    'cols_with_types', 'nullables', 'defaults',
     [
         ({}, None, None),
         ({'c': 'float64'}, None, [1.0]),
