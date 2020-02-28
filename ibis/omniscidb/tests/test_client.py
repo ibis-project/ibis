@@ -109,7 +109,7 @@ def test_union_op(alltypes):
     [
         {},
         {'c': 'float64'},
-        {'c': 'float64', 'd': 'text', 'e': 'point', 'f': 'polygon'},
+        {'c': 'float64', 'd': 'string', 'e': 'point', 'f': 'polygon'},
     ],
 )
 def test_add_column(con, cols_with_types):
@@ -157,7 +157,7 @@ def test_drop_column(con, column_names):
 
     con.drop_column(table_name, column_names)
 
-    schema_with_dropped_cols = ibis.schema.delete(column_names)
+    schema_with_dropped_cols = schema.delete(column_names)
 
     try:
         t = con.table(table_name)
