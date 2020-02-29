@@ -360,7 +360,7 @@ class AddColumn(AlterTable):
         self.cols_with_types = cols_with_types
 
         if nullables is None:
-            self.nullables = [None] * self.col_count
+            self.nullables = [True] * self.col_count
         else:
             self.nullables = nullables
 
@@ -386,17 +386,18 @@ class AddColumn(AlterTable):
         sep = ''
         yield '{} ADD ('.format(self.table)
         for col, d_type in self.cols_with_types.items():
-            yield '{}{} {} {} {}'.format(
+            yield '{}{} {}{}{}'.format(
                 sep,
                 col,
                 omniscidb_dtypes.ibis_str_dtypes_to_sql[d_type],
-                'NOT NULL'
+                ' NOT NULL'
                 if not self.nullables[idx] and not self.defaults[idx]
                 else '',
-                'DEFAULT {}'.format(convert_default_value(self.defaults[idx]))
+                ' DEFAULT {}'.format(convert_default_value(self.defaults[idx]))
                 if self.defaults[idx]
                 else '',
             )
+            idx += 1
             sep = ', '
         yield ');'
 

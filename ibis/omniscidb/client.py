@@ -446,7 +446,8 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
             where key is column name and value is column type
         nullables : list, optional
             Set list of boolean values for new columns
-            that could be nullable, by default None
+            that could be nullable/not nullable, by default None (i.e
+            all the new columns added are nullables)
         defaults : list, optional
             Set list of values for the new columns, by default None
         extras : list, optional
