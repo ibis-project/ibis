@@ -451,7 +451,8 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         defaults : list, optional
             Set list of default values for the new columns, by default None
         extras : list, optional
-            Set extra parameters for every column added, by default None
+            Set list of extra parameters for the new columns,
+            by default None
         """
         statement = ddl.AddColumn(
             self._qualified_name,
