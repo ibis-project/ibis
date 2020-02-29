@@ -449,9 +449,9 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
             that could be nullable/not nullable, by default None (i.e
             all the new columns added are nullables)
         defaults : list, optional
-            Set list of values for the new columns, by default None
+            Set list of default values for the new columns, by default None
         extras : list, optional
-            Set extra parameters for the new columns, by default None
+            Set extra parameters for every column added, by default None
         """
         statement = ddl.AddColumn(
             self._qualified_name,
