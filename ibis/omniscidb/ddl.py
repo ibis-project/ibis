@@ -539,7 +539,7 @@ class LoadData(OmniSciDBDDL):
         with_stmt = ','.join(
             [
                 '{}={}'.format(
-                    i, "'{}'".format(v) if isinstance(v, str) else v
+                    i, "'{}'".format(v) if not isinstance(v, int) else v
                 )
                 for i, v in self.options.items()
                 if v is not None
