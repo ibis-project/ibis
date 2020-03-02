@@ -923,7 +923,7 @@ class OmniSciDBClient(SQLClient):
         self,
         table_name: str,
         obj: Optional[Union[ir.TableExpr, pd.DataFrame]] = None,
-        schema: Optional[ir.Schema] = None,
+        schema: Optional[sch.Schema] = None,
         database: Optional[str] = None,
         max_rows: Optional[int] = None,
         fragment_size: Optional[int] = 32000000,
