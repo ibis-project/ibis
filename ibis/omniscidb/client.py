@@ -1002,7 +1002,13 @@ class OmniSciDBClient(SQLClient):
         self._execute(statement, False)
 
     def create_table(
-        self, table_name, obj=None, schema=None, database=None, max_rows=None
+        self,
+        table_name,
+        obj=None,
+        schema=None,
+        database=None,
+        max_rows=None,
+        fragment_size=None,
     ):
         """
         Create a new table from an Ibis table expression.
@@ -1020,6 +1026,9 @@ class OmniSciDBClient(SQLClient):
           Set the maximum number of rows allowed in a table to create a capped
           collection. When this limit is reached, the oldest fragment is
           removed. Default = 2^62.
+        fragment_size: int, optional
+          Set the number of rows per fragment that is a unit of the table for
+          query processing. Default: 32 million rows.
 
         Examples
         --------
@@ -1041,7 +1050,11 @@ class OmniSciDBClient(SQLClient):
             statement = ddl.CTAS(table_name, select, database=database)
         elif schema is not None:
             statement = ddl.CreateTableWithSchema(
-                table_name, schema, database=database, max_rows=max_rows
+                table_name,
+                schema,
+                database=database,
+                max_rows=max_rows,
+                fragment_size=fragment_size,
             )
         else:
             raise com.IbisError('Must pass expr or schema')
