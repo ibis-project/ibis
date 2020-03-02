@@ -120,11 +120,19 @@ class CreateTable(CreateDDL):
 class CreateTableWithSchema(CreateTable):
     """Create Table With Schema class."""
 
-    def __init__(self, table_name, schema, database=None, max_rows=None):
+    def __init__(
+        self,
+        table_name,
+        schema,
+        database=None,
+        max_rows=None,
+        fragment_size=None,
+    ):
         self.table_name = table_name
         self.database = database
         self.schema = schema
         self.max_rows = max_rows
+        self.fragment_size = fragment_size
 
     @property
     def with_params(self):
@@ -132,9 +140,9 @@ class CreateTableWithSchema(CreateTable):
 
         Returns
         -------
-        string
+        dict
         """
-        return dict(max_rows=self.max_rows)
+        return dict(max_rows=self.max_rows, fragment_size=self.fragment_size)
 
     @property
     def _pieces(self):
