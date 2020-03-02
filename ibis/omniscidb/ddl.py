@@ -359,17 +359,17 @@ class AddColumn(AlterTable):
         super().__init__(table_name)
         self.cols_with_types = cols_with_types
 
-        if nullables is None:
+        if not nullables:
             self.nullables = [True] * self.col_count
         else:
             self.nullables = nullables
 
-        if defaults is None:
+        if not defaults:
             self.defaults = [None] * self.col_count
         else:
             self.defaults = defaults
 
-        if extras is None:
+        if not extras:
             self.extras = [None] * self.col_count
         else:
             self.extras = extras
@@ -391,10 +391,10 @@ class AddColumn(AlterTable):
                 col,
                 omniscidb_dtypes.ibis_str_dtypes_to_sql[d_type],
                 ' NOT NULL'
-                if not self.nullables[idx] and not self.defaults[idx]
+                if not self.nullables[idx] and self.defaults[idx] is None
                 else '',
                 ' DEFAULT {}'.format(convert_default_value(self.defaults[idx]))
-                if self.defaults[idx]
+                if self.defaults[idx] is not None
                 else '',
             )
             idx += 1
