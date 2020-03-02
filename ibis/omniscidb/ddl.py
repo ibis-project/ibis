@@ -536,12 +536,16 @@ class LoadData(OmniSciDBDDL):
         self.options = kwargs
 
     def _get_options(self):
-        if self.options:
-            return 'WITH ({})'.format(
-                ', '.join("%s='%s'" % x for x in self.options.items())
-            )
-        else:
-            return ''
+        with_stmt = ','.join(
+            [
+                '{}={}'.format(
+                    i, "'{}'".format(v) if isinstance(v, str) else v
+                )
+                for i, v in self.options.items()
+                if v is not None
+            ]
+        )
+        return ' WITH ({})'.format(with_stmt)
 
     def compile(self):
         """Compile the LoadData expression."""
