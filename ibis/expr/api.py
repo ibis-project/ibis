@@ -23,6 +23,7 @@ import ibis.util as util
 from ibis.compat import to_date, to_time
 from ibis.expr.analytics import bucket, histogram
 from ibis.expr.groupby import GroupedTableExpr  # noqa
+from ibis.expr.random import random  # noqa
 from ibis.expr.schema import Schema
 from ibis.expr.types import (  # noqa
     ArrayColumn,
@@ -1342,11 +1343,6 @@ def clip(arg, lower=None, upper=None):
         raise ValueError("at least one of lower and " "upper must be provided")
 
     op = ops.Clip(arg, lower, upper)
-    return op.to_expr()
-
-
-def random():
-    op = ops.Random()
     return op.to_expr()
 
 

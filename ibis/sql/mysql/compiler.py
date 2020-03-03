@@ -208,7 +208,7 @@ _operation_registry.update(
         ops.Log2: unary(sa.func.log2),
         ops.Log10: unary(sa.func.log10),
         ops.Round: _round,
-        ops.Random: _random,
+        ops.RandomScalar: _random,
         # dates and times
         ops.Date: unary(sa.func.date),
         ops.DateAdd: infix_op('+'),

@@ -2450,7 +2450,7 @@ class TimestampNow(Constant):
         return dt.timestamp.scalar_type()
 
 
-class Random(Constant):
+class RandomScalar(Constant):
     def output_type(self):
         return dt.float64.scalar_type()
 

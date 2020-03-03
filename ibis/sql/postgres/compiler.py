@@ -686,7 +686,7 @@ _operation_registry.update(
         ops.Max: _reduction('max'),
         ops.Variance: _variance_reduction('var'),
         ops.StandardDev: _variance_reduction('stddev'),
-        ops.Random: _random,
+        ops.RandomScalar: _random,
         # now is in the timezone of the server, but we want UTC
         ops.TimestampNow: lambda *args: sa.func.timezone('UTC', sa.func.now()),
         ops.CumulativeAll: unary(sa.func.bool_and),
