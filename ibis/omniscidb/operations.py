@@ -957,8 +957,6 @@ _unsupported_ops = [
     ops.CumulativeMean,
     ops.CumulativeAny,
     ops.CumulativeAll,
-    ops.IdenticalTo,
-    ops.NTile,
     ops.NthValue,
     ops.GroupConcat,
     ops.NullIf,
