@@ -966,6 +966,7 @@ _unsupported_ops = [
     ops.IsInf,
     ops.IsNan,
     ops.IfNull,
+    ops.Hash,
     # string
     ops.Lowercase,
     ops.Uppercase,
