@@ -170,7 +170,7 @@ _cumulative_to_reduction = {
 }
 
 
-def _cumulative_to_window(translator, expr, window):
+def cumulative_to_window(translator, expr, window):
     win = ibis.cumulative_window()
     win = win.group_by(window._group_by).order_by(window._order_by)
 
@@ -306,7 +306,7 @@ def _window(translator, expr):
         )
 
     if isinstance(window_op, ops.CumulativeOp):
-        arg = _cumulative_to_window(translator, arg, window)
+        arg = cumulative_to_window(translator, arg, window)
         return translator.translate(arg)
 
     # Some analytic functions need to have the expression of interest in

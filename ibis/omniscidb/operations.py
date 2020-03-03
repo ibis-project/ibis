@@ -723,6 +723,10 @@ def _window(translator, expr):
             '{} is not supported in window functions'.format(type(window_op))
         )
 
+    if isinstance(window_op, ops.CumulativeOp):
+        arg = impala_compiler.cumulative_to_window(translator, arg, window)
+        return translator.translate(arg)
+
     if window.preceding is not None:
         raise com.UnsupportedOperationError(
             'Window preceding is not supported by OmniSciDB backend yet'
@@ -951,10 +955,6 @@ _unsupported_ops = [
     ops.DecimalPrecision,
     ops.DecimalScale,
     ops.BaseConvert,
-    ops.CumulativeSum,
-    ops.CumulativeMin,
-    ops.CumulativeMax,
-    ops.CumulativeMean,
     ops.CumulativeAny,
     ops.CumulativeAll,
     ops.IdenticalTo,
