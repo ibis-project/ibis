@@ -259,27 +259,8 @@ def test_ifelse_returning_bool():
 @pytest.mark.parametrize(
     ('dtype', 'value'),
     [
-        pytest.param(
-            dt.float64,
-            1,
-            marks=pytest.mark.xfail(
-                raises=NotImplementedError,
-                reason="Implicit casting for UDFs is not yet implemented",
-            ),
-            id='float_int',
-        ),
-        pytest.param(
-            dt.float64,
-            True,
-            marks=pytest.mark.xfail(
-                raises=NotImplementedError,
-                reason=(
-                    "Implicit casting from boolean to float is not "
-                    "implemented"
-                ),
-            ),
-            id='float_bool',
-        ),
+        pytest.param(dt.float64, 1, id='float_int'),
+        pytest.param(dt.float64, True, id='float_bool'),
         pytest.param(dt.int64, 1.0, id='int_float'),
         pytest.param(dt.int64, True, id='int_bool'),
         pytest.param(dt.boolean, 1.0, id='bool_float'),

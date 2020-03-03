@@ -8,7 +8,7 @@ repos:
     hooks:
       - id: isort
   - repo: https://github.com/psf/black
-    rev: 40e8b3a231bade22d838858435a33d60a8325306
+    rev: 19.10b0
     hooks:
       - id: black
         exclude: (ibis/_version|versioneer).py

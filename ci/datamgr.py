@@ -185,7 +185,7 @@ def download(repo_url, directory):
 @cli.command()
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
 @click.option('-d', '--data-directory', default=DATA_DIR)
-@click.option('-i', '--ignore-missing-dependency', is_flag=True, default=False)
+@click.option('-i', '--ignore-missing-dependency', is_flag=True, default=True)
 def parquet(tables, data_directory, ignore_missing_dependency, **params):
     try:
         import pyarrow as pa  # noqa: F401
@@ -260,7 +260,7 @@ def postgres(schema, tables, data_directory, psql_path, plpython, **params):
                 continue
             from geoalchemy2 import Geometry, WKTElement
 
-            srid = 4326
+            srid = 0
             df = pd.read_csv(src)
             df[df.columns[1:]] = df[df.columns[1:]].applymap(
                 lambda x: WKTElement(x, srid=srid)
@@ -346,7 +346,9 @@ def omniscidb(schema, tables, data_directory, **params):
     # connection
     logger.info('Initializing OmniSci...')
     default_db = 'omnisci'
-    if params['database'] != default_db:
+    database = params["database"]
+
+    if database != default_db:
         conn = pymapd.connect(
             host=params['host'],
             user=params['user'],
@@ -355,7 +357,6 @@ def omniscidb(schema, tables, data_directory, **params):
             dbname=default_db,
             protocol=params['protocol'],
         )
-        database = params["database"]
         stmt = "DROP DATABASE IF EXISTS {}".format(database)
         try:
             conn.execute(stmt)

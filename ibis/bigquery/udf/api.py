@@ -8,10 +8,10 @@ import ibis.expr.rules as rlz
 from ibis.bigquery.compiler import BigQueryUDFNode, compiles
 from ibis.bigquery.datatypes import UDFContext, ibis_type_to_bigquery_type
 from ibis.bigquery.udf.core import PythonToJavaScriptTranslator
+from ibis.compat import PY38  # noqa: F401
 from ibis.expr.signature import Argument as Arg
 
 __all__ = ('udf',)
-
 
 _udf_name_cache = collections.defaultdict(itertools.count)
 
@@ -58,12 +58,16 @@ def udf(input_type, output_type, strict=True, libraries=None):
 
     Notes
     -----
-    ``INT64`` is not supported as an argument type or a return type, as per
-    `the BigQuery documentation
-    <https://cloud.google.com/bigquery/docs/reference/standard-sql/user-defined-functions#sql-type-encodings-in-javascript>`_.
+    - ``INT64`` is not supported as an argument type or a return type, as per
+      `the BigQuery documentation
+      <https://cloud.google.com/bigquery/docs/reference/standard-sql/user-defined-functions#sql-type-encodings-in-javascript>`_.
+    - `The follow example doctest doesn't work for Python 3.8
+      <https://github.com/ibis-project/ibis/issues/2085>`_.
 
     Examples
     --------
+    >>> if PY38:
+    ...     import pytest; pytest.skip("Issue #2085")
     >>> from ibis.bigquery import udf
     >>> import ibis.expr.datatypes as dt
     >>> @udf(input_type=[dt.double], output_type=dt.double)

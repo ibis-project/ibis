@@ -5,8 +5,14 @@ import tempfile
 import pytest
 
 from ibis.bigquery.udf.core import PythonToJavaScriptTranslator, SymbolTable
+from ibis.compat import PY38
 
-pytestmark = pytest.mark.bigquery
+if PY38:
+    # ref: https://github.com/ibis-project/ibis/issues/2098
+    # note: UDF is already skipt on CI
+    pytestmark = [pytest.mark.bigquery, pytest.mark.udf]
+else:
+    pytestmark = pytest.mark.bigquery
 
 
 def test_symbol_table():
