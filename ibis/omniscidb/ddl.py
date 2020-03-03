@@ -142,7 +142,7 @@ class CreateTableWithSchema(CreateTable):
 
         Returns
         -------
-        string
+        dict
         """
         return dict(max_rows=self.max_rows, fragment_size=self.fragment_size)
 

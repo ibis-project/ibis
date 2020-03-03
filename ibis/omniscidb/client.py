@@ -1003,12 +1003,12 @@ class OmniSciDBClient(SQLClient):
 
     def create_table(
         self,
-        table_name,
-        obj=None,
-        schema=None,
-        database=None,
-        max_rows=None,
-        fragment_size=None,
+        table_name: str,
+        obj: Optional[Union[ir.TableExpr, pd.DataFrame]] = None,
+        schema: Optional[sch.Schema] = None,
+        database: Optional[str] = None,
+        max_rows: Optional[int] = None,
+        fragment_size: Optional[int] = 32000000,
     ):
         """
         Create a new table from an Ibis table expression.
@@ -1019,16 +1019,23 @@ class OmniSciDBClient(SQLClient):
         obj : TableExpr or pandas.DataFrame, optional
           If passed, creates table from select statement results
         schema : ibis.Schema, optional
+        table_name : str
+        obj : TableExpr or pandas.DataFrame, optional, default None
+          If passed, creates table from select statement results.
+        schema : ibis.Schema, optional, default None
           Mutually exclusive with expr, creates an empty table with a
           particular schema
         database : string, optional
         max_rows : int, optional
+          particular schema.
+        database : str, optional, default None
+        max_rows : int, optional, default None
           Set the maximum number of rows allowed in a table to create a capped
           collection. When this limit is reached, the oldest fragment is
-          removed. Default = 2^62.
-        fragment_size: int, optional
-          Set the number of rows per fragment that is a unit of the table for
-          query processing. Default: 32 million rows.
+          removed.
+        fragment_size: int, optional, default 32000000
+          Number of rows per fragment that is a unit of the table for query
+          processing, which is not expected to be changed.
 
         Examples
         --------
