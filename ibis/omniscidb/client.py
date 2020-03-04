@@ -1008,7 +1008,7 @@ class OmniSciDBClient(SQLClient):
         schema: Optional[sch.Schema] = None,
         database: Optional[str] = None,
         max_rows: Optional[int] = None,
-        fragment_size: Optional[int] = 32000000,
+        fragment_size: Optional[int] = None,
     ):
         """
         Create a new table from an Ibis table expression.
@@ -1033,7 +1033,8 @@ class OmniSciDBClient(SQLClient):
           Set the maximum number of rows allowed in a table to create a capped
           collection. When this limit is reached, the oldest fragment is
           removed.
-        fragment_size: int, optional, default 32000000
+        fragment_size: int, optional,
+          default 32000000 if gpu_device is enabled otherwise 5000000
           Number of rows per fragment that is a unit of the table for query
           processing, which is not expected to be changed.
 
@@ -1043,6 +1044,9 @@ class OmniSciDBClient(SQLClient):
         """
         _database = self.db_name
         self.set_database(database)
+
+        if fragment_size is None:
+            fragment_size = 32000000 if self.gpu_device else 5000000
 
         if obj is not None:
             if isinstance(obj, pd.DataFrame):
