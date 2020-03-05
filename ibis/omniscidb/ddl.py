@@ -19,6 +19,14 @@ def _is_quoted(x):
     return quoted is not None
 
 
+def _convert_default_value(value):
+    if isinstance(value, bool):
+        return "'t'" if value else "'f'"
+    if isinstance(value, (int, float)):
+        return value
+    return quote_identifier(value, force=True)
+
+
 class OmniSciDBQualifiedSQLStatement:
     """OmniSciDBQualifiedSQLStatement."""
 
@@ -338,6 +346,85 @@ class AlterTable(OmniSciDBDDL):
         props = self._format_properties()
         action = '{} SET {}'.format(self.table, props)
         return self._wrap_command(action)
+
+
+class Insert(OmniSciDBDDL):
+    """Insert class."""
+
+    def __init__(self, table):
+        self.table = table
+
+    def _get_dst_cols_cmd(self):
+        yield '('
+        sep = ''
+        for col in self.dst_cols:
+            yield '{}{}'.format(sep, col)
+            sep = ', '
+        yield ') '
+
+    def _wrap_command(self, cmd):
+        return 'INSERT INTO {} {};'.format(self.table, cmd)
+
+
+class InsertInto(Insert):
+    """Insert Into class."""
+
+    def __init__(self, table_name, dst_values, dst_cols=None):
+        super().__init__(table_name)
+        self.dst_values = dst_values
+        self.dst_cols = dst_cols
+
+    def _get_vals_cmd(self):
+        yield 'VALUES ('
+        sep = ''
+        for val in self.dst_values:
+            yield '{}{}'.format(sep, _convert_default_value(val))
+            sep = ', '
+        yield ')'
+
+    def compile(self):
+        """Compile the Insert Into expression.
+
+        Returns
+        -------
+        string
+        """
+        if not self.dst_cols:
+            cmd = ''.join(self._get_vals_cmd())
+        else:
+            cmd = ''.join(self._get_dst_cols_cmd()) + ''.join(
+                self._get_vals_cmd()
+            )
+
+        return self._wrap_command(cmd)
+
+
+class InsertIntoSelect(Insert):
+    """Insert Into Select class."""
+
+    def __init__(self, table_name, select, dst_cols=None):
+        super().__init__(table_name)
+        self.select = select
+        self.dst_cols = dst_cols
+
+    def compile(self):
+        """Compile the Insert Into Select expression.
+
+        Returns
+        -------
+        string
+        """
+        select = self.select.compile()
+        select = re.sub('AS tmp\n', '', select)
+        select = re.sub('\n', ' ', select)
+
+        cmd = (
+            select
+            if not self.dst_cols
+            else ''.join(self._get_dst_cols_cmd()) + select
+        )
+
+        return self._wrap_command(cmd)
 
 
 class RenameTable(AlterTable):
