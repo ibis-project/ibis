@@ -8,6 +8,7 @@ Release Notes
    notes for pre-1.0 versions of ibis can be found at :doc:`/release-pre-1.0`
 
 * :feature:`2060` Add initial support for ibis.random function
+* :feature:`2117` Add non-nullable info to schema output
 * :support:`2096` Added round() support for OmniSciDB
 * :support:`2113` Enabled cumulative ops support for OmniSciDB
 * :release:`1.3.0 <2020-02-27>`
