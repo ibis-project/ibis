@@ -488,7 +488,7 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
 
     def insert_into_select(self, select, dst_cols=None):
         """
-        Copies data from one table and inserts it into another table.
+        Copy data from one table and inserts it into another table.
 
         Parameters
         ----------
@@ -497,7 +497,6 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         dst_cols : list, optional
             Set list of table's column(s) into which data will be coppied
         """
-
         stmt = ddl.InsertIntoSelect(
             self._qualified_name, select, dst_cols=dst_cols
         )
