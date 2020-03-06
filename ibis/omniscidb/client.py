@@ -459,7 +459,7 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
             cols_with_types,
             nullables=nullables,
             defaults=defaults,
-            encoding=encodings,
+            encodings=encodings,
         )
         self._client._execute(statement, False)
 
