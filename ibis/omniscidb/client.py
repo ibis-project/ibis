@@ -451,7 +451,7 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         defaults : list, optional
             Set list of default values for the new columns, by default None
         encodings : list, optional
-            Set list of strings of encodings dict attributes
+            Set list of strings of encoding attributes
             for the new columns, by default None
         """
         statement = ddl.AddColumn(
