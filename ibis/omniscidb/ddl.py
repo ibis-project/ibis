@@ -350,7 +350,7 @@ class AddColumn(AlterTable):
         cols_with_types,
         nullables=None,
         defaults=None,
-        encoding=None,
+        encodings=None,
     ):
         if len(cols_with_types) == 0:
             raise com.IbisInputError('No column requested to add.')
@@ -369,10 +369,10 @@ class AddColumn(AlterTable):
         else:
             self.defaults = defaults
 
-        if not encoding:
-            self.encoding = [None] * self.col_count
+        if not encodings:
+            self.encodings = [None] * self.col_count
         else:
-            self.encoding = encoding
+            self.encodings = encodings
 
     def _pieces(self):
         def convert_default_value(value):
@@ -396,8 +396,8 @@ class AddColumn(AlterTable):
                 ' DEFAULT {}'.format(convert_default_value(self.defaults[idx]))
                 if self.defaults[idx] is not None
                 else '',
-                ' ENCODING {}'.format(self.encoding[idx])
-                if self.encoding[idx]
+                ' ENCODING {}'.format(self.encodings[idx])
+                if self.encodings[idx]
                 else '',
             )
             idx += 1

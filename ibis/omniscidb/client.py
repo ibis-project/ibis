@@ -434,7 +434,7 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         return results
 
     def add_column(
-        self, cols_with_types, nullables=None, defaults=None, encoding=None
+        self, cols_with_types, nullables=None, defaults=None, encodings=None
     ):
         """
         Add a given column(s).
@@ -450,8 +450,8 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
             all the new columns added are nullables)
         defaults : list, optional
             Set list of default values for the new columns, by default None
-        encoding : list, optional
-            Set list of strings of encoding dict attributes
+        encodings : list, optional
+            Set list of strings of encodings dict attributes
             for the new columns, by default None
         """
         statement = ddl.AddColumn(
@@ -459,7 +459,7 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
             cols_with_types,
             nullables=nullables,
             defaults=defaults,
-            encoding=encoding,
+            encoding=encodings,
         )
         self._client._execute(statement, False)
 
