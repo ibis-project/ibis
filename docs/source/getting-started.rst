@@ -10,7 +10,7 @@ Installation
 System Dependencies
 ~~~~~~~~~~~~~~~~~~~
 
-Ibis requires a working Python 2.7 or 3.5+ installation. We recommend using
+Ibis requires a working Python 3.6+ installation. We recommend using
 `Anaconda <http://continuum.io/downloads>`_ to manage Python versions and
 environments.
 
