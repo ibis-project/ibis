@@ -442,7 +442,8 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         """
         kwargs = {
             'header': header,
-            'quote': quotechar,
+            # 'quote' field couldn't be empty string for omnisci backend
+            'quote': quotechar if quotechar else '"',
             'quoted': bool(quotechar),
             'delimiter': delimiter,
             'threads': threads,
