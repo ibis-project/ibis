@@ -104,6 +104,93 @@ def test_union_op(alltypes):
         expr.compile()
 
 
+@pytest.mark.xfail
+def test_insert_into(con):
+    table_name_1 = 'my_table_1'
+    table_name_2 = 'my_table_2'
+
+    con.drop_table(table_name_1, force=True)
+    con.drop_table(table_name_2, force=True)
+
+    schema_1 = ibis.schema([('a', 'int32'), ('b', 'float')])
+    schema_2 = ibis.schema([('c', 'int32'), ('d', 'float')])
+
+    con.create_table(table_name_1, schema=schema_1)
+    con.create_table(table_name_2, schema=schema_2)
+
+    tbl1 = con.table(table_name_1)
+    tbl2 = con.table(table_name_2)
+
+    dst_vals1 = [1, 2.0]
+    dst_cols1 = ['a', 'b']
+    tbl1.insert_into(dst_vals1, dst_cols1)
+
+    dst_vals2 = [1, 4.0]
+    dst_cols2 = ['c', 'd']
+    tbl2.insert_into(dst_vals2, dst_cols2)
+
+    try:
+        tbl1 = con.table(table_name_1)
+        tbl2 = con.table(table_name_2)
+
+        joined_tbl_name = 'joined_table'
+        pred = tbl1['a'] == tbl2['c']
+        joined_tbl = tbl1.inner_join(tbl2, pred)
+
+        con.create_table(joined_tbl_name, joined_tbl)
+        joined_tbl = con.table(joined_tbl_name)
+
+        joined_cols = ['a', 'c']
+        for col in joined_cols:
+            assert col in joined_tbl.schema().names
+    finally:
+        con.drop_table(table_name_1)
+        con.drop_table(table_name_2)
+
+
+@pytest.mark.xfail
+def test_insert_into_select(con):
+    table_name_1 = 'my_table_1'
+    table_name_2 = 'my_table_2'
+
+    con.drop_table(table_name_1, force=True)
+    con.drop_table(table_name_2, force=True)
+
+    schema_1 = ibis.schema([('a', 'int32'), ('b', 'float')])
+    schema_2 = ibis.schema([('c', 'int32'), ('d', 'float')])
+
+    con.create_table(table_name_1, schema=schema_1)
+    con.create_table(table_name_2, schema=schema_2)
+
+    tbl1 = con.table(table_name_1)
+
+    dst_vals1 = [1, 2.0]
+    dst_cols1 = ['a', 'b']
+    tbl1.insert_into(dst_vals1, dst_cols1)
+
+    tbl1 = con.table(table_name_1)
+    tbl2 = con.table(table_name_2)
+    dst_cols2 = ['c', 'd']
+    tbl2.insert_into_select(tbl1['a', 'b'], dst_cols2)
+    tbl2 = con.table(table_name_2)
+
+    try:
+        joined_tbl_name = 'joined_table'
+        joined_tbl = tbl1.inner_join(
+            tbl2, [tbl1.a == tbl2.c, tbl1.b == tbl2.d]
+        )
+
+        con.create_table(joined_tbl_name, joined_tbl)
+        joined_tbl = con.table(joined_tbl_name)
+
+        joined_cols = ['a', 'b', 'c', 'd']
+        for col in joined_cols:
+            assert col in joined_tbl.schema().names
+    finally:
+        con.drop_table(table_name_1)
+        con.drop_table(table_name_2)
+
+
 def test_create_table_schema(con):
     t_name = 'mytable'
 
