@@ -122,6 +122,7 @@ __all__ = (
     'desc',
     'Expr',
     'expr_list',
+    'geo_point',
     'geo_area',
     'geo_as_binary',
     'geo_as_ewkb',
@@ -160,6 +161,7 @@ __all__ = (
     'geo_n_rings',
     'geo_perimeter',
     'geo_point_n',
+    'geo_point',
     'geo_simplify',
     'geo_srid',
     'geo_start_point',
@@ -2023,6 +2025,24 @@ def geo_overlaps(left, right):
     overlaps : bool scalar
     """
     op = ops.GeoOverlaps(left, right)
+    return op.to_expr()
+
+
+def geo_point(left, right):
+    """
+    Return a point constructed on the fly from the provided coordinate values.
+    Constant coordinates result in construction of a POINT literal.
+
+    Parameters
+    ----------
+    left : integer
+    right : integer
+
+    Returns
+    -------
+    point
+    """
+    op = ops.GeoPoint(left, right)
     return op.to_expr()
 
 

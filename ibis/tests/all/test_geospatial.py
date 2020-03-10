@@ -307,6 +307,14 @@ def test_geo_spatial_unops(backend, geo, expr_fn, expected):
             id='d_within',
         ),
         param(
+            lambda t: t['geo_point'].d_fully_within(t['geo_linestring'], 2.0),
+            {
+                'omniscidb': [True, True, True, True, True],
+                'postgres': [True, True, True, True, True],
+            },
+            id='d_fully_within',
+        ),
+        param(
             lambda t: t['geo_linestring'].intersects(point_geom_0_srid0),
             {
                 'omniscidb': [True, False, False, False, False],
@@ -329,6 +337,14 @@ def test_geo_spatial_unops(backend, geo, expr_fn, expected):
                 'postgres': [1.41, 2.82, 4.24, 5.66, 7.08],
             },
             id='max_distance',
+        ),
+        param(
+            lambda t: t.geo_polygon.contains(ibis.geo_point(30, 10)),
+            {
+                'omniscidb': [True, False, False, False, False],
+                'postgres': [True, False, False, False, False],
+            },
+            id='point',
         ),
     ],
 )

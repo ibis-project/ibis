@@ -9,6 +9,7 @@ Release Notes
 
 * :feature:`2060` Add initial support for ibis.random function
 * :support:`2096` Added round() support for OmniSciDB
+* :feature:`2125` [OmniSciDB] Add support for within, d_fully_within and point
 * :support:`2113` Enabled cumulative ops support for OmniSciDB
 * :release:`1.3.0 <2020-02-27>`
 * :support:`2066` Add support to Python 3.8
