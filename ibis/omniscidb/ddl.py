@@ -20,6 +20,14 @@ def _is_quoted(x):
     return quoted is not None
 
 
+def _convert_default_value(value):
+    if isinstance(value, bool):
+        return "'t'" if value else "'f'"
+    if isinstance(value, (int, float)):
+        return value
+    return quote_identifier(value, force=True)
+
+
 class OmniSciDBQualifiedSQLStatement:
     """OmniSciDBQualifiedSQLStatement."""
 
@@ -375,13 +383,6 @@ class AddColumn(AlterTable):
             self.encodings = encodings
 
     def _pieces(self):
-        def convert_default_value(value):
-            if isinstance(value, bool):
-                return "'t'" if value else "'f'"
-            if isinstance(value, (int, float)):
-                return value
-            return quote_identifier(value, force=True)
-
         idx = 0
         sep = ''
         yield '{} ADD ('.format(self.table)
@@ -393,7 +394,9 @@ class AddColumn(AlterTable):
                 ' NOT NULL'
                 if not self.nullables[idx] and self.defaults[idx] is None
                 else '',
-                ' DEFAULT {}'.format(convert_default_value(self.defaults[idx]))
+                ' DEFAULT {}'.format(
+                    _convert_default_value(self.defaults[idx])
+                )
                 if self.defaults[idx] is not None
                 else '',
                 ' ENCODING {}'.format(self.encodings[idx])
