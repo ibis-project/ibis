@@ -1442,14 +1442,14 @@ def compile_null_if(t, expr, scope, **kwargs):
 def compile_is_null(t, expr, scope, **kwargs):
     op = expr.op()
     col = t.translate(op.arg, scope)
-    return F.isnull(col)
+    return F.isnull(col) | F.isnan(col)
 
 
 @compiles(ops.NotNull)
 def compile_not_null(t, expr, scope, **kwargs):
     op = expr.op()
     col = t.translate(op.arg, scope)
-    return ~F.isnull(col)
+    return ~F.isnull(col) & ~F.isnan(col)
 
 
 # ------------------------- User defined function ------------------------

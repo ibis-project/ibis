@@ -17,8 +17,12 @@ def client():
     df.createTempView('basic_table')
 
     df_nans = client._session.createDataFrame(
-        [[np.NaN, 'Alfred', None], [6.0, 'Batman', 'motocycle']],
-        ['age', 'name', 'toy'],
+        [
+            [np.NaN, 'Alfred', None],
+            [27.0, 'Batman', 'motocycle'],
+            [3.0, None, 'joker'],
+        ],
+        ['age', 'user', 'toy'],
     )
     df_nans.createTempView('nan_table')
 
