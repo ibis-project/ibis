@@ -724,7 +724,7 @@ def _window(translator, expr):
         )
 
     if isinstance(window_op, ops.CumulativeOp):
-        arg = impala_compiler.cumulative_to_window(translator, arg, window)
+        arg = impala_compiler._cumulative_to_window(translator, arg, window)
         return translator.translate(arg)
 
     if window.preceding is not None:
