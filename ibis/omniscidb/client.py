@@ -1016,8 +1016,6 @@ class OmniSciDBClient(SQLClient):
         Parameters
         ----------
         table_name : string
-        obj : TableExpr or pandas.DataFrame, optional
-          If passed, creates table from select statement results
         schema : ibis.Schema, optional
         table_name : str
         obj : TableExpr or pandas.DataFrame, optional, default None
@@ -1025,9 +1023,6 @@ class OmniSciDBClient(SQLClient):
         schema : ibis.Schema, optional, default None
           Mutually exclusive with expr, creates an empty table with a
           particular schema
-        database : string, optional
-        max_rows : int, optional
-          particular schema.
         database : str, optional, default None
         max_rows : int, optional, default None
           Set the maximum number of rows allowed in a table to create a capped
