@@ -1,9 +1,10 @@
 """Module for DDL operations."""
 import re
 from pathlib import Path
-from typing import Any, Dict, Union
+from typing import Any, Dict, Optional, Union
 
 import ibis
+import ibis.expr.schema as sch
 from ibis.sql.compiler import DDL, DML
 
 from .compiler import _type_to_sql_string, quote_identifier
@@ -124,11 +125,11 @@ class CreateTableWithSchema(CreateTable):
 
     def __init__(
         self,
-        table_name,
-        schema,
-        database=None,
-        max_rows=None,
-        fragment_size=None,
+        table_name: str,
+        schema: sch.Schema,
+        database: Optional[str] = None,
+        max_rows: Optional[int] = None,
+        fragment_size: Optional[int] = None,
     ):
         self.table_name = table_name
         self.database = database
