@@ -39,7 +39,7 @@ class Query:
         self.result_wrapper = getattr(dml, 'result_handler', None)
         self.extra_options = kwargs
 
-    def execute(self):
+    def execute(self, **kwargs):
         """Execute a DML expression.
 
         Returns
@@ -50,7 +50,9 @@ class Query:
           Scalar expressions: Python scalar value
         """
         # synchronous by default
-        with self.client._execute(self.compiled_sql, results=True) as cur:
+        with self.client._execute(
+            self.compiled_sql, results=True, **kwargs
+        ) as cur:
             result = self._fetch(cur)
 
         return self._wrap_result(result)
@@ -144,7 +146,7 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         # XXX
         return name
 
-    def _execute(self, query, results=False):
+    def _execute(self, query, results=False, **kwargs):
         cur = self.con.execute(query)
         if results:
             return cur

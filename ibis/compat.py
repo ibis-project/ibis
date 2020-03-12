@@ -1,5 +1,6 @@
 """Module for compatible functions."""
 import operator
+import sys
 
 import toolz
 
@@ -24,3 +25,5 @@ except ImportError:
 
 
 to_date = toolz.compose(operator.methodcaller('date'), to_datetime)
+
+PY38 = sys.version_info >= (3, 8, 0)

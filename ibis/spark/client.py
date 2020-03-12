@@ -519,7 +519,7 @@ class SparkClient(SQLClient):
         force=False,
         temp_view=False,
         format='parquet',
-        **kwargs
+        **kwargs,
     ):
         options = _read_csv_defaults.copy()
         options.update(kwargs)

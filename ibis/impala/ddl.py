@@ -226,7 +226,7 @@ class CreateTableParquet(CreateTable):
         example_table=None,
         schema=None,
         external=True,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
             table_name,
@@ -361,7 +361,7 @@ class CreateTableDelimited(CreateTableWithSchema):
         lineterminator=None,
         na_rep=None,
         external=True,
-        **kwargs
+        **kwargs,
     ):
         table_format = DelimitedFormat(
             path,

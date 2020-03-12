@@ -18,26 +18,29 @@ dependencies:
   - lz4
   - multipledispatch>=0.6.0
   - mypy
-  - numpy>=1.11
+  - numpy>=1.15
   - openjdk=8
-  - pandas>=0.21
-  - pip
+  - pandas>=0.25.3
+  - pip=19.3.1
   - plumbum
   - pre-commit
   - psycopg2
-  - pyarrow>=0.12
+  - pyarrow>=0.13
   - pydata-google-auth
   - pydocstyle=4.0.1
   - pygit2
-  - pymapd>=0.12.0
+  # currently it introduces incompatible packages
+  # maybe it is related to the pinned arrow used
+  # - pymapd>=0.12
   - pymysql
-  - pyspark>=2.4.3
+  # not fully compatible with Python 3.8
+  # https://github.com/apache/spark/pull/26194#issuecomment-566592265
+  # - pyspark>=3.0
   - pytables>=3.0.0
   - pytest>=4.5
   - pytest-cov
-  - pytest-mock
   - pytest-xdist
-  - python=3.7
+  - python=3.8
   - python-graphviz
   - python-hdfs>=2.0.16
   - pytz
@@ -55,5 +58,4 @@ dependencies:
   - pip:
     # see .pre-commit-config.yaml, isort pinned
     - seed-isort-config
-    # we should try using isort release that will be next after 4.3.21-2
     - git+git://github.com/timothycrosley/isort@18ad293fc9d1852776afe35015a932b68d26fb14#egg=isort
