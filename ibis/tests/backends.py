@@ -357,7 +357,7 @@ class PostgreSQL(Backend, RoundHalfToEven):
             return self.db.geo
 
 
-class OmniSciDB(Backend):
+class OmniSciDB(Backend, RoundAwayFromZero):
     check_dtype = False
     check_names = False
     supports_window_operations = True
@@ -368,7 +368,6 @@ class OmniSciDB(Backend):
     additional_skipped_operations = frozenset(
         {
             ops.Abs,
-            ops.Round,
             ops.Ceil,
             ops.Floor,
             ops.Exp,
