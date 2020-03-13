@@ -162,10 +162,7 @@ def test_explain(con, alltypes):
         pathlib.Path("/omnisci/test_read_csv.csv"),
     ],
 )
-def test_read_csv(con, filename):
-    t_name = "test_read_csv"
-
-    con.drop_table(t_name, force=True)
+def test_read_csv(con, temp_table, filename):
     schema = ibis.schema(
         [
             ('index', 'int64'),
@@ -185,7 +182,7 @@ def test_read_csv(con, filename):
             ('month_', 'int32'),
         ]
     )
-    con.create_table(t_name, schema=schema)
+    con.create_table(temp_table, schema=schema)
 
     # prepare csv file inside omnisci docker container
     # if the file exists, then it will be overwritten
@@ -193,17 +190,14 @@ def test_read_csv(con, filename):
         "COPY (SELECT * FROM functional_alltypes) TO '{}'".format(filename)
     )
 
-    try:
-        db = con.database()
-        table = db.table(t_name)
-        table.read_csv(filename, header=False, quotechar='"', delimiter=",")
+    db = con.database()
+    table = db.table(temp_table)
+    table.read_csv(filename, header=False, quotechar='"', delimiter=",")
 
-        df_read_csv = table.execute()
-        df_expected = db.table("functional_alltypes").execute()
+    df_read_csv = table.execute()
+    df_expected = db.table("functional_alltypes").execute()
 
-        pd.testing.assert_frame_equal(df_expected, df_read_csv)
-    finally:
-        con.drop_table(t_name)
+    pd.testing.assert_frame_equal(df_expected, df_read_csv)
 
 
 @pytest.mark.parametrize('ipc', [None, True, False])
