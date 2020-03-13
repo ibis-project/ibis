@@ -104,26 +104,6 @@ def test_union_op(alltypes):
         expr.compile()
 
 
-@pytest.fixture
-def table1_for_insert(con):
-    table_name = 'test_table1_for_insert'
-    con.drop_table(table_name, force=True)
-    schema = ibis.schema([('a', 'int32'), ('b', 'float')])
-    con.create_table(table_name, schema=schema)
-    yield con.table(table_name)
-    con.drop_table(table_name)
-
-
-@pytest.fixture
-def table2_for_insert(con):
-    table_name = 'test_table2_for_insert'
-    con.drop_table(table_name, force=True)
-    schema = ibis.schema([('c', 'int32'), ('d', 'float')])
-    con.create_table(table_name, schema=schema)
-    yield con.table(table_name)
-    con.drop_table(table_name)
-
-
 @pytest.mark.xfail
 def test_insert_into(con, table1_for_insert, table2_for_insert):
     dst_vals1 = [1, 2.0]
