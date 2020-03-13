@@ -418,7 +418,7 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         quotechar: Optional[str] = '"',
         delimiter: Optional[str] = ',',
         threads: Optional[int] = None,
-    ):
+    ) -> OmniSciDBQuery:
         """
         Load data into an Omniscidb table from CSV file.
 

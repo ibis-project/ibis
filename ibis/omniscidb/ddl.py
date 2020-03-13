@@ -1,5 +1,7 @@
 """Module for DDL operations."""
 import re
+from pathlib import Path
+from typing import Any, Dict, Union
 
 import ibis
 from ibis.sql.compiler import DDL, DML
@@ -530,12 +532,17 @@ class InsertPandas(OmniSciDBDML):
 class LoadData(OmniSciDBDDL):
     """Generate DDL for LOAD DATA command. Cannot be cancelled."""
 
-    def __init__(self, table_name, source, **kwargs):
+    def __init__(
+        self,
+        table_name: str,
+        source: Union[str, Path],
+        **kwargs: Dict[str, Any],
+    ):
         self.table_name = table_name
         self.source = source
         self.options = kwargs
 
-    def _get_options(self):
+    def _get_options(self) -> str:
         with_stmt = ','.join(
             [
                 '{}={}'.format(
@@ -547,7 +554,7 @@ class LoadData(OmniSciDBDDL):
         )
         return ' WITH ({})'.format(with_stmt)
 
-    def compile(self):
+    def compile(self) -> str:
         """Compile the LoadData expression."""
         return "COPY {} FROM '{}' {}".format(
             self.table_name, self.source, self._get_options()
