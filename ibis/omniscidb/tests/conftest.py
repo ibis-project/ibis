@@ -36,6 +36,50 @@ def con():
     )
 
 
+@pytest.fixture(scope='function')
+def table_for_add_column(con):
+    """
+    Define fixture for an interaction with table
+    within an operation of adding column(s).
+
+    Returns
+    -------
+    ibis.expr.types.TableExpr
+    """
+    table_name = 'test_table_for_add_column'
+    con.drop_table(table_name, force=True)
+
+    schema = ibis.schema([('a', 'float'), ('b', 'int8')])
+    con.create_table(table_name, schema=schema)
+
+    yield con.table(table_name)
+
+    con.drop_table(table_name)
+
+
+@pytest.fixture(scope='function')
+def table_for_drop_column(con):
+    """
+    Define fixture for an interaction with table
+    within an operation of dropping column(s).
+
+    Returns
+    -------
+    ibis.expr.types.TableExpr
+    """
+    table_name = 'test_table_for_drop_column'
+    con.drop_table(table_name, force=True)
+
+    schema = ibis.schema(
+        [('a', 'polygon'), ('b', 'point'), ('c', 'int8'), ('d', 'double')]
+    )
+    con.create_table(table_name, schema=schema)
+
+    yield con.table(table_name)
+
+    con.drop_table(table_name)
+
+
 @pytest.fixture(scope='module')
 def session_con():
     """Define a session connection fixture."""

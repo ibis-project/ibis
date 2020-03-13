@@ -104,27 +104,6 @@ def test_union_op(alltypes):
         expr.compile()
 
 
-@pytest.fixture(scope='function')
-def table_for_add_column(con):
-    """
-    Define fixture for an interaction with table
-    within an operation of adding column(s).
-
-    Returns
-    -------
-    ibis.expr.types.TableExpr
-    """
-    table_name = 'test_table_for_add_column'
-    con.drop_table(table_name, force=True)
-
-    schema = ibis.schema([('a', 'float'), ('b', 'int8')])
-    con.create_table(table_name, schema=schema)
-
-    yield con.table(table_name)
-
-    con.drop_table(table_name)
-
-
 def test_add_zero_column(table_for_add_column):
     cols_with_types = {}
     with pytest.raises(com.IbisInputError):
@@ -149,29 +128,6 @@ def test_add_column(con, table_for_add_column, cols_with_types):
     old_schema_with_new_cols = schema_before.append(schema_new_cols)
 
     assert res_tbl.schema() == old_schema_with_new_cols
-
-
-@pytest.fixture(scope='function')
-def table_for_drop_column(con):
-    """
-    Define fixture for an interaction with table
-    within an operation of dropping column(s).
-
-    Returns
-    -------
-    ibis.expr.types.TableExpr
-    """
-    table_name = 'test_table_for_drop_column'
-    con.drop_table(table_name, force=True)
-
-    schema = ibis.schema(
-        [('a', 'polygon'), ('b', 'point'), ('c', 'int8'), ('d', 'double')]
-    )
-    con.create_table(table_name, schema=schema)
-
-    yield con.table(table_name)
-
-    con.drop_table(table_name)
 
 
 def test_drop_zero_column(table_for_drop_column):
