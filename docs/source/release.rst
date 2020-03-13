@@ -8,6 +8,7 @@ Release Notes
    notes for pre-1.0 versions of ibis can be found at :doc:`/release-pre-1.0`
 
 * :feature:`2062` Implement read_csv for omniscidb backend
+* :support:`2096` Added round() support for OmniSciDB
 * :release:`1.3.0 <2020-02-27>`
 * :support:`2066` Add support to Python 3.8
 * :bug:`2089 major` Pin "clickhouse-driver" to ">=0.1.3"
