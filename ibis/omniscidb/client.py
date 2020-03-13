@@ -470,7 +470,7 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
             _run_ddl, tbl_properties=tbl_properties
         )
 
-    def insert_into(self, dst_values, dst_cols=None):
+    def insert_into(self, dst_values: list, dst_cols: Optional[list] = None):
         """
         Insert new records in the table.
 
@@ -480,22 +480,45 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
             Set list of values for table's column(s)
         dst_cols : list, optional
             Set list of table's column(s) for which values are provided
+
+        Examples
+        --------
+        >>> table_name = 'my_table'
+        >>> my_table = con.table(table_name)  # doctest: +SKIP
+        >>> dst_values = [1, 2.0]
+        >>> dst_cols = ['a', 'b']
+        >>> my_table.insert_into(dst_values, dst_cols)
         """
         stmt = ddl.InsertInto(
             self._qualified_name, dst_values, dst_cols=dst_cols
         )
         return self._execute(stmt)
 
-    def insert_into_select(self, select, dst_cols=None):
+    def insert_into_select(
+        self, select: ir.Expr, dst_cols: Optional[list] = None
+    ):
         """
         Copy data from one table and inserts it into another table.
 
         Parameters
         ----------
-        select : ibis TableExpr
+        select : ibis Expr
             Set selection ibis expression
         dst_cols : list, optional
             Set list of table's column(s) into which data will be coppied
+
+        Examples
+        --------
+        >>> table_name_1 = 'my_table1'
+        >>> my_table1 = con.table(table_name_1)  # doctest: +SKIP
+        >>> dst_values = [1, 2.0]
+        >>> dst_cols1 = ['a', 'b']
+        >>> my_table1.insert_into(dst_values, dst_cols1)
+        >>> my_table1 = con.table(table_name_1)  # doctest: +SKIP
+        >>> table_name_2 = 'my_table2'
+        >>> my_table2 = con.table(table_name_2)  # doctest: +SKIP
+        >>> dst_cols2 = ['c', 'd']
+        >>> my_table2.insert_into_select(my_table1['a', 'b'], dst_cols2)
         """
         stmt = ddl.InsertIntoSelect(
             self._qualified_name, select, dst_cols=dst_cols

@@ -1,5 +1,6 @@
 """Module for DDL operations."""
 import re
+from typing import Any, Optional
 
 import ibis
 from ibis.sql.compiler import DDL, DML
@@ -19,7 +20,7 @@ def _is_quoted(x):
     return quoted is not None
 
 
-def _convert_default_value(value):
+def _convert_default_value(value: Any) -> Any:
     if isinstance(value, bool):
         return "'t'" if value else "'f'"
     if isinstance(value, (int, float)):
@@ -351,7 +352,7 @@ class AlterTable(OmniSciDBDDL):
 class Insert(OmniSciDBDDL):
     """Insert class."""
 
-    def __init__(self, table):
+    def __init__(self, table: str):
         self.table = table
 
     def _get_dst_cols_cmd(self):
@@ -362,14 +363,19 @@ class Insert(OmniSciDBDDL):
             sep = ', '
         yield ') '
 
-    def _wrap_command(self, cmd):
+    def _wrap_command(self, cmd: str) -> str:
         return 'INSERT INTO {} {};'.format(self.table, cmd)
 
 
 class InsertInto(Insert):
     """Insert Into class."""
 
-    def __init__(self, table_name, dst_values, dst_cols=None):
+    def __init__(
+        self,
+        table_name: str,
+        dst_values: list,
+        dst_cols: Optional[list] = None,
+    ):
         super().__init__(table_name)
         self.dst_values = dst_values
         self.dst_cols = dst_cols
@@ -402,7 +408,12 @@ class InsertInto(Insert):
 class InsertIntoSelect(Insert):
     """Insert Into Select class."""
 
-    def __init__(self, table_name, select, dst_cols=None):
+    def __init__(
+        self,
+        table_name: str,
+        select: ibis.Expr,
+        dst_cols: Optional[list] = None,
+    ):
         super().__init__(table_name)
         self.select = select
         self.dst_cols = dst_cols
