@@ -114,7 +114,7 @@ def table_for_add_column(con):
     -------
     ibis.expr.types.TableExpr
     """
-    table_name = 'test_table'
+    table_name = 'test_table_for_add_column'
     con.drop_table(table_name, force=True)
 
     schema = ibis.schema([('a', 'float'), ('b', 'int8')])
@@ -143,7 +143,7 @@ def test_add_column(con, table_for_add_column, cols_with_types):
 
     table_for_add_column.add_column(cols_with_types)
 
-    res_tbl = con.table('test_table')
+    res_tbl = con.table('test_table_for_add_column')
 
     schema_new_cols = ibis.schema(cols_with_types.items())
     old_schema_with_new_cols = schema_before.append(schema_new_cols)
@@ -161,7 +161,7 @@ def table_for_drop_column(con):
     -------
     ibis.expr.types.TableExpr
     """
-    table_name = 'test_table'
+    table_name = 'test_table_for_drop_column'
     con.drop_table(table_name, force=True)
 
     schema = ibis.schema(
@@ -186,7 +186,7 @@ def test_drop_column(con, table_for_drop_column, column_names):
 
     table_for_drop_column.drop_column(column_names)
 
-    res_tbl = con.table('test_table')
+    res_tbl = con.table('test_table_for_drop_column')
     schema_with_dropped_cols = schema_before.delete(column_names)
 
     assert res_tbl.schema() == schema_with_dropped_cols
