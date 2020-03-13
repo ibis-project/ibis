@@ -1,5 +1,6 @@
 """Module for DDL operations."""
 import re
+from typing import Any, Optional
 
 import ibis
 from ibis.common import exceptions as com
@@ -20,7 +21,7 @@ def _is_quoted(x):
     return quoted is not None
 
 
-def _convert_default_value(value):
+def _convert_default_value(value: Any) -> Any:
     if isinstance(value, bool):
         return "'t'" if value else "'f'"
     if isinstance(value, (int, float)):
@@ -354,11 +355,11 @@ class AddColumn(AlterTable):
 
     def __init__(
         self,
-        table_name,
-        cols_with_types,
-        nullables=None,
-        defaults=None,
-        encodings=None,
+        table_name: str,
+        cols_with_types: dict,
+        nullables: Optional[list] = None,
+        defaults: Optional[list] = None,
+        encodings: Optional[list] = None,
     ):
         if len(cols_with_types) == 0:
             raise com.IbisInputError('No column requested to add.')
@@ -421,7 +422,7 @@ class AddColumn(AlterTable):
 class DropColumn(AlterTable):
     """Drop Column class."""
 
-    def __init__(self, table_name, column_names):
+    def __init__(self, table_name: str, column_names: list):
         if len(column_names) == 0:
             raise com.IbisInputError('No column requested to drop.')
         super().__init__(table_name)

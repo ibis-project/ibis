@@ -104,72 +104,92 @@ def test_union_op(alltypes):
         expr.compile()
 
 
+@pytest.fixture(scope='function')
+def table_for_add_column(con):
+    """
+    Define fixture for an interaction with table
+    within an operation of adding column(s).
+
+    Returns
+    -------
+    ibis.expr.types.TableExpr
+    """
+    table_name = 'test_table'
+    con.drop_table(table_name, force=True)
+
+    schema = ibis.schema([('a', 'float'), ('b', 'int8')])
+    con.create_table(table_name, schema=schema)
+
+    yield con.table(table_name)
+
+    con.drop_table(table_name)
+
+
+def test_add_zero_column(table_for_add_column):
+    cols_with_types = {}
+    with pytest.raises(com.IbisInputError):
+        table_for_add_column.add_column(cols_with_types)
+
+
 @pytest.mark.parametrize(
     'cols_with_types',
     [
-        {},
         {'c': 'float64'},
         {'c': 'float64', 'd': 'string', 'e': 'point', 'f': 'polygon'},
     ],
 )
-def test_add_column(con, cols_with_types):
-    table_name = 'my_table'
+def test_add_column(con, table_for_add_column, cols_with_types):
+    schema_before = table_for_add_column.schema()
 
-    con.drop_table(table_name, force=True)
+    table_for_add_column.add_column(cols_with_types)
 
-    schema = ibis.schema([('a', 'float'), ('b', 'int8')])
-
-    con.create_table(table_name, schema=schema)
-
-    aux_tbl = con.table(table_name)
-
-    if len(cols_with_types) == 0:
-        with pytest.raises(com.IbisInputError):
-            aux_tbl.add_column(cols_with_types)
-        return con.drop_table(table_name)
-
-    aux_tbl.add_column(cols_with_types)
-
-    res_tbl = con.table(table_name)
+    res_tbl = con.table('test_table')
 
     schema_new_cols = ibis.schema(cols_with_types.items())
-    old_schema_with_new_cols = schema.append(schema_new_cols)
+    old_schema_with_new_cols = schema_before.append(schema_new_cols)
 
-    try:
-        assert res_tbl.schema() == old_schema_with_new_cols
-    finally:
-        con.drop_table(table_name)
+    assert res_tbl.schema() == old_schema_with_new_cols
 
 
-@pytest.mark.parametrize('column_names', [[], ['a'], ['a', 'b', 'c']])
-def test_drop_column(con, column_names):
-    table_name = 'my_table'
+@pytest.fixture(scope='function')
+def table_for_drop_column(con):
+    """
+    Define fixture for an interaction with table
+    within an operation of dropping column(s).
 
+    Returns
+    -------
+    ibis.expr.types.TableExpr
+    """
+    table_name = 'test_table'
     con.drop_table(table_name, force=True)
 
     schema = ibis.schema(
         [('a', 'polygon'), ('b', 'point'), ('c', 'int8'), ('d', 'double')]
     )
-
     con.create_table(table_name, schema=schema)
 
-    aux_tbl = con.table(table_name)
+    yield con.table(table_name)
 
-    if len(column_names) == 0:
-        with pytest.raises(com.IbisInputError):
-            aux_tbl.drop_column(column_names)
-        return con.drop_table(table_name)
+    con.drop_table(table_name)
 
-    aux_tbl.drop_column(column_names)
 
-    res_tbl = con.table(table_name)
+def test_drop_zero_column(table_for_drop_column):
+    column_names = []
+    with pytest.raises(com.IbisInputError):
+        table_for_drop_column.drop_column(column_names)
 
-    schema_with_dropped_cols = schema.delete(column_names)
 
-    try:
-        assert res_tbl.schema() == schema_with_dropped_cols
-    finally:
-        con.drop_table(table_name)
+@pytest.mark.parametrize('column_names', [['a'], ['a', 'b', 'c']])
+def test_drop_column(con, table_for_drop_column, column_names):
+    schema_before = table_for_drop_column.schema()
+
+    table_for_drop_column.drop_column(column_names)
+
+    res_tbl = con.table('test_table')
+    schema_with_dropped_cols = schema_before.delete(column_names)
+
+    assert res_tbl.schema() == schema_with_dropped_cols
 
 
 def test_create_table_schema(con):
