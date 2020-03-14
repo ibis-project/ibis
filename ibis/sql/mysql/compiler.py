@@ -191,6 +191,10 @@ def _literal(t, expr):
         return sa.literal(value)
 
 
+def _random(t, expr):
+    return sa.func.random()
+
+
 _operation_registry.update(
     {
         ops.Literal: _literal,
@@ -204,6 +208,7 @@ _operation_registry.update(
         ops.Log2: unary(sa.func.log2),
         ops.Log10: unary(sa.func.log10),
         ops.Round: _round,
+        ops.RandomScalar: _random,
         # dates and times
         ops.Date: unary(sa.func.date),
         ops.DateAdd: infix_op('+'),

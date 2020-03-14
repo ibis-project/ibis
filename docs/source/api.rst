@@ -329,6 +329,7 @@ These methods are available directly in the ``ibis`` module namespace.
    trailing_window
    cumulative_window
    trailing_range_window
+   random
 
 .. _api.expr:
 
