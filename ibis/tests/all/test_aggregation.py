@@ -2,13 +2,7 @@ import numpy as np
 import pytest
 from pytest import param
 
-from ibis.tests.backends import (
-    Clickhouse,
-    MySQL,
-    PostgreSQL,
-    PySpark,
-    SQLite,
-)
+from ibis.tests.backends import Clickhouse, MySQL, PostgreSQL, PySpark, SQLite
 
 
 @pytest.mark.parametrize(
