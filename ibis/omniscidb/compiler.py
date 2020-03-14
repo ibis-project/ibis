@@ -180,6 +180,7 @@ class OmniSciDBTableSetFormatter(compiles.TableSetFormatter):
     _join_names = {
         ops.InnerJoin: 'JOIN',
         ops.LeftJoin: 'LEFT JOIN',
+        ops.LeftSemiJoin: 'JOIN',  # needed by topk as filter
         ops.CrossJoin: 'JOIN',
     }
 
