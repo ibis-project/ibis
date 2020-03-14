@@ -384,10 +384,6 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
 
     describe_formatted = metadata
 
-    def drop(self):
-        """Drop the table from the database."""
-        self._client.drop_table_or_view(self._qualified_name)
-
     def truncate(self):
         """Delete all rows from, but do not drop, an existing table."""
         self._client.truncate_table(self._qualified_name)
