@@ -11,23 +11,31 @@ jobs:
   variables:
     AZURECI: 1
     COMPOSE_FILE: ci/docker-compose.yml
-
+    PYTHONHASHSEED: "random"
+    PYTEST_MARK_EXPRESSION: "not udf"
+    BACKENDS: "clickhouse impala kudu-master kudu-tserver mysql omniscidb parquet postgres sqlite"
   strategy:
     matrix:
       py36:
-        PYTHONHASHSEED: "random"
         PYTHON_MAJOR_VERSION: "3"
         PYTHON_MINOR_VERSION: "6"
         PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
         PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
-        PYTEST_MARK_EXPRESSION: "not udf"
       py37:
-        PYTHONHASHSEED: "random"
         PYTHON_MAJOR_VERSION: "3"
         PYTHON_MINOR_VERSION: "7"
         PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
         PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
-        PYTEST_MARK_EXPRESSION: "not udf"
+      py38:
+        PYTHON_MAJOR_VERSION: "3"
+        PYTHON_MINOR_VERSION: "8"
+        PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
+        PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
+        # pymapd and pyspark are not working on Ibis with Python 3.8
+        # https://github.com/ibis-project/ibis/issues/2091
+        # https://github.com/ibis-project/ibis/issues/2090
+        PYTEST_MARK_EXPRESSION: "not udf and not omniscidb and not spark and not pyspark"
+        BACKENDS: "clickhouse impala kudu-master kudu-tserver mysql parquet postgres sqlite"
 
   steps:
     - bash: |
@@ -40,10 +48,10 @@ jobs:
       displayName: 'Setup BigQuery credentials'
       condition: eq(variables['System.PullRequest.IsFork'], 'False')
 
-    - bash: make start PYTHON_VERSION=$PYTHON_VERSION
+    - bash: make start PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
       displayName: 'Start databases'
 
-    - bash: make wait PYTHON_VERSION=$PYTHON_VERSION
+    - bash: make wait PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
       displayName: 'Wait for databases'
 
     - bash: docker ps
@@ -76,7 +84,7 @@ jobs:
     - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="conda list --export > /tmp/env/env.yml"
       displayName: 'Capture packages in conda environment'
 
-    - bash: make load PYTHON_VERSION=$PYTHON_VERSION
+    - bash: make load PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
       displayName: 'Load test datasets'
 
     - bash: |

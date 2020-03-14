@@ -1051,7 +1051,6 @@ _unsupported_ops = [
     ops.Greatest,
     ops.Log2,
     ops.Log,
-    ops.Round,
     # date/time/timestamp
     ops.TimestampFromUNIX,
     ops.TimeTruncate,

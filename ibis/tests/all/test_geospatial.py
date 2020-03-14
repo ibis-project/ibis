@@ -205,13 +205,23 @@ def test_literal_geospatial_inferred(backend, con, shp, expected):
             {
                 'postgres': (
                     "'MULTILINESTRING ((0 0, 1 1, 2 2), (2 2, 1 1, 0 0))'"
-                )
+                ),
+                'omniscidb': (
+                    "ST_GeomFromText('MULTILINESTRING ((0 0, 1 1, 2 2),"
+                    + " (2 2, 1 1, 0 0))')"
+                ),
             },
         ),
-        (shp_multipoint_0, {'postgres': "'MULTIPOINT (0 0, 1 1, 2 2)'"}),
+        (
+            shp_multipoint_0,
+            {
+                'postgres': "'MULTIPOINT (0 0, 1 1, 2 2)'",
+                'omniscidb': "ST_GeomFromText('MULTIPOINT (0 0, 1 1, 2 2)')",
+            },
+        ),
     ],
 )
-@pytest.mark.only_on_backends([PostgreSQL])
+@pytest.mark.only_on_backends(all_db_geo_supported)
 @pytest.mark.xfail_unsupported
 def test_literal_multi_geospatial_inferred(backend, con, shp, expected):
     result = str(con.compile(ibis.literal(shp)))

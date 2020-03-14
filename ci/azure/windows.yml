@@ -10,6 +10,7 @@ jobs:
 
   variables:
     AZURECI: 1
+    conda.version: "4.6"
 
   strategy:
     matrix:
@@ -19,14 +20,18 @@ jobs:
         python.version: "$(python.major.version).$(python.minor.version)"
         python.no.dot.version: "$(python.major.version)$(python.minor.version)"
         conda.env: "ibis$(python.no.dot.version)"
-        conda.version: "4.6"
       py37:
         python.major.version: "3"
         python.minor.version: "7"
         python.version: "$(python.major.version).$(python.minor.version)"
         python.no.dot.version: "$(python.major.version)$(python.minor.version)"
         conda.env: "ibis$(python.no.dot.version)"
-        conda.version: "4.6"
+      py38:
+        python.major.version: "3"
+        python.minor.version: "8"
+        python.version: "$(python.major.version).$(python.minor.version)"
+        python.no.dot.version: "$(python.major.version)$(python.minor.version)"
+        conda.env: "ibis$(python.no.dot.version)"
 
   steps:
     - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"

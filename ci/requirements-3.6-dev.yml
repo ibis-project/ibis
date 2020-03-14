@@ -35,6 +35,7 @@ dependencies:
   - pytables>=3.0.0
   - pytest>=4.5
   - pytest-cov
+  - pytest-mock
   - pytest-xdist
   - python=3.6
   - python-graphviz

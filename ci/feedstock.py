@@ -80,14 +80,6 @@ def update(meta, source_path):
     # XXX: because render will remove the {{ PYTHON }} variable
     recipe['build']['script'] = SCRIPT
 
-    # TODO: remove it after update feedstock
-    recipe['test']['commands'] = [
-        'pytest --rootdir ibis -m "not (backend or bigquery or clickhouse or '
-        'hdfs or impala or kudu or omniscidb or mysql or postgresql or '
-        'superuser or udf or postgis)" --ignore ibis/tests/test_version.py '
-        '--tb=line'
-    ]
-
     updated_content = ruamel.yaml.round_trip_dump(
         recipe, default_flow_style=False, width=sys.maxsize
     ).strip()
