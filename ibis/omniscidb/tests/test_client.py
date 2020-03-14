@@ -1,3 +1,4 @@
+import pathlib
 from typing import Optional
 
 import mock
@@ -152,6 +153,51 @@ def test_sql(con, sql):
 def test_explain(con, alltypes):
     # execute the expression using SQL query
     con.explain(alltypes)
+
+
+@pytest.mark.parametrize(
+    'filename',
+    [
+        "/omnisci/test_read_csv.csv",
+        pathlib.Path("/omnisci/test_read_csv.csv"),
+    ],
+)
+def test_read_csv(con, temp_table, filename):
+    schema = ibis.schema(
+        [
+            ('index', 'int64'),
+            ('Unnamed__0', 'int64'),
+            ('id', 'int32'),
+            ('bool_col', 'bool'),
+            ('tinyint_col', 'int16'),
+            ('smallint_col', 'int16'),
+            ('int_col', 'int32'),
+            ('bigint_col', 'int64'),
+            ('float_col', 'float32'),
+            ('double_col', 'double'),
+            ('date_string_col', 'string'),
+            ('string_col', 'string'),
+            ('timestamp_col', 'timestamp'),
+            ('year_', 'int32'),
+            ('month_', 'int32'),
+        ]
+    )
+    con.create_table(temp_table, schema=schema)
+
+    # prepare csv file inside omnisci docker container
+    # if the file exists, then it will be overwritten
+    con._execute(
+        "COPY (SELECT * FROM functional_alltypes) TO '{}'".format(filename)
+    )
+
+    db = con.database()
+    table = db.table(temp_table)
+    table.read_csv(filename, header=False, quotechar='"', delimiter=",")
+
+    df_read_csv = table.execute()
+    df_expected = db.table("functional_alltypes").execute()
+
+    pd.testing.assert_frame_equal(df_expected, df_read_csv)
 
 
 @pytest.mark.parametrize('ipc', [None, True, False])

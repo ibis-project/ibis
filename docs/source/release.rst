@@ -7,6 +7,7 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`/release-pre-1.0`
 
+* :feature:`2062` Implement read_csv for omniscidb backend
 * :feature:`2060` Add initial support for ibis.random function
 * :support:`2096` Added round() support for OmniSciDB
 * :feature:`2125` [OmniSciDB] Add support for within, d_fully_within and point
