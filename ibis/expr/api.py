@@ -23,6 +23,7 @@ import ibis.util as util
 from ibis.compat import to_date, to_time
 from ibis.expr.analytics import bucket, histogram
 from ibis.expr.groupby import GroupedTableExpr  # noqa
+from ibis.expr.random import random  # noqa
 from ibis.expr.schema import Schema
 from ibis.expr.types import (  # noqa
     ArrayColumn,
@@ -187,6 +188,7 @@ __all__ = (
     'param',
     'pi',
     'prevent_rewrite',
+    'random',
     'range_window',
     'row_number',
     'rows_with_max_lookback',

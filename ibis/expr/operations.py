@@ -2450,6 +2450,11 @@ class TimestampNow(Constant):
         return dt.timestamp.scalar_type()
 
 
+class RandomScalar(Constant):
+    def output_type(self):
+        return dt.float64.scalar_type()
+
+
 class E(Constant):
     def output_type(self):
         return functools.partial(ir.FloatingScalar, dtype=dt.float64)
