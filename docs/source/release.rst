@@ -9,6 +9,7 @@ Release Notes
 
 * :feature:`2060` Add initial support for ibis.random function
 * :support:`2096` Added round() support for OmniSciDB
+* :support:`2113` Enabled cumulative ops support for OmniSciDB
 * :release:`1.3.0 <2020-02-27>`
 * :support:`2066` Add support to Python 3.8
 * :bug:`2089 major` Pin "clickhouse-driver" to ">=0.1.3"
