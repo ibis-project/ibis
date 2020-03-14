@@ -3269,6 +3269,17 @@ class GeoEndPoint(GeoSpatialUnOp):
     output_type = rlz.shape_like('arg', dt.point)
 
 
+class GeoPoint(GeoSpatialBinOp):
+    """
+    Return a point constructed on the fly from the provided coordinate values.
+    Constant coordinates result in construction of a POINT literal.
+    """
+
+    left = Arg(rlz.numeric)
+    right = Arg(rlz.numeric)
+    output_type = rlz.shape_like('args', dt.point)
+
+
 class GeoPointN(GeoSpatialUnOp):
     """Return the Nth point in a single linestring in the geometry.
     Negative values are counted backwards from the end of the LineString,

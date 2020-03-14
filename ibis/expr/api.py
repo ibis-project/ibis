@@ -5,6 +5,7 @@ import datetime
 import functools
 import numbers
 import operator
+from typing import Union
 
 import dateutil.parser
 import pandas as pd
@@ -159,6 +160,7 @@ __all__ = (
     'geo_n_points',
     'geo_n_rings',
     'geo_perimeter',
+    'geo_point',
     'geo_point_n',
     'geo_simplify',
     'geo_srid',
@@ -2023,6 +2025,27 @@ def geo_overlaps(left, right):
     overlaps : bool scalar
     """
     op = ops.GeoOverlaps(left, right)
+    return op.to_expr()
+
+
+def geo_point(
+    left: Union[NumericValue, int, float],
+    right: Union[NumericValue, int, float],
+) -> ops.GeoPoint:
+    """
+    Return a point constructed on the fly from the provided coordinate values.
+    Constant coordinates result in construction of a POINT literal.
+
+    Parameters
+    ----------
+    left : NumericValue, integer or float
+    right : NumericValue, integer or float
+
+    Returns
+    -------
+    point
+    """
+    op = ops.GeoPoint(left, right)
     return op.to_expr()
 
 
