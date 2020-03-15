@@ -706,6 +706,10 @@ def _window(translator, expr):
             '{} is not supported in window functions'.format(type(window_op))
         )
 
+    if isinstance(window_op, ops.CumulativeOp):
+        arg = impala_compiler._cumulative_to_window(translator, arg, window)
+        return translator.translate(arg)
+
     if window.preceding is not None:
         raise com.UnsupportedOperationError(
             'Window preceding is not supported by OmniSciDB backend yet'
@@ -841,6 +845,7 @@ _geospatial_ops = {
     ops.GeoContains: fixed_arity('ST_CONTAINS', 2),
     ops.GeoDistance: fixed_arity('ST_DISTANCE', 2),
     ops.GeoDisjoint: fixed_arity('ST_DISJOINT', 2),
+    ops.GeoDFullyWithin: fixed_arity('ST_DFULLYWITHIN', 3),
     ops.GeoDWithin: fixed_arity('ST_DWITHIN', 3),
     ops.GeoEndPoint: unary('ST_ENDPOINT'),
     ops.GeoIntersects: fixed_arity('ST_INTERSECTS', 2),
@@ -849,11 +854,13 @@ _geospatial_ops = {
     ops.GeoNPoints: unary('ST_NPOINTS'),
     ops.GeoNRings: unary('ST_NRINGS'),
     ops.GeoPerimeter: unary('ST_PERIMETER'),
+    ops.GeoPoint: fixed_arity('ST_POINT', 2),
     ops.GeoPointN: fixed_arity('ST_POINTN', 2),
     ops.GeoSetSRID: fixed_arity('ST_SETSRID', 2),
     ops.GeoSRID: unary('ST_SRID'),
     ops.GeoStartPoint: unary('ST_STARTPOINT'),
     ops.GeoTransform: fixed_arity('ST_TRANSFORM', 2),
+    ops.GeoWithin: fixed_arity('ST_WITHIN', 2),
     ops.GeoX: unary('ST_X'),
     ops.GeoY: unary('ST_Y'),
     ops.GeoXMin: unary('ST_XMIN'),
@@ -934,10 +941,6 @@ _unsupported_ops = [
     ops.DecimalPrecision,
     ops.DecimalScale,
     ops.BaseConvert,
-    ops.CumulativeSum,
-    ops.CumulativeMin,
-    ops.CumulativeMax,
-    ops.CumulativeMean,
     ops.CumulativeAny,
     ops.CumulativeAll,
     ops.IdenticalTo,
@@ -977,7 +980,6 @@ _unsupported_ops = [
     ops.Greatest,
     ops.Log2,
     ops.Log,
-    ops.Round,
     # date/time/timestamp
     ops.TimestampFromUNIX,
     ops.Date,

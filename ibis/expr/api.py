@@ -5,6 +5,7 @@ import datetime
 import functools
 import numbers
 import operator
+from typing import Union
 
 import dateutil.parser
 import pandas as pd
@@ -23,6 +24,7 @@ import ibis.util as util
 from ibis.compat import to_date, to_time
 from ibis.expr.analytics import bucket, histogram
 from ibis.expr.groupby import GroupedTableExpr  # noqa
+from ibis.expr.random import random  # noqa
 from ibis.expr.schema import Schema
 from ibis.expr.types import (  # noqa
     ArrayColumn,
@@ -158,6 +160,7 @@ __all__ = (
     'geo_n_points',
     'geo_n_rings',
     'geo_perimeter',
+    'geo_point',
     'geo_point_n',
     'geo_simplify',
     'geo_srid',
@@ -187,6 +190,7 @@ __all__ = (
     'param',
     'pi',
     'prevent_rewrite',
+    'random',
     'range_window',
     'row_number',
     'rows_with_max_lookback',
@@ -2021,6 +2025,27 @@ def geo_overlaps(left, right):
     overlaps : bool scalar
     """
     op = ops.GeoOverlaps(left, right)
+    return op.to_expr()
+
+
+def geo_point(
+    left: Union[NumericValue, int, float],
+    right: Union[NumericValue, int, float],
+) -> ops.GeoPoint:
+    """
+    Return a point constructed on the fly from the provided coordinate values.
+    Constant coordinates result in construction of a POINT literal.
+
+    Parameters
+    ----------
+    left : NumericValue, integer or float
+    right : NumericValue, integer or float
+
+    Returns
+    -------
+    point
+    """
+    op = ops.GeoPoint(left, right)
     return op.to_expr()
 
 

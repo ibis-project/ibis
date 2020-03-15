@@ -2450,6 +2450,11 @@ class TimestampNow(Constant):
         return dt.timestamp.scalar_type()
 
 
+class RandomScalar(Constant):
+    def output_type(self):
+        return dt.float64.scalar_type()
+
+
 class E(Constant):
     def output_type(self):
         return functools.partial(ir.FloatingScalar, dtype=dt.float64)
@@ -3262,6 +3267,17 @@ class GeoEndPoint(GeoSpatialUnOp):
     """
 
     output_type = rlz.shape_like('arg', dt.point)
+
+
+class GeoPoint(GeoSpatialBinOp):
+    """
+    Return a point constructed on the fly from the provided coordinate values.
+    Constant coordinates result in construction of a POINT literal.
+    """
+
+    left = Arg(rlz.numeric)
+    right = Arg(rlz.numeric)
+    output_type = rlz.shape_like('args', dt.point)
 
 
 class GeoPointN(GeoSpatialUnOp):

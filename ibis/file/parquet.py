@@ -1,3 +1,5 @@
+from typing import Optional
+
 import pyarrow as pa
 import pyarrow.parquet as pq
 import regex as re
@@ -6,6 +8,7 @@ from pkg_resources import parse_version
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
+import ibis.expr.types as ir
 from ibis.file.client import FileClient
 from ibis.pandas.api import PandasDialect
 from ibis.pandas.core import execute, execute_node
@@ -75,7 +78,7 @@ class ParquetClient(FileClient):
         table = pa.Table.from_pandas(df)
         pq.write_table(table, str(path))
 
-    def table(self, name, path):
+    def table(self, name: str, path: Optional[str] = None) -> ir.TableExpr:
         if name not in self.list_tables(path):
             raise AttributeError(name)
 
