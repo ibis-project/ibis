@@ -1,5 +1,6 @@
 """Ibis OmniSciDB Client."""
-from typing import Optional
+from pathlib import Path
+from typing import Optional, Union
 
 import pandas as pd
 import pkg_resources
@@ -384,10 +385,6 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
 
     describe_formatted = metadata
 
-    def drop(self):
-        """Drop the table from the database."""
-        self._client.drop_table_or_view(self._qualified_name)
-
     def truncate(self):
         """Delete all rows from, but do not drop, an existing table."""
         self._client.truncate_table(self._qualified_name)
@@ -408,6 +405,91 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         query : OmniSciDBQuery
         """
         stmt = ddl.LoadData(self._qualified_name, df)
+        return self._execute(stmt)
+
+    def read_csv(
+        self,
+        path: Union[str, Path],
+        header: Optional[bool] = True,
+        quotechar: Optional[str] = '"',
+        delimiter: Optional[str] = ',',
+        threads: Optional[int] = None,
+    ) -> OmniSciDBQuery:
+        """
+        Load data into an Omniscidb table from CSV file.
+
+        Wraps the COPY FROM DML statement.
+
+        Parameters
+        ----------
+        path: str or pathlib.Path
+          Path to the input data file
+        header: bool, optional, default True
+          Indicating whether the input file has a header line
+        quotechar: str, optional, default '"'
+          The character used to denote the start and end of a quoted item.
+        delimiter: str, optional, default ','
+        threads: int, optional, default number of CPU cores on the system
+          Number of threads for performing the data import.
+
+        Returns
+        -------
+        query : OmniSciDBQuery
+
+        Examples
+        --------
+        # assumptions:
+        #   - dataset can be found on ./datasets/functional_alltypes.csv
+        #       https://github.com/ibis-project/testing-data/blob/master/functional_alltypes.csv
+        #   - omnisci server is launched on localhost and using port: 6274
+
+        import ibis
+
+        conn = ibis.omniscidb.connect(
+            host="localhost",
+            port="6274",
+            user="admin",
+            password="HyperInteractive",
+        )
+
+        t_name = "functional_alltypes"
+        db_name = "ibis_testing"
+        filename = "./datasets/functional_alltypes.csv"
+
+        schema = ibis.schema(
+            [
+                ('index', 'int64'),
+                ('Unnamed__0', 'int64'),
+                ('id', 'int32'),
+                ('bool_col', 'bool'),
+                ('tinyint_col', 'int16'),
+                ('smallint_col', 'int16'),
+                ('int_col', 'int32'),
+                ('bigint_col', 'int64'),
+                ('float_col', 'float32'),
+                ('double_col', 'double'),
+                ('date_string_col', 'string'),
+                ('string_col', 'string'),
+                ('timestamp_col', 'timestamp'),
+                ('year_', 'int32'),
+                ('month_', 'int32'),
+            ]
+        )
+        conn.create_table(t_name, schema=schema)
+
+        db = conn.database(db_name)
+        table = db.table(t_name)
+        table.read_csv(filename, header=False, quotechar='"', delimiter=",")
+        """
+        kwargs = {
+            'header': header,
+            # 'quote' field couldn't be empty string for omnisci backend
+            'quote': quotechar if quotechar else '"',
+            'quoted': bool(quotechar),
+            'delimiter': delimiter,
+            'threads': threads,
+        }
+        stmt = ddl.LoadData(self._qualified_name, path, **kwargs)
         return self._execute(stmt)
 
     @property
