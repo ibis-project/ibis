@@ -36,39 +36,24 @@ def con():
     )
 
 
-@pytest.fixture
-def table1_for_insert(con):
+def test_table(con):
     """
-    Define fixture for an interaction with table
-    within an operation of insert.
+    Define fixture for test table.
 
     Yields
     -------
     ibis.expr.types.TableExpr
     """
-    table_name = 'test_table1_for_insert'
+    table_name = 'test_table'
     con.drop_table(table_name, force=True)
-    schema = ibis.schema([('a', 'int32'), ('b', 'float')])
+
+    schema = ibis.schema(
+        [('a', 'polygon'), ('b', 'point'), ('c', 'int8'), ('d', 'double')]
+    )
     con.create_table(table_name, schema=schema)
+
     yield con.table(table_name)
-    con.drop_table(table_name)
 
-
-@pytest.fixture
-def table2_for_insert(con):
-    """
-    Define fixture for an interaction with table
-    within an operation of insert.
-
-    Yields
-    -------
-    ibis.expr.types.TableExpr
-    """
-    table_name = 'test_table2_for_insert'
-    con.drop_table(table_name, force=True)
-    schema = ibis.schema([('c', 'int32'), ('d', 'float')])
-    con.create_table(table_name, schema=schema)
-    yield con.table(table_name)
     con.drop_table(table_name)
 
 

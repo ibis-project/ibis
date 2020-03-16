@@ -105,58 +105,96 @@ def test_union_op(alltypes):
         expr.compile()
 
 
-def test_insert_zero_values(table1_for_insert):
+def test_insert_zero_values(test_table):
     dst_vals = []
     with pytest.raises(com.IbisInputError):
-        table1_for_insert.insert_into(dst_vals)
+        test_table.insert_into(dst_vals)
 
 
 @pytest.mark.xfail
-def test_insert_into(con, table1_for_insert, table2_for_insert):
-    dst_vals1 = [1, 2.0]
-    dst_cols1 = ['a', 'b']
-    table1_for_insert.insert_into(dst_vals1, dst_cols1)
+def test_insert_into(con, test_table):
+    dst_vals1 = [
+        'polygon((0 0, 4 0, 4 4, 0 4, 0 0), (1 1, 2 1, 2 2, 1 2, 1 1))',
+        'point(1 1)',
+        1,
+        2.0,
+    ]
+    dst_cols1 = ['a', 'b', 'c', 'd']
+    test_table.insert_into(dst_vals1, dst_cols1)
 
-    dst_vals2 = [1, 4.0]
-    dst_cols2 = ['c', 'd']
-    table2_for_insert.insert_into(dst_vals2, dst_cols2)
+    aux_table_name = 'aux_test_table'
+    con.drop_table(aux_table_name, force=True)
 
-    tbl1 = con.table('test_table1_for_insert')
-    tbl2 = con.table('test_table2_for_insert')
+    schema = ibis.schema(
+        [('e', 'polygon'), ('f', 'point'), ('g', 'int8'), ('h', 'double')]
+    )
+    con.create_table(aux_table_name, schema=schema)
+    aux_table = con.table(aux_table_name)
+
+    dst_vals2 = [
+        'polygon((0 0, 4 0, 4 4, 0 4, 0 0), (1 1, 2 1, 2 2, 1 2, 1 1))',
+        'point(1 1)',
+        2,
+        4.0,
+    ]
+    dst_cols2 = ['e', 'f', 'g', 'h']
+    aux_table.insert_into(dst_vals2, dst_cols2)
+
+    tbl1 = con.table('test_table')
+    tbl2 = con.table(aux_table_name)
 
     joined_tbl_name = 'joined_table'
-    pred = tbl1['a'] == tbl2['c']
-    joined_tbl = tbl1.inner_join(tbl2, pred)
+    joined_tbl = tbl1.inner_join(tbl2, [tbl1.a == tbl2.e, tbl1.b == tbl2.f])
 
     con.create_table(joined_tbl_name, joined_tbl)
     joined_tbl = con.table(joined_tbl_name)
 
-    joined_cols = ['a', 'c']
-    for col in joined_cols:
-        assert col in joined_tbl.schema().names
+    try:
+        joined_cols = ['a', 'b', 'e', 'f']
+        for col in joined_cols:
+            assert col in joined_tbl.schema().names
+    finally:
+        con.drop_table(aux_table_name)
 
 
 @pytest.mark.xfail
-def test_insert_into_select(con, table1_for_insert, table2_for_insert):
-    dst_vals1 = [1, 2.0]
-    dst_cols1 = ['a', 'b']
-    table1_for_insert.insert_into(dst_vals1, dst_cols1)
+def test_insert_into_select(con, test_table):
+    dst_vals1 = [
+        'polygon((0 0, 4 0, 4 4, 0 4, 0 0), (1 1, 2 1, 2 2, 1 2, 1 1))',
+        'point(1 1)',
+        1,
+        2.0,
+    ]
+    dst_cols1 = ['a', 'b', 'c', 'd']
+    test_table.insert_into(dst_vals1, dst_cols1)
 
-    tbl1 = con.table('test_table1_for_insert')
-    tbl2 = con.table('test_table2_for_insert')
-    dst_cols2 = ['c', 'd']
-    tbl2.insert_into_select(tbl1['a', 'b'], dst_cols2)
-    tbl2 = con.table('test_table2_for_insert')
+    aux_table_name = 'aux_test_table'
+    con.drop_table(aux_table_name, force=True)
+
+    schema = ibis.schema(
+        [('e', 'polygon'), ('f', 'point'), ('g', 'int8'), ('h', 'double')]
+    )
+    con.create_table(aux_table_name, schema=schema)
+
+    tbl1 = con.table('test_table')
+    tbl2 = con.table(aux_table_name)
+
+    dst_cols2 = ['e', 'f', 'g', 'h']
+    tbl2.insert_into_select(tbl1['a', 'b', 'c', 'd'], dst_cols2)
+    tbl2 = con.table(aux_table_name)
 
     joined_tbl_name = 'joined_table'
-    joined_tbl = tbl1.inner_join(tbl2, [tbl1.a == tbl2.c, tbl1.b == tbl2.d])
+    joined_tbl = tbl1.inner_join(tbl2, [tbl1.a == tbl2.e, tbl1.b == tbl2.f])
 
     con.create_table(joined_tbl_name, joined_tbl)
     joined_tbl = con.table(joined_tbl_name)
 
-    joined_cols = ['a', 'b', 'c', 'd']
-    for col in joined_cols:
-        assert col in joined_tbl.schema().names
+    try:
+        joined_cols = ['a', 'b', 'e', 'f']
+        for col in joined_cols:
+            assert col in joined_tbl.schema().names
+    finally:
+        con.drop_table(aux_table_name)
 
 
 def test_create_table_schema(con):
