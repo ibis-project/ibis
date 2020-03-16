@@ -208,6 +208,7 @@ def test_string_to_timestamp_tz_error(client):
 
 
 def test_alias_after_select(client):
+    # Issue 2136
     table = client.table('basic_table')
     table = table[['id']]
     table = table.mutate(id2=table['id'])
