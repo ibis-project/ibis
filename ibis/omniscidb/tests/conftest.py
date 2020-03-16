@@ -36,6 +36,7 @@ def con():
     )
 
 
+@pytest.fixture(scope='function')
 def test_table(con):
     """
     Define fixture for test table.
