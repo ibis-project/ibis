@@ -37,37 +37,15 @@ def con():
 
 
 @pytest.fixture(scope='function')
-def table_for_add_column(con):
+def test_table(con):
     """
-    Define fixture for an interaction with table
-    within an operation of adding column(s).
+    Define fixture for test table.
 
-    Returns
+    Yields
     -------
     ibis.expr.types.TableExpr
     """
-    table_name = 'test_table_for_add_column'
-    con.drop_table(table_name, force=True)
-
-    schema = ibis.schema([('a', 'float'), ('b', 'int8')])
-    con.create_table(table_name, schema=schema)
-
-    yield con.table(table_name)
-
-    con.drop_table(table_name)
-
-
-@pytest.fixture(scope='function')
-def table_for_drop_column(con):
-    """
-    Define fixture for an interaction with table
-    within an operation of dropping column(s).
-
-    Returns
-    -------
-    ibis.expr.types.TableExpr
-    """
-    table_name = 'test_table_for_drop_column'
+    table_name = 'test_table'
     con.drop_table(table_name, force=True)
 
     schema = ibis.schema(
@@ -210,7 +188,7 @@ def temp_database(con, test_data_db: str) -> str:
     con : ibis.omniscidb.OmniSciDBClient
     test_data_db : str
 
-    Returns
+    Yields
     -------
     str
     """

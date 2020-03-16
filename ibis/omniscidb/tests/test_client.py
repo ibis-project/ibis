@@ -105,25 +105,22 @@ def test_union_op(alltypes):
         expr.compile()
 
 
-def test_add_zero_column(table_for_add_column):
+def test_add_zero_column(test_table):
     cols_with_types = {}
     with pytest.raises(com.IbisInputError):
-        table_for_add_column.add_column(cols_with_types)
+        test_table.add_column(cols_with_types)
 
 
 @pytest.mark.parametrize(
     'cols_with_types',
-    [
-        {'c': 'float64'},
-        {'c': 'float64', 'd': 'string', 'e': 'point', 'f': 'polygon'},
-    ],
+    [{'e': 'float64'}, {'e': 'string', 'f': 'point', 'g': 'polygon'}],
 )
-def test_add_column(con, table_for_add_column, cols_with_types):
-    schema_before = table_for_add_column.schema()
+def test_add_column(con, test_table, cols_with_types):
+    schema_before = test_table.schema()
 
-    table_for_add_column.add_column(cols_with_types)
+    test_table.add_column(cols_with_types)
 
-    res_tbl = con.table('test_table_for_add_column')
+    res_tbl = con.table('test_table')
 
     schema_new_cols = ibis.schema(cols_with_types.items())
     old_schema_with_new_cols = schema_before.append(schema_new_cols)
@@ -131,19 +128,19 @@ def test_add_column(con, table_for_add_column, cols_with_types):
     assert res_tbl.schema() == old_schema_with_new_cols
 
 
-def test_drop_zero_column(table_for_drop_column):
+def test_drop_zero_column(test_table):
     column_names = []
     with pytest.raises(com.IbisInputError):
-        table_for_drop_column.drop_column(column_names)
+        test_table.drop_column(column_names)
 
 
 @pytest.mark.parametrize('column_names', [['a'], ['a', 'b', 'c']])
-def test_drop_column(con, table_for_drop_column, column_names):
-    schema_before = table_for_drop_column.schema()
+def test_drop_column(con, test_table, column_names):
+    schema_before = test_table.schema()
 
-    table_for_drop_column.drop_column(column_names)
+    test_table.drop_column(column_names)
 
-    res_tbl = con.table('test_table_for_drop_column')
+    res_tbl = con.table('test_table')
     schema_with_dropped_cols = schema_before.delete(column_names)
 
     assert res_tbl.schema() == schema_with_dropped_cols
