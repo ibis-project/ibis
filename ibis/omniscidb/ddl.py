@@ -138,12 +138,12 @@ class CreateTableWithSchema(CreateTable):
         self.fragment_size = fragment_size
 
     @property
-    def with_params(self):
+    def with_params(self) -> Dict[str, Any]:
         """Return the parameters for `with` clause.
 
         Returns
         -------
-        dict
+        Dict[str, Any]
         """
         return dict(max_rows=self.max_rows, fragment_size=self.fragment_size)
 
