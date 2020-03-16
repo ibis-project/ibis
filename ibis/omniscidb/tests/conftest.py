@@ -42,7 +42,7 @@ def table1_for_insert(con):
     Define fixture for an interaction with table
     within an operation of insert.
 
-    Returns
+    Yields
     -------
     ibis.expr.types.TableExpr
     """
@@ -60,7 +60,7 @@ def table2_for_insert(con):
     Define fixture for an interaction with table
     within an operation of insert.
 
-    Returns
+    Yields
     -------
     ibis.expr.types.TableExpr
     """

@@ -105,6 +105,12 @@ def test_union_op(alltypes):
         expr.compile()
 
 
+def test_insert_zero_values(table1_for_insert):
+    dst_vals = []
+    with pytest.raises(com.IbisInputError):
+        table1_for_insert.insert_into(dst_vals)
+
+
 @pytest.mark.xfail
 def test_insert_into(con, table1_for_insert, table2_for_insert):
     dst_vals1 = [1, 2.0]

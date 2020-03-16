@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
 import ibis
+from ibis.common import exceptions as com
 from ibis.sql.compiler import DDL, DML
 
 from .compiler import _type_to_sql_string, quote_identifier
@@ -378,7 +379,10 @@ class InsertInto(Insert):
         dst_cols: Optional[list] = None,
     ):
         super().__init__(table_name)
-        self.dst_values = dst_values
+        if not dst_values:
+            raise com.IbisInputError('No one values provided to insert')
+        else:
+            self.dst_values = dst_values
         self.dst_cols = dst_cols
 
     def _get_vals_cmd(self):
