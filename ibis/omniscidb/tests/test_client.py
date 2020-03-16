@@ -105,20 +105,20 @@ def test_union_op(alltypes):
         expr.compile()
 
 
-def test_add_zero_column(test_table):
+def test_add_zero_columns(test_table):
     cols_with_types = {}
     with pytest.raises(com.IbisInputError):
-        test_table.add_column(cols_with_types)
+        test_table.add_columns(cols_with_types)
 
 
 @pytest.mark.parametrize(
     'cols_with_types',
     [{'e': 'float64'}, {'e': 'string', 'f': 'point', 'g': 'polygon'}],
 )
-def test_add_column(con, test_table, cols_with_types):
+def test_add_columns(con, test_table, cols_with_types):
     schema_before = test_table.schema()
 
-    test_table.add_column(cols_with_types)
+    test_table.add_columns(cols_with_types)
 
     res_tbl = con.table('test_table')
 
@@ -128,17 +128,17 @@ def test_add_column(con, test_table, cols_with_types):
     assert res_tbl.schema() == old_schema_with_new_cols
 
 
-def test_drop_zero_column(test_table):
+def test_drop_zero_columns(test_table):
     column_names = []
     with pytest.raises(com.IbisInputError):
-        test_table.drop_column(column_names)
+        test_table.drop_columns(column_names)
 
 
 @pytest.mark.parametrize('column_names', [['a'], ['a', 'b', 'c']])
-def test_drop_column(con, test_table, column_names):
+def test_drop_columns(con, test_table, column_names):
     schema_before = test_table.schema()
 
-    test_table.drop_column(column_names)
+    test_table.drop_columns(column_names)
 
     res_tbl = con.table('test_table')
     schema_with_dropped_cols = schema_before.delete(column_names)

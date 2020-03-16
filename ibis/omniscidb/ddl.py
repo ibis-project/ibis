@@ -351,8 +351,8 @@ class AlterTable(OmniSciDBDDL):
         return self._wrap_command(action)
 
 
-class AddColumn(AlterTable):
-    """Add Column class."""
+class AddColumns(AlterTable):
+    """Add Columns class."""
 
     def __init__(
         self,
@@ -420,8 +420,8 @@ class AddColumn(AlterTable):
         return self._wrap_command(cmd)
 
 
-class DropColumn(AlterTable):
-    """Drop Column class."""
+class DropColumns(AlterTable):
+    """Drop Columns class."""
 
     def __init__(self, table_name: str, column_names: list):
         if len(column_names) == 0:

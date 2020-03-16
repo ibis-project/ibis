@@ -515,7 +515,7 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
             results.append(result)
         return results
 
-    def add_column(
+    def add_columns(
         self,
         cols_with_types: dict,
         nullables: Optional[list] = None,
@@ -549,11 +549,11 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         >>> nullables = [True, True, False, True]
         >>> defaults = [1, None, None, 'point(0 0)']
         >>> encodings = ['', 'DICT', '', '']
-        >>> my_table.add_column(cols_with_types,
+        >>> my_table.add_columns(cols_with_types,
         ... nullables=nullables, defaults=defaults,
         ... encodings=encodings)
         """
-        statement = ddl.AddColumn(
+        statement = ddl.AddColumns(
             self._qualified_name,
             cols_with_types,
             nullables=nullables,
@@ -562,7 +562,7 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         )
         self._client._execute(statement, False)
 
-    def drop_column(self, column_names: list):
+    def drop_columns(self, column_names: list):
         """
         Drop a given column(s).
 
@@ -576,9 +576,9 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         >>> table_name = 'my_table'
         >>> my_table = con.table(table_name)  # doctest: +SKIP
         >>> column_names = ['col1', 'col2']
-        >>> my_table.drop_column(column_names)
+        >>> my_table.drop_columns(column_names)
         """
-        statement = ddl.DropColumn(self._qualified_name, column_names)
+        statement = ddl.DropColumns(self._qualified_name, column_names)
         self._client._execute(statement, False)
 
 
