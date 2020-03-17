@@ -83,7 +83,9 @@ class DataType:
         )
 
     def __str__(self) -> str:
-        return self.name.lower()
+        return '{}{}'.format(
+            self.name.lower(), '[non-nullable]' if not self.nullable else ''
+        )
 
     @property
     def name(self) -> str:
