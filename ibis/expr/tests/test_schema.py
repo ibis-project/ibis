@@ -149,3 +149,20 @@ def test_empty_schema():
 ibis.Schema {
 }"""
     assert result == expected
+
+
+def test_nullable_output():
+    sch = ibis.schema(
+        [
+            ('foo', 'int64'),
+            ('bar', ibis.expr.datatypes.int64(nullable=False)),
+            ('baz', 'boolean*'),
+        ]
+    )
+
+    sch_str = str(sch)
+    assert 'foo  int64' in sch_str
+    assert 'foo  int64[non-nullable]' not in sch_str
+    assert 'bar  int64[non-nullable]' in sch_str
+    assert 'baz  boolean' in sch_str
+    assert 'baz  boolean[non-nullable]' not in sch_str

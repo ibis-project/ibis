@@ -2,7 +2,14 @@ import numpy as np
 import pytest
 from pytest import param
 
-from ibis.tests.backends import Clickhouse, MySQL, OmniSciDB, SQLite
+from ibis.tests.backends import (
+    Clickhouse,
+    MySQL,
+    OmniSciDB,
+    PostgreSQL,
+    PySpark,
+    SQLite,
+)
 
 
 @pytest.mark.parametrize(
@@ -156,3 +163,57 @@ def test_group_concat(backend, alltypes, df, result_fn, expected_fn):
     expected = expected_fn(df)
 
     assert set(result.iloc[:, 1]) == set(expected.iloc[:, 1])
+
+
+@pytest.mark.parametrize(
+    ('result_fn', 'expected_fn'),
+    [
+        param(
+            lambda t: t.string_col.topk(3),
+            lambda t: t.groupby('string_col')['string_col'].count().head(3),
+            id='string_col_top3',
+        )
+    ],
+)
+@pytest.mark.xfail_unsupported
+@pytest.mark.xfail_backends([PySpark])  # Issue #2130
+def test_topk_op(backend, alltypes, df, result_fn, expected_fn):
+    # TopK expression will order rows by "count" but each backend
+    # can have different result for that.
+    # Note: Maybe would be good if TopK could order by "count"
+    # and the field used by TopK
+    t = alltypes.sort_by(alltypes.string_col)
+    df = df.sort_values('string_col')
+    result = result_fn(t).execute()
+    expected = expected_fn(df)
+    assert all(result['count'].values == expected.values)
+
+
+@pytest.mark.parametrize(
+    ('result_fn', 'expected_fn'),
+    [
+        param(
+            lambda t: t[t.string_col.topk(3)],
+            lambda t: t[
+                t.string_col.isin(
+                    t.groupby('string_col')['string_col'].count().head(3).index
+                )
+            ],
+            id='string_col_filter_top3',
+        )
+    ],
+)
+@pytest.mark.xfail_unsupported
+# Issues #2133 #2132# #2133
+@pytest.mark.xfail_backends([Clickhouse, MySQL, PostgreSQL])
+@pytest.mark.skip_backends([SQLite], reason='Issue #2128')
+def test_topk_filter_op(backend, alltypes, df, result_fn, expected_fn):
+    # TopK expression will order rows by "count" but each backend
+    # can have different result for that.
+    # Note: Maybe would be good if TopK could order by "count"
+    # and the field used by TopK
+    t = alltypes.sort_by(alltypes.string_col)
+    df = df.sort_values('string_col')
+    result = result_fn(t).execute()
+    expected = expected_fn(df)
+    assert result.shape[0] == expected.shape[0]
