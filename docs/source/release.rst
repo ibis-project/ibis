@@ -8,8 +8,10 @@ Release Notes
    notes for pre-1.0 versions of ibis can be found at :doc:`/release-pre-1.0`
 
 * :feature:`2094` [OmnisciDB] Support add_columns and drop_columns for OmnisciDB table
+* :feature:`2126` Add translation rules for isnull() and notnull() for pyspark backend
 * :feature:`2062` Implement read_csv for omniscidb backend
 * :feature:`2060` Add initial support for ibis.random function
+* :feature:`2117` Add non-nullable info to schema output
 * :support:`2096` Added round() support for OmniSciDB
 * :feature:`2125` [OmniSciDB] Add support for within, d_fully_within and point
 * :support:`2113` Enabled cumulative ops support for OmniSciDB
