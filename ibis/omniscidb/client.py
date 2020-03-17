@@ -580,7 +580,7 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         self, select: ir.Expr, dst_cols: Optional[list] = None
     ):
         """
-        Copy data from one table and inserts it into another table.
+        Copy data from one table and insert it into another table.
 
         Parameters
         ----------
