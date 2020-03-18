@@ -2,14 +2,7 @@ import numpy as np
 import pytest
 from pytest import param
 
-from ibis.tests.backends import (
-    Clickhouse,
-    MySQL,
-    OmniSciDB,
-    PostgreSQL,
-    PySpark,
-    SQLite,
-)
+from ibis.tests.backends import Clickhouse, MySQL, PostgreSQL, PySpark, SQLite
 
 
 @pytest.mark.parametrize(
@@ -19,8 +12,6 @@ from ibis.tests.backends import (
             lambda t, where: t.bool_col.count(where=where),
             lambda t, where: len(t.bool_col[where].dropna()),
             id='count',
-            # OmniSciDB issue #375
-            marks=pytest.mark.skip_backends((OmniSciDB,)),
         ),
         param(
             lambda t, where: t.bool_col.any(),
