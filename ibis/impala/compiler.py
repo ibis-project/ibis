@@ -1165,6 +1165,9 @@ _operation_registry = {
     ops.Log10: unary('log10'),
     ops.DecimalPrecision: unary('precision'),
     ops.DecimalScale: unary('scale'),
+    ops.Sin: unary('sin'),
+    ops.Cos: unary('cos'),
+    ops.Tan: unary('tan'),
     # Unary aggregates
     ops.CMSMedian: _reduction('appx_median'),
     ops.HLLCardinality: _reduction('ndv'),
