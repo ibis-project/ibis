@@ -5,6 +5,7 @@ import mock
 import pandas as pd
 import pytest
 from pkg_resources import get_distribution, parse_version
+from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
@@ -146,7 +147,33 @@ def test_drop_columns(con, test_table, column_names):
     assert res_tbl.schema() == schema_with_dropped_cols
 
 
-def test_create_table_schema(con):
+@pytest.mark.parametrize(
+    'properties',
+    [
+        param(dict(), id='none',),
+        param(dict(fragment_size=10000000), id='frag_size'),
+        param(
+            dict(fragment_size=0),
+            id='frag_size0',
+            marks=pytest.mark.xfail(
+                raises=Exception,
+                reason="FRAGMENT_SIZE must be a positive number",
+            ),
+        ),
+        param(dict(max_rows=5), id='max_rows'),
+        param(
+            dict(max_rows=0),
+            id='max_rows0',
+            marks=pytest.mark.xfail(
+                raises=Exception, reason="MAX_ROWS must be a positive number",
+            ),
+        ),
+        param(
+            dict(fragment_size=10000000, max_rows=5), id='frag_size-max_rows'
+        ),
+    ],
+)
+def test_create_table_schema(con, properties):
     t_name = 'mytable'
 
     con.drop_table(t_name, force=True)
@@ -166,7 +193,7 @@ def test_create_table_schema(con):
         ]
     )
 
-    con.create_table(t_name, schema=schema)
+    con.create_table(t_name, schema=schema, **properties)
 
     try:
         t = con.table(t_name)

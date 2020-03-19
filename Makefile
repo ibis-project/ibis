@@ -8,7 +8,7 @@ MAKEFILE_DIR = $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 # and `./ci/docker-compose.yml`)
 # you can use `3.6` or `3.7` for now
 PYTHON_VERSION := 3.6
-PYTHONHASHSEED := "random"
+PYTHONHASHSEED := random
 
 # docker specific
 COMPOSE_FILE := "$(MAKEFILE_DIR)/ci/docker-compose.yml"

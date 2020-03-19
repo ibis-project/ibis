@@ -7,6 +7,7 @@ import ibis
 from ibis.common import exceptions as com
 from ibis.omniscidb import dtypes as omniscidb_dtypes
 from ibis.omniscidb.compiler import _type_to_sql_string, quote_identifier
+import ibis.expr.schema as sch
 from ibis.sql.compiler import DDL, DML
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
@@ -131,21 +132,29 @@ class CreateTable(CreateDDL):
 class CreateTableWithSchema(CreateTable):
     """Create Table With Schema class."""
 
-    def __init__(self, table_name, schema, database=None, max_rows=None):
+    def __init__(
+        self,
+        table_name: str,
+        schema: sch.Schema,
+        database: Optional[str] = None,
+        max_rows: Optional[int] = None,
+        fragment_size: Optional[int] = None,
+    ):
         self.table_name = table_name
         self.database = database
         self.schema = schema
         self.max_rows = max_rows
+        self.fragment_size = fragment_size
 
     @property
-    def with_params(self):
+    def with_params(self) -> Dict[str, Any]:
         """Return the parameters for `with` clause.
 
         Returns
         -------
-        string
+        Dict[str, Any]
         """
-        return dict(max_rows=self.max_rows)
+        return dict(max_rows=self.max_rows, fragment_size=self.fragment_size)
 
     @property
     def _pieces(self):
