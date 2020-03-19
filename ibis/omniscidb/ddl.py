@@ -4,10 +4,10 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
 import ibis
+import ibis.expr.schema as sch
 from ibis.common import exceptions as com
 from ibis.omniscidb import dtypes as omniscidb_dtypes
 from ibis.omniscidb.compiler import _type_to_sql_string, quote_identifier
-import ibis.expr.schema as sch
 from ibis.sql.compiler import DDL, DML
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
