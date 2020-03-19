@@ -1,3 +1,5 @@
+from typing import List
+
 import pandas as pd
 import pytest
 from pytest import param
@@ -5,6 +7,8 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
+from ibis.expr import types as ir
+from ibis.expr import window as ww
 from ibis.tests.backends import (
     Csv,
     Impala,
@@ -66,12 +70,6 @@ def calc_zscore(s):
                 [Csv, Pandas, Parquet, PySpark, OmniSciDB],
                 raises=AssertionError,
             ),
-        ),
-        param(
-            lambda t, win: t.float_col.ntile(buckets=7).over(win),
-            lambda t: t,
-            id='ntile',
-            marks=pytest.mark.xfail,
         ),
         param(
             lambda t, win: t.float_col.first().over(win),
@@ -224,6 +222,69 @@ def test_grouped_bounded_expanding_window(
     left, right = result.val, expected.val
 
     backend.assert_series_equal(left, right)
+
+
+@pytest.mark.parametrize(
+    'table_name,column_name,group_by,order_by,buckets',
+    [('functional_alltypes', 'string_col', ['string_col'], ['id'], 7)],
+)
+# Note: PostgreSQL strategy was used as references.
+#       See also: https://www.postgresqltutorial.com/postgresql-ntile-function
+# Not: OmniSciDB, Imapala NTile strategy are different than the PostgreSQL one
+@pytest.mark.xfail_backends([OmniSciDB, Impala])
+@pytest.mark.xfail_unsupported
+def test_ntile(
+    con,
+    backend,
+    pandas_testing_client,
+    table_name: str,
+    column_name: str,
+    group_by: List[str],
+    order_by: List[str],
+    buckets: int,
+):
+    if not backend.supports_window_operations:
+        pytest.skip(
+            'Backend {} does not support window operations'.format(backend)
+        )
+
+    def result_fn(
+        t: ir.TableExpr, column_name: str, buckets: int, win: ww.Window,
+    ):
+        return t[column_name].ntile(buckets=buckets).over(win)
+
+    def prepare_expr(
+        t: ir.TableExpr,
+        column_name: str,
+        buckets: int,
+        group_by: List[str],
+        order_by: List[str],
+    ):
+        return t.mutate(
+            val=result_fn(
+                t,
+                column_name,
+                buckets,
+                win=ibis.window(
+                    following=0, group_by=group_by, order_by=order_by,
+                ),
+            )
+        )
+
+    # table from current backend
+    t_bk = con.table(table_name)
+    # table from pandas testing client
+    t_pd = pandas_testing_client.table(table_name)
+
+    expr_pd = prepare_expr(t_pd, column_name, buckets, group_by, order_by)
+    expr_bk = prepare_expr(t_bk, column_name, buckets, group_by, order_by)
+
+    result_pd = expr_pd.execute().sort_values(order_by).reset_index(drop=True)
+    result_bk = expr_bk.execute().sort_values(order_by).reset_index(drop=True)
+
+    pd.testing.assert_series_equal(
+        result_pd.val.astype('int64'), result_bk.val.astype('int64')
+    )
 
 
 @pytest.mark.parametrize(

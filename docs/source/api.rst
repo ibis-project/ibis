@@ -165,6 +165,7 @@ Column methods
    ColumnExpr.lead
    ColumnExpr.cummin
    ColumnExpr.cummax
+   ColumnExpr.ntile
 
 General numeric methods
 -----------------------

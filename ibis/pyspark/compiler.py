@@ -1174,7 +1174,7 @@ def compile_percent_rank(t, expr, scope, timecontext, **kwargs):
 def compile_ntile(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
     buckets = op.buckets.op().value
-    return F.ntile(buckets)
+    return F.ntile(buckets) - 1
 
 
 @compiles(ops.FirstValue)

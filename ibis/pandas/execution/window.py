@@ -514,3 +514,56 @@ def execute_series_dense_rank(op, data, **kwargs):
 def execute_series_percent_rank(op, data, **kwargs):
     # TODO(phillipc): Handle ORDER BY
     return data.rank(method='min', ascending=True, pct=True)
+
+
+# internal ntile function
+def _ntile(x: pd.Series, bucket: int):
+    """
+    NTILE divides given data set into a number of buckets.
+
+    It divides an ordered and grouped data set into a number of buckets
+    and assigns the appropriate bucket number to each row.
+
+    Return an integer ranging from 0 to `bucket - 1`, dividing the
+    partition as equally as possible.
+
+    Adapted from:
+    https://gist.github.com/xmnlab/2c1f93df1a6c6bde4e32c8579117e9cc
+
+    Parameters
+    ----------
+    x : pandas.core.groupby.generic.SeriesGroupBy ||
+        pandas.Series
+    bucket: int
+
+    Returns
+    -------
+    pandas.Series
+    """
+    n = x.shape[0]
+    sub_n = n // bucket
+    diff = n - (sub_n * bucket)
+
+    result = []
+    for i in range(bucket):
+        sub_result = [i] * (sub_n + (1 if diff else 0))
+        result.extend(sub_result)
+        if diff > 0:
+            diff -= 1
+    return pd.Series(result, index=x.index)
+
+
+@execute_node.register(ops.NTile, pd.Series, int)
+def execute_series_ntile(op, data, bucket: int, **kwargs):
+    # TODO(phillipc): Handle ORDER BY
+    # Note: pandas doesn't have a NTile operation
+    result = pd.concat([_ntile(data, bucket)])
+    return result
+
+
+@execute_node.register(ops.NTile, SeriesGroupBy, int)
+def execute_series_group_br_ntile(op, data, bucket: int, **kwargs):
+    # TODO(phillipc): Handle ORDER BY
+    # Note: pandas doesn't have a NTile operation
+    result = pd.concat([_ntile(group, bucket) for name, group in data])
+    return result

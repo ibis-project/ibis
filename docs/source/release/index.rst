@@ -66,6 +66,7 @@ Release Notes
 * :feature:`2083` fillna and nullif implementations for OmnisciDB
 * :feature:`1981` Add load_data to sqlalchemy's backends and fix database parameter for load/create/drop when database parameter is the same than the current database
 * :support:`2096` Added round() support for OmniSciDB
+* :feature:`2146` Add Pandas and OmniSciDB NTile operation support and fix PySpark NTile operation
 * :feature:`2125` [OmniSciDB] Add support for within, d_fully_within and point
 * :feature:`2086` OmniSciDB - Refactor DDL and Client; Add temporary parameter to create_table and "force" parameter to drop_view
 * :support:`2113` Enabled cumulative ops support for OmniSciDB

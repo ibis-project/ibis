@@ -1,4 +1,5 @@
 from operator import methodcaller
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -131,6 +132,43 @@ def custom_window():
         following=0,
         group_by='dup_ints',
         order_by='plain_int64',
+    )
+
+
+@pytest.fixture
+def con_salary():
+    """Provide connection to df_salary1 and df_salary2."""
+    df_salary1 = pd.DataFrame(
+        {
+            'last_name': [
+                'Greenberg',
+                'Faviet',
+                'Chen',
+                'Urman',
+                'Sciarra',
+                'Popp',
+            ],
+            'salary': [12000, 9000, 8200, 7800, 7700, 6900],
+        }
+    )
+
+    df_salary2 = pd.DataFrame(
+        [
+            {'year': 2018, 'name': 'Jack Daniel', 'amount': 150000.0},
+            {'year': 2018, 'name': 'Jane Johnson', 'amount': 110000.0},
+            {'year': 2018, 'name': 'John Doe', 'amount': 120000.0},
+            {'year': 2018, 'name': 'Stephane Heady', 'amount': 200000.0},
+            {'year': 2018, 'name': 'Yin Yang', 'amount': 30000.0},
+            {'year': 2019, 'name': 'Jack Daniel', 'amount': 180000.0},
+            {'year': 2019, 'name': 'Jane Johnson', 'amount': 130000.0},
+            {'year': 2019, 'name': 'John Doe', 'amount': 150000.0},
+            {'year': 2019, 'name': 'Stephane Heady', 'amount': 270000.0},
+            {'year': 2019, 'name': 'Yin Yang', 'amount': 25000.0},
+        ]
+    )
+
+    return ibis.pandas.connect(
+        {'salary_1': df_salary1, 'salary_2': df_salary2}
     )
 
 
@@ -772,3 +810,43 @@ def test_rolling_window_udf_nan_and_non_numeric(t, group_by, order_by):
     tm.assert_series_equal(result_nan, expected, check_names=False)
     tm.assert_series_equal(result_non_numeric, expected, check_names=False)
     tm.assert_series_equal(result_nan_non_numeric, expected, check_names=False)
+
+
+@pytest.mark.parametrize(
+    'table_name,column,order_by,group_by,bucket,expected',
+    [
+        (
+            'salary_1',
+            'salary',
+            ['salary'],
+            None,
+            4,
+            pd.Series([0, 0, 1, 1, 2, 3]),
+        ),
+        (
+            'salary_2',
+            'amount',
+            ['year', 'amount'],
+            ['year'],
+            3,
+            pd.Series([0, 0, 1, 1, 2, 0, 0, 1, 1, 2]),
+        ),
+    ],
+)
+def test_ntile(
+    con_salary,
+    table_name: str,
+    column: str,
+    order_by: List[str],
+    group_by: List[str],
+    bucket: int,
+    expected: List[int],
+):
+    """Test ntile operation."""
+    t = con_salary.table(table_name)
+
+    win = ibis.window(following=0, group_by=group_by, order_by=order_by)
+    expr = t.mutate(val=t[column].ntile(buckets=bucket).over(win))
+    result = expr.execute().sort_values(order_by).reset_index()
+    expected.name = 'val'
+    tm.assert_series_equal(result.val, expected)

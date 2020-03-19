@@ -8,7 +8,7 @@ import pytest
 import ibis
 import ibis.common.exceptions as com
 import ibis.util as util
-from ibis.tests.backends import Backend
+from ibis.tests.backends import Backend, Pandas
 
 
 def _random_identifier(suffix):
@@ -213,6 +213,11 @@ def geo_df(geo):
     if geo is not None:
         return geo.execute(limit=None)
     return None
+
+
+@pytest.fixture
+def pandas_testing_client(data_directory):
+    return Pandas.connect(data_directory)
 
 
 _spark_testing_client = None
