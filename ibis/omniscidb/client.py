@@ -551,7 +551,7 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         >>> encodings = ['', 'DICT', '', '']
         >>> my_table.add_columns(cols_with_types,
         ... nullables=nullables, defaults=defaults,
-        ... encodings=encodings)
+        ... encodings=encodings)  # doctest: +SKIP
         """
         statement = ddl.AddColumns(
             self._qualified_name,
@@ -576,7 +576,7 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         >>> table_name = 'my_table'
         >>> my_table = con.table(table_name)  # doctest: +SKIP
         >>> column_names = ['col1', 'col2']
-        >>> my_table.drop_columns(column_names)
+        >>> my_table.drop_columns(column_names)  # doctest: +SKIP
         """
         statement = ddl.DropColumns(self._qualified_name, column_names)
         self._client._execute(statement, False)
