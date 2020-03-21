@@ -10,7 +10,6 @@ from pymapd._parsers import _extract_column_details
 from pymapd.cursor import Cursor
 from pymapd.dtypes import TDatumType as pymapd_dtype
 
-import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
