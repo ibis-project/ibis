@@ -152,27 +152,6 @@ def temp_table(con) -> str:
         con.drop_table(name)
 
 
-@pytest.fixture
-def temp_view(con) -> str:
-    """Return a temporary view name.
-
-    Parameters
-    ----------
-    con : ibis.omniscidb.OmniSciDBClient
-
-    Yields
-    ------
-    name : string
-        Random view name for a temporary usage.
-    """
-    name = _random_identifier('view')
-    try:
-        yield name
-    finally:
-        assert con.exists_table(name), name
-        con.drop_view(name)
-
-
 @pytest.fixture(scope='session')
 def test_data_db() -> str:
     """Return the database name."""

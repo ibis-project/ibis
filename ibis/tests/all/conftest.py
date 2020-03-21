@@ -391,4 +391,26 @@ def temp_table(con: ibis.client.Client) -> str:
     try:
         yield name
     finally:
-        con.drop_table(name)
+        if hasattr(con, 'drop_table'):
+            con.drop_table(name, force=True)
+
+
+@pytest.fixture
+def temp_view(con) -> str:
+    """Return a temporary view name.
+
+    Parameters
+    ----------
+    con : ibis.omniscidb.OmniSciDBClient
+
+    Yields
+    ------
+    name : string
+        Random view name for a temporary usage.
+    """
+    name = _random_identifier('view')
+    try:
+        yield name
+    finally:
+        if hasattr(con, 'drop_view'):
+            con.drop_view(name, force=True)
