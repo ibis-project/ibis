@@ -445,7 +445,7 @@ class DropColumns(AlterTable):
 
     def _pieces(self):
         sep = ''
-        yield '{}'.format(self.table)
+        yield '{}'.format(self.table_name)
         for col in self.column_names:
             yield '{} DROP {}'.format(sep, col)
             sep = ','
