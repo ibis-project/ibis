@@ -3,7 +3,12 @@ from pkg_resources import parse_version
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.tests.backends import BigQuery
+from ibis.tests.backends import BigQuery, Impala, PySpark, Spark
+
+
+@pytest.fixture
+def new_schema():
+    return ibis.schema([('a', 'string'), ('b', 'bool'), ('c', 'int32')])
 
 
 @pytest.mark.xfail_unsupported
@@ -66,3 +71,89 @@ def test_sql(backend, con, sql):
 
     # execute the expression using SQL query
     con.sql(sql).execute()
+
+
+# test table
+
+
+@pytest.mark.xfail_unsupported
+def test_create_table_from_schema(con, backend, new_schema, temp_table):
+    if not hasattr(con, 'create_table') or not hasattr(con, 'drop_table'):
+        pytest.xfail(
+            '{} backend doesn\'t have create_table or drop_table methods.'
+        )
+
+    con.create_table(temp_table, schema=new_schema)
+
+    t = con.table(temp_table)
+
+    for k, i_type in t.schema().items():
+        assert new_schema[k] == i_type
+
+
+@pytest.mark.xfail_unsupported
+def test_rename_table(con, backend, temp_table, new_schema):
+    if not hasattr(con, 'rename_table'):
+        pytest.xfail('{} backend doesn\'t have rename_table method.')
+
+    temp_table_original = '{}_original'.format(temp_table)
+    con.create_table(temp_table_original, schema=new_schema)
+
+    t = con.table(temp_table_original)
+    t.rename(temp_table)
+
+    assert con.table(temp_table) is not None
+    assert temp_table in con.list_tables()
+
+
+@pytest.mark.xfail_unsupported
+@pytest.mark.xfail_backends([Impala, PySpark, Spark])
+def test_nullable_input_output(con, backend, temp_table):
+    # - Impala, PySpark and Spark non-nullable issues #2138 and #2137
+    if not hasattr(con, 'create_table') or not hasattr(con, 'drop_table'):
+        pytest.xfail(
+            '{} backend doesn\'t have create_table or drop_table methods.'
+        )
+
+    sch = ibis.schema(
+        [
+            ('foo', 'int64'),
+            ('bar', ibis.expr.datatypes.int64(nullable=False)),
+            ('baz', 'boolean*'),
+        ]
+    )
+
+    con.create_table(temp_table, schema=sch)
+
+    t = con.table(temp_table)
+
+    assert t.schema().types[0].nullable
+    assert not t.schema().types[1].nullable
+    assert t.schema().types[2].nullable
+
+
+# view tests
+
+
+@pytest.mark.xfail_unsupported
+@pytest.mark.xfail_backends([PySpark, Spark])
+def test_create_drop_view(con, backend, temp_view):
+    # pyspark and spark skipt because table actually is a temporary view
+    if not hasattr(con, 'create_view') or not hasattr(con, 'drop_view'):
+        pytest.xfail(
+            '{} backend doesn\'t have create_view or drop_view methods.'
+        )
+
+    # setup
+    table_name = 'functional_alltypes'
+    expr = con.table(table_name).limit(1)
+
+    # create a new view
+    con.create_view(temp_view, expr)
+    # check if the view was created
+    assert temp_view in con.list_tables()
+
+    t_expr = con.table(table_name)
+    v_expr = con.table(temp_view)
+    # check if the view and the table has the same fields
+    assert set(t_expr.schema().names) == set(v_expr.schema().names)

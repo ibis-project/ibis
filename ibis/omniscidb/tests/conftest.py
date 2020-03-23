@@ -142,6 +142,7 @@ def temp_table(con) -> str:
     Yields
     ------
     name : string
+        Random table name for a temporary usage.
     """
     name = _random_identifier('table')
     try:
