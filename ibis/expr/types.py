@@ -1036,8 +1036,9 @@ class DayOfWeek(Expr):
         Returns
         -------
         IntegerValue
-            The index of the day of the week. Ibis follows pandas conventions,
-            where **Monday = 0 and Sunday = 6**.
+            Use pandas conventions (``ISO 8601`` starting on zero),
+            where week starts on Sunday (0) and ends on
+            Saturday (6).
         """
         import ibis.expr.operations as ops
 

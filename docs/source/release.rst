@@ -17,6 +17,7 @@ Release Notes
 * :support:`2107` Added fragment_size to table creation for OmniSciDB
 * :feature:`2117` Add non-nullable info to schema output
 * :support:`2096` Added round() support for OmniSciDB
+* :feature:`2149` Add ExtractDayOfYear, ExtractWeekOfYear, ExtractQuarter and ExtractMicrosecond and add support for more extraction date and datetime to PostgreSQL and OmniSciDB
 * :feature:`2125` [OmniSciDB] Add support for within, d_fully_within and point
 * :feature:`2086` OmniSciDB - Refactor DDL and Client; Add temporary parameter to create_table and "force" parameter to drop_view
 * :support:`2113` Enabled cumulative ops support for OmniSciDB

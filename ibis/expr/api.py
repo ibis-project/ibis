@@ -3356,10 +3356,15 @@ _timestamp_value_methods = dict(
     year=_extract_field('year', ops.ExtractYear),
     month=_extract_field('month', ops.ExtractMonth),
     day=_extract_field('day', ops.ExtractDay),
+    day_of_week=_day_of_week,
+    day_of_year=_extract_field('day_of_year', ops.ExtractDayOfYear),
+    quarter=_extract_field('quarter', ops.ExtractQuarter),
+    week_of_year=_extract_field('week_of_year', ops.ExtractWeekOfYear),
     hour=_extract_field('hour', ops.ExtractHour),
     minute=_extract_field('minute', ops.ExtractMinute),
     second=_extract_field('second', ops.ExtractSecond),
     millisecond=_extract_field('millisecond', ops.ExtractMillisecond),
+    microsecond=_extract_field('microsecond', ops.ExtractMicrosecond),
     truncate=_timestamp_truncate,
     time=_timestamp_time,
     date=_timestamp_date,
@@ -3371,7 +3376,6 @@ _timestamp_value_methods = dict(
     radd=_timestamp_radd,
     __rsub__=_timestamp_sub,
     rsub=_timestamp_sub,
-    day_of_week=_day_of_week,
 )
 
 _add_methods(ir.TimestampValue, _timestamp_value_methods)
@@ -3421,6 +3425,9 @@ _date_value_methods = dict(
     month=_extract_field('month', ops.ExtractMonth),
     day=_extract_field('day', ops.ExtractDay),
     day_of_week=_day_of_week,
+    day_of_year=_extract_field('day_of_year', ops.ExtractDayOfYear),
+    quarter=_extract_field('quarter', ops.ExtractQuarter),
+    week_of_year=_extract_field('week_of_year', ops.ExtractWeekOfYear),
     truncate=_date_truncate,
     __sub__=_date_sub,
     sub=_date_sub,

@@ -17,6 +17,7 @@ sql_to_ibis_dtypes = {
     'POLYGON': dt.polygon,
     'SMALLINT': dt.int16,
     'STR': dt.string,
+    'TEXT': dt.string,
     'TIME': dt.time,
     'TIMESTAMP': dt.timestamp,
     'TINYINT': dt.int8,
@@ -67,5 +68,5 @@ ibis_dtypes_str_to_sql = {
     'polygon': 'polygon',
     'string': 'text',
     'time': 'time',
-    'timestamp': 'timestamp',
+    'timestamp': 'timestamp(9)',
 }

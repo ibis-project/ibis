@@ -23,11 +23,15 @@ from ibis.tests.backends import (
 )
 
 
-@pytest.mark.parametrize('attr', ['year', 'month', 'day'])
+@pytest.mark.parametrize(
+    'attr', ['year', 'month', 'day', 'day_of_year', 'week_of_year', 'quarter']
+)
 @pytest.mark.xfail_unsupported
 def test_date_extract(backend, alltypes, df, attr):
     expr = getattr(alltypes.timestamp_col.date(), attr)()
-    expected = getattr(df.timestamp_col.dt, attr).astype('int32')
+    expected = getattr(df.timestamp_col.dt, attr.replace('_', '')).astype(
+        'int32'
+    )
 
     result = expr.execute()
     expected = backend.default_series_rename(expected)
@@ -36,12 +40,25 @@ def test_date_extract(backend, alltypes, df, attr):
 
 
 @pytest.mark.parametrize(
-    'attr', ['year', 'month', 'day', 'hour', 'minute', 'second']
+    'attr',
+    [
+        'year',
+        'month',
+        'day',
+        'hour',
+        'minute',
+        'second',
+        'millisecond',
+        'microsecond',
+    ],
 )
 @pytest.mark.xfail_unsupported
 def test_timestamp_extract(backend, alltypes, df, attr):
     expr = getattr(alltypes.timestamp_col, attr)()
-    expected = getattr(df.timestamp_col.dt, attr).astype('int32')
+    if attr == 'millisecond':
+        expected = (df.timestamp_col.dt.microsecond // 1000).astype('int32')
+    else:
+        expected = getattr(df.timestamp_col.dt, attr).astype('int32')
 
     result = expr.execute()
     expected = backend.default_series_rename(expected)

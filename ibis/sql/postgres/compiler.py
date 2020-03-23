@@ -67,11 +67,11 @@ def _string_find(t, expr):
     return sa.func.strpos(sa_arg, sa_substr) - 1
 
 
-def _extract(fmt):
-    def translator(t, expr):
+def _extract(fmt, output_format=sa.SMALLINT):
+    def translator(t, expr, output_format=output_format):
         (arg,) = expr.op().args
         sa_arg = t.translate(arg)
-        return sa.cast(sa.extract(fmt, sa_arg), sa.SMALLINT)
+        return sa.cast(sa.extract(fmt, sa_arg), output_format)
 
     return translator
 
@@ -87,7 +87,20 @@ def _millisecond(t, expr):
     # we get total number of milliseconds including seconds with extract so we
     # mod 1000
     (sa_arg,) = map(t.translate, expr.op().args)
-    return sa.cast(sa.extract('millisecond', sa_arg), sa.SMALLINT) % 1000
+    return (
+        sa.cast(sa.func.floor(sa.extract('millisecond', sa_arg)), sa.SMALLINT)
+        % 1000
+    )
+
+
+def _microsecond(t, expr):
+    # we get total number of microsecond including seconds with extract so we
+    # mod 1000
+    (sa_arg,) = map(t.translate, expr.op().args)
+    return (
+        sa.cast(sa.func.floor(sa.extract('microsecond', sa_arg)), sa.INT)
+        % 1000000
+    )
 
 
 _truncate_precisions = {
@@ -612,14 +625,16 @@ def _random(t, expr):
 
 
 def _day_of_week_index(t, expr):
-    (sa_arg,) = map(t.translate, expr.op().args)
+    # arg[-1] is "how" parameter
+    sa_arg = t.translate(expr.op().args[0])
     return sa.cast(
         sa.cast(sa.extract('dow', sa_arg) + 6, sa.SMALLINT) % 7, sa.SMALLINT
     )
 
 
 def _day_of_week_name(t, expr):
-    (sa_arg,) = map(t.translate, expr.op().args)
+    # arg[-1] is "how" parameter
+    sa_arg = t.translate(expr.op().args[0])
     return sa.func.trim(sa.func.to_char(sa_arg, 'Day'))
 
 
@@ -674,10 +689,14 @@ _operation_registry.update(
         ops.ExtractYear: _extract('year'),
         ops.ExtractMonth: _extract('month'),
         ops.ExtractDay: _extract('day'),
+        ops.ExtractDayOfYear: _extract('doy'),
+        ops.ExtractQuarter: _extract('quarter'),
+        ops.ExtractWeekOfYear: _extract('week'),
         ops.ExtractHour: _extract('hour'),
         ops.ExtractMinute: _extract('minute'),
         ops.ExtractSecond: _second,
         ops.ExtractMillisecond: _millisecond,
+        ops.ExtractMicrosecond: _microsecond,
         ops.DayOfWeekIndex: _day_of_week_index,
         ops.DayOfWeekName: _day_of_week_name,
         ops.Sum: _reduction('sum'),

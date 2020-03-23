@@ -2,7 +2,7 @@
 import warnings
 from datetime import date, datetime
 from io import StringIO
-from typing import Callable
+from typing import Callable, Union
 
 import ibis
 import ibis.common.exceptions as com
@@ -265,10 +265,137 @@ def _call(translator, func, *args):
 
 
 def _extract_field(sql_attr):
-    def extract_field_formatter(translator, expr):
+    def extract_field_formatter(translator, expr, sql_attr=sql_attr):
+        adjustments = {
+            'MILLISECOND': 1000,
+            'MICROSECOND': 1000000,
+        }
+        adjustment = adjustments.get(sql_attr, None)
+
         op = expr.op()
-        arg = translator.translate(op.args[0])
-        return 'EXTRACT({} FROM {})'.format(sql_attr, arg)
+        arg = op.args[0]
+        modify = ''
+        if sql_attr == 'DOW':
+            sql_attr = 'ISODOW'
+            modify = ' - 1'
+
+        arg_str = translator.translate(arg)
+        result = 'EXTRACT({} FROM {}){}'.format(sql_attr, arg_str, modify)
+
+        if adjustment:
+            # used by time extraction
+            result = ' mod({}, {})'.format(result, adjustment)
+
+        return result
+
+    return extract_field_formatter
+
+
+def _n_weeks_year(year: ir.NumericValue):
+    """
+    Return the number of the total of weeks for the given year.
+
+    Parameters
+    ----------
+    year : ibis.expr.types.NumericValue
+
+    Returns
+    -------
+    Ibis.expr.types.Expr
+
+    See also
+    --------
+    https://en.wikipedia.org/wiki/ISO_week_date
+    """
+
+    def _p(year):
+        return (year + (year // 4) - (year // 100) + (year // 400)) % 7
+
+    return 52 + (
+        ibis.case()
+        .when((_p(year) == 4) | (_p(year - 1) == 3), 1)
+        .else_(0)
+        .end()
+    )
+
+
+def _woy_preliminary(d: Union[ir.DateValue, ir.TimestampValue]) -> ir.Expr:
+    """
+    Return a preliminary week of year (WOY).
+
+    Parameters
+    ----------
+    d : ibis.expr.types.DateValue or ibis.expr.types.TimestampValue
+
+    Returns
+    -------
+    ir.Expr
+
+    See also
+    --------
+    https://en.wikipedia.org/wiki/ISO_week_date
+
+    """
+    doy = d.day_of_year()
+    dow = d.day_of_week.index() + 1
+
+    result = doy - dow
+    result += 10
+    return (result // 7).cast('int16')
+
+
+def _extract_woy(translator, expr) -> str:
+    def _extract_woy_expr(
+        d: Union[ir.DateValue, ir.TimestampValue]
+    ) -> ir.Expr:
+        """
+        Extract the week of the year expression for a given date/datetime.
+
+        Parameters
+        ----------
+        d : ibis.expr.types.DateValue or ibis.expr.typesTimestampValue]
+
+        Returns
+        -------
+        ir.Expr
+        """
+        w = _woy_preliminary(d)
+        y = d.year()
+
+        one = ibis.literal(1, type='int16')
+
+        return (
+            ibis.case()
+            .when(w < one, _n_weeks_year(y - one))
+            .when(w > _n_weeks_year(y), one)
+            .else_(w)
+            .end()
+        )
+
+    op = expr.op()
+    return translator.translate(_extract_woy_expr(op.args[0]))
+
+
+def _extract_field_dow_name(sql_attr):
+    def extract_field_formatter(translator, expr, sql_attr=sql_attr):
+        op = expr.op()
+        week_names = [
+            'Monday',
+            'Tuesday',
+            'Wednesday',
+            'Thursday',
+            'Friday',
+            'Saturday',
+            'Sunday',
+        ]
+
+        expr_new = ops.DayOfWeekIndex(op.args[0]).to_expr()
+        expr_new = expr_new.case()
+        for i in range(7):
+            expr_new = expr_new.when(i, week_names[i])
+        expr_new = expr_new.else_('').end()
+
+        return translator.translate(expr_new)
 
     return extract_field_formatter
 
@@ -977,9 +1104,16 @@ _date_ops = {
     ops.ExtractYear: _extract_field('YEAR'),
     ops.ExtractMonth: _extract_field('MONTH'),
     ops.ExtractDay: _extract_field('DAY'),
+    ops.DayOfWeekIndex: _extract_field('DOW'),
+    ops.DayOfWeekName: _extract_field_dow_name('DOW'),
+    ops.ExtractDayOfYear: _extract_field('DOY'),
+    ops.ExtractQuarter: _extract_field('QUARTER'),
+    ops.ExtractWeekOfYear: _extract_woy,
     ops.ExtractHour: _extract_field('HOUR'),
     ops.ExtractMinute: _extract_field('MINUTE'),
     ops.ExtractSecond: _extract_field('SECOND'),
+    ops.ExtractMillisecond: _extract_field('MILLISECOND'),
+    ops.ExtractMicrosecond: _extract_field('MICROSECOND'),
     ops.IntervalAdd: _interval_from_integer,
     ops.IntervalFromInteger: _interval_from_integer,
     ops.DateAdd: _timestamp_op('TIMESTAMPADD'),
@@ -1079,8 +1213,6 @@ _unsupported_ops = [
     # date/time/timestamp
     ops.TimestampFromUNIX,
     ops.TimeTruncate,
-    ops.DayOfWeekIndex,
-    ops.DayOfWeekName,
     # table
     ops.Union,
 ]
