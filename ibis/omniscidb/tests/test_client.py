@@ -173,11 +173,7 @@ def test_drop_columns(con, test_table, column_names):
         ),
     ],
 )
-def test_create_table_schema(con, properties):
-    t_name = 'mytable'
-
-    con.drop_table(t_name, force=True)
-
+def test_create_table_schema(con, temp_table, properties):
     schema = ibis.schema(
         [
             ('a', 'float'),
@@ -193,15 +189,12 @@ def test_create_table_schema(con, properties):
         ]
     )
 
-    con.create_table(t_name, schema=schema, **properties)
+    con.create_table(temp_table, schema=schema, **properties)
 
-    try:
-        t = con.table(t_name)
+    t = con.table(temp_table)
 
-        for k, i_type in t.schema().items():
-            assert schema[k] == i_type
-    finally:
-        con.drop_table(t_name)
+    for k, i_type in t.schema().items():
+        assert schema[k] == i_type
 
 
 @pytest.mark.parametrize(

@@ -1,4 +1,4 @@
-"""OmniSciDB data types and SQL data types compatibility."""
+"""OmniSciDB data types and SQL dtypes compatibility."""
 import ibis.expr.datatypes as dt
 
 sql_to_ibis_dtypes = {
@@ -23,7 +23,7 @@ sql_to_ibis_dtypes = {
 }
 
 
-sql_to_ibis_str_dtypes = {
+sql_to_ibis_dtypes_str = {
     'BIGINT': 'int64',
     'BOOLEAN': 'Boolean',
     'BOOL': 'Boolean',
@@ -50,7 +50,7 @@ sql_to_ibis_str_dtypes = {
 }
 
 
-ibis_str_dtypes_to_sql = {
+ibis_dtypes_str_to_sql = {
     'boolean': 'boolean',
     'date': 'date',
     'decimal': 'decimal',
