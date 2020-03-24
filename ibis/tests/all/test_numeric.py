@@ -10,7 +10,7 @@ from pytest import param
 import ibis
 from ibis import literal as L
 from ibis.expr import datatypes as dt
-from ibis.tests.backends import MySQL, OmniSciDB, PostgreSQL
+from ibis.tests.backends import MySQL, PostgreSQL
 from ibis.tests.util import assert_equal
 
 try:
@@ -118,7 +118,6 @@ def test_isnan_isinf(
         param(L(11) % 3, 11 % 3, id='mod'),
     ],
 )
-@pytest.mark.skip_backends([OmniSciDB])
 @pytest.mark.xfail_unsupported
 def test_math_functions_literals(backend, con, alltypes, df, expr, expected):
     result = con.execute(expr)

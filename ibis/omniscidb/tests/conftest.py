@@ -164,6 +164,7 @@ def temp_table(con) -> str:
     Yields
     ------
     name : string
+        Random table name for a temporary usage.
     """
     name = _random_identifier('table')
     try:
@@ -188,7 +189,7 @@ def temp_database(con, test_data_db: str) -> str:
     con : ibis.omniscidb.OmniSciDBClient
     test_data_db : str
 
-    Returns
+    Yields
     -------
     str
     """

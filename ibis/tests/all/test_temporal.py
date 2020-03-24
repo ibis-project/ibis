@@ -14,7 +14,6 @@ from ibis.tests.backends import (
     Clickhouse,
     Csv,
     Impala,
-    OmniSciDB,
     Pandas,
     Parquet,
     PostgreSQL,
@@ -68,7 +67,6 @@ def test_timestamp_extract(backend, alltypes, df, attr):
     ],
 )
 @pytest.mark.xfail_unsupported
-@pytest.mark.skip_backends([OmniSciDB])
 def test_timestamp_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.truncate(unit)
 
@@ -124,7 +122,7 @@ def test_date_truncate(backend, alltypes, df, unit):
         param(
             'us',
             pd.Timedelta,
-            marks=pytest.mark.xfail_backends((Clickhouse, OmniSciDB, SQLite)),
+            marks=pytest.mark.xfail_backends((Clickhouse, SQLite)),
         ),
     ],
 )
@@ -414,7 +412,6 @@ def test_day_of_week_column_group_by(
 
 
 @pytest.mark.xfail_unsupported
-@pytest.mark.skip_backends([OmniSciDB])
 def test_now(backend, con):
     expr = ibis.now()
     result = con.execute(expr)
@@ -427,7 +424,6 @@ def test_now(backend, con):
 
 
 @pytest.mark.xfail_unsupported
-@pytest.mark.skip_backends([OmniSciDB])
 def test_now_from_projection(backend, con, alltypes, df):
     n = 5
     expr = alltypes[[ibis.now().name('ts')]].limit(n)

@@ -8,7 +8,6 @@ from ibis.tests.backends import (
     BigQuery,
     Clickhouse,
     MySQL,
-    OmniSciDB,
     PostgreSQL,
     PySpark,
     Spark,
@@ -53,7 +52,6 @@ def test_fillna_nullif(backend, con, expr, expected):
     ],
 )
 @pytest.mark.xfail_unsupported
-@pytest.mark.skip_backends((OmniSciDB,))  # OmniSciDB issue #375
 def test_coalesce(backend, con, expr, expected):
     result = con.execute(expr)
 

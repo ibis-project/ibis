@@ -5,6 +5,7 @@ import mock
 import pandas as pd
 import pytest
 from pkg_resources import get_distribution, parse_version
+from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
@@ -197,11 +198,74 @@ def test_insert_into_select(con, test_table):
         con.drop_table(aux_table_name)
 
 
-def test_create_table_schema(con):
-    t_name = 'mytable'
+def test_add_zero_columns(test_table):
+    cols_with_types = {}
+    with pytest.raises(com.IbisInputError):
+        test_table.add_columns(cols_with_types)
 
-    con.drop_table(t_name, force=True)
 
+@pytest.mark.parametrize(
+    'cols_with_types',
+    [{'e': 'float64'}, {'e': 'string', 'f': 'point', 'g': 'polygon'}],
+)
+def test_add_columns(con, test_table, cols_with_types):
+    schema_before = test_table.schema()
+
+    test_table.add_columns(cols_with_types)
+
+    res_tbl = con.table('test_table')
+
+    schema_new_cols = ibis.schema(cols_with_types.items())
+    old_schema_with_new_cols = schema_before.append(schema_new_cols)
+
+    assert res_tbl.schema() == old_schema_with_new_cols
+
+
+def test_drop_zero_columns(test_table):
+    column_names = []
+    with pytest.raises(com.IbisInputError):
+        test_table.drop_columns(column_names)
+
+
+@pytest.mark.parametrize('column_names', [['a'], ['a', 'b', 'c']])
+def test_drop_columns(con, test_table, column_names):
+    schema_before = test_table.schema()
+
+    test_table.drop_columns(column_names)
+
+    res_tbl = con.table('test_table')
+    schema_with_dropped_cols = schema_before.delete(column_names)
+
+    assert res_tbl.schema() == schema_with_dropped_cols
+
+
+@pytest.mark.parametrize(
+    'properties',
+    [
+        param(dict(), id='none',),
+        param(dict(fragment_size=10000000), id='frag_size'),
+        param(
+            dict(fragment_size=0),
+            id='frag_size0',
+            marks=pytest.mark.xfail(
+                raises=Exception,
+                reason="FRAGMENT_SIZE must be a positive number",
+            ),
+        ),
+        param(dict(max_rows=5), id='max_rows'),
+        param(
+            dict(max_rows=0),
+            id='max_rows0',
+            marks=pytest.mark.xfail(
+                raises=Exception, reason="MAX_ROWS must be a positive number",
+            ),
+        ),
+        param(
+            dict(fragment_size=10000000, max_rows=5), id='frag_size-max_rows'
+        ),
+    ],
+)
+def test_create_table_schema(con, temp_table, properties):
     schema = ibis.schema(
         [
             ('a', 'float'),
@@ -217,15 +281,12 @@ def test_create_table_schema(con):
         ]
     )
 
-    con.create_table(t_name, schema=schema)
+    con.create_table(temp_table, schema=schema, **properties)
 
-    try:
-        t = con.table(t_name)
+    t = con.table(temp_table)
 
-        for k, i_type in t.schema().items():
-            assert schema[k] == i_type
-    finally:
-        con.drop_table(t_name)
+    for k, i_type in t.schema().items():
+        assert schema[k] == i_type
 
 
 @pytest.mark.parametrize(
