@@ -98,19 +98,23 @@ def compile_selection(t, expr, scope, **kwargs):
     op = expr.op()
 
     src_table = t.translate(op.table, scope)
-    col_names_in_selection_order = []
 
+    col_in_selection_order = []
     for selection in op.selections:
         if isinstance(selection, types.TableExpr):
-            col_names_in_selection_order.extend(selection.columns)
+            col_in_selection_order.extend(selection.columns)
         elif isinstance(selection, (types.ColumnExpr, types.ScalarExpr)):
-            column_name = selection.get_name()
-            col_names_in_selection_order.append(column_name)
-            column = t.translate(selection, scope=scope)
-            src_table = src_table.withColumn(column_name, column)
+            col = t.translate(selection, scope=scope).alias(
+                selection.get_name()
+            )
+            col_in_selection_order.append(col)
+        else:
+            raise NotImplementedError(
+                f"Unrecoginized type in selections: {type(selection)}"
+            )
 
-    if col_names_in_selection_order:
-        src_table = src_table[col_names_in_selection_order]
+    if col_in_selection_order:
+        src_table = src_table[col_in_selection_order]
 
     for predicate in op.predicates:
         col = t.translate(predicate, scope)

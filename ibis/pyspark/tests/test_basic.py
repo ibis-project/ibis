@@ -205,3 +205,13 @@ def test_string_to_timestamp_tz_error(client):
         table.mutate(
             date=table.date_str.to_timestamp('yyyy-MM-dd', 'non-utc-timezone')
         ).compile()
+
+
+def test_alias_after_select(client):
+    # Regression test for issue 2136
+    table = client.table('basic_table')
+    table = table[['id']]
+    table = table.mutate(id2=table['id'])
+
+    result = table.compile().toPandas()
+    tm.assert_series_equal(result['id'], result['id2'], check_names=False)
