@@ -4,6 +4,8 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
 import ibis
+from ibis.common import exceptions as com
+from ibis.omniscidb import dtypes as omniscidb_dtypes
 from ibis.omniscidb.compiler import _type_to_sql_string, quote_identifier
 from ibis.sql.compiler import DDL, DML
 
@@ -18,6 +20,14 @@ def _is_quoted(x):
     regex = re.compile(r"(?:`(.*)`|(.*))")
     quoted, _ = regex.match(x).groups()
     return quoted is not None
+
+
+def _convert_default_value(value: Any) -> Any:
+    if isinstance(value, bool):
+        return "'t'" if value else "'f'"
+    if isinstance(value, (int, float)):
+        return value
+    return quote_identifier(value, force=True)
 
 
 def _bool2str(v: bool) -> str:
@@ -353,6 +363,103 @@ class AlterTable(OmniSciDBDDL):
 
     def _wrap_command(self, cmd):
         return 'ALTER TABLE {}'.format(cmd)
+
+
+class AddColumns(AlterTable):
+    """Add Columns class."""
+
+    def __init__(
+        self,
+        table_name: str,
+        cols_with_types: dict,
+        nullables: Optional[list] = None,
+        defaults: Optional[list] = None,
+        encodings: Optional[list] = None,
+    ):
+        if len(cols_with_types) == 0:
+            raise com.IbisInputError('No column requested to add.')
+        else:
+            self.col_count = len(cols_with_types)
+        self.table_name = table_name
+        self.cols_with_types = cols_with_types
+
+        if not nullables:
+            self.nullables = [True] * self.col_count
+        else:
+            self.nullables = nullables
+
+        if not defaults:
+            self.defaults = [None] * self.col_count
+        else:
+            self.defaults = defaults
+
+        if not encodings:
+            self.encodings = [None] * self.col_count
+        else:
+            self.encodings = encodings
+
+    def _pieces(self):
+        idx = 0
+        sep = ''
+        yield '{} ADD ('.format(self.table_name)
+        for col, d_type in self.cols_with_types.items():
+            yield '{}{} {}{}{}{}'.format(
+                sep,
+                col,
+                omniscidb_dtypes.ibis_dtypes_str_to_sql[d_type],
+                ' NOT NULL'
+                if not self.nullables[idx] and self.defaults[idx] is None
+                else '',
+                ' DEFAULT {}'.format(
+                    _convert_default_value(self.defaults[idx])
+                )
+                if self.defaults[idx] is not None
+                else '',
+                ' ENCODING {}'.format(self.encodings[idx])
+                if self.encodings[idx]
+                else '',
+            )
+            idx += 1
+            sep = ', '
+        yield ');'
+
+    def compile(self):
+        """Compile the Add Column expression.
+
+        Returns
+        -------
+        string
+        """
+        cmd = "".join(self._pieces())
+        return self._wrap_command(cmd)
+
+
+class DropColumns(AlterTable):
+    """Drop Columns class."""
+
+    def __init__(self, table_name: str, column_names: list):
+        if len(column_names) == 0:
+            raise com.IbisInputError('No column requested to drop.')
+        self.table_name = table_name
+        self.column_names = column_names
+
+    def _pieces(self):
+        sep = ''
+        yield '{}'.format(self.table_name)
+        for col in self.column_names:
+            yield '{} DROP {}'.format(sep, col)
+            sep = ','
+        yield ';'
+
+    def compile(self):
+        """Compile the Drop Column expression.
+
+        Returns
+        -------
+        string
+        """
+        cmd = "".join(self._pieces())
+        return self._wrap_command(cmd)
 
 
 class RenameTable(AlterTable):

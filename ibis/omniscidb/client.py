@@ -497,6 +497,72 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
             results.append(result)
         return results
 
+    def add_columns(
+        self,
+        cols_with_types: dict,
+        nullables: Optional[list] = None,
+        defaults: Optional[list] = None,
+        encodings: Optional[list] = None,
+    ):
+        """
+        Add a given column(s).
+
+        Parameters
+        ----------
+        cols_with_types : dict
+            Set dict of column(s) with type(s) to add into table,
+            where key is column name and value is column type
+        nullables : list, optional
+            Set list of boolean values for new columns
+            that could be nullable/not nullable, by default None (i.e
+            all the new columns added are nullables)
+        defaults : list, optional
+            Set list of default values for the new columns, by default None
+        encodings : list, optional
+            Set list of strings of encoding attributes
+            for the new columns, by default None
+
+        Examples
+        --------
+        >>> table_name = 'my_table'
+        >>> my_table = con.table(table_name)  # doctest: +SKIP
+        >>> cols_with_types = {'col1': 'int32', 'col2': 'string',
+        ... 'col3': 'float', 'col4': 'point'}
+        >>> nullables = [True, True, False, True]
+        >>> defaults = [1, None, None, 'point(0 0)']
+        >>> encodings = ['', 'DICT', '', '']
+        >>> my_table.add_columns(cols_with_types,
+        ... nullables=nullables, defaults=defaults,
+        ... encodings=encodings)  # doctest: +SKIP
+        """
+        statement = ddl.AddColumns(
+            self._qualified_name,
+            cols_with_types,
+            nullables=nullables,
+            defaults=defaults,
+            encodings=encodings,
+        )
+        self._client._execute(statement, False)
+
+    def drop_columns(self, column_names: list):
+        """
+        Drop a given column(s).
+
+        Parameters
+        ----------
+        column_names : list
+            Set list of column's names to drop from table
+
+        Examples
+        --------
+        >>> table_name = 'my_table'
+        >>> my_table = con.table(table_name)  # doctest: +SKIP
+        >>> column_names = ['col1', 'col2']
+        >>> my_table.drop_columns(column_names)  # doctest: +SKIP
+        """
+        statement = ddl.DropColumns(self._qualified_name, column_names)
+        self._client._execute(statement, False)
+
 
 class OmniSciDBClient(SQLClient):
     """Client class for OmniSciDB backend."""

@@ -22,6 +22,7 @@ sql_to_ibis_dtypes = {
     'TINYINT': dt.int8,
 }
 
+
 sql_to_ibis_dtypes_str = {
     'BIGINT': 'int64',
     'BOOLEAN': 'Boolean',
