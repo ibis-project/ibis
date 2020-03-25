@@ -325,3 +325,21 @@ def test_drop_table(con, temp_table, test_schema, force):
     assert con.exists_table(temp_table)
     con.drop_table(temp_table, force=force)
     assert not con.exists_table(temp_table)
+
+
+def test_truncate_table(con, temp_table):
+    con.create_table(temp_table, schema=con.get_schema('functional_alltypes'))
+    con._execute(
+        "INSERT INTO {} SELECT * FROM functional_alltypes".format(temp_table)
+    )
+
+    db = con.database()
+    table = db.table(temp_table)
+
+    df_before, schema_before = table.execute(), table.schema()
+    con.truncate_table(temp_table)
+    df_after, schema_after = table.execute(), table.schema()
+
+    assert con.exists_table(temp_table)
+    assert schema_before == schema_after
+    pd.testing.assert_frame_equal(pd.concat([df_before, df_after]), df_before)
