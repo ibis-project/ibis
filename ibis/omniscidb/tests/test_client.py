@@ -177,10 +177,7 @@ def test_explain(con, alltypes):
 
 @pytest.mark.parametrize(
     'filename',
-    [
-        "/tmp/test_read_csv.csv",
-        pathlib.Path("/tmp/test_read_csv.csv"),
-    ],
+    ["/tmp/test_read_csv.csv", pathlib.Path("/tmp/test_read_csv.csv")],
 )
 def test_read_csv(con, temp_table, filename):
     schema = ibis.schema(
