@@ -310,3 +310,18 @@ def test_cpu_execution_type(
 
     for mocked_method in mocked_methods:
         mocked_method.stop()
+
+
+@pytest.mark.parametrize(
+    'force', [False, True]
+)
+def test_drop_table(con, temp_table, test_schema, force):
+    try:
+        con.drop_table(temp_table, force=force)
+    except:
+        assert not force
+    
+    con.create_table(temp_table, schema=test_schema)
+    assert con.exists_table(temp_table)
+    con.drop_table(temp_table, force=force)
+    assert not con.exists_table(temp_table)
