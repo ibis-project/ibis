@@ -10,7 +10,7 @@ from pytest import param
 import ibis
 from ibis import literal as L
 from ibis.expr import datatypes as dt
-from ibis.tests.backends import MySQL, PostgreSQL
+from ibis.tests.backends import MySQL, OmniSciDB, PostgreSQL
 from ibis.tests.util import assert_equal
 
 try:
