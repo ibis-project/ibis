@@ -314,6 +314,8 @@ def test_cpu_execution_type(
 
 @pytest.mark.parametrize('force', [False, True])
 def test_drop_table(con, temp_table, test_schema, force):
+    # trying to drop non existing table and see,
+    # if an exception occurred with force=False
     try:
         con.drop_table(temp_table, force=force)
     except Exception:
@@ -327,6 +329,8 @@ def test_drop_table(con, temp_table, test_schema, force):
 
 def test_truncate_table(con, temp_table):
     con.create_table(temp_table, schema=con.get_schema('functional_alltypes'))
+    # TODO: when #2119 will be merged, replase 'con._execute()'
+    # with calling 'con.insert_into_select()'
     con._execute(
         "INSERT INTO {} SELECT * FROM functional_alltypes".format(temp_table)
     )
@@ -340,4 +344,4 @@ def test_truncate_table(con, temp_table):
 
     assert con.exists_table(temp_table)
     assert schema_before == schema_after
-    assert (df_before.shape[0] - df_after.shape[0]) == df_before.shape[0]
+    assert df_before.shape[0] != 0 and df_after.shape[0] == 0
