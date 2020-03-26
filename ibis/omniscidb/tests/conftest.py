@@ -37,7 +37,7 @@ def con():
 
 
 @pytest.fixture(scope='function')
-def test_schema() -> ibis.expr.Schema:
+def test_schema() -> ibis.schema:
     """
     Define fixture for test schema
 

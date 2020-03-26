@@ -342,4 +342,4 @@ def test_truncate_table(con, temp_table):
 
     assert con.exists_table(temp_table)
     assert schema_before == schema_after
-    pd.testing.assert_frame_equal(pd.concat([df_before, df_after]), df_before)
+    assert (df_before.shape[0] - df_after.shape[0]) == df_before.shape[0]
