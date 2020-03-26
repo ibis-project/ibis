@@ -488,62 +488,50 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         """
         raise NotImplementedError('This method is not implemented yet!')
 
-    def insert_into(self, dst_values: list, dst_cols: Optional[list] = None):
-        """
-        Insert new records in the table.
-
-        Parameters
-        ----------
-        dst_values : list
-            Set list of values for table's column(s)
-        dst_cols : list, optional
-            Set list of table's column(s) for which values are provided
-
-        Examples
-        --------
-        >>> table_name = 'my_table'
-        >>> my_table = con.table(table_name)  # doctest: +SKIP
-        >>> dst_values = [1, 2.0]
-        >>> dst_cols = ['a', 'b']
-        >>> my_table.insert_into(dst_values, dst_cols)  # doctest: +SKIP
-        """
-        stmt = ddl.InsertInto(
-            self._qualified_name, dst_values, dst_cols=dst_cols
-        )
-        return self._execute(stmt)
-
-    def insert_into_select(
-        self, select: ir.Expr, dst_cols: Optional[list] = None
+    def insert(
+        self,
+        obj: Union[pd.DataFrame, ir.Expr],
+        dst_cols: Optional[list] = None,
     ):
         """
-        Copy data from one table and insert it into another table.
+        Insert data into table.
+
+        Insert values from pandas dataframe into table
+        when pd.DataFrame is passed,
+        or copy data from one table and insert it into another table
+        when ibis Expr is passed.
 
         Parameters
         ----------
-        select : ibis Expr
-            Set selection ibis expression
+        obj : pd.DataFrame or ibis Expr
+            Set obj to pandas dataframe or ibis Expr
         dst_cols : list, optional
             Set list of table's column(s) into which data will be coppied
+            when ibis Expr is passed
 
         Examples
         --------
         >>> table_name_1 = 'my_table1'
         >>> my_table1 = con.table(table_name_1)  # doctest: +SKIP
-        >>> dst_values = [1, 2.0]
-        >>> dst_cols1 = ['a', 'b']
-        >>> my_table1.insert_into(dst_values, dst_cols1)  # doctest: +SKIP
+        >>> import pandas as pd
+        >>> data = {'a': [1], 'b': [4.0]}
+        >>> df = pd.DataFrame(data=data)
+        >>> my_table1.insert(df)  # doctest: +SKIP
         >>> my_table1 = con.table(table_name_1)  # doctest: +SKIP
         >>> table_name_2 = 'my_table2'
         >>> my_table2 = con.table(table_name_2)  # doctest: +SKIP
         >>> dst_cols2 = ['c', 'd']
-        >>> my_table2.insert_into_select(
+        >>> my_table2.insert(
         ...     my_table1['a', 'b'], dst_cols2
         ... )  # doctest: +SKIP
         """
-        stmt = ddl.InsertIntoSelect(
-            self._qualified_name, select, dst_cols=dst_cols
-        )
-        return self._execute(stmt)
+        if isinstance(obj, pd.DataFrame):
+            stmt = ddl.InsertPandas(self._qualified_name, obj)
+        if isinstance(obj, ir.Expr):
+            stmt = ddl.InsertSelect(
+                self._qualified_name, obj, dst_cols=dst_cols
+            )
+        self._execute(stmt)
 
     def _alter_table_helper(self, f, **alterations):
         results = []

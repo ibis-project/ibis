@@ -3,6 +3,8 @@ import re
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
+import pandas as pd
+
 import ibis
 from ibis.common import exceptions as com
 from ibis.omniscidb import dtypes as omniscidb_dtypes
@@ -462,98 +464,6 @@ class DropColumns(AlterTable):
         return self._wrap_command(cmd)
 
 
-class Insert(OmniSciDBDDL):
-    """Insert class."""
-
-    def __init__(self, table: str):
-        self.table = table
-
-    def _get_dst_cols_cmd(self):
-        yield '('
-        sep = ''
-        for col in self.dst_cols:
-            yield '{}{}'.format(sep, col)
-            sep = ', '
-        yield ') '
-
-    def _wrap_command(self, cmd: str) -> str:
-        return 'INSERT INTO {} {};'.format(self.table, cmd)
-
-
-class InsertInto(Insert):
-    """Insert Into class."""
-
-    def __init__(
-        self,
-        table_name: str,
-        dst_values: list,
-        dst_cols: Optional[list] = None,
-    ):
-        super().__init__(table_name)
-        if not dst_values:
-            raise com.IbisInputError('No one values provided to insert')
-        else:
-            self.dst_values = dst_values
-        self.dst_cols = dst_cols
-
-    def _get_vals_cmd(self):
-        yield 'VALUES ('
-        sep = ''
-        for val in self.dst_values:
-            yield '{}{}'.format(sep, _convert_default_value(val))
-            sep = ', '
-        yield ')'
-
-    def compile(self):
-        """Compile the Insert Into expression.
-
-        Returns
-        -------
-        string
-        """
-        if not self.dst_cols:
-            cmd = ''.join(self._get_vals_cmd())
-        else:
-            cmd = ''.join(self._get_dst_cols_cmd()) + ''.join(
-                self._get_vals_cmd()
-            )
-
-        return self._wrap_command(cmd)
-
-
-class InsertIntoSelect(Insert):
-    """Insert Into Select class."""
-
-    def __init__(
-        self,
-        table_name: str,
-        select: ibis.Expr,
-        dst_cols: Optional[list] = None,
-    ):
-        super().__init__(table_name)
-        self.select = select
-        self.dst_cols = dst_cols
-
-    def compile(self):
-        """Compile the Insert Into Select expression.
-
-        Returns
-        -------
-        string
-        """
-        select = self.select.compile()
-        select = re.sub('AS tmp\n', '', select)
-        select = re.sub('\n', ' ', select)
-
-        cmd = (
-            select
-            if not self.dst_cols
-            else ''.join(self._get_dst_cols_cmd()) + select
-        )
-
-        return self._wrap_command(cmd)
-
-
 class RenameTable(AlterTable):
     """Rename Table class."""
 
@@ -697,21 +607,61 @@ def _format_schema_element(name, tp, nullable):
     )
 
 
+class InsertSelect(OmniSciDBDML):
+    """Insert Select class."""
+
+    def __init__(
+        self,
+        table_name: str,
+        select: ibis.Expr,
+        dst_cols: Optional[list] = None,
+    ):
+        self.table_name = table_name
+        self.select = select
+        self.dst_cols = dst_cols
+
+    def _wrap_command(self, cmd: str) -> str:
+        return 'INSERT INTO {} {};'.format(self.table_name, cmd)
+
+    def _get_dst_cols_cmd(self):
+        yield '('
+        sep = ''
+        for col in self.dst_cols:
+            yield '{}{}'.format(sep, col)
+            sep = ', '
+        yield ') '
+
+    def compile(self):
+        """Compile the Insert Into Select expression.
+
+        Returns
+        -------
+        string
+        """
+        select = self.select.compile()
+        select = re.sub('AS tmp\n', '', select)
+        select = re.sub('\n', ' ', select)
+
+        cmd = (
+            select
+            if not self.dst_cols
+            else ''.join(self._get_dst_cols_cmd()) + select
+        )
+
+        return self._wrap_command(cmd)
+
+
 class InsertPandas(OmniSciDBDML):
     """Insert Data from Pandas class."""
 
-    def __init__(self, table_name, df, insert_index=False, database=None):
+    def __init__(self, table_name: str, df: pd.DataFrame):
         self.table_name = table_name
-        self.database = database
-        self.df = df.copy()
-
-        if insert_index:
-            self.df.reset_index(inplace=True)
+        self.df = df
 
     def _get_field_names(self):
         return ','.join(self.df.columns)
 
-    def _get_value(self, v):
+    def _get_value(self, v: Any) -> Any:
         if isinstance(v, str):
             return "'{}'".format(v)
         elif v is None:

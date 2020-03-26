@@ -7,7 +7,7 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`/release-pre-1.0`
 
-* :feature:`2119` [OmnisciDB] Support insert_into and insert_into_select for OmnisciDB table
+* :feature:`2119` [OmnisciDB] Support insert for OmnisciDB table
 * :feature:`2094` [OmnisciDB] Support add_columns and drop_columns for OmnisciDB table
 * :bug:`2127` Fix PySpark error when doing alias after selection
 * :feature:`2126` Add translation rules for isnull() and notnull() for pyspark backend

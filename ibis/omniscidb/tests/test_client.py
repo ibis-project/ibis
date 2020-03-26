@@ -106,22 +106,11 @@ def test_union_op(alltypes):
         expr.compile()
 
 
-def test_insert_zero_values(test_table):
-    dst_vals = []
-    with pytest.raises(com.IbisInputError):
-        test_table.insert_into(dst_vals)
-
-
 @pytest.mark.xfail
-def test_insert_into(con, test_table):
-    dst_vals1 = [
-        'polygon((0 0, 4 0, 4 4, 0 4, 0 0), (1 1, 2 1, 2 2, 1 2, 1 1))',
-        'point(1 1)',
-        1,
-        2.0,
-    ]
-    dst_cols1 = ['a', 'b', 'c', 'd']
-    test_table.insert_into(dst_vals1, dst_cols1)
+def test_insert_pandas(con, test_table):
+    data1 = {'a': [None], 'b': [None], 'c': [1], 'd': [2.0]}
+    df1 = pd.DataFrame(data=data1)
+    test_table.insert(df1)
 
     aux_table_name = 'aux_test_table'
     con.drop_table(aux_table_name, force=True)
@@ -132,26 +121,21 @@ def test_insert_into(con, test_table):
     con.create_table(aux_table_name, schema=schema)
     aux_table = con.table(aux_table_name)
 
-    dst_vals2 = [
-        'polygon((0 0, 4 0, 4 4, 0 4, 0 0), (1 1, 2 1, 2 2, 1 2, 1 1))',
-        'point(1 1)',
-        2,
-        4.0,
-    ]
-    dst_cols2 = ['e', 'f', 'g', 'h']
-    aux_table.insert_into(dst_vals2, dst_cols2)
+    data2 = {'e': [None], 'f': [None], 'g': [1], 'h': [2.0]}
+    df2 = pd.DataFrame(data=data2)
+    aux_table.insert(df2)
 
     tbl1 = con.table('test_table')
     tbl2 = con.table(aux_table_name)
 
     joined_tbl_name = 'joined_table'
-    joined_tbl = tbl1.inner_join(tbl2, [tbl1.a == tbl2.e, tbl1.b == tbl2.f])
+    joined_tbl = tbl1.inner_join(tbl2, [tbl1.c == tbl2.g, tbl1.d == tbl2.h])
 
     con.create_table(joined_tbl_name, joined_tbl)
     joined_tbl = con.table(joined_tbl_name)
 
     try:
-        joined_cols = ['a', 'b', 'e', 'f']
+        joined_cols = ['c', 'd', 'g', 'h']
         for col in joined_cols:
             assert col in joined_tbl.schema().names
     finally:
@@ -159,15 +143,10 @@ def test_insert_into(con, test_table):
 
 
 @pytest.mark.xfail
-def test_insert_into_select(con, test_table):
-    dst_vals1 = [
-        'polygon((0 0, 4 0, 4 4, 0 4, 0 0), (1 1, 2 1, 2 2, 1 2, 1 1))',
-        'point(1 1)',
-        1,
-        2.0,
-    ]
-    dst_cols1 = ['a', 'b', 'c', 'd']
-    test_table.insert_into(dst_vals1, dst_cols1)
+def test_insert_select(con, test_table):
+    data = {'a': [None], 'b': [None], 'c': [1], 'd': [2.0]}
+    df = pd.DataFrame(data=data)
+    test_table.insert(df)
 
     aux_table_name = 'aux_test_table'
     con.drop_table(aux_table_name, force=True)
@@ -180,18 +159,18 @@ def test_insert_into_select(con, test_table):
     tbl1 = con.table('test_table')
     tbl2 = con.table(aux_table_name)
 
-    dst_cols2 = ['e', 'f', 'g', 'h']
-    tbl2.insert_into_select(tbl1['a', 'b', 'c', 'd'], dst_cols2)
+    dst_cols = ['e', 'f', 'g', 'h']
+    tbl2.insert_into_select(tbl1['a', 'b', 'c', 'd'], dst_cols)
     tbl2 = con.table(aux_table_name)
 
     joined_tbl_name = 'joined_table'
-    joined_tbl = tbl1.inner_join(tbl2, [tbl1.a == tbl2.e, tbl1.b == tbl2.f])
+    joined_tbl = tbl1.inner_join(tbl2, [tbl1.c == tbl2.g, tbl1.d == tbl2.h])
 
     con.create_table(joined_tbl_name, joined_tbl)
     joined_tbl = con.table(joined_tbl_name)
 
     try:
-        joined_cols = ['a', 'b', 'e', 'f']
+        joined_cols = ['c', 'd', 'g', 'h']
         for col in joined_cols:
             assert col in joined_tbl.schema().names
     finally:
