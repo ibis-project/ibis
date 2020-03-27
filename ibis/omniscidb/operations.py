@@ -1011,6 +1011,7 @@ _general_ops = {
     ops.Where: _where,
     ops.TableColumn: _table_column,
     ops.CrossJoin: _cross_join,
+    ops.IsNan: unary('isNan'),
 }
 
 # WINDOW
@@ -1045,7 +1046,6 @@ _unsupported_ops = [
     ops.NullIf,
     ops.NullIfZero,
     ops.IsInf,
-    ops.IsNan,
     ops.IfNull,
     # string
     ops.Lowercase,
