@@ -345,3 +345,59 @@ def test_truncate_table(con, temp_table):
     assert con.exists_table(temp_table)
     assert schema_before == schema_after
     assert df_before.shape[0] != 0 and df_after.shape[0] == 0
+
+
+@pytest.mark.parametrize(
+    'expr',
+    [
+        [],
+        ['invalid_collumn_name'],
+        ['index', 'invalid_collumn_name'],
+        [
+            'index',
+            'id',
+            'bool_col',
+            'tinyint_col',
+            'float_col',
+            'double_col',
+            'string_col',
+            'timestamp_col',
+        ],
+    ],
+)
+def test_create_view(con, temp_view, alltypes, expr):
+    df_alltypes = alltypes.execute()
+
+    # if list with selected cols contains invalid names
+    # 'create_view' should raise exception
+    try:
+        con.create_view(temp_view, alltypes[expr])
+    except com.IbisTypeError:
+        assert not set(expr).issubset(df_alltypes.columns)
+        return
+
+    df_view = con._execute('SELECT * from {};'.format(temp_view)).to_df()
+
+    # when list with selected columns is empty
+    # in SQL notations it means - select all cols,
+    # DataFrame[`empty_list`] means - select nothing,
+    # so there is some logic here to properly process that situation
+    pd.testing.assert_frame_equal(
+        df_alltypes[expr if expr != [] else df_alltypes.columns],
+        df_view,
+        check_dtype=False,
+    )
+
+
+@pytest.mark.parametrize('force', [False, True])
+def test_drop_view(con, test_view, force):
+    assert con.exists_table(test_view)
+    con.drop_view(test_view, force=force)
+    assert not con.exists_table(test_view)
+
+    # trying to drop non existing view and see,
+    # if an exception occurred with force=False
+    try:
+        con.drop_view(test_view, force=force)
+    except Exception:
+        assert not force

@@ -211,3 +211,46 @@ def temp_database(con, test_data_db: str) -> str:
     finally:
         con.set_database(test_data_db)
         con.drop_database(name, force=True)
+
+
+@pytest.fixture
+def temp_view(con) -> str:
+    """Return a temporary view name.
+
+    Parameters
+    ----------
+    con : ibis.omniscidb.OmniSciDBClient
+
+    Yields
+    ------
+    name : string
+        Random view name for a temporary usage.
+    """
+    name = _random_identifier('view')
+    try:
+        yield name
+    finally:
+        con.drop_view(name, force=True)
+
+
+@pytest.fixture(scope='function')
+def test_view(con, test_table) -> ibis.expr.types.TableExpr:
+    """Create a temporary view.
+
+    Parameters
+    ----------
+    con : ibis.omniscidb.OmniSciDBClient
+
+    Yields
+    -------
+    str
+    """
+    name = _random_identifier('view')
+
+    con.drop_view(name, force=True)
+    con.create_view(name, test_table)
+
+    try:
+        yield name
+    finally:
+        con.drop_view(name, force=True)
