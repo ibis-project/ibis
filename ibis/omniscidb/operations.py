@@ -303,11 +303,11 @@ def _n_weeks_year(year: ir.NumericValue):
     -------
     Ibis.expr.types.Expr
 
-    See also
+    See Also
     --------
     https://en.wikipedia.org/wiki/ISO_week_date
     """
-
+    # n_weeks_year adjustment
     def _p(year):
         return (year + (year // 4) - (year // 100) + (year // 400)) % 7
 
@@ -331,7 +331,7 @@ def _woy_preliminary(d: Union[ir.DateValue, ir.TimestampValue]) -> ir.Expr:
     -------
     ir.Expr
 
-    See also
+    See Also
     --------
     https://en.wikipedia.org/wiki/ISO_week_date
 
