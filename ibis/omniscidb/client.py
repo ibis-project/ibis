@@ -652,7 +652,7 @@ class OmniSciDBClient(SQLClient):
 
     def __del__(self):
         """Close the connection when instance is deleted."""
-            self.close()
+        self.close()
 
     def __enter__(self, **kwargs):
         """Update internal attributes when using `with` statement."""
