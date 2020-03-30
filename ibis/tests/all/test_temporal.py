@@ -54,12 +54,14 @@ def test_date_extract(backend, alltypes, df, attr):
 )
 @pytest.mark.xfail_unsupported
 def test_timestamp_extract(backend, alltypes, df, attr):
-    expr = getattr(alltypes.timestamp_col, attr)()
     if attr == 'millisecond':
+        if backend.name == 'sqlite':
+            pytest.xfail(reason=('Issue #2156'))
         expected = (df.timestamp_col.dt.microsecond // 1000).astype('int32')
     else:
         expected = getattr(df.timestamp_col.dt, attr).astype('int32')
 
+    expr = getattr(alltypes.timestamp_col, attr)()
     result = expr.execute()
     expected = backend.default_series_rename(expected)
 
