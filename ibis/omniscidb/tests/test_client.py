@@ -371,17 +371,13 @@ def test_create_table(con, temp_table, table_src):
 
 @pytest.mark.parametrize('force', [False, True])
 def test_drop_table(con, temp_table, test_schema, force):
-    # trying to drop non existing table and see,
-    # if an exception occurred with force=False
-    try:
-        con.drop_table(temp_table, force=force)
-    except Exception:
-        assert not force
-
-    con.create_table(temp_table, schema=test_schema)
-    assert con.exists_table(temp_table)
-    con.drop_table(temp_table, force=force)
-    assert not con.exists_table(temp_table)
+    _drop(
+        con,
+        temp_table,
+        'table',
+        dict({'force': force}),
+        dict({'schema': test_schema}),
+    )
 
 
 def test_truncate_table(con, temp_table):
@@ -495,3 +491,30 @@ def test_alter_user(con, test_user, is_super):
         )
     except Exception:
         assert not is_super
+
+
+@pytest.mark.xfail(reason='\'exists_database\' not supported yet')
+def test_create_database(con, temp_database):
+    assert not con.exists_database(temp_database)
+    con.create_database(temp_database)
+    assert con.exists_database(temp_database)
+
+
+@pytest.mark.xfail(reason='\'exists_database\' not supported yet')
+@pytest.mark.parametrize('force', [False, True])
+def test_drop_database(con, temp_database, force):
+    _drop(con, temp_database, 'database', dict({'force': force}), dict())
+
+
+def _drop(con, name, method_name, drop_kwargs, create_kwargs):
+    # trying to drop non existing obj and see,
+    # if an exception occurred with force=False
+    try:
+        getattr(con, 'drop_' + method_name)(name, **drop_kwargs)
+    except Exception:
+        assert not drop_kwargs['force']
+
+    getattr(con, 'create_' + method_name)(name, **create_kwargs)
+    assert getattr(con, 'exists_' + method_name)(name)
+    getattr(con, 'drop_' + method_name)(name, **drop_kwargs)
+    assert not getattr(con, 'exists_' + method_name)(name)
