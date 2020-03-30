@@ -625,16 +625,14 @@ def _random(t, expr):
 
 
 def _day_of_week_index(t, expr):
-    # arg[-1] is "how" parameter
-    sa_arg = t.translate(expr.op().args[0])
+    (sa_arg,) = map(t.translate, expr.op().args)
     return sa.cast(
         sa.cast(sa.extract('dow', sa_arg) + 6, sa.SMALLINT) % 7, sa.SMALLINT
     )
 
 
 def _day_of_week_name(t, expr):
-    # arg[-1] is "how" parameter
-    sa_arg = t.translate(expr.op().args[0])
+    (sa_arg,) = map(t.translate, expr.op().args)
     return sa.func.trim(sa.func.to_char(sa_arg, 'Day'))
 
 
