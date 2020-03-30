@@ -12,6 +12,7 @@ import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 import ibis.util as util
+from ibis import literal as L
 from ibis.impala import compiler as impala_compiler
 from ibis.omniscidb import dtypes as omniscidb_dtypes
 from ibis.omniscidb.identifiers import quote_identifier
@@ -270,6 +271,40 @@ def _extract_field(sql_attr):
         return 'EXTRACT({} FROM {})'.format(sql_attr, arg)
 
     return extract_field_formatter
+
+
+# MATH
+
+
+def _log_common(translator, arg, base=None):
+    if isinstance(arg, tuple):
+        args_ = ', '.join(map(translator.translate, arg))
+    else:
+        args_ = translator.translate(arg)
+
+    if base is None:
+        return 'ln({})'.format(args_)
+
+    base_formatted = translator.translate(base)
+    return 'ln({})/ln({})'.format(args_, base_formatted)
+
+
+def _log(translator, expr):
+    op = expr.op()
+    arg, base = op.args
+    return _log_common(translator, arg, base)
+
+
+def _log2(translator, expr):
+    op = expr.op()
+    arg = op.args
+    return _log_common(translator, arg, L(2))
+
+
+def _log10(translator, expr):
+    op = expr.op()
+    arg = op.args
+    return _log_common(translator, arg, L(10))
 
 
 # STATS
@@ -878,6 +913,9 @@ _math_ops = {
     ops.Pi: fixed_arity('pi', 0),
     ops.Radians: unary('radians'),
     NumericTruncate: fixed_arity('truncate', 2),
+    ops.Log: _log,
+    ops.Log2: _log2,
+    ops.Log10: _log10,
 }
 
 # STATS
@@ -988,6 +1026,7 @@ _general_ops = {
     ops.CrossJoin: _cross_join,
     ops.IfNull: _ifnull,
     ops.NullIf: fixed_arity('nullif', 2),
+    ops.IsNan: unary('isNan'),
 }
 
 # WINDOW
@@ -1021,7 +1060,6 @@ _unsupported_ops = [
     ops.GroupConcat,
     ops.NullIfZero,
     ops.IsInf,
-    ops.IsNan,
     # string
     ops.Lowercase,
     ops.Uppercase,
@@ -1050,6 +1088,7 @@ _unsupported_ops = [
     ops.Greatest,
     ops.Log2,
     ops.Log,
+    ops.Round,
     # date/time/timestamp
     ops.TimestampFromUNIX,
     ops.TimeTruncate,
