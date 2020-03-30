@@ -179,6 +179,7 @@ def temp_table(con) -> str:
         Random table name for a temporary usage.
     """
     name = _random_identifier('table')
+    con.drop_table(name, force=True)
     try:
         yield name
     finally:
@@ -254,3 +255,34 @@ def test_view(con, test_table) -> ibis.expr.types.TableExpr:
         yield name
     finally:
         con.drop_view(name, force=True)
+
+
+@pytest.fixture(scope='function')
+def test_user(con) -> list:
+    """Return a list with temporary user name and password
+
+    Parameters
+    ----------
+    con : ibis.omniscidb.OmniSciDBClient
+
+    Yields
+    -------
+    list
+    """
+
+    name = _random_identifier('user')
+    password = "super"
+
+    # drop_user does not support 'force' parameter,
+    # so there is no way to safely drop user without try-except
+    try:
+        con.drop_user(name)
+    except Exception:
+        pass
+    try:
+        yield [name, password]
+    finally:
+        try:
+            con.drop_user(name)
+        except Exception:
+            pass

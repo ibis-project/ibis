@@ -312,6 +312,63 @@ def test_cpu_execution_type(
         mocked_method.stop()
 
 
+@pytest.mark.parametrize(
+    'table_src',
+    [
+        ibis.schema(
+            [('a', 'polygon'), ('b', 'point'), ('c', 'int8'), ('d', 'double')]
+        ),
+        ibis.table(
+            schema=ibis.schema(
+                [
+                    ('index', 'int64'),
+                    ('Unnamed__0', 'int64'),
+                    ('id', 'int32'),
+                    ('bool_col', 'bool'),
+                    ('tinyint_col', 'int16'),
+                    ('smallint_col', 'int16'),
+                    ('int_col', 'int32'),
+                    ('bigint_col', 'int64'),
+                    ('float_col', 'float32'),
+                    ('double_col', 'double'),
+                    ('date_string_col', 'string'),
+                    ('string_col', 'string'),
+                    ('timestamp_col', 'timestamp'),
+                    ('year_', 'int32'),
+                    ('month_', 'int32'),
+                ]
+            ),
+            name='functional_alltypes',
+        ),
+        param(
+            pd.DataFrame(),
+            marks=pytest.mark.xfail(reason="Not implemented yet."),
+        ),
+        param(
+            pd.DataFrame([(1, 2.0, 'string'), (3, 4.0, 'string')]),
+            marks=pytest.mark.xfail(reason="Not implemented yet."),
+        ),
+    ],
+)
+def test_create_table(con, temp_table, table_src):
+
+    if isinstance(table_src, ibis.Schema):
+        con.create_table(temp_table, schema=table_src)
+    else:
+        table_src.name = temp_table
+        con.create_table(temp_table, obj=table_src)
+
+    assert con.exists_table(temp_table)
+    if isinstance(table_src, ibis.Schema):
+        assert con.get_schema(temp_table) == table_src
+    elif isinstance(table_src, pd.DataFrame):
+        assert con.get_schema(temp_table) == ibis.schema(
+            types=table_src.dtypes()
+        )
+    elif isinstance(table_src, ibis.expr.types.TableExpr):
+        assert con.get_schema(temp_table) == table_src.schema()
+
+
 @pytest.mark.parametrize('force', [False, True])
 def test_drop_table(con, temp_table, test_schema, force):
     # trying to drop non existing table and see,
@@ -401,3 +458,40 @@ def test_drop_view(con, test_view, force):
         con.drop_view(test_view, force=force)
     except Exception:
         assert not force
+
+
+@pytest.mark.parametrize('is_super', [False, True])
+def test_create_user(con, test_user, is_super):
+    name, password = test_user
+    con.create_user(name, password, is_super)
+
+    # if is_super=False, then it should throw an exception
+    try:
+        ibis.omniscidb.connect(
+            protocol=con.protocol,
+            host=con.host,
+            port=con.port,
+            user=name,
+            password=password,
+        )
+    except Exception:
+        assert not is_super
+
+
+@pytest.mark.parametrize('is_super', [False, True])
+def test_alter_user(con, test_user, is_super):
+    name, password = test_user
+    con.create_user(*test_user, is_super=False)
+    con.alter_user(*test_user, is_super=is_super)
+
+    # if is_super=False, then it should throw an exception
+    try:
+        ibis.omniscidb.connect(
+            protocol=con.protocol,
+            host=con.host,
+            port=con.port,
+            user=name,
+            password=password,
+        )
+    except Exception:
+        assert not is_super
