@@ -652,7 +652,6 @@ class OmniSciDBClient(SQLClient):
 
     def __del__(self):
         """Close the connection when instance is deleted."""
-        if hasattr(self, 'con') and self.con:
             self.close()
 
     def __enter__(self, **kwargs):
