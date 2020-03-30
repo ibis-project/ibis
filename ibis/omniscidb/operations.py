@@ -12,28 +12,12 @@ import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 import ibis.util as util
+from ibis import literal as L
 from ibis.impala import compiler as impala_compiler
+from ibis.omniscidb import dtypes as omniscidb_dtypes
 from ibis.omniscidb.identifiers import quote_identifier
 
-_sql_type_names = {
-    'boolean': 'boolean',
-    'date': 'date',
-    'decimal': 'decimal',
-    'double': 'double',
-    'float32': 'float',
-    'float64': 'double',
-    'int8': 'tinyint',
-    'int16': 'smallint',
-    'int32': 'int',
-    'int64': 'bigint',
-    'linestring': 'linestring',
-    'multipolygon': 'multipolygon',
-    'point': 'point',
-    'polygon': 'polygon',
-    'string': 'text',
-    'time': 'time',
-    'timestamp': 'timestamp',
-}
+_sql_type_names = omniscidb_dtypes.ibis_dtypes_str_to_sql
 
 
 def _is_floating(*args):
@@ -289,6 +273,40 @@ def _extract_field(sql_attr):
     return extract_field_formatter
 
 
+# MATH
+
+
+def _log_common(translator, arg, base=None):
+    if isinstance(arg, tuple):
+        args_ = ', '.join(map(translator.translate, arg))
+    else:
+        args_ = translator.translate(arg)
+
+    if base is None:
+        return 'ln({})'.format(args_)
+
+    base_formatted = translator.translate(base)
+    return 'ln({})/ln({})'.format(args_, base_formatted)
+
+
+def _log(translator, expr):
+    op = expr.op()
+    arg, base = op.args
+    return _log_common(translator, arg, base)
+
+
+def _log2(translator, expr):
+    op = expr.op()
+    arg = op.args
+    return _log_common(translator, arg, L(2))
+
+
+def _log10(translator, expr):
+    op = expr.op()
+    arg = op.args
+    return _log_common(translator, arg, L(10))
+
+
 # STATS
 
 
@@ -374,6 +392,16 @@ def _interval_from_integer(translator, expr):
     return '{}, (sign){}'.format(dtype.resolution.upper(), arg_)
 
 
+def _todate(translator, expr):
+    op = expr.op()
+    arg_expr = op.args
+    if isinstance(arg_expr, tuple):
+        arg = ', '.join(map(translator.translate, arg_expr))
+    else:
+        arg = translator.translate(arg_expr)
+    return 'CAST({} AS date)'.format(arg)
+
+
 def _timestamp_op(func, op_sign='+'):
     def _formatter(translator, expr):
         op = expr.op()
@@ -387,6 +415,50 @@ def _timestamp_op(func, op_sign='+'):
 
         return '{}({}, {})'.format(
             func, formatted_right.replace('(sign)', op_sign), formatted_left
+        )
+
+    return _formatter
+
+
+def _timestampdiff(date_part='second', op_sign='+'):
+    def _formatter(translator, expr):
+        op = expr.op()
+        left, right = op.args
+
+        formatted_left = translator.translate(left)
+        formatted_right = translator.translate(right)
+
+        if isinstance(left, (ir.DateValue, ir.TimestampValue)):
+            formatted_left = 'CAST({} as timestamp)'.format(formatted_left)
+        if isinstance(right, (ir.DateValue, ir.TimestampValue)):
+            formatted_right = 'CAST({} as timestamp)'.format(formatted_right)
+
+        return "timestampdiff({}, {}, {})".format(
+            date_part,
+            formatted_right.replace('(sign)', op_sign),
+            formatted_left,
+        )
+
+    return _formatter
+
+
+def _datadiff(date_part='day', op_sign='+'):
+    def _formatter(translator, expr):
+        op = expr.op()
+        left, right = op.args
+
+        formatted_left = translator.translate(left)
+        formatted_right = translator.translate(right)
+
+        if isinstance(left, (ir.DateValue, ir.TimestampValue)):
+            formatted_left = 'CAST({} as date)'.format(formatted_left)
+        if isinstance(right, (ir.DateValue, ir.TimestampValue)):
+            formatted_right = 'CAST({} as date)'.format(formatted_right)
+
+        return "datediff('{}', {}, {})".format(
+            date_part,
+            formatted_right.replace('(sign)', op_sign),
+            formatted_left,
         )
 
     return _formatter
@@ -477,7 +549,7 @@ def literal(translator, expr: ibis.expr.operations.Literal) -> str:
     elif isinstance(expr, ir.DateValue):
         if isinstance(value, date):
             value = value.strftime('%Y-%m-%d')
-        return "toDate('{0!s}')".format(value)
+        return "CAST('{0!s}' as date)".format(value)
     # array data type
     elif isinstance(expr, ir.ArrayValue):
         return str(list(value))
@@ -828,6 +900,9 @@ _math_ops = {
     ops.Pi: fixed_arity('pi', 0),
     ops.Radians: unary('radians'),
     NumericTruncate: fixed_arity('truncate', 2),
+    ops.Log: _log,
+    ops.Log2: _log2,
+    ops.Log10: _log10,
 }
 
 # STATS
@@ -911,6 +986,9 @@ _date_ops = {
     ops.DateSub: _timestamp_op('TIMESTAMPADD', '-'),
     ops.TimestampAdd: _timestamp_op('TIMESTAMPADD'),
     ops.TimestampSub: _timestamp_op('TIMESTAMPADD', '-'),
+    ops.TimestampDiff: _timestampdiff(),
+    ops.DateDiff: _datadiff(),
+    ops.Date: _todate,
 }
 
 # AGGREGATION/REDUCTION
@@ -933,6 +1011,7 @@ _general_ops = {
     ops.Where: _where,
     ops.TableColumn: _table_column,
     ops.CrossJoin: _cross_join,
+    ops.IsNan: unary('isNan'),
 }
 
 # WINDOW
@@ -967,7 +1046,6 @@ _unsupported_ops = [
     ops.NullIf,
     ops.NullIfZero,
     ops.IsInf,
-    ops.IsNan,
     ops.IfNull,
     # string
     ops.Lowercase,
@@ -997,11 +1075,10 @@ _unsupported_ops = [
     ops.Greatest,
     ops.Log2,
     ops.Log,
+    ops.Round,
     # date/time/timestamp
     ops.TimestampFromUNIX,
-    ops.Date,
     ops.TimeTruncate,
-    ops.TimestampDiff,
     ops.DayOfWeekIndex,
     ops.DayOfWeekName,
     # table

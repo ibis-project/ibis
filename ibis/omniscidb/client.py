@@ -17,6 +17,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.client import Database, DatabaseEntity, Query, SQLClient
 from ibis.omniscidb import ddl
+from ibis.omniscidb import dtypes as omniscidb_dtypes
 from ibis.omniscidb.compiler import OmniSciDBDialect, build_ast
 from ibis.sql.compiler import DDL, DML
 from ibis.util import log
@@ -66,58 +67,9 @@ class OmniSciDBDataType:
     __slots__ = 'typename', 'nullable'
 
     # using impala.client._HS2_TTypeId_to_dtype as reference
-    # NOTE: any updates here should be reflected to
-    #       omniscidb.operations._sql_type_names
-    dtypes = {
-        'BIGINT': dt.int64,
-        'BOOL': dt.Boolean,
-        'DATE': dt.date,
-        'DECIMAL': dt.Decimal(18, 9),
-        'DOUBLE': dt.double,
-        'FLOAT': dt.float32,
-        'INT': dt.int32,
-        'LINESTRING': dt.linestring,
-        'MULTIPOLYGON': dt.multipolygon,
-        'NULL': dt.Null,
-        'NUMERIC': dt.Decimal(18, 9),
-        'POINT': dt.point,
-        'POLYGON': dt.polygon,
-        'SMALLINT': dt.int16,
-        'STR': dt.string,
-        'TIME': dt.time,
-        'TIMESTAMP': dt.timestamp,
-        'TINYINT': dt.int8,
-    }
-
+    dtypes = omniscidb_dtypes.sql_to_ibis_dtypes
     ibis_dtypes = {v: k for k, v in dtypes.items()}
-
-    # NOTE: any updates here should be reflected to
-    #       omniscidb.operations._sql_type_names
-    _omniscidb_to_ibis_dtypes = {
-        'BIGINT': 'int64',
-        'BOOLEAN': 'Boolean',
-        'BOOL': 'Boolean',
-        'CHAR': 'string',
-        'DATE': 'date',
-        'DECIMAL': 'decimal',
-        'DOUBLE': 'double',
-        'INT': 'int32',
-        'INTEGER': 'int32',
-        'FLOAT': 'float32',
-        'NUMERIC': 'float64',
-        'REAL': 'float32',
-        'SMALLINT': 'int16',
-        'STR': 'string',
-        'TEXT': 'string',
-        'TIME': 'time',
-        'TIMESTAMP': 'timestamp',
-        'TINYINT': 'int8',
-        'VARCHAR': 'string',
-        'POINT': 'point',
-        'LINESTRING': 'linestring',
-        'POLYGON': 'polygon',
-        'MULTIPOLYGON': 'multipolygon',
-    }
+    _omniscidb_to_ibis_dtypes = omniscidb_dtypes.sql_to_ibis_dtypes_str
 
     def __init__(self, typename, nullable=True):
         if typename not in self.dtypes:
@@ -515,13 +467,7 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         -------
         renamed : OmniSciDBTable
         """
-        m = ddl.fully_qualified_re.match(new_name)
-        if not m and database is None:
-            database = self._database
-
-        statement = ddl.RenameTable(
-            self._qualified_name, new_name, new_database=database
-        )
+        statement = ddl.RenameTable(self._qualified_name, new_name)
 
         self._client._execute(statement)
 
@@ -535,22 +481,12 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         """
         Change setting and parameters of the table.
 
-        Parameters
-        ----------
-        tbl_properties : dict, optional
-
-        Returns
-        -------
-        None (for now)
+        Raises
+        ------
+        NotImplementedError
+            Method is not implemented yet.
         """
-        # internal function that runs DDL operation
-        def _run_ddl(**kwds):
-            stmt = ddl.AlterTable(self._qualified_name, **kwds)
-            return self._execute(stmt)
-
-        return self._alter_table_helper(
-            _run_ddl, tbl_properties=tbl_properties
-        )
+        raise NotImplementedError('This method is not implemented yet!')
 
     def _alter_table_helper(self, f, **alterations):
         results = []
@@ -560,6 +496,72 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
             result = f(**{k: v})
             results.append(result)
         return results
+
+    def add_columns(
+        self,
+        cols_with_types: dict,
+        nullables: Optional[list] = None,
+        defaults: Optional[list] = None,
+        encodings: Optional[list] = None,
+    ):
+        """
+        Add a given column(s).
+
+        Parameters
+        ----------
+        cols_with_types : dict
+            Set dict of column(s) with type(s) to add into table,
+            where key is column name and value is column type
+        nullables : list, optional
+            Set list of boolean values for new columns
+            that could be nullable/not nullable, by default None (i.e
+            all the new columns added are nullables)
+        defaults : list, optional
+            Set list of default values for the new columns, by default None
+        encodings : list, optional
+            Set list of strings of encoding attributes
+            for the new columns, by default None
+
+        Examples
+        --------
+        >>> table_name = 'my_table'
+        >>> my_table = con.table(table_name)  # doctest: +SKIP
+        >>> cols_with_types = {'col1': 'int32', 'col2': 'string',
+        ... 'col3': 'float', 'col4': 'point'}
+        >>> nullables = [True, True, False, True]
+        >>> defaults = [1, None, None, 'point(0 0)']
+        >>> encodings = ['', 'DICT', '', '']
+        >>> my_table.add_columns(cols_with_types,
+        ... nullables=nullables, defaults=defaults,
+        ... encodings=encodings)  # doctest: +SKIP
+        """
+        statement = ddl.AddColumns(
+            self._qualified_name,
+            cols_with_types,
+            nullables=nullables,
+            defaults=defaults,
+            encodings=encodings,
+        )
+        self._client._execute(statement, False)
+
+    def drop_columns(self, column_names: list):
+        """
+        Drop a given column(s).
+
+        Parameters
+        ----------
+        column_names : list
+            Set list of column's names to drop from table
+
+        Examples
+        --------
+        >>> table_name = 'my_table'
+        >>> my_table = con.table(table_name)  # doctest: +SKIP
+        >>> column_names = ['col1', 'col2']
+        >>> my_table.drop_columns(column_names)  # doctest: +SKIP
+        """
+        statement = ddl.DropColumns(self._qualified_name, column_names)
+        self._client._execute(statement, False)
 
 
 class OmniSciDBClient(SQLClient):
@@ -649,7 +651,8 @@ class OmniSciDBClient(SQLClient):
 
     def __del__(self):
         """Close the connection when instance is deleted."""
-        self.close()
+        if hasattr(self, 'con') and self.con:
+            self.close()
 
     def __enter__(self, **kwargs):
         """Update internal attributes when using `with` statement."""
@@ -676,11 +679,12 @@ class OmniSciDBClient(SQLClient):
     def _adapt_types(self, descr):
         names = []
         adapted_types = []
+
         for col in descr:
             names.append(col.name)
-            adapted_types.append(
-                OmniSciDBDataType._omniscidb_to_ibis_dtypes[col.type]
-            )
+            col_type = OmniSciDBDataType._omniscidb_to_ibis_dtypes[col.type]
+            col_type.nullable = col.nullable
+            adapted_types.append(col_type)
         return names, adapted_types
 
     def _build_ast(self, expr, context):
@@ -871,6 +875,7 @@ class OmniSciDBClient(SQLClient):
                 (
                     col.name,
                     OmniSciDBDataType.parse(col.type),
+                    col.nullable,
                     col.precision,
                     col.scale,
                     col.comp_param,
@@ -880,6 +885,7 @@ class OmniSciDBClient(SQLClient):
             ],
             columns=[
                 'column_name',
+                'nullable',
                 'type',
                 'precision',
                 'scale',
@@ -989,7 +995,7 @@ class OmniSciDBClient(SQLClient):
         statement = ddl.CreateView(name, select, database=database)
         self._execute(statement)
 
-    def drop_view(self, name, database=None):
+    def drop_view(self, name, database=None, force: bool = False):
         """
         Drop a given view.
 
@@ -997,8 +1003,10 @@ class OmniSciDBClient(SQLClient):
         ----------
         name : string
         database : string, default None
+        force : boolean, default False
+          Database may throw exception if table does not exist
         """
-        statement = ddl.DropView(name, database=database)
+        statement = ddl.DropView(name, database=database, must_exist=not force)
         self._execute(statement, False)
 
     def create_table(
@@ -1009,6 +1017,8 @@ class OmniSciDBClient(SQLClient):
         database: Optional[str] = None,
         max_rows: Optional[int] = None,
         fragment_size: Optional[int] = None,
+        is_temporary: bool = False,
+        **kwargs,
     ):
         """
         Create a new table from an Ibis table expression.
@@ -1016,6 +1026,8 @@ class OmniSciDBClient(SQLClient):
         Parameters
         ----------
         table_name : string
+        obj : ibis.expr.types.TableExpr or pandas.DataFrame, optional
+          If passed, creates table from select statement results
         schema : ibis.Schema, optional
         table_name : str
         obj : TableExpr or pandas.DataFrame, optional, default None
@@ -1032,6 +1044,8 @@ class OmniSciDBClient(SQLClient):
           default 32000000 if gpu_device is enabled otherwise 5000000
           Number of rows per fragment that is a unit of the table for query
           processing, which is not expected to be changed.
+        is_temporary : bool, default False
+            If True it the table will be created as temporary.
 
         Examples
         --------
@@ -1061,6 +1075,7 @@ class OmniSciDBClient(SQLClient):
                 database=database,
                 max_rows=max_rows,
                 fragment_size=fragment_size,
+                is_temporary=is_temporary,
             )
         else:
             raise com.IbisError('Must pass expr or schema')
@@ -1295,19 +1310,14 @@ class OmniSciDBClient(SQLClient):
         -------
         schema : ibis Schema
         """
-        col_names = []
-        col_types = []
+        cols = {
+            col.name: omniscidb_dtypes.sql_to_ibis_dtypes[col.type](
+                nullable=col.nullable
+            )
+            for col in self.con.get_table_details(table_name)
+        }
 
-        for col in self.con.get_table_details(table_name):
-            col_names.append(col.name)
-            col_types.append(OmniSciDBDataType.parse(col.type))
-
-        return sch.schema(
-            [
-                (col.name, OmniSciDBDataType.parse(col.type))
-                for col in self.con.get_table_details(table_name)
-            ]
-        )
+        return sch.schema([(name, tp) for name, tp in cols.items()])
 
     def sql(self, query: str):
         """

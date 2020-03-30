@@ -4,10 +4,10 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
 import ibis
-import ibis.expr.schema as sch
+from ibis.common import exceptions as com
+from ibis.omniscidb import dtypes as omniscidb_dtypes
+from ibis.omniscidb.compiler import _type_to_sql_string, quote_identifier
 from ibis.sql.compiler import DDL, DML
-
-from .compiler import _type_to_sql_string, quote_identifier
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
 
@@ -20,6 +20,29 @@ def _is_quoted(x):
     regex = re.compile(r"(?:`(.*)`|(.*))")
     quoted, _ = regex.match(x).groups()
     return quoted is not None
+
+
+def _convert_default_value(value: Any) -> Any:
+    if isinstance(value, bool):
+        return "'t'" if value else "'f'"
+    if isinstance(value, (int, float)):
+        return value
+    return quote_identifier(value, force=True)
+
+
+def _bool2str(v: bool) -> str:
+    """
+    Convert a bool value to a OmniSciDB bool value.
+
+    Parameters
+    ----------
+    v : bool
+
+    Returns
+    -------
+    str
+    """
+    return str(bool(v)).lower()
 
 
 class OmniSciDBQualifiedSQLStatement:
@@ -70,14 +93,6 @@ class DropTable(DropObject):
         return self._get_scoped_name(self.table_name, self.database)
 
 
-def _format_properties(props):
-    tokens = []
-    for k, v in sorted(props.items()):
-        tokens.append("  '{}'='{}'".format(k, v))
-
-    return '(\n{}\n)'.format(',\n'.join(tokens))
-
-
 class CreateTable(CreateDDL):
     """Create Table class.
 
@@ -126,16 +141,36 @@ class CreateTableWithSchema(CreateTable):
     def __init__(
         self,
         table_name: str,
-        schema: sch.Schema,
+        schema: ibis.Schema,
         database: Optional[str] = None,
         max_rows: Optional[int] = None,
         fragment_size: Optional[int] = None,
+        is_temporary: bool = False,
     ):
+        """
+        Initialize CreateTableWithSchema.
+
+        Parameters
+        ----------
+        table_name : str
+        schema : ibis.Schema
+        database : str, optional, defaul None
+        max_rows : int, optional, defaul None
+        fragment_size : int, optional, defaul None
+        is_temporary : bool, default False
+        """
         self.table_name = table_name
         self.database = database
         self.schema = schema
         self.max_rows = max_rows
         self.fragment_size = fragment_size
+        self.is_temporary = is_temporary
+
+    @property
+    def _prefix(self):
+        return 'CREATE {}TABLE'.format(
+            'TEMPORARY ' if self.is_temporary else ''
+        )
 
     @property
     def with_params(self) -> Dict[str, Any]:
@@ -209,7 +244,7 @@ class DropView(DropTable):
     _object_type = 'VIEW'
 
 
-# USER
+# DDL User classes
 
 
 class AlterUser(OmniSciDBDDL):
@@ -317,38 +352,114 @@ class DropUser(OmniSciDBDDL):
         return '\n'.join(self.pieces)
 
 
+# DDL Table classes
+
+
 class AlterTable(OmniSciDBDDL):
     """Alter Table class."""
 
-    def __init__(self, table, tbl_properties=None):
-        self.table = table
-        self.tbl_properties = tbl_properties
+    def __init__(self, args, **kwargs):
+        raise NotImplementedError('Not implemented yet.')
 
     def _wrap_command(self, cmd):
         return 'ALTER TABLE {}'.format(cmd)
 
-    def _format_properties(self, prefix=''):
-        tokens = []
 
-        if self.tbl_properties is not None:
-            # tokens.append(format_tblproperties(self.tbl_properties))
-            pass
+class AddColumns(AlterTable):
+    """Add Columns class."""
 
-        if len(tokens) > 0:
-            return '\n{}{}'.format(prefix, '\n'.join(tokens))
+    def __init__(
+        self,
+        table_name: str,
+        cols_with_types: dict,
+        nullables: Optional[list] = None,
+        defaults: Optional[list] = None,
+        encodings: Optional[list] = None,
+    ):
+        if len(cols_with_types) == 0:
+            raise com.IbisInputError('No column requested to add.')
         else:
-            return ''
+            self.col_count = len(cols_with_types)
+        self.table_name = table_name
+        self.cols_with_types = cols_with_types
+
+        if not nullables:
+            self.nullables = [True] * self.col_count
+        else:
+            self.nullables = nullables
+
+        if not defaults:
+            self.defaults = [None] * self.col_count
+        else:
+            self.defaults = defaults
+
+        if not encodings:
+            self.encodings = [None] * self.col_count
+        else:
+            self.encodings = encodings
+
+    def _pieces(self):
+        idx = 0
+        sep = ''
+        yield '{} ADD ('.format(self.table_name)
+        for col, d_type in self.cols_with_types.items():
+            yield '{}{} {}{}{}{}'.format(
+                sep,
+                col,
+                omniscidb_dtypes.ibis_dtypes_str_to_sql[d_type],
+                ' NOT NULL'
+                if not self.nullables[idx] and self.defaults[idx] is None
+                else '',
+                ' DEFAULT {}'.format(
+                    _convert_default_value(self.defaults[idx])
+                )
+                if self.defaults[idx] is not None
+                else '',
+                ' ENCODING {}'.format(self.encodings[idx])
+                if self.encodings[idx]
+                else '',
+            )
+            idx += 1
+            sep = ', '
+        yield ');'
 
     def compile(self):
-        """Compile the Alter Table expression.
+        """Compile the Add Column expression.
 
         Returns
         -------
         string
         """
-        props = self._format_properties()
-        action = '{} SET {}'.format(self.table, props)
-        return self._wrap_command(action)
+        cmd = "".join(self._pieces())
+        return self._wrap_command(cmd)
+
+
+class DropColumns(AlterTable):
+    """Drop Columns class."""
+
+    def __init__(self, table_name: str, column_names: list):
+        if len(column_names) == 0:
+            raise com.IbisInputError('No column requested to drop.')
+        self.table_name = table_name
+        self.column_names = column_names
+
+    def _pieces(self):
+        sep = ''
+        yield '{}'.format(self.table_name)
+        for col in self.column_names:
+            yield '{} DROP {}'.format(sep, col)
+            sep = ','
+        yield ';'
+
+    def compile(self):
+        """Compile the Drop Column expression.
+
+        Returns
+        -------
+        string
+        """
+        cmd = "".join(self._pieces())
+        return self._wrap_command(cmd)
 
 
 class RenameTable(AlterTable):
@@ -478,15 +589,19 @@ def format_schema(schema: ibis.expr.schema.Schema):
     string
     """
     elements = [
-        _format_schema_element(name, t)
-        for name, t in zip(schema.names, schema.types)
+        _format_schema_element(name, tp, nullable)
+        for name, tp, nullable in zip(
+            schema.names, schema.types, [t.nullable for t in schema.types]
+        )
     ]
     return '({})'.format(',\n '.join(elements))
 
 
-def _format_schema_element(name, t):
-    return '{} {}'.format(
-        quote_identifier(name, force=False), _type_to_sql_string(t)
+def _format_schema_element(name, tp, nullable):
+    return '{} {} {}'.format(
+        quote_identifier(name, force=False),
+        _type_to_sql_string(tp),
+        'NOT NULL' if not nullable else '',
     )
 
 
