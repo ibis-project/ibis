@@ -51,7 +51,7 @@ Database and Table objects
 --------------------------
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    ImpalaClient.database
    ImpalaClient.table
@@ -83,7 +83,7 @@ Like all table expressions in Ibis, ``ImpalaTable`` has a ``schema`` method you
 can use to examine its schema:
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    ImpalaTable.schema
 
@@ -124,7 +124,7 @@ In all cases, you should use the ``create_table`` method either on the
 top-level client connection or a database object.
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    ImpalaClient.create_table
    ImpalaDatabase.create_table
@@ -217,7 +217,7 @@ There are a handful of table methods for adding and removing partitions and
 getting information about the partition schema and any existing partition data:
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    ImpalaTable.add_partition
    ImpalaTable.drop_partition
@@ -287,7 +287,7 @@ To get a handy wrangled version of ``DESCRIBE FORMATTED`` use the ``metadata``
 method.
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    ImpalaTable.metadata
 
@@ -306,7 +306,7 @@ The ``files`` function is also available to see all of the physical HDFS data
 files backing a table:
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    ImpalaTable.files
 
@@ -338,7 +338,7 @@ location, file format, and other properties. For partitioned tables, to change
 partition-specific metadata use ``alter_partition``.
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    ImpalaTable.alter
    ImpalaTable.alter_partition
@@ -377,7 +377,7 @@ Computing table and partition statistics
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    ImpalaTable.compute_stats
 
@@ -400,7 +400,7 @@ INCREMENTAL STATS`` DDL command:
 Seeing table and column statistics
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    ImpalaTable.column_stats
    ImpalaTable.stats
@@ -476,7 +476,7 @@ depend, of course, on the last ``COMPUTE STATS`` call.
 These DDL commands are available as table-level and client-level methods:
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    ImpalaClient.invalidate_metadata
    ImpalaTable.invalidate_metadata
@@ -509,7 +509,7 @@ manually moving files with low level HDFS commands. It also deals with file
 name conflicts so data is not lost in such cases.
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    ImpalaClient.load_data
    ImpalaTable.load_data
@@ -538,7 +538,7 @@ Ibis gives you access to Impala session-level variables that affect query
 execution:
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    ImpalaClient.disable_codegen
    ImpalaClient.get_options

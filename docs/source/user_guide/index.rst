@@ -1,3 +1,9 @@
+.. _userguide:
+
+**********
+User guide
+**********
+
 The user guide covers Ibis by topic.
 
 If you are new to Ibis, you can learn the basics in the :ref:`tutorial`.
@@ -15,3 +21,6 @@ the information is available in the :ref:`api`.
    design
    extending
    backends
+   geospatial_analysis
+   extending_elementwise_expr
+   extending_reduce_expr

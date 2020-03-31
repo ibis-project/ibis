@@ -77,16 +77,15 @@ SQL engine support needing code contributors:
 - `Hive <https://hive.apache.org/>`_
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 0
 
    getting-started
-   tutorial
-   user_guide
+   tutorial/index
+   user_guide/index
    api
+   release/index
    contributing
    roadmap
-   release
-   release-pre-1.0
    legal
 
 

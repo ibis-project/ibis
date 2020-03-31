@@ -2,10 +2,15 @@
 Release Notes
 =============
 
+.. toctree::
+   :hidden:
+
+   release-pre-1.0
+
 .. note::
 
    These release notes are for versions of ibis **1.0 and later**. Release
-   notes for pre-1.0 versions of ibis can be found at :doc:`/release-pre-1.0`
+   notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
 * :feature:`2093` IsNan implementation for OmniSciDB
 * :feature:`2094` [OmnisciDB] Support add_columns and drop_columns for OmnisciDB table
