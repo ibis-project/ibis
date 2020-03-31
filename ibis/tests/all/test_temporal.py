@@ -57,6 +57,9 @@ def test_timestamp_extract(backend, alltypes, df, attr):
     if attr == 'millisecond':
         if backend.name == 'sqlite':
             pytest.xfail(reason=('Issue #2156'))
+        if backend.name == 'spark':
+            pytest.xfail(reason='Issue #2159')
+
         expected = (df.timestamp_col.dt.microsecond // 1000).astype('int32')
     else:
         expected = getattr(df.timestamp_col.dt, attr).astype('int32')
