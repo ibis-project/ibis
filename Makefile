@@ -47,7 +47,7 @@ LOGLEVEL := WARNING
 ## Targets for code checks
 
 typecheck:
-	@mypy --ignore-missing-imports $(MAKEFILE_DIR)/ibis
+	@mypy --config-file $(MAKEFILE_DIR)/typecheck.ini $(MAKEFILE_DIR)/ibis
 
 lint:
 	flake8

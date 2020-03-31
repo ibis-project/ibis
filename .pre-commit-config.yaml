@@ -18,3 +18,8 @@ repos:
       - id: flake8
         types:
           - python
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: 'v0.770'
+    hooks:
+      - id: mypy
+        files: ibis/
