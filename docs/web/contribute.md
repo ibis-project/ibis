@@ -37,6 +37,7 @@ rough steps on how to get things set up:
 - Install ``docker-compose`` with ``pip install docker-compose``
 - Install [docker](https://docs.docker.com/install/)
 - Be sure to follow the [post-install instructions](https://docs.docker.com/install/linux/linux-postinstall/) if you are running on Linux.
+- Log in to your Docker hub account with ``docker login`` (create an account at <https://hub.docker.com/> if you don't have one).
 
 Here are the steps to start database services and run the test suite:
 
