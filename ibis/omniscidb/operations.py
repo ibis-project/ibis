@@ -1013,6 +1013,7 @@ _date_ops = {
     ops.ExtractYear: _extract_field('YEAR'),
     ops.ExtractMonth: _extract_field('MONTH'),
     ops.ExtractDay: _extract_field('DAY'),
+    ops.ExtractDayOfYear: _extract_field('DOY'),
     ops.ExtractHour: _extract_field('HOUR'),
     ops.ExtractMinute: _extract_field('MINUTE'),
     ops.ExtractSecond: _extract_field('SECOND'),
