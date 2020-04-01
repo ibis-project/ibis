@@ -179,7 +179,7 @@ def test_explain(con, alltypes):
     'filename',
     ["/tmp/test_read_csv.csv", pathlib.Path("/tmp/test_read_csv.csv")],
 )
-def test_read_csv(con, temp_table, filename, alltypes):
+def test_read_csv(con, temp_table, filename, alltypes, df_alltypes):
     schema = alltypes.schema()
     con.create_table(temp_table, schema=schema)
 
@@ -194,7 +194,7 @@ def test_read_csv(con, temp_table, filename, alltypes):
     table.read_csv(filename, header=False, quotechar='"', delimiter=",")
 
     df_read_csv = table.execute()
-    df_expected = alltypes.execute()
+    df_expected = df_alltypes
 
     pd.testing.assert_frame_equal(df_expected, df_read_csv)
 
