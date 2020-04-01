@@ -42,6 +42,7 @@ def test_date_extract(backend, alltypes, df, attr):
         'month',
         'day',
         'day_of_year',
+        'quarter',
         'hour',
         'minute',
         'second',

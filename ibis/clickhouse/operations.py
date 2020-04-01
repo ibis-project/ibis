@@ -599,6 +599,7 @@ _operation_registry = {
     ops.ExtractMonth: unary('toMonth'),
     ops.ExtractDay: unary('toDayOfMonth'),
     ops.ExtractDayOfYear: unary('toDayOfYear'),
+    ops.ExtractQuarter: unary('toQuarter'),
     ops.ExtractHour: unary('toHour'),
     ops.ExtractMinute: unary('toMinute'),
     ops.ExtractSecond: unary('toSecond'),
