@@ -2,7 +2,6 @@ import contextlib
 import datetime
 import getpass
 
-import pyodbc  # NOQA fail early if the driver is missing
 import sqlalchemy as sa
 from sqlalchemy.dialects.mssql.pyodbc import MSDialect_pyodbc
 
@@ -11,6 +10,8 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.sql.alchemy as alch
 from ibis.sql.mssql.compiler import MSSQLDialect
+
+import pyodbc  # NOQA fail early if the driver is missing
 
 
 @dt.dtype.register(MSDialect_pyodbc, sa.dialects.mssql.UNIQUEIDENTIFIER)
