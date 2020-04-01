@@ -8,7 +8,7 @@ from ibis.tests.backends import (
     MySQL,
     PostgreSQL,
     PySpark,
-    SQLite
+    SQLite,
 )
 
 
