@@ -248,3 +248,4 @@ def test_cpu_execution_type(
 
     for mocked_method in mocked_methods:
         mocked_method.stop()
+
