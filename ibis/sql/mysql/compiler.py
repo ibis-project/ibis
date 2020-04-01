@@ -55,6 +55,8 @@ def _extract(fmt):
     def translator(t, expr):
         (arg,) = expr.op().args
         sa_arg = t.translate(arg)
+        if fmt == 'millisecond':
+            return sa.extract('microsecond', sa_arg) % 1000
         return sa.extract(fmt, sa_arg)
 
     return translator

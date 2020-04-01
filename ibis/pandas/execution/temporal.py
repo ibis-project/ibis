@@ -41,6 +41,8 @@ def execute_extract_millisecond_timestamp(op, data, **kwargs):
 @execute_node.register(ops.ExtractTemporalField, pd.Series)
 def execute_extract_timestamp_field_series(op, data, **kwargs):
     field_name = type(op).__name__.lower().replace('extract', '')
+    if field_name == 'millisecond':
+        return (data.dt.microsecond // 1000).astype(np.int32)
     return getattr(data.dt, field_name).astype(np.int32)
 
 
