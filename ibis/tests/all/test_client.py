@@ -4,7 +4,7 @@ from pkg_resources import parse_version
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.tests.backends import BigQuery, Impala, MSSQL, PySpark, Spark
+from ibis.tests.backends import MSSQL, BigQuery, Impala, PySpark, Spark
 
 
 @pytest.fixture

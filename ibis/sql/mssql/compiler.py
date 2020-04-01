@@ -2,14 +2,13 @@ import pyodbc
 import sqlalchemy as sa
 import sqlalchemy.dialects.mssql as mssql
 
-
-import ibis.sql.alchemy as alch
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.common.exceptions as com
+import ibis.sql.alchemy as alch
 
 # used for literal translate
-from ibis.sql.alchemy import unary, fixed_arity
+from ibis.sql.alchemy import fixed_arity, unary
 
 
 def raise_unsupported_op_error(translator, expr, *args):

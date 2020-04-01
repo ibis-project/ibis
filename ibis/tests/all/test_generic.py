@@ -5,9 +5,9 @@ import pytest
 import ibis
 from ibis import literal as L
 from ibis.tests.backends import (
+    MSSQL,
     BigQuery,
     Clickhouse,
-    MSSQL,
     MySQL,
     OmniSciDB,
     PostgreSQL,

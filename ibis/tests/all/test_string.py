@@ -4,9 +4,9 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 from ibis.tests.backends import (
+    MSSQL,
     Clickhouse,
     Impala,
-    MSSQL,
     PostgreSQL,
     PySpark,
     Spark,

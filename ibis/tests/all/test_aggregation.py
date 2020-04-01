@@ -3,8 +3,8 @@ import pytest
 from pytest import param
 
 from ibis.tests.backends import (
-    Clickhouse,
     MSSQL,
+    Clickhouse,
     MySQL,
     PostgreSQL,
     PySpark,

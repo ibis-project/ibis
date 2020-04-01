@@ -10,11 +10,11 @@ import ibis
 import ibis.expr.datatypes as dt
 from ibis.pandas.execution.temporal import day_name
 from ibis.tests.backends import (
+    MSSQL,
     BigQuery,
     Clickhouse,
     Csv,
     Impala,
-    MSSQL,
     Pandas,
     Parquet,
     PostgreSQL,
