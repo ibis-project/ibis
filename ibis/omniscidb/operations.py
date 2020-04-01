@@ -274,10 +274,7 @@ def _extract_field(sql_attr):
 
         op = expr.op()
         arg = op.args[0]
-        modify = ''
-        if sql_attr == 'DOW':
-            sql_attr = 'ISODOW'
-            modify = ' - 1'
+        modify = ' -1' if sql_attr == 'ISODOW' else ''
 
         arg_str = translator.translate(arg)
         result = 'EXTRACT({} FROM {}){}'.format(sql_attr, arg_str, modify)
@@ -1104,8 +1101,8 @@ _date_ops = {
     ops.ExtractYear: _extract_field('YEAR'),
     ops.ExtractMonth: _extract_field('MONTH'),
     ops.ExtractDay: _extract_field('DAY'),
-    ops.DayOfWeekIndex: _extract_field('DOW'),
-    ops.DayOfWeekName: _extract_field_dow_name('DOW'),
+    ops.DayOfWeekIndex: _extract_field('ISODOW'),
+    ops.DayOfWeekName: _extract_field_dow_name('ISODOW'),
     ops.ExtractDayOfYear: _extract_field('DOY'),
     ops.ExtractQuarter: _extract_field('QUARTER'),
     ops.ExtractWeekOfYear: _extract_woy,
