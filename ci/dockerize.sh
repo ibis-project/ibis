@@ -12,6 +12,9 @@ for service in $@; do
     omniscidb)
         add_wait "-wait tcp://omniscidb:6274"
         ;;
+    mssql)
+        add_wait "-wait tcp://mssql:1433"
+        ;;
     mysql)
         add_wait "-wait tcp://mysql:3306"
         ;;

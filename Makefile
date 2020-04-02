@@ -22,13 +22,13 @@ DOCKER_STOP := $(DOCKER) rm --force --stop
 DOCKER_RUN_COMMAND := echo "you should do 'make docker_run DOCKER_RUN_COMMAND=[you command]'"
 
 # all backends that ibis using
-BACKENDS := clickhouse impala kudu-master kudu-tserver mysql omniscidb parquet postgres sqlite
+BACKENDS := clickhouse impala kudu-master kudu-tserver mssql mysql omniscidb parquet postgres sqlite
 
 # backends which are implemented as containers and can be launched through the `docker-compose`
-SERVICES := omniscidb postgres mysql clickhouse impala kudu-master kudu-tserver
+SERVICES := omniscidb postgres mssql mysql clickhouse impala kudu-master kudu-tserver
 
 # the variable contains backends for which test datasets can be automatically loaded
-LOADS := sqlite parquet postgres clickhouse omniscidb mysql impala
+LOADS := sqlite parquet postgres clickhouse omniscidb mssql mysql impala
 
 CURRENT_SERVICES := $(shell $(MAKEFILE_DIR)/ci/backends-to-start.sh "$(BACKENDS)" "$(SERVICES)")
 CURRENT_LOADS := $(shell $(MAKEFILE_DIR)/ci/backends-to-start.sh "$(BACKENDS)" "$(LOADS)")
@@ -149,7 +149,7 @@ testspark:
 		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) -n auto -m 'pyspark' -k 'not test_import_time'"
 
 fastopt:
-	@echo -m 'not (backend or bigquery or clickhouse or hdfs or impala or kudu or omniscidb or mysql or postgis or postgresql or superuser or udf)'
+	@echo -m 'not (backend or bigquery or clickhouse or hdfs or impala or kudu or omniscidb or mssql or mysql or postgis or postgresql or superuser or udf)'
 
 # Targets for documentation builds
 
