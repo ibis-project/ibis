@@ -180,7 +180,7 @@ def test_group_concat(backend, alltypes, df, result_fn, expected_fn):
     ],
 )
 @pytest.mark.xfail_unsupported
-@pytest.mark.xfail_backends([PySpark])  # Issue #2130
+@pytest.mark.xfail_backends([MSSQL, PySpark])  # Issue #2130
 def test_topk_op(backend, alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend
     # can have different result for that.
@@ -209,7 +209,7 @@ def test_topk_op(backend, alltypes, df, result_fn, expected_fn):
 )
 @pytest.mark.xfail_unsupported
 # Issues #2133 #2132# #2133
-@pytest.mark.xfail_backends([Clickhouse, MySQL, PostgreSQL])
+@pytest.mark.xfail_backends([Clickhouse, MSSQL, MySQL, PostgreSQL])
 @pytest.mark.skip_backends([SQLite], reason='Issue #2128')
 def test_topk_filter_op(backend, alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend

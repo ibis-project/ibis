@@ -33,6 +33,7 @@ dependencies:
   # maybe it is related to the pinned arrow used
   # - pymapd>=0.12
   - pymysql
+  - pyodbc
   # not fully compatible with Python 3.8
   # https://github.com/apache/spark/pull/26194#issuecomment-566592265
   # - pyspark>=3.0
