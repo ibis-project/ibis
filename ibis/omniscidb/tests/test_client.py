@@ -192,11 +192,9 @@ def test_read_csv(con, temp_table, filename, alltypes, df_alltypes):
     db = con.database()
     table = db.table(temp_table)
     table.read_csv(filename, header=False, quotechar='"', delimiter=",")
-
     df_read_csv = table.execute()
-    df_expected = df_alltypes
 
-    pd.testing.assert_frame_equal(df_expected, df_read_csv)
+    pd.testing.assert_frame_equal(df_alltypes, df_read_csv)
 
 
 @pytest.mark.parametrize('ipc', [None, True, False])
