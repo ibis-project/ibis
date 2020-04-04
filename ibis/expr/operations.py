@@ -2601,6 +2601,10 @@ class ExtractEpochSeconds(ExtractDateField):
     pass
 
 
+class ExtractWeekOfYear(ExtractDateField):
+    pass
+
+
 class ExtractHour(ExtractTimeField):
     pass
 
