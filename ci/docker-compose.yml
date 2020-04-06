@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: ''
 
   mysql:
-    image: mariadb:10.2
+    image: mariadb:10.4.12
     hostname: mysql
     ports:
       - 3307:3306
@@ -19,8 +19,6 @@ services:
       MYSQL_DATABASE: ibis_testing
       MYSQL_USER: ibis
       MYSQL_PASSWORD: ibis
-      # see: https://github.com/docker-library/mariadb/issues/262
-      MYSQL_INITDB_SKIP_TZINFO: 1
 
   impala:
     image: ibisproject/impala:latest
