@@ -36,6 +36,45 @@ def con():
     )
 
 
+class temp_helper:
+    def __init__(
+        self,
+        con,
+        kind,
+        create=False,
+        create_kwargs=dict(),
+        extra_return=[],
+        method_name=None,
+    ):
+        self.name = _random_identifier(kind)
+        self.con = con
+        self.kind = kind
+        self.create = create
+        self.create_kwargs = create_kwargs
+        self.extra_return = extra_return
+        self.method_name = kind if method_name is None else method_name
+
+    def __enter__(self):
+        # some of the temp entities may not support 'force' parameter
+        # at 'drop' method, that's why we use 'try-except' for that
+        try:
+            getattr(self.con, 'drop_' + self.method_name)(self.name)
+        except Exception:
+            pass
+
+        if self.create:
+            getattr(self.con, 'create_' + self.method_name)(
+                self.name, **self.create_kwargs
+            )
+        return self.name
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        try:
+            getattr(self.con, 'drop_' + self.method_name)(self.name)
+        except Exception:
+            pass
+
+
 @pytest.fixture(scope='function')
 def test_schema() -> ibis.schema:
     """
@@ -59,15 +98,8 @@ def test_table(con, test_schema):
     -------
     ibis.expr.types.TableExpr
     """
-    table_name = 'test_table'
-    con.drop_table(table_name, force=True)
-
-    schema = test_schema
-    con.create_table(table_name, schema=schema)
-
-    yield con.table(table_name)
-
-    con.drop_table(table_name)
+    with temp_helper(con, 'table', True, {'schema': test_schema}) as name:
+        yield con.table(name)
 
 
 @pytest.fixture(scope='module')
@@ -178,12 +210,10 @@ def temp_table(con) -> str:
     name : string
         Random table name for a temporary usage.
     """
-    name = _random_identifier('table')
-    con.drop_table(name, force=True)
-    try:
-        yield name
-    finally:
-        con.drop_table(name, force=True)
+    with temp_helper(
+        con, 'table', False, {'schema': test_schema}
+    ) as ret_value:
+        yield ret_value
 
 
 @pytest.fixture(scope='session')
@@ -205,13 +235,8 @@ def temp_database(con, test_data_db: str) -> str:
     -------
     str
     """
-    name = _random_identifier('database')
-    con.create_database(name)
-    try:
-        yield name
-    finally:
-        con.set_database(test_data_db)
-        con.drop_database(name, force=True)
+    with temp_helper(con, 'database', True) as ret_value:
+        yield ret_value
 
 
 @pytest.fixture
@@ -227,15 +252,12 @@ def temp_view(con) -> str:
     name : string
         Random view name for a temporary usage.
     """
-    name = _random_identifier('view')
-    try:
-        yield name
-    finally:
-        con.drop_view(name, force=True)
+    with temp_helper(con, 'view') as ret_value:
+        yield ret_value
 
 
 @pytest.fixture(scope='function')
-def test_view(con, test_table) -> ibis.expr.types.TableExpr:
+def test_view(con, test_table) -> str:
     """Create a temporary view.
 
     Parameters
@@ -246,15 +268,8 @@ def test_view(con, test_table) -> ibis.expr.types.TableExpr:
     -------
     str
     """
-    name = _random_identifier('view')
-
-    con.drop_view(name, force=True)
-    con.create_view(name, test_table)
-
-    try:
-        yield name
-    finally:
-        con.drop_view(name, force=True)
+    with temp_helper(con, 'view', True, {'expr': test_table}) as ret_value:
+        yield ret_value
 
 
 @pytest.fixture(scope='function')
@@ -267,22 +282,7 @@ def test_user(con) -> list:
 
     Yields
     -------
-    list
+    tupple
     """
-
-    name = _random_identifier('user')
-    password = "super"
-
-    # drop_user does not support 'force' parameter,
-    # so there is no way to safely drop user without try-except
-    try:
-        con.drop_user(name)
-    except Exception:
-        pass
-    try:
-        yield [name, password]
-    finally:
-        try:
-            con.drop_user(name)
-        except Exception:
-            pass
+    with temp_helper(con, "user") as name:
+        yield (name, "super")

@@ -121,7 +121,7 @@ def test_add_columns(con, test_table, cols_with_types):
 
     test_table.add_columns(cols_with_types)
 
-    res_tbl = con.table('test_table')
+    res_tbl = con.table(test_table.name)
 
     schema_new_cols = ibis.schema(cols_with_types.items())
     old_schema_with_new_cols = schema_before.append(schema_new_cols)
@@ -475,7 +475,7 @@ def test_create_user(con, test_user, is_super):
 
 
 @pytest.mark.parametrize('is_super', [False, True])
-def test_alter_user(con, test_user, is_super):
+def test_alter_user(con, is_super, test_user):
     name, password = test_user
     con.create_user(*test_user, is_super=False)
     con.alter_user(*test_user, is_super=is_super)
