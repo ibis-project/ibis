@@ -99,6 +99,7 @@ object you get back from ``ImpalaClient.table``.
    ImpalaTable.files
    ImpalaTable.insert
    ImpalaTable.invalidate_metadata
+   ImpalaTable.is_partitioned
    ImpalaTable.load_data
    ImpalaTable.metadata
    ImpalaTable.partition_schema
