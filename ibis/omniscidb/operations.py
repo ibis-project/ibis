@@ -12,6 +12,7 @@ import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 import ibis.util as util
+from ibis import literal as L
 from ibis.impala import compiler as impala_compiler
 from ibis.omniscidb import dtypes as omniscidb_dtypes
 from ibis.omniscidb.identifiers import quote_identifier
@@ -272,6 +273,40 @@ def _extract_field(sql_attr):
     return extract_field_formatter
 
 
+# MATH
+
+
+def _log_common(translator, arg, base=None):
+    if isinstance(arg, tuple):
+        args_ = ', '.join(map(translator.translate, arg))
+    else:
+        args_ = translator.translate(arg)
+
+    if base is None:
+        return 'ln({})'.format(args_)
+
+    base_formatted = translator.translate(base)
+    return 'ln({})/ln({})'.format(args_, base_formatted)
+
+
+def _log(translator, expr):
+    op = expr.op()
+    arg, base = op.args
+    return _log_common(translator, arg, base)
+
+
+def _log2(translator, expr):
+    op = expr.op()
+    arg = op.args
+    return _log_common(translator, arg, L(2))
+
+
+def _log10(translator, expr):
+    op = expr.op()
+    arg = op.args
+    return _log_common(translator, arg, L(10))
+
+
 # STATS
 
 
@@ -444,6 +479,19 @@ def _cross_join(translator, expr):
     args = expr.op().args
     left, right = args[:2]
     return translator.translate(left.join(right, ibis.literal(True)))
+
+
+def _ifnull(translator, expr):
+    col_expr, value_expr = expr.op().args
+    if isinstance(col_expr, ir.DecimalValue) and isinstance(
+        value_expr, ir.IntegerValue
+    ):
+        value_expr = value_expr.cast(col_expr.type())
+    col_name = translator.translate(col_expr)
+    value = translator.translate(value_expr)
+    return 'CASE WHEN {} IS NULL THEN {} ELSE {} END'.format(
+        col_name, value, col_name
+    )
 
 
 def literal(translator, expr: ibis.expr.operations.Literal) -> str:
@@ -865,6 +913,9 @@ _math_ops = {
     ops.Pi: fixed_arity('pi', 0),
     ops.Radians: unary('radians'),
     NumericTruncate: fixed_arity('truncate', 2),
+    ops.Log: _log,
+    ops.Log2: _log2,
+    ops.Log10: _log10,
 }
 
 # STATS
@@ -973,6 +1024,9 @@ _general_ops = {
     ops.Where: _where,
     ops.TableColumn: _table_column,
     ops.CrossJoin: _cross_join,
+    ops.IfNull: _ifnull,
+    ops.NullIf: fixed_arity('nullif', 2),
+    ops.IsNan: unary('isNan'),
 }
 
 # WINDOW
@@ -1004,11 +1058,8 @@ _unsupported_ops = [
     ops.NTile,
     ops.NthValue,
     ops.GroupConcat,
-    ops.NullIf,
     ops.NullIfZero,
     ops.IsInf,
-    ops.IsNan,
-    ops.IfNull,
     # string
     ops.Lowercase,
     ops.Uppercase,
@@ -1037,6 +1088,7 @@ _unsupported_ops = [
     ops.Greatest,
     ops.Log2,
     ops.Log,
+    ops.Round,
     # date/time/timestamp
     ops.TimestampFromUNIX,
     ops.TimeTruncate,
