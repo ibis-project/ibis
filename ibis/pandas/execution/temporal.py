@@ -49,6 +49,11 @@ def execute_extract_millisecond_series(op, data, **kwargs):
     return (data.dt.microsecond // 1000).astype(np.int32)
 
 
+@execute_node.register(ops.ExtractEpoch, (pd.Timestamp, pd.Series))
+def execute_epoch(op, data, **kwargs):
+    return data.astype('int64') // int(1e9)
+
+
 @execute_node.register(
     ops.BetweenTime,
     pd.Series,

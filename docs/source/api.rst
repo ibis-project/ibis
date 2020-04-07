@@ -580,6 +580,7 @@ All timestamp operations are valid either on scalar or array values
    TimestampValue.month
    TimestampValue.day
    TimestampValue.day_of_week
+   TimestampValue.epoch
    TimestampValue.hour
    TimestampValue.minute
    TimestampValue.second
@@ -605,6 +606,7 @@ Date methods
    DateValue.month
    DateValue.day
    DateValue.day_of_week
+   DateValue.epoch
    DateValue.truncate
    DateValue.add
    DateValue.radd

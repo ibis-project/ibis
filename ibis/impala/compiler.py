@@ -862,6 +862,11 @@ def _day_of_week_name(t, expr):
     return 'dayname({})'.format(t.translate(arg))
 
 
+def _extract_epoch(t, expr):
+    (arg,) = expr.op().args
+    return 'unix_timestamp({})'.format(t.translate(arg))
+
+
 _impala_unit_names = {
     'Y': 'Y',
     'Q': 'Q',
@@ -1208,6 +1213,7 @@ _operation_registry = {
     ops.ExtractMonth: _extract_field('month'),
     ops.ExtractDay: _extract_field('day'),
     ops.ExtractQuarter: _extract_field('quarter'),
+    ops.ExtractEpoch: _extract_epoch,
     ops.ExtractHour: _extract_field('hour'),
     ops.ExtractMinute: _extract_field('minute'),
     ops.ExtractSecond: _extract_field('second'),
