@@ -73,6 +73,7 @@ the most methods on ``ImpalaTable``.
    ImpalaClient.drop_table
    ImpalaClient.create_table
    ImpalaClient.insert
+   ImpalaClient.invalidate_metadata
    ImpalaClient.truncate_table
    ImpalaClient.get_schema
    ImpalaClient.cache_table
