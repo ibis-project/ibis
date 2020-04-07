@@ -105,6 +105,7 @@ object you get back from ``ImpalaClient.table``.
    ImpalaTable.partitions
    ImpalaTable.refresh
    ImpalaTable.rename
+   ImpalaTable.schema
    ImpalaTable.stats
 
 Creating views is also possible:
