@@ -30,6 +30,15 @@ class TestInteractiveUse(unittest.TestCase):
 
         assert len(self.con.executed_queries) > 0
 
+    def test_png_repr_returns_correct_type(self):
+        table = self.con.table('functional_alltypes')
+
+        with config.option_context('interactive', False):
+            assert table._repr_png_() is not None
+
+        with config.option_context('interactive', True):
+            assert table._repr_png_() is None
+
     def test_default_limit(self):
         table = self.con.table('functional_alltypes')
 
