@@ -33,9 +33,6 @@ class TestInteractiveUse(unittest.TestCase):
     def test_png_repr_returns_correct_type(self):
         table = self.con.table('functional_alltypes')
 
-        with config.option_context('interactive', False):
-            assert table._repr_png_() is not None
-
         with config.option_context('interactive', True):
             assert table._repr_png_() is None
 
