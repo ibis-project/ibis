@@ -135,6 +135,9 @@ def test_drop_zero_columns(test_table):
         test_table.drop_columns(column_names)
 
 
+@pytest.mark.xfail(
+    reason="'ALTER TABLE <tbl_name> DROP <col_name>' is not supported yet by omnisci backend."
+)
 @pytest.mark.parametrize('column_names', [['a'], ['a', 'b', 'c']])
 def test_drop_columns(con, test_table, column_names):
     schema_before = test_table.schema()
