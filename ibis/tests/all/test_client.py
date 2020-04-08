@@ -194,8 +194,6 @@ def test_create_drop_view(con, backend, temp_view):
     v_expr = con.table(temp_view)
     # check if the view and the table has the same fields
     assert set(t_expr.schema().names) == set(v_expr.schema().names)
-
-
 @pytest.mark.only_on_backends(
     [BigQuery, Clickhouse, Impala, OmniSciDB, Spark, BigQuery],
     reason="run only if backend is sql-based",
