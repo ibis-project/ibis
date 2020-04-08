@@ -187,3 +187,13 @@ def test_create_drop_view(con, backend, temp_view):
     v_expr = con.table(temp_view)
     # check if the view and the table has the same fields
     assert set(t_expr.schema().names) == set(v_expr.schema().names)
+
+
+def test_separate_database(con, test_data_db, temp_database):
+    # using temp_database switches "con" current database to a
+    # temporary one until a test is over
+    tmp_db = con.database(temp_database)
+    # verifying we can open another db which isn't equal to current
+    db = con.database(test_data_db)
+    assert db.name == test_data_db
+    assert tmp_db.name == temp_database
