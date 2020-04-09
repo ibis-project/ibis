@@ -14,9 +14,11 @@ Release Notes
 * :feature:`2126` Add translation rules for isnull() and notnull() for pyspark backend
 * :feature:`2062` Implement read_csv for omniscidb backend
 * :feature:`2097` Date, DateDiff and TimestampDiff implementations for OmniSciDB
+* :bug:`2170` Fix millisecond issue for OmniSciDB :issue:`2167`, MySQL :issue:`2169`, PostgreSQL :issue:`2166` and Pandas :issue:`2168` backends
 * :feature:`2060` Add initial support for ibis.random function
 * :support:`2107` Added fragment_size to table creation for OmniSciDB
 * :feature:`2117` Add non-nullable info to schema output
+* :feature:`2083` fillna and nullif implementations for OmnisciDB
 * :support:`2096` Added round() support for OmniSciDB
 * :feature:`2125` [OmniSciDB] Add support for within, d_fully_within and point
 * :feature:`2086` OmniSciDB - Refactor DDL and Client; Add temporary parameter to create_table and "force" parameter to drop_view
