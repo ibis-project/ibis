@@ -106,24 +106,32 @@ def test_union_op(alltypes):
         expr.compile()
 
 
-@pytest.mark.xfail
-def test_insert_pandas(con, test_table):
-    data1 = {'a': [None], 'b': [None], 'c': [1], 'd': [2.0]}
-    df1 = pd.DataFrame(data=data1)
-    test_table.insert(df1)
+def test_insert_zero_values(test_table):
+    values = []
+    with pytest.raises(com.IbisInputError):
+        test_table.insert(values=values)
+
+
+def test_insert_values(con, test_table):
+    values1 = [None, None, 1, 2.0]
+    dst_cols1 = ['a', 'b', 'c', 'd']
+    test_table.insert(dst_cols=dst_cols1, values=values1)
 
     aux_table_name = 'aux_test_table'
     con.drop_table(aux_table_name, force=True)
-
     schema = ibis.schema(
         [('e', 'polygon'), ('f', 'point'), ('g', 'int8'), ('h', 'double')]
     )
     con.create_table(aux_table_name, schema=schema)
-    aux_table = con.table(aux_table_name)
-
-    data2 = {'e': [None], 'f': [None], 'g': [1], 'h': [2.0]}
-    df2 = pd.DataFrame(data=data2)
-    aux_table.insert(df2)
+    tbl2 = con.table(aux_table_name)
+    values2 = [
+        'polygon((0 0, 4 0, 4 4, 0 4, 0 0), (1 1, 2 1, 2 2, 1 2, 1 1))',
+        'point(1 1)',
+        1,
+        2.0,
+    ]
+    dst_cols2 = ['e', 'f', 'g', 'h']
+    tbl2.insert(dst_cols=dst_cols2, values=values2, validate=False)
 
     tbl1 = con.table('test_table')
     tbl2 = con.table(aux_table_name)
@@ -131,7 +139,7 @@ def test_insert_pandas(con, test_table):
     joined_tbl_name = 'joined_table'
     joined_tbl = tbl1.inner_join(tbl2, [tbl1.c == tbl2.g, tbl1.d == tbl2.h])
 
-    con.create_table(joined_tbl_name, joined_tbl)
+    con.create_view(joined_tbl_name, joined_tbl)
     joined_tbl = con.table(joined_tbl_name)
 
     try:
@@ -140,13 +148,18 @@ def test_insert_pandas(con, test_table):
             assert col in joined_tbl.schema().names
     finally:
         con.drop_table(aux_table_name)
+        con.drop_view(joined_tbl_name)
 
 
-@pytest.mark.xfail
 def test_insert_select(con, test_table):
-    data = {'a': [None], 'b': [None], 'c': [1], 'd': [2.0]}
-    df = pd.DataFrame(data=data)
-    test_table.insert(df)
+    values = [
+        'polygon((0 0, 4 0, 4 4, 0 4, 0 0), (1 1, 2 1, 2 2, 1 2, 1 1))',
+        'point(1 1)',
+        1,
+        2.0,
+    ]
+    dst_cols = ['a', 'b', 'c', 'd']
+    test_table.insert(values=values, dst_cols=dst_cols)
 
     aux_table_name = 'aux_test_table'
     con.drop_table(aux_table_name, force=True)
@@ -160,13 +173,15 @@ def test_insert_select(con, test_table):
     tbl2 = con.table(aux_table_name)
 
     dst_cols = ['e', 'f', 'g', 'h']
-    tbl2.insert_into_select(tbl1['a', 'b', 'c', 'd'], dst_cols)
+    tbl2.insert(
+        obj=tbl1['a', 'b', 'c', 'd'], dst_cols=dst_cols, validate=False
+    )
     tbl2 = con.table(aux_table_name)
 
     joined_tbl_name = 'joined_table'
     joined_tbl = tbl1.inner_join(tbl2, [tbl1.c == tbl2.g, tbl1.d == tbl2.h])
 
-    con.create_table(joined_tbl_name, joined_tbl)
+    con.create_view(joined_tbl_name, joined_tbl)
     joined_tbl = con.table(joined_tbl_name)
 
     try:
@@ -175,6 +190,43 @@ def test_insert_select(con, test_table):
             assert col in joined_tbl.schema().names
     finally:
         con.drop_table(aux_table_name)
+        con.drop_view(joined_tbl_name)
+
+
+def test_insert_pandas(con, test_table):
+    data1 = {'a': [None], 'b': [None], 'c': [1], 'd': [2.0]}
+    df1 = pd.DataFrame(data=data1)
+    test_table.insert(obj=df1)
+
+    aux_table_name = 'aux_test_table'
+    con.drop_table(aux_table_name, force=True)
+
+    schema = ibis.schema(
+        [('e', 'polygon'), ('f', 'point'), ('g', 'int8'), ('h', 'double')]
+    )
+    con.create_table(aux_table_name, schema=schema)
+    aux_table = con.table(aux_table_name)
+
+    data2 = {'e': [None], 'f': [None], 'g': [1], 'h': [2.0]}
+    df2 = pd.DataFrame(data=data2)
+    aux_table.insert(obj=df2, validate=False)
+
+    tbl1 = con.table('test_table')
+    tbl2 = con.table(aux_table_name)
+
+    joined_tbl_name = 'joined_table'
+    joined_tbl = tbl1.inner_join(tbl2, [tbl1.c == tbl2.g, tbl1.d == tbl2.h])
+
+    con.create_view(joined_tbl_name, joined_tbl)
+    joined_tbl = con.table(joined_tbl_name)
+
+    try:
+        joined_cols = ['c', 'd', 'g', 'h']
+        for col in joined_cols:
+            assert col in joined_tbl.schema().names
+    finally:
+        con.drop_table(aux_table_name)
+        con.drop_view(joined_tbl_name)
 
 
 def test_add_zero_columns(test_table):

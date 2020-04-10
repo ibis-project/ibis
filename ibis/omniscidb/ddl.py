@@ -29,7 +29,7 @@ def _convert_default_value(value: Any) -> Any:
         return "'t'" if value else "'f'"
     if isinstance(value, (int, float)):
         return value
-    return quote_identifier(value, force=True)
+    return quote_identifier(value, quotechar='\'', force=True)
 
 
 def _bool2str(v: bool) -> str:
@@ -50,7 +50,9 @@ def _bool2str(v: bool) -> str:
 class OmniSciDBQualifiedSQLStatement:
     """OmniSciDBQualifiedSQLStatement."""
 
-    def _get_scoped_name(self, obj_name, database):  # noqa: F401
+    def _get_scoped_name(
+        self, obj_name: str, database: str
+    ) -> str:  # noqa: F401
         return obj_name
 
 
@@ -69,7 +71,7 @@ class CreateDDL(OmniSciDBDDL):
 class DropObject(OmniSciDBDDL):
     """Drop object class."""
 
-    def __init__(self, must_exist=True):
+    def __init__(self, must_exist: bool = True):
         """Initialize the drop object operation."""
         self.must_exist = must_exist
 
@@ -85,13 +87,15 @@ class DropTable(DropObject):
 
     _object_type = 'TABLE'
 
-    def __init__(self, table_name, database=None, must_exist=True):
+    def __init__(
+        self, table_name: str, database: str = None, must_exist: bool = True
+    ):
         """Initialize the drop table object."""
         super().__init__(must_exist=must_exist)
         self.table_name = table_name
         self.database = database
 
-    def _object_name(self):
+    def _object_name(self) -> str:
         return self._get_scoped_name(self.table_name, self.database)
 
 
@@ -240,10 +244,21 @@ class CreateView(CTAS):
         return 'CREATE VIEW'
 
 
-class DropView(DropTable):
+class DropView(DropObject):
     """Drop View class."""
 
     _object_type = 'VIEW'
+
+    def __init__(
+        self, view_name: str, database: str = None, must_exist: bool = True
+    ):
+        """Initialize the drop view object."""
+        super().__init__(must_exist=must_exist)
+        self.view_name = view_name
+        self.database = database
+
+    def _object_name(self) -> str:
+        return self._get_scoped_name(self.view_name, self.database)
 
 
 # DDL User classes
@@ -607,21 +622,11 @@ def _format_schema_element(name, tp, nullable):
     )
 
 
-class InsertSelect(OmniSciDBDML):
-    """Insert Select class."""
+class Insert(OmniSciDBDML):
+    """Insert class."""
 
-    def __init__(
-        self,
-        table_name: str,
-        select: ibis.Expr,
-        dst_cols: Optional[list] = None,
-    ):
-        self.table_name = table_name
-        self.select = select
-        self.dst_cols = dst_cols
-
-    def _wrap_command(self, cmd: str) -> str:
-        return 'INSERT INTO {} {};'.format(self.table_name, cmd)
+    def __init__(self, table: str):
+        self.table = table
 
     def _get_dst_cols_cmd(self):
         yield '('
@@ -631,8 +636,65 @@ class InsertSelect(OmniSciDBDML):
             sep = ', '
         yield ') '
 
+    def _wrap_command(self, cmd: str) -> str:
+        return 'INSERT INTO {} {}'.format(self.table, cmd)
+
+
+class InsertValues(Insert):
+    """Insert Values class."""
+
+    def __init__(
+        self, table_name: str, values: list, dst_cols: Optional[list] = None,
+    ):
+        super().__init__(table_name)
+        if not values:
+            raise com.IbisInputError('No one values provided to insert')
+        else:
+            self.values = values
+        self.dst_cols = dst_cols
+
+    def _get_vals_cmd(self):
+        yield 'VALUES ('
+        sep = ''
+        for val in self.values:
+            yield '{}{}'.format(
+                sep, _convert_default_value(val) if val is not None else 'NULL'
+            )
+            sep = ', '
+        yield ');'
+
     def compile(self):
-        """Compile the Insert Into Select expression.
+        """Compile the Insert expression.
+
+        Returns
+        -------
+        string
+        """
+        if not self.dst_cols:
+            cmd = ''.join(self._get_vals_cmd())
+        else:
+            cmd = ''.join(self._get_dst_cols_cmd()) + ''.join(
+                self._get_vals_cmd()
+            )
+
+        return self._wrap_command(cmd)
+
+
+class InsertSelect(Insert):
+    """Insert Select class."""
+
+    def __init__(
+        self,
+        table_name: str,
+        select: ibis.Expr,
+        dst_cols: Optional[list] = None,
+    ):
+        super().__init__(table_name)
+        self.select = select
+        self.dst_cols = dst_cols
+
+    def compile(self):
+        """Compile the Insert expression.
 
         Returns
         -------
@@ -648,14 +710,14 @@ class InsertSelect(OmniSciDBDML):
             else ''.join(self._get_dst_cols_cmd()) + select
         )
 
-        return self._wrap_command(cmd)
+        return self._wrap_command(cmd) + ';'
 
 
-class InsertPandas(OmniSciDBDML):
+class InsertPandas(Insert):
     """Insert Data from Pandas class."""
 
     def __init__(self, table_name: str, df: pd.DataFrame):
-        self.table_name = table_name
+        super().__init__(table_name)
         self.df = df
 
     def _get_field_names(self):
@@ -681,18 +743,16 @@ class InsertPandas(OmniSciDBDML):
         ------
         string
         """
-        cmd = 'INSERT INTO'
-
         fields = self._get_field_names()
 
-        stmt = '{0} {1} ({2}) VALUES '.format(cmd, self.table_name, fields)
+        stmt = '({}) VALUES '.format(fields)
 
         for values in self._get_field_values():
-            yield '{} ({});'.format(stmt, ','.join(values))
+            yield '{} ({});'.format(self._wrap_command(stmt), ','.join(values))
 
     def compile(self):
         """Compile the Insert expression."""
-        return '\n'.join(self.pieces)
+        return ''.join(self.pieces)
 
 
 class LoadData(OmniSciDBDDL):

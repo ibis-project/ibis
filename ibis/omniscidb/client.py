@@ -490,24 +490,26 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
 
     def insert(
         self,
-        obj: Union[pd.DataFrame, ir.Expr],
+        obj: Optional[Union[pd.DataFrame, ir.Expr]] = None,
         dst_cols: Optional[list] = None,
+        values: Optional[list] = None,
+        validate: Optional[bool] = True,
     ):
         """
-        Insert data into table.
-
-        Insert values from pandas dataframe into table
-        when pd.DataFrame is passed,
-        or copy data from one table and insert it into another table
-        when ibis Expr is passed.
+        Insert data into OmniSciDB table.
 
         Parameters
         ----------
-        obj : pd.DataFrame or ibis Expr
-            Set obj to pandas dataframe or ibis Expr
+        obj : pd.DataFrame or ibis Expr, optional
+            Set obj to pandas dataframe or ibis Expr. Default is None
         dst_cols : list, optional
             Set list of table's column(s) into which data will be coppied
-            when ibis Expr is passed
+            when ibis Expr or values is passed. Default is None
+        values : list, optional
+            Set list of values. Default is None
+        validate : boolean, optional
+            If True, do more rigorous validation that schema of table being
+            inserted is compatible with the existing table. Default is True
 
         Examples
         --------
@@ -525,13 +527,22 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         ...     my_table1['a', 'b'], dst_cols2
         ... )  # doctest: +SKIP
         """
+        if values is not None:
+            stmt = ddl.InsertValues(self._qualified_name, values, dst_cols)
+            return self._execute(stmt)
+
         if isinstance(obj, pd.DataFrame):
             stmt = ddl.InsertPandas(self._qualified_name, obj)
-        if isinstance(obj, ir.Expr):
-            stmt = ddl.InsertSelect(
-                self._qualified_name, obj, dst_cols=dst_cols
-            )
-        self._execute(stmt)
+            return self._execute(stmt)
+
+        if validate:
+            existing_schema = self.schema()
+            insert_schema = obj.schema()
+            if not insert_schema.equals(existing_schema):
+                _validate_compatible(insert_schema, existing_schema)
+
+        stmt = ddl.InsertSelect(self._qualified_name, obj, dst_cols=dst_cols)
+        return self._execute(stmt)
 
     def _alter_table_helper(self, f, **alterations):
         results = []
@@ -1243,6 +1254,36 @@ class OmniSciDBClient(SQLClient):
         self.set_database(database)
         self.con.load_table(table_name, obj, **kwargs)
         self.set_database(_database)
+
+    def insert(
+        self,
+        table_name: str,
+        obj: Optional[Union[pd.DataFrame, ir.Expr]] = None,
+        database: Optional[str] = None,
+        dst_cols: Optional[list] = None,
+        values: Optional[list] = None,
+        validate: Optional[bool] = True,
+    ):
+        """
+        Insert into existing table.
+
+        See OmniSciDBTable.insert for other parameters.
+
+        Parameters
+        ----------
+        table_name : string
+        database : string, optional
+            Default is None
+
+        Examples
+        --------
+        >>> table = 'my_table'
+        >>> con.insert(table, table_expr)  # doctest: +SKIP
+        """
+        table = self.table(table_name, database=database)
+        return table.insert(
+            obj=obj, dst_cols=dst_cols, values=values, validate=validate
+        )
 
     @property
     def current_database(self):
