@@ -265,10 +265,23 @@ def _call(translator, func, *args):
 
 
 def _extract_field(sql_attr):
-    def extract_field_formatter(translator, expr):
+    def extract_field_formatter(translator, expr, sql_attr=sql_attr):
+        adjustments = {
+            'MILLISECOND': 1000,
+        }
+        adjustment = adjustments.get(sql_attr, None)
+
         op = expr.op()
-        arg = translator.translate(op.args[0])
-        return 'EXTRACT({} FROM {})'.format(sql_attr, arg)
+        arg = op.args[0]
+
+        arg_str = translator.translate(arg)
+        result = 'EXTRACT({} FROM {})'.format(sql_attr, arg_str)
+
+        if adjustment:
+            # used by time extraction
+            result = ' mod({}, {})'.format(result, adjustment)
+
+        return result
 
     return extract_field_formatter
 
@@ -993,6 +1006,7 @@ _date_ops = {
     ops.ExtractHour: _extract_field('HOUR'),
     ops.ExtractMinute: _extract_field('MINUTE'),
     ops.ExtractSecond: _extract_field('SECOND'),
+    ops.ExtractMillisecond: _extract_field('MILLISECOND'),
     ops.IntervalAdd: _interval_from_integer,
     ops.IntervalFromInteger: _interval_from_integer,
     ops.DateAdd: _timestamp_op('TIMESTAMPADD'),
