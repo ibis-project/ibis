@@ -98,7 +98,9 @@ def test_table(con, test_schema):
     -------
     ibis.expr.types.TableExpr
     """
-    with temp_helper(con, 'table', True, {'schema': test_schema}) as name:
+    with temp_helper(
+        con, kind='table', create=True, create_kwargs={'schema': test_schema}
+    ) as name:
         yield con.table(name)
 
 
@@ -211,7 +213,7 @@ def temp_table(con) -> str:
         Random table name for a temporary usage.
     """
     with temp_helper(
-        con, 'table', False, {'schema': test_schema}
+        con, kind='table', create=False, create_kwargs={'schema': test_schema}
     ) as ret_value:
         yield ret_value
 
@@ -235,7 +237,7 @@ def temp_database(con, test_data_db: str) -> str:
     -------
     str
     """
-    with temp_helper(con, 'database', True) as ret_value:
+    with temp_helper(con, kind='database', create=True) as ret_value:
         yield ret_value
 
 
@@ -252,7 +254,7 @@ def temp_view(con) -> str:
     name : string
         Random view name for a temporary usage.
     """
-    with temp_helper(con, 'view') as ret_value:
+    with temp_helper(con, kind='view') as ret_value:
         yield ret_value
 
 
@@ -268,7 +270,9 @@ def test_view(con, test_table) -> str:
     -------
     str
     """
-    with temp_helper(con, 'view', True, {'expr': test_table}) as ret_value:
+    with temp_helper(
+        con, kind='view', create=True, create_kwargs={'expr': test_table}
+    ) as ret_value:
         yield ret_value
 
 
@@ -284,5 +288,5 @@ def test_user(con) -> list:
     -------
     tupple
     """
-    with temp_helper(con, "user") as name:
+    with temp_helper(con, kind="user") as name:
         yield (name, "super")
