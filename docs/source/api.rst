@@ -138,6 +138,27 @@ Executing expressions
    ImpalaClient.execute
    ImpalaClient.disable_codegen
 
+.. _api.bigquery:
+
+BigQuery client
+---------------
+.. currentmodule:: ibis.bigquery.api
+
+The BigQuery client is accessible through the ``ibis.bigquery`` namespace.
+
+Use the ``ibis.bigquery.connect`` function to create a BigQuery
+client. If no ``credentials`` are provided, the
+:func:`pydata_google_auth.default` function fetches default credentials.
+
+.. autosummary::
+   :toctree: generated/
+
+   connect
+   BigQueryClient.database
+   BigQueryClient.list_databases
+   BigQueryClient.list_tables
+   BigQueryClient.table
+
 .. _api.postgres:
 
 PostgreSQL client
