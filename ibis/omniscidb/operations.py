@@ -495,8 +495,6 @@ def _cross_join(translator, expr):
 
 
 def _ifnull(translator, expr):
-    import pdb
-    pdb.set_trace()
     col_expr, value_expr = expr.op().args
     if isinstance(col_expr, ir.DecimalValue) and isinstance(
         value_expr, ir.IntegerValue
@@ -508,14 +506,14 @@ def _ifnull(translator, expr):
         col_name, value, col_name
     )
 
-def _zer(translator, expr):
-    # import pdb
-    # pdb.set_trace()
+def _nullifzero(translator, expr):
     col_expr = expr.op().args[0]
-    col_name = translator.translate(col_expr)
-    return 'CASE WHEN {} = 0 THEN NULL ELSE {} END'.format(
-        col_name, col_name
-    )
+    return translator.translate(col_expr.nullif(0))
+
+def _zeroifnull(translator, expr):
+    col_expr = expr.op().args[0]
+    return translator.translate(col_expr.fillna(0))
+
 
 def literal(translator, expr: ibis.expr.operations.Literal) -> str:
     """Create a translator for literal operations.
@@ -1049,9 +1047,10 @@ _general_ops = {
     ops.TableColumn: _table_column,
     ops.CrossJoin: _cross_join,
     ops.IfNull: _ifnull,
-    ops.NullIfZero: _zer,
     ops.NullIf: fixed_arity('nullif', 2),
     ops.IsNan: unary('isNan'),
+    ops.NullIfZero: _nullifzero,
+    ops.ZeroIfNull: _zeroifnull,
 }
 
 # WINDOW
