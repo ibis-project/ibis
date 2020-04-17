@@ -506,9 +506,11 @@ def _ifnull(translator, expr):
         col_name, value, col_name
     )
 
+
 def _nullifzero(translator, expr):
     col_expr = expr.op().args[0]
     return translator.translate(col_expr.nullif(0))
+
 
 def _zeroifnull(translator, expr):
     col_expr = expr.op().args[0]
