@@ -1074,6 +1074,7 @@ _unsupported_ops = [
     ops.GroupConcat,
     ops.NullIfZero,
     ops.IsInf,
+    ops.Hash,
     # string
     ops.Lowercase,
     ops.Uppercase,
