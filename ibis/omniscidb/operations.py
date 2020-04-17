@@ -1100,8 +1100,6 @@ _unsupported_ops = [
     # Numeric
     ops.Least,
     ops.Greatest,
-    ops.Log2,
-    ops.Log,
     ops.Round,
     # date/time/timestamp
     ops.TimestampFromUNIX,
