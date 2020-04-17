@@ -1068,7 +1068,6 @@ _unsupported_ops = [
     ops.BaseConvert,
     ops.CumulativeAny,
     ops.CumulativeAll,
-    ops.IdenticalTo,
     ops.NTile,
     ops.NthValue,
     ops.GroupConcat,
