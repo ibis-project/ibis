@@ -47,16 +47,16 @@ jobs:
         PYTEST_MARK_EXPRESSION: "omniscidb"
         BACKENDS: "omniscidb"
         CONDA_ENVIRONMENT_FILENAME: "requirements-${PYTHON_VERSION}-dev-omniscidb.yml"
-        DOCTEST_EXTRA_FLAGS: --doctest-glob=ibis/omniscidb/**/*.py
+        DOCTEST_EXTRA_FLAGS: --doctest-glob=ibis/omniscidb/*.py
       omniscidb_py37:
         PYTHON_MAJOR_VERSION: "3"
         PYTHON_MINOR_VERSION: "7"
         PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
         PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
         PYTEST_MARK_EXPRESSION: "omniscidb"
-        BACKENDS: omniscidb"
+        BACKENDS: "omniscidb"
         CONDA_ENVIRONMENT_FILENAME: "requirements-${PYTHON_VERSION}-dev-omniscidb.yml"
-        DOCTEST_EXTRA_FLAGS: --doctest-glob=ibis/omniscidb/**/*.py
+        DOCTEST_EXTRA_FLAGS: --doctest-glob=ibis/omniscidb/*.py
 
   steps:
     - bash: |
@@ -121,7 +121,7 @@ jobs:
                       --doctest-ignore-import-errors \
                       --junitxml=/tmp/test-reports/pytest/junit.xml \
                       --cov=ibis \
-                      --cov-report=xml:/tmp/test-reports/pytest-cov/coverage.xml
+                      --cov-report=xml:/tmp/test-reports/pytest-cov/coverage.xml $DOCTEST_EXTRA_FLAGS
       displayName: 'Run tests'
 
     # See #1954
