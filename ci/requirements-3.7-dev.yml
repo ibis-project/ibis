@@ -20,7 +20,7 @@ dependencies:
   - mypy
   - numpy>=1.11
   - openjdk=8
-  - pandas>=1.0
+  - pandas>=0.25.3
   - pip
   - plumbum
   - pre-commit
