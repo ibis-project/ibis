@@ -208,6 +208,7 @@ Create a client by passing in database connection parameters such as ``host``,
 :func:`ibis.omniscidb.connect`:
 
 .. ipython:: python
+   :verbatim:
 
    con = ibis.omniscidb.connect(
        host='omniscidb',

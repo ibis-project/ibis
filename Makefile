@@ -9,13 +9,14 @@ MAKEFILE_DIR = $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 # you can use `3.6` or `3.7` for now
 PYTHON_VERSION := 3.6
 PYTHONHASHSEED := random
+CONDA_ENVIRONMENT_FILENAME := requirements-$(PYTHON_VERSION)-dev.yml
 
 # docker specific
 COMPOSE_FILE := "$(MAKEFILE_DIR)/ci/docker-compose.yml"
 DOCKER := PYTHON_VERSION=$(PYTHON_VERSION) docker-compose -f $(COMPOSE_FILE)
 DOCKER_UP := $(DOCKER) up --remove-orphans -d --no-build
 DOCKER_RUN := $(DOCKER) run --rm
-DOCKER_BUILD := $(DOCKER) build
+DOCKER_BUILD := CONDA_ENVIRONMENT_FILENAME=$(CONDA_ENVIRONMENT_FILENAME) $(DOCKER) build
 DOCKER_STOP := $(DOCKER) rm --force --stop
 
 # command to be executed inside docker container
@@ -98,7 +99,7 @@ start:
 
 build:
 	# build the ibis image
-	$(DOCKER_BUILD) ibis
+	$(DOCKER_BUILD) --pull ibis
 
 wait:
 	# wait for services to start

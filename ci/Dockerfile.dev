@@ -6,14 +6,15 @@ RUN apt-get -qq update --yes \
  && rm -rf /var/lib/apt/lists/*
 
 ARG PYTHON_VERSION
-ADD ci/requirements-$PYTHON_VERSION-dev.yml /
+ARG CONDA_ENVIRONMENT_FILENAME
+ADD ci/${CONDA_ENVIRONMENT_FILENAME} /requirements-dev.yml
 
 RUN /opt/conda/bin/conda config --add channels conda-forge \
   && /opt/conda/bin/conda update --all --yes --quiet \
   && /opt/conda/bin/conda install --yes conda-build \
   && /opt/conda/bin/conda clean --all --yes
 
-RUN /opt/conda/bin/conda env create --name ibis-env --file /requirements-$PYTHON_VERSION-dev.yml \
+RUN /opt/conda/bin/conda env create --name ibis-env --file /requirements-dev.yml \
   && /opt/conda/bin/conda clean --all --yes
 
 RUN echo 'source /opt/conda/bin/activate ibis-env && exec "$@"' > activate.sh

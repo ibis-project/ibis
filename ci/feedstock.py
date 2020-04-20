@@ -32,6 +32,10 @@ default_repo = 'https://github.com/conda-forge/ibis-framework-feedstock'
 default_dest = os.path.join(tempfile.gettempdir(), 'ibis-framework-feedstock')
 default_branch = 'master'
 
+# TODO: remove it when the PR#41 is merged
+default_repo = 'https://github.com/Quansight/ibis-framework-feedstock'
+default_branch = 'fix-build-py38'
+
 
 @cli.command()
 @click.argument('repo-uri', default=default_repo)
@@ -96,10 +100,10 @@ def update(meta, source_path):
     default='{}.{}'.format(sys.version_info.major, sys.version_info.minor),
 )
 def build(recipe, python):
-    click.echo('Building {} recipe...'.format(recipe))
+    click.echo('Building {} recipe for Python {} ...'.format(recipe, python))
 
     cmd = conda[
-        'build', recipe, '--channel', 'conda-forge', '--python', python
+        'build', '--channel', 'conda-forge', '--python', python, recipe
     ]
 
     cmd(
@@ -131,10 +135,14 @@ def deploy(package_location, artifact_directory, architecture):
 
 @cli.command()
 @click.pass_context
-def test(ctx):
+@click.option(
+    '--python',
+    default='{}.{}'.format(sys.version_info.major, sys.version_info.minor),
+)
+def test(ctx, **kwargs):
     ctx.invoke(clone)
     ctx.invoke(update)
-    ctx.invoke(build)
+    ctx.invoke(build, **kwargs)
     ctx.invoke(deploy)
 
 

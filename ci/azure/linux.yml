@@ -12,8 +12,10 @@ jobs:
     AZURECI: 1
     COMPOSE_FILE: ci/docker-compose.yml
     PYTHONHASHSEED: "random"
-    PYTEST_MARK_EXPRESSION: "not udf"
-    BACKENDS: "clickhouse impala kudu-master kudu-tserver mysql omniscidb parquet postgres sqlite"
+    PYTEST_MARK_EXPRESSION: "not udf and not omniscidb"
+    BACKENDS: "clickhouse impala kudu-master kudu-tserver mysql parquet postgres sqlite"
+    DOCTEST_EXTRA_FLAGS: ""
+
   strategy:
     matrix:
       py36:
@@ -36,6 +38,25 @@ jobs:
         # https://github.com/ibis-project/ibis/issues/2090
         PYTEST_MARK_EXPRESSION: "not udf and not omniscidb and not spark and not pyspark"
         BACKENDS: "clickhouse impala kudu-master kudu-tserver mysql parquet postgres sqlite"
+      # omniscidb
+      omniscidb_py36:
+        PYTHON_MAJOR_VERSION: "3"
+        PYTHON_MINOR_VERSION: "6"
+        PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
+        PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
+        PYTEST_MARK_EXPRESSION: "omniscidb"
+        BACKENDS: "omniscidb"
+        CONDA_ENVIRONMENT_FILENAME: "requirements-${PYTHON_VERSION}-dev-omniscidb.yml"
+        DOCTEST_EXTRA_FLAGS: --doctest-glob=ibis/omniscidb/**/*.py
+      omniscidb_py37:
+        PYTHON_MAJOR_VERSION: "3"
+        PYTHON_MINOR_VERSION: "7"
+        PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
+        PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
+        PYTEST_MARK_EXPRESSION: "omniscidb"
+        BACKENDS: omniscidb"
+        CONDA_ENVIRONMENT_FILENAME: "requirements-${PYTHON_VERSION}-dev-omniscidb.yml"
+        DOCTEST_EXTRA_FLAGS: --doctest-glob=ibis/omniscidb/**/*.py
 
   steps:
     - bash: |
@@ -57,7 +78,7 @@ jobs:
     - bash: docker ps
       displayName: 'Show running containers'
 
-    - bash: make build PYTHON_VERSION=$PYTHON_VERSION
+    - bash: make build PYTHON_VERSION=$PYTHON_VERSION CONDA_ENVIRONMENT_FILENAME=$CONDA_ENVIRONMENT_FILENAME
       displayName: 'Build ibis image'
 
     - bash: docker images
@@ -141,7 +162,7 @@ jobs:
     - bash: docker images
       displayName: 'List docker images'
 
-    - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="ci/feedstock.py test"
+    - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="ci/feedstock.py test --python $PYTHON_VERSION"
       displayName: 'Clone, update and build conda-forge recipe'
 
     - task: PublishPipelineArtifact@1
@@ -177,12 +198,13 @@ jobs:
     PYTHON_VERSION: "3.6"
     AZURECI: 1
     COMPOSE_FILE: ci/docker-compose.yml
+    BACKENDS: "clickhouse impala kudu-master kudu-tserver mysql parquet postgres sqlite"
 
   steps:
-    - bash: make start PYTHON_VERSION=$PYTHON_VERSION
+    - bash: make start PYTHON_VERSION=$PYTHON_VERSION BACKENDS="$BACKENDS"
       displayName: 'Start databases'
 
-    - bash: make wait PYTHON_VERSION=$PYTHON_VERSION
+    - bash: make wait PYTHON_VERSION=$PYTHON_VERSION BACKENDS="$BACKENDS"
       displayName: 'Wait for databases'
 
     - bash: make builddoc PYTHON_VERSION=$PYTHON_VERSION
@@ -194,7 +216,7 @@ jobs:
     - bash: docker ps
       displayName: 'Show running containers'
 
-    - bash: make load PYTHON_VERSION=$PYTHON_VERSION
+    - bash: make load PYTHON_VERSION=$PYTHON_VERSION BACKENDS="$BACKENDS"
       displayName: 'Load test datasets'
 
     - bash: make docker_docs_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="ping -c 1 impala"

@@ -20,7 +20,7 @@ dependencies:
   - mypy
   - numpy>=1.11
   - openjdk=8
-  - pandas>=0.21
+  - pandas>=1.0
   - pip
   - plumbum
   - pre-commit
@@ -29,7 +29,6 @@ dependencies:
   - pydata-google-auth
   - pydocstyle=4.0.1
   - pygit2
-  - pymapd>=0.12.0
   - pymysql
   - pyspark>=2.4.3
   - pytables>=3.0.0
