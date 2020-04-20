@@ -23,11 +23,13 @@ jobs:
         PYTHON_MINOR_VERSION: "6"
         PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
         PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
+        CONDA_ENVIRONMENT_FILENAME: requirements-$(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)-dev.yml
       py37:
         PYTHON_MAJOR_VERSION: "3"
         PYTHON_MINOR_VERSION: "7"
         PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
         PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
+        CONDA_ENVIRONMENT_FILENAME: requirements-$(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)-dev.yml
       py38:
         PYTHON_MAJOR_VERSION: "3"
         PYTHON_MINOR_VERSION: "8"
@@ -38,6 +40,7 @@ jobs:
         # https://github.com/ibis-project/ibis/issues/2090
         PYTEST_MARK_EXPRESSION: "not udf and not omniscidb and not spark and not pyspark"
         BACKENDS: "clickhouse impala kudu-master kudu-tserver mysql parquet postgres sqlite"
+        CONDA_ENVIRONMENT_FILENAME: requirements-$(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)-dev.yml
       # omniscidb
       omniscidb_py36:
         PYTHON_MAJOR_VERSION: "3"
