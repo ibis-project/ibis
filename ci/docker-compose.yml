@@ -111,7 +111,7 @@ services:
       dockerfile: ci/Dockerfile.dev
       args:
         PYTHON_VERSION: ${PYTHON_VERSION:-3.6}
-        CONDA_ENVIRONMENT_FILENAME: ${CONDA_ENVIRONMENT_FILENAME:-""}
+        CONDA_ENVIRONMENT_FILENAME: ${CONDA_ENVIRONMENT_FILENAME}
 
   ibis-docs:
     image: ibis-docs:${PYTHON_VERSION:-3.6}
