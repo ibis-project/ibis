@@ -20,21 +20,21 @@ jobs:
         python.version: "$(python.major.version).$(python.minor.version)"
         python.no.dot.version: "$(python.major.version)$(python.minor.version)"
         conda.env: "ibis$(python.no.dot.version)"
-        arrow.build: "py36hfc8cfcd_3"
+        arrow.build: "py36hbe5aa27_2"
       py37:
         python.major.version: "3"
         python.minor.version: "7"
         python.version: "$(python.major.version).$(python.minor.version)"
         python.no.dot.version: "$(python.major.version)$(python.minor.version)"
         conda.env: "ibis$(python.no.dot.version)"
-        arrow.build: "py37h8247c2b_3"
+        arrow.build: "py37h5e0360d_2"
       py38:
         python.major.version: "3"
         python.minor.version: "8"
         python.version: "$(python.major.version).$(python.minor.version)"
         python.no.dot.version: "$(python.major.version)$(python.minor.version)"
         conda.env: "ibis$(python.no.dot.version)"
-        arrow.build: "py38hd3bb158_3"
+        arrow.build: "py38h0e40e04_2"
 
   steps:
     - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
