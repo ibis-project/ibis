@@ -1,6 +1,7 @@
 channels:
   - conda-forge
 dependencies:
+  - arrow-cpp=0.16.0=py37h8247c2b_3
   - black=19.10b0
   - click
   - clickhouse-cityhash
