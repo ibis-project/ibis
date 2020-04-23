@@ -13,9 +13,12 @@ jobs:
     COMPOSE_FILE: ci/docker-compose.yml
     PYTHONHASHSEED: "random"
     PYTEST_MARK_EXPRESSION: "not udf"
+    # not sure why there are issing backends here, like pyspark, bigquery or pandas, since they are not skipped with markers
     BACKENDS: "clickhouse impala kudu-master kudu-tserver mysql omniscidb parquet postgres sqlite"
     BACKENDS_1: "mysql parquet postgres sqlite" # omniscidb would belong here, but it's added in the matrix since it's not 3.8 compatible
     BACKENDS_2: "clickhouse impala kudu-master kudu-tserver"
+    PYTEST_MARK_EXPRESSION_1: "not clickhouse and not impala and not kudu"
+    PYTEST_MARK_EXPRESSION_2: "not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite"
   strategy:
     matrix:
       py36_backends1:
@@ -23,24 +26,28 @@ jobs:
         PYTHON_MINOR_VERSION: "6"
         PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
         PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
+        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_1)
         BACKENDS: "$(BACKENDS_1) omniscidb"
       py36_backends2:
         PYTHON_MAJOR_VERSION: "3"
         PYTHON_MINOR_VERSION: "6"
         PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
         PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
+        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_2)
         BACKENDS: $(BACKENDS_2)
       py37_backends1:
         PYTHON_MAJOR_VERSION: "3"
         PYTHON_MINOR_VERSION: "7"
         PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
         PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
+        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_1)
         BACKENDS: "$(BACKENDS_1) omniscidb"
       py37_backends2:
         PYTHON_MAJOR_VERSION: "3"
         PYTHON_MINOR_VERSION: "7"
         PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
         PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
+        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_2)
         BACKENDS: $(BACKENDS_2)
       py38_backends1:
         PYTHON_MAJOR_VERSION: "3"
@@ -50,7 +57,7 @@ jobs:
         # pymapd and pyspark are not working on Ibis with Python 3.8
         # https://github.com/ibis-project/ibis/issues/2091
         # https://github.com/ibis-project/ibis/issues/2090
-        PYTEST_MARK_EXPRESSION: "not udf and not omniscidb and not spark and not pyspark"
+        PYTEST_MARK_EXPRESSION: "$(PYTEST_MARK_EXPRESSION_1) and not udf and not omniscidb and not spark and not pyspark"
         BACKENDS: $(BACKENDS_1)
       py38_backends2:
         PYTHON_MAJOR_VERSION: "3"
@@ -60,7 +67,7 @@ jobs:
         # pymapd and pyspark are not working on Ibis with Python 3.8
         # https://github.com/ibis-project/ibis/issues/2091
         # https://github.com/ibis-project/ibis/issues/2090
-        PYTEST_MARK_EXPRESSION: "not udf and not omniscidb and not spark and not pyspark"
+        PYTEST_MARK_EXPRESSION: "$(PYTEST_MARK_EXPRESSION_2) and not udf and not omniscidb and not spark and not pyspark"
         BACKENDS: $(BACKENDS_2)
 
   steps:
