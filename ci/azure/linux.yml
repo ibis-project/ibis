@@ -157,7 +157,7 @@ jobs:
     vmImage: ${{ parameters.vmImage }}
 
   variables:
-    PYTHON_VERSION: "3.6"
+    PYTHON_VERSION: "3.7"
     AZURECI: 1
     COMPOSE_FILE: ci/docker-compose.yml
 
@@ -174,7 +174,7 @@ jobs:
     vmImage: ${{ parameters.vmImage }}
 
   variables:
-    PYTHON_VERSION: "3.6"
+    PYTHON_VERSION: "3.7"
     AZURECI: 1
     COMPOSE_FILE: ci/docker-compose.yml
 
