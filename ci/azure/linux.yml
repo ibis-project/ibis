@@ -177,8 +177,8 @@ jobs:
     PYTHON_VERSION: "3.6"
     AZURECI: 1
     COMPOSE_FILE: ci/docker-compose.yml
-    BACKENDS: "impala"
-    LOADS: "impala"
+    BACKENDS: "impala postgres"
+    LOADS: "impala postgres"
 
   steps:
     - bash: make start PYTHON_VERSION=$PYTHON_VERSION BACKENDS=$BACKENDS
