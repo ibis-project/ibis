@@ -31,7 +31,7 @@ dependencies:
   - pygit2
   - pymapd>=0.12
   - pymysql
-  - pyspark>=3.0
+  - pyspark>=2.4.3
   - pytables>=3.0.0
   - pytest>=4.5
   - pytest-cov
