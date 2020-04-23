@@ -29,9 +29,6 @@ dependencies:
   - pydata-google-auth
   - pydocstyle=4.0.1
   - pygit2
-  # Pinning pymapd to reduce the conda solver time
-  # See: https://github.com/ibis-project/ibis/pull/2193
-  - pymapd=0.21.0
   - pymysql
   - pyspark>=2.4.3
   - pytables>=3.0.0
