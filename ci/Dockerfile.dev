@@ -13,8 +13,6 @@ RUN /opt/conda/bin/conda config --add channels conda-forge \
   && /opt/conda/bin/conda install --yes conda-build \
   && /opt/conda/bin/conda clean --all --yes
 
-RUN cat /requirements-$PYTHON_VERSION-dev.yml
-
 RUN /opt/conda/bin/conda env create --name ibis-env --file /requirements-$PYTHON_VERSION-dev.yml \
   && /opt/conda/bin/conda clean --all --yes
 
