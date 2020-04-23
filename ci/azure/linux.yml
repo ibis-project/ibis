@@ -177,12 +177,13 @@ jobs:
     PYTHON_VERSION: "3.6"
     AZURECI: 1
     COMPOSE_FILE: ci/docker-compose.yml
+    BACKENDS: "impala"
 
   steps:
-    - bash: make start PYTHON_VERSION=$PYTHON_VERSION
+    - bash: make start PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
       displayName: 'Start databases'
 
-    - bash: make wait PYTHON_VERSION=$PYTHON_VERSION
+    - bash: make wait PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
       displayName: 'Wait for databases'
 
     - bash: make builddoc PYTHON_VERSION=$PYTHON_VERSION
