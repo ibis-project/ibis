@@ -51,7 +51,7 @@ Install dependencies for Ibis's Impala dialect:
 To create an Ibis client, you must first connect your services and assemble the
 client using :func:`ibis.impala.connect`:
 
-.. code-block:: python
+.. ipython:: python
 
    import ibis
 
@@ -102,7 +102,7 @@ Install dependencies for Ibis's PostgreSQL dialect:
 Create a client by passing a connection string to the ``url`` parameter or
 individual parameters to :func:`ibis.postgres.connect`:
 
-.. code-block:: python
+.. ipython:: python
 
    con = ibis.postgres.connect(
        url='postgresql://postgres:postgres@postgres:5432/ibis_testing'
@@ -130,7 +130,7 @@ Create a client by passing in database connection parameters such as ``host``,
 ``port``, ``database``, and ``user`` to :func:`ibis.clickhouse.connect`:
 
 
-.. code-block:: python
+.. ipython:: python
 
    con = ibis.clickhouse.connect(host='clickhouse', port=9000)
 
@@ -182,7 +182,7 @@ Ibis's Pandas backend is available in core Ibis:
 Create a client by supplying a dictionary of DataFrames using
 :func:`ibis.pandas.connect`. The keys become the table names:
 
-.. code-block:: python
+.. ipython:: python
 
    import pandas as pd
    con = ibis.pandas.connect(
@@ -207,7 +207,7 @@ Create a client by passing in database connection parameters such as ``host``,
 ``port``, ``database``,  ``user`` and ``password`` to
 :func:`ibis.omniscidb.connect`:
 
-.. code-block:: python
+.. ipython:: python
 
    con = ibis.omniscidb.connect(
        host='omniscidb',
@@ -234,7 +234,7 @@ Install dependencies for Ibis's MySQL dialect:
 Create a client by passing a connection string or individual parameters to
 :func:`ibis.mysql.connect`:
 
-.. code-block:: python
+.. ipython:: python
 
    con = ibis.mysql.connect(url='mysql+pymysql://ibis:ibis@mysql/ibis_testing')
    con = ibis.mysql.connect(
