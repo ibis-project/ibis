@@ -14,19 +14,35 @@ jobs:
     PYTHONHASHSEED: "random"
     PYTEST_MARK_EXPRESSION: "not udf"
     BACKENDS: "clickhouse impala kudu-master kudu-tserver mysql omniscidb parquet postgres sqlite"
+    BACKENDS_1: "mysql parquet postgres sqlite" # omniscidb would belong here, but it's added in the matrix since it's not 3.8 compatible
+    BACKENDS_2: "clickhouse impala kudu-master kudu-tserver"
   strategy:
     matrix:
-      py36:
+      py36_backends1:
         PYTHON_MAJOR_VERSION: "3"
         PYTHON_MINOR_VERSION: "6"
         PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
         PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
-      py37:
+        BACKENDS: "$(BACKENDS_1) omniscidb"
+      py36_backends2:
+        PYTHON_MAJOR_VERSION: "3"
+        PYTHON_MINOR_VERSION: "6"
+        PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
+        PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
+        BACKENDS: $(BACKENDS_2)
+      py37_backends1:
         PYTHON_MAJOR_VERSION: "3"
         PYTHON_MINOR_VERSION: "7"
         PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
         PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
-      py38:
+        BACKENDS: "$(BACKENDS_1) omniscidb"
+      py37_backends2:
+        PYTHON_MAJOR_VERSION: "3"
+        PYTHON_MINOR_VERSION: "7"
+        PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
+        PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
+        BACKENDS: $(BACKENDS_2)
+      py38_backends1:
         PYTHON_MAJOR_VERSION: "3"
         PYTHON_MINOR_VERSION: "8"
         PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
@@ -35,7 +51,17 @@ jobs:
         # https://github.com/ibis-project/ibis/issues/2091
         # https://github.com/ibis-project/ibis/issues/2090
         PYTEST_MARK_EXPRESSION: "not udf and not omniscidb and not spark and not pyspark"
-        BACKENDS: "clickhouse impala kudu-master kudu-tserver mysql parquet postgres sqlite"
+        BACKENDS: $(BACKENDS_1)
+      py38_backends2:
+        PYTHON_MAJOR_VERSION: "3"
+        PYTHON_MINOR_VERSION: "8"
+        PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
+        PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
+        # pymapd and pyspark are not working on Ibis with Python 3.8
+        # https://github.com/ibis-project/ibis/issues/2091
+        # https://github.com/ibis-project/ibis/issues/2090
+        PYTEST_MARK_EXPRESSION: "not udf and not omniscidb and not spark and not pyspark"
+        BACKENDS: $(BACKENDS_2)
 
   steps:
     - bash: |
