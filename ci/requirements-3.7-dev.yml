@@ -29,9 +29,9 @@ dependencies:
   - pydata-google-auth
   - pydocstyle=4.0.1
   - pygit2
-  # - pymapd>=0.12
+  - pymapd>=0.12
   - pymysql
-  # - pyspark>=3.0
+  - pyspark>=3.0
   - pytables>=3.0.0
   - pytest>=4.5
   - pytest-cov
