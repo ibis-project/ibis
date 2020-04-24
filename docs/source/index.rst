@@ -92,3 +92,8 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+.. Use the meta tags to verify the site for use in Google OAuth2 consent flow.
+
+.. meta::
+    :google-site-verification: IVqzkYiD5E35oD4kkVOcTYCTfqWKU1f6zOHCnLIPkUU
