@@ -210,6 +210,7 @@ Use ``ibis.omniscidb.connect`` to create a client.
    compile
    connect
    verify
+   OmniSciDBClient.alter_user
    OmniSciDBClient.close
    OmniSciDBClient.create_database
    OmniSciDBClient.create_table
