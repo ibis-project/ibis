@@ -79,8 +79,13 @@ class UserDefinedFunction(object):
 
         self.func = func
         self.func_type = func_type
-        self.input_type = input_type
-        self.output_type = output_type
+
+        self.input_type = list(map(dt.dtype, input_type))
+
+        if type(output_type) is list:
+            [output_type] = output_type
+
+        self.output_type = dt.dtype(output_type)
 
     def __call__(self, *args, **kwargs):
         # kwargs cannot be part of the node object because it can contain
