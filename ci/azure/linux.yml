@@ -210,12 +210,14 @@ jobs:
     PYTHON_VERSION: "3.6"
     AZURECI: 1
     COMPOSE_FILE: ci/docker-compose.yml
+    BACKENDS: "impala postgres"
+    LOADS: "impala postgres"
 
   steps:
-    - bash: make start PYTHON_VERSION=$PYTHON_VERSION
+    - bash: make start PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
       displayName: 'Start databases'
 
-    - bash: make wait PYTHON_VERSION=$PYTHON_VERSION
+    - bash: make wait PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
       displayName: 'Wait for databases'
 
     - bash: make builddoc PYTHON_VERSION=$PYTHON_VERSION
@@ -227,7 +229,7 @@ jobs:
     - bash: docker ps
       displayName: 'Show running containers'
 
-    - bash: make load PYTHON_VERSION=$PYTHON_VERSION
+    - bash: make load PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}" LOADS="${LOADS}"
       displayName: 'Load test datasets'
 
     - bash: make docker_docs_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="ping -c 1 impala"
@@ -259,7 +261,7 @@ jobs:
 
     - bash: |
         make docker_docs_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="sphinx-build -b html \
-          docs/source /tmp/docs.ibis-project.org -W -T"
+          docs/source /tmp/docs.ibis-project.org -W -T --keep-going"
       displayName: 'Build docs'
 
     - task: PublishPipelineArtifact@1
