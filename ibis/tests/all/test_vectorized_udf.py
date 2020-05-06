@@ -5,19 +5,13 @@ from ibis.tests.backends import Pandas, PySpark
 from ibis.udf.vectorized import elementwise
 
 
-@elementwise(input_type=[dt.double], output_type=dt.double)
-def add_one(s):
-    return s + 1
-
-
-@elementwise(input_type=[dt.double], output_type=[dt.double])
-def add_one_with_output_type_list(s):
-    return s + 1
-
-
 @pytest.mark.only_on_backends([Pandas, PySpark])
 @pytest.mark.xfail_unsupported
 def test_elementwise_udf(backend, alltypes, df):
+    @elementwise(input_type=[dt.double], output_type=dt.double)
+    def add_one(s):
+        return s + 1
+
     result = add_one(alltypes['double_col']).execute()
     expected = add_one.func(df['double_col'])
     backend.assert_series_equal(result, expected, check_names=False)
@@ -25,9 +19,19 @@ def test_elementwise_udf(backend, alltypes, df):
 
 @pytest.mark.only_on_backends([Pandas, PySpark])
 @pytest.mark.xfail_unsupported
-def test_elementwise_udf_with_output_type_list(backend, alltypes, df):
-    result = add_one_with_output_type_list(alltypes['double_col']).execute()
-    expected = add_one_with_output_type_list.func(df['double_col'])
+def test_elementwise_udf_with_output_type_in_list(backend, alltypes, df):
+    """
+    Test that a UDF's output type can be specified as a single datatype
+    wrapped in a list. This is equivalent to single datatype that is not in a
+    list.
+    """
+
+    @elementwise(input_type=[dt.double], output_type=[dt.double])
+    def add_one(s):
+        return s + 1
+
+    result = add_one(alltypes['double_col']).execute()
+    expected = add_one.func(df['double_col'])
     backend.assert_series_equal(result, expected, check_names=False)
 
 
