@@ -8,6 +8,7 @@ DO NOT USE DIRECTLY.
 import functools
 from inspect import Parameter, signature
 
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.expr.operations import (
     AnalyticVectorizedUDF,
@@ -82,8 +83,15 @@ class UserDefinedFunction(object):
 
         self.input_type = list(map(dt.dtype, input_type))
 
-        if type(output_type) is list:
-            [output_type] = output_type
+        if isinstance(output_type, list):
+            try:
+                (output_type,) = output_type
+            except ValueError:
+                raise com.IbisTypeError(
+                    'The output type of a UDF must be either a single '
+                    'datatype, or equivalently, a single datatype wrapped in '
+                    'a list.'
+                )
 
         self.output_type = dt.dtype(output_type)
 
