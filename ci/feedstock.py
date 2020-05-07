@@ -32,10 +32,6 @@ default_repo = 'https://github.com/conda-forge/ibis-framework-feedstock'
 default_dest = os.path.join(tempfile.gettempdir(), 'ibis-framework-feedstock')
 default_branch = 'master'
 
-# needed until ibis-framework-feedstock #41 is merged
-default_repo = 'https://github.com/quansight/ibis-framework-feedstock'
-default_branch = 'fix-build-py38'
-
 
 @cli.command()
 @click.argument('repo-uri', default=default_repo)
