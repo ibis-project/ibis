@@ -12,63 +12,63 @@ jobs:
     AZURECI: 1
     COMPOSE_FILE: ci/docker-compose.yml
     PYTHONHASHSEED: "random"
-    BACKENDS_SQL_PARQUET_OMNISCI: "mysql postgres sqlite parquet omnisci"
+    BACKENDS_SQL_PARQUET: "mysql postgres sqlite parquet"
     BACKENDS_IMPALA_KUDU_CLICKHOUSE: "impala kudu-master kudu-tserver clickhouse"
-    # TODO: there are some issues with pyspark, so not testing for now. Same for udf I guess, which was already not being tested.
-    PYTEST_MARK_EXPRESSION_SQL_PARQUET_OMNISCI: "not udf and not spark and not pyspark and not clickhouse and not impala and not kudu and not hdfs"
-    PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE: "not udf and not spark and not pyspark and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite and not omniscidb"
+    BACKENDS_OMNISCI: "omniscidb"  # add spark/pyspark here
+    PYTEST_MARK_EXPRESSION_SQL_PARQUET: "not udf and not clickhouse and not impala and not kudu and not hdfs and not omniscidb and not spark and not pyspark"
+    PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE: "not udf and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite and not omniscidb and not spark and not pyspark"
+    # TODO: pymapd and pyspark are not working on Ibis with Python 3.8, so not added to the matrix yet
+    # https://github.com/ibis-project/ibis/issues/2091 https://github.com/ibis-project/ibis/issues/2090
+    PYTEST_MARK_EXPRESSION_OMNISCI: "not udf and not clickhouse and not impala and not kudu and not hdfs and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite and not spark and not pyspark"  # add spark/pyspark here (remove the `not spark and not pyspark`)
   strategy:
     matrix:
-      py36_backends1:
+      py36_sql_parquet:
         PYTHON_MAJOR_VERSION: "3"
         PYTHON_MINOR_VERSION: "6"
-        PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
-        PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
-        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_SQL_PARQUET_OMNISCI)
-        BACKENDS: $(BACKENDS_SQL_PARQUET_OMNISCI)
-      py36_backends2:
+        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_SQL_PARQUET)
+        BACKENDS: $(BACKENDS_SQL_PARQUET)
+      py36_impala_kudu_clickhouse:
         PYTHON_MAJOR_VERSION: "3"
         PYTHON_MINOR_VERSION: "6"
-        PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
-        PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
         BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
-      py37_backends1:
+      py36_omnisci:
+        PYTHON_MAJOR_VERSION: "3"
+        PYTHON_MINOR_VERSION: "6"
+        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_OMNISCI)
+        BACKENDS: $(BACKENDS_OMNISCI)
+      py37_sql_parquet:
         PYTHON_MAJOR_VERSION: "3"
         PYTHON_MINOR_VERSION: "7"
-        PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
-        PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_SQL_PARQUET_OMNISCI)
         BACKENDS: $(BACKENDS_SQL_PARQUET_OMNISCI)
-      py37_backends2:
+      py37_impala_kudu_clickhouse:
         PYTHON_MAJOR_VERSION: "3"
         PYTHON_MINOR_VERSION: "7"
-        PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
-        PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
         BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
-      py38_backends1:
+      py37_impala_kudu_clickhouse:
+        PYTHON_MAJOR_VERSION: "3"
+        PYTHON_MINOR_VERSION: "7"
+        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
+        BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
+      py38_sql_parquet:
         PYTHON_MAJOR_VERSION: "3"
         PYTHON_MINOR_VERSION: "8"
-        PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
-        PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
-        # pymapd and pyspark are not working on Ibis with Python 3.8
-        # https://github.com/ibis-project/ibis/issues/2091
-        # https://github.com/ibis-project/ibis/issues/2090
         PYTEST_MARK_EXPRESSION: "$(PYTEST_MARK_EXPRESSION_SQL_PARQUET_OMNISCI) and not omniscidb and not spark and not pyspark"
         BACKENDS: $(BACKENDS_SQL_PARQUET_OMNISCI)
-      py38_backends2:
+      py38_impala_kudu_clickhouse:
         PYTHON_MAJOR_VERSION: "3"
         PYTHON_MINOR_VERSION: "8"
-        PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
-        PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
-        # pymapd and pyspark are not working on Ibis with Python 3.8
-        # https://github.com/ibis-project/ibis/issues/2091
-        # https://github.com/ibis-project/ibis/issues/2090
         PYTEST_MARK_EXPRESSION: "$(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE) and not omniscidb and not spark and not pyspark"
         BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
 
   steps:
+    - bash: |
+        echo "##vso[task.setvariable variable=PYTHON_VERSION]$(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)"
+        echo "##vso[task.setvariable variable=PYTHON_NO_DOT_VERSION]$(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)"
+      displayName: 'Set environment variables'
+
     - bash: |
         if [ -n "${GCLOUD_SERVICE_KEY}" ]; then
           mkdir -p /tmp/ibis
