@@ -16,7 +16,7 @@ jobs:
     BACKENDS_IMPALA_KUDU_CLICKHOUSE: "impala kudu-master kudu-tserver clickhouse"
     # TODO: there are some issues with pyspark, so not testing for now. Same for udf I guess, which was already not being tested.
     PYTEST_MARK_EXPRESSION_SQL_PARQUET_OMNISCI: "not udf and not spark and not pyspark and not clickhouse and not impala and not kudu and not hdfs"
-    PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE: "not udf and not spark and not pyspark and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite"
+    PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE: "not udf and not spark and not pyspark and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite and not omniscidb"
   strategy:
     matrix:
       py36_backends1:
