@@ -73,6 +73,7 @@ the most methods on ``ImpalaTable``.
    ImpalaClient.drop_table
    ImpalaClient.create_table
    ImpalaClient.insert
+   ImpalaClient.invalidate_metadata
    ImpalaClient.truncate_table
    ImpalaClient.get_schema
    ImpalaClient.cache_table
@@ -99,12 +100,14 @@ object you get back from ``ImpalaClient.table``.
    ImpalaTable.files
    ImpalaTable.insert
    ImpalaTable.invalidate_metadata
+   ImpalaTable.is_partitioned
    ImpalaTable.load_data
    ImpalaTable.metadata
    ImpalaTable.partition_schema
    ImpalaTable.partitions
    ImpalaTable.refresh
    ImpalaTable.rename
+   ImpalaTable.schema
    ImpalaTable.stats
 
 Creating views is also possible:
