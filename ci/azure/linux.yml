@@ -26,7 +26,7 @@ jobs:
         PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
         PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_1)
-        BACKENDS: "$(BACKENDS_1) omniscidb"
+        BACKENDS: $(BACKENDS_1) # omnisci should be here, but conda takes forever to resolve when pymapd is in the deps, so removing for now
       py36_backends2:
         PYTHON_MAJOR_VERSION: "3"
         PYTHON_MINOR_VERSION: "6"
@@ -40,7 +40,7 @@ jobs:
         PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
         PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_1)
-        BACKENDS: "$(BACKENDS_1) omniscidb"
+        BACKENDS: $(BACKENDS_1) # omnisci should be here, but conda takes forever to resolve when pymapd is in the deps, so removing for now
       py37_backends2:
         PYTHON_MAJOR_VERSION: "3"
         PYTHON_MINOR_VERSION: "7"
