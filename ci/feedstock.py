@@ -99,7 +99,7 @@ def build(recipe, python):
     click.echo('Building {} recipe...'.format(recipe))
 
     cmd = conda[
-        'build', recipe, '--channel', 'conda-forge', '--python', python
+        'build', recipe, '--channel', 'conda-forge', '--python', '3.7'
     ]
 
     cmd(
