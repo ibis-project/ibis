@@ -415,15 +415,21 @@ def temp_view(con) -> str:
         if hasattr(con, 'drop_view'):
             con.drop_view(name, force=True)
 
+
+@pytest.fixture(scope='session')
+def current_data_db(con) -> str:
+    """Return current database name."""
+    return con.current_database
+
+
 @pytest.fixture
-def temp_database(con, test_data_db: str) -> str:
+def temp_database(con, current_data_db: str) -> str:
     """Create a temporary database.
 
     Parameters
     ----------
     con : ibis.omniscidb.OmniSciDBClient
-    test_data_db : str
-
+    current_data_db : str
     Yields
     -------
     str
@@ -433,5 +439,5 @@ def temp_database(con, test_data_db: str) -> str:
     try:
         yield name
     finally:
-        con.set_database(test_data_db)
+        con.set_database(current_data_db)
         con.drop_database(name, force=True)
