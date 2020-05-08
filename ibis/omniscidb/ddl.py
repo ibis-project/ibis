@@ -721,7 +721,7 @@ class InsertPandas(Insert):
         self.df = df
 
     def _get_field_names(self):
-        return ','.join(self.df.columns)
+        return ', '.join(self.df.columns)
 
     def _get_value(self, v: Any) -> Any:
         if isinstance(v, str):
@@ -745,10 +745,12 @@ class InsertPandas(Insert):
         """
         fields = self._get_field_names()
 
-        stmt = '({}) VALUES '.format(fields)
+        stmt = '({}) VALUES'.format(fields)
 
         for values in self._get_field_values():
-            yield '{} ({});'.format(self._wrap_command(stmt), ','.join(values))
+            yield '{} ({});'.format(
+                self._wrap_command(stmt), ', '.join(values)
+            )
 
     def compile(self):
         """Compile the Insert expression."""
