@@ -80,19 +80,12 @@ SQL engine support needing code contributors:
    :maxdepth: 1
 
    getting-started
-   configuration
-   impala
-   tutorial
+   tutorial/index
+   user_guide/index
    api
-   sql
-   udf
+   release/index
    contributing
-   design
-   extending
-   backends
    roadmap
-   release
-   release-pre-1.0
    legal
 
 

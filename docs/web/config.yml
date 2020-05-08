@@ -1,0 +1,57 @@
+main:
+  templates_path: _templates
+  base_template: "layout.html"
+  ignore:
+  - _templates/layout.html
+  - config.yml
+  project_name: Ibis
+  title: "Ibis: Python data analysis productivity framework"
+  header_text: Ibis
+  github_repo_url: ibis-project/ibis
+  footer_note: © Copyright 2020, Ibis developers
+  google_analytics: ""
+  context_preprocessors:
+  - pysuerga.contrib.navbar
+  - pysuerga.contrib.maintainers
+  - pysuerga.contrib.releases
+  markdown_extensions:
+  - toc
+  - tables
+  - fenced_code
+static:
+  logo: /static/img/logo_ibis.svg
+  favicon: /static/img/favicon.ico
+  css:
+  - /static/css/ibis.css
+social_media:
+  - font_awesome: twitter
+    url: https://twitter.com/IbisData
+  - font_awesome: github
+    url: https://github.com/ibis-project/ibis/
+navbar:
+  - name: "About us"
+    target:
+    - name: "About Ibis"
+      target: /about/index.html
+    - name: "Team"
+      target: /about/team.html
+  - name: "Getting started"
+    target: /getting_started.html
+  - name: "Documentation"
+    target: https://docs.ibis-project.org
+  - name: "Community"
+    target:
+    - name: "Ask a question (StackOverflow)"
+      target: https://stackoverflow.com/questions/tagged/ibis
+    - name: "Chat (Gitter)"
+      target: https://gitter.im/ibis-dev/Lobby
+    - name: "Code of conduct"
+      target: /community/coc.html
+  - name: "Contribute"
+    target: /contribute.html
+maintainers:
+  active:
+  - wesm
+  - cpcloud
+  - kszucs
+  - jreback
