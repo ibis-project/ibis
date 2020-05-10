@@ -216,6 +216,11 @@ jobs:
     LOADS: "impala postgres"
 
   steps:
+    - bash: |
+        python pip install git+https://github.com/datapythonista/pysuerga
+        python -m pysuerga docs/web --target-path=/tmp/ibis-project.org
+      displayName: 'Build website'
+
     - bash: make start PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
       displayName: 'Start databases'
 
@@ -240,15 +245,15 @@ jobs:
     - bash: |
         make docker_docs_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="git clone --branch gh-pages \
           https://github.com/cpcloud/docs.ibis-project.org \
-          /tmp/docs.ibis-project.org"
+          /tmp/ibis-project.org/docs"
       displayName: 'Clone doc repo'
 
     - bash: |
         docker-compose run ibis-docs \
-          find /tmp/docs.ibis-project.org \
+          find /tmp/ibis-project.org/docs \
             -maxdepth 1 \
             # ignore the directory we're searching in itself
-            ! -wholename /tmp/docs.ibis-project.org \
+            ! -wholename /tmp/ibis-project.org/docs \
             # ignore git files
             ! -name '*.git' \
             # ignore the CNAME record
@@ -263,12 +268,12 @@ jobs:
 
     - bash: |
         make docker_docs_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="sphinx-build -b html \
-          docs/source /tmp/docs.ibis-project.org -W -T --keep-going"
+          docs/source /tmp/ibis-project.org/docs -W -T --keep-going"
       displayName: 'Build docs'
 
     - task: PublishPipelineArtifact@1
       inputs:
-        path: /tmp/ibis/docs.ibis-project.org
+        path: /tmp/ibis/ibis-project.org/docs
         artifact: Documentation
       displayName: 'Publish documentation to Azure'
       condition: and(succeeded(), eq(variables['System.PullRequest.IsFork'], 'False'))
@@ -283,7 +288,7 @@ jobs:
         ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
 
         sudo chown -R "${USER}":"${USER}" /tmp/ibis
-        pushd /tmp/ibis/docs.ibis-project.org
+        pushd /tmp/ibis/ibis-project.org/docs
 
         git remote set-url origin git@github.com:ibis-project/docs.ibis-project.org
 
@@ -294,7 +299,7 @@ jobs:
         git add --all .
         git commit -m "Docs from ibis at $(Build.SourceVersion)"
         git push --force origin gh-pages
-      displayName: 'Push docs to remote repo'
+      displayName: 'Push web to remote repo'
       env:
         IBIS_GH_TOKEN: $(IBIS_GH_TOKEN)
       condition: |
