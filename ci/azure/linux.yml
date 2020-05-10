@@ -174,7 +174,7 @@ jobs:
     - bash: docker images
       displayName: 'List docker images'
 
-    - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="ci/feedstock.py test"
+    - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="ci/feedstock.py test --python 3.7"
       displayName: 'Clone, update and build conda-forge recipe'
 
     - task: PublishPipelineArtifact@1
