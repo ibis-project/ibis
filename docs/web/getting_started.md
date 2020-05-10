@@ -3,7 +3,7 @@
 ## Installation instructions
 
 The next steps provides the easiest and recommended way to set up your
-environment to use {{ main.project_name }}. Other installation options can be found in
+environment to use {{ ibis.project_name }}. Other installation options can be found in
 the [advanced installation page]({{ base_url}}/docs/getting_started/install.html).
 
 1. Download [Anaconda](https://www.anaconda.com/distribution/) for your operating system and
@@ -11,7 +11,7 @@ the [advanced installation page]({{ base_url}}/docs/getting_started/install.html
    on how to install Anaconda can be found in the
    [Anaconda documentation](https://docs.anaconda.com/anaconda/install/)).
 
-2. In the Anaconda prompt (or terminal in Linux or MacOS), install {{ main.project_name }}:
+2. In the Anaconda prompt (or terminal in Linux or MacOS), install {{ ibis.project_name }}:
 
         conda install -c conda-forge ibis-project
 
@@ -23,15 +23,15 @@ the [advanced installation page]({{ base_url}}/docs/getting_started/install.html
 
     <img class="img-fluid" alt="" src="{{ base_url }}/static/img/install/jupyterlab_home.png"/>
 
-5. In the first cell of the notebook, you can import {{ main.project_name }} and check the version with:
+5. In the first cell of the notebook, you can import {{ ibis.project_name }} and check the version with:
 
         import ibis
         ibis.__version__
 
-6. Now you are ready to use {{ main.project_name }}, and you can write your code in the next cells.
+6. Now you are ready to use {{ ibis.project_name }}, and you can write your code in the next cells.
 
 ## Tutorials
 
-You can learn more about {{ main.project_name }} in the
+You can learn more about {{ ibis.project_name }} in the
 [tutorials](https://mybinder.org/v2/gh/ibis-project/ibis/master?filepath=docs%2Fsource%2Fnotebooks%2Ftutorial),
 and more about JupyterLab in the [JupyterLab documentation](https://jupyterlab.readthedocs.io/en/stable/user/interface.html).
