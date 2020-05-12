@@ -249,15 +249,15 @@ jobs:
     - bash: |
         make docker_docs_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="git clone --branch gh-pages \
           https://github.com/cpcloud/docs.ibis-project.org \
-          /tmp/ibis-project.org/docs"
+          /tmp/ibis-project.org"
       displayName: 'Clone doc repo'
 
     - bash: |
         docker-compose run ibis-docs \
-          find /tmp/ibis-project.org/docs \
+          find /tmp/ibis-project.org \
             -maxdepth 1 \
             # ignore the directory we're searching in itself
-            ! -wholename /tmp/ibis-project.org/docs \
+            ! -wholename /tmp/ibis-project.org/ \
             # ignore git files
             ! -name '*.git' \
             # ignore the CNAME record
