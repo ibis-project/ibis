@@ -277,7 +277,7 @@ jobs:
 
     - task: PublishPipelineArtifact@1
       inputs:
-        path: /tmp/ibis/ibis-project.org/docs
+        path: /tmp/ibis/ibis-project.org
         artifact: Documentation
       displayName: 'Publish documentation to Azure'
       condition: and(succeeded(), eq(variables['System.PullRequest.IsFork'], 'False'))
@@ -292,7 +292,7 @@ jobs:
         ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
 
         sudo chown -R "${USER}":"${USER}" /tmp/ibis
-        pushd /tmp/ibis/ibis-project.org/docs
+        pushd /tmp/ibis/ibis-project.org
 
         git remote set-url origin git@github.com:ibis-project/docs.ibis-project.org
 
