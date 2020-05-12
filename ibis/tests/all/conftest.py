@@ -417,13 +417,19 @@ def temp_view(con) -> str:
 
 
 @pytest.fixture(scope='session')
-def current_data_db(con) -> str:
+def current_data_db(con, backend) -> str:
     """Return current database name."""
+    if not hasattr(con, 'current_database'):
+        pytest.skip(
+            '{} backend doesn\'t have current_database method.'.format(
+                backend.name
+            )
+        )
     return con.current_database
 
 
 @pytest.fixture
-def temp_database(con, current_data_db: str) -> str:
+def temp_database(con, backend, current_data_db: str) -> str:
     """Create a temporary database.
 
     Parameters
@@ -435,6 +441,12 @@ def temp_database(con, current_data_db: str) -> str:
     str
     """
     name = _random_identifier('database')
+    if not hasattr(con, 'create_database'):
+        pytest.skip(
+            '{} backend doesn\'t have create_database method.'.format(
+                backend.name
+            )
+        )
     con.create_database(name)
     try:
         yield name
