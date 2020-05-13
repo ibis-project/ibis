@@ -14,6 +14,7 @@
 
 import datetime
 import glob
+import os
 
 import sphinx_rtd_theme  # noqa: E402
 
@@ -46,7 +47,7 @@ napoleon_google_docstring = False
 napoleon_numpy_docstring = True
 releases_github_path = "ibis-project/ibis"
 releases_unstable_prehistory = True
-releases_document_name = ["release"]
+releases_document_name = [os.path.join("release", "index")]
 ipython_warning_is_error = True
 autosummary_generate = glob.glob("*.rst")
 

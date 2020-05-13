@@ -5,7 +5,7 @@ Release Notes (pre 1.0)
 .. note::
 
    These release notes are for versions of ibis **prior to 1.0**. For 1.0 and
-   later release notes see :doc:`/release`.
+   later release notes see :doc:`/release/index`.
 
 v0.14.0 (August 23rd, 2018)
 ---------------------------

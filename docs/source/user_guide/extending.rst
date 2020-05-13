@@ -32,8 +32,8 @@ how to add a new ``bitwise_and`` reduction operation:
 .. toctree::
    :maxdepth: 1
 
-   notebooks/tutorial/09-Adding-a-new-elementwise-expression.ipynb
-   notebooks/tutorial/10-Adding-a-new-reduction-expression.ipynb
+   extending_elementwise_expr.ipynb
+   extending_reduce_expr.ipynb
 
 
 Adding a New Backend
