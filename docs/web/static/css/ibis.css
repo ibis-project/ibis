@@ -1,0 +1,80 @@
+body {
+    padding-top: 5em;
+    color: #444;
+}
+h1 {
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: #2980B9;
+}
+h2 {
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: black;
+}
+h3 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: black;
+}
+a {
+    color: #130654;
+}
+pre {
+    white-space: pre;
+    padding: 10px;
+    background-color: #fafafa;
+    color: #222;
+    line-height: 1.2em;
+    border: 1px solid #c9c9c9;
+    margin: 1.5em 0;
+    box-shadow: 1px 1px 1px #d8d8d8
+}
+.header-title {
+    font-size: 1.75rem;
+    font-weight: bold;
+    vertical-align: middle;
+}
+.blue {
+    color: #150458;
+}
+.pink {
+    color: #e70488;
+}
+.fab {
+    font-size: 1.2rem;
+    color: #666;
+}
+.fab:hover {
+    color: #130654;
+}
+a.navbar-brand img {
+    max-height: 50px;
+    height: 3rem;
+    margin-right: 0.75rem;
+}
+div.card {
+    margin: 0 0 .2em .2em !important;
+}
+div.card .card-title {
+    font-weight: 500;
+    color: #130654;
+}
+.book {
+    padding: 0 20%;
+}
+.bg-dark {
+    background-color: #2980B9 !important;
+}
+.navbar-dark .navbar-nav .nav-link {
+    color: rgba(255, 255, 255, .9);
+}
+.navbar-dark .navbar-nav .nav-link:hover {
+    color: white;
+}
+table.logo td {
+    text-align: center;
+}
+table.logo img {
+    height: 4rem;
+}
