@@ -3449,9 +3449,8 @@ class GeoAsText(GeoSpatialUnOp):
     output_type = rlz.shape_like('arg', dt.string)
 
 
-class VectorizedUDF(ValueOp):
-    """Base node for vectorized UDF.
-    """
+class ElementWiseVectorizedUDF(ValueOp):
+    """Node for element wise UDF."""
 
     func = Arg(callable)
     func_args = Arg(tuple)
@@ -3479,10 +3478,6 @@ class VectorizedUDF(ValueOp):
         )
 
         return result
-
-
-class ElementWiseVectorizedUDF(VectorizedUDF):
-    """Node for element wise UDF."""
 
 
 class ReductionVectorizedUDF(Reduction):
