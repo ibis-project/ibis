@@ -941,7 +941,8 @@ def compile_join(t, expr, scope, how):
     return left_df.join(right_df, pred_columns, how)
 
 
-def compile_window_op_fallback(t, expr, scope, **kwargs):
+@compiles(ops.WindowOp)
+def compile_window_op(t, expr, scope, **kwargs):
     op = expr.op()
     window = op.window
     operand = op.expr
