@@ -96,7 +96,10 @@ jobs:
       displayName: 'Setup BigQuery credentials'
       condition: eq(variables['System.PullRequest.IsFork'], 'False')
 
-    - bash: make start PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
+    - bash: |
+        if [ ! -z "${BACKENDS}" ]; then
+          make start PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
+        fi
       displayName: 'Start databases'
 
     - bash: make wait PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
