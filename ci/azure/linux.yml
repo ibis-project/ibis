@@ -16,9 +16,11 @@ jobs:
     # It is not being added, because the conda solver takes forever to resolve when pymapd is present, so it's not being tested for now
     BACKENDS_SQL_PARQUET: "mysql postgres sqlite parquet"
     BACKENDS_IMPALA_KUDU_CLICKHOUSE: "impala kudu-master kudu-tserver clickhouse"
+    BACKENDS_PYSPARK: ""
     # TODO: there are some issues with pyspark, so not testing for now. Same for udf I guess, which was already not being tested.
     PYTEST_MARK_EXPRESSION_SQL_PARQUET: "not udf and not spark and not pyspark and not clickhouse and not impala and not kudu and not hdfs"
     PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE: "not udf and not spark and not pyspark and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite"
+    PYTEST_MARK_EXPRESSION_PYSPARK: "not udf and not spark and not omniscidb and not clickhouse and not impala and not kudu and not hdfs and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite"
   strategy:
     matrix:
       py36_backends1:
@@ -35,6 +37,13 @@ jobs:
         PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
         BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
+      py36_pyspark:
+        PYTHON_MAJOR_VERSION: "3"
+        PYTHON_MINOR_VERSION: "6"
+        PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
+        PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
+        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_PYSPARK)
+        BACKENDS: $(BACKENDS_PYSPARK)
       py37_backends1:
         PYTHON_MAJOR_VERSION: "3"
         PYTHON_MINOR_VERSION: "7"
@@ -49,6 +58,12 @@ jobs:
         PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
         BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
+      py37_pyspark:
+        PYTHON_MAJOR_VERSION: "3"
+        PYTHON_MINOR_VERSION: "7"
+        PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
+        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_PYSPARK)
+        BACKENDS: $(BACKENDS_PYSPARK)
       py38_backends1:
         PYTHON_MAJOR_VERSION: "3"
         PYTHON_MINOR_VERSION: "8"
