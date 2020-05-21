@@ -14,50 +14,60 @@ jobs:
     PYTHONHASHSEED: "random"
     BACKENDS_SQL_PARQUET: "mysql postgres sqlite parquet"
     BACKENDS_IMPALA_KUDU_CLICKHOUSE: "impala kudu-master kudu-tserver clickhouse"
-    BACKENDS_OMNISCI: "omniscidb"  # add spark/pyspark here
+    BACKENDS_OMNISCI_SPARK: "omniscidb"
     PYTEST_MARK_EXPRESSION_SQL_PARQUET: "not udf and not clickhouse and not impala and not kudu and not hdfs and not omniscidb and not spark and not pyspark"
     PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE: "not udf and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite and not omniscidb and not spark and not pyspark"
     # TODO: pymapd and pyspark are not working on Ibis with Python 3.8, so not added to the matrix yet
     # https://github.com/ibis-project/ibis/issues/2091 https://github.com/ibis-project/ibis/issues/2090
-    PYTEST_MARK_EXPRESSION_OMNISCI: "not udf and not clickhouse and not impala and not kudu and not hdfs and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite and not spark and not pyspark"  # add spark/pyspark here (remove the `not spark and not pyspark`)
+    PYTEST_MARK_EXPRESSION_OMNISCI_SPARK: "not udf and not clickhouse and not impala and not kudu and not hdfs and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite"
   strategy:
     matrix:
+
+      # SQL and parquet backends
       py36_sql_parquet:
         PYTHON_VERSION: "3.6"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_SQL_PARQUET)
         BACKENDS: $(BACKENDS_SQL_PARQUET)
+      py37_sql_parquet:
+        PYTHON_VERSION: "3.7"
+        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_SQL_PARQUET)
+        BACKENDS: $(BACKENDS_SQL_PARQUET)
+      py38_sql_parquet:
+        PYTHON_VERSION: "3.8"
+        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_SQL_PARQUET)
+        BACKENDS: $(BACKENDS_SQL_PARQUET)
+
+      # Impala, kudu and clickhouse backends
       py36_impala_kudu_clickhouse:
         PYTHON_VERSION: "3.6"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
         BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
-      py36_omnisci:
-        PYTHON_VERSION: "3.6"
-        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_OMNISCI)
-        BACKENDS: $(BACKENDS_OMNISCI)
-      py37_sql_parquet:
-        PYTHON_VERSION: "3.7"
-        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_SQL_PARQUET_OMNISCI)
-        BACKENDS: $(BACKENDS_SQL_PARQUET)
       py37_impala_kudu_clickhouse:
         PYTHON_VERSION: "3.7"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
         BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
-      py37_omnisci:
-        PYTHON_VERSION: "3.7"
-        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
-        BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
-      py38_sql_parquet:
-        PYTHON_VERSION: "3.8"
-        PYTEST_MARK_EXPRESSION: "$(PYTEST_MARK_EXPRESSION_SQL_PARQUET_OMNISCI) and not omniscidb and not spark and not pyspark"
-        BACKENDS: $(BACKENDS_SQL_PARQUET)
       py38_impala_kudu_clickhouse:
         PYTHON_VERSION: "3.8"
-        PYTEST_MARK_EXPRESSION: "$(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE) and not omniscidb and not spark and not pyspark"
+        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
         BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
+
+      # Omnisci and spark backends
+      py36_omnisci_spark:
+        PYTHON_VERSION: "3.6"
+        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_OMNISCI_SPARK)
+        BACKENDS: $(BACKENDS_OMNISCI_SPARK)
+      py37_omnisci_spark:
+        PYTHON_VERSION: "3.7"
+        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_OMNISCI_SPARK)
+        BACKENDS: $(BACKENDS_OMNISCI_SPARK
 
   steps:
     - bash: |
         echo "##vso[task.setvariable variable=PYTHON_NO_DOT_VERSION]${PYTHON_VERSION/./}"
+        if [ -z "$PYTEST_MARK_EXPRESSION" ]; then
+          echo "##vso[task.logissue type=error]The env variable PYTEST_MARK_EXPRESSION is not set. It is expected to be set in all the matrix builds, since not all tests can be run in a single build. It's probably caused by a typo."
+          exit 1
+        fi
       displayName: 'Set environment variables'
 
     - bash: |
