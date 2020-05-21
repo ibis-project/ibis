@@ -266,8 +266,7 @@ jobs:
       displayName: 'Show the doc env'
 
     - bash: |
-        make docker_docs_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="python -m pip install git+https://github.com/datapythonista/pysuerga && \
-          python -m pysuerga docs/web --target-path=/tmp/ibis-project.org"
+        make docker_docs_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="python -m pysuerga docs/web --target-path=/tmp/ibis-project.org"
       displayName: 'Build website'
 
     - bash: |
