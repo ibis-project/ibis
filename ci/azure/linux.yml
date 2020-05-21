@@ -17,9 +17,8 @@ jobs:
     BACKENDS_OMNISCI_SPARK: "omniscidb"
     PYTEST_MARK_EXPRESSION_SQL_PARQUET: "not udf and not clickhouse and not impala and not kudu and not hdfs and not omniscidb and not spark and not pyspark"
     PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE: "not udf and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite and not omniscidb and not spark and not pyspark"
-    # TODO: pymapd and pyspark are not working on Ibis with Python 3.8, so not added to the matrix yet
-    # https://github.com/ibis-project/ibis/issues/2091 https://github.com/ibis-project/ibis/issues/2090
-    PYTEST_MARK_EXPRESSION_OMNISCI_SPARK: "not udf and not clickhouse and not impala and not kudu and not hdfs and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite"
+    # TODO: Remove "and not spark and not pyspark" once spark tests are working. #2201
+    PYTEST_MARK_EXPRESSION_OMNISCI_SPARK: "not udf and not clickhouse and not impala and not kudu and not hdfs and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite and not spark and not pyspark"
   strategy:
     matrix:
 
@@ -60,6 +59,8 @@ jobs:
         PYTHON_VERSION: "3.7"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_OMNISCI_SPARK)
         BACKENDS: $(BACKENDS_OMNISCI_SPARK)
+      # TODO: pymapd and pyspark are not working on Ibis with Python 3.8, so not added to the matrix yet
+      # https://github.com/ibis-project/ibis/issues/2091 https://github.com/ibis-project/ibis/issues/2090
 
   steps:
     - bash: |
