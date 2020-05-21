@@ -59,7 +59,7 @@ jobs:
       py37_omnisci_spark:
         PYTHON_VERSION: "3.7"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_OMNISCI_SPARK)
-        BACKENDS: $(BACKENDS_OMNISCI_SPARK
+        BACKENDS: $(BACKENDS_OMNISCI_SPARK)
 
   steps:
     - bash: |
