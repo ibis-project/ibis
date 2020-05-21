@@ -23,7 +23,7 @@ dependencies:
   - pandas>=0.25.3
   - pip=19.3.1
   - plumbum
-  - pre-commit
+  - pre-commit=2.1
   - psycopg2
   - pyarrow>=0.13
   - pydata-google-auth

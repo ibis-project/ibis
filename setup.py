@@ -59,7 +59,7 @@ develop_requires = all_requires + [
     'flake8',
     'isort',
     'mypy',
-    'pre-commit',
+    'pre-commit==2.1',
     'pygit2',
     'pytest>=4.5',
 ]
