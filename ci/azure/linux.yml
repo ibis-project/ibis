@@ -23,50 +23,41 @@ jobs:
   strategy:
     matrix:
       py36_sql_parquet:
-        PYTHON_MAJOR_VERSION: "3"
-        PYTHON_MINOR_VERSION: "6"
+        PYTHON_VERSION: "3.6"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_SQL_PARQUET)
         BACKENDS: $(BACKENDS_SQL_PARQUET)
       py36_impala_kudu_clickhouse:
-        PYTHON_MAJOR_VERSION: "3"
-        PYTHON_MINOR_VERSION: "6"
+        PYTHON_VERSION: "3.6"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
         BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
       py36_omnisci:
-        PYTHON_MAJOR_VERSION: "3"
-        PYTHON_MINOR_VERSION: "6"
+        PYTHON_VERSION: "3.6"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_OMNISCI)
         BACKENDS: $(BACKENDS_OMNISCI)
       py37_sql_parquet:
-        PYTHON_MAJOR_VERSION: "3"
-        PYTHON_MINOR_VERSION: "7"
+        PYTHON_VERSION: "3.7"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_SQL_PARQUET_OMNISCI)
         BACKENDS: $(BACKENDS_SQL_PARQUET)
       py37_impala_kudu_clickhouse:
-        PYTHON_MAJOR_VERSION: "3"
-        PYTHON_MINOR_VERSION: "7"
+        PYTHON_VERSION: "3.7"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
         BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
       py37_omnisci:
-        PYTHON_MAJOR_VERSION: "3"
-        PYTHON_MINOR_VERSION: "7"
+        PYTHON_VERSION: "3.7"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
         BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
       py38_sql_parquet:
-        PYTHON_MAJOR_VERSION: "3"
-        PYTHON_MINOR_VERSION: "8"
+        PYTHON_VERSION: "3.8"
         PYTEST_MARK_EXPRESSION: "$(PYTEST_MARK_EXPRESSION_SQL_PARQUET_OMNISCI) and not omniscidb and not spark and not pyspark"
         BACKENDS: $(BACKENDS_SQL_PARQUET)
       py38_impala_kudu_clickhouse:
-        PYTHON_MAJOR_VERSION: "3"
-        PYTHON_MINOR_VERSION: "8"
+        PYTHON_VERSION: "3.8"
         PYTEST_MARK_EXPRESSION: "$(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE) and not omniscidb and not spark and not pyspark"
         BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
 
   steps:
     - bash: |
-        echo "##vso[task.setvariable variable=PYTHON_VERSION]$(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)"
-        echo "##vso[task.setvariable variable=PYTHON_NO_DOT_VERSION]$(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)"
+        echo "##vso[task.setvariable variable=PYTHON_NO_DOT_VERSION]${PYTHON_VERSION/./}"
       displayName: 'Set environment variables'
 
     - bash: |
