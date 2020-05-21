@@ -12,7 +12,7 @@ RUN /opt/conda/bin/conda config --add channels conda-forge \
  && /opt/conda/bin/conda update --all --yes \
  && /opt/conda/bin/conda clean --all --yes
 
-RUN /opt/conda/bin/conda install --name ibis-env --yes --file /requirements-docs.yml \
+RUN /opt/conda/bin/conda env create --file=/requirements-docs.yml \
  && /opt/conda/bin/conda clean --all --yes
 
 RUN echo 'source /opt/conda/bin/activate ibis-env && exec "$@"' > activate.sh
