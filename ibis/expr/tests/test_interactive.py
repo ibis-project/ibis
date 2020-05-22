@@ -36,6 +36,9 @@ class TestInteractiveUse(unittest.TestCase):
         with config.option_context('interactive', True):
             assert table._repr_png_() is None
 
+        with config.option_context('interactive', False):
+            assert table._repr_png_() is not None
+
     def test_default_limit(self):
         table = self.con.table('functional_alltypes')
 
