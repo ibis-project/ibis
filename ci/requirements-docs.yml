@@ -1,14 +1,23 @@
-ipython
-jupyter
-libiconv  # see https://github.com/jupyter/repo2docker/issues/758
-matplotlib
-nbconvert
-nbsphinx
-nomkl
-# must pin again otherwise strange things happen
-pyarrow>=0.12
-sphinx=2.0.1
-sphinx-releases
-sphinx_rtd_theme
-# https://github.com/ibis-project/ibis/issues/2027
-semantic_version<2.7
+name: ibis-env
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - ipython
+  - jupyter
+  - libiconv  # see https://github.com/jupyter/repo2docker/issues/758
+  - matplotlib
+  - nbconvert
+  - nbsphinx
+  - nomkl
+  # must pin again otherwise strange things happen
+  - pyarrow>=0.12
+  - sphinx=2.0.1
+  - sphinx-releases
+  - sphinx_rtd_theme
+  # https://github.com/ibis-project/ibis/issues/2027
+  - semantic_version<2.7
+
+  - pip
+  - pip:
+    - git+https://github.com/datapythonista/pysuerga
