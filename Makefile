@@ -176,8 +176,8 @@ doc: builddoc docclean
 
 # Targets for run commands inside ibis and ibis-docs containers
 
-docker_run: build
+docker_run:
 	$(DOCKER_RUN) ibis $(DOCKER_RUN_COMMAND)
 
-docker_docs_run: builddoc
+docker_docs_run:
 	$(DOCKER_RUN) ibis-docs $(DOCKER_RUN_COMMAND)

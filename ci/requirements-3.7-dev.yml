@@ -18,18 +18,18 @@ dependencies:
   - lz4
   - multipledispatch>=0.6.0
   - mypy
-  - numpy>=1.11
+  - numpy>=1.15
   - openjdk=8
-  - pandas>=0.21
-  - pip
+  - pandas>=0.25.3
+  - pip=19.3.1
   - plumbum
   - pre-commit
   - psycopg2
-  - pyarrow>=0.12
+  - pyarrow>=0.13
   - pydata-google-auth
   - pydocstyle=4.0.1
   - pygit2
-  - pymapd>=0.12.0
+  - pymapd>=0.22
   - pymysql
   - pyspark>=2.4.3
   - pytables>=3.0.0

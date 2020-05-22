@@ -99,7 +99,7 @@ def build(recipe, python):
     click.echo('Building {} recipe...'.format(recipe))
 
     cmd = conda[
-        'build', recipe, '--channel', 'conda-forge', '--python', python
+        'build', '--channel', 'conda-forge', '--python', python, recipe
     ]
 
     cmd(
@@ -131,10 +131,14 @@ def deploy(package_location, artifact_directory, architecture):
 
 @cli.command()
 @click.pass_context
-def test(ctx):
+@click.option(
+    '--python',
+    default='{}.{}'.format(sys.version_info.major, sys.version_info.minor),
+)
+def test(ctx, python):
     ctx.invoke(clone)
     ctx.invoke(update)
-    ctx.invoke(build)
+    ctx.invoke(build, python=python)
     ctx.invoke(deploy)
 
 

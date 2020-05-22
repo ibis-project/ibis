@@ -15,8 +15,9 @@
 # This file may adapt small portions of https://github.com/mtth/hdfs (MIT
 # license), see the LICENSES directory.
 
-import posixpath
 from functools import wraps as implements
+
+import posixpath
 
 import ibis.common.exceptions as com
 from ibis.config import options

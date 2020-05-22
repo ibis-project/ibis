@@ -36,12 +36,20 @@ def test_date_extract(backend, alltypes, df, attr):
 
 
 @pytest.mark.parametrize(
-    'attr', ['year', 'month', 'day', 'hour', 'minute', 'second']
+    'attr', ['year', 'month', 'day', 'hour', 'minute', 'second', 'millisecond']
 )
 @pytest.mark.xfail_unsupported
 def test_timestamp_extract(backend, alltypes, df, attr):
+    if attr == 'millisecond':
+        if backend.name == 'sqlite':
+            pytest.xfail(reason=('Issue #2156'))
+        if backend.name == 'spark':
+            pytest.xfail(reason='Issue #2159')
+        expected = (df.timestamp_col.dt.microsecond // 1000).astype('int32')
+    else:
+        expected = getattr(df.timestamp_col.dt, attr).astype('int32')
+
     expr = getattr(alltypes.timestamp_col, attr)()
-    expected = getattr(df.timestamp_col.dt, attr).astype('int32')
 
     result = expr.execute()
     expected = backend.default_series_rename(expected)

@@ -20,18 +20,21 @@ jobs:
         python.version: "$(python.major.version).$(python.minor.version)"
         python.no.dot.version: "$(python.major.version)$(python.minor.version)"
         conda.env: "ibis$(python.no.dot.version)"
+        arrow.build: "py36hbe5aa27_2"
       py37:
         python.major.version: "3"
         python.minor.version: "7"
         python.version: "$(python.major.version).$(python.minor.version)"
         python.no.dot.version: "$(python.major.version)$(python.minor.version)"
         conda.env: "ibis$(python.no.dot.version)"
+        arrow.build: "py37h5e0360d_2"
       py38:
         python.major.version: "3"
         python.minor.version: "8"
         python.version: "$(python.major.version).$(python.minor.version)"
         python.no.dot.version: "$(python.major.version)$(python.minor.version)"
         conda.env: "ibis$(python.no.dot.version)"
+        arrow.build: "py38h0e40e04_2"
 
   steps:
     - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
@@ -46,7 +49,7 @@ jobs:
     - script: conda update --all conda=$(conda.version)
       displayName: 'Update conda and install an appropriate version'
 
-    - script: conda create --name $(conda.env) python=$(python.version) numpy pandas pytables ruamel.yaml jinja2 pyarrow multipledispatch pymysql "sqlalchemy>=1.1" psycopg2 graphviz click mock plumbum geopandas toolz regex
+    - script: conda create --name $(conda.env) python=$(python.version) numpy pandas pytables ruamel.yaml jinja2 pyarrow multipledispatch pymysql "sqlalchemy>=1.1" psycopg2 graphviz click mock plumbum geopandas toolz regex "arrow-cpp=0.16.0=$(arrow.build)"
       displayName: 'Create conda environment'
 
     - script: |
