@@ -38,12 +38,14 @@ class TestInteractiveUse(unittest.TestCase):
 
         try:
             import ibis.expr.visualize
+
             ibis.expr.visualize.to_graph(table).pipe(format='png')
         except Exception:
             pass
         else:
-            with config.option_context('interactive', False), \
-                    config.option_context('graphviz_repr', True):
+            with config.option_context(
+                'interactive', False
+            ), config.option_context('graphviz_repr', True):
                 assert table._repr_png_() is not None
 
     def test_default_limit(self):
