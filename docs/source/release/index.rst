@@ -12,6 +12,7 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :bug:`2157` Fix interactive mode returning a expression instead of the value when used in Jupyter
 * :feature:`2093` IsNan implementation for OmniSciDB
 * :feature:`2094` [OmnisciDB] Support add_columns and drop_columns for OmnisciDB table
 * :bug:`2127` Fix PySpark error when doing alias after selection
