@@ -18,7 +18,7 @@ jobs:
     PYTEST_MARK_EXPRESSION_SQL_PARQUET: "not udf and not clickhouse and not impala and not kudu and not hdfs and not omniscidb and not spark and not pyspark"
     PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE: "not udf and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite and not omniscidb and not spark and not pyspark"
     # TODO: Remove "and not spark and not pyspark" once spark tests are working. #2201
-    PYTEST_MARK_EXPRESSION_OMNISCI_SPARK: "not udf and not clickhouse and not impala and not kudu and not hdfs and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite and not spark and not pyspark"
+    PYTEST_MARK_EXPRESSION_OMNISCI_SPARK: "not udf and not clickhouse and not impala and not kudu and not hdfs and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite and not spark"
   strategy:
     matrix:
 
