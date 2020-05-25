@@ -1,6 +1,5 @@
-from posixpath import join as pjoin
-
 import pytest
+from posixpath import join as pjoin
 
 import ibis
 from ibis.tests.util import assert_equal
