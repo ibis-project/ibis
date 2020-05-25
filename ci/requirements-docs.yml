@@ -1,20 +1,23 @@
-ipython
-jupyter
-libiconv  # see https://github.com/jupyter/repo2docker/issues/758
-matplotlib
-nbconvert
-nbsphinx
-nomkl
-# must pin again otherwise strange things happen
-pyarrow>=0.12
-sphinx=2.0.1
-sphinx-releases
-sphinx_rtd_theme
-# https://github.com/ibis-project/ibis/issues/2027
-semantic_version<2.7
+name: ibis-env
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - ipython
+  - jupyter
+  - libiconv  # see https://github.com/jupyter/repo2docker/issues/758
+  - matplotlib
+  - nbconvert
+  - nbsphinx
+  - nomkl
+  # must pin again otherwise strange things happen
+  - pyarrow>=0.12
+  - sphinx=2.0.1
+  - sphinx-releases
+  - sphinx_rtd_theme
+  # https://github.com/ibis-project/ibis/issues/2027
+  - semantic_version<2.7
 
-# TODO: The conda solver takes forever when pymapd is installed, with the rest of
-# Ibis dependencies. It has been excluded from the tests for now, so we add it here.
-# Once the solver problem is fixed, this should be in ci/requirements-3.*-dev.yml
-# (the one used for the docs), and removed from here.
-pymapd>=0.21.0
+  - pip
+  - pip:
+    - git+https://github.com/datapythonista/pysuerga
