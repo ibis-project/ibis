@@ -507,6 +507,16 @@ def _ifnull(translator, expr):
     )
 
 
+def _nullifzero(translator, expr):
+    col_expr = expr.op().args[0]
+    return translator.translate(col_expr.nullif(0))
+
+
+def _zeroifnull(translator, expr):
+    col_expr = expr.op().args[0]
+    return translator.translate(col_expr.fillna(0))
+
+
 def literal(translator, expr: ibis.expr.operations.Literal) -> str:
     """Create a translator for literal operations.
 
@@ -1041,6 +1051,8 @@ _general_ops = {
     ops.IfNull: _ifnull,
     ops.NullIf: fixed_arity('nullif', 2),
     ops.IsNan: unary('isNan'),
+    ops.NullIfZero: _nullifzero,
+    ops.ZeroIfNull: _zeroifnull,
 }
 
 # WINDOW
@@ -1072,7 +1084,6 @@ _unsupported_ops = [
     ops.NTile,
     ops.NthValue,
     ops.GroupConcat,
-    ops.NullIfZero,
     ops.IsInf,
     # string
     ops.Lowercase,
