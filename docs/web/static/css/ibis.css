@@ -17,6 +17,11 @@ h3 {
     font-weight: 600;
     color: black;
 }
+h4 {
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: #444;
+}
 a {
     color: #130654;
 }
