@@ -36,6 +36,10 @@ IBIS_TEST_POSTGRES_DB = os.environ.get(
 )
 
 
+def _random_identifier(suffix):
+    return '__ibis_test_{}_{}'.format(suffix, ibis.util.guid())
+
+
 @pytest.fixture(scope='session')
 def con():
     return ibis.postgres.connect(
@@ -89,3 +93,24 @@ def translate():
     dialect = PostgreSQLDialect()
     context = dialect.make_context()
     return lambda expr: dialect.translator(expr, context).get_result()
+
+
+@pytest.fixture
+def temp_table(con) -> str:
+    """
+    Return a temporary table name.
+
+    Parameters
+    ----------
+    con : ibis.postgres.PostgreSQLClient
+
+    Yields
+    ------
+    name : string
+        Random table name for a temporary usage.
+    """
+    name = _random_identifier('table')
+    try:
+        yield name
+    finally:
+        con.drop_table(name, force=True)

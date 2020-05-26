@@ -1472,7 +1472,7 @@ class ImpalaClient(SQLClient):
         )
 
     def load_data(
-        self, table_name, path, database=None, overwrite=False, partition=None
+        self, table_name, path, database=None, overwrite=False, partition=None,
     ):
         """
         Wraps the LOAD DATA DDL statement. Loads data into an Impala table by
