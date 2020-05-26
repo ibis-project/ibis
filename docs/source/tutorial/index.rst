@@ -8,7 +8,7 @@ Here we show Jupyter notebooks that take you through various tasks using ibis.
 .. toctree::
    :maxdepth: 1
 
-   01-Intro-and-Setup.ipynb
+   01-Introduction-to-Ibis.ipynb
    02-Basics-Aggregate-Filter-Limit.ipynb
    03-Projection-Join-Sort.ipynb
    04-More-Value-Expressions.ipynb
