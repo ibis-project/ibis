@@ -30,6 +30,7 @@ Release Notes
 * :feature:`2086` OmniSciDB - Refactor DDL and Client; Add temporary parameter to create_table and "force" parameter to drop_view
 * :support:`2113` Enabled cumulative ops support for OmniSciDB
 * :bug:`2134` [OmniSciDB] Fix TopK when used as filter
+* :feature:`2173` Create ExtractDayOfYear operation and add its support to Clickhouse, CSV, MySQL, OmniSciDB, Pandas, Parquet, PostgreSQL, PySpark, SQLite and Spark
 * :feature:`2095` Implementations of Log Log2 Log10 for OmniSciDB backend
 * :release:`1.3.0 <2020-02-27>`
 * :support:`2066` Add support to Python 3.8

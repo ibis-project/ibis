@@ -227,6 +227,7 @@ _operation_registry.update(
         ops.ExtractYear: _strftime_int('%Y'),
         ops.ExtractMonth: _strftime_int('%m'),
         ops.ExtractDay: _strftime_int('%d'),
+        ops.ExtractDayOfYear: _strftime_int('%j'),
         ops.ExtractHour: _strftime_int('%H'),
         ops.ExtractMinute: _strftime_int('%M'),
         ops.ExtractSecond: _strftime_int('%S'),
