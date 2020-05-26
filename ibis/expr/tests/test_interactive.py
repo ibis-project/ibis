@@ -14,6 +14,8 @@
 
 import unittest
 
+import pytest
+
 import ibis.config as config
 from ibis.expr.tests.mocks import MockConnection
 
@@ -30,23 +32,21 @@ class TestInteractiveUse(unittest.TestCase):
 
         assert len(self.con.executed_queries) > 0
 
-    def test_png_repr_returns_correct_type(self):
+    def test_repr_png_is_none_in_interactive(self):
         table = self.con.table('functional_alltypes')
 
         with config.option_context('interactive', True):
             assert table._repr_png_() is None
 
-        try:
-            import ibis.expr.visualize
+    def test_repr_png_is_not_none_in_not_interactive(self):
+        pytest.importorskip('ibis.expr.visualize')
 
-            ibis.expr.visualize.to_graph(table).pipe(format='png')
-        except Exception:
-            pass
-        else:
-            with config.option_context(
-                'interactive', False
-            ), config.option_context('graphviz_repr', True):
-                assert table._repr_png_() is not None
+        table = self.con.table('functional_alltypes')
+
+        with config.option_context(
+            'interactive', False
+        ), config.option_context('graphviz_repr', True):
+            assert table._repr_png_() is not None
 
     def test_default_limit(self):
         table = self.con.table('functional_alltypes')
