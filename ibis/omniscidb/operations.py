@@ -1014,6 +1014,7 @@ _date_ops = {
     ops.ExtractMonth: _extract_field('MONTH'),
     ops.ExtractDay: _extract_field('DAY'),
     ops.ExtractDayOfYear: _extract_field('DOY'),
+    ops.ExtractQuarter: _extract_field('QUARTER'),
     ops.ExtractHour: _extract_field('HOUR'),
     ops.ExtractMinute: _extract_field('MINUTE'),
     ops.ExtractSecond: _extract_field('SECOND'),
