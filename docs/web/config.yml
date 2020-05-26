@@ -24,6 +24,10 @@ layout:
         target: /about/index.html
       - name: "Team"
         target: /about/team.html
+      - name: "Roadmap"
+        target: /about/roadmap.html
+      - name: "License"
+        target: /about/license.html
     - name: "Getting started"
       target: /getting_started.html
     - name: "Documentation"
