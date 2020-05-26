@@ -79,7 +79,7 @@ class Expr:
         return type(self), self._safe_name, self.op()
 
     def _repr_png_(self):
-        if not ibis.options.graphviz_repr:
+        if config.options.interactive or not ibis.options.graphviz_repr:
             return None
         try:
             import ibis.expr.visualize as viz
