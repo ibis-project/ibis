@@ -13,9 +13,12 @@ Release Notes
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
 * :feature:`2185` [OmniSciDB] Added support of log, log2 and IdenticalTo operations
+* :feature:`2186` ZeroIfNull and NullIfZero implementation for OmniSciDB  
+* :bug:`2157` Fix interactive mode returning a expression instead of the value when used in Jupyter
 * :feature:`2093` IsNan implementation for OmniSciDB
 * :feature:`2094` [OmnisciDB] Support add_columns and drop_columns for OmnisciDB table
 * :bug:`2127` Fix PySpark error when doing alias after selection
+* :feature:`2175` Create ExtractQuarter operation and add its support to Clickhouse, CSV, Impala, MySQL, OmniSciDB, Pandas, Parquet, PostgreSQL, PySpark, SQLite and Spark
 * :feature:`2126` Add translation rules for isnull() and notnull() for pyspark backend
 * :feature:`2062` Implement read_csv for omniscidb backend
 * :feature:`2097` Date, DateDiff and TimestampDiff implementations for OmniSciDB
@@ -24,11 +27,13 @@ Release Notes
 * :support:`2107` Added fragment_size to table creation for OmniSciDB
 * :feature:`2117` Add non-nullable info to schema output
 * :feature:`2083` fillna and nullif implementations for OmnisciDB
+* :feature:`1981` Add load_data to sqlalchemy's backends and fix database parameter for load/create/drop when database parameter is the same than the current database
 * :support:`2096` Added round() support for OmniSciDB
 * :feature:`2125` [OmniSciDB] Add support for within, d_fully_within and point
 * :feature:`2086` OmniSciDB - Refactor DDL and Client; Add temporary parameter to create_table and "force" parameter to drop_view
 * :support:`2113` Enabled cumulative ops support for OmniSciDB
 * :bug:`2134` [OmniSciDB] Fix TopK when used as filter
+* :feature:`2173` Create ExtractDayOfYear operation and add its support to Clickhouse, CSV, MySQL, OmniSciDB, Pandas, Parquet, PostgreSQL, PySpark, SQLite and Spark
 * :feature:`2095` Implementations of Log Log2 Log10 for OmniSciDB backend
 * :release:`1.3.0 <2020-02-27>`
 * :support:`2066` Add support to Python 3.8

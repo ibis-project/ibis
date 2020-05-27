@@ -84,9 +84,6 @@ SQL engine support needing code contributors:
    user_guide/index
    api
    release/index
-   contributing
-   roadmap
-   legal
 
 
 Indices and tables
