@@ -57,7 +57,9 @@ def valid_function_signature(input_type, func):
     if declared_parameter_count != function_parameter_count:
         raise TypeError(
             'Function signature {!r} has {:d} parameters, '
-            'input_type has {:d}. These must match'.format(
+            'input_type has {:d}. These must match. Non-column '
+            'parameters must be defined as keyword only, i.e., '
+            'def foo(col, *, function_param).'.format(
                 func.__name__,
                 function_parameter_count,
                 declared_parameter_count,
@@ -109,16 +111,82 @@ def _udf_decorator(node_type, input_type, output_type):
     return wrapper
 
 
-def analytics(input_type, output_type):
-    """ Reduction vectorized UDFs."""
+def analytic(input_type, output_type):
+    """Define an *analytic* user-defined function that takes N
+    pandas Series or scalar values as inputs and produces N rows of output.
+
+    Parameters
+    ----------
+    input_type : List[ibis.expr.datatypes.DataType]
+        A list of the types found in :mod:`~ibis.expr.datatypes`. The
+        length of this list must match the number of arguments to the
+        function. Variadic arguments are not yet supported.
+    output_type : ibis.expr.datatypes.DataType
+        The return type of the function.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> import ibis.expr.datatypes as dt
+    >>> from ibis.udf.vectorized import analytic
+    >>> @analytic(input_type=[dt.double], output_type=dt.double)
+    ... def zscore(series):  # note the use of aggregate functions
+    ...     return (series - series.mean()) / series.std()
+    """
     return _udf_decorator(AnalyticsVectorizedUDF, input_type, output_type)
 
 
 def elementwise(input_type, output_type):
-    """ Element wise vectorized UDFs."""
+    """Define a UDF (user-defined function) that operates element wise on a
+    Pandas Series.
+
+    Parameters
+    ----------
+    input_type : List[ibis.expr.datatypes.DataType]
+        A list of the types found in :mod:`~ibis.expr.datatypes`. The
+        length of this list must match the number of arguments to the
+        function. Variadic arguments are not yet supported.
+    output_type : ibis.expr.datatypes.DataType
+        The return type of the function.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> import ibis.expr.datatypes as dt
+    >>> from ibis.udf.vectorized import elementwise
+    >>> @elementwise(input_type=[dt.string], output_type=dt.int64)
+    ... def my_string_length(series):
+    ...     return series.str.len() * 2
+
+    Define a UDF with non-column parameters:
+
+    >>> @elementwise(input_type=[dt.string], output_type=dt.int64)
+    ... def my_string_length(series, *, times):
+    ...     return series.str.len() * times
+    """
     return _udf_decorator(ElementWiseVectorizedUDF, input_type, output_type)
 
 
 def reduction(input_type, output_type):
-    """ Reduction vectorized UDFs."""
+    """Define a user-defined reduction function that takes N pandas Series
+    or scalar values as inputs and produces one row of output.
+
+    Parameters
+    ----------
+    input_type : List[ibis.expr.datatypes.DataType]
+        A list of the types found in :mod:`~ibis.expr.datatypes`. The
+        length of this list must match the number of arguments to the
+        function. Variadic arguments are not yet supported.
+    output_type : ibis.expr.datatypes.DataType
+        The return type of the function.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> import ibis.expr.datatypes as dt
+    >>> from ibis.udf.vectorized import reduction
+    >>> @reduction(input_type=[dt.string], output_type=dt.int64)
+    ... def my_string_length_agg(series, **kwargs):
+    ...     return (series.str.len() * 2).sum()
+    """
     return _udf_decorator(ReductionVectorizedUDF, input_type, output_type)

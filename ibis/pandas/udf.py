@@ -52,7 +52,7 @@ def rule_to_python_type(datatype):
 def create_gens_from_args_groupby(args: Tuple[SeriesGroupBy]):
     """ Create generators for each args for groupby udaf.
 
-    Returns a generator taht outputs each group.
+    Returns a generator that outputs each group.
 
     Parameters
     ----------
@@ -139,81 +139,21 @@ def nullable(datatype):
 class udf:
     @staticmethod
     def elementwise(input_type, output_type):
-        """Define a UDF (user-defined function) that operates element wise on a
-        Pandas Series.
+        """Alias for ibis.udf.vectorized.elementwise."""
 
-        Parameters
-        ----------
-        input_type : List[ibis.expr.datatypes.DataType]
-            A list of the types found in :mod:`~ibis.expr.datatypes`. The
-            length of this list must match the number of arguments to the
-            function. Variadic arguments are not yet supported.
-        output_type : ibis.expr.datatypes.DataType
-            The return type of the function.
-
-        Examples
-        --------
-        >>> import ibis
-        >>> import ibis.expr.datatypes as dt
-        >>> from ibis.pandas.udf import udf
-        >>> @udf.elementwise(input_type=[dt.string], output_type=dt.int64)
-        ... def my_string_length(series):
-        ...     return series.str.len() * 2
-        """
         return ibis.udf.vectorized.elementwise(input_type, output_type)
 
     @staticmethod
     def reduction(input_type, output_type):
-        """Define a user-defined reduction function that takes N pandas Series
-        or scalar values as inputs and produces one row of output.
-
-        Parameters
-        ----------
-        input_type : List[ibis.expr.datatypes.DataType]
-            A list of the types found in :mod:`~ibis.expr.datatypes`. The
-            length of this list must match the number of arguments to the
-            function. Variadic arguments are not yet supported.
-        output_type : ibis.expr.datatypes.DataType
-            The return type of the function.
-
-        Examples
-        --------
-        >>> import ibis
-        >>> import ibis.expr.datatypes as dt
-        >>> from ibis.pandas.udf import udf
-        >>> @udf.reduction(input_type=[dt.string], output_type=dt.int64)
-        ... def my_string_length_agg(series, **kwargs):
-        ...     return (series.str.len() * 2).sum()
-        """
+        """Alias for ibis.udf.vectorized.reduction."""
         return ibis.udf.vectorized.reduction(input_type, output_type)
 
     @staticmethod
     def analytic(input_type, output_type):
-        """Define an *analytic* user-defined function that takes N
-        pandas Series or scalar values as inputs and produces N rows of output.
-
-        Parameters
-        ----------
-        input_type : List[ibis.expr.datatypes.DataType]
-            A list of the types found in :mod:`~ibis.expr.datatypes`. The
-            length of this list must match the number of arguments to the
-            function. Variadic arguments are not yet supported.
-        output_type : ibis.expr.datatypes.DataType
-            The return type of the function.
-
-        Examples
-        --------
-        >>> import ibis
-        >>> import ibis.expr.datatypes as dt
-        >>> from ibis.pandas.udf import udf
-        >>> @udf.analytic(input_type=[dt.double], output_type=dt.double)
-        ... def zscore(series):  # note the use of aggregate functions
-        ...     return (series - series.mean()) / series.std()
-        """
-        return ibis.udf.vectorized.analytics(input_type, output_type)
+        """Alias for ibis.udf.vectorized.analytics."""
+        return ibis.udf.vectorized.analytic(input_type, output_type)
 
 
-@pre_execute.register(ops.ElementWiseVectorizedUDF)
 @pre_execute.register(ops.ElementWiseVectorizedUDF, ibis.client.Client)
 def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
     """Register execution rules for elementwise UDFs.
@@ -267,9 +207,7 @@ def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
     return scope
 
 
-@pre_execute.register(ops.AnalyticsVectorizedUDF)
 @pre_execute.register(ops.AnalyticsVectorizedUDF, ibis.client.Client)
-@pre_execute.register(ops.ReductionVectorizedUDF)
 @pre_execute.register(ops.ReductionVectorizedUDF, ibis.client.Client)
 def pre_execute_reduction_udf(op, *clients, scope=None, **kwargs):
     input_type = op.input_type
