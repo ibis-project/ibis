@@ -2589,6 +2589,14 @@ class ExtractDay(ExtractDateField):
     pass
 
 
+class ExtractDayOfYear(ExtractDateField):
+    pass
+
+
+class ExtractQuarter(ExtractDateField):
+    pass
+
+
 class ExtractHour(ExtractTimeField):
     pass
 

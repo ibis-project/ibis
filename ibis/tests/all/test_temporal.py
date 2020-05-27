@@ -36,7 +36,18 @@ def test_date_extract(backend, alltypes, df, attr):
 
 
 @pytest.mark.parametrize(
-    'attr', ['year', 'month', 'day', 'hour', 'minute', 'second', 'millisecond']
+    'attr',
+    [
+        'year',
+        'month',
+        'day',
+        'day_of_year',
+        'quarter',
+        'hour',
+        'minute',
+        'second',
+        'millisecond',
+    ],
 )
 @pytest.mark.xfail_unsupported
 def test_timestamp_extract(backend, alltypes, df, attr):
@@ -47,7 +58,9 @@ def test_timestamp_extract(backend, alltypes, df, attr):
             pytest.xfail(reason='Issue #2159')
         expected = (df.timestamp_col.dt.microsecond // 1000).astype('int32')
     else:
-        expected = getattr(df.timestamp_col.dt, attr).astype('int32')
+        expected = getattr(df.timestamp_col.dt, attr.replace('_', '')).astype(
+            'int32'
+        )
 
     expr = getattr(alltypes.timestamp_col, attr)()
 

@@ -1,10 +1,10 @@
 import unittest
 from decimal import Decimal
-from posixpath import join as pjoin
 
 import numpy as np
 import pandas as pd
 import pytest
+from posixpath import join as pjoin
 
 import ibis
 import ibis.common.exceptions as com
@@ -91,13 +91,13 @@ class TestWrapping(unittest.TestCase):
             ibis_type = dt.validate_type(t)
 
             expr = func(sv)
-            assert type(expr) == type(
+            assert type(expr) == type(  # noqa: E501, E721
                 ibis_type.scalar_type()(expr.op())
-            )  # noqa: E501, E721
+            )
             expr = func(av)
-            assert type(expr) == type(
+            assert type(expr) == type(  # noqa: E501, E721
                 ibis_type.column_type()(expr.op())
-            )  # noqa: E501, E721
+            )
 
     def test_uda_primitive_output_types(self):
         types = [

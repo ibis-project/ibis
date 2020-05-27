@@ -370,6 +370,7 @@ class SQLiteClient(alch.AlchemyClient):
                 path=path, name=quoted_name
             )
         )
+        self.has_attachment = True
 
     @property
     def client(self):

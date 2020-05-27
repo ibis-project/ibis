@@ -12,65 +12,65 @@ jobs:
     AZURECI: 1
     COMPOSE_FILE: ci/docker-compose.yml
     PYTHONHASHSEED: "random"
-    # TODO: omniscidb should be in BACKENDS_SQL_PARQUET, but it's not compatible with Python 3.8, so it needs to be set individually in py36 and py37 builds.
-    # It is not being added, because the conda solver takes forever to resolve when pymapd is present, so it's not being tested for now
     BACKENDS_SQL_PARQUET: "mysql postgres sqlite parquet"
     BACKENDS_IMPALA_KUDU_CLICKHOUSE: "impala kudu-master kudu-tserver clickhouse"
-    # TODO: there are some issues with pyspark, so not testing for now. Same for udf I guess, which was already not being tested.
-    PYTEST_MARK_EXPRESSION_SQL_PARQUET: "not udf and not spark and not pyspark and not clickhouse and not impala and not kudu and not hdfs"
-    PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE: "not udf and not spark and not pyspark and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite"
+    BACKENDS_OMNISCI_SPARK: "omniscidb"
+    PYTEST_MARK_EXPRESSION_SQL_PARQUET: "not udf and not clickhouse and not impala and not kudu and not hdfs and not omniscidb and not spark and not pyspark"
+    PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE: "not udf and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite and not omniscidb and not spark and not pyspark"
+    # TODO: Remove "and not spark and not pyspark" once spark tests are working. #2201
+    PYTEST_MARK_EXPRESSION_OMNISCI_SPARK: "not udf and not clickhouse and not impala and not kudu and not hdfs and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite and not spark and not pyspark"
   strategy:
     matrix:
-      py36_backends1:
-        PYTHON_MAJOR_VERSION: "3"
-        PYTHON_MINOR_VERSION: "6"
-        PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
-        PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
+
+      # SQL and parquet backends
+      py36_sql_parquet:
+        PYTHON_VERSION: "3.6"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_SQL_PARQUET)
         BACKENDS: $(BACKENDS_SQL_PARQUET)
-      py36_backends2:
-        PYTHON_MAJOR_VERSION: "3"
-        PYTHON_MINOR_VERSION: "6"
-        PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
-        PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
-        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
-        BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
-      py37_backends1:
-        PYTHON_MAJOR_VERSION: "3"
-        PYTHON_MINOR_VERSION: "7"
-        PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
-        PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
+      py37_sql_parquet:
+        PYTHON_VERSION: "3.7"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_SQL_PARQUET)
         BACKENDS: $(BACKENDS_SQL_PARQUET)
-      py37_backends2:
-        PYTHON_MAJOR_VERSION: "3"
-        PYTHON_MINOR_VERSION: "7"
-        PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
-        PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
+      py38_sql_parquet:
+        PYTHON_VERSION: "3.8"
+        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_SQL_PARQUET)
+        BACKENDS: $(BACKENDS_SQL_PARQUET)
+
+      # Impala, kudu and clickhouse backends
+      py36_impala_kudu_clickhouse:
+        PYTHON_VERSION: "3.6"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
         BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
-      py38_backends1:
-        PYTHON_MAJOR_VERSION: "3"
-        PYTHON_MINOR_VERSION: "8"
-        PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
-        PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
-        # pymapd and pyspark are not working on Ibis with Python 3.8
-        # https://github.com/ibis-project/ibis/issues/2091
-        # https://github.com/ibis-project/ibis/issues/2090
-        PYTEST_MARK_EXPRESSION: "$(PYTEST_MARK_EXPRESSION_SQL_PARQUET) and not omniscidb and not spark and not pyspark"
-        BACKENDS: $(BACKENDS_SQL_PARQUET)
-      py38_backends2:
-        PYTHON_MAJOR_VERSION: "3"
-        PYTHON_MINOR_VERSION: "8"
-        PYTHON_VERSION: $(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
-        PYTHON_NO_DOT_VERSION: $(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
-        # pymapd and pyspark are not working on Ibis with Python 3.8
-        # https://github.com/ibis-project/ibis/issues/2091
-        # https://github.com/ibis-project/ibis/issues/2090
-        PYTEST_MARK_EXPRESSION: "$(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE) and not omniscidb and not spark and not pyspark"
+      py37_impala_kudu_clickhouse:
+        PYTHON_VERSION: "3.7"
+        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
+        BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
+      py38_impala_kudu_clickhouse:
+        PYTHON_VERSION: "3.8"
+        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
         BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
 
+      # Omnisci and spark backends
+      py36_omnisci_spark:
+        PYTHON_VERSION: "3.6"
+        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_OMNISCI_SPARK)
+        BACKENDS: $(BACKENDS_OMNISCI_SPARK)
+      py37_omnisci_spark:
+        PYTHON_VERSION: "3.7"
+        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_OMNISCI_SPARK)
+        BACKENDS: $(BACKENDS_OMNISCI_SPARK)
+      # TODO: pymapd and pyspark are not working on Ibis with Python 3.8, so not added to the matrix yet
+      # https://github.com/ibis-project/ibis/issues/2091 https://github.com/ibis-project/ibis/issues/2090
+
   steps:
+    - bash: |
+        echo "##vso[task.setvariable variable=PYTHON_NO_DOT_VERSION]${PYTHON_VERSION/./}"
+        if [ -z "$PYTEST_MARK_EXPRESSION" ]; then
+          echo "##vso[task.logissue type=error]The env variable PYTEST_MARK_EXPRESSION is not set. It is expected to be set in all the matrix builds, since not all tests can be run in a single build. It's probably caused by a typo."
+          exit 1
+        fi
+      displayName: 'Set environment variables'
+
     - bash: |
         if [ -n "${GCLOUD_SERVICE_KEY}" ]; then
           mkdir -p /tmp/ibis
@@ -216,6 +216,10 @@ jobs:
     LOADS: "impala postgres"
 
   steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.6' 
+
     - bash: make start PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
       displayName: 'Start databases'
 
@@ -240,15 +244,15 @@ jobs:
     - bash: |
         make docker_docs_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="git clone --branch gh-pages \
           https://github.com/cpcloud/docs.ibis-project.org \
-          /tmp/docs.ibis-project.org"
+          /tmp/ibis-project.org"
       displayName: 'Clone doc repo'
 
     - bash: |
         docker-compose run ibis-docs \
-          find /tmp/docs.ibis-project.org \
+          find /tmp/ibis-project.org \
             -maxdepth 1 \
             # ignore the directory we're searching in itself
-            ! -wholename /tmp/docs.ibis-project.org \
+            ! -wholename /tmp/ibis-project.org/ \
             # ignore git files
             ! -name '*.git' \
             # ignore the CNAME record
@@ -262,13 +266,17 @@ jobs:
       displayName: 'Show the doc env'
 
     - bash: |
+        make docker_docs_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="python -m pysuerga docs/web --target-path=/tmp/ibis-project.org"
+      displayName: 'Build website'
+
+    - bash: |
         make docker_docs_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="sphinx-build -b html \
-          docs/source /tmp/docs.ibis-project.org -W -T --keep-going"
+          docs/source /tmp/ibis-project.org/docs -W -T --keep-going"
       displayName: 'Build docs'
 
     - task: PublishPipelineArtifact@1
       inputs:
-        path: /tmp/ibis/docs.ibis-project.org
+        path: /tmp/ibis/ibis-project.org
         artifact: Documentation
       displayName: 'Publish documentation to Azure'
       condition: and(succeeded(), eq(variables['System.PullRequest.IsFork'], 'False'))
@@ -283,7 +291,7 @@ jobs:
         ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
 
         sudo chown -R "${USER}":"${USER}" /tmp/ibis
-        pushd /tmp/ibis/docs.ibis-project.org
+        pushd /tmp/ibis/ibis-project.org
 
         git remote set-url origin git@github.com:ibis-project/docs.ibis-project.org
 
@@ -294,7 +302,7 @@ jobs:
         git add --all .
         git commit -m "Docs from ibis at $(Build.SourceVersion)"
         git push --force origin gh-pages
-      displayName: 'Push docs to remote repo'
+      displayName: 'Push web to remote repo'
       env:
         IBIS_GH_TOKEN: $(IBIS_GH_TOKEN)
       condition: |

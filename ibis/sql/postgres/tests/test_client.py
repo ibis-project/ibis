@@ -224,3 +224,23 @@ def test_unsupported_intervals(con):
     assert t["a"].type() == dt.Interval("Y")
     assert t["b"].type() == dt.Interval("M")
     assert t["g"].type() == dt.Interval("M")
+
+
+@pytest.mark.parametrize('params', [{}, {'database': POSTGRES_TEST_DB}])
+def test_create_and_drop_table(con, temp_table, params):
+    sch = ibis.schema(
+        [
+            ('first_name', 'string'),
+            ('last_name', 'string'),
+            ('department_name', 'string'),
+            ('salary', 'float64'),
+        ]
+    )
+
+    con.create_table(temp_table, schema=sch, **params)
+    assert con.table(temp_table, **params) is not None
+
+    con.drop_table(temp_table, **params)
+
+    with pytest.raises(sa.exc.NoSuchTableError):
+        con.table(temp_table, **params)

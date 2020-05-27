@@ -324,6 +324,8 @@ _operation_registry.update(
         ops.ExtractYear: unary('year'),
         ops.ExtractMonth: unary('month'),
         ops.ExtractDay: unary('day'),
+        ops.ExtractDayOfYear: unary('dayofyear'),
+        ops.ExtractQuarter: unary('quarter'),
         ops.ExtractHour: unary('hour'),
         ops.ExtractMinute: unary('minute'),
         ops.ExtractSecond: unary('second'),

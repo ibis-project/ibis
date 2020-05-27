@@ -2,15 +2,16 @@
 
 ## Contributors
 
-{{ main.project_name }} is developed and maintained by a
-[community of volunteer contributors](https://github.com/{{ main.github_repo_url }}/graphs/contributors).
+{{ ibis.project_name }} is developed and maintained by a
+[community of volunteer contributors](https://github.com/{{ ibis.github_repo_url }}/graphs/contributors).
 
-If you want to support pandas development, you can find information in the [donations page](../donate.html).
 
-## Maintainers
+{% for group in team %}
+
+## {{ group.name }}
 
 <div class="row maintainers">
-    {% for row in maintainers.people | batch(6, "") %}
+    {% for row in group.members | batch(6, "") %}
         <div class="card-group maintainers">
             {% for person in row %}
                 {% if person %}
@@ -37,18 +38,10 @@ If you want to support pandas development, you can find information in the [dona
     {% endfor %}
 </div>
 
-{{ main.project_name }} aims to be a welcoming, friendly, diverse and inclusive community.
+{% endfor %}
+
+{{ ibis.project_name }} aims to be a welcoming, friendly, diverse and inclusive community.
 Everybody is welcome, regardless of gender, sexual orientation, gender identity,
 and expression, disability, physical appearance, body size, race, or religion.
 We do not tolerate harassment of community members in any form.
 In particular, people from underrepresented groups are encouraged to join the community.
-
-{% if maintainers.emeritus %}
-## Emeritus maintainers
-
-<ul>
-    {% for person in maintainers.emeritus %}
-        <li>{{ person }}</li>
-    {% endfor %}
-</ul>
-{% endif %}
