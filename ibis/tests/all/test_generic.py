@@ -13,7 +13,6 @@ from ibis.tests.backends import (
     PySpark,
     Spark,
     SQLite,
-    Impala,
 )
 
 
