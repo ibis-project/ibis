@@ -12,7 +12,7 @@ PYTHONHASHSEED := random
 
 # docker specific
 COMPOSE_FILE := "$(MAKEFILE_DIR)/ci/docker-compose.yml"
-DOCKER := PYTHON_VERSION=$(PYTHON_VERSION) docker-compose -f $(COMPOSE_FILE)
+DOCKER := PYTHON_VERSION=$(PYTHON_VERSION) REQUIREMENTS_TAG="$(REQUIREMENTS_TAG)" docker-compose -f $(COMPOSE_FILE)
 DOCKER_UP := $(DOCKER) up --remove-orphans -d --no-build
 DOCKER_RUN := $(DOCKER) run --rm
 DOCKER_BUILD := $(DOCKER) build

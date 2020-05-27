@@ -25,11 +25,11 @@ dependencies:
   - plumbum
   - pre-commit
   - psycopg2
-  - pyarrow>=0.13
+  - pyarrow>=0.13, <=0.14.1
   - pydata-google-auth
   - pydocstyle=4.0.1
   - pygit2
-  - pymapd>=0.22
+  #- pymapd>=0.22
   - pymysql
   - pyspark>=2.4.3
   - pytables>=3.0.0
@@ -37,7 +37,7 @@ dependencies:
   - pytest-cov
   - pytest-mock
   - pytest-xdist
-  - python=3.7
+  - python=3.6
   - python-graphviz
   - python-hdfs>=2.0.16
   - pytz

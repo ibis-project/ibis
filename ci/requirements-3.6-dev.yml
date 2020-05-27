@@ -25,7 +25,7 @@ dependencies:
   - plumbum
   - pre-commit
   - psycopg2
-  - pyarrow>=0.13, <=0.14.1
+  - pyarrow>=0.13
   - pydata-google-auth
   - pydocstyle=4.0.1
   - pygit2

@@ -14,11 +14,12 @@ jobs:
     PYTHONHASHSEED: "random"
     BACKENDS_SQL_PARQUET: "mysql postgres sqlite parquet"
     BACKENDS_IMPALA_KUDU_CLICKHOUSE: "impala kudu-master kudu-tserver clickhouse"
-    BACKENDS_OMNISCI_SPARK: "omniscidb"
+    BACKENDS_OMNISCI: "omniscidb"
+    BACKENDS_PYSPARK_SPARK: ""
     PYTEST_MARK_EXPRESSION_SQL_PARQUET: "not udf and not clickhouse and not impala and not kudu and not hdfs and not omniscidb and not spark and not pyspark"
     PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE: "not udf and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite and not omniscidb and not spark and not pyspark"
-    # TODO: Remove "and not spark and not pyspark" once spark tests are working. #2201
-    PYTEST_MARK_EXPRESSION_OMNISCI_SPARK: "not udf and not clickhouse and not impala and not kudu and not hdfs and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite and not spark"
+    PYTEST_MARK_EXPRESSION_OMNISCI: "not udf and not clickhouse and not impala and not kudu and not hdfs and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite and not pyspark and not spark"
+    PYTEST_MARK_EXPRESSION_PYSPARK_SPARK: "not udf and not clickhouse and not impala and not kudu and not hdfs and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite and not omniscidb"
   strategy:
     matrix:
 
@@ -50,17 +51,31 @@ jobs:
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
         BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
 
-      # Omnisci and spark backends
-      py36_omnisci_spark:
+      # Omnisci backend
+      py36_omnisci:
         PYTHON_VERSION: "3.6"
-        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_OMNISCI_SPARK)
-        BACKENDS: $(BACKENDS_OMNISCI_SPARK)
-      py37_omnisci_spark:
+        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_OMNISCI)
+        BACKENDS: $(BACKENDS_OMNISCI)
+      py37_omnisci:
         PYTHON_VERSION: "3.7"
-        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_OMNISCI_SPARK)
-        BACKENDS: $(BACKENDS_OMNISCI_SPARK)
-      # TODO: pymapd and pyspark are not working on Ibis with Python 3.8, so not added to the matrix yet
-      # https://github.com/ibis-project/ibis/issues/2091 https://github.com/ibis-project/ibis/issues/2090
+        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_OMNISCI)
+        BACKENDS: $(BACKENDS_OMNISCI)
+      # TODO: pymapd is not working on Ibis with Python 3.8, so not added to the matrix yet
+      # https://github.com/ibis-project/ibis/issues/2090
+
+      # PySpark and Spark backends
+      py36_pyspark_spark:
+        PYTHON_VERSION: "3.6"
+        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_PYSPARK_SPARK)
+        BACKENDS: $(BACKENDS_PYSPARK_SPARK)
+        REQUIREMENTS_TAG: "pyspark-spark"
+      py37_pyspark_spark:
+        PYTHON_VERSION: "3.7"
+        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_PYSPARK_SPARK)
+        BACKENDS: $(BACKENDS_PYSPARK_SPARK)
+        REQUIREMENTS_TAG: "pyspark-spark"
+      # TODO: pyspark is not working on Ibis with Python 3.8, so not added to the matrix yet
+      # https://github.com/ibis-project/ibis/issues/2091
 
   steps:
     - bash: |
@@ -81,7 +96,10 @@ jobs:
       displayName: 'Setup BigQuery credentials'
       condition: eq(variables['System.PullRequest.IsFork'], 'False')
 
-    - bash: make start PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
+    - bash: |
+        if [ -n "${BACKENDS}" ]; then
+          make start PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
+        fi
       displayName: 'Start databases'
 
     - bash: make wait PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
@@ -90,7 +108,7 @@ jobs:
     - bash: docker ps
       displayName: 'Show running containers'
 
-    - bash: make build PYTHON_VERSION=$PYTHON_VERSION
+    - bash: make build PYTHON_VERSION=$PYTHON_VERSION REQUIREMENTS_TAG="${REQUIREMENTS-TAG}"
       displayName: 'Build ibis image'
 
     - bash: docker images
@@ -111,10 +129,10 @@ jobs:
         mkdir -p /tmp/env
       displayName: 'Make artifacts directories'
 
-    - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="conda list"
+    - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION REQUIREMENTS_TAG="${REQUIREMENTS_TAG}" DOCKER_RUN_COMMAND="conda list"
       displayName: 'Show packages in conda environment'
 
-    - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="conda list --export > /tmp/env/env.yml"
+    - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION REQUIREMENTS_TAG="${REQUIREMENTS_TAG}" DOCKER_RUN_COMMAND="conda list --export > /tmp/env/env.yml"
       displayName: 'Capture packages in conda environment'
 
     - bash: make load PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
