@@ -13,6 +13,7 @@ from ibis.tests.backends import (
     PySpark,
     Spark,
     SQLite,
+    Impala,
 )
 
 
@@ -129,3 +130,15 @@ def test_notin(backend, sorted_alltypes, sorted_df, column, elements):
     expected = ~sorted_df[column].isin(elements)
     expected = backend.default_series_rename(expected)
     backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        (L(1).hash(how="fnv"), 4307505193096137732),
+        (L("hello").hash(how="fnv"), 6414202926103426347),
+    ],
+)
+@pytest.mark.xfail_unsupported
+def test_hash(backend, con, expr, expected):
+    assert con.execute(expr) == expected
