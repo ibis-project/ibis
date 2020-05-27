@@ -7,13 +7,13 @@ from ibis import literal as L
 from ibis.tests.backends import (
     BigQuery,
     Clickhouse,
+    Impala,
     MySQL,
     OmniSciDB,
     PostgreSQL,
     PySpark,
     Spark,
     SQLite,
-    Impala,
 )
 
 
