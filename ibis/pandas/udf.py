@@ -150,7 +150,7 @@ class udf:
 
     @staticmethod
     def analytic(input_type, output_type):
-        """Alias for ibis.udf.vectorized.analytics."""
+        """Alias for ibis.udf.vectorized.analytic."""
         return ibis.udf.vectorized.analytic(input_type, output_type)
 
 
