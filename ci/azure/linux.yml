@@ -79,8 +79,7 @@ jobs:
 
   steps:
     - bash: |
-        echo "##vso[task.setvariable variable=PYTHON_NO_DOT_VERSION]${PYTHON_VERSION/./}"
-        echo "##vso[task.setvariable variable=PIPELINE_ARTIFACT_TAG]$PYTHON_NO_DOT_VERSION-${REQUIREMENTS_TAG:+-$REQUIREMENTS_TAG}"
+        echo "##vso[task.setvariable variable=PIPELINE_ARTIFACT_TAG]${PYTHON_VERSION/./}${REQUIREMENTS_TAG:+-$REQUIREMENTS_TAG}"
         if [ -z "$PYTEST_MARK_EXPRESSION" ]; then
           echo "##vso[task.logissue type=error]The env variable PYTEST_MARK_EXPRESSION is not set. It is expected to be set in all the matrix builds, since not all tests can be run in a single build. It's probably caused by a typo."
           exit 1
