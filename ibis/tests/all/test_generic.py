@@ -13,6 +13,7 @@ from ibis.tests.backends import (
     PySpark,
     Spark,
     SQLite,
+    Impala,
 )
 
 
@@ -138,7 +139,16 @@ def test_notin(backend, sorted_alltypes, sorted_df, column, elements):
         (L(False, type="boolean").hash(how="fnv"), 2062021750465500607),
         (L(1234567890, type="int64").hash(how="fnv"), 3614724209955230832),
         (L("hello", type="string").hash(how="fnv"), 6414202926103426347),
-        (L(0, type="int64").hash(how="fnv"), -2611523532599129963),
+        pytest.param(
+            L(0, type="int64").hash(how="fnv"),
+            -2611523532599129963,
+            marks=pytest.mark.xfail_backends([Impala]),
+        ),
+        pytest.param(
+            L(1, type="int64").hash(how="fnv"),
+            4307505193096137732,
+            marks=pytest.mark.xfail_backends([Impala]),
+        ),
     ],
 )
 @pytest.mark.xfail_unsupported
