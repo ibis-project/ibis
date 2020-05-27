@@ -108,7 +108,7 @@ jobs:
     - bash: docker ps
       displayName: 'Show running containers'
 
-    - bash: make build PYTHON_VERSION=$PYTHON_VERSION REQUIREMENTS_TAG="${REQUIREMENTS-TAG}"
+    - bash: make build PYTHON_VERSION=$PYTHON_VERSION REQUIREMENTS_TAG="${REQUIREMENTS_TAG}"
       displayName: 'Build ibis image'
 
     - bash: docker images
