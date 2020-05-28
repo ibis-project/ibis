@@ -154,6 +154,7 @@ class udf:
         return ibis.udf.vectorized.analytic(input_type, output_type)
 
 
+@pre_execute.register(ops.ElementWiseVectorizedUDF)
 @pre_execute.register(ops.ElementWiseVectorizedUDF, ibis.client.Client)
 def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
     """Register execution rules for elementwise UDFs.
@@ -207,7 +208,9 @@ def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
     return scope
 
 
+@pre_execute.register(ops.AnalyticsVectorizedUDF)
 @pre_execute.register(ops.AnalyticsVectorizedUDF, ibis.client.Client)
+@pre_execute.register(ops.ReductionVectorizedUDF)
 @pre_execute.register(ops.ReductionVectorizedUDF, ibis.client.Client)
 def pre_execute_reduction_udf(op, *clients, scope=None, **kwargs):
     input_type = op.input_type
