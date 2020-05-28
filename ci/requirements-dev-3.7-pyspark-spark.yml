@@ -9,6 +9,7 @@ dependencies:
   - jinja2
   - libiconv  # see https://github.com/jupyter/repo2docker/issues/758
   - lz4
+  - mock  # Is transitively imported in main requirements file, but to explicitly depend on here. Usage in ibis/omniscidb/tests/test_client.py
   - multipledispatch>=0.6.0
   - mypy
   - numpy>=1.15
