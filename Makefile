@@ -3,11 +3,13 @@
 SHELL := /bin/bash
 MAKEFILE_DIR = $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 
-# from PYTHON_VERSION depends which `./ci/requirements-$PYTHON_VERSION-dev` file
-# will be used for creating ibis image (see for additional info: `./ci/Dockerfile.dev`
-# and `./ci/docker-compose.yml`)
-# you can use `3.6` or `3.7` for now
+# PYTHON_VERSION and REQUIREMENTS_TAG defines which `./ci/requirements-dev-$PYTHON_VERSION-$REQUIREMENTS_TAG`
+# file will be used for creating the ibis image (see for additional info: `./ci/Dockerfile.dev` and
+# `./ci/docker-compose.yml`)
+# You can use `3.6` or `3.7` for now for the PYTHON_VERSION
 PYTHON_VERSION := 3.6
+REQUIREMENTS_TAG := "main"
+
 PYTHONHASHSEED := random
 
 # docker specific

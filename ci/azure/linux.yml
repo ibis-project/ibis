@@ -28,38 +28,46 @@ jobs:
         PYTHON_VERSION: "3.6"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_SQL_PARQUET)
         BACKENDS: $(BACKENDS_SQL_PARQUET)
+        REQUIREMENTS_TAG: "main"
       py37_sql_parquet:
         PYTHON_VERSION: "3.7"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_SQL_PARQUET)
         BACKENDS: $(BACKENDS_SQL_PARQUET)
+        REQUIREMENTS_TAG: "main"
       py38_sql_parquet:
         PYTHON_VERSION: "3.8"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_SQL_PARQUET)
         BACKENDS: $(BACKENDS_SQL_PARQUET)
+        REQUIREMENTS_TAG: "main"
 
       # Impala, kudu and clickhouse backends
       py36_impala_kudu_clickhouse:
         PYTHON_VERSION: "3.6"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
         BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
+        REQUIREMENTS_TAG: "main"
       py37_impala_kudu_clickhouse:
         PYTHON_VERSION: "3.7"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
         BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
+        REQUIREMENTS_TAG: "main"
       py38_impala_kudu_clickhouse:
         PYTHON_VERSION: "3.8"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
         BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
+        REQUIREMENTS_TAG: "main"
 
       # Omnisci backend
       py36_omnisci:
         PYTHON_VERSION: "3.6"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_OMNISCI)
         BACKENDS: $(BACKENDS_OMNISCI)
+        REQUIREMENTS_TAG: "main"
       py37_omnisci:
         PYTHON_VERSION: "3.7"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_OMNISCI)
         BACKENDS: $(BACKENDS_OMNISCI)
+        REQUIREMENTS_TAG: "main"
       # TODO: pymapd is not working on Ibis with Python 3.8, so not added to the matrix yet
       # https://github.com/ibis-project/ibis/issues/2090
 
@@ -96,6 +104,7 @@ jobs:
       displayName: 'Setup BigQuery credentials'
       condition: eq(variables['System.PullRequest.IsFork'], 'False')
 
+    # Start databases if BACKENDS is not an empty string. Without this check, docker-compose would start all services (instead of none of them) if no BACKENDS are specified.
     - bash: |
         if [ -n "${BACKENDS}" ]; then
           make start PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
