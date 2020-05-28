@@ -10,7 +10,7 @@ from inspect import Parameter, signature
 
 import ibis.expr.datatypes as dt
 from ibis.expr.operations import (
-    AnalyticsVectorizedUDF,
+    AnalyticVectorizedUDF,
     ElementWiseVectorizedUDF,
     ReductionVectorizedUDF,
 )
@@ -133,7 +133,7 @@ def analytic(input_type, output_type):
     ... def zscore(series):  # note the use of aggregate functions
     ...     return (series - series.mean()) / series.std()
     """
-    return _udf_decorator(AnalyticsVectorizedUDF, input_type, output_type)
+    return _udf_decorator(AnalyticVectorizedUDF, input_type, output_type)
 
 
 def elementwise(input_type, output_type):
