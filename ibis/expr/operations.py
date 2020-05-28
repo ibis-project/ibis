@@ -3515,7 +3515,7 @@ class ReductionVectorizedUDF(Reduction):
         return result
 
 
-class AnalyticsVectorizedUDF(AnalyticOp):
+class AnalyticVectorizedUDF(AnalyticOp):
     """Node for analytics UDF."""
 
     func = Arg(callable)

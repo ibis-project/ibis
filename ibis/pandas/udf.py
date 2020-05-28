@@ -208,11 +208,11 @@ def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
     return scope
 
 
-@pre_execute.register(ops.AnalyticsVectorizedUDF)
-@pre_execute.register(ops.AnalyticsVectorizedUDF, ibis.client.Client)
+@pre_execute.register(ops.AnalyticVectorizedUDF)
+@pre_execute.register(ops.AnalyticVectorizedUDF, ibis.client.Client)
 @pre_execute.register(ops.ReductionVectorizedUDF)
 @pre_execute.register(ops.ReductionVectorizedUDF, ibis.client.Client)
-def pre_execute_reduction_udf(op, *clients, scope=None, **kwargs):
+def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
     input_type = op.input_type
     nargs = len(input_type)
 
