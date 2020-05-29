@@ -21,9 +21,8 @@ def test_elementwise_udf(backend, alltypes, df):
 @pytest.mark.xfail_unsupported
 def test_output_type_in_list(backend, alltypes, df):
     """
-    Test that a UDF's output type can be specified as a single datatype
-    wrapped in a list. This is equivalent to a single datatype that is not in a
-    list.
+    Test that a UDF's output type can be specified as a single datatype wrapped
+    in a list. This is equivalent to a single datatype that is not in a list.
     """
 
     @elementwise(input_type=[dt.double], output_type=[dt.double])
