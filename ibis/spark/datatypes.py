@@ -91,6 +91,11 @@ def ibis_dtype_to_spark_dtype(ibis_dtype_obj):
     return _IBIS_DTYPE_TO_SPARK_DTYPE.get(type(ibis_dtype_obj))()
 
 
+@spark_dtype.register(dt.Timestamp)
+def ibis_timestamp_dtype_to_spark_dtype(ibis_dtype_obj):
+    return dt.TimestampType()
+
+
 @spark_dtype.register(dt.Decimal)
 def ibis_decimal_dtype_to_spark_dtype(ibis_dtype_obj):
     precision = ibis_dtype_obj.precision
