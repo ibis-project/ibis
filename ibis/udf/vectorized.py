@@ -135,7 +135,7 @@ def analytic(input_type, output_type):
         length of this list must match the number of arguments to the
         function. Variadic arguments are not yet supported.
     output_type : ibis.expr.datatypes.DataType or
-            List[ibis.expr.datatypes.DataType]]
+            List[ibis.expr.datatypes.DataType]
         The return type of the function. This can be specified either
         as a single value, or equivalently, a single value wrapped in a list.
 
@@ -162,7 +162,7 @@ def elementwise(input_type, output_type):
         length of this list must match the number of arguments to the
         function. Variadic arguments are not yet supported.
     output_type : ibis.expr.datatypes.DataType or
-            List[ibis.expr.datatypes.DataType]]
+            List[ibis.expr.datatypes.DataType]
         The return type of the function. This can be specified either
         as a single value, or equivalently, a single value wrapped in a list.
 
@@ -195,7 +195,7 @@ def reduction(input_type, output_type):
         length of this list must match the number of arguments to the
         function. Variadic arguments are not yet supported.
     output_type : ibis.expr.datatypes.DataType or
-            List[ibis.expr.datatypes.DataType]]
+            List[ibis.expr.datatypes.DataType]
         The return type of the function. This can be specified either
         as a single value, or equivalently, a single value wrapped in a list.
 
