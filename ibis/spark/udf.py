@@ -13,9 +13,9 @@ import pyspark.sql.types as pt
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.signature as sig
+import ibis.udf.validate as v
 from ibis.spark.compiler import SparkUDAFNode, SparkUDFNode, compiles
 from ibis.spark.datatypes import spark_dtype
-from ibis.udf.vectorized import valid_function_signature
 
 _udf_name_cache = collections.defaultdict(itertools.count)
 
@@ -32,9 +32,10 @@ class SparkUDF:
         if not callable(func):
             raise TypeError('func must be callable, got {}'.format(func))
 
-        # validate that the input_type argument and the function signature
-        # match
-        valid_function_signature(self.input_type, func)
+        # Validate that the input_type argument and the function signature
+        # match and that the output_type is valid
+        v.validate_input_type_count(self.input_type, func)
+        v.validate_output_type(self.output_type)
 
         if not self.output_type.nullable:
             raise com.IbisTypeError(

@@ -19,23 +19,6 @@ def test_elementwise_udf(backend, alltypes, df):
 
 @pytest.mark.only_on_backends([Pandas, PySpark])
 @pytest.mark.xfail_unsupported
-def test_output_type_in_list(backend, alltypes, df):
-    """
-    Test that a UDF's output type can be specified as a single datatype wrapped
-    in a list. This is equivalent to a single datatype that is not in a list.
-    """
-
-    @elementwise(input_type=[dt.double], output_type=[dt.double])
-    def add_one(s):
-        return s + 1
-
-    result = add_one(alltypes['double_col']).execute()
-    expected = add_one.func(df['double_col'])
-    backend.assert_series_equal(result, expected, check_names=False)
-
-
-@pytest.mark.only_on_backends([Pandas, PySpark])
-@pytest.mark.xfail_unsupported
 def test_valid_kwargs(backend, alltypes, df):
     # Test different forms of UDF definition
 
