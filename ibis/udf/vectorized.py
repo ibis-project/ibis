@@ -115,8 +115,8 @@ class UserDefinedFunction(object):
 
 
 def _udf_decorator(node_type, input_type, output_type):
-    input_type = list(map(dt.dtype, input_type))
-    output_type = dt.dtype(output_type)
+    input_type = input_type
+    output_type = output_type
 
     def wrapper(func):
         return UserDefinedFunction(func, node_type, input_type, output_type)
