@@ -606,6 +606,7 @@ def _window(t, expr):
         ops.MinRank,
         ops.NTile,
         ops.PercentRank,
+        ops.CumeDist,
     )
 
     if isinstance(window_op, ops.CumulativeOp):
@@ -634,6 +635,7 @@ def _window(t, expr):
         ops.MinRank,
         ops.NTile,
         ops.PercentRank,
+        ops.CumeDist,
         ops.RowNumber,
     )
 
@@ -780,6 +782,7 @@ _window_functions = {
     ops.DenseRank: unary(lambda arg: sa.func.dense_rank()),
     ops.MinRank: unary(lambda arg: sa.func.rank()),
     ops.PercentRank: unary(lambda arg: sa.func.percent_rank()),
+    ops.CumeDist: unary(lambda arg: sa.func.cume_dist()),
     ops.WindowOp: _window,
     ops.CumulativeOp: _window,
     ops.CumulativeMax: unary(sa.func.max),

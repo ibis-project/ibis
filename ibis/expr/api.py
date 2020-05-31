@@ -1135,6 +1135,7 @@ last = _unary_op('last', ops.LastValue)
 rank = _unary_op('rank', ops.MinRank)
 dense_rank = _unary_op('dense_rank', ops.DenseRank)
 percent_rank = _unary_op('percent_rank', ops.PercentRank)
+cume_dist = _unary_op('cume_dist', ops.CumeDist)
 cummin = _unary_op('cummin', ops.CumulativeMin)
 cummax = _unary_op('cummax', ops.CumulativeMax)
 
@@ -1276,6 +1277,7 @@ _generic_column_methods = dict(
     dense_rank=dense_rank,
     rank=rank,
     percent_rank=percent_rank,
+    cume_dist=cume_dist,
     # nth=nth,
     ntile=ntile,
     lag=lag,

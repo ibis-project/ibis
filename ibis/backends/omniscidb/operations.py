@@ -1101,9 +1101,8 @@ _window_ops = {
     ops.Lag: _shift_like('lag'),
     ops.Lead: _shift_like('lead', 1),
     ops.MinRank: lambda *args: 'rank()',
-    # cume_dist vs percent_rank
-    # https://github.com/ibis-project/ibis/issues/1975
-    ops.PercentRank: lambda *args: 'cume_dist()',
+    ops.PercentRank: lambda *args: 'percent_rank()',
+    ops.CumeDist: lambda *args: 'cume_dist()',
     ops.RowNumber: lambda *args: 'row_number()',
     ops.WindowOp: _window,
 }

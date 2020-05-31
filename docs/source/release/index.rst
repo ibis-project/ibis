@@ -56,6 +56,7 @@ Release Notes
 * :bug:`2127` Fix PySpark error when doing alias after selection
 * :support:`2244` Use an OmniSciDB image stable on CI
 * :feature:`2175` Create ExtractQuarter operation and add its support to Clickhouse, CSV, Impala, MySQL, OmniSciDB, Pandas, Parquet, PostgreSQL, PySpark, SQLite and Spark
+* :feature:`2224` Create CumeDist operation, fix PercentRank and add/fix their support to CSV, Impala, MySQL, OmniSciDB, Pandas, Parquet, PostgreSQL and SQLite
 * :feature:`2126` Add translation rules for isnull() and notnull() for pyspark backend
 * :feature:`2232` Add window operations support to SQLite
 * :feature:`2062` Implement read_csv for omniscidb backend

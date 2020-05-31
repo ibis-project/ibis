@@ -54,18 +54,16 @@ def calc_zscore(s):
             id='dense_rank',
         ),
         param(
-            # these can't be equivalent, because pandas doesn't have a way to
-            # compute percentile rank with a strict less-than ordering
-            #
-            # cume_dist() is the corresponding function in databases that
-            # support window functions
             lambda t, win: t.id.percent_rank().over(win),
-            lambda t: t.id.rank(pct=True),
-            id='percent_rank',
-            marks=pytest.mark.xpass_backends(
-                [Csv, Pandas, Parquet, PySpark, OmniSciDB],
-                raises=AssertionError,
+            lambda t: (
+                (t.id.rank(method='min') - 1) / (t.id.transform(len) - 1)
             ),
+            id='percent_rank',
+        ),
+        param(
+            lambda t, win: t.id.cume_dist().over(win),
+            lambda t: t.id.rank(method='min') / t.id.transform(len),
+            id='cume_dist',
         ),
         param(
             lambda t, win: t.float_col.ntile(buckets=7).over(win),

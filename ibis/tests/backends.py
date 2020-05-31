@@ -372,7 +372,7 @@ class OmniSciDB(Backend, RoundAwayFromZero):
 class MySQL(Backend, RoundHalfToEven):
     # mysql has the same rounding behavior as postgres
     check_dtype = False
-    supports_window_operations = False
+    supports_window_operations = True
     returned_timestamp_unit = 's'
 
     def __init__(self, data_directory: Path) -> None:

@@ -161,8 +161,10 @@ Column methods
    ColumnExpr.last
    ColumnExpr.dense_rank
    ColumnExpr.rank
+   ColumnExpr.percent_rank
    ColumnExpr.lag
    ColumnExpr.lead
+   ColumnExpr.cume_dist
    ColumnExpr.cummin
    ColumnExpr.cummax
 

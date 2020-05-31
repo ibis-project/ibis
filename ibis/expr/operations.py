@@ -1209,6 +1209,22 @@ class CumulativeMin(CumulativeOp):
     output_type = rlz.array_like('arg')
 
 
+class CumeDist(AnalyticOp):
+    """
+    The cumulative distribution operation.
+
+    CumeDist calculates the cumulative distribution of a value within a group
+    of values. In other words, CumeDist calculates the relative position of a
+    specified value in a group of values.
+
+    For more information, consider reading the following reference:
+    https://docs.microsoft.com/en-us/sql/t-sql/functions/cume-dist-transact-sql
+    """
+
+    arg = Arg(rlz.column(rlz.any))
+    output_type = rlz.shape_like('arg', dt.double)
+
+
 class PercentRank(AnalyticOp):
     arg = Arg(rlz.column(rlz.any))
     output_type = rlz.shape_like('arg', dt.double)
