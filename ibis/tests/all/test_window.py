@@ -6,6 +6,7 @@ import ibis.common.exceptions as com
 from ibis.tests.backends import (
     Csv,
     Impala,
+    MySQL,
     OmniSciDB,
     Pandas,
     Parquet,
@@ -111,7 +112,7 @@ from ibis.tests.backends import (
         ),
         param(
             # notany() over window not supported in Impala, PostgreSQL,
-            # and Spark backends
+            # Spark and MySQL backends
             lambda t, win: (t.double_col == 0).notany().over(win),
             lambda t: (
                 t.double_col.expanding()
@@ -120,7 +121,9 @@ from ibis.tests.backends import (
                 .astype(bool)
             ),
             id='cumnotany',
-            marks=pytest.mark.xfail_backends((Impala, PostgreSQL, Spark)),
+            marks=pytest.mark.xfail_backends(
+                (Impala, PostgreSQL, Spark, MySQL)
+            ),
         ),
         param(
             lambda t, win: (t.double_col == 0).all().over(win),
@@ -134,7 +137,7 @@ from ibis.tests.backends import (
         ),
         param(
             # notall() over window not supported in Impala, PostgreSQL,
-            # and Spark backends
+            # Spark and MySQL backends
             lambda t, win: (t.double_col == 0).notall().over(win),
             lambda t: (
                 t.double_col.expanding()
@@ -143,7 +146,9 @@ from ibis.tests.backends import (
                 .astype(bool)
             ),
             id='cumnotall',
-            marks=pytest.mark.xfail_backends((Impala, PostgreSQL, Spark)),
+            marks=pytest.mark.xfail_backends(
+                (Impala, PostgreSQL, Spark, MySQL)
+            ),
         ),
         param(
             lambda t, win: t.double_col.sum().over(win),
