@@ -1,0 +1,45 @@
+channels:
+  - conda-forge
+dependencies:
+  - black=19.10b0
+  - click
+  - cmake
+  - flake8
+  - graphviz
+  - jinja2
+  - libiconv  # see https://github.com/jupyter/repo2docker/issues/758
+  - lz4
+  - mock  # Transitively imported in main requirements file, but need to explicitly depend on here. Usage in ibis/omniscidb/tests/test_client.py
+  - multipledispatch>=0.6.0
+  - mypy
+  - numpy>=1.15
+  - openjdk=8
+  - pandas>=0.25.3
+  - pip=19.3.1
+  - plumbum
+  - pre-commit
+  - pyarrow>=0.13, <=0.14.1  # Capped at 0.14.1 so that tests succeed. Issue to increase version: https://github.com/ibis-project/ibis/issues/2222 
+  - pydata-google-auth
+  - pydocstyle=4.0.1
+  - pygit2
+  - pyspark>=2.4.3
+  - pytest>=4.5
+  - pytest-cov
+  - pytest-mock
+  - pytest-xdist
+  - python=3.7
+  - python-graphviz
+  - pytz
+  - regex
+  - requests
+  - rtree
+  - ruamel.yaml
+  - sqlalchemy>=1.1
+  - toolz
+  - xorg-libxpm
+  - xorg-libxrender
+  - pip:
+    # see .pre-commit-config.yaml, isort pinned
+    - seed-isort-config
+    # we should try using isort release that will be next after 4.3.21-2
+    - git+git://github.com/timothycrosley/isort@18ad293fc9d1852776afe35015a932b68d26fb14#egg=isort

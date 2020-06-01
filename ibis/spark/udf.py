@@ -13,9 +13,9 @@ import pyspark.sql.types as pt
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.signature as sig
-from ibis.pandas.udf import valid_function_signature
 from ibis.spark.compiler import SparkUDAFNode, SparkUDFNode, compiles
 from ibis.spark.datatypes import spark_dtype
+from ibis.udf.vectorized import valid_function_signature
 
 _udf_name_cache = collections.defaultdict(itertools.count)
 
