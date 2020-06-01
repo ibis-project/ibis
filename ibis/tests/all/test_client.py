@@ -200,11 +200,11 @@ def test_create_drop_view(con, backend, temp_view):
     [BigQuery, Clickhouse, Impala, OmniSciDB, Spark, BigQuery],
     reason="run only if backend is sql-based",
 )
-def test_separate_database(con, temp_database, current_data_db):
-    # using temp_database switches "con" current database to a
-    # temporary one until a test is over
-    tmp_db = con.database(temp_database)
+def test_separate_database(con, alternate_current_database, current_data_db):
+    # using alternate_current_database switches "con" current
+    #  database to a temporary one until a test is over
+    tmp_db = con.database(alternate_current_database)
     # verifying we can open another db which isn't equal to current
     db = con.database(current_data_db)
     assert db.name == current_data_db
-    assert tmp_db.name == temp_database
+    assert tmp_db.name == alternate_current_database

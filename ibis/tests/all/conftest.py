@@ -421,20 +421,19 @@ def current_data_db(con, backend) -> str:
     """Return current database name."""
     if not hasattr(con, 'current_database'):
         pytest.skip(
-            '{} backend doesn\'t have current_database method.'.format(
-                backend.name
-            )
+            f'{backend.name} backend doesn\'t have current_database method.'
         )
     return con.current_database
 
 
 @pytest.fixture
-def temp_database(con, backend, current_data_db: str) -> str:
-    """Create a temporary database.
+def alternate_current_database(con, backend, current_data_db: str) -> str:
+    """Create a temporary database and yield its name.
+    Drops the created database upon completion.
 
     Parameters
     ----------
-    con : ibis.omniscidb.OmniSciDBClient
+    con : ibis.client.Client
     current_data_db : str
     Yields
     -------
@@ -443,9 +442,7 @@ def temp_database(con, backend, current_data_db: str) -> str:
     name = _random_identifier('database')
     if not hasattr(con, 'create_database'):
         pytest.skip(
-            '{} backend doesn\'t have create_database method.'.format(
-                backend.name
-            )
+            f'{backend.name} backend doesn\'t have create_database method.'
         )
     con.create_database(name)
     try:
