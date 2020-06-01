@@ -19,6 +19,7 @@ _SPARK_DTYPE_TO_IBIS_DTYPE = {
     pt.IntegerType: dt.Int32,
     pt.LongType: dt.Int64,
     pt.ShortType: dt.Int16,
+    pt.TimestampType: dt.Timestamp,
 }
 
 
@@ -27,11 +28,6 @@ def spark_dtype_to_ibis_dtype(spark_dtype_obj, nullable=True):
     """Convert Spark SQL type objects to ibis type objects."""
     ibis_type_class = _SPARK_DTYPE_TO_IBIS_DTYPE.get(type(spark_dtype_obj))
     return ibis_type_class(nullable=nullable)
-
-
-@dt.dtype.register(pt.TimestampType)
-def spark_timestamp_dtype_to_ibis_dtype(spark_dtype_obj, nullable=True):
-    return dt.Timestamp(nullable=nullable)
 
 
 @dt.dtype.register(pt.DecimalType)
@@ -89,11 +85,6 @@ def from_spark_dtype(value: pt.DataType) -> pt.DataType:
 def ibis_dtype_to_spark_dtype(ibis_dtype_obj):
     """Convert ibis types types to Spark SQL."""
     return _IBIS_DTYPE_TO_SPARK_DTYPE.get(type(ibis_dtype_obj))()
-
-
-@spark_dtype.register(dt.Timestamp)
-def ibis_timestamp_dtype_to_spark_dtype(ibis_dtype_obj):
-    return dt.TimestampType()
 
 
 @spark_dtype.register(dt.Decimal)
