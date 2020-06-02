@@ -18,8 +18,9 @@ def test_elementwise_udf(backend, alltypes, df):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
+@pytest.mark.only_on_backends([Pandas, PySpark])
 @pytest.mark.xfail_unsupported
-def test_output_type_in_list(backend, alltypes, df):
+def test_output_type_in_list_invalid(backend, alltypes, df):
     # Test that an error is raised ifUDF output type is wrapped in a list
 
     with pytest.raises(
