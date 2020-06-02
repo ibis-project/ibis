@@ -26,6 +26,7 @@ Release Notes
 * :support:`2244` Use an OmniSciDB image stable on CI
 * :feature:`2175` Create ExtractQuarter operation and add its support to Clickhouse, CSV, Impala, MySQL, OmniSciDB, Pandas, Parquet, PostgreSQL, PySpark, SQLite and Spark
 * :feature:`2126` Add translation rules for isnull() and notnull() for pyspark backend
+* :feature:`2232` Add window operations support to SQLite
 * :feature:`2062` Implement read_csv for omniscidb backend
 * :feature:`2171` [OmniSciDB] Add support to week extraction
 * :feature:`2097` Date, DateDiff and TimestampDiff implementations for OmniSciDB
