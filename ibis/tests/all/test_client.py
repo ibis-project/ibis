@@ -4,7 +4,14 @@ from pkg_resources import parse_version
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.tests.backends import BigQuery, Impala, PySpark, Spark
+from ibis.tests.backends import (
+    BigQuery,
+    Clickhouse,
+    Impala,
+    OmniSciDB,
+    PySpark,
+    Spark,
+)
 
 
 @pytest.fixture
@@ -187,3 +194,17 @@ def test_create_drop_view(con, backend, temp_view):
     v_expr = con.table(temp_view)
     # check if the view and the table has the same fields
     assert set(t_expr.schema().names) == set(v_expr.schema().names)
+
+
+@pytest.mark.only_on_backends(
+    [BigQuery, Clickhouse, Impala, OmniSciDB, Spark, BigQuery],
+    reason="run only if backend is sql-based",
+)
+def test_separate_database(con, alternate_current_database, current_data_db):
+    # using alternate_current_database switches "con" current
+    #  database to a temporary one until a test is over
+    tmp_db = con.database(alternate_current_database)
+    # verifying we can open another db which isn't equal to current
+    db = con.database(current_data_db)
+    assert db.name == current_data_db
+    assert tmp_db.name == alternate_current_database
