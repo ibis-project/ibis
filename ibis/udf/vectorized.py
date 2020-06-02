@@ -7,7 +7,6 @@ DO NOT USE DIRECTLY.
 
 import functools
 
-import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.udf.validate as v
 from ibis.expr.operations import (
@@ -29,8 +28,8 @@ class UserDefinedFunction(object):
 
         self.func = func
         self.func_type = func_type
-        self.input_type = input_type
-        self.output_type = output_type
+        self.input_type = list(map(dt.dtype, input_type))
+        self.output_type = dt.dtype(output_type)
 
     def __call__(self, *args, **kwargs):
         # kwargs cannot be part of the node object because it can contain
@@ -52,13 +51,6 @@ class UserDefinedFunction(object):
 
 
 def _udf_decorator(node_type, input_type, output_type):
-    if isinstance(output_type, list):
-        raise com.IbisTypeError(
-            'The output type of a UDF must be a single datatype.'
-        )
-    input_type = list(map(dt.dtype, input_type))
-    output_type = dt.dtype(output_type)
-
     def wrapper(func):
         return UserDefinedFunction(func, node_type, input_type, output_type)
 
