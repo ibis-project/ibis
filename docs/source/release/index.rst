@@ -13,6 +13,7 @@ Release Notes
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
 * :feature:`2119` [OmnisciDB] Support insert for OmnisciDB table
+* :bug:`2223` Fix PySpark compiler error when elementwise UDF output_type is Decimal or Timestamp
 * :feature:`2186` ZeroIfNull and NullIfZero implementation for OmniSciDB  
 * :bug:`2157` Fix interactive mode returning a expression instead of the value when used in Jupyter
 * :feature:`2093` IsNan implementation for OmniSciDB
@@ -21,6 +22,7 @@ Release Notes
 * :feature:`2175` Create ExtractQuarter operation and add its support to Clickhouse, CSV, Impala, MySQL, OmniSciDB, Pandas, Parquet, PostgreSQL, PySpark, SQLite and Spark
 * :feature:`2126` Add translation rules for isnull() and notnull() for pyspark backend
 * :feature:`2062` Implement read_csv for omniscidb backend
+* :feature:`2171` [OmniSciDB] Add support to week extraction
 * :feature:`2097` Date, DateDiff and TimestampDiff implementations for OmniSciDB
 * :bug:`2170` Fix millisecond issue for OmniSciDB :issue:`2167`, MySQL :issue:`2169`, PostgreSQL :issue:`2166` and Pandas :issue:`2168` backends
 * :feature:`2060` Add initial support for ibis.random function

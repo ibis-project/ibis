@@ -17,6 +17,7 @@ from ibis.spark.compiler import SparkContext, SparkDialect
 from ibis.spark.datatypes import (
     ibis_array_dtype_to_spark_dtype,
     ibis_dtype_to_spark_dtype,
+    spark_dtype,
 )
 
 
@@ -1476,7 +1477,7 @@ def compile_not_null(t, expr, scope, **kwargs):
 @compiles(ops.ElementWiseVectorizedUDF)
 def compile_elementwise_udf(t, expr, scope):
     op = expr.op()
-    spark_output_type = ibis_dtype_to_spark_dtype(op._output_type)
+    spark_output_type = spark_dtype(op._output_type)
     spark_udf = pandas_udf(op.func, spark_output_type, PandasUDFType.SCALAR)
     func_args = (t.translate(arg, scope) for arg in op.func_args)
     return spark_udf(*func_args)

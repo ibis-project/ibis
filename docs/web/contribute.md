@@ -12,8 +12,14 @@ To contribute to ibis you need to clone the repository from GitHub:
 
 1. [Install miniconda](https://docs.conda.io/en/latest/miniconda.html)
 2. Create a Conda environment suitable for ibis development:
+   
+   If you are developing for the Impala, Kudu, HDFS, PostgreSQL, MySQL, SQLite, Pandas, Clickhouse, BigQuery, and/or OmniSciDB backend(s):
 
-        conda env create -n ibis-dev --file ci/requirements-3.7-dev.yml
+        conda env create -n ibis-dev --file ci/requirements-dev-3.7-main.yml
+
+   If you are developing for the PySpark or Spark backend:
+
+        conda env create -n ibis-dev --file ci/requirements-dev-3.7-pyspark-spark.yml
 
 3. Activate the environment
 

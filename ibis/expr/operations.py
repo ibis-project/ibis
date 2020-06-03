@@ -3454,11 +3454,72 @@ class GeoAsText(GeoSpatialUnOp):
 
 
 class ElementWiseVectorizedUDF(ValueOp):
-    """Node for element wise UDF.
-    """
+    """Node for element wise UDF."""
 
     func = Arg(callable)
-    func_args = Arg(list)
+    func_args = Arg(tuple)
+    input_type = Arg(rlz.shape_like('func_args'))
+    _output_type = Arg(rlz.noop)
+
+    def __init__(self, func, args, input_type, output_type):
+        self.func = func
+        self.func_args = args
+        self.input_type = input_type
+        self._output_type = output_type
+
+    @property
+    def inputs(self):
+        return self.func_args
+
+    def output_type(self):
+        return self._output_type.column_type()
+
+    def root_tables(self):
+        result = list(
+            toolz.unique(
+                toolz.concat(arg._root_tables() for arg in self.func_args)
+            )
+        )
+
+        return result
+
+
+class ReductionVectorizedUDF(Reduction):
+    """Node for reduction UDF."""
+
+    func = Arg(callable)
+    func_args = Arg(tuple)
+    input_type = Arg(rlz.shape_like('func_args'))
+    _output_type = Arg(rlz.noop)
+
+    def __init__(self, func, args, input_type, output_type):
+        self.func = func
+        self.func_args = args
+        self.input_type = input_type
+        self._output_type = output_type
+
+    @property
+    def inputs(self):
+        return self.func_args
+
+    def output_type(self):
+        return self._output_type.scalar_type()
+
+    def root_tables(self):
+        result = list(
+            toolz.unique(
+                toolz.concat(arg._root_tables() for arg in self.func_args)
+            )
+        )
+
+        return result
+
+
+class AnalyticVectorizedUDF(AnalyticOp):
+    """Node for analytics UDF."""
+
+    func = Arg(callable)
+    func_args = Arg(tuple)
     input_type = Arg(rlz.shape_like('func_args'))
     _output_type = Arg(rlz.noop)
 
