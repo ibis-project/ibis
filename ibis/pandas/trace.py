@@ -52,24 +52,24 @@ DEBUG:root: main_execute Selection
 DEBUG:root:   execute_until_in_scope Selection
 DEBUG:root:     execute_until_in_scope PandasTable
 DEBUG:root:       execute_database_table_client PandasTable
-DEBUG:root:       execute_database_table_client PandasTable 0:00:00.000074
-DEBUG:root:     execute_until_in_scope PandasTable 0:00:00.000396
+DEBUG:root:       execute_database_table_client PandasTable 0:00:00.000067
+DEBUG:root:     execute_until_in_scope PandasTable 0:00:00.000374
 DEBUG:root:     execute_selection_dataframe Selection
-DEBUG:root:     main_execute ElementWiseVectorizedUDF
-DEBUG:root:       execute_until_in_scope ElementWiseVectorizedUDF
-DEBUG:root:         execute_until_in_scope TableColumn
-DEBUG:root:           execute_until_in_scope PandasTable
-DEBUG:root:           execute_until_in_scope PandasTable 0:00:00.000069
-DEBUG:root:           execute_table_column_df_or_df_groupby TableColumn
-DEBUG:root:           execute_table_column_df_or_df_groupby TableColumn 0:00:00.000324  # noqa: E501
-DEBUG:root:         execute_until_in_scope TableColumn 0:00:00.000608
-DEBUG:root:         execute_udf_node ElementWiseVectorizedUDF
-DEBUG:root:         execute_udf_node ElementWiseVectorizedUDF 0:00:05.014354
-DEBUG:root:       execute_until_in_scope ElementWiseVectorizedUDF 0:00:05.015450  # noqa: E501
-DEBUG:root:     main_execute ElementWiseVectorizedUDF 0:00:05.015659
-DEBUG:root:     execute_selection_dataframe Selection 0:00:05.017459
-DEBUG:root:   execute_until_in_scope Selection 0:00:05.018348
-DEBUG:root: main_execute Selection 0:00:05.020070
+DEBUG:root:       main_execute ElementWiseVectorizedUDF
+DEBUG:root:         execute_until_in_scope ElementWiseVectorizedUDF
+DEBUG:root:           execute_until_in_scope TableColumn
+DEBUG:root:             execute_until_in_scope PandasTable
+DEBUG:root:             execute_until_in_scope PandasTable 0:00:00.000073
+DEBUG:root:             execute_table_column_df_or_df_groupby TableColumn
+DEBUG:root:             execute_table_column_df_or_df_groupby TableColumn 0:00:00.003948  # noqa: E501
+DEBUG:root:           execute_until_in_scope TableColumn 0:00:00.004322
+DEBUG:root:           execute_udf_node ElementWiseVectorizedUDF
+DEBUG:root:           execute_udf_node ElementWiseVectorizedUDF 0:00:05.031799
+DEBUG:root:         execute_until_in_scope ElementWiseVectorizedUDF 0:00:05.036855  # noqa: E501
+DEBUG:root:       main_execute ElementWiseVectorizedUDF 0:00:05.037206
+DEBUG:root:     execute_selection_dataframe Selection 0:00:05.043668
+DEBUG:root:   execute_until_in_scope Selection 0:00:05.044942
+DEBUG:root: main_execute Selection 0:00:05.046008
 
 """
 
@@ -137,6 +137,8 @@ class TraceDispatcher(Dispatcher):
         """
 
         def _df(func):
+            _trace_funcs.add(func.__name__)
+
             @functools.wraps(func)
             def trace_func(*args, **kwargs):
                 start = datetime.now()
