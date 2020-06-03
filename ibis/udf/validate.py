@@ -31,7 +31,7 @@ def _parameter_count(funcsig):
     )
 
 
-def validate_input_type_count(input_type, func):
+def validate_input_type(input_type, func):
     """Check that the declared number of inputs (the length of `input_type`)
     and the number of inputs to `func` are equal.
 

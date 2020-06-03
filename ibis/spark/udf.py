@@ -34,7 +34,7 @@ class SparkUDF:
 
         # Validate that the input_type argument and the function signature
         # match and that the output_type is valid
-        v.validate_input_type_count(self.input_type, func)
+        v.validate_input_type(self.input_type, func)
         v.validate_output_type(self.output_type)
 
         if not self.output_type.nullable:
