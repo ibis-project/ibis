@@ -7,6 +7,8 @@ from multipledispatch import Dispatcher
 
 from ibis.expr import types as ir
 
+_logger = logging.getLogger('ibis.pandas.trace')
+
 """Module that adds tracing to pandas execution.
 
 With tracing enabled, this module will log time and call stack information of
@@ -99,7 +101,7 @@ def _log_trace(func, start=None):
     if isinstance(current_op, ir.Expr):
         current_op = current_op.op()
 
-    logging.debug(
+    _logger.debug(
         f"{'  ' * level} {func.__name__} {type(current_op).__qualname__} "
         f"{datetime.now() - start if start else ''}"
     )
