@@ -55,7 +55,7 @@ At this time, Ibis offers some level of support for the following systems:
 - `Yandex Clickhouse <https://clickhouse.yandex/>`_
 - Direct execution of ibis expressions against `Pandas
   <http://pandas.pydata.org/>`_ objects
-- `OmniSciDB <https://www.omnisci.com/>`_ (Experimental)
+- `OmniSciDB <https://www.omnisci.com/>`_
 - `PySpark/Spark SQL <https://spark.apache.org/sql/>`_ (Experimental)
 
 Coming from SQL? Check out :ref:`Ibis for SQL Programmers <sql>`.
