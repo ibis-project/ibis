@@ -29,6 +29,7 @@ Release Notes
 * :feature:`2126` Add translation rules for isnull() and notnull() for pyspark backend
 * :feature:`2232` Add window operations support to SQLite
 * :feature:`2062` Implement read_csv for omniscidb backend
+* :feature:`2254` [OmniSciDB] Allow users to specify where the backend execution will occur using backend client "execution_mode" method ('gpu' or 'cpu')
 * :feature:`2171` [OmniSciDB] Add support to week extraction
 * :feature:`2097` Date, DateDiff and TimestampDiff implementations for OmniSciDB
 * :bug:`2170` Fix millisecond issue for OmniSciDB :issue:`2167`, MySQL :issue:`2169`, PostgreSQL :issue:`2166` and Pandas :issue:`2168` backends

@@ -240,7 +240,7 @@ def test_read_csv(con, temp_table, filename, alltypes, df_alltypes):
 
 @pytest.mark.parametrize('ipc', [None, True, False])
 @pytest.mark.parametrize('gpu_device', [None, 1])
-def test_cpu_execution_type(
+def test_cpu_ipc_gpu_device(
     mocker, con, ipc: Optional[bool], gpu_device: Optional[int]
 ):
     """Test the combination of ipc and gpu_device parameters for connection."""
@@ -287,3 +287,17 @@ def test_cpu_execution_type(
 
     for mocked_method in mocked_methods:
         mocked_method.stop()
+
+
+def test_cpu_ipc_execution_mode(con):
+    con.execution_mode('cpu')
+    result = con.table('functional_alltypes').head().execute()
+    assert isinstance(result, pd.DataFrame)
+
+    try:
+        con.execution_mode('gpu')
+    except Exception as e:
+        assert e.error_msg == (
+            'Cannot switch to GPU mode in a'
+            ' server started in CPU-only mode.'
+        )

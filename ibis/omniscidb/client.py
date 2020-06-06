@@ -764,6 +764,27 @@ class OmniSciDBClient(SQLClient):
         query = self.query_class(self, dml, **kwargs)
         return query.execute(**kwargs)
 
+    def execution_mode(self, processing_unit: str):
+        """
+        Define where the SQL execution occurs (GPU or CPU).
+
+        Parameters
+        ----------
+        processing_unit : {'cpu', 'gpu'}
+          Define if the request will be executed on CPU or GPU.
+        """
+        if processing_unit not in ['cpu', 'gpu']:
+            raise Exception(
+                'Processing unit should be one of the follow values: '
+                '"cpu" or "gpu"'
+            )
+
+        PROCESSING_UNIT_MAP = {'cpu': 0, 'gpu': 1}
+
+        self.con._client.set_execution_mode(
+            self.con._session, PROCESSING_UNIT_MAP[processing_unit]
+        )
+
     def _execute(
         self,
         query: str,
