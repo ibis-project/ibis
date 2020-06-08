@@ -6,11 +6,13 @@ DO NOT USE DIRECTLY.
 """
 
 from inspect import Parameter, signature
+from typing import Any, Callable, List
 
 import ibis.common.exceptions as com
+from ibis.expr.datatypes import DataType
 
 
-def _parameter_count(funcsig):
+def _parameter_count(funcsig: signature) -> int:
     """Get the number of positional-or-keyword or position-only parameters in a
     function signature.
 
@@ -31,7 +33,9 @@ def _parameter_count(funcsig):
     )
 
 
-def validate_input_type(input_type, func):
+def validate_input_type(
+    input_type: List[DataType], func: Callable
+) -> signature:
     """Check that the declared number of inputs (the length of `input_type`)
     and the number of inputs to `func` are equal.
 
@@ -62,7 +66,7 @@ def validate_input_type(input_type, func):
     return funcsig
 
 
-def validate_output_type(output_type):
+def validate_output_type(output_type: Any) -> None:
     """Check that the output type is a single datatype."""
 
     if isinstance(output_type, list):
