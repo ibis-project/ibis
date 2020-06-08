@@ -13,6 +13,7 @@ Release Notes
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
 * :feature:`2233` Add ibis.pandas.trace module to log time and call stack information.
+* :feature:`2198` Validate that the output type of a UDF is a single element
 * :bug:`2223` Fix PySpark compiler error when elementwise UDF output_type is Decimal or Timestamp
 * :feature:`2186` ZeroIfNull and NullIfZero implementation for OmniSciDB
 * :bug:`2157` Fix interactive mode returning a expression instead of the value when used in Jupyter

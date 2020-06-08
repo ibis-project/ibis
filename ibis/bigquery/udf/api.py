@@ -5,6 +5,7 @@ import itertools
 
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
+import ibis.udf.validate as v
 from ibis.bigquery.compiler import BigQueryUDFNode, compiles
 from ibis.bigquery.datatypes import UDFContext, ibis_type_to_bigquery_type
 from ibis.bigquery.udf.core import PythonToJavaScriptTranslator
@@ -159,6 +160,8 @@ def udf(input_type, output_type, strict=True, libraries=None):
     return my_rectangle(width, height);
     """;
     '''
+    v.validate_output_type(output_type)
+
     if libraries is None:
         libraries = []
 
