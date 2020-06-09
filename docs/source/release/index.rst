@@ -12,6 +12,7 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :bug:`2237` Add missing types float16, float32, and float64 to pandas backend
 * :bug:`2223` Fix PySpark compiler error when elementwise UDF output_type is Decimal or Timestamp
 * :feature:`2186` ZeroIfNull and NullIfZero implementation for OmniSciDB  
 * :bug:`2157` Fix interactive mode returning a expression instead of the value when used in Jupyter
