@@ -8,9 +8,10 @@ from multipledispatch import Dispatcher
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
+from ibis.pandas.trace import TraceDispatcher
 
 # Individual operation execution
-execute_node = Dispatcher(
+execute_node = TraceDispatcher(
     'execute_node',
     doc=(
         'Execute an individual operation given the operation and its computed '
