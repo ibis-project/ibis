@@ -1,21 +1,36 @@
 import pytest
 
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.tests.backends import Pandas, PySpark
 from ibis.udf.vectorized import elementwise
 
 
-@elementwise(input_type=[dt.double], output_type=dt.double)
-def add_one(s):
-    return s + 1
+@pytest.mark.only_on_backends([Pandas, PySpark])
+@pytest.mark.xfail_unsupported
+def test_elementwise_udf(backend, alltypes, df):
+    @elementwise(input_type=[dt.double], output_type=dt.double)
+    def add_one(s):
+        return s + 1
+
+    result = add_one(alltypes['double_col']).execute()
+    expected = add_one.func(df['double_col'])
+    backend.assert_series_equal(result, expected, check_names=False)
 
 
 @pytest.mark.only_on_backends([Pandas, PySpark])
 @pytest.mark.xfail_unsupported
-def test_elementwise_udf(backend, alltypes, df):
-    result = add_one(alltypes['double_col']).execute()
-    expected = add_one.func(df['double_col'])
-    backend.assert_series_equal(result, expected, check_names=False)
+def test_output_type_in_list_invalid(backend, alltypes, df):
+    # Test that an error is raised ifUDF output type is wrapped in a list
+
+    with pytest.raises(
+        com.IbisTypeError,
+        match="The output type of a UDF must be a single datatype.",
+    ):
+
+        @elementwise(input_type=[dt.double], output_type=[dt.double])
+        def add_one(s):
+            return s + 1
 
 
 @pytest.mark.only_on_backends([Pandas, PySpark])

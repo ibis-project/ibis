@@ -101,6 +101,7 @@ from ibis.pandas.dispatch import (
     post_execute,
     pre_execute,
 )
+from ibis.pandas.trace import trace
 
 integer_types = np.integer, int
 floating_types = (numbers.Real,)
@@ -193,6 +194,7 @@ def execute_with_scope(expr, scope, aggcontext=None, clients=None, **kwargs):
     return result
 
 
+@trace
 def execute_until_in_scope(
     expr, scope, aggcontext=None, clients=None, post_execute_=None, **kwargs
 ):
@@ -287,6 +289,7 @@ execute = Dispatcher('execute')
 
 
 @execute.register(ir.Expr)
+@trace
 def main_execute(expr, params=None, scope=None, aggcontext=None, **kwargs):
     """Execute an expression against data that are bound to it. If no data
     are bound, raise an Exception.

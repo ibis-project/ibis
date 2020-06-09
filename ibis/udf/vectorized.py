@@ -6,66 +6,14 @@ DO NOT USE DIRECTLY.
 """
 
 import functools
-from inspect import Parameter, signature
 
 import ibis.expr.datatypes as dt
+import ibis.udf.validate as v
 from ibis.expr.operations import (
     AnalyticVectorizedUDF,
     ElementWiseVectorizedUDF,
     ReductionVectorizedUDF,
 )
-
-
-def parameter_count(funcsig):
-    """Get the number of positional-or-keyword or position-only parameters in a
-    function signature.
-
-    Parameters
-    ----------
-    funcsig : inspect.Signature
-        A UDF signature
-
-    Returns
-    -------
-    int
-        The number of parameters
-    """
-    return sum(
-        param.kind in {param.POSITIONAL_OR_KEYWORD, param.POSITIONAL_ONLY}
-        for param in funcsig.parameters.values()
-        if param.default is Parameter.empty
-    )
-
-
-def valid_function_signature(input_type, func):
-    """Check that the declared number of inputs (the length of `input_type`)
-    and the number of inputs to `func` are equal.
-
-    Parameters
-    ----------
-    input_type : List[DataType]
-    func : callable
-
-    Returns
-    -------
-    inspect.Signature
-    """
-    funcsig = signature(func)
-    declared_parameter_count = len(input_type)
-    function_parameter_count = parameter_count(funcsig)
-
-    if declared_parameter_count != function_parameter_count:
-        raise TypeError(
-            'Function signature {!r} has {:d} parameters, '
-            'input_type has {:d}. These must match. Non-column '
-            'parameters must be defined as keyword only, i.e., '
-            'def foo(col, *, function_param).'.format(
-                func.__name__,
-                function_parameter_count,
-                declared_parameter_count,
-            )
-        )
-    return funcsig
 
 
 class UserDefinedFunction(object):
@@ -75,12 +23,13 @@ class UserDefinedFunction(object):
     """
 
     def __init__(self, func, func_type, input_type, output_type):
-        valid_function_signature(input_type, func)
+        v.validate_input_type(input_type, func)
+        v.validate_output_type(output_type)
 
         self.func = func
         self.func_type = func_type
-        self.input_type = input_type
-        self.output_type = output_type
+        self.input_type = list(map(dt.dtype, input_type))
+        self.output_type = dt.dtype(output_type)
 
     def __call__(self, *args, **kwargs):
         # kwargs cannot be part of the node object because it can contain
@@ -102,9 +51,6 @@ class UserDefinedFunction(object):
 
 
 def _udf_decorator(node_type, input_type, output_type):
-    input_type = list(map(dt.dtype, input_type))
-    output_type = dt.dtype(output_type)
-
     def wrapper(func):
         return UserDefinedFunction(func, node_type, input_type, output_type)
 
