@@ -119,10 +119,11 @@ init: restart
 	$(MAKE) build
 	$(MAKE) load
 
-# Targets for testing ibis inside docker's containers
+# Targets for running backend specific Ibis tests inside docker's containers
+# BACKENDS can be set to choose which tests should be run:
+#   make --directory ibis testparallel BACKENDS='omniscidb impala'
 
 test: init
-	# use this target to run backend specific tests
 	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
 		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) ${PYTEST_MARKERS} -k 'not test_import_time'"
 
@@ -130,12 +131,7 @@ testnoinit:
 	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
 		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) ${PYTEST_MARKERS} -k 'not test_import_time'"
 
-testall:
-	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
-		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) -k 'not test_import_time'"
-
 testparallel: init
-	# use this target to run backend specific tests in parallel
 	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
 		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) ${PYTEST_MARKERS} -n auto -k 'not test_import_time'"
 
@@ -143,9 +139,13 @@ testparallelnoinit:
 	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
 		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) ${PYTEST_MARKERS} -n auto -k 'not test_import_time'"
 
-testparallelall: init
-	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
-		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) -m 'not udf' -n auto -k 'not test_import_time'"
+# Shortcut targets for running a subset of the Ibis tests inside docker's containers
+
+testall:
+	@echo "You should use make testmain instead"
+
+testmain:
+	$(MAKE) testparallelnoinit REQUIREMENTS_TAG="main" PYTEST_MARKERS="-m 'not (udf or spark or pyspark)'"
 
 testmost:
 	$(MAKE) testparallelnoinit REQUIREMENTS_TAG="main" PYTEST_MARKERS="-m 'not (udf or impala or hdfs or spark or pyspark)'"
@@ -156,7 +156,7 @@ testfast:
 testpandas:
 	$(MAKE) testparallelnoinit REQUIREMENTS_TAG="main" PYTEST_MARKERS="-m pandas"
 
-testspark:
+testpyspark:
 	$(MAKE) testparallelnoinit REQUIREMENTS_TAG="pyspark-spark" PYTEST_MARKERS="-m pyspark"
 
 fastopt:
