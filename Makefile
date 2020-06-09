@@ -122,33 +122,42 @@ init: restart
 # Targets for testing ibis inside docker's containers
 
 test: init
-	# use the target to run backend specific tests
+	# use this target to run backend specific tests
 	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
 		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) ${PYTEST_MARKERS} -k 'not test_import_time'"
 
-testparallel: init
+testnoinit:
 	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
-		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) ${PYTEST_MARKERS} -n auto -m 'not udf' -k 'not test_import_time'"
+		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) ${PYTEST_MARKERS} -k 'not test_import_time'"
 
 testall:
 	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
 		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) -k 'not test_import_time'"
 
-testmost:
+testparallel: init
+	# use this target to run backend specific tests in parallel
 	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
-		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) -n auto -m 'not (udf or impala or hdfs)' -k 'not test_import_time'"
+		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) ${PYTEST_MARKERS} -n auto -k 'not test_import_time'"
+
+testparallelnoinit:
+	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
+		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) ${PYTEST_MARKERS} -n auto -k 'not test_import_time'"
+
+testparallelall: init
+	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
+		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) -m 'not udf' -n auto -k 'not test_import_time'"
+
+testmost:
+	$(MAKE) testparallelnoinit REQUIREMENTS_TAG="main" PYTEST_MARKERS="-m 'not (udf or impala or hdfs or spark or pyspark)'"
 
 testfast:
-	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
-		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) -n auto -m 'not (udf or impala or hdfs or bigquery)' -k 'not test_import_time'"
+	$(MAKE) testparallelnoinit REQUIREMENTS_TAG="main" PYTEST_MARKERS="-m 'not (udf or impala or hdfs or bigquery or spark or pyspark)'"
 
 testpandas:
-	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
-		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) -n auto -m 'pandas' -k 'not test_import_time'"
+	$(MAKE) testparallelnoinit REQUIREMENTS_TAG="main" PYTEST_MARKERS="-m pandas"
 
 testspark:
-	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
-		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) -n auto -m 'pyspark' -k 'not test_import_time'"
+	$(MAKE) testparallelnoinit REQUIREMENTS_TAG="pyspark-spark" PYTEST_MARKERS="-m pyspark"
 
 fastopt:
 	@echo -m 'not (backend or bigquery or clickhouse or hdfs or impala or kudu or omniscidb or mysql or postgis or postgresql or superuser or udf)'
