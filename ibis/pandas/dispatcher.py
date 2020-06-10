@@ -54,18 +54,3 @@ class TwoLevelDispatcher(Dispatcher):
             return func
         except StopIteration:
             return None
-
-    # def __call__(self, *args, **kwargs):
-    #     types = tuple(type(arg) for arg in args)
-
-    #     try:
-    #         func = self._cache[types]
-    #     except KeyError:
-    #         func = self.dispatch(*types)
-    #         if not func:
-    #             raise NotImplementedError(
-    #                 'Could not find signature for %s: <%s>' %
-    #                 (self.name, str_signature(types)))
-    #         self._cache[types] = func
-
-    #     return func(*args, **kwargs)
