@@ -7,10 +7,6 @@ def _create_dispatcher_func(dispatcher):
 
 def _create_register_func(dispatcher_funcs, types, **kwargs):
     def _(func):
-
-        # if len(dispatcher_funcs) == 3:
-        # import pdb; pdb.set_trace()
-
         for dispatcher_func in dispatcher_funcs:
             dispatcher_func(None).add(types, func, **kwargs)
 
@@ -41,9 +37,6 @@ class TwoLevelDispatcher(object):
             if (t,) in self._meta_dispatcher.funcs:
                 dispatcher_func = self._meta_dispatcher.funcs[(t,)]
             else:
-                # if t.__name__ == 'Add':
-                #    import pdb; pdb.set_trace()
-
                 dispatcher_func = _create_dispatcher_func(
                     Dispatcher(f"{self.name}_{t.__name__}")
                 )
