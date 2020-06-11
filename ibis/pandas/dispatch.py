@@ -10,7 +10,14 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis.pandas.dispatcher import TwoLevelDispatcher
 
-execute_node = TwoLevelDispatcher('execute_node')
+# Individual operation execution
+execute_node = TwoLevelDispatcher(
+    'execute_node',
+    doc=(
+        'Execute an individual operation given the operation and its computed '
+        'arguments'
+    ),
+)
 
 
 @execute_node.register(ops.Node)

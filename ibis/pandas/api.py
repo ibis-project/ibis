@@ -4,7 +4,7 @@ import toolz
 
 import ibis
 from ibis.pandas.client import PandasClient
-from ibis.pandas.execution import execute
+from ibis.pandas.execution import execute, execute_node
 from ibis.pandas.udf import udf
 
 __all__ = ('connect', 'dialect', 'execute', 'udf')
@@ -70,16 +70,11 @@ class PandasExprTranslator:
     # get the dispatched functions from the execute_node dispatcher and compute
     # and flatten the type tree of the first argument which is always the Node
     # subclass
-    # import pdb; pdb.set_trace()
-
-    _registry = {}
-
-    # _registry = frozenset(
-    #    toolz.concat(
-    #        _flatten_subclass_tree(types[0]) for types in execute_node.funcs
-    #    )
-    # )
-
+    _registry = frozenset(
+        toolz.concat(
+            _flatten_subclass_tree(types[0]) for types in execute_node.funcs
+        )
+    )
     _rewrites = {}
 
 
