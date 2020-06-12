@@ -5,19 +5,17 @@ class TwoLevelDispatcher(Dispatcher):
     """An implementation of multipledispatch.Dispatcher that utilizes two
     levels of dispatching.
 
-    Using two level of dispatching speeds up the time
-    to perform linear search of matched function. If n is the number of
-    registered types for the first arg and m is the number of registered types
-    for the rest of the arguments. The time complexity of finding the first
-    match is O(n + m) with this implementaion, and O(n*m) with the multiple
-    dispatch.Dispatcher implementaion.
+    The major change is that this class no longer trigger reorder in
+    dispatch_iter. Because the majority of the slowness is happening
+    in reorder, this implementation makes dispatch_iter faster.
+    Instead, this implementation will trigger reorder in the meta dispatcher
+    and second level dispatcher. Because the number of registered signatures
+    for each dispatcher is much smaller in this implementation (In pandas
+    backend, the number of signatures in one level implementation is
+    O(1000), and the max number of signatures for the meta dispatcher and
+    second level dispatcher is O(100)), the overall dispatch_iter is faster.
 
-    The first level (meta dispatcher), dispatches to the second level
-    dispatcher on the first argument.
-
-    The second level, dispatches to the function on args.
-
-    This implementation consist of three Dispatcher instance:
+     This implementation consist of three Dispatcher instance:
 
     (1) This dispatcher, or the instance of this class itself. This class
     inherits Dispatcher to avoid duplicating __call__, cache, ambiguities
@@ -44,7 +42,7 @@ class TwoLevelDispatcher(Dispatcher):
     The decorator will also register with this dispatcher so that func and
     ordering works properly.
 
-    (2) dispatcher_iter:
+    (2) dispatcher_iter
     Instead of searching through self.ordering, this method now searches
     through:
     (a) dispatch_iter of the meta dispatcher (to find matching second level
@@ -53,10 +51,8 @@ class TwoLevelDispatcher(Dispatcher):
     Because dispatch_iter of meta dispatcher and second level dispatcher
     searches through registered functions in proper order (from subclasses to
     base classes).
-    The overall search also searches through all registered functions in proper
-    order.
 
-    (3) ambiguity detection, ordering, and funcs:
+    (3) ambiguity detection, ordering, and funcs
     Because this dispatcher has the same func and ordering property as
     multipledispatch.Dispatcher. We can completely reuse the ambiguity
     detection logic of Dispatcher. Note:
@@ -67,9 +63,11 @@ class TwoLevelDispatcher(Dispatcher):
     level dispatcher also needs to be deleted. This is OK because it is not
     public API.
 
-    Performance:
-    A performance comparison using execute_node in ibis.pandas is under
-    xxx(TODO).
+    Difference in behavior:
+    (1) ambiguity detection
+    Because this implementation doesn't not trigger total reorder of signatures
+    in dispatch_iter, ambiguity warning will trigger when user calls
+    "ordering", instead of "dispatch".
 
     """
 
