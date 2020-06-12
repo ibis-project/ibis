@@ -10,6 +10,8 @@ dependencies:
   - flake8
   - geoalchemy2
   - geopandas
+  # see https://github.com/googleapis/python-api-core/issues/47
+  - google-api-core=1.17.0
   - google-cloud-bigquery>=1.0.0
   - graphviz
   - impyla>=0.15.0
