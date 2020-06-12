@@ -15,7 +15,7 @@ class TwoLevelDispatcher(Dispatcher):
     O(1000), and the max number of signatures for the meta dispatcher and
     second level dispatcher is O(100)), the overall dispatch_iter is faster.
 
-     This implementation consist of three Dispatcher instance:
+    This implementation consist of three Dispatcher instance:
 
     (1) This dispatcher, or the instance of this class itself. This class
     inherits Dispatcher to avoid duplicating __call__, cache, ambiguities
