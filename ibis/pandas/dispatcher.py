@@ -103,12 +103,6 @@ class TwoLevelDispatcher(Dispatcher):
         return _
 
     def dispatch_iter(self, *types):
-        # Trigger initializatin of ordering to defect ambiguities
-        # This follows the same behavior of Dispatcher where
-        # ordering is intialized when dispatcher_iter is called
-        # for the first time
-        self.ordering
-
         for dispatcher in self._meta_dispatcher.dispatch_iter(types[0]):
             func = dispatcher.dispatch(*types)
             if func is not None:

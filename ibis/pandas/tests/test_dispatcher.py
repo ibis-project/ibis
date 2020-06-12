@@ -151,7 +151,7 @@ def test_ambiguities_warning():
     bar.register(A2, B1)(lambda a, b: 2)
 
     with pytest.warns(AmbiguityWarning, match=".*Consider.*\n\n.*(A2, B2).*"):
-        bar(A2(), B2())
+        bar.reorder()
 
 
 def test_ambiguities_no_warning():
@@ -163,6 +163,6 @@ def test_ambiguities_no_warning():
     bar.register(A2, B2)(lambda a, b: 3)
 
     with pytest.warns(None) as warnings:
-        bar(A2(), B2())
+        bar.reorder()
 
     assert len(warnings) == 0
