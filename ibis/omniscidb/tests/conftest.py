@@ -170,8 +170,27 @@ def temp_table(con) -> str:
     try:
         yield name
     finally:
-        assert con.exists_table(name), name
-        con.drop_table(name)
+        con.drop_table(name, force=True)
+
+
+@pytest.fixture
+def temp_user(con) -> str:
+    """Return a temporary user name.
+
+    Parameters
+    ----------
+    con : ibis.omniscidb.OmniSciDBClient
+
+    Yields
+    ------
+    name : string
+        Random user name for a temporary usage.
+    """
+    name = _random_identifier('user')
+    try:
+        yield name
+    finally:
+        con.drop_user(name)
 
 
 @pytest.fixture(scope='session')

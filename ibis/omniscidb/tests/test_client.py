@@ -12,6 +12,8 @@ import ibis.common.exceptions as com
 import ibis.expr.types as ir
 from ibis.tests.util import assert_equal
 
+from .conftest import _random_identifier
+
 pymapd = pytest.importorskip('pymapd')
 
 pytestmark = pytest.mark.omniscidb
@@ -81,7 +83,33 @@ def test_compile_toplevel():
     assert str(result) == expected
 
 
-def text_exists_table_with_database(
+def test_create_drop_database(con):
+    db_name = _random_identifier('database')
+
+    con.create_database(db_name)
+    db_conf = dict(
+        host=con.host,
+        port=con.port,
+        user=con.user,
+        password=con.password,
+        database=db_name,
+    )
+    new_con = ibis.omniscidb.connect(**db_conf)
+    assert isinstance(new_con, ibis.omniscidb.OmniSciDBClient)
+    new_con = None
+
+    con.drop_database(db_name)
+
+    try:
+        ibis.omniscidb.connect(**db_conf)
+    except Exception:
+        # omnisci.thrift.ttypes.TOmniSciException
+        ...
+    else:
+        raise Exception('Database was not dropped properly.')
+
+
+def test_exists_table_with_database(
     con, alltypes, test_data_db, temp_table, temp_database
 ):
     tmp_db = test_data_db
@@ -287,3 +315,86 @@ def test_cpu_execution_type(
 
     for mocked_method in mocked_methods:
         mocked_method.stop()
+
+
+def test_truncate(con, temp_table):
+    schema = ibis.schema([('a', 'float64'), ('b', 'int64')])
+    data = pd.DataFrame({'a': [1.0, 2.0], 'b': [1, 2]})
+
+    con.create_table(temp_table, schema=schema)
+    con.load_data(temp_table, data)
+    assert con.table(temp_table).execute().empty is False
+    assert con.table(temp_table).execute().shape == data.shape
+
+    con.truncate_table(temp_table)
+    assert con.table(temp_table).execute().empty
+
+
+def test_create_drop_view(con, alltypes):
+    expr = alltypes.limit(100)
+    view_name = _random_identifier('view')
+    con.create_view(view_name, expr)
+    pd.testing.assert_frame_equal(
+        expr.execute(), con.table(view_name).execute()
+    )
+    con.drop_view(view_name)
+
+    try:
+        con.table(view_name)
+    except Exception:
+        # omnisci.thrift.ttypes.TOmniSciException
+        ...
+    else:
+        raise Exception('View was not dropped properly.')
+
+
+def test_create_drop_user(con):
+    user_name = _random_identifier('user')
+    user_pass = 'password'
+    con.create_user(user_name, user_pass, is_super=True)
+
+    db_conf = dict(
+        host=con.host,
+        port=con.port,
+        user=user_name,
+        password=user_pass,
+        database=con.current_database,
+    )
+    new_con = ibis.omniscidb.connect(**db_conf)
+    assert isinstance(new_con, ibis.omniscidb.OmniSciDBClient)
+    new_con = None
+
+    con.drop_user(user_name)
+
+    try:
+        ibis.omniscidb.connect(**db_conf)
+    except Exception:
+        # omnisci.thrift.ttypes.TOmniSciException
+        ...
+    else:
+        raise Exception('User was not dropped properly.')
+
+
+def test_alter_user(con, temp_user):
+    def test_connection(db_conf):
+        new_con = ibis.omniscidb.connect(**db_conf)
+        assert isinstance(new_con, ibis.omniscidb.OmniSciDBClient)
+
+    user_pass = 'password1'
+    con.create_user(temp_user, user_pass, is_super=True)
+
+    db_conf = dict(
+        host=con.host,
+        port=con.port,
+        user=temp_user,
+        password=user_pass,
+        database=con.current_database,
+    )
+
+    # test password 1
+    test_connection(db_conf)
+
+    # test password 2
+    db_conf['password'] = 'password2'
+    con.alter_user(temp_user, db_conf['password'])
+    test_connection(db_conf)
