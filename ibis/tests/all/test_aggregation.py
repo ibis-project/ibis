@@ -90,6 +90,16 @@ from ibis.tests.backends import Clickhouse, MySQL, PostgreSQL, PySpark, SQLite
             id='var_pop',
         ),
         param(
+            lambda t, where: t.double_col.cov(t.float_col),
+            lambda t, where: t.double_col.cov(t.float_col),
+            id='covar',
+        ),
+        param(
+            lambda t, where: t.double_col.corr(t.float_col),
+            lambda t, where: t.double_col.corr(t.float_col),
+            id='corr',
+        ),
+        param(
             lambda t, where: t.string_col.approx_nunique(),
             lambda t, where: t.string_col.nunique(),
             id='approx_nunique',

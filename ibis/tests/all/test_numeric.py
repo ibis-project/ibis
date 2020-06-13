@@ -122,6 +122,8 @@ def test_isnan_isinf(
         param(L(5.556).ln(), math.log(5.556), id='ln'),
         param(L(5.556).log2(), math.log(5.556, 2), id='log2'),
         param(L(5.556).log10(), math.log10(5.556), id='log10'),
+        param(L(5.556).radians(), math.radians(5.556), id='radians'),
+        param(L(5.556).degrees(), math.degrees(5.556), id='degrees'),
         param(L(11) % 3, 11 % 3, id='mod'),
     ],
 )
