@@ -219,6 +219,7 @@ class ExprFormatter:
                 for arg, name in zip(op.args, arg_names)
                 if signature[name].show
             )
+            # MIGHT BE ARG_NAME_PAIRS
             for arg, name in arg_name_pairs:
                 if name == 'arg' and isinstance(op, ops.ValueOp):
                     # don't display first argument's name in repr
@@ -248,12 +249,11 @@ class ExprFormatter:
 
     def _format_subexpr(self, expr):
         subexprs = self.memo.subexprs
-        key = expr.op()
         try:
-            result = subexprs[key]
+            result = subexprs[expr]
         except KeyError:
             formatter = ExprFormatter(expr, memo=self.memo, memoize=False)
-            result = subexprs[key] = self._indent(formatter.get_result(), 1)
+            result = subexprs[expr] = self._indent(formatter.get_result(), 1)
         return result
 
     def _get_type_display(self, expr=None):
