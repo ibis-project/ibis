@@ -219,7 +219,6 @@ class ExprFormatter:
                 for arg, name in zip(op.args, arg_names)
                 if signature[name].show
             )
-            # MIGHT BE ARG_NAME_PAIRS
             for arg, name in arg_name_pairs:
                 if name == 'arg' and isinstance(op, ops.ValueOp):
                     # don't display first argument's name in repr
