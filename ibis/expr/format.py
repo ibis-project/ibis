@@ -248,8 +248,7 @@ class ExprFormatter:
 
     def _format_subexpr(self, expr):
         subexprs = self.memo.subexprs
-        key = expr.op()
-        key = expr
+        key = expr.get_key()
         try:
             result = subexprs[key]
         except KeyError:
