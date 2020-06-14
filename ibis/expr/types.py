@@ -233,9 +233,6 @@ class Expr:
     def _root_tables(self):
         return self.op().root_tables()
 
-    def get_key(self):
-        return self._key
-
 
 class ExprList(Expr):
     def _type_display(self):
