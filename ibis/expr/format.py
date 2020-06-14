@@ -248,11 +248,13 @@ class ExprFormatter:
 
     def _format_subexpr(self, expr):
         subexprs = self.memo.subexprs
+        key = expr.op()
+        key = expr
         try:
-            result = subexprs[expr]
+            result = subexprs[key]
         except KeyError:
             formatter = ExprFormatter(expr, memo=self.memo, memoize=False)
-            result = subexprs[expr] = self._indent(formatter.get_result(), 1)
+            result = subexprs[key] = self._indent(formatter.get_result(), 1)
         return result
 
     def _get_type_display(self, expr=None):
