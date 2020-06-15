@@ -21,7 +21,7 @@ class TwoLevelDispatcher(Dispatcher):
     inherits Dispatcher to avoid duplicating __call__, cache, ambiguities
     detection, as well as properties like ordering and funcs.
 
-    (2) First level dispatcher, aka, Meta dispatcher. This is the dispatcher
+    (2) First level dispatcher, aka, meta dispatcher. This is the dispatcher
     is used to dispatch to the second level dispatcher using the type of the
     first arg.
 
@@ -56,8 +56,8 @@ class TwoLevelDispatcher(Dispatcher):
     Because this dispatcher has the same func and ordering property as
     multipledispatch.Dispatcher. We can completely reuse the ambiguity
     detection logic of Dispatcher. Note:
-    (a) we never actually linear search through ordering of this dispatcher.
-    It's only used for ambiguity detection, which is called only once.
+    (a) we never actually linear search through ordering of this dispatcher
+    for dispatching. It's only used for ambiguity detection.
     (b) deleting an entry from func of this dispatcher (i.e. del
     dispatcher.func[A, B]) does not unregister it. Entries from the second
     level dispatcher also needs to be deleted. This is OK because it is not
