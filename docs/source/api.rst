@@ -199,7 +199,7 @@ create a client.
 
 .. _api.omniscidb:
 
-OmniSciDB client (Experimental)
+OmniSciDB client
 -------------------------------
 .. currentmodule:: ibis.omniscidb.api
 

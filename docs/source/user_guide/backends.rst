@@ -31,7 +31,7 @@ string to the database through a driver API.
 - `Yandex Clickhouse <https://clickhouse.yandex/>`_
 - `Google BigQuery <https://cloud.google.com/bigquery/>`_
 - `Hadoop Distributed File System (HDFS) <https://hadoop.apache.org/>`_
-- `OmniSciDB <https://www.omnisci.com/>`_ (Experimental)
+- `OmniSciDB <https://www.omnisci.com/>`_
 - `PySpark/Spark SQL <https://spark.apache.org/sql/>`_ (Experimental)
 
 .. _expression_generating_backends:
