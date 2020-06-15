@@ -249,6 +249,37 @@ class TableColumn(ValueOp):
         return klass(self, name=self.name)
 
 
+class PseudoColumn(TableColumn):
+    """
+    PseudoColumn expression.
+
+    A Pseudocolumn is a "column" that yields a value when selected,
+    but which is not an actual column of the table.
+
+    See Also
+    --------
+    https://en.wikipedia.org/wiki/Pseudocolumn
+    """
+
+    def _validate(self):
+        return True
+
+    def _make_expr(self):
+        klass = self.output_type()
+        return klass(self, name=self.name)
+
+
+class RowID(PseudoColumn):
+    """
+    Operation for a pseudocolumn row ID.
+
+    Row ID returns a sequential integer, starting from 0, for each row.
+    """
+
+    def output_type(self):
+        return functools.partial(ir.IntegerColumn, dtype=dt.int64)
+
+
 def find_all_base_tables(expr, memo=None):
     if memo is None:
         memo = {}

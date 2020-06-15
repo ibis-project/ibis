@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import sqlalchemy as sa
 import toolz
 
@@ -235,6 +234,23 @@ def _rpad(t, expr):
     return arg + _generic_pad(arg, length, pad)
 
 
+def _row_id(t, expr: ir.Expr):
+    """
+    Pseudo column Row ID translation.
+
+    Parameters
+    ----------
+    t : SQLiteExprTranslator
+    expr : ir.Expr
+
+    Returns
+    -------
+    row_id : str
+    """
+    sa_expr = sa.literal_column('rowid') - 1
+    return sa_expr.label(expr.get_name())
+
+
 _operation_registry.update(
     {
         ops.Cast: _cast,
@@ -285,6 +301,7 @@ _operation_registry.update(
         ops.StandardDev: toolz.compose(
             sa.func._ibis_sqlite_sqrt, _variance_reduction('_ibis_sqlite_var')
         ),
+        ops.RowID: _row_id,
     }
 )
 

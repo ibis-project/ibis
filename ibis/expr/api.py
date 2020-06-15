@@ -4261,6 +4261,30 @@ def _table_drop(self, fields):
     return self[[field for field in schema if field not in field_set]]
 
 
+# pseudocolumns
+
+
+def row_id(self, col_name: str):
+    """
+    Row ID pseudo column operation.
+
+    Parameters
+    ----------
+    col_name : str
+
+    Returns
+    -------
+    row_id : ir.IntegerColumn
+    """
+    if isinstance(self._arg, ops.Selection):
+        raise NotImplementedError(
+            'Pseudocolumns operations cannot be used for a table selection. '
+            'Use it directly on a table expresion.'
+        )
+
+    return ops.RowID(col_name, self).to_expr()
+
+
 _table_methods = dict(
     aggregate=aggregate,
     count=_table_count,
@@ -4290,6 +4314,8 @@ _table_methods = dict(
     to_array=_table_to_array,
     union=_table_union,
     view=_table_view,
+    # pseudocolumns
+    row_id=row_id,
 )
 
 
