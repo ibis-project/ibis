@@ -12,6 +12,7 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :bug:`2252` Allow group_by and order_by as window operation input in pandas backend
 * :bug:`2229` Fix same column with multiple aliases not showing properly in repr
 * :feature:`2233` Add ibis.pandas.trace module to log time and call stack information.
 * :feature:`2198` Validate that the output type of a UDF is a single element
