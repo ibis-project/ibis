@@ -476,7 +476,7 @@ class Window(AggregationContext):
             frame = getattr(parent, 'obj', parent)
             obj = getattr(grouped_data, 'obj', grouped_data)
             name = obj.name
-            if frame[name] is not obj:
+            if frame[name] is not obj or name in group_by or name in order_by:
                 name = f"{name}_{ibis.util.guid()}"
                 frame = frame.assign(**{name: obj})
 
@@ -484,6 +484,7 @@ class Window(AggregationContext):
             # index
             # TODO: see if we can do this in the caller, when the context
             # is constructed rather than pulling out the data
+
             columns = group_by + order_by + [name]
             indexed_by_ordering = frame[columns].set_index(order_by)
 
