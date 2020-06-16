@@ -100,6 +100,12 @@ class TwoLevelDispatcher(Dispatcher):
 
         return _
 
+    def __delitem__(self, types):
+        del self.funcs[types]
+        del self._meta_dispatcher.funcs[types[:1]].funcs[types]
+        if not self._meta_dispatcher.funcs[types[:1]].funcs:
+            del self._meta_dispatcher.funcs[types[1:]]
+
     def dispatch_iter(self, *types):
         for dispatcher in self._meta_dispatcher.dispatch_iter(types[0]):
             func = dispatcher.dispatch(*types)
