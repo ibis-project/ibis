@@ -1049,6 +1049,20 @@ def test_union(table):
         t1.union(t3)
 
 
+def test_intersect(table):
+    schema1 = [('key', 'string'), ('value', 'double')]
+    schema2 = [('key', 'string'), ('key2', 'string'), ('value', 'double')]
+    t1 = ibis.table(schema1, 'foo')
+    t2 = ibis.table(schema1, 'bar')
+    t3 = ibis.table(schema2, 'baz')
+
+    result = t1.intersect(t2)
+    assert isinstance(result.op(), ops.Intersection)
+
+    with pytest.raises(RelationError):
+        t1.union(t3)
+
+
 def test_column_ref_on_projection_rename(con):
     region = con.table('tpch_region')
     nation = con.table('tpch_nation')

@@ -3988,6 +3988,23 @@ def _table_union(left, right, distinct=False):
     return op.to_expr()
 
 
+def _table_intersect(left, right):
+    """
+    Form the table set intersect of two table expressions having identical
+    schemas.
+
+    Parameters
+    ----------
+    right : TableExpr
+
+    Returns
+    -------
+    union : TableExpr
+    """
+    op = ops.Intersection(left, right)
+    return op.to_expr()
+
+
 def _table_to_array(self):
     """
     Single column tables can be viewed as arrays.
@@ -4286,6 +4303,7 @@ _table_methods = dict(
     sort_by=_table_sort_by,
     to_array=_table_to_array,
     union=_table_union,
+    intersect=_table_intersect,
     view=_table_view,
 )
 

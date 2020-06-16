@@ -1742,10 +1742,9 @@ class AsOfJoin(Join):
             setattr(self, arg, value)
 
 
-class Union(TableNode, HasSchema):
+class SetOperation(TableNode, HasSchema):
     left = Arg(rlz.noop)
     right = Arg(rlz.noop)
-    distinct = Arg(rlz.validator(bool), default=False)
 
     def _validate(self):
         if not self.left.schema().equals(self.right.schema()):
@@ -1759,6 +1758,16 @@ class Union(TableNode, HasSchema):
 
     def blocks(self):
         return True
+
+
+class Union(SetOperation):
+    distinct = Arg(rlz.validator(bool), default=False)
+
+    pass
+
+
+class Intersection(SetOperation):
+    pass
 
 
 class Limit(TableNode):
