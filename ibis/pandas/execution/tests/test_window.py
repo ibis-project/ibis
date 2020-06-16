@@ -47,11 +47,6 @@ def range_window():
     return ibis.window(following=0, order_by='plain_datetimes_naive')
 
 
-@pytest.fixture
-def table1():
-    return
-
-
 @default
 @row_offset
 def test_lead(t, df, row_offset, default, row_window):

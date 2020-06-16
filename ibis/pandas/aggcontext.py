@@ -484,7 +484,6 @@ class Window(AggregationContext):
             # index
             # TODO: see if we can do this in the caller, when the context
             # is constructed rather than pulling out the data
-
             columns = group_by + order_by + [name]
             indexed_by_ordering = frame[columns].set_index(order_by)
 
