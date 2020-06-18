@@ -26,6 +26,7 @@ Release Notes
 * :bug:`2157` Fix interactive mode returning a expression instead of the value when used in Jupyter
 * :feature:`2093` IsNan implementation for OmniSciDB
 * :feature:`2094` [OmnisciDB] Support add_columns and drop_columns for OmnisciDB table
+* :feature:`2251` Add Pseudocolum column type, create RowID operation and add its support to OmniSciDB and SQLite
 * :support:`2234` Remove "experimental" mentions for OmniSciDB and Pandas backends
 * :bug:`2127` Fix PySpark error when doing alias after selection
 * :support:`2244` Use an OmniSciDB image stable on CI
