@@ -3999,7 +3999,7 @@ def _table_intersect(left, right):
 
     Returns
     -------
-    union : TableExpr
+    intersection : TableExpr
     """
     op = ops.Intersection(left, right)
     return op.to_expr()
