@@ -11,6 +11,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.expr.window import rows_with_max_lookback
 from ibis.pandas.dispatch import pre_execute
+from ibis.udf.vectorized import reduction
 
 execute = ibis.pandas.execute
 
@@ -529,3 +530,55 @@ def test_window_grouping_key_has_scope(t, df):
     result = expr.execute(params={param: "a"})
     expected = df.groupby(df.dup_strings + "a").plain_int64.transform("mean")
     tm.assert_series_equal(result, expected)
+
+
+def test_window_on_and_by_key_as_window_input(t, df):
+    order_by = 'plain_int64'
+    group_by = 'dup_ints'
+    control = 'plain_float64'
+
+    row_window = ibis.trailing_window(
+        order_by=order_by, group_by=group_by, preceding=1
+    )
+
+    # Test built-in function
+
+    tm.assert_series_equal(
+        t[order_by].count().over(row_window).execute(),
+        t[control].count().over(row_window).execute(),
+        check_names=False,
+    )
+
+    tm.assert_series_equal(
+        t[group_by].count().over(row_window).execute(),
+        t[control].count().over(row_window).execute(),
+        check_names=False,
+    )
+
+    # Test UDF
+
+    @reduction(input_type=[dt.int64], output_type=dt.int64)
+    def count(v):
+        return len(v)
+
+    @reduction(input_type=[dt.int64, dt.int64], output_type=dt.int64)
+    def count_both(v1, v2):
+        return len(v1)
+
+    tm.assert_series_equal(
+        count(t[order_by]).over(row_window).execute(),
+        t[control].count().over(row_window).execute(),
+        check_names=False,
+    )
+
+    tm.assert_series_equal(
+        count(t[group_by]).over(row_window).execute(),
+        t[control].count().over(row_window).execute(),
+        check_names=False,
+    )
+
+    tm.assert_series_equal(
+        count_both(t[group_by], t[order_by]).over(row_window).execute(),
+        t[control].count().over(row_window).execute(),
+        check_names=False,
+    )
