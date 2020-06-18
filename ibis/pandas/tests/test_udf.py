@@ -83,7 +83,7 @@ def add_one(x):
 
 
 @udf.elementwise([dt.double], dt.double)
-def times_two(x, scope=None):
+def times_two(x):
     return x * 2.0
 
 
@@ -98,10 +98,9 @@ def a_single_number(**kwargs):
 
 
 @udf.reduction(
-    input_type=[dt.double, dt.Array(dt.double)],
-    output_type=dt.Array(dt.double),
+    input_type=[dt.double], output_type=dt.Array(dt.double),
 )
-def quantiles(series, quantiles):
+def quantiles(series, *, quantiles):
     return list(series.quantile(quantiles))
 
 
@@ -192,9 +191,6 @@ def test_udaf_analytic_groupby(con, t, df):
     tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.xfail(
-    reason="https://github.com/pandas-dev/pandas/issues/31760", strict=False
-)
 def test_udaf_groupby():
     df = pd.DataFrame(
         {
@@ -207,6 +203,7 @@ def test_udaf_groupby():
     )
     con = ibis.pandas.connect({'df': df})
     t = con.table('df')
+
     expr = t.groupby(t.key).aggregate(my_corr=my_corr(t.a, t.b))
 
     assert isinstance(expr, ir.TableExpr)
@@ -377,9 +374,6 @@ def test_multiple_argument_udaf_window():
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.xfail(
-    reason="https://github.com/pandas-dev/pandas/issues/31754", strict=False
-)
 def test_udaf_window_nan():
     df = pd.DataFrame(
         {
@@ -408,14 +402,14 @@ def qs(request):
 
 
 def test_array_return_type_reduction(con, t, df, qs):
-    expr = quantiles(t.b, qs)
+    expr = quantiles(t.b, quantiles=qs)
     result = expr.execute()
     expected = df.b.quantile(qs)
     assert result == expected.tolist()
 
 
 def test_array_return_type_reduction_window(con, t, df, qs):
-    expr = quantiles(t.b, qs).over(ibis.window())
+    expr = quantiles(t.b, quantiles=qs).over(ibis.window())
     result = expr.execute()
     expected_raw = df.b.quantile(qs).tolist()
     expected = pd.Series([expected_raw] * len(df))

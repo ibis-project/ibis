@@ -12,15 +12,24 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+
+* :bug:`2229` Fix same column with multiple aliases not showing properly in repr
+* :feature:`2233` Add ibis.pandas.trace module to log time and call stack information.
+* :feature:`2198` Validate that the output type of a UDF is a single element
+* :bug:`2223` Fix PySpark compiler error when elementwise UDF output_type is Decimal or Timestamp
+* :feature:`2186` ZeroIfNull and NullIfZero implementation for OmniSciDB
 * :feature:`2185` [OmniSciDB] Added support of log, log2 and IdenticalTo operations
 * :feature:`2186` ZeroIfNull and NullIfZero implementation for OmniSciDB  
 * :bug:`2157` Fix interactive mode returning a expression instead of the value when used in Jupyter
 * :feature:`2093` IsNan implementation for OmniSciDB
 * :feature:`2094` [OmnisciDB] Support add_columns and drop_columns for OmnisciDB table
+* :support:`2234` Remove "experimental" mentions for OmniSciDB and Pandas backends
 * :bug:`2127` Fix PySpark error when doing alias after selection
+* :support:`2244` Use an OmniSciDB image stable on CI
 * :feature:`2175` Create ExtractQuarter operation and add its support to Clickhouse, CSV, Impala, MySQL, OmniSciDB, Pandas, Parquet, PostgreSQL, PySpark, SQLite and Spark
 * :feature:`2126` Add translation rules for isnull() and notnull() for pyspark backend
 * :feature:`2062` Implement read_csv for omniscidb backend
+* :feature:`2171` [OmniSciDB] Add support to week extraction
 * :feature:`2097` Date, DateDiff and TimestampDiff implementations for OmniSciDB
 * :bug:`2170` Fix millisecond issue for OmniSciDB :issue:`2167`, MySQL :issue:`2169`, PostgreSQL :issue:`2166` and Pandas :issue:`2168` backends
 * :feature:`2060` Add initial support for ibis.random function

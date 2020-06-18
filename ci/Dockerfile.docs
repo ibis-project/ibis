@@ -1,5 +1,5 @@
 ARG PYTHON_VERSION
-FROM ibis:$PYTHON_VERSION
+FROM ibis:$PYTHON_VERSION-main
 
 # fonts are for docs
 RUN apt-get -qq update --yes \

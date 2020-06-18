@@ -7,6 +7,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import dialect as sa_postgres_dialect
 
 import ibis.expr.rules as rlz
+import ibis.udf.validate as v
 from ibis import IbisError
 from ibis.expr.signature import Argument as Arg
 from ibis.sql.alchemy import _to_sqla_type
@@ -80,6 +81,7 @@ def existing_udf(name, input_types, output_type, schema=None, parameters=None):
     Callable
         The wrapped function
     """
+
     if parameters is None:
         parameters = ['v{}'.format(i) for i in range(len(input_types))]
     elif len(input_types) != len(parameters):
@@ -89,6 +91,8 @@ def existing_udf(name, input_types, output_type, schema=None, parameters=None):
                 "len(input_types)={}, len(parameters)={}"
             ).format(len(input_types), len(parameters))
         )
+
+    v.validate_output_type(output_type)
 
     udf_node_fields = collections.OrderedDict(
         [

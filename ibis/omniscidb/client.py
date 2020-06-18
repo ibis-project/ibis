@@ -1178,7 +1178,7 @@ class OmniSciDBClient(SQLClient):
                 protocol=self.protocol,
                 session_id=self.session_id,
                 ipc=self.ipc,
-                device=self.device,
+                gpu_device=self.gpu_device,
             )
             return self.database_class(name, new_client)
 

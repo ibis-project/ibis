@@ -66,3 +66,14 @@ with cf.config_prefix('clickhouse'):
 
 with cf.config_prefix('bigquery'):
     cf.register_option('partition_col', 'PARTITIONTIME')
+
+
+with cf.config_prefix('pandas'):
+    cf.register_option(
+        'enable_trace',
+        False,
+        """
+Whether enable tracing for pandas execution. See ibis.panads.trace for details.
+""",
+        validator=cf.is_bool,
+    )
