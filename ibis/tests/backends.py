@@ -285,7 +285,7 @@ class HDF5(Pandas):
 class SQLite(Backend, RoundAwayFromZero):
     supports_arrays = False
     supports_arrays_outside_of_select = supports_arrays
-    supports_window_operations = False
+    supports_window_operations = True
     check_dtype = False
     returned_timestamp_unit = 's'
 

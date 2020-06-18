@@ -24,6 +24,7 @@ import ibis.sql.alchemy as alch
 from ibis.sql.alchemy import _variance_reduction, fixed_arity, unary, varargs
 
 _operation_registry = alch._operation_registry.copy()
+_operation_registry.update(alch._window_functions)
 
 
 def _cast(t, expr):
