@@ -3,10 +3,9 @@ import logging
 import traceback
 from datetime import datetime
 
-from multipledispatch import Dispatcher
-
 from ibis.config import get_option, set_option
 from ibis.expr import types as ir
+from ibis.pandas.dispatcher import TwoLevelDispatcher
 
 """Module that adds tracing to pandas execution.
 
@@ -138,12 +137,11 @@ def trace(func):
     return traced_func
 
 
-class TraceDispatcher(Dispatcher):
+class TraceTwoLevelDispatcher(TwoLevelDispatcher):
     """ A Dispatcher that also wraps the registered function with tracing."""
 
     def __init__(self, name, doc=None):
         super().__init__(name, doc)
-        _trace_funcs.add(name)
 
     def register(self, *types, **kwargs):
         """ Register a function with this Dispatcher.
@@ -151,13 +149,12 @@ class TraceDispatcher(Dispatcher):
         The function will also be wrapped with tracing information.
         """
 
-        def _df(func):
-            _trace_funcs.add(func.__name__)
-            traced_func = trace(func)
-            self.add(types, traced_func, **kwargs)
+        def _(func):
+            trace_func = trace(func)
+            TwoLevelDispatcher.register(self, *types, **kwargs)(trace_func)
             # return func instead trace_func here so that
             # chained register didn't get wrapped multiple
             # times
             return func
 
-        return _df
+        return _
