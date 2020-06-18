@@ -1059,8 +1059,10 @@ def test_intersect(table):
     result = t1.intersect(t2)
     assert isinstance(result.op(), ops.Intersection)
 
-    with pytest.raises(RelationError):
-        t1.union(t3)
+    with pytest.raises(
+        RelationError, match=r'Table schemas must be equal for set operations'
+    ):
+        t1.intersect(t3)
 
 
 def test_column_ref_on_projection_rename(con):
