@@ -35,28 +35,42 @@ pre_execute = Dispatcher(
     'pre_execute',
     doc="""\
 Given a node, compute a (possibly partial) scope prior to standard execution.
-
+Also, return with a list of pre_executed_states that are going to be passed to
+children nodes.
 Notes
 -----
 This function is useful if parts of the tree structure need to be executed at
 the same time or if there are other reasons to need to interrupt the regular
 depth-first traversal of the tree.
+pre_executed_state is used to store 'local' data for each Node in execution.
+Two nodes that have the same expression may require different data needed for
+execution,e,g, different time context for each node. The data is calculated
+in pre_execute and pass to chilren nodes.
 """,
 )
 
 
-# Default returns an empty scope
+# Default returns an empty scope and None as states
 @pre_execute.register(ops.Node)
 @pre_execute.register(ops.Node, ibis.client.Client)
 def pre_execute_default(node, *clients, **kwargs):
-    return {}
+    return {}, [None for arg in node.inputs]
 
 
 # Merge the results of all client pre-execution with scope
 @pre_execute.register(ops.Node, [ibis.client.Client])
-def pre_execute_multiple_clients(node, *clients, scope=None, **kwargs):
-    return toolz.merge(
-        scope, *map(partial(pre_execute, node, scope=scope, **kwargs), clients)
+def pre_execute_multiple_clients(
+    node, *clients, scope=None, state=None, **kwargs
+):
+    return (
+        toolz.merge(
+            scope,
+            *map(
+                partial(pre_execute, node, scope=scope, state=state ** kwargs),
+                clients,
+            ),
+        ),
+        [None for arg in node.inputs],
     )
 
 

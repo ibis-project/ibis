@@ -68,22 +68,40 @@ def _post_process_group_by_order_by(series, parent, order_by, group_by):
 
 @execute_node.register(ops.WindowOp, pd.Series, win.Window)
 def execute_window_op(
-    op, data, window, scope=None, aggcontext=None, clients=None, **kwargs
+    op,
+    data,
+    window,
+    scope=None,
+    state=None,
+    aggcontext=None,
+    clients=None,
+    **kwargs,
 ):
     operand = op.expr
     # pre execute "manually" here because otherwise we wouldn't pickup
     # relevant scope changes from the child operand since we're managing
     # execution of that by hand
     operand_op = operand.op()
-    pre_executed_scope = pre_execute(
-        operand_op, *clients, scope=scope, aggcontext=aggcontext, **kwargs
+    pre_executed_scope, pre_executed_states = pre_execute(
+        operand_op,
+        *clients,
+        scope=scope,
+        state=state,
+        aggcontext=aggcontext,
+        **kwargs,
     )
     scope = toolz.merge(scope, pre_executed_scope)
+
+    if len(pre_executed_states):
+        new_state = pre_executed_states[0]
+    else:
+        new_state = None
     (root,) = op.root_tables()
     root_expr = root.to_expr()
     data = execute(
         root_expr,
         scope=scope,
+        state=new_state,
         clients=clients,
         aggcontext=aggcontext,
         **kwargs,
