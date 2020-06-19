@@ -13,6 +13,7 @@ from ibis.tests.backends import (
     PostgreSQL,
     PySpark,
     Spark,
+    SQLite,
 )
 
 
@@ -112,7 +113,7 @@ from ibis.tests.backends import (
         ),
         param(
             # notany() over window not supported in Impala, PostgreSQL,
-            # Spark and MySQL backends
+            # Spark, MySQL and SQLite backends
             lambda t, win: (t.double_col == 0).notany().over(win),
             lambda t: (
                 t.double_col.expanding()
@@ -122,7 +123,7 @@ from ibis.tests.backends import (
             ),
             id='cumnotany',
             marks=pytest.mark.xfail_backends(
-                (Impala, PostgreSQL, Spark, MySQL)
+                (Impala, PostgreSQL, Spark, MySQL, SQLite)
             ),
         ),
         param(
@@ -137,7 +138,7 @@ from ibis.tests.backends import (
         ),
         param(
             # notall() over window not supported in Impala, PostgreSQL,
-            # Spark and MySQL backends
+            # Spark, MySQL and SQLite backends
             lambda t, win: (t.double_col == 0).notall().over(win),
             lambda t: (
                 t.double_col.expanding()
@@ -147,7 +148,7 @@ from ibis.tests.backends import (
             ),
             id='cumnotall',
             marks=pytest.mark.xfail_backends(
-                (Impala, PostgreSQL, Spark, MySQL)
+                (Impala, PostgreSQL, Spark, MySQL, SQLite)
             ),
         ),
         param(
