@@ -226,6 +226,7 @@ Use ``ibis.omniscidb.connect`` to create a client.
    OmniSciDBClient.drop_table_or_view
    OmniSciDBClient.drop_user
    OmniSciDBClient.drop_view
+   OmniSciDBClient.execution_mode
    OmniSciDBClient.exists_table
    OmniSciDBClient.get_schema
    OmniSciDBClient.list_tables

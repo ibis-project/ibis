@@ -768,10 +768,19 @@ class OmniSciDBClient(SQLClient):
         """
         Define where the SQL execution occurs (GPU or CPU).
 
+        Use "execution_mode" before the expression execution to change
+        where it should be executed in the backend engine.
+
         Parameters
         ----------
         processing_unit : {'cpu', 'gpu'}
           Define if the request will be executed on CPU or GPU.
+
+        Examples
+        --------
+        >>> con.execution_mode('gpu') # doctest: +SKIP
+        >>> expr.execute()  # doctest: +SKIP
+        >>> con.execution_mode('cpu') # doctest: +SKIP
         """
         if processing_unit not in ['cpu', 'gpu']:
             raise Exception(
