@@ -782,13 +782,13 @@ class OmniSciDBClient(SQLClient):
         >>> expr.execute()  # doctest: +SKIP
         >>> con.execution_mode('cpu') # doctest: +SKIP
         """
-        if processing_unit not in ['cpu', 'gpu']:
-            raise Exception(
+        PROCESSING_UNIT_MAP = {'cpu': 0, 'gpu': 1}
+
+        if processing_unit not in PROCESSING_UNIT_MAP:
+            raise ValueError(
                 'Processing unit should be one of the follow values: '
                 '"cpu" or "gpu"'
             )
-
-        PROCESSING_UNIT_MAP = {'cpu': 0, 'gpu': 1}
 
         self.con._client.set_execution_mode(
             self.con._session, PROCESSING_UNIT_MAP[processing_unit]

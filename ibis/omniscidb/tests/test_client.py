@@ -301,3 +301,6 @@ def test_cpu_ipc_execution_mode(con):
             'Cannot switch to GPU mode in a'
             ' server started in CPU-only mode.'
         )
+
+    with pytest.raises(ValueError):
+        con.execution_mode('invalid-execution-mode')
