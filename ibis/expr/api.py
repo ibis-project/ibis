@@ -3991,7 +3991,7 @@ def _table_union(left, right, distinct=False):
 def _table_intersect(left, right):
     """
     Form the table set intersect of two table expressions having identical
-    schemas.
+    schemas. An intersect returns only the common rows between the two tables.
 
     Parameters
     ----------
