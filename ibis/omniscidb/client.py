@@ -735,9 +735,9 @@ class OmniSciDBClient(SQLClient):
         result = self.con._client.sql_validate(self.con._session, query)
         return sch.Schema.from_tuples(
             (
-                r,
+                r.col_name,
                 OmniSciDBDataType._omniscidb_to_ibis_dtypes[
-                    pymapd_dtype._VALUES_TO_NAMES[result[r].col_type.type]
+                    pymapd_dtype._VALUES_TO_NAMES[r.col_type.type]
                 ],
             )
             for r in result
