@@ -289,11 +289,13 @@ def test_cpu_ipc_gpu_device(
         mocked_method.stop()
 
 
-def test_cpu_ipc_execution_mode(con):
+def test_execution_mode_cpu(con):
     con.execution_mode('cpu')
     result = con.table('functional_alltypes').head().execute()
     assert isinstance(result, pd.DataFrame)
 
+
+def test_execution_mode_gpu(con):
     try:
         con.execution_mode('gpu')
     except Exception as e:
@@ -302,5 +304,7 @@ def test_cpu_ipc_execution_mode(con):
             ' server started in CPU-only mode.'
         )
 
+
+def test_execution_mode_invalid(con):
     with pytest.raises(ValueError):
         con.execution_mode('invalid-execution-mode')
