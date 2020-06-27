@@ -114,6 +114,13 @@ def df2():
 
 
 @pytest.fixture(scope='module')
+def intersect_df2():
+    return pd.DataFrame(
+        {'key': list('cd'), 'value': [5, 6], 'key2': list('ff')}
+    )
+
+
+@pytest.fixture(scope='module')
 def time_df1():
     return pd.DataFrame(
         {'time': pd.to_datetime([1, 2, 3, 4]), 'value': [1.1, 2.2, 3.3, 4.4]}
@@ -151,7 +158,15 @@ def time_keyed_df2():
 
 @pytest.fixture(scope='module')
 def client(
-    df, df1, df2, df3, time_df1, time_df2, time_keyed_df1, time_keyed_df2
+    df,
+    df1,
+    df2,
+    df3,
+    time_df1,
+    time_df2,
+    time_keyed_df1,
+    time_keyed_df2,
+    intersect_df2,
 ):
     return ibis.pandas.connect(
         dict(
@@ -165,6 +180,7 @@ def client(
             time_df2=time_df2,
             time_keyed_df1=time_keyed_df1,
             time_keyed_df2=time_keyed_df2,
+            intersect_df2=intersect_df2,
         )
     )
 

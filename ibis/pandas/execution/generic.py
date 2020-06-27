@@ -765,6 +765,14 @@ def execute_union_dataframe_dataframe(op, left, right, distinct, **kwargs):
     return result.drop_duplicates() if distinct else result
 
 
+@execute_node.register(ops.Intersection, pd.DataFrame, pd.DataFrame)
+def execute_intersection_dataframe_dataframe(
+    op, left: pd.DataFrame, right, **kwargs
+):
+    result = left.merge(right, on=list(left.columns))
+    return result
+
+
 @execute_node.register(ops.IsNull, pd.Series)
 def execute_series_isnull(op, data, **kwargs):
     return data.isnull()

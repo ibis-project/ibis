@@ -830,6 +830,15 @@ def test_union(client, df1, distinct):
     tm.assert_frame_equal(result, expected)
 
 
+def test_intersect(client, df1, intersect_df2):
+    t1 = client.table('df1')
+    t2 = client.table('intersect_df2')
+    expr = t1.intersect(t2)
+    result = expr.execute()
+    expected = df1.merge(intersect_df2, on=list(df1.columns))
+    tm.assert_frame_equal(result, expected)
+
+
 @pytest.mark.parametrize(
     "distinct",
     [
