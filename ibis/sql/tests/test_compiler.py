@@ -677,6 +677,21 @@ class ExprTestCases:
 
         return expr
 
+    def _case_intersect(self):
+        table = self.con.table('functional_alltypes')
+
+        t1 = table[table.int_col > 0][
+            table.string_col.name('key'),
+            table.float_col.cast('double').name('value'),
+        ]
+        t2 = table[table.int_col <= 0][
+            table.string_col.name('key'), table.double_col.name('value')
+        ]
+
+        expr = t1.intersect(t2)
+
+        return expr
+
     def _case_simple_case(self):
         t = self.con.table('alltypes')
         return (
@@ -2237,6 +2252,26 @@ FROM (
   FROM functional_alltypes
   WHERE `int_col` <= 0
 ) t0"""
+        assert result == expected
+
+
+class TestIntersect(unittest.TestCase, ExprTestCases):
+    def setUp(self):
+        self.con = MockConnection()
+
+    def test_table_intersect(self):
+        intersection = self._case_intersect()
+        result = to_sql(intersection)
+        print(result)
+        expected = """\
+SELECT `string_col` AS `key`, CAST(`float_col` AS double) AS `value`
+FROM functional_alltypes
+WHERE `int_col` > 0
+INTERSECT
+SELECT `string_col` AS `key`, `double_col` AS `value`
+FROM functional_alltypes
+WHERE `int_col` <= 0"""
+        print(expected)
         assert result == expected
 
 
