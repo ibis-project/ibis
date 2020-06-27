@@ -1030,39 +1030,33 @@ def test_join_nontrivial_exprs(table):
     assert False
 
 
-def test_union(table):
+@pytest.mark.parametrize(
+    "set_op_func,set_op_type",
+    [
+        (lambda t1, t2: t1.union(t2), ops.Union),
+        (lambda t1, t2: t1.intersect(t2), ops.Intersection),
+    ],
+)
+def test_set_ops(table, set_op_func, set_op_type):
     schema1 = [('key', 'string'), ('value', 'double')]
     schema2 = [('key', 'string'), ('key2', 'string'), ('value', 'double')]
     t1 = ibis.table(schema1, 'foo')
     t2 = ibis.table(schema1, 'bar')
     t3 = ibis.table(schema2, 'baz')
 
-    result = t1.union(t2)
-    assert isinstance(result.op(), ops.Union)
-    assert not result.op().distinct
+    result = set_op_func(t1, t2)
+    assert isinstance(result.op(), set_op_type)
+    if isinstance(set_op_type, ops.Union):
+        assert not result.op().distinct
 
-    result = t1.union(t2, distinct=True)
-    assert isinstance(result.op(), ops.Union)
-    assert result.op().distinct
-
-    with pytest.raises(RelationError):
-        t1.union(t3)
-
-
-def test_intersect(table):
-    schema1 = [('key', 'string'), ('value', 'double')]
-    schema2 = [('key', 'string'), ('key2', 'string'), ('value', 'double')]
-    t1 = ibis.table(schema1, 'foo')
-    t2 = ibis.table(schema1, 'bar')
-    t3 = ibis.table(schema2, 'baz')
-
-    result = t1.intersect(t2)
-    assert isinstance(result.op(), ops.Intersection)
+    if isinstance(set_op_type, ops.Union):
+        result = t1.union(t2, distinct=True)
+        assert result.op().distinct
 
     with pytest.raises(
         RelationError, match=r'Table schemas must be equal for set operations'
     ):
-        t1.intersect(t3)
+        t1.union(t3)
 
 
 def test_column_ref_on_projection_rename(con):
