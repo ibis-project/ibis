@@ -3975,6 +3975,7 @@ def _table_union(left, right, distinct=False):
 
     Parameters
     ----------
+    left : TableExpr
     right : TableExpr
     distinct : boolean, default False
         Only union distinct rows not occurring in the calling table (this
@@ -3984,8 +3985,7 @@ def _table_union(left, right, distinct=False):
     -------
     union : TableExpr
     """
-    op = ops.Union(left, right, distinct=distinct)
-    return op.to_expr()
+    return ops.Union(left, right, distinct=distinct).to_expr()
 
 
 def _table_intersect(left, right):
@@ -3995,14 +3995,14 @@ def _table_intersect(left, right):
 
     Parameters
     ----------
+    left : TableExpr
     right : TableExpr
 
     Returns
     -------
     intersection : TableExpr
     """
-    op = ops.Intersection(left, right)
-    return op.to_expr()
+    return ops.Intersection(left, right).to_expr()
 
 
 def _table_to_array(self):
