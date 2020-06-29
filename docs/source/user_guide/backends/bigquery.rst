@@ -1,5 +1,34 @@
+.. currentmodule:: ibis.bigquery.api
+
+.. _bigquery:
+
+Using Ibis with BigQuery
+========================
+
+To use the BigQuery client, you will need a Google Cloud Platform account.
+Use the `BigQuery sandbox <https://cloud.google.com/bigquery/docs/sandbox>`__
+to try the service for free.
+
+The BigQuery client object
+--------------------------
+
+To use Ibis with BigQuery, you first must connect to BigQuery using the
+:func:`ibis.bigquery.connect` function, optionally supplying Google API
+credentials:
+
+.. code-block:: python
+
+   import ibis
+
+   client = ibis.bigquery.connect(
+       project_id=YOUR_PROJECT_ID,
+       dataset_id='bigquery-public-data.stackoverflow'
+   )
+
+.. _bigquery-privacy:
+
 Privacy
-=======
+-------
 
 This package is subject to the `NumFocus privacy policy
 <https://numfocus.org/privacy-policy>`_. Your use of Google APIs with this

@@ -26,7 +26,8 @@ Impala client
 
 These methods are available on the Impala client object after connecting to
 your HDFS cluster (``ibis.hdfs_connect``) and connecting to Impala with
-``ibis.impala.connect``.
+``ibis.impala.connect``. See :ref:`_impala` for a tutorial on using this
+backend.
 
 .. autosummary::
    :toctree: generated/
@@ -145,6 +146,7 @@ BigQuery client
 .. currentmodule:: ibis.bigquery.api
 
 The BigQuery client is accessible through the ``ibis.bigquery`` namespace.
+See :ref:`_bigquery` for a tutorial on using this backend.
 
 Use the ``ibis.bigquery.connect`` function to create a BigQuery
 client. If no ``credentials`` are provided, the
