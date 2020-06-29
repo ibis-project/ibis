@@ -180,7 +180,7 @@ def _timestamp_from_unix(translator, expr):
     return 'to_timestamp({})'.format(arg)
 
 
-def _extract_epoch(translator, expr):
+def _extract_epoch_seconds(translator, expr):
     return 'CAST({} AS BIGINT)'.format(
         unary('unix_timestamp')(translator, expr)
     )
@@ -332,7 +332,7 @@ _operation_registry.update(
         ops.ExtractDay: unary('day'),
         ops.ExtractDayOfYear: unary('dayofyear'),
         ops.ExtractQuarter: unary('quarter'),
-        ops.ExtractEpoch: _extract_epoch,
+        ops.ExtractEpochSeconds: _extract_epoch_seconds,
         ops.ExtractHour: unary('hour'),
         ops.ExtractMinute: unary('minute'),
         ops.ExtractSecond: unary('second'),

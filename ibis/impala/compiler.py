@@ -862,7 +862,7 @@ def _day_of_week_name(t, expr):
     return 'dayname({})'.format(t.translate(arg))
 
 
-def _extract_epoch(t, expr):
+def _extract_epoch_seconds(t, expr):
     (arg,) = expr.op().args
     return 'unix_timestamp({})'.format(t.translate(arg))
 
@@ -1213,7 +1213,7 @@ _operation_registry = {
     ops.ExtractMonth: _extract_field('month'),
     ops.ExtractDay: _extract_field('day'),
     ops.ExtractQuarter: _extract_field('quarter'),
-    ops.ExtractEpoch: _extract_epoch,
+    ops.ExtractEpochSeconds: _extract_epoch_seconds,
     ops.ExtractHour: _extract_field('hour'),
     ops.ExtractMinute: _extract_field('minute'),
     ops.ExtractSecond: _extract_field('second'),

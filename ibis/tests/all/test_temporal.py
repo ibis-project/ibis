@@ -43,7 +43,7 @@ def test_date_extract(backend, alltypes, df, attr):
         'day',
         'day_of_year',
         'quarter',
-        'epoch',
+        'epoch_seconds',
         'hour',
         'minute',
         'second',
@@ -58,7 +58,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
         if backend.name == 'spark':
             pytest.xfail(reason='Issue #2159')
         expected = (df.timestamp_col.dt.microsecond // 1000).astype('int32')
-    elif attr == 'epoch':
+    elif attr == 'epoch_seconds':
         expected = df.timestamp_col.astype('int64') // int(1e9)
     else:
         expected = getattr(df.timestamp_col.dt, attr.replace('_', '')).astype(
@@ -68,7 +68,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
     expr = getattr(alltypes.timestamp_col, attr)()
 
     result = expr.execute()
-    if attr == 'epoch' and backend.name in ['postgres', 'spark']:
+    if attr == 'epoch_seconds' and backend.name in ['postgres', 'spark']:
         # note: postgres and spark cast to bigint are not changing the result
         result = result.astype('int64')
     expected = backend.default_series_rename(expected)
