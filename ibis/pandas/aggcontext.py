@@ -347,6 +347,23 @@ def window_agg_built_in(
     return result
 
 
+def create_window_input_iter(
+    grouped_data: Union[SeriesGroupBy, pd.Series],
+    masked_window_lower_indices: pd.Series,
+    masked_window_upper_indices: pd.Series,
+) -> Iterator[np.ndarray]:
+    # create a generator for each input series
+    # the generator will yield a slice of the
+    # input series for each valid window
+    data = getattr(grouped_data, 'obj', grouped_data).values
+    lower_indices_array = masked_window_lower_indices.values
+    upper_indices_array = masked_window_upper_indices.values
+    for i in range(len(lower_indices_array)):
+        lower_index = lower_indices_array[i]
+        upper_index = upper_indices_array[i]
+        yield data[lower_index:upper_index]
+
+
 def window_agg_udf(
     grouped_data: SeriesGroupBy,
     function: Callable,
@@ -371,11 +388,19 @@ def window_agg_udf(
     assert len(window_lower_indices) == len(window_upper_indices)
     assert len(window_lower_indices) == len(mask)
 
+    # Reset index here so we don't need to deal with mismatching
+    # indices
+    window_lower_indices = window_lower_indices.reset_index(drop=True)
+    window_upper_indices = window_upper_indices.reset_index(drop=True)
+    mask = mask.reset_index(drop=True)
+
     # Compute window indices and manually roll
     # over the window.
+
     # If an window has only nan values, we output nan for
     # the window result. This follows pandas rolling apply
     # behavior.
+
     # If there is no args, then the UDF only takes a single
     # input which is defined by grouped_data
     # This is a complication due to the lack of standard
@@ -386,22 +411,10 @@ def window_agg_udf(
     masked_window_lower_indices = window_lower_indices[mask].astype('i8')
     masked_window_upper_indices = window_upper_indices[mask].astype('i8')
 
-    def create_input_iter(
-        grouped_series: SeriesGroupBy,
-    ) -> Iterator[np.ndarray]:
-        # create a generator for each input series
-        # the generator will yield a slice of the
-        # input series for each valid window
-        data = getattr(grouped_series, 'obj', grouped_series).values
-        lower_indices_array = masked_window_lower_indices.values
-        upper_indices_array = masked_window_upper_indices.values
-        for i in range(len(lower_indices_array)):
-            lower_index = lower_indices_array[i]
-            upper_index = upper_indices_array[i]
-            yield data[lower_index:upper_index]
-
     input_iters = list(
-        create_input_iter(arg)
+        create_window_input_iter(
+            arg, masked_window_lower_indices, masked_window_upper_indices
+        )
         if isinstance(arg, (pd.Series, SeriesGroupBy))
         else itertools.repeat(arg)
         for arg in inputs
