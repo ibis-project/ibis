@@ -35,26 +35,21 @@ pre_execute = Dispatcher(
     'pre_execute',
     doc="""\
 Given a node, compute a (possibly partial) scope prior to standard execution.
-Also, return with a list of pre_executed_states that are going to be passed to
-children nodes.
+
 Notes
 -----
 This function is useful if parts of the tree structure need to be executed at
 the same time or if there are other reasons to need to interrupt the regular
 depth-first traversal of the tree.
-pre_executed_state is used to store 'local' data for each Node in execution.
-Two nodes that have the same expression may require different data needed for
-execution,e,g, different time context for each node. The data is calculated
-in pre_execute and pass to chilren nodes.
 """,
 )
 
 
-# Default returns an empty scope and None as states
+# Default returns an empty scope
 @pre_execute.register(ops.Node)
 @pre_execute.register(ops.Node, ibis.client.Client)
 def pre_execute_default(node, *clients, **kwargs):
-    return {}, [None for arg in node.inputs]
+    return {}
 
 
 # Merge the results of all client pre-execution with scope
@@ -62,15 +57,8 @@ def pre_execute_default(node, *clients, **kwargs):
 def pre_execute_multiple_clients(
     node, *clients, scope=None, state=None, **kwargs
 ):
-    return (
-        toolz.merge(
-            scope,
-            *map(
-                partial(pre_execute, node, scope=scope, state=state ** kwargs),
-                clients,
-            ),
-        ),
-        [None for arg in node.inputs],
+    return toolz.merge(
+        scope, *map(partial(pre_execute, node, scope=scope, **kwargs), clients)
     )
 
 
@@ -114,3 +102,30 @@ def post_execute_default(op, data, **kwargs):
 
 
 execute = Dispatcher("execute")
+
+compute_local_context = Dispatcher(
+    'compute_local_context',
+    doc="""\
+
+Compute local_context for a node in execution
+
+Notes
+-----
+For a given node, return with a list of local_context that are going to be
+passed to its children nodes.
+local_context is useful when data is not uniquely defined by op tree. e.g.
+a TableExpr can represent the query select count(a) from table, but the
+result of that is different with time context (20190101, 20200101) vs
+(20200101, 20210101), because what data is in "table" also depends on the
+time context. And such context may not be global for all nodes. Each node
+may have its own context. compuate_local_context computes attributes that
+are going to be used in executeion and passes these attributes to children
+nodes.
+""",
+)
+
+
+@compute_local_context.register(ops.Node)
+@compute_local_context.register(ops.Node, ibis.client.Client)
+def compute_local_context_default(node, *clients, **kwargs):
+    return [None for arg in node.inputs]

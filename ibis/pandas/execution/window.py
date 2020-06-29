@@ -20,7 +20,11 @@ from ibis.pandas.core import (
     timedelta_types,
     timestamp_types,
 )
-from ibis.pandas.dispatch import execute_node, pre_execute
+from ibis.pandas.dispatch import (
+    compute_local_context,
+    execute_node,
+    pre_execute,
+)
 from ibis.pandas.execution import util
 
 
@@ -72,7 +76,7 @@ def execute_window_op(
     data,
     window,
     scope=None,
-    state=None,
+    localcontext=None,
     aggcontext=None,
     clients=None,
     **kwargs,
@@ -82,26 +86,24 @@ def execute_window_op(
     # relevant scope changes from the child operand since we're managing
     # execution of that by hand
     operand_op = operand.op()
-    pre_executed_scope, pre_executed_states = pre_execute(
-        operand_op,
-        *clients,
-        scope=scope,
-        state=state,
-        aggcontext=aggcontext,
-        **kwargs,
+    pre_executed_scope = pre_execute(
+        operand_op, *clients, scope=scope, aggcontext=aggcontext, **kwargs
+    )
+    computed_localcontexts = compute_local_context(
+        operand_op, *clients, localcontext=localcontext
     )
     scope = toolz.merge(scope, pre_executed_scope)
 
-    if len(pre_executed_states):
-        new_state = pre_executed_states[0]
+    if len(computed_localcontexts):
+        new_localcontext = computed_localcontexts[0]
     else:
-        new_state = None
+        new_localcontext = None
     (root,) = op.root_tables()
     root_expr = root.to_expr()
     data = execute(
         root_expr,
         scope=scope,
-        state=new_state,
+        localcontext=new_localcontext,
         clients=clients,
         aggcontext=aggcontext,
         **kwargs,
