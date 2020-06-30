@@ -33,7 +33,7 @@ def _choose_non_empty_val(first, second):
 
 
 def _determine_how(preceding):
-    offset_type = type(_get_preceding_value(preceding))
+    offset_type = type(get_preceding_value(preceding))
     if issubclass(offset_type, (int, np.integer)):
         how = 'rows'
     elif issubclass(offset_type, ir.IntervalScalar):
@@ -47,15 +47,15 @@ def _determine_how(preceding):
 
 
 @functools.singledispatch
-def _get_preceding_value(preceding):
+def get_preceding_value(preceding):
     raise TypeError(
         "Type {} is not a valid type for 'preceding' "
         "parameter".format(type(preceding))
     )
 
 
-@_get_preceding_value.register(tuple)
-def _get_preceding_value_tuple(preceding):
+@get_preceding_value.register(tuple)
+def get_preceding_value_tuple(preceding):
     start, end = preceding
     if start is None:
         preceding_value = end
@@ -64,15 +64,15 @@ def _get_preceding_value_tuple(preceding):
     return preceding_value
 
 
-@_get_preceding_value.register(int)
-@_get_preceding_value.register(np.integer)
-@_get_preceding_value.register(ir.IntervalScalar)
-def _get_preceding_value_simple(preceding):
+@get_preceding_value.register(int)
+@get_preceding_value.register(np.integer)
+@get_preceding_value.register(ir.IntervalScalar)
+def get_preceding_value_simple(preceding):
     return preceding
 
 
-@_get_preceding_value.register(RowsWithMaxLookback)
-def _get_preceding_value_mlb(preceding):
+@get_preceding_value.register(RowsWithMaxLookback)
+def get_preceding_value_mlb(preceding):
     preceding_value = preceding.rows
     if not isinstance(preceding_value, (int, np.integer)):
         raise TypeError(
