@@ -20,6 +20,8 @@ from ibis.pandas.aggcontext import window_agg_udf
     ],
 )
 def test_window_agg_udf(param):
+    """ Test passing custom window indices for window aggregation."""
+
     mask, expected = param
 
     df = pd.DataFrame({'id': [1, 2, 1, 2], 'v': [1.0, 2.0, 3.0, 4.0]})
