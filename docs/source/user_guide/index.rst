@@ -16,11 +16,12 @@ the information is available in the :ref:`api`.
 
    configuration
    impala
+   backends/bigquery
    sql
    udf
    design
    extending
-   backends
+   backends/index
    geospatial_analysis
    extending_elementwise_expr
    extending_reduce_expr

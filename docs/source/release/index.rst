@@ -13,6 +13,9 @@ Release Notes
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
 * :bug:`2237` Add missing float types to pandas backend
+* :bug:`2252` Allow group_by and order_by as window operation input in pandas backend
+* :feature:`2246` Implement two level dispatcher for execute_node
+* :bug:`2229` Fix same column with multiple aliases not showing properly in repr
 * :feature:`2233` Add ibis.pandas.trace module to log time and call stack information.
 * :feature:`2198` Validate that the output type of a UDF is a single element
 * :bug:`2223` Fix PySpark compiler error when elementwise UDF output_type is Decimal or Timestamp
@@ -20,9 +23,12 @@ Release Notes
 * :bug:`2157` Fix interactive mode returning a expression instead of the value when used in Jupyter
 * :feature:`2093` IsNan implementation for OmniSciDB
 * :feature:`2094` [OmnisciDB] Support add_columns and drop_columns for OmnisciDB table
+* :support:`2234` Remove "experimental" mentions for OmniSciDB and Pandas backends
 * :bug:`2127` Fix PySpark error when doing alias after selection
+* :support:`2244` Use an OmniSciDB image stable on CI
 * :feature:`2175` Create ExtractQuarter operation and add its support to Clickhouse, CSV, Impala, MySQL, OmniSciDB, Pandas, Parquet, PostgreSQL, PySpark, SQLite and Spark
 * :feature:`2126` Add translation rules for isnull() and notnull() for pyspark backend
+* :feature:`2232` Add window operations support to SQLite
 * :feature:`2062` Implement read_csv for omniscidb backend
 * :feature:`2171` [OmniSciDB] Add support to week extraction
 * :feature:`2097` Date, DateDiff and TimestampDiff implementations for OmniSciDB
