@@ -26,7 +26,8 @@ Impala client
 
 These methods are available on the Impala client object after connecting to
 your HDFS cluster (``ibis.hdfs_connect``) and connecting to Impala with
-``ibis.impala.connect``.
+``ibis.impala.connect``. See :ref:`impala` for a tutorial on using this
+backend.
 
 .. autosummary::
    :toctree: generated/
@@ -137,6 +138,28 @@ Executing expressions
 
    ImpalaClient.execute
    ImpalaClient.disable_codegen
+
+.. _api.bigquery:
+
+BigQuery client
+---------------
+.. currentmodule:: ibis.bigquery.api
+
+The BigQuery client is accessible through the ``ibis.bigquery`` namespace.
+See :ref:`bigquery` for a tutorial on using this backend.
+
+Use the ``ibis.bigquery.connect`` function to create a BigQuery
+client. If no ``credentials`` are provided, the
+:func:`pydata_google_auth.default` function fetches default credentials.
+
+.. autosummary::
+   :toctree: generated/
+
+   connect
+   BigQueryClient.database
+   BigQueryClient.list_databases
+   BigQueryClient.list_tables
+   BigQueryClient.table
 
 .. _api.postgres:
 
