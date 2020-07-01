@@ -641,14 +641,14 @@ def test_custom_window_udf(t, df):
             self.preceding = preceding
 
         def agg(self, grouped_data, function, *args, **kwargs):
-            upper_indices = pd.Series(range(len(self.parent) + 1)) + 1
+            upper_indices = pd.Series(range(1, len(self.parent) + 2))
             window_sizes = (
                 grouped_data.rolling(self.preceding.value + 1)
                 .count()
                 .reset_index(drop=True)
             )
             lower_indices = upper_indices - window_sizes
-            mask = ~upper_indices.isna()
+            mask = upper_indices.notna()
 
             result = window_agg_udf(
                 grouped_data,

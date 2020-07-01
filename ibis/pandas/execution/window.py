@@ -72,7 +72,7 @@ def get_aggcontext(
     window, *, operand, operand_dtype, parent, group_by, order_by
 ):
     raise NotImplementedError(
-        f"get_aggcontext is not implemented for {type(window)}"
+        f"get_aggcontext is not implemented for {type(window).__name__}"
     )
 
 
