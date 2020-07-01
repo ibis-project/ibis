@@ -4,6 +4,7 @@ import functools
 import operator
 import re
 from collections import OrderedDict
+from typing import NoReturn
 
 import pandas as pd
 import toolz
@@ -13,6 +14,7 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.window as win
 import ibis.pandas.aggcontext as agg_ctx
+from ibis.pandas.aggcontext import AggregationContext
 from ibis.pandas.core import (
     date_types,
     execute,
@@ -70,7 +72,7 @@ def _post_process_group_by_order_by(series, parent, order_by, group_by):
 @functools.singledispatch
 def get_aggcontext(
     window, *, operand, operand_dtype, parent, group_by, order_by
-):
+) -> NoReturn:
     raise NotImplementedError(
         f"get_aggcontext is not implemented for {type(window).__name__}"
     )
@@ -79,7 +81,7 @@ def get_aggcontext(
 @get_aggcontext.register(win.Window)
 def get_aggcontext_window(
     window, *, operand, operand_dtype, parent, group_by, order_by
-):
+) -> AggregationContext:
     # no order by or group by: default summarization aggcontext
     #
     # if we're reducing and we have an order by expression then we need to
