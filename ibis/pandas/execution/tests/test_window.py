@@ -20,6 +20,77 @@ execute = ibis.pandas.execute
 pytestmark = pytest.mark.pandas
 
 
+# These custom classes are used inn test_custom_window_udf
+
+
+class CustomInterval:
+    def __init__(self, value):
+        self.value = value
+
+    # These are necessary because ibis.expr.window
+    # will compare preceding and following
+    # with 0 to see if they are valid
+    def __lt__(self, other):
+        return self.value < other
+
+    def __gt__(self, other):
+        return self.value > other
+
+
+class CustomWindow(ibis.expr.window.Window):
+    """ This is a dummy custom window that return n preceding rows
+    where n is defined by CustomInterval.value."""
+
+    def _replace(self, **kwds):
+        new_kwds = dict(
+            group_by=kwds.get('group_by', self._group_by),
+            order_by=kwds.get('order_by', self._order_by),
+            preceding=kwds.get('preceding', self.preceding),
+            following=kwds.get('following', self.following),
+            max_lookback=kwds.get('max_lookback', self.max_lookback),
+            how=kwds.get('how', self.how),
+        )
+        return CustomWindow(**new_kwds)
+
+
+class CustomAggContext(AggregationContext):
+    def __init__(
+        self, parent, group_by, order_by, dtype, max_lookback, preceding
+    ):
+        super().__init__(
+            parent=parent,
+            group_by=group_by,
+            order_by=order_by,
+            dtype=dtype,
+            max_lookback=max_lookback,
+        )
+        self.preceding = preceding
+
+    def agg(self, grouped_data, function, *args, **kwargs):
+        upper_indices = pd.Series(range(1, len(self.parent) + 2))
+        window_sizes = (
+            grouped_data.rolling(self.preceding.value + 1)
+            .count()
+            .reset_index(drop=True)
+        )
+        lower_indices = upper_indices - window_sizes
+        mask = upper_indices.notna()
+
+        result = window_agg_udf(
+            grouped_data,
+            function,
+            lower_indices,
+            upper_indices,
+            mask,
+            self.dtype,
+            self.max_lookback,
+            *args,
+            **kwargs,
+        )
+
+        return result
+
+
 @pytest.fixture(scope='session')
 def sort_kind():
     return 'mergesort'
@@ -47,6 +118,16 @@ def row_window():
 @pytest.fixture
 def range_window():
     return ibis.window(following=0, order_by='plain_datetimes_naive')
+
+
+@pytest.fixture
+def custom_window():
+    return CustomWindow(
+        preceding=CustomInterval(1),
+        following=0,
+        group_by='dup_ints',
+        order_by='plain_int64',
+    )
 
 
 @default
@@ -586,7 +667,7 @@ def test_window_on_and_by_key_as_window_input(t, df):
     )
 
 
-def test_custom_window_udf(t, df):
+def test_custom_window_udf(t, custom_window):
     """ Test implementing  a (dummy) custom window.
 
     This test covers the advance use case to support custom window with udfs.
@@ -598,85 +679,6 @@ def test_custom_window_udf(t, df):
     @reduction(input_type=[dt.float64], output_type=dt.float64)
     def my_sum(v):
         return v.sum()
-
-    class CustomInterval:
-        def __init__(self, value):
-            self.value = value
-
-        # These are necessary because ibis.expr.window
-        # will compare preceding and following
-        # with 0 to see if they are valid
-        def __lt__(self, other):
-            return self.value < other
-
-        def __gt__(self, other):
-            return self.value > other
-
-    class CustomWindow(ibis.expr.window.Window):
-        """ This is a dummy custom window that return n preceding rows
-        where n is defined by CustomInterval.value."""
-
-        def _replace(self, **kwds):
-            new_kwds = dict(
-                group_by=kwds.get('group_by', self._group_by),
-                order_by=kwds.get('order_by', self._order_by),
-                preceding=kwds.get('preceding', self.preceding),
-                following=kwds.get('following', self.following),
-                max_lookback=kwds.get('max_lookback', self.max_lookback),
-                how=kwds.get('how', self.how),
-            )
-            return CustomWindow(**new_kwds)
-
-    class CustomAggContext(AggregationContext):
-        def __init__(
-            self, parent, group_by, order_by, dtype, max_lookback, preceding
-        ):
-            super().__init__(
-                parent=parent,
-                group_by=group_by,
-                order_by=order_by,
-                dtype=dtype,
-                max_lookback=max_lookback,
-            )
-            self.preceding = preceding
-
-        def agg(self, grouped_data, function, *args, **kwargs):
-            upper_indices = pd.Series(range(1, len(self.parent) + 2))
-            window_sizes = (
-                grouped_data.rolling(self.preceding.value + 1)
-                .count()
-                .reset_index(drop=True)
-            )
-            lower_indices = upper_indices - window_sizes
-            mask = upper_indices.notna()
-
-            result = window_agg_udf(
-                grouped_data,
-                function,
-                lower_indices,
-                upper_indices,
-                mask,
-                self.dtype,
-                self.max_lookback,
-                *args,
-                **kwargs,
-            )
-
-            return result
-
-    custom_window_0 = CustomWindow(
-        preceding=CustomInterval(0),
-        following=0,
-        group_by='dup_ints',
-        order_by='plain_int64',
-    )
-
-    custom_window_1 = CustomWindow(
-        preceding=CustomInterval(1),
-        following=0,
-        group_by='dup_ints',
-        order_by='plain_int64',
-    )
 
     # Unfortunately we cannot unregister these because singledispatch
     # doesn't support it, but this won't cause any issues either.
@@ -697,11 +699,7 @@ def test_custom_window_udf(t, df):
             preceding=window.preceding,
         )
 
-    result_0 = my_sum(t['plain_float64']).over(custom_window_0).execute()
-    result_1 = my_sum(t['plain_float64']).over(custom_window_1).execute()
+    result = my_sum(t['plain_float64']).over(custom_window).execute()
+    expected = pd.Series([4.0, 10.0, 5.0])
 
-    expected_0 = pd.Series([4.0, 6.0, 5.0])
-    expected_1 = pd.Series([4.0, 10.0, 5.0])
-
-    tm.assert_series_equal(result_0, expected_0)
-    tm.assert_series_equal(result_1, expected_1)
+    tm.assert_series_equal(result, expected)
