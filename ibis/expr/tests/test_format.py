@@ -246,3 +246,25 @@ CustomOp[CustomExpr]
   second_arg:
     2.0"""
     assert result == expected
+
+
+def test_same_column_multiple_aliases():
+    table = ibis.table([('col', 'int64')], name='t')
+    expr = table[table.col.name('alias1'), table.col.name('alias2')]
+    result = repr(expr)
+    expected = """\
+ref_0
+UnboundTable[table]
+  name: t
+  schema:
+    col : int64
+
+Selection[table]
+  table:
+    Table: ref_0
+  selections:
+    alias1 = Column[int64*] 'col' from table
+      ref_0
+    alias2 = Column[int64*] 'col' from table
+      ref_0"""
+    assert result == expected

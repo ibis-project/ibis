@@ -15,6 +15,9 @@ pytestmark = pytest.mark.pandas
 @pytest.mark.parametrize(
     ('to', 'expected'),
     [
+        ('float16', 'float16'),
+        ('float32', 'float32'),
+        ('float64', 'float64'),
         ('double', 'float64'),
         ('float', 'float32'),
         ('int8', 'int8'),

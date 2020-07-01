@@ -1,14 +1,51 @@
+import pandas as pd
 import pytest
 from pkg_resources import parse_version
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.tests.backends import BigQuery, Impala, PySpark, Spark
+from ibis.tests.backends import (
+    BigQuery,
+    Clickhouse,
+    Impala,
+    OmniSciDB,
+    PySpark,
+    Spark,
+)
 
 
 @pytest.fixture
 def new_schema():
     return ibis.schema([('a', 'string'), ('b', 'bool'), ('c', 'int32')])
+
+
+@pytest.mark.xfail_unsupported
+def test_load_data_sqlalchemy(backend, con, temp_table):
+    if not isinstance(con.dialect(), ibis.sql.alchemy.AlchemyDialect):
+        pytest.skip('{} is not a SQL Alchemy Client.'.format(backend.name))
+
+    sch = ibis.schema(
+        [
+            ('first_name', 'string'),
+            ('last_name', 'string'),
+            ('department_name', 'string'),
+            ('salary', 'float64'),
+        ]
+    )
+
+    df = pd.DataFrame(
+        {
+            'first_name': ['A', 'B', 'C'],
+            'last_name': ['D', 'E', 'F'],
+            'department_name': ['AA', 'BB', 'CC'],
+            'salary': [100.0, 200.0, 300.0],
+        }
+    )
+    con.create_table(temp_table, schema=sch)
+    con.load_data(temp_table, df, if_exists='append')
+    result = con.table(temp_table).execute()
+
+    backend.assert_frame_equal(df, result)
 
 
 @pytest.mark.xfail_unsupported
@@ -157,3 +194,17 @@ def test_create_drop_view(con, backend, temp_view):
     v_expr = con.table(temp_view)
     # check if the view and the table has the same fields
     assert set(t_expr.schema().names) == set(v_expr.schema().names)
+
+
+@pytest.mark.only_on_backends(
+    [BigQuery, Clickhouse, Impala, OmniSciDB, Spark, BigQuery],
+    reason="run only if backend is sql-based",
+)
+def test_separate_database(con, alternate_current_database, current_data_db):
+    # using alternate_current_database switches "con" current
+    #  database to a temporary one until a test is over
+    tmp_db = con.database(alternate_current_database)
+    # verifying we can open another db which isn't equal to current
+    db = con.database(current_data_db)
+    assert db.name == current_data_db
+    assert tmp_db.name == alternate_current_database

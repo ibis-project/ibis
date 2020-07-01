@@ -277,11 +277,38 @@ def _extract_field(sql_attr):
         arg_str = translator.translate(arg)
         result = 'EXTRACT({} FROM {})'.format(sql_attr, arg_str)
 
+        if sql_attr == 'ISODOW':
+            result += '- 1'
+
         if adjustment:
             # used by time extraction
             result = ' mod({}, {})'.format(result, adjustment)
 
         return result
+
+    return extract_field_formatter
+
+
+def _extract_field_dow_name(sql_attr):
+    def extract_field_formatter(translator, expr, sql_attr=sql_attr):
+        op = expr.op()
+        week_names = [
+            'Monday',
+            'Tuesday',
+            'Wednesday',
+            'Thursday',
+            'Friday',
+            'Saturday',
+            'Sunday',
+        ]
+
+        expr_new = ops.DayOfWeekIndex(op.args[0]).to_expr()
+        expr_new = expr_new.case()
+        for i in range(7):
+            expr_new = expr_new.when(i, week_names[i])
+        expr_new = expr_new.else_('').end()
+
+        return translator.translate(expr_new)
 
     return extract_field_formatter
 
@@ -1014,6 +1041,9 @@ _date_ops = {
     ops.ExtractMonth: _extract_field('MONTH'),
     ops.ExtractDay: _extract_field('DAY'),
     ops.ExtractDayOfYear: _extract_field('DOY'),
+    ops.ExtractQuarter: _extract_field('QUARTER'),
+    ops.DayOfWeekIndex: _extract_field('ISODOW'),
+    ops.DayOfWeekName: _extract_field_dow_name('ISODOW'),
     ops.ExtractHour: _extract_field('HOUR'),
     ops.ExtractMinute: _extract_field('MINUTE'),
     ops.ExtractSecond: _extract_field('SECOND'),
@@ -1118,8 +1148,6 @@ _unsupported_ops = [
     # date/time/timestamp
     ops.TimestampFromUNIX,
     ops.TimeTruncate,
-    ops.DayOfWeekIndex,
-    ops.DayOfWeekName,
     # table
     ops.Union,
 ]

@@ -24,6 +24,7 @@ import ibis.sql.alchemy as alch
 from ibis.sql.alchemy import _variance_reduction, fixed_arity, unary, varargs
 
 _operation_registry = alch._operation_registry.copy()
+_operation_registry.update(alch._window_functions)
 
 
 def _cast(t, expr):
@@ -119,6 +120,21 @@ def _strftime_int(fmt):
         return sa.cast(sa.func.strftime(fmt, sa_arg), sa.INTEGER)
 
     return translator
+
+
+def _extract_quarter(t, expr):
+    (arg,) = expr.op().args
+
+    expr_new = ops.ExtractMonth(arg).to_expr()
+    expr_new = (
+        ibis.case()
+        .when(expr_new.isin([1, 2, 3]), 1)
+        .when(expr_new.isin([4, 5, 6]), 2)
+        .when(expr_new.isin([7, 8, 9]), 3)
+        .else_(4)
+        .end()
+    )
+    return sa.cast(t.translate(expr_new), sa.Integer)
 
 
 _truncate_modifiers = {
@@ -228,6 +244,7 @@ _operation_registry.update(
         ops.ExtractMonth: _strftime_int('%m'),
         ops.ExtractDay: _strftime_int('%d'),
         ops.ExtractDayOfYear: _strftime_int('%j'),
+        ops.ExtractQuarter: _extract_quarter,
         ops.ExtractHour: _strftime_int('%H'),
         ops.ExtractMinute: _strftime_int('%M'),
         ops.ExtractSecond: _strftime_int('%S'),
