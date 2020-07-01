@@ -599,7 +599,7 @@ def test_custom_window_udf(t, df):
     def my_sum(v):
         return v.sum()
 
-    class CustomInterval(object):
+    class CustomInterval:
         def __init__(self, value):
             self.value = value
 
