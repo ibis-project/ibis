@@ -121,7 +121,7 @@ def test_add_columns(con, test_table, cols_with_types):
 
     test_table.add_columns(cols_with_types)
 
-    res_tbl = con.table('test_table')
+    res_tbl = con.table(test_table.name)
 
     schema_new_cols = ibis.schema(cols_with_types.items())
     old_schema_with_new_cols = schema_before.append(schema_new_cols)
@@ -141,7 +141,7 @@ def test_drop_columns(con, test_table, column_names):
 
     test_table.drop_columns(column_names)
 
-    res_tbl = con.table('test_table')
+    res_tbl = con.table(test_table.name)
     schema_with_dropped_cols = schema_before.delete(column_names)
 
     assert res_tbl.schema() == schema_with_dropped_cols

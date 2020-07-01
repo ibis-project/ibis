@@ -45,7 +45,7 @@ def test_table(con):
     -------
     ibis.expr.types.TableExpr
     """
-    table_name = 'test_table'
+    table_name = _random_identifier('table')
     con.drop_table(table_name, force=True)
 
     schema = ibis.schema(
