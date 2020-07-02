@@ -1,4 +1,14 @@
-OmniSciDB IBIS backend
+.. _omnisci
+
+*************************
+Using Ibis with OmniSciDB
+*************************
+
+To get started with the OmniSci client, check the :ref:`OmniSci quick start <install.omniscidb>`.
+
+For the API documentation, visit the :ref:`OmniSci API <api.omniscidb>`.
+
+Backend internals
 =================
 
 In this document it would be explained the main aspects of `ibis` and
@@ -7,20 +17,19 @@ In this document it would be explained the main aspects of `ibis` and
 Modules
 -------
 
-omniscidb backend has 5 modules, which 3 of them are the main modules:
+omniscidb backend has 5 modules, the main three are:
 
 - `api`
 - `client`
 - `compiler`
 
-The `identifiers` and `operations` modules were created to organize `compiler`
-method.
+The `identifiers` and `operations` modules complement the `compiler` module.
 
 api
 ---
 
 `api` module is the central key to access the backend. Ensure to include
-the follow code into `ibi.__init__`:
+the follow code into `ibis.__init__`:
 
 .. code-block:: python
 
@@ -28,13 +37,13 @@ the follow code into `ibi.__init__`:
         # pip install ibis-framework[omniscidb]
         import ibis.omniscidb.api as omniscidb
 
-Basically, there is 3 function on `api` module>
+There are 3 functions in the `api` module:
 
 - `compile`
 - `connect`
 - `verify`
 
-`compile` method compiles a `ibis` expression to `SQL`:
+`compile` method compiles an `ibis` expression into `SQL`:
 
 .. code-block:: python
 
@@ -42,8 +51,8 @@ Basically, there is 3 function on `api` module>
     proj = t['arrtime', 'arrdelay']
     print(ibis.omniscidb.compile(proj))
 
-`connect` method instantiates a `MapDClient` object that connect to the `omniscidb`
-database specified:
+`connect` method instantiates a `MapDClient` object that connect to the specified
+`omniscidb` database:
 
 .. code-block:: python
 
@@ -52,7 +61,7 @@ database specified:
         port=6274, database='omnisci'
     )
 
-`verify` method checks if the `ibis` expression can be compiled.
+`verify` method checks if the `ibis` expression can be compiled:
 
 .. code-block:: python
 
@@ -63,7 +72,7 @@ database specified:
 client
 ------
 
-`client` module has the main classes to handle connection to the `omniscidb`
+`client` module contains the main classes to handle the connection to an `omniscidb`
 database.
 
 The main classes are:
@@ -80,14 +89,8 @@ Its main methods are:
 - `to_ibis`
 - `from_ibis`
 
-`parse` method ... # @TODO
-
-`to_ibis` method ... # @TODO
-
-`from_ibis` method ... # @TODO
-
-`MapDClient` class is used to connect to `omniscidb` database and manipulation data
-expression. Its main methods are:
+`MapDClient` class is used to connect to an `omniscidb` database and manipulate data
+expressions. Its main methods are:
 
 - __init__
 - _build_ast
@@ -109,8 +112,8 @@ expression. Its main methods are:
 
 `_build_ast` method is required.
 
-`MapDQuery` class should be used redefine at least `_fetch` method. If `Query`
-class is used instead, when `MapDClient.execute` method is called, a exception
+`MapDQuery` class should define at least the `_fetch` method. If `Query`
+class is used when the `MapDClient.execute` method is called, an exception
 is raised.
 
     (...) once the data arrives from the database we need to convert that data
@@ -124,11 +127,12 @@ is raised.
 `MapDCursor` class was created just to allow `ibis.client.Query.execute`
 useful automatically, because it uses `with` statement:
 
-.. code-block:: Python
+.. code-block:: python
+
     with self.client._execute(self.compiled_ddl, results=True) as cur:
        ...
 
-Otherwise, `MapDQuery` should rewrites `execute` method with no `with`
+Otherwise, `MapDQuery` should implement the `execute` method with no `with`
 statement.
 
 compiler
@@ -159,18 +163,18 @@ steps:
 2. create a new function and assign it to a DataType
 3. create a compiler function to this new function and assign it to the compiler translator
 
-A new Class database function seems like this (`my_backend_operations.py`):
+A new Class database function would be like this (`my_backend_operations.py`):
 
-.. code-block:: Python
+.. code-block:: python
 
     class MyNewFunction(ops.UnaryOp):
         """My new class function"""
         output_type = rlz.shape_like('arg', 'float')
 
-After create the new class database function, the follow step is create a
+After creating the new class database function, the follow step is to create a
 function and assign it to the DataTypes allowed to use it:
 
-.. code-block:: Python
+.. code-block:: python
 
     def my_new_function(numeric_value):
         return MyNewFunction(numeric_value).to_expr()
@@ -178,9 +182,10 @@ function and assign it to the DataTypes allowed to use it:
 
     NumericValue.sin = sin
 
-Also, it is necessary register the new function:
+Also, it is necessary to register the new function:
 
-.. code-block:: Python
+.. code-block:: python
+
     # if it necessary define the fixed_arity function
     def fixed_arity(func_name, arity):
         def formatter(translator, expr):
@@ -198,12 +203,12 @@ Also, it is necessary register the new function:
         MyNewFunction: fixed_arity('my_new_function', 1)
     })
 
-Now, it just need a compiler function to translate the function to a SQL code
+Now, it just needs a compiler function to translate the function to a SQL code
 (my_backend/compiler.py):
 
-.. code-block:: Python
-    compiles = MyBackendExprTranslator.compiles
+.. code-block:: python
 
+    compiles = MyBackendExprTranslator.compiles
 
     @compiles(MyNewFunction)
     def compile_my_new_function(translator, expr):
@@ -230,17 +235,17 @@ Timestamp/Date operations
 
 **Interval:**
 
-omniscidb Interval statement allow just the follow date/time attribute: YEAR, DAY,
+omniscidb Interval statement allows just the following date/time attribute: YEAR, DAY,
 MONTH, HOUR, MINUTE, SECOND
 
-To use the interval statement, it is necessary use a `integer literal/constant`
+To use the interval statement, it is necessary to use a `integer literal/constant`
 and use the `to_interval` method:
 
-.. code-block:: Python
+.. code-block:: python
 
     >>> t['arr_timestamp'] + ibis.literal(1).to_interval('Y')
 
-.. code-block:: Sql
+.. code-block:: sql
 
     SELECT TIMESTAMPADD(YEAR, 1, "arr_timestamp") AS tmp
     FROM omniscidb.flights_2008_10k
@@ -251,7 +256,7 @@ Another way to use intervals is using `ibis.interval(years=1)`
 
 To extract a date part information from a timestamp, `extract` would be used:
 
-.. code-block:: Python
+.. code-block:: python
 
     >>> t['arr_timestamp'].extract('YEAR')
 
@@ -262,10 +267,10 @@ DOW, ISODOW, DOY, EPOCH, QUARTERDAY, WEEK
 
 **Direct functions to extract date/time**
 
-There is some direct functions to extract date/time, the following shows how
-to use that:
+There are some direct functions to extract date/time, the following shows how
+to use them:
 
-.. code-block:: Python
+.. code-block:: python
 
     >>> t['arr_timestamp'].year()
     >>> t['arr_timestamp'].month()
@@ -274,9 +279,9 @@ to use that:
     >>> t['arr_timestamp'].minute()
     >>> t['arr_timestamp'].second()
 
-The result should be:
+The result will be:
 
-.. code-block:: Sql
+.. code-block:: sql
 
     SELECT EXTRACT(YEAR FROM "arr_timestamp") AS tmp
     FROM omniscidb.flights_2008_10k
@@ -300,7 +305,7 @@ The result should be:
 
 A truncate timestamp/data value function is available as `truncate`:
 
-.. code-block:: Python
+.. code-block:: python
 
     >>> t['arr_timestamp'].truncate(date_part)
 
@@ -317,13 +322,13 @@ for `omniscidb` backend.
 
 `Not` operation can be done using `~` operator:
 
-.. code-block:: Python
+.. code-block:: python
 
     >>> ~t['dest_name'].like('L%')
 
 `regexp` and `regexp_like` operations can be done using `re_search` operation:
 
-.. code-block:: Python
+.. code-block:: python
 
     >>> t['dest_name'].re_search('L%')
 
@@ -333,7 +338,7 @@ Aggregate operations
 
 The aggregation operations available are: max, min, mean, count, distinct and count, nunique, approx_nunique.
 
-The follow examples show how to use count operations:
+The following examples show how to use count operations:
 
 - get the row count of the table: `t['taxiin'].count()`
 - get the distinct count of a field: `t['taxiin'].distinct().count()` or `t['taxiin'].nunique().name('v')`
@@ -343,7 +348,7 @@ The follow examples show how to use count operations:
 Best practices
 --------------
 
-- Use `Numpy` starndard for docstring: https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard
+- Use `Numpy` standard for docstrings: https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard
 - Use `format` string function to format a string instead of `%` statement.
 
 
