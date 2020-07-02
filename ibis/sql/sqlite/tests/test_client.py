@@ -106,14 +106,14 @@ def test_create_and_drop_table(con):
     assert name not in con.list_tables()
 
 
-def test_verbose_log_queries(con, db):
+def test_verbose_log_queries(con):
     queries = []
 
     with config.option_context('verbose', True):
         with config.option_context('verbose_log', queries.append):
-            con.table('functional_alltypes', database=db)
+            con.table('functional_alltypes')
 
     assert len(queries) == 1
     (query,) = queries
-    expected = 'DESCRIBE {}.`functional_all_types`'.format(db)
+    expected = 'DESCRIBE `functional_all_types`'
     assert query == expected
