@@ -177,7 +177,8 @@ def test_is_computable_input():
     result = ibis.pandas.execute(four)
     assert result == 4.0
 
-    del execute_node.funcs[ops.Add, int, MyObject]
+    del execute_node[ops.Add, int, MyObject]
+
     execute_node.reorder()
     execute_node._cache.clear()
 

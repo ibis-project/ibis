@@ -1,8 +1,10 @@
 """Code for computing window functions with ibis and pandas."""
 
+import functools
 import operator
 import re
 from collections import OrderedDict
+from typing import NoReturn
 
 import pandas as pd
 import toolz
@@ -12,6 +14,7 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.window as win
 import ibis.pandas.aggcontext as agg_ctx
+from ibis.pandas.aggcontext import AggregationContext
 from ibis.pandas.core import (
     date_types,
     execute,
@@ -68,6 +71,67 @@ def _post_process_group_by_order_by(series, parent, order_by, group_by):
     if len(reordered_levels) > 1:
         series = series.reorder_levels(reordered_levels)
     return series
+
+
+@functools.singledispatch
+def get_aggcontext(
+    window, *, operand, operand_dtype, parent, group_by, order_by
+) -> NoReturn:
+    raise NotImplementedError(
+        f"get_aggcontext is not implemented for {type(window).__name__}"
+    )
+
+
+@get_aggcontext.register(win.Window)
+def get_aggcontext_window(
+    window, *, operand, operand_dtype, parent, group_by, order_by
+) -> AggregationContext:
+    # no order by or group by: default summarization aggcontext
+    #
+    # if we're reducing and we have an order by expression then we need to
+    # expand or roll.
+    #
+    # otherwise we're transforming
+
+    if not group_by and not order_by:
+        aggcontext = agg_ctx.Summarize()
+    elif (
+        isinstance(
+            operand.op(), (ops.Reduction, ops.CumulativeOp, ops.Any, ops.All)
+        )
+        and order_by
+    ):
+        # XXX(phillipc): What a horror show
+        preceding = window.preceding
+        if preceding is not None:
+            max_lookback = window.max_lookback
+            assert not isinstance(operand.op(), ops.CumulativeOp)
+            aggcontext = agg_ctx.Moving(
+                preceding,
+                max_lookback,
+                parent=parent,
+                group_by=group_by,
+                order_by=order_by,
+                dtype=operand_dtype,
+            )
+        else:
+            # expanding window
+            aggcontext = agg_ctx.Cumulative(
+                parent=parent,
+                group_by=group_by,
+                order_by=order_by,
+                dtype=operand_dtype,
+            )
+    else:
+        # groupby transform (window with a partition by clause in SQL parlance)
+        aggcontext = agg_ctx.Transform(
+            parent=parent,
+            group_by=group_by,
+            order_by=order_by,
+            dtype=operand_dtype,
+        )
+
+    return aggcontext
 
 
 @execute_node.register(ops.WindowOp, pd.Series, win.Window)
@@ -172,49 +236,14 @@ def execute_window_op(
     operand_type = operand.type()
     operand_dtype = operand_type.to_pandas()
 
-    # no order by or group by: default summarization aggcontext
-    #
-    # if we're reducing and we have an order by expression then we need to
-    # expand or roll.
-    #
-    # otherwise we're transforming
-    if not grouping_keys and not ordering_keys:
-        aggcontext = agg_ctx.Summarize()
-    elif (
-        isinstance(
-            operand.op(), (ops.Reduction, ops.CumulativeOp, ops.Any, ops.All)
-        )
-        and ordering_keys
-    ):
-        # XXX(phillipc): What a horror show
-        preceding = window.preceding
-        if preceding is not None:
-            max_lookback = window.max_lookback
-            assert not isinstance(operand.op(), ops.CumulativeOp)
-            aggcontext = agg_ctx.Moving(
-                preceding,
-                max_lookback,
-                parent=source,
-                group_by=grouping_keys,
-                order_by=ordering_keys,
-                dtype=operand_dtype,
-            )
-        else:
-            # expanding window
-            aggcontext = agg_ctx.Cumulative(
-                parent=source,
-                group_by=grouping_keys,
-                order_by=ordering_keys,
-                dtype=operand_dtype,
-            )
-    else:
-        # groupby transform (window with a partition by clause in SQL parlance)
-        aggcontext = agg_ctx.Transform(
-            parent=source,
-            group_by=grouping_keys,
-            order_by=ordering_keys,
-            dtype=operand_dtype,
-        )
+    aggcontext = get_aggcontext(
+        window,
+        operand=operand,
+        operand_dtype=operand_dtype,
+        parent=source,
+        group_by=grouping_keys,
+        order_by=ordering_keys,
+    )
 
     result = execute(
         operand,
