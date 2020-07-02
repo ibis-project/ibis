@@ -1,14 +1,35 @@
 from __future__ import absolute_import
 
-from functools import partial
+from functools import partial, singledispatch
 
 import toolz
 from multipledispatch import Dispatcher
 
 import ibis
 import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
+import ibis.expr.window as win
 from ibis.pandas.trace import TraceDispatcher
+
+
+@singledispatch
+def is_computable_input(arg):
+    """All inputs are not computable without a specific override."""
+    return False
+
+
+@is_computable_input.register(ibis.client.Client)
+@is_computable_input.register(ir.Expr)
+@is_computable_input.register(dt.DataType)
+@is_computable_input.register(type(None))
+@is_computable_input.register(win.Window)
+@is_computable_input.register(tuple)
+def is_computable_input_arg(arg):
+    """Return whether `arg` is a valid computable argument."""
+    return True
+
 
 # Individual operation execution
 execute_node = TraceDispatcher(
@@ -111,7 +132,7 @@ Compute local_context for a node in execution
 
 Notes
 -----
-For a given node, return with a list of local_context that are going to be
+For a given node, return with a list of localcontext that are going to be
 passed to its children nodes.
 local_context is useful when data is not uniquely defined by op tree. e.g.
 a TableExpr can represent the query select count(a) from table, but the
@@ -127,5 +148,5 @@ nodes.
 
 @compute_local_context.register(ops.Node)
 @compute_local_context.register(ops.Node, ibis.client.Client)
-def compute_local_context_default(node, *clients, **kwargs):
-    return [None for arg in node.inputs]
+def compute_local_context_default(node, *clients, localcontext=None, **kwargs):
+    return [localcontext for arg in node.inputs if is_computable_input(arg)]

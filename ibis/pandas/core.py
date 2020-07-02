@@ -89,16 +89,16 @@ from multipledispatch import Dispatcher
 
 import ibis
 import ibis.common.exceptions as com
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.expr.window as win
 import ibis.pandas.aggcontext as agg_ctx
 from ibis.client import find_backends
 from ibis.pandas.dispatch import (
     compute_local_context,
     execute_literal,
     execute_node,
+    is_computable_input,
+    is_computable_input_arg,
     post_execute,
     pre_execute,
 )
@@ -116,23 +116,6 @@ timedelta_types = pd.Timedelta, datetime.timedelta, np.timedelta64
 temporal_types = date_types + time_types + timestamp_types + timedelta_types
 scalar_types = fixed_width_types + temporal_types
 simple_types = scalar_types + (str, type(None))
-
-
-@functools.singledispatch
-def is_computable_input(arg):
-    """All inputs are not computable without a specific override."""
-    return False
-
-
-@is_computable_input.register(ibis.client.Client)
-@is_computable_input.register(ir.Expr)
-@is_computable_input.register(dt.DataType)
-@is_computable_input.register(type(None))
-@is_computable_input.register(win.Window)
-@is_computable_input.register(tuple)
-def is_computable_input_arg(arg):
-    """Return whether `arg` is a valid computable argument."""
-    return True
 
 
 # Register is_computable_input for each scalar type (int, float, date, etc).
@@ -181,7 +164,12 @@ def execute_with_scope(
         aggcontext = agg_ctx.Summarize()
 
     pre_executed_scope = pre_execute(
-        op, *clients, scope=scope, aggcontext=aggcontext, **kwargs
+        op,
+        *clients,
+        scope=scope,
+        localcontext=localcontext,
+        aggcontext=aggcontext,
+        **kwargs,
     )
     new_scope = toolz.merge(scope, pre_executed_scope)
     result = execute_until_in_scope(
@@ -248,11 +236,16 @@ def execute_until_in_scope(
         }
     # pre_executed_states is a list of states with same the length of
     # computable_args, these states are passed to each arg
-    pre_executed_scope = pre_execute(
-        op, *clients, scope=scope, aggcontext=aggcontext, **kwargs
-    )
     computed_localcontexts = compute_local_context(
         op, *clients, localcontext=localcontext
+    )
+    pre_executed_scope = pre_execute(
+        op,
+        *clients,
+        scope=scope,
+        localcontext=localcontext,
+        aggcontext=aggcontext,
+        **kwargs,
     )
     new_scope = toolz.merge(scope, pre_executed_scope)
 
@@ -362,7 +355,7 @@ def main_execute(
         scope = {}
 
     if localcontext is None:
-        localcontext = []
+        localcontext = {}
 
     if params is None:
         params = {}
