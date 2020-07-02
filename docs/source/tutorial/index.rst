@@ -9,8 +9,8 @@ Here we show Jupyter notebooks that take you through various tasks using ibis.
    :maxdepth: 1
 
    01-Introduction-to-Ibis.ipynb
-   02-Basics-Aggregate-Filter-Limit.ipynb
-   03-Projection-Join-Sort.ipynb
+   02-Aggregates-Joins.ipynb
+   03-Expressions-Lazy-Mode-Logging.ipynb
    04-More-Value-Expressions.ipynb
    05-IO-Create-Insert-External-Data.ipynb
    06-Advanced-Topics-TopK-SelfJoins.ipynb
