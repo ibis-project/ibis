@@ -1,4 +1,4 @@
-.. _omnisci
+.. _omnisci:
 
 *************************
 Using Ibis with OmniSciDB
@@ -317,8 +317,7 @@ DECADE, QUARTERDAY
 String operations
 -----------------
 
-- `byte_length` is not part of `ibis` `string` operations, it will work just
-for `omniscidb` backend.
+- `byte_length` is not part of `ibis` `string` operations, it will work just for `omniscidb` backend.
 
 `Not` operation can be done using `~` operator:
 
