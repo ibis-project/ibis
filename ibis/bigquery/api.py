@@ -57,6 +57,7 @@ def connect(
     project_id: Optional[str] = None,
     dataset_id: Optional[str] = None,
     credentials: Optional[google.auth.credentials.Credentials] = None,
+    user_agent: Optional[str] = None,
 ) -> BigQueryClient:
     """Create a BigQueryClient for use with Ibis.
 
@@ -68,6 +69,8 @@ def connect(
         A dataset id that lives inside of the project indicated by
         `project_id`.
     credentials : google.auth.credentials.Credentials
+    user_agent : str
+        A string identifying your application to Google API endpoints.
 
     Returns
     -------
@@ -86,5 +89,8 @@ def connect(
         )
 
     return BigQueryClient(
-        project_id, dataset_id=dataset_id, credentials=credentials
+        project_id,
+        dataset_id=dataset_id,
+        credentials=credentials,
+        user_agent=user_agent,
     )
