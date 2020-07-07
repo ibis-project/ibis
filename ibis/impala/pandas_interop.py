@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import csv
+import os
 import tempfile
 
 from posixpath import join as pjoin
@@ -56,7 +57,14 @@ class DataFrameWriter:
         return temp_hdfs_dir
 
     def write_csv(self, path):
-        with tempfile.NamedTemporaryFile() as f:
+        if os.name == 'nt':
+            # Should probably think of a better name for this boolean
+            delete = False
+        else:
+            delete = True
+
+        with tempfile.NamedTemporaryFile(delete=delete) as f:
+            tmp_name = f.name
             # Write the DataFrame to the temporary file path
             if options.verbose:
                 util.log(
@@ -78,6 +86,10 @@ class DataFrameWriter:
                 util.log('Writing CSV to: {0}'.format(path))
 
             self.hdfs.put(path, f.name)
+
+        if not delete:
+            os.remove(tmp_name)
+
         return path
 
     def get_schema(self):
