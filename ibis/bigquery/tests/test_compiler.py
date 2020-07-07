@@ -404,48 +404,58 @@ FROM t3
     assert result == expected
 
 
-def test_bool_reducers(alltypes):
+def test_bool_reducers(alltypes, project_id):
     b = alltypes.bool_col
     expr = b.mean()
     result = expr.compile()
     expected = """\
 SELECT avg(CAST(`bool_col` AS INT64)) AS `mean`
-FROM `ibis-gbq.testing.functional_alltypes`"""
+FROM `{}.testing.functional_alltypes`""".format(
+        project_id
+    )
     assert result == expected
 
     expr2 = b.sum()
     result = expr2.compile()
     expected = """\
 SELECT sum(CAST(`bool_col` AS INT64)) AS `sum`
-FROM `ibis-gbq.testing.functional_alltypes`"""
+FROM `{}.testing.functional_alltypes`""".format(
+        project_id
+    )
     assert result == expected
 
 
-def test_bool_reducers_where(alltypes):
+def test_bool_reducers_where(alltypes, project_id):
     b = alltypes.bool_col
     m = alltypes.month
     expr = b.mean(where=m > 6)
     result = expr.compile()
     expected = """\
 SELECT avg(CASE WHEN `month` > 6 THEN CAST(`bool_col` AS INT64) ELSE NULL END) AS `mean`
-FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
+FROM `{}.testing.functional_alltypes`""".format(  # noqa: E501
+        project_id
+    )
     assert result == expected
 
     expr2 = b.sum(where=((m > 6) & (m < 10)))
     result = expr2.compile()
     expected = """\
 SELECT sum(CASE WHEN (`month` > 6) AND (`month` < 10) THEN CAST(`bool_col` AS INT64) ELSE NULL END) AS `sum`
-FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
+FROM `{}.testing.functional_alltypes`""".format(  # noqa: E501
+        project_id
+    )
     assert result == expected
 
 
-def test_approx_nunique(alltypes):
+def test_approx_nunique(alltypes, project_id):
     d = alltypes.double_col
     expr = d.approx_nunique()
     result = expr.compile()
     expected = """\
 SELECT APPROX_COUNT_DISTINCT(`double_col`) AS `approx_nunique`
-FROM `ibis-gbq.testing.functional_alltypes`"""
+FROM `{}.testing.functional_alltypes`""".format(
+        project_id
+    )
     assert result == expected
 
     b = alltypes.bool_col
@@ -454,17 +464,21 @@ FROM `ibis-gbq.testing.functional_alltypes`"""
     result = expr2.compile()
     expected = """\
 SELECT APPROX_COUNT_DISTINCT(CASE WHEN `month` > 6 THEN `bool_col` ELSE NULL END) AS `approx_nunique`
-FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
+FROM `{}.testing.functional_alltypes`""".format(  # noqa: E501
+        project_id
+    )
     assert result == expected
 
 
-def test_approx_median(alltypes):
+def test_approx_median(alltypes, project_id):
     d = alltypes.double_col
     expr = d.approx_median()
     result = expr.compile()
     expected = """\
 SELECT APPROX_QUANTILES(`double_col`, 2)[OFFSET(1)] AS `approx_median`
-FROM `ibis-gbq.testing.functional_alltypes`"""
+FROM `{}.testing.functional_alltypes`""".format(
+        project_id
+    )
     assert result == expected
 
     m = alltypes.month
@@ -472,24 +486,30 @@ FROM `ibis-gbq.testing.functional_alltypes`"""
     result = expr2.compile()
     expected = """\
 SELECT APPROX_QUANTILES(CASE WHEN `month` > 6 THEN `double_col` ELSE NULL END, 2)[OFFSET(1)] AS `approx_median`
-FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
+FROM `{}.testing.functional_alltypes`""".format(  # noqa: E501
+        project_id
+    )
     assert result == expected
 
 
-def test_cov(alltypes):
+def test_cov(alltypes, project_id):
     d = alltypes.double_col
     expr = d.cov(d)
     result = expr.compile()
     expected = """\
 SELECT COVAR_SAMP(`double_col`, `double_col`) AS `tmp`
-FROM `ibis-gbq.testing.functional_alltypes`"""
+FROM `{}.testing.functional_alltypes`""".format(
+        project_id
+    )
     assert result == expected
 
     expr = d.cov(d, how='pop')
     result = expr.compile()
     expected = """\
 SELECT COVAR_POP(`double_col`, `double_col`) AS `tmp`
-FROM `ibis-gbq.testing.functional_alltypes`"""
+FROM `{}.testing.functional_alltypes`""".format(
+        project_id
+    )
     assert result == expected
 
     expr = d.cov(d, how='error')
