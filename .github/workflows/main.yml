@@ -131,7 +131,7 @@ jobs:
           - 6274:6274
           - 6278:6278
         volumes:
-          - omniscidb.conf:/omnisci-storage/omnisci.conf
+          - ci/omniscidb.conf:/omnisci-storage/omnisci.conf
     steps:
     - name: checkout
       uses: actions/checkout@v1

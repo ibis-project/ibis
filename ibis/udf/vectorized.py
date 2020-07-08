@@ -7,7 +7,9 @@ DO NOT USE DIRECTLY.
 
 import functools
 
+import ibis
 import ibis.expr.datatypes as dt
+import ibis.expr.types as ir
 import ibis.udf.validate as v
 from ibis.expr.operations import (
     AnalyticVectorizedUDF,
@@ -22,7 +24,9 @@ class UserDefinedFunction(object):
     This class Implements __call__ that returns an ibis expr for the UDF.
     """
 
-    def __init__(self, func, func_type, input_type, output_type):
+    def __init__(
+        self, func, func_type, input_type, output_type, infer_literal=False
+    ):
         v.validate_input_type(input_type, func)
         v.validate_output_type(output_type)
 
@@ -30,6 +34,7 @@ class UserDefinedFunction(object):
         self.func_type = func_type
         self.input_type = list(map(dt.dtype, input_type))
         self.output_type = dt.dtype(output_type)
+        self.infer_literal = infer_literal
 
     def __call__(self, *args, **kwargs):
         # kwargs cannot be part of the node object because it can contain
@@ -39,6 +44,18 @@ class UserDefinedFunction(object):
         @functools.wraps(self.func)
         def func(*args):
             return self.func(*args, **kwargs)
+
+        if self.infer_literal:
+            new_args = []
+            for i, arg in enumerate(args):
+                if not isinstance(arg, ir.Expr):
+                    params = {}
+                    if arg is not None:
+                        params.update({'type': self.input_type[i]})
+                    arg = ibis.literal(arg, **params)
+
+                new_args.append(arg)
+            args = new_args
 
         op = self.func_type(
             func=func,
@@ -50,9 +67,11 @@ class UserDefinedFunction(object):
         return op.to_expr()
 
 
-def _udf_decorator(node_type, input_type, output_type):
+def _udf_decorator(node_type, input_type, output_type, infer_literal=False):
     def wrapper(func):
-        return UserDefinedFunction(func, node_type, input_type, output_type)
+        return UserDefinedFunction(
+            func, node_type, input_type, output_type, infer_literal
+        )
 
     return wrapper
 
@@ -82,7 +101,7 @@ def analytic(input_type, output_type):
     return _udf_decorator(AnalyticVectorizedUDF, input_type, output_type)
 
 
-def elementwise(input_type, output_type):
+def elementwise(input_type, output_type, infer_literal=False):
     """Define a UDF (user-defined function) that operates element wise on a
     Pandas Series.
 
@@ -94,6 +113,9 @@ def elementwise(input_type, output_type):
         function. Variadic arguments are not yet supported.
     output_type : ibis.expr.datatypes.DataType
         The return type of the function.
+    infer_literal : bool, default False
+        Define if literal scalar values should be infered or if this method
+        should accept explicitly just ibis literal.
 
     Examples
     --------
@@ -110,7 +132,9 @@ def elementwise(input_type, output_type):
     ... def my_string_length(series, *, times):
     ...     return series.str.len() * times
     """
-    return _udf_decorator(ElementWiseVectorizedUDF, input_type, output_type)
+    return _udf_decorator(
+        ElementWiseVectorizedUDF, input_type, output_type, infer_literal
+    )
 
 
 def reduction(input_type, output_type):

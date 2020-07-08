@@ -69,3 +69,8 @@ ibis_dtypes_str_to_sql = {
     'time': 'time',
     'timestamp': 'timestamp',
 }
+
+# example: {dt.int64: 'int64'}
+ibis_dtypes_to_str = {}
+for sql_type, ibis_type in sql_to_ibis_dtypes.items():
+    ibis_dtypes_to_str[ibis_type] = str(ibis_type)

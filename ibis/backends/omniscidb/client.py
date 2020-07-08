@@ -16,6 +16,10 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.client import Database, DatabaseEntity, Query, SQLClient
+from ibis.omniscidb import ddl
+from ibis.omniscidb import dtypes as omniscidb_dtypes
+from ibis.omniscidb.compiler import OmniSciDBDialect, build_ast
+from ibis.omniscidb.udf import OmniSciDBUDF
 from ibis.sql.compiler import DDL, DML
 from ibis.util import log
 
@@ -649,6 +653,14 @@ class OmniSciDBClient(SQLClient):
                 dbname=database,
                 protocol=protocol,
             )
+        # used for UDF
+        self.udf = OmniSciDBUDF(
+            host=self.con._host,
+            port=self.con._port,
+            database=self.con._dbname,
+            user=self.con._user,
+            password=self.con._password,
+        )
 
     def __del__(self):
         """Close the connection when instance is deleted."""
