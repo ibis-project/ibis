@@ -180,6 +180,12 @@ def _timestamp_from_unix(translator, expr):
     return 'to_timestamp({})'.format(arg)
 
 
+def _extract_epoch_seconds(translator, expr):
+    return 'CAST({} AS BIGINT)'.format(
+        unary('unix_timestamp')(translator, expr)
+    )
+
+
 def _string_concat(translator, expr):
     return 'CONCAT({})'.format(
         ', '.join(map(translator.translate, expr.op().arg))
@@ -326,6 +332,7 @@ _operation_registry.update(
         ops.ExtractDay: unary('day'),
         ops.ExtractDayOfYear: unary('dayofyear'),
         ops.ExtractQuarter: unary('quarter'),
+        ops.ExtractEpochSeconds: _extract_epoch_seconds,
         ops.ExtractHour: unary('hour'),
         ops.ExtractMinute: unary('minute'),
         ops.ExtractSecond: unary('second'),

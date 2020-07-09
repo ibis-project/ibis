@@ -137,6 +137,13 @@ def _extract_quarter(t, expr):
     return sa.cast(t.translate(expr_new), sa.Integer)
 
 
+def _extract_epoch_seconds(t, expr):
+    (arg,) = expr.op().args
+    # example: (julianday('now') - 2440587.5) * 86400.0
+    sa_expr = (sa.func.julianday(t.translate(arg)) - 2440587.5) * 86400.0
+    return sa.cast(sa_expr, sa.BigInteger)
+
+
 _truncate_modifiers = {
     'Y': 'start of year',
     'M': 'start of month',
@@ -245,6 +252,7 @@ _operation_registry.update(
         ops.ExtractDay: _strftime_int('%d'),
         ops.ExtractDayOfYear: _strftime_int('%j'),
         ops.ExtractQuarter: _extract_quarter,
+        ops.ExtractEpochSeconds: _extract_epoch_seconds,
         ops.ExtractHour: _strftime_int('%H'),
         ops.ExtractMinute: _strftime_int('%M'),
         ops.ExtractSecond: _strftime_int('%S'),
