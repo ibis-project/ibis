@@ -302,6 +302,13 @@ def compile_aggregation(t, expr, scope, **kwargs):
         return src_table.agg(*aggs)
 
 
+@compiles(ops.Union)
+def compile_union(t, expr, scope, **kwargs):
+    op = expr.op()
+    result = t.translate(op.left, scope).union(t.translate(op.right, scope))
+    return result.distinct() if op.distinct else result
+
+
 @compiles(ops.Contains)
 def compile_contains(t, expr, scope, **kwargs):
     op = expr.op()
