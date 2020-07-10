@@ -163,25 +163,6 @@ def test_filter(client, filter_fn, expected_fn):
     tm.assert_frame_equal(result.toPandas(), expected.toPandas())
 
 
-@pytest.mark.parametrize('distinct', [False, True])
-def test_union(client, distinct):
-    table = client.table('basic_table')
-
-    result = table.union(table, distinct=distinct).compile().toPandas()
-
-    if distinct:
-        expected = pd.DataFrame({'id': range(0, 10), 'str_col': 'value'})
-    else:
-        expected = pd.DataFrame(
-            {'id': list(range(0, 10)) * 2, 'str_col': 'value'}
-        )
-
-    result = result.sort_values(['id']).reset_index(drop=True)
-    expected = expected.sort_values(['id']).reset_index(drop=True)
-
-    tm.assert_frame_equal(result, expected)
-
-
 def test_cast(client):
     table = client.table('basic_table')
 
