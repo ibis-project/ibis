@@ -1044,6 +1044,7 @@ _date_ops = {
     ops.ExtractQuarter: _extract_field('QUARTER'),
     ops.DayOfWeekIndex: _extract_field('ISODOW'),
     ops.DayOfWeekName: _extract_field_dow_name('ISODOW'),
+    ops.ExtractEpochSeconds: _extract_field('EPOCH'),
     ops.ExtractHour: _extract_field('HOUR'),
     ops.ExtractMinute: _extract_field('MINUTE'),
     ops.ExtractSecond: _extract_field('SECOND'),

@@ -15,7 +15,7 @@ the information is available in the :ref:`api`.
    :maxdepth: 1
 
    configuration
-   impala
+   backends/impala
    backends/bigquery
    sql
    udf
