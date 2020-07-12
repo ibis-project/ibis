@@ -1120,6 +1120,13 @@ def compile_extract_quarter(t, expr, scope, **kwargs):
     )
 
 
+@compiles(ops.ExtractEpochSeconds)
+def compile_extract_epoch_seconds(t, expr, scope, **kwargs):
+    return _extract_component_from_datetime(
+        t, expr, scope, F.unix_timestamp, **kwargs
+    )
+
+
 @compiles(ops.ExtractHour)
 def compile_extract_hour(t, expr, scope, **kwargs):
     return _extract_component_from_datetime(t, expr, scope, F.hour, **kwargs)

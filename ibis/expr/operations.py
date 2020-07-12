@@ -2597,6 +2597,10 @@ class ExtractQuarter(ExtractDateField):
     pass
 
 
+class ExtractEpochSeconds(ExtractDateField):
+    pass
+
+
 class ExtractHour(ExtractTimeField):
     pass
 

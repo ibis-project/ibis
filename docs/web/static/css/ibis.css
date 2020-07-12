@@ -35,6 +35,9 @@ pre {
     margin: 1.5em 0;
     box-shadow: 1px 1px 1px #d8d8d8
 }
+blockquote, blockquote p {
+    color: #888;
+}
 .header-title {
     font-size: 1.75rem;
     font-weight: bold;
