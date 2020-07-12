@@ -12,6 +12,7 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :feature:`2270` Add support for Union in the PySpark backend
 * :feature:`2260` Add support for implementign custom window object for pandas backend
 * :bug:`2237` Add missing float types to pandas backend
 * :bug:`2252` Allow group_by and order_by as window operation input in pandas backend
