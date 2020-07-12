@@ -394,6 +394,8 @@ _invalid_operations = {
     ops.Capitalize,
     ops.DateDiff,
     ops.TimestampDiff,
+    ops.ExtractEpochSeconds,
+    ops.ExtractQuarter
 }
 
 _operation_registry = {
