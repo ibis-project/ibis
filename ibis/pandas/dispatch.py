@@ -11,7 +11,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.window as win
-from ibis.pandas.trace import TraceDispatcher
+from ibis.pandas.trace import TraceTwoLevelDispatcher
 
 
 @singledispatch
@@ -32,7 +32,7 @@ def is_computable_input_arg(arg):
 
 
 # Individual operation execution
-execute_node = TraceDispatcher(
+execute_node = TraceTwoLevelDispatcher(
     'execute_node',
     doc=(
         'Execute an individual operation given the operation and its computed '
