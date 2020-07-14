@@ -60,6 +60,17 @@ Run test suite for separate Backend
    matches the name of the backend (you can manually correct the generated
    name for the marker inside the file)
 
+Extending an existing backend
+-----------------------------
+
+Extending the BigQuery backend
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Create a Google Cloud project.
+* Set the ``GOOGLE_BIGQUERY_PROJECT_ID`` environment variable.
+* Populate test data: ``python ci/datamgr.py bigquery``
+* Run the test suite: ``pytest ibis/bigquery/tests``
+
 Other
 -----
 
