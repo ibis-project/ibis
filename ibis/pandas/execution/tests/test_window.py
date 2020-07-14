@@ -688,7 +688,7 @@ def test_custom_window_udf(t, custom_window):
 
     @get_aggcontext.register(CustomWindow)
     def get_aggcontext_custom(
-        window, *, operand, operand_dtype, parent, group_by, order_by
+        window, *, scope, operand, operand_dtype, parent, group_by, order_by
     ):
         return CustomAggContext(
             parent=parent,
