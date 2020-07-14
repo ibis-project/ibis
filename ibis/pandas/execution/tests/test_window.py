@@ -690,6 +690,7 @@ def test_custom_window_udf(t, custom_window):
     def get_aggcontext_custom(
         window, *, scope, operand, operand_dtype, parent, group_by, order_by
     ):
+        # scope and operand are not used here
         return CustomAggContext(
             parent=parent,
             group_by=group_by,
