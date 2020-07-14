@@ -37,23 +37,34 @@ The general flow of execution is:
 Specifically, execute is comprised of a series of steps that happen at
 different times during the loop.
 
-1. ``pre_execute``
+1. ``compute_timecontext``
+First, at the beginning of the main execution loop, ``compute_timecontext`` is
+called. This function computes time contexts, and pass them to all children of
+the current node. These time contexts could be used in later steps to get data.
+This is essential for time series TableExpr, and related operations that adjust
+time context, such as window, asof_join, etc.
+
+By default, this function simply pass the unchanged time context to all
+children nodes.
+
+
+2. ``pre_execute``
 ------------------
-First, at the beginning of the main execution loop, ``pre_execute`` is called.
+Second, ``pre_execute`` is called.
 This function serves a similar purpose to ``data_preload``, the key difference
 being that ``pre_execute`` is called *every time* there's a call to execute.
 
 By default this function does nothing.
 
-2. ``execute_node``
+3. ``execute_node``
 -------------------
 
-Second, when an expression is ready to be evaluated we call
+Then, when an expression is ready to be evaluated we call
 :func:`~ibis.pandas.core.execute` on the expressions arguments and then
 :func:`~ibis.pandas.dispatch.execute_node` on the expression with its
 now-materialized arguments.
 
-3. ``post_execute``
+4. ``post_execute``
 -------------------
 The final step--``post_execute``--is called immediately after the previous call
 to ``execute_node`` and takes the instance of the
@@ -94,7 +105,7 @@ import ibis.expr.types as ir
 import ibis.pandas.aggcontext as agg_ctx
 from ibis.client import find_backends
 from ibis.pandas.dispatch import (
-    compute_local_context,
+    compute_time_context,
     execute_literal,
     execute_node,
     is_computable_input,
@@ -127,7 +138,7 @@ ibis.util.consume(
 
 
 def execute_with_scope(
-    expr, scope, localcontext=None, aggcontext=None, clients=None, **kwargs
+    expr, scope, timecontext=None, aggcontext=None, clients=None, **kwargs
 ):
     """Execute an expression `expr`, with data provided in `scope`.
 
@@ -138,7 +149,7 @@ def execute_with_scope(
     scope : collections.Mapping
         A dictionary mapping :class:`~ibis.expr.operations.Node` subclass
         instances to concrete data such as a pandas DataFrame.
-    localcontext : collections.Mapping
+    timecontext : collections.Mapping
         A dictionary that is passed from parent Node to children
         Nodes. While data in `scope` is public for all Nodes, `state` is
         used to store 'local' data for each Node in execution.
@@ -167,7 +178,7 @@ def execute_with_scope(
         op,
         *clients,
         scope=scope,
-        localcontext=localcontext,
+        timecontext=timecontext,
         aggcontext=aggcontext,
         **kwargs,
     )
@@ -175,7 +186,7 @@ def execute_with_scope(
     result = execute_until_in_scope(
         expr,
         new_scope,
-        localcontext=localcontext,
+        timecontext=timecontext,
         aggcontext=aggcontext,
         clients=clients,
         # XXX: we *explicitly* pass in scope and not new_scope here so that
@@ -184,7 +195,7 @@ def execute_with_scope(
         post_execute_=functools.partial(
             post_execute,
             scope=scope,
-            localcontext=localcontext,
+            timecontext=timecontext,
             aggcontext=aggcontext,
             clients=clients,
             **kwargs,
@@ -199,7 +210,7 @@ def execute_with_scope(
 def execute_until_in_scope(
     expr,
     scope,
-    localcontext=None,
+    timecontext=None,
     aggcontext=None,
     clients=None,
     post_execute_=None,
@@ -211,7 +222,7 @@ def execute_until_in_scope(
     ----------
     expr : ibis.expr.types.Expr
     scope : Mapping
-    state : Mapping
+    timecontext : Mapping
     aggcontext : Optional[AggregationContext]
     clients : List[ibis.client.Client]
     kwargs : Mapping
@@ -236,14 +247,12 @@ def execute_until_in_scope(
         }
     # pre_executed_states is a list of states with same the length of
     # computable_args, these states are passed to each arg
-    computed_localcontexts = compute_local_context(
-        op, *clients, localcontext=localcontext
-    )
+    arg_timecontexts = compute_time_context(op, timecontext=timecontext)
     pre_executed_scope = pre_execute(
         op,
         *clients,
         scope=scope,
-        localcontext=localcontext,
+        timecontext=timecontext,
         aggcontext=aggcontext,
         **kwargs,
     )
@@ -260,27 +269,27 @@ def execute_until_in_scope(
     computable_args = [arg for arg in op.inputs if is_computable_input(arg)]
 
     # recursively compute each node's arguments until we've changed type
-    if len(computed_localcontexts) == len(computable_args):
-        scopes = [
-            execute_until_in_scope(
-                arg,
-                new_scope,
-                localcontext=localcontext,
-                aggcontext=aggcontext,
-                post_execute_=post_execute_,
-                clients=clients,
-                **kwargs,
-            )
-            if hasattr(arg, 'op')
-            else {arg: arg}
-            for (arg, localcontext) in zip(
-                computable_args, computed_localcontexts
-            )
-        ]
-    else:
+
+    if len(arg_timecontexts) != len(computable_args):
         raise com.IbisError(
-            "computed_localcontexts differ with computable_arg in length."
+            'arg_timecontexts differ with computable_arg in length '
+            'for type:\n{}.'.format(type(op).__name__)
         )
+
+    scopes = [
+        execute_until_in_scope(
+            arg,
+            new_scope,
+            timecontext=timecontext,
+            aggcontext=aggcontext,
+            post_execute_=post_execute_,
+            clients=clients,
+            **kwargs,
+        )
+        if hasattr(arg, 'op')
+        else {arg: arg}
+        for (arg, timecontext) in zip(computable_args, arg_timecontexts)
+    ]
 
     # if we're unable to find data then raise an exception
     if not scopes and computable_args:
@@ -302,12 +311,12 @@ def execute_until_in_scope(
         op,
         *data,
         scope=scope,
-        localcontext=localcontext,
+        timecontext=timecontext,
         aggcontext=aggcontext,
         clients=clients,
         **kwargs,
     )
-    computed = post_execute_(op, result, localcontext=localcontext)
+    computed = post_execute_(op, result, timecontext=timecontext)
     return {op: computed}
 
 
@@ -317,7 +326,7 @@ execute = Dispatcher('execute')
 @execute.register(ir.Expr)
 @trace
 def main_execute(
-    expr, params=None, scope=None, localcontext=None, aggcontext=None, **kwargs
+    expr, params=None, scope=None, timecontext=None, aggcontext=None, **kwargs
 ):
     """Execute an expression against data that are bound to it. If no data
     are bound, raise an Exception.
@@ -330,8 +339,8 @@ def main_execute(
         The data that an unbound parameter in `expr` maps to
     scope : Mapping[ibis.expr.operations.Node, object]
         Additional scope, mapping ibis operations to data
-    localcontext: Mapping
-        localcontext needed for execution
+    timecontext: Mapping
+        timecontext needed for execution
     aggcontext : Optional[ibis.pandas.aggcontext.AggregationContext]
         An object indicating how to compute aggregations. For example,
         a rolling mean needs to be computed differently than the mean of a
@@ -354,8 +363,8 @@ def main_execute(
     if scope is None:
         scope = {}
 
-    if localcontext is None:
-        localcontext = {}
+    if timecontext is None:
+        timecontext = {}
 
     if params is None:
         params = {}
@@ -368,14 +377,14 @@ def main_execute(
     return execute_with_scope(
         expr,
         new_scope,
-        localcontext=localcontext,
+        timecontext=timecontext,
         aggcontext=aggcontext,
         **kwargs,
     )
 
 
 def execute_and_reset(
-    expr, params=None, scope=None, localcontext=None, aggcontext=None, **kwargs
+    expr, params=None, scope=None, timecontext=None, aggcontext=None, **kwargs
 ):
     """Execute an expression against data that are bound to it. If no data
     are bound, raise an Exception.
@@ -394,8 +403,8 @@ def execute_and_reset(
         The data that an unbound parameter in `expr` maps to
     scope : Mapping[ibis.expr.operations.Node, object]
         Additional scope, mapping ibis operations to data
-    localcontext : Mapping
-        localcontext needed for execution
+    timecontext : Mapping
+        timecontext needed for execution
     aggcontext : Optional[ibis.pandas.aggcontext.AggregationContext]
         An object indicating how to compute aggregations. For example,
         a rolling mean needs to be computed differently than the mean of a
@@ -419,7 +428,7 @@ def execute_and_reset(
         expr,
         params=params,
         scope=scope,
-        localcontext=localcontext,
+        timecontext=timecontext,
         aggcontext=aggcontext,
         **kwargs,
     )

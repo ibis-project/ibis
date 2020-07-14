@@ -75,9 +75,7 @@ def pre_execute_default(node, *clients, **kwargs):
 
 # Merge the results of all client pre-execution with scope
 @pre_execute.register(ops.Node, [ibis.client.Client])
-def pre_execute_multiple_clients(
-    node, *clients, scope=None, state=None, **kwargs
-):
+def pre_execute_multiple_clients(node, *clients, scope=None, **kwargs):
     return toolz.merge(
         scope, *map(partial(pre_execute, node, scope=scope, **kwargs), clients)
     )
@@ -124,29 +122,28 @@ def post_execute_default(op, data, **kwargs):
 
 execute = Dispatcher("execute")
 
-compute_local_context = Dispatcher(
-    'compute_local_context',
+compute_time_context = Dispatcher(
+    'compute_time_context',
     doc="""\
 
-Compute local_context for a node in execution
+Compute time context for a node in execution
 
 Notes
 -----
-For a given node, return with a list of localcontext that are going to be
+For a given node, return with a list of timecontext that are going to be
 passed to its children nodes.
-local_context is useful when data is not uniquely defined by op tree. e.g.
+time context is useful when data is not uniquely defined by op tree. e.g.
 a TableExpr can represent the query select count(a) from table, but the
 result of that is different with time context (20190101, 20200101) vs
 (20200101, 20210101), because what data is in "table" also depends on the
 time context. And such context may not be global for all nodes. Each node
-may have its own context. compuate_local_context computes attributes that
+may have its own context. compute_time_context computes attributes that
 are going to be used in executeion and passes these attributes to children
 nodes.
 """,
 )
 
 
-@compute_local_context.register(ops.Node)
-@compute_local_context.register(ops.Node, ibis.client.Client)
-def compute_local_context_default(node, *clients, localcontext=None, **kwargs):
-    return [localcontext for arg in node.inputs if is_computable_input(arg)]
+@compute_time_context.register(ops.Node)
+def compute_time_context_default(node, timecontext=None, **kwargs):
+    return [timecontext for arg in node.inputs if is_computable_input(arg)]

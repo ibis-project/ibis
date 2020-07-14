@@ -77,7 +77,7 @@ def compute_projection_scalar_expr(expr, parent, data, scope=None, **kwargs):
 
 @compute_projection.register(ir.ColumnExpr, ops.Selection, pd.DataFrame)
 def compute_projection_column_expr(
-    expr, parent, data, scope=None, localcontext=None, **kwargs
+    expr, parent, data, scope=None, timecontext=None, **kwargs
 ):
     result_name = getattr(expr, '_name', None)
     op = expr.op()
@@ -114,9 +114,7 @@ def compute_projection_column_expr(
     }
 
     new_scope = toolz.merge(scope, additional_scope)
-    result = execute(
-        expr, scope=new_scope, localcontext=localcontext, **kwargs
-    )
+    result = execute(expr, scope=new_scope, timecontext=timecontext, **kwargs)
     assert result_name is not None, 'Column selection name is None'
     if np.isscalar(result):
         return pd.Series(
@@ -282,7 +280,7 @@ def physical_tables_node(node):
 
 @execute_node.register(ops.Selection, pd.DataFrame)
 def execute_selection_dataframe(
-    op, data, scope=None, localcontext=None, **kwargs
+    op, data, scope=None, timecontext=None, **kwargs
 ):
     selections = op.selections
     predicates = op.predicates
@@ -298,7 +296,7 @@ def execute_selection_dataframe(
                 op,
                 data,
                 scope=scope,
-                localcontext=localcontext,
+                timecontext=timecontext,
                 **kwargs,
             )
             data_pieces.append(pandas_object)
