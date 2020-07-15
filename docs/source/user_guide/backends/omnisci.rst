@@ -39,11 +39,11 @@ the follow code into `ibis.__init__`:
 
 There are three functions in the `api` module:
 
-- `compile`
-- `connect`
-- `verify`
+- :func:`~ibis.omnisci.api.compile`
+- :func:`~ibis.omnisci.api.connect`
+- :func:`~ibis.omnisci.api.verify`
 
-`compile` method compiles an `ibis` expression into `SQL`:
+:func:`~ibis.omnisci.api.compile` method compiles an `ibis` expression into `SQL`:
 
 .. code-block:: python
 
@@ -51,7 +51,7 @@ There are three functions in the `api` module:
     proj = t['arrtime', 'arrdelay']
     print(ibis.omniscidb.compile(proj))
 
-`connect` method instantiates a `OmniSciDBClient` object that connect to the specified
+:func:`~ibis.omnisci.api.connect` method instantiates a :class:`~ibis.omnisci.api.OmniSciDBClient` object that connect to the specified
 `omniscidb` database:
 
 .. code-block:: python
@@ -61,7 +61,7 @@ There are three functions in the `api` module:
         port=6274, database='omnisci'
     )
 
-`verify` method checks if the `ibis` expression can be compiled:
+:func:`~ibis.omnisci.api.verify` method checks if the `ibis` expression can be compiled:
 
 .. code-block:: python
 
@@ -77,38 +77,38 @@ database.
 
 The main classes are:
 
-- `MapDClient`
-- `MapDQuery`
-- `MapDDataType`
-- `MapDCursor`
+- :class:`~ibis.omnisci.api.OmniSciDBClient`
+- `OmniSciDBQuery`
+- `OmniSciDBDataType`
+- `OmniSciDBDefaultCursor`
 
-`MapDDataType` class is used to translate data type from `ibis` and to `ibis`.
+`OmniSciDBDataType` class is used to translate data type from `ibis` and to `ibis`.
 Its main methods are:
 
 - `parse`
 - `to_ibis`
 - `from_ibis`
 
-`OmniSciDBClient` class is used to connect to an `omniscidb` database and manipulate data
+:class:`~ibis.omnisci.api.OmniSciDBClient` class is used to connect to an `omniscidb` database and manipulate data
 expressions. Its main methods are:
 
-- __init__
-- _build_ast
-- _execute
-- _fully_qualified_name
-- _get_table_schema
-- _table_expr_klass
-- log
-- close
-- database
-- current_database
-- set_database
-- exists_database
-- list_databases
-- exists_table
-- list_tables
-- get_schema
-- version
+- `__init__`
+- `_build_ast`
+- `_execute`
+- `_fully_qualified_name`
+- `_get_table_schema`
+- `_table_expr_klass`
+- :func:`~ibis.omnisci.api.OmniSciDBClient.log`
+- :func:`~ibis.omnisci.api.OmniSciDBClient.close`
+- :func:`~ibis.omnisci.api.OmniSciDBClient.database`
+- `current_database`
+- :func:`~ibis.omnisci.api.OmniSciDBClient.set_database`
+- `exists_database`
+- `list_databases`
+- :func:`~ibis.omnisci.api.OmniSciDBClient.exists_table`
+- :func:`~ibis.omnisci.api.OmniSciDBClient.list_tables`
+- :func:`~ibis.omnisci.api.OmniSciDBClient.get_schema`
+- :func:`~ibis.omnisci.api.OmniSciDBClient.version`
 
 `_build_ast` method is required.
 
@@ -132,12 +132,12 @@ compiler
 
 The main classes inside `compiler` module are:
 
-- OmniSciDBDialect
-- OmniSciDBExprTranslator
-- OmniSciDBQueryBuilder
-- OmniSciDBSelect
-- OmniSciDBSelectBuilder
-- OmniSciDBTableSetFormatter
+- `OmniSciDBDialect`
+- `OmniSciDBExprTranslator`
+- `OmniSciDBQueryBuilder`
+- `OmniSciDBSelect`
+- `OmniSciDBSelectBuilder`
+- `OmniSciDBTableSetFormatter
 
 operations
 ----------
