@@ -17,7 +17,7 @@ In this document it would be explained the main aspects of `ibis` and
 Modules
 -------
 
-omniscidb backend has 5 modules, the main three are:
+omniscidb backend has 7 modules, the main three are:
 
 - `api`
 - `client`
@@ -37,7 +37,7 @@ the follow code into `ibis.__init__`:
         # pip install ibis-framework[omniscidb]
         import ibis.omniscidb.api as omniscidb
 
-There are 3 functions in the `api` module:
+There are three functions in the `api` module:
 
 - `compile`
 - `connect`
@@ -124,28 +124,20 @@ is raised.
     the database returns results to the client.
     (http://docs.ibis-project.org/design.html#execution)
 
-`MapDCursor` class was created just to allow `ibis.client.Query.execute`
-useful automatically, because it uses `with` statement:
-
-.. code-block:: python
-
-    with self.client._execute(self.compiled_ddl, results=True) as cur:
-       ...
-
-Otherwise, `MapDQuery` should implement the `execute` method with no `with`
-statement.
+Under the hood the `execute` method, uses a cursor class that will fetch the
+result from the database and load it to a dataframe format (e.g. pandas, GeoPandas, cuDF).
 
 compiler
 --------
 
 The main classes inside `compiler` module are:
 
-- MapDDialect
-- MapDExprTranslator
-- MapDQueryBuilder
-- MapDSelect
-- MapDSelectBuilder
-- MapDTableSetFormatter
+- OmniSciDBDialect
+- OmniSciDBExprTranslator
+- OmniSciDBQueryBuilder
+- OmniSciDBSelect
+- OmniSciDBSelectBuilder
+- OmniSciDBTableSetFormatter
 
 operations
 ----------
