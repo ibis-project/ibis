@@ -37,8 +37,8 @@ The general flow of execution is:
 Specifically, execute is comprised of a series of steps that happen at
 different times during the loop.
 
-1. ``compute_timecontext``
-First, at the beginning of the main execution loop, ``compute_timecontext`` is
+1. ``compute_time_context``
+First, at the beginning of the main execution loop, ``compute_time_context`` is
 called. This function computes time contexts, and pass them to all children of
 the current node. These time contexts could be used in later steps to get data.
 This is essential for time series TableExpr, and related operations that adjust
@@ -269,7 +269,9 @@ def execute_until_in_scope(
     # pre_executed_states is a list of states with same the length of
     # computable_args, these states are passed to each arg
     if timecontext:
-        arg_timecontexts = compute_time_context(op, timecontext=timecontext)
+        arg_timecontexts = compute_time_context(
+            op, computable_args, timecontext=timecontext
+        )
     else:
         arg_timecontexts = [None] * len(computable_args)
 
@@ -479,10 +481,20 @@ time context. And such context may not be global for all nodes. Each node
 may have its own context. compute_time_context computes attributes that
 are going to be used in executeion and passes these attributes to children
 nodes.
+
+Param:
+computable_args: a list of computable_args generated in
+``execute_until_in_scope``.
+
+timecontext : Optional[Tuple[pd.Timestamp, pd.Timestamp]]
+    begin and end time context needed for execution
 """,
 )
 
 
 @compute_time_context.register(ops.Node)
-def compute_time_context_default(node, timecontext=None, **kwargs):
-    return [timecontext for arg in node.inputs if is_computable_input(arg)]
+@compute_time_context.register(ops.Node, list)
+def compute_time_context_default(
+    node, computable_args=[], timecontext=None, **kwargs
+):
+    return [timecontext for i in range(len(computable_args))]

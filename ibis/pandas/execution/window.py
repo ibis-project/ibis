@@ -20,6 +20,7 @@ from ibis.pandas.core import (
     date_types,
     execute,
     integer_types,
+    is_computable_input,
     simple_types,
     timedelta_types,
     timestamp_types,
@@ -162,7 +163,12 @@ def execute_window_op(
     # relevant scope changes from the child operand since we're managing
     # execution of that by hand
     operand_op = operand.op()
-    arg_timecontexts = compute_time_context(op, timecontext=timecontext)
+
+    computable_args = [arg for arg in op.inputs if is_computable_input(arg)]
+    arg_timecontexts = compute_time_context(
+        op, computable_args, timecontext=timecontext
+    )
+
     if len(arg_timecontexts):
         new_timecontext = arg_timecontexts[0]
     else:
