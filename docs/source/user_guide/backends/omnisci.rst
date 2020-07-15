@@ -137,7 +137,7 @@ The main classes inside `compiler` module are:
 - `OmniSciDBQueryBuilder`
 - `OmniSciDBSelect`
 - `OmniSciDBSelectBuilder`
-- `OmniSciDBTableSetFormatter
+- `OmniSciDBTableSetFormatter`
 
 operations
 ----------
