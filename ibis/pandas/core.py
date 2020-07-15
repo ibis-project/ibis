@@ -167,12 +167,8 @@ def execute_with_scope(
         instances to concrete data such as a pandas DataFrame.
     timecontext : Optional[Tuple[pd.Timestamp, pd.Timestamp]]
         A tuple of (begin, end) that is passed from parent Node to children
-        Nodes. While data in `scope` is public for all Nodes, `state` is
-        used to store 'local' data for each Node in execution.
-        e,g, different time context for each node. Two nodes that have the
-        same expression may require different data needed for execution,
-        and we store these data as 'state', calculate in pre_execute and
-        pass it along the ibis tree.
+        see [timecontext.py](ibis/pandas/execution/timecontext.py) for
+        detailed usage for this time context.
     aggcontext : Optional[ibis.pandas.aggcontext.AggregationContext]
 
     Returns
@@ -270,7 +266,7 @@ def execute_until_in_scope(
     # computable_args, these states are passed to each arg
     if timecontext:
         arg_timecontexts = compute_time_context(
-            op, computable_args, timecontext=timecontext
+            op, num_args=len(computable_args), timecontext=timecontext
         )
     else:
         arg_timecontexts = [None] * len(computable_args)
@@ -387,6 +383,15 @@ def main_execute(
 
     if timecontext is None:
         timecontext = {}
+    else:
+        try:
+            timecontext = tuple(map(pd.to_datetime, timecontext))
+        except ValueError:
+            raise com.IbisError(
+                'Cannot resolve timecontext for expression\n{}.'.format(
+                    expr.get_name()
+                )
+            )
 
     if params is None:
         params = {}
@@ -483,8 +488,9 @@ are going to be used in executeion and passes these attributes to children
 nodes.
 
 Param:
-computable_args: a list of computable_args generated in
-``execute_until_in_scope``.
+computable_args: int
+    The number of computable_args generated in
+    ``execute_until_in_scope``.
 
 timecontext : Optional[Tuple[pd.Timestamp, pd.Timestamp]]
     begin and end time context needed for execution
@@ -493,8 +499,5 @@ timecontext : Optional[Tuple[pd.Timestamp, pd.Timestamp]]
 
 
 @compute_time_context.register(ops.Node)
-@compute_time_context.register(ops.Node, list)
-def compute_time_context_default(
-    node, computable_args=[], timecontext=None, **kwargs
-):
-    return [timecontext for i in range(len(computable_args))]
+def compute_time_context_default(node, num_args, timecontext, **kwargs):
+    return [timecontext for i in range(num_args)]

@@ -133,18 +133,25 @@ def get_aggcontext_window(
 
 
 def trim_with_timecontext(data, timecontext):
-    try:
-        begin, end = map(pd.to_datetime, timecontext)
-    except ValueError:
-        raise com.IbisError('Cannot resolve timecontext for window\n{}.')
-    else:
-        df = data.reset_index()
-        time_col = 'time'
-        subset = df.loc[df[time_col].between(begin, end)]
-        name = data.name
-        non_target_columns = list(subset.columns.difference([name]))
-        indexed_subset = subset.set_index(non_target_columns)
-        return indexed_subset[name]
+    """ Trim data within time range defined by timecontext
+
+        This is a util function used in ``execute_window_op``, where time
+        context might be adjusted for calculation. Data must be trimmed
+        within the original time context before return.
+
+    """
+    df = data.reset_index()
+    name = data.name
+    time_col = 'time'
+    # Filter the data, here we preserve the time index so that when user is
+    # computing a single column, the computation and the relevant time
+    # indexes are retturned.
+    subset = df.loc[df[time_col].between(*timecontext)]
+    # get index columns for the Series
+    non_target_columns = list(subset.columns.difference([name]))
+    # set the correct index for return Seires
+    indexed_subset = subset.set_index(non_target_columns)
+    return indexed_subset[name]
 
 
 @execute_node.register(ops.WindowOp, pd.Series, win.Window)
@@ -165,14 +172,18 @@ def execute_window_op(
     operand_op = operand.op()
 
     computable_args = [arg for arg in op.inputs if is_computable_input(arg)]
-    arg_timecontexts = compute_time_context(
-        op, computable_args, timecontext=timecontext
-    )
 
-    if len(arg_timecontexts):
+    new_timecontext = None
+    if timecontext:
+        arg_timecontexts = compute_time_context(
+            op, num_args=len(computable_args), timecontext=timecontext
+        )
+        # timecontext is the original time context required by parent node
+        # of this WindowOp, while new_timecontext is the adjusted context
+        # of this Window, since we are doing a manual execution here, use
+        # new_timecontext in later execution phases
         new_timecontext = arg_timecontexts[0]
-    else:
-        new_timecontext = timecontext
+
     pre_executed_scope = pre_execute(
         operand_op,
         *clients,
@@ -182,7 +193,6 @@ def execute_window_op(
         **kwargs,
     )
     scope = toolz.merge(scope, pre_executed_scope)
-
     (root,) = op.root_tables()
     root_expr = root.to_expr()
 
