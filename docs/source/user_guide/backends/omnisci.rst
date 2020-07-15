@@ -51,7 +51,7 @@ There are 3 functions in the `api` module:
     proj = t['arrtime', 'arrdelay']
     print(ibis.omniscidb.compile(proj))
 
-`connect` method instantiates a `MapDClient` object that connect to the specified
+`connect` method instantiates a `OmniSciDBClient` object that connect to the specified
 `omniscidb` database:
 
 .. code-block:: python
@@ -89,7 +89,7 @@ Its main methods are:
 - `to_ibis`
 - `from_ibis`
 
-`MapDClient` class is used to connect to an `omniscidb` database and manipulate data
+`OmniSciDBClient` class is used to connect to an `omniscidb` database and manipulate data
 expressions. Its main methods are:
 
 - __init__
@@ -112,8 +112,8 @@ expressions. Its main methods are:
 
 `_build_ast` method is required.
 
-`MapDQuery` class should define at least the `_fetch` method. If `Query`
-class is used when the `MapDClient.execute` method is called, an exception
+`OmniSciDBQuery` class should define at least the `_fetch` method. If `Query`
+class is used when the `OmniSciDBClient.execute` method is called, an exception
 is raised.
 
     (...) once the data arrives from the database we need to convert that data
