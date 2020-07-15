@@ -875,8 +875,17 @@ def execute_node_where_scalar_scalar_series(op, cond, true, false, **kwargs):
 @execute_node.register(
     ibis.pandas.client.PandasTable, ibis.pandas.client.PandasClient
 )
-def execute_database_table_client(op, client, **kwargs):
-    return client.dictionary[op.name]
+def execute_database_table_client(op, client, timecontext=None, **kwargs):
+    df = client.dictionary[op.name]
+    try:
+        begin, end = map(pd.to_datetime, timecontext)
+    except ValueError:
+        return df
+    # filter with time context
+    # Note: in order to make time context trimming work, there should be a
+    # column in table called 'time', of type Timestamp
+    time_col = 'time'
+    return df[df[time_col] >= begin][df[time_col] < end]
 
 
 MATH_FUNCTIONS = {

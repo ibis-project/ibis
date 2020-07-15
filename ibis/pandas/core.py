@@ -149,8 +149,8 @@ def execute_with_scope(
     scope : collections.Mapping
         A dictionary mapping :class:`~ibis.expr.operations.Node` subclass
         instances to concrete data such as a pandas DataFrame.
-    timecontext : collections.Mapping
-        A dictionary that is passed from parent Node to children
+    timecontext : Tuple[pd.Timestamp, pd.Timestamp]
+        A tuple of (begin, end) that is passed from parent Node to children
         Nodes. While data in `scope` is public for all Nodes, `state` is
         used to store 'local' data for each Node in execution.
         e,g, different time context for each node. Two nodes that have the
@@ -222,7 +222,7 @@ def execute_until_in_scope(
     ----------
     expr : ibis.expr.types.Expr
     scope : Mapping
-    timecontext : Mapping
+    timecontext : Tuple[pd.Timestamp, pd.Timestamp]
     aggcontext : Optional[AggregationContext]
     clients : List[ibis.client.Client]
     kwargs : Mapping
@@ -339,7 +339,7 @@ def main_execute(
         The data that an unbound parameter in `expr` maps to
     scope : Mapping[ibis.expr.operations.Node, object]
         Additional scope, mapping ibis operations to data
-    timecontext: Mapping
+    timecontext: Tuple[pd.Timestamp, pd.Timestamp]
         timecontext needed for execution
     aggcontext : Optional[ibis.pandas.aggcontext.AggregationContext]
         An object indicating how to compute aggregations. For example,
@@ -403,7 +403,7 @@ def execute_and_reset(
         The data that an unbound parameter in `expr` maps to
     scope : Mapping[ibis.expr.operations.Node, object]
         Additional scope, mapping ibis operations to data
-    timecontext : Mapping
+    timecontext : Tuple[pd.Timestamp, pd.Timestamp]
         timecontext needed for execution
     aggcontext : Optional[ibis.pandas.aggcontext.AggregationContext]
         An object indicating how to compute aggregations. For example,

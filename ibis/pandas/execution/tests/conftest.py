@@ -128,6 +128,20 @@ def time_df2():
 
 
 @pytest.fixture(scope='module')
+def time_df3():
+    return pd.DataFrame(
+        {
+            'time': pd.Series(
+                pd.date_range(
+                    start='2017-01-02 01:02:03.234', periods=4
+                ).values
+            ),
+            'value': [1.1, 2.2, 3.3, 4.4],
+        }
+    )
+
+
+@pytest.fixture(scope='module')
 def time_keyed_df1():
     return pd.DataFrame(
         {
@@ -151,7 +165,15 @@ def time_keyed_df2():
 
 @pytest.fixture(scope='module')
 def client(
-    df, df1, df2, df3, time_df1, time_df2, time_keyed_df1, time_keyed_df2
+    df,
+    df1,
+    df2,
+    df3,
+    time_df1,
+    time_df2,
+    time_df3,
+    time_keyed_df1,
+    time_keyed_df2,
 ):
     return ibis.pandas.connect(
         dict(
@@ -163,6 +185,7 @@ def client(
             right=df2,
             time_df1=time_df1,
             time_df2=time_df2,
+            time_df3=time_df3,
             time_keyed_df1=time_keyed_df1,
             time_keyed_df2=time_keyed_df2,
         )
@@ -222,6 +245,11 @@ def time_left(client):
 @pytest.fixture(scope='module')
 def time_right(client):
     return client.table('time_df2')
+
+
+@pytest.fixture(scope='module')
+def time_table(client):
+    return client.table('time_df3')
 
 
 @pytest.fixture(scope='module')
