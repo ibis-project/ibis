@@ -96,9 +96,9 @@ def _extract_field(sql_attr):
         op = expr.op()
         arg = translator.translate(op.args[0])
         if sql_attr == 'epochseconds':
-            return 'UNIX_SECONDS({})'.format(arg)
+            return f'UNIX_SECONDS({arg})'
         else:
-            return 'EXTRACT({} from {})'.format(sql_attr, arg)
+            return f'EXTRACT({sql_attr} from {arg})'
 
     return extract_field_formatter
 
