@@ -111,9 +111,9 @@ def test_verbose_log_queries(con):
 
     with config.option_context('verbose', True):
         with config.option_context('verbose_log', queries.append):
-            con.table('functional_alltypes')
+            con.table('functional_alltypes')['year'].execute()
 
     assert len(queries) == 1
     (query,) = queries
-    expected = 'DESCRIBE `functional_all_types`'
+    expected = 'SELECT year FROM functional_alltypes;'
     assert query == expected
