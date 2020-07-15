@@ -71,7 +71,15 @@ def _post_process_group_by_order_by(series, parent, order_by, group_by):
 
 @functools.singledispatch
 def get_aggcontext(
-    window, *, operand, operand_dtype, parent, group_by, order_by
+    window,
+    *,
+    scope,
+    operand,
+    operand_dtype,
+    parent,
+    group_by,
+    order_by,
+    **kwargs,
 ) -> NoReturn:
     raise NotImplementedError(
         f"get_aggcontext is not implemented for {type(window).__name__}"
@@ -80,7 +88,15 @@ def get_aggcontext(
 
 @get_aggcontext.register(win.Window)
 def get_aggcontext_window(
-    window, *, operand, operand_dtype, parent, group_by, order_by
+    window,
+    *,
+    scope,
+    operand,
+    operand_dtype,
+    parent,
+    group_by,
+    order_by,
+    **kwargs,
 ) -> AggregationContext:
     # no order by or group by: default summarization aggcontext
     #
@@ -218,11 +234,13 @@ def execute_window_op(
 
     aggcontext = get_aggcontext(
         window,
+        scope=scope,
         operand=operand,
         operand_dtype=operand_dtype,
         parent=source,
         group_by=grouping_keys,
         order_by=ordering_keys,
+        **kwargs,
     )
 
     result = execute(

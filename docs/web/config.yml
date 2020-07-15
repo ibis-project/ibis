@@ -5,6 +5,7 @@ pysuerga:
   - toc
   - tables
   - fenced_code
+  - codehilite
 
 ibis:
   project_name: Ibis
@@ -15,6 +16,7 @@ layout:
   favicon: /static/img/favicon.ico
   stylesheets:
   - /static/css/ibis.css
+  - /static/css/codehilite.css
   logo: /static/img/logo_ibis.svg
   header_text: Ibis
   navbar:

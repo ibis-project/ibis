@@ -302,6 +302,13 @@ def compile_aggregation(t, expr, scope, **kwargs):
         return src_table.agg(*aggs)
 
 
+@compiles(ops.Union)
+def compile_union(t, expr, scope, **kwargs):
+    op = expr.op()
+    result = t.translate(op.left, scope).union(t.translate(op.right, scope))
+    return result.distinct() if op.distinct else result
+
+
 @compiles(ops.Contains)
 def compile_contains(t, expr, scope, **kwargs):
     op = expr.op()
@@ -1117,6 +1124,13 @@ def compile_extract_day_of_year(t, expr, scope, **kwargs):
 def compile_extract_quarter(t, expr, scope, **kwargs):
     return _extract_component_from_datetime(
         t, expr, scope, F.quarter, **kwargs
+    )
+
+
+@compiles(ops.ExtractEpochSeconds)
+def compile_extract_epoch_seconds(t, expr, scope, **kwargs):
+    return _extract_component_from_datetime(
+        t, expr, scope, F.unix_timestamp, **kwargs
     )
 
 

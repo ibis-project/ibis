@@ -16,11 +16,9 @@ def test_timestamp_accepts_date_literals(alltypes, project_id):
     expr = alltypes.mutate(param=param)
     params = {param: date_string}
     result = expr.compile(params=params)
-    expected = """\
+    expected = f"""\
 SELECT *, @param AS `param`
-FROM `{}.testing.functional_alltypes`""".format(
-        project_id
-    )
+FROM `{project_id}.testing.functional_alltypes`"""
     assert result == expected
 
 
@@ -30,25 +28,21 @@ FROM `{}.testing.functional_alltypes`""".format(
 def test_union(alltypes, distinct, expected_keyword, project_id):
     expr = alltypes.union(alltypes, distinct=distinct)
     result = expr.compile()
-    expected = """\
+    expected = f"""\
 SELECT *
-FROM `{project}.testing.functional_alltypes`
-UNION {}
+FROM `{project_id}.testing.functional_alltypes`
+UNION {expected_keyword}
 SELECT *
-FROM `{project}.testing.functional_alltypes`""".format(
-        expected_keyword, project=project_id
-    )
+FROM `{project_id}.testing.functional_alltypes`"""
     assert result == expected
 
 
 def test_ieee_divide(alltypes, project_id):
     expr = alltypes.double_col / 0
     result = expr.compile()
-    expected = """\
+    expected = f"""\
 SELECT IEEE_DIVIDE(`double_col`, 0) AS `tmp`
-FROM `{}.testing.functional_alltypes`""".format(
-        project_id
-    )
+FROM `{project_id}.testing.functional_alltypes`"""
     assert result == expected
 
 
@@ -57,13 +51,11 @@ def test_identical_to(alltypes, project_id):
     pred = t.string_col.identical_to('a') & t.date_string_col.identical_to('b')
     expr = t[pred]
     result = expr.compile()
-    expected = """\
+    expected = f"""\
 SELECT *
-FROM `{}.testing.functional_alltypes`
+FROM `{project_id}.testing.functional_alltypes`
 WHERE (((`string_col` IS NULL) AND ('a' IS NULL)) OR (`string_col` = 'a')) AND
-      (((`date_string_col` IS NULL) AND ('b' IS NULL)) OR (`date_string_col` = 'b'))""".format(  # noqa: E501
-        project_id
-    )
+      (((`date_string_col` IS NULL) AND ('b' IS NULL)) OR (`date_string_col` = 'b'))"""  # noqa: E501
     assert result == expected
 
 
@@ -72,43 +64,35 @@ def test_to_timestamp(alltypes, timezone, project_id):
     expr = alltypes.date_string_col.to_timestamp('%F', timezone)
     result = expr.compile()
     if timezone:
-        expected = """\
+        expected = f"""\
 SELECT PARSE_TIMESTAMP('%F', `date_string_col`, 'America/New_York') AS `tmp`
-FROM `{}.testing.functional_alltypes`""".format(
-            project_id
-        )
+FROM `{project_id}.testing.functional_alltypes`"""
     else:
-        expected = """\
+        expected = f"""\
 SELECT PARSE_TIMESTAMP('%F', `date_string_col`) AS `tmp`
-FROM `{}.testing.functional_alltypes`""".format(
-            project_id
-        )
+FROM `{project_id}.testing.functional_alltypes`"""
     assert result == expected
 
 
 @pytest.mark.parametrize(
     ('case', 'expected', 'dtype'),
     [
-        (datetime.date(2017, 1, 1), "DATE '{}'".format('2017-01-01'), dt.date),
-        (
-            pd.Timestamp('2017-01-01'),
-            "DATE '{}'".format('2017-01-01'),
-            dt.date,
-        ),
-        ('2017-01-01', "DATE '{}'".format('2017-01-01'), dt.date),
+        (datetime.date(2017, 1, 1), "DATE '2017-01-01'", dt.date),
+        (pd.Timestamp('2017-01-01'), "DATE '2017-01-01'", dt.date,),
+        ('2017-01-01', "DATE '2017-01-01'", dt.date),
         (
             datetime.datetime(2017, 1, 1, 4, 55, 59),
-            "TIMESTAMP '{}'".format('2017-01-01 04:55:59'),
+            "TIMESTAMP '2017-01-01 04:55:59'",
             dt.timestamp,
         ),
         (
             '2017-01-01 04:55:59',
-            "TIMESTAMP '{}'".format('2017-01-01 04:55:59'),
+            "TIMESTAMP '2017-01-01 04:55:59'",
             dt.timestamp,
         ),
         (
             pd.Timestamp('2017-01-01 04:55:59'),
-            "TIMESTAMP '{}'".format('2017-01-01 04:55:59'),
+            "TIMESTAMP '2017-01-01 04:55:59'",
             dt.timestamp,
         ),
     ],
@@ -116,7 +100,7 @@ FROM `{}.testing.functional_alltypes`""".format(
 def test_literal_date(case, expected, dtype):
     expr = ibis.literal(case, type=dtype).year()
     result = ibis.bigquery.compile(expr)
-    assert result == "SELECT EXTRACT(year from {}) AS `tmp`".format(expected)
+    assert result == f"SELECT EXTRACT(year from {expected}) AS `tmp`"
 
 
 @pytest.mark.parametrize(
@@ -124,37 +108,32 @@ def test_literal_date(case, expected, dtype):
     [
         (
             datetime.date(2017, 1, 1),
-            "DATE '{}'".format('2017-01-01'),
+            "DATE '2017-01-01'",
             dt.date,
             'FORMAT_DATE',
         ),
         (
             pd.Timestamp('2017-01-01'),
-            "DATE '{}'".format('2017-01-01'),
+            "DATE '2017-01-01'",
             dt.date,
             'FORMAT_DATE',
         ),
-        (
-            '2017-01-01',
-            "DATE '{}'".format('2017-01-01'),
-            dt.date,
-            'FORMAT_DATE',
-        ),
+        ('2017-01-01', "DATE '2017-01-01'", dt.date, 'FORMAT_DATE',),
         (
             datetime.datetime(2017, 1, 1, 4, 55, 59),
-            "TIMESTAMP '{}'".format('2017-01-01 04:55:59'),
+            "TIMESTAMP '2017-01-01 04:55:59'",
             dt.timestamp,
             'FORMAT_TIMESTAMP',
         ),
         (
             '2017-01-01 04:55:59',
-            "TIMESTAMP '{}'".format('2017-01-01 04:55:59'),
+            "TIMESTAMP '2017-01-01 04:55:59'",
             dt.timestamp,
             'FORMAT_TIMESTAMP',
         ),
         (
             pd.Timestamp('2017-01-01 04:55:59'),
-            "TIMESTAMP '{}'".format('2017-01-01 04:55:59'),
+            "TIMESTAMP '2017-01-01 04:55:59'",
             dt.timestamp,
             'FORMAT_TIMESTAMP',
         ),
@@ -166,21 +145,18 @@ def test_day_of_week(case, expected, dtype, strftime_func):
     result = ibis.bigquery.compile(expr_index)
     assert (
         result
-        == "SELECT MOD(EXTRACT(DAYOFWEEK FROM {}) + 5, 7) AS `tmp`".format(
-            expected
-        )
-    )  # noqa: E501
+        == f"SELECT MOD(EXTRACT(DAYOFWEEK FROM {expected}) + 5, 7) AS `tmp`"
+    )
 
     expr_name = date_var.day_of_week.full_name()
     result = ibis.bigquery.compile(expr_name)
     if strftime_func == 'FORMAT_TIMESTAMP':
-        assert result == "SELECT {}('%A', {}, 'UTC') AS `tmp`".format(
-            strftime_func, expected
+        assert (
+            result
+            == f"SELECT {strftime_func}('%A', {expected}, 'UTC') AS `tmp`"
         )
     else:
-        assert result == "SELECT {}('%A', {}) AS `tmp`".format(
-            strftime_func, expected
-        )
+        assert result == f"SELECT {strftime_func}('%A', {expected}) AS `tmp`"
 
 
 @pytest.mark.parametrize(
@@ -188,27 +164,27 @@ def test_day_of_week(case, expected, dtype, strftime_func):
     [
         (
             datetime.datetime(2017, 1, 1, 4, 55, 59),
-            "TIMESTAMP '{}'".format('2017-01-01 04:55:59'),
+            "TIMESTAMP '2017-01-01 04:55:59'",
             dt.timestamp,
         ),
         (
             '2017-01-01 04:55:59',
-            "TIMESTAMP '{}'".format('2017-01-01 04:55:59'),
+            "TIMESTAMP '2017-01-01 04:55:59'",
             dt.timestamp,
         ),
         (
             pd.Timestamp('2017-01-01 04:55:59'),
-            "TIMESTAMP '{}'".format('2017-01-01 04:55:59'),
+            "TIMESTAMP '2017-01-01 04:55:59'",
             dt.timestamp,
         ),
-        (datetime.time(4, 55, 59), "TIME '{}'".format('04:55:59'), dt.time),
-        ('04:55:59', "TIME '{}'".format('04:55:59'), dt.time),
+        (datetime.time(4, 55, 59), "TIME '04:55:59'", dt.time),
+        ('04:55:59', "TIME '04:55:59'", dt.time),
     ],
 )
 def test_literal_timestamp_or_time(case, expected, dtype):
     expr = ibis.literal(case, type=dtype).hour()
     result = ibis.bigquery.compile(expr)
-    assert result == "SELECT EXTRACT(hour from {}) AS `tmp`".format(expected)
+    assert result == f"SELECT EXTRACT(hour from {expected}) AS `tmp`"
 
 
 def test_window_function(alltypes, project_id):
@@ -218,12 +194,10 @@ def test_window_function(alltypes, project_id):
     )
     expr = t.mutate(win_avg=t.float_col.mean().over(w1))
     result = expr.compile()
-    expected = """\
+    expected = f"""\
 SELECT *,
        avg(`float_col`) OVER (PARTITION BY `year` ORDER BY `timestamp_col` ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) AS `win_avg`
-FROM `{}.testing.functional_alltypes`""".format(  # noqa: E501
-        project_id
-    )
+FROM `{project_id}.testing.functional_alltypes`"""  # noqa: E501
     assert result == expected
 
     w2 = ibis.window(
@@ -231,12 +205,10 @@ FROM `{}.testing.functional_alltypes`""".format(  # noqa: E501
     )
     expr = t.mutate(win_avg=t.float_col.mean().over(w2))
     result = expr.compile()
-    expected = """\
+    expected = f"""\
 SELECT *,
        avg(`float_col`) OVER (PARTITION BY `year` ORDER BY `timestamp_col` ROWS BETWEEN CURRENT ROW AND 2 FOLLOWING) AS `win_avg`
-FROM `{}.testing.functional_alltypes`""".format(  # noqa: E501
-        project_id
-    )
+FROM `{project_id}.testing.functional_alltypes`"""  # noqa: E501
     assert result == expected
 
     w3 = ibis.window(
@@ -244,12 +216,10 @@ FROM `{}.testing.functional_alltypes`""".format(  # noqa: E501
     )
     expr = t.mutate(win_avg=t.float_col.mean().over(w3))
     result = expr.compile()
-    expected = """\
+    expected = f"""\
 SELECT *,
        avg(`float_col`) OVER (PARTITION BY `year` ORDER BY `timestamp_col` ROWS BETWEEN 4 PRECEDING AND 2 PRECEDING) AS `win_avg`
-FROM `{}.testing.functional_alltypes`""".format(  # noqa: E501
-        project_id
-    )
+FROM `{project_id}.testing.functional_alltypes`"""  # noqa: E501
     assert result == expected
 
 
@@ -260,12 +230,10 @@ def test_range_window_function(alltypes, project_id):
     )
     expr = t.mutate(two_month_avg=t.float_col.mean().over(w))
     result = expr.compile()
-    expected = """\
+    expected = f"""\
 SELECT *,
        avg(`float_col`) OVER (PARTITION BY `year` ORDER BY `month` RANGE BETWEEN 1 PRECEDING AND CURRENT ROW) AS `two_month_avg`
-FROM `{}.testing.functional_alltypes`""".format(  # noqa: E501
-        project_id
-    )
+FROM `{project_id}.testing.functional_alltypes`"""  # noqa: E501
     assert result == expected
 
     w3 = ibis.range_window(
@@ -273,12 +241,10 @@ FROM `{}.testing.functional_alltypes`""".format(  # noqa: E501
     )
     expr = t.mutate(win_avg=t.float_col.mean().over(w3))
     result = expr.compile()
-    expected = """\
+    expected = f"""\
 SELECT *,
        avg(`float_col`) OVER (PARTITION BY `year` ORDER BY UNIX_MICROS(`timestamp_col`) RANGE BETWEEN 4 PRECEDING AND 2 PRECEDING) AS `win_avg`
-FROM `{}.testing.functional_alltypes`""".format(  # noqa: E501
-        project_id
-    )
+FROM `{project_id}.testing.functional_alltypes`"""  # noqa: E501
     assert result == expected
 
 
@@ -303,12 +269,10 @@ def test_trailing_range_window(alltypes, preceding, value, project_id):
     )
     expr = t.mutate(win_avg=t.float_col.mean().over(w))
     result = expr.compile()
-    expected = """\
+    expected = f"""\
 SELECT *,
-       avg(`float_col`) OVER (ORDER BY UNIX_MICROS(`timestamp_col`) RANGE BETWEEN {} PRECEDING AND CURRENT ROW) AS `win_avg`
-FROM `{}.testing.functional_alltypes`""".format(  # noqa: E501
-        value, project_id
-    )
+       avg(`float_col`) OVER (ORDER BY UNIX_MICROS(`timestamp_col`) RANGE BETWEEN {value} PRECEDING AND CURRENT ROW) AS `win_avg`
+FROM `{project_id}.testing.functional_alltypes`"""  # noqa: E501
     assert result == expected
 
 
@@ -345,24 +309,22 @@ def test_union_cte(
         expr3, distinct=distinct2
     )
     result = expr.compile()
-    expected = """\
+    expected = f"""\
 WITH t0 AS (
   SELECT `string_col`, sum(`double_col`) AS `metric`
-  FROM `{project}.testing.functional_alltypes`
+  FROM `{project_id}.testing.functional_alltypes`
   GROUP BY 1
 )
 SELECT *
 FROM t0
-{}
+{expected1}
 SELECT `string_col`, sum(`double_col`) AS `metric`
-FROM `{project}.testing.functional_alltypes`
+FROM `{project_id}.testing.functional_alltypes`
 GROUP BY 1
-{}
+{expected2}
 SELECT `string_col`, sum(`double_col`) AS `metric`
-FROM `{project}.testing.functional_alltypes`
-GROUP BY 1""".format(
-        expected1, expected2, project=project_id
-    )
+FROM `{project_id}.testing.functional_alltypes`
+GROUP BY 1"""
     assert result == expected
 
 
@@ -404,92 +366,92 @@ FROM t3
     assert result == expected
 
 
-def test_bool_reducers(alltypes):
+def test_bool_reducers(alltypes, project_id):
     b = alltypes.bool_col
     expr = b.mean()
     result = expr.compile()
-    expected = """\
+    expected = f"""\
 SELECT avg(CAST(`bool_col` AS INT64)) AS `mean`
-FROM `ibis-gbq.testing.functional_alltypes`"""
+FROM `{project_id}.testing.functional_alltypes`"""
     assert result == expected
 
     expr2 = b.sum()
     result = expr2.compile()
-    expected = """\
+    expected = f"""\
 SELECT sum(CAST(`bool_col` AS INT64)) AS `sum`
-FROM `ibis-gbq.testing.functional_alltypes`"""
+FROM `{project_id}.testing.functional_alltypes`"""
     assert result == expected
 
 
-def test_bool_reducers_where(alltypes):
+def test_bool_reducers_where(alltypes, project_id):
     b = alltypes.bool_col
     m = alltypes.month
     expr = b.mean(where=m > 6)
     result = expr.compile()
-    expected = """\
+    expected = f"""\
 SELECT avg(CASE WHEN `month` > 6 THEN CAST(`bool_col` AS INT64) ELSE NULL END) AS `mean`
-FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
+FROM `{project_id}.testing.functional_alltypes`"""  # noqa: E501
     assert result == expected
 
     expr2 = b.sum(where=((m > 6) & (m < 10)))
     result = expr2.compile()
-    expected = """\
+    expected = f"""\
 SELECT sum(CASE WHEN (`month` > 6) AND (`month` < 10) THEN CAST(`bool_col` AS INT64) ELSE NULL END) AS `sum`
-FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
+FROM `{project_id}.testing.functional_alltypes`"""  # noqa: E501
     assert result == expected
 
 
-def test_approx_nunique(alltypes):
+def test_approx_nunique(alltypes, project_id):
     d = alltypes.double_col
     expr = d.approx_nunique()
     result = expr.compile()
-    expected = """\
+    expected = f"""\
 SELECT APPROX_COUNT_DISTINCT(`double_col`) AS `approx_nunique`
-FROM `ibis-gbq.testing.functional_alltypes`"""
+FROM `{project_id}.testing.functional_alltypes`"""
     assert result == expected
 
     b = alltypes.bool_col
     m = alltypes.month
     expr2 = b.approx_nunique(where=m > 6)
     result = expr2.compile()
-    expected = """\
+    expected = f"""\
 SELECT APPROX_COUNT_DISTINCT(CASE WHEN `month` > 6 THEN `bool_col` ELSE NULL END) AS `approx_nunique`
-FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
+FROM `{project_id}.testing.functional_alltypes`"""  # noqa: E501
     assert result == expected
 
 
-def test_approx_median(alltypes):
+def test_approx_median(alltypes, project_id):
     d = alltypes.double_col
     expr = d.approx_median()
     result = expr.compile()
-    expected = """\
+    expected = f"""\
 SELECT APPROX_QUANTILES(`double_col`, 2)[OFFSET(1)] AS `approx_median`
-FROM `ibis-gbq.testing.functional_alltypes`"""
+FROM `{project_id}.testing.functional_alltypes`"""
     assert result == expected
 
     m = alltypes.month
     expr2 = d.approx_median(where=m > 6)
     result = expr2.compile()
-    expected = """\
+    expected = f"""\
 SELECT APPROX_QUANTILES(CASE WHEN `month` > 6 THEN `double_col` ELSE NULL END, 2)[OFFSET(1)] AS `approx_median`
-FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
+FROM `{project_id}.testing.functional_alltypes`"""  # noqa: E501
     assert result == expected
 
 
-def test_cov(alltypes):
+def test_cov(alltypes, project_id):
     d = alltypes.double_col
     expr = d.cov(d)
     result = expr.compile()
-    expected = """\
+    expected = f"""\
 SELECT COVAR_SAMP(`double_col`, `double_col`) AS `tmp`
-FROM `ibis-gbq.testing.functional_alltypes`"""
+FROM `{project_id}.testing.functional_alltypes`"""
     assert result == expected
 
     expr = d.cov(d, how='pop')
     result = expr.compile()
-    expected = """\
+    expected = f"""\
 SELECT COVAR_POP(`double_col`, `double_col`) AS `tmp`
-FROM `ibis-gbq.testing.functional_alltypes`"""
+FROM `{project_id}.testing.functional_alltypes`"""
     assert result == expected
 
     expr = d.cov(d, how='error')
@@ -526,11 +488,9 @@ def test_temporal_truncate(unit, expected_unit, expected_func):
     t = ibis.table([('a', getattr(dt, expected_func.lower()))], name='t')
     expr = t.a.truncate(unit)
     result = ibis.bigquery.compile(expr)
-    expected = """\
-SELECT {}_TRUNC(`a`, {}) AS `tmp`
-FROM t""".format(
-        expected_func, expected_unit
-    )
+    expected = f"""\
+SELECT {expected_func}_TRUNC(`a`, {expected_unit}) AS `tmp`
+FROM t"""
     assert result == expected
 
 
@@ -539,11 +499,9 @@ def test_extract_temporal_from_timestamp(kind):
     t = ibis.table([('ts', dt.timestamp)], name='t')
     expr = getattr(t.ts, kind)()
     result = ibis.bigquery.compile(expr)
-    expected = """\
-SELECT {}(`ts`) AS `tmp`
-FROM t""".format(
-        kind.upper()
-    )
+    expected = f"""\
+SELECT {kind.upper()}(`ts`) AS `tmp`
+FROM t"""
     assert result == expected
 
 
@@ -584,9 +542,7 @@ def test_window_unbounded(kind, begin, end, expected):
     result = ibis.bigquery.compile(expr)
     assert (
         result
-        == """\
-SELECT sum(`a`) OVER (ROWS BETWEEN {}) AS `tmp`
-FROM t""".format(
-            expected
-        )
+        == f"""\
+SELECT sum(`a`) OVER (ROWS BETWEEN {expected}) AS `tmp`
+FROM t"""
     )
