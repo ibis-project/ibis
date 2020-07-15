@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import pandas.util.testing as tm
 import pytest
@@ -52,3 +53,25 @@ def test_context_adjustment_asof_join(
         tolerance=pd.Timedelta('2D'),
     )
     tm.assert_frame_equal(result, expected)
+
+
+def test_context_adjustment_window():
+    time = pd.date_range('20180101', '20180110')
+    start = 2
+    data = np.arange(start, start + len(time))
+    df = pd.DataFrame({'value': data, 'time': time}, index=time)
+    client = ibis.pandas.connect({'df': df})
+    t = client.table('df')
+    # trim data manually
+    expected = (
+        df.set_index('time').value.rolling('3d', closed='both').mean()
+    )[4:].reset_index(drop=True)
+
+    context = ('20180105', '20180111')
+    expected.index.name = None
+    day = ibis.interval(days=1)
+    window = ibis.trailing_window(3 * day, order_by=t.time)
+    expr = t.value.mean().over(window)
+    # result should adjust time context accordingly
+    result = expr.execute(timecontext=context)
+    tm.assert_series_equal(result, expected)

@@ -23,14 +23,21 @@ And we assume timecontext is passed in as a tuple (begin, end) where begin and
 end are timestamp, or datetime string like "20100101".
 """
 
+import numpy as np
 import pandas as pd
 
+import ibis.expr.api as ir
 import ibis.expr.operations as ops
-from ibis.pandas.dispatch import compute_time_context, is_computable_input
+from ibis.pandas.dispatch import (
+    compute_time_context,
+    is_computable_input,
+    post_execute,
+)
+from ibis.pandas.execution import execute
 
 
 @compute_time_context.register(ops.AsOfJoin)
-def adjust_context_asof_join(op, scope=None, timecontext=None, **kwargs):
+def adjust_context_asof_join(op, timecontext=None, **kwargs):
     new_timecontexts = [
         timecontext for arg in op.inputs if is_computable_input(arg)
     ]
@@ -52,3 +59,57 @@ def adjust_context_asof_join(op, scope=None, timecontext=None, **kwargs):
         pass
     finally:
         return new_timecontexts
+
+
+@compute_time_context.register(ops.WindowOp)
+def adjust_context_window(op, timecontext=None, **kwargs):
+    new_timecontexts = [
+        timecontext for arg in op.inputs if is_computable_input(arg)
+    ]
+    # adjust time context by preceding and following
+    try:
+        begin, end = map(pd.to_datetime, timecontext)
+        result = [begin, end]
+        preceding = op.window.preceding
+        following = op.window.following
+        if preceding is not None:
+            if isinstance(preceding, ir.Expr):
+                new_preceding = execute(preceding)
+            else:
+                new_preceding = preceding
+            if new_preceding and not isinstance(
+                new_preceding, (int, np.integer)
+            ):
+                result[0] = begin - new_preceding
+        if following is not None:
+            if isinstance(following, ir.Expr):
+                new_following = execute(following)
+            else:
+                new_following = following
+            if new_following and not isinstance(
+                new_following, (int, np.integer)
+            ):
+                result[1] = end + new_following
+        new_timecontexts[0] = tuple(result)
+        new_timecontexts[1] = tuple(result)
+    except ValueError:
+        pass
+    finally:
+        return new_timecontexts
+
+
+@post_execute.register(ops.WindowOp, pd.Series)
+def post_execute_window(op, data, timecontext=None, **kwargs):
+    # trim data to original context
+    try:
+        begin, end = map(pd.to_datetime, timecontext)
+    except ValueError:
+        return data
+    else:
+        df = data.reset_index()
+        time_col = 'time'
+        subset = df.loc[df[time_col].between(begin, end)]
+        name = data.name
+        non_target_columns = list(subset.columns.difference([name]))
+        indexed_subset = subset.set_index(non_target_columns)
+        return indexed_subset[name]

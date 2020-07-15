@@ -23,7 +23,11 @@ from ibis.pandas.core import (
     timedelta_types,
     timestamp_types,
 )
-from ibis.pandas.dispatch import execute_node, pre_execute
+from ibis.pandas.dispatch import (
+    compute_time_context,
+    execute_node,
+    pre_execute,
+)
 from ibis.pandas.execution import util
 
 
@@ -146,11 +150,16 @@ def execute_window_op(
     # relevant scope changes from the child operand since we're managing
     # execution of that by hand
     operand_op = operand.op()
+    arg_timecontexts = compute_time_context(op, timecontext=timecontext)
+    if len(arg_timecontexts):
+        new_timecontext = arg_timecontexts[0]
+    else:
+        new_timecontext = timecontext
     pre_executed_scope = pre_execute(
         operand_op,
         *clients,
         scope=scope,
-        timecontext=timecontext,
+        timecontext=new_timecontext,
         aggcontext=aggcontext,
         **kwargs,
     )
@@ -158,10 +167,11 @@ def execute_window_op(
 
     (root,) = op.root_tables()
     root_expr = root.to_expr()
+
     data = execute(
         root_expr,
         scope=scope,
-        timecontext=timecontext,
+        timecontext=new_timecontext,
         clients=clients,
         aggcontext=aggcontext,
         **kwargs,
