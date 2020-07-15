@@ -21,26 +21,31 @@ column of Timestamp type, and named as 'time' in TableExpr.
 See ``execute_database_table_client`` in ``generic.py``.
 And we assume timecontext is passed in as a tuple (begin, end) where begin and
 end are timestamp, or datetime string like "20100101".
+
+This is an optional feature. The result of executing an expression without time
+context is conceptually the same as executing an expression with (-inf, inf)
+time context.
 """
 
 import numpy as np
 import pandas as pd
 
+import ibis.common.exceptions as com
 import ibis.expr.api as ir
 import ibis.expr.operations as ops
-from ibis.pandas.dispatch import (
-    compute_time_context,
-    is_computable_input,
-    post_execute,
-)
+from ibis.pandas.core import compute_time_context, is_computable_input
 from ibis.pandas.execution import execute
 
 
 @compute_time_context.register(ops.AsOfJoin)
-def adjust_context_asof_join(op, timecontext=None, **kwargs):
+def adjust_context_asof_join(op, timecontext, **kwargs):
     new_timecontexts = [
         timecontext for arg in op.inputs if is_computable_input(arg)
     ]
+
+    if not timecontext:
+        return new_timecontexts
+
     # right table should look back or forward
     try:
         begin, end = map(pd.to_datetime, timecontext)
@@ -56,16 +61,24 @@ def adjust_context_asof_join(op, timecontext=None, **kwargs):
         # right table is the second node in children
         new_timecontexts[1] = (new_begin, new_end)
     except ValueError:
-        pass
+        raise com.IbisError(
+            'Cannot resolve timecontext for type:\n{}.'.format(
+                type(op).__name__
+            )
+        )
     finally:
         return new_timecontexts
 
 
 @compute_time_context.register(ops.WindowOp)
-def adjust_context_window(op, timecontext=None, **kwargs):
+def adjust_context_window(op, timecontext, **kwargs):
     new_timecontexts = [
         timecontext for arg in op.inputs if is_computable_input(arg)
     ]
+
+    if not timecontext:
+        return new_timecontexts
+
     # adjust time context by preceding and following
     try:
         begin, end = map(pd.to_datetime, timecontext)
@@ -93,23 +106,10 @@ def adjust_context_window(op, timecontext=None, **kwargs):
         new_timecontexts[0] = tuple(result)
         new_timecontexts[1] = tuple(result)
     except ValueError:
-        pass
+        raise com.IbisError(
+            'Cannot resolve timecontext for type:\n{}.'.format(
+                type(op).__name__
+            )
+        )
     finally:
         return new_timecontexts
-
-
-@post_execute.register(ops.WindowOp, pd.Series)
-def post_execute_window(op, data, timecontext=None, **kwargs):
-    # trim data to original context
-    try:
-        begin, end = map(pd.to_datetime, timecontext)
-    except ValueError:
-        return data
-    else:
-        df = data.reset_index()
-        time_col = 'time'
-        subset = df.loc[df[time_col].between(begin, end)]
-        name = data.name
-        non_target_columns = list(subset.columns.difference([name]))
-        indexed_subset = subset.set_index(non_target_columns)
-        return indexed_subset[name]

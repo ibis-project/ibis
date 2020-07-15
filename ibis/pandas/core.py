@@ -100,16 +100,15 @@ from multipledispatch import Dispatcher
 
 import ibis
 import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+import ibis.expr.window as win
 import ibis.pandas.aggcontext as agg_ctx
 from ibis.client import find_backends
 from ibis.pandas.dispatch import (
-    compute_time_context,
     execute_literal,
     execute_node,
-    is_computable_input,
-    is_computable_input_arg,
     post_execute,
     pre_execute,
 )
@@ -127,6 +126,23 @@ timedelta_types = pd.Timedelta, datetime.timedelta, np.timedelta64
 temporal_types = date_types + time_types + timestamp_types + timedelta_types
 scalar_types = fixed_width_types + temporal_types
 simple_types = scalar_types + (str, type(None))
+
+
+@functools.singledispatch
+def is_computable_input(arg):
+    """All inputs are not computable without a specific override."""
+    return False
+
+
+@is_computable_input.register(ibis.client.Client)
+@is_computable_input.register(ir.Expr)
+@is_computable_input.register(dt.DataType)
+@is_computable_input.register(type(None))
+@is_computable_input.register(win.Window)
+@is_computable_input.register(tuple)
+def is_computable_input_arg(arg):
+    """Return whether `arg` is a valid computable argument."""
+    return True
 
 
 # Register is_computable_input for each scalar type (int, float, date, etc).
@@ -149,7 +165,7 @@ def execute_with_scope(
     scope : collections.Mapping
         A dictionary mapping :class:`~ibis.expr.operations.Node` subclass
         instances to concrete data such as a pandas DataFrame.
-    timecontext : Tuple[pd.Timestamp, pd.Timestamp]
+    timecontext : Optional[Tuple[pd.Timestamp, pd.Timestamp]]
         A tuple of (begin, end) that is passed from parent Node to children
         Nodes. While data in `scope` is public for all Nodes, `state` is
         used to store 'local' data for each Node in execution.
@@ -222,7 +238,7 @@ def execute_until_in_scope(
     ----------
     expr : ibis.expr.types.Expr
     scope : Mapping
-    timecontext : Tuple[pd.Timestamp, pd.Timestamp]
+    timecontext : Optional[Tuple[pd.Timestamp, pd.Timestamp]]
     aggcontext : Optional[AggregationContext]
     clients : List[ibis.client.Client]
     kwargs : Mapping
@@ -245,9 +261,18 @@ def execute_until_in_scope(
                 op, op.value, expr.type(), aggcontext=aggcontext, **kwargs
             )
         }
+    # figure out what arguments we're able to compute on based on the
+    # expressions inputs. things like expressions, None, and scalar types are
+    # computable whereas ``list``s are not
+    computable_args = [arg for arg in op.inputs if is_computable_input(arg)]
+
     # pre_executed_states is a list of states with same the length of
     # computable_args, these states are passed to each arg
-    arg_timecontexts = compute_time_context(op, timecontext=timecontext)
+    if timecontext:
+        arg_timecontexts = compute_time_context(op, timecontext=timecontext)
+    else:
+        arg_timecontexts = [None] * len(computable_args)
+
     pre_executed_scope = pre_execute(
         op,
         *clients,
@@ -262,11 +287,6 @@ def execute_until_in_scope(
     # execute its computable_args
     if op in new_scope:
         return new_scope
-
-    # figure out what arguments we're able to compute on based on the
-    # expressions inputs. things like expressions, None, and scalar types are
-    # computable whereas ``list``s are not
-    computable_args = [arg for arg in op.inputs if is_computable_input(arg)]
 
     # recursively compute each node's arguments until we've changed type
 
@@ -339,7 +359,7 @@ def main_execute(
         The data that an unbound parameter in `expr` maps to
     scope : Mapping[ibis.expr.operations.Node, object]
         Additional scope, mapping ibis operations to data
-    timecontext: Tuple[pd.Timestamp, pd.Timestamp]
+    timecontext : Optional[Tuple[pd.Timestamp, pd.Timestamp]]
         timecontext needed for execution
     aggcontext : Optional[ibis.pandas.aggcontext.AggregationContext]
         An object indicating how to compute aggregations. For example,
@@ -403,7 +423,7 @@ def execute_and_reset(
         The data that an unbound parameter in `expr` maps to
     scope : Mapping[ibis.expr.operations.Node, object]
         Additional scope, mapping ibis operations to data
-    timecontext : Tuple[pd.Timestamp, pd.Timestamp]
+    timecontext : Optional[Tuple[pd.Timestamp, pd.Timestamp]]
         timecontext needed for execution
     aggcontext : Optional[ibis.pandas.aggcontext.AggregationContext]
         An object indicating how to compute aggregations. For example,
@@ -439,3 +459,30 @@ def execute_and_reset(
     elif isinstance(result, pd.Series):
         return result.reset_index(drop=True)
     return result
+
+
+compute_time_context = Dispatcher(
+    'compute_time_context',
+    doc="""\
+
+Compute time context for a node in execution
+
+Notes
+-----
+For a given node, return with a list of timecontext that are going to be
+passed to its children nodes.
+time context is useful when data is not uniquely defined by op tree. e.g.
+a TableExpr can represent the query select count(a) from table, but the
+result of that is different with time context (20190101, 20200101) vs
+(20200101, 20210101), because what data is in "table" also depends on the
+time context. And such context may not be global for all nodes. Each node
+may have its own context. compute_time_context computes attributes that
+are going to be used in executeion and passes these attributes to children
+nodes.
+""",
+)
+
+
+@compute_time_context.register(ops.Node)
+def compute_time_context_default(node, timecontext=None, **kwargs):
+    return [timecontext for arg in node.inputs if is_computable_input(arg)]

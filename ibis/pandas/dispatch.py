@@ -1,35 +1,14 @@
 from __future__ import absolute_import
 
-from functools import partial, singledispatch
+from functools import partial
 
 import toolz
 from multipledispatch import Dispatcher
 
 import ibis
 import ibis.common.exceptions as com
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.types as ir
-import ibis.expr.window as win
 from ibis.pandas.trace import TraceTwoLevelDispatcher
-
-
-@singledispatch
-def is_computable_input(arg):
-    """All inputs are not computable without a specific override."""
-    return False
-
-
-@is_computable_input.register(ibis.client.Client)
-@is_computable_input.register(ir.Expr)
-@is_computable_input.register(dt.DataType)
-@is_computable_input.register(type(None))
-@is_computable_input.register(win.Window)
-@is_computable_input.register(tuple)
-def is_computable_input_arg(arg):
-    """Return whether `arg` is a valid computable argument."""
-    return True
-
 
 # Individual operation execution
 execute_node = TraceTwoLevelDispatcher(
@@ -121,29 +100,3 @@ def post_execute_default(op, data, **kwargs):
 
 
 execute = Dispatcher("execute")
-
-compute_time_context = Dispatcher(
-    'compute_time_context',
-    doc="""\
-
-Compute time context for a node in execution
-
-Notes
------
-For a given node, return with a list of timecontext that are going to be
-passed to its children nodes.
-time context is useful when data is not uniquely defined by op tree. e.g.
-a TableExpr can represent the query select count(a) from table, but the
-result of that is different with time context (20190101, 20200101) vs
-(20200101, 20210101), because what data is in "table" also depends on the
-time context. And such context may not be global for all nodes. Each node
-may have its own context. compute_time_context computes attributes that
-are going to be used in executeion and passes these attributes to children
-nodes.
-""",
-)
-
-
-@compute_time_context.register(ops.Node)
-def compute_time_context_default(node, timecontext=None, **kwargs):
-    return [timecontext for arg in node.inputs if is_computable_input(arg)]

@@ -16,6 +16,7 @@ import ibis.expr.window as win
 import ibis.pandas.aggcontext as agg_ctx
 from ibis.pandas.aggcontext import AggregationContext
 from ibis.pandas.core import (
+    compute_time_context,
     date_types,
     execute,
     integer_types,
@@ -23,11 +24,7 @@ from ibis.pandas.core import (
     timedelta_types,
     timestamp_types,
 )
-from ibis.pandas.dispatch import (
-    compute_time_context,
-    execute_node,
-    pre_execute,
-)
+from ibis.pandas.dispatch import execute_node, pre_execute
 from ibis.pandas.execution import util
 
 
@@ -132,6 +129,21 @@ def get_aggcontext_window(
         )
 
     return aggcontext
+
+
+def trim_with_timecontext(data, timecontext):
+    try:
+        begin, end = map(pd.to_datetime, timecontext)
+    except ValueError:
+        raise com.IbisError('Cannot resolve timecontext for window\n{}.')
+    else:
+        df = data.reset_index()
+        time_col = 'time'
+        subset = df.loc[df[time_col].between(begin, end)]
+        name = data.name
+        non_target_columns = list(subset.columns.difference([name]))
+        indexed_subset = subset.set_index(non_target_columns)
+        return indexed_subset[name]
 
 
 @execute_node.register(ops.WindowOp, pd.Series, win.Window)
@@ -260,6 +272,11 @@ def execute_window_op(
     assert len(data) == len(
         series
     ), 'input data source and computed column do not have the same length'
+
+    # trim data to original time context
+    if timecontext:
+        series = trim_with_timecontext(series, timecontext)
+
     return series
 
 

@@ -875,7 +875,7 @@ def execute_node_where_scalar_scalar_series(op, cond, true, false, **kwargs):
 @execute_node.register(
     ibis.pandas.client.PandasTable, ibis.pandas.client.PandasClient
 )
-def execute_database_table_client(op, client, timecontext=None, **kwargs):
+def execute_database_table_client(op, client, timecontext, **kwargs):
     df = client.dictionary[op.name]
     try:
         begin, end = map(pd.to_datetime, timecontext)

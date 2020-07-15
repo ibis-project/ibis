@@ -133,10 +133,10 @@ def time_df3():
         {
             'time': pd.Series(
                 pd.date_range(
-                    start='2017-01-02 01:02:03.234', periods=4
+                    start='2017-01-02 01:02:03.234', periods=8
                 ).values
             ),
-            'value': [1.1, 2.2, 3.3, 4.4],
+            'value': [1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, 8.8],
         }
     )
 
