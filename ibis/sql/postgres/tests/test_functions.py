@@ -593,24 +593,6 @@ def test_category_label(alltypes, df):
     tm.assert_series_equal(result, expected)
 
 
-def test_union(alltypes):
-    t = alltypes
-
-    expr = (
-        t.group_by('string_col')
-        .aggregate(t.double_col.sum().name('foo'))
-        .sort_by('string_col')
-    )
-
-    t1 = expr.limit(4)
-    t2 = expr.limit(4, offset=4)
-    t3 = expr.limit(8)
-
-    result = t1.union(t2).execute()
-    expected = t3.execute()
-    tm.assert_frame_equal(result, expected)
-
-
 @pytest.mark.parametrize(
     ('distinct1', 'distinct2', 'expected1', 'expected2'),
     [
