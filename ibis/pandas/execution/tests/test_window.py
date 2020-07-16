@@ -688,8 +688,18 @@ def test_custom_window_udf(t, custom_window):
 
     @get_aggcontext.register(CustomWindow)
     def get_aggcontext_custom(
-        window, *, operand, operand_dtype, parent, group_by, order_by
+        window,
+        *,
+        scope,
+        operand,
+        operand_dtype,
+        parent,
+        group_by,
+        order_by,
+        dummy_custom_window_data,
     ):
+        assert dummy_custom_window_data == 'dummy_data'
+        # scope and operand are not used here
         return CustomAggContext(
             parent=parent,
             group_by=group_by,
@@ -699,7 +709,11 @@ def test_custom_window_udf(t, custom_window):
             preceding=window.preceding,
         )
 
-    result = my_sum(t['plain_float64']).over(custom_window).execute()
+    result = (
+        my_sum(t['plain_float64'])
+        .over(custom_window)
+        .execute(dummy_custom_window_data='dummy_data')
+    )
     expected = pd.Series([4.0, 10.0, 5.0])
 
     tm.assert_series_equal(result, expected)
