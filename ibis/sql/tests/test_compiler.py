@@ -4,9 +4,11 @@ import unittest
 import pytest
 
 import ibis
+import ibis.bigquery as bq
 import ibis.expr.api as api
 import ibis.expr.operations as ops
 from ibis import impala  # noqa: E402
+from ibis.expr.types import TableExpr
 from ibis.expr.tests.mocks import MockConnection
 from ibis.impala.compiler import ImpalaDialect, build_ast, to_sql  # noqa: E402
 
@@ -2496,3 +2498,27 @@ FROM (
     ON t0.`b` = t1.`b`
 WHERE t0.`a` < 1.0"""
     assert result == expected
+
+
+def test_large_compile():
+    """
+    Tests that compiling a large expression tree finishes
+    within a reasonable amount of time
+    """
+    num_columns = 20
+    num_joins = 7
+
+    names = [f"col_{i}" for i in range(num_columns)]
+    schema = ibis.Schema(names, ['string'] * num_columns)
+    ibis_client = bq.BigQueryClient.__new__(bq.BigQueryClient)
+    table = TableExpr(
+        ops.SQLQueryResult("select * from t", schema, ibis_client)
+    )
+    for _ in range(num_joins):
+        table = table.mutate(dummy=ibis.literal(""))
+        table = table.left_join(table, ["dummy"])[[table]]
+
+    start = datetime.datetime.now()
+    table.compile()
+    delta = datetime.datetime.now() - start
+    assert delta.total_seconds() < 10
