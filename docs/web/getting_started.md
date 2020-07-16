@@ -13,6 +13,7 @@ the [advanced installation page]({{ base_url}}/docs/getting_started/install.html
 
 2. In the Anaconda prompt (or terminal in Linux or MacOS), install {{ ibis.project_name }}:
 
+        :::sh
         conda install -c conda-forge ibis-project
 
 3. In the Anaconda prompt (or terminal in Linux or MacOS), start JupyterLab:
@@ -25,6 +26,7 @@ the [advanced installation page]({{ base_url}}/docs/getting_started/install.html
 
 5. In the first cell of the notebook, you can import {{ ibis.project_name }} and check the version with:
 
+        :::python
         import ibis
         ibis.__version__
 

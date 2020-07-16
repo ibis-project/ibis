@@ -15,12 +15,13 @@ the information is available in the :ref:`api`.
    :maxdepth: 1
 
    configuration
-   impala
+   backends/impala
+   backends/bigquery
    sql
    udf
    design
    extending
-   backends
+   backends/index
    geospatial_analysis
    extending_elementwise_expr
    extending_reduce_expr

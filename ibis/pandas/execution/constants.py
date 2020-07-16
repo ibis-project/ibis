@@ -28,6 +28,9 @@ ALTERNATE_SUFFIXES = {
 
 
 IBIS_TYPE_TO_PANDAS_TYPE = {
+    dt.float16: np.float16,
+    dt.float32: np.float32,
+    dt.float64: np.float64,
     dt.float: np.float32,
     dt.double: np.float64,
     dt.int8: np.int8,
