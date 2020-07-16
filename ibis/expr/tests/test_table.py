@@ -1030,33 +1030,56 @@ def test_join_nontrivial_exprs(table):
     assert False
 
 
-@pytest.mark.parametrize(
-    "set_op_func,set_op_type",
-    [
-        (lambda t1, t2: t1.union(t2), ops.Union),
-        (lambda t1, t2: t1.intersect(t2), ops.Intersection),
-    ],
-)
-def test_set_ops(table, set_op_func, set_op_type):
-    schema1 = [('key', 'string'), ('value', 'double')]
-    schema2 = [('key', 'string'), ('key2', 'string'), ('value', 'double')]
-    t1 = ibis.table(schema1, 'foo')
-    t2 = ibis.table(schema1, 'bar')
-    t3 = ibis.table(schema2, 'baz')
+@pytest.fixture
+def set_ops_schema1():
+    return [('key', 'string'), ('value', 'double')]
 
-    result = set_op_func(t1, t2)
-    assert isinstance(result.op(), set_op_type)
-    if isinstance(set_op_type, ops.Union):
-        assert not result.op().distinct
 
-    if isinstance(set_op_type, ops.Union):
-        result = t1.union(t2, distinct=True)
-        assert result.op().distinct
+@pytest.fixture
+def set_ops_schema2():
+    return [('key', 'string'), ('key2', 'string'), ('value', 'double')]
 
-    with pytest.raises(
-        RelationError, match=r'Table schemas must be equal for set operations'
-    ):
-        t1.union(t3)
+
+@pytest.fixture
+def setops_t1(set_ops_schema1):
+    return ibis.table(set_ops_schema1, 'foo')
+
+
+@pytest.fixture
+def setops_t2(set_ops_schema1):
+    return ibis.table(set_ops_schema1, 'bar')
+
+
+@pytest.fixture
+def setops_t3(set_ops_schema2):
+    return ibis.table(set_ops_schema2, 'baz')
+
+
+@pytest.fixture
+def setops_relation_error_message():
+    return 'Table schemas must be equal for set operations'
+
+
+def test_union(setops_t1, setops_t2, setops_t3, setops_relation_error_message):
+    result = setops_t1.union(setops_t2)
+    assert isinstance(result.op(), ops.Union)
+    assert not result.op().distinct
+
+    result = setops_t1.union(setops_t2, distinct=True)
+    assert result.op().distinct
+
+    with pytest.raises(RelationError, match=setops_relation_error_message):
+        setops_t1.union(setops_t3)
+
+
+def test_intersection(
+    setops_t1, setops_t2, setops_t3, setops_relation_error_message
+):
+    result = setops_t1.intersect(setops_t2)
+    assert isinstance(result.op(), ops.Intersection)
+
+    with pytest.raises(RelationError, match=setops_relation_error_message):
+        setops_t1.intersect(setops_t3)
 
 
 def test_column_ref_on_projection_rename(con):
