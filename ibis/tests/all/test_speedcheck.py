@@ -20,9 +20,7 @@ def test_large_compile():
         t = t.left_join(t, ["dummy"])[[t]]
     
     start = datetime.now()
-    print("start")
     t.compile()
-    print("end")
     delta = datetime.now() - start
     # assert delta.total_seconds() < 10
 
