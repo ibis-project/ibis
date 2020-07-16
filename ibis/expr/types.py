@@ -194,13 +194,12 @@ class Expr:
           Pass an integer to effect a specific row limit. limit=None means "no
           limit". The default is whatever is in ibis.options.
 
-        timecontext: Tuple(pd.Timestamp, pd.Timestamp) or None, default None
-           Defines a time range of [begin, end). If table contains a time
-           column of Timestamp type, execute with data within the range of
-           timecontext. This is conceptually same as a time filter.
-           Note:
+        timecontext: Optional[Tuple[pd.Timestamp, pd.Timestamp]],default None.
+           Defines a time range of [begin, end). When defined, the execution
+           will only compute result for data inside the time range. This is
+           conceptually same as a time filter.
            The time column must be named as 'time' and should preserve
-           acrossthe expression. e.g. If that column is dropped then
+           across the expression. e.g. If that column is dropped then
            execute will result in an error.
         Returns
         -------
