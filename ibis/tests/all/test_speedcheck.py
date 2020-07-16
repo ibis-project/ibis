@@ -13,7 +13,9 @@ def test_large_compile():
     names = [f"col_{i}" for i in range(num_columns)]
     schema = ibis.Schema(names, ['string'] * num_columns)
     ibis_client = bq.BigQueryClient.__new__(bq.BigQueryClient)
-    table = TableExpr(ops.SQLQueryResult("select * from t", schema, ibis_client))
+    table = TableExpr(
+        ops.SQLQueryResult("select * from t", schema, ibis_client)
+    )
     for _ in range(num_joins):
         table = table.mutate(dummy=ibis.literal(""))
         table = table.left_join(table, ["dummy"])[[table]]
