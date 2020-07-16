@@ -115,5 +115,7 @@ def test_verbose_log_queries(con):
 
     assert len(queries) == 1
     (query,) = queries
-    expected = 'SELECT t0.name \nFROM base.countries AS t0\n LIMIT ? OFFSET ?'
+    expected = 'SELECT t0.year \n'
+    expected += 'FROM base.functional_alltypes AS t0\n'
+    expected += ' LIMIT ? OFFSET ?'
     assert query == expected

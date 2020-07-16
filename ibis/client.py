@@ -211,9 +211,16 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
           Array expressions: pandas.Series
           Scalar expressions: Python scalar value
         """
+        import sqlalchemy
+
         query_ast = self._build_ast_ensure_limit(expr, limit, params=params)
         query = self._get_query(query_ast, **kwargs)
-        util.log(str(query.compiled_sql))
+        try:
+            query_str = str(query.compiled_sql)
+        except sqlalchemy.exc.UnsupportedCompilationError:
+            pass
+        else:
+            util.log(query_str)
         result = self._execute_query(query, **kwargs)
         return result
 
