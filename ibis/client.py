@@ -212,15 +212,15 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
           Scalar expressions: Python scalar value
         """
         query_ast = self._build_ast_ensure_limit(expr, limit, params=params)
-        if isinstance(query_ast, str):
-            util.log(query_ast)
-        else:
-            util.log(str(query_ast.compile()))
-        result = self._execute_query(query_ast, **kwargs)
+        query = self._get_query(query_ast, **kwargs)
+        util.log(query.compiled_sql)
+        result = self._execute_query(query, **kwargs)
         return result
 
-    def _execute_query(self, dml, **kwargs):
-        query = self.query_class(self, dml, **kwargs)
+    def _get_query(self, dml, **kwargs):
+        return self.query_class(self, dml, **kwargs)
+
+    def _execute_query(self, query, **kwargs):
         return query.execute()
 
     def compile(self, expr, params=None, limit=None):
