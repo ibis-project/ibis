@@ -249,6 +249,7 @@ CustomOp[CustomExpr]
     2.0"""
     assert result == expected
 
+
 @pytest.mark.xfail(raises=AssertionError)
 def test_same_column_multiple_aliases():
     table = ibis.table([('col', 'int64')], name='t')
