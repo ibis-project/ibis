@@ -181,7 +181,9 @@ class Expr:
     def _factory(self):
         return type(self)
 
-    def execute(self, limit='default', params=None, **kwargs):
+    def execute(
+        self, limit='default', timecontext=None, params=None, **kwargs
+    ):
         """
         If this expression is based on physical tables in a database backend,
         execute it against that backend.
@@ -192,6 +194,14 @@ class Expr:
           Pass an integer to effect a specific row limit. limit=None means "no
           limit". The default is whatever is in ibis.options.
 
+        timecontext: Tuple(pd.Timestamp, pd.Timestamp) or None, default None
+           Defines a time range of [begin, end). If table contains a time
+           column of Timestamp type, execute with data within the range of
+           timecontext. This is conceptually same as a time filter.
+           Note:
+           The time column must be named as 'time' and should preserve
+           acrossthe expression. e.g. If that column is dropped then
+           execute will result in an error.
         Returns
         -------
         result : expression-dependent
@@ -199,7 +209,9 @@ class Expr:
         """
         from ibis.client import execute
 
-        return execute(self, limit=limit, params=params, **kwargs)
+        return execute(
+            self, limit=limit, timecontext=timecontext, params=params, **kwargs
+        )
 
     def compile(self, limit=None, params=None):
         """

@@ -16,11 +16,11 @@ import ibis.expr.window as win
 import ibis.pandas.aggcontext as agg_ctx
 from ibis.pandas.aggcontext import AggregationContext
 from ibis.pandas.core import (
+    TIME_COL,
     compute_time_context,
     date_types,
     execute,
     integer_types,
-    is_computable_input,
     simple_types,
     timedelta_types,
     timestamp_types,
@@ -142,11 +142,10 @@ def trim_with_timecontext(data, timecontext):
     """
     df = data.reset_index()
     name = data.name
-    time_col = 'time'
     # Filter the data, here we preserve the time index so that when user is
     # computing a single column, the computation and the relevant time
     # indexes are retturned.
-    subset = df.loc[df[time_col].between(*timecontext)]
+    subset = df.loc[df[TIME_COL].between(*timecontext)]
     # get index columns for the Series
     non_target_columns = list(subset.columns.difference([name]))
     # set the correct index for return Seires
@@ -171,13 +170,9 @@ def execute_window_op(
     # execution of that by hand
     operand_op = operand.op()
 
-    computable_args = [arg for arg in op.inputs if is_computable_input(arg)]
-
     new_timecontext = None
     if timecontext:
-        arg_timecontexts = compute_time_context(
-            op, num_args=len(computable_args), timecontext=timecontext
-        )
+        arg_timecontexts = compute_time_context(op, timecontext=timecontext)
         # timecontext is the original time context required by parent node
         # of this WindowOp, while new_timecontext is the adjusted context
         # of this Window, since we are doing a manual execution here, use

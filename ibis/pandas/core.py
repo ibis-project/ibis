@@ -488,16 +488,25 @@ are going to be used in executeion and passes these attributes to children
 nodes.
 
 Param:
-computable_args: int
-    The number of computable_args generated in
-    ``execute_until_in_scope``.
-
 timecontext : Optional[Tuple[pd.Timestamp, pd.Timestamp]]
     begin and end time context needed for execution
+
+Return:
+List[Optional[Tuple[pd.Timestamp, pd.Timestamp]]]
+A list of timecontexts for children nodes of the current node. Note that
+timecontext are calculated for children nodes of computable args only.
+The length of the return list is same of the length of computable inputs.
+See ``computable_args`` in ``execute_until_in_scope``
 """,
 )
 
 
 @compute_time_context.register(ops.Node)
-def compute_time_context_default(node, num_args, timecontext, **kwargs):
-    return [timecontext for i in range(num_args)]
+def compute_time_context_default(node, timecontext, **kwargs):
+    return [timecontext for arg in node.inputs if is_computable_input(arg)]
+
+
+# In order to use time context feature, there must be a column of Timestamp
+# type, and named as 'time' in TableExpr. This TIME_COL constant will be
+# used in filtering data from a table or columns of a table.
+TIME_COL = 'time'

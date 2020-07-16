@@ -22,6 +22,7 @@ import ibis.expr.types as ir
 import ibis.pandas.aggcontext as agg_ctx
 from ibis.compat import DatetimeTZDtype
 from ibis.pandas.core import (
+    TIME_COL,
     boolean_types,
     execute,
     fixed_width_types,
@@ -878,15 +879,9 @@ def execute_node_where_scalar_scalar_series(op, cond, true, false, **kwargs):
 def execute_database_table_client(op, client, timecontext, **kwargs):
     df = client.dictionary[op.name]
     if timecontext:
-        try:
-            begin, end = map(pd.to_datetime, timecontext)
-        except ValueError:
-            return df
+        begin, end = timecontext
         # filter with time context
-        # Note: in order to make time context trimming work, there should be a
-        # column in table called 'time', of type Timestamp
-        time_col = 'time'
-        return df[df[time_col] >= begin][df[time_col] < end]
+        return df[df[TIME_COL] >= begin][df[TIME_COL] < end]
     return df
 
 

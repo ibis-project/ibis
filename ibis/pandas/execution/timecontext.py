@@ -33,13 +33,15 @@ import pandas as pd
 
 import ibis.expr.api as ir
 import ibis.expr.operations as ops
-from ibis.pandas.core import compute_time_context
+from ibis.pandas.core import compute_time_context, is_computable_input
 from ibis.pandas.execution import execute
 
 
 @compute_time_context.register(ops.AsOfJoin)
-def adjust_context_asof_join(op, num_args, timecontext, **kwargs):
-    new_timecontexts = [timecontext for i in range(num_args)]
+def adjust_context_asof_join(op, timecontext, **kwargs):
+    new_timecontexts = [
+        timecontext for arg in op.inputs if is_computable_input(arg)
+    ]
 
     if not timecontext:
         return new_timecontexts
@@ -61,8 +63,10 @@ def adjust_context_asof_join(op, num_args, timecontext, **kwargs):
 
 
 @compute_time_context.register(ops.WindowOp)
-def adjust_context_window(op, num_args, timecontext, **kwargs):
-    new_timecontexts = [timecontext for i in range(num_args)]
+def adjust_context_window(op, timecontext, **kwargs):
+    new_timecontexts = [
+        timecontext for arg in op.inputs if is_computable_input(arg)
+    ]
 
     if not timecontext:
         return new_timecontexts
@@ -86,5 +90,7 @@ def adjust_context_window(op, num_args, timecontext, **kwargs):
             new_following = following
         if new_following:
             result[1] = end + new_following
-    new_timecontexts = [result for i in range(num_args)]
+    new_timecontexts = [
+        result for arg in op.inputs if is_computable_input(arg)
+    ]
     return new_timecontexts
