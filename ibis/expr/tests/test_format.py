@@ -1,3 +1,5 @@
+import pytest
+
 import ibis
 from ibis.expr.format import ExprFormatter
 from ibis.expr.operations import Node
@@ -247,7 +249,7 @@ CustomOp[CustomExpr]
     2.0"""
     assert result == expected
 
-
+@pytest.mark.xfail(raises=AssertionError)
 def test_same_column_multiple_aliases():
     table = ibis.table([('col', 'int64')], name='t')
     expr = table[table.col.name('alias1'), table.col.name('alias2')]
