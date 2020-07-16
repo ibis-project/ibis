@@ -6,7 +6,7 @@ import ibis.expr.operations as ops
 from ibis.expr.types import TableExpr
 import pytest
 
-@pytest.mark.timeout(1)
+@pytest.mark.timeout(10)
 def test_large_compile():
     num_columns = 20
     num_joins = 7
