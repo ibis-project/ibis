@@ -213,7 +213,7 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         """
         query_ast = self._build_ast_ensure_limit(expr, limit, params=params)
         query = self._get_query(query_ast, **kwargs)
-        util.log(query.compiled_sql)
+        util.log(str(query.compiled_sql))
         result = self._execute_query(query, **kwargs)
         return result
 
