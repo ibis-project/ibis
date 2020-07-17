@@ -31,7 +31,7 @@ class FormatMemo:
     def _format(self, expr):
         return expr.op()._repr(memo=self)
 
-    def observe(self, expr, formatter=None):
+    def observe(self, expr, formatter=None, get_text_repr=False):
         if formatter is None:
             formatter = self._format
         key = self._key(expr)
@@ -77,7 +77,7 @@ class ExprFormatter:
 
         self.memo = memo
 
-    def get_result(self):
+    def get_result(self, get_text_repr=False):
         what = self.expr.op()
 
         if self.memoize:
@@ -91,7 +91,9 @@ class ExprFormatter:
                 text = self._format_table(self.expr)
             else:
                 # Any other node type
-                text = self._format_node(self.expr)
+                text = self._format_node(
+                    self.expr, get_text_repr=get_text_repr
+                )
         elif isinstance(what, ops.TableColumn):
             text = self._format_column(self.expr)
         elif isinstance(what, ops.Literal):
@@ -101,7 +103,7 @@ class ExprFormatter:
         elif isinstance(what, ops.ScalarParameter):
             text = 'ScalarParameter[{}]'.format(self._get_type_display())
         elif isinstance(what, ops.Node):
-            text = self._format_node(self.expr)
+            text = self._format_node(self.expr, get_text_repr=get_text_repr)
 
         if isinstance(self.expr, ir.ValueExpr) and self.expr._name is not None:
             text = '{} = {}'.format(self.expr.get_name(), text)
@@ -192,13 +194,15 @@ class ExprFormatter:
             type_display, col.name, table_formatted
         )
 
-    def _format_node(self, expr):
+    def _format_node(self, expr, get_text_repr=False):
         op = expr.op()
         formatted_args = []
 
         def visit(what, extra_indents=0):
             if isinstance(what, ir.Expr):
-                result = self._format_subexpr(what)
+                result = self._format_subexpr(
+                    what, get_text_repr=get_text_repr
+                )
             else:
                 result = self._indent(str(what))
 
@@ -246,14 +250,19 @@ class ExprFormatter:
         opline = '{}[{}]'.format(opname, type_display)
         return '\n'.join([opline] + formatted_args)
 
-    def _format_subexpr(self, expr):
+    def _format_subexpr(self, expr, get_text_repr=False):
         subexprs = self.memo.subexprs
-        key = expr._key
+        if get_text_repr:
+            key = expr._key
+        else:
+            key = expr.op()
         try:
             result = subexprs[key]
         except KeyError:
             formatter = ExprFormatter(expr, memo=self.memo, memoize=False)
-            result = subexprs[key] = self._indent(formatter.get_result(), 1)
+            result = subexprs[key] = self._indent(
+                formatter.get_result(get_text_repr), 1
+            )
         return result
 
     def _get_type_display(self, expr=None):

@@ -24,7 +24,7 @@ class Expr:
 
     def __repr__(self):
         if not config.options.interactive:
-            return self._repr()
+            return self._text_repr()
 
         try:
             result = self.execute()
@@ -47,6 +47,11 @@ class Expr:
         )
 
     __nonzero__ = __bool__
+
+    def _text_repr(self, memo=None):
+        from ibis.expr.format import ExprFormatter
+
+        return ExprFormatter(self, memo=memo).get_result(get_text_repr=True)
 
     def _repr(self, memo=None):
         from ibis.expr.format import ExprFormatter
