@@ -31,7 +31,7 @@ class FormatMemo:
     def _format(self, expr):
         return expr.op()._repr(memo=self)
 
-    def observe(self, expr, formatter=None, get_text_repr=False):
+    def observe(self, expr, formatter=None):
         if formatter is None:
             formatter = self._format
         key = self._key(expr)
