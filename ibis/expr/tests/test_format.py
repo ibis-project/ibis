@@ -252,7 +252,8 @@ CustomOp[CustomExpr]
 
 @pytest.mark.xfail(
     raises=AssertionError,
-    reason="PR 2283: The change for this test is reverted due to performance regression"
+    reason='PR 2283: The change for this test '
+    'is reverted due to performance regression'
 )
 def test_same_column_multiple_aliases():
     table = ibis.table([('col', 'int64')], name='t')
