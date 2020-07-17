@@ -17,7 +17,6 @@ Release Notes
 * :bug:`2237` Add missing float types to pandas backend
 * :bug:`2252` Allow group_by and order_by as window operation input in pandas backend
 * :feature:`2246` Implement two level dispatcher for execute_node
-* :bug:`2229` Fix same column with multiple aliases not showing properly in repr
 * :feature:`2233` Add ibis.pandas.trace module to log time and call stack information.
 * :feature:`2198` Validate that the output type of a UDF is a single element
 * :bug:`2223` Fix PySpark compiler error when elementwise UDF output_type is Decimal or Timestamp
