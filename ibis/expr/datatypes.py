@@ -874,6 +874,7 @@ _primitive_types = [
     ('time', time),
     ('timestamp', timestamp),
     ('interval', interval),
+    ('category', category),
 ]  # type: List[Tuple[str, DataType]]
 
 
