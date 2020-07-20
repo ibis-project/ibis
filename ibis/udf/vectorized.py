@@ -23,7 +23,6 @@ class UserDefinedFunction(object):
     """
 
     def __init__(self, func, func_type, input_type, output_type):
-        v.validate_parameter_kinds(func)
         v.validate_input_type(input_type, func)
         v.validate_output_type(output_type)
 
