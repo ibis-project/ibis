@@ -11,8 +11,15 @@ For more information on a specific backend, check the next backend pages:
 .. toctree::
    :maxdepth: 1
 
+   sqlite
+   postgres
+   mysql
+   impala
    omnisci
    bigquery
+   clickhouse
+   spark
+   pandas
 
 
 .. _classes_of_backends:

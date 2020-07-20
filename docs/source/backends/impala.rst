@@ -17,6 +17,35 @@ While interoperability between the Hadoop / Spark ecosystems and pandas / the
 PyData stack is overall poor (but improving), we also show some ways that you
 can use pandas with Ibis and Impala.
 
+.. _install.impala:
+
+`Impala <https://impala.apache.org/>`_ Quickstart
+-------------------------------------------------
+
+Install dependencies for Ibis's Impala dialect:
+
+::
+
+  pip install ibis-framework[impala]
+
+To create an Ibis client, you must first connect your services and assemble the
+client using :func:`ibis.impala.connect`:
+
+.. code-block:: python
+
+   import ibis
+
+   hdfs = ibis.hdfs_connect(host='impala', port=50070)
+   con = ibis.impala.connect(
+       host='impala', database='ibis_testing', hdfs_client=hdfs
+   )
+
+Both method calls can take ``auth_mechanism='GSSAPI'`` or
+``auth_mechanism='LDAP'`` to connect to Kerberos clusters.  Depending on your
+cluster setup, this may also include SSL. See the :ref:`API reference
+<api.client>` for more, along with the Impala shell reference, as the
+connection semantics are identical.
+
 The Impala client object
 ------------------------
 
