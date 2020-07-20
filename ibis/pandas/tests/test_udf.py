@@ -58,7 +58,7 @@ def my_string_length(series, **kwargs):
 
 
 @udf.elementwise(input_type=[dt.double, dt.double], output_type=dt.double)
-def my_add(series1, series2, *kwargs):
+def my_add(series1, series2, **kwargs):
     return series1 + series2
 
 
