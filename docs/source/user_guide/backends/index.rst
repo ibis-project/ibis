@@ -6,6 +6,15 @@ Backends
 This document describes the classes of backends, how they work, and any details
 about each backend that are relevant to end users.
 
+For more information on a specific backend, check the next backend pages:
+
+.. toctree::
+   :maxdepth: 1
+
+   omnisci
+   bigquery
+
+
 .. _classes_of_backends:
 
 Classes of Backends
