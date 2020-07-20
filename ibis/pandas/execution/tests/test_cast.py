@@ -158,3 +158,11 @@ def test_cast_to_decimal(t, df, type):
         1 <= len(element.as_tuple().digits) <= type.precision
         for element in result.values
     )
+
+
+@pytest.mark.parametrize(
+    'column', ['plain_int64', 'dup_strings', 'dup_ints', 'strings_with_nulls'],
+)
+def test_cast_to_category(t, df, column):
+    test = t[column].cast('category').execute()
+    tm.assert_series_equal(test, df[column].astype('category'))

@@ -40,6 +40,7 @@ IBIS_TYPE_TO_PANDAS_TYPE = {
     dt.string: str,
     dt.timestamp: 'datetime64[ns]',
     dt.boolean: np.bool_,
+    dt.category: 'category',
 }
 
 
