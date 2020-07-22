@@ -111,7 +111,7 @@ SQL engine support needing code contributors:
    tutorial/index
    user_guide/index
    api
-   backends
+   backends/index
    release/index
 
 Learning Resources
