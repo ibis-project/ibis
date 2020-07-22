@@ -58,7 +58,7 @@ def test_context_adjustment_asof_join(
 ):
     expr = time_keyed_left.asof_join(
         time_keyed_right, 'time', by='key', tolerance=4 * ibis.interval(days=1)
-    )[time_keyed_left, time_keyed_right.right_value]
+    )[time_keyed_left, time_keyed_right.other_value]
     context = (pd.Timestamp('20170105'), pd.Timestamp('20170111'))
     result = expr.execute(timecontext=context)
 

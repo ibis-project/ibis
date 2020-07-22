@@ -151,7 +151,7 @@ def time_keyed_df1():
                 ).values
             ),
             'key': [1, 2, 3, 1, 2, 3],
-            'left_value': [1.2, 1.4, 2.0, 4.0, 8.0, 16.0],
+            'value': [1.2, 1.4, 2.0, 4.0, 8.0, 16.0],
         }
     )
 
@@ -166,7 +166,7 @@ def time_keyed_df2():
                 ).values
             ),
             'key': [1, 2, 3],
-            'right_value': [1.1, 1.2, 2.2],
+            'other_value': [1.1, 1.2, 2.2],
         }
     )
 
