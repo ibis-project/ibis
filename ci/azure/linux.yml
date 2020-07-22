@@ -302,7 +302,7 @@ jobs:
 
         git init
         git checkout -b gh-pages
-        git remote set-url origin git@github.com:ibis-project/docs.ibis-project.org
+        git remote add origin git@github.com:ibis-project/docs.ibis-project.org
         git config user.name 'Ibis Documentation Bot'
         git config user.email ''
 
