@@ -194,7 +194,10 @@ class Expr:
           Pass an integer to effect a specific row limit. limit=None means "no
           limit". The default is whatever is in ibis.options.
 
-        timecontext: Optional[Tuple[pd.Timestamp, pd.Timestamp]],default None.
+        timecontext: Optional[TimeContext], default None.
+           TimeContext = Tuple[SupportsTimestamp, SupportsTimestamp]
+           SupportsTimestamp = Union[pd.Timestamp, str]
+
            Defines a time range of [begin, end). When defined, the execution
            will only compute result for data inside the time range. This is
            conceptually same as a time filter.

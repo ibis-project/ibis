@@ -881,7 +881,8 @@ def execute_database_table_client(op, client, timecontext, **kwargs):
     if timecontext:
         begin, end = timecontext
         # filter with time context
-        return df[df[TIME_COL] >= begin][df[TIME_COL] < end]
+        mask = df[TIME_COL].between(begin, end)
+        return df.loc[mask].reset_index(drop=True)
     return df
 
 

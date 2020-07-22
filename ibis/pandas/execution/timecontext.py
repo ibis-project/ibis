@@ -28,9 +28,6 @@ This is an optional feature. The result of executing an expression without time
 context is conceptually the same as executing an expression with (-inf, inf)
 time context.
 """
-
-import pandas as pd
-
 import ibis.expr.api as ir
 import ibis.expr.operations as ops
 from ibis.pandas.core import compute_time_context, is_computable_input
@@ -45,18 +42,13 @@ def adjust_context_asof_join(op, timecontext, **kwargs):
 
     if not timecontext:
         return new_timecontexts
-
-    # right table should look back or forward
     begin, end = timecontext
     tolerance = op.tolerance
     if tolerance is not None:
-        timedelta = pd.Timedelta(-tolerance.op().right.op().value)
-        if timedelta <= pd.Timedelta(0):
-            new_begin = begin + timedelta
-            new_end = end
-        else:
-            new_begin = begin
-            new_end = end + timedelta
+        timedelta = execute(tolerance)
+        # only backwards and adjust begin time only
+        new_begin = begin - timedelta
+        new_end = end
     # right table is the second node in children
     new_timecontexts[1] = (new_begin, new_end)
     return new_timecontexts

@@ -199,7 +199,6 @@ def execute_window_op(
         aggcontext=aggcontext,
         **kwargs,
     )
-
     following = window.following
     order_by = window._order_by
 
@@ -218,7 +217,12 @@ def execute_window_op(
         key_op.name
         if isinstance(key_op, ops.TableColumn)
         else execute(
-            key, scope=scope, clients=clients, aggcontext=aggcontext, **kwargs
+            key,
+            scope=scope,
+            clients=clients,
+            timecontext=new_timecontext,
+            aggcontext=aggcontext,
+            **kwargs,
         )
         for key, key_op in zip(
             group_by, map(operator.methodcaller('op'), group_by)
@@ -275,6 +279,7 @@ def execute_window_op(
     result = execute(
         operand,
         scope=new_scope,
+        timecontext=new_timecontext,
         aggcontext=aggcontext,
         clients=clients,
         **kwargs,

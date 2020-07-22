@@ -805,6 +805,9 @@ class OmniSciDBClient(SQLClient):
         Exception
             if execution method fails.
         """
+
+        # time context is not implemented for omniscidb yet
+        kwargs.pop('timecontext', None)
         # raise an Exception if kwargs is not empty:
         if kwargs:
             raise com.IbisInputError(

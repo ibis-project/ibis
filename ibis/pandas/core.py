@@ -106,6 +106,7 @@ import ibis.expr.types as ir
 import ibis.expr.window as win
 import ibis.pandas.aggcontext as agg_ctx
 from ibis.client import find_backends
+from ibis.expr.typing import TimeContext
 from ibis.pandas.dispatch import (
     execute_literal,
     execute_node,
@@ -165,7 +166,7 @@ def execute_with_scope(
     scope : collections.Mapping
         A dictionary mapping :class:`~ibis.expr.operations.Node` subclass
         instances to concrete data such as a pandas DataFrame.
-    timecontext : Optional[Tuple[pd.Timestamp, pd.Timestamp]]
+    timecontext : TimeContext
         A tuple of (begin, end) that is passed from parent Node to children
         see [timecontext.py](ibis/pandas/execution/timecontext.py) for
         detailed usage for this time context.
@@ -214,7 +215,6 @@ def execute_with_scope(
         ),
         **kwargs,
     )[op]
-
     return result
 
 
@@ -234,7 +234,7 @@ def execute_until_in_scope(
     ----------
     expr : ibis.expr.types.Expr
     scope : Mapping
-    timecontext : Optional[Tuple[pd.Timestamp, pd.Timestamp]]
+    timecontext : TimeContext
     aggcontext : Optional[AggregationContext]
     clients : List[ibis.client.Client]
     kwargs : Mapping
@@ -286,12 +286,14 @@ def execute_until_in_scope(
     if op in new_scope:
         return new_scope
 
-    # recursively compute each node's arguments until we've changed type
-
+    # recursively compute each node's arguments until we've changed type.
+    # compute_time_context should return with a list with the same length
+    # as computable_args, the two lists will be zipping together for
+    # further execution
     if len(arg_timecontexts) != len(computable_args):
         raise com.IbisError(
-            'arg_timecontexts differ with computable_arg in length '
-            'for type:\n{}.'.format(type(op).__name__)
+            f'arg_timecontexts differ with computable_arg in length '
+            'for type:\n{type(op).__name__}.'
         )
 
     scopes = [
@@ -344,7 +346,12 @@ execute = Dispatcher('execute')
 @execute.register(ir.Expr)
 @trace
 def main_execute(
-    expr, params=None, scope=None, timecontext=None, aggcontext=None, **kwargs
+    expr,
+    params=None,
+    scope=None,
+    timecontext: TimeContext = None,
+    aggcontext=None,
+    **kwargs,
 ):
     """Execute an expression against data that are bound to it. If no data
     are bound, raise an Exception.
@@ -357,7 +364,7 @@ def main_execute(
         The data that an unbound parameter in `expr` maps to
     scope : Mapping[ibis.expr.operations.Node, object]
         Additional scope, mapping ibis operations to data
-    timecontext : Optional[Tuple[pd.Timestamp, pd.Timestamp]]
+    timecontext : TimeContext
         timecontext needed for execution
     aggcontext : Optional[ibis.pandas.aggcontext.AggregationContext]
         An object indicating how to compute aggregations. For example,
@@ -384,14 +391,8 @@ def main_execute(
     if timecontext is None:
         timecontext = {}
     else:
-        try:
-            timecontext = tuple(map(pd.to_datetime, timecontext))
-        except ValueError:
-            raise com.IbisError(
-                'Cannot resolve timecontext for expression\n{}.'.format(
-                    expr.get_name()
-                )
-            )
+        # convert timecontext to datetime type, if time strings are provided
+        timecontext = canonicalize_context(timecontext)
 
     if params is None:
         params = {}
@@ -430,7 +431,7 @@ def execute_and_reset(
         The data that an unbound parameter in `expr` maps to
     scope : Mapping[ibis.expr.operations.Node, object]
         Additional scope, mapping ibis operations to data
-    timecontext : Optional[Tuple[pd.Timestamp, pd.Timestamp]]
+    timecontext : TimeContext
         timecontext needed for execution
     aggcontext : Optional[ibis.pandas.aggcontext.AggregationContext]
         An object indicating how to compute aggregations. For example,
@@ -480,19 +481,19 @@ For a given node, return with a list of timecontext that are going to be
 passed to its children nodes.
 time context is useful when data is not uniquely defined by op tree. e.g.
 a TableExpr can represent the query select count(a) from table, but the
-result of that is different with time context (20190101, 20200101) vs
-(20200101, 20210101), because what data is in "table" also depends on the
+result of that is different with time context ("20190101", "20200101") vs
+("20200101", "20210101“), because what data is in "table" also depends on the
 time context. And such context may not be global for all nodes. Each node
 may have its own context. compute_time_context computes attributes that
 are going to be used in executeion and passes these attributes to children
 nodes.
 
 Param:
-timecontext : Optional[Tuple[pd.Timestamp, pd.Timestamp]]
+timecontext : TimeContext
     begin and end time context needed for execution
 
 Return:
-List[Optional[Tuple[pd.Timestamp, pd.Timestamp]]]
+List[TimeContext]
 A list of timecontexts for children nodes of the current node. Note that
 timecontext are calculated for children nodes of computable args only.
 The length of the return list is same of the length of computable inputs.
@@ -510,3 +511,34 @@ def compute_time_context_default(node, timecontext, **kwargs):
 # type, and named as 'time' in TableExpr. This TIME_COL constant will be
 # used in filtering data from a table or columns of a table.
 TIME_COL = 'time'
+
+
+def canonicalize_context(timecontext):
+    """Convert a timecontext to canonical one with type pandas.Timestamp
+       for its begin and end time. Raise Exception for illegal inputs
+    """
+    SUPPORTS_TIMESTAMP_TYPE = pd.Timestamp, str
+    try:
+        begin, end = timecontext
+    except (ValueError, TypeError):
+        raise com.IbisError(
+            f'Timecontext {timecontext} should specify (begin, end)'
+        )
+    else:
+        if not isinstance(begin, SUPPORTS_TIMESTAMP_TYPE):
+            raise com.IbisError(
+                f'begin time value {begin} of type {type(begin)} is not'
+                'convertable to a timestamp'
+            )
+        if not isinstance(end, SUPPORTS_TIMESTAMP_TYPE):
+            raise com.IbisError(
+                f'end time value {end} of type {type(begin)} is not'
+                'convertable to a timestamp'
+            )
+        t_begin, t_end = map(pd.Timestamp, (begin, end))
+        if t_begin > t_end:
+            raise com.IbisError(
+                f'begin time {begin} must be before or equal'
+                f'to end time {end}'
+            )
+        return t_begin, t_end

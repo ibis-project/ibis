@@ -3,6 +3,7 @@ import pandas.util.testing as tm
 import pytest
 
 import ibis
+import ibis.common.exceptions as com
 
 pytestmark = pytest.mark.pandas
 
@@ -10,7 +11,7 @@ pytestmark = pytest.mark.pandas
 def test_execute_with_timecontext(time_table):
     expr = time_table
     # define a time context for time-series data
-    context = pd.Timestamp('20170101'), pd.Timestamp('20170103')
+    context = ('20170101', '20170103')
 
     # without time context, execute produces every row
     df_all = expr.execute()
@@ -27,29 +28,53 @@ merge_asof_minversion = pytest.mark.skipif(
 )
 
 
+def test_bad_timecontext(time_table):
+    expr = time_table
+    # define context with illegal string
+    with pytest.raises(ValueError):
+        context = ('bad', 'context')
+        expr.execute(timecontext=context)
+    # define context with unsupport type int
+    with pytest.raises(com.IbisError):
+        context = (20091010, 20100101)
+        expr.execute(timecontext=context)
+    # define context with too many values
+    with pytest.raises(com.IbisError):
+        context = ('20101010', '20100101', '20101010')
+        expr.execute(timecontext=context)
+    # define context with too few values
+    with pytest.raises(com.IbisError):
+        context = pd.Timestamp('20101010')
+        expr.execute(timecontext=context)
+    # define context with begin value later than end
+    with pytest.raises(com.IbisError):
+        context = ('20101010', '20090101')
+        expr.execute(timecontext=context)
+
+
 @merge_asof_minversion
 def test_context_adjustment_asof_join(
     time_keyed_left, time_keyed_right, time_keyed_df1, time_keyed_df2
 ):
     expr = time_keyed_left.asof_join(
-        time_keyed_right, 'time', by='key', tolerance=2 * ibis.interval(days=1)
-    )[time_keyed_left, time_keyed_right.other_value]
-    context = pd.Timestamp(3), pd.Timestamp(4)
+        time_keyed_right, 'time', by='key', tolerance=4 * ibis.interval(days=1)
+    )[time_keyed_left, time_keyed_right.right_value]
+    context = (pd.Timestamp('20170105'), pd.Timestamp('20170111'))
     result = expr.execute(timecontext=context)
 
     # compare with asof_join of manually trimmed tables
-    trimmed_df1 = time_keyed_df1[
-        time_keyed_df1['time'] >= pd.to_datetime(context[0])
-    ][time_keyed_df1['time'] < pd.to_datetime(context[1])]
+    trimmed_df1 = time_keyed_df1[time_keyed_df1['time'] >= context[0]][
+        time_keyed_df1['time'] < context[1]
+    ]
     trimmed_df2 = time_keyed_df2[
-        time_keyed_df2['time'] >= pd.to_datetime(context[0] - pd.Timedelta(2))
-    ][time_keyed_df2['time'] < pd.to_datetime(context[1])]
+        time_keyed_df2['time'] >= context[0] - pd.Timedelta(days=4)
+    ][time_keyed_df2['time'] < context[1]]
     expected = pd.merge_asof(
         trimmed_df1,
         trimmed_df2,
         on='time',
         by='key',
-        tolerance=pd.Timedelta('2D'),
+        tolerance=pd.Timedelta('4D'),
     )
     tm.assert_frame_equal(result, expected)
 
