@@ -388,9 +388,7 @@ def main_execute(
     if scope is None:
         scope = {}
 
-    if timecontext is None:
-        timecontext = {}
-    else:
+    if timecontext is not None:
         # convert timecontext to datetime type, if time strings are provided
         timecontext = canonicalize_context(timecontext)
 
