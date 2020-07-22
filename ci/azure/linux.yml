@@ -291,6 +291,8 @@ jobs:
 
         ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
       displayName: 'Set up ssh'
+      env:
+        IBIS_GH_TOKEN: $(IBIS_GH_TOKEN)
       condition: |
         and(eq(variables['System.PullRequest.IsFork'], 'False'),
             eq(variables['Build.Repository.Name'], 'ibis-project/ibis'),
@@ -310,8 +312,6 @@ jobs:
         git commit -m "Docs from ibis at $(Build.SourceVersion)"
         git push --force origin gh-pages
       displayName: 'Push web to remote repo'
-      env:
-        IBIS_GH_TOKEN: $(IBIS_GH_TOKEN)
       condition: |
         and(eq(variables['System.PullRequest.IsFork'], 'False'),
             eq(variables['Build.Repository.Name'], 'ibis-project/ibis'),
