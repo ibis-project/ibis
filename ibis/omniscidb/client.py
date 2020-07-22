@@ -760,8 +760,7 @@ class OmniSciDBClient(SQLClient):
             database, table_name = table_name_
         return self.get_schema(table_name, database)
 
-    def _execute_query(self, dml, **kwargs):
-        query = self.query_class(self, dml, **kwargs)
+    def _execute_query(self, query, **kwargs):
         return query.execute(**kwargs)
 
     def _execute(

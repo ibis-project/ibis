@@ -1275,6 +1275,14 @@ class AlchemyClient(SQLClient):
     def _build_ast(self, expr, context):
         return build_ast(expr, context)
 
+    def _log(self, sql):
+        try:
+            query_str = str(sql)
+        except sa.exc.UnsupportedCompilationError:
+            pass
+        else:
+            util.log(query_str)
+
     def _get_sqla_table(self, name, schema=None, autoload=True):
         return sa.Table(name, self.meta, schema=schema, autoload=autoload)
 
