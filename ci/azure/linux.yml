@@ -265,11 +265,9 @@ jobs:
     - bash: make load PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}" LOADS="${LOADS}"
       displayName: 'Load test datasets'
 
-    - bash: make docker_docs_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="ping -c 1 impala && conda list"
-      displayName: 'Ping the impala host used in the tutorial notebooks, and show conda deps'
-
     - bash: |
-        make docker_docs_run DOCKER_RUN_COMMAND="mkdir -p /ibis-project.org && \
+        make docker_docs_run DOCKER_RUN_COMMAND="ping -c 1 impala && conda list && \
+                                                 mkdir -p /ibis-project.org && \
                                                  cd /ibis-project.org && \
                                                  echo \"ibis-project.org\" > CNAME && \
                                                  touch .nojekyll && \
