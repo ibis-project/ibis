@@ -1,7 +1,5 @@
 .. currentmodule:: ibis.impala.api
 
-.. _impala:
-
 **********************
 Using Ibis with Impala
 **********************
