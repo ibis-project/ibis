@@ -1,5 +1,7 @@
 .. currentmodule:: ibis.bigquery.api
 
+.. _backends.bigquery:
+
 Using Ibis with BigQuery
 ========================
 
