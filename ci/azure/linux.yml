@@ -266,7 +266,7 @@ jobs:
       displayName: 'Load test datasets'
 
     - bash: |
-        docker-compose -f ci/docker-compose.yml run --rm ibis-docs "\
+        docker-compose -f ci/docker-compose.yml run --rm ibis-docs bash -c "\
             ping -c 1 impala && conda list && \
             mkdir -p /tmp/ibis-project.org && \
             cd /tmp/ibis-project.org && \
