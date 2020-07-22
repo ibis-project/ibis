@@ -292,8 +292,8 @@ def execute_until_in_scope(
     # further execution
     if len(arg_timecontexts) != len(computable_args):
         raise com.IbisError(
-            f'arg_timecontexts differ with computable_arg in length '
-            'for type:\n{type(op).__name__}.'
+            'arg_timecontexts differ with computable_arg in length '
+            f'for type:\n{type(op).__name__}.'
         )
 
     scopes = [
