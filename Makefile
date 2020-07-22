@@ -191,6 +191,3 @@ doc: builddoc docclean
 
 docker_run:
 	$(DOCKER_RUN) ibis $(DOCKER_RUN_COMMAND)
-
-docker_docs_run:
-	$(DOCKER_RUN) ibis-docs $(DOCKER_RUN_COMMAND)
