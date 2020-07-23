@@ -1,7 +1,7 @@
 .. _install.mysql:
 
-`MySQL <https://www.mysql.com/>`_ Quickstart
---------------------------------------------
+`MySQL <https://www.mysql.com/>`_
+---------------------------------
 
 Install dependencies for Ibis's MySQL dialect:
 

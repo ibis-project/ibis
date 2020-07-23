@@ -2,9 +2,9 @@
 
 .. _backends.impala:
 
-**********************
-Using Ibis with Impala
-**********************
+******
+Impala
+******
 
 One goal of Ibis is to provide an integrated Python API for an Impala cluster
 without requiring you to switch back and forth between Python code and the
