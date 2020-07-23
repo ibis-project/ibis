@@ -211,9 +211,17 @@ class Expr:
         """
         from ibis.client import execute
 
-        return execute(
-            self, limit=limit, timecontext=timecontext, params=params, **kwargs
-        )
+        # don't pass timecontext to kwargs if ont present
+        if timecontext is None:
+            return execute(self, limit=limit, params=params, **kwargs)
+        else:
+            return execute(
+                self,
+                limit=limit,
+                timecontext=timecontext,
+                params=params,
+                **kwargs,
+            )
 
     def compile(self, limit=None, params=None):
         """
