@@ -2,9 +2,7 @@
 
 Ibis is distributed under the Apache License, Version 2.0.
 
-Ibis development is generously sponsored by Cloudera, Inc.
-
-```
+```text
                                  Apache License
                            Version 2.0, January 2004
                         http://www.apache.org/licenses/

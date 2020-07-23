@@ -56,7 +56,11 @@ team:
 - name: "Active maintainers"
   kind: github
   members:
+  - jreback
+  - datapythonista
+- name: "Former maintainers"
+  kind: github
+  members:
   - wesm
   - cpcloud
   - kszucs
-  - jreback
