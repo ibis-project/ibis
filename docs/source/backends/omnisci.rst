@@ -8,6 +8,34 @@ To get started with the OmniSci client, check the :ref:`OmniSci quick start <ins
 
 For the API documentation, visit the :ref:`OmniSci API <api.omniscidb>`.
 
+.. _install.omniscidb:
+
+`omniscidb <https://www.omnisci.com/>`_ Quickstart
+==================================================
+
+Install dependencies for Ibis's omniscidb dialect:
+
+::
+
+  pip install ibis-framework[omniscidb]
+
+Create a client by passing in database connection parameters such as ``host``,
+``port``, ``database``,  ``user`` and ``password`` to
+:func:`ibis.omniscidb.connect`:
+
+.. code-block:: python
+
+   con = ibis.omniscidb.connect(
+       host='omniscidb',
+       database='ibis_testing',
+       user='admin',
+       password='HyperInteractive',
+   )
+
+Note: OmniSciDB backend support is tested against the latest development
+release of their database using the ``omnisci/core-os-cpu-dev:latest``
+Docker image. Some features may not work on earlier releases.
+
 Backend internals
 =================
 

@@ -1,6 +1,6 @@
 .. currentmodule:: ibis.bigquery.api
 
-.. _bigquery:
+.. _backends.bigquery:
 
 Using Ibis with BigQuery
 ========================
@@ -8,6 +8,46 @@ Using Ibis with BigQuery
 To use the BigQuery client, you will need a Google Cloud Platform account.
 Use the `BigQuery sandbox <https://cloud.google.com/bigquery/docs/sandbox>`__
 to try the service for free.
+
+.. _install.bigquery:
+
+`BigQuery <https://cloud.google.com/bigquery/>`_ Quickstart
+-----------------------------------------------------------
+
+Install dependencies for Ibis's BigQuery dialect:
+
+::
+
+  pip install ibis-framework[bigquery]
+
+Create a client by passing in the project id and dataset id you wish to operate
+with:
+
+
+.. code-block:: python
+
+   >>> con = ibis.bigquery.connect(project_id='ibis-gbq', dataset_id='testing')
+
+By default ibis assumes that the BigQuery project that's billed for queries is
+also the project where the data lives.
+
+However, it's very easy to query data that does **not** live in the billing
+project.
+
+.. note::
+
+   When you run queries against data from other projects **the billing project
+   will still be billed for any and all queries**.
+
+If you want to query data that lives in a different project than the billing
+project you can use the :meth:`ibis.bigquery.client.BigQueryClient.database`
+method of :class:`ibis.bigquery.client.BigQueryClient` objects:
+
+.. code-block:: python
+
+   >>> db = con.database('other-data-project.other-dataset')
+   >>> t = db.my_awesome_table
+   >>> t.sweet_column.sum().execute()  # runs against the billing project
 
 The BigQuery client object
 --------------------------
