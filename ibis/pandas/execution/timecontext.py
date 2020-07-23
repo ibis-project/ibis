@@ -22,7 +22,8 @@ column should be preserved across the expression tree. If 'time' column is
 dropped then execution will result in error.
 See ``execute_database_table_client`` in ``generic.py``.
 And we assume timecontext is passed in as a tuple (begin, end) where begin and
-end are timestamp, or datetime string like "20100101".
+end are timestamp, or datetime string like "20100101". Time range is inclusive
+(include both begin and end points).
 
 This is an optional feature. The result of executing an expression without time
 context is conceptually the same as executing an expression with (-inf, inf)
