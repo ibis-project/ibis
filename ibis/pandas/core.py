@@ -92,6 +92,7 @@ from __future__ import absolute_import
 import datetime
 import functools
 import numbers
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -157,7 +158,7 @@ ibis.util.consume(
 def execute_with_scope(
     expr,
     scope,
-    timecontext: TimeContext = None,
+    timecontext: Optional[TimeContext] = None,
     aggcontext=None,
     clients=None,
     **kwargs,
@@ -171,7 +172,7 @@ def execute_with_scope(
     scope : collections.Mapping
         A dictionary mapping :class:`~ibis.expr.operations.Node` subclass
         instances to concrete data such as a pandas DataFrame.
-    timecontext : TimeContext
+    timecontext : Optional[TimeContext]
         A tuple of (begin, end) that is passed from parent Node to children
         see [timecontext.py](ibis/pandas/execution/timecontext.py) for
         detailed usage for this time context.
@@ -227,7 +228,7 @@ def execute_with_scope(
 def execute_until_in_scope(
     expr,
     scope,
-    timecontext: TimeContext = None,
+    timecontext: Optional[TimeContext] = None,
     aggcontext=None,
     clients=None,
     post_execute_=None,
@@ -239,7 +240,7 @@ def execute_until_in_scope(
     ----------
     expr : ibis.expr.types.Expr
     scope : Mapping
-    timecontext : TimeContext
+    timecontext : Optional[TimeContext]
     aggcontext : Optional[AggregationContext]
     clients : List[ibis.client.Client]
     kwargs : Mapping
@@ -354,7 +355,7 @@ def main_execute(
     expr,
     params=None,
     scope=None,
-    timecontext: TimeContext = None,
+    timecontext: Optional[TimeContext] = None,
     aggcontext=None,
     **kwargs,
 ):
@@ -369,7 +370,7 @@ def main_execute(
         The data that an unbound parameter in `expr` maps to
     scope : Mapping[ibis.expr.operations.Node, object]
         Additional scope, mapping ibis operations to data
-    timecontext : TimeContext
+    timecontext : Optional[TimeContext]
         timecontext needed for execution
     aggcontext : Optional[ibis.pandas.aggcontext.AggregationContext]
         An object indicating how to compute aggregations. For example,
@@ -418,7 +419,7 @@ def execute_and_reset(
     expr,
     params=None,
     scope=None,
-    timecontext: TimeContext = None,
+    timecontext: Optional[TimeContext] = None,
     aggcontext=None,
     **kwargs,
 ):
@@ -439,7 +440,7 @@ def execute_and_reset(
         The data that an unbound parameter in `expr` maps to
     scope : Mapping[ibis.expr.operations.Node, object]
         Additional scope, mapping ibis operations to data
-    timecontext : TimeContext
+    timecontext : Optional[TimeContext]
         timecontext needed for execution
     aggcontext : Optional[ibis.pandas.aggcontext.AggregationContext]
         An object indicating how to compute aggregations. For example,
@@ -489,19 +490,20 @@ For a given node, return with a list of timecontext that are going to be
 passed to its children nodes.
 time context is useful when data is not uniquely defined by op tree. e.g.
 a TableExpr can represent the query select count(a) from table, but the
-result of that is different with time context ("20190101", "20200101") vs
-("20200101", "20210101“), because what data is in "table" also depends on the
-time context. And such context may not be global for all nodes. Each node
-may have its own context. compute_time_context computes attributes that
+result of that is different with time context (pd.Timestamp("20190101"),
+pd.Timestamp("20200101")) vs (pd.Timestamp("20200101"),
+pd.Timestamp("20210101“)), because what data is in "table" also depends on
+the time context. And such context may not be global for all nodes. Each
+node may have its own context. compute_time_context computes attributes that
 are going to be used in executeion and passes these attributes to children
 nodes.
 
 Param:
-timecontext : TimeContext
+timecontext : Optional[TimeContext]
     begin and end time context needed for execution
 
 Return:
-List[TimeContext]
+List[Optional[TimeContext]]
 A list of timecontexts for children nodes of the current node. Note that
 timecontext are calculated for children nodes of computable args only.
 The length of the return list is same of the length of computable inputs.
@@ -511,7 +513,9 @@ See ``computable_args`` in ``execute_until_in_scope``
 
 
 @compute_time_context.register(ops.Node)
-def compute_time_context_default(node, timecontext: TimeContext, **kwargs):
+def compute_time_context_default(
+    node, timecontext: Optional[TimeContext], **kwargs
+):
     return [timecontext for arg in node.inputs if is_computable_input(arg)]
 
 
@@ -521,11 +525,13 @@ def compute_time_context_default(node, timecontext: TimeContext, **kwargs):
 TIME_COL = 'time'
 
 
-def canonicalize_context(timecontext: TimeContext) -> TimeContext:
+def canonicalize_context(
+    timecontext: Optional[TimeContext],
+) -> Optional[TimeContext]:
     """Convert a timecontext to canonical one with type pandas.Timestamp
        for its begin and end time. Raise Exception for illegal inputs
     """
-    SUPPORTS_TIMESTAMP_TYPE = pd.Timestamp, str
+    SUPPORTS_TIMESTAMP_TYPE = pd.Timestamp
     try:
         begin, end = timecontext
     except (ValueError, TypeError):
@@ -536,16 +542,15 @@ def canonicalize_context(timecontext: TimeContext) -> TimeContext:
     if not isinstance(begin, SUPPORTS_TIMESTAMP_TYPE):
         raise com.IbisError(
             f'begin time value {begin} of type {type(begin)} is not'
-            ' convertable to a timestamp'
+            ' of type pd.Timestamp'
         )
     if not isinstance(end, SUPPORTS_TIMESTAMP_TYPE):
         raise com.IbisError(
             f'end time value {end} of type {type(begin)} is not'
-            ' convertable to a timestamp'
+            ' of type pd.Timestamp'
         )
-    t_begin, t_end = map(pd.Timestamp, (begin, end))
-    if t_begin > t_end:
+    if begin > end:
         raise com.IbisError(
             f'begin time {begin} must be before or equal' f' to end time {end}'
         )
-    return t_begin, t_end
+    return begin, end

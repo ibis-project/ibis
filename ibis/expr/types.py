@@ -1,6 +1,7 @@
 import itertools
 import os
 import webbrowser
+from typing import Optional
 
 import numpy as np
 
@@ -185,7 +186,7 @@ class Expr:
     def execute(
         self,
         limit='default',
-        timecontext: TimeContext = None,
+        timecontext: Optional[TimeContext] = None,
         params=None,
         **kwargs,
     ):
@@ -199,7 +200,7 @@ class Expr:
           Pass an integer to effect a specific row limit. limit=None means "no
           limit". The default is whatever is in ibis.options.
 
-        timecontext: TimeContext, default None.
+        timecontext: Optional[TimeContext], default None.
            Defines a time range of (begin, end). When defined, the execution
            will only compute result for data inside the time range. The time
            range is inclusive of both endpoints. This is conceptually same as

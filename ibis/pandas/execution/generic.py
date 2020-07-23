@@ -8,6 +8,7 @@ import math
 import numbers
 import operator
 from collections.abc import Sized
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -878,7 +879,7 @@ def execute_node_where_scalar_scalar_series(op, cond, true, false, **kwargs):
     ibis.pandas.client.PandasTable, ibis.pandas.client.PandasClient
 )
 def execute_database_table_client(
-    op, client, timecontext: TimeContext, **kwargs
+    op, client, timecontext: Optional[TimeContext], **kwargs
 ):
     df = client.dictionary[op.name]
     if timecontext:

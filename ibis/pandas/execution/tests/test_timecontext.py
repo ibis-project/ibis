@@ -11,7 +11,7 @@ pytestmark = pytest.mark.pandas
 def test_execute_with_timecontext(time_table):
     expr = time_table
     # define a time context for time-series data
-    context = ('20170101', '20170103')
+    context = (pd.Timestamp('20170101'), pd.Timestamp('20170103'))
 
     # without time context, execute produces every row
     df_all = expr.execute()
@@ -26,12 +26,12 @@ def test_bad_timecontext(time_table, t):
     expr = time_table
 
     # define context with illegal string
-    with pytest.raises(ValueError):
+    with pytest.raises(com.IbisError, match=r".*type pd.Timestamp.*"):
         context = ('bad', 'context')
         expr.execute(timecontext=context)
 
     # define context with unsupport type int
-    with pytest.raises(com.IbisError, match=r".*not convertable.*"):
+    with pytest.raises(com.IbisError, match=r".*type pd.Timestamp.*"):
         context = (20091010, 20100101)
         expr.execute(timecontext=context)
 
@@ -42,12 +42,12 @@ def test_bad_timecontext(time_table, t):
 
     # define context with begin value later than end
     with pytest.raises(com.IbisError, match=r".*before or equal.*"):
-        context = ('20101010', '20090101')
+        context = (pd.Timestamp('20101010'), pd.Timestamp('20090101'))
         expr.execute(timecontext=context)
 
     # execute context with a table without TIME_COL
     with pytest.raises(com.IbisError, match=r".*must have a time column.*"):
-        context = ('20090101', '20100101')
+        context = (pd.Timestamp('20090101'), pd.Timestamp('20100101'))
         t.execute(timecontext=context)
 
 

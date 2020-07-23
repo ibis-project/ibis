@@ -4,7 +4,7 @@ import functools
 import operator
 import re
 from collections import OrderedDict
-from typing import NoReturn
+from typing import NoReturn, Optional
 
 import pandas as pd
 import toolz
@@ -133,7 +133,7 @@ def get_aggcontext_window(
     return aggcontext
 
 
-def trim_with_timecontext(data, timecontext: TimeContext):
+def trim_with_timecontext(data, timecontext: Optional[TimeContext]):
     """ Trim data within time range defined by timecontext
 
         This is a util function used in ``execute_window_op``, where time
@@ -167,7 +167,7 @@ def execute_window_op(
     data,
     window,
     scope=None,
-    timecontext: TimeContext = None,
+    timecontext: Optional[TimeContext] = None,
     aggcontext=None,
     clients=None,
     **kwargs,
