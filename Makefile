@@ -6,8 +6,8 @@ MAKEFILE_DIR = $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 # PYTHON_VERSION and REQUIREMENTS_TAG defines which `./ci/requirements-dev-$PYTHON_VERSION-$REQUIREMENTS_TAG`
 # file will be used for creating the ibis image (see for additional info: `./ci/Dockerfile.dev` and
 # `./ci/docker-compose.yml`)
-# You can use `3.6` or `3.7` for now for the PYTHON_VERSION
-PYTHON_VERSION := 3.6
+# You can use `3.7` for now for the PYTHON_VERSION
+PYTHON_VERSION := 3.7
 REQUIREMENTS_TAG := "main"
 
 PYTHONHASHSEED := random

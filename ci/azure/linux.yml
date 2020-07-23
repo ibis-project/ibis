@@ -24,11 +24,6 @@ jobs:
     matrix:
 
       # SQL and parquet backends
-      py36_sql_parquet:
-        PYTHON_VERSION: "3.6"
-        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_SQL_PARQUET)
-        BACKENDS: $(BACKENDS_SQL_PARQUET)
-        REQUIREMENTS_TAG: "main"
       py37_sql_parquet:
         PYTHON_VERSION: "3.7"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_SQL_PARQUET)
@@ -41,11 +36,6 @@ jobs:
         REQUIREMENTS_TAG: "main"
 
       # Impala, kudu and clickhouse backends
-      py36_impala_kudu_clickhouse:
-        PYTHON_VERSION: "3.6"
-        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
-        BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
-        REQUIREMENTS_TAG: "main"
       py37_impala_kudu_clickhouse:
         PYTHON_VERSION: "3.7"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
@@ -58,11 +48,6 @@ jobs:
         REQUIREMENTS_TAG: "main"
 
       # Omnisci backend
-      py36_omnisci:
-        PYTHON_VERSION: "3.6"
-        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_OMNISCI)
-        BACKENDS: $(BACKENDS_OMNISCI)
-        REQUIREMENTS_TAG: "main"
       py37_omnisci:
         PYTHON_VERSION: "3.7"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_OMNISCI)
@@ -72,11 +57,6 @@ jobs:
       # https://github.com/ibis-project/ibis/issues/2090
 
       # PySpark and Spark backends
-      py36_pyspark_spark:
-        PYTHON_VERSION: "3.6"
-        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_PYSPARK_SPARK)
-        BACKENDS: $(BACKENDS_PYSPARK_SPARK)
-        REQUIREMENTS_TAG: "pyspark-spark"
       py37_pyspark_spark:
         PYTHON_VERSION: "3.7"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_PYSPARK_SPARK)
