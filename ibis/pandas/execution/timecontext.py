@@ -30,12 +30,13 @@ time context.
 """
 import ibis.expr.api as ir
 import ibis.expr.operations as ops
+from ibis.expr.typing import TimeContext
 from ibis.pandas.core import compute_time_context, is_computable_input
 from ibis.pandas.execution import execute
 
 
 @compute_time_context.register(ops.AsOfJoin)
-def adjust_context_asof_join(op, timecontext, **kwargs):
+def adjust_context_asof_join(op, timecontext: TimeContext, **kwargs):
     new_timecontexts = [
         timecontext for arg in op.inputs if is_computable_input(arg)
     ]
@@ -55,7 +56,7 @@ def adjust_context_asof_join(op, timecontext, **kwargs):
 
 
 @compute_time_context.register(ops.WindowOp)
-def adjust_context_window(op, timecontext, **kwargs):
+def adjust_context_window(op, timecontext: TimeContext, **kwargs):
     new_timecontexts = [
         timecontext for arg in op.inputs if is_computable_input(arg)
     ]

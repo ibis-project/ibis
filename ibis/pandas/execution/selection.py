@@ -16,6 +16,7 @@ from toolz import compose, concat, concatv, first, unique
 
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+from ibis.expr.typing import TimeContext
 from ibis.pandas.core import execute
 from ibis.pandas.dispatch import execute_node
 from ibis.pandas.execution import constants, util
@@ -77,7 +78,7 @@ def compute_projection_scalar_expr(expr, parent, data, scope=None, **kwargs):
 
 @compute_projection.register(ir.ColumnExpr, ops.Selection, pd.DataFrame)
 def compute_projection_column_expr(
-    expr, parent, data, scope, timecontext, **kwargs
+    expr, parent, data, scope, timecontext: TimeContext, **kwargs
 ):
     result_name = getattr(expr, '_name', None)
     op = expr.op()
@@ -279,7 +280,9 @@ def physical_tables_node(node):
 
 
 @execute_node.register(ops.Selection, pd.DataFrame)
-def execute_selection_dataframe(op, data, scope, timecontext, **kwargs):
+def execute_selection_dataframe(
+    op, data, scope, timecontext: TimeContext, **kwargs
+):
     selections = op.selections
     predicates = op.predicates
     sort_keys = op.sort_keys

@@ -22,37 +22,35 @@ def test_execute_with_timecontext(time_table):
     assert len(df_within_context['time']) == 1
 
 
-merge_asof_minversion = pytest.mark.skipif(
-    pd.__version__ < '0.19.2',
-    reason='at least pandas-0.19.2 required for merge_asof',
-)
-
-
-def test_bad_timecontext(time_table):
+def test_bad_timecontext(time_table, t):
     expr = time_table
+
     # define context with illegal string
     with pytest.raises(ValueError):
         context = ('bad', 'context')
         expr.execute(timecontext=context)
+
     # define context with unsupport type int
-    with pytest.raises(com.IbisError):
+    with pytest.raises(com.IbisError, match=r".*not convertable.*"):
         context = (20091010, 20100101)
         expr.execute(timecontext=context)
-    # define context with too many values
-    with pytest.raises(com.IbisError):
-        context = ('20101010', '20100101', '20101010')
-        expr.execute(timecontext=context)
+
     # define context with too few values
-    with pytest.raises(com.IbisError):
+    with pytest.raises(com.IbisError, match=r".*should specify.*"):
         context = pd.Timestamp('20101010')
         expr.execute(timecontext=context)
+
     # define context with begin value later than end
-    with pytest.raises(com.IbisError):
+    with pytest.raises(com.IbisError, match=r".*before or equal.*"):
         context = ('20101010', '20090101')
         expr.execute(timecontext=context)
 
+    # execute context with a table without TIME_COL
+    with pytest.raises(com.IbisError, match=r".*must have a time column.*"):
+        context = ('20090101', '20100101')
+        t.execute(timecontext=context)
 
-@merge_asof_minversion
+
 def test_context_adjustment_asof_join(
     time_keyed_left, time_keyed_right, time_keyed_df1, time_keyed_df2
 ):

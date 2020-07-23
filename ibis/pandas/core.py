@@ -155,7 +155,12 @@ ibis.util.consume(
 
 
 def execute_with_scope(
-    expr, scope, timecontext=None, aggcontext=None, clients=None, **kwargs
+    expr,
+    scope,
+    timecontext: TimeContext = None,
+    aggcontext=None,
+    clients=None,
+    **kwargs,
 ):
     """Execute an expression `expr`, with data provided in `scope`.
 
@@ -222,7 +227,7 @@ def execute_with_scope(
 def execute_until_in_scope(
     expr,
     scope,
-    timecontext=None,
+    timecontext: TimeContext = None,
     aggcontext=None,
     clients=None,
     post_execute_=None,
@@ -410,7 +415,12 @@ def main_execute(
 
 
 def execute_and_reset(
-    expr, params=None, scope=None, timecontext=None, aggcontext=None, **kwargs
+    expr,
+    params=None,
+    scope=None,
+    timecontext: TimeContext = None,
+    aggcontext=None,
+    **kwargs,
 ):
     """Execute an expression against data that are bound to it. If no data
     are bound, raise an Exception.
@@ -501,7 +511,7 @@ See ``computable_args`` in ``execute_until_in_scope``
 
 
 @compute_time_context.register(ops.Node)
-def compute_time_context_default(node, timecontext, **kwargs):
+def compute_time_context_default(node, timecontext: TimeContext, **kwargs):
     return [timecontext for arg in node.inputs if is_computable_input(arg)]
 
 
@@ -511,7 +521,7 @@ def compute_time_context_default(node, timecontext, **kwargs):
 TIME_COL = 'time'
 
 
-def canonicalize_context(timecontext):
+def canonicalize_context(timecontext: TimeContext) -> TimeContext:
     """Convert a timecontext to canonical one with type pandas.Timestamp
        for its begin and end time. Raise Exception for illegal inputs
     """
@@ -522,21 +532,20 @@ def canonicalize_context(timecontext):
         raise com.IbisError(
             f'Timecontext {timecontext} should specify (begin, end)'
         )
-    else:
-        if not isinstance(begin, SUPPORTS_TIMESTAMP_TYPE):
-            raise com.IbisError(
-                f'begin time value {begin} of type {type(begin)} is not'
-                'convertable to a timestamp'
-            )
-        if not isinstance(end, SUPPORTS_TIMESTAMP_TYPE):
-            raise com.IbisError(
-                f'end time value {end} of type {type(begin)} is not'
-                'convertable to a timestamp'
-            )
-        t_begin, t_end = map(pd.Timestamp, (begin, end))
-        if t_begin > t_end:
-            raise com.IbisError(
-                f'begin time {begin} must be before or equal'
-                f'to end time {end}'
-            )
-        return t_begin, t_end
+
+    if not isinstance(begin, SUPPORTS_TIMESTAMP_TYPE):
+        raise com.IbisError(
+            f'begin time value {begin} of type {type(begin)} is not'
+            ' convertable to a timestamp'
+        )
+    if not isinstance(end, SUPPORTS_TIMESTAMP_TYPE):
+        raise com.IbisError(
+            f'end time value {end} of type {type(begin)} is not'
+            ' convertable to a timestamp'
+        )
+    t_begin, t_end = map(pd.Timestamp, (begin, end))
+    if t_begin > t_end:
+        raise com.IbisError(
+            f'begin time {begin} must be before or equal' f' to end time {end}'
+        )
+    return t_begin, t_end

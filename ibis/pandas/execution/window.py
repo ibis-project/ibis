@@ -14,6 +14,7 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.window as win
 import ibis.pandas.aggcontext as agg_ctx
+from ibis.expr.typing import TimeContext
 from ibis.pandas.aggcontext import AggregationContext
 from ibis.pandas.core import (
     TIME_COL,
@@ -132,7 +133,7 @@ def get_aggcontext_window(
     return aggcontext
 
 
-def trim_with_timecontext(data, timecontext):
+def trim_with_timecontext(data, timecontext: TimeContext):
     """ Trim data within time range defined by timecontext
 
         This is a util function used in ``execute_window_op``, where time
@@ -140,14 +141,21 @@ def trim_with_timecontext(data, timecontext):
         within the original time context before return.
 
     """
+    # noop if timecontext is None
+    if not timecontext:
+        return data
+
     df = data.reset_index()
     name = data.name
+
     # Filter the data, here we preserve the time index so that when user is
     # computing a single column, the computation and the relevant time
     # indexes are retturned.
     subset = df.loc[df[TIME_COL].between(*timecontext)]
+
     # get index columns for the Series
     non_target_columns = list(subset.columns.difference([name]))
+
     # set the correct index for return Seires
     indexed_subset = subset.set_index(non_target_columns)
     return indexed_subset[name]
@@ -159,7 +167,7 @@ def execute_window_op(
     data,
     window,
     scope=None,
-    timecontext=None,
+    timecontext: TimeContext = None,
     aggcontext=None,
     clients=None,
     **kwargs,
@@ -290,8 +298,7 @@ def execute_window_op(
     ), 'input data source and computed column do not have the same length'
 
     # trim data to original time context
-    if timecontext:
-        series = trim_with_timecontext(series, timecontext)
+    series = trim_with_timecontext(series, timecontext)
 
     return series
 
