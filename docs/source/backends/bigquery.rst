@@ -2,8 +2,8 @@
 
 .. _backends.bigquery:
 
-Using Ibis with BigQuery
-========================
+BigQuery
+========
 
 To use the BigQuery client, you will need a Google Cloud Platform account.
 Use the `BigQuery sandbox <https://cloud.google.com/bigquery/docs/sandbox>`__

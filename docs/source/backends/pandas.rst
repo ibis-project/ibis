@@ -1,7 +1,7 @@
-`Pandas <https://pandas.pydata.org/>`_ Quickstart
--------------------------------------------------
+`pandas <https://pandas.pydata.org/>`_
+--------------------------------------
 
-Ibis's Pandas backend is available in core Ibis:
+Ibis's pandas backend is available in core Ibis:
 
 Create a client by supplying a dictionary of DataFrames using
 :func:`ibis.pandas.connect`. The keys become the table names:

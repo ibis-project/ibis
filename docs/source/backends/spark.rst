@@ -1,7 +1,7 @@
 .. _install.spark:
 
-`PySpark/Spark SQL <https://spark.apache.org/sql/>`_ Quickstart
----------------------------------------------------------------
+`PySpark/Spark SQL <https://spark.apache.org/sql/>`_
+----------------------------------------------------
 
 Install dependencies for Ibis's Spark dialect:
 

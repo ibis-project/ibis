@@ -1,8 +1,8 @@
 .. _omnisci:
 
-*************************
-Using Ibis with OmniSciDB
-*************************
+*********
+OmniSciDB
+*********
 
 To get started with the OmniSci client, check the :ref:`OmniSci quick start <install.omniscidb>`.
 

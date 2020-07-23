@@ -1,7 +1,7 @@
 .. _install.sqlite:
 
-`SQLite <https://www.sqlite.org/>`_ Quickstart
-----------------------------------------------
+`SQLite <https://www.sqlite.org/>`_
+-----------------------------------
 
 Install dependencies for Ibis's SQLite dialect:
 

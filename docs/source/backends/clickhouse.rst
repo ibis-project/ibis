@@ -1,7 +1,7 @@
 .. _install.clickhouse:
 
-`Clickhouse <https://clickhouse.yandex/>`_ Quickstart
------------------------------------------------------
+`Clickhouse <https://clickhouse.yandex/>`_
+------------------------------------------
 
 Install dependencies for Ibis's Clickhouse dialect(minimal supported version is `0.1.3`):
 
