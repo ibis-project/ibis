@@ -36,6 +36,46 @@ Note: OmniSciDB backend support is tested against the latest development
 release of their database using the ``omnisci/core-os-cpu-dev:latest``
 Docker image. Some features may not work on earlier releases.
 
+.. _api.omniscidb:
+
+API
+===
+.. currentmodule:: ibis.omniscidb.api
+
+The OmniSciDB client is accessible through the ``ibis.omniscidb`` namespace.
+
+Use ``ibis.omniscidb.connect`` to create a client.
+
+.. autosummary::
+   :toctree: ../generated/
+
+   compile
+   connect
+   verify
+   OmniSciDBClient.alter_user
+   OmniSciDBClient.close
+   OmniSciDBClient.create_database
+   OmniSciDBClient.create_table
+   OmniSciDBClient.create_user
+   OmniSciDBClient.create_view
+   OmniSciDBClient.database
+   OmniSciDBClient.describe_formatted
+   OmniSciDBClient.drop_database
+   OmniSciDBClient.drop_table
+   OmniSciDBClient.drop_table_or_view
+   OmniSciDBClient.drop_user
+   OmniSciDBClient.drop_view
+   OmniSciDBClient.exists_table
+   OmniSciDBClient.get_schema
+   OmniSciDBClient.list_tables
+   OmniSciDBClient.load_data
+   OmniSciDBClient.log
+   OmniSciDBClient.set_database
+   OmniSciDBClient.sql
+   OmniSciDBClient.table
+   OmniSciDBClient.truncate_table
+   OmniSciDBClient.version
+
 Backend internals
 =================
 
