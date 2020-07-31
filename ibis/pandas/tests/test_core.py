@@ -10,7 +10,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.pandas.client import PandasClient
-from ibis.pandas.core import is_computable_input
+from ibis.pandas.core import is_computable_input, scope_item
 from ibis.pandas.dispatch import execute_node, post_execute, pre_execute
 
 pytestmark = pytest.mark.pandas
@@ -66,7 +66,7 @@ def test_pre_execute_basic():
 
     @pre_execute.register(ops.Add)
     def pre_execute_test(op, *clients, scope=None, **kwargs):
-        return {op: 4}
+        return scope_item(op, 4, None)
 
     one = ibis.literal(1)
     expr = one + one

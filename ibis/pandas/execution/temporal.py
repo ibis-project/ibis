@@ -11,6 +11,7 @@ from ibis.pandas.core import (
     date_types,
     integer_types,
     numeric_types,
+    scope_item,
     timedelta_types,
     timestamp_types,
 )
@@ -232,7 +233,8 @@ def execute_timestamp_from_unix(op, data, **kwargs):
 @pre_execute.register(ops.TimestampNow)
 @pre_execute.register(ops.TimestampNow, ibis.client.Client)
 def pre_execute_timestamp_now(op, *args, **kwargs):
-    return {op: pd.Timestamp('now')}
+    timecontext = kwargs.get('timecontext', None)
+    return scope_item(op, pd.Timestamp('now'), timecontext)
 
 
 @execute_node.register(ops.DayOfWeekIndex, (str, datetime.date))

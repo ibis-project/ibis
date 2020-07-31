@@ -90,6 +90,7 @@ passed to ``post_execute`` would be the bound values passed in at the time the
 from __future__ import absolute_import
 
 import datetime
+import enum
 import functools
 import numbers
 from typing import Optional
@@ -220,7 +221,7 @@ def execute_with_scope(
             **kwargs,
         ),
         **kwargs,
-    )[op]
+    )[op]['value']
     return result
 
 
@@ -253,16 +254,19 @@ def execute_until_in_scope(
     # base case: our op has been computed (or is a leaf data node), so
     # return the corresponding value
     op = expr.op()
-    if op in scope:
-        return scope
-    elif isinstance(op, ops.Literal):
+    if isinstance(op, ops.Literal):
         # special case literals to avoid the overhead of dispatching
         # execute_node
-        return {
-            op: execute_literal(
+        return scope_item(
+            op,
+            execute_literal(
                 op, op.value, expr.type(), aggcontext=aggcontext, **kwargs
-            )
-        }
+            ),
+            timecontext,
+        )
+
+    if get_scope(scope, op, timecontext) is not None:
+        return scope
     # figure out what arguments we're able to compute on based on the
     # expressions inputs. things like expressions, None, and scalar types are
     # computable whereas ``list``s are not
@@ -289,8 +293,11 @@ def execute_until_in_scope(
 
     # Short circuit: if pre_execute puts op in scope, then we don't need to
     # execute its computable_args
-    if op in new_scope:
+    if get_scope(new_scope, op, timecontext) is not None:
         return new_scope
+
+    # if op in new_scope:
+    #    return new_scope
 
     # recursively compute each node's arguments until we've changed type.
     # compute_time_context should return with a list with the same length
@@ -313,7 +320,7 @@ def execute_until_in_scope(
             **kwargs,
         )
         if hasattr(arg, 'op')
-        else {arg: arg}
+        else scope_item(arg, arg, timecontext)
         for (arg, timecontext) in zip(computable_args, arg_timecontexts)
     ]
 
@@ -330,7 +337,7 @@ def execute_until_in_scope(
 
     # pass our computed arguments to this node's execute_node implementation
     data = [
-        new_scope[arg.op()] if hasattr(arg, 'op') else arg
+        get_scope(new_scope, arg.op()) if hasattr(arg, 'op') else arg
         for arg in computable_args
     ]
     result = execute_node(
@@ -343,7 +350,7 @@ def execute_until_in_scope(
         **kwargs,
     )
     computed = post_execute_(op, result, timecontext=timecontext)
-    return {op: computed}
+    return scope_item(op, computed, timecontext)
 
 
 execute = Dispatcher('execute')
@@ -403,9 +410,15 @@ def main_execute(
 
     # TODO: make expresions hashable so that we can get rid of these .op()
     # calls everywhere
-    params = {k.op() if hasattr(k, 'op') else k: v for k, v in params.items()}
+    additional_scope = {}
+    for k, v in params.items():
+        if hasattr(k, 'op'):
+            item = scope_item(k.op(), v, timecontext)
+        else:
+            item = scope_item(k, v, timecontext)
+        additional_scope = toolz.merge(additional_scope, item)
 
-    new_scope = toolz.merge(scope, params)
+    new_scope = toolz.merge(scope, additional_scope)
     return execute_with_scope(
         expr,
         new_scope,
@@ -554,3 +567,69 @@ def canonicalize_context(
             f'begin time {begin} must be before or equal' f' to end time {end}'
         )
     return begin, end
+
+
+class TimeContextRelation(enum.Enum):
+    SUBSET = 0
+    SUPERSET = 1
+    OVERLAP = 2
+
+
+def compare_timecontext(cur_context: TimeContext, old_context: TimeContext):
+    """Compare two timecontext and return the relationship between two time
+       context (SUBSET, SUPERSET, OVERLAP).
+       e.g. SUBSET means cur_context is a subset of old_context,
+       it has a begin time greater than old_context's, and an end time
+       earlier than old_context's.
+    """
+    begin, end = cur_context
+    old_begin, old_end = old_context
+    if old_begin <= begin and old_end >= end:
+        return TimeContextRelation.SUBSET
+    elif old_begin >= begin and old_end <= end:
+        return TimeContextRelation.SUPERSET
+    else:
+        return TimeContextRelation.OVERLAP
+
+
+def get_scope(scope, op, timecontext=None):
+    """ Given a op and timecontext, get result from scope
+    """
+    if op not in scope:
+        return None
+    # for ops without timecontext
+    if timecontext is None:
+        return scope[op]['value']
+    else:
+        # For op with timecontext, we only use scope to cache leaf nodes for
+        # now. This is because some ops cannot use cached result with a
+        # different timecontext to get the correct result. For example,
+        # a groupby followed by count, if we use a larger or smaller dataset
+        # from cache, we will probably get an error in result. Such ops with
+        # global aggregation, ops whose result is depending on other rows
+        # in result Dataframe, cannot use cached result with different time
+        # context to optimize calculation. For simplicity, we skip these ops
+        # for now.
+        if isinstance(op, ops.TableColumn) or isinstance(op, ops.TableNode):
+            relation = compare_timecontext(
+                timecontext, scope[op]['timecontext']
+            )
+            if relation == TimeContextRelation.SUBSET:
+                return scope[op]['value']
+            else:
+                return None
+        else:
+            # For other ops with time context,  do not trust results in scope,
+            # return None as if result is not present
+            return None
+
+
+def scope_item(op, result, timecontext):
+    """make a scope item to be set in scope
+
+    Scope is a dictionary mapping :class:`~ibis.expr.operations.Node`
+    subclass instances to concrete data, and the time context associate
+    with it(if any).
+
+    """
+    return {op: {'value': result, 'timecontext': timecontext}}

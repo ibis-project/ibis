@@ -96,3 +96,57 @@ def test_context_adjustment_window(time_table, time_df3):
     # result should adjust time context accordingly
     result = expr.execute(timecontext=context)
     tm.assert_series_equal(result, expected)
+
+
+def test_context_adjustment_window_with_mutate(time_table, time_df3):
+    expected_win_1 = (
+        time_df3.set_index('time').value.rolling('3d', closed='both').mean()
+    )
+    expected_win_1 = expected_win_1[
+        expected_win_1.index >= pd.Timestamp('20170105')
+    ].reset_index(drop=True)
+
+    context = pd.Timestamp('20170105'), pd.Timestamp('20170111')
+    window1 = ibis.trailing_window(
+        3 * ibis.interval(days=1), order_by=time_table.time
+    )
+    expr = time_table.mutate(value=time_table['value'].mean().over(window1))
+    result = expr.execute(timecontext=context)
+    tm.assert_series_equal(result["value"], expected_win_1)
+
+
+def test_context_adjustment_multi_window(time_table, time_df3):
+    expected_win_1 = (
+        time_df3.set_index('time')
+        .rename(columns={'value': 'v1'})['v1']
+        .rolling('3d', closed='both')
+        .mean()
+    )
+    expected_win_1 = expected_win_1[
+        expected_win_1.index >= pd.Timestamp('20170105')
+    ].reset_index(drop=True)
+
+    expected_win_2 = (
+        time_df3.set_index('time')
+        .rename(columns={'value': 'v2'})['v2']
+        .rolling('2d', closed='both')
+        .mean()
+    )
+    expected_win_2 = expected_win_2[
+        expected_win_2.index >= pd.Timestamp('20170105')
+    ].reset_index(drop=True)
+
+    context = pd.Timestamp('20170105'), pd.Timestamp('20170111')
+    window1 = ibis.trailing_window(
+        3 * ibis.interval(days=1), order_by=time_table.time
+    )
+    window2 = ibis.trailing_window(
+        2 * ibis.interval(days=1), order_by=time_table.time
+    )
+    expr = time_table.mutate(
+        v1=time_table['value'].mean().over(window1),
+        v2=time_table['value'].mean().over(window2),
+    )
+    result = expr.execute(timecontext=context)
+    tm.assert_series_equal(result["v1"], expected_win_1)
+    tm.assert_series_equal(result["v2"], expected_win_2)

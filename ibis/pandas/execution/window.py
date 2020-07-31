@@ -3,7 +3,6 @@
 import functools
 import operator
 import re
-from collections import OrderedDict
 from typing import NoReturn, Optional
 
 import pandas as pd
@@ -22,6 +21,7 @@ from ibis.pandas.core import (
     date_types,
     execute,
     integer_types,
+    scope_item,
     simple_types,
     timedelta_types,
     timestamp_types,
@@ -161,13 +161,16 @@ def trim_with_timecontext(data, timecontext: Optional[TimeContext]):
     if not timecontext:
         return data
 
-    df = data.reset_index()
+    df = data.reset_index(level=1)
     name = data.name
 
     # Filter the data, here we preserve the time index so that when user is
     # computing a single column, the computation and the relevant time
     # indexes are retturned.
     subset = df.loc[df[TIME_COL].between(*timecontext)]
+
+    # re-indexing index to count from 0
+    subset = subset.reset_index(drop=True).reset_index()
 
     # get index columns for the Series
     non_target_columns = list(subset.columns.difference([name]))
@@ -264,7 +267,11 @@ def execute_window_op(
                 grouping_keys,
                 ordering_keys,
             ) = util.compute_sorted_frame(
-                data, order_by, group_by=group_by, **kwargs
+                data,
+                order_by,
+                group_by=group_by,
+                timecontext=new_timecontext,
+                **kwargs,
             )
             source = sorted_df.groupby(grouping_keys, sort=True)
             post_process = _post_process_group_by_order_by
@@ -274,18 +281,20 @@ def execute_window_op(
     else:
         if order_by:
             source, grouping_keys, ordering_keys = util.compute_sorted_frame(
-                data, order_by, **kwargs
+                data, order_by, timecontext=new_timecontext, **kwargs
             )
             post_process = _post_process_order_by
         else:
             source = data
             post_process = _post_process_empty
 
-    new_scope = toolz.merge(
-        scope,
-        OrderedDict((t, source) for t in operand.op().root_tables()),
-        factory=OrderedDict,
-    )
+    additional_scope = {}
+    for t in operand.op().root_tables():
+        additional_scope = toolz.merge(
+            additional_scope, scope_item(t, source, new_timecontext)
+        )
+
+    new_scope = toolz.merge(scope, additional_scope)
 
     # figure out what the dtype of the operand is
     operand_type = operand.type()

@@ -4,24 +4,30 @@ import toolz
 
 import ibis
 import ibis.common.exceptions as com
-from ibis.pandas.core import execute
+from ibis.pandas.core import execute, scope_item
 
 
-def compute_sort_key(key, data, scope=None, **kwargs):
+def compute_sort_key(key, data, timecontext, scope=None, **kwargs):
     by = key.to_expr()
     try:
         if isinstance(by, str):
             return by, None
         return by.get_name(), None
     except com.ExpressionError:
-        new_scope = {t: data for t in by.op().root_tables()}
+        new_scope = {}
+        for t in by.op().root_tables():
+            new_scope = toolz.merge(
+                new_scope, scope_item(t, data, timecontext)
+            )
         new_column = execute(by, scope=toolz.merge(scope, new_scope), **kwargs)
         name = ibis.util.guid()
         new_column.name = name
         return name, new_column
 
 
-def compute_sorted_frame(df, order_by, group_by=(), **kwargs):
+def compute_sorted_frame(
+    df, order_by, group_by=(), timecontext=None, **kwargs
+):
     computed_sort_keys = []
     sort_keys = list(toolz.concatv(group_by, order_by))
     ascending = [getattr(key.op(), 'ascending', True) for key in sort_keys]
@@ -29,7 +35,7 @@ def compute_sorted_frame(df, order_by, group_by=(), **kwargs):
 
     for i, key in enumerate(map(operator.methodcaller('op'), sort_keys)):
         computed_sort_key, temporary_column = compute_sort_key(
-            key, df, **kwargs
+            key, df, timecontext, **kwargs
         )
         computed_sort_keys.append(computed_sort_key)
 
