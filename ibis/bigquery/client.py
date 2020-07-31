@@ -51,14 +51,14 @@ _LEGACY_TO_STANDARD = {
 _USER_AGENT_DEFAULT_TEMPLATE = 'ibis/{}'
 
 
-def _create_client_info(user_agent):
-    user_agent_components = [
-        _USER_AGENT_DEFAULT_TEMPLATE.format(ibis.__version__)
-    ]
-    if user_agent:
-        user_agent_components.insert(0, user_agent)
+def _create_client_info(application_name):
+    user_agent = []
 
-    return ClientInfo(user_agent=" ".join(user_agent_components))
+    if application_name:
+        user_agent.append(application_name)
+
+    user_agent.append(_USER_AGENT_DEFAULT_TEMPLATE.format(ibis.__version__))
+    return ClientInfo(user_agent=" ".join(user_agent))
 
 
 @dt.dtype.register(bq.schema.SchemaField)
@@ -379,7 +379,11 @@ class BigQueryClient(SQLClient):
     dialect = comp.BigQueryDialect
 
     def __init__(
-        self, project_id, dataset_id=None, credentials=None, user_agent=None
+        self,
+        project_id,
+        dataset_id=None,
+        credentials=None,
+        application_name=None,
     ):
         """Construct a BigQueryClient.
 
@@ -390,7 +394,7 @@ class BigQueryClient(SQLClient):
         dataset_id : Optional[str]
             A ``<project_id>.<dataset_id>`` string or just a dataset name
         credentials : google.auth.credentials.Credentials
-        user_agent : str
+        application_name : str
             A string identifying your application to Google API endpoints.
 
         """
@@ -402,7 +406,7 @@ class BigQueryClient(SQLClient):
         self.client = bq.Client(
             project=self.data_project,
             credentials=credentials,
-            client_info=_create_client_info(user_agent),
+            client_info=_create_client_info(application_name),
         )
 
     def _parse_project_and_dataset(self, dataset):
