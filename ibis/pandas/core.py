@@ -85,6 +85,49 @@ allows you to encode such logic. One might want to implement this using
 :class:`~ibis.expr.operations.ScalarParameter`, in which case the ``scope``
 passed to ``post_execute`` would be the bound values passed in at the time the
 ``execute`` method was called.
+
+
+Scope
+-------------------
+Scope is used across the execution phases, it iss a map that maps Ibis
+operators to actual data. It is used to cache data for calculated ops. It is
+an optimization to reused executed results.
+
+With time context included, the key is op associated with each expression;
+And scope value is another key-value map:
+- value: pd.DataFrame or pd.Series that is the result of executing key op
+- timecontext: of type TimeContext, the time context associated with the data
+stored in value
+
+Note that the idea is: data should be determined by both op and timecontext.
+So the data structure above is conceptually same as making (op, timecontext)
+as the key for scope. But that may increase the time complexity in querying,
+so we make timecontext as another key of op. See following getting and setting
+logic for details.
+
+Set scope kv pair: before setting the value op in scope we need to perform the
+following check first:
+
+Test if op is in scope yet
+- No, then put op in scope, set timecontext to be the current timecontext (None
+if timecontext is not present), set value to be the DataFrame or Series of the
+actual data.
+- Yes, then get the timecontext stored in scope for op as old_timecontext, and
+compare it with current timecontext:
+If current timecontext is a subset of old_timecontext, that means we already
+cached a larger range of data. Do nothing and we will trim data in later
+execution process.
+If current timecontext is a superset of old_timecontext, that means we need
+to update cache. Set value to be the current data and set timecontext to be the
+current timecontext for op.
+If current timecontext is neither a subset nor a superset of old_timcontext,
+but they overlap, or not overlap at all. For example this will happen when
+there is a window that looks forward, over a window that looks back. So in this
+case, we should not trust the data stored either, and go on to execute this
+node. For simplicity, we update cache in this case as well.
+
+See scope_item() for the structure of scope, and get_scope() for the details
+about the implementaion.
 """
 
 from __future__ import absolute_import
@@ -570,17 +613,37 @@ def canonicalize_context(
 
 
 class TimeContextRelation(enum.Enum):
+    """ Enum to classify the relationship between two time contexts
+        Assume that we have two timecontext c1 (begin1, end1),
+        c2(begin2, end2):
+        SUBSET means c1 is a subset of c2, begin1 is greater than or equal to
+        begin2, and end1 is less than or equal to end2.
+        Likewise, SUPERSET means that begin1 is earlier than begin2, and end1
+        is later than end2.
+        If neither of the two contexts is a superset of each other, and they
+        share some time range in common, we called them OVERLAP.
+        And NONOVERLAP means the two contexts doesn't overlap at all, which
+        means end1 is earlier than begin2 or end2 is earlier than begin1
+    """
+
     SUBSET = 0
     SUPERSET = 1
     OVERLAP = 2
+    NONOVERLAP = 3
 
 
 def compare_timecontext(cur_context: TimeContext, old_context: TimeContext):
     """Compare two timecontext and return the relationship between two time
-       context (SUBSET, SUPERSET, OVERLAP).
-       e.g. SUBSET means cur_context is a subset of old_context,
-       it has a begin time greater than old_context's, and an end time
-       earlier than old_context's.
+    context (SUBSET, SUPERSET, OVERLAP, NONOVERLAP).
+
+    Parameters
+    ----------
+    cur_context: TimeContext
+    old_context: TimeContext
+
+    Returns
+    -------
+    result : Enum[TimeContextRelation]
     """
     begin, end = cur_context
     old_begin, old_end = old_context
@@ -588,12 +651,47 @@ def compare_timecontext(cur_context: TimeContext, old_context: TimeContext):
         return TimeContextRelation.SUBSET
     elif old_begin >= begin and old_end <= end:
         return TimeContextRelation.SUPERSET
+    elif old_end < begin or end < old_begin:
+        return TimeContextRelation.NONOVERLAP
     else:
         return TimeContextRelation.OVERLAP
 
 
+def scope_item(op, result, timecontext):
+    """make a scope item to be set in scope
+
+    Scope is a dictionary mapping :class:`~ibis.expr.operations.Node`
+    subclass instances to concrete data, and the time context associate
+    with it(if any).
+
+    Parameters
+    ----------
+    op: ibis.expr.operations.Node, key in scope.
+    result : scalar, pd.Series, pd.DataFrame, concrete data.
+    timecontext: Optional[TimeContext], time context associate with the
+    result.
+
+    Returns
+    -------
+    scope_item : Dict, a key value pair that could merge into scope later
+    """
+    return {op: {'value': result, 'timecontext': timecontext}}
+
+
 def get_scope(scope, op, timecontext=None):
     """ Given a op and timecontext, get result from scope
+    Parameters
+    ----------
+    scope: collections.Mapping
+    a dictionary mapping :class:`~ibis.expr.operations.Node`
+    subclass instances to concrete data, and the time context associate
+    with it(if any).
+    op: ibis.expr.operations.Node, key in scope.
+    timecontext: Optional[TimeContext]
+
+    Returns
+    -------
+    result : scalar, pd.Series, pd.DataFrame
     """
     if op not in scope:
         return None
@@ -622,14 +720,3 @@ def get_scope(scope, op, timecontext=None):
             # For other ops with time context,  do not trust results in scope,
             # return None as if result is not present
             return None
-
-
-def scope_item(op, result, timecontext):
-    """make a scope item to be set in scope
-
-    Scope is a dictionary mapping :class:`~ibis.expr.operations.Node`
-    subclass instances to concrete data, and the time context associate
-    with it(if any).
-
-    """
-    return {op: {'value': result, 'timecontext': timecontext}}
