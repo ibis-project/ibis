@@ -126,7 +126,7 @@ jobs:
       displayName: 'Build ibis image'
 
     - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="conda install ${DEPS}"
-      displayName: 'Install conda dependencies for the build
+      displayName: 'Install conda dependencies for the build'
 
     - bash: docker images
       displayName: 'List docker images'
