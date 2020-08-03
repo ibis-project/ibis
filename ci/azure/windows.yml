@@ -10,77 +10,36 @@ jobs:
 
   variables:
     AZURECI: 1
-    conda.version: "4.6"
 
   strategy:
     matrix:
       py36:
-        python.major.version: "3"
-        python.minor.version: "6"
-        python.version: "$(python.major.version).$(python.minor.version)"
-        python.no.dot.version: "$(python.major.version)$(python.minor.version)"
-        conda.env: "ibis$(python.no.dot.version)"
+        PYTHON_VERSION: "3.6"
       py37:
-        python.major.version: "3"
-        python.minor.version: "7"
-        python.version: "$(python.major.version).$(python.minor.version)"
-        python.no.dot.version: "$(python.major.version)$(python.minor.version)"
-        conda.env: "ibis$(python.no.dot.version)"
+        PYTHON_VERSION: "3.7"
       py38:
-        python.major.version: "3"
-        python.minor.version: "8"
-        python.version: "$(python.major.version).$(python.minor.version)"
-        python.no.dot.version: "$(python.major.version)$(python.minor.version)"
-        conda.env: "ibis$(python.no.dot.version)"
+        PYTHON_VERSION: "3.8"
 
   steps:
     - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
       displayName: Add conda to PATH
 
-    - script: conda config --set always_yes True --set show_channel_urls True
-      displayName: 'Set conda always_yes and show_channel_urls'
-
-    - script: conda config --add channels conda-forge
-      displayName: 'Add the conda-forge channel'
-
-    - script: conda update --all conda=$(conda.version)
-      displayName: 'Update conda and install an appropriate version'
-
-    - script: conda create --name $(conda.env) python=$(python.version) "numpy>=1.18" "pandas>=1.0" pytables "ruamel.yaml>=0.16" jinja2 "pyarrow>=1.0" multipledispatch pymysql "sqlalchemy>=1.3" psycopg2 graphviz click mock plumbum geopandas toolz "regex>=2020" "arrow-cpp>=1.0"
-      displayName: 'Create conda environment'
-
     - script: |
-        call activate $(conda.env)
-        pip install --upgrade "pytest>=4.5"
-        pip install --upgrade pytest-xdist
-        pip install --upgrade pytest-mock
-      displayName: 'Install latest pytest'
-
-    - script: conda info
-      displayName: 'Show conda info'
-
-    - script: conda list --name $(conda.env)
-      displayName: 'Show installed packages'
-
-    - script: conda list --export --name $(conda.env) > env.yml
-      displayName: 'Capture installed packages'
+        conda config --set always_yes True --set show_channel_urls True
+        conda config --add channels conda-forge
+        conda update --all
+        conda create --name ibis-dev python=$(PYTHON_VERSION) --file=ci/requirements-dev.yml
+        conda info
+        conda list --name ibis-dev
+        conda list --export --name ibis-dev > env.yml
+      displayName: 'Set up conda'
 
     - task: PublishPipelineArtifact@1
       inputs:
         path: env.yml
-        artifact: WindowsCondaEnvironment$(python.no.dot.version)
+        artifact: WindowsCondaEnvironment$(PYTHON_VERSION)
       displayName: 'Publish Windows environment YAML to Azure'
       condition: succeededOrFailed()  # pass or fail, but not cancelled
-
-    - script: |
-        call activate $(conda.env)
-        python -c "import numpy"
-      displayName: 'Import numpy'
-
-    - script: |
-        call activate $(conda.env)
-        python -c "import pandas"
-      displayName: 'Import pandas'
 
     - script: choco install -y mariadb --version=10.3.16
       displayName: 'Install mariadb (mysql) from chocolatey'
@@ -95,44 +54,44 @@ jobs:
       displayName: 'Install postgres from chocolatey'
 
     - script: |
-        call activate $(conda.env)
+        call activate ibis-dev
         pip install -e . --no-deps --ignore-installed --no-cache-dir
       displayName: 'Install ibis'
 
     - script: |
-        call activate $(conda.env)
+        call activate ibis-dev
         python ci/datamgr.py download
       displayName: 'Download data'
 
     - script: |
-        call activate $(conda.env)
+        call activate ibis-dev
         python ci/datamgr.py mysql
       displayName: 'Load MySQL data'
 
     - script: |
-        call activate $(conda.env)
+        call activate ibis-dev
         python ci/datamgr.py postgres --no-plpython --psql-path="C:/Program Files/PostgreSQL/10/bin/psql.exe" -t functional_alltypes -t diamonds -t batting -t awards_players
       displayName: 'Load PostgreSQL data'
 
     - script: |
-        call activate $(conda.env)
+        call activate ibis-dev
         python ci/datamgr.py sqlite
       displayName: 'Load SQLite data'
 
     - script: |
-        call activate $(conda.env)
+        call activate ibis-dev
         python ci/datamgr.py parquet -i
       displayName: 'Load Parquet data'
 
     - script: |
-        call activate $(conda.env)
-        pytest --tb=short --junitxml="junit-$(python.version).xml" -n auto -m "not backend and not clickhouse and not impala and not hdfs and not bigquery and not omniscidb and not postgis and not postgresql" -ra ibis
+        call activate ibis-dev
+        pytest --tb=short --junitxml="junit-$(PYTHON_VERSION).xml" -n auto -m "not backend and not clickhouse and not impala and not hdfs and not bigquery and not omniscidb and not postgis and not postgresql" -ra ibis
       displayName: 'Run tests'
 
     - task: PublishTestResults@2
       displayName: 'Publish test results from pytest JUnitXML'
       inputs:
-        testResultsFiles: junit-$(python.version).xml
+        testResultsFiles: junit-$(PYTHON_VERSION).xml
         testRunTitle: 'Publish test results'
         mergeTestResults: False
       condition: succeededOrFailed()  # pass or fail, but not cancelled

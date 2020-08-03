@@ -15,11 +15,17 @@ jobs:
     BACKENDS_SQL_PARQUET: "mysql postgres sqlite parquet"
     BACKENDS_IMPALA_KUDU_CLICKHOUSE: "impala kudu-master kudu-tserver clickhouse"
     BACKENDS_OMNISCI: "omniscidb"
-    BACKENDS_PYSPARK_SPARK: ""
+    BACKENDS_SPARK: ""
+    DEPS_SQL_PARQUET: "sqlalchemy>=1.1 pymysql psycopg2 pyarrow>=0.13"
+    DEPS_IMPALA_KUDU_CLICKHOUSE: "sqlalchemy>=1.1 requests impyla>=0.15.0 thrift>=0.9.3 thriftpy2 clickhouse-cityhash clickhouse-driver>=0.1.3 clickhouse-sqlalchemy lz4"
+    DEPS_OMNISCI: "pymapd=0.23"
+    DEPS_SPARK: "pyspark>=2.4.3"
+    DEPS_BIGQUERY: "google-api-core=1.17.0 google-cloud-bigquery>=1.0.0 pydata-google-auth"
+    DEPS_GEO: "geoalchemy2 geopandas shapely"
     PYTEST_MARK_EXPRESSION_SQL_PARQUET: "not udf and not clickhouse and not impala and not kudu and not hdfs and not omniscidb and not spark and not pyspark"
     PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE: "not udf and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite and not omniscidb and not spark and not pyspark"
     PYTEST_MARK_EXPRESSION_OMNISCI: "not udf and not clickhouse and not impala and not kudu and not hdfs and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite and not pyspark and not spark"
-    PYTEST_MARK_EXPRESSION_PYSPARK_SPARK: "not udf and not clickhouse and not impala and not kudu and not hdfs and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite and not omniscidb"
+    PYTEST_MARK_EXPRESSION_SPARK: "not udf and not clickhouse and not impala and not kudu and not hdfs and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite and not omniscidb"
   strategy:
     matrix:
 
@@ -28,66 +34,65 @@ jobs:
         PYTHON_VERSION: "3.6"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_SQL_PARQUET)
         BACKENDS: $(BACKENDS_SQL_PARQUET)
-        REQUIREMENTS_TAG: "main"
+        DEPS: $(DEPS_SQL_PARQUET)
       py37_sql_parquet:
         PYTHON_VERSION: "3.7"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_SQL_PARQUET)
         BACKENDS: $(BACKENDS_SQL_PARQUET)
-        REQUIREMENTS_TAG: "main"
+        DEPS: $(DEPS_SQL_PARQUET)
       py38_sql_parquet:
         PYTHON_VERSION: "3.8"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_SQL_PARQUET)
         BACKENDS: $(BACKENDS_SQL_PARQUET)
-        REQUIREMENTS_TAG: "main"
+        DEPS: $(DEPS_SQL_PARQUET)
 
       # Impala, kudu and clickhouse backends
       py36_impala_kudu_clickhouse:
         PYTHON_VERSION: "3.6"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
         BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
-        REQUIREMENTS_TAG: "main"
+        DEPS: $(DEPS_IMPALA_KUDU_CLICKHOUSE)
       py37_impala_kudu_clickhouse:
         PYTHON_VERSION: "3.7"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
         BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
-        REQUIREMENTS_TAG: "main"
+        DEPS: $(DEPS_IMPALA_KUDU_CLICKHOUSE)
       py38_impala_kudu_clickhouse:
         PYTHON_VERSION: "3.8"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
         BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
-        REQUIREMENTS_TAG: "main"
+        DEPS: $(DEPS_IMPALA_KUDU_CLICKHOUSE)
 
       # Omnisci backend
       py36_omnisci:
         PYTHON_VERSION: "3.6"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_OMNISCI)
         BACKENDS: $(BACKENDS_OMNISCI)
-        REQUIREMENTS_TAG: "main"
+        DEPS: $(DEPS_OMNISCI)
       py37_omnisci:
         PYTHON_VERSION: "3.7"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_OMNISCI)
         BACKENDS: $(BACKENDS_OMNISCI)
-        REQUIREMENTS_TAG: "main"
+        DEPS: $(DEPS_OMNISCI)
       # TODO: pymapd is not working on Ibis with Python 3.8, so not added to the matrix yet
       # https://github.com/ibis-project/ibis/issues/2090
 
       # PySpark and Spark backends
       py36_pyspark_spark:
         PYTHON_VERSION: "3.6"
-        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_PYSPARK_SPARK)
-        BACKENDS: $(BACKENDS_PYSPARK_SPARK)
-        REQUIREMENTS_TAG: "pyspark-spark"
+        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_SPARK)
+        BACKENDS: $(BACKENDS_SPARK)
+        DEPS: $(DEPS_SPARK)
       py37_pyspark_spark:
         PYTHON_VERSION: "3.7"
-        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_PYSPARK_SPARK)
-        BACKENDS: $(BACKENDS_PYSPARK_SPARK)
-        REQUIREMENTS_TAG: "pyspark-spark"
+        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_SPARK)
+        BACKENDS: $(BACKENDS_SPARK)
+        DEPS: $(DEPS_SPARK)
       # TODO: pyspark is not working on Ibis with Python 3.8, so not added to the matrix yet
       # https://github.com/ibis-project/ibis/issues/2091
 
   steps:
     - bash: |
-        echo "##vso[task.setvariable variable=PIPELINE_ARTIFACT_TAG]${PYTHON_VERSION/./}-${REQUIREMENTS_TAG}"
         if [ -z "$PYTEST_MARK_EXPRESSION" ]; then
           echo "##vso[task.logissue type=error]The env variable PYTEST_MARK_EXPRESSION is not set. It is expected to be set in all the matrix builds, since not all tests can be run in a single build. It's probably caused by a typo."
           exit 1
@@ -117,8 +122,11 @@ jobs:
     - bash: docker ps
       displayName: 'Show running containers'
 
-    - bash: make build PYTHON_VERSION=$PYTHON_VERSION REQUIREMENTS_TAG="${REQUIREMENTS_TAG}"
+    - bash: make build PYTHON_VERSION=$PYTHON_VERSION
       displayName: 'Build ibis image'
+
+    - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="conda install ${DEPS}"
+      displayName: 'Install conda dependencies for the build
 
     - bash: docker images
       displayName: 'List docker images'
@@ -138,10 +146,10 @@ jobs:
         mkdir -p /tmp/env
       displayName: 'Make artifacts directories'
 
-    - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION REQUIREMENTS_TAG="${REQUIREMENTS_TAG}" DOCKER_RUN_COMMAND="conda list"
+    - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="conda list"
       displayName: 'Show packages in conda environment'
 
-    - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION REQUIREMENTS_TAG="${REQUIREMENTS_TAG}" DOCKER_RUN_COMMAND="conda list --export > /tmp/env/env.yml"
+    - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="conda list --export > /tmp/env/env.yml"
       displayName: 'Capture packages in conda environment'
 
     - bash: make load PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
@@ -182,7 +190,7 @@ jobs:
     - task: PublishPipelineArtifact@1
       inputs:
         path: /tmp/env/env.yml
-        artifact: LinuxCondaEnvironment-$(PIPELINE_ARTIFACT_TAG)
+        artifact: LinuxCondaEnvironment-$(PYTHON_VERSION)
       displayName: 'Publish Linux environment YAML to Azure'
       condition: succeededOrFailed()  # pass or fail, but not cancelled
 
