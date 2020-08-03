@@ -697,7 +697,7 @@ def get_scope(scope, op, timecontext=None):
         return None
     # for ops without timecontext
     if timecontext is None:
-        return scope[op]['value']
+        return scope[op].get('value', None)
     else:
         # For op with timecontext, we only use scope to cache leaf nodes for
         # now. This is because some ops cannot use cached result with a
@@ -709,14 +709,13 @@ def get_scope(scope, op, timecontext=None):
         # context to optimize calculation. For simplicity, we skip these ops
         # for now.
         if isinstance(op, ops.TableColumn) or isinstance(op, ops.TableNode):
-            relation = compare_timecontext(
-                timecontext, scope[op]['timecontext']
-            )
-            if relation == TimeContextRelation.SUBSET:
-                return scope[op]['value']
-            else:
-                return None
-        else:
-            # For other ops with time context,  do not trust results in scope,
-            # return None as if result is not present
-            return None
+            old_timecontext = scope[op].get('timecontext', None)
+            if old_timecontext:
+                relation = compare_timecontext(timecontext, old_timecontext)
+                if relation == TimeContextRelation.SUBSET:
+                    return scope[op].get('value', None)
+                else:
+                    # For other ops with time context, do not trust results
+                    # in scope, return None as if result is not present
+                    return None
+    return None
