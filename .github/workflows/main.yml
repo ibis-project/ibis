@@ -50,18 +50,20 @@ jobs:
     - name: conda update -n base -c anaconda conda
       run: conda update -n base -c anaconda conda
 
-    - name: find .
-      run: find .
-
-    - name: cat ci/requirements-dev.yml
-      run: cat ci/requirements-dev.yml
+    - name: conda init bash
+      run: conda init bash
 
     - name: conda env update -n base --file=ci/requirements-dev.yml
       run: conda env update -n base --file=ci/requirements-dev.yml
       if: always()
 
-    - name: python --version
-      run: python --version
+    - name: which python
+      run: which python
+
+    - name: which python
+      run: |
+        conda activate base
+        which python
 
     - name: python -c "import pandas; print(pandas.__version__)"
       run: |
