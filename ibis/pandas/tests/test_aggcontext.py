@@ -27,6 +27,7 @@ def test_window_agg_udf(param):
     df = pd.DataFrame({'id': [1, 2, 1, 2], 'v': [1.0, 2.0, 3.0, 4.0]})
 
     grouped_data = df.sort_values('id').groupby("id")['v']
+    result_index = grouped_data.obj.index
 
     window_lower_indices = pd.Series([0, 0, 2, 2])
     window_higher_indices = pd.Series([1, 2, 3, 4])
@@ -37,6 +38,7 @@ def test_window_agg_udf(param):
         window_lower_indices,
         window_higher_indices,
         mask,
+        result_index,
         dtype='float',
         max_lookback=None,
     )

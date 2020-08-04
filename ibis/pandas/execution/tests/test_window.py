@@ -76,12 +76,15 @@ class CustomAggContext(AggregationContext):
         lower_indices = upper_indices - window_sizes
         mask = upper_indices.notna()
 
+        result_index = grouped_data.obj.index
+
         result = window_agg_udf(
             grouped_data,
             function,
             lower_indices,
             upper_indices,
             mask,
+            result_index,
             self.dtype,
             self.max_lookback,
             *args,
