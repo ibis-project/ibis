@@ -43,4 +43,6 @@ jobs:
       run: python --version
 
     - name: python -c "import pandas; print(pandas.__version__)"
-      run: python -c "import pandas; print(pandas.__version__)"
+      run: |
+        conda activate base
+        python -c "import pandas; print(pandas.__version__)"
