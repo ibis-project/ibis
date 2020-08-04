@@ -37,6 +37,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
+    - name: which conda
+      run: which conda
+
+    - name: Add conda to path
+      run: echo "::add-path::${HOME}/miniconda3/bin"
+
     - name: Checkout
       uses: actions/checkout@v1
 
