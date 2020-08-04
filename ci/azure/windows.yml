@@ -28,7 +28,7 @@ jobs:
         conda config --set always_yes True --set show_channel_urls True
         conda config --add channels conda-forge
         conda update --all
-        conda create --name ibis-dev python=$(PYTHON_VERSION) --file=ci/requirements-dev.yml
+        conda env create --name ibis-dev python=$(PYTHON_VERSION) --file=ci/requirements-dev.yml
         conda info
         conda list --name ibis-dev
         conda list --export --name ibis-dev > env.yml

@@ -1,4 +1,4 @@
-.PHONY: all clean develop typecheck stop build start load restart init test testmost testfast testparams docclean doc black
+.PHONY: all clean develop stop build start load restart init test testmost testfast testparams
 
 SHELL := /bin/bash
 MAKEFILE_DIR = $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
@@ -40,23 +40,6 @@ REMOVE_COMPILED_PYTHON_SCRIPTS := (find /ibis -name "*.py[co]" -delete > /dev/nu
 
 LOGLEVEL := WARNING
 
-
-## Targets for code checks
-
-typecheck:
-	@mypy --ignore-missing-imports $(MAKEFILE_DIR)/ibis
-
-lint:
-	flake8
-
-black:
-	# check that black formatting would not be applied
-	black --check .
-
-check_pre_commit_hooks:
-	# check if all pre-commit hooks are passing
-	pre-commit run --all-files
-
 ## Targets for setup development environment
 
 clean:
@@ -70,18 +53,6 @@ develop: clean
 
 
 ## DOCKER specific targets
-
-# Targets for code checks inside containers
-
-docker_lint: build
-	$(DOCKER_RUN) ibis flake8
-
-docker_black: build
-	$(DOCKER_RUN) ibis black --check .
-
-docker_check_pre_commit_hooks: build
-	# check if all pre-commit hooks are passing inside ibis container
-	$(DOCKER_RUN) ibis pre-commit run --all-files
 
 # Targets for manipulating docker's containers
 
@@ -158,29 +129,6 @@ testpyspark:
 
 fastopt:
 	@echo -m 'not (backend or bigquery or clickhouse or hdfs or impala or kudu or omniscidb or mysql or postgis or postgresql or superuser or udf)'
-
-# Targets for documentation builds
-
-docclean:
-	$(DOCKER_RUN) ibis-docs rm -rf /tmp/docs.ibis-project.org
-
-builddoc: build
-	# build the ibis-docs image
-	$(DOCKER_BUILD) ibis-docs
-
-doc: builddoc docclean
-	$(DOCKER_RUN) ibis-docs ping -c 1 impala
-	$(DOCKER_RUN) ibis-docs rm -rf /tmp/docs.ibis-project.org
-	$(DOCKER_RUN) ibis-docs git clone --branch gh-pages https://github.com/ibis-project/docs.ibis-project.org /tmp/docs.ibis-project.org --depth 1
-	$(DOCKER_RUN) ibis-docs find /tmp/docs.ibis-project.org \
-	    -maxdepth 1 \
-	    ! -wholename /tmp/docs.ibis-project.org \
-	    ! -name '*.git' \
-	    ! -name '.' \
-	    ! -name CNAME \
-	    ! -name '*.nojekyll' \
-	    -exec rm -rf {} \;
-	$(DOCKER_RUN) ibis-docs sphinx-build -b html docs/source /tmp/docs.ibis-project.org -W -T
 
 # Targets for run commands inside ibis and ibis-docs containers
 
