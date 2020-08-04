@@ -40,6 +40,9 @@ jobs:
     - name: which conda
       run: which conda
 
+    - name: conda env list
+      run: conda env list
+
     - name: Add conda to path
       run: echo "::add-path::${HOME}/miniconda3/bin"
 
