@@ -7,32 +7,17 @@ jobs:
   pool:
     vmImage: ${{ parameters.vmImage }}
   steps:
-    - bash: which python
-      displayName: 'which python'
+    - bash: python --version
+      displayName: 'python --version'
 
-    - bash: which conda || true
-      displayName: 'which conda || true'
+    - bash: conda update conda
+      displayName: 'conda update conda'
 
-    - bash: echo '##vso[task.prependpath]$(HOME)/miniconda3/bin'
-      displayName: 'Set conda path'
+    - bash: conda install --file=ci/requirements-dev.yml
+      displayName: 'conda install --file=ci/requirements-dev.yml'
 
-    - bash: ./ci/setup_env.sh 3.8
-      displayName: 'Set up environment'
-
-    - bash: ls
-      displayName: 'ls'
-
-    - bash: echo $PATH
-      displayName: 'echo $PATH'
-
-    - bash: which python
-      displayName: 'which python'
-
-    - bash: which conda
-      displayName: 'which conda'
-
-    - bash: source activate ibis-dev && which python
-      displayName: 'source activate ibis-dev && which python'
+    - bash: python -c "import click"
+      displayName: 'python -c "import click"'
 
 
 - job: ${{ parameters.name }}Test
