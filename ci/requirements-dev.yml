@@ -1,4 +1,3 @@
-name: ibis-dev
 channels:
   - conda-forge
 dependencies:
