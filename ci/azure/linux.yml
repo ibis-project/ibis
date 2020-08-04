@@ -107,6 +107,10 @@ jobs:
       # https://github.com/ibis-project/ibis/issues/2091
 
   steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: $(PYTHON_VERSION)
+
     - bash: |
         if [ -z "$PYTEST_MARK_EXPRESSION" ]; then
           echo "##vso[task.logissue type=error]The env variable PYTEST_MARK_EXPRESSION is not set. It is expected to be set in all the matrix builds, since not all tests can be run in a single build. It's probably caused by a typo."
@@ -165,6 +169,10 @@ jobs:
   pool:
     vmImage: ${{ parameters.vmImage }}
   steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: "3.7"
+
     - bash: ./ci/setup_env.sh
       displayName: 'Set up environment'
 
@@ -196,6 +204,10 @@ jobs:
   pool:
     vmImage: ${{ parameters.vmImage }}
   steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: "3.7"
+
     - bash: ./ci/setup_env.sh
       displayName: 'Set up environment'
 
@@ -213,6 +225,10 @@ jobs:
     CONTAINERS_TO_START: "impala postgres"
 
   steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: "3.7"
+
     - bash: ./ci/start_backend_containers.sh $CONTAINERS_TO_START
       displayName: 'Start backend containers'
 
