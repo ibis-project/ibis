@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: master
+  pull_request:
+    branches: master
+
+env:
+  ENV_FILE: environment.yml
+
+jobs:
+  test_conda:
+    name: Test Conda
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v1
+
+    - name: python --version
+      run: python --version
+
+    - name: conda update -n base -c anaconda conda
+      run: conda update -n base -c anaconda conda
+
+    - name: conda install --file=ci/requirements-dev.yml
+      run: conda install --file=ci/requirements-dev.yml
+
+    - name: python --version
+      run: python --version
+
+    - name: python -c "import pandas; print(pandas.__version__)"
+      run: python -c "import pandas; print(pandas.__version__)"
