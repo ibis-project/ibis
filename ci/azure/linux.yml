@@ -122,7 +122,7 @@ jobs:
       displayName: 'Start backend containers'
 
     - bash: |
-        ./ci/setup_env.sh
+        ./ci/setup_env.sh $PYTHON_VERSION
         conda install $DEPS
       displayName: 'Set up environment'
 

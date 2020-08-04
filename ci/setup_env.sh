@@ -1,6 +1,7 @@
 #!/bin/bash -e
 
 BASE_DIR="$(readlink -m $(dirname $0)/..)"
+PYTHON_VERSION=${1:-3.7}
 
 echo "Downloading and installing Miniconda..."
 UNAME_OS=$(uname)
@@ -28,8 +29,8 @@ conda config --set quiet true --set always_yes true --set changeps1 false
 conda update -n base conda
 
 echo
-echo "conda env create -q --file=$BASE_DIR/ci/requirements-dev.yml"
-time conda env create -q --file="$BASE_DIR/ci/requirements-dev.yml"
+echo "conda env create -q python=$PYTHON_VERSION --file=$BASE_DIR/ci/requirements-dev.yml"
+time conda env create -q python=$PYTHON_VERSION --file="$BASE_DIR/ci/requirements-dev.yml"
 
 echo "Installing Ibis in the environment..."
 python -m pip install --no-build-isolation -e $BASE_DIR
