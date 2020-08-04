@@ -120,6 +120,7 @@ jobs:
 
     - bash: |
         ./ci/setup_env.sh $PYTHON_VERSION
+        source activate ibis-dev
         conda install $DEPS
       displayName: 'Set up environment'
 
@@ -141,6 +142,7 @@ jobs:
     - bash: |
         echo "PYTEST_MARK_EXPRESSION: ${PYTEST_MARK_EXPRESSION}"
         export GOOGLE_APPLICATION_CREDENTIALS="/tmp/gcloud-service-key.json"
+        source activate ibis-dev
         pytest ibis -m "${PYTEST_MARK_EXPRESSION}" \
                     -ra \
                     --numprocesses auto \
@@ -182,7 +184,7 @@ jobs:
     - bash: |
         ./ci/setup_env.sh
         source activate ibis-dev
-        conda env install --file=ci/requirements-docs.yml
+        conda env update --file=ci/requirements-docs.yml
       displayName: 'Set up environment'
 
     - bash: |

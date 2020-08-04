@@ -1,4 +1,3 @@
-name: ibis-env
 channels:
   - defaults
   - conda-forge
