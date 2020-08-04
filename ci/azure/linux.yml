@@ -118,10 +118,13 @@ jobs:
         fi
       displayName: 'Check the pytest mark expressions are correctly set'
 
+    - bash: echo '##vso[task.prependpath]$(HOME)/miniconda3/bin'
+      displayName: 'Set conda path'
+
     - bash: |
         ./ci/setup_env.sh $PYTHON_VERSION
         source activate ibis-dev
-        conda install $DEPS
+        conda install -c conda-forge $DEPS
       displayName: 'Set up environment'
 
     - bash: |
@@ -180,6 +183,9 @@ jobs:
     - task: UsePythonVersion@0
       inputs:
         versionSpec: "3.7"
+
+    - bash: echo '##vso[task.prependpath]$(HOME)/miniconda3/bin'
+      displayName: 'Set conda path'
 
     - bash: |
         ./ci/setup_env.sh
