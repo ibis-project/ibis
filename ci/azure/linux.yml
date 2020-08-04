@@ -167,59 +167,7 @@ jobs:
       condition: succeededOrFailed()  # pass or fail, but not cancelled
 
 
-- job: Lint_and_build_conda_forge_package
-  pool:
-    vmImage: ${{ parameters.vmImage }}
-  steps:
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: "3.7"
-
-    - bash: ./ci/setup_env.sh
-      displayName: 'Set up environment'
-
-    - bash: flake8 .
-      displayName: 'Lint'
-
-    - bash: mypy ibis
-      displayName: "Type checks"
-
-    # TODO: change match-dir when docstrings are fixed for other backends
-    - bash: pydocstyle --match-dir="(ibis|omniscidb)"
-      displayName: "Docstring check"
-
-    - bash: pre-commit run --all-files
-      displayName: 'Ensure all pre-commit hooks checking are passing.'
-
-    - bash: ./ci/feedstock.py test --python 3.7
-      displayName: 'Clone, update and build conda-forge recipe'
-
-    - task: PublishPipelineArtifact@1
-      inputs:
-        path: /tmp/ibis/packages
-        artifact: LinuxCondaPackage
-      displayName: 'Publish conda package to Azure'
-      condition: and(succeeded(), eq(variables['System.PullRequest.IsFork'], 'False'))
-
-
-- job: Benchmarks
-  pool:
-    vmImage: ${{ parameters.vmImage }}
-  steps:
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: "3.7"
-
-    - bash: ./ci/setup_env.sh
-      displayName: 'Set up environment'
-
-    - bash: |
-        source activate ibis-dev
-        ./ci/benchmark.sh azure "$(Build.SourceVersion)"
-      displayName: 'Run Benchmark (ASV)'
-
-
-- job: Documentation
+- job: Docs_lint_packaging_benckmarks
   pool:
     vmImage: ${{ parameters.vmImage }}
 
@@ -233,8 +181,45 @@ jobs:
 
     - bash: |
         ./ci/setup_env.sh
-        conda install --file=ci/requirements-docs.yml
+        source activate ibis-dev
+        conda env install --file=ci/requirements-docs.yml
       displayName: 'Set up environment'
+
+    - bash: |
+        source activate ibis-dev
+        flake8 .
+      displayName: 'Lint'
+
+    - bash: |
+        source activate ibis-dev
+        mypy ibis
+      displayName: "Type checks"
+
+    # TODO: change match-dir when docstrings are fixed for other backends
+    - bash: |
+        source activate ibis-dev
+        pydocstyle --match-dir="(ibis|omniscidb)"
+      displayName: "Docstring check"
+
+    - bash: pre-commit run --all-files
+      displayName: 'Ensure all pre-commit hooks checking are passing.'
+
+    - bash: |
+        source activate ibis-dev
+        ./ci/feedstock.py test --python 3.7
+      displayName: 'Clone, update and build conda-forge recipe'
+
+    - task: PublishPipelineArtifact@1
+      inputs:
+        path: /tmp/ibis/packages
+        artifact: LinuxCondaPackage
+      displayName: 'Publish conda package to Azure'
+      condition: and(succeeded(), eq(variables['System.PullRequest.IsFork'], 'False'))
+
+    - bash: |
+        source activate ibis-dev
+        ./ci/benchmark.sh azure "$(Build.SourceVersion)"
+      displayName: 'Run Benchmark (ASV)'
 
     - bash: |
         source activate ibis-dev
