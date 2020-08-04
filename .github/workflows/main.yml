@@ -21,9 +21,10 @@ jobs:
     - name: Setup conda
       uses: goanpeca/setup-miniconda@v1
       with:
-        activate-environment: ibis-dev
-        environment-file: ci/requirements-dev.yml
         python-version: 3.8
+        auto-activate-base: false
+        environment-file: ci/requirements-dev.yml
+        activate-environment: ibis-dev
 
     - name: which python
       run: which python
@@ -62,10 +63,10 @@ jobs:
 
     - name: which python
       run: |
-        conda activate base
+        source activate base
         which python
 
     - name: python -c "import pandas; print(pandas.__version__)"
       run: |
-        conda activate base
+        source activate base
         python -c "import pandas; print(pandas.__version__)"
