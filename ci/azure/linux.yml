@@ -161,7 +161,7 @@ jobs:
       condition: succeededOrFailed()  # pass or fail, but not cancelled
 
 
-- job: 'Lint and build conda-forge package'
+- job: Lint_and_build_conda_forge_package
   pool:
     vmImage: ${{ parameters.vmImage }}
   steps:
