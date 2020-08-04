@@ -43,16 +43,14 @@ jobs:
     - name: conda env list
       run: conda env list
 
+    - name: find /usr/share/miniconda
+      run: find /usr/share/miniconda
+
     - name: Add conda to path
-      run: echo "::add-path::${HOME}/miniconda3/bin"
+      run: echo "::add-path::/usr/share/miniconda/bin"
 
     - name: Checkout
       uses: actions/checkout@v1
-
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: "3.8"
 
     - name: python --version
       run: python --version
@@ -60,8 +58,8 @@ jobs:
     - name: conda update -n base -c anaconda conda
       run: conda update -n base -c anaconda conda
 
-    - name: conda init bash
-      run: conda init bash
+    - name: conda install python=3.8
+      run: conda install python=3.8
 
     - name: conda env update -n base --file=ci/requirements-dev.yml
       run: conda env update -n base --file=ci/requirements-dev.yml
