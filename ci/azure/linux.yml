@@ -4,15 +4,23 @@ parameters:
 
 jobs:
 - job: TestConda
+  pool:
+    vmImage: ${{ parameters.vmImage }}
   steps:
-    - bash: echo '##vso[task.prependpath]$(HOME)/miniconda3/bin'
-      displayName: 'Set conda path'
-
     - bash: which python
       displayName: 'which python'
 
+    - bash: which conda || true
+      displayName: 'which conda || true'
+
+    - bash: echo '##vso[task.prependpath]$(HOME)/miniconda3/bin'
+      displayName: 'Set conda path'
+
     - bash: ./ci/setup_env.sh 3.8
       displayName: 'Set up environment'
+
+    - bash: ls
+      displayName: 'ls'
 
     - bash: echo $PATH
       displayName: 'echo $PATH'

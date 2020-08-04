@@ -19,8 +19,7 @@ else
 fi
 wget -q https://repo.continuum.io/miniconda/Miniconda3-latest-$CONDA_OS.sh -O $BASE_DIR/miniconda.sh
 chmod +x $BASE_DIR/miniconda.sh
-$BASE_DIR/miniconda.sh -b -p $BASE_DIR/miniconda3
-export PATH=$BASE_DIR/miniconda3/bin:$PATH
+$BASE_DIR/miniconda.sh -b -p $HOME/miniconda3
 
 echo
 echo "Configuring and updating conda..."
@@ -31,6 +30,10 @@ conda update -n base conda
 echo
 echo "conda env create -q python=$PYTHON_VERSION --file=$BASE_DIR/ci/requirements-dev.yml"
 time conda env create -q python=$PYTHON_VERSION --file="$BASE_DIR/ci/requirements-dev.yml"
+
+echo
+echo "conda activate ibis-dev"
+conda activate ibis-dev
 
 echo "Installing Ibis in the environment..."
 python -m pip install --no-build-isolation -e $BASE_DIR
