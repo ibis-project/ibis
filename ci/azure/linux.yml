@@ -3,6 +3,49 @@ parameters:
   vmImage: ''
 
 jobs:
+- job: TestConda
+  steps:
+    - bash: which python
+      displayName: 'which python'
+
+    - bash: which conda
+      displayName: 'which conda'
+
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: "3.7"
+
+    - bash: which python
+      displayName: 'which python'
+
+    - bash: which conda
+      displayName: 'which conda'
+
+    - bash: echo '##vso[task.prependpath]$(HOME)/miniconda3/bin'
+      displayName: 'Set conda path'
+
+    - bash: which python
+      displayName: 'which python'
+
+    - bash: which conda
+      displayName: 'which conda'
+
+    - bash: ./ci/setup_env.sh 3.8
+      displayName: 'Set up environment'
+
+    - bash: which python
+      displayName: 'which python'
+
+    - bash: which conda
+      displayName: 'which conda'
+
+    - bash: echo $PATH
+      displayName: 'echo $PATH'
+
+    - bash: source activate ibis-dev && which python
+      displayName: 'source activate ibis-dev && which python'
+
+
 - job: ${{ parameters.name }}Test
 
   pool:
