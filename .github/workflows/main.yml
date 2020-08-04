@@ -29,11 +29,15 @@ jobs:
     - name: conda update -n base -c anaconda conda
       run: conda update -n base -c anaconda conda
 
-    - name: ls
-      run: ls
+    - name: find .
+      run: find .
 
-    - name: conda install --file=ibis/ci/requirements-dev.yml
-      run: conda install --file=ibis/ci/requirements-dev.yml
+    - name: cat ci/requirements-dev.yml
+      run: cat ci/requirements-dev.yml
+
+    - name: conda install --file=ci/requirements-dev.yml
+      run: conda install --file=ci/requirements-dev.yml
+      if: always()
 
     - name: python --version
       run: python --version
