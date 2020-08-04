@@ -118,13 +118,15 @@ jobs:
         fi
       displayName: 'Check the pytest mark expressions are correctly set'
 
-    - bash: ./ci/start_backend_containers.sh $CONTAINERS_TO_START
-      displayName: 'Start backend containers'
-
     - bash: |
         ./ci/setup_env.sh $PYTHON_VERSION
         conda install $DEPS
       displayName: 'Set up environment'
+
+    - bash: |
+        source activate ibis-dev
+        ./ci/start_backend_containers.sh $CONTAINERS_TO_START
+      displayName: 'Start backend containers'
 
     - bash: |
         if [ -n "${GCLOUD_SERVICE_KEY}" ]; then
@@ -229,13 +231,15 @@ jobs:
       inputs:
         versionSpec: "3.7"
 
-    - bash: ./ci/start_backend_containers.sh $CONTAINERS_TO_START
-      displayName: 'Start backend containers'
-
     - bash: |
         ./ci/setup_env.sh
         conda install --file=ci/requirements-docs.yml
       displayName: 'Set up environment'
+
+    - bash: |
+        source activate ibis-dev
+        ./ci/start_backend_containers.sh $CONTAINERS_TO_START
+      displayName: 'Start backend containers'
 
     - bash: |
         source activate ibis-dev
