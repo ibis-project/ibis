@@ -18,11 +18,15 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v1
 
-    - uses: goanpeca/setup-miniconda@v1
+    - name: Setup conda
+      uses: goanpeca/setup-miniconda@v1
       with:
         activate-environment: ibis-dev
         environment-file: ci/requirements-dev.yml
         python-version: 3.8
+
+    - name: which python
+      run: which python
 
     - name: python -c "import pandas; print(pandas.__version__)"
       run: python -c "import pandas; print(pandas.__version__)"
