@@ -1,4 +1,4 @@
-name: CI
+name: Main
 
 on:
   push:
@@ -18,14 +18,22 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v1
 
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: "3.8"
+
     - name: python --version
       run: python --version
 
     - name: conda update -n base -c anaconda conda
       run: conda update -n base -c anaconda conda
 
-    - name: conda install --file=ci/requirements-dev.yml
-      run: conda install --file=ci/requirements-dev.yml
+    - name: ls
+      run: ls
+
+    - name: conda install --file=ibis/ci/requirements-dev.yml
+      run: conda install --file=ibis/ci/requirements-dev.yml
 
     - name: python --version
       run: python --version
