@@ -35,8 +35,8 @@ jobs:
     - name: cat ci/requirements-dev.yml
       run: cat ci/requirements-dev.yml
 
-    - name: conda env update --file=ci/requirements-dev.yml
-      run: conda env update --file=ci/requirements-dev.yml
+    - name: conda env update -n base --file=ci/requirements-dev.yml
+      run: conda env update -n base --file=ci/requirements-dev.yml
       if: always()
 
     - name: python --version
