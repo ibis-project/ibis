@@ -10,6 +10,23 @@ env:
   ENV_FILE: environment.yml
 
 jobs:
+  setup_miniconda:
+    name: Test setup miniconda task
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v1
+
+    - uses: goanpeca/setup-miniconda@v1
+      with:
+        activate-environment: ibis-dev
+        environment-file: ci/requirements-dev.yml
+        python-version: 3.8
+
+    - name: python -c "import pandas; print(pandas.__version__)"
+      run: python -c "import pandas; print(pandas.__version__)"
+
   test_conda:
     name: Test Conda
     runs-on: ubuntu-latest
