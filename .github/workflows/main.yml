@@ -16,10 +16,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-    - name: Checkout
+    - name: checkout
       uses: actions/checkout@v1
 
-    - name: Setup conda
+    - name: set up conda
       run: |
         echo "::add-path::/usr/share/miniconda/bin"
         conda update -n base -c anaconda conda
@@ -30,7 +30,7 @@ jobs:
       run: flake8 .
 
     - name: mypy
-      run: mypy ibis
+      run: mypy --ignore-missing-imports ibis
       if: always()
 
     - name: pydocstyle
@@ -46,7 +46,7 @@ jobs:
       run: ./ci/feedstock.py test --python 3.7
       if: always()
 
-    - name: Publish feedstock artifact
+    - name: publish feedstock artifact
       uses: actions/upload-artifact@master
       with:
         name: LinuxCondaPackage
@@ -54,7 +54,7 @@ jobs:
       if: github.event_name == 'push'
 
     - name: benckmark
-      run: ./ci/benchmark.sh azure "$(Build.SourceVersion)"
+      run: ./ci/benchmark.sh azure "${{ github.sha }}"
       if: always()
 
     - name: start backend containers
