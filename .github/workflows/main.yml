@@ -21,7 +21,7 @@ jobs:
     - name: Setup conda
       uses: goanpeca/setup-miniconda@v2
       with:
-        python-version: ${{ PYTHON_VERSION }}
+        python-version: ${PYTHON_VERSION}
         auto-activate-base: false
         environment-file: ci/requirements-dev.yml
         activate-environment: ibis-dev
@@ -43,7 +43,7 @@ jobs:
       run: |
         echo "::add-path::/usr/share/miniconda/bin"
         conda update -n base -c anaconda conda
-        conda install -n base -c anaconda python=${{ PYTHON_VERSION }}
+        conda install -n base -c anaconda python=${PYTHON_VERSION}
         conda env update -n base --file=ci/requirements-dev.yml
 
     - name: which python and pandas version
