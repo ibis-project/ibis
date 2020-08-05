@@ -7,11 +7,11 @@ on:
     branches: master
 
 env:
-  ENV_FILE: environment.yml
+  python.version: "3.8"
 
 jobs:
   setup_miniconda:
-    name: Test setup miniconda task
+    name: Setup miniconda task
     runs-on: ubuntu-latest
     steps:
 
@@ -19,61 +19,34 @@ jobs:
       uses: actions/checkout@v1
 
     - name: Setup conda
-      uses: goanpeca/setup-miniconda@v1
+      uses: goanpeca/setup-miniconda@v2
       with:
-        python-version: 3.8
+        python-version: ${{ python.version }}
         auto-activate-base: false
         environment-file: ci/requirements-dev.yml
         activate-environment: ibis-dev
 
-    - name: which python
-      run: which python
+    - name: which python and pandas version
+      run: |
+        which python
+        python -c "import pandas; print(pandas.__version__)"
 
-    - name: python -c "import pandas; print(pandas.__version__)"
-      run: python -c "import pandas; print(pandas.__version__)"
-
-  test_conda:
-    name: Test Conda
+  actions_conda:
+    name: Setup GitHub actions conda
     runs-on: ubuntu-latest
     steps:
-
-    - name: which conda
-      run: which conda
-
-    - name: conda env list
-      run: conda env list
-
-    - name: find /usr/share/miniconda
-      run: find /usr/share/miniconda
-
-    - name: Add conda to path
-      run: echo "::add-path::/usr/share/miniconda/bin"
 
     - name: Checkout
       uses: actions/checkout@v1
 
-    - name: python --version
-      run: python --version
-
-    - name: conda update -n base -c anaconda conda
-      run: conda update -n base -c anaconda conda
-
-    - name: conda install python=3.8
-      run: conda install python=3.8
-
-    - name: conda env update -n base --file=ci/requirements-dev.yml
-      run: conda env update -n base --file=ci/requirements-dev.yml
-      if: always()
-
-    - name: which python
-      run: which python
-
-    - name: which python
+    - name: Setup conda
       run: |
-        source activate base
+        echo "::add-path::/usr/share/miniconda/bin"
+        conda update -n base -c anaconda conda
+        conda install -n base -c anaconda python=${{ python.version }}
+        conda env update -n base --file=ci/requirements-dev.yml
+
+    - name: which python and pandas version
+      run: |
         which python
-
-    - name: python -c "import pandas; print(pandas.__version__)"
-      run: |
-        source activate base
         python -c "import pandas; print(pandas.__version__)"
