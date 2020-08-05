@@ -21,6 +21,7 @@ dependencies:
   # Dev tools
   - black=19.10b0
   - click # few scripts in ci/
+  - conda-build # feedstock
   - cmake
   - flake8
   - jinja2 # feedstock

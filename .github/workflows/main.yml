@@ -26,15 +26,14 @@ jobs:
         conda install -n base -c anaconda python=${PYTHON_VERSION}
         conda env update -n base --file=ci/requirements-dev.yml
         conda env update -n base --file=ci/requirements-docs.yml
-        which python
 
     - name: install ibis
-      run: |
-        python -m pip install -e .
+      run: python -m pip install -e .
       if: always()
 
     - name: flake8
       run: flake8 .
+      if: always()
 
     - name: mypy
       run: mypy --ignore-missing-imports ibis
@@ -61,7 +60,7 @@ jobs:
       if: github.event_name == 'push'
 
     - name: benckmark
-      run: ./ci/benchmark.sh azure "${{ github.sha }}"
+      run: echo "TODO: restore benchmarks before merging" # ./ci/benchmark.sh azure "${{ github.sha }}"
       if: always()
 
     - name: start backend containers
@@ -75,6 +74,7 @@ jobs:
         touch ibis-project.org/.nojekyll
         python -m pysuerga /ibis/docs/web --target-path=ibis-project.org/
         sphinx-build -b html docs/source ibis-project.org/docs -W -T --keep-going
+      if: always()
 
     - name: set up ssh
       run: |
