@@ -8,31 +8,11 @@ on:
 
 env:
   PYTHON_VERSION: "3.8"
+  CONTAINERS_TO_START: "impala postgres"
 
 jobs:
-  setup_miniconda:
-    name: Setup miniconda task
-    runs-on: ubuntu-latest
-    steps:
-
-    - name: Checkout
-      uses: actions/checkout@v1
-
-    - name: Setup conda
-      uses: goanpeca/setup-miniconda@v2
-      with:
-        python-version: ${PYTHON_VERSION}
-        auto-activate-base: false
-        environment-file: ci/requirements-dev.yml
-        activate-environment: ibis-dev
-
-    - name: which python and pandas version
-      run: |
-        which python
-        python -c "import pandas; print(pandas.__version__)"
-
-  actions_conda:
-    name: Setup GitHub actions conda
+  docs_lint_package_benchmark:
+    name: Docs, lint, package and benckmark
     runs-on: ubuntu-latest
     steps:
 
@@ -46,7 +26,69 @@ jobs:
         conda install -n base -c anaconda python=${PYTHON_VERSION}
         conda env update -n base --file=ci/requirements-dev.yml
 
-    - name: which python and pandas version
+    - name: flake8
+      run: flake8 .
+
+    - name: mypy
+      run: mypy ibis
+      if: always()
+
+    - name: pydocstyle
+      # TODO: change match-dir when docstrings are fixed for other backends
+      run: pydocstyle --match-dir="(ibis|omniscidb)"
+      if: always()
+
+    - name: pre-commit
+      run: pre-commit run --all-files
+      if: always()
+
+    - name: feedstock
+      run: ./ci/feedstock.py test --python 3.7
+      if: always()
+
+    - name: Publish feedstock artifact
+      uses: actions/upload-artifact@master
+      with:
+        name: LinuxCondaPackage
+        path: /tmp/ibis/packages
+      if: github.event_name == 'push'
+
+    - name: benckmark
+      run: ./ci/benchmark.sh azure "$(Build.SourceVersion)"
+      if: always()
+
+    - name: start backend containers
+      run: ./ci/start_backend_containers.sh $CONTAINERS_TO_START
+      if: always()
+
+    - name: build web and docs
       run: |
-        which python
-        python -c "import pandas; print(pandas.__version__)"
+        mkdir ibis-project.org
+        echo "ibis-project.org" > ibis-project.org/CNAME
+        touch ibis-project.org/.nojekyll
+        python -m pysuerga /ibis/docs/web --target-path=ibis-project.org/
+        sphinx-build -b html docs/source ibis-project.org/docs -W -T --keep-going
+
+    - name: set up ssh
+      run: |
+        mkdir ~/.ssh
+        base64 --decode --ignore-garbage <<< "${{ secrets.ibis_gh_token }}" > ~/.ssh/id_rsa
+        chmod 700 ~/.ssh
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
+      if: github.event_name == 'push'
+
+    - name: push web to GitHub pages
+      run: |
+        cd ibis-project.org
+
+        git init
+        git checkout -b gh-pages
+        git remote add origin git@github.com:ibis-project/docs.ibis-project.org
+        git config user.name 'Ibis Documentation Bot'
+        git config user.email ''
+
+        git add --all .
+        git commit -m "Docs from ibis at $(Build.SourceVersion)"
+        git push --force origin gh-pages
+      if: github.event_name == 'push'
