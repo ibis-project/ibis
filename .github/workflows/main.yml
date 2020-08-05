@@ -25,6 +25,8 @@ jobs:
         conda update -n base -c anaconda conda
         conda install -n base -c anaconda python=${PYTHON_VERSION}
         conda env update -n base --file=ci/requirements-dev.yml
+        conda env update -n base --file=ci/requirements-docs.yml
+        python -m pip install --no-build-isolation -e .
 
     - name: flake8
       run: flake8 .
