@@ -4,7 +4,8 @@ import toolz
 
 import ibis
 import ibis.common.exceptions as com
-from ibis.pandas.core import execute, scope_item
+from ibis.common.scope import set_scope_item
+from ibis.pandas.core import execute
 
 
 def compute_sort_key(key, data, timecontext, scope=None, **kwargs):
@@ -17,7 +18,7 @@ def compute_sort_key(key, data, timecontext, scope=None, **kwargs):
         new_scope = {}
         for t in by.op().root_tables():
             new_scope = toolz.merge(
-                new_scope, scope_item(t, data, timecontext)
+                new_scope, set_scope_item(t, data, timecontext)
             )
         new_column = execute(by, scope=toolz.merge(scope, new_scope), **kwargs)
         name = ibis.util.guid()

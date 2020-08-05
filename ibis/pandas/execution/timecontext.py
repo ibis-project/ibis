@@ -36,30 +36,37 @@ import ibis.expr.operations as ops
 from ibis.expr.typing import TimeContext
 from ibis.pandas.core import compute_time_context, is_computable_input
 from ibis.pandas.execution import execute
+from ibis.timecontext.adjustment import (
+    adjust_context_asof_join,
+    adjust_context_window,
+)
 
 
 @compute_time_context.register(ops.AsOfJoin)
-def adjust_context_asof_join(op, timecontext: Optional[TimeContext], **kwargs):
+def compute_time_context_asof_join(
+    op, timecontext: Optional[TimeContext], **kwargs
+):
     new_timecontexts = [
         timecontext for arg in op.inputs if is_computable_input(arg)
     ]
 
     if not timecontext:
         return new_timecontexts
-    begin, end = timecontext
-    tolerance = op.tolerance
-    if tolerance is not None:
-        timedelta = execute(tolerance)
-        # only backwards and adjust begin time only
-        new_begin = begin - timedelta
-        new_end = end
+
+    if op.tolerance is not None:
+        timedelta = execute(op.tolerance)
+        result = adjust_context_asof_join(timecontext, timedelta)
+    else:
+        result = timecontext
     # right table is the second node in children
-    new_timecontexts[1] = (new_begin, new_end)
+    new_timecontexts[1] = result
     return new_timecontexts
 
 
 @compute_time_context.register(ops.WindowOp)
-def adjust_context_window(op, timecontext: Optional[TimeContext], **kwargs):
+def compute_time_context_window(
+    op, timecontext: Optional[TimeContext], **kwargs
+):
     new_timecontexts = [
         timecontext for arg in op.inputs if is_computable_input(arg)
     ]
@@ -68,24 +75,20 @@ def adjust_context_window(op, timecontext: Optional[TimeContext], **kwargs):
         return new_timecontexts
 
     # adjust time context by preceding and following
-    begin, end = timecontext
-    result = [begin, end]
     preceding = op.window.preceding
-    following = op.window.following
     if preceding is not None:
         if isinstance(preceding, ir.IntervalScalar):
-            new_preceding = execute(preceding)
-        else:
-            new_preceding = preceding
-        if new_preceding:
-            result[0] = begin - new_preceding
+            preceding = execute(preceding)
+
+    following = op.window.following
     if following is not None:
         if isinstance(following, ir.IntervalScalar):
-            new_following = execute(following)
-        else:
-            new_following = following
-        if new_following:
-            result[1] = end + new_following
+            following = execute(following)
+
+    result = adjust_context_window(
+        timecontext, preceding=preceding, following=following
+    )
+
     new_timecontexts = [
         result for arg in op.inputs if is_computable_input(arg)
     ]

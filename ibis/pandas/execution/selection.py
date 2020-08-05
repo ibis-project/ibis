@@ -17,8 +17,9 @@ from toolz import compose, concat, concatv, first, unique
 
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+from ibis.common.scope import set_scope_item
 from ibis.expr.typing import TimeContext
-from ibis.pandas.core import execute, scope_item
+from ibis.pandas.core import execute
 from ibis.pandas.dispatch import execute_node
 from ibis.pandas.execution import constants, util
 
@@ -69,7 +70,7 @@ def compute_projection_scalar_expr(
     for t in op.root_tables():
         additional_scope = toolz.merge(
             additional_scope,
-            scope_item(
+            set_scope_item(
                 t,
                 map_new_column_names_to_data(
                     remap_overlapping_column_names(
@@ -122,7 +123,7 @@ def compute_projection_column_expr(
     for t in op.root_tables():
         additional_scope = toolz.merge(
             additional_scope,
-            scope_item(
+            set_scope_item(
                 t,
                 map_new_column_names_to_data(
                     remap_overlapping_column_names(
@@ -258,7 +259,7 @@ def _compute_predicates(
                 new_data = data.loc[:, mapping.keys()].rename(columns=mapping)
             else:
                 new_data = data
-            item = scope_item(root_table, new_data, timecontext)
+            item = set_scope_item(root_table, new_data, timecontext)
             additional_scope = toolz.merge(additional_scope, item)
 
         new_scope = toolz.merge(scope, additional_scope)

@@ -126,14 +126,13 @@ there is a window that looks forward, over a window that looks back. So in this
 case, we should not trust the data stored either, and go on to execute this
 node. For simplicity, we update cache in this case as well.
 
-See scope_item() for the structure of scope, and get_scope() for the details
-about the implementaion.
+See set_scope_item() for the structure of scope, and get_scope_item() in
+ibis.common.scope for details about the implementaion.
 """
 
 from __future__ import absolute_import
 
 import datetime
-import enum
 import functools
 import numbers
 from typing import Optional
@@ -151,6 +150,7 @@ import ibis.expr.types as ir
 import ibis.expr.window as win
 import ibis.pandas.aggcontext as agg_ctx
 from ibis.client import find_backends
+from ibis.common.scope import get_scope_item, set_scope_item
 from ibis.expr.typing import TimeContext
 from ibis.pandas.dispatch import (
     execute_literal,
@@ -159,6 +159,7 @@ from ibis.pandas.dispatch import (
     pre_execute,
 )
 from ibis.pandas.trace import trace
+from ibis.timecontext.util import canonicalize_context
 
 integer_types = np.integer, int
 floating_types = (numbers.Real,)
@@ -300,7 +301,7 @@ def execute_until_in_scope(
     if isinstance(op, ops.Literal):
         # special case literals to avoid the overhead of dispatching
         # execute_node
-        return scope_item(
+        return set_scope_item(
             op,
             execute_literal(
                 op, op.value, expr.type(), aggcontext=aggcontext, **kwargs
@@ -308,7 +309,7 @@ def execute_until_in_scope(
             timecontext,
         )
 
-    if get_scope(scope, op, timecontext) is not None:
+    if get_scope_item(scope, op, timecontext) is not None:
         return scope
     # figure out what arguments we're able to compute on based on the
     # expressions inputs. things like expressions, None, and scalar types are
@@ -336,7 +337,7 @@ def execute_until_in_scope(
 
     # Short circuit: if pre_execute puts op in scope, then we don't need to
     # execute its computable_args
-    if get_scope(new_scope, op, timecontext) is not None:
+    if get_scope_item(new_scope, op, timecontext) is not None:
         return new_scope
 
     # if op in new_scope:
@@ -363,7 +364,7 @@ def execute_until_in_scope(
             **kwargs,
         )
         if hasattr(arg, 'op')
-        else scope_item(arg, arg, timecontext)
+        else set_scope_item(arg, arg, timecontext)
         for (arg, timecontext) in zip(computable_args, arg_timecontexts)
     ]
 
@@ -380,7 +381,7 @@ def execute_until_in_scope(
 
     # pass our computed arguments to this node's execute_node implementation
     data = [
-        get_scope(new_scope, arg.op()) if hasattr(arg, 'op') else arg
+        get_scope_item(new_scope, arg.op()) if hasattr(arg, 'op') else arg
         for arg in computable_args
     ]
     result = execute_node(
@@ -393,7 +394,7 @@ def execute_until_in_scope(
         **kwargs,
     )
     computed = post_execute_(op, result, timecontext=timecontext)
-    return scope_item(op, computed, timecontext)
+    return set_scope_item(op, computed, timecontext)
 
 
 execute = Dispatcher('execute')
@@ -456,9 +457,9 @@ def main_execute(
     additional_scope = {}
     for k, v in params.items():
         if hasattr(k, 'op'):
-            item = scope_item(k.op(), v, timecontext)
+            item = set_scope_item(k.op(), v, timecontext)
         else:
-            item = scope_item(k, v, timecontext)
+            item = set_scope_item(k, v, timecontext)
         additional_scope = toolz.merge(additional_scope, item)
 
     new_scope = toolz.merge(scope, additional_scope)
@@ -573,149 +574,3 @@ def compute_time_context_default(
     node, timecontext: Optional[TimeContext], **kwargs
 ):
     return [timecontext for arg in node.inputs if is_computable_input(arg)]
-
-
-# In order to use time context feature, there must be a column of Timestamp
-# type, and named as 'time' in TableExpr. This TIME_COL constant will be
-# used in filtering data from a table or columns of a table.
-TIME_COL = 'time'
-
-
-def canonicalize_context(
-    timecontext: Optional[TimeContext],
-) -> Optional[TimeContext]:
-    """Convert a timecontext to canonical one with type pandas.Timestamp
-       for its begin and end time. Raise Exception for illegal inputs
-    """
-    SUPPORTS_TIMESTAMP_TYPE = pd.Timestamp
-    try:
-        begin, end = timecontext
-    except (ValueError, TypeError):
-        raise com.IbisError(
-            f'Timecontext {timecontext} should specify (begin, end)'
-        )
-
-    if not isinstance(begin, SUPPORTS_TIMESTAMP_TYPE):
-        raise com.IbisError(
-            f'begin time value {begin} of type {type(begin)} is not'
-            ' of type pd.Timestamp'
-        )
-    if not isinstance(end, SUPPORTS_TIMESTAMP_TYPE):
-        raise com.IbisError(
-            f'end time value {end} of type {type(begin)} is not'
-            ' of type pd.Timestamp'
-        )
-    if begin > end:
-        raise com.IbisError(
-            f'begin time {begin} must be before or equal' f' to end time {end}'
-        )
-    return begin, end
-
-
-class TimeContextRelation(enum.Enum):
-    """ Enum to classify the relationship between two time contexts
-        Assume that we have two timecontext c1 (begin1, end1),
-        c2(begin2, end2):
-        SUBSET means c1 is a subset of c2, begin1 is greater than or equal to
-        begin2, and end1 is less than or equal to end2.
-        Likewise, SUPERSET means that begin1 is earlier than begin2, and end1
-        is later than end2.
-        If neither of the two contexts is a superset of each other, and they
-        share some time range in common, we called them OVERLAP.
-        And NONOVERLAP means the two contexts doesn't overlap at all, which
-        means end1 is earlier than begin2 or end2 is earlier than begin1
-    """
-
-    SUBSET = 0
-    SUPERSET = 1
-    OVERLAP = 2
-    NONOVERLAP = 3
-
-
-def compare_timecontext(cur_context: TimeContext, old_context: TimeContext):
-    """Compare two timecontext and return the relationship between two time
-    context (SUBSET, SUPERSET, OVERLAP, NONOVERLAP).
-
-    Parameters
-    ----------
-    cur_context: TimeContext
-    old_context: TimeContext
-
-    Returns
-    -------
-    result : Enum[TimeContextRelation]
-    """
-    begin, end = cur_context
-    old_begin, old_end = old_context
-    if old_begin <= begin and old_end >= end:
-        return TimeContextRelation.SUBSET
-    elif old_begin >= begin and old_end <= end:
-        return TimeContextRelation.SUPERSET
-    elif old_end < begin or end < old_begin:
-        return TimeContextRelation.NONOVERLAP
-    else:
-        return TimeContextRelation.OVERLAP
-
-
-def scope_item(op, result, timecontext):
-    """make a scope item to be set in scope
-
-    Scope is a dictionary mapping :class:`~ibis.expr.operations.Node`
-    subclass instances to concrete data, and the time context associate
-    with it(if any).
-
-    Parameters
-    ----------
-    op: ibis.expr.operations.Node, key in scope.
-    result : scalar, pd.Series, pd.DataFrame, concrete data.
-    timecontext: Optional[TimeContext], time context associate with the
-    result.
-
-    Returns
-    -------
-    scope_item : Dict, a key value pair that could merge into scope later
-    """
-    return {op: {'value': result, 'timecontext': timecontext}}
-
-
-def get_scope(scope, op, timecontext=None):
-    """ Given a op and timecontext, get result from scope
-    Parameters
-    ----------
-    scope: collections.Mapping
-    a dictionary mapping :class:`~ibis.expr.operations.Node`
-    subclass instances to concrete data, and the time context associate
-    with it(if any).
-    op: ibis.expr.operations.Node, key in scope.
-    timecontext: Optional[TimeContext]
-
-    Returns
-    -------
-    result : scalar, pd.Series, pd.DataFrame
-    """
-    if op not in scope:
-        return None
-    # for ops without timecontext
-    if timecontext is None:
-        return scope[op].get('value', None)
-    else:
-        # For op with timecontext, we only use scope to cache leaf nodes for
-        # now. This is because some ops cannot use cached result with a
-        # different timecontext to get the correct result. For example,
-        # a groupby followed by count, if we use a larger or smaller dataset
-        # from cache, we will probably get an error in result. Such ops with
-        # global aggregation, ops whose result is depending on other rows
-        # in result Dataframe, cannot use cached result with different time
-        # context to optimize calculation. For simplicity, we skip these ops
-        # for now.
-        if isinstance(op, ops.TableColumn) or isinstance(op, ops.TableNode):
-            old_timecontext = scope[op].get('timecontext', None)
-            if old_timecontext:
-                relation = compare_timecontext(timecontext, old_timecontext)
-                if relation == TimeContextRelation.SUBSET:
-                    return scope[op].get('value', None)
-                else:
-                    # For other ops with time context, do not trust results
-                    # in scope, return None as if result is not present
-                    return None
-    return None

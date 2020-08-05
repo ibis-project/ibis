@@ -13,21 +13,21 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.window as win
 import ibis.pandas.aggcontext as agg_ctx
+from ibis.common.scope import set_scope_item
 from ibis.expr.typing import TimeContext
 from ibis.pandas.aggcontext import AggregationContext
 from ibis.pandas.core import (
-    TIME_COL,
     compute_time_context,
     date_types,
     execute,
     integer_types,
-    scope_item,
     simple_types,
     timedelta_types,
     timestamp_types,
 )
 from ibis.pandas.dispatch import execute_node, pre_execute
 from ibis.pandas.execution import util
+from ibis.timecontext.util import TIME_COL
 
 
 def _post_process_empty(scalar, parent, order_by, group_by):
@@ -197,20 +197,20 @@ def execute_window_op(
     # execution of that by hand
     operand_op = operand.op()
 
-    new_timecontext = None
+    adjusted_timecontext = None
     if timecontext:
         arg_timecontexts = compute_time_context(op, timecontext=timecontext)
         # timecontext is the original time context required by parent node
-        # of this WindowOp, while new_timecontext is the adjusted context
+        # of this WindowOp, while adjusted_timecontext is the adjusted context
         # of this Window, since we are doing a manual execution here, use
-        # new_timecontext in later execution phases
-        new_timecontext = arg_timecontexts[0]
+        # adjusted_timecontext in later execution phases
+        adjusted_timecontext = arg_timecontexts[0]
 
     pre_executed_scope = pre_execute(
         operand_op,
         *clients,
         scope=scope,
-        timecontext=new_timecontext,
+        timecontext=adjusted_timecontext,
         aggcontext=aggcontext,
         **kwargs,
     )
@@ -221,7 +221,7 @@ def execute_window_op(
     data = execute(
         root_expr,
         scope=scope,
-        timecontext=new_timecontext,
+        timecontext=adjusted_timecontext,
         clients=clients,
         aggcontext=aggcontext,
         **kwargs,
@@ -247,7 +247,7 @@ def execute_window_op(
             key,
             scope=scope,
             clients=clients,
-            timecontext=new_timecontext,
+            timecontext=adjusted_timecontext,
             aggcontext=aggcontext,
             **kwargs,
         )
@@ -270,7 +270,7 @@ def execute_window_op(
                 data,
                 order_by,
                 group_by=group_by,
-                timecontext=new_timecontext,
+                timecontext=adjusted_timecontext,
                 **kwargs,
             )
             source = sorted_df.groupby(grouping_keys, sort=True)
@@ -281,7 +281,7 @@ def execute_window_op(
     else:
         if order_by:
             source, grouping_keys, ordering_keys = util.compute_sorted_frame(
-                data, order_by, timecontext=new_timecontext, **kwargs
+                data, order_by, timecontext=adjusted_timecontext, **kwargs
             )
             post_process = _post_process_order_by
         else:
@@ -291,7 +291,7 @@ def execute_window_op(
     additional_scope = {}
     for t in operand.op().root_tables():
         additional_scope = toolz.merge(
-            additional_scope, scope_item(t, source, new_timecontext)
+            additional_scope, set_scope_item(t, source, adjusted_timecontext)
         )
 
     new_scope = toolz.merge(scope, additional_scope)
@@ -314,7 +314,7 @@ def execute_window_op(
     result = execute(
         operand,
         scope=new_scope,
-        timecontext=new_timecontext,
+        timecontext=adjusted_timecontext,
         aggcontext=aggcontext,
         clients=clients,
         **kwargs,

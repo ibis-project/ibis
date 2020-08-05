@@ -21,10 +21,10 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.pandas.aggcontext as agg_ctx
+from ibis.common.scope import set_scope_item
 from ibis.compat import DatetimeTZDtype
 from ibis.expr.typing import TimeContext
 from ibis.pandas.core import (
-    TIME_COL,
     boolean_types,
     execute,
     fixed_width_types,
@@ -32,12 +32,12 @@ from ibis.pandas.core import (
     integer_types,
     numeric_types,
     scalar_types,
-    scope_item,
     simple_types,
     timedelta_types,
 )
 from ibis.pandas.dispatch import execute_literal, execute_node
 from ibis.pandas.execution import constants
+from ibis.timecontext.util import TIME_COL
 
 
 # By default return the literal value
@@ -429,7 +429,7 @@ def execute_aggregation_dataframe(
         source = data
 
     new_scope = toolz.merge(
-        scope, scope_item(op.table.op(), source, timecontext)
+        scope, set_scope_item(op.table.op(), source, timecontext)
     )
     pieces = [
         pd.Series(
