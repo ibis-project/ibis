@@ -12,5 +12,5 @@ echo "::add-path::${CONDA_PATH}"
 
 conda update -n base -c anaconda --all --yes conda
 conda install -n base -c anaconda --yes  python=${PYTHON_VERSION}
-conda env update -n base --yes --file=environment.yml
+conda env update -n base --file=environment.yml
 python -m pip install -e .
