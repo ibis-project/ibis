@@ -26,7 +26,12 @@ jobs:
         conda install -n base -c anaconda python=${PYTHON_VERSION}
         conda env update -n base --file=ci/requirements-dev.yml
         conda env update -n base --file=ci/requirements-docs.yml
+        which python
+
+    - name: install ibis
+      run: |
         python -m pip install -e .
+      if: always()
 
     - name: flake8
       run: flake8 .

@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-BASE_DIR="$(dirname $0)"
+BASE_DIR="$(readlink -m $(dirname $0)/..)"
 CONTAINERS_TO_START=$@
 
 if [ -n "$CONTAINERS_TO_START" ]; then
