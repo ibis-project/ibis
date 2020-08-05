@@ -4,7 +4,7 @@ BASE_DIR="$(readlink -m $(dirname $0)/..)"
 CONTAINERS_TO_START=$@
 
 if [ -n "$CONTAINERS_TO_START" ]; then
-    python $BASE_DIR/datamgr.py download
+    python $BASE_DIR/ci/datamgr.py download
 fi
 
 for BACKEND in "$CONTAINERS_TO_START"
@@ -13,13 +13,13 @@ do
 
 
     if [[ "$BACKEND" == "impala" ]]; then
-        python $BASE_DIR/impalamgr.py load --data
+        python $BASE_DIR/ci/impalamgr.py load --data
     else
-        python $BASE_DIR/datamgr.py $BACKEND
+        python $BASE_DIR/ci/datamgr.py $BACKEND
     fi
 done
 
-docker-compose -f $BASE_DIR/ci/docker-compose.yml up --remove-orphans -d --no-build waiter ci/dockerize.sh $CONTAINERS_TO_START
+docker-compose -f $BASE_DIR/ci/docker-compose.yml up --remove-orphans -d --no-build waiter $BASE_DIR/ci/dockerize.sh $CONTAINERS_TO_START
 DOCKER_CODE=$?
 echo "DOCKER_CODE: ${DOCKER_CODE}"
 
