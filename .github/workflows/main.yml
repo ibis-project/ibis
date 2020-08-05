@@ -6,9 +6,6 @@ on:
   pull_request:
     branches: master
 
-env:
-  PYTHON_VERSION: "3.7"
-
 jobs:
   Lint_package_benchmark:
     name: Lint, package and benckmark
@@ -18,15 +15,8 @@ jobs:
     - name: checkout
       uses: actions/checkout@v1
 
-    - name: add conda to path
-      run: echo "::add-path::/usr/share/miniconda/bin"
-
-    - name: set up conda
-      run: |
-        conda update -n base -c anaconda conda
-        conda install -n base -c anaconda python=${PYTHON_VERSION}
-        conda env update -n base --file=ci/requirements-dev-3.7-main.yml
-        python -m pip install -e .
+    - name: set up environment
+      run: ./ci/setup_env.sh
 
     - name: black
       run: black --check .
@@ -48,7 +38,7 @@ jobs:
       if: always()
 
     - name: feedstock
-      run: ./ci/feedstock.py test --python 3.7
+      run: ./ci/feedstock.py test --python 3.7 --package_location /usr/share/miniconda/conda-bld/
       if: always()
 
     - name: publish feedstock artifact
