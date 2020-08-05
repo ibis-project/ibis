@@ -9,7 +9,7 @@ fi
 
 for BACKEND in "$CONTAINERS_TO_START"
 do
-    docker-compose -f docker-compose.yml up --remove-orphans -d --no-build $BACKEND
+    docker-compose -f $BASE_DIR/ci/docker-compose.yml up --remove-orphans -d --no-build $BACKEND
 
 
     if [[ "$BACKEND" == "impala" ]]; then
@@ -19,7 +19,7 @@ do
     fi
 done
 
-docker-compose -f ci/docker-compose.yml up --remove-orphans -d --no-build waiter ci/dockerize.sh $CONTAINERS_TO_START
+docker-compose -f $BASE_DIR/ci/docker-compose.yml up --remove-orphans -d --no-build waiter ci/dockerize.sh $CONTAINERS_TO_START
 DOCKER_CODE=$?
 echo "DOCKER_CODE: ${DOCKER_CODE}"
 
