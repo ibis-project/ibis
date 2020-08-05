@@ -764,7 +764,7 @@ def execute_series_distinct(op, data, **kwargs):
 
 @execute_node.register(ops.Union, pd.DataFrame, pd.DataFrame, bool)
 def execute_union_dataframe_dataframe(op, left, right, distinct, **kwargs):
-    result = pd.concat([left, right], axis=0)
+    result = pd.concat([left, right], axis=0, sort=False)
     return result.drop_duplicates() if distinct else result
 
 
