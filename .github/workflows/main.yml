@@ -34,7 +34,7 @@ jobs:
 
     - name: isort
       # TODO: isort has errors that need to be fixed before it can be added
-      run: isort --quiet --recursive . || true
+      run: isort --check-only . || true
       if: always()
 
     - name: feedstock
