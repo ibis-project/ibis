@@ -34,11 +34,15 @@ jobs:
 
     - name: isort
       # TODO: isort has errors that need to be fixed before it can be added
-      run: isort --quiet --recursive || true
+      run: isort --quiet --recursive . || true
       if: always()
 
     - name: feedstock
-      run: ./ci/feedstock.py test --python 3.7 --package_location /usr/share/miniconda/conda-bld/
+      run: |
+        ./ci/feedstock.py clone
+        ./ci/feedstock.py update
+        ./ci/feedstock.py build --python 3.7
+        ./ci/feedstock.py deploy /usr/share/miniconda/conda-bld/
       if: always()
 
     - name: publish feedstock artifact
