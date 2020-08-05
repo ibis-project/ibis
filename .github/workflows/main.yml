@@ -1,0 +1,63 @@
+name: Main
+
+on:
+  push:
+    branches: master
+  pull_request:
+    branches: master
+
+env:
+  PYTHON_VERSION: "3.7"
+
+jobs:
+  Lint_package_benchmark:
+    name: Lint, package and benckmark
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: checkout
+      uses: actions/checkout@v1
+
+    - name: add conda to path
+      run: echo "::add-path::/usr/share/miniconda/bin"
+
+    - name: set up conda
+      run: |
+        conda update -n base -c anaconda conda
+        conda install -n base -c anaconda python=${PYTHON_VERSION}
+        conda env update -n base --file=ci/requirements-dev-3.7-main.yml
+        python -m pip install -e .
+
+    - name: black
+      run: black --check .
+      if: always()
+
+    - name: mypy
+      # TODO: mypy has errors that need to be fixed before it can be added
+      run: mypy --ignore-missing-imports ibis || true
+      if: always()
+
+    - name: pydocstyle
+      # TODO: change match-dir when docstrings are fixed for other backends
+      run: pydocstyle --match-dir="(ibis|omniscidb)"
+      if: always()
+
+    - name: isort
+      # TODO: isort has errors that need to be fixed before it can be added
+      run: isort --quiet --recursive || true
+      if: always()
+
+    - name: feedstock
+      run: ./ci/feedstock.py test --python 3.7
+      if: always()
+
+    - name: publish feedstock artifact
+      uses: actions/upload-artifact@master
+      with:
+        name: LinuxCondaPackage
+        path: /tmp/ibis/packages
+      if: github.event_name == 'push'
+
+    - name: benckmark
+      run: ./ci/benchmark.sh azure "${{ github.sha }}"
+      if: always()
