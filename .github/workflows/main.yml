@@ -37,7 +37,7 @@ jobs:
       shell: bash
 
     - name: install backend dependencies
-      run: conda env update --file=ci/deps/postgres.yml
+      run: conda env update -n base --file=ci/deps/postgres.yml
 
     - name: set up testing database
       run: |
