@@ -22,24 +22,22 @@ jobs:
     services:
       postgres:
         # image: postgres:10.8
-		image: shajekpivotal/ibis-docker-postgres-9.5
-        env:
-          POSTGRES_PASSWORD: ""
+        image: shajekpivotal/ibis-docker-postgres-9.5
         ports:
         - 5432:5432
-        # needed because the postgres container does not provide a healthcheck
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+        env:
+          POSTGRES_PASSWORD: ""
 
-	  mysql:
-		image: mariadb:10.4.12
-		hostname: mysql
-		ports:
-		  - 3307:3306
-		environment:
-		  MYSQL_ALLOW_EMPTY_PASSWORD: 1
-		  MYSQL_DATABASE: ibis_testing
-		  MYSQL_USER: ibis
-		  MYSQL_PASSWORD: ibis
+      mysql:
+        image: mariadb:10.4.12
+        hostname: mysql
+        ports:
+        - 3307:3306
+        environment:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 1
+          MYSQL_DATABASE: ibis_testing
+          MYSQL_USER: ibis
+          MYSQL_PASSWORD: ibis
 
     steps:
 
@@ -52,9 +50,9 @@ jobs:
 
     - name: set up testing database
       run: |
-		python ci/datamgr.py download
-		python ci/datamgr.py mysql
-		python ci/datamgr.py postgres
+        python ci/datamgr.py download
+        python ci/datamgr.py mysql
+        python ci/datamgr.py postgres
 
     - name: run tests
       run: ./ci/run_tests.sh "$PYTEST_EXPRESSION"
