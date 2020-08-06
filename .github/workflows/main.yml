@@ -19,25 +19,6 @@ jobs:
     env:
       # Removing everything that needs a running (docker) backend for now
       PYTEST_EXPRESSION: "not udf and not postgis and not postgres_extensions and not clickhouse and not impala and not kudu and not hdfs and not omniscidb and not spark and not pyspark"
-    services:
-      postgres:
-        # image: postgres:10.8
-        image: shajekpivotal/ibis-docker-postgres-9.5
-        ports:
-        - 5432:5432
-        env:
-          POSTGRES_PASSWORD: ""
-
-      mysql:
-        image: mariadb:10.4.12
-        hostname: mysql
-        ports:
-        - 3307:3306
-        environment:
-          MYSQL_ALLOW_EMPTY_PASSWORD: 1
-          MYSQL_DATABASE: ibis_testing
-          MYSQL_USER: ibis
-          MYSQL_PASSWORD: ibis
 
     steps:
 
