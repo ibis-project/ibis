@@ -36,6 +36,9 @@ jobs:
       run: ./ci/setup_env.sh
       shell: bash
 
+    - name: install backend dependencies
+      run: conda env update --file=ci/deps/posgres.yml
+
     - name: set up testing database
       run: |
         python ci/datamgr.py download
