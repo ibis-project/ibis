@@ -18,7 +18,14 @@ jobs:
         python_version: ["3.7", "3.8"]
     env:
       # Removing everything that needs a running (docker) backend for now
-      PYTEST_EXPRESSION: "not udf and not postgis and not postgres_extensions and not clickhouse and not impala and not kudu and not hdfs and not omniscidb and not spark and not pyspark"
+      PYTEST_EXPRESSION: "not udf and not mysql and not postgis and not postgres_extensions and not clickhouse and not impala and not kudu and not hdfs and not omniscidb and not spark and not pyspark"
+    services:
+      postgres:
+        image: postgres:10.8
+        ports:
+        - 5432:5432
+        env:
+          POSTGRES_PASSWORD: ""
 
     steps:
 
@@ -32,7 +39,6 @@ jobs:
     - name: set up testing database
       run: |
         python ci/datamgr.py download
-        python ci/datamgr.py mysql
         python ci/datamgr.py postgres
 
     - name: run tests
