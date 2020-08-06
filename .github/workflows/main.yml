@@ -18,7 +18,7 @@ jobs:
         python_version: ["3.7", "3.8"]
     env:
       # Removing everything that needs a running (docker) backend for now
-      PYTEST_EXPRESSION: "not udf and not mysql and not postgis and not postgres_extensions and not clickhouse and not impala and not kudu and not hdfs and not omniscidb and not spark and not pyspark"
+      PYTEST_EXPRESSION: "not udf and not mysql and not postgres and not postgis and not postgres_extensions and not clickhouse and not impala and not kudu and not hdfs and not omniscidb and not spark and not pyspark"
     services:
       postgres:
         image: postgres:10.8
@@ -26,6 +26,14 @@ jobs:
         - 5432:5432
         env:
           POSTGRES_PASSWORD: ""
+      omnisci:
+        image: omnisci/core-os-cpu:v5.2.2
+        hostname: omniscidb
+        ports:
+        - 6274:6274
+        - 6278:6278
+        volumes:
+        - ./omniscidb.conf:/omnisci-storage/omnisci.conf
 
     steps:
 
@@ -37,12 +45,15 @@ jobs:
       shell: bash
 
     - name: install backend dependencies
-      run: conda env update -n base --file=ci/deps/postgres.yml
+      run: |
+        conda env update -n base --file=ci/deps/postgres.yml
+        conda env update -n base --file=ci/deps/omnisci.yml
 
     - name: set up testing database
       run: |
         python ci/datamgr.py download
-        python ci/datamgr.py postgres
+        # python ci/datamgr.py postgres
+        python ci/datamgr.py omnisci
 
     - name: run tests
       run: ./ci/run_tests.sh "$PYTEST_EXPRESSION"

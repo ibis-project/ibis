@@ -1,0 +1,4 @@
+channels:
+  - conda-forge
+dependencies:
+- pymapd=0.23
