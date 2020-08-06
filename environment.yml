@@ -1,0 +1,57 @@
+name: ibis-dev
+channels:
+  - conda-forge
+dependencies:
+  # Ibis hard dependencies
+  - multipledispatch>=0.6.0
+  - numpy>=1.15
+  - pandas>=0.25.3
+  - pytz
+  - regex
+  - toolz
+
+  # Ibis soft dependencies
+  - sqlalchemy>=1.1
+  - graphviz
+  - openjdk=8
+  - pytables>=3.0.0
+  - python-graphviz
+  - python-hdfs>=2.0.16
+
+  # Dev tools
+  - black=19.10b0
+  - click # few scripts in ci/
+  - conda-build # feedstock
+  - cmake
+  - flake8
+  - isort
+  - jinja2 # feedstock
+  - mypy
+  - plumbum # few scripts in ci/ and dev/
+  - pre-commit
+  - pydocstyle=4.0.1
+  - pygit2 # dev/genrelease.py
+  - pytest>=4.5, <6.0.0rc1
+  - pytest-cov
+  - pytest-mock
+  - pytest-xdist
+  - ruamel.yaml # feedstock
+  - libiconv  # bug in repo2docker, see https://github.com/jupyter/repo2docker/issues/758
+  - xorg-libxpm
+  - xorg-libxrender
+
+  # Docs
+  - ipython
+  - jupyter
+  - matplotlib
+  - nbconvert
+  - nbsphinx
+  - nomkl
+  - pyarrow>=0.12 # must pin again otherwise strange things happen
+  - sphinx=2.0.1
+  - sphinx-releases
+  - sphinx_rtd_theme
+  - semantic_version<2.7 # https://github.com/ibis-project/ibis/issues/2027
+  - pip
+  - pip:
+    - git+https://github.com/datapythonista/pysuerga
