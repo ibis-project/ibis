@@ -16,6 +16,21 @@ __all__ = ('udf',)
 
 _udf_name_cache = collections.defaultdict(itertools.count)
 
+TEMPORARY_UDF_TEMPLATE = '''\
+CREATE TEMPORARY FUNCTION {external_name}({signature})
+RETURNS {return_type}
+LANGUAGE js AS """
+{strict}{source}
+return {internal_name}({args});
+"""{libraries};'''
+
+PERSISTENT_UDF_TEMPLATE = '''\
+CREATE OR REPLACE FUNCTION {external_name}({signature})
+RETURNS {return_type}
+LANGUAGE js AS """
+{strict}{source}
+return {internal_name}({args});
+"""{libraries};'''
 
 def create_udf_node(name, fields):
     """Create a new UDF node type.
@@ -37,7 +52,8 @@ def create_udf_node(name, fields):
     return type(external_name, (BigQueryUDFNode,), fields)
 
 
-def udf(input_type, output_type, strict=True, libraries=None):
+def udf(input_type, output_type, strict=True, libraries=None, temp=True,
+        dataset=None, func_name=None):
     '''Define a UDF for BigQuery
 
     Parameters
@@ -210,14 +226,12 @@ def udf(input_type, output_type, strict=True, libraries=None):
             for name, type in zip(parameter_names, input_type)
         )
         source = PythonToJavaScriptTranslator(f).compile()
-        js = '''\
-CREATE TEMPORARY FUNCTION {external_name}({signature})
-RETURNS {return_type}
-LANGUAGE js AS """
-{strict}{source}
-return {internal_name}({args});
-"""{libraries};'''.format(
-            external_name=udf_node.__name__,
+        template = TEMPORARY_UDF_TEMPLATE if temp else PERSISTENT_UDF_TEMPLATE
+        if temp:
+            assert dataset is not None, "Persistent UDFs must belong to a dataset"
+            assert func_name is not None, "Persistent UDFs must have Names"
+        js = template.format(
+            external_name=udf_node.__name__ if temp else f'{dataset}.{func_name}',
             internal_name=f.__name__,
             return_type=return_type,
             source=source,
