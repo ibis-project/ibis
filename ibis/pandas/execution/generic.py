@@ -21,7 +21,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.pandas.aggcontext as agg_ctx
-from ibis.common.scope import set_scope_item
+from ibis.common.scope import make_scope_item, set_scope_item
 from ibis.compat import DatetimeTZDtype
 from ibis.expr.timecontext import TIME_COL
 from ibis.expr.typing import TimeContext
@@ -428,14 +428,11 @@ def execute_aggregation_dataframe(
     else:
         source = data
 
-    new_scope = toolz.merge(
-        scope, set_scope_item(op.table.op(), source, timecontext)
-    )
+    set_scope_item(scope, make_scope_item(op.table.op(), source, timecontext))
+
     pieces = [
         pd.Series(
-            execute(
-                metric, scope=new_scope, timecontext=timecontext, **kwargs
-            ),
+            execute(metric, scope=scope, timecontext=timecontext, **kwargs),
             name=metric.get_name(),
         )
         for metric in op.metrics
@@ -458,9 +455,7 @@ def execute_aggregation_dataframe(
         predicate = functools.reduce(
             operator.and_,
             (
-                execute(
-                    having, scope=new_scope, timecontext=timecontext, **kwargs
-                )
+                execute(having, scope=scope, timecontext=timecontext, **kwargs)
                 for having in op.having
             ),
         )

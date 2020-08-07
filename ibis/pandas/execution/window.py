@@ -13,7 +13,7 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.window as win
 import ibis.pandas.aggcontext as agg_ctx
-from ibis.common.scope import set_scope_item
+from ibis.common.scope import make_scope_item
 from ibis.expr.timecontext import TIME_COL
 from ibis.expr.typing import TimeContext
 from ibis.pandas.aggcontext import AggregationContext
@@ -156,6 +156,15 @@ def trim_with_timecontext(data, timecontext: Optional[TimeContext]):
         context might be adjusted for calculation. Data must be trimmed
         within the original time context before return.
 
+        Params
+        ------
+        data: pd.Series of MultiIndex
+        timecontext: Optional[TimeContext]
+
+        Returns:
+        ------
+        a trimmed pd.Series with same Multiindex struct as data
+
     """
     # noop if timecontext is None
     if not timecontext:
@@ -290,13 +299,10 @@ def execute_window_op(
             source = data
             post_process = _post_process_empty
 
-    additional_scope = {}
-    for t in operand.op().root_tables():
-        additional_scope = toolz.merge(
-            additional_scope, set_scope_item(t, source, adjusted_timecontext)
-        )
-
-    new_scope = toolz.merge(scope, additional_scope)
+    new_scope = toolz.merge(
+        make_scope_item(t, source, adjusted_timecontext)
+        for t in operand.op().root_tables()
+    )
 
     # figure out what the dtype of the operand is
     operand_type = operand.type()
@@ -312,7 +318,6 @@ def execute_window_op(
         order_by=ordering_keys,
         **kwargs,
     )
-
     result = execute(
         operand,
         scope=new_scope,
@@ -325,10 +330,8 @@ def execute_window_op(
     assert len(data) == len(
         series
     ), 'input data source and computed column do not have the same length'
-
     # trim data to original time context
     series = trim_with_timecontext(series, timecontext)
-
     return series
 
 

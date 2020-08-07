@@ -17,7 +17,7 @@ from toolz import compose, concat, concatv, first, unique
 
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.common.scope import set_scope_item
+from ibis.common.scope import make_scope_item, set_scope_item
 from ibis.expr.typing import TimeContext
 from ibis.pandas.core import execute
 from ibis.pandas.dispatch import execute_node
@@ -70,7 +70,7 @@ def compute_projection_scalar_expr(
     for t in op.root_tables():
         additional_scope = toolz.merge(
             additional_scope,
-            set_scope_item(
+            make_scope_item(
                 t,
                 map_new_column_names_to_data(
                     remap_overlapping_column_names(
@@ -81,8 +81,8 @@ def compute_projection_scalar_expr(
                 timecontext,
             ),
         )
-    new_scope = toolz.merge(scope, additional_scope)
-    scalar = execute(expr, scope=new_scope, **kwargs)
+    set_scope_item(scope, additional_scope)
+    scalar = execute(expr, scope=scope, **kwargs)
     result = pd.Series([scalar], name=name).repeat(len(data.index))
     result.index = data.index
     return result
@@ -123,7 +123,7 @@ def compute_projection_column_expr(
     for t in op.root_tables():
         additional_scope = toolz.merge(
             additional_scope,
-            set_scope_item(
+            make_scope_item(
                 t,
                 map_new_column_names_to_data(
                     remap_overlapping_column_names(
@@ -135,8 +135,8 @@ def compute_projection_column_expr(
             ),
         )
 
-    new_scope = toolz.merge(scope, additional_scope)
-    result = execute(expr, scope=new_scope, timecontext=timecontext, **kwargs)
+    set_scope_item(scope, additional_scope)
+    result = execute(expr, scope=scope, timecontext=timecontext, **kwargs)
     assert result_name is not None, 'Column selection name is None'
     if np.isscalar(result):
         return pd.Series(
@@ -259,11 +259,11 @@ def _compute_predicates(
                 new_data = data.loc[:, mapping.keys()].rename(columns=mapping)
             else:
                 new_data = data
-            item = set_scope_item(root_table, new_data, timecontext)
+            item = make_scope_item(root_table, new_data, timecontext)
             additional_scope = toolz.merge(additional_scope, item)
 
-        new_scope = toolz.merge(scope, additional_scope)
-        yield execute(predicate, scope=new_scope, **kwargs)
+        set_scope_item(scope, additional_scope)
+        yield execute(predicate, scope=scope, **kwargs)
 
 
 physical_tables = Dispatcher(

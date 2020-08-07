@@ -113,6 +113,7 @@ from __future__ import absolute_import
 import datetime
 import functools
 import numbers
+from copy import deepcopy
 from typing import Optional
 
 import numpy as np
@@ -128,7 +129,7 @@ import ibis.expr.types as ir
 import ibis.expr.window as win
 import ibis.pandas.aggcontext as agg_ctx
 from ibis.client import find_backends
-from ibis.common.scope import get_scope_item, set_scope_item
+from ibis.common.scope import get_scope_item, make_scope_item, set_scope_item
 from ibis.expr.timecontext import canonicalize_context
 from ibis.expr.typing import TimeContext
 from ibis.pandas.dispatch import (
@@ -224,7 +225,8 @@ def execute_with_scope(
         aggcontext=aggcontext,
         **kwargs,
     )
-    new_scope = toolz.merge(scope, pre_executed_scope)
+    new_scope = deepcopy(scope)
+    set_scope_item(new_scope, pre_executed_scope)
     result = execute_until_in_scope(
         expr,
         new_scope,
@@ -276,14 +278,13 @@ def execute_until_in_scope(
     # base case: our op has been computed (or is a leaf data node), so
     # return the corresponding value
     op = expr.op()
-
     if get_scope_item(scope, op, timecontext) is not None:
         return scope
 
     if isinstance(op, ops.Literal):
         # special case literals to avoid the overhead of dispatching
         # execute_node
-        return set_scope_item(
+        return make_scope_item(
             op,
             execute_literal(
                 op, op.value, expr.type(), aggcontext=aggcontext, **kwargs
@@ -316,7 +317,8 @@ def execute_until_in_scope(
         aggcontext=aggcontext,
         **kwargs,
     )
-    new_scope = toolz.merge(scope, pre_executed_scope)
+    new_scope = deepcopy(scope)
+    set_scope_item(new_scope, pre_executed_scope)
 
     # Short circuit: if pre_execute puts op in scope, then we don't need to
     # execute its computable_args
@@ -347,7 +349,7 @@ def execute_until_in_scope(
             **kwargs,
         )
         if hasattr(arg, 'op')
-        else set_scope_item(arg, arg, timecontext)
+        else make_scope_item(arg, arg, timecontext)
         for (arg, timecontext) in zip(computable_args, arg_timecontexts)
     ]
 
@@ -360,8 +362,7 @@ def execute_until_in_scope(
     # there should be exactly one dictionary per computable argument
     assert len(computable_args) == len(scopes)
 
-    new_scope = toolz.merge(new_scope, *scopes)
-
+    set_scope_item(new_scope, toolz.merge(*scopes))
     # pass our computed arguments to this node's execute_node implementation
     data = [
         get_scope_item(new_scope, arg.op(), timecontext)
@@ -379,7 +380,8 @@ def execute_until_in_scope(
         **kwargs,
     )
     computed = post_execute_(op, result, timecontext=timecontext)
-    return set_scope_item(op, computed, timecontext)
+
+    return make_scope_item(op, computed, timecontext)
 
 
 execute = Dispatcher('execute')
@@ -442,9 +444,9 @@ def main_execute(
     additional_scope = {}
     for k, v in params.items():
         if hasattr(k, 'op'):
-            item = set_scope_item(k.op(), v, timecontext)
+            item = make_scope_item(k.op(), v, timecontext)
         else:
-            item = set_scope_item(k, v, timecontext)
+            item = make_scope_item(k, v, timecontext)
         additional_scope = toolz.merge(additional_scope, item)
 
     new_scope = toolz.merge(scope, additional_scope)
