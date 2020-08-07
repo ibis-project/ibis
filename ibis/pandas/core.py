@@ -325,9 +325,6 @@ def execute_until_in_scope(
     if get_scope_item(new_scope, op, timecontext) is not None:
         return new_scope
 
-    # if op in new_scope:
-    #    return new_scope
-
     # recursively compute each node's arguments until we've changed type.
     # compute_time_context should return with a list with the same length
     # as computable_args, the two lists will be zipping together for
