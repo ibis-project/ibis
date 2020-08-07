@@ -30,11 +30,14 @@ implementation details.
 """
 
 import enum
+import functools
 from typing import Optional
 
 import pandas as pd
 
 import ibis.common.exceptions as com
+import ibis.expr.api as ir
+import ibis.expr.operations as ops
 from ibis.expr.typing import TimeContext
 
 # In order to use time context feature, there must be a column of Timestamp
@@ -63,26 +66,26 @@ class TimeContextRelation(enum.Enum):
     NONOVERLAP = 3
 
 
-def compare_timecontext(cur_context: TimeContext, old_context: TimeContext):
+def compare_timecontext(left_context: TimeContext, right_context: TimeContext):
     """Compare two timecontext and return the relationship between two time
     context (SUBSET, SUPERSET, OVERLAP, NONOVERLAP).
 
     Parameters
     ----------
-    cur_context: TimeContext
-    old_context: TimeContext
+    left_context: TimeContext
+    right_context: TimeContext
 
     Returns
     -------
-    result : Enum[TimeContextRelation]
+    result : TimeContextRelation
     """
-    begin, end = cur_context
-    old_begin, old_end = old_context
-    if old_begin <= begin and old_end >= end:
+    left_begin, left_end = left_context
+    right_begin, right_end = right_context
+    if right_begin <= left_begin and right_end >= left_end:
         return TimeContextRelation.SUBSET
-    elif old_begin >= begin and old_end <= end:
+    elif right_begin >= left_begin and right_end <= left_end:
         return TimeContextRelation.SUPERSET
-    elif old_end < begin or end < old_begin:
+    elif right_end < left_begin or left_end < right_begin:
         return TimeContextRelation.NONOVERLAP
     else:
         return TimeContextRelation.OVERLAP
@@ -117,3 +120,71 @@ def canonicalize_context(
             f'begin time {begin} must be before or equal' f' to end time {end}'
         )
     return begin, end
+
+
+""" Time context adjustment algorithm
+    In an Ibis tree, time context is local for each node, and they should be
+    adjusted accordingly for some specific nodes. Those operations may
+    require extra data outside of the global time context that user defines.
+    For example, in asof_join, we need to look back extra `tolerance` daays
+    for the right table to get the data for joining. Similarly for window
+    operation with preceeding and following.
+    Algorithm to calculate context adjustment are defined in this module
+    and could be used by multiple backends.
+"""
+
+
+@functools.singledispatch
+def adjust_context(op, *clients, timecontext: TimeContext) -> TimeContext:
+    """
+    Params
+    -------
+    op: ibis.expr.operations.Node
+    clients: List[ibis.client.Client], backend for execution
+    timecontext: TimeContext, time context associated with the node
+
+    Returns
+    --------
+    Adjusted time context
+    """
+    raise NotImplementedError()
+
+
+@adjust_context.register(ops.AsOfJoin)
+def adjust_context_asof_join(
+    op, *clients, timecontext: TimeContext
+) -> TimeContext:
+    (backend,) = clients
+    begin, end = timecontext
+
+    if op.tolerance is not None:
+        timedelta = backend.execute(op.tolerance)
+        # only backwards and adjust begin time only
+        return (begin - timedelta, end)
+
+    return timecontext
+
+
+@adjust_context.register(ops.WindowOp)
+def adjust_context_window(
+    op, *clients, timecontext: TimeContext
+) -> TimeContext:
+    # adjust time context by preceding and following
+    (backend,) = clients
+    begin, end = timecontext
+
+    preceding = op.window.preceding
+    if preceding is not None:
+        if isinstance(preceding, ir.IntervalScalar):
+            preceding = backend.execute(preceding)
+        if preceding:
+            begin = begin - preceding
+
+    following = op.window.following
+    if following is not None:
+        if isinstance(following, ir.IntervalScalar):
+            following = backend.execute(following)
+        if following:
+            end = end + following
+
+    return (begin, end)

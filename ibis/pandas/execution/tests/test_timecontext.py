@@ -4,7 +4,7 @@ import pytest
 
 import ibis
 import ibis.common.exceptions as com
-from ibis.timecontext.util import TimeContextRelation, compare_timecontext
+from ibis.expr.timecontext import TimeContextRelation, compare_timecontext
 
 pytestmark = pytest.mark.pandas
 

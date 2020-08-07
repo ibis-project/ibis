@@ -102,29 +102,7 @@ stored in value
 Note that the idea is: data should be determined by both op and timecontext.
 So the data structure above is conceptually same as making (op, timecontext)
 as the key for scope. But that may increase the time complexity in querying,
-so we make timecontext as another key of op. See following getting and setting
-logic for details.
-
-Set scope kv pair: before setting the value op in scope we need to perform the
-following check first:
-
-Test if op is in scope yet
-- No, then put op in scope, set timecontext to be the current timecontext (None
-if timecontext is not present), set value to be the DataFrame or Series of the
-actual data.
-- Yes, then get the timecontext stored in scope for op as old_timecontext, and
-compare it with current timecontext:
-If current timecontext is a subset of old_timecontext, that means we already
-cached a larger range of data. Do nothing and we will trim data in later
-execution process.
-If current timecontext is a superset of old_timecontext, that means we need
-to update cache. Set value to be the current data and set timecontext to be the
-current timecontext for op.
-If current timecontext is neither a subset nor a superset of old_timcontext,
-but they overlap, or not overlap at all. For example this will happen when
-there is a window that looks forward, over a window that looks back. So in this
-case, we should not trust the data stored either, and go on to execute this
-node. For simplicity, we update cache in this case as well.
+so we make timecontext as another key of op.
 
 See set_scope_item() for the structure of scope, and get_scope_item() in
 ibis.common.scope for details about the implementaion.
@@ -151,6 +129,7 @@ import ibis.expr.window as win
 import ibis.pandas.aggcontext as agg_ctx
 from ibis.client import find_backends
 from ibis.common.scope import get_scope_item, set_scope_item
+from ibis.expr.timecontext import canonicalize_context
 from ibis.expr.typing import TimeContext
 from ibis.pandas.dispatch import (
     execute_literal,
@@ -159,7 +138,6 @@ from ibis.pandas.dispatch import (
     pre_execute,
 )
 from ibis.pandas.trace import trace
-from ibis.timecontext.util import canonicalize_context
 
 integer_types = np.integer, int
 floating_types = (numbers.Real,)
@@ -298,6 +276,10 @@ def execute_until_in_scope(
     # base case: our op has been computed (or is a leaf data node), so
     # return the corresponding value
     op = expr.op()
+
+    if get_scope_item(scope, op, timecontext) is not None:
+        return scope
+
     if isinstance(op, ops.Literal):
         # special case literals to avoid the overhead of dispatching
         # execute_node
@@ -309,8 +291,6 @@ def execute_until_in_scope(
             timecontext,
         )
 
-    if get_scope_item(scope, op, timecontext) is not None:
-        return scope
     # figure out what arguments we're able to compute on based on the
     # expressions inputs. things like expressions, None, and scalar types are
     # computable whereas ``list``s are not
@@ -320,7 +300,10 @@ def execute_until_in_scope(
     # computable_args, these states are passed to each arg
     if timecontext:
         arg_timecontexts = compute_time_context(
-            op, num_args=len(computable_args), timecontext=timecontext
+            op,
+            num_args=len(computable_args),
+            timecontext=timecontext,
+            clients=clients,
         )
     else:
         arg_timecontexts = [None] * len(computable_args)
@@ -381,7 +364,9 @@ def execute_until_in_scope(
 
     # pass our computed arguments to this node's execute_node implementation
     data = [
-        get_scope_item(new_scope, arg.op()) if hasattr(arg, 'op') else arg
+        get_scope_item(new_scope, arg.op(), timecontext)
+        if hasattr(arg, 'op')
+        else arg
         for arg in computable_args
     ]
     result = execute_node(
@@ -556,6 +541,8 @@ are going to be used in executeion and passes these attributes to children
 nodes.
 
 Param:
+clients: List[ibis.client.Client]
+    backends for execution
 timecontext : Optional[TimeContext]
     begin and end time context needed for execution
 
@@ -571,6 +558,6 @@ See ``computable_args`` in ``execute_until_in_scope``
 
 @compute_time_context.register(ops.Node)
 def compute_time_context_default(
-    node, timecontext: Optional[TimeContext], **kwargs
+    node, *clients, timecontext: Optional[TimeContext] = None, **kwargs
 ):
     return [timecontext for arg in node.inputs if is_computable_input(arg)]

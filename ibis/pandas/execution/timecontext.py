@@ -31,20 +31,15 @@ time context.
 """
 from typing import Optional
 
-import ibis.expr.api as ir
 import ibis.expr.operations as ops
+from ibis.expr.timecontext import adjust_context
 from ibis.expr.typing import TimeContext
 from ibis.pandas.core import compute_time_context, is_computable_input
-from ibis.pandas.execution import execute
-from ibis.timecontext.adjustment import (
-    adjust_context_asof_join,
-    adjust_context_window,
-)
 
 
 @compute_time_context.register(ops.AsOfJoin)
 def compute_time_context_asof_join(
-    op, timecontext: Optional[TimeContext], **kwargs
+    op, clients, timecontext: Optional[TimeContext] = None, **kwargs
 ):
     new_timecontexts = [
         timecontext for arg in op.inputs if is_computable_input(arg)
@@ -53,19 +48,14 @@ def compute_time_context_asof_join(
     if not timecontext:
         return new_timecontexts
 
-    if op.tolerance is not None:
-        timedelta = execute(op.tolerance)
-        result = adjust_context_asof_join(timecontext, timedelta)
-    else:
-        result = timecontext
     # right table is the second node in children
-    new_timecontexts[1] = result
+    new_timecontexts[1] = adjust_context(op, *clients, timecontext=timecontext)
     return new_timecontexts
 
 
 @compute_time_context.register(ops.WindowOp)
 def compute_time_context_window(
-    op, timecontext: Optional[TimeContext], **kwargs
+    op, clients, timecontext: Optional[TimeContext] = None, **kwargs
 ):
     new_timecontexts = [
         timecontext for arg in op.inputs if is_computable_input(arg)
@@ -74,20 +64,7 @@ def compute_time_context_window(
     if not timecontext:
         return new_timecontexts
 
-    # adjust time context by preceding and following
-    preceding = op.window.preceding
-    if preceding is not None:
-        if isinstance(preceding, ir.IntervalScalar):
-            preceding = execute(preceding)
-
-    following = op.window.following
-    if following is not None:
-        if isinstance(following, ir.IntervalScalar):
-            following = execute(following)
-
-    result = adjust_context_window(
-        timecontext, preceding=preceding, following=following
-    )
+    result = adjust_context(op, *clients, timecontext=timecontext)
 
     new_timecontexts = [
         result for arg in op.inputs if is_computable_input(arg)

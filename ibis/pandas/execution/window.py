@@ -14,6 +14,7 @@ import ibis.expr.operations as ops
 import ibis.expr.window as win
 import ibis.pandas.aggcontext as agg_ctx
 from ibis.common.scope import set_scope_item
+from ibis.expr.timecontext import TIME_COL
 from ibis.expr.typing import TimeContext
 from ibis.pandas.aggcontext import AggregationContext
 from ibis.pandas.core import (
@@ -27,7 +28,6 @@ from ibis.pandas.core import (
 )
 from ibis.pandas.dispatch import execute_node, pre_execute
 from ibis.pandas.execution import util
-from ibis.timecontext.util import TIME_COL
 
 
 def _post_process_empty(scalar, parent, order_by, group_by):
@@ -199,7 +199,9 @@ def execute_window_op(
 
     adjusted_timecontext = None
     if timecontext:
-        arg_timecontexts = compute_time_context(op, timecontext=timecontext)
+        arg_timecontexts = compute_time_context(
+            op, timecontext=timecontext, clients=clients
+        )
         # timecontext is the original time context required by parent node
         # of this WindowOp, while adjusted_timecontext is the adjusted context
         # of this Window, since we are doing a manual execution here, use

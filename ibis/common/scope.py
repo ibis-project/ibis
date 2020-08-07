@@ -3,11 +3,34 @@
     subclass instances to concrete data, and the time context associate
     with it(if any).
     Scope is used in many backends to cache data for calculated ops.
+
+    Set scope kv pair: before setting the value op in scope we need to perform
+    the following check first:
+
+    Test if op is in scope yet
+    - No, then put op in scope, set timecontext to be the current timecontext
+    (None if timecontext is not present), set value to be the DataFrame or
+    Series of the actual data.
+    - Yes, then get the timecontext stored in scope for op as old_timecontext,
+    and compare it with current timecontext:
+    If current timecontext is a subset of old timecontext, that means we
+    already cached a larger range of data. Do nothing and we will trim data in
+    later execution process.
+    If current timecontext is a superset of old timecontext, that means we
+    need to update cache. Set value to be the current data and set timecontext
+    to be the current timecontext for op.
+    If current timecontext is neither a subset nor a superset of old
+    timcontext, but they overlap, or not overlap at all. For example this will
+    happen when there is a window that looks forward, over a window that looks
+    back. So in this case, we should not trust the data stored either, and go
+    on to execute this node. For simplicity, we update cache in this case as
+    well.
+
 """
 from typing import Optional
 
+from ibis.expr.timecontext import TimeContextRelation, compare_timecontext
 from ibis.expr.typing import TimeContext
-from ibis.timecontext.util import TimeContextRelation, compare_timecontext
 
 
 def set_scope_item(op, result, timecontext: Optional[TimeContext]):
@@ -22,7 +45,7 @@ def set_scope_item(op, result, timecontext: Optional[TimeContext]):
 
     Returns
     -------
-    set_scope_item : Dict, a key value pair that could merge into scope later
+    Dict, a key value pair that could merge into scope later
     """
     return {op: {'value': result, 'timecontext': timecontext}}
 
@@ -40,7 +63,7 @@ def get_scope_item(scope, op, timecontext: Optional[TimeContext] = None):
 
     Returns
     -------
-    result : scalar, pd.Series, pd.DataFrame
+    result: scalar, pd.Series, pd.DataFrame
     """
     if op not in scope:
         return None
