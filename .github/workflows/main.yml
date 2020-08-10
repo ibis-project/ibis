@@ -10,6 +10,9 @@ jobs:
   Debugging_services:
     name: Just debugging a problem with GitHub Actions services
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python_version: ["3.7", "3.8"]
     services:
       postgres:
         image: shajekpivotal/ibis-docker-postgres-9.5
