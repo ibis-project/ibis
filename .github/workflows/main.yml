@@ -12,11 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: ubuntu-latest
         python_version: ["3.7", "3.8"]
-    env:
-      # Removing everything that needs a running (docker) backend for now
-      PYTEST_EXPRESSION: "not udf and not mysql and not clickhouse and not impala and not kudu and not hdfs and not omniscidb and not spark and not pyspark"
     services:
       postgres:
         image: shajekpivotal/ibis-docker-postgres-9.5
@@ -41,7 +37,7 @@ jobs:
         python ci/datamgr.py postgres
 
     - name: run tests
-      run: ./ci/run_tests.sh "$PYTEST_EXPRESSION"
+      run: ./ci/run_tests.sh "not udf and not mysql and not clickhouse and not impala and not kudu and not hdfs and not omniscidb and not spark and not pyspark"
       shell: bash
 
 
