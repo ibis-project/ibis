@@ -1,2 +1,3 @@
 sqlalchemy>=1.3
 psycopg2>=2.8
+geoalchemy2
