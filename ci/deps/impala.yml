@@ -1,0 +1,5 @@
+sqlalchemy>=1.3
+impyla>=0.15.0
+requests
+thrift>=0.9.3
+thriftpy2

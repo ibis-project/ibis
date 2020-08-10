@@ -21,7 +21,15 @@ python -m pip install -e .
 if [[ -n "$BACKENDS" ]]; then
     python ci/datamgr.py download
     for BACKEND in $BACKENDS; do
-        conda install -n base -c conda-forge --file="ci/deps/$BACKEND.yml"
-        python ci/datamgr.py $BACKEND
+        if [[ -f "ci/deps/$BACKEND.yml" ]]; then
+            conda install -n base -c conda-forge --file="ci/deps/$BACKEND.yml"
+        fi
+
+        # TODO load impala data in the same way as the rest of the backends
+        if [[ "$BACKEND" == "impala" ]]; then
+            python ci/impalamgr.py load --data
+        else
+            python ci/datamgr.py $BACKEND
+        fi
     done
 fi
