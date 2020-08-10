@@ -18,27 +18,6 @@ jobs:
           - 5432:5432
         env:
           POSTGRES_PASSWORD: ''
-      impala:
-        image: ibisproject/impala:latest
-        hostname: impala
-        env:
-          PGPASSWORD: postgres
-        ports:
-          # HDFS
-          - 9020:9020
-          - 50070:50070
-          - 50075:50075
-          - 8020:8020
-          - 8042:8042
-          # Hive
-          - 9083:9083
-
-          # Impala
-          - 21000:21000
-          - 21050:21050
-          - 25000:25000
-          - 25010:25010
-          - 25020:25020
     steps:
       - name: List containers
         run: docker container ls
