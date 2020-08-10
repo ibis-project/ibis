@@ -7,6 +7,26 @@ on:
     branches: master
 
 jobs:
+  Tests_pandas:
+    name: Tests pandas
+    runs-on: ubuntu-latest
+    env:
+      BACKENDS: "pandas csv parquet hdf5"
+    strategy:
+      matrix:
+        python_version: ["3.7", "3.8"]
+    steps:
+    - name: checkout
+      uses: actions/checkout@v1
+
+    - name: set up environment
+      run: ./ci/setup_env.sh "${{ matrix.pytest_version }}" "$BACKENDS"
+      shell: bash
+
+    - name: run tests
+      run: ./ci/run_tests.sh "not udf and not mysql and not clickhouse and not impala and not kudu and not hdfs and not omniscidb and not spark and not pyspark"
+      shell: bash
+
   Tests_sql:
     name: Tests SQL
     runs-on: ubuntu-latest

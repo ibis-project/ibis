@@ -1,0 +1,5 @@
+sqlalchemy>=1.3
+clickhouse-cityhash
+clickhouse-driver>=0.1.3
+clickhouse-sqlalchemy
+lz4
