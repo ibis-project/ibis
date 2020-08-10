@@ -7,8 +7,8 @@ on:
     branches: master
 
 jobs:
-  Tests:
-    name: Tests
+  Tests_postgresql:
+    name: Tests PostgreSQL
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -22,7 +22,6 @@ jobs:
           POSTGRES_PASSWORD: ''
 
     steps:
-
     - name: checkout
       uses: actions/checkout@v1
 
