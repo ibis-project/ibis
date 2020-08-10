@@ -7,11 +7,11 @@ on:
     branches: master
 
 jobs:
-  Tests_postgresql:
-    name: Tests PostgreSQL
+  Tests_sql:
+    name: Tests SQL
     runs-on: ubuntu-latest
     env:
-      BACKENDS: "postgres impala"
+      BACKENDS: "postgres sqlite" # TODO add mysql
     strategy:
       matrix:
         python_version: ["3.7", "3.8"]
@@ -22,6 +22,27 @@ jobs:
           - 5432:5432
         env:
           POSTGRES_PASSWORD: ''
+    steps:
+    - name: checkout
+      uses: actions/checkout@v1
+
+    - name: set up environment
+      run: ./ci/setup_env.sh "${{ matrix.pytest_version }}" "$BACKENDS"
+      shell: bash
+
+    - name: run tests
+      run: ./ci/run_tests.sh "not udf and not mysql and not clickhouse and not impala and not kudu and not hdfs and not omniscidb and not spark and not pyspark" # TODO remove mysql
+      shell: bash
+
+  Tests_impala:
+    name: Tests Impala
+    runs-on: ubuntu-latest
+    env:
+      BACKENDS: "impala"
+    strategy:
+      matrix:
+        python_version: ["3.7", "3.8"]
+    services:
       impala:
         image: ibisproject/impala:latest
         env:
@@ -52,7 +73,7 @@ jobs:
       shell: bash
 
     - name: run tests
-      run: ./ci/run_tests.sh "not udf and not mysql and not clickhouse and not impala and not kudu and not hdfs and not omniscidb and not spark and not pyspark"
+      run: ./ci/run_tests.sh "not udf and not sqlite and not postgres and not mysql and not clickhouse and not omniscidb and not spark and not pyspark"
       shell: bash
 
 
