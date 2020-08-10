@@ -31,7 +31,7 @@ jobs:
     name: Tests SQL
     runs-on: ubuntu-latest
     env:
-      BACKENDS: "postgres sqlite" # TODO add mysql
+      BACKENDS: "postgres mysql sqlite"
     strategy:
       matrix:
         python_version: ["3.7", "3.8"]
@@ -42,6 +42,15 @@ jobs:
           - 5432:5432
         env:
           POSTGRES_PASSWORD: ''
+      mysql:
+        image: mariadb:10.4.12
+        ports:
+          - 3307:3306
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 1
+          MYSQL_DATABASE: ibis_testing
+          MYSQL_USER: ibis
+          MYSQL_PASSWORD: ibis
     steps:
     - name: checkout
       uses: actions/checkout@v1
@@ -51,7 +60,7 @@ jobs:
       shell: bash
 
     - name: run tests
-      run: ./ci/run_tests.sh "not udf and not mysql and not clickhouse and not impala and not kudu and not hdfs and not omniscidb and not spark and not pyspark and not parquet" # TODO remove mysql
+      run: ./ci/run_tests.sh "not udf and not clickhouse and not impala and not kudu and not hdfs and not omniscidb and not spark and not pyspark and not parquet"
       shell: bash
 
   Tests_impala:
@@ -96,11 +105,11 @@ jobs:
       run: ./ci/run_tests.sh "not udf and not sqlite and not postgres and not mysql and not clickhouse and not omniscidb and not spark and not pyspark and not parquet"
       shell: bash
 
-  Tests_clickhouse:
-    name: Tests Clickhouse
+  Tests_clickhouse_bigquery:
+    name: Tests Clickhouse/BigQuery
     runs-on: ubuntu-latest
     env:
-      BACKENDS: "clickhouse"
+      BACKENDS: "clickhouse bigquery"
     strategy:
       matrix:
         python_version: ["3.7", "3.8"]

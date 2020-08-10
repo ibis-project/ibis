@@ -614,6 +614,16 @@ def bigquery(data_directory, ignore_missing_dependency, **params):
         raise click.ClickException(str(job.error_result))
 
 
+@cli.command()
+def pandas(**params):
+    """
+    The pandas backend does not need test data, but we still
+    have an option for the backend for consistency, and to not
+    have to avoid calling `./datamgr.py pandas` in the CI.
+    """
+    pass
+
+
 if __name__ == '__main__':
     """
     Environment Variables are automatically parsed:
