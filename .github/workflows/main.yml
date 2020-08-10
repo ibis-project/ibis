@@ -41,8 +41,22 @@ jobs:
           - 25010:25010
           - 25020:25020
     steps:
-      - name: List containers
-        run: docker container ls
+
+    - name: checkout
+      uses: actions/checkout@v1
+
+    - name: set up environment ${{ matrix.pytest_version }}
+      run: ./ci/setup_env.sh
+      shell: bash
+
+    - name: set up backend
+      run: |
+        conda env update -n base --file=ci/deps/postgres.yml
+        python ci/datamgr.py download
+        python ci/datamgr.py postgres
+    - name: run tests
+      run: ./ci/run_tests.sh "$PYTEST_EXPRESSION"
+      shell: bash
 
   Lint_package_benchmark:
     name: Lint, package and benckmark
