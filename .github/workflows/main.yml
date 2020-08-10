@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       scratch:
-        image: scratch
+        image: ibisproject/impala:latest
     steps:
       - name: List containers
         run: docker container ls
