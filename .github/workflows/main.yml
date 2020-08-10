@@ -7,6 +7,16 @@ on:
     branches: master
 
 jobs:
+  Debugging_services:
+    name: Just debugging a problem with GitHub Actions services
+    runs-on: ubuntu-latest
+    services:
+      scratch:
+        image: scratch
+    steps:
+      - name: List containers
+        run: docker container ls
+
   Lint_package_benchmark:
     name: Lint, package and benckmark
     runs-on: ubuntu-latest
