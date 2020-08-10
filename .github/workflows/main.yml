@@ -17,7 +17,7 @@ jobs:
       postgres:
         image: shajekpivotal/ibis-docker-postgres-9.5
         ports:
-          - 5432
+          - 5432:5432
         env:
           POSTGRES_PASSWORD: ''
 
