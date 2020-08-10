@@ -13,7 +13,8 @@ jobs:
     services:
       impala:
         image: ibisproject/impala:latest
-        hostname: impala
+        env:
+          PGPASSWORD: postgres
     steps:
       - name: List containers
         run: docker container ls
