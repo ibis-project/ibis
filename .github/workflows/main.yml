@@ -13,6 +13,7 @@ jobs:
     services:
       impala:
         image: ibisproject/impala:latest
+        hostname: impala
     steps:
       - name: List containers
         run: docker container ls
