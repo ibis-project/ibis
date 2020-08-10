@@ -1,5 +1,2 @@
-channels:
-  - conda-forge
-dependencies:
-- sqlalchemy>=1.1
-- psycopg2
+sqlalchemy>=1.1
+psycopg2
