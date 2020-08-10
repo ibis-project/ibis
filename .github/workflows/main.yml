@@ -11,6 +11,12 @@ jobs:
     name: Just debugging a problem with GitHub Actions services
     runs-on: ubuntu-latest
     services:
+      postgres:
+        image: shajekpivotal/ibis-docker-postgres-9.5
+        ports:
+          - 5432
+        env:
+          POSTGRES_PASSWORD: ''
       impala:
         image: ibisproject/impala:latest
         env:
