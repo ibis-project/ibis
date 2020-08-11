@@ -14,7 +14,7 @@ jobs:
       BACKENDS: "pandas csv parquet hdf5"
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]  # TODO add windows and fix bash scripts (conda not found)
+        os: [windows-latest]  # TODO add windows and fix bash scripts (conda not found)
         python_version: ["3.6", "3.7", "3.8"]
     steps:
     - name: checkout
