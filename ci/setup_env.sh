@@ -7,7 +7,7 @@
 # FIXME trying to find conda in windows, remove later
 set -x
 cd /
-find . -name "conda*"
+find . -name "conda*" || true
 
 
 PYTHON_VERSION="${1:-3.7}"

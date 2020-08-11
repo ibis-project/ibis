@@ -1,3 +1,5 @@
+# This file should have all the dependencies for development excluding the specific to the backends.
+# TODO The section of soft dependencies is probably not very accurate right now (I think couple should be in the backends).
 name: ibis-dev
 channels:
   - conda-forge
