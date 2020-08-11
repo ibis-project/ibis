@@ -13,6 +13,7 @@ jobs:
     env:
       BACKENDS: "pandas csv parquet hdf5"
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest]  # TODO add windows and fix bash scripts (conda not found)
         python_version: ["3.6", "3.7", "3.8"]
@@ -34,6 +35,7 @@ jobs:
     env:
       BACKENDS: "postgres mysql sqlite"
     strategy:
+      fail-fast: false
       matrix:
         python_version: ["3.6", "3.7", "3.8"]
     services:
@@ -71,6 +73,7 @@ jobs:
     env:
       BACKENDS: "impala clickhouse"
     strategy:
+      fail-fast: false
       matrix:
         python_version: ["3.6", "3.7", "3.8"]
     services:
@@ -118,6 +121,7 @@ jobs:
     env:
       BACKENDS: "omniscidb spark pyspark"
     strategy:
+      fail-fast: false
       matrix:
         python_version: ["3.6", "3.7"]
     services:
