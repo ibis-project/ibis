@@ -18,7 +18,7 @@ jobs:
       uses: actions/checkout@v1
 
     - name: set up environment
-      run: ./ci/setup_env.sh "${{ matrix.pytest_version }}" "$BACKENDS"
+      run: ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
 
     - name: set up bigquery credentials
     - run: base64 --decode --ignore-garbage <<< "${{ secrets.GCLOUD_SERVICE_KEY }}" > gcloud-service-key.json
