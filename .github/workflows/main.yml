@@ -6,15 +6,16 @@ on:
   pull_request:
     branches: master
 
-# TODO add windows and bigquery tests
+# TODO add bigquery tests
 jobs:
   Tests_pandas:
     name: Tests pandas
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     env:
       BACKENDS: "pandas csv parquet hdf5"
     strategy:
       matrix:
+        os: [ubuntu-latest, windows-latest]
         python_version: ["3.6", "3.7", "3.8"]
     steps:
     - name: checkout
@@ -142,7 +143,7 @@ jobs:
           - 6274:6274
           - 6278:6278
         volumes:
-          - ./omniscidb.conf:/omnisci-storage/omnisci.conf
+          - omniscidb.conf:/omnisci-storage/omnisci.conf
     steps:
     - name: checkout
       uses: actions/checkout@v1
