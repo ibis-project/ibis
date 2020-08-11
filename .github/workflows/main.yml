@@ -25,7 +25,7 @@ jobs:
       shell: bash
 
     - name: run tests
-      run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not udf" ./ci/run_tests.sh
+      run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not udf and not hdfs" ./ci/run_tests.sh
       shell: bash
 
   Tests_sql:
@@ -62,7 +62,7 @@ jobs:
       run: ./ci/setup_env.sh "${{ matrix.pytest_version }}" "$BACKENDS"
 
     - name: run tests
-      run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not udf" ./ci/run_tests.sh
+      run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not udf and not hdfs" ./ci/run_tests.sh
 
   Tests_impala_clickhouse:
     name: Tests Impala / Clickhouse
@@ -135,7 +135,7 @@ jobs:
       run: ./ci/setup_env.sh "${{ matrix.pytest_version }}" "$BACKENDS"
 
     - name: run tests
-      run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not udf" ./ci/run_tests.sh
+      run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not udf and not hdfs" ./ci/run_tests.sh
 
 
   Lint_package_benchmark:

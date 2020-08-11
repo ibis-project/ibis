@@ -21,7 +21,10 @@ for BACKEND in $PYTEST_BACKENDS; do
     fi
 done
 
-pytest ibis \
+echo "TESTS_DIRS: $TESTS_DIRS"
+echo "PYTEST_EXPRESSION: $PYTEST_EXPRESSION"
+
+pytest $TESTS_DIRS \
     -m "${PYTEST_EXPRESSION}" \
     -ra \
     --numprocesses auto \
