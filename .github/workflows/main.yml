@@ -21,11 +21,9 @@ jobs:
 
     - name: set up environment
       run: ./ci/setup_env.sh "${{ matrix.pytest_version }}" "$BACKENDS"
-      shell: bash
 
     - name: run tests
-      run: ./ci/run_tests.sh "not udf and not mysql and not clickhouse and not impala and not kudu and not hdfs and not omniscidb and not spark and not pyspark"
-      shell: bash
+      run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not udf" ./ci/run_tests.sh
 
   Tests_sql:
     name: Tests SQL
@@ -42,6 +40,7 @@ jobs:
           - 5432:5432
         env:
           POSTGRES_PASSWORD: ''
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
       mysql:
         image: mariadb:10.4.12
         ports:
@@ -57,11 +56,9 @@ jobs:
 
     - name: set up environment
       run: ./ci/setup_env.sh "${{ matrix.pytest_version }}" "$BACKENDS"
-      shell: bash
 
     - name: run tests
-      run: ./ci/run_tests.sh "not udf and not clickhouse and not impala and not kudu and not hdfs and not omniscidb and not spark and not pyspark and not parquet"
-      shell: bash
+      run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not udf" ./ci/run_tests.sh
 
   Tests_impala:
     name: Tests Impala
@@ -92,6 +89,7 @@ jobs:
           - 25000:25000
           - 25010:25010
           - 25020:25020
+        options: --health-cmd "curl --fail tcp://impala:21050 && curl --fail tcp://impala:50070" --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
     - name: checkout
@@ -99,11 +97,9 @@ jobs:
 
     - name: set up environment
       run: ./ci/setup_env.sh "${{ matrix.pytest_version }}" "$BACKENDS"
-      shell: bash
 
     - name: run tests
-      run: ./ci/run_tests.sh "not udf and not sqlite and not postgres and not mysql and not clickhouse and not omniscidb and not spark and not pyspark and not parquet"
-      shell: bash
+      run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh
 
   Tests_clickhouse_bigquery:
     name: Tests Clickhouse/BigQuery
@@ -125,11 +121,9 @@ jobs:
 
     - name: set up environment
       run: ./ci/setup_env.sh "${{ matrix.pytest_version }}" "$BACKENDS"
-      shell: bash
 
     - name: run tests
-      run: ./ci/run_tests.sh "not udf and not sqlite and not postgres and not mysql and not impala and not omniscidb and not spark and not pyspark and not parquet"
-      shell: bash
+      run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not udf" ./ci/run_tests.sh
 
 
   Lint_package_benchmark:

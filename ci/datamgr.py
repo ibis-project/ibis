@@ -624,6 +624,16 @@ def pandas(**params):
     pass
 
 
+@cli.command()
+def csv(**params):
+    """
+    The csv backend does not need test data, but we still
+    have an option for the backend for consistency, and to not
+    have to avoid calling `./datamgr.py csv` in the CI.
+    """
+    pass
+
+
 if __name__ == '__main__':
     """
     Environment Variables are automatically parsed:
