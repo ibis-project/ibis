@@ -28,9 +28,6 @@ echo "PYTEST_EXPRESSION: $PYTEST_EXPRESSION"
 pytest $TESTS_DIRS \
     -m "${PYTEST_EXPRESSION}" \
     -ra \
-    --doctest-modules \
-    --doctest-ignore-import-errors \
-    -k"-compile -connect" \
     --junitxml=junit.xml \
     --cov=ibis \
     --cov-report=xml:coverage.xml
