@@ -5,26 +5,26 @@ channels:
 dependencies:
   # Ibis hard dependencies
   - multipledispatch>=0.6.0
-  - numpy>=1.19
-  - pandas>=0.25 # XXX pymapd does not support pandas 1.0
-  - pytz>=2020.1
+  - numpy>=1.18 # XXX pymapd does not support numpy 1.19
+  - pandas>=0.23 # XXX pymapd does not support pandas 1.0
+  - pytz>=2017.2 # XXX pymapd does not support pytz 2020.1
   - regex>=2020.7
   - toolz>=0.10
 
   # Ibis soft dependencies
   # TODO This section is probably not very accurate right now (some dependencies should probably be in the backends files)
   - sqlalchemy>=1.3
-  - graphviz>=2.40
+  - graphviz
   - openjdk=8
   - pytables>=3.6.0
-  - python-graphviz>=0.14
-  - python-hdfs>=2.0.16 # XXX this verison can probably be increased
+  - python-graphviz
+  - python-hdfs>=2.0.16
 
   # Dev tools
   - black=19.10b0
   - click>=7.1 # few scripts in ci/
   - conda-build # feedstock
-  - cmake>=3.17
+  - cmake>=3.18
   - flake8>=3.8
   - isort>=5.3
   - jinja2>=2.11 # feedstock
@@ -36,7 +36,7 @@ dependencies:
   - pytest=5.4.2 # TODO: there are problems in future versions, review eventually
   - pytest-cov>=2.10
   - pytest-mock>=3.1
-  - pytest-xdist>=1.34
+  - pytest-xdist
   - ruamel.yaml>=0.16 # feedstock
   - libiconv>=1.15  # bug in repo2docker, see https://github.com/jupyter/repo2docker/issues/758
   - xorg-libxpm
@@ -45,7 +45,7 @@ dependencies:
   # Docs
   - ipython>=7.17
   - jupyter>=1.0
-  - matplotlib>=2 # XXX test if this can be bumped
+  - matplotlib>=3.3
   - nbconvert
   - nbsphinx>=0.7
   - nomkl
