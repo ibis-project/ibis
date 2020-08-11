@@ -8,13 +8,13 @@ on:
 
 jobs:
   Tests_pandas:
-    name: Tests pandas
+    name: Tests pandas / files
     runs-on: ${{ matrix.os }}
     env:
       BACKENDS: "pandas csv parquet hdf5"
     strategy:
       matrix:
-        os: [windows-latest]  # TODO add windows and fix bash scripts (conda not found)
+        os: [ubuntu-latest]  # TODO add windows and fix bash scripts (conda not found)
         python_version: ["3.6", "3.7", "3.8"]
     steps:
     - name: checkout
@@ -93,7 +93,6 @@ jobs:
           - 25000:25000
           - 25010:25010
           - 25020:25020
-        options: --health-cmd "nc -z 127.0.0.1 21050" --health-interval 30s --health-timeout 10s --health-retries 20
         # options: --health-cmd "nc -z 127.0.0.1 21050 && nc -z 127.0.0.1 50070" --health-interval 30s --health-timeout 10s --health-retries 20
       clickhouse:
         # XXX does clickhouse backend require the impala container too?

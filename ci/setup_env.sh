@@ -4,12 +4,6 @@
 # This script only installs the base dependencies.
 # Dependencies for the backends need to be installed separately.
 
-# FIXME trying to find conda in windows, remove later
-set -x
-cd /
-find . -name "conda*" || true
-
-
 PYTHON_VERSION="${1:-3.7}"
 BACKENDS="$2"
 CONDA_PATH="/usr/share/miniconda/bin"
