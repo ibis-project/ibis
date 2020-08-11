@@ -6,6 +6,7 @@ on:
   pull_request:
     branches: master
 
+# TODO add windows and bigquery tests
 jobs:
   Tests_pandas:
     name: Tests pandas
@@ -14,7 +15,7 @@ jobs:
       BACKENDS: "pandas csv parquet hdf5"
     strategy:
       matrix:
-        python_version: ["3.7", "3.8"]
+        python_version: ["3.6", "3.7", "3.8"]
     steps:
     - name: checkout
       uses: actions/checkout@v1
@@ -32,7 +33,7 @@ jobs:
       BACKENDS: "postgres mysql sqlite"
     strategy:
       matrix:
-        python_version: ["3.7", "3.8"]
+        python_version: ["3.6", "3.7", "3.8"]
     services:
       postgres:
         image: shajekpivotal/ibis-docker-postgres-9.5
@@ -50,6 +51,7 @@ jobs:
           MYSQL_DATABASE: ibis_testing
           MYSQL_USER: ibis
           MYSQL_PASSWORD: ibis
+        options: --health-cmd="mysqladmin ping" --health-interval 10s --health-timeout 5s --health-retries 3
     steps:
     - name: checkout
       uses: actions/checkout@v1
@@ -67,7 +69,7 @@ jobs:
       BACKENDS: "impala"
     strategy:
       matrix:
-        python_version: ["3.7", "3.8"]
+        python_version: ["3.6", "3.7", "3.8"]
     services:
       impala:
         image: ibisproject/impala:latest
@@ -101,20 +103,46 @@ jobs:
     - name: run tests
       run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh
 
-  Tests_clickhouse_bigquery:
-    name: Tests Clickhouse/BigQuery
+  Tests_clickhouse:
+    name: Tests Clickhouse
     runs-on: ubuntu-latest
     env:
-      BACKENDS: "clickhouse bigquery"
+      BACKENDS: "clickhouse"
     strategy:
       matrix:
-        python_version: ["3.7", "3.8"]
+        python_version: ["3.6", "3.7", "3.8"]
     services:
       clickhouse:
         image: yandex/clickhouse-server:18.14
         ports:
           - 8123:8123
           - 9000:9000
+    steps:
+    - name: checkout
+      uses: actions/checkout@v1
+
+    - name: set up environment
+      run: ./ci/setup_env.sh "${{ matrix.pytest_version }}" "$BACKENDS"
+
+    - name: run tests
+      run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not udf" ./ci/run_tests.sh
+
+  Tests_omnisci_spark:
+    name: Tests Omnisci/Spark
+    runs-on: ubuntu-latest
+    env:
+      BACKENDS: "omnisci spark pyspark"
+    strategy:
+      matrix:
+        python_version: ["3.6", "3.7"]
+    services:
+      omnisci:
+        image: omnisci/core-os-cpu:v5.2.2
+        ports:
+          - 6274:6274
+          - 6278:6278
+        volumes:
+          - ./omniscidb.conf:/omnisci-storage/omnisci.conf
     steps:
     - name: checkout
       uses: actions/checkout@v1
