@@ -12,8 +12,6 @@ RUN apt-get -qq update --yes \
  && /opt/conda/bin/conda config --add channels conda-forge \
  && /opt/conda/bin/conda update --all --yes \
  && /opt/conda/bin/conda clean --all --yes \
- && /opt/conda/bin/conda env update --file=/requirements-docs.yml \
- && /opt/conda/bin/conda clean --all --yes \
  && pip install -e . --no-deps --ignore-installed --no-cache-dir
 
 SHELL ["conda", "run", "-n", "ibis-env", "/bin/bash", "-c"]
