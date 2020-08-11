@@ -6,15 +6,19 @@ RUN apt-get -qq update --yes \
  && rm -rf /var/lib/apt/lists/*
 
 ARG PYTHON_VERSION
-ARG REQUIREMENTS_TAG
-ADD ci/requirements-dev-$PYTHON_VERSION-$REQUIREMENTS_TAG.yml /
+ADD environment.yml /
+ADD ci/deps/impala.yml /
+ADD ci/deps/clickhouse.yml /
+ADD ci/deps/postgres.yml /
 
 RUN /opt/conda/bin/conda config --add channels conda-forge \
   && /opt/conda/bin/conda update --all --yes --quiet \
   && /opt/conda/bin/conda install --yes conda-build \
-  && /opt/conda/bin/conda clean --all --yes
-
-RUN /opt/conda/bin/conda env create --name ibis-env --file /requirements-dev-$PYTHON_VERSION-$REQUIREMENTS_TAG.yml \
+  && /opt/conda/bin/conda clean --all --yes \
+  && /opt/conda/bin/conda env create --name ibis-env --file /environment.yml \
+  && /opt/conda/bin/conda env update --name ibis-env -c conda-forge --file /impala.yml \
+  && /opt/conda/bin/conda env update --name ibis-env -c conda-forge --file /clickhouse.yml \
+  && /opt/conda/bin/conda env update --name ibis-env -c conda-forge --file /postgres.yml \
   && /opt/conda/bin/conda clean --all --yes
 
 RUN echo 'source /opt/conda/bin/activate ibis-env && exec "$@"' > activate.sh

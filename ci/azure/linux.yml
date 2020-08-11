@@ -12,97 +12,32 @@ jobs:
     AZURECI: 1
     COMPOSE_FILE: ci/docker-compose.yml
     PYTHONHASHSEED: "random"
-    BACKENDS_SQL_PARQUET: "mysql postgres sqlite parquet"
     BACKENDS_IMPALA_KUDU_CLICKHOUSE: "impala kudu-master kudu-tserver clickhouse"
-    BACKENDS_OMNISCI: "omniscidb"
-    BACKENDS_PYSPARK_SPARK: ""
-    PYTEST_MARK_EXPRESSION_SQL_PARQUET: "not udf and not clickhouse and not impala and not kudu and not hdfs and not omniscidb and not spark and not pyspark"
     PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE: "not udf and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite and not omniscidb and not spark and not pyspark"
-    PYTEST_MARK_EXPRESSION_OMNISCI: "not udf and not clickhouse and not impala and not kudu and not hdfs and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite and not pyspark and not spark"
-    PYTEST_MARK_EXPRESSION_PYSPARK_SPARK: "not udf and not clickhouse and not impala and not kudu and not hdfs and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite and not omniscidb"
   strategy:
     matrix:
-
-      # SQL and parquet backends
-      py36_sql_parquet:
-        PYTHON_VERSION: "3.6"
-        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_SQL_PARQUET)
-        BACKENDS: $(BACKENDS_SQL_PARQUET)
-        REQUIREMENTS_TAG: "main"
-      py37_sql_parquet:
-        PYTHON_VERSION: "3.7"
-        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_SQL_PARQUET)
-        BACKENDS: $(BACKENDS_SQL_PARQUET)
-        REQUIREMENTS_TAG: "main"
-      py38_sql_parquet:
-        PYTHON_VERSION: "3.8"
-        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_SQL_PARQUET)
-        BACKENDS: $(BACKENDS_SQL_PARQUET)
-        REQUIREMENTS_TAG: "main"
 
       # Impala, kudu and clickhouse backends
       py36_impala_kudu_clickhouse:
         PYTHON_VERSION: "3.6"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
         BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
-        REQUIREMENTS_TAG: "main"
       py37_impala_kudu_clickhouse:
         PYTHON_VERSION: "3.7"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
         BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
-        REQUIREMENTS_TAG: "main"
       py38_impala_kudu_clickhouse:
         PYTHON_VERSION: "3.8"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
         BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
-        REQUIREMENTS_TAG: "main"
-
-      # Omnisci backend
-      py36_omnisci:
-        PYTHON_VERSION: "3.6"
-        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_OMNISCI)
-        BACKENDS: $(BACKENDS_OMNISCI)
-        REQUIREMENTS_TAG: "main"
-      py37_omnisci:
-        PYTHON_VERSION: "3.7"
-        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_OMNISCI)
-        BACKENDS: $(BACKENDS_OMNISCI)
-        REQUIREMENTS_TAG: "main"
-      # TODO: pymapd is not working on Ibis with Python 3.8, so not added to the matrix yet
-      # https://github.com/ibis-project/ibis/issues/2090
-
-      # PySpark and Spark backends
-      py36_pyspark_spark:
-        PYTHON_VERSION: "3.6"
-        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_PYSPARK_SPARK)
-        BACKENDS: $(BACKENDS_PYSPARK_SPARK)
-        REQUIREMENTS_TAG: "pyspark-spark"
-      py37_pyspark_spark:
-        PYTHON_VERSION: "3.7"
-        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_PYSPARK_SPARK)
-        BACKENDS: $(BACKENDS_PYSPARK_SPARK)
-        REQUIREMENTS_TAG: "pyspark-spark"
-      # TODO: pyspark is not working on Ibis with Python 3.8, so not added to the matrix yet
-      # https://github.com/ibis-project/ibis/issues/2091
 
   steps:
     - bash: |
-        echo "##vso[task.setvariable variable=PIPELINE_ARTIFACT_TAG]${PYTHON_VERSION/./}-${REQUIREMENTS_TAG}"
         if [ -z "$PYTEST_MARK_EXPRESSION" ]; then
           echo "##vso[task.logissue type=error]The env variable PYTEST_MARK_EXPRESSION is not set. It is expected to be set in all the matrix builds, since not all tests can be run in a single build. It's probably caused by a typo."
           exit 1
         fi
       displayName: 'Set environment variables'
-
-    - bash: |
-        if [ -n "${GCLOUD_SERVICE_KEY}" ]; then
-          mkdir -p /tmp/ibis
-          base64 --decode --ignore-garbage <<< "${GCLOUD_SERVICE_KEY}" > /tmp/ibis/gcloud-service-key.json
-        fi
-      env:
-        GCLOUD_SERVICE_KEY: $(GCLOUD_SERVICE_KEY)
-      displayName: 'Setup BigQuery credentials'
-      condition: eq(variables['System.PullRequest.IsFork'], 'False')
 
     # Start databases if BACKENDS is not an empty string. Without this check, docker-compose would start all services (instead of none of them) if no BACKENDS are specified.
     - bash: |
@@ -117,31 +52,21 @@ jobs:
     - bash: docker ps
       displayName: 'Show running containers'
 
-    - bash: make build PYTHON_VERSION=$PYTHON_VERSION REQUIREMENTS_TAG="${REQUIREMENTS_TAG}"
+    - bash: make build PYTHON_VERSION=$PYTHON_VERSION
       displayName: 'Build ibis image'
 
     - bash: docker images
       displayName: 'List docker images'
-
-    - bash: make docker_lint PYTHON_VERSION=$PYTHON_VERSION
-      displayName: 'Lint'
-
-    # TODO: change match-dir when docstrings are fixed for other backends
-    - bash: docker-compose run ibis pydocstyle --match-dir="(ibis|omniscidb)"
-      displayName: "Docstring check"
-
-    - bash: make docker_check_pre_commit_hooks PYTHON_VERSION=$PYTHON_VERSION
-      displayName: 'Ensure all pre-commit hooks checking are passing.'
 
     - bash: |
         sudo mkdir -p /tmp/ibis/test-reports/pytest
         mkdir -p /tmp/env
       displayName: 'Make artifacts directories'
 
-    - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION REQUIREMENTS_TAG="${REQUIREMENTS_TAG}" DOCKER_RUN_COMMAND="conda list"
+    - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="conda list"
       displayName: 'Show packages in conda environment'
 
-    - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION REQUIREMENTS_TAG="${REQUIREMENTS_TAG}" DOCKER_RUN_COMMAND="conda list --export > /tmp/env/env.yml"
+    - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="conda list --export > /tmp/env/env.yml"
       displayName: 'Capture packages in conda environment'
 
     - bash: make load PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
@@ -152,7 +77,6 @@ jobs:
         docker-compose run \
           -e PYTHONHASHSEED=$PYTHONHASHSEED \
           -e AZURECI=$AZURECI \
-          -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcloud-service-key.json \
           ibis \
           pytest ibis -m "${PYTEST_MARK_EXPRESSION}" \
                       -ra \
@@ -182,53 +106,9 @@ jobs:
     - task: PublishPipelineArtifact@1
       inputs:
         path: /tmp/env/env.yml
-        artifact: LinuxCondaEnvironment-$(PIPELINE_ARTIFACT_TAG)
+        artifact: LinuxCondaEnvironment-$(PYTHON_VERSION)
       displayName: 'Publish Linux environment YAML to Azure'
       condition: succeededOrFailed()  # pass or fail, but not cancelled
-
-- job: ${{ parameters.name }}BuildConda
-
-  pool:
-    vmImage: ${{ parameters.vmImage }}
-
-  variables:
-    PYTHON_VERSION: "3.7"
-    AZURECI: 1
-    COMPOSE_FILE: ci/docker-compose.yml
-
-  steps:
-    - bash: make build PYTHON_VERSION=$PYTHON_VERSION
-      displayName: 'Build ibis image'
-
-    - bash: docker images
-      displayName: 'List docker images'
-
-    - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="ci/feedstock.py test --python 3.7"
-      displayName: 'Clone, update and build conda-forge recipe'
-
-    - task: PublishPipelineArtifact@1
-      inputs:
-        path: /tmp/ibis/packages
-        artifact: LinuxCondaPackage
-      displayName: 'Publish conda package to Azure'
-      condition: and(succeeded(), eq(variables['System.PullRequest.IsFork'], 'False'))
-
-- job: ${{ parameters.name }}Benchmark
-
-  pool:
-    vmImage: ${{ parameters.vmImage }}
-
-  variables:
-    PYTHON_VERSION: "3.6"
-    AZURECI: 1
-    COMPOSE_FILE: ci/docker-compose.yml
-
-  steps:
-    - bash: make build PYTHON_VERSION=$PYTHON_VERSION
-      displayName: 'Build Ibis Image'
-
-    - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND='ci/benchmark.sh azure "$(Build.SourceVersion)"'
-      displayName: 'Run Benchmark (ASV)'
 
 - job: ${{ parameters.name }}BuildDocs
 

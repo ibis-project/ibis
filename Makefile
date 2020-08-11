@@ -3,18 +3,17 @@
 SHELL := /bin/bash
 MAKEFILE_DIR = $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 
-# PYTHON_VERSION and REQUIREMENTS_TAG defines which `./ci/requirements-dev-$PYTHON_VERSION-$REQUIREMENTS_TAG`
+# PYTHON_VERSION defines which `./ci/requirements-dev-$PYTHON_VERSION`
 # file will be used for creating the ibis image (see for additional info: `./ci/Dockerfile.dev` and
 # `./ci/docker-compose.yml`)
 # You can use `3.6` or `3.7` for now for the PYTHON_VERSION
 PYTHON_VERSION := 3.6
-REQUIREMENTS_TAG := "main"
 
 PYTHONHASHSEED := random
 
 # docker specific
 COMPOSE_FILE := "$(MAKEFILE_DIR)/ci/docker-compose.yml"
-DOCKER := PYTHON_VERSION=$(PYTHON_VERSION) REQUIREMENTS_TAG="$(REQUIREMENTS_TAG)" docker-compose -f $(COMPOSE_FILE)
+DOCKER := PYTHON_VERSION=$(PYTHON_VERSION) docker-compose -f $(COMPOSE_FILE)
 DOCKER_UP := $(DOCKER) up --remove-orphans -d --no-build
 DOCKER_RUN := $(DOCKER) run --rm
 DOCKER_BUILD := $(DOCKER) build
