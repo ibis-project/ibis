@@ -14,7 +14,7 @@ jobs:
       BACKENDS: "pandas csv parquet hdf5"
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest]  # TODO add windows and fix bash scripts (conda not found)
         python_version: ["3.6", "3.7", "3.8"]
     steps:
     - name: checkout
@@ -47,11 +47,12 @@ jobs:
       mysql:
         image: mariadb:10.4.12
         ports:
-          - 3307:3306
+          - 3306:3306
         env:
           MYSQL_ALLOW_EMPTY_PASSWORD: true
           MYSQL_DATABASE: ibis_testing
           MYSQL_USER: ibis
+          MYSQL_PASSWORD: ibis
         options: --health-cmd="mysqladmin ping" --health-interval 10s --health-timeout 5s --health-retries 3
     steps:
     - name: checkout
@@ -110,11 +111,11 @@ jobs:
     - name: run tests
       run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh
 
-  Tests_omnisci_spark:
-    name: Tests Omnisci/Spark
+  Tests_omniscidb_spark:
+    name: Tests OmniSciDB/Spark
     runs-on: ubuntu-latest
     env:
-      BACKENDS: "omnisci spark pyspark"
+      BACKENDS: "omniscidb spark pyspark"
     strategy:
       matrix:
         python_version: ["3.6", "3.7"]
