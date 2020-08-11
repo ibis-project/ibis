@@ -16,7 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]  # TODO add windows and fix bash scripts (conda not found)
-        python_version: ["3.6", "3.7", "3.8"]
+        python_version: ["3.7", "3.8"]
     steps:
     - name: checkout
       uses: actions/checkout@v1
@@ -37,7 +37,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: ["3.6", "3.7", "3.8"]
+        python_version: ["3.7", "3.8"]
     services:
       postgres:
         image: shajekpivotal/ibis-docker-postgres-9.5
@@ -75,7 +75,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: ["3.6", "3.7", "3.8"]
+        python_version: ["3.7", "3.8"]
     services:
       impala:
         image: ibisproject/impala:latest
@@ -123,7 +123,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: ["3.6", "3.7"]
+        python_version: ["3.7"]
     services:
       omnisci:
         image: omnisci/core-os-cpu:v5.2.2

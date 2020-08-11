@@ -12,7 +12,7 @@ jobs:
       BACKENDS: "bigquery"
     strategy:
       matrix:
-        python_version: ["3.6", "3.7", "3.8"]
+        python_version: ["3.7", "3.8"]
     steps:
     - name: checkout
       uses: actions/checkout@v1
