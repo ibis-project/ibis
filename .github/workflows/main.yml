@@ -49,10 +49,9 @@ jobs:
         ports:
           - 3307:3306
         env:
-          MYSQL_ALLOW_EMPTY_PASSWORD: 1
+          MYSQL_ALLOW_EMPTY_PASSWORD: true
           MYSQL_DATABASE: ibis_testing
           MYSQL_USER: ibis
-          MYSQL_PASSWORD: ibis
         options: --health-cmd="mysqladmin ping" --health-interval 10s --health-timeout 5s --health-retries 3
     steps:
     - name: checkout
@@ -64,11 +63,11 @@ jobs:
     - name: run tests
       run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not udf" ./ci/run_tests.sh
 
-  Tests_impala:
-    name: Tests Impala
+  Tests_impala_clickhouse:
+    name: Tests Impala / Clickhouse
     runs-on: ubuntu-latest
     env:
-      BACKENDS: "impala"
+      BACKENDS: "impala clickhouse"
     strategy:
       matrix:
         python_version: ["3.6", "3.7", "3.8"]
@@ -94,6 +93,12 @@ jobs:
           - 25010:25010
           - 25020:25020
         options: --health-cmd "curl --fail tcp://impala:21050 && curl --fail tcp://impala:50070" --health-interval 10s --health-timeout 5s --health-retries 5
+      clickhouse:
+        # XXX does clickhouse backend require the impala container too?
+        image: yandex/clickhouse-server:18.14
+        ports:
+          - 8123:8123
+          - 9000:9000
 
     steps:
     - name: checkout
@@ -104,30 +109,6 @@ jobs:
 
     - name: run tests
       run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh
-
-  Tests_clickhouse:
-    name: Tests Clickhouse
-    runs-on: ubuntu-latest
-    env:
-      BACKENDS: "clickhouse"
-    strategy:
-      matrix:
-        python_version: ["3.6", "3.7", "3.8"]
-    services:
-      clickhouse:
-        image: yandex/clickhouse-server:18.14
-        ports:
-          - 8123:8123
-          - 9000:9000
-    steps:
-    - name: checkout
-      uses: actions/checkout@v1
-
-    - name: set up environment
-      run: ./ci/setup_env.sh "${{ matrix.pytest_version }}" "$BACKENDS"
-
-    - name: run tests
-      run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not udf" ./ci/run_tests.sh
 
   Tests_omnisci_spark:
     name: Tests Omnisci/Spark

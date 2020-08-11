@@ -5,7 +5,7 @@ dependencies:
   # Ibis hard dependencies
   - multipledispatch>=0.6.0
   - numpy>=1.19
-  - pandas>=1.1
+  - pandas>=0.25 # XXX pymapd does not support pandas 1.0, only 0.25 series
   - pytz>=2020.1
   - regex>=2020.7
   - toolz>=0.10
