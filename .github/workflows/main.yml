@@ -93,7 +93,8 @@ jobs:
           - 25000:25000
           - 25010:25010
           - 25020:25020
-        options: --health-cmd "nc -z 127.0.0.1 21050 && nc -z 127.0.0.1 50070" --health-interval 30s --health-timeout 10s --health-retries 20
+        options: --health-cmd "nc -z 127.0.0.1 21050" --health-interval 30s --health-timeout 10s --health-retries 20
+        # options: --health-cmd "nc -z 127.0.0.1 21050 && nc -z 127.0.0.1 50070" --health-interval 30s --health-timeout 10s --health-retries 20
       clickhouse:
         # XXX does clickhouse backend require the impala container too?
         image: yandex/clickhouse-server:18.14
