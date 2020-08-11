@@ -21,10 +21,12 @@ for BACKEND in $PYTEST_BACKENDS; do
     fi
 done
 
+export PYTHONHASHSEED=$(python -c 'import random; print(random.randint(1, 4294967295))')
+
 echo "TESTS_DIRS: $TESTS_DIRS"
 echo "PYTEST_EXPRESSION: $PYTEST_EXPRESSION"
+echo "PYTHONHASHSEED: $PYTHONHASHSEED"
 
-PYTHONHASHSEED="random"
 
 pytest $TESTS_DIRS \
     -m "${PYTEST_EXPRESSION}" \
