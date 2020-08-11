@@ -1,57 +1,57 @@
+# This file should have all the dependencies for development excluding the specific to the backends.
 name: ibis-dev
 channels:
   - conda-forge
 dependencies:
   # Ibis hard dependencies
   - multipledispatch>=0.6.0
-  - numpy>=1.15
-  - pandas>=0.25.3
-  - pytz
-  - regex
-  - toolz
+  - numpy>=1.19
+  - pandas>=0.25 # XXX pymapd does not support pandas 1.0
+  - pytz>=2020.1
+  - regex>=2020.7
+  - toolz>=0.10
 
   # Ibis soft dependencies
-  - sqlalchemy>=1.1
-  - graphviz
+  # TODO This section is probably not very accurate right now (some dependencies should probably be in the backends files)
+  - sqlalchemy>=1.3
+  - graphviz>=2.40
   - openjdk=8
-  - pytables>=3.0.0
-  - python-graphviz
-  - python-hdfs>=2.0.16
+  - pytables>=3.6
+  - python-graphviz>=0.14
+  - python-hdfs>=2.0.16 # XXX this verison can probably be increased
 
   # Dev tools
   - black=19.10b0
-  - click # few scripts in ci/
+  - click>=7.1 # few scripts in ci/
   - conda-build # feedstock
-  - cmake
-  - flake8
-  - isort
-  - jinja2 # feedstock
-  - mypy
-  - plumbum # few scripts in ci/ and dev/
-  - pre-commit
-  - pydocstyle=4.0.1
-  - pygit2 # dev/genrelease.py
-  - pytest>=4.5, <6.0.0rc1
-  - pytest-cov
-  - pytest-mock
-  - pytest-xdist
-  - ruamel.yaml # feedstock
-  - libiconv  # bug in repo2docker, see https://github.com/jupyter/repo2docker/issues/758
-  - xorg-libxpm
-  - xorg-libxrender
+  - cmake>=3.17
+  - flake8>=3.8
+  - isort>=5.3
+  - jinja2>=2.11 # feedstock
+  - mypy>=0.782
+  - plumbum>=1.6 # few scripts in ci/ and dev/
+  - pre-commit>=2.6
+  - pydocstyle>=4.0
+  - pygit2>=1.2 # dev/genrelease.py
+  - pytest>=5.4
+  - pytest-cov>=2.10
+  - pytest-mock>=3.1
+  - ruamel.yaml>=0.16 # feedstock
+  - libiconv>=1.15  # bug in repo2docker, see https://github.com/jupyter/repo2docker/issues/758
+  - xorg-libxpm>=3.5
+  - xorg-libxrender>=0.9
 
   # Docs
-  - ipython
-  - jupyter
-  - matplotlib
+  - ipython>=7.17
+  - jupyter>=1.0
+  - matplotlib>=2 # XXX test if this can be bumped
   - nbconvert
-  - nbsphinx
+  - nbsphinx>=0.7
   - nomkl
   - pyarrow>=0.12 # must pin again otherwise strange things happen
-  - sphinx=2.0.1
+  - sphinx>=2.0.1
   - sphinx-releases
-  - sphinx_rtd_theme
-  - semantic_version<2.7 # https://github.com/ibis-project/ibis/issues/2027
+  - sphinx_rtd_theme>=0.5
   - pip
   - pip:
     - git+https://github.com/datapythonista/pysuerga

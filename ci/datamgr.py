@@ -614,6 +614,56 @@ def bigquery(data_directory, ignore_missing_dependency, **params):
         raise click.ClickException(str(job.error_result))
 
 
+@cli.command()
+def pandas(**params):
+    """
+    The pandas backend does not need test data, but we still
+    have an option for the backend for consistency, and to not
+    have to avoid calling `./datamgr.py pandas` in the CI.
+    """
+    pass
+
+
+@cli.command()
+def csv(**params):
+    """
+    The csv backend does not need test data, but we still
+    have an option for the backend for consistency, and to not
+    have to avoid calling `./datamgr.py csv` in the CI.
+    """
+    pass
+
+
+@cli.command()
+def hdf5(**params):
+    """
+    The hdf5 backend does not need test data, but we still
+    have an option for the backend for consistency, and to not
+    have to avoid calling `./datamgr.py hdf5` in the CI.
+    """
+    pass
+
+
+@cli.command()
+def spark(**params):
+    """
+    The spark backend does not need test data, but we still
+    have an option for the backend for consistency, and to not
+    have to avoid calling `./datamgr.py spark` in the CI.
+    """
+    pass
+
+
+@cli.command()
+def pyspark(**params):
+    """
+    The hdf5 backend does not need test data, but we still
+    have an option for the backend for consistency, and to not
+    have to avoid calling `./datamgr.py pyspark` in the CI.
+    """
+    pass
+
+
 if __name__ == '__main__':
     """
     Environment Variables are automatically parsed:
