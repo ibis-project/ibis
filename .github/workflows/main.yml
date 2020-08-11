@@ -6,7 +6,6 @@ on:
   pull_request:
     branches: master
 
-# TODO add bigquery tests
 jobs:
   Tests_pandas:
     name: Tests pandas
