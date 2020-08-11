@@ -39,7 +39,7 @@ dependencies:
   - pytest-xdist>=1.34
   - ruamel.yaml>=0.16 # feedstock
   - libiconv>=1.15  # bug in repo2docker, see https://github.com/jupyter/repo2docker/issues/758
-  - xorg-libxpm>=5.3
+  - xorg-libxpm>=3.5
   - xorg-libxrender>=0.9
 
   # Docs
