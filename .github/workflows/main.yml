@@ -21,7 +21,9 @@ jobs:
       uses: actions/checkout@v1
 
     - name: set up environment
-      run: ./ci/setup_env.sh "${{ matrix.pytest_version }}" "$BACKENDS"
+      run: ./ci/setup_env.sh "$PYTHON_VERSION" "$BACKENDS"
+      with:
+        PYTHON_VERSION: ${{ matrix.pytest_version }}
       shell: bash
 
     - name: run tests
@@ -59,7 +61,9 @@ jobs:
       uses: actions/checkout@v1
 
     - name: set up environment
-      run: ./ci/setup_env.sh "${{ matrix.pytest_version }}" "$BACKENDS"
+      run: ./ci/setup_env.sh "$PYTHON_VERSION" "$BACKENDS"
+      with:
+        PYTHON_VERSION: ${{ matrix.pytest_version }}
 
     - name: run tests
       run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not udf and not hdfs" ./ci/run_tests.sh
@@ -107,7 +111,9 @@ jobs:
       uses: actions/checkout@v1
 
     - name: set up environment
-      run: ./ci/setup_env.sh "${{ matrix.pytest_version }}" "$BACKENDS"
+      run: ./ci/setup_env.sh "$PYTHON_VERSION" "$BACKENDS"
+      with:
+        PYTHON_VERSION: ${{ matrix.pytest_version }}
 
     - name: run tests
       run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh
@@ -133,7 +139,9 @@ jobs:
       uses: actions/checkout@v1
 
     - name: set up environment
-      run: ./ci/setup_env.sh "${{ matrix.pytest_version }}" "$BACKENDS"
+      run: ./ci/setup_env.sh "$PYTHON_VERSION" "$BACKENDS"
+      with:
+        PYTHON_VERSION: ${{ matrix.pytest_version }}
 
     - name: run tests
       run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not udf and not hdfs" ./ci/run_tests.sh
