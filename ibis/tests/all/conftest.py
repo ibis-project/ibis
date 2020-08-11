@@ -122,7 +122,7 @@ def pytest_pyfunc_call(pyfuncitem):
 
 pytestmark = pytest.mark.backend
 
-pytest_backends = os.environ('PYTEST_BACKENDS', '').split(' ')
+pytest_backends = os.environ.get('PYTEST_BACKENDS', '').split(' ')
 params_backend = [
     pytest.param(backend, marks=getattr(pytest.mark, backend.__name__.lower()))
     for backend in ALL_BACKENDS
