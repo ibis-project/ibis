@@ -17,9 +17,9 @@ RUN /opt/conda/bin/conda config --add channels conda-forge \
 
 RUN /opt/conda/bin/conda env create --name ibis-env --file /environment.yml
 
-RUN /opt/conda/bin/conda env update --name ibis-env --file /impala.yml \
-  && /opt/conda/bin/conda env update --name ibis-env --file /clickhouse.yml \
-  && /opt/conda/bin/conda env update --name ibis-env --file /postgres.yml
+RUN /opt/conda/bin/conda install --name ibis-env --file /impala.yml \
+  && /opt/conda/bin/conda install --name ibis-env --file /clickhouse.yml \
+  && /opt/conda/bin/conda install --name ibis-env --file /postgres.yml
 
 RUN echo 'source /opt/conda/bin/activate ibis-env && exec "$@"' > activate.sh
 
