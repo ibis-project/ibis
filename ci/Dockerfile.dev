@@ -11,9 +11,10 @@ ADD ci/deps/*.yml /deps/
 
 RUN /opt/conda/bin/conda config --add channels conda-forge \
   && /opt/conda/bin/conda update --all --yes --quiet \
-  && /opt/conda/bin/conda install --yes conda-build python=$PYTHON_VERSION
+  && /opt/conda/bin/conda install --yes conda-build
 
-RUN /opt/conda/bin/conda env create --name ibis-env --file /environment.yml
+RUN /opt/conda/bin/conda env create --name ibis-env --file /environment.yml \
+  && /opt/conda/bin/conda install --name ibis-env python=$PYTHON_VERSION
 
 RUN for FNAME in $(ls /deps/*.yml); do /opt/conda/bin/conda install --name ibis-env --file $FNAME; done
 
