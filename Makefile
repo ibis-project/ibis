@@ -146,19 +146,19 @@ testall:
 	@echo "You should use make testmain instead"
 
 testmain:
-	$(MAKE) testparallelnoinit REQUIREMENTS_TAG="main" PYTEST_MARKERS="-m 'not (udf or spark or pyspark)'"
+	$(MAKE) testparallelnoinit PYTEST_MARKERS="-m 'not (udf or spark or pyspark)'"
 
 testmost:
-	$(MAKE) testparallelnoinit REQUIREMENTS_TAG="main" PYTEST_MARKERS="-m 'not (udf or impala or hdfs or spark or pyspark)'"
+	$(MAKE) testparallelnoinit PYTEST_MARKERS="-m 'not (udf or impala or hdfs or spark or pyspark)'"
 
 testfast:
-	$(MAKE) testparallelnoinit REQUIREMENTS_TAG="main" PYTEST_MARKERS="-m 'not (udf or impala or hdfs or bigquery or spark or pyspark)'"
+	$(MAKE) testparallelnoinit PYTEST_MARKERS="-m 'not (udf or impala or hdfs or bigquery or spark or pyspark)'"
 
 testpandas:
-	$(MAKE) testparallelnoinit REQUIREMENTS_TAG="main" PYTEST_MARKERS="-m pandas"
+	$(MAKE) testparallelnoinit PYTEST_MARKERS="-m pandas"
 
 testpyspark:
-	$(MAKE) testparallelnoinit REQUIREMENTS_TAG="pyspark-spark" PYTEST_MARKERS="-m pyspark"
+	$(MAKE) testparallelnoinit PYTEST_MARKERS="-m pyspark"
 
 fastopt:
 	@echo -m 'not (backend or bigquery or clickhouse or hdfs or impala or kudu or omniscidb or mysql or postgis or postgresql or superuser or udf)'

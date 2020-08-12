@@ -1,7 +1,6 @@
 ARG PYTHON_VERSION
 FROM ibis:$PYTHON_VERSION-main
 
-ADD ci/requirements-docs.yml /
 COPY . /ibis
 WORKDIR /ibis
 
