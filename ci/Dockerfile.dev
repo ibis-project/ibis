@@ -11,7 +11,7 @@ ADD ci/deps/*.yml /deps/
 
 RUN /opt/conda/bin/conda config --add channels conda-forge \
   && /opt/conda/bin/conda update --all --yes --quiet \
-  && /opt/conda/bin/conda install --yes conda-build
+  && /opt/conda/bin/conda install --yes conda-build python=$PYTHON_VERSION
 
 RUN /opt/conda/bin/conda env create --name ibis-env --file /environment.yml
 

@@ -115,7 +115,7 @@ jobs:
     vmImage: ${{ parameters.vmImage }}
 
   variables:
-    PYTHON_VERSION: "3.6"
+    PYTHON_VERSION: "3.7"
     AZURECI: 1
     COMPOSE_FILE: ci/docker-compose.yml
     BACKENDS: "impala postgres"
@@ -124,7 +124,7 @@ jobs:
   steps:
     - task: UsePythonVersion@0
       inputs:
-        versionSpec: '3.6' 
+        versionSpec: '3.7'
 
     - bash: make start PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
       displayName: 'Start databases'
