@@ -18,10 +18,6 @@ jobs:
     matrix:
 
       # Impala, kudu and clickhouse backends
-      py36_impala_kudu_clickhouse:
-        PYTHON_VERSION: "3.6"
-        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
-        BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
       py37_impala_kudu_clickhouse:
         PYTHON_VERSION: "3.7"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
@@ -151,6 +147,7 @@ jobs:
             cd /tmp/ibis-project.org && \
             echo \"ibis-project.org\" > CNAME && \
             touch .nojekyll && \
+            pip install pysuerga && \  # XXX pysuerga is already in environment.yml, should already be installed
             python -m pysuerga /ibis/docs/web --target-path=/tmp/ibis-project.org/ && \
             sphinx-build -b html /ibis/docs/source /tmp/ibis-project.org/docs -W -T --keep-going"
       displayName: 'Build website and docs'
