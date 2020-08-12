@@ -3012,8 +3012,9 @@ def parse_url(arg, extract, key=None):
 
     Parameters
     ----------
-    extract : one of {'PROTOCOL', 'HOST', 'PATH', 'REF',
-                'AUTHORITY', 'FILE', 'USERINFO', 'QUERY'}
+    extract : str
+        One of {'PROTOCOL', 'HOST', 'PATH', 'REF', 'AUTHORITY', 'FILE',
+            'USERINFO', 'QUERY'}
     key : string (optional)
 
     Examples
