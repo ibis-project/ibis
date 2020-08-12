@@ -80,7 +80,6 @@ jobs:
           ibis \
           pytest ibis -m "${PYTEST_MARK_EXPRESSION}" \
                       -ra \
-                      --numprocesses auto \
                       --doctest-modules \
                       --doctest-ignore-import-errors \
                       -k"-compile -connect" \
