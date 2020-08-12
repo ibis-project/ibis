@@ -15,7 +15,7 @@ RUN /opt/conda/bin/conda config --add channels conda-forge \
 
 RUN /opt/conda/bin/conda env create --name ibis-env --file /environment.yml
 
-RUN for FNAME in $(ls /deps/*.yml); do; /opt/conda/bin/conda install --name ibis-env --file $FNAME; done
+RUN for FNAME in $(ls /deps/*.yml); do /opt/conda/bin/conda install --name ibis-env --file $FNAME; done
 
 RUN echo 'source /opt/conda/bin/activate ibis-env && exec "$@"' > activate.sh
 
