@@ -13,13 +13,13 @@ ADD ci/deps/postgres.yml /
 
 RUN /opt/conda/bin/conda config --add channels conda-forge \
   && /opt/conda/bin/conda update --all --yes --quiet \
-  && /opt/conda/bin/conda install --yes conda-build \
-  && /opt/conda/bin/conda clean --all --yes \
-  && /opt/conda/bin/conda env create --name ibis-env --file /environment.yml \
-  && /opt/conda/bin/conda env update --name ibis-env --file /impala.yml \
+  && /opt/conda/bin/conda install --yes conda-build
+
+RUN /opt/conda/bin/conda env create --name ibis-env --file /environment.yml
+
+RUN /opt/conda/bin/conda env update --name ibis-env --file /impala.yml \
   && /opt/conda/bin/conda env update --name ibis-env --file /clickhouse.yml \
-  && /opt/conda/bin/conda env update --name ibis-env --file /postgres.yml \
-  && /opt/conda/bin/conda clean --all --yes
+  && /opt/conda/bin/conda env update --name ibis-env --file /postgres.yml
 
 RUN echo 'source /opt/conda/bin/activate ibis-env && exec "$@"' > activate.sh
 
