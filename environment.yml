@@ -49,7 +49,7 @@ dependencies:
   - nbsphinx>=0.7
   - nomkl
   - pyarrow>=0.12 # must pin again otherwise strange things happen
-  - semanticversion=2.7 # https://github.com/ibis-project/ibis/issues/2027
+  - semantic_version=2.7 # https://github.com/ibis-project/ibis/issues/2027
   - sphinx>=2.0.1
   - sphinx-releases
   - sphinx_rtd_theme>=0.5
