@@ -147,7 +147,7 @@ jobs:
             cd /tmp/ibis-project.org && \
             echo \"ibis-project.org\" > CNAME && \
             touch .nojekyll && \
-            pip install pysuerga && \  # XXX pysuerga is already in environment.yml, should already be installed
+            pip install git+https://github.com/datapythonista/pysuerga && \  # XXX pysuerga is already in environment.yml, should already be installed
             python -m pysuerga /ibis/docs/web --target-path=/tmp/ibis-project.org/ && \
             sphinx-build -b html /ibis/docs/source /tmp/ibis-project.org/docs -W -T --keep-going"
       displayName: 'Build website and docs'
