@@ -82,7 +82,6 @@ jobs:
                       -ra \
                       --doctest-modules \
                       --doctest-ignore-import-errors \
-                      -k"-compile -connect" \
                       --junitxml=/tmp/test-reports/pytest/junit.xml \
                       --cov=ibis \
                       --cov-report=xml:/tmp/test-reports/pytest-cov/coverage.xml
