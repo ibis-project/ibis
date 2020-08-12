@@ -79,7 +79,7 @@ jobs:
           -e AZURECI=$AZURECI \
           ibis \
           pytest ibis -m "${PYTEST_MARK_EXPRESSION}" \
-                      -k "-compile -connect" \
+                      -k"-compile -connect" \
                       -ra \
                       --doctest-modules \
                       --doctest-ignore-import-errors \
