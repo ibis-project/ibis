@@ -7,9 +7,7 @@ RUN apt-get -qq update --yes \
 
 ARG PYTHON_VERSION
 ADD environment.yml /
-ADD ci/deps/impala.yml /
-ADD ci/deps/clickhouse.yml /
-ADD ci/deps/postgres.yml /
+ADD ci/deps/*.yml /deps/
 
 RUN /opt/conda/bin/conda config --add channels conda-forge \
   && /opt/conda/bin/conda update --all --yes --quiet \
@@ -17,9 +15,7 @@ RUN /opt/conda/bin/conda config --add channels conda-forge \
 
 RUN /opt/conda/bin/conda env create --name ibis-env --file /environment.yml
 
-RUN /opt/conda/bin/conda install --name ibis-env --file /impala.yml \
-  && /opt/conda/bin/conda install --name ibis-env --file /clickhouse.yml \
-  && /opt/conda/bin/conda install --name ibis-env --file /postgres.yml
+RUN for FNAME in $(ls /deps/*.yml); do; /opt/conda/bin/conda install --name ibis-env --file $FNAME; done
 
 RUN echo 'source /opt/conda/bin/activate ibis-env && exec "$@"' > activate.sh
 
