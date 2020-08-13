@@ -169,9 +169,8 @@ def trim_with_timecontext(data, timecontext: Optional[TimeContext]):
     # noop if timecontext is None
     if not timecontext:
         return data
-
     # reset multiindex and turn series into a dateframe
-    df = data.reset_index(level=1)
+    df = data.reset_index()
     name = data.name
 
     # Filter the data, here we preserve the time index so that when user is
