@@ -17,8 +17,6 @@ the information is available in the :ref:`api`.
    configuration
    sql
    udf
-   design
-   extending
    geospatial_analysis
-   extending_elementwise_expr
-   extending_reduce_expr
+   design
+   extending/index
