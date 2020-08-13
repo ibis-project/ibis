@@ -158,7 +158,7 @@ def trim_with_timecontext(data, timecontext: Optional[TimeContext]):
 
         Params
         ------
-        data: pd.Series of MultiIndex
+        data: pd.Series with MultiIndex
         timecontext: Optional[TimeContext]
 
         Returns:
@@ -301,9 +301,12 @@ def execute_window_op(
             post_process = _post_process_empty
 
     new_scope = Scope.from_scope(scope)
+    # Here groupby object should be add to the corresponding node in scope
+    # for execution, data will be overwrite to a groupby object, so we
+    # force an update regardless of time context
     for t in operand.op().root_tables():
         new_scope.merge_scope(
-            Scope.make_scope(t, source, adjusted_timecontext)
+            Scope.make_scope(t, source, adjusted_timecontext), overwrite=True
         )
 
     # figure out what the dtype of the operand is

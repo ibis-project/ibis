@@ -131,17 +131,19 @@ class Scope:
                 return self.scope[op].get('value', None)
         return None
 
-    def merge_scope(self, other_scope):
+    def merge_scope(self, other_scope, overwrite=False):
         """merge items in other_scope into this scope
 
         Parameters
         ----------
         other_scope: Scope
+        overwrite: bool, if set to be True, force overwrite value if op
+            already exists.
         """
         for op, v in other_scope.get_scope().items():
             # if get_scope returns a not None value, then data is already
             # cached in scope and it is at least a greater range than
             # the current timecontext, so we drop the item. Otherwise
             # add it into scope.
-            if self.get(op, v['timecontext']) is None:
+            if overwrite or self.get(op, v['timecontext']) is None:
                 self.scope[op] = v

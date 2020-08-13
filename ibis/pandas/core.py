@@ -99,11 +99,6 @@ And scope value is another key-value map:
 - timecontext: of type TimeContext, the time context associated with the data
 stored in value
 
-Note that the idea is: data should be determined by both op and timecontext.
-So the data structure above is conceptually same as making (op, timecontext)
-as the key for scope. But that may increase the time complexity in querying,
-so we make timecontext as another key of op.
-
 See ibis.common.scope for details about the implementaion.
 """
 

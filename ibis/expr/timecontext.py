@@ -147,7 +147,8 @@ def adjust_context(op, *clients, timecontext: TimeContext) -> TimeContext:
     --------
     Adjusted time context
     """
-    raise NotImplementedError()
+    # by default, do not adjust time context
+    return timecontext
 
 
 @adjust_context.register(ops.AsOfJoin)
