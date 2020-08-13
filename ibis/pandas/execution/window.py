@@ -13,7 +13,7 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.window as win
 import ibis.pandas.aggcontext as agg_ctx
-from ibis.common.scope import make_scope_item
+from ibis.common.scope import Scope
 from ibis.expr.timecontext import TIME_COL
 from ibis.expr.typing import TimeContext
 from ibis.pandas.aggcontext import AggregationContext
@@ -170,6 +170,7 @@ def trim_with_timecontext(data, timecontext: Optional[TimeContext]):
     if not timecontext:
         return data
 
+    # reset multiindex and turn series into a dateframe
     df = data.reset_index(level=1)
     name = data.name
 
@@ -194,7 +195,7 @@ def execute_window_op(
     op,
     data,
     window,
-    scope=None,
+    scope: Scope = None,
     timecontext: Optional[TimeContext] = None,
     aggcontext=None,
     clients=None,
@@ -225,7 +226,7 @@ def execute_window_op(
         aggcontext=aggcontext,
         **kwargs,
     )
-    scope = toolz.merge(scope, pre_executed_scope)
+    scope.merge_scope(pre_executed_scope)
     (root,) = op.root_tables()
     root_expr = root.to_expr()
 
@@ -299,10 +300,11 @@ def execute_window_op(
             source = data
             post_process = _post_process_empty
 
-    new_scope = toolz.merge(
-        make_scope_item(t, source, adjusted_timecontext)
-        for t in operand.op().root_tables()
-    )
+    new_scope = Scope.from_scope(scope)
+    for t in operand.op().root_tables():
+        new_scope.merge_scope(
+            Scope.make_scope(t, source, adjusted_timecontext)
+        )
 
     # figure out what the dtype of the operand is
     operand_type = operand.type()

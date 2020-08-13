@@ -11,13 +11,12 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
-import toolz
 from multipledispatch import Dispatcher
 from toolz import compose, concat, concatv, first, unique
 
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.common.scope import make_scope_item, set_scope_item
+from ibis.common.scope import Scope
 from ibis.expr.typing import TimeContext
 from ibis.pandas.core import execute
 from ibis.pandas.dispatch import execute_node
@@ -34,7 +33,7 @@ Parameters
 expr : Union[ir.ScalarExpr, ir.ColumnExpr, ir.TableExpr]
 parent : ops.Selection
 data : pd.DataFrame
-scope : dict, optional
+scope : Scope
 timecontext:Optional[TimeContext]
 
 Returns
@@ -54,7 +53,7 @@ def compute_projection_scalar_expr(
     expr,
     parent,
     data,
-    scope=None,
+    scope: Scope = None,
     timecontext: Optional[TimeContext] = None,
     **kwargs,
 ):
@@ -66,11 +65,9 @@ def compute_projection_scalar_expr(
 
     data_columns = frozenset(data.columns)
 
-    additional_scope = {}
     for t in op.root_tables():
-        additional_scope = toolz.merge(
-            additional_scope,
-            make_scope_item(
+        scope.merge_scope(
+            Scope.make_scope(
                 t,
                 map_new_column_names_to_data(
                     remap_overlapping_column_names(
@@ -81,7 +78,6 @@ def compute_projection_scalar_expr(
                 timecontext,
             ),
         )
-    set_scope_item(scope, additional_scope)
     scalar = execute(expr, scope=scope, **kwargs)
     result = pd.Series([scalar], name=name).repeat(len(data.index))
     result.index = data.index
@@ -90,7 +86,12 @@ def compute_projection_scalar_expr(
 
 @compute_projection.register(ir.ColumnExpr, ops.Selection, pd.DataFrame)
 def compute_projection_column_expr(
-    expr, parent, data, scope, timecontext: Optional[TimeContext], **kwargs
+    expr,
+    parent,
+    data,
+    scope: Scope,
+    timecontext: Optional[TimeContext],
+    **kwargs,
 ):
     result_name = getattr(expr, '_name', None)
     op = expr.op()
@@ -118,12 +119,9 @@ def compute_projection_column_expr(
         )
 
     data_columns = frozenset(data.columns)
-
-    additional_scope = {}
     for t in op.root_tables():
-        additional_scope = toolz.merge(
-            additional_scope,
-            make_scope_item(
+        scope.merge_scope(
+            Scope.make_scope(
                 t,
                 map_new_column_names_to_data(
                     remap_overlapping_column_names(
@@ -135,7 +133,6 @@ def compute_projection_column_expr(
             ),
         )
 
-    set_scope_item(scope, additional_scope)
     result = execute(expr, scope=scope, timecontext=timecontext, **kwargs)
     assert result_name is not None, 'Column selection name is None'
     if np.isscalar(result):
@@ -215,7 +212,7 @@ def _compute_predicates(
     table_op,
     predicates,
     data,
-    scope,
+    scope: Scope,
     timecontext: Optional[TimeContext],
     **kwargs,
 ):
@@ -226,7 +223,7 @@ def _compute_predicates(
     table_op : TableNode
     predicates : List[ir.ColumnExpr]
     data : pd.DataFrame
-    scope : dict
+    scope : Scope
     timecontext: Optional[TimeContext]
     kwargs : dict
 
@@ -248,7 +245,6 @@ def _compute_predicates(
         root_tables = predicate.op().root_tables()
 
         # handle suffixes
-        additional_scope = {}
         data_columns = frozenset(data.columns)
 
         for root_table in root_tables:
@@ -259,10 +255,10 @@ def _compute_predicates(
                 new_data = data.loc[:, mapping.keys()].rename(columns=mapping)
             else:
                 new_data = data
-            item = make_scope_item(root_table, new_data, timecontext)
-            additional_scope = toolz.merge(additional_scope, item)
+            scope.merge_scope(
+                Scope.make_scope(root_table, new_data, timecontext)
+            )
 
-        set_scope_item(scope, additional_scope)
         yield execute(predicate, scope=scope, **kwargs)
 
 
@@ -311,7 +307,7 @@ def physical_tables_node(node):
 
 @execute_node.register(ops.Selection, pd.DataFrame)
 def execute_selection_dataframe(
-    op, data, scope, timecontext: Optional[TimeContext], **kwargs
+    op, data, scope: Scope, timecontext: Optional[TimeContext], **kwargs
 ):
     selections = op.selections
     predicates = op.predicates

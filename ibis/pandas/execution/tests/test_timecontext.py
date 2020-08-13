@@ -168,5 +168,6 @@ def test_context_adjustment_multi_window(time_table, time_df3):
         v2=time_table['value'].mean().over(window2),
     )
     result = expr.execute(timecontext=context)
+
     tm.assert_series_equal(result["v1"], expected_win_1)
     tm.assert_series_equal(result["v2"], expected_win_2)

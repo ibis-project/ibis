@@ -1,8 +1,28 @@
 """ Module for scope
-    Scope is a dictionary mapping :class:`~ibis.expr.operations.Node`
-    subclass instances to concrete data, and the time context associate
+    The motivation of Scope is to cache data for calculated ops.
+
+    `scope` in Scope class is the main cache. It is a dictionary mapping
+    ibis node instances to concrete data, and the time context associate
     with it(if any).
-    Scope is used in many backends to cache data for calculated ops.
+
+    `scope` has the structure of:
+    {
+        op[ibis.expr.operations.Node]: {
+            "value": v[Object]
+            "timecontext": t[TimeContext]
+        }
+        ...
+    }
+
+    `scope` uses `op` as the key, `v` is the cached result of executing `op`,
+    the type of the result may differ in different backends. `t` is the time
+    context associate with the result, set it to None if there is no time
+    context in execution.
+
+    When there are no time contexts associate with the cached result, getting
+    and setting values in Scope would be as simple as get and set in a normal
+    dictonary. With time contexts, we need the following logic for getting
+    and setting items in scope:
 
     Set scope kv pair: before setting the value op in scope we need to perform
     the following check first:
@@ -33,75 +53,95 @@ from ibis.expr.timecontext import TimeContextRelation, compare_timecontext
 from ibis.expr.typing import TimeContext
 
 
-def make_scope_item(op, result, timecontext: Optional[TimeContext]):
-    """make a scope item to be set in scope
+class Scope:
+    def __init__(self, items={}):
+        self.scope = items
 
-    Parameters
-    ----------
-    op: ibis.expr.operations.Node, key in scope.
-    result : scalar, pd.Series, pd.DataFrame, concrete data.
-    timecontext: Optional[TimeContext], time context associate with the
-    result.
+    def get_scope(self):
+        """ Get all items in scope.
+        """
+        return self.scope
 
-    Returns
-    -------
-    Dict, a key value pair that could merge into scope later
-    """
-    return {op: {'value': result, 'timecontext': timecontext}}
+    @staticmethod
+    def make_scope(op, result, timecontext: Optional[TimeContext]):
+        """make a Scope class, adding (op, result, timecontext) into the
+           scope
 
+        Parameters
+        ----------
+        op: ibis.expr.operations.Node, key in scope.
+        result : scalar, pd.Series, pd.DataFrame, concrete data.
+        timecontext: Optional[TimeContext], time context associate with the
+        result.
 
-def get_scope_item(scope, op, timecontext: Optional[TimeContext] = None):
-    """ Given a op and timecontext, get result from scope
-    Parameters
-    ----------
-    scope: collections.Mapping
-    a dictionary mapping :class:`~ibis.expr.operations.Node`
-    subclass instances to concrete data, and the time context associate
-    with it(if any).
-    op: ibis.expr.operations.Node, key in scope.
-    timecontext: Optional[TimeContext]
+        Returns
+        -------
+        Scope: a new Scope class with op in it.
+        """
+        return Scope({op: {'value': result, 'timecontext': timecontext}})
 
-    Returns
-    -------
-    result: scalar, pd.Series, pd.DataFrame
-    """
-    if op not in scope:
-        return None
-    # for ops without timecontext
-    if timecontext is None:
-        return scope[op].get('value', None)
-    else:
-        # For op with timecontext, ther are some ops cannot use cached result
-        # with a different (larger) timecontext to get the correct result.
-        # For example, a groupby followed by count, if we use a larger or
-        # smaller dataset from cache, we will probably get an error in result.
-        # Such ops with global aggregation, ops whose result is depending on
-        # other rows in result Dataframe, cannot use cached result with
-        # different time context to optimize calculation. These are time
-        # context sensitive operations. Since these cases are rare in
-        # acutal use case, we just enable optimization for all nodes for now.
-        old_timecontext = scope[op].get('timecontext', None)
-        if old_timecontext:
-            relation = compare_timecontext(timecontext, old_timecontext)
-            if relation == TimeContextRelation.SUBSET:
-                return scope[op].get('value', None)
+    @staticmethod
+    def from_scope(other_scope):
+        """make a Scope class, copying other_scope
+        """
+        scope = Scope()
+        scope.merge_scope(other_scope)
+        return scope
+
+    def get(self, op, timecontext: Optional[TimeContext] = None):
+        """ Given a op and timecontext, get result from scope
+
+        Parameters
+        ----------
+        scope: collections.Mapping
+        a dictionary mapping :class:`~ibis.expr.operations.Node`
+        subclass instances to concrete data, and the time context associate
+        with it(if any).
+        op: ibis.expr.operations.Node, key in scope.
+        timecontext: Optional[TimeContext]
+
+        Returns
+        -------
+        result: the cached result, an object whose types may differ in
+        different backends.
+        """
+        if op not in self.scope:
+            return None
+        # for ops without timecontext
+        if timecontext is None:
+            return self.scope[op].get('value', None)
         else:
-            return scope[op].get('value', None)
-    return None
+            # For op with timecontext, ther are some ops cannot use cached
+            # result with a different (larger) timecontext to get the
+            # correct result.
+            # For example, a groupby followed by count, if we use a larger or
+            # smaller dataset from cache, we will probably get an error in
+            # result. Such ops with global aggregation, ops whose result is
+            # depending on other rows in result Dataframe, cannot use cached
+            # result with different time context to optimize calculation.
+            # These are time context sensitive operations. Since these cases
+            # are rare in acutal use case, we just enable optimization for
+            # all nodes for now.
+            cached_timecontext = self.scope[op].get('timecontext', None)
+            if cached_timecontext:
+                relation = compare_timecontext(timecontext, cached_timecontext)
+                if relation == TimeContextRelation.SUBSET:
+                    return self.scope[op].get('value', None)
+            else:
+                return self.scope[op].get('value', None)
+        return None
 
+    def merge_scope(self, other_scope):
+        """merge items in other_scope into this scope
 
-def set_scope_item(scope, item):
-    """set scope_item in scope
-
-    Parameters
-    ----------
-    scope: collections.Mapping
-    item: Dict, generated by make_scope_item
-    """
-    for op, v in item.items():
-        # if get_scope returns a not None value, then data is already
-        # cached in scope and it is at least a greater range than
-        # the current timecontext, so we drop the item. Otherwise
-        # add it into scope.
-        if get_scope_item(scope, op, v['timecontext']) is None:
-            scope[op] = v
+        Parameters
+        ----------
+        other_scope: Scope
+        """
+        for op, v in other_scope.get_scope().items():
+            # if get_scope returns a not None value, then data is already
+            # cached in scope and it is at least a greater range than
+            # the current timecontext, so we drop the item. Otherwise
+            # add it into scope.
+            if self.get(op, v['timecontext']) is None:
+                self.scope[op] = v

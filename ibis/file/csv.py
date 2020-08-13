@@ -4,6 +4,7 @@ from pkg_resources import parse_version
 
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
+from ibis.common.scope import Scope
 from ibis.file.client import FileClient
 from ibis.pandas.api import PandasDialect
 from ibis.pandas.core import execute, execute_node, pre_execute
@@ -98,10 +99,10 @@ def csv_read_table(op, client, scope, **kwargs):
 
 
 @pre_execute.register(ops.Selection, CSVClient)
-def csv_pre_execute_selection(op, client, scope, **kwargs):
+def csv_pre_execute_selection(op, client, scope, timecontext=None, **kwargs):
     tables = filter(lambda t: t not in scope, physical_tables(op.table.op()))
 
-    ops = {}
+    ops = Scope()
     for table in tables:
         path = client.dictionary[table.name]
         usecols = None
@@ -117,6 +118,12 @@ def csv_pre_execute_selection(op, client, scope, **kwargs):
             if len(pd.Index(usecols) & header.columns) != len(usecols):
                 usecols = None
 
-        ops[table] = _read_csv(path, table.schema, usecols=usecols, header=0)
+        ops.merge_scope(
+            Scope.make_scope(
+                table,
+                _read_csv(path, table.schema, usecols=usecols, header=0),
+                timecontext,
+            )
+        )
 
     return ops

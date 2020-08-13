@@ -493,7 +493,11 @@ class Window(AggregationContext):
             frame = getattr(parent, 'obj', parent)
             obj = getattr(grouped_data, 'obj', grouped_data)
             name = obj.name
-            if frame[name] is not obj or name in group_by or name in order_by:
+            if (
+                not frame[name].equals(obj)
+                or name in group_by
+                or name in order_by
+            ):
                 name = f"{name}_{ibis.util.guid()}"
                 frame = frame.assign(**{name: obj})
 

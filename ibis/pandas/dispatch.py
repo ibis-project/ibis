@@ -2,12 +2,12 @@ from __future__ import absolute_import
 
 from functools import partial
 
-import toolz
 from multipledispatch import Dispatcher
 
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
+from ibis.common.scope import Scope
 from ibis.pandas.trace import TraceTwoLevelDispatcher
 
 # Individual operation execution
@@ -49,15 +49,15 @@ depth-first traversal of the tree.
 @pre_execute.register(ops.Node)
 @pre_execute.register(ops.Node, ibis.client.Client)
 def pre_execute_default(node, *clients, **kwargs):
-    return {}
+    return Scope()
 
 
 # Merge the results of all client pre-execution with scope
 @pre_execute.register(ops.Node, [ibis.client.Client])
 def pre_execute_multiple_clients(node, *clients, scope=None, **kwargs):
-    return toolz.merge(
-        scope, *map(partial(pre_execute, node, scope=scope, **kwargs), clients)
-    )
+    for s in map(partial(pre_execute, node, scope=scope, **kwargs), clients):
+        scope.merge_scope(s)
+    return scope
 
 
 execute_literal = Dispatcher(

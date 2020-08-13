@@ -104,8 +104,7 @@ So the data structure above is conceptually same as making (op, timecontext)
 as the key for scope. But that may increase the time complexity in querying,
 so we make timecontext as another key of op.
 
-See set_scope_item() for the structure of scope, and get_scope_item() in
-ibis.common.scope for details about the implementaion.
+See ibis.common.scope for details about the implementaion.
 """
 
 from __future__ import absolute_import
@@ -113,12 +112,10 @@ from __future__ import absolute_import
 import datetime
 import functools
 import numbers
-from copy import deepcopy
 from typing import Optional
 
 import numpy as np
 import pandas as pd
-import toolz
 from multipledispatch import Dispatcher
 
 import ibis
@@ -129,7 +126,7 @@ import ibis.expr.types as ir
 import ibis.expr.window as win
 import ibis.pandas.aggcontext as agg_ctx
 from ibis.client import find_backends
-from ibis.common.scope import get_scope_item, make_scope_item, set_scope_item
+from ibis.common.scope import Scope
 from ibis.expr.timecontext import canonicalize_context
 from ibis.expr.typing import TimeContext
 from ibis.pandas.dispatch import (
@@ -181,7 +178,7 @@ ibis.util.consume(
 
 def execute_with_scope(
     expr,
-    scope,
+    scope: Scope,
     timecontext: Optional[TimeContext] = None,
     aggcontext=None,
     clients=None,
@@ -193,9 +190,10 @@ def execute_with_scope(
     ----------
     expr : ibis.expr.types.Expr
         The expression to execute.
-    scope : collections.Mapping
-        A dictionary mapping :class:`~ibis.expr.operations.Node` subclass
-        instances to concrete data such as a pandas DataFrame.
+    scope : Scope
+        A Scope class, with dictionary mapping
+        :class:`~ibis.expr.operations.Node` subclass instances to concrete
+        data such as a pandas DataFrame.
     timecontext : Optional[TimeContext]
         A tuple of (begin, end) that is passed from parent Node to children
         see [timecontext.py](ibis/pandas/execution/timecontext.py) for
@@ -225,8 +223,8 @@ def execute_with_scope(
         aggcontext=aggcontext,
         **kwargs,
     )
-    new_scope = deepcopy(scope)
-    set_scope_item(new_scope, pre_executed_scope)
+    new_scope = Scope.from_scope(scope)
+    new_scope.merge_scope(pre_executed_scope)
     result = execute_until_in_scope(
         expr,
         new_scope,
@@ -245,26 +243,26 @@ def execute_with_scope(
             **kwargs,
         ),
         **kwargs,
-    )[op]['value']
+    ).get(op, timecontext)
     return result
 
 
 @trace
 def execute_until_in_scope(
     expr,
-    scope,
+    scope: Scope,
     timecontext: Optional[TimeContext] = None,
     aggcontext=None,
     clients=None,
     post_execute_=None,
     **kwargs,
-):
+) -> Scope:
     """Execute until our op is in `scope`.
 
     Parameters
     ----------
     expr : ibis.expr.types.Expr
-    scope : Mapping
+    scope : Scope
     timecontext : Optional[TimeContext]
     aggcontext : Optional[AggregationContext]
     clients : List[ibis.client.Client]
@@ -278,13 +276,13 @@ def execute_until_in_scope(
     # base case: our op has been computed (or is a leaf data node), so
     # return the corresponding value
     op = expr.op()
-    if get_scope_item(scope, op, timecontext) is not None:
+    if scope.get(op, timecontext) is not None:
         return scope
 
     if isinstance(op, ops.Literal):
         # special case literals to avoid the overhead of dispatching
         # execute_node
-        return make_scope_item(
+        return Scope.make_scope(
             op,
             execute_literal(
                 op, op.value, expr.type(), aggcontext=aggcontext, **kwargs
@@ -317,12 +315,13 @@ def execute_until_in_scope(
         aggcontext=aggcontext,
         **kwargs,
     )
-    new_scope = deepcopy(scope)
-    set_scope_item(new_scope, pre_executed_scope)
+
+    new_scope = Scope.from_scope(scope)
+    new_scope.merge_scope(pre_executed_scope)
 
     # Short circuit: if pre_execute puts op in scope, then we don't need to
     # execute its computable_args
-    if get_scope_item(new_scope, op, timecontext) is not None:
+    if new_scope.get(op, timecontext) is not None:
         return new_scope
 
     # recursively compute each node's arguments until we've changed type.
@@ -346,7 +345,7 @@ def execute_until_in_scope(
             **kwargs,
         )
         if hasattr(arg, 'op')
-        else make_scope_item(arg, arg, timecontext)
+        else Scope.make_scope(arg, arg, timecontext)
         for (arg, timecontext) in zip(computable_args, arg_timecontexts)
     ]
 
@@ -359,12 +358,11 @@ def execute_until_in_scope(
     # there should be exactly one dictionary per computable argument
     assert len(computable_args) == len(scopes)
 
-    set_scope_item(new_scope, toolz.merge(*scopes))
+    for s in scopes:
+        new_scope.merge_scope(s)
     # pass our computed arguments to this node's execute_node implementation
     data = [
-        get_scope_item(new_scope, arg.op(), timecontext)
-        if hasattr(arg, 'op')
-        else arg
+        new_scope.get(arg.op(), timecontext) if hasattr(arg, 'op') else arg
         for arg in computable_args
     ]
     result = execute_node(
@@ -377,8 +375,7 @@ def execute_until_in_scope(
         **kwargs,
     )
     computed = post_execute_(op, result, timecontext=timecontext)
-
-    return make_scope_item(op, computed, timecontext)
+    return Scope.make_scope(op, computed, timecontext)
 
 
 execute = Dispatcher('execute')
@@ -427,7 +424,7 @@ def main_execute(
         * If no data are bound to the input expression
     """
     if scope is None:
-        scope = {}
+        scope = Scope()
 
     if timecontext is not None:
         # convert timecontext to datetime type, if time strings are provided
@@ -438,21 +435,15 @@ def main_execute(
 
     # TODO: make expresions hashable so that we can get rid of these .op()
     # calls everywhere
-    additional_scope = {}
     for k, v in params.items():
         if hasattr(k, 'op'):
-            item = make_scope_item(k.op(), v, timecontext)
+            item = Scope.make_scope(k.op(), v, timecontext)
         else:
-            item = make_scope_item(k, v, timecontext)
-        additional_scope = toolz.merge(additional_scope, item)
+            item = Scope.make_scope(k, v, timecontext)
+        scope.merge_scope(item)
 
-    new_scope = toolz.merge(scope, additional_scope)
     return execute_with_scope(
-        expr,
-        new_scope,
-        timecontext=timecontext,
-        aggcontext=aggcontext,
-        **kwargs,
+        expr, scope, timecontext=timecontext, aggcontext=aggcontext, **kwargs,
     )
 
 
