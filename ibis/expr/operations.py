@@ -249,16 +249,24 @@ class TableColumn(ValueOp):
         return klass(self, name=self.name)
 
 
-class PseudoColumn(TableColumn):
+class RowID(TableColumn):
     """
-    PseudoColumn expression.
+    A pseudocolumn Row ID expression.
+
+    Row ID returns a sequential integer, starting from 0, for each row.
 
     A Pseudocolumn is a "column" that yields a value when selected,
     but which is not an actual column of the table.
 
+    Note
+    ----
+    For the next pseudocolumn classes, that would be good to abstract
+    the PseudoColumn methods to be shared between PseudoColumn implementations
+
     See Also
     --------
     https://en.wikipedia.org/wiki/Pseudocolumn
+
     """
 
     def _validate(self):
@@ -267,14 +275,6 @@ class PseudoColumn(TableColumn):
     def _make_expr(self):
         klass = self.output_type()
         return klass(self, name=self.name)
-
-
-class RowID(PseudoColumn):
-    """
-    Operation for a pseudocolumn row ID.
-
-    Row ID returns a sequential integer, starting from 0, for each row.
-    """
 
     def output_type(self):
         return functools.partial(ir.IntegerColumn, dtype=dt.int64)
