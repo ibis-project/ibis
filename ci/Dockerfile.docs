@@ -1,7 +1,6 @@
 ARG PYTHON_VERSION
-FROM ibis:$PYTHON_VERSION-main
+FROM ibis:$PYTHON_VERSION
 
-ADD ci/requirements-docs.yml /
 COPY . /ibis
 WORKDIR /ibis
 
@@ -11,8 +10,6 @@ RUN apt-get -qq update --yes \
  && rm -rf /var/lib/apt/lists/* \
  && /opt/conda/bin/conda config --add channels conda-forge \
  && /opt/conda/bin/conda update --all --yes \
- && /opt/conda/bin/conda clean --all --yes \
- && /opt/conda/bin/conda env update --file=/requirements-docs.yml \
  && /opt/conda/bin/conda clean --all --yes \
  && pip install -e . --no-deps --ignore-installed --no-cache-dir
 

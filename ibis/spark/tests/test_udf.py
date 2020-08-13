@@ -8,7 +8,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.tests.backends import Spark
 
-pytestmark = pytest.mark.spark
+pytestmark = [pytest.mark.spark, pytest.mark.udf]
 
 py4j = pytest.importorskip('py4j')
 ps = pytest.importorskip('pyspark')
