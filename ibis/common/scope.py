@@ -54,7 +54,7 @@ from ibis.expr.typing import TimeContext
 
 
 class Scope:
-    def __init__(self, items={}):
+    def __init__(self, items):
         self.scope = items
 
     def get_scope(self):
@@ -84,7 +84,7 @@ class Scope:
     def from_scope(other_scope):
         """make a Scope class, copying other_scope
         """
-        scope = Scope()
+        scope = Scope({})
         scope.merge_scope(other_scope)
         return scope
 

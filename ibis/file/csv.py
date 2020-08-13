@@ -102,7 +102,7 @@ def csv_read_table(op, client, scope, **kwargs):
 def csv_pre_execute_selection(op, client, scope, timecontext=None, **kwargs):
     tables = filter(lambda t: t not in scope, physical_tables(op.table.op()))
 
-    ops = Scope()
+    ops = Scope({})
     for table in tables:
         path = client.dictionary[table.name]
         usecols = None

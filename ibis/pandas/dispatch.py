@@ -49,7 +49,7 @@ depth-first traversal of the tree.
 @pre_execute.register(ops.Node)
 @pre_execute.register(ops.Node, ibis.client.Client)
 def pre_execute_default(node, *clients, **kwargs):
-    return Scope()
+    return Scope({})
 
 
 # Merge the results of all client pre-execution with scope

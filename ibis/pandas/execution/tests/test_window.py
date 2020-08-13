@@ -590,7 +590,7 @@ def test_window_has_pre_execute_scope():
     @pre_execute.register(*signature)
     def test_pre_execute(op, client, **kwargs):
         called[0] += 1
-        return Scope()
+        return Scope({})
 
     data = {'key': list('abc'), 'value': [1, 2, 3], 'dup': list('ggh')}
     df = pd.DataFrame(data, columns=['key', 'value', 'dup'])

@@ -423,8 +423,9 @@ def main_execute(
     ValueError
         * If no data are bound to the input expression
     """
+
     if scope is None:
-        scope = Scope()
+        scope = Scope({})
 
     if timecontext is not None:
         # convert timecontext to datetime type, if time strings are provided
