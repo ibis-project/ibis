@@ -55,16 +55,16 @@ from ibis.expr.typing import TimeContext
 
 class Scope:
     def __init__(self, items):
-        self.scope = items
+        self.items = items
 
-    def get_scope(self):
+    def _get_items(self):
         """ Get all items in scope.
         """
-        return self.scope
+        return self.items
 
     @staticmethod
     def make_scope(op, result, timecontext: Optional[TimeContext]):
-        """make a Scope class, adding (op, result, timecontext) into the
+        """make a Scope instance, adding (op, result, timecontext) into the
            scope
 
         Parameters
@@ -76,13 +76,13 @@ class Scope:
 
         Returns
         -------
-        Scope: a new Scope class with op in it.
+        Scope: a new Scope instance with op in it.
         """
         return Scope({op: {'value': result, 'timecontext': timecontext}})
 
     @staticmethod
     def from_scope(other_scope):
-        """make a Scope class, copying other_scope
+        """make a Scope instance, copying other_scope
         """
         scope = Scope({})
         scope.merge_scope(other_scope)
@@ -105,11 +105,11 @@ class Scope:
         result: the cached result, an object whose types may differ in
         different backends.
         """
-        if op not in self.scope:
+        if op not in self.items:
             return None
         # for ops without timecontext
         if timecontext is None:
-            return self.scope[op].get('value', None)
+            return self.items[op].get('value', None)
         else:
             # For op with timecontext, ther are some ops cannot use cached
             # result with a different (larger) timecontext to get the
@@ -122,13 +122,13 @@ class Scope:
             # These are time context sensitive operations. Since these cases
             # are rare in acutal use case, we just enable optimization for
             # all nodes for now.
-            cached_timecontext = self.scope[op].get('timecontext', None)
+            cached_timecontext = self.items[op].get('timecontext', None)
             if cached_timecontext:
                 relation = compare_timecontext(timecontext, cached_timecontext)
                 if relation == TimeContextRelation.SUBSET:
-                    return self.scope[op].get('value', None)
+                    return self.items[op].get('value', None)
             else:
-                return self.scope[op].get('value', None)
+                return self.items[op].get('value', None)
         return None
 
     def merge_scope(self, other_scope, overwrite=False):
@@ -136,14 +136,14 @@ class Scope:
 
         Parameters
         ----------
-        other_scope: Scope
+        other_scope: Scope to be merged with
         overwrite: bool, if set to be True, force overwrite value if op
             already exists.
         """
-        for op, v in other_scope.get_scope().items():
+        for op, v in other_scope._get_items().items():
             # if get_scope returns a not None value, then data is already
             # cached in scope and it is at least a greater range than
             # the current timecontext, so we drop the item. Otherwise
             # add it into scope.
             if overwrite or self.get(op, v['timecontext']) is None:
-                self.scope[op] = v
+                self.items[op] = v
