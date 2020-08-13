@@ -107,6 +107,7 @@ from __future__ import absolute_import
 import datetime
 import functools
 import numbers
+from copy import copy
 from typing import Optional
 
 import numpy as np
@@ -218,7 +219,7 @@ def execute_with_scope(
         aggcontext=aggcontext,
         **kwargs,
     )
-    new_scope = Scope.from_scope(scope)
+    new_scope = copy(scope)
     new_scope.merge_scope(pre_executed_scope)
     result = execute_until_in_scope(
         expr,
@@ -311,7 +312,7 @@ def execute_until_in_scope(
         **kwargs,
     )
 
-    new_scope = Scope.from_scope(scope)
+    new_scope = copy(scope)
     new_scope.merge_scope(pre_executed_scope)
 
     # Short circuit: if pre_execute puts op in scope, then we don't need to

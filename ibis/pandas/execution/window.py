@@ -3,6 +3,7 @@
 import functools
 import operator
 import re
+from copy import copy
 from typing import NoReturn, Optional
 
 import pandas as pd
@@ -299,7 +300,7 @@ def execute_window_op(
             source = data
             post_process = _post_process_empty
 
-    new_scope = Scope.from_scope(scope)
+    new_scope = copy(scope)
     # Here groupby object should be add to the corresponding node in scope
     # for execution, data will be overwrite to a groupby object, so we
     # force an update regardless of time context

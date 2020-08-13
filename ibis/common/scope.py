@@ -68,8 +68,7 @@ class Scope:
         """
         return Scope({op: {'value': result, 'timecontext': timecontext}})
 
-    @staticmethod
-    def from_scope(other_scope):
+    def __copy__(other_scope):
         """make a Scope instance, copying other_scope
         """
         scope = Scope()
