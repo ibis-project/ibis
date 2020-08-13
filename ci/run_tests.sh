@@ -5,7 +5,7 @@
 
 # TODO have a more consistent test structure among backends
 # so not so many directories need to be checked
-TESTS_DIRS="ibis/tests ibis/expr/tests ibis/sql/tests ibis/sql/vertica/tests ibis/sql/presto/tests ibis/sql/redshift/tests"
+TESTS_DIRS="ibis/tests ibis/expr/tests ibis/sql/tests"
 for BACKEND in $PYTEST_BACKENDS; do
     if [[ -d ibis/$BACKEND/tests ]]; then
         TESTS_DIRS="$TESTS_DIRS ibis/$BACKEND/tests"
