@@ -4,7 +4,7 @@ from pkg_resources import parse_version
 
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
-from ibis.common.scope import Scope
+from ibis.expr.scope import Scope
 from ibis.file.client import FileClient
 from ibis.pandas.api import PandasDialect
 from ibis.pandas.core import execute, execute_node, pre_execute

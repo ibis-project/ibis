@@ -122,7 +122,7 @@ import ibis.expr.types as ir
 import ibis.expr.window as win
 import ibis.pandas.aggcontext as agg_ctx
 from ibis.client import find_backends
-from ibis.common.scope import Scope
+from ibis.expr.scope import Scope
 from ibis.expr.timecontext import canonicalize_context
 from ibis.expr.typing import TimeContext
 from ibis.pandas.dispatch import (

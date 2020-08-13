@@ -7,7 +7,7 @@ from multipledispatch import Dispatcher
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-from ibis.common.scope import Scope
+from ibis.expr.scope import Scope
 from ibis.pandas.trace import TraceTwoLevelDispatcher
 
 # Individual operation execution

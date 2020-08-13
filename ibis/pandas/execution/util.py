@@ -4,7 +4,7 @@ import toolz
 
 import ibis
 import ibis.common.exceptions as com
-from ibis.common.scope import Scope
+from ibis.expr.scope import Scope
 from ibis.pandas.core import execute
 
 

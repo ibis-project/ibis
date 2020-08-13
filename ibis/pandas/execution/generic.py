@@ -21,8 +21,8 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.pandas.aggcontext as agg_ctx
-from ibis.common.scope import Scope
 from ibis.compat import DatetimeTZDtype
+from ibis.expr.scope import Scope
 from ibis.expr.timecontext import TIME_COL
 from ibis.expr.typing import TimeContext
 from ibis.pandas.core import (

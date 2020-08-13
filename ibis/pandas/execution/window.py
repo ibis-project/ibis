@@ -14,7 +14,7 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.window as win
 import ibis.pandas.aggcontext as agg_ctx
-from ibis.common.scope import Scope
+from ibis.expr.scope import Scope
 from ibis.expr.timecontext import TIME_COL
 from ibis.expr.typing import TimeContext
 from ibis.pandas.aggcontext import AggregationContext

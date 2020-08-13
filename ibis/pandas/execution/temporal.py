@@ -7,7 +7,7 @@ from pandas.core.groupby import SeriesGroupBy
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.common.scope import Scope
+from ibis.expr.scope import Scope
 from ibis.pandas.core import (
     date_types,
     integer_types,

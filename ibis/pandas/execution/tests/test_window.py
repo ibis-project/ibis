@@ -9,7 +9,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.common.scope import Scope
+from ibis.expr.scope import Scope
 from ibis.expr.window import get_preceding_value, rows_with_max_lookback
 from ibis.pandas.aggcontext import AggregationContext, window_agg_udf
 from ibis.pandas.dispatch import pre_execute

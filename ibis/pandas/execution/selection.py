@@ -16,7 +16,7 @@ from toolz import compose, concat, concatv, first, unique
 
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.common.scope import Scope
+from ibis.expr.scope import Scope
 from ibis.expr.typing import TimeContext
 from ibis.pandas.core import execute
 from ibis.pandas.dispatch import execute_node
