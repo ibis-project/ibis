@@ -431,11 +431,10 @@ def main_execute(
 
     # TODO: make expresions hashable so that we can get rid of these .op()
     # calls everywhere
-    params = {
-        Scope.make_scope(getattr(k, 'op', k), v, timecontext)
+    params = [
+        Scope.make_scope(k.op() if hasattr(k, 'op') else k, v, timecontext)
         for k, v in params.items()
-    }
-
+    ]
     scope.merge_scopes(params)
     return execute_with_scope(
         expr, scope, timecontext=timecontext, aggcontext=aggcontext, **kwargs,
