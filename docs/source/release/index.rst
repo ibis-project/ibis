@@ -12,6 +12,7 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :support:`2304` Update ``google-cloud-bigquery`` dependency minimum version to 1.12.0
 * :bug:`1320` Added verbose logging to SQL backends
 * :feature:`2285` Add support for casting category dtype in pandas backend
 * :feature:`2270` Add support for Union in the PySpark backend
