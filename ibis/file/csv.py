@@ -100,7 +100,10 @@ def csv_read_table(op, client, scope, **kwargs):
 
 @pre_execute.register(ops.Selection, CSVClient)
 def csv_pre_execute_selection(op, client, scope, timecontext=None, **kwargs):
-    tables = filter(lambda t: t not in scope, physical_tables(op.table.op()))
+    tables = filter(
+        lambda t: scope.get(t, timecontext) is None,
+        physical_tables(op.table.op()),
+    )
 
     ops = Scope({})
     for table in tables:
