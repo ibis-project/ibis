@@ -353,8 +353,7 @@ def execute_until_in_scope(
     # there should be exactly one dictionary per computable argument
     assert len(computable_args) == len(scopes)
 
-    for s in scopes:
-        new_scope.merge_scope(s)
+    new_scope.merge_scopes(scopes)
     # pass our computed arguments to this node's execute_node implementation
     data = [
         new_scope.get(arg.op(), timecontext) if hasattr(arg, 'op') else arg
@@ -420,7 +419,7 @@ def main_execute(
     """
 
     if scope is None:
-        scope = Scope({})
+        scope = Scope()
 
     if timecontext is not None:
         # convert timecontext to datetime type, if time strings are provided
@@ -431,13 +430,12 @@ def main_execute(
 
     # TODO: make expresions hashable so that we can get rid of these .op()
     # calls everywhere
-    for k, v in params.items():
-        if hasattr(k, 'op'):
-            item = Scope.make_scope(k.op(), v, timecontext)
-        else:
-            item = Scope.make_scope(k, v, timecontext)
-        scope.merge_scope(item)
+    params = {
+        Scope.make_scope(getattr(k, 'op', k), v, timecontext)
+        for k, v in params.items()
+    }
 
+    scope.merge_scopes(params)
     return execute_with_scope(
         expr, scope, timecontext=timecontext, aggcontext=aggcontext, **kwargs,
     )

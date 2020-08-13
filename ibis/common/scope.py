@@ -5,20 +5,6 @@
     ibis node instances to concrete data, and the time context associate
     with it(if any).
 
-    `scope` has the structure of:
-    {
-        op[ibis.expr.operations.Node]: {
-            "value": v[Object]
-            "timecontext": t[TimeContext]
-        }
-        ...
-    }
-
-    `scope` uses `op` as the key, `v` is the cached result of executing `op`,
-    the type of the result may differ in different backends. `t` is the time
-    context associate with the result, set it to None if there is no time
-    context in execution.
-
     When there are no time contexts associate with the cached result, getting
     and setting values in Scope would be as simple as get and set in a normal
     dictonary. With time contexts, we need the following logic for getting
@@ -54,8 +40,10 @@ from ibis.expr.typing import TimeContext
 
 
 class Scope:
-    def __init__(self, items):
-        self.items = items
+    def __init__(self, items={}):
+        self.items = {}
+        if items:
+            self.items = items
 
     def _get_items(self):
         """ Get all items in scope.
@@ -84,7 +72,7 @@ class Scope:
     def from_scope(other_scope):
         """make a Scope instance, copying other_scope
         """
-        scope = Scope({})
+        scope = Scope()
         scope.merge_scope(other_scope)
         return scope
 
@@ -147,3 +135,7 @@ class Scope:
             # add it into scope.
             if overwrite or self.get(op, v['timecontext']) is None:
                 self.items[op] = v
+
+    def merge_scopes(self, other_scopes, overwrite=False):
+        for s in other_scopes:
+            self.merge_scope(s)

@@ -65,19 +65,19 @@ def compute_projection_scalar_expr(
 
     data_columns = frozenset(data.columns)
 
-    for t in op.root_tables():
-        scope.merge_scope(
-            Scope.make_scope(
-                t,
-                map_new_column_names_to_data(
-                    remap_overlapping_column_names(
-                        parent_table_op, t, data_columns
-                    ),
-                    data,
+    scope.merge_scopes(
+        Scope.make_scope(
+            t,
+            map_new_column_names_to_data(
+                remap_overlapping_column_names(
+                    parent_table_op, t, data_columns
                 ),
-                timecontext,
+                data,
             ),
+            timecontext,
         )
+        for t in op.root_tables()
+    )
     scalar = execute(expr, scope=scope, **kwargs)
     result = pd.Series([scalar], name=name).repeat(len(data.index))
     result.index = data.index
@@ -119,19 +119,20 @@ def compute_projection_column_expr(
         )
 
     data_columns = frozenset(data.columns)
-    for t in op.root_tables():
-        scope.merge_scope(
-            Scope.make_scope(
-                t,
-                map_new_column_names_to_data(
-                    remap_overlapping_column_names(
-                        parent_table_op, t, data_columns
-                    ),
-                    data,
+
+    scope.merge_scopes(
+        Scope.make_scope(
+            t,
+            map_new_column_names_to_data(
+                remap_overlapping_column_names(
+                    parent_table_op, t, data_columns
                 ),
-                timecontext,
+                data,
             ),
+            timecontext,
         )
+        for t in op.root_tables()
+    )
 
     result = execute(expr, scope=scope, timecontext=timecontext, **kwargs)
     assert result_name is not None, 'Column selection name is None'
@@ -247,6 +248,7 @@ def _compute_predicates(
         # handle suffixes
         data_columns = frozenset(data.columns)
 
+        additional_scope = Scope()
         for root_table in root_tables:
             mapping = remap_overlapping_column_names(
                 table_op, root_table, data_columns
@@ -255,10 +257,11 @@ def _compute_predicates(
                 new_data = data.loc[:, mapping.keys()].rename(columns=mapping)
             else:
                 new_data = data
-            scope.merge_scope(
+            additional_scope.merge_scope(
                 Scope.make_scope(root_table, new_data, timecontext)
             )
 
+        scope.merge_scope(additional_scope)
         yield execute(predicate, scope=scope, **kwargs)
 
 

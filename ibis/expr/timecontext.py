@@ -48,16 +48,16 @@ TIME_COL = 'time'
 
 class TimeContextRelation(enum.Enum):
     """ Enum to classify the relationship between two time contexts
-        Assume that we have two timecontext c1 (begin1, end1),
-        c2(begin2, end2):
-        SUBSET means c1 is a subset of c2, begin1 is greater than or equal to
-        begin2, and end1 is less than or equal to end2.
-        Likewise, SUPERSET means that begin1 is earlier than begin2, and end1
-        is later than end2.
-        If neither of the two contexts is a superset of each other, and they
-        share some time range in common, we called them OVERLAP.
-        And NONOVERLAP means the two contexts doesn't overlap at all, which
-        means end1 is earlier than begin2 or end2 is earlier than begin1
+    Assume that we have two timecontext c1 (begin1, end1),
+    c2(begin2, end2):
+    SUBSET means c1 is a subset of c2, begin1 is greater than or equal to
+    begin2, and end1 is less than or equal to end2.
+    Likewise, SUPERSET means that begin1 is earlier than begin2, and end1
+    is later than end2.
+    If neither of the two contexts is a superset of each other, and they
+    share some time range in common, we called them OVERLAP.
+    And NONOVERLAP means the two contexts doesn't overlap at all, which
+    means end1 is earlier than begin2 or end2 is earlier than begin1
     """
 
     SUBSET = 0

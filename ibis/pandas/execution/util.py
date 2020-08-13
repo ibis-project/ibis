@@ -15,8 +15,10 @@ def compute_sort_key(key, data, timecontext, scope=None, **kwargs):
             return by, None
         return by.get_name(), None
     except com.ExpressionError:
-        for t in by.op().root_tables():
-            scope.merge_scope(Scope.make_scope(t, data, timecontext))
+        scope.merge_scopes(
+            Scope.make_scope(t, data, timecontext)
+            for t in by.op().root_tables()
+        )
         new_column = execute(by, scope=scope, **kwargs)
         name = ibis.util.guid()
         new_column.name = name
