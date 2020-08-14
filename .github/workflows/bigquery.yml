@@ -17,11 +17,11 @@ jobs:
     - name: checkout
       uses: actions/checkout@v1
 
-    - name: set up environment
-      run: GOOGLE_BIGQUERY_PROJECT_ID="ibis-gbq" ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
-
     - name: set up bigquery credentials
       run: base64 --decode --ignore-garbage <<< "${{ secrets.GCLOUD_SERVICE_KEY }}" > gcloud-service-key.json
+
+    - name: set up environment
+      run: GOOGLE_BIGQUERY_PROJECT_ID="ibis-gbq" GOOGLE_APPLICATION_CREDENTIALS=gcloud-service-key.json ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
 
     - name: run tests
       run: PYTEST_BACKENDS=$BACKENDS GOOGLE_BIGQUERY_PROJECT_ID="ibis-gbq" GOOGLE_APPLICATION_CREDENTIALS=gcloud-service-key.json ./ci/run_tests.sh
