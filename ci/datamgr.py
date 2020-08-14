@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import io
-import json
 import logging
 import os
 import warnings
@@ -477,9 +476,15 @@ def clickhouse(schema, tables, data_directory, **params):
 
 
 @cli.command()
+@click.option(
+    '-S',
+    '--schema',
+    type=click.File('rt'),
+    default=str(SCRIPT_DIR / 'schema' / 'bigquery.sql'),
+)
 @click.option('-d', '--data-directory', default=DATA_DIR)
 @click.option('-i', '--ignore-missing-dependency', is_flag=True, default=False)
-def bigquery(data_directory, ignore_missing_dependency, **params):
+def bigquery(schema, data_directory, ignore_missing_dependency, **params):
     try:
         import google.api_core.exceptions
         from google.cloud import bigquery
@@ -501,24 +506,17 @@ def bigquery(data_directory, ignore_missing_dependency, **params):
     except google.api_core.exceptions.Conflict:
         pass  # Skip if already created.
 
-    # Set up main data table.
+    # Set up main data tables.
     data_directory = Path(data_directory)
     functional_alltypes_path = data_directory / 'functional_alltypes.csv'
-    functional_alltypes_schema = []
-    schema_path = data_directory / 'functional_alltypes_bigquery_schema.json'
-    with open(str(schema_path)) as schemafile:
-        schema_json = json.load(schemafile)
-        for field in schema_json:
-            functional_alltypes_schema.append(
-                bigquery.SchemaField.from_api_repr(field)
-            )
-    load_config = bigquery.LoadJobConfig()
-    load_config.write_disposition = 'WRITE_TRUNCATE'
-    load_config.skip_leading_rows = 1  # skip the header row.
-    load_config.schema = functional_alltypes_schema
+    job = bqclient.query(schema.read())
+    job.result()
+    if job.error_result:
+        raise click.ClickException(str(job.error_result))
 
     # Load main data table.
-    functional_alltypes_schema = []
+    load_config = bigquery.LoadJobConfig()
+    load_config.skip_leading_rows = 1  # skip the header row.
     with open(str(functional_alltypes_path), 'rb') as csvfile:
         job = bqclient.load_table_from_file(
             csvfile,
@@ -532,7 +530,6 @@ def bigquery(data_directory, ignore_missing_dependency, **params):
     # Load an ingestion time partitioned table.
     functional_alltypes_path = data_directory / 'functional_alltypes.csv'
     with open(str(functional_alltypes_path), 'rb') as csvfile:
-        load_config.time_partitioning = bigquery.TimePartitioning()
         job = bqclient.load_table_from_file(
             csvfile,
             testing_dataset.table('functional_alltypes_parted'),
