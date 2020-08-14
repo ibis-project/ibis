@@ -19,6 +19,7 @@ import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.signature as sig
 import ibis.impala.compiler as comp
+import ibis.udf.validate as v
 import ibis.util as util
 
 __all__ = [
@@ -121,6 +122,7 @@ class ImpalaUDF(ScalarFunction, ImpalaFunction):
     def __init__(
         self, inputs, output, so_symbol=None, lib_path=None, name=None
     ):
+        v.validate_output_type(output)
         self.so_symbol = so_symbol
         ImpalaFunction.__init__(self, name=name, lib_path=lib_path)
         ScalarFunction.__init__(self, inputs, output, name=self.name)
@@ -154,6 +156,8 @@ class ImpalaUDA(AggregateFunction, ImpalaFunction):
         self.merge_fn = merge_fn
         self.finalize_fn = finalize_fn
         self.serialize_fn = serialize_fn
+
+        v.validate_output_type(output)
 
         ImpalaFunction.__init__(self, name=name, lib_path=lib_path)
         AggregateFunction.__init__(self, inputs, output, name=self.name)

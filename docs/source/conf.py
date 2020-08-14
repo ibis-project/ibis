@@ -36,6 +36,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.extlinks',
+    'sphinx.ext.intersphinx',
     'sphinx.ext.mathjax',
     'sphinx.ext.napoleon',
     'nbsphinx',
@@ -116,6 +117,14 @@ pygments_style = 'sphinx'
 # If true, keep warnings as "system message" paragraphs in the built documents.
 # keep_warnings = False
 
+# -- Options for intersphinx ----------------------------------------------
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+    'pydata-google-auth': (
+        'https://pydata-google-auth.readthedocs.io/en/latest/',
+        None,
+    ),
+}
 
 # -- Options for HTML output ----------------------------------------------
 

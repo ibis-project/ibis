@@ -12,22 +12,43 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :support:`2304` Update ``google-cloud-bigquery`` dependency minimum version to 1.12.0
+* :bug:`1320` Added verbose logging to SQL backends
+* :feature:`2285` Add support for casting category dtype in pandas backend
+* :feature:`2270` Add support for Union in the PySpark backend
+* :feature:`2260` Add support for implementign custom window object for pandas backend
+* :bug:`2237` Add missing float types to pandas backend
+* :bug:`2252` Allow group_by and order_by as window operation input in pandas backend
+* :feature:`2246` Implement two level dispatcher for execute_node
+* :feature:`2233` Add ibis.pandas.trace module to log time and call stack information.
+* :feature:`2198` Validate that the output type of a UDF is a single element
+* :bug:`2223` Fix PySpark compiler error when elementwise UDF output_type is Decimal or Timestamp
+* :feature:`2186` ZeroIfNull and NullIfZero implementation for OmniSciDB
+* :bug:`2157` Fix interactive mode returning a expression instead of the value when used in Jupyter
 * :feature:`2093` IsNan implementation for OmniSciDB
 * :feature:`2094` [OmnisciDB] Support add_columns and drop_columns for OmnisciDB table
+* :support:`2234` Remove "experimental" mentions for OmniSciDB and Pandas backends
 * :bug:`2127` Fix PySpark error when doing alias after selection
+* :support:`2244` Use an OmniSciDB image stable on CI
+* :feature:`2175` Create ExtractQuarter operation and add its support to Clickhouse, CSV, Impala, MySQL, OmniSciDB, Pandas, Parquet, PostgreSQL, PySpark, SQLite and Spark
 * :feature:`2126` Add translation rules for isnull() and notnull() for pyspark backend
+* :feature:`2232` Add window operations support to SQLite
 * :feature:`2062` Implement read_csv for omniscidb backend
+* :feature:`2171` [OmniSciDB] Add support to week extraction
 * :feature:`2097` Date, DateDiff and TimestampDiff implementations for OmniSciDB
-* :bug:`2170` Fix millisecond issue for OmniSciDB :issue:`2167`, MySQL :issue:`2169`, PostgreSQL :issue:`2166` and Pandas :issue:`2168` backends
+* :bug:`2170` Fix millisecond issue for OmniSciDB :issue:`2167`, MySQL :issue:`2169`, PostgreSQL :issue:`2166`, Pandas :issue:`2168`, BigQuery :issue:`2273` backends
 * :feature:`2060` Add initial support for ibis.random function
 * :support:`2107` Added fragment_size to table creation for OmniSciDB
+* :feature:`2178` Added epoch_seconds extraction operation to Clickhouse, CSV, Impala, MySQL, OmniSciDB, Pandas, Parquet, PostgreSQL, PySpark, SQLite, Spark and BigQuery :issue:`2273`
 * :feature:`2117` Add non-nullable info to schema output
 * :feature:`2083` fillna and nullif implementations for OmnisciDB
+* :feature:`1981` Add load_data to sqlalchemy's backends and fix database parameter for load/create/drop when database parameter is the same than the current database
 * :support:`2096` Added round() support for OmniSciDB
 * :feature:`2125` [OmniSciDB] Add support for within, d_fully_within and point
 * :feature:`2086` OmniSciDB - Refactor DDL and Client; Add temporary parameter to create_table and "force" parameter to drop_view
 * :support:`2113` Enabled cumulative ops support for OmniSciDB
 * :bug:`2134` [OmniSciDB] Fix TopK when used as filter
+* :feature:`2173` Create ExtractDayOfYear operation and add its support to Clickhouse, CSV, MySQL, OmniSciDB, Pandas, Parquet, PostgreSQL, PySpark, SQLite and Spark
 * :feature:`2095` Implementations of Log Log2 Log10 for OmniSciDB backend
 * :release:`1.3.0 <2020-02-27>`
 * :support:`2066` Add support to Python 3.8

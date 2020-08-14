@@ -1,8 +1,10 @@
 """Code for computing window functions with ibis and pandas."""
 
+import functools
 import operator
 import re
 from collections import OrderedDict
+from typing import NoReturn, Optional
 
 import pandas as pd
 import toolz
@@ -12,7 +14,11 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.window as win
 import ibis.pandas.aggcontext as agg_ctx
+from ibis.expr.typing import TimeContext
+from ibis.pandas.aggcontext import AggregationContext
 from ibis.pandas.core import (
+    TIME_COL,
+    compute_time_context,
     date_types,
     execute,
     integer_types,
@@ -66,29 +72,157 @@ def _post_process_group_by_order_by(series, parent, order_by, group_by):
     return series
 
 
+@functools.singledispatch
+def get_aggcontext(
+    window,
+    *,
+    scope,
+    operand,
+    operand_dtype,
+    parent,
+    group_by,
+    order_by,
+    **kwargs,
+) -> NoReturn:
+    raise NotImplementedError(
+        f"get_aggcontext is not implemented for {type(window).__name__}"
+    )
+
+
+@get_aggcontext.register(win.Window)
+def get_aggcontext_window(
+    window,
+    *,
+    scope,
+    operand,
+    operand_dtype,
+    parent,
+    group_by,
+    order_by,
+    **kwargs,
+) -> AggregationContext:
+    # no order by or group by: default summarization aggcontext
+    #
+    # if we're reducing and we have an order by expression then we need to
+    # expand or roll.
+    #
+    # otherwise we're transforming
+
+    if not group_by and not order_by:
+        aggcontext = agg_ctx.Summarize()
+    elif (
+        isinstance(
+            operand.op(), (ops.Reduction, ops.CumulativeOp, ops.Any, ops.All)
+        )
+        and order_by
+    ):
+        # XXX(phillipc): What a horror show
+        preceding = window.preceding
+        if preceding is not None:
+            max_lookback = window.max_lookback
+            assert not isinstance(operand.op(), ops.CumulativeOp)
+            aggcontext = agg_ctx.Moving(
+                preceding,
+                max_lookback,
+                parent=parent,
+                group_by=group_by,
+                order_by=order_by,
+                dtype=operand_dtype,
+            )
+        else:
+            # expanding window
+            aggcontext = agg_ctx.Cumulative(
+                parent=parent,
+                group_by=group_by,
+                order_by=order_by,
+                dtype=operand_dtype,
+            )
+    else:
+        # groupby transform (window with a partition by clause in SQL parlance)
+        aggcontext = agg_ctx.Transform(
+            parent=parent,
+            group_by=group_by,
+            order_by=order_by,
+            dtype=operand_dtype,
+        )
+
+    return aggcontext
+
+
+def trim_with_timecontext(data, timecontext: Optional[TimeContext]):
+    """ Trim data within time range defined by timecontext
+
+        This is a util function used in ``execute_window_op``, where time
+        context might be adjusted for calculation. Data must be trimmed
+        within the original time context before return.
+
+    """
+    # noop if timecontext is None
+    if not timecontext:
+        return data
+
+    df = data.reset_index()
+    name = data.name
+
+    # Filter the data, here we preserve the time index so that when user is
+    # computing a single column, the computation and the relevant time
+    # indexes are retturned.
+    subset = df.loc[df[TIME_COL].between(*timecontext)]
+
+    # get index columns for the Series
+    non_target_columns = list(subset.columns.difference([name]))
+
+    # set the correct index for return Seires
+    indexed_subset = subset.set_index(non_target_columns)
+    return indexed_subset[name]
+
+
 @execute_node.register(ops.WindowOp, pd.Series, win.Window)
 def execute_window_op(
-    op, data, window, scope=None, aggcontext=None, clients=None, **kwargs
+    op,
+    data,
+    window,
+    scope=None,
+    timecontext: Optional[TimeContext] = None,
+    aggcontext=None,
+    clients=None,
+    **kwargs,
 ):
     operand = op.expr
     # pre execute "manually" here because otherwise we wouldn't pickup
     # relevant scope changes from the child operand since we're managing
     # execution of that by hand
     operand_op = operand.op()
+
+    new_timecontext = None
+    if timecontext:
+        arg_timecontexts = compute_time_context(op, timecontext=timecontext)
+        # timecontext is the original time context required by parent node
+        # of this WindowOp, while new_timecontext is the adjusted context
+        # of this Window, since we are doing a manual execution here, use
+        # new_timecontext in later execution phases
+        new_timecontext = arg_timecontexts[0]
+
     pre_executed_scope = pre_execute(
-        operand_op, *clients, scope=scope, aggcontext=aggcontext, **kwargs
+        operand_op,
+        *clients,
+        scope=scope,
+        timecontext=new_timecontext,
+        aggcontext=aggcontext,
+        **kwargs,
     )
     scope = toolz.merge(scope, pre_executed_scope)
     (root,) = op.root_tables()
     root_expr = root.to_expr()
+
     data = execute(
         root_expr,
         scope=scope,
+        timecontext=new_timecontext,
         clients=clients,
         aggcontext=aggcontext,
         **kwargs,
     )
-
     following = window.following
     order_by = window._order_by
 
@@ -107,7 +241,12 @@ def execute_window_op(
         key_op.name
         if isinstance(key_op, ops.TableColumn)
         else execute(
-            key, scope=scope, clients=clients, aggcontext=aggcontext, **kwargs
+            key,
+            scope=scope,
+            clients=clients,
+            timecontext=new_timecontext,
+            aggcontext=aggcontext,
+            **kwargs,
         )
         for key, key_op in zip(
             group_by, map(operator.methodcaller('op'), group_by)
@@ -152,53 +291,21 @@ def execute_window_op(
     operand_type = operand.type()
     operand_dtype = operand_type.to_pandas()
 
-    # no order by or group by: default summarization aggcontext
-    #
-    # if we're reducing and we have an order by expression then we need to
-    # expand or roll.
-    #
-    # otherwise we're transforming
-    if not grouping_keys and not ordering_keys:
-        aggcontext = agg_ctx.Summarize()
-    elif (
-        isinstance(
-            operand.op(), (ops.Reduction, ops.CumulativeOp, ops.Any, ops.All)
-        )
-        and ordering_keys
-    ):
-        # XXX(phillipc): What a horror show
-        preceding = window.preceding
-        if preceding is not None:
-            max_lookback = window.max_lookback
-            assert not isinstance(operand.op(), ops.CumulativeOp)
-            aggcontext = agg_ctx.Moving(
-                preceding,
-                max_lookback,
-                parent=source,
-                group_by=grouping_keys,
-                order_by=ordering_keys,
-                dtype=operand_dtype,
-            )
-        else:
-            # expanding window
-            aggcontext = agg_ctx.Cumulative(
-                parent=source,
-                group_by=grouping_keys,
-                order_by=ordering_keys,
-                dtype=operand_dtype,
-            )
-    else:
-        # groupby transform (window with a partition by clause in SQL parlance)
-        aggcontext = agg_ctx.Transform(
-            parent=source,
-            group_by=grouping_keys,
-            order_by=ordering_keys,
-            dtype=operand_dtype,
-        )
+    aggcontext = get_aggcontext(
+        window,
+        scope=scope,
+        operand=operand,
+        operand_dtype=operand_dtype,
+        parent=source,
+        group_by=grouping_keys,
+        order_by=ordering_keys,
+        **kwargs,
+    )
 
     result = execute(
         operand,
         scope=new_scope,
+        timecontext=new_timecontext,
         aggcontext=aggcontext,
         clients=clients,
         **kwargs,
@@ -207,6 +314,10 @@ def execute_window_op(
     assert len(data) == len(
         series
     ), 'input data source and computed column do not have the same length'
+
+    # trim data to original time context
+    series = trim_with_timecontext(series, timecontext)
+
     return series
 
 

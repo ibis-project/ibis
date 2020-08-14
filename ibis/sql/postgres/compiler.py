@@ -67,11 +67,11 @@ def _string_find(t, expr):
     return sa.func.strpos(sa_arg, sa_substr) - 1
 
 
-def _extract(fmt):
-    def translator(t, expr):
+def _extract(fmt, output_type=sa.SMALLINT):
+    def translator(t, expr, output_type=output_type):
         (arg,) = expr.op().args
         sa_arg = t.translate(arg)
-        return sa.cast(sa.extract(fmt, sa_arg), sa.SMALLINT)
+        return sa.cast(sa.extract(fmt, sa_arg), output_type)
 
     return translator
 
@@ -677,6 +677,9 @@ _operation_registry.update(
         ops.ExtractYear: _extract('year'),
         ops.ExtractMonth: _extract('month'),
         ops.ExtractDay: _extract('day'),
+        ops.ExtractDayOfYear: _extract('doy'),
+        ops.ExtractQuarter: _extract('quarter'),
+        ops.ExtractEpochSeconds: _extract('epoch', sa.BigInteger),
         ops.ExtractHour: _extract('hour'),
         ops.ExtractMinute: _extract('minute'),
         ops.ExtractSecond: _second,

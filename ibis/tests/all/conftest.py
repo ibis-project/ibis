@@ -1,4 +1,5 @@
 import operator
+import os
 
 import numpy as np
 import pandas as pd
@@ -121,9 +122,11 @@ def pytest_pyfunc_call(pyfuncitem):
 
 pytestmark = pytest.mark.backend
 
+pytest_backends = os.environ.get('PYTEST_BACKENDS', '').split(' ')
 params_backend = [
     pytest.param(backend, marks=getattr(pytest.mark, backend.__name__.lower()))
     for backend in ALL_BACKENDS
+    if backend in pytest_backends or not pytest_backends
 ]
 
 
@@ -414,3 +417,39 @@ def temp_view(con) -> str:
     finally:
         if hasattr(con, 'drop_view'):
             con.drop_view(name, force=True)
+
+
+@pytest.fixture(scope='session')
+def current_data_db(con, backend) -> str:
+    """Return current database name."""
+    if not hasattr(con, 'current_database'):
+        pytest.skip(
+            f'{backend.name} backend doesn\'t have current_database method.'
+        )
+    return con.current_database
+
+
+@pytest.fixture
+def alternate_current_database(con, backend, current_data_db: str) -> str:
+    """Create a temporary database and yield its name.
+    Drops the created database upon completion.
+
+    Parameters
+    ----------
+    con : ibis.client.Client
+    current_data_db : str
+    Yields
+    -------
+    str
+    """
+    name = _random_identifier('database')
+    if not hasattr(con, 'create_database'):
+        pytest.skip(
+            f'{backend.name} backend doesn\'t have create_database method.'
+        )
+    con.create_database(name)
+    try:
+        yield name
+    finally:
+        con.set_database(current_data_db)
+        con.drop_database(name, force=True)

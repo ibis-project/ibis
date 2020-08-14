@@ -277,11 +277,38 @@ def _extract_field(sql_attr):
         arg_str = translator.translate(arg)
         result = 'EXTRACT({} FROM {})'.format(sql_attr, arg_str)
 
+        if sql_attr == 'ISODOW':
+            result += '- 1'
+
         if adjustment:
             # used by time extraction
             result = ' mod({}, {})'.format(result, adjustment)
 
         return result
+
+    return extract_field_formatter
+
+
+def _extract_field_dow_name(sql_attr):
+    def extract_field_formatter(translator, expr, sql_attr=sql_attr):
+        op = expr.op()
+        week_names = [
+            'Monday',
+            'Tuesday',
+            'Wednesday',
+            'Thursday',
+            'Friday',
+            'Saturday',
+            'Sunday',
+        ]
+
+        expr_new = ops.DayOfWeekIndex(op.args[0]).to_expr()
+        expr_new = expr_new.case()
+        for i in range(7):
+            expr_new = expr_new.when(i, week_names[i])
+        expr_new = expr_new.else_('').end()
+
+        return translator.translate(expr_new)
 
     return extract_field_formatter
 
@@ -505,6 +532,16 @@ def _ifnull(translator, expr):
     return 'CASE WHEN {} IS NULL THEN {} ELSE {} END'.format(
         col_name, value, col_name
     )
+
+
+def _nullifzero(translator, expr):
+    col_expr = expr.op().args[0]
+    return translator.translate(col_expr.nullif(0))
+
+
+def _zeroifnull(translator, expr):
+    col_expr = expr.op().args[0]
+    return translator.translate(col_expr.fillna(0))
 
 
 def literal(translator, expr: ibis.expr.operations.Literal) -> str:
@@ -1003,6 +1040,11 @@ _date_ops = {
     ops.ExtractYear: _extract_field('YEAR'),
     ops.ExtractMonth: _extract_field('MONTH'),
     ops.ExtractDay: _extract_field('DAY'),
+    ops.ExtractDayOfYear: _extract_field('DOY'),
+    ops.ExtractQuarter: _extract_field('QUARTER'),
+    ops.DayOfWeekIndex: _extract_field('ISODOW'),
+    ops.DayOfWeekName: _extract_field_dow_name('ISODOW'),
+    ops.ExtractEpochSeconds: _extract_field('EPOCH'),
     ops.ExtractHour: _extract_field('HOUR'),
     ops.ExtractMinute: _extract_field('MINUTE'),
     ops.ExtractSecond: _extract_field('SECOND'),
@@ -1041,6 +1083,8 @@ _general_ops = {
     ops.IfNull: _ifnull,
     ops.NullIf: fixed_arity('nullif', 2),
     ops.IsNan: unary('isNan'),
+    ops.NullIfZero: _nullifzero,
+    ops.ZeroIfNull: _zeroifnull,
 }
 
 # WINDOW
@@ -1072,7 +1116,6 @@ _unsupported_ops = [
     ops.NTile,
     ops.NthValue,
     ops.GroupConcat,
-    ops.NullIfZero,
     ops.IsInf,
     # string
     ops.Lowercase,
@@ -1106,8 +1149,6 @@ _unsupported_ops = [
     # date/time/timestamp
     ops.TimestampFromUNIX,
     ops.TimeTruncate,
-    ops.DayOfWeekIndex,
-    ops.DayOfWeekName,
     # table
     ops.Union,
 ]

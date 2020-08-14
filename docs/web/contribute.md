@@ -5,23 +5,29 @@
 
 To contribute to ibis you need to clone the repository from GitHub:
 
-    git clone https://github.com/ibis-project/ibis
-
+```sh
+git clone https://github.com/ibis-project/ibis
+```
 
 ## Set Up a Development Environment
 
 1. [Install miniconda](https://docs.conda.io/en/latest/miniconda.html)
 2. Create a Conda environment suitable for ibis development:
+   
+        :::sh
+        conda env create -n ibis-dev --file ci/requirements-dev-3.7-main.yml
 
-        conda env create -n ibis-dev --file ci/requirements-3.7-dev.yml
+    > If you are developing for the Spark/PySpark backends, use ``requirements-dev-3.7-pyspark-spark.yml`` instead.
 
 3. Activate the environment
 
+        :::sh
         conda activate ibis-dev
 
 4. Install your local copy of Ibis into the Conda environment. This also
    sets up a pre-commit hook to check style and formatting before committing.
 
+        :::sh
         make develop
 
 
@@ -39,20 +45,29 @@ rough steps on how to get things set up:
 - Be sure to follow the [post-install instructions](https://docs.docker.com/install/linux/linux-postinstall/) if you are running on Linux.
 - Log in to your Docker hub account with ``docker login`` (create an account at <https://hub.docker.com/> if you don't have one).
 
-Here are the steps to start database services and run the test suite:
+First, start the database services and load the test data:
 
 ```sh
 make --directory ibis init
-make --directory ibis testall
 ```
 
-Also you can run tests for a specific backend:
+To run tests for all backends except PySpark and Spark:
+```sh
+make --directory ibis testmain
+```
+
+To run tests for the PySpark backend:
+```sh
+make --directory ibis testpyspark
+```
+
+You can run tests for a custom subset of backends:
 
 ```sh
 make --directory ibis testparallel BACKENDS='omniscidb impala'
 ```
 
-or start database services for a specific backend:
+or start database services for a specific subset of backends:
 
 ```sh
 make --directory ibis init BACKENDS='omniscidb impala'

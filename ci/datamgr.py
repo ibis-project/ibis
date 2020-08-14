@@ -1,8 +1,8 @@
 #!/usr/bin/env python
+import io
 import json
 import logging
 import os
-import tempfile
 import warnings
 import zipfile
 from pathlib import Path
@@ -495,7 +495,7 @@ def bigquery(data_directory, ignore_missing_dependency, **params):
     bqclient = bigquery.Client(project=project_id)
 
     # Create testing dataset.
-    testing_dataset = bqclient.dataset('testing')
+    testing_dataset = bigquery.DatasetReference(bqclient.project, 'testing')
     try:
         bqclient.create_dataset(bigquery.Dataset(testing_dataset))
     except google.api_core.exceptions.Conflict:
@@ -513,6 +513,7 @@ def bigquery(data_directory, ignore_missing_dependency, **params):
                 bigquery.SchemaField.from_api_repr(field)
             )
     load_config = bigquery.LoadJobConfig()
+    load_config.write_disposition = 'WRITE_TRUNCATE'
     load_config.skip_leading_rows = 1  # skip the header row.
     load_config.schema = functional_alltypes_schema
 
@@ -545,6 +546,7 @@ def bigquery(data_directory, ignore_missing_dependency, **params):
     struct_table_path = data_directory / 'struct_table.avro'
     with open(str(struct_table_path), 'rb') as avrofile:
         load_config = bigquery.LoadJobConfig()
+        load_config.write_disposition = 'WRITE_TRUNCATE'
         load_config.source_format = 'AVRO'
         job = bqclient.load_table_from_file(
             avrofile,
@@ -565,7 +567,7 @@ def bigquery(data_directory, ignore_missing_dependency, **params):
     date_table.time_partitioning = bigquery.TimePartitioning(
         field='my_date_parted_col'
     )
-    bqclient.create_table(date_table)
+    bqclient.create_table(date_table, exists_ok=True)
 
     # Create empty timestamp-partitioned tables.
     timestamp_table = bigquery.Table(
@@ -579,7 +581,7 @@ def bigquery(data_directory, ignore_missing_dependency, **params):
     timestamp_table.time_partitioning = bigquery.TimePartitioning(
         field='my_timestamp_parted_col'
     )
-    bqclient.create_table(timestamp_table)
+    bqclient.create_table(timestamp_table, exists_ok=True)
 
     # Create a table with a numeric column
     numeric_table = bigquery.Table(testing_dataset.table('numeric_table'))
@@ -587,29 +589,79 @@ def bigquery(data_directory, ignore_missing_dependency, **params):
         bigquery.SchemaField('string_col', 'STRING'),
         bigquery.SchemaField('numeric_col', 'NUMERIC'),
     ]
-    bqclient.create_table(numeric_table)
+    bqclient.create_table(numeric_table, exists_ok=True)
 
     df = pd.read_csv(
         str(data_directory / 'functional_alltypes.csv'),
         usecols=['string_col', 'double_col'],
         header=0,
     )
-    with tempfile.NamedTemporaryFile(mode='a+b') as csvfile:
-        df.to_csv(csvfile, header=False, index=False)
-        csvfile.seek(0)
+    numeric_csv = io.StringIO()
+    df.to_csv(numeric_csv, header=False, index=False)
+    csvfile = io.BytesIO(numeric_csv.getvalue().encode('utf-8'))
+    load_config = bigquery.LoadJobConfig()
+    load_config.write_disposition = 'WRITE_TRUNCATE'
+    load_config.skip_leading_rows = 1  # skip the header row.
+    load_config.schema = numeric_table.schema
 
-        load_config = bigquery.LoadJobConfig()
-        load_config.skip_leading_rows = 1  # skip the header row.
-        load_config.schema = numeric_table.schema
+    job = bqclient.load_table_from_file(
+        csvfile,
+        testing_dataset.table('numeric_table'),
+        job_config=load_config,
+    ).result()
 
-        job = bqclient.load_table_from_file(
-            csvfile,
-            testing_dataset.table('numeric_table'),
-            job_config=load_config,
-        ).result()
+    if job.error_result:
+        raise click.ClickException(str(job.error_result))
 
-        if job.error_result:
-            raise click.ClickException(str(job.error_result))
+
+@cli.command()
+def pandas(**params):
+    """
+    The pandas backend does not need test data, but we still
+    have an option for the backend for consistency, and to not
+    have to avoid calling `./datamgr.py pandas` in the CI.
+    """
+    pass
+
+
+@cli.command()
+def csv(**params):
+    """
+    The csv backend does not need test data, but we still
+    have an option for the backend for consistency, and to not
+    have to avoid calling `./datamgr.py csv` in the CI.
+    """
+    pass
+
+
+@cli.command()
+def hdf5(**params):
+    """
+    The hdf5 backend does not need test data, but we still
+    have an option for the backend for consistency, and to not
+    have to avoid calling `./datamgr.py hdf5` in the CI.
+    """
+    pass
+
+
+@cli.command()
+def spark(**params):
+    """
+    The spark backend does not need test data, but we still
+    have an option for the backend for consistency, and to not
+    have to avoid calling `./datamgr.py spark` in the CI.
+    """
+    pass
+
+
+@cli.command()
+def pyspark(**params):
+    """
+    The hdf5 backend does not need test data, but we still
+    have an option for the backend for consistency, and to not
+    have to avoid calling `./datamgr.py pyspark` in the CI.
+    """
+    pass
 
 
 if __name__ == '__main__':

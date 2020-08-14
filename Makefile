@@ -3,11 +3,12 @@
 SHELL := /bin/bash
 MAKEFILE_DIR = $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 
-# from PYTHON_VERSION depends which `./ci/requirements-$PYTHON_VERSION-dev` file
-# will be used for creating ibis image (see for additional info: `./ci/Dockerfile.dev`
-# and `./ci/docker-compose.yml`)
-# you can use `3.6` or `3.7` for now
+# PYTHON_VERSION defines which `./ci/requirements-dev-$PYTHON_VERSION`
+# file will be used for creating the ibis image (see for additional info: `./ci/Dockerfile.dev` and
+# `./ci/docker-compose.yml`)
+# You can use `3.6` or `3.7` for now for the PYTHON_VERSION
 PYTHON_VERSION := 3.6
+
 PYTHONHASHSEED := random
 
 # docker specific
@@ -117,36 +118,47 @@ init: restart
 	$(MAKE) build
 	$(MAKE) load
 
-# Targets for testing ibis inside docker's containers
+# Targets for running backend specific Ibis tests inside docker's containers
+# BACKENDS can be set to choose which tests should be run:
+#   make --directory ibis testparallel BACKENDS='omniscidb impala'
 
 test: init
-	# use the target to run backend specific tests
+	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
+		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) ${PYTEST_MARKERS} -k 'not test_import_time'"
+
+testnoinit:
+	# Same as make test, but does not run init first
 	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
 		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) ${PYTEST_MARKERS} -k 'not test_import_time'"
 
 testparallel: init
 	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
-		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) ${PYTEST_MARKERS} -n auto -m 'not udf' -k 'not test_import_time'"
+		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) ${PYTEST_MARKERS} -n auto -k 'not test_import_time'"
+
+testparallelnoinit:
+	# Same as make testparallel, but does not run init first
+	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
+		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) ${PYTEST_MARKERS} -n auto -k 'not test_import_time'"
+
+# Shortcut targets for running a subset of the Ibis tests inside docker's containers
 
 testall:
-	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
-		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) -k 'not test_import_time'"
+	@echo "You should use make testmain instead"
+
+testmain:
+	$(MAKE) testparallelnoinit PYTEST_MARKERS="-m 'not (udf or spark or pyspark)'"
 
 testmost:
-	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
-		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) -n auto -m 'not (udf or impala or hdfs)' -k 'not test_import_time'"
+	$(MAKE) testparallelnoinit PYTEST_MARKERS="-m 'not (udf or impala or hdfs or spark or pyspark)'"
 
 testfast:
-	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
-		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) -n auto -m 'not (udf or impala or hdfs or bigquery)' -k 'not test_import_time'"
+	$(MAKE) testparallelnoinit PYTEST_MARKERS="-m 'not (udf or impala or hdfs or bigquery or spark or pyspark)'"
 
 testpandas:
-	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
-		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) -n auto -m 'pandas' -k 'not test_import_time'"
+	$(MAKE) testparallelnoinit PYTEST_MARKERS="-m pandas"
 
-testspark:
-	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
-		pytest $(PYTEST_DOCTEST_OPTIONS) $(PYTEST_OPTIONS) -n auto -m 'pyspark' -k 'not test_import_time'"
+testpyspark:
+	$(MAKE) testparallelnoinit PYTEST_MARKERS="-m pyspark"
 
 fastopt:
 	@echo -m 'not (backend or bigquery or clickhouse or hdfs or impala or kudu or omniscidb or mysql or postgis or postgresql or superuser or udf)'
@@ -178,6 +190,3 @@ doc: builddoc docclean
 
 docker_run:
 	$(DOCKER_RUN) ibis $(DOCKER_RUN_COMMAND)
-
-docker_docs_run:
-	$(DOCKER_RUN) ibis-docs $(DOCKER_RUN_COMMAND)

@@ -1077,6 +1077,7 @@ class AlchemyClient(SQLClient):
 
     dialect = AlchemyDialect
     query_class = AlchemyQuery
+    has_attachment = False
 
     def __init__(self, con: sa.engine.Engine) -> None:
         super().__init__()
@@ -1099,7 +1100,11 @@ class AlchemyClient(SQLClient):
 
     @invalidates_reflection_cache
     def create_table(self, name, expr=None, schema=None, database=None):
-        if database is not None and database != self.engine.url.database:
+        if database == self.database_name:
+            # avoid fully qualified name
+            database = None
+
+        if database is not None:
             raise NotImplementedError(
                 'Creating tables from a different database is not yet '
                 'implemented'
@@ -1150,7 +1155,11 @@ class AlchemyClient(SQLClient):
         database: Optional[str] = None,
         force: bool = False,
     ) -> None:
-        if database is not None and database != self.con.url.database:
+        if database == self.database_name:
+            # avoid fully qualified name
+            database = None
+
+        if database is not None:
             raise NotImplementedError(
                 'Dropping tables from a different database is not yet '
                 'implemented'
@@ -1171,6 +1180,54 @@ class AlchemyClient(SQLClient):
             del self._schemas[qualified_name]
         except KeyError:  # schemas won't be cached if created with raw_sql
             pass
+
+    def load_data(
+        self,
+        table_name: str,
+        data: pd.DataFrame,
+        database: str = None,
+        if_exists: str = 'fail',
+    ):
+        """
+        Load data from a dataframe to the backend.
+
+        Parameters
+        ----------
+        table_name : string
+        data: pandas.DataFrame
+        database : string, optional
+        if_exists : string, optional, default 'fail'
+            The values available are: {‘fail’, ‘replace’, ‘append’}
+
+        Raises
+        ------
+        NotImplementedError
+            Loading data to a table from a different database is not
+            yet implemented
+        """
+        if database == self.database_name:
+            # avoid fully qualified name
+            database = None
+
+        if database is not None:
+            raise NotImplementedError(
+                'Loading data to a table from a different database is not '
+                'yet implemented'
+            )
+
+        params = {}
+        if self.has_attachment:
+            # for database with attachment
+            # see: https://github.com/ibis-project/ibis/issues/1930
+            params['schema'] = self.database_name
+
+        data.to_sql(
+            table_name,
+            con=self.con,
+            index=False,
+            if_exists=if_exists,
+            **params,
+        )
 
     def truncate_table(
         self, table_name: str, database: Optional[str] = None
@@ -1217,6 +1274,14 @@ class AlchemyClient(SQLClient):
 
     def _build_ast(self, expr, context):
         return build_ast(expr, context)
+
+    def _log(self, sql):
+        try:
+            query_str = str(sql)
+        except sa.exc.UnsupportedCompilationError:
+            pass
+        else:
+            util.log(query_str)
 
     def _get_sqla_table(self, name, schema=None, autoload=True):
         return sa.Table(name, self.meta, schema=schema, autoload=autoload)

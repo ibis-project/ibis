@@ -12,35 +12,12 @@ jobs:
     AZURECI: 1
     COMPOSE_FILE: ci/docker-compose.yml
     PYTHONHASHSEED: "random"
-    BACKENDS_SQL_PARQUET: "mysql postgres sqlite parquet"
     BACKENDS_IMPALA_KUDU_CLICKHOUSE: "impala kudu-master kudu-tserver clickhouse"
-    BACKENDS_OMNISCI_SPARK: "omniscidb"
-    PYTEST_MARK_EXPRESSION_SQL_PARQUET: "not udf and not clickhouse and not impala and not kudu and not hdfs and not omniscidb and not spark and not pyspark"
     PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE: "not udf and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite and not omniscidb and not spark and not pyspark"
-    # TODO: Remove "and not spark and not pyspark" once spark tests are working. #2201
-    PYTEST_MARK_EXPRESSION_OMNISCI_SPARK: "not udf and not clickhouse and not impala and not kudu and not hdfs and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite and not spark and not pyspark"
   strategy:
     matrix:
 
-      # SQL and parquet backends
-      py36_sql_parquet:
-        PYTHON_VERSION: "3.6"
-        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_SQL_PARQUET)
-        BACKENDS: $(BACKENDS_SQL_PARQUET)
-      py37_sql_parquet:
-        PYTHON_VERSION: "3.7"
-        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_SQL_PARQUET)
-        BACKENDS: $(BACKENDS_SQL_PARQUET)
-      py38_sql_parquet:
-        PYTHON_VERSION: "3.8"
-        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_SQL_PARQUET)
-        BACKENDS: $(BACKENDS_SQL_PARQUET)
-
       # Impala, kudu and clickhouse backends
-      py36_impala_kudu_clickhouse:
-        PYTHON_VERSION: "3.6"
-        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
-        BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
       py37_impala_kudu_clickhouse:
         PYTHON_VERSION: "3.7"
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
@@ -50,38 +27,19 @@ jobs:
         PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
         BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
 
-      # Omnisci and spark backends
-      py36_omnisci_spark:
-        PYTHON_VERSION: "3.6"
-        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_OMNISCI_SPARK)
-        BACKENDS: $(BACKENDS_OMNISCI_SPARK)
-      py37_omnisci_spark:
-        PYTHON_VERSION: "3.7"
-        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_OMNISCI_SPARK)
-        BACKENDS: $(BACKENDS_OMNISCI_SPARK)
-      # TODO: pymapd and pyspark are not working on Ibis with Python 3.8, so not added to the matrix yet
-      # https://github.com/ibis-project/ibis/issues/2091 https://github.com/ibis-project/ibis/issues/2090
-
   steps:
     - bash: |
-        echo "##vso[task.setvariable variable=PYTHON_NO_DOT_VERSION]${PYTHON_VERSION/./}"
         if [ -z "$PYTEST_MARK_EXPRESSION" ]; then
           echo "##vso[task.logissue type=error]The env variable PYTEST_MARK_EXPRESSION is not set. It is expected to be set in all the matrix builds, since not all tests can be run in a single build. It's probably caused by a typo."
           exit 1
         fi
       displayName: 'Set environment variables'
 
+    # Start databases if BACKENDS is not an empty string. Without this check, docker-compose would start all services (instead of none of them) if no BACKENDS are specified.
     - bash: |
-        if [ -n "${GCLOUD_SERVICE_KEY}" ]; then
-          mkdir -p /tmp/ibis
-          base64 --decode --ignore-garbage <<< "${GCLOUD_SERVICE_KEY}" > /tmp/ibis/gcloud-service-key.json
+        if [ -n "${BACKENDS}" ]; then
+          make start PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
         fi
-      env:
-        GCLOUD_SERVICE_KEY: $(GCLOUD_SERVICE_KEY)
-      displayName: 'Setup BigQuery credentials'
-      condition: eq(variables['System.PullRequest.IsFork'], 'False')
-
-    - bash: make start PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
       displayName: 'Start databases'
 
     - bash: make wait PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
@@ -95,16 +53,6 @@ jobs:
 
     - bash: docker images
       displayName: 'List docker images'
-
-    - bash: make docker_lint PYTHON_VERSION=$PYTHON_VERSION
-      displayName: 'Lint'
-
-    # TODO: change match-dir when docstrings are fixed for other backends
-    - bash: docker-compose run ibis pydocstyle --match-dir="(ibis|omniscidb)"
-      displayName: "Docstring check"
-
-    - bash: make docker_check_pre_commit_hooks PYTHON_VERSION=$PYTHON_VERSION
-      displayName: 'Ensure all pre-commit hooks checking are passing.'
 
     - bash: |
         sudo mkdir -p /tmp/ibis/test-reports/pytest
@@ -125,14 +73,12 @@ jobs:
         docker-compose run \
           -e PYTHONHASHSEED=$PYTHONHASHSEED \
           -e AZURECI=$AZURECI \
-          -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcloud-service-key.json \
           ibis \
           pytest ibis -m "${PYTEST_MARK_EXPRESSION}" \
+                      -k"not compile and not connect" \
                       -ra \
-                      --numprocesses auto \
                       --doctest-modules \
                       --doctest-ignore-import-errors \
-                      -k"-compile -connect" \
                       --junitxml=/tmp/test-reports/pytest/junit.xml \
                       --cov=ibis \
                       --cov-report=xml:/tmp/test-reports/pytest-cov/coverage.xml
@@ -155,11 +101,11 @@ jobs:
     - task: PublishPipelineArtifact@1
       inputs:
         path: /tmp/env/env.yml
-        artifact: LinuxCondaEnvironment$(PYTHON_NO_DOT_VERSION)
+        artifact: LinuxCondaEnvironment-$(PYTHON_VERSION)
       displayName: 'Publish Linux environment YAML to Azure'
       condition: succeededOrFailed()  # pass or fail, but not cancelled
 
-- job: ${{ parameters.name }}BuildConda
+- job: ${{ parameters.name }}BuildDocs
 
   pool:
     vmImage: ${{ parameters.vmImage }}
@@ -168,57 +114,13 @@ jobs:
     PYTHON_VERSION: "3.7"
     AZURECI: 1
     COMPOSE_FILE: ci/docker-compose.yml
-
-  steps:
-    - bash: make build PYTHON_VERSION=$PYTHON_VERSION
-      displayName: 'Build ibis image'
-
-    - bash: docker images
-      displayName: 'List docker images'
-
-    - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="ci/feedstock.py test --python 3.7"
-      displayName: 'Clone, update and build conda-forge recipe'
-
-    - task: PublishPipelineArtifact@1
-      inputs:
-        path: /tmp/ibis/packages
-        artifact: LinuxCondaPackage
-      displayName: 'Publish conda package to Azure'
-      condition: and(succeeded(), eq(variables['System.PullRequest.IsFork'], 'False'))
-
-- job: ${{ parameters.name }}Benchmark
-
-  pool:
-    vmImage: ${{ parameters.vmImage }}
-
-  variables:
-    PYTHON_VERSION: "3.6"
-    AZURECI: 1
-    COMPOSE_FILE: ci/docker-compose.yml
-
-  steps:
-    - bash: make build PYTHON_VERSION=$PYTHON_VERSION
-      displayName: 'Build Ibis Image'
-
-    - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND='ci/benchmark.sh azure "$(Build.SourceVersion)"'
-      displayName: 'Run Benchmark (ASV)'
-
-- job: ${{ parameters.name }}BuildDocs
-
-  pool:
-    vmImage: ${{ parameters.vmImage }}
-
-  variables:
-    PYTHON_VERSION: "3.6"
-    AZURECI: 1
-    COMPOSE_FILE: ci/docker-compose.yml
     BACKENDS: "impala postgres"
     LOADS: "impala postgres"
 
   steps:
     - task: UsePythonVersion@0
       inputs:
-        versionSpec: '3.6' 
+        versionSpec: '3.7'
 
     - bash: make start PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
       displayName: 'Start databases'
@@ -238,41 +140,17 @@ jobs:
     - bash: make load PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}" LOADS="${LOADS}"
       displayName: 'Load test datasets'
 
-    - bash: make docker_docs_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="ping -c 1 impala"
-      displayName: 'Ping the impala host used in the tutorial notebooks'
-
     - bash: |
-        make docker_docs_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="git clone --branch gh-pages \
-          https://github.com/cpcloud/docs.ibis-project.org \
-          /tmp/ibis-project.org"
-      displayName: 'Clone doc repo'
-
-    - bash: |
-        docker-compose run ibis-docs \
-          find /tmp/ibis-project.org \
-            -maxdepth 1 \
-            # ignore the directory we're searching in itself
-            ! -wholename /tmp/ibis-project.org/ \
-            # ignore git files
-            ! -name '*.git' \
-            # ignore the CNAME record
-            ! -name CNAME \
-            # ignore files ending in nojekyll
-            ! -name '*.nojekyll' \
-            -exec rm -rf {} \;
-      displayName: 'Clear out old docs'
-
-    - bash: make docker_docs_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="conda list"
-      displayName: 'Show the doc env'
-
-    - bash: |
-        make docker_docs_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="python -m pysuerga docs/web --target-path=/tmp/ibis-project.org"
-      displayName: 'Build website'
-
-    - bash: |
-        make docker_docs_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="sphinx-build -b html \
-          docs/source /tmp/ibis-project.org/docs -W -T --keep-going"
-      displayName: 'Build docs'
+        docker-compose -f ci/docker-compose.yml run --rm ibis-docs bash -c "\
+            ping -c 1 impala && conda list && \
+            mkdir -p /tmp/ibis-project.org && \
+            cd /tmp/ibis-project.org && \
+            echo \"ibis-project.org\" > CNAME && \
+            touch .nojekyll && \
+            pip install git+https://github.com/datapythonista/pysuerga && \  # XXX pysuerga is already in environment.yml, should already be installed
+            python -m pysuerga /ibis/docs/web --target-path=/tmp/ibis-project.org/ && \
+            sphinx-build -b html /ibis/docs/source /tmp/ibis-project.org/docs -W -T --keep-going"
+      displayName: 'Build website and docs'
 
     - task: PublishPipelineArtifact@1
       inputs:
@@ -287,24 +165,29 @@ jobs:
         chmod 700 ~/.ssh
         chmod 600 ~/.ssh/id_rsa
 
-        # add github to known hosts
         ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
+      displayName: 'Set up ssh'
+      env:
+        IBIS_GH_TOKEN: $(IBIS_GH_TOKEN)
+      condition: |
+        and(eq(variables['System.PullRequest.IsFork'], 'False'),
+            eq(variables['Build.Repository.Name'], 'ibis-project/ibis'),
+            eq(variables['Build.SourceBranchName'], 'master'))
 
+    - bash: |
         sudo chown -R "${USER}":"${USER}" /tmp/ibis
         pushd /tmp/ibis/ibis-project.org
 
-        git remote set-url origin git@github.com:ibis-project/docs.ibis-project.org
-
+        git init
+        git checkout -b gh-pages
+        git remote add origin git@github.com:ibis-project/docs.ibis-project.org
         git config user.name 'Ibis Documentation Bot'
         git config user.email ''
 
-        # Add everything
         git add --all .
         git commit -m "Docs from ibis at $(Build.SourceVersion)"
         git push --force origin gh-pages
       displayName: 'Push web to remote repo'
-      env:
-        IBIS_GH_TOKEN: $(IBIS_GH_TOKEN)
       condition: |
         and(eq(variables['System.PullRequest.IsFork'], 'False'),
             eq(variables['Build.Repository.Name'], 'ibis-project/ibis'),

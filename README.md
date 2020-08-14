@@ -34,19 +34,10 @@ Ibis currently provides tools for interacting with the following systems:
 - [PostgreSQL](https://www.postgresql.org/)
 - [MySQL](https://www.mysql.com/) (Experimental)
 - [SQLite](https://www.sqlite.org/)
-- [Pandas](https://pandas.pydata.org/) [DataFrames](http://pandas.pydata.org/pandas-docs/stable/dsintro.html#dataframe) (Experimental)
+- [Pandas](https://pandas.pydata.org/) [DataFrames](http://pandas.pydata.org/pandas-docs/stable/dsintro.html#dataframe)
 - [Clickhouse](https://clickhouse.yandex)
 - [BigQuery](https://cloud.google.com/bigquery)
-- [OmniSciDB](https://www.omnisci.com) (Experimental)
+- [OmniSciDB](https://www.omnisci.com)
 - [Spark](https://spark.apache.org) (Experimental)
 
 Learn more about using the library at http://docs.ibis-project.org.
-
-
-## Notes
-
-- OmniSciDB backend support is tested against a development release
-of their database using the ``omnisci/core-os-cpu-dev`` Docker image.
-Check the docker image tag used at
-[docker-compose.yml](https://github.com/ibis-project/ibis/blob/master/ci/docker-compose.yml).
-Some features may not work on earlier releases.

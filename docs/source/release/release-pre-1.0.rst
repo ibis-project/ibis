@@ -392,7 +392,7 @@ Thank you to all who contributed patches to this release.
 
 This release brings expanded pandas and Impala integration, including support
 for managing partitioned tables in Impala. See the new :ref:`Ibis for Impala
-Users <impala>` guide for more on using Ibis with Impala.
+Users <backends.impala>` guide for more on using Ibis with Impala.
 
 The :ref:`Ibis for SQL Programmers <sql>` guide also was written since the 0.5
 release.
@@ -404,7 +404,7 @@ New Features
 ~~~~~~~~~~~~
 
 * New integrated Impala functionality. See :ref:`Ibis for Impala Users
-  <impala>` for more details on these things.
+  <backends.impala>` for more details on these things.
 
   * Improved Impala-pandas integration. Create tables or insert into existing
     tables from pandas ``DataFrame`` objects.

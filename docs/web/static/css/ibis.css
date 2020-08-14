@@ -13,9 +13,17 @@ h2 {
     color: black;
 }
 h3 {
-    font-size: 1.3rem;
+    font-size: 1.1rem;
     font-weight: 600;
-    color: black;
+    color: #444;
+}
+h3 a {
+    color: #446;
+}
+h4 {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #444;
 }
 a {
     color: #130654;
@@ -29,6 +37,9 @@ pre {
     border: 1px solid #c9c9c9;
     margin: 1.5em 0;
     box-shadow: 1px 1px 1px #d8d8d8
+}
+blockquote, blockquote p {
+    color: #888;
 }
 .header-title {
     font-size: 1.75rem;
@@ -77,4 +88,17 @@ table.logo td {
 }
 table.logo img {
     height: 4rem;
+}
+.home-jumbotron {
+    background-image: url(/static/img/ibis_sky.png);
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-color: #d8e8ff;
+    background-position: center;
+    min-height: 9rem;
+}
+.home-jumbotron p {
+    position: absolute;
+    bottom: 2rem;
+    text-shadow: 1px 1px #ffffff;
 }

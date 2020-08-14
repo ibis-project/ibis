@@ -37,23 +37,34 @@ The general flow of execution is:
 Specifically, execute is comprised of a series of steps that happen at
 different times during the loop.
 
-1. ``pre_execute``
+1. ``compute_time_context``
+First, at the beginning of the main execution loop, ``compute_time_context`` is
+called. This function computes time contexts, and pass them to all children of
+the current node. These time contexts could be used in later steps to get data.
+This is essential for time series TableExpr, and related operations that adjust
+time context, such as window, asof_join, etc.
+
+By default, this function simply pass the unchanged time context to all
+children nodes.
+
+
+2. ``pre_execute``
 ------------------
-First, at the beginning of the main execution loop, ``pre_execute`` is called.
+Second, ``pre_execute`` is called.
 This function serves a similar purpose to ``data_preload``, the key difference
 being that ``pre_execute`` is called *every time* there's a call to execute.
 
 By default this function does nothing.
 
-2. ``execute_node``
+3. ``execute_node``
 -------------------
 
-Second, when an expression is ready to be evaluated we call
+Then, when an expression is ready to be evaluated we call
 :func:`~ibis.pandas.core.execute` on the expressions arguments and then
 :func:`~ibis.pandas.dispatch.execute_node` on the expression with its
 now-materialized arguments.
 
-3. ``post_execute``
+4. ``post_execute``
 -------------------
 The final step--``post_execute``--is called immediately after the previous call
 to ``execute_node`` and takes the instance of the
@@ -81,6 +92,7 @@ from __future__ import absolute_import
 import datetime
 import functools
 import numbers
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -95,12 +107,14 @@ import ibis.expr.types as ir
 import ibis.expr.window as win
 import ibis.pandas.aggcontext as agg_ctx
 from ibis.client import find_backends
+from ibis.expr.typing import TimeContext
 from ibis.pandas.dispatch import (
     execute_literal,
     execute_node,
     post_execute,
     pre_execute,
 )
+from ibis.pandas.trace import trace
 
 integer_types = np.integer, int
 floating_types = (numbers.Real,)
@@ -141,7 +155,14 @@ ibis.util.consume(
 )
 
 
-def execute_with_scope(expr, scope, aggcontext=None, clients=None, **kwargs):
+def execute_with_scope(
+    expr,
+    scope,
+    timecontext: Optional[TimeContext] = None,
+    aggcontext=None,
+    clients=None,
+    **kwargs,
+):
     """Execute an expression `expr`, with data provided in `scope`.
 
     Parameters
@@ -151,6 +172,10 @@ def execute_with_scope(expr, scope, aggcontext=None, clients=None, **kwargs):
     scope : collections.Mapping
         A dictionary mapping :class:`~ibis.expr.operations.Node` subclass
         instances to concrete data such as a pandas DataFrame.
+    timecontext : Optional[TimeContext]
+        A tuple of (begin, end) that is passed from parent Node to children
+        see [timecontext.py](ibis/pandas/execution/timecontext.py) for
+        detailed usage for this time context.
     aggcontext : Optional[ibis.pandas.aggcontext.AggregationContext]
 
     Returns
@@ -169,12 +194,18 @@ def execute_with_scope(expr, scope, aggcontext=None, clients=None, **kwargs):
         aggcontext = agg_ctx.Summarize()
 
     pre_executed_scope = pre_execute(
-        op, *clients, scope=scope, aggcontext=aggcontext, **kwargs
+        op,
+        *clients,
+        scope=scope,
+        timecontext=timecontext,
+        aggcontext=aggcontext,
+        **kwargs,
     )
     new_scope = toolz.merge(scope, pre_executed_scope)
     result = execute_until_in_scope(
         expr,
         new_scope,
+        timecontext=timecontext,
         aggcontext=aggcontext,
         clients=clients,
         # XXX: we *explicitly* pass in scope and not new_scope here so that
@@ -183,18 +214,25 @@ def execute_with_scope(expr, scope, aggcontext=None, clients=None, **kwargs):
         post_execute_=functools.partial(
             post_execute,
             scope=scope,
+            timecontext=timecontext,
             aggcontext=aggcontext,
             clients=clients,
             **kwargs,
         ),
         **kwargs,
     )[op]
-
     return result
 
 
+@trace
 def execute_until_in_scope(
-    expr, scope, aggcontext=None, clients=None, post_execute_=None, **kwargs
+    expr,
+    scope,
+    timecontext: Optional[TimeContext] = None,
+    aggcontext=None,
+    clients=None,
+    post_execute_=None,
+    **kwargs,
 ):
     """Execute until our op is in `scope`.
 
@@ -202,6 +240,7 @@ def execute_until_in_scope(
     ----------
     expr : ibis.expr.types.Expr
     scope : Mapping
+    timecontext : Optional[TimeContext]
     aggcontext : Optional[AggregationContext]
     clients : List[ibis.client.Client]
     kwargs : Mapping
@@ -224,9 +263,27 @@ def execute_until_in_scope(
                 op, op.value, expr.type(), aggcontext=aggcontext, **kwargs
             )
         }
+    # figure out what arguments we're able to compute on based on the
+    # expressions inputs. things like expressions, None, and scalar types are
+    # computable whereas ``list``s are not
+    computable_args = [arg for arg in op.inputs if is_computable_input(arg)]
+
+    # pre_executed_states is a list of states with same the length of
+    # computable_args, these states are passed to each arg
+    if timecontext:
+        arg_timecontexts = compute_time_context(
+            op, num_args=len(computable_args), timecontext=timecontext
+        )
+    else:
+        arg_timecontexts = [None] * len(computable_args)
 
     pre_executed_scope = pre_execute(
-        op, *clients, scope=scope, aggcontext=aggcontext, **kwargs
+        op,
+        *clients,
+        scope=scope,
+        timecontext=timecontext,
+        aggcontext=aggcontext,
+        **kwargs,
     )
     new_scope = toolz.merge(scope, pre_executed_scope)
 
@@ -235,16 +292,21 @@ def execute_until_in_scope(
     if op in new_scope:
         return new_scope
 
-    # figure out what arguments we're able to compute on based on the
-    # expressions inputs. things like expressions, None, and scalar types are
-    # computable whereas ``list``s are not
-    computable_args = [arg for arg in op.inputs if is_computable_input(arg)]
+    # recursively compute each node's arguments until we've changed type.
+    # compute_time_context should return with a list with the same length
+    # as computable_args, the two lists will be zipping together for
+    # further execution
+    if len(arg_timecontexts) != len(computable_args):
+        raise com.IbisError(
+            'arg_timecontexts differ with computable_arg in length '
+            f'for type:\n{type(op).__name__}.'
+        )
 
-    # recursively compute each node's arguments until we've changed type
     scopes = [
         execute_until_in_scope(
             arg,
             new_scope,
+            timecontext=timecontext,
             aggcontext=aggcontext,
             post_execute_=post_execute_,
             clients=clients,
@@ -252,7 +314,7 @@ def execute_until_in_scope(
         )
         if hasattr(arg, 'op')
         else {arg: arg}
-        for arg in computable_args
+        for (arg, timecontext) in zip(computable_args, arg_timecontexts)
     ]
 
     # if we're unable to find data then raise an exception
@@ -275,11 +337,12 @@ def execute_until_in_scope(
         op,
         *data,
         scope=scope,
+        timecontext=timecontext,
         aggcontext=aggcontext,
         clients=clients,
         **kwargs,
     )
-    computed = post_execute_(op, result)
+    computed = post_execute_(op, result, timecontext=timecontext)
     return {op: computed}
 
 
@@ -287,7 +350,15 @@ execute = Dispatcher('execute')
 
 
 @execute.register(ir.Expr)
-def main_execute(expr, params=None, scope=None, aggcontext=None, **kwargs):
+@trace
+def main_execute(
+    expr,
+    params=None,
+    scope=None,
+    timecontext: Optional[TimeContext] = None,
+    aggcontext=None,
+    **kwargs,
+):
     """Execute an expression against data that are bound to it. If no data
     are bound, raise an Exception.
 
@@ -299,6 +370,8 @@ def main_execute(expr, params=None, scope=None, aggcontext=None, **kwargs):
         The data that an unbound parameter in `expr` maps to
     scope : Mapping[ibis.expr.operations.Node, object]
         Additional scope, mapping ibis operations to data
+    timecontext : Optional[TimeContext]
+        timecontext needed for execution
     aggcontext : Optional[ibis.pandas.aggcontext.AggregationContext]
         An object indicating how to compute aggregations. For example,
         a rolling mean needs to be computed differently than the mean of a
@@ -321,6 +394,10 @@ def main_execute(expr, params=None, scope=None, aggcontext=None, **kwargs):
     if scope is None:
         scope = {}
 
+    if timecontext is not None:
+        # convert timecontext to datetime type, if time strings are provided
+        timecontext = canonicalize_context(timecontext)
+
     if params is None:
         params = {}
 
@@ -329,11 +406,22 @@ def main_execute(expr, params=None, scope=None, aggcontext=None, **kwargs):
     params = {k.op() if hasattr(k, 'op') else k: v for k, v in params.items()}
 
     new_scope = toolz.merge(scope, params)
-    return execute_with_scope(expr, new_scope, aggcontext=aggcontext, **kwargs)
+    return execute_with_scope(
+        expr,
+        new_scope,
+        timecontext=timecontext,
+        aggcontext=aggcontext,
+        **kwargs,
+    )
 
 
 def execute_and_reset(
-    expr, params=None, scope=None, aggcontext=None, **kwargs
+    expr,
+    params=None,
+    scope=None,
+    timecontext: Optional[TimeContext] = None,
+    aggcontext=None,
+    **kwargs,
 ):
     """Execute an expression against data that are bound to it. If no data
     are bound, raise an Exception.
@@ -352,6 +440,8 @@ def execute_and_reset(
         The data that an unbound parameter in `expr` maps to
     scope : Mapping[ibis.expr.operations.Node, object]
         Additional scope, mapping ibis operations to data
+    timecontext : Optional[TimeContext]
+        timecontext needed for execution
     aggcontext : Optional[ibis.pandas.aggcontext.AggregationContext]
         An object indicating how to compute aggregations. For example,
         a rolling mean needs to be computed differently than the mean of a
@@ -372,7 +462,12 @@ def execute_and_reset(
         * If no data are bound to the input expression
     """
     result = execute(
-        expr, params=params, scope=scope, aggcontext=aggcontext, **kwargs
+        expr,
+        params=params,
+        scope=scope,
+        timecontext=timecontext,
+        aggcontext=aggcontext,
+        **kwargs,
     )
     if isinstance(result, pd.DataFrame):
         schema = expr.schema()
@@ -381,3 +476,81 @@ def execute_and_reset(
     elif isinstance(result, pd.Series):
         return result.reset_index(drop=True)
     return result
+
+
+compute_time_context = Dispatcher(
+    'compute_time_context',
+    doc="""\
+
+Compute time context for a node in execution
+
+Notes
+-----
+For a given node, return with a list of timecontext that are going to be
+passed to its children nodes.
+time context is useful when data is not uniquely defined by op tree. e.g.
+a TableExpr can represent the query select count(a) from table, but the
+result of that is different with time context (pd.Timestamp("20190101"),
+pd.Timestamp("20200101")) vs (pd.Timestamp("20200101"),
+pd.Timestamp("20210101“)), because what data is in "table" also depends on
+the time context. And such context may not be global for all nodes. Each
+node may have its own context. compute_time_context computes attributes that
+are going to be used in executeion and passes these attributes to children
+nodes.
+
+Param:
+timecontext : Optional[TimeContext]
+    begin and end time context needed for execution
+
+Return:
+List[Optional[TimeContext]]
+A list of timecontexts for children nodes of the current node. Note that
+timecontext are calculated for children nodes of computable args only.
+The length of the return list is same of the length of computable inputs.
+See ``computable_args`` in ``execute_until_in_scope``
+""",
+)
+
+
+@compute_time_context.register(ops.Node)
+def compute_time_context_default(
+    node, timecontext: Optional[TimeContext], **kwargs
+):
+    return [timecontext for arg in node.inputs if is_computable_input(arg)]
+
+
+# In order to use time context feature, there must be a column of Timestamp
+# type, and named as 'time' in TableExpr. This TIME_COL constant will be
+# used in filtering data from a table or columns of a table.
+TIME_COL = 'time'
+
+
+def canonicalize_context(
+    timecontext: Optional[TimeContext],
+) -> Optional[TimeContext]:
+    """Convert a timecontext to canonical one with type pandas.Timestamp
+       for its begin and end time. Raise Exception for illegal inputs
+    """
+    SUPPORTS_TIMESTAMP_TYPE = pd.Timestamp
+    try:
+        begin, end = timecontext
+    except (ValueError, TypeError):
+        raise com.IbisError(
+            f'Timecontext {timecontext} should specify (begin, end)'
+        )
+
+    if not isinstance(begin, SUPPORTS_TIMESTAMP_TYPE):
+        raise com.IbisError(
+            f'begin time value {begin} of type {type(begin)} is not'
+            ' of type pd.Timestamp'
+        )
+    if not isinstance(end, SUPPORTS_TIMESTAMP_TYPE):
+        raise com.IbisError(
+            f'end time value {end} of type {type(begin)} is not'
+            ' of type pd.Timestamp'
+        )
+    if begin > end:
+        raise com.IbisError(
+            f'begin time {begin} must be before or equal' f' to end time {end}'
+        )
+    return begin, end

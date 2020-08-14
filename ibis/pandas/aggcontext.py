@@ -316,7 +316,7 @@ def compute_window_spec_interval(_, expr):
     return pd.tseries.frequencies.to_offset(value)
 
 
-def _window_agg_built_in(
+def window_agg_built_in(
     frame: pd.DataFrame,
     windowed: pd.core.window.Window,
     function: str,
@@ -347,10 +347,29 @@ def _window_agg_built_in(
     return result
 
 
-def _window_agg_udf(
+def create_window_input_iter(
+    grouped_data: Union[SeriesGroupBy, pd.Series],
+    masked_window_lower_indices: pd.Series,
+    masked_window_upper_indices: pd.Series,
+) -> Iterator[np.ndarray]:
+    # create a generator for each input series
+    # the generator will yield a slice of the
+    # input series for each valid window
+    data = getattr(grouped_data, 'obj', grouped_data).values
+    lower_indices_array = masked_window_lower_indices.values
+    upper_indices_array = masked_window_upper_indices.values
+    for i in range(len(lower_indices_array)):
+        lower_index = lower_indices_array[i]
+        upper_index = upper_indices_array[i]
+        yield data[lower_index:upper_index]
+
+
+def window_agg_udf(
     grouped_data: SeriesGroupBy,
-    windowed: pd.core.window.Window,
     function: Callable,
+    window_lower_indices: pd.Series,
+    window_upper_indices: pd.Series,
+    mask: pd.Series,
     dtype: np.dtype,
     max_lookback: int,
     *args: Tuple[Any],
@@ -364,30 +383,23 @@ def _window_agg_udf(
     This is because pandas's rolling function doesn't support
     multi param UDFs.
     """
-
-    def create_input_iter(
-        grouped_series: SeriesGroupBy, window_size: int
-    ) -> Iterator[np.ndarray]:
-        # create a generator for each input series
-        # the generator will yield a slice of the
-        # input series for each valid window
-        data = getattr(grouped_series, 'obj', grouped_series).values
-        window_size_array = window_size.values
-        for i in range(len(window_size_array)):
-            k = window_size.index[i]
-            yield data[k - window_size_array[i] + 1 : k + 1]
-
     obj = getattr(grouped_data, 'obj', grouped_data)
+
+    assert len(window_lower_indices) == len(window_upper_indices)
+    assert len(window_lower_indices) == len(mask)
+
+    # Reset index here so we don't need to deal with mismatching
+    # indices
+    window_lower_indices = window_lower_indices.reset_index(drop=True)
+    window_upper_indices = window_upper_indices.reset_index(drop=True)
+    mask = mask.reset_index(drop=True)
 
     # Compute window indices and manually roll
     # over the window.
+
     # If an window has only nan values, we output nan for
     # the window result. This follows pandas rolling apply
     # behavior.
-    raw_window_size = windowed.apply(len, raw=True).reset_index(drop=True)
-    mask = ~(raw_window_size.isna())
-    window_size = raw_window_size[mask].astype('i8')
-    window_size_array = window_size.values
 
     # If there is no args, then the UDF only takes a single
     # input which is defined by grouped_data
@@ -396,8 +408,13 @@ def _window_agg_udf(
     # to AggregationContext.agg()
     inputs = args if len(args) > 0 else [grouped_data]
 
+    masked_window_lower_indices = window_lower_indices[mask].astype('i8')
+    masked_window_upper_indices = window_upper_indices[mask].astype('i8')
+
     input_iters = list(
-        create_input_iter(arg, window_size)
+        create_window_input_iter(
+            arg, masked_window_lower_indices, masked_window_upper_indices
+        )
         if isinstance(arg, (pd.Series, SeriesGroupBy))
         else itertools.repeat(arg)
         for arg in inputs
@@ -405,11 +422,11 @@ def _window_agg_udf(
 
     valid_result = pd.Series(
         function(*(next(gen) for gen in input_iters))
-        for i in range(len(window_size_array))
+        for i in range(len(masked_window_lower_indices))
     )
 
     valid_result = pd.Series(valid_result)
-    valid_result.index = window_size.index
+    valid_result.index = masked_window_lower_indices.index
     result = pd.Series(index=mask.index, dtype=dtype)
     result[mask] = valid_result
     result.index = obj.index
@@ -476,7 +493,7 @@ class Window(AggregationContext):
             frame = getattr(parent, 'obj', parent)
             obj = getattr(grouped_data, 'obj', grouped_data)
             name = obj.name
-            if frame[name] is not obj:
+            if frame[name] is not obj or name in group_by or name in order_by:
                 name = f"{name}_{ibis.util.guid()}"
                 frame = frame.assign(**{name: obj})
 
@@ -498,17 +515,26 @@ class Window(AggregationContext):
             windowed = self.construct_window(grouped)
 
             if callable(function):
-                result = _window_agg_udf(
+                window_sizes = windowed.apply(len, raw=True).reset_index(
+                    drop=True
+                )
+                mask = ~(window_sizes.isna())
+                window_upper_indices = pd.Series(range(len(window_sizes))) + 1
+                window_lower_indices = window_upper_indices - window_sizes
+
+                result = window_agg_udf(
                     grouped_data,
-                    windowed,
                     function,
+                    window_lower_indices,
+                    window_upper_indices,
+                    mask,
                     self.dtype,
                     self.max_lookback,
                     *args,
                     **kwargs,
                 )
             else:
-                result = _window_agg_built_in(
+                result = window_agg_built_in(
                     frame,
                     windowed,
                     function,

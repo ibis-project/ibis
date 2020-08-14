@@ -56,6 +56,11 @@ def unary(func_name):
     return fixed_arity(func_name, 1)
 
 
+def _extract_epoch_seconds(translator, expr):
+    op = expr.op()
+    return _call(translator, 'toRelativeSecondNum', *op.args)
+
+
 def fixed_arity(func_name, arity):
     def formatter(translator, expr):
         op = expr.op()
@@ -598,6 +603,9 @@ _operation_registry = {
     ops.ExtractYear: unary('toYear'),
     ops.ExtractMonth: unary('toMonth'),
     ops.ExtractDay: unary('toDayOfMonth'),
+    ops.ExtractDayOfYear: unary('toDayOfYear'),
+    ops.ExtractQuarter: unary('toQuarter'),
+    ops.ExtractEpochSeconds: _extract_epoch_seconds,
     ops.ExtractHour: unary('toHour'),
     ops.ExtractMinute: unary('toMinute'),
     ops.ExtractSecond: unary('toSecond'),
