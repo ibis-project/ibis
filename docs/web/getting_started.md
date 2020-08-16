@@ -14,7 +14,7 @@ the [advanced installation page]({{ base_url}}/docs/getting_started/install.html
 2. In the Anaconda prompt (or terminal in Linux or MacOS), install {{ ibis.project_name }}:
 
         :::sh
-        conda install -c conda-forge ibis-project
+        conda install -c conda-forge ibis-framework
 
 3. In the Anaconda prompt (or terminal in Linux or MacOS), start JupyterLab:
 

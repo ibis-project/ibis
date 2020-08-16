@@ -135,12 +135,30 @@ def time_df2():
 
 
 @pytest.fixture(scope='module')
+def time_df3():
+    return pd.DataFrame(
+        {
+            'time': pd.Series(
+                pd.date_range(
+                    start='2017-01-02 01:02:03.234', periods=8
+                ).values
+            ),
+            'value': [1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, 8.8],
+        }
+    )
+
+
+@pytest.fixture(scope='module')
 def time_keyed_df1():
     return pd.DataFrame(
         {
-            'time': pd.to_datetime([1, 1, 2, 2, 3, 3, 4, 4]),
-            'key': [1, 2, 1, 2, 1, 2, 1, 2],
-            'value': [1.1, 1.2, 2.2, 2.4, 3.3, 3.6, 4.4, 4.8],
+            'time': pd.Series(
+                pd.date_range(
+                    start='2017-01-02 01:02:03.234', periods=6
+                ).values
+            ),
+            'key': [1, 2, 3, 1, 2, 3],
+            'value': [1.2, 1.4, 2.0, 4.0, 8.0, 16.0],
         }
     )
 
@@ -149,9 +167,13 @@ def time_keyed_df1():
 def time_keyed_df2():
     return pd.DataFrame(
         {
-            'time': pd.to_datetime([2, 2, 4, 4]),
-            'key': [1, 2, 1, 2],
-            'other_value': [1.2, 1.4, 2.0, 4.0],
+            'time': pd.Series(
+                pd.date_range(
+                    start='2017-01-02 01:02:03.234', freq='3D', periods=3
+                ).values
+            ),
+            'key': [1, 2, 3],
+            'other_value': [1.1, 1.2, 2.2],
         }
     )
 
@@ -164,6 +186,7 @@ def client(
     df3,
     time_df1,
     time_df2,
+    time_df3,
     time_keyed_df1,
     time_keyed_df2,
     intersect_df2,
@@ -178,6 +201,7 @@ def client(
             right=df2,
             time_df1=time_df1,
             time_df2=time_df2,
+            time_df3=time_df3,
             time_keyed_df1=time_keyed_df1,
             time_keyed_df2=time_keyed_df2,
             intersect_df2=intersect_df2,
@@ -238,6 +262,11 @@ def time_left(client):
 @pytest.fixture(scope='module')
 def time_right(client):
     return client.table('time_df2')
+
+
+@pytest.fixture(scope='module')
+def time_table(client):
+    return client.table('time_df3')
 
 
 @pytest.fixture(scope='module')

@@ -7,6 +7,7 @@ import functools
 import operator
 from collections import OrderedDict
 from operator import methodcaller
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -16,6 +17,7 @@ from toolz import compose, concat, concatv, first, unique
 
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+from ibis.expr.typing import TimeContext
 from ibis.pandas.core import execute
 from ibis.pandas.dispatch import execute_node
 from ibis.pandas.execution import constants, util
@@ -76,7 +78,9 @@ def compute_projection_scalar_expr(expr, parent, data, scope=None, **kwargs):
 
 
 @compute_projection.register(ir.ColumnExpr, ops.Selection, pd.DataFrame)
-def compute_projection_column_expr(expr, parent, data, scope=None, **kwargs):
+def compute_projection_column_expr(
+    expr, parent, data, scope, timecontext: Optional[TimeContext], **kwargs
+):
     result_name = getattr(expr, '_name', None)
     op = expr.op()
     parent_table_op = parent.table.op()
@@ -112,7 +116,7 @@ def compute_projection_column_expr(expr, parent, data, scope=None, **kwargs):
     }
 
     new_scope = toolz.merge(scope, additional_scope)
-    result = execute(expr, scope=new_scope, **kwargs)
+    result = execute(expr, scope=new_scope, timecontext=timecontext, **kwargs)
     assert result_name is not None, 'Column selection name is None'
     if np.isscalar(result):
         return pd.Series(
@@ -277,7 +281,9 @@ def physical_tables_node(node):
 
 
 @execute_node.register(ops.Selection, pd.DataFrame)
-def execute_selection_dataframe(op, data, scope=None, **kwargs):
+def execute_selection_dataframe(
+    op, data, scope, timecontext: Optional[TimeContext], **kwargs
+):
     selections = op.selections
     predicates = op.predicates
     sort_keys = op.sort_keys
@@ -288,7 +294,12 @@ def execute_selection_dataframe(op, data, scope=None, **kwargs):
         data_pieces = []
         for selection in selections:
             pandas_object = compute_projection(
-                selection, op, data, scope=scope, **kwargs
+                selection,
+                op,
+                data,
+                scope=scope,
+                timecontext=timecontext,
+                **kwargs,
             )
             data_pieces.append(pandas_object)
 

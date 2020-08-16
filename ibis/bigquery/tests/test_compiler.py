@@ -4,7 +4,10 @@ import pandas as pd
 import pytest
 
 import ibis
+import ibis.bigquery as bq
 import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
+from ibis.expr.types import TableExpr
 
 pytestmark = pytest.mark.bigquery
 pytest.importorskip('google.cloud.bigquery')
@@ -546,3 +549,31 @@ def test_window_unbounded(kind, begin, end, expected):
 SELECT sum(`a`) OVER (ROWS BETWEEN {expected}) AS `tmp`
 FROM t"""
     )
+
+
+def test_large_compile():
+    """
+    Tests that compiling a large expression tree finishes
+    within a reasonable amount of time
+    """
+    num_columns = 20
+    num_joins = 7
+
+    class MockBigQueryClient(bq.BigQueryClient):
+        def __init__(self):
+            pass
+
+    names = [f"col_{i}" for i in range(num_columns)]
+    schema = ibis.Schema(names, ['string'] * num_columns)
+    ibis_client = MockBigQueryClient()
+    table = TableExpr(
+        ops.SQLQueryResult("select * from t", schema, ibis_client)
+    )
+    for _ in range(num_joins):
+        table = table.mutate(dummy=ibis.literal(""))
+        table = table.left_join(table, ["dummy"])[[table]]
+
+    start = datetime.datetime.now()
+    table.compile()
+    delta = datetime.datetime.now() - start
+    assert delta.total_seconds() < 10

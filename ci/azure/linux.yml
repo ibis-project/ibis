@@ -265,41 +265,16 @@ jobs:
     - bash: make load PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}" LOADS="${LOADS}"
       displayName: 'Load test datasets'
 
-    - bash: make docker_docs_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="ping -c 1 impala"
-      displayName: 'Ping the impala host used in the tutorial notebooks'
-
     - bash: |
-        make docker_docs_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="git clone --branch gh-pages \
-          https://github.com/cpcloud/docs.ibis-project.org \
-          /tmp/ibis-project.org"
-      displayName: 'Clone doc repo'
-
-    - bash: |
-        docker-compose run ibis-docs \
-          find /tmp/ibis-project.org \
-            -maxdepth 1 \
-            # ignore the directory we're searching in itself
-            ! -wholename /tmp/ibis-project.org/ \
-            # ignore git files
-            ! -name '*.git' \
-            # ignore the CNAME record
-            ! -name CNAME \
-            # ignore files ending in nojekyll
-            ! -name '*.nojekyll' \
-            -exec rm -rf {} \;
-      displayName: 'Clear out old docs'
-
-    - bash: make docker_docs_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="conda list"
-      displayName: 'Show the doc env'
-
-    - bash: |
-        make docker_docs_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="python -m pysuerga docs/web --target-path=/tmp/ibis-project.org"
-      displayName: 'Build website'
-
-    - bash: |
-        make docker_docs_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="sphinx-build -b html \
-          docs/source /tmp/ibis-project.org/docs -W -T --keep-going"
-      displayName: 'Build docs'
+        docker-compose -f ci/docker-compose.yml run --rm ibis-docs bash -c "\
+            ping -c 1 impala && conda list && \
+            mkdir -p /tmp/ibis-project.org && \
+            cd /tmp/ibis-project.org && \
+            echo \"ibis-project.org\" > CNAME && \
+            touch .nojekyll && \
+            python -m pysuerga /ibis/docs/web --target-path=/tmp/ibis-project.org/ && \
+            sphinx-build -b html /ibis/docs/source /tmp/ibis-project.org/docs -W -T --keep-going"
+      displayName: 'Build website and docs'
 
     - task: PublishPipelineArtifact@1
       inputs:
@@ -314,24 +289,29 @@ jobs:
         chmod 700 ~/.ssh
         chmod 600 ~/.ssh/id_rsa
 
-        # add github to known hosts
         ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
+      displayName: 'Set up ssh'
+      env:
+        IBIS_GH_TOKEN: $(IBIS_GH_TOKEN)
+      condition: |
+        and(eq(variables['System.PullRequest.IsFork'], 'False'),
+            eq(variables['Build.Repository.Name'], 'ibis-project/ibis'),
+            eq(variables['Build.SourceBranchName'], 'master'))
 
+    - bash: |
         sudo chown -R "${USER}":"${USER}" /tmp/ibis
         pushd /tmp/ibis/ibis-project.org
 
-        git remote set-url origin git@github.com:ibis-project/docs.ibis-project.org
-
+        git init
+        git checkout -b gh-pages
+        git remote add origin git@github.com:ibis-project/docs.ibis-project.org
         git config user.name 'Ibis Documentation Bot'
         git config user.email ''
 
-        # Add everything
         git add --all .
         git commit -m "Docs from ibis at $(Build.SourceVersion)"
         git push --force origin gh-pages
       displayName: 'Push web to remote repo'
-      env:
-        IBIS_GH_TOKEN: $(IBIS_GH_TOKEN)
       condition: |
         and(eq(variables['System.PullRequest.IsFork'], 'False'),
             eq(variables['Build.Repository.Name'], 'ibis-project/ibis'),

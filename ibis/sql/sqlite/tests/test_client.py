@@ -6,6 +6,7 @@ import pandas.util.testing as tm
 import pytest
 
 import ibis
+import ibis.config as config
 import ibis.expr.types as ir
 from ibis.util import guid
 
@@ -103,3 +104,18 @@ def test_create_and_drop_table(con):
     tm.assert_frame_equal(new_table.execute(), t.limit(5).execute())
     con.drop_table(name)
     assert name not in con.list_tables()
+
+
+def test_verbose_log_queries(con):
+    queries = []
+
+    with config.option_context('verbose', True):
+        with config.option_context('verbose_log', queries.append):
+            con.table('functional_alltypes')['year'].execute()
+
+    assert len(queries) == 1
+    (query,) = queries
+    expected = 'SELECT t0.year \n'
+    expected += 'FROM base.functional_alltypes AS t0\n'
+    expected += ' LIMIT ? OFFSET ?'
+    assert query == expected

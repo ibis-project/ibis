@@ -8,6 +8,7 @@ import math
 import numbers
 import operator
 from collections.abc import Sized
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -21,7 +22,9 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.pandas.aggcontext as agg_ctx
 from ibis.compat import DatetimeTZDtype
+from ibis.expr.typing import TimeContext
 from ibis.pandas.core import (
+    TIME_COL,
     boolean_types,
     execute,
     fixed_width_types,
@@ -883,8 +886,21 @@ def execute_node_where_scalar_scalar_series(op, cond, true, false, **kwargs):
 @execute_node.register(
     ibis.pandas.client.PandasTable, ibis.pandas.client.PandasClient
 )
-def execute_database_table_client(op, client, **kwargs):
-    return client.dictionary[op.name]
+def execute_database_table_client(
+    op, client, timecontext: Optional[TimeContext], **kwargs
+):
+    df = client.dictionary[op.name]
+    if timecontext:
+        begin, end = timecontext
+        if TIME_COL not in df:
+            raise com.IbisError(
+                f'Table {op.name} must have a time column named {TIME_COL}'
+                ' to execute with time context.'
+            )
+        # filter with time context
+        mask = df[TIME_COL].between(begin, end)
+        return df.loc[mask].reset_index(drop=True)
+    return df
 
 
 MATH_FUNCTIONS = {

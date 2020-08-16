@@ -95,7 +95,10 @@ def _extract_field(sql_attr):
     def extract_field_formatter(translator, expr):
         op = expr.op()
         arg = translator.translate(op.args[0])
-        return 'EXTRACT({} from {})'.format(sql_attr, arg)
+        if sql_attr == 'epochseconds':
+            return f'UNIX_SECONDS({arg})'
+        else:
+            return f'EXTRACT({sql_attr} from {arg})'
 
     return extract_field_formatter
 
@@ -337,12 +340,14 @@ _operation_registry = impala_compiler._operation_registry.copy()
 _operation_registry.update(
     {
         ops.ExtractYear: _extract_field('year'),
+        ops.ExtractQuarter: _extract_field('quarter'),
         ops.ExtractMonth: _extract_field('month'),
         ops.ExtractDay: _extract_field('day'),
         ops.ExtractHour: _extract_field('hour'),
         ops.ExtractMinute: _extract_field('minute'),
         ops.ExtractSecond: _extract_field('second'),
         ops.ExtractMillisecond: _extract_field('millisecond'),
+        ops.ExtractEpochSeconds: _extract_field('epochseconds'),
         ops.StringReplace: fixed_arity('REPLACE', 3),
         ops.StringSplit: fixed_arity('SPLIT', 2),
         ops.StringConcat: _string_concat,

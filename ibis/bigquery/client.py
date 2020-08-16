@@ -414,11 +414,8 @@ class BigQueryClient(SQLClient):
         result = comp.build_ast(expr, context)
         return result
 
-    def _execute_query(self, dml):
-        query = self.query_class(
-            self, dml, query_parameters=dml.context.params
-        )
-        return query.execute()
+    def _get_query(self, dml, **kwargs):
+        return self.query_class(self, dml, query_parameters=dml.context.params)
 
     def _fully_qualified_name(self, name, database):
         project, dataset = self._parse_project_and_dataset(database)

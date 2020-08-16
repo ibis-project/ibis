@@ -39,6 +39,9 @@ def validate_input_type(
     """Check that the declared number of inputs (the length of `input_type`)
     and the number of inputs to `func` are equal.
 
+    If the signature of `func` uses *args, then no check is done (since no
+    check can be done).
+
     Parameters
     ----------
     input_type : List[DataType]
@@ -49,20 +52,26 @@ def validate_input_type(
     inspect.Signature
     """
     funcsig = signature(func)
-    declared_parameter_count = len(input_type)
-    function_parameter_count = _parameter_count(funcsig)
+    params = funcsig.parameters.values()
 
-    if declared_parameter_count != function_parameter_count:
-        raise TypeError(
-            'Function signature {!r} has {:d} parameters, '
-            'input_type has {:d}. These must match. Non-column '
-            'parameters must be defined as keyword only, i.e., '
-            'def foo(col, *, function_param).'.format(
-                func.__name__,
-                function_parameter_count,
-                declared_parameter_count,
+    # We can only do validation if all the positional arguments are explicit
+    # (i.e. no *args)
+    if not any([param.kind is Parameter.VAR_POSITIONAL for param in params]):
+        declared_parameter_count = len(input_type)
+        function_parameter_count = _parameter_count(funcsig)
+
+        if declared_parameter_count != function_parameter_count:
+            raise TypeError(
+                'Function signature {!r} has {:d} parameters, '
+                'input_type has {:d}. These must match. Non-column '
+                'parameters must be defined as keyword only, i.e., '
+                'def foo(col, *, function_param).'.format(
+                    func.__name__,
+                    function_parameter_count,
+                    declared_parameter_count,
+                )
             )
-        )
+
     return funcsig
 
 
