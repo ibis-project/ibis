@@ -13,6 +13,8 @@ Release Notes
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
 * :feature:`2230` Add intersection to general ibis api
+* :support:`2304` Update ``google-cloud-bigquery`` dependency minimum version to 1.12.0
+* :feature:`2303` Add ``application_name`` argument to ``ibis.bigquery.connect`` to allow attributing Google API requests to projects that use Ibis.
 * :bug:`1320` Added verbose logging to SQL backends
 * :feature:`2285` Add support for casting category dtype in pandas backend
 * :feature:`2270` Add support for Union in the PySpark backend
