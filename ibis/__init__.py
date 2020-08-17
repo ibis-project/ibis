@@ -33,7 +33,7 @@ with suppress(ImportError):
 
 with suppress(ImportError):
     # pip install ibis-framework[sqlite]
-    import ibis.sql.sqlite.api as sqlite  # noqa: F401
+    import ibis.backends.sqlite.api as sqlite  # noqa: F401
 
 with suppress(ImportError):
     # pip install ibis-framework[postgres]

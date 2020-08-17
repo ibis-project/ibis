@@ -1,0 +1,2 @@
+IBIS_TEST_DATA_DIRECTORY=/tmp/ibis-testing-data
+IBIS_TEST_SQLITE_DATABASE="/tmp/ibis_testing.db"
