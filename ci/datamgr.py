@@ -507,14 +507,14 @@ def bigquery(schema, data_directory, ignore_missing_dependency, **params):
         pass  # Skip if already created.
 
     # Set up main data tables.
-    data_directory = Path(data_directory)
-    functional_alltypes_path = data_directory / 'functional_alltypes.csv'
     job = bqclient.query(schema.read())
     job.result()
     if job.error_result:
         raise click.ClickException(str(job.error_result))
 
     # Load main data table.
+    data_directory = Path(data_directory)
+    functional_alltypes_path = data_directory / 'functional_alltypes.csv'
     load_config = bigquery.LoadJobConfig()
     load_config.skip_leading_rows = 1  # skip the header row.
     with open(str(functional_alltypes_path), 'rb') as csvfile:
@@ -528,7 +528,6 @@ def bigquery(schema, data_directory, ignore_missing_dependency, **params):
             raise click.ClickException(str(job.error_result))
 
     # Load an ingestion time partitioned table.
-    functional_alltypes_path = data_directory / 'functional_alltypes.csv'
     with open(str(functional_alltypes_path), 'rb') as csvfile:
         job = bqclient.load_table_from_file(
             csvfile,
@@ -589,7 +588,7 @@ def bigquery(schema, data_directory, ignore_missing_dependency, **params):
     bqclient.create_table(numeric_table, exists_ok=True)
 
     df = pd.read_csv(
-        str(data_directory / 'functional_alltypes.csv'),
+        str(functional_alltypes_path),
         usecols=['string_col', 'double_col'],
         header=0,
     )
