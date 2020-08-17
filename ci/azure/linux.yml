@@ -62,7 +62,7 @@ jobs:
         docker-compose run \
           -e PYTHONHASHSEED=$PYTHONHASHSEED \
           -e AZURECI=$AZURECI \
-          -e PYTEST_BACKENDS=$PYTEST_BACKENDS \
+          -e PYTEST_BACKENDS="$PYTEST_BACKENDS" \
           ibis \
           pytest ibis -m "not udf" \
                       -k"not compile and not connect" \
