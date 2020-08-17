@@ -16,7 +16,7 @@ from ibis.tests.backends import (
     Impala,
     Pandas,
     Parquet,
-    PostgreSQL,
+    Postgres,
     PySpark,
     Spark,
     SQLite,
@@ -143,7 +143,7 @@ def test_date_truncate(backend, alltypes, df, unit):
             'ms',
             pd.Timedelta,
             marks=pytest.mark.xpass_backends(
-                (Csv, Pandas, Parquet, BigQuery, Impala, PostgreSQL)
+                (Csv, Pandas, Parquet, BigQuery, Impala, Postgres)
             ),
         ),
         param(
