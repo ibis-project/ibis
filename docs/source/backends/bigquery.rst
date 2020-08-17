@@ -166,3 +166,11 @@ library, or tool. Per the `Google User Data Policy
 <https://developers.google.com/terms/api-services-user-data-policy>`_, your
 application must accurately represent itself when authenticating to Google
 API services.
+
+Extending the BigQuery backend
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Create a Google Cloud project.
+* Set the ``GOOGLE_BIGQUERY_PROJECT_ID`` environment variable.
+* Populate test data: ``python ci/datamgr.py bigquery``
+* Run the test suite: ``pytest ibis/bigquery/tests``
