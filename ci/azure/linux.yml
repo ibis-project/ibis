@@ -64,14 +64,15 @@ jobs:
           -e AZURECI=$AZURECI \
           -e PYTEST_BACKENDS="$PYTEST_BACKENDS" \
           ibis \
-          pytest ibis -m "not udf" \
-                      -k"not compile and not connect" \
-                      -ra \
-                      --doctest-modules \
-                      --doctest-ignore-import-errors \
-                      --junitxml=/tmp/test-reports/pytest/junit.xml \
-                      --cov=ibis \
-                      --cov-report=xml:/tmp/test-reports/pytest-cov/coverage.xml
+          pytest ibis/tests ibis/expr/tests ibis/sql/tests ibis/impala/tests ibis/clickhouse/tests \
+            -m "not udf" \
+            -k"not compile and not connect" \
+            -ra \
+            --doctest-modules \
+            --doctest-ignore-import-errors \
+            --junitxml=/tmp/test-reports/pytest/junit.xml \
+            --cov=ibis \
+            --cov-report=xml:/tmp/test-reports/pytest-cov/coverage.xml
       displayName: 'Run tests'
 
     # See #1954
