@@ -7,12 +7,8 @@ import pytest
 
 import ibis
 import ibis.common.exceptions as com
-import ibis.util as util
 from ibis.tests.backends import Backend
-
-
-def _random_identifier(suffix):
-    return '__ibis_test_{}_{}'.format(suffix, util.guid())
+from ibis.tests.util import random_identifier, TempHelper
 
 
 def subclasses(cls):
@@ -377,30 +373,39 @@ def get_common_spark_testing_client(data_directory, connect):
 
 
 @pytest.fixture
-def temp_table(con: ibis.client.Client) -> str:
-    """
-    Return a temporary table name.
+def database(con, test_data_db: str) -> str:
+    """Create a temporary database.
 
     Parameters
     ----------
-    con : ibis.client.Client
+    con : ibis.omniscidb.OmniSciDBClient
+    test_data_db : str
 
     Yields
-    ------
-    name : string
-        Random table name for a temporary usage.
+    -------
+    str
     """
-    name = _random_identifier('table')
-    try:
-        yield name
-    finally:
-        if hasattr(con, 'drop_table'):
-            con.drop_table(name, force=True)
+    with TempHelper(con, kind='database', create=True) as result:
+        yield result
 
 
 @pytest.fixture
-def temp_view(con) -> str:
-    """Return a temporary view name.
+def schema() -> ibis.schema:
+    """
+    Define fixture for test schema
+
+    Returns
+    -------
+    ibis.expr.Schema
+    """
+    return ibis.schema(
+        [('a', 'polygon'), ('b', 'point'), ('c', 'int8'), ('d', 'double')]
+    )
+
+
+@pytest.fixture
+def table_name(con) -> str:
+    """Return a temporary table name.
 
     Parameters
     ----------
@@ -409,14 +414,30 @@ def temp_view(con) -> str:
     Yields
     ------
     name : string
-        Random view name for a temporary usage.
+        Random table name for a temporary usage.
     """
-    name = _random_identifier('view')
-    try:
-        yield name
-    finally:
-        if hasattr(con, 'drop_view'):
-            con.drop_view(name, force=True)
+    with TempHelper(
+        con, kind='table', create=False, create_kwargs={'schema': schema}
+    ) as result:
+        yield result
+
+
+@pytest.fixture
+def view(con, test_table) -> str:
+    """Create a temporary view.
+
+    Parameters
+    ----------
+    con : ibis.omniscidb.OmniSciDBClient
+
+    Yields
+    -------
+    str
+    """
+    with TempHelper(
+        con, kind='view', create=True, create_kwargs={'expr': test_table}
+    ) as result:
+        yield result
 
 
 @pytest.fixture(scope='session')
@@ -442,7 +463,7 @@ def alternate_current_database(con, backend, current_data_db: str) -> str:
     -------
     str
     """
-    name = _random_identifier('database')
+    name = random_identifier('database')
     if not hasattr(con, 'create_database'):
         pytest.skip(
             f'{backend.name} backend doesn\'t have create_database method.'

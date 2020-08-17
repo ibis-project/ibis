@@ -6,7 +6,7 @@ import pandas
 import pytest
 
 import ibis
-import ibis.util as util
+from ibis.tests.util import TempHelper
 
 OMNISCIDB_HOST = os.environ.get('IBIS_TEST_OMNISCIDB_HOST', 'localhost')
 OMNISCIDB_PORT = int(os.environ.get('IBIS_TEST_OMNISCIDB_PORT', 6274))
@@ -36,47 +36,8 @@ def con():
     )
 
 
-class temp_helper:
-    def __init__(
-        self,
-        con,
-        kind,
-        create=False,
-        create_kwargs=dict(),
-        extra_return=[],
-        method_name=None,
-    ):
-        self.name = _random_identifier(kind)
-        self.con = con
-        self.kind = kind
-        self.create = create
-        self.create_kwargs = create_kwargs
-        self.extra_return = extra_return
-        self.method_name = kind if method_name is None else method_name
-
-    def __enter__(self):
-        # some of the temp entities may not support 'force' parameter
-        # at 'drop' method, that's why we use 'try-except' for that
-        try:
-            getattr(self.con, 'drop_' + self.method_name)(self.name)
-        except Exception:
-            pass
-
-        if self.create:
-            getattr(self.con, 'create_' + self.method_name)(
-                self.name, **self.create_kwargs
-            )
-        return self.name
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        try:
-            getattr(self.con, 'drop_' + self.method_name)(self.name)
-        except Exception:
-            pass
-
-
-@pytest.fixture(scope='function')
-def test_schema() -> ibis.schema:
+@pytest.fixture
+def schema() -> ibis.schema:
     """
     Define fixture for test schema
 
@@ -89,8 +50,8 @@ def test_schema() -> ibis.schema:
     )
 
 
-@pytest.fixture(scope='function')
-def test_table(con, test_schema):
+@pytest.fixture
+def table(con, schema):
     """
     Define fixture for test table.
 
@@ -98,8 +59,8 @@ def test_table(con, test_schema):
     -------
     ibis.expr.types.TableExpr
     """
-    with temp_helper(
-        con, kind='table', create=True, create_kwargs={'schema': test_schema}
+    with TempHelper(
+        con, kind='table', create=True, create_kwargs={'schema': schema}
     ) as name:
         yield con.table(name)
 
@@ -195,12 +156,8 @@ def translate() -> typing.Callable:
     return lambda expr: dialect.translator(expr, context).get_result()
 
 
-def _random_identifier(suffix):
-    return '__ibis_test_{}_{}'.format(suffix, util.guid())
-
-
 @pytest.fixture
-def temp_table(con) -> str:
+def table_name(con) -> str:
     """Return a temporary table name.
 
     Parameters
@@ -212,10 +169,10 @@ def temp_table(con) -> str:
     name : string
         Random table name for a temporary usage.
     """
-    with temp_helper(
-        con, kind='table', create=False, create_kwargs={'schema': test_schema}
-    ) as ret_value:
-        yield ret_value
+    with TempHelper(
+        con, kind='table', create=False, create_kwargs={'schema': schema}
+    ) as result:
+        yield result
 
 
 @pytest.fixture(scope='session')
@@ -225,7 +182,7 @@ def test_data_db() -> str:
 
 
 @pytest.fixture
-def temp_database(con, test_data_db: str) -> str:
+def database(con, test_data_db: str) -> str:
     """Create a temporary database.
 
     Parameters
@@ -237,12 +194,12 @@ def temp_database(con, test_data_db: str) -> str:
     -------
     str
     """
-    with temp_helper(con, kind='database', create=True) as ret_value:
-        yield ret_value
+    with TempHelper(con, kind='database', create=True) as result:
+        yield result
 
 
 @pytest.fixture
-def temp_view(con) -> str:
+def view(con) -> str:
     """Return a temporary view name.
 
     Parameters
@@ -254,30 +211,27 @@ def temp_view(con) -> str:
     name : string
         Random view name for a temporary usage.
     """
-    with temp_helper(con, kind='view') as ret_value:
-        yield ret_value
+    with TempHelper(con, kind='view') as result:
+        yield result
 
 
-@pytest.fixture(scope='function')
-def test_view(con, test_table) -> str:
+def new_view(con, table) -> str:
     """Create a temporary view.
-
     Parameters
     ----------
     con : ibis.omniscidb.OmniSciDBClient
-
     Yields
     -------
     str
     """
-    with temp_helper(
-        con, kind='view', create=True, create_kwargs={'expr': test_table}
-    ) as ret_value:
-        yield ret_value
+    with TempHelper(
+        con, kind='view', create=True, create_kwargs={'expr': table}
+    ) as result:
+        yield result
 
 
-@pytest.fixture(scope='function')
-def test_user(con) -> list:
+@pytest.fixture
+def user(con) -> list:
     """Return a list with temporary user name and password
 
     Parameters
@@ -288,5 +242,5 @@ def test_user(con) -> list:
     -------
     tupple
     """
-    with temp_helper(con, kind="user") as name:
+    with TempHelper(con, kind="user") as name:
         yield (name, "super")

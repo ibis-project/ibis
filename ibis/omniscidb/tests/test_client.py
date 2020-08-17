@@ -82,13 +82,13 @@ def test_compile_toplevel():
 
 
 def text_exists_table_with_database(
-    con, alltypes, test_data_db, temp_table, temp_database
+    con, alltypes, test_data_db, table_name, database
 ):
     tmp_db = test_data_db
-    con.create_table(temp_table, alltypes, database=tmp_db)
+    con.create_table(table_name, alltypes, database=tmp_db)
 
-    assert con.exists_table(temp_table, database=tmp_db)
-    assert not con.exists_table(temp_table, database=temp_database)
+    assert con.exists_table(table_name, database=tmp_db)
+    assert not con.exists_table(table_name, database=database)
 
 
 def test_union_op(alltypes):
@@ -106,22 +106,22 @@ def test_union_op(alltypes):
         expr.compile()
 
 
-def test_add_zero_columns(test_table):
+def test_add_zero_columns(table):
     cols_with_types = {}
     with pytest.raises(com.IbisInputError):
-        test_table.add_columns(cols_with_types)
+        table.add_columns(cols_with_types)
 
 
 @pytest.mark.parametrize(
     'cols_with_types',
     [{'e': 'float64'}, {'e': 'string', 'f': 'point', 'g': 'polygon'}],
 )
-def test_add_columns(con, test_table, cols_with_types):
-    schema_before = test_table.schema()
+def test_add_columns(con, table, cols_with_types):
+    schema_before = table.schema()
 
-    test_table.add_columns(cols_with_types)
+    table.add_columns(cols_with_types)
 
-    res_tbl = con.table(test_table.name)
+    res_tbl = con.table(table.name)
 
     schema_new_cols = ibis.schema(cols_with_types.items())
     old_schema_with_new_cols = schema_before.append(schema_new_cols)
@@ -129,23 +129,19 @@ def test_add_columns(con, test_table, cols_with_types):
     assert res_tbl.schema() == old_schema_with_new_cols
 
 
-def test_drop_zero_columns(test_table):
+def test_drop_zero_columns(table):
     column_names = []
     with pytest.raises(com.IbisInputError):
-        test_table.drop_columns(column_names)
+        table.drop_columns(column_names)
 
 
-@pytest.mark.xfail(
-    reason="'ALTER TABLE <tbl_name> DROP <col_name>' \
-        is not supported yet by omnisci backend."
-)
 @pytest.mark.parametrize('column_names', [['a'], ['a', 'b', 'c']])
-def test_drop_columns(con, test_table, column_names):
-    schema_before = test_table.schema()
+def test_drop_columns(con, table, column_names):
+    schema_before = table.schema()
 
-    test_table.drop_columns(column_names)
+    table.drop_columns(column_names)
 
-    res_tbl = con.table(test_table.name)
+    res_tbl = con.table(table.name)
     schema_with_dropped_cols = schema_before.delete(column_names)
 
     assert res_tbl.schema() == schema_with_dropped_cols
@@ -177,7 +173,7 @@ def test_drop_columns(con, test_table, column_names):
         ),
     ],
 )
-def test_create_table_schema(con, temp_table, properties):
+def test_create_table_schema(con, table_name, properties):
     schema = ibis.schema(
         [
             ('a', 'float'),
@@ -193,9 +189,9 @@ def test_create_table_schema(con, temp_table, properties):
         ]
     )
 
-    con.create_table(temp_table, schema=schema, **properties)
+    con.create_table(table_name, schema=schema, **properties)
 
-    t = con.table(temp_table)
+    t = con.table(table_name)
 
     for k, i_type in t.schema().items():
         assert schema[k] == i_type
@@ -224,9 +220,9 @@ def test_explain(con, alltypes):
     'filename',
     ["/tmp/test_read_csv.csv", pathlib.Path("/tmp/test_read_csv.csv")],
 )
-def test_read_csv(con, temp_table, filename, alltypes, df_alltypes):
+def test_read_csv(con, table_name, filename, alltypes, df_alltypes):
     schema = alltypes.schema()
-    con.create_table(temp_table, schema=schema)
+    con.create_table(table_name, schema=schema)
 
     # prepare csv file inside omnisci docker container
     # if the file exists, then it will be overwritten
@@ -235,7 +231,7 @@ def test_read_csv(con, temp_table, filename, alltypes, df_alltypes):
     )
 
     db = con.database()
-    table = db.table(temp_table)
+    table = db.table(table_name)
     table.read_csv(filename, header=False, quotechar='"', delimiter=",")
     df_read_csv = table.execute()
 
@@ -331,115 +327,28 @@ def test_cpu_execution_type(
         ),
     ],
 )
-def test_create_table(con, temp_table, table_src):
+def test_create_table(con, table_name, table_src):
 
     if isinstance(table_src, ibis.Schema):
-        con.create_table(temp_table, schema=table_src)
+        con.create_table(table_name, schema=table_src)
     else:
-        table_src.name = temp_table
-        con.create_table(temp_table, obj=table_src)
+        table_src.name = table_name
+        con.create_table(table_name, obj=table_src)
 
-    assert con.exists_table(temp_table)
+    assert con.exists_table(table_name)
     if isinstance(table_src, ibis.Schema):
-        assert con.get_schema(temp_table) == table_src
+        assert con.get_schema(table_name) == table_src
     elif isinstance(table_src, pd.DataFrame):
-        assert con.get_schema(temp_table) == ibis.schema(
+        assert con.get_schema(table_name) == ibis.schema(
             types=table_src.dtypes()
         )
     elif isinstance(table_src, ibis.expr.types.TableExpr):
-        assert con.get_schema(temp_table) == table_src.schema()
-
-
-@pytest.mark.parametrize('force', [False, True])
-def test_drop_table(con, temp_table, test_schema, force):
-    _drop(
-        con,
-        temp_table,
-        'table',
-        dict({'force': force}),
-        dict({'schema': test_schema}),
-    )
-
-
-def test_truncate_table(con, temp_table):
-    con.create_table(temp_table, schema=con.get_schema('functional_alltypes'))
-    # TODO: when #2119 will be merged, replase 'con._execute()'
-    # with calling 'con.insert_into_select()'
-    con._execute(
-        "INSERT INTO {} SELECT * FROM functional_alltypes".format(temp_table)
-    )
-
-    db = con.database()
-    table = db.table(temp_table)
-
-    df_before, schema_before = table.execute(), table.schema()
-    con.truncate_table(temp_table)
-    df_after, schema_after = table.execute(), table.schema()
-
-    assert con.exists_table(temp_table)
-    assert schema_before == schema_after
-    assert df_before.shape[0] != 0 and df_after.shape[0] == 0
-
-
-@pytest.mark.parametrize(
-    'expr',
-    [
-        [],
-        ['invalid_collumn_name'],
-        ['index', 'invalid_collumn_name'],
-        [
-            'index',
-            'id',
-            'bool_col',
-            'tinyint_col',
-            'float_col',
-            'double_col',
-            'string_col',
-            'timestamp_col',
-        ],
-    ],
-)
-def test_create_view(con, temp_view, alltypes, expr):
-    df_alltypes = alltypes.execute()
-
-    # if list with selected cols contains invalid names
-    # 'create_view' should raise exception
-    try:
-        con.create_view(temp_view, alltypes[expr])
-    except com.IbisTypeError:
-        assert not set(expr).issubset(df_alltypes.columns)
-        return
-
-    df_view = con._execute('SELECT * from {};'.format(temp_view)).to_df()
-
-    # when list with selected columns is empty
-    # in SQL notations it means - select all cols,
-    # DataFrame[`empty_list`] means - select nothing,
-    # so there is some logic here to properly process that situation
-    pd.testing.assert_frame_equal(
-        df_alltypes[expr if expr != [] else df_alltypes.columns],
-        df_view,
-        check_dtype=False,
-    )
-
-
-@pytest.mark.parametrize('force', [False, True])
-def test_drop_view(con, test_view, force):
-    assert con.exists_table(test_view)
-    con.drop_view(test_view, force=force)
-    assert not con.exists_table(test_view)
-
-    # trying to drop non existing view and see,
-    # if an exception occurred with force=False
-    try:
-        con.drop_view(test_view, force=force)
-    except Exception:
-        assert not force
+        assert con.get_schema(table_name) == table_src.schema()
 
 
 @pytest.mark.parametrize('is_super', [False, True])
-def test_create_user(con, test_user, is_super):
-    name, password = test_user
+def test_create_user(con, user, is_super):
+    name, password = user
     con.create_user(name, password, is_super)
 
     # if is_super=False, then it should throw an exception
@@ -456,10 +365,10 @@ def test_create_user(con, test_user, is_super):
 
 
 @pytest.mark.parametrize('is_super', [False, True])
-def test_alter_user(con, is_super, test_user):
-    name, password = test_user
-    con.create_user(*test_user, is_super=False)
-    con.alter_user(*test_user, is_super=is_super)
+def test_alter_user(con, is_super, user):
+    name, password = user
+    con.create_user(*user, is_super=False)
+    con.alter_user(*user, is_super=is_super)
 
     # if is_super=False, then it should throw an exception
     try:
@@ -472,30 +381,3 @@ def test_alter_user(con, is_super, test_user):
         )
     except Exception:
         assert not is_super
-
-
-@pytest.mark.xfail(reason='\'exists_database\' not supported yet')
-def test_create_database(con, temp_database):
-    assert not con.exists_database(temp_database)
-    con.create_database(temp_database)
-    assert con.exists_database(temp_database)
-
-
-@pytest.mark.xfail(reason='\'exists_database\' not supported yet')
-@pytest.mark.parametrize('force', [False, True])
-def test_drop_database(con, temp_database, force):
-    _drop(con, temp_database, 'database', dict({'force': force}), dict())
-
-
-def _drop(con, name, method_name, drop_kwargs, create_kwargs):
-    # trying to drop non existing obj and see,
-    # if an exception occurred with force=False
-    try:
-        getattr(con, 'drop_' + method_name)(name, **drop_kwargs)
-    except Exception:
-        assert not drop_kwargs['force']
-
-    getattr(con, 'create_' + method_name)(name, **create_kwargs)
-    assert getattr(con, 'exists_' + method_name)(name)
-    getattr(con, 'drop_' + method_name)(name, **drop_kwargs)
-    assert not getattr(con, 'exists_' + method_name)(name)

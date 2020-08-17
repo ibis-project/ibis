@@ -4,6 +4,7 @@ from pkg_resources import parse_version
 
 import ibis
 import ibis.expr.datatypes as dt
+import ibis.common.exceptions as com
 from ibis.tests.backends import (
     BigQuery,
     Clickhouse,
@@ -12,6 +13,20 @@ from ibis.tests.backends import (
     PySpark,
     Spark,
 )
+
+
+def _drop(con, name, method_name, drop_kwargs, create_kwargs):
+    # trying to drop non existing obj and see,
+    # if an exception occurred with force=False
+    try:
+        getattr(con, 'drop_' + method_name)(name, **drop_kwargs)
+    except Exception:
+        assert not drop_kwargs['force']
+
+    getattr(con, 'create_' + method_name)(name, **create_kwargs)
+    assert getattr(con, 'exists_' + method_name)(name)
+    getattr(con, 'drop_' + method_name)(name, **drop_kwargs)
+    assert not getattr(con, 'exists_' + method_name)(name)
 
 
 @pytest.fixture
@@ -114,38 +129,38 @@ def test_sql(backend, con, sql):
 
 
 @pytest.mark.xfail_unsupported
-def test_create_table_from_schema(con, backend, new_schema, temp_table):
+def test_create_table_from_schema(con, backend, new_schema, table_name):
     if not hasattr(con, 'create_table') or not hasattr(con, 'drop_table'):
         pytest.xfail(
             '{} backend doesn\'t have create_table or drop_table methods.'
         )
 
-    con.create_table(temp_table, schema=new_schema)
+    con.create_table(table_name, schema=new_schema)
 
-    t = con.table(temp_table)
+    t = con.table(table_name)
 
     for k, i_type in t.schema().items():
         assert new_schema[k] == i_type
 
 
 @pytest.mark.xfail_unsupported
-def test_rename_table(con, backend, temp_table, new_schema):
+def test_rename_table(con, backend, table_name, new_schema):
     if not hasattr(con, 'rename_table'):
         pytest.xfail('{} backend doesn\'t have rename_table method.')
 
-    temp_table_original = '{}_original'.format(temp_table)
+    temp_table_original = '{}_original'.format(table_name)
     con.create_table(temp_table_original, schema=new_schema)
 
     t = con.table(temp_table_original)
-    t.rename(temp_table)
+    t.rename(table_name)
 
-    assert con.table(temp_table) is not None
-    assert temp_table in con.list_tables()
+    assert con.table(table_name) is not None
+    assert table_name in con.list_tables()
 
 
 @pytest.mark.xfail_unsupported
 @pytest.mark.xfail_backends([Impala, PySpark, Spark])
-def test_nullable_input_output(con, backend, temp_table):
+def test_nullable_input_output(con, backend, table_name):
     # - Impala, PySpark and Spark non-nullable issues #2138 and #2137
     if not hasattr(con, 'create_table') or not hasattr(con, 'drop_table'):
         pytest.xfail(
@@ -160,13 +175,42 @@ def test_nullable_input_output(con, backend, temp_table):
         ]
     )
 
-    con.create_table(temp_table, schema=sch)
+    con.create_table(table_name, schema=sch)
 
-    t = con.table(temp_table)
+    t = con.table(table_name)
 
     assert t.schema().types[0].nullable
     assert not t.schema().types[1].nullable
     assert t.schema().types[2].nullable
+
+
+@pytest.mark.parametrize('force', [False, True])
+def test_drop_table(con, table_name, schema, force):
+    _drop(
+        con,
+        name=table_name,
+        method_name='table',
+        drop_kwargs={'force': force},
+        create_kwargs={'schema': schema},
+    )
+
+
+def test_truncate_table(con, table_name):
+    con.create_table(table_name, schema=con.get_schema('functional_alltypes'))
+    con._execute(
+        "INSERT INTO {} SELECT * FROM functional_alltypes".format(table_name)
+    )
+
+    db = con.database()
+    table = db.table(table_name)
+
+    df_before, schema_before = table.execute(), table.schema()
+    con.truncate_table(table_name)
+    df_after, schema_after = table.execute(), table.schema()
+
+    assert con.exists_table(table_name)
+    assert schema_before == schema_after
+    assert df_before.shape[0] != 0 and df_after.shape[0] == 0
 
 
 # view tests
@@ -174,26 +218,60 @@ def test_nullable_input_output(con, backend, temp_table):
 
 @pytest.mark.xfail_unsupported
 @pytest.mark.xfail_backends([PySpark, Spark])
-def test_create_drop_view(con, backend, temp_view):
-    # pyspark and spark skipt because table actually is a temporary view
-    if not hasattr(con, 'create_view') or not hasattr(con, 'drop_view'):
-        pytest.xfail(
-            '{} backend doesn\'t have create_view or drop_view methods.'
-        )
+@pytest.mark.parametrize(
+    'expr',
+    [
+        [],
+        ['invalid_collumn_name'],
+        ['index', 'invalid_collumn_name'],
+        [
+            'index',
+            'id',
+            'bool_col',
+            'tinyint_col',
+            'float_col',
+            'double_col',
+            'string_col',
+            'timestamp_col',
+        ],
+    ],
+)
+def test_create_view(con, view, alltypes, expr):
+    df_alltypes = alltypes.execute()
 
-    # setup
-    table_name = 'functional_alltypes'
-    expr = con.table(table_name).limit(1)
+    # if list with selected cols contains invalid names
+    # 'create_view' should raise exception
+    try:
+        con.create_view(view, alltypes[expr])
+    except com.IbisTypeError:
+        assert not set(expr).issubset(df_alltypes.columns)
+        return
 
-    # create a new view
-    con.create_view(temp_view, expr)
-    # check if the view was created
-    assert temp_view in con.list_tables()
+    df_view = con._execute('SELECT * from {};'.format(view)).to_df()
 
-    t_expr = con.table(table_name)
-    v_expr = con.table(temp_view)
-    # check if the view and the table has the same fields
-    assert set(t_expr.schema().names) == set(v_expr.schema().names)
+    # when list with selected columns is empty
+    # in SQL notations it means - select all cols,
+    # DataFrame[`empty_list`] means - select nothing,
+    # so there is some logic here to properly process that situation
+    pd.testing.assert_frame_equal(
+        df_alltypes[expr if expr != [] else df_alltypes.columns],
+        df_view,
+        check_dtype=False,
+    )
+
+
+@pytest.mark.parametrize('force', [False, True])
+def test_drop_view(con, new_view, force):
+    assert con.exists_table(new_view)
+    con.drop_view(new_view, force=force)
+    assert not con.exists_table(new_view)
+
+    # trying to drop non existing view and see,
+    # if an exception occurred with force=False
+    try:
+        con.drop_view(new_view, force=force)
+    except Exception:
+        assert not force
 
 
 @pytest.mark.only_on_backends(
@@ -208,3 +286,28 @@ def test_separate_database(con, alternate_current_database, current_data_db):
     db = con.database(current_data_db)
     assert db.name == current_data_db
     assert tmp_db.name == alternate_current_database
+
+
+# database test
+
+
+@pytest.mark.xfail_backends([OmniSciDB])
+def test_create_database(con, database):
+    assert not con.exists_database(database)
+    con.create_database(database)
+    assert con.exists_database(database)
+
+
+@pytest.mark.xfail_backends([OmniSciDB])
+@pytest.mark.parametrize('force', [False, True])
+def test_drop_database(con, database, force):
+    con.create_database(database)
+    assert con.exists_database(database)
+    _drop(
+        con,
+        name=database,
+        method_name='database',
+        drop_kwargs={'force': force},
+        create_kwargs={},
+    )
+    assert not con.exists_database(database)
