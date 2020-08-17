@@ -15,8 +15,6 @@ from ibis.filesystems import HDFS, WebHDFS  # noqa: F401
 
 from ._version import get_versions  # noqa: E402
 
-
-
 with suppress(ImportError):
     # pip install ibis-framework[csv]
     import ibis.file.csv as csv  # noqa: F401
