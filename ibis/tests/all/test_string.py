@@ -3,7 +3,14 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.tests.backends import Clickhouse, Impala, Postgres, PySpark, Spark
+from ibis.tests.backends import (
+    Clickhouse,
+    Impala,
+    Postgres,
+    PySpark,
+    Spark,
+    OmniSciDB,
+)
 
 
 def test_string_col_is_unicode(backend, alltypes, df):
@@ -156,6 +163,7 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.string_col.length(),
             lambda t: t.string_col.str.len().astype('int32'),
             id='length',
+            marks=pytest.mark.xfail_backends([OmniSciDB]),  # #2338
         ),
         param(
             lambda t: t.string_col.strip(),

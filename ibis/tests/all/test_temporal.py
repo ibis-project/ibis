@@ -315,6 +315,7 @@ def test_interval_add_cast_column(backend, alltypes, df):
 )
 @pytest.mark.xfail_unsupported
 # Spark takes Java SimpleDateFormat instead of strftime
+@pytest.mark.xfail_backends([PySpark])  # #2201
 @pytest.mark.skip_backends([Spark])
 def test_strftime(backend, con, alltypes, df, ibis_pattern, pandas_pattern):
     expr = alltypes.timestamp_col.strftime(ibis_pattern)
@@ -376,6 +377,7 @@ def test_to_timestamp(backend, con, unit):
         ('2017-01-07', 5, 'Saturday'),
     ],
 )
+@pytest.mark.xfail_backends([PySpark])  # #2201
 @pytest.mark.xfail_unsupported
 def test_day_of_week_scalar(backend, con, date, expected_index, expected_day):
     expr = ibis.literal(date).cast(dt.date)
