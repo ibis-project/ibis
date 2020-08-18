@@ -215,6 +215,7 @@ def parquet(tables, data_directory, ignore_missing_dependency, **params):
     '--schema',
     type=click.File('rt'),
     default=str(SCRIPT_DIR / 'schema' / 'postgresql.sql'),
+    help='Path to SQL file that initializes the database via DDL.',
 )
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES + ['geo'])
 @click.option('-d', '--data-directory', default=DATA_DIR)
@@ -303,6 +304,7 @@ def postgres(schema, tables, data_directory, psql_path, plpython, **params):
     '--schema',
     type=click.File('rt'),
     default=str(SCRIPT_DIR / 'schema' / 'sqlite.sql'),
+    help='Path to SQL file that initializes the database via DDL.',
 )
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
 @click.option('-d', '--data-directory', default=DATA_DIR)
@@ -333,6 +335,7 @@ def sqlite(database, schema, tables, data_directory, **params):
     '--schema',
     type=click.File('rt'),
     default=str(SCRIPT_DIR / 'schema' / 'omniscidb.sql'),
+    help='Path to SQL file that initializes the database via DDL.',
 )
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES + ['geo'])
 @click.option('-d', '--data-directory', default=DATA_DIR)
@@ -427,6 +430,7 @@ def omniscidb(schema, tables, data_directory, **params):
     '--schema',
     type=click.File('rt'),
     default=str(SCRIPT_DIR / 'schema' / 'mysql.sql'),
+    help='Path to SQL file that initializes the database via DDL.',
 )
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
 @click.option('-d', '--data-directory', default=DATA_DIR)
@@ -452,6 +456,7 @@ def mysql(schema, tables, data_directory, **params):
     '--schema',
     type=click.File('rt'),
     default=str(SCRIPT_DIR / 'schema' / 'clickhouse.sql'),
+    help='Path to SQL file that initializes the database via DDL.',
 )
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
 @click.option('-d', '--data-directory', default=DATA_DIR)
@@ -481,6 +486,7 @@ def clickhouse(schema, tables, data_directory, **params):
     '--schema',
     type=click.File('rt'),
     default=str(SCRIPT_DIR / 'schema' / 'bigquery.sql'),
+    help='Path to SQL file that initializes the database via DDL.',
 )
 @click.option('-d', '--data-directory', default=DATA_DIR)
 @click.option('-i', '--ignore-missing-dependency', is_flag=True, default=False)
