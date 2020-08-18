@@ -388,6 +388,7 @@ def test_day_of_week_scalar(backend, con, date, expected_index, expected_day):
     assert result_day.lower() == expected_day.lower()
 
 
+@pytest.mark.xfail_backends([PySpark])  # #2201
 @pytest.mark.xfail_unsupported
 def test_day_of_week_column(backend, con, alltypes, df):
     expr = alltypes.timestamp_col.day_of_week
@@ -418,6 +419,7 @@ def test_day_of_week_column(backend, con, alltypes, df):
         ),
     ],
 )
+@pytest.mark.xfail_backends([PySpark])  # #2201
 @pytest.mark.xfail_unsupported
 def test_day_of_week_column_group_by(
     backend, con, alltypes, df, day_of_week_expr, day_of_week_pandas

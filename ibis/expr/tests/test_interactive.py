@@ -48,7 +48,7 @@ class TestInteractiveUse(unittest.TestCase):
         ), config.option_context('graphviz_repr', True):
             assert table._repr_png_() is not None
 
-    @pytest.mark.xfail  # #2337
+    @pytest.mark.xfail(strict=False)  # #2337
     def test_default_limit(self):
         table = self.con.table('functional_alltypes')
 
