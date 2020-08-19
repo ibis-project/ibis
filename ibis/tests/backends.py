@@ -56,13 +56,7 @@ class Backend(abc.ABC):
 
     def __init__(self, data_directory: Path) -> None:
         self.api  # skips if we can't access the backend
-        self.skip_if_missing_dependencies()
         self.connection = self.connect(data_directory)
-
-    @staticmethod
-    @abc.abstractmethod
-    def skip_if_missing_dependencies() -> None:
-        """Skip if the backend is missing dependencies."""
 
     @property
     def name(self) -> str:
@@ -173,10 +167,6 @@ class Pandas(Backend, RoundHalfToEven):
     returned_timestamp_unit = 'ns'
 
     @staticmethod
-    def skip_if_missing_dependencies() -> None:
-        """All dependencies of the pandas backend are hard dependencies."""
-
-    @staticmethod
     def connect(data_directory: Path) -> ibis.client.Client:
         return ibis.pandas.connect(
             {
@@ -253,11 +243,6 @@ class Parquet(Pandas):
     returned_timestamp_unit = 'ns'
 
     @staticmethod
-    def skip_if_missing_dependencies() -> None:
-        pytest.importorskip('pyarrow')
-        pytest.importorskip('pyarrow.parquet')
-
-    @staticmethod
     def connect(data_directory: Path) -> ibis.client.Client:
         filename = data_directory / 'functional_alltypes.parquet'
         if not filename.exists():
@@ -269,10 +254,6 @@ class HDF5(Pandas):
     check_names = False
     supports_divide_by_zero = True
     returned_timestamp_unit = 'ns'
-
-    @staticmethod
-    def skip_if_missing_dependencies() -> None:
-        pytest.importorskip('tables')
 
     @staticmethod
     def connect(data_directory: Path) -> ibis.client.Client:
@@ -288,10 +269,6 @@ class SQLite(Backend, RoundAwayFromZero):
     supports_window_operations = True
     check_dtype = False
     returned_timestamp_unit = 's'
-
-    @staticmethod
-    def skip_if_missing_dependencies() -> None:
-        pytest.importorskip('sqlalchemy')
 
     @staticmethod
     def connect(data_directory: Path) -> ibis.client.Client:
@@ -310,16 +287,11 @@ class SQLite(Backend, RoundAwayFromZero):
         return t.mutate(timestamp_col=t.timestamp_col.cast('timestamp'))
 
 
-class PostgreSQL(Backend, RoundHalfToEven):
+class Postgres(Backend, RoundHalfToEven):
     # postgres rounds half to even for double precision and half away from zero
     # for numeric and decimal
 
     returned_timestamp_unit = 's'
-
-    @staticmethod
-    def skip_if_missing_dependencies() -> None:
-        pytest.importorskip('sqlalchemy')
-        pytest.importorskip('psycopg2')
 
     @property
     def name(self) -> str:
@@ -380,10 +352,6 @@ class OmniSciDB(Backend, RoundAwayFromZero):
     )
 
     @staticmethod
-    def skip_if_missing_dependencies() -> None:
-        pytest.importorskip('pymapd')
-
-    @staticmethod
     def connect(data_directory: Path) -> ibis.client.Client:
         user = os.environ.get('IBIS_TEST_OMNISCIDB_USER', 'admin')
         password = os.environ.get(
@@ -439,11 +407,6 @@ class MySQL(Backend, RoundHalfToEven):
             self.__class__.supports_window_operations = True
 
     @staticmethod
-    def skip_if_missing_dependencies() -> None:
-        pytest.importorskip('sqlalchemy')
-        pytest.importorskip('pymysql')
-
-    @staticmethod
     def connect(data_directory: Path) -> ibis.client.Client:
         user = os.environ.get('IBIS_TEST_MYSQL_USER', 'ibis')
         password = os.environ.get('IBIS_TEST_MYSQL_PASSWORD', 'ibis')
@@ -471,10 +434,6 @@ class Clickhouse(UnorderedComparator, Backend, RoundHalfToEven):
     returned_timestamp_unit = 's'
     supported_to_timestamp_units = {'s'}
     supports_floating_modulus = False
-
-    @staticmethod
-    def skip_if_missing_dependencies() -> None:
-        pytest.importorskip('clickhouse_driver')
 
     @staticmethod
     def connect(data_directory: Path) -> ibis.client.Client:
@@ -525,13 +484,6 @@ class BigQuery(UnorderedComparator, Backend, RoundAwayFromZero):
     returned_timestamp_unit = 'us'
 
     @staticmethod
-    def skip_if_missing_dependencies() -> None:
-        pytest.importorskip('google.api_core.exceptions')
-        pytest.importorskip('google.auth')
-        pytest.importorskip('google.cloud.bigquery')
-        pytest.importorskip('pydata_google_auth')
-
-    @staticmethod
     def connect(data_directory: Path) -> ibis.client.Client:
         project_id = os.environ.get('GOOGLE_BIGQUERY_PROJECT_ID')
         if project_id is None:
@@ -560,12 +512,6 @@ class Impala(UnorderedComparator, Backend, RoundAwayFromZero):
     check_dtype = False
     supports_divide_by_zero = True
     returned_timestamp_unit = 's'
-
-    @staticmethod
-    def skip_if_missing_dependencies() -> None:
-        pytest.importorskip('hdfs')
-        pytest.importorskip('impala')
-        pytest.importorskip('impala.dbapi')
 
     @staticmethod
     def connect(data_directory: Path) -> ibis.client.Client:
@@ -599,10 +545,6 @@ class Impala(UnorderedComparator, Backend, RoundAwayFromZero):
 
 class Spark(Backend, RoundHalfToEven):
     @staticmethod
-    def skip_if_missing_dependencies() -> None:
-        pytest.importorskip('pyspark')
-
-    @staticmethod
     def connect(data_directory):
         from ibis.tests.all.conftest import get_spark_testing_client
 
@@ -623,10 +565,6 @@ class Spark(Backend, RoundHalfToEven):
 
 class PySpark(Backend, RoundAwayFromZero):
     supported_to_timestamp_units = {'s'}
-
-    @staticmethod
-    def skip_if_missing_dependencies() -> None:
-        pytest.importorskip('pyspark')
 
     @staticmethod
     def connect(data_directory):

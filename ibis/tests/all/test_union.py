@@ -1,11 +1,11 @@
 import pandas as pd
 import pytest
 
-from ibis.tests.backends import BigQuery, Impala, Pandas, PostgreSQL, PySpark
+from ibis.tests.backends import BigQuery, Impala, Pandas, Postgres, PySpark
 
 
 @pytest.mark.parametrize('distinct', [False, True])
-@pytest.mark.only_on_backends([BigQuery, Impala, Pandas, PostgreSQL, PySpark])
+@pytest.mark.only_on_backends([BigQuery, Impala, Pandas, Postgres, PySpark])
 @pytest.mark.xfail_unsupported
 def test_union(backend, alltypes, df, distinct):
     result = alltypes.union(alltypes, distinct=distinct).execute()

@@ -3,7 +3,14 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.tests.backends import Clickhouse, Impala, PostgreSQL, PySpark, Spark
+from ibis.tests.backends import (
+    Clickhouse,
+    Impala,
+    Postgres,
+    PySpark,
+    Spark,
+    OmniSciDB,
+)
 
 
 def test_string_col_is_unicode(backend, alltypes, df):
@@ -156,6 +163,7 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.string_col.length(),
             lambda t: t.string_col.str.len().astype('int32'),
             id='length',
+            marks=pytest.mark.xfail_backends([OmniSciDB]),  # #2338
         ),
         param(
             lambda t: t.string_col.strip(),
@@ -244,7 +252,7 @@ def test_string(backend, alltypes, df, result_func, expected_func):
     'data, data_type',
     [param('123e4567-e89b-12d3-a456-426655440000', 'uuid', id='uuid')],
 )
-@pytest.mark.only_on_backends([PostgreSQL])
+@pytest.mark.only_on_backends([Postgres])
 def test_special_strings(backend, con, alltypes, data, data_type):
     lit = ibis.literal(data, type=data_type).name('tmp')
     expr = alltypes[[alltypes.id, lit]].head(1)

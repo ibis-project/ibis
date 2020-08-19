@@ -20,7 +20,7 @@ from ibis.expr.window import rows_with_max_lookback
 sa = pytest.importorskip('sqlalchemy')
 pytest.importorskip('psycopg2')
 
-pytestmark = pytest.mark.postgresql
+pytestmark = pytest.mark.postgres
 
 
 @pytest.fixture
