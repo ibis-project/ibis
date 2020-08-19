@@ -11,6 +11,7 @@ jobs:
     env:
       BACKENDS: "bigquery"
     strategy:
+      fail-fast: false
       matrix:
         python_version: ["3.7", "3.8"]
     steps:
@@ -18,7 +19,7 @@ jobs:
       uses: actions/checkout@v1
 
     - name: set up bigquery credentials
-      run: echo "${{ secrets.GCLOUD_SERVICE_KEY }}" > gcloud-service-key.json
+      run: echo '${{ secrets.GCLOUD_SERVICE_KEY }}' > gcloud-service-key.json
 
     - name: set up environment
       run: GOOGLE_BIGQUERY_PROJECT_ID="ibis-gbq" GOOGLE_APPLICATION_CREDENTIALS=gcloud-service-key.json ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
