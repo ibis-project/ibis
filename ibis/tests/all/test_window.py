@@ -10,7 +10,7 @@ from ibis.tests.backends import (
     OmniSciDB,
     Pandas,
     Parquet,
-    PostgreSQL,
+    Postgres,
     PySpark,
     Spark,
     SQLite,
@@ -112,7 +112,7 @@ from ibis.tests.backends import (
             id='cumany',
         ),
         param(
-            # notany() over window not supported in Impala, PostgreSQL,
+            # notany() over window not supported in Impala, Postgres,
             # Spark, MySQL and SQLite backends
             lambda t, win: (t.double_col == 0).notany().over(win),
             lambda t: (
@@ -123,7 +123,7 @@ from ibis.tests.backends import (
             ),
             id='cumnotany',
             marks=pytest.mark.xfail_backends(
-                (Impala, PostgreSQL, Spark, MySQL, SQLite)
+                (Impala, Postgres, Spark, MySQL, SQLite)
             ),
         ),
         param(
@@ -137,7 +137,7 @@ from ibis.tests.backends import (
             id='cumall',
         ),
         param(
-            # notall() over window not supported in Impala, PostgreSQL,
+            # notall() over window not supported in Impala, Postgres,
             # Spark, MySQL and SQLite backends
             lambda t, win: (t.double_col == 0).notall().over(win),
             lambda t: (
@@ -148,7 +148,7 @@ from ibis.tests.backends import (
             ),
             id='cumnotall',
             marks=pytest.mark.xfail_backends(
-                (Impala, PostgreSQL, Spark, MySQL, SQLite)
+                (Impala, Postgres, Spark, MySQL, SQLite)
             ),
         ),
         param(
