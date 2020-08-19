@@ -48,7 +48,12 @@ class TestInteractiveUse(unittest.TestCase):
         ), config.option_context('graphviz_repr', True):
             assert table._repr_png_() is not None
 
-    @pytest.mark.xfail(strict=False)  # #2337
+    # XXX This test is failing in the OmniSciDB/Spark build, and working
+    # in the rest, even if does not seem to depend on the backend.
+    # For some reason in that build the statement does not contain
+    # the LIMIT. Xfailing with `strict=False` since in the other backends
+    # it does work. See #2337
+    @pytest.mark.xfail(strict=False)
     def test_default_limit(self):
         table = self.con.table('functional_alltypes')
 
