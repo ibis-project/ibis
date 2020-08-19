@@ -53,7 +53,11 @@ class TestInteractiveUse(unittest.TestCase):
     # For some reason in that build the statement does not contain
     # the LIMIT. Xfailing with `strict=False` since in the other backends
     # it does work. See #2337
-    @pytest.mark.xfail(strict=False)
+    @pytest.mark.xfail(
+        reason='Not obvious why this is failing for omnisci/spark, and this '
+        'was incorrectly skipped until now. Xfailing to restore the CI',
+        strict=False,
+    )
     def test_default_limit(self):
         table = self.con.table('functional_alltypes')
 
