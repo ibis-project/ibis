@@ -8,7 +8,7 @@ PROJECT_ID = os.environ.get('GOOGLE_BIGQUERY_PROJECT_ID', 'ibis-gbq')
 DATASET_ID = 'testing'
 
 
-def connect(project_id, dataset_id):
+def connect(project_id, dataset_id, application_name=None):
     ga = pytest.importorskip('google.auth')
     service_account = pytest.importorskip('google.oauth2.service_account')
     google_application_credentials = os.environ.get(
@@ -40,7 +40,10 @@ def connect(project_id, dataset_id):
     )
     try:
         return ibis.bigquery.connect(
-            project_id, dataset_id, credentials=credentials
+            project_id,
+            dataset_id,
+            credentials=credentials,
+            application_name=application_name,
         )
     except ga.exceptions.DefaultCredentialsError:
         pytest.skip(skip_message)

@@ -11,6 +11,7 @@ jobs:
   variables:
     AZURECI: 1
     conda.version: "4.6"
+    PYTEST_BACKENDS: "pandas csv hdf5 parquet sqlite mysql"
 
   strategy:
     matrix:
@@ -43,7 +44,7 @@ jobs:
       displayName: 'Update conda and install an appropriate version'
 
     - script: |
-        conda create --name $(conda.env) python=$(python.version) # numpy pandas pytables ruamel.yaml jinja2 pyarrow multipledispatch pymysql "sqlalchemy>=1.1" psycopg2 graphviz click mock plumbum geopandas toolz regex "arrow-cpp=0.16.0=$(arrow.build)"
+        conda create --name $(conda.env) python=$(python.version)
         conda env update --name $(conda.env) --file=environment.yml
         conda install -n $(conda.env) --file=ci/deps/mysql.yml
         conda install -n $(conda.env) --file=ci/deps/postgres.yml
@@ -125,7 +126,7 @@ jobs:
 
     - script: |
         call activate $(conda.env)
-        pytest --tb=short --junitxml="junit-$(python.version).xml" -m "not backend and not clickhouse and not impala and not hdfs and not bigquery and not omniscidb and not postgis and not postgresql" -ra ibis
+        pytest ibis/tests ibis/expr/tests ibis/sql/tests ibis/pandas/tests ibis/pandas/execution/tests ibis/file/tests -m "not hdfs" -ra --junitxml="junit-$(python.version).xml"
       displayName: 'Run tests'
 
     - task: PublishTestResults@2

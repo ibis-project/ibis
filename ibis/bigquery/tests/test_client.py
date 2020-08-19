@@ -1,6 +1,7 @@
 import collections
 import datetime
 import decimal
+from unittest import mock
 
 import numpy as np
 import pandas as pd
@@ -722,3 +723,17 @@ def test_client_without_dataset(project_id):
     con = connect(project_id, dataset_id=None)
     with pytest.raises(ValueError, match="Unable to determine BigQuery"):
         con.list_tables()
+
+
+def test_client_sets_user_agent(project_id, monkeypatch):
+    mock_client = mock.create_autospec(bq.Client)
+    monkeypatch.setattr(bq, 'Client', mock_client)
+    connect(
+        project_id,
+        dataset_id='bigquery-public-data.stackoverflow',
+        application_name='my-great-app/0.7.0',
+    )
+    info = mock_client.call_args[1]['client_info']
+    user_agent = info.to_user_agent()
+    assert ' ibis/{}'.format(ibis.__version__) in user_agent
+    assert 'my-great-app/0.7.0 ' in user_agent
