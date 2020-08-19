@@ -277,7 +277,7 @@ class RowID(TableColumn):
         return klass(self, name=self.name)
 
     def output_type(self):
-        return functools.partial(ir.IntegerColumn, dtype=dt.int64)
+        return dt.int64.column_type()
 
 
 def find_all_base_tables(expr, memo=None):
