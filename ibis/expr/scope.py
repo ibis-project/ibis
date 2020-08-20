@@ -10,72 +10,57 @@
     dictonary. With time contexts, we need the following logic for getting
     and setting items in scope:
 
-    Set scope kv pair: before setting the value op in scope we need to perform
-    the following check first:
+    Before setting the value op in scope we need to perform the following
+    check first:
 
-    Test if op is in scope yet
-    - No, then put op in scope, set timecontext to be the current timecontext
-    (None if timecontext is not present), set value to be the DataFrame or
-    Series of the actual data.
-    - Yes, then get the timecontext stored in scope for op as old_timecontext,
-    and compare it with current timecontext:
-    If current timecontext is a subset of old timecontext, that means we
+    Test if `op` is in `scope` yet
+    - No, then put `op` in `scope`, set 'timecontext' to be the current
+    `timecontext` (None if `timecontext` is not present), set 'value' to be
+    the actual data.
+    - Yes, then get the time context stored in `scope` for `op` as
+    `old_timecontext`, and compare it with current `timecontext`:
+    If current `timecontext` is a subset of `_timecontext`, that means we
     already cached a larger range of data. Do nothing and we will trim data in
     later execution process.
-    If current timecontext is a superset of old timecontext, that means we
-    need to update cache. Set value to be the current data and set timecontext
-    to be the current timecontext for op.
-    If current timecontext is neither a subset nor a superset of old
-    timcontext, but they overlap, or not overlap at all. For example this will
-    happen when there is a window that looks forward, over a window that looks
-    back. So in this case, we should not trust the data stored either, and go
-    on to execute this node. For simplicity, we update cache in this case as
-    well.
+    If current `timecontext` is a superset of `old_timecontext`, that means we
+    need to update cache. Set 'value' to be the current data and set
+    'timecontext' to be the current `timecontext` for `op`.
+    If current `timecontext` is neither a subset nor a superset of
+    `old_timcontext`, but they overlap, or not overlap at all (For example
+    when there is a window that looks forward, over a window that looks
+    back), in this case, we should not trust the data stored either because
+    the data stored in scope doesn't cover the current time context.
+    For simplicity, we update cache in this case, instead of merge data of
+    different time contexts.
 
 """
-from typing import Optional
+from typing import Any, List, Optional
 
+from ibis.expr.operations import Node
 from ibis.expr.timecontext import TimeContextRelation, compare_timecontext
 from ibis.expr.typing import TimeContext
 
 
 class Scope:
-    def __init__(self, items={}):
-        self.items = {}
+    def __init__(self, items=None):
         if items:
             self.items = items
+        else:
+            self.items = {}
 
     def _get_items(self):
         """ Get all items in scope.
         """
         return self.items
 
-    @staticmethod
-    def make_scope(op, result, timecontext: Optional[TimeContext]):
-        """make a Scope instance, adding (op, result, timecontext) into the
-           scope
-
-        Parameters
-        ----------
-        op: ibis.expr.operations.Node, key in scope.
-        result : scalar, pd.Series, pd.DataFrame, concrete data.
-        timecontext: Optional[TimeContext], time context associate with the
-        result.
-
-        Returns
-        -------
-        Scope: a new Scope instance with op in it.
-        """
-        return Scope({op: {'value': result, 'timecontext': timecontext}})
-
-    def __copy__(other_scope):
+    def __copy__(self):
         """make a Scope instance, copying other_scope
         """
         scope = Scope()
-        scope.merge_scope(other_scope)
+        scope.merge_scope(self)
         return scope
 
-    def get(self, op, timecontext: Optional[TimeContext] = None):
+    def get(self, op: Node, timecontext: Optional[TimeContext] = None) -> Any:
         """ Given a op and timecontext, get result from scope
 
         Parameters
@@ -83,7 +68,7 @@ class Scope:
         scope: collections.Mapping
         a dictionary mapping :class:`~ibis.expr.operations.Node`
         subclass instances to concrete data, and the time context associate
-        with it(if any).
+        with it (if any).
         op: ibis.expr.operations.Node, key in scope.
         timecontext: Optional[TimeContext]
 
@@ -102,8 +87,8 @@ class Scope:
             # result with a different (larger) timecontext to get the
             # correct result.
             # For example, a groupby followed by count, if we use a larger or
-            # smaller dataset from cache, we will probably get an error in
-            # result. Such ops with global aggregation, ops whose result is
+            # smaller dataset from cache, we will get an error in result.
+            # Such ops with global aggregation, ops whose result is
             # depending on other rows in result Dataframe, cannot use cached
             # result with different time context to optimize calculation.
             # These are time context sensitive operations. Since these cases
@@ -118,7 +103,7 @@ class Scope:
                 return self.items[op].get('value', None)
         return None
 
-    def merge_scope(self, other_scope, overwrite=False):
+    def merge_scope(self, other_scope: 'Scope', overwrite=False):
         """merge items in other_scope into this scope
 
         Parameters
@@ -135,6 +120,27 @@ class Scope:
             if overwrite or self.get(op, v['timecontext']) is None:
                 self.items[op] = v
 
-    def merge_scopes(self, other_scopes, overwrite=False):
+    def merge_scopes(self, other_scopes: List['Scope'], overwrite=False):
         for s in other_scopes:
             self.merge_scope(s)
+
+
+def make_scope(
+    op: Node, result: Any, timecontext: Optional[TimeContext] = None
+) -> 'Scope':
+    """make a Scope instance, adding (op, result, timecontext) into the
+       scope
+
+    Parameters
+    ----------
+    op: ibis.expr.operations.Node, key in scope.
+    result : Object, concrete data, type could be different for different
+    backends.
+    timecontext: Optional[TimeContext], time context associate with the
+    result.
+
+    Returns
+    -------
+    Scope: a new Scope instance with op in it.
+    """
+    return Scope({op: {'value': result, 'timecontext': timecontext}})

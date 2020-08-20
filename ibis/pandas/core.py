@@ -122,7 +122,7 @@ import ibis.expr.types as ir
 import ibis.expr.window as win
 import ibis.pandas.aggcontext as agg_ctx
 from ibis.client import find_backends
-from ibis.expr.scope import Scope
+from ibis.expr.scope import Scope, make_scope
 from ibis.expr.timecontext import canonicalize_context
 from ibis.expr.typing import TimeContext
 from ibis.pandas.dispatch import (
@@ -278,7 +278,7 @@ def execute_until_in_scope(
     if isinstance(op, ops.Literal):
         # special case literals to avoid the overhead of dispatching
         # execute_node
-        return Scope.make_scope(
+        return make_scope(
             op,
             execute_literal(
                 op, op.value, expr.type(), aggcontext=aggcontext, **kwargs
@@ -341,7 +341,7 @@ def execute_until_in_scope(
             **kwargs,
         )
         if hasattr(arg, 'op')
-        else Scope.make_scope(arg, arg, timecontext)
+        else make_scope(arg, arg, timecontext)
         for (arg, timecontext) in zip(computable_args, arg_timecontexts)
     ]
 
@@ -370,7 +370,7 @@ def execute_until_in_scope(
         **kwargs,
     )
     computed = post_execute_(op, result, timecontext=timecontext)
-    return Scope.make_scope(op, computed, timecontext)
+    return make_scope(op, computed, timecontext)
 
 
 execute = Dispatcher('execute')
@@ -432,7 +432,7 @@ def main_execute(
     # TODO: make expresions hashable so that we can get rid of these .op()
     # calls everywhere
     params = [
-        Scope.make_scope(k.op() if hasattr(k, 'op') else k, v, timecontext)
+        make_scope(k.op() if hasattr(k, 'op') else k, v, timecontext)
         for k, v in params.items()
     ]
     scope.merge_scopes(params)

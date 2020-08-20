@@ -4,7 +4,7 @@ import toolz
 
 import ibis
 import ibis.common.exceptions as com
-from ibis.expr.scope import Scope
+from ibis.expr.scope import make_scope
 from ibis.pandas.core import execute
 
 
@@ -16,8 +16,7 @@ def compute_sort_key(key, data, timecontext, scope=None, **kwargs):
         return by.get_name(), None
     except com.ExpressionError:
         scope.merge_scopes(
-            Scope.make_scope(t, data, timecontext)
-            for t in by.op().root_tables()
+            make_scope(t, data, timecontext) for t in by.op().root_tables()
         )
         new_column = execute(by, scope=scope, **kwargs)
         name = ibis.util.guid()

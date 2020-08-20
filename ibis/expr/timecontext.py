@@ -1,7 +1,7 @@
 """ Time context module
 
-This is an attempt to allow us to implement the time context extension without
-affecting the existing SQL-like execution model for backends.
+This is an implementation of time context extension without affecting the
+existing SQL-like execution model for backends.
 
 Most of the execution is built on the foundation that "Data is uniquely
 defined by the op tree". This is true in SQL analysis where there is no
