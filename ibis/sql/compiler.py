@@ -1011,7 +1011,7 @@ class Intersection(SetOp):
         return ["INTERSECT" for _ in range(len(self.tables) - 1)]
 
 
-def flatten_union(table):
+def flatten_union(table: ir.TableExpr):
     """Extract all union queries from `table`.
 
     Parameters
@@ -1030,8 +1030,8 @@ def flatten_union(table):
     return [table]
 
 
-def flatten_intersection(table):
-    """Extract all union queries from `table`.
+def flatten_intersection(table: ir.TableExpr):
+    """Extract all intersection queries from `table`.
 
     Parameters
     ----------

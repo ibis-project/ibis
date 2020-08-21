@@ -3991,7 +3991,7 @@ def _table_union(left, right, distinct=False):
     return ops.Union(left, right, distinct=distinct).to_expr()
 
 
-def _table_intersect(left, right):
+def _table_intersect(left: TableExpr, right: TableExpr):
     """
     Form the table set intersect of two table expressions having identical
     schemas. An intersect returns only the common rows between the two tables.
