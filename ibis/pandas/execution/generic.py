@@ -772,7 +772,7 @@ def execute_union_dataframe_dataframe(op, left, right, distinct, **kwargs):
 def execute_intersection_dataframe_dataframe(
     op, left: pd.DataFrame, right, **kwargs
 ):
-    result = left.merge(right, on=list(left.columns))
+    result = left.merge(right, on=list(left.columns), how="inner")
     return result
 
 
