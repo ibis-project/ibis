@@ -49,7 +49,7 @@ def test_window_agg_udf(param):
 
 
 def test_window_agg_udf_different_freq():
-    """ Test that window_agg_udf work when the window series and data series
+    """ Test that window_agg_udf works when the window series and data series
     have different frequencies.
     """
 
