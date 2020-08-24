@@ -100,7 +100,6 @@ def test_context_adjustment_window(time_table, time_df3):
 
     context = pd.Timestamp('20170105'), pd.Timestamp('20170111')
 
-    # expected.index.name = None
     window = ibis.trailing_window(
         3 * ibis.interval(days=1), order_by=time_table.time
     )

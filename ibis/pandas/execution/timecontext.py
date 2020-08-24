@@ -49,7 +49,11 @@ def compute_time_context_asof_join(
         return new_timecontexts
 
     # right table is the second node in children
-    new_timecontexts[1] = adjust_context(op, *clients, timecontext=timecontext)
+    new_timecontexts = [
+        new_timecontexts[0],
+        adjust_context(op, *clients, timecontext=timecontext),
+        *new_timecontexts[2:],
+    ]
     return new_timecontexts
 
 

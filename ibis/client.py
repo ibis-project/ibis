@@ -1,5 +1,6 @@
 """Ibis generic client classes and functions."""
 import abc
+from typing import List
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
@@ -14,6 +15,9 @@ class Client:
     """Generic Ibis client."""
 
     pass
+
+
+Backends = List[Client]
 
 
 class Query:

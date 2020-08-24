@@ -3,7 +3,6 @@
 import functools
 import operator
 import re
-from copy import copy
 from typing import NoReturn, Optional
 
 import pandas as pd
@@ -226,7 +225,7 @@ def execute_window_op(
         aggcontext=aggcontext,
         **kwargs,
     )
-    scope.merge_scope(pre_executed_scope)
+    scope = scope.merge_scope(pre_executed_scope)
     (root,) = op.root_tables()
     root_expr = root.to_expr()
 
@@ -300,14 +299,16 @@ def execute_window_op(
             source = data
             post_process = _post_process_empty
 
-    new_scope = copy(scope)
     # Here groupby object should be add to the corresponding node in scope
     # for execution, data will be overwrite to a groupby object, so we
     # force an update regardless of time context
-    for t in operand.op().root_tables():
-        new_scope.merge_scope(
-            make_scope(t, source, adjusted_timecontext), overwrite=True
-        )
+    new_scope = scope.merge_scopes(
+        (
+            make_scope(t, source, adjusted_timecontext)
+            for t in operand.op().root_tables()
+        ),
+        overwrite=True,
+    )
 
     # figure out what the dtype of the operand is
     operand_type = operand.type()

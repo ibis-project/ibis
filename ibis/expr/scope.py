@@ -57,8 +57,7 @@ class Scope:
         """make a Scope instance, copying other_scope
         """
         scope = Scope()
-        scope.merge_scope(self)
-        return scope
+        return scope.merge_scope(self)
 
     def get(self, op: Node, timecontext: Optional[TimeContext] = None) -> Any:
         """ Given a op and timecontext, get result from scope
@@ -103,7 +102,7 @@ class Scope:
                 return self.items[op].get('value', None)
         return None
 
-    def merge_scope(self, other_scope: 'Scope', overwrite=False):
+    def merge_scope(self, other_scope: 'Scope', overwrite=False) -> 'Scope':
         """merge items in other_scope into this scope
 
         Parameters
@@ -111,18 +110,43 @@ class Scope:
         other_scope: Scope to be merged with
         overwrite: bool, if set to be True, force overwrite value if op
             already exists.
+
+        Return
+        ----------
+        Scope, a new Scope instance with merged items.
         """
+        scope = Scope()
+        for op, v in self._get_items().items():
+            scope.items[op] = v
+
         for op, v in other_scope._get_items().items():
             # if get_scope returns a not None value, then data is already
             # cached in scope and it is at least a greater range than
             # the current timecontext, so we drop the item. Otherwise
             # add it into scope.
             if overwrite or self.get(op, v['timecontext']) is None:
-                self.items[op] = v
+                scope.items[op] = v
+        return scope
 
-    def merge_scopes(self, other_scopes: List['Scope'], overwrite=False):
+    def merge_scopes(
+        self, other_scopes: List['Scope'], overwrite=False
+    ) -> 'Scope':
+        """merge items in other_scopes into this scope
+
+        Parameters
+        ----------
+        other_scopes: Scopes to be merged with
+        overwrite: bool, if set to be True, force overwrite value if op
+            already exists.
+
+        Return
+        ----------
+        Scope, a new Scope instance with merged items.
+        """
+        scope = Scope()
         for s in other_scopes:
-            self.merge_scope(s)
+            scope = scope.merge_scope(s)
+        return scope
 
 
 def make_scope(

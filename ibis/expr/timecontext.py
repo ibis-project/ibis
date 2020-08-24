@@ -38,6 +38,8 @@ import pandas as pd
 import ibis.common.exceptions as com
 import ibis.expr.api as ir
 import ibis.expr.operations as ops
+from ibis.client import Backends
+from ibis.expr.operations import Node
 from ibis.expr.typing import TimeContext
 
 # In order to use time context feature, there must be a column of Timestamp
@@ -135,7 +137,9 @@ def canonicalize_context(
 
 
 @functools.singledispatch
-def adjust_context(op, *clients, timecontext: TimeContext) -> TimeContext:
+def adjust_context(
+    op: Node, *clients: Backends, timecontext: TimeContext
+) -> TimeContext:
     """
     Params
     -------
@@ -153,7 +157,7 @@ def adjust_context(op, *clients, timecontext: TimeContext) -> TimeContext:
 
 @adjust_context.register(ops.AsOfJoin)
 def adjust_context_asof_join(
-    op, *clients, timecontext: TimeContext
+    op: Node, *clients: Backends, timecontext: TimeContext
 ) -> TimeContext:
     (backend,) = clients
     begin, end = timecontext
@@ -168,7 +172,7 @@ def adjust_context_asof_join(
 
 @adjust_context.register(ops.WindowOp)
 def adjust_context_window(
-    op, *clients, timecontext: TimeContext
+    op: Node, *clients: Backends, timecontext: TimeContext
 ) -> TimeContext:
     # adjust time context by preceding and following
     (backend,) = clients
