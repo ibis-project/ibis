@@ -34,6 +34,7 @@
     different time contexts.
 
 """
+from collections import namedtuple
 from typing import Any, List, Optional
 
 from ibis.expr.operations import Node
@@ -80,7 +81,7 @@ class Scope:
             return None
         # for ops without timecontext
         if timecontext is None:
-            return self.items[op].get('value', None)
+            return self.items[op].value
         else:
             # For op with timecontext, ther are some ops cannot use cached
             # result with a different (larger) timecontext to get the
@@ -93,13 +94,13 @@ class Scope:
             # These are time context sensitive operations. Since these cases
             # are rare in acutal use case, we just enable optimization for
             # all nodes for now.
-            cached_timecontext = self.items[op].get('timecontext', None)
+            cached_timecontext = self.items[op].timecontext
             if cached_timecontext:
                 relation = compare_timecontext(timecontext, cached_timecontext)
                 if relation == TimeContextRelation.SUBSET:
-                    return self.items[op].get('value', None)
+                    return self.items[op].value
             else:
-                return self.items[op].get('value', None)
+                return self.items[op].value
         return None
 
     def merge_scope(self, other_scope: 'Scope', overwrite=False) -> 'Scope':
@@ -124,7 +125,7 @@ class Scope:
             # cached in scope and it is at least a greater range than
             # the current timecontext, so we drop the item. Otherwise
             # add it into scope.
-            if overwrite or self.get(op, v['timecontext']) is None:
+            if overwrite or self.get(op, v.timecontext) is None:
                 scope.items[op] = v
         return scope
 
@@ -167,4 +168,5 @@ def make_scope(
     -------
     Scope: a new Scope instance with op in it.
     """
-    return Scope({op: {'value': result, 'timecontext': timecontext}})
+    item = namedtuple('item', ['value', 'timecontext'])
+    return Scope({op: item(result, timecontext)})
