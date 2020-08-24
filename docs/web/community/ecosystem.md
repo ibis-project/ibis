@@ -22,7 +22,16 @@ adapted into a simple and Pythonic domain language.
 
 [sql_to_ibis](https://github.com/zbrookle/sql_to_ibis) is a Python package that 
 translates SQL syntax into ibis expressions. This allows users to use one unified SQL 
-dialect to target many different backends.
+dialect to target many different backends, even those that don't traditionally
+ support SQL.  
+
+A good use case would be ease of migration between databases or backends. Suppose you
+ were moving from SQLite to MySQL or from PostgresSQL to BigQuery. These
+  frameworks all have very subtle differences in SQL dialects, but with sql_to_ibis, 
+  these differences are automatically translated in Ibis.
+  
+Another good use case is pandas, which has no SQL support at all for querying a
+ dataframe. With sql_to_ibis this is made possible.
 
 For example,
 
