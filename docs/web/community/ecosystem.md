@@ -26,22 +26,35 @@ dialect to target many different backends, even those that don't traditionally
  support SQL.  
 
 A good use case would be ease of migration between databases or backends. Suppose you
- were moving from SQLite to MySQL or from PostgresSQL to BigQuery. These
-  frameworks all have very subtle differences in SQL dialects, but with sql_to_ibis, 
-  these differences are automatically translated in Ibis.
+were moving from SQLite to MySQL or from PostgresSQL to BigQuery. These 
+frameworks all have very subtle differences in SQL dialects, but with sql_to_ibis, 
+these differences are automatically translated in Ibis.
   
 Another good use case is pandas, which has no SQL support at all for querying a
- dataframe. With sql_to_ibis this is made possible.
+dataframe. With sql_to_ibis this is made possible.
 
 For example,
 
 ```python
-from ibis.pandas.api import from_dataframe, PandasClient
-from pandas import read_csv
-from sql_to_ibis import register_temp_table, query
+import ibis.pandas.api
+import pandas
+import sql_to_ibis
 
-df = read_csv("some_file.csv")
-ibis_table = from_dataframe(df, name="my_table", client=PandasClient({}))
-register_temp_table(ibis_table, "my_table")
-query("select column1, column2 as my_col2 from my_table")
+df = pandas.DataFrame({"column1": [1, 2, 3], "column2": ["4", "5", "6"]})
+ibis_table = ibis.pandas.api.from_dataframe(
+    df, name="my_table", client=ibis.pandas.api.PandasClient({})
+)
+sql_to_ibis.register_temp_table(ibis_table, "my_table")
+sql_to_ibis.query(
+    "select column1, cast(column2 as integer) + 1 as my_col2 from my_table"
+).execute()
+```
+This would output a dataframe that looks like:
+
+```
+| column1 | my_col2 |
+|---------|---------|
+| 1       | 5       |
+| 2       | 6       |
+| 3       | 7       |
 ```
