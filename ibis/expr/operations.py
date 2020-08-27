@@ -257,6 +257,7 @@ class RowID(ValueOp):
     (even if they are conceptually the same), and different from row
     id in backends where it represents the memory location (e.g. Oracle).
     """
+
     def output_type(self):
         return dt.int64.column_type()
 

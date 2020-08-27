@@ -28,9 +28,11 @@ def test_rowid(con, backend):
     t = con.table('functional_alltypes')
     result = t[t.row_id()].execute()
     first_value = 0 if backend.name in ROWID_ZERO_INDEXED_BACKENDS else 1
-    expected = pd.Series(range(first_value, first_value + len(result)),
-                         dtype=np.int64,
-                         name='rowid')
+    expected = pd.Series(
+        range(first_value, first_value + len(result)),
+        dtype=np.int64,
+        name='rowid',
+    )
     pd.testing.assert_series_equal(result.iloc[:, 0], expected)
 
 
@@ -39,7 +41,9 @@ def test_named_rowid(con, backend):
     t = con.table('functional_alltypes')
     result = t[t.row_id().name('number')].execute()
     first_value = 0 if backend.name in ROWID_ZERO_INDEXED_BACKENDS else 1
-    expected = pd.Series(range(first_value, first_value + len(result)),
-                         dtype=np.int64,
-                         name='number')
+    expected = pd.Series(
+        range(first_value, first_value + len(result)),
+        dtype=np.int64,
+        name='number',
+    )
     pd.testing.assert_series_equal(result.iloc[:, 0], expected)
