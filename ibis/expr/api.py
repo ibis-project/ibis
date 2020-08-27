@@ -4285,6 +4285,11 @@ def _row_id(self):
     It can be 0 or 1 indexed depending on the backend. Check the backend
     documentation.
 
+    Note that this is different from the window function row number
+    (even if they are conceptually the same), and different from row
+    id in backends where it represents the physical location (e.g. Oracle
+    or PostgreSQL's ctid).
+
     Returns
     -------
     ir.IntegerColumn

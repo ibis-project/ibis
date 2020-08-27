@@ -250,14 +250,7 @@ class TableColumn(ValueOp):
 
 
 class RowID(ValueOp):
-    """
-    The row number (an autonumeric) of the returned result, 1-indexed.
-
-    Note that this is different from the window function row number
-    (even if they are conceptually the same), and different from row
-    id in backends where it represents the memory location (e.g. Oracle).
-    """
-
+    """The row number (an autonumeric) of the returned result."""
     def output_type(self):
         return dt.int64.column_type()
 
