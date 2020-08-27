@@ -4278,6 +4278,27 @@ def _table_drop(self, fields):
     return self[[field for field in schema if field not in field_set]]
 
 
+def _row_id(self):
+    """
+    An autonumeric representing the row number of the results.
+
+    It can be 0 or 1 indexed depending on the backend. Check the backend
+    documentation.
+
+    Returns
+    -------
+    ir.IntegerColumn
+
+    Examples
+    --------
+    >>> my_table[my_table.row_id, mytable.name].execute()
+    1|Ibis
+    2|pandas
+    3|Dask
+    """
+    return ops.RowID().to_expr()
+
+
 _table_methods = dict(
     aggregate=aggregate,
     count=_table_count,
@@ -4308,6 +4329,7 @@ _table_methods = dict(
     union=_table_union,
     intersect=_table_intersect,
     view=_table_view,
+    row_id=_row_id,
 )
 
 

@@ -1085,6 +1085,7 @@ _general_ops = {
     ops.IsNan: unary('isNan'),
     ops.NullIfZero: _nullifzero,
     ops.ZeroIfNull: _zeroifnull,
+    ops.RowID: lambda *args: 'rowid',
 }
 
 # WINDOW

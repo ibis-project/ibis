@@ -249,6 +249,24 @@ class TableColumn(ValueOp):
         return klass(self, name=self.name)
 
 
+class RowID(ValueOp):
+    """
+    The row number (an autonumeric) of the returned result, 1-indexed.
+
+    Note that this is different from the window function row number
+    (even if they are conceptually the same), and different from row
+    id in backends where it represents the memory location (e.g. Oracle).
+    """
+    def output_type(self):
+        return dt.int64.column_type()
+
+    def resolve_name(self):
+        return 'rowid'
+
+    def has_resolved_name(self):
+        return True
+
+
 def find_all_base_tables(expr, memo=None):
     if memo is None:
         memo = {}

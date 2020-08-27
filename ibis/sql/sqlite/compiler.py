@@ -285,6 +285,7 @@ _operation_registry.update(
         ops.StandardDev: toolz.compose(
             sa.func._ibis_sqlite_sqrt, _variance_reduction('_ibis_sqlite_var')
         ),
+        ops.RowID: lambda t, expr: sa.literal_column('rowid'),
     }
 )
 
