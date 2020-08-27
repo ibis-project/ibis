@@ -251,6 +251,7 @@ class TableColumn(ValueOp):
 
 class RowID(ValueOp):
     """The row number (an autonumeric) of the returned result."""
+
     def output_type(self):
         return dt.int64.column_type()
 

@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 
 
-ROWID_ZERO_INDEXED_BACKENDS = 'omniscidb',
+ROWID_ZERO_INDEXED_BACKENDS = ('omniscidb',)
 
 
 @pytest.mark.parametrize(

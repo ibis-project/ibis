@@ -4296,7 +4296,7 @@ def _rowid(self):
 
     Examples
     --------
-    >>> my_table[my_table.rowid(), mytable.name].execute()
+    >>> my_table[my_table.rowid(), my_table.name].execute()
     1|Ibis
     2|pandas
     3|Dask

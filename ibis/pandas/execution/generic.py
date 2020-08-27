@@ -1071,4 +1071,5 @@ def execute_distinct_dataframe(op, df, **kwargs):
 @execute_node.register(ops.RowID)
 def execute_rowid(op, *args, **kwargs):
     raise com.UnsupportedOperationError(
-        'rowid is not supported in pandas backends')
+        'rowid is not supported in pandas backends'
+    )
