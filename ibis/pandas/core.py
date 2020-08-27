@@ -107,6 +107,7 @@ from __future__ import absolute_import
 import datetime
 import functools
 import numbers
+from copy import copy
 from typing import Optional
 
 import numpy as np
@@ -218,7 +219,8 @@ def execute_with_scope(
         aggcontext=aggcontext,
         **kwargs,
     )
-    new_scope = scope.merge_scope(pre_executed_scope)
+    new_scope = copy(scope)
+    new_scope.merge_scope(pre_executed_scope)
     result = execute_until_in_scope(
         expr,
         new_scope,
@@ -310,7 +312,8 @@ def execute_until_in_scope(
         **kwargs,
     )
 
-    new_scope = scope.merge_scope(pre_executed_scope)
+    new_scope = copy(scope)
+    new_scope.merge_scope(pre_executed_scope)
 
     # Short circuit: if pre_execute puts op in scope, then we don't need to
     # execute its computable_args
@@ -351,7 +354,7 @@ def execute_until_in_scope(
     # there should be exactly one dictionary per computable argument
     assert len(computable_args) == len(scopes)
 
-    new_scope = new_scope.merge_scopes(scopes)
+    new_scope.merge_scopes(scopes)
     # pass our computed arguments to this node's execute_node implementation
     data = [
         new_scope.get(arg.op(), timecontext) if hasattr(arg, 'op') else arg
@@ -432,7 +435,7 @@ def main_execute(
         make_scope(k.op() if hasattr(k, 'op') else k, v, timecontext)
         for k, v in params.items()
     ]
-    scope = scope.merge_scopes(params)
+    scope.merge_scopes(params)
     return execute_with_scope(
         expr, scope, timecontext=timecontext, aggcontext=aggcontext, **kwargs,
     )

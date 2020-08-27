@@ -428,7 +428,7 @@ def execute_aggregation_dataframe(
     else:
         source = data
 
-    scope = scope.merge_scope(make_scope(op.table.op(), source, timecontext))
+    scope.merge_scope(make_scope(op.table.op(), source, timecontext))
 
     pieces = [
         pd.Series(

@@ -89,10 +89,22 @@ def test_context_adjustment_asof_join(
     tm.assert_frame_equal(result, expected)
 
 
-def test_context_adjustment_window(time_table, time_df3):
+@pytest.mark.parametrize(
+    ['interval_ibis', 'interval_pd'],
+    [
+        (ibis.interval(days=1), '1d'),
+        (3 * ibis.interval(days=1), '3d'),
+        (5 * ibis.interval(days=1), '5d'),
+    ],
+)
+def test_context_adjustment_window(
+    time_table, time_df3, interval_ibis, interval_pd
+):
     # trim data manually
     expected = (
-        time_df3.set_index('time').value.rolling('3d', closed='both').mean()
+        time_df3.set_index('time')
+        .value.rolling(interval_pd, closed='both')
+        .mean()
     )
     expected = expected[
         expected.index >= pd.Timestamp('20170105')
@@ -100,9 +112,7 @@ def test_context_adjustment_window(time_table, time_df3):
 
     context = pd.Timestamp('20170105'), pd.Timestamp('20170111')
 
-    window = ibis.trailing_window(
-        3 * ibis.interval(days=1), order_by=time_table.time
-    )
+    window = ibis.trailing_window(interval_ibis, order_by=time_table.time)
     expr = time_table['value'].mean().over(window)
     # result should adjust time context accordingly
     result = expr.execute(timecontext=context)

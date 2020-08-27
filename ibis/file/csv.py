@@ -128,6 +128,6 @@ def csv_pre_execute_selection(
             if len(pd.Index(usecols) & header.columns) != len(usecols):
                 usecols = None
         result = _read_csv(path, table.schema, usecols=usecols, header=0)
-        ops = ops.merge_scope(make_scope(table, result, timecontext))
+        ops.merge_scope(make_scope(table, result, timecontext))
 
     return ops

@@ -17,7 +17,7 @@ def compute_sort_key(key, data, timecontext, scope=None, **kwargs):
     except com.ExpressionError:
         if scope is None:
             scope = Scope()
-        scope = scope.merge_scopes(
+        scope.merge_scopes(
             make_scope(t, data, timecontext) for t in by.op().root_tables()
         )
         new_column = execute(by, scope=scope, **kwargs)

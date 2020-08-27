@@ -65,7 +65,7 @@ def compute_projection_scalar_expr(
 
     data_columns = frozenset(data.columns)
 
-    scope = scope.merge_scopes(
+    scope.merge_scopes(
         make_scope(
             t,
             map_new_column_names_to_data(
@@ -120,7 +120,7 @@ def compute_projection_column_expr(
 
     data_columns = frozenset(data.columns)
 
-    scope = scope.merge_scopes(
+    scope.merge_scopes(
         make_scope(
             t,
             map_new_column_names_to_data(
@@ -257,11 +257,11 @@ def _compute_predicates(
                 new_data = data.loc[:, mapping.keys()].rename(columns=mapping)
             else:
                 new_data = data
-            additional_scope = additional_scope.merge_scope(
+            additional_scope.merge_scope(
                 make_scope(root_table, new_data, timecontext)
             )
 
-        scope = scope.merge_scope(additional_scope)
+        scope.merge_scope(additional_scope)
         yield execute(predicate, scope=scope, **kwargs)
 
 
