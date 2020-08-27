@@ -1066,3 +1066,9 @@ def execute_simple_case_series(op, value, whens, thens, otherwise, **kwargs):
 @execute_node.register(ops.Distinct, pd.DataFrame)
 def execute_distinct_dataframe(op, df, **kwargs):
     return df.drop_duplicates()
+
+
+@execute_node.register(ops.RowID)
+def execute_rowid(op, *args, **kwargs):
+    raise com.UnsupportedOperationError(
+        'rowid is not supported in pandas backends')

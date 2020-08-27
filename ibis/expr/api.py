@@ -4278,7 +4278,7 @@ def _table_drop(self, fields):
     return self[[field for field in schema if field not in field_set]]
 
 
-def _row_id(self):
+def _rowid(self):
     """
     An autonumeric representing the row number of the results.
 
@@ -4296,7 +4296,7 @@ def _row_id(self):
 
     Examples
     --------
-    >>> my_table[my_table.row_id, mytable.name].execute()
+    >>> my_table[my_table.rowid(), mytable.name].execute()
     1|Ibis
     2|pandas
     3|Dask
@@ -4334,7 +4334,7 @@ _table_methods = dict(
     union=_table_union,
     intersect=_table_intersect,
     view=_table_view,
-    row_id=_row_id,
+    rowid=_rowid,
 )
 
 

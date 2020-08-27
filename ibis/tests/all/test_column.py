@@ -26,7 +26,7 @@ def test_distinct_column(backend, alltypes, df, column):
 @pytest.mark.xfail_unsupported
 def test_rowid(con, backend):
     t = con.table('functional_alltypes')
-    result = t[t.row_id()].execute()
+    result = t[t.rowid()].execute()
     first_value = 0 if backend.name in ROWID_ZERO_INDEXED_BACKENDS else 1
     expected = pd.Series(
         range(first_value, first_value + len(result)),
@@ -39,7 +39,7 @@ def test_rowid(con, backend):
 @pytest.mark.xfail_unsupported
 def test_named_rowid(con, backend):
     t = con.table('functional_alltypes')
-    result = t[t.row_id().name('number')].execute()
+    result = t[t.rowid().name('number')].execute()
     first_value = 0 if backend.name in ROWID_ZERO_INDEXED_BACKENDS else 1
     expected = pd.Series(
         range(first_value, first_value + len(result)),
