@@ -33,6 +33,7 @@ import enum
 import functools
 from typing import Optional
 
+import numpy as np
 import pandas as pd
 
 import ibis.common.exceptions as com
@@ -159,13 +160,16 @@ def adjust_context(
 def adjust_context_asof_join(
     op: Node, *clients: Backends, timecontext: TimeContext
 ) -> TimeContext:
-    (backend,) = clients
     begin, end = timecontext
 
     if op.tolerance is not None:
-        timedelta = backend.execute(op.tolerance)
-        # only backwards and adjust begin time only
-        return (begin - timedelta, end)
+        for backend in clients:
+            try:
+                timedelta = backend.execute(op.tolerance)
+                # only backwards and adjust begin time only
+                return (begin - timedelta, end)
+            except Exception:
+                pass
 
     return timecontext
 
@@ -175,21 +179,32 @@ def adjust_context_window(
     op: Node, *clients: Backends, timecontext: TimeContext
 ) -> TimeContext:
     # adjust time context by preceding and following
-    (backend,) = clients
     begin, end = timecontext
 
     preceding = op.window.preceding
     if preceding is not None:
         if isinstance(preceding, ir.IntervalScalar):
-            preceding = backend.execute(preceding)
-        if preceding:
+            for backend in clients:
+                try:
+                    preceding = backend.execute(preceding)
+                    if preceding:
+                        break
+                except Exception:
+                    pass
+        if preceding and not isinstance(preceding, (int, np.integer)):
             begin = begin - preceding
 
     following = op.window.following
     if following is not None:
         if isinstance(following, ir.IntervalScalar):
-            following = backend.execute(following)
-        if following:
+            for backend in clients:
+                try:
+                    following = backend.execute(following)
+                    if following:
+                        break
+                except Exception:
+                    pass
+        if following and not isinstance(following, (int, np.integer)):
             end = end + following
 
     return (begin, end)
