@@ -397,7 +397,7 @@ Table methods
    TableExpr.mutate
    TableExpr.projection
    TableExpr.relabel
-   TableExpr.rowid
+   TableExpr.row_id
    TableExpr.schema
    TableExpr.set_column
    TableExpr.sort_by
