@@ -7,13 +7,8 @@ from ibis.tests.backends import Clickhouse, MySQL, Postgres, PySpark, SQLite
 
 aggregate_test_params = [
     param(lambda t: t.double_col.mean(), lambda s: s.mean(), id='mean',),
-    param(
-        lambda t: t.double_col.std(how='sample'),
-        lambda s: s.std(ddof=1),
-        id='std',
-    ),
     param(lambda t: t.double_col.min(), lambda s: s.min(), id='min',),
-    param(lambda t: t.double_col.min(), lambda s: s.min(), id='max',),
+    param(lambda t: t.double_col.max(), lambda s: s.max(), id='max',),
     param(
         lambda t: (t.double_col + 5).sum(),
         lambda s: (s + 5).sum(),
@@ -193,7 +188,7 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
     ],
 )
 @pytest.mark.xfail_unsupported
-def test_aggregation(
+def test_reduction_ops(
     backend, alltypes, df, result_fn, expected_fn, ibis_cond, pandas_cond
 ):
     expr = result_fn(alltypes, ibis_cond(alltypes))
