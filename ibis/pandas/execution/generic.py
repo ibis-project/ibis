@@ -428,8 +428,12 @@ def execute_aggregation_dataframe(op, data, scope=None, **kwargs):
         for metric in op.metrics
     ]
 
-    # group by always needs a reset to get the grouping key back as a column
-    result = pd.concat(pieces, axis=1).reset_index()
+    result = pd.concat(pieces, axis=1)
+
+    # If grouping, need a reset to get the grouping key back as a column
+    if op.by:
+        result = result.reset_index()
+
     result.columns = [columns.get(c, c) for c in result.columns]
 
     if op.having:
