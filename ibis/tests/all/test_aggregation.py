@@ -56,9 +56,9 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
     )
 
     # Row ordering may differ depending on backend, so sort on the grouping key
-    result1 = result1.sort_values(by=grouping_key_col, ignore_index=True)
-    result2 = result2.sort_values(by=grouping_key_col, ignore_index=True)
-    expected = expected.sort_values(by=grouping_key_col, ignore_index=True)
+    result1 = result1.sort_values(by=grouping_key_col).reset_index(drop=True)
+    result2 = result2.sort_values(by=grouping_key_col).reset_index(drop=True)
+    expected = expected.sort_values(by=grouping_key_col).reset_index(drop=True)
 
     pd.testing.assert_frame_equal(result1, expected)
     pd.testing.assert_frame_equal(result2, expected)
