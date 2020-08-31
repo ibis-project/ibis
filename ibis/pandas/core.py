@@ -542,6 +542,6 @@ See ``computable_args`` in ``execute_until_in_scope``
 
 @compute_time_context.register(ops.Node)
 def compute_time_context_default(
-    node, *clients, timecontext: Optional[TimeContext] = None, **kwargs
+    node, timecontext: Optional[TimeContext] = None, **kwargs
 ):
     return [timecontext for arg in node.inputs if is_computable_input(arg)]

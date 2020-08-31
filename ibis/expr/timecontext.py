@@ -39,7 +39,6 @@ import pandas as pd
 import ibis.common.exceptions as com
 import ibis.expr.api as ir
 import ibis.expr.operations as ops
-from ibis.client import Backends
 from ibis.expr.operations import Node
 from ibis.expr.typing import TimeContext
 
@@ -138,9 +137,7 @@ def canonicalize_context(
 
 
 @functools.singledispatch
-def adjust_context(
-    op: Node, *clients: Backends, timecontext: TimeContext
-) -> TimeContext:
+def adjust_context(op: Node, timecontext: TimeContext) -> TimeContext:
     """
     Params
     -------
@@ -158,52 +155,39 @@ def adjust_context(
 
 @adjust_context.register(ops.AsOfJoin)
 def adjust_context_asof_join(
-    op: Node, *clients: Backends, timecontext: TimeContext
+    op: Node, timecontext: TimeContext
 ) -> TimeContext:
     begin, end = timecontext
 
     if op.tolerance is not None:
-        for backend in clients:
-            try:
-                timedelta = backend.execute(op.tolerance)
-                # only backwards and adjust begin time only
-                return (begin - timedelta, end)
-            except Exception:
-                pass
+        from ibis.pandas.execution import execute
+
+        timedelta = execute(op.tolerance)
+        return (begin - timedelta, end)
 
     return timecontext
 
 
 @adjust_context.register(ops.WindowOp)
-def adjust_context_window(
-    op: Node, *clients: Backends, timecontext: TimeContext
-) -> TimeContext:
+def adjust_context_window(op: Node, timecontext: TimeContext) -> TimeContext:
     # adjust time context by preceding and following
     begin, end = timecontext
 
     preceding = op.window.preceding
     if preceding is not None:
         if isinstance(preceding, ir.IntervalScalar):
-            for backend in clients:
-                try:
-                    preceding = backend.execute(preceding)
-                    if preceding:
-                        break
-                except Exception:
-                    pass
+            from ibis.pandas.execution import execute
+
+            preceding = execute(preceding)
         if preceding and not isinstance(preceding, (int, np.integer)):
             begin = begin - preceding
 
     following = op.window.following
     if following is not None:
         if isinstance(following, ir.IntervalScalar):
-            for backend in clients:
-                try:
-                    following = backend.execute(following)
-                    if following:
-                        break
-                except Exception:
-                    pass
+            from ibis.pandas.execution import execute
+
+            following = execute(following)
         if following and not isinstance(following, (int, np.integer)):
             end = end + following
 

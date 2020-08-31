@@ -51,7 +51,7 @@ def compute_time_context_asof_join(
     # right table is the second node in children
     new_timecontexts = [
         new_timecontexts[0],
-        adjust_context(op, *clients, timecontext=timecontext),
+        adjust_context(op, timecontext=timecontext),
         *new_timecontexts[2:],
     ]
     return new_timecontexts
@@ -68,7 +68,7 @@ def compute_time_context_window(
     if not timecontext:
         return new_timecontexts
 
-    result = adjust_context(op, *clients, timecontext=timecontext)
+    result = adjust_context(op, timecontext=timecontext)
 
     new_timecontexts = [
         result for arg in op.inputs if is_computable_input(arg)
