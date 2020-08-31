@@ -4008,6 +4008,24 @@ def _table_intersect(left: TableExpr, right: TableExpr):
     return ops.Intersection(left, right).to_expr()
 
 
+def _table_except(left: TableExpr, right: TableExpr):
+    """
+    Form the table set except of two table expressions having identical
+    schemas. An except returns only the rows present in the left table that are
+    not present in the right table
+
+    Parameters
+    ----------
+    left : TableExpr
+    right : TableExpr
+
+    Returns
+    -------
+    except : TableExpr
+    """
+    return ops.Except(left, right).to_expr()
+
+
 def _table_to_array(self):
     """
     Single column tables can be viewed as arrays.

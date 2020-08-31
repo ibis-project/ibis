@@ -1768,6 +1768,10 @@ class Intersection(SetOp):
     pass
 
 
+class Except(SetOp):
+    pass
+
+
 class Limit(TableNode):
     table = Arg(ir.TableExpr)
     n = Arg(rlz.validator(int))
