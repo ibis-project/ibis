@@ -4010,7 +4010,7 @@ def _table_intersect(left: TableExpr, right: TableExpr):
 
 def _table_except(left: TableExpr, right: TableExpr):
     """
-    Form the table set except of two table expressions having identical
+    Form the table set difference of two table expressions having identical
     schemas. An except returns only the rows present in the left table that are
     not present in the right table
 
