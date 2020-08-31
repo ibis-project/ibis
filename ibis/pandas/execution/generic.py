@@ -780,6 +780,17 @@ def execute_intersection_dataframe_dataframe(
     return result
 
 
+@execute_node.register(ops.Except, pd.DataFrame, pd.DataFrame)
+def execute_except_dataframe_dataframe(
+    op, left: pd.DataFrame, right, **kwargs
+):
+    merged = left.merge(
+        right, on=list(left.columns), how='outer', indicator=True
+    )
+    result = merged[merged["_merge"] != "both"].drop("_merge", 1)
+    return result
+
+
 @execute_node.register(ops.IsNull, pd.Series)
 def execute_series_isnull(op, data, **kwargs):
     return data.isnull()
