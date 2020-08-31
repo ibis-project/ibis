@@ -1090,6 +1090,19 @@ def test_intersection(
         setops_table_foo.intersect(setops_table_baz)
 
 
+def test_except(
+    setops_table_foo,
+    setops_table_bar,
+    setops_table_baz,
+    setops_relation_error_message,
+):
+    result = setops_table_foo.except_(setops_table_bar)
+    assert isinstance(result.op(), ops.Except)
+
+    with pytest.raises(RelationError, match=setops_relation_error_message):
+        setops_table_foo.except_(setops_table_baz)
+
+
 def test_column_ref_on_projection_rename(con):
     region = con.table('tpch_region')
     nation = con.table('tpch_nation')

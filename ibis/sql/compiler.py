@@ -703,6 +703,12 @@ class ExtractSubqueries:
         self.visit(op.right)
         self.observe(expr)
 
+    def visit_Except(self, expr):
+        op = expr.op()
+        self.visit(op.left)
+        self.visit(op.right)
+        self.observe(expr)
+
     def visit_MaterializedJoin(self, expr):
         self.visit(expr.op().join)
         self.observe(expr)
@@ -1011,6 +1017,11 @@ class Intersection(SetOp):
         return ["INTERSECT" for _ in range(len(self.tables) - 1)]
 
 
+class Except(SetOp):
+    def _get_keyword_list(self):
+        return ["EXCEPT" for _ in range(len(self.tables) - 1)]
+
+
 def flatten_union(table: ir.TableExpr):
     """Extract all union queries from `table`.
 
@@ -1047,11 +1058,29 @@ def flatten_intersection(table: ir.TableExpr):
     return [table]
 
 
+def flatten_except(table: ir.TableExpr):
+    """Extract all intersection queries from `table`.
+
+    Parameters
+    ----------
+    table : TableExpr
+
+    Returns
+    -------
+    Iterable[Union[TableExpr]]
+    """
+    op = table.op()
+    if isinstance(op, ops.Except):
+        return toolz.concatv(flatten_union(op.left), flatten_union(op.right))
+    return [table]
+
+
 class QueryBuilder:
 
     select_builder = SelectBuilder
     union_class = Union
     intersect_class = Intersection
+    except_class = Except
 
     def __init__(self, expr, context):
         self.expr = expr
@@ -1076,6 +1105,8 @@ class QueryBuilder:
             query = self._make_union()
         elif isinstance(op, ops.Intersection):
             query = self._make_intersect()
+        elif isinstance(op, ops.Except):
+            query = self._make_except()
         else:
             query = self._make_select()
 
@@ -1112,6 +1143,11 @@ class QueryBuilder:
         return self.intersect_class(
             table_exprs, self.expr, context=self.context
         )
+
+    def _make_except(self):
+        # flatten excepts so that we can codegen them all at once
+        table_exprs = list(flatten_except(self.expr))
+        return self.except_class(table_exprs, self.expr, context=self.context)
 
     def _make_select(self):
         builder = self.select_builder(self.expr, self.context)

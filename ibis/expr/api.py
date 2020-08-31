@@ -4325,6 +4325,7 @@ _table_methods = dict(
     to_array=_table_to_array,
     union=_table_union,
     intersect=_table_intersect,
+    except_=_table_except,
     view=_table_view,
 )
 
