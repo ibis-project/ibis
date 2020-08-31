@@ -1,8 +1,67 @@
 import numpy as np
+import pandas as pd
 import pytest
 from pytest import param
 
-from ibis.tests.backends import Clickhouse, MySQL, PostgreSQL, PySpark, SQLite
+from ibis.tests.backends import Clickhouse, MySQL, Postgres, PySpark, SQLite
+
+aggregate_test_params = [
+    param(lambda t: t.double_col.mean(), lambda s: s.mean(), id='mean',),
+    param(lambda t: t.double_col.min(), lambda s: s.min(), id='min',),
+    param(lambda t: t.double_col.max(), lambda s: s.max(), id='max',),
+    param(
+        lambda t: (t.double_col + 5).sum(),
+        lambda s: (s + 5).sum(),
+        id='complex_sum',
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    ('result_fn', 'expected_fn'), aggregate_test_params,
+)
+@pytest.mark.xfail_unsupported
+def test_aggregate(backend, alltypes, df, result_fn, expected_fn):
+    expr = alltypes.aggregate(tmp=result_fn)
+    result = expr.execute()
+
+    # Create a single-row single-column dataframe with the Pandas `agg` result
+    # (to match the output format of Ibis `aggregate`)
+    expected = pd.DataFrame({'tmp': [df.double_col.agg(expected_fn)]})
+
+    pd.testing.assert_frame_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    ('result_fn', 'expected_fn'), aggregate_test_params,
+)
+@pytest.mark.xfail_unsupported
+def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
+    grouping_key_col = 'bigint_col'
+
+    # Two (equivalent) variations:
+    #  1) `groupby` then `aggregate`
+    #  2) `aggregate` with `by`
+    expr1 = alltypes.groupby(grouping_key_col).aggregate(tmp=result_fn)
+    expr2 = alltypes.aggregate(tmp=result_fn, by=grouping_key_col)
+    result1 = expr1.execute()
+    result2 = expr2.execute()
+
+    # Note: Using `reset_index` to get the grouping key as a column
+    expected = (
+        df.groupby(grouping_key_col)
+        .double_col.agg(expected_fn)
+        .rename('tmp')
+        .reset_index()
+    )
+
+    # Row ordering may differ depending on backend, so sort on the grouping key
+    result1 = result1.sort_values(by=grouping_key_col).reset_index(drop=True)
+    result2 = result2.sort_values(by=grouping_key_col).reset_index(drop=True)
+    expected = expected.sort_values(by=grouping_key_col).reset_index(drop=True)
+
+    pd.testing.assert_frame_equal(result1, expected)
+    pd.testing.assert_frame_equal(result2, expected)
 
 
 @pytest.mark.parametrize(
@@ -129,7 +188,7 @@ from ibis.tests.backends import Clickhouse, MySQL, PostgreSQL, PySpark, SQLite
     ],
 )
 @pytest.mark.xfail_unsupported
-def test_aggregation(
+def test_reduction_ops(
     backend, alltypes, df, result_fn, expected_fn, ibis_cond, pandas_cond
 ):
     expr = result_fn(alltypes, ibis_cond(alltypes))
@@ -206,7 +265,7 @@ def test_topk_op(backend, alltypes, df, result_fn, expected_fn):
 )
 @pytest.mark.xfail_unsupported
 # Issues #2133 #2132# #2133
-@pytest.mark.xfail_backends([Clickhouse, MySQL, PostgreSQL])
+@pytest.mark.xfail_backends([Clickhouse, MySQL, Postgres])
 @pytest.mark.skip_backends([SQLite], reason='Issue #2128')
 def test_topk_filter_op(backend, alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend

@@ -428,8 +428,12 @@ def execute_aggregation_dataframe(op, data, scope=None, **kwargs):
         for metric in op.metrics
     ]
 
-    # group by always needs a reset to get the grouping key back as a column
-    result = pd.concat(pieces, axis=1).reset_index()
+    result = pd.concat(pieces, axis=1)
+
+    # If grouping, need a reset to get the grouping key back as a column
+    if op.by:
+        result = result.reset_index()
+
     result.columns = [columns.get(c, c) for c in result.columns]
 
     if op.having:
@@ -766,6 +770,14 @@ def execute_series_distinct(op, data, **kwargs):
 def execute_union_dataframe_dataframe(op, left, right, distinct, **kwargs):
     result = pd.concat([left, right], axis=0)
     return result.drop_duplicates() if distinct else result
+
+
+@execute_node.register(ops.Intersection, pd.DataFrame, pd.DataFrame)
+def execute_intersection_dataframe_dataframe(
+    op, left: pd.DataFrame, right, **kwargs
+):
+    result = left.merge(right, on=list(left.columns), how="inner")
+    return result
 
 
 @execute_node.register(ops.IsNull, pd.Series)

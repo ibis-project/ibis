@@ -12,7 +12,7 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
-* :bug:`2267` Fix impala pandas interop temporary csv file writing issue on Windows platforms
+* :feature:`2230` Add intersection to general ibis api
 * :support:`2304` Update ``google-cloud-bigquery`` dependency minimum version to 1.12.0
 * :feature:`2303` Add ``application_name`` argument to ``ibis.bigquery.connect`` to allow attributing Google API requests to projects that use Ibis.
 * :bug:`1320` Added verbose logging to SQL backends

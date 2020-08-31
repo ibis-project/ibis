@@ -3978,6 +3978,7 @@ def _table_union(left, right, distinct=False):
 
     Parameters
     ----------
+    left : TableExpr
     right : TableExpr
     distinct : boolean, default False
         Only union distinct rows not occurring in the calling table (this
@@ -3987,8 +3988,24 @@ def _table_union(left, right, distinct=False):
     -------
     union : TableExpr
     """
-    op = ops.Union(left, right, distinct=distinct)
-    return op.to_expr()
+    return ops.Union(left, right, distinct=distinct).to_expr()
+
+
+def _table_intersect(left: TableExpr, right: TableExpr):
+    """
+    Form the table set intersect of two table expressions having identical
+    schemas. An intersect returns only the common rows between the two tables.
+
+    Parameters
+    ----------
+    left : TableExpr
+    right : TableExpr
+
+    Returns
+    -------
+    intersection : TableExpr
+    """
+    return ops.Intersection(left, right).to_expr()
 
 
 def _table_to_array(self):
@@ -4289,6 +4306,7 @@ _table_methods = dict(
     sort_by=_table_sort_by,
     to_array=_table_to_array,
     union=_table_union,
+    intersect=_table_intersect,
     view=_table_view,
 )
 
