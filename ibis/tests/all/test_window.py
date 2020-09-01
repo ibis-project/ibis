@@ -173,15 +173,6 @@ def mean_udf(s):
             id='mean',
         ),
         param(
-            lambda t, win: mean_udf(t.double_col).over(win),
-            lambda gb: (
-                gb.double_col.expanding()
-                .mean()
-                .reset_index(drop=True, level=0)
-            ),
-            id='mean_udf',
-        ),
-        param(
             lambda t, win: t.float_col.min().over(win),
             lambda gb: gb.float_col.cummin(),
             id='min',
@@ -310,6 +301,46 @@ def test_bounded_preceding_windows(backend, alltypes, df, con, window_fn):
         .set_index('id')
         .sort_index()
     )
+
+    left, right = result.val, expected.val
+
+    backend.assert_series_equal(left, right)
+
+
+@pytest.mark.parametrize(
+    ('result_fn', 'expected_fn'),
+    [
+        param(
+            lambda t, win: t.double_col.mean().over(win),
+            lambda gb: (gb.double_col.transform('mean')),
+            id='mean',
+        ),
+        param(
+            lambda t, win: mean_udf(t.double_col).over(win),
+            lambda gb: (gb.double_col.transform('mean')),
+            id='mean_udf',
+        ),
+    ],
+)
+@pytest.mark.xfail_unsupported
+def test_unbounded_window(backend, alltypes, df, con, result_fn, expected_fn):
+    if not backend.supports_window_operations:
+        pytest.skip(
+            'Backend {} does not support window operations'.format(backend)
+        )
+
+    expr = alltypes.mutate(
+        val=result_fn(
+            alltypes,
+            win=ibis.window(
+                group_by=[alltypes.string_col], order_by=[alltypes.id],
+            ),
+        )
+    )
+
+    result = expr.execute().set_index('id').sort_index()
+    column = expected_fn(df.sort_values('id').groupby('string_col'))
+    expected = df.assign(val=column).set_index('id').sort_index()
 
     left, right = result.val, expected.val
 
