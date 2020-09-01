@@ -1017,7 +1017,7 @@ class Intersection(SetOp):
         return ["INTERSECT" for _ in range(len(self.tables) - 1)]
 
 
-class Except(SetOp):
+class Difference(SetOp):
     def _get_keyword_list(self):
         return ["EXCEPT" for _ in range(len(self.tables) - 1)]
 
@@ -1080,7 +1080,7 @@ class QueryBuilder:
     select_builder = SelectBuilder
     union_class = Union
     intersect_class = Intersection
-    difference_class = Except
+    difference_class = Difference
 
     def __init__(self, expr, context):
         self.expr = expr
