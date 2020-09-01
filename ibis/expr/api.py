@@ -4021,7 +4021,7 @@ def _table_difference(left: TableExpr, right: TableExpr):
 
     Returns
     -------
-    except : TableExpr
+    difference : TableExpr
     """
     return ops.Difference(left, right).to_expr()
 

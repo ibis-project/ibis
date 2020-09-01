@@ -1058,7 +1058,7 @@ def flatten_intersection(table: ir.TableExpr):
     return [table]
 
 
-def flatten_except(table: ir.TableExpr):
+def flatten_difference(table: ir.TableExpr):
     """Extract all intersection queries from `table`.
 
     Parameters
@@ -1145,8 +1145,8 @@ class QueryBuilder:
         )
 
     def _make_difference(self):
-        # flatten excepts so that we can codegen them all at once
-        table_exprs = list(flatten_except(self.expr))
+        # flatten differences so that we can codegen them all at once
+        table_exprs = list(flatten_difference(self.expr))
         return self.difference_class(
             table_exprs, self.expr, context=self.context
         )

@@ -2287,7 +2287,7 @@ FROM functional_alltypes
 WHERE `int_col` <= 0"""
         assert result == expected
 
-    def test_table_except(self):
+    def test_table_difference(self):
         difference = self._case_difference()
         result = to_sql(difference)
         expected = """\
