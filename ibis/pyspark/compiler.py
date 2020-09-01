@@ -332,18 +332,18 @@ def compile_aggregator(t, expr, scope, fn, context=None, **kwargs):
         src_col = F.when(condition, src_col)
 
     col = fn(src_col)
-    if context is None:
+    if context == AggregationContext.ENTIRE:
+        return col
+    elif context == AggregationContext.WINDOW:
+        window = kwargs['window']
+        return col.over(window)
+    else:
         # We are trying to compile a expr such as some_col.max()
         # to a Spark expression.
         # Here we get the root table df of that column and compile
         # the expr to:
         # df.select(max(some_col))
         return t.translate(expr.op().arg.op().table, scope).select(col)
-    elif context == AggregationContext.WINDOW:
-        window = kwargs['window']
-        return col.over(window)
-    else:
-        return col
 
 
 @compiles(ops.GroupConcat)
@@ -1489,9 +1489,30 @@ def compile_not_null(t, expr, scope, **kwargs):
 
 
 @compiles(ops.ElementWiseVectorizedUDF)
-def compile_elementwise_udf(t, expr, scope):
+def compile_elementwise_udf(t, expr, scope, **kwargs):
     op = expr.op()
     spark_output_type = spark_dtype(op._output_type)
     spark_udf = pandas_udf(op.func, spark_output_type, PandasUDFType.SCALAR)
     func_args = (t.translate(arg, scope) for arg in op.func_args)
     return spark_udf(*func_args)
+
+
+@compiles(ops.ReductionVectorizedUDF)
+def compile_reduction_udf(t, expr, scope, context=None, **kwargs):
+    op = expr.op()
+
+    spark_output_type = spark_dtype(op._output_type)
+    spark_udf = pandas_udf(
+        op.func, spark_output_type, PandasUDFType.GROUPED_AGG
+    )
+    func_args = (t.translate(arg, scope) for arg in op.func_args)
+
+    col = spark_udf(*func_args)
+    if context == AggregationContext.ENTIRE:
+        return col
+    elif context == AggregationContext.WINDOW:
+        window = kwargs['window']
+        return col.over(window)
+    else:
+        src_table = t.translate(op.func_args[0].op().table, scope)
+        return src_table.select(col)

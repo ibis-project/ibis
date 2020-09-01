@@ -3,10 +3,21 @@ import pandas as pd
 import pytest
 from pytest import param
 
+import ibis.expr.datatypes as dt
 from ibis.tests.backends import Clickhouse, MySQL, Postgres, PySpark, SQLite
+from ibis.udf.vectorized import reduction
+
+
+@reduction(input_type=[dt.double], output_type=dt.double)
+def mean_udf(s):
+    return s.mean()
+
 
 aggregate_test_params = [
     param(lambda t: t.double_col.mean(), lambda s: s.mean(), id='mean',),
+    param(
+        lambda t: mean_udf(t.double_col), lambda s: s.mean(), id='mean_udf',
+    ),
     param(lambda t: t.double_col.min(), lambda s: s.min(), id='min',),
     param(lambda t: t.double_col.max(), lambda s: s.max(), id='max',),
     param(

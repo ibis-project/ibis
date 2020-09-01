@@ -3,6 +3,7 @@ from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 from ibis.tests.backends import (
     Csv,
     Impala,
@@ -15,6 +16,12 @@ from ibis.tests.backends import (
     Spark,
     SQLite,
 )
+from ibis.udf.vectorized import reduction
+
+
+@reduction(input_type=[dt.double], output_type=dt.double)
+def mean_udf(s):
+    return s.mean()
 
 
 @pytest.mark.parametrize(
@@ -164,6 +171,15 @@ from ibis.tests.backends import (
                 .reset_index(drop=True, level=0)
             ),
             id='mean',
+        ),
+        param(
+            lambda t, win: mean_udf(t.double_col).over(win),
+            lambda gb: (
+                gb.double_col.expanding()
+                .mean()
+                .reset_index(drop=True, level=0)
+            ),
+            id='mean_udf',
         ),
         param(
             lambda t, win: t.float_col.min().over(win),
