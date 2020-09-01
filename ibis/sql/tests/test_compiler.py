@@ -703,7 +703,7 @@ class ExprTestCases:
             table.string_col.name('key'), table.double_col.name('value')
         ]
 
-        expr = t1.except_(t2)
+        expr = t1.difference(t2)
 
         return expr
 

@@ -1768,7 +1768,7 @@ class Intersection(SetOp):
     pass
 
 
-class Except(SetOp):
+class Difference(SetOp):
     pass
 
 

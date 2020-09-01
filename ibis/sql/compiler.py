@@ -703,7 +703,7 @@ class ExtractSubqueries:
         self.visit(op.right)
         self.observe(expr)
 
-    def visit_Except(self, expr):
+    def visit_Difference(self, expr):
         op = expr.op()
         self.visit(op.left)
         self.visit(op.right)
@@ -1070,7 +1070,7 @@ def flatten_except(table: ir.TableExpr):
     Iterable[Union[TableExpr]]
     """
     op = table.op()
-    if isinstance(op, ops.Except):
+    if isinstance(op, ops.Difference):
         return toolz.concatv(flatten_union(op.left), flatten_union(op.right))
     return [table]
 
@@ -1080,7 +1080,7 @@ class QueryBuilder:
     select_builder = SelectBuilder
     union_class = Union
     intersect_class = Intersection
-    except_class = Except
+    difference_class = Except
 
     def __init__(self, expr, context):
         self.expr = expr
@@ -1105,8 +1105,8 @@ class QueryBuilder:
             query = self._make_union()
         elif isinstance(op, ops.Intersection):
             query = self._make_intersect()
-        elif isinstance(op, ops.Except):
-            query = self._make_except()
+        elif isinstance(op, ops.Difference):
+            query = self._make_difference()
         else:
             query = self._make_select()
 
@@ -1144,10 +1144,12 @@ class QueryBuilder:
             table_exprs, self.expr, context=self.context
         )
 
-    def _make_except(self):
+    def _make_difference(self):
         # flatten excepts so that we can codegen them all at once
         table_exprs = list(flatten_except(self.expr))
-        return self.except_class(table_exprs, self.expr, context=self.context)
+        return self.difference_class(
+            table_exprs, self.expr, context=self.context
+        )
 
     def _make_select(self):
         builder = self.select_builder(self.expr, self.context)

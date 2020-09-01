@@ -4008,11 +4008,11 @@ def _table_intersect(left: TableExpr, right: TableExpr):
     return ops.Intersection(left, right).to_expr()
 
 
-def _table_except(left: TableExpr, right: TableExpr):
+def _table_difference(left: TableExpr, right: TableExpr):
     """
     Form the table set difference of two table expressions having identical
-    schemas. An except returns only the rows present in the left table that are
-    not present in the right table
+    schemas. A set difference returns only the rows present in the left table
+    that are not present in the right table
 
     Parameters
     ----------
@@ -4023,7 +4023,7 @@ def _table_except(left: TableExpr, right: TableExpr):
     -------
     except : TableExpr
     """
-    return ops.Except(left, right).to_expr()
+    return ops.Difference(left, right).to_expr()
 
 
 def _table_to_array(self):
@@ -4325,7 +4325,7 @@ _table_methods = dict(
     to_array=_table_to_array,
     union=_table_union,
     intersect=_table_intersect,
-    except_=_table_except,
+    difference=_table_difference,
     view=_table_view,
 )
 

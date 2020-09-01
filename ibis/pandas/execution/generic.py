@@ -782,8 +782,8 @@ def execute_intersection_dataframe_dataframe(
     return result
 
 
-@execute_node.register(ops.Except, pd.DataFrame, pd.DataFrame)
-def execute_except_dataframe_dataframe(
+@execute_node.register(ops.Difference, pd.DataFrame, pd.DataFrame)
+def execute_difference_dataframe_dataframe(
     op, left: pd.DataFrame, right: pd.DataFrame, **kwargs
 ):
     merged = left.merge(

@@ -839,10 +839,10 @@ def test_intersect(client, df1, intersect_df2):
     tm.assert_frame_equal(result, expected)
 
 
-def test_except(client, df1, intersect_df2):
+def test_difference(client, df1, intersect_df2):
     t1 = client.table('df1')
     t2 = client.table('intersect_df2')
-    expr = t1.except_(t2)
+    expr = t1.difference(t2)
     result = expr.execute()
     merged = df1.merge(
         intersect_df2, on=list(df1.columns), how="outer", indicator=True
