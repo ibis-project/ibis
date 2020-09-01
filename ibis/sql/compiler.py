@@ -1019,7 +1019,7 @@ class Intersection(SetOp):
 
 class Difference(SetOp):
     def _get_keyword_list(self):
-        return ["EXCEPT" for _ in range(len(self.tables) - 1)]
+        return ["EXCEPT"] * (len(self.tables) - 1)
 
 
 def flatten_union(table: ir.TableExpr):
