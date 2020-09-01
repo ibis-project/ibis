@@ -1,2 +1,2 @@
-pyspark>=2.4.3
-pyarrow>=0.13, <=0.14.1
+pyspark>=3.0.0
+pyarrow>=1.0.1
