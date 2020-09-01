@@ -3,7 +3,7 @@
 
     `scope` in Scope class is the main cache. It is a dictionary mapping
     ibis node instances to concrete data, and the time context associate
-    with it(if any).
+    with it (if any).
 
     When there are no time contexts associate with the cached result, getting
     and setting values in Scope would be as simple as get and set in a normal
@@ -66,11 +66,12 @@ class Scope:
 
         Parameters
         ----------
-        scope: collections.Mapping
-        a dictionary mapping :class:`~ibis.expr.operations.Node`
-        subclass instances to concrete data, and the time context associate
-        with it (if any).
-        op: ibis.expr.operations.Node, key in scope.
+        scope : collections.Mapping
+            a dictionary mapping :class:`~ibis.expr.operations.Node`
+            subclass instances to concrete data, and the time context associate
+            with it (if any).
+        op: ibis.expr.operations.Node
+            key in scope.
         timecontext: Optional[TimeContext]
 
         Returns
@@ -109,9 +110,11 @@ class Scope:
 
         Parameters
         ----------
-        other_scope: Scope to be merged with
-        overwrite: bool, if set to be True, force overwrite value if op
-            already exists.
+        other_scope: Scope
+            Scope to be merged with
+        overwrite: bool
+            if set to be True, force overwrite `value` if `op` already
+            exists.
         """
         for op, v in other_scope._get_items().items():
             # if get_scope returns a not None value, then data is already

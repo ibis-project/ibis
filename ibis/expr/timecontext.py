@@ -18,10 +18,10 @@ from table, but the result of that is different with time context
 ("20190101", "20200101") vs ("20200101", "20210101"), because what data is in
 "table" depends also on the time context.
 
-While data in scope is public and global for all nodes, timecontext is intended
-to store 'local' time context data for each node in execution. i.e., each
-subtree of an expr tree can have different time context. Which makes it so
-that when executing each node, we also need to know the "local time context"
+While data in scope is public and global for all nodes, `timecontext` is
+intended to store 'local' time context data for each node in execution. i.e.,
+each subtree of an expr tree can have different time context. Which makes it
+so that when executing each node, we also need to know the "local time context"
 for that node.
 
 And we propose to store these data as 'timecontext', calculate in execution
@@ -50,16 +50,16 @@ TIME_COL = 'time'
 
 class TimeContextRelation(enum.Enum):
     """ Enum to classify the relationship between two time contexts
-    Assume that we have two timecontext c1 (begin1, end1),
-    c2(begin2, end2):
-    SUBSET means c1 is a subset of c2, begin1 is greater than or equal to
-    begin2, and end1 is less than or equal to end2.
-    Likewise, SUPERSET means that begin1 is earlier than begin2, and end1
-    is later than end2.
+    Assume that we have two timecontext `c1 (begin1, end1)`,
+    `c2(begin2, end2)`:
+    SUBSET means `c1` is a subset of `c2`, `begin1` is greater than or equal to
+    `begin2`, and `end1` is less than or equal to `end2`.
+    Likewise, SUPERSET means that `begin1` is earlier than `begin2`, and `end1`
+    is later than `end2`.
     If neither of the two contexts is a superset of each other, and they
     share some time range in common, we called them OVERLAP.
     And NONOVERLAP means the two contexts doesn't overlap at all, which
-    means end1 is earlier than begin2 or end2 is earlier than begin1
+    means `end1` is earlier than `begin2` or `end2` is earlier than `begin1`.
     """
 
     SUBSET = 0
@@ -68,7 +68,9 @@ class TimeContextRelation(enum.Enum):
     NONOVERLAP = 3
 
 
-def compare_timecontext(left_context: TimeContext, right_context: TimeContext):
+def compare_timecontext(
+    left_context: TimeContext, right_context: TimeContext
+) -> TimeContextRelation:
     """Compare two timecontext and return the relationship between two time
     context (SUBSET, SUPERSET, OVERLAP, NONOVERLAP).
 
@@ -142,8 +144,8 @@ def adjust_context(op: Node, timecontext: TimeContext) -> TimeContext:
     Params
     -------
     op: ibis.expr.operations.Node
-    clients: List[ibis.client.Client], backend for execution
-    timecontext: TimeContext, time context associated with the node
+    timecontext: TimeContext
+        time context associated with the node
 
     Returns
     --------
