@@ -692,7 +692,7 @@ class ExprTestCases:
 
         return expr
 
-    def _case_except(self):
+    def _case_difference(self):
         table = self.con.table('functional_alltypes')
 
         t1 = table[table.int_col > 0][
@@ -2288,8 +2288,8 @@ WHERE `int_col` <= 0"""
         assert result == expected
 
     def test_table_except(self):
-        intersection = self._case_except()
-        result = to_sql(intersection)
+        difference = self._case_difference()
+        result = to_sql(difference)
         expected = """\
 SELECT `string_col` AS `key`, CAST(`float_col` AS double) AS `value`
 FROM functional_alltypes
