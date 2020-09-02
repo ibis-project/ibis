@@ -8,8 +8,11 @@ from ibis import literal as L
 from ibis.tests.backends import (
     BigQuery,
     Clickhouse,
+    Csv,
     MySQL,
     OmniSciDB,
+    Pandas,
+    Parquet,
     Postgres,
     PySpark,
     Spark,
@@ -32,7 +35,9 @@ from ibis.tests.backends import (
         pytest.param(
             L(5).nullif(5),
             np.nan,
-            marks=pytest.mark.xpass_backends([Spark, PySpark]),
+            marks=pytest.mark.xpass_backends(
+                [Csv, Pandas, Parquet, Spark, PySpark]
+            ),
         ),
         (L(10).nullif(5), 10),
     ],
@@ -40,6 +45,9 @@ from ibis.tests.backends import (
 @pytest.mark.xfail_unsupported
 def test_fillna_nullif(backend, con, expr, expected):
     result = con.execute(expr)
+    import pdb
+
+    pdb.set_trace()
     assert result == expected or (np.isnan(result) and np.isnan(expected))
 
 
