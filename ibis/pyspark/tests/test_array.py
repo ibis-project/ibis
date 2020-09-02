@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import pandas.util.testing as tm
 import pytest
@@ -127,7 +128,7 @@ def test_array_index(client, index):
     expected = pd.DataFrame(
         {
             'indexed': df.array_int.apply(
-                lambda x: x[index] if -len(x) <= index < len(x) else None
+                lambda x: x[index] if -len(x) <= index < len(x) else np.nan
             )
         }
     )
@@ -140,8 +141,8 @@ def test_array_index_scalar(client, index):
     value = ibis.literal(raw_value)
     expr = value[index]
     result = client.execute(expr)
-    expected = raw_value[index] if index < len(raw_value) else None
-    assert result == expected
+    expected = raw_value[index] if index < len(raw_value) else np.nan
+    assert result == expected or (np.isnan(result) and np.isnan(expected))
 
 
 @pytest.mark.parametrize('op', [lambda x, y: x + y, lambda x, y: y + x])
