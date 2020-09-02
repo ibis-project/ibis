@@ -48,7 +48,7 @@ dependencies:
   - nbconvert
   - nbsphinx>=0.7
   - nomkl
-  - pyarrow>=0.12 # must pin again otherwise strange things happen
+  - pyarrow>=0.12, <=0.15.1 # must pin again otherwise strange things happen
   - semantic_version=2.6 # https://github.com/ibis-project/ibis/issues/2027
   - sphinx>=2.0.1
   - sphinx-releases
