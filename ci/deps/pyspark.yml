@@ -1,2 +1,1 @@
-pyspark>=3.0.0
-pyarrow>=1.0.1
+pyspark>=2.4.3
