@@ -1521,4 +1521,4 @@ def compile_reduction_udf(t, expr, scope, context=None, **kwargs):
         return col.over(window)
     else:
         src_table = t.translate(op.func_args[0].op().table, scope)
-        return src_table.select(col)
+        return src_table.agg(col)
