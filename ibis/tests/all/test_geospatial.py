@@ -382,7 +382,10 @@ def test_geo_spatial_binops(backend, geo, expr_fn, expected):
 def test_get_point(backend, geo, expr_fn, expected):
     """Testing for geo spatial get point operations."""
     arg = expr_fn(geo)
-    expr = geo['geo_polygon'].buffer(0.01).contains(arg)
+    # Note: there is a difference in how OmnisciDB and PostGIS consider
+    # boundaries with the contains predicate. Work around this by adding a
+    # small buffer.
+    expr = geo['geo_linestring'].buffer(0.01).contains(arg)
     result = geo[geo, expr.name('tmp')].execute()['tmp']
     testing.assert_almost_equal(result, expected, decimal=2)
 
