@@ -291,6 +291,8 @@ def test_compose_udfs(t_random, df_random, times_two_fn, add_one_fn):
     tm.assert_series_equal(expected, result)
 
 
+# Spark doesn't support pandas_udf with bounded windows. See Spark-24561
+@pytest.mark.xfail(raises=ps.sql.utils.AnalysisException)
 def test_udaf_window(con, t_random, df_random):
     @udf.reduction(['double'], 'double')
     def my_mean(series):
@@ -347,8 +349,10 @@ def test_udaf_window_null(con, t_null, df_null):
     tm.assert_frame_equal(result, expected)
 
 
-# xfail. See #2349
-@pytest.mark.xfail(reason='Usage of reduction UDF does not work properly')
+# Spark doesn't support pandas_udf GROUPED_AGG in spark.sql(). See SPARK-28422
+# We will get SPARK-28422 when we update pyspark to 3.0.0, but this test will
+# still fail. See #2349
+@pytest.mark.xfail(raises=py4j.protocol.Py4JJavaError)
 def test_array_return_type_reduction(con, t, df, qs):
     expr = quantiles(t.b, qs)
     result = expr.execute()

@@ -1,6 +1,5 @@
 import decimal
 
-import numpy as np
 import pytest
 
 import ibis
@@ -8,11 +7,8 @@ from ibis import literal as L
 from ibis.tests.backends import (
     BigQuery,
     Clickhouse,
-    Csv,
     MySQL,
     OmniSciDB,
-    Pandas,
-    Parquet,
     Postgres,
     PySpark,
     Spark,
@@ -29,14 +25,16 @@ from ibis.tests.backends import (
             L(5).nullif(5),
             None,
             marks=pytest.mark.xpass_backends(
-                [BigQuery, Clickhouse, MySQL, OmniSciDB, Postgres, SQLite]
-            ),
-        ),
-        pytest.param(
-            L(5).nullif(5),
-            np.nan,
-            marks=pytest.mark.xpass_backends(
-                [Csv, Pandas, Parquet, Spark, PySpark]
+                [
+                    BigQuery,
+                    Clickhouse,
+                    MySQL,
+                    OmniSciDB,
+                    Postgres,
+                    Spark,
+                    SQLite,
+                    PySpark,
+                ]
             ),
         ),
         (L(10).nullif(5), 10),
@@ -44,8 +42,7 @@ from ibis.tests.backends import (
 )
 @pytest.mark.xfail_unsupported
 def test_fillna_nullif(backend, con, expr, expected):
-    result = con.execute(expr)
-    assert result == expected or (np.isnan(result) and np.isnan(expected))
+    assert con.execute(expr) == expected
 
 
 @pytest.mark.parametrize(
