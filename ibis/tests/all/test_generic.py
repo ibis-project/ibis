@@ -45,9 +45,6 @@ from ibis.tests.backends import (
 @pytest.mark.xfail_unsupported
 def test_fillna_nullif(backend, con, expr, expected):
     result = con.execute(expr)
-    import pdb
-
-    pdb.set_trace()
     assert result == expected or (np.isnan(result) and np.isnan(expected))
 
 
