@@ -56,7 +56,7 @@ def test_reduction_udf_window(backend, alltypes, df):
     window = ibis.window(
         group_by=[alltypes.string_col], order_by=[alltypes.id],
     )
-    expr = alltypes.mutate(val=alltypes.double_col.mean().over(window))
+    expr = alltypes.mutate(val=calc_mean(alltypes.double_col).over(window))
     result = expr.execute().set_index('id').sort_index()
 
     gb = df.sort_values('id').groupby('string_col')
