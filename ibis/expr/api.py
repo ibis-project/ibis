@@ -4296,6 +4296,32 @@ def _table_drop(self, fields):
     return self[[field for field in schema if field not in field_set]]
 
 
+def _rowid(self):
+    """
+    An autonumeric representing the row number of the results.
+
+    It can be 0 or 1 indexed depending on the backend. Check the backend
+    documentation.
+
+    Note that this is different from the window function row number
+    (even if they are conceptually the same), and different from row
+    id in backends where it represents the physical location (e.g. Oracle
+    or PostgreSQL's ctid).
+
+    Returns
+    -------
+    ir.IntegerColumn
+
+    Examples
+    --------
+    >>> my_table[my_table.rowid(), my_table.name].execute()
+    1|Ibis
+    2|pandas
+    3|Dask
+    """
+    return ops.RowID().to_expr()
+
+
 _table_methods = dict(
     aggregate=aggregate,
     count=_table_count,
@@ -4327,6 +4353,7 @@ _table_methods = dict(
     intersect=_table_intersect,
     difference=_table_difference,
     view=_table_view,
+    rowid=_rowid,
 )
 
 
