@@ -4008,6 +4008,24 @@ def _table_intersect(left: TableExpr, right: TableExpr):
     return ops.Intersection(left, right).to_expr()
 
 
+def _table_difference(left: TableExpr, right: TableExpr):
+    """
+    Form the table set difference of two table expressions having identical
+    schemas. A set difference returns only the rows present in the left table
+    that are not present in the right table
+
+    Parameters
+    ----------
+    left : TableExpr
+    right : TableExpr
+
+    Returns
+    -------
+    difference : TableExpr
+    """
+    return ops.Difference(left, right).to_expr()
+
+
 def _table_to_array(self):
     """
     Single column tables can be viewed as arrays.
@@ -4333,6 +4351,7 @@ _table_methods = dict(
     to_array=_table_to_array,
     union=_table_union,
     intersect=_table_intersect,
+    difference=_table_difference,
     view=_table_view,
     rowid=_rowid,
 )
