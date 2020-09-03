@@ -767,16 +767,29 @@ def execute_series_distinct(op, data, **kwargs):
 
 
 @execute_node.register(ops.Union, pd.DataFrame, pd.DataFrame, bool)
-def execute_union_dataframe_dataframe(op, left, right, distinct, **kwargs):
+def execute_union_dataframe_dataframe(
+    op, left: pd.DataFrame, right: pd.DataFrame, distinct, **kwargs
+):
     result = pd.concat([left, right], axis=0)
     return result.drop_duplicates() if distinct else result
 
 
 @execute_node.register(ops.Intersection, pd.DataFrame, pd.DataFrame)
 def execute_intersection_dataframe_dataframe(
-    op, left: pd.DataFrame, right, **kwargs
+    op, left: pd.DataFrame, right: pd.DataFrame, **kwargs
 ):
     result = left.merge(right, on=list(left.columns), how="inner")
+    return result
+
+
+@execute_node.register(ops.Difference, pd.DataFrame, pd.DataFrame)
+def execute_difference_dataframe_dataframe(
+    op, left: pd.DataFrame, right: pd.DataFrame, **kwargs
+):
+    merged = left.merge(
+        right, on=list(left.columns), how='outer', indicator=True
+    )
+    result = merged[merged["_merge"] != "both"].drop("_merge", 1)
     return result
 
 
