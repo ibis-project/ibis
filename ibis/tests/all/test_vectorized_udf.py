@@ -6,6 +6,9 @@ from ibis.tests.backends import Pandas, PySpark
 from ibis.udf.vectorized import elementwise
 
 
+pytestmark = pytest.mark.udf
+
+
 @pytest.mark.only_on_backends([Pandas, PySpark])
 @pytest.mark.xfail_unsupported
 def test_elementwise_udf(backend, alltypes, df):
