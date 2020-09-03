@@ -13,7 +13,7 @@ jobs:
     COMPOSE_FILE: ci/docker-compose.yml
     PYTHONHASHSEED: "random"
     BACKENDS: "impala kudu-master kudu-tserver clickhouse"
-    INSTALL_DEPS_FOR: "impala clickhose"
+    INSTALL_DEPS_FOR: "impala clickhouse"
     PYTEST_BACKENDS: "impala clickhouse"
   strategy:
     matrix:
