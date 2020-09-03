@@ -1,7 +1,5 @@
-import pandas as pd
 import pytest
 
-import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.tests.backends import Pandas, PySpark
@@ -34,38 +32,6 @@ def test_reduction_udf(backend, alltypes, df):
     result = calc_mean(alltypes['double_col']).execute()
     expected = df['double_col'].agg(calc_mean.func)
     assert result == expected
-
-
-@pytest.mark.only_on_backends([Pandas, PySpark])
-@pytest.mark.xfail_unsupported
-def test_reduction_udf_aggregate(backend, alltypes, df):
-    expr = alltypes.aggregate(tmp=calc_mean(alltypes.double_col))
-    result = expr.execute()
-
-    # Create a single-row single-column dataframe
-    # (to match the output format of Ibis `aggregate`)
-    expected = pd.DataFrame({'tmp': [df.double_col.mean()]})
-
-    pd.testing.assert_frame_equal(result, expected)
-
-
-@pytest.mark.only_on_backends([Pandas, PySpark])
-@pytest.mark.xfail_unsupported
-def test_reduction_udf_window(backend, alltypes, df):
-    # Unbounded window
-    window = ibis.window(
-        group_by=[alltypes.string_col], order_by=[alltypes.id],
-    )
-    expr = alltypes.mutate(val=calc_mean(alltypes.double_col).over(window))
-    result = expr.execute().set_index('id').sort_index()
-
-    gb = df.sort_values('id').groupby('string_col')
-    column = gb.double_col.transform('mean')
-    expected = df.assign(val=column).set_index('id').sort_index()
-
-    left, right = result.val, expected.val
-
-    backend.assert_series_equal(left, right)
 
 
 @pytest.mark.only_on_backends([Pandas, PySpark])
