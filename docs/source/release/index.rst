@@ -13,6 +13,7 @@ Release Notes
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
 * :feature:`2348` Add PySpark support for ReductionVectorizedUDF
+* :feature:`2081` Add ``start_point`` and ``end_point`` to PostGIS backend.
 * :feature:`2347` Add set difference to general ibis api
 * :feature:`2251` Add ``rowid`` expression, supported by SQLite and OmniSciDB
 * :feature:`2230` Add intersection to general ibis api
