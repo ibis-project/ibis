@@ -332,10 +332,7 @@ def compile_aggregator(t, expr, scope, fn, context=None, **kwargs):
         src_col = F.when(condition, src_col)
 
     col = fn(src_col)
-    if (
-        context == AggregationContext.ENTIRE
-        or context == AggregationContext.GROUP
-    ):
+    if context in (AggregationContext.ENTIRE, AggregationContext.GROUP):
         return col
     elif context == AggregationContext.WINDOW:
         window = kwargs['window']
@@ -1511,10 +1508,7 @@ def compile_reduction_udf(t, expr, scope, context=None, **kwargs):
     func_args = (t.translate(arg, scope) for arg in op.func_args)
 
     col = spark_udf(*func_args)
-    if (
-        context == AggregationContext.ENTIRE
-        or context == AggregationContext.GROUP
-    ):
+    if context in (AggregationContext.ENTIRE, AggregationContext.GROUP):
         return col
     elif context == AggregationContext.WINDOW:
         window = kwargs['window']
