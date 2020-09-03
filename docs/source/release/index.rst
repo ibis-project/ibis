@@ -13,6 +13,8 @@ Release Notes
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
 * :feature:`2348` Add PySpark support for ReductionVectorizedUDF
+* :feature:`2347` Add set difference to general ibis api
+* :feature:`2251` Add ``rowid`` expression, supported by SQLite and OmniSciDB
 * :feature:`2230` Add intersection to general ibis api
 * :support:`2304` Update ``google-cloud-bigquery`` dependency minimum version to 1.12.0
 * :feature:`2303` Add ``application_name`` argument to ``ibis.bigquery.connect`` to allow attributing Google API requests to projects that use Ibis.
