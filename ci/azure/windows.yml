@@ -133,7 +133,7 @@ jobs:
 
     - script: |
         call activate $(conda.env)
-        pytest ibis/tests ibis/expr/tests ibis/sql/tests ibis/pandas/tests ibis/pandas/execution/tests ibis/file/tests -m "not hdfs" -ra --junitxml="junit-$(python.version).xml"
+        pytest ibis/tests ibis/pandas/tests ibis/file/tests -m "not hdfs" -ra --junitxml="junit-$(python.version).xml"
       displayName: 'Run tests'
 
     - task: PublishTestResults@2
