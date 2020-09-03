@@ -13,6 +13,7 @@ jobs:
     COMPOSE_FILE: ci/docker-compose.yml
     PYTHONHASHSEED: "random"
     BACKENDS: "impala kudu-master kudu-tserver clickhouse"
+    INSTALL_DEPS_FOR: "impala clickhose"
     PYTEST_BACKENDS: "impala clickhouse"
   strategy:
     matrix:
@@ -37,7 +38,7 @@ jobs:
     - bash: docker ps
       displayName: 'Show running containers'
 
-    - bash: make build PYTHON_VERSION=$PYTHON_VERSION
+    - bash: make build PYTHON_VERSION=$PYTHON_VERSION INSTALL_DEPS_FOR="${INSTALL_DEPS_FOR}"
       displayName: 'Build ibis image'
 
     - bash: docker images
@@ -106,6 +107,7 @@ jobs:
     AZURECI: 1
     COMPOSE_FILE: ci/docker-compose.yml
     BACKENDS: "impala postgres"
+    INSTALL_DEPS_FOR: "docs"
     LOADS: "impala postgres"
 
   steps:
@@ -119,7 +121,7 @@ jobs:
     - bash: make wait PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
       displayName: 'Wait for databases'
 
-    - bash: make builddoc PYTHON_VERSION=$PYTHON_VERSION
+    - bash: make builddoc PYTHON_VERSION=$PYTHON_VERSION INSTALL_DEPS_FOR="${INSTALL_DEPS_FOR}"
       displayName: 'build ibis documentation image'
 
     - bash: docker images
