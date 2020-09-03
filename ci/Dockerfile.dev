@@ -9,10 +9,6 @@ ARG PYTHON_VERSION
 ARG INSTALL_DEPS_FOR
 ADD environment.yml /
 ADD ci/deps/*.yml /deps/
-  
-RUN echo $INSTALL_DEPS_FOR
-
-RUN for BACKEND in $INSTALL_DEPS_FOR; do echo $(ls /deps/$BACKEND.yml); done
 
 RUN /opt/conda/bin/conda config --add channels conda-forge \
   && /opt/conda/bin/conda update --all --yes --quiet \
