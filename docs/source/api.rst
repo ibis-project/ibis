@@ -490,6 +490,8 @@ Column methods
 
    GeoSpatialColumn.unary_union
 
+.. _api.hdfs:
+
 HDFS
 ----
 

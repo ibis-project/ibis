@@ -43,7 +43,7 @@ client using :func:`ibis.impala.connect`:
 Both method calls can take ``auth_mechanism='GSSAPI'`` or
 ``auth_mechanism='LDAP'`` to connect to Kerberos clusters.  Depending on your
 cluster setup, this may also include SSL. See the :ref:`API reference
-<api.client>` for more, along with the Impala shell reference, as the
+<api>` for more, along with the Impala shell reference, as the
 connection semantics are identical.
 
 API

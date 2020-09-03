@@ -50,8 +50,9 @@ releases_github_path = "ibis-project/ibis"
 releases_unstable_prehistory = True
 releases_document_name = [os.path.join("release", "index")]
 ipython_warning_is_error = True
-autosummary_generate = (glob.glob("*.rst")
-                        + glob.glob(os.path.join("backends", "*.rst")))
+autosummary_generate = glob.glob("*.rst") + glob.glob(
+    os.path.join("backends", "*.rst")
+)
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

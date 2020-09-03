@@ -34,7 +34,7 @@ Use ``ibis.mysql.connect`` with a SQLAlchemy-compatible connection string to
 create a client.
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    connect
    MySQLClient.database
