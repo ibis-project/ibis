@@ -11,17 +11,6 @@ PYTHON_VERSION := 3.6
 
 PYTHONHASHSEED := random
 
-# docker specific
-COMPOSE_FILE := "$(MAKEFILE_DIR)/ci/docker-compose.yml"
-DOCKER := PYTHON_VERSION=$(PYTHON_VERSION) docker-compose -f $(COMPOSE_FILE)
-DOCKER_UP := $(DOCKER) up --remove-orphans -d --no-build
-DOCKER_RUN := $(DOCKER) run --rm
-DOCKER_BUILD := $(DOCKER) build
-DOCKER_STOP := $(DOCKER) rm --force --stop
-
-# command to be executed inside docker container
-DOCKER_RUN_COMMAND := echo "you should do 'make docker_run DOCKER_RUN_COMMAND=[you command]'"
-
 # all backends that ibis using
 BACKENDS := clickhouse impala kudu-master kudu-tserver mysql omniscidb parquet postgres sqlite
 
@@ -31,9 +20,23 @@ SERVICES := omniscidb postgres mysql clickhouse impala kudu-master kudu-tserver
 # the variable contains backends for which test datasets can be automatically loaded
 LOADS := sqlite parquet postgres clickhouse omniscidb mysql impala
 
+# which backends we want to install dependencies for
+INSTALL_DEPS_FOR := bigquery clickhouse impala mysql omniscidb parquet postgres
+
 CURRENT_SERVICES := $(shell $(MAKEFILE_DIR)/ci/backends-to-start.sh "$(BACKENDS)" "$(SERVICES)")
 CURRENT_LOADS := $(shell $(MAKEFILE_DIR)/ci/backends-to-start.sh "$(BACKENDS)" "$(LOADS)")
 WAITER_COMMAND := $(shell $(MAKEFILE_DIR)/ci/dockerize.sh $(CURRENT_SERVICES))
+
+# docker specific
+COMPOSE_FILE := "$(MAKEFILE_DIR)/ci/docker-compose.yml"
+DOCKER := PYTHON_VERSION=$(PYTHON_VERSION) INSTALL_DEPS_FOR="$(INSTALL_DEPS_FOR)" docker-compose -f $(COMPOSE_FILE)
+DOCKER_UP := $(DOCKER) up --remove-orphans -d --no-build
+DOCKER_RUN := $(DOCKER) run --rm
+DOCKER_BUILD := $(DOCKER) build --no-cache
+DOCKER_STOP := $(DOCKER) rm --force --stop
+
+# command to be executed inside docker container
+DOCKER_RUN_COMMAND := echo "you should do 'make docker_run DOCKER_RUN_COMMAND=[you command]'"
 
 # pytest specific options
 PYTEST_MARKERS := $(shell $(MAKEFILE_DIR)/ci/backends-markers.sh $(BACKENDS))

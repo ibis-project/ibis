@@ -6,17 +6,21 @@ RUN apt-get -qq update --yes \
  && rm -rf /var/lib/apt/lists/*
 
 ARG PYTHON_VERSION
+ARG INSTALL_DEPS_FOR
 ADD environment.yml /
 ADD ci/deps/*.yml /deps/
+  
+RUN echo $INSTALL_DEPS_FOR
+
+RUN for BACKEND in $INSTALL_DEPS_FOR; do echo $(ls /deps/$BACKEND.yml); done
 
 RUN /opt/conda/bin/conda config --add channels conda-forge \
   && /opt/conda/bin/conda update --all --yes --quiet \
   && /opt/conda/bin/conda install --yes conda-build
 
-RUN /opt/conda/bin/conda env create --name ibis-env --file /environment.yml \
-  && /opt/conda/bin/conda install --name ibis-env python=$PYTHON_VERSION
+RUN /opt/conda/bin/conda env create --name ibis-env --file /environment.yml
 
-RUN for FNAME in $(ls /deps/*.yml); do /opt/conda/bin/conda install --name ibis-env --file $FNAME; done
+RUN for BACKEND in $INSTALL_DEPS_FOR; do /opt/conda/bin/conda install --name ibis-env --file $(ls /deps/$BACKEND.yml); done
 
 RUN echo 'source /opt/conda/bin/activate ibis-env && exec "$@"' > activate.sh
 
