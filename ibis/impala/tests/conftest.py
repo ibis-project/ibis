@@ -7,7 +7,7 @@ import pytest
 import ibis
 import ibis.util as util
 from ibis import options
-from ibis.expr.tests.mocks import MockConnection
+from ibis.tests.expr.mocks import MockConnection
 
 
 def isproperty(obj):
