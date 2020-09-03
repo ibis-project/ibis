@@ -47,8 +47,10 @@ geoalchemy2>=0.6
 
 # PySpark
 pyspark>=2.4.3  # (!) Changed from >=2.4.3, <3.0.0
+# (!) Removed double-conversion
 # (!) Removed pyarrow>=0.12, <=0.14.1
 
 # Spark
 pyspark>=2.4.3  # (!) Changed from >=2.4.3, <3.0.0
+# (!) Removed double-conversion
 # (!) Removed pyarrow>=0.12, <=0.14.1

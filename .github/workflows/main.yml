@@ -123,7 +123,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: ["3.7"]
+        python_version: ["3.7", "3.8"]
     services:
       omnisci:
         image: omnisci/core-os-cpu:v5.2.2
@@ -142,8 +142,8 @@ jobs:
     - name: run tests
       run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not udf and not hdfs" ./ci/run_tests.sh
 
-  Tests_spark:
-    name: Tests Spark
+  Tests_spark_pyspark:
+    name: Tests Spark / PySpark
     runs-on: ubuntu-latest
     env:
       BACKENDS: "spark pyspark"
