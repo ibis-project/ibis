@@ -43,8 +43,129 @@ client using :func:`ibis.impala.connect`:
 Both method calls can take ``auth_mechanism='GSSAPI'`` or
 ``auth_mechanism='LDAP'`` to connect to Kerberos clusters.  Depending on your
 cluster setup, this may also include SSL. See the :ref:`API reference
-<api.client>` for more, along with the Impala shell reference, as the
+<api>` for more, along with the Impala shell reference, as the
 connection semantics are identical.
+
+API
+---
+.. currentmodule:: ibis.impala.api
+
+These methods are available on the Impala client object after connecting to
+your HDFS cluster (``ibis.hdfs_connect``) and connecting to Impala with
+``ibis.impala.connect``. See :ref:`backends.impala` for a tutorial on using this
+backend.
+
+.. autosummary::
+   :toctree: ../generated/
+
+   connect
+   ImpalaClient.close
+   ImpalaClient.database
+
+Database methods
+~~~~~~~~~~~~~~~~
+
+.. autosummary::
+   :toctree: ../generated/
+
+   ImpalaClient.set_database
+   ImpalaClient.create_database
+   ImpalaClient.drop_database
+   ImpalaClient.list_databases
+   ImpalaClient.exists_database
+
+.. autosummary::
+   :toctree: ../generated/
+
+   ImpalaDatabase.create_table
+   ImpalaDatabase.drop
+   ImpalaDatabase.namespace
+   ImpalaDatabase.table
+
+Table methods
+~~~~~~~~~~~~~
+
+The ``ImpalaClient`` object itself has many helper utility methods. You'll find
+the most methods on ``ImpalaTable``.
+
+.. autosummary::
+   :toctree: ../generated/
+
+   ImpalaClient.database
+   ImpalaClient.table
+   ImpalaClient.sql
+   ImpalaClient.raw_sql
+   ImpalaClient.list_tables
+   ImpalaClient.exists_table
+   ImpalaClient.drop_table
+   ImpalaClient.create_table
+   ImpalaClient.insert
+   ImpalaClient.invalidate_metadata
+   ImpalaClient.truncate_table
+   ImpalaClient.get_schema
+   ImpalaClient.cache_table
+   ImpalaClient.load_data
+   ImpalaClient.get_options
+   ImpalaClient.set_options
+   ImpalaClient.set_compression_codec
+
+
+The best way to interact with a single table is through the ``ImpalaTable``
+object you get back from ``ImpalaClient.table``.
+
+.. autosummary::
+   :toctree: ../generated/
+
+   ImpalaTable.add_partition
+   ImpalaTable.alter
+   ImpalaTable.alter_partition
+   ImpalaTable.column_stats
+   ImpalaTable.compute_stats
+   ImpalaTable.describe_formatted
+   ImpalaTable.drop
+   ImpalaTable.drop_partition
+   ImpalaTable.files
+   ImpalaTable.insert
+   ImpalaTable.invalidate_metadata
+   ImpalaTable.is_partitioned
+   ImpalaTable.load_data
+   ImpalaTable.metadata
+   ImpalaTable.partition_schema
+   ImpalaTable.partitions
+   ImpalaTable.refresh
+   ImpalaTable.rename
+   ImpalaTable.schema
+   ImpalaTable.stats
+
+Creating views is also possible:
+
+.. autosummary::
+   :toctree: ../generated/
+
+   ImpalaClient.create_view
+   ImpalaClient.drop_view
+   ImpalaClient.drop_table_or_view
+
+Accessing data formats in HDFS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+   :toctree: ../generated/
+
+   ImpalaClient.avro_file
+   ImpalaClient.delimited_file
+   ImpalaClient.parquet_file
+
+Executing expressions
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+   :toctree: ../generated/
+
+   ImpalaClient.execute
+   ImpalaClient.disable_codegen
+
+
 
 The Impala client object
 ------------------------
@@ -656,8 +777,10 @@ For example:
    to_insert.execute()
    to_insert.drop()
 
-Using Impala UDFs in Ibis
--------------------------
+.. _udf.impala:
+
+User Defined functions (UDF)
+----------------------------
 
 Impala currently supports user-defined scalar functions (known henceforth as
 *UDFs*) and aggregate functions (respectively *UDAs*) via a C++ extension API.
