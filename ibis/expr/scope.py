@@ -125,7 +125,9 @@ class Scope:
                 result.items[op] = v
         return result
 
-    def merge_scopes(self, other_scopes: List['Scope'], overwrite=False):
+    def merge_scopes(
+        self, other_scopes: List['Scope'], overwrite=False
+    ) -> 'Scope':
         """merge items in other_scopes into this scope
 
         Parameters
