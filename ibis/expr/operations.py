@@ -249,6 +249,19 @@ class TableColumn(ValueOp):
         return klass(self, name=self.name)
 
 
+class RowID(ValueOp):
+    """The row number (an autonumeric) of the returned result."""
+
+    def output_type(self):
+        return dt.int64.column_type()
+
+    def resolve_name(self):
+        return 'rowid'
+
+    def has_resolved_name(self):
+        return True
+
+
 def find_all_base_tables(expr, memo=None):
     if memo is None:
         memo = {}
@@ -1742,15 +1755,14 @@ class AsOfJoin(Join):
             setattr(self, arg, value)
 
 
-class Union(TableNode, HasSchema):
+class SetOp(TableNode, HasSchema):
     left = Arg(rlz.noop)
     right = Arg(rlz.noop)
-    distinct = Arg(rlz.validator(bool), default=False)
 
     def _validate(self):
         if not self.left.schema().equals(self.right.schema()):
             raise com.RelationError(
-                'Table schemas must be equal ' 'to form union'
+                'Table schemas must be equal for set operations'
             )
 
     @property
@@ -1759,6 +1771,18 @@ class Union(TableNode, HasSchema):
 
     def blocks(self):
         return True
+
+
+class Union(SetOp):
+    distinct = Arg(rlz.validator(bool), default=False)
+
+
+class Intersection(SetOp):
+    pass
+
+
+class Difference(SetOp):
+    pass
 
 
 class Limit(TableNode):

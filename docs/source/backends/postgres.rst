@@ -24,3 +24,23 @@ individual parameters to :func:`ibis.postgres.connect`:
        port=5432,
        database='ibis_testing',
    )
+
+.. _api.postgres:
+
+API
+---
+.. currentmodule:: ibis.sql.postgres.api
+
+The PostgreSQL client is accessible through the ``ibis.postgres`` namespace.
+
+Use ``ibis.postgres.connect`` with a SQLAlchemy-compatible connection string to
+create a client.
+
+.. autosummary::
+   :toctree: ../generated/
+
+   connect
+   PostgreSQLClient.database
+   PostgreSQLClient.list_tables
+   PostgreSQLClient.list_databases
+   PostgreSQLClient.table

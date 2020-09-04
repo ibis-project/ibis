@@ -42,6 +42,8 @@ layout:
         target: https://gitter.im/ibis-dev/Lobby
       - name: "Code of conduct"
         target: /community/coc.html
+      - name: "Ecosystem"
+        target: /community/ecosystem.html
     - name: "Contribute"
       target: /contribute.html
   social_media:

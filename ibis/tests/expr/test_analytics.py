@@ -16,7 +16,7 @@ import unittest
 
 import ibis
 import ibis.expr.types as ir
-from ibis.expr.tests.mocks import MockConnection
+from ibis.tests.expr.mocks import MockConnection
 from ibis.tests.util import assert_equal
 
 

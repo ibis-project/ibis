@@ -12,29 +12,18 @@ jobs:
     AZURECI: 1
     COMPOSE_FILE: ci/docker-compose.yml
     PYTHONHASHSEED: "random"
-    BACKENDS_IMPALA_KUDU_CLICKHOUSE: "impala kudu-master kudu-tserver clickhouse"
-    PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE: "not udf and not mysql and not parquet and not postgresql and not postgis and not postgres_extensions and not sqlite and not omniscidb and not spark and not pyspark"
+    BACKENDS: "impala kudu-master kudu-tserver clickhouse"
+    PYTEST_BACKENDS: "impala clickhouse"
   strategy:
     matrix:
 
       # Impala, kudu and clickhouse backends
       py37_impala_kudu_clickhouse:
         PYTHON_VERSION: "3.7"
-        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
-        BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
       py38_impala_kudu_clickhouse:
         PYTHON_VERSION: "3.8"
-        PYTEST_MARK_EXPRESSION: $(PYTEST_MARK_EXPRESSION_IMPALA_KUDU_CLICKHOUSE)
-        BACKENDS: $(BACKENDS_IMPALA_KUDU_CLICKHOUSE)
 
   steps:
-    - bash: |
-        if [ -z "$PYTEST_MARK_EXPRESSION" ]; then
-          echo "##vso[task.logissue type=error]The env variable PYTEST_MARK_EXPRESSION is not set. It is expected to be set in all the matrix builds, since not all tests can be run in a single build. It's probably caused by a typo."
-          exit 1
-        fi
-      displayName: 'Set environment variables'
-
     # Start databases if BACKENDS is not an empty string. Without this check, docker-compose would start all services (instead of none of them) if no BACKENDS are specified.
     - bash: |
         if [ -n "${BACKENDS}" ]; then
@@ -73,15 +62,17 @@ jobs:
         docker-compose run \
           -e PYTHONHASHSEED=$PYTHONHASHSEED \
           -e AZURECI=$AZURECI \
+          -e PYTEST_BACKENDS="$PYTEST_BACKENDS" \
           ibis \
-          pytest ibis -m "${PYTEST_MARK_EXPRESSION}" \
-                      -k"not compile and not connect" \
-                      -ra \
-                      --doctest-modules \
-                      --doctest-ignore-import-errors \
-                      --junitxml=/tmp/test-reports/pytest/junit.xml \
-                      --cov=ibis \
-                      --cov-report=xml:/tmp/test-reports/pytest-cov/coverage.xml
+          pytest ibis/tests ibis/impala/tests ibis/clickhouse/tests \
+            -m "not udf" \
+            -k"not compile and not connect" \
+            -ra \
+            --doctest-modules \
+            --doctest-ignore-import-errors \
+            --junitxml=/tmp/test-reports/pytest/junit.xml \
+            --cov=ibis \
+            --cov-report=xml:/tmp/test-reports/pytest-cov/coverage.xml
       displayName: 'Run tests'
 
     # See #1954
