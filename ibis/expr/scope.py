@@ -51,6 +51,12 @@ class Scope:
     def items(self):
         return iter(self._items)
 
+    def __getitem__(self, op):
+        return self._items[op]
+
+    def __setitem__(self, op, value):
+        self._items[op] = value
+
     def get(self, op: Node, timecontext: Optional[TimeContext] = None) -> Any:
         """ Given a op and timecontext, get the result from scope
 
@@ -74,7 +80,7 @@ class Scope:
 
         # for ops without timecontext
         if timecontext is None:
-            return self._items[op].value
+            return self.__getitem__(op).value
         else:
             # For op with timecontext, ther are some ops cannot use cached
             # result with a different (larger) timecontext to get the
@@ -87,13 +93,13 @@ class Scope:
             # These are time context sensitive operations. Since these cases
             # are rare in acutal use case, we just enable optimization for
             # all nodes for now.
-            cached_timecontext = self._items[op].timecontext
+            cached_timecontext = self.__getitem__(op).timecontext
             if cached_timecontext:
                 relation = compare_timecontext(timecontext, cached_timecontext)
                 if relation == TimeContextRelation.SUBSET:
-                    return self._items[op].value
+                    return self.__getitem__(op).value
             else:
-                return self._items[op].value
+                return self.__getitem__(op).value
         return None
 
     def merge_scope(self, other_scope: 'Scope', overwrite=False) -> 'Scope':
@@ -115,16 +121,16 @@ class Scope:
         result = Scope()
 
         for op in self.items():
-            result._items[op] = self._items[op]
+            result.__setitem__(op, self.__getitem__(op))
 
         for op in other_scope.items():
             # if get_scope returns a not None value, then data is already
             # cached in scope and it is at least a greater range than
             # the current timecontext, so we drop the item. Otherwise
             # add it into scope.
-            v = other_scope._items[op]
+            v = other_scope.__getitem__(op)
             if overwrite or result.get(op, v.timecontext) is None:
-                result._items[op] = v
+                result.__setitem__(op, v)
         return result
 
     def merge_scopes(
@@ -146,7 +152,8 @@ class Scope:
         """
         result = Scope()
         for op in self.items():
-            result._items[op] = self._items[op]
+            result.__setitem__(op, self.__getitem__(op))
+
         for s in other_scopes:
             result = result.merge_scope(s, overwrite)
         return result
