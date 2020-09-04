@@ -35,34 +35,26 @@
 
 """
 from collections import namedtuple
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from ibis.expr.operations import Node
 from ibis.expr.timecontext import TimeContextRelation, compare_timecontext
 from ibis.expr.typing import TimeContext
 
+ScopeItem = namedtuple('item', ['value', 'timecontext'])
+
 
 class Scope:
-    def __init__(self, items=None):
-        if items:
-            self.items = items
-        else:
-            self.items = {}
+    def __init__(self, items: Dict[str, ScopeItem] = None):
+        self.items = items or {}
 
     def _get_items(self):
         """ Get all items in scope.
         """
         return self.items
 
-    def __copy__(self):
-        """make a Scope instance, copying other_scope
-        """
-        scope = Scope()
-        scope.merge_scope(self)
-        return scope
-
     def get(self, op: Node, timecontext: Optional[TimeContext] = None) -> Any:
-        """ Given a op and timecontext, get result from scope
+        """ Given a op and timecontext, get the result from scope
 
         Parameters
         ----------
@@ -81,6 +73,7 @@ class Scope:
         """
         if op not in self.items:
             return None
+
         # for ops without timecontext
         if timecontext is None:
             return self.items[op].value
@@ -105,7 +98,7 @@ class Scope:
                 return self.items[op].value
         return None
 
-    def merge_scope(self, other_scope: 'Scope', overwrite=False):
+    def merge_scope(self, other_scope: 'Scope', overwrite=False) -> 'Scope':
         """merge items in other_scope into this scope
 
         Parameters
@@ -115,26 +108,42 @@ class Scope:
         overwrite: bool
             if set to be True, force overwrite `value` if `op` already
             exists.
+
+        Returns
+        -------
+        Scope
+            a new Scope instance with items in two scope merged.
         """
+        result = Scope(self._get_items())
+
         for op, v in other_scope._get_items().items():
             # if get_scope returns a not None value, then data is already
             # cached in scope and it is at least a greater range than
             # the current timecontext, so we drop the item. Otherwise
             # add it into scope.
-            if overwrite or self.get(op, v.timecontext) is None:
-                self.items[op] = v
+            if overwrite or result.get(op, v.timecontext) is None:
+                result.items[op] = v
+        return result
 
     def merge_scopes(self, other_scopes: List['Scope'], overwrite=False):
         """merge items in other_scopes into this scope
 
         Parameters
         ----------
-        other_scopes: Scopes to be merged with
-        overwrite: bool, if set to be True, force overwrite value if op
-            already exists.
+        other_scopes: List[Scope]
+            scopes to be merged with
+        overwrite: Bool
+            if set to be True, force overwrite value if op already exists.
+
+        Returns
+        -------
+        Scope
+            a new Scope instance with items in two scope merged.
         """
+        result = Scope(self._get_items())
         for s in other_scopes:
-            self.merge_scope(s)
+            result = result.merge_scope(s)
+        return result
 
 
 def make_scope(
@@ -145,15 +154,16 @@ def make_scope(
 
     Parameters
     ----------
-    op: ibis.expr.operations.Node, key in scope.
-    result : Object, concrete data, type could be different for different
-    backends.
-    timecontext: Optional[TimeContext], time context associate with the
-    result.
+    op: ibis.expr.operations.Node
+        key in scope.
+    result : Object
+        concrete data, type could be different for different backends.
+    timecontext: Optional[TimeContext]
+        time context associate with the result.
 
     Returns
     -------
-    Scope: a new Scope instance with op in it.
+    Scope
+        a new Scope instance with op in it.
     """
-    item = namedtuple('item', ['value', 'timecontext'])
-    return Scope({op: item(result, timecontext)})
+    return Scope({op: ScopeItem(result, timecontext)})
