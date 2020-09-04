@@ -18,7 +18,7 @@ import pytest
 
 import ibis
 import ibis.common.exceptions as com
-from ibis.expr.tests.mocks import MockConnection
+from ibis.tests.expr.mocks import MockConnection
 
 
 @pytest.fixture

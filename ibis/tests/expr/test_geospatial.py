@@ -2,7 +2,7 @@
 import pytest
 
 import ibis
-from ibis.expr.tests.mocks import (
+from ibis.tests.expr.mocks import (
     GeoMockConnectionOmniSciDB,
     GeoMockConnectionPostGIS,
 )

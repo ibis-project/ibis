@@ -49,6 +49,28 @@ method of :class:`ibis.bigquery.client.BigQueryClient` objects:
    >>> t = db.my_awesome_table
    >>> t.sweet_column.sum().execute()  # runs against the billing project
 
+.. _api.bigquery:
+
+API
+---
+.. currentmodule:: ibis.bigquery.api
+
+The BigQuery client is accessible through the ``ibis.bigquery`` namespace.
+See :ref:`backends.bigquery` for a tutorial on using this backend.
+
+Use the ``ibis.bigquery.connect`` function to create a BigQuery
+client. If no ``credentials`` are provided, the
+:func:`pydata_google_auth.default` function fetches default credentials.
+
+.. autosummary::
+   :toctree: ../generated/
+
+   connect
+   BigQueryClient.database
+   BigQueryClient.list_databases
+   BigQueryClient.list_tables
+   BigQueryClient.table
+
 The BigQuery client object
 --------------------------
 
@@ -64,6 +86,42 @@ credentials:
        project_id=YOUR_PROJECT_ID,
        dataset_id='bigquery-public-data.stackoverflow'
    )
+
+.. _udf.bigquery:
+
+User Defined functions (UDF)
+----------------------------
+
+.. note::
+
+   BigQuery only supports element-wise UDFs at this time.
+
+BigQuery supports UDFs through JavaScript. Ibis provides support for this by
+turning Python code into JavaScript.
+
+The interface is very similar to the pandas UDF API:
+
+.. code-block:: python
+
+   import ibis.expr.datatypes as dt
+   from ibis.bigquery import udf
+
+   @udf([dt.double], dt.double)
+   def my_bigquery_add_one(x):
+       return x + 1.0
+
+Ibis will parse the source of the function and turn the resulting Python AST
+into JavaScript source code (technically, ECMAScript 2015). Most of the Python
+language is supported including classes, functions and generators.
+
+When you want to use this function you call it like any other Python
+function--only it must be called on an ibis expression:
+
+.. code-block:: python
+
+   t = ibis.table([('a', 'double')])
+   expr = my_bigquery_add_one(t.a)
+   print(ibis.bigquery.compile(expr))
 
 .. _bigquery-privacy:
 

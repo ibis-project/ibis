@@ -249,6 +249,19 @@ class TableColumn(ValueOp):
         return klass(self, name=self.name)
 
 
+class RowID(ValueOp):
+    """The row number (an autonumeric) of the returned result."""
+
+    def output_type(self):
+        return dt.int64.column_type()
+
+    def resolve_name(self):
+        return 'rowid'
+
+    def has_resolved_name(self):
+        return True
+
+
 def find_all_base_tables(expr, memo=None):
     if memo is None:
         memo = {}
@@ -1765,6 +1778,10 @@ class Union(SetOp):
 
 
 class Intersection(SetOp):
+    pass
+
+
+class Difference(SetOp):
     pass
 
 

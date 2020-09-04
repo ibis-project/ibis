@@ -68,8 +68,12 @@ def test_timestamp_extract(backend, alltypes, df, attr):
     expr = getattr(alltypes.timestamp_col, attr)()
 
     result = expr.execute()
-    if attr == 'epoch_seconds' and backend.name in ['postgres', 'spark']:
-        # note: postgres and spark cast to bigint are not changing the result
+    if attr == 'epoch_seconds' and backend.name in [
+        'bigquery',
+        'postgres',
+        'spark',
+    ]:
+        # note: these backends cast to bigint are not changing the result
         result = result.astype('int64')
     expected = backend.default_series_rename(expected)
 
