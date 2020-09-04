@@ -114,7 +114,10 @@ class Scope:
         Scope
             a new Scope instance with items in two scope merged.
         """
-        result = Scope(self._get_items())
+        result = Scope()
+
+        for op, v in self._get_items().items():
+            result.items[op] = v
 
         for op, v in other_scope._get_items().items():
             # if get_scope returns a not None value, then data is already
@@ -142,9 +145,11 @@ class Scope:
         Scope
             a new Scope instance with items in two scope merged.
         """
-        result = Scope(self._get_items())
+        result = Scope()
+        for op, v in self._get_items().items():
+            result.items[op] = v
         for s in other_scopes:
-            result = result.merge_scope(s)
+            result = result.merge_scope(s, overwrite)
         return result
 
 
