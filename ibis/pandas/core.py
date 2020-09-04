@@ -237,7 +237,7 @@ def execute_with_scope(
             **kwargs,
         ),
         **kwargs,
-    ).get(op, timecontext)
+    ).get_value(op, timecontext)
     return result
 
 
@@ -270,7 +270,7 @@ def execute_until_in_scope(
     # base case: our op has been computed (or is a leaf data node), so
     # return the corresponding value
     op = expr.op()
-    if scope.get(op, timecontext) is not None:
+    if scope.get_value(op, timecontext) is not None:
         return scope
     if isinstance(op, ops.Literal):
         # special case literals to avoid the overhead of dispatching
@@ -313,7 +313,7 @@ def execute_until_in_scope(
 
     # Short circuit: if pre_execute puts op in scope, then we don't need to
     # execute its computable_args
-    if new_scope.get(op, timecontext) is not None:
+    if new_scope.get_value(op, timecontext) is not None:
         return new_scope
 
     # recursively compute each node's arguments until we've changed type.
@@ -353,7 +353,9 @@ def execute_until_in_scope(
     new_scope = new_scope.merge_scopes(scopes)
     # pass our computed arguments to this node's execute_node implementation
     data = [
-        new_scope.get(arg.op(), timecontext) if hasattr(arg, 'op') else arg
+        new_scope.get_value(arg.op(), timecontext)
+        if hasattr(arg, 'op')
+        else arg
         for arg in computable_args
     ]
     result = execute_node(

@@ -108,7 +108,7 @@ def csv_pre_execute_selection(
     **kwargs,
 ):
     tables = filter(
-        lambda t: scope.get(t, timecontext) is None,
+        lambda t: scope.get_value(t, timecontext) is None,
         physical_tables(op.table.op()),
     )
 

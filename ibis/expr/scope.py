@@ -57,7 +57,9 @@ class Scope:
     def __setitem__(self, op: Node, value: Any) -> None:
         self._items[op] = value
 
-    def get(self, op: Node, timecontext: Optional[TimeContext] = None) -> Any:
+    def get_value(
+        self, op: Node, timecontext: Optional[TimeContext] = None
+    ) -> Any:
         """ Given a op and timecontext, get the result from scope
 
         Parameters
@@ -129,7 +131,7 @@ class Scope:
             # the current timecontext, so we drop the item. Otherwise
             # add it into scope.
             v = other_scope[op]
-            if overwrite or result.get(op, v.timecontext) is None:
+            if overwrite or result.get_value(op, v.timecontext) is None:
                 result[op] = v
         return result
 
