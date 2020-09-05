@@ -3012,8 +3012,9 @@ def parse_url(arg, extract, key=None):
 
     Parameters
     ----------
-    extract : one of {'PROTOCOL', 'HOST', 'PATH', 'REF',
-                'AUTHORITY', 'FILE', 'USERINFO', 'QUERY'}
+    extract : str
+        One of {'PROTOCOL', 'HOST', 'PATH', 'REF', 'AUTHORITY', 'FILE',
+            'USERINFO', 'QUERY'}
     key : string (optional)
 
     Examples
@@ -3977,6 +3978,7 @@ def _table_union(left, right, distinct=False):
 
     Parameters
     ----------
+    left : TableExpr
     right : TableExpr
     distinct : boolean, default False
         Only union distinct rows not occurring in the calling table (this
@@ -3986,8 +3988,42 @@ def _table_union(left, right, distinct=False):
     -------
     union : TableExpr
     """
-    op = ops.Union(left, right, distinct=distinct)
-    return op.to_expr()
+    return ops.Union(left, right, distinct=distinct).to_expr()
+
+
+def _table_intersect(left: TableExpr, right: TableExpr):
+    """
+    Form the table set intersect of two table expressions having identical
+    schemas. An intersect returns only the common rows between the two tables.
+
+    Parameters
+    ----------
+    left : TableExpr
+    right : TableExpr
+
+    Returns
+    -------
+    intersection : TableExpr
+    """
+    return ops.Intersection(left, right).to_expr()
+
+
+def _table_difference(left: TableExpr, right: TableExpr):
+    """
+    Form the table set difference of two table expressions having identical
+    schemas. A set difference returns only the rows present in the left table
+    that are not present in the right table
+
+    Parameters
+    ----------
+    left : TableExpr
+    right : TableExpr
+
+    Returns
+    -------
+    difference : TableExpr
+    """
+    return ops.Difference(left, right).to_expr()
 
 
 def _table_to_array(self):
@@ -4260,6 +4296,32 @@ def _table_drop(self, fields):
     return self[[field for field in schema if field not in field_set]]
 
 
+def _rowid(self):
+    """
+    An autonumeric representing the row number of the results.
+
+    It can be 0 or 1 indexed depending on the backend. Check the backend
+    documentation.
+
+    Note that this is different from the window function row number
+    (even if they are conceptually the same), and different from row
+    id in backends where it represents the physical location (e.g. Oracle
+    or PostgreSQL's ctid).
+
+    Returns
+    -------
+    ir.IntegerColumn
+
+    Examples
+    --------
+    >>> my_table[my_table.rowid(), my_table.name].execute()
+    1|Ibis
+    2|pandas
+    3|Dask
+    """
+    return ops.RowID().to_expr()
+
+
 _table_methods = dict(
     aggregate=aggregate,
     count=_table_count,
@@ -4288,7 +4350,10 @@ _table_methods = dict(
     sort_by=_table_sort_by,
     to_array=_table_to_array,
     union=_table_union,
+    intersect=_table_intersect,
+    difference=_table_difference,
     view=_table_view,
+    rowid=_rowid,
 )
 
 

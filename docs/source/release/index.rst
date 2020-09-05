@@ -12,7 +12,16 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
-* :bug:`2229` Fix same column with multiple aliases not showing properly in repr
+* :feature:`2306` Add time context in `scope` in execution for pandas backend
+* :support:`2351` Simplifying tests directories structure
+* :feature:`2081` Add ``start_point`` and ``end_point`` to PostGIS backend.
+* :feature:`2347` Add set difference to general ibis api
+* :feature:`2251` Add ``rowid`` expression, supported by SQLite and OmniSciDB
+* :feature:`2230` Add intersection to general ibis api
+* :support:`2304` Update ``google-cloud-bigquery`` dependency minimum version to 1.12.0
+* :feature:`2303` Add ``application_name`` argument to ``ibis.bigquery.connect`` to allow attributing Google API requests to projects that use Ibis.
+* :bug:`1320` Added verbose logging to SQL backends
+* :feature:`2285` Add support for casting category dtype in pandas backend
 * :feature:`2270` Add support for Union in the PySpark backend
 * :feature:`2260` Add support for implementign custom window object for pandas backend
 * :bug:`2237` Add missing float types to pandas backend
@@ -34,10 +43,10 @@ Release Notes
 * :feature:`2062` Implement read_csv for omniscidb backend
 * :feature:`2171` [OmniSciDB] Add support to week extraction
 * :feature:`2097` Date, DateDiff and TimestampDiff implementations for OmniSciDB
-* :bug:`2170` Fix millisecond issue for OmniSciDB :issue:`2167`, MySQL :issue:`2169`, PostgreSQL :issue:`2166` and Pandas :issue:`2168` backends
+* :bug:`2170` Fix millisecond issue for OmniSciDB :issue:`2167`, MySQL :issue:`2169`, PostgreSQL :issue:`2166`, Pandas :issue:`2168`, BigQuery :issue:`2273` backends
 * :feature:`2060` Add initial support for ibis.random function
 * :support:`2107` Added fragment_size to table creation for OmniSciDB
-* :feature:`2178` Added epoch_seconds extraction operation to Clickhouse, CSV, Impala, MySQL, OmniSciDB, Pandas, Parquet, PostgreSQL, PySpark, SQLite and Spark
+* :feature:`2178` Added epoch_seconds extraction operation to Clickhouse, CSV, Impala, MySQL, OmniSciDB, Pandas, Parquet, PostgreSQL, PySpark, SQLite, Spark and BigQuery :issue:`2273`
 * :feature:`2117` Add non-nullable info to schema output
 * :feature:`2083` fillna and nullif implementations for OmnisciDB
 * :feature:`1981` Add load_data to sqlalchemy's backends and fix database parameter for load/create/drop when database parameter is the same than the current database

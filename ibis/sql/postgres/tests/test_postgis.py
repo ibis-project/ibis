@@ -6,7 +6,11 @@ gp = pytest.importorskip('geopandas')
 sa = pytest.importorskip('sqlalchemy')
 pytest.importorskip('psycopg2')
 
-pytestmark = [pytest.mark.postgis, pytest.mark.postgres_extensions]
+pytestmark = [
+    pytest.mark.postgres,
+    pytest.mark.postgis,
+    pytest.mark.postgres_extensions,
+]
 
 
 def test_load_geodata(con):
@@ -115,6 +119,16 @@ def test_geo_d_fully_within(geotable):
 def test_geo_d_within(geotable):
     expr = geotable.geo_point.d_within(geotable.geo_point.buffer(1.0), 1.0)
     assert expr.execute().all()
+
+
+def test_geo_end_point(geotable, gdf):
+    expr = geotable.geo_linestring.end_point()
+    result = expr.execute()
+    end_point = gdf.apply(
+        lambda x: x.geo_linestring.interpolate(1, True), axis=1
+    )
+    for a, b in zip(result, end_point):
+        assert a.equals(b)
 
 
 def test_geo_envelope(geotable, gdf):
@@ -230,6 +244,16 @@ def test_geo_srid(geotable):
     expr = geotable.geo_linestring.srid()
     result = expr.execute()
     assert (result == 0).all()
+
+
+def test_geo_start_point(geotable, gdf):
+    expr = geotable.geo_linestring.start_point()
+    result = expr.execute()
+    start_point = gdf.apply(
+        lambda x: x.geo_linestring.interpolate(0, True), axis=1
+    )
+    for a, b in zip(result, start_point):
+        assert a.equals(b)
 
 
 def test_geo_difference(geotable, gdf):

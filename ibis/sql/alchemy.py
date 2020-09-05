@@ -797,6 +797,7 @@ if geospatial_supported:
         ops.GeoDisjoint: fixed_arity(sa.func.ST_Disjoint, 2),
         ops.GeoDistance: fixed_arity(sa.func.ST_Distance, 2),
         ops.GeoDWithin: fixed_arity(sa.func.ST_DWithin, 3),
+        ops.GeoEndPoint: unary(sa.func.ST_EndPoint),
         ops.GeoEnvelope: unary(sa.func.ST_Envelope),
         ops.GeoEquals: fixed_arity(sa.func.ST_Equals, 2),
         ops.GeoGeometryN: fixed_arity(sa.func.ST_GeometryN, 2),
@@ -815,6 +816,7 @@ if geospatial_supported:
         ops.GeoSimplify: fixed_arity(sa.func.ST_Simplify, 3),
         ops.GeoSRID: unary(sa.func.ST_SRID),
         ops.GeoSetSRID: fixed_arity(sa.func.ST_SetSRID, 2),
+        ops.GeoStartPoint: unary(sa.func.ST_StartPoint),
         ops.GeoTouches: fixed_arity(sa.func.ST_Touches, 2),
         ops.GeoTransform: fixed_arity(sa.func.ST_Transform, 2),
         ops.GeoUnaryUnion: unary(sa.func.ST_Union),
@@ -1274,6 +1276,14 @@ class AlchemyClient(SQLClient):
 
     def _build_ast(self, expr, context):
         return build_ast(expr, context)
+
+    def _log(self, sql):
+        try:
+            query_str = str(sql)
+        except sa.exc.UnsupportedCompilationError:
+            pass
+        else:
+            util.log(query_str)
 
     def _get_sqla_table(self, name, schema=None, autoload=True):
         return sa.Table(name, self.meta, schema=schema, autoload=autoload)

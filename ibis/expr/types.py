@@ -1,6 +1,7 @@
 import itertools
 import os
 import webbrowser
+from typing import Optional
 
 import numpy as np
 
@@ -8,6 +9,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.config as config
 import ibis.util as util
+from ibis.expr.typing import TimeContext
 
 # TODO move methods containing ops import to api.py
 
@@ -186,7 +188,13 @@ class Expr:
     def _factory(self):
         return type(self)
 
-    def execute(self, limit='default', params=None, **kwargs):
+    def execute(
+        self,
+        limit='default',
+        timecontext: Optional[TimeContext] = None,
+        params=None,
+        **kwargs,
+    ):
         """
         If this expression is based on physical tables in a database backend,
         execute it against that backend.
@@ -197,6 +205,14 @@ class Expr:
           Pass an integer to effect a specific row limit. limit=None means "no
           limit". The default is whatever is in ibis.options.
 
+        timecontext: Optional[TimeContext], default None.
+           Defines a time range of (begin, end). When defined, the execution
+           will only compute result for data inside the time range. The time
+           range is inclusive of both endpoints. This is conceptually same as
+           a time filter.
+           The time column must be named as 'time' and should preserve
+           across the expression. e.g. If that column is dropped then
+           execute will result in an error.
         Returns
         -------
         result : expression-dependent
@@ -204,7 +220,9 @@ class Expr:
         """
         from ibis.client import execute
 
-        return execute(self, limit=limit, params=params, **kwargs)
+        return execute(
+            self, limit=limit, timecontext=timecontext, params=params, **kwargs
+        )
 
     def compile(self, limit=None, params=None):
         """

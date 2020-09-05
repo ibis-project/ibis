@@ -4,6 +4,8 @@ from pkg_resources import parse_version
 
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
+from ibis.expr.scope import Scope, make_scope
+from ibis.expr.typing import TimeContext
 from ibis.file.client import FileClient
 from ibis.pandas.api import PandasDialect
 from ibis.pandas.core import execute, execute_node, pre_execute
@@ -98,10 +100,19 @@ def csv_read_table(op, client, scope, **kwargs):
 
 
 @pre_execute.register(ops.Selection, CSVClient)
-def csv_pre_execute_selection(op, client, scope, **kwargs):
-    tables = filter(lambda t: t not in scope, physical_tables(op.table.op()))
+def csv_pre_execute_selection(
+    op: ops.Node,
+    client: CSVClient,
+    scope: Scope,
+    timecontext: TimeContext = None,
+    **kwargs,
+):
+    tables = filter(
+        lambda t: scope.get_value(t, timecontext) is None,
+        physical_tables(op.table.op()),
+    )
 
-    ops = {}
+    ops = Scope()
     for table in tables:
         path = client.dictionary[table.name]
         usecols = None
@@ -116,7 +127,7 @@ def csv_pre_execute_selection(op, client, scope, **kwargs):
             # we cannot read all the columns that we would like
             if len(pd.Index(usecols) & header.columns) != len(usecols):
                 usecols = None
-
-        ops[table] = _read_csv(path, table.schema, usecols=usecols, header=0)
+        result = _read_csv(path, table.schema, usecols=usecols, header=0)
+        ops = ops.merge_scope(make_scope(table, result, timecontext))
 
     return ops

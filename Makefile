@@ -3,18 +3,17 @@
 SHELL := /bin/bash
 MAKEFILE_DIR = $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 
-# PYTHON_VERSION and REQUIREMENTS_TAG defines which `./ci/requirements-dev-$PYTHON_VERSION-$REQUIREMENTS_TAG`
+# PYTHON_VERSION defines which `./ci/requirements-dev-$PYTHON_VERSION`
 # file will be used for creating the ibis image (see for additional info: `./ci/Dockerfile.dev` and
 # `./ci/docker-compose.yml`)
 # You can use `3.6` or `3.7` for now for the PYTHON_VERSION
 PYTHON_VERSION := 3.6
-REQUIREMENTS_TAG := "main"
 
 PYTHONHASHSEED := random
 
 # docker specific
 COMPOSE_FILE := "$(MAKEFILE_DIR)/ci/docker-compose.yml"
-DOCKER := PYTHON_VERSION=$(PYTHON_VERSION) REQUIREMENTS_TAG="$(REQUIREMENTS_TAG)" docker-compose -f $(COMPOSE_FILE)
+DOCKER := PYTHON_VERSION=$(PYTHON_VERSION) docker-compose -f $(COMPOSE_FILE)
 DOCKER_UP := $(DOCKER) up --remove-orphans -d --no-build
 DOCKER_RUN := $(DOCKER) run --rm
 DOCKER_BUILD := $(DOCKER) build
@@ -147,19 +146,19 @@ testall:
 	@echo "You should use make testmain instead"
 
 testmain:
-	$(MAKE) testparallelnoinit REQUIREMENTS_TAG="main" PYTEST_MARKERS="-m 'not (udf or spark or pyspark)'"
+	$(MAKE) testparallelnoinit PYTEST_MARKERS="-m 'not (udf or spark or pyspark)'"
 
 testmost:
-	$(MAKE) testparallelnoinit REQUIREMENTS_TAG="main" PYTEST_MARKERS="-m 'not (udf or impala or hdfs or spark or pyspark)'"
+	$(MAKE) testparallelnoinit PYTEST_MARKERS="-m 'not (udf or impala or hdfs or spark or pyspark)'"
 
 testfast:
-	$(MAKE) testparallelnoinit REQUIREMENTS_TAG="main" PYTEST_MARKERS="-m 'not (udf or impala or hdfs or bigquery or spark or pyspark)'"
+	$(MAKE) testparallelnoinit PYTEST_MARKERS="-m 'not (udf or impala or hdfs or bigquery or spark or pyspark)'"
 
 testpandas:
-	$(MAKE) testparallelnoinit REQUIREMENTS_TAG="main" PYTEST_MARKERS="-m pandas"
+	$(MAKE) testparallelnoinit PYTEST_MARKERS="-m pandas"
 
 testpyspark:
-	$(MAKE) testparallelnoinit REQUIREMENTS_TAG="pyspark-spark" PYTEST_MARKERS="-m pyspark"
+	$(MAKE) testparallelnoinit PYTEST_MARKERS="-m pyspark"
 
 fastopt:
 	@echo -m 'not (backend or bigquery or clickhouse or hdfs or impala or kudu or omniscidb or mysql or postgis or postgresql or superuser or udf)'
@@ -191,6 +190,3 @@ doc: builddoc docclean
 
 docker_run:
 	$(DOCKER_RUN) ibis $(DOCKER_RUN_COMMAND)
-
-docker_docs_run:
-	$(DOCKER_RUN) ibis-docs $(DOCKER_RUN_COMMAND)
