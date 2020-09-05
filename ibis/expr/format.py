@@ -202,7 +202,7 @@ class ExprFormatter:
             type_display, col.name, table_formatted
         )
 
-    def _format_node(self, expr, get_text_repr=False):
+    def _format_node(self, expr, get_text_repr: bool = False):
         op = expr.op()
         formatted_args = []
 
@@ -258,7 +258,7 @@ class ExprFormatter:
         opline = '{}[{}]'.format(opname, type_display)
         return '\n'.join([opline] + formatted_args)
 
-    def _format_subexpr(self, expr, get_text_repr=False):
+    def _format_subexpr(self, expr, get_text_repr: bool = False):
         subexprs = self.memo.subexprs
         if get_text_repr:
             key = expr._key
