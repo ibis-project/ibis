@@ -1,5 +1,5 @@
 sqlalchemy>=1.3
-impyla>=0.15.0
+impyla[kerberos]>=0.15.0
 requests>=2.24
 thrift>=0.9.3
 thriftpy2>=0.4
