@@ -1,3 +1,5 @@
+from typing import Optional
+
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
@@ -62,8 +64,14 @@ class ExprFormatter:
     """
 
     def __init__(
-        self, expr, indent_size=2, base_level=0, memo=None, memoize=True
+        self,
+        expr,
+        indent_size: int = 2,
+        base_level: int = 0,
+        memo: Optional[FormatMemo] = None,
+        memoize: bool = True,
     ):
+
         self.expr = expr
         self.indent_size = indent_size
         self.base_level = base_level
@@ -77,7 +85,7 @@ class ExprFormatter:
 
         self.memo = memo
 
-    def get_result(self, get_text_repr=False):
+    def get_result(self, get_text_repr: bool = False):
         what = self.expr.op()
 
         if self.memoize:

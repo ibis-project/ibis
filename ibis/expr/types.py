@@ -26,7 +26,7 @@ class Expr:
 
     def __repr__(self):
         if not config.options.interactive:
-            return self._text_repr()
+            return self._repr(get_text_repr=True)
 
         try:
             result = self.execute()
@@ -50,15 +50,10 @@ class Expr:
 
     __nonzero__ = __bool__
 
-    def _text_repr(self, memo=None):
+    def _repr(self, memo=None, get_text_repr: bool = False):
         from ibis.expr.format import ExprFormatter
 
-        return ExprFormatter(self, memo=memo).get_result(get_text_repr=True)
-
-    def _repr(self, memo=None):
-        from ibis.expr.format import ExprFormatter
-
-        return ExprFormatter(self, memo=memo).get_result()
+        return ExprFormatter(self, memo=memo).get_result(get_text_repr)
 
     @property
     def _safe_name(self):
