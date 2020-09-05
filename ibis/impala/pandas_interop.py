@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import csv
+import os
 import tempfile
-
 from posixpath import join as pjoin
 
 import ibis.common.exceptions as com
@@ -56,15 +56,21 @@ class DataFrameWriter:
         return temp_hdfs_dir
 
     def write_csv(self, path):
-        with tempfile.NamedTemporaryFile() as f:
+        # Use a temporary dir instead of a temporary file
+        # to provide Windows support and avoid #2267
+        # https://github.com/ibis-project/ibis/issues/2267
+        with tempfile.TemporaryDirectory() as f:
             # Write the DataFrame to the temporary file path
+            tmp_file_path = os.path.join(f, 'impala_temp_file.csv')
             if options.verbose:
                 util.log(
-                    'Writing DataFrame to temporary file {}'.format(f.name)
+                    'Writing DataFrame to temporary directory {}'.format(
+                        tmp_file_path
+                    )
                 )
 
             self.df.to_csv(
-                f.name,
+                tmp_file_path,
                 header=False,
                 index=False,
                 sep=',',
@@ -72,12 +78,11 @@ class DataFrameWriter:
                 escapechar='\\',
                 na_rep='#NULL',
             )
-            f.seek(0)
 
             if options.verbose:
                 util.log('Writing CSV to: {0}'.format(path))
 
-            self.hdfs.put(path, f.name)
+            self.hdfs.put(path, tmp_file_path)
         return path
 
     def get_schema(self):
