@@ -24,9 +24,6 @@ For more information on a specific backend, check the next backend pages:
 
 .. _classes_of_backends:
 
-Classes of Backends
--------------------
-
 There are currently three classes of backends that live in ibis.
 
 #. String generating backends
@@ -35,8 +32,7 @@ There are currently three classes of backends that live in ibis.
 
 .. _string_generating_backends:
 
-String Generating Backends
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+**String Generating Backends**
 
 The first category of backend translates ibis expressions into strings.
 Generally speaking these backends also need to handle their own execution.
@@ -52,8 +48,7 @@ string to the database through a driver API.
 
 .. _expression_generating_backends:
 
-Expression Generating Backends
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Expression Generating Backends**
 
 The second category of backends translates ibis expressions into other
 expressions. Currently, all expression generating backends generate `SQLAlchemy
@@ -70,8 +65,7 @@ dependencies).
 
 .. _direct_execution_backends:
 
-Direct Execution Backends
-~~~~~~~~~~~~~~~~~~~~~~~~~
+**Direct Execution Backends**
 
 The only existing backend that directly executes ibis expressions is the pandas
 backend. A full description of the implementation can be found in the module

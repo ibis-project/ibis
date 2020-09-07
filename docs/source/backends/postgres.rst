@@ -1,7 +1,7 @@
 .. _install.postgres:
 
 `PostgreSQL <https://www.postgresql.org/>`_
--------------------------------------------
+===========================================
 
 Install dependencies for Ibis's PostgreSQL dialect:
 
