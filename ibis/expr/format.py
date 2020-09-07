@@ -6,9 +6,21 @@ import ibis.util as util
 
 
 class FormatMemo:
-    # A little sanity hack to simplify the below
+    """
+    Class used to manage memoization of intermediate ibis expression format
+    results in ExprFormatter.
 
-    def __init__(self):
+    Parameters
+    ----------
+    get_text_repr: bool
+         Defaults to ``False``. Determines whether or not the memoization
+         should use proper alias names. Using the same alias names for
+         equivalent expressions is more optimal for memoization / recursion
+         but does not
+         accurately display aliases in the representation
+    """
+
+    def __init__(self, get_text_repr: bool = False):
         from collections import defaultdict
 
         self.formatted = {}
@@ -18,7 +30,7 @@ class FormatMemo:
         self._repr_memo = {}
         self.subexprs = {}
         self.visit_memo = set()
-        self.get_text_repr = False
+        self.get_text_repr = get_text_repr
 
     def __contains__(self, obj):
         return self._key(obj) in self.formatted
@@ -85,13 +97,11 @@ class ExprFormatter:
 
         self.memo = memo
 
-    def get_result(self, get_text_repr: bool = False):
+    def get_result(self):
         what = self.expr.op()
 
         if self.memoize:
             self._memoize_tables()
-
-        self.memo.get_text_repr = get_text_repr
 
         if isinstance(what, ops.TableNode) and what.has_schema():
             # This should also catch aggregations
@@ -266,9 +276,7 @@ class ExprFormatter:
             result = subexprs[key]
         except KeyError:
             formatter = ExprFormatter(expr, memo=self.memo, memoize=False)
-            result = subexprs[key] = self._indent(
-                formatter.get_result(self.memo.get_text_repr), 1
-            )
+            result = subexprs[key] = self._indent(formatter.get_result(), 1)
         return result
 
     def _get_type_display(self, expr=None):
