@@ -179,7 +179,7 @@ class ExprFormatter:
                     memo.observe(e, self._format_table)
                 memo.visit_memo.add(op)
 
-    def _indent(self, text, indents=1):
+    def _indent(self, text, indents: int = 1):
         return util.indent(text, self.indent_size * indents)
 
     def _format_table(self, expr):
