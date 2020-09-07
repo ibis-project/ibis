@@ -1134,6 +1134,13 @@ def compile_extract_epoch_seconds(t, expr, scope, **kwargs):
     )
 
 
+@compiles(ops.ExtractWeekOfYear)
+def compile_extract_week_of_year(t, expr, scope, **kwargs):
+    return _extract_component_from_datetime(
+        t, expr, scope, F.weekofyear, **kwargs
+    )
+
+
 @compiles(ops.ExtractHour)
 def compile_extract_hour(t, expr, scope, **kwargs):
     return _extract_component_from_datetime(t, expr, scope, F.hour, **kwargs)

@@ -44,6 +44,7 @@ def test_date_extract(backend, alltypes, df, attr):
         'day_of_year',
         'quarter',
         'epoch_seconds',
+        'week_of_year',
         'hour',
         'minute',
         'second',
@@ -66,7 +67,6 @@ def test_timestamp_extract(backend, alltypes, df, attr):
         )
 
     expr = getattr(alltypes.timestamp_col, attr)()
-
     result = expr.execute()
     if attr == 'epoch_seconds' and backend.name in [
         'bigquery',
