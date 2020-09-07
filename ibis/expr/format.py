@@ -16,8 +16,7 @@ class FormatMemo:
          Defaults to ``False``. Determines whether or not the memoization
          should use proper alias names. Using the same alias names for
          equivalent expressions is more optimal for memoization / recursion
-         but does not
-         accurately display aliases in the representation
+         but does not accurately display aliases in the representation
     """
 
     def __init__(self, get_text_repr: bool = False):
