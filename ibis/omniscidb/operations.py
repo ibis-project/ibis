@@ -1148,6 +1148,7 @@ _unsupported_ops = [
     ops.Log,
     ops.Round,
     # date/time/timestamp
+    ops.ExtractWeekOfYear,
     ops.TimestampFromUNIX,
     ops.TimeTruncate,
     # table
