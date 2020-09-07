@@ -9,6 +9,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.config as config
 import ibis.util as util
+from ibis.expr.format import FormatMemo
 from ibis.expr.typing import TimeContext
 
 # TODO move methods containing ops import to api.py
@@ -26,7 +27,7 @@ class Expr:
 
     def __repr__(self):
         if not config.options.interactive:
-            return self._repr(get_text_repr=True)
+            return self._repr(memo=FormatMemo(get_text_repr=True))
 
         try:
             result = self.execute()
@@ -50,10 +51,10 @@ class Expr:
 
     __nonzero__ = __bool__
 
-    def _repr(self, memo=None, get_text_repr: bool = False):
+    def _repr(self, memo: Optional[FormatMemo] = None):
         from ibis.expr.format import ExprFormatter
 
-        return ExprFormatter(self, memo=memo).get_result(get_text_repr)
+        return ExprFormatter(self, memo=memo).get_result()
 
     @property
     def _safe_name(self):
