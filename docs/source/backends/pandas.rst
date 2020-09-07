@@ -1,5 +1,5 @@
 `pandas <https://pandas.pydata.org/>`_
---------------------------------------
+======================================
 
 Ibis's pandas backend is available in core Ibis:
 
