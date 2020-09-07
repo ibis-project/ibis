@@ -115,11 +115,11 @@ jobs:
     - name: run tests
       run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh
 
-  Tests_omniscidb_spark:
-    name: Tests OmniSciDB/Spark
+  Tests_omniscidb:
+    name: Tests OmniSciDB
     runs-on: ubuntu-latest
     env:
-      BACKENDS: "omniscidb spark pyspark"
+      BACKENDS: "omniscidb"
     strategy:
       fail-fast: false
       matrix:
@@ -132,6 +132,25 @@ jobs:
           - 6278:6278
         volumes:
           - omniscidb.conf:/omnisci-storage/omnisci.conf
+    steps:
+    - name: checkout
+      uses: actions/checkout@v1
+
+    - name: set up environment
+      run: ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
+
+    - name: run tests
+      run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not hdfs" ./ci/run_tests.sh
+
+  Tests_spark:
+    name: Tests Spark
+    runs-on: ubuntu-latest
+    env:
+      BACKENDS: "spark pyspark"
+    strategy:
+      fail-fast: false
+      matrix:
+        python_version: ["3.7"]
     steps:
     - name: checkout
       uses: actions/checkout@v1
