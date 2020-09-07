@@ -3,7 +3,6 @@
 import functools
 import operator
 import re
-from collections import OrderedDict
 from typing import NoReturn, Optional
 
 import pandas as pd
@@ -14,10 +13,11 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.window as win
 import ibis.pandas.aggcontext as agg_ctx
+from ibis.expr.scope import Scope, make_scope
+from ibis.expr.timecontext import TIME_COL
 from ibis.expr.typing import TimeContext
 from ibis.pandas.aggcontext import AggregationContext
 from ibis.pandas.core import (
-    TIME_COL,
     compute_time_context,
     date_types,
     execute,
@@ -156,18 +156,32 @@ def trim_with_timecontext(data, timecontext: Optional[TimeContext]):
         context might be adjusted for calculation. Data must be trimmed
         within the original time context before return.
 
+        Params
+        ------
+        data: pd.Series with MultiIndex
+        timecontext: Optional[TimeContext]
+
+        Returns:
+        ------
+        a trimmed pd.Series with same Multiindex struct as data
+
     """
     # noop if timecontext is None
     if not timecontext:
         return data
-
+    # reset multiindex and turn series into a dateframe
     df = data.reset_index()
     name = data.name
 
     # Filter the data, here we preserve the time index so that when user is
     # computing a single column, the computation and the relevant time
     # indexes are retturned.
+    if TIME_COL not in df:
+        return data
     subset = df.loc[df[TIME_COL].between(*timecontext)]
+
+    # re-indexing index to count from 0
+    subset = subset.reset_index(drop=True).reset_index()
 
     # get index columns for the Series
     non_target_columns = list(subset.columns.difference([name]))
@@ -182,7 +196,7 @@ def execute_window_op(
     op,
     data,
     window,
-    scope=None,
+    scope: Scope = None,
     timecontext: Optional[TimeContext] = None,
     aggcontext=None,
     clients=None,
@@ -194,31 +208,33 @@ def execute_window_op(
     # execution of that by hand
     operand_op = operand.op()
 
-    new_timecontext = None
+    adjusted_timecontext = None
     if timecontext:
-        arg_timecontexts = compute_time_context(op, timecontext=timecontext)
+        arg_timecontexts = compute_time_context(
+            op, timecontext=timecontext, clients=clients
+        )
         # timecontext is the original time context required by parent node
-        # of this WindowOp, while new_timecontext is the adjusted context
+        # of this WindowOp, while adjusted_timecontext is the adjusted context
         # of this Window, since we are doing a manual execution here, use
-        # new_timecontext in later execution phases
-        new_timecontext = arg_timecontexts[0]
+        # adjusted_timecontext in later execution phases
+        adjusted_timecontext = arg_timecontexts[0]
 
     pre_executed_scope = pre_execute(
         operand_op,
         *clients,
         scope=scope,
-        timecontext=new_timecontext,
+        timecontext=adjusted_timecontext,
         aggcontext=aggcontext,
         **kwargs,
     )
-    scope = toolz.merge(scope, pre_executed_scope)
+    scope = scope.merge_scope(pre_executed_scope)
     (root,) = op.root_tables()
     root_expr = root.to_expr()
 
     data = execute(
         root_expr,
         scope=scope,
-        timecontext=new_timecontext,
+        timecontext=adjusted_timecontext,
         clients=clients,
         aggcontext=aggcontext,
         **kwargs,
@@ -244,7 +260,7 @@ def execute_window_op(
             key,
             scope=scope,
             clients=clients,
-            timecontext=new_timecontext,
+            timecontext=adjusted_timecontext,
             aggcontext=aggcontext,
             **kwargs,
         )
@@ -264,7 +280,11 @@ def execute_window_op(
                 grouping_keys,
                 ordering_keys,
             ) = util.compute_sorted_frame(
-                data, order_by, group_by=group_by, **kwargs
+                data,
+                order_by,
+                group_by=group_by,
+                timecontext=adjusted_timecontext,
+                **kwargs,
             )
             source = sorted_df.groupby(grouping_keys, sort=True)
             post_process = _post_process_group_by_order_by
@@ -274,17 +294,22 @@ def execute_window_op(
     else:
         if order_by:
             source, grouping_keys, ordering_keys = util.compute_sorted_frame(
-                data, order_by, **kwargs
+                data, order_by, timecontext=adjusted_timecontext, **kwargs
             )
             post_process = _post_process_order_by
         else:
             source = data
             post_process = _post_process_empty
 
-    new_scope = toolz.merge(
-        scope,
-        OrderedDict((t, source) for t in operand.op().root_tables()),
-        factory=OrderedDict,
+    # Here groupby object should be add to the corresponding node in scope
+    # for execution, data will be overwrite to a groupby object, so we
+    # force an update regardless of time context
+    new_scope = scope.merge_scopes(
+        [
+            make_scope(t, source, adjusted_timecontext)
+            for t in operand.op().root_tables()
+        ],
+        overwrite=True,
     )
 
     # figure out what the dtype of the operand is
@@ -301,11 +326,10 @@ def execute_window_op(
         order_by=ordering_keys,
         **kwargs,
     )
-
     result = execute(
         operand,
         scope=new_scope,
-        timecontext=new_timecontext,
+        timecontext=adjusted_timecontext,
         aggcontext=aggcontext,
         clients=clients,
         **kwargs,
@@ -314,10 +338,8 @@ def execute_window_op(
     assert len(data) == len(
         series
     ), 'input data source and computed column do not have the same length'
-
     # trim data to original time context
     series = trim_with_timecontext(series, timecontext)
-
     return series
 
 

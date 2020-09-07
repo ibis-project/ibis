@@ -716,7 +716,9 @@ def test_approx_median(alltypes):
 
     expr = m.approx_median()
     result = expr.execute()
-    assert result == expected
+    # Since 6 and 7 are right on the edge for median in the range of months
+    # (1-12), accept either for the approximate function.
+    assert result in (6, 7)
 
 
 def test_client_without_dataset(project_id):

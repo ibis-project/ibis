@@ -22,9 +22,10 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.pandas.aggcontext as agg_ctx
 from ibis.compat import DatetimeTZDtype
+from ibis.expr.scope import make_scope
+from ibis.expr.timecontext import TIME_COL
 from ibis.expr.typing import TimeContext
 from ibis.pandas.core import (
-    TIME_COL,
     boolean_types,
     execute,
     fixed_width_types,
@@ -383,7 +384,9 @@ def execute_table_column_df_or_df_groupby(op, data, **kwargs):
 
 
 @execute_node.register(ops.Aggregation, pd.DataFrame)
-def execute_aggregation_dataframe(op, data, scope=None, **kwargs):
+def execute_aggregation_dataframe(
+    op, data, scope=None, timecontext: Optional[TimeContext] = None, **kwargs
+):
     assert op.metrics, 'no metrics found during aggregation execution'
 
     if op.sort_keys:
@@ -395,7 +398,10 @@ def execute_aggregation_dataframe(op, data, scope=None, **kwargs):
     if predicates:
         predicate = functools.reduce(
             operator.and_,
-            (execute(p, scope=scope, **kwargs) for p in predicates),
+            (
+                execute(p, scope=scope, timecontext=timecontext, **kwargs)
+                for p in predicates
+            ),
         )
         data = data.loc[predicate]
 
@@ -408,7 +414,9 @@ def execute_aggregation_dataframe(op, data, scope=None, **kwargs):
         grouping_keys = [
             by_op.name
             if isinstance(by_op, ops.TableColumn)
-            else execute(by, scope=scope, **kwargs).rename(by.get_name())
+            else execute(
+                by, scope=scope, timecontext=timecontext, **kwargs
+            ).rename(by.get_name())
             for by, by_op in grouping_key_pairs
         ]
         columns.update(
@@ -420,10 +428,12 @@ def execute_aggregation_dataframe(op, data, scope=None, **kwargs):
     else:
         source = data
 
-    new_scope = toolz.merge(scope, {op.table.op(): source})
+    scope = scope.merge_scope(make_scope(op.table.op(), source, timecontext))
+
     pieces = [
         pd.Series(
-            execute(metric, scope=new_scope, **kwargs), name=metric.get_name()
+            execute(metric, scope=scope, timecontext=timecontext, **kwargs),
+            name=metric.get_name(),
         )
         for metric in op.metrics
     ]
@@ -449,7 +459,7 @@ def execute_aggregation_dataframe(op, data, scope=None, **kwargs):
         predicate = functools.reduce(
             operator.and_,
             (
-                execute(having, scope=new_scope, **kwargs)
+                execute(having, scope=scope, timecontext=timecontext, **kwargs)
                 for having in op.having
             ),
         )
