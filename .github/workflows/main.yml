@@ -123,7 +123,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: ["3.7", "3.8"]
+        python_version: ["3.7"]
     services:
       omnisci:
         image: omnisci/core-os-cpu:v5.2.2
@@ -150,7 +150,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: ["3.7", "3.8"]
+        python_version: ["3.7"]
     steps:
     - name: checkout
       uses: actions/checkout@v1
@@ -159,7 +159,7 @@ jobs:
       run: ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
 
     - name: run tests
-      run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not hdfs" ./ci/run_tests.sh
+      run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not udf and not hdfs" ./ci/run_tests.sh
 
 
   Lint_package_benchmark:
