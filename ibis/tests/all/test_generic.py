@@ -19,7 +19,11 @@ from ibis import literal as L
 @pytest.mark.xfail_unsupported
 def test_fillna_nullif(backend, con, expr, expected):
     if expected is None:
-        # We are being flexible with how nulls are represented by each backend
+        # The exact kind of null value used differs per backend (and version).
+        # Example 1: Pandas returns np.nan while BigQuery returns None.
+        # Example 2: PySpark returns np.nan if pyspark==3.0.0, but returns None
+        # if pyspark <=3.0.0.
+        # TODO: Make this behavior consistent (#2365)
         assert pd.isna(con.execute(expr))
     else:
         assert con.execute(expr) == expected
