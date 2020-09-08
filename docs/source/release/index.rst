@@ -12,6 +12,7 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :feature:`2365` Add PySpark support for ReductionVectorizedUDF
 * :feature:`2306` Add time context in `scope` in execution for pandas backend
 * :support:`2351` Simplifying tests directories structure
 * :feature:`2081` Add ``start_point`` and ``end_point`` to PostGIS backend.
