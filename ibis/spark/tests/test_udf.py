@@ -1,5 +1,6 @@
 import pandas as pd
 import pandas.util.testing as tm
+import pyspark
 import pytest
 
 import ibis
@@ -291,6 +292,9 @@ def test_compose_udfs(t_random, df_random, times_two_fn, add_one_fn):
     tm.assert_series_equal(expected, result)
 
 
+@pytest.mark.skipif(
+    pyspark.__version__ < '3.0.0', reason='Requires PySpark 3.0.0 or higher'
+)
 def test_udaf_window(con, t_random, df_random):
     @udf.reduction(['double'], 'double')
     def my_mean(series):
@@ -347,7 +351,10 @@ def test_udaf_window_null(con, t_null, df_null):
     tm.assert_frame_equal(result, expected)
 
 
-# xfail. See #2349
+# For more info on xfail, see #2349
+@pytest.mark.skipif(
+    pyspark.__version__ < '3.0.0', reason='Requires PySpark 3.0.0 or higher'
+)
 @pytest.mark.xfail(reason='Usage of reduction UDF does not work properly')
 def test_array_return_type_reduction(con, t, df, qs):
     expr = quantiles(t.b, qs)
