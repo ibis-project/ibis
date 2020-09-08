@@ -21,8 +21,17 @@ python -m pip install -e .
 if [[ -n "$BACKENDS" ]]; then
     python ci/datamgr.py download
     for BACKEND in $BACKENDS; do
-        if [[ -f "ci/deps/$BACKEND.yml" ]]; then
-            conda install -n base -c conda-forge --file="ci/deps/$BACKEND.yml"
+        # For the oldest python version supported (currently 3.7) we first try to
+        # install the minimum supported dependencies `ci/deps/$BACKEND-min.yml`.
+        # If the file does not exist then we install the normal dependencies
+        # (if there are dependencies). For other python versions we simply install
+        # the normal dependencies if they exist.
+        if [[ $PYTHON_VERSION == "3.7" && -f "ci/deps/$BACKEND-min.yml" ]]; then
+            conda install -n base -c conda-forge --file="ci/deps/$BACKEND-min.yml"
+        else
+            if [[ -f "ci/deps/$BACKEND.yml" ]]; then
+                conda install -n base -c conda-forge --file="ci/deps/$BACKEND.yml"
+            fi
         fi
 
         # TODO load impala data in the same way as the rest of the backends

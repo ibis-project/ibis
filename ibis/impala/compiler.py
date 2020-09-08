@@ -1214,6 +1214,7 @@ _operation_registry = {
     ops.ExtractDay: _extract_field('day'),
     ops.ExtractQuarter: _extract_field('quarter'),
     ops.ExtractEpochSeconds: _extract_epoch_seconds,
+    ops.ExtractWeekOfYear: fixed_arity('weekofyear', 1),
     ops.ExtractHour: _extract_field('hour'),
     ops.ExtractMinute: _extract_field('minute'),
     ops.ExtractSecond: _extract_field('second'),

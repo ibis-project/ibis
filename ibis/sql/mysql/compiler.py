@@ -229,6 +229,7 @@ _operation_registry.update(
         ops.ExtractDayOfYear: unary('dayofyear'),
         ops.ExtractQuarter: _extract('quarter'),
         ops.ExtractEpochSeconds: unary('UNIX_TIMESTAMP'),
+        ops.ExtractWeekOfYear: fixed_arity('weekofyear', 1),
         ops.ExtractHour: _extract('hour'),
         ops.ExtractMinute: _extract('minute'),
         ops.ExtractSecond: _extract('second'),

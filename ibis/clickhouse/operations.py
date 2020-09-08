@@ -606,6 +606,7 @@ _operation_registry = {
     ops.ExtractDayOfYear: unary('toDayOfYear'),
     ops.ExtractQuarter: unary('toQuarter'),
     ops.ExtractEpochSeconds: _extract_epoch_seconds,
+    ops.ExtractWeekOfYear: unary('toISOWeek'),
     ops.ExtractHour: unary('toHour'),
     ops.ExtractMinute: unary('toMinute'),
     ops.ExtractSecond: unary('toSecond'),
