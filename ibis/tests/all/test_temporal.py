@@ -17,6 +17,7 @@ from ibis.tests.backends import (
     Pandas,
     Parquet,
     Postgres,
+    PySpark,
     Spark,
     SQLite,
 )
@@ -295,6 +296,8 @@ def test_interval_add_cast_scalar(backend, alltypes):
 
 
 @pytest.mark.xfail_unsupported
+# PySpark does not support casting columns to intervals
+@pytest.mark.xfail_backends([PySpark])
 @pytest.mark.skip_backends([Spark])
 def test_interval_add_cast_column(backend, alltypes, df):
     timestamp_date = alltypes.timestamp_col.date()
