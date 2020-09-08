@@ -11,6 +11,7 @@ import ibis.config as config
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.util as util
+from ibis.impala.tests.conftest import con_kerberos_no_hdfs
 from ibis.tests.util import assert_equal
 
 pytest.importorskip('sqlalchemy')
@@ -25,13 +26,9 @@ def db(con, test_data_db):
     return con.database(test_data_db)
 
 
-def test_kerberos_deps_installed(con_kerberos_no_hdfs):
-    expected_exception_type = ModuleNotFoundError
-    try:
-        _ = con_kerberos_no_hdfs.table('tpch_lineitem')
-    except Exception as error:
-        # See: https://github.com/ibis-project/ibis/issues/2342
-        assert isinstance(error, expected_exception_type)
+with pytest.raises(ModuleNotFoundError):
+    # See: https://github.com/ibis-project/ibis/issues/2342
+    con_kerberos_no_hdfs.table('tpch_lineitem')
 
 
 def test_execute_exprs_default_backend(con_no_hdfs):
