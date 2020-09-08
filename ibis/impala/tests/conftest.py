@@ -150,24 +150,6 @@ def con_no_hdfs(env, test_data_db):
 
 
 @pytest.fixture(scope='session')
-def con_kerberos_no_hdfs(env, test_data_db):
-    con = ibis.impala.connect(
-        host=env.impala_host,
-        database=test_data_db,
-        port=env.impala_port,
-        auth_mechanism='GSSAPI',
-        hdfs_client=None,
-    )
-    if not env.use_codegen:
-        con.disable_codegen()
-    assert con.get_options()['DISABLE_CODEGEN'] == '1'
-    try:
-        yield con
-    finally:
-        con.set_database(test_data_db)
-
-
-@pytest.fixture(scope='session')
 def con(env, hdfs, test_data_db):
     con = ibis.impala.connect(
         host=env.impala_host,
