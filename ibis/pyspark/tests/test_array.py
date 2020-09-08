@@ -131,7 +131,7 @@ def test_array_index(client, index):
             )
         }
     )
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result.isnull(), expected.isnull())
 
 
 @pytest.mark.parametrize('index', [1, 3, 4, 11])
@@ -141,7 +141,7 @@ def test_array_index_scalar(client, index):
     expr = value[index]
     result = client.execute(expr)
     expected = raw_value[index] if index < len(raw_value) else None
-    assert result == expected
+    assert (result == expected) or (pd.isna(result) and pd.isna(expected))
 
 
 @pytest.mark.parametrize('op', [lambda x, y: x + y, lambda x, y: y + x])
