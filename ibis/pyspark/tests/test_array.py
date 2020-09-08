@@ -1,5 +1,7 @@
+import numpy as np
 import pandas as pd
 import pandas.util.testing as tm
+import pyspark
 import pytest
 from pytest import param
 
@@ -7,6 +9,12 @@ import ibis
 
 pytest.importorskip('pyspark')
 pytestmark = pytest.mark.pyspark
+
+
+if pyspark.__version__ < '3.0.0':
+    null_representation = None
+else:
+    null_representation = np.nan
 
 
 def test_array_length(client):
@@ -127,11 +135,13 @@ def test_array_index(client, index):
     expected = pd.DataFrame(
         {
             'indexed': df.array_int.apply(
-                lambda x: x[index] if -len(x) <= index < len(x) else None
+                lambda x: x[index]
+                if -len(x) <= index < len(x)
+                else null_representation
             )
         }
     )
-    tm.assert_frame_equal(result.isnull(), expected.isnull())
+    tm.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize('index', [1, 3, 4, 11])
@@ -140,8 +150,10 @@ def test_array_index_scalar(client, index):
     value = ibis.literal(raw_value)
     expr = value[index]
     result = client.execute(expr)
-    expected = raw_value[index] if index < len(raw_value) else None
-    assert (result == expected) or (pd.isna(result) and pd.isna(expected))
+    expected = (
+        raw_value[index] if index < len(raw_value) else null_representation
+    )
+    assert result == expected or (np.isnan(result) and np.isnan(expected))
 
 
 @pytest.mark.parametrize('op', [lambda x, y: x + y, lambda x, y: y + x])
