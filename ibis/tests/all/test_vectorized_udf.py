@@ -3,10 +3,19 @@ import pytest
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.tests.backends import Pandas, PySpark
-from ibis.udf.vectorized import elementwise
-
+from ibis.udf.vectorized import elementwise, reduction
 
 pytestmark = pytest.mark.udf
+
+
+@elementwise(input_type=[dt.double], output_type=dt.double)
+def add_one(s):
+    return s + 1
+
+
+@reduction(input_type=[dt.double], output_type=dt.double)
+def calc_mean(s):
+    return s.mean()
 
 
 @pytest.mark.only_on_backends([Pandas, PySpark])
@@ -19,6 +28,14 @@ def test_elementwise_udf(backend, alltypes, df):
     result = add_one(alltypes['double_col']).execute()
     expected = add_one.func(df['double_col'])
     backend.assert_series_equal(result, expected, check_names=False)
+
+
+@pytest.mark.only_on_backends([Pandas, PySpark])
+@pytest.mark.xfail_unsupported
+def test_reduction_udf(backend, alltypes, df):
+    result = calc_mean(alltypes['double_col']).execute()
+    expected = df['double_col'].agg(calc_mean.func)
+    assert result == expected
 
 
 @pytest.mark.only_on_backends([Pandas, PySpark])
