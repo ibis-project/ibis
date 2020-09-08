@@ -25,6 +25,15 @@ def db(con, test_data_db):
     return con.database(test_data_db)
 
 
+def test_kerberos_deps_installed(con_kerberos_no_hdfs):
+    expected_exception_type = ModuleNotFoundError
+    try:
+        _ = con_kerberos_no_hdfs.table('tpch_lineitem')
+    except Exception as error:
+        # See: https://github.com/ibis-project/ibis/issues/2342
+        assert isinstance(error, expected_exception_type)
+
+
 def test_execute_exprs_default_backend(con_no_hdfs):
     expr = ibis.literal(2)
     expected = 2
