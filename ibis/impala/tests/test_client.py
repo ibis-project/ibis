@@ -4,6 +4,7 @@ import time
 import pandas as pd
 import pytest
 import pytz
+from thrift.transport.TTransport import TTransportException
 
 import ibis
 import ibis.common.exceptions as com
@@ -27,17 +28,14 @@ def db(con, test_data_db):
 
 def test_kerberos_deps_installed(env, test_data_db):
     # See: https://github.com/ibis-project/ibis/issues/2342
-    with pytest.raises(IndexError):
-        con = ibis.impala.connect(
+    with pytest.raises(TTransportException):
+        ibis.impala.connect(
             host=env.impala_host,
             database=test_data_db,
             port=env.impala_port,
             auth_mechanism='GSSAPI',
             hdfs_client=None,
         )
-    if not env.use_codegen:
-        con.disable_codegen()
-    con.table('tpch_lineitem', database=test_data_db)
 
 
 def test_execute_exprs_default_backend(con_no_hdfs):
