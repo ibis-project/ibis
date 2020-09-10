@@ -5,7 +5,6 @@ import pytest
 import ibis
 from ibis import literal as L
 from ibis.tests.backends import (
-    BigQuery,
     Clickhouse,
     MySQL,
     OmniSciDB,
@@ -26,7 +25,7 @@ from ibis.tests.backends import (
             None,
             marks=pytest.mark.xpass_backends(
                 [
-                    BigQuery,
+                    # Excludes: BigQuery, see: #2371
                     Clickhouse,
                     MySQL,
                     OmniSciDB,
