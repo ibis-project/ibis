@@ -401,15 +401,17 @@ def test_unbounded_window_grouped(
     [
         param(True, id='orderered'),
         param(
-            # Disabled on PySpark because PySpark requires a defined
+            # Disabled on MySQL and PySpark because they require a defined
             # ordering for analytic ops like lag and lead
             False,
             id='unordered',
-            marks=pytest.mark.skip_backends([PySpark]),
+            marks=pytest.mark.skip_backends([MySQL, PySpark]),
         ),
     ],
 )
 @pytest.mark.xfail_unsupported
+# Some backends do not support non-grouped window specs
+@pytest.mark.xfail_backends([OmniSciDB, SQLite])
 def test_unbounded_window_ungrouped(
     backend, alltypes, df, con, result_fn, expected_fn, ordered
 ):
