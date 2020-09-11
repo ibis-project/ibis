@@ -1,18 +1,11 @@
 import decimal
 
+import pandas as pd
 import pytest
 
 import ibis
 from ibis import literal as L
-from ibis.tests.backends import (
-    Clickhouse,
-    MySQL,
-    OmniSciDB,
-    Postgres,
-    PySpark,
-    Spark,
-    SQLite,
-)
+from ibis.tests.backends import BigQuery
 
 
 @pytest.mark.parametrize(
@@ -23,25 +16,23 @@ from ibis.tests.backends import (
         pytest.param(
             L(5).nullif(5),
             None,
-            marks=pytest.mark.xpass_backends(
-                [
-                    # Excludes: BigQuery, see: #2371
-                    Clickhouse,
-                    MySQL,
-                    OmniSciDB,
-                    Postgres,
-                    Spark,
-                    SQLite,
-                    PySpark,
-                ]
-            ),
+            # Issue #2371
+            marks=pytest.mark.xfail_backends([BigQuery]),
         ),
         (L(10).nullif(5), 10),
     ],
 )
 @pytest.mark.xfail_unsupported
 def test_fillna_nullif(backend, con, expr, expected):
-    assert con.execute(expr) == expected
+    if expected is None:
+        # The exact kind of null value used differs per backend (and version).
+        # Example 1: Pandas returns np.nan while BigQuery returns None.
+        # Example 2: PySpark returns np.nan if pyspark==3.0.0, but returns None
+        # if pyspark <=3.0.0.
+        # TODO: Make this behavior consistent (#2365)
+        assert pd.isna(con.execute(expr))
+    else:
+        assert con.execute(expr) == expected
 
 
 @pytest.mark.parametrize(
