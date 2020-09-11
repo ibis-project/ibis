@@ -30,12 +30,19 @@ from ibis.pandas.dispatch import execute_node, pre_execute
 from ibis.pandas.execution import util
 
 
-def _post_process_empty(scalar, parent, order_by, group_by):
+def _post_process_empty(result, parent, order_by, group_by):
     assert not order_by and not group_by
-    index = parent.index
-    result = pd.Series([scalar]).repeat(len(index))
-    result.index = index
-    return result
+    if isinstance(result, pd.Series):
+        # `result` is a Series e.g. when an analytic operation is being
+        # applied over the window
+        return result
+    else:
+        # `result` is a scalar e.g. when a reduction operation is being
+        # applied over the window
+        index = parent.index
+        result = pd.Series([result]).repeat(len(index))
+        result.index = index
+        return result
 
 
 def _post_process_group_by(series, parent, order_by, group_by):
