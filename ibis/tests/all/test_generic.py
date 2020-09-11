@@ -5,7 +5,6 @@ import pytest
 
 import ibis
 from ibis import literal as L
-from ibis.tests.backends import BigQuery
 
 
 @pytest.mark.parametrize(
@@ -13,12 +12,7 @@ from ibis.tests.backends import BigQuery
     [
         (ibis.NA.fillna(5), 5),
         (L(5).fillna(10), 5),
-        pytest.param(
-            L(5).nullif(5),
-            None,
-            # Issue #2371
-            marks=pytest.mark.xfail_backends([BigQuery]),
-        ),
+        (L(5).nullif(5), None),
         (L(10).nullif(5), 10),
     ],
 )
