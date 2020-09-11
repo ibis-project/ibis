@@ -409,9 +409,9 @@ def test_unbounded_window_grouped(
         ),
     ],
 )
-@pytest.mark.xfail_unsupported
 # Some backends do not support non-grouped window specs
-@pytest.mark.xfail_backends([OmniSciDB, SQLite])
+@pytest.mark.xfail_backends([OmniSciDB])
+@pytest.mark.xfail_unsupported
 def test_unbounded_window_ungrouped(
     backend, alltypes, df, con, result_fn, expected_fn, ordered
 ):
