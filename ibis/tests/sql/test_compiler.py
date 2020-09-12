@@ -7,7 +7,7 @@ import ibis
 import ibis.expr.api as api
 import ibis.expr.operations as ops
 from ibis import impala  # noqa: E402
-from ibis.expr.tests.mocks import MockConnection
+from ibis.tests.expr.mocks import MockConnection
 from ibis.impala.compiler import ImpalaDialect, build_ast, to_sql  # noqa: E402
 
 pytest.importorskip('sqlalchemy')
@@ -674,6 +674,36 @@ class ExprTestCases:
         ]
 
         expr = t1.union(t2, distinct=distinct)
+
+        return expr
+
+    def _case_intersect(self):
+        table = self.con.table('functional_alltypes')
+
+        t1 = table[table.int_col > 0][
+            table.string_col.name('key'),
+            table.float_col.cast('double').name('value'),
+        ]
+        t2 = table[table.int_col <= 0][
+            table.string_col.name('key'), table.double_col.name('value')
+        ]
+
+        expr = t1.intersect(t2)
+
+        return expr
+
+    def _case_difference(self):
+        table = self.con.table('functional_alltypes')
+
+        t1 = table[table.int_col > 0][
+            table.string_col.name('key'),
+            table.float_col.cast('double').name('value'),
+        ]
+        t2 = table[table.int_col <= 0][
+            table.string_col.name('key'), table.double_col.name('value')
+        ]
+
+        expr = t1.difference(t2)
 
         return expr
 
@@ -2237,6 +2267,37 @@ FROM (
   FROM functional_alltypes
   WHERE `int_col` <= 0
 ) t0"""
+        assert result == expected
+
+
+class TestIntersect(unittest.TestCase, ExprTestCases):
+    def setUp(self):
+        self.con = MockConnection()
+
+    def test_table_intersect(self):
+        intersection = self._case_intersect()
+        result = to_sql(intersection)
+        expected = """\
+SELECT `string_col` AS `key`, CAST(`float_col` AS double) AS `value`
+FROM functional_alltypes
+WHERE `int_col` > 0
+INTERSECT
+SELECT `string_col` AS `key`, `double_col` AS `value`
+FROM functional_alltypes
+WHERE `int_col` <= 0"""
+        assert result == expected
+
+    def test_table_difference(self):
+        difference = self._case_difference()
+        result = to_sql(difference)
+        expected = """\
+SELECT `string_col` AS `key`, CAST(`float_col` AS double) AS `value`
+FROM functional_alltypes
+WHERE `int_col` > 0
+EXCEPT
+SELECT `string_col` AS `key`, `double_col` AS `value`
+FROM functional_alltypes
+WHERE `int_col` <= 0"""
         assert result == expected
 
 

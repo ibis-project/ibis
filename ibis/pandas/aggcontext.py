@@ -370,6 +370,7 @@ def window_agg_udf(
     window_lower_indices: pd.Series,
     window_upper_indices: pd.Series,
     mask: pd.Series,
+    result_index: pd.Index,
     dtype: np.dtype,
     max_lookback: int,
     *args: Tuple[Any],
@@ -383,8 +384,6 @@ def window_agg_udf(
     This is because pandas's rolling function doesn't support
     multi param UDFs.
     """
-    obj = getattr(grouped_data, 'obj', grouped_data)
-
     assert len(window_lower_indices) == len(window_upper_indices)
     assert len(window_lower_indices) == len(mask)
 
@@ -429,7 +428,7 @@ def window_agg_udf(
     valid_result.index = masked_window_lower_indices.index
     result = pd.Series(index=mask.index, dtype=dtype)
     result[mask] = valid_result
-    result.index = obj.index
+    result.index = result_index
 
     return result
 
@@ -528,6 +527,7 @@ class Window(AggregationContext):
                     window_lower_indices,
                     window_upper_indices,
                     mask,
+                    obj.index,
                     self.dtype,
                     self.max_lookback,
                     *args,

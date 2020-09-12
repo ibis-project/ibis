@@ -457,9 +457,8 @@ SELECT COVAR_POP(`double_col`, `double_col`) AS `tmp`
 FROM `{project_id}.testing.functional_alltypes`"""
     assert result == expected
 
-    expr = d.cov(d, how='error')
     with pytest.raises(ValueError):
-        expr.compile()
+        d.cov(d, how='error')
 
 
 @pytest.mark.parametrize(

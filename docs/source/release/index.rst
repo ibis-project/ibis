@@ -13,6 +13,14 @@ Release Notes
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
 * :support:`2288` Drop support to Python 3.6
+* :bug:`2367` Fix the covariance operator in the BigQuery backend.
+* :feature:`2366` Add PySpark support for ReductionVectorizedUDF
+* :feature:`2306` Add time context in `scope` in execution for pandas backend
+* :support:`2351` Simplifying tests directories structure
+* :feature:`2081` Add ``start_point`` and ``end_point`` to PostGIS backend.
+* :feature:`2347` Add set difference to general ibis api
+* :feature:`2251` Add ``rowid`` expression, supported by SQLite and OmniSciDB
+* :feature:`2230` Add intersection to general ibis api
 * :support:`2304` Update ``google-cloud-bigquery`` dependency minimum version to 1.12.0
 * :feature:`2303` Add ``application_name`` argument to ``ibis.bigquery.connect`` to allow attributing Google API requests to projects that use Ibis.
 * :bug:`1320` Added verbose logging to SQL backends
@@ -39,6 +47,7 @@ Release Notes
 * :feature:`2171` [OmniSciDB] Add support to week extraction
 * :feature:`2097` Date, DateDiff and TimestampDiff implementations for OmniSciDB
 * :bug:`2170` Fix millisecond issue for OmniSciDB :issue:`2167`, MySQL :issue:`2169`, PostgreSQL :issue:`2166`, Pandas :issue:`2168`, BigQuery :issue:`2273` backends
+* :feature:`2177` Create ExtractWeekOfYear operation and add its support to Clickhouse, CSV, MySQL, Pandas, Parquet, PostgreSQL, PySpark and Spark
 * :feature:`2060` Add initial support for ibis.random function
 * :support:`2107` Added fragment_size to table creation for OmniSciDB
 * :feature:`2178` Added epoch_seconds extraction operation to Clickhouse, CSV, Impala, MySQL, OmniSciDB, Pandas, Parquet, PostgreSQL, PySpark, SQLite, Spark and BigQuery :issue:`2273`

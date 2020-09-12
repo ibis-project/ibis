@@ -64,8 +64,7 @@ jobs:
           -e AZURECI=$AZURECI \
           -e PYTEST_BACKENDS="$PYTEST_BACKENDS" \
           ibis \
-          pytest ibis/tests ibis/expr/tests ibis/sql/tests ibis/impala/tests ibis/clickhouse/tests \
-            -m "not udf" \
+          pytest ibis/tests ibis/impala/tests ibis/clickhouse/tests \
             -k"not compile and not connect" \
             -ra \
             --doctest-modules \

@@ -22,9 +22,10 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.pandas.aggcontext as agg_ctx
 from ibis.compat import DatetimeTZDtype
+from ibis.expr.scope import make_scope
+from ibis.expr.timecontext import TIME_COL
 from ibis.expr.typing import TimeContext
 from ibis.pandas.core import (
-    TIME_COL,
     boolean_types,
     execute,
     fixed_width_types,
@@ -383,7 +384,9 @@ def execute_table_column_df_or_df_groupby(op, data, **kwargs):
 
 
 @execute_node.register(ops.Aggregation, pd.DataFrame)
-def execute_aggregation_dataframe(op, data, scope=None, **kwargs):
+def execute_aggregation_dataframe(
+    op, data, scope=None, timecontext: Optional[TimeContext] = None, **kwargs
+):
     assert op.metrics, 'no metrics found during aggregation execution'
 
     if op.sort_keys:
@@ -395,7 +398,10 @@ def execute_aggregation_dataframe(op, data, scope=None, **kwargs):
     if predicates:
         predicate = functools.reduce(
             operator.and_,
-            (execute(p, scope=scope, **kwargs) for p in predicates),
+            (
+                execute(p, scope=scope, timecontext=timecontext, **kwargs)
+                for p in predicates
+            ),
         )
         data = data.loc[predicate]
 
@@ -408,7 +414,9 @@ def execute_aggregation_dataframe(op, data, scope=None, **kwargs):
         grouping_keys = [
             by_op.name
             if isinstance(by_op, ops.TableColumn)
-            else execute(by, scope=scope, **kwargs).rename(by.get_name())
+            else execute(
+                by, scope=scope, timecontext=timecontext, **kwargs
+            ).rename(by.get_name())
             for by, by_op in grouping_key_pairs
         ]
         columns.update(
@@ -420,16 +428,22 @@ def execute_aggregation_dataframe(op, data, scope=None, **kwargs):
     else:
         source = data
 
-    new_scope = toolz.merge(scope, {op.table.op(): source})
+    scope = scope.merge_scope(make_scope(op.table.op(), source, timecontext))
+
     pieces = [
         pd.Series(
-            execute(metric, scope=new_scope, **kwargs), name=metric.get_name()
+            execute(metric, scope=scope, timecontext=timecontext, **kwargs),
+            name=metric.get_name(),
         )
         for metric in op.metrics
     ]
 
-    # group by always needs a reset to get the grouping key back as a column
-    result = pd.concat(pieces, axis=1).reset_index()
+    result = pd.concat(pieces, axis=1)
+
+    # If grouping, need a reset to get the grouping key back as a column
+    if op.by:
+        result = result.reset_index()
+
     result.columns = [columns.get(c, c) for c in result.columns]
 
     if op.having:
@@ -445,7 +459,7 @@ def execute_aggregation_dataframe(op, data, scope=None, **kwargs):
         predicate = functools.reduce(
             operator.and_,
             (
-                execute(having, scope=new_scope, **kwargs)
+                execute(having, scope=scope, timecontext=timecontext, **kwargs)
                 for having in op.having
             ),
         )
@@ -763,9 +777,30 @@ def execute_series_distinct(op, data, **kwargs):
 
 
 @execute_node.register(ops.Union, pd.DataFrame, pd.DataFrame, bool)
-def execute_union_dataframe_dataframe(op, left, right, distinct, **kwargs):
+def execute_union_dataframe_dataframe(
+    op, left: pd.DataFrame, right: pd.DataFrame, distinct, **kwargs
+):
     result = pd.concat([left, right], axis=0)
     return result.drop_duplicates() if distinct else result
+
+
+@execute_node.register(ops.Intersection, pd.DataFrame, pd.DataFrame)
+def execute_intersection_dataframe_dataframe(
+    op, left: pd.DataFrame, right: pd.DataFrame, **kwargs
+):
+    result = left.merge(right, on=list(left.columns), how="inner")
+    return result
+
+
+@execute_node.register(ops.Difference, pd.DataFrame, pd.DataFrame)
+def execute_difference_dataframe_dataframe(
+    op, left: pd.DataFrame, right: pd.DataFrame, **kwargs
+):
+    merged = left.merge(
+        right, on=list(left.columns), how='outer', indicator=True
+    )
+    result = merged[merged["_merge"] != "both"].drop("_merge", 1)
+    return result
 
 
 @execute_node.register(ops.IsNull, pd.Series)
@@ -1058,3 +1093,10 @@ def execute_simple_case_series(op, value, whens, thens, otherwise, **kwargs):
 @execute_node.register(ops.Distinct, pd.DataFrame)
 def execute_distinct_dataframe(op, df, **kwargs):
     return df.drop_duplicates()
+
+
+@execute_node.register(ops.RowID)
+def execute_rowid(op, *args, **kwargs):
+    raise com.UnsupportedOperationError(
+        'rowid is not supported in pandas backends'
+    )

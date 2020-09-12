@@ -9,6 +9,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.expr.scope import Scope
 from ibis.expr.window import get_preceding_value, rows_with_max_lookback
 from ibis.pandas.aggcontext import AggregationContext, window_agg_udf
 from ibis.pandas.dispatch import pre_execute
@@ -76,12 +77,15 @@ class CustomAggContext(AggregationContext):
         lower_indices = upper_indices - window_sizes
         mask = upper_indices.notna()
 
+        result_index = grouped_data.obj.index
+
         result = window_agg_udf(
             grouped_data,
             function,
             lower_indices,
             upper_indices,
             mask,
+            result_index,
             self.dtype,
             self.max_lookback,
             *args,
@@ -589,7 +593,7 @@ def test_window_has_pre_execute_scope():
     @pre_execute.register(*signature)
     def test_pre_execute(op, client, **kwargs):
         called[0] += 1
-        return {}
+        return Scope()
 
     data = {'key': list('abc'), 'value': [1, 2, 3], 'dup': list('ggh')}
     df = pd.DataFrame(data, columns=['key', 'value', 'dup'])

@@ -11,12 +11,12 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
-import toolz
 from multipledispatch import Dispatcher
 from toolz import compose, concat, concatv, first, unique
 
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+from ibis.expr.scope import Scope, make_scope
 from ibis.expr.typing import TimeContext
 from ibis.pandas.core import execute
 from ibis.pandas.dispatch import execute_node
@@ -33,7 +33,8 @@ Parameters
 expr : Union[ir.ScalarExpr, ir.ColumnExpr, ir.TableExpr]
 parent : ops.Selection
 data : pd.DataFrame
-scope : dict, optional
+scope : Scope
+timecontext:Optional[TimeContext]
 
 Returns
 -------
@@ -48,7 +49,14 @@ projection is a window operation.
 
 
 @compute_projection.register(ir.ScalarExpr, ops.Selection, pd.DataFrame)
-def compute_projection_scalar_expr(expr, parent, data, scope=None, **kwargs):
+def compute_projection_scalar_expr(
+    expr,
+    parent,
+    data,
+    scope: Scope = None,
+    timecontext: Optional[TimeContext] = None,
+    **kwargs,
+):
     name = expr._name
     assert name is not None, 'Scalar selection name is None'
 
@@ -57,8 +65,8 @@ def compute_projection_scalar_expr(expr, parent, data, scope=None, **kwargs):
 
     data_columns = frozenset(data.columns)
 
-    additional_scope = OrderedDict(
-        (
+    scope = scope.merge_scopes(
+        make_scope(
             t,
             map_new_column_names_to_data(
                 remap_overlapping_column_names(
@@ -66,12 +74,11 @@ def compute_projection_scalar_expr(expr, parent, data, scope=None, **kwargs):
                 ),
                 data,
             ),
+            timecontext,
         )
         for t in op.root_tables()
     )
-
-    new_scope = toolz.merge(scope, additional_scope, factory=OrderedDict)
-    scalar = execute(expr, scope=new_scope, **kwargs)
+    scalar = execute(expr, scope=scope, **kwargs)
     result = pd.Series([scalar], name=name).repeat(len(data.index))
     result.index = data.index
     return result
@@ -79,7 +86,12 @@ def compute_projection_scalar_expr(expr, parent, data, scope=None, **kwargs):
 
 @compute_projection.register(ir.ColumnExpr, ops.Selection, pd.DataFrame)
 def compute_projection_column_expr(
-    expr, parent, data, scope, timecontext: Optional[TimeContext], **kwargs
+    expr,
+    parent,
+    data,
+    scope: Scope,
+    timecontext: Optional[TimeContext],
+    **kwargs,
 ):
     result_name = getattr(expr, '_name', None)
     op = expr.op()
@@ -107,16 +119,22 @@ def compute_projection_column_expr(
         )
 
     data_columns = frozenset(data.columns)
-    additional_scope = {
-        t: map_new_column_names_to_data(
-            remap_overlapping_column_names(parent_table_op, t, data_columns),
-            data,
+
+    scope = scope.merge_scopes(
+        make_scope(
+            t,
+            map_new_column_names_to_data(
+                remap_overlapping_column_names(
+                    parent_table_op, t, data_columns
+                ),
+                data,
+            ),
+            timecontext,
         )
         for t in op.root_tables()
-    }
+    )
 
-    new_scope = toolz.merge(scope, additional_scope)
-    result = execute(expr, scope=new_scope, timecontext=timecontext, **kwargs)
+    result = execute(expr, scope=scope, timecontext=timecontext, **kwargs)
     assert result_name is not None, 'Column selection name is None'
     if np.isscalar(result):
         return pd.Series(
@@ -191,7 +209,14 @@ def map_new_column_names_to_data(mapping, df):
     return df
 
 
-def _compute_predicates(table_op, predicates, data, scope, **kwargs):
+def _compute_predicates(
+    table_op,
+    predicates,
+    data,
+    scope: Scope,
+    timecontext: Optional[TimeContext],
+    **kwargs,
+):
     """Compute the predicates for a table operation.
 
     Parameters
@@ -199,7 +224,8 @@ def _compute_predicates(table_op, predicates, data, scope, **kwargs):
     table_op : TableNode
     predicates : List[ir.ColumnExpr]
     data : pd.DataFrame
-    scope : dict
+    scope : Scope
+    timecontext: Optional[TimeContext]
     kwargs : dict
 
     Returns
@@ -220,9 +246,9 @@ def _compute_predicates(table_op, predicates, data, scope, **kwargs):
         root_tables = predicate.op().root_tables()
 
         # handle suffixes
-        additional_scope = {}
         data_columns = frozenset(data.columns)
 
+        additional_scope = Scope()
         for root_table in root_tables:
             mapping = remap_overlapping_column_names(
                 table_op, root_table, data_columns
@@ -231,10 +257,12 @@ def _compute_predicates(table_op, predicates, data, scope, **kwargs):
                 new_data = data.loc[:, mapping.keys()].rename(columns=mapping)
             else:
                 new_data = data
-            additional_scope[root_table] = new_data
+            additional_scope = additional_scope.merge_scope(
+                make_scope(root_table, new_data, timecontext)
+            )
 
-        new_scope = toolz.merge(scope, additional_scope)
-        yield execute(predicate, scope=new_scope, **kwargs)
+        scope = scope.merge_scope(additional_scope)
+        yield execute(predicate, scope=scope, **kwargs)
 
 
 physical_tables = Dispatcher(
@@ -282,7 +310,7 @@ def physical_tables_node(node):
 
 @execute_node.register(ops.Selection, pd.DataFrame)
 def execute_selection_dataframe(
-    op, data, scope, timecontext: Optional[TimeContext], **kwargs
+    op, data, scope: Scope, timecontext: Optional[TimeContext], **kwargs
 ):
     selections = op.selections
     predicates = op.predicates
@@ -315,7 +343,7 @@ def execute_selection_dataframe(
 
     if predicates:
         predicates = _compute_predicates(
-            op.table.op(), predicates, data, scope, **kwargs
+            op.table.op(), predicates, data, scope, timecontext, **kwargs
         )
         predicate = functools.reduce(operator.and_, predicates)
         assert len(predicate) == len(
@@ -325,7 +353,11 @@ def execute_selection_dataframe(
 
     if sort_keys:
         result, grouping_keys, ordering_keys = util.compute_sorted_frame(
-            result, order_by=sort_keys, scope=scope, **kwargs
+            result,
+            order_by=sort_keys,
+            scope=scope,
+            timecontext=timecontext,
+            **kwargs,
         )
     else:
         grouping_keys = ordering_keys = ()

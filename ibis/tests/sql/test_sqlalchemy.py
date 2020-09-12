@@ -23,8 +23,8 @@ from sqlalchemy import types as sat  # noqa: E402
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.sql.alchemy as alch  # noqa: E402
-from ibis.expr.tests.mocks import MockAlchemyConnection
-from ibis.sql.tests.test_compiler import ExprTestCases  # noqa: E402
+from ibis.tests.expr.mocks import MockAlchemyConnection
+from ibis.tests.sql.test_compiler import ExprTestCases  # noqa: E402
 from ibis.tests.util import assert_equal
 
 sa = pytest.importorskip('sqlalchemy')

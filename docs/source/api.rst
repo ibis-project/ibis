@@ -5,324 +5,6 @@
 API Reference
 *************
 
-.. currentmodule:: ibis
-
-.. _api.client:
-
-Creating connections
---------------------
-
-These methods are in the ``ibis`` module namespace, and your main point of
-entry to using Ibis.
-
-.. autosummary::
-   :toctree: generated/
-
-   hdfs_connect
-
-Impala client
--------------
-.. currentmodule:: ibis.impala.api
-
-These methods are available on the Impala client object after connecting to
-your HDFS cluster (``ibis.hdfs_connect``) and connecting to Impala with
-``ibis.impala.connect``. See :ref:`backends.impala` for a tutorial on using this
-backend.
-
-.. autosummary::
-   :toctree: generated/
-
-   connect
-   ImpalaClient.close
-   ImpalaClient.database
-
-Database methods
-~~~~~~~~~~~~~~~~
-
-.. autosummary::
-   :toctree: generated/
-
-   ImpalaClient.set_database
-   ImpalaClient.create_database
-   ImpalaClient.drop_database
-   ImpalaClient.list_databases
-   ImpalaClient.exists_database
-
-.. autosummary::
-   :toctree: generated/
-
-   ImpalaDatabase.create_table
-   ImpalaDatabase.drop
-   ImpalaDatabase.namespace
-   ImpalaDatabase.table
-
-Table methods
-~~~~~~~~~~~~~
-
-The ``ImpalaClient`` object itself has many helper utility methods. You'll find
-the most methods on ``ImpalaTable``.
-
-.. autosummary::
-   :toctree: generated/
-
-   ImpalaClient.database
-   ImpalaClient.table
-   ImpalaClient.sql
-   ImpalaClient.raw_sql
-   ImpalaClient.list_tables
-   ImpalaClient.exists_table
-   ImpalaClient.drop_table
-   ImpalaClient.create_table
-   ImpalaClient.insert
-   ImpalaClient.invalidate_metadata
-   ImpalaClient.truncate_table
-   ImpalaClient.get_schema
-   ImpalaClient.cache_table
-   ImpalaClient.load_data
-   ImpalaClient.get_options
-   ImpalaClient.set_options
-   ImpalaClient.set_compression_codec
-
-
-The best way to interact with a single table is through the ``ImpalaTable``
-object you get back from ``ImpalaClient.table``.
-
-.. autosummary::
-   :toctree: generated/
-
-   ImpalaTable.add_partition
-   ImpalaTable.alter
-   ImpalaTable.alter_partition
-   ImpalaTable.column_stats
-   ImpalaTable.compute_stats
-   ImpalaTable.describe_formatted
-   ImpalaTable.drop
-   ImpalaTable.drop_partition
-   ImpalaTable.files
-   ImpalaTable.insert
-   ImpalaTable.invalidate_metadata
-   ImpalaTable.is_partitioned
-   ImpalaTable.load_data
-   ImpalaTable.metadata
-   ImpalaTable.partition_schema
-   ImpalaTable.partitions
-   ImpalaTable.refresh
-   ImpalaTable.rename
-   ImpalaTable.schema
-   ImpalaTable.stats
-
-Creating views is also possible:
-
-.. autosummary::
-   :toctree: generated/
-
-   ImpalaClient.create_view
-   ImpalaClient.drop_view
-   ImpalaClient.drop_table_or_view
-
-Accessing data formats in HDFS
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-   :toctree: generated/
-
-   ImpalaClient.avro_file
-   ImpalaClient.delimited_file
-   ImpalaClient.parquet_file
-
-Executing expressions
-~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-   :toctree: generated/
-
-   ImpalaClient.execute
-   ImpalaClient.disable_codegen
-
-.. _api.bigquery:
-
-BigQuery client
----------------
-.. currentmodule:: ibis.bigquery.api
-
-The BigQuery client is accessible through the ``ibis.bigquery`` namespace.
-See :ref:`backends.bigquery` for a tutorial on using this backend.
-
-Use the ``ibis.bigquery.connect`` function to create a BigQuery
-client. If no ``credentials`` are provided, the
-:func:`pydata_google_auth.default` function fetches default credentials.
-
-.. autosummary::
-   :toctree: generated/
-
-   connect
-   BigQueryClient.database
-   BigQueryClient.list_databases
-   BigQueryClient.list_tables
-   BigQueryClient.table
-
-.. _api.postgres:
-
-PostgreSQL client
------------------
-.. currentmodule:: ibis.sql.postgres.api
-
-The PostgreSQL client is accessible through the ``ibis.postgres`` namespace.
-
-Use ``ibis.postgres.connect`` with a SQLAlchemy-compatible connection string to
-create a client.
-
-.. autosummary::
-   :toctree: generated/
-
-   connect
-   PostgreSQLClient.database
-   PostgreSQLClient.list_tables
-   PostgreSQLClient.list_databases
-   PostgreSQLClient.table
-
-.. _api.sqlite:
-
-SQLite client
--------------
-.. currentmodule:: ibis.sql.sqlite.api
-
-The SQLite client is accessible through the ``ibis.sqlite`` namespace.
-
-Use ``ibis.sqlite.connect`` to create a SQLite client.
-
-.. autosummary::
-   :toctree: generated/
-
-   connect
-   SQLiteClient.attach
-   SQLiteClient.database
-   SQLiteClient.list_tables
-   SQLiteClient.table
-
-.. _api.mysql:
-
-MySQL client (Experimental)
----------------------------
-.. currentmodule:: ibis.sql.mysql.api
-
-The MySQL client is accessible through the ``ibis.mysql`` namespace.
-
-Use ``ibis.mysql.connect`` with a SQLAlchemy-compatible connection string to
-create a client.
-
-.. autosummary::
-   :toctree: generated/
-
-   connect
-   MySQLClient.database
-   MySQLClient.list_databases
-   MySQLClient.list_tables
-   MySQLClient.table
-
-.. _api.omniscidb:
-
-OmniSciDB client
--------------------------------
-.. currentmodule:: ibis.omniscidb.api
-
-The OmniSciDB client is accessible through the ``ibis.omniscidb`` namespace.
-
-Use ``ibis.omniscidb.connect`` to create a client.
-
-.. autosummary::
-   :toctree: generated/
-
-   compile
-   connect
-   verify
-   OmniSciDBClient.alter_user
-   OmniSciDBClient.close
-   OmniSciDBClient.create_database
-   OmniSciDBClient.create_table
-   OmniSciDBClient.create_user
-   OmniSciDBClient.create_view
-   OmniSciDBClient.database
-   OmniSciDBClient.describe_formatted
-   OmniSciDBClient.drop_database
-   OmniSciDBClient.drop_table
-   OmniSciDBClient.drop_table_or_view
-   OmniSciDBClient.drop_user
-   OmniSciDBClient.drop_view
-   OmniSciDBClient.exists_table
-   OmniSciDBClient.get_schema
-   OmniSciDBClient.list_tables
-   OmniSciDBClient.load_data
-   OmniSciDBClient.log
-   OmniSciDBClient.set_database
-   OmniSciDBClient.sql
-   OmniSciDBClient.table
-   OmniSciDBClient.truncate_table
-   OmniSciDBClient.version
-
-.. _api.hdfs:
-
-HDFS
-----
-
-Client objects have an ``hdfs`` attribute you can use to interact directly with
-HDFS.
-
-.. currentmodule:: ibis
-
-.. autosummary::
-   :toctree: generated/
-
-   HDFS.ls
-   HDFS.chmod
-   HDFS.chown
-   HDFS.get
-   HDFS.head
-   HDFS.put
-   HDFS.put_tarfile
-   HDFS.rm
-   HDFS.rmdir
-   HDFS.size
-   HDFS.status
-
-.. _api.spark:
-
-SparkSQL client (Experimental)
-------------------------------
-.. currentmodule:: ibis.spark.api
-
-The Spark SQL client is accessible through the ``ibis.spark`` namespace.
-
-Use ``ibis.spark.connect`` to create a client.
-
-.. autosummary::
-   :toctree: generated/
-
-   connect
-   SparkClient.database
-   SparkClient.list_databases
-   SparkClient.list_tables
-   SparkClient.table
-
-.. _api.pyspark:
-
-PySpark client (Experimental)
------------------------------
-.. currentmodule:: ibis.pyspark.api
-
-The PySpark client is accessible through the ``ibis.pyspark`` namespace.
-
-Use ``ibis.pyspark.connect`` to create a client.
-
-.. autosummary::
-   :toctree: generated/
-
-   connect
-   PySparkClient.database
-   PySparkClient.list_databases
-   PySparkClient.list_tables
-   PySparkClient.table
-
 Top-level expression APIs
 -------------------------
 
@@ -397,6 +79,7 @@ Table methods
    TableExpr.mutate
    TableExpr.projection
    TableExpr.relabel
+   TableExpr.rowid
    TableExpr.schema
    TableExpr.set_column
    TableExpr.sort_by
@@ -806,3 +489,29 @@ Column methods
    :toctree: generated/
 
    GeoSpatialColumn.unary_union
+
+.. _api.hdfs:
+
+HDFS
+----
+
+Client objects have an ``hdfs`` attribute you can use to interact directly with
+HDFS.
+
+.. currentmodule:: ibis
+
+.. autosummary::
+   :toctree: generated/
+
+   hdfs_connect
+   HDFS.ls
+   HDFS.chmod
+   HDFS.chown
+   HDFS.get
+   HDFS.head
+   HDFS.put
+   HDFS.put_tarfile
+   HDFS.rm
+   HDFS.rmdir
+   HDFS.size
+   HDFS.status

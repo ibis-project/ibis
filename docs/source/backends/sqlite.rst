@@ -1,7 +1,7 @@
 .. _install.sqlite:
 
 `SQLite <https://www.sqlite.org/>`_
------------------------------------
+===================================
 
 Install dependencies for Ibis's SQLite dialect:
 
@@ -20,3 +20,21 @@ Create a client by passing a path to a SQLite database to
 See http://blog.ibis-project.org/sqlite-crunchbase-quickstart/ for a quickstart
 using SQLite.
 
+.. _api.sqlite:
+
+API
+---
+.. currentmodule:: ibis.sql.sqlite.api
+
+The SQLite client is accessible through the ``ibis.sqlite`` namespace.
+
+Use ``ibis.sqlite.connect`` to create a SQLite client.
+
+.. autosummary::
+   :toctree: ../generated/
+
+   connect
+   SQLiteClient.attach
+   SQLiteClient.database
+   SQLiteClient.list_tables
+   SQLiteClient.table
