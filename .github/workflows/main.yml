@@ -150,7 +150,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: ["3.7"]
+        python_version: ["3.7", "3.8"]
     steps:
     - name: checkout
       uses: actions/checkout@v1
