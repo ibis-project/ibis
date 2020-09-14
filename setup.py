@@ -110,4 +110,20 @@ setup(
     license='Apache License, Version 2.0',
     maintainer="Phillip Cloud",
     maintainer_email="phillip.cloud@twosigma.com",
+    entry_points={
+        'ibis.backends': [
+            'csv = ibis.file.csv',
+            'parquet = ibis.file.parquet',
+            'hdf5 = ibis.file.hdf5',
+            'impala = ibis.impala.api',
+            'sqlite = ibis.sql.sqlite.api',
+            'postgres = ibis.sql.postgres.api',
+            'mysql = ibis.sql.mysql.api',
+            'clickhouse = ibis.clickhouse.api',
+            'bigquery = ibis.bigquery.api',
+            'omniscidb = ibis.omniscidb.api',
+            'spark = ibis.spark.api',
+            'pyspark = ibis.pyspark.api',
+        ]
+    }
 )

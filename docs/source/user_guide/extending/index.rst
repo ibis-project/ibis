@@ -39,6 +39,32 @@ how to add a new ``bitwise_and`` reduction operation:
 Adding a New Backend
 --------------------
 
+Ibis backends are accessed by users calling ``ibis.backend_name``, for example
+in ``ibis.sqlite.connect(fname)``.
+
+Both, when adding a new backend to the Ibis repo, or when creating a third-party
+backend, you should define a entry point in the group ``ibis.backends``, with the
+name of your backend and the module where it is implemented. This is defined in
+the ``setup.py`` file. The code to setup the sqlite backend could be:
+
+.. code-block:: python
+
+   setup(name='ibis-sqlite',
+         ...
+         entry_points={'ibis.backends': 'sqlite = ibis-sqlite'}
+   )
+
+In the code above, the name of the module will be ``sqlite``, as defined in the
+left of the assignment ``sqlite = ibis-sqlite``. And the code should be available
+in the module ``ibis-sqlite`` (the file ``ibis-sqlite/__init__.py`` will define
+the ``connect`` method, as well as any other method available to the users in
+``ibis.sqlite.<method>``.
+
+For third party packages it is recommended that the name of the Python package
+is ``ibis-<backend>``, since Ibis will recommend users to run ``pip install ibis-<backend>``
+when a backend is not found.
+
+
 Run test suite for separate Backend
 -----------------------------------
 .. note::

@@ -1,5 +1,5 @@
 """Initialize Ibis module."""
-from contextlib import suppress
+import pkg_resources
 
 import ibis.config_init  # noqa: F401
 import ibis.expr.api as api  # noqa: F401
@@ -14,53 +14,6 @@ from ibis.expr.api import *  # noqa: F401,F403
 from ibis.filesystems import HDFS, WebHDFS  # noqa: F401
 
 from ._version import get_versions  # noqa: E402
-
-with suppress(ImportError):
-    # pip install ibis-framework[csv]
-    import ibis.file.csv as csv  # noqa: F401
-
-with suppress(ImportError):
-    # pip install ibis-framework[parquet]
-    import ibis.file.parquet as parquet  # noqa: F401
-
-with suppress(ImportError):
-    # pip install  ibis-framework[hdf5]
-    import ibis.file.hdf5 as hdf5  # noqa: F401
-
-with suppress(ImportError):
-    # pip install ibis-framework[impala]
-    import ibis.impala.api as impala  # noqa: F401
-
-with suppress(ImportError):
-    # pip install ibis-framework[sqlite]
-    import ibis.sql.sqlite.api as sqlite  # noqa: F401
-
-with suppress(ImportError):
-    # pip install ibis-framework[postgres]
-    import ibis.sql.postgres.api as postgres  # noqa: F401
-
-with suppress(ImportError):
-    # pip install ibis-framework[mysql]
-    import ibis.sql.mysql.api as mysql  # noqa: F401
-
-with suppress(ImportError):
-    # pip install ibis-framework[clickhouse]
-    import ibis.clickhouse.api as clickhouse  # noqa: F401
-
-with suppress(ImportError):
-    # pip install ibis-framework[bigquery]
-    import ibis.bigquery.api as bigquery  # noqa: F401
-
-with suppress(ImportError):
-    # pip install ibis-framework[omniscidb]
-    import ibis.omniscidb.api as omniscidb  # noqa: F401
-
-with suppress(ImportError):
-    # pip install ibis-framework[spark]
-    import ibis.spark.api as spark  # noqa: F401
-
-with suppress(ImportError):
-    import ibis.pyspark.api as pyspark  # noqa: F401
 
 
 def hdfs_connect(
@@ -142,3 +95,24 @@ def hdfs_connect(
 
 __version__ = get_versions()['version']
 del get_versions
+
+
+def __getattr__(name):
+    """
+    Loading backends as `ibis` module attributes.
+
+    When `ibis.sqlite` is called, this function is executed with `name=sqlite`.
+    Ibis backends are expected to be defined as `entry_points` in the
+    `setup.py` file of the Ibis project, or of third-party backends.
+
+    If a backend is not found in the entry point registry, and `ImportError` is
+    raised.
+    """
+    try:
+        entry_point = next(pkg_resources.iter_entry_points('ibis.backends',
+                                                           name))
+    except StopIteration:
+        raise ImportError(f'"{name}" was assumed to be a backend, but it was '
+                          'not found. You may have to install it with `pip '
+                          f'install ibis-{name}`.')
+    return entry_point.resolve()
