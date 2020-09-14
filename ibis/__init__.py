@@ -109,10 +109,13 @@ def __getattr__(name):
     raised.
     """
     try:
-        entry_point = next(pkg_resources.iter_entry_points('ibis.backends',
-                                                           name))
+        entry_point = next(
+            pkg_resources.iter_entry_points('ibis.backends', name)
+        )
     except StopIteration:
-        raise ImportError(f'"{name}" was assumed to be a backend, but it was '
-                          'not found. You may have to install it with `pip '
-                          f'install ibis-{name}`.')
+        raise ImportError(
+            f'"{name}" was assumed to be a backend, but it was '
+            'not found. You may have to install it with `pip '
+            f'install ibis-{name}`.'
+        )
     return entry_point.resolve()

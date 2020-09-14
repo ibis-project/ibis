@@ -125,5 +125,5 @@ setup(
             'spark = ibis.spark.api',
             'pyspark = ibis.pyspark.api',
         ]
-    }
+    },
 )
