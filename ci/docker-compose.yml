@@ -100,7 +100,7 @@ services:
     image: jwilder/dockerize
 
   ibis:
-    image: ibis:${PYTHON_VERSION:-3.6}
+    image: ibis:${PYTHON_VERSION:-3.7}
     env_file:
       - ./.env
     volumes:
@@ -110,10 +110,10 @@ services:
       context: ..
       dockerfile: ci/Dockerfile.dev
       args:
-        PYTHON_VERSION: ${PYTHON_VERSION:-3.6}
+        PYTHON_VERSION: ${PYTHON_VERSION:-3.7}
 
   ibis-docs:
-    image: ibis-docs:${PYTHON_VERSION:-3.6}
+    image: ibis-docs:${PYTHON_VERSION:-3.7}
     env_file:
       - ./.env
     volumes:
@@ -123,4 +123,4 @@ services:
       context: ..
       dockerfile: ci/Dockerfile.docs
       args:
-        PYTHON_VERSION: ${PYTHON_VERSION:-3.6}
+        PYTHON_VERSION: ${PYTHON_VERSION:-3.7}

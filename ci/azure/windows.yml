@@ -15,13 +15,6 @@ jobs:
 
   strategy:
     matrix:
-      py36:
-        python.major.version: "3"
-        python.minor.version: "6"
-        python.version: "$(python.major.version).$(python.minor.version)"
-        python.no.dot.version: "$(python.major.version)$(python.minor.version)"
-        conda.env: "ibis$(python.no.dot.version)"
-        arrow.build: "py36hbe5aa27_2"
       py37:
         python.major.version: "3"
         python.minor.version: "7"

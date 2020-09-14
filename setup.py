@@ -79,7 +79,7 @@ setup(
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     install_requires=install_requires,
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     extras_require={
         'all': all_requires,
         'develop': develop_requires,
