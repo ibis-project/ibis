@@ -409,9 +409,11 @@ def test_unbounded_window_grouped(
         param(
             # Disabled on MySQL and PySpark because they require a defined
             # ordering for analytic ops like lag and lead.
+            # Disabled on Spark because its behavior is inconsistent with other
+            # backends (see #2381).
             False,
             id='unordered',
-            marks=pytest.mark.skip_backends([MySQL, PySpark]),
+            marks=pytest.mark.skip_backends([MySQL, PySpark, Spark]),
         ),
     ],
 )
