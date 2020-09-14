@@ -421,6 +421,10 @@ def test_unbounded_window_grouped(
 def test_unbounded_window_ungrouped(
     backend, alltypes, df, con, result_fn, expected_fn, ordered
 ):
+    assert (
+        not df.empty
+    )  # Only for verifying this fails Impala CI. Remove before merging PR!
+
     if not backend.supports_window_operations:
         pytest.skip(
             'Backend {} does not support window operations'.format(backend)
