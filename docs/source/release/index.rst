@@ -12,7 +12,7 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
-* :feature:`xxxx` Backends are defined as entry points
+* :feature:`2379` Backends are defined as entry points
 * :support:`2288` Drop support to Python 3.6
 * :bug:`2367` Fix the covariance operator in the BigQuery backend.
 * :feature:`2366` Add PySpark support for ReductionVectorizedUDF
