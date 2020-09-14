@@ -99,7 +99,7 @@ del get_versions
 
 def __getattr__(name):
     """
-    Loading backends as `ibis` module attributes.
+    Load backends as `ibis` module attributes.
 
     When `ibis.sqlite` is called, this function is executed with `name=sqlite`.
     Ibis backends are expected to be defined as `entry_points` in the

@@ -9,6 +9,9 @@ from ibis.omniscidb.client import OmniSciDBClient  # noqa: F401
 from ibis.omniscidb.compiler import compiles, dialect, rewrites  # noqa: F401
 
 
+__all__ = 'compile', 'verify', 'connect'
+
+
 def compile(expr: ibis.Expr, params=None):
     """Compile a given expression.
 
