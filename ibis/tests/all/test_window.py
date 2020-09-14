@@ -399,10 +399,16 @@ def test_unbounded_window_grouped(
 @pytest.mark.parametrize(
     ('ordered'),
     [
-        param(True, id='orderered'),
+        param(
+            # Temporarily disabled on Spark and Imapala because their behavior
+            # is currently inconsistent with the other backends (see #2378).
+            True,
+            id='orderered',
+            marks=pytest.mark.skip_backends([Spark, Impala]),
+        ),
         param(
             # Disabled on MySQL and PySpark because they require a defined
-            # ordering for analytic ops like lag and lead
+            # ordering for analytic ops like lag and lead.
             False,
             id='unordered',
             marks=pytest.mark.skip_backends([MySQL, PySpark]),
