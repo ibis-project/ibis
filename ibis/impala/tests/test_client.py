@@ -4,6 +4,7 @@ import time
 import pandas as pd
 import pytest
 import pytz
+from thrift.transport.TTransport import TTransportException
 
 import ibis
 import ibis.common.exceptions as com
@@ -27,7 +28,7 @@ def db(con, test_data_db):
 
 def test_kerberos_deps_installed(env, test_data_db):
     # See: https://github.com/ibis-project/ibis/issues/2342
-    with pytest.raises(AttributeError):
+    with pytest.raises((AttributeError, TTransportException)):
         ibis.impala.connect(
             host=env.impala_host,
             database=test_data_db,
