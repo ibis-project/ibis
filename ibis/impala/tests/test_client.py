@@ -27,6 +27,10 @@ def db(con, test_data_db):
 
 
 def test_kerberos_deps_installed(env, test_data_db):
+    # This test raises an AttributeError or TTransportException
+    # if the required dependencies are installed. Both are generic
+    # errors and occur, because there is no kerberos server in
+    # the CI pipeline, but they imply our imports have succeeded.
     # See: https://github.com/ibis-project/ibis/issues/2342
     with pytest.raises((AttributeError, TTransportException)):
         ibis.impala.connect(
