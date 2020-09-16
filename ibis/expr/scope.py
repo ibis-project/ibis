@@ -49,7 +49,7 @@ class Scope:
         self._items = items or {}
 
     def __contains__(self, op):
-        return True if op in self._items.keys() else False
+        return op in self._items.keys()
 
     def get_value(
         self, op: Node, timecontext: Optional[TimeContext] = None
