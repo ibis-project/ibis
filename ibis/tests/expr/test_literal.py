@@ -1,4 +1,6 @@
 import ibis
+from ibis.expr import datatypes
+from ibis.expr.operations import Literal
 
 
 def test_literal_equality_basic():
@@ -13,6 +15,14 @@ def test_literal_equality_int_float():
     # Note: This is different from the Python behavior for int/float comparison
     a = ibis.literal(1).op()
     b = ibis.literal(1.0).op()
+
+    assert a != b
+
+
+def test_literal_equality_int16_int32():
+    # Note: This is different from the Python behavior for int/float comparison
+    a = Literal(1, datatypes.int16)
+    b = Literal(1, datatypes.int32)
 
     assert a != b
 

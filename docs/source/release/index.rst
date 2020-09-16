@@ -12,6 +12,7 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :bug:`2387` Fix equality behavior for Literal ops
 * :bug:`2376` Fix analytic ops over ungrouped and unordered windows on Pandas backend
 * :support:`2288` Drop support to Python 3.6
 * :bug:`2367` Fix the covariance operator in the BigQuery backend.
