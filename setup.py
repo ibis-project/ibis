@@ -112,6 +112,7 @@ setup(
     maintainer_email="phillip.cloud@twosigma.com",
     entry_points={
         'ibis.backends': [
+            'pandas = ibis.pandas.api'
             'csv = ibis.file.csv',
             'parquet = ibis.file.parquet',
             'hdf5 = ibis.file.hdf5',

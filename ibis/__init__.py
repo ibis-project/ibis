@@ -1,13 +1,10 @@
 """Initialize Ibis module."""
-import importlib
 import pkg_resources
 
 import ibis.config_init  # noqa: F401
 import ibis.expr.api as api  # noqa: F401
 import ibis.expr.types as ir  # noqa: F401
 
-# pandas backend is mandatory
-import ibis.pandas.api as pandas  # noqa: F401
 import ibis.util as util  # noqa: F401
 from ibis.common.exceptions import IbisError
 from ibis.config import options  # noqa: F401
@@ -119,9 +116,4 @@ def __getattr__(name):
             'not found. You may have to install it with `pip '
             f'install ibis-{name}`.'
         )
-    module = importlib.import_module(entry_point.module_name)
-    if not hasattr(module, 'connect'):
-        raise RuntimeError(f'"{entry_point.module_name}" module does not seem '
-                           'to be an Ibis backend.'
-                           f' {module} - {module.__file__} - {dir(module)}')
-    return module
+    return entry_point.resolve()
