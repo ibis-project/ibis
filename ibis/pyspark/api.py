@@ -2,9 +2,6 @@ from ibis.pyspark.client import PySparkClient
 from ibis.pyspark.compiler import dialect  # noqa: F401
 
 
-__all__ = ('connect',)
-
-
 def connect(session):
     """
     Create a `SparkClient` for use with Ibis.
