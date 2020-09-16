@@ -573,7 +573,9 @@ def compiles_covar(translator, expr):
         left = where.ifelse(left, ibis.NA)
         right = where.ifelse(right, ibis.NA)
 
-    return "COVAR_{}({}, {})".format(how, left, right)
+    return "COVAR_{}({}, {})".format(
+        how, translator.translate(left), translator.translate(right)
+    )
 
 
 @rewrites(ops.Any)

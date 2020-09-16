@@ -13,6 +13,10 @@ Release Notes
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
 * :bug:`2229` Fix same column with multiple aliases not showing properly in repr
+* :bug:`2376` Fix analytic ops over ungrouped and unordered windows on Pandas backend
+* :support:`2288` Drop support to Python 3.6
+* :bug:`2367` Fix the covariance operator in the BigQuery backend.
+* :feature:`2366` Add PySpark support for ReductionVectorizedUDF
 * :feature:`2306` Add time context in `scope` in execution for pandas backend
 * :support:`2351` Simplifying tests directories structure
 * :feature:`2081` Add ``start_point`` and ``end_point`` to PostGIS backend.
