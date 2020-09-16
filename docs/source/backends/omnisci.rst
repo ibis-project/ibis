@@ -40,7 +40,7 @@ Docker image. Some features may not work on earlier releases.
 
 API
 ===
-.. currentmodule:: ibis.omniscidb.api
+.. currentmodule:: ibis.backends.omniscidb.api
 
 The OmniSciDB client is accessible through the ``ibis.omniscidb`` namespace.
 
