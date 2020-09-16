@@ -24,12 +24,12 @@ To contribute to ibis you need to clone the repository from GitHub:
         conda env create
 
 
-3. Activate the environment
+4. Activate the environment
 
         :::sh
         conda activate ibis-dev
 
-4. Install your local copy of Ibis into the Conda environment. In the root of the project run:
+5. Install your local copy of Ibis into the Conda environment. In the root of the project run:
 
         :::sh
         pip install -e .
