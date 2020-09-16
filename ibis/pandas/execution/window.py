@@ -3,7 +3,7 @@
 import functools
 import operator
 import re
-from typing import NoReturn, Optional
+from typing import Any, List, NoReturn, Optional
 
 import pandas as pd
 import toolz
@@ -30,20 +30,36 @@ from ibis.pandas.dispatch import execute_node, pre_execute
 from ibis.pandas.execution import util
 
 
-def _post_process_empty(scalar, parent, order_by, group_by):
+def _post_process_empty(
+    result: Any, parent: pd.DataFrame, order_by: List[str], group_by: List[str]
+) -> pd.Series:
     assert not order_by and not group_by
-    index = parent.index
-    result = pd.Series([scalar]).repeat(len(index))
-    result.index = index
-    return result
+    if isinstance(result, pd.Series):
+        # `result` is a Series when an analytic operation is being
+        # applied over the window, since analytic operations are N->N
+        return result
+    else:
+        # `result` is a scalar when a reduction operation is being
+        # applied over the window, since reduction operations are N->1
+        index = parent.index
+        result = pd.Series([result]).repeat(len(index))
+        result.index = index
+        return result
 
 
-def _post_process_group_by(series, parent, order_by, group_by):
+def _post_process_group_by(
+    series: pd.Series,
+    parent: pd.DataFrame,
+    order_by: List[str],
+    group_by: List[str],
+) -> pd.Series:
     assert not order_by and group_by
     return series
 
 
-def _post_process_order_by(series, parent, order_by, group_by):
+def _post_process_order_by(
+    series, parent: pd.DataFrame, order_by: List[str], group_by: List[str]
+) -> pd.Series:
     assert order_by and not group_by
     indexed_parent = parent.set_index(order_by)
     index = indexed_parent.index
@@ -54,7 +70,12 @@ def _post_process_order_by(series, parent, order_by, group_by):
     return series
 
 
-def _post_process_group_by_order_by(series, parent, order_by, group_by):
+def _post_process_group_by_order_by(
+    series: pd.Series,
+    parent: pd.DataFrame,
+    order_by: List[str],
+    group_by: List[str],
+) -> pd.Series:
     indexed_parent = parent.set_index(group_by + order_by, append=True)
     index = indexed_parent.index
 
@@ -271,7 +292,7 @@ def execute_window_op(
 
     order_by = window._order_by
     if not order_by:
-        ordering_keys = ()
+        ordering_keys = []
 
     if group_by:
         if order_by:
