@@ -119,4 +119,9 @@ def __getattr__(name):
             'not found. You may have to install it with `pip '
             f'install ibis-{name}`.'
         )
-    return importlib.import_module(entry_point.module_name)
+    module = importlib.import_module(entry_point.module_name)
+    if not hasattr(module, 'connect'):
+        raise RuntimeError(f'"{entry_point.module_name}" module does not seem '
+                           'to be an Ibis backend.'
+                           f' {module} - {module.__file__} - {dir(module)}')
+    return module
