@@ -1,5 +1,6 @@
 import pandas as pd
 import pandas.util.testing as tm
+import pyspark
 import pytest
 
 import ibis
@@ -8,7 +9,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.tests.backends import Spark
 
-pytestmark = pytest.mark.spark
+pytestmark = [pytest.mark.spark, pytest.mark.udf]
 
 py4j = pytest.importorskip('py4j')
 ps = pytest.importorskip('pyspark')
@@ -291,8 +292,9 @@ def test_compose_udfs(t_random, df_random, times_two_fn, add_one_fn):
     tm.assert_series_equal(expected, result)
 
 
-# Spark doesn't support pandas_udf with bounded windows. See Spark-24561
-@pytest.mark.xfail(raises=ps.sql.utils.AnalysisException)
+@pytest.mark.skipif(
+    pyspark.__version__ < '3.0.0', reason='Requires PySpark 3.0.0 or higher'
+)
 def test_udaf_window(con, t_random, df_random):
     @udf.reduction(['double'], 'double')
     def my_mean(series):
@@ -303,11 +305,15 @@ def test_udaf_window(con, t_random, df_random):
         ['key', 'a']
     )
     result = expr.execute()
-    expected = df_random.sort_values(['key', 'a']).assign(
-        rolled=lambda df: df.groupby('key')
-        .b.rolling(3, min_periods=1)
-        .mean()
-        .reset_index(level=0, drop=True)
+    expected = (
+        df_random.sort_values(['key', 'a'])
+        .assign(
+            rolled=lambda df: df.groupby('key')
+            .b.rolling(3, min_periods=1)
+            .mean()
+            .reset_index(level=0, drop=True)
+        )
+        .reset_index(drop=True)
     )
     tm.assert_frame_equal(result, expected)
 
@@ -345,8 +351,11 @@ def test_udaf_window_null(con, t_null, df_null):
     tm.assert_frame_equal(result, expected)
 
 
-# Spark doesn't support pandas_udf GROUPED_AGG in spark.sql(). See SPARK-28422
-@pytest.mark.xfail(raises=py4j.protocol.Py4JJavaError)
+# For more info on xfail, see #2349
+@pytest.mark.skipif(
+    pyspark.__version__ < '3.0.0', reason='Requires PySpark 3.0.0 or higher'
+)
+@pytest.mark.xfail(reason='Usage of reduction UDF does not work properly')
 def test_array_return_type_reduction(con, t, df, qs):
     expr = quantiles(t.b, qs)
     result = expr.execute()

@@ -697,6 +697,18 @@ class ExtractSubqueries:
         self.visit(op.right)
         self.observe(expr)
 
+    def visit_Intersection(self, expr):
+        op = expr.op()
+        self.visit(op.left)
+        self.visit(op.right)
+        self.observe(expr)
+
+    def visit_Difference(self, expr):
+        op = expr.op()
+        self.visit(op.left)
+        self.visit(op.right)
+        self.observe(expr)
+
     def visit_MaterializedJoin(self, expr):
         self.visit(expr.op().join)
         self.observe(expr)
@@ -933,11 +945,10 @@ def _adapt_expr(expr):
         )
 
 
-class Union(DML):
-    def __init__(self, tables, expr, context, distincts):
+class SetOp(DML):
+    def __init__(self, tables, expr, context):
         self.context = context
         self.tables = tables
-        self.distincts = distincts
         self.table_set = expr
         self.filters = []
 
@@ -964,9 +975,8 @@ class Union(DML):
             return 'SELECT *\nFROM {}'.format(ref)
         return self.context.get_compiled_expr(expr)
 
-    @staticmethod
-    def keyword(distinct):
-        return 'UNION' if distinct else 'UNION ALL'
+    def _get_keyword_list(self):
+        raise NotImplementedError("Need objects to interleave")
 
     def compile(self):
         self._extract_subqueries()
@@ -978,20 +988,41 @@ class Union(DML):
         if extracted:
             buf.append('WITH {}'.format(extracted))
 
-        # interleave correct keyword for the backend in between the formatted
-        # UNION expressions
         buf.extend(
             toolz.interleave(
                 (
                     map(self.format_relation, self.tables),
-                    map(self.keyword, self.distincts),
+                    self._get_keyword_list(),
                 )
             )
         )
         return '\n'.join(buf)
 
 
-def flatten_union(table):
+class Union(SetOp):
+    def __init__(self, tables, expr, context, distincts):
+        super().__init__(tables, expr, context)
+        self.distincts = distincts
+
+    @staticmethod
+    def keyword(distinct):
+        return 'UNION' if distinct else 'UNION ALL'
+
+    def _get_keyword_list(self):
+        return map(self.keyword, self.distincts)
+
+
+class Intersection(SetOp):
+    def _get_keyword_list(self):
+        return ["INTERSECT" for _ in range(len(self.tables) - 1)]
+
+
+class Difference(SetOp):
+    def _get_keyword_list(self):
+        return ["EXCEPT"] * (len(self.tables) - 1)
+
+
+def flatten_union(table: ir.TableExpr):
     """Extract all union queries from `table`.
 
     Parameters
@@ -1010,10 +1041,46 @@ def flatten_union(table):
     return [table]
 
 
+def flatten_intersection(table: ir.TableExpr):
+    """Extract all intersection queries from `table`.
+
+    Parameters
+    ----------
+    table : TableExpr
+
+    Returns
+    -------
+    Iterable[Union[TableExpr]]
+    """
+    op = table.op()
+    if isinstance(op, ops.Intersection):
+        return toolz.concatv(flatten_union(op.left), flatten_union(op.right))
+    return [table]
+
+
+def flatten_difference(table: ir.TableExpr):
+    """Extract all intersection queries from `table`.
+
+    Parameters
+    ----------
+    table : TableExpr
+
+    Returns
+    -------
+    Iterable[Union[TableExpr]]
+    """
+    op = table.op()
+    if isinstance(op, ops.Difference):
+        return toolz.concatv(flatten_union(op.left), flatten_union(op.right))
+    return [table]
+
+
 class QueryBuilder:
 
     select_builder = SelectBuilder
     union_class = Union
+    intersect_class = Intersection
+    difference_class = Difference
 
     def __init__(self, expr, context):
         self.expr = expr
@@ -1036,6 +1103,10 @@ class QueryBuilder:
         # to building the result set-generating statements.
         if isinstance(op, ops.Union):
             query = self._make_union()
+        elif isinstance(op, ops.Intersection):
+            query = self._make_intersect()
+        elif isinstance(op, ops.Difference):
+            query = self._make_difference()
         else:
             query = self._make_select()
 
@@ -1064,6 +1135,20 @@ class QueryBuilder:
         table_exprs, distincts = union_info[::2], union_info[1::2]
         return self.union_class(
             table_exprs, self.expr, distincts=distincts, context=self.context
+        )
+
+    def _make_intersect(self):
+        # flatten intersections so that we can codegen them all at once
+        table_exprs = list(flatten_intersection(self.expr))
+        return self.intersect_class(
+            table_exprs, self.expr, context=self.context
+        )
+
+    def _make_difference(self):
+        # flatten differences so that we can codegen them all at once
+        table_exprs = list(flatten_difference(self.expr))
+        return self.difference_class(
+            table_exprs, self.expr, context=self.context
         )
 
     def _make_select(self):

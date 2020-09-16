@@ -1085,6 +1085,7 @@ _general_ops = {
     ops.IsNan: unary('isNan'),
     ops.NullIfZero: _nullifzero,
     ops.ZeroIfNull: _zeroifnull,
+    ops.RowID: lambda *args: 'rowid',
 }
 
 # WINDOW
@@ -1147,6 +1148,7 @@ _unsupported_ops = [
     ops.Log,
     ops.Round,
     # date/time/timestamp
+    ops.ExtractWeekOfYear,
     ops.TimestampFromUNIX,
     ops.TimeTruncate,
     # table

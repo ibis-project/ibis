@@ -16,7 +16,7 @@ from ibis.tests.backends import (
     Impala,
     Pandas,
     Parquet,
-    PostgreSQL,
+    Postgres,
     PySpark,
     Spark,
     SQLite,
@@ -44,6 +44,7 @@ def test_date_extract(backend, alltypes, df, attr):
         'day_of_year',
         'quarter',
         'epoch_seconds',
+        'week_of_year',
         'hour',
         'minute',
         'second',
@@ -66,10 +67,13 @@ def test_timestamp_extract(backend, alltypes, df, attr):
         )
 
     expr = getattr(alltypes.timestamp_col, attr)()
-
     result = expr.execute()
-    if attr == 'epoch_seconds' and backend.name in ['postgres', 'spark']:
-        # note: postgres and spark cast to bigint are not changing the result
+    if attr == 'epoch_seconds' and backend.name in [
+        'bigquery',
+        'postgres',
+        'spark',
+    ]:
+        # note: these backends cast to bigint are not changing the result
         result = result.astype('int64')
     expected = backend.default_series_rename(expected)
 
@@ -143,7 +147,7 @@ def test_date_truncate(backend, alltypes, df, unit):
             'ms',
             pd.Timedelta,
             marks=pytest.mark.xpass_backends(
-                (Csv, Pandas, Parquet, BigQuery, Impala, PostgreSQL)
+                (Csv, Pandas, Parquet, BigQuery, Impala, Postgres)
             ),
         ),
         param(

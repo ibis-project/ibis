@@ -7,6 +7,7 @@ from typing import Optional, Tuple
 import google.cloud.bigquery as bq
 import pandas as pd
 import regex as re
+from google.api_core.client_info import ClientInfo
 from google.api_core.exceptions import NotFound
 from multipledispatch import Dispatcher
 from pkg_resources import parse_version
@@ -45,6 +46,19 @@ _LEGACY_TO_STANDARD = {
     'FLOAT': 'FLOAT64',
     'BOOLEAN': 'BOOL',
 }
+
+
+_USER_AGENT_DEFAULT_TEMPLATE = 'ibis/{}'
+
+
+def _create_client_info(application_name):
+    user_agent = []
+
+    if application_name:
+        user_agent.append(application_name)
+
+    user_agent.append(_USER_AGENT_DEFAULT_TEMPLATE.format(ibis.__version__))
+    return ClientInfo(user_agent=" ".join(user_agent))
 
 
 @dt.dtype.register(bq.schema.SchemaField)
@@ -364,7 +378,13 @@ class BigQueryClient(SQLClient):
     table_class = BigQueryTable
     dialect = comp.BigQueryDialect
 
-    def __init__(self, project_id, dataset_id=None, credentials=None):
+    def __init__(
+        self,
+        project_id,
+        dataset_id=None,
+        credentials=None,
+        application_name=None,
+    ):
         """Construct a BigQueryClient.
 
         Parameters
@@ -374,6 +394,8 @@ class BigQueryClient(SQLClient):
         dataset_id : Optional[str]
             A ``<project_id>.<dataset_id>`` string or just a dataset name
         credentials : google.auth.credentials.Credentials
+        application_name : str
+            A string identifying your application to Google API endpoints.
 
         """
         (
@@ -382,7 +404,9 @@ class BigQueryClient(SQLClient):
             self.dataset,
         ) = parse_project_and_dataset(project_id, dataset_id)
         self.client = bq.Client(
-            project=self.data_project, credentials=credentials
+            project=self.data_project,
+            credentials=credentials,
+            client_info=_create_client_info(application_name),
         )
 
     def _parse_project_and_dataset(self, dataset):
@@ -414,11 +438,8 @@ class BigQueryClient(SQLClient):
         result = comp.build_ast(expr, context)
         return result
 
-    def _execute_query(self, dml):
-        query = self.query_class(
-            self, dml, query_parameters=dml.context.params
-        )
-        return query.execute()
+    def _get_query(self, dml, **kwargs):
+        return self.query_class(self, dml, query_parameters=dml.context.params)
 
     def _fully_qualified_name(self, name, database):
         project, dataset = self._parse_project_and_dataset(database)

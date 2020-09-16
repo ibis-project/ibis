@@ -1,8 +1,10 @@
+import pandas as pd
 import pytest
 from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 from ibis.tests.backends import (
     Csv,
     Impala,
@@ -10,11 +12,22 @@ from ibis.tests.backends import (
     OmniSciDB,
     Pandas,
     Parquet,
-    PostgreSQL,
+    Postgres,
     PySpark,
     Spark,
     SQLite,
 )
+from ibis.udf.vectorized import analytic, reduction
+
+
+@reduction(input_type=[dt.double], output_type=dt.double)
+def mean_udf(s):
+    return s.mean()
+
+
+@analytic(input_type=[dt.double], output_type=dt.double)
+def calc_zscore(s):
+    return (s - s.mean()) / s.std()
 
 
 @pytest.mark.parametrize(
@@ -112,7 +125,7 @@ from ibis.tests.backends import (
             id='cumany',
         ),
         param(
-            # notany() over window not supported in Impala, PostgreSQL,
+            # notany() over window not supported in Impala, Postgres,
             # Spark, MySQL and SQLite backends
             lambda t, win: (t.double_col == 0).notany().over(win),
             lambda t: (
@@ -123,7 +136,7 @@ from ibis.tests.backends import (
             ),
             id='cumnotany',
             marks=pytest.mark.xfail_backends(
-                (Impala, PostgreSQL, Spark, MySQL, SQLite)
+                (Impala, Postgres, Spark, MySQL, SQLite)
             ),
         ),
         param(
@@ -137,7 +150,7 @@ from ibis.tests.backends import (
             id='cumall',
         ),
         param(
-            # notall() over window not supported in Impala, PostgreSQL,
+            # notall() over window not supported in Impala, Postgres,
             # Spark, MySQL and SQLite backends
             lambda t, win: (t.double_col == 0).notall().over(win),
             lambda t: (
@@ -148,7 +161,7 @@ from ibis.tests.backends import (
             ),
             id='cumnotall',
             marks=pytest.mark.xfail_backends(
-                (Impala, PostgreSQL, Spark, MySQL, SQLite)
+                (Impala, Postgres, Spark, MySQL, SQLite)
             ),
         ),
         param(
@@ -294,6 +307,142 @@ def test_bounded_preceding_windows(backend, alltypes, df, con, window_fn):
         .set_index('id')
         .sort_index()
     )
+
+    left, right = result.val, expected.val
+
+    backend.assert_series_equal(left, right)
+
+
+@pytest.mark.parametrize(
+    ('result_fn', 'expected_fn'),
+    [
+        param(
+            lambda t, win: t.double_col.mean().over(win),
+            lambda gb: (gb.double_col.transform('mean')),
+            id='mean',
+        ),
+        param(
+            lambda t, win: mean_udf(t.double_col).over(win),
+            lambda gb: (gb.double_col.transform('mean')),
+            id='mean_udf',
+            marks=pytest.mark.udf,
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    ('ordered'), [param(True, id='orderered'), param(False, id='unordered')],
+)
+@pytest.mark.xfail_unsupported
+def test_unbounded_window_grouped(
+    backend, alltypes, df, con, result_fn, expected_fn, ordered
+):
+    if not backend.supports_window_operations:
+        pytest.skip(
+            'Backend {} does not support window operations'.format(backend)
+        )
+
+    # Define a window that is
+    # 1) Always grouped
+    # 2) Ordered if `ordered` is True
+    order_by = [alltypes.id] if ordered else None
+    window = ibis.window(group_by=[alltypes.string_col], order_by=order_by)
+    expr = alltypes.mutate(val=result_fn(alltypes, win=window,))
+    result = expr.execute()
+    result = result.set_index('id').sort_index()
+
+    # Apply `expected_fn` onto a DataFrame that is
+    # 1) Always grouped
+    # 2) Ordered if `ordered` is True
+    df = df.sort_values('id') if ordered else df
+    expected = df.assign(val=expected_fn(df.groupby('string_col')))
+    expected = expected.set_index('id').sort_index()
+
+    left, right = result.val, expected.val
+
+    backend.assert_series_equal(left, right)
+
+
+@pytest.mark.parametrize(
+    ('result_fn', 'expected_fn'),
+    [
+        # Reduction ops
+        param(
+            lambda t, win: t.double_col.mean().over(win),
+            lambda df: pd.Series([df.double_col.mean()] * len(df.double_col)),
+            id='mean',
+        ),
+        param(
+            lambda t, win: mean_udf(t.double_col).over(win),
+            lambda df: pd.Series([df.double_col.mean()] * len(df.double_col)),
+            id='mean_udf',
+            marks=pytest.mark.udf,
+        ),
+        # Analytic ops
+        param(
+            lambda t, win: t.float_col.lag().over(win),
+            lambda df: df.float_col.shift(1),
+            id='lag',
+        ),
+        param(
+            lambda t, win: t.float_col.lead().over(win),
+            lambda df: df.float_col.shift(-1),
+            id='lead',
+        ),
+        param(
+            lambda t, win: calc_zscore(t.double_col).over(win),
+            lambda df: df.double_col.transform(calc_zscore.func),
+            id='zscore_udf',
+            marks=pytest.mark.udf,
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    ('ordered'),
+    [
+        param(
+            # Temporarily disabled on Spark and Imapala because their behavior
+            # is currently inconsistent with the other backends (see #2378).
+            True,
+            id='orderered',
+            marks=pytest.mark.skip_backends([Spark, Impala]),
+        ),
+        param(
+            # Disabled on MySQL and PySpark because they require a defined
+            # ordering for analytic ops like lag and lead.
+            # Disabled on Spark because its behavior is inconsistent with other
+            # backends (see #2381).
+            False,
+            id='unordered',
+            marks=pytest.mark.skip_backends([MySQL, PySpark, Spark]),
+        ),
+    ],
+)
+# Some backends do not support non-grouped window specs
+@pytest.mark.xfail_backends([OmniSciDB])
+@pytest.mark.xfail_unsupported
+def test_unbounded_window_ungrouped(
+    backend, alltypes, df, con, result_fn, expected_fn, ordered
+):
+    if not backend.supports_window_operations:
+        pytest.skip(
+            'Backend {} does not support window operations'.format(backend)
+        )
+
+    # Define a window that is
+    # 1) Not grouped
+    # 2) Ordered if `ordered` is True
+    order_by = [alltypes.id] if ordered else None
+    window = ibis.window(order_by=order_by)
+    expr = alltypes.mutate(val=result_fn(alltypes, win=window,))
+    result = expr.execute()
+    result = result.set_index('id').sort_index()
+
+    # Apply `expected_fn` onto a DataFrame that is
+    # 1) Not grouped
+    # 2) Ordered if `ordered` is True
+    df = df.sort_values('id') if ordered else df
+    expected = df.assign(val=expected_fn(df))
+    expected = expected.set_index('id').sort_index()
 
     left, right = result.val, expected.val
 

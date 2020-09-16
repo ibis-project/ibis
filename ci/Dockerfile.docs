@@ -1,25 +1,16 @@
 ARG PYTHON_VERSION
-FROM ibis:$PYTHON_VERSION-main
-
-# fonts are for docs
-RUN apt-get -qq update --yes \
- && apt-get -qq install --yes ttf-dejavu iputils-ping \
- && rm -rf /var/lib/apt/lists/*
-
-ADD ci/requirements-docs.yml /
-
-RUN /opt/conda/bin/conda config --add channels conda-forge \
- && /opt/conda/bin/conda update --all --yes \
- && /opt/conda/bin/conda clean --all --yes
-
-RUN /opt/conda/bin/conda env update --file=/requirements-docs.yml \
- && /opt/conda/bin/conda clean --all --yes
-
-RUN echo 'source /opt/conda/bin/activate ibis-env && exec "$@"' > activate.sh
+FROM ibis:$PYTHON_VERSION
 
 COPY . /ibis
 WORKDIR /ibis
 
-RUN bash /activate.sh pip install -e . --no-deps --ignore-installed --no-cache-dir
+# fonts are for docs
+RUN apt-get -qq update --yes \
+ && apt-get -qq install --yes ttf-dejavu iputils-ping \
+ && rm -rf /var/lib/apt/lists/* \
+ && /opt/conda/bin/conda config --add channels conda-forge \
+ && /opt/conda/bin/conda update --all --yes \
+ && /opt/conda/bin/conda clean --all --yes \
+ && pip install -e . --no-deps --ignore-installed --no-cache-dir
 
-ENTRYPOINT ["bash", "/activate.sh"]
+SHELL ["conda", "run", "-n", "ibis-env", "/bin/bash", "-c"]

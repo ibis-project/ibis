@@ -1,4 +1,5 @@
 import operator
+import os
 
 import numpy as np
 import pandas as pd
@@ -121,10 +122,20 @@ def pytest_pyfunc_call(pyfuncitem):
 
 pytestmark = pytest.mark.backend
 
+pytest_backends = os.environ.get('PYTEST_BACKENDS', '').split(' ')
 params_backend = [
     pytest.param(backend, marks=getattr(pytest.mark, backend.__name__.lower()))
     for backend in ALL_BACKENDS
+    if backend.__name__.lower() in pytest_backends or not pytest_backends
 ]
+if len(pytest_backends) != len(params_backend):
+    unknown_backends = set(pytest_backends) - set(
+        b.__name__.lower() for b in ALL_BACKENDS
+    )
+    raise ValueError(
+        'PYTEST_BACKENDS environment variable contain unknown '
+        f'backends {unknown_backends}'
+    )
 
 
 @pytest.fixture(params=params_backend, scope='session')

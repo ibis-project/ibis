@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-export PYTHON_VERSION="3.6"
+export PYTHON_VERSION="3.7"
 
 docker-compose build ibis
 docker-compose build ibis-docs

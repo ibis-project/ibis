@@ -5,7 +5,7 @@ from numpy import testing
 from pytest import param
 
 import ibis
-from ibis.tests.backends import OmniSciDB, PostgreSQL
+from ibis.tests.backends import OmniSciDB, Postgres
 
 geopandas = pytest.importorskip('geopandas')
 shapely = pytest.importorskip('shapely')
@@ -32,7 +32,7 @@ polygon_0 = ibis.literal(
 ).name('p')
 
 # add here backends that support geo spatial types
-all_db_geo_supported = [OmniSciDB, PostgreSQL]
+all_db_geo_supported = [OmniSciDB, Postgres]
 
 # test input data with shapely geometries
 shp_point_0 = shapely.geometry.Point(0, 0)
@@ -257,7 +257,7 @@ def test_literal_multi_geospatial_inferred(backend, con, shp, expected):
             [96.34, 114.36, 10.24, 10.24, 10.24],
             id='perimeter',
             marks=pytest.mark.skip_backends(
-                [PostgreSQL], reason='TODO: fix different results issue'
+                [Postgres], reason='TODO: fix different results issue'
             ),
         ),
         param(
@@ -265,7 +265,7 @@ def test_literal_multi_geospatial_inferred(backend, con, shp, expected):
             [7, 11, 5, 5, 5],
             id='n_points',
             marks=pytest.mark.skip_backends(
-                [PostgreSQL], reason='TODO: fix different results issue'
+                [Postgres], reason='TODO: fix different results issue'
             ),
         ),
     ],
@@ -362,17 +362,17 @@ def test_geo_spatial_binops(backend, geo, expr_fn, expected):
     [
         param(
             lambda t: t['geo_linestring'].end_point(),
-            [False, False, True, True, True],
+            [True, True, True, True, True],
             id='end_point',
         ),
         param(
             lambda t: t['geo_linestring'].point_n(1),
-            [False, False, True, True, True],
+            [True, True, True, True, True],
             id='point_n',
         ),
         param(
             lambda t: t['geo_linestring'].start_point(),
-            [False, False, True, True, True],
+            [True, True, True, True, True],
             id='start_point',
         ),
     ],
@@ -382,7 +382,10 @@ def test_geo_spatial_binops(backend, geo, expr_fn, expected):
 def test_get_point(backend, geo, expr_fn, expected):
     """Testing for geo spatial get point operations."""
     arg = expr_fn(geo)
-    expr = geo['geo_polygon'].contains(arg)
+    # Note: there is a difference in how OmnisciDB and PostGIS consider
+    # boundaries with the contains predicate. Work around this by adding a
+    # small buffer.
+    expr = geo['geo_linestring'].buffer(0.01).contains(arg)
     result = geo[geo, expr.name('tmp')].execute()['tmp']
     testing.assert_almost_equal(result, expected, decimal=2)
 

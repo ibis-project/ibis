@@ -6,7 +6,7 @@ import pytest
 import ibis  # noqa: E402
 import ibis.expr.datatypes as dt  # noqa: E402
 import ibis.util as util  # noqa: E402
-from ibis.expr.tests.mocks import MockConnection  # noqa: E402
+from ibis.tests.expr.mocks import MockConnection  # noqa: E402
 from ibis.tests.util import assert_equal  # noqa: E402
 
 pytest.importorskip('hdfs')

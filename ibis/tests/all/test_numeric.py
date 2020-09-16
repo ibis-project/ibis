@@ -10,7 +10,7 @@ from pytest import param
 import ibis
 from ibis import literal as L
 from ibis.expr import datatypes as dt
-from ibis.tests.backends import MySQL, OmniSciDB, PostgreSQL
+from ibis.tests.backends import MySQL, OmniSciDB, Postgres
 from ibis.tests.util import assert_equal
 
 try:
@@ -376,7 +376,7 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
         )
     ],
 )
-@pytest.mark.only_on_backends([PostgreSQL, MySQL])
+@pytest.mark.only_on_backends([Postgres, MySQL])
 def test_sa_default_numeric_precision_and_scale(
     con, backend, dialects, default_precisions, default_scales
 ):
@@ -415,7 +415,7 @@ def test_sa_default_numeric_precision_and_scale(
     con.drop_table(table_name, force=True)
 
 
-@pytest.mark.only_on_backends([PostgreSQL, MySQL])
+@pytest.mark.only_on_backends([Postgres, MySQL])
 def test_random(con):
     expr = ibis.random()
     result = con.execute(expr)
