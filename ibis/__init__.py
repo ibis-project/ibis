@@ -1,4 +1,5 @@
 """Initialize Ibis module."""
+import importlib
 import pkg_resources
 
 import ibis.config_init  # noqa: F401
@@ -118,4 +119,4 @@ def __getattr__(name):
             'not found. You may have to install it with `pip '
             f'install ibis-{name}`.'
         )
-    return entry_point.resolve()
+    return importlib.import_module(entry_point.module_name)
