@@ -8,6 +8,7 @@ import ibis.expr.types as ir  # noqa: F401
 # pandas backend is mandatory
 import ibis.pandas.api as pandas  # noqa: F401
 import ibis.util as util  # noqa: F401
+from ibis.common.exceptions import IbisError  # noqa: F401
 from ibis.config import options  # noqa: F401
 from ibis.expr.api import *  # noqa: F401,F403
 from ibis.filesystems import HDFS, WebHDFS, hdfs_connect  # noqa: F401
