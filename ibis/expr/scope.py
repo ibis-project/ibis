@@ -48,14 +48,8 @@ class Scope:
     def __init__(self, items: Dict[str, ScopeItem] = None):
         self._items = items or {}
 
-    def items(self):
-        return iter(self._items)
-
-    def __getitem__(self, op: Node) -> ScopeItem:
-        return self._items[op]
-
-    def __setitem__(self, op: Node, value: Any) -> None:
-        self._items[op] = value
+    def __contains__(self, op):
+        return True if op in self._items.keys() else False
 
     def get_value(
         self, op: Node, timecontext: Optional[TimeContext] = None
@@ -77,12 +71,12 @@ class Scope:
         result: the cached result, an object whose types may differ in
         different backends.
         """
-        if op not in self._items.keys():
+        if op not in self:
             return None
 
         # for ops without timecontext
         if timecontext is None:
-            return self[op].value
+            return self._items[op].value
         else:
             # For op with timecontext, ther are some ops cannot use cached
             # result with a different (larger) timecontext to get the
@@ -95,13 +89,13 @@ class Scope:
             # These are time context sensitive operations. Since these cases
             # are rare in acutal use case, we just enable optimization for
             # all nodes for now.
-            cached_timecontext = self[op].timecontext
+            cached_timecontext = self._items[op].timecontext
             if cached_timecontext:
                 relation = compare_timecontext(timecontext, cached_timecontext)
                 if relation == TimeContextRelation.SUBSET:
-                    return self[op].value
+                    return self._items[op].value
             else:
-                return self[op].value
+                return self._items[op].value
         return None
 
     def merge_scope(self, other_scope: 'Scope', overwrite=False) -> 'Scope':
@@ -123,16 +117,16 @@ class Scope:
         result = Scope()
 
         for op in self._items.keys():
-            result[op] = self[op]
+            result._items[op] = self._items[op]
 
         for op in other_scope._items.keys():
             # if get_scope returns a not None value, then data is already
             # cached in scope and it is at least a greater range than
             # the current timecontext, so we drop the item. Otherwise
             # add it into scope.
-            v = other_scope[op]
+            v = other_scope._items[op]
             if overwrite or result.get_value(op, v.timecontext) is None:
-                result[op] = v
+                result._items[op] = v
         return result
 
     def merge_scopes(
@@ -154,7 +148,7 @@ class Scope:
         """
         result = Scope()
         for op in self._items.keys():
-            result[op] = self[op]
+            result._items[op] = self._items[op]
 
         for s in other_scopes:
             result = result.merge_scope(s, overwrite)
