@@ -2948,6 +2948,7 @@ class Literal(ValueOp):
             isinstance(other, Literal)
             and isinstance(other.value, type(self.value))
             and self.value == other.value
+            and self.dtype == other.dtype
         )
 
     def output_type(self):
