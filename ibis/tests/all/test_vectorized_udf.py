@@ -3,7 +3,7 @@ import pytest
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.tests.backends import Pandas, PySpark
-from ibis.udf.vectorized import elementwise, reduction
+from ibis.udf.vectorized import analytic, elementwise, reduction
 
 pytestmark = pytest.mark.udf
 
@@ -11,6 +11,11 @@ pytestmark = pytest.mark.udf
 @elementwise(input_type=[dt.double], output_type=dt.double)
 def add_one(s):
     return s + 1
+
+
+@analytic(input_type=[dt.double], output_type=dt.double)
+def calc_zscore(s):
+    return (s - s.mean()) / s.std()
 
 
 @reduction(input_type=[dt.double], output_type=dt.double)
@@ -21,13 +26,39 @@ def calc_mean(s):
 @pytest.mark.only_on_backends([Pandas, PySpark])
 @pytest.mark.xfail_unsupported
 def test_elementwise_udf(backend, alltypes, df):
-    @elementwise(input_type=[dt.double], output_type=dt.double)
-    def add_one(s):
-        return s + 1
-
     result = add_one(alltypes['double_col']).execute()
     expected = add_one.func(df['double_col'])
     backend.assert_series_equal(result, expected, check_names=False)
+
+
+@pytest.mark.only_on_backends([Pandas, PySpark])
+@pytest.mark.xfail_unsupported
+def test_elementwise_udf_mutate(backend, alltypes, df):
+    expr = alltypes.mutate(incremented=add_one(alltypes['double_col']))
+    result = expr.execute()
+
+    expected = df.assign(incremented=add_one.func(df['double_col']))
+
+    backend.assert_series_equal(result['incremented'], expected['incremented'])
+
+
+@pytest.mark.only_on_backends([Pandas, PySpark])
+@pytest.mark.xfail_unsupported
+def test_analytic_udf(backend, alltypes, df):
+    result = calc_zscore(alltypes['double_col']).execute()
+    expected = calc_zscore.func(df['double_col'])
+    backend.assert_series_equal(result, expected, check_names=False)
+
+
+@pytest.mark.only_on_backends([Pandas, PySpark])
+@pytest.mark.xfail_unsupported
+def test_analytic_udf_mutate(backend, alltypes, df):
+    expr = alltypes.mutate(zscore=calc_zscore(alltypes['double_col']))
+    result = expr.execute()
+
+    expected = df.assign(zscore=calc_zscore.func(df['double_col']))
+
+    backend.assert_series_equal(result['zscore'], expected['zscore'])
 
 
 @pytest.mark.only_on_backends([Pandas, PySpark])
