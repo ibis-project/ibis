@@ -77,7 +77,7 @@ class Scope:
         result: the cached result, an object whose types may differ in
         different backends.
         """
-        if op not in self.items():
+        if op not in self._items:
             return None
 
         # for ops without timecontext
@@ -122,10 +122,10 @@ class Scope:
         """
         result = Scope()
 
-        for op in self.items():
+        for op in self._items:
             result[op] = self[op]
 
-        for op in other_scope.items():
+        for op in other_scope._items:
             # if get_scope returns a not None value, then data is already
             # cached in scope and it is at least a greater range than
             # the current timecontext, so we drop the item. Otherwise
@@ -153,7 +153,7 @@ class Scope:
             a new Scope instance with items in two scope merged.
         """
         result = Scope()
-        for op in self.items():
+        for op in self._items:
             result[op] = self[op]
 
         for s in other_scopes:
