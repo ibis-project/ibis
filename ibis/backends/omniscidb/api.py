@@ -5,8 +5,8 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.config as cf
 from ibis.config import options
-from ibis.omniscidb.client import OmniSciDBClient  # noqa: F401
-from ibis.omniscidb.compiler import compiles, dialect, rewrites  # noqa: F401
+from .client import OmniSciDBClient  # noqa: F401
+from .compiler import compiles, dialect, rewrites  # noqa: F401
 
 
 def compile(expr: ibis.Expr, params=None):
@@ -23,7 +23,7 @@ def compile(expr: ibis.Expr, params=None):
     -------
     compiled : string
     """
-    from ibis.omniscidb.compiler import to_sql
+    from .compiler import to_sql
 
     return to_sql(expr, dialect.make_context(params=params))
 

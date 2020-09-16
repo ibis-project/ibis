@@ -53,7 +53,7 @@ with suppress(ImportError):
 
 with suppress(ImportError):
     # pip install ibis-framework[omniscidb]
-    import ibis.omniscidb.api as omniscidb  # noqa: F401
+    import ibis.backends.omniscidb.api as omniscidb  # noqa: F401
 
 with suppress(ImportError):
     # pip install ibis-framework[spark]
