@@ -5,8 +5,8 @@ from typing import Any, Dict, Optional, Union
 
 import ibis
 from ibis.common import exceptions as com
-from ibis.omniscidb import dtypes as omniscidb_dtypes
-from ibis.omniscidb.compiler import _type_to_sql_string, quote_identifier
+from . import dtypes as omniscidb_dtypes
+from .compiler import _type_to_sql_string, quote_identifier
 from ibis.sql.compiler import DDL, DML
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")

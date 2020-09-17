@@ -14,8 +14,8 @@ import ibis.expr.types as ir
 import ibis.util as util
 from ibis import literal as L
 from ibis.impala import compiler as impala_compiler
-from ibis.omniscidb import dtypes as omniscidb_dtypes
-from ibis.omniscidb.identifiers import quote_identifier
+from . import dtypes as omniscidb_dtypes
+from .identifiers import quote_identifier
 
 _sql_type_names = omniscidb_dtypes.ibis_dtypes_str_to_sql
 
@@ -35,7 +35,7 @@ def _type_to_sql_string(tval):
 
 
 def _cast(translator, expr):
-    from ibis.omniscidb.client import OmniSciDBDataType
+    from .client import OmniSciDBDataType
 
     op = expr.op()
     arg, target = op.args

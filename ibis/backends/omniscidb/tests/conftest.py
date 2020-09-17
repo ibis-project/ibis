@@ -142,7 +142,7 @@ def translate() -> typing.Callable:
     -------
     function
     """
-    from ibis.omniscidb.compiler import OmniSciDBDialect
+    from ..compiler import OmniSciDBDialect
 
     dialect = OmniSciDBDialect()
     context = dialect.make_context()
