@@ -727,6 +727,7 @@ def test_custom_window_udf(t, custom_window):
     'group_by,order_by',
     [
         (None, None),
+        # Enable this after #2395 is merged
         # (None, 'plain_datetimes_utc'),
         ('dup_ints', None),
         ('dup_ints', 'plain_datetimes_utc'),
