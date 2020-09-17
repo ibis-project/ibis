@@ -9,7 +9,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.expr.scope import make_scope
+from ibis.expr.scope import Scope, make_scope
 from ibis.pandas.client import PandasClient
 from ibis.pandas.core import is_computable_input
 from ibis.pandas.dispatch import execute_node, post_execute, pre_execute
@@ -182,3 +182,13 @@ def test_is_computable_input():
     del dt.infer.funcs[(MyObject,)]
     dt.infer.reorder()
     dt.infer._cache.clear()
+
+
+def test_scope_look_up():
+    # test if scope could lookup items properly
+    scope = Scope()
+    one_day = ibis.interval(days=1).op()
+    one_hour = ibis.interval(hours=1).op()
+    scope = scope.merge_scope(make_scope(one_day, 1))
+    assert scope.get_value(one_hour) is None
+    assert scope.get_value(one_day) is not None
