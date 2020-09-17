@@ -1,14 +1,6 @@
 # Contributing to Ibis
 
-
-## Clone the Repository
-
-To contribute to ibis you need to clone the repository from GitHub:
-
-```sh
-```
-
-## Set Up a Development Environment
+## Set up a development environment
 
 1. Create a fork of the Ibis repository, and clone it.
 
@@ -61,7 +53,7 @@ If you don't have a database for the backend you want to work on, you can check 
 continuos integration, where docker images are used for different backend. This is defined in
 `.github/workflows/main.yml`.
 
-## Run the Test Suite
+## Run the test suite
 
 To run Ibis tests use the next command:
 
@@ -73,7 +65,7 @@ You can change `sqlite pandas` by the backend or backends (space separated) that
 you want to test.
 
 
-## Style and Formatting
+## Style and formatting
 
 We use [flake8](http://flake8.pycqa.org/en/latest/),
 [black](https://github.com/psf/black) and
@@ -86,7 +78,7 @@ We use [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html) as
 our standard format for docstrings.
 
 
-## Commit Philosophy
+## Commit philosophy
 
 We aim to make our individual commits small and tightly focused on the feature
 they are implementing. If you find yourself making functional changes to
@@ -102,7 +94,7 @@ Rebasing your changes is usually as simple as running
 ``git push origin <branch-name> -f``.
 
 
-## Commit/PR Messages
+## Commit/PR messages
 
 Well-structed commit messages allow us to generate comprehensive release notes
 and make it very easy to understand what a commit/PR contributes to our
@@ -114,7 +106,7 @@ category has some more fine-grained aliases that you can use, such as ``BLD``
 (testing), and ``RLS`` (releases).
 
 
-## Maintainer's Guide
+## Maintainer's guide
 
 Maintainers generally perform two roles, merging PRs and making official
 releases.
