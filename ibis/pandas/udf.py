@@ -216,30 +216,47 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
     input_type = op.input_type
     nargs = len(input_type)
 
-    # An execution rule for a simple aggregate node
+    # An execution rule for ungrouped aggregations. Handles:
+    #   1) AggregationNode with no grouping
+    #   2) Some aggregation over a window with no grouping
     @execute_node.register(type(op), *(itertools.repeat(pd.Series, nargs)))
     def execute_udaf_node(op, *args, **kwargs):
-        return op.func(*args)
-
-    # An execution rule for a grouped aggregation node. This
-    # includes aggregates applied over a window.
-    @execute_node.register(type(op), *(itertools.repeat(SeriesGroupBy, nargs)))
-    def execute_udaf_node_groupby(op, *args, **kwargs):
-        # construct a generator that yields the next group of data
-        # for every argument excluding the first (pandas performs
-        # the iteration for the first argument) for each argument
-        # that is a SeriesGroupBy.
-        #
         aggcontext = kwargs.pop('aggcontext', None)
         assert aggcontext is not None, 'aggcontext is None'
 
         func = op.func
 
         if isinstance(aggcontext, Window):
-            # Call the func differently for Window because of
-            # the custom rolling logic.
+            # If aggcontext is a Window, then we must be aggregating over
+            # a bounded window, so we need aggcontext.agg to handle the
+            # rolling/expanding window logic.
+            return aggcontext.agg(args[0], func, *args, **kwargs)
+        else:
+            # If aggcontext is not a Window, then we must be aggregating over
+            # an unbounded (and ungrouped) "window"/aggcontext. No information
+            # from aggcontext is needed to do this. Call func directly.
+            return func(*args)
+
+    # An execution rule for grouped aggregations. Handles:
+    #   1) AggregationNode with grouping
+    #   2) Some aggregation over a window with grouping
+    @execute_node.register(type(op), *(itertools.repeat(SeriesGroupBy, nargs)))
+    def execute_udaf_node_groupby(op, *args, **kwargs):
+        aggcontext = kwargs.pop('aggcontext', None)
+        assert aggcontext is not None, 'aggcontext is None'
+
+        func = op.func
+
+        if isinstance(aggcontext, Window):
+            # If aggcontext is a Window, then we must be aggregating over
+            # a bounded window, so we need aggcontext.agg to handle the
+            # rolling/expanding window logic.
             result = aggcontext.agg(args[0], func, *args, **kwargs)
         else:
+            # Construct a generator that yields the next group of data
+            # for every argument excluding the first (pandas performs
+            # the iteration for the first argument) for each argument
+            # that is a SeriesGroupBy.
             iters = create_gens_from_args_groupby(args[1:])
 
             # TODO: Unify calling convension here to be more like

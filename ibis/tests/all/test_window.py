@@ -198,7 +198,9 @@ def calc_zscore(s):
     ],
 )
 @pytest.mark.xfail_unsupported
-def test_window(backend, alltypes, df, con, result_fn, expected_fn):
+def test_grouped_bounded_expanding_window(
+    backend, alltypes, df, con, result_fn, expected_fn
+):
     if not backend.supports_window_operations:
         pytest.skip(
             'Backend {} does not support window operations'.format(backend)
@@ -225,7 +227,7 @@ def test_window(backend, alltypes, df, con, result_fn, expected_fn):
 
 
 @pytest.mark.xfail_unsupported
-def test_bounded_following_window(backend, alltypes, df, con):
+def test_grouped_bounded_following_window(backend, alltypes, df, con):
     if not backend.supports_window_operations:
         pytest.skip(
             'Backend {} does not support window operations'.format(backend)
@@ -285,7 +287,9 @@ def test_bounded_following_window(backend, alltypes, df, con):
     ],
 )
 @pytest.mark.xfail_unsupported
-def test_bounded_preceding_windows(backend, alltypes, df, con, window_fn):
+def test_grouped_bounded_preceding_windows(
+    backend, alltypes, df, con, window_fn
+):
     if not backend.supports_window_operations:
         pytest.skip(
             'Backend {} does not support window operations'.format(backend)
@@ -318,6 +322,51 @@ def test_bounded_preceding_windows(backend, alltypes, df, con, window_fn):
     [
         param(
             lambda t, win: t.double_col.mean().over(win),
+            lambda df: (df.double_col.expanding().mean()),
+            id='mean',
+        ),
+        param(
+            # Disabled on PySpark and Spark backends becuase in Spark,
+            # Pandas UDFs are only supported on unbounded windows
+            lambda t, win: mean_udf(t.double_col).over(win),
+            lambda df: (df.double_col.expanding().mean()),
+            id='mean_udf',
+            marks=[
+                pytest.mark.udf,
+                pytest.mark.xfail_backends([PySpark, Spark]),
+            ],
+        ),
+    ],
+)
+@pytest.mark.xfail_unsupported
+def test_ungrouped_bounded_expanding_window(
+    backend, alltypes, df, con, result_fn, expected_fn
+):
+    if not backend.supports_window_operations:
+        pytest.skip(
+            'Backend {} does not support window operations'.format(backend)
+        )
+
+    expr = alltypes.mutate(
+        val=result_fn(
+            alltypes, win=ibis.window(following=0, order_by=[alltypes.id]),
+        )
+    )
+    result = expr.execute().set_index('id').sort_index()
+
+    column = expected_fn(df.sort_values('id'))
+    expected = df.assign(val=column).set_index('id').sort_index()
+
+    left, right = result.val, expected.val
+
+    backend.assert_series_equal(left, right)
+
+
+@pytest.mark.parametrize(
+    ('result_fn', 'expected_fn'),
+    [
+        param(
+            lambda t, win: t.double_col.mean().over(win),
             lambda gb: (gb.double_col.transform('mean')),
             id='mean',
         ),
@@ -333,7 +382,7 @@ def test_bounded_preceding_windows(backend, alltypes, df, con, window_fn):
     ('ordered'), [param(True, id='orderered'), param(False, id='unordered')],
 )
 @pytest.mark.xfail_unsupported
-def test_unbounded_window_grouped(
+def test_grouped_unbounded_window(
     backend, alltypes, df, con, result_fn, expected_fn, ordered
 ):
     if not backend.supports_window_operations:
@@ -342,8 +391,9 @@ def test_unbounded_window_grouped(
         )
 
     # Define a window that is
-    # 1) Always grouped
+    # 1) Grouped
     # 2) Ordered if `ordered` is True
+    # 3) Unbounded
     order_by = [alltypes.id] if ordered else None
     window = ibis.window(group_by=[alltypes.string_col], order_by=order_by)
     expr = alltypes.mutate(val=result_fn(alltypes, win=window,))
@@ -351,7 +401,7 @@ def test_unbounded_window_grouped(
     result = result.set_index('id').sort_index()
 
     # Apply `expected_fn` onto a DataFrame that is
-    # 1) Always grouped
+    # 1) Grouped
     # 2) Ordered if `ordered` is True
     df = df.sort_values('id') if ordered else df
     expected = df.assign(val=expected_fn(df.groupby('string_col')))
@@ -420,7 +470,7 @@ def test_unbounded_window_grouped(
 # Some backends do not support non-grouped window specs
 @pytest.mark.xfail_backends([OmniSciDB])
 @pytest.mark.xfail_unsupported
-def test_unbounded_window_ungrouped(
+def test_ungrouped_unbounded_window(
     backend, alltypes, df, con, result_fn, expected_fn, ordered
 ):
     if not backend.supports_window_operations:
@@ -429,8 +479,9 @@ def test_unbounded_window_ungrouped(
         )
 
     # Define a window that is
-    # 1) Not grouped
+    # 1) Unrouped
     # 2) Ordered if `ordered` is True
+    # 3) Unbounded
     order_by = [alltypes.id] if ordered else None
     window = ibis.window(order_by=order_by)
     expr = alltypes.mutate(val=result_fn(alltypes, win=window,))
@@ -438,7 +489,7 @@ def test_unbounded_window_ungrouped(
     result = result.set_index('id').sort_index()
 
     # Apply `expected_fn` onto a DataFrame that is
-    # 1) Not grouped
+    # 1) Ungrouped
     # 2) Ordered if `ordered` is True
     df = df.sort_values('id') if ordered else df
     expected = df.assign(val=expected_fn(df))
