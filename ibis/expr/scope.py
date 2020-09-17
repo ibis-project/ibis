@@ -122,7 +122,7 @@ class Scope:
         for op in self:
             result._items[op] = self._items[op]
 
-        for op in other_scope._items:
+        for op in other_scope:
             # if get_scope returns a not None value, then data is already
             # cached in scope and it is at least a greater range than
             # the current timecontext, so we drop the item. Otherwise
