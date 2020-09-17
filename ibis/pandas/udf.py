@@ -16,7 +16,7 @@ from pandas.core.groupby import SeriesGroupBy
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.udf.vectorized
-from ibis.pandas.aggcontext import Window
+from ibis.pandas.aggcontext import Summarize, Transform, Window
 from ibis.pandas.core import (
     date_types,
     time_types,
@@ -216,11 +216,10 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
     input_type = op.input_type
     nargs = len(input_type)
 
-    # An execution rule for ungrouped aggregations. Handles:
-    #   1) AggregationNode with no grouping
-    #   2) Some aggregation over a window with no grouping
+    # An execution rule to handle analytic and reduction UDFs over
+    # ungrouped windows
     @execute_node.register(type(op), *(itertools.repeat(pd.Series, nargs)))
-    def execute_udaf_node(op, *args, **kwargs):
+    def execute_udaf_node_no_groupby(op, *args, **kwargs):
         aggcontext = kwargs.pop('aggcontext', None)
         assert aggcontext is not None, 'aggcontext is None'
 
@@ -231,15 +230,21 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
             # a bounded window, so we need aggcontext.agg to handle the
             # rolling/expanding window logic.
             return aggcontext.agg(args[0], func, *args, **kwargs)
-        else:
-            # If aggcontext is not a Window, then we must be aggregating over
-            # an unbounded (and ungrouped) "window"/aggcontext. No information
-            # from aggcontext is needed to do this. Call func directly.
+        elif isinstance(aggcontext, Summarize) or isinstance(
+            aggcontext, Transform
+        ):
+            # If aggcontext is Summarize or Transform, then we must be
+            # aggregating over an unbounded (and ungrouped) window. No
+            # information from aggcontext is needed to do this. Call func
+            # directly.
             return func(*args)
+        else:
+            raise AssertionError(
+                f'Unexpected aggcontext type: {type(aggcontext)}'
+            )
 
-    # An execution rule for grouped aggregations. Handles:
-    #   1) AggregationNode with grouping
-    #   2) Some aggregation over a window with grouping
+    # An execution rule to handle analytic and reduction UDFs over
+    # grouped windows
     @execute_node.register(type(op), *(itertools.repeat(SeriesGroupBy, nargs)))
     def execute_udaf_node_groupby(op, *args, **kwargs):
         aggcontext = kwargs.pop('aggcontext', None)
@@ -252,7 +257,11 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
             # a bounded window, so we need aggcontext.agg to handle the
             # rolling/expanding window logic.
             result = aggcontext.agg(args[0], func, *args, **kwargs)
-        else:
+        elif isinstance(aggcontext, Transform):
+            # If aggcontext is Transform, then we are aggregating over an
+            # unbounded (and grouped) window. We will need aggcontext.agg
+            # to handle this logic, but first we need to wrap func.
+
             # Construct a generator that yields the next group of data
             # for every argument excluding the first (pandas performs
             # the iteration for the first argument) for each argument
@@ -267,6 +276,12 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
                 return func(first, *map(next, rest))
 
             result = aggcontext.agg(args[0], aggregator, *iters, **kwargs)
+        else:
+            # If aggcontext is Summarize for example, then something is wrong,
+            # because a Summarize aggcontext represents an ungrouped aggcontext
+            raise AssertionError(
+                f'Unexpected aggcontext type: {type(aggcontext)}'
+            )
 
         return result
 
