@@ -16,6 +16,7 @@ Release Notes
 * :support:`2288` Drop support to Python 3.6
 * :bug:`2367` Fix the covariance operator in the BigQuery backend.
 * :feature:`2366` Add PySpark support for ReductionVectorizedUDF
+* :bug:`2386` Fix scope get to use hashmap lookup instead of list lookup
 * :feature:`2306` Add time context in `scope` in execution for pandas backend
 * :support:`2351` Simplifying tests directories structure
 * :feature:`2081` Add ``start_point`` and ``end_point`` to PostGIS backend.
