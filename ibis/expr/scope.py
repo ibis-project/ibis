@@ -49,7 +49,10 @@ class Scope:
         self._items = items or {}
 
     def __contains__(self, op):
-        return op in self._items.keys()
+        return op in self._items
+
+    def __iter__(self):
+        return iter(self._items.keys())
 
     def get_value(
         self, op: Node, timecontext: Optional[TimeContext] = None
@@ -116,10 +119,10 @@ class Scope:
         """
         result = Scope()
 
-        for op in self._items.keys():
+        for op in self:
             result._items[op] = self._items[op]
 
-        for op in other_scope._items.keys():
+        for op in other_scope._items:
             # if get_scope returns a not None value, then data is already
             # cached in scope and it is at least a greater range than
             # the current timecontext, so we drop the item. Otherwise
@@ -147,7 +150,7 @@ class Scope:
             a new Scope instance with items in two scope merged.
         """
         result = Scope()
-        for op in self._items.keys():
+        for op in self:
             result._items[op] = self._items[op]
 
         for s in other_scopes:
