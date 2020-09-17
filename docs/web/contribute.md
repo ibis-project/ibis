@@ -1,90 +1,71 @@
 # Contributing to Ibis
 
+## Set up a development environment
 
-## Clone the Repository
+1. Create a fork of the Ibis repository, and clone it.
 
-To contribute to ibis you need to clone the repository from GitHub:
+        :::sh
+        git clone https://github.com/<your-github-username>/ibis
 
-```sh
-git clone https://github.com/ibis-project/ibis
-```
 
-## Set Up a Development Environment
-
-1. [Install miniconda](https://docs.conda.io/en/latest/miniconda.html)
-2. Create a Conda environment suitable for ibis development:
+2. [Download](https://docs.conda.io/en/latest/miniconda.html) and install Miniconda
+3. Create a Conda environment suitable for ibis development:
    
         :::sh
-        conda env create -n ibis-dev --file ci/requirements-dev-3.7-main.yml
+        cd  ibis
+        conda env create
 
-    > If you are developing for the Spark/PySpark backends, use ``requirements-dev-3.7-pyspark-spark.yml`` instead.
 
-3. Activate the environment
+4. Activate the environment
 
         :::sh
         conda activate ibis-dev
 
-4. Install your local copy of Ibis into the Conda environment. This also
-   sets up a pre-commit hook to check style and formatting before committing.
+5. Install your local copy of Ibis into the Conda environment. In the root of the project run:
 
         :::sh
-        make develop
+        pip install -e .
 
 
-## Run the Test Suite
+## Find an issue to work on
 
-Contributor [Krisztián Szűcs](https://github.com/kszucs) has spent many hours
-crafting an easy-to-use [docker-compose](https://docs.docker.com/compose/)
-setup that enables ibis developers to get up and running quickly.
+If you are working with Ibis, and find a bug, or you are reading the documentation and see something
+wrong, or that could be clearer, you can work on that.
 
-For those unfamiliar with ``docker``, and ``docker-compose``, here are some
-rough steps on how to get things set up:
+But sometimes, you may want to contribute to Ibis, but you don't have anything in mind. In that case,
+you can check the GitHub issue tracker for Ibis, and look for issues with the label
+[good first issue](https://github.com/ibis-project/ibis/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22).
+Feel free to also help with other issues that don't have the label, but they may be more challenging,
+and require knowledge of Ibis internals.
 
-- Install ``docker-compose`` with ``pip install docker-compose``
-- Install [docker](https://docs.docker.com/install/)
-- Be sure to follow the [post-install instructions](https://docs.docker.com/install/linux/linux-postinstall/) if you are running on Linux.
-- Log in to your Docker hub account with ``docker login`` (create an account at <https://hub.docker.com/> if you don't have one).
+Once you found an issue you want to work on, write a comment with the text `/take`, and GitHub will
+assign the issue to yourself. This way, nobody else will work on it at the same time. If you find an
+issue that someone else is assigned to, please contact the assignee to know if they are still working
+on it.
 
-First, start the database services and load the test data:
 
-```sh
-make --directory ibis init
-```
+## Working with backends
 
-To run tests for all backends except PySpark and Spark:
-```sh
-make --directory ibis testmain
-```
+Ibis comes with several backends. If you want to work with a specific backend, you will have to install
+the dependencies for the backend with `conda install -n ibis-dev -c conda-forge --file="ci/deps/<backend>.yml"`.
 
-To run tests for the PySpark backend:
-```sh
-make --directory ibis testpyspark
-```
+If you don't have a database for the backend you want to work on, you can check the configuration of the
+continuos integration, where docker images are used for different backend. This is defined in
+`.github/workflows/main.yml`.
 
-You can run tests for a custom subset of backends:
+## Run the test suite
+
+To run Ibis tests use the next command:
 
 ```sh
-make --directory ibis testparallel BACKENDS='omniscidb impala'
+PYTEST_BACKENDS="sqlite pandas" python -m pytest ibis/tests
 ```
 
-or start database services for a specific subset of backends:
-
-```sh
-make --directory ibis init BACKENDS='omniscidb impala'
-```
-
-*make for targets `test` and `testparallel` automatically do restart of services (as a prerequisite)*
-
-You can also run ``pytest`` tests on the command line if you are not testing
-integration with running database services. For example, to run all the tests
-for the ``pandas`` backend:
-
-```sh
-pytest ./ibis/pandas
-```
+You can change `sqlite pandas` by the backend or backends (space separated) that
+you want to test.
 
 
-## Style and Formatting
+## Style and formatting
 
 We use [flake8](http://flake8.pycqa.org/en/latest/),
 [black](https://github.com/psf/black) and
@@ -97,7 +78,7 @@ We use [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html) as
 our standard format for docstrings.
 
 
-## Commit Philosophy
+## Commit philosophy
 
 We aim to make our individual commits small and tightly focused on the feature
 they are implementing. If you find yourself making functional changes to
@@ -113,7 +94,7 @@ Rebasing your changes is usually as simple as running
 ``git push origin <branch-name> -f``.
 
 
-## Commit/PR Messages
+## Commit/PR messages
 
 Well-structed commit messages allow us to generate comprehensive release notes
 and make it very easy to understand what a commit/PR contributes to our
@@ -125,7 +106,7 @@ category has some more fine-grained aliases that you can use, such as ``BLD``
 (testing), and ``RLS`` (releases).
 
 
-## Maintainer's Guide
+## Maintainer's guide
 
 Maintainers generally perform two roles, merging PRs and making official
 releases.

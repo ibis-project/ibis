@@ -4,7 +4,14 @@ import pytest
 from pytest import param
 
 import ibis.expr.datatypes as dt
-from ibis.tests.backends import Clickhouse, MySQL, Postgres, PySpark, SQLite
+from ibis.tests.backends import (
+    BigQuery,
+    Clickhouse,
+    MySQL,
+    Postgres,
+    PySpark,
+    SQLite,
+)
 from ibis.udf.vectorized import reduction
 
 
@@ -278,8 +285,8 @@ def test_topk_op(backend, alltypes, df, result_fn, expected_fn):
     ],
 )
 @pytest.mark.xfail_unsupported
-# Issues #2133 #2132# #2133
-@pytest.mark.xfail_backends([Clickhouse, MySQL, Postgres])
+# Issues #2369 #2133 #2131 #2132
+@pytest.mark.xfail_backends([BigQuery, Clickhouse, MySQL, Postgres])
 @pytest.mark.skip_backends([SQLite], reason='Issue #2128')
 def test_topk_filter_op(backend, alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend

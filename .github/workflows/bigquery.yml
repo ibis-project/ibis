@@ -6,7 +6,7 @@ on:
 
 jobs:
   Tests_bigquery:
-    name: Tests pandas
+    name: Tests bigquery
     runs-on: ubuntu-latest
     env:
       BACKENDS: "bigquery"
