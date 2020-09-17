@@ -226,6 +226,53 @@ def test_grouped_bounded_expanding_window(
     backend.assert_series_equal(left, right)
 
 
+@pytest.mark.parametrize(
+    ('result_fn', 'expected_fn'),
+    [
+        param(
+            lambda t, win: t.double_col.mean().over(win),
+            lambda df: (df.double_col.expanding().mean()),
+            id='mean',
+        ),
+        param(
+            # Disabled on PySpark and Spark backends becuase in pyspark<3.0.0,
+            # Pandas UDFs are only supported on unbounded windows
+            lambda t, win: mean_udf(t.double_col).over(win),
+            lambda df: (df.double_col.expanding().mean()),
+            id='mean_udf',
+            marks=[
+                pytest.mark.udf,
+                pytest.mark.skip_backends([PySpark, Spark]),
+            ],
+        ),
+    ],
+)
+# Some backends do not support non-grouped window specs
+@pytest.mark.xfail_backends([OmniSciDB])
+@pytest.mark.xfail_unsupported
+def test_ungrouped_bounded_expanding_window(
+    backend, alltypes, df, con, result_fn, expected_fn
+):
+    if not backend.supports_window_operations:
+        pytest.skip(
+            'Backend {} does not support window operations'.format(backend)
+        )
+
+    expr = alltypes.mutate(
+        val=result_fn(
+            alltypes, win=ibis.window(following=0, order_by=[alltypes.id]),
+        )
+    )
+    result = expr.execute().set_index('id').sort_index()
+
+    column = expected_fn(df.sort_values('id'))
+    expected = df.assign(val=column).set_index('id').sort_index()
+
+    left, right = result.val, expected.val
+
+    backend.assert_series_equal(left, right)
+
+
 @pytest.mark.xfail_unsupported
 def test_grouped_bounded_following_window(backend, alltypes, df, con):
     if not backend.supports_window_operations:
@@ -311,51 +358,6 @@ def test_grouped_bounded_preceding_windows(
         .set_index('id')
         .sort_index()
     )
-
-    left, right = result.val, expected.val
-
-    backend.assert_series_equal(left, right)
-
-
-@pytest.mark.parametrize(
-    ('result_fn', 'expected_fn'),
-    [
-        param(
-            lambda t, win: t.double_col.mean().over(win),
-            lambda df: (df.double_col.expanding().mean()),
-            id='mean',
-        ),
-        param(
-            # Disabled on PySpark and Spark backends becuase in Spark,
-            # Pandas UDFs are only supported on unbounded windows
-            lambda t, win: mean_udf(t.double_col).over(win),
-            lambda df: (df.double_col.expanding().mean()),
-            id='mean_udf',
-            marks=[
-                pytest.mark.udf,
-                pytest.mark.xfail_backends([PySpark, Spark]),
-            ],
-        ),
-    ],
-)
-@pytest.mark.xfail_unsupported
-def test_ungrouped_bounded_expanding_window(
-    backend, alltypes, df, con, result_fn, expected_fn
-):
-    if not backend.supports_window_operations:
-        pytest.skip(
-            'Backend {} does not support window operations'.format(backend)
-        )
-
-    expr = alltypes.mutate(
-        val=result_fn(
-            alltypes, win=ibis.window(following=0, order_by=[alltypes.id]),
-        )
-    )
-    result = expr.execute().set_index('id').sort_index()
-
-    column = expected_fn(df.sort_values('id'))
-    expected = df.assign(val=column).set_index('id').sort_index()
 
     left, right = result.val, expected.val
 
