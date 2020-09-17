@@ -721,3 +721,53 @@ def test_custom_window_udf(t, custom_window):
     expected = pd.Series([4.0, 10.0, 5.0])
 
     tm.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    'group_by,order_by',
+    [
+        (None, None),
+        # (None, 'plain_datetimes_utc'),
+        ('dup_ints', None),
+        ('dup_ints', 'plain_datetimes_utc'),
+    ],
+)
+def test_rolling_window_udf_nan_and_non_numeric(t, group_by, order_by):
+    # Test that rolling window can be performed on
+    # (1) A column that contains NaN values
+    # (2) A non-numeric column
+    # (3) A non-numeric column that contains NaN value
+
+    t = t.mutate(nan_int64=t['plain_int64'])
+    t = t.mutate(nan_int64=None)
+
+    @reduction(input_type=[dt.int64], output_type=dt.int64)
+    def count_int64(v):
+        return len(v)
+
+    @reduction(input_type=[dt.timestamp], output_type=dt.int64)
+    def count_timestamp(v):
+        return len(v)
+
+    @reduction(
+        input_type=[t['map_of_strings_integers'].type()], output_type=dt.int64
+    )
+    def count_complex(v):
+        return len(v)
+
+    window = ibis.trailing_window(
+        preceding=1, order_by=order_by, group_by=group_by
+    )
+
+    result_nan = count_int64(t['nan_int64']).over(window).execute()
+    result_non_numeric = (
+        count_timestamp(t['plain_datetimes_utc']).over(window).execute()
+    )
+    result_nan_non_numeric = (
+        count_timestamp(t['map_of_strings_integers']).over(window).execute()
+    )
+    expected = t['plain_int64'].count().over(window).execute()
+
+    tm.assert_series_equal(result_nan, expected, check_names=False)
+    tm.assert_series_equal(result_non_numeric, expected, check_names=False)
+    tm.assert_series_equal(result_nan_non_numeric, expected, check_names=False)
