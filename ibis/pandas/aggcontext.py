@@ -453,7 +453,6 @@ class Window(AggregationContext):
         *args: Tuple[Any],
         **kwargs: Dict[str, Any],
     ) -> pd.Series:
-
         # avoid a pandas warning about numpy arrays being passed through
         # directly
         group_by = self.group_by
