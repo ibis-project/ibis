@@ -481,7 +481,7 @@ def test_ungrouped_unbounded_window(
         )
 
     # Define a window that is
-    # 1) Unrouped
+    # 1) Ungrouped
     # 2) Ordered if `ordered` is True
     # 3) Unbounded
     order_by = [alltypes.id] if ordered else None
