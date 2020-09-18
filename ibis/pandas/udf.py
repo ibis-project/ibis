@@ -225,22 +225,23 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
 
         func = op.func
 
-        if isinstance(aggcontext, Window):
-            # Aggregating over a bounded window, so we need aggcontext.agg to
-            # handle the rolling/expanding window logic.
-            return aggcontext.agg(args[0], func, *args, **kwargs)
-        elif isinstance(aggcontext, Summarize) or isinstance(
+        if isinstance(aggcontext, Summarize) or isinstance(
             aggcontext, Transform
         ):
-            # Either aggregating over an unbounded (and ungrouped) window or
-            # aggregating using an Aggregate node (with no grouping specified).
-            # No information from aggcontext is needed to do this. Call func
-            # directly.
+            # We are either:
+            # 1. Aggregating over an unbounded (and ungrouped) window
+            # 2. Aggregating using an Aggregate node (with no grouping)
+            # No information from aggcontext is needed in either scenario.
+            # Call func directly.
             return func(*args)
+        elif isinstance(aggcontext, Window):
+            # We must be aggregating over a bounded window, so we need
+            # aggcontext.agg to handle the rolling/expanding window logic.
+            return aggcontext.agg(args[0], func, *args, **kwargs)
         else:
-            raise AssertionError(
-                f'Unexpected aggcontext type: {type(aggcontext)}'
-            )
+            # We must be aggregating over a custom AggregationContext. We'll
+            # call its .agg method and let it handle any further custom logic.
+            return aggcontext.agg(args[0], func, *args, **kwargs)
 
     # An execution rule to handle analytic and reduction UDFs over
     # a grouped window or a grouped Aggregate node
@@ -251,16 +252,15 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
 
         func = op.func
 
-        if isinstance(aggcontext, Window):
-            # Aggregating over a bounded window, so we need aggcontext.agg to
-            # handle the rolling/expanding window logic.
-            result = aggcontext.agg(args[0], func, *args, **kwargs)
-        elif isinstance(aggcontext, Summarize) or isinstance(
+        if isinstance(aggcontext, Summarize) or isinstance(
             aggcontext, Transform
         ):
-            # Either aggregating over an unbounded (and grouped) window or
-            # aggregating using an Aggregate node (with grouping specified).
-            # We will need aggcontext.agg to handle the aggregation logic.
+            # We are either:
+            # 1. Aggregating over an unbounded (and GROUPED) window
+            # 2. Aggregating using an Aggregate node (with GROUPING)
+            # In either case, we need to unpack the data from the
+            # SeriesGroupBys then use aggcontext.agg to handle the
+            # grouped aggregation logic.
 
             # Construct a generator that yields the next group of data
             # for every argument excluding the first (pandas performs
@@ -275,12 +275,14 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
                 # TODO: might be inefficient to do this on every call
                 return func(first, *map(next, rest))
 
-            result = aggcontext.agg(args[0], aggregator, *iters, **kwargs)
+            return aggcontext.agg(args[0], aggregator, *iters, **kwargs)
+        elif isinstance(aggcontext, Window):
+            # We must be aggregating over a bounded window, so we need
+            # aggcontext.agg to handle the rolling/expanding window logic.
+            return aggcontext.agg(args[0], func, *args, **kwargs)
         else:
-            raise AssertionError(
-                f'Unexpected aggcontext type: {type(aggcontext)}'
-            )
-
-        return result
+            # We must be aggregating over a custom AggregationContext. We'll
+            # call its .agg method and let it handle any further custom logic.
+            return aggcontext.agg(args[0], func, *args, **kwargs)
 
     return scope
