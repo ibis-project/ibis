@@ -18,9 +18,14 @@ def execute_node_struct_field_dict(op, data, **kwargs):
 @execute_node.register(ops.StructField, dd.Series)
 def execute_node_struct_field_series(op, data, **kwargs):
     field = op.field
-    return data.map(operator.itemgetter(field)).rename(field)
+    # TODO This meta is not necessarily right
+    return data.map(
+        operator.itemgetter(field),
+        meta=(data.name, data.dtype)
+    ).rename(field)
 
 
+# TODO - this is broken
 @execute_node.register(ops.StructField, SeriesGroupBy)
 def execute_node_struct_field_series_group_by(op, data, **kwargs):
     field = op.field

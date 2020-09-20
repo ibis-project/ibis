@@ -1,8 +1,10 @@
 import datetime
 from operator import methodcaller
 
-import numpy as np
 import dask.dataframe as dd
+import numpy as np
+import pandas as pd
+
 from dask.dataframe.utils import tm  # noqa: E402
 import pytest
 from pkg_resources import parse_version
@@ -62,14 +64,17 @@ def test_timestamp_functions(case_func, expected_func):
     ['datetime_strings_naive', 'datetime_strings_ny', 'datetime_strings_utc'],
 )
 def test_cast_datetime_strings_to_date(t, df, column):
+    # TODO - this is changed from the pandas test, double check
     expr = t[column].cast('date')
     result = expr.execute()
-    expected = (
-        pd.to_datetime(df[column], infer_datetime_format=True)
-        .dt.normalize()
-        .dt.tz_localize(None)
+    df_computed = df.compute()
+    expected = dd.from_pandas(
+        pd.to_datetime(
+            df_computed[column], infer_datetime_format=True,
+        ).dt.normalize(),
+        npartitions=1,
     )
-    tm.assert_series_equal(result, expected)
+    tm.assert_series_equal(result.compute(), expected.compute())
 
 
 @pytest.mark.parametrize(
@@ -79,10 +84,14 @@ def test_cast_datetime_strings_to_date(t, df, column):
 def test_cast_datetime_strings_to_timestamp(t, df, column):
     expr = t[column].cast('timestamp')
     result = expr.execute()
-    expected = pd.to_datetime(df[column], infer_datetime_format=True)
+    df_computed = df.compute()
+    expected = dd.from_pandas(
+        pd.to_datetime(df_computed[column], infer_datetime_format=True),
+        npartitions=1,
+    )
     if getattr(expected.dtype, 'tz', None) is not None:
         expected = expected.dt.tz_convert(None)
-    tm.assert_series_equal(result, expected)
+    tm.assert_series_equal(result.compute(), expected.compute())
 
 
 @pytest.mark.parametrize(
@@ -93,33 +102,41 @@ def test_cast_integer_to_temporal_type(t, df, column):
     column_type = t[column].type()
     expr = t.plain_int64.cast(column_type)
     result = expr.execute()
-    expected = dd.Series(
-        pd.to_datetime(df.plain_int64.values, unit='ns').values,
-        index=df.index,
-        name='plain_int64',
-    ).dt.tz_localize(column_type.timezone)
-    tm.assert_series_equal(result, expected)
+    df_computed = df.compute()
+    expected = dd.from_pandas(
+        pd.Series(
+            pd.to_datetime(df_computed.plain_int64.values, unit='ns').values,
+            index=df_computed.index,
+            name='plain_int64',
+        ).dt.tz_localize(column_type.timezone),
+        npartitions=1,
+    )
+    tm.assert_series_equal(result.compute(), expected.compute())
 
 
 def test_cast_integer_to_date(t, df):
     expr = t.plain_int64.cast('date')
     result = expr.execute()
-    expected = dd.Series(
-        pd.to_datetime(df.plain_int64.values, unit='D').values,
-        index=df.index,
-        name='plain_int64',
+    df_computed = df.compute()
+    expected = dd.from_pandas(
+        pd.Series(
+            pd.to_datetime(df_computed.plain_int64.values, unit='D').values,
+            index=df_computed.index,
+            name='plain_int64',
+        ),
+        npartitions=1,
     )
-    tm.assert_series_equal(result, expected)
+    tm.assert_series_equal(result.compute(), expected.compute())
 
 
 def test_times_ops(t, df):
     result = t.plain_datetimes_naive.time().between('10:00', '10:00').execute()
-    expected = dd.Series(np.zeros(len(df), dtype=bool))
-    tm.assert_series_equal(result, expected)
+    expected = dd.from_array(np.zeros(len(df), dtype=bool))
+    tm.assert_series_equal(result.compute(), expected.compute())
 
     result = t.plain_datetimes_naive.time().between('01:00', '02:00').execute()
-    expected = dd.Series(np.ones(len(df), dtype=bool))
-    tm.assert_series_equal(result, expected)
+    expected = dd.from_array(np.ones(len(df), dtype=bool))
+    tm.assert_series_equal(result.compute(), expected.compute())
 
 
 @pytest.mark.parametrize(
@@ -130,17 +147,19 @@ def test_times_ops(t, df):
     'column', ['plain_datetimes_utc', 'plain_datetimes_naive']
 )
 def test_times_ops_with_tz(t, df, tz, rconstruct, column):
-    expected = dd.Series(rconstruct(len(df), dtype=bool))
+    expected = dd.from_array(
+        rconstruct(len(df), dtype=bool),
+    )
     time = t[column].time()
     expr = time.between('01:00', '02:00', timezone=tz)
     result = expr.execute()
-    tm.assert_series_equal(result, expected)
+    tm.assert_series_equal(result.compute(), expected.compute())
 
     # Test that casting behavior is the same as using the timezone kwarg
     ts = t[column].cast(dt.Timestamp(timezone=tz))
     expr = ts.time().between('01:00', '02:00')
     result = expr.execute()
-    tm.assert_series_equal(result, expected)
+    tm.assert_series_equal(result.compute(), expected.compute())
 
 
 @pytest.mark.parametrize(
@@ -166,11 +185,18 @@ def test_times_ops_with_tz(t, df, tz, rconstruct, column):
 )
 def test_interval_arithmetic(op, expected):
     data = pd.timedelta_range('0 days', '10 days', freq='D')
+    pandas_df = pd.DataFrame({'td': data})
     con = ibis.dask.connect(
-        {'df1': dd.DataFrame({'td': data}), 'df2': dd.DataFrame({'td': data})}
+        {
+            'df1': dd.from_pandas(pandas_df, npartitions=1),
+            'df2': dd.from_pandas(pandas_df, npartitions=1),
+        }
     )
     t1 = con.table('df1')
     expr = op(t1.td, t1.td)
     result = expr.execute()
-    expected = dd.Series(expected(data, data), name='td')
-    tm.assert_series_equal(result, expected)
+    expected = dd.from_pandas(
+        pd.Series(expected(data, data), name='td'),
+        npartitions=1,
+    )
+    tm.assert_series_equal(result.compute(), expected.compute())

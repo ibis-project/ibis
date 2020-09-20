@@ -8,14 +8,15 @@ import math
 import numbers
 import operator
 from collections.abc import Sized
+import pdb
 from typing import Optional
 
 import dask.dataframe as dd
+from dask.dataframe.numeric import pd_is_scalar
 import numpy as np
 import toolz
 from dask.dataframe.groupby import DataFrameGroupBy, SeriesGroupBy
 from pandas import (
-    DatetimeIndex,
     Timedelta,
     Timestamp,
     isnull,
@@ -130,21 +131,18 @@ def execute_cast_series_timestamp(op, data, type, **kwargs):
         )
 
     if isinstance(from_type, (dt.String, dt.Integer)):
-        timestamps = to_datetime(data.values, infer_datetime_format=True)
+        timestamps = data.map_partitions(
+            to_datetime, infer_datetime_format=True,
+            meta=(data.name, 'datetime64[ns]'),
+        )
+        # TODO - is there a better way to do this
+        timestamps = timestamps.astype(timestamps.head(1).dtype)
         if getattr(timestamps.dtype, "tz", None) is not None:
-            method_name = "tz_convert"
+            return timestamps.dt.tz_convert(tz)
         else:
-            method_name = "tz_localize"
-        method = getattr(timestamps, method_name)
-        timestamps = method(tz)
-        return dd.Series(timestamps, index=data.index, name=data.name)
+            return timestamps.dt.tz_localize(tz)
 
     raise TypeError("Don't know how to cast {} to {}".format(from_type, type))
-
-
-def _normalize(values, original_index, name, timezone=None):
-    index = DatetimeIndex(values, tz=timezone)
-    return dd.Series(index.normalize(), index=original_index, name=name)
 
 
 @execute_node.register(ops.Cast, dd.Series, dt.Date)
@@ -155,24 +153,30 @@ def execute_cast_series_date(op, data, type, **kwargs):
     if from_type.equals(type):
         return data
 
+    # TODO - we return slightly different things depending on the branch
+    # double check what the logic should be
+
     if isinstance(from_type, dt.Timestamp):
         return data.dt.normalize()
 
     if from_type.equals(dt.string):
-        values = data.values
-        datetimes = to_datetime(values, infer_datetime_format=True)
+        # TODO - this is broken
+        datetimes = data.map_partitions(
+            to_datetime,
+            infer_datetime_format=True,
+            meta=(data.name, 'datetime64[ns]'),
+        )
         try:
-            datetimes = datetimes.tz_convert(None)
+            datetimes = datetimes.dt.tz_convert(None)
         except TypeError:
             pass
-        dates = _normalize(datetimes, data.index, data.name)
-        return dd.Series(dates, index=data.index, name=data.name)
+        # TODO - we are getting rid of the index here
+        return datetimes.dt.normalize()
 
     if isinstance(from_type, dt.Integer):
-        return dd.Series(
-            to_datetime(data.values, unit='D').values,
-            index=data.index,
-            name=data.name,
+        return data.map_partitions(
+            to_datetime, unit='D',
+            meta=(data.name, 'datetime64[ns]')
         )
 
     raise TypeError("Don't know how to cast {} to {}".format(from_type, type))

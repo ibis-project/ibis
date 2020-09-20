@@ -83,6 +83,9 @@ def test_struct_field_series_group_by_key(struct_table):
     tm.assert_frame_equal(result.compute(), expected.compute())
 
 
+@pytest.mark.xfail(
+    reason="execute_node_struct_field_series_group_by is broken"
+)
 def test_struct_field_series_group_by_value(struct_table):
     t = struct_table
     expr = t.groupby(t.key).aggregate(total=t.s.weight.sum())

@@ -32,12 +32,12 @@ def test_bad_timecontext(time_table, t):
     expr = time_table
 
     # define context with illegal string
-    with pytest.raises(com.IbisError, match=r".*type Timestamp.*"):
+    with pytest.raises(com.IbisError, match=r".*type pd.Timestamp.*"):
         context = ('bad', 'context')
         expr.execute(timecontext=context)
 
     # define context with unsupport type int
-    with pytest.raises(com.IbisError, match=r".*type Timestamp.*"):
+    with pytest.raises(com.IbisError, match=r".*type pd.Timestamp.*"):
         context = (20091010, 20100101)
         expr.execute(timecontext=context)
 
@@ -91,9 +91,10 @@ def test_context_adjustment_asof_join(
         by='key',
         tolerance=Timedelta('4D'),
     )
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result.compute(), expected.compute())
 
 
+@pytest.mark.xfail(reason="Windows are still todo")
 @pytest.mark.parametrize(
     ['interval_ibis', 'interval_pd'],
     [
@@ -124,9 +125,11 @@ def test_context_adjustment_window(
     tm.assert_series_equal(result, expected)
 
 
+@pytest.mark.xfail(reason="Windows are still todo")
 def test_setting_timecontext_in_scope(time_table, time_df3):
     expected_win_1 = (
-        time_df3.set_index('time').value.rolling('3d', closed='both').mean()
+        time_df3.compute()
+        .set_index('time').value.rolling('3d', closed='both').mean()
     )
     expected_win_1 = expected_win_1[
         expected_win_1.index >= Timestamp('20170105')
@@ -149,9 +152,11 @@ def test_setting_timecontext_in_scope(time_table, time_df3):
     tm.assert_series_equal(result["value"], expected_win_1)
 
 
+@pytest.mark.xfail(reason="Windows are still todo")
 def test_context_adjustment_multi_window(time_table, time_df3):
     expected_win_1 = (
-        time_df3.set_index('time')
+        time_df3.compute()
+        .set_index('time')
         .rename(columns={'value': 'v1'})['v1']
         .rolling('3d', closed='both')
         .mean()
@@ -161,7 +166,8 @@ def test_context_adjustment_multi_window(time_table, time_df3):
     ].reset_index(drop=True)
 
     expected_win_2 = (
-        time_df3.set_index('time')
+        time_df3.compute().
+        set_index('time')
         .rename(columns={'value': 'v2'})['v2']
         .rolling('2d', closed='both')
         .mean()
@@ -187,13 +193,15 @@ def test_context_adjustment_multi_window(time_table, time_df3):
     tm.assert_series_equal(result["v2"], expected_win_2)
 
 
+@pytest.mark.xfail(reason="Windows are still todo")
 def test_context_adjustment_window_groupby_id(time_table, time_df3):
     """ This test case is meant to test trim_with_timecontext method
         in dask/execution/window.py to see if it could trim Series
         correctly with groupby params
     """
     expected = (
-        time_df3.set_index('time')
+        time_df3.compute()
+        .set_index('time')
         .groupby('id')
         .value.rolling('3d', closed='both')
         .mean()

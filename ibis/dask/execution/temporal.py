@@ -1,10 +1,10 @@
 import datetime
 
+import dask.array as da
 import dask.dataframe as dd
 import numpy as np
 from dask.dataframe.groupby import SeriesGroupBy
 from pandas import (
-    DatetimeIndex,
     Timedelta,
     Timestamp,
     to_datetime,
@@ -69,10 +69,15 @@ def execute_epoch_seconds(op, data, **kwargs):
     (dd.Series, str, datetime.time),
 )
 def execute_between_time(op, data, lower, upper, **kwargs):
-    indexer = DatetimeIndex(data).indexer_between_time(lower, upper)
-    result = np.zeros(len(data), dtype=np.bool_)
+    # TODO - This can be done better. Not sure we handle types correctly either
+    indexer = (
+        (data.dt.time.astype(str) >= lower)
+        & (data.dt.time.astype(str) <= upper)
+    ).to_dask_array(True)
+
+    result = da.zeros(len(data), dtype=np.bool_)
     result[indexer] = True
-    return dd.Series(result)
+    return dd.from_array(result)
 
 
 @execute_node.register(ops.Date, dd.Series)
