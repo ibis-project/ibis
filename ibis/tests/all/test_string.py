@@ -4,12 +4,13 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 from ibis.tests.backends import (
+    BigQuery,
     Clickhouse,
     Impala,
+    OmniSciDB,
     Postgres,
     PySpark,
     Spark,
-    OmniSciDB,
 )
 
 
@@ -231,6 +232,7 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.date_string_col.split('/'),
             lambda t: t.date_string_col.str.split('/'),
             id='split',
+            marks=pytest.mark.xfail_backends([BigQuery]),  # Issue #2372
         ),
         param(
             lambda t: ibis.literal('-').join(['a', t.string_col, 'c']),

@@ -460,11 +460,11 @@ class GeoMockConnectionOmniSciDB(SQLClient):
 
     @property
     def dialect(self):
-        from ibis.omniscidb.compiler import OmniSciDBDialect
+        from ibis.backends.omniscidb.compiler import OmniSciDBDialect
 
         return OmniSciDBDialect
 
     def _build_ast(self, expr, context):
-        from ibis.omniscidb.compiler import build_ast
+        from ibis.backends.omniscidb.compiler import build_ast
 
         return build_ast(expr, context)

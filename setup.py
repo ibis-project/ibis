@@ -16,7 +16,7 @@ See http://docs.ibis-project.org
 VERSION = sys.version_info.major, sys.version_info.minor
 
 impala_requires = ['hdfs>=2.0.16', 'sqlalchemy>=1.1,<1.3.7', 'requests']
-impala_requires.append('impyla>=0.15.0')
+impala_requires.append('impyla[kerberos]>=0.15.0')
 
 sqlite_requires = ['sqlalchemy>=1.1,<1.3.7']
 postgres_requires = sqlite_requires + ['psycopg2']
@@ -122,7 +122,7 @@ setup(
             'mysql = ibis.sql.mysql.api',
             'clickhouse = ibis.clickhouse.api',
             'bigquery = ibis.bigquery.api',
-            'omniscidb = ibis.omniscidb.api',
+            'omniscidb = ibis.backends.omniscidb',
             'spark = ibis.spark.api',
             'pyspark = ibis.pyspark.api',
         ]
