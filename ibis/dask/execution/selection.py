@@ -12,6 +12,9 @@ from typing import Optional
 import dask.dataframe as dd
 import numpy as np
 from multipledispatch import Dispatcher
+from pandas import (
+    Index
+)
 from toolz import compose, concat, concatv, first, unique
 
 import ibis.expr.operations as ops
@@ -79,6 +82,7 @@ def compute_projection_scalar_expr(
         for t in op.root_tables()
     )
     scalar = execute(expr, scope=scope, **kwargs)
+    # TODO - broken
     result = dd.Series([scalar], name=name).repeat(len(data.index))
     result.index = data.index
     return result
@@ -137,11 +141,12 @@ def compute_projection_column_expr(
     result = execute(expr, scope=scope, timecontext=timecontext, **kwargs)
     assert result_name is not None, 'Column selection name is None'
     if np.isscalar(result):
-        return dd.Series(
-            np.repeat(result, len(data.index)),
-            index=data.index,
-            name=result_name,
+        series = dd.from_array(
+            np.repeat(result, len(data.index))
         )
+        series.name = result_name
+        series.index = data.index
+        return series
     return result.rename(result_name)
 
 
@@ -361,7 +366,7 @@ def execute_selection_dataframe(
         return result
 
     # create a sequence of columns that we need to drop
-    temporary_columns = dd.Index(
+    temporary_columns = Index(
         concatv(grouping_keys, ordering_keys)
     ).difference(data.columns)
 

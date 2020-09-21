@@ -1,6 +1,7 @@
 from typing import Any
 
 import dask.dataframe as dd
+import pandas as pd
 from dask.dataframe.utils import tm
 import pytest
 from multipledispatch.conflict import ambiguities
@@ -19,12 +20,15 @@ pytestmark = pytest.mark.dask
 
 @pytest.fixture
 def dataframe():
-    return dd.DataFrame(
-        {
-            'plain_int64': list(range(1, 4)),
-            'plain_strings': list('abc'),
-            'dup_strings': list('dad'),
-        }
+    return dd.from_pandas(
+        pd.DataFrame(
+            {
+                'plain_int64': list(range(1, 4)),
+                'plain_strings': list('abc'),
+                'dup_strings': list('dad'),
+            }
+        ),
+        npartitions=1
     )
 
 
@@ -47,16 +51,16 @@ def test_from_dataframe(dataframe, ibis_table, core_client):
     t = ibis.dask.from_dataframe(dataframe)
     result = t.execute()
     expected = ibis_table.execute()
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result.compute(), expected.compute())
 
     t = ibis.dask.from_dataframe(dataframe, name='foo')
     expected = ibis_table.execute()
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result.compute(), expected.compute())
 
     client = core_client
     t = ibis.dask.from_dataframe(dataframe, name='foo', client=client)
     expected = ibis_table.execute()
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result.compute(), expected.compute())
 
 
 def test_pre_execute_basic():
@@ -124,7 +128,7 @@ def test_post_execute_called_on_joins(dataframe, core_client, ibis_table):
     join = left.join(right, 'plain_strings')[left.plain_int64]
     result = join.execute()
     assert result is not None
-    assert not result.empty
+    assert len(result.index) > 0
     assert count[0] == 1
 
 

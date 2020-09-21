@@ -8,11 +8,10 @@ import math
 import numbers
 import operator
 from collections.abc import Sized
-import pdb
 from typing import Optional
 
+import dask.array as da
 import dask.dataframe as dd
-from dask.dataframe.numeric import pd_is_scalar
 import numpy as np
 import toolz
 from dask.dataframe.groupby import DataFrameGroupBy, SeriesGroupBy
@@ -87,7 +86,7 @@ def execute_interval_literal(op, value, dtype, **kwargs):
 
 @execute_node.register(ops.Limit, dd.DataFrame, integer_types, integer_types)
 def execute_limit_frame(op, data, nrows, offset, **kwargs):
-    return data.iloc[offset : offset + nrows]
+    return data.loc[offset : offset + nrows]
 
 
 @execute_node.register(ops.Cast, SeriesGroupBy, dt.DataType)
@@ -641,10 +640,7 @@ def execute_any_all_series(op, data, aggcontext=None, **kwargs):
         result = aggcontext.agg(
             data, lambda data: getattr(data, type(op).__name__.lower())()
         )
-    try:
-        return result.astype(bool)
-    except TypeError:
-        return result
+    return result
 
 
 @execute_node.register(ops.NotAny, (dd.Series, SeriesGroupBy))
@@ -676,13 +672,19 @@ def execute_count_frame(op, data, _, **kwargs):
     return len(data)
 
 
-@execute_node.register(ops.Not, (bool, np.bool_))
+@execute_node.register(ops.Not, (bool, np.bool_, dd.core.Scalar))
 def execute_not_bool(op, data, **kwargs):
     return not data
 
 
+@execute_node.register(ops.Not, dd.core.Scalar)
+def execute_not_scalar(op, data, **kwargs):
+    return ~data
+
+
 @execute_node.register(ops.BinaryOp, dd.Series, dd.Series)
 @execute_node.register(ops.BinaryOp, dd.Series, dd.core.Scalar)
+@execute_node.register(ops.BinaryOp, dd.core.Scalar, dd.Series)
 @execute_node.register(
     (ops.NumericBinaryOp, ops.LogicalBinaryOp, ops.Comparison),
     numeric_types,
@@ -730,20 +732,29 @@ def execute_binary_op_series_group_by(op, left, right, **kwargs):
 
 @execute_node.register(ops.BinaryOp, SeriesGroupBy, simple_types)
 def execute_binary_op_series_gb_simple(op, left, right, **kwargs):
-    result = execute_binary_op(op, left.obj, right, **kwargs)
-    return result.groupby(left.grouper.groupings)
+    op_type = type(op)
+    try:
+        operation = constants.BINARY_OPERATIONS[op_type]
+    except KeyError:
+        raise NotImplementedError(
+            'Binary operation {} not implemented'.format(op_type.__name__)
+        )
+    else:
+        return left.apply(
+            lambda x, op=operation, right=right: op(x, right)
+        )
 
 
 @execute_node.register(ops.BinaryOp, simple_types, SeriesGroupBy)
 def execute_binary_op_simple_series_gb(op, left, right, **kwargs):
-    result = execute_binary_op(op, left, right.obj, **kwargs)
+    result = execute_binary_op(op, left, right, **kwargs)
     return result.groupby(right.grouper.groupings)
 
 
 @execute_node.register(ops.UnaryOp, SeriesGroupBy)
 def execute_unary_op_series_gb(op, operand, **kwargs):
     result = execute_node(op, operand.obj, **kwargs)
-    return result.groupby(operand.grouper.groupings)
+    return result
 
 
 @execute_node.register(
@@ -789,7 +800,7 @@ def execute_between(op, data, lower, upper, **kwargs):
 
 @execute_node.register(ops.DistinctColumn, dd.Series)
 def execute_series_distinct(op, data, **kwargs):
-    return dd.Series(data.unique(), name=data.name)
+    return data.unique()
 
 
 @execute_node.register(ops.Union, dd.DataFrame, dd.DataFrame, bool)
@@ -1010,8 +1021,9 @@ def execute_node_nullif_series_scalar(op, series, value, **kwargs):
 
 @execute_node.register(ops.NullIf, simple_types, dd.Series)
 def execute_node_nullif_scalar_series(op, value, series, **kwargs):
-    return dd.Series(
-        np.where(series.values == value, np.nan, value), index=series.index
+    # TODO - not preserving the index
+    return dd.from_array(
+        da.where(series.eq(value).values, np.nan, value)
     )
 
 

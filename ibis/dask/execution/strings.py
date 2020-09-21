@@ -218,9 +218,14 @@ def execute_group_concat_series_mask(
 def execute_group_concat_series_gb(
     op, data, sep, _, aggcontext=None, **kwargs
 ):
-    return aggcontext.agg(
-        data, lambda data, sep=sep: sep.join(data.values.astype(str))
+    custom_group_concat = dd.Aggregation(
+        name='custom_group_concat',
+        chunk=lambda s: s.apply(list),
+        agg=lambda s0: s0.apply(lambda chunks: sep.join(
+            str(s) for s in itertools.chain.from_iterable(chunks)
+        )),
     )
+    return data.agg(custom_group_concat)
 
 
 @execute_node.register(ops.GroupConcat, SeriesGroupBy, str, SeriesGroupBy)

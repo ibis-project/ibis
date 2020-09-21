@@ -253,7 +253,7 @@ DASK_DATE_TYPES = {'datetime', 'datetime64', 'date'}
 @convert.register(np.dtype, dt.Timestamp, dd.Series)
 def convert_datetime64_to_timestamp(in_dtype, out_dtype, column):
     if in_dtype.type == np.datetime64:
-        return column.astype(out_dtype.to_dask(), errors='ignore')
+        return column.astype(out_dtype.to_dask())
     try:
         series = pd.to_datetime(column, utc=True)
     except pd.errors.OutOfBoundsDatetime:
@@ -404,7 +404,7 @@ class DaskClient(client.Client):
 
         """
         # kwargs is a catch all for any options required by other backends.
-        self.dictionary[table_name] = dd.DataFrame(obj)
+        self.dictionary[table_name] = obj
 
     def create_table(self, table_name, obj=None, schema=None):
         """Create a table."""
@@ -412,8 +412,9 @@ class DaskClient(client.Client):
             raise com.IbisError('Must pass expr or schema')
 
         if obj is not None:
-            df = dd.DataFrame(obj)
+            df = obj
         else:
+            # TODO - this isn't right
             dtypes = ibis_schema_to_dask(schema)
             df = schema.apply_to(
                 dd.DataFrame(columns=list(map(toolz.first, dtypes)))

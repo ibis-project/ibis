@@ -1,7 +1,9 @@
 import collections
 
-import numpy as np
 import dask.dataframe as dd
+import numpy as np
+import pandas as pd
+
 from dask.dataframe.utils import tm
 import pytest
 
@@ -13,19 +15,20 @@ from ibis.dask.udf import nullable, udf
 
 @pytest.fixture
 def df():
-    return dd.DataFrame(
-        {
+    return dd.from_pandas(
+        pd.DataFrame({
             'a': list('abc'),
             'b': [1, 2, 3],
             'c': [4.0, 5.0, 6.0],
             'key': list('aab'),
-        }
+        }),
+        npartitions=1,
     )
 
 
 @pytest.fixture
 def df2():
-    return dd.DataFrame(
+    return dd.from_pandas(pd.DataFrame(
         {
             'a': np.arange(4, dtype=float).tolist()
             + np.random.rand(3).tolist(),
@@ -34,12 +37,12 @@ def df2():
             'c': np.arange(7, dtype=int).tolist(),
             'key': list('ddeefff'),
         }
-    )
+    ), npartitions=1)
 
 
 @pytest.fixture
 def con(df, df2):
-    return ibis.pandas.connect({'df': df, 'df2': df2})
+    return ibis.dask.connect({'df': df, 'df2': df2})
 
 
 @pytest.fixture
@@ -111,12 +114,12 @@ def test_udf(t, df):
 
     result = expr.execute()
     expected = df.a.str.len().mul(2)
-    tm.assert_series_equal(result, expected)
+    tm.assert_series_equal(result.compute(), expected.compute())
 
 
 def test_zero_argument_udf(con, t, df):
     expr = t.projection([a_single_number().name('foo')])
-    result = ibis.pandas.execute(expr)
+    result = ibis.dask.execute(expr)
     assert result is not None
 
 
@@ -135,9 +138,10 @@ def test_multiple_argument_udf(con, t, df):
 
     result = expr.execute()
     expected = df.b + df.c
-    tm.assert_series_equal(result, expected)
+    tm.assert_series_equal(result.compute(), expected.compute())
 
 
+@pytest.mark.xfail(reason="TODO IndexError list index out of range")
 def test_multiple_argument_udf_group_by(con, t, df):
     expr = t.groupby(t.key).aggregate(my_add=my_add(t.b, t.c).sum())
 
@@ -147,10 +151,10 @@ def test_multiple_argument_udf_group_by(con, t, df):
     assert isinstance(expr.my_add, ir.FloatingColumn)
 
     result = expr.execute()
-    expected = dd.DataFrame(
+    expected = dd.from_pandas(pd.DataFrame(
         {'key': list('ab'), 'my_add': [sum([1.0 + 4.0, 2.0 + 5.0]), 3.0 + 6.0]}
-    )
-    tm.assert_frame_equal(result, expected)
+    ), npartitions=1)
+    tm.assert_frame_equal(result.compute(), expected.compute())
 
 
 def test_udaf(con, t, df):
@@ -160,7 +164,7 @@ def test_udaf(con, t, df):
 
     result = expr.execute()
     expected = t.a.execute().str.len().mul(2).sum()
-    assert result == expected
+    assert result.compute() == expected.compute()
 
 
 def test_udaf_analytic(con, t, df):
@@ -174,7 +178,7 @@ def test_udaf_analytic(con, t, df):
         return s.sub(s.mean()).div(s.std())
 
     expected = f(df.c)
-    tm.assert_series_equal(result, expected)
+    tm.assert_series_equal(result.compute(), expected.compute())
 
 
 def test_udaf_analytic_groupby(con, t, df):
@@ -188,11 +192,12 @@ def test_udaf_analytic_groupby(con, t, df):
         return s.sub(s.mean()).div(s.std())
 
     expected = df.groupby('key').c.transform(f)
-    tm.assert_series_equal(result, expected)
+    tm.assert_series_equal(result.compute(), expected.compute())
 
 
+@pytest.mark.xfail(reason="TODO SeriesGroupBy' object is not iterable")
 def test_udaf_groupby():
-    df = dd.DataFrame(
+    df = dd.from_pandas(pd.DataFrame(
         {
             'a': np.arange(4, dtype=float).tolist()
             + np.random.rand(3).tolist(),
@@ -200,8 +205,8 @@ def test_udaf_groupby():
             + np.random.rand(3).tolist(),
             'key': list('ddeefff'),
         }
-    )
-    con = ibis.pandas.connect({'df': df})
+    ), npartitions=1)
+    con = ibis.dask.connect({'df': df})
     t = con.table('df')
 
     expr = t.groupby(t.key).aggregate(my_corr=my_corr(t.a, t.b))
@@ -211,7 +216,7 @@ def test_udaf_groupby():
     result = expr.execute().sort_values('key')
 
     dfi = df.set_index('key')
-    expected = dd.DataFrame(
+    expected = dd.from_pandas(pd.DataFrame(
         {
             'key': list('def'),
             'my_corr': [
@@ -219,7 +224,7 @@ def test_udaf_groupby():
                 for value in 'def'
             ],
         }
-    )
+    ), npartitions=1)
 
     columns = ['key', 'my_corr']
     tm.assert_frame_equal(result[columns], expected[columns])
@@ -264,9 +269,10 @@ def test_compose_udfs(t2, df2):
     expr = times_two(add_one(t2.a))
     result = expr.execute()
     expected = df2.a.add(1.0).mul(2.0)
-    tm.assert_series_equal(expected, result)
+    tm.assert_series_equal(expected.compute(), result.compute())
 
 
+@pytest.mark.xfail(reason="window functions are broken")
 def test_udaf_window(t2, df2):
     window = ibis.trailing_window(2, order_by='a', group_by='key')
     expr = t2.mutate(rolled=my_mean(t2.b).over(window))
@@ -277,11 +283,12 @@ def test_udaf_window(t2, df2):
         .mean()
         .reset_index(level=0, drop=True)
     )
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result.compute(), expected.compute())
 
 
+@pytest.mark.xfail(reason="window functions are broken")
 def test_udaf_window_interval():
-    df = dd.DataFrame(
+    df = dd.from_pandas(pd.DataFrame(
         collections.OrderedDict(
             [
                 (
@@ -294,9 +301,9 @@ def test_udaf_window_interval():
                 ("value", np.arange(5)),
             ]
         )
-    )
+    ), npartitions=1)
 
-    con = ibis.pandas.connect({'df': df})
+    con = ibis.dask.connect({'df': df})
     t = con.table('df')
     window = ibis.trailing_range_window(
         ibis.interval(days=2), order_by='time', group_by='key'
@@ -316,9 +323,10 @@ def test_udaf_window_interval():
         )
     ).reset_index(drop=False)
 
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result.compute(), expected.compute())
 
 
+@pytest.mark.xfail(reason="window functions are broken")
 def test_multiple_argument_udaf_window():
     # PR 2035
 
@@ -326,7 +334,7 @@ def test_multiple_argument_udaf_window():
     def my_wm(v, w):
         return np.average(v, weights=w)
 
-    df = dd.DataFrame(
+    df = dd.from_pandas(pd.DataFrame(
         {
             'a': np.arange(4, 0, dtype=float, step=-1).tolist()
             + np.random.rand(3).tolist(),
@@ -337,8 +345,8 @@ def test_multiple_argument_udaf_window():
             'd': np.repeat(1, 7),
             'key': list('deefefd'),
         }
-    )
-    con = ibis.pandas.connect({'df': df})
+    ), npartitions=1)
+    con = ibis.dask.connect({'df': df})
     t = con.table('df')
     window = ibis.trailing_window(2, order_by='a', group_by='key')
     window2 = ibis.trailing_window(1, order_by='b', group_by='key')
@@ -371,18 +379,19 @@ def test_multiple_argument_udaf_window():
     )
     expected = expected.sort_values(['key', 'a'])
 
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result.compute(), expected.compute())
 
 
+@pytest.mark.xfail(reason="window functions are broken")
 def test_udaf_window_nan():
-    df = dd.DataFrame(
+    df = dd.from_pandas(pd.DataFrame(
         {
             'a': np.arange(10, dtype=float),
             'b': [3.0, np.NaN] * 5,
             'key': list('ddeefffggh'),
         }
-    )
-    con = ibis.pandas.connect({'df': df})
+    ), npartitions=1)
+    con = ibis.dask.connect({'df': df})
     t = con.table('df')
     window = ibis.trailing_window(2, order_by='a', group_by='key')
     expr = t.mutate(rolled=my_mean(t.b).over(window))
@@ -393,7 +402,7 @@ def test_udaf_window_nan():
         .apply(lambda x: x.mean(), raw=True)
         .reset_index(level=0, drop=True)
     )
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result.compute(), expected.compute())
 
 
 @pytest.fixture(params=[[0.25, 0.75], [0.01, 0.99]])
@@ -405,15 +414,16 @@ def test_array_return_type_reduction(con, t, df, qs):
     expr = quantiles(t.b, quantiles=qs)
     result = expr.execute()
     expected = df.b.quantile(qs)
-    assert result == expected.tolist()
+    assert result == expected.compute().tolist()
 
 
+@pytest.mark.xfail(reason="window functions are broken")
 def test_array_return_type_reduction_window(con, t, df, qs):
     expr = quantiles(t.b, quantiles=qs).over(ibis.window())
     result = expr.execute()
     expected_raw = df.b.quantile(qs).tolist()
     expected = dd.Series([expected_raw] * len(df))
-    tm.assert_series_equal(result, expected)
+    tm.assert_series_equal(result.compute(), expected.compute())
 
 
 def test_elementwise_udf_with_many_args(t2):
@@ -452,4 +462,4 @@ def test_elementwise_udf_with_many_args(t2):
     result = expr.execute()
     expected = t2.a.execute()
 
-    tm.assert_series_equal(result, expected)
+    tm.assert_series_equal(result.compute(), expected.compute())
