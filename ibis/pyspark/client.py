@@ -2,6 +2,7 @@ from pyspark.sql.column import Column
 
 import ibis.common.exceptions as com
 import ibis.expr.types as types
+from ibis.expr.scope import Scope, make_scope
 from ibis.pyspark.compiler import PySparkDialect, PySparkExprTranslator
 from ibis.pyspark.operations import PySparkTable
 from ibis.spark.client import SparkClient
@@ -25,10 +26,13 @@ class PySparkClient(SparkClient):
 
         # Insert params in scope
         if params is None:
-            scope = {}
+            scope = Scope()
         else:
-            scope = dict(
-                (param.op(), raw_value) for param, raw_value in params.items()
+            scope = Scope().merge_scopes(
+                [
+                    make_scope(param.op(), raw_value, None)
+                    for param, raw_value in params.items()
+                ]
             )
         return self.translator.translate(expr, scope=scope)
 

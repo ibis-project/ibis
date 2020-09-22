@@ -54,6 +54,27 @@ class Scope:
     def __iter__(self):
         return iter(self._items.keys())
 
+    def set_value(
+        self, op: Node, timecontext: Optional[TimeContext], value: Any
+    ):
+        """ Given a op, timecontext and value, set op and (value, timecontext)
+            in scope.
+        Parameters
+        ----------
+        scope : collections.Mapping
+            a dictionary mapping :class:`~ibis.expr.operations.Node`
+            subclass instances to concrete data, and the time context associate
+            with it (if any).
+        op: ibis.expr.operations.Node
+            key in scope.
+        timecontext: Optional[TimeContext]
+        value: Any
+            the cached result to save in scope, an object whose type may
+            differ in different backends.
+        """
+        if self.get_value(op, timecontext) is None:
+            self._items[op] = ScopeItem(value, timecontext)
+
     def get_value(
         self, op: Node, timecontext: Optional[TimeContext] = None
     ) -> Any:

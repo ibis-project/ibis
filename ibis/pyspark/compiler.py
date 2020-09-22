@@ -59,12 +59,13 @@ class PySparkExprTranslator:
         # The operation node type the typed expression wraps
         op = expr.op()
 
-        if op in scope:
-            return scope[op]
+        result = scope.get_value(op)
+        if result is not None:
+            return result
         elif type(op) in self._registry:
             formatter = self._registry[type(op)]
             result = formatter(self, expr, scope, **kwargs)
-            scope[op] = result
+            scope.set_value(op, None, result)
             return result
         else:
             raise com.OperationNotDefinedError(
