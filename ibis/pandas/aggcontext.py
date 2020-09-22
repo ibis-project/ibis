@@ -501,7 +501,8 @@ class Window(AggregationContext):
             # TODO: see if we can do this in the caller, when the context
             # is constructed rather than pulling out the data
             columns = group_by + order_by + [name]
-            indexed_by_ordering = frame[columns]
+            # Create a new frame to avoid mutating the original one
+            indexed_by_ordering = frame[columns].copy()
             # placeholder column to compute window_sizes below
             indexed_by_ordering['_placeholder'] = 0
             indexed_by_ordering = indexed_by_ordering.set_index(order_by)
@@ -523,7 +524,7 @@ class Window(AggregationContext):
                 #     , which results in incorrect window sizes.
                 # (2) windowed.apply(len, raw=True) will include NaN
                 #     obversations, but doesn't work on non-numeric types.
-                #
+                #     https://github.com/pandas-dev/pandas/issues/23002
                 # To deal with this, we create a _placeholder column
 
                 windowed_frame = self.construct_window(grouped_frame)
