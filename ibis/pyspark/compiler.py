@@ -591,7 +591,9 @@ def compile_round(t, expr, scope, timecontext, **kwargs):
 
     src_column = t.translate(op.arg, scope, timecontext)
     scale = (
-        t.translate(op.digits, scope, raw=True) if op.digits is not None else 0
+        t.translate(op.digits, scope, timecontext, raw=True)
+        if op.digits is not None
+        else 0
     )
     rounded = F.round(src_column, scale=scale)
     if scale == 0:
@@ -648,7 +650,9 @@ def compile_log(t, expr, scope, timecontext, **kwargs):
 
     src_column = t.translate(op.arg, scope, timecontext)
     # Spark log method only takes float
-    return F.log(float(t.translate(op.base, scope, raw=True)), src_column)
+    return F.log(
+        float(t.translate(op.base, scope, timecontext, raw=True)), src_column
+    )
 
 
 @compiles(ops.Ln)
