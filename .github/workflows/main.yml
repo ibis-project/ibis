@@ -162,7 +162,7 @@ jobs:
       run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not hdfs" ./ci/run_tests.sh
 
 
-  Lint_and_benchmark:
+  Lint_and_benchmarks:
     name: Lint and benckmarks
     runs-on: ubuntu-latest
     steps:
@@ -203,8 +203,8 @@ jobs:
       run: ./ci/benchmark.sh azure "${{ github.sha }}"
       if: always()
 
-  Build_conda_package:
-    name: Build conda package
+  Conda_package:
+    name: Conda package
     runs-on: ubuntu-latest
     steps:
 
@@ -225,20 +225,20 @@ jobs:
         cd /tmp/feedstock/recipe/
 
         echo "*** Original recipe:"
-        cat meta.yml
+        cat meta.yaml
 
         # remove `{% set version = "X.X.X" %}`
-        tail -n +2 meta.yml > meta_tmp.yml && mv meta.tmp meta.yml
+        tail -n +2 meta.yaml > meta_tmp.yml && mv meta.tmp meta.yaml && rm meta.tmp
 
         # replace the url and sha256 in the source, by a path
-        grep -v "^\s*sha256:" meta.yaml > meta.tmp && mv meta.tmp meta.yml
+        grep -v "^\s*sha256:" meta.yaml > meta.tmp && mv meta.tmp meta.yaml && rm meta.tmp
         sed -i "s/url:.*/path: $IBIS_PATH/g"
 
         # set version
-        sed -i "s/{{ version }}/$IBIS_VERSION/g" meta.yml
+        sed -i "s/{{ version }}/$IBIS_VERSION/g" meta.yaml
 
         echo "*** Modified recipe:"
-        cat meta.yml
+        cat meta.yaml
 
     - name: build recipe
       run: conda build -c conda-forge --python 3.7 /tmp/feedstock/recipe
