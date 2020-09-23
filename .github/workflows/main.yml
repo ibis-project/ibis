@@ -228,7 +228,7 @@ jobs:
         cat meta.yaml
 
         # remove `{% set version = "X.X.X" %}`
-        tail -n +2 meta.yaml > meta_tmp.yml && mv meta.tmp meta.yaml && rm meta.tmp
+        tail -n +2 meta.yaml > meta.tmp && mv meta.tmp meta.yaml && rm meta.tmp
 
         # replace the url and sha256 in the source, by a path
         grep -v "^\s*sha256:" meta.yaml > meta.tmp && mv meta.tmp meta.yaml && rm meta.tmp
