@@ -19,8 +19,6 @@ from functools import wraps as implements
 
 import posixpath
 
-import requests
-
 import ibis.common.exceptions as com
 from ibis.config import options
 
@@ -697,6 +695,8 @@ def hdfs_connect(
     WebHDFS
 
     """
+    import requests
+
     if session is None:
         session = requests.Session()
     session.verify = verify
