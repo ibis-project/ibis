@@ -400,12 +400,11 @@ def window_agg_udf(
     # the window result. This follows pandas rolling apply
     # behavior.
 
-    # If there is no args, then the UDF only takes a single
-    # input which is defined by grouped_data
-    # This is a complication due to the lack of standard
-    # way to pass multiple input pd.Series/SeriesGroupBy
-    # to AggregationContext.agg()
-    inputs = args if len(args) > 0 else [grouped_data]
+    # The first input column is in grouped_data, but there may
+    # be additional input columns in args.
+    inputs = [grouped_data]
+    if args:
+        inputs.extend(args)
 
     masked_window_lower_indices = window_lower_indices[mask].astype('i8')
     masked_window_upper_indices = window_upper_indices[mask].astype('i8')
@@ -520,7 +519,6 @@ class Window(AggregationContext):
                 mask = ~(window_sizes.isna())
                 window_upper_indices = pd.Series(range(len(window_sizes))) + 1
                 window_lower_indices = window_upper_indices - window_sizes
-
                 result = window_agg_udf(
                     grouped_data,
                     function,
