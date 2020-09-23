@@ -219,7 +219,7 @@ jobs:
 
     - name: update recipe file
       run: |
-        IBIS_PATH=`pwd`/ibis
+        IBIS_PATH=`pwd`
         IBIS_VERSION=`python -c "import ibis; print(ibis.__version__)"`
 
         set -x
