@@ -68,13 +68,13 @@ def compute_projection_scalar_expr(
     scope = scope.merge_scopes(
         make_scope(
             t,
+            timecontext,
             map_new_column_names_to_data(
                 remap_overlapping_column_names(
                     parent_table_op, t, data_columns
                 ),
                 data,
             ),
-            timecontext,
         )
         for t in op.root_tables()
     )
@@ -123,13 +123,13 @@ def compute_projection_column_expr(
     scope = scope.merge_scopes(
         make_scope(
             t,
+            timecontext,
             map_new_column_names_to_data(
                 remap_overlapping_column_names(
                     parent_table_op, t, data_columns
                 ),
                 data,
             ),
-            timecontext,
         )
         for t in op.root_tables()
     )
@@ -258,7 +258,7 @@ def _compute_predicates(
             else:
                 new_data = data
             additional_scope = additional_scope.merge_scope(
-                make_scope(root_table, new_data, timecontext)
+                make_scope(root_table, timecontext, new_data)
             )
 
         scope = scope.merge_scope(additional_scope)

@@ -234,7 +234,7 @@ def execute_timestamp_from_unix(op, data, **kwargs):
 @pre_execute.register(ops.TimestampNow, ibis.client.Client)
 def pre_execute_timestamp_now(op, *args, **kwargs):
     timecontext = kwargs.get('timecontext', None)
-    return make_scope(op, pd.Timestamp('now'), timecontext)
+    return make_scope(op, timecontext, pd.Timestamp('now'))
 
 
 @execute_node.register(ops.DayOfWeekIndex, (str, datetime.date))

@@ -67,7 +67,7 @@ def test_pre_execute_basic():
 
     @pre_execute.register(ops.Add)
     def pre_execute_test(op, *clients, scope=None, **kwargs):
-        return make_scope(op, 4, None)
+        return make_scope(op, None, 4)
 
     one = ibis.literal(1)
     expr = one + one
@@ -189,6 +189,6 @@ def test_scope_look_up():
     scope = Scope()
     one_day = ibis.interval(days=1).op()
     one_hour = ibis.interval(hours=1).op()
-    scope = scope.merge_scope(make_scope(one_day, 1))
+    scope = scope.merge_scope(make_scope(one_day, None, 1))
     assert scope.get_value(one_hour) is None
     assert scope.get_value(one_day) is not None

@@ -41,14 +41,37 @@ from ibis.expr.operations import Node
 from ibis.expr.timecontext import TimeContextRelation, compare_timecontext
 from ibis.expr.typing import TimeContext
 
-ScopeItem = namedtuple('item', ['value', 'timecontext'])
+ScopeItem = namedtuple('item', ['timecontext', 'value'])
 
 
 class Scope:
-    def __init__(self, items: Dict[str, ScopeItem] = None):
-        self._items = items or {}
+    def __init__(
+        self,
+        param: Dict[Node, Any] = None,
+        timecontext: Optional[TimeContext] = None,
+    ):
+        """ Take a dict of `op`, `result`, create a new scope and save
+        those pairs in scope. Associate None as timecontext by default.
+        This is mostly used to init a scope with a set of given params.
+        """
+        self._items = (
+            {op: ScopeItem(timecontext, value) for op, value in param.items()}
+            if param
+            else {}
+        )
 
     def __contains__(self, op):
+        """ Given an `op`, return if `op` is present in Scope.
+        Note that this `__contain__` method doesn't take `timecontext`
+        as a parameter. This could be used to iterate all keys in
+        current scope, or any case that doesn't care about value, just
+        simply test if `op` is in scope or not.
+        When trying to get value in scope, use `get_value(op, timecontext)`
+        instead. Because the cached data could be trusted only if:
+        1. `op` is in `scope`, and,
+        2. The `timecontext` associated with `op` is a time context equal
+           to, or larger than the current time context.
+        """
         return op in self._items
 
     def __iter__(self):
@@ -57,8 +80,8 @@ class Scope:
     def set_value(
         self, op: Node, timecontext: Optional[TimeContext], value: Any
     ):
-        """ Given a op, timecontext and value, set op and (value, timecontext)
-            in scope.
+        """ Given an `op`, `timecontext` and `value`, set `op` and
+            `(value, timecontext)` in scope.
         Parameters
         ----------
         scope : collections.Mapping
@@ -73,7 +96,7 @@ class Scope:
             differ in different backends.
         """
         if self.get_value(op, timecontext) is None:
-            self._items[op] = ScopeItem(value, timecontext)
+            self._items[op] = ScopeItem(timecontext, value)
 
     def get_value(
         self, op: Node, timecontext: Optional[TimeContext] = None
@@ -180,7 +203,7 @@ class Scope:
 
 
 def make_scope(
-    op: Node, result: Any, timecontext: Optional[TimeContext] = None
+    op: Node, timecontext: Optional[TimeContext], value: Any
 ) -> 'Scope':
     """make a Scope instance, adding (op, result, timecontext) into the
        scope
@@ -189,14 +212,16 @@ def make_scope(
     ----------
     op: ibis.expr.operations.Node
         key in scope.
-    result : Object
-        concrete data, type could be different for different backends.
     timecontext: Optional[TimeContext]
         time context associate with the result.
+    value : Object
+        concrete data, type could be different for different backends.
 
     Returns
     -------
     Scope
         a new Scope instance with op in it.
     """
-    return Scope({op: ScopeItem(result, timecontext)})
+    scope = Scope()
+    scope._items = {op: ScopeItem(timecontext, value)}
+    return scope

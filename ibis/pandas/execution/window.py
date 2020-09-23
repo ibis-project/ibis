@@ -327,7 +327,7 @@ def execute_window_op(
     # force an update regardless of time context
     new_scope = scope.merge_scopes(
         [
-            make_scope(t, source, adjusted_timecontext)
+            make_scope(t, adjusted_timecontext, source)
             for t in operand.op().root_tables()
         ],
         overwrite=True,

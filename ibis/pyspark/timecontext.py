@@ -1,17 +1,20 @@
 from typing import Optional
 
 import pyspark.sql.functions as F
+from pyspark.sql.dataframe import DataFrame
 
 import ibis.common.exceptions as com
 from ibis.expr.timecontext import TIME_COL
 from ibis.expr.typing import TimeContext
 
 
-def filter_by_time_context(df, timecontext: Optional[TimeContext] = None):
+def filter_by_time_context(
+    df: DataFrame, timecontext: Optional[TimeContext] = None
+) -> DataFrame:
     """ Filter a Dataframe by given time context
     Parameters
     ----------
-    df : Spark DataFrame
+    df : pyspark.sql.dataframe.DataFrame
     timecontext: TimeContext
 
     Returns

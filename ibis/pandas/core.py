@@ -277,10 +277,10 @@ def execute_until_in_scope(
         # execute_node
         return make_scope(
             op,
+            timecontext,
             execute_literal(
                 op, op.value, expr.type(), aggcontext=aggcontext, **kwargs
             ),
-            timecontext,
         )
 
     # figure out what arguments we're able to compute on based on the
@@ -337,7 +337,7 @@ def execute_until_in_scope(
             **kwargs,
         )
         if hasattr(arg, 'op')
-        else make_scope(arg, arg, timecontext)
+        else make_scope(arg, timecontext, arg)
         for (arg, timecontext) in zip(computable_args, arg_timecontexts)
     ]
 
@@ -368,7 +368,7 @@ def execute_until_in_scope(
         **kwargs,
     )
     computed = post_execute_(op, result, timecontext=timecontext)
-    return make_scope(op, computed, timecontext)
+    return make_scope(op, timecontext, computed)
 
 
 execute = Dispatcher('execute')
@@ -429,11 +429,8 @@ def main_execute(
 
     # TODO: make expresions hashable so that we can get rid of these .op()
     # calls everywhere
-    params = [
-        make_scope(k.op() if hasattr(k, 'op') else k, v, timecontext)
-        for k, v in params.items()
-    ]
-    scope = scope.merge_scopes(params)
+    params = {k.op() if hasattr(k, 'op') else k: v for k, v in params.items()}
+    scope = scope.merge_scope(Scope(params, timecontext))
     return execute_with_scope(
         expr, scope, timecontext=timecontext, aggcontext=aggcontext, **kwargs,
     )

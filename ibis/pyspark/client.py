@@ -2,7 +2,7 @@ from pyspark.sql.column import Column
 
 import ibis.common.exceptions as com
 import ibis.expr.types as types
-from ibis.expr.scope import Scope, make_scope
+from ibis.expr.scope import Scope
 from ibis.expr.timecontext import canonicalize_context
 from ibis.pyspark.compiler import PySparkDialect, PySparkExprTranslator
 from ibis.pyspark.operations import PySparkTable
@@ -25,18 +25,16 @@ class PySparkClient(SparkClient):
         """Compile an ibis expression to a PySpark DataFrame object
         """
 
+        if timecontext is not None:
+            timecontext = canonicalize_context(timecontext)
         # Insert params in scope
         if params is None:
             scope = Scope()
         else:
-            scope = Scope().merge_scopes(
-                [
-                    make_scope(param.op(), raw_value, None)
-                    for param, raw_value in params.items()
-                ]
+            scope = Scope(
+                {param.op(): raw_value for param, raw_value in params.items()},
+                timecontext,
             )
-        if timecontext is not None:
-            timecontext = canonicalize_context(timecontext)
         return self.translator.translate(
             expr, scope=scope, timecontext=timecontext
         )
