@@ -219,7 +219,12 @@ class Expr:
             self, limit=limit, timecontext=timecontext, params=params, **kwargs
         )
 
-    def compile(self, limit=None, params=None):
+    def compile(
+        self,
+        limit=None,
+        timecontext: Optional[TimeContext] = None,
+        params=None,
+    ):
         """
         Compile expression to whatever execution target, to verify
 
@@ -230,7 +235,9 @@ class Expr:
         """
         from ibis.client import compile
 
-        return compile(self, limit=limit, params=params)
+        return compile(
+            self, limit=limit, timecontext=timecontext, params=params
+        )
 
     def verify(self):
         """
