@@ -162,8 +162,8 @@ jobs:
       run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not hdfs" ./ci/run_tests.sh
 
 
-  Lint_package_benchmark:
-    name: Lint, package and benckmark
+  Lint_and_benchmarks:
+    name: Lint and benckmarks
     runs-on: ubuntu-latest
     steps:
 
@@ -192,14 +192,6 @@ jobs:
       run: isort --check-only . || true
       if: always()
 
-    - name: feedstock
-      run: |
-        ./ci/feedstock.py clone
-        ./ci/feedstock.py update
-        ./ci/feedstock.py build --python 3.7
-        ./ci/feedstock.py deploy /usr/share/miniconda/conda-bld/
-      if: always()
-
     - name: publish feedstock artifact
       uses: actions/upload-artifact@master
       with:
@@ -210,3 +202,51 @@ jobs:
     - name: benckmark
       run: ./ci/benchmark.sh azure "${{ github.sha }}"
       if: always()
+
+  Conda_package:
+    name: Conda package
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: checkout
+      uses: actions/checkout@v1
+
+    - name: set up environment
+      run: ./ci/setup_env.sh
+
+    - name: clone feedstock repo
+      run: git clone https://github.com/conda-forge/ibis-framework-feedstock /tmp/feedstock
+
+    - name: update recipe file
+      run: |
+        IBIS_PATH=`pwd`
+        IBIS_VERSION=`python -c "import ibis; print(ibis.__version__)"`
+
+        set -x
+        cd /tmp/feedstock/recipe/
+
+        echo "*** Original recipe:"
+        cat meta.yaml
+
+        # remove `{% set version = "X.X.X" %}`
+        tail -n +2 meta.yaml > meta.tmp && mv meta.tmp meta.yaml
+
+        # replace the url and sha256 in the source, by a path
+        grep -v "^\s*sha256:" meta.yaml > meta.tmp && mv meta.tmp meta.yaml
+        sed -i "s|url:.*|path: $IBIS_PATH|g" meta.yaml
+
+        # set version
+        sed -i "s/{{ version }}/$IBIS_VERSION/g" meta.yaml
+
+        echo "*** Modified recipe:"
+        cat meta.yaml
+
+    - name: build recipe
+      run: conda build -c conda-forge --python 3.7 /tmp/feedstock/recipe
+
+    - name: deploy recipe package
+      run: |
+        mkdir /tmp/packages
+        cp -r /usr/share/miniconda/conda-bld/noarch /tmp/packages/noarch
+        cp -r /usr/share/miniconda/conda-bld/linux-64 /tmp/packages/linux-64
+        conda index /tmp/packages
