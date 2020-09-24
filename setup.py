@@ -10,7 +10,7 @@ import versioneer
 LONG_DESCRIPTION = """
 Ibis is a productivity-centric Python big data framework.
 
-See http://docs.ibis-project.org
+See http://ibis-project.org
 """
 
 VERSION = sys.version_info.major, sys.version_info.minor

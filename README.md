@@ -2,7 +2,7 @@
 
 |Service|Status|
 | -------------: | :---- |
-| Documentation  | [![Documentation Status](https://img.shields.io/badge/docs-docs.ibis--project.org-blue.svg)](http://docs.ibis-project.org) |
+| Documentation  | [![Documentation Status](https://img.shields.io/badge/docs-docs.ibis--project.org-blue.svg)](http://ibis-project.org) |
 | Conda packages | [![Anaconda-Server Badge](https://anaconda.org/conda-forge/ibis-framework/badges/version.svg)](https://anaconda.org/conda-forge/ibis-framework) |
 | PyPI           | [![PyPI](https://img.shields.io/pypi/v/ibis-framework.svg)](https://pypi.org/project/ibis-framework) |
 | Azure          | [![Azure Status](https://dev.azure.com/ibis-project/ibis/_apis/build/status/ibis-project.ibis)](https://dev.azure.com/ibis-project/ibis/_build) |
@@ -40,4 +40,4 @@ Ibis currently provides tools for interacting with the following systems:
 - [OmniSciDB](https://www.omnisci.com)
 - [Spark](https://spark.apache.org) (Experimental)
 
-Learn more about using the library at http://docs.ibis-project.org.
+Learn more about using the library at http://ibis-project.org.
