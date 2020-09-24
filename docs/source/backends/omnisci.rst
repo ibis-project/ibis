@@ -436,4 +436,4 @@ Pull Requests:
 References
 ----------
 
-- ibis API: http://docs.ibis-project.org/api.html
+- ibis API: http://ibis-project.org/docs/api.html

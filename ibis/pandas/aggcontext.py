@@ -501,7 +501,11 @@ class Window(AggregationContext):
             # TODO: see if we can do this in the caller, when the context
             # is constructed rather than pulling out the data
             columns = group_by + order_by + [name]
-            indexed_by_ordering = frame[columns].set_index(order_by)
+            # Create a new frame to avoid mutating the original one
+            indexed_by_ordering = frame[columns].copy()
+            # placeholder column to compute window_sizes below
+            indexed_by_ordering['_placeholder'] = 0
+            indexed_by_ordering = indexed_by_ordering.set_index(order_by)
 
             # regroup if needed
             if group_by:
@@ -510,12 +514,24 @@ class Window(AggregationContext):
                 grouped_frame = indexed_by_ordering
             grouped = grouped_frame[name]
 
-            # perform the per-group rolling operation
-            windowed = self.construct_window(grouped)
-
             if callable(function):
-                window_sizes = windowed.apply(len, raw=True).reset_index(
-                    drop=True
+                # To compute the window_size, we need to contruct a
+                # RollingGroupby and compute count using construct_window.
+                # However, if the RollingGroupby is not numeric, e.g.,
+                # we are calling window UDF on a timestamp column, we
+                # cannot compute rolling count directly because:
+                # (1) windowed.count() will exclude NaN observations
+                #     , which results in incorrect window sizes.
+                # (2) windowed.apply(len, raw=True) will include NaN
+                #     obversations, but doesn't work on non-numeric types.
+                #     https://github.com/pandas-dev/pandas/issues/23002
+                # To deal with this, we create a _placeholder column
+
+                windowed_frame = self.construct_window(grouped_frame)
+                window_sizes = (
+                    windowed_frame['_placeholder']
+                    .count()
+                    .reset_index(drop=True)
                 )
                 mask = ~(window_sizes.isna())
                 window_upper_indices = pd.Series(range(len(window_sizes))) + 1
@@ -534,6 +550,8 @@ class Window(AggregationContext):
                     **kwargs,
                 )
             else:
+                # perform the per-group rolling operation
+                windowed = self.construct_window(grouped)
                 result = window_agg_built_in(
                     frame,
                     windowed,
