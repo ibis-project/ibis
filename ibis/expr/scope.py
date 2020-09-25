@@ -209,26 +209,3 @@ class Scope:
         for s in other_scopes:
             result = result.merge_scope(s, overwrite)
         return result
-
-
-def make_scope(
-    op: Node, timecontext: Optional[TimeContext], value: Any
-) -> 'Scope':
-    """make a Scope instance, adding (op, result, timecontext) into the
-       scope
-
-    Parameters
-    ----------
-    op: ibis.expr.operations.Node
-        key in scope.
-    timecontext: Optional[TimeContext]
-        time context associate with the result.
-    value : Any
-        concrete data, type could be different for different backends.
-
-    Returns
-    -------
-    Scope
-        a new Scope instance with op in it.
-    """
-    return Scope({op: value}, timecontext)
