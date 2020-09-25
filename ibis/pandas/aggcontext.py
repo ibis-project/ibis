@@ -402,9 +402,7 @@ def window_agg_udf(
 
     # The first input column is in grouped_data, but there may
     # be additional input columns in args.
-    inputs = [grouped_data]
-    if args:
-        inputs.extend(args)
+    inputs = (grouped_data,) + args
 
     masked_window_lower_indices = window_lower_indices[mask].astype('i8')
     masked_window_upper_indices = window_upper_indices[mask].astype('i8')

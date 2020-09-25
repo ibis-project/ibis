@@ -221,23 +221,16 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
     # 2) an ungrouped Aggregate node, or
     # 3) an ungrouped custom aggregation context
     @execute_node.register(type(op), *(itertools.repeat(pd.Series, nargs)))
-    def execute_udaf_node_no_groupby(op, *args, **kwargs):
-        aggcontext = kwargs.pop('aggcontext', None)
-        assert aggcontext is not None, 'aggcontext is None'
-        func = op.func
-        return aggcontext.agg(args[0], func, *args[1:])
+    def execute_udaf_node_no_groupby(op, *args, aggcontext, **kwargs):
+        return aggcontext.agg(args[0], op.func, *args[1:])
 
     # An execution rule to handle analytic and reduction UDFs over
     # 1) a grouped window,
     # 2) a grouped Aggregate node, or
     # 3) a grouped custom aggregation context
     @execute_node.register(type(op), *(itertools.repeat(SeriesGroupBy, nargs)))
-    def execute_udaf_node_groupby(op, *args, **kwargs):
-        aggcontext = kwargs.pop('aggcontext', None)
-        assert aggcontext is not None, 'aggcontext is None'
-
+    def execute_udaf_node_groupby(op, *args, aggcontext, **kwargs):
         func = op.func
-
         if isinstance(aggcontext, (Transform, Summarize)):
             # We are either:
             # 1) Aggregating over an unbounded (and GROUPED) window, which
