@@ -12,6 +12,7 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :feature:`2402` Sse Scope class for scope in pyspark backend
 * :bug:`2395` Fix reduction UDFs over ungrouped, bounded windows on Pandas backend
 * :bug:`2386` FEAT: Support rolling window UDF with non numeric inputs for pandas backend.
 * :bug:`2386` Fix scope get to use hashmap lookup instead of list lookup
