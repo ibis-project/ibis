@@ -80,8 +80,11 @@ class Scope:
     def set_value(
         self, op: Node, timecontext: Optional[TimeContext], value: Any
     ):
-        """ Given an `op`, `timecontext` and `value`, set `op` and
+        """ Set values in scope.
+
+            Given an `op`, `timecontext` and `value`, set `op` and
             `(value, timecontext)` in scope.
+
         Parameters
         ----------
         scope : collections.Mapping
@@ -95,6 +98,12 @@ class Scope:
             the cached result to save in scope, an object whose type may
             differ in different backends.
         """
+        # Note that this set method doesn't simply override and set, but
+        # takes time context into consideration.
+        # If there is a value associated with the key, but time context is
+        # smaller than the current time context we are going to set,
+        # `get_value` will return None and we will proceed to set the new
+        # value in scope.
         if self.get_value(op, timecontext) is None:
             self._items[op] = ScopeItem(timecontext, value)
 
@@ -214,7 +223,7 @@ def make_scope(
         key in scope.
     timecontext: Optional[TimeContext]
         time context associate with the result.
-    value : Object
+    value : Any
         concrete data, type could be different for different backends.
 
     Returns
@@ -222,6 +231,4 @@ def make_scope(
     Scope
         a new Scope instance with op in it.
     """
-    scope = Scope()
-    scope._items = {op: ScopeItem(timecontext, value)}
-    return scope
+    return Scope({op: value}, timecontext)
