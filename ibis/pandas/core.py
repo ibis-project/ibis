@@ -121,7 +121,7 @@ import ibis.expr.types as ir
 import ibis.expr.window as win
 import ibis.pandas.aggcontext as agg_ctx
 from ibis.client import find_backends
-from ibis.expr.scope import Scope, make_scope
+from ibis.expr.scope import Scope
 from ibis.expr.timecontext import canonicalize_context
 from ibis.expr.typing import TimeContext
 from ibis.pandas.dispatch import (
@@ -275,12 +275,13 @@ def execute_until_in_scope(
     if isinstance(op, ops.Literal):
         # special case literals to avoid the overhead of dispatching
         # execute_node
-        return make_scope(
-            op,
+        return Scope(
+            {
+                op: execute_literal(
+                    op, op.value, expr.type(), aggcontext=aggcontext, **kwargs
+                )
+            },
             timecontext,
-            execute_literal(
-                op, op.value, expr.type(), aggcontext=aggcontext, **kwargs
-            ),
         )
 
     # figure out what arguments we're able to compute on based on the
@@ -337,7 +338,7 @@ def execute_until_in_scope(
             **kwargs,
         )
         if hasattr(arg, 'op')
-        else make_scope(arg, timecontext, arg)
+        else Scope({arg: arg}, timecontext)
         for (arg, timecontext) in zip(computable_args, arg_timecontexts)
     ]
 
@@ -368,7 +369,7 @@ def execute_until_in_scope(
         **kwargs,
     )
     computed = post_execute_(op, result, timecontext=timecontext)
-    return make_scope(op, timecontext, computed)
+    return Scope({op: computed}, timecontext)
 
 
 execute = Dispatcher('execute')

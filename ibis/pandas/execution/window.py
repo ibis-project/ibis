@@ -13,7 +13,7 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.window as win
 import ibis.pandas.aggcontext as agg_ctx
-from ibis.expr.scope import Scope, make_scope
+from ibis.expr.scope import Scope
 from ibis.expr.timecontext import TIME_COL
 from ibis.expr.typing import TimeContext
 from ibis.pandas.aggcontext import AggregationContext
@@ -327,7 +327,7 @@ def execute_window_op(
     # force an update regardless of time context
     new_scope = scope.merge_scopes(
         [
-            make_scope(t, adjusted_timecontext, source)
+            Scope({t: source}, adjusted_timecontext)
             for t in operand.op().root_tables()
         ],
         overwrite=True,

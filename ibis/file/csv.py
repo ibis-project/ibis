@@ -4,7 +4,7 @@ from pkg_resources import parse_version
 
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
-from ibis.expr.scope import Scope, make_scope
+from ibis.expr.scope import Scope
 from ibis.expr.typing import TimeContext
 from ibis.file.client import FileClient
 from ibis.pandas.api import PandasDialect
@@ -128,6 +128,6 @@ def csv_pre_execute_selection(
             if len(pd.Index(usecols) & header.columns) != len(usecols):
                 usecols = None
         result = _read_csv(path, table.schema, usecols=usecols, header=0)
-        ops = ops.merge_scope(make_scope(table, timecontext, result))
+        ops = ops.merge_scope(Scope({table: result}, timecontext))
 
     return ops

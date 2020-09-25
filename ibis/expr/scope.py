@@ -79,7 +79,7 @@ class Scope:
 
     def set_value(
         self, op: Node, timecontext: Optional[TimeContext], value: Any
-    ):
+    ) -> None:
         """ Set values in scope.
 
             Given an `op`, `timecontext` and `value`, set `op` and
