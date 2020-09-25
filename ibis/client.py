@@ -1,6 +1,6 @@
 """Ibis generic client classes and functions."""
 import abc
-from typing import List
+from typing import List, Optional
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
@@ -9,6 +9,7 @@ import ibis.expr.types as ir
 import ibis.sql.compiler as comp
 import ibis.util as util
 from ibis.config import options
+from ibis.expr.typing import TimeContext
 
 
 class Client:
@@ -235,7 +236,13 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         """
         pass
 
-    def compile(self, expr, params=None, limit=None):
+    def compile(
+        self,
+        expr,
+        params=None,
+        limit=None,
+        timecontext: Optional[TimeContext] = None,
+    ):
         """Translate expression.
 
         Translate expression to one or more queries according to
@@ -347,7 +354,13 @@ def validate_backends(backends) -> list:
     return backends
 
 
-def execute(expr, limit: str = 'default', params: dict = None, **kwargs):
+def execute(
+    expr,
+    limit: str = 'default',
+    params: dict = None,
+    timecontext: Optional[TimeContext] = None,
+    **kwargs,
+):
     """Execute given expression using the backend available.
 
     Parameters
@@ -355,6 +368,7 @@ def execute(expr, limit: str = 'default', params: dict = None, **kwargs):
     expr : Expr
     limit : string
     params : dict
+    timecontext: Optional[TimeContext]
     kwargs : dict
 
     Returns
@@ -365,10 +379,18 @@ def execute(expr, limit: str = 'default', params: dict = None, **kwargs):
       Scalar expressions: Python scalar value
     """
     (backend,) = validate_backends(list(find_backends(expr)))
-    return backend.execute(expr, limit=limit, params=params, **kwargs)
+    return backend.execute(
+        expr, limit=limit, params=params, timecontext=timecontext, **kwargs
+    )
 
 
-def compile(expr, limit: str = None, params: dict = None, **kwargs) -> str:
+def compile(
+    expr,
+    limit: str = None,
+    params: dict = None,
+    timecontext: Optional[TimeContext] = None,
+    **kwargs,
+) -> str:
     """Translate given expression.
 
     Parameters
@@ -376,6 +398,7 @@ def compile(expr, limit: str = None, params: dict = None, **kwargs) -> str:
     expr : Expr
     limit : string
     params : dict
+    timecontext: Optional[TimeContext]
     kwargs : dict
 
     Returns
@@ -383,7 +406,9 @@ def compile(expr, limit: str = None, params: dict = None, **kwargs) -> str:
     expression_translated : string
     """
     (backend,) = validate_backends(list(find_backends(expr)))
-    return backend.compile(expr, limit=limit, params=params, **kwargs)
+    return backend.compile(
+        expr, limit=limit, params=params, timecontext=timecontext, **kwargs
+    )
 
 
 def find_backends(expr):

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import abc
+from typing import Optional
 
 import pytest
 
@@ -20,6 +21,7 @@ import ibis.expr.types as ir
 import ibis.sql.alchemy as alch  # noqa: E402
 from ibis.client import SQLClient
 from ibis.expr.schema import Schema
+from ibis.expr.typing import TimeContext
 
 
 class BaseMockConnection(SQLClient, metaclass=abc.ABCMeta):
@@ -367,7 +369,13 @@ class BaseMockConnection(SQLClient, metaclass=abc.ABCMeta):
             self.executed_queries.append(query.compile())
         return None
 
-    def compile(self, expr, limit=None, params=None):
+    def compile(
+        self,
+        expr,
+        limit=None,
+        params=None,
+        timecontext: Optional[TimeContext] = None,
+    ):
         ast = self._build_ast_ensure_limit(expr, limit, params=params)
         queries = [q.compile() for q in ast.queries]
         return queries[0] if len(queries) == 1 else queries

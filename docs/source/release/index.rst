@@ -13,6 +13,7 @@ Release Notes
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
 * :bug:`2229` Fix same column with multiple aliases not showing properly in repr
+* :feature:`2402` Use Scope class for scope in pyspark backend
 * :bug:`2395` Fix reduction UDFs over ungrouped, bounded windows on Pandas backend
 * :bug:`2386` FEAT: Support rolling window UDF with non numeric inputs for pandas backend.
 * :bug:`2386` Fix scope get to use hashmap lookup instead of list lookup
