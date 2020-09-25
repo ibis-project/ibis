@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 import numpy as np
 import pytest
 
@@ -42,4 +44,21 @@ def client():
         ['key', 'array_int', 'array_str'],
     )
     df_arrays.createTempView('array_table')
+
+    df_time_indexed = client._session.createDataFrame(
+        [
+            [datetime(2017, 1, 2, 5, tzinfo=timezone.utc), 1, 1.0],
+            [datetime(2017, 1, 2, 5, tzinfo=timezone.utc), 2, 2.0],
+            [datetime(2017, 1, 2, 6, tzinfo=timezone.utc), 1, 3.0],
+            [datetime(2017, 1, 2, 6, tzinfo=timezone.utc), 2, 4.0],
+            [datetime(2017, 1, 2, 7, tzinfo=timezone.utc), 1, 5.0],
+            [datetime(2017, 1, 2, 7, tzinfo=timezone.utc), 2, 6.0],
+            [datetime(2017, 1, 4, 8, tzinfo=timezone.utc), 1, 7.0],
+            [datetime(2017, 1, 4, 8, tzinfo=timezone.utc), 2, 8.0],
+        ],
+        ['time', 'key', 'value'],
+    )
+
+    df_time_indexed.createTempView('time_indexed_table')
+
     return client

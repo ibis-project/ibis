@@ -16,7 +16,7 @@ from toolz import compose, concat, concatv, first, unique
 
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.expr.scope import Scope, make_scope
+from ibis.expr.scope import Scope
 from ibis.expr.typing import TimeContext
 from ibis.pandas.core import execute
 from ibis.pandas.dispatch import execute_node
@@ -66,14 +66,15 @@ def compute_projection_scalar_expr(
     data_columns = frozenset(data.columns)
 
     scope = scope.merge_scopes(
-        make_scope(
-            t,
-            map_new_column_names_to_data(
-                remap_overlapping_column_names(
-                    parent_table_op, t, data_columns
-                ),
-                data,
-            ),
+        Scope(
+            {
+                t: map_new_column_names_to_data(
+                    remap_overlapping_column_names(
+                        parent_table_op, t, data_columns
+                    ),
+                    data,
+                )
+            },
             timecontext,
         )
         for t in op.root_tables()
@@ -121,14 +122,15 @@ def compute_projection_column_expr(
     data_columns = frozenset(data.columns)
 
     scope = scope.merge_scopes(
-        make_scope(
-            t,
-            map_new_column_names_to_data(
-                remap_overlapping_column_names(
-                    parent_table_op, t, data_columns
-                ),
-                data,
-            ),
+        Scope(
+            {
+                t: map_new_column_names_to_data(
+                    remap_overlapping_column_names(
+                        parent_table_op, t, data_columns
+                    ),
+                    data,
+                )
+            },
             timecontext,
         )
         for t in op.root_tables()
@@ -258,7 +260,7 @@ def _compute_predicates(
             else:
                 new_data = data
             additional_scope = additional_scope.merge_scope(
-                make_scope(root_table, new_data, timecontext)
+                Scope({root_table: new_data}, timecontext)
             )
 
         scope = scope.merge_scope(additional_scope)
