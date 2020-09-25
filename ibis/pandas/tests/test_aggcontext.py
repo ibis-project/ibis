@@ -61,7 +61,7 @@ def test_window_agg_udf_different_freq():
     result_index = time.index
 
     result = window_agg_udf(
-        time,
+        data,
         lambda s: s.mean(),
         window_lower_indices,
         window_upper_indices,
@@ -69,7 +69,6 @@ def test_window_agg_udf_different_freq():
         result_index,
         'float',
         None,
-        data,
     )
 
     expected = pd.Series([data.iloc[0:5].mean(), data.iloc[4:7].mean()])
