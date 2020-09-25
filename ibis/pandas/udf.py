@@ -16,7 +16,7 @@ from pandas.core.groupby import SeriesGroupBy
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.udf.vectorized
-from ibis.pandas.aggcontext import Window
+from ibis.pandas.aggcontext import Summarize, Transform
 from ibis.pandas.core import (
     date_types,
     time_types,
@@ -216,41 +216,51 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
     input_type = op.input_type
     nargs = len(input_type)
 
-    # An execution rule for a simple aggregate node
+    # An execution rule to handle analytic and reduction UDFs over
+    # 1) an ungrouped window,
+    # 2) an ungrouped Aggregate node, or
+    # 3) an ungrouped custom aggregation context
     @execute_node.register(type(op), *(itertools.repeat(pd.Series, nargs)))
-    def execute_udaf_node(op, *args, **kwargs):
-        return op.func(*args)
+    def execute_udaf_node_no_groupby(op, *args, aggcontext, **kwargs):
+        return aggcontext.agg(args[0], op.func, *args[1:])
 
-    # An execution rule for a grouped aggregation node. This
-    # includes aggregates applied over a window.
+    # An execution rule to handle analytic and reduction UDFs over
+    # 1) a grouped window,
+    # 2) a grouped Aggregate node, or
+    # 3) a grouped custom aggregation context
     @execute_node.register(type(op), *(itertools.repeat(SeriesGroupBy, nargs)))
-    def execute_udaf_node_groupby(op, *args, **kwargs):
-        # construct a generator that yields the next group of data
-        # for every argument excluding the first (pandas performs
-        # the iteration for the first argument) for each argument
-        # that is a SeriesGroupBy.
-        #
-        aggcontext = kwargs.pop('aggcontext', None)
-        assert aggcontext is not None, 'aggcontext is None'
-
+    def execute_udaf_node_groupby(op, *args, aggcontext, **kwargs):
         func = op.func
+        if isinstance(aggcontext, (Transform, Summarize)):
+            # We are either:
+            # 1) Aggregating over an unbounded (and GROUPED) window, which
+            #   uses a Transform aggregation context
+            # 2) Aggregating using an Aggregate node (with GROUPING), which
+            #   uses a Summarize aggregation context
+            # We need to do some pre-processing to func and args so that
+            # Transform or Summarize can pull data out of the SeriesGroupBys
+            # in args.
 
-        if isinstance(aggcontext, Window):
-            # Call the func differently for Window because of
-            # the custom rolling logic.
-            result = aggcontext.agg(args[0], func, *args, **kwargs)
-        else:
+            # Construct a generator that yields the next group of data
+            # for every argument excluding the first (pandas performs
+            # the iteration for the first argument) for each argument
+            # that is a SeriesGroupBy.
             iters = create_gens_from_args_groupby(args[1:])
 
             # TODO: Unify calling convension here to be more like
             # window
-            def aggregator(first, *rest, **kwargs):
+            def aggregator(first, *rest):
                 # map(next, *rest) gets the inputs for the next group
                 # TODO: might be inefficient to do this on every call
                 return func(first, *map(next, rest))
 
-            result = aggcontext.agg(args[0], aggregator, *iters, **kwargs)
-
-        return result
+            return aggcontext.agg(args[0], aggregator, *iters)
+        else:
+            # We are either:
+            # 1) Aggregating over a bounded window, which uses a Window
+            #  aggregation context
+            # 2) Aggregating over a custom aggregation context
+            # No pre-processing to be done for either case.
+            return aggcontext.agg(args[0], func, *args[1:])
 
     return scope
