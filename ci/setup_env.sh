@@ -11,7 +11,7 @@ if [[ $3 == *"windows"* ]]
 then
     echo "Running on windows. Setting CONDA_PATH manually"
     # Force windows to use miniconda python
-    PATH="/c/Miniconda":${PATH}
+    PATH="/c/Miniconda:/c/Miniconda/Library/bin":${PATH}
     CONDA_PATH="/c/Miniconda/Scripts"
 else
     echo "Not running on windows. Using ${CONDA}/bin"
