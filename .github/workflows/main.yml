@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]  # TODO add windows and fix bash scripts (conda not found)
+        os: [ubuntu-latest, windows-latest]
         python_version: ["3.7", "3.8"]
     steps:
     - name: checkout

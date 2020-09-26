@@ -6,7 +6,7 @@
 
 PYTHON_VERSION="${1:-3.7}"
 BACKENDS="$2"
-CONDA_PATH="/usr/share/miniconda/bin"
+CONDA_PATH="${CONDA}/bin"
 PATH=${CONDA_PATH}:${PATH}
 
 echo "PYTHON_VERSION: $PYTHON_VERSION"
