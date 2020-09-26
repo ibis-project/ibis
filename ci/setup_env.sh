@@ -6,7 +6,16 @@
 
 PYTHON_VERSION="${1:-3.7}"
 BACKENDS="$2"
-CONDA_PATH="${CONDA}/condabin"
+
+if [[ $3 == *"windows"* ]]
+then
+    echo "Running on windows. Setting CONDA_PATH manually"
+    CONDA_PATH="/c/Miniconda/Scripts"
+else
+    echo "Not running on windows. Using ${CONDA}/bin"
+    CONDA_PATH="${CONDA}/bin"
+fi
+
 PATH=${CONDA_PATH}:${PATH}
 
 echo "PYTHON_VERSION: $PYTHON_VERSION"
