@@ -15,19 +15,26 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]  # TODO add windows and fix bash scripts (conda not found)
+        os: [ubuntu-latest, windows-latest]
         python_version: ["3.7", "3.8"]
     steps:
     - name: checkout
       uses: actions/checkout@v1
-
+    - uses: conda-incubator/setup-miniconda@v1
+      with:
+        auto-update-conda: true
+        python-version: ${{ matrix.python-version }}
     - name: set up environment
-      run: ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
-      shell: bash
+      run: |
+        conda activate base
+        ./ci/basic_setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
+      shell: bash -l {0}
 
     - name: run tests
-      run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not hdfs" ./ci/run_tests.sh
-      shell: bash
+      run: |
+        conda activate base
+        PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not hdfs" ./ci/run_tests.sh
+      shell: bash -l {0}
 
   Tests_sql:
     name: Tests SQL
