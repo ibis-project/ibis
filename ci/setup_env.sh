@@ -10,6 +10,8 @@ BACKENDS="$2"
 if [[ $3 == *"windows"* ]]
 then
     echo "Running on windows. Setting CONDA_PATH manually"
+    # Force windows to use miniconda python
+    PATH="/c/Miniconda":${PATH}
     CONDA_PATH="/c/Miniconda/Scripts"
 else
     echo "Not running on windows. Using ${CONDA}/bin"
@@ -25,8 +27,6 @@ echo "::add-path::${CONDA_PATH}"
 conda update -n base -c anaconda --all --yes conda
 conda install -n base -c anaconda --yes  python=${PYTHON_VERSION}
 conda env update -n base --file=environment.yml
-
-conda activate base
 
 python -m pip install -e .
 
