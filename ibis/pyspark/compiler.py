@@ -8,10 +8,12 @@ from pyspark.sql import Window
 from pyspark.sql.functions import PandasUDFType, pandas_udf
 
 import ibis.common.exceptions as com
+import ibis.expr.api as ir
 import ibis.expr.datatypes as dtypes
 import ibis.expr.operations as ops
 import ibis.expr.types as types
 from ibis import interval
+from ibis.pandas.execution import execute
 from ibis.pyspark.operations import PySparkTable
 from ibis.pyspark.timecontext import filter_by_time_context
 from ibis.spark.compiler import SparkContext, SparkDialect
@@ -366,11 +368,12 @@ def compile_aggregator(
         src_col = F.when(condition, src_col)
 
     col = fn(src_col)
-    if context in (AggregationContext.ENTIRE, AggregationContext.GROUP):
+    if context in (
+        AggregationContext.ENTIRE,
+        AggregationContext.GROUP,
+        AggregationContext.WINDOW,
+    ):
         return col
-    elif context == AggregationContext.WINDOW:
-        window = kwargs['window']
-        return col.over(window)
     else:
         # We are trying to compile a expr such as some_col.max()
         # to a Spark expression.
@@ -1052,32 +1055,53 @@ def compile_window_op(t, expr, scope, timecontext, **kwargs):
     ]
 
     order_by = window._order_by
+    # Timestamp needs to be cast to long for filtering in spark
     ordering_keys = [
-        key.to_expr().get_name()
+        F.col(key.to_expr().get_name()).cast('long')
+        if isinstance(key.args[0], types.TimestampColumn)
+        else key.to_expr().get_name()
         for key in map(operator.methodcaller('op'), order_by)
     ]
-
     context = AggregationContext.WINDOW
     pyspark_window = Window.partitionBy(grouping_keys).orderBy(ordering_keys)
 
     # If the operand is a shift op (e.g. lead, lag), Spark will set the window
     # bounds. Only set window bounds here if not a shift operation.
     if not isinstance(operand.op(), ops.ShiftBase):
-        start = (
-            -window.preceding
-            if window.preceding is not None
-            else Window.unboundedPreceding
-        )
-        end = (
-            window.following
-            if window.following is not None
-            else Window.unboundedFollowing
-        )
-        pyspark_window = pyspark_window.rowsBetween(start, end)
+        if window.preceding is None:
+            start = Window.unboundedPreceding
+        elif isinstance(window.preceding, ir.IntervalScalar):
+            start = -int(execute(window.preceding).value / 1e9)
+        elif isinstance(window.preceding, int):
+            start = -window.preceding
+        else:
+            raise com.UnsupportedOperationError(
+                'preceding type {}is not supported in windowing'.format(
+                    type(window.preceding)
+                )
+            )
+        if window.following is None:
+            end = Window.unboundedFollowing
+        elif isinstance(window.following, ir.IntervalScalar):
+            end = int(execute(window.following).value / 1e9)
+        elif isinstance(window.following, int):
+            end = window.following
+        else:
+            raise com.UnsupportedOperationError(
+                'following type {}is not supported in windowing'.format(
+                    type(window.following)
+                )
+            )
 
-    result = t.translate(
-        operand, scope, timecontext, window=pyspark_window, context=context
+        if isinstance(window.preceding, ir.IntervalScalar):
+            pyspark_window = pyspark_window.rangeBetween(start, end)
+        else:
+            pyspark_window = pyspark_window.rowsBetween(start, end)
+
+    result = t.translate(operand, scope, timecontext, context=context).over(
+        pyspark_window
     )
+
     return result
 
 
@@ -1622,11 +1646,12 @@ def compile_reduction_udf(t, expr, scope, timecontext, context=None, **kwargs):
     func_args = (t.translate(arg, scope, timecontext) for arg in op.func_args)
 
     col = spark_udf(*func_args)
-    if context in (AggregationContext.ENTIRE, AggregationContext.GROUP):
+    if context in (
+        AggregationContext.ENTIRE,
+        AggregationContext.GROUP,
+        AggregationContext.WINDOW,
+    ):
         return col
-    elif context == AggregationContext.WINDOW:
-        window = kwargs['window']
-        return col.over(window)
     else:
         src_table = t.translate(op.func_args[0].op().table, scope, timecontext)
         return src_table.agg(col)
