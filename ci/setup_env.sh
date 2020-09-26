@@ -7,26 +7,9 @@
 PYTHON_VERSION="${1:-3.7}"
 BACKENDS="$2"
 
-if [[ $3 == *"windows"* ]]
-then
-    echo "Running on windows. Setting CONDA_PATH manually"
-    # Force windows to use miniconda python
-    PATH="/c/Miniconda:/c/Miniconda/Library/bin":${PATH}
-    CONDA_PATH="/c/Miniconda/Scripts"
-else
-    echo "Not running on windows. Using ${CONDA}/bin"
-    CONDA_PATH="${CONDA}/bin"
-fi
-
-PATH=${CONDA_PATH}:${PATH}
-
 echo "PYTHON_VERSION: $PYTHON_VERSION"
 echo "BACKENDS: $BACKENDS"
-echo "::add-path::${CONDA_PATH}"
 
-conda update -n base -c anaconda --all --yes conda
-conda install -n base -c anaconda --yes  python=${PYTHON_VERSION}
-conda env update -n base --file=environment.yml
 
 python -m pip install -e .
 
