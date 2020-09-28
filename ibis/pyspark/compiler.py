@@ -1097,10 +1097,10 @@ def compile_window_op(t, expr, scope, timecontext, **kwargs):
             pyspark_window = pyspark_window.rangeBetween(start, end)
         else:
             pyspark_window = pyspark_window.rowsBetween(start, end)
-
-    result = t.translate(operand, scope, timecontext, context=context).over(
-        pyspark_window
-    )
+    # TODO: completely remove window from params
+    result = t.translate(
+        operand, scope, timecontext, window=pyspark_window, context=context
+    ).over(pyspark_window)
 
     return result
 
