@@ -406,7 +406,9 @@ def compile_any(t, expr, scope, timecontext, context=None, **kwargs):
 
 
 @compiles(ops.NotAny)
-def compile_notany(t, expr, scope, timecontext, *, context=None, **kwargs):
+def compile_notany(
+    t, expr, scope, timecontext, *, context=None, window=None, **kwargs
+):
     # The code here is a little ugly because the translation are different
     # with different context.
     # When translating col.notany() (context is None), we returns the dataframe
@@ -424,7 +426,13 @@ def compile_notany(t, expr, scope, timecontext, *, context=None, **kwargs):
         )
     else:
         return ~compile_any(
-            t, expr, scope, timecontext, context=context, **kwargs,
+            t,
+            expr,
+            scope,
+            timecontext,
+            context=context,
+            window=window,
+            **kwargs,
         )
 
 
@@ -436,7 +444,9 @@ def compile_all(t, expr, scope, timecontext, context=None, **kwargs):
 
 
 @compiles(ops.NotAll)
-def compile_notall(t, expr, scope, timecontext, *, context=None, **kwargs):
+def compile_notall(
+    t, expr, scope, timecontext, *, context=None, window=None, **kwargs
+):
     # See comments for opts.NotAny for reasoning for the if/else
     if context is None:
 
@@ -448,7 +458,13 @@ def compile_notall(t, expr, scope, timecontext, *, context=None, **kwargs):
         )
     else:
         return ~compile_all(
-            t, expr, scope, timecontext, context=context, **kwargs,
+            t,
+            expr,
+            scope,
+            timecontext,
+            context=context,
+            window=window,
+            **kwargs,
         )
 
 
@@ -1109,17 +1125,12 @@ def compile_window_op(t, expr, scope, timecontext, **kwargs):
         use_scope=False,
     )
 
-    # These ops need type cast after running over window
-    if (
-        isinstance(operand, ops.MinRank)
-        or isinstance(operand, ops.DenseRank)
-        or isinstance(operand, ops.RowNumber)
-    ):
-        result = result.astype('long') - 1
     return result
 
 
-def _handle_shift_operation(t, expr, scope, timecontext, *, fn, **kwargs):
+def _handle_shift_operation(
+    t, expr, scope, timecontext, *, fn, window, **kwargs
+):
     op = expr.op()
 
     src_column = t.translate(op.arg, scope, timecontext)
@@ -1127,37 +1138,37 @@ def _handle_shift_operation(t, expr, scope, timecontext, *, fn, **kwargs):
     offset = op.offset.op().value if op.offset is not None else op.offset
 
     if offset:
-        return fn(src_column, count=offset, default=default)
+        return fn(src_column, count=offset, default=default).over(window)
     else:
-        return fn(src_column, default=default)
+        return fn(src_column, default=default).over(window)
 
 
 @compiles(ops.Lag)
-def compile_lag(t, expr, scope, timecontext, **kwargs):
+def compile_lag(t, expr, scope, timecontext, *, window, **kwargs):
     return _handle_shift_operation(
-        t, expr, scope, timecontext, fn=F.lag, **kwargs
+        t, expr, scope, timecontext, fn=F.lag, window=window, **kwargs
     )
 
 
 @compiles(ops.Lead)
-def compile_lead(t, expr, scope, timecontext, **kwargs):
+def compile_lead(t, expr, scope, timecontext, *, window, **kwargs):
     return _handle_shift_operation(
-        t, expr, scope, timecontext, fn=F.lead, **kwargs
+        t, expr, scope, timecontext, fn=F.lead, window=window, **kwargs
     )
 
 
 @compiles(ops.MinRank)
-def compile_rank(t, expr, scope, timecontext, **kwargs):
-    return F.rank()
+def compile_rank(t, expr, scope, timecontext, *, window, **kwargs):
+    return F.rank().over(window).astype('long') - 1
 
 
 @compiles(ops.DenseRank)
-def compile_dense_rank(t, expr, scope, timecontext, **kwargs):
-    return F.dense_rank()
+def compile_dense_rank(t, expr, scope, timecontext, *, window, **kwargs):
+    return F.dense_rank().over(window).astype('long') - 1
 
 
 @compiles(ops.PercentRank)
-def compile_percent_rank(t, expr, scope, timecontext, **kwargs):
+def compile_percent_rank(t, expr, scope, timecontext, *, window, **kwargs):
     raise com.UnsupportedOperationError(
         'Pyspark percent_rank() function indexes from 0 '
         'instead of 1, and does not match expected '
@@ -1166,29 +1177,29 @@ def compile_percent_rank(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.NTile)
-def compile_ntile(t, expr, scope, timecontext, **kwargs):
+def compile_ntile(t, expr, scope, timecontext, *, window, **kwargs):
     op = expr.op()
     buckets = op.buckets.op().value
-    return F.ntile(buckets)
+    return F.ntile(buckets).over(window)
 
 
 @compiles(ops.FirstValue)
-def compile_first_value(t, expr, scope, timecontext, **kwargs):
+def compile_first_value(t, expr, scope, timecontext, *, window, **kwargs):
     op = expr.op()
     src_column = t.translate(op.arg, scope, timecontext)
-    return F.first(src_column)
+    return F.first(src_column).over(window)
 
 
 @compiles(ops.LastValue)
-def compile_last_value(t, expr, scope, timecontext, **kwargs):
+def compile_last_value(t, expr, scope, timecontext, *, window, **kwargs):
     op = expr.op()
     src_column = t.translate(op.arg, scope, timecontext)
-    return F.last(src_column)
+    return F.last(src_column).over(window)
 
 
 @compiles(ops.RowNumber)
-def compile_row_number(t, expr, scope, timecontext, **kwargs):
-    return F.row_number()
+def compile_row_number(t, expr, scope, timecontext, *, window, **kwargs):
+    return F.row_number().over(window).cast('long') - 1
 
 
 # -------------------------- Temporal Operations ----------------------------
