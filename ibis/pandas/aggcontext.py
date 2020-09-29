@@ -252,19 +252,41 @@ class AggregationContext(abc.ABC):
         pass
 
 
-def make_applied_function(function, args=None, kwargs=None):
+def wrap_for_apply(function, args, kwargs):
+    """Wrap a function so that it may be used with Pandas `apply`"""
     assert callable(function), 'function {} is not callable'.format(function)
 
     @functools.wraps(function)
-    def apply(
-        data,
-        function=function,
-        args=args if args is not None else (),
-        kwargs=kwargs if kwargs is not None else {},
-    ):
+    def wrapped_func(data, function=function, args=args, kwargs=kwargs):
         return function(data, *args, **kwargs)
 
-    return apply
+    return wrapped_func
+
+
+def wrap_for_agg(function, args, kwargs):
+    """Wrap a function so that it may be used with Pandas `agg`.
+
+    In some cases, Pandas `agg` will try to behave like Pandas `apply`.
+    `function` will be wrapped in such a way that Pandas will be forced
+    not to do this (in other words, forced to treat `function` as an
+    aggregation function, not a mapping function).
+    """
+    assert callable(function), 'function {} is not callable'.format(function)
+
+    @functools.wraps(function)
+    def wrapped_func(data, function=function, args=args, kwargs=kwargs):
+        # `data` will be a scalar here if Pandas `agg` is trying to behave like
+        # like Pandas `apply`.
+        if not isinstance(data, pd.Series):
+            # Force `agg` to NOT behave like `apply`. We want Pandas to use
+            # `function` as an aggregation function, not as a mapping function.
+            raise TypeError(
+                f'This function expects a Series, but saw an object of type '
+                f'{type(data)} instead.'
+            )
+        return function(data, *args, **kwargs)
+
+    return wrapped_func
 
 
 class Summarize(AggregationContext):
@@ -279,7 +301,7 @@ class Summarize(AggregationContext):
                 'Object {} is not callable or a string'.format(function)
             )
 
-        return grouped_data.agg(make_applied_function(function, args, kwargs))
+        return grouped_data.agg(wrap_for_agg(function, args, kwargs))
 
 
 class Transform(AggregationContext):
@@ -464,7 +486,7 @@ class Window(AggregationContext):
             # collect implementation) then call apply
             if callable(function):
                 return windowed.apply(
-                    make_applied_function(function, args, kwargs), raw=True
+                    wrap_for_apply(function, args, kwargs), raw=True
                 )
             else:
                 # otherwise we're a string and probably faster
@@ -476,7 +498,7 @@ class Window(AggregationContext):
                 # handle the case where we pulled out a name from an operation
                 # but it doesn't actually exist
                 return windowed.apply(
-                    make_applied_function(
+                    wrap_for_apply(
                         operator.methodcaller(function, *args, **kwargs)
                     ),
                     raw=True,
