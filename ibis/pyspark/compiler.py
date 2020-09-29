@@ -46,7 +46,7 @@ class PySparkExprTranslator:
 
         return decorator
 
-    def translate(self, expr, scope, timecontext, use_scope=True, **kwargs):
+    def translate(self, expr, scope, timecontext, **kwargs):
         """
         Translate Ibis expression into a PySpark object.
 
@@ -57,7 +57,6 @@ class PySparkExprTranslator:
         :param expr: ibis expression
         :param scope: dictionary mapping from operation to translated result
         :param timecontext: time context associated with expr
-        :param use_scope: boolean to toggle use of cached result in scope
         :param kwargs: parameters passed as keyword args (e.g. window)
         :return: translated PySpark DataFrame or Column object
         """
@@ -65,7 +64,7 @@ class PySparkExprTranslator:
         op = expr.op()
 
         result = scope.get_value(op, timecontext)
-        if use_scope and result is not None:
+        if result is not None:
             return result
         elif type(op) in self._registry:
             formatter = self._registry[type(op)]
@@ -1104,25 +1103,8 @@ def compile_window_op(t, expr, scope, timecontext, **kwargs):
         else:
             pyspark_window = pyspark_window.rowsBetween(start, end)
 
-    # TODO: Refactor window param to remove use_scope flag
-    # We add a flag to force this translation not to use cached result in scope
-    # without this flag, same op with different window will not be translated
-    # and generate incorrect result.
-    # e.g. Mean() on same col, with 1h window and 2h window, the second Mean()
-    # would not be compiled again.
-    # This is because `window` is passed in as a param in translation. In
-    # compile_aggregator, handle_shift_operation, window will be used in
-    # compiled result. But we cannot tell window size from the key `op`.
-    # We should lift .over(pyspark_window) in this compile_window_op, instead
-    # of passing window as a param.
-
     result = t.translate(
-        operand,
-        scope,
-        timecontext,
-        window=pyspark_window,
-        context=context,
-        use_scope=False,
+        operand, scope, timecontext, window=pyspark_window, context=context
     )
 
     return result

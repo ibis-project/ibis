@@ -14,13 +14,8 @@ def test_time_indexed_window(client):
     window1 = ibis.trailing_window(
         preceding=ibis.interval(hours=1), order_by='time', group_by='key'
     )
-    window2 = ibis.trailing_window(
-        preceding=ibis.interval(hours=2), order_by='time', group_by='key'
-    )
-
     result = table.mutate(
-        mean_1h=table['value'].mean().over(window1),
-        mean_2h=table['value'].mean().over(window2),
+        mean_1h=table['value'].mean().over(window1)
     ).compile()
     result_pd = result.toPandas()
 
@@ -32,15 +27,7 @@ def test_time_indexed_window(client):
         .mean()
         .rename('mean_1h')
     ).reset_index(drop=True)
-    expected_win_2 = (
-        df.set_index('time')
-        .groupby('key')
-        .value.rolling('2h', closed='both')
-        .mean()
-        .rename('mean_2h')
-    ).reset_index(drop=True)
     tm.assert_series_equal(result_pd['mean_1h'], expected_win_1)
-    tm.assert_series_equal(result_pd['mean_2h'], expected_win_2)
 
 
 def test_foward_looking_window(client):
