@@ -23,16 +23,18 @@ jobs:
     - uses: conda-incubator/setup-miniconda@v1
       with:
         auto-update-conda: true
-        python-version: ${{ matrix.python-version }}
+        python-version: ${{ matrix.python_version }}
+        activate-environment: "ibis-dev"
+        environment-file: "environment.yml"
     - name: set up environment
       run: |
-        conda activate base
-        ./ci/basic_setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
+        conda activate ibis-dev
+        ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
       shell: bash -l {0}
 
     - name: run tests
       run: |
-        conda activate base
+        conda activate ibis-dev
         PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not hdfs" ./ci/run_tests.sh
       shell: bash -l {0}
 
@@ -67,11 +69,20 @@ jobs:
     - name: checkout
       uses: actions/checkout@v1
 
+    - uses: conda-incubator/setup-miniconda@v1
+      with:
+        auto-update-conda: true
+        python-version: ${{ matrix.python_version }}
+        activate-environment: "ibis-dev"
+        environment-file: "environment.yml"
+
     - name: set up environment
       run: ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
+      shell: bash -l {0}
 
     - name: run tests
       run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not udf and not hdfs" ./ci/run_tests.sh
+      shell: bash -l {0}
 
   Tests_impala_clickhouse:
     name: Tests Impala / Clickhouse
@@ -116,11 +127,20 @@ jobs:
     - name: checkout
       uses: actions/checkout@v1
 
+    - uses: conda-incubator/setup-miniconda@v1
+      with:
+        auto-update-conda: true
+        python-version: ${{ matrix.python_version }}
+        activate-environment: "ibis-dev"
+        environment-file: "environment.yml"
+
     - name: set up environment
       run: ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
+      shell: bash -l {0}
 
     - name: run tests
       run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh
+      shell: bash -l {0}
 
   Tests_omniscidb:
     name: Tests OmniSciDB
@@ -143,11 +163,20 @@ jobs:
     - name: checkout
       uses: actions/checkout@v1
 
+    - uses: conda-incubator/setup-miniconda@v1
+      with:
+        auto-update-conda: true
+        python-version: ${{ matrix.python_version }}
+        activate-environment: "ibis-dev"
+        environment-file: "environment.yml"
+
     - name: set up environment
       run: ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
+      shell: bash -l {0}
 
     - name: run tests
       run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not hdfs" ./ci/run_tests.sh
+      shell: bash -l {0}
 
   Tests_spark:
     name: Tests PySpark / Spark
@@ -162,11 +191,20 @@ jobs:
     - name: checkout
       uses: actions/checkout@v1
 
+    - uses: conda-incubator/setup-miniconda@v1
+      with:
+        auto-update-conda: true
+        python-version: ${{ matrix.python_version }}
+        activate-environment: "ibis-dev"
+        environment-file: "environment.yml"
+
     - name: set up environment
       run: ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
+      shell: bash -l {0}
 
     - name: run tests
       run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not hdfs" ./ci/run_tests.sh
+      shell: bash -l {0}
 
 
   Lint_and_benchmarks:
@@ -177,27 +215,39 @@ jobs:
     - name: checkout
       uses: actions/checkout@v1
 
+    - uses: conda-incubator/setup-miniconda@v1
+      with:
+        auto-update-conda: true
+        python-version: ${{ matrix.python_version }}
+        activate-environment: "ibis-dev"
+        environment-file: "environment.yml"
+
     - name: set up environment
       run: ./ci/setup_env.sh
+      shell: bash -l {0}
 
     - name: black
       run: black --check .
       if: always()
+      shell: bash -l {0}
 
     - name: mypy
       # TODO: mypy has errors that need to be fixed before it can be added
       run: mypy --ignore-missing-imports ibis || true
       if: always()
+      shell: bash -l {0}
 
     - name: pydocstyle
       # TODO: change match-dir when docstrings are fixed for other backends
       run: pydocstyle --match-dir="(ibis|omniscidb)"
       if: always()
+      shell: bash -l {0}
 
     - name: isort
       # TODO: isort has errors that need to be fixed before it can be added
       run: isort --check-only . || true
       if: always()
+      shell: bash -l {0}
 
     - name: publish feedstock artifact
       uses: actions/upload-artifact@master
@@ -209,6 +259,7 @@ jobs:
     - name: benckmark
       run: ./ci/benchmark.sh azure "${{ github.sha }}"
       if: always()
+      shell: bash -l {0}
 
   Conda_package:
     name: Conda package
@@ -218,11 +269,20 @@ jobs:
     - name: checkout
       uses: actions/checkout@v1
 
+    - uses: conda-incubator/setup-miniconda@v1
+      with:
+        auto-update-conda: true
+        python-version: ${{ matrix.python_version }}
+        activate-environment: "ibis-dev"
+        environment-file: "environment.yml"
+
     - name: set up environment
       run: ./ci/setup_env.sh
+      shell: bash -l {0}
 
     - name: clone feedstock repo
       run: git clone https://github.com/conda-forge/ibis-framework-feedstock /tmp/feedstock
+      shell: bash -l {0}
 
     - name: update recipe file
       run: |
@@ -247,9 +307,11 @@ jobs:
 
         echo "*** Modified recipe:"
         cat meta.yaml
+      shell: bash -l {0}
 
     - name: build recipe
       run: conda build -c conda-forge --python 3.7 /tmp/feedstock/recipe
+      shell: bash -l {0}
 
     - name: deploy recipe package
       run: |
@@ -257,3 +319,4 @@ jobs:
         cp -r /usr/share/miniconda/conda-bld/noarch /tmp/packages/noarch
         cp -r /usr/share/miniconda/conda-bld/linux-64 /tmp/packages/linux-64
         conda index /tmp/packages
+      shell: bash -l {0}
