@@ -8,9 +8,9 @@ from pyspark.sql import Window
 from pyspark.sql.functions import PandasUDFType, pandas_udf
 
 import ibis.common.exceptions as com
-import ibis.expr.api as ir
 import ibis.expr.datatypes as dtypes
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
 import ibis.expr.types as types
 from ibis import interval
 from ibis.pandas.execution import execute
@@ -1044,8 +1044,9 @@ def _canonicalize_interval(interval):
     When pyspark cast timestamp to integer type, it uses the number of seconds
     since epoch. Therefore, we need cast ibis interval correspondingly.
     """
+
     if isinstance(interval, ir.IntervalScalar):
-        # value is in nanosecond
+
         return int(execute(interval).value / 1e9)
     elif isinstance(interval, int):
         return interval
@@ -1074,12 +1075,12 @@ def compile_window_op(t, expr, scope, timecontext, **kwargs):
     ]
 
     order_by = window._order_by
-    # Timestamp needs to be cast to long for filtering in spark
+    # Timestamp needs to be cast to long for window bounds in spark
     ordering_keys = [
-        F.col(expr.get_name()).cast('long')
-        if isinstance(expr.op().args[0], types.TimestampColumn)
-        else expr.get_name()
-        for expr in order_by
+        F.col(sort_expr.get_name()).cast('long')
+        if isinstance(sort_expr.op().expr, types.TimestampColumn)
+        else sort_expr.get_name()
+        for sort_expr in order_by
     ]
     context = AggregationContext.WINDOW
     pyspark_window = Window.partitionBy(grouping_keys).orderBy(ordering_keys)
@@ -1106,7 +1107,6 @@ def compile_window_op(t, expr, scope, timecontext, **kwargs):
     result = t.translate(
         operand, scope, timecontext, window=pyspark_window, context=context
     )
-
     return result
 
 
