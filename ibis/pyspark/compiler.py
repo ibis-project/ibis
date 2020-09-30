@@ -1093,31 +1093,27 @@ def compile_window_op(t, expr, scope, timecontext, **kwargs):
             pyspark_window = pyspark_window.rowsBetween(start, end)
 
     res_op = operand.op()
-
-    # For NotAll and NotAny, negation must be applied after .over(window)
-    # Here we rewrite node to be its negation, and negate it back after
-    # translation and window operation
-    negated = False
-    if isinstance(res_op, ops.NotAll) or isinstance(res_op, ops.NotAny):
-        negated = True
-        operand = res_op.negate().to_expr()
-
-    # window must applied after translation, since window is not
-    # stored in op() key in scope
-    result = t.translate(operand, scope, timecontext, context=context).over(
-        pyspark_window
-    )
-
-    # post processing after windowing
-    if (
-        isinstance(res_op, ops.MinRank)
-        or isinstance(res_op, ops.DenseRank)
-        or isinstance(res_op, ops.RowNumber)
-    ):
-        result = result.astype('long') - 1
-    if negated:
-        result = ~result
-    return result
+    if isinstance(res_op, (ops.NotAll, ops.NotAny)):
+        # For NotAll and NotAny, negation must be applied after .over(window)
+        # Here we rewrite node to be its negation, and negate it back after
+        # translation and window operation
+        return ~(
+            t.translate(
+                res_op.negate().to_expr(), scope, timecontext, context=context
+            ).over(pyspark_window)
+        )
+    elif isinstance(res_op, (ops.MinRank, ops.DenseRank, ops.RowNumber)):
+        # result must be cast to long type for rank / rownumber
+        return (
+            t.translate(operand, scope, timecontext, context=context)
+            .over(pyspark_window)
+            .astype('long')
+            - 1
+        )
+    else:
+        return t.translate(operand, scope, timecontext, context=context).over(
+            pyspark_window
+        )
 
 
 def _handle_shift_operation(t, expr, scope, timecontext, *, fn, **kwargs):
