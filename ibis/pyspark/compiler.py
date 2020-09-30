@@ -288,9 +288,14 @@ def compile_literal(t, expr, scope, timecontext, raw=False, **kwargs):
     """ If raw is True, don't wrap the result with F.lit()
     """
     value = expr.op().value
+    dtype = expr.op().dtype
 
     if raw:
         return value
+
+    if isinstance(dtype, dtypes.Interval):
+        # execute returns a Timedelta and value is nanoseconds
+        return execute(expr).value
 
     if isinstance(value, collections.abc.Set):
         # Don't wrap set with F.lit
@@ -1038,24 +1043,22 @@ def compile_join(t, expr, scope, timecontext, *, how):
     return left_df.join(right_df, pred_columns, how)
 
 
-def _canonicalize_interval(interval):
+def _canonicalize_interval(t, interval, scope, timecontext, **kwargs):
     """ Convert interval to integer timestamp of second
 
     When pyspark cast timestamp to integer type, it uses the number of seconds
     since epoch. Therefore, we need cast ibis interval correspondingly.
     """
-
     if isinstance(interval, ir.IntervalScalar):
-
-        return int(execute(interval).value / 1e9)
+        value = t.translate(interval, scope, timecontext, **kwargs)
+        # value is in nanoseconds and spark uses seconds since epoch
+        return int(value / 1e9)
     elif isinstance(interval, int):
         return interval
-    else:
-        raise com.UnsupportedOperationError(
-            'type {} is not supported in preceding/following in window'.format(
-                type(interval)
-            )
-        )
+    raise com.UnsupportedOperationError(
+        f'type {type(interval)} is not supported in preceding /following '
+        'in window.'
+    )
 
 
 @compiles(ops.WindowOp)
@@ -1091,11 +1094,15 @@ def compile_window_op(t, expr, scope, timecontext, **kwargs):
         if window.preceding is None:
             start = Window.unboundedPreceding
         else:
-            start = -_canonicalize_interval(window.preceding)
+            start = -_canonicalize_interval(
+                t, window.preceding, scope, timecontext, **kwargs
+            )
         if window.following is None:
             end = Window.unboundedFollowing
         else:
-            end = _canonicalize_interval(window.following)
+            end = _canonicalize_interval(
+                t, window.following, scope, timecontext, **kwargs
+            )
 
         if isinstance(window.preceding, ir.IntervalScalar) or isinstance(
             window.following, ir.IntervalScalar

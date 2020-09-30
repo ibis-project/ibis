@@ -59,7 +59,7 @@ def test_time_indexed_window(client, ibis_window, spark_range):
 
 
 # TODO: multi windows don't update scope correctly
-@pytest.mark.xfail
+@pytest.mark.xfail(reason='Issue #2412', strict=True)
 def test_multiple_windows(client):
     table = client.table('time_indexed_table')
     window1 = ibis.trailing_window(
