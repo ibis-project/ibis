@@ -316,7 +316,7 @@ jobs:
     - name: deploy recipe package
       run: |
         mkdir /tmp/packages
-        cp -r /usr/share/miniconda/conda-bld/noarch /tmp/packages/noarch
-        cp -r /usr/share/miniconda/conda-bld/linux-64 /tmp/packages/linux-64
+        cp -r /usr/share/miniconda/envs/ibis-dev/conda-bld/noarch /tmp/packages/noarch
+        cp -r /usr/share/miniconda/envs/ibis-dev/conda-bld/linux-64 /tmp/packages/linux-64
         conda index /tmp/packages
       shell: bash -l {0}
