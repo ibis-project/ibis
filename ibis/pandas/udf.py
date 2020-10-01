@@ -16,14 +16,14 @@ from pandas.core.groupby import SeriesGroupBy
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.udf.vectorized
-from ibis.pandas.aggcontext import Summarize, Transform
-from ibis.pandas.core import (
+from .aggcontext import Summarize, Transform
+from .core import (
     date_types,
     time_types,
     timedelta_types,
     timestamp_types,
 )
-from ibis.pandas.dispatch import execute_node, pre_execute
+from .dispatch import execute_node, pre_execute
 
 
 @functools.singledispatch

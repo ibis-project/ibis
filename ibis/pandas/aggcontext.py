@@ -224,10 +224,11 @@ import numpy as np
 import pandas as pd
 from pandas.core.groupby import SeriesGroupBy
 
-import ibis
+# import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.util
+from .dispatch import execute
 
 
 class AggregationContext(abc.ABC):
@@ -312,7 +313,7 @@ def compute_window_spec_none(_, obj):
 
 @compute_window_spec.register(dt.Interval)
 def compute_window_spec_interval(_, expr):
-    value = ibis.pandas.execute(expr)
+    value = execute(expr)
     return pd.tseries.frequencies.to_offset(value)
 
 
@@ -573,7 +574,7 @@ class Moving(Window):
     __slots__ = ()
 
     def __init__(self, preceding, max_lookback, *args, **kwargs):
-        from ibis.pandas.core import timedelta_types
+        from .core import timedelta_types
 
         ibis_dtype = getattr(preceding, 'type', lambda: None)()
         preceding = compute_window_spec(ibis_dtype, preceding)

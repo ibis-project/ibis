@@ -20,7 +20,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.compat import CategoricalDtype, DatetimeTZDtype
-from ibis.pandas.core import execute_and_reset
+from .core import execute_and_reset
 
 try:
     infer_pandas_dtype = pd.api.types.infer_dtype

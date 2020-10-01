@@ -5,7 +5,7 @@ from datetime import datetime
 
 from ibis.config import get_option, set_option
 from ibis.expr import types as ir
-from ibis.pandas.dispatcher import TwoLevelDispatcher
+from .dispatcher import TwoLevelDispatcher
 
 """Module that adds tracing to pandas execution.
 

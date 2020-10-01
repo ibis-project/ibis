@@ -4,11 +4,11 @@ from functools import partial
 
 from multipledispatch import Dispatcher
 
-import ibis
+import ibis.client
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis.expr.scope import Scope
-from ibis.pandas.trace import TraceTwoLevelDispatcher
+from .trace import TraceTwoLevelDispatcher
 
 # Individual operation execution
 execute_node = TraceTwoLevelDispatcher(
