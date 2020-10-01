@@ -9,8 +9,8 @@ from posixpath import join as pjoin
 
 import ibis
 import ibis.util as util
+from ibis.backends.impala.tests.conftest import IbisTestEnv
 from ibis.filesystems import HDFS
-from ibis.impala.tests.conftest import IbisTestEnv
 
 pytest.importorskip('hdfs')
 
