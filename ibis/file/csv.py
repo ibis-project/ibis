@@ -7,9 +7,9 @@ import ibis.expr.schema as sch
 from ibis.expr.scope import Scope
 from ibis.expr.typing import TimeContext
 from ibis.file.client import FileClient
-from ibis.pandas import PandasDialect
-from ibis.pandas.core import execute, execute_node, pre_execute
-from ibis.pandas.execution.selection import physical_tables
+from ibis.backends.pandas import PandasDialect
+from ibis.backends.pandas import execute, execute_node, pre_execute
+from ibis.backends.pandas import physical_tables
 
 dialect = PandasDialect
 

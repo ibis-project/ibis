@@ -14,6 +14,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.sql.compiler as comp
+from ibis.backends.pandas import connect
 from ibis.bigquery.tests.conftest import connect as bigquery_connect
 from ibis.impala.tests.conftest import IbisTestEnv as ImpalaEnv
 
@@ -168,7 +169,7 @@ class Pandas(Backend, RoundHalfToEven):
 
     @staticmethod
     def connect(data_directory: Path) -> ibis.client.Client:
-        return ibis.pandas.connect(
+        return connect(
             {
                 'functional_alltypes': pd.read_csv(
                     str(data_directory / 'functional_alltypes.csv'),

@@ -6,6 +6,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
+from ibis.backends.pandas import connect
 from ibis.common.exceptions import IbisTypeError
 from ibis.expr.signature import Argument as Arg
 
@@ -106,7 +107,7 @@ def test_custom_table_expr():
         def output_type(self):
             return MyTableExpr
 
-    con = ibis.pandas.connect({})
+    con = connect({})
     node = SpecialTable('foo', ibis.schema([('a', 'int64')]), con)
     expr = node.to_expr()
     assert isinstance(expr, MyTableExpr)

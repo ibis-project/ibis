@@ -13,7 +13,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.types as types
 from ibis import interval
-from ibis.pandas.execution import execute
+from ibis.backends.pandas import execute
 from ibis.pyspark.operations import PySparkTable
 from ibis.pyspark.timecontext import filter_by_time_context
 from ibis.spark.compiler import SparkContext, SparkDialect

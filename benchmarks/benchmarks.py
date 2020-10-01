@@ -3,7 +3,7 @@ import pandas as pd
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.pandas.udf import udf
+from ibis.backends.pandas import udf
 
 
 def make_t(name='t'):
@@ -156,7 +156,7 @@ class PandasBackend:
             }
         )
 
-        t = ibis.pandas.connect({'df': self.data}).table('df')
+        t = ibis.backends.pandas.connect({'df': self.data}).table('df')
 
         self.high_card_group_by = t.groupby(t.key).aggregate(
             avg_value=t.value.mean()

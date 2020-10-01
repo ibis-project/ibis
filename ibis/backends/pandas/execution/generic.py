@@ -20,11 +20,11 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.pandas.aggcontext as agg_ctx
 from ibis.compat import DatetimeTZDtype
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import TIME_COL
 from ibis.expr.typing import TimeContext
+from .. import aggcontext as agg_ctx
 from ..core import (
     boolean_types,
     execute,
