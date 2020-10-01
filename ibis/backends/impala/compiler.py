@@ -15,7 +15,7 @@ import ibis.sql.compiler as comp
 import ibis.sql.transforms as transforms
 import ibis.util as util
 
-from . import identifiers as identifiers
+from . import identifiers
 
 
 def build_ast(expr, context):
