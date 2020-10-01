@@ -14,8 +14,8 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.sql.compiler as comp
+from ibis.backends.impala.tests.conftest import IbisTestEnv as ImpalaEnv
 from ibis.bigquery.tests.conftest import connect as bigquery_connect
-from ibis.impala.tests.conftest import IbisTestEnv as ImpalaEnv
 
 
 class RoundingConvention:
