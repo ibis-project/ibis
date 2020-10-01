@@ -16,8 +16,8 @@ import ibis.pandas.aggcontext as agg_ctx
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import TIME_COL
 from ibis.expr.typing import TimeContext
-from ibis.pandas.aggcontext import AggregationContext
-from ibis.pandas.core import (
+from ..aggcontext import AggregationContext
+from ..core import (
     compute_time_context,
     date_types,
     execute,
@@ -26,8 +26,8 @@ from ibis.pandas.core import (
     timedelta_types,
     timestamp_types,
 )
-from ibis.pandas.dispatch import execute_node, pre_execute
-from ibis.pandas.execution import util
+from ..dispatch import execute_node, pre_execute
+from ..execution import util
 
 
 def _post_process_empty(

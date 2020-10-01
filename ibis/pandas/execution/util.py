@@ -2,10 +2,10 @@ import operator
 
 import toolz
 
-import ibis
+import ibis.util
 import ibis.common.exceptions as com
 from ibis.expr.scope import Scope
-from ibis.pandas.core import execute
+from ..core import execute
 
 
 def compute_sort_key(key, data, timecontext, scope=None, **kwargs):

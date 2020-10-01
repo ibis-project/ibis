@@ -9,7 +9,7 @@ import pandas as pd
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.pandas.dispatch import execute_node
+from ..dispatch import execute_node
 
 
 @execute_node.register(ops.Ln, decimal.Decimal)

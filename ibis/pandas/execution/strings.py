@@ -8,10 +8,10 @@ import regex as re
 import toolz
 from pandas.core.groupby import SeriesGroupBy
 
-import ibis
+import ibis.util
 import ibis.expr.operations as ops
-from ibis.pandas.core import integer_types, scalar_types
-from ibis.pandas.dispatch import execute_node
+from ..core import integer_types, scalar_types
+from ..dispatch import execute_node
 
 
 @execute_node.register(ops.StringLength, pd.Series)

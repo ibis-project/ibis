@@ -25,7 +25,7 @@ from ibis.compat import DatetimeTZDtype
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import TIME_COL
 from ibis.expr.typing import TimeContext
-from ibis.pandas.core import (
+from ..core import (
     boolean_types,
     execute,
     fixed_width_types,
@@ -36,8 +36,9 @@ from ibis.pandas.core import (
     simple_types,
     timedelta_types,
 )
-from ibis.pandas.dispatch import execute_literal, execute_node
-from ibis.pandas.execution import constants
+from ..dispatch import execute_literal, execute_node
+from ..execution import constants
+from ..client import PandasTable, PandasClient
 
 
 # By default return the literal value
@@ -911,7 +912,7 @@ def execute_node_where_scalar_scalar_series(op, cond, true, false, **kwargs):
 
 
 @execute_node.register(
-    ibis.pandas.client.PandasTable, ibis.pandas.client.PandasClient
+    PandasTable, PandasClient
 )
 def execute_database_table_client(
     op, client, timecontext: Optional[TimeContext], **kwargs

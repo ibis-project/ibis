@@ -4,18 +4,18 @@ import numpy as np
 import pandas as pd
 from pandas.core.groupby import SeriesGroupBy
 
-import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.client import Client
 from ibis.expr.scope import Scope
-from ibis.pandas.core import (
+from ..core import (
     date_types,
     integer_types,
     numeric_types,
     timedelta_types,
     timestamp_types,
 )
-from ibis.pandas.dispatch import execute_node, pre_execute
+from ..dispatch import execute_node, pre_execute
 
 
 @execute_node.register(ops.Strftime, pd.Timestamp, str)
@@ -231,7 +231,7 @@ def execute_timestamp_from_unix(op, data, **kwargs):
 
 
 @pre_execute.register(ops.TimestampNow)
-@pre_execute.register(ops.TimestampNow, ibis.client.Client)
+@pre_execute.register(ops.TimestampNow, Client)
 def pre_execute_timestamp_now(op, *args, **kwargs):
     timecontext = kwargs.get('timecontext', None)
     return Scope({op: pd.Timestamp('now')}, timecontext)
