@@ -224,7 +224,7 @@ class ImpalaCursor:
 
     def _wait_synchronous(self):
         # Wait to finish, but cancel if KeyboardInterrupt
-        from impala.hiveserver2 import OperationalError
+        from .hiveserver2 import OperationalError
 
         loop_start = time.time()
 
