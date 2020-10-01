@@ -14,6 +14,8 @@ import ibis.config as config  # noqa: E402
 import ibis.expr.datatypes as dt  # noqa: E402
 from ibis import literal as L  # noqa: E402
 
+from ... import sqlite
+
 sa = pytest.importorskip('sqlalchemy')
 
 
@@ -692,14 +694,14 @@ def test_not(alltypes):
 
 def test_compile_with_named_table():
     t = ibis.table([('a', 'string')], name='t')
-    result = ibis.sqlite.compile(t.a)
+    result = sqlite.compile(t.a)
     st = sa.table('t', sa.column('a', sa.String)).alias('t0')
     assert str(result) == str(sa.select([st.c.a]))
 
 
 def test_compile_with_unnamed_table():
     t = ibis.table([('a', 'string')])
-    result = ibis.sqlite.compile(t.a)
+    result = sqlite.compile(t.a)
     st = sa.table(t.op().name, sa.column('a', sa.String)).alias('t0')
     assert str(result) == str(sa.select([st.c.a]))
 
@@ -708,7 +710,7 @@ def test_compile_with_multiple_unnamed_tables():
     t = ibis.table([('a', 'string')])
     s = ibis.table([('b', 'string')])
     join = t.join(s, t.a == s.b)
-    result = ibis.sqlite.compile(join)
+    result = sqlite.compile(join)
     sqla_t = sa.table(t.op().name, sa.column('a', sa.String)).alias('t0')
     sqla_s = sa.table(s.op().name, sa.column('b', sa.String)).alias('t1')
     sqla_join = sqla_t.join(sqla_s, sqla_t.c.a == sqla_s.c.b)
@@ -720,7 +722,7 @@ def test_compile_with_one_unnamed_table():
     t = ibis.table([('a', 'string')])
     s = ibis.table([('b', 'string')], name='s')
     join = t.join(s, t.a == s.b)
-    result = ibis.sqlite.compile(join)
+    result = sqlite.compile(join)
     sqla_t = sa.table(t.op().name, sa.column('a', sa.String)).alias('t0')
     sqla_s = sa.table('s', sa.column('b', sa.String)).alias('t1')
     sqla_join = sqla_t.join(sqla_s, sqla_t.c.a == sqla_s.c.b)
@@ -756,13 +758,13 @@ def test_scalar_parameter(db):
 
 
 def test_compile_twice(dbpath):
-    con1 = ibis.sqlite.connect(dbpath)
+    con1 = sqlite.connect(dbpath)
     t1 = con1.table('batting')
     sort_key1 = ibis.desc(t1.playerID)
     sorted_table1 = t1.sort_by(sort_key1)
     expr1 = sorted_table1.count()
 
-    con2 = ibis.sqlite.connect(dbpath)
+    con2 = sqlite.connect(dbpath)
     t2 = con2.table('batting')
     sort_key2 = ibis.desc(t2.playerID)
     sorted_table2 = t2.sort_by(sort_key2)
