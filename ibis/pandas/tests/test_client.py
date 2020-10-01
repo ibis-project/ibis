@@ -5,14 +5,15 @@ import pytest
 from pytest import param
 
 import ibis
-from ibis.pandas.client import PandasTable  # noqa: E402
+from ..client import PandasTable  # noqa: E402
+from .. import connect
 
 pytestmark = pytest.mark.pandas
 
 
 @pytest.fixture
 def client():
-    return ibis.pandas.connect(
+    return connect(
         {
             'df': pd.DataFrame({'a': [1, 2, 3], 'b': list('abc')}),
             'df_unknown': pd.DataFrame(

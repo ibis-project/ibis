@@ -8,7 +8,8 @@ import pytest
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-from ibis.pandas.udf import nullable, udf
+from .. import connect, execute
+from ..udf import nullable, udf
 
 
 @pytest.fixture
@@ -39,7 +40,7 @@ def df2():
 
 @pytest.fixture
 def con(df, df2):
-    return ibis.pandas.connect({'df': df, 'df2': df2})
+    return connect({'df': df, 'df2': df2})
 
 
 @pytest.fixture
@@ -116,7 +117,7 @@ def test_udf(t, df):
 
 def test_zero_argument_udf(con, t, df):
     expr = t.projection([a_single_number().name('foo')])
-    result = ibis.pandas.execute(expr)
+    result = execute(expr)
     assert result is not None
 
 
@@ -201,7 +202,7 @@ def test_udaf_groupby():
             'key': list('ddeefff'),
         }
     )
-    con = ibis.pandas.connect({'df': df})
+    con = connect({'df': df})
     t = con.table('df')
 
     expr = t.groupby(t.key).aggregate(my_corr=my_corr(t.a, t.b))
@@ -296,7 +297,7 @@ def test_udaf_window_interval():
         )
     )
 
-    con = ibis.pandas.connect({'df': df})
+    con = connect({'df': df})
     t = con.table('df')
     window = ibis.trailing_range_window(
         ibis.interval(days=2), order_by='time', group_by='key'
@@ -338,7 +339,7 @@ def test_multiple_argument_udaf_window():
             'key': list('deefefd'),
         }
     )
-    con = ibis.pandas.connect({'df': df})
+    con = connect({'df': df})
     t = con.table('df')
     window = ibis.trailing_window(2, order_by='a', group_by='key')
     window2 = ibis.trailing_window(1, order_by='b', group_by='key')
@@ -382,7 +383,7 @@ def test_udaf_window_nan():
             'key': list('ddeefffggh'),
         }
     )
-    con = ibis.pandas.connect({'df': df})
+    con = connect({'df': df})
     t = con.table('df')
     window = ibis.trailing_window(2, order_by='a', group_by='key')
     expr = t.mutate(rolled=my_mean(t.b).over(window))

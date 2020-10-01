@@ -11,12 +11,11 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.expr.scope import Scope
 from ibis.expr.window import get_preceding_value, rows_with_max_lookback
-from ibis.pandas.aggcontext import AggregationContext, window_agg_udf
-from ibis.pandas.dispatch import pre_execute
-from ibis.pandas.execution.window import get_aggcontext
+from ...aggcontext import AggregationContext, window_agg_udf
+from ...dispatch import pre_execute
+from ...execution.window import get_aggcontext
 from ibis.udf.vectorized import reduction
-
-execute = ibis.pandas.execute
+from ... import connect, execute, PandasClient
 
 pytestmark = pytest.mark.pandas
 
@@ -445,7 +444,7 @@ def test_mutate_with_window_after_join(sort_kind):
             'value': [0, 1, np.nan, 3, 4, np.nan, 6, 7, 8],
         }
     )
-    con = ibis.pandas.connect(dict(left=left_df, right=right_df))
+    con = connect(dict(left=left_df, right=right_df))
     left, right = map(con.table, ('left', 'right'))
 
     joined = left.outer_join(right, left.ints == right.group)
@@ -474,7 +473,7 @@ def test_mutate_scalar_with_window_after_join():
             'value': [0, 1, np.nan, 3, 4, np.nan, 6, 7, 8],
         }
     )
-    con = ibis.pandas.connect(dict(left=left_df, right=right_df))
+    con = connect(dict(left=left_df, right=right_df))
     left, right = map(con.table, ('left', 'right'))
 
     joined = left.outer_join(right, left.ints == right.group)
@@ -500,7 +499,7 @@ def test_project_scalar_after_join():
             'value': [0, 1, np.nan, 3, 4, np.nan, 6, 7, 8],
         }
     )
-    con = ibis.pandas.connect(dict(left=left_df, right=right_df))
+    con = connect(dict(left=left_df, right=right_df))
     left, right = map(con.table, ('left', 'right'))
 
     joined = left.outer_join(right, left.ints == right.group)
@@ -513,7 +512,7 @@ def test_project_scalar_after_join():
 
 def test_project_list_scalar():
     df = pd.DataFrame({'ints': range(3)})
-    con = ibis.pandas.connect(dict(df=df))
+    con = connect(dict(df=df))
     expr = con.table('df')
     result = expr.mutate(res=expr.ints.quantile([0.5, 0.95])).execute()
     tm.assert_series_equal(
@@ -533,7 +532,7 @@ def test_window_with_preceding_expr(index):
     start = 2
     data = np.arange(start, start + len(time))
     df = pd.DataFrame({'value': data, 'time': time}, index=index(time))
-    client = ibis.pandas.connect({'df': df})
+    client = connect({'df': df})
     t = client.table('df')
     expected = (
         df.set_index('time')
@@ -557,7 +556,7 @@ def test_window_with_mlb():
         .rename_axis('time')
         .reset_index(drop=False)
     )
-    client = ibis.pandas.connect({'df': df})
+    client = connect({'df': df})
     t = client.table('df')
     rows_with_mlb = rows_with_max_lookback(5, ibis.interval(days=10))
     expr = t.mutate(
@@ -587,7 +586,7 @@ def test_window_with_mlb():
 
 
 def test_window_has_pre_execute_scope():
-    signature = ops.Lag, ibis.pandas.PandasClient
+    signature = ops.Lag, PandasClient
     called = [0]
 
     @pre_execute.register(*signature)
@@ -597,7 +596,7 @@ def test_window_has_pre_execute_scope():
 
     data = {'key': list('abc'), 'value': [1, 2, 3], 'dup': list('ggh')}
     df = pd.DataFrame(data, columns=['key', 'value', 'dup'])
-    client = ibis.pandas.connect(dict(df=df))
+    client = connect(dict(df=df))
     t = client.table('df')
     window = ibis.window(order_by='value')
     expr = t.key.lag(1).over(window).name('foo')

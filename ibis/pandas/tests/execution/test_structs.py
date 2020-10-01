@@ -6,6 +6,7 @@ import pytest
 
 import ibis
 import ibis.expr.datatypes as dt
+from ... import connect, execute
 
 
 @pytest.fixture(scope="module")
@@ -26,7 +27,7 @@ def struct_client(value):
             "value": [1, 2, 3],
         }
     )
-    return ibis.pandas.connect({"t": df})
+    return connect({"t": df})
 
 
 @pytest.fixture
@@ -48,11 +49,11 @@ def test_struct_field_literal(value):
     )
 
     expr = struct.fruit
-    result = ibis.pandas.execute(expr)
+    result = execute(expr)
     assert result == "pear"
 
     expr = struct.weight
-    result = ibis.pandas.execute(expr)
+    result = execute(expr)
     assert result == 0
 
 
