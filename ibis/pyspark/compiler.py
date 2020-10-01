@@ -10,8 +10,10 @@ from pyspark.sql.functions import PandasUDFType, pandas_udf
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dtypes
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
 import ibis.expr.types as types
 from ibis import interval
+from ibis.pandas.execution import execute
 from ibis.pyspark.operations import PySparkTable
 from ibis.pyspark.timecontext import filter_by_time_context
 from ibis.spark.compiler import SparkContext, SparkDialect
@@ -54,6 +56,7 @@ class PySparkExprTranslator:
 
         :param expr: ibis expression
         :param scope: dictionary mapping from operation to translated result
+        :param timecontext: time context associated with expr
         :param kwargs: parameters passed as keyword args (e.g. window)
         :return: translated PySpark DataFrame or Column object
         """
@@ -285,9 +288,14 @@ def compile_literal(t, expr, scope, timecontext, raw=False, **kwargs):
     """ If raw is True, don't wrap the result with F.lit()
     """
     value = expr.op().value
+    dtype = expr.op().dtype
 
     if raw:
         return value
+
+    if isinstance(dtype, dtypes.Interval):
+        # execute returns a Timedelta and value is nanoseconds
+        return execute(expr).value
 
     if isinstance(value, collections.abc.Set):
         # Don't wrap set with F.lit
@@ -366,11 +374,8 @@ def compile_aggregator(
         src_col = F.when(condition, src_col)
 
     col = fn(src_col)
-    if context in (AggregationContext.ENTIRE, AggregationContext.GROUP):
+    if context:
         return col
-    elif context == AggregationContext.WINDOW:
-        window = kwargs['window']
-        return col.over(window)
     else:
         # We are trying to compile a expr such as some_col.max()
         # to a Spark expression.
@@ -402,9 +407,7 @@ def compile_any(t, expr, scope, timecontext, context=None, **kwargs):
 
 
 @compiles(ops.NotAny)
-def compile_notany(
-    t, expr, scope, timecontext, *, context=None, window=None, **kwargs
-):
+def compile_notany(t, expr, scope, timecontext, *, context=None, **kwargs):
     # The code here is a little ugly because the translation are different
     # with different context.
     # When translating col.notany() (context is None), we returns the dataframe
@@ -422,13 +425,7 @@ def compile_notany(
         )
     else:
         return ~compile_any(
-            t,
-            expr,
-            scope,
-            timecontext,
-            context=context,
-            window=window,
-            **kwargs,
+            t, expr, scope, timecontext, context=context, **kwargs,
         )
 
 
@@ -440,9 +437,7 @@ def compile_all(t, expr, scope, timecontext, context=None, **kwargs):
 
 
 @compiles(ops.NotAll)
-def compile_notall(
-    t, expr, scope, timecontext, *, context=None, window=None, **kwargs
-):
+def compile_notall(t, expr, scope, timecontext, *, context=None, **kwargs):
     # See comments for opts.NotAny for reasoning for the if/else
     if context is None:
 
@@ -454,13 +449,7 @@ def compile_notall(
         )
     else:
         return ~compile_all(
-            t,
-            expr,
-            scope,
-            timecontext,
-            context=context,
-            window=window,
-            **kwargs,
+            t, expr, scope, timecontext, context=context, **kwargs,
         )
 
 
@@ -1035,6 +1024,24 @@ def compile_join(t, expr, scope, timecontext, *, how):
     return left_df.join(right_df, pred_columns, how)
 
 
+def _canonicalize_interval(t, interval, scope, timecontext, **kwargs):
+    """ Convert interval to integer timestamp of second
+
+    When pyspark cast timestamp to integer type, it uses the number of seconds
+    since epoch. Therefore, we need cast ibis interval correspondingly.
+    """
+    if isinstance(interval, ir.IntervalScalar):
+        value = t.translate(interval, scope, timecontext, **kwargs)
+        # value is in nanoseconds and spark uses seconds since epoch
+        return int(value / 1e9)
+    elif isinstance(interval, int):
+        return interval
+    raise com.UnsupportedOperationError(
+        f'type {type(interval)} is not supported in preceding /following '
+        'in window.'
+    )
+
+
 @compiles(ops.WindowOp)
 def compile_window_op(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
@@ -1052,38 +1059,59 @@ def compile_window_op(t, expr, scope, timecontext, **kwargs):
     ]
 
     order_by = window._order_by
+    # Timestamp needs to be cast to long for window bounds in spark
     ordering_keys = [
-        key.to_expr().get_name()
-        for key in map(operator.methodcaller('op'), order_by)
+        F.col(sort_expr.get_name()).cast('long')
+        if isinstance(sort_expr.op().expr, types.TimestampColumn)
+        else sort_expr.get_name()
+        for sort_expr in order_by
     ]
-
     context = AggregationContext.WINDOW
     pyspark_window = Window.partitionBy(grouping_keys).orderBy(ordering_keys)
 
     # If the operand is a shift op (e.g. lead, lag), Spark will set the window
     # bounds. Only set window bounds here if not a shift operation.
     if not isinstance(operand.op(), ops.ShiftBase):
-        start = (
-            -window.preceding
-            if window.preceding is not None
-            else Window.unboundedPreceding
-        )
-        end = (
-            window.following
-            if window.following is not None
-            else Window.unboundedFollowing
-        )
-        pyspark_window = pyspark_window.rowsBetween(start, end)
+        if window.preceding is None:
+            start = Window.unboundedPreceding
+        else:
+            start = -_canonicalize_interval(
+                t, window.preceding, scope, timecontext, **kwargs
+            )
+        if window.following is None:
+            end = Window.unboundedFollowing
+        else:
+            end = _canonicalize_interval(
+                t, window.following, scope, timecontext, **kwargs
+            )
 
-    result = t.translate(
-        operand, scope, timecontext, window=pyspark_window, context=context
+        if isinstance(window.preceding, ir.IntervalScalar) or isinstance(
+            window.following, ir.IntervalScalar
+        ):
+            pyspark_window = pyspark_window.rangeBetween(start, end)
+        else:
+            pyspark_window = pyspark_window.rowsBetween(start, end)
+
+    res_op = operand.op()
+    if isinstance(res_op, (ops.NotAll, ops.NotAny)):
+        # For NotAll and NotAny, negation must be applied after .over(window)
+        # Here we rewrite node to be its negation, and negate it back after
+        # translation and window operation
+        operand = res_op.negate().to_expr()
+    result = t.translate(operand, scope, timecontext, context=context).over(
+        pyspark_window
     )
-    return result
+
+    if isinstance(res_op, (ops.NotAll, ops.NotAny)):
+        return ~result
+    elif isinstance(res_op, (ops.MinRank, ops.DenseRank, ops.RowNumber)):
+        # result must be cast to long type for Rank / RowNumber
+        return result.astype('long') - 1
+    else:
+        return result
 
 
-def _handle_shift_operation(
-    t, expr, scope, timecontext, *, fn, window, **kwargs
-):
+def _handle_shift_operation(t, expr, scope, timecontext, *, fn, **kwargs):
     op = expr.op()
 
     src_column = t.translate(op.arg, scope, timecontext)
@@ -1091,37 +1119,37 @@ def _handle_shift_operation(
     offset = op.offset.op().value if op.offset is not None else op.offset
 
     if offset:
-        return fn(src_column, count=offset, default=default).over(window)
+        return fn(src_column, count=offset, default=default)
     else:
-        return fn(src_column, default=default).over(window)
+        return fn(src_column, default=default)
 
 
 @compiles(ops.Lag)
-def compile_lag(t, expr, scope, timecontext, *, window, **kwargs):
+def compile_lag(t, expr, scope, timecontext, **kwargs):
     return _handle_shift_operation(
-        t, expr, scope, timecontext, fn=F.lag, window=window, **kwargs
+        t, expr, scope, timecontext, fn=F.lag, **kwargs
     )
 
 
 @compiles(ops.Lead)
-def compile_lead(t, expr, scope, timecontext, *, window, **kwargs):
+def compile_lead(t, expr, scope, timecontext, **kwargs):
     return _handle_shift_operation(
-        t, expr, scope, timecontext, fn=F.lead, window=window, **kwargs
+        t, expr, scope, timecontext, fn=F.lead, **kwargs
     )
 
 
 @compiles(ops.MinRank)
-def compile_rank(t, expr, scope, timecontext, *, window, **kwargs):
-    return F.rank().over(window).astype('long') - 1
+def compile_rank(t, expr, scope, timecontext, **kwargs):
+    return F.rank()
 
 
 @compiles(ops.DenseRank)
-def compile_dense_rank(t, expr, scope, timecontext, *, window, **kwargs):
-    return F.dense_rank().over(window).astype('long') - 1
+def compile_dense_rank(t, expr, scope, timecontext, **kwargs):
+    return F.dense_rank()
 
 
 @compiles(ops.PercentRank)
-def compile_percent_rank(t, expr, scope, timecontext, *, window, **kwargs):
+def compile_percent_rank(t, expr, scope, timecontext, **kwargs):
     raise com.UnsupportedOperationError(
         'Pyspark percent_rank() function indexes from 0 '
         'instead of 1, and does not match expected '
@@ -1130,29 +1158,29 @@ def compile_percent_rank(t, expr, scope, timecontext, *, window, **kwargs):
 
 
 @compiles(ops.NTile)
-def compile_ntile(t, expr, scope, timecontext, *, window, **kwargs):
+def compile_ntile(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
     buckets = op.buckets.op().value
-    return F.ntile(buckets).over(window)
+    return F.ntile(buckets)
 
 
 @compiles(ops.FirstValue)
-def compile_first_value(t, expr, scope, timecontext, *, window, **kwargs):
+def compile_first_value(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
     src_column = t.translate(op.arg, scope, timecontext)
-    return F.first(src_column).over(window)
+    return F.first(src_column)
 
 
 @compiles(ops.LastValue)
-def compile_last_value(t, expr, scope, timecontext, *, window, **kwargs):
+def compile_last_value(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
     src_column = t.translate(op.arg, scope, timecontext)
-    return F.last(src_column).over(window)
+    return F.last(src_column)
 
 
 @compiles(ops.RowNumber)
-def compile_row_number(t, expr, scope, timecontext, *, window, **kwargs):
-    return F.row_number().over(window).cast('long') - 1
+def compile_row_number(t, expr, scope, timecontext, **kwargs):
+    return F.row_number()
 
 
 # -------------------------- Temporal Operations ----------------------------
@@ -1622,11 +1650,8 @@ def compile_reduction_udf(t, expr, scope, timecontext, context=None, **kwargs):
     func_args = (t.translate(arg, scope, timecontext) for arg in op.func_args)
 
     col = spark_udf(*func_args)
-    if context in (AggregationContext.ENTIRE, AggregationContext.GROUP):
+    if context:
         return col
-    elif context == AggregationContext.WINDOW:
-        window = kwargs['window']
-        return col.over(window)
     else:
         src_table = t.translate(op.func_args[0].op().table, scope, timecontext)
         return src_table.agg(col)

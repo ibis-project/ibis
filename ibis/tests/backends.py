@@ -14,8 +14,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.sql.compiler as comp
-from ibis.backends.impala.tests.conftest import IbisTestEnv as ImpalaEnv
-from ibis.bigquery.tests.conftest import connect as bigquery_connect
 
 
 class RoundingConvention:
@@ -126,11 +124,7 @@ class Backend(abc.ABC):
 
     @property
     def api(self):
-        name = self.name
-        module = getattr(ibis, name, None)
-        if module is None:
-            pytest.skip("Unable to access module ibis.{}".format(name))
-        return module
+        return getattr(ibis, self.name)
 
     def make_context(
         self, params: Optional[Mapping[ir.ValueExpr, Any]] = None
@@ -485,6 +479,8 @@ class BigQuery(UnorderedComparator, Backend, RoundAwayFromZero):
 
     @staticmethod
     def connect(data_directory: Path) -> ibis.client.Client:
+        from ibis.bigquery.tests.conftest import connect
+
         project_id = os.environ.get('GOOGLE_BIGQUERY_PROJECT_ID')
         if project_id is None:
             pytest.skip(
@@ -495,7 +491,7 @@ class BigQuery(UnorderedComparator, Backend, RoundAwayFromZero):
             pytest.skip(
                 'Environment variable GOOGLE_BIGQUERY_PROJECT_ID is empty'
             )
-        return bigquery_connect(project_id, dataset_id='testing')
+        return connect(project_id, dataset_id='testing')
 
     @property
     def batting(self) -> ir.TableExpr:
@@ -515,7 +511,9 @@ class Impala(UnorderedComparator, Backend, RoundAwayFromZero):
 
     @staticmethod
     def connect(data_directory: Path) -> ibis.client.Client:
-        env = ImpalaEnv()
+        from ibis.impala.tests.conftest import IbisTestEnv
+
+        env = IbisTestEnv()
         hdfs_client = ibis.hdfs_connect(
             host=env.nn_host,
             port=env.webhdfs_port,

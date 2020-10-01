@@ -12,6 +12,9 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :bug:`2410` Fix ``aggcontext.Summarize`` not always producing scalar (Pandas backend)
+* :bug:`2414` Fix same window op with different window size on table lead to incorrect results for pyspark backend
+* :feature:`2409` FEAT: Support Ibis interval for window in pyspark backend
 * :bug:`2229` Fix same column with multiple aliases not showing properly in repr
 * :feature:`2402` Use Scope class for scope in pyspark backend
 * :bug:`2395` Fix reduction UDFs over ungrouped, bounded windows on Pandas backend
