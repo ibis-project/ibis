@@ -45,7 +45,7 @@ with suppress(ImportError):
 
 with suppress(ImportError):
     # pip install ibis-framework[clickhouse]
-    import ibis.clickhouse.api as clickhouse  # noqa: F401
+    import ibis.backends.clickhouse.api as clickhouse  # noqa: F401
 
 with suppress(ImportError):
     # pip install ibis-framework[bigquery]

@@ -39,7 +39,7 @@ def df(alltypes):
 
 @pytest.fixture
 def translate():
-    from ibis.clickhouse.compiler import ClickhouseDialect
+    from ibis.backends.clickhouse.compiler import ClickhouseDialect
 
     dialect = ClickhouseDialect()
     context = dialect.make_context()

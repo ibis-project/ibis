@@ -11,7 +11,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.clickhouse.compiler import ClickhouseDialect, build_ast
+from ibis.backends.clickhouse.compiler import ClickhouseDialect, build_ast
 from ibis.client import Database, DatabaseEntity, Query, SQLClient
 from ibis.config import options
 from ibis.sql.compiler import DDL
