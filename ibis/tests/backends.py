@@ -511,7 +511,7 @@ class Impala(UnorderedComparator, Backend, RoundAwayFromZero):
 
     @staticmethod
     def connect(data_directory: Path) -> ibis.client.Client:
-        from ibis.impala.tests.conftest import IbisTestEnv
+        from ibis.backends.impala.tests.conftest import IbisTestEnv
 
         env = IbisTestEnv()
         hdfs_client = ibis.hdfs_connect(

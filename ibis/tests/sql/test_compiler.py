@@ -6,7 +6,7 @@ import pytest
 import ibis
 import ibis.expr.api as api
 import ibis.expr.operations as ops
-from ibis import impala  # noqa: E402
+from ibis.backends import impala  # noqa: E402
 from ibis.backends.impala.compiler import (  # noqa: E402
     ImpalaDialect,
     build_ast,
