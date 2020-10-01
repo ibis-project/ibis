@@ -7,21 +7,21 @@ import toolz
 from multipledispatch import Dispatcher
 
 import ibis
+import ibis.backends.impala.compiler as impala_compiler
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.lineage as lin
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.sql.compiler as comp
-from ibis.bigquery.datatypes import ibis_type_to_bigquery_type
-from ibis.impala import compiler as impala_compiler
-from ibis.impala.compiler import (
+from ibis.backends.impala.compiler import (
     ImpalaSelect,
     ImpalaTableSetFormatter,
     _reduction,
     fixed_arity,
     unary,
 )
+from ibis.bigquery.datatypes import ibis_type_to_bigquery_type
 
 
 class BigQueryUDFNode(ops.ValueOp):
