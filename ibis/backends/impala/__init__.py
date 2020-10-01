@@ -21,7 +21,7 @@ def compile(expr, params=None):
     str
 
     """
-    from ibis.impala.compiler import to_sql
+    from .compiler import to_sql
 
     return to_sql(expr, dialect.make_context(params=params))
 

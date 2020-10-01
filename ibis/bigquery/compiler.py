@@ -7,13 +7,13 @@ import toolz
 from multipledispatch import Dispatcher
 
 import ibis
-import ibis.backends.impala.compiler as impala_compiler
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.lineage as lin
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.sql.compiler as comp
+from ibis.backends.impala import compile as impala_compiler
 from ibis.backends.impala.compiler import (
     ImpalaSelect,
     ImpalaTableSetFormatter,
