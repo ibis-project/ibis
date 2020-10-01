@@ -1097,23 +1097,18 @@ def compile_window_op(t, expr, scope, timecontext, **kwargs):
         # For NotAll and NotAny, negation must be applied after .over(window)
         # Here we rewrite node to be its negation, and negate it back after
         # translation and window operation
-        return ~(
-            t.translate(
-                res_op.negate().to_expr(), scope, timecontext, context=context
-            ).over(pyspark_window)
-        )
+        operand = res_op.negate().to_expr()
+    result = t.translate(operand, scope, timecontext, context=context).over(
+        pyspark_window
+    )
+
+    if isinstance(res_op, (ops.NotAll, ops.NotAny)):
+        return ~result
     elif isinstance(res_op, (ops.MinRank, ops.DenseRank, ops.RowNumber)):
-        # result must be cast to long type for rank / rownumber
-        return (
-            t.translate(operand, scope, timecontext, context=context)
-            .over(pyspark_window)
-            .astype('long')
-            - 1
-        )
+        # result must be cast to long type for Rank / RowNumber
+        return result.astype('long') - 1
     else:
-        return t.translate(operand, scope, timecontext, context=context).over(
-            pyspark_window
-        )
+        return result
 
 
 def _handle_shift_operation(t, expr, scope, timecontext, *, fn, **kwargs):
