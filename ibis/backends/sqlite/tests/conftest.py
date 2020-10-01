@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from ... import sqlite
+import ibis
 
 
 @pytest.fixture(scope='module')
@@ -17,7 +17,7 @@ def dbpath(data_directory):
 
 @pytest.fixture(scope='module')
 def con(dbpath):
-    return sqlite.connect(dbpath)
+    return ibis.sqlite.connect(dbpath)
 
 
 @pytest.fixture(scope='module')
@@ -34,7 +34,7 @@ def dialect():
 
 @pytest.fixture
 def translate(dialect):
-    from ...sqlite.compiler import SQLiteDialect
+    from ibis.backends.sqlite.compiler import SQLiteDialect
 
     ibis_dialect = SQLiteDialect()
     context = ibis_dialect.make_context()

@@ -10,8 +10,6 @@ import ibis.config as config
 import ibis.expr.types as ir
 from ibis.util import guid
 
-from ... import sqlite
-
 sa = pytest.importorskip('sqlalchemy')
 
 
@@ -22,9 +20,9 @@ def test_file_not_exist_and_create():
     path = '__ibis_tmp_{}.db'.format(guid())
 
     with pytest.raises(FileNotFoundError):
-        sqlite.connect(path)
+        ibis.sqlite.connect(path)
 
-    con = sqlite.connect(path, create=True)
+    con = ibis.sqlite.connect(path, create=True)
     try:
         assert os.path.exists(path)
     finally:
@@ -71,7 +69,7 @@ def test_compile_verify(alltypes):
 
 
 def test_attach_file(dbpath):
-    client = sqlite.connect()
+    client = ibis.sqlite.connect()
 
     client.attach('foo', dbpath)
     client.attach('bar', dbpath)
@@ -91,7 +89,7 @@ def test_compile_toplevel():
 
     # it works!
     expr = t.foo.sum()
-    result = sqlite.compile(expr)
+    result = ibis.sqlite.compile(expr)
     expected = """\
 SELECT sum(t0.foo) AS sum 
 FROM t0 AS t0"""  # noqa
