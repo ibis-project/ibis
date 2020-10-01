@@ -573,7 +573,7 @@ class Moving(Window):
     __slots__ = ()
 
     def __init__(self, preceding, max_lookback, *args, **kwargs):
-        from ibis.pandas.core import timedelta_types
+        from .core import timedelta_types
 
         ibis_dtype = getattr(preceding, 'type', lambda: None)()
         preceding = compute_window_spec(ibis_dtype, preceding)

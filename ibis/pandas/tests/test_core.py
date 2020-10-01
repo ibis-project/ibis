@@ -10,9 +10,9 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.expr.scope import Scope
-from ibis.pandas.client import PandasClient
-from ibis.pandas.core import is_computable_input
-from ibis.pandas.dispatch import execute_node, post_execute, pre_execute
+from ..client import PandasClient
+from ..core import is_computable_input
+from ..dispatch import execute_node, post_execute, pre_execute
 
 pytestmark = pytest.mark.pandas
 

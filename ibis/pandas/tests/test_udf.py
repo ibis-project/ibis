@@ -8,7 +8,7 @@ import pytest
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-from ibis.pandas.udf import nullable, udf
+from ..udf import nullable, udf
 
 
 @pytest.fixture

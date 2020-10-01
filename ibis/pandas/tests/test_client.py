@@ -5,7 +5,7 @@ import pytest
 from pytest import param
 
 import ibis
-from ibis.pandas.client import PandasTable  # noqa: E402
+from ..client import PandasTable  # noqa: E402
 
 pytestmark = pytest.mark.pandas
 

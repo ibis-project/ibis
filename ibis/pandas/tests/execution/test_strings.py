@@ -4,7 +4,7 @@ import pandas.util.testing as tm  # noqa: E402
 import pytest
 from pytest import param
 
-from ibis.pandas.execution.strings import sql_like_to_regex
+from ...execution.strings import sql_like_to_regex
 
 pytestmark = pytest.mark.pandas
 

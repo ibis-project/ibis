@@ -2,10 +2,10 @@ from __future__ import absolute_import
 
 import toolz
 
-import ibis
-from ibis.pandas.client import PandasClient
-from ibis.pandas.execution import execute, execute_node
-from ibis.pandas.udf import udf
+from ibis.sql.compiler import Dialect
+from .client import PandasClient
+from .execution import execute, execute_node
+from .udf import udf
 
 __all__ = ('connect', 'dialect', 'execute', 'udf')
 
@@ -78,7 +78,7 @@ class PandasExprTranslator:
     _rewrites = {}
 
 
-class PandasDialect(ibis.sql.compiler.Dialect):
+class PandasDialect(Dialect):
 
     translator = PandasExprTranslator
 

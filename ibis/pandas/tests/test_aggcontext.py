@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 from pandas.util import testing as tm
 
-from ibis.pandas.aggcontext import window_agg_udf
+from ..aggcontext import window_agg_udf
 
 
 @pytest.mark.parametrize(

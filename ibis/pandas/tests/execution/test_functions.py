@@ -11,7 +11,7 @@ import pytest
 
 import ibis
 import ibis.expr.datatypes as dt  # noqa: E402
-from ibis.pandas.udf import udf
+from ...udf import udf
 
 pytestmark = pytest.mark.pandas
 

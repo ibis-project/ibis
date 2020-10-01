@@ -13,14 +13,14 @@ import toolz
 from multipledispatch import Dispatcher
 from pkg_resources import parse_version
 
-import ibis.client as client
+import ibis.client
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.compat import CategoricalDtype, DatetimeTZDtype
-from ibis.pandas.core import execute_and_reset
+from .core import execute_and_reset
 
 try:
     infer_pandas_dtype = pd.api.types.infer_dtype
@@ -344,7 +344,7 @@ class PandasTable(ops.DatabaseTable):
     pass
 
 
-class PandasClient(client.Client):
+class PandasClient(ibis.client.Client):
 
     dialect = None  # defined in ibis.pandas.api
 
@@ -457,5 +457,5 @@ class PandasClient(client.Client):
         return parse_version(pd.__version__)
 
 
-class PandasDatabase(client.Database):
+class PandasDatabase(ibis.client.Database):
     pass

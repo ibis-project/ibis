@@ -11,10 +11,10 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.expr.scope import Scope
 from ibis.expr.window import get_preceding_value, rows_with_max_lookback
-from ibis.pandas.aggcontext import AggregationContext, window_agg_udf
-from ibis.pandas.dispatch import pre_execute
-from ibis.pandas.execution.window import get_aggcontext
 from ibis.udf.vectorized import reduction
+from ...aggcontext import AggregationContext, window_agg_udf
+from ...dispatch import pre_execute
+from ...execution.window import get_aggcontext
 
 execute = ibis.pandas.execute
 
