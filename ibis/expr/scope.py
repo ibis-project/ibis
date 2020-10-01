@@ -41,21 +41,71 @@ from ibis.expr.operations import Node
 from ibis.expr.timecontext import TimeContextRelation, compare_timecontext
 from ibis.expr.typing import TimeContext
 
-ScopeItem = namedtuple('item', ['value', 'timecontext'])
+ScopeItem = namedtuple('item', ['timecontext', 'value'])
 
 
 class Scope:
-    def __init__(self, items: Dict[str, ScopeItem] = None):
-        self._items = items or {}
+    def __init__(
+        self,
+        param: Dict[Node, Any] = None,
+        timecontext: Optional[TimeContext] = None,
+    ):
+        """ Take a dict of `op`, `result`, create a new scope and save
+        those pairs in scope. Associate None as timecontext by default.
+        This is mostly used to init a scope with a set of given params.
+        """
+        self._items = (
+            {op: ScopeItem(timecontext, value) for op, value in param.items()}
+            if param
+            else {}
+        )
 
-    def items(self):
-        return iter(self._items)
+    def __contains__(self, op):
+        """ Given an `op`, return if `op` is present in Scope.
+        Note that this `__contain__` method doesn't take `timecontext`
+        as a parameter. This could be used to iterate all keys in
+        current scope, or any case that doesn't care about value, just
+        simply test if `op` is in scope or not.
+        When trying to get value in scope, use `get_value(op, timecontext)`
+        instead. Because the cached data could be trusted only if:
+        1. `op` is in `scope`, and,
+        2. The `timecontext` associated with `op` is a time context equal
+           to, or larger than the current time context.
+        """
+        return op in self._items
 
-    def __getitem__(self, op: Node) -> ScopeItem:
-        return self._items[op]
+    def __iter__(self):
+        return iter(self._items.keys())
 
-    def __setitem__(self, op: Node, value: Any) -> None:
-        self._items[op] = value
+    def set_value(
+        self, op: Node, timecontext: Optional[TimeContext], value: Any
+    ) -> None:
+        """ Set values in scope.
+
+            Given an `op`, `timecontext` and `value`, set `op` and
+            `(value, timecontext)` in scope.
+
+        Parameters
+        ----------
+        scope : collections.Mapping
+            a dictionary mapping :class:`~ibis.expr.operations.Node`
+            subclass instances to concrete data, and the time context associate
+            with it (if any).
+        op: ibis.expr.operations.Node
+            key in scope.
+        timecontext: Optional[TimeContext]
+        value: Any
+            the cached result to save in scope, an object whose type may
+            differ in different backends.
+        """
+        # Note that this set method doesn't simply override and set, but
+        # takes time context into consideration.
+        # If there is a value associated with the key, but time context is
+        # smaller than the current time context we are going to set,
+        # `get_value` will return None and we will proceed to set the new
+        # value in scope.
+        if self.get_value(op, timecontext) is None:
+            self._items[op] = ScopeItem(timecontext, value)
 
     def get_value(
         self, op: Node, timecontext: Optional[TimeContext] = None
@@ -77,12 +127,12 @@ class Scope:
         result: the cached result, an object whose types may differ in
         different backends.
         """
-        if op not in self.items():
+        if op not in self:
             return None
 
         # for ops without timecontext
         if timecontext is None:
-            return self[op].value
+            return self._items[op].value
         else:
             # For op with timecontext, ther are some ops cannot use cached
             # result with a different (larger) timecontext to get the
@@ -95,13 +145,13 @@ class Scope:
             # These are time context sensitive operations. Since these cases
             # are rare in acutal use case, we just enable optimization for
             # all nodes for now.
-            cached_timecontext = self[op].timecontext
+            cached_timecontext = self._items[op].timecontext
             if cached_timecontext:
                 relation = compare_timecontext(timecontext, cached_timecontext)
                 if relation == TimeContextRelation.SUBSET:
-                    return self[op].value
+                    return self._items[op].value
             else:
-                return self[op].value
+                return self._items[op].value
         return None
 
     def merge_scope(self, other_scope: 'Scope', overwrite=False) -> 'Scope':
@@ -122,17 +172,17 @@ class Scope:
         """
         result = Scope()
 
-        for op in self.items():
-            result[op] = self[op]
+        for op in self:
+            result._items[op] = self._items[op]
 
-        for op in other_scope.items():
+        for op in other_scope:
             # if get_scope returns a not None value, then data is already
             # cached in scope and it is at least a greater range than
             # the current timecontext, so we drop the item. Otherwise
             # add it into scope.
-            v = other_scope[op]
+            v = other_scope._items[op]
             if overwrite or result.get_value(op, v.timecontext) is None:
-                result[op] = v
+                result._items[op] = v
         return result
 
     def merge_scopes(
@@ -153,32 +203,9 @@ class Scope:
             a new Scope instance with items in two scope merged.
         """
         result = Scope()
-        for op in self.items():
-            result[op] = self[op]
+        for op in self:
+            result._items[op] = self._items[op]
 
         for s in other_scopes:
             result = result.merge_scope(s, overwrite)
         return result
-
-
-def make_scope(
-    op: Node, result: Any, timecontext: Optional[TimeContext] = None
-) -> 'Scope':
-    """make a Scope instance, adding (op, result, timecontext) into the
-       scope
-
-    Parameters
-    ----------
-    op: ibis.expr.operations.Node
-        key in scope.
-    result : Object
-        concrete data, type could be different for different backends.
-    timecontext: Optional[TimeContext]
-        time context associate with the result.
-
-    Returns
-    -------
-    Scope
-        a new Scope instance with op in it.
-    """
-    return Scope({op: ScopeItem(result, timecontext)})

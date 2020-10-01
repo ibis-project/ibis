@@ -40,7 +40,7 @@ Docker image. Some features may not work on earlier releases.
 
 API
 ===
-.. currentmodule:: ibis.omniscidb.api
+.. currentmodule:: ibis.backends.omniscidb
 
 The OmniSciDB client is accessible through the ``ibis.omniscidb`` namespace.
 
@@ -103,7 +103,7 @@ the follow code into `ibis.__init__`:
 
     with suppress(ImportError):
         # pip install ibis-framework[omniscidb]
-        import ibis.omniscidb.api as omniscidb
+        from ibis.backends import omniscidb
 
 There are three functions in the `api` module:
 
@@ -436,4 +436,4 @@ Pull Requests:
 References
 ----------
 
-- ibis API: http://docs.ibis-project.org/api.html
+- ibis API: http://ibis-project.org/docs/api.html

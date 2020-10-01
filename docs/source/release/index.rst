@@ -12,10 +12,18 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :feature:`2409` FEAT: Support Ibis interval for window in pyspark backend
+* :bug:`2229` Fix same column with multiple aliases not showing properly in repr
+* :feature:`2402` Use Scope class for scope in pyspark backend
+* :bug:`2395` Fix reduction UDFs over ungrouped, bounded windows on Pandas backend
+* :bug:`2386` FEAT: Support rolling window UDF with non numeric inputs for pandas backend.
+* :bug:`2386` Fix scope get to use hashmap lookup instead of list lookup
+* :bug:`2387` Fix equality behavior for Literal ops
 * :bug:`2376` Fix analytic ops over ungrouped and unordered windows on Pandas backend
 * :support:`2288` Drop support to Python 3.6
 * :bug:`2367` Fix the covariance operator in the BigQuery backend.
 * :feature:`2366` Add PySpark support for ReductionVectorizedUDF
+* :bug:`2342` Update impala kerberos dependencies
 * :feature:`2306` Add time context in `scope` in execution for pandas backend
 * :support:`2351` Simplifying tests directories structure
 * :feature:`2081` Add ``start_point`` and ``end_point`` to PostGIS backend.

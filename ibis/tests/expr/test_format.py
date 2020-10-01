@@ -1,5 +1,3 @@
-import pytest
-
 import ibis
 from ibis.expr.format import ExprFormatter
 from ibis.expr.operations import Node
@@ -250,11 +248,6 @@ CustomOp[CustomExpr]
     assert result == expected
 
 
-@pytest.mark.xfail(
-    raises=AssertionError,
-    reason='PR 2283: The change for this test '
-    'is reverted due to performance regression',
-)
 def test_same_column_multiple_aliases():
     table = ibis.table([('col', 'int64')], name='t')
     expr = table[table.col.name('alias1'), table.col.name('alias2')]

@@ -1,12 +1,25 @@
+from typing import Optional
+
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
 
 
 class FormatMemo:
-    # A little sanity hack to simplify the below
+    """
+    Class used to manage memoization of intermediate ibis expression format
+    results in ExprFormatter.
 
-    def __init__(self):
+    Parameters
+    ----------
+    get_text_repr: bool
+         Defaults to ``False``. Determines whether or not the memoization
+         should use proper alias names. Using the same alias names for
+         equivalent expressions is more optimal for memoization / recursion
+         but does not accurately display aliases in the representation
+    """
+
+    def __init__(self, get_text_repr: bool = False):
         from collections import defaultdict
 
         self.formatted = {}
@@ -16,6 +29,7 @@ class FormatMemo:
         self._repr_memo = {}
         self.subexprs = {}
         self.visit_memo = set()
+        self.get_text_repr = get_text_repr
 
     def __contains__(self, obj):
         return self._key(obj) in self.formatted
@@ -62,7 +76,12 @@ class ExprFormatter:
     """
 
     def __init__(
-        self, expr, indent_size=2, base_level=0, memo=None, memoize=True
+        self,
+        expr,
+        indent_size: int = 2,
+        base_level: int = 0,
+        memo: Optional[FormatMemo] = None,
+        memoize: bool = True,
     ):
         self.expr = expr
         self.indent_size = indent_size
@@ -160,7 +179,7 @@ class ExprFormatter:
                     memo.observe(e, self._format_table)
                 memo.visit_memo.add(op)
 
-    def _indent(self, text, indents=1):
+    def _indent(self, text, indents: int = 1):
         return util.indent(text, self.indent_size * indents)
 
     def _format_table(self, expr):
@@ -248,7 +267,10 @@ class ExprFormatter:
 
     def _format_subexpr(self, expr):
         subexprs = self.memo.subexprs
-        key = expr.op()
+        if self.memo.get_text_repr:
+            key = expr._key
+        else:
+            key = expr.op()
         try:
             result = subexprs[key]
         except KeyError:

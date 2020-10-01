@@ -9,6 +9,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.config as config
 import ibis.util as util
+from ibis.expr.format import FormatMemo
 from ibis.expr.typing import TimeContext
 
 # TODO move methods containing ops import to api.py
@@ -26,7 +27,7 @@ class Expr:
 
     def __repr__(self):
         if not config.options.interactive:
-            return self._repr()
+            return self._repr(memo=FormatMemo(get_text_repr=True))
 
         try:
             result = self.execute()
@@ -50,7 +51,7 @@ class Expr:
 
     __nonzero__ = __bool__
 
-    def _repr(self, memo=None):
+    def _repr(self, memo: Optional[FormatMemo] = None):
         from ibis.expr.format import ExprFormatter
 
         return ExprFormatter(self, memo=memo).get_result()
@@ -219,7 +220,12 @@ class Expr:
             self, limit=limit, timecontext=timecontext, params=params, **kwargs
         )
 
-    def compile(self, limit=None, params=None):
+    def compile(
+        self,
+        limit=None,
+        timecontext: Optional[TimeContext] = None,
+        params=None,
+    ):
         """
         Compile expression to whatever execution target, to verify
 
@@ -230,7 +236,9 @@ class Expr:
         """
         from ibis.client import compile
 
-        return compile(self, limit=limit, params=params)
+        return compile(
+            self, limit=limit, timecontext=timecontext, params=params
+        )
 
     def verify(self):
         """
