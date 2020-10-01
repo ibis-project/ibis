@@ -11,10 +11,10 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.client import Database, Query, SQLClient
-from ibis.backends.spark import compiler as comp
-from ibis.backends.spark import ddl
-from ibis.backends.spark.compiler import SparkDialect, build_ast
-from ibis.backends.spark.datatypes import spark_dtype
+from . import compiler as comp
+from . import ddl
+from .compiler import SparkDialect, build_ast
+from .datatypes import spark_dtype
 from ibis.util import log
 
 
