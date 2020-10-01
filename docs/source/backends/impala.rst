@@ -1,4 +1,4 @@
-.. currentmodule:: ibis.impala.api
+.. currentmodule:: ibis.backends.impala
 
 .. _backends.impala:
 
