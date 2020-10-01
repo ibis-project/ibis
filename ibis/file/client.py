@@ -2,7 +2,7 @@ from pathlib import Path
 
 import ibis
 import ibis.expr.types as ir
-from ibis.backends.pandas import execute_and_reset
+from ibis.backends.pandas.core import execute_and_reset
 
 
 class FileClient(ibis.client.Client):
