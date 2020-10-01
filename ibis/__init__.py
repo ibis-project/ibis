@@ -57,7 +57,7 @@ with suppress(ImportError):
 
 with suppress(ImportError):
     # pip install ibis-framework[spark]
-    import ibis.backends as spark  # noqa: F401
+    from ibis.backends import spark  # noqa: F401
 
 with suppress(ImportError):
     import ibis.pyspark.api as pyspark  # noqa: F401
