@@ -1,6 +1,6 @@
 """PostgreSQL backend."""
-from ibis.backends.postgres.client import PostgreSQLClient
-from ibis.backends.postgres.compiler import (  # noqa: F401, E501
+from .client import PostgreSQLClient
+from .compiler import (  # noqa: F401, E501
     compiles,
     dialect,
     rewrites,
