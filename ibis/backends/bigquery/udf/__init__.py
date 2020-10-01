@@ -1,1 +1,1 @@
-from ibis.bigquery.udf.api import udf  # noqa: F401
+from .api import udf  # noqa: F401

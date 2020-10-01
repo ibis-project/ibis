@@ -12,7 +12,7 @@ from .compiler import dialect
 from ibis.config import options  # noqa: F401
 
 try:
-    from ibis.backends.bigquery.udf import udf  # noqa: F401
+    from .udf import udf
 except ImportError:
     pass
 

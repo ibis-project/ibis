@@ -3,7 +3,7 @@ from multipledispatch.conflict import ambiguities
 from pytest import param
 
 import ibis.expr.datatypes as dt
-from ibis.bigquery.datatypes import (
+from ibis.backends.bigquery.datatypes import (
     TypeTranslationContext,
     UDFContext,
     ibis_type_to_bigquery_type,

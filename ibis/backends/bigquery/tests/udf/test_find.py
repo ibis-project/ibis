@@ -2,7 +2,7 @@ import ast
 
 import pytest
 
-from ibis.bigquery.udf.find import find_names
+from ibis.backends.bigquery.udf.find import find_names
 from ibis.compat import PY38
 from ibis.util import is_iterable
 

@@ -9,8 +9,8 @@ import textwrap
 from collections import ChainMap
 
 import ibis.expr.datatypes as dt
-from ibis.bigquery.udf.find import find_names
-from ibis.bigquery.udf.rewrite import rewrite
+from .find import find_names
+from .rewrite import rewrite
 
 
 class SymbolTable(ChainMap):
@@ -542,7 +542,7 @@ class PythonToJavaScriptTranslator:
 
 
 if __name__ == '__main__':
-    from ibis.bigquery.api import udf
+    from . import udf
 
     @udf(
         input_type=[dt.double, dt.double, dt.int64],

@@ -19,9 +19,9 @@ import ibis.expr.lineage as lin
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.bigquery import compiler as comp
-from ibis.bigquery.datatypes import ibis_type_to_bigquery_type
 from ibis.client import Database, Query, SQLClient
+from . import compiler as comp
+from .datatypes import ibis_type_to_bigquery_type
 
 NATIVE_PARTITION_COL = '_PARTITIONTIME'
 
