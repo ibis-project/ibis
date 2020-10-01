@@ -6,7 +6,7 @@ import operator
 import numpy as np
 import pandas as pd
 
-import ibis
+import ibis.util
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 

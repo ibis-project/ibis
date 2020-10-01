@@ -4,18 +4,18 @@ import numpy as np
 import pandas as pd
 from pandas.core.groupby import SeriesGroupBy
 
-import ibis
+import ibis.client
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.expr.scope import Scope
-from ibis.pandas.core import (
+from ..core import (
     date_types,
     integer_types,
     numeric_types,
     timedelta_types,
     timestamp_types,
 )
-from ibis.pandas.dispatch import execute_node, pre_execute
+from ..dispatch import execute_node, pre_execute
 
 
 @execute_node.register(ops.Strftime, pd.Timestamp, str)
