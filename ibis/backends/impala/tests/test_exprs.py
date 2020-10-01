@@ -10,15 +10,16 @@ import ibis
 import ibis.expr.api as api
 import ibis.expr.types as ir
 from ibis import literal as L
-from ibis.backends.impala.compiler import (  # noqa: E402
-    ImpalaDialect,
-    ImpalaExprTranslator,
-    to_sql,
-)
 from ibis.common.exceptions import RelationError
 from ibis.expr.datatypes import Category
 from ibis.tests.expr.mocks import MockConnection
 from ibis.tests.sql.test_compiler import ExprTestCases  # noqa: E402
+
+from ..compiler import (  # noqa: E402
+    ImpalaDialect,
+    ImpalaExprTranslator,
+    to_sql,
+)
 
 pytest.importorskip('hdfs')
 pytest.importorskip('sqlalchemy')

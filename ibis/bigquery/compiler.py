@@ -13,7 +13,7 @@ import ibis.expr.lineage as lin
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.sql.compiler as comp
-from ibis.backends.impala import compile as impala_compiler
+from ibis.backends.impala import compiler as impala_compiler
 from ibis.backends.impala.compiler import (
     ImpalaSelect,
     ImpalaTableSetFormatter,
