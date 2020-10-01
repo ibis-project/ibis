@@ -13,6 +13,5 @@
 # limitations under the License.
 
 from impala import dbapi as impyla  # noqa
-
-from .error import Error as ImpylaError  # noqa
-from .error import HiveServer2Error as HS2Error  # noqa
+from impala.error import Error as ImpylaError  # noqa
+from impala.error import HiveServer2Error as HS2Error  # noqa
