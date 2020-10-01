@@ -13,8 +13,8 @@
 # limitations under the License.
 
 
-from ibis.backends.sqlite.client import SQLiteClient
-from ibis.backends.sqlite.compiler import dialect, rewrites  # noqa: F401
+from .client import SQLiteClient
+from .compiler import dialect, rewrites  # noqa: F401
 
 
 def compile(expr, params=None):
