@@ -14,8 +14,8 @@ import ibis.expr.types as ir
 import ibis.impala as api  # noqa: E402
 import ibis.util as util
 from ibis.common.exceptions import IbisTypeError
-from ibis.tests.expr.mocks import MockConnection
 from ibis.impala import ddl  # noqa: E402
+from ibis.tests.expr.mocks import MockConnection
 
 pytest.importorskip('hdfs')
 pytest.importorskip('sqlalchemy')

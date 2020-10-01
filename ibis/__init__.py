@@ -29,7 +29,7 @@ with suppress(ImportError):
 
 with suppress(ImportError):
     # pip install ibis-framework[impala]
-    import ibis.impala.api as impala  # noqa: F401
+    from ibis.backends import impala  # noqa: F401
 
 with suppress(ImportError):
     # pip install ibis-framework[sqlite]

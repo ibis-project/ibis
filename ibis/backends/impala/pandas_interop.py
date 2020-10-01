@@ -15,6 +15,7 @@
 import csv
 import os
 import tempfile
+
 from posixpath import join as pjoin
 
 import ibis.common.exceptions as com

@@ -12,6 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import impala.dbapi as impyla  # noqa
-from impala.error import Error as ImpylaError  # noqa
-from impala.error import HiveServer2Error as HS2Error  # noqa
+from . import dbapi as impyla  # noqa
+from .error import Error as ImpylaError  # noqa
+from .error import HiveServer2Error as HS2Error  # noqa

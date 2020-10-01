@@ -22,11 +22,12 @@ import ibis.util as util
 from ibis.client import Database, DatabaseEntity, Query, SQLClient
 from ibis.config import options
 from ibis.filesystems import HDFS, WebHDFS
-from ibis.impala import ddl, udf
-from ibis.impala.compat import HS2Error, ImpylaError, impyla
-from ibis.impala.compiler import ImpalaDialect, build_ast
 from ibis.sql.compiler import DDL, DML
 from ibis.util import log
+
+from . import ddl, udf
+from .compat import HS2Error, ImpylaError, impyla
+from .compiler import ImpalaDialect, build_ast
 
 
 class ImpalaDatabase(Database):
@@ -477,7 +478,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         >>> t.insert(table_expr, overwrite=True)  # doctest: +SKIP
         """
         if isinstance(obj, pd.DataFrame):
-            from ibis.impala.pandas_interop import write_temp_dataframe
+            from .pandas_interop import write_temp_dataframe
 
             writer, expr = write_temp_dataframe(self._client, obj)
         else:
@@ -809,7 +810,7 @@ class ImpalaClient(SQLClient):
 
     @property
     def kudu(self):
-        from ibis.impala.kudu_support import KuduImpalaInterface
+        from .kudu_support import KuduImpalaInterface
 
         if self._kudu is None:
             self._kudu = KuduImpalaInterface(self)
@@ -1166,7 +1167,7 @@ class ImpalaClient(SQLClient):
 
         if obj is not None:
             if isinstance(obj, pd.DataFrame):
-                from ibis.impala.pandas_interop import write_temp_dataframe
+                from .pandas_interop import write_temp_dataframe
 
                 writer, to_insert = write_temp_dataframe(self, obj)
             else:
@@ -1852,7 +1853,7 @@ class ImpalaClient(SQLClient):
           Table name. Can be fully qualified (with database)
         database : string, optional
         """
-        from ibis.impala.metadata import parse_metadata
+        from .metadata import parse_metadata
 
         stmt = self._table_command(
             'DESCRIBE FORMATTED', name, database=database
@@ -1944,7 +1945,7 @@ class ImpalaClient(SQLClient):
         -------
         None (for now)
         """
-        from ibis.impala.pandas_interop import DataFrameWriter
+        from .pandas_interop import DataFrameWriter
 
         writer = DataFrameWriter(self, df)
         return writer.write_csv(path)

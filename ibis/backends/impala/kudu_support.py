@@ -6,7 +6,8 @@ import pandas as pd
 import ibis.expr.datatypes as dt
 from ibis.common.exceptions import IbisError
 from ibis.expr.api import schema
-from ibis.impala import ddl
+
+from . import ddl
 
 _kudu_type_to_ibis_typeclass = {
     'int8': dt.Int8,
@@ -133,7 +134,7 @@ class KuduImpalaInterface:
                 )
 
             if isinstance(obj, pd.DataFrame):
-                from ibis.impala.pandas_interop import write_temp_dataframe
+                from .pandas_interop import write_temp_dataframe
 
                 writer, to_insert = write_temp_dataframe(
                     self.impala_client, obj

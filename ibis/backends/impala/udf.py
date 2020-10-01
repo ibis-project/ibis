@@ -18,9 +18,10 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.signature as sig
-import ibis.impala.compiler as comp
 import ibis.udf.validate as v
 import ibis.util as util
+
+from . import compiler as comp
 
 __all__ = [
     'add_operation',
@@ -356,7 +357,7 @@ def _impala_type_to_ibis(tval):
 
 
 def _ibis_string_to_impala(tval):
-    from ibis.impala.compiler import _sql_type_names
+    from .compiler import _sql_type_names
 
     if tval in _sql_type_names:
         return _sql_type_names[tval]

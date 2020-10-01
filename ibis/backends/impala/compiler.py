@@ -11,10 +11,11 @@ import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.impala.identifiers as identifiers
 import ibis.sql.compiler as comp
 import ibis.sql.transforms as transforms
 import ibis.util as util
+
+from . import identifiers as identifiers
 
 
 def build_ast(expr, context):
