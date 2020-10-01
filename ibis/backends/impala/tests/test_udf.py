@@ -7,14 +7,14 @@ import pytest
 from posixpath import join as pjoin
 
 import ibis
+import ibis.backends.impala as api  # noqa: E402
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rules
 import ibis.expr.types as ir
-import ibis.impala as api  # noqa: E402
 import ibis.util as util
+from ibis.backends.impala import ddl  # noqa: E402
 from ibis.common.exceptions import IbisTypeError
-from ibis.impala import ddl  # noqa: E402
 from ibis.tests.expr.mocks import MockConnection
 
 pytest.importorskip('hdfs')
