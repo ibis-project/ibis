@@ -13,14 +13,18 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.types as types
 from ibis import interval
-from ibis.pandas.execution import execute
-from ibis.pyspark.operations import PySparkTable
-from ibis.pyspark.timecontext import filter_by_time_context
-from ibis.spark.compiler import SparkContext, SparkDialect
-from ibis.spark.datatypes import (
+from ibis.backends.spark.compiler import SparkContext, SparkDialect
+from ibis.backends.spark.datatypes import (
     ibis_array_dtype_to_spark_dtype,
     ibis_dtype_to_spark_dtype,
     spark_dtype,
+)
+from ibis.expr.timecontext import adjust_context
+from ibis.pandas.execution import execute
+from ibis.pyspark.operations import PySparkTable
+from ibis.pyspark.timecontext import (
+    combine_time_context,
+    filter_by_time_context,
 )
 
 
@@ -102,15 +106,25 @@ def compile_sql_query_result(t, expr, scope, timecontext, **kwargs):
 @compiles(ops.Selection)
 def compile_selection(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
-
-    src_table = t.translate(op.table, scope, timecontext)
+    # In selection, there could be multiple children that point to the
+    # same root table. e.g. window with different sizes on a table.
+    # We need to get the 'combined' time range that is a superset of every
+    # time context among child nodes, and pass this as context to
+    # source table to get all data within time context loaded.
+    arg_timecontexts = [
+        adjust_context(node.op(), timecontext)
+        for node in op.selections
+        if timecontext
+    ]
+    combined_timecontext = combine_time_context(arg_timecontexts)
+    src_table = t.translate(op.table, scope, combined_timecontext)
 
     col_in_selection_order = []
     for selection in op.selections:
         if isinstance(selection, types.TableExpr):
             col_in_selection_order.extend(selection.columns)
         elif isinstance(selection, (types.ColumnExpr, types.ScalarExpr)):
-            col = t.translate(selection, scope, timecontext).alias(
+            col = t.translate(selection, scope, combined_timecontext).alias(
                 selection.get_name()
             )
             col_in_selection_order.append(col)
@@ -130,10 +144,9 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
         sort_cols = [
             t.translate(key, scope, timecontext) for key in op.sort_keys
         ]
+        src_table = src_table.sort(*sort_cols)
 
-        return src_table.sort(*sort_cols)
-    else:
-        return src_table
+    return filter_by_time_context(src_table, timecontext)
 
 
 @compiles(ops.SortKey)

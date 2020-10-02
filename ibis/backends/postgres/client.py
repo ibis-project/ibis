@@ -1,81 +1,57 @@
 import contextlib
 import getpass
-import warnings
+from typing import Optional
 
-import pymysql  # NOQA fail early if the driver is missing
+import psycopg2  # NOQA fail early if the driver is missing
 import sqlalchemy as sa
-import sqlalchemy.dialects.mysql as mysql
 
-import ibis.expr.datatypes as dt
 import ibis.sql.alchemy as alch
-from ibis.sql.mysql.compiler import MySQLDialect
-
-# TODO(kszucs): unsigned integers
-
-
-@dt.dtype.register((mysql.DOUBLE, mysql.REAL))
-def mysql_double(satype, nullable=True):
-    return dt.Double(nullable=nullable)
+from ibis.backends.postgres import udf
+from ibis.backends.postgres.compiler import PostgreSQLDialect
 
 
-@dt.dtype.register(mysql.FLOAT)
-def mysql_float(satype, nullable=True):
-    return dt.Float(nullable=nullable)
-
-
-@dt.dtype.register(mysql.TINYINT)
-def mysql_tinyint(satype, nullable=True):
-    return dt.Int8(nullable=nullable)
-
-
-@dt.dtype.register(mysql.BLOB)
-def mysql_blob(satype, nullable=True):
-    return dt.Binary(nullable=nullable)
-
-
-class MySQLTable(alch.AlchemyTable):
+class PostgreSQLTable(alch.AlchemyTable):
     pass
 
 
-class MySQLSchema(alch.AlchemyDatabaseSchema):
+class PostgreSQLSchema(alch.AlchemyDatabaseSchema):
     pass
 
 
-class MySQLDatabase(alch.AlchemyDatabase):
-    schema_class = MySQLSchema
+class PostgreSQLDatabase(alch.AlchemyDatabase):
+    schema_class = PostgreSQLSchema
 
 
-class MySQLClient(alch.AlchemyClient):
+class PostgreSQLClient(alch.AlchemyClient):
 
-    """The Ibis MySQL client class
+    """The Ibis PostgreSQL client class
 
     Attributes
     ----------
     con : sqlalchemy.engine.Engine
     """
 
-    dialect = MySQLDialect
-    database_class = MySQLDatabase
-    table_class = MySQLTable
+    dialect = PostgreSQLDialect
+    database_class = PostgreSQLDatabase
+    table_class = PostgreSQLTable
 
     def __init__(
         self,
-        host='localhost',
-        user=None,
-        password=None,
-        port=3306,
-        database='mysql',
-        url=None,
-        driver='pymysql',
+        host: str = 'localhost',
+        user: str = getpass.getuser(),
+        password: Optional[str] = None,
+        port: int = 5432,
+        database: str = 'public',
+        url: Optional[str] = None,
+        driver: str = 'psycopg2',
     ):
         if url is None:
-            if driver != 'pymysql':
+            if driver != 'psycopg2':
                 raise NotImplementedError(
-                    'pymysql is currently the only supported driver'
+                    'psycopg2 is currently the only supported driver'
                 )
-            user = user or getpass.getuser()
-            url = sa.engine.url.URL(
-                'mysql+pymysql',
+            sa_url = sa.engine.url.URL(
+                'postgresql+psycopg2',
                 host=host,
                 port=port,
                 username=user,
@@ -83,27 +59,20 @@ class MySQLClient(alch.AlchemyClient):
                 database=database,
             )
         else:
-            url = sa.engine.url.make_url(url)
+            sa_url = sa.engine.url.make_url(url)
 
-        super().__init__(sa.create_engine(url))
-        self.database_name = url.database
+        super().__init__(sa.create_engine(sa_url))
+        self.database_name = sa_url.database
 
     @contextlib.contextmanager
     def begin(self):
         with super().begin() as bind:
-            previous_timezone = bind.execute(
-                'SELECT @@session.time_zone'
-            ).scalar()
-            try:
-                bind.execute("SET @@session.time_zone = 'UTC'")
-            except Exception as e:
-                warnings.warn("Couldn't set mysql timezone: {}".format(str(e)))
-
+            previous_timezone = bind.execute('SHOW TIMEZONE').scalar()
+            bind.execute('SET TIMEZONE = UTC')
             try:
                 yield bind
             finally:
-                query = "SET @@session.time_zone = '{}'"
-                bind.execute(query.format(previous_timezone))
+                bind.execute("SET TIMEZONE = '{}'".format(previous_timezone))
 
     def database(self, name=None):
         """Connect to a database called `name`.
@@ -116,8 +85,8 @@ class MySQLClient(alch.AlchemyClient):
 
         Returns
         -------
-        db : MySQLDatabase
-            An :class:`ibis.sql.mysql.client.MySQLDatabase` instance.
+        db : PostgreSQLDatabase
+            An :class:`ibis.sql.postgres.client.PostgreSQLDatabase` instance.
 
         Notes
         -----
@@ -149,8 +118,8 @@ class MySQLClient(alch.AlchemyClient):
 
         Returns
         -------
-        schema : MySQLSchema
-            An :class:`ibis.sql.mysql.client.MySQLSchema` instance.
+        schema : PostgreSQLSchema
+            An :class:`ibis.sql.postgres.client.PostgreSQLSchema` instance.
 
         """
         return self.database().schema(name)
@@ -161,7 +130,13 @@ class MySQLClient(alch.AlchemyClient):
         return self.database_name
 
     def list_databases(self):
-        return [row.Database for row in self.con.execute('SHOW DATABASES')]
+        # http://dba.stackexchange.com/a/1304/58517
+        return [
+            row.datname
+            for row in self.con.execute(
+                'SELECT datname FROM pg_database WHERE NOT datistemplate'
+            )
+        ]
 
     def list_schemas(self):
         """List all the schemas in the current database."""
@@ -169,7 +144,7 @@ class MySQLClient(alch.AlchemyClient):
 
     def set_database(self, name):
         raise NotImplementedError(
-            'Cannot set database with MySQL client. To use a different'
+            'Cannot set database with PostgreSQL client. To use a different'
             ' database, use client.database({!r})'.format(name)
         )
 
@@ -179,7 +154,7 @@ class MySQLClient(alch.AlchemyClient):
 
     def table(self, name, database=None, schema=None):
         """Create a table expression that references a particular a table
-        called `name` in a MySQL database called `database`.
+        called `name` in a PostgreSQL database called `database`.
 
         Parameters
         ----------
@@ -210,5 +185,41 @@ class MySQLClient(alch.AlchemyClient):
                 like=like, schema=schema
             )
         else:
-            parent = super(MySQLClient, self)
+            parent = super(PostgreSQLClient, self)
             return parent.list_tables(like=like, schema=schema)
+
+    def udf(
+        self, pyfunc, in_types, out_type, schema=None, replace=False, name=None
+    ):
+        """Decorator that defines a PL/Python UDF in-database based on the
+        wrapped function and turns it into an ibis function expression.
+
+        Parameters
+        ----------
+        pyfunc : function
+        in_types : List[ibis.expr.datatypes.DataType]
+        out_type : ibis.expr.datatypes.DataType
+        schema : str
+            optionally specify the schema in which to define the UDF
+        replace : bool
+            replace UDF in database if already exists
+        name: str
+            name for the UDF to be defined in database
+
+        Returns
+        -------
+        Callable
+
+        Function that takes in ColumnExpr arguments and returns an instance
+        inheriting from PostgresUDFNode
+        """
+
+        return udf(
+            client=self,
+            python_func=pyfunc,
+            in_types=in_types,
+            out_type=out_type,
+            schema=schema,
+            replace=replace,
+            name=name,
+        )

@@ -24,7 +24,7 @@ using SQLite.
 
 API
 ---
-.. currentmodule:: ibis.sql.sqlite.api
+.. currentmodule:: ibis.backends.sqlite
 
 The SQLite client is accessible through the ``ibis.sqlite`` namespace.
 
