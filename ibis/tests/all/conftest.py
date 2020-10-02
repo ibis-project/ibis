@@ -38,7 +38,8 @@ def pytest_runtest_call(item):
         )
         if not isinstance(backend, backend_types):
             pytest.skip(
-                f"Only on backends: {backend} not in {backend_types} {nodeid}"
+                f"only_on_backends: {backend} is not in {backend_types} "
+                f"{nodeid}"
             )
 
     for marker in list(item.iter_markers(name="skip_backends")):
@@ -48,7 +49,7 @@ def pytest_runtest_call(item):
             type(backend).__name__
         )
         if isinstance(backend, backend_types):
-            pytest.skip(f"Skip backends: {backend} {nodeid}")
+            pytest.skip(f"skip_backends: {backend} {nodeid}")
 
     for marker in list(item.iter_markers(name="skip_missing_feature")):
         backend = item.funcargs["backend"]
