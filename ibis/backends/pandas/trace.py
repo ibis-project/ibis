@@ -19,9 +19,9 @@ import pandas as pd
 import logging
 
 import ibis.expr.datatypes as dt
-import ibis.pandas
+import ibis.backends.pandas
 from ibis.udf.vectorized import elementwise
-from ibis.pandas import trace
+from ibis.backends.pandas import trace
 
 logging.basicConfig()
 trace.enable()
@@ -32,7 +32,7 @@ df = pd.DataFrame(
     }
 )
 
-con = ibis.pandas.connect({"table1": df})
+con = ibis.backends.pandas.connect({"table1": df})
 
 @elementwise(
     input_type=[dt.double],
@@ -49,32 +49,32 @@ table.execute()
 
 Output:
 
-DEBUG:ibis.pandas.trace: main_execute Selection
-DEBUG:ibis.pandas.trace:   execute_until_in_scope Selection
-DEBUG:ibis.pandas.trace:     execute_until_in_scope PandasTable
-DEBUG:ibis.pandas.trace:       execute_database_table_client PandasTable
-DEBUG:ibis.pandas.trace:       execute_database_table_client PandasTable 0:00:00.000085
-DEBUG:ibis.pandas.trace:     execute_until_in_scope PandasTable 0:00:00.000362
-DEBUG:ibis.pandas.trace:     execute_selection_dataframe Selection
-DEBUG:ibis.pandas.trace:       main_execute ElementWiseVectorizedUDF
-DEBUG:ibis.pandas.trace:         execute_until_in_scope ElementWiseVectorizedUDF
-DEBUG:ibis.pandas.trace:           execute_until_in_scope TableColumn
-DEBUG:ibis.pandas.trace:             execute_until_in_scope PandasTable
-DEBUG:ibis.pandas.trace:             execute_until_in_scope PandasTable 0:00:00.000061
-DEBUG:ibis.pandas.trace:             execute_table_column_df_or_df_groupby TableColumn
-DEBUG:ibis.pandas.trace:             execute_table_column_df_or_df_groupby TableColumn 0:00:00.000304  # noqa: E501
-DEBUG:ibis.pandas.trace:           execute_until_in_scope TableColumn 0:00:00.000584
-DEBUG:ibis.pandas.trace:           execute_udf_node ElementWiseVectorizedUDF
-DEBUG:ibis.pandas.trace:           execute_udf_node ElementWiseVectorizedUDF 0:00:05.019173
-DEBUG:ibis.pandas.trace:         execute_until_in_scope ElementWiseVectorizedUDF 0:00:05.052604  # noqa: E501
-DEBUG:ibis.pandas.trace:       main_execute ElementWiseVectorizedUDF 0:00:05.052819
-DEBUG:ibis.pandas.trace:     execute_selection_dataframe Selection 0:00:05.054894
-DEBUG:ibis.pandas.trace:   execute_until_in_scope Selection 0:00:05.055662
-DEBUG:ibis.pandas.trace: main_execute Selection 0:00:05.056556
+DEBUG:ibis.backends.pandas.trace: main_execute Selection
+DEBUG:ibis.backends.pandas.trace:   execute_until_in_scope Selection
+DEBUG:ibis.backends.pandas.trace:     execute_until_in_scope PandasTable
+DEBUG:ibis.backends.pandas.trace:       execute_database_table_client PandasTable
+DEBUG:ibis.backends.pandas.trace:       execute_database_table_client PandasTable 0:00:00.000085
+DEBUG:ibis.backends.pandas.trace:     execute_until_in_scope PandasTable 0:00:00.000362
+DEBUG:ibis.backends.pandas.trace:     execute_selection_dataframe Selection
+DEBUG:ibis.backends.pandas.trace:       main_execute ElementWiseVectorizedUDF
+DEBUG:ibis.backends.pandas.trace:         execute_until_in_scope ElementWiseVectorizedUDF
+DEBUG:ibis.backends.pandas.trace:           execute_until_in_scope TableColumn
+DEBUG:ibis.backends.pandas.trace:             execute_until_in_scope PandasTable
+DEBUG:ibis.backends.pandas.trace:             execute_until_in_scope PandasTable 0:00:00.000061
+DEBUG:ibis.backends.pandas.trace:             execute_table_column_df_or_df_groupby TableColumn
+DEBUG:ibis.backends.pandas.trace:             execute_table_column_df_or_df_groupby TableColumn 0:00:00.000304  # noqa: E501
+DEBUG:ibis.backends.pandas.trace:           execute_until_in_scope TableColumn 0:00:00.000584
+DEBUG:ibis.backends.pandas.trace:           execute_udf_node ElementWiseVectorizedUDF
+DEBUG:ibis.backends.pandas.trace:           execute_udf_node ElementWiseVectorizedUDF 0:00:05.019173
+DEBUG:ibis.backends.pandas.trace:         execute_until_in_scope ElementWiseVectorizedUDF 0:00:05.052604  # noqa: E501
+DEBUG:ibis.backends.pandas.trace:       main_execute ElementWiseVectorizedUDF 0:00:05.052819
+DEBUG:ibis.backends.pandas.trace:     execute_selection_dataframe Selection 0:00:05.054894
+DEBUG:ibis.backends.pandas.trace:   execute_until_in_scope Selection 0:00:05.055662
+DEBUG:ibis.backends.pandas.trace: main_execute Selection 0:00:05.056556
 
 """
 
-_logger = logging.getLogger('ibis.pandas.trace')
+_logger = logging.getLogger('ibis.backends.pandas.trace')
 
 # A list of funcs that is traced
 _trace_funcs = set()
@@ -85,7 +85,7 @@ _TRACE_CONFIG = 'pandas.enable_trace'
 def enable():
     """Enable tracing."""
     set_option(_TRACE_CONFIG, True)
-    logging.getLogger('ibis.pandas.trace').setLevel(logging.DEBUG)
+    logging.getLogger('ibis.backends.pandas.trace').setLevel(logging.DEBUG)
 
 
 def _log_trace(func, start=None):

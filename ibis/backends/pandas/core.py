@@ -60,8 +60,8 @@ By default this function does nothing.
 -------------------
 
 Then, when an expression is ready to be evaluated we call
-:func:`~ibis.pandas.core.execute` on the expressions arguments and then
-:func:`~ibis.pandas.dispatch.execute_node` on the expression with its
+:func:`~ibis.backends.pandas.core.execute` on the expressions arguments and then
+:func:`~ibis.backends.pandas.dispatch.execute_node` on the expression with its
 now-materialized arguments.
 
 4. ``post_execute``
@@ -193,7 +193,7 @@ def execute_with_scope(
         A tuple of (begin, end) that is passed from parent Node to children
         see [timecontext.py](ibis/pandas/execution/timecontext.py) for
         detailed usage for this time context.
-    aggcontext : Optional[ibis.pandas.aggcontext.AggregationContext]
+    aggcontext : Optional[ibis.backends.pandas.aggcontext.AggregationContext]
 
     Returns
     -------
@@ -398,7 +398,7 @@ def main_execute(
         Additional scope, mapping ibis operations to data
     timecontext : Optional[TimeContext]
         timecontext needed for execution
-    aggcontext : Optional[ibis.pandas.aggcontext.AggregationContext]
+    aggcontext : Optional[ibis.backends.pandas.aggcontext.AggregationContext]
         An object indicating how to compute aggregations. For example,
         a rolling mean needs to be computed differently than the mean of a
         column.
@@ -409,7 +409,7 @@ def main_execute(
     Returns
     -------
     result : Union[
-        pandas.Series, pandas.DataFrame, ibis.pandas.core.simple_types
+        pandas.Series, pandas.DataFrame, ibis.backends.pandas.core.simple_types
     ]
 
     Raises
@@ -450,7 +450,7 @@ def execute_and_reset(
 
     Notes
     -----
-    The difference between this function and :func:`~ibis.pandas.core.execute`
+    The difference between this function and :func:`~ibis.backends.pandas.core.execute`
     is that this function resets the index of the result, if the result has
     an index.
 
@@ -464,7 +464,7 @@ def execute_and_reset(
         Additional scope, mapping ibis operations to data
     timecontext : Optional[TimeContext]
         timecontext needed for execution
-    aggcontext : Optional[ibis.pandas.aggcontext.AggregationContext]
+    aggcontext : Optional[ibis.backends.pandas.aggcontext.AggregationContext]
         An object indicating how to compute aggregations. For example,
         a rolling mean needs to be computed differently than the mean of a
         column.
@@ -475,7 +475,7 @@ def execute_and_reset(
     Returns
     -------
     result : Union[
-        pandas.Series, pandas.DataFrame, ibis.pandas.core.simple_types
+        pandas.Series, pandas.DataFrame, ibis.backends.pandas.core.simple_types
     ]
 
     Raises

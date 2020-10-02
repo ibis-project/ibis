@@ -346,7 +346,7 @@ class PandasTable(ops.DatabaseTable):
 
 class PandasClient(ibis.client.Client):
 
-    dialect = None  # defined in ibis.pandas
+    dialect = None  # defined in ibis.backends.pandas
 
     def __init__(self, dictionary):
         self.dictionary = dictionary
