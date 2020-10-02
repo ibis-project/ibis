@@ -152,7 +152,7 @@ def test_day_of_week(case, expected, dtype, strftime_func):
     )
 
     expr_name = date_var.day_of_week.full_name()
-    result = ibis.backends.bigquery.compile(expr_name)
+    result = ibis.bigquery.compile(expr_name)
     if strftime_func == 'FORMAT_TIMESTAMP':
         assert (
             result
@@ -186,7 +186,7 @@ def test_day_of_week(case, expected, dtype, strftime_func):
 )
 def test_literal_timestamp_or_time(case, expected, dtype):
     expr = ibis.literal(case, type=dtype).hour()
-    result = ibis.backends.bigquery.compile(expr)
+    result = ibis.bigquery.compile(expr)
     assert result == f"SELECT EXTRACT(hour from {expected}) AS `tmp`"
 
 
@@ -343,7 +343,7 @@ def test_projection_fusion_only_peeks_at_immediate_parent():
     table = table[table.file_date < ibis.date('2017-01-01')]
     table = table.mutate(XYZ=table.val * 2)
     expr = table.join(table.view())[table]
-    result = ibis.backends.bigquery.compile(expr)
+    result = ibis.bigquery.compile(expr)
     expected = """\
 WITH t0 AS (
   SELECT *
@@ -489,7 +489,7 @@ FROM `{project_id}.testing.functional_alltypes`"""
 def test_temporal_truncate(unit, expected_unit, expected_func):
     t = ibis.table([('a', getattr(dt, expected_func.lower()))], name='t')
     expr = t.a.truncate(unit)
-    result = ibis.backends.bigquery.compile(expr)
+    result = ibis.bigquery.compile(expr)
     expected = f"""\
 SELECT {expected_func}_TRUNC(`a`, {expected_unit}) AS `tmp`
 FROM t"""
@@ -500,7 +500,7 @@ FROM t"""
 def test_extract_temporal_from_timestamp(kind):
     t = ibis.table([('ts', dt.timestamp)], name='t')
     expr = getattr(t.ts, kind)()
-    result = ibis.backends.bigquery.compile(expr)
+    result = ibis.bigquery.compile(expr)
     expected = f"""\
 SELECT {kind.upper()}(`ts`) AS `tmp`
 FROM t"""
@@ -509,7 +509,7 @@ FROM t"""
 
 def test_now():
     expr = ibis.now()
-    result = ibis.backends.bigquery.compile(expr)
+    result = ibis.bigquery.compile(expr)
     expected = 'SELECT CURRENT_TIMESTAMP() AS `tmp`'
     assert result == expected
 
@@ -518,7 +518,7 @@ def test_bucket():
     t = ibis.table([('value', 'double')], name='t')
     buckets = [0, 1, 3]
     expr = t.value.bucket(buckets).name('foo')
-    result = ibis.backends.bigquery.compile(expr)
+    result = ibis.bigquery.compile(expr)
     expected = """\
 SELECT
   CASE
@@ -541,7 +541,7 @@ def test_window_unbounded(kind, begin, end, expected):
     t = ibis.table([('a', 'int64')], name='t')
     kwargs = {kind: (begin, end)}
     expr = t.a.sum().over(ibis.window(**kwargs))
-    result = ibis.backends.bigquery.compile(expr)
+    result = ibis.bigquery.compile(expr)
     assert (
         result
         == f"""\
