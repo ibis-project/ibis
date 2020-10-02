@@ -18,8 +18,8 @@ bq = pytest.importorskip('google.cloud.bigquery')
 ga = pytest.importorskip('google.auth')
 exceptions = pytest.importorskip('google.api_core.exceptions')
 
-from ibis.backends.bigquery.client import bigquery_param  # noqa: E402, isort:skip
-from ibis.backends.bigquery.tests.conftest import connect  # noqa: E402, isort:skip
+from .client import bigquery_param  # noqa: E402, isort:skip
+from .tests.conftest import connect  # noqa: E402, isort:skip
 
 
 def test_table(alltypes):
@@ -75,7 +75,7 @@ def test_compile_toplevel():
 
     # it works!
     expr = t.foo.sum()
-    result = ibis.backends.bigquery.compile(expr)
+    result = ibis.bigquery.compile(expr)
     # FIXME: remove quotes because bigquery can't use anythig that needs
     # quoting?
     expected = """\

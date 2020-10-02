@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 import ibis
-import ibis.backends.bigquery as bq
+import . as bq
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.expr.types import TableExpr
@@ -102,7 +102,7 @@ FROM `{project_id}.testing.functional_alltypes`"""
 )
 def test_literal_date(case, expected, dtype):
     expr = ibis.literal(case, type=dtype).year()
-    result = ibis.backends.bigquery.compile(expr)
+    result = ibis.bigquery.compile(expr)
     assert result == f"SELECT EXTRACT(year from {expected}) AS `tmp`"
 
 
@@ -145,7 +145,7 @@ def test_literal_date(case, expected, dtype):
 def test_day_of_week(case, expected, dtype, strftime_func):
     date_var = ibis.literal(case, type=dtype)
     expr_index = date_var.day_of_week.index()
-    result = ibis.backends.bigquery.compile(expr_index)
+    result = ibis.bigquery.compile(expr_index)
     assert (
         result
         == f"SELECT MOD(EXTRACT(DAYOFWEEK FROM {expected}) + 5, 7) AS `tmp`"
