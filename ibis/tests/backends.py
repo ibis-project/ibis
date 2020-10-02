@@ -484,6 +484,7 @@ class BigQuery(UnorderedComparator, Backend, RoundAwayFromZero):
     @staticmethod
     def connect(data_directory: Path) -> ibis.client.Client:
         from ibis.bigquery.tests.conftest import connect
+
         project_id = os.environ.get('GOOGLE_BIGQUERY_PROJECT_ID')
         if project_id is None:
             pytest.skip(
@@ -515,6 +516,7 @@ class Impala(UnorderedComparator, Backend, RoundAwayFromZero):
     @staticmethod
     def connect(data_directory: Path) -> ibis.client.Client:
         from ibis.impala.tests.conftest import IbisTestEnv
+
         env = IbisTestEnv()
         hdfs_client = ibis.hdfs_connect(
             host=env.nn_host,
