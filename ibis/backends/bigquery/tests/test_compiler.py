@@ -152,7 +152,7 @@ def test_day_of_week(case, expected, dtype, strftime_func):
     )
 
     expr_name = date_var.day_of_week.full_name()
-    result = ibis.backends.bigquery.compile(expr_name)
+    result = ibis.bigquery.compile(expr_name)
     if strftime_func == 'FORMAT_TIMESTAMP':
         assert (
             result
