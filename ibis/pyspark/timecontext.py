@@ -15,7 +15,7 @@ def filter_by_time_context(
     Parameters
     ----------
     df : pyspark.sql.dataframe.DataFrame
-    timecontext: TimeCo ntext
+    timecontext: TimeContext
 
     Returns
     -------
@@ -26,7 +26,12 @@ def filter_by_time_context(
 
     begin, end = timecontext
     if TIME_COL in df.columns:
-        return df.filter((F.col(TIME_COL) >= begin) & (F.col(TIME_COL) < end))
+        # for py3.8, underlying spark type converter calls utctimetuple()
+        # and will throw excpetion for Timestamp type.
+        return df.filter(
+            (F.col(TIME_COL) >= begin.to_pydatetime())
+            & (F.col(TIME_COL) < end.to_pydatetime())
+        )
     else:
         raise com.TranslationError(
             "'time' column missing in Dataframe {}."
@@ -35,10 +40,15 @@ def filter_by_time_context(
         )
 
 
-def union_time_context(
+def combine_time_context(
     timecontexts: List[TimeContext],
 ) -> Optional[TimeContext]:
-    """ Return a 'union' time context of `timecontexts`
+    """ Return a combined time context of `timecontexts`
+
+    The combined time context starts from the earliest begin time
+    of `timecontexts`, and ends with the latest end time of `timecontexts`
+    The motivation is to generate a time context that is a superset
+    to all time contexts.
 
     Parameters
     ----------
@@ -46,9 +56,7 @@ def union_time_context(
 
     Returns
     -------
-    TimeContext, a time context that start from the earliest begin time
-    of `timecontexts`, and end with the latest end time of `timecontexts`.
-    This is not a union in mathematical way.
+    TimeContext
     """
     begin = min([t[0] for t in timecontexts if t], default=None)
     end = max([t[1] for t in timecontexts if t], default=None)

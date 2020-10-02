@@ -16,7 +16,10 @@ from ibis import interval
 from ibis.expr.timecontext import adjust_context
 from ibis.pandas.execution import execute
 from ibis.pyspark.operations import PySparkTable
-from ibis.pyspark.timecontext import filter_by_time_context, union_time_context
+from ibis.pyspark.timecontext import (
+    combine_time_context,
+    filter_by_time_context,
+)
 from ibis.spark.compiler import SparkContext, SparkDialect
 from ibis.spark.datatypes import (
     ibis_array_dtype_to_spark_dtype,
@@ -113,15 +116,15 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
         for node in op.selections
         if timecontext
     ]
-    max_timecontext = union_time_context(arg_timecontexts)
-    src_table = t.translate(op.table, scope, max_timecontext)
+    combined_timecontext = combine_time_context(arg_timecontexts)
+    src_table = t.translate(op.table, scope, combined_timecontext)
 
     col_in_selection_order = []
     for selection in op.selections:
         if isinstance(selection, types.TableExpr):
             col_in_selection_order.extend(selection.columns)
         elif isinstance(selection, (types.ColumnExpr, types.ScalarExpr)):
-            col = t.translate(selection, scope, max_timecontext).alias(
+            col = t.translate(selection, scope, combined_timecontext).alias(
                 selection.get_name()
             )
             col_in_selection_order.append(col)
