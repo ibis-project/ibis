@@ -7,6 +7,7 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt  # noqa: E402
+from ... import execute
 
 pytestmark = pytest.mark.pandas
 
@@ -88,8 +89,8 @@ def test_cast_timestamp_column(t, df, column, to, expected):
 def test_cast_timestamp_scalar_naive(to, expected):
     literal_expr = ibis.literal(pd.Timestamp('now'))
     value = literal_expr.cast(to)
-    result = ibis.backends.pandas.execute(value)
-    raw = ibis.backends.pandas.execute(literal_expr)
+    result = execute(value)
+    raw = execute(literal_expr)
     assert result == expected(raw)
 
 
@@ -113,8 +114,8 @@ def test_cast_timestamp_scalar_naive(to, expected):
 def test_cast_timestamp_scalar(to, expected, tz):
     literal_expr = ibis.literal(pd.Timestamp('now').tz_localize(tz))
     value = literal_expr.cast(to)
-    result = ibis.backends.pandas.execute(value)
-    raw = ibis.backends.pandas.execute(literal_expr)
+    result = execute(value)
+    raw = execute(literal_expr)
     assert result == expected(raw)
 
 

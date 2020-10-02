@@ -10,6 +10,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.expr.scope import Scope
+from .. import from_dataframe, connect, execute
 from ..client import PandasClient
 from ..core import is_computable_input
 from ..dispatch import execute_node, post_execute, pre_execute
@@ -30,7 +31,7 @@ def dataframe():
 
 @pytest.fixture
 def core_client(dataframe):
-    return ibis.backends.pandas.connect({'df': dataframe})
+    return connect({'df': dataframe})
 
 
 @pytest.fixture
@@ -44,17 +45,17 @@ def test_no_execute_ambiguities(func):
 
 
 def test_from_dataframe(dataframe, ibis_table, core_client):
-    t = ibis.backends.pandas.from_dataframe(dataframe)
+    t = from_dataframe(dataframe)
     result = t.execute()
     expected = ibis_table.execute()
     tm.assert_frame_equal(result, expected)
 
-    t = ibis.backends.pandas.from_dataframe(dataframe, name='foo')
+    t = from_dataframe(dataframe, name='foo')
     expected = ibis_table.execute()
     tm.assert_frame_equal(result, expected)
 
     client = core_client
-    t = ibis.backends.pandas.from_dataframe(dataframe, name='foo', client=client)
+    t = from_dataframe(dataframe, name='foo', client=client)
     expected = ibis_table.execute()
     tm.assert_frame_equal(result, expected)
 
@@ -71,7 +72,7 @@ def test_pre_execute_basic():
 
     one = ibis.literal(1)
     expr = one + one
-    result = ibis.backends.pandas.execute(expr)
+    result = execute(expr)
     assert result == 4
 
     del pre_execute.funcs[(ops.Add,)]
@@ -81,7 +82,7 @@ def test_pre_execute_basic():
 
 def test_execute_parameter_only():
     param = ibis.param('int64')
-    result = ibis.backends.pandas.execute(param, params={param: 42})
+    result = execute(param, params={param: 42})
     assert result == 42
 
 
@@ -89,7 +90,7 @@ def test_missing_data_sources():
     t = ibis.table([('a', 'string')])
     expr = t.a.length()
     with pytest.raises(com.UnboundExpressionError):
-        ibis.backends.pandas.execute(expr)
+        execute(expr)
 
 
 def test_missing_data_on_custom_client():
@@ -171,7 +172,7 @@ def test_is_computable_input():
 
     three = one + two
     four = three + 1
-    result = ibis.backends.pandas.execute(four)
+    result = execute(four)
     assert result == 4.0
 
     del execute_node[ops.Add, int, MyObject]
