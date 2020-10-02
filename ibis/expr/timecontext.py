@@ -31,7 +31,7 @@ implementation details.
 
 import enum
 import functools
-from typing import Optional
+from typing import Any, Optional
 
 import numpy as np
 import pandas as pd
@@ -140,7 +140,7 @@ def canonicalize_context(
 
 
 @functools.singledispatch
-def adjust_context(op: Node, timecontext: TimeContext) -> TimeContext:
+def adjust_context(op: Any, timecontext: TimeContext) -> TimeContext:
     """
     Params
     -------
@@ -152,6 +152,11 @@ def adjust_context(op: Node, timecontext: TimeContext) -> TimeContext:
     --------
     Adjusted time context
     """
+    raise com.IbisError(f'Unsupported input type for adjust context for {op}')
+
+
+@adjust_context.register(ops.Node)
+def adjust_context_node(op: Node, timecontext: TimeContext) -> TimeContext:
     # by default, do not adjust time context
     return timecontext
 

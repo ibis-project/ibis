@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 
 import pyspark.sql.functions as F
 from pyspark.sql.dataframe import DataFrame
@@ -15,7 +15,7 @@ def filter_by_time_context(
     Parameters
     ----------
     df : pyspark.sql.dataframe.DataFrame
-    timecontext: TimeContext
+    timecontext: TimeCo ntext
 
     Returns
     -------
@@ -33,3 +33,25 @@ def filter_by_time_context(
             "To use time context, a Timestamp column name 'time' must"
             "present in the table. ".format(df)
         )
+
+
+def union_time_context(
+    timecontexts: List[TimeContext],
+) -> Optional[TimeContext]:
+    """ Return a 'union' time context of `timecontexts`
+
+    Parameters
+    ----------
+    timecontexts: List[TimeContext]
+
+    Returns
+    -------
+    TimeContext, a time context that start from the earliest begin time
+    of `timecontexts`, and end with the latest end time of `timecontexts`.
+    This is not a union in mathematical way.
+    """
+    begin = min([t[0] for t in timecontexts if t], default=None)
+    end = max([t[1] for t in timecontexts if t], default=None)
+    if begin and end:
+        return begin, end
+    return None

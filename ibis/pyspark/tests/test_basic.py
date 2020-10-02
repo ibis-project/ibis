@@ -159,7 +159,6 @@ def test_filter(client, filter_fn, expected_fn):
 
     df = table.compile()
     expected = expected_fn(df)
-
     tm.assert_frame_equal(result.toPandas(), expected.toPandas())
 
 
