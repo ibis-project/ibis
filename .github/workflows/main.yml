@@ -206,6 +206,9 @@ jobs:
   Conda_package:
     name: Conda package
     runs-on: ubuntu-latest
+    # TODO: temporary disabling this build, we'll probably have to move the conda-forge
+    # recipe to this repo, since conda-forge is building with the last release, not master
+    if: false
     steps:
 
     - name: checkout
