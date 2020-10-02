@@ -224,7 +224,7 @@ import numpy as np
 import pandas as pd
 from pandas.core.groupby import SeriesGroupBy
 
-import ibis
+import ibis.backends.pandas
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.util
