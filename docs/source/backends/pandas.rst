@@ -4,12 +4,12 @@
 Ibis's pandas backend is available in core Ibis:
 
 Create a client by supplying a dictionary of DataFrames using
-:func:`ibis.pandas.connect`. The keys become the table names:
+:func:`ibis.backends.pandas.connect`. The keys become the table names:
 
 .. code-block:: python
 
    import pandas as pd
-   con = ibis.pandas.connect(
+   con = ibis.backends.pandas.connect(
        {
           'A': pd._testing.makeDataFrame(),
           'B': pd._testing.makeDataFrame(),
@@ -38,7 +38,7 @@ Here's how to define an element-wise function:
 .. code-block:: python
 
    import ibis.expr.datatypes as dt
-   from ibis.pandas import udf
+   from ibis.backends.pandas import udf
 
    @udf.elementwise(input_type=[dt.int64], output_type=dt.double)
    def add_one(x):
@@ -58,7 +58,7 @@ Here's how to define a reduction function:
 .. code-block:: python
 
    import ibis.expr.datatypes as dt
-   from ibis.pandas import udf
+   from ibis.backends.pandas import udf
 
    @udf.reduction(input_type=[dt.double], output_type=dt.double)
    def double_mean(series):
@@ -78,7 +78,7 @@ Here's how to define an analytic function:
 .. code-block:: python
 
    import ibis.expr.datatypes as dt
-   from ibis.pandas import udf
+   from ibis.backends.pandas import udf
 
    @udf.analytic(input_type=[dt.double], output_type=dt.double)
    def zscore(series):
@@ -112,7 +112,7 @@ Using ``add_one`` from above as an example, the following call will receive a
    import ibis
    import pandas as pd
    df = pd.DataFrame({'a': [1, 2, 3]})
-   con = ibis.pandas.connect({'df': df})
+   con = ibis.backends.pandas.connect({'df': df})
    t = con.table('df')
    expr = add_one(t.a)
    expr
@@ -130,7 +130,7 @@ in your function:
 .. code-block:: python
 
    import ibis.expr.datatypes as dt
-   from ibis.pandas import udf
+   from ibis.backends.pandas import udf
 
    @udf.elementwise([dt.int64], dt.double)
    def add_two(x, **kwargs):
@@ -145,7 +145,7 @@ For example:
 .. code-block:: python
 
    import ibis.expr.datatypes as dt
-   from ibis.pandas import udf
+   from ibis.backends.pandas import udf
 
    @udf.elementwise([dt.int64], dt.double)
    def add_two_with_none(x, y=None):
