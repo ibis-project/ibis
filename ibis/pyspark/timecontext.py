@@ -50,6 +50,19 @@ def combine_time_context(
     The motivation is to generate a time context that is a superset
     to all time contexts.
 
+    Examples
+    ---------
+    >>> timecontexts = [(pd.Timestamp('20200102'), pd.Timestamp('20200103')),
+        (pd.Timestamp('20200101'), pd.Timestamp('20200106')),
+        (pd.Timestamp('20200109'), pd.Timestamp('20200110')),
+    ]
+    >>> combine_time_context(timecontexts)
+    (pd.Timestamp('20200101'), pd.Timestamp('20200110'))
+
+    >>> timecontexts = [None]
+    >>> combine_time_context(timecontexts)
+    None
+
     Parameters
     ----------
     timecontexts: List[TimeContext]

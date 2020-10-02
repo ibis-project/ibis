@@ -1,6 +1,9 @@
 import pandas as pd
 import pandas.util.testing as tm
+import pyspark.sql.functions as F
 import pytest
+from pyspark.sql import Window
+from pytest import param
 
 import ibis
 
@@ -17,77 +20,118 @@ def test_table_with_timecontext(client):
     tm.assert_frame_equal(result, expected)
 
 
-def test_window_with_timecontext(client):
+@pytest.mark.parametrize(
+    ('ibis_window', 'spark_range'),
+    [
+        param(
+            ibis.trailing_window(
+                preceding=ibis.interval(hours=1),
+                order_by='time',
+                group_by='key',
+            ),
+            (-3600, 0),
+        ),  # 1h back looking window
+        param(
+            ibis.trailing_window(
+                preceding=ibis.interval(hours=2),
+                order_by='time',
+                group_by='key',
+            ),
+            (-7200, 0),
+        ),  # 2h back looking window
+        param(
+            ibis.range_window(
+                preceding=0,
+                following=ibis.interval(hours=1),
+                order_by='time',
+                group_by='key',
+            ),
+            (0, 3600),
+        ),  # 1h forward looking window
+    ],
+)
+def test_window_with_timecontext(client, ibis_window, spark_range):
+    """ Test context adjustment for trailing / range window
+
+    We expand context according to window sizes, for example, for a table of:
+    time       value
+    2020-01-01   a
+    2020-01-02   b
+    2020-01-03   c
+    2020-01-04   d
+    with context = (2020-01-03, 2002-01-04) trailing count for 1 day will be:
+    time       value  count
+    2020-01-03   c      2
+    2020-01-04   d      3
+    trailing count for 2 days will be:
+    time       value  count
+    2020-01-03   c      3
+    2020-01-04   d      4
+    with context = (2020-01-01, 2002-01-02) count for 1 day forward looking
+    window will be:
+    time       value  count
+    2020-01-01   a      2
+    2020-01-02   b      2
+    """
     table = client.table('time_indexed_table')
     context = (
         pd.Timestamp('20170102 07:00:00', tz='UTC'),
         pd.Timestamp('20170103', tz='UTC'),
     )
-    window1 = ibis.trailing_window(
-        preceding=ibis.interval(hours=1), order_by='time', group_by='key'
-    )
-    window2 = ibis.trailing_window(
-        preceding=ibis.interval(hours=2), order_by='time', group_by='key'
-    )
     result = table.mutate(
-        mean_1h=table['value'].mean().over(window1),
-        mean_2h=table['value'].mean().over(window2),
+        count=table['value'].count().over(ibis_window)
     ).compile(timecontext=context)
     result_pd = result.toPandas()
-    # load the entire table
-    df = table.compile().toPandas()
-    expected_win_1 = (
-        df.set_index('time')
-        .groupby('key')
-        .value.rolling('1h', closed='both')
-        .mean()
-        .rename('mean_1h')
+    spark_table = table.compile()
+    spark_window = (
+        Window.partitionBy('key')
+        .orderBy(F.col('time').cast('long'))
+        .rangeBetween(*spark_range)
     )
-    expected_win_2 = (
-        df.set_index('time')
-        .groupby('key')
-        .value.rolling('2h', closed='both')
-        .mean()
-        .rename('mean_2h')
-    )
-    df = df.set_index('time')
-    df = df.assign(
-        mean_1h=expected_win_1.sort_index(level=['time', 'key']).reset_index(
-            level='key', drop=True
-        )
-    )
-    df = df.assign(
-        mean_2h=expected_win_2.sort_index(level=['time', 'key']).reset_index(
-            level='key', drop=True
-        )
-    )
-    df = df.reset_index()
-    # trim data manually
-    expected = df[
-        df.time.between(*(t.tz_convert(None) for t in context))
+    expected = spark_table.withColumn(
+        'count', F.count(spark_table['value']).over(spark_window),
+    ).toPandas()
+    expected = expected[
+        expected.time.between(*(t.tz_convert(None) for t in context))
     ].reset_index(drop=True)
     tm.assert_frame_equal(result_pd, expected)
 
 
 def test_cumulative_window(client):
+    """ Test context adjustment for cumulative window
+
+    For cumulative window, by defination we should look back infinately.
+    When data is trimmed by time context, we define the limit of looking
+    back is the start time of given time context. Thus for a table of
+    time       value
+    2020-01-01   a
+    2020-01-02   b
+    2020-01-03   c
+    2020-01-04   d
+    with context = (2020-01-02, 2002-01-03) cumulative count will be:
+    time       value  count
+    2020-01-02   b      1
+    2020-01-03   c      2
+    """
     table = client.table('time_indexed_table')
     context = (
         pd.Timestamp('20170102 07:00:00', tz='UTC'),
         pd.Timestamp('20170105', tz='UTC'),
     )
     window = ibis.cumulative_window(order_by='time', group_by='key')
-    result = table.mutate(mean_cum=table['value'].mean().over(window)).compile(
-        timecontext=context
-    )
+    result = table.mutate(
+        mean_cum=table['value'].count().over(window)
+    ).compile(timecontext=context)
     result_pd = result.toPandas()
     df = table.compile().toPandas()
     df = df[df.time.between(*(t.tz_convert(None) for t in context))]
     expected_cum_win = (
         df.set_index('time')
         .groupby('key')
-        .value.rolling('10d', closed='both')
-        .mean()
-        .rename('mean_cum')
+        .value.expanding()
+        .count()
+        .rename('count_cum')
+        .astype(int)
     )
     df = df.set_index('time')
     df = df.assign(
@@ -151,7 +195,7 @@ def test_complex_window(client):
     expected_cum_win = (
         df.set_index('time')
         .groupby('key')
-        .value.rolling('10d', closed='both')
+        .value.expanding()
         .count()
         .rename('count_cum')
         .astype(int)
