@@ -36,13 +36,13 @@ dataframe. With sql_to_ibis this is made possible.
 For example,
 
 ```python
-import ibis.pandas.api
+import ibis.pandas
 import pandas
 import sql_to_ibis
 
 df = pandas.DataFrame({"column1": [1, 2, 3], "column2": ["4", "5", "6"]})
-ibis_table = ibis.pandas.api.from_dataframe(
-    df, name="my_table", client=ibis.pandas.api.PandasClient({})
+ibis_table = ibis.pandas.from_dataframe(
+    df, name="my_table", client=ibis.pandas.PandasClient({})
 )
 sql_to_ibis.register_temp_table(ibis_table, "my_table")
 sql_to_ibis.query(
