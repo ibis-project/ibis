@@ -313,13 +313,13 @@ def test_null_if_zero(t, df, column):
 )
 def test_nullif(t, df, left, right, expected, compare):
     expr = left(t).nullif(right(t))
-    result = ibis.pandas.execute(expr)
+    result = ibis.backends.pandas.execute(expr)
     compare(result, expected(df))
 
 
 def test_nullif_inf():
     df = pd.DataFrame({'a': [np.inf, 3.14, -np.inf, 42.0]})
-    con = ibis.pandas.connect(dict(t=df))
+    con = ibis.backends.pandas.connect(dict(t=df))
     t = con.table('t')
     expr = t.a.nullif(np.inf).nullif(-np.inf)
     result = expr.execute()

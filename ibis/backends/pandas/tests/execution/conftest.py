@@ -192,7 +192,7 @@ def client(
     time_keyed_df2,
     intersect_df2,
 ):
-    return ibis.pandas.connect(
+    return ibis.backends.pandas.connect(
         dict(
             df=df,
             df1=df1,
@@ -240,7 +240,7 @@ def t(client):
 
 @pytest.fixture(scope='module')
 def lahman(batting_df, awards_players_df):
-    return ibis.pandas.connect(
+    return ibis.backends.pandas.connect(
         {'batting': batting_df, 'awards_players': awards_players_df}
     )
 

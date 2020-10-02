@@ -26,7 +26,7 @@ def struct_client(value):
             "value": [1, 2, 3],
         }
     )
-    return ibis.pandas.connect({"t": df})
+    return ibis.backends.pandas.connect({"t": df})
 
 
 @pytest.fixture
@@ -48,11 +48,11 @@ def test_struct_field_literal(value):
     )
 
     expr = struct.fruit
-    result = ibis.pandas.execute(expr)
+    result = ibis.backends.pandas.execute(expr)
     assert result == "pear"
 
     expr = struct.weight
-    result = ibis.pandas.execute(expr)
+    result = ibis.backends.pandas.execute(expr)
     assert result == 0
 
 

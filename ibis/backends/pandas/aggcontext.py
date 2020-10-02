@@ -312,7 +312,7 @@ def compute_window_spec_none(_, obj):
 
 @compute_window_spec.register(dt.Interval)
 def compute_window_spec_interval(_, expr):
-    value = ibis.pandas.execute(expr)
+    value = ibis.backends.pandas.execute(expr)
     return pd.tseries.frequencies.to_offset(value)
 
 

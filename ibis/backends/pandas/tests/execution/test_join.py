@@ -370,7 +370,7 @@ def test_keyed_asof_join_with_tolerance(
 def test_select_on_unambiguous_join(how, func):
     df_t = pd.DataFrame(dict(a0=[1, 2, 3], b1=list("aab")))
     df_s = pd.DataFrame(dict(a1=[2, 3, 4], b2=list("abc")))
-    con = ibis.pandas.connect({"t": df_t, "s": df_s})
+    con = ibis.backends.pandas.connect({"t": df_t, "s": df_s})
     t = con.table("t")
     s = con.table("s")
     method = getattr(t, "{}_join".format(how))
@@ -404,7 +404,7 @@ def test_select_on_unambiguous_asof_join(func):
     df_s = pd.DataFrame(
         dict(a1=[2, 3, 4], b2=pd.date_range("20171230", periods=3))
     )
-    con = ibis.pandas.connect({"t": df_t, "s": df_s})
+    con = ibis.backends.pandas.connect({"t": df_t, "s": df_s})
     t = con.table("t")
     s = con.table("s")
     join = t.asof_join(s, t.b1 == s.b2)

@@ -54,7 +54,7 @@ def test_timestamp_functions(case_func, expected_func):
     )
     result = case_func(v)
     expected = expected_func(vt)
-    assert ibis.pandas.execute(result) == expected
+    assert ibis.backends.pandas.execute(result) == expected
 
 
 @pytest.mark.parametrize(
@@ -166,7 +166,7 @@ def test_times_ops_with_tz(t, df, tz, rconstruct, column):
 )
 def test_interval_arithmetic(op, expected):
     data = pd.timedelta_range('0 days', '10 days', freq='D')
-    con = ibis.pandas.connect(
+    con = ibis.backends.pandas.connect(
         {'df1': pd.DataFrame({'td': data}), 'df2': pd.DataFrame({'td': data})}
     )
     t1 = con.table('df1')

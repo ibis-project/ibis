@@ -88,8 +88,8 @@ def test_cast_timestamp_column(t, df, column, to, expected):
 def test_cast_timestamp_scalar_naive(to, expected):
     literal_expr = ibis.literal(pd.Timestamp('now'))
     value = literal_expr.cast(to)
-    result = ibis.pandas.execute(value)
-    raw = ibis.pandas.execute(literal_expr)
+    result = ibis.backends.pandas.execute(value)
+    raw = ibis.backends.pandas.execute(literal_expr)
     assert result == expected(raw)
 
 
@@ -113,8 +113,8 @@ def test_cast_timestamp_scalar_naive(to, expected):
 def test_cast_timestamp_scalar(to, expected, tz):
     literal_expr = ibis.literal(pd.Timestamp('now').tz_localize(tz))
     value = literal_expr.cast(to)
-    result = ibis.pandas.execute(value)
-    raw = ibis.pandas.execute(literal_expr)
+    result = ibis.backends.pandas.execute(value)
+    raw = ibis.backends.pandas.execute(literal_expr)
     assert result == expected(raw)
 
 

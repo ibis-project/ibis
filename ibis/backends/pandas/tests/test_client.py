@@ -12,7 +12,7 @@ pytestmark = pytest.mark.pandas
 
 @pytest.fixture
 def client():
-    return ibis.pandas.connect(
+    return ibis.backends.pandas.connect(
         {
             'df': pd.DataFrame({'a': [1, 2, 3], 'b': list('abc')}),
             'df_unknown': pd.DataFrame(

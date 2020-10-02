@@ -241,7 +241,7 @@ def test_execute_with_same_hash_value_in_scope(
         return x
 
     expr = my_func(left, right)
-    result = ibis.pandas.execute(expr)
+    result = ibis.backends.pandas.execute(expr)
     assert type(result) is expected_type
     assert result == expected_value
 
@@ -252,7 +252,7 @@ def test_ifelse_returning_bool():
     true = ibis.literal(True)
     false = ibis.literal(False)
     expr = ibis.ifelse(one + one == two, true, false)
-    result = ibis.pandas.execute(expr)
+    result = ibis.backends.pandas.execute(expr)
     assert result is True
 
 
@@ -273,6 +273,6 @@ def test_signature_does_not_match_input_type(dtype, value):
         return x
 
     expr = func(value)
-    result = ibis.pandas.execute(expr)
+    result = ibis.backends.pandas.execute(expr)
     assert type(result) == type(value)
     assert result == value
