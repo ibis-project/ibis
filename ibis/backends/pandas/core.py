@@ -191,7 +191,7 @@ def execute_with_scope(
         data such as a pandas DataFrame.
     timecontext : Optional[TimeContext]
         A tuple of (begin, end) that is passed from parent Node to children
-        see [timecontext.py](ibis/pandas/execution/timecontext.py) for
+        see [timecontext.py](ibis/backends/pandas/execution/timecontext.py) for
         detailed usage for this time context.
     aggcontext : Optional[ibis.backends.pandas.aggcontext.AggregationContext]
 
