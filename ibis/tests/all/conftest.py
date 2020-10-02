@@ -37,7 +37,9 @@ def pytest_runtest_call(item):
             type(backend).__name__
         )
         if not isinstance(backend, backend_types):
-            pytest.skip(f"Only on backends: {backend_types} {nodeid}")
+            pytest.skip(
+                f"Only on backends: {backend} not in {backend_types} {nodeid}"
+            )
 
     for marker in list(item.iter_markers(name="skip_backends")):
         (backend_types,) = map(tuple, marker.args)
