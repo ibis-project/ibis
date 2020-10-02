@@ -53,7 +53,7 @@ method of :class:`ibis.bigquery.client.BigQueryClient` objects:
 
 API
 ---
-.. currentmodule:: ibis.backends.bigquery.api
+.. currentmodule:: ibis.backends.bigquery
 
 The BigQuery client is accessible through the ``ibis.bigquery`` namespace.
 See :ref:`backends.bigquery` for a tutorial on using this backend.

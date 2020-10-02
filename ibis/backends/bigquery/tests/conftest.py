@@ -39,7 +39,7 @@ def connect(project_id, dataset_id, application_name=None):
         google_application_credentials
     )
     try:
-        return ibis.backends.bigquery.connect(
+        return ibis.bigquery.connect(
             project_id,
             dataset_id,
             credentials=credentials,
