@@ -8,8 +8,8 @@ import ibis
 
 @pytest.fixture(scope='session')
 def client():
-    from pyspark.sql import SparkSession
     import pyspark.sql.functions as F
+    from pyspark.sql import SparkSession
 
     session = SparkSession.builder.getOrCreate()
     client = ibis.pyspark.connect(session)

@@ -143,8 +143,9 @@ def cli(quiet):
 )
 @click.option('-d', '--directory', default=DATA_DIR)
 def download(repo_url, directory):
-    from plumbum.cmd import curl
     from shutil import rmtree
+
+    from plumbum.cmd import curl
 
     directory = Path(directory)
     # download the master branch
