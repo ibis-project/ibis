@@ -156,7 +156,7 @@ class PandasBackend:
             }
         )
 
-        t = ibis.backends.pandas.connect({'df': self.data}).table('df')
+        t = ibis.pandas.connect({'df': self.data}).table('df')
 
         self.high_card_group_by = t.groupby(t.key).aggregate(
             avg_value=t.value.mean()

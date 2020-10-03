@@ -224,7 +224,7 @@ import numpy as np
 import pandas as pd
 from pandas.core.groupby import SeriesGroupBy
 
-import ibis.backends.pandas
+import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.util
@@ -312,7 +312,7 @@ def compute_window_spec_none(_, obj):
 
 @compute_window_spec.register(dt.Interval)
 def compute_window_spec_interval(_, expr):
-    value = ibis.backends.pandas.execute(expr)
+    value = ibis.pandas.execute(expr)
     return pd.tseries.frequencies.to_offset(value)
 
 

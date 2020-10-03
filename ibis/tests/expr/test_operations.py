@@ -106,7 +106,7 @@ def test_custom_table_expr():
         def output_type(self):
             return MyTableExpr
 
-    con = ibis.backends.pandas.connect({})
+    con = ibis.pandas.connect({})
     node = SpecialTable('foo', ibis.schema([('a', 'int64')]), con)
     expr = node.to_expr()
     assert isinstance(expr, MyTableExpr)

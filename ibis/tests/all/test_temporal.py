@@ -357,7 +357,7 @@ def test_to_timestamp(backend, con, unit):
     factor = unit_factors[unit]
 
     ts = ibis.timestamp('2018-04-13 09:54:11.872832')
-    pandas_ts = ibis.backends.pandas.execute(ts).floor(unit).value
+    pandas_ts = ibis.pandas.execute(ts).floor(unit).value
 
     # convert the now timestamp to the input unit being tested
     int_expr = ibis.literal(pandas_ts // factor)

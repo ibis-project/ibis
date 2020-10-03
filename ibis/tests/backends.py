@@ -168,7 +168,7 @@ class Pandas(Backend, RoundHalfToEven):
 
     @staticmethod
     def connect(data_directory: Path) -> ibis.client.Client:
-        return ibis.backends.pandas.connect(
+        return ibis.pandas.connect(
             {
                 'functional_alltypes': pd.read_csv(
                     str(data_directory / 'functional_alltypes.csv'),
