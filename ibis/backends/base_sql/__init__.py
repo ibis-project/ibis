@@ -9,7 +9,7 @@ import math
 
 import ibis.expr.types as ir
 import ibis.sql.compiler as comp
-from ibis.impala import identifiers
+from ibis.backends.impala import identifiers
 
 
 def _set_literal_format(translator, expr):
