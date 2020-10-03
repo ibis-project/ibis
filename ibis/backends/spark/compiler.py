@@ -31,6 +31,7 @@ import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 import ibis.sql.compiler as comp
 import ibis.util as util
+from ibis.backends.base_sql import literal_formatters
 from ibis.impala import compiler as impala_compiler
 from ibis.impala.compiler import (
     ImpalaDialect,
@@ -246,7 +247,7 @@ def _number_literal_format(translator, expr):
     return formatted
 
 
-_literal_formatters = impala_compiler._literal_formatters.copy()
+_literal_formatters = literal_formatters.copy()
 
 _literal_formatters.update(
     {

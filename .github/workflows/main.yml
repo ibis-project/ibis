@@ -199,7 +199,7 @@ jobs:
       if: github.event_name == 'push'
 
     - name: benckmark
-      run: ./ci/benchmark.sh azure "${{ github.sha }}"
+      run: asv machine --yes && asv dev
       if: always()
 
   Conda_package:
