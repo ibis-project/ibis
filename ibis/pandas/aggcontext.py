@@ -218,7 +218,7 @@ import abc
 import functools
 import itertools
 import operator
-from typing import Any, Callable, Dict, Iterator, Tuple, Union
+from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -252,18 +252,27 @@ class AggregationContext(abc.ABC):
         pass
 
 
-def wrap_for_apply(function, args, kwargs):
+def wrap_for_apply(
+    function: Callable, args: Optional[Tuple[Any]], kwargs: Optional[Dict[Any]]
+) -> Callable:
     """Wrap a function for use with Pandas `apply`."""
-    assert callable(function), 'function {} is not callable'.format(function)
+    assert callable(function), f'function {function} is not callable'
 
     @functools.wraps(function)
-    def wrapped_func(data, function=function, args=args, kwargs=kwargs):
+    def wrapped_func(
+        data: Any,
+        function: Callable = function,
+        args: Optional[Tuple[Any]] = args,
+        kwargs: Optional[Dict[Any]] = kwargs,
+    ) -> Callable:
         return function(data, *args, **kwargs)
 
     return wrapped_func
 
 
-def wrap_for_agg(function, args, kwargs):
+def wrap_for_agg(
+    function: Callable, args: Optional[Tuple[Any]], kwargs: Optional[Dict[Any]]
+) -> Callable:
     """Wrap a function for use with Pandas `agg`.
 
     This includes special logic that will force Pandas `agg` to always treat
@@ -282,10 +291,15 @@ def wrap_for_agg(function, args, kwargs):
     raises a TypeError otherwise. When Pandas `agg` is attempting to use
     behavior #1 but sees the TypeError, it will fall back to behavior #2.
     """
-    assert callable(function), 'function {} is not callable'.format(function)
+    assert callable(function), f'function {function} is not callable'
 
     @functools.wraps(function)
-    def wrapped_func(data, function=function, args=args, kwargs=kwargs):
+    def wrapped_func(
+        data: Any,
+        function: Callable = function,
+        args: Optional[Tuple[Any]] = args,
+        kwargs: Optional[Dict[Any]] = kwargs,
+    ) -> Callable:
         # `data` will be a scalar here if Pandas `agg` is trying to behave like
         # like Pandas `apply`.
         if not isinstance(data, pd.Series):
