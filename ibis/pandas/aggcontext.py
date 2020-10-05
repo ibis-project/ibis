@@ -255,7 +255,18 @@ class AggregationContext(abc.ABC):
 def wrap_for_apply(
     function: Callable, args: Optional[Tuple[Any]], kwargs: Optional[Dict[Any]]
 ) -> Callable:
-    """Wrap a function for use with Pandas `apply`."""
+    """Wrap a function for use with Pandas `apply`.
+
+    Parameters
+    ----------
+    function : Callable
+        A function to be used with Pandas `apply`.
+    args : Optional[Tuple[Any]]
+        args to be passed to function when it is called by Pandas `apply`
+    kwargs : Optional[Dict[Any]]
+        kwargs to be passed to function when it is called by Pandas `apply`
+
+    """
     assert callable(function), f'function {function} is not callable'
 
     @functools.wraps(function)
@@ -290,6 +301,16 @@ def wrap_for_agg(
     the function with logic that checks that a Series is being passed in, and
     raises a TypeError otherwise. When Pandas `agg` is attempting to use
     behavior #1 but sees the TypeError, it will fall back to behavior #2.
+
+    Parameters
+    ----------
+    function : Callable
+        An aggregation function to be used with Pandas `agg`.
+    args : Optional[Tuple[Any]]
+        args to be passed to function when it is called by Pandas `agg`
+    kwargs : Optional[Dict[Any]]
+        kwargs to be passed to function when it is called by Pandas `agg`
+
     """
     assert callable(function), f'function {function} is not callable'
 
