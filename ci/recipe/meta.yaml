@@ -75,7 +75,7 @@ test:
     - ibis.sql.postgres
     - ibis.pyspark  # [py<38]
     - ibis.spark
-    - ibis.sql.sqlite
+    - ibis.backends.sqlite
 
 about:
   license: Apache-2.0
