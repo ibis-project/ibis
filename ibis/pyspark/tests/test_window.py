@@ -58,12 +58,6 @@ def test_time_indexed_window(client, ibis_window, spark_range):
     tm.assert_frame_equal(result_pd, expected)
 
 
-# TODO: multi windows don't update scope correctly
-@pytest.mark.xfail(
-    reason='Issue #2412 Same window op with different window size on table '
-    'lead to incorrect results for pyspark backend',
-    strict=True,
-)
 def test_multiple_windows(client):
     table = client.table('time_indexed_table')
     window1 = ibis.trailing_window(
