@@ -64,7 +64,7 @@ test:
   imports:
     - ibis
     - ibis.bigquery
-    - ibis.clickhouse
+    - ibis.backend.clickhouse
     - ibis.file.csv
     - ibis.file.parquet
     - ibis.file.hdf5
