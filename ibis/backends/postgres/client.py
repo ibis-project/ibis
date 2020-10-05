@@ -5,8 +5,8 @@ from typing import Optional
 import sqlalchemy as sa
 
 import ibis.sql.alchemy as alch
-from ibis.sql.postgres import udf
-from ibis.sql.postgres.compiler import PostgreSQLDialect
+from ibis.backends.postgres import udf
+from ibis.backends.postgres.compiler import PostgreSQLDialect
 
 import psycopg2  # NOQA fail early if the driver is missing
 
