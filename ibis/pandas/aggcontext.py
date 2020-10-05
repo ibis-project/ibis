@@ -253,7 +253,9 @@ class AggregationContext(abc.ABC):
 
 
 def wrap_for_apply(
-    function: Callable, args: Optional[Tuple[Any]], kwargs: Optional[Dict[Any]]
+    function: Callable,
+    args: Optional[Tuple[Any]],
+    kwargs: Optional[Dict[Any, Any]],
 ) -> Callable:
     """Wrap a function for use with Pandas `apply`.
 
@@ -263,7 +265,7 @@ def wrap_for_apply(
         A function to be used with Pandas `apply`.
     args : Optional[Tuple[Any]]
         args to be passed to function when it is called by Pandas `apply`
-    kwargs : Optional[Dict[Any]]
+    kwargs : Optional[Dict[Any, Any]]
         kwargs to be passed to function when it is called by Pandas `apply`
 
     """
@@ -274,7 +276,7 @@ def wrap_for_apply(
         data: Any,
         function: Callable = function,
         args: Optional[Tuple[Any]] = args,
-        kwargs: Optional[Dict[Any]] = kwargs,
+        kwargs: Optional[Dict[Any, Any]] = kwargs,
     ) -> Callable:
         return function(data, *args, **kwargs)
 
@@ -282,7 +284,9 @@ def wrap_for_apply(
 
 
 def wrap_for_agg(
-    function: Callable, args: Optional[Tuple[Any]], kwargs: Optional[Dict[Any]]
+    function: Callable,
+    args: Optional[Tuple[Any]],
+    kwargs: Optional[Dict[Any, Any]],
 ) -> Callable:
     """Wrap a function for use with Pandas `agg`.
 
@@ -308,7 +312,7 @@ def wrap_for_agg(
         An aggregation function to be used with Pandas `agg`.
     args : Optional[Tuple[Any]]
         args to be passed to function when it is called by Pandas `agg`
-    kwargs : Optional[Dict[Any]]
+    kwargs : Optional[Dict[Any, Any]]
         kwargs to be passed to function when it is called by Pandas `agg`
 
     """
@@ -319,7 +323,7 @@ def wrap_for_agg(
         data: Any,
         function: Callable = function,
         args: Optional[Tuple[Any]] = args,
-        kwargs: Optional[Dict[Any]] = kwargs,
+        kwargs: Optional[Dict[Any, Any]] = kwargs,
     ) -> Callable:
         # `data` will be a scalar here if Pandas `agg` is trying to behave like
         # like Pandas `apply`.
