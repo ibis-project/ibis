@@ -124,11 +124,7 @@ class Backend(abc.ABC):
 
     @property
     def api(self):
-        name = self.name
-        module = getattr(ibis, name, None)
-        if module is None:
-            pytest.skip("Unable to access module ibis.{}".format(name))
-        return module
+        return getattr(ibis, self.name)
 
     def make_context(
         self, params: Optional[Mapping[ir.ValueExpr, Any]] = None
