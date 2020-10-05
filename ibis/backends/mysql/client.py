@@ -7,7 +7,7 @@ import sqlalchemy.dialects.mysql as mysql
 
 import ibis.expr.datatypes as dt
 import ibis.sql.alchemy as alch
-from ibis.sql.mysql.compiler import MySQLDialect
+from .compiler import MySQLDialect
 
 import pymysql  # NOQA fail early if the driver is missing
 
