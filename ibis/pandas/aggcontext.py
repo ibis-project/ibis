@@ -253,7 +253,7 @@ class AggregationContext(abc.ABC):
 
 
 def wrap_for_apply(function, args, kwargs):
-    """Wrap a function so that it may be used with Pandas `apply`"""
+    """Wrap a function for use with Pandas `apply`."""
     assert callable(function), 'function {} is not callable'.format(function)
 
     @functools.wraps(function)
@@ -264,12 +264,23 @@ def wrap_for_apply(function, args, kwargs):
 
 
 def wrap_for_agg(function, args, kwargs):
-    """Wrap a function so that it may be used with Pandas `agg`.
+    """Wrap a function for use with Pandas `agg`.
 
-    In some cases, Pandas `agg` will try to behave like Pandas `apply`.
-    `function` will be wrapped in such a way that Pandas will be forced
-    not to do this (in other words, forced to treat `function` as an
-    aggregation function, not a mapping function).
+    This includes special logic that will force Pandas `agg` to always treat
+    the function as an aggregation function. Details:
+
+    When passed a function, Pandas `agg` will either:
+    1) Behave like Pandas `apply` and treat the function as a N->N mapping
+      function (i.e. calls the function once for every value in the Series
+      that `agg` is being called on), OR
+    2) Treat the function as a N->1 aggregation function (i.e. calls the
+      function once on the entire Series)
+    Pandas `agg` will use behavior #1 unless an error is raised when doing so.
+
+    We want to force Pandas `agg` to use behavior #2. To do this, we will wrap
+    the function with logic that checks that a Series is being passed in, and
+    raises a TypeError otherwise. When Pandas `agg` is attempting to use
+    behavior #1 but sees the TypeError, it will fall back to behavior #2.
     """
     assert callable(function), 'function {} is not callable'.format(function)
 
