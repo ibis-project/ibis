@@ -200,7 +200,7 @@ jobs:
       if: github.event_name == 'push'
 
     - name: benckmark
-      run: |
+      run: >-
         cat <<EOF
         {
           "azure": {
