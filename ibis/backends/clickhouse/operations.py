@@ -6,6 +6,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.sql.transforms as transforms
 import ibis.util as util
+
 from .identifiers import quote_identifier
 
 
