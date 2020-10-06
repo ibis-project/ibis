@@ -1,17 +1,15 @@
-import datetime
 import itertools
-import math
 from io import StringIO
 from operator import add, mul, sub
 from typing import Optional
 
 import ibis
+import ibis.base_backend
 import ibis.common.exceptions as com
 import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.impala.identifiers as identifiers
 import ibis.sql.compiler as comp
 import ibis.sql.transforms as transforms
 import ibis.util as util
@@ -98,7 +96,7 @@ class ImpalaTableSetFormatter(comp.TableSetFormatter):
         return jname
 
     def _quote_identifier(self, name):
-        return quote_identifier(name)
+        return ibis.base_backend.quote_identifier(name)
 
 
 # ---------------------------------------------------------------------
@@ -595,10 +593,6 @@ def _xor(translator, expr):
     return '({0} OR {1}) AND NOT ({0} AND {1})'.format(left_arg, right_arg)
 
 
-def _name_expr(formatted_expr, quoted_name):
-    return '{} AS {}'.format(formatted_expr, quoted_name)
-
-
 def _needs_parens(op):
     if isinstance(op, ir.Expr):
         op = op.op()
@@ -611,51 +605,6 @@ def _needs_parens(op):
     }
 
 
-def _set_literal_format(translator, expr):
-    value_type = expr.type().value_type
-
-    formatted = [
-        translator.translate(ir.literal(x, type=value_type))
-        for x in expr.op().value
-    ]
-
-    return _parenthesize(', '.join(formatted))
-
-
-def _boolean_literal_format(translator, expr):
-    value = expr.op().value
-    return 'TRUE' if value else 'FALSE'
-
-
-def _string_literal_format(translator, expr):
-    value = expr.op().value
-    return "'{}'".format(value.replace("'", "\\'"))
-
-
-def _number_literal_format(translator, expr):
-    value = expr.op().value
-
-    if math.isfinite(value):
-        formatted = repr(value)
-    else:
-        if math.isnan(value):
-            formatted_val = 'NaN'
-        elif math.isinf(value):
-            if value > 0:
-                formatted_val = 'Infinity'
-            else:
-                formatted_val = '-Infinity'
-        formatted = "CAST({!r} AS DOUBLE)".format(formatted_val)
-
-    return formatted
-
-
-def _interval_literal_format(translator, expr):
-    return 'INTERVAL {} {}'.format(
-        expr.op().value, expr.type().resolution.upper()
-    )
-
-
 def _interval_from_integer(translator, expr):
     # interval cannot be selected from impala
     op = expr.op()
@@ -665,29 +614,6 @@ def _interval_from_integer(translator, expr):
     return 'INTERVAL {} {}'.format(
         arg_formatted, expr.type().resolution.upper()
     )
-
-
-def _date_literal_format(translator, expr):
-    value = expr.op().value
-    if isinstance(value, datetime.date):
-        value = value.strftime('%Y-%m-%d')
-
-    return repr(value)
-
-
-def _timestamp_literal_format(translator, expr):
-    value = expr.op().value
-    if isinstance(value, datetime.datetime):
-        value = value.strftime('%Y-%m-%d %H:%M:%S')
-
-    return repr(value)
-
-
-def quote_identifier(name, quotechar='`', force=False):
-    if force or name.count(' ') or name in identifiers.impala_identifiers:
-        return '{0}{1}{0}'.format(quotechar, name)
-    else:
-        return name
 
 
 class CaseFormatter:
@@ -821,7 +747,7 @@ def _exists_subquery(translator, expr):
 def _table_column(translator, expr):
     op = expr.op()
     field_name = op.name
-    quoted_name = quote_identifier(field_name, force=True)
+    quoted_name = ibis.base_backend.quote_identifier(field_name, force=True)
 
     table = op.table
     ctx = translator.context
@@ -1034,40 +960,8 @@ def _count_distinct(translator, expr):
     return 'count(DISTINCT {})'.format(arg_formatted)
 
 
-def _literal(translator, expr):
-    if isinstance(expr, ir.BooleanValue):
-        typeclass = 'boolean'
-    elif isinstance(expr, ir.StringValue):
-        typeclass = 'string'
-    elif isinstance(expr, ir.NumericValue):
-        typeclass = 'number'
-    elif isinstance(expr, ir.DateValue):
-        typeclass = 'date'
-    elif isinstance(expr, ir.TimestampValue):
-        typeclass = 'timestamp'
-    elif isinstance(expr, ir.IntervalValue):
-        typeclass = 'interval'
-    elif isinstance(expr, ir.SetValue):
-        typeclass = 'set'
-    else:
-        raise NotImplementedError
-
-    return _literal_formatters[typeclass](translator, expr)
-
-
 def _null_literal(translator, expr):
     return 'NULL'
-
-
-_literal_formatters = {
-    'boolean': _boolean_literal_format,
-    'number': _number_literal_format,
-    'string': _string_literal_format,
-    'interval': _interval_literal_format,
-    'timestamp': _timestamp_literal_format,
-    'date': _date_literal_format,
-    'set': _set_literal_format,
-}
 
 
 def _value_list(translator, expr):
@@ -1224,7 +1118,7 @@ _operation_registry = {
     ops.IntervalFromInteger: _interval_from_integer,
     # Other operations
     ops.E: lambda *args: 'e()',
-    ops.Literal: _literal,
+    ops.Literal: ibis.base_backend.literal,
     ops.NullLiteral: _null_literal,
     ops.ValueList: _value_list,
     ops.Cast: _cast,
@@ -1267,13 +1161,9 @@ _operation_registry = {
 _operation_registry.update(_binary_infix_ops)
 
 
-class ImpalaExprTranslator(comp.ExprTranslator):
-
+class ImpalaExprTranslator(ibis.base_backend.BaseExprTranslator):
     _registry = _operation_registry
     context_class = ImpalaContext
-
-    def name(self, translated, name, force=True):
-        return _name_expr(translated, quote_identifier(name, force=force))
 
 
 class ImpalaDialect(comp.Dialect):
