@@ -67,7 +67,7 @@ def _timestamp_literal_format(translator, expr):
     return repr(value)
 
 
-_literal_formatters = {
+literal_formatters = {
     'boolean': _boolean_literal_format,
     'number': _number_literal_format,
     'string': _string_literal_format,
@@ -96,7 +96,7 @@ def literal(translator, expr):
     else:
         raise NotImplementedError
 
-    return _literal_formatters[typeclass](translator, expr)
+    return literal_formatters[typeclass](translator, expr)
 
 
 def _name_expr(formatted_expr, quoted_name):
