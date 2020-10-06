@@ -200,7 +200,23 @@ jobs:
       if: github.event_name == 'push'
 
     - name: benckmark
-      run: ./ci/benchmark.sh azure "${{ github.sha }}"
+      run: |
+        cat <<EOF
+        {
+          "azure": {
+            "machine": "azure",
+            "os": "$(uname -sr)",
+            "num_cpu": "$(grep -c ^processor /proc/cpuinfo)",
+            "arch": "$(uname -p)",
+            "cpu": "$(cat /proc/cpuinfo | grep -m1 'model name' | sed 's/model name\s:\s//g')",
+            "ram": "$(awk '/MemTotal/ { printf "%.0f \n", $2/1024/1024 }' /proc/meminfo)GB"
+          },
+          "version": 1
+        }
+        EOF | tee ~/.asv-machine.json
+        git remote add upstream https://github.com/ibis-project/ibis
+        git fetch upstream refs/heads/master
+        asv continuous -f 1.5 -e upstream/master "${{ github.sha }}" || echo > /dev/null
       if: always()
 
   Conda_package:
