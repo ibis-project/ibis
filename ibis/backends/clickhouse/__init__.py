@@ -1,7 +1,8 @@
 import ibis.common.exceptions as com
+from ibis.config import options
+
 from .client import ClickhouseClient
 from .compiler import dialect
-from ibis.config import options
 
 __all__ = 'compile', 'verify', 'connect', 'dialect'
 
