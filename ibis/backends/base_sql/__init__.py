@@ -117,6 +117,7 @@ def quote_identifier(name, quotechar='`', force=False):
 # TODO move the name method to comp.ExprTranslator and use that instead
 class BaseExprTranslator(comp.ExprTranslator):
     """Base expression translator."""
+
     @staticmethod
     def _name_expr(formatted_expr, quoted_name):
         return '{} AS {}'.format(formatted_expr, quoted_name)
