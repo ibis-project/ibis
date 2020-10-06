@@ -73,6 +73,7 @@ def hdf(tmpdir, data):
 def parquet(tmpdir, data):
     pa = pytest.importorskip('pyarrow')
     import pyarrow.parquet as pq  # noqa: E402
+
     from ibis.file.parquet import ParquetClient
 
     # create single files

@@ -1,7 +1,8 @@
 import ibis.common.exceptions as com
-from ibis.clickhouse.client import ClickhouseClient
-from ibis.clickhouse.compiler import dialect
 from ibis.config import options
+
+from .client import ClickhouseClient
+from .compiler import dialect
 
 __all__ = 'compile', 'verify', 'connect', 'dialect'
 
@@ -23,7 +24,7 @@ def compile(expr, params=None):
     -------
     compiled : string
     """
-    from ibis.clickhouse.compiler import to_sql
+    from .compiler import to_sql
 
     return to_sql(expr, dialect.make_context(params=params))
 
