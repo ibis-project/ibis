@@ -11,11 +11,12 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.client import Database, Query, SQLClient
+from ibis.util import log
+
 from . import compiler as comp
 from . import ddl
 from .compiler import SparkDialect, build_ast
 from .datatypes import spark_dtype
-from ibis.util import log
 
 
 @sch.infer.register(ps.sql.dataframe.DataFrame)

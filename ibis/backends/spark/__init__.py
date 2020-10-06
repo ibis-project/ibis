@@ -1,5 +1,6 @@
 """Spark backend."""
 import ibis.common.exceptions as com
+
 from .client import SparkClient
 from .compiler import dialect  # noqa: F401
 from .udf import udf  # noqa: F401
