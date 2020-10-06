@@ -16,11 +16,12 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.client import Database, DatabaseEntity, Query, SQLClient
+from ibis.sql.compiler import DDL, DML
+from ibis.util import log
+
 from . import ddl
 from . import dtypes as omniscidb_dtypes
 from .compiler import OmniSciDBDialect, build_ast
-from ibis.sql.compiler import DDL, DML
-from ibis.util import log
 
 try:
     from cudf import DataFrame as GPUDataFrame
