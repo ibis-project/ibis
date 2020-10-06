@@ -1027,8 +1027,8 @@ class WindowOp(ValueOp):
     display_argnames = False
 
     def __init__(self, expr, window):
-        from ibis.expr.window import propagate_down_window
         from ibis.expr.analysis import is_analytic
+        from ibis.expr.window import propagate_down_window
 
         if not is_analytic(expr):
             raise com.IbisInputError(
@@ -2158,8 +2158,7 @@ class Aggregation(TableNode, HasSchema):
         )
 
     def _validate(self):
-        from ibis.expr.analysis import is_reduction
-        from ibis.expr.analysis import FilterValidator
+        from ibis.expr.analysis import FilterValidator, is_reduction
 
         # All aggregates are valid
         for expr in self.metrics:
