@@ -121,7 +121,7 @@ def test_cumulative_window(client):
     )
     window = ibis.cumulative_window(order_by='time', group_by='key')
     result_pd = table.mutate(
-        mean_cum=table['value'].count().over(window)
+        count_cum=table['value'].count().over(window)
     ).execute(timecontext=context)
     df = table.execute()
     df = df[df.time.between(*(t.tz_convert(None) for t in context))]
@@ -135,7 +135,7 @@ def test_cumulative_window(client):
     )
     df = df.set_index('time')
     df = df.assign(
-        mean_cum=expected_cum_win.sort_index(
+        count_cum=expected_cum_win.sort_index(
             level=['time', 'key']
         ).reset_index(level='key', drop=True)
     )
@@ -143,8 +143,15 @@ def test_cumulative_window(client):
     tm.assert_frame_equal(result_pd, expected)
 
 
+@pytest.mark.xfail(
+    reason='Issue #2453 chain mutate() for window op and'
+    'non window op throws error for pyspark backend',
+    strict=True,
+)
 def test_complex_window(client):
     """ Test window with different sizes
+        mix context adjustment for window op that require context
+        adjustment and non window op that doesn't adjust context
     """
     table = client.table('time_indexed_table')
     context = (
@@ -165,7 +172,7 @@ def test_complex_window(client):
             count_2h=table['value'].count().over(window2),
             count_cum=table['value'].count().over(window_cum),
         )
-        .mutate(mean_1h=table['value'].mean().over(window))
+        .mutate(count=table['value'].count())
         .execute(timecontext=context)
     )
 
@@ -185,13 +192,6 @@ def test_complex_window(client):
         .count()
         .rename('count_2h')
         .astype(int)
-    )
-    expected_win_mean_1h = (
-        df.set_index('time')
-        .groupby('key')
-        .value.rolling('1h', closed='both')
-        .mean()
-        .rename('mean_1h')
     )
     expected_cum_win = (
         df.set_index('time')
@@ -217,11 +217,7 @@ def test_complex_window(client):
             level=['time', 'key']
         ).reset_index(level='key', drop=True)
     )
-    df = df.assign(
-        mean_1h=expected_win_mean_1h.sort_index(
-            level=['time', 'key']
-        ).reset_index(level='key', drop=True)
-    )
+    df['count'] = df.groupby(['key'])['value'].transform('count')
     df = df.reset_index()
     expected = (
         df[df.time.between(*(t.tz_convert(None) for t in context))]
