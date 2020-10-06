@@ -14,6 +14,7 @@ import ibis.expr.types as ir
 import ibis.util as util
 from ibis import literal as L
 from ibis.impala import compiler as impala_compiler
+
 from . import dtypes as omniscidb_dtypes
 from .identifiers import quote_identifier
 
