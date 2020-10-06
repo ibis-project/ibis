@@ -1,5 +1,5 @@
+import ibis.base_backend
 from ibis.impala import ddl as impala_ddl
-from ibis.impala.compiler import quote_identifier
 from ibis.impala.ddl import (  # noqa: F401
     _is_fully_qualified,
     _is_quoted,
@@ -150,7 +150,8 @@ def format_schema(schema):
 
 def _format_schema_element(name, t):
     return '{} {}'.format(
-        quote_identifier(name, force=True), _type_to_sql_string(t)
+        ibis.base_backend.quote_identifier(name, force=True),
+        _type_to_sql_string(t),
     )
 
 
