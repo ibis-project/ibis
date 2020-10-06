@@ -24,7 +24,7 @@ import itertools
 import math
 
 import ibis
-import ibis.base_backend
+import ibis.backends.base_sql
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -247,7 +247,7 @@ def _number_literal_format(translator, expr):
     return formatted
 
 
-_literal_formatters = ibis.base_backend.literal_formatters.copy()
+_literal_formatters = ibis.backends.base_sql.literal_formatters.copy()
 
 _literal_formatters.update(
     {

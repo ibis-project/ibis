@@ -7,7 +7,7 @@ import toolz
 from multipledispatch import Dispatcher
 
 import ibis
-import ibis.base_backend
+import ibis.backends.base_sql
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.lineage as lin
@@ -255,7 +255,7 @@ def _literal(translator, expr):
             return "TIME '{}'".format(value)
 
     try:
-        return ibis.base_backend.literal(translator, expr)
+        return ibis.backends.base_sql.literal(translator, expr)
     except NotImplementedError:
         if isinstance(expr, ir.ArrayValue):
             return _array_literal_format(expr)
@@ -409,9 +409,9 @@ _operation_registry = {
 }
 
 
-class BigQueryExprTranslator(ibis.base_backend.BaseExprTranslator):
+class BigQueryExprTranslator(ibis.backends.base_sql.BaseExprTranslator):
     _registry = _operation_registry
-    _rewrites = ibis.base_backend.BaseExprTranslator._rewrites.copy()
+    _rewrites = ibis.backends.base_sql.BaseExprTranslator._rewrites.copy()
 
     context_class = BigQueryContext
 
