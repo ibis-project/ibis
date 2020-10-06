@@ -24,10 +24,14 @@ def filter_by_time_context(
     if not timecontext:
         return df
 
-    begin, end = timecontext
     if TIME_COL in df.columns:
-        # for py3.8, underlying spark type converter calls utctimetuple()
-        # and will throw excpetion for Timestamp type.
+        # For py3.8, underlying spark type converter calls utctimetuple()
+        # and will throw excpetion for Timestamp type if tz is set.
+        # See https://github.com/pandas-dev/pandas/issues/32174
+        # Dropping tz will cause spark to interpret begin, end with session
+        # timezone & os env TZ. We convert Timestamp to pydatetime to
+        # workaround.
+        begin, end = timecontext
         return df.filter(
             (F.col(TIME_COL) >= begin.to_pydatetime())
             & (F.col(TIME_COL) < end.to_pydatetime())

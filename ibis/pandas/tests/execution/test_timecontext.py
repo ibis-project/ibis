@@ -4,7 +4,11 @@ import pytest
 
 import ibis
 import ibis.common.exceptions as com
-from ibis.expr.timecontext import TimeContextRelation, compare_timecontext
+from ibis.expr.timecontext import (
+    TimeContextRelation,
+    adjust_context,
+    compare_timecontext,
+)
 
 pytestmark = pytest.mark.pandas
 
@@ -50,6 +54,15 @@ def test_bad_timecontext(time_table, t):
     with pytest.raises(com.IbisError, match=r".*must have a time column.*"):
         context = (pd.Timestamp('20090101'), pd.Timestamp('20100101'))
         t.execute(timecontext=context)
+
+
+def test_bad_call_to_adjust_context():
+    op = "not_a_node"
+    context = (pd.Timestamp('20170101'), pd.Timestamp('20170103'))
+    with pytest.raises(
+        com.IbisError, match=r".*Unsupported input type for adjust context*"
+    ):
+        adjust_context(op, context)
 
 
 def test_compare_timecontext():

@@ -108,7 +108,7 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
     # In selection, there could be multiple children that point to the
     # same root table. e.g. window with different sizes on a table.
-    # We need to get the 'max' time range that is a superset of every
+    # We need to get the 'combined' time range that is a superset of every
     # time context among child nodes, and pass this as context to
     # source table to get all data within time context loaded.
     arg_timecontexts = [

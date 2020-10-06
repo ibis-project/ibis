@@ -151,13 +151,16 @@ def adjust_context(op: Any, timecontext: TimeContext) -> TimeContext:
     Returns
     --------
     Adjusted time context
+        For op that is not of type Node, we raise an error to avoid failing
+        silently since the default behavior is to return input timecontext
+        itself.
     """
     raise com.IbisError(f'Unsupported input type for adjust context for {op}')
 
 
 @adjust_context.register(ops.Node)
 def adjust_context_node(op: Node, timecontext: TimeContext) -> TimeContext:
-    # by default, do not adjust time context
+    # For any node, by default, do not adjust time context
     return timecontext
 
 

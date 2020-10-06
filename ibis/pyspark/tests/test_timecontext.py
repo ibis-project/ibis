@@ -10,12 +10,14 @@ import ibis
 pytest.importorskip('pyspark')
 pytestmark = pytest.mark.pyspark
 
+# def test_adjust_context():
+
 
 def test_table_with_timecontext(client):
     table = client.table('time_indexed_table')
     context = (pd.Timestamp('20170102'), pd.Timestamp('20170103'))
-    result = table.compile(timecontext=context).toPandas()
-    expected = table.compile().toPandas()
+    result = table.execute(timecontext=context)
+    expected = table.execute()
     expected = expected[expected.time.between(*context)]
     tm.assert_frame_equal(result, expected)
 
@@ -62,11 +64,11 @@ def test_window_with_timecontext(client, ibis_window, spark_range):
     with context = (2020-01-03, 2002-01-04) trailing count for 1 day will be:
     time       value  count
     2020-01-03   c      2
-    2020-01-04   d      3
+    2020-01-04   d      2
     trailing count for 2 days will be:
     time       value  count
     2020-01-03   c      3
-    2020-01-04   d      4
+    2020-01-04   d      3
     with context = (2020-01-01, 2002-01-02) count for 1 day forward looking
     window will be:
     time       value  count
@@ -78,10 +80,9 @@ def test_window_with_timecontext(client, ibis_window, spark_range):
         pd.Timestamp('20170102 07:00:00', tz='UTC'),
         pd.Timestamp('20170103', tz='UTC'),
     )
-    result = table.mutate(
+    result_pd = table.mutate(
         count=table['value'].count().over(ibis_window)
-    ).compile(timecontext=context)
-    result_pd = result.toPandas()
+    ).execute(timecontext=context)
     spark_table = table.compile()
     spark_window = (
         Window.partitionBy('key')
@@ -119,11 +120,10 @@ def test_cumulative_window(client):
         pd.Timestamp('20170105', tz='UTC'),
     )
     window = ibis.cumulative_window(order_by='time', group_by='key')
-    result = table.mutate(
+    result_pd = table.mutate(
         mean_cum=table['value'].count().over(window)
-    ).compile(timecontext=context)
-    result_pd = result.toPandas()
-    df = table.compile().toPandas()
+    ).execute(timecontext=context)
+    df = table.execute()
     df = df[df.time.between(*(t.tz_convert(None) for t in context))]
     expected_cum_win = (
         df.set_index('time')
@@ -144,6 +144,8 @@ def test_cumulative_window(client):
 
 
 def test_complex_window(client):
+    """ Test window with different sizes
+    """
     table = client.table('time_indexed_table')
     context = (
         pd.Timestamp('20170102 07:00:00', tz='UTC'),
@@ -157,18 +159,17 @@ def test_complex_window(client):
     )
     window_cum = ibis.cumulative_window(order_by='time', group_by='key')
     # context should be adjusted accordingly for each window
-    result = (
-        table.mutate(count_1h=table['value'].count().over(window))
-        .mutate(
+    result_pd = (
+        table.mutate(
+            count_1h=table['value'].count().over(window),
             count_2h=table['value'].count().over(window2),
             count_cum=table['value'].count().over(window_cum),
         )
         .mutate(mean_1h=table['value'].mean().over(window))
-        .compile(timecontext=context)
+        .execute(timecontext=context)
     )
-    result_pd = result.toPandas()
 
-    df = table.compile().toPandas()
+    df = table.execute()
     expected_win_1h = (
         df.set_index('time')
         .groupby('key')
