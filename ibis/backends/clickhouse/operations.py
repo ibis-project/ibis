@@ -6,11 +6,11 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.sql.transforms as transforms
 import ibis.util as util
-from ibis.clickhouse.identifiers import quote_identifier
+from .identifiers import quote_identifier
 
 
 def _cast(translator, expr):
-    from ibis.clickhouse.client import ClickhouseDataType
+    from .client import ClickhouseDataType
 
     op = expr.op()
     arg, target = op.args
