@@ -3,23 +3,28 @@ import pyspark.sql.functions as F
 import pytest
 from pyspark.sql.window import Window
 
+import ibis
+
 pytest.importorskip('pyspark')
 pytestmark = pytest.mark.pyspark
 
 
 @pytest.mark.parametrize(
-    ('ibis_window', 'spark_range'),
+    ('ibis_windows', 'spark_range'),
     [
-        ([('trailing', 1)], (-3600, 0)),  # 1h back looking window
-        ([('trailing', 2)], (-7200, 0)),  # 2h back looking window
-        ([('forward', 1)], (0, 3600)),  # 1h forward looking window
+        ([(ibis.interval(hours=1), 0)], (-3600, 0)),  # 1h back looking window
+        ([(ibis.interval(hours=2), 0)], (-7200, 0)),  # 2h back looking window
+        (
+            [(0, ibis.interval(hours=1))],
+            (0, 3600),
+        ),  # 1h forward looking window
     ],
-    indirect=['ibis_window'],
+    indirect=['ibis_windows'],
 )
-def test_time_indexed_window(client, ibis_window, spark_range):
+def test_time_indexed_window(client, ibis_windows, spark_range):
     table = client.table('time_indexed_table')
     result = table.mutate(
-        mean=table['value'].mean().over(ibis_window[0])
+        mean=table['value'].mean().over(ibis_windows[0])
     ).compile()
     result_pd = result.toPandas()
     spark_table = table.compile()
@@ -35,15 +40,20 @@ def test_time_indexed_window(client, ibis_window, spark_range):
 
 
 @pytest.mark.parametrize(
-    ('ibis_window', 'spark_range'),
-    [([('trailing', 1), ('trailing', 2)], [(-3600, 0), (-7200, 0)])],
-    indirect=['ibis_window'],
+    ('ibis_windows', 'spark_range'),
+    [
+        (
+            [(ibis.interval(hours=1), 0), (ibis.interval(hours=2), 0)],
+            [(-3600, 0), (-7200, 0)],
+        ),
+    ],
+    indirect=['ibis_windows'],
 )
-def test_multiple_windows(client, ibis_window, spark_range):
+def test_multiple_windows(client, ibis_windows, spark_range):
     table = client.table('time_indexed_table')
     result = table.mutate(
-        mean_1h=table['value'].mean().over(ibis_window[0]),
-        mean_2h=table['value'].mean().over(ibis_window[1]),
+        mean_1h=table['value'].mean().over(ibis_windows[0]),
+        mean_2h=table['value'].mean().over(ibis_windows[1]),
     ).compile()
     result_pd = result.toPandas()
 

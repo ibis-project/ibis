@@ -71,34 +71,17 @@ class IbisWindow:
 
     def get_windows(self):
         # Return a list of Ibis windows
-        result = []
-        for w in self.windows:
-            window_type, interval = w
-            if window_type == 'trailing':
-                result.append(
-                    ibis.trailing_window(
-                        preceding=ibis.interval(hours=interval),
-                        order_by='time',
-                        group_by='key',
-                    )
-                )
-            elif window_type == 'forward':
-                result.append(
-                    ibis.range_window(
-                        preceding=0,
-                        following=ibis.interval(hours=interval),
-                        order_by='time',
-                        group_by='key',
-                    )
-                )
-            elif window_type == 'cumulative':
-                # we don't need interval for cumulative window
-                result.append(
-                    ibis.cumulative_window(order_by='time', group_by='key')
-                )
-        return result
+        return [
+            ibis.window(
+                preceding=w[0],
+                following=w[1],
+                order_by='time',
+                group_by='key',
+            )
+            for w in self.windows
+        ]
 
 
 @pytest.fixture
-def ibis_window(request):
+def ibis_windows(request):
     return IbisWindow(request.param).get_windows()
