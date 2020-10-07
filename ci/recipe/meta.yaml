@@ -72,7 +72,7 @@ test:
     - ibis.sql.mysql
     - ibis.backends.omniscidb  # [py<38]
     - ibis.pandas
-    - ibis.sql.postgres
+    - ibis.backends.postgres
     - ibis.pyspark  # [py<38]
     - ibis.backends.spark
     - ibis.backends.sqlite

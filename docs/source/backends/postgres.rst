@@ -29,7 +29,7 @@ individual parameters to :func:`ibis.postgres.connect`:
 
 API
 ---
-.. currentmodule:: ibis.sql.postgres.api
+.. currentmodule:: ibis.backends.postgres
 
 The PostgreSQL client is accessible through the ``ibis.postgres`` namespace.
 
