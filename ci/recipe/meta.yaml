@@ -63,7 +63,7 @@ requirements:
 test:
   imports:
     - ibis
-    - ibis.bigquery
+    - ibis.backends.bigquery
     - ibis.backends.clickhouse
     - ibis.file.csv
     - ibis.file.parquet
