@@ -2,11 +2,11 @@ import pytest
 
 import ibis
 
-from ibis.spark.compiler import (  # noqa: E402, isort:skip
+from ..compiler import (  # noqa: E402, isort:skip
     SparkDialect,
     build_ast,
 )
-from ibis.spark import ddl  # noqa: E402, isort:skip
+from .. import ddl  # noqa: E402, isort:skip
 
 
 pytestmark = pytest.mark.spark

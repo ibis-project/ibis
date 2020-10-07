@@ -11,11 +11,12 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.clickhouse.compiler import ClickhouseDialect, build_ast
 from ibis.client import Database, DatabaseEntity, Query, SQLClient
 from ibis.config import options
 from ibis.sql.compiler import DDL
 from ibis.util import log
+
+from .compiler import ClickhouseDialect, build_ast
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
 base_typename_re = re.compile(r"(\w+)")
