@@ -214,7 +214,7 @@ jobs:
           | tee ~/.asv-machine.json
         git remote add upstream https://github.com/ibis-project/ibis
         git fetch upstream refs/heads/master
-        asv continuous -f 1.5 -e upstream/master "${{ github.sha }}" || echo > /dev/null
+        asv continuous -f 1.5 -e upstream/master ${{ github.sha }} || echo > /dev/null
       if: always()
       env:
         ASV_CONFIG: |
