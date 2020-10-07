@@ -2,7 +2,6 @@ import pandas.util.testing as tm
 import pyspark.sql.functions as F
 import pytest
 from pyspark.sql.window import Window
-from pytest import param
 
 import ibis
 
@@ -11,39 +10,21 @@ pytestmark = pytest.mark.pyspark
 
 
 @pytest.mark.parametrize(
-    ('ibis_window', 'spark_range'),
+    ('ibis_windows', 'spark_range'),
     [
-        param(
-            ibis.trailing_window(
-                preceding=ibis.interval(hours=1),
-                order_by='time',
-                group_by='key',
-            ),
-            (-3600, 0),
-        ),
-        param(
-            ibis.trailing_window(
-                preceding=ibis.interval(hours=2),
-                order_by='time',
-                group_by='key',
-            ),
-            (-7200, 0),
-        ),
-        param(
-            ibis.range_window(
-                preceding=0,
-                following=ibis.interval(hours=1),
-                order_by='time',
-                group_by='key',
-            ),
+        ([(ibis.interval(hours=1), 0)], (-3600, 0)),  # 1h back looking window
+        ([(ibis.interval(hours=2), 0)], (-7200, 0)),  # 2h back looking window
+        (
+            [(0, ibis.interval(hours=1))],
             (0, 3600),
-        ),
+        ),  # 1h forward looking window
     ],
+    indirect=['ibis_windows'],
 )
-def test_time_indexed_window(client, ibis_window, spark_range):
+def test_time_indexed_window(client, ibis_windows, spark_range):
     table = client.table('time_indexed_table')
     result = table.mutate(
-        mean=table['value'].mean().over(ibis_window)
+        mean=table['value'].mean().over(ibis_windows[0])
     ).compile()
     result_pd = result.toPandas()
     spark_table = table.compile()
@@ -58,34 +39,42 @@ def test_time_indexed_window(client, ibis_window, spark_range):
     tm.assert_frame_equal(result_pd, expected)
 
 
-def test_multiple_windows(client):
+@pytest.mark.parametrize(
+    ('ibis_windows', 'spark_range'),
+    [
+        (
+            [(ibis.interval(hours=1), 0), (ibis.interval(hours=2), 0)],
+            [(-3600, 0), (-7200, 0)],
+        ),
+    ],
+    indirect=['ibis_windows'],
+)
+def test_multiple_windows(client, ibis_windows, spark_range):
     table = client.table('time_indexed_table')
-    window1 = ibis.trailing_window(
-        preceding=ibis.interval(hours=1), order_by='time', group_by='key'
-    )
-    window2 = ibis.trailing_window(
-        preceding=ibis.interval(hours=2), order_by='time', group_by='key'
-    )
     result = table.mutate(
-        mean_1h=table['value'].mean().over(window1),
-        mean_2h=table['value'].mean().over(window2),
+        mean_1h=table['value'].mean().over(ibis_windows[0]),
+        mean_2h=table['value'].mean().over(ibis_windows[1]),
     ).compile()
     result_pd = result.toPandas()
 
-    df = table.compile().toPandas()
-    expected_win_1 = (
-        df.set_index('time')
-        .groupby('key')
-        .value.rolling('1h', closed='both')
-        .mean()
-        .rename('mean_1h')
-    ).reset_index(drop=True)
-    expected_win_2 = (
-        df.set_index('time')
-        .groupby('key')
-        .value.rolling('2h', closed='both')
-        .mean()
-        .rename('mean_2h')
-    ).reset_index(drop=True)
-    tm.assert_series_equal(result_pd['mean_1h'], expected_win_1)
-    tm.assert_series_equal(result_pd['mean_2h'], expected_win_2)
+    spark_table = table.compile()
+    spark_window = (
+        Window.partitionBy('key')
+        .orderBy(F.col('time').cast('long'))
+        .rangeBetween(*spark_range[0])
+    )
+    spark_window_2 = (
+        Window.partitionBy('key')
+        .orderBy(F.col('time').cast('long'))
+        .rangeBetween(*spark_range[1])
+    )
+    expected = (
+        spark_table.withColumn(
+            'mean_1h', F.mean(spark_table['value']).over(spark_window),
+        )
+        .withColumn(
+            'mean_2h', F.mean(spark_table['value']).over(spark_window_2),
+        )
+        .toPandas()
+    )
+    tm.assert_frame_equal(result_pd, expected)
