@@ -3,14 +3,11 @@ import pandas.util.testing as tm
 import pyspark.sql.functions as F
 import pytest
 from pyspark.sql import Window
-from pytest import param
 
 import ibis
 
 pytest.importorskip('pyspark')
 pytestmark = pytest.mark.pyspark
-
-# def test_adjust_context():
 
 
 def test_table_with_timecontext(client):
@@ -25,32 +22,11 @@ def test_table_with_timecontext(client):
 @pytest.mark.parametrize(
     ('ibis_window', 'spark_range'),
     [
-        param(
-            ibis.trailing_window(
-                preceding=ibis.interval(hours=1),
-                order_by='time',
-                group_by='key',
-            ),
-            (-3600, 0),
-        ),  # 1h back looking window
-        param(
-            ibis.trailing_window(
-                preceding=ibis.interval(hours=2),
-                order_by='time',
-                group_by='key',
-            ),
-            (-7200, 0),
-        ),  # 2h back looking window
-        param(
-            ibis.range_window(
-                preceding=0,
-                following=ibis.interval(hours=1),
-                order_by='time',
-                group_by='key',
-            ),
-            (0, 3600),
-        ),  # 1h forward looking window
+        ([('trailing', 1)], (-3600, 0)),  # 1h back looking window
+        ([('trailing', 2)], (-7200, 0)),  # 2h back looking window
+        ([('forward', 1)], (0, 3600)),  # 1h forward looking window
     ],
+    indirect=['ibis_window'],
 )
 def test_window_with_timecontext(client, ibis_window, spark_range):
     """ Test context adjustment for trailing / range window
@@ -81,7 +57,7 @@ def test_window_with_timecontext(client, ibis_window, spark_range):
         pd.Timestamp('20170103', tz='UTC'),
     )
     result_pd = table.mutate(
-        count=table['value'].count().over(ibis_window)
+        count=table['value'].count().over(ibis_window[0])
     ).execute(timecontext=context)
     spark_table = table.compile()
     spark_window = (
@@ -98,7 +74,12 @@ def test_window_with_timecontext(client, ibis_window, spark_range):
     tm.assert_frame_equal(result_pd, expected)
 
 
-def test_cumulative_window(client):
+@pytest.mark.parametrize(
+    ('ibis_window', 'spark_range'),
+    [([('cumulative', 1)], (Window.unboundedPreceding, 0))],
+    indirect=['ibis_window'],
+)
+def test_cumulative_window(client, ibis_window, spark_range):
     """ Test context adjustment for cumulative window
 
     For cumulative window, by defination we should look back infinately.
@@ -119,27 +100,196 @@ def test_cumulative_window(client):
         pd.Timestamp('20170102 07:00:00', tz='UTC'),
         pd.Timestamp('20170105', tz='UTC'),
     )
-    window = ibis.cumulative_window(order_by='time', group_by='key')
     result_pd = table.mutate(
-        count_cum=table['value'].count().over(window)
+        count_cum=table['value'].count().over(ibis_window[0])
     ).execute(timecontext=context)
-    df = table.execute()
-    df = df[df.time.between(*(t.tz_convert(None) for t in context))]
-    expected_cum_win = (
-        df.set_index('time')
-        .groupby('key')
-        .value.expanding()
-        .count()
-        .rename('count_cum')
-        .astype(int)
+
+    spark_table = table.compile(timecontext=context)
+    spark_window = (
+        Window.partitionBy('key')
+        .orderBy(F.col('time').cast('long'))
+        .rangeBetween(*spark_range)
     )
-    df = df.set_index('time')
-    df = df.assign(
-        count_cum=expected_cum_win.sort_index(
-            level=['time', 'key']
-        ).reset_index(level='key', drop=True)
+    expected = spark_table.withColumn(
+        'count_cum', F.count(spark_table['value']).over(spark_window),
+    ).toPandas()
+    expected = expected[
+        expected.time.between(*(t.tz_convert(None) for t in context))
+    ].reset_index(drop=True)
+    tm.assert_frame_equal(result_pd, expected)
+
+
+@pytest.mark.parametrize(
+    ('ibis_window', 'spark_range'),
+    [([('trailing', 1), ('trailing', 2)], [(-3600, 0), (-7200, 0)])],
+    indirect=['ibis_window'],
+)
+def test_multiple_trailing_window(client, ibis_window, spark_range):
+    """ Test context adjustment for multiple trailing window
+
+    When there are multiple window ops, we need to verify contexts are
+    adjusted correctly for all windows. In this tests we are constucting
+    one trailing window for 1h and another trailng window for 2h
+    """
+    table = client.table('time_indexed_table')
+    context = (
+        pd.Timestamp('20170102 07:00:00', tz='UTC'),
+        pd.Timestamp('20170105', tz='UTC'),
     )
-    expected = df.sort_values(by=['key', 'time']).reset_index()
+    result_pd = table.mutate(
+        count_1h=table['value'].count().over(ibis_window[0]),
+        count_2h=table['value'].count().over(ibis_window[1]),
+    ).execute(timecontext=context)
+
+    spark_table = table.compile()
+    spark_window_1h = (
+        Window.partitionBy('key')
+        .orderBy(F.col('time').cast('long'))
+        .rangeBetween(*spark_range[0])
+    )
+    spark_window_2h = (
+        Window.partitionBy('key')
+        .orderBy(F.col('time').cast('long'))
+        .rangeBetween(*spark_range[1])
+    )
+    expected = (
+        spark_table.withColumn(
+            'count_1h', F.count(spark_table['value']).over(spark_window_1h)
+        )
+        .withColumn(
+            'count_2h', F.count(spark_table['value']).over(spark_window_2h)
+        )
+        .toPandas()
+    )
+    expected = expected[
+        expected.time.between(*(t.tz_convert(None) for t in context))
+    ].reset_index(drop=True)
+    tm.assert_frame_equal(result_pd, expected)
+
+
+@pytest.mark.xfail(
+    reason='Issue #2457 Adjust context properly for mixed rolling window,'
+    ' cumulative window and non window ops',
+    strict=True,
+)
+@pytest.mark.parametrize(
+    ('ibis_window', 'spark_range'),
+    [
+        (
+            [('trailing', 1), ('cumulative', 1)],
+            [(-3600, 0), (Window.unboundedPreceding, 0)],
+        )
+    ],
+    indirect=['ibis_window'],
+)
+def test_rolling_with_cumulative_window(client, ibis_window, spark_range):
+    """ Test context adjustment for rolling window and cumulative window
+
+    cumulative window should calculate only with in user's context,
+    while rolling window should calculate on expanded context.
+    For a rolling window of 1 day,
+    time       value
+    2020-01-01   a
+    2020-01-02   b
+    2020-01-03   c
+    2020-01-04   d
+    with context = (2020-01-02, 2002-01-03), count will be:
+    time       value  roll_count cum_count
+    2020-01-02   b      2            1
+    2020-01-03   c      2            2
+    """
+    table = client.table('time_indexed_table')
+    context = (
+        pd.Timestamp('20170102 07:00:00', tz='UTC'),
+        pd.Timestamp('20170105', tz='UTC'),
+    )
+    result_pd = table.mutate(
+        count_1h=table['value'].count().over(ibis_window[0]),
+        count_cum=table['value'].count().over(ibis_window[1]),
+    ).execute(timecontext=context)
+
+    spark_table = table.compile()
+    spark_window_1h = (
+        Window.partitionBy('key')
+        .orderBy(F.col('time').cast('long'))
+        .rangeBetween(*spark_range[0])
+    )
+    spark_window_cum = (
+        Window.partitionBy('key')
+        .orderBy(F.col('time').cast('long'))
+        .rangeBetween(*spark_range[1])
+    )
+    expected = (
+        spark_table.withColumn(
+            'count_1h', F.count(spark_table['value']).over(spark_window_1h)
+        )
+        .withColumn(
+            'count_cum', F.count(spark_table['value']).over(spark_window_cum)
+        )
+        .toPandas()
+    )
+    expected = expected[
+        expected.time.between(*(t.tz_convert(None) for t in context))
+    ].reset_index(drop=True)
+    tm.assert_frame_equal(result_pd, expected)
+
+
+@pytest.mark.xfail(
+    reason='Issue #2457 Adjust context properly for mixed rolling window,'
+    ' cumulative window and non window ops',
+    strict=True,
+)
+@pytest.mark.parametrize(
+    ('ibis_window', 'spark_range'),
+    [([('trailing', 1)], [(-3600, 0)])],
+    indirect=['ibis_window'],
+)
+def test_rolling_with_non_window_op(client, ibis_window, spark_range):
+    """ Test context adjustment for rolling window and non window ops
+
+    non window ops should calculate only with in user's context,
+    while rolling window should calculate on expanded context.
+    For a rolling window of 1 day, and a `count` aggregation
+    time       value
+    2020-01-01   a
+    2020-01-02   b
+    2020-01-03   c
+    2020-01-04   d
+    with context = (2020-01-02, 2002-01-04), result will be:
+    time       value  roll_count    count
+    2020-01-02   b      2            3
+    2020-01-03   c      2            3
+    2020-01-04   d      2            3
+    Because there are 3 rows within user context (01-02, 01-04),
+    count should return 3 for every row, rather 4, based on the
+    adjusted context (01-01, 01-04).
+    """
+    table = client.table('time_indexed_table')
+    context = (
+        pd.Timestamp('20170102 07:00:00', tz='UTC'),
+        pd.Timestamp('20170105', tz='UTC'),
+    )
+    result_pd = table.mutate(
+        count_1h=table['value'].count().over(ibis_window[0]),
+        count=table['value'].count(),
+    ).execute(timecontext=context)
+
+    spark_table = table.compile()
+    spark_window_1h = (
+        Window.partitionBy('key')
+        .orderBy(F.col('time').cast('long'))
+        .rangeBetween(*spark_range[0])
+    )
+    expected = (
+        spark_table.withColumn(
+            'count_1h', F.count(spark_table['value']).over(spark_window_1h)
+        )
+        .withColumn('count', F.count(spark_table['value']))
+        .toPandas()
+    )
+    expected = expected[
+        expected.time.between(*(t.tz_convert(None) for t in context))
+    ].reset_index(drop=True)
     tm.assert_frame_equal(result_pd, expected)
 
 

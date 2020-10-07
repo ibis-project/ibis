@@ -62,3 +62,43 @@ def client():
     df_time_indexed.createTempView('time_indexed_table')
 
     return client
+
+
+class IbisWindow:
+    # Test util class to generate different types of ibis windows
+    def __init__(self, windows):
+        self.windows = windows
+
+    def get_windows(self):
+        # Return a list of Ibis windows
+        result = []
+        for w in self.windows:
+            window_type, interval = w
+            if window_type == 'trailing':
+                result.append(
+                    ibis.trailing_window(
+                        preceding=ibis.interval(hours=interval),
+                        order_by='time',
+                        group_by='key',
+                    )
+                )
+            elif window_type == 'forward':
+                result.append(
+                    ibis.range_window(
+                        preceding=0,
+                        following=ibis.interval(hours=interval),
+                        order_by='time',
+                        group_by='key',
+                    )
+                )
+            elif window_type == 'cumulative':
+                # we don't need interval for cumulative window
+                result.append(
+                    ibis.cumulative_window(order_by='time', group_by='key')
+                )
+        return result
+
+
+@pytest.fixture
+def ibis_window(request):
+    return IbisWindow(request.param).get_windows()
