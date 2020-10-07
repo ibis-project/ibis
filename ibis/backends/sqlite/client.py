@@ -10,7 +10,6 @@ import sqlalchemy as sa
 
 import ibis.sql.alchemy as alch
 from ibis.client import Database
-
 from .compiler import SQLiteDialect
 
 
