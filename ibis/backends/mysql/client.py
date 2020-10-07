@@ -8,6 +8,7 @@ import sqlalchemy.dialects.mysql as mysql
 
 import ibis.expr.datatypes as dt
 import ibis.sql.alchemy as alch
+
 from .compiler import MySQLDialect
 
 # TODO(kszucs): unsigned integers
