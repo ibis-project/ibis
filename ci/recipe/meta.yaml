@@ -74,7 +74,7 @@ test:
     - ibis.pandas
     - ibis.sql.postgres
     - ibis.pyspark  # [py<38]
-    - ibis.spark
+    - ibis.backends.spark
     - ibis.sql.sqlite
 
 about:
