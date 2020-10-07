@@ -14,8 +14,9 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.signature as sig
 import ibis.udf.validate as v
-from ibis.spark.compiler import SparkUDAFNode, SparkUDFNode, compiles
-from ibis.spark.datatypes import spark_dtype
+
+from .compiler import SparkUDAFNode, SparkUDFNode, compiles
+from .datatypes import spark_dtype
 
 _udf_name_cache = collections.defaultdict(itertools.count)
 

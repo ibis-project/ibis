@@ -1,5 +1,6 @@
-import pytest
 from posixpath import join as pjoin
+
+import pytest
 
 import ibis
 import ibis.common.exceptions as com
