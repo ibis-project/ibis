@@ -1,7 +1,9 @@
+"""Spark backend."""
 import ibis.common.exceptions as com
-from ibis.spark.client import SparkClient
-from ibis.spark.compiler import dialect  # noqa: F401
-from ibis.spark.udf import udf  # noqa: F401
+
+from .client import SparkClient
+from .compiler import dialect  # noqa: F401
+from .udf import udf  # noqa: F401
 
 
 def compile(expr, params=None):
@@ -12,7 +14,7 @@ def compile(expr, params=None):
     str
 
     """
-    from ibis.spark.compiler import to_sql
+    from .compiler import to_sql
 
     return to_sql(expr, dialect.make_context(params=params))
 

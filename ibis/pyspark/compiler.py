@@ -13,15 +13,15 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.types as types
 from ibis import interval
-from ibis.pandas.execution import execute
-from ibis.pyspark.operations import PySparkTable
-from ibis.pyspark.timecontext import filter_by_time_context
-from ibis.spark.compiler import SparkContext, SparkDialect
-from ibis.spark.datatypes import (
+from ibis.backends.spark.compiler import SparkContext, SparkDialect
+from ibis.backends.spark.datatypes import (
     ibis_array_dtype_to_spark_dtype,
     ibis_dtype_to_spark_dtype,
     spark_dtype,
 )
+from ibis.pandas.execution import execute
+from ibis.pyspark.operations import PySparkTable
+from ibis.pyspark.timecontext import filter_by_time_context
 
 
 class PySparkContext(SparkContext):

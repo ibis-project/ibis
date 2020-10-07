@@ -1,4 +1,4 @@
-'''
+"""
 Adding and subtracting timestamp/date intervals (dealt with in `_timestamp_op`)
 is still WIP since Spark SQL support for these tasks is not comprehensive.
 The built-in Spark SQL functions `date_add`, `date_sub`, and `add_months` do
@@ -17,7 +17,7 @@ like `date_add`     |      YES      |      YES      |       NO      |
 arithmetic          |      YES      |       NO      |      YES      |
                     |_______________|_______________|_______________|
 
-'''
+"""
 
 
 import itertools

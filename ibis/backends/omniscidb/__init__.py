@@ -5,9 +5,9 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.config as cf
 from ibis.config import options
+
 from .client import OmniSciDBClient  # noqa: F401
 from .compiler import compiles, dialect, rewrites  # noqa: F401
-
 
 __all__ = 'compile', 'verify', 'connect'
 

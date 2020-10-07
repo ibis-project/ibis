@@ -64,7 +64,7 @@ test:
   imports:
     - ibis
     - ibis.bigquery
-    - ibis.clickhouse
+    - ibis.backends.clickhouse
     - ibis.file.csv
     - ibis.file.parquet
     - ibis.file.hdf5
@@ -74,7 +74,7 @@ test:
     - ibis.pandas
     - ibis.sql.postgres
     - ibis.pyspark  # [py<38]
-    - ibis.spark
+    - ibis.backends.spark
     - ibis.sql.sqlite
 
 about:

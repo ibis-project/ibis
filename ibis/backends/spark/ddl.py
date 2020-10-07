@@ -5,7 +5,8 @@ from ibis.impala.ddl import (  # noqa: F401
     _is_quoted,
     fully_qualified_re,
 )
-from ibis.spark.compiler import _type_to_sql_string
+
+from .compiler import _type_to_sql_string
 
 _format_aliases = {'TEXTFILE': 'TEXT'}
 
