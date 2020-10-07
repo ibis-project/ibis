@@ -2,15 +2,13 @@ import contextlib
 import getpass
 import warnings
 
+import pymysql  # NOQA fail early if the driver is missing
 import sqlalchemy as sa
 import sqlalchemy.dialects.mysql as mysql
 
 import ibis.expr.datatypes as dt
 import ibis.sql.alchemy as alch
 from .compiler import MySQLDialect
-
-import pymysql  # NOQA fail early if the driver is missing
-
 
 # TODO(kszucs): unsigned integers
 

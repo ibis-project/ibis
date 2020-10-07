@@ -6,11 +6,11 @@ import time
 import traceback
 import weakref
 from collections import deque
+from posixpath import join as pjoin
 
 import numpy as np
 import pandas as pd
 from pkg_resources import parse_version
-from posixpath import join as pjoin
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt

@@ -218,7 +218,7 @@ import abc
 import functools
 import itertools
 import operator
-from typing import Any, Callable, Dict, Iterator, Tuple, Union
+from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -252,19 +252,91 @@ class AggregationContext(abc.ABC):
         pass
 
 
-def make_applied_function(function, args=None, kwargs=None):
-    assert callable(function), 'function {} is not callable'.format(function)
+def wrap_for_apply(
+    function: Callable,
+    args: Optional[Tuple[Any]],
+    kwargs: Optional[Dict[Any, Any]],
+) -> Callable:
+    """Wrap a function for use with Pandas `apply`.
+
+    Parameters
+    ----------
+    function : Callable
+        A function to be used with Pandas `apply`.
+    args : Optional[Tuple[Any]]
+        args to be passed to function when it is called by Pandas `apply`
+    kwargs : Optional[Dict[Any, Any]]
+        kwargs to be passed to function when it is called by Pandas `apply`
+
+    """
+    assert callable(function), f'function {function} is not callable'
 
     @functools.wraps(function)
-    def apply(
-        data,
-        function=function,
-        args=args if args is not None else (),
-        kwargs=kwargs if kwargs is not None else {},
-    ):
+    def wrapped_func(
+        data: Any,
+        function: Callable = function,
+        args: Optional[Tuple[Any]] = args,
+        kwargs: Optional[Dict[Any, Any]] = kwargs,
+    ) -> Callable:
         return function(data, *args, **kwargs)
 
-    return apply
+    return wrapped_func
+
+
+def wrap_for_agg(
+    function: Callable,
+    args: Optional[Tuple[Any]],
+    kwargs: Optional[Dict[Any, Any]],
+) -> Callable:
+    """Wrap a function for use with Pandas `agg`.
+
+    This includes special logic that will force Pandas `agg` to always treat
+    the function as an aggregation function. Details:
+
+    When passed a function, Pandas `agg` will either:
+    1) Behave like Pandas `apply` and treat the function as a N->N mapping
+      function (i.e. calls the function once for every value in the Series
+      that `agg` is being called on), OR
+    2) Treat the function as a N->1 aggregation function (i.e. calls the
+      function once on the entire Series)
+    Pandas `agg` will use behavior #1 unless an error is raised when doing so.
+
+    We want to force Pandas `agg` to use behavior #2. To do this, we will wrap
+    the function with logic that checks that a Series is being passed in, and
+    raises a TypeError otherwise. When Pandas `agg` is attempting to use
+    behavior #1 but sees the TypeError, it will fall back to behavior #2.
+
+    Parameters
+    ----------
+    function : Callable
+        An aggregation function to be used with Pandas `agg`.
+    args : Optional[Tuple[Any]]
+        args to be passed to function when it is called by Pandas `agg`
+    kwargs : Optional[Dict[Any, Any]]
+        kwargs to be passed to function when it is called by Pandas `agg`
+
+    """
+    assert callable(function), f'function {function} is not callable'
+
+    @functools.wraps(function)
+    def wrapped_func(
+        data: Any,
+        function: Callable = function,
+        args: Optional[Tuple[Any]] = args,
+        kwargs: Optional[Dict[Any, Any]] = kwargs,
+    ) -> Callable:
+        # `data` will be a scalar here if Pandas `agg` is trying to behave like
+        # like Pandas `apply`.
+        if not isinstance(data, pd.Series):
+            # Force `agg` to NOT behave like `apply`. We want Pandas to use
+            # `function` as an aggregation function, not as a mapping function.
+            raise TypeError(
+                f'This function expects a Series, but saw an object of type '
+                f'{type(data)} instead.'
+            )
+        return function(data, *args, **kwargs)
+
+    return wrapped_func
 
 
 class Summarize(AggregationContext):
@@ -279,7 +351,7 @@ class Summarize(AggregationContext):
                 'Object {} is not callable or a string'.format(function)
             )
 
-        return grouped_data.agg(make_applied_function(function, args, kwargs))
+        return grouped_data.agg(wrap_for_agg(function, args, kwargs))
 
 
 class Transform(AggregationContext):
@@ -464,7 +536,7 @@ class Window(AggregationContext):
             # collect implementation) then call apply
             if callable(function):
                 return windowed.apply(
-                    make_applied_function(function, args, kwargs), raw=True
+                    wrap_for_apply(function, args, kwargs), raw=True
                 )
             else:
                 # otherwise we're a string and probably faster
@@ -476,7 +548,7 @@ class Window(AggregationContext):
                 # handle the case where we pulled out a name from an operation
                 # but it doesn't actually exist
                 return windowed.apply(
-                    make_applied_function(
+                    wrap_for_apply(
                         operator.methodcaller(function, *args, **kwargs)
                     ),
                     raw=True,

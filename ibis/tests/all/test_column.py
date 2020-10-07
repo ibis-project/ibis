@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-
 ROWID_ZERO_INDEXED_BACKENDS = ('omniscidb',)
 
 

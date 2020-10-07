@@ -64,7 +64,7 @@ jobs:
           -e AZURECI=$AZURECI \
           -e PYTEST_BACKENDS="$PYTEST_BACKENDS" \
           ibis \
-          pytest ibis/tests ibis/impala/tests ibis/clickhouse/tests \
+          pytest ibis/tests ibis/impala/tests ibis/backends/clickhouse/tests \
             -k"not compile and not connect" \
             -ra \
             --doctest-modules \

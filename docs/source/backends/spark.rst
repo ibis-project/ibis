@@ -23,7 +23,7 @@ API
 
 SparkSQL client (Experimental)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. currentmodule:: ibis.spark.api
+.. currentmodule:: ibis.backends.spark
 
 The Spark SQL client is accessible through the ``ibis.spark`` namespace.
 
