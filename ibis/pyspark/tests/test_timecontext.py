@@ -5,6 +5,7 @@ import pytest
 from pyspark.sql import Window
 
 import ibis
+from ibis.pyspark.timecontext import combine_time_context
 
 pytest.importorskip('pyspark')
 pytestmark = pytest.mark.pyspark
@@ -375,3 +376,46 @@ def test_complex_window(client):
         .reset_index(drop=True)
     )
     tm.assert_frame_equal(result_pd, expected)
+
+
+@pytest.mark.parametrize(
+    ('contexts', 'expected'),
+    [
+        (
+            [
+                (pd.Timestamp('20200102'), pd.Timestamp('20200103')),
+                (pd.Timestamp('20200101'), pd.Timestamp('20200106')),
+            ],
+            (pd.Timestamp('20200101'), pd.Timestamp('20200106')),
+        ),  # superset
+        (
+            [
+                (pd.Timestamp('20200101'), pd.Timestamp('20200103')),
+                (pd.Timestamp('20200102'), pd.Timestamp('20200106')),
+            ],
+            (pd.Timestamp('20200101'), pd.Timestamp('20200106')),
+        ),  # overlap
+        (
+            [
+                (pd.Timestamp('20200101'), pd.Timestamp('20200103')),
+                (pd.Timestamp('20200202'), pd.Timestamp('20200206')),
+            ],
+            (pd.Timestamp('20200101'), pd.Timestamp('20200206')),
+        ),  # non-overlap
+        (
+            [(pd.Timestamp('20200101'), pd.Timestamp('20200103')), None],
+            (pd.Timestamp('20200101'), pd.Timestamp('20200103')),
+        ),  # None in input
+        ([None], None),  # None for all
+        (
+            [
+                (pd.Timestamp('20200102'), pd.Timestamp('20200103')),
+                (pd.Timestamp('20200101'), pd.Timestamp('20200106')),
+                (pd.Timestamp('20200109'), pd.Timestamp('20200110')),
+            ],
+            (pd.Timestamp('20200101'), pd.Timestamp('20200110')),
+        ),  # complex
+    ],
+)
+def test_combine_time_context(contexts, expected):
+    assert combine_time_context(contexts) == expected
