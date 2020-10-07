@@ -7,7 +7,7 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.bigquery import udf  # noqa: E402
+from . import udf  # noqa: E402
 from ibis.compat import PY38
 
 pytest.importorskip('google.cloud.bigquery')
@@ -26,7 +26,7 @@ DATASET_ID = 'testing'
 
 @pytest.fixture(scope='module')
 def client():
-    from ibis.bigquery.tests.conftest import connect
+    from .tests.conftest import connect
 
     return connect(PROJECT_ID, DATASET_ID)
 
