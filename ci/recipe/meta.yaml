@@ -63,7 +63,7 @@ requirements:
 test:
   imports:
     - ibis
-    - ibis.bigquery
+    - ibis.backends.bigquery
     - ibis.backends.clickhouse
     - ibis.file.csv
     - ibis.file.parquet
@@ -72,9 +72,9 @@ test:
     - ibis.sql.mysql
     - ibis.backends.omniscidb  # [py<38]
     - ibis.pandas
-    - ibis.sql.postgres
+    - ibis.backends.postgres
     - ibis.pyspark  # [py<38]
-    - ibis.spark
+    - ibis.backends.spark
     - ibis.sql.sqlite
 
 about:

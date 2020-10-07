@@ -37,7 +37,7 @@ with suppress(ImportError):
 
 with suppress(ImportError):
     # pip install ibis-framework[postgres]
-    import ibis.sql.postgres.api as postgres  # noqa: F401
+    from ibis.backends import postgres  # noqa: F401
 
 with suppress(ImportError):
     # pip install ibis-framework[mysql]
@@ -49,7 +49,7 @@ with suppress(ImportError):
 
 with suppress(ImportError):
     # pip install ibis-framework[bigquery]
-    import ibis.bigquery.api as bigquery  # noqa: F401
+    from ibis.backends import bigquery  # noqa: F401
 
 with suppress(ImportError):
     # pip install ibis-framework[omniscidb]
@@ -57,7 +57,7 @@ with suppress(ImportError):
 
 with suppress(ImportError):
     # pip install ibis-framework[spark]
-    import ibis.spark.api as spark  # noqa: F401
+    from ibis.backends import spark  # noqa: F401
 
 with suppress(ImportError):
     import ibis.pyspark.api as pyspark  # noqa: F401
