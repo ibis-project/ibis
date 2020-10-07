@@ -11,9 +11,9 @@ import ibis.expr.types as ir
 import ibis.util as util
 
 try:
-    from cytoolz import curry, compose, identity
+    from cytoolz import compose, curry, identity
 except ImportError:
-    from toolz import curry, compose, identity
+    from toolz import compose, curry, identity
 
 
 def highest_precedence_dtype(exprs):
