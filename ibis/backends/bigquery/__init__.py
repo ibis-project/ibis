@@ -7,9 +7,10 @@ import google.cloud.bigquery  # noqa: F401, fail early if bigquery is missing
 import pydata_google_auth
 
 import ibis.common.exceptions as com
+from ibis.config import options  # noqa: F401
+
 from .client import BigQueryClient
 from .compiler import dialect
-from ibis.config import options  # noqa: F401
 
 try:
     from .udf import udf

@@ -7,8 +7,9 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-from . import udf  # noqa: E402
 from ibis.compat import PY38
+
+from . import udf  # noqa: E402
 
 pytest.importorskip('google.cloud.bigquery')
 

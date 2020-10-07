@@ -9,6 +9,7 @@ import textwrap
 from collections import ChainMap
 
 import ibis.expr.datatypes as dt
+
 from .find import find_names
 from .rewrite import rewrite
 

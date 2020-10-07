@@ -20,6 +20,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.client import Database, Query, SQLClient
+
 from . import compiler as comp
 from .datatypes import ibis_type_to_bigquery_type
 

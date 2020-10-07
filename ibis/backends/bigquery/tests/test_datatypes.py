@@ -3,6 +3,7 @@ from multipledispatch.conflict import ambiguities
 from pytest import param
 
 import ibis.expr.datatypes as dt
+
 from .datatypes import (
     TypeTranslationContext,
     UDFContext,
