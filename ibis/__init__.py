@@ -36,7 +36,7 @@ with suppress(ImportError):
 
 with suppress(ImportError):
     # pip install ibis-framework[postgres]
-    import ibis.sql.postgres.api as postgres  # noqa: F401
+    from ibis.backends import postgres  # noqa: F401
 
 with suppress(ImportError):
     # pip install ibis-framework[mysql]
