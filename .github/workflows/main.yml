@@ -188,8 +188,7 @@ jobs:
       if: always()
 
     - name: isort
-      # TODO: isort has errors that need to be fixed before it can be added
-      run: isort --check-only . || true
+      run: isort --check-only .
       if: always()
 
     - name: publish feedstock artifact
@@ -219,30 +218,15 @@ jobs:
 
     - name: update recipe file
       run: |
-        IBIS_PATH=`pwd`
-        IBIS_VERSION=`python -c "import ibis; print(ibis.__version__)"`
-
         set -x
-        cd /tmp/feedstock/recipe/
-
-        echo "*** Original recipe:"
-        cat meta.yaml
-
-        # remove `{% set version = "X.X.X" %}`
-        tail -n +2 meta.yaml > meta.tmp && mv meta.tmp meta.yaml
-
-        # replace the url and sha256 in the source, by a path
-        grep -v "^\s*sha256:" meta.yaml > meta.tmp && mv meta.tmp meta.yaml
-        sed -i "s|url:.*|path: $IBIS_PATH|g" meta.yaml
-
-        # set version
-        sed -i "s/{{ version }}/$IBIS_VERSION/g" meta.yaml
-
-        echo "*** Modified recipe:"
-        cat meta.yaml
+        IBIS_PATH=`pwd`
+        sed -i "s|url:.*|path: $IBIS_PATH|g" ci/recipe/meta.yaml
+        IBIS_VERSION=`python -c "import ibis; print(ibis.__version__)"`
+        sed -i "s/{{ version }}/$IBIS_VERSION/g" ci/recipe/meta.yaml
+        cat ci/recipe/meta.yaml
 
     - name: build recipe
-      run: conda build -c conda-forge --python 3.7 /tmp/feedstock/recipe
+      run: conda build -c conda-forge --python 3.7 ci/recipe
 
     - name: deploy recipe package
       run: |

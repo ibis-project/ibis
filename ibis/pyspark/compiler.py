@@ -14,13 +14,17 @@ import ibis.expr.types as ir
 import ibis.expr.types as types
 from ibis import interval
 from ibis.backends.pandas.execution import execute
-from ibis.pyspark.operations import PySparkTable
-from ibis.pyspark.timecontext import filter_by_time_context
-from ibis.spark.compiler import SparkContext, SparkDialect
-from ibis.spark.datatypes import (
+from ibis.backends.spark.compiler import SparkContext, SparkDialect
+from ibis.backends.spark.datatypes import (
     ibis_array_dtype_to_spark_dtype,
     ibis_dtype_to_spark_dtype,
     spark_dtype,
+)
+from ibis.expr.timecontext import adjust_context
+from ibis.pyspark.operations import PySparkTable
+from ibis.pyspark.timecontext import (
+    combine_time_context,
+    filter_by_time_context,
 )
 
 
@@ -102,15 +106,25 @@ def compile_sql_query_result(t, expr, scope, timecontext, **kwargs):
 @compiles(ops.Selection)
 def compile_selection(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
-
-    src_table = t.translate(op.table, scope, timecontext)
+    # In selection, there could be multiple children that point to the
+    # same root table. e.g. window with different sizes on a table.
+    # We need to get the 'combined' time range that is a superset of every
+    # time context among child nodes, and pass this as context to
+    # source table to get all data within time context loaded.
+    arg_timecontexts = [
+        adjust_context(node.op(), timecontext)
+        for node in op.selections
+        if timecontext
+    ]
+    combined_timecontext = combine_time_context(arg_timecontexts)
+    src_table = t.translate(op.table, scope, combined_timecontext)
 
     col_in_selection_order = []
     for selection in op.selections:
         if isinstance(selection, types.TableExpr):
             col_in_selection_order.extend(selection.columns)
         elif isinstance(selection, (types.ColumnExpr, types.ScalarExpr)):
-            col = t.translate(selection, scope, timecontext).alias(
+            col = t.translate(selection, scope, combined_timecontext).alias(
                 selection.get_name()
             )
             col_in_selection_order.append(col)
@@ -130,10 +144,9 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
         sort_cols = [
             t.translate(key, scope, timecontext) for key in op.sort_keys
         ]
+        src_table = src_table.sort(*sort_cols)
 
-        return src_table.sort(*sort_cols)
-    else:
-        return src_table
+    return filter_by_time_context(src_table, timecontext)
 
 
 @compiles(ops.SortKey)
@@ -374,11 +387,8 @@ def compile_aggregator(
         src_col = F.when(condition, src_col)
 
     col = fn(src_col)
-    if context in (AggregationContext.ENTIRE, AggregationContext.GROUP):
+    if context:
         return col
-    elif context == AggregationContext.WINDOW:
-        window = kwargs['window']
-        return col.over(window)
     else:
         # We are trying to compile a expr such as some_col.max()
         # to a Spark expression.
@@ -410,9 +420,7 @@ def compile_any(t, expr, scope, timecontext, context=None, **kwargs):
 
 
 @compiles(ops.NotAny)
-def compile_notany(
-    t, expr, scope, timecontext, *, context=None, window=None, **kwargs
-):
+def compile_notany(t, expr, scope, timecontext, *, context=None, **kwargs):
     # The code here is a little ugly because the translation are different
     # with different context.
     # When translating col.notany() (context is None), we returns the dataframe
@@ -430,13 +438,7 @@ def compile_notany(
         )
     else:
         return ~compile_any(
-            t,
-            expr,
-            scope,
-            timecontext,
-            context=context,
-            window=window,
-            **kwargs,
+            t, expr, scope, timecontext, context=context, **kwargs,
         )
 
 
@@ -448,9 +450,7 @@ def compile_all(t, expr, scope, timecontext, context=None, **kwargs):
 
 
 @compiles(ops.NotAll)
-def compile_notall(
-    t, expr, scope, timecontext, *, context=None, window=None, **kwargs
-):
+def compile_notall(t, expr, scope, timecontext, *, context=None, **kwargs):
     # See comments for opts.NotAny for reasoning for the if/else
     if context is None:
 
@@ -462,13 +462,7 @@ def compile_notall(
         )
     else:
         return ~compile_all(
-            t,
-            expr,
-            scope,
-            timecontext,
-            context=context,
-            window=window,
-            **kwargs,
+            t, expr, scope, timecontext, context=context, **kwargs,
         )
 
 
@@ -1111,15 +1105,26 @@ def compile_window_op(t, expr, scope, timecontext, **kwargs):
         else:
             pyspark_window = pyspark_window.rowsBetween(start, end)
 
-    result = t.translate(
-        operand, scope, timecontext, window=pyspark_window, context=context
+    res_op = operand.op()
+    if isinstance(res_op, (ops.NotAll, ops.NotAny)):
+        # For NotAll and NotAny, negation must be applied after .over(window)
+        # Here we rewrite node to be its negation, and negate it back after
+        # translation and window operation
+        operand = res_op.negate().to_expr()
+    result = t.translate(operand, scope, timecontext, context=context).over(
+        pyspark_window
     )
-    return result
+
+    if isinstance(res_op, (ops.NotAll, ops.NotAny)):
+        return ~result
+    elif isinstance(res_op, (ops.MinRank, ops.DenseRank, ops.RowNumber)):
+        # result must be cast to long type for Rank / RowNumber
+        return result.astype('long') - 1
+    else:
+        return result
 
 
-def _handle_shift_operation(
-    t, expr, scope, timecontext, *, fn, window, **kwargs
-):
+def _handle_shift_operation(t, expr, scope, timecontext, *, fn, **kwargs):
     op = expr.op()
 
     src_column = t.translate(op.arg, scope, timecontext)
@@ -1127,37 +1132,37 @@ def _handle_shift_operation(
     offset = op.offset.op().value if op.offset is not None else op.offset
 
     if offset:
-        return fn(src_column, count=offset, default=default).over(window)
+        return fn(src_column, count=offset, default=default)
     else:
-        return fn(src_column, default=default).over(window)
+        return fn(src_column, default=default)
 
 
 @compiles(ops.Lag)
-def compile_lag(t, expr, scope, timecontext, *, window, **kwargs):
+def compile_lag(t, expr, scope, timecontext, **kwargs):
     return _handle_shift_operation(
-        t, expr, scope, timecontext, fn=F.lag, window=window, **kwargs
+        t, expr, scope, timecontext, fn=F.lag, **kwargs
     )
 
 
 @compiles(ops.Lead)
-def compile_lead(t, expr, scope, timecontext, *, window, **kwargs):
+def compile_lead(t, expr, scope, timecontext, **kwargs):
     return _handle_shift_operation(
-        t, expr, scope, timecontext, fn=F.lead, window=window, **kwargs
+        t, expr, scope, timecontext, fn=F.lead, **kwargs
     )
 
 
 @compiles(ops.MinRank)
-def compile_rank(t, expr, scope, timecontext, *, window, **kwargs):
-    return F.rank().over(window).astype('long') - 1
+def compile_rank(t, expr, scope, timecontext, **kwargs):
+    return F.rank()
 
 
 @compiles(ops.DenseRank)
-def compile_dense_rank(t, expr, scope, timecontext, *, window, **kwargs):
-    return F.dense_rank().over(window).astype('long') - 1
+def compile_dense_rank(t, expr, scope, timecontext, **kwargs):
+    return F.dense_rank()
 
 
 @compiles(ops.PercentRank)
-def compile_percent_rank(t, expr, scope, timecontext, *, window, **kwargs):
+def compile_percent_rank(t, expr, scope, timecontext, **kwargs):
     raise com.UnsupportedOperationError(
         'Pyspark percent_rank() function indexes from 0 '
         'instead of 1, and does not match expected '
@@ -1166,29 +1171,29 @@ def compile_percent_rank(t, expr, scope, timecontext, *, window, **kwargs):
 
 
 @compiles(ops.NTile)
-def compile_ntile(t, expr, scope, timecontext, *, window, **kwargs):
+def compile_ntile(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
     buckets = op.buckets.op().value
-    return F.ntile(buckets).over(window)
+    return F.ntile(buckets)
 
 
 @compiles(ops.FirstValue)
-def compile_first_value(t, expr, scope, timecontext, *, window, **kwargs):
+def compile_first_value(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
     src_column = t.translate(op.arg, scope, timecontext)
-    return F.first(src_column).over(window)
+    return F.first(src_column)
 
 
 @compiles(ops.LastValue)
-def compile_last_value(t, expr, scope, timecontext, *, window, **kwargs):
+def compile_last_value(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
     src_column = t.translate(op.arg, scope, timecontext)
-    return F.last(src_column).over(window)
+    return F.last(src_column)
 
 
 @compiles(ops.RowNumber)
-def compile_row_number(t, expr, scope, timecontext, *, window, **kwargs):
-    return F.row_number().over(window).cast('long') - 1
+def compile_row_number(t, expr, scope, timecontext, **kwargs):
+    return F.row_number()
 
 
 # -------------------------- Temporal Operations ----------------------------
@@ -1658,11 +1663,8 @@ def compile_reduction_udf(t, expr, scope, timecontext, context=None, **kwargs):
     func_args = (t.translate(arg, scope, timecontext) for arg in op.func_args)
 
     col = spark_udf(*func_args)
-    if context in (AggregationContext.ENTIRE, AggregationContext.GROUP):
+    if context:
         return col
-    elif context == AggregationContext.WINDOW:
-        window = kwargs['window']
-        return col.over(window)
     else:
         src_table = t.translate(op.func_args[0].op().table, scope, timecontext)
         return src_table.agg(col)

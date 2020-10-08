@@ -29,7 +29,10 @@ clickhouse_requires = [
     'clickhouse-driver>=0.1.3',
     'clickhouse-cityhash',
 ]
-bigquery_requires = ['google-cloud-bigquery>=1.12.0', 'pydata-google-auth']
+bigquery_requires = [
+    'google-cloud-bigquery[bqstorage,pandas]>=1.12.0,<2.0.0dev',
+    'pydata-google-auth',
+]
 hdf5_requires = ['tables>=3.0.0']
 
 parquet_requires = ['pyarrow>=0.12.0']

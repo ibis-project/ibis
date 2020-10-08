@@ -2,7 +2,7 @@
 
 ## Set up a development environment
 
-1. Create a fork of the Ibis repository, and clone it.
+1. Create a fork of the [Ibis repository](https://github.com/ibis-project/ibis), and clone it.
 
         :::sh
         git clone https://github.com/<your-github-username>/ibis
