@@ -34,6 +34,7 @@ from typing import Optional
 import ibis.expr.operations as ops
 from ibis.expr.timecontext import adjust_context
 from ibis.expr.typing import TimeContext
+
 from ..core import compute_time_context, is_computable_input
 
 

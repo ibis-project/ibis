@@ -17,13 +17,9 @@ import ibis.client
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.udf.vectorized
+
 from .aggcontext import Summarize, Transform
-from .core import (
-    date_types,
-    time_types,
-    timedelta_types,
-    timestamp_types,
-)
+from .core import date_types, time_types, timedelta_types, timestamp_types
 from .dispatch import execute_node, pre_execute
 
 

@@ -10,6 +10,7 @@ from pytest import param
 
 from ibis import literal as L  # noqa: E402
 from ibis.expr import datatypes as dt
+
 from ... import connect, execute
 
 pytestmark = pytest.mark.pandas

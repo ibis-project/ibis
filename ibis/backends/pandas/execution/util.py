@@ -2,9 +2,10 @@ import operator
 
 import toolz
 
-import ibis.util
 import ibis.common.exceptions as com
+import ibis.util
 from ibis.expr.scope import Scope
+
 from ..core import execute
 
 

@@ -9,9 +9,9 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.file.client import FileClient
 from ibis.backends.pandas import PandasDialect
 from ibis.backends.pandas.core import execute, execute_node
+from ibis.file.client import FileClient
 
 dialect = PandasDialect
 

@@ -5,6 +5,7 @@ from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
+
 from ... import connect
 
 pytestmark = pytest.mark.pandas

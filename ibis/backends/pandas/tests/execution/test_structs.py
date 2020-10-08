@@ -6,6 +6,7 @@ import pytest
 
 import ibis
 import ibis.expr.datatypes as dt
+
 from ... import connect, execute
 
 

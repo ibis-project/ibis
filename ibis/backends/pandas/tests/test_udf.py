@@ -8,6 +8,7 @@ import pytest
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
+
 from .. import connect, execute
 from ..udf import nullable, udf
 

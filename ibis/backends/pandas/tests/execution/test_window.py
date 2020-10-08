@@ -12,7 +12,8 @@ import ibis.expr.operations as ops
 from ibis.expr.scope import Scope
 from ibis.expr.window import get_preceding_value, rows_with_max_lookback
 from ibis.udf.vectorized import reduction
-from ... import execute, connect, PandasClient
+
+from ... import PandasClient, connect, execute
 from ...aggcontext import AggregationContext, window_agg_udf
 from ...dispatch import pre_execute
 from ...execution.window import get_aggcontext

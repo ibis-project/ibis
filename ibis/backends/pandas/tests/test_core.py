@@ -10,7 +10,8 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.expr.scope import Scope
-from .. import from_dataframe, connect, execute
+
+from .. import connect, execute, from_dataframe
 from ..client import PandasClient
 from ..core import is_computable_input
 from ..dispatch import execute_node, post_execute, pre_execute

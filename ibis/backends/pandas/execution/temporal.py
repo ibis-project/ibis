@@ -8,6 +8,7 @@ import ibis.client
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.expr.scope import Scope
+
 from ..core import (
     date_types,
     integer_types,

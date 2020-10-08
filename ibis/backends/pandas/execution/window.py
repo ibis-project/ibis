@@ -15,6 +15,7 @@ import ibis.expr.window as win
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import TIME_COL
 from ibis.expr.typing import TimeContext
+
 from .. import aggcontext as agg_ctx
 from ..aggcontext import AggregationContext
 from ..core import (

@@ -113,23 +113,19 @@ import numpy as np
 import pandas as pd
 from multipledispatch import Dispatcher
 
-import ibis.util
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.window as win
+import ibis.util
 from ibis.client import find_backends
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import canonicalize_context
 from ibis.expr.typing import TimeContext
+
 from . import aggcontext as agg_ctx
-from .dispatch import (
-    execute_literal,
-    execute_node,
-    post_execute,
-    pre_execute,
-)
+from .dispatch import execute_literal, execute_node, post_execute, pre_execute
 from .trace import trace
 
 integer_types = np.integer, int

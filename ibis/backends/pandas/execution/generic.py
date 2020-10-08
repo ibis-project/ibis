@@ -24,6 +24,7 @@ from ibis.compat import DatetimeTZDtype
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import TIME_COL
 from ibis.expr.typing import TimeContext
+
 from .. import aggcontext as agg_ctx
 from ..client import PandasClient, PandasTable
 from ..core import (

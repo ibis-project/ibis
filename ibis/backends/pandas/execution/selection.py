@@ -18,6 +18,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.expr.scope import Scope
 from ibis.expr.typing import TimeContext
+
 from ..core import execute
 from ..dispatch import execute_node
 from ..execution import constants, util

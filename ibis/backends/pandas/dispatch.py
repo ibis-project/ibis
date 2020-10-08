@@ -8,6 +8,7 @@ import ibis.client
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis.expr.scope import Scope
+
 from .trace import TraceTwoLevelDispatcher
 
 # Individual operation execution

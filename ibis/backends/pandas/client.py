@@ -20,6 +20,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.compat import CategoricalDtype, DatetimeTZDtype
+
 from .core import execute_and_reset
 
 try:

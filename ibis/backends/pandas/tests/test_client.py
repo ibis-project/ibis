@@ -5,6 +5,7 @@ import pytest
 from pytest import param
 
 import ibis
+
 from .. import connect
 from ..client import PandasTable  # noqa: E402
 
