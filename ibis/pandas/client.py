@@ -11,6 +11,7 @@ import pandas as pd
 import pytz
 import toolz
 from multipledispatch import Dispatcher
+from pandas.api.types import CategoricalDtype, DatetimeTZDtype
 from pkg_resources import parse_version
 
 import ibis.client as client
@@ -19,7 +20,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.compat import CategoricalDtype, DatetimeTZDtype
 from ibis.pandas.core import execute_and_reset
 
 try:

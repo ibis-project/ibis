@@ -13,6 +13,7 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 import toolz
+from pandas.api.types import DatetimeTZDtype
 from pandas.core.groupby import DataFrameGroupBy, SeriesGroupBy
 
 import ibis
@@ -21,7 +22,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.pandas.aggcontext as agg_ctx
-from ibis.compat import DatetimeTZDtype
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import TIME_COL
 from ibis.expr.typing import TimeContext
