@@ -18,8 +18,8 @@ bq = pytest.importorskip('google.cloud.bigquery')
 ga = pytest.importorskip('google.auth')
 exceptions = pytest.importorskip('google.api_core.exceptions')
 
-from ibis.bigquery.client import bigquery_param  # noqa: E402, isort:skip
-from ibis.bigquery.tests.conftest import connect  # noqa: E402, isort:skip
+from .client import bigquery_param  # noqa: E402, isort:skip
+from .tests.conftest import connect  # noqa: E402, isort:skip
 
 
 def test_table(alltypes):

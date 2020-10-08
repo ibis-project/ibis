@@ -62,3 +62,26 @@ def client():
     df_time_indexed.createTempView('time_indexed_table')
 
     return client
+
+
+class IbisWindow:
+    # Test util class to generate different types of ibis windows
+    def __init__(self, windows):
+        self.windows = windows
+
+    def get_windows(self):
+        # Return a list of Ibis windows
+        return [
+            ibis.window(
+                preceding=w[0],
+                following=w[1],
+                order_by='time',
+                group_by='key',
+            )
+            for w in self.windows
+        ]
+
+
+@pytest.fixture
+def ibis_windows(request):
+    return IbisWindow(request.param).get_windows()

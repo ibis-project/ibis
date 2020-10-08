@@ -48,7 +48,7 @@ with suppress(ImportError):
 
 with suppress(ImportError):
     # pip install ibis-framework[bigquery]
-    import ibis.bigquery.api as bigquery  # noqa: F401
+    from ibis.backends import bigquery  # noqa: F401
 
 with suppress(ImportError):
     # pip install ibis-framework[omniscidb]

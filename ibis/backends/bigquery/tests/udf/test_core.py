@@ -4,8 +4,9 @@ import tempfile
 
 import pytest
 
-from ibis.bigquery.udf.core import PythonToJavaScriptTranslator, SymbolTable
 from ibis.compat import PY38
+
+from .udf.core import PythonToJavaScriptTranslator, SymbolTable
 
 if PY38:
     # ref: https://github.com/ibis-project/ibis/issues/2098
