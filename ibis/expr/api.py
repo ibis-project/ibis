@@ -21,7 +21,6 @@ import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
-from ibis.compat import to_date, to_time
 from ibis.expr.analytics import bucket, histogram
 from ibis.expr.groupby import GroupedTableExpr  # noqa
 from ibis.expr.random import random  # noqa
@@ -332,7 +331,7 @@ def date(value):
     result : TimeScalar
     """
     if isinstance(value, str):
-        value = to_date(value)
+        value = pd.to_datetime(value).date()
     return literal(value, type=dt.date)
 
 
@@ -349,7 +348,7 @@ def time(value):
     result : TimeScalar
     """
     if isinstance(value, str):
-        value = to_time(value)
+        value = pd.to_datetime(value).time()
     return literal(value, type=dt.time)
 
 

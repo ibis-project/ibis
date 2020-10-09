@@ -2,12 +2,12 @@ import numpy as np
 import pandas as pd
 import pytest
 from multipledispatch.conflict import ambiguities
+from pandas.api.types import CategoricalDtype, DatetimeTZDtype
 
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.compat import CategoricalDtype, DatetimeTZDtype
 
 
 def test_no_infer_ambiguities():

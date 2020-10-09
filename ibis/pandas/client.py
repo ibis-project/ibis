@@ -11,6 +11,7 @@ import pandas as pd
 import pytz
 import toolz
 from multipledispatch import Dispatcher
+from pandas.api.types import CategoricalDtype, DatetimeTZDtype
 from pkg_resources import parse_version
 
 import ibis.client as client
@@ -19,13 +20,9 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.compat import CategoricalDtype, DatetimeTZDtype
 from ibis.pandas.core import execute_and_reset
 
-try:
-    infer_pandas_dtype = pd.api.types.infer_dtype
-except AttributeError:
-    infer_pandas_dtype = pd.lib.infer_dtype
+infer_pandas_dtype = pd.api.types.infer_dtype
 
 
 _ibis_dtypes = toolz.valmap(
