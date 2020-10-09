@@ -9,17 +9,3 @@ from .structs import *  # noqa: F401,F403
 from .temporal import *  # noqa: F401,F403
 from .timecontext import *  # noqa: F401,F403
 from .window import *  # noqa: F401,F403
-
-__all__ = (
-    'arrays',
-    'decimal',
-    'generic',
-    'join',
-    'maps',
-    'selection',
-    'strings',
-    'structs',
-    'temporal',
-    'timecontext',
-    'window',
-)
