@@ -10,7 +10,6 @@ from typing import Union
 import dateutil.parser
 import pandas as pd
 import toolz
-from pandas.core.tools.datetimes import to_datetime, to_time
 
 import ibis
 import ibis.common.exceptions as com
@@ -332,7 +331,7 @@ def date(value):
     result : TimeScalar
     """
     if isinstance(value, str):
-        value = to_datetime(value).date()
+        value = pd.to_datetime(value).date()
     return literal(value, type=dt.date)
 
 
@@ -349,7 +348,7 @@ def time(value):
     result : TimeScalar
     """
     if isinstance(value, str):
-        value = to_time(value)
+        value = pd.to_datetime(value).time()
     return literal(value, type=dt.time)
 
 
