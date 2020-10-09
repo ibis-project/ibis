@@ -22,10 +22,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.pandas.core import execute_and_reset
 
-try:
-    infer_pandas_dtype = pd.api.types.infer_dtype
-except AttributeError:
-    infer_pandas_dtype = pd.lib.infer_dtype
+infer_pandas_dtype = pd.api.types.infer_dtype
 
 
 _ibis_dtypes = toolz.valmap(
