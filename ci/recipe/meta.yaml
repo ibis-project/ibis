@@ -71,11 +71,11 @@ test:
     - ibis.impala
     - ibis.backends.mysql
     - ibis.backends.omniscidb  # [py<38]
-    - ibis.pandas
+    - ibis.backends.pandas
     - ibis.backends.postgres
     - ibis.pyspark  # [py<38]
     - ibis.backends.spark
-    - ibis.sql.sqlite
+    - ibis.backends.sqlite
 
 about:
   license: Apache-2.0

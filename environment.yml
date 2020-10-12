@@ -21,6 +21,7 @@ dependencies:
   - python-hdfs>=2.0.16 # XXX this verison can probably be increased
 
   # Dev tools
+  - asv>=0.4.2
   - black=19.10b0
   - click>=7.1 # few scripts in ci/
   - conda-build # feedstock

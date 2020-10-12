@@ -171,7 +171,7 @@ def adjust_context_asof_join(
     begin, end = timecontext
 
     if op.tolerance is not None:
-        from ibis.pandas.execution import execute
+        from ibis.backends.pandas.execution import execute
 
         timedelta = execute(op.tolerance)
         return (begin - timedelta, end)
@@ -187,7 +187,7 @@ def adjust_context_window(op: Node, timecontext: TimeContext) -> TimeContext:
     preceding = op.window.preceding
     if preceding is not None:
         if isinstance(preceding, ir.IntervalScalar):
-            from ibis.pandas.execution import execute
+            from ibis.backends.pandas.execution import execute
 
             preceding = execute(preceding)
         if preceding and not isinstance(preceding, (int, np.integer)):
@@ -196,7 +196,7 @@ def adjust_context_window(op: Node, timecontext: TimeContext) -> TimeContext:
     following = op.window.following
     if following is not None:
         if isinstance(following, ir.IntervalScalar):
-            from ibis.pandas.execution import execute
+            from ibis.backends.pandas.execution import execute
 
             following = execute(following)
         if following and not isinstance(following, (int, np.integer)):

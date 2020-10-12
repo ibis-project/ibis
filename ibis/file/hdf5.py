@@ -2,8 +2,8 @@ import pandas as pd
 
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
+from ibis.backends.pandas.core import execute, execute_node
 from ibis.file.client import FileClient
-from ibis.pandas.core import execute, execute_node
 
 
 def connect(path):

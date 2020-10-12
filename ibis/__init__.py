@@ -4,9 +4,10 @@ from contextlib import suppress
 import ibis.config_init  # noqa: F401
 import ibis.expr.api as api  # noqa: F401
 import ibis.expr.types as ir  # noqa: F401
-# pandas backend is mandatory
-import ibis.pandas.api as pandas  # noqa: F401
 import ibis.util as util  # noqa: F401
+
+# pandas backend is mandatory
+from ibis.backends import pandas  # noqa: F401
 from ibis.common.exceptions import IbisError  # noqa: F401
 from ibis.config import options  # noqa: F401
 from ibis.expr.api import *  # noqa: F401,F403
@@ -32,7 +33,7 @@ with suppress(ImportError):
 
 with suppress(ImportError):
     # pip install ibis-framework[sqlite]
-    import ibis.sql.sqlite.api as sqlite  # noqa: F401
+    from ibis.backends import sqlite  # noqa: F401
 
 with suppress(ImportError):
     # pip install ibis-framework[postgres]
