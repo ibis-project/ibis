@@ -15,9 +15,9 @@
 import json
 import re
 
-import ibis.backends.base_sql
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
+from ibis.backends.base_sql import quote_identifier
 from ibis.sql.compiler import DDL, DML
 
 from .compiler import _type_to_sql_string
@@ -193,8 +193,7 @@ class CTAS(CreateTable):
         if self.partition is not None:
             return 'PARTITIONED BY ({})'.format(
                 ', '.join(
-                    ibis.backends.base_sql.quote_identifier(expr._name)
-                    for expr in self.partition
+                    quote_identifier(expr._name) for expr in self.partition
                 )
             )
         return None
@@ -679,7 +678,7 @@ class CreateDatabase(CreateDDL):
         self.can_exist = can_exist
 
     def compile(self):
-        name = ibis.backends.base_sql.quote_identifier(self.name)
+        name = quote_identifier(self.name)
 
         create_decl = 'CREATE DATABASE'
         create_line = '{} {}{}'.format(create_decl, self._if_exists(), name)
@@ -711,8 +710,7 @@ def format_schema(schema):
 
 def _format_schema_element(name, t):
     return '{} {}'.format(
-        ibis.backends.base_sql.quote_identifier(name, force=True),
-        _type_to_sql_string(t),
+        quote_identifier(name, force=True), _type_to_sql_string(t),
     )
 
 

@@ -4,7 +4,6 @@ from operator import add, mul, sub
 from typing import Optional
 
 import ibis
-import ibis.backends.base_sql
 import ibis.common.exceptions as com
 import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
@@ -13,6 +12,11 @@ import ibis.expr.types as ir
 import ibis.sql.compiler as comp
 import ibis.sql.transforms as transforms
 import ibis.util as util
+from ibis.backends.base_sql import (
+    BaseExprTranslator,
+    literal,
+    quote_identifier,
+)
 
 
 def build_ast(expr, context):
@@ -96,7 +100,7 @@ class ImpalaTableSetFormatter(comp.TableSetFormatter):
         return jname
 
     def _quote_identifier(self, name):
-        return ibis.backends.base_sql.quote_identifier(name)
+        return quote_identifier(name)
 
 
 # ---------------------------------------------------------------------
@@ -747,9 +751,7 @@ def _exists_subquery(translator, expr):
 def _table_column(translator, expr):
     op = expr.op()
     field_name = op.name
-    quoted_name = ibis.backends.base_sql.quote_identifier(
-        field_name, force=True
-    )
+    quoted_name = quote_identifier(field_name, force=True)
 
     table = op.table
     ctx = translator.context
@@ -1120,7 +1122,7 @@ _operation_registry = {
     ops.IntervalFromInteger: _interval_from_integer,
     # Other operations
     ops.E: lambda *args: 'e()',
-    ops.Literal: ibis.backends.base_sql.literal,
+    ops.Literal: literal,
     ops.NullLiteral: _null_literal,
     ops.ValueList: _value_list,
     ops.Cast: _cast,
@@ -1163,7 +1165,7 @@ _operation_registry = {
 _operation_registry.update(_binary_infix_ops)
 
 
-class ImpalaExprTranslator(ibis.backends.base_sql.BaseExprTranslator):
+class ImpalaExprTranslator(BaseExprTranslator):
     _registry = _operation_registry
     context_class = ImpalaContext
 
