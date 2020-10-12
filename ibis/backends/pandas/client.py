@@ -11,22 +11,19 @@ import pandas as pd
 import pytz
 import toolz
 from multipledispatch import Dispatcher
+from pandas.api.types import CategoricalDtype, DatetimeTZDtype
 from pkg_resources import parse_version
 
-import ibis.client
+import ibis.client as client
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.compat import CategoricalDtype, DatetimeTZDtype
 
 from .core import execute_and_reset
 
-try:
-    infer_pandas_dtype = pd.api.types.infer_dtype
-except AttributeError:
-    infer_pandas_dtype = pd.lib.infer_dtype
+infer_pandas_dtype = pd.api.types.infer_dtype
 
 
 _ibis_dtypes = toolz.valmap(
@@ -345,9 +342,9 @@ class PandasTable(ops.DatabaseTable):
     pass
 
 
-class PandasClient(ibis.client.Client):
+class PandasClient(client.Client):
 
-    dialect = None  # defined in ibis.backends.pandas
+    dialect = None  # defined in ibis.pandas.api
 
     def __init__(self, dictionary):
         self.dictionary = dictionary
@@ -458,5 +455,5 @@ class PandasClient(ibis.client.Client):
         return parse_version(pd.__version__)
 
 
-class PandasDatabase(ibis.client.Database):
+class PandasDatabase(client.Database):
     pass
