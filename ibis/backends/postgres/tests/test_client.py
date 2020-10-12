@@ -143,6 +143,8 @@ def test_schema_type_conversion():
         ('json', sa.dialects.postgresql.JSON, True, dt.JSON),
         ('jsonb', sa.dialects.postgresql.JSONB, True, dt.JSONB),
         ('uuid', sa.dialects.postgresql.UUID, True, dt.UUID),
+        ('macaddr', sa.dialects.postgresql.MACADDR, True, dt.MACADDR),
+        ('inet', sa.dialects.postgresql.INET, True, dt.INET),
     ]
 
     sqla_types = []

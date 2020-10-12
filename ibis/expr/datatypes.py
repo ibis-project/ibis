@@ -807,6 +807,24 @@ class UUID(String):
     __slots__ = ()
 
 
+class MACADDR(String):
+    """Media Access Control (MAC) Address of a network interface."""
+
+    scalar = ir.MACADDRScalar
+    column = ir.MACADDRColumn
+
+    __slots__ = ()
+
+
+class INET(String):
+    """IP address type."""
+
+    scalar = ir.INETScalar
+    column = ir.INETColumn
+
+    __slots__ = ()
+
+
 # ---------------------------------------------------------------------
 any = Any()
 null = Null()
@@ -848,6 +866,8 @@ json = JSON()
 jsonb = JSONB()
 # special string based data type
 uuid = UUID()
+macaddr = MACADDR()
+inet = INET()
 
 _primitive_types = [
     ('any', any),
@@ -917,6 +937,8 @@ class Tokens:
     JSON = 31
     JSONB = 32
     UUID = 33
+    MACADDR = 34
+    INET = 35
 
     @staticmethod
     def name(value):
@@ -1054,7 +1076,9 @@ _TYPE_RULES = collections.OrderedDict(
     ]
     + [
         # special string based data types
-        ('(?P<UUID>uuid)', lambda token: Token(Tokens.UUID, token))
+        ('(?P<UUID>uuid)', lambda token: Token(Tokens.UUID, token)),
+        ('(?P<MACADDR>macaddr)', lambda token: Token(Tokens.MACADDR, token)),
+        ('(?P<INET>inet)', lambda token: Token(Tokens.INET, token)),
     ]
     + [
         # integers, for decimal spec
@@ -1265,6 +1289,10 @@ class TypeParser:
         jsonb : "jsonb"
 
         uuid : "uuid"
+
+        macaddr : "macaddr"
+
+        inet : "inet"
 
         """
         if self._accept(Tokens.PRIMITIVE):
@@ -1498,6 +1526,12 @@ class TypeParser:
         # special string based data types
         elif self._accept(Tokens.UUID):
             return UUID()
+
+        elif self._accept(Tokens.MACADDR):
+            return MACADDR()
+
+        elif self._accept(Tokens.INET):
+            return INET()
 
         else:
             raise SyntaxError('Type cannot be parsed: {}'.format(self.text))
@@ -1861,6 +1895,8 @@ def can_cast_geospatial(source, target, **kwargs):
 
 
 @castable.register(UUID, UUID)
+@castable.register(MACADDR, MACADDR)
+@castable.register(INET, INET)
 def can_cast_special_string(source, target, **kwargs):
     return True
 
