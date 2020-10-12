@@ -806,6 +806,15 @@ class UUID(String):
 
     __slots__ = ()
 
+class MACADDR(String):
+    """Media Access Control (MAC) Address of a network interface.
+    """
+
+    scalar = ir.MACADDRScalar
+    column = ir.MACADDRColumn
+
+    __slots__ = ()
+
 
 # ---------------------------------------------------------------------
 any = Any()
@@ -848,6 +857,7 @@ json = JSON()
 jsonb = JSONB()
 # special string based data type
 uuid = UUID()
+macaddr = MACADDR()
 
 _primitive_types = [
     ('any', any),
@@ -917,6 +927,7 @@ class Tokens:
     JSON = 31
     JSONB = 32
     UUID = 33
+    MACADDR = 34
 
     @staticmethod
     def name(value):
@@ -1054,7 +1065,8 @@ _TYPE_RULES = collections.OrderedDict(
     ]
     + [
         # special string based data types
-        ('(?P<UUID>uuid)', lambda token: Token(Tokens.UUID, token))
+        ('(?P<UUID>uuid)', lambda token: Token(Tokens.UUID, token)),
+        ('(?P<MACADDR>macaddr)', lambda token: Token(Tokens.MACADDR, token)),
     ]
     + [
         # integers, for decimal spec
@@ -1265,6 +1277,8 @@ class TypeParser:
         jsonb : "jsonb"
 
         uuid : "uuid"
+
+        macaddr : "macaddr"
 
         """
         if self._accept(Tokens.PRIMITIVE):
@@ -1498,6 +1512,10 @@ class TypeParser:
         # special string based data types
         elif self._accept(Tokens.UUID):
             return UUID()
+
+        # special string based data types
+        elif self._accept(Tokens.MACADDR):
+            return MACADDR()
 
         else:
             raise SyntaxError('Type cannot be parsed: {}'.format(self.text))
@@ -1861,6 +1879,10 @@ def can_cast_geospatial(source, target, **kwargs):
 
 
 @castable.register(UUID, UUID)
+def can_cast_special_string(source, target, **kwargs):
+    return True
+
+@castable.register(MACADDR, MACADDR)
 def can_cast_special_string(source, target, **kwargs):
     return True
 

@@ -157,6 +157,10 @@ def sa_double(_, satype, nullable=True):
 def sa_uuid(_, satype, nullable=True):
     return dt.UUID(nullable=nullable)
 
+@dt.dtype.register(PostgreSQLDialect, sa.dialects.postgresql.MACADDR)
+def sa_macaddr(_, satype, nullable=True):
+    return dt.MACADDR(nullable=nullable)
+
 
 @dt.dtype.register(PostgreSQLDialect, sa.dialects.postgresql.JSON)
 def sa_json(_, satype, nullable=True):
