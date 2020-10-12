@@ -10,6 +10,7 @@ from pyspark.sql.functions import PandasUDFType, pandas_udf
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dtypes
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
 import ibis.expr.types as types
 from ibis import interval
 from ibis.backends.pandas.execution import execute
