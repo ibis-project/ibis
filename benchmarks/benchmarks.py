@@ -3,7 +3,7 @@ import pandas as pd
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.pandas.udf import udf
+from ibis.backends.pandas.udf import udf
 
 
 def make_t(name='t'):

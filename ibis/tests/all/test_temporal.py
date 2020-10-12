@@ -8,7 +8,7 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.pandas.execution.temporal import day_name
+from ibis.backends.pandas.execution.temporal import day_name
 from ibis.tests.backends import (
     BigQuery,
     Clickhouse,
