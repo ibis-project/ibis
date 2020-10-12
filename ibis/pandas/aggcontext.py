@@ -218,7 +218,7 @@ import abc
 import functools
 import itertools
 import operator
-from typing import Any, Callable, Dict, Iterator, Tuple, Union
+from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -252,19 +252,91 @@ class AggregationContext(abc.ABC):
         pass
 
 
-def make_applied_function(function, args=None, kwargs=None):
-    assert callable(function), 'function {} is not callable'.format(function)
+def wrap_for_apply(
+    function: Callable,
+    args: Optional[Tuple[Any]],
+    kwargs: Optional[Dict[Any, Any]],
+) -> Callable:
+    """Wrap a function for use with Pandas `apply`.
+
+    Parameters
+    ----------
+    function : Callable
+        A function to be used with Pandas `apply`.
+    args : Optional[Tuple[Any]]
+        args to be passed to function when it is called by Pandas `apply`
+    kwargs : Optional[Dict[Any, Any]]
+        kwargs to be passed to function when it is called by Pandas `apply`
+
+    """
+    assert callable(function), f'function {function} is not callable'
 
     @functools.wraps(function)
-    def apply(
-        data,
-        function=function,
-        args=args if args is not None else (),
-        kwargs=kwargs if kwargs is not None else {},
-    ):
+    def wrapped_func(
+        data: Any,
+        function: Callable = function,
+        args: Optional[Tuple[Any]] = args,
+        kwargs: Optional[Dict[Any, Any]] = kwargs,
+    ) -> Callable:
         return function(data, *args, **kwargs)
 
-    return apply
+    return wrapped_func
+
+
+def wrap_for_agg(
+    function: Callable,
+    args: Optional[Tuple[Any]],
+    kwargs: Optional[Dict[Any, Any]],
+) -> Callable:
+    """Wrap a function for use with Pandas `agg`.
+
+    This includes special logic that will force Pandas `agg` to always treat
+    the function as an aggregation function. Details:
+
+    When passed a function, Pandas `agg` will either:
+    1) Behave like Pandas `apply` and treat the function as a N->N mapping
+      function (i.e. calls the function once for every value in the Series
+      that `agg` is being called on), OR
+    2) Treat the function as a N->1 aggregation function (i.e. calls the
+      function once on the entire Series)
+    Pandas `agg` will use behavior #1 unless an error is raised when doing so.
+
+    We want to force Pandas `agg` to use behavior #2. To do this, we will wrap
+    the function with logic that checks that a Series is being passed in, and
+    raises a TypeError otherwise. When Pandas `agg` is attempting to use
+    behavior #1 but sees the TypeError, it will fall back to behavior #2.
+
+    Parameters
+    ----------
+    function : Callable
+        An aggregation function to be used with Pandas `agg`.
+    args : Optional[Tuple[Any]]
+        args to be passed to function when it is called by Pandas `agg`
+    kwargs : Optional[Dict[Any, Any]]
+        kwargs to be passed to function when it is called by Pandas `agg`
+
+    """
+    assert callable(function), f'function {function} is not callable'
+
+    @functools.wraps(function)
+    def wrapped_func(
+        data: Any,
+        function: Callable = function,
+        args: Optional[Tuple[Any]] = args,
+        kwargs: Optional[Dict[Any, Any]] = kwargs,
+    ) -> Callable:
+        # `data` will be a scalar here if Pandas `agg` is trying to behave like
+        # like Pandas `apply`.
+        if not isinstance(data, pd.Series):
+            # Force `agg` to NOT behave like `apply`. We want Pandas to use
+            # `function` as an aggregation function, not as a mapping function.
+            raise TypeError(
+                f'This function expects a Series, but saw an object of type '
+                f'{type(data)} instead.'
+            )
+        return function(data, *args, **kwargs)
+
+    return wrapped_func
 
 
 class Summarize(AggregationContext):
@@ -279,7 +351,7 @@ class Summarize(AggregationContext):
                 'Object {} is not callable or a string'.format(function)
             )
 
-        return grouped_data.agg(make_applied_function(function, args, kwargs))
+        return grouped_data.agg(wrap_for_agg(function, args, kwargs))
 
 
 class Transform(AggregationContext):
@@ -400,12 +472,9 @@ def window_agg_udf(
     # the window result. This follows pandas rolling apply
     # behavior.
 
-    # If there is no args, then the UDF only takes a single
-    # input which is defined by grouped_data
-    # This is a complication due to the lack of standard
-    # way to pass multiple input pd.Series/SeriesGroupBy
-    # to AggregationContext.agg()
-    inputs = args if len(args) > 0 else [grouped_data]
+    # The first input column is in grouped_data, but there may
+    # be additional input columns in args.
+    inputs = (grouped_data,) + args
 
     masked_window_lower_indices = window_lower_indices[mask].astype('i8')
     masked_window_upper_indices = window_upper_indices[mask].astype('i8')
@@ -467,7 +536,7 @@ class Window(AggregationContext):
             # collect implementation) then call apply
             if callable(function):
                 return windowed.apply(
-                    make_applied_function(function, args, kwargs), raw=True
+                    wrap_for_apply(function, args, kwargs), raw=True
                 )
             else:
                 # otherwise we're a string and probably faster
@@ -479,7 +548,7 @@ class Window(AggregationContext):
                 # handle the case where we pulled out a name from an operation
                 # but it doesn't actually exist
                 return windowed.apply(
-                    make_applied_function(
+                    wrap_for_apply(
                         operator.methodcaller(function, *args, **kwargs)
                     ),
                     raw=True,
@@ -501,7 +570,11 @@ class Window(AggregationContext):
             # TODO: see if we can do this in the caller, when the context
             # is constructed rather than pulling out the data
             columns = group_by + order_by + [name]
-            indexed_by_ordering = frame[columns].set_index(order_by)
+            # Create a new frame to avoid mutating the original one
+            indexed_by_ordering = frame[columns].copy()
+            # placeholder column to compute window_sizes below
+            indexed_by_ordering['_placeholder'] = 0
+            indexed_by_ordering = indexed_by_ordering.set_index(order_by)
 
             # regroup if needed
             if group_by:
@@ -510,17 +583,28 @@ class Window(AggregationContext):
                 grouped_frame = indexed_by_ordering
             grouped = grouped_frame[name]
 
-            # perform the per-group rolling operation
-            windowed = self.construct_window(grouped)
-
             if callable(function):
-                window_sizes = windowed.apply(len, raw=True).reset_index(
-                    drop=True
+                # To compute the window_size, we need to contruct a
+                # RollingGroupby and compute count using construct_window.
+                # However, if the RollingGroupby is not numeric, e.g.,
+                # we are calling window UDF on a timestamp column, we
+                # cannot compute rolling count directly because:
+                # (1) windowed.count() will exclude NaN observations
+                #     , which results in incorrect window sizes.
+                # (2) windowed.apply(len, raw=True) will include NaN
+                #     obversations, but doesn't work on non-numeric types.
+                #     https://github.com/pandas-dev/pandas/issues/23002
+                # To deal with this, we create a _placeholder column
+
+                windowed_frame = self.construct_window(grouped_frame)
+                window_sizes = (
+                    windowed_frame['_placeholder']
+                    .count()
+                    .reset_index(drop=True)
                 )
                 mask = ~(window_sizes.isna())
                 window_upper_indices = pd.Series(range(len(window_sizes))) + 1
                 window_lower_indices = window_upper_indices - window_sizes
-
                 result = window_agg_udf(
                     grouped_data,
                     function,
@@ -534,6 +618,8 @@ class Window(AggregationContext):
                     **kwargs,
                 )
             else:
+                # perform the per-group rolling operation
+                windowed = self.construct_window(grouped)
                 result = window_agg_built_in(
                     frame,
                     windowed,

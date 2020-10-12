@@ -10,7 +10,7 @@ import versioneer
 LONG_DESCRIPTION = """
 Ibis is a productivity-centric Python big data framework.
 
-See http://docs.ibis-project.org
+See http://ibis-project.org
 """
 
 VERSION = sys.version_info.major, sys.version_info.minor
@@ -29,7 +29,10 @@ clickhouse_requires = [
     'clickhouse-driver>=0.1.3',
     'clickhouse-cityhash',
 ]
-bigquery_requires = ['google-cloud-bigquery>=1.12.0', 'pydata-google-auth']
+bigquery_requires = [
+    'google-cloud-bigquery[bqstorage,pandas]>=1.12.0,<2.0.0dev',
+    'pydata-google-auth',
+]
 hdf5_requires = ['tables>=3.0.0']
 
 parquet_requires = ['pyarrow>=0.12.0']
@@ -117,13 +120,13 @@ setup(
             'parquet = ibis.file.parquet',
             'hdf5 = ibis.file.hdf5',
             'impala = ibis.impala.api',
-            'sqlite = ibis.sql.sqlite.api',
-            'postgres = ibis.sql.postgres.api',
+            'sqlite = ibis.backends.sqlite',
+            'postgres = ibis.backends.postgres',
             'mysql = ibis.sql.mysql.api',
-            'clickhouse = ibis.clickhouse.api',
-            'bigquery = ibis.bigquery.api',
+            'clickhouse = ibis.backends.clickhouse',
+            'bigquery = ibis.backends.bigquery',
             'omniscidb = ibis.backends.omniscidb',
-            'spark = ibis.spark.api',
+            'spark = ibis.backebds.spark',
             'pyspark = ibis.pyspark.api',
         ]
     },
