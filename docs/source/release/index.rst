@@ -12,6 +12,8 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :bug:`2462` Table expressions do not recognize inet datatype (Postgres backend)
+* :bug:`2461` Table expressions do not recognize macaddr datatype (Postgres backend)
 * :bug:`2410` Fix ``aggcontext.Summarize`` not always producing scalar (Pandas backend)
 * :bug:`2414` Fix same window op with different window size on table lead to incorrect results for pyspark backend
 * :feature:`2409` FEAT: Support Ibis interval for window in pyspark backend
