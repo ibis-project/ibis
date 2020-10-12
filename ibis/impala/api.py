@@ -1,6 +1,5 @@
 import ibis.common.exceptions as com
 from ibis.config import options
-
 # these objects are exposed in the public API and are not used in the module
 from ibis.impala.client import (  # noqa: F401
     ImpalaClient,
