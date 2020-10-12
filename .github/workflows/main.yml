@@ -199,36 +199,8 @@ jobs:
       if: github.event_name == 'push'
 
     - name: benckmark
-      run: |
-        OS=$(uname -sr)
-        NUM_CPU=$(grep -c ^processor /proc/cpuinfo)
-        ARCH=$(uname -p)
-        CPU=$(grep -m1 'model name' /proc/cpuinfo | sed 's/model name\s:\s//g')
-        RAM=$(awk '/MemTotal/ { printf "%.0f \n", $2/1024/1024 }' /proc/meminfo)
-        echo $ASV_CONFIG \
-          | sed "s/{os}/$OS/g" \
-          | sed "s/{num_cpu}/$NUM_CPU/g" \
-          | sed "s/{arch}/$ARCH/g" \
-          | sed "s/{cpu}/$CPU/g" \
-          | sed "s/{ram}/$RAM/g" \
-          | tee ~/.asv-machine.json
-        git remote add upstream https://github.com/ibis-project/ibis
-        git fetch upstream refs/heads/master
-        asv continuous -f 1.5 -e upstream/master ${{ github.sha }} || echo > /dev/null
+      run: asv machine --yes && asv dev
       if: always()
-      env:
-        ASV_CONFIG: |
-          {
-            "azure": {
-              "machine": "azure",
-              "os": "{os}",
-              "num_cpu": "{num_cpu}",
-              "arch": "{arch}",
-              "cpu": "{cpu}",
-              "ram": "{ram}GB"
-            },
-            "version": 1
-          }
 
   Conda_package:
     name: Conda package
