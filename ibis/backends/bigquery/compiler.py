@@ -13,6 +13,7 @@ import ibis.expr.lineage as lin
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.sql.compiler as comp
+from ibis.backends.base_sql import BaseExprTranslator, literal
 from ibis.impala import compiler as impala_compiler
 from ibis.impala.compiler import (
     ImpalaSelect,
@@ -255,7 +256,7 @@ def _literal(translator, expr):
             return "TIME '{}'".format(value)
 
     try:
-        return impala_compiler._literal(translator, expr)
+        return literal(translator, expr)
     except NotImplementedError:
         if isinstance(expr, ir.ArrayValue):
             return _array_literal_format(expr)
@@ -409,9 +410,9 @@ _operation_registry = {
 }
 
 
-class BigQueryExprTranslator(impala_compiler.ImpalaExprTranslator):
+class BigQueryExprTranslator(BaseExprTranslator):
     _registry = _operation_registry
-    _rewrites = impala_compiler.ImpalaExprTranslator._rewrites.copy()
+    _rewrites = BaseExprTranslator._rewrites.copy()
 
     context_class = BigQueryContext
 
@@ -611,7 +612,7 @@ def bigquery_compile_notall(translator, expr):
     )
 
 
-class BigQueryDialect(impala_compiler.ImpalaDialect):
+class BigQueryDialect(comp.Dialect):
     translator = BigQueryExprTranslator
 
 
