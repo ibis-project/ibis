@@ -2,9 +2,10 @@ import ast
 
 import pytest
 
-from ibis.bigquery.udf.find import find_names
 from ibis.compat import PY38
 from ibis.util import is_iterable
+
+from .udf.find import find_names
 
 if PY38:
     # ref: https://github.com/ibis-project/ibis/issues/2098

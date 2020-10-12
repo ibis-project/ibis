@@ -1,7 +1,7 @@
 import itertools
 import os
 import webbrowser
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 
@@ -9,8 +9,10 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.config as config
 import ibis.util as util
-from ibis.expr.format import FormatMemo
 from ibis.expr.typing import TimeContext
+
+if TYPE_CHECKING:
+    from ibis.expr.format import FormatMemo
 
 # TODO move methods containing ops import to api.py
 
@@ -26,6 +28,8 @@ class Expr:
         self._arg = arg
 
     def __repr__(self):
+        from ibis.expr.format import FormatMemo
+
         if not config.options.interactive:
             return self._repr(memo=FormatMemo(get_text_repr=True))
 
@@ -51,7 +55,7 @@ class Expr:
 
     __nonzero__ = __bool__
 
-    def _repr(self, memo: Optional[FormatMemo] = None):
+    def _repr(self, memo: 'Optional[FormatMemo]' = None):
         from ibis.expr.format import ExprFormatter
 
         return ExprFormatter(self, memo=memo).get_result()

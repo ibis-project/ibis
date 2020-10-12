@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 import ibis
-import ibis.bigquery as bq
+import ibis.backends.bigquery as bq
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.expr.types import TableExpr

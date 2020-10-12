@@ -14,7 +14,6 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.sql.compiler as comp
 from ibis.backends.base_sql import BaseExprTranslator, literal
-from ibis.bigquery.datatypes import ibis_type_to_bigquery_type
 from ibis.impala import compiler as impala_compiler
 from ibis.impala.compiler import (
     ImpalaSelect,
@@ -23,6 +22,8 @@ from ibis.impala.compiler import (
     fixed_arity,
     unary,
 )
+
+from .datatypes import ibis_type_to_bigquery_type
 
 
 class BigQueryUDFNode(ops.ValueOp):
