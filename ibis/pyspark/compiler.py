@@ -13,6 +13,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.types as types
 from ibis import interval
+from ibis.backends.pandas.execution import execute
 from ibis.backends.spark.compiler import SparkContext, SparkDialect
 from ibis.backends.spark.datatypes import (
     ibis_array_dtype_to_spark_dtype,
@@ -20,7 +21,6 @@ from ibis.backends.spark.datatypes import (
     spark_dtype,
 )
 from ibis.expr.timecontext import adjust_context
-from ibis.pandas.execution import execute
 from ibis.pyspark.operations import PySparkTable
 from ibis.pyspark.timecontext import (
     combine_time_context,

@@ -69,6 +69,6 @@ dependencies).
 
 The only existing backend that directly executes ibis expressions is the pandas
 backend. A full description of the implementation can be found in the module
-docstring of the pandas backend located in ``ibis/pandas/execution/core.py``.
+docstring of the pandas backend located in ``ibis/backends/pandas/core.py``.
 
 - `Pandas <http://pandas.pydata.org/>`_
