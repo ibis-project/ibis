@@ -161,6 +161,9 @@ def sa_uuid(_, satype, nullable=True):
 def sa_macaddr(_, satype, nullable=True):
     return dt.MACADDR(nullable=nullable)
 
+@dt.dtype.register(PostgreSQLDialect, sa.dialects.postgresql.INET)
+def sa_inet(_, satype, nullable=True):
+    return dt.INET(nullable=nullable)
 
 @dt.dtype.register(PostgreSQLDialect, sa.dialects.postgresql.JSON)
 def sa_json(_, satype, nullable=True):

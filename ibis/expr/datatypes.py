@@ -806,12 +806,23 @@ class UUID(String):
 
     __slots__ = ()
 
+
 class MACADDR(String):
     """Media Access Control (MAC) Address of a network interface.
     """
 
     scalar = ir.MACADDRScalar
     column = ir.MACADDRColumn
+
+    __slots__ = ()
+
+
+class INET(String):
+    """IP address type.
+    """
+
+    scalar = ir.INETScalar
+    column = ir.INETColumn
 
     __slots__ = ()
 
@@ -858,6 +869,7 @@ jsonb = JSONB()
 # special string based data type
 uuid = UUID()
 macaddr = MACADDR()
+inet = INET()
 
 _primitive_types = [
     ('any', any),
@@ -928,6 +940,7 @@ class Tokens:
     JSONB = 32
     UUID = 33
     MACADDR = 34
+    INET = 35
 
     @staticmethod
     def name(value):
@@ -1067,6 +1080,7 @@ _TYPE_RULES = collections.OrderedDict(
         # special string based data types
         ('(?P<UUID>uuid)', lambda token: Token(Tokens.UUID, token)),
         ('(?P<MACADDR>macaddr)', lambda token: Token(Tokens.MACADDR, token)),
+        ('(?P<INET>inet)', lambda token: Token(Tokens.INET, token)),
     ]
     + [
         # integers, for decimal spec
@@ -1279,6 +1293,8 @@ class TypeParser:
         uuid : "uuid"
 
         macaddr : "macaddr"
+
+        inet : "inet"
 
         """
         if self._accept(Tokens.PRIMITIVE):
@@ -1513,9 +1529,11 @@ class TypeParser:
         elif self._accept(Tokens.UUID):
             return UUID()
 
-        # special string based data types
         elif self._accept(Tokens.MACADDR):
             return MACADDR()
+
+        elif self._accept(Tokens.INET):
+            return INET()
 
         else:
             raise SyntaxError('Type cannot be parsed: {}'.format(self.text))
@@ -1883,6 +1901,10 @@ def can_cast_special_string(source, target, **kwargs):
     return True
 
 @castable.register(MACADDR, MACADDR)
+def can_cast_special_string(source, target, **kwargs):
+    return True
+
+@castable.register(INET, INET)
 def can_cast_special_string(source, target, **kwargs):
     return True
 
