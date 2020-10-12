@@ -1895,15 +1895,7 @@ def can_cast_geospatial(source, target, **kwargs):
 
 
 @castable.register(UUID, UUID)
-def can_cast_special_string(source, target, **kwargs):
-    return True
-
-
 @castable.register(MACADDR, MACADDR)
-def can_cast_special_string(source, target, **kwargs):
-    return True
-
-
 @castable.register(INET, INET)
 def can_cast_special_string(source, target, **kwargs):
     return True
