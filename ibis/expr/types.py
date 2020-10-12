@@ -990,6 +990,7 @@ class MACADDRColumn(StringColumn, MACADDRValue):
 class INETValue(StringValue):
     pass  # noqa: E701,E302
 
+
 class INETScalar(StringScalar, INETValue):
     pass  # noqa: E701,E302
 

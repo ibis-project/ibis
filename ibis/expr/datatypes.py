@@ -808,8 +808,7 @@ class UUID(String):
 
 
 class MACADDR(String):
-    """Media Access Control (MAC) Address of a network interface.
-    """
+    """Media Access Control (MAC) Address of a network interface."""
 
     scalar = ir.MACADDRScalar
     column = ir.MACADDRColumn
@@ -818,8 +817,7 @@ class MACADDR(String):
 
 
 class INET(String):
-    """IP address type.
-    """
+    """IP address type."""
 
     scalar = ir.INETScalar
     column = ir.INETColumn
@@ -1900,9 +1898,11 @@ def can_cast_geospatial(source, target, **kwargs):
 def can_cast_special_string(source, target, **kwargs):
     return True
 
+
 @castable.register(MACADDR, MACADDR)
 def can_cast_special_string(source, target, **kwargs):
     return True
+
 
 @castable.register(INET, INET)
 def can_cast_special_string(source, target, **kwargs):
