@@ -5,7 +5,6 @@ import ibis.config_init  # noqa: F401
 import ibis.expr.api as api  # noqa: F401
 import ibis.expr.types as ir  # noqa: F401
 import ibis.util as util  # noqa: F401
-
 # pandas backend is mandatory
 from ibis.backends import pandas  # noqa: F401
 from ibis.common.exceptions import IbisError  # noqa: F401
