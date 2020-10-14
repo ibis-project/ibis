@@ -3,9 +3,9 @@ import shutil
 import unittest
 from io import BytesIO
 from os import path as osp
+from posixpath import join as pjoin
 
 import pytest
-from posixpath import join as pjoin
 
 import ibis
 import ibis.util as util
