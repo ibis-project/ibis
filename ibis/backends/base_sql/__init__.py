@@ -17,9 +17,10 @@ import ibis.sql.compiler as comp
 import ibis.sql.transforms as transforms
 import ibis.util as util
 from ibis.impala import identifiers
+from ibis.impala.compiler import _truncate
 
 
-def _set_literal_format(translator, expr):
+def set_literal_format(translator, expr):
     value_type = expr.type().value_type
 
     formatted = [
@@ -30,17 +31,17 @@ def _set_literal_format(translator, expr):
     return '(' + ', '.join(formatted) + ')'
 
 
-def _boolean_literal_format(translator, expr):
+def boolean_literal_format(translator, expr):
     value = expr.op().value
     return 'TRUE' if value else 'FALSE'
 
 
-def _string_literal_format(translator, expr):
+def string_literal_format(translator, expr):
     value = expr.op().value
     return "'{}'".format(value.replace("'", "\\'"))
 
 
-def _number_literal_format(translator, expr):
+def number_literal_format(translator, expr):
     import math
 
     value = expr.op().value
@@ -60,13 +61,13 @@ def _number_literal_format(translator, expr):
     return formatted
 
 
-def _interval_literal_format(translator, expr):
+def interval_literal_format(translator, expr):
     return 'INTERVAL {} {}'.format(
         expr.op().value, expr.type().resolution.upper()
     )
 
 
-def _date_literal_format(translator, expr):
+def date_literal_format(translator, expr):
     value = expr.op().value
     if isinstance(value, datetime.date):
         value = value.strftime('%Y-%m-%d')
@@ -74,7 +75,7 @@ def _date_literal_format(translator, expr):
     return repr(value)
 
 
-def _timestamp_literal_format(translator, expr):
+def timestamp_literal_format(translator, expr):
     value = expr.op().value
     if isinstance(value, datetime.datetime):
         value = value.strftime('%Y-%m-%d %H:%M:%S')
@@ -83,13 +84,13 @@ def _timestamp_literal_format(translator, expr):
 
 
 literal_formatters = {
-    'boolean': _boolean_literal_format,
-    'number': _number_literal_format,
-    'string': _string_literal_format,
-    'interval': _interval_literal_format,
-    'timestamp': _timestamp_literal_format,
-    'date': _date_literal_format,
-    'set': _set_literal_format,
+    'boolean': boolean_literal_format,
+    'number': number_literal_format,
+    'string': string_literal_format,
+    'interval': interval_literal_format,
+    'timestamp': timestamp_literal_format,
+    'date': date_literal_format,
+    'set': set_literal_format,
 }
 
 
@@ -136,51 +137,51 @@ class BaseExprTranslator(comp.ExprTranslator):
         return self._name_expr(translated, quote_identifier(name, force=force))
 
 
-def _is_null(translator, expr):
+def is_null(translator, expr):
     formatted_arg = translator.translate(expr.op().args[0])
     return '{} IS NULL'.format(formatted_arg)
 
 
-def _not_null(translator, expr):
+def not_null(translator, expr):
     formatted_arg = translator.translate(expr.op().args[0])
     return '{} IS NOT NULL'.format(formatted_arg)
 
 
-def _negate(translator, expr):
+def negate(translator, expr):
     arg = expr.op().args[0]
     formatted_arg = translator.translate(arg)
     if isinstance(expr, ir.BooleanValue):
         return _not(translator, expr)
     else:
-        if _needs_parens(arg):
-            formatted_arg = _parenthesize(formatted_arg)
+        if needs_parens(arg):
+            formatted_arg = parenthesize(formatted_arg)
         return '-{}'.format(formatted_arg)
 
 
 def _not(translator, expr):
     (arg,) = expr.op().args
     formatted_arg = translator.translate(arg)
-    if _needs_parens(arg):
-        formatted_arg = _parenthesize(formatted_arg)
+    if needs_parens(arg):
+        formatted_arg = parenthesize(formatted_arg)
     return 'NOT {}'.format(formatted_arg)
 
 
-_parenthesize = '({})'.format
+parenthesize = '({})'.format
 
 
-def _needs_parens(op):
+def needs_parens(op):
     if isinstance(op, ir.Expr):
         op = op.op()
     op_klass = type(op)
     # function calls don't need parens
-    return op_klass in _binary_infix_ops or op_klass in {
+    return op_klass in binary_infix_ops or op_klass in {
         ops.Negate,
         ops.IsNull,
         ops.NotNull,
     }
 
 
-def _binary_infix_op(infix_sym):
+def binary_infix_op(infix_sym):
     def formatter(translator, expr):
         op = expr.op()
 
@@ -188,18 +189,18 @@ def _binary_infix_op(infix_sym):
 
         left_arg = translator.translate(left)
         right_arg = translator.translate(right)
-        if _needs_parens(left):
-            left_arg = _parenthesize(left_arg)
+        if needs_parens(left):
+            left_arg = parenthesize(left_arg)
 
-        if _needs_parens(right):
-            right_arg = _parenthesize(right_arg)
+        if needs_parens(right):
+            right_arg = parenthesize(right_arg)
 
         return '{} {} {}'.format(left_arg, infix_sym, right_arg)
 
     return formatter
 
 
-def _variance_like(func_name):
+def variance_like(func_name):
     func_names = {
         'sample': '{}_samp'.format(func_name),
         'pop': '{}_pop'.format(func_name),
@@ -207,7 +208,7 @@ def _variance_like(func_name):
 
     def formatter(translator, expr):
         arg, how, where = expr.op().args
-        return _reduction_format(translator, func_names[how], where, arg)
+        return reduction_format(translator, func_names[how], where, arg)
 
     return formatter
 
@@ -217,12 +218,12 @@ def fixed_arity(func_name, arity):
         op = expr.op()
         if arity != len(op.args):
             raise com.IbisError('incorrect number of args')
-        return _format_call(translator, func_name, *op.args)
+        return format_call(translator, func_name, *op.args)
 
     return formatter
 
 
-def _identical_to(translator, expr):
+def identical_to(translator, expr):
     op = expr.op()
     if op.args[0].equals(op.args[1]):
         return 'TRUE'
@@ -232,14 +233,14 @@ def _identical_to(translator, expr):
     left = translator.translate(left_expr)
     right = translator.translate(right_expr)
 
-    if _needs_parens(left_expr):
-        left = _parenthesize(left)
-    if _needs_parens(right_expr):
-        right = _parenthesize(right)
+    if needs_parens(left_expr):
+        left = parenthesize(left)
+    if needs_parens(right_expr):
+        right = parenthesize(right)
     return '{} IS NOT DISTINCT FROM {}'.format(left, right)
 
 
-def _format_call(translator, func, *args):
+def format_call(translator, func, *args):
     formatted_args = []
     for arg in args:
         fmt_arg = translator.translate(arg)
@@ -248,41 +249,41 @@ def _format_call(translator, func, *args):
     return '{}({})'.format(func, ', '.join(formatted_args))
 
 
-def _xor(translator, expr):
+def xor(translator, expr):
     op = expr.op()
 
     left_arg = translator.translate(op.left)
     right_arg = translator.translate(op.right)
 
-    if _needs_parens(op.left):
-        left_arg = _parenthesize(left_arg)
+    if needs_parens(op.left):
+        left_arg = parenthesize(left_arg)
 
-    if _needs_parens(op.right):
-        right_arg = _parenthesize(right_arg)
+    if needs_parens(op.right):
+        right_arg = parenthesize(right_arg)
 
     return '({0} OR {1}) AND NOT ({0} AND {1})'.format(left_arg, right_arg)
 
 
-_binary_infix_ops = {
+binary_infix_ops = {
     # Binary operations
-    ops.Add: _binary_infix_op('+'),
-    ops.Subtract: _binary_infix_op('-'),
-    ops.Multiply: _binary_infix_op('*'),
-    ops.Divide: _binary_infix_op('/'),
+    ops.Add: binary_infix_op('+'),
+    ops.Subtract: binary_infix_op('-'),
+    ops.Multiply: binary_infix_op('*'),
+    ops.Divide: binary_infix_op('/'),
     ops.Power: fixed_arity('pow', 2),
-    ops.Modulus: _binary_infix_op('%'),
+    ops.Modulus: binary_infix_op('%'),
     # Comparisons
-    ops.Equals: _binary_infix_op('='),
-    ops.NotEquals: _binary_infix_op('!='),
-    ops.GreaterEqual: _binary_infix_op('>='),
-    ops.Greater: _binary_infix_op('>'),
-    ops.LessEqual: _binary_infix_op('<='),
-    ops.Less: _binary_infix_op('<'),
-    ops.IdenticalTo: _identical_to,
+    ops.Equals: binary_infix_op('='),
+    ops.NotEquals: binary_infix_op('!='),
+    ops.GreaterEqual: binary_infix_op('>='),
+    ops.Greater: binary_infix_op('>'),
+    ops.LessEqual: binary_infix_op('<='),
+    ops.Less: binary_infix_op('<'),
+    ops.IdenticalTo: identical_to,
     # Boolean comparisons
-    ops.And: _binary_infix_op('AND'),
-    ops.Or: _binary_infix_op('OR'),
-    ops.Xor: _xor,
+    ops.And: binary_infix_op('AND'),
+    ops.Or: binary_infix_op('OR'),
+    ops.Xor: xor,
 }
 
 
@@ -290,7 +291,7 @@ def unary(func_name):
     return fixed_arity(func_name, 1)
 
 
-def _reduction_format(translator, func_name, where, arg, *args):
+def reduction_format(translator, func_name, where, arg, *args):
     import itertools
 
     if where is not None:
@@ -302,16 +303,16 @@ def _reduction_format(translator, func_name, where, arg, *args):
     )
 
 
-def _reduction(func_name):
+def reduction(func_name):
     def formatter(translator, expr):
         op = expr.op()
         *args, where = op.args
-        return _reduction_format(translator, func_name, where, *args)
+        return reduction_format(translator, func_name, where, *args)
 
     return formatter
 
 
-def _ifnull_workaround(translator, expr):
+def ifnull_workaround(translator, expr):
     op = expr.op()
     a, b = op.args
 
@@ -319,10 +320,10 @@ def _ifnull_workaround(translator, expr):
     if isinstance(a, ir.DecimalValue) and isinstance(b, ir.IntegerValue):
         b = b.cast(a.type())
 
-    return _format_call(translator, 'isnull', a, b)
+    return format_call(translator, 'isnull', a, b)
 
 
-def _round(translator, expr):
+def round(translator, expr):
     op = expr.op()
     arg, digits = op.args
 
@@ -334,7 +335,7 @@ def _round(translator, expr):
     return 'round({})'.format(arg_formatted)
 
 
-def _hash(translator, expr):
+def hash(translator, expr):
     op = expr.op()
     arg, how = op.args
 
@@ -346,7 +347,7 @@ def _hash(translator, expr):
         raise NotImplementedError(how)
 
 
-def _log(translator, expr):
+def log(translator, expr):
     op = expr.op()
     arg, base = op.args
     arg_formatted = translator.translate(arg)
@@ -358,7 +359,7 @@ def _log(translator, expr):
     return 'log({}, {})'.format(base_formatted, arg_formatted)
 
 
-def _count_distinct(translator, expr):
+def count_distinct(translator, expr):
     arg, where = expr.op().args
 
     if where is not None:
@@ -368,7 +369,7 @@ def _count_distinct(translator, expr):
     return 'count(DISTINCT {})'.format(arg_formatted)
 
 
-def _substring(translator, expr):
+def substring(translator, expr):
     op = expr.op()
     arg, start, length = op.args
     arg_formatted = translator.translate(arg)
@@ -390,7 +391,7 @@ def _substring(translator, expr):
         )
 
 
-def _string_find(translator, expr):
+def string_find(translator, expr):
     op = expr.op()
     arg, substr, start, _ = op.args
     arg_formatted = translator.translate(arg)
@@ -410,13 +411,13 @@ def _string_find(translator, expr):
         return 'locate({}, {}) - 1'.format(substr_formatted, arg_formatted)
 
 
-def _string_join(translator, expr):
+def string_join(translator, expr):
     op = expr.op()
     arg, strings = op.args
-    return _format_call(translator, 'concat_ws', arg, *strings)
+    return format_call(translator, 'concat_ws', arg, *strings)
 
 
-def _extract_field(sql_attr):
+def extract_field(sql_attr):
     def extract_field_formatter(translator, expr):
         op = expr.op()
         arg = translator.translate(op.args[0])
@@ -428,7 +429,7 @@ def _extract_field(sql_attr):
     return extract_field_formatter
 
 
-def _find_in_set(translator, expr):
+def find_in_set(translator, expr):
     op = expr.op()
 
     arg, str_list = op.args
@@ -437,14 +438,14 @@ def _find_in_set(translator, expr):
     return "find_in_set({}, '{}') - 1".format(arg_formatted, str_formatted)
 
 
-def _string_like(translator, expr):
+def string_like(translator, expr):
     arg, pattern, _ = expr.op().args
     return '{} LIKE {}'.format(
         translator.translate(arg), translator.translate(pattern)
     )
 
 
-def _parse_url(translator, expr):
+def parse_url(translator, expr):
     op = expr.op()
 
     arg, extract, key = op.args
@@ -459,12 +460,12 @@ def _parse_url(translator, expr):
         )
 
 
-def _extract_epoch_seconds(t, expr):
+def extract_epoch_seconds(t, expr):
     (arg,) = expr.op().args
     return 'unix_timestamp({})'.format(t.translate(arg))
 
 
-def _interval_from_integer(translator, expr):
+def interval_from_integer(translator, expr):
     # interval cannot be selected from impala
     op = expr.op()
     arg, unit = op.args
@@ -475,17 +476,17 @@ def _interval_from_integer(translator, expr):
     )
 
 
-def _null_literal(translator, expr):
+def null_literal(translator, expr):
     return 'NULL'
 
 
-def _value_list(translator, expr):
+def value_list(translator, expr):
     op = expr.op()
     formatted = [translator.translate(x) for x in op.values]
-    return _parenthesize(', '.join(formatted))
+    return parenthesize(', '.join(formatted))
 
 
-def _cast(translator, expr):
+def cast(translator, expr):
     op = expr.op()
     arg, target_type = op.args
     arg_formatted = translator.translate(arg)
@@ -495,19 +496,19 @@ def _cast(translator, expr):
     if isinstance(arg, ir.TemporalValue) and target_type == dt.int64:
         return '1000000 * unix_timestamp({})'.format(arg_formatted)
     else:
-        sql_type = _type_to_sql_string(target_type)
+        sql_type = type_to_sql_string(target_type)
         return 'CAST({} AS {})'.format(arg_formatted, sql_type)
 
 
 def varargs(func_name):
     def varargs_formatter(translator, expr):
         op = expr.op()
-        return _format_call(translator, func_name, *op.arg)
+        return format_call(translator, func_name, *op.arg)
 
     return varargs_formatter
 
 
-def _between(translator, expr):
+def between(translator, expr):
     op = expr.op()
     comp, lower, upper = [translator.translate(x) for x in op.args]
     return '{} BETWEEN {} AND {}'.format(comp, lower, upper)
@@ -564,14 +565,14 @@ class CaseFormatter:
             self.buf.write(' ')
 
 
-def _table_array_view(translator, expr):
+def table_array_view(translator, expr):
     ctx = translator.context
     table = expr.op().table
     query = ctx.get_compiled_expr(table)
     return '(\n{}\n)'.format(util.indent(query, ctx.indent))
 
 
-def _simple_case(translator, expr):
+def simple_case(translator, expr):
     op = expr.op()
     formatter = CaseFormatter(
         translator, op.base, op.cases, op.results, op.default
@@ -579,7 +580,7 @@ def _simple_case(translator, expr):
     return formatter.get_result()
 
 
-def _searched_case(translator, expr):
+def searched_case(translator, expr):
     op = expr.op()
     formatter = CaseFormatter(
         translator, None, op.cases, op.results, op.default
@@ -587,7 +588,7 @@ def _searched_case(translator, expr):
     return formatter.get_result()
 
 
-def _table_column(translator, expr):
+def table_column(translator, expr):
     op = expr.op()
     field_name = op.name
     quoted_name = quote_identifier(field_name, force=True)
@@ -599,7 +600,7 @@ def _table_column(translator, expr):
     # context, we should format as a subquery
     if translator.permit_subquery and ctx.is_foreign_expr(table):
         proj_expr = table.projection([field_name]).to_array()
-        return _table_array_view(translator, proj_expr)
+        return table_array_view(translator, proj_expr)
 
     if ctx.need_aliases():
         alias = ctx.get_ref(table)
@@ -609,22 +610,22 @@ def _table_column(translator, expr):
     return quoted_name
 
 
-def _from_unixtime(translator, expr):
+def from_unixtime(translator, expr):
     arg = translator.translate(expr)
     return 'from_unixtime({}, "yyyy-MM-dd HH:mm:ss")'.format(arg)
 
 
-def _timestamp_from_unix(translator, expr):
+def timestamp_from_unix(translator, expr):
     op = expr.op()
 
     val, unit = op.args
     val = util.convert_unit(val, unit, 's').cast('int32')
 
-    arg = _from_unixtime(translator, val)
+    arg = from_unixtime(translator, val)
     return 'CAST({} AS timestamp)'.format(arg)
 
 
-def _exists_subquery(translator, expr):
+def exists_subquery(translator, expr):
     op = expr.op()
     ctx = translator.context
 
@@ -645,7 +646,7 @@ def _exists_subquery(translator, expr):
     return '{} (\n{}\n)'.format(key, util.indent(subquery, ctx.indent))
 
 
-def _nth_value(translator, expr):
+def nth_value(translator, expr):
     op = expr.op()
     arg, rank = op.args
 
@@ -655,7 +656,7 @@ def _nth_value(translator, expr):
     return 'first_value(lag({}, {}))'.format(arg_formatted, rank_formatted)
 
 
-def _shift_like(name):
+def shift_like(name):
     def formatter(translator, expr):
         op = expr.op()
         arg, offset, default = op.args
@@ -682,7 +683,7 @@ def _shift_like(name):
     return formatter
 
 
-_cumulative_to_reduction = {
+cumulative_to_reduction = {
     ops.CumulativeSum: ops.Sum,
     ops.CumulativeMin: ops.Min,
     ops.CumulativeMax: ops.Max,
@@ -692,13 +693,13 @@ _cumulative_to_reduction = {
 }
 
 
-def _cumulative_to_window(translator, expr, window):
+def cumulative_to_window(translator, expr, window):
     win = ibis.cumulative_window()
     win = win.group_by(window._group_by).order_by(window._order_by)
 
     op = expr.op()
 
-    klass = _cumulative_to_reduction[type(op)]
+    klass = cumulative_to_reduction[type(op)]
     new_op = klass(*op.args)
     new_expr = expr._factory(new_op, name=expr._name)
 
@@ -709,7 +710,7 @@ def _cumulative_to_window(translator, expr, window):
     return new_expr
 
 
-_map_interval_to_microseconds = dict(
+map_interval_to_microseconds = dict(
     W=604800000000,
     D=86400000000,
     h=3600000000,
@@ -721,10 +722,10 @@ _map_interval_to_microseconds = dict(
 )
 
 
-_map_interval_op_to_op = {
+map_interval_op_to_op = {
     # Literal Intervals have two args, i.e.
     # Literal(1, Interval(value_type=int8, unit='D', nullable=True))
-    # Parse both args and multipy 1 * _map_interval_to_microseconds['D']
+    # Parse both args and multipy 1 * map_interval_to_microseconds['D']
     ops.Literal: mul,
     ops.IntervalMultiply: mul,
     ops.IntervalAdd: add,
@@ -732,7 +733,7 @@ _map_interval_op_to_op = {
 }
 
 
-def _replace_interval_with_scalar(expr):
+def replace_interval_with_scalar(expr):
     """
     Good old Depth-First Search to identify the Interval and IntervalValue
     components of the expression and return a comparable scalar expression.
@@ -759,7 +760,7 @@ def _replace_interval_with_scalar(expr):
             return expr
     elif isinstance(expr, dt.Interval):
         try:
-            microseconds = _map_interval_to_microseconds[expr.unit]
+            microseconds = map_interval_to_microseconds[expr.unit]
             return microseconds
         except KeyError:
             raise ValueError(
@@ -772,13 +773,13 @@ def _replace_interval_with_scalar(expr):
             raise com.NotImplementedError(
                 "'preceding' argument cannot be parsed."
             )
-        left_arg = _replace_interval_with_scalar(expr_op.args[0])
-        right_arg = _replace_interval_with_scalar(expr_op.args[1])
-        method = _map_interval_op_to_op[type(expr_op)]
+        left_arg = replace_interval_with_scalar(expr_op.args[0])
+        right_arg = replace_interval_with_scalar(expr_op.args[1])
+        method = map_interval_op_to_op[type(expr_op)]
         return method(left_arg, right_arg)
 
 
-def _time_range_to_range_window(translator, window):
+def time_range_to_range_window(translator, window):
     # Check that ORDER BY column is a single time column:
     order_by_vars = [x.op().args[0] for x in window._order_by]
     if len(order_by_vars) > 1:
@@ -793,13 +794,13 @@ def _time_range_to_range_window(translator, window):
     # Need to change preceding interval expression to scalars
     preceding = window.preceding
     if isinstance(preceding, ir.IntervalScalar):
-        new_preceding = _replace_interval_with_scalar(preceding)
+        new_preceding = replace_interval_with_scalar(preceding)
         window = window._replace(preceding=new_preceding)
 
     return window
 
 
-def _format_window(translator, op, window):
+def format_window(translator, op, window):
     from typing import Optional
 
     components = []
@@ -851,7 +852,7 @@ def _format_window(translator, op, window):
         return '{} FOLLOWING'.format(prefix)
 
 
-def _window(translator, expr):
+def window(translator, expr):
     op = expr.op()
 
     arg, window = op.args
@@ -880,7 +881,7 @@ def _window(translator, expr):
         )
 
     if isinstance(window_op, ops.CumulativeOp):
-        arg = _cumulative_to_window(translator, arg, window)
+        arg = cumulative_to_window(translator, arg, window)
         return translator.translate(arg)
 
     # Some analytic functions need to have the expression of interest in
@@ -893,42 +894,42 @@ def _window(translator, expr):
         order_by_types = [type(x.op().args[0]) for x in window._order_by]
         time_range_types = (ir.TimeColumn, ir.DateColumn, ir.TimestampColumn)
         if any(col_type in time_range_types for col_type in order_by_types):
-            window = _time_range_to_range_window(translator, window)
+            window = time_range_to_range_window(translator, window)
 
-    window_formatted = _format_window(translator, op, window)
+    window_formatted = format_window(translator, op, window)
 
     arg_formatted = translator.translate(arg)
     result = '{} {}'.format(arg_formatted, window_formatted)
 
-    if type(window_op) in _expr_transforms:
-        return _expr_transforms[type(window_op)](result)
+    if type(window_op) in expr_transforms:
+        return expr_transforms[type(window_op)](result)
     else:
         return result
 
 
-def _ntile(translator, expr):
+def ntile(translator, expr):
     op = expr.op()
     arg, buckets = map(translator.translate, op.args)
     return 'ntile({})'.format(buckets)
 
 
-_subtract_one = '({} - 1)'.format
+subtract_one = '({} - 1)'.format
 
 
-_expr_transforms = {
-    ops.RowNumber: _subtract_one,
-    ops.DenseRank: _subtract_one,
-    ops.MinRank: _subtract_one,
-    ops.NTile: _subtract_one,
+expr_transforms = {
+    ops.RowNumber: subtract_one,
+    ops.DenseRank: subtract_one,
+    ops.MinRank: subtract_one,
+    ops.NTile: subtract_one,
 }
 
 
-def _day_of_week_index(t, expr):
+def day_of_week_index(t, expr):
     (arg,) = expr.op().args
     return 'pmod(dayofweek({}) - 2, 7)'.format(t.translate(arg))
 
 
-def _day_of_week_name(t, expr):
+def day_of_week_name(t, expr):
     (arg,) = expr.op().args
     return 'dayname({})'.format(t.translate(arg))
 
@@ -936,7 +937,7 @@ def _day_of_week_name(t, expr):
 # ---------------------------------------------------------------------
 # Scalar and array expression formatting
 
-_sql_type_names = {
+sql_type_names = {
     'int8': 'tinyint',
     'int16': 'smallint',
     'int32': 'int',
@@ -952,20 +953,20 @@ _sql_type_names = {
 }
 
 
-def _type_to_sql_string(tval):
+def type_to_sql_string(tval):
     if isinstance(tval, dt.Decimal):
         return 'decimal({}, {})'.format(tval.precision, tval.scale)
     name = tval.name.lower()
     try:
-        return _sql_type_names[name]
+        return sql_type_names[name]
     except KeyError:
         raise com.UnsupportedBackendType(name)
 
 
-def _sign(translator, expr):
+def sign(translator, expr):
     (arg,) = expr.op().args
     translated_arg = translator.translate(arg)
-    translated_type = _type_to_sql_string(expr.type())
+    translated_type = type_to_sql_string(expr.type())
     if expr.type() != dt.float:
         return 'CAST(sign({}) AS {})'.format(translated_arg, translated_type)
     return 'sign({})'.format(translated_arg)
@@ -975,7 +976,7 @@ def _sign(translator, expr):
 # Timestamp arithmetic and other functions
 
 
-def _timestamp_op(func):
+def timestamp_op(func):
     def _formatter(translator, expr):
         op = expr.op()
         left, right = op.args
@@ -993,7 +994,7 @@ def _timestamp_op(func):
     return _formatter
 
 
-def _timestamp_diff(translator, expr):
+def timestamp_diff(translator, expr):
     op = expr.op()
     left, right = op.args
 
@@ -1004,13 +1005,13 @@ def _timestamp_diff(translator, expr):
 
 _operation_registry = {
     # Unary operations
-    ops.NotNull: _not_null,
-    ops.IsNull: _is_null,
-    ops.Negate: _negate,
+    ops.NotNull: not_null,
+    ops.IsNull: is_null,
+    ops.Negate: negate,
     ops.Not: _not,
     ops.IsNan: unary('is_nan'),
     ops.IsInf: unary('is_inf'),
-    ops.IfNull: _ifnull_workaround,
+    ops.IfNull: ifnull_workaround,
     ops.NullIf: fixed_arity('nullif', 2),
     ops.ZeroIfNull: unary('zeroifnull'),
     ops.NullIfZero: unary('nullifzero'),
@@ -1019,28 +1020,28 @@ _operation_registry = {
     ops.Ceil: unary('ceil'),
     ops.Floor: unary('floor'),
     ops.Exp: unary('exp'),
-    ops.Round: _round,
-    ops.Sign: _sign,
+    ops.Round: round,
+    ops.Sign: sign,
     ops.Sqrt: unary('sqrt'),
-    ops.Hash: _hash,
-    ops.Log: _log,
+    ops.Hash: hash,
+    ops.Log: log,
     ops.Ln: unary('ln'),
     ops.Log2: unary('log2'),
     ops.Log10: unary('log10'),
     ops.DecimalPrecision: unary('precision'),
     ops.DecimalScale: unary('scale'),
     # Unary aggregates
-    ops.CMSMedian: _reduction('appx_median'),
-    ops.HLLCardinality: _reduction('ndv'),
-    ops.Mean: _reduction('avg'),
-    ops.Sum: _reduction('sum'),
-    ops.Max: _reduction('max'),
-    ops.Min: _reduction('min'),
-    ops.StandardDev: _variance_like('stddev'),
-    ops.Variance: _variance_like('var'),
-    ops.GroupConcat: _reduction('group_concat'),
-    ops.Count: _reduction('count'),
-    ops.CountDistinct: _count_distinct,
+    ops.CMSMedian: reduction('appx_median'),
+    ops.HLLCardinality: reduction('ndv'),
+    ops.Mean: reduction('avg'),
+    ops.Sum: reduction('sum'),
+    ops.Max: reduction('max'),
+    ops.Min: reduction('min'),
+    ops.StandardDev: variance_like('stddev'),
+    ops.Variance: variance_like('var'),
+    ops.GroupConcat: reduction('group_concat'),
+    ops.Count: reduction('count'),
+    ops.CountDistinct: count_distinct,
     # string operations
     ops.StringLength: unary('length'),
     ops.StringAscii: unary('ascii'),
@@ -1051,62 +1052,62 @@ _operation_registry = {
     ops.LStrip: unary('ltrim'),
     ops.RStrip: unary('rtrim'),
     ops.Capitalize: unary('initcap'),
-    ops.Substring: _substring,
+    ops.Substring: substring,
     ops.StrRight: fixed_arity('strright', 2),
     ops.Repeat: fixed_arity('repeat', 2),
-    ops.StringFind: _string_find,
+    ops.StringFind: string_find,
     ops.Translate: fixed_arity('translate', 3),
-    ops.FindInSet: _find_in_set,
+    ops.FindInSet: find_in_set,
     ops.LPad: fixed_arity('lpad', 3),
     ops.RPad: fixed_arity('rpad', 3),
-    ops.StringJoin: _string_join,
-    ops.StringSQLLike: _string_like,
+    ops.StringJoin: string_join,
+    ops.StringSQLLike: string_like,
     ops.RegexSearch: fixed_arity('regexp_like', 2),
     ops.RegexExtract: fixed_arity('regexp_extract', 3),
     ops.RegexReplace: fixed_arity('regexp_replace', 3),
-    ops.ParseURL: _parse_url,
+    ops.ParseURL: parse_url,
     # Timestamp operations
     ops.Date: unary('to_date'),
     ops.TimestampNow: lambda *args: 'now()',
-    ops.ExtractYear: _extract_field('year'),
-    ops.ExtractMonth: _extract_field('month'),
-    ops.ExtractDay: _extract_field('day'),
-    ops.ExtractQuarter: _extract_field('quarter'),
-    ops.ExtractEpochSeconds: _extract_epoch_seconds,
+    ops.ExtractYear: extract_field('year'),
+    ops.ExtractMonth: extract_field('month'),
+    ops.ExtractDay: extract_field('day'),
+    ops.ExtractQuarter: extract_field('quarter'),
+    ops.ExtractEpochSeconds: extract_epoch_seconds,
     ops.ExtractWeekOfYear: fixed_arity('weekofyear', 1),
-    ops.ExtractHour: _extract_field('hour'),
-    ops.ExtractMinute: _extract_field('minute'),
-    ops.ExtractSecond: _extract_field('second'),
-    ops.ExtractMillisecond: _extract_field('millisecond'),
-    ops.TimestampTruncate: _truncate,
-    ops.DateTruncate: _truncate,
-    ops.IntervalFromInteger: _interval_from_integer,
+    ops.ExtractHour: extract_field('hour'),
+    ops.ExtractMinute: extract_field('minute'),
+    ops.ExtractSecond: extract_field('second'),
+    ops.ExtractMillisecond: extract_field('millisecond'),
+    ops.TimestampTruncate: truncate,
+    ops.DateTruncate: truncate,
+    ops.IntervalFromInteger: interval_from_integer,
     # Other operations
     ops.E: lambda *args: 'e()',
     ops.Literal: literal,
-    ops.NullLiteral: _null_literal,
-    ops.ValueList: _value_list,
-    ops.Cast: _cast,
+    ops.NullLiteral: null_literal,
+    ops.ValueList: value_list,
+    ops.Cast: cast,
     ops.Coalesce: varargs('coalesce'),
     ops.Greatest: varargs('greatest'),
     ops.Least: varargs('least'),
     ops.Where: fixed_arity('if', 3),
-    ops.Between: _between,
-    ops.Contains: _binary_infix_op('IN'),
-    ops.NotContains: _binary_infix_op('NOT IN'),
-    ops.SimpleCase: _simple_case,
-    ops.SearchedCase: _searched_case,
-    ops.TableColumn: _table_column,
-    ops.TableArrayView: _table_array_view,
-    ops.DateAdd: _timestamp_op('date_add'),
-    ops.DateSub: _timestamp_op('date_sub'),
-    ops.DateDiff: _timestamp_op('datediff'),
-    ops.TimestampAdd: _timestamp_op('date_add'),
-    ops.TimestampSub: _timestamp_op('date_sub'),
-    ops.TimestampDiff: _timestamp_diff,
-    ops.TimestampFromUNIX: _timestamp_from_unix,
-    transforms.ExistsSubquery: _exists_subquery,
-    transforms.NotExistsSubquery: _exists_subquery,
+    ops.Between: between,
+    ops.Contains: binary_infix_op('IN'),
+    ops.NotContains: binary_infix_op('NOT IN'),
+    ops.SimpleCase: simple_case,
+    ops.SearchedCase: searched_case,
+    ops.TableColumn: table_column,
+    ops.TableArrayView: table_array_view,
+    ops.DateAdd: timestamp_op('date_add'),
+    ops.DateSub: timestamp_op('date_sub'),
+    ops.DateDiff: timestamp_op('datediff'),
+    ops.TimestampAdd: timestamp_op('date_add'),
+    ops.TimestampSub: timestamp_op('date_sub'),
+    ops.TimestampDiff: timestamp_diff,
+    ops.TimestampFromUNIX: timestamp_from_unix,
+    transforms.ExistsSubquery: exists_subquery,
+    transforms.NotExistsSubquery: exists_subquery,
     # RowNumber, and rank functions starts with 0 in Ibis-land
     ops.RowNumber: lambda *args: 'row_number()',
     ops.DenseRank: lambda *args: 'dense_rank()',
@@ -1114,13 +1115,13 @@ _operation_registry = {
     ops.PercentRank: lambda *args: 'percent_rank()',
     ops.FirstValue: unary('first_value'),
     ops.LastValue: unary('last_value'),
-    ops.NthValue: _nth_value,
-    ops.Lag: _shift_like('lag'),
-    ops.Lead: _shift_like('lead'),
-    ops.WindowOp: _window,
-    ops.NTile: _ntile,
-    ops.DayOfWeekIndex: _day_of_week_index,
-    ops.DayOfWeekName: _day_of_week_name,
+    ops.NthValue: nth_value,
+    ops.Lag: shift_like('lag'),
+    ops.Lead: shift_like('lead'),
+    ops.WindowOp: window,
+    ops.NTile: ntile,
+    ops.DayOfWeekIndex: day_of_week_index,
+    ops.DayOfWeekName: day_of_week_name,
 }
 
-_operation_registry.update(_binary_infix_ops)
+_operation_registry.update(binary_infix_ops)
