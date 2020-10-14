@@ -5,11 +5,7 @@ Eventually this should be converted to a base class inherited
 from the SQL-based backends.
 """
 import datetime
-import itertools
-import math
-from io import StringIO
 from operator import add, mul, sub
-from typing import Optional
 
 import ibis
 import ibis.common.exceptions as com
@@ -45,6 +41,8 @@ def _string_literal_format(translator, expr):
 
 
 def _number_literal_format(translator, expr):
+    import math
+
     value = expr.op().value
 
     if math.isfinite(value):
@@ -293,6 +291,8 @@ def unary(func_name):
 
 
 def _reduction_format(translator, func_name, where, arg, *args):
+    import itertools
+
     if where is not None:
         arg = where.ifelse(arg, ibis.NA)
 
@@ -464,32 +464,6 @@ def _extract_epoch_seconds(t, expr):
     return 'unix_timestamp({})'.format(t.translate(arg))
 
 
-_impala_unit_names = {
-    'Y': 'Y',
-    'Q': 'Q',
-    'M': 'MONTH',
-    'W': 'W',
-    'D': 'J',
-    'h': 'HH',
-    'm': 'MI',
-}
-
-
-def _truncate(translator, expr):
-    op = expr.op()
-    arg, unit = op.args
-
-    arg_formatted = translator.translate(arg)
-    try:
-        unit = _impala_unit_names[unit]
-    except KeyError:
-        raise com.UnsupportedOperationError(
-            '{!r} unit is not supported in timestamp truncate'.format(unit)
-        )
-
-    return "trunc({}, '{}')".format(arg_formatted, unit)
-
-
 def _interval_from_integer(translator, expr):
     # interval cannot be selected from impala
     op = expr.op()
@@ -541,6 +515,8 @@ def _between(translator, expr):
 
 class CaseFormatter:
     def __init__(self, translator, base, cases, results, default):
+        from io import StringIO
+
         self.translator = translator
         self.base = base
         self.cases = cases
@@ -824,6 +800,8 @@ def _time_range_to_range_window(translator, window):
 
 
 def _format_window(translator, op, window):
+    from typing import Optional
+
     components = []
 
     if window.max_lookback is not None:
