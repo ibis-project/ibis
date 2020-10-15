@@ -7,6 +7,8 @@ from the SQL-based backends.
 import datetime
 import math
 
+import ibis.common.exceptions as com
+import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.sql.compiler as comp
 from ibis.impala import identifiers
@@ -125,3 +127,170 @@ class BaseExprTranslator(comp.ExprTranslator):
     def name(self, translated, name, force=True):
         """Return expression with its identifier."""
         return self._name_expr(translated, quote_identifier(name, force=force))
+
+
+_parenthesize = '({})'.format
+
+
+def _format_call(translator, func, *args):
+    formatted_args = []
+    for arg in args:
+        fmt_arg = translator.translate(arg)
+        formatted_args.append(fmt_arg)
+
+    return '{}({})'.format(func, ', '.join(formatted_args))
+
+
+def fixed_arity(func_name, arity):
+    def formatter(translator, expr):
+        op = expr.op()
+        if arity != len(op.args):
+            raise com.IbisError('incorrect number of args')
+        return _format_call(translator, func_name, *op.args)
+
+    return formatter
+
+
+def _needs_parens(op):
+    if isinstance(op, ir.Expr):
+        op = op.op()
+    op_klass = type(op)
+    # function calls don't need parens
+    return op_klass in _binary_infix_ops or op_klass in {
+        ops.Negate,
+        ops.IsNull,
+        ops.NotNull,
+    }
+
+
+def _binary_infix_op(infix_sym):
+    def formatter(translator, expr):
+        op = expr.op()
+
+        left, right = op.args
+
+        left_arg = translator.translate(left)
+        right_arg = translator.translate(right)
+        if _needs_parens(left):
+            left_arg = _parenthesize(left_arg)
+
+        if _needs_parens(right):
+            right_arg = _parenthesize(right_arg)
+
+        return '{} {} {}'.format(left_arg, infix_sym, right_arg)
+
+    return formatter
+
+
+def _identical_to(translator, expr):
+    op = expr.op()
+    if op.args[0].equals(op.args[1]):
+        return 'TRUE'
+
+    left_expr = op.left
+    right_expr = op.right
+    left = translator.translate(left_expr)
+    right = translator.translate(right_expr)
+
+    if _needs_parens(left_expr):
+        left = _parenthesize(left)
+    if _needs_parens(right_expr):
+        right = _parenthesize(right)
+    return '{} IS NOT DISTINCT FROM {}'.format(left, right)
+
+
+def _xor(translator, expr):
+    op = expr.op()
+
+    left_arg = translator.translate(op.left)
+    right_arg = translator.translate(op.right)
+
+    if _needs_parens(op.left):
+        left_arg = _parenthesize(left_arg)
+
+    if _needs_parens(op.right):
+        right_arg = _parenthesize(right_arg)
+
+    return '({0} OR {1}) AND NOT ({0} AND {1})'.format(left_arg, right_arg)
+
+
+def unary(func_name):
+    return fixed_arity(func_name, 1)
+
+
+def _ifnull_workaround(translator, expr):
+    op = expr.op()
+    a, b = op.args
+
+    # work around per #345, #360
+    if isinstance(a, ir.DecimalValue) and isinstance(b, ir.IntegerValue):
+        b = b.cast(a.type())
+
+    return _format_call(translator, 'isnull', a, b)
+
+
+_binary_infix_ops = {
+    # Binary operations
+    ops.Add: _binary_infix_op('+'),
+    ops.Subtract: _binary_infix_op('-'),
+    ops.Multiply: _binary_infix_op('*'),
+    ops.Divide: _binary_infix_op('/'),
+    ops.Power: fixed_arity('pow', 2),
+    ops.Modulus: _binary_infix_op('%'),
+    # Comparisons
+    ops.Equals: _binary_infix_op('='),
+    ops.NotEquals: _binary_infix_op('!='),
+    ops.GreaterEqual: _binary_infix_op('>='),
+    ops.Greater: _binary_infix_op('>'),
+    ops.LessEqual: _binary_infix_op('<='),
+    ops.Less: _binary_infix_op('<'),
+    ops.IdenticalTo: _identical_to,
+    # Boolean comparisons
+    ops.And: _binary_infix_op('AND'),
+    ops.Or: _binary_infix_op('OR'),
+    ops.Xor: _xor,
+}
+
+
+def _not(translator, expr):
+    (arg,) = expr.op().args
+    formatted_arg = translator.translate(arg)
+    if _needs_parens(arg):
+        formatted_arg = _parenthesize(formatted_arg)
+    return 'NOT {}'.format(formatted_arg)
+
+
+def _not_null(translator, expr):
+    formatted_arg = translator.translate(expr.op().args[0])
+    return '{} IS NOT NULL'.format(formatted_arg)
+
+
+def _is_null(translator, expr):
+    formatted_arg = translator.translate(expr.op().args[0])
+    return '{} IS NULL'.format(formatted_arg)
+
+
+def _negate(translator, expr):
+    arg = expr.op().args[0]
+    formatted_arg = translator.translate(arg)
+    if isinstance(expr, ir.BooleanValue):
+        return _not(translator, expr)
+    else:
+        if _needs_parens(arg):
+            formatted_arg = _parenthesize(formatted_arg)
+        return '-{}'.format(formatted_arg)
+
+
+_operation_registry = {
+    # Unary operations
+    ops.NotNull: _not_null,
+    ops.IsNull: _is_null,
+    ops.Negate: _negate,
+    ops.Not: _not,
+    ops.IsNan: unary('is_nan'),
+    ops.IsInf: unary('is_inf'),
+    ops.IfNull: _ifnull_workaround,
+    ops.NullIf: fixed_arity('nullif', 2),
+    ops.ZeroIfNull: unary('zeroifnull'),
+    ops.NullIfZero: unary('nullifzero'),
+}
