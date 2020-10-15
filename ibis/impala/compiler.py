@@ -475,23 +475,23 @@ def _ntile(translator, expr):
     return 'ntile({})'.format(buckets)
 
 
-def _negate(translator, expr):
-    arg = expr.op().args[0]
-    formatted_arg = translator.translate(arg)
-    if isinstance(expr, ir.BooleanValue):
-        return _not(translator, expr)
-    else:
-        if _needs_parens(arg):
-            formatted_arg = _parenthesize(formatted_arg)
-        return '-{}'.format(formatted_arg)
+# def _negate(translator, expr):
+#     arg = expr.op().args[0]
+#     formatted_arg = translator.translate(arg)
+#     if isinstance(expr, ir.BooleanValue):
+#         return _not(translator, expr)
+#     else:
+#         if _needs_parens(arg):
+#             formatted_arg = _parenthesize(formatted_arg)
+#         return '-{}'.format(formatted_arg)
 
 
-def _not(translator, expr):
-    (arg,) = expr.op().args
-    formatted_arg = translator.translate(arg)
-    if _needs_parens(arg):
-        formatted_arg = _parenthesize(formatted_arg)
-    return 'NOT {}'.format(formatted_arg)
+# def _not(translator, expr):
+#     (arg,) = expr.op().args
+#     formatted_arg = translator.translate(arg)
+#     if _needs_parens(arg):
+#         formatted_arg = _parenthesize(formatted_arg)
+#     return 'NOT {}'.format(formatted_arg)
 
 
 _parenthesize = '({})'.format
@@ -543,15 +543,15 @@ def fixed_arity(func_name, arity):
     return formatter
 
 
-def _ifnull_workaround(translator, expr):
-    op = expr.op()
-    a, b = op.args
+# def _ifnull_workaround(translator, expr):
+#     op = expr.op()
+#     a, b = op.args
 
-    # work around per #345, #360
-    if isinstance(a, ir.DecimalValue) and isinstance(b, ir.IntegerValue):
-        b = b.cast(a.type())
+#     # work around per #345, #360
+#     if isinstance(a, ir.DecimalValue) and isinstance(b, ir.IntegerValue):
+#         b = b.cast(a.type())
 
-    return _format_call(translator, 'isnull', a, b)
+#     return _format_call(translator, 'isnull', a, b)
 
 
 def _format_call(translator, func, *args):
