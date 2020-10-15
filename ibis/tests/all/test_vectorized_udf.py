@@ -1,3 +1,4 @@
+import pandas as pd
 import pytest
 
 import ibis.common.exceptions as com
@@ -205,3 +206,22 @@ def test_invalid_kwargs(backend, alltypes):
         @elementwise(input_type=[dt.double], output_type=dt.double)
         def foo1(v, amount):
             return v + 1
+
+
+@pytest.mark.only_on_backends([Pandas, PySpark])
+@pytest.mark.xfail_unsupported
+def test_elementwise_udf_struct(backend, alltypes):
+    @elementwise(
+        input_type=[dt.double],
+        output_type=dt.Struct(['col1', 'col2'], [dt.double, dt.double]),
+    )
+    def foo1(v):
+        return pd.DataFrame({'col1': v + 1, 'col2': v + 2})
+
+    result = alltypes.mutate(foo1(alltypes['double_col'])).execute()
+
+    expected = alltypes.mutate(
+        col1=alltypes['double_col'] + 1, col2=alltypes['double_col'] + 2,
+    ).execute()
+
+    backend.assert_frame_equal(result, expected)

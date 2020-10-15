@@ -1966,7 +1966,16 @@ class Selection(TableNode, HasSchema):
         names = []
 
         for projection in self.selections:
-            if isinstance(projection, ir.ValueExpr):
+            if (
+                isinstance(projection, ir.StructValue)
+                and not projection.has_name()
+            ):
+                # expand unnamed struct
+                struct_type = projection.type()
+                for name in struct_type.names:
+                    names.append(name)
+                    types.append(struct_type[name])
+            elif isinstance(projection, ir.ValueExpr):
                 names.append(projection.get_name())
                 types.append(projection.type())
             elif isinstance(projection, ir.TableExpr):

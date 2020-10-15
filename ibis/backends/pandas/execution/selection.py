@@ -138,14 +138,21 @@ def compute_projection_column_expr(
     )
 
     result = execute(expr, scope=scope, timecontext=timecontext, **kwargs)
-    assert result_name is not None, 'Column selection name is None'
+
     if np.isscalar(result):
         return pd.Series(
             np.repeat(result, len(data.index)),
             index=data.index,
             name=result_name,
         )
-    return result.rename(result_name)
+
+    if expr.has_name():
+        return result.rename(result_name)
+    elif isinstance(expr, ir.StructValue):
+        # If this is unnamed struct column, we set the field names
+        # as column names
+        result.columns = expr.type().names
+        return result
 
 
 @compute_projection.register(ir.TableExpr, ops.Selection, pd.DataFrame)

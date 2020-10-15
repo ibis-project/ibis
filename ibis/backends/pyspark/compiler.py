@@ -121,10 +121,19 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
     for selection in op.selections:
         if isinstance(selection, types.TableExpr):
             col_in_selection_order.extend(selection.columns)
+        elif (
+            isinstance(selection, (types.StructValue))
+            and not selection.has_name()
+        ):
+            struct_col = t.translate(selection, scope, combined_timecontext)
+            cols = [
+                struct_col[name].alias(name) for name in selection.type().names
+            ]
+            col_in_selection_order += cols
         elif isinstance(selection, (types.ColumnExpr, types.ScalarExpr)):
-            col = t.translate(selection, scope, combined_timecontext).alias(
-                selection.get_name()
-            )
+            col = t.translate(selection, scope, combined_timecontext)
+            if selection.has_name():
+                col = col.alias(selection.get_name())
             col_in_selection_order.append(col)
         else:
             raise NotImplementedError(
