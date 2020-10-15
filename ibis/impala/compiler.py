@@ -152,14 +152,14 @@ def _between(translator, expr):
     return '{} BETWEEN {} AND {}'.format(comp, lower, upper)
 
 
-def _is_null(translator, expr):
-    formatted_arg = translator.translate(expr.op().args[0])
-    return '{} IS NULL'.format(formatted_arg)
+# def _is_null(translator, expr):
+#     formatted_arg = translator.translate(expr.op().args[0])
+#     return '{} IS NULL'.format(formatted_arg)
 
 
-def _not_null(translator, expr):
-    formatted_arg = translator.translate(expr.op().args[0])
-    return '{} IS NOT NULL'.format(formatted_arg)
+# def _not_null(translator, expr):
+#     formatted_arg = translator.translate(expr.op().args[0])
+#     return '{} IS NOT NULL'.format(formatted_arg)
 
 
 _cumulative_to_reduction = {
