@@ -7,6 +7,7 @@ import toolz
 from multipledispatch import Dispatcher
 
 import ibis
+from ibis.backends import base_sql
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.lineage as lin
@@ -14,7 +15,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.sql.compiler as comp
 from ibis.backends.base_sql import BaseExprTranslator, literal
-from ibis.impala import compiler as impala_compiler
+from ibis.impala import compiler as impala_compiler, impala
 from ibis.impala.compiler import (
     ImpalaSelect,
     ImpalaTableSetFormatter,
@@ -338,7 +339,11 @@ STRFTIME_FORMAT_FUNCTIONS = {
 }
 
 
-_operation_registry = impala_compiler._operation_registry.copy()
+# _operation_registry = impala_compiler._operation_registry.copy()
+_operation_registry = {
+    **impala_compiler._operation_registry.copy(),
+    **base_sql._operation_registry.copy(),
+}
 _operation_registry.update(
     {
         ops.ExtractYear: _extract_field('year'),
