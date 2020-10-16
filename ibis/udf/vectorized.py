@@ -104,11 +104,28 @@ def elementwise(input_type, output_type):
     ... def my_string_length(series):
     ...     return series.str.len() * 2
 
-    Define a UDF with non-column parameters:
+    Define an UDF with non-column parameters:
 
     >>> @elementwise(input_type=[dt.string], output_type=dt.int64)
     ... def my_string_length(series, *, times):
     ...     return series.str.len() * times
+
+    Define and use an UDF with multiple return columns:
+
+    >>> @elementwise(
+    ...     input_type=[dt.string],
+    ...     output_type=dt.Struct(['year', 'monthday'], [dt.string, dt.string])
+    ... )
+    ... def year_monthday(date):
+    ...     result = pd.concat(
+    ...         [date.str.slice(0, 4), date.str.slice(4, 8)],
+    ...         axis=1
+    ...     )
+    ...     result.columns = ['year', 'monthday']
+    ...     return result
+    >>>
+    >>> # add two columns "year" and "monthday"
+    >>> table = table.mutate(year_monthday(table['date']))
     """
     return _udf_decorator(ElementWiseVectorizedUDF, input_type, output_type)
 
