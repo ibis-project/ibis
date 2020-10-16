@@ -281,7 +281,7 @@ def negate(translator, expr):
         return '-{}'.format(formatted_arg)
 
 
-_operation_registry = {
+operation_registry = {
     # Unary operations
     ops.NotNull: not_null,
     ops.IsNull: is_null,

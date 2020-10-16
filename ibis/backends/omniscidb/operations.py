@@ -13,6 +13,7 @@ import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis import literal as L
+from ibis.backends import base_sql
 from ibis.impala import compiler as impala_compiler
 
 from . import dtypes as omniscidb_dtypes
@@ -1159,7 +1160,10 @@ _unsupported_ops = [
 _unsupported_ops = {k: raise_unsupported_op_error for k in _unsupported_ops}
 
 # registry
-_operation_registry = impala_compiler._operation_registry.copy()
+_operation_registry = {
+    **base_sql.operation_registry,
+    **impala_compiler._operation_registry,
+}
 
 _operation_registry.update(_general_ops)
 _operation_registry.update(_binary_infix_ops)

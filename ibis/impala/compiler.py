@@ -1007,8 +1007,8 @@ _operation_registry = {
     ops.DayOfWeekName: _day_of_week_name,
 }
 
+_operation_registry.update(base_sql.operation_registry)
 _operation_registry.update(binary_infix_ops)
-_operation_registry.update(base_sql._operation_registry)
 
 
 class ImpalaExprTranslator(BaseExprTranslator):

@@ -342,8 +342,8 @@ STRFTIME_FORMAT_FUNCTIONS = {
 
 # _operation_registry = impala_compiler._operation_registry.copy()
 _operation_registry = {
-    **impala_compiler._operation_registry.copy(),
-    **base_sql._operation_registry.copy(),
+    **base_sql.operation_registry,
+    **impala_compiler._operation_registry,
 }
 _operation_registry.update(
     {
