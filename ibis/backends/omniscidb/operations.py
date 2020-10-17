@@ -949,7 +949,7 @@ def _window_op_one_param(name):
 _binary_infix_ops = {
     # math
     ops.Power: fixed_arity('power', 2),
-    ops.NotEquals: impala_compiler._binary_infix_op('<>'),
+    ops.NotEquals: base_sql.binary_infix_op('<>'),
 }
 
 _unary_ops = {}
