@@ -16,7 +16,6 @@ import ibis.sql.compiler as comp
 from ibis.backends import base_sql
 from ibis.backends.base_sql import BaseExprTranslator, literal
 from ibis.impala import compiler as impala_compiler
-from ibis.impala import impala
 from ibis.impala.compiler import (
     ImpalaSelect,
     ImpalaTableSetFormatter,
@@ -340,7 +339,6 @@ STRFTIME_FORMAT_FUNCTIONS = {
 }
 
 
-# _operation_registry = impala_compiler._operation_registry.copy()
 _operation_registry = {
     **base_sql.operation_registry,
     **impala_compiler._operation_registry,
