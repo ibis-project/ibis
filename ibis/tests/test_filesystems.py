@@ -10,11 +10,8 @@ import pytest
 import ibis
 import ibis.util as util
 from ibis.filesystems import HDFS
-from ibis.impala.tests.conftest import IbisTestEnv
 
 pytest.importorskip('hdfs')
-
-ENV = IbisTestEnv()
 
 pytestmark = pytest.mark.hdfs
 
@@ -54,7 +51,9 @@ class TestHDFSRandom(unittest.TestCase):
 class TestHDFSE2E(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.ENV = ENV
+        from ibis.impala.tests.conftest import IbisTestEnv
+
+        cls.ENV = IbisTestEnv()
         cls.tmp_dir = pjoin(cls.ENV.tmp_dir, util.guid())
         if cls.ENV.auth_mechanism in ['GSSAPI', 'LDAP']:
             print("Warning: ignoring invalid Certificate Authority errors")
@@ -388,7 +387,9 @@ class TestHDFSE2E(unittest.TestCase):
 class TestSuperUserHDFSE2E(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.ENV = ENV
+        from ibis.impala.tests.conftest import IbisTestEnv
+
+        cls.ENV = IbisTestEnv()
         cls.tmp_dir = pjoin(cls.ENV.tmp_dir, util.guid())
         if cls.ENV.auth_mechanism in ['GSSAPI', 'LDAP']:
             print("Warning: ignoring invalid Certificate Authority errors")
