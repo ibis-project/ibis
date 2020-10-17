@@ -22,6 +22,7 @@ from ibis.backends.base_sql import (
     literal,
     parenthesize,
     quote_identifier,
+    type_to_sql_string,
     unary,
 )
 
@@ -110,25 +111,6 @@ class ImpalaTableSetFormatter(comp.TableSetFormatter):
         return quote_identifier(name)
 
 
-# ---------------------------------------------------------------------
-# Scalar and array expression formatting
-
-_sql_type_names = {
-    'int8': 'tinyint',
-    'int16': 'smallint',
-    'int32': 'int',
-    'int64': 'bigint',
-    'float': 'float',
-    'float32': 'float',
-    'double': 'double',
-    'float64': 'double',
-    'string': 'string',
-    'boolean': 'boolean',
-    'timestamp': 'timestamp',
-    'decimal': 'decimal',
-}
-
-
 def _cast(translator, expr):
     op = expr.op()
     arg, target_type = op.args
@@ -139,18 +121,8 @@ def _cast(translator, expr):
     if isinstance(arg, ir.TemporalValue) and target_type == dt.int64:
         return '1000000 * unix_timestamp({})'.format(arg_formatted)
     else:
-        sql_type = _type_to_sql_string(target_type)
+        sql_type = type_to_sql_string(target_type)
         return 'CAST({} AS {})'.format(arg_formatted, sql_type)
-
-
-def _type_to_sql_string(tval):
-    if isinstance(tval, dt.Decimal):
-        return 'decimal({}, {})'.format(tval.precision, tval.scale)
-    name = tval.name.lower()
-    try:
-        return _sql_type_names[name]
-    except KeyError:
-        raise com.UnsupportedBackendType(name)
 
 
 def _between(translator, expr):
@@ -813,42 +785,6 @@ def _find_in_set(translator, expr):
     return "find_in_set({}, '{}') - 1".format(arg_formatted, str_formatted)
 
 
-def _round(translator, expr):
-    op = expr.op()
-    arg, digits = op.args
-
-    arg_formatted = translator.translate(arg)
-
-    if digits is not None:
-        digits_formatted = translator.translate(digits)
-        return 'round({}, {})'.format(arg_formatted, digits_formatted)
-    return 'round({})'.format(arg_formatted)
-
-
-def _hash(translator, expr):
-    op = expr.op()
-    arg, how = op.args
-
-    arg_formatted = translator.translate(arg)
-
-    if how == 'fnv':
-        return 'fnv_hash({})'.format(arg_formatted)
-    else:
-        raise NotImplementedError(how)
-
-
-def _log(translator, expr):
-    op = expr.op()
-    arg, base = op.args
-    arg_formatted = translator.translate(arg)
-
-    if base is None:
-        return 'ln({})'.format(arg_formatted)
-
-    base_formatted = translator.translate(base)
-    return 'log({}, {})'.format(base_formatted, arg_formatted)
-
-
 def _count_distinct(translator, expr):
     arg, where = expr.op().args
 
@@ -887,32 +823,7 @@ def _string_like(translator, expr):
     )
 
 
-def _sign(translator, expr):
-    (arg,) = expr.op().args
-    translated_arg = translator.translate(arg)
-    translated_type = _type_to_sql_string(expr.type())
-    if expr.type() != dt.float:
-        return 'CAST(sign({}) AS {})'.format(translated_arg, translated_type)
-    return 'sign({})'.format(translated_arg)
-
-
 _operation_registry = {
-    # Unary operations
-    ops.Abs: unary('abs'),
-    ops.BaseConvert: fixed_arity('conv', 3),
-    ops.Ceil: unary('ceil'),
-    ops.Floor: unary('floor'),
-    ops.Exp: unary('exp'),
-    ops.Round: _round,
-    ops.Sign: _sign,
-    ops.Sqrt: unary('sqrt'),
-    ops.Hash: _hash,
-    ops.Log: _log,
-    ops.Ln: unary('ln'),
-    ops.Log2: unary('log2'),
-    ops.Log10: unary('log10'),
-    ops.DecimalPrecision: unary('precision'),
-    ops.DecimalScale: unary('scale'),
     # Unary aggregates
     ops.CMSMedian: _reduction('appx_median'),
     ops.HLLCardinality: _reduction('ndv'),

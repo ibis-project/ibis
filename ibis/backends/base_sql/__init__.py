@@ -8,6 +8,7 @@ import datetime
 import math
 
 import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.sql.compiler as comp
@@ -281,6 +282,80 @@ def negate(translator, expr):
         return '-{}'.format(formatted_arg)
 
 
+def round(translator, expr):
+    op = expr.op()
+    arg, digits = op.args
+
+    arg_formatted = translator.translate(arg)
+
+    if digits is not None:
+        digits_formatted = translator.translate(digits)
+        return 'round({}, {})'.format(arg_formatted, digits_formatted)
+    return 'round({})'.format(arg_formatted)
+
+
+def sign(translator, expr):
+    (arg,) = expr.op().args
+    translated_arg = translator.translate(arg)
+    translated_type = type_to_sql_string(expr.type())
+    if expr.type() != dt.float:
+        return 'CAST(sign({}) AS {})'.format(translated_arg, translated_type)
+    return 'sign({})'.format(translated_arg)
+
+
+def _hash(translator, expr):
+    op = expr.op()
+    arg, how = op.args
+
+    arg_formatted = translator.translate(arg)
+
+    if how == 'fnv':
+        return 'fnv_hash({})'.format(arg_formatted)
+    else:
+        raise NotImplementedError(how)
+
+
+def _log(translator, expr):
+    op = expr.op()
+    arg, base = op.args
+    arg_formatted = translator.translate(arg)
+
+    if base is None:
+        return 'ln({})'.format(arg_formatted)
+
+    base_formatted = translator.translate(base)
+    return 'log({}, {})'.format(base_formatted, arg_formatted)
+
+
+# ---------------------------------------------------------------------
+# Scalar and array expression formatting
+
+_sql_type_names = {
+    'int8': 'tinyint',
+    'int16': 'smallint',
+    'int32': 'int',
+    'int64': 'bigint',
+    'float': 'float',
+    'float32': 'float',
+    'double': 'double',
+    'float64': 'double',
+    'string': 'string',
+    'boolean': 'boolean',
+    'timestamp': 'timestamp',
+    'decimal': 'decimal',
+}
+
+
+def type_to_sql_string(tval):
+    if isinstance(tval, dt.Decimal):
+        return 'decimal({}, {})'.format(tval.precision, tval.scale)
+    name = tval.name.lower()
+    try:
+        return _sql_type_names[name]
+    except KeyError:
+        raise com.UnsupportedBackendType(name)
+
+
 operation_registry = {
     # Unary operations
     ops.NotNull: not_null,
@@ -293,4 +368,19 @@ operation_registry = {
     ops.NullIf: fixed_arity('nullif', 2),
     ops.ZeroIfNull: unary('zeroifnull'),
     ops.NullIfZero: unary('nullifzero'),
+    ops.Abs: unary('abs'),
+    ops.BaseConvert: fixed_arity('conv', 3),
+    ops.Ceil: unary('ceil'),
+    ops.Floor: unary('floor'),
+    ops.Exp: unary('exp'),
+    ops.Round: round,
+    ops.Sign: sign,
+    ops.Sqrt: unary('sqrt'),
+    ops.Hash: _hash,
+    ops.Log: _log,
+    ops.Ln: unary('ln'),
+    ops.Log2: unary('log2'),
+    ops.Log10: unary('log10'),
+    ops.DecimalPrecision: unary('precision'),
+    ops.DecimalScale: unary('scale'),
 }
