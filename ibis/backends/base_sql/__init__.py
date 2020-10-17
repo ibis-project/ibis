@@ -5,8 +5,10 @@ Eventually this should be converted to a base class inherited
 from the SQL-based backends.
 """
 import datetime
+import itertools
 import math
 
+import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -303,7 +305,7 @@ def sign(translator, expr):
     return 'sign({})'.format(translated_arg)
 
 
-def _hash(translator, expr):
+def hash(translator, expr):
     op = expr.op()
     arg, how = op.args
 
@@ -315,7 +317,7 @@ def _hash(translator, expr):
         raise NotImplementedError(how)
 
 
-def _log(translator, expr):
+def log(translator, expr):
     op = expr.op()
     arg, base = op.args
     arg_formatted = translator.translate(arg)
@@ -325,6 +327,48 @@ def _log(translator, expr):
 
     base_formatted = translator.translate(base)
     return 'log({}, {})'.format(base_formatted, arg_formatted)
+
+
+def reduction_format(translator, func_name, where, arg, *args):
+    if where is not None:
+        arg = where.ifelse(arg, ibis.NA)
+
+    return '{}({})'.format(
+        func_name,
+        ', '.join(map(translator.translate, itertools.chain([arg], args))),
+    )
+
+
+def reduction(func_name):
+    def formatter(translator, expr):
+        op = expr.op()
+        *args, where = op.args
+        return reduction_format(translator, func_name, where, *args)
+
+    return formatter
+
+
+def variance_like(func_name):
+    func_names = {
+        'sample': '{}_samp'.format(func_name),
+        'pop': '{}_pop'.format(func_name),
+    }
+
+    def formatter(translator, expr):
+        arg, how, where = expr.op().args
+        return reduction_format(translator, func_names[how], where, arg)
+
+    return formatter
+
+
+def count_distinct(translator, expr):
+    arg, where = expr.op().args
+
+    if where is not None:
+        arg_formatted = translator.translate(where.ifelse(arg, None))
+    else:
+        arg_formatted = translator.translate(arg)
+    return 'count(DISTINCT {})'.format(arg_formatted)
 
 
 # ---------------------------------------------------------------------
@@ -376,11 +420,23 @@ operation_registry = {
     ops.Round: round,
     ops.Sign: sign,
     ops.Sqrt: unary('sqrt'),
-    ops.Hash: _hash,
-    ops.Log: _log,
+    ops.Hash: hash,
+    ops.Log: log,
     ops.Ln: unary('ln'),
     ops.Log2: unary('log2'),
     ops.Log10: unary('log10'),
     ops.DecimalPrecision: unary('precision'),
     ops.DecimalScale: unary('scale'),
+    # Unary aggregates
+    ops.CMSMedian: reduction('appx_median'),
+    ops.HLLCardinality: reduction('ndv'),
+    ops.Mean: reduction('avg'),
+    ops.Sum: reduction('sum'),
+    ops.Max: reduction('max'),
+    ops.Min: reduction('min'),
+    ops.StandardDev: variance_like('stddev'),
+    ops.Variance: variance_like('var'),
+    ops.GroupConcat: reduction('group_concat'),
+    ops.Count: reduction('count'),
+    ops.CountDistinct: count_distinct,
 }

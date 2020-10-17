@@ -1,4 +1,3 @@
-import itertools
 from io import StringIO
 from operator import add, mul, sub
 from typing import Optional
@@ -444,38 +443,6 @@ def _ntile(translator, expr):
     return 'ntile({})'.format(buckets)
 
 
-def _reduction_format(translator, func_name, where, arg, *args):
-    if where is not None:
-        arg = where.ifelse(arg, ibis.NA)
-
-    return '{}({})'.format(
-        func_name,
-        ', '.join(map(translator.translate, itertools.chain([arg], args))),
-    )
-
-
-def _reduction(func_name):
-    def formatter(translator, expr):
-        op = expr.op()
-        *args, where = op.args
-        return _reduction_format(translator, func_name, where, *args)
-
-    return formatter
-
-
-def _variance_like(func_name):
-    func_names = {
-        'sample': '{}_samp'.format(func_name),
-        'pop': '{}_pop'.format(func_name),
-    }
-
-    def formatter(translator, expr):
-        arg, how, where = expr.op().args
-        return _reduction_format(translator, func_names[how], where, arg)
-
-    return formatter
-
-
 def _interval_from_integer(translator, expr):
     # interval cannot be selected from impala
     op = expr.op()
@@ -785,16 +752,6 @@ def _find_in_set(translator, expr):
     return "find_in_set({}, '{}') - 1".format(arg_formatted, str_formatted)
 
 
-def _count_distinct(translator, expr):
-    arg, where = expr.op().args
-
-    if where is not None:
-        arg_formatted = translator.translate(where.ifelse(arg, None))
-    else:
-        arg_formatted = translator.translate(arg)
-    return 'count(DISTINCT {})'.format(arg_formatted)
-
-
 def _null_literal(translator, expr):
     return 'NULL'
 
@@ -824,18 +781,6 @@ def _string_like(translator, expr):
 
 
 _operation_registry = {
-    # Unary aggregates
-    ops.CMSMedian: _reduction('appx_median'),
-    ops.HLLCardinality: _reduction('ndv'),
-    ops.Mean: _reduction('avg'),
-    ops.Sum: _reduction('sum'),
-    ops.Max: _reduction('max'),
-    ops.Min: _reduction('min'),
-    ops.StandardDev: _variance_like('stddev'),
-    ops.Variance: _variance_like('var'),
-    ops.GroupConcat: _reduction('group_concat'),
-    ops.Count: _reduction('count'),
-    ops.CountDistinct: _count_distinct,
     # string operations
     ops.StringLength: unary('length'),
     ops.StringAscii: unary('ascii'),
