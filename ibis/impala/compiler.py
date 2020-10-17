@@ -15,14 +15,14 @@ import ibis.util as util
 from ibis.backends import base_sql
 from ibis.backends.base_sql import (
     BaseExprTranslator,
-    literal,
-    quote_identifier,
-    unary,
-    fixed_arity,
-    parenthesize,
-    format_call,
     binary_infix_op,
     binary_infix_ops,
+    fixed_arity,
+    format_call,
+    literal,
+    parenthesize,
+    quote_identifier,
+    unary,
 )
 
 
