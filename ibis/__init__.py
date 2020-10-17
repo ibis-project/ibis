@@ -41,7 +41,7 @@ with suppress(ImportError):
 
 with suppress(ImportError):
     # pip install ibis-framework[mysql]
-    import ibis.sql.mysql.api as mysql  # noqa: F401
+    from ibis.backends import mysql  # noqa: F401
 
 with suppress(ImportError):
     # pip install ibis-framework[clickhouse]

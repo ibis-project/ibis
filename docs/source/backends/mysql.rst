@@ -26,7 +26,7 @@ Create a client by passing a connection string or individual parameters to
 
 API
 ---
-.. currentmodule:: ibis.sql.mysql.api
+.. currentmodule:: ibis.backends.mysql
 
 The MySQL client is accessible through the ``ibis.mysql`` namespace.
 

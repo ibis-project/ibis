@@ -31,6 +31,7 @@ import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 import ibis.sql.compiler as comp
 import ibis.util as util
+from ibis.backends import base_sql
 from ibis.backends.base_sql import literal_formatters
 from ibis.impala import compiler as impala_compiler
 from ibis.impala.compiler import (
@@ -311,7 +312,11 @@ def _round(translator, expr):
     return 'bround({})'.format(arg_formatted)
 
 
-_operation_registry = impala_compiler._operation_registry.copy()
+_operation_registry = {
+    **base_sql.operation_registry,
+    **impala_compiler._operation_registry,
+}
+
 _operation_registry.update(
     {
         ops.IsNan: unary('isnan'),

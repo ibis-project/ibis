@@ -975,6 +975,30 @@ class UUIDColumn(StringColumn, UUIDValue):
     pass  # noqa: E701,E302
 
 
+class MACADDRValue(StringValue):
+    pass  # noqa: E701,E302
+
+
+class MACADDRScalar(StringScalar, MACADDRValue):
+    pass  # noqa: E701,E302
+
+
+class MACADDRColumn(StringColumn, MACADDRValue):
+    pass  # noqa: E701,E302
+
+
+class INETValue(StringValue):
+    pass  # noqa: E701,E302
+
+
+class INETScalar(StringScalar, INETValue):
+    pass  # noqa: E701,E302
+
+
+class INETColumn(StringColumn, INETValue):
+    pass  # noqa: E701,E302
+
+
 class ListExpr(ColumnExpr, AnyValue):
     @property
     def values(self):
