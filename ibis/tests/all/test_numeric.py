@@ -381,7 +381,7 @@ def test_sa_default_numeric_precision_and_scale(
     con, backend, dialects, default_precisions, default_scales
 ):
     # TODO: find a better way to access ibis.sql.alchemy
-    import ibis.sql.alchemy as alch
+    import ibis.backends.base_sqlalchemy.alchemy as alch
 
     dialect = dialects[backend.name]
     default_precision = default_precisions[backend.name]

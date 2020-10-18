@@ -7,8 +7,8 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.sql.alchemy as alch
-from ibis.sql.alchemy import _variance_reduction, fixed_arity, infix_op, unary
+import ibis.backends.base_sqlalchemy.alchemy as alch
+from ibis.backends.base_sqlalchemy.alchemy import _variance_reduction, fixed_arity, infix_op, unary
 
 _operation_registry = alch._operation_registry.copy()
 

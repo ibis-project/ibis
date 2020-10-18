@@ -15,7 +15,7 @@ from ibis.backends.postgres.compiler import (
     add_operation,
 )
 from ibis.expr.signature import Argument as Arg
-from ibis.sql.alchemy import _to_sqla_type
+from ibis.backends.base_sqlalchemy.alchemy import _to_sqla_type
 
 _udf_name_cache = collections.defaultdict(itertools.count)
 

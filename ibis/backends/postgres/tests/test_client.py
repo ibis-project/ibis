@@ -21,7 +21,7 @@ import pytest
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-import ibis.sql.alchemy as alch  # noqa: E402
+import ibis.backends.base_sqlalchemy.alchemy as alch  # noqa: E402
 from ibis.tests.util import assert_equal
 
 sa = pytest.importorskip('sqlalchemy')
