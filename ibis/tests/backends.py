@@ -479,7 +479,7 @@ class BigQuery(UnorderedComparator, Backend, RoundAwayFromZero):
 
     @staticmethod
     def connect(data_directory: Path) -> ibis.client.Client:
-        from ibis.backends.bigquery.tests.conftest import connect
+        from ibis.bigquery.tests.conftest import connect
 
         project_id = os.environ.get('GOOGLE_BIGQUERY_PROJECT_ID')
         if project_id is None:
