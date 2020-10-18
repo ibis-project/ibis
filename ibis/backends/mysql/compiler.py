@@ -3,12 +3,17 @@ import sqlalchemy as sa
 import sqlalchemy.dialects.mysql as mysql
 
 import ibis
+import ibis.backends.base_sqlalchemy.alchemy as alch
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.backends.base_sqlalchemy.alchemy as alch
-from ibis.backends.base_sqlalchemy.alchemy import _variance_reduction, fixed_arity, infix_op, unary
+from ibis.backends.base_sqlalchemy.alchemy import (
+    _variance_reduction,
+    fixed_arity,
+    infix_op,
+    unary,
+)
 
 _operation_registry = alch._operation_registry.copy()
 

@@ -16,12 +16,17 @@ import sqlalchemy as sa
 import toolz
 
 import ibis
+import ibis.backends.base_sqlalchemy.alchemy as alch
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.backends.base_sqlalchemy.alchemy as alch
-from ibis.backends.base_sqlalchemy.alchemy import _variance_reduction, fixed_arity, unary, varargs
+from ibis.backends.base_sqlalchemy.alchemy import (
+    _variance_reduction,
+    fixed_arity,
+    unary,
+    varargs,
+)
 
 _operation_registry = alch._operation_registry.copy()
 _operation_registry.update(alch._window_functions)

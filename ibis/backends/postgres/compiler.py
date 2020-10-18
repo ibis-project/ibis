@@ -13,12 +13,12 @@ from sqlalchemy.sql import expression
 from sqlalchemy.sql.functions import GenericFunction
 
 import ibis
+import ibis.backends.base_sqlalchemy.alchemy as alch
 import ibis.common.exceptions as com
 import ibis.common.geospatial as geo
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.backends.base_sqlalchemy.alchemy as alch
 
 # used for literal translate
 from ibis.backends.base_sqlalchemy.alchemy import (

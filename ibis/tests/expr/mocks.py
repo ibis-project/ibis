@@ -17,8 +17,8 @@ from typing import Optional
 
 import pytest
 
-import ibis.expr.types as ir
 import ibis.backends.base_sqlalchemy.alchemy as alch  # noqa: E402
+import ibis.expr.types as ir
 from ibis.client import SQLClient
 from ibis.expr.schema import Schema
 from ibis.expr.typing import TimeContext
