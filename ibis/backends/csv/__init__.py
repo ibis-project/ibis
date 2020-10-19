@@ -4,12 +4,12 @@ from pkg_resources import parse_version
 
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
+from ibis.backends.base_file import FileClient
 from ibis.backends.pandas import PandasDialect
 from ibis.backends.pandas.core import execute, execute_node, pre_execute
 from ibis.backends.pandas.execution.selection import physical_tables
 from ibis.expr.scope import Scope
 from ibis.expr.typing import TimeContext
-from ibis.backends.base_file import FileClient
 
 dialect = PandasDialect
 

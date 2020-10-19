@@ -1,15 +1,13 @@
 import sys
 
-import pytest
-from pandas.util import testing as tm
 import pyarrow as pa
 import pyarrow.parquet as pq
+import pytest
+from pandas.util import testing as tm
 
 import ibis
 from ibis.backends.base_file import FileDatabase
-from ibis.backends.parquet import ParquetClient
-from ibis.backends.parquet import ParquetTable
-
+from ibis.backends.parquet import ParquetClient, ParquetTable
 
 pytestmark = pytest.mark.skipif(
     sys.platform == 'win32', reason='See ibis issue #1698'
