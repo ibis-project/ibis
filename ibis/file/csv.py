@@ -121,6 +121,8 @@ def csv_pre_execute_selection(
             header = _read_csv(path, schema=table.schema, header=0, nrows=1)
             usecols = [
                 getattr(s.op(), 'name', None) or s.get_name()
+                if s.has_name()
+                else None
                 for s in op.selections
             ]
 
