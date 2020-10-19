@@ -85,9 +85,7 @@ jobs:
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 3
       impala:
         image: ibisproject/impala:latest
-        hostname: impala
-        depends_on:
-          - postgres
+        options: "--hostname impala"
         env:
           PGPASSWORD: postgres
         ports:
