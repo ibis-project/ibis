@@ -2139,10 +2139,6 @@ class Aggregation(TableNode, HasSchema):
     ):
         # For tables, like joins, that are not materialized
         metrics = self._rewrite_exprs(table, metrics)
-        if not all(metric.has_name() for metric in metrics):
-            raise com.ExpressionError(
-                "Aggregation contains unnamed expressions."
-            )
 
         by = [] if by is None else by
         by = table._resolve(by)
