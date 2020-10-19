@@ -24,6 +24,14 @@ def calc_mean(s):
     return s.mean()
 
 
+@elementwise(
+    input_type=[dt.double],
+    output_type=dt.Struct(['col1', 'col2'], [dt.double, dt.double]),
+)
+def add_one_struct(v):
+    return pd.DataFrame({'col1': v + 1, 'col2': v + 2})
+
+
 @pytest.mark.only_on_backends([Pandas, PySpark])
 @pytest.mark.xfail_unsupported
 def test_elementwise_udf(backend, alltypes, df):
@@ -210,16 +218,27 @@ def test_invalid_kwargs(backend, alltypes):
 
 @pytest.mark.only_on_backends([Pandas, PySpark])
 @pytest.mark.xfail_unsupported
+def test_elementwise_udf_multi_cols(backend, alltypes):
+    result = alltypes.mutate(add_one_struct(alltypes['double_col'])).execute()
+
+    expected = alltypes.mutate(
+        col1=alltypes['double_col'] + 1, col2=alltypes['double_col'] + 2,
+    ).execute()
+
+    backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.only_on_backends([PySpark])
+@pytest.mark.xfail_unsupported
 def test_elementwise_udf_struct(backend, alltypes):
-    @elementwise(
-        input_type=[dt.double],
-        output_type=dt.Struct(['col1', 'col2'], [dt.double, dt.double]),
+    result = alltypes.mutate(
+        new_col=add_one_struct(alltypes['double_col'])
+    ).execute()
+    result = result.assign(
+        col1=result['new_col'].apply(lambda x: x[0]),
+        col2=result['new_col'].apply(lambda x: x[1]),
     )
-    def foo1(v):
-        return pd.DataFrame({'col1': v + 1, 'col2': v + 2})
-
-    result = alltypes.mutate(foo1(alltypes['double_col'])).execute()
-
+    result = result.drop('new_col', axis=1)
     expected = alltypes.mutate(
         col1=alltypes['double_col'] + 1, col2=alltypes['double_col'] + 2,
     ).execute()

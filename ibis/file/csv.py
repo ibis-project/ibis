@@ -119,16 +119,10 @@ def csv_pre_execute_selection(
 
         if op.selections:
             header = _read_csv(path, schema=table.schema, header=0, nrows=1)
-            usecols = list(
-                filter(
-                    None,
-                    [
-                        getattr(s.op(), 'name', None)
-                        or (s.get_name() if s.has_name() else None)
-                        for s in op.selections
-                    ],
-                )
-            )
+            usecols = [
+                getattr(s.op(), 'name', None) or s.get_name()
+                for s in op.selections
+            ]
 
             # we cannot read all the columns that we would like
             if len(pd.Index(usecols) & header.columns) != len(usecols):
