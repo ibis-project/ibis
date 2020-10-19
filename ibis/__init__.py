@@ -17,15 +17,15 @@ from ._version import get_versions  # noqa: E402
 
 with suppress(ImportError):
     # pip install ibis-framework[csv]
-    import ibis.file.csv as csv  # noqa: F401
+    from ibis.backends import csv  # noqa: F401
 
 with suppress(ImportError):
     # pip install ibis-framework[parquet]
-    import ibis.file.parquet as parquet  # noqa: F401
+    from ibis.backends import parquet  # noqa: F401
 
 with suppress(ImportError):
     # pip install  ibis-framework[hdf5]
-    import ibis.file.hdf5 as hdf5  # noqa: F401
+    from ibis.backends import hdf5  # noqa: F401
 
 with suppress(ImportError):
     # pip install ibis-framework[impala]

@@ -3,11 +3,8 @@ import pytest
 from pandas.util import testing as tm
 
 import ibis
-from ibis.file.client import FileDatabase
-
-pytest.importorskip('tables')  # isort:skip
-
-from ibis.file.hdf5 import HDFClient, HDFTable  # noqa: E402, isort:skip
+from ibis.backends.base_file import FileDatabase
+from ibis.backends.hdf5 import HDFClient, HDFTable
 
 
 @pytest.fixture
@@ -36,13 +33,13 @@ def test_creation(hdf):
     assert len(pd.read_hdf(prices, 'close')) == 50
 
 
-def test_client(tmpdir, data):
+def test_client(tmpdir, file_backends_data):
 
     # construct with a path to a file
     hdf = tmpdir
     f = hdf / 'prices.h5'
 
-    for k, v in data.items():
+    for k, v in file_backends_data.items():
         v.to_hdf(str(f), k, format='table', data_columns=True)
 
     c = HDFClient(tmpdir)
@@ -81,13 +78,13 @@ def test_navigation(hdf):
     assert isinstance(closes.op(), HDFTable)
 
 
-def test_read(hdf, data):
+def test_read(hdf, file_backends_data):
 
     closes = hdf.hdf_dir.prices.close
     assert str(closes) is not None
 
     result = closes.execute()
-    expected = data['close']
+    expected = file_backends_data['close']
     tm.assert_frame_equal(result, expected)
 
     result = closes.execute()
