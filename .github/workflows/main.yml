@@ -69,7 +69,6 @@ jobs:
   Tests_impala_clickhouse:
     name: Tests Impala / Clickhouse
     runs-on: ubuntu-latest
-    if: false # TODO: temporary disabling this build, since the impala container seems to not be starting properly
     env:
       BACKENDS: "impala clickhouse"
     strategy:
@@ -77,8 +76,18 @@ jobs:
       matrix:
         python_version: ["3.7", "3.8"]
     services:
+      postgres:
+        image: shajekpivotal/ibis-docker-postgres-9.5
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_PASSWORD: ''
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 3
       impala:
         image: ibisproject/impala:latest
+        hostname: impala
+        depends_on:
+          - postgres
         env:
           PGPASSWORD: postgres
         ports:
