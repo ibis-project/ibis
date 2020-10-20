@@ -218,14 +218,27 @@ def test_invalid_kwargs(backend, alltypes):
 
 @pytest.mark.only_on_backends([Pandas, PySpark])
 @pytest.mark.xfail_unsupported
-def test_elementwise_udf_multi_cols(backend, alltypes):
-    result = alltypes.mutate(add_one_struct(alltypes['double_col'])).execute()
+def test_elementwise_udf_destruct(backend, alltypes):
+    result = alltypes.mutate(
+        add_one_struct(alltypes['double_col']).destructure()
+    ).execute()
 
     expected = alltypes.mutate(
         col1=alltypes['double_col'] + 1, col2=alltypes['double_col'] + 2,
     ).execute()
 
     backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.only_on_backends([Pandas, PySpark])
+@pytest.mark.xfail_unsupported
+def test_elementwise_udf_destruct_named(backend, alltypes):
+    with pytest.raises(
+        com.ExpressionError, match=r".*Cannot name a destruct.*"
+    ):
+        alltypes.mutate(
+            new_struct=add_one_struct(alltypes['double_col']).destructure()
+        )
 
 
 @pytest.mark.only_on_backends([PySpark])

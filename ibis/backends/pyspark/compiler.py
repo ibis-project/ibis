@@ -121,10 +121,7 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
     for selection in op.selections:
         if isinstance(selection, types.TableExpr):
             col_in_selection_order.extend(selection.columns)
-        elif (
-            isinstance(selection, (types.StructValue))
-            and not selection.has_name()
-        ):
+        elif isinstance(selection, types.DestructColumn):
             struct_col = t.translate(selection, scope, combined_timecontext)
             cols = [
                 struct_col[name].alias(name) for name in selection.type().names

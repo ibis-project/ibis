@@ -145,15 +145,11 @@ def compute_projection_column_expr(
             index=data.index,
             name=result_name,
         )
-    elif expr.has_name():
-        return result.rename(result_name)
-    elif isinstance(expr, ir.StructValue):
-        # If this is unnamed struct column, we set the field names
-        # as column names
+    elif isinstance(expr, ir.DestructColumn):
         result.columns = expr.type().names
         return result
     else:
-        raise NotImplementedError("Expr is not named and is not struct.")
+        return result.rename(result_name)
 
 
 @compute_projection.register(ir.TableExpr, ops.Selection, pd.DataFrame)

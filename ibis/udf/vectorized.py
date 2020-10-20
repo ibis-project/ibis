@@ -125,7 +125,7 @@ def elementwise(input_type, output_type):
     ...     return result
     >>>
     >>> # add two columns "year" and "monthday"
-    >>> table = table.mutate(year_monthday(table['date']))
+    >>> table = table.mutate(year_monthday(table['date']).destructure())
     """
     return _udf_decorator(ElementWiseVectorizedUDF, input_type, output_type)
 

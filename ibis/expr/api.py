@@ -41,6 +41,7 @@ from ibis.expr.types import (  # noqa
     DecimalColumn,
     DecimalScalar,
     DecimalValue,
+    DestructColumn,
     Expr,
     FloatingColumn,
     FloatingScalar,
@@ -3244,8 +3245,31 @@ def _struct_get_field(expr, field_name):
     return ops.StructField(expr, field_name).to_expr().name(field_name)
 
 
+def _destructure(expr: StructColumn) -> DestructColumn:
+    """ Destructure a ``Struct`` to create a destruct column.
+
+    When assigned, a destruct column will destructured and assigned to multiple
+    columns.
+
+    Parameters
+    ----------
+    expr : StructColumn
+        The struct column to destructure.
+
+    Returns
+    -------
+    destruct_expr: ibis.expr.types.DestructColumn
+        A destruct column expression.
+    """
+    # Set name to empty string here so that we can detect and error when
+    # user set name for a destruct column.
+    return DestructColumn(expr._arg, expr._dtype).name("")
+
+
 _struct_column_methods = dict(
-    __getattr__=_struct_get_field, __getitem__=_struct_get_field
+    destructure=_destructure,
+    __getattr__=_struct_get_field,
+    __getitem__=_struct_get_field,
 )
 
 _add_methods(ir.StructValue, _struct_column_methods)
@@ -4115,10 +4139,16 @@ def mutate(table, exprs=None, **mutations):
         for name, expr in sorted(mutations.items(), key=operator.itemgetter(0))
     )
 
+    for expr in exprs:
+        if expr.get_name() and isinstance(expr, ir.DestructColumn):
+            raise com.ExpressionError(
+                f"Cannot name a destruct column: {expr.get_name()}"
+            )
+
     by_name = collections.OrderedDict(
-        (expr.get_name(), expr) if expr.has_name() else (None, expr)
-        for expr in exprs
+        (expr.get_name(), expr) for expr in exprs for expr in exprs
     )
+
     columns = table.columns
     used = by_name.keys() & columns
 
