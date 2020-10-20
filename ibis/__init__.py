@@ -60,7 +60,7 @@ with suppress(ImportError):
     from ibis.backends import spark  # noqa: F401
 
 with suppress(ImportError):
-    import ibis.pyspark.api as pyspark  # noqa: F401
+    from ibis.backends import pyspark  # noqa: F401
 
 
 __version__ = get_versions()['version']

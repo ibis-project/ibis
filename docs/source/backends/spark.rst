@@ -42,7 +42,7 @@ Use ``ibis.spark.connect`` to create a client.
 
 PySpark client (Experimental)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. currentmodule:: ibis.pyspark.api
+.. currentmodule:: ibis.backends.pyspark
 
 The PySpark client is accessible through the ``ibis.pyspark`` namespace.
 
