@@ -324,7 +324,7 @@ _operation_registry.update(
         ops.MapValueForKey: _map_value_for_key,
         ops.ArrayLength: unary('size'),
         ops.Round: _round,
-        ops.HLLCardinality: _reduction('approx_count_distinct'),
+        ops.HLLCardinality: reduction('approx_count_distinct'),
         ops.StrRight: fixed_arity('right', 2),
         ops.StringSplit: fixed_arity('SPLIT', 2),
         ops.RegexSearch: fixed_arity('rlike', 2),
