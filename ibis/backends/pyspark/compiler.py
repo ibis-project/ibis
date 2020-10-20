@@ -21,11 +21,9 @@ from ibis.backends.spark.datatypes import (
     spark_dtype,
 )
 from ibis.expr.timecontext import adjust_context
-from ibis.pyspark.operations import PySparkTable
-from ibis.pyspark.timecontext import (
-    combine_time_context,
-    filter_by_time_context,
-)
+
+from .operations import PySparkTable
+from .timecontext import combine_time_context, filter_by_time_context
 
 
 class PySparkContext(SparkContext):
