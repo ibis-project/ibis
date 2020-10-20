@@ -32,7 +32,11 @@ import ibis.expr.types as ir
 import ibis.sql.compiler as comp
 import ibis.util as util
 from ibis.backends import base_sql
-from ibis.backends.base_sql import literal_formatters, reduction
+from ibis.backends.base_sql import (
+    literal_formatters,
+    reduction,
+    sql_type_names,
+)
 from ibis.impala import compiler as impala_compiler
 from ibis.impala.compiler import (
     ImpalaDialect,
@@ -94,7 +98,7 @@ class SparkContext(comp.QueryContext):
         return to_sql(expr, ctx)
 
 
-_sql_type_names = impala_compiler._sql_type_names.copy()
+_sql_type_names = sql_type_names.copy()
 
 _sql_type_names.update({'date': 'date'})
 

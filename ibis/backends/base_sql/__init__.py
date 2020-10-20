@@ -374,7 +374,7 @@ def count_distinct(translator, expr):
 # ---------------------------------------------------------------------
 # Scalar and array expression formatting
 
-_sql_type_names = {
+sql_type_names = {
     'int8': 'tinyint',
     'int16': 'smallint',
     'int32': 'int',
@@ -395,7 +395,7 @@ def type_to_sql_string(tval):
         return 'decimal({}, {})'.format(tval.precision, tval.scale)
     name = tval.name.lower()
     try:
-        return _sql_type_names[name]
+        return sql_type_names[name]
     except KeyError:
         raise com.UnsupportedBackendType(name)
 
