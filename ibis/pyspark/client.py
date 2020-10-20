@@ -1,3 +1,5 @@
+from pyspark.sql.column import Column
+
 import ibis.common.exceptions as com
 import ibis.expr.types as types
 from ibis.backends.spark.client import SparkClient
@@ -11,8 +13,6 @@ class PySparkClient(SparkClient):
     """
     An ibis client that uses PySpark SQL Dataframe
     """
-
-    from pyspark.sql.column import Column
 
     dialect = PySparkDialect
     table_class = PySparkTable
