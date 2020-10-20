@@ -33,17 +33,17 @@ import ibis.sql.compiler as comp
 import ibis.util as util
 from ibis.backends import base_sql
 from ibis.backends.base_sql import (
+    fixed_arity,
     literal_formatters,
     reduction,
     sql_type_names,
+    unary,
 )
 from ibis.impala import compiler as impala_compiler
 from ibis.impala.compiler import (
     ImpalaDialect,
     ImpalaExprTranslator,
     ImpalaSelect,
-    fixed_arity,
-    unary,
 )
 
 
