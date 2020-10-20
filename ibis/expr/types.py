@@ -870,8 +870,6 @@ class DestructColumn(AnyColumn):
     will be destructured and assigned to multipe columnns.
     """
 
-    pass  # noqa: E701,E302
-
 
 class IntervalValue(AnyValue):
     pass  # noqa: E701,E302
