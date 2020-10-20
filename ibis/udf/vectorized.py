@@ -121,7 +121,6 @@ def elementwise(input_type, output_type):
     ...         [date.str.slice(0, 4), date.str.slice(4, 8)],
     ...         axis=1
     ...     )
-    ...     result.columns = ['year', 'monthday']
     ...     return result
     >>>
     >>> # add two columns "year" and "monthday"

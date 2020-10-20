@@ -3,6 +3,7 @@ import enum
 import functools
 import operator
 
+import pandas as pd
 import pyspark.sql.functions as F
 from pyspark.sql import Window
 from pyspark.sql.functions import PandasUDFType, pandas_udf
@@ -1647,11 +1648,23 @@ def compile_not_null(t, expr, scope, timecontext, **kwargs):
 # ------------------------- User defined function ------------------------
 
 
+def _wrap_elementwise_func(func, output_cols):
+    @functools.wraps(func)
+    def wrapped(*args, **kwargs):
+        result = func(*args, **kwargs)
+        if isinstance(result, pd.DataFrame):
+            result.columns = output_cols
+        return result
+
+    return wrapped
+
+
 @compiles(ops.ElementWiseVectorizedUDF)
 def compile_elementwise_udf(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
     spark_output_type = spark_dtype(op._output_type)
-    spark_udf = pandas_udf(op.func, spark_output_type, PandasUDFType.SCALAR)
+    func = _wrap_elementwise_func(op.func, spark_output_type.names)
+    spark_udf = pandas_udf(func, spark_output_type, PandasUDFType.SCALAR)
     func_args = (t.translate(arg, scope, timecontext) for arg in op.func_args)
     return spark_udf(*func_args)
 

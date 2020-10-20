@@ -29,7 +29,7 @@ def calc_mean(s):
     output_type=dt.Struct(['col1', 'col2'], [dt.double, dt.double]),
 )
 def add_one_struct(v):
-    return pd.DataFrame({'col1': v + 1, 'col2': v + 2})
+    return pd.concat([v + 1, v + 2], axis=1)
 
 
 @pytest.mark.only_on_backends([Pandas, PySpark])
@@ -232,7 +232,9 @@ def test_elementwise_udf_destruct(backend, alltypes):
 
 @pytest.mark.only_on_backends([Pandas, PySpark])
 @pytest.mark.xfail_unsupported
-def test_elementwise_udf_destruct_named(backend, alltypes):
+def test_elementwise_udf_named_destruct(backend, alltypes):
+    """Test error when assigning name to a destruct column."""
+
     with pytest.raises(
         com.ExpressionError, match=r".*Cannot name a destruct.*"
     ):
