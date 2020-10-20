@@ -1967,7 +1967,6 @@ class Selection(TableNode, HasSchema):
 
         for projection in self.selections:
             if isinstance(projection, ir.DestructColumn):
-                # expand unnamed struct
                 struct_type = projection.type()
                 for name in struct_type.names:
                     names.append(name)

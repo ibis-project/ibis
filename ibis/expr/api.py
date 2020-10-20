@@ -4146,9 +4146,8 @@ def mutate(table, exprs=None, **mutations):
             )
 
     by_name = collections.OrderedDict(
-        (expr.get_name(), expr) for expr in exprs for expr in exprs
+        (expr.get_name(), expr) for expr in exprs
     )
-
     columns = table.columns
     used = by_name.keys() & columns
 

@@ -138,7 +138,7 @@ def compute_projection_column_expr(
     )
 
     result = execute(expr, scope=scope, timecontext=timecontext, **kwargs)
-
+    assert result_name is not None, 'Column selection name is None'
     if np.isscalar(result):
         return pd.Series(
             np.repeat(result, len(data.index)),
@@ -374,7 +374,7 @@ def execute_selection_dataframe(
     if not ordering_keys:
         return result
 
-    # create a sequence of columns that we need to drop
+    # create a sequen ce of columns that we need to drop
     temporary_columns = pd.Index(
         concatv(grouping_keys, ordering_keys)
     ).difference(data.columns)

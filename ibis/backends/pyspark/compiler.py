@@ -128,9 +128,9 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
             ]
             col_in_selection_order += cols
         elif isinstance(selection, (types.ColumnExpr, types.ScalarExpr)):
-            col = t.translate(selection, scope, combined_timecontext)
-            if selection.has_name():
-                col = col.alias(selection.get_name())
+            col = t.translate(selection, scope, combined_timecontext).alias(
+                selection.get_name()
+            )
             col_in_selection_order.append(col)
         else:
             raise NotImplementedError(
