@@ -11,7 +11,6 @@ from ibis.impala.compiler import ImpalaDialect, build_ast, to_sql  # noqa: E402
 from ibis.tests.expr.mocks import MockConnection
 
 pytest.importorskip('sqlalchemy')
-pytest.importorskip('impala.dbapi')
 
 
 class TestASTBuilder(unittest.TestCase):
