@@ -65,9 +65,9 @@ test:
     - ibis
     - ibis.backends.bigquery
     - ibis.backends.clickhouse
-    - ibis.file.csv
-    - ibis.file.parquet
-    - ibis.file.hdf5
+    - ibis.backends.csv
+    - ibis.backends.parquet
+    - ibis.backends.hdf5
     - ibis.impala
     - ibis.backends.mysql
     - ibis.backends.omniscidb  # [py<38]
