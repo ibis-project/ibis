@@ -43,7 +43,7 @@ requirements:
     - psycopg2
     - pyarrow >=0.15
     - pydata-google-auth
-    - pymapd =0.23.0  # [py<38]
+    - pymapd >=0.24.0  # [py<38]
     - pymysql
     - pyspark >=2.4.3  # [py<38]
     - pytables >=3.0.0
