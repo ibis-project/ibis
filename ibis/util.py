@@ -76,6 +76,8 @@ all_of = toolz.compose(all, is_one_of)
 
 def coerce_to_dataframe(data: Any, names: List[str]) -> pd.DataFrame:
     """Coerce the following shapes to a DataFrame.
+
+    The following shapes are allowed:
     (1) A list/tuple of Series
     (2) A Series of list/tuple
 

@@ -261,6 +261,7 @@ def test_elementwise_udf_named_destruct(backend, alltypes):
 
 
 @pytest.mark.only_on_backends([PySpark])
+@pytest.mark.xfail_unsupported
 def test_elementwise_udf_struct(backend, alltypes):
     result = alltypes.mutate(
         new_col=add_one_struct(alltypes['double_col'])

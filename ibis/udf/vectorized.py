@@ -165,6 +165,7 @@ def reduction(input_type, output_type):
     ...     return (series.str.len() * 2).sum()
 
     Define and use an UDF with multiple return columns:
+
     >>> @reduction(
     ...     input_type=[dt.double],
     ...     output_type=dt.Struct(['mean', 'std'], [dt.double, dt.double])

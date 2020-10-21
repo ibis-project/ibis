@@ -231,20 +231,28 @@ import ibis.util
 
 
 class AggregationContext(abc.ABC):
-    __slots__ = 'parent', 'group_by', 'order_by', 'dtype', 'max_lookback'
+    __slots__ = (
+        'parent',
+        'group_by',
+        'order_by',
+        'dtype',
+        'max_lookback',
+        'output_type',
+    )
 
     def __init__(
         self,
         parent=None,
         group_by=None,
         order_by=None,
-        dtype=None,
         max_lookback=None,
+        output_type=None,
     ):
         self.parent = parent
         self.group_by = group_by
         self.order_by = order_by
-        self.dtype = dtype
+        self.dtype = None if output_type is None else output_type.to_pandas()
+        self.output_type = output_type
         self.max_lookback = max_lookback
 
     @abc.abstractmethod
@@ -358,14 +366,14 @@ class Transform(AggregationContext):
     __slots__ = ()
 
     def agg(self, grouped_data, function, *args, **kwargs):
-        # If function is a built-in function, e.g., 'mean'
-        # then we call transform because apply cannot take in str
-        # If function is a UDF, then we call apply because transform
-        # cannot take UDF that returns struct, but apply can
-        if isinstance(function, str):
-            return grouped_data.transform(function, *args, **kwargs)
-        else:
+        # If this is a multi column UDF, then we cannot use
+        # "transform" here (Data must be 1-dimensional)
+        # Instead, we need to use "apply", which can return a non
+        # numeric type, e.g, tuple of two double.
+        if isinstance(self.output_type, dt.Struct):
             return grouped_data.apply(function, *args, **kwargs)
+        else:
+            return grouped_data.transform(function, *args, **kwargs)
 
 
 @functools.singledispatch
@@ -517,7 +525,7 @@ class Window(AggregationContext):
             parent=kwargs.pop('parent', None),
             group_by=kwargs.pop('group_by', None),
             order_by=kwargs.pop('order_by', None),
-            dtype=kwargs.pop('dtype'),
+            output_type=kwargs.pop('output_type'),
             max_lookback=kwargs.pop('max_lookback', None),
         )
         self.construct_window = operator.methodcaller(kind, *args, **kwargs)

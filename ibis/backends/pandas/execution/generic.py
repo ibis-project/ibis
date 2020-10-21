@@ -440,7 +440,6 @@ def execute_aggregation_dataframe(
         )
 
         if isinstance(metric, ir.DestructValue):
-            # Destruct series of tuples to multiple series
             result = coerce_to_dataframe(result, metric.type().names)
             pieces.append(result)
         else:
