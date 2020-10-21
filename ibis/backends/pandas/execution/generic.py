@@ -24,6 +24,7 @@ import ibis.expr.types as ir
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import TIME_COL
 from ibis.expr.typing import TimeContext
+from ibis.util import coerce_to_dataframe
 
 from .. import aggcontext as agg_ctx
 from ..client import PandasClient, PandasTable
@@ -432,13 +433,18 @@ def execute_aggregation_dataframe(
 
     scope = scope.merge_scope(Scope({op.table.op(): source}, timecontext))
 
-    pieces = [
-        pd.Series(
-            execute(metric, scope=scope, timecontext=timecontext, **kwargs),
-            name=metric.get_name(),
+    pieces = []
+    for metric in op.metrics:
+        result = execute(
+            metric, scope=scope, timecontext=timecontext, **kwargs
         )
-        for metric in op.metrics
-    ]
+
+        if isinstance(metric, ir.DestructValue):
+            # Destruct series of tuples to multiple series
+            result = coerce_to_dataframe(result, metric.type().names)
+            pieces.append(result)
+        else:
+            pieces.append(pd.Series(result, name=metric.get_name()))
 
     result = pd.concat(pieces, axis=1)
 

@@ -78,6 +78,23 @@ def analytic(input_type, output_type):
     >>> @analytic(input_type=[dt.double], output_type=dt.double)
     ... def zscore(series):  # note the use of aggregate functions
     ...     return (series - series.mean()) / series.std()
+
+    Define and use an UDF with multiple return columns:
+
+    >>> @analytic(
+    ...     input_type=[dt.double],
+    ...     output_type=dt.Struct(['demean', 'zscore'], [dt.double, dt.double])
+    ... )
+    ... def demean_and_zscore(v):
+    ...     mean = v.mean()
+    ...     std = v.std()
+    ...     return v - mean, (v - mean) / std
+    >>>
+    >>> win = ibis.window(preceding=None, following=None, group_by='key')
+    >>> # add two columns "demean" and "zscore"
+    >>> table = table.mutate(
+    ...     demean_and_zscore(table['v']).over(win).destructure()
+    ... )
     """
     return _udf_decorator(AnalyticVectorizedUDF, input_type, output_type)
 
@@ -117,11 +134,7 @@ def elementwise(input_type, output_type):
     ...     output_type=dt.Struct(['year', 'monthday'], [dt.string, dt.string])
     ... )
     ... def year_monthday(date):
-    ...     result = pd.concat(
-    ...         [date.str.slice(0, 4), date.str.slice(4, 8)],
-    ...         axis=1
-    ...     )
-    ...     return result
+    ...     return date.str.slice(0, 4), date.str.slice(4, 8)
     >>>
     >>> # add two columns "year" and "monthday"
     >>> table = table.mutate(year_monthday(table['date']).destructure())
@@ -150,5 +163,18 @@ def reduction(input_type, output_type):
     >>> @reduction(input_type=[dt.string], output_type=dt.int64)
     ... def my_string_length_agg(series, **kwargs):
     ...     return (series.str.len() * 2).sum()
+
+    Define and use an UDF with multiple return columns:
+    >>> @reduction(
+    ...     input_type=[dt.double],
+    ...     output_type=dt.Struct(['mean', 'std'], [dt.double, dt.double])
+    ... )
+    ... def mean_and_std(v):
+    ...     return v.mean(), v.std()
+    >>>
+    >>> # create aggregation columns "mean" and "std"
+    >>> table = table.groupby('key').aggregate(
+    ...     mean_and_std(table['v']).destructure()
+    ... )
     """
     return _udf_decorator(ReductionVectorizedUDF, input_type, output_type)

@@ -19,6 +19,7 @@ from typing import (
 )
 from uuid import uuid4
 
+import pandas as pd
 import toolz
 
 from ibis.config import options
@@ -71,6 +72,34 @@ def is_one_of(values: Sequence[T], t: Type[U]) -> Iterator[bool]:
 
 any_of = toolz.compose(any, is_one_of)
 all_of = toolz.compose(all, is_one_of)
+
+
+def coerce_to_dataframe(data: Any, names: List[str]) -> pd.DataFrame:
+    """Coerce the following shapes to a DataFrame.
+    (1) A list/tuple of Series
+    (2) A Series of list/tuple
+
+    Parameters
+    ----------
+    val : pd.DataFrame, a tuple/list of pd.Series or a pd.Series of tuple/list
+
+    Returns
+    -------
+    pd.DataFrame
+    """
+    if isinstance(data, pd.DataFrame):
+        result = data
+    elif isinstance(data, pd.Series):
+        num_cols = len(data.iloc[0])
+        series = [data.apply(lambda t: t[i]) for i in range(num_cols)]
+        result = pd.concat(series, axis=1)
+    elif isinstance(data, (tuple, list)):
+        result = pd.concat(data, axis=1)
+    else:
+        raise ValueError(f"Cannot coerce to DataFrame: {data}")
+
+    result.columns = names
+    return result
 
 
 def promote_list(val: Union[V, List[V]]) -> List[V]:

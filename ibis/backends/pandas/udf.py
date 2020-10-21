@@ -17,6 +17,7 @@ import ibis.client
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.udf.vectorized
+from ibis.util import coerce_to_dataframe
 
 from .aggcontext import Summarize, Transform
 from .core import date_types, time_types, timedelta_types, timestamp_types
@@ -228,7 +229,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
     @execute_node.register(type(op), *(itertools.repeat(SeriesGroupBy, nargs)))
     def execute_udaf_node_groupby(op, *args, aggcontext, **kwargs):
         func = op.func
-        if isinstance(aggcontext, (Transform, Summarize)):
+        if isinstance(aggcontext, Transform):
             # We are either:
             # 1) Aggregating over an unbounded (and GROUPED) window, which
             #   uses a Transform aggregation context
@@ -249,7 +250,21 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
             def aggregator(first, *rest):
                 # map(next, *rest) gets the inputs for the next group
                 # TODO: might be inefficient to do this on every call
-                return func(first, *map(next, rest))
+                result = func(first, *map(next, rest))
+                if isinstance(op._output_type, dt.Struct):
+                    return coerce_to_dataframe(result, op._output_type.names)
+                else:
+                    return result
+
+            return aggcontext.agg(args[0], aggregator, *iters)
+        elif isinstance(aggcontext, Summarize):
+            iters = create_gens_from_args_groupby(args[1:])
+
+            def aggregator(first, *rest):
+                # map(next, *rest) gets the inputs for the next group
+                # TODO: might be inefficient to do this on every call
+                result = func(first, *map(next, rest))
+                return result
 
             return aggcontext.agg(args[0], aggregator, *iters)
         else:

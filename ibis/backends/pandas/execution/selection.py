@@ -18,6 +18,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.expr.scope import Scope
 from ibis.expr.typing import TimeContext
+from ibis.util import coerce_to_dataframe
 
 from ..core import execute
 from ..dispatch import execute_node
@@ -146,8 +147,7 @@ def compute_projection_column_expr(
             name=result_name,
         )
     elif isinstance(expr, ir.DestructColumn):
-        result.columns = expr.type().names
-        return result
+        return coerce_to_dataframe(result, expr.type().names)
     else:
         return result.rename(result_name)
 

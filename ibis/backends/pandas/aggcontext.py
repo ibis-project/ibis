@@ -358,7 +358,14 @@ class Transform(AggregationContext):
     __slots__ = ()
 
     def agg(self, grouped_data, function, *args, **kwargs):
-        return grouped_data.transform(function, *args, **kwargs)
+        # If function is a built-in function, e.g., 'mean'
+        # then we call transform because apply cannot take in str
+        # If function is a UDF, then we call apply because transform
+        # cannot take UDF that returns struct, but apply can
+        if isinstance(function, str):
+            return grouped_data.transform(function, *args, **kwargs)
+        else:
+            return grouped_data.apply(function, *args, **kwargs)
 
 
 @functools.singledispatch
