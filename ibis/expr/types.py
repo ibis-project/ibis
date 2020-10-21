@@ -863,6 +863,14 @@ class StructColumn(AnyColumn, StructValue):
     pass  # noqa: E701,E302
 
 
+class DestructColumn(AnyColumn):
+    """ Class that represents a destruct column.
+
+    When assigning a destruct column, the field inside this destruct column
+    will be destructured and assigned to multipe columnns.
+    """
+
+
 class IntervalValue(AnyValue):
     pass  # noqa: E701,E302
 

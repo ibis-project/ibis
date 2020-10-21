@@ -145,7 +145,11 @@ def compute_projection_column_expr(
             index=data.index,
             name=result_name,
         )
-    return result.rename(result_name)
+    elif isinstance(expr, ir.DestructColumn):
+        result.columns = expr.type().names
+        return result
+    else:
+        return result.rename(result_name)
 
 
 @compute_projection.register(ir.TableExpr, ops.Selection, pd.DataFrame)

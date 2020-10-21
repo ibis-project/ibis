@@ -1,3 +1,4 @@
+import pandas as pd
 import pytest
 
 import ibis.common.exceptions as com
@@ -21,6 +22,14 @@ def calc_zscore(s):
 @reduction(input_type=[dt.double], output_type=dt.double)
 def calc_mean(s):
     return s.mean()
+
+
+@elementwise(
+    input_type=[dt.double],
+    output_type=dt.Struct(['col1', 'col2'], [dt.double, dt.double]),
+)
+def add_one_struct(v):
+    return pd.concat([v + 1, v + 2], axis=1)
 
 
 @pytest.mark.only_on_backends([Pandas, PySpark])
@@ -205,3 +214,48 @@ def test_invalid_kwargs(backend, alltypes):
         @elementwise(input_type=[dt.double], output_type=dt.double)
         def foo1(v, amount):
             return v + 1
+
+
+@pytest.mark.only_on_backends([Pandas, PySpark])
+@pytest.mark.xfail_unsupported
+def test_elementwise_udf_destruct(backend, alltypes):
+    result = alltypes.mutate(
+        add_one_struct(alltypes['double_col']).destructure()
+    ).execute()
+
+    expected = alltypes.mutate(
+        col1=alltypes['double_col'] + 1, col2=alltypes['double_col'] + 2,
+    ).execute()
+
+    backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.only_on_backends([Pandas, PySpark])
+@pytest.mark.xfail_unsupported
+def test_elementwise_udf_named_destruct(backend, alltypes):
+    """Test error when assigning name to a destruct column."""
+
+    with pytest.raises(
+        com.ExpressionError, match=r".*Cannot name a destruct.*"
+    ):
+        alltypes.mutate(
+            new_struct=add_one_struct(alltypes['double_col']).destructure()
+        )
+
+
+@pytest.mark.only_on_backends([PySpark])
+@pytest.mark.xfail_unsupported
+def test_elementwise_udf_struct(backend, alltypes):
+    result = alltypes.mutate(
+        new_col=add_one_struct(alltypes['double_col'])
+    ).execute()
+    result = result.assign(
+        col1=result['new_col'].apply(lambda x: x[0]),
+        col2=result['new_col'].apply(lambda x: x[1]),
+    )
+    result = result.drop('new_col', axis=1)
+    expected = alltypes.mutate(
+        col1=alltypes['double_col'] + 1, col2=alltypes['double_col'] + 2,
+    ).execute()
+
+    backend.assert_frame_equal(result, expected)
