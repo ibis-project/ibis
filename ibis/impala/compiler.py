@@ -443,17 +443,6 @@ def _ntile(translator, expr):
     return 'ntile({})'.format(buckets)
 
 
-def _interval_from_integer(translator, expr):
-    # interval cannot be selected from impala
-    op = expr.op()
-    arg, unit = op.args
-    arg_formatted = translator.translate(arg)
-
-    return 'INTERVAL {} {}'.format(
-        arg_formatted, expr.type().resolution.upper()
-    )
-
-
 class CaseFormatter:
     def __init__(self, translator, base, cases, results, default):
         self.translator = translator
@@ -604,18 +593,6 @@ def _table_column(translator, expr):
     return quoted_name
 
 
-def _extract_field(sql_attr):
-    def extract_field_formatter(translator, expr):
-        op = expr.op()
-        arg = translator.translate(op.args[0])
-
-        # This is pre-2.0 Impala-style, which did not used to support the
-        # SQL-99 format extract($FIELD from expr)
-        return "extract({}, '{}')".format(arg, sql_attr)
-
-    return extract_field_formatter
-
-
 def _day_of_week_index(t, expr):
     (arg,) = expr.op().args
     return 'pmod(dayofweek({}) - 2, 7)'.format(t.translate(arg))
@@ -624,11 +601,6 @@ def _day_of_week_index(t, expr):
 def _day_of_week_name(t, expr):
     (arg,) = expr.op().args
     return 'dayname({})'.format(t.translate(arg))
-
-
-def _extract_epoch_seconds(t, expr):
-    (arg,) = expr.op().args
-    return 'unix_timestamp({})'.format(t.translate(arg))
 
 
 _impala_unit_names = {
@@ -640,21 +612,6 @@ _impala_unit_names = {
     'h': 'HH',
     'm': 'MI',
 }
-
-
-def _truncate(translator, expr):
-    op = expr.op()
-    arg, unit = op.args
-
-    arg_formatted = translator.translate(arg)
-    try:
-        unit = _impala_unit_names[unit]
-    except KeyError:
-        raise com.UnsupportedOperationError(
-            '{!r} unit is not supported in timestamp truncate'.format(unit)
-        )
-
-    return "trunc({}, '{}')".format(arg_formatted, unit)
 
 
 def _timestamp_from_unix(translator, expr):
@@ -680,78 +637,6 @@ def varargs(func_name):
     return varargs_formatter
 
 
-def _substring(translator, expr):
-    op = expr.op()
-    arg, start, length = op.args
-    arg_formatted = translator.translate(arg)
-    start_formatted = translator.translate(start)
-
-    # Impala is 1-indexed
-    if length is None or isinstance(length.op(), ops.Literal):
-        lvalue = length.op().value if length is not None else None
-        if lvalue:
-            return 'substr({}, {} + 1, {})'.format(
-                arg_formatted, start_formatted, lvalue
-            )
-        else:
-            return 'substr({}, {} + 1)'.format(arg_formatted, start_formatted)
-    else:
-        length_formatted = translator.translate(length)
-        return 'substr({}, {} + 1, {})'.format(
-            arg_formatted, start_formatted, length_formatted
-        )
-
-
-def _string_find(translator, expr):
-    op = expr.op()
-    arg, substr, start, _ = op.args
-    arg_formatted = translator.translate(arg)
-    substr_formatted = translator.translate(substr)
-
-    if start is not None and not isinstance(start.op(), ops.Literal):
-        start_fmt = translator.translate(start)
-        return 'locate({}, {}, {} + 1) - 1'.format(
-            substr_formatted, arg_formatted, start_fmt
-        )
-    elif start is not None and start.op().value:
-        sval = start.op().value
-        return 'locate({}, {}, {}) - 1'.format(
-            substr_formatted, arg_formatted, sval + 1
-        )
-    else:
-        return 'locate({}, {}) - 1'.format(substr_formatted, arg_formatted)
-
-
-def _string_join(translator, expr):
-    op = expr.op()
-    arg, strings = op.args
-    return format_call(translator, 'concat_ws', arg, *strings)
-
-
-def _parse_url(translator, expr):
-    op = expr.op()
-
-    arg, extract, key = op.args
-    arg_formatted = translator.translate(arg)
-
-    if key is None:
-        return "parse_url({}, '{}')".format(arg_formatted, extract)
-    else:
-        key_fmt = translator.translate(key)
-        return "parse_url({}, '{}', {})".format(
-            arg_formatted, extract, key_fmt
-        )
-
-
-def _find_in_set(translator, expr):
-    op = expr.op()
-
-    arg, str_list = op.args
-    arg_formatted = translator.translate(arg)
-    str_formatted = ','.join([x._arg.value for x in str_list])
-    return "find_in_set({}, '{}') - 1".format(arg_formatted, str_formatted)
-
-
 def _null_literal(translator, expr):
     return 'NULL'
 
@@ -773,54 +658,7 @@ _expr_transforms = {
 }
 
 
-def _string_like(translator, expr):
-    arg, pattern, _ = expr.op().args
-    return '{} LIKE {}'.format(
-        translator.translate(arg), translator.translate(pattern)
-    )
-
-
 _operation_registry = {
-    # string operations
-    ops.StringLength: unary('length'),
-    ops.StringAscii: unary('ascii'),
-    ops.Lowercase: unary('lower'),
-    ops.Uppercase: unary('upper'),
-    ops.Reverse: unary('reverse'),
-    ops.Strip: unary('trim'),
-    ops.LStrip: unary('ltrim'),
-    ops.RStrip: unary('rtrim'),
-    ops.Capitalize: unary('initcap'),
-    ops.Substring: _substring,
-    ops.StrRight: fixed_arity('strright', 2),
-    ops.Repeat: fixed_arity('repeat', 2),
-    ops.StringFind: _string_find,
-    ops.Translate: fixed_arity('translate', 3),
-    ops.FindInSet: _find_in_set,
-    ops.LPad: fixed_arity('lpad', 3),
-    ops.RPad: fixed_arity('rpad', 3),
-    ops.StringJoin: _string_join,
-    ops.StringSQLLike: _string_like,
-    ops.RegexSearch: fixed_arity('regexp_like', 2),
-    ops.RegexExtract: fixed_arity('regexp_extract', 3),
-    ops.RegexReplace: fixed_arity('regexp_replace', 3),
-    ops.ParseURL: _parse_url,
-    # Timestamp operations
-    ops.Date: unary('to_date'),
-    ops.TimestampNow: lambda *args: 'now()',
-    ops.ExtractYear: _extract_field('year'),
-    ops.ExtractMonth: _extract_field('month'),
-    ops.ExtractDay: _extract_field('day'),
-    ops.ExtractQuarter: _extract_field('quarter'),
-    ops.ExtractEpochSeconds: _extract_epoch_seconds,
-    ops.ExtractWeekOfYear: fixed_arity('weekofyear', 1),
-    ops.ExtractHour: _extract_field('hour'),
-    ops.ExtractMinute: _extract_field('minute'),
-    ops.ExtractSecond: _extract_field('second'),
-    ops.ExtractMillisecond: _extract_field('millisecond'),
-    ops.TimestampTruncate: _truncate,
-    ops.DateTruncate: _truncate,
-    ops.IntervalFromInteger: _interval_from_integer,
     # Other operations
     ops.E: lambda *args: 'e()',
     ops.Literal: literal,
