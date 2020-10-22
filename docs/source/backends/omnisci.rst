@@ -32,7 +32,10 @@ Create a client by passing in database connection parameters such as ``host``,
        password='HyperInteractive',
    )
 
-Note: OmniSciDB backend support OmniSciDB version greater than or equals to `5.3.0`.
+
+.. note::
+
+   OmniSciDB backend support OmniSciDB version greater than or equals to `5.3.0`.
 
 .. _api.omniscidb:
 
