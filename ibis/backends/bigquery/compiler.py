@@ -14,15 +14,15 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.sql.compiler as comp
 from ibis.backends import base_sql
-from ibis.backends.base_sql import BaseExprTranslator, literal
-from ibis.impala import compiler as impala_compiler
-from ibis.impala.compiler import (
-    ImpalaSelect,
-    ImpalaTableSetFormatter,
-    _reduction,
+from ibis.backends.base_sql import (
+    BaseExprTranslator,
     fixed_arity,
+    literal,
+    reduction,
     unary,
 )
+from ibis.impala import compiler as impala_compiler
+from ibis.impala.compiler import ImpalaSelect, ImpalaTableSetFormatter
 
 from .datatypes import ibis_type_to_bigquery_type
 
@@ -365,7 +365,7 @@ _operation_registry.update(
         ops.RegexSearch: _regex_search,
         ops.RegexExtract: _regex_extract,
         ops.RegexReplace: _regex_replace,
-        ops.GroupConcat: _reduction('STRING_AGG'),
+        ops.GroupConcat: reduction('STRING_AGG'),
         ops.IfNull: fixed_arity('IFNULL', 2),
         ops.Cast: _cast,
         ops.StructField: _struct_field,
@@ -373,7 +373,7 @@ _operation_registry.update(
         ops.ArrayConcat: _array_concat,
         ops.ArrayIndex: _array_index,
         ops.ArrayLength: unary('ARRAY_LENGTH'),
-        ops.HLLCardinality: _reduction('APPROX_COUNT_DISTINCT'),
+        ops.HLLCardinality: reduction('APPROX_COUNT_DISTINCT'),
         ops.Log: _log,
         ops.Sign: unary('SIGN'),
         ops.Modulus: fixed_arity('MOD', 2),
