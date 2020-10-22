@@ -11,7 +11,6 @@ import ibis.expr.types as ir
 import ibis.sql.compiler as comp
 import ibis.sql.transforms as transforms
 import ibis.util as util
-from ibis.backends import base_sql
 from ibis.backends.base_sql import (
     BaseExprTranslator,
     binary_infix_op,
@@ -19,6 +18,7 @@ from ibis.backends.base_sql import (
     fixed_arity,
     format_call,
     literal,
+    operation_registry,
     parenthesize,
     quote_identifier,
     type_to_sql_string,
@@ -701,7 +701,7 @@ _operation_registry = {
     ops.DayOfWeekName: _day_of_week_name,
 }
 
-_operation_registry.update(base_sql.operation_registry)
+_operation_registry.update(operation_registry)
 _operation_registry.update(binary_infix_ops)
 
 
