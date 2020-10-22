@@ -15,7 +15,6 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.sql.compiler as comp
 from ibis.impala import identifiers
-from ibis.impala.compiler import _impala_unit_names
 
 
 def _set_literal_format(translator, expr):
@@ -503,7 +502,7 @@ def truncate(translator, expr):
 
     arg_formatted = translator.translate(arg)
     try:
-        unit = _impala_unit_names[unit]
+        unit = _base_unit_names[unit]
     except KeyError:
         raise com.UnsupportedOperationError(
             '{!r} unit is not supported in timestamp truncate'.format(unit)
@@ -521,6 +520,17 @@ def interval_from_integer(translator, expr):
     return 'INTERVAL {} {}'.format(
         arg_formatted, expr.type().resolution.upper()
     )
+
+
+_base_unit_names = {
+    'Y': 'Y',
+    'Q': 'Q',
+    'M': 'MONTH',
+    'W': 'W',
+    'D': 'J',
+    'h': 'HH',
+    'm': 'MI',
+}
 
 
 operation_registry = {

@@ -603,17 +603,6 @@ def _day_of_week_name(t, expr):
     return 'dayname({})'.format(t.translate(arg))
 
 
-_impala_unit_names = {
-    'Y': 'Y',
-    'Q': 'Q',
-    'M': 'MONTH',
-    'W': 'W',
-    'D': 'J',
-    'h': 'HH',
-    'm': 'MI',
-}
-
-
 def _timestamp_from_unix(translator, expr):
     op = expr.op()
 
