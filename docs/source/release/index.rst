@@ -40,6 +40,7 @@ Release Notes
 * :bug:`1320` Added verbose logging to SQL backends
 * :feature:`2285` Add support for casting category dtype in pandas backend
 * :feature:`2270` Add support for Union in the PySpark backend
+* :bug:`2256` Fix issue with sql_validate call to OmnisciDB.
 * :feature:`2260` Add support for implementign custom window object for pandas backend
 * :bug:`2237` Add missing float types to pandas backend
 * :bug:`2252` Allow group_by and order_by as window operation input in pandas backend
