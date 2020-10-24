@@ -10,7 +10,6 @@ from ibis.backends.base_sql import (
     binary_infix_ops,
     operation_registry,
     quote_identifier,
-    window,
 )
 
 
@@ -165,18 +164,6 @@ def _replace_interval_with_scalar(expr):
         right_arg = _replace_interval_with_scalar(expr_op.args[1])
         method = _map_interval_op_to_op[type(expr_op)]
         return method(left_arg, right_arg)
-
-    order_var = window._order_by[0].op().args[0]
-    timestamp_order_var = order_var.cast('int64')
-    window = window._replace(order_by=timestamp_order_var, how='range')
-
-    # Need to change preceding interval expression to scalars
-    preceding = window.preceding
-    if isinstance(preceding, ir.IntervalScalar):
-        new_preceding = _replace_interval_with_scalar(preceding)
-        window = window._replace(preceding=new_preceding)
-
-    return window
 
 
 _operation_registry = {}
