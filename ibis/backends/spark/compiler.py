@@ -39,7 +39,6 @@ from ibis.backends.base_sql import (
     sql_type_names,
     unary,
 )
-from ibis.impala import compiler as impala_compiler
 from ibis.impala.compiler import (
     ImpalaDialect,
     ImpalaExprTranslator,
@@ -317,7 +316,6 @@ def _round(translator, expr):
 
 _operation_registry = {
     **base_sql.operation_registry,
-    **impala_compiler._operation_registry,
 }
 
 _operation_registry.update(
