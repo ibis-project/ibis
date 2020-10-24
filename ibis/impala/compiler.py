@@ -3,12 +3,12 @@ from operator import add, mul, sub
 from typing import Optional
 
 import ibis
+import ibis.backends.base_sqlalchemy.compiler as comp
 import ibis.common.exceptions as com
 import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.sql.compiler as comp
 import ibis.sql.transforms as transforms
 import ibis.util as util
 from ibis.backends import base_sql

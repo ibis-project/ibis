@@ -2,10 +2,10 @@
 from io import StringIO
 
 import ibis
+import ibis.backends.base_sqlalchemy.compiler as compiles
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.sql.compiler as compiles
 import ibis.util as util
 from ibis.expr.api import _add_methods, _binop_expr, _unary_op
 from ibis.impala import compiler as impala_compiler
@@ -16,8 +16,9 @@ from .operations import _type_to_sql_string  # noqa: F401
 
 
 def build_ast(
-    expr: ibis.Expr, context: ibis.sql.compiler.QueryContext
-) -> ibis.sql.compiler.QueryAST:
+    expr: ibis.Expr,
+    context: ibis.backends.base_sqlalchemy.compiler.QueryContext,
+) -> ibis.backends.base_sqlalchemy.compiler.QueryAST:
     """Build AST from given expression.
 
     Parameters
@@ -34,7 +35,10 @@ def build_ast(
     return builder.get_result()
 
 
-def _get_query(expr: ibis.Expr, context: ibis.sql.compiler.QueryContext):
+def _get_query(
+    expr: ibis.Expr,
+    context: ibis.backends.base_sqlalchemy.compiler.QueryContext,
+):
     assert context is not None, 'context is None'
     ast = build_ast(expr, context)
     query = ast.queries[0]
@@ -43,7 +47,8 @@ def _get_query(expr: ibis.Expr, context: ibis.sql.compiler.QueryContext):
 
 
 def to_sql(
-    expr: ibis.Expr, context: ibis.sql.compiler.QueryContext = None
+    expr: ibis.Expr,
+    context: ibis.backends.base_sqlalchemy.compiler.QueryContext = None,
 ) -> str:
     """Convert expression to SQL statement.
 

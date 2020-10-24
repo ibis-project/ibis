@@ -10,10 +10,10 @@ import pytest
 from pkg_resources import parse_version
 
 import ibis
+import ibis.backends.base_sqlalchemy.compiler as comp
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.sql.compiler as comp
 
 
 class RoundingConvention:
