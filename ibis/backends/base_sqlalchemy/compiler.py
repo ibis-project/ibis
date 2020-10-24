@@ -10,6 +10,7 @@ from itertools import chain
 import toolz
 
 import ibis
+import ibis.backends.base_sqlalchemy.transforms as transforms
 import ibis.common.exceptions as com
 import ibis.expr.analysis as L
 import ibis.expr.analytics as analytics
@@ -17,7 +18,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.format as fmt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.sql.transforms as transforms
 import ibis.util as util
 
 

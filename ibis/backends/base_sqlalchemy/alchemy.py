@@ -14,6 +14,7 @@ from sqlalchemy.engine.interfaces import Dialect as SQLAlchemyDialect
 
 import ibis
 import ibis.backends.base_sqlalchemy.compiler as comp
+import ibis.backends.base_sqlalchemy.transforms as transforms
 import ibis.common.exceptions as com
 import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
@@ -21,7 +22,6 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.expr.window as W
-import ibis.sql.transforms as transforms
 import ibis.util as util
 from ibis.backends.base_sqlalchemy.compiler import (
     Dialect,
