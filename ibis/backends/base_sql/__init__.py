@@ -1114,3 +1114,6 @@ operation_registry = {
     ops.DayOfWeekIndex: day_of_week_index,
     ops.DayOfWeekName: day_of_week_name,
 }
+
+
+operation_registry.update(binary_infix_ops)
