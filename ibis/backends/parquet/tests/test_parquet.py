@@ -1,17 +1,13 @@
 import sys
 
+import pyarrow as pa
+import pyarrow.parquet as pq
 import pytest
 from pandas.util import testing as tm
 
 import ibis
-from ibis.file.client import FileDatabase
-
-pa = pytest.importorskip('pyarrow')  # isort:skip
-pq = pytest.importorskip('pyarrow.parquet')  # isort:skip
-
-from ibis.file.parquet import ParquetClient  # noqa: E402, isort:skip
-from ibis.file.parquet import ParquetTable  # noqa: E402, isort:skip
-
+from ibis.backends.base_file import FileDatabase
+from ibis.backends.parquet import ParquetClient, ParquetTable
 
 pytestmark = pytest.mark.skipif(
     sys.platform == 'win32', reason='See ibis issue #1698'
@@ -42,12 +38,12 @@ def test_creation(parquet):
     assert len(pq.read_table(str(pqd / 'close.parquet'))) == 50
 
 
-def test_client(tmpdir, data):
+def test_client(tmpdir, file_backends_data):
     # construct with a path to a file
     d = tmpdir / 'pq'
     d.mkdir()
 
-    for k, v in data.items():
+    for k, v in file_backends_data.items():
         f = d / "{}.parquet".format(k)
         table = pa.Table.from_pandas(v)
         pq.write_table(table, str(f))
@@ -78,12 +74,12 @@ def test_navigation(parquet):
     assert isinstance(closes.op(), ParquetTable)
 
 
-def test_read(parquet, data):
+def test_read(parquet, file_backends_data):
     closes = parquet.pq.close
     assert str(closes) is not None
 
     result = closes.execute()
-    expected = data['close']
+    expected = file_backends_data['close']
     tm.assert_frame_equal(result, expected)
 
     result = closes.execute()

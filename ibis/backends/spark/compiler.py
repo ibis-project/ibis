@@ -31,16 +31,18 @@ import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 import ibis.sql.compiler as comp
 import ibis.util as util
-from ibis.backends import base_sql
-from ibis.backends.base_sql import literal_formatters
-from ibis.impala import compiler as impala_compiler
+from ibis.backends.base_sql import (
+    fixed_arity,
+    literal_formatters,
+    operation_registry,
+    reduction,
+    sql_type_names,
+    unary,
+)
 from ibis.impala.compiler import (
     ImpalaDialect,
     ImpalaExprTranslator,
     ImpalaSelect,
-    _reduction,
-    fixed_arity,
-    unary,
 )
 
 
@@ -95,7 +97,7 @@ class SparkContext(comp.QueryContext):
         return to_sql(expr, ctx)
 
 
-_sql_type_names = impala_compiler._sql_type_names.copy()
+_sql_type_names = sql_type_names.copy()
 
 _sql_type_names.update({'date': 'date'})
 
@@ -312,10 +314,7 @@ def _round(translator, expr):
     return 'bround({})'.format(arg_formatted)
 
 
-_operation_registry = {
-    **base_sql.operation_registry,
-    **impala_compiler._operation_registry,
-}
+_operation_registry = {**operation_registry}
 
 _operation_registry.update(
     {
@@ -325,7 +324,7 @@ _operation_registry.update(
         ops.MapValueForKey: _map_value_for_key,
         ops.ArrayLength: unary('size'),
         ops.Round: _round,
-        ops.HLLCardinality: _reduction('approx_count_distinct'),
+        ops.HLLCardinality: reduction('approx_count_distinct'),
         ops.StrRight: fixed_arity('right', 2),
         ops.StringSplit: fixed_arity('SPLIT', 2),
         ops.RegexSearch: fixed_arity('rlike', 2),

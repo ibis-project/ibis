@@ -17,6 +17,7 @@ import ibis.client
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.udf.vectorized
+from ibis.util import coerce_to_dataframe
 
 from .aggcontext import Summarize, Transform
 from .core import date_types, time_types, timedelta_types, timestamp_types
@@ -228,7 +229,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
     @execute_node.register(type(op), *(itertools.repeat(SeriesGroupBy, nargs)))
     def execute_udaf_node_groupby(op, *args, aggcontext, **kwargs):
         func = op.func
-        if isinstance(aggcontext, (Transform, Summarize)):
+        if isinstance(aggcontext, Transform):
             # We are either:
             # 1) Aggregating over an unbounded (and GROUPED) window, which
             #   uses a Transform aggregation context
@@ -242,6 +243,25 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
             # for every argument excluding the first (pandas performs
             # the iteration for the first argument) for each argument
             # that is a SeriesGroupBy.
+            iters = create_gens_from_args_groupby(args[1:])
+
+            # TODO: Unify calling convension here to be more like
+            # window
+            def aggregator(first, *rest):
+                # map(next, *rest) gets the inputs for the next group
+                # TODO: might be inefficient to do this on every call
+                result = func(first, *map(next, rest))
+
+                # Here we don't user execution.util.coerce_to_output
+                # because this is the inner loop and we do not want
+                # to wrap a scalar value with a series.
+                if isinstance(op._output_type, dt.Struct):
+                    return coerce_to_dataframe(result, op._output_type.names)
+                else:
+                    return result
+
+            return aggcontext.agg(args[0], aggregator, *iters)
+        elif isinstance(aggcontext, Summarize):
             iters = create_gens_from_args_groupby(args[1:])
 
             # TODO: Unify calling convension here to be more like

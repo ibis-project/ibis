@@ -5,8 +5,9 @@ import ibis.expr.types as types
 from ibis.backends.spark.client import SparkClient
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import canonicalize_context
-from ibis.pyspark.compiler import PySparkDialect, PySparkExprTranslator
-from ibis.pyspark.operations import PySparkTable
+
+from .compiler import PySparkDialect, PySparkExprTranslator
+from .operations import PySparkTable
 
 
 class PySparkClient(SparkClient):

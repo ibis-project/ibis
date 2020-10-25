@@ -8,7 +8,7 @@ from typing import Optional
 import regex as re
 import sqlalchemy as sa
 
-import ibis.sql.alchemy as alch
+import ibis.backends.base_sqlalchemy.alchemy as alch
 from ibis.client import Database
 
 from .compiler import SQLiteDialect

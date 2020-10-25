@@ -17,10 +17,8 @@ import re
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
-from ibis.backends.base_sql import quote_identifier
+from ibis.backends.base_sql import quote_identifier, type_to_sql_string
 from ibis.sql.compiler import DDL, DML
-
-from .compiler import _type_to_sql_string
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
 
@@ -710,7 +708,7 @@ def format_schema(schema):
 
 def _format_schema_element(name, t):
     return '{} {}'.format(
-        quote_identifier(name, force=True), _type_to_sql_string(t),
+        quote_identifier(name, force=True), type_to_sql_string(t),
     )
 
 
@@ -726,7 +724,7 @@ class CreateFunction(ImpalaDDL):
     def _impala_signature(self):
         scoped_name = self._get_scoped_name(self.name, self.database)
         input_sig = _impala_input_signature(self.func.inputs)
-        output_sig = _type_to_sql_string(self.func.output)
+        output_sig = type_to_sql_string(self.func.output)
 
         return '{}({}) returns {}'.format(scoped_name, input_sig, output_sig)
 
@@ -812,4 +810,4 @@ class ListFunction(ImpalaDDL):
 
 def _impala_input_signature(inputs):
     # TODO: varargs '{}...'.format(val)
-    return ', '.join(map(_type_to_sql_string, inputs))
+    return ', '.join(map(type_to_sql_string, inputs))

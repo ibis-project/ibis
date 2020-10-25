@@ -4,6 +4,7 @@ from typing import Optional, Union
 
 import pandas as pd
 import pkg_resources
+import pyarrow
 import pymapd
 import regex as re
 from pymapd._parsers import _extract_column_details
@@ -342,7 +343,7 @@ class OmniSciDBTable(ir.TableExpr, DatabaseEntity):
         """Delete all rows from, but do not drop, an existing table."""
         self._client.truncate_table(self._qualified_name)
 
-    def load_data(self, df):
+    def load_data(self, df: Union[pd.DataFrame, pyarrow.Table]):
         """
         Load a data frame into database.
 
@@ -736,9 +737,9 @@ class OmniSciDBClient(SQLClient):
         result = self.con._client.sql_validate(self.con._session, query)
         return sch.Schema.from_tuples(
             (
-                r,
+                r.col_name,
                 OmniSciDBDataType._omniscidb_to_ibis_dtypes[
-                    pymapd_dtype._VALUES_TO_NAMES[result[r].col_type.type]
+                    pymapd_dtype._VALUES_TO_NAMES[r.col_type.type]
                 ],
             )
             for r in result
@@ -1184,8 +1185,15 @@ class OmniSciDBClient(SQLClient):
             )
             return self.database_class(name, new_client)
 
-    def load_data(self, table_name, obj, database=None, **kwargs):
-        """Load data into a given table.
+    def load_data(
+        self,
+        table_name: str,
+        obj: Union[pd.DataFrame, pyarrow.Table],
+        database: Optional[str] = None,
+        method: str = 'rows',
+    ):
+        """
+        Load data into a given table.
 
         Wraps the LOAD DATA DDL statement. Loads data into an OmniSciDB table
         by physically moving data files.
@@ -1195,10 +1203,13 @@ class OmniSciDBClient(SQLClient):
         table_name : string
         obj: pandas.DataFrame or pyarrow.Table
         database : string, optional
+        method : string, {‘infer’, ‘columnar’, ‘rows’, ‘arrow’}, default 'rows'
+            The Arrow loader is typically the fastest, followed by the columnar
+            loader, followed by the row-wise loader.
         """
         _database = self.db_name
         self.set_database(database)
-        self.con.load_table(table_name, obj)
+        self.con.load_table(table_name, obj, method=method)
         self.set_database(_database)
 
     @property
