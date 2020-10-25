@@ -21,7 +21,6 @@ from ibis.backends.base_sql import (
     reduction,
     unary,
 )
-from ibis.backends.impala import compiler as impala_compiler
 from ibis.backends.impala.compiler import ImpalaSelect, ImpalaTableSetFormatter
 
 from .datatypes import ibis_type_to_bigquery_type
@@ -341,7 +340,6 @@ STRFTIME_FORMAT_FUNCTIONS = {
 
 _operation_registry = {
     **base_sql.operation_registry,
-    **impala_compiler._operation_registry,
 }
 _operation_registry.update(
     {

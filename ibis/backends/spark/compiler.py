@@ -31,15 +31,14 @@ import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 import ibis.sql.compiler as comp
 import ibis.util as util
-from ibis.backends import base_sql
 from ibis.backends.base_sql import (
     fixed_arity,
     literal_formatters,
+    operation_registry,
     reduction,
     sql_type_names,
     unary,
 )
-from ibis.backends.impala import compiler as impala_compiler
 from ibis.backends.impala.compiler import (
     ImpalaDialect,
     ImpalaExprTranslator,
@@ -315,10 +314,7 @@ def _round(translator, expr):
     return 'bround({})'.format(arg_formatted)
 
 
-_operation_registry = {
-    **base_sql.operation_registry,
-    **impala_compiler._operation_registry,
-}
+_operation_registry = {**operation_registry}
 
 _operation_registry.update(
     {
