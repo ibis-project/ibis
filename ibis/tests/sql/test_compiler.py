@@ -6,7 +6,6 @@ import pytest
 import ibis
 import ibis.expr.api as api
 import ibis.expr.operations as ops
-from ibis import impala  # noqa: E402
 from ibis.impala.compiler import ImpalaDialect, build_ast, to_sql  # noqa: E402
 from ibis.tests.expr.mocks import MockConnection
 
@@ -190,61 +189,6 @@ FROM (
         handler = query.result_handler
         output = DataFrame({'g': ['foo', 'bar', 'baz']})
         assert (handler(output) == output['g']).all()
-
-    def test_complex_array_expr_projection(self):
-        # May require finding the base table and forming a projection.
-        expr = self.table.group_by('g').aggregate(
-            [self.table.count().name('count')]
-        )
-        expr2 = expr.g.cast('double')
-
-        query = impala.compile(expr2)
-        expected = """SELECT CAST(`g` AS double) AS `tmp`
-FROM (
-  SELECT `g`, count(*) AS `count`
-  FROM alltypes
-  GROUP BY 1
-) t0"""
-        assert query == expected
-
-    def test_scalar_exprs_no_table_refs(self):
-        expr1 = ibis.now()
-        expected1 = """\
-SELECT now() AS `tmp`"""
-
-        expr2 = ibis.literal(1) + ibis.literal(2)
-        expected2 = """\
-SELECT 1 + 2 AS `tmp`"""
-
-        cases = [(expr1, expected1), (expr2, expected2)]
-
-        for expr, expected in cases:
-            result = impala.compile(expr)
-            assert result == expected
-
-    def test_expr_list_no_table_refs(self):
-        exlist = ibis.api.expr_list(
-            [
-                ibis.literal(1).name('a'),
-                ibis.now().name('b'),
-                ibis.literal(2).log().name('c'),
-            ]
-        )
-        result = impala.compile(exlist)
-        expected = """\
-SELECT 1 AS `a`, now() AS `b`, ln(2) AS `c`"""
-        assert result == expected
-
-    def test_isnull_case_expr_rewrite_failure(self):
-        # #172, case expression that was not being properly converted into an
-        # aggregation
-        reduction = self.table.g.isnull().ifelse(1, 0).sum()
-
-        result = impala.compile(reduction)
-        expected = """\
-SELECT sum(CASE WHEN `g` IS NULL THEN 1 ELSE 0 END) AS `sum`
-FROM alltypes"""
-        assert result == expected
 
 
 def _get_query(expr):
@@ -2125,66 +2069,6 @@ FROM (
   ) t1
     ON t0.`region` = t1.`region`"""
         self._compare_sql(expr, expected)
-
-    def test_join_filtered_tables_no_pushdown(self):
-        # #790, #781
-        tbl_a = ibis.table(
-            [
-                ('year', 'int32'),
-                ('month', 'int32'),
-                ('day', 'int32'),
-                ('value_a', 'double'),
-            ],
-            'a',
-        )
-
-        tbl_b = ibis.table(
-            [
-                ('year', 'int32'),
-                ('month', 'int32'),
-                ('day', 'int32'),
-                ('value_b', 'double'),
-            ],
-            'b',
-        )
-
-        tbl_a_filter = tbl_a.filter(
-            [tbl_a.year == 2016, tbl_a.month == 2, tbl_a.day == 29]
-        )
-
-        tbl_b_filter = tbl_b.filter(
-            [tbl_b.year == 2016, tbl_b.month == 2, tbl_b.day == 29]
-        )
-
-        joined = tbl_a_filter.left_join(tbl_b_filter, ['year', 'month', 'day'])
-        result = joined[tbl_a_filter.value_a, tbl_b_filter.value_b]
-
-        join_op = result.op().table.op()
-        assert join_op.left.equals(tbl_a_filter)
-        assert join_op.right.equals(tbl_b_filter)
-
-        result_sql = ibis.impala.compile(result)
-        expected_sql = """\
-SELECT t0.`value_a`, t1.`value_b`
-FROM (
-  SELECT *
-  FROM a
-  WHERE (`year` = 2016) AND
-        (`month` = 2) AND
-        (`day` = 29)
-) t0
-  LEFT OUTER JOIN (
-    SELECT *
-    FROM b
-    WHERE (`year` = 2016) AND
-          (`month` = 2) AND
-          (`day` = 29)
-  ) t1
-    ON (t0.`year` = t1.`year`) AND
-       (t0.`month` = t1.`month`) AND
-       (t0.`day` = t1.`day`)"""
-
-        assert result_sql == expected_sql
 
     def test_loj_subquery_filter_handling(self):
         # #781
