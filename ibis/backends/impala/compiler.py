@@ -1,4 +1,3 @@
-import itertools
 from io import StringIO
 from operator import add, mul, sub
 from typing import Optional
@@ -12,7 +11,6 @@ import ibis.expr.types as ir
 import ibis.sql.compiler as comp
 import ibis.sql.transforms as transforms
 import ibis.util as util
-from ibis.backends import base_sql
 from ibis.backends.base_sql import (
     BaseExprTranslator,
     binary_infix_op,
@@ -20,8 +18,10 @@ from ibis.backends.base_sql import (
     fixed_arity,
     format_call,
     literal,
+    operation_registry,
     parenthesize,
     quote_identifier,
+    type_to_sql_string,
     unary,
 )
 
@@ -112,25 +112,6 @@ class ImpalaTableSetFormatter(comp.TableSetFormatter):
         return quote_identifier(name)
 
 
-# ---------------------------------------------------------------------
-# Scalar and array expression formatting
-
-_sql_type_names = {
-    'int8': 'tinyint',
-    'int16': 'smallint',
-    'int32': 'int',
-    'int64': 'bigint',
-    'float': 'float',
-    'float32': 'float',
-    'double': 'double',
-    'float64': 'double',
-    'string': 'string',
-    'boolean': 'boolean',
-    'timestamp': 'timestamp',
-    'decimal': 'decimal',
-}
-
-
 def _cast(translator, expr):
     op = expr.op()
     arg, target_type = op.args
@@ -141,18 +122,8 @@ def _cast(translator, expr):
     if isinstance(arg, ir.TemporalValue) and target_type == dt.int64:
         return '1000000 * unix_timestamp({})'.format(arg_formatted)
     else:
-        sql_type = _type_to_sql_string(target_type)
+        sql_type = type_to_sql_string(target_type)
         return 'CAST({} AS {})'.format(arg_formatted, sql_type)
-
-
-def _type_to_sql_string(tval):
-    if isinstance(tval, dt.Decimal):
-        return 'decimal({}, {})'.format(tval.precision, tval.scale)
-    name = tval.name.lower()
-    try:
-        return _sql_type_names[name]
-    except KeyError:
-        raise com.UnsupportedBackendType(name)
 
 
 def _between(translator, expr):
@@ -474,49 +445,6 @@ def _ntile(translator, expr):
     return 'ntile({})'.format(buckets)
 
 
-def _reduction_format(translator, func_name, where, arg, *args):
-    if where is not None:
-        arg = where.ifelse(arg, ibis.NA)
-
-    return '{}({})'.format(
-        func_name,
-        ', '.join(map(translator.translate, itertools.chain([arg], args))),
-    )
-
-
-def _reduction(func_name):
-    def formatter(translator, expr):
-        op = expr.op()
-        *args, where = op.args
-        return _reduction_format(translator, func_name, where, *args)
-
-    return formatter
-
-
-def _variance_like(func_name):
-    func_names = {
-        'sample': '{}_samp'.format(func_name),
-        'pop': '{}_pop'.format(func_name),
-    }
-
-    def formatter(translator, expr):
-        arg, how, where = expr.op().args
-        return _reduction_format(translator, func_names[how], where, arg)
-
-    return formatter
-
-
-def _interval_from_integer(translator, expr):
-    # interval cannot be selected from impala
-    op = expr.op()
-    arg, unit = op.args
-    arg_formatted = translator.translate(arg)
-
-    return 'INTERVAL {} {}'.format(
-        arg_formatted, expr.type().resolution.upper()
-    )
-
-
 class CaseFormatter:
     def __init__(self, translator, base, cases, results, default):
         self.translator = translator
@@ -667,18 +595,6 @@ def _table_column(translator, expr):
     return quoted_name
 
 
-def _extract_field(sql_attr):
-    def extract_field_formatter(translator, expr):
-        op = expr.op()
-        arg = translator.translate(op.args[0])
-
-        # This is pre-2.0 Impala-style, which did not used to support the
-        # SQL-99 format extract($FIELD from expr)
-        return "extract({}, '{}')".format(arg, sql_attr)
-
-    return extract_field_formatter
-
-
 def _day_of_week_index(t, expr):
     (arg,) = expr.op().args
     return 'pmod(dayofweek({}) - 2, 7)'.format(t.translate(arg))
@@ -687,37 +603,6 @@ def _day_of_week_index(t, expr):
 def _day_of_week_name(t, expr):
     (arg,) = expr.op().args
     return 'dayname({})'.format(t.translate(arg))
-
-
-def _extract_epoch_seconds(t, expr):
-    (arg,) = expr.op().args
-    return 'unix_timestamp({})'.format(t.translate(arg))
-
-
-_impala_unit_names = {
-    'Y': 'Y',
-    'Q': 'Q',
-    'M': 'MONTH',
-    'W': 'W',
-    'D': 'J',
-    'h': 'HH',
-    'm': 'MI',
-}
-
-
-def _truncate(translator, expr):
-    op = expr.op()
-    arg, unit = op.args
-
-    arg_formatted = translator.translate(arg)
-    try:
-        unit = _impala_unit_names[unit]
-    except KeyError:
-        raise com.UnsupportedOperationError(
-            '{!r} unit is not supported in timestamp truncate'.format(unit)
-        )
-
-    return "trunc({}, '{}')".format(arg_formatted, unit)
 
 
 def _timestamp_from_unix(translator, expr):
@@ -743,124 +628,6 @@ def varargs(func_name):
     return varargs_formatter
 
 
-def _substring(translator, expr):
-    op = expr.op()
-    arg, start, length = op.args
-    arg_formatted = translator.translate(arg)
-    start_formatted = translator.translate(start)
-
-    # Impala is 1-indexed
-    if length is None or isinstance(length.op(), ops.Literal):
-        lvalue = length.op().value if length is not None else None
-        if lvalue:
-            return 'substr({}, {} + 1, {})'.format(
-                arg_formatted, start_formatted, lvalue
-            )
-        else:
-            return 'substr({}, {} + 1)'.format(arg_formatted, start_formatted)
-    else:
-        length_formatted = translator.translate(length)
-        return 'substr({}, {} + 1, {})'.format(
-            arg_formatted, start_formatted, length_formatted
-        )
-
-
-def _string_find(translator, expr):
-    op = expr.op()
-    arg, substr, start, _ = op.args
-    arg_formatted = translator.translate(arg)
-    substr_formatted = translator.translate(substr)
-
-    if start is not None and not isinstance(start.op(), ops.Literal):
-        start_fmt = translator.translate(start)
-        return 'locate({}, {}, {} + 1) - 1'.format(
-            substr_formatted, arg_formatted, start_fmt
-        )
-    elif start is not None and start.op().value:
-        sval = start.op().value
-        return 'locate({}, {}, {}) - 1'.format(
-            substr_formatted, arg_formatted, sval + 1
-        )
-    else:
-        return 'locate({}, {}) - 1'.format(substr_formatted, arg_formatted)
-
-
-def _string_join(translator, expr):
-    op = expr.op()
-    arg, strings = op.args
-    return format_call(translator, 'concat_ws', arg, *strings)
-
-
-def _parse_url(translator, expr):
-    op = expr.op()
-
-    arg, extract, key = op.args
-    arg_formatted = translator.translate(arg)
-
-    if key is None:
-        return "parse_url({}, '{}')".format(arg_formatted, extract)
-    else:
-        key_fmt = translator.translate(key)
-        return "parse_url({}, '{}', {})".format(
-            arg_formatted, extract, key_fmt
-        )
-
-
-def _find_in_set(translator, expr):
-    op = expr.op()
-
-    arg, str_list = op.args
-    arg_formatted = translator.translate(arg)
-    str_formatted = ','.join([x._arg.value for x in str_list])
-    return "find_in_set({}, '{}') - 1".format(arg_formatted, str_formatted)
-
-
-def _round(translator, expr):
-    op = expr.op()
-    arg, digits = op.args
-
-    arg_formatted = translator.translate(arg)
-
-    if digits is not None:
-        digits_formatted = translator.translate(digits)
-        return 'round({}, {})'.format(arg_formatted, digits_formatted)
-    return 'round({})'.format(arg_formatted)
-
-
-def _hash(translator, expr):
-    op = expr.op()
-    arg, how = op.args
-
-    arg_formatted = translator.translate(arg)
-
-    if how == 'fnv':
-        return 'fnv_hash({})'.format(arg_formatted)
-    else:
-        raise NotImplementedError(how)
-
-
-def _log(translator, expr):
-    op = expr.op()
-    arg, base = op.args
-    arg_formatted = translator.translate(arg)
-
-    if base is None:
-        return 'ln({})'.format(arg_formatted)
-
-    base_formatted = translator.translate(base)
-    return 'log({}, {})'.format(base_formatted, arg_formatted)
-
-
-def _count_distinct(translator, expr):
-    arg, where = expr.op().args
-
-    if where is not None:
-        arg_formatted = translator.translate(where.ifelse(arg, None))
-    else:
-        arg_formatted = translator.translate(arg)
-    return 'count(DISTINCT {})'.format(arg_formatted)
-
-
 def _null_literal(translator, expr):
     return 'NULL'
 
@@ -882,91 +649,7 @@ _expr_transforms = {
 }
 
 
-def _string_like(translator, expr):
-    arg, pattern, _ = expr.op().args
-    return '{} LIKE {}'.format(
-        translator.translate(arg), translator.translate(pattern)
-    )
-
-
-def _sign(translator, expr):
-    (arg,) = expr.op().args
-    translated_arg = translator.translate(arg)
-    translated_type = _type_to_sql_string(expr.type())
-    if expr.type() != dt.float:
-        return 'CAST(sign({}) AS {})'.format(translated_arg, translated_type)
-    return 'sign({})'.format(translated_arg)
-
-
 _operation_registry = {
-    # Unary operations
-    ops.Abs: unary('abs'),
-    ops.BaseConvert: fixed_arity('conv', 3),
-    ops.Ceil: unary('ceil'),
-    ops.Floor: unary('floor'),
-    ops.Exp: unary('exp'),
-    ops.Round: _round,
-    ops.Sign: _sign,
-    ops.Sqrt: unary('sqrt'),
-    ops.Hash: _hash,
-    ops.Log: _log,
-    ops.Ln: unary('ln'),
-    ops.Log2: unary('log2'),
-    ops.Log10: unary('log10'),
-    ops.DecimalPrecision: unary('precision'),
-    ops.DecimalScale: unary('scale'),
-    # Unary aggregates
-    ops.CMSMedian: _reduction('appx_median'),
-    ops.HLLCardinality: _reduction('ndv'),
-    ops.Mean: _reduction('avg'),
-    ops.Sum: _reduction('sum'),
-    ops.Max: _reduction('max'),
-    ops.Min: _reduction('min'),
-    ops.StandardDev: _variance_like('stddev'),
-    ops.Variance: _variance_like('var'),
-    ops.GroupConcat: _reduction('group_concat'),
-    ops.Count: _reduction('count'),
-    ops.CountDistinct: _count_distinct,
-    # string operations
-    ops.StringLength: unary('length'),
-    ops.StringAscii: unary('ascii'),
-    ops.Lowercase: unary('lower'),
-    ops.Uppercase: unary('upper'),
-    ops.Reverse: unary('reverse'),
-    ops.Strip: unary('trim'),
-    ops.LStrip: unary('ltrim'),
-    ops.RStrip: unary('rtrim'),
-    ops.Capitalize: unary('initcap'),
-    ops.Substring: _substring,
-    ops.StrRight: fixed_arity('strright', 2),
-    ops.Repeat: fixed_arity('repeat', 2),
-    ops.StringFind: _string_find,
-    ops.Translate: fixed_arity('translate', 3),
-    ops.FindInSet: _find_in_set,
-    ops.LPad: fixed_arity('lpad', 3),
-    ops.RPad: fixed_arity('rpad', 3),
-    ops.StringJoin: _string_join,
-    ops.StringSQLLike: _string_like,
-    ops.RegexSearch: fixed_arity('regexp_like', 2),
-    ops.RegexExtract: fixed_arity('regexp_extract', 3),
-    ops.RegexReplace: fixed_arity('regexp_replace', 3),
-    ops.ParseURL: _parse_url,
-    # Timestamp operations
-    ops.Date: unary('to_date'),
-    ops.TimestampNow: lambda *args: 'now()',
-    ops.ExtractYear: _extract_field('year'),
-    ops.ExtractMonth: _extract_field('month'),
-    ops.ExtractDay: _extract_field('day'),
-    ops.ExtractQuarter: _extract_field('quarter'),
-    ops.ExtractEpochSeconds: _extract_epoch_seconds,
-    ops.ExtractWeekOfYear: fixed_arity('weekofyear', 1),
-    ops.ExtractHour: _extract_field('hour'),
-    ops.ExtractMinute: _extract_field('minute'),
-    ops.ExtractSecond: _extract_field('second'),
-    ops.ExtractMillisecond: _extract_field('millisecond'),
-    ops.TimestampTruncate: _truncate,
-    ops.DateTruncate: _truncate,
-    ops.IntervalFromInteger: _interval_from_integer,
     # Other operations
     ops.E: lambda *args: 'e()',
     ops.Literal: literal,
@@ -1009,7 +692,7 @@ _operation_registry = {
     ops.DayOfWeekName: _day_of_week_name,
 }
 
-_operation_registry.update(base_sql.operation_registry)
+_operation_registry.update(operation_registry)
 _operation_registry.update(binary_infix_ops)
 
 

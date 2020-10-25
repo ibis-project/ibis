@@ -21,11 +21,10 @@ from ibis.backends.spark.datatypes import (
     spark_dtype,
 )
 from ibis.expr.timecontext import adjust_context
-from ibis.pyspark.operations import PySparkTable
-from ibis.pyspark.timecontext import (
-    combine_time_context,
-    filter_by_time_context,
-)
+from ibis.util import coerce_to_dataframe
+
+from .operations import PySparkTable
+from .timecontext import combine_time_context, filter_by_time_context
 
 
 class PySparkContext(SparkContext):
@@ -123,6 +122,12 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
     for selection in op.selections:
         if isinstance(selection, types.TableExpr):
             col_in_selection_order.extend(selection.columns)
+        elif isinstance(selection, types.DestructColumn):
+            struct_col = t.translate(selection, scope, combined_timecontext)
+            cols = [
+                struct_col[name].alias(name) for name in selection.type().names
+            ]
+            col_in_selection_order += cols
         elif isinstance(selection, (types.ColumnExpr, types.ScalarExpr)):
             col = t.translate(selection, scope, combined_timecontext).alias(
                 selection.get_name()
@@ -1643,11 +1648,25 @@ def compile_not_null(t, expr, scope, timecontext, **kwargs):
 # ------------------------- User defined function ------------------------
 
 
+def _wrap_struct_func(func, output_cols):
+    @functools.wraps(func)
+    def wrapped(*args, **kwargs):
+        result = func(*args, **kwargs)
+        return coerce_to_dataframe(result, output_cols)
+
+    return wrapped
+
+
 @compiles(ops.ElementWiseVectorizedUDF)
 def compile_elementwise_udf(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
     spark_output_type = spark_dtype(op._output_type)
-    spark_udf = pandas_udf(op.func, spark_output_type, PandasUDFType.SCALAR)
+    if isinstance(expr, (types.StructColumn, types.DestructColumn)):
+        func = _wrap_struct_func(op.func, spark_output_type.names)
+    else:
+        func = op.func
+
+    spark_udf = pandas_udf(func, spark_output_type, PandasUDFType.SCALAR)
     func_args = (t.translate(arg, scope, timecontext) for arg in op.func_args)
     return spark_udf(*func_args)
 

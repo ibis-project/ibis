@@ -2,8 +2,8 @@ import pytest
 from pandas.util import testing as tm
 
 import ibis
-from ibis.file.client import FileDatabase
-from ibis.file.csv import CSVClient, CSVTable
+from ibis.backends.base_file import FileDatabase
+from ibis.backends.csv import CSVClient, CSVTable
 
 
 @pytest.fixture
@@ -23,12 +23,12 @@ def transformed(csv):
     return t
 
 
-def test_client(tmpdir, data):
+def test_client(tmpdir, file_backends_data):
 
     # construct with a path to a file
     csv = tmpdir
 
-    for k, v in data.items():
+    for k, v in file_backends_data.items():
         f = csv / '{}.csv'.format(k)
         v.to_csv(str(f), index=False)
 
@@ -62,13 +62,13 @@ def test_navigation(csv):
     assert isinstance(closes.op(), CSVTable)
 
 
-def test_read(csv, data):
+def test_read(csv, file_backends_data):
 
     closes = csv.csv_dir.close
     assert str(closes) is not None
 
     result = closes.execute()
-    expected = data['close']
+    expected = file_backends_data['close']
 
     # csv's don't preserve dtypes
     expected['time'] = expected['time'].astype(str)
@@ -78,7 +78,7 @@ def test_read(csv, data):
     tm.assert_frame_equal(result, expected)
 
 
-def test_read_with_projection(csv2, data):
+def test_read_with_projection(csv2, file_backends_data):
 
     t = csv2.csv_dir2.df
     result = t.execute()

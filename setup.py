@@ -22,7 +22,7 @@ sqlite_requires = ['sqlalchemy>=1.1,<1.3.7']
 postgres_requires = sqlite_requires + ['psycopg2']
 mysql_requires = sqlite_requires + ['pymysql']
 
-omniscidb_requires = ['pymapd>=0.12.0']
+omniscidb_requires = ['pymapd==0.24', 'pyarrow']
 kerberos_requires = ['requests-kerberos']
 visualization_requires = ['graphviz']
 clickhouse_requires = [

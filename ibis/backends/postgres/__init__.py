@@ -1,5 +1,5 @@
 """PostgreSQL backend."""
-from ibis.sql.alchemy import to_sqlalchemy
+from ibis.backends.base_sqlalchemy.alchemy import to_sqlalchemy
 
 from .client import PostgreSQLClient
 from .compiler import compiles, dialect, rewrites  # noqa: F401, E501

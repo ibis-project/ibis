@@ -7,8 +7,8 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.sql.compiler as compiles
 import ibis.util as util
+from ibis.backends.impala import compiler as impala_compiler
 from ibis.expr.api import _add_methods, _binop_expr, _unary_op
-from ibis.impala import compiler as impala_compiler
 
 from . import operations as omniscidb_ops
 from .identifiers import quote_identifier  # noqa: F401

@@ -56,13 +56,13 @@ class CustomWindow(ibis.expr.window.Window):
 
 class CustomAggContext(AggregationContext):
     def __init__(
-        self, parent, group_by, order_by, dtype, max_lookback, preceding
+        self, parent, group_by, order_by, output_type, max_lookback, preceding
     ):
         super().__init__(
             parent=parent,
             group_by=group_by,
             order_by=order_by,
-            dtype=dtype,
+            output_type=output_type,
             max_lookback=max_lookback,
         )
         self.preceding = preceding
@@ -696,7 +696,6 @@ def test_custom_window_udf(t, custom_window):
         *,
         scope,
         operand,
-        operand_dtype,
         parent,
         group_by,
         order_by,
@@ -708,7 +707,7 @@ def test_custom_window_udf(t, custom_window):
             parent=parent,
             group_by=group_by,
             order_by=order_by,
-            dtype=operand_dtype,
+            output_type=operand.type(),
             max_lookback=window.max_lookback,
             preceding=window.preceding,
         )

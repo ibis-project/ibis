@@ -5,7 +5,7 @@ from typing import Optional
 import psycopg2  # NOQA fail early if the driver is missing
 import sqlalchemy as sa
 
-import ibis.sql.alchemy as alch
+import ibis.backends.base_sqlalchemy.alchemy as alch
 from ibis.backends.postgres import udf
 from ibis.backends.postgres.compiler import PostgreSQLDialect
 

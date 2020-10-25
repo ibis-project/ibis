@@ -41,6 +41,9 @@ from ibis.expr.types import (  # noqa
     DecimalColumn,
     DecimalScalar,
     DecimalValue,
+    DestructColumn,
+    DestructScalar,
+    DestructValue,
     Expr,
     FloatingColumn,
     FloatingScalar,
@@ -3244,11 +3247,41 @@ def _struct_get_field(expr, field_name):
     return ops.StructField(expr, field_name).to_expr().name(field_name)
 
 
-_struct_column_methods = dict(
-    __getattr__=_struct_get_field, __getitem__=_struct_get_field
+def _destructure(expr: StructColumn) -> DestructColumn:
+    """ Destructure a ``Struct`` to create a destruct column.
+
+    When assigned, a destruct column will destructured and assigned to multiple
+    columns.
+
+    Parameters
+    ----------
+    expr : StructColumn
+        The struct column to destructure.
+
+    Returns
+    -------
+    destruct_expr: ibis.expr.types.DestructColumn
+        A destruct column expression.
+    """
+    # Set name to empty string here so that we can detect and error when
+    # user set name for a destruct column.
+    if isinstance(expr, StructScalar):
+        return DestructScalar(expr._arg, expr._dtype).name("")
+    elif isinstance(expr, StructColumn):
+        return DestructColumn(expr._arg, expr._dtype).name("")
+    elif isinstance(expr, StructValue):
+        return DestructValue(expr._arg, expr._dtype).name("")
+    else:
+        raise AssertionError()
+
+
+_struct_value_methods = dict(
+    destructure=_destructure,
+    __getattr__=_struct_get_field,
+    __getitem__=_struct_get_field,
 )
 
-_add_methods(ir.StructValue, _struct_column_methods)
+_add_methods(ir.StructValue, _struct_value_methods)
 
 
 # ---------------------------------------------------------------------
@@ -4114,6 +4147,12 @@ def mutate(table, exprs=None, **mutations):
         )
         for name, expr in sorted(mutations.items(), key=operator.itemgetter(0))
     )
+
+    for expr in exprs:
+        if expr.get_name() and isinstance(expr, ir.DestructColumn):
+            raise com.ExpressionError(
+                f"Cannot name a destruct column: {expr.get_name()}"
+            )
 
     by_name = collections.OrderedDict(
         (expr.get_name(), expr) for expr in exprs

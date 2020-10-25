@@ -43,7 +43,7 @@ requirements:
     - psycopg2
     - pyarrow >=0.15
     - pydata-google-auth
-    - pymapd =0.23.0  # [py<38]
+    - pymapd 0.24  # [py<38]
     - pymysql
     - pyspark >=2.4.3  # [py<38]
     - pytables >=3.0.0
@@ -65,15 +65,15 @@ test:
     - ibis
     - ibis.backends.bigquery
     - ibis.backends.clickhouse
-    - ibis.file.csv
-    - ibis.file.parquet
-    - ibis.file.hdf5
+    - ibis.backends.csv
+    - ibis.backends.parquet
+    - ibis.backends.hdf5
     - ibis.backends.impala
     - ibis.backends.mysql
     - ibis.backends.omniscidb  # [py<38]
     - ibis.backends.pandas
     - ibis.backends.postgres
-    - ibis.pyspark  # [py<38]
+    - ibis.backends.pyspark  # [py<38]
     - ibis.backends.spark
     - ibis.backends.sqlite
 
