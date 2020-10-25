@@ -814,7 +814,7 @@ def time_range_to_range_window(translator, window):
         )
 
 
-def _format_window(translator, op, window):
+def format_window(translator, op, window):
     components = []
 
     if window.max_lookback is not None:
@@ -967,7 +967,7 @@ def window(translator, expr):
         if any(col_type in time_range_types for col_type in order_by_types):
             window = time_range_to_range_window(translator, window)
 
-    window_formatted = _format_window(translator, op, window)
+    window_formatted = format_window(translator, op, window)
 
     arg_formatted = translator.translate(arg)
     result = '{} {}'.format(arg_formatted, window_formatted)
