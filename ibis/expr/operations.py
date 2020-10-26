@@ -2224,6 +2224,8 @@ class Aggregation(TableNode, HasSchema):
 
         for e in self.by + self.metrics:
             if isinstance(e, ir.DestructValue):
+                # If this is a destruct, then we destructure
+                # the result and assign to multiple columns
                 struct_type = e.type()
                 for name in struct_type.names:
                     names.append(name)

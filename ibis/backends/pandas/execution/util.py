@@ -1,5 +1,5 @@
 import operator
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -63,8 +63,27 @@ def compute_sorted_frame(
 
 
 def coerce_to_output(
-    result: Any, expr: ir.Expr, index: pd.Index
+    result: Any, expr: ir.Expr, index: Optional[pd.Index] = None
 ) -> Union[pd.Series, pd.DataFrame]:
+    """ Cast the result to either a Series or DataFrame.
+
+    This method casts result of an execution to a Series or DataFrame,
+    depending on the type of the expression and shape of the result.
+
+    Parameters
+    ----------
+    result: Any
+        The result to cast
+    expr: ibis.expr.types.Expr
+        The expression associated with the result
+    index: pd.Index
+        Optional. If passed, scalar results will be broadcasted according
+        to the index.
+
+    Returns
+    -------
+    result: A Series or DataFrame
+    """
     result_name = getattr(expr, '_name', None)
 
     if isinstance(expr, (ir.DestructColumn, ir.StructColumn)):

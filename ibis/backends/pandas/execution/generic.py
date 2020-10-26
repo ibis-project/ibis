@@ -437,7 +437,6 @@ def execute_aggregation_dataframe(
         coerce_to_output(
             execute(metric, scope=scope, timecontext=timecontext, **kwargs),
             metric,
-            index=None,
         )
         for metric in op.metrics
     ]
