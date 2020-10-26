@@ -57,6 +57,11 @@ jobs:
           MYSQL_PASSWORD: ibis
         options: --health-cmd="mysqladmin ping" --health-interval 10s --health-timeout 5s --health-retries 3
     steps:
+    - name: ping impala
+      run: |
+        ping -c4 postgres
+        ping -c4 mysql
+
     - name: checkout
       uses: actions/checkout@v1
 
