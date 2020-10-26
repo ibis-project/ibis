@@ -120,6 +120,12 @@ jobs:
     - name: checkout
       uses: actions/checkout@v1
 
+    - name: ping impala
+      run: ping -c4 impala
+
+    - name: nc impala
+      run: nc -zvw3 impala
+
     - name: set up environment
       run: ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
 
