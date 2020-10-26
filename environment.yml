@@ -56,4 +56,4 @@ dependencies:
   - sphinx_rtd_theme>=0.5
   - pip
   - pip:
-    - git+https://github.com/datapythonista/pysuerga
+    - pysuerga
