@@ -121,7 +121,10 @@ jobs:
       uses: actions/checkout@v1
 
     - name: ping impala
-      run: ping -c4 impala
+      run: |
+        ping -c4 postgres
+        ping -c4 clickhouse
+        ping -c4 impala
 
     - name: nc impala
       run: nc -zvw3 impala
