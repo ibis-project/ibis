@@ -9,7 +9,6 @@ from collections import OrderedDict
 from operator import methodcaller
 from typing import Optional
 
-import numpy as np
 import pandas as pd
 from multipledispatch import Dispatcher
 from toolz import compose, concat, concatv, first, unique
@@ -22,6 +21,7 @@ from ibis.expr.typing import TimeContext
 from ..core import execute
 from ..dispatch import execute_node
 from ..execution import constants, util
+from ..execution.util import coerce_to_output
 
 compute_projection = Dispatcher(
     'compute_projection',
@@ -137,19 +137,13 @@ def compute_projection_column_expr(
         for t in op.root_tables()
     )
 
-    result = execute(expr, scope=scope, timecontext=timecontext, **kwargs)
+    result = coerce_to_output(
+        execute(expr, scope=scope, timecontext=timecontext, **kwargs),
+        expr,
+        data.index,
+    )
     assert result_name is not None, 'Column selection name is None'
-    if np.isscalar(result):
-        return pd.Series(
-            np.repeat(result, len(data.index)),
-            index=data.index,
-            name=result_name,
-        )
-    elif isinstance(expr, ir.DestructColumn):
-        result.columns = expr.type().names
-        return result
-    else:
-        return result.rename(result_name)
+    return result
 
 
 @compute_projection.register(ir.TableExpr, ops.Selection, pd.DataFrame)
