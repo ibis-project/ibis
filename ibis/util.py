@@ -80,6 +80,11 @@ def coerce_to_dataframe(data: Any, names: List[str]) -> pd.DataFrame:
     The following shapes are allowed:
     (1) A list/tuple of Series
     (2) A Series of list/tuple
+    (3) pd.DataFrame
+
+    Note:
+    This method does NOT always return a new DataFrame. If a DataFrame is
+    passed in, this method will return the original object.
 
     Parameters
     ----------
