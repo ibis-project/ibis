@@ -43,6 +43,7 @@ from ibis.expr.types import (  # noqa
     DecimalValue,
     DestructColumn,
     DestructScalar,
+    DestructValue,
     Expr,
     FloatingColumn,
     FloatingScalar,
@@ -3268,6 +3269,10 @@ def _destructure(expr: StructColumn) -> DestructColumn:
         return DestructScalar(expr._arg, expr._dtype).name("")
     elif isinstance(expr, StructColumn):
         return DestructColumn(expr._arg, expr._dtype).name("")
+    elif isinstance(expr, StructValue):
+        return DestructValue(expr._arg, expr._dtype).name("")
+    else:
+        raise AssertionError()
 
 
 _struct_value_methods = dict(

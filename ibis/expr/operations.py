@@ -1967,6 +1967,8 @@ class Selection(TableNode, HasSchema):
 
         for projection in self.selections:
             if isinstance(projection, ir.DestructColumn):
+                # If this is a destruct, then we destructure
+                # the result and assign to multiple columns
                 struct_type = projection.type()
                 for name in struct_type.names:
                     names.append(name)

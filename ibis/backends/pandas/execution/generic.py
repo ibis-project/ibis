@@ -24,7 +24,6 @@ import ibis.expr.types as ir
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import TIME_COL
 from ibis.expr.typing import TimeContext
-from ibis.util import coerce_to_dataframe
 
 from .. import aggcontext as agg_ctx
 from ..client import PandasClient, PandasTable
@@ -41,6 +40,7 @@ from ..core import (
 )
 from ..dispatch import execute_literal, execute_node
 from ..execution import constants
+from ..execution.util import coerce_to_output
 
 
 # By default return the literal value
@@ -433,17 +433,14 @@ def execute_aggregation_dataframe(
 
     scope = scope.merge_scope(Scope({op.table.op(): source}, timecontext))
 
-    pieces = []
-    for metric in op.metrics:
-        result = execute(
-            metric, scope=scope, timecontext=timecontext, **kwargs
+    pieces = [
+        coerce_to_output(
+            execute(metric, scope=scope, timecontext=timecontext, **kwargs),
+            metric,
+            index=None,
         )
-
-        if isinstance(metric, ir.DestructValue):
-            result = coerce_to_dataframe(result, metric.type().names)
-            pieces.append(result)
-        else:
-            pieces.append(pd.Series(result, name=metric.get_name()))
+        for metric in op.metrics
+    ]
 
     result = pd.concat(pieces, axis=1)
 

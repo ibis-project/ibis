@@ -251,6 +251,10 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
                 # map(next, *rest) gets the inputs for the next group
                 # TODO: might be inefficient to do this on every call
                 result = func(first, *map(next, rest))
+
+                # Here we don't user execution.util.coerce_to_output
+                # because this is the inner loop and we do not want
+                # to wrap a scalar value with a series.
                 if isinstance(op._output_type, dt.Struct):
                     return coerce_to_dataframe(result, op._output_type.names)
                 else:
@@ -260,11 +264,12 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
         elif isinstance(aggcontext, Summarize):
             iters = create_gens_from_args_groupby(args[1:])
 
+            # TODO: Unify calling convension here to be more like
+            # window
             def aggregator(first, *rest):
                 # map(next, *rest) gets the inputs for the next group
                 # TODO: might be inefficient to do this on every call
-                result = func(first, *map(next, rest))
-                return result
+                return func(first, *map(next, rest))
 
             return aggcontext.agg(args[0], aggregator, *iters)
         else:

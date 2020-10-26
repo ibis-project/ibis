@@ -1,9 +1,13 @@
 import operator
+from typing import Any, Union
 
+import numpy as np
+import pandas as pd
 import toolz
 
 import ibis.common.exceptions as com
 import ibis.util
+from ibis.expr import types as ir
 from ibis.expr.scope import Scope
 
 from ..core import execute
@@ -56,3 +60,26 @@ def compute_sorted_frame(
         computed_sort_keys[:ngrouping_keys],
         computed_sort_keys[ngrouping_keys:],
     )
+
+
+def coerce_to_output(
+    result: Any, expr: ir.Expr, index: pd.Index
+) -> Union[pd.Series, pd.DataFrame]:
+    result_name = getattr(expr, '_name', None)
+
+    if isinstance(expr, (ir.DestructColumn, ir.StructColumn)):
+        return ibis.util.coerce_to_dataframe(result, expr.type().names)
+    elif isinstance(expr, (ir.DestructScalar, ir.StructScalar)):
+        # Here there are two cases, if this is groupby aggregate,
+        # then the result e a Series of tuple/list, or
+        # if this is non grouped aggregate, then the result
+        return ibis.util.coerce_to_dataframe(result, expr.type().names)
+    elif np.isscalar(result):
+        if index is None:
+            return pd.Series(result, name=result_name)
+        else:
+            return pd.Series(
+                np.repeat(result, len(index)), index=index, name=result_name,
+            )
+    else:
+        return result.rename(result_name)
