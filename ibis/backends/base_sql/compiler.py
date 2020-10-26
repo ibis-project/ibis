@@ -10,18 +10,11 @@ from ibis.backends.base_sql import (
     operation_registry,
     quote_identifier,
 )
-from ibis.backends.base_sql.compiler import (
-    BaseContext,
-    BaseExprTranslator,
-    BaseQueryBuilder,
-    BaseSelectBuilder,
-    BaseTableSetFormatter,
-)
 
 
 def build_ast(expr, context):
     assert context is not None, 'context is None'
-    builder = ImpalaQueryBuilder(expr, context=context)
+    builder = BaseQueryBuilder(expr, context=context)
     return builder.get_result()
 
 
@@ -35,7 +28,7 @@ def _get_query(expr, context):
 
 def to_sql(expr, context=None):
     if context is None:
-        context = ImpalaDialect.make_context()
+        context = BaseDialect.make_context()
     assert context is not None, 'context is None'
     query = _get_query(expr, context)
     return query.compile()
@@ -45,23 +38,23 @@ def to_sql(expr, context=None):
 # Select compilation
 
 
-class ImpalaSelectBuilder(BaseSelectBuilder):
+class BaseSelectBuilder(comp.SelectBuilder):
     @property
     def _select_class(self):
-        return ImpalaSelect
+        return BaseSelect
 
 
-class ImpalaQueryBuilder(BaseQueryBuilder):
+class BaseQueryBuilder(comp.QueryBuilder):
 
-    select_builder = ImpalaSelectBuilder
+    select_builder = BaseSelectBuilder
 
 
-class ImpalaContext(BaseContext):
+class BaseContext(comp.QueryContext):
     def _to_sql(self, expr, ctx):
         return to_sql(expr, ctx)
 
 
-class ImpalaSelect(comp.Select):
+class BaseSelect(comp.Select):
 
     """
     A SELECT statement which, after execution, might yield back to the user a
@@ -71,22 +64,32 @@ class ImpalaSelect(comp.Select):
 
     @property
     def translator(self):
-        return ImpalaExprTranslator
+        return BaseExprTranslator
 
     @property
     def table_set_formatter(self):
-        return ImpalaTableSetFormatter
+        return BaseTableSetFormatter
 
 
-class ImpalaTableSetFormatter(BaseTableSetFormatter):
+class BaseTableSetFormatter(comp.TableSetFormatter):
+
+    _join_names = {
+        ops.InnerJoin: 'INNER JOIN',
+        ops.LeftJoin: 'LEFT OUTER JOIN',
+        ops.RightJoin: 'RIGHT OUTER JOIN',
+        ops.OuterJoin: 'FULL OUTER JOIN',
+        ops.LeftAntiJoin: 'LEFT ANTI JOIN',
+        ops.LeftSemiJoin: 'LEFT SEMI JOIN',
+        ops.CrossJoin: 'CROSS JOIN',
+    }
+
     def _get_join_type(self, op):
         jname = self._join_names[type(op)]
 
-        # Impala requires this
-        if not op.predicates:
-            jname = self._join_names[ops.CrossJoin]
-
         return jname
+
+    def _quote_identifier(self, name):
+        return quote_identifier(name)
 
 
 _map_interval_to_microseconds = dict(
@@ -162,20 +165,28 @@ _operation_registry = {**operation_registry}
 _operation_registry.update(binary_infix_ops)
 
 
-class ImpalaExprTranslator(BaseExprTranslator):
+# TODO move the name method to comp.ExprTranslator and use that instead
+class BaseExprTranslator(comp.ExprTranslator):
+    """Base expression translator."""
+
     _registry = _operation_registry
-    context_class = ImpalaContext
+    context_class = BaseContext
+
+    @staticmethod
+    def _name_expr(formatted_expr, quoted_name):
+        return '{} AS {}'.format(formatted_expr, quoted_name)
+
+    def name(self, translated, name, force=True):
+        """Return expression with its identifier."""
+        return self._name_expr(translated, quote_identifier(name, force=force))
 
 
-class ImpalaDialect(comp.Dialect):
+class BaseDialect(comp.Dialect):
     translator = BaseExprTranslator
 
 
-dialect = ImpalaDialect
-
-
-compiles = ImpalaExprTranslator.compiles
-rewrites = ImpalaExprTranslator.rewrites
+compiles = BaseExprTranslator.compiles
+rewrites = BaseExprTranslator.rewrites
 
 
 @rewrites(ops.FloorDivide)

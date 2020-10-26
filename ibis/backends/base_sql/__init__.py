@@ -173,19 +173,6 @@ def quote_identifier(name, quotechar='`', force=False):
         return name
 
 
-# TODO move the name method to comp.ExprTranslator and use that instead
-class BaseExprTranslator(comp.ExprTranslator):
-    """Base expression translator."""
-
-    @staticmethod
-    def _name_expr(formatted_expr, quoted_name):
-        return '{} AS {}'.format(formatted_expr, quoted_name)
-
-    def name(self, translated, name, force=True):
-        """Return expression with its identifier."""
-        return self._name_expr(translated, quote_identifier(name, force=force))
-
-
 parenthesize = '({})'.format
 
 
