@@ -71,6 +71,11 @@ jobs:
     runs-on: ubuntu-latest
     env:
       BACKENDS: "impala clickhouse"
+      IBIS_TEST_NN_HOST: impala
+      IBIS_TEST_IMPALA_HOST: impala
+      IBIS_TEST_IMPALA_PORT: 21050
+      IBIS_TEST_WEBHDFS_PORT: 50070
+      IBIS_TEST_WEBHDFS_USER: hdfs
     strategy:
       fail-fast: false
       matrix:
