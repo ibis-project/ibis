@@ -12,6 +12,7 @@ from ibis.backends.base_sql import (
 )
 from ibis.backends.base_sql.compiler import (
     BaseContext,
+    BaseDialect,
     BaseExprTranslator,
     BaseQueryBuilder,
     BaseSelectBuilder,
@@ -35,7 +36,7 @@ def _get_query(expr, context):
 
 def to_sql(expr, context=None):
     if context is None:
-        context = ImpalaDialect.make_context()
+        context = BaseDialect.make_context()
     assert context is not None, 'context is None'
     query = _get_query(expr, context)
     return query.compile()
@@ -54,11 +55,6 @@ class ImpalaSelectBuilder(BaseSelectBuilder):
 class ImpalaQueryBuilder(BaseQueryBuilder):
 
     select_builder = ImpalaSelectBuilder
-
-
-class ImpalaContext(BaseContext):
-    def _to_sql(self, expr, ctx):
-        return to_sql(expr, ctx)
 
 
 class ImpalaSelect(comp.Select):
@@ -158,17 +154,16 @@ def _replace_interval_with_scalar(expr):
         return method(left_arg, right_arg)
 
 
-_operation_registry = {**operation_registry}
-_operation_registry.update(binary_infix_ops)
+_operation_registry = {**operation_registry, **binary_infix_ops}
 
 
 class ImpalaExprTranslator(BaseExprTranslator):
     _registry = _operation_registry
-    context_class = ImpalaContext
+    context_class = BaseContext
 
 
-class ImpalaDialect(comp.Dialect):
-    translator = BaseExprTranslator
+class ImpalaDialect(BaseDialect):
+    pass
 
 
 dialect = ImpalaDialect

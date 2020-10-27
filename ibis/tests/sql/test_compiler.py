@@ -6,12 +6,10 @@ import pytest
 import ibis
 import ibis.expr.api as api
 import ibis.expr.operations as ops
-from ibis import impala  # noqa: E402
-from ibis.impala.compiler import ImpalaDialect, build_ast, to_sql  # noqa: E402
+from ibis.backends.base_sql.compiler import BaseDialect, build_ast, to_sql
 from ibis.tests.expr.mocks import MockConnection
 
 pytest.importorskip('sqlalchemy')
-pytest.importorskip('impala.dbapi')
 
 
 class TestASTBuilder(unittest.TestCase):
@@ -199,7 +197,7 @@ FROM (
         )
         expr2 = expr.g.cast('double')
 
-        query = impala.compile(expr2)
+        query = to_sql(expr2)
         expected = """SELECT CAST(`g` AS double) AS `tmp`
 FROM (
   SELECT `g`, count(*) AS `count`
@@ -220,7 +218,7 @@ SELECT 1 + 2 AS `tmp`"""
         cases = [(expr1, expected1), (expr2, expected2)]
 
         for expr, expected in cases:
-            result = impala.compile(expr)
+            result = to_sql(expr)
             assert result == expected
 
     def test_expr_list_no_table_refs(self):
@@ -231,7 +229,7 @@ SELECT 1 + 2 AS `tmp`"""
                 ibis.literal(2).log().name('c'),
             ]
         )
-        result = impala.compile(exlist)
+        result = to_sql(exlist)
         expected = """\
 SELECT 1 AS `a`, now() AS `b`, ln(2) AS `c`"""
         assert result == expected
@@ -241,7 +239,7 @@ SELECT 1 AS `a`, now() AS `b`, ln(2) AS `c`"""
         # aggregation
         reduction = self.table.g.isnull().ifelse(1, 0).sum()
 
-        result = impala.compile(reduction)
+        result = to_sql(reduction)
         expected = """\
 SELECT sum(CASE WHEN `g` IS NULL THEN 1 ELSE 0 END) AS `sum`
 FROM alltypes"""
@@ -249,7 +247,7 @@ FROM alltypes"""
 
 
 def _get_query(expr):
-    ast = build_ast(expr, ImpalaDialect.make_context())
+    ast = build_ast(expr, BaseDialect.make_context())
     return ast.queries[0]
 
 
@@ -2164,7 +2162,7 @@ FROM (
         assert join_op.left.equals(tbl_a_filter)
         assert join_op.right.equals(tbl_b_filter)
 
-        result_sql = ibis.impala.compile(result)
+        result_sql = to_sql(result)
         expected_sql = """\
 SELECT t0.`value_a`, t1.`value_b`
 FROM (

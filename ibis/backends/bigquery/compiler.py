@@ -15,13 +15,12 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends import base_sql
 from ibis.backends.base_sql import (
-    BaseExprTranslator,
     fixed_arity,
     literal,
     reduction,
     unary,
 )
-from ibis.impala.compiler import ImpalaSelect, ImpalaTableSetFormatter
+from ibis.backends.base_sql.compiler import BaseSelect, BaseTableSetFormatter
 
 from .datatypes import ibis_type_to_bigquery_type
 
@@ -479,14 +478,14 @@ def compiles_string_to_timestamp(translator, expr):
     return 'PARSE_TIMESTAMP({}, {})'.format(fmt_string, arg_formatted)
 
 
-class BigQueryTableSetFormatter(ImpalaTableSetFormatter):
+class BigQueryTableSetFormatter(BaseTableSetFormatter):
     def _quote_identifier(self, name):
         if re.match(r'^[A-Za-z][A-Za-z_0-9]*$', name):
             return name
         return '`{}`'.format(name)
 
 
-class BigQuerySelect(ImpalaSelect):
+class BigQuerySelect(BaseSelect):
 
     translator = BigQueryExprTranslator
 
