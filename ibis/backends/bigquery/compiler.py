@@ -20,7 +20,11 @@ from ibis.backends.base_sql import (
     reduction,
     unary,
 )
-from ibis.backends.base_sql.compiler import BaseSelect, BaseTableSetFormatter
+from ibis.backends.base_sql.compiler import (
+    BaseSelect,
+    BaseTableSetFormatter,
+    BaseExprTranslator,
+)
 
 from .datatypes import ibis_type_to_bigquery_type
 

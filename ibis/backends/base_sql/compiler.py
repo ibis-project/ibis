@@ -161,8 +161,7 @@ def _replace_interval_with_scalar(expr):
         return method(left_arg, right_arg)
 
 
-_operation_registry = {**operation_registry}
-_operation_registry.update(binary_infix_ops)
+_operation_registry = {**operation_registry, **binary_infix_ops}
 
 
 # TODO move the name method to comp.ExprTranslator and use that instead

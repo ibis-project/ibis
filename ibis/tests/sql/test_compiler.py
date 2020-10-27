@@ -928,27 +928,6 @@ FROM tpch_nation t0
         result = to_sql(joined.materialize())
         assert result == expected
 
-    def test_join_no_predicates_for_impala(self):
-        # Impala requires that joins without predicates be written explicitly
-        # as CROSS JOIN, since result sets can accidentally get too large if a
-        # query is executed before predicates are written
-        t1 = self.con.table('star1')
-        t2 = self.con.table('star2')
-
-        joined2 = t1.cross_join(t2)[[t1]]
-
-        expected = """SELECT t0.*
-FROM star1 t0
-  CROSS JOIN star2 t1"""
-        result2 = to_sql(joined2)
-        assert result2 == expected
-
-        for jtype in ['inner_join', 'left_join', 'outer_join']:
-            joined = getattr(t1, jtype)(t2)[[t1]]
-
-            result = to_sql(joined)
-            assert result == expected
-
     def test_semi_anti_joins(self):
         sj, aj = self._case_semi_anti_joins()
 
@@ -1988,6 +1967,7 @@ WHERE NOT EXISTS (
 
     def test_limit_cte_extract(self):
         case = self._case_limit_cte_extract()
+        result = to_sql(case)
 
         expected = """\
 WITH t0 AS (
@@ -1999,7 +1979,7 @@ SELECT t0.*
 FROM t0
   CROSS JOIN t0 t1"""
 
-        self._compare_sql(case, expected)
+        assert result == expected
 
     def test_sort_by(self):
         cases = self._case_sort_by()
