@@ -15,14 +15,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]  # TODO add windows and fix bash scripts (conda not found)
+        os: [ubuntu-latest, windows-latest]
         python_version: ["3.7", "3.8"]
     steps:
     - name: checkout
       uses: actions/checkout@v1
 
     - name: set up environment
-      run: ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
+      run: ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS" ""${{ runner.os }}""
       shell: bash
 
     - name: run tests
