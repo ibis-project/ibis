@@ -42,6 +42,8 @@ from ibis.expr.types import (  # noqa
     DecimalScalar,
     DecimalValue,
     DestructColumn,
+    DestructScalar,
+    DestructValue,
     Expr,
     FloatingColumn,
     FloatingScalar,
@@ -3263,16 +3265,23 @@ def _destructure(expr: StructColumn) -> DestructColumn:
     """
     # Set name to empty string here so that we can detect and error when
     # user set name for a destruct column.
-    return DestructColumn(expr._arg, expr._dtype).name("")
+    if isinstance(expr, StructScalar):
+        return DestructScalar(expr._arg, expr._dtype).name("")
+    elif isinstance(expr, StructColumn):
+        return DestructColumn(expr._arg, expr._dtype).name("")
+    elif isinstance(expr, StructValue):
+        return DestructValue(expr._arg, expr._dtype).name("")
+    else:
+        raise AssertionError()
 
 
-_struct_column_methods = dict(
+_struct_value_methods = dict(
     destructure=_destructure,
     __getattr__=_struct_get_field,
     __getitem__=_struct_get_field,
 )
 
-_add_methods(ir.StructValue, _struct_column_methods)
+_add_methods(ir.StructValue, _struct_value_methods)
 
 
 # ---------------------------------------------------------------------

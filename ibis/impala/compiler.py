@@ -165,10 +165,7 @@ def _replace_interval_with_scalar(expr):
         method = _map_interval_op_to_op[type(expr_op)]
         return method(left_arg, right_arg)
 
-
-_operation_registry = {}
-
-_operation_registry.update(operation_registry)
+_operation_registry = {**operation_registry}
 _operation_registry.update(binary_infix_ops)
 
 

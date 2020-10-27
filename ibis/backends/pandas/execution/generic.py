@@ -40,6 +40,7 @@ from ..core import (
 )
 from ..dispatch import execute_literal, execute_node
 from ..execution import constants
+from ..execution.util import coerce_to_output
 
 
 # By default return the literal value
@@ -433,9 +434,9 @@ def execute_aggregation_dataframe(
     scope = scope.merge_scope(Scope({op.table.op(): source}, timecontext))
 
     pieces = [
-        pd.Series(
+        coerce_to_output(
             execute(metric, scope=scope, timecontext=timecontext, **kwargs),
-            name=metric.get_name(),
+            metric,
         )
         for metric in op.metrics
     ]
