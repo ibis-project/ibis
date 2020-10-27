@@ -6,21 +6,22 @@
 
 PYTHON_VERSION="${1:-3.7}"
 BACKENDS="$2"
+RUNNER_OS="$3"
 
 # Add conda to path
-if [ "$OS" == "Linux" ]; then
+if [[ "$RUNNER_OS" == "Linux" ]]; then
     CONDA_PATH="/usr/share/miniconda/bin"
-elif [ "$OS" == "Windows" ]; then
+elif [[ "$RUNNER_OS" == "Windows" ]]; then
     CONDA_PATH="/c/Miniconda/Scripts"
 else
-    echo "OS: ${OS} not supported"
+    echo "RUNNER_OS: ${RUNNER_OS} not supported"
     exit 1
 fi
 PATH=${CONDA_PATH}:${PATH}
 
 echo "PYTHON_VERSION: $PYTHON_VERSION"
 echo "BACKENDS: $BACKENDS"
-echo "OS: $OS"
+echo "OS: $RUNNER_OS"
 echo "::add-path::${CONDA_PATH}"
 
 conda update -n base -c anaconda --all --yes conda
