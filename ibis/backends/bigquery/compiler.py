@@ -14,16 +14,11 @@ import ibis.expr.lineage as lin
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends import base_sql
-from ibis.backends.base_sql import (
-    fixed_arity,
-    literal,
-    reduction,
-    unary,
-)
+from ibis.backends.base_sql import fixed_arity, literal, reduction, unary
 from ibis.backends.base_sql.compiler import (
+    BaseExprTranslator,
     BaseSelect,
     BaseTableSetFormatter,
-    BaseExprTranslator,
 )
 
 from .datatypes import ibis_type_to_bigquery_type
