@@ -165,6 +165,29 @@ Executing expressions
    ImpalaClient.execute
    ImpalaClient.disable_codegen
 
+.. _api.hdfs:
+
+HDFS
+~~~~
+
+Client objects have an ``hdfs`` attribute you can use to interact directly with
+HDFS.
+
+.. autosummary::
+   :toctree: generated/
+
+   hdfs_connect
+   HDFS.ls
+   HDFS.chmod
+   HDFS.chown
+   HDFS.get
+   HDFS.head
+   HDFS.put
+   HDFS.put_tarfile
+   HDFS.rm
+   HDFS.rmdir
+   HDFS.size
+   HDFS.status
 
 
 The Impala client object
