@@ -6,7 +6,7 @@
 
 PYTHON_VERSION="${1:-3.7}"
 BACKENDS="$2"
-RUNNER_OS="$3"
+RUNNER_OS="${3:-Linux}"
 
 # Add conda to path
 if [[ "$RUNNER_OS" == "Linux" ]]; then
