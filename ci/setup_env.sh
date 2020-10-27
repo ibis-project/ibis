@@ -8,9 +8,9 @@ PYTHON_VERSION="${1:-3.7}"
 BACKENDS="$2"
 
 # Add conda to path
-if [[ "$OS" == "Linux" ]]; then
+if [ "$OS" == "Linux" ]; then
     CONDA_PATH="/usr/share/miniconda/bin"
-elif [[ "$OS" == "Windows" ]]; then
+elif [ "$OS" == "Windows" ]; then
     CONDA_PATH="/c/Miniconda/Scripts"
 else
     echo "OS: ${OS} not supported"
