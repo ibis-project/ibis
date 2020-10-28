@@ -1967,6 +1967,8 @@ class Selection(TableNode, HasSchema):
 
         for projection in self.selections:
             if isinstance(projection, ir.DestructColumn):
+                # If this is a destruct, then we destructure
+                # the result and assign to multiple columns
                 struct_type = projection.type()
                 for name in struct_type.names:
                     names.append(name)
@@ -2220,10 +2222,17 @@ class Aggregation(TableNode, HasSchema):
         names = []
         types = []
 
-        # All exprs must be named
         for e in self.by + self.metrics:
-            names.append(e.get_name())
-            types.append(e.type())
+            if isinstance(e, ir.DestructValue):
+                # If this is a destruct, then we destructure
+                # the result and assign to multiple columns
+                struct_type = e.type()
+                for name in struct_type.names:
+                    names.append(name)
+                    types.append(struct_type[name])
+            else:
+                names.append(e.get_name())
+                types.append(e.type())
 
         return Schema(names, types)
 

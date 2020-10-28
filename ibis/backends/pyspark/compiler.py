@@ -21,6 +21,7 @@ from ibis.backends.spark.datatypes import (
     spark_dtype,
 )
 from ibis.expr.timecontext import adjust_context
+from ibis.util import coerce_to_dataframe
 
 from .operations import PySparkTable
 from .timecontext import combine_time_context, filter_by_time_context
@@ -1651,8 +1652,7 @@ def _wrap_struct_func(func, output_cols):
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
         result = func(*args, **kwargs)
-        result.columns = output_cols
-        return result
+        return coerce_to_dataframe(result, output_cols)
 
     return wrapped
 
