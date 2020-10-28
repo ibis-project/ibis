@@ -5,7 +5,7 @@ import pytest
 
 import ibis
 from ibis.impala.compiler import to_sql  # noqa: E402
-from ibis.tests.expr.mocks import MockConnection
+from ibis.impala.tests.mocks import MockImpalaConnection
 from ibis.tests.sql.test_compiler import ExprTestCases
 
 pytest.importorskip('sqlalchemy')
@@ -32,7 +32,7 @@ FROM `table`"""
 class TestSelectSQL(unittest.TestCase, ExprTestCases):
     @classmethod
     def setUpClass(cls):
-        cls.con = MockConnection()
+        cls.con = MockImpalaConnection()
 
     def test_join_no_predicates_for_impala(self):
         # Impala requires that joins without predicates be written explicitly
@@ -54,6 +54,22 @@ FROM star1 t0
 
             result = to_sql(joined)
             assert result == expected
+
+    def test_limit_cte_extract(self):
+        case = self._case_limit_cte_extract()
+        result = to_sql(case)
+
+        expected = """\
+WITH t0 AS (
+  SELECT *
+  FROM functional_alltypes
+  LIMIT 100
+)
+SELECT t0.*
+FROM t0
+  CROSS JOIN t0 t1"""
+
+        assert result == expected
 
 
 def test_nested_join_base():
