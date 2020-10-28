@@ -1104,6 +1104,7 @@ operation_registry = {
     ops.DenseRank: lambda *args: 'dense_rank()',
     ops.MinRank: lambda *args: 'rank()',
     ops.PercentRank: lambda *args: 'percent_rank()',
+    ops.CumeDist: lambda *args: 'cume_dist()',
     ops.FirstValue: unary('first_value'),
     ops.LastValue: unary('last_value'),
     ops.NthValue: nth_value,
