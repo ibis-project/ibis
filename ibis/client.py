@@ -2,11 +2,11 @@
 import abc
 from typing import List, Optional
 
+import ibis.backends.base_sqlalchemy.compiler as comp
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-import ibis.sql.compiler as comp
 import ibis.util as util
 from ibis.config import options
 from ibis.expr.typing import TimeContext

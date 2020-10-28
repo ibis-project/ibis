@@ -20,11 +20,12 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.expr.window as W
-import ibis.sql.compiler as comp
-import ibis.sql.transforms as transforms
 import ibis.util as util
 from ibis.client import Database, Query, SQLClient
-from ibis.sql.compiler import Dialect, Select, TableSetFormatter, Union
+
+from . import compiler as comp
+from . import transforms
+from .compiler import Dialect, Select, TableSetFormatter, Union
 
 geospatial_supported = False
 try:

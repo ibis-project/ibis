@@ -19,13 +19,13 @@ import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
+from ibis.backends.base_sqlalchemy.compiler import DDL, DML
 from ibis.client import Database, DatabaseEntity, Query, SQLClient
 from ibis.config import options
 from ibis.filesystems import HDFS, WebHDFS
 from ibis.impala import ddl, udf
 from ibis.impala.compat import HS2Error, ImpylaError, impyla
 from ibis.impala.compiler import ImpalaDialect, build_ast
-from ibis.sql.compiler import DDL, DML
 from ibis.util import log
 
 

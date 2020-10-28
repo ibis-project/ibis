@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import toolz
 
-from ibis.sql.compiler import Dialect
+from ibis.backends.base_sqlalchemy.compiler import Dialect
 
 from .client import PandasClient
 from .execution import execute, execute_node

@@ -16,8 +16,8 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis.backends.base_sqlalchemy.compiler import DDL, DML
 from ibis.client import Database, DatabaseEntity, Query, SQLClient
-from ibis.sql.compiler import DDL, DML
 from ibis.util import log
 
 from . import ddl

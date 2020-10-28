@@ -7,12 +7,12 @@ import toolz
 from multipledispatch import Dispatcher
 
 import ibis
+import ibis.backends.base_sqlalchemy.compiler as comp
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.lineage as lin
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.sql.compiler as comp
 from ibis.backends import base_sql
 from ibis.backends.base_sql import (
     BaseExprTranslator,
