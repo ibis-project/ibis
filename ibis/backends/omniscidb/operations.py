@@ -13,8 +13,12 @@ import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis import literal as L
-from ibis.backends import base_sql
-from ibis.impala import compiler as impala_compiler
+from ibis.backends.base_sql import (
+    cumulative_to_window,
+    format_window,
+    operation_registry,
+    time_range_to_range_window,
+)
 
 from . import dtypes as omniscidb_dtypes
 from .identifiers import quote_identifier
@@ -861,7 +865,7 @@ def _window(translator, expr):
         )
 
     if isinstance(window_op, ops.CumulativeOp):
-        arg = impala_compiler._cumulative_to_window(translator, arg, window)
+        arg = cumulative_to_window(translator, arg, window)
         return translator.translate(arg)
 
     if window.preceding is not None:
@@ -885,11 +889,9 @@ def _window(translator, expr):
         order_by_types = [type(x.op().args[0]) for x in window._order_by]
         time_range_types = (ir.TimeColumn, ir.DateColumn, ir.TimestampColumn)
         if any(col_type in time_range_types for col_type in order_by_types):
-            window = impala_compiler._time_range_to_range_window(
-                translator, window
-            )
+            window = time_range_to_range_window(translator, window)
 
-    window_formatted = impala_compiler._format_window(translator, op, window)
+    window_formatted = format_window(translator, op, window)
 
     arg_formatted = translator.translate(arg)
     result = '{} {}'.format(arg_formatted, window_formatted)
@@ -949,7 +951,7 @@ def _window_op_one_param(name):
 _binary_infix_ops = {
     # math
     ops.Power: fixed_arity('power', 2),
-    ops.NotEquals: base_sql.binary_infix_op('<>'),
+    ops.NotEquals: binary_infix_op('<>'),
 }
 
 _unary_ops = {}
@@ -1160,10 +1162,7 @@ _unsupported_ops = [
 _unsupported_ops = {k: raise_unsupported_op_error for k in _unsupported_ops}
 
 # registry
-_operation_registry = {
-    **base_sql.operation_registry,
-    **impala_compiler._operation_registry,
-}
+_operation_registry = {**operation_registry}
 
 _operation_registry.update(_general_ops)
 _operation_registry.update(_binary_infix_ops)

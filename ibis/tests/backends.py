@@ -5,15 +5,15 @@ from typing import Any, Callable, Mapping, Optional
 
 import numpy as np
 import pandas as pd
-import pandas.util.testing as tm
+import pandas.testing as tm
 import pytest
 from pkg_resources import parse_version
 
 import ibis
+import ibis.backends.base_sqlalchemy.compiler as comp
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.sql.compiler as comp
 
 
 class RoundingConvention:

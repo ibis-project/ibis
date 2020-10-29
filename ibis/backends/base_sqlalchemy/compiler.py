@@ -17,8 +17,9 @@ import ibis.expr.datatypes as dt
 import ibis.expr.format as fmt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.sql.transforms as transforms
 import ibis.util as util
+
+from . import transforms
 
 
 class DML(abc.ABC):
