@@ -1215,7 +1215,8 @@ class CumeDist(AnalyticOp):
 
     CumeDist calculates the cumulative distribution of a value within a group
     of values. In other words, CumeDist calculates the relative position of a
-    specified value in a group of values.
+    specified value in a group of values. It can be expressed as:
+    ``CUME_DIST = RANK/COUNT``
 
     For more information, consider reading the following reference:
     https://docs.microsoft.com/en-us/sql/t-sql/functions/cume-dist-transact-sql
@@ -1226,6 +1227,18 @@ class CumeDist(AnalyticOp):
 
 
 class PercentRank(AnalyticOp):
+    """
+    The percent rank operation.
+
+    PercentRank calculates the relative rank of a row within a group of rows,
+    in other words, it evaluates the relative standing of a value within a
+    query result set or partition. It can be expressed as:
+    ``PERCENT_RANK = (RANK – 1)/(COUNT -1)``
+
+    For more information, consider reading the following reference:
+    https://docs.microsoft.com/en-us/sql/t-sql/functions/percent-rank-transact-sql
+    """
+
     arg = Arg(rlz.column(rlz.any))
     output_type = rlz.shape_like('arg', dt.double)
 
