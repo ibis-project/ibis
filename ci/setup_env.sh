@@ -12,7 +12,7 @@ RUNNER_OS="${3:-Linux}"
 if [[ "$RUNNER_OS" == "Linux" ]]; then
     CONDA_PATH="/usr/share/miniconda/bin"
 elif [[ "$RUNNER_OS" == "Windows" ]]; then
-    CONDA_PATH="/c/Miniconda/Scripts"
+    CONDA_PATH="/c/Miniconda:/c/Miniconda/Scripts:/c/Miniconda/Library:/c/Miniconda/Library/bin:/c/Miniconda/Library/mingw-w64/bin"
 else
     echo "RUNNER_OS: ${RUNNER_OS} not supported"
     exit 1
