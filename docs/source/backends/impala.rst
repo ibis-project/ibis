@@ -213,7 +213,7 @@ using docker:
 
    import ibis
    host = 'impala'
-   hdfs = ibis.hdfs_connect(host=host)
+   hdfs = ibis.impala.hdfs_connect(host=host)
    client = ibis.impala.connect(host=host, hdfs_client=hdfs)
 
 You can accomplish many tasks directly through the client object, but we
