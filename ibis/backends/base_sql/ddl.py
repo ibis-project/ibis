@@ -1,0 +1,279 @@
+import re
+
+import ibis.expr.schema as sch
+from ibis.backends.base_sql import quote_identifier, type_to_sql_string
+from ibis.backends.base_sqlalchemy.compiler import DDL
+
+fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
+_format_aliases = {'TEXT': 'TEXTFILE'}
+
+
+def _sanitize_format(format):
+    if format is None:
+        return
+    format = format.upper()
+    format = _format_aliases.get(format, format)
+    if format not in ('PARQUET', 'AVRO', 'TEXTFILE'):
+        raise ValueError('Invalid format: {!r}'.format(format))
+
+    return format
+
+
+def _is_fully_qualified(x):
+    return bool(fully_qualified_re.search(x))
+
+
+def _is_quoted(x):
+    regex = re.compile(r"(?:`(.*)`|(.*))")
+    quoted, _ = regex.match(x).groups()
+    return quoted is not None
+
+
+def format_schema(schema):
+    elements = [
+        _format_schema_element(name, t)
+        for name, t in zip(schema.names, schema.types)
+    ]
+    return '({})'.format(',\n '.join(elements))
+
+
+def _format_schema_element(name, t):
+    return '{} {}'.format(
+        quote_identifier(name, force=True), type_to_sql_string(t),
+    )
+
+
+class BaseQualifiedSQLStatement:
+    def _get_scoped_name(self, obj_name, database):
+        if database:
+            scoped_name = '{}.`{}`'.format(database, obj_name)
+        else:
+            if not _is_fully_qualified(obj_name):
+                if _is_quoted(obj_name):
+                    return obj_name
+                else:
+                    return '`{}`'.format(obj_name)
+            else:
+                return obj_name
+        return scoped_name
+
+
+class BaseDDL(DDL, BaseQualifiedSQLStatement):
+    pass
+
+
+class CreateDDL(BaseDDL):
+    def _if_exists(self):
+        return 'IF NOT EXISTS ' if self.can_exist else ''
+
+
+class CreateTable(CreateDDL):
+
+    """
+
+    Parameters
+    ----------
+    partition :
+
+    """
+
+    def __init__(
+        self,
+        table_name,
+        database=None,
+        external=False,
+        format='parquet',
+        can_exist=False,
+        partition=None,
+        path=None,
+        tbl_properties=None,
+    ):
+        self.table_name = table_name
+        self.database = database
+        self.partition = partition
+        self.path = path
+        self.external = external
+        self.can_exist = can_exist
+        self.format = _sanitize_format(format)
+        self.tbl_properties = tbl_properties
+
+    @property
+    def _prefix(self):
+        if self.external:
+            return 'CREATE EXTERNAL TABLE'
+        else:
+            return 'CREATE TABLE'
+
+    def _create_line(self):
+        scoped_name = self._get_scoped_name(self.table_name, self.database)
+        return '{} {}{}'.format(self._prefix, self._if_exists(), scoped_name)
+
+    def _location(self):
+        return "LOCATION '{}'".format(self.path) if self.path else None
+
+    def _storage(self):
+        # By the time we're here, we have a valid format
+        return 'STORED AS {}'.format(self.format)
+
+    @property
+    def pieces(self):
+        yield self._create_line()
+        for piece in filter(None, self._pieces):
+            yield piece
+
+    def compile(self):
+        return '\n'.join(self.pieces)
+
+
+class CTAS(CreateTable):
+
+    """
+    Create Table As Select
+    """
+
+    def __init__(
+        self,
+        table_name,
+        select,
+        database=None,
+        external=False,
+        format='parquet',
+        can_exist=False,
+        path=None,
+        partition=None,
+    ):
+        super().__init__(
+            table_name,
+            database=database,
+            external=external,
+            format=format,
+            can_exist=can_exist,
+            path=path,
+            partition=partition,
+        )
+        self.select = select
+
+    @property
+    def _pieces(self):
+        yield self._partitioned_by()
+        yield self._storage()
+        yield self._location()
+        yield 'AS'
+        yield self.select.compile()
+
+    def _partitioned_by(self):
+        if self.partition is not None:
+            return 'PARTITIONED BY ({})'.format(
+                ', '.join(
+                    quote_identifier(expr._name) for expr in self.partition
+                )
+            )
+        return None
+
+
+class CreateView(CTAS):
+
+    """Create a view"""
+
+    def __init__(self, table_name, select, database=None, can_exist=False):
+        super().__init__(
+            table_name, select, database=database, can_exist=can_exist
+        )
+
+    @property
+    def _pieces(self):
+        yield 'AS'
+        yield self.select.compile()
+
+    @property
+    def _prefix(self):
+        return 'CREATE VIEW'
+
+
+class CreateTableWithSchema(CreateTable):
+    def __init__(self, table_name, schema, table_format=None, **kwargs):
+        super().__init__(table_name, **kwargs)
+        self.schema = schema
+        self.table_format = table_format
+
+    @property
+    def _pieces(self):
+        if self.partition is not None:
+            main_schema = self.schema
+            part_schema = self.partition
+            if not isinstance(part_schema, sch.Schema):
+                part_schema = sch.Schema(
+                    part_schema, [self.schema[name] for name in part_schema]
+                )
+
+            to_delete = []
+            for name in self.partition:
+                if name in self.schema:
+                    to_delete.append(name)
+
+            if len(to_delete):
+                main_schema = main_schema.delete(to_delete)
+
+            yield format_schema(main_schema)
+            yield 'PARTITIONED BY {}'.format(format_schema(part_schema))
+        else:
+            yield format_schema(self.schema)
+
+        if self.table_format is not None:
+            yield '\n'.join(self.table_format.to_ddl())
+        else:
+            yield self._storage()
+
+        yield self._location()
+
+
+class CreateDatabase(CreateDDL):
+    def __init__(self, name, path=None, can_exist=False):
+        self.name = name
+        self.path = path
+        self.can_exist = can_exist
+
+    def compile(self):
+        name = quote_identifier(self.name)
+
+        create_decl = 'CREATE DATABASE'
+        create_line = '{} {}{}'.format(create_decl, self._if_exists(), name)
+        if self.path is not None:
+            create_line += "\nLOCATION '{}'".format(self.path)
+
+        return create_line
+
+
+class DropObject(BaseDDL):
+    def __init__(self, must_exist=True):
+        self.must_exist = must_exist
+
+    def compile(self):
+        if_exists = '' if self.must_exist else 'IF EXISTS '
+        object_name = self._object_name()
+        return 'DROP {} {}{}'.format(self._object_type, if_exists, object_name)
+
+
+class DropDatabase(DropObject):
+
+    _object_type = 'DATABASE'
+
+    def __init__(self, name, must_exist=True):
+        super().__init__(must_exist=must_exist)
+        self.name = name
+
+    def _object_name(self):
+        return self.name
+
+
+class DropTable(DropObject):
+
+    _object_type = 'TABLE'
+
+    def __init__(self, table_name, database=None, must_exist=True):
+        super().__init__(must_exist=must_exist)
+        self.table_name = table_name
+        self.database = database
+
+    def _object_name(self):
+        return self._get_scoped_name(self.table_name, self.database)
