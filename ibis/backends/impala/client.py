@@ -6,11 +6,11 @@ import time
 import traceback
 import weakref
 from collections import deque
+from posixpath import join as pjoin
 
 import numpy as np
 import pandas as pd
 from pkg_resources import parse_version
-from posixpath import join as pjoin
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -19,10 +19,10 @@ import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
+from ibis.backends.base_sqlalchemy.compiler import DDL, DML
 from ibis.client import Database, DatabaseEntity, Query, SQLClient
 from ibis.config import options
 from ibis.filesystems import HDFS, WebHDFS
-from ibis.sql.compiler import DDL, DML
 from ibis.util import log
 
 from . import ddl, udf

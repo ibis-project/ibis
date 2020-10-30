@@ -35,5 +35,5 @@ the [advanced installation page]({{ base_url}}/docs/getting_started/install.html
 ## Tutorials
 
 You can learn more about {{ ibis.project_name }} in the
-[tutorials](https://mybinder.org/v2/gh/ibis-project/ibis/master?filepath=docs%2Fsource%2Fnotebooks%2Ftutorial),
+[tutorials](https://ibis-project.org/docs/tutorial/index.html),
 and more about JupyterLab in the [JupyterLab documentation](https://jupyterlab.readthedocs.io/en/stable/user/interface.html).

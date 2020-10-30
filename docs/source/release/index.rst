@@ -12,6 +12,7 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :support:`2497` Move `ibis.HDFS`, `ibis.WebHDFS` and `ibis.hdfs_connect` to `ibis.impala.*`
 * :feature:`2473` Support elementwise UDF to return multiple columns for Pandas and PySpark backend
 * :bug:`2462` Table expressions do not recognize inet datatype (Postgres backend)
 * :bug:`2461` Table expressions do not recognize macaddr datatype (Postgres backend)

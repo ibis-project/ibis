@@ -6,16 +6,10 @@ import pytest
 import ibis
 import ibis.expr.api as api
 import ibis.expr.operations as ops
-from ibis.backends import impala  # noqa: E402
-from ibis.backends.impala.compiler import (  # noqa: E402
-    ImpalaDialect,
-    build_ast,
-    to_sql,
-)
+from ibis.backends.base_sql.compiler import BaseDialect, build_ast, to_sql
 from ibis.tests.expr.mocks import MockConnection
 
 pytest.importorskip('sqlalchemy')
-pytest.importorskip('impala.dbapi')
 
 
 class TestASTBuilder(unittest.TestCase):
@@ -203,7 +197,7 @@ FROM (
         )
         expr2 = expr.g.cast('double')
 
-        query = impala.compile(expr2)
+        query = to_sql(expr2)
         expected = """SELECT CAST(`g` AS double) AS `tmp`
 FROM (
   SELECT `g`, count(*) AS `count`
@@ -224,7 +218,7 @@ SELECT 1 + 2 AS `tmp`"""
         cases = [(expr1, expected1), (expr2, expected2)]
 
         for expr, expected in cases:
-            result = impala.compile(expr)
+            result = to_sql(expr)
             assert result == expected
 
     def test_expr_list_no_table_refs(self):
@@ -235,7 +229,7 @@ SELECT 1 + 2 AS `tmp`"""
                 ibis.literal(2).log().name('c'),
             ]
         )
-        result = impala.compile(exlist)
+        result = to_sql(exlist)
         expected = """\
 SELECT 1 AS `a`, now() AS `b`, ln(2) AS `c`"""
         assert result == expected
@@ -245,7 +239,7 @@ SELECT 1 AS `a`, now() AS `b`, ln(2) AS `c`"""
         # aggregation
         reduction = self.table.g.isnull().ifelse(1, 0).sum()
 
-        result = impala.compile(reduction)
+        result = to_sql(reduction)
         expected = """\
 SELECT sum(CASE WHEN `g` IS NULL THEN 1 ELSE 0 END) AS `sum`
 FROM alltypes"""
@@ -253,7 +247,7 @@ FROM alltypes"""
 
 
 def _get_query(expr):
-    ast = build_ast(expr, ImpalaDialect.make_context())
+    ast = build_ast(expr, BaseDialect.make_context())
     return ast.queries[0]
 
 
@@ -933,27 +927,6 @@ FROM tpch_nation t0
 
         result = to_sql(joined.materialize())
         assert result == expected
-
-    def test_join_no_predicates_for_impala(self):
-        # Impala requires that joins without predicates be written explicitly
-        # as CROSS JOIN, since result sets can accidentally get too large if a
-        # query is executed before predicates are written
-        t1 = self.con.table('star1')
-        t2 = self.con.table('star2')
-
-        joined2 = t1.cross_join(t2)[[t1]]
-
-        expected = """SELECT t0.*
-FROM star1 t0
-  CROSS JOIN star2 t1"""
-        result2 = to_sql(joined2)
-        assert result2 == expected
-
-        for jtype in ['inner_join', 'left_join', 'outer_join']:
-            joined = getattr(t1, jtype)(t2)[[t1]]
-
-            result = to_sql(joined)
-            assert result == expected
 
     def test_semi_anti_joins(self):
         sj, aj = self._case_semi_anti_joins()
@@ -1994,6 +1967,7 @@ WHERE NOT EXISTS (
 
     def test_limit_cte_extract(self):
         case = self._case_limit_cte_extract()
+        result = to_sql(case)
 
         expected = """\
 WITH t0 AS (
@@ -2003,9 +1977,9 @@ WITH t0 AS (
 )
 SELECT t0.*
 FROM t0
-  CROSS JOIN t0 t1"""
+  INNER JOIN t0 t1"""
 
-        self._compare_sql(case, expected)
+        assert result == expected
 
     def test_sort_by(self):
         cases = self._case_sort_by()
@@ -2168,7 +2142,7 @@ FROM (
         assert join_op.left.equals(tbl_a_filter)
         assert join_op.right.equals(tbl_b_filter)
 
-        result_sql = ibis.impala.compile(result)
+        result_sql = to_sql(result)
         expected_sql = """\
 SELECT t0.`value_a`, t1.`value_b`
 FROM (

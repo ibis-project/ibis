@@ -7,21 +7,19 @@ import toolz
 from multipledispatch import Dispatcher
 
 import ibis
+import ibis.backends.base_sqlalchemy.compiler as comp
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.lineage as lin
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.sql.compiler as comp
 from ibis.backends import base_sql
-from ibis.backends.base_sql import (
+from ibis.backends.base_sql import fixed_arity, literal, reduction, unary
+from ibis.backends.base_sql.compiler import (
     BaseExprTranslator,
-    fixed_arity,
-    literal,
-    reduction,
-    unary,
+    BaseSelect,
+    BaseTableSetFormatter,
 )
-from ibis.backends.impala.compiler import ImpalaSelect, ImpalaTableSetFormatter
 
 from .datatypes import ibis_type_to_bigquery_type
 
@@ -479,14 +477,14 @@ def compiles_string_to_timestamp(translator, expr):
     return 'PARSE_TIMESTAMP({}, {})'.format(fmt_string, arg_formatted)
 
 
-class BigQueryTableSetFormatter(ImpalaTableSetFormatter):
+class BigQueryTableSetFormatter(BaseTableSetFormatter):
     def _quote_identifier(self, name):
         if re.match(r'^[A-Za-z][A-Za-z_0-9]*$', name):
             return name
         return '`{}`'.format(name)
 
 
-class BigQuerySelect(ImpalaSelect):
+class BigQuerySelect(BaseSelect):
 
     translator = BigQueryExprTranslator
 

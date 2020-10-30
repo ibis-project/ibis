@@ -387,12 +387,12 @@ class MockConnection(BaseMockConnection):
     #       MockAlchemyConnection instead?
     @property
     def dialect(self):
-        from ibis.backends.impala.compiler import ImpalaDialect
+        from ibis.backends.base_sql.compiler import BaseDialect
 
-        return ImpalaDialect
+        return BaseDialect
 
     def _build_ast(self, expr, context):
-        from ibis.backends.impala.compiler import build_ast
+        from ibis.backends.base_sql.compiler import build_ast
 
         return build_ast(expr, context)
 

@@ -5,9 +5,9 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.sql.compiler as compiles
 import ibis.util as util
-from ibis.backends.impala import compiler as impala_compiler
+from ibis.backends.base_sql.compiler import BaseExprTranslator
+from ibis.backends.base_sqlalchemy import compiler
 from ibis.expr.api import _add_methods, _binop_expr, _unary_op
 
 from . import operations as omniscidb_ops
@@ -16,25 +16,27 @@ from .operations import _type_to_sql_string  # noqa: F401
 
 
 def build_ast(
-    expr: ibis.Expr, context: ibis.sql.compiler.QueryContext
-) -> ibis.sql.compiler.QueryAST:
+    expr: ibis.Expr, context: compiler.QueryContext,
+) -> compiler.QueryAST:
     """Build AST from given expression.
 
     Parameters
     ----------
     expr : ibis.Expr
-    context : ibis.sql.compiler.QueryContext
+    context : compiler.QueryContext
 
     Returns
     -------
-    ibis.sql.compiler.QueryAST
+    compiler.QueryAST
     """
     assert context is not None, 'context is None'
     builder = OmniSciDBQueryBuilder(expr, context=context)
     return builder.get_result()
 
 
-def _get_query(expr: ibis.Expr, context: ibis.sql.compiler.QueryContext):
+def _get_query(
+    expr: ibis.Expr, context: compiler.QueryContext,
+):
     assert context is not None, 'context is None'
     ast = build_ast(expr, context)
     query = ast.queries[0]
@@ -42,15 +44,13 @@ def _get_query(expr: ibis.Expr, context: ibis.sql.compiler.QueryContext):
     return query
 
 
-def to_sql(
-    expr: ibis.Expr, context: ibis.sql.compiler.QueryContext = None
-) -> str:
+def to_sql(expr: ibis.Expr, context: compiler.QueryContext = None,) -> str:
     """Convert expression to SQL statement.
 
     Parameters
     ----------
     expr : ibis.Expr
-    context : ibis.sql.compiler.QueryContext, optional
+    context : compiler.QueryContext, optional
 
     Returns
     -------
@@ -63,7 +63,7 @@ def to_sql(
     return query.compile()
 
 
-class OmniSciDBSelectBuilder(compiles.SelectBuilder):
+class OmniSciDBSelectBuilder(compiler.SelectBuilder):
     """OmniSciDB Select Builder class."""
 
     @property
@@ -74,7 +74,7 @@ class OmniSciDBSelectBuilder(compiles.SelectBuilder):
         return exprs
 
 
-class OmniSciDBQueryBuilder(compiles.QueryBuilder):
+class OmniSciDBQueryBuilder(compiler.QueryBuilder):
     """OmniSciDB Query Builder class."""
 
     select_builder = OmniSciDBSelectBuilder
@@ -86,7 +86,7 @@ class OmniSciDBQueryBuilder(compiles.QueryBuilder):
         )
 
 
-class OmniSciDBQueryContext(compiles.QueryContext):
+class OmniSciDBQueryContext(compiler.QueryContext):
     """OmniSciDB Query Context class."""
 
     always_alias = False
@@ -96,7 +96,7 @@ class OmniSciDBQueryContext(compiles.QueryContext):
         return to_sql(expr, context=ctx)
 
 
-class OmniSciDBSelect(compiles.Select):
+class OmniSciDBSelect(compiler.Select):
     """OmniSciDB Select class."""
 
     @property
@@ -174,7 +174,7 @@ class OmniSciDBSelect(compiles.Select):
         return buf.getvalue()
 
 
-class OmniSciDBTableSetFormatter(compiles.TableSetFormatter):
+class OmniSciDBTableSetFormatter(compiler.TableSetFormatter):
     """OmniSciDB Table Set Formatter class."""
 
     _join_names = {
@@ -255,11 +255,11 @@ class OmniSciDBTableSetFormatter(compiles.TableSetFormatter):
         return name
 
 
-class OmniSciDBExprTranslator(compiles.ExprTranslator):
+class OmniSciDBExprTranslator(compiler.ExprTranslator):
     """OmniSciDB Expr Translator class."""
 
     _registry = omniscidb_ops._operation_registry
-    _rewrites = impala_compiler.ImpalaExprTranslator._rewrites.copy()
+    _rewrites = BaseExprTranslator._rewrites.copy()
 
     context_class = OmniSciDBQueryContext
 
@@ -281,7 +281,7 @@ class OmniSciDBExprTranslator(compiles.ExprTranslator):
         return omniscidb_ops._name_expr(translated, name)
 
 
-class OmniSciDBDialect(compiles.Dialect):
+class OmniSciDBDialect(compiler.Dialect):
     """OmniSciDB Dialect class."""
 
     translator = OmniSciDBExprTranslator
