@@ -21,7 +21,8 @@ PATH=${CONDA_PATH}:${PATH}
 
 echo "PYTHON_VERSION: $PYTHON_VERSION"
 echo "BACKENDS: $BACKENDS"
-echo "::add-path::${CONDA_PATH}"
+# Prepend conda path to system path for the subsequent actions
+echo "${CONDA_PATH}" >> $GITHUB_PATH
 
 conda update -n base -c anaconda --all --yes conda
 conda install -n base -c anaconda --yes  python=${PYTHON_VERSION}
