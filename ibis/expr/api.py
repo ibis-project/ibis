@@ -751,7 +751,7 @@ def hash(arg, how='fnv'):
     Parameters
     ----------
     arg : value expression
-    how : {'fnv', 'farm_fingerprint'}, default 'farm_fingerprint'
+    how : {'fnv', 'farm_fingerprint'}, default 'fnv'
       Hash algorithm to use
 
     Returns
