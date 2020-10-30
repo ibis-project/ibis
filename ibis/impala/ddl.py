@@ -14,36 +14,18 @@
 
 import json
 
-import ibis.expr.datatypes as dt
 from ibis.backends.base_sql import type_to_sql_string
 from ibis.backends.base_sql.ddl import (
+    AlterTable,
     BaseDDL,
     CreateTable,
     CreateTableWithSchema,
-    DropObject,
+    DropFunction,
     DropTable,
-    _sanitize_format,
     format_partition,
     format_schema,
+    format_tblproperties,
 )
-
-
-def _serdeproperties(props):
-    formatted_props = _format_properties(props)
-    return 'SERDEPROPERTIES {}'.format(formatted_props)
-
-
-def format_tblproperties(props):
-    formatted_props = _format_properties(props)
-    return 'TBLPROPERTIES {}'.format(formatted_props)
-
-
-def _format_properties(props):
-    tokens = []
-    for k, v in sorted(props.items()):
-        tokens.append("  '{}'='{}'".format(k, v))
-
-    return '(\n{}\n)'.format(',\n'.join(tokens))
 
 
 class CreateTableParquet(CreateTable):
@@ -217,50 +199,6 @@ class LoadData(BaseDDL):
         )
 
 
-class AlterTable(BaseDDL):
-    def __init__(
-        self,
-        table,
-        location=None,
-        format=None,
-        tbl_properties=None,
-        serde_properties=None,
-    ):
-        self.table = table
-        self.location = location
-        self.format = _sanitize_format(format)
-        self.tbl_properties = tbl_properties
-        self.serde_properties = serde_properties
-
-    def _wrap_command(self, cmd):
-        return 'ALTER TABLE {}'.format(cmd)
-
-    def _format_properties(self, prefix=''):
-        tokens = []
-
-        if self.location is not None:
-            tokens.append("LOCATION '{}'".format(self.location))
-
-        if self.format is not None:
-            tokens.append("FILEFORMAT {}".format(self.format))
-
-        if self.tbl_properties is not None:
-            tokens.append(format_tblproperties(self.tbl_properties))
-
-        if self.serde_properties is not None:
-            tokens.append(_serdeproperties(self.serde_properties))
-
-        if len(tokens) > 0:
-            return '\n{}{}'.format(prefix, '\n'.join(tokens))
-        else:
-            return ''
-
-    def compile(self):
-        props = self._format_properties()
-        action = '{} SET {}'.format(self.table, props)
-        return self._wrap_command(action)
-
-
 class PartitionProperties(AlterTable):
     def __init__(
         self,
@@ -311,34 +249,6 @@ class DropPartition(PartitionProperties):
 
     def compile(self):
         return self._compile('DROP')
-
-
-class RenameTable(AlterTable):
-    def __init__(
-        self, old_name, new_name, old_database=None, new_database=None
-    ):
-        # if either database is None, the name is assumed to be fully scoped
-        self.old_name = old_name
-        self.old_database = old_database
-        self.new_name = new_name
-        self.new_database = new_database
-
-        new_qualified_name = new_name
-        if new_database is not None:
-            new_qualified_name = self._get_scoped_name(new_name, new_database)
-
-        old_qualified_name = old_name
-        if old_database is not None:
-            old_qualified_name = self._get_scoped_name(old_name, old_database)
-
-        self.old_qualified_name = old_qualified_name
-        self.new_qualified_name = new_qualified_name
-
-    def compile(self):
-        cmd = '{} RENAME TO {}'.format(
-            self.old_qualified_name, self.new_qualified_name
-        )
-        return self._wrap_command(cmd)
 
 
 class DropView(DropTable):
@@ -408,35 +318,11 @@ class CreateUDA(CreateFunction):
         return ' '.join([create_decl, impala_sig]) + ' ' + '\n'.join(tokens)
 
 
-class DropFunction(DropObject):
-    def __init__(
-        self, name, inputs, must_exist=True, aggregate=False, database=None
-    ):
-        super().__init__(must_exist=must_exist)
-        self.name = name
-        self.inputs = tuple(map(dt.dtype, inputs))
-        self.must_exist = must_exist
-        self.aggregate = aggregate
-        self.database = database
-
+class ImpalaDropFunction(DropFunction):
     def _impala_signature(self):
         full_name = self._get_scoped_name(self.name, self.database)
         input_sig = _impala_input_signature(self.inputs)
         return '{}({})'.format(full_name, input_sig)
-
-    def _object_name(self):
-        return self.name
-
-    def compile(self):
-        tokens = ['DROP']
-        if self.aggregate:
-            tokens.append('AGGREGATE')
-        tokens.append('FUNCTION')
-        if not self.must_exist:
-            tokens.append('IF EXISTS')
-
-        tokens.append(self._impala_signature())
-        return ' '.join(tokens)
 
 
 class ListFunction(BaseDDL):

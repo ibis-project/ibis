@@ -73,6 +73,24 @@ def format_partition(partition, partition_schema):
     return 'PARTITION ({})'.format(', '.join(tokens))
 
 
+def format_properties(props):
+    tokens = []
+    for k, v in sorted(props.items()):
+        tokens.append("  '{}'='{}'".format(k, v))
+
+    return '(\n{}\n)'.format(',\n'.join(tokens))
+
+
+def format_tblproperties(props):
+    formatted_props = format_properties(props)
+    return 'TBLPROPERTIES {}'.format(formatted_props)
+
+
+def _serdeproperties(props):
+    formatted_props = format_properties(props)
+    return 'SERDEPROPERTIES {}'.format(formatted_props)
+
+
 class BaseQualifiedSQLStatement:
     def _get_scoped_name(self, obj_name, database):
         if database:
@@ -362,3 +380,101 @@ class InsertSelect(BaseDML):
         return '{0} {1}{2}\n{3}'.format(
             cmd, scoped_name, partition, select_query
         )
+
+
+class AlterTable(BaseDDL):
+    def __init__(
+        self,
+        table,
+        location=None,
+        format=None,
+        tbl_properties=None,
+        serde_properties=None,
+    ):
+        self.table = table
+        self.location = location
+        self.format = _sanitize_format(format)
+        self.tbl_properties = tbl_properties
+        self.serde_properties = serde_properties
+
+    def _wrap_command(self, cmd):
+        return 'ALTER TABLE {}'.format(cmd)
+
+    def _format_properties(self, prefix=''):
+        tokens = []
+
+        if self.location is not None:
+            tokens.append("LOCATION '{}'".format(self.location))
+
+        if self.format is not None:
+            tokens.append("FILEFORMAT {}".format(self.format))
+
+        if self.tbl_properties is not None:
+            tokens.append(format_tblproperties(self.tbl_properties))
+
+        if self.serde_properties is not None:
+            tokens.append(_serdeproperties(self.serde_properties))
+
+        if len(tokens) > 0:
+            return '\n{}{}'.format(prefix, '\n'.join(tokens))
+        else:
+            return ''
+
+    def compile(self):
+        props = self._format_properties()
+        action = '{} SET {}'.format(self.table, props)
+        return self._wrap_command(action)
+
+
+class DropFunction(DropObject):
+    def __init__(
+        self, name, inputs, must_exist=True, aggregate=False, database=None
+    ):
+        super().__init__(must_exist=must_exist)
+        self.name = name
+        self.inputs = tuple(map(dt.dtype, inputs))
+        self.must_exist = must_exist
+        self.aggregate = aggregate
+        self.database = database
+
+    def _object_name(self):
+        return self.name
+
+    def compile(self):
+        tokens = ['DROP']
+        if self.aggregate:
+            tokens.append('AGGREGATE')
+        tokens.append('FUNCTION')
+        if not self.must_exist:
+            tokens.append('IF EXISTS')
+
+        tokens.append(self._impala_signature())
+        return ' '.join(tokens)
+
+
+class RenameTable(AlterTable):
+    def __init__(
+        self, old_name, new_name, old_database=None, new_database=None
+    ):
+        # if either database is None, the name is assumed to be fully scoped
+        self.old_name = old_name
+        self.old_database = old_database
+        self.new_name = new_name
+        self.new_database = new_database
+
+        new_qualified_name = new_name
+        if new_database is not None:
+            new_qualified_name = self._get_scoped_name(new_name, new_database)
+
+        old_qualified_name = old_name
+        if old_database is not None:
+            old_qualified_name = self._get_scoped_name(old_name, old_database)
+
+        self.old_qualified_name = old_qualified_name
+        self.new_qualified_name = new_qualified_name
+
+    def compile(self):
+        cmd = '{} RENAME TO {}'.format(
+            self.old_qualified_name, self.new_qualified_name
+        )
+        return self._wrap_command(cmd)
