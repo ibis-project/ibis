@@ -6,7 +6,6 @@
 
 PYTHON_VERSION="${1:-3.7}"
 BACKENDS="$2"
-RUNNER_OS="${3:-Linux}"
 
 # Add conda to path
 if [[ "$RUNNER_OS" == "Linux" ]]; then
@@ -21,7 +20,6 @@ PATH=${CONDA_PATH}:${PATH}
 
 echo "PYTHON_VERSION: $PYTHON_VERSION"
 echo "BACKENDS: $BACKENDS"
-echo "OS: $RUNNER_OS"
 echo "::add-path::${CONDA_PATH}"
 
 conda update -n base -c anaconda --all --yes conda
