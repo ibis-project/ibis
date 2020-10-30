@@ -10,7 +10,7 @@ BACKENDS="$2"
 echo "PYTHON_VERSION: $PYTHON_VERSION"
 echo "BACKENDS: $BACKENDS"
 
-if [ -z "$CONDA" ]; then
+if [[ -n "$CONDA" ]]; then
     # Add conda to Path
     OS_NAME=$(uname)
     case $OS_NAME in
