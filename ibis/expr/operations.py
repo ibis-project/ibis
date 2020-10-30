@@ -2704,8 +2704,14 @@ class DecimalScale(UnaryOp):
 
 class Hash(ValueOp):
     arg = Arg(rlz.any)
-    how = Arg(rlz.isin({'fnv'}))
+    how = Arg(rlz.isin({'fnv', 'farm_fingerprint'}))
     output_type = rlz.shape_like('arg', dt.int64)
+
+
+class HashBytes(ValueOp):
+    arg = Arg(rlz.one_of({rlz.value(dt.string), rlz.value(dt.binary)}))
+    how = Arg(rlz.isin({'md5', 'sha1', 'sha256', 'sha512'}))
+    output_type = rlz.shape_like('arg', dt.binary)
 
 
 class DateAdd(BinaryOp):

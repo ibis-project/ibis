@@ -751,7 +751,7 @@ def hash(arg, how='fnv'):
     Parameters
     ----------
     arg : value expression
-    how : {'fnv'}, default 'fnv'
+    how : {'fnv', 'farm_fingerprint'}, default 'farm_fingerprint'
       Hash algorithm to use
 
     Returns
@@ -2641,6 +2641,31 @@ _add_methods(ir.BooleanColumn, _boolean_column_methods)
 
 
 # ---------------------------------------------------------------------
+# Binary API
+
+
+def hashbytes(arg, how='sha256'):
+    """
+    Compute a binary hash value for the indicated value expression.
+
+    Parameters
+    ----------
+    arg : binary or string value expression
+    how : {'md5', 'sha1', 'sha256', 'sha512'}, default 'sha256'
+      Hash algorithm to use
+
+    Returns
+    -------
+    hash_value : binary expression
+    """
+    return ops.HashBytes(arg, how).to_expr()
+
+
+_binary_value_methods = dict(hashbytes=hashbytes)
+_add_methods(ir.BinaryValue, _binary_value_methods)
+
+
+# ---------------------------------------------------------------------
 # String API
 
 
@@ -3117,6 +3142,7 @@ _string_value_methods = dict(
     convert_base=convert_base,
     __contains__=_string_dunder_contains,
     contains=_string_contains,
+    hashbytes=hashbytes,
     like=_string_like,
     ilike=_string_ilike,
     rlike=re_search,

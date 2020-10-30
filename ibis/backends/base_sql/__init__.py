@@ -371,6 +371,24 @@ def hash(translator, expr):
         raise NotImplementedError(how)
 
 
+def hashbytes(translator, expr):
+    op = expr.op()
+    arg, how = op.args
+
+    arg_formatted = translator.translate(arg)
+
+    if how == 'md5':
+        return 'md5({})'.format(arg_formatted)
+    elif how == 'sha1':
+        return 'sha1({})'.format(arg_formatted)
+    elif how == 'sha256':
+        return 'sha256({})'.format(arg_formatted)
+    elif how == 'sha512':
+        return 'sha512({})'.format(arg_formatted)
+    else:
+        raise NotImplementedError(how)
+
+
 def log(translator, expr):
     op = expr.op()
     arg, base = op.args
@@ -1015,6 +1033,7 @@ operation_registry = {
     ops.Sign: sign,
     ops.Sqrt: unary('sqrt'),
     ops.Hash: hash,
+    ops.HashBytes: hashbytes,
     ops.Log: log,
     ops.Ln: unary('ln'),
     ops.Log2: unary('log2'),

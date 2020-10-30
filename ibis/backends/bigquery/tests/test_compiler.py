@@ -163,6 +163,40 @@ def test_day_of_week(case, expected, dtype, strftime_func):
 
 
 @pytest.mark.parametrize(
+    ("case", "expected", "dtype"),
+    [
+        ("test of hash", "'test of hash'", dt.string,),
+        (b"test of hash", "FROM_BASE64('dGVzdCBvZiBoYXNo')", dt.binary,),
+    ],
+)
+def test_hash(case, expected, dtype):
+    string_var = ibis.literal(case, type=dtype)
+    expr = string_var.hash(how="farm_fingerprint")
+    result = ibis.bigquery.compile(expr)
+    assert result == f"SELECT farm_fingerprint({expected}) AS `tmp`"
+
+
+@pytest.mark.parametrize(
+    ("case", "expected", "how", "dtype"),
+    [
+        ("test", "md5('test')", "md5", dt.string,),
+        (b"test", "md5(FROM_BASE64('dGVzdA=='))", "md5", dt.binary,),
+        ("test", "sha1('test')", "sha1", dt.string,),
+        (b"test", "sha1(FROM_BASE64('dGVzdA=='))", "sha1", dt.binary,),
+        ("test", "sha256('test')", "sha256", dt.string,),
+        (b"test", "sha256(FROM_BASE64('dGVzdA=='))", "sha256", dt.binary,),
+        ("test", "sha512('test')", "sha512", dt.string,),
+        (b"test", "sha512(FROM_BASE64('dGVzdA=='))", "sha512", dt.binary,),
+    ],
+)
+def test_hashbytes(case, expected, how, dtype):
+    var = ibis.literal(case, type=dtype)
+    expr = var.hashbytes(how=how)
+    result = ibis.bigquery.compile(expr)
+    assert result == f"SELECT {expected} AS `tmp`"
+
+
+@pytest.mark.parametrize(
     ('case', 'expected', 'dtype'),
     [
         (
