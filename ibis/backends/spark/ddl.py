@@ -1,6 +1,6 @@
 from ibis.backends.base_sql import quote_identifier
-from ibis.impala import ddl as impala_ddl
-from ibis.impala.ddl import (  # noqa: F401
+from ibis.backends.impala import ddl as impala_ddl
+from ibis.backends.impala.ddl import (  # noqa: F401
     _is_fully_qualified,
     _is_quoted,
     fully_qualified_re,
