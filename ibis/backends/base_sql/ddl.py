@@ -20,7 +20,7 @@ def _sanitize_format(format):
     return format
 
 
-def _is_fully_qualified(x):
+def is_fully_qualified(x):
     return bool(fully_qualified_re.search(x))
 
 
@@ -96,7 +96,7 @@ class BaseQualifiedSQLStatement:
         if database:
             scoped_name = '{}.`{}`'.format(database, obj_name)
         else:
-            if not _is_fully_qualified(obj_name):
+            if not is_fully_qualified(obj_name):
                 if _is_quoted(obj_name):
                     return obj_name
                 else:

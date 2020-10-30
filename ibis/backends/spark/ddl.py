@@ -150,14 +150,6 @@ def _format_schema_element(name, t):
     )
 
 
-class CreateDatabase(base_ddl.CreateDatabase):
-    pass
-
-
-class DropTable(base_ddl.DropTable):
-    pass
-
-
 class DropDatabase(base_ddl.DropObject):
 
     _object_type = 'DATABASE'
@@ -189,10 +181,6 @@ class DropFunction(base_ddl.DropObject):
 
     def _object_name(self):
         return self.name
-
-
-class TruncateTable(base_ddl.TruncateTable):
-    pass
 
 
 class InsertSelect(base_ddl.InsertSelect):
