@@ -18,19 +18,14 @@ import ibis.expr.datatypes as dt
 from ibis.backends.base_sql import type_to_sql_string
 from ibis.backends.base_sql.ddl import (
     BaseDDL,
-    BaseQualifiedSQLStatement,
     CreateTable,
     CreateTableWithSchema,
     DropObject,
     DropTable,
     _sanitize_format,
+    format_partition,
     format_schema,
 )
-from ibis.backends.base_sqlalchemy.compiler import DML
-
-
-class ImpalaDML(DML, BaseQualifiedSQLStatement):
-    pass
 
 
 def _serdeproperties(props):
@@ -182,73 +177,6 @@ class CreateTableAvro(CreateTable):
         yield '\n'.join(self.table_format.to_ddl())
 
 
-class InsertSelect(ImpalaDML):
-    def __init__(
-        self,
-        table_name,
-        select_expr,
-        database=None,
-        partition=None,
-        partition_schema=None,
-        overwrite=False,
-    ):
-        self.table_name = table_name
-        self.database = database
-        self.select = select_expr
-
-        self.partition = partition
-        self.partition_schema = partition_schema
-
-        self.overwrite = overwrite
-
-    def compile(self):
-        if self.overwrite:
-            cmd = 'INSERT OVERWRITE'
-        else:
-            cmd = 'INSERT INTO'
-
-        if self.partition is not None:
-            part = _format_partition(self.partition, self.partition_schema)
-            partition = ' {} '.format(part)
-        else:
-            partition = ''
-
-        select_query = self.select.compile()
-        scoped_name = self._get_scoped_name(self.table_name, self.database)
-        return '{0} {1}{2}\n{3}'.format(
-            cmd, scoped_name, partition, select_query
-        )
-
-
-def _format_partition(partition, partition_schema):
-    tokens = []
-    if isinstance(partition, dict):
-        for name in partition_schema:
-            if name in partition:
-                tok = _format_partition_kv(
-                    name, partition[name], partition_schema[name]
-                )
-            else:
-                # dynamic partitioning
-                tok = name
-            tokens.append(tok)
-    else:
-        for name, value in zip(partition_schema, partition):
-            tok = _format_partition_kv(name, value, partition_schema[name])
-            tokens.append(tok)
-
-    return 'PARTITION ({})'.format(', '.join(tokens))
-
-
-def _format_partition_kv(k, v, type):
-    if type == dt.string:
-        value_formatted = '"{}"'.format(v)
-    else:
-        value_formatted = str(v)
-
-    return '{}={}'.format(k, value_formatted)
-
-
 class LoadData(BaseDDL):
 
     """
@@ -277,7 +205,7 @@ class LoadData(BaseDDL):
         overwrite = 'OVERWRITE ' if self.overwrite else ''
 
         if self.partition is not None:
-            partition = '\n' + _format_partition(
+            partition = '\n' + format_partition(
                 self.partition, self.partition_schema
             )
         else:
@@ -355,7 +283,7 @@ class PartitionProperties(AlterTable):
         self.partition_schema = partition_schema
 
     def _compile(self, cmd, property_prefix=''):
-        part = _format_partition(self.partition, self.partition_schema)
+        part = format_partition(self.partition, self.partition_schema)
         if cmd:
             part = '{} {}'.format(cmd, part)
 
@@ -411,19 +339,6 @@ class RenameTable(AlterTable):
             self.old_qualified_name, self.new_qualified_name
         )
         return self._wrap_command(cmd)
-
-
-class TruncateTable(BaseDDL):
-
-    _object_type = 'TABLE'
-
-    def __init__(self, table_name, database=None):
-        self.table_name = table_name
-        self.database = database
-
-    def compile(self):
-        name = self._get_scoped_name(self.table_name, self.database)
-        return 'TRUNCATE TABLE {}'.format(name)
 
 
 class DropView(DropTable):

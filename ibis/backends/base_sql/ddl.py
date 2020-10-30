@@ -1,8 +1,9 @@
 import re
 
+import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis.backends.base_sql import quote_identifier, type_to_sql_string
-from ibis.backends.base_sqlalchemy.compiler import DDL
+from ibis.backends.base_sqlalchemy.compiler import DDL, DML
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
 _format_aliases = {'TEXT': 'TEXTFILE'}
@@ -43,6 +44,35 @@ def _format_schema_element(name, t):
     )
 
 
+def _format_partition_kv(k, v, type):
+    if type == dt.string:
+        value_formatted = '"{}"'.format(v)
+    else:
+        value_formatted = str(v)
+
+    return '{}={}'.format(k, value_formatted)
+
+
+def format_partition(partition, partition_schema):
+    tokens = []
+    if isinstance(partition, dict):
+        for name in partition_schema:
+            if name in partition:
+                tok = _format_partition_kv(
+                    name, partition[name], partition_schema[name]
+                )
+            else:
+                # dynamic partitioning
+                tok = name
+            tokens.append(tok)
+    else:
+        for name, value in zip(partition_schema, partition):
+            tok = _format_partition_kv(name, value, partition_schema[name])
+            tokens.append(tok)
+
+    return 'PARTITION ({})'.format(', '.join(tokens))
+
+
 class BaseQualifiedSQLStatement:
     def _get_scoped_name(self, obj_name, database):
         if database:
@@ -59,6 +89,10 @@ class BaseQualifiedSQLStatement:
 
 
 class BaseDDL(DDL, BaseQualifiedSQLStatement):
+    pass
+
+
+class BaseDML(DML, BaseQualifiedSQLStatement):
     pass
 
 
@@ -277,3 +311,54 @@ class DropTable(DropObject):
 
     def _object_name(self):
         return self._get_scoped_name(self.table_name, self.database)
+
+
+class TruncateTable(BaseDDL):
+
+    _object_type = 'TABLE'
+
+    def __init__(self, table_name, database=None):
+        self.table_name = table_name
+        self.database = database
+
+    def compile(self):
+        name = self._get_scoped_name(self.table_name, self.database)
+        return 'TRUNCATE TABLE {}'.format(name)
+
+
+class InsertSelect(BaseDML):
+    def __init__(
+        self,
+        table_name,
+        select_expr,
+        database=None,
+        partition=None,
+        partition_schema=None,
+        overwrite=False,
+    ):
+        self.table_name = table_name
+        self.database = database
+        self.select = select_expr
+
+        self.partition = partition
+        self.partition_schema = partition_schema
+
+        self.overwrite = overwrite
+
+    def compile(self):
+        if self.overwrite:
+            cmd = 'INSERT OVERWRITE'
+        else:
+            cmd = 'INSERT INTO'
+
+        if self.partition is not None:
+            part = format_partition(self.partition, self.partition_schema)
+            partition = ' {} '.format(part)
+        else:
+            partition = ''
+
+        select_query = self.select.compile()
+        scoped_name = self._get_scoped_name(self.table_name, self.database)
+        return '{0} {1}{2}\n{3}'.format(
+            cmd, scoped_name, partition, select_query
+        )
