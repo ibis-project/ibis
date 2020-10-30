@@ -8,15 +8,19 @@ PYTHON_VERSION="${1:-3.7}"
 BACKENDS="$2"
 
 # Add conda to path
-if [[ "$RUNNER_OS" == "Linux" ]]; then
-    CONDA_PATH="$CONDA/bin"
-elif [[ "$RUNNER_OS" == "Windows" ]]; then
-    CONDA_POSIX=$(cygpath -u "$CONDA")
-    CONDA_PATH="$CONDA_POSIX:$CONDA_POSIX/Scripts:$CONDA_POSIX/Library:$CONDA_POSIX/Library/bin:$CONDA_POSIX/Library/mingw-w64/bin"
-else
-    echo "RUNNER_OS: ${RUNNER_OS} not supported"
-    exit 1
-fi
+OS_NAME=$(uname)
+case $OS_NAME in
+    Linux)
+        CONDA_PATH="$CONDA/bin"
+        ;;
+    MINGW*)
+        CONDA_POSIX=$(cygpath -u "$CONDA")
+        CONDA_PATH="$CONDA_POSIX:$CONDA_POSIX/Scripts:$CONDA_POSIX/Library:$CONDA_POSIX/Library/bin:$CONDA_POSIX/Library/mingw-w64/bin"
+        ;;
+    *)
+        echo "$OS_NAME not supported."
+        exit 1
+esac
 PATH=${CONDA_PATH}:${PATH}
 
 echo "PYTHON_VERSION: $PYTHON_VERSION"
