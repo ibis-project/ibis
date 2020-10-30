@@ -9,9 +9,10 @@ BACKENDS="$2"
 
 # Add conda to path
 if [[ "$RUNNER_OS" == "Linux" ]]; then
-    CONDA_PATH="/usr/share/miniconda/bin"
+    CONDA_PATH="$CONDA/bin"
 elif [[ "$RUNNER_OS" == "Windows" ]]; then
-    CONDA_PATH="/c/Miniconda:/c/Miniconda/Scripts:/c/Miniconda/Library:/c/Miniconda/Library/bin:/c/Miniconda/Library/mingw-w64/bin"
+    CONDA_POSIX=$(cygpath -u "$CONDA")
+    CONDA_PATH="$CONDA_POSIX:$CONDA_POSIX/Scripts:$CONDA_POSIX/Library:$CONDA_POSIX/Library/bin:$CONDA_POSIX/Library/mingw-w64/bin"
 else
     echo "RUNNER_OS: ${RUNNER_OS} not supported"
     exit 1
