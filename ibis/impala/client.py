@@ -885,7 +885,7 @@ class ImpalaClient(SQLClient):
         if database:
             statement += ' IN {0}'.format(database)
         if like:
-            m = ddl.fully_qualified_re.match(like)
+            m = fully_qualified_re.match(like)
             if m:
                 database, quoted, unquoted = m.groups()
                 like = quoted or unquoted
