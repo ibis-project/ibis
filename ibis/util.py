@@ -79,8 +79,9 @@ def coerce_to_dataframe(data: Any, names: List[str]) -> pd.DataFrame:
 
     The following shapes are allowed:
     (1) A list/tuple of Series
-    (2) A Series of list/tuple
-    (3) pd.DataFrame
+    (2) A list/tuple of scalars
+    (3) A Series of list/tuple
+    (4) pd.DataFrame
 
     Note:
     This method does NOT always return a new DataFrame. If a DataFrame is
@@ -101,7 +102,11 @@ def coerce_to_dataframe(data: Any, names: List[str]) -> pd.DataFrame:
         series = [data.apply(lambda t: t[i]) for i in range(num_cols)]
         result = pd.concat(series, axis=1)
     elif isinstance(data, (tuple, list)):
-        result = pd.concat(data, axis=1)
+        if isinstance(data[0], pd.Series):
+            result = pd.concat(data, axis=1)
+        else:
+            # Promote scalar to Series
+            result = pd.concat([pd.Series([v]) for v in data], axis=1)
     else:
         raise ValueError(f"Cannot coerce to DataFrame: {data}")
 

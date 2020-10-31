@@ -4,10 +4,13 @@ import kudu
 import pandas as pd
 
 import ibis.expr.datatypes as dt
+from ibis.backends.base_sql.ddl import (
+    CreateTable,
+    format_schema,
+    format_tblproperties,
+)
 from ibis.common.exceptions import IbisError
 from ibis.expr.api import schema
-
-from . import ddl
 
 _kudu_type_to_ibis_typeclass = {
     'int8': dt.Int8,
@@ -220,7 +223,7 @@ class KuduImpalaInterface:
         return self.impala_client._wrap_new_table(name, database, persist)
 
 
-class CreateTableKudu(ddl.CreateTable):
+class CreateTableKudu(CreateTable):
 
     """
     Creates an Impala table that scans from a Kudu table
@@ -245,7 +248,7 @@ class CreateTableKudu(ddl.CreateTable):
         self.master_addrs = master_addrs
         self.schema = schema
         self.key_columns = key_columns
-        ddl.CreateTable.__init__(self, table_name, external=external, **kwargs)
+        CreateTable.__init__(self, table_name, external=external, **kwargs)
 
         self._validate()
 
@@ -255,8 +258,8 @@ class CreateTableKudu(ddl.CreateTable):
     def compile(self):
         return '{}\n{}\n{}'.format(
             self._create_line(),
-            ddl.format_schema(self.schema),
-            ddl.format_tblproperties(self._get_table_properties()),
+            format_schema(self.schema),
+            format_tblproperties(self._get_table_properties()),
         )
 
     _table_props_base = {
@@ -308,7 +311,7 @@ class CTASKudu(CreateTableKudu):
     def compile(self):
         return '{}\n{} AS\n{}'.format(
             self._create_line(),
-            ddl.format_tblproperties(self._get_table_properties()),
+            format_tblproperties(self._get_table_properties()),
             self.select.compile(),
         )
 
