@@ -14,14 +14,13 @@
 
 import json
 
+from ibis.backends.base_sql import ddl as base_sql_ddl
 from ibis.backends.base_sql import type_to_sql_string
 from ibis.backends.base_sql.ddl import (
     AlterTable,
     BaseDDL,
     CreateTable,
     CreateTableWithSchema,
-    DropFunction,
-    DropTable,
     format_partition,
     format_schema,
     format_tblproperties,
@@ -313,7 +312,7 @@ class CreateUDA(CreateFunction):
         return ' '.join([create_decl, impala_sig]) + ' ' + '\n'.join(tokens)
 
 
-class ImpalaDropFunction(DropFunction):
+class DropFunction(base_sql_ddl.DropFunction):
     def _impala_signature(self):
         full_name = self._get_scoped_name(self.name, self.database)
         input_sig = _impala_input_signature(self.inputs)

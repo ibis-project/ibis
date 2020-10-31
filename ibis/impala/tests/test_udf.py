@@ -554,25 +554,25 @@ class TestUDFDDL(unittest.TestCase):
         assert result == expected
 
     def test_delete_udf_simple(self):
-        stmt = ddl.ImpalaDropFunction(self.name, self.inputs)
+        stmt = ddl.DropFunction(self.name, self.inputs)
         result = stmt.compile()
         expected = "DROP FUNCTION `test_name`(string, string)"
         assert result == expected
 
     def test_delete_udf_if_exists(self):
-        stmt = ddl.ImpalaDropFunction(self.name, self.inputs, must_exist=False)
+        stmt = ddl.DropFunction(self.name, self.inputs, must_exist=False)
         result = stmt.compile()
         expected = "DROP FUNCTION IF EXISTS `test_name`(string, string)"
         assert result == expected
 
     def test_delete_udf_aggregate(self):
-        stmt = ddl.ImpalaDropFunction(self.name, self.inputs, aggregate=True)
+        stmt = ddl.DropFunction(self.name, self.inputs, aggregate=True)
         result = stmt.compile()
         expected = "DROP AGGREGATE FUNCTION `test_name`(string, string)"
         assert result == expected
 
     def test_delete_udf_db(self):
-        stmt = ddl.ImpalaDropFunction(self.name, self.inputs, database='test')
+        stmt = ddl.DropFunction(self.name, self.inputs, database='test')
         result = stmt.compile()
         expected = "DROP FUNCTION test.`test_name`(string, string)"
         assert result == expected
