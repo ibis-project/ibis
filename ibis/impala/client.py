@@ -20,20 +20,20 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis.backends.base_sql.ddl import (
+    CTAS,
     AlterTable,
     CreateDatabase,
-    CreateView,
     CreateTableWithSchema,
-    CTAS,
+    CreateView,
     DropDatabase,
     DropFunction,
     DropTable,
     DropView,
     InsertSelect,
-    is_fully_qualified,
-    fully_qualified_re,
     RenameTable,
     TruncateTable,
+    fully_qualified_re,
+    is_fully_qualified,
 )
 from ibis.backends.base_sqlalchemy.compiler import DDL, DML
 from ibis.client import Database, DatabaseEntity, Query, SQLClient
