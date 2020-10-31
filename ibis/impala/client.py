@@ -19,6 +19,7 @@ import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
+from ibis.backends.base_sql.ddl import CreateDatabase
 from ibis.backends.base_sqlalchemy.compiler import DDL, DML
 from ibis.client import Database, DatabaseEntity, Query, SQLClient
 from ibis.config import options
@@ -922,7 +923,7 @@ class ImpalaClient(SQLClient):
             # explicit mkdir ensures the user own the dir rather than impala,
             # which is easier for manual cleanup, if necessary
             self.hdfs.mkdir(path)
-        statement = ddl.CreateDatabase(name, path=path, can_exist=force)
+        statement = CreateDatabase(name, path=path, can_exist=force)
         return self._execute(statement)
 
     def drop_database(self, name, force=False):
