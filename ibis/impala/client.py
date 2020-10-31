@@ -26,7 +26,6 @@ from ibis.backends.base_sql.ddl import (
     CreateTableWithSchema,
     CreateView,
     DropDatabase,
-    DropFunction,
     DropTable,
     DropView,
     InsertSelect,
@@ -42,6 +41,7 @@ from ibis.filesystems import HDFS, WebHDFS
 from ibis.impala import ddl, udf
 from ibis.impala.compat import HS2Error, ImpylaError, impyla
 from ibis.impala.compiler import ImpalaDialect, build_ast
+from ibis.impala.ddl import ImpalaDropFunction
 from ibis.util import log
 
 
@@ -1680,7 +1680,7 @@ class ImpalaClient(SQLClient):
     def _drop_single_function(
         self, name, input_types, database=None, aggregate=False
     ):
-        stmt = DropFunction(
+        stmt = ImpalaDropFunction(
             name,
             input_types,
             must_exist=False,
@@ -1692,7 +1692,7 @@ class ImpalaClient(SQLClient):
     def _drop_all_functions(self, database):
         udfs = self.list_udfs(database=database)
         for fnct in udfs:
-            stmt = DropFunction(
+            stmt = ImpalaDropFunction(
                 fnct.name,
                 fnct.inputs,
                 must_exist=False,
@@ -1702,7 +1702,7 @@ class ImpalaClient(SQLClient):
             self._execute(stmt)
         udafs = self.list_udas(database=database)
         for udaf in udafs:
-            stmt = DropFunction(
+            stmt = ImpalaDropFunction(
                 udaf.name,
                 udaf.inputs,
                 must_exist=False,
