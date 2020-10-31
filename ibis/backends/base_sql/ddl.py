@@ -331,6 +331,11 @@ class DropTable(DropObject):
         return self._get_scoped_name(self.table_name, self.database)
 
 
+class DropView(DropTable):
+
+    _object_type = 'VIEW'
+
+
 class TruncateTable(BaseDDL):
 
     _object_type = 'TABLE'

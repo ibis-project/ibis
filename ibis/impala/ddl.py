@@ -251,11 +251,6 @@ class DropPartition(PartitionProperties):
         return self._compile('DROP')
 
 
-class DropView(DropTable):
-
-    _object_type = 'VIEW'
-
-
 class CacheTable(BaseDDL):
     def __init__(self, table_name, database=None, pool='default'):
         self.table_name = table_name
