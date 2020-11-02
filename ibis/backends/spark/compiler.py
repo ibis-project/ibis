@@ -39,10 +39,10 @@ from ibis.backends.base_sql import (
     sql_type_names,
     unary,
 )
-from ibis.impala.compiler import (
-    ImpalaDialect,
-    ImpalaExprTranslator,
-    ImpalaSelect,
+from ibis.backends.base_sql.compiler import (
+    BaseDialect,
+    BaseExprTranslator,
+    BaseSelect,
 )
 
 
@@ -349,7 +349,7 @@ _operation_registry.update(
 )
 
 
-class SparkExprTranslator(ImpalaExprTranslator):
+class SparkExprTranslator(BaseExprTranslator):
     _registry = _operation_registry
 
     context_class = SparkContext
@@ -388,11 +388,11 @@ def spark_rewrites_is_inf(expr):
     return (arg == ibis.literal(math.inf)) | (arg == ibis.literal(-math.inf))
 
 
-class SparkSelect(ImpalaSelect):
+class SparkSelect(BaseSelect):
     translator = SparkExprTranslator
 
 
-class SparkDialect(ImpalaDialect):
+class SparkDialect(BaseDialect):
     translator = SparkExprTranslator
 
 
