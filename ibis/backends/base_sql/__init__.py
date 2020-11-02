@@ -11,7 +11,6 @@ from io import StringIO
 from typing import Optional
 
 import ibis
-import ibis.backends.base_sqlalchemy.compiler as comp
 import ibis.common.exceptions as com
 import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
@@ -353,7 +352,7 @@ def hash(translator, expr):
     arg_formatted = translator.translate(arg)
 
     if how == 'fnv':
-        return 'fnv_hash({})'.format(arg_formatted)
+        return f'fnv_hash({arg_formatted})'
     else:
         raise NotImplementedError(how)
 
@@ -365,13 +364,13 @@ def hashbytes(translator, expr):
     arg_formatted = translator.translate(arg)
 
     if how == 'md5':
-        return 'md5({})'.format(arg_formatted)
+        return f'md5({arg_formatted})'
     elif how == 'sha1':
-        return 'sha1({})'.format(arg_formatted)
+        return f'sha1({arg_formatted})'
     elif how == 'sha256':
-        return 'sha256({})'.format(arg_formatted)
+        return f'sha256({arg_formatted})'
     elif how == 'sha512':
-        return 'sha512({})'.format(arg_formatted)
+        return f'sha512({arg_formatted})'
     else:
         raise NotImplementedError(how)
 

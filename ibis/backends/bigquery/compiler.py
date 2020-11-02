@@ -151,7 +151,7 @@ def _hash(translator, expr):
     arg_formatted = translator.translate(arg)
 
     if how == 'farm_fingerprint':
-        return 'farm_fingerprint({})'.format(arg_formatted)
+        return f'farm_fingerprint({arg_formatted})'
     else:
         raise NotImplementedError(how)
 
