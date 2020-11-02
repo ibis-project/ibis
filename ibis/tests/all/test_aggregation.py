@@ -21,43 +21,70 @@ def mean_udf(s):
 
 
 aggregate_test_params = [
-    param(lambda t: t.double_col.mean(), lambda s: s.mean(), id='mean',),
+    param(
+        lambda t: t.double_col.mean(),
+        lambda s: s.mean(),
+        'double_col',
+        id='mean',
+    ),
     param(
         lambda t: mean_udf(t.double_col),
         lambda s: s.mean(),
+        'double_col',
         id='mean_udf',
         marks=pytest.mark.udf,
     ),
-    param(lambda t: t.double_col.min(), lambda s: s.min(), id='min',),
-    param(lambda t: t.double_col.max(), lambda s: s.max(), id='max',),
+    param(
+        lambda t: t.double_col.min(),
+        lambda s: s.min(),
+        'double_col',
+        id='min',
+    ),
+    param(
+        lambda t: t.double_col.max(),
+        lambda s: s.max(),
+        'double_col',
+        id='max',
+    ),
     param(
         lambda t: (t.double_col + 5).sum(),
         lambda s: (s + 5).sum(),
+        'double_col',
         id='complex_sum',
+    ),
+    param(
+        lambda t: t.timestamp_col.max(),
+        lambda s: s.max(),
+        'timestamp_col',
+        id='timestamp_max',
     ),
 ]
 
 
 @pytest.mark.parametrize(
-    ('result_fn', 'expected_fn'), aggregate_test_params,
+    ('result_fn', 'expected_fn', 'expected_col'), aggregate_test_params,
 )
 @pytest.mark.xfail_unsupported
-def test_aggregate(backend, alltypes, df, result_fn, expected_fn):
+def test_aggregate(
+    backend, alltypes, df, result_fn, expected_fn, expected_col
+):
     expr = alltypes.aggregate(tmp=result_fn)
     result = expr.execute()
 
     # Create a single-row single-column dataframe with the Pandas `agg` result
     # (to match the output format of Ibis `aggregate`)
-    expected = pd.DataFrame({'tmp': [df.double_col.agg(expected_fn)]})
+    expected = pd.DataFrame({'tmp': [df[expected_col].agg(expected_fn)]})
 
     pd.testing.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize(
-    ('result_fn', 'expected_fn'), aggregate_test_params,
+    ('result_fn', 'expected_fn', 'expected_col'), aggregate_test_params,
 )
 @pytest.mark.xfail_unsupported
-def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
+def test_aggregate_grouped(
+    backend, alltypes, df, result_fn, expected_fn, expected_col
+):
     grouping_key_col = 'bigint_col'
 
     # Two (equivalent) variations:
@@ -70,8 +97,8 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
 
     # Note: Using `reset_index` to get the grouping key as a column
     expected = (
-        df.groupby(grouping_key_col)
-        .double_col.agg(expected_fn)
+        df.groupby(grouping_key_col)[expected_col]
+        .agg(expected_fn)
         .rename('tmp')
         .reset_index()
     )

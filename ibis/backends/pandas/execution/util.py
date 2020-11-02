@@ -93,12 +93,12 @@ def coerce_to_output(
         # then the result e a Series of tuple/list, or
         # if this is non grouped aggregate, then the result
         return ibis.util.coerce_to_dataframe(result, expr.type().names)
-    elif np.isscalar(result):
+    elif isinstance(result, pd.Series):
+        return result.rename(result_name)
+    else:
         if index is None:
             return pd.Series(result, name=result_name)
         else:
             return pd.Series(
                 np.repeat(result, len(index)), index=index, name=result_name,
             )
-    else:
-        return result.rename(result_name)

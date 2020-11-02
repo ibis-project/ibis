@@ -321,6 +321,20 @@ def test_reduction_udf_destruct_groupby(backend, alltypes):
 
 
 @pytest.mark.only_on_backends([Pandas])
+def test_reduction_udf_destruct_no_groupby(backend, alltypes):
+    result = alltypes.aggregate(
+        mean_struct(alltypes['double_col'], alltypes['int_col']).destructure()
+    ).execute()
+
+    expected = alltypes.aggregate(
+        mean=alltypes['double_col'].mean(),
+        mean_weight=alltypes['int_col'].mean(),
+    ).execute()
+
+    backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.only_on_backends([Pandas])
 def test_reduction_udf_destruct_window(backend, alltypes):
     win = window(
         preceding=ibis.interval(hours=2),
