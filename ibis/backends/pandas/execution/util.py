@@ -7,6 +7,7 @@ import toolz
 
 import ibis.common.exceptions as com
 import ibis.util
+from ibis.expr import operations as ops
 from ibis.expr import types as ir
 from ibis.expr.scope import Scope
 
@@ -93,7 +94,13 @@ def coerce_to_output(
         # then the result e a Series of tuple/list, or
         # if this is non grouped aggregate, then the result
         return ibis.util.coerce_to_dataframe(result, expr.type().names)
-    elif np.isscalar(result):
+    elif isinstance(result, pd.Series):
+        return result.rename(result_name)
+    elif isinstance(result, np.ndarray):
+        return pd.Series(result, name=result_name)
+    elif isinstance(expr.op(), ops.Reduction):
+        # We either wrap a scalar into a single element Series
+        # or broadcast the scalar to a multi element Series
         if index is None:
             return pd.Series(result, name=result_name)
         else:
@@ -101,4 +108,4 @@ def coerce_to_output(
                 np.repeat(result, len(index)), index=index, name=result_name,
             )
     else:
-        return result.rename(result_name)
+        raise ValueError(f"Cannot coerce_to_output. Result: {result}")
