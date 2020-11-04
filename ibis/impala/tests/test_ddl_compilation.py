@@ -5,6 +5,8 @@ import ibis
 pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
 
+from ibis.backends.base_sql import ddl as base_ddl
+
 from ibis.impala import ddl  # noqa: E402, isort:skip
 from ibis.impala.client import build_ast  # noqa: E402, isort:skip
 from ibis.impala.compiler import ImpalaDialect  # noqa: E402, isort:skip
@@ -14,12 +16,12 @@ pytestmark = pytest.mark.impala
 
 
 def test_drop_table_compile():
-    statement = ddl.DropTable('foo', database='bar', must_exist=True)
+    statement = base_ddl.DropTable('foo', database='bar', must_exist=True)
     query = statement.compile()
     expected = "DROP TABLE bar.`foo`"
     assert query == expected
 
-    statement = ddl.DropTable('foo', database='bar', must_exist=False)
+    statement = base_ddl.DropTable('foo', database='bar', must_exist=False)
     query = statement.compile()
     expected = "DROP TABLE IF EXISTS bar.`foo`"
     assert query == expected
@@ -36,7 +38,7 @@ def test_select_basics(t):
     expr = t.limit(10)
     select, _ = _get_select(expr, ImpalaDialect.make_context())
 
-    stmt = ddl.InsertSelect(name, select, database='foo')
+    stmt = base_ddl.InsertSelect(name, select, database='foo')
     result = stmt.compile()
 
     expected = """\
@@ -46,7 +48,7 @@ FROM functional_alltypes
 LIMIT 10"""
     assert result == expected
 
-    stmt = ddl.InsertSelect(name, select, database='foo', overwrite=True)
+    stmt = base_ddl.InsertSelect(name, select, database='foo', overwrite=True)
     result = stmt.compile()
 
     expected = """\
@@ -256,7 +258,7 @@ def test_create_external_table_as(mockcon):
     select, _ = _get_select(
         mockcon.table('test1'), ImpalaDialect.make_context()
     )
-    statement = ddl.CTAS(
+    statement = base_ddl.CTAS(
         'another_table',
         select,
         external=True,
@@ -283,7 +285,7 @@ def test_create_table_with_location_compile():
     schema = ibis.schema(
         [('foo', 'string'), ('bar', 'int8'), ('baz', 'int16')]
     )
-    statement = ddl.CreateTableWithSchema(
+    statement = base_ddl.CreateTableWithSchema(
         'another_table',
         schema,
         can_exist=False,
@@ -539,7 +541,7 @@ def _create_table(
 ):
     ast = build_ast(expr, ImpalaDialect.make_context())
     select = ast.queries[0]
-    statement = ddl.CTAS(
+    statement = base_ddl.CTAS(
         table_name,
         select,
         database=database,
