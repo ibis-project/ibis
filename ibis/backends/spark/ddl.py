@@ -1,10 +1,5 @@
+from ibis.backends.base_sql import ddl as base_ddl
 from ibis.backends.base_sql import quote_identifier
-from ibis.impala import ddl as impala_ddl
-from ibis.impala.ddl import (  # noqa: F401
-    _is_fully_qualified,
-    _is_quoted,
-    fully_qualified_re,
-)
 
 from .compiler import _type_to_sql_string
 
@@ -45,7 +40,7 @@ def _format_properties(props):
     return '(\n{}\n)'.format(',\n'.join(tokens))
 
 
-class CreateTable(impala_ddl.CreateTable):
+class CreateTable(base_ddl.CreateTable):
 
     """Create a table"""
 
@@ -71,12 +66,12 @@ class CreateTable(impala_ddl.CreateTable):
         return 'USING {}'.format(self.format)
 
 
-class CreateTableWithSchema(impala_ddl.CreateTableWithSchema):
+class CreateTableWithSchema(base_ddl.CreateTableWithSchema):
     def _storage(self):
         return 'USING {}'.format(self.format)
 
 
-class CTAS(impala_ddl.CTAS):
+class CTAS(base_ddl.CTAS):
 
     """
     Create Table As Select
@@ -155,15 +150,7 @@ def _format_schema_element(name, t):
     )
 
 
-class CreateDatabase(impala_ddl.CreateDatabase):
-    pass
-
-
-class DropTable(impala_ddl.DropTable):
-    pass
-
-
-class DropDatabase(impala_ddl.DropObject):
+class DropDatabase(base_ddl.DropObject):
 
     _object_type = 'DATABASE'
 
@@ -183,7 +170,7 @@ class DropDatabase(impala_ddl.DropObject):
             return compiled
 
 
-class DropFunction(impala_ddl.DropObject):
+class DropFunction(base_ddl.DropObject):
 
     _object_type = 'TEMPORARY FUNCTION'
 
@@ -196,11 +183,7 @@ class DropFunction(impala_ddl.DropObject):
         return self.name
 
 
-class TruncateTable(impala_ddl.TruncateTable):
-    pass
-
-
-class InsertSelect(impala_ddl.InsertSelect):
+class InsertSelect(base_ddl.InsertSelect):
     def __init__(
         self, table_name, select_expr, database=None, overwrite=False
     ):
@@ -224,7 +207,7 @@ class InsertSelect(impala_ddl.InsertSelect):
         return '{0} {1}\n{2}'.format(cmd, scoped_name, select_query)
 
 
-class AlterTable(impala_ddl.AlterTable):
+class AlterTable(base_ddl.AlterTable):
     def __init__(self, table, tbl_properties=None):
         super().__init__(
             table,
@@ -240,7 +223,7 @@ class AlterTable(impala_ddl.AlterTable):
         return self._wrap_command(action)
 
 
-class RenameTable(impala_ddl.RenameTable):
+class RenameTable(base_ddl.RenameTable):
     def __init__(self, old_name, new_name):
         super().__init__(
             old_name, new_name, old_database=None, new_database=None
