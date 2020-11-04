@@ -1,3 +1,4 @@
+import base64
 import datetime
 from functools import partial
 
@@ -143,6 +144,18 @@ def _array_index(translator, expr):
     )
 
 
+def _hash(translator, expr):
+    op = expr.op()
+    arg, how = op.args
+
+    arg_formatted = translator.translate(arg)
+
+    if how == 'farm_fingerprint':
+        return f'farm_fingerprint({arg_formatted})'
+    else:
+        raise NotImplementedError(how)
+
+
 def _string_find(translator, expr):
     haystack, needle, start, end = expr.op().args
 
@@ -252,6 +265,10 @@ def _literal(translator, expr):
         elif isinstance(expr, ir.TimeScalar):
             # TODO: define extractors on TimeValue expressions
             return "TIME '{}'".format(value)
+        elif isinstance(expr, ir.BinaryScalar):
+            return "FROM_BASE64('{}')".format(
+                base64.b64encode(value).decode(encoding="utf-8")
+            )
 
     try:
         return literal(translator, expr)
@@ -350,6 +367,7 @@ _operation_registry.update(
         ops.ExtractSecond: _extract_field('second'),
         ops.ExtractMillisecond: _extract_field('millisecond'),
         ops.ExtractEpochSeconds: _extract_field('epochseconds'),
+        ops.Hash: _hash,
         ops.StringReplace: fixed_arity('REPLACE', 3),
         ops.StringSplit: fixed_arity('SPLIT', 2),
         ops.StringConcat: _string_concat,
