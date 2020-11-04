@@ -6,6 +6,7 @@ pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
 
 from ibis.backends.base_sql import ddl as base_ddl
+
 from ibis.backends.impala.compiler import (  # noqa: E402, isort:skip
     ImpalaDialect,
 )
