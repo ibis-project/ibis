@@ -11,14 +11,14 @@ from io import StringIO
 from typing import Optional
 
 import ibis
+import ibis.backends.base_sqlalchemy.compiler as comp
 import ibis.common.exceptions as com
 import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.sql.compiler as comp
-import ibis.sql.transforms as transforms
 import ibis.util as util
+from ibis.backends.base_sqlalchemy import transforms
 from ibis.impala import identifiers
 
 
@@ -171,19 +171,6 @@ def quote_identifier(name, quotechar='`', force=False):
         return '{0}{1}{0}'.format(quotechar, name)
     else:
         return name
-
-
-# TODO move the name method to comp.ExprTranslator and use that instead
-class BaseExprTranslator(comp.ExprTranslator):
-    """Base expression translator."""
-
-    @staticmethod
-    def _name_expr(formatted_expr, quoted_name):
-        return '{} AS {}'.format(formatted_expr, quoted_name)
-
-    def name(self, translated, name, force=True):
-        """Return expression with its identifier."""
-        return self._name_expr(translated, quote_identifier(name, force=force))
 
 
 parenthesize = '({})'.format

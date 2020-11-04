@@ -4,8 +4,3 @@ jobs:
   parameters:
     name: Linux
     vmImage: ubuntu-16.04
-
-- template: ci/azure/windows.yml
-  parameters:
-    name: Windows
-    vmImage: windows-2019

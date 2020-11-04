@@ -19,13 +19,29 @@ import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
+from ibis.backends.base_sql.ddl import (
+    CTAS,
+    AlterTable,
+    CreateDatabase,
+    CreateTableWithSchema,
+    CreateView,
+    DropDatabase,
+    DropTable,
+    DropView,
+    InsertSelect,
+    RenameTable,
+    TruncateTable,
+    fully_qualified_re,
+    is_fully_qualified,
+)
+from ibis.backends.base_sqlalchemy.compiler import DDL, DML
 from ibis.client import Database, DatabaseEntity, Query, SQLClient
 from ibis.config import options
 from ibis.filesystems import HDFS, WebHDFS
 from ibis.impala import ddl, udf
 from ibis.impala.compat import HS2Error, ImpylaError, impyla
 from ibis.impala.compiler import ImpalaDialect, build_ast
-from ibis.sql.compiler import DDL, DML
+from ibis.impala.ddl import DropFunction
 from ibis.util import log
 
 
@@ -385,7 +401,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         return self.op().source
 
     def _match_name(self):
-        m = ddl.fully_qualified_re.match(self._qualified_name)
+        m = fully_qualified_re.match(self._qualified_name)
         if not m:
             raise com.IbisError(
                 'Cannot determine database name from {0}'.format(
@@ -507,7 +523,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
 
         ast = build_ast(expr, ImpalaDialect.make_context())
         select = ast.queries[0]
-        statement = ddl.InsertSelect(
+        statement = InsertSelect(
             self._qualified_name,
             select,
             partition=partition,
@@ -566,10 +582,10 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         -------
         renamed : ImpalaTable
         """
-        m = ddl.fully_qualified_re.match(new_name)
+        m = fully_qualified_re.match(new_name)
         if not m and database is None:
             database = self._database
-        statement = ddl.RenameTable(
+        statement = RenameTable(
             self._qualified_name, new_name, new_database=database
         )
         self._client._execute(statement)
@@ -652,7 +668,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         """
 
         def _run_ddl(**kwds):
-            stmt = ddl.AlterTable(self._qualified_name, **kwds)
+            stmt = AlterTable(self._qualified_name, **kwds)
             return self._execute(stmt)
 
         return self._alter_table_helper(
@@ -843,7 +859,7 @@ class ImpalaClient(SQLClient):
         log(msg)
 
     def _fully_qualified_name(self, name, database):
-        if ddl._is_fully_qualified(name):
+        if is_fully_qualified(name):
             return name
 
         database = database or self.current_database
@@ -869,7 +885,7 @@ class ImpalaClient(SQLClient):
         if database:
             statement += ' IN {0}'.format(database)
         if like:
-            m = ddl.fully_qualified_re.match(like)
+            m = fully_qualified_re.match(like)
             if m:
                 database, quoted, unquoted = m.groups()
                 like = quoted or unquoted
@@ -922,7 +938,7 @@ class ImpalaClient(SQLClient):
             # explicit mkdir ensures the user own the dir rather than impala,
             # which is easier for manual cleanup, if necessary
             self.hdfs.mkdir(path)
-        statement = ddl.CreateDatabase(name, path=path, can_exist=force)
+        statement = CreateDatabase(name, path=path, can_exist=force)
         return self._execute(statement)
 
     def drop_database(self, name, force=False):
@@ -978,7 +994,7 @@ class ImpalaClient(SQLClient):
                     'being dropped, or set '
                     'force=True'.format(name)
                 )
-        statement = ddl.DropDatabase(name, must_exist=not force)
+        statement = DropDatabase(name, must_exist=not force)
         return self._execute(statement)
 
     def list_databases(self, like=None):
@@ -1097,7 +1113,7 @@ class ImpalaClient(SQLClient):
         """
         ast = self._build_ast(expr, ImpalaDialect.make_context())
         select = ast.queries[0]
-        statement = ddl.CreateView(name, select, database=database)
+        statement = CreateView(name, select, database=database)
         return self._execute(statement)
 
     def drop_view(self, name, database=None, force=False):
@@ -1111,7 +1127,7 @@ class ImpalaClient(SQLClient):
         force : boolean, default False
           Database may throw exception if table does not exist
         """
-        statement = ddl.DropView(name, database=database, must_exist=not force)
+        statement = DropView(name, database=database, must_exist=not force)
         return self._execute(statement)
 
     def create_table(
@@ -1174,7 +1190,7 @@ class ImpalaClient(SQLClient):
             ast = self._build_ast(to_insert, ImpalaDialect.make_context())
             select = ast.queries[0]
 
-            statement = ddl.CTAS(
+            statement = CTAS(
                 table_name,
                 select,
                 database=database,
@@ -1185,7 +1201,7 @@ class ImpalaClient(SQLClient):
                 path=location,
             )
         elif schema is not None:
-            statement = ddl.CreateTableWithSchema(
+            statement = CreateTableWithSchema(
                 table_name,
                 schema,
                 database=database,
@@ -1503,7 +1519,7 @@ class ImpalaClient(SQLClient):
         >>> db = 'operations'
         >>> con.drop_table(table, database=db, force=True)  # doctest: +SKIP
         """
-        statement = ddl.DropTable(
+        statement = DropTable(
             table_name, database=database, must_exist=not force
         )
         self._execute(statement)
@@ -1517,7 +1533,7 @@ class ImpalaClient(SQLClient):
         table_name : string
         database : string, default None (optional)
         """
-        statement = ddl.TruncateTable(table_name, database=database)
+        statement = TruncateTable(table_name, database=database)
         self._execute(statement)
 
     def drop_table_or_view(self, name, database=None, force=False):
@@ -1664,7 +1680,7 @@ class ImpalaClient(SQLClient):
     def _drop_single_function(
         self, name, input_types, database=None, aggregate=False
     ):
-        stmt = ddl.DropFunction(
+        stmt = DropFunction(
             name,
             input_types,
             must_exist=False,
@@ -1676,7 +1692,7 @@ class ImpalaClient(SQLClient):
     def _drop_all_functions(self, database):
         udfs = self.list_udfs(database=database)
         for fnct in udfs:
-            stmt = ddl.DropFunction(
+            stmt = DropFunction(
                 fnct.name,
                 fnct.inputs,
                 must_exist=False,
@@ -1686,7 +1702,7 @@ class ImpalaClient(SQLClient):
             self._execute(stmt)
         udafs = self.list_udas(database=database)
         for udaf in udafs:
-            stmt = ddl.DropFunction(
+            stmt = DropFunction(
                 udaf.name,
                 udaf.inputs,
                 must_exist=False,

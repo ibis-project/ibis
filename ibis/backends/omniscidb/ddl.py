@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
 import ibis
+from ibis.backends.base_sqlalchemy.compiler import DDL, DML
 from ibis.common import exceptions as com
-from ibis.sql.compiler import DDL, DML
 
 from . import dtypes as omniscidb_dtypes
 from .compiler import _type_to_sql_string, quote_identifier
