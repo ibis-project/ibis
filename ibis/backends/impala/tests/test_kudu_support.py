@@ -13,12 +13,15 @@ pytest.importorskip('hdfs')
 pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
 
-ksupport = pytest.importorskip('ibis.impala.kudu_support')
+ksupport = pytest.importorskip('ibis.backends.impala.kudu_support')
 kudu = pytest.importorskip('kudu')
 
-from ibis.impala.tests.common import IbisTestEnv  # noqa: E402, isort:skip
-from ibis.impala.tests.common import ImpalaE2E  # noqa: E402, isort:skip
-from ibis.impala.client import build_ast  # noqa: E402, isort:skip
+from ibis.backends.impala.tests.conftest import (  # noqa: E402, isort:skip
+    IbisTestEnv,
+    ImpalaE2E,
+)
+
+from ibis.backends.impala.client import build_ast  # noqa: E402, isort:skip
 
 
 pytestmark = pytest.mark.kudu
