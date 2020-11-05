@@ -15,8 +15,6 @@ from ibis.backends.base_sql.compiler import (
     BaseTableSetFormatter,
 )
 
-# from . import identifiers
-
 
 def build_ast(expr, context):
     assert context is not None, 'context is None'
