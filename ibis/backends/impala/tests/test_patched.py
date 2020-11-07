@@ -47,7 +47,7 @@ def test_refresh(con, test_data_db):
 
 
 def test_describe_formatted(con, test_data_db):
-    from ibis.impala.metadata import TableMetadata
+    from ibis.backends.impala.metadata import TableMetadata
 
     t = con.table('functional_alltypes')
     with patch_execute(con) as ex_mock:

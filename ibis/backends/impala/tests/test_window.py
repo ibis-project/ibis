@@ -3,8 +3,8 @@ import pytest
 import ibis
 import ibis.common.exceptions as com
 from ibis import window
+from ibis.backends.impala.compiler import to_sql  # noqa: E402
 from ibis.expr.window import rows_with_max_lookback
-from ibis.impala.compiler import to_sql  # noqa: E402
 from ibis.tests.util import assert_equal
 
 pytest.importorskip('hdfs')

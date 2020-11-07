@@ -18,7 +18,8 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis.backends.base_sqlalchemy import transforms
-from ibis.impala import identifiers
+
+from . import identifiers
 
 
 class CaseFormatter:
@@ -166,7 +167,7 @@ def literal(translator, expr):
 
 def quote_identifier(name, quotechar='`', force=False):
     """Add quotes to the `name` identifier if needed."""
-    if force or name.count(' ') or name in identifiers.impala_identifiers:
+    if force or name.count(' ') or name in identifiers.base_identifiers:
         return '{0}{1}{0}'.format(quotechar, name)
     else:
         return name

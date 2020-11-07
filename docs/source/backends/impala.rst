@@ -1,4 +1,4 @@
-.. currentmodule:: ibis.impala.api
+.. currentmodule:: ibis.backends.impala
 
 .. _backends.impala:
 
@@ -48,7 +48,7 @@ connection semantics are identical.
 
 API
 ---
-.. currentmodule:: ibis.impala.api
+.. currentmodule:: ibis.backends.impala
 
 These methods are available on the Impala client object after connecting to
 your HDFS cluster (``ibis.hdfs_connect``) and connecting to Impala with

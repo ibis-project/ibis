@@ -12,8 +12,8 @@ from plumbum import CommandNotFound, local
 from plumbum.cmd import cmake, make
 
 import ibis
+from ibis.backends.impala.tests.conftest import IbisTestEnv
 from ibis.common.exceptions import IbisError
-from ibis.impala.tests.conftest import IbisTestEnv
 
 SCRIPT_DIR = Path(__file__).parent.absolute()
 DATA_DIR = Path(

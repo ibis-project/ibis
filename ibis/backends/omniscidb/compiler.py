@@ -6,9 +6,9 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
+from ibis.backends.base_sql.compiler import BaseExprTranslator
 from ibis.backends.base_sqlalchemy import compiler
 from ibis.expr.api import _add_methods, _binop_expr, _unary_op
-from ibis.impala import compiler as impala_compiler
 
 from . import operations as omniscidb_ops
 from .identifiers import quote_identifier  # noqa: F401
@@ -259,7 +259,7 @@ class OmniSciDBExprTranslator(compiler.ExprTranslator):
     """OmniSciDB Expr Translator class."""
 
     _registry = omniscidb_ops._operation_registry
-    _rewrites = impala_compiler.ImpalaExprTranslator._rewrites.copy()
+    _rewrites = BaseExprTranslator._rewrites.copy()
 
     context_class = OmniSciDBQueryContext
 
