@@ -11,7 +11,6 @@ from io import StringIO
 from typing import Optional
 
 import ibis
-import ibis.backends.base_sqlalchemy.compiler as comp
 import ibis.common.exceptions as com
 import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
@@ -19,7 +18,8 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis.backends.base_sqlalchemy import transforms
-from ibis.impala import identifiers
+
+from . import identifiers
 
 
 class CaseFormatter:
@@ -167,7 +167,7 @@ def literal(translator, expr):
 
 def quote_identifier(name, quotechar='`', force=False):
     """Add quotes to the `name` identifier if needed."""
-    if force or name.count(' ') or name in identifiers.impala_identifiers:
+    if force or name.count(' ') or name in identifiers.base_identifiers:
         return '{0}{1}{0}'.format(quotechar, name)
     else:
         return name
@@ -353,7 +353,25 @@ def hash(translator, expr):
     arg_formatted = translator.translate(arg)
 
     if how == 'fnv':
-        return 'fnv_hash({})'.format(arg_formatted)
+        return f'fnv_hash({arg_formatted})'
+    else:
+        raise NotImplementedError(how)
+
+
+def hashbytes(translator, expr):
+    op = expr.op()
+    arg, how = op.args
+
+    arg_formatted = translator.translate(arg)
+
+    if how == 'md5':
+        return f'md5({arg_formatted})'
+    elif how == 'sha1':
+        return f'sha1({arg_formatted})'
+    elif how == 'sha256':
+        return f'sha256({arg_formatted})'
+    elif how == 'sha512':
+        return f'sha512({arg_formatted})'
     else:
         raise NotImplementedError(how)
 
@@ -1002,6 +1020,7 @@ operation_registry = {
     ops.Sign: sign,
     ops.Sqrt: unary('sqrt'),
     ops.Hash: hash,
+    ops.HashBytes: hashbytes,
     ops.Log: log,
     ops.Ln: unary('ln'),
     ops.Log2: unary('log2'),

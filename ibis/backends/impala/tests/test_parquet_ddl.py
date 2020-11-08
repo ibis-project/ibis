@@ -9,7 +9,7 @@ pytest.importorskip('hdfs')
 pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
 
-from ibis.impala.compat import HS2Error  # noqa: E402, isort:skip
+from ibis.backends.impala.compat import HS2Error  # noqa: E402, isort:skip
 
 
 pytestmark = pytest.mark.impala

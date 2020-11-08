@@ -137,7 +137,7 @@ class KuduImpalaInterface:
                 )
 
             if isinstance(obj, pd.DataFrame):
-                from ibis.impala.pandas_interop import write_temp_dataframe
+                from .pandas_interop import write_temp_dataframe
 
                 writer, to_insert = write_temp_dataframe(
                     self.impala_client, obj

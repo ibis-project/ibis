@@ -7,9 +7,12 @@ pytest.importorskip('impala.dbapi')
 
 from ibis.backends.base_sql import ddl as base_ddl
 
-from ibis.impala import ddl  # noqa: E402, isort:skip
-from ibis.impala.client import build_ast  # noqa: E402, isort:skip
-from ibis.impala.compiler import ImpalaDialect  # noqa: E402, isort:skip
+from ibis.backends.impala.compiler import (  # noqa: E402, isort:skip
+    ImpalaDialect,
+)
+
+from ibis.backends.impala import ddl  # noqa: E402, isort:skip
+from ibis.backends.impala.client import build_ast  # noqa: E402, isort:skip
 
 
 pytestmark = pytest.mark.impala

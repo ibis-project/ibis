@@ -68,7 +68,7 @@ test:
     - ibis.backends.csv
     - ibis.backends.parquet
     - ibis.backends.hdf5
-    - ibis.impala
+    - ibis.backends.impala
     - ibis.backends.mysql
     - ibis.backends.omniscidb  # [py<38]
     - ibis.backends.pandas

@@ -14,7 +14,7 @@ pytest.importorskip('impala.dbapi')
 
 impala = pytest.importorskip('impala')
 
-from ibis.impala.compat import ImpylaError  # noqa: E402, isort:skip
+from ibis.backends.impala.compat import ImpylaError  # noqa: E402, isort:skip
 
 pytestmark = pytest.mark.impala
 

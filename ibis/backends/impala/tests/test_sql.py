@@ -4,12 +4,10 @@ import unittest
 import pytest
 
 import ibis
-from ibis.impala.compiler import to_sql  # noqa: E402
-from ibis.impala.tests.mocks import MockImpalaConnection
-from ibis.tests.expr.mocks import MockConnection
+from ibis.backends.impala import compile
+from ibis.backends.impala.compiler import to_sql  # noqa: E402
+from ibis.backends.impala.tests.mocks import MockImpalaConnection
 from ibis.tests.sql.test_compiler import ExprTestCases
-
-from ..api import compile
 
 pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
@@ -628,7 +626,7 @@ class TestNonTabularResults(unittest.TestCase):
     """
 
     def setUp(self):
-        self.con = MockConnection()
+        self.con = MockImpalaConnection()
         self.table = self.con.table('alltypes')
 
     def test_complex_array_expr_projection(self):

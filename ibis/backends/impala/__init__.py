@@ -1,16 +1,17 @@
+"""Impala backend"""
 import ibis.common.exceptions as com
 from ibis.config import options
 from ibis.filesystems import HDFS, WebHDFS, hdfs_connect  # noqa: F401
 
 # these objects are exposed in the public API and are not used in the module
-from ibis.impala.client import (  # noqa: F401
+from .client import (  # noqa: F401
     ImpalaClient,
     ImpalaConnection,
     ImpalaDatabase,
     ImpalaTable,
 )
-from ibis.impala.compiler import dialect  # noqa: F401
-from ibis.impala.udf import *  # noqa: F401,F403
+from .compiler import dialect  # noqa: F401
+from .udf import *  # noqa: F401,F403
 
 
 def compile(expr, params=None):
@@ -21,7 +22,7 @@ def compile(expr, params=None):
     str
 
     """
-    from ibis.impala.compiler import to_sql
+    from .compiler import to_sql
 
     return to_sql(expr, dialect.make_context(params=params))
 

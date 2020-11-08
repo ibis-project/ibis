@@ -18,10 +18,11 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.signature as sig
-import ibis.impala.compiler as comp
 import ibis.udf.validate as v
 import ibis.util as util
 from ibis.backends.base_sql import fixed_arity
+
+from . import compiler as comp
 
 __all__ = [
     'add_operation',
