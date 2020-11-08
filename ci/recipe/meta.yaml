@@ -33,9 +33,7 @@ requirements:
     - clickhouse-sqlalchemy
     - geoalchemy2
     - geopandas
-    - google-cloud-bigquery-core >=1.12.0,<1.24.0dev
     - graphviz
-    - impyla >=0.15.0
     - lz4
     - multipledispatch >=0.6
     - numpy >=1.15
@@ -43,9 +41,7 @@ requirements:
     - psycopg2
     - pyarrow >=0.15
     - pydata-google-auth
-    - pymapd 0.24  # [py<38]
     - pymysql
-    - pyspark >=2.4.3  # [py<38]
     - pytables >=3.0.0
     - python
     - python-graphviz
@@ -63,18 +59,13 @@ requirements:
 test:
   imports:
     - ibis
-    - ibis.backends.bigquery
     - ibis.backends.clickhouse
     - ibis.backends.csv
     - ibis.backends.parquet
     - ibis.backends.hdf5
-    - ibis.backends.impala
     - ibis.backends.mysql
-    - ibis.backends.omniscidb  # [py<38]
     - ibis.backends.pandas
     - ibis.backends.postgres
-    - ibis.backends.pyspark  # [py<38]
-    - ibis.backends.spark
     - ibis.backends.sqlite
 
 about:
