@@ -123,7 +123,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: ["3.7"]
+        python_version: ["3.7", "3.8"]
     services:
       omnisci:
         # NOTE: Keep the documentation about the OmniSciDB supported version
