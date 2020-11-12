@@ -10,6 +10,13 @@ import ibis.expr.lineage as lin
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis.backends.base_sql.ddl import (
+    CreateDatabase,
+    DropTable,
+    TruncateTable,
+    fully_qualified_re,
+    is_fully_qualified,
+)
 from ibis.client import Database, Query, SQLClient
 from ibis.util import log
 
@@ -136,7 +143,7 @@ class SparkTable(ir.TableExpr):
         return self.op().args[0]
 
     def _match_name(self):
-        m = ddl.fully_qualified_re.match(self._qualified_name)
+        m = fully_qualified_re.match(self._qualified_name)
         if not m:
             return None, self._qualified_name
         db, quoted, unquoted = m.groups()
@@ -448,7 +455,7 @@ class SparkClient(SQLClient):
           Path where to store the database data; otherwise uses Spark
           default
         """
-        statement = ddl.CreateDatabase(name, path=path, can_exist=force)
+        statement = CreateDatabase(name, path=path, can_exist=force)
         return self._execute(statement.compile())
 
     def drop_database(self, name, force=False):
@@ -665,9 +672,7 @@ class SparkClient(SQLClient):
         >>> db = 'operations'
         >>> con.drop_table_or_view(table, db, force=True)  # doctest: +SKIP
         """
-        statement = ddl.DropTable(
-            name, database=database, must_exist=not force
-        )
+        statement = DropTable(name, database=database, must_exist=not force)
         self._execute(statement.compile())
 
     def truncate_table(self, table_name, database=None):
@@ -679,7 +684,7 @@ class SparkClient(SQLClient):
         table_name : string
         database : string, default None (optional)
         """
-        statement = ddl.TruncateTable(table_name, database=database)
+        statement = TruncateTable(table_name, database=database)
         self._execute(statement.compile())
 
     def insert(
@@ -735,7 +740,7 @@ class SparkClient(SQLClient):
 
 
 def _fully_qualified_name(name, database):
-    if ddl._is_fully_qualified(name):
+    if is_fully_qualified(name):
         return name
     if database:
         return '{0}.`{1}`'.format(database, name)

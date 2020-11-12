@@ -32,9 +32,10 @@ Create a client by passing in database connection parameters such as ``host``,
        password='HyperInteractive',
    )
 
-Note: OmniSciDB backend support is tested against the latest development
-release of their database using the ``omnisci/core-os-cpu-dev:latest``
-Docker image. Some features may not work on earlier releases.
+
+.. note::
+
+   OmniSciDB backend support OmniSciDB version greater than or equals to `5.3.0`.
 
 .. _api.omniscidb:
 

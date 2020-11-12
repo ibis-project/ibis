@@ -1,8 +1,8 @@
 from io import StringIO
 
+import ibis.backends.base_sqlalchemy.compiler as comp
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-import ibis.sql.compiler as comp
 import ibis.util as util
 
 from .identifiers import quote_identifier

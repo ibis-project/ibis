@@ -96,15 +96,7 @@ def _post_process_group_by_order_by(
 
 @functools.singledispatch
 def get_aggcontext(
-    window,
-    *,
-    scope,
-    operand,
-    operand_dtype,
-    parent,
-    group_by,
-    order_by,
-    **kwargs,
+    window, *, scope, operand, parent, group_by, order_by, **kwargs,
 ) -> NoReturn:
     raise NotImplementedError(
         f"get_aggcontext is not implemented for {type(window).__name__}"
@@ -113,15 +105,7 @@ def get_aggcontext(
 
 @get_aggcontext.register(win.Window)
 def get_aggcontext_window(
-    window,
-    *,
-    scope,
-    operand,
-    operand_dtype,
-    parent,
-    group_by,
-    order_by,
-    **kwargs,
+    window, *, scope, operand, parent, group_by, order_by, **kwargs,
 ) -> AggregationContext:
     # no order by or group by: default summarization aggcontext
     #
@@ -129,9 +113,10 @@ def get_aggcontext_window(
     # expand or roll.
     #
     # otherwise we're transforming
+    output_type = operand.type()
 
     if not group_by and not order_by:
-        aggcontext = agg_ctx.Summarize()
+        aggcontext = agg_ctx.Summarize(parent=parent, output_type=output_type)
     elif (
         isinstance(
             operand.op(), (ops.Reduction, ops.CumulativeOp, ops.Any, ops.All)
@@ -149,7 +134,7 @@ def get_aggcontext_window(
                 parent=parent,
                 group_by=group_by,
                 order_by=order_by,
-                dtype=operand_dtype,
+                output_type=output_type,
             )
         else:
             # expanding window
@@ -157,7 +142,7 @@ def get_aggcontext_window(
                 parent=parent,
                 group_by=group_by,
                 order_by=order_by,
-                dtype=operand_dtype,
+                output_type=output_type,
             )
     else:
         # groupby transform (window with a partition by clause in SQL parlance)
@@ -165,7 +150,7 @@ def get_aggcontext_window(
             parent=parent,
             group_by=group_by,
             order_by=order_by,
-            dtype=operand_dtype,
+            output_type=output_type,
         )
 
     return aggcontext
@@ -334,15 +319,10 @@ def execute_window_op(
         overwrite=True,
     )
 
-    # figure out what the dtype of the operand is
-    operand_type = operand.type()
-    operand_dtype = operand_type.to_pandas()
-
     aggcontext = get_aggcontext(
         window,
         scope=scope,
         operand=operand,
-        operand_dtype=operand_dtype,
         parent=source,
         group_by=grouping_keys,
         order_by=ordering_keys,
@@ -357,6 +337,7 @@ def execute_window_op(
         **kwargs,
     )
     series = post_process(result, data, ordering_keys, grouping_keys)
+
     assert len(data) == len(
         series
     ), 'input data source and computed column do not have the same length'

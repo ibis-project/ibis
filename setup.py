@@ -22,7 +22,7 @@ sqlite_requires = ['sqlalchemy>=1.1,<1.3.7']
 postgres_requires = sqlite_requires + ['psycopg2']
 mysql_requires = sqlite_requires + ['pymysql']
 
-omniscidb_requires = ['pymapd>=0.12.0']
+omniscidb_requires = ['pymapd==0.24', 'pyarrow']
 kerberos_requires = ['requests-kerberos']
 visualization_requires = ['graphviz']
 clickhouse_requires = [
@@ -115,19 +115,19 @@ setup(
     maintainer_email="phillip.cloud@twosigma.com",
     entry_points={
         'ibis.backends': [
-            'pandas = ibis.pandas.api'
-            'csv = ibis.file.csv',
-            'parquet = ibis.file.parquet',
-            'hdf5 = ibis.file.hdf5',
-            'impala = ibis.impala.api',
+            'pandas = ibis.backends.pandas'
+            'csv = ibis.backends.csv',
+            'parquet = ibis.backends.parquet',
+            'hdf5 = ibis.backends.hdf5',
+            'impala = ibis.backends.impala',
             'sqlite = ibis.backends.sqlite',
             'postgres = ibis.backends.postgres',
-            'mysql = ibis.sql.mysql.api',
+            'mysql = ibis.backends.mysql',
             'clickhouse = ibis.backends.clickhouse',
             'bigquery = ibis.backends.bigquery',
             'omniscidb = ibis.backends.omniscidb',
-            'spark = ibis.backebds.spark',
-            'pyspark = ibis.pyspark.api',
+            'spark = ibis.backends.spark',
+            'pyspark = ibis.backends.pyspark',
         ]
     },
 )

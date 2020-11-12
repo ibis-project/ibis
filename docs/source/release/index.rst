@@ -13,6 +13,14 @@ Release Notes
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
 * :feature:`2379` Backends are defined as entry points
+* :feature:`2514` Add Struct.from_dict
+* :feature:`2310` Add hash and hashbytes support for BigQuery backend
+* :feature:`2511` Support reduction UDF without groupby to return multiple columns for Pandas backend
+* :feature:`2487` Support analytic and reduction UDF to return multiple columns for Pandas backend
+* :support:`2497` Move `ibis.HDFS`, `ibis.WebHDFS` and `ibis.hdfs_connect` to `ibis.impala.*`
+* :feature:`2473` Support elementwise UDF to return multiple columns for Pandas and PySpark backend
+* :bug:`2462` Table expressions do not recognize inet datatype (Postgres backend)
+* :bug:`2461` Table expressions do not recognize macaddr datatype (Postgres backend)
 * :bug:`2410` Fix ``aggcontext.Summarize`` not always producing scalar (Pandas backend)
 * :bug:`2414` Fix same window op with different window size on table lead to incorrect results for pyspark backend
 * :feature:`2409` FEAT: Support Ibis interval for window in pyspark backend
@@ -38,6 +46,7 @@ Release Notes
 * :bug:`1320` Added verbose logging to SQL backends
 * :feature:`2285` Add support for casting category dtype in pandas backend
 * :feature:`2270` Add support for Union in the PySpark backend
+* :bug:`2256` Fix issue with sql_validate call to OmnisciDB.
 * :feature:`2260` Add support for implementign custom window object for pandas backend
 * :bug:`2237` Add missing float types to pandas backend
 * :bug:`2252` Allow group_by and order_by as window operation input in pandas backend
@@ -63,6 +72,7 @@ Release Notes
 * :feature:`2060` Add initial support for ibis.random function
 * :support:`2107` Added fragment_size to table creation for OmniSciDB
 * :feature:`2178` Added epoch_seconds extraction operation to Clickhouse, CSV, Impala, MySQL, OmniSciDB, Pandas, Parquet, PostgreSQL, PySpark, SQLite, Spark and BigQuery :issue:`2273`
+* :feature:`2165` [OmniSciDB] Add "method" parameter to load_data
 * :feature:`2117` Add non-nullable info to schema output
 * :feature:`2083` fillna and nullif implementations for OmnisciDB
 * :feature:`1981` Add load_data to sqlalchemy's backends and fix database parameter for load/create/drop when database parameter is the same than the current database

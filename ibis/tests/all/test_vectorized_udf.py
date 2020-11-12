@@ -1,7 +1,9 @@
 import pytest
 
+import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
+from ibis.expr.window import window
 from ibis.tests.backends import Pandas, PySpark
 from ibis.udf.vectorized import analytic, elementwise, reduction
 
@@ -21,6 +23,30 @@ def calc_zscore(s):
 @reduction(input_type=[dt.double], output_type=dt.double)
 def calc_mean(s):
     return s.mean()
+
+
+@elementwise(
+    input_type=[dt.double],
+    output_type=dt.Struct(['col1', 'col2'], [dt.double, dt.double]),
+)
+def add_one_struct(v):
+    return v + 1, v + 2
+
+
+@analytic(
+    input_type=[dt.double, dt.double],
+    output_type=dt.Struct(['demean', 'demean_weight'], [dt.double, dt.double]),
+)
+def demean_struct(v, w):
+    return v - v.mean(), w - w.mean()
+
+
+@reduction(
+    input_type=[dt.double, dt.double],
+    output_type=dt.Struct(['mean', 'mean_weight'], [dt.double, dt.double]),
+)
+def mean_struct(v, w):
+    return v.mean(), w.mean()
 
 
 @pytest.mark.only_on_backends([Pandas, PySpark])
@@ -205,3 +231,127 @@ def test_invalid_kwargs(backend, alltypes):
         @elementwise(input_type=[dt.double], output_type=dt.double)
         def foo1(v, amount):
             return v + 1
+
+
+@pytest.mark.only_on_backends([Pandas, PySpark])
+@pytest.mark.xfail_unsupported
+def test_elementwise_udf_destruct(backend, alltypes):
+    result = alltypes.mutate(
+        add_one_struct(alltypes['double_col']).destructure()
+    ).execute()
+
+    expected = alltypes.mutate(
+        col1=alltypes['double_col'] + 1, col2=alltypes['double_col'] + 2,
+    ).execute()
+
+    backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.only_on_backends([Pandas, PySpark])
+@pytest.mark.xfail_unsupported
+def test_elementwise_udf_named_destruct(backend, alltypes):
+    """Test error when assigning name to a destruct column."""
+
+    with pytest.raises(
+        com.ExpressionError, match=r".*Cannot name a destruct.*"
+    ):
+        alltypes.mutate(
+            new_struct=add_one_struct(alltypes['double_col']).destructure()
+        )
+
+
+@pytest.mark.only_on_backends([PySpark])
+@pytest.mark.xfail_unsupported
+def test_elementwise_udf_struct(backend, alltypes):
+    result = alltypes.mutate(
+        new_col=add_one_struct(alltypes['double_col'])
+    ).execute()
+    result = result.assign(
+        col1=result['new_col'].apply(lambda x: x[0]),
+        col2=result['new_col'].apply(lambda x: x[1]),
+    )
+    result = result.drop('new_col', axis=1)
+    expected = alltypes.mutate(
+        col1=alltypes['double_col'] + 1, col2=alltypes['double_col'] + 2,
+    ).execute()
+
+    backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.only_on_backends([Pandas])
+def test_analytic_udf_destruct(backend, alltypes):
+    w = window(preceding=None, following=None, group_by='year')
+
+    result = alltypes.mutate(
+        demean_struct(alltypes['double_col'], alltypes['int_col'])
+        .over(w)
+        .destructure()
+    ).execute()
+
+    expected = alltypes.mutate(
+        demean=alltypes['double_col'] - alltypes['double_col'].mean().over(w),
+        demean_weight=alltypes['int_col'] - alltypes['int_col'].mean().over(w),
+    ).execute()
+
+    backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.only_on_backends([Pandas])
+def test_reduction_udf_destruct_groupby(backend, alltypes):
+    result = (
+        alltypes.groupby('year')
+        .aggregate(
+            mean_struct(
+                alltypes['double_col'], alltypes['int_col']
+            ).destructure()
+        )
+        .execute()
+    )
+
+    expected = (
+        alltypes.groupby('year')
+        .aggregate(
+            mean=alltypes['double_col'].mean(),
+            mean_weight=alltypes['int_col'].mean(),
+        )
+        .execute()
+    )
+
+    backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.only_on_backends([Pandas])
+def test_reduction_udf_destruct_no_groupby(backend, alltypes):
+    result = alltypes.aggregate(
+        mean_struct(alltypes['double_col'], alltypes['int_col']).destructure()
+    ).execute()
+
+    expected = alltypes.aggregate(
+        mean=alltypes['double_col'].mean(),
+        mean_weight=alltypes['int_col'].mean(),
+    ).execute()
+
+    backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.only_on_backends([Pandas])
+def test_reduction_udf_destruct_window(backend, alltypes):
+    win = window(
+        preceding=ibis.interval(hours=2),
+        following=0,
+        group_by='year',
+        order_by='timestamp_col',
+    )
+
+    result = alltypes.mutate(
+        mean_struct(alltypes['double_col'], alltypes['int_col'])
+        .over(win)
+        .destructure()
+    ).execute()
+
+    expected = alltypes.mutate(
+        mean=alltypes['double_col'].mean().over(win),
+        mean_weight=alltypes['int_col'].mean().over(win),
+    ).execute()
+
+    backend.assert_frame_equal(result, expected)

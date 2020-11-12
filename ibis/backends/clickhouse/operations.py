@@ -1,10 +1,10 @@
 from datetime import date, datetime
 from io import StringIO
 
+import ibis.backends.base_sqlalchemy.transforms as transforms
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.sql.transforms as transforms
 import ibis.util as util
 
 from .identifiers import quote_identifier

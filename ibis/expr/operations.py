@@ -1966,7 +1966,14 @@ class Selection(TableNode, HasSchema):
         names = []
 
         for projection in self.selections:
-            if isinstance(projection, ir.ValueExpr):
+            if isinstance(projection, ir.DestructColumn):
+                # If this is a destruct, then we destructure
+                # the result and assign to multiple columns
+                struct_type = projection.type()
+                for name in struct_type.names:
+                    names.append(name)
+                    types.append(struct_type[name])
+            elif isinstance(projection, ir.ValueExpr):
                 names.append(projection.get_name())
                 types.append(projection.type())
             elif isinstance(projection, ir.TableExpr):
@@ -2215,10 +2222,17 @@ class Aggregation(TableNode, HasSchema):
         names = []
         types = []
 
-        # All exprs must be named
         for e in self.by + self.metrics:
-            names.append(e.get_name())
-            types.append(e.type())
+            if isinstance(e, ir.DestructValue):
+                # If this is a destruct, then we destructure
+                # the result and assign to multiple columns
+                struct_type = e.type()
+                for name in struct_type.names:
+                    names.append(name)
+                    types.append(struct_type[name])
+            else:
+                names.append(e.get_name())
+                types.append(e.type())
 
         return Schema(names, types)
 
@@ -2690,8 +2704,14 @@ class DecimalScale(UnaryOp):
 
 class Hash(ValueOp):
     arg = Arg(rlz.any)
-    how = Arg(rlz.isin({'fnv'}))
+    how = Arg(rlz.isin({'fnv', 'farm_fingerprint'}))
     output_type = rlz.shape_like('arg', dt.int64)
+
+
+class HashBytes(ValueOp):
+    arg = Arg(rlz.one_of({rlz.value(dt.string), rlz.value(dt.binary)}))
+    how = Arg(rlz.isin({'md5', 'sha1', 'sha256', 'sha512'}))
+    output_type = rlz.shape_like('arg', dt.binary)
 
 
 class DateAdd(BinaryOp):

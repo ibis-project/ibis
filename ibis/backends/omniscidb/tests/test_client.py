@@ -3,6 +3,7 @@ from typing import Optional
 
 import mock
 import pandas as pd
+import pyarrow
 import pytest
 from pkg_resources import get_distribution, parse_version
 from pytest import param
@@ -13,6 +14,7 @@ import ibis.expr.types as ir
 from ibis.tests.util import assert_equal
 
 pymapd = pytest.importorskip('pymapd')
+
 
 pytestmark = pytest.mark.omniscidb
 
@@ -287,3 +289,45 @@ def test_cpu_execution_type(
 
     for mocked_method in mocked_methods:
         mocked_method.stop()
+
+
+@pytest.mark.parametrize(
+    'method,format',
+    [
+        ('rows', 'pandas'),
+        ('columnar', 'pandas'),
+        ('infer' 'pandas'),
+        ('infer', 'arrow'),
+        ('arrow', 'arrow'),
+    ],
+)
+def test_load_data(con, temp_table, method, format):
+    df_salary = pd.DataFrame(
+        {
+            'first_name': ['A', 'B', 'C'],
+            'last_name': ['D', 'E', 'F'],
+            'department_name': ['AA', 'BB', 'CC'],
+            'salary': [100.0, 200.0, 300.0],
+        }
+    )
+
+    sch_salary = ibis.schema(
+        [
+            ('first_name', 'string'),
+            ('last_name', 'string'),
+            ('department_name', 'string'),
+            ('salary', 'float64'),
+        ]
+    )
+
+    arrow_salary = pyarrow.Table.from_pandas(df_salary)
+
+    con.create_table(temp_table, schema=sch_salary)
+    con.load_data(
+        temp_table,
+        df_salary if format == 'pandas' else arrow_salary,
+        method=method,
+    )
+    result = con.table(temp_table).execute()
+
+    pd.testing.assert_frame_equal(result, df_salary)

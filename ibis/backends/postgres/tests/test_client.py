@@ -19,9 +19,9 @@ import pandas as pd
 import pytest
 
 import ibis
+import ibis.backends.base_sqlalchemy.alchemy as alch  # noqa: E402
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-import ibis.sql.alchemy as alch  # noqa: E402
 from ibis.tests.util import assert_equal
 
 sa = pytest.importorskip('sqlalchemy')
@@ -143,6 +143,8 @@ def test_schema_type_conversion():
         ('json', sa.dialects.postgresql.JSON, True, dt.JSON),
         ('jsonb', sa.dialects.postgresql.JSONB, True, dt.JSONB),
         ('uuid', sa.dialects.postgresql.UUID, True, dt.UUID),
+        ('macaddr', sa.dialects.postgresql.MACADDR, True, dt.MACADDR),
+        ('inet', sa.dialects.postgresql.INET, True, dt.INET),
     ]
 
     sqla_types = []

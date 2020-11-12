@@ -17,8 +17,8 @@ from typing import Optional
 
 import pytest
 
+import ibis.backends.base_sqlalchemy.alchemy as alch  # noqa: E402
 import ibis.expr.types as ir
-import ibis.sql.alchemy as alch  # noqa: E402
 from ibis.client import SQLClient
 from ibis.expr.schema import Schema
 from ibis.expr.typing import TimeContext
@@ -387,12 +387,12 @@ class MockConnection(BaseMockConnection):
     #       MockAlchemyConnection instead?
     @property
     def dialect(self):
-        from ibis.impala.compiler import ImpalaDialect
+        from ibis.backends.base_sql.compiler import BaseDialect
 
-        return ImpalaDialect
+        return BaseDialect
 
     def _build_ast(self, expr, context):
-        from ibis.impala.compiler import build_ast
+        from ibis.backends.base_sql.compiler import build_ast
 
         return build_ast(expr, context)
 
@@ -418,12 +418,12 @@ class MockAlchemyConnection(BaseMockConnection):
 
     @property
     def dialect(self):
-        from ibis.sql.alchemy import AlchemyDialect
+        from ibis.backends.base_sqlalchemy.alchemy import AlchemyDialect
 
         return AlchemyDialect
 
     def _build_ast(self, expr, context):
-        from ibis.sql.alchemy import build_ast
+        from ibis.backends.base_sqlalchemy.alchemy import build_ast
 
         return build_ast(expr, context)
 

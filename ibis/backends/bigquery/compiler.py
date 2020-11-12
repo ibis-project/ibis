@@ -1,3 +1,4 @@
+import base64
 import datetime
 from functools import partial
 
@@ -7,20 +8,18 @@ import toolz
 from multipledispatch import Dispatcher
 
 import ibis
+import ibis.backends.base_sqlalchemy.compiler as comp
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.lineage as lin
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.sql.compiler as comp
-from ibis.backends.base_sql import BaseExprTranslator, literal
-from ibis.impala import compiler as impala_compiler
-from ibis.impala.compiler import (
-    ImpalaSelect,
-    ImpalaTableSetFormatter,
-    _reduction,
-    fixed_arity,
-    unary,
+from ibis.backends import base_sql
+from ibis.backends.base_sql import fixed_arity, literal, reduction, unary
+from ibis.backends.base_sql.compiler import (
+    BaseExprTranslator,
+    BaseSelect,
+    BaseTableSetFormatter,
 )
 
 from .datatypes import ibis_type_to_bigquery_type
@@ -145,6 +144,18 @@ def _array_index(translator, expr):
     )
 
 
+def _hash(translator, expr):
+    op = expr.op()
+    arg, how = op.args
+
+    arg_formatted = translator.translate(arg)
+
+    if how == 'farm_fingerprint':
+        return f'farm_fingerprint({arg_formatted})'
+    else:
+        raise NotImplementedError(how)
+
+
 def _string_find(translator, expr):
     haystack, needle, start, end = expr.op().args
 
@@ -254,6 +265,10 @@ def _literal(translator, expr):
         elif isinstance(expr, ir.TimeScalar):
             # TODO: define extractors on TimeValue expressions
             return "TIME '{}'".format(value)
+        elif isinstance(expr, ir.BinaryScalar):
+            return "FROM_BASE64('{}')".format(
+                base64.b64encode(value).decode(encoding="utf-8")
+            )
 
     try:
         return literal(translator, expr)
@@ -338,7 +353,9 @@ STRFTIME_FORMAT_FUNCTIONS = {
 }
 
 
-_operation_registry = impala_compiler._operation_registry.copy()
+_operation_registry = {
+    **base_sql.operation_registry,
+}
 _operation_registry.update(
     {
         ops.ExtractYear: _extract_field('year'),
@@ -350,6 +367,7 @@ _operation_registry.update(
         ops.ExtractSecond: _extract_field('second'),
         ops.ExtractMillisecond: _extract_field('millisecond'),
         ops.ExtractEpochSeconds: _extract_field('epochseconds'),
+        ops.Hash: _hash,
         ops.StringReplace: fixed_arity('REPLACE', 3),
         ops.StringSplit: fixed_arity('SPLIT', 2),
         ops.StringConcat: _string_concat,
@@ -361,7 +379,7 @@ _operation_registry.update(
         ops.RegexSearch: _regex_search,
         ops.RegexExtract: _regex_extract,
         ops.RegexReplace: _regex_replace,
-        ops.GroupConcat: _reduction('STRING_AGG'),
+        ops.GroupConcat: reduction('STRING_AGG'),
         ops.IfNull: fixed_arity('IFNULL', 2),
         ops.Cast: _cast,
         ops.StructField: _struct_field,
@@ -369,7 +387,7 @@ _operation_registry.update(
         ops.ArrayConcat: _array_concat,
         ops.ArrayIndex: _array_index,
         ops.ArrayLength: unary('ARRAY_LENGTH'),
-        ops.HLLCardinality: _reduction('APPROX_COUNT_DISTINCT'),
+        ops.HLLCardinality: reduction('APPROX_COUNT_DISTINCT'),
         ops.Log: _log,
         ops.Sign: unary('SIGN'),
         ops.Modulus: fixed_arity('MOD', 2),
@@ -477,14 +495,14 @@ def compiles_string_to_timestamp(translator, expr):
     return 'PARSE_TIMESTAMP({}, {})'.format(fmt_string, arg_formatted)
 
 
-class BigQueryTableSetFormatter(ImpalaTableSetFormatter):
+class BigQueryTableSetFormatter(BaseTableSetFormatter):
     def _quote_identifier(self, name):
         if re.match(r'^[A-Za-z][A-Za-z_0-9]*$', name):
             return name
         return '`{}`'.format(name)
 
 
-class BigQuerySelect(ImpalaSelect):
+class BigQuerySelect(BaseSelect):
 
     translator = BigQueryExprTranslator
 
