@@ -3,17 +3,21 @@ import warnings
 from contextlib import suppress
 
 import ibis.config_init  # noqa: F401
-import ibis.expr.api as api  # noqa: F401
-import ibis.expr.types as ir  # noqa: F401
-import ibis.util as util  # noqa: F401
+import ibis.expr.types as ir
+from ibis import util
 
 # pandas backend is mandatory
 from ibis.backends import pandas  # noqa: F401
-from ibis.common.exceptions import IbisError  # noqa: F401
-from ibis.config import options  # noqa: F401
+from ibis.common.exceptions import IbisError
+from ibis.config import options
+from ibis.expr import api
 from ibis.expr.api import *  # noqa: F401,F403
 
 from ._version import get_versions  # noqa: E402
+
+__all__ = ['api', 'ir', 'util', 'IbisError', 'options']
+__all__ += api.__all__
+
 
 with suppress(ImportError):
     # pip install ibis-framework[csv]
