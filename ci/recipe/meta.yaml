@@ -8,15 +8,12 @@
 # - Set the `number` in the `build` section to the appropriate build number
 # - Remove this comment from the beginning of the file
 
-{% set version = "1.4.0" %}
-
 package:
   name: ibis-framework
   version: {{ version }}
 
 source:
   url: https://github.com/ibis-project/ibis/archive/{{ version }}.tar.gz
-  sha256: dd3e3d6d495d4ed4f7e5b8ec523949bc54f6fc89f31ca60ef3dc103de8d37635
 
 build:
   number: 0
