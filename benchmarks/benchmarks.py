@@ -268,10 +268,10 @@ class PandasBackend:
         self.high_card_grouped_rolling.execute()
 
     def time_low_card_grouped_rolling_udf(self):
-        self.low_card_grouped_rolling_udf.execute()
+        self.low_card_grouped_rolling_udf_mean.execute()
 
     def time_high_card_grouped_rolling_udf(self):
-        self.high_card_grouped_rolling_udf.execute()
+        self.high_card_grouped_rolling_udf_mean.execute()
 
     def time_low_card_window_analytics_udf(self):
         self.low_card_window_analytics_udf.execute()
