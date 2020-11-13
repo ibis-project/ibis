@@ -66,6 +66,7 @@ Table methods
    :toctree: generated/
 
    TableExpr.aggregate
+   TableExpr.asof_join
    TableExpr.count
    TableExpr.distinct
    TableExpr.drop
