@@ -138,7 +138,7 @@ class Compilation(Suite):
 
 class PandasBackend:
     def setup(self):
-        n = 30 * int(2e5)
+        n = 30 * int(2e4)
         self.data = pd.DataFrame(
             {
                 'key': np.random.choice(16000, size=n),
