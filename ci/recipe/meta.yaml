@@ -16,10 +16,9 @@ source:
   url: https://github.com/ibis-project/ibis/archive/{{ version }}.tar.gz
 
 build:
-  number: 1
+  number: 0
   script: {{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
-  # uncomment noarch when pymapd and pyspark issues are fixed for py38
-  # noarch: python
+  skip: true  # [py<37]
 
 requirements:
   host:
@@ -45,7 +44,7 @@ requirements:
     - pydata-google-auth
     - pymapd 0.24  # [py<38]
     - pymysql
-    - pyspark >=2.4.3  # [py<38]
+    - pyspark >=2.4.3
     - pytables >=3.0.0
     - python
     - python-graphviz
@@ -73,7 +72,7 @@ test:
     - ibis.backends.omniscidb  # [py<38]
     - ibis.backends.pandas
     - ibis.backends.postgres
-    - ibis.backends.pyspark  # [py<38]
+    - ibis.backends.pyspark
     - ibis.backends.spark
     - ibis.backends.sqlite
 
@@ -86,9 +85,6 @@ about:
 
 extra:
   recipe-maintainers:
-    - cpcloud
-    - mariusvniekerk
-    - wesm
-    - kszucs
-    - xmnlab
     - jreback
+    - xmnlab
+    - datapythonista
