@@ -118,11 +118,7 @@ jobs:
 
     steps:
     - name: nc impala
-      run: nc -zvw3 127.0.0.1 50070
-      if: always()
-
-    - name: nc impala
-      run: nc -zvw3 impala 50070
+      run: nc -zvw3 $IBIS_TEST_IMPALA_HOST 50070
       if: always()
 
     - name: checkout
