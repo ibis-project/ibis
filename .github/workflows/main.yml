@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]  # TODO add windows and fix bash scripts (conda not found)
+        os: [ubuntu-latest, windows-latest]
         python_version: ["3.7", "3.8"]
     steps:
     - name: checkout
@@ -151,7 +151,9 @@ jobs:
         python_version: ["3.7"]
     services:
       omnisci:
-        image: omnisci/core-os-cpu:v5.2.2
+        # NOTE: Keep the documentation about the OmniSciDB supported version
+        #       updated (docs/source/backends/omnisci.rst).
+        image: omnisci/core-os-cpu:v5.3.0
         ports:
           - 6274:6274
           - 6278:6278

@@ -66,6 +66,7 @@ Table methods
    :toctree: generated/
 
    TableExpr.aggregate
+   TableExpr.asof_join
    TableExpr.count
    TableExpr.distinct
    TableExpr.drop
@@ -489,29 +490,3 @@ Column methods
    :toctree: generated/
 
    GeoSpatialColumn.unary_union
-
-.. _api.hdfs:
-
-HDFS
-----
-
-Client objects have an ``hdfs`` attribute you can use to interact directly with
-HDFS.
-
-.. currentmodule:: ibis
-
-.. autosummary::
-   :toctree: generated/
-
-   hdfs_connect
-   HDFS.ls
-   HDFS.chmod
-   HDFS.chown
-   HDFS.get
-   HDFS.head
-   HDFS.put
-   HDFS.put_tarfile
-   HDFS.rm
-   HDFS.rmdir
-   HDFS.size
-   HDFS.status

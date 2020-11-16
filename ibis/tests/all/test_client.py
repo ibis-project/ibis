@@ -21,7 +21,9 @@ def new_schema():
 
 @pytest.mark.xfail_unsupported
 def test_load_data_sqlalchemy(backend, con, temp_table):
-    if not isinstance(con.dialect(), ibis.sql.alchemy.AlchemyDialect):
+    if not isinstance(
+        con.dialect(), ibis.backends.base_sqlalchemy.alchemy.AlchemyDialect
+    ):
         pytest.skip('{} is not a SQL Alchemy Client.'.format(backend.name))
 
     sch = ibis.schema(

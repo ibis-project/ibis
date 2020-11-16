@@ -9,7 +9,7 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 
-from .. import connect, execute
+from .. import connect
 from ..udf import nullable, udf
 
 
@@ -94,11 +94,6 @@ def zscore(series):
     return (series - series.mean()) / series.std()
 
 
-@udf.elementwise([], dt.int64)
-def a_single_number(**kwargs):
-    return 1
-
-
 @udf.reduction(
     input_type=[dt.double], output_type=dt.Array(dt.double),
 )
@@ -114,12 +109,6 @@ def test_udf(t, df):
     result = expr.execute()
     expected = df.a.str.len().mul(2)
     tm.assert_series_equal(result, expected)
-
-
-def test_zero_argument_udf(con, t, df):
-    expr = t.projection([a_single_number().name('foo')])
-    result = execute(expr)
-    assert result is not None
 
 
 def test_elementwise_udf_with_non_vectors(con):

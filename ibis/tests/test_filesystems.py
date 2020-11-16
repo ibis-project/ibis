@@ -51,7 +51,7 @@ class TestHDFSRandom(unittest.TestCase):
 class TestHDFSE2E(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        from ibis.impala.tests.conftest import IbisTestEnv
+        from ibis.backends.impala.tests.conftest import IbisTestEnv
 
         cls.ENV = IbisTestEnv()
         cls.tmp_dir = pjoin(cls.ENV.tmp_dir, util.guid())
@@ -387,7 +387,7 @@ class TestHDFSE2E(unittest.TestCase):
 class TestSuperUserHDFSE2E(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        from ibis.impala.tests.conftest import IbisTestEnv
+        from ibis.backends.impala.tests.conftest import IbisTestEnv
 
         cls.ENV = IbisTestEnv()
         cls.tmp_dir = pjoin(cls.ENV.tmp_dir, util.guid())

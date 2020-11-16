@@ -21,8 +21,8 @@ from sqlalchemy import func as F
 from sqlalchemy import types as sat  # noqa: E402
 
 import ibis
+import ibis.backends.base_sqlalchemy.alchemy as alch  # noqa: E402
 import ibis.expr.datatypes as dt
-import ibis.sql.alchemy as alch  # noqa: E402
 from ibis.tests.expr.mocks import MockAlchemyConnection
 from ibis.tests.sql.test_compiler import ExprTestCases  # noqa: E402
 from ibis.tests.util import assert_equal

@@ -526,6 +526,13 @@ class Struct(DataType):
         names, types = zip(*pairs)
         return cls(list(names), list(map(dtype, types)), nullable=nullable)
 
+    @classmethod
+    def from_dict(
+        cls, pairs: Mapping[str, Union[str, DataType]], nullable: bool = True,
+    ) -> 'Struct':
+        names, types = pairs.keys(), pairs.values()
+        return cls(list(names), list(map(dtype, types)), nullable=nullable)
+
     @property
     def pairs(self) -> Mapping:
         return collections.OrderedDict(zip(self.names, self.types))

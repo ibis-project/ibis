@@ -1,184 +1,183 @@
 parameters:
-  name: ''
-  vmImage: ''
+  name: ""
+  vmImage: ""
 
 jobs:
-- job: ${{ parameters.name }}Test
+  - job: ${{ parameters.name }}Test
 
-  pool:
-    vmImage: ${{ parameters.vmImage }}
+    pool:
+      vmImage: ${{ parameters.vmImage }}
 
-  variables:
-    AZURECI: 1
-    COMPOSE_FILE: ci/docker-compose.yml
-    PYTHONHASHSEED: "random"
-    BACKENDS: "impala kudu-master kudu-tserver clickhouse"
-    PYTEST_BACKENDS: "impala clickhouse"
-  strategy:
-    matrix:
+    variables:
+      AZURECI: 1
+      COMPOSE_FILE: ci/docker-compose.yml
+      PYTHONHASHSEED: "random"
+      BACKENDS: "impala kudu-master kudu-tserver clickhouse"
+      PYTEST_BACKENDS: "impala clickhouse"
+    strategy:
+      matrix:
+        # Impala, kudu and clickhouse backends
+        py37_impala_kudu_clickhouse:
+          PYTHON_VERSION: "3.7"
+        py38_impala_kudu_clickhouse:
+          PYTHON_VERSION: "3.8"
 
-      # Impala, kudu and clickhouse backends
-      py37_impala_kudu_clickhouse:
-        PYTHON_VERSION: "3.7"
-      py38_impala_kudu_clickhouse:
-        PYTHON_VERSION: "3.8"
+    steps:
+      # Start databases if BACKENDS is not an empty string. Without this check, docker-compose would start all services (instead of none of them) if no BACKENDS are specified.
+      - bash: |
+          if [ -n "${BACKENDS}" ]; then
+            make start PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
+          fi
+        displayName: "Start databases"
 
-  steps:
-    # Start databases if BACKENDS is not an empty string. Without this check, docker-compose would start all services (instead of none of them) if no BACKENDS are specified.
-    - bash: |
-        if [ -n "${BACKENDS}" ]; then
-          make start PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
-        fi
-      displayName: 'Start databases'
+      - bash: make wait PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
+        displayName: "Wait for databases"
 
-    - bash: make wait PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
-      displayName: 'Wait for databases'
+      - bash: docker ps
+        displayName: "Show running containers"
 
-    - bash: docker ps
-      displayName: 'Show running containers'
+      - bash: make build PYTHON_VERSION=$PYTHON_VERSION
+        displayName: "Build ibis image"
 
-    - bash: make build PYTHON_VERSION=$PYTHON_VERSION
-      displayName: 'Build ibis image'
+      - bash: docker images
+        displayName: "List docker images"
 
-    - bash: docker images
-      displayName: 'List docker images'
+      - bash: |
+          sudo mkdir -p /tmp/ibis/test-reports/pytest
+          mkdir -p /tmp/env
+        displayName: "Make artifacts directories"
 
-    - bash: |
-        sudo mkdir -p /tmp/ibis/test-reports/pytest
-        mkdir -p /tmp/env
-      displayName: 'Make artifacts directories'
+      - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="conda list"
+        displayName: "Show packages in conda environment"
 
-    - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="conda list"
-      displayName: 'Show packages in conda environment'
+      - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="conda list --export > /tmp/env/env.yml"
+        displayName: "Capture packages in conda environment"
 
-    - bash: make docker_run PYTHON_VERSION=$PYTHON_VERSION DOCKER_RUN_COMMAND="conda list --export > /tmp/env/env.yml"
-      displayName: 'Capture packages in conda environment'
+      - bash: make load PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
+        displayName: "Load test datasets"
 
-    - bash: make load PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
-      displayName: 'Load test datasets'
+      - bash: |
+          echo "PYTEST_MARK_EXPRESSION: ${PYTEST_MARK_EXPRESSION}"
+          docker-compose run \
+            -e PYTHONHASHSEED=$PYTHONHASHSEED \
+            -e AZURECI=$AZURECI \
+            -e PYTEST_BACKENDS="$PYTEST_BACKENDS" \
+            ibis \
+            pytest ibis/tests ibis/backends/impala/tests ibis/backends/clickhouse/tests \
+              -k"not compile and not connect" \
+              -ra \
+              --doctest-modules \
+              --doctest-ignore-import-errors \
+              --junitxml=/tmp/test-reports/pytest/junit.xml \
+              --cov=ibis \
+              --cov-report=xml:/tmp/test-reports/pytest-cov/coverage.xml
+        displayName: "Run tests"
 
-    - bash: |
-        echo "PYTEST_MARK_EXPRESSION: ${PYTEST_MARK_EXPRESSION}"
-        docker-compose run \
-          -e PYTHONHASHSEED=$PYTHONHASHSEED \
-          -e AZURECI=$AZURECI \
-          -e PYTEST_BACKENDS="$PYTEST_BACKENDS" \
-          ibis \
-          pytest ibis/tests ibis/impala/tests ibis/backends/clickhouse/tests \
-            -k"not compile and not connect" \
-            -ra \
-            --doctest-modules \
-            --doctest-ignore-import-errors \
-            --junitxml=/tmp/test-reports/pytest/junit.xml \
-            --cov=ibis \
-            --cov-report=xml:/tmp/test-reports/pytest-cov/coverage.xml
-      displayName: 'Run tests'
+      # See #1954
+      # - bash: |
+      #     bash <(curl -s https://codecov.io/bash) \
+      #       -f /tmp/ibis/test-reports/pytest-cov/coverage.xml
+      #   displayName: 'Upload coverage'
 
-    # See #1954
-    # - bash: |
-    #     bash <(curl -s https://codecov.io/bash) \
-    #       -f /tmp/ibis/test-reports/pytest-cov/coverage.xml
-    #   displayName: 'Upload coverage'
+      - task: PublishTestResults@2
+        displayName: "Publish test results from pytest JUnitXML"
+        inputs:
+          testResultsFiles: /tmp/ibis/test-reports/pytest/junit.xml
+          testRunTitle: "Publish test results"
+          mergeTestResults: False
+        condition: succeededOrFailed() # pass or fail, but not cancelled
 
-    - task: PublishTestResults@2
-      displayName: 'Publish test results from pytest JUnitXML'
-      inputs:
-        testResultsFiles: /tmp/ibis/test-reports/pytest/junit.xml
-        testRunTitle: 'Publish test results'
-        mergeTestResults: False
-      condition: succeededOrFailed()  # pass or fail, but not cancelled
+      - task: PublishPipelineArtifact@1
+        inputs:
+          path: /tmp/env/env.yml
+          artifact: LinuxCondaEnvironment-$(PYTHON_VERSION)
+        displayName: "Publish Linux environment YAML to Azure"
+        condition: succeededOrFailed() # pass or fail, but not cancelled
 
-    - task: PublishPipelineArtifact@1
-      inputs:
-        path: /tmp/env/env.yml
-        artifact: LinuxCondaEnvironment-$(PYTHON_VERSION)
-      displayName: 'Publish Linux environment YAML to Azure'
-      condition: succeededOrFailed()  # pass or fail, but not cancelled
+  - job: ${{ parameters.name }}BuildDocs
 
-- job: ${{ parameters.name }}BuildDocs
+    pool:
+      vmImage: ${{ parameters.vmImage }}
 
-  pool:
-    vmImage: ${{ parameters.vmImage }}
+    variables:
+      PYTHON_VERSION: "3.7"
+      AZURECI: 1
+      COMPOSE_FILE: ci/docker-compose.yml
+      BACKENDS: "impala postgres"
+      LOADS: "impala postgres"
 
-  variables:
-    PYTHON_VERSION: "3.7"
-    AZURECI: 1
-    COMPOSE_FILE: ci/docker-compose.yml
-    BACKENDS: "impala postgres"
-    LOADS: "impala postgres"
+    steps:
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: "3.7"
 
-  steps:
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: '3.7'
+      - bash: make start PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
+        displayName: "Start databases"
 
-    - bash: make start PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
-      displayName: 'Start databases'
+      - bash: make wait PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
+        displayName: "Wait for databases"
 
-    - bash: make wait PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}"
-      displayName: 'Wait for databases'
+      - bash: make builddoc PYTHON_VERSION=$PYTHON_VERSION
+        displayName: "build ibis documentation image"
 
-    - bash: make builddoc PYTHON_VERSION=$PYTHON_VERSION
-      displayName: 'build ibis documentation image'
+      - bash: docker images
+        displayName: "List docker images"
 
-    - bash: docker images
-      displayName: 'List docker images'
+      - bash: docker ps
+        displayName: "Show running containers"
 
-    - bash: docker ps
-      displayName: 'Show running containers'
+      - bash: make load PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}" LOADS="${LOADS}"
+        displayName: "Load test datasets"
 
-    - bash: make load PYTHON_VERSION=$PYTHON_VERSION BACKENDS="${BACKENDS}" LOADS="${LOADS}"
-      displayName: 'Load test datasets'
+      - bash: |
+          docker-compose -f ci/docker-compose.yml run --rm ibis-docs bash -c "\
+              ping -c 1 impala && conda list && \
+              mkdir -p /tmp/ibis-project.org && \
+              cd /tmp/ibis-project.org && \
+              echo \"ibis-project.org\" > CNAME && \
+              touch .nojekyll && \
+              pip install pysuerga && \  # XXX pysuerga is already in environment.yml, should already be installed
+              python -m pysuerga /ibis/docs/web --target-path=/tmp/ibis-project.org/ && \
+              sphinx-build -b html /ibis/docs/source /tmp/ibis-project.org/docs -W -T --keep-going"
+        displayName: "Build website and docs"
 
-    - bash: |
-        docker-compose -f ci/docker-compose.yml run --rm ibis-docs bash -c "\
-            ping -c 1 impala && conda list && \
-            mkdir -p /tmp/ibis-project.org && \
-            cd /tmp/ibis-project.org && \
-            echo \"ibis-project.org\" > CNAME && \
-            touch .nojekyll && \
-            pip install git+https://github.com/datapythonista/pysuerga && \  # XXX pysuerga is already in environment.yml, should already be installed
-            python -m pysuerga /ibis/docs/web --target-path=/tmp/ibis-project.org/ && \
-            sphinx-build -b html /ibis/docs/source /tmp/ibis-project.org/docs -W -T --keep-going"
-      displayName: 'Build website and docs'
+      - task: PublishPipelineArtifact@1
+        inputs:
+          path: /tmp/ibis/ibis-project.org
+          artifact: Documentation
+        displayName: "Publish documentation to Azure"
+        condition: and(succeeded(), eq(variables['System.PullRequest.IsFork'], 'False'))
 
-    - task: PublishPipelineArtifact@1
-      inputs:
-        path: /tmp/ibis/ibis-project.org
-        artifact: Documentation
-      displayName: 'Publish documentation to Azure'
-      condition: and(succeeded(), eq(variables['System.PullRequest.IsFork'], 'False'))
+      - bash: |
+          mkdir ~/.ssh
+          base64 --decode --ignore-garbage <<< "${IBIS_GH_TOKEN}" > ~/.ssh/id_rsa
+          chmod 700 ~/.ssh
+          chmod 600 ~/.ssh/id_rsa
 
-    - bash: |
-        mkdir ~/.ssh
-        base64 --decode --ignore-garbage <<< "${IBIS_GH_TOKEN}" > ~/.ssh/id_rsa
-        chmod 700 ~/.ssh
-        chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
+        displayName: "Set up ssh"
+        env:
+          IBIS_GH_TOKEN: $(IBIS_GH_TOKEN)
+        condition: |
+          and(eq(variables['System.PullRequest.IsFork'], 'False'),
+              eq(variables['Build.Repository.Name'], 'ibis-project/ibis'),
+              eq(variables['Build.SourceBranchName'], 'master'))
 
-        ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
-      displayName: 'Set up ssh'
-      env:
-        IBIS_GH_TOKEN: $(IBIS_GH_TOKEN)
-      condition: |
-        and(eq(variables['System.PullRequest.IsFork'], 'False'),
-            eq(variables['Build.Repository.Name'], 'ibis-project/ibis'),
-            eq(variables['Build.SourceBranchName'], 'master'))
+      - bash: |
+          sudo chown -R "${USER}":"${USER}" /tmp/ibis
+          pushd /tmp/ibis/ibis-project.org
 
-    - bash: |
-        sudo chown -R "${USER}":"${USER}" /tmp/ibis
-        pushd /tmp/ibis/ibis-project.org
+          git init
+          git checkout -b gh-pages
+          git remote add origin git@github.com:ibis-project/docs.ibis-project.org
+          git config user.name 'Ibis Documentation Bot'
+          git config user.email ''
 
-        git init
-        git checkout -b gh-pages
-        git remote add origin git@github.com:ibis-project/docs.ibis-project.org
-        git config user.name 'Ibis Documentation Bot'
-        git config user.email ''
-
-        git add --all .
-        git commit -m "Docs from ibis at $(Build.SourceVersion)"
-        git push --force origin gh-pages
-      displayName: 'Push web to remote repo'
-      condition: |
-        and(eq(variables['System.PullRequest.IsFork'], 'False'),
-            eq(variables['Build.Repository.Name'], 'ibis-project/ibis'),
-            eq(variables['Build.SourceBranchName'], 'master'))
+          git add --all .
+          git commit -m "Docs from ibis at $(Build.SourceVersion)"
+          git push --force origin gh-pages
+        displayName: "Push web to remote repo"
+        condition: |
+          and(eq(variables['System.PullRequest.IsFork'], 'False'),
+              eq(variables['Build.Repository.Name'], 'ibis-project/ibis'),
+              eq(variables['Build.SourceBranchName'], 'master'))
