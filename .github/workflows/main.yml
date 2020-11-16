@@ -71,8 +71,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       BACKENDS: "impala clickhouse"
-      IBIS_TEST_NN_HOST: "127.0.0.1"
-      IBIS_TEST_IMPALA_HOST: "127.0.0.1"
+      IBIS_TEST_NN_HOST: localhost
+      IBIS_TEST_IMPALA_HOST: localhost
       IBIS_TEST_IMPALA_PORT: 21050
       IBIS_TEST_WEBHDFS_PORT: 50070
       IBIS_TEST_WEBHDFS_USER: hdfs
