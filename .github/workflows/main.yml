@@ -57,11 +57,6 @@ jobs:
           MYSQL_PASSWORD: ibis
         options: --health-cmd="mysqladmin ping" --health-interval 10s --health-timeout 5s --health-retries 3
     steps:
-    - name: ping impala
-      run: |
-        ping -c4 postgres
-        ping -c4 mysql
-
     - name: checkout
       uses: actions/checkout@v1
 
@@ -76,8 +71,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       BACKENDS: "impala clickhouse"
-      IBIS_TEST_NN_HOST: impala
-      IBIS_TEST_IMPALA_HOST: impala
+      IBIS_TEST_NN_HOST: "127.0.0.1"
+      IBIS_TEST_IMPALA_HOST: "127.0.0.1"
       IBIS_TEST_IMPALA_PORT: 21050
       IBIS_TEST_WEBHDFS_PORT: 50070
       IBIS_TEST_WEBHDFS_USER: hdfs
@@ -124,15 +119,6 @@ jobs:
     steps:
     - name: checkout
       uses: actions/checkout@v1
-
-    - name: ping impala
-      run: |
-        ping -c4 postgres
-        ping -c4 clickhouse
-        ping -c4 impala
-
-    - name: nc impala
-      run: nc -zvw3 impala
 
     - name: set up environment
       run: ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
