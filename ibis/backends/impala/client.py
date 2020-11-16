@@ -37,12 +37,12 @@ from ibis.backends.base_sql.ddl import (
 from ibis.backends.base_sqlalchemy.compiler import DDL, DML
 from ibis.client import Database, DatabaseEntity, Query, SQLClient
 from ibis.config import options
-from .hdfs import HDFS, WebHDFS
 from ibis.util import log
 
 from . import ddl, udf
 from .compat import HS2Error, ImpylaError, impyla
 from .compiler import ImpalaDialect, build_ast
+from .hdfs import HDFS, WebHDFS
 
 
 class ImpalaDatabase(Database):

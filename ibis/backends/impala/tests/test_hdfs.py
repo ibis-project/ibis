@@ -9,6 +9,7 @@ import pytest
 
 import ibis
 import ibis.util as util
+
 from .. import HDFS
 
 pytestmark = pytest.mark.hdfs
