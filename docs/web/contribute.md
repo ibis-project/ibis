@@ -128,5 +128,39 @@ for more information.
 
 ### Releasing
 
-Access the [Ibis "Releasing" wiki](https://github.com/ibis-project/ibis/wiki/Releasing-Ibis) page
-for more information.
+Ibis is released in two places:
+- [PyPI](https://pypi.org/) (the **PY**thon **P**ackage **I**ndex), to enable `pip install ibis-framework`
+- [Conda Forge](https://conda-forge.org/), to enable `conda install ibis-framework`
+
+#### Prepare the Release
+1. Generate release notes using `dev/genrelease.py $NEXT_VERSION` and add the output to `docs/source/release.rst` **immediately above the current release's `:release:`** line.
+1. Make a pull request with these changes.
+
+#### Tag a Commit and Push
+1. `git tag $NEXT_VERSION`; `$NEXT_VERSION` should be replaced with the next semantic version. This tag should correspond to the commit just merged from the release notes generation.
+1. `git push --tags upstream master`; `upstream` should point to `https://github.com/ibis-project/ibis`
+
+#### PyPI Release
+1. Install `twine` and `wheel`
+1. Inside of an `ibis` clone, run `python setup.py sdist bdist_wheel`.
+   1. This creates a source distribution as well as a wheel inside of `$PWD/dist`.
+1. Run `twine upload dist/*`
+   1. This uploads packages to PyPI. **This step cannot be undone**.
+
+The `twine` upload takes action immediately and users can now `pip install` the latest version of ibis.
+
+#### Conda Forge Release
+1. Install `conda-smithy`.
+1. Run `git clone https://github.com/conda-forge/ibis-framework-feedstock`.
+1. `cd` into the clone.
+1. Update `recipe/meta.yaml` with the `sha256` of the release.
+   1. You can compute the new `sha256` using:
+      ```shell
+      curl -SLqs https://github.com/ibis-project/ibis/archive/$NEXT_VERSION.tar.gz | sha256sum | cut -f1 -d' '
+      ```
+1. Set the build number to `0`.
+1. If any new hard dependencies have been added, add those to the requirements in the recipe.
+1. Run `conda smithy rerender`. Follow the instructions provided, if any.
+1. Make a pull request to `https://github.com/conda-forge/ibis-framework-feedstock`.
+
+Conda packages should be installable shortly after the pull request is merged.
