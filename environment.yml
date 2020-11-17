@@ -42,6 +42,11 @@ dependencies:
   - xorg-libxpm>=3.5
   - xorg-libxrender>=0.9
 
+  # Release
+  - twine>=3.2.0
+  - wheel>=0.35.1
+  - conda-smithy>=3.8.5
+
   # Docs
   - ipython>=7.17
   - jupyter>=1.0
