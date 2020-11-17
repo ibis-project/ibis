@@ -129,6 +129,7 @@ for more information.
 ### Releasing
 
 Ibis is released in two places:
+
 - [PyPI](https://pypi.org/) (the **PY**thon **P**ackage **I**ndex), to enable `pip install ibis-framework`
 - [Conda Forge](https://conda-forge.org/), to enable `conda install ibis-framework`
 
