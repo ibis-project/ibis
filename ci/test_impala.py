@@ -12,6 +12,8 @@ webhdfs_user = os.environ.get('IBIS_TEST_WEBHDFS_USER', 'hdfs')
 impala_host = os.environ.get('IBIS_TEST_IMPALA_HOST', 'localhost')
 impala_port = int(os.environ.get('IBIS_TEST_IMPALA_PORT', 21050))
 
+pprint.pprint(globals())
+
 hdfs_conn = ibis.hdfs_connect(
     host=hdfs_host,
     port=hdfs_port,
@@ -19,6 +21,8 @@ hdfs_conn = ibis.hdfs_connect(
     verify=auth_mechanism not in ['GSSAPI', 'LDAP'],
     user=webhdfs_user,
 )
+hdfs_conn.put('/tmp/test_file', io.BytesIO(b'1234'))
+
 impala_conn = ibis.impala.connect(
     host=impala_host,
     port=impala_port,
@@ -26,5 +30,4 @@ impala_conn = ibis.impala.connect(
     hdfs_client=hdfs_conn,
     pool_size=16,
 )
-pprint.pprint(globals())
 impala_conn.hdfs.put('/tmp/test_file', io.BytesIO(b'1234'))
