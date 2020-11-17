@@ -1,7 +1,6 @@
 """Impala backend"""
 import ibis.common.exceptions as com
 from ibis.config import options
-from ibis.filesystems import HDFS, WebHDFS, hdfs_connect  # noqa: F401
 
 # these objects are exposed in the public API and are not used in the module
 from .client import (  # noqa: F401
@@ -11,6 +10,7 @@ from .client import (  # noqa: F401
     ImpalaTable,
 )
 from .compiler import dialect  # noqa: F401
+from .hdfs import HDFS, WebHDFS, hdfs_connect  # noqa: F401
 from .udf import *  # noqa: F401,F403
 
 

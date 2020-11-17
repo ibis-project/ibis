@@ -9,9 +9,8 @@ import pytest
 
 import ibis
 import ibis.util as util
-from ibis.filesystems import HDFS
 
-pytest.importorskip('hdfs')
+from .. import HDFS
 
 pytestmark = pytest.mark.hdfs
 
