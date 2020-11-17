@@ -128,5 +128,65 @@ for more information.
 
 ### Releasing
 
-Access the [Ibis "Releasing" wiki](https://github.com/ibis-project/ibis/wiki/Releasing-Ibis) page
-for more information.
+Ibis is released in two places:
+- [PyPI](https://pypi.org/) (the **PY**thon **P**ackage **I**ndex), to enable `pip install ibis-framework`
+- [Conda Forge](https://conda-forge.org/), to enable `conda install ibis-framework`
+
+Steps to release:
+
+#### Create a new version
+
+In the `master` branch, after the last commit to include in the release, create a tag:
+
+- `git tag <version>` (e.g. `git tag 2.0.0`)
+
+Originally, Ibis used a version like `v0.0.1`, but the `v` was eventually dropped, and recently we
+have been using just the `0.0.1` format.
+
+Push the tag to the remote branch:
+
+- `git push --tags upstream master`
+
+The remote `upstream` is assumed to be the main Ibis repo (i.e. https://github.com/ibis-project/ibis).
+
+#### Release to PyPI
+
+Just after the tag (without pulling new commits from master, build the Python package:
+
+- `python setup.py sdist bdist_wheel`
+
+This requires `twine` and `wheel` installed, which you should have if you created your environment
+with the repo `environment.yml` file.
+
+The package will be built in the `dist/` directory. To upload it to the PyPI server, use:
+
+- `twine upload dist/*`
+
+This will create the new package, and will be available immediately via `pip install ibis-framework`.
+
+#### Release to conda-forge
+
+The conda-forge package is released using the conda-forge feedstock repository: https://github.com/conda-forge/ibis-framework-feedstock/
+
+We need to update its recipe in a pull request, and the new version will be automatically released.
+After cloning the feedstock repository, update its recipe with the one in the main Ibis repository:
+
+- `cp <ibis-repo>/ci/recipe/meta.yaml <feedstock-repo/recipe/meta.yaml`
+
+Remove the comment at the header of the `meta.yaml` file. And update the next yaml values:
+
+- Add at the beginning `{% set version = "2.0.0" %}` (replace `2.0.0` by the version being released)
+- Set `number` in the `build` section to `0` (unless it's a different build for the previous release, then increase by one)
+- Add the `sha256` value in the `source` section. Use `sha256sum` of the `tar.gz` file in `dist/` to know the value.
+
+Once the recipe is final, run:
+
+- `conda smithy rerender`
+
+This will update the azure configuration files in the feedstock repository, and possibly other files. Open a pull request with all the changes.
+
+The conda-forge package should be ready not long after the pull request is merged, and it can
+be installed with `conda install -c conda-forge ibis-framework`.
+
+Finally, if extra changes have been required to the recipe, besides the version, build and sha256
+mentioned before, copy the recipe to the Ibis repository. Keeping the header.
