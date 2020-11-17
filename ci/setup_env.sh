@@ -56,7 +56,7 @@ if [[ -n "$BACKENDS" ]]; then
 
         # TODO load impala data in the same way as the rest of the backends
         if [[ "$BACKEND" == "impala" ]]; then
-            python ci/test_impala.py || true
+            python ci/test_impala.py
             python ci/impalamgr.py load --data
         else
             python ci/datamgr.py $BACKEND
