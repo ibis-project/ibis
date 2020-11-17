@@ -17,7 +17,7 @@ with ibis.config.config_prefix('pandas'):
         'enable_trace',
         False,
         'Whether enable tracing for pandas execution. '
-        'See ibis.panads.trace for details.',
+        'See ibis.pandas.trace for details.',
         validator=ibis.config.is_bool,
     )
 
