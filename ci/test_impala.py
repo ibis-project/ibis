@@ -1,11 +1,10 @@
-import os
 import io
+import os
 import pprint
 
 import ibis
 
-
-hdfs_host = os.environ.get('IBIS_TEST_NN_HOST', 'localhost'),
+hdfs_host = os.environ.get('IBIS_TEST_NN_HOST', 'localhost')
 hdfs_port = int(os.environ.get('IBIS_TEST_WEBHDFS_PORT', 50070))
 auth_mechanism = os.environ.get('IBIS_TEST_AUTH_MECH', 'NOSASL')
 webhdfs_user = os.environ.get('IBIS_TEST_WEBHDFS_USER', 'hdfs')
