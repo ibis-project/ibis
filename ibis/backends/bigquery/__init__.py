@@ -7,6 +7,7 @@ import google.cloud.bigquery  # noqa: F401, fail early if bigquery is missing
 import pydata_google_auth
 
 import ibis.common.exceptions as com
+import ibis.config
 from ibis.config import options  # noqa: F401
 
 from .client import BigQueryClient
@@ -19,6 +20,10 @@ except ImportError:
 
 
 __all__ = ('compile', 'connect', 'verify', 'udf')
+
+
+with ibis.config.config_prefix('bigquery'):
+    ibis.config.register_option('partition_col', 'PARTITIONTIME')
 
 
 def compile(expr, params=None):

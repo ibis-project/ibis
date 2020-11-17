@@ -12,6 +12,7 @@ from typing import Optional
 
 import ibis
 import ibis.common.exceptions as com
+import ibis.config
 import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -20,6 +21,13 @@ import ibis.util as util
 from ibis.backends.base_sqlalchemy import transforms
 
 from . import identifiers
+
+with ibis.config.config_prefix('sql'):
+    ibis.config.register_option(
+        'default_limit',
+        10_000,
+        'Number of rows to be retrieved for an unlimited table expression',
+    )
 
 
 class CaseFormatter:

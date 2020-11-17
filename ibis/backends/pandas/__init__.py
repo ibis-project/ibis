@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import toolz
 
+import ibis.config
 from ibis.backends.base_sqlalchemy.compiler import Dialect
 
 from .client import PandasClient
@@ -9,6 +10,16 @@ from .execution import execute, execute_node
 from .udf import udf
 
 __all__ = ('connect', 'dialect', 'execute', 'udf')
+
+
+with ibis.config.config_prefix('pandas'):
+    ibis.config.register_option(
+        'enable_trace',
+        False,
+        'Whether enable tracing for pandas execution. '
+        'See ibis.pandas.trace for details.',
+        validator=ibis.config.is_bool,
+    )
 
 
 def connect(dictionary):
