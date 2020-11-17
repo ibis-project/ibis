@@ -69,7 +69,7 @@ jobs:
   Tests_impala_clickhouse:
     name: Tests Impala / Clickhouse
     runs-on: ubuntu-latest
-    # if: false # TODO: temporary disabling this build, since Ibis can't connect to Impala yet
+    if: false # TODO: temporary disabling this build, since Ibis can't connect to Impala yet, see #2533
     env:
       BACKENDS: "impala clickhouse"
       IBIS_TEST_NN_HOST: localhost
@@ -118,10 +118,6 @@ jobs:
           - 9000:9000
 
     steps:
-    - name: nc impala
-      run: nc -zvw3 $IBIS_TEST_IMPALA_HOST 50070
-      if: always()
-
     - name: checkout
       uses: actions/checkout@v1
 
