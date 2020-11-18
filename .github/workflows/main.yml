@@ -69,14 +69,26 @@ jobs:
   Tests_impala_clickhouse:
     name: Tests Impala / Clickhouse
     runs-on: ubuntu-latest
-    if: false # TODO: temporary disabling this build, since the impala container seems to not be starting properly
+    if: false # TODO: temporary disabling this build, since Ibis can't connect to Impala yet, see #2533
     env:
       BACKENDS: "impala clickhouse"
+      IBIS_TEST_NN_HOST: localhost
+      IBIS_TEST_IMPALA_HOST: localhost
+      IBIS_TEST_IMPALA_PORT: 21050
+      IBIS_TEST_WEBHDFS_PORT: 50070
+      IBIS_TEST_WEBHDFS_USER: hdfs
     strategy:
       fail-fast: false
       matrix:
         python_version: ["3.7", "3.8"]
     services:
+      postgres:
+        image: shajekpivotal/ibis-docker-postgres-9.5
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_PASSWORD: ''
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 3
       impala:
         image: ibisproject/impala:latest
         env:
@@ -97,7 +109,7 @@ jobs:
           - 25000:25000
           - 25010:25010
           - 25020:25020
-        options: --health-cmd "nc -z 127.0.0.1 21050 && nc -z 127.0.0.1 50070" --health-interval 30s --health-timeout 10s --health-retries 20
+        options: --hostname impala --health-cmd "nc -z 127.0.0.1 21050 && nc -z 127.0.0.1 50070" --health-interval 30s --health-timeout 10s --health-retries 20
       clickhouse:
         # XXX does clickhouse backend require the impala container too?
         image: yandex/clickhouse-server:18.14
