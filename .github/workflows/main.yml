@@ -203,7 +203,7 @@ jobs:
         if: always()
 
   Conda_package:
-    name: Conda package
+    name: Conda core package
     runs-on: ubuntu-latest
     steps:
       - name: checkout

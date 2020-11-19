@@ -27,21 +27,10 @@ requirements:
     - setuptools
 
   run:
-    - geopandas
-    - numpy >=1.15
-    - pandas >=0.25.3
-    - pyarrow >=0.15
+    - ibis-framework
     - pymapd 0.24  # [py<38]
     - python
-    - python-graphviz
-    - pytz
-    - regex
-    - requests
-    - shapely
-    - setuptools
-    - sqlalchemy >=1.1
-    - toolz
-
+    
 test:
   imports:
     - ibis
