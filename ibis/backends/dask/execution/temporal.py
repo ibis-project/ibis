@@ -5,6 +5,7 @@ import dask.dataframe as dd
 import numpy as np
 from dask.dataframe.groupby import SeriesGroupBy
 from pandas import Timedelta, Timestamp, to_datetime
+import pandas as pd
 from pandas.tseries.offsets import DateOffset
 
 import ibis
@@ -86,7 +87,7 @@ def execute_timestamp_date(op, data, **kwargs):
 def execute_timestamp_truncate(op, data, **kwargs):
     dtype = 'datetime64[{}]'.format(op.unit)
     array = data.values.astype(dtype)
-    return dd.Series(array, name=data.name)
+    return dd.from_array(array, meta=pd.Series(dtype=dtype, name=data.name))
 
 
 OFFSET_CLASS = {

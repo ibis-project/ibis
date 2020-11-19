@@ -13,6 +13,7 @@ import dask.dataframe as dd
 import numpy as np
 from multipledispatch import Dispatcher
 from pandas import Index
+import pandas as pd
 from toolz import compose, concat, concatv, first, unique
 
 import ibis.expr.operations as ops
@@ -82,10 +83,9 @@ def compute_projection_scalar_expr(
         for t in op.root_tables()
     )
     scalar = execute(expr, scope=scope, **kwargs)
-    # TODO - broken
-    result = dd.Series([scalar], name=name).repeat(len(data.index))
+    result = pd.Series([scalar], name=name).repeat(len(data.index))
     result.index = data.index
-    return result
+    return dd.from_pandas(result, npartitions=1)
 
 
 @compute_projection.register(ir.ColumnExpr, ops.Selection, dd.DataFrame)

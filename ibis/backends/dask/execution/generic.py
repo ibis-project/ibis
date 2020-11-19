@@ -13,6 +13,7 @@ from typing import Optional
 import dask.array as da
 import dask.dataframe as dd
 import numpy as np
+import pandas as pd
 import toolz
 from dask.dataframe.groupby import DataFrameGroupBy, SeriesGroupBy
 from pandas import Timedelta, Timestamp, isnull, to_datetime
@@ -128,7 +129,8 @@ def execute_cast_series_timestamp(op, data, type, **kwargs):
 
     if isinstance(from_type, (dt.String, dt.Integer)):
         timestamps = data.map_partitions(
-            to_datetime, infer_datetime_format=True,
+            to_datetime,
+            infer_datetime_format=True,
             meta=(data.name, 'datetime64[ns]'),
         )
         # TODO - is there a better way to do this
@@ -171,8 +173,7 @@ def execute_cast_series_date(op, data, type, **kwargs):
 
     if isinstance(from_type, dt.Integer):
         return data.map_partitions(
-            to_datetime, unit='D',
-            meta=(data.name, 'datetime64[ns]')
+            to_datetime, unit='D', meta=(data.name, 'datetime64[ns]')
         )
 
     raise TypeError("Don't know how to cast {} to {}".format(from_type, type))
@@ -247,7 +248,7 @@ def execute_series_natural_log(op, data, **kwargs):
     if data.dtype == np.dtype(np.object_):
         return data.apply(
             functools.partial(execute_node, op, **kwargs),
-            meta=(data.name, "object")
+            meta=(data.name, "object"),
         )
     return np.log(data)
 
@@ -737,9 +738,7 @@ def execute_binary_op_series_gb_simple(op, left, right, **kwargs):
             'Binary operation {} not implemented'.format(op_type.__name__)
         )
     else:
-        return left.apply(
-            lambda x, op=operation, right=right: op(x, right)
-        )
+        return left.apply(lambda x, op=operation, right=right: op(x, right))
 
 
 @execute_node.register(ops.BinaryOp, simple_types, SeriesGroupBy)
@@ -892,10 +891,10 @@ def execute_node_where_series_series_series(op, cond, true, false, **kwargs):
 
 # Series, scalar, Series
 def execute_node_where_series_scalar_scalar(op, cond, true, false, **kwargs):
-    return dd.Series(np.repeat(true, len(cond))).where(cond, other=false)
+    return dd.from_array(np.repeat(true, len(cond))).where(cond, other=false)
 
 
-# Series, scalar, scalar
+# Series, scalar, scalar`
 for scalar_type in scalar_types:
     execute_node_where_series_scalar_scalar = execute_node.register(
         ops.Where, dd.Series, scalar_type, scalar_type
@@ -936,9 +935,7 @@ def execute_node_where_scalar_scalar_series(op, cond, true, false, **kwargs):
     return dd.from_array(np.repeat(true, len(false))) if cond else false
 
 
-@execute_node.register(
-    DaskTable, DaskClient
-)
+@execute_node.register(DaskTable, DaskClient)
 def execute_database_table_client(
     op, client, timecontext: Optional[TimeContext], **kwargs
 ):
@@ -992,7 +989,9 @@ def execute_node_ifnull_scalar_series(op, value, replacement, **kwargs):
     return (
         replacement
         if isnull(value)
-        else dd.Series(value, index=replacement.index)
+        else dd.from_pandas(
+            pd.Series(value, index=replacement.index), npartitions=1
+        )
     )
 
 
@@ -1019,9 +1018,7 @@ def execute_node_nullif_series_scalar(op, series, value, **kwargs):
 @execute_node.register(ops.NullIf, simple_types, dd.Series)
 def execute_node_nullif_scalar_series(op, value, series, **kwargs):
     # TODO - not preserving the index
-    return dd.from_array(
-        da.where(series.eq(value).values, np.nan, value)
-    )
+    return dd.from_array(da.where(series.eq(value).values, np.nan, value))
 
 
 def coalesce(values):
@@ -1039,7 +1036,7 @@ def compute_row_reduction(func, value, **kwargs):
         return func(value)
     (final_size,) = final_sizes
     raw = func(list(map(promote_to_sequence(final_size), value)), **kwargs)
-    return dd.Series(raw).squeeze()
+    return dd.from_array(raw).squeeze()
 
 
 @execute_node.register(ops.Greatest, collections.abc.Sequence)
@@ -1064,7 +1061,9 @@ def execute_node_expr_list(op, sequence, **kwargs):
     columns = [e.get_name() for e in op.exprs]
     schema = ibis.schema(list(zip(columns, (e.type() for e in op.exprs))))
     data = {col: [execute(el, **kwargs)] for col, el in zip(columns, sequence)}
-    return schema.apply_to(dd.DataFrame(data, columns=columns))
+    return schema.apply_to(
+        dd.from_pandas(pd.DataFrame(data, columns=columns), npartitions=1)
+    )
 
 
 def wrap_case_result(raw, expr):

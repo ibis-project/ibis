@@ -449,7 +449,9 @@ def test_array_return_type_reduction_window(con, t, df, qs):
     expr = quantiles(t.b, quantiles=qs).over(ibis.window())
     result = expr.execute()
     expected_raw = df.b.quantile(qs).tolist()
-    expected = dd.Series([expected_raw] * len(df))
+    expected = dd.from_array(
+        np.repeat(expected_raw, len(df)
+    )
     tm.assert_series_equal(result.compute(), expected.compute())
 
 

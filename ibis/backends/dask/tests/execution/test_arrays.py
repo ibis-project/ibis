@@ -44,10 +44,7 @@ def test_array_collect(t, df):
     expr = t.group_by(t.dup_strings).aggregate(
         collected=t.float64_with_zeros.collect()
     )
-    executed = expr.execute()
-    result = (
-        executed.set_index('dup_strings', drop=True)
-    )
+    result = expr.execute()
     expected = (
         df.groupby('dup_strings')
         .float64_with_zeros.apply(list)

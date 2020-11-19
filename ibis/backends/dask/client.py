@@ -6,6 +6,7 @@ import re
 from functools import partial
 
 import dask.dataframe as dd
+from dask.dataframe.core import DataFrame
 import dateutil.parser
 import numpy as np
 import pandas as pd
@@ -418,7 +419,10 @@ class DaskClient(client.Client):
             # TODO - this isn't right
             dtypes = ibis_schema_to_dask(schema)
             df = schema.apply_to(
-                dd.DataFrame(columns=list(map(toolz.first, dtypes)))
+                dd.from_pandas(
+                    pd.DataFrame(columns=list(map(toolz.first, dtypes))),
+                    npartitions=1,
+                )
             )
 
         self.dictionary[table_name] = df

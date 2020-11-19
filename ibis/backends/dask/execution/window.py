@@ -6,6 +6,7 @@ import re
 from typing import Any, List, NoReturn, Optional
 
 import dask.dataframe as dd
+import pandas as pd
 import toolz
 from dask.dataframe.groupby import SeriesGroupBy
 from pandas import isnull
@@ -44,9 +45,9 @@ def _post_process_empty(
         # `result` is a scalar when a reduction operation is being
         # applied over the window, since reduction operations are N->1
         index = parent.index
-        result = dd.Series([result]).repeat(len(index))
+        result = pd.Series([result]).repeat(len(index))
         result.index = index
-        return result
+        return dd.from_pandas(result, npartitions=1)
 
 
 def _post_process_group_by(

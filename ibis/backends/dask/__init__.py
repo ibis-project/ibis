@@ -2,13 +2,24 @@ from __future__ import absolute_import
 
 import toolz
 
-import ibis
+import ibis.config
+from ibis.backends.base_sqlalchemy.compiler import Dialect
 
 from .client import DaskClient
 from .execution import execute, execute_node
 from .udf import udf
 
 __all__ = ('connect', 'dialect', 'execute', 'udf')
+
+
+with ibis.config.config_prefix('dask'):
+    ibis.config.register_option(
+        'enable_trace',
+        False,
+        'Whether enable tracing for dask execution. '
+        'See ibis.dask.trace for details.',
+        validator=ibis.config.is_bool,
+    )
 
 
 def connect(dictionary):
@@ -79,7 +90,7 @@ class DaskExprTranslator:
     _rewrites = {}
 
 
-class DaskDialect(ibis.sql.compiler.Dialect):
+class DaskDialect(Dialect):
 
     translator = DaskExprTranslator
 

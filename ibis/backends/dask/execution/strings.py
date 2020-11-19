@@ -29,14 +29,14 @@ def execute_substring_int_int(op, data, start, length, **kwargs):
 @execute_node.register(ops.Substring, dd.Series, dd.Series, integer_types)
 def execute_substring_series_int(op, data, start, length, **kwargs):
     return execute_substring_series_series(
-        op, data, start, dd.Series(np.repeat(length, len(start))), **kwargs
+        op, data, start, dd.from_array(np.repeat(length, len(start))), **kwargs
     )
 
 
 @execute_node.register(ops.Substring, dd.Series, integer_types, dd.Series)
 def execute_string_substring_int_series(op, data, start, length, **kwargs):
     return execute_substring_series_series(
-        op, data, dd.Series(np.repeat(start, len(length))), length, **kwargs
+        op, data, dd.from_array(np.repeat(start, len(length))), length, **kwargs
     )
 
 
@@ -365,13 +365,13 @@ def haystack_to_series_of_lists(haystack, index=None):
     pieces = reduce(
         operator.add,
         (
-            dd.Series(getattr(piece, 'values', piece), index=index).map(
+            pd.Series(getattr(piece, 'values', piece), index=index).map(
                 ibis.util.promote_list
             )
             for piece in haystack
         ),
     )
-    return pieces
+    return dd.from_pandas(pieces, npartitions=1)
 
 
 @execute_node.register(ops.FindInSet, dd.Series, list)
