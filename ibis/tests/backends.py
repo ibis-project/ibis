@@ -179,6 +179,11 @@ class Pandas(Backend, RoundHalfToEven):
         )
 
 
+class Dask(Pandas):
+    # clone pandas directly until the rest of the dask backend is defined
+    pass
+
+
 class Csv(Pandas):
     check_names = False
     supports_divide_by_zero = True
