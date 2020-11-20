@@ -40,6 +40,8 @@ spark_requires = ['pyspark>=2.4.3']
 
 geospatial_requires = ['geoalchemy2', 'geopandas', 'shapely']
 
+dask_requires = ['dask[dataframe, array]', ]
+
 all_requires = (
     impala_requires
     + postgres_requires
@@ -53,6 +55,7 @@ all_requires = (
     + parquet_requires
     + spark_requires
     + geospatial_requires
+    + dask_requires
 )
 
 develop_requires = all_requires + [
@@ -99,6 +102,7 @@ setup(
         'parquet': parquet_requires,
         'spark': spark_requires,
         'geospatial': geospatial_requires,
+        'dask': dask_requires,
     },
     description="Productivity-centric Python Big Data Framework",
     long_description=LONG_DESCRIPTION,

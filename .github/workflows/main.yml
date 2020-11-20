@@ -11,7 +11,7 @@ jobs:
     name: Tests pandas / files
     runs-on: ${{ matrix.os }}
     env:
-      BACKENDS: "pandas csv parquet hdf5"
+      BACKENDS: "pandas dask csv parquet hdf5"
     strategy:
       fail-fast: false
       matrix:

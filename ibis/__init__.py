@@ -82,6 +82,10 @@ with suppress(ImportError):
 with suppress(ImportError):
     from ibis.backends import pyspark  # noqa: F401
 
+with suppress(ImportError):
+    # pip install ibis-framework[dask]
+    import ibis.backends as dask  # noqa: F401
+
 
 __version__ = get_versions()['version']
 del get_versions
