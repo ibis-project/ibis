@@ -40,7 +40,9 @@ spark_requires = ['pyspark>=2.4.3']
 
 geospatial_requires = ['geoalchemy2', 'geopandas', 'shapely']
 
-dask_requires = ['dask[dataframe, array]', ]
+dask_requires = [
+    'dask[dataframe, array]',
+]
 
 all_requires = (
     impala_requires
