@@ -1,6 +1,6 @@
 from warnings import catch_warnings
 
-import pandas.util.testing as tm  # noqa: E402
+import pandas.testing as tm  # noqa: E402
 import pytest
 from pytest import param
 

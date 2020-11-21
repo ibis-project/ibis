@@ -2,7 +2,7 @@ from posixpath import join as pjoin
 
 import pandas as pd
 import pytest
-from pandas.util.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal
 
 import ibis
 import ibis.util as util

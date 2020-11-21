@@ -3,7 +3,7 @@ from operator import methodcaller
 
 import numpy as np
 import pandas as pd
-import pandas.util.testing as tm  # noqa: E402
+import pandas.testing as tm  # noqa: E402
 import pytest
 from pkg_resources import parse_version
 from pytest import param

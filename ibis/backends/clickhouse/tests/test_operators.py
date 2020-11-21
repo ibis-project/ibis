@@ -3,7 +3,7 @@ from datetime import date, datetime
 
 import numpy as np
 import pandas as pd
-import pandas.util.testing as tm
+import pandas.testing as tm
 import pytest
 
 import ibis

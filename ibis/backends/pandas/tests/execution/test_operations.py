@@ -4,7 +4,7 @@ from operator import methodcaller
 import numpy as np
 import numpy.testing as npt
 import pandas as pd
-import pandas.util.testing as tm
+import pandas.testing as tm
 import pytest
 
 import ibis
