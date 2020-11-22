@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
+import pandas.testing as tm
 import pytest
-from pandas.testing import assert_frame_equal
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -151,7 +151,7 @@ def test_create_table_from_dataframe(con, alltypes_df, temp_table_db):
 
     table = con.table(tname, database=tmp_db)
     df = table.execute()
-    assert_frame_equal(df, alltypes_df)
+    tm.assert_frame_equal(df, alltypes_df)
 
 
 def test_insert(con, temp_table_db, exhaustive_df):
@@ -168,7 +168,7 @@ def test_insert(con, temp_table_db, exhaustive_df):
     result = (
         table.execute().sort_values(by='tinyint_col').reset_index(drop=True)
     )
-    assert_frame_equal(result, exhaustive_df)
+    tm.assert_frame_equal(result, exhaustive_df)
 
 
 @pytest.mark.xfail(raises=AssertionError, reason='NYT')
@@ -186,7 +186,7 @@ def _check_roundtrip(con, df):
 
     table = writer.delimited_table(path)
     df2 = table.execute()
-    assert_frame_equal(df2, df)
+    tm.assert_frame_equal(df2, df)
 
 
 def test_timestamp_with_timezone():

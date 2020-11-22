@@ -1,8 +1,8 @@
 from posixpath import join as pjoin
 
 import pandas as pd
+import pandas.testing as tm
 import pytest
-from pandas.testing import assert_frame_equal
 
 import ibis
 import ibis.util as util
@@ -150,7 +150,7 @@ def test_create_partitioned_table_from_expr(con, alltypes):
         new = con.table(name)
         expected = expr.execute().sort_values('id').reset_index(drop=True)
         result = new.execute().sort_values('id').reset_index(drop=True)
-        assert_frame_equal(result, expected)
+        tm.assert_frame_equal(result, expected)
     finally:
         con.drop_table(name, force=True)
 
@@ -282,7 +282,7 @@ def verify_partitioned_table(part_t, df, unique_keys):
         .reset_index(drop=True)[df.columns]
     )
 
-    assert_frame_equal(result, df)
+    tm.assert_frame_equal(result, df)
 
     parts = part_t.partitions()
 

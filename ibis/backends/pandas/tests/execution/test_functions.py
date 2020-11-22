@@ -6,7 +6,7 @@ from operator import methodcaller
 
 import numpy as np
 import pandas as pd
-import pandas.testing as tm  # noqa: E402
+import pandas.testing as tm
 import pytest
 
 import ibis
