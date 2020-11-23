@@ -84,7 +84,7 @@ def test_join_diff_name(awards_players, batting):
         .materialize()
         .execute()
     )
-    assert df.size == 80
+    assert df.size == 70
 
 
 def test_cross_join(alltypes):
