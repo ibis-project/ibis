@@ -6,7 +6,7 @@ from ..compiler import (  # noqa: E402, isort:skip
     SparkDialect,
     build_ast,
 )
-from .. import ddl  # noqa: E402, isort:skip
+from ibis.backends.base_sql import ddl
 
 
 pytestmark = pytest.mark.spark
