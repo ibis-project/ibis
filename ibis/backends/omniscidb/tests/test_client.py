@@ -296,7 +296,7 @@ def test_cpu_execution_type(
     [
         ('rows', 'pandas'),
         ('columnar', 'pandas'),
-        ('infer' 'pandas'),
+        ('infer', 'pandas'),
         ('infer', 'arrow'),
         ('arrow', 'arrow'),
     ],

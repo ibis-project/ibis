@@ -2,7 +2,7 @@ import pandas as pd
 import pandas.util.testing as tm
 import pytest
 
-from ibis.pyspark.timecontext import combine_time_context
+from ibis.backends.pyspark.timecontext import combine_time_context
 
 pytest.importorskip('pyspark')
 pytestmark = pytest.mark.pyspark

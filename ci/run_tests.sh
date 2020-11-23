@@ -5,8 +5,8 @@
 
 TESTS_DIRS="ibis/tests"
 for BACKEND in $PYTEST_BACKENDS; do
-    if [[ -d ibis/$BACKEND/tests ]]; then
-        TESTS_DIRS="$TESTS_DIRS ibis/$BACKEND/tests"
+    if [[ -d ibis/backends/$BACKEND/tests ]]; then
+        TESTS_DIRS="$TESTS_DIRS ibis/backends/$BACKEND/tests"
     fi
 done
 
