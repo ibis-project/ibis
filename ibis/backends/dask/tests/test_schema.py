@@ -11,49 +11,6 @@ from ibis.expr import schema as sch
 pytestmark = pytest.mark.dask
 
 
-@pytest.mark.parametrize(
-    ('column', 'expected_dtype'),
-    [
-        ([True, False, False], dt.boolean),
-        (np.int8([-3, 9, 17]), dt.int8),
-        (np.uint8([3, 0, 16]), dt.uint8),
-        (np.int16([-5, 0, 12]), dt.int16),
-        (np.uint16([5569, 1, 33]), dt.uint16),
-        (np.int32([-12, 3, 25000]), dt.int32),
-        (np.uint32([100, 0, 6]), dt.uint32),
-        (np.uint64([666, 2, 3]), dt.uint64),
-        (np.int64([102, 67228734, -0]), dt.int64),
-        (np.float32([45e-3, -0.4, 99.0]), dt.float),
-        (np.float64([-3e43, 43.0, 10000000.0]), dt.double),
-        (['foo', 'bar', 'hello'], dt.string),
-        (
-            [
-                pd.Timestamp('2010-11-01 00:01:00'),
-                pd.Timestamp('2010-11-01 00:02:00.1000'),
-                pd.Timestamp('2010-11-01 00:03:00.300000'),
-            ],
-            dt.timestamp,
-        ),
-        (
-            pd.date_range('20130101', periods=3, tz='US/Eastern'),
-            dt.Timestamp('US/Eastern'),
-        ),
-        (
-            [
-                pd.Timedelta('1 days'),
-                pd.Timedelta('-1 days 2 min 3us'),
-                pd.Timedelta('-2 days +23:57:59.999997'),
-            ],
-            dt.Interval('ns'),
-        ),
-        (pd.Series(['a', 'b', 'c', 'a']).astype('category'), dt.Category(),),
-    ],
-)
-def test_infer_simple_dataframe(column, expected_dtype):
-    df = dd.from_pandas(pd.DataFrame({'col': column}), npartitions=1)
-    assert sch.infer(df) == ibis.schema([('col', expected_dtype)])
-
-
 def test_infer_exhaustive_dataframe():
     df = dd.from_pandas(
         pd.DataFrame(
