@@ -128,10 +128,8 @@ def test_series_to_ibis_literal():
 )
 def test_schema_infer(col_data, schema_type):
     forced_dtype = 'category' if isinstance(schema_type, dt.Category) else None
-
-    df = dd.from_pandas(
-        pd.DataFrame({'col': col_data}, dtype=forced_dtype), npartitions=1
-    )
+    df = pd.DataFrame({'col': col_data}, dtype=forced_dtype)
+    
     inferred = sch.infer(df)
     expected = ibis.schema([('col', schema_type)])
     assert inferred == expected
