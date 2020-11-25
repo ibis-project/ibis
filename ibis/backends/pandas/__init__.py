@@ -41,8 +41,6 @@ def from_dataframe(df, name='df', client=None):
     convenience function to construct an ibis table
     from a DataFrame
 
-    EXPERIMENTAL API
-
     Parameters
     ----------
     df : DataFrame
