@@ -130,9 +130,7 @@ def test_series_to_ibis_literal():
     ],
 )
 def test_schema_infer(col_data, schema_type):
-    df = dd.from_pandas(
-        pd.DataFrame({'col': col_data}), npartitions=1
-    )
+    df = dd.from_pandas(pd.DataFrame({'col': col_data}), npartitions=1)
     inferred = sch.infer(df)
     expected = ibis.schema([('col', schema_type)])
     assert inferred == expected
