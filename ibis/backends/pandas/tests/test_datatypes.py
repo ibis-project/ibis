@@ -123,12 +123,11 @@ def test_series_to_ibis_literal():
             "interval('ns')",
         ),
         (['foo', 'bar', 'hello'], "string"),
-        (['a', 'b', 'c', 'a'], dt.Category()),
+        (pd.Series(['a', 'b', 'c', 'a']).astype('category'), dt.Category()),
     ],
 )
 def test_schema_infer(col_data, schema_type):
-    forced_dtype = 'category' if isinstance(schema_type, dt.Category) else None
-    df = pd.DataFrame({'col': col_data}, dtype=forced_dtype)
+    df = pd.DataFrame({'col': col_data})
 
     inferred = sch.infer(df)
     expected = ibis.schema([('col', schema_type)])
