@@ -113,7 +113,7 @@ from __future__ import absolute_import
 import datetime
 import functools
 import numbers
-from typing import Optional
+from typing import Callable, List, Mapping, Optional, Union
 
 import dask.dataframe as dd
 import numpy as np
@@ -126,7 +126,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.window as win
-from ibis.client import find_backends
+from ibis.client import Client, find_backends
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import canonicalize_context
 from ibis.expr.typing import TimeContext
@@ -174,13 +174,13 @@ ibis.util.consume(
 
 
 def execute_with_scope(
-    expr,
+    expr: ir.Expr,
     scope: Scope,
     timecontext: Optional[TimeContext] = None,
     aggcontext=None,
-    clients=None,
+    clients: List[Client] = None,
     **kwargs,
-):
+) -> Union[dd.DataFrame, dd.Series, Union[simple_types]]:
     """Execute an expression `expr`, with data provided in `scope`.
 
     Parameters
@@ -199,7 +199,7 @@ def execute_with_scope(
 
     Returns
     -------
-    result : scalar, pd.Series, pd.DataFrame
+    result : Union[dd.DataFrame, dd.Series, ibis.dask.core.simple_types]
     """
     op = expr.op()
 
@@ -242,12 +242,12 @@ def execute_with_scope(
 
 @trace
 def execute_until_in_scope(
-    expr,
+    expr: ir.Expr,
     scope: Scope,
     timecontext: Optional[TimeContext] = None,
     aggcontext=None,
-    clients=None,
-    post_execute_=None,
+    clients: List[Client] = None,
+    post_execute_: Callable = None,
     **kwargs,
 ) -> Scope:
     """Execute until our op is in `scope`.
@@ -376,13 +376,13 @@ execute = Dispatcher('execute')
 @execute.register(ir.Expr)
 @trace
 def main_execute(
-    expr,
-    params=None,
-    scope=None,
+    expr: ir.Expr,
+    params: Mapping[ir.Expr, object] = None,
+    scope: Mapping[ops.Node, object] = None,
     timecontext: Optional[TimeContext] = None,
     aggcontext=None,
     **kwargs,
-):
+) -> Union[dd.DataFrame, dd.Series, Union[simple_types]]:
     """Execute an expression against data that are bound to it. If no data
     are bound, raise an Exception.
 
@@ -438,13 +438,13 @@ def main_execute(
 
 
 def execute_and_reset(
-    expr,
-    params=None,
-    scope=None,
+    expr: ir.Expr,
+    params: Mapping[ir.Expr, object] = None,
+    scope: Mapping[ops.Node, object] = None,
     timecontext: Optional[TimeContext] = None,
     aggcontext=None,
     **kwargs,
-):
+) -> Union[dd.DataFrame, dd.Series, Union[simple_types]]:
     """Execute an expression against data that are bound to it. If no data
     are bound, raise an Exception.
 

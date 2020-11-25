@@ -1,12 +1,15 @@
 from __future__ import absolute_import
 
+from typing import Dict
+
 import toolz
+from dask.dataframe import DataFrame
 
 import ibis.config
 from ibis.backends.base_sqlalchemy.compiler import Dialect
 from ibis.backends.pandas import _flatten_subclass_tree
 
-from .client import DaskClient
+from .client import DaskClient, DaskTable
 from .execution import execute, execute_node
 
 __all__ = ('connect', 'dialect', 'execute')
@@ -22,7 +25,7 @@ with ibis.config.config_prefix('dask'):
     )
 
 
-def connect(dictionary):
+def connect(dictionary: Dict[str, DataFrame]) -> DaskClient:
     """Construct a dask client from a dictionary of DataFrames.
 
     Parameters
@@ -36,7 +39,9 @@ def connect(dictionary):
     return DaskClient(dictionary)
 
 
-def from_dataframe(df, name='df', client=None):
+def from_dataframe(
+    df: DataFrame, name: str = 'df', client: DaskClient = None
+) -> DaskTable:
     """
     convenience function to construct an ibis table
     from a DataFrame

@@ -4,6 +4,7 @@ from __future__ import absolute_import
 
 import re
 from functools import partial
+from typing import Dict, List, Mapping
 
 import dask.dataframe as dd
 import dateutil.parser
@@ -178,7 +179,7 @@ def convert_any_to_any(_, out_dtype, column):
     return column.astype(out_dtype.to_dask(), errors='ignore')
 
 
-def ibis_schema_apply_to(schema, df):
+def ibis_schema_apply_to(schema: sch.Schema, df: dd.DataFrame) -> dd.DataFrame:
     """Applies the Ibis schema to a dask DataFrame
 
     Parameters
@@ -221,19 +222,29 @@ class DaskTable(ops.DatabaseTable):
     pass
 
 
+class DaskDatabase(client.Database):
+    pass
+
+
 class DaskClient(client.Client):
 
     dialect = None  # defined in ibis.dask.api
 
-    def __init__(self, dictionary):
+    def __init__(self, dictionary: Dict[str, dd.DataFrame]):
         self.dictionary = dictionary
 
-    def table(self, name, schema=None):
+    def table(self, name: str, schema: sch.Schema = None) -> DaskTable:
         df = self.dictionary[name]
         schema = sch.infer(df, schema=schema)
         return DaskTable(name, schema, self).to_expr()
 
-    def execute(self, query, params=None, limit='default', **kwargs):
+    def execute(
+        self,
+        query: ir.Expr,
+        params: Mapping[ir.Expr, object] = None,
+        limit: str = 'default',
+        **kwargs,
+    ):
         if limit != 'default':
             raise ValueError(
                 'limit parameter to execute is not yet implemented in the '
@@ -248,7 +259,7 @@ class DaskClient(client.Client):
             )
         return execute_and_reset(query, params=params, **kwargs)
 
-    def compile(self, expr, *args, **kwargs):
+    def compile(self, expr: ir.Expr, *args, **kwargs):
         """Compile `expr`.
 
         Notes
@@ -258,11 +269,11 @@ class DaskClient(client.Client):
         """
         return expr
 
-    def database(self, name=None):
+    def database(self, name: str = None) -> DaskDatabase:
         """Construct a database called `name`."""
         return DaskDatabase(name, self)
 
-    def list_tables(self, like=None):
+    def list_tables(self, like: str = None) -> List[str]:
         """List the available tables."""
         tables = list(self.dictionary.keys())
         if like is not None:
@@ -270,7 +281,7 @@ class DaskClient(client.Client):
             return list(filter(lambda t: pattern.findall(t), tables))
         return tables
 
-    def load_data(self, table_name, obj, **kwargs):
+    def load_data(self, table_name: str, obj: dd.DataFrame, **kwargs):
         """Load data from `obj` into `table_name`.
 
         Parameters
@@ -282,7 +293,12 @@ class DaskClient(client.Client):
         # kwargs is a catch all for any options required by other backends.
         self.dictionary[table_name] = obj
 
-    def create_table(self, table_name, obj=None, schema=None):
+    def create_table(
+        self,
+        table_name: str,
+        obj: dd.DataFrame = None,
+        schema: sch.Schema = None,
+    ):
         """Create a table."""
         if obj is None and schema is None:
             raise com.IbisError('Must pass expr or schema')
@@ -301,7 +317,7 @@ class DaskClient(client.Client):
 
         self.dictionary[table_name] = df
 
-    def get_schema(self, table_name, database=None):
+    def get_schema(self, table_name: str, database: str = None) -> sch.Schema:
         """Return a Schema object for the indicated table and database.
 
         Parameters
@@ -317,7 +333,7 @@ class DaskClient(client.Client):
         """
         return sch.infer(self.dictionary[table_name])
 
-    def exists_table(self, name):
+    def exists_table(self, name: str) -> bool:
         """Determine if the indicated table or view exists.
 
         Parameters
@@ -336,7 +352,3 @@ class DaskClient(client.Client):
     def version(self) -> str:
         """Return the version of the underlying backend library."""
         return parse_version(dd.__version__)
-
-
-class DaskDatabase(client.Database):
-    pass
