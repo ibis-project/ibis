@@ -39,6 +39,7 @@ def test_no_infer_ambiguities():
             pd.Timestamp('2015-01-01 12:00:00', tz='US/Eastern'),
             dt.Timestamp('US/Eastern'),
         ),
+        # TODO - add in Period/Interval/Int/Categorical
     ],
 )
 def test_infer_dtype(value, expected_dtype):
@@ -84,7 +85,7 @@ def test_dask_dtype(dask_dtype, ibis_dtype):
     assert dt.dtype(dask_dtype) == ibis_dtype
 
 
-@pytest.mark.xfail(reason="literal conversion doesn't work, not sure why yet")
+@pytest.mark.xfail(reason="TODO - literal conversion does not work yet")
 def test_series_to_ibis_literal():
     values = [1, 2, 3, 4]
     s = dd.from_pandas(pd.Series(values), npartitions=1)
@@ -125,14 +126,12 @@ def test_series_to_ibis_literal():
             "interval('ns')",
         ),
         (['foo', 'bar', 'hello'], "string"),
-        (['a', 'b', 'c', 'a'], dt.Category()),
+        (pd.Series(['a', 'b', 'c', 'a']).astype('category'), dt.Category()),
     ],
 )
 def test_schema_infer(col_data, schema_type):
-    forced_dtype = 'category' if isinstance(schema_type, dt.Category) else None
-
     df = dd.from_pandas(
-        pd.DataFrame({'col': col_data}, dtype=forced_dtype), npartitions=1
+        pd.DataFrame({'col': col_data}), npartitions=1
     )
     inferred = sch.infer(df)
     expected = ibis.schema([('col', schema_type)])
