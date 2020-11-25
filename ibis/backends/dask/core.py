@@ -43,6 +43,7 @@ Specifically, execute is comprised of a series of steps that happen at
 different times during the loop.
 
 1. ``compute_time_context``
+---------------------------
 First, at the beginning of the main execution loop, ``compute_time_context`` is
 called. This function computes time contexts, and pass them to all children of
 the current node. These time contexts could be used in later steps to get data.
@@ -93,7 +94,7 @@ passed to ``post_execute`` would be the bound values passed in at the time the
 
 
 Scope
--------------------
+-----
 Scope is used across the execution phases, it iss a map that maps Ibis
 operators to actual data. It is used to cache data for calculated ops. It is
 an optimization to reused executed results.
