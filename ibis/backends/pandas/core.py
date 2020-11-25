@@ -38,6 +38,7 @@ Specifically, execute is comprised of a series of steps that happen at
 different times during the loop.
 
 1. ``compute_time_context``
+---------------------------
 First, at the beginning of the main execution loop, ``compute_time_context`` is
 called. This function computes time contexts, and pass them to all children of
 the current node. These time contexts could be used in later steps to get data.
