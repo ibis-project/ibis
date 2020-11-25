@@ -1,8 +1,8 @@
 import dask.dataframe as dd
 import numpy as np
 import pandas as pd
-from dask.dataframe.utils import tm
 import pytest
+from dask.dataframe.utils import tm
 
 import ibis
 from ibis.expr import datatypes as dt
@@ -46,10 +46,7 @@ pytestmark = pytest.mark.dask
             ],
             dt.Interval('ns'),
         ),
-        (
-            pd.Series(['a', 'b', 'c', 'a']).astype('category'),
-            dt.Category(),
-        ),
+        (pd.Series(['a', 'b', 'c', 'a']).astype('category'), dt.Category(),),
     ],
 )
 def test_infer_simple_dataframe(column, expected_dtype):

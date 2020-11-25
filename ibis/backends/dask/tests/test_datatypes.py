@@ -196,13 +196,15 @@ def test_dtype_uint64():
 
 def test_dtype_datetime64():
     df = dd.from_pandas(
-        pd.DataFrame({
-            'col': [
-                pd.Timestamp('2010-11-01 00:01:00'),
-                pd.Timestamp('2010-11-01 00:02:00.1000'),
-                pd.Timestamp('2010-11-01 00:03:00.300000'),
-            ]
-        }),
+        pd.DataFrame(
+            {
+                'col': [
+                    pd.Timestamp('2010-11-01 00:01:00'),
+                    pd.Timestamp('2010-11-01 00:02:00.1000'),
+                    pd.Timestamp('2010-11-01 00:03:00.300000'),
+                ]
+            }
+        ),
         npartitions=1,
     )
     inferred = sch.infer(df)
@@ -212,13 +214,15 @@ def test_dtype_datetime64():
 
 def test_dtype_timedelta64():
     df = dd.from_pandas(
-        pd.DataFrame({
-            'col': [
-                pd.Timedelta('1 days'),
-                pd.Timedelta('-1 days 2 min 3us'),
-                pd.Timedelta('-2 days +23:57:59.999997'),
-            ]
-        }),
+        pd.DataFrame(
+            {
+                'col': [
+                    pd.Timedelta('1 days'),
+                    pd.Timedelta('-1 days 2 min 3us'),
+                    pd.Timedelta('-2 days +23:57:59.999997'),
+                ]
+            }
+        ),
         npartitions=1,
     )
     inferred = sch.infer(df)
