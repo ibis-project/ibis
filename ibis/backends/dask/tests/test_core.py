@@ -1,7 +1,6 @@
 from typing import Any
 
 import dask.dataframe as dd
-import pandas as pd
 import pytest
 from dask.dataframe.utils import tm
 from multipledispatch.conflict import ambiguities
@@ -12,36 +11,12 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.expr.scope import Scope
 
-from .. import connect, execute, from_dataframe
+from .. import execute, from_dataframe
 from ..client import DaskClient
 from ..core import is_computable_input
 from ..dispatch import execute_node, post_execute, pre_execute
 
 pytestmark = pytest.mark.dask
-
-
-@pytest.fixture
-def dataframe():
-    return dd.from_pandas(
-        pd.DataFrame(
-            {
-                'plain_int64': list(range(1, 4)),
-                'plain_strings': list('abc'),
-                'dup_strings': list('dad'),
-            }
-        ),
-        npartitions=1,
-    )
-
-
-@pytest.fixture
-def core_client(dataframe):
-    return connect({'df': dataframe})
-
-
-@pytest.fixture
-def ibis_table(core_client):
-    return core_client.table('df')
 
 
 @pytest.mark.parametrize('func', [execute_node, pre_execute, post_execute])
