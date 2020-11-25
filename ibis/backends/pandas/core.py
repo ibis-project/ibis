@@ -89,7 +89,7 @@ passed to ``post_execute`` would be the bound values passed in at the time the
 
 
 Scope
--------------------
+-----
 Scope is used across the execution phases, it iss a map that maps Ibis
 operators to actual data. It is used to cache data for calculated ops. It is
 an optimization to reused executed results.
