@@ -1,4 +1,5 @@
 import ibis.common.exceptions as com
+import ibis.config
 from ibis.config import options
 
 from .client import ClickhouseClient
@@ -13,6 +14,14 @@ try:
     _default_compression = 'lz4'
 except ImportError:
     _default_compression = False
+
+
+with ibis.config.config_prefix('clickhouse'):
+    ibis.config.register_option(
+        'temp_db',
+        '__ibis_tmp',
+        'Database to use for temporary tables, views. functions, etc.',
+    )
 
 
 def compile(expr, params=None):

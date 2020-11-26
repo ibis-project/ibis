@@ -14,6 +14,7 @@ dependencies:
   # Ibis soft dependencies
   # TODO This section is probably not very accurate right now (some dependencies should probably be in the backends files)
   - sqlalchemy>=1.3
+  - dask
   - graphviz>=2.38
   - openjdk=8
   - pytables>=3.6
@@ -41,6 +42,11 @@ dependencies:
   - libiconv>=1.15  # bug in repo2docker, see https://github.com/jupyter/repo2docker/issues/758
   - xorg-libxpm>=3.5
   - xorg-libxrender>=0.9
+
+  # Release
+  - twine>=3.2.0
+  - wheel>=0.35.1
+  - conda-smithy>=3.8.5
 
   # Docs
   - ipython>=7.17

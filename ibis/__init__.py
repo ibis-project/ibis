@@ -3,7 +3,7 @@ import warnings
 
 import pkg_resources
 
-import ibis.config_init  # noqa: F401
+import ibis.config
 import ibis.expr.types as ir
 from ibis import util
 
@@ -19,6 +19,22 @@ from ._version import get_versions  # noqa: E402
 __all__ = ['api', 'ir', 'util', 'IbisError', 'options']
 __all__ += api.__all__
 
+
+ibis.config.register_option(
+    'interactive', False, validator=ibis.config.is_bool
+)
+ibis.config.register_option('verbose', False, validator=ibis.config.is_bool)
+ibis.config.register_option('verbose_log', None)
+ibis.config.register_option(
+    'graphviz_repr',
+    True,
+    """\
+Whether to render expressions as GraphViz PNGs when repr-ing in a Jupyter
+notebook.
+""",
+    validator=ibis.config.is_bool,
+)
+ibis.config.register_option('default_backend', None)
 
 __version__ = get_versions()['version']
 del get_versions
