@@ -1,5 +1,4 @@
 """Initialize Ibis module."""
-import warnings
 from contextlib import suppress
 
 import ibis.config
@@ -89,20 +88,3 @@ with suppress(ImportError):
 
 __version__ = get_versions()['version']
 del get_versions
-
-
-def __getattr__(name):
-    if name in ('HDFS', 'WebHDFS', 'hdfs_connect'):
-        warnings.warn(
-            f'`ibis.{name}` has been deprecated and will be removed in a '
-            f'future version, use `ibis.impala.{name}` instead',
-            FutureWarning,
-            stacklevel=2,
-        )
-        if 'impala' in globals():
-            return getattr(impala, name)
-        else:
-            raise AttributeError(
-                f'`ibis.{name}` requires impala backend to be installed'
-            )
-    raise AttributeError

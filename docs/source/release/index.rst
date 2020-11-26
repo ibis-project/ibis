@@ -12,6 +12,7 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :support:`2505` Remove deprecated `ibis.HDFS`, `ibis.WebHDFS` and `ibis.hdfs_connect`
 * :feature:`2514` Add Struct.from_dict
 * :feature:`2310` Add hash and hashbytes support for BigQuery backend
 * :feature:`2511` Support reduction UDF without groupby to return multiple columns for Pandas backend
