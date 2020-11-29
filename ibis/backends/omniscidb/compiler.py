@@ -356,18 +356,18 @@ def omniscidb_rewrite_not_any(expr: ibis.Expr) -> ibis.Expr:
 
 _add_methods(
     ir.NumericValue,
-    dict(
-        conv_4326_900913_x=_unary_op(
+    {
+        'conv_4326_900913_x': _unary_op(
             'conv_4326_900913_x', omniscidb_ops.Conv_4326_900913_X
         ),
-        conv_4326_900913_y=_unary_op(
+        'conv_4326_900913_y': _unary_op(
             'conv_4326_900913_y', omniscidb_ops.Conv_4326_900913_Y
         ),
-        truncate=_binop_expr('truncate', omniscidb_ops.NumericTruncate),
-    ),
+        'truncate': _binop_expr('truncate', omniscidb_ops.NumericTruncate),
+    },
 )
 
 _add_methods(
     ir.StringValue,
-    dict(byte_length=_unary_op('length', omniscidb_ops.ByteLength)),
+    {'byte_length': _unary_op('length', omniscidb_ops.ByteLength)},
 )

@@ -392,29 +392,29 @@ class Interval(DataType):
     __slots__ = 'value_type', 'unit'
 
     # based on numpy's units
-    _units = dict(
-        Y='year',
-        Q='quarter',
-        M='month',
-        W='week',
-        D='day',
-        h='hour',
-        m='minute',
-        s='second',
-        ms='millisecond',
-        us='microsecond',
-        ns='nanosecond',
-    )
+    _units = {
+        'Y': 'year',
+        'Q': 'quarter',
+        'M': 'month',
+        'W': 'week',
+        'D': 'day',
+        'h': 'hour',
+        'm': 'minute',
+        's': 'second',
+        'ms': 'millisecond',
+        'us': 'microsecond',
+        'ns': 'nanosecond',
+    }
 
-    _timedelta_to_interval_units = dict(
-        days='D',
-        hours='h',
-        minutes='m',
-        seconds='s',
-        milliseconds='ms',
-        microseconds='us',
-        nanoseconds='ns',
-    )
+    _timedelta_to_interval_units = {
+        'days': 'D',
+        'hours': 'h',
+        'minutes': 'm',
+        'seconds': 's',
+        'milliseconds': 'ms',
+        'microseconds': 'us',
+        'nanoseconds': 'ns',
+    }
 
     def _convert_timedelta_unit_to_interval_unit(self, unit: str):
         if unit not in self._timedelta_to_interval_units:
@@ -952,9 +952,9 @@ class Tokens:
         return _token_names[value]
 
 
-_token_names = dict(
-    (getattr(Tokens, n), n) for n in dir(Tokens) if n.isalpha() and n.isupper()
-)
+_token_names = {
+    {getattr(Tokens, n): n} for n in dir(Tokens) if n.isalpha() and n.isupper()
+}
 
 Token = collections.namedtuple('Token', ('type', 'value'))
 

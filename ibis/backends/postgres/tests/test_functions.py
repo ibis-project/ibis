@@ -614,7 +614,7 @@ def test_union_cte(alltypes, distinct1, distinct2, expected1, expected2):
         map(
             lambda line: line.rstrip(),  # strip trailing whitespace
             str(
-                expr.compile().compile(compile_kwargs=dict(literal_binds=True))
+                expr.compile().compile(compile_kwargs={'literal_binds': True})
             ).splitlines(),
         )
     )
@@ -1245,7 +1245,7 @@ def trunc(con, guid):
 def test_semi_join(t, s):
     t_a, s_a = t.op().sqla_table.alias('t0'), s.op().sqla_table.alias('t1')
     expr = t.semi_join(s, t.id == s.id)
-    result = expr.compile().compile(compile_kwargs=dict(literal_binds=True))
+    result = expr.compile().compile(compile_kwargs={'literal_binds': True})
     base = sa.select([t_a.c.id, t_a.c.name]).where(
         sa.exists(sa.select([1]).where(t_a.c.id == s_a.c.id))
     )
@@ -1256,7 +1256,7 @@ def test_semi_join(t, s):
 def test_anti_join(t, s):
     t_a, s_a = t.op().sqla_table.alias('t0'), s.op().sqla_table.alias('t1')
     expr = t.anti_join(s, t.id == s.id)
-    result = expr.compile().compile(compile_kwargs=dict(literal_binds=True))
+    result = expr.compile().compile(compile_kwargs={'literal_binds': True})
     expected = sa.select([sa.column('id'), sa.column('name')]).select_from(
         sa.select([t_a.c.id, t_a.c.name]).where(
             ~(sa.exists(sa.select([1]).where(t_a.c.id == s_a.c.id)))
@@ -1301,7 +1301,7 @@ def test_rank(con):
     t = con.table('functional_alltypes')
     expr = t.double_col.rank()
     sqla_expr = expr.compile()
-    result = str(sqla_expr.compile(compile_kwargs=dict(literal_binds=True)))
+    result = str(sqla_expr.compile(compile_kwargs={'literal_binds': True}))
     expected = (
         "SELECT rank() OVER (ORDER BY t0.double_col) - 1 AS tmp \n"
         "FROM functional_alltypes AS t0"
@@ -1313,7 +1313,7 @@ def test_percent_rank(con):
     t = con.table('functional_alltypes')
     expr = t.double_col.percent_rank()
     sqla_expr = expr.compile()
-    result = str(sqla_expr.compile(compile_kwargs=dict(literal_binds=True)))
+    result = str(sqla_expr.compile(compile_kwargs={'literal_binds': True}))
     expected = (
         "SELECT percent_rank() OVER (ORDER BY t0.double_col) AS "
         "tmp \nFROM functional_alltypes AS t0"
@@ -1325,7 +1325,7 @@ def test_ntile(con):
     t = con.table('functional_alltypes')
     expr = t.double_col.ntile(7)
     sqla_expr = expr.compile()
-    result = str(sqla_expr.compile(compile_kwargs=dict(literal_binds=True)))
+    result = str(sqla_expr.compile(compile_kwargs={'literal_binds': True}))
     expected = (
         "SELECT ntile(7) OVER (ORDER BY t0.double_col) - 1 AS tmp \n"
         "FROM functional_alltypes AS t0"

@@ -244,13 +244,17 @@ class Window:
                 ).format(self.how.upper(), window.how.upper())
             )
 
-        kwds = dict(
-            preceding=_choose_non_empty_val(self.preceding, window.preceding),
-            following=_choose_non_empty_val(self.following, window.following),
-            max_lookback=self.max_lookback or window.max_lookback,
-            group_by=self._group_by + window._group_by,
-            order_by=self._order_by + window._order_by,
-        )
+        kwds = {
+            'preceding': _choose_non_empty_val(
+                self.preceding, window.preceding
+            ),
+            'following': _choose_non_empty_val(
+                self.following, window.following
+            ),
+            'max_lookback': self.max_lookback or window.max_lookback,
+            'group_by': self._group_by + window._group_by,
+            'order_by': self._order_by + window._order_by,
+        }
         return Window(**kwds)
 
     def group_by(self, expr):
@@ -258,14 +262,14 @@ class Window:
         return self._replace(group_by=new_groups)
 
     def _replace(self, **kwds):
-        new_kwds = dict(
-            group_by=kwds.get('group_by', self._group_by),
-            order_by=kwds.get('order_by', self._order_by),
-            preceding=kwds.get('preceding', self.preceding),
-            following=kwds.get('following', self.following),
-            max_lookback=kwds.get('max_lookback', self.max_lookback),
-            how=kwds.get('how', self.how),
-        )
+        new_kwds = {
+            'group_by': kwds.get('group_by', self._group_by),
+            'order_by': kwds.get('order_by', self._order_by),
+            'preceding': kwds.get('preceding', self.preceding),
+            'following': kwds.get('following', self.following),
+            'max_lookback': kwds.get('max_lookback', self.max_lookback),
+            'how': kwds.get('how', self.how),
+        }
         return Window(**new_kwds)
 
     def order_by(self, expr):

@@ -132,9 +132,9 @@ params_backend = [
     if backend.__name__.lower() in pytest_backends or not pytest_backends
 ]
 if len(pytest_backends) != len(params_backend):
-    unknown_backends = set(pytest_backends) - set(
+    unknown_backends = set(pytest_backends) - {
         b.__name__.lower() for b in ALL_BACKENDS
-    )
+    }
     raise ValueError(
         'PYTEST_BACKENDS environment variable contain unknown '
         f'backends {unknown_backends}'

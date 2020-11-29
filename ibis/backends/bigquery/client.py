@@ -122,7 +122,7 @@ class BigQueryCursor:
     def description(self):
         """Get the fields of the result set's schema."""
         result = self.query.result()
-        return [field for field in result.schema]
+        return list(result.schema)
 
     def __enter__(self):
         # For compatibility when constructed from Query.execute()

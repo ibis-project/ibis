@@ -49,7 +49,7 @@ def test_cross_join(left, right, df1, df2):
     result = expr.execute()
     expected = pd.merge(
         df1.assign(dummy=1), df2.assign(dummy=1), how='inner', on='dummy'
-    ).rename(columns=dict(key_x='key'))
+    ).rename(columns={'key_x': 'key'})
     del expected['dummy'], expected['key_y']
     tm.assert_frame_equal(result[expected.columns], expected)
 
@@ -69,7 +69,7 @@ def test_cross_join_project_left_table(left, right, df1, df2):
     result = expr.execute()
     expected = pd.merge(
         df1.assign(dummy=1), df2.assign(dummy=1), how='inner', on='dummy'
-    ).rename(columns=dict(key_x='key'))[list(left.columns) + ['key3']]
+    ).rename(columns={'key_x': 'key'})[list(left.columns) + ['key3']]
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
@@ -179,7 +179,7 @@ def test_join_with_post_expression_filter(how, left):
 def test_multi_join_with_post_expression_filter(how, left, df1):
     lhs = left[['key', 'key2']]
     rhs = left[['key2', 'value']]
-    rhs2 = left[['key2', 'value']].relabel(dict(value='value2'))
+    rhs2 = left[['key2', 'value']].relabel({'value': 'value2'})
 
     joined = lhs.join(rhs, 'key2', how=how)
     projected = joined[lhs, rhs.value]
@@ -370,8 +370,8 @@ def test_keyed_asof_join_with_tolerance(
     reason="Select from unambiguous joins not implemented",
 )
 def test_select_on_unambiguous_join(how, func):
-    df_t = pd.DataFrame(dict(a0=[1, 2, 3], b1=list("aab")))
-    df_s = pd.DataFrame(dict(a1=[2, 3, 4], b2=list("abc")))
+    df_t = pd.DataFrame({'a0': [1, 2, 3], 'b1': list("aab")})
+    df_s = pd.DataFrame({'a1': [2, 3, 4], 'b2': list("abc")})
     con = connect({"t": df_t, "s": df_s})
     t = con.table("t")
     s = con.table("s")
@@ -401,10 +401,10 @@ def test_select_on_unambiguous_join(how, func):
 @merge_asof_minversion
 def test_select_on_unambiguous_asof_join(func):
     df_t = pd.DataFrame(
-        dict(a0=[1, 2, 3], b1=pd.date_range("20180101", periods=3))
+        {'a0': [1, 2, 3], 'b1': pd.date_range("20180101", periods=3)}
     )
     df_s = pd.DataFrame(
-        dict(a1=[2, 3, 4], b2=pd.date_range("20171230", periods=3))
+        {'a1': [2, 3, 4], 'b2': pd.date_range("20171230", periods=3)}
     )
     con = connect({"t": df_t, "s": df_s})
     t = con.table("t")
