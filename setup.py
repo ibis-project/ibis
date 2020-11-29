@@ -60,18 +60,6 @@ all_requires = (
     + dask_requires
 )
 
-develop_requires = all_requires + [
-    'black',
-    'click',
-    'pydocstyle==4.0.1',
-    'flake8',
-    'isort',
-    'mypy',
-    'pre-commit',
-    'pygit2',
-    'pytest>=4.5',
-]
-
 install_requires = [
     line.strip()
     for line in pathlib.Path(__file__)
@@ -90,7 +78,6 @@ setup(
     python_requires='>=3.7',
     extras_require={
         'all': all_requires,
-        'develop': develop_requires,
         'impala': impala_requires,
         'kerberos': kerberos_requires,
         'postgres': postgres_requires,
