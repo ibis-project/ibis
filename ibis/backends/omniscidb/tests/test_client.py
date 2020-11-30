@@ -155,7 +155,7 @@ def test_drop_columns(con, test_table, column_names):
         param({}, id='none',),
         param({'fragment_size': 10000000}, id='frag_size'),
         param(
-            {'ent_size': 0},
+            {'fragment_size': 0},
             id='frag_size0',
             marks=pytest.mark.xfail(
                 raises=Exception,
