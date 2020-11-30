@@ -953,7 +953,7 @@ class Tokens:
 
 
 _token_names = {
-    {getattr(Tokens, n): n} for n in dir(Tokens) if n.isalpha() and n.isupper()
+    getattr(Tokens, n): n for n in dir(Tokens) if n.isalpha() and n.isupper()
 }
 
 Token = collections.namedtuple('Token', ('type', 'value'))
