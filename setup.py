@@ -134,6 +134,7 @@ setup(
             'omniscidb = ibis.backends.omniscidb',
             'spark = ibis.backends.spark',
             'pyspark = ibis.backends.pyspark',
+            'dask = ibis.backends.dask',
         ]
     },
 )
