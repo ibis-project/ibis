@@ -279,9 +279,6 @@ class MySQLDialect(alch.AlchemyDialect):
     translator = MySQLExprTranslator
 
 
-dialect = MySQLDialect
-
-
 @compiles(ops.GroupConcat)
 def mysql_compiles_group_concat(t, expr):
     op = expr.op()

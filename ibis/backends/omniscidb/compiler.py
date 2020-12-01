@@ -287,7 +287,6 @@ class OmniSciDBDialect(compiler.Dialect):
     translator = OmniSciDBExprTranslator
 
 
-dialect = OmniSciDBDialect
 compiles = OmniSciDBExprTranslator.compiles
 rewrites = OmniSciDBExprTranslator.rewrites
 

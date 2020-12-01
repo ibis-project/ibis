@@ -11,35 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import ibis.backends.base
+from ibis.backends.base_sqlalchemy.alchemy import AlchemyQueryBuilder
 
 from .client import SQLiteClient
-from .compiler import dialect, rewrites  # noqa: F401
+from .compiler import SQLiteDialect
 
 
-def compile(expr, params=None):
-    """
-    Force compilation of expression for the SQLite target
-    """
-    from ibis.backends.base_sqlalchemy.alchemy import to_sqlalchemy
+class Backend(ibis.backends.base.BaseBackend):
+    name = 'sqlite'
+    builder = AlchemyQueryBuilder
+    dialect = SQLiteDialect
 
-    return to_sqlalchemy(expr, dialect.make_context(params=params))
-
-
-def connect(path=None, create=False):
-
-    """
-    Create an Ibis client connected to a SQLite database.
-
-    Multiple database files can be created using the attach() method
-
-    Parameters
-    ----------
-    path : string, default None
-        File path to the SQLite database file. If None, creates an in-memory
-        transient database and you can use attach() to add more files
-    create : boolean, default False
-        If file does not exist, create it
-    """
-
-    return SQLiteClient(path, create=create)
+    def connect(self):
+        return SQLiteClient(path, create=create)

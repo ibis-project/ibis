@@ -739,6 +739,3 @@ def _any_all_no_op(expr):
 
 class PostgreSQLDialect(alch.AlchemyDialect):
     translator = PostgreSQLExprTranslator
-
-
-dialect = PostgreSQLDialect

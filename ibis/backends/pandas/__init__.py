@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import toolz
 
 import ibis.config
@@ -8,56 +6,6 @@ from ibis.backends.base_sqlalchemy.compiler import Dialect
 from .client import PandasClient
 from .execution import execute, execute_node
 from .udf import udf
-
-__all__ = ('connect', 'dialect', 'execute', 'udf')
-
-
-with ibis.config.config_prefix('pandas'):
-    ibis.config.register_option(
-        'enable_trace',
-        False,
-        'Whether enable tracing for pandas execution. '
-        'See ibis.pandas.trace for details.',
-        validator=ibis.config.is_bool,
-    )
-
-
-def connect(dictionary):
-    """Construct a pandas client from a dictionary of DataFrames.
-
-    Parameters
-    ----------
-    dictionary : dict
-
-    Returns
-    -------
-    PandasClient
-    """
-    return PandasClient(dictionary)
-
-
-def from_dataframe(df, name='df', client=None):
-    """
-    convenience function to construct an ibis table
-    from a DataFrame
-
-    Parameters
-    ----------
-    df : DataFrame
-    name : str, default 'df'
-    client : Client, default new PandasClient
-        client dictionary will be mutated with the
-        name of the DataFrame
-
-    Returns
-    -------
-    Table
-    """
-
-    if client is None:
-        return connect({name: df}).table(name)
-    client.dictionary[name] = df
-    return client.table(name)
 
 
 def _flatten_subclass_tree(cls):
@@ -94,3 +42,54 @@ class PandasDialect(Dialect):
 
 
 PandasClient.dialect = dialect = PandasDialect
+
+
+class Backend(ibis.backends.base.BaseBackend):
+    name = 'pandas'
+    compiler = None
+    dialect = dialect
+
+    def connect(self):
+        """Construct a pandas client from a dictionary of DataFrames.
+
+        Parameters
+        ----------
+        dictionary : dict
+
+        Returns
+        -------
+        PandasClient
+        """
+        return PandasClient(self.connection_string)
+
+    def register_options(self):
+        ibis.config.register_option(
+            'enable_trace',
+            False,
+            'Whether enable tracing for pandas execution. '
+            'See ibis.pandas.trace for details.',
+            validator=ibis.config.is_bool,
+        )
+
+    @staticmethod
+    def from_dataframe(df, name='df', client=None):
+        """
+        convenience function to construct an ibis table
+        from a DataFrame
+
+        Parameters
+        ----------
+        df : DataFrame
+        name : str, default 'df'
+        client : Client, default new PandasClient
+            client dictionary will be mutated with the
+            name of the DataFrame
+
+        Returns
+        -------
+        Table
+        """
+        if client is None:
+            return connect({name: df}).table(name)
+        client.dictionary[name] = df
+        return client.table(name)
