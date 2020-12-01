@@ -28,6 +28,7 @@ dependencies:
   - conda-build # feedstock
   - cmake>=3.17
   - flake8>=3.8
+  - flake8-comprehensions>=3.3.0 # used by flake8, linting of unnecessary comprehensions
   - isort>=5.3
   - jinja2>=2.11 # feedstock
   - mypy>=0.782

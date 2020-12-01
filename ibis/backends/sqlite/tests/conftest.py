@@ -41,14 +41,14 @@ def translate(dialect):
     return lambda expr: str(
         ibis_dialect.translator(expr, context)
         .get_result()
-        .compile(dialect=dialect, compile_kwargs=dict(literal_binds=True))
+        .compile(dialect=dialect, compile_kwargs={'literal_binds': True})
     )
 
 
 @pytest.fixture
 def sqla_compile(dialect):
     return lambda expr: str(
-        expr.compile(dialect=dialect, compile_kwargs=dict(literal_binds=True))
+        expr.compile(dialect=dialect, compile_kwargs={'literal_binds': True})
     )
 
 

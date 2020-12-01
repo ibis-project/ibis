@@ -1,11 +1,10 @@
 import pytest
 
 import ibis
+from ibis.backends.base_sql import ddl as base_ddl
 
 pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
-
-from ibis.backends.base_sql import ddl as base_ddl
 
 from ibis.backends.impala.compiler import (  # noqa: E402, isort:skip
     ImpalaDialect,
@@ -165,7 +164,7 @@ def test_drop_partition(part_schema, table_name):
 
 
 def test_add_partition_with_props(part_schema, table_name):
-    props = dict(location='/users/foo/my-data')
+    props = {'location': '/users/foo/my-data'}
     stmt = ddl.AddPartition(
         table_name, {'year': 2007, 'month': 4}, part_schema, **props
     )

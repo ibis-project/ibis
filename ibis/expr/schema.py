@@ -30,7 +30,7 @@ class Schema:
         self.names = names
         self.types = list(map(dt.dtype, types))
 
-        self._name_locs = dict((v, i) for i, v in enumerate(self.names))
+        self._name_locs = {v: i for i, v in enumerate(self.names)}
 
         if len(self._name_locs) < len(self.names):
             duplicate_names = list(self.names)

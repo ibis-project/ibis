@@ -107,9 +107,11 @@ class ClickhouseQuery(Query):
             structure = list(zip(schema.names, map(str, chtypes)))
 
             tables.append(
-                dict(
-                    name=name, data=df.to_dict('records'), structure=structure
-                )
+                {
+                    'name': name,
+                    'data': df.to_dict('records'),
+                    'structure': structure,
+                }
             )
         return tables
 

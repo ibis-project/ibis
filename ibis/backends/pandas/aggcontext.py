@@ -494,14 +494,14 @@ def window_agg_udf(
     masked_window_lower_indices = window_lower_indices[mask].astype('i8')
     masked_window_upper_indices = window_upper_indices[mask].astype('i8')
 
-    input_iters = list(
+    input_iters = [
         create_window_input_iter(
             arg, masked_window_lower_indices, masked_window_upper_indices
         )
         if isinstance(arg, (pd.Series, SeriesGroupBy))
         else itertools.repeat(arg)
         for arg in inputs
-    )
+    ]
 
     valid_result = pd.Series(
         function(*(next(gen) for gen in input_iters))

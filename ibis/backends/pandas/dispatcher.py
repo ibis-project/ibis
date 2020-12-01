@@ -95,7 +95,7 @@ class TwoLevelDispatcher(Dispatcher):
         def _(func):
             self.add(types, func, **kwargs)
             for t, dispatcher in dispatchers:
-                dispatcher.add(tuple([t, *types[1:]]), func, **kwargs)
+                dispatcher.add((t, *types[1:]), func, **kwargs)
             return func
 
         return _

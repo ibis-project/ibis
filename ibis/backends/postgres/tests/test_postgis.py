@@ -28,7 +28,7 @@ def test_empty_select(geotable):
 def test_select_point_geodata(geotable):
     expr = geotable['geo_point']
     sqla_expr = expr.compile()
-    compiled = str(sqla_expr.compile(compile_kwargs=dict(literal_binds=True)))
+    compiled = str(sqla_expr.compile(compile_kwargs={'literal_binds': True}))
     expected = "SELECT ST_AsEWKB(t0.geo_point) AS geo_point \nFROM geo AS t0"
     assert compiled == expected
     data = expr.execute()
@@ -38,7 +38,7 @@ def test_select_point_geodata(geotable):
 def test_select_linestring_geodata(geotable):
     expr = geotable['geo_linestring']
     sqla_expr = expr.compile()
-    compiled = str(sqla_expr.compile(compile_kwargs=dict(literal_binds=True)))
+    compiled = str(sqla_expr.compile(compile_kwargs={'literal_binds': True}))
     expected = (
         "SELECT ST_AsEWKB(t0.geo_linestring) AS geo_linestring \n"
         "FROM geo AS t0"
@@ -51,7 +51,7 @@ def test_select_linestring_geodata(geotable):
 def test_select_polygon_geodata(geotable):
     expr = geotable['geo_polygon']
     sqla_expr = expr.compile()
-    compiled = str(sqla_expr.compile(compile_kwargs=dict(literal_binds=True)))
+    compiled = str(sqla_expr.compile(compile_kwargs={'literal_binds': True}))
     expected = (
         "SELECT ST_AsEWKB(t0.geo_polygon) AS geo_polygon \n" "FROM geo AS t0"
     )
@@ -63,7 +63,7 @@ def test_select_polygon_geodata(geotable):
 def test_select_multipolygon_geodata(geotable):
     expr = geotable['geo_multipolygon']
     sqla_expr = expr.compile()
-    compiled = str(sqla_expr.compile(compile_kwargs=dict(literal_binds=True)))
+    compiled = str(sqla_expr.compile(compile_kwargs={'literal_binds': True}))
     expected = (
         "SELECT ST_AsEWKB(t0.geo_multipolygon) AS geo_multipolygon \n"
         "FROM geo AS t0"

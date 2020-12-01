@@ -435,7 +435,7 @@ def test_day_of_week_column_group_by(
         df.groupby('string_col')
         .timestamp_col.apply(day_of_week_pandas)
         .reset_index()
-        .rename(columns=dict(timestamp_col='day_of_week_result'))
+        .rename(columns={'timestamp_col': 'day_of_week_result'})
     )
 
     # FIXME(#1536): Pandas backend should use query.schema().apply_to

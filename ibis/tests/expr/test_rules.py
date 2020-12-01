@@ -93,7 +93,7 @@ def test_valid_value(dtype, value, expected):
     ('dtype', 'value', 'expected'),
     [
         (dt.uint8, -3, IbisTypeError),
-        (dt.int32, dict(), IbisTypeError),
+        (dt.int32, {}, IbisTypeError),
         (dt.string, 1, IbisTypeError),
         (dt.Array(dt.float), ['s'], IbisTypeError),
         (
