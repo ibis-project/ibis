@@ -2,7 +2,7 @@ import pytest
 from multipledispatch import Dispatcher
 from multipledispatch.conflict import AmbiguityWarning
 
-from ..dispatcher import TwoLevelDispatcher
+from ..trace import TwoLevelDispatcher
 
 
 class A1(object):

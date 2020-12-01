@@ -9,7 +9,7 @@ from pytest import param
 import ibis
 
 from .. import connect
-from ..client import DaskTable  # noqa: E402
+from ..client import DaskTable
 
 pytestmark = pytest.mark.dask
 

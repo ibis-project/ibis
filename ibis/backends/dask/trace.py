@@ -3,10 +3,9 @@ import logging
 import traceback
 from datetime import datetime
 
+from ibis.backends.pandas.dispatcher import TwoLevelDispatcher
 from ibis.config import get_option, set_option
 from ibis.expr import types as ir
-
-from .dispatcher import TwoLevelDispatcher
 
 """Module that adds tracing to dask execution.
 With tracing enabled, this module will log time and call stack information of

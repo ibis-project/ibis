@@ -21,24 +21,15 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.pandas.client import (  # noqa: F401
+from ibis.backends.pandas.client import (
     PANDAS_DATE_TYPES,
     PANDAS_STRING_TYPES,
-    _ibis_dtypes,
     _inferable_pandas_dtypes,
-    _numpy_dtypes,
     convert_timezone,
-    from_numpy_dtype,
-    from_pandas_categorical,
-    from_pandas_tzdtype,
     ibis_dtype_to_pandas,
     ibis_schema_to_pandas,
-    infer_array,
-    infer_numpy_scalar,
-    infer_pandas_timestamp,
 )
-
-from .core import execute_and_reset
+from ibis.backends.pandas.core import execute_and_reset
 
 infer_dask_dtype = pd.api.types.infer_dtype
 

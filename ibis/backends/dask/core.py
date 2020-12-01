@@ -112,33 +112,9 @@ from __future__ import absolute_import
 
 import dask.dataframe as dd
 
-from ibis.backends.pandas.core import (  # noqa: F401
-    boolean_types,
-    compute_time_context,
-    compute_time_context_default,
-    date_types,
-    execute,
-    execute_and_reset,
-    execute_until_in_scope,
-    execute_with_scope,
-    fixed_width_types,
-    floating_types,
-    integer_types,
+from ibis.backends.pandas.core import (
     is_computable_input,
     is_computable_input_arg,
-    main_execute,
-    numeric_types,
-    temporal_types,
-    time_types,
-    timedelta_types,
 )
-
-from .dispatch import (  # noqa: F401
-    execute_literal,
-    execute_node,
-    post_execute,
-    pre_execute,
-)
-from .trace import trace  # noqa: F401
 
 is_computable_input.register(dd.core.Scalar)(is_computable_input_arg)
