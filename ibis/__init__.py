@@ -1,6 +1,4 @@
 """Initialize Ibis module."""
-import warnings
-
 import pkg_resources
 
 import ibis.config
@@ -51,20 +49,6 @@ def __getattr__(name):
     If a backend is not found in the entry point registry, and `ImportError` is
     raised.
     """
-    if name in ('HDFS', 'WebHDFS', 'hdfs_connect'):
-        warnings.warn(
-            f'`ibis.{name}` has been deprecated and will be removed in a '
-            f'future version, use `ibis.impala.{name}` instead',
-            FutureWarning,
-            stacklevel=2,
-        )
-        try:
-            return getattr(ibis.impala, name)
-        except ImportError:
-            raise AttributeError(
-                f'`ibis.{name}` requires impala backend to be installed'
-            )
-
     try:
         entry_point = next(
             pkg_resources.iter_entry_points('ibis.backends', name)

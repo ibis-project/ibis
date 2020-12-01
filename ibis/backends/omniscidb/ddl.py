@@ -181,7 +181,7 @@ class CreateTableWithSchema(CreateTable):
         -------
         Dict[str, Any]
         """
-        return dict(max_rows=self.max_rows, fragment_size=self.fragment_size)
+        return {'max_rows': self.max_rows, 'fragment_size': self.fragment_size}
 
     @property
     def _pieces(self):

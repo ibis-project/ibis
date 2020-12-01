@@ -152,26 +152,26 @@ def test_drop_columns(con, test_table, column_names):
 @pytest.mark.parametrize(
     'properties',
     [
-        param(dict(), id='none',),
-        param(dict(fragment_size=10000000), id='frag_size'),
+        param({}, id='none',),
+        param({'fragment_size': 10000000}, id='frag_size'),
         param(
-            dict(fragment_size=0),
+            {'fragment_size': 0},
             id='frag_size0',
             marks=pytest.mark.xfail(
                 raises=Exception,
                 reason="FRAGMENT_SIZE must be a positive number",
             ),
         ),
-        param(dict(max_rows=5), id='max_rows'),
+        param({'max_rows': 5}, id='max_rows'),
         param(
-            dict(max_rows=0),
+            {'max_rows': 0},
             id='max_rows0',
             marks=pytest.mark.xfail(
                 raises=Exception, reason="MAX_ROWS must be a positive number",
             ),
         ),
         param(
-            dict(fragment_size=10000000, max_rows=5), id='frag_size-max_rows'
+            {'fragment_size': 10000000, 'max_rows': 5}, id='frag_size-max_rows'
         ),
     ],
 )

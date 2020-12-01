@@ -56,7 +56,7 @@ def validate_input_type(
 
     # We can only do validation if all the positional arguments are explicit
     # (i.e. no *args)
-    if not any([param.kind is Parameter.VAR_POSITIONAL for param in params]):
+    if not any(param.kind is Parameter.VAR_POSITIONAL for param in params):
         declared_parameter_count = len(input_type)
         function_parameter_count = _parameter_count(funcsig)
 

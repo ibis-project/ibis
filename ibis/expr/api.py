@@ -1088,31 +1088,31 @@ def cases(arg, case_result_pairs, default=None):
     return builder.end()
 
 
-_generic_value_methods = dict(
-    hash=hash,
-    cast=cast,
-    coalesce=coalesce,
-    typeof=typeof,
-    fillna=fillna,
-    nullif=nullif,
-    between=between,
-    isin=isin,
-    notin=notin,
-    isnull=_unary_op('isnull', ops.IsNull),
-    notnull=_unary_op('notnull', ops.NotNull),
-    over=over,
-    case=_case,
-    cases=cases,
-    substitute=substitute,
-    __eq__=_binop_expr('__eq__', ops.Equals),
-    __ne__=_binop_expr('__ne__', ops.NotEquals),
-    __ge__=_binop_expr('__ge__', ops.GreaterEqual),
-    __gt__=_binop_expr('__gt__', ops.Greater),
-    __le__=_binop_expr('__le__', ops.LessEqual),
-    __lt__=_binop_expr('__lt__', ops.Less),
-    collect=_unary_op('collect', ops.ArrayCollect),
-    identical_to=_binop_expr('identical_to', ops.IdenticalTo),
-)
+_generic_value_methods = {
+    'hash': hash,
+    'cast': cast,
+    'coalesce': coalesce,
+    'typeof': typeof,
+    'fillna': fillna,
+    'nullif': nullif,
+    'between': between,
+    'isin': isin,
+    'notin': notin,
+    'isnull': _unary_op('isnull', ops.IsNull),
+    'notnull': _unary_op('notnull', ops.NotNull),
+    'over': over,
+    'case': _case,
+    'cases': cases,
+    'substitute': substitute,
+    '__eq__': _binop_expr('__eq__', ops.Equals),
+    '__ne__': _binop_expr('__ne__', ops.NotEquals),
+    '__ge__': _binop_expr('__ge__', ops.GreaterEqual),
+    '__gt__': _binop_expr('__gt__', ops.Greater),
+    '__le__': _binop_expr('__le__', ops.LessEqual),
+    '__lt__': _binop_expr('__lt__', ops.Less),
+    'collect': _unary_op('collect', ops.ArrayCollect),
+    'identical_to': _binop_expr('identical_to', ops.IdenticalTo),
+}
 
 
 approx_nunique = _agg_function('approx_nunique', ops.HLLCardinality, True)
@@ -1257,32 +1257,32 @@ def expr_list(exprs):
     return ops.ExpressionList(exprs).to_expr()
 
 
-_generic_column_methods = dict(
-    bottomk=bottomk,
-    distinct=distinct,
-    nunique=nunique,
-    topk=topk,
-    summary=_generic_summary,
-    count=count,
-    arbitrary=arbitrary,
-    min=min,
-    max=max,
-    approx_median=approx_median,
-    approx_nunique=approx_nunique,
-    group_concat=group_concat,
-    value_counts=value_counts,
-    first=first,
-    last=last,
-    dense_rank=dense_rank,
-    rank=rank,
-    percent_rank=percent_rank,
-    # nth=nth,
-    ntile=ntile,
-    lag=lag,
-    lead=lead,
-    cummin=cummin,
-    cummax=cummax,
-)
+_generic_column_methods = {
+    'bottomk': bottomk,
+    'distinct': distinct,
+    'nunique': nunique,
+    'topk': topk,
+    'summary': _generic_summary,
+    'count': count,
+    'arbitrary': arbitrary,
+    'min': min,
+    'max': max,
+    'approx_median': approx_median,
+    'approx_nunique': approx_nunique,
+    'group_concat': group_concat,
+    'value_counts': value_counts,
+    'first': first,
+    'last': last,
+    'dense_rank': dense_rank,
+    'rank': rank,
+    'percent_rank': percent_rank,
+    # 'nth': nth,
+    'ntile': ntile,
+    'lag': lag,
+    'lead': lead,
+    'cummin': cummin,
+    'cummax': cummax,
+}
 
 
 # TODO: should bound to AnyValue and AnyColumn instead, but that breaks
@@ -1439,62 +1439,62 @@ sin = _unary_op('sin', ops.Sin)
 tan = _unary_op('tan', ops.Tan)
 
 
-_numeric_value_methods = dict(
-    __neg__=negate,
-    abs=abs,
-    ceil=ceil,
-    degrees=degrees,
-    deg2rad=radians,
-    floor=floor,
-    radians=radians,
-    rad2deg=degrees,
-    sign=sign,
-    exp=exp,
-    sqrt=sqrt,
-    log=log,
-    ln=ln,
-    log2=log2,
-    log10=log10,
-    round=round,
-    nullifzero=_unary_op('nullifzero', ops.NullIfZero),
-    zeroifnull=_unary_op('zeroifnull', ops.ZeroIfNull),
-    clip=clip,
-    __add__=add,
-    add=add,
-    __sub__=sub,
-    sub=sub,
-    __mul__=mul,
-    mul=mul,
-    __div__=div,
-    __truediv__=div,
-    __floordiv__=floordiv,
-    div=div,
-    floordiv=floordiv,
-    __rdiv__=rdiv,
-    __rtruediv__=rdiv,
-    __rfloordiv__=rfloordiv,
-    rdiv=rdiv,
-    rfloordiv=rfloordiv,
-    __pow__=pow,
-    pow=pow,
-    __radd__=add,
-    radd=add,
-    __rsub__=rsub,
-    rsub=rsub,
-    __rmul__=_rbinop_expr('__rmul__', ops.Multiply),
-    __rpow__=_rbinop_expr('__rpow__', ops.Power),
-    __mod__=mod,
-    __rmod__=_rbinop_expr('__rmod__', ops.Modulus),
+_numeric_value_methods = {
+    '__neg__': negate,
+    'abs': abs,
+    'ceil': ceil,
+    'degrees': degrees,
+    'deg2rad': radians,
+    'floor': floor,
+    'radians': radians,
+    'rad2deg': degrees,
+    'sign': sign,
+    'exp': exp,
+    'sqrt': sqrt,
+    'log': log,
+    'ln': ln,
+    'log2': log2,
+    'log10': log10,
+    'round': round,
+    'nullifzero': _unary_op('nullifzero', ops.NullIfZero),
+    'zeroifnull': _unary_op('zeroifnull', ops.ZeroIfNull),
+    'clip': clip,
+    '__add__': add,
+    'add': add,
+    '__sub__': sub,
+    'sub': sub,
+    '__mul__': mul,
+    'mul': mul,
+    '__div__': div,
+    '__truediv__': div,
+    '__floordiv__': floordiv,
+    'div': div,
+    'floordiv': floordiv,
+    '__rdiv__': rdiv,
+    '__rtruediv__': rdiv,
+    '__rfloordiv__': rfloordiv,
+    'rdiv': rdiv,
+    'rfloordiv': rfloordiv,
+    '__pow__': pow,
+    'pow': pow,
+    '__radd__': add,
+    'radd': add,
+    '__rsub__': rsub,
+    'rsub': rsub,
+    '__rmul__': _rbinop_expr('__rmul__', ops.Multiply),
+    '__rpow__': _rbinop_expr('__rpow__', ops.Power),
+    '__mod__': mod,
+    '__rmod__': _rbinop_expr('__rmod__', ops.Modulus),
     # trigonometric operations
-    acos=acos,
-    asin=asin,
-    atan=atan,
-    atan2=atan2,
-    cos=cos,
-    cot=cot,
-    sin=sin,
-    tan=tan,
-)
+    'acos': acos,
+    'asin': asin,
+    'atan': atan,
+    'atan2': atan2,
+    'cos': cos,
+    'cot': cot,
+    'sin': sin,
+    'tan': tan,
+}
 
 
 def convert_base(arg, from_base, to_base):
@@ -1514,11 +1514,11 @@ def convert_base(arg, from_base, to_base):
     return ops.BaseConvert(arg, from_base, to_base).to_expr()
 
 
-_integer_value_methods = dict(
-    to_timestamp=_integer_to_timestamp,
-    to_interval=_integer_to_interval,
-    convert_base=convert_base,
-)
+_integer_value_methods = {
+    'to_timestamp': _integer_to_timestamp,
+    'to_interval': _integer_to_interval,
+    'convert_base': convert_base,
+}
 
 
 mean = _agg_function('mean', ops.Mean, True)
@@ -1594,24 +1594,25 @@ def covariance(left, right, where=None, how='sample'):
     return expr
 
 
-_numeric_column_methods = dict(
-    mean=mean,
-    cummean=cummean,
-    sum=sum,
-    cumsum=cumsum,
-    quantile=quantile,
-    std=std,
-    var=variance,
-    corr=correlation,
-    cov=covariance,
-    bucket=bucket,
-    histogram=histogram,
-    summary=_numeric_summary,
-)
+_numeric_column_methods = {
+    'mean': mean,
+    'cummean': cummean,
+    'sum': sum,
+    'cumsum': cumsum,
+    'quantile': quantile,
+    'std': std,
+    'var': variance,
+    'corr': correlation,
+    'cov': covariance,
+    'bucket': bucket,
+    'histogram': histogram,
+    'summary': _numeric_summary,
+}
 
-_floating_value_methods = dict(
-    isnan=_unary_op('isnull', ops.IsNan), isinf=_unary_op('isinf', ops.IsInf)
-)
+_floating_value_methods = {
+    'isnan': _unary_op('isnull', ops.IsNan),
+    'isinf': _unary_op('isinf', ops.IsInf),
+}
 
 _add_methods(ir.NumericValue, _numeric_value_methods)
 _add_methods(ir.IntegerValue, _integer_value_methods)
@@ -2535,60 +2536,60 @@ def geo_transform(arg, srid):
     return op.to_expr()
 
 
-_geospatial_value_methods = dict(
-    area=geo_area,
-    as_binary=geo_as_binary,
-    as_ewkb=geo_as_ewkb,
-    as_ewkt=geo_as_ewkt,
-    as_text=geo_as_text,
-    azimuth=geo_azimuth,
-    buffer=geo_buffer,
-    centroid=geo_centroid,
-    contains=geo_contains,
-    contains_properly=geo_contains_properly,
-    covers=geo_covers,
-    covered_by=geo_covered_by,
-    crosses=geo_crosses,
-    d_fully_within=geo_d_fully_within,
-    difference=geo_difference,
-    disjoint=geo_disjoint,
-    distance=geo_distance,
-    d_within=geo_d_within,
-    end_point=geo_end_point,
-    envelope=geo_envelope,
-    equals=geo_equals,
-    geometry_n=geo_geometry_n,
-    geometry_type=geo_geometry_type,
-    intersection=geo_intersection,
-    intersects=geo_intersects,
-    is_valid=geo_is_valid,
-    line_locate_point=geo_line_locate_point,
-    line_merge=geo_line_merge,
-    line_substring=geo_line_substring,
-    length=geo_length,
-    max_distance=geo_max_distance,
-    n_points=geo_n_points,
-    n_rings=geo_n_rings,
-    ordering_equals=geo_ordering_equals,
-    overlaps=geo_overlaps,
-    perimeter=geo_perimeter,
-    point_n=geo_point_n,
-    set_srid=geo_set_srid,
-    simplify=geo_simplify,
-    srid=geo_srid,
-    start_point=geo_start_point,
-    touches=geo_touches,
-    transform=geo_transform,
-    union=geo_union,
-    within=geo_within,
-    x=geo_x,
-    x_max=geo_x_max,
-    x_min=geo_x_min,
-    y=geo_y,
-    y_max=geo_y_max,
-    y_min=geo_y_min,
-)
-_geospatial_column_methods = dict(unary_union=geo_unary_union)
+_geospatial_value_methods = {
+    'area': geo_area,
+    'as_binary': geo_as_binary,
+    'as_ewkb': geo_as_ewkb,
+    'as_ewkt': geo_as_ewkt,
+    'as_text': geo_as_text,
+    'azimuth': geo_azimuth,
+    'buffer': geo_buffer,
+    'centroid': geo_centroid,
+    'contains': geo_contains,
+    'contains_properly': geo_contains_properly,
+    'covers': geo_covers,
+    'covered_by': geo_covered_by,
+    'crosses': geo_crosses,
+    'd_fully_within': geo_d_fully_within,
+    'difference': geo_difference,
+    'disjoint': geo_disjoint,
+    'distance': geo_distance,
+    'd_within': geo_d_within,
+    'end_point': geo_end_point,
+    'envelope': geo_envelope,
+    'equals': geo_equals,
+    'geometry_n': geo_geometry_n,
+    'geometry_type': geo_geometry_type,
+    'intersection': geo_intersection,
+    'intersects': geo_intersects,
+    'is_valid': geo_is_valid,
+    'line_locate_point': geo_line_locate_point,
+    'line_merge': geo_line_merge,
+    'line_substring': geo_line_substring,
+    'length': geo_length,
+    'max_distance': geo_max_distance,
+    'n_points': geo_n_points,
+    'n_rings': geo_n_rings,
+    'ordering_equals': geo_ordering_equals,
+    'overlaps': geo_overlaps,
+    'perimeter': geo_perimeter,
+    'point_n': geo_point_n,
+    'set_srid': geo_set_srid,
+    'simplify': geo_simplify,
+    'srid': geo_srid,
+    'start_point': geo_start_point,
+    'touches': geo_touches,
+    'transform': geo_transform,
+    'union': geo_union,
+    'within': geo_within,
+    'x': geo_x,
+    'x_max': geo_x_max,
+    'x_min': geo_x_min,
+    'y': geo_y,
+    'y_max': geo_y_max,
+    'y_min': geo_y_min,
+}
+_geospatial_column_methods = {'unary_union': geo_unary_union}
 
 _add_methods(ir.GeoSpatialValue, _geospatial_value_methods)
 _add_methods(ir.GeoSpatialColumn, _geospatial_column_methods)
@@ -2614,26 +2615,26 @@ def ifelse(arg, true_expr, false_expr):
     return case.when(arg, true_expr).else_(false_expr).end()
 
 
-_boolean_value_methods = dict(
-    ifelse=ifelse,
-    __and__=_boolean_binary_op('__and__', ops.And),
-    __or__=_boolean_binary_op('__or__', ops.Or),
-    __xor__=_boolean_binary_op('__xor__', ops.Xor),
-    __rand__=_boolean_binary_rop('__rand__', ops.And),
-    __ror__=_boolean_binary_rop('__ror__', ops.Or),
-    __rxor__=_boolean_binary_rop('__rxor__', ops.Xor),
-    __invert__=_boolean_unary_op('__invert__', ops.Not),
-)
+_boolean_value_methods = {
+    'ifelse': ifelse,
+    '__and__': _boolean_binary_op('__and__', ops.And),
+    '__or__': _boolean_binary_op('__or__', ops.Or),
+    '__xor__': _boolean_binary_op('__xor__', ops.Xor),
+    '__rand__': _boolean_binary_rop('__rand__', ops.And),
+    '__ror__': _boolean_binary_rop('__ror__', ops.Or),
+    '__rxor__': _boolean_binary_rop('__rxor__', ops.Xor),
+    '__invert__': _boolean_unary_op('__invert__', ops.Not),
+}
 
 
-_boolean_column_methods = dict(
-    any=_unary_op('any', ops.Any),
-    notany=_unary_op('notany', ops.NotAny),
-    all=_unary_op('all', ops.All),
-    notall=_unary_op('notany', ops.NotAll),
-    cumany=_unary_op('cumany', ops.CumulativeAny),
-    cumall=_unary_op('cumall', ops.CumulativeAll),
-)
+_boolean_column_methods = {
+    'any': _unary_op('any', ops.Any),
+    'notany': _unary_op('notany', ops.NotAny),
+    'all': _unary_op('all', ops.All),
+    'notall': _unary_op('notany', ops.NotAll),
+    'cumany': _unary_op('cumany', ops.CumulativeAny),
+    'cumall': _unary_op('cumall', ops.CumulativeAll),
+}
 
 
 _add_methods(ir.BooleanValue, _boolean_value_methods)
@@ -2661,7 +2662,7 @@ def hashbytes(arg, how='sha256'):
     return ops.HashBytes(arg, how).to_expr()
 
 
-_binary_value_methods = dict(hashbytes=hashbytes)
+_binary_value_methods = {'hashbytes': hashbytes}
 _add_methods(ir.BinaryValue, _binary_value_methods)
 
 
@@ -3128,46 +3129,46 @@ def _string_getitem(self, key):
     )
 
 
-_string_value_methods = dict(
-    __getitem__=_string_getitem,
-    length=_unary_op('length', ops.StringLength),
-    lower=_unary_op('lower', ops.Lowercase),
-    upper=_unary_op('upper', ops.Uppercase),
-    reverse=_unary_op('reverse', ops.Reverse),
-    ascii_str=_unary_op('ascii', ops.StringAscii),
-    strip=_unary_op('strip', ops.Strip),
-    lstrip=_unary_op('lstrip', ops.LStrip),
-    rstrip=_unary_op('rstrip', ops.RStrip),
-    capitalize=_unary_op('initcap', ops.Capitalize),
-    convert_base=convert_base,
-    __contains__=_string_dunder_contains,
-    contains=_string_contains,
-    hashbytes=hashbytes,
-    like=_string_like,
-    ilike=_string_ilike,
-    rlike=re_search,
-    replace=_string_replace,
-    re_search=re_search,
-    re_extract=regex_extract,
-    re_replace=regex_replace,
-    to_timestamp=to_timestamp,
-    parse_url=parse_url,
-    substr=_string_substr,
-    left=_string_left,
-    right=_string_right,
-    repeat=repeat,
-    find=_string_find,
-    translate=_translate,
-    find_in_set=_find_in_set,
-    split=_string_split,
-    join=_string_join,
-    lpad=_lpad,
-    rpad=_rpad,
-    __add__=_string_concat,
-    __radd__=lambda *args: _string_concat(*args[::-1]),
-    __mul__=mul,
-    __rmul__=mul,
-)
+_string_value_methods = {
+    '__getitem__': _string_getitem,
+    'length': _unary_op('length', ops.StringLength),
+    'lower': _unary_op('lower', ops.Lowercase),
+    'upper': _unary_op('upper', ops.Uppercase),
+    'reverse': _unary_op('reverse', ops.Reverse),
+    'ascii_str': _unary_op('ascii', ops.StringAscii),
+    'strip': _unary_op('strip', ops.Strip),
+    'lstrip': _unary_op('lstrip', ops.LStrip),
+    'rstrip': _unary_op('rstrip', ops.RStrip),
+    'capitalize': _unary_op('initcap', ops.Capitalize),
+    'convert_base': convert_base,
+    '__contains__': _string_dunder_contains,
+    'contains': _string_contains,
+    'hashbytes': hashbytes,
+    'like': _string_like,
+    'ilike': _string_ilike,
+    'rlike': re_search,
+    'replace': _string_replace,
+    're_search': re_search,
+    're_extract': regex_extract,
+    're_replace': regex_replace,
+    'to_timestamp': to_timestamp,
+    'parse_url': parse_url,
+    'substr': _string_substr,
+    'left': _string_left,
+    'right': _string_right,
+    'repeat': repeat,
+    'find': _string_find,
+    'translate': _translate,
+    'find_in_set': _find_in_set,
+    'split': _string_split,
+    'join': _string_join,
+    'lpad': _lpad,
+    'rpad': _rpad,
+    '__add__': _string_concat,
+    '__radd__': lambda *args: _string_concat(*args[::-1]),
+    '__mul__': mul,
+    '__rmul__': mul,
+}
 
 
 _add_methods(ir.StringValue, _string_value_methods)
@@ -3210,14 +3211,14 @@ def _array_slice(array, index):
     return op.to_expr()
 
 
-_array_column_methods = dict(
-    length=_unary_op('length', ops.ArrayLength),
-    __getitem__=_array_slice,
-    __add__=_binop_expr('__add__', ops.ArrayConcat),
-    __radd__=toolz.flip(_binop_expr('__radd__', ops.ArrayConcat)),
-    __mul__=_binop_expr('__mul__', ops.ArrayRepeat),
-    __rmul__=_binop_expr('__rmul__', ops.ArrayRepeat),
-)
+_array_column_methods = {
+    'length': _unary_op('length', ops.ArrayLength),
+    '__getitem__': _array_slice,
+    '__add__': _binop_expr('__add__', ops.ArrayConcat),
+    '__radd__': toolz.flip(_binop_expr('__radd__', ops.ArrayConcat)),
+    '__mul__': _binop_expr('__mul__', ops.ArrayRepeat),
+    '__rmul__': _binop_expr('__rmul__', ops.ArrayRepeat),
+}
 
 _add_methods(ir.ArrayValue, _array_column_methods)
 
@@ -3239,15 +3240,15 @@ def get(expr, key, default=None):
     return ops.MapValueOrDefaultForKey(expr, key, default).to_expr()
 
 
-_map_column_methods = dict(
-    get=get,
-    length=_unary_op('length', ops.MapLength),
-    __getitem__=_binop_expr('__getitem__', ops.MapValueForKey),
-    keys=_unary_op('keys', ops.MapKeys),
-    values=_unary_op('values', ops.MapValues),
-    __add__=_binop_expr('__add__', ops.MapConcat),
-    __radd__=toolz.flip(_binop_expr('__radd__', ops.MapConcat)),
-)
+_map_column_methods = {
+    'get': get,
+    'length': _unary_op('length', ops.MapLength),
+    '__getitem__': _binop_expr('__getitem__', ops.MapValueForKey),
+    'keys': _unary_op('keys', ops.MapKeys),
+    'values': _unary_op('values', ops.MapValues),
+    '__add__': _binop_expr('__add__', ops.MapConcat),
+    '__radd__': toolz.flip(_binop_expr('__radd__', ops.MapConcat)),
+}
 
 _add_methods(ir.MapValue, _map_column_methods)
 
@@ -3301,11 +3302,11 @@ def _destructure(expr: StructColumn) -> DestructColumn:
         raise AssertionError()
 
 
-_struct_value_methods = dict(
-    destructure=_destructure,
-    __getattr__=_struct_get_field,
-    __getitem__=_struct_get_field,
-)
+_struct_value_methods = {
+    'destructure': _destructure,
+    '__getattr__': _struct_get_field,
+    '__getitem__': _struct_get_field,
+}
 
 _add_methods(ir.StructValue, _struct_value_methods)
 
@@ -3410,32 +3411,32 @@ DayOfWeek
 )
 
 
-_timestamp_value_methods = dict(
-    strftime=_timestamp_strftime,
-    year=_extract_field('year', ops.ExtractYear),
-    month=_extract_field('month', ops.ExtractMonth),
-    day=_extract_field('day', ops.ExtractDay),
-    day_of_week=_day_of_week,
-    day_of_year=_extract_field('day_of_year', ops.ExtractDayOfYear),
-    quarter=_extract_field('quarter', ops.ExtractQuarter),
-    epoch_seconds=_extract_field('epoch', ops.ExtractEpochSeconds),
-    week_of_year=_extract_field('week_of_year', ops.ExtractWeekOfYear),
-    hour=_extract_field('hour', ops.ExtractHour),
-    minute=_extract_field('minute', ops.ExtractMinute),
-    second=_extract_field('second', ops.ExtractSecond),
-    millisecond=_extract_field('millisecond', ops.ExtractMillisecond),
-    truncate=_timestamp_truncate,
-    time=_timestamp_time,
-    date=_timestamp_date,
-    __sub__=_timestamp_sub,
-    sub=_timestamp_sub,
-    __add__=_timestamp_add,
-    add=_timestamp_add,
-    __radd__=_timestamp_radd,
-    radd=_timestamp_radd,
-    __rsub__=_timestamp_sub,
-    rsub=_timestamp_sub,
-)
+_timestamp_value_methods = {
+    'strftime': _timestamp_strftime,
+    'year': _extract_field('year', ops.ExtractYear),
+    'month': _extract_field('month', ops.ExtractMonth),
+    'day': _extract_field('day', ops.ExtractDay),
+    'day_of_week': _day_of_week,
+    'day_of_year': _extract_field('day_of_year', ops.ExtractDayOfYear),
+    'quarter': _extract_field('quarter', ops.ExtractQuarter),
+    'epoch_seconds': _extract_field('epoch', ops.ExtractEpochSeconds),
+    'week_of_year': _extract_field('week_of_year', ops.ExtractWeekOfYear),
+    'hour': _extract_field('hour', ops.ExtractHour),
+    'minute': _extract_field('minute', ops.ExtractMinute),
+    'second': _extract_field('second', ops.ExtractSecond),
+    'millisecond': _extract_field('millisecond', ops.ExtractMillisecond),
+    'truncate': _timestamp_truncate,
+    'time': _timestamp_time,
+    'date': _timestamp_date,
+    '__sub__': _timestamp_sub,
+    'sub': _timestamp_sub,
+    '__add__': _timestamp_add,
+    'add': _timestamp_add,
+    '__radd__': _timestamp_radd,
+    'radd': _timestamp_radd,
+    '__rsub__': _timestamp_sub,
+    'rsub': _timestamp_sub,
+}
 
 _add_methods(ir.TimestampValue, _timestamp_value_methods)
 
@@ -3478,26 +3479,26 @@ def _date_sub(left, right):
 
 _date_add = _binop_expr('__add__', ops.DateAdd)
 
-_date_value_methods = dict(
-    strftime=_timestamp_strftime,
-    year=_extract_field('year', ops.ExtractYear),
-    month=_extract_field('month', ops.ExtractMonth),
-    day=_extract_field('day', ops.ExtractDay),
-    day_of_week=_day_of_week,
-    day_of_year=_extract_field('day_of_year', ops.ExtractDayOfYear),
-    quarter=_extract_field('quarter', ops.ExtractQuarter),
-    epoch_seconds=_extract_field('epoch', ops.ExtractEpochSeconds),
-    week_of_year=_extract_field('week_of_year', ops.ExtractWeekOfYear),
-    truncate=_date_truncate,
-    __sub__=_date_sub,
-    sub=_date_sub,
-    __rsub__=_date_sub,
-    rsub=_date_sub,
-    __add__=_date_add,
-    add=_date_add,
-    __radd__=_date_add,
-    radd=_date_add,
-)
+_date_value_methods = {
+    'strftime': _timestamp_strftime,
+    'year': _extract_field('year', ops.ExtractYear),
+    'month': _extract_field('month', ops.ExtractMonth),
+    'day': _extract_field('day', ops.ExtractDay),
+    'day_of_week': _day_of_week,
+    'day_of_year': _extract_field('day_of_year', ops.ExtractDayOfYear),
+    'quarter': _extract_field('quarter', ops.ExtractQuarter),
+    'epoch_seconds': _extract_field('epoch', ops.ExtractEpochSeconds),
+    'week_of_year': _extract_field('week_of_year', ops.ExtractWeekOfYear),
+    'truncate': _date_truncate,
+    '__sub__': _date_sub,
+    'sub': _date_sub,
+    '__rsub__': _date_sub,
+    'rsub': _date_sub,
+    '__add__': _date_add,
+    'add': _date_add,
+    '__radd__': _date_add,
+    'radd': _date_add,
+}
 
 _add_methods(ir.DateValue, _date_value_methods)
 
@@ -3531,34 +3532,34 @@ _interval_mul = _binop_expr('__mul__', ops.IntervalMultiply)
 _interval_rmul = _binop_expr('__rmul__', ops.IntervalMultiply)
 _interval_floordiv = _binop_expr('__floordiv__', ops.IntervalFloorDivide)
 
-_interval_value_methods = dict(
-    to_unit=_to_unit,
-    years=_interval_property('Y', 'year'),
-    quarters=_interval_property('Q', 'quarter'),
-    months=_interval_property('M', 'month'),
-    weeks=_interval_property('W', 'week'),
-    days=_interval_property('D', 'day'),
-    hours=_interval_property('h', 'hour'),
-    minutes=_interval_property('m', 'minute'),
-    seconds=_interval_property('s', 'second'),
-    milliseconds=_interval_property('ms', 'millisecond'),
-    microseconds=_interval_property('us', 'microsecond'),
-    nanoseconds=_interval_property('ns', 'nanosecond'),
-    __add__=_interval_add,
-    add=_interval_add,
-    __sub__=_interval_sub,
-    sub=_interval_sub,
-    __radd__=_interval_radd,
-    radd=_interval_radd,
-    __mul__=_interval_mul,
-    mul=_interval_mul,
-    __rmul__=_interval_rmul,
-    rmul=_interval_rmul,
-    __floordiv__=_interval_floordiv,
-    floordiv=_interval_floordiv,
-    __neg__=negate,
-    negate=negate,
-)
+_interval_value_methods = {
+    'to_unit': _to_unit,
+    'years': _interval_property('Y', 'year'),
+    'quarters': _interval_property('Q', 'quarter'),
+    'months': _interval_property('M', 'month'),
+    'weeks': _interval_property('W', 'week'),
+    'days': _interval_property('D', 'day'),
+    'hours': _interval_property('h', 'hour'),
+    'minutes': _interval_property('m', 'minute'),
+    'seconds': _interval_property('s', 'second'),
+    'milliseconds': _interval_property('ms', 'millisecond'),
+    'microseconds': _interval_property('us', 'microsecond'),
+    'nanoseconds': _interval_property('ns', 'nanosecond'),
+    '__add__': _interval_add,
+    'add': _interval_add,
+    '__sub__': _interval_sub,
+    'sub': _interval_sub,
+    '__radd__': _interval_radd,
+    'radd': _interval_radd,
+    '__mul__': _interval_mul,
+    'mul': _interval_mul,
+    '__rmul__': _interval_rmul,
+    'rmul': _interval_rmul,
+    '__floordiv__': _interval_floordiv,
+    'floordiv': _interval_floordiv,
+    '__neg__': negate,
+    'negate': negate,
+}
 
 _add_methods(ir.IntervalValue, _interval_value_methods)
 
@@ -3635,22 +3636,22 @@ def _time_sub(left, right):
 _time_add = _binop_expr('__add__', ops.TimeAdd)
 
 
-_time_value_methods = dict(
-    between=between_time,
-    truncate=_time_truncate,
-    hour=_extract_field('hour', ops.ExtractHour),
-    minute=_extract_field('minute', ops.ExtractMinute),
-    second=_extract_field('second', ops.ExtractSecond),
-    millisecond=_extract_field('millisecond', ops.ExtractMillisecond),
-    __sub__=_time_sub,
-    sub=_time_sub,
-    __rsub__=_time_sub,
-    rsub=_time_sub,
-    __add__=_time_add,
-    add=_time_add,
-    __radd__=_time_add,
-    radd=_time_add,
-)
+_time_value_methods = {
+    'between': between_time,
+    'truncate': _time_truncate,
+    'hour': _extract_field('hour', ops.ExtractHour),
+    'minute': _extract_field('minute', ops.ExtractMinute),
+    'second': _extract_field('second', ops.ExtractSecond),
+    'millisecond': _extract_field('millisecond', ops.ExtractMillisecond),
+    '__sub__': _time_sub,
+    'sub': _time_sub,
+    '__rsub__': _time_sub,
+    'rsub': _time_sub,
+    '__add__': _time_add,
+    'add': _time_add,
+    '__radd__': _time_add,
+    'radd': _time_add,
+}
 
 _add_methods(ir.TimeValue, _time_value_methods)
 
@@ -3658,10 +3659,10 @@ _add_methods(ir.TimeValue, _time_value_methods)
 # ---------------------------------------------------------------------
 # Decimal API
 
-_decimal_value_methods = dict(
-    precision=_unary_op('precision', ops.DecimalPrecision),
-    scale=_unary_op('scale', ops.DecimalScale),
-)
+_decimal_value_methods = {
+    'precision': _unary_op('precision', ops.DecimalPrecision),
+    'scale': _unary_op('scale', ops.DecimalScale),
+}
 
 
 _add_methods(ir.DecimalValue, _decimal_value_methods)
@@ -3671,7 +3672,7 @@ _add_methods(ir.DecimalValue, _decimal_value_methods)
 # Category API
 
 
-_category_value_methods = dict(label=_analytics.category_label)
+_category_value_methods = {'label': _analytics.category_label}
 
 _add_methods(ir.CategoryValue, _category_value_methods)
 
@@ -4388,39 +4389,39 @@ def _rowid(self):
     return ops.RowID().to_expr()
 
 
-_table_methods = dict(
-    aggregate=aggregate,
-    count=_table_count,
-    distinct=_table_distinct,
-    drop=_table_drop,
-    info=_table_info,
-    limit=_table_limit,
-    head=_head,
-    set_column=_table_set_column,
-    filter=filter,
-    materialize=_table_materialize,
-    mutate=mutate,
-    projection=projection,
-    select=projection,
-    relabel=_table_relabel,
-    join=join,
-    cross_join=cross_join,
-    inner_join=_regular_join_method('inner_join', 'inner'),
-    left_join=_regular_join_method('left_join', 'left'),
-    any_inner_join=_regular_join_method('any_inner_join', 'any_inner'),
-    any_left_join=_regular_join_method('any_left_join', 'any_left'),
-    outer_join=_regular_join_method('outer_join', 'outer'),
-    semi_join=_regular_join_method('semi_join', 'semi'),
-    anti_join=_regular_join_method('anti_join', 'anti'),
-    asof_join=asof_join,
-    sort_by=_table_sort_by,
-    to_array=_table_to_array,
-    union=_table_union,
-    intersect=_table_intersect,
-    difference=_table_difference,
-    view=_table_view,
-    rowid=_rowid,
-)
+_table_methods = {
+    'aggregate': aggregate,
+    'count': _table_count,
+    'distinct': _table_distinct,
+    'drop': _table_drop,
+    'info': _table_info,
+    'limit': _table_limit,
+    'head': _head,
+    'set_column': _table_set_column,
+    'filter': filter,
+    'materialize': _table_materialize,
+    'mutate': mutate,
+    'projection': projection,
+    'select': projection,
+    'relabel': _table_relabel,
+    'join': join,
+    'cross_join': cross_join,
+    'inner_join': _regular_join_method('inner_join', 'inner'),
+    'left_join': _regular_join_method('left_join', 'left'),
+    'any_inner_join': _regular_join_method('any_inner_join', 'any_inner'),
+    'any_left_join': _regular_join_method('any_left_join', 'any_left'),
+    'outer_join': _regular_join_method('outer_join', 'outer'),
+    'semi_join': _regular_join_method('semi_join', 'semi'),
+    'anti_join': _regular_join_method('anti_join', 'anti'),
+    'asof_join': asof_join,
+    'sort_by': _table_sort_by,
+    'to_array': _table_to_array,
+    'union': _table_union,
+    'intersect': _table_intersect,
+    'difference': _table_difference,
+    'view': _table_view,
+    'rowid': _rowid,
+}
 
 
 _add_methods(ir.TableExpr, _table_methods)

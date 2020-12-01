@@ -92,16 +92,16 @@ class BaseTableSetFormatter(comp.TableSetFormatter):
         return quote_identifier(name)
 
 
-_map_interval_to_microseconds = dict(
-    W=604800000000,
-    D=86400000000,
-    h=3600000000,
-    m=60000000,
-    s=1000000,
-    ms=1000,
-    us=1,
-    ns=0.001,
-)
+_map_interval_to_microseconds = {
+    'W': 604800000000,
+    'D': 86400000000,
+    'h': 3600000000,
+    'm': 60000000,
+    's': 1000000,
+    'ms': 1000,
+    'us': 1,
+    'ns': 0.001,
+}
 
 
 _map_interval_op_to_op = {

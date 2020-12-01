@@ -75,8 +75,8 @@ def combine_time_context(
     -------
     TimeContext
     """
-    begin = min([t[0] for t in timecontexts if t], default=None)
-    end = max([t[1] for t in timecontexts if t], default=None)
+    begin = min((t[0] for t in timecontexts if t), default=None)
+    end = max((t[1] for t in timecontexts if t), default=None)
     if begin and end:
         return begin, end
     return None

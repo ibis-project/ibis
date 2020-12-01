@@ -43,14 +43,14 @@ class CustomWindow(ibis.expr.window.Window):
     where n is defined by CustomInterval.value."""
 
     def _replace(self, **kwds):
-        new_kwds = dict(
-            group_by=kwds.get('group_by', self._group_by),
-            order_by=kwds.get('order_by', self._order_by),
-            preceding=kwds.get('preceding', self.preceding),
-            following=kwds.get('following', self.following),
-            max_lookback=kwds.get('max_lookback', self.max_lookback),
-            how=kwds.get('how', self.how),
-        )
+        new_kwds = {
+            'group_by': kwds.get('group_by', self._group_by),
+            'order_by': kwds.get('order_by', self._order_by),
+            'preceding': kwds.get('preceding', self.preceding),
+            'following': kwds.get('following', self.following),
+            'max_lookback': kwds.get('max_lookback', self.max_lookback),
+            'how': kwds.get('how', self.how),
+        }
         return CustomWindow(**new_kwds)
 
 
@@ -445,7 +445,7 @@ def test_mutate_with_window_after_join(sort_kind):
             'value': [0, 1, np.nan, 3, 4, np.nan, 6, 7, 8],
         }
     )
-    con = connect(dict(left=left_df, right=right_df))
+    con = connect({'left': left_df, 'right': right_df})
     left, right = map(con.table, ('left', 'right'))
 
     joined = left.outer_join(right, left.ints == right.group)
@@ -474,7 +474,7 @@ def test_mutate_scalar_with_window_after_join():
             'value': [0, 1, np.nan, 3, 4, np.nan, 6, 7, 8],
         }
     )
-    con = connect(dict(left=left_df, right=right_df))
+    con = connect({'left': left_df, 'right': right_df})
     left, right = map(con.table, ('left', 'right'))
 
     joined = left.outer_join(right, left.ints == right.group)
@@ -500,7 +500,7 @@ def test_project_scalar_after_join():
             'value': [0, 1, np.nan, 3, 4, np.nan, 6, 7, 8],
         }
     )
-    con = connect(dict(left=left_df, right=right_df))
+    con = connect({'left': left_df, 'right': right_df})
     left, right = map(con.table, ('left', 'right'))
 
     joined = left.outer_join(right, left.ints == right.group)
@@ -513,7 +513,7 @@ def test_project_scalar_after_join():
 
 def test_project_list_scalar():
     df = pd.DataFrame({'ints': range(3)})
-    con = connect(dict(df=df))
+    con = connect({'df': df})
     expr = con.table('df')
     result = expr.mutate(res=expr.ints.quantile([0.5, 0.95])).execute()
     tm.assert_series_equal(
@@ -597,7 +597,7 @@ def test_window_has_pre_execute_scope():
 
     data = {'key': list('abc'), 'value': [1, 2, 3], 'dup': list('ggh')}
     df = pd.DataFrame(data, columns=['key', 'value', 'dup'])
-    client = connect(dict(df=df))
+    client = connect({'df': df})
     t = client.table('df')
     window = ibis.window(order_by='value')
     expr = t.key.lag(1).over(window).name('foo')
