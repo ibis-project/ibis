@@ -9,12 +9,16 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.backends.pandas.dispatch import (  # noqa: F401
+    execute_node,
+    post_execute,
+    pre_execute,
+)
 from ibis.expr.scope import Scope
 
 from .. import execute, from_dataframe
 from ..client import DaskClient
 from ..core import is_computable_input
-from ..dispatch import execute_node, post_execute, pre_execute
 
 pytestmark = pytest.mark.dask
 
