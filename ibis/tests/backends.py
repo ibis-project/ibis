@@ -519,7 +519,7 @@ class Impala(UnorderedComparator, Backend, RoundAwayFromZero):
         from ibis.backends.impala.tests.conftest import IbisTestEnv
 
         env = IbisTestEnv()
-        hdfs_client = ibis.hdfs_connect(
+        hdfs_client = ibis.impala.hdfs_connect(
             host=env.nn_host,
             port=env.webhdfs_port,
             auth_mechanism=env.auth_mechanism,

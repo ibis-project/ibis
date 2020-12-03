@@ -80,7 +80,7 @@ This method also takes arguments to configure SSL (``use_ssl``, ``ca_cert``).
 See the documentation for the Impala shell for more details.
 
 Ibis also includes functionality that communicates directly with HDFS, using
-the WebHDFS REST API.  When calling ``ibis.hdfs_connect(...)``, also pass
+the WebHDFS REST API.  When calling ``ibis.impala.hdfs_connect(...)``, also pass
 ``auth_mechanism='GSSAPI'`` or ``auth_mechanism='LDAP'``, and ensure that you
 are connecting to the correct port, which may likely be an SSL-secured WebHDFS
 port.  Also note that you can pass ``verify=False`` to avoid verifying SSL
