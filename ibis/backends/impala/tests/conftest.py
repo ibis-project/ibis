@@ -118,7 +118,7 @@ def hdfs(env, tmp_dir):
     if env.auth_mechanism in {'GSSAPI', 'LDAP'}:
         warnings.warn("Ignoring invalid Certificate Authority errors")
 
-    client = ibis.hdfs_connect(
+    client = ibis.impala.hdfs_connect(
         host=env.nn_host,
         port=env.webhdfs_port,
         auth_mechanism=env.auth_mechanism,
