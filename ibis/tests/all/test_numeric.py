@@ -99,7 +99,10 @@ def test_isnan_isinf(
         expected = backend.default_series_rename(expected)
         backend.assert_series_equal(result, expected)
     else:
-        assert result == expected
+        try:
+            assert result == expected
+        except ValueError:
+            backend.assert_series_equal(result, expected)
 
 
 @pytest.mark.parametrize(

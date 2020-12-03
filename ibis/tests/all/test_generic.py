@@ -5,6 +5,7 @@ import pytest
 
 import ibis
 from ibis import literal as L
+from ibis.tests.backends import Dask
 
 
 @pytest.mark.parametrize(
@@ -80,6 +81,7 @@ def test_identical_to(backend, sorted_alltypes, con, sorted_df):
         ('int_col', frozenset({1})),
     ],
 )
+@pytest.mark.skip_backends([Dask])  # TODO - sorting - #2553
 @pytest.mark.xfail_unsupported
 def test_isin(backend, sorted_alltypes, sorted_df, column, elements):
     expr = sorted_alltypes[
@@ -103,6 +105,7 @@ def test_isin(backend, sorted_alltypes, sorted_df, column, elements):
         ('int_col', frozenset({1})),
     ],
 )
+@pytest.mark.skip_backends([Dask])  # TODO - sorting - #2553
 @pytest.mark.xfail_unsupported
 def test_notin(backend, sorted_alltypes, sorted_df, column, elements):
     expr = sorted_alltypes[

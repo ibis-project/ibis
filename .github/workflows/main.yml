@@ -48,7 +48,7 @@ jobs:
       shell: bash
 
     - name: run tests
-      run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh
+      run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not udf" ./ci/run_tests.sh
       shell: bash
 
   Tests_sql:
