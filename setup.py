@@ -96,7 +96,7 @@ setup(
     description="Productivity-centric Python Big Data Framework",
     long_description=LONG_DESCRIPTION,
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Operating System :: OS Independent',
         'Intended Audience :: Science/Research',
         'Programming Language :: Python',
