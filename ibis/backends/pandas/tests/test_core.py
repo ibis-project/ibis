@@ -1,7 +1,7 @@
 from typing import Any
 
 import pandas as pd
-import pandas.util.testing as tm
+import pandas.testing as tm
 import pytest
 from multipledispatch.conflict import ambiguities
 

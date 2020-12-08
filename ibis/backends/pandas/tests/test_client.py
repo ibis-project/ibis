@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import pandas.util.testing as tm
+import pandas.testing as tm
 import pytest
 from pytest import param
 
@@ -29,6 +29,14 @@ def table(client):
     return client.table('df')
 
 
+@pytest.fixture
+def test_data():
+    test_data = test_data = pd.DataFrame(
+        {"A": [1, 2, 3, 4, 5], "B": list("abcde")}
+    )
+    return test_data
+
+
 def test_client_table(table):
     assert isinstance(table.op(), ibis.expr.operations.DatabaseTable)
     assert isinstance(table.op(), PandasTable)
@@ -38,14 +46,15 @@ def test_client_table_repr(table):
     assert 'PandasTable' in repr(table)
 
 
-def test_load_data(client):
-    client.load_data('testing', tm.makeDataFrame())
+def test_load_data(client, test_data):
+
+    client.load_data('testing', test_data)
     assert client.exists_table('testing')
     assert client.get_schema('testing')
 
 
-def test_create_table(client):
-    client.create_table('testing', obj=tm.makeDataFrame())
+def test_create_table(client, test_data):
+    client.create_table('testing', obj=test_data)
     assert client.exists_table('testing')
     client.create_table('testingschema', schema=client.get_schema('testing'))
     assert client.exists_table('testingschema')
