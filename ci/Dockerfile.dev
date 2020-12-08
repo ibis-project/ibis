@@ -16,7 +16,7 @@ RUN /opt/conda/bin/conda config --add channels conda-forge \
 RUN /opt/conda/bin/conda create --yes --name ibis-env python=$PYTHON_VERSION \
   && /opt/conda/bin/conda env update --name ibis-env --file /environment.yml
 
-RUN for FNAME in $(ls /deps/*.yml | grep -v "\-min.yml\|omniscidb.yml"); do /opt/conda/bin/conda install --name ibis-env --file $FNAME; done
+RUN for FNAME in $(ls /deps/*.yml | grep -v "\-min.yml"); do /opt/conda/bin/conda install --name ibis-env --file $FNAME; done
 
 RUN echo 'source /opt/conda/bin/activate ibis-env && exec "$@"' > activate.sh
 
