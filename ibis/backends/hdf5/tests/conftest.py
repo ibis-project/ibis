@@ -3,9 +3,8 @@ from pathlib import Path
 import pytest
 
 import ibis
-from ibis.backends.pandas.tests.conftest import PandasTest
-
 from ibis.backends.hdf5 import HDFClient
+from ibis.backends.pandas.tests.conftest import PandasTest
 
 
 class HDF5Test(PandasTest):
