@@ -5,7 +5,7 @@ import pytest
 import ibis
 from ibis.backends.pandas.tests.conftest import PandasTest
 
-from ..hdf5 import HDFClient
+from ibis.backends.hdf5 import HDFClient
 
 
 class HDF5Test(PandasTest):
