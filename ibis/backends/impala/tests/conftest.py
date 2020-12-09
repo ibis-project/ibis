@@ -6,12 +6,15 @@ from pathlib import Path
 import pytest
 
 import ibis
+import ibis.expr.types as ir
 import ibis.util as util
 from ibis import options
-import ibis.expr.types as ir
-from ibis.tests.expr.mocks import MockConnection
 from ibis.backends.tests.base import (
-    BackendTest, UnorderedComparator, RoundAwayFromZero)
+    BackendTest,
+    RoundAwayFromZero,
+    UnorderedComparator,
+)
+from ibis.tests.expr.mocks import MockConnection
 
 
 class ImpalaTest(UnorderedComparator, BackendTest, RoundAwayFromZero):

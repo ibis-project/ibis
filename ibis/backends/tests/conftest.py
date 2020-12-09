@@ -1,14 +1,15 @@
-from pathlib import Path
-import operator
-import os
 import importlib
 import inspect
+import operator
+import os
+from pathlib import Path
 
 import pytest
 
 import ibis
 import ibis.common.exceptions as com
 import ibis.util as util
+
 from .base import BackendTest
 
 
@@ -22,20 +23,24 @@ def backend_test_classes():
         backend = backend_dir.name
         try:
             conftest = importlib.import_module(
-                f'ibis.backends.{backend}.tests.conftest')
+                f'ibis.backends.{backend}.tests.conftest'
+            )
         except ImportError:
             pass
         else:
             for obj_name in dir(conftest):
                 obj = getattr(conftest, obj_name)
-                if (inspect.isclass(obj)
-                        and issubclass(obj, BackendTest)
-                        and obj.name() == backend):
+                if (
+                    inspect.isclass(obj)
+                    and issubclass(obj, BackendTest)
+                    and obj.name() == backend
+                ):
                     yield obj
 
 
-ALL_BACKENDS = sorted(backend_test_classes(),
-                      key=operator.attrgetter("__name__"))
+ALL_BACKENDS = sorted(
+    backend_test_classes(), key=operator.attrgetter("__name__")
+)
 
 
 def pytest_runtest_call(item):
@@ -44,8 +49,9 @@ def pytest_runtest_call(item):
     for marker in list(item.iter_markers(name="only_on_backends")):
         (backend_types,) = map(tuple, marker.args)
         backend = item.funcargs["backend"]
-        assert isinstance(backend, BackendTest), \
-               "backend has type {!r}".format(type(backend).__name__)
+        assert isinstance(
+            backend, BackendTest
+        ), "backend has type {!r}".format(type(backend).__name__)
         if not isinstance(backend, backend_types):
             pytest.skip(
                 f"only_on_backends: {backend} is not in {backend_types} "
@@ -55,8 +61,9 @@ def pytest_runtest_call(item):
     for marker in list(item.iter_markers(name="skip_backends")):
         (backend_types,) = map(tuple, marker.args)
         backend = item.funcargs["backend"]
-        assert isinstance(backend, BackendTest), \
-               "backend has type {!r}".format(type(backend).__name__)
+        assert isinstance(
+            backend, BackendTest
+        ), "backend has type {!r}".format(type(backend).__name__)
         if isinstance(backend, backend_types):
             pytest.skip(f"skip_backends: {backend} {nodeid}")
 
@@ -76,8 +83,9 @@ def pytest_runtest_call(item):
     for marker in list(item.iter_markers(name="xfail_backends")):
         (backend_types,) = map(tuple, marker.args)
         backend = item.funcargs["backend"]
-        assert isinstance(backend, BackendTest), \
-               "backend has type {!r}".format(type(backend).__name__)
+        assert isinstance(
+            backend, BackendTest
+        ), "backend has type {!r}".format(type(backend).__name__)
         item.add_marker(
             pytest.mark.xfail(
                 condition=isinstance(backend, backend_types),
@@ -91,8 +99,9 @@ def pytest_runtest_call(item):
     for marker in list(item.iter_markers(name="xpass_backends")):
         (backend_types,) = map(tuple, marker.args)
         backend = item.funcargs["backend"]
-        assert isinstance(backend, BackendTest), \
-               "backend has type {!r}".format(type(backend).__name__)
+        assert isinstance(
+            backend, BackendTest
+        ), "backend has type {!r}".format(type(backend).__name__)
         item.add_marker(
             pytest.mark.xfail(
                 condition=not isinstance(backend, backend_types),
@@ -124,8 +133,9 @@ def pytest_pyfunc_call(pyfuncitem):
         )
         (marker,) = markers
         backend = pyfuncitem.funcargs["backend"]
-        assert isinstance(backend, BackendTest), \
-               "backend has type {!r}".format(type(backend).__name__)
+        assert isinstance(
+            backend, BackendTest
+        ), "backend has type {!r}".format(type(backend).__name__)
         pytest.xfail(reason='{}: {}'.format(type(backend).__name__, e))
 
 
@@ -133,15 +143,12 @@ pytestmark = pytest.mark.backend
 
 pytest_backends = os.environ.get('PYTEST_BACKENDS', '').split(' ')
 params_backend = [
-    pytest.param(backend,
-                 marks=getattr(pytest.mark, backend.name()))
+    pytest.param(backend, marks=getattr(pytest.mark, backend.name()))
     for backend in ALL_BACKENDS
     if backend.name() in pytest_backends or not pytest_backends
 ]
 if len(pytest_backends) != len(params_backend):
-    unknown_backends = set(pytest_backends) - {
-        b.name() for b in ALL_BACKENDS
-    }
+    unknown_backends = set(pytest_backends) - {b.name() for b in ALL_BACKENDS}
     raise ValueError(
         'PYTEST_BACKENDS environment variable contains unknown '
         f'backends {unknown_backends} {[b.name() for b in ALL_BACKENDS]}'

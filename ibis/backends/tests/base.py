@@ -77,7 +77,7 @@ class BackendTest(abc.ABC):
 
     @classmethod
     def name(cls) -> str:
-        return cls.__name__.lower()[:-len('Test')]
+        return cls.__name__.lower()[: -len('Test')]
 
     def __str__(self) -> str:
         return self.__class__.__name__

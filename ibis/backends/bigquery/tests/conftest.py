@@ -6,8 +6,10 @@ import pytest
 import ibis
 import ibis.expr.types as ir
 from ibis.backends.tests.base import (
-    BackendTest, RoundAwayFromZero, UnorderedComparator)
-
+    BackendTest,
+    RoundAwayFromZero,
+    UnorderedComparator,
+)
 
 PROJECT_ID = os.environ.get('GOOGLE_BIGQUERY_PROJECT_ID', 'ibis-gbq')
 DATASET_ID = 'testing'

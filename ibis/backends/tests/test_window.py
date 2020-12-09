@@ -463,8 +463,9 @@ def test_grouped_unbounded_window(
             # backends (see #2381).
             False,
             id='unordered',
-            marks=pytest.mark.skip_backends([MySQLTest, PySparkTest,
-                                             SparkTest]),
+            marks=pytest.mark.skip_backends(
+                [MySQLTest, PySparkTest, SparkTest]
+            ),
         ),
     ],
 )

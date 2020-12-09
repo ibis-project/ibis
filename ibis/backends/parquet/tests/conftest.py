@@ -5,8 +5,8 @@ import pyarrow.parquet as pq
 import pytest
 
 import ibis
-from ..parquet import ParquetClient
 from ibis.backends.pandas.tests.conftest import PandasTest
+from ibis.backends.parquet import ParquetClient
 
 
 class ParquetTest(PandasTest):

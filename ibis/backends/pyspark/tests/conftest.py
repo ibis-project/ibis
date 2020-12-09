@@ -6,7 +6,10 @@ import pytest
 import ibis
 import ibis.expr.types as ir
 from ibis.backends.tests.base import (
-    get_pyspark_testing_client, BackendTest, RoundAwayFromZero)
+    BackendTest,
+    RoundAwayFromZero,
+    get_pyspark_testing_client,
+)
 
 
 class PySparkTest(BackendTest, RoundAwayFromZero):

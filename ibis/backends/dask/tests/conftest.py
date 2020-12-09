@@ -3,6 +3,7 @@ import pandas as pd
 import pytest
 
 from ibis.backends.pandas.tests.conftest import PandasTest
+
 from .. import connect
 
 

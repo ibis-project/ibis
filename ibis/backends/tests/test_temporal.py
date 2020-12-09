@@ -8,11 +8,11 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.backends.pandas.execution.temporal import day_name
 from ibis.backends.bigquery.tests.conftest import BigQueryTest
 from ibis.backends.clickhouse.tests.conftest import ClickhouseTest
 from ibis.backends.csv.tests.conftest import CsvTest
 from ibis.backends.impala.tests.conftest import ImpalaTest
+from ibis.backends.pandas.execution.temporal import day_name
 from ibis.backends.pandas.tests.conftest import PandasTest
 from ibis.backends.parquet.tests.conftest import ParquetTest
 from ibis.backends.postgres.tests.conftest import PostgresTest
@@ -86,8 +86,12 @@ def test_timestamp_extract(backend, alltypes, df, attr):
         'D',
         # Spark truncation to week truncates to different days than Pandas
         # Pandas backend is probably doing this wrong
-        param('W', marks=pytest.mark.xpass_backends((CsvTest, PandasTest,
-                                                     ParquetTest))),
+        param(
+            'W',
+            marks=pytest.mark.xpass_backends(
+                (CsvTest, PandasTest, ParquetTest)
+            ),
+        ),
         'h',
         'm',
         's',
@@ -115,8 +119,12 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
         'Y',
         'M',
         'D',
-        param('W', marks=pytest.mark.xpass_backends((CsvTest, PandasTest,
-                                                     ParquetTest))),
+        param(
+            'W',
+            marks=pytest.mark.xpass_backends(
+                (CsvTest, PandasTest, ParquetTest)
+            ),
+        ),
     ],
 )
 @pytest.mark.xfail_unsupported
@@ -147,8 +155,14 @@ def test_date_truncate(backend, alltypes, df, unit):
             'ms',
             pd.Timedelta,
             marks=pytest.mark.xpass_backends(
-                (CsvTest, PandasTest, ParquetTest, BigQueryTest, ImpalaTest,
-                 PostgresTest)
+                (
+                    CsvTest,
+                    PandasTest,
+                    ParquetTest,
+                    BigQueryTest,
+                    ImpalaTest,
+                    PostgresTest,
+                )
             ),
         ),
         param(
@@ -341,12 +355,22 @@ unit_factors = {'s': int(1e9), 'ms': int(1e6), 'us': int(1e3), 'ns': 1}
         param(
             'us',
             marks=pytest.mark.xpass_backends(
-                (BigQueryTest, CsvTest, ImpalaTest, PandasTest, ParquetTest,
-                 SparkTest)
+                (
+                    BigQueryTest,
+                    CsvTest,
+                    ImpalaTest,
+                    PandasTest,
+                    ParquetTest,
+                    SparkTest,
+                )
             ),
         ),
-        param('ns', marks=pytest.mark.xpass_backends((CsvTest, PandasTest,
-                                                      ParquetTest))),
+        param(
+            'ns',
+            marks=pytest.mark.xpass_backends(
+                (CsvTest, PandasTest, ParquetTest)
+            ),
+        ),
     ],
 )
 @pytest.mark.xfail_unsupported

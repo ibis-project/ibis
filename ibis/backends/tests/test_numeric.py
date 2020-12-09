@@ -9,10 +9,10 @@ from pytest import param
 
 import ibis
 from ibis import literal as L
-from ibis.expr import datatypes as dt
 from ibis.backends.mysql.tests.conftest import MySQLTest
 from ibis.backends.omniscidb.tests.conftest import OmniSciDBTest
 from ibis.backends.postgres.tests.conftest import PostgresTest
+from ibis.expr import datatypes as dt
 from ibis.tests.util import assert_equal
 
 try:

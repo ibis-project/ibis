@@ -8,9 +8,9 @@ import pandas
 import pytest
 
 import ibis
-import ibis.util as util
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+import ibis.util as util
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 
 OMNISCIDB_HOST = os.environ.get('IBIS_TEST_OMNISCIDB_HOST', 'localhost')

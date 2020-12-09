@@ -4,10 +4,10 @@ import pandas as pd
 import pytest
 
 import ibis
-from ibis.backends.csv import CSVClient
-from ibis.backends.pandas.tests.conftest import PandasTest
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
+from ibis.backends.csv import CSVClient
+from ibis.backends.pandas.tests.conftest import PandasTest
 
 
 class CsvTest(PandasTest):

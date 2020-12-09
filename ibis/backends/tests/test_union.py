@@ -9,8 +9,9 @@ from ibis.backends.pyspark.tests.conftest import PySparkTest
 
 
 @pytest.mark.parametrize('distinct', [False, True])
-@pytest.mark.only_on_backends([BigQueryTest, ImpalaTest, PandasTest,
-                               PostgresTest, PySparkTest])
+@pytest.mark.only_on_backends(
+    [BigQueryTest, ImpalaTest, PandasTest, PostgresTest, PySparkTest]
+)
 @pytest.mark.xfail_unsupported
 def test_union(backend, alltypes, df, distinct):
     result = alltypes.union(alltypes, distinct=distinct).execute()

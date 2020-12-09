@@ -2,10 +2,13 @@ import os
 
 import pytest
 
-import ibis.util as util
 import ibis.expr.types as ir
+import ibis.util as util
 from ibis.backends.tests.base import (
-    get_spark_testing_client, BackendTest, RoundHalfToEven)
+    BackendTest,
+    RoundHalfToEven,
+    get_spark_testing_client,
+)
 
 
 class SparkTest(BackendTest, RoundHalfToEven):
