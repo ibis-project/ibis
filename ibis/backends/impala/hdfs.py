@@ -727,4 +727,6 @@ def hdfs_connect(
 
         url = '{}://{}:{}'.format(prefix, host, port)
         hdfs_client = InsecureClient(url, session=session, **kwds)
+    print("URL: {}".format(url))
+    print("HDFS Client: {}".format(hdfs_client))
     return WebHDFS(hdfs_client)
