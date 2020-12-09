@@ -328,52 +328,6 @@ class Postgres(Backend, RoundHalfToEven):
             return self.db.geo
 
 
-class OmniSciDB(Backend, RoundAwayFromZero):
-    check_dtype = False
-    check_names = False
-    supports_window_operations = True
-    supports_divide_by_zero = False
-    supports_floating_modulus = False
-    returned_timestamp_unit = 's'
-    # Exception: Non-empty LogicalValues not supported yet
-    additional_skipped_operations = frozenset(
-        {
-            ops.Abs,
-            ops.Ceil,
-            ops.Floor,
-            ops.Exp,
-            ops.Sign,
-            ops.Sqrt,
-            ops.Ln,
-            ops.Log10,
-            ops.Modulus,
-        }
-    )
-
-    @staticmethod
-    def connect(data_directory: Path) -> ibis.client.Client:
-        user = os.environ.get('IBIS_TEST_OMNISCIDB_USER', 'admin')
-        password = os.environ.get(
-            'IBIS_TEST_OMNISCIDB_PASSWORD', 'HyperInteractive'
-        )
-        host = os.environ.get('IBIS_TEST_OMNISCIDB_HOST', 'localhost')
-        port = os.environ.get('IBIS_TEST_OMNISCIDB_PORT', '6274')
-        database = os.environ.get(
-            'IBIS_TEST_OMNISCIDB_DATABASE', 'ibis_testing'
-        )
-        return ibis.omniscidb.connect(
-            host=host,
-            port=port,
-            user=user,
-            password=password,
-            database=database,
-        )
-
-    @property
-    def geo(self) -> Optional[ir.TableExpr]:
-        return self.db.geo
-
-
 class MySQL(Backend, RoundHalfToEven):
     # mysql has the same rounding behavior as postgres
     check_dtype = False

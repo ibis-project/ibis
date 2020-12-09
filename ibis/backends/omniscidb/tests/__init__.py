@@ -1,1 +1,0 @@
-"""OmniSciDB unit tests module."""

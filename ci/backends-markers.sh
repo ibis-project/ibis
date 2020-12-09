@@ -8,10 +8,10 @@
 # * param1: array of backends
 #
 # Example:
-# markers=`./ci/backends-markers.sh omniscidb impala` && echo $markers
+# markers=`./ci/backends-markers.sh spark impala` && echo $markers
 #
 # Output:
-# '-m omniscidb or impala'
+# '-m spark or impala'
 
 BACKENDS=$@
 
