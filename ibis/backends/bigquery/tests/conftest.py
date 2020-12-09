@@ -1,8 +1,13 @@
 import os
+from pathlib import Path
 
 import pytest
 
 import ibis
+import ibis.expr.types as ir
+from ibis.backends.tests.base import (
+    BackendTest, RoundAwayFromZero, UnorderedComparator)
+
 
 PROJECT_ID = os.environ.get('GOOGLE_BIGQUERY_PROJECT_ID', 'ibis-gbq')
 DATASET_ID = 'testing'
@@ -47,6 +52,34 @@ def connect(project_id, dataset_id, application_name=None):
         )
     except ga.exceptions.DefaultCredentialsError:
         pytest.skip(skip_message)
+
+
+class BigQueryTest(UnorderedComparator, BackendTest, RoundAwayFromZero):
+    supports_divide_by_zero = True
+    supports_floating_modulus = False
+    returned_timestamp_unit = 'us'
+
+    @staticmethod
+    def connect(data_directory: Path) -> ibis.client.Client:
+        project_id = os.environ.get('GOOGLE_BIGQUERY_PROJECT_ID')
+        if project_id is None:
+            pytest.skip(
+                'Environment variable GOOGLE_BIGQUERY_PROJECT_ID '
+                'not defined'
+            )
+        elif not project_id:
+            pytest.skip(
+                'Environment variable GOOGLE_BIGQUERY_PROJECT_ID is empty'
+            )
+        return connect(project_id, dataset_id='testing')
+
+    @property
+    def batting(self) -> ir.TableExpr:
+        return None
+
+    @property
+    def awards_players(self) -> ir.TableExpr:
+        return None
 
 
 @pytest.fixture(scope='session')

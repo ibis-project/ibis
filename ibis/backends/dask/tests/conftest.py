@@ -2,7 +2,13 @@ import dask.dataframe as dd
 import pandas as pd
 import pytest
 
+from ibis.backends.pandas.tests.conftest import PandasTest
 from .. import connect
+
+
+class DaskTest(PandasTest):
+    # clone pandas directly until the rest of the dask backend is defined
+    pass
 
 
 @pytest.fixture

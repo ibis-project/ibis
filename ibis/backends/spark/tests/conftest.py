@@ -3,7 +3,27 @@ import os
 import pytest
 
 import ibis.util as util
-from ibis.tests.all.conftest import get_spark_testing_client
+import ibis.expr.types as ir
+from ibis.backends.tests.base import (
+    get_spark_testing_client, BackendTest, RoundHalfToEven)
+
+
+class SparkTest(BackendTest, RoundHalfToEven):
+    @staticmethod
+    def connect(data_directory):
+        return get_spark_testing_client(data_directory)
+
+    @property
+    def functional_alltypes(self) -> ir.TableExpr:
+        return self.connection.table('functional_alltypes')
+
+    @property
+    def batting(self) -> ir.TableExpr:
+        return self.connection.table('batting')
+
+    @property
+    def awards_players(self) -> ir.TableExpr:
+        return self.connection.table('awards_players')
 
 
 @pytest.fixture(scope='session', autouse=True)

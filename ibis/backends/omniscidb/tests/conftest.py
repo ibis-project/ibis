@@ -1,12 +1,17 @@
 """OmniSciDB test configuration module."""
 import os
 import typing
+from pathlib import Path
+from typing import Optional
 
 import pandas
 import pytest
 
 import ibis
 import ibis.util as util
+import ibis.expr.operations as ops
+import ibis.expr.types as ir
+from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 
 OMNISCIDB_HOST = os.environ.get('IBIS_TEST_OMNISCIDB_HOST', 'localhost')
 OMNISCIDB_PORT = int(os.environ.get('IBIS_TEST_OMNISCIDB_PORT', 6274))
@@ -16,6 +21,52 @@ OMNISCIDB_PASS = os.environ.get(
 )
 OMNISCIDB_PROTOCOL = os.environ.get('IBIS_TEST_OMNISCIDB_PROTOCOL', 'binary')
 OMNISCIDB_DB = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
+
+
+class OmniSciDBTest(BackendTest, RoundAwayFromZero):
+    check_dtype = False
+    check_names = False
+    supports_window_operations = True
+    supports_divide_by_zero = False
+    supports_floating_modulus = False
+    returned_timestamp_unit = 's'
+    # Exception: Non-empty LogicalValues not supported yet
+    additional_skipped_operations = frozenset(
+        {
+            ops.Abs,
+            ops.Ceil,
+            ops.Floor,
+            ops.Exp,
+            ops.Sign,
+            ops.Sqrt,
+            ops.Ln,
+            ops.Log10,
+            ops.Modulus,
+        }
+    )
+
+    @staticmethod
+    def connect(data_directory: Path) -> ibis.client.Client:
+        user = os.environ.get('IBIS_TEST_OMNISCIDB_USER', 'admin')
+        password = os.environ.get(
+            'IBIS_TEST_OMNISCIDB_PASSWORD', 'HyperInteractive'
+        )
+        host = os.environ.get('IBIS_TEST_OMNISCIDB_HOST', 'localhost')
+        port = os.environ.get('IBIS_TEST_OMNISCIDB_PORT', '6274')
+        database = os.environ.get(
+            'IBIS_TEST_OMNISCIDB_DATABASE', 'ibis_testing'
+        )
+        return ibis.omniscidb.connect(
+            host=host,
+            port=port,
+            user=user,
+            password=password,
+            database=database,
+        )
+
+    @property
+    def geo(self) -> Optional[ir.TableExpr]:
+        return self.db.geo
 
 
 @pytest.fixture(scope='module')

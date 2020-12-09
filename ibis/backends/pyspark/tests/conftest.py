@@ -4,6 +4,29 @@ import numpy as np
 import pytest
 
 import ibis
+import ibis.expr.types as ir
+from ibis.backends.tests.base import (
+    get_pyspark_testing_client, BackendTest, RoundAwayFromZero)
+
+
+class PySparkTest(BackendTest, RoundAwayFromZero):
+    supported_to_timestamp_units = {'s'}
+
+    @staticmethod
+    def connect(data_directory):
+        return get_pyspark_testing_client(data_directory)
+
+    @property
+    def functional_alltypes(self) -> ir.TableExpr:
+        return self.connection.table('functional_alltypes')
+
+    @property
+    def batting(self) -> ir.TableExpr:
+        return self.connection.table('batting')
+
+    @property
+    def awards_players(self) -> ir.TableExpr:
+        return self.connection.table('awards_players')
 
 
 @pytest.fixture(scope='session')

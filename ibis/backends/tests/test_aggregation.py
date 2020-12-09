@@ -4,14 +4,12 @@ import pytest
 from pytest import param
 
 import ibis.expr.datatypes as dt
-from ibis.tests.backends import (
-    BigQuery,
-    Clickhouse,
-    MySQL,
-    Postgres,
-    PySpark,
-    SQLite,
-)
+from ibis.backends.bigquery.tests.conftest import BigQueryTest
+from ibis.backends.clickhouse.tests.conftest import ClickhouseTest
+from ibis.backends.mysql.tests.conftest import MySQLTest
+from ibis.backends.postgres.tests.conftest import PostgresTest
+from ibis.backends.pyspark.tests.conftest import PySparkTest
+from ibis.backends.sqlite.tests.conftest import SQLiteTest
 from ibis.udf.vectorized import reduction
 
 
@@ -174,7 +172,7 @@ def test_aggregate_grouped(
             lambda t, where: t.double_col.approx_median(),
             lambda t, where: t.double_col.median(),
             id='approx_median',
-            marks=pytest.mark.xpass_backends([Clickhouse]),
+            marks=pytest.mark.xpass_backends([ClickhouseTest]),
         ),
         param(
             lambda t, where: t.double_col.std(how='sample'),
@@ -210,7 +208,7 @@ def test_aggregate_grouped(
             lambda t, where: t.string_col.approx_nunique(),
             lambda t, where: t.string_col.nunique(),
             id='approx_nunique',
-            marks=pytest.mark.xfail_backends([MySQL, SQLite]),
+            marks=pytest.mark.xfail_backends([MySQLTest, SQLiteTest]),
         ),
         param(
             lambda t, where: t.double_col.arbitrary(how='first'),
@@ -284,7 +282,7 @@ def test_group_concat(backend, alltypes, df, result_fn, expected_fn):
     ],
 )
 @pytest.mark.xfail_unsupported
-@pytest.mark.xfail_backends([PySpark])  # Issue #2130
+@pytest.mark.xfail_backends([PySparkTest])  # Issue #2130
 def test_topk_op(backend, alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend
     # can have different result for that.
@@ -313,8 +311,9 @@ def test_topk_op(backend, alltypes, df, result_fn, expected_fn):
 )
 @pytest.mark.xfail_unsupported
 # Issues #2369 #2133 #2131 #2132
-@pytest.mark.xfail_backends([BigQuery, Clickhouse, MySQL, Postgres])
-@pytest.mark.skip_backends([SQLite], reason='Issue #2128')
+@pytest.mark.xfail_backends([BigQueryTest, ClickhouseTest, MySQLTest,
+                             PostgresTest])
+@pytest.mark.skip_backends([SQLiteTest], reason='Issue #2128')
 def test_topk_filter_op(backend, alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend
     # can have different result for that.
