@@ -144,7 +144,7 @@ jobs:
       uses: actions/checkout@v1
 
     - name: install boost
-      run: apt-get -qq update --yes && apt-get -qq install --yes --no-install-recommends libboost-dev
+      run: sudo apt-get -qq update --yes && apt-get -qq install --yes --no-install-recommends libboost-dev
     
     - name: set up environment
       run: ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
