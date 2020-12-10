@@ -617,10 +617,6 @@ class WebHDFS(HDFS):
         else:
             # `resource` is a file-like object.
             hdfs_path = self.client.resolve(hdfs_path)
-            print(self.client)
-            print(hdfs_path)
-            print(resource)
-            print(overwrite)
             self.client.write(
                 hdfs_path, data=resource, overwrite=overwrite, **kwargs
             )
@@ -731,6 +727,4 @@ def hdfs_connect(
 
         url = '{}://{}:{}'.format(prefix, host, port)
         hdfs_client = InsecureClient(url, session=session, **kwds)
-    print("URL: {}".format(url))
-    print("HDFS Client: {}".format(hdfs_client))
     return WebHDFS(hdfs_client)
