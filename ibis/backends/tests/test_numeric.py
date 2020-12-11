@@ -9,8 +9,10 @@ from pytest import param
 
 import ibis
 from ibis import literal as L
+from ibis.backends.mysql.tests.conftest import MySQLTest
+from ibis.backends.omniscidb.tests.conftest import OmniSciDBTest
+from ibis.backends.postgres.tests.conftest import PostgresTest
 from ibis.expr import datatypes as dt
-from ibis.tests.backends import MySQL, OmniSciDB, Postgres
 from ibis.tests.util import assert_equal
 
 try:
@@ -56,19 +58,19 @@ def sch_decimal():
             lambda t: ibis.literal(np.nan),
             lambda t: np.nan,
             id='nan-literal',
-            marks=pytest.mark.xfail_backends([OmniSciDB]),
+            marks=pytest.mark.xfail_backends([OmniSciDBTest]),
         ),
         param(
             lambda t: ibis.literal(np.inf),
             lambda t: np.inf,
             id='inf-literal',
-            marks=pytest.mark.xfail_backends([OmniSciDB]),
+            marks=pytest.mark.xfail_backends([OmniSciDBTest]),
         ),
         param(
             lambda t: ibis.literal(-np.inf),
             lambda t: -np.inf,
             id='-inf-literal',
-            marks=pytest.mark.xfail_backends([OmniSciDB]),
+            marks=pytest.mark.xfail_backends([OmniSciDBTest]),
         ),
     ],
 )
@@ -376,7 +378,7 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
         )
     ],
 )
-@pytest.mark.only_on_backends([Postgres, MySQL])
+@pytest.mark.only_on_backends([PostgresTest, MySQLTest])
 def test_sa_default_numeric_precision_and_scale(
     con, backend, dialects, default_precisions, default_scales
 ):
@@ -415,7 +417,7 @@ def test_sa_default_numeric_precision_and_scale(
     con.drop_table(table_name, force=True)
 
 
-@pytest.mark.only_on_backends([Postgres, MySQL])
+@pytest.mark.only_on_backends([PostgresTest, MySQLTest])
 def test_random(con):
     expr = ibis.random()
     result = con.execute(expr)
