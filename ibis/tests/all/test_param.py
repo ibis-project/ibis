@@ -4,7 +4,7 @@ import pytest
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.backends.pyspark.tests.conftest import PySparkTest
+from ibis.tests.backends import PySpark
 
 
 @pytest.mark.parametrize(
@@ -46,7 +46,7 @@ def test_date_scalar_parameter(
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.xfail_backends([PySparkTest])
+@pytest.mark.xfail_backends([PySpark])
 @pytest.mark.xfail_unsupported
 def test_timestamp_accepts_date_literals(backend, alltypes):
     date_string = '2009-03-01'
@@ -56,7 +56,7 @@ def test_timestamp_accepts_date_literals(backend, alltypes):
     assert expr.compile(params=params) is not None
 
 
-@pytest.mark.xfail_backends([PySparkTest])
+@pytest.mark.xfail_backends([PySpark])
 @pytest.mark.xfail_unsupported
 def test_scalar_param_array(backend, con):
     value = [1, 2, 3]

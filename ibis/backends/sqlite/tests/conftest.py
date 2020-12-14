@@ -1,35 +1,8 @@
 import os
-from pathlib import Path
 
 import pytest
 
 import ibis
-import ibis.expr.types as ir
-from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
-
-
-class SQLiteTest(BackendTest, RoundAwayFromZero):
-    supports_arrays = False
-    supports_arrays_outside_of_select = supports_arrays
-    supports_window_operations = True
-    check_dtype = False
-    returned_timestamp_unit = 's'
-
-    @staticmethod
-    def connect(data_directory: Path) -> ibis.client.Client:
-        path = Path(
-            os.environ.get(
-                'IBIS_TEST_SQLITE_DATABASE', data_directory / 'ibis_testing.db'
-            )
-        )
-        if not path.exists():
-            pytest.skip('SQLite testing db {} does not exist'.format(path))
-        return ibis.sqlite.connect(str(path))
-
-    @property
-    def functional_alltypes(self) -> ir.TableExpr:
-        t = self.db.functional_alltypes
-        return t.mutate(timestamp_col=t.timestamp_col.cast('timestamp'))
 
 
 @pytest.fixture(scope='module')

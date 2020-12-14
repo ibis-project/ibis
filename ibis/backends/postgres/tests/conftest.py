@@ -14,14 +14,10 @@
 
 
 import os
-from pathlib import Path
-from typing import Optional
 
 import pytest
 
 import ibis
-import ibis.expr.types as ir
-from ibis.backends.tests.base import BackendTest, RoundHalfToEven
 
 PG_USER = os.environ.get(
     'IBIS_TEST_POSTGRES_USER', os.environ.get('PGUSER', 'postgres')
@@ -38,48 +34,6 @@ PG_PORT = os.environ.get(
 IBIS_TEST_POSTGRES_DB = os.environ.get(
     'IBIS_TEST_POSTGRES_DATABASE', os.environ.get('PGDATABASE', 'ibis_testing')
 )
-
-
-class PostgresTest(BackendTest, RoundHalfToEven):
-    # postgres rounds half to even for double precision and half away from zero
-    # for numeric and decimal
-
-    returned_timestamp_unit = 's'
-
-    @property
-    def name(self) -> str:
-        return 'postgres'
-
-    @staticmethod
-    def connect(data_directory: Path) -> ibis.client.Client:
-        user = os.environ.get(
-            'IBIS_TEST_POSTGRES_USER', os.environ.get('PGUSER', 'postgres')
-        )
-        password = os.environ.get(
-            'IBIS_TEST_POSTGRES_PASSWORD', os.environ.get('PGPASS', 'postgres')
-        )
-        host = os.environ.get(
-            'IBIS_TEST_POSTGRES_HOST', os.environ.get('PGHOST', 'localhost')
-        )
-        port = os.environ.get(
-            'IBIS_TEST_POSTGRES_PORT', os.environ.get('PGPORT', '5432')
-        )
-        database = os.environ.get(
-            'IBIS_TEST_POSTGRES_DATABASE',
-            os.environ.get('PGDATABASE', 'ibis_testing'),
-        )
-        return ibis.postgres.connect(
-            host=host,
-            port=port,
-            user=user,
-            password=password,
-            database=database,
-        )
-
-    @property
-    def geo(self) -> Optional[ir.TableExpr]:
-        if 'geo' in self.db.list_tables():
-            return self.db.geo
 
 
 def _random_identifier(suffix):
