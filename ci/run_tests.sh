@@ -3,7 +3,7 @@
 # - PYTEST_BACKENDS: Space-separated list of backends to run
 # - PYTEST_EXPRESSION: Marker expression, for example "not udf"
 
-TESTS_DIRS="ibis/tests"
+TESTS_DIRS="ibis/tests ibis/backends/tests ibis/backends/base*/tests"
 for BACKEND in $PYTEST_BACKENDS; do
     if [[ -d ibis/backends/$BACKEND/tests ]]; then
         TESTS_DIRS="$TESTS_DIRS ibis/backends/$BACKEND/tests"
