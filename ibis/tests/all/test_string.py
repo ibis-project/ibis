@@ -3,13 +3,15 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.backends.bigquery.tests.conftest import BigQueryTest
-from ibis.backends.clickhouse.tests.conftest import ClickhouseTest
-from ibis.backends.impala.tests.conftest import ImpalaTest
-from ibis.backends.omniscidb.tests.conftest import OmniSciDBTest
-from ibis.backends.postgres.tests.conftest import PostgresTest
-from ibis.backends.pyspark.tests.conftest import PySparkTest
-from ibis.backends.spark.tests.conftest import SparkTest
+from ibis.tests.backends import (
+    BigQuery,
+    Clickhouse,
+    Impala,
+    OmniSciDB,
+    Postgres,
+    PySpark,
+    Spark,
+)
 
 
 def test_string_col_is_unicode(backend, alltypes, df):
@@ -53,67 +55,55 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.string_col.re_search(r'[[:digit:]]+'),
             lambda t: t.string_col.str.contains(r'\d+'),
             id='re_search',
-            marks=pytest.mark.xfail_backends((SparkTest, PySparkTest)),
+            marks=pytest.mark.xfail_backends((Spark, PySpark)),
         ),
         param(
             lambda t: t.string_col.re_extract(r'([[:digit:]]+)', 0),
             lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
             id='re_extract',
-            marks=pytest.mark.xfail_backends((SparkTest, PySparkTest)),
+            marks=pytest.mark.xfail_backends((Spark, PySpark)),
         ),
         param(
             lambda t: t.string_col.re_replace(r'[[:digit:]]+', 'a'),
             lambda t: t.string_col.str.replace(r'\d+', 'a'),
             id='re_replace',
-            marks=pytest.mark.xfail_backends((SparkTest, PySparkTest)),
+            marks=pytest.mark.xfail_backends((Spark, PySpark)),
         ),
         param(
             lambda t: t.string_col.re_search(r'\\d+'),
             lambda t: t.string_col.str.contains(r'\d+'),
             id='re_search_spark',
-            marks=pytest.mark.xpass_backends(
-                (ClickhouseTest, ImpalaTest, SparkTest)
-            ),
+            marks=pytest.mark.xpass_backends((Clickhouse, Impala, Spark)),
         ),
         param(
             lambda t: t.string_col.re_extract(r'(\\d+)', 0),
             lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
             id='re_extract_spark',
-            marks=pytest.mark.xpass_backends(
-                (ClickhouseTest, ImpalaTest, SparkTest)
-            ),
+            marks=pytest.mark.xpass_backends((Clickhouse, Impala, Spark)),
         ),
         param(
             lambda t: t.string_col.re_replace(r'\\d+', 'a'),
             lambda t: t.string_col.str.replace(r'\d+', 'a'),
             id='re_replace_spark',
-            marks=pytest.mark.xpass_backends(
-                (ClickhouseTest, ImpalaTest, SparkTest)
-            ),
+            marks=pytest.mark.xpass_backends((Clickhouse, Impala, Spark)),
         ),
         param(
             lambda t: t.string_col.re_search(r'\d+'),
             lambda t: t.string_col.str.contains(r'\d+'),
             id='re_search_spark',
-            marks=pytest.mark.xfail_backends(
-                (ClickhouseTest, ImpalaTest, SparkTest)
-            ),
+            marks=pytest.mark.xfail_backends((Clickhouse, Impala, Spark)),
         ),
         param(
             lambda t: t.string_col.re_extract(r'(\d+)', 0),
             lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
             id='re_extract_spark',
-            marks=pytest.mark.xfail_backends(
-                (ClickhouseTest, ImpalaTest, SparkTest)
-            ),
+            marks=pytest.mark.xfail_backends((Clickhouse, Impala, Spark)),
         ),
         param(
             lambda t: t.string_col.re_replace(r'\d+', 'a'),
             lambda t: t.string_col.str.replace(r'\d+', 'a'),
             id='re_replace_spark',
-            marks=pytest.mark.xfail_backends(
-                (ClickhouseTest, ImpalaTest, SparkTest)
-            ),
+            marks=pytest.mark.xfail_backends((Clickhouse, Impala, Spark)),
         ),
         param(
             lambda t: t.string_col.repeat(2),
@@ -174,7 +164,7 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.string_col.length(),
             lambda t: t.string_col.str.len().astype('int32'),
             id='length',
-            marks=pytest.mark.xfail_backends([OmniSciDBTest]),  # #2338
+            marks=pytest.mark.xfail_backends([OmniSciDB]),  # #2338
         ),
         param(
             lambda t: t.string_col.strip(),
@@ -242,7 +232,7 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.date_string_col.split('/'),
             lambda t: t.date_string_col.str.split('/'),
             id='split',
-            marks=pytest.mark.xfail_backends([BigQueryTest]),  # Issue #2372
+            marks=pytest.mark.xfail_backends([BigQuery]),  # Issue #2372
         ),
         param(
             lambda t: ibis.literal('-').join(['a', t.string_col, 'c']),
@@ -264,7 +254,7 @@ def test_string(backend, alltypes, df, result_func, expected_func):
     'data, data_type',
     [param('123e4567-e89b-12d3-a456-426655440000', 'uuid', id='uuid')],
 )
-@pytest.mark.only_on_backends([PostgresTest])
+@pytest.mark.only_on_backends([Postgres])
 def test_special_strings(backend, con, alltypes, data, data_type):
     lit = ibis.literal(data, type=data_type).name('tmp')
     expr = alltypes[[alltypes.id, lit]].head(1)
