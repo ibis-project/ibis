@@ -5,7 +5,8 @@ from numpy import testing
 from pytest import param
 
 import ibis
-from ibis.tests.backends import OmniSciDB, Postgres
+from ibis.backends.omniscidb.tests.conftest import OmniSciDBTest
+from ibis.backends.postgres.tests.conftest import PostgresTest
 
 geopandas = pytest.importorskip('geopandas')
 shapely = pytest.importorskip('shapely')
@@ -32,7 +33,7 @@ polygon_0 = ibis.literal(
 ).name('p')
 
 # add here backends that support geo spatial types
-all_db_geo_supported = [OmniSciDB, Postgres]
+all_db_geo_supported = [OmniSciDBTest, PostgresTest]
 
 # test input data with shapely geometries
 shp_point_0 = shapely.geometry.Point(0, 0)
@@ -257,7 +258,7 @@ def test_literal_multi_geospatial_inferred(backend, con, shp, expected):
             [96.34, 114.36, 10.24, 10.24, 10.24],
             id='perimeter',
             marks=pytest.mark.skip_backends(
-                [Postgres], reason='TODO: fix different results issue'
+                [PostgresTest], reason='TODO: fix different results issue'
             ),
         ),
         param(
@@ -265,7 +266,7 @@ def test_literal_multi_geospatial_inferred(backend, con, shp, expected):
             [7, 11, 5, 5, 5],
             id='n_points',
             marks=pytest.mark.skip_backends(
-                [Postgres], reason='TODO: fix different results issue'
+                [PostgresTest], reason='TODO: fix different results issue'
             ),
         ),
     ],

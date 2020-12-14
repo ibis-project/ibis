@@ -5,18 +5,16 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
-from ibis.tests.backends import (
-    Csv,
-    Impala,
-    MySQL,
-    OmniSciDB,
-    Pandas,
-    Parquet,
-    Postgres,
-    PySpark,
-    Spark,
-    SQLite,
-)
+from ibis.backends.csv.tests.conftest import CsvTest
+from ibis.backends.impala.tests.conftest import ImpalaTest
+from ibis.backends.mysql.tests.conftest import MySQLTest
+from ibis.backends.omniscidb.tests.conftest import OmniSciDBTest
+from ibis.backends.pandas.tests.conftest import PandasTest
+from ibis.backends.paquet.tests.conftest import ParquetTest
+from ibis.backends.postgres.tests.conftest import PostgresTest
+from ibis.backends.pyspark.tests.conftest import PySparkTest
+from ibis.backends.spark.tests.conftest import SparkTest
+from ibis.backends.sqlite.tests.conftest import SQLiteTest
 from ibis.udf.vectorized import analytic, reduction
 
 
@@ -63,7 +61,7 @@ def calc_zscore(s):
             lambda t: t.id.rank(pct=True),
             id='percent_rank',
             marks=pytest.mark.xpass_backends(
-                [Csv, Pandas, Parquet, PySpark, OmniSciDB],
+                [CsvTest, PandasTest, ParquetTest, PySparkTest, OmniSciDBTest],
                 raises=AssertionError,
             ),
         ),
@@ -88,7 +86,7 @@ def calc_zscore(s):
             lambda t: t.cumcount(),
             id='row_number',
             marks=pytest.mark.xfail_backends(
-                (Pandas, Csv, Parquet),
+                (PandasTest, CsvTest, ParquetTest),
                 raises=(IndexError, com.UnboundExpressionError),
             ),
         ),
@@ -136,7 +134,7 @@ def calc_zscore(s):
             ),
             id='cumnotany',
             marks=pytest.mark.xfail_backends(
-                (Impala, Postgres, Spark, MySQL, SQLite)
+                (ImpalaTest, PostgresTest, SparkTest, MySQLTest, SQLiteTest)
             ),
         ),
         param(
@@ -161,7 +159,7 @@ def calc_zscore(s):
             ),
             id='cumnotall',
             marks=pytest.mark.xfail_backends(
-                (Impala, Postgres, Spark, MySQL, SQLite)
+                (ImpalaTest, PostgresTest, SparkTest, MySQLTest, SQLiteTest)
             ),
         ),
         param(
@@ -242,13 +240,13 @@ def test_grouped_bounded_expanding_window(
             id='mean_udf',
             marks=[
                 pytest.mark.udf,
-                pytest.mark.skip_backends([PySpark, Spark]),
+                pytest.mark.skip_backends([PySparkTest, SparkTest]),
             ],
         ),
     ],
 )
 # Some backends do not support non-grouped window specs
-@pytest.mark.xfail_backends([OmniSciDB])
+@pytest.mark.xfail_backends([OmniSciDBTest])
 @pytest.mark.xfail_unsupported
 def test_ungrouped_bounded_expanding_window(
     backend, alltypes, df, con, result_fn, expected_fn
@@ -456,7 +454,7 @@ def test_grouped_unbounded_window(
             # is currently inconsistent with the other backends (see #2378).
             True,
             id='orderered',
-            marks=pytest.mark.skip_backends([Spark, Impala]),
+            marks=pytest.mark.skip_backends([SparkTest, ImpalaTest]),
         ),
         param(
             # Disabled on MySQL and PySpark because they require a defined
@@ -465,12 +463,14 @@ def test_grouped_unbounded_window(
             # backends (see #2381).
             False,
             id='unordered',
-            marks=pytest.mark.skip_backends([MySQL, PySpark, Spark]),
+            marks=pytest.mark.skip_backends(
+                [MySQLTest, PySparkTest, SparkTest]
+            ),
         ),
     ],
 )
 # Some backends do not support non-grouped window specs
-@pytest.mark.xfail_backends([OmniSciDB])
+@pytest.mark.xfail_backends([OmniSciDBTest])
 @pytest.mark.xfail_unsupported
 def test_ungrouped_unbounded_window(
     backend, alltypes, df, con, result_fn, expected_fn, ordered

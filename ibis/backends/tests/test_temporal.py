@@ -8,19 +8,17 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis.backends.bigquery.tests.conftest import BigQueryTest
+from ibis.backends.clickhouse.tests.conftest import ClickhouseTest
+from ibis.backends.csv.tests.conftest import CsvTest
+from ibis.backends.impala.tests.conftest import ImpalaTest
 from ibis.backends.pandas.execution.temporal import day_name
-from ibis.tests.backends import (
-    BigQuery,
-    Clickhouse,
-    Csv,
-    Impala,
-    Pandas,
-    Parquet,
-    Postgres,
-    PySpark,
-    Spark,
-    SQLite,
-)
+from ibis.backends.pandas.tests.conftest import PandasTest
+from ibis.backends.parquet.tests.conftest import ParquetTest
+from ibis.backends.postgres.tests.conftest import PostgresTest
+from ibis.backends.pyspark.tests.conftest import PySparkTest
+from ibis.backends.spark.tests.conftest import SparkTest
+from ibis.backends.sqlite.tests.conftest import SQLiteTest
 
 
 @pytest.mark.parametrize('attr', ['year', 'month', 'day'])
@@ -88,7 +86,12 @@ def test_timestamp_extract(backend, alltypes, df, attr):
         'D',
         # Spark truncation to week truncates to different days than Pandas
         # Pandas backend is probably doing this wrong
-        param('W', marks=pytest.mark.xpass_backends((Csv, Pandas, Parquet))),
+        param(
+            'W',
+            marks=pytest.mark.xpass_backends(
+                (CsvTest, PandasTest, ParquetTest)
+            ),
+        ),
         'h',
         'm',
         's',
@@ -116,7 +119,12 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
         'Y',
         'M',
         'D',
-        param('W', marks=pytest.mark.xpass_backends((Csv, Pandas, Parquet))),
+        param(
+            'W',
+            marks=pytest.mark.xpass_backends(
+                (CsvTest, PandasTest, ParquetTest)
+            ),
+        ),
     ],
 )
 @pytest.mark.xfail_unsupported
@@ -147,18 +155,25 @@ def test_date_truncate(backend, alltypes, df, unit):
             'ms',
             pd.Timedelta,
             marks=pytest.mark.xpass_backends(
-                (Csv, Pandas, Parquet, BigQuery, Impala, Postgres)
+                (
+                    CsvTest,
+                    PandasTest,
+                    ParquetTest,
+                    BigQueryTest,
+                    ImpalaTest,
+                    PostgresTest,
+                )
             ),
         ),
         param(
             'us',
             pd.Timedelta,
-            marks=pytest.mark.xfail_backends((Clickhouse, SQLite)),
+            marks=pytest.mark.xfail_backends((ClickhouseTest, SQLiteTest)),
         ),
     ],
 )
 @pytest.mark.xfail_unsupported
-@pytest.mark.skip_backends([Spark])
+@pytest.mark.skip_backends([SparkTest])
 def test_integer_to_interval_timestamp(
     backend, con, alltypes, df, unit, displacement_type
 ):
@@ -185,7 +200,7 @@ def test_integer_to_interval_timestamp(
     'unit', ['Y', param('Q', marks=pytest.mark.xfail), 'M', 'W', 'D']
 )
 @pytest.mark.xfail_unsupported
-@pytest.mark.skip_backends([Spark])
+@pytest.mark.skip_backends([SparkTest])
 def test_integer_to_interval_date(backend, con, alltypes, df, unit):
     interval = alltypes.int_col.to_interval(unit=unit)
     array = alltypes.date_string_col.split('/')
@@ -263,7 +278,7 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
                 )
             ),
             id='timestamp-subtract-timestamp',
-            marks=pytest.mark.xfail_backends([Spark]),
+            marks=pytest.mark.xfail_backends([SparkTest]),
         ),
         param(
             lambda t, be: t.timestamp_col.date() - ibis.date(date_value),
@@ -273,7 +288,7 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
     ],
 )
 @pytest.mark.xfail_unsupported
-@pytest.mark.skip_backends([Spark])
+@pytest.mark.skip_backends([SparkTest])
 def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
     expr = expr_fn(alltypes, backend)
     expected = expected_fn(df, backend)
@@ -285,7 +300,7 @@ def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
 
 
 @pytest.mark.xfail_unsupported
-@pytest.mark.skip_backends([Spark])
+@pytest.mark.skip_backends([SparkTest])
 def test_interval_add_cast_scalar(backend, alltypes):
     timestamp_date = alltypes.timestamp_col.date()
     delta = ibis.literal(10).cast("interval('D')")
@@ -297,8 +312,8 @@ def test_interval_add_cast_scalar(backend, alltypes):
 
 @pytest.mark.xfail_unsupported
 # PySpark does not support casting columns to intervals
-@pytest.mark.xfail_backends([PySpark])
-@pytest.mark.skip_backends([Spark])
+@pytest.mark.xfail_backends([PySparkTest])
+@pytest.mark.skip_backends([SparkTest])
 def test_interval_add_cast_column(backend, alltypes, df):
     timestamp_date = alltypes.timestamp_col.date()
     delta = alltypes.bigint_col.cast("interval('D')")
@@ -319,7 +334,7 @@ def test_interval_add_cast_column(backend, alltypes, df):
 )
 @pytest.mark.xfail_unsupported
 # Spark takes Java SimpleDateFormat instead of strftime
-@pytest.mark.skip_backends([Spark])
+@pytest.mark.skip_backends([SparkTest])
 def test_strftime(backend, con, alltypes, df, ibis_pattern, pandas_pattern):
     expr = alltypes.timestamp_col.strftime(ibis_pattern)
     expected = df.timestamp_col.dt.strftime(pandas_pattern)
@@ -340,10 +355,22 @@ unit_factors = {'s': int(1e9), 'ms': int(1e6), 'us': int(1e3), 'ns': 1}
         param(
             'us',
             marks=pytest.mark.xpass_backends(
-                (BigQuery, Csv, Impala, Pandas, Parquet, Spark)
+                (
+                    BigQueryTest,
+                    CsvTest,
+                    ImpalaTest,
+                    PandasTest,
+                    ParquetTest,
+                    SparkTest,
+                )
             ),
         ),
-        param('ns', marks=pytest.mark.xpass_backends((Csv, Pandas, Parquet))),
+        param(
+            'ns',
+            marks=pytest.mark.xpass_backends(
+                (CsvTest, PandasTest, ParquetTest)
+            ),
+        ),
     ],
 )
 @pytest.mark.xfail_unsupported
