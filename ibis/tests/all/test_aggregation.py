@@ -322,9 +322,7 @@ def test_topk_op(backend, alltypes, df, result_fn, expected_fn):
 @pytest.mark.xfail_unsupported
 # Issues #2369 #2133 #2131 #2132
 # TODO - sorting - #2553
-@pytest.mark.xfail_backends(
-    [BigQuery, Clickhouse, Dask, MySQL, Postgres]
-)
+@pytest.mark.xfail_backends([BigQuery, Clickhouse, Dask, MySQL, Postgres])
 @pytest.mark.skip_backends([SQLite], reason='Issue #2128')
 def test_topk_filter_op(backend, alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend
