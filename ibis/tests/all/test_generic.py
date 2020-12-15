@@ -52,7 +52,8 @@ def test_coalesce(backend, con, expr, expected):
 
 
 @pytest.mark.xfail_unsupported
-def test_identical_to(backend, sorted_alltypes, con, sorted_df):
+def test_identical_to(backend, alltypes, con, sorted_df):
+    sorted_alltypes = alltypes.sort_by('id')
     df = sorted_df
     dt = df[['tinyint_col', 'double_col']]
 
@@ -83,7 +84,8 @@ def test_identical_to(backend, sorted_alltypes, con, sorted_df):
 )
 @pytest.mark.skip_backends([Dask])  # TODO - sorting - #2553
 @pytest.mark.xfail_unsupported
-def test_isin(backend, sorted_alltypes, sorted_df, column, elements):
+def test_isin(backend, alltypes, sorted_df, column, elements):
+    sorted_alltypes = alltypes.sort_by('id')
     expr = sorted_alltypes[
         'id', sorted_alltypes[column].isin(elements).name('tmp')
     ].sort_by('id')
@@ -107,7 +109,8 @@ def test_isin(backend, sorted_alltypes, sorted_df, column, elements):
 )
 @pytest.mark.skip_backends([Dask])  # TODO - sorting - #2553
 @pytest.mark.xfail_unsupported
-def test_notin(backend, sorted_alltypes, sorted_df, column, elements):
+def test_notin(backend, alltypes, sorted_df, column, elements):
+    sorted_alltypes = alltypes.sort_by('id')
     expr = sorted_alltypes[
         'id', sorted_alltypes[column].notin(elements).name('tmp')
     ].sort_by('id')

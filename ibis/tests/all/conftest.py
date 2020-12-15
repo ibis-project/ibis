@@ -157,11 +157,6 @@ def alltypes(backend):
 
 
 @pytest.fixture(scope='session')
-def sorted_alltypes(alltypes):
-    return alltypes.sort_by('id')
-
-
-@pytest.fixture(scope='session')
 def batting(backend):
     return backend.batting
 
@@ -194,7 +189,7 @@ def df(alltypes):
 
 @pytest.fixture(scope='session')
 def sorted_df(df):
-    return df.sort_values('id').reset_index(drop=True)
+    return df.set_index('id').reset_index(drop=True)
 
 
 @pytest.fixture(scope='session')
