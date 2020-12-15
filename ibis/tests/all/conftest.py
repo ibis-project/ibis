@@ -189,7 +189,7 @@ def df(alltypes):
 
 @pytest.fixture(scope='session')
 def sorted_df(df):
-    return df.set_index('id').reset_index(drop=True)
+    return df.set_index('id').reset_index()
 
 
 @pytest.fixture(scope='session')
