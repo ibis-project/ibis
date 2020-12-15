@@ -7,9 +7,9 @@ import numbers
 
 import dask.array as da
 import dask.dataframe as dd
+import dask.dataframe.groupby as ddgb
 import numpy as np
 import pandas as pd
-from dask.dataframe.groupby import DataFrameGroupBy, SeriesGroupBy
 from pandas import isnull, to_datetime
 from pandas.api.types import DatetimeTZDtype
 
@@ -74,12 +74,12 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
     ],
     ops.TableColumn: [
         (
-            ((dd.DataFrame, DataFrameGroupBy),),
+            ((dd.DataFrame, ddgb.DataFrameGroupBy),),
             execute_table_column_df_or_df_groupby,
         ),
     ],
     ops.Count: [
-        ((DataFrameGroupBy, type(None)), execute_count_frame_groupby),
+        ((ddgb.DataFrameGroupBy, type(None)), execute_count_frame_groupby),
         ((dd.DataFrame, type(None)), execute_count_frame),
     ],
     ops.NullIfZero: [((dd.Series,), execute_null_if_zero_series)],
@@ -156,7 +156,7 @@ def execute_arbitrary_series_mask(op, data, mask, aggcontext=None, **kwargs):
 
 
 # TODO - grouping - #2553
-@execute_node.register(ops.Cast, SeriesGroupBy, dt.DataType)
+@execute_node.register(ops.Cast, ddgb.SeriesGroupBy, dt.DataType)
 def execute_cast_series_group_by(op, data, type, **kwargs):
     result = execute_cast_series_generic(op, data.obj, type, **kwargs)
     return result.groupby(data.grouper.groupings)
@@ -265,7 +265,7 @@ def execute_binary_op(op, left, right, **kwargs):
 
 
 # TODO - grouping - #2553
-@execute_node.register(ops.BinaryOp, SeriesGroupBy, SeriesGroupBy)
+@execute_node.register(ops.BinaryOp, ddgb.SeriesGroupBy, ddgb.SeriesGroupBy)
 def execute_binary_op_series_group_by(op, left, right, **kwargs):
     left_groupings = left.grouper.groupings
     right_groupings = right.grouper.groupings
@@ -278,7 +278,7 @@ def execute_binary_op_series_group_by(op, left, right, **kwargs):
     return result.groupby(left_groupings)
 
 
-@execute_node.register(ops.BinaryOp, SeriesGroupBy, simple_types)
+@execute_node.register(ops.BinaryOp, ddgb.SeriesGroupBy, simple_types)
 def execute_binary_op_series_gb_simple(op, left, right, **kwargs):
     op_type = type(op)
     try:
@@ -292,14 +292,14 @@ def execute_binary_op_series_gb_simple(op, left, right, **kwargs):
 
 
 # TODO - grouping - #2553
-@execute_node.register(ops.BinaryOp, simple_types, SeriesGroupBy)
+@execute_node.register(ops.BinaryOp, simple_types, ddgb.SeriesGroupBy)
 def execute_binary_op_simple_series_gb(op, left, right, **kwargs):
     result = execute_binary_op(op, left, right, **kwargs)
     return result.groupby(right.grouper.groupings)
 
 
 # TODO - grouping - #2553
-@execute_node.register(ops.UnaryOp, SeriesGroupBy)
+@execute_node.register(ops.UnaryOp, ddgb.SeriesGroupBy)
 def execute_unary_op_series_gb(op, operand, **kwargs):
     result = execute_node(op, operand.obj, **kwargs)
     return result
@@ -308,7 +308,7 @@ def execute_unary_op_series_gb(op, operand, **kwargs):
 # TODO - grouping - #2553
 @execute_node.register(
     (ops.Log, ops.Round),
-    SeriesGroupBy,
+    ddgb.SeriesGroupBy,
     (numbers.Real, decimal.Decimal, type(None)),
 )
 def execute_log_series_gb_others(op, left, right, **kwargs):
@@ -317,7 +317,9 @@ def execute_log_series_gb_others(op, left, right, **kwargs):
 
 
 # TODO - grouping - #2553
-@execute_node.register((ops.Log, ops.Round), SeriesGroupBy, SeriesGroupBy)
+@execute_node.register(
+    (ops.Log, ops.Round), ddgb.SeriesGroupBy, ddgb.SeriesGroupBy
+)
 def execute_log_series_gb_series_gb(op, left, right, **kwargs):
     result = execute_node(op, left.obj, right.obj, **kwargs)
     return result.groupby(left.grouper.groupings)

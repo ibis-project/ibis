@@ -1,10 +1,10 @@
 import itertools
 
 import dask.dataframe as dd
+import dask.dataframe.groupby as ddgb
 import numpy as np
 import pandas
 import toolz
-from dask.dataframe.groupby import SeriesGroupBy
 from pandas import isnull
 
 import ibis
@@ -153,7 +153,7 @@ def execute_substring_series_series(op, data, start, length, **kwargs):
 
 
 # TODO - grouping - #2553
-@execute_node.register(ops.StringSQLLike, SeriesGroupBy, str, str)
+@execute_node.register(ops.StringSQLLike, ddgb.SeriesGroupBy, str, str)
 def execute_string_like_series_groupby_string(
     op, data, pattern, escape, **kwargs
 ):
@@ -176,7 +176,7 @@ def execute_group_concat_series_mask(
 
 
 # TODO - grouping - #2553
-@execute_node.register(ops.GroupConcat, SeriesGroupBy, str, type(None))
+@execute_node.register(ops.GroupConcat, ddgb.SeriesGroupBy, str, type(None))
 def execute_group_concat_series_gb(
     op, data, sep, _, aggcontext=None, **kwargs
 ):
@@ -193,7 +193,9 @@ def execute_group_concat_series_gb(
 
 
 # TODO - grouping - #2553
-@execute_node.register(ops.GroupConcat, SeriesGroupBy, str, SeriesGroupBy)
+@execute_node.register(
+    ops.GroupConcat, ddgb.SeriesGroupBy, str, ddgb.SeriesGroupBy
+)
 def execute_group_concat_series_gb_mask(
     op, data, sep, mask, aggcontext=None, **kwargs
 ):
@@ -215,7 +217,7 @@ def execute_string_ascii(op, data, **kwargs):
 
 
 # TODO - grouping - #2553
-@execute_node.register(ops.StringAscii, SeriesGroupBy)
+@execute_node.register(ops.StringAscii, ddgb.SeriesGroupBy)
 def execute_string_ascii_group_by(op, data, **kwargs):
     return execute_string_ascii(op, data, **kwargs).groupby(
         data.grouper.groupings
@@ -223,7 +225,7 @@ def execute_string_ascii_group_by(op, data, **kwargs):
 
 
 # TODO - grouping - #2553
-@execute_node.register(ops.RegexSearch, SeriesGroupBy, str)
+@execute_node.register(ops.RegexSearch, ddgb.SeriesGroupBy, str)
 def execute_series_regex_search_gb(op, data, pattern, **kwargs):
     return execute_series_regex_search(
         op, data, getattr(pattern, 'obj', pattern), **kwargs
@@ -231,7 +233,9 @@ def execute_series_regex_search_gb(op, data, pattern, **kwargs):
 
 
 # TODO - grouping - #2553
-@execute_node.register(ops.RegexExtract, SeriesGroupBy, str, integer_types)
+@execute_node.register(
+    ops.RegexExtract, ddgb.SeriesGroupBy, str, integer_types
+)
 def execute_series_regex_extract_gb(op, data, pattern, index, **kwargs):
     return execute_series_regex_extract(
         op, data.obj, pattern, index, **kwargs
@@ -239,7 +243,7 @@ def execute_series_regex_extract_gb(op, data, pattern, index, **kwargs):
 
 
 # TODO - grouping - #2553
-@execute_node.register(ops.RegexReplace, SeriesGroupBy, str, str)
+@execute_node.register(ops.RegexReplace, ddgb.SeriesGroupBy, str, str)
 def execute_series_regex_replace_gb(op, data, pattern, replacement, **kwargs):
     return execute_series_regex_replace(
         data.obj, pattern, replacement, **kwargs
@@ -247,7 +251,7 @@ def execute_series_regex_replace_gb(op, data, pattern, replacement, **kwargs):
 
 
 # TODO - grouping - #2553
-@execute_node.register(ops.StrRight, SeriesGroupBy, integer_types)
+@execute_node.register(ops.StrRight, ddgb.SeriesGroupBy, integer_types)
 def execute_series_right_gb(op, data, nchars, **kwargs):
     return execute_series_right(op, data.obj, nchars).groupby(
         data.grouper.groupings
@@ -268,7 +272,7 @@ def execute_series_find_in_set(op, needle, haystack, **kwargs):
 
 
 # TODO - grouping - #2553
-@execute_node.register(ops.FindInSet, SeriesGroupBy, list)
+@execute_node.register(ops.FindInSet, ddgb.SeriesGroupBy, list)
 def execute_series_group_by_find_in_set(op, needle, haystack, **kwargs):
     pieces = [getattr(piece, 'obj', piece) for piece in haystack]
     return execute_series_find_in_set(
@@ -284,7 +288,7 @@ def execute_string_group_by_find_in_set(op, needle, haystack, **kwargs):
     series_in_haystack = [
         type(piece)
         for piece in haystack
-        if isinstance(piece, (dd.Series, SeriesGroupBy))
+        if isinstance(piece, (dd.Series, ddgb.SeriesGroupBy))
     ]
 
     if not series_in_haystack:
@@ -293,7 +297,7 @@ def execute_string_group_by_find_in_set(op, needle, haystack, **kwargs):
     try:
         (collection_type,) = frozenset(map(type, series_in_haystack))
     except ValueError:
-        raise ValueError('Mixing Series and SeriesGroupBy is not allowed')
+        raise ValueError('Mixing Series and ddgb.SeriesGroupBy is not allowed')
 
     pieces = haystack_to_dask_series_of_lists(
         [getattr(piece, 'obj', piece) for piece in haystack]
@@ -303,7 +307,7 @@ def execute_string_group_by_find_in_set(op, needle, haystack, **kwargs):
     if issubclass(collection_type, dd.Series):
         return result
 
-    assert issubclass(collection_type, SeriesGroupBy)
+    assert issubclass(collection_type, ddgb.SeriesGroupBy)
 
     return result.groupby(
         toolz.first(

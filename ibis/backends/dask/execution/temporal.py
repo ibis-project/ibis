@@ -2,8 +2,8 @@ import datetime
 
 import dask.array as da
 import dask.dataframe as dd
+import dask.dataframe.groupby as ddgb
 import numpy as np
-from dask.dataframe.groupby import SeriesGroupBy
 from pandas import Timedelta
 
 import ibis.expr.datatypes as dt
@@ -165,13 +165,13 @@ def execute_timestamp_truncate(op, data, **kwargs):
 
 
 # TODO - grouping - #2553
-@execute_node.register(ops.DayOfWeekIndex, SeriesGroupBy)
+@execute_node.register(ops.DayOfWeekIndex, ddgb.SeriesGroupBy)
 def execute_day_of_week_index_series_group_by(op, data, **kwargs):
     groupings = data.grouper.groupings
     return data.obj.dt.dayofweek.astype(np.int16).groupby(groupings)
 
 
 # TODO - grouping - #2553
-@execute_node.register(ops.DayOfWeekName, SeriesGroupBy)
+@execute_node.register(ops.DayOfWeekName, ddgb.SeriesGroupBy)
 def execute_day_of_week_name_series_group_by(op, data, **kwargs):
     return day_name(data.obj.dt).groupby(data.grouper.groupings)

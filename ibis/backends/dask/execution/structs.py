@@ -3,7 +3,7 @@
 import operator
 
 import dask.dataframe as dd
-from dask.dataframe.groupby import SeriesGroupBy
+import dask.dataframe.groupby as ddgb
 
 import ibis.expr.operations as ops
 from ibis.backends.pandas.execution.structs import execute_node
@@ -19,7 +19,7 @@ def execute_node_struct_field_series(op, data, **kwargs):
 
 
 # TODO - grouping - #2553
-@execute_node.register(ops.StructField, SeriesGroupBy)
+@execute_node.register(ops.StructField, ddgb.SeriesGroupBy)
 def execute_node_struct_field_series_group_by(op, data, **kwargs):
     field = op.field
     return (

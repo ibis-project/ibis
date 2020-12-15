@@ -1,7 +1,7 @@
 import itertools
 
 import dask.dataframe as dd
-from dask.dataframe.groupby import SeriesGroupBy
+import dask.dataframe.groupby as ddgb
 
 import ibis.expr.operations as ops
 from ibis.backends.pandas.execution.arrays import (
@@ -51,6 +51,6 @@ def execute_array_collect(op, data, aggcontext=None, **kwargs):
 
 
 # TODO - grouping - #2553
-@execute_node.register(ops.ArrayCollect, SeriesGroupBy)
+@execute_node.register(ops.ArrayCollect, ddgb.SeriesGroupBy)
 def execute_array_collect_grouped_series(op, data, aggcontext=None, **kwargs):
     return data.agg(collect_list)

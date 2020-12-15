@@ -4,8 +4,8 @@ import functools
 import numbers
 
 import dask.dataframe as dd
+import dask.dataframe.groupby as ddgb
 import numpy as np
-from dask.dataframe.groupby import SeriesGroupBy
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
@@ -14,7 +14,7 @@ from ibis.backends.pandas.execution.generic import execute_node
 
 
 # TODO - aggregations - #2553
-@execute_node.register(ops.Arbitrary, SeriesGroupBy, type(None))
+@execute_node.register(ops.Arbitrary, ddgb.SeriesGroupBy, type(None))
 def execute_arbitrary_series_groupby(op, data, _, aggcontext=None, **kwargs):
     how = op.how
     if how is None:
@@ -33,7 +33,7 @@ def execute_series_negate(op, data, **kwargs):
 
 
 # TODO - grouping - #2553
-@execute_node.register(ops.Negate, SeriesGroupBy)
+@execute_node.register(ops.Negate, ddgb.SeriesGroupBy)
 def execute_series_group_by_negate(op, data, **kwargs):
     return execute_series_negate(op, data.obj, **kwargs).groupby(
         data.grouper.groupings
@@ -92,7 +92,9 @@ def execute_series_natural_log(op, data, **kwargs):
     return np.log(data)
 
 
-@execute_node.register(ops.Quantile, (dd.Series, SeriesGroupBy), numeric_types)
+@execute_node.register(
+    ops.Quantile, (dd.Series, ddgb.SeriesGroupBy), numeric_types
+)
 def execute_series_quantile(op, data, quantile, aggcontext=None, **kwargs):
     return data.quantile(q=quantile)
 
@@ -106,7 +108,7 @@ def execute_series_quantile_sequence(
 
 # TODO - aggregations - #2553
 @execute_node.register(
-    ops.MultiQuantile, SeriesGroupBy, collections.abc.Sequence
+    ops.MultiQuantile, ddgb.SeriesGroupBy, collections.abc.Sequence
 )
 def execute_series_quantile_groupby(
     op, data, quantile, aggcontext=None, **kwargs

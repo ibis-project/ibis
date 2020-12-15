@@ -19,10 +19,10 @@ from collections.abc import Sized
 
 import dask.array as da
 import dask.dataframe as dd
+import dask.dataframe.groupby as ddgb
 import numpy as np
 import pandas as pd
 import toolz
-from dask.dataframe.groupby import SeriesGroupBy
 
 import ibis
 import ibis.expr.operations as ops
@@ -74,7 +74,7 @@ def dask_execute_node_least_list(op, value, **kwargs):
 
 
 # TODO - aggregations - #2553
-@execute_node.register(ops.Reduction, SeriesGroupBy, type(None))
+@execute_node.register(ops.Reduction, ddgb.SeriesGroupBy, type(None))
 def execute_reduction_series_groupby(
     op, data, mask, aggcontext=None, **kwargs
 ):
@@ -86,7 +86,7 @@ def _filtered_reduction(mask, method, data):
 
 
 # TODO - grouping - #2553
-@execute_node.register(ops.Reduction, SeriesGroupBy, SeriesGroupBy)
+@execute_node.register(ops.Reduction, ddgb.SeriesGroupBy, ddgb.SeriesGroupBy)
 def execute_reduction_series_gb_mask(
     op, data, mask, aggcontext=None, **kwargs
 ):
@@ -105,7 +105,7 @@ def execute_reduction_series_mask(op, data, mask, aggcontext=None, **kwargs):
 
 # TODO - aggregations - #2553
 @execute_node.register(
-    (ops.CountDistinct, ops.HLLCardinality), SeriesGroupBy, type(None)
+    (ops.CountDistinct, ops.HLLCardinality), ddgb.SeriesGroupBy, type(None)
 )
 def execute_count_distinct_series_groupby(
     op, data, _, aggcontext=None, **kwargs
@@ -115,7 +115,9 @@ def execute_count_distinct_series_groupby(
 
 # TODO - aggregations - #2553
 @execute_node.register(
-    (ops.CountDistinct, ops.HLLCardinality), SeriesGroupBy, SeriesGroupBy
+    (ops.CountDistinct, ops.HLLCardinality),
+    ddgb.SeriesGroupBy,
+    ddgb.SeriesGroupBy,
 )
 def execute_count_distinct_series_groupby_mask(
     op, data, mask, aggcontext=None, **kwargs
@@ -140,7 +142,7 @@ variance_ddof = {'pop': 0, 'sample': 1}
 
 
 # TODO - aggregations - #2553
-@execute_node.register(ops.Variance, SeriesGroupBy, type(None))
+@execute_node.register(ops.Variance, ddgb.SeriesGroupBy, type(None))
 def execute_reduction_series_groupby_var(
     op, data, _, aggcontext=None, **kwargs
 ):
@@ -148,7 +150,7 @@ def execute_reduction_series_groupby_var(
 
 
 # TODO - grouping - #2553
-@execute_node.register(ops.Variance, SeriesGroupBy, SeriesGroupBy)
+@execute_node.register(ops.Variance, ddgb.SeriesGroupBy, ddgb.SeriesGroupBy)
 def execute_var_series_groupby_mask(op, data, mask, aggcontext=None, **kwargs):
     return aggcontext.agg(
         data,
@@ -169,7 +171,7 @@ def execute_variance_series(op, data, mask, aggcontext=None, **kwargs):
 
 
 # TODO - aggregations - #2553
-@execute_node.register(ops.StandardDev, SeriesGroupBy, type(None))
+@execute_node.register(ops.StandardDev, ddgb.SeriesGroupBy, type(None))
 def execute_reduction_series_groupby_std(
     op, data, _, aggcontext=None, **kwargs
 ):
@@ -177,7 +179,7 @@ def execute_reduction_series_groupby_std(
 
 
 # TODO - grouping - #2553
-@execute_node.register(ops.StandardDev, SeriesGroupBy, SeriesGroupBy)
+@execute_node.register(ops.StandardDev, ddgb.SeriesGroupBy, ddgb.SeriesGroupBy)
 def execute_std_series_groupby_mask(op, data, mask, aggcontext=None, **kwargs):
     return aggcontext.agg(
         data,
