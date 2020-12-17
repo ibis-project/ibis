@@ -7,7 +7,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-from ibis.backends.spark.tests.conftest import SparkTest
+from ibis.backends.spark.tests.conftest import TestConf as SparkTest
 
 pytestmark = [pytest.mark.spark, pytest.mark.udf]
 
