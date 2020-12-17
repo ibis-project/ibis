@@ -7,10 +7,10 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.backends.csv import CSVClient
-from ibis.backends.pandas.tests.conftest import PandasTest
+from ibis.backends.pandas.tests.conftest import TestConf as PandasTest
 
 
-class CsvTest(PandasTest):
+class TestConf(PandasTest):
     check_names = False
     supports_divide_by_zero = True
     returned_timestamp_unit = 'ns'

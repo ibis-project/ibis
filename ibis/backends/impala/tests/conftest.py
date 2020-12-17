@@ -17,7 +17,7 @@ from ibis.backends.tests.base import (
 from ibis.tests.expr.mocks import MockConnection
 
 
-class ImpalaTest(UnorderedComparator, BackendTest, RoundAwayFromZero):
+class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
     supports_arrays = True
     supports_arrays_outside_of_select = False
     check_dtype = False

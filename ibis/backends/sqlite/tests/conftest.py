@@ -8,7 +8,7 @@ import ibis.expr.types as ir
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 
 
-class SQLiteTest(BackendTest, RoundAwayFromZero):
+class TestConf(BackendTest, RoundAwayFromZero):
     supports_arrays = False
     supports_arrays_outside_of_select = supports_arrays
     supports_window_operations = True

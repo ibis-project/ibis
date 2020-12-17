@@ -23,7 +23,7 @@ OMNISCIDB_PROTOCOL = os.environ.get('IBIS_TEST_OMNISCIDB_PROTOCOL', 'binary')
 OMNISCIDB_DB = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
 
 
-class OmniSciDBTest(BackendTest, RoundAwayFromZero):
+class TestConf(BackendTest, RoundAwayFromZero):
     check_dtype = False
     check_names = False
     supports_window_operations = True

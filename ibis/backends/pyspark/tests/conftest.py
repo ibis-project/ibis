@@ -12,7 +12,7 @@ from ibis.backends.tests.base import (
 )
 
 
-class PySparkTest(BackendTest, RoundAwayFromZero):
+class TestConf(BackendTest, RoundAwayFromZero):
     supported_to_timestamp_units = {'s'}
 
     @staticmethod

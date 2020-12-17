@@ -40,7 +40,7 @@ IBIS_TEST_POSTGRES_DB = os.environ.get(
 )
 
 
-class PostgresTest(BackendTest, RoundHalfToEven):
+class TestConf(BackendTest, RoundHalfToEven):
     # postgres rounds half to even for double precision and half away from zero
     # for numeric and decimal
 

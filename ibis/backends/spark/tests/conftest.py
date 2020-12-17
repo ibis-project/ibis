@@ -11,7 +11,7 @@ from ibis.backends.tests.base import (
 )
 
 
-class SparkTest(BackendTest, RoundHalfToEven):
+class TestConf(BackendTest, RoundHalfToEven):
     @staticmethod
     def connect(data_directory):
         return get_spark_testing_client(data_directory)

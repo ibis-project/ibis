@@ -1,6 +1,4 @@
 import importlib
-import inspect
-import operator
 import os
 from pathlib import Path
 
@@ -17,59 +15,58 @@ def _random_identifier(suffix):
     return '__ibis_test_{}_{}'.format(suffix, util.guid())
 
 
-def backend_test_classes():
-    """Return all backend tests classes defined in thebackends directories."""
-    for backend_dir in Path(__file__).parent.parent.iterdir():
-        backend = backend_dir.name
-        try:
-            conftest = importlib.import_module(
-                f'ibis.backends.{backend}.tests.conftest'
-            )
-        except ImportError:
-            pass
-        else:
-            for obj_name in dir(conftest):
-                obj = getattr(conftest, obj_name)
-                if (
-                    inspect.isclass(obj)
-                    and issubclass(obj, BackendTest)
-                    and obj.name() == backend
-                ):
-                    yield obj
+def _backend_name_to_class(backend_str: str):
+    """
+    Convert a backend string to the test configuration class for the backend.
+    """
+    try:
+        conftest = importlib.import_module(
+            f'ibis.backends.{backend_str}.tests.conftest')
+    except ImportError:
+        raise RuntimeError(f'Unknown backend {backend_str}')
+    return conftest.TestConf
 
 
-ALL_BACKENDS = sorted(
-    backend_test_classes(), key=operator.attrgetter("__name__")
-)
+def _get_backends_to_test():
+    """
+    Get a list of `TestConf` classes of the backends to test.
+
+    The list of backends can be specified by theuse rwith the `PYTEST_BACKENDS`
+    environment variable, or otherwise all backends are being tested.
+    """
+    backends = os.environ.get('PYTEST_BACKENDS', '').split(' ')
+    if backends == ['']:
+        backends = [d.name for d in Path(__file__).parent.parent.iterdir()
+                    if list(d.glob('tests/conftest.py'))]
+
+    # raise RuntimeError(f'{backends=}')
+    return [pytest.param(_backend_name_to_class(backend),
+                         marks=getattr(pytest.mark, backend))
+            for backend in sorted(backends)]
 
 
 def pytest_runtest_call(item):
     """Dynamically add various custom markers."""
     nodeid = item.nodeid
-    for marker in list(item.iter_markers(name="only_on_backends")):
-        (backend_types,) = map(tuple, marker.args)
-        backend = item.funcargs["backend"]
-        assert isinstance(
-            backend, BackendTest
-        ), "backend has type {!r}".format(type(backend).__name__)
-        if not isinstance(backend, backend_types):
+    backend = item.funcargs["backend"]
+    assert isinstance(
+        backend, BackendTest
+    ), "backend has type {!r}".format(type(backend).__name__)
+
+    for marker in item.iter_markers(name="only_on_backends"):
+        if backend.name() not in marker.args[0]:
             pytest.skip(
-                f"only_on_backends: {backend} is not in {backend_types} "
+                f"only_on_backends: {backend} is not in {marker.args[0]} "
                 f"{nodeid}"
             )
 
-    for marker in list(item.iter_markers(name="skip_backends")):
+    for marker in item.iter_markers(name="skip_backends"):
         (backend_types,) = map(tuple, marker.args)
-        backend = item.funcargs["backend"]
-        assert isinstance(
-            backend, BackendTest
-        ), "backend has type {!r}".format(type(backend).__name__)
-        if isinstance(backend, backend_types):
+        if backend.name() in marker.args[0]:
             pytest.skip(f"skip_backends: {backend} {nodeid}")
 
-    for marker in list(item.iter_markers(name="skip_missing_feature")):
-        backend = item.funcargs["backend"]
-        (features,) = marker.args
+    for marker in item.iter_markers(name="skip_missing_feature"):
+        features = marker.args[0]
         missing_features = [
             feature for feature in features if not getattr(backend, feature)
         ]
@@ -80,15 +77,10 @@ def pytest_runtest_call(item):
                 )
             )
 
-    for marker in list(item.iter_markers(name="xfail_backends")):
-        (backend_types,) = map(tuple, marker.args)
-        backend = item.funcargs["backend"]
-        assert isinstance(
-            backend, BackendTest
-        ), "backend has type {!r}".format(type(backend).__name__)
+    for marker in item.iter_markers(name="xfail_backends"):
         item.add_marker(
             pytest.mark.xfail(
-                condition=isinstance(backend, backend_types),
+                condition=backend.name() in marker.args[0],
                 reason='Backend {} does not pass this test'.format(
                     type(backend).__name__
                 ),
@@ -96,15 +88,10 @@ def pytest_runtest_call(item):
             )
         )
 
-    for marker in list(item.iter_markers(name="xpass_backends")):
-        (backend_types,) = map(tuple, marker.args)
-        backend = item.funcargs["backend"]
-        assert isinstance(
-            backend, BackendTest
-        ), "backend has type {!r}".format(type(backend).__name__)
+    for marker in item.iter_markers(name="xpass_backends"):
         item.add_marker(
             pytest.mark.xfail(
-                condition=not isinstance(backend, backend_types),
+                condition=backend.name() not in marker.args[0],
                 reason='{} does not pass this test'.format(
                     type(backend).__name__
                 ),
@@ -141,21 +128,8 @@ def pytest_pyfunc_call(pyfuncitem):
 
 pytestmark = pytest.mark.backend
 
-pytest_backends = os.environ.get('PYTEST_BACKENDS', '').split(' ')
-params_backend = [
-    pytest.param(backend, marks=getattr(pytest.mark, backend.name()))
-    for backend in ALL_BACKENDS
-    if backend.name() in pytest_backends or not pytest_backends
-]
-if len(pytest_backends) != len(params_backend):
-    unknown_backends = set(pytest_backends) - {b.name() for b in ALL_BACKENDS}
-    raise ValueError(
-        'PYTEST_BACKENDS environment variable contains unknown '
-        f'backends {unknown_backends} {[b.name() for b in ALL_BACKENDS]}'
-    )
 
-
-@pytest.fixture(params=params_backend, scope='session')
+@pytest.fixture(params=_get_backends_to_test(), scope='session')
 def backend(request, data_directory):
     return request.param(data_directory)
 

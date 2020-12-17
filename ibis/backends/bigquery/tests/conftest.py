@@ -56,7 +56,7 @@ def connect(project_id, dataset_id, application_name=None):
         pytest.skip(skip_message)
 
 
-class BigQueryTest(UnorderedComparator, BackendTest, RoundAwayFromZero):
+class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
     supports_divide_by_zero = True
     supports_floating_modulus = False
     returned_timestamp_unit = 'us'

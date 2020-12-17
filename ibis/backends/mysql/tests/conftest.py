@@ -7,7 +7,7 @@ import ibis
 from ibis.backends.tests.base import BackendTest, RoundHalfToEven
 
 
-class MySQLTest(BackendTest, RoundHalfToEven):
+class TestConf(BackendTest, RoundHalfToEven):
     # mysql has the same rounding behavior as postgres
     check_dtype = False
     supports_window_operations = False

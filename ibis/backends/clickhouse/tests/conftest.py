@@ -19,7 +19,7 @@ CLICKHOUSE_PASS = os.environ.get('IBIS_TEST_CLICKHOUSE_PASSWORD', '')
 IBIS_TEST_CLICKHOUSE_DB = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
 
 
-class ClickhouseTest(UnorderedComparator, BackendTest, RoundHalfToEven):
+class TestConf(UnorderedComparator, BackendTest, RoundHalfToEven):
     check_dtype = False
     supports_window_operations = False
     returned_timestamp_unit = 's'

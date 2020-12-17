@@ -1,16 +1,10 @@
 import pandas as pd
 import pytest
 
-from ibis.backends.bigquery.tests.conftest import BigQueryTest
-from ibis.backends.impala.tests.conftest import ImpalaTest
-from ibis.backends.pandas.tests.conftest import PandasTest
-from ibis.backends.postgres.tests.conftest import PostgresTest
-from ibis.backends.pyspark.tests.conftest import PySparkTest
-
 
 @pytest.mark.parametrize('distinct', [False, True])
 @pytest.mark.only_on_backends(
-    [BigQueryTest, ImpalaTest, PandasTest, PostgresTest, PySparkTest]
+    ['bigquery', 'impala', 'pandas', 'postrges', 'pyspark']
 )
 @pytest.mark.xfail_unsupported
 def test_union(backend, alltypes, df, distinct):

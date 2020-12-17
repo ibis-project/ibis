@@ -4,10 +4,10 @@ import pytest
 
 import ibis
 from ibis.backends.hdf5 import HDFClient
-from ibis.backends.pandas.tests.conftest import PandasTest
+from ibis.backends.pandas.tests.conftest import TestConf as PandasTest
 
 
-class HDF5Test(PandasTest):
+class TestConf(PandasTest):
     check_names = False
     supports_divide_by_zero = True
     returned_timestamp_unit = 'ns'

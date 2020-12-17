@@ -5,11 +5,11 @@ import pyarrow.parquet as pq
 import pytest
 
 import ibis
-from ibis.backends.pandas.tests.conftest import PandasTest
+from ibis.backends.pandas.tests.conftest import TestConf as PandasTest
 from ibis.backends.parquet import ParquetClient
 
 
-class ParquetTest(PandasTest):
+class TestConf(PandasTest):
     check_names = False
     supports_divide_by_zero = True
     returned_timestamp_unit = 'ns'

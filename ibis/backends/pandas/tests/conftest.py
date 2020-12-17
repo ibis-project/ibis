@@ -7,7 +7,7 @@ import ibis.expr.operations as ops
 from ibis.backends.tests.base import BackendTest, RoundHalfToEven
 
 
-class PandasTest(BackendTest, RoundHalfToEven):
+class TestConf(BackendTest, RoundHalfToEven):
     check_names = False
     additional_skipped_operations = frozenset({ops.StringSQLLike})
     supported_to_timestamp_units = BackendTest.supported_to_timestamp_units | {

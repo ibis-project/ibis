@@ -77,7 +77,7 @@ class BackendTest(abc.ABC):
 
     @classmethod
     def name(cls) -> str:
-        return cls.__name__.lower()[: -len('Test')]
+        return Path(__file__).resolve().parent.parent.name
 
     def __str__(self) -> str:
         return self.__class__.__name__
@@ -143,7 +143,7 @@ class BackendTest(abc.ABC):
 
     @property
     def api(self):
-        return getattr(ibis, self.name)
+        return getattr(ibis, self.name())
 
     def make_context(
         self, params: Optional[Mapping[ir.ValueExpr, Any]] = None
