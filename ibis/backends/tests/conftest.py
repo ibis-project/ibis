@@ -21,7 +21,8 @@ def _backend_name_to_class(backend_str: str):
     """
     try:
         conftest = importlib.import_module(
-            f'ibis.backends.{backend_str}.tests.conftest')
+            f'ibis.backends.{backend_str}.tests.conftest'
+        )
     except ImportError:
         raise RuntimeError(f'Unknown backend {backend_str}')
     return conftest.TestConf
@@ -36,22 +37,29 @@ def _get_backends_to_test():
     """
     backends = os.environ.get('PYTEST_BACKENDS', '').split(' ')
     if backends == ['']:
-        backends = [d.name for d in Path(__file__).parent.parent.iterdir()
-                    if list(d.glob('tests/conftest.py'))]
+        backends = [
+            d.name
+            for d in Path(__file__).parent.parent.iterdir()
+            if list(d.glob('tests/conftest.py'))
+        ]
 
     # raise RuntimeError(f'{backends=}')
-    return [pytest.param(_backend_name_to_class(backend),
-                         marks=getattr(pytest.mark, backend))
-            for backend in sorted(backends)]
+    return [
+        pytest.param(
+            _backend_name_to_class(backend),
+            marks=getattr(pytest.mark, backend),
+        )
+        for backend in sorted(backends)
+    ]
 
 
 def pytest_runtest_call(item):
     """Dynamically add various custom markers."""
     nodeid = item.nodeid
     backend = item.funcargs["backend"]
-    assert isinstance(
-        backend, BackendTest
-    ), "backend has type {!r}".format(type(backend).__name__)
+    assert isinstance(backend, BackendTest), "backend has type {!r}".format(
+        type(backend).__name__
+    )
 
     for marker in item.iter_markers(name="only_on_backends"):
         if backend.name() not in marker.args[0]:
