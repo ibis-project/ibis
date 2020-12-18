@@ -63,7 +63,7 @@ def compute_projection_scalar_expr(
     scalar = execute(expr, scope=scope, **kwargs)
     result = pandas.Series([scalar], name=name).repeat(len(data.index))
     result.index = data.index
-    return dd.from_pandas(result, npartitions=1)
+    return dd.from_pandas(result, npartitions=data.npartitions)
 
 
 @compute_projection.register(ir.ColumnExpr, ops.Selection, dd.DataFrame)

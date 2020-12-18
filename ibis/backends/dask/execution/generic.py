@@ -344,7 +344,8 @@ def execute_node_ifnull_scalar_series(op, value, replacement, **kwargs):
         replacement
         if isnull(value)
         else dd.from_pandas(
-            pd.Series(value, index=replacement.index), npartitions=1
+            pd.Series(value, index=replacement.index),
+            npartitions=replacement.npartitions,
         )
     )
 

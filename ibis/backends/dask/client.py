@@ -242,7 +242,6 @@ class DaskClient(client.Client):
         if obj is not None:
             df = obj
         else:
-            # TODO - this isn't right
             dtypes = ibis_schema_to_dask(schema)
             df = schema.apply_to(
                 dd.from_pandas(
