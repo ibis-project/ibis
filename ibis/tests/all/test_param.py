@@ -73,7 +73,7 @@ def test_scalar_param_struct(backend, con):
             [('a', 'int64'), ('b', 'string'), ('c', 'float64')]
         )
     )
-    result = con.execute(param.a, params={param: value})
+    result = con.execute(param['a'], params={param: value})
     assert result == value['a']
 
 
