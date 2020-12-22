@@ -3274,48 +3274,6 @@ def _struct_get_field(expr: StructValue, field_name: str) -> ValueExpr:
     return ops.StructField(expr, field_name).to_expr().name(field_name)
 
 
-def _struct_get_attr(expr: StructValue, attr_name: str) -> ValueExpr:
-    """Get field named `attr_name` from the ``StructValue`` expression `expr`.
-
-    Parameters
-    ----------
-    field_name : str
-        The name of the field to access from the ``Struct`` typed expression
-        `expr`. Must be a Python ``str`` type; programmatic struct field
-        access is not yet supported.
-
-    Returns
-    -------
-    value_expr : ibis.expr.types.ValueExpr
-        An expression with the type of the field being accessed.
-    """
-    # Below, we indicate to pickle that this function is not meant to be an
-    # implementation for __getstate__ and __setstate__. Without this, when
-    # pickling/unpickling, pickle would attempt to pull a field named
-    # '__getstate__' (or '__setstate__') from the struct, which would fail.
-    if attr_name == '__getstate__' or attr_name == '__setstate__':
-        raise AttributeError(attr_name)
-    return _struct_get_field(expr, attr_name)
-
-
-def _struct_get_item(expr: StructValue, item_name: str) -> ValueExpr:
-    """Get field named `item_name` from the ``StructValue`` expression `expr`.
-
-    Parameters
-    ----------
-    field_name : str
-        The name of the field to access from the ``Struct`` typed expression
-        `expr`. Must be a Python ``str`` type; programmatic struct field
-        access is not yet supported.
-
-    Returns
-    -------
-    value_expr : ibis.expr.types.ValueExpr
-        An expression with the type of the field being accessed.
-    """
-    return _struct_get_field(expr, item_name)
-
-
 def _destructure(expr: StructValue) -> DestructValue:
     """Destructure a ``StructValue`` into a corresponding ``DestructValue``.
 
@@ -3349,8 +3307,7 @@ def _destructure(expr: StructValue) -> DestructValue:
 
 _struct_value_methods = {
     'destructure': _destructure,
-    '__getattr__': _struct_get_attr,
-    '__getitem__': _struct_get_item,
+    '__getitem__': _struct_get_field,
 }
 
 _add_methods(ir.StructValue, _struct_value_methods)
