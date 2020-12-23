@@ -6,6 +6,7 @@ import ibis.expr.datatypes as dt
 from ibis.tests.backends import (
     BigQuery,
     Clickhouse,
+    Dask,
     Impala,
     OmniSciDB,
     Postgres,
@@ -14,6 +15,7 @@ from ibis.tests.backends import (
 )
 
 
+@pytest.mark.xfail_backends([Dask])  # TODO - pandas - #2553
 def test_string_col_is_unicode(backend, alltypes, df):
     dtype = alltypes.string_col.type()
     assert dtype == dt.String(nullable=dtype.nullable)
@@ -159,6 +161,8 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.string_col.ascii_str(),
             lambda t: t.string_col.map(ord).astype('int32'),
             id='ascii_str',
+            # TODO - pandas - #2553
+            marks=pytest.mark.skip_backends([Dask]),
         ),
         param(
             lambda t: t.string_col.length(),
@@ -210,16 +214,22 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.date_string_col[t.date_string_col.length() - 1 :],
             lambda t: t.date_string_col.str[-1:],
             id='expr_slice_begin',
+            # TODO - substring - #2553
+            marks=pytest.mark.xfail_backends([Dask]),
         ),
         param(
             lambda t: t.date_string_col[: t.date_string_col.length()],
             lambda t: t.date_string_col,
             id='expr_slice_end',
+            # TODO - substring - #2553
+            marks=pytest.mark.xfail_backends([Dask]),
         ),
         param(
             lambda t: t.date_string_col[:],
             lambda t: t.date_string_col,
             id='expr_empty_slice',
+            # TODO - substring - #2553
+            marks=pytest.mark.xfail_backends([Dask]),
         ),
         param(
             lambda t: t.date_string_col[
@@ -227,6 +237,8 @@ def test_string_col_is_unicode(backend, alltypes, df):
             ],
             lambda t: t.date_string_col.str[-2:-1],
             id='expr_slice_begin_end',
+            # TODO - substring - #2553
+            marks=pytest.mark.xfail_backends([Dask]),
         ),
         param(
             lambda t: t.date_string_col.split('/'),

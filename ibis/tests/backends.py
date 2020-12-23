@@ -180,8 +180,61 @@ class Pandas(Backend, RoundHalfToEven):
 
 
 class Dask(Pandas):
-    # clone pandas directly until the rest of the dask backend is defined
-    pass
+    @staticmethod
+    def connect(data_directory: Path) -> ibis.client.Client:
+        import dask.dataframe as dd
+
+        # Note - we use `dd.from_pandas(pd.read_csv(...))` instead of
+        # `dd.read_csv` due to https://github.com/dask/dask/issues/6970
+
+        return ibis.backends.dask.connect(
+            {
+                'functional_alltypes': dd.from_pandas(
+                    pd.read_csv(
+                        str(data_directory / 'functional_alltypes.csv'),
+                        index_col=None,
+                        dtype={'bool_col': bool, 'string_col': str},
+                        parse_dates=['timestamp_col'],
+                        encoding='utf-8',
+                    ),
+                    npartitions=1,
+                ),
+                'batting': dd.from_pandas(
+                    pd.read_csv(str(data_directory / 'batting.csv')),
+                    npartitions=1,
+                ),
+                'awards_players': dd.from_pandas(
+                    pd.read_csv(str(data_directory / 'awards_players.csv')),
+                    npartitions=1,
+                ),
+            }
+        )
+
+    # @staticmethod
+    # def default_series_rename(
+    #     series: pd.Series, name: str = 'tmp'
+    # ) -> pd.Series:
+    #     return series.compute().rename(name)
+
+    @classmethod
+    def assert_series_equal(
+        cls, left, right, *args: Any, **kwargs: Any
+    ) -> None:
+        import dask.dataframe as dd
+
+        kwargs.setdefault('check_dtype', cls.check_dtype)
+        kwargs.setdefault('check_names', cls.check_names)
+        # we sometimes use pandas to build the "expected" case in tests
+        right = right.compute() if isinstance(right, dd.Series) else right
+        tm.assert_series_equal(left.compute(), right, *args, **kwargs)
+
+    @classmethod
+    def assert_frame_equal(
+        cls, left, right, *args: Any, **kwargs: Any
+    ) -> None:
+        left = left.compute().reset_index(drop=True)
+        right = right.compute().reset_index(drop=True)
+        tm.assert_frame_equal(left, right, *args, **kwargs)
 
 
 class Csv(Pandas):

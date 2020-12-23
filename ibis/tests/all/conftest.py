@@ -8,7 +8,7 @@ import pytest
 import ibis
 import ibis.common.exceptions as com
 import ibis.util as util
-from ibis.tests.backends import Backend
+from ibis.tests.backends import Backend, Dask
 
 
 def _random_identifier(suffix):
@@ -157,7 +157,9 @@ def alltypes(backend):
 
 
 @pytest.fixture(scope='session')
-def sorted_alltypes(alltypes):
+def sorted_alltypes(backend, alltypes):
+    if isinstance(backend, Dask):
+        pytest.skip("# TODO - sorting - #2553")
     return alltypes.sort_by('id')
 
 
@@ -193,7 +195,10 @@ def df(alltypes):
 
 
 @pytest.fixture(scope='session')
-def sorted_df(df):
+def sorted_df(backend, df):
+    if isinstance(backend, Dask):
+        pytest.skip("# TODO - sorting - #2553")
+
     return df.sort_values('id').reset_index(drop=True)
 
 
