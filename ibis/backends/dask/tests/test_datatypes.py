@@ -85,7 +85,7 @@ def test_dask_dtype(dask_dtype, ibis_dtype):
     assert dt.dtype(dask_dtype) == ibis_dtype
 
 
-@pytest.mark.xfail(reason="TODO - literal conversion does not work yet")
+@pytest.mark.xfail(TypeError, reason="TODO - as_value_expr - #2553")
 def test_series_to_ibis_literal():
     values = [1, 2, 3, 4]
     s = dd.from_pandas(pd.Series(values), npartitions=1)

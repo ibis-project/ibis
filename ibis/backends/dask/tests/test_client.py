@@ -54,7 +54,6 @@ def test_load_data(client):
     assert client.get_schema('testing')
 
 
-@pytest.mark.xfail(reason="Need to fix up create_table")
 def test_create_table(client):
     client.create_table('testing', obj=make_dask_data_frame())
     assert client.exists_table('testing')
@@ -79,7 +78,6 @@ def test_read_with_undiscoverable_type(client):
         client.table('df_unknown')
 
 
-@pytest.mark.xfail(reason="TODO remove when execution is written")
 def test_drop(table):
     table = table.mutate(c=table.a)
     expr = table.drop(['a'])
