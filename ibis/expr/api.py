@@ -3266,6 +3266,20 @@ def _struct_get_field(expr: StructValue, field_name: str) -> ValueExpr:
         `expr`. Must be a Python ``str`` type; programmatic struct field
         access is not yet supported.
 
+    Examples
+    --------
+    >>> import ibis
+    >>> from collections import OrderedDict
+    >>> struct_expr = ibis.literal(
+    ...     OrderedDict([("fruit", "pear"), ("weight", 0)])
+    ... )
+    >>> struct_expr['fruit']  # doctest: +NORMALIZE_WHITESPACE
+    fruit = StructField[string]
+      Literal[struct<fruit: string, weight: int8>]
+        OrderedDict([('fruit', 'pear'), ('weight', 0)])
+      field:
+        fruit
+
     Returns
     -------
     value_expr : ibis.expr.types.ValueExpr
