@@ -53,18 +53,18 @@ def test_struct_field_literal(value):
         [("fruit", dt.string), ("weight", dt.int8)]
     )
 
-    expr = struct.fruit
+    expr = struct['fruit']
     result = execute(expr)
     assert result == "pear"
 
-    expr = struct.weight
+    expr = struct['weight']
     result = execute(expr)
     assert result == 0
 
 
 def test_struct_field_series(struct_table):
     t = struct_table
-    expr = t.s.fruit
+    expr = t.s['fruit']
     result = expr.execute()
     expected = dd.from_pandas(
         pd.Series(["apple", "pear", "pear"], name="fruit"), npartitions=1,
@@ -74,7 +74,7 @@ def test_struct_field_series(struct_table):
 
 def test_struct_field_series_group_by_key(struct_table):
     t = struct_table
-    expr = t.groupby(t.s.fruit).aggregate(total=t.value.sum())
+    expr = t.groupby(t.s['fruit']).aggregate(total=t.value.sum())
     result = expr.execute()
     expected = dd.from_pandas(
         pd.DataFrame([("apple", 1), ("pear", 5)], columns=["fruit", "total"]),
@@ -86,7 +86,7 @@ def test_struct_field_series_group_by_key(struct_table):
 @pytest.mark.xfail(reason="TODO - grouping - #2553")
 def test_struct_field_series_group_by_value(struct_table):
     t = struct_table
-    expr = t.groupby(t.key).aggregate(total=t.s.weight.sum())
+    expr = t.groupby(t.key).aggregate(total=t.s['weight'].sum())
     result = expr.execute()
     # these are floats because we have a NULL value in the input data
     expected = dd.from_pandas(
