@@ -18,7 +18,7 @@ dependencies:
   - graphviz>=2.38
   - openjdk=8
   - pytables>=3.6
-  - python-graphviz>=0.14, <=0.15
+  - python-graphviz>=0.14
   - python-hdfs>=2.0.16 # XXX this verison can probably be increased
 
   # Dev tools
