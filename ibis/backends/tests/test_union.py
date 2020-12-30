@@ -6,6 +6,7 @@ import pytest
 @pytest.mark.only_on_backends(
     ['bigquery', 'impala', 'pandas', 'postrges', 'pyspark']
 )
+@pytest.mark.skip_backends(['dask'])  # TODO - sorting - #2553 (pd.concat)
 @pytest.mark.xfail_unsupported
 def test_union(backend, alltypes, df, distinct):
     result = alltypes.union(alltypes, distinct=distinct).execute()

@@ -56,6 +56,9 @@ aggregate_test_params = [
 @pytest.mark.parametrize(
     ('result_fn', 'expected_fn', 'expected_col'), aggregate_test_params,
 )
+@pytest.mark.skip_backends(
+    ['dask']
+)  # TODO - aggregations - #2553 (and pd.concat)
 @pytest.mark.xfail_unsupported
 def test_aggregate(
     backend, alltypes, df, result_fn, expected_fn, expected_col
@@ -73,6 +76,7 @@ def test_aggregate(
 @pytest.mark.parametrize(
     ('result_fn', 'expected_fn', 'expected_col'), aggregate_test_params,
 )
+@pytest.mark.skip_backends(['dask'])  # TODO - aggregations - #2553
 @pytest.mark.xfail_unsupported
 def test_aggregate_grouped(
     backend, alltypes, df, result_fn, expected_fn, expected_col
@@ -227,6 +231,7 @@ def test_aggregate_grouped(
         ),
     ],
 )
+@pytest.mark.skip_backends(['dask'])  # TODO - iloc - #2553
 @pytest.mark.xfail_unsupported
 def test_reduction_ops(
     backend, alltypes, df, result_fn, expected_fn, ibis_cond, pandas_cond
@@ -256,6 +261,7 @@ def test_reduction_ops(
         )
     ],
 )
+@pytest.mark.skip_backends(['dask'])  # TODO - aggregations - #2553
 @pytest.mark.xfail_unsupported
 def test_group_concat(backend, alltypes, df, result_fn, expected_fn):
     expr = result_fn(alltypes)
@@ -276,7 +282,8 @@ def test_group_concat(backend, alltypes, df, result_fn, expected_fn):
     ],
 )
 @pytest.mark.xfail_unsupported
-@pytest.mark.xfail_backends(['pyspark'])  # Issue #2130
+# TODO - sorting - #2553
+@pytest.mark.xfail_backends(['dask', 'pyspark'])  # Issue #2130
 def test_topk_op(backend, alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend
     # can have different result for that.
@@ -305,7 +312,10 @@ def test_topk_op(backend, alltypes, df, result_fn, expected_fn):
 )
 @pytest.mark.xfail_unsupported
 # Issues #2369 #2133 #2131 #2132
-@pytest.mark.xfail_backends(['bigquery', 'clickhouse', 'mysql', 'postgres'])
+# TODO - sorting - #2553
+@pytest.mark.xfail_backends(
+    ['bigquery', 'clickhouse', 'dask', 'mysql', 'postgres']
+)
 @pytest.mark.skip_backends(['sqlite'], reason='Issue #2128')
 def test_topk_filter_op(backend, alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend

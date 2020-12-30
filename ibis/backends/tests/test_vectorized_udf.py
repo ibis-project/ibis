@@ -233,6 +233,8 @@ def test_invalid_kwargs(backend, alltypes):
 
 
 @pytest.mark.only_on_backends(['pandas', 'pyspark'])
+# TODO - udf - #2553
+@pytest.mark.xfail_backends(['dask'])
 @pytest.mark.xfail_unsupported
 def test_elementwise_udf_destruct(backend, alltypes):
     result = alltypes.mutate(
@@ -278,6 +280,8 @@ def test_elementwise_udf_struct(backend, alltypes):
 
 
 @pytest.mark.only_on_backends(['pandas'])
+# TODO - udf - #2553
+@pytest.mark.xfail_backends(['dask'])
 def test_analytic_udf_destruct(backend, alltypes):
     w = window(preceding=None, following=None, group_by='year')
 
@@ -296,6 +300,8 @@ def test_analytic_udf_destruct(backend, alltypes):
 
 
 @pytest.mark.only_on_backends(['pandas'])
+# TODO - udf - #2553
+@pytest.mark.xfail_backends(['dask'])
 def test_reduction_udf_destruct_groupby(backend, alltypes):
     result = (
         alltypes.groupby('year')
@@ -320,6 +326,8 @@ def test_reduction_udf_destruct_groupby(backend, alltypes):
 
 
 @pytest.mark.only_on_backends(['pandas'])
+# TODO - udf - #2553
+@pytest.mark.xfail_backends(['dask'])
 def test_reduction_udf_destruct_no_groupby(backend, alltypes):
     result = alltypes.aggregate(
         mean_struct(alltypes['double_col'], alltypes['int_col']).destructure()
@@ -334,6 +342,8 @@ def test_reduction_udf_destruct_no_groupby(backend, alltypes):
 
 
 @pytest.mark.only_on_backends(['pandas'])
+# TODO - udf - #2553
+@pytest.mark.xfail_backends(['dask'])
 def test_reduction_udf_destruct_window(backend, alltypes):
     win = window(
         preceding=ibis.interval(hours=2),

@@ -6,12 +6,12 @@ import re
 from functools import partial
 from typing import Dict, List, Mapping
 
+import dask
 import dask.dataframe as dd
 import dateutil.parser
 import numpy as np
 import pandas as pd
 import toolz
-from multipledispatch import Dispatcher
 from pandas.api.types import DatetimeTZDtype
 from pkg_resources import parse_version
 
@@ -25,11 +25,13 @@ from ibis.backends.pandas.client import (
     PANDAS_DATE_TYPES,
     PANDAS_STRING_TYPES,
     _inferable_pandas_dtypes,
+    convert,
     convert_timezone,
     ibis_dtype_to_pandas,
     ibis_schema_to_pandas,
 )
-from ibis.backends.pandas.core import execute_and_reset
+
+from .core import execute_and_reset
 
 infer_dask_dtype = pd.api.types.infer_dtype
 
@@ -82,35 +84,13 @@ ibis_dtype_to_dask = ibis_dtype_to_pandas
 
 ibis_schema_to_dask = ibis_schema_to_pandas
 
-convert = Dispatcher(
-    'convert',
-    doc="""\
-Convert `column` to the dask dtype corresponding to `out_dtype`, where the
-dtype of `column` is `in_dtype`.
-
-Parameters
-----------
-in_dtype : Union[np.dtype, dask_dtype]
-    The dtype of `column`, used for dispatching
-out_dtype : ibis.expr.datatypes.DataType
-    The requested ibis type of the output
-column : dd.Series
-    The column to convert
-
-Returns
--------
-result : dd.Series
-    The converted column
-""",
-)
-
 
 @convert.register(DatetimeTZDtype, dt.Timestamp, dd.Series)
 def convert_datetimetz_to_timestamp(in_dtype, out_dtype, column):
     output_timezone = out_dtype.timezone
     if output_timezone is not None:
         return column.dt.tz_convert(output_timezone)
-    return column.astype(out_dtype.to_dask(), errors='ignore')
+    return column.astype(out_dtype.to_dask())
 
 
 DASK_STRING_TYPES = PANDAS_STRING_TYPES
@@ -151,7 +131,7 @@ def convert_any_to_interval(_, out_dtype, column):
 
 @convert.register(np.dtype, dt.String, dd.Series)
 def convert_any_to_string(_, out_dtype, column):
-    result = column.astype(out_dtype.to_dask(), errors='ignore')
+    result = column.astype(out_dtype.to_dask())
     return result
 
 
@@ -167,46 +147,11 @@ def convert_boolean_to_series(in_dtype, out_dtype, column):
 
 @convert.register(object, dt.DataType, dd.Series)
 def convert_any_to_any(_, out_dtype, column):
-    return column.astype(out_dtype.to_dask(), errors='ignore')
-
-
-def ibis_schema_apply_to(schema: sch.Schema, df: dd.DataFrame) -> dd.DataFrame:
-    """Applies the Ibis schema to a dask DataFrame
-
-    Parameters
-    ----------
-    schema : ibis.schema.Schema
-    df : dask.dataframe.DataFrame
-
-    Returns
-    -------
-    df : dask.dataframeDataFrame
-
-    Notes
-    -----
-    Mutates `df`
-    """
-
-    for column, dtype in schema.items():
-        dask_dtype = dtype.to_dask()
-        col = df[column]
-        col_dtype = col.dtype
-
-        try:
-            not_equal = dask_dtype != col_dtype
-        except TypeError:
-            # ugh, we can't compare dtypes coming from dask, assume not equal
-            not_equal = True
-
-        if not_equal or isinstance(dtype, dt.String):
-            df[column] = convert(col_dtype, dtype, col)
-
-    return df
+    return column.astype(out_dtype.to_dask())
 
 
 dt.DataType.to_dask = ibis_dtype_to_dask
 sch.Schema.to_dask = ibis_schema_to_dask
-sch.Schema.apply_to = ibis_schema_apply_to
 
 
 class DaskTable(ops.DatabaseTable):
@@ -297,7 +242,6 @@ class DaskClient(client.Client):
         if obj is not None:
             df = obj
         else:
-            # TODO - this isn't right
             dtypes = ibis_schema_to_dask(schema)
             df = schema.apply_to(
                 dd.from_pandas(
@@ -342,4 +286,4 @@ class DaskClient(client.Client):
     @property
     def version(self) -> str:
         """Return the version of the underlying backend library."""
-        return parse_version(dd.__version__)
+        return parse_version(dask.__version__)

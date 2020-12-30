@@ -1,8 +1,9 @@
 from collections import OrderedDict
 
+import dask.dataframe as dd
 import pandas as pd
-import pandas.testing as tm
 import pytest
+from dask.dataframe.utils import tm
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -17,16 +18,19 @@ def value():
 
 @pytest.fixture(scope="module")
 def struct_client(value):
-    df = pd.DataFrame(
-        {
-            "s": [
-                OrderedDict([("fruit", "apple"), ("weight", None)]),
-                value,
-                OrderedDict([("fruit", "pear"), ("weight", 1)]),
-            ],
-            "key": list("aab"),
-            "value": [1, 2, 3],
-        }
+    df = dd.from_pandas(
+        pd.DataFrame(
+            {
+                "s": [
+                    OrderedDict([("fruit", "apple"), ("weight", None)]),
+                    value,
+                    OrderedDict([("fruit", "pear"), ("weight", 1)]),
+                ],
+                "key": list("aab"),
+                "value": [1, 2, 3],
+            }
+        ),
+        npartitions=1,
     )
     return connect({"t": df})
 
@@ -62,24 +66,31 @@ def test_struct_field_series(struct_table):
     t = struct_table
     expr = t.s['fruit']
     result = expr.execute()
-    expected = pd.Series(["apple", "pear", "pear"], name="fruit")
-    tm.assert_series_equal(result, expected)
+    expected = dd.from_pandas(
+        pd.Series(["apple", "pear", "pear"], name="fruit"), npartitions=1,
+    )
+    tm.assert_series_equal(result.compute(), expected.compute())
 
 
 def test_struct_field_series_group_by_key(struct_table):
     t = struct_table
     expr = t.groupby(t.s['fruit']).aggregate(total=t.value.sum())
     result = expr.execute()
-    expected = pd.DataFrame(
-        [("apple", 1), ("pear", 5)], columns=["fruit", "total"]
+    expected = dd.from_pandas(
+        pd.DataFrame([("apple", 1), ("pear", 5)], columns=["fruit", "total"]),
+        npartitions=1,
     )
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result.compute(), expected.compute())
 
 
+@pytest.mark.xfail(reason="TODO - grouping - #2553")
 def test_struct_field_series_group_by_value(struct_table):
     t = struct_table
     expr = t.groupby(t.key).aggregate(total=t.s['weight'].sum())
     result = expr.execute()
     # these are floats because we have a NULL value in the input data
-    expected = pd.DataFrame([("a", 0.0), ("b", 1.0)], columns=["key", "total"])
-    tm.assert_frame_equal(result, expected)
+    expected = dd.from_pandas(
+        pd.DataFrame([("a", 0.0), ("b", 1.0)], columns=["key", "total"]),
+        npartitions=1,
+    )
+    tm.assert_frame_equal(result.compute(), expected.compute())

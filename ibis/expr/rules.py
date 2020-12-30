@@ -103,7 +103,7 @@ def one_of(inners, arg):
 
 @validator
 def all_of(inners, arg):
-    """All of the inner valudators must pass.
+    """All of the inner validators must pass.
 
     The order of inner validators matters.
 
