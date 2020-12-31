@@ -33,8 +33,10 @@ def _backend_name_to_class(backend_str: str):
     """
     known_backends = _get_all_backends()
     if backend_str not in known_backends:
-        raise ValueError(f'Unknown backend {backend_str}. '
-                         f'Known backends: {known_backends}')
+        raise ValueError(
+            f'Unknown backend {backend_str}. '
+            f'Known backends: {known_backends}'
+        )
 
     conftest = importlib.import_module(
         f'ibis.backends.{backend_str}.tests.conftest'
@@ -176,9 +178,7 @@ def awards_players(backend):
 @pytest.fixture(scope='session')
 def geo(backend):
     if backend.geo is None:
-        pytest.skip(
-            'Geo Spatial type not supported for {backend}.'
-        )
+        pytest.skip('Geo Spatial type not supported for {backend}.')
     return backend.geo
 
 

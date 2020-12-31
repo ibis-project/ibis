@@ -46,10 +46,6 @@ class TestConf(BackendTest, RoundHalfToEven):
 
     returned_timestamp_unit = 's'
 
-    @property
-    def name(self) -> str:
-        return 'postgres'
-
     @staticmethod
     def connect(data_directory: Path) -> ibis.client.Client:
         user = os.environ.get(

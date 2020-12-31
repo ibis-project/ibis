@@ -326,9 +326,7 @@ def test_mod(backend, alltypes, df):
 
 def test_floating_mod(backend, alltypes, df):
     if not backend.supports_floating_modulus:
-        pytest.skip(
-            f'{backend} does not support floating modulus operation'
-        )
+        pytest.skip(f'{backend} does not support floating modulus operation')
     expr = operator.mod(alltypes.double_col, alltypes.smallint_col + 1)
 
     result = expr.execute()
