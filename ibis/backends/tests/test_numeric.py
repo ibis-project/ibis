@@ -327,9 +327,7 @@ def test_mod(backend, alltypes, df):
 def test_floating_mod(backend, alltypes, df):
     if not backend.supports_floating_modulus:
         pytest.skip(
-            '{} backend does not support floating modulus operation'.format(
-                backend.name
-            )
+            f'{backend} does not support floating modulus operation'
         )
     expr = operator.mod(alltypes.double_col, alltypes.smallint_col + 1)
 
@@ -385,9 +383,9 @@ def test_sa_default_numeric_precision_and_scale(
     # TODO: find a better way to access ibis.sql.alchemy
     import ibis.backends.base_sqlalchemy.alchemy as alch
 
-    dialect = dialects[backend.name]
-    default_precision = default_precisions[backend.name]
-    default_scale = default_scales[backend.name]
+    dialect = dialects[backend.name()]
+    default_precision = default_precisions[backend.name()]
+    default_scale = default_scales[backend.name()]
 
     typespec = [
         # name, sqlalchemy type, ibis type

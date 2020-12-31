@@ -1,6 +1,7 @@
 import importlib
 import os
 from pathlib import Path
+from typing import List
 
 import pytest
 
@@ -15,16 +16,29 @@ def _random_identifier(suffix):
     return '__ibis_test_{}_{}'.format(suffix, util.guid())
 
 
+def _get_all_backends() -> List[str]:
+    """
+    Return the list of known backend names.
+    """
+    return [
+        d.name
+        for d in (Path(ibis.__file__).parent / 'backends').iterdir()
+        if list(d.glob('tests/conftest.py'))
+    ]
+
+
 def _backend_name_to_class(backend_str: str):
     """
     Convert a backend string to the test configuration class for the backend.
     """
-    try:
-        conftest = importlib.import_module(
-            f'ibis.backends.{backend_str}.tests.conftest'
-        )
-    except ImportError:
-        raise RuntimeError(f'Unknown backend {backend_str}')
+    known_backends = _get_all_backends()
+    if backend_str not in known_backends:
+        raise ValueError(f'Unknown backend {backend_str}. '
+                         f'Known backends: {known_backends}')
+
+    conftest = importlib.import_module(
+        f'ibis.backends.{backend_str}.tests.conftest'
+    )
     return conftest.TestConf
 
 
@@ -37,11 +51,7 @@ def _get_backends_to_test():
     """
     backends = os.environ.get('PYTEST_BACKENDS', '').split(' ')
     if backends == ['']:
-        backends = [
-            d.name
-            for d in Path(__file__).parent.parent.iterdir()
-            if list(d.glob('tests/conftest.py'))
-        ]
+        backends = _get_all_backends()
 
     return [
         pytest.param(
@@ -167,9 +177,7 @@ def awards_players(backend):
 def geo(backend):
     if backend.geo is None:
         pytest.skip(
-            'Geo Spatial type not supported for {} backend.'.format(
-                backend.name
-            )
+            'Geo Spatial type not supported for {backend}.'
         )
     return backend.geo
 
@@ -257,7 +265,7 @@ def current_data_db(con, backend) -> str:
     """Return current database name."""
     if not hasattr(con, 'current_database'):
         pytest.skip(
-            f'{backend.name} backend doesn\'t have current_database method.'
+            f'{backend.name()} backend doesn\'t have current_database method.'
         )
     return con.current_database
 
@@ -278,7 +286,7 @@ def alternate_current_database(con, backend, current_data_db: str) -> str:
     name = _random_identifier('database')
     if not hasattr(con, 'create_database'):
         pytest.skip(
-            f'{backend.name} backend doesn\'t have create_database method.'
+            f'{backend.name()} backend doesn\'t have create_database method.'
         )
     con.create_database(name)
     try:

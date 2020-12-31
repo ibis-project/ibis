@@ -16,7 +16,7 @@ def test_load_data_sqlalchemy(backend, con, temp_table):
     if not isinstance(
         con.dialect(), ibis.backends.base_sqlalchemy.alchemy.AlchemyDialect
     ):
-        pytest.skip('{} is not a SQL Alchemy Client.'.format(backend.name))
+        pytest.skip(f'{backend} is not a SQL Alchemy Client.')
 
     sch = ibis.schema(
         [

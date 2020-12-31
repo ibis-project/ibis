@@ -42,9 +42,9 @@ def test_date_extract(backend, alltypes, df, attr):
 @pytest.mark.xfail_unsupported
 def test_timestamp_extract(backend, alltypes, df, attr):
     if attr == 'millisecond':
-        if backend.name == 'sqlite':
+        if backend.name() == 'sqlite':
             pytest.xfail(reason=('Issue #2156'))
-        if backend.name == 'spark':
+        if backend.name() == 'spark':
             pytest.xfail(reason='Issue #2159')
         expected = (df.timestamp_col.dt.microsecond // 1000).astype('int32')
     elif attr == 'epoch_seconds':
@@ -56,7 +56,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
 
     expr = getattr(alltypes.timestamp_col, attr)()
     result = expr.execute()
-    if attr == 'epoch_seconds' and backend.name in [
+    if attr == 'epoch_seconds' and backend.name() in [
         'bigquery',
         'postgres',
         'spark',
