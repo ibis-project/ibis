@@ -79,18 +79,15 @@ def pytest_runtest_call(item):
         ]
         if missing_features:
             pytest.mark.skip(
-                'Backend {} is missing features {} needed to run {}'.format(
-                    type(backend).__name__, ', '.join(missing_features), nodeid
-                )
+                f'Backend {backend} is missing features {missing_features} '
+                f'needed to run {nodeid}'
             )
 
     for marker in item.iter_markers(name="xfail_backends"):
         item.add_marker(
             pytest.mark.xfail(
                 condition=backend.name() in marker.args[0],
-                reason='Backend {} does not pass this test'.format(
-                    type(backend).__name__
-                ),
+                reason=f'{backend} does not pass this test',
                 **marker.kwargs,
             )
         )
@@ -99,9 +96,7 @@ def pytest_runtest_call(item):
         item.add_marker(
             pytest.mark.xfail(
                 condition=backend.name() not in marker.args[0],
-                reason='{} does not pass this test'.format(
-                    type(backend).__name__
-                ),
+                reason=f'{backend} does not pass this test',
                 **marker.kwargs,
             )
         )

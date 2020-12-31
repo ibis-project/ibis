@@ -1,4 +1,5 @@
 import abc
+import inspect
 from pathlib import Path
 from typing import Any, Callable, Mapping, Optional
 
@@ -80,7 +81,8 @@ class BackendTest(abc.ABC):
 
     @classmethod
     def name(cls) -> str:
-        return Path(__file__).resolve().parent.parent.name
+        backend_tests_path = inspect.getmodule(cls).__file__
+        return Path(backend_tests_path).resolve().parent.parent.name
 
     @staticmethod
     @abc.abstractmethod
