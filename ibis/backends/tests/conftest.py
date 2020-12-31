@@ -43,7 +43,6 @@ def _get_backends_to_test():
             if list(d.glob('tests/conftest.py'))
         ]
 
-    # raise RuntimeError(f'{backends=}')
     return [
         pytest.param(
             _backend_name_to_class(backend),

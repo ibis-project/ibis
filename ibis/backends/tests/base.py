@@ -75,12 +75,12 @@ class BackendTest(abc.ABC):
         self.api  # skips if we can't access the backend
         self.connection = self.connect(data_directory)
 
+    def __str__(self):
+        return f'<BackendTest {self.name()}>'
+
     @classmethod
     def name(cls) -> str:
         return Path(__file__).resolve().parent.parent.name
-
-    def __str__(self) -> str:
-        return self.__class__.__name__
 
     @staticmethod
     @abc.abstractmethod
