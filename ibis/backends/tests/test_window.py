@@ -76,7 +76,7 @@ def calc_zscore(s):
             lambda t: t.cumcount(),
             id='row_number',
             marks=pytest.mark.xfail_backends(
-                ('pandas', 'csv', 'parquet'),
+                ('pandas', 'dask', 'csv', 'parquet'),
                 raises=(IndexError, com.UnboundExpressionError),
             ),
         ),

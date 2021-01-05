@@ -163,7 +163,7 @@ def test_date_truncate(backend, alltypes, df, unit):
             'ms',
             pd.Timedelta,
             marks=pytest.mark.xpass_backends(
-                ('csv', 'pandas', 'parquet', 'bigquery', 'impala', 'postgres',)
+                ('csv', 'pandas', 'parquet', 'bigquery', 'impala', 'postgres', 'dask')
             ),
         ),
         param(
@@ -359,12 +359,12 @@ unit_factors = {'s': int(1e9), 'ms': int(1e6), 'us': int(1e3), 'ns': 1}
         param(
             'us',
             marks=pytest.mark.xpass_backends(
-                ('bigquery', 'csv', 'impala', 'pandas', 'parquet', 'spark',)
+                ('bigquery', 'csv', 'impala', 'pandas', 'parquet', 'spark', 'dask')
             ),
         ),
         param(
             'ns',
-            marks=pytest.mark.xpass_backends(('csv', 'pandas', 'parquet')),
+            marks=pytest.mark.xpass_backends(('csv', 'pandas', 'parquet', 'dask')),
         ),
     ],
 )
