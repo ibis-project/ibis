@@ -96,22 +96,22 @@ def pytest_runtest_call(item):
             )
 
     for marker in item.iter_markers(name="xfail_backends"):
-        item.add_marker(
-            pytest.mark.xfail(
-                condition=backend.name() in marker.args[0],
-                reason=f'{backend} does not pass this test',
-                **marker.kwargs,
+        if backend.name() in marker.args[0]:
+            item.add_marker(
+                pytest.mark.xfail(
+                    reason=f'{backend} in xfail list: {marker.args[0]}',
+                    **marker.kwargs,
+                )
             )
-        )
 
     for marker in item.iter_markers(name="xpass_backends"):
-        item.add_marker(
-            pytest.mark.xfail(
-                condition=backend.name() not in marker.args[0],
-                reason=f'{backend} does not pass this test',
-                **marker.kwargs,
+        if backend.name() not in marker.args[0]:
+            item.add_marker(
+                pytest.mark.xfail(
+                    reason=f'{backend} not in xpass list: {marker.args[0]}',
+                    **marker.kwargs,
+                )
             )
-        )
 
 
 @pytest.hookimpl(hookwrapper=True)
