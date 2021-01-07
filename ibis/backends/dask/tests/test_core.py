@@ -28,7 +28,6 @@ def test_no_execute_ambiguities(func):
     assert not ambiguities(func.funcs)
 
 
-@pytest.mark.xfail(reason="TODO remove when execution is written")
 def test_from_dataframe(dataframe, ibis_table, core_client):
     t = from_dataframe(dataframe)
     result = t.execute()
@@ -97,7 +96,6 @@ def test_missing_data_on_custom_client():
         con.execute(t)
 
 
-@pytest.mark.xfail(reason="TODO remove when execution is written")
 def test_post_execute_called_on_joins(dataframe, core_client, ibis_table):
     count = [0]
 

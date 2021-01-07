@@ -4,7 +4,6 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.expr.window import window
-from ibis.tests.backends import Pandas, PySpark
 from ibis.udf.vectorized import analytic, elementwise, reduction
 
 pytestmark = pytest.mark.udf
@@ -49,7 +48,7 @@ def mean_struct(v, w):
     return v.mean(), w.mean()
 
 
-@pytest.mark.only_on_backends([Pandas, PySpark])
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
 @pytest.mark.xfail_unsupported
 def test_elementwise_udf(backend, alltypes, df):
     result = add_one(alltypes['double_col']).execute()
@@ -57,7 +56,7 @@ def test_elementwise_udf(backend, alltypes, df):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
-@pytest.mark.only_on_backends([Pandas, PySpark])
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
 @pytest.mark.xfail_unsupported
 def test_elementwise_udf_mutate(backend, alltypes, df):
     expr = alltypes.mutate(incremented=add_one(alltypes['double_col']))
@@ -68,7 +67,7 @@ def test_elementwise_udf_mutate(backend, alltypes, df):
     backend.assert_series_equal(result['incremented'], expected['incremented'])
 
 
-@pytest.mark.only_on_backends([Pandas, PySpark])
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
 @pytest.mark.xfail_unsupported
 def test_analytic_udf(backend, alltypes, df):
     result = calc_zscore(alltypes['double_col']).execute()
@@ -76,7 +75,7 @@ def test_analytic_udf(backend, alltypes, df):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
-@pytest.mark.only_on_backends([Pandas, PySpark])
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
 @pytest.mark.xfail_unsupported
 def test_analytic_udf_mutate(backend, alltypes, df):
     expr = alltypes.mutate(zscore=calc_zscore(alltypes['double_col']))
@@ -87,7 +86,7 @@ def test_analytic_udf_mutate(backend, alltypes, df):
     backend.assert_series_equal(result['zscore'], expected['zscore'])
 
 
-@pytest.mark.only_on_backends([Pandas, PySpark])
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
 @pytest.mark.xfail_unsupported
 def test_reduction_udf(backend, alltypes, df):
     result = calc_mean(alltypes['double_col']).execute()
@@ -95,7 +94,7 @@ def test_reduction_udf(backend, alltypes, df):
     assert result == expected
 
 
-@pytest.mark.only_on_backends([Pandas, PySpark])
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
 @pytest.mark.xfail_unsupported
 def test_output_type_in_list_invalid(backend, alltypes, df):
     # Test that an error is raised if UDF output type is wrapped in a list
@@ -110,7 +109,7 @@ def test_output_type_in_list_invalid(backend, alltypes, df):
             return s + 1
 
 
-@pytest.mark.only_on_backends([Pandas, PySpark])
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
 @pytest.mark.xfail_unsupported
 def test_valid_kwargs(backend, alltypes, df):
     # Test different forms of UDF definition with keyword arguments
@@ -151,7 +150,7 @@ def test_valid_kwargs(backend, alltypes, df):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.only_on_backends([Pandas, PySpark])
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
 @pytest.mark.xfail_unsupported
 def test_valid_args(backend, alltypes, df):
     # Test different forms of UDF definition with *args
@@ -177,7 +176,7 @@ def test_valid_args(backend, alltypes, df):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.only_on_backends([Pandas, PySpark])
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
 @pytest.mark.xfail_unsupported
 def test_valid_args_and_kwargs(backend, alltypes, df):
     # Test UDFs with both *args and keyword arguments
@@ -220,7 +219,7 @@ def test_valid_args_and_kwargs(backend, alltypes, df):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.only_on_backends([Pandas, PySpark])
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
 @pytest.mark.xfail_unsupported
 def test_invalid_kwargs(backend, alltypes):
     # Test that defining a UDF with a non-column argument that is not a
@@ -233,7 +232,9 @@ def test_invalid_kwargs(backend, alltypes):
             return v + 1
 
 
-@pytest.mark.only_on_backends([Pandas, PySpark])
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
+# TODO - udf - #2553
+@pytest.mark.xfail_backends(['dask'])
 @pytest.mark.xfail_unsupported
 def test_elementwise_udf_destruct(backend, alltypes):
     result = alltypes.mutate(
@@ -247,7 +248,7 @@ def test_elementwise_udf_destruct(backend, alltypes):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.only_on_backends([Pandas, PySpark])
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
 @pytest.mark.xfail_unsupported
 def test_elementwise_udf_named_destruct(backend, alltypes):
     """Test error when assigning name to a destruct column."""
@@ -260,7 +261,7 @@ def test_elementwise_udf_named_destruct(backend, alltypes):
         )
 
 
-@pytest.mark.only_on_backends([PySpark])
+@pytest.mark.only_on_backends(['pyspark'])
 @pytest.mark.xfail_unsupported
 def test_elementwise_udf_struct(backend, alltypes):
     result = alltypes.mutate(
@@ -278,7 +279,9 @@ def test_elementwise_udf_struct(backend, alltypes):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.only_on_backends([Pandas])
+@pytest.mark.only_on_backends(['pandas'])
+# TODO - udf - #2553
+@pytest.mark.xfail_backends(['dask'])
 def test_analytic_udf_destruct(backend, alltypes):
     w = window(preceding=None, following=None, group_by='year')
 
@@ -296,7 +299,9 @@ def test_analytic_udf_destruct(backend, alltypes):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.only_on_backends([Pandas])
+@pytest.mark.only_on_backends(['pandas'])
+# TODO - udf - #2553
+@pytest.mark.xfail_backends(['dask'])
 def test_reduction_udf_destruct_groupby(backend, alltypes):
     result = (
         alltypes.groupby('year')
@@ -320,7 +325,9 @@ def test_reduction_udf_destruct_groupby(backend, alltypes):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.only_on_backends([Pandas])
+@pytest.mark.only_on_backends(['pandas'])
+# TODO - udf - #2553
+@pytest.mark.xfail_backends(['dask'])
 def test_reduction_udf_destruct_no_groupby(backend, alltypes):
     result = alltypes.aggregate(
         mean_struct(alltypes['double_col'], alltypes['int_col']).destructure()
@@ -334,7 +341,9 @@ def test_reduction_udf_destruct_no_groupby(backend, alltypes):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.only_on_backends([Pandas])
+@pytest.mark.only_on_backends(['pandas'])
+# TODO - udf - #2553
+@pytest.mark.xfail_backends(['dask'])
 def test_reduction_udf_destruct_window(backend, alltypes):
     win = window(
         preceding=ibis.interval(hours=2),

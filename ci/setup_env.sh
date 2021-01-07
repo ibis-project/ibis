@@ -62,3 +62,5 @@ if [[ -n "$BACKENDS" ]]; then
         fi
     done
 fi
+
+conda list

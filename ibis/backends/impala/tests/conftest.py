@@ -1,13 +1,59 @@
 import inspect
 import os
 import warnings
+from pathlib import Path
 
 import pytest
 
 import ibis
+import ibis.expr.types as ir
 import ibis.util as util
 from ibis import options
+from ibis.backends.tests.base import (
+    BackendTest,
+    RoundAwayFromZero,
+    UnorderedComparator,
+)
 from ibis.tests.expr.mocks import MockConnection
+
+
+class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
+    supports_arrays = True
+    supports_arrays_outside_of_select = False
+    check_dtype = False
+    supports_divide_by_zero = True
+    returned_timestamp_unit = 's'
+
+    @staticmethod
+    def connect(data_directory: Path) -> ibis.client.Client:
+        from ibis.backends.impala.tests.conftest import IbisTestEnv
+
+        env = IbisTestEnv()
+        hdfs_client = ibis.impala.hdfs_connect(
+            host=env.nn_host,
+            port=env.webhdfs_port,
+            auth_mechanism=env.auth_mechanism,
+            verify=env.auth_mechanism not in ['GSSAPI', 'LDAP'],
+            user=env.webhdfs_user,
+        )
+        auth_mechanism = env.auth_mechanism
+        if auth_mechanism == 'GSSAPI' or auth_mechanism == 'LDAP':
+            print("Warning: ignoring invalid Certificate Authority errors")
+        return ibis.impala.connect(
+            host=env.impala_host,
+            port=env.impala_port,
+            auth_mechanism=env.auth_mechanism,
+            hdfs_client=hdfs_client,
+            database='ibis_testing',
+        )
+
+    @property
+    def batting(self) -> ir.TableExpr:
+        return None
+
+    @property
+    def awards_players(self) -> ir.TableExpr:
+        return None
 
 
 def isproperty(obj):

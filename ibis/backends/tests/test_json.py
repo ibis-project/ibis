@@ -5,10 +5,9 @@ import pytest
 from pytest import param
 
 import ibis
-from ibis.tests.backends import Postgres
 
 # add here backends that support json types
-all_db_geo_supported = [Postgres]
+all_db_geo_supported = ['postgres']
 
 
 @pytest.mark.parametrize('data', [param({'status': True}, id='status')])

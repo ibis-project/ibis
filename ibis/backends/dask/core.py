@@ -110,11 +110,76 @@ See ibis.common.scope for details about the implementaion.
 
 from __future__ import absolute_import
 
+from typing import Optional
+
 import dask.dataframe as dd
 
 from ibis.backends.pandas.core import (
+    execute,
     is_computable_input,
     is_computable_input_arg,
 )
+from ibis.expr.typing import TimeContext
 
 is_computable_input.register(dd.core.Scalar)(is_computable_input_arg)
+
+
+def execute_and_reset(
+    expr,
+    params=None,
+    scope=None,
+    timecontext: Optional[TimeContext] = None,
+    aggcontext=None,
+    **kwargs,
+):
+    """Execute an expression against data that are bound to it. If no data
+    are bound, raise an Exception.
+    Notes
+    -----
+    The difference between this function and :func:`~ibis.dask.core.execute`
+    is that this function resets the index of the result, if the result has
+    an index.
+    Parameters
+    ----------
+    expr : ibis.expr.types.Expr
+        The expression to execute
+    params : Mapping[ibis.expr.types.Expr, object]
+        The data that an unbound parameter in `expr` maps to
+    scope : Mapping[ibis.expr.operations.Node, object]
+        Additional scope, mapping ibis operations to data
+    timecontext : Optional[TimeContext]
+        timecontext needed for execution
+    aggcontext : Optional[ibis.dask.aggcontext.AggregationContext]
+        An object indicating how to compute aggregations. For example,
+        a rolling mean needs to be computed differently than the mean of a
+        column.
+    kwargs : Dict[str, object]
+        Additional arguments that can potentially be used by individual node
+        execution
+    Returns
+    -------
+    result : Union[
+        dask.dataframe.Series,
+        dask.dataframe.DataFrame,
+        ibis.dask.core.simple_types
+    ]
+    Raises
+    ------
+    ValueError
+        * If no data are bound to the input expression
+    """
+    result = execute(
+        expr,
+        params=params,
+        scope=scope,
+        timecontext=timecontext,
+        aggcontext=aggcontext,
+        **kwargs,
+    )
+    if isinstance(result, dd.DataFrame):
+        schema = expr.schema()
+        df = result.reset_index()
+        return df[schema.names]
+    elif isinstance(result, dd.Series):
+        return result.reset_index(drop=True)
+    return result

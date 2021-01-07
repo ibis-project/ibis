@@ -2,25 +2,13 @@ import warnings
 
 import numpy as np
 import pandas as pd
-import pandas.util.testing as tm
+import pandas.testing as tm
 import pytest
 from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
 from ibis.backends.pandas.execution.temporal import day_name
-from ibis.tests.backends import (
-    BigQuery,
-    Clickhouse,
-    Csv,
-    Impala,
-    Pandas,
-    Parquet,
-    Postgres,
-    PySpark,
-    Spark,
-    SQLite,
-)
 
 
 @pytest.mark.parametrize('attr', ['year', 'month', 'day'])
@@ -54,9 +42,9 @@ def test_date_extract(backend, alltypes, df, attr):
 @pytest.mark.xfail_unsupported
 def test_timestamp_extract(backend, alltypes, df, attr):
     if attr == 'millisecond':
-        if backend.name == 'sqlite':
+        if backend.name() == 'sqlite':
             pytest.xfail(reason=('Issue #2156'))
-        if backend.name == 'spark':
+        if backend.name() == 'spark':
             pytest.xfail(reason='Issue #2159')
         expected = (df.timestamp_col.dt.microsecond // 1000).astype('int32')
     elif attr == 'epoch_seconds':
@@ -68,7 +56,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
 
     expr = getattr(alltypes.timestamp_col, attr)()
     result = expr.execute()
-    if attr == 'epoch_seconds' and backend.name in [
+    if attr == 'epoch_seconds' and backend.name() in [
         'bigquery',
         'postgres',
         'spark',
@@ -88,7 +76,10 @@ def test_timestamp_extract(backend, alltypes, df, attr):
         'D',
         # Spark truncation to week truncates to different days than Pandas
         # Pandas backend is probably doing this wrong
-        param('W', marks=pytest.mark.xpass_backends((Csv, Pandas, Parquet))),
+        param(
+            'W',
+            marks=pytest.mark.xpass_backends(('csv', 'pandas', 'parquet')),
+        ),
         'h',
         'm',
         's',
@@ -97,6 +88,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
         'ns',
     ],
 )
+@pytest.mark.skip_backends(['dask'])  # TODO - pandas - #2553
 @pytest.mark.xfail_unsupported
 def test_timestamp_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.truncate(unit)
@@ -116,9 +108,13 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
         'Y',
         'M',
         'D',
-        param('W', marks=pytest.mark.xpass_backends((Csv, Pandas, Parquet))),
+        param(
+            'W',
+            marks=pytest.mark.xpass_backends(('csv', 'pandas', 'parquet')),
+        ),
     ],
 )
+@pytest.mark.skip_backends(['dask'])  # TODO - pandas - #2553
 @pytest.mark.xfail_unsupported
 def test_date_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.date().truncate(unit)
@@ -135,11 +131,31 @@ def test_date_truncate(backend, alltypes, df, unit):
 @pytest.mark.parametrize(
     ('unit', 'displacement_type'),
     [
-        ('Y', pd.offsets.DateOffset),
+        param(
+            'Y',
+            pd.offsets.DateOffset,
+            # TODO - DateOffset - #2553
+            marks=pytest.mark.xfail_backends(['dask']),
+        ),
         param('Q', pd.offsets.DateOffset, marks=pytest.mark.xfail),
-        ('M', pd.offsets.DateOffset),
-        ('W', pd.offsets.DateOffset),
-        ('D', pd.offsets.DateOffset),
+        param(
+            'M',
+            pd.offsets.DateOffset,
+            # TODO - DateOffset - #2553
+            marks=pytest.mark.xfail_backends(['dask']),
+        ),
+        param(
+            'W',
+            pd.offsets.DateOffset,
+            # TODO - DateOffset - #2553
+            marks=pytest.mark.xfail_backends(['dask']),
+        ),
+        param(
+            'D',
+            pd.offsets.DateOffset,
+            # TODO - DateOffset - #2553
+            marks=pytest.mark.xfail_backends(['dask']),
+        ),
         ('h', pd.Timedelta),
         ('m', pd.Timedelta),
         ('s', pd.Timedelta),
@@ -147,18 +163,26 @@ def test_date_truncate(backend, alltypes, df, unit):
             'ms',
             pd.Timedelta,
             marks=pytest.mark.xpass_backends(
-                (Csv, Pandas, Parquet, BigQuery, Impala, Postgres)
+                (
+                    'csv',
+                    'pandas',
+                    'parquet',
+                    'bigquery',
+                    'impala',
+                    'postgres',
+                    'dask',
+                )
             ),
         ),
         param(
             'us',
             pd.Timedelta,
-            marks=pytest.mark.xfail_backends((Clickhouse, SQLite)),
+            marks=pytest.mark.xfail_backends(('clickhouse', 'sqlite')),
         ),
     ],
 )
 @pytest.mark.xfail_unsupported
-@pytest.mark.skip_backends([Spark])
+@pytest.mark.skip_backends(['spark'])
 def test_integer_to_interval_timestamp(
     backend, con, alltypes, df, unit, displacement_type
 ):
@@ -185,7 +209,8 @@ def test_integer_to_interval_timestamp(
     'unit', ['Y', param('Q', marks=pytest.mark.xfail), 'M', 'W', 'D']
 )
 @pytest.mark.xfail_unsupported
-@pytest.mark.skip_backends([Spark])
+# TODO - DateOffset - #2553
+@pytest.mark.skip_backends(['dask', 'spark'])
 def test_integer_to_interval_date(backend, con, alltypes, df, unit):
     interval = alltypes.int_col.to_interval(unit=unit)
     array = alltypes.date_string_col.split('/')
@@ -263,7 +288,8 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
                 )
             ),
             id='timestamp-subtract-timestamp',
-            marks=pytest.mark.xfail_backends([Spark]),
+            # TODO - pandas - #2553
+            marks=pytest.mark.xfail_backends(['dask', 'spark']),
         ),
         param(
             lambda t, be: t.timestamp_col.date() - ibis.date(date_value),
@@ -273,7 +299,7 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
     ],
 )
 @pytest.mark.xfail_unsupported
-@pytest.mark.skip_backends([Spark])
+@pytest.mark.skip_backends(['spark'])
 def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
     expr = expr_fn(alltypes, backend)
     expected = expected_fn(df, backend)
@@ -285,7 +311,7 @@ def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
 
 
 @pytest.mark.xfail_unsupported
-@pytest.mark.skip_backends([Spark])
+@pytest.mark.skip_backends(['spark'])
 def test_interval_add_cast_scalar(backend, alltypes):
     timestamp_date = alltypes.timestamp_col.date()
     delta = ibis.literal(10).cast("interval('D')")
@@ -296,9 +322,10 @@ def test_interval_add_cast_scalar(backend, alltypes):
 
 
 @pytest.mark.xfail_unsupported
+# TODO - pandas - #2553
 # PySpark does not support casting columns to intervals
-@pytest.mark.xfail_backends([PySpark])
-@pytest.mark.skip_backends([Spark])
+@pytest.mark.xfail_backends(['dask', 'pyspark'])
+@pytest.mark.skip_backends(['spark'])
 def test_interval_add_cast_column(backend, alltypes, df):
     timestamp_date = alltypes.timestamp_col.date()
     delta = alltypes.bigint_col.cast("interval('D')")
@@ -319,7 +346,7 @@ def test_interval_add_cast_column(backend, alltypes, df):
 )
 @pytest.mark.xfail_unsupported
 # Spark takes Java SimpleDateFormat instead of strftime
-@pytest.mark.skip_backends([Spark])
+@pytest.mark.skip_backends(['spark'])
 def test_strftime(backend, con, alltypes, df, ibis_pattern, pandas_pattern):
     expr = alltypes.timestamp_col.strftime(ibis_pattern)
     expected = df.timestamp_col.dt.strftime(pandas_pattern)
@@ -340,10 +367,23 @@ unit_factors = {'s': int(1e9), 'ms': int(1e6), 'us': int(1e3), 'ns': 1}
         param(
             'us',
             marks=pytest.mark.xpass_backends(
-                (BigQuery, Csv, Impala, Pandas, Parquet, Spark)
+                (
+                    'bigquery',
+                    'csv',
+                    'impala',
+                    'pandas',
+                    'parquet',
+                    'spark',
+                    'dask',
+                )
             ),
         ),
-        param('ns', marks=pytest.mark.xpass_backends((Csv, Pandas, Parquet))),
+        param(
+            'ns',
+            marks=pytest.mark.xpass_backends(
+                ('csv', 'pandas', 'parquet', 'dask')
+            ),
+        ),
     ],
 )
 @pytest.mark.xfail_unsupported
@@ -420,6 +460,8 @@ def test_day_of_week_column(backend, con, alltypes, df):
         ),
     ],
 )
+# TODO - grouping - #2553
+@pytest.mark.xfail_backends(['dask'])
 @pytest.mark.xfail_unsupported
 def test_day_of_week_column_group_by(
     backend, con, alltypes, df, day_of_week_expr, day_of_week_pandas
@@ -454,6 +496,8 @@ def test_now(backend, con):
     assert result.year == pandas_now.year
 
 
+# TODO - pandas - #2553
+@pytest.mark.xfail_backends(['dask'])
 @pytest.mark.xfail_unsupported
 def test_now_from_projection(backend, con, alltypes, df):
     n = 5

@@ -10,7 +10,6 @@ from pytest import param
 import ibis
 from ibis import literal as L
 from ibis.expr import datatypes as dt
-from ibis.tests.backends import MySQL, OmniSciDB, Postgres
 from ibis.tests.util import assert_equal
 
 try:
@@ -56,19 +55,19 @@ def sch_decimal():
             lambda t: ibis.literal(np.nan),
             lambda t: np.nan,
             id='nan-literal',
-            marks=pytest.mark.xfail_backends([OmniSciDB]),
+            marks=pytest.mark.xfail_backends(['omniscidb']),
         ),
         param(
             lambda t: ibis.literal(np.inf),
             lambda t: np.inf,
             id='inf-literal',
-            marks=pytest.mark.xfail_backends([OmniSciDB]),
+            marks=pytest.mark.xfail_backends(['omniscidb']),
         ),
         param(
             lambda t: ibis.literal(-np.inf),
             lambda t: -np.inf,
             id='-inf-literal',
-            marks=pytest.mark.xfail_backends([OmniSciDB]),
+            marks=pytest.mark.xfail_backends(['omniscidb']),
         ),
     ],
 )
@@ -99,7 +98,10 @@ def test_isnan_isinf(
         expected = backend.default_series_rename(expected)
         backend.assert_series_equal(result, expected)
     else:
-        assert result == expected
+        try:
+            assert result == expected
+        except ValueError:
+            backend.assert_series_equal(result, expected)
 
 
 @pytest.mark.parametrize(
@@ -324,11 +326,7 @@ def test_mod(backend, alltypes, df):
 
 def test_floating_mod(backend, alltypes, df):
     if not backend.supports_floating_modulus:
-        pytest.skip(
-            '{} backend does not support floating modulus operation'.format(
-                backend.name
-            )
-        )
+        pytest.skip(f'{backend} does not support floating modulus operation')
     expr = operator.mod(alltypes.double_col, alltypes.smallint_col + 1)
 
     result = expr.execute()
@@ -376,16 +374,16 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
         )
     ],
 )
-@pytest.mark.only_on_backends([Postgres, MySQL])
+@pytest.mark.only_on_backends(['postgres', 'mysql'])
 def test_sa_default_numeric_precision_and_scale(
     con, backend, dialects, default_precisions, default_scales
 ):
     # TODO: find a better way to access ibis.sql.alchemy
     import ibis.backends.base_sqlalchemy.alchemy as alch
 
-    dialect = dialects[backend.name]
-    default_precision = default_precisions[backend.name]
-    default_scale = default_scales[backend.name]
+    dialect = dialects[backend.name()]
+    default_precision = default_precisions[backend.name()]
+    default_scale = default_scales[backend.name()]
 
     typespec = [
         # name, sqlalchemy type, ibis type
@@ -415,7 +413,7 @@ def test_sa_default_numeric_precision_and_scale(
     con.drop_table(table_name, force=True)
 
 
-@pytest.mark.only_on_backends([Postgres, MySQL])
+@pytest.mark.only_on_backends(['postgres', 'mysql'])
 def test_random(con):
     expr = ibis.random()
     result = con.execute(expr)

@@ -7,9 +7,9 @@ import dask.dataframe as dd
 import pandas as pd
 import pytest
 
-# import ibis.expr.datatypes as dt
+import ibis.expr.datatypes as dt
 
-# from ... import connect
+from ... import connect
 
 
 @pytest.fixture(scope='module')
@@ -84,7 +84,7 @@ def batting_df():
     elif not os.path.isfile(path):
         pytest.skip('{} is not a file'.format(path))
 
-    df = dd.read_csv(path, index_col=None, sep=',')
+    df = dd.read_csv(path, assume_missing=True)
     num_rows = int(0.01 * len(df))
     return df.iloc[30 : 30 + num_rows].reset_index(drop=True)
 
@@ -99,7 +99,7 @@ def awards_players_df():
     elif not os.path.isfile(path):
         pytest.skip('{} is not a file'.format(path))
 
-    return dd.read_csv(path, index_col=None, sep=',')
+    return dd.read_csv(path, assume_missing=True)
 
 
 @pytest.fixture(scope='module')
@@ -190,135 +190,135 @@ def time_keyed_df2():
     return dd.from_pandas(pandas_df, npartitions=1)
 
 
-# @pytest.fixture(scope='module')
-# def client(
-#     df,
-#     df1,
-#     df2,
-#     df3,
-#     time_df1,
-#     time_df2,
-#     time_df3,
-#     time_keyed_df1,
-#     time_keyed_df2,
-#     intersect_df2,
-# ):
-#     return connect(
-#         dict(
-#             df=df,
-#             df1=df1,
-#             df2=df2,
-#             df3=df3,
-#             left=df1,
-#             right=df2,
-#             time_df1=time_df1,
-#             time_df2=time_df2,
-#             time_df3=time_df3,
-#             time_keyed_df1=time_keyed_df1,
-#             time_keyed_df2=time_keyed_df2,
-#             intersect_df2=intersect_df2,
-#         )
-#     )
+@pytest.fixture(scope='module')
+def client(
+    df,
+    df1,
+    df2,
+    df3,
+    time_df1,
+    time_df2,
+    time_df3,
+    time_keyed_df1,
+    time_keyed_df2,
+    intersect_df2,
+):
+    return connect(
+        dict(
+            df=df,
+            df1=df1,
+            df2=df2,
+            df3=df3,
+            left=df1,
+            right=df2,
+            time_df1=time_df1,
+            time_df2=time_df2,
+            time_df3=time_df3,
+            time_keyed_df1=time_keyed_df1,
+            time_keyed_df2=time_keyed_df2,
+            intersect_df2=intersect_df2,
+        )
+    )
 
 
-# @pytest.fixture(scope='module')
-# def df3():
-#     pandas_df = pd.DataFrame(
-#         {
-#             'key': list('ac'),
-#             'other_value': [4.0, 6.0],
-#             'key2': list('ae'),
-#             'key3': list('fe'),
-#         }
-#     )
-#     return dd.from_pandas(pandas_df, npartitions=1)
+@pytest.fixture(scope='module')
+def df3():
+    pandas_df = pd.DataFrame(
+        {
+            'key': list('ac'),
+            'other_value': [4.0, 6.0],
+            'key2': list('ae'),
+            'key3': list('fe'),
+        }
+    )
+    return dd.from_pandas(pandas_df, npartitions=1)
 
 
-# t_schema = {
-#     'decimal': dt.Decimal(4, 3),
-#     'array_of_float64': dt.Array(dt.double),
-#     'array_of_int64': dt.Array(dt.int64),
-#     'array_of_strings': dt.Array(dt.string),
-#     'map_of_strings_integers': dt.Map(dt.string, dt.int64),
-#     'map_of_integers_strings': dt.Map(dt.int64, dt.string),
-#     'map_of_complex_values': dt.Map(dt.string, dt.Array(dt.int64)),
-# }
+t_schema = {
+    'decimal': dt.Decimal(4, 3),
+    'array_of_float64': dt.Array(dt.double),
+    'array_of_int64': dt.Array(dt.int64),
+    'array_of_strings': dt.Array(dt.string),
+    'map_of_strings_integers': dt.Map(dt.string, dt.int64),
+    'map_of_integers_strings': dt.Map(dt.int64, dt.string),
+    'map_of_complex_values': dt.Map(dt.string, dt.Array(dt.int64)),
+}
 
 
-# @pytest.fixture(scope='module')
-# def t(client):
-#     return client.table('df', schema=t_schema)
+@pytest.fixture(scope='module')
+def t(client):
+    return client.table('df', schema=t_schema)
 
 
-# @pytest.fixture(scope='module')
-# def lahman(batting_df, awards_players_df):
-#     return connect(
-#         {'batting': batting_df, 'awards_players': awards_players_df}
-#     )
+@pytest.fixture(scope='module')
+def lahman(batting_df, awards_players_df):
+    return connect(
+        {'batting': batting_df, 'awards_players': awards_players_df}
+    )
 
 
-# @pytest.fixture(scope='module')
-# def left(client):
-#     return client.table('left')
+@pytest.fixture(scope='module')
+def left(client):
+    return client.table('left')
 
 
-# @pytest.fixture(scope='module')
-# def right(client):
-#     return client.table('right')
+@pytest.fixture(scope='module')
+def right(client):
+    return client.table('right')
 
 
-# @pytest.fixture(scope='module')
-# def time_left(client):
-#     return client.table('time_df1')
+@pytest.fixture(scope='module')
+def time_left(client):
+    return client.table('time_df1')
 
 
-# @pytest.fixture(scope='module')
-# def time_right(client):
-#     return client.table('time_df2')
+@pytest.fixture(scope='module')
+def time_right(client):
+    return client.table('time_df2')
 
 
-# @pytest.fixture(scope='module')
-# def time_table(client):
-#     return client.table('time_df3')
+@pytest.fixture(scope='module')
+def time_table(client):
+    return client.table('time_df3')
 
 
-# @pytest.fixture(scope='module')
-# def time_keyed_left(client):
-#     return client.table('time_keyed_df1')
+@pytest.fixture(scope='module')
+def time_keyed_left(client):
+    return client.table('time_keyed_df1')
 
 
-# @pytest.fixture(scope='module')
-# def time_keyed_right(client):
-#     return client.table('time_keyed_df2')
+@pytest.fixture(scope='module')
+def time_keyed_right(client):
+    return client.table('time_keyed_df2')
 
 
-# @pytest.fixture(scope='module')
-# def batting(lahman):
-#     return lahman.table('batting')
+@pytest.fixture(scope='module')
+def batting(lahman):
+    return lahman.table('batting')
 
 
-# @pytest.fixture(scope='module')
-# def awards_players(lahman):
-#     return lahman.table('awards_players')
+@pytest.fixture(scope='module')
+def awards_players(lahman):
+    return lahman.table('awards_players')
 
 
-# @pytest.fixture(scope='module')
-# def sel_cols(batting):
-#     cols = batting.columns
-#     start, end = cols.index('AB'), cols.index('H') + 1
-#     return ['playerID', 'yearID', 'teamID', 'G'] + cols[start:end]
+@pytest.fixture(scope='module')
+def sel_cols(batting):
+    cols = batting.columns
+    start, end = cols.index('AB'), cols.index('H') + 1
+    return ['playerID', 'yearID', 'teamID', 'G'] + cols[start:end]
 
 
-# @pytest.fixture(scope='module')
-# def players_base(batting, sel_cols):
-#     return batting[sel_cols].sort_by(sel_cols[:3])
+@pytest.fixture(scope='module')
+def players_base(batting, sel_cols):
+    return batting[sel_cols].sort_by(sel_cols[:3])
 
 
-# @pytest.fixture(scope='module')
-# def players(players_base):
-#     return players_base.groupby('playerID')
+@pytest.fixture(scope='module')
+def players(players_base):
+    return players_base.groupby('playerID')
 
 
-# @pytest.fixture(scope='module')
-# def players_df(players_base):
-#     return players_base.execute().reset_index(drop=True)
+@pytest.fixture(scope='module')
+def players_df(players_base):
+    return players_base.execute().reset_index(drop=True)

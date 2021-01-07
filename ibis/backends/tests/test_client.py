@@ -4,14 +4,6 @@ from pkg_resources import parse_version
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.tests.backends import (
-    BigQuery,
-    Clickhouse,
-    Impala,
-    OmniSciDB,
-    PySpark,
-    Spark,
-)
 
 
 @pytest.fixture
@@ -24,7 +16,7 @@ def test_load_data_sqlalchemy(backend, con, temp_table):
     if not isinstance(
         con.dialect(), ibis.backends.base_sqlalchemy.alchemy.AlchemyDialect
     ):
-        pytest.skip('{} is not a SQL Alchemy Client.'.format(backend.name))
+        pytest.skip(f'{backend} is not a SQL Alchemy Client.')
 
     sch = ibis.schema(
         [
@@ -102,7 +94,7 @@ def test_query_schema(backend, con, alltypes, expr_fn, expected):
         'select * from functional_alltypes \nlimit 10\n',
     ],
 )
-@pytest.mark.xfail_backends((BigQuery,))
+@pytest.mark.xfail_backends(('bigquery',))
 @pytest.mark.xfail_unsupported
 def test_sql(backend, con, sql):
     if not hasattr(con, 'sql') or not hasattr(con, '_get_schema_using_query'):
@@ -146,7 +138,7 @@ def test_rename_table(con, backend, temp_table, new_schema):
 
 
 @pytest.mark.xfail_unsupported
-@pytest.mark.xfail_backends([Impala, PySpark, Spark])
+@pytest.mark.xfail_backends(['impala', 'pyspark', 'spark'])
 def test_nullable_input_output(con, backend, temp_table):
     # - Impala, PySpark and Spark non-nullable issues #2138 and #2137
     if not hasattr(con, 'create_table') or not hasattr(con, 'drop_table'):
@@ -175,7 +167,7 @@ def test_nullable_input_output(con, backend, temp_table):
 
 
 @pytest.mark.xfail_unsupported
-@pytest.mark.xfail_backends([PySpark, Spark])
+@pytest.mark.xfail_backends(['pyspark', 'spark'])
 def test_create_drop_view(con, backend, temp_view):
     # pyspark and spark skipt because table actually is a temporary view
     if not hasattr(con, 'create_view') or not hasattr(con, 'drop_view'):
@@ -199,7 +191,7 @@ def test_create_drop_view(con, backend, temp_view):
 
 
 @pytest.mark.only_on_backends(
-    [BigQuery, Clickhouse, Impala, OmniSciDB, Spark, BigQuery],
+    ['bigquery', 'clickhouse', 'impala', 'omniscidb', 'spark'],
     reason="run only if backend is sql-based",
 )
 def test_separate_database(con, alternate_current_database, current_data_db):

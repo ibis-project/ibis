@@ -4,14 +4,6 @@ import pytest
 from pytest import param
 
 import ibis.expr.datatypes as dt
-from ibis.tests.backends import (
-    BigQuery,
-    Clickhouse,
-    MySQL,
-    Postgres,
-    PySpark,
-    SQLite,
-)
 from ibis.udf.vectorized import reduction
 
 
@@ -64,6 +56,9 @@ aggregate_test_params = [
 @pytest.mark.parametrize(
     ('result_fn', 'expected_fn', 'expected_col'), aggregate_test_params,
 )
+@pytest.mark.skip_backends(
+    ['dask']
+)  # TODO - aggregations - #2553 (and pd.concat)
 @pytest.mark.xfail_unsupported
 def test_aggregate(
     backend, alltypes, df, result_fn, expected_fn, expected_col
@@ -81,6 +76,7 @@ def test_aggregate(
 @pytest.mark.parametrize(
     ('result_fn', 'expected_fn', 'expected_col'), aggregate_test_params,
 )
+@pytest.mark.skip_backends(['dask'])  # TODO - aggregations - #2553
 @pytest.mark.xfail_unsupported
 def test_aggregate_grouped(
     backend, alltypes, df, result_fn, expected_fn, expected_col
@@ -174,7 +170,7 @@ def test_aggregate_grouped(
             lambda t, where: t.double_col.approx_median(),
             lambda t, where: t.double_col.median(),
             id='approx_median',
-            marks=pytest.mark.xpass_backends([Clickhouse]),
+            marks=pytest.mark.xpass_backends(['clickhouse']),
         ),
         param(
             lambda t, where: t.double_col.std(how='sample'),
@@ -210,7 +206,7 @@ def test_aggregate_grouped(
             lambda t, where: t.string_col.approx_nunique(),
             lambda t, where: t.string_col.nunique(),
             id='approx_nunique',
-            marks=pytest.mark.xfail_backends([MySQL, SQLite]),
+            marks=pytest.mark.xfail_backends(['mysql', 'sqlite']),
         ),
         param(
             lambda t, where: t.double_col.arbitrary(how='first'),
@@ -235,6 +231,7 @@ def test_aggregate_grouped(
         ),
     ],
 )
+@pytest.mark.skip_backends(['dask'])  # TODO - iloc - #2553
 @pytest.mark.xfail_unsupported
 def test_reduction_ops(
     backend, alltypes, df, result_fn, expected_fn, ibis_cond, pandas_cond
@@ -264,6 +261,7 @@ def test_reduction_ops(
         )
     ],
 )
+@pytest.mark.skip_backends(['dask'])  # TODO - aggregations - #2553
 @pytest.mark.xfail_unsupported
 def test_group_concat(backend, alltypes, df, result_fn, expected_fn):
     expr = result_fn(alltypes)
@@ -284,7 +282,8 @@ def test_group_concat(backend, alltypes, df, result_fn, expected_fn):
     ],
 )
 @pytest.mark.xfail_unsupported
-@pytest.mark.xfail_backends([PySpark])  # Issue #2130
+# TODO - sorting - #2553
+@pytest.mark.xfail_backends(['dask', 'pyspark'])  # Issue #2130
 def test_topk_op(backend, alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend
     # can have different result for that.
@@ -313,8 +312,11 @@ def test_topk_op(backend, alltypes, df, result_fn, expected_fn):
 )
 @pytest.mark.xfail_unsupported
 # Issues #2369 #2133 #2131 #2132
-@pytest.mark.xfail_backends([BigQuery, Clickhouse, MySQL, Postgres])
-@pytest.mark.skip_backends([SQLite], reason='Issue #2128')
+# TODO - sorting - #2553
+@pytest.mark.xfail_backends(
+    ['bigquery', 'clickhouse', 'dask', 'mysql', 'postgres']
+)
+@pytest.mark.skip_backends(['sqlite'], reason='Issue #2128')
 def test_topk_filter_op(backend, alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend
     # can have different result for that.

@@ -420,6 +420,22 @@ Decimal methods
    DecimalValue.precision
    DecimalValue.scale
 
+.. _api.struct:
+
+Struct methods
+-----------------
+
+Scalar or column methods
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Values in a ``StructValue`` can be accessed using indexing, e.g. ``struct_expr['my_col']``. See :meth:`StructValue.__getitem__`.
+
+.. autosummary::
+   :toctree: generated/
+
+   StructValue.destructure
+   StructValue.__getitem__
+
 .. _api.geospatial:
 
 Geospatial methods

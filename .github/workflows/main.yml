@@ -131,7 +131,7 @@ jobs:
           - 25000:25000
           - 25010:25010
           - 25020:25020
-        options: --hostname impala --health-cmd "nc -z 127.0.0.1 21050 && nc -z 127.0.0.1 50070" --health-interval 30s --health-timeout 10s --health-retries 20
+        options: --hostname localhost --health-cmd "nc -z 127.0.0.1 21050 && nc -z 127.0.0.1 50070" --health-interval 30s --health-timeout 10s --health-retries 20
       clickhouse:
         # XXX does clickhouse backend require the impala container too?
         image: yandex/clickhouse-server:18.14
@@ -142,6 +142,9 @@ jobs:
     steps:
     - name: checkout
       uses: actions/checkout@v1
+
+    - name: install boost
+      run: sudo apt-get -qq update --yes && sudo apt-get -qq install --yes --no-install-recommends libboost-dev
 
     - name: set up environment
       run: ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
