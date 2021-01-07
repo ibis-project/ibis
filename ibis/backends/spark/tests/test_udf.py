@@ -7,7 +7,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-from ibis.tests.backends import Spark
+from ibis.backends.spark.tests.conftest import TestConf as SparkTest
 
 pytestmark = [pytest.mark.spark, pytest.mark.udf]
 
@@ -162,7 +162,7 @@ def test_udf(t, df, fn):
 
     result = expr.execute()
     expected = df.a.str.len().mul(2)
-    expected = Spark.default_series_rename(expected)
+    expected = SparkTest.default_series_rename(expected)
     tm.assert_series_equal(result, expected)
 
 
@@ -197,7 +197,7 @@ def test_multiple_argument_udf(con, t, df, fn):
 
     result = expr.execute()
     expected = df.b + df.c
-    expected = Spark.default_series_rename(expected)
+    expected = SparkTest.default_series_rename(expected)
     tm.assert_series_equal(result, expected)
 
 
@@ -226,7 +226,7 @@ def test_udaf(con, t, df):
 
     result = expr.execute()
     expected = t.a.execute().str.len().mul(2).sum()
-    expected = Spark.default_series_rename(expected)
+    expected = SparkTest.default_series_rename(expected)
     assert result == expected
 
 
@@ -288,7 +288,7 @@ def test_compose_udfs(t_random, df_random, times_two_fn, add_one_fn):
     expr = times_two_fn(add_one_fn(t_random.a))
     result = expr.execute()
     expected = df_random.a.add(1.0).mul(2.0)
-    expected = Spark.default_series_rename(expected)
+    expected = SparkTest.default_series_rename(expected)
     tm.assert_series_equal(expected, result)
 
 
@@ -368,5 +368,5 @@ def test_array_return_type_reduction_window(con, t_random, df_random, qs):
     result = expr.execute()
     expected_raw = df_random.b.quantile(qs).tolist()
     expected = pd.Series([expected_raw] * len(df_random))
-    expected = Spark.default_series_rename(expected)
+    expected = SparkTest.default_series_rename(expected)
     tm.assert_series_equal(result, expected)

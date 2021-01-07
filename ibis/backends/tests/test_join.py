@@ -2,10 +2,8 @@ import pandas as pd
 import pytest
 from pytest import param
 
-from ibis.tests.backends import Csv, Dask, Pandas, PySpark
-
 # add here backends that passes join tests
-all_db_join_supported = [Pandas, PySpark]
+all_db_join_supported = ['pandas', 'pyspark']
 
 
 @pytest.mark.parametrize(
@@ -32,7 +30,7 @@ all_db_join_supported = [Pandas, PySpark]
 @pytest.mark.only_on_backends(all_db_join_supported)
 # Csv is a subclass of Pandas so need to skip it explicitly.
 # TODO - sorting - #2553
-@pytest.mark.skip_backends([Csv, Dask])
+@pytest.mark.skip_backends(['csv', 'dask'])
 @pytest.mark.xfail_unsupported
 def test_join_project_left_table(backend, con, batting, awards_players, how):
 

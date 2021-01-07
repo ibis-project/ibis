@@ -5,7 +5,6 @@ from numpy import testing
 from pytest import param
 
 import ibis
-from ibis.tests.backends import OmniSciDB, Postgres
 
 geopandas = pytest.importorskip('geopandas')
 shapely = pytest.importorskip('shapely')
@@ -32,7 +31,7 @@ polygon_0 = ibis.literal(
 ).name('p')
 
 # add here backends that support geo spatial types
-all_db_geo_supported = [OmniSciDB, Postgres]
+all_db_geo_supported = ['omniscidb', 'postgres']
 
 # test input data with shapely geometries
 shp_point_0 = shapely.geometry.Point(0, 0)
@@ -121,7 +120,7 @@ shp_multipolygon_0 = shapely.geometry.MultiPolygon([shp_polygon_0])
 @pytest.mark.only_on_backends(all_db_geo_supported)
 def test_literal_geospatial_explicit(backend, con, expr, expected):
     result = str(con.compile(expr))
-    result_expected = "SELECT {} AS tmp".format(expected[backend.name])
+    result_expected = "SELECT {} AS tmp".format(expected[backend.name()])
     # use `in` op because if name is specified omniscidb doesn't compile
     # with alias but postgresql does. but if name is not provided,
     # omniscidb uses tmp as a default alias but postgres doesn't use alias
@@ -190,7 +189,7 @@ def test_literal_geospatial_explicit(backend, con, expr, expected):
 @pytest.mark.xfail_unsupported
 def test_literal_geospatial_inferred(backend, con, shp, expected):
     result = str(con.compile(ibis.literal(shp)))
-    result_expected = "SELECT {} AS tmp".format(expected[backend.name])
+    result_expected = "SELECT {} AS tmp".format(expected[backend.name()])
     # use `in` op because if name is specified omniscidb doesn't compile
     # with alias but postgresql does. but if name is not provided,
     # omniscidb uses tmp as a default alias but postgres doesn't use alias
@@ -225,7 +224,7 @@ def test_literal_geospatial_inferred(backend, con, shp, expected):
 @pytest.mark.xfail_unsupported
 def test_literal_multi_geospatial_inferred(backend, con, shp, expected):
     result = str(con.compile(ibis.literal(shp)))
-    result_expected = "SELECT {} AS tmp".format(expected[backend.name])
+    result_expected = "SELECT {} AS tmp".format(expected[backend.name()])
     assert result in result_expected
 
 
@@ -257,7 +256,7 @@ def test_literal_multi_geospatial_inferred(backend, con, shp, expected):
             [96.34, 114.36, 10.24, 10.24, 10.24],
             id='perimeter',
             marks=pytest.mark.skip_backends(
-                [Postgres], reason='TODO: fix different results issue'
+                ['postgres'], reason='TODO: fix different results issue'
             ),
         ),
         param(
@@ -265,7 +264,7 @@ def test_literal_multi_geospatial_inferred(backend, con, shp, expected):
             [7, 11, 5, 5, 5],
             id='n_points',
             marks=pytest.mark.skip_backends(
-                [Postgres], reason='TODO: fix different results issue'
+                ['postgres'], reason='TODO: fix different results issue'
             ),
         ),
     ],
@@ -354,7 +353,7 @@ def test_geo_spatial_binops(backend, geo, expr_fn, expected):
     """Testing for geo spatial binary operations."""
     expr = expr_fn(geo)
     result = expr.execute()
-    testing.assert_almost_equal(result, expected[backend.name], decimal=2)
+    testing.assert_almost_equal(result, expected[backend.name()], decimal=2)
 
 
 @pytest.mark.parametrize(
@@ -417,7 +416,7 @@ def test_srid(backend, geo, condition, expected):
     """Testing for geo spatial srid operation."""
     expr = geo[geo.id, condition(geo).name('tmp')]
     result = expr.execute()['tmp'][[0]]
-    assert np.all(result == expected[backend.name])
+    assert np.all(result == expected[backend.name()])
 
 
 @pytest.mark.parametrize(

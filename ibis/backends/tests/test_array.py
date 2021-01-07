@@ -1,7 +1,6 @@
 import pytest
 
 import ibis
-from ibis.tests.backends import BigQuery
 
 
 @pytest.mark.xfail_unsupported
@@ -9,7 +8,7 @@ from ibis.tests.backends import BigQuery
     ['supports_arrays', 'supports_arrays_outside_of_select']
 )
 # Issues #2370
-@pytest.mark.xfail_backends([BigQuery])
+@pytest.mark.xfail_backends(['bigquery'])
 def test_array_concat(backend, con):
     left = ibis.literal([1, 2, 3])
     right = ibis.literal([2, 1])
