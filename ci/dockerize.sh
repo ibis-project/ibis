@@ -9,9 +9,6 @@ add_wait() {
 
 for service in $@; do
     case "${service}" in
-    omniscidb)
-        add_wait "-wait tcp://omniscidb:6274"
-        ;;
     mysql)
         add_wait "-wait tcp://mysql:3306"
         ;;

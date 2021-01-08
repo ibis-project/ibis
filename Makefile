@@ -23,13 +23,13 @@ DOCKER_STOP := $(DOCKER) rm --force --stop
 DOCKER_RUN_COMMAND := echo "you should do 'make docker_run DOCKER_RUN_COMMAND=[you command]'"
 
 # all backends that ibis using
-BACKENDS := clickhouse impala kudu-master kudu-tserver mysql omniscidb parquet postgres sqlite
+BACKENDS := clickhouse impala kudu-master kudu-tserver mysql parquet postgres sqlite
 
 # backends which are implemented as containers and can be launched through the `docker-compose`
-SERVICES := omniscidb postgres mysql clickhouse impala kudu-master kudu-tserver
+SERVICES := postgres mysql clickhouse impala kudu-master kudu-tserver
 
 # the variable contains backends for which test datasets can be automatically loaded
-LOADS := sqlite parquet postgres clickhouse omniscidb mysql impala
+LOADS := sqlite parquet postgres clickhouse mysql impala
 
 CURRENT_SERVICES := $(shell $(MAKEFILE_DIR)/ci/backends-to-start.sh "$(BACKENDS)" "$(SERVICES)")
 CURRENT_LOADS := $(shell $(MAKEFILE_DIR)/ci/backends-to-start.sh "$(BACKENDS)" "$(LOADS)")
@@ -120,7 +120,7 @@ init: restart
 
 # Targets for running backend specific Ibis tests inside docker's containers
 # BACKENDS can be set to choose which tests should be run:
-#   make --directory ibis testparallel BACKENDS='omniscidb impala'
+#   make --directory ibis testparallel BACKENDS='impala'
 
 test: init
 	$(DOCKER_RUN) -e PYTHONHASHSEED="$(PYTHONHASHSEED)" ibis bash -c "${REMOVE_COMPILED_PYTHON_SCRIPTS} && \
@@ -161,7 +161,7 @@ testpyspark:
 	$(MAKE) testparallelnoinit PYTEST_MARKERS="-m pyspark"
 
 fastopt:
-	@echo -m 'not (backend or bigquery or clickhouse or hdfs or impala or kudu or omniscidb or mysql or postgis or postgresql or superuser or udf)'
+	@echo -m 'not (backend or bigquery or clickhouse or hdfs or impala or kudu or mysql or postgis or postgresql or superuser or udf)'
 
 # Targets for documentation builds
 

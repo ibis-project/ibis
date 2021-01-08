@@ -71,10 +71,6 @@ with suppress(ImportError):
     from ibis.backends import bigquery  # noqa: F401
 
 with suppress(ImportError):
-    # pip install ibis-framework[omniscidb]
-    from ibis.backends import omniscidb  # noqa: F401
-
-with suppress(ImportError):
     # pip install ibis-framework[spark]
     from ibis.backends import spark  # noqa: F401
 

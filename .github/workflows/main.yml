@@ -152,35 +152,6 @@ jobs:
     - name: run tests
       run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh
 
-  Tests_omniscidb:
-    name: Tests OmniSciDB
-    runs-on: ubuntu-latest
-    env:
-      BACKENDS: "omniscidb"
-    strategy:
-      fail-fast: false
-      matrix:
-        python_version: ["3.7"]
-    services:
-      omnisci:
-        # NOTE: Keep the documentation about the OmniSciDB supported version
-        #       updated (docs/source/backends/omnisci.rst).
-        image: omnisci/core-os-cpu:v5.3.0
-        ports:
-          - 6274:6274
-          - 6278:6278
-        volumes:
-          - omniscidb.conf:/omnisci-storage/omnisci.conf
-    steps:
-    - name: checkout
-      uses: actions/checkout@v1
-
-    - name: set up environment
-      run: ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
-
-    - name: run tests
-      run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh
-
   Tests_spark:
     name: Tests PySpark / Spark
     runs-on: ubuntu-latest

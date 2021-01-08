@@ -42,7 +42,6 @@ requirements:
     - psycopg2
     - pyarrow >=0.15
     - pydata-google-auth
-    - pymapd 0.24  # [py<38]
     - pymysql
     - pyspark >=2.4.3
     - pytables >=3.0.0
@@ -69,7 +68,6 @@ test:
     - ibis.backends.hdf5
     - ibis.backends.impala
     - ibis.backends.mysql
-    - ibis.backends.omniscidb  # [py<38]
     - ibis.backends.pandas
     - ibis.backends.postgres
     - ibis.backends.pyspark
