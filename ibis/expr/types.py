@@ -20,6 +20,8 @@ if TYPE_CHECKING:
 class Expr:
     """Base expression class"""
 
+    __slots__ = ['_hash']
+
     def _type_display(self):
         return type(self).__name__
 
@@ -46,7 +48,9 @@ class Expr:
             return repr(result)
 
     def __hash__(self):
-        return hash(self._key)
+        if not hasattr(self, '_hash'):
+            self._hash = hash(self._key)
+        return self._hash
 
     def __bool__(self):
         raise ValueError(
