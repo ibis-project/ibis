@@ -35,7 +35,7 @@ client using :func:`ibis.impala.connect`:
 
    import ibis
 
-   hdfs = ibis.hdfs_connect(host='impala', port=50070)
+   hdfs = ibis.impala.hdfs_connect(host='impala', port=50070)
    con = ibis.impala.connect(
        host='impala', database='ibis_testing', hdfs_client=hdfs
    )
@@ -51,7 +51,7 @@ API
 .. currentmodule:: ibis.backends.impala
 
 These methods are available on the Impala client object after connecting to
-your HDFS cluster (``ibis.hdfs_connect``) and connecting to Impala with
+your HDFS cluster (``ibis.impala.hdfs_connect``) and connecting to Impala with
 ``ibis.impala.connect``. See :ref:`backends.impala` for a tutorial on using this
 backend.
 
@@ -201,7 +201,7 @@ connection:
 
    import ibis
 
-   hdfs = ibis.hdfs_connect(host=webhdfs_host, port=webhdfs_port)
+   hdfs = ibis.impala.hdfs_connect(host=webhdfs_host, port=webhdfs_port)
    client = ibis.impala.connect(
        host=impala_host, port=impala_port, hdfs_client=hdfs
    )

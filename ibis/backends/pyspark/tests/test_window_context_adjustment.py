@@ -1,5 +1,5 @@
 import pandas as pd
-import pandas.util.testing as tm
+import pandas.testing as tm
 import pyspark.sql.functions as F
 import pytest
 from pyspark.sql import Window

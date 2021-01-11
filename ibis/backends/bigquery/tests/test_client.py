@@ -5,7 +5,7 @@ from unittest import mock
 
 import numpy as np
 import pandas as pd
-import pandas.util.testing as tm
+import pandas.testing as tm
 import pytest
 import pytz
 
@@ -85,7 +85,7 @@ FROM t0"""  # noqa
 
 
 def test_struct_field_access(struct_table):
-    expr = struct_table.struct_col.string_field
+    expr = struct_table.struct_col['string_field']
     result = expr.execute()
     expected = pd.Series([None, 'a'], name='tmp')
     tm.assert_series_equal(result, expected)
@@ -136,9 +136,9 @@ def test_array_length(struct_table):
 
 
 def test_array_collect(struct_table):
-    key = struct_table.array_of_structs_col[0].string_field
+    key = struct_table.array_of_structs_col[0]['string_field']
     expr = struct_table.groupby(key=key).aggregate(
-        foo=lambda t: t.array_of_structs_col[0].int_field.collect()
+        foo=lambda t: t.array_of_structs_col[0]['int_field'].collect()
     )
     result = expr.execute()
     expected = struct_table.execute()

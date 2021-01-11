@@ -1,7 +1,7 @@
 import decimal
 
 import pandas as pd
-import pandas.util.testing as tm  # noqa: E402
+import pandas.testing as tm
 import pytest
 from pytest import param
 

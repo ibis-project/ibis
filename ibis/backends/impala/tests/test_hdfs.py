@@ -56,7 +56,7 @@ class TestHDFSE2E(unittest.TestCase):
         cls.tmp_dir = pjoin(cls.ENV.tmp_dir, util.guid())
         if cls.ENV.auth_mechanism in ['GSSAPI', 'LDAP']:
             print("Warning: ignoring invalid Certificate Authority errors")
-        cls.hdfs = ibis.hdfs_connect(
+        cls.hdfs = ibis.impala.hdfs_connect(
             host=cls.ENV.nn_host,
             port=cls.ENV.webhdfs_port,
             auth_mechanism=cls.ENV.auth_mechanism,
@@ -393,7 +393,7 @@ class TestSuperUserHDFSE2E(unittest.TestCase):
         if cls.ENV.auth_mechanism in ['GSSAPI', 'LDAP']:
             print("Warning: ignoring invalid Certificate Authority errors")
         # NOTE: specifying superuser as set in IbisTestEnv
-        cls.hdfs = ibis.hdfs_connect(
+        cls.hdfs = ibis.impala.hdfs_connect(
             host=cls.ENV.nn_host,
             port=cls.ENV.webhdfs_port,
             auth_mechanism=cls.ENV.auth_mechanism,

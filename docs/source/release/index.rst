@@ -13,6 +13,7 @@ Release Notes
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
 * :feature:`2379` Backends are defined as entry points
+* :bug:`2577` Make StructValue picklable
 * :support:`2505` Remove deprecated `ibis.HDFS`, `ibis.WebHDFS` and `ibis.hdfs_connect`
 * :feature:`2514` Add Struct.from_dict
 * :feature:`2310` Add hash and hashbytes support for BigQuery backend

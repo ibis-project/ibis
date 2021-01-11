@@ -3256,8 +3256,8 @@ _add_methods(ir.MapValue, _map_column_methods)
 # Struct API
 
 
-def _struct_get_field(expr, field_name):
-    """Get the `field_name` field from the ``Struct`` expression `expr`.
+def _struct_get_field(expr: StructValue, field_name: str) -> ValueExpr:
+    """Get the `field_name` field from the ``StructValue`` expression `expr`.
 
     Parameters
     ----------
@@ -3265,6 +3265,20 @@ def _struct_get_field(expr, field_name):
         The name of the field to access from the ``Struct`` typed expression
         `expr`. Must be a Python ``str`` type; programmatic struct field
         access is not yet supported.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> from collections import OrderedDict
+    >>> struct_expr = ibis.literal(
+    ...     OrderedDict([("fruit", "pear"), ("weight", 0)])
+    ... )
+    >>> struct_expr['fruit']  # doctest: +NORMALIZE_WHITESPACE
+    fruit = StructField[string]
+      Literal[struct<fruit: string, weight: int8>]
+        OrderedDict([('fruit', 'pear'), ('weight', 0)])
+      field:
+        fruit
 
     Returns
     -------
@@ -3274,8 +3288,11 @@ def _struct_get_field(expr, field_name):
     return ops.StructField(expr, field_name).to_expr().name(field_name)
 
 
-def _destructure(expr: StructColumn) -> DestructColumn:
-    """ Destructure a ``Struct`` to create a destruct column.
+def _destructure(expr: StructValue) -> DestructValue:
+    """Destructure a ``StructValue`` into a corresponding ``DestructValue``.
+
+    Each subclass of ``StructValue`` will be destructed accordingly. For
+    example, a ``StructColumn`` will be destructed into a ``DestructColumn``.
 
     When assigned, a destruct column will destructured and assigned to multiple
     columns.
@@ -3287,8 +3304,8 @@ def _destructure(expr: StructColumn) -> DestructColumn:
 
     Returns
     -------
-    destruct_expr: ibis.expr.types.DestructColumn
-        A destruct column expression.
+    destruct_expr: ibis.expr.types.DestructValue
+        A destruct value expression.
     """
     # Set name to empty string here so that we can detect and error when
     # user set name for a destruct column.
@@ -3304,7 +3321,6 @@ def _destructure(expr: StructColumn) -> DestructColumn:
 
 _struct_value_methods = {
     'destructure': _destructure,
-    '__getattr__': _struct_get_field,
     '__getitem__': _struct_get_field,
 }
 

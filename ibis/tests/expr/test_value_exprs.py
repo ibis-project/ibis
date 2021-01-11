@@ -158,20 +158,6 @@ def test_literal_complex_types(value, expected_type, expected_class):
     assert expr.op().value is value
 
 
-def test_struct_operations():
-    value = OrderedDict(
-        [
-            ('a', 1),
-            ('b', list('abc')),
-            ('c', OrderedDict([('foo', [1.0, 2.0])])),
-        ]
-    )
-    expr = ibis.literal(value)
-    assert isinstance(expr, ir.StructValue)
-    assert isinstance(expr.b, ir.ArrayValue)
-    assert isinstance(expr.a.op(), ops.StructField)
-
-
 def test_simple_map_operations():
     value = {'a': [1.0, 2.0], 'b': [], 'c': [3.0]}
     value2 = {'a': [1.0, 2.0], 'c': [3.0], 'd': [4.0, 5.0]}
@@ -1228,12 +1214,6 @@ def test_empty_array_as_argument():
 
     assert value.type().equals(dt.Array(dt.null))
     assert value.cast(dt.Array(dt.int64)).equals(expected)
-
-
-def test_struct_field_dir():
-    t = ibis.table([('struct_col', 'struct<my_field: string>')])
-    assert 'struct_col' in dir(t)
-    assert 'my_field' in dir(t.struct_col)
 
 
 def test_nullable_column_propagated():

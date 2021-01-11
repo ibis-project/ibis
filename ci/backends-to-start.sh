@@ -13,10 +13,10 @@
 #     datasets should be loaded.
 #
 # Example:
-# current_backends=`./ci/backends-to-start.sh "omniscidb impala parquet" "omniscidb impala"`  && echo $current_backends
+# current_backends=`./ci/backends-to-start.sh "spark impala parquet" "spark impala"`  && echo $current_backends
 #
 # Output:
-# 'omniscidb impala'
+# 'spark impala'
 
 # convert strings to arrays
 BACKENDS=($(echo $1))

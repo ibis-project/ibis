@@ -103,7 +103,7 @@ def connect(
     >>> hdfs_port = int(os.environ.get('IBIS_TEST_NN_PORT', 50070))
     >>> impala_host = os.environ.get('IBIS_TEST_IMPALA_HOST', 'localhost')
     >>> impala_port = int(os.environ.get('IBIS_TEST_IMPALA_PORT', 21050))
-    >>> hdfs = ibis.hdfs_connect(host=hdfs_host, port=hdfs_port)
+    >>> hdfs = ibis.impala.hdfs_connect(host=hdfs_host, port=hdfs_port)
     >>> hdfs  # doctest: +ELLIPSIS
     <ibis.filesystems.WebHDFS object at 0x...>
     >>> client = ibis.impala.connect(
