@@ -12,6 +12,7 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :feature:`2587` Add caching for Expr.__hash__
 * :bug:`2577` Make StructValue picklable
 * :support:`2505` Remove deprecated `ibis.HDFS`, `ibis.WebHDFS` and `ibis.hdfs_connect`
 * :feature:`2514` Add Struct.from_dict
