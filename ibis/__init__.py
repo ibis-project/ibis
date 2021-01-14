@@ -38,25 +38,10 @@ __version__ = get_versions()['version']
 del get_versions
 
 
-def __getattr__(name):
-    """
-    Load backends as `ibis` module attributes.
-
-    When `ibis.sqlite` is called, this function is executed with `name=sqlite`.
-    Ibis backends are expected to be defined as `entry_points` in the
-    `setup.py` file of the Ibis project, or of third-party backends.
-
-    If a backend is not found in the entry point registry, and `ImportError` is
-    raised.
-    """
+for entry_point in pkg_resources.iter_entry_points(
+    group='ibis.backends', name=None
+):
     try:
-        entry_point = next(
-            pkg_resources.iter_entry_points('ibis.backends', name)
-        )
-    except StopIteration:
-        raise ImportError(
-            f'"{name}" was assumed to be a backend, but it was '
-            'not found. You may have to install it with `pip '
-            f'install ibis-{name}`.'
-        )
-    return entry_point.resolve()
+        setattr(ibis, entry_point.name, entry_point.resolve())
+    except ImportError:
+        pass
