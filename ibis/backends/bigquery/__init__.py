@@ -6,6 +6,7 @@ import google.auth.credentials
 import google.cloud.bigquery  # noqa: F401, fail early if bigquery is missing
 import pydata_google_auth
 
+from ibis.backends.base import BaseBackend
 import ibis.common.exceptions as com
 import ibis.config
 from ibis.config import options  # noqa: F401
@@ -100,3 +101,10 @@ def connect(
         credentials=credentials,
         application_name=application_name,
     )
+
+
+class Backend(BaseBackend):
+    name = 'bigquery'
+    buider = None
+    dialect = None
+    connect = connect

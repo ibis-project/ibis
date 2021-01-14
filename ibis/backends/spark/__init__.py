@@ -1,5 +1,6 @@
 """Spark backend."""
 import ibis.common.exceptions as com
+from ibis.backends.base import BaseBackend
 
 from .client import SparkClient
 from .compiler import dialect  # noqa: F401
@@ -47,3 +48,10 @@ def connect(spark_session):
     client._session.conf.set('spark.sql.session.timeZone', 'UTC')
 
     return client
+
+
+class Backend(BaseBackend):
+    name = 'spark'
+    buider = None
+    dialect = None
+    connect = connect

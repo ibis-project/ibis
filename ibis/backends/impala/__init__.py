@@ -2,6 +2,7 @@
 import ibis.common.exceptions as com
 import ibis.config
 from ibis.config import options
+from ibis.backends.base import BaseBackend
 
 # these objects are exposed in the public API and are not used in the module
 from .client import (  # noqa: F401
@@ -142,3 +143,10 @@ def connect(
             options.default_backend = client
 
     return client
+
+
+class Backend(BaseBackend):
+    name = 'impala'
+    buider = None
+    dialect = None
+    connect = connect

@@ -1,3 +1,5 @@
+from ibis.backends.base import BaseBackend
+
 from .client import PySparkClient
 from .compiler import dialect  # noqa: F401
 
@@ -19,3 +21,10 @@ def connect(session):
     client._session.conf.set('spark.sql.session.timeZone', 'UTC')
 
     return client
+
+
+class Backend(BaseBackend):
+    name = 'pyspark'
+    buider = None
+    dialect = None  # noqa: F811
+    connect = connect

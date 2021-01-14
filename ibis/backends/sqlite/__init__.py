@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
+from ibis.backends.base import BaseBackend
 from .client import SQLiteClient
 from .compiler import dialect, rewrites  # noqa: F401
 
@@ -43,3 +44,10 @@ def connect(path=None, create=False):
     """
 
     return SQLiteClient(path, create=create)
+
+
+class Backend(BaseBackend):
+    name = 'sqlite'
+    buider = None
+    dialect = None
+    connect = connect

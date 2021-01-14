@@ -1,3 +1,4 @@
+from ibis.backends.base import BaseBackend
 from ibis.backends.base_sqlalchemy.alchemy import to_sqlalchemy
 
 from .client import MySQLClient
@@ -120,3 +121,10 @@ def connect(
         url=url,
         driver=driver,
     )
+
+
+class Backend(BaseBackend):
+    name = 'sqlite'
+    buider = None
+    dialect = None
+    connect = connect

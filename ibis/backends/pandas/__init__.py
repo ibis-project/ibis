@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import toolz
 
 import ibis.config
+from ibis.backends.base import BaseBackend
 from ibis.backends.base_sqlalchemy.compiler import Dialect
 
 from .client import PandasClient
@@ -94,3 +95,10 @@ class PandasDialect(Dialect):
 
 
 PandasClient.dialect = dialect = PandasDialect
+
+
+class Backend(BaseBackend):
+    name = 'pandas'
+    buider = None
+    dialect = None
+    connect = connect
