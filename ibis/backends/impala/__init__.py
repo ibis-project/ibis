@@ -1,8 +1,8 @@
 """Impala backend"""
 import ibis.common.exceptions as com
 import ibis.config
-from ibis.config import options
 from ibis.backends.base import BaseBackend
+from ibis.config import options
 
 # these objects are exposed in the public API and are not used in the module
 from .client import (  # noqa: F401

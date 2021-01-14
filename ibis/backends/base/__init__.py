@@ -11,6 +11,7 @@ class BaseBackend(abc.ABC):
     All Ibis backends are expected to subclass this `Backend` class,
     and implement all the required methods.
     """
+
     def __init__(self, connection_string):
         self.connection_string = connection_string
 

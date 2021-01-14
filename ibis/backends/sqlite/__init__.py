@@ -14,6 +14,7 @@
 
 
 from ibis.backends.base import BaseBackend
+
 from .client import SQLiteClient
 from .compiler import dialect, rewrites  # noqa: F401
 
