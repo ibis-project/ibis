@@ -2,6 +2,7 @@ import pandas as pd
 
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
+from ibis.backends.base import BaseBackend
 from ibis.backends.base_file import FileClient
 from ibis.backends.pandas.core import execute, execute_node
 
@@ -75,3 +76,10 @@ def hdf_read_table(op, client, scope, **kwargs):
     path = client.dictionary[key]
     df = pd.read_hdf(str(path), key, mode='r')
     return df
+
+
+class Backend(BaseBackend):
+    name = 'hdf5'
+    buider = None
+    dialect = None
+    connect = connect

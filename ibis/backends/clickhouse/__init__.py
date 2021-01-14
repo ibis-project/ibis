@@ -1,5 +1,6 @@
 import ibis.common.exceptions as com
 import ibis.config
+from ibis.backends.base import BaseBackend
 from ibis.config import options
 
 from .client import ClickhouseClient
@@ -113,3 +114,10 @@ def connect(
         options.default_backend = client
 
     return client
+
+
+class Backend(BaseBackend):
+    name = 'clickhouse'
+    buider = None
+    dialect = None
+    connect = connect
