@@ -9,6 +9,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis.backends.base import BaseBackend
 from ibis.backends.base_file import FileClient
 from ibis.backends.pandas import PandasDialect
 from ibis.backends.pandas.core import execute, execute_node
@@ -116,3 +117,10 @@ def parquet_read_table(op, client, scope, **kwargs):
     table = pq.read_table(str(path))
     df = table.to_pandas()
     return df
+
+
+class Backend(BaseBackend):
+    name = 'parquet'
+    buider = None
+    dialect = None
+    connect = connect

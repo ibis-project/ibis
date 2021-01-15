@@ -8,6 +8,7 @@ import pydata_google_auth
 
 import ibis.common.exceptions as com
 import ibis.config
+from ibis.backends.base import BaseBackend
 from ibis.config import options  # noqa: F401
 
 from .client import BigQueryClient
@@ -100,3 +101,10 @@ def connect(
         credentials=credentials,
         application_name=application_name,
     )
+
+
+class Backend(BaseBackend):
+    name = 'bigquery'
+    buider = None
+    dialect = None
+    connect = connect

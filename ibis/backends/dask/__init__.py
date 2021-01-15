@@ -6,6 +6,7 @@ import toolz
 from dask.dataframe import DataFrame
 
 import ibis.config
+from ibis.backends.base import BaseBackend
 from ibis.backends.base_sqlalchemy.compiler import Dialect
 from ibis.backends.pandas import _flatten_subclass_tree
 
@@ -83,3 +84,10 @@ class DaskDialect(Dialect):
 
 
 DaskClient.dialect = dialect = DaskDialect
+
+
+class Backend(BaseBackend):
+    name = 'dask'
+    buider = None
+    dialect = None
+    connect = connect
