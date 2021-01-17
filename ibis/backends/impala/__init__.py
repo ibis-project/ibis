@@ -15,18 +15,6 @@ from .compiler import dialect  # noqa: F401
 from .hdfs import HDFS, WebHDFS, hdfs_connect  # noqa: F401
 from .udf import *  # noqa: F401,F403
 
-with ibis.config.config_prefix('impala'):
-    ibis.config.register_option(
-        'temp_db',
-        '__ibis_tmp',
-        'Database to use for temporary tables, views. functions, etc.',
-    )
-    ibis.config.register_option(
-        'temp_hdfs_path',
-        '/tmp/ibis',
-        'HDFS path for storage of temporary data',
-    )
-
 
 def compile(expr, params=None):
     """Force compilation of expression.
@@ -150,3 +138,15 @@ class Backend(BaseBackend):
     buider = None
     dialect = None
     connect = connect
+
+    def register_options(self):
+        ibis.config.register_option(
+            'temp_db',
+            '__ibis_tmp',
+            'Database to use for temporary tables, views. functions, etc.',
+        )
+        ibis.config.register_option(
+            'temp_hdfs_path',
+            '/tmp/ibis',
+            'HDFS path for storage of temporary data',
+        )

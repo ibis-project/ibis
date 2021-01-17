@@ -16,16 +16,6 @@ from .execution import execute, execute_node
 __all__ = ('connect', 'dialect', 'execute')
 
 
-with ibis.config.config_prefix('dask'):
-    ibis.config.register_option(
-        'enable_trace',
-        False,
-        'Whether enable tracing for dask execution. '
-        'See ibis.dask.trace for details.',
-        validator=ibis.config.is_bool,
-    )
-
-
 def connect(dictionary: Dict[str, DataFrame]) -> DaskClient:
     """Construct a dask client from a dictionary of DataFrames.
 
@@ -91,3 +81,12 @@ class Backend(BaseBackend):
     buider = None
     dialect = None
     connect = connect
+
+    def register_options(self):
+        ibis.config.register_option(
+            'enable_trace',
+            False,
+            'Whether enable tracing for dask execution. '
+            'See ibis.dask.trace for details.',
+            validator=ibis.config.is_bool,
+        )

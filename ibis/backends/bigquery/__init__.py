@@ -23,10 +23,6 @@ except ImportError:
 __all__ = ('compile', 'connect', 'verify', 'udf')
 
 
-with ibis.config.config_prefix('bigquery'):
-    ibis.config.register_option('partition_col', 'PARTITIONTIME')
-
-
 def compile(expr, params=None):
     """Compile an expression for BigQuery.
 
@@ -108,3 +104,6 @@ class Backend(BaseBackend):
     buider = None
     dialect = None
     connect = connect
+
+    def register_options(self):
+        ibis.config.register_option('partition_col', 'PARTITIONTIME')
