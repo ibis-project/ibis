@@ -244,3 +244,19 @@ jobs:
         cp -r /usr/share/miniconda/conda-bld/noarch /tmp/packages/noarch
         cp -r /usr/share/miniconda/conda-bld/linux-64 /tmp/packages/linux-64
         conda index /tmp/packages
+
+  Docs:
+    name: Docs
+    runs-on: ubuntu-latest
+    env:
+      BACKENDS: "bigquery clickhouse dask impala mysql parquet postgres pyspark spark"
+    steps:
+
+    - name: checkout
+      uses: actions/checkout@v1
+
+    - name: set up environment
+      run: ./ci/setup_env.sh
+
+    - name: build docs
+      run: sphinx-build -b html docs/source /tmp/docs.ibis-project.org -W -T
