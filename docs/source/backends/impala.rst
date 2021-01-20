@@ -206,10 +206,10 @@ connection:
        host=impala_host, port=impala_port, hdfs_client=hdfs
    )
 
-All IPython examples here use the following block of code to connect to impala
+All examples here use the following block of code to connect to impala
 using docker:
 
-.. ipython:: python
+.. code-block:: python
 
    import ibis
    host = 'impala'
@@ -232,7 +232,7 @@ Database and Table objects
 The client's ``table`` method allows you to create an Ibis table expression
 referencing a physical Impala table:
 
-.. ipython:: python
+.. code-block:: python
 
    table = client.table('functional_alltypes', database='ibis_testing')
 
@@ -241,12 +241,25 @@ of a database object that simplifies interactions with a single Impala
 database. It also gives you IPython tab completion of table names (that are
 valid Python variable names):
 
-.. ipython:: python
+.. code-block:: python
 
-   db = client.database('ibis_testing')
-   db
-   table = db.functional_alltypes
-   db.list_tables()
+   >>> db = client.database('ibis_testing')
+   >>> db
+   ImpalaDatabase('ibis_testing')
+
+   >>> table = db.functional_alltypes
+   >>> db.list_tables()
+   ['alltypes',
+    'functional_alltypes',
+    'tpch_customer',
+    'tpch_lineitem',
+    'tpch_nation',
+    'tpch_orders',
+    'tpch_part',
+    'tpch_partsupp',
+    'tpch_region',
+    'tpch_region_avro',
+    'tpch_supplier']
 
 ``ImpalaTable`` is a Python subclass of the more general Ibis ``TableExpr``
 that has additional Impala-specific methods. So you can use it interchangeably
@@ -275,11 +288,12 @@ expressions on Impala or whichever backend is being referenced.
 
 For example:
 
-.. ipython:: python
+.. code-block:: python
 
-   fa = db.functional_alltypes
-   expr = fa.double_col.sum()
-   expr.execute()
+   >>> fa = db.functional_alltypes
+   >>> expr = fa.double_col.sum()
+   >>> expr.execute()
+   331785.00000000006
 
 For longer-running queries, Ibis will attempt to cancel the query in progress
 if an interrupt is received.
@@ -308,19 +322,32 @@ Creating tables from a table expression
 If you pass an Ibis expression to ``create_table``, Ibis issues a ``CREATE
 TABLE .. AS SELECT`` (CTAS) statement:
 
-.. ipython:: python
+.. code-block:: python
 
-   table = db.table('functional_alltypes')
-   expr = table.group_by('string_col').size()
-   db.create_table('string_freqs', expr, format='parquet')
+   >>> table = db.table('functional_alltypes')
+   >>> expr = table.group_by('string_col').size()
+   >>> db.create_table('string_freqs', expr, format='parquet')
 
-   freqs = db.table('string_freqs')
-   freqs.execute()
+   >>> freqs = db.table('string_freqs')
+   >>> freqs.execute()
+     string_col  count
+   0          9    730
+   1          3    730
+   2          6    730
+   3          4    730
+   4          1    730
+   5          8    730
+   6          2    730
+   7          7    730
+   8          5    730
+   9          0    730
 
-   files = freqs.files()
-   files
+   >>> files = freqs.files()
+   >>> files
+                                                   Path  Size Partition
+   0  hdfs://impala:8020/user/hive/warehouse/ibis_te...  584B  
 
-   freqs.drop()
+   >>> freqs.drop()
 
 You can also choose to create an empty table and use ``insert`` (see below).
 
@@ -359,10 +386,25 @@ can force a particular path with the ``location`` option.
 If the schema matches a known table schema, you can always use the ``schema``
 method to get a schema object:
 
-.. ipython:: python
+.. code-block:: python
 
-   t = db.table('functional_alltypes')
-   t.schema()
+   >>> t = db.table('functional_alltypes')
+   >>> t.schema()
+   ibis.Schema {  
+     id               int32
+     bool_col         boolean
+     tinyint_col      int8
+     smallint_col     int16
+     int_col          int32
+     bigint_col       int64
+     float_col        float32
+     double_col       float64
+     date_string_col  string
+     string_col       string
+     timestamp_col    timestamp
+     year             int32
+     month            int32
+   }
 
 Creating a partitioned table
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -426,19 +468,31 @@ Inserting data into tables
 If the schemas are compatible, you can insert into a table directly from an
 Ibis table expression:
 
-.. ipython:: python
+.. code-block:: python
 
-   t = db.functional_alltypes
-   db.create_table('insert_test', schema=t.schema())
-   target = db.table('insert_test')
+   >>> t = db.functional_alltypes
+   >>> db.create_table('insert_test', schema=t.schema())
+   >>> target = db.table('insert_test')
 
-   target.insert(t[:3])
-   target.insert(t[:3])
-   target.insert(t[:3])
+   >>> target.insert(t[:3])
+   >>> target.insert(t[:3])
+   >>> target.insert(t[:3])
 
-   target.execute()
+   >>> target.execute()
+        id  bool_col  tinyint_col  ...           timestamp_col  year  month
+   0  5770      True            0  ... 2010-08-01 00:00:00.000  2010      8
+   1  5771     False            1  ... 2010-08-01 00:01:00.000  2010      8
+   2  5772      True            2  ... 2010-08-01 00:02:00.100  2010      8
+   3  5770      True            0  ... 2010-08-01 00:00:00.000  2010      8
+   4  5771     False            1  ... 2010-08-01 00:01:00.000  2010      8
+   5  5772      True            2  ... 2010-08-01 00:02:00.100  2010      8
+   6  5770      True            0  ... 2010-08-01 00:00:00.000  2010      8
+   7  5771     False            1  ... 2010-08-01 00:01:00.000  2010      8
+   8  5772      True            2  ... 2010-08-01 00:02:00.100  2010      8
 
-   target.drop()
+   [9 rows x 13 columns]
+
+   >>> target.drop()
 
 If the table is partitioned, you must indicate the partition you are inserting
 into:
@@ -467,13 +521,54 @@ method.
 The ``TableMetadata`` object that is returned has a nicer console output and
 many attributes set that you can explore in IPython:
 
-.. ipython:: python
+.. code-block:: python
 
-   t = client.table('ibis_testing.functional_alltypes')
-   meta = t.metadata()
-   meta
-   meta.location
-   meta.create_time
+   >>> t = client.table('ibis_testing.functional_alltypes')
+   >>> meta = t.metadata()
+   >>> meta
+   <class 'ibis.backends.impala.metadata.TableMetadata'>
+   {'info': {'CreateTime': datetime.datetime(2021, 1, 14, 21, 23, 8),
+             'Database': 'ibis_testing',
+             'LastAccessTime': 'UNKNOWN',
+             'Location': 'hdfs://impala:8020/__ibis/ibis-testing-data/parquet/functional_alltypes',
+             'Owner': 'root',
+             'Protect Mode': 'None',
+             'Retention': 0,
+             'Table Parameters': {'COLUMN_STATS_ACCURATE': False,
+                                  'EXTERNAL': True,
+                                  'STATS_GENERATED_VIA_STATS_TASK': True,
+                                  'numFiles': 3,
+                                  'numRows': 7300,
+                                  'rawDataSize': '-1',
+                                  'totalSize': 106278,
+                                  'transient_lastDdlTime': datetime.datetime(2021, 1, 14, 21, 23, 17)},
+             'Table Type': 'EXTERNAL_TABLE'},
+    'schema': [('id', 'int'),
+               ('bool_col', 'boolean'),
+               ('tinyint_col', 'tinyint'),
+               ('smallint_col', 'smallint'),
+               ('int_col', 'int'),
+               ('bigint_col', 'bigint'),
+               ('float_col', 'float'),
+               ('double_col', 'double'),
+               ('date_string_col', 'string'),
+               ('string_col', 'string'),
+               ('timestamp_col', 'timestamp'),
+               ('year', 'int'),
+               ('month', 'int')],
+    'storage info': {'Bucket Columns': '[]',
+                     'Compressed': False,
+                     'InputFormat': 'org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat',
+                     'Num Buckets': 0,
+                     'OutputFormat': 'org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat',
+                     'SerDe Library': 'org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe',
+                     'Sort Columns': '[]'}}
+
+   >>> meta.location
+   'hdfs://impala:8020/__ibis/ibis-testing-data/parquet/functional_alltypes'
+
+   >>> meta.create_time
+   datetime.datetime(2021, 1, 14, 21, 23, 8)
 
 The ``files`` function is also available to see all of the physical HDFS data
 files backing a table:
@@ -483,12 +578,11 @@ files backing a table:
 
    ImpalaTable.files
 
-.. code-block:: ipython
+.. code-block:: python
 
-   In [9]: ss = c.table('tpcds_parquet.store_sales')
+   >>> ss = c.table('tpcds_parquet.store_sales')
 
-   In [10]: ss.files()[:5]
-   Out[10]:
+   >>> ss.files()[:5]
                                                    path      size  \
    0  hdfs://localhost:20500/test-warehouse/tpcds.st...  160.61KB
    1  hdfs://localhost:20500/test-warehouse/tpcds.st...  123.88KB
@@ -582,16 +676,12 @@ The ``compute_stats`` and ``stats`` functions return the results of ``SHOW
 COLUMN STATS`` and ``SHOW TABLE STATS``, respectively, and their output will
 depend, of course, on the last ``COMPUTE STATS`` call.
 
-.. code-block:: ipython
+.. code-block:: python
 
-   In [5]: ss = c.table('tpcds_parquet.store_sales')
-
-   In [6]: ss.compute_stats(incremental=True)
-
-   In [7]: stats = ss.stats()
-   s
-   In [8]: stats[:5]
-   Out[8]:
+   >>> ss = c.table('tpcds_parquet.store_sales')
+   >>> ss.compute_stats(incremental=True)
+   >>> stats = ss.stats()
+   >>> stats[:5]
      ss_sold_date_sk  #Rows  #Files     Size Bytes Cached Cache Replication  \
    0         2450829   1071       1  78.34KB   NOT CACHED        NOT CACHED
    1         2450846    839       1  61.83KB   NOT CACHED        NOT CACHED
@@ -613,10 +703,8 @@ depend, of course, on the last ``COMPUTE STATS`` call.
    3  hdfs://localhost:20500/test-warehouse/tpcds.st...
    4  hdfs://localhost:20500/test-warehouse/tpcds.st...
 
-   In [9]: cstats = ss.column_stats()
-
-   In [10]: cstats
-   Out[10]:
+   >>> cstats = ss.column_stats()
+   >>> cstats
                       Column          Type  #Distinct Values  #Nulls  Max Size  Avg Size
    0         ss_sold_time_sk        BIGINT             13879      -1       NaN         8
    1              ss_item_sk        BIGINT             17925      -1       NaN         8
@@ -720,18 +808,66 @@ execution:
 
 For example:
 
-.. ipython:: python
+.. code-block:: python
 
-   client.get_options()
+   >>> client.get_options()
+   {'ABORT_ON_ERROR': '0',
+    'APPX_COUNT_DISTINCT': '0',
+    'BUFFER_POOL_LIMIT': '',
+    'COMPRESSION_CODEC': '',
+    'COMPUTE_STATS_MIN_SAMPLE_SIZE': '1073741824',
+    'DEFAULT_JOIN_DISTRIBUTION_MODE': '0',
+    'DEFAULT_SPILLABLE_BUFFER_SIZE': '2097152',
+    'DISABLE_CODEGEN': '0',
+    'DISABLE_CODEGEN_ROWS_THRESHOLD': '50000',
+    'DISABLE_ROW_RUNTIME_FILTERING': '0',
+    'DISABLE_STREAMING_PREAGGREGATIONS': '0',
+    'DISABLE_UNSAFE_SPILLS': '0',
+    'ENABLE_EXPR_REWRITES': '1',
+    'EXEC_SINGLE_NODE_ROWS_THRESHOLD': '100',
+    'EXEC_TIME_LIMIT_S': '0',
+    'EXPLAIN_LEVEL': '1',
+    'HBASE_CACHE_BLOCKS': '0',
+    'HBASE_CACHING': '0',
+    'IDLE_SESSION_TIMEOUT': '0',
+    'MAX_ERRORS': '100',
+    'MAX_NUM_RUNTIME_FILTERS': '10',
+    'MAX_ROW_SIZE': '524288',
+    'MEM_LIMIT': '0',
+    'MIN_SPILLABLE_BUFFER_SIZE': '65536',
+    'MT_DOP': '',
+    'NUM_SCANNER_THREADS': '0',
+    'OPTIMIZE_PARTITION_KEY_SCANS': '0',
+    'PARQUET_ANNOTATE_STRINGS_UTF8': '0',
+    'PARQUET_ARRAY_RESOLUTION': '2',
+    'PARQUET_DICTIONARY_FILTERING': '1',
+    'PARQUET_FALLBACK_SCHEMA_RESOLUTION': '0',
+    'PARQUET_FILE_SIZE': '0',
+    'PARQUET_READ_STATISTICS': '1',
+    'PREFETCH_MODE': '1',
+    'QUERY_TIMEOUT_S': '0',
+    'REPLICA_PREFERENCE': '0',
+    'REQUEST_POOL': '',
+    'RUNTIME_BLOOM_FILTER_SIZE': '1048576',
+    'RUNTIME_FILTER_MAX_SIZE': '16777216',
+    'RUNTIME_FILTER_MIN_SIZE': '1048576',
+    'RUNTIME_FILTER_MODE': '2',
+    'RUNTIME_FILTER_WAIT_TIME_MS': '0',
+    'S3_SKIP_INSERT_STAGING': '1',
+    'SCHEDULE_RANDOM_REPLICA': '0',
+    'SCRATCH_LIMIT': '-1',
+    'SEQ_COMPRESSION_MODE': '',
+    'SYNC_DDL': '0'}
 
 To enable Snappy compression for Parquet files, you could do either of:
 
-.. ipython:: python
+.. code-block:: python
 
-   client.set_options({'COMPRESSION_CODEC': 'snappy'})
-   client.set_compression_codec('snappy')
+   >>> client.set_options({'COMPRESSION_CODEC': 'snappy'})
+   >>> client.set_compression_codec('snappy')
 
-   client.get_options()['COMPRESSION_CODEC']
+   >>> client.get_options()['COMPRESSION_CODEC']
+   'SNAPPY'
 
 Ingesting data from pandas
 --------------------------
@@ -750,55 +886,63 @@ Ibis's Impala tools currently interoperate with pandas in these ways:
 
 For example:
 
-.. code-block:: ipython
+.. code-block:: python
 
-   In [2]: import pandas as pd
+   >>> import pandas as pd
 
-   In [3]: data = pd.DataFrame({'foo': [1, 2, 3, 4], 'bar': ['a', 'b', 'c', 'd']})
+   >>> data = pd.DataFrame({'foo': [1, 2, 3, 4], 'bar': ['a', 'b', 'c', 'd']})
 
-   In [4]: db.create_table('pandas_table', data)
-
-   In [5]: t = db.pandas_table
-
-   In [6]: t.execute()
-   Out[6]:
+   >>> db.create_table('pandas_table', data)
+   >>> t = db.pandas_table
+   >>> t.execute()
      bar  foo
    0   a    1
    1   b    2
    2   c    3
    3   d    4
 
-   In [7]: t.drop()
+   >>> t.drop()
 
-   In [8]: db.create_table('empty_for_insert', schema=t.schema())
+   >>> db.create_table('empty_for_insert', schema=t.schema())
 
-   In [9]: to_insert = db.empty_for_insert
-
-   In [10]: to_insert.insert(data)
-
-   In [11]: to_insert.execute()
-   Out[11]:
+   >>> to_insert = db.empty_for_insert
+   >>> to_insert.insert(data)
+   >>> to_insert.execute()
      bar  foo
    0   a    1
    1   b    2
    2   c    3
    3   d    4
 
-   In [12]: to_insert.drop()
+   >>> to_insert.drop()
 
-.. ipython:: python
+.. code-block:: python
 
-   import pandas as pd
-   data = pd.DataFrame({'foo': [1, 2, 3, 4], 'bar': ['a', 'b', 'c', 'd']})
-   db.create_table('pandas_table', data)
-   t = db.pandas_table
-   t.execute()
-   t.drop()
-   db.create_table('empty_for_insert', schema=t.schema())
-   to_insert = db.empty_for_insert
-   to_insert.insert(data)
-   to_insert.execute()
-   to_insert.drop()
+   >>> import pandas as pd
+
+   >>> data = pd.DataFrame({'foo': [1, 2, 3, 4], 'bar': ['a', 'b', 'c', 'd']})
+
+   >>> db.create_table('pandas_table', data)
+   >>> t = db.pandas_table
+   >>> t.execute()
+      foo bar
+   0    1   a
+   1    2   b
+   2    3   c
+   3    4   d
+
+   >>> t.drop()
+   >>> db.create_table('empty_for_insert', schema=t.schema())
+   >>> to_insert = db.empty_for_insert
+   >>> to_insert.insert(data)
+   >>> to_insert.execute()
+      foo bar
+   0    1   a
+   1    2   b
+   2    3   c
+   3    4   d
+
+   >>> to_insert.drop()
 
 .. _udf.impala:
 
@@ -867,16 +1011,15 @@ must take place each time you load your Ibis session.
 
 The object ``fuzzy_equals`` is callable and works with Ibis expressions:
 
-.. code-block:: ipython
+.. code-block:: python
 
-   In [35]: db = c.database('ibis_testing')
+   >>> db = c.database('ibis_testing')
 
-   In [36]: t = db.functional_alltypes
+   >>> t = db.functional_alltypes
 
-   In [37]: expr = fuzzy_equals(t.float_col, t.double_col / 10)
+   >>> expr = fuzzy_equals(t.float_col, t.double_col / 10)
 
-   In [38]: expr.execute()[:10]
-   Out[38]:
+   >>> expr.execute()[:10]
    0     True
    1    False
    2    False
