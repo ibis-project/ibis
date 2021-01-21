@@ -41,7 +41,11 @@ from ibis.backends.pandas.execution.temporal import (
     execute_timestamp_sub_series_timedelta,
 )
 
-from .util import TypeRegistrationDict, register_types_to_dispatcher
+from .util import (
+    TypeRegistrationDict,
+    make_selected_obj,
+    register_types_to_dispatcher,
+)
 
 DASK_DISPATCH_TYPES: TypeRegistrationDict = {
     ops.Cast: [
@@ -164,14 +168,15 @@ def execute_timestamp_truncate(op, data, **kwargs):
     return data.astype(dtype)
 
 
-# TODO - grouping - #2553
 @execute_node.register(ops.DayOfWeekIndex, ddgb.SeriesGroupBy)
 def execute_day_of_week_index_series_group_by(op, data, **kwargs):
-    groupings = data.grouper.groupings
-    return data.obj.dt.dayofweek.astype(np.int16).groupby(groupings)
+    return (
+        make_selected_obj(data)
+        .dt.dayofweek.astype(np.int16)
+        .groupby(data.index)
+    )
 
 
-# TODO - grouping - #2553
 @execute_node.register(ops.DayOfWeekName, ddgb.SeriesGroupBy)
 def execute_day_of_week_name_series_group_by(op, data, **kwargs):
-    return day_name(data.obj.dt).groupby(data.grouper.groupings)
+    return day_name(make_selected_obj(data).dt).groupby(data.index)

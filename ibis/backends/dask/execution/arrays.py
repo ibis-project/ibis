@@ -50,7 +50,6 @@ def execute_array_collect(op, data, aggcontext=None, **kwargs):
     return aggcontext.agg(data, collect_list)
 
 
-# TODO - grouping - #2553
 @execute_node.register(ops.ArrayCollect, ddgb.SeriesGroupBy)
 def execute_array_collect_grouped_series(op, data, aggcontext=None, **kwargs):
     return data.agg(collect_list)
