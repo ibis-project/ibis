@@ -8,6 +8,8 @@ import dask.dataframe.groupby as ddgb
 import ibis.expr.operations as ops
 from ibis.backends.pandas.execution.structs import execute_node
 
+from .util import make_selected_obj
+
 
 @execute_node.register(ops.StructField, dd.Series)
 def execute_node_struct_field_series(op, data, **kwargs):
@@ -18,12 +20,12 @@ def execute_node_struct_field_series(op, data, **kwargs):
     ).rename(field)
 
 
-# TODO - grouping - #2553
 @execute_node.register(ops.StructField, ddgb.SeriesGroupBy)
 def execute_node_struct_field_series_group_by(op, data, **kwargs):
     field = op.field
+    selected_obj = make_selected_obj(data)
     return (
-        data.obj.map(operator.itemgetter(field))
+        selected_obj.map(operator.itemgetter(field), meta=selected_obj._meta)
         .rename(field)
-        .groupby(data.grouper.groupings)
+        .groupby(data.index)
     )

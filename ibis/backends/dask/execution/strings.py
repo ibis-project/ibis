@@ -38,7 +38,11 @@ from ibis.backends.pandas.execution.strings import (
     haystack_to_series_of_lists,
 )
 
-from .util import TypeRegistrationDict, register_types_to_dispatcher
+from .util import (
+    TypeRegistrationDict,
+    make_selected_obj,
+    register_types_to_dispatcher,
+)
 
 DASK_DISPATCH_TYPES: TypeRegistrationDict = {
     ops.StringLength: [((dd.Series,), execute_string_length_series)],
@@ -152,13 +156,12 @@ def execute_substring_series_series(op, data, start, length, **kwargs):
     return data.map(iterate)
 
 
-# TODO - grouping - #2553
 @execute_node.register(ops.StringSQLLike, ddgb.SeriesGroupBy, str, str)
 def execute_string_like_series_groupby_string(
     op, data, pattern, escape, **kwargs
 ):
     return execute_string_like_series_string(
-        op, data.obj, pattern, escape, **kwargs
+        op, make_selected_obj(data), pattern, escape, **kwargs
     ).groupby(data.grouper.groupings)
 
 
@@ -175,7 +178,6 @@ def execute_group_concat_series_mask(
     )
 
 
-# TODO - grouping - #2553
 @execute_node.register(ops.GroupConcat, ddgb.SeriesGroupBy, str, type(None))
 def execute_group_concat_series_gb(
     op, data, sep, _, aggcontext=None, **kwargs
@@ -192,7 +194,7 @@ def execute_group_concat_series_gb(
     return data.agg(custom_group_concat)
 
 
-# TODO - grouping - #2553
+# TODO - aggregations - #2553
 @execute_node.register(
     ops.GroupConcat, ddgb.SeriesGroupBy, str, ddgb.SeriesGroupBy
 )
@@ -216,45 +218,43 @@ def execute_string_ascii(op, data, **kwargs):
     return data.map(ord, meta=output_meta)
 
 
-# TODO - grouping - #2553
 @execute_node.register(ops.StringAscii, ddgb.SeriesGroupBy)
 def execute_string_ascii_group_by(op, data, **kwargs):
-    return execute_string_ascii(op, data, **kwargs).groupby(
-        data.grouper.groupings
+    return execute_string_ascii(op, make_selected_obj(data), **kwargs).groupby(
+        data.index
     )
 
 
-# TODO - grouping - #2553
 @execute_node.register(ops.RegexSearch, ddgb.SeriesGroupBy, str)
 def execute_series_regex_search_gb(op, data, pattern, **kwargs):
     return execute_series_regex_search(
-        op, data, getattr(pattern, 'obj', pattern), **kwargs
-    ).groupby(data.grouper.groupings)
+        op,
+        make_selected_obj(data),
+        getattr(pattern, 'obj', pattern),
+        **kwargs,
+    ).groupby(data.index)
 
 
-# TODO - grouping - #2553
 @execute_node.register(
     ops.RegexExtract, ddgb.SeriesGroupBy, str, integer_types
 )
 def execute_series_regex_extract_gb(op, data, pattern, index, **kwargs):
     return execute_series_regex_extract(
-        op, data.obj, pattern, index, **kwargs
-    ).groupby(data.grouper.groupings)
+        op, make_selected_obj(data), pattern, index, **kwargs
+    ).groupby(data.index)
 
 
-# TODO - grouping - #2553
 @execute_node.register(ops.RegexReplace, ddgb.SeriesGroupBy, str, str)
 def execute_series_regex_replace_gb(op, data, pattern, replacement, **kwargs):
     return execute_series_regex_replace(
-        data.obj, pattern, replacement, **kwargs
-    ).groupby(data.grouper.groupings)
+        make_selected_obj(data), pattern, replacement, **kwargs
+    ).groupby(data.index)
 
 
-# TODO - grouping - #2553
 @execute_node.register(ops.StrRight, ddgb.SeriesGroupBy, integer_types)
 def execute_series_right_gb(op, data, nchars, **kwargs):
-    return execute_series_right(op, data.obj, nchars).groupby(
-        data.grouper.groupings
+    return execute_series_right(op, make_selected_obj(data), nchars).groupby(
+        data.index
     )
 
 
@@ -271,13 +271,12 @@ def execute_series_find_in_set(op, needle, haystack, **kwargs):
     return needle.apply(find_in_set, args=(haystack,))
 
 
-# TODO - grouping - #2553
 @execute_node.register(ops.FindInSet, ddgb.SeriesGroupBy, list)
 def execute_series_group_by_find_in_set(op, needle, haystack, **kwargs):
     pieces = [getattr(piece, 'obj', piece) for piece in haystack]
     return execute_series_find_in_set(
-        op, needle.obj, pieces, **kwargs
-    ).groupby(needle.grouper.groupings)
+        op, make_selected_obj(needle), pieces, **kwargs
+    ).groupby(needle.index)
 
 
 # TODO we need this version not pandas

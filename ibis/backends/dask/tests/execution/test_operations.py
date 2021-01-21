@@ -84,13 +84,16 @@ def test_project_scope_does_not_override(t, df):
     tm.assert_frame_equal(result.compute(), expected.compute())
 
 
-@pytest.mark.xfail(reason="TODO - aggregations - #2553")
 @pytest.mark.parametrize(
     'where',
     [
         lambda t: None,
-        lambda t: t.dup_strings == 'd',
-        lambda t: (t.dup_strings == 'd') | (t.plain_int64 < 100),
+        # TODO - aggregations - #2553
+        pytest.param(lambda t: t.dup_strings == 'd', marks=pytest.mark.xfail),
+        pytest.param(
+            lambda t: (t.dup_strings == 'd') | (t.plain_int64 < 100),
+            marks=pytest.mark.xfail,
+        ),
     ],
 )
 @pytest.mark.parametrize(
@@ -128,7 +131,8 @@ def test_aggregation_group_by(t, df, where, ibis_func, dask_func):
     dask_where = where(df)
     mask = slice(None) if dask_where is None else dask_where
     expected = (
-        df.groupby('dup_strings')
+        df.compute()
+        .groupby('dup_strings')
         .agg(
             {
                 'plain_int64': lambda x, mask=mask: x[mask].mean(),
@@ -166,9 +170,9 @@ def test_aggregation_group_by(t, df, where, ibis_func, dask_func):
     result['mean_float64_positive'] = result.mean_float64_positive.astype(
         'float64'
     )
-    lhs = result[expected.columns]
+    lhs = result[expected.columns].compute()
     rhs = expected
-    tm.assert_frame_equal(lhs.compute(), rhs.compute())
+    tm.assert_frame_equal(lhs, rhs)
 
 
 @pytest.mark.xfail(reason="TODO - aggregations - #2553")
@@ -474,7 +478,6 @@ def test_table_count(t, df):
     assert result == expected
 
 
-@pytest.mark.xfail(reason="TODO - grouping - #2553")
 def test_weighted_average(t, df):
     expr = t.groupby(t.dup_strings).aggregate(
         avg=(t.plain_float64 * t.plain_int64).sum() / t.plain_int64.sum()
@@ -528,7 +531,6 @@ def test_mutate_after_group_by(t, df):
     )
 
 
-@pytest.mark.xfail(reason="TODO - grouping - #2553")
 def test_groupby_with_unnamed_arithmetic(t, df):
     expr = t.groupby(t.dup_strings).aggregate(
         naive_variance=(
@@ -591,20 +593,19 @@ def test_notin(t, df, elements):
     tm.assert_series_equal(result.compute(), expected.compute())
 
 
-@pytest.mark.xfail(reason="TODO - grouping - #2553")
 def test_cast_on_group_by(t, df):
     expr = t.groupby(t.dup_strings).aggregate(
         casted=(t.float64_with_zeros == 0).cast('int64').sum()
     )
+
     result = expr.execute()
     expected = (
-        df.compute()
-        .groupby('dup_strings')
+        df.groupby('dup_strings')
         .float64_with_zeros.apply(lambda s: (s == 0).astype('int64').sum())
         .reset_index()
         .rename(columns={'float64_with_zeros': 'casted'})
     )
-    tm.assert_frame_equal(result.compute(), expected)
+    tm.assert_frame_equal(result.compute(), expected.compute())
 
 
 @pytest.mark.parametrize(
@@ -628,7 +629,6 @@ def test_left_binary_op(t, df, op, args):
     tm.assert_series_equal(result.compute(), expected.compute())
 
 
-@pytest.mark.xfail(reason="TODO - aggregations - #2553")
 @pytest.mark.parametrize(
     'op',
     [

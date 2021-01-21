@@ -12,6 +12,8 @@ import ibis.expr.operations as ops
 from ibis.backends.pandas.core import numeric_types
 from ibis.backends.pandas.execution.generic import execute_node
 
+from .util import make_selected_obj
+
 
 # TODO - aggregations - #2553
 @execute_node.register(ops.Arbitrary, ddgb.SeriesGroupBy, type(None))
@@ -32,12 +34,11 @@ def execute_series_negate(op, data, **kwargs):
     return data.mul(-1)
 
 
-# TODO - grouping - #2553
 @execute_node.register(ops.Negate, ddgb.SeriesGroupBy)
 def execute_series_group_by_negate(op, data, **kwargs):
-    return execute_series_negate(op, data.obj, **kwargs).groupby(
-        data.grouper.groupings
-    )
+    return execute_series_negate(
+        op, make_selected_obj(data), **kwargs
+    ).groupby(data.index)
 
 
 def call_numpy_ufunc(func, op, data, **kwargs):

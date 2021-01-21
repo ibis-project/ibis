@@ -85,7 +85,7 @@ def _filtered_reduction(mask, method, data):
     return method(data[mask[data.index]])
 
 
-# TODO - grouping - #2553
+# TODO - aggregations - #2553
 @execute_node.register(ops.Reduction, ddgb.SeriesGroupBy, ddgb.SeriesGroupBy)
 def execute_reduction_series_gb_mask(
     op, data, mask, aggcontext=None, **kwargs
@@ -149,7 +149,7 @@ def execute_reduction_series_groupby_var(
     return aggcontext.agg(data, 'var', ddof=variance_ddof[op.how])
 
 
-# TODO - grouping - #2553
+# TODO - aggregations - #2553
 @execute_node.register(ops.Variance, ddgb.SeriesGroupBy, ddgb.SeriesGroupBy)
 def execute_var_series_groupby_mask(op, data, mask, aggcontext=None, **kwargs):
     return aggcontext.agg(
@@ -178,7 +178,7 @@ def execute_reduction_series_groupby_std(
     return aggcontext.agg(data, 'std', ddof=variance_ddof[op.how])
 
 
-# TODO - grouping - #2553
+# TODO - aggregations - #2553
 @execute_node.register(ops.StandardDev, ddgb.SeriesGroupBy, ddgb.SeriesGroupBy)
 def execute_std_series_groupby_mask(op, data, mask, aggcontext=None, **kwargs):
     return aggcontext.agg(
