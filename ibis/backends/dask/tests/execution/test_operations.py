@@ -88,12 +88,8 @@ def test_project_scope_does_not_override(t, df):
     'where',
     [
         lambda t: None,
-        # TODO - aggregations - #2553
-        pytest.param(lambda t: t.dup_strings == 'd', marks=pytest.mark.xfail),
-        pytest.param(
-            lambda t: (t.dup_strings == 'd') | (t.plain_int64 < 100),
-            marks=pytest.mark.xfail,
-        ),
+        lambda t: t.dup_strings == 'd',
+        lambda t: (t.dup_strings == 'd') | (t.plain_int64 < 100),
     ],
 )
 @pytest.mark.parametrize(
@@ -128,7 +124,7 @@ def test_aggregation_group_by(t, df, where, ibis_func, dask_func):
     )
     result = expr.execute()
 
-    dask_where = where(df)
+    dask_where = where(df.compute())
     mask = slice(None) if dask_where is None else dask_where
     expected = (
         df.compute()
@@ -136,7 +132,8 @@ def test_aggregation_group_by(t, df, where, ibis_func, dask_func):
         .agg(
             {
                 'plain_int64': lambda x, mask=mask: x[mask].mean(),
-                'plain_float64': lambda x, mask=mask: x[mask].sum(),
+                # Note we force min count here to match dask behavior
+                'plain_float64': lambda x, mask=mask: x[mask].sum(min_count=1),
                 'dup_ints': 'nunique',
                 'float64_positive': (
                     lambda x, mask=mask, func=dask_func: func(x[mask]).mean()
@@ -155,6 +152,9 @@ def test_aggregation_group_by(t, df, where, ibis_func, dask_func):
             }
         )
     )
+
+    result = result.compute()
+
     # TODO(phillipc): Why does pandas not return floating point values here?
     expected['avg_plain_int64'] = expected.avg_plain_int64.astype('float64')
     result['avg_plain_int64'] = result.avg_plain_int64.astype('float64')
@@ -170,12 +170,12 @@ def test_aggregation_group_by(t, df, where, ibis_func, dask_func):
     result['mean_float64_positive'] = result.mean_float64_positive.astype(
         'float64'
     )
-    lhs = result[expected.columns].compute()
+
+    lhs = result[expected.columns]
     rhs = expected
     tm.assert_frame_equal(lhs, rhs)
 
 
-@pytest.mark.xfail(reason="TODO - aggregations - #2553")
 def test_aggregation_without_group_by(t, df):
     expr = t.aggregate(
         avg_plain_int64=t.plain_int64.mean(),
@@ -186,17 +186,20 @@ def test_aggregation_without_group_by(t, df):
         'plain_float64': 'sum_plain_float64',
         'plain_int64': 'avg_plain_int64',
     }
+    pandas_df = df.compute()
     expected = (
-        dd.from_array(
-            [df['plain_int64'].mean(), df['plain_float64'].sum()],
+        pd.Series(
+            [
+                pandas_df['plain_int64'].mean(),
+                pandas_df['plain_float64'].sum(),
+            ],
             index=['plain_int64', 'plain_float64'],
         )
         .to_frame()
         .T.rename(columns=new_names)
     )
-    tm.assert_frame_equal(
-        result[expected.columns].compute(), expected.compute()
-    )
+    lhs = result[expected.columns].compute()
+    tm.assert_frame_equal(lhs, expected)
 
 
 def test_group_by_with_having(t, df):
@@ -264,7 +267,87 @@ def test_reduction(t, df, reduction, where):
     assert result.compute() == expected.compute()
 
 
-@pytest.mark.xfail(NotImplementedError, reason="TODO - aggregations - #2553")
+@pytest.mark.parametrize(
+    'where',
+    [
+        lambda t: (t.plain_strings == 'a') | (t.plain_strings == 'c'),
+        lambda t: None,
+    ],
+)
+def test_grouped_reduction(t, df, where):
+    ibis_where = where(t)
+    expr = t.group_by(t.dup_strings).aggregate(
+        nunique_dup_ints=t.dup_ints.nunique(),
+        sum_plain_int64=t.plain_int64.sum(where=ibis_where),
+        mean_plain_int64=t.plain_int64.mean(where=ibis_where),
+        count_plain_int64=t.plain_int64.count(where=ibis_where),
+        std_plain_int64=t.plain_int64.std(where=ibis_where),
+        var_plain_int64=t.plain_int64.var(where=ibis_where),
+        nunique_plain_int64=t.plain_int64.nunique(where=ibis_where),
+    )
+    result = expr.execute()
+
+    df_mask = where(df.compute())
+    mask = slice(None) if df_mask is None else df_mask
+
+    expected = (
+        df.compute()
+        .groupby('dup_strings')
+        .agg(
+            {
+                'dup_ints': "nunique",
+                "plain_int64": [
+                    lambda x, mask=mask: x[mask].sum(),
+                    lambda x, mask=mask: x[mask].mean(),
+                    lambda x, mask=mask: x[mask].count(),
+                    lambda x, mask=mask: x[mask].std(),
+                    lambda x, mask=mask: x[mask].var(),
+                    lambda x, mask=mask: x[mask].nunique(),
+                ],
+            }
+        )
+        .reset_index()
+    )
+    result = result.compute()
+
+    assert len(result.columns) == len(expected.columns)
+
+    expected.columns = [
+        "dup_strings",
+        "nunique_dup_ints",
+        "sum_plain_int64",
+        "mean_plain_int64",
+        "count_plain_int64",
+        "std_plain_int64",
+        "var_plain_int64",
+        "nunique_plain_int64",
+    ]
+    # guarentee ordering
+    result = result[expected.columns]
+    # dask and pandas differ slightly in how they treat groups with no entry
+    # we're not testing that so fillna here.
+    result = result.fillna(0.0)
+    expected = expected.fillna(0.0)
+
+    # match the dtypes
+    if df_mask is None:
+        expected["mean_plain_int64"] = expected.mean_plain_int64.astype(
+            "float64"
+        )
+    else:
+        expected["sum_plain_int64"] = expected.sum_plain_int64.astype(
+            "float64"
+        )
+        expected["count_plain_int64"] = expected.count_plain_int64.astype(
+            "float64"
+        )
+        expected["nunique_plain_int64"] = expected.nunique_plain_int64.astype(
+            "float64"
+        )
+
+    tm.assert_frame_equal(result, expected)
+
+
 @pytest.mark.parametrize(
     'reduction',
     [
@@ -340,17 +423,21 @@ def test_nullif(t, df, left, right, expected, compare):
         compare(result, expected(df))
 
 
-def test_nullif_inf():
+def test_nullif_inf(npartitions):
     df = dd.from_pandas(
-        pd.DataFrame({'a': [np.inf, 3.14, -np.inf, 42.0]}), npartitions=1,
+        pd.DataFrame({'a': [np.inf, 3.14, -np.inf, 42.0]}),
+        npartitions=npartitions,
     )
     con = connect(dict(t=df))
     t = con.table('t')
     expr = t.a.nullif(np.inf).nullif(-np.inf)
     result = expr.execute()
     expected = dd.from_pandas(
-        pd.Series([np.nan, 3.14, np.nan, 42.0], name='a'), npartitions=1,
-    )
+        pd.Series([np.nan, 3.14, np.nan, 42.0], name='a'),
+        npartitions=npartitions,
+    ).reset_index(
+        drop=True
+    )  # match dask reset index behavior
     tm.assert_series_equal(result.compute(), expected.compute())
 
 
@@ -878,7 +965,12 @@ def test_union(client, df1, distinct):
     expected = (
         df1 if distinct else dd.concat([df1, df1], axis=0, ignore_index=True)
     )
-    tm.assert_frame_equal(result.compute(), expected.compute())
+
+    # match indicies because of dask reset_index behavior
+    result = result.compute().reset_index(drop=True)
+    expected = expected.compute().reset_index(drop=True)
+
+    tm.assert_frame_equal(result, expected)
 
 
 def test_intersect(client, df1, intersect_df2):
@@ -899,7 +991,12 @@ def test_difference(client, df1, intersect_df2):
         intersect_df2, on=list(df1.columns), how="outer", indicator=True
     )
     expected = merged[merged["_merge"] != "both"].drop("_merge", 1)
-    tm.assert_frame_equal(result.compute(), expected.compute())
+
+    # force same index
+    result = result.compute().reset_index(drop=True)
+    expected = expected.compute().reset_index(drop=True)
+
+    tm.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize(

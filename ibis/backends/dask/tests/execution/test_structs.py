@@ -17,7 +17,7 @@ def value():
 
 
 @pytest.fixture(scope="module")
-def struct_client(value):
+def struct_client(value, npartitions):
     df = dd.from_pandas(
         pd.DataFrame(
             {
@@ -30,7 +30,7 @@ def struct_client(value):
                 "value": [1, 2, 3],
             }
         ),
-        npartitions=1,
+        npartitions=npartitions,
     )
     return connect({"t": df})
 

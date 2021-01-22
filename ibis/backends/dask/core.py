@@ -176,6 +176,8 @@ def execute_and_reset(
         aggcontext=aggcontext,
         **kwargs,
     )
+    # Note - if `result` has npartitions > 1 `reset_index` will not create
+    # a monotonically increasing index.
     if isinstance(result, dd.DataFrame):
         schema = expr.schema()
         df = result.reset_index()

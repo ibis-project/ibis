@@ -145,18 +145,33 @@ execute_node.register(DaskTable, DaskClient)(execute_database_table_client)
 def execute_arbitrary_series_mask(op, data, mask, aggcontext=None, **kwargs):
     """
     Note: we cannot use the pandas version because Dask does not support .iloc
+    See https://docs.dask.org/en/latest/dataframe-indexing.html. .loc will
+    only work if our index lines up with the label.
     """
+    data = data[mask] if mask is not None else data
     if op.how == 'first':
         index = 0
     elif op.how == 'last':
-        index = -1
+        index = len(data) - 1  # TODO - computation
     else:
         raise com.OperationNotDefinedError(
             'Arbitrary {!r} is not supported'.format(op.how)
         )
 
-    data = data[mask] if mask is not None else data
     return data.loc[index]
+
+
+@execute_node.register(ops.Arbitrary, ddgb.SeriesGroupBy, type(None))
+def execute_arbitrary_series_groupby(op, data, _, aggcontext=None, **kwargs):
+    how = op.how
+    if how is None:
+        how = 'first'
+
+    if how not in {'first', 'last'}:
+        raise com.OperationNotDefinedError(
+            'Arbitrary {!r} is not supported'.format(how)
+        )
+    return aggcontext.agg(data, how)
 
 
 @execute_node.register(ops.Cast, ddgb.SeriesGroupBy, dt.DataType)
