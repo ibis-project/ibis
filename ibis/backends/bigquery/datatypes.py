@@ -49,6 +49,11 @@ def trans_integer(t, context):
     return 'INT64'
 
 
+@ibis_type_to_bigquery_type.register(dt.Binary, TypeTranslationContext)
+def trans_binary(t, context):
+    return 'BYTES'
+
+
 @ibis_type_to_bigquery_type.register(
     dt.UInt64, (TypeTranslationContext, UDFContext)
 )
