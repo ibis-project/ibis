@@ -548,6 +548,16 @@ def test_now():
     assert result == expected
 
 
+def test_binary():
+    t = ibis.table([('value', 'double')], name='t')
+    expr = t["value"].cast(dt.binary).name("value_hash")
+    result = ibis.bigquery.compile(expr)
+    expected = """\
+SELECT CAST(`value` AS BYTES) AS `tmp`
+FROM t"""
+    assert result == expected
+
+
 def test_bucket():
     t = ibis.table([('value', 'double')], name='t')
     buckets = [0, 1, 3]
