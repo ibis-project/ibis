@@ -14,7 +14,6 @@ dispatcher since the top level container is a list.
 
 import collections
 import functools
-import operator
 from collections.abc import Sized
 
 import dask.array as da
@@ -33,6 +32,8 @@ from ibis.backends.pandas.execution.generic import (
     execute_node_greatest_list,
     execute_node_least_list,
 )
+
+from .util import make_selected_obj
 
 
 @toolz.curry
@@ -73,7 +74,6 @@ def dask_execute_node_least_list(op, value, **kwargs):
     return compute_row_reduction(da.minimum, value)
 
 
-# TODO - aggregations - #2553
 @execute_node.register(ops.Reduction, ddgb.SeriesGroupBy, type(None))
 def execute_reduction_series_groupby(
     op, data, mask, aggcontext=None, **kwargs
@@ -81,29 +81,24 @@ def execute_reduction_series_groupby(
     return aggcontext.agg(data, type(op).__name__.lower())
 
 
-def _filtered_reduction(mask, method, data):
-    return method(data[mask[data.index]])
+def _filtered_reduction(data, mask):
+    return make_selected_obj(data)[mask.obj].groupby(data.index)
 
 
-# TODO - aggregations - #2553
 @execute_node.register(ops.Reduction, ddgb.SeriesGroupBy, ddgb.SeriesGroupBy)
 def execute_reduction_series_gb_mask(
     op, data, mask, aggcontext=None, **kwargs
 ):
-    method = operator.methodcaller(type(op).__name__.lower())
-    return aggcontext.agg(
-        data, functools.partial(_filtered_reduction, mask.obj, method)
-    )
+    grouped_and_filtered_data = _filtered_reduction(data, mask)
+    return aggcontext.agg(grouped_and_filtered_data, type(op).__name__.lower())
 
 
-# TODO - aggregations - #2553
 @execute_node.register(ops.Reduction, dd.Series, (dd.Series, type(None)))
 def execute_reduction_series_mask(op, data, mask, aggcontext=None, **kwargs):
     operand = data[mask] if mask is not None else data
     return aggcontext.agg(operand, type(op).__name__.lower())
 
 
-# TODO - aggregations - #2553
 @execute_node.register(
     (ops.CountDistinct, ops.HLLCardinality), ddgb.SeriesGroupBy, type(None)
 )
@@ -113,7 +108,6 @@ def execute_count_distinct_series_groupby(
     return aggcontext.agg(data, 'nunique')
 
 
-# TODO - aggregations - #2553
 @execute_node.register(
     (ops.CountDistinct, ops.HLLCardinality),
     ddgb.SeriesGroupBy,
@@ -122,13 +116,10 @@ def execute_count_distinct_series_groupby(
 def execute_count_distinct_series_groupby_mask(
     op, data, mask, aggcontext=None, **kwargs
 ):
-    return aggcontext.agg(
-        data,
-        functools.partial(_filtered_reduction, mask.obj, dd.Series.nunique),
-    )
+    grouped_and_filtered_data = _filtered_reduction(data, mask)
+    return aggcontext.agg(grouped_and_filtered_data, "nunique")
 
 
-# TODO - aggregations - #2553
 @execute_node.register(
     (ops.CountDistinct, ops.HLLCardinality), dd.Series, (dd.Series, type(None))
 )
@@ -141,7 +132,6 @@ def execute_count_distinct_series_mask(
 variance_ddof = {'pop': 0, 'sample': 1}
 
 
-# TODO - aggregations - #2553
 @execute_node.register(ops.Variance, ddgb.SeriesGroupBy, type(None))
 def execute_reduction_series_groupby_var(
     op, data, _, aggcontext=None, **kwargs
@@ -149,18 +139,14 @@ def execute_reduction_series_groupby_var(
     return aggcontext.agg(data, 'var', ddof=variance_ddof[op.how])
 
 
-# TODO - aggregations - #2553
 @execute_node.register(ops.Variance, ddgb.SeriesGroupBy, ddgb.SeriesGroupBy)
 def execute_var_series_groupby_mask(op, data, mask, aggcontext=None, **kwargs):
+    grouped_and_filtered_data = _filtered_reduction(data, mask)
     return aggcontext.agg(
-        data,
-        lambda x, mask=mask.obj, ddof=variance_ddof[op.how]: (
-            x[mask[x.index]].var(ddof=ddof)
-        ),
+        grouped_and_filtered_data, "var", ddof=variance_ddof[op.how]
     )
 
 
-# TODO - aggregations - #2553
 @execute_node.register(ops.Variance, dd.Series, (dd.Series, type(None)))
 def execute_variance_series(op, data, mask, aggcontext=None, **kwargs):
     return aggcontext.agg(
@@ -170,7 +156,6 @@ def execute_variance_series(op, data, mask, aggcontext=None, **kwargs):
     )
 
 
-# TODO - aggregations - #2553
 @execute_node.register(ops.StandardDev, ddgb.SeriesGroupBy, type(None))
 def execute_reduction_series_groupby_std(
     op, data, _, aggcontext=None, **kwargs
@@ -178,18 +163,14 @@ def execute_reduction_series_groupby_std(
     return aggcontext.agg(data, 'std', ddof=variance_ddof[op.how])
 
 
-# TODO - aggregations - #2553
 @execute_node.register(ops.StandardDev, ddgb.SeriesGroupBy, ddgb.SeriesGroupBy)
 def execute_std_series_groupby_mask(op, data, mask, aggcontext=None, **kwargs):
+    grouped_and_filtered_data = _filtered_reduction(data, mask)
     return aggcontext.agg(
-        data,
-        lambda x, mask=mask.obj, ddof=variance_ddof[op.how]: (
-            x[mask[x.index]].std(ddof=ddof)
-        ),
+        grouped_and_filtered_data, "std", ddof=variance_ddof[op.how]
     )
 
 
-# TODO - aggregations - #2553
 @execute_node.register(ops.StandardDev, dd.Series, (dd.Series, type(None)))
 def execute_standard_dev_series(op, data, mask, aggcontext=None, **kwargs):
     return aggcontext.agg(

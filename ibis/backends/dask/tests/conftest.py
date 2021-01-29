@@ -11,6 +11,13 @@ from ibis.backends.pandas.tests.conftest import TestConf as PandasTest
 
 from .. import connect
 
+NPARTITIONS = 2
+
+
+@pytest.fixture(scope="module")
+def npartitions():
+    return NPARTITIONS
+
 
 class TestConf(PandasTest):
     @staticmethod
@@ -28,15 +35,15 @@ class TestConf(PandasTest):
                         parse_dates=['timestamp_col'],
                         encoding='utf-8',
                     ),
-                    npartitions=1,
+                    npartitions=NPARTITIONS,
                 ),
                 'batting': dd.from_pandas(
                     pd.read_csv(str(data_directory / 'batting.csv')),
-                    npartitions=1,
+                    npartitions=NPARTITIONS,
                 ),
                 'awards_players': dd.from_pandas(
                     pd.read_csv(str(data_directory / 'awards_players.csv')),
-                    npartitions=1,
+                    npartitions=NPARTITIONS,
                 ),
             }
         )
@@ -54,20 +61,35 @@ class TestConf(PandasTest):
         kwargs.setdefault('check_dtype', cls.check_dtype)
         kwargs.setdefault('check_names', cls.check_names)
         # we sometimes use pandas to build the "expected" case in tests
-        right = right.compute() if isinstance(right, dd.Series) else right
-        tm.assert_series_equal(left.compute(), right, *args, **kwargs)
+        incoming_types = tuple(map(type, (left, right)))
+        if incoming_types == (dd.Series, pd.Series):
+            if left.npartitions > 1:
+                # if there is more than one partition `reset_index` in
+                # `core.execute_and_reset` will not lead to a monotonically
+                # increasing index, so we reset to match our expected case.
+                left = left.compute().reset_index(drop=True)
+            else:
+                left = left.compute()
+        else:
+            left = left.compute()
+            right = right.compute()
+
+        tm.assert_series_equal(left, right, *args, **kwargs)
 
     @classmethod
     def assert_frame_equal(
         cls, left, right, *args: Any, **kwargs: Any
     ) -> None:
         left = left.compute().reset_index(drop=True)
-        right = right.compute().reset_index(drop=True)
+        # we sometimes use pandas to build the "expected" case in tests
+        if isinstance(right, dd.DataFrame):
+            right = right.compute()
+        right = right.reset_index(drop=True)
         tm.assert_frame_equal(left, right, *args, **kwargs)
 
 
 @pytest.fixture
-def dataframe():
+def dataframe(npartitions):
     return dd.from_pandas(
         pd.DataFrame(
             {
@@ -76,7 +98,7 @@ def dataframe():
                 'dup_strings': list('dad'),
             }
         ),
-        npartitions=1,
+        npartitions=npartitions,
     )
 
 

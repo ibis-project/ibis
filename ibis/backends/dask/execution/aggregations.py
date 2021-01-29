@@ -13,11 +13,18 @@ import operator
 from typing import Optional
 
 import dask.dataframe as dd
+import dask.dataframe.groupby as ddgb
 
 import ibis.expr.operations as ops
-from ibis.backends.pandas.execution.generic import execute, execute_node
+from ibis.backends.pandas.execution.generic import (
+    agg_ctx,
+    execute,
+    execute_node,
+)
 from ibis.expr.scope import Scope
 from ibis.expr.typing import TimeContext
+
+from .util import maybe_wrap_scalar, safe_concat
 
 
 # TODO - aggregations - #2553
@@ -72,10 +79,13 @@ def execute_aggregation_dataframe(
     pieces = []
     for metric in op.metrics:
         piece = execute(metric, scope=scope, timecontext=timecontext, **kwargs)
-        piece.name = metric.get_name()
+        piece = maybe_wrap_scalar(piece, metric)
         pieces.append(piece)
 
-    result = dd.concat(pieces, axis=1)
+    # We must perform this check here otherwise dask will throw a ValueError
+    # on `concat_and_check`. See docstring on `util.concat_via_join` for
+    # more detail
+    result = safe_concat(pieces)
 
     # If grouping, need a reset to get the grouping key back as a column
     if op.by:
@@ -107,37 +117,38 @@ def execute_aggregation_dataframe(
     return result
 
 
-# TODO - aggregations - #2553
-# @execute_node.register((ops.Any, ops.All), (dd.Series, SeriesGroupBy))
-# def execute_any_all_series(op, data, aggcontext=None, **kwargs):
-#     if isinstance(aggcontext, (agg_ctx.Summarize, agg_ctx.Transform)):
-#         result = aggcontext.agg(data, type(op).__name__.lower())
-#     else:
-#         result = aggcontext.agg(
-#             data, lambda data: getattr(data, type(op).__name__.lower())()
-#         )
-#     return result
+@execute_node.register((ops.Any, ops.All), (dd.Series, ddgb.SeriesGroupBy))
+def execute_any_all_series(op, data, aggcontext=None, **kwargs):
+    if isinstance(aggcontext, (agg_ctx.Summarize, agg_ctx.Transform)):
+        result = aggcontext.agg(data, type(op).__name__.lower())
+    else:
+        # Note this branch is not currently hit in the dask backend but is
+        # here for future scafolding.
+        result = aggcontext.agg(
+            data, lambda data: getattr(data, type(op).__name__.lower())()
+        )
+    return result
 
-# TODO - aggregations - #2553
-# @execute_node.register(ops.NotAny, (dd.Series, SeriesGroupBy))
-# def execute_notany_series(op, data, aggcontext=None, **kwargs):
-#     if isinstance(aggcontext, (agg_ctx.Summarize, agg_ctx.Transform)):
-#         result = ~(aggcontext.agg(data, 'any'))
-#     else:
-#         result = aggcontext.agg(data, lambda data: ~(data.any()))
-#     try:
-#         return result.astype(bool)
-#     except TypeError:
-#         return result
 
-# TODO - aggregations - #2553
-# @execute_node.register(ops.NotAll, (dd.Series, SeriesGroupBy))
-# def execute_notall_series(op, data, aggcontext=None, **kwargs):
-#     if isinstance(aggcontext, (agg_ctx.Summarize, agg_ctx.Transform)):
-#         result = ~(aggcontext.agg(data, 'all'))
-#     else:
-#         result = aggcontext.agg(data, lambda data: ~(data.all()))
-#     try:
-#         return result.astype(bool)
-#     except TypeError:
-#         return result
+@execute_node.register(ops.NotAny, (dd.Series, ddgb.SeriesGroupBy))
+def execute_notany_series(op, data, aggcontext=None, **kwargs):
+    if isinstance(aggcontext, (agg_ctx.Summarize, agg_ctx.Transform)):
+        result = ~(aggcontext.agg(data, 'any'))
+    else:
+        # Note this branch is not currently hit in the dask backend but is
+        # here for future scafolding.
+        result = aggcontext.agg(data, lambda data: ~(data.any()))
+
+    return result
+
+
+@execute_node.register(ops.NotAll, (dd.Series, ddgb.SeriesGroupBy))
+def execute_notall_series(op, data, aggcontext=None, **kwargs):
+    if isinstance(aggcontext, (agg_ctx.Summarize, agg_ctx.Transform)):
+        result = ~(aggcontext.agg(data, 'all'))
+    else:
+        # Note this branch is not currently hit in the dask backend but is
+        # here for future scafolding.
+        result = aggcontext.agg(data, lambda data: ~(data.all()))
+
+    return result
