@@ -7,6 +7,7 @@ from typing import Any, List, NoReturn, Optional
 
 import pandas as pd
 import toolz
+from pandas.core.dtypes.dtypes import DatetimeTZDtype
 from pandas.core.groupby import SeriesGroupBy
 
 import ibis.common.exceptions as com
@@ -183,7 +184,9 @@ def trim_with_timecontext(data, timecontext: Optional[TimeContext]):
     # Filter the data, here we preserve the time index so that when user is
     # computing a single column, the computation and the relevant time
     # indexes are retturned.
-    if TIME_COL not in df:
+    if TIME_COL not in df or not isinstance(
+        df[TIME_COL].dtype, DatetimeTZDtype
+    ):
         return data
     subset = df.loc[df[TIME_COL].between(*timecontext)]
 
