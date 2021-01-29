@@ -3,6 +3,7 @@ import enum
 import functools
 import operator
 
+import numpy as np
 import pyspark.sql.functions as F
 from pyspark.sql import Window
 from pyspark.sql.functions import PandasUDFType, pandas_udf
@@ -324,8 +325,12 @@ def compile_literal(t, expr, scope, timecontext, raw=False, **kwargs):
             return value
     elif isinstance(value, list):
         return F.array(*[F.lit(v) for v in value])
+    elif isinstance(value, np.ndarray):
+        # Unpack np.generic's using .item(), otherwise Spark
+        # will not accept
+        return F.array(*[F.lit(v.item()) for v in value])
     else:
-        return F.lit(expr.op().value)
+        return F.lit(value)
 
 
 def _compile_agg(t, agg_expr, scope, timecontext, *, context, **kwargs):
