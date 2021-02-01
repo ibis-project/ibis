@@ -90,7 +90,7 @@ def pytest_runtest_call(item):
             feature for feature in features if not getattr(backend, feature)
         ]
         if missing_features:
-            pytest.mark.skip(
+            pytest.skip(
                 f'Backend {backend} is missing features {missing_features} '
                 f'needed to run {nodeid}'
             )
