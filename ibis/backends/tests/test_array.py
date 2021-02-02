@@ -31,7 +31,18 @@ def test_array_length(backend, con):
 @pytest.mark.skip_missing_feature(
     ['supports_arrays', 'supports_arrays_outside_of_select']
 )
-def test_np_array(backend, con):
+def test_list_literal(backend, con):
+    arr = [1, 2, 3]
+    expr = ibis.literal(arr)
+    result = con.execute(expr)
+    assert np.array_equal(result, arr)
+
+
+@pytest.mark.xfail_unsupported
+@pytest.mark.skip_missing_feature(
+    ['supports_arrays', 'supports_arrays_outside_of_select']
+)
+def test_np_array_literal(backend, con):
     arr = np.array([1, 2, 3])
     expr = ibis.literal(arr)
     result = con.execute(expr)
