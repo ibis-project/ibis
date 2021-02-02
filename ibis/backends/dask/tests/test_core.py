@@ -85,7 +85,7 @@ def test_missing_data_on_custom_client():
     with pytest.raises(
         NotImplementedError,
         match=(
-            'Could not find signature for dask_execute_node: '
+            'Could not find signature for execute_node: '
             '<DatabaseTable, MyClient>'
         ),
     ):
