@@ -90,7 +90,7 @@ def pytest_runtest_call(item):
             feature for feature in features if not getattr(backend, feature)
         ]
         if missing_features:
-            pytest.mark.skip(
+            pytest.skip(
                 f'Backend {backend} is missing features {missing_features} '
                 f'needed to run {nodeid}'
             )
@@ -189,6 +189,13 @@ def analytic_alltypes(alltypes):
 
 @pytest.fixture(scope='session')
 def df(alltypes):
+    return alltypes.execute()
+
+
+@pytest.fixture(scope='session')
+def pandas_df(backend, alltypes):
+    if backend.name() == "dask":
+        return alltypes.execute().compute()
     return alltypes.execute()
 
 

@@ -11,7 +11,7 @@ from ibis.expr import schema as sch
 pytestmark = pytest.mark.dask
 
 
-def test_infer_exhaustive_dataframe():
+def test_infer_exhaustive_dataframe(npartitions):
     df = dd.from_pandas(
         pd.DataFrame(
             {
@@ -138,7 +138,7 @@ def test_infer_exhaustive_dataframe():
                 ],
             }
         ),
-        npartitions=1,
+        npartitions=npartitions,
     )
 
     expected = [
@@ -160,9 +160,9 @@ def test_infer_exhaustive_dataframe():
     assert sch.infer(df) == ibis.schema(expected)
 
 
-def test_apply_to_schema_with_timezone():
+def test_apply_to_schema_with_timezone(npartitions):
     data = {'time': pd.date_range('2018-01-01', '2018-01-02', freq='H')}
-    df = dd.from_pandas(pd.DataFrame(data), npartitions=1)
+    df = dd.from_pandas(pd.DataFrame(data), npartitions=npartitions)
     expected = df.assign(time=df.time.astype('datetime64[ns, EST]'))
     desired_schema = ibis.schema([('time', 'timestamp("EST")')])
     result = desired_schema.apply_to(df.copy())
