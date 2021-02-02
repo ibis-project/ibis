@@ -110,14 +110,10 @@ See ibis.common.scope for details about the implementaion.
 
 from __future__ import absolute_import
 
-import datetime
 import functools
-import numbers
 from typing import Optional
 
 import dask.dataframe as dd
-import numpy as np
-import pandas as pd
 from multipledispatch import Dispatcher
 
 import ibis.common.exceptions as com
@@ -136,19 +132,6 @@ from ibis.expr.typing import TimeContext
 
 from .dispatch import execute_literal, execute_node, post_execute, pre_execute
 from .trace import trace
-
-integer_types = np.integer, int
-floating_types = (numbers.Real,)
-numeric_types = integer_types + floating_types
-boolean_types = bool, np.bool_
-fixed_width_types = numeric_types + boolean_types
-date_types = (datetime.date,)
-time_types = (datetime.time,)
-timestamp_types = pd.Timestamp, datetime.datetime, np.datetime64
-timedelta_types = pd.Timedelta, datetime.timedelta, np.timedelta64
-temporal_types = date_types + time_types + timestamp_types + timedelta_types
-scalar_types = fixed_width_types + temporal_types
-simple_types = scalar_types + (str, type(None))
 
 is_computable_input.register(dd.core.Scalar)(is_computable_input_arg)
 
