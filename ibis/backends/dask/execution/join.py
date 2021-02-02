@@ -9,9 +9,9 @@ from ibis.backends.pandas.execution.join import (
     _compute_join_column,
     _extract_predicate_names,
     _validate_columns,
-    execute_node,
 )
 
+from ..dispatch import dask_execute_node as execute_node
 from ..execution import constants
 
 

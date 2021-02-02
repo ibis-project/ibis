@@ -28,7 +28,6 @@ from ibis.backends.pandas.execution.temporal import (
     execute_interval_add_multiply_delta_series,
     execute_interval_from_integer_series,
     execute_interval_multiply_fdiv_series_numeric,
-    execute_node,
     execute_strftime_series_str,
     execute_timestamp_add_datetime_series,
     execute_timestamp_date,
@@ -41,6 +40,7 @@ from ibis.backends.pandas.execution.temporal import (
     execute_timestamp_sub_series_timedelta,
 )
 
+from ..dispatch import dask_execute_node as execute_node
 from .util import (
     TypeRegistrationDict,
     make_selected_obj,

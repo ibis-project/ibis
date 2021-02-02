@@ -10,9 +10,9 @@ from ibis.backends.pandas.execution.arrays import (
     execute_array_length,
     execute_array_repeat,
     execute_array_slice,
-    execute_node,
 )
 
+from ..dispatch import dask_execute_node as execute_node
 from .util import TypeRegistrationDict, register_types_to_dispatcher
 
 DASK_DISPATCH_TYPES: TypeRegistrationDict = {

@@ -9,16 +9,14 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.pandas.dispatch import (  # noqa: F401
-    execute_node,
-    post_execute,
-    pre_execute,
-)
 from ibis.expr.scope import Scope
 
-from .. import execute, from_dataframe
+from .. import from_dataframe
 from ..client import DaskClient
-from ..core import is_computable_input
+from ..core import execute, is_computable_input
+from ..dispatch import dask_execute_node as execute_node  # noqa: F401
+from ..dispatch import dask_post_execute as post_execute
+from ..dispatch import dask_pre_execute as pre_execute
 
 pytestmark = pytest.mark.dask
 
@@ -89,7 +87,7 @@ def test_missing_data_on_custom_client():
     with pytest.raises(
         NotImplementedError,
         match=(
-            'Could not find signature for execute_node: '
+            'Could not find signature for dask_execute_node: '
             '<DatabaseTable, MyClient>'
         ),
     ):

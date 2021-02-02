@@ -11,7 +11,6 @@ import ibis
 import ibis.expr.operations as ops
 from ibis.backends.pandas.core import integer_types, scalar_types
 from ibis.backends.pandas.execution.strings import (
-    execute_node,
     execute_series_join_scalar_sep,
     execute_series_regex_extract,
     execute_series_regex_replace,
@@ -38,6 +37,7 @@ from ibis.backends.pandas.execution.strings import (
     haystack_to_series_of_lists,
 )
 
+from ..dispatch import dask_execute_node as execute_node
 from .util import (
     TypeRegistrationDict,
     make_selected_obj,

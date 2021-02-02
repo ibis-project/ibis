@@ -15,17 +15,16 @@ from toolz import concatv
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.pandas.execution.selection import (
-    _compute_predicates,
     compute_projection,
     compute_projection_table_expr,
-    execute,
-    execute_node,
     map_new_column_names_to_data,
     remap_overlapping_column_names,
 )
 from ibis.expr.scope import Scope
 from ibis.expr.typing import TimeContext
 
+from ..core import execute
+from ..dispatch import dask_execute_node as execute_node
 from ..execution import constants
 
 
@@ -199,3 +198,59 @@ def execute_selection_dataframe(
 
     # drop every temporary column we created for ordering or grouping
     return result.drop(temporary_columns, axis=1)
+
+
+def _compute_predicates(
+    table_op,
+    predicates,
+    data,
+    scope: Scope,
+    timecontext: Optional[TimeContext],
+    **kwargs,
+):
+    """Compute the predicates for a table operation.
+
+    Parameters
+    ----------
+    table_op : TableNode
+    predicates : List[ir.ColumnExpr]
+    data : pd.DataFrame
+    scope : Scope
+    timecontext: Optional[TimeContext]
+    kwargs : dict
+
+    Returns
+    -------
+    computed_predicate : pd.Series[bool]
+
+    Notes
+    -----
+    This handles the cases where the predicates are computed columns, in
+    addition to the simple case of named columns coming directly from the input
+    table.
+    """
+    for predicate in predicates:
+        # Map each root table of the predicate to the data so that we compute
+        # predicates on the result instead of any left or right tables if the
+        # Selection is on a Join. Project data to only inlude columns from
+        # the root table.
+        root_tables = predicate.op().root_tables()
+
+        # handle suffixes
+        data_columns = frozenset(data.columns)
+
+        additional_scope = Scope()
+        for root_table in root_tables:
+            mapping = remap_overlapping_column_names(
+                table_op, root_table, data_columns
+            )
+            if mapping is not None:
+                new_data = data.loc[:, mapping.keys()].rename(columns=mapping)
+            else:
+                new_data = data
+            additional_scope = additional_scope.merge_scope(
+                Scope({root_table: new_data}, timecontext)
+            )
+
+        scope = scope.merge_scope(additional_scope)
+        yield execute(predicate, scope=scope, **kwargs)
