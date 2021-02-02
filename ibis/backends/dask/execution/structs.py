@@ -7,7 +7,7 @@ import dask.dataframe.groupby as ddgb
 
 import ibis.expr.operations as ops
 
-from ..dispatch import dask_execute_node as execute_node
+from ..dispatch import execute_node
 from .util import make_selected_obj
 
 

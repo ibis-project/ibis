@@ -11,7 +11,7 @@ from ibis.backends.pandas.execution.join import (
     _validate_columns,
 )
 
-from ..dispatch import dask_execute_node as execute_node
+from ..dispatch import execute_node
 from ..execution import constants
 
 

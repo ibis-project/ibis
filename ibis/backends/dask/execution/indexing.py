@@ -10,7 +10,7 @@ from ibis.backends.pandas.execution.generic import (
     execute_node_where_series_series_series,
 )
 
-from ..dispatch import dask_execute_node as execute_node
+from ..dispatch import execute_node
 from .util import TypeRegistrationDict, register_types_to_dispatcher
 
 DASK_DISPATCH_TYPES: TypeRegistrationDict = {

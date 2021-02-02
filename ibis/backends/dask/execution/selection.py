@@ -24,7 +24,7 @@ from ibis.expr.scope import Scope
 from ibis.expr.typing import TimeContext
 
 from ..core import execute
-from ..dispatch import dask_execute_node as execute_node
+from ..dispatch import execute_node
 from ..execution import constants
 
 

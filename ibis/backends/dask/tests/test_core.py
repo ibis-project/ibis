@@ -14,9 +14,7 @@ from ibis.expr.scope import Scope
 from .. import from_dataframe
 from ..client import DaskClient
 from ..core import execute, is_computable_input
-from ..dispatch import dask_execute_node as execute_node  # noqa: F401
-from ..dispatch import dask_post_execute as post_execute
-from ..dispatch import dask_pre_execute as pre_execute
+from ..dispatch import execute_node, post_execute, pre_execute
 
 pytestmark = pytest.mark.dask
 

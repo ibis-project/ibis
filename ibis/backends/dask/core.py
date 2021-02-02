@@ -134,10 +134,7 @@ from ibis.expr.scope import Scope
 from ibis.expr.timecontext import canonicalize_context
 from ibis.expr.typing import TimeContext
 
-from .dispatch import dask_execute_literal as execute_literal
-from .dispatch import dask_execute_node as execute_node
-from .dispatch import dask_post_execute as post_execute
-from .dispatch import dask_pre_execute as pre_execute
+from .dispatch import execute_literal, execute_node, post_execute, pre_execute
 from .trace import trace
 
 integer_types = np.integer, int
@@ -484,10 +481,3 @@ def execute_and_reset(
     elif isinstance(result, dd.Series):
         return result.reset_index(drop=True)
     return result
-
-
-@compute_time_context.register(ops.Node)
-def compute_time_context_default(
-    node, timecontext: Optional[TimeContext] = None, **kwargs
-):
-    return [timecontext for arg in node.inputs if is_computable_input(arg)]

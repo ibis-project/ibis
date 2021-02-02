@@ -52,7 +52,7 @@ from ibis.backends.pandas.execution.generic import (
 
 from ..client import DaskClient, DaskTable
 from ..core import execute
-from ..dispatch import dask_execute_node as execute_node
+from ..dispatch import execute_node
 from .util import (
     TypeRegistrationDict,
     make_selected_obj,

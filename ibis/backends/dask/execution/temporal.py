@@ -40,7 +40,7 @@ from ibis.backends.pandas.execution.temporal import (
     execute_timestamp_sub_series_timedelta,
 )
 
-from ..dispatch import dask_execute_node as execute_node
+from ..dispatch import execute_node
 from .util import (
     TypeRegistrationDict,
     make_selected_obj,

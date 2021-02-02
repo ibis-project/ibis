@@ -20,7 +20,7 @@ from ibis.backends.pandas.execution.maps import (
     safe_merge,
 )
 
-from ..dispatch import dask_execute_node as execute_node
+from ..dispatch import execute_node
 from .util import TypeRegistrationDict, register_types_to_dispatcher
 
 # NOTE - to avoid dispatch ambiguities we must unregister pandas, only to
