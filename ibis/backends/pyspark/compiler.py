@@ -246,6 +246,12 @@ def compile_equals(t, expr, scope, timecontext, **kwargs):
     )
 
 
+@compiles(ops.Not)
+def compile_not(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+    return ~t.translate(op.arg, scope, timecontext)
+
+
 @compiles(ops.NotEquals)
 def compile_not_equals(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
