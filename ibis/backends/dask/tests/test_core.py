@@ -9,6 +9,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.backends.pandas.dispatch import execute_node as pandas_execute_node
 from ibis.expr.scope import Scope
 
 from .. import from_dataframe
@@ -173,3 +174,9 @@ def test_scope_look_up():
     scope = scope.merge_scope(Scope({one_day: 1}, None))
     assert scope.get_value(one_hour) is None
     assert scope.get_value(one_day) is not None
+
+
+def test_new_dispatcher():
+    types = (ops.TableColumn, dd.DataFrame)
+    assert execute_node.dispatch(*types) is not None
+    assert pandas_execute_node.dispatch(*types) is None
