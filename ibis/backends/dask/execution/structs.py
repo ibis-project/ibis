@@ -6,8 +6,8 @@ import dask.dataframe as dd
 import dask.dataframe.groupby as ddgb
 
 import ibis.expr.operations as ops
-from ibis.backends.pandas.execution.structs import execute_node
 
+from ..dispatch import execute_node
 from .util import make_selected_obj
 
 

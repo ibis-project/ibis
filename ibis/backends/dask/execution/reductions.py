@@ -25,14 +25,14 @@ import toolz
 
 import ibis
 import ibis.expr.operations as ops
-from ibis.backends.pandas.core import execute
 from ibis.backends.pandas.execution.generic import (
-    execute_node,
     execute_node_expr_list,
     execute_node_greatest_list,
     execute_node_least_list,
 )
 
+from ..core import execute
+from ..dispatch import execute_node
 from .util import make_selected_obj
 
 
