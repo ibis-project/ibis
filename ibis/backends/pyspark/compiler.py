@@ -4,6 +4,7 @@ import functools
 import operator
 
 import numpy as np
+import pyspark
 import pyspark.sql.functions as F
 from pyspark.sql import Window
 from pyspark.sql.functions import PandasUDFType, pandas_udf
@@ -825,16 +826,19 @@ def compile_capitalize(t, expr, scope, timecontext, **kwargs):
 @compiles(ops.Substring)
 def compile_substring(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
-
-    @F.udf('string')
-    def substring(s, start, length):
-        end = start + length
-        return s[start:end]
-
     src_column = t.translate(op.arg, scope, timecontext)
-    start_column = t.translate(op.start, scope, timecontext)
-    length_column = t.translate(op.length, scope, timecontext)
-    return substring(src_column, start_column, length_column)
+    start = t.translate(op.start, scope, timecontext, raw=True) + 1
+    length = t.translate(op.length, scope, timecontext, raw=True)
+
+    if isinstance(start, pyspark.sql.Column) or isinstance(
+        length, pyspark.sql.Column
+    ):
+        raise NotImplementedError(
+            "Specifiying Start and length with column expressions "
+            "are not supported."
+        )
+
+    return src_column.substr(start, length)
 
 
 @compiles(ops.StringLength)
@@ -1698,3 +1702,25 @@ def compile_reduction_udf(t, expr, scope, timecontext, context=None, **kwargs):
     else:
         src_table = t.translate(op.func_args[0].op().table, scope, timecontext)
         return src_table.agg(col)
+
+
+@compiles(ops.SearchedCase)
+def compile_searched_case(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+    existing_when = None
+
+    for case, result in zip(op.cases, op.results):
+        if existing_when is not None:
+            # Spark allowed chained when statement
+            when = existing_when.when
+        else:
+            when = F.when
+
+        existing_when = when(
+            t.translate(case, scope, timecontext, **kwargs),
+            t.translate(result, scope, timecontext, **kwargs),
+        )
+
+    return existing_when.otherwise(
+        t.translate(op.default, scope, timecontext, **kwargs)
+    )
