@@ -12,6 +12,11 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :feature:`2607` Implement Not operation in PySpark backend
+* :feature:`2610` Added support for case/when in PySpark backend
+* :bug:`2610` Fixes a NPE issue with substr in PySpark backend
+* :feature:`2603` Add support for np.array as literals for backends that already support lists as literals
+* :bug:`2354` Fixes binary data type translation into BigQuery bytes data type
 * :bug:`2577` Make StructValue picklable
 * :support:`2505` Remove deprecated `ibis.HDFS`, `ibis.WebHDFS` and `ibis.hdfs_connect`
 * :feature:`2514` Add Struct.from_dict

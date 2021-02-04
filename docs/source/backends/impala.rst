@@ -345,7 +345,7 @@ TABLE .. AS SELECT`` (CTAS) statement:
    >>> files = freqs.files()
    >>> files
                                                    Path  Size Partition
-   0  hdfs://impala:8020/user/hive/warehouse/ibis_te...  584B  
+   0  hdfs://impala:8020/user/hive/warehouse/ibis_te...  584B
 
    >>> freqs.drop()
 
@@ -390,7 +390,7 @@ method to get a schema object:
 
    >>> t = db.table('functional_alltypes')
    >>> t.schema()
-   ibis.Schema {  
+   ibis.Schema {
      id               int32
      bool_col         boolean
      tinyint_col      int8
@@ -943,6 +943,355 @@ For example:
    3    4   d
 
    >>> to_insert.drop()
+
+Uploading / downloading data from HDFS
+--------------------------------------
+
+If you’ve set up an HDFS connection, you can use the Ibis HDFS interface
+to look through your data and read and write files to and from HDFS:
+
+.. code:: python
+
+    >>> hdfs = con.hdfs
+    >>> hdfs.ls('/__ibis/ibis-testing-data')
+    ['README.md',
+     'avro',
+     'awards_players.csv',
+     'batting.csv',
+     'csv',
+     'diamonds.csv',
+     'functional_alltypes.csv',
+     'functional_alltypes.parquet',
+     'geo.csv',
+     'ibis_testing.db',
+     'parquet',
+     'struct_table.avro',
+     'udf']
+
+.. code:: python
+
+    >>> hdfs.ls('/__ibis/ibis-testing-data/parquet')
+    ['functional_alltypes',
+     'tpch_customer',
+     'tpch_lineitem',
+     'tpch_nation',
+     'tpch_orders',
+     'tpch_part',
+     'tpch_partsupp',
+     'tpch_region',
+     'tpch_supplier']
+
+Suppose we wanted to download
+``/__ibis/ibis-testing-data/parquet/functional_alltypes``, which is a
+directory. We need only do:
+
+.. code:: bash
+
+    $ rm -rf parquet_dir/
+
+.. code:: python
+
+    >>> hdfs.get('/__ibis/ibis-testing-data/parquet/functional_alltypes',
+    ...          'parquet_dir')
+    '/ibis/docs/source/tutorial/parquet_dir'
+
+Now we have that directory locally:
+
+.. code:: bash
+
+    $ ls parquet_dir/
+    9a41de519352ab07-4e76bc4d9fb5a789_1624886651_data.0.parq
+    9a41de519352ab07-4e76bc4d9fb5a78a_778826485_data.0.parq
+    9a41de519352ab07-4e76bc4d9fb5a78b_1277612014_data.0.parq
+
+Files and directories can be written to HDFS just as easily using
+``put``:
+
+.. code:: python
+
+    >>> path = '/__ibis/dir-write-example'
+    >>> if hdfs.exists(path):
+    ...    hdfs.rmdir(path)
+    >>> hdfs.put(path, 'parquet_dir', verbose=True)
+    '/__ibis/dir-write-example'
+
+.. code:: python
+
+    >>> hdfs.ls('/__ibis/dir-write-example')
+    ['9a41de519352ab07-4e76bc4d9fb5a789_1624886651_data.0.parq',
+     '9a41de519352ab07-4e76bc4d9fb5a78a_778826485_data.0.parq',
+     '9a41de519352ab07-4e76bc4d9fb5a78b_1277612014_data.0.parq']
+
+Delete files with ``rm`` or directories with ``rmdir``:
+
+.. code:: python
+
+    >>> hdfs.rmdir('/__ibis/dir-write-example')
+
+.. code:: bash
+
+    rm -rf parquet_dir/
+
+Queries on Parquet, Avro, and Delimited files in HDFS
+-----------------------------------------------------
+
+Ibis can easily create temporary or persistent Impala tables that
+reference data in the following formats:
+
+-  Parquet (``parquet_file``)
+-  Avro (``avro_file``)
+-  Delimited text formats (CSV, TSV, etc.) (``delimited_file``)
+
+Parquet is the easiest because the schema can be read from the data
+files:
+
+.. code:: python
+
+    >>> path = '/__ibis/ibis-testing-data/parquet/tpch_lineitem'
+    >>> lineitem = con.parquet_file(path)
+    >>> lineitem.limit(2)
+       l_orderkey  l_partkey  l_suppkey  l_linenumber l_quantity l_extendedprice  \
+    0           1     155190       7706             1      17.00        21168.23
+    1           1      67310       7311             2      36.00        45983.16
+
+      l_discount l_tax l_returnflag l_linestatus  l_shipdate l_commitdate  \
+    0       0.04  0.02            N            O  1996-03-13   1996-02-12
+    1       0.09  0.06            N            O  1996-04-12   1996-02-28
+
+      l_receiptdate     l_shipinstruct l_shipmode  \
+    0    1996-03-22  DELIVER IN PERSON      TRUCK
+    1    1996-04-20   TAKE BACK RETURN       MAIL
+
+                                l_comment
+    0             egular courts above the
+    1  ly final dependencies: slyly bold
+
+.. code:: python
+
+    >>> lineitem.l_extendedprice.sum()
+    Decimal('229577310901.20')
+
+If you want to query a Parquet file and also create a table in Impala
+that remains after your session, you can pass more information to
+``parquet_file``:
+
+.. code:: python
+
+    >>> table = con.parquet_file(path, name='my_parquet_table',
+    ...                          database='ibis_testing',
+    ...                          persist=True)
+    >>> table.l_extendedprice.sum()
+    Decimal('229577310901.20')
+
+.. code:: python
+
+    >>> con.table('my_parquet_table').l_extendedprice.sum()
+    Decimal('229577310901.20')
+
+.. code:: python
+
+    >>> con.drop_table('my_parquet_table')
+
+To query delimited files, you need to write down an Ibis schema. At some
+point we’d like to build some helper tools that will infer the schema
+for you, all in good time.
+
+There’s some CSV files in the test folder, so let’s use those:
+
+.. code:: python
+
+    >>> hdfs.get('/__ibis/ibis-testing-data/csv', 'csv-files')
+    '/ibis/docs/source/tutorial/csv-files'
+
+.. code:: bash
+
+    $ cat csv-files/0.csv
+    63IEbRheTh,0.679388707915,6
+    mG4hlqnjeG,2.80710565922,15
+    JTPdX9SZH5,-0.155126406372,55
+    2jcl6FypOl,1.03787834032,21
+    k3TbJLaadQ,-1.40190801103,23
+    rP5J4xvinM,-0.442092712869,22
+    WniUylixYt,-0.863748033806,27
+    znsDuKOB1n,-0.566029637098,47
+    4SRP9jlo1M,0.331460412318,88
+    KsfjPyDf5e,-0.578930506363,70
+
+.. code:: bash
+
+    $ rm -rf csv-files/
+
+The schema here is pretty simple (see ``ibis.schema`` for more):
+
+.. code:: python
+
+    >>> schema = ibis.schema([('foo', 'string'),
+    ...                       ('bar', 'double'),
+    ...                       ('baz', 'int32')])
+
+    >>> table = con.delimited_file('/__ibis/ibis-testing-data/csv',
+    ...                            schema)
+    >>> table.limit(10)
+              foo       bar  baz
+    0  63IEbRheTh  0.679389    6
+    1  mG4hlqnjeG  2.807106   15
+    2  JTPdX9SZH5 -0.155126   55
+    3  2jcl6FypOl  1.037878   21
+    4  k3TbJLaadQ -1.401908   23
+    5  rP5J4xvinM -0.442093   22
+    6  WniUylixYt -0.863748   27
+    7  znsDuKOB1n -0.566030   47
+    8  4SRP9jlo1M  0.331460   88
+    9  KsfjPyDf5e -0.578931   70
+
+.. code:: python
+
+    >>> table.bar.summary()
+       count  nulls       min       max       sum    mean  approx_nunique
+    0    100      0 -1.401908  2.807106  8.479978  0.0848              10
+
+For functions like ``parquet_file`` and ``delimited_file``, an HDFS
+directory must be passed (we’ll add support for S3 and other filesystems
+later) and the directory must contain files all having the same schema.
+
+If you have Avro data, you can query it too if you have the full avro
+schema:
+
+.. code:: python
+
+    >>> avro_schema = {
+    ...     "fields": [
+    ...         {"type": ["int", "null"], "name": "R_REGIONKEY"},
+    ...         {"type": ["string", "null"], "name": "R_NAME"},
+    ...         {"type": ["string", "null"], "name": "R_COMMENT"}],
+    ...     "type": "record",
+    ...     "name": "a"
+    ... }
+
+    >>> path = '/__ibis/ibis-testing-data/avro/tpch.region'
+
+    >>> hdfs.mkdir(path)
+    >>> table = con.avro_file(path, avro_schema)
+    >>> table
+    Empty DataFrame
+    Columns: [r_regionkey, r_name, r_comment]
+    Index: []
+
+Other helper functions for interacting with the database
+--------------------------------------------------------
+
+We’re adding a growing list of useful utility functions for interacting
+with an Impala cluster on the client object. The idea is that you should
+be able to do any database-admin-type work with Ibis and not have to
+switch over to the Impala SQL shell. Any ways we can make this more
+pleasant, please let us know.
+
+Here’s some of the features, which we’ll give examples for:
+
+-  Listing and searching for available databases and tables
+-  Creating and dropping databases
+-  Getting table schemas
+
+.. code:: python
+
+    >>> con.list_databases(like='ibis*')
+    ['ibis_testing', 'ibis_testing_tmp_db']
+
+.. code:: python
+
+    >>> con.list_tables(database='ibis_testing', like='tpch*')
+    ['tpch_customer',
+     'tpch_lineitem',
+     'tpch_nation',
+     'tpch_orders',
+     'tpch_part',
+     'tpch_partsupp',
+     'tpch_region',
+     'tpch_region_avro',
+     'tpch_supplier']
+
+.. code:: python
+
+    >>> schema = con.get_schema('functional_alltypes')
+    >>> schema
+    ibis.Schema {
+      id               int32
+      bool_col         boolean
+      tinyint_col      int8
+      smallint_col     int16
+      int_col          int32
+      bigint_col       int64
+      float_col        float32
+      double_col       float64
+      date_string_col  string
+      string_col       string
+      timestamp_col    timestamp
+      year             int32
+      month            int32
+    }
+
+Databases can be created, too, and you can set the storage path in HDFS
+you want for the data files
+
+.. code:: python
+
+    >>> db = 'ibis_testing2'
+    >>> con.create_database(db, path='/__ibis/my-test-database', force=True)
+
+    >>> # you may or may not have to give the impala user write and execute permissions to '/__ibis/my-test-database'
+    >>> hdfs.chmod('/__ibis/my-test-database', '777')
+
+.. code:: python
+
+    >>> con.create_table('example_table', con.table('functional_alltypes'),
+    ...                  database=db, force=True)
+
+Hopefully, there will be data files in the indicated spot in HDFS:
+
+.. code:: python
+
+    >>> hdfs.ls('/__ibis/my-test-database')
+    ['example_table']
+
+To drop a database, including all tables in it, you can use
+``drop_database`` with ``force=True``:
+
+.. code:: python
+
+    >>> con.drop_database(db, force=True)
+
+Faster queries on small data in Impala
+--------------------------------------
+
+Since Impala internally uses LLVM to compile parts of queries (aka
+“codegen”) to make them faster on large data sets there is a certain
+amount of overhead with running many kinds of queries, even on small
+datasets. You can disable LLVM code generation when using Ibis, which
+may significantly speed up queries on smaller datasets:
+
+.. code:: python
+
+    >>> from numpy.random import rand
+    >>> con.disable_codegen()
+    >>> t = con.table('ibis_testing.functional_alltypes')
+
+.. code:: bash
+
+    $ time python -c "(t.double_col + rand()).sum().execute()"
+    27.7 ms ± 996 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+
+.. code:: python
+
+    # Turn codegen back on
+    con.disable_codegen(False)
+
+.. code:: bash
+
+    $ time python -c "(t.double_col + rand()).sum().execute()"
+    27 ms ± 1.62 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)
+
+It’s important to remember that codegen is a fixed overhead and will
+significantly speed up queries on big data
 
 .. _udf.impala:
 

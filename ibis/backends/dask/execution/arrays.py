@@ -10,9 +10,9 @@ from ibis.backends.pandas.execution.arrays import (
     execute_array_length,
     execute_array_repeat,
     execute_array_slice,
-    execute_node,
 )
 
+from ..dispatch import execute_node
 from .util import TypeRegistrationDict, register_types_to_dispatcher
 
 DASK_DISPATCH_TYPES: TypeRegistrationDict = {
@@ -50,7 +50,6 @@ def execute_array_collect(op, data, aggcontext=None, **kwargs):
     return aggcontext.agg(data, collect_list)
 
 
-# TODO - grouping - #2553
 @execute_node.register(ops.ArrayCollect, ddgb.SeriesGroupBy)
 def execute_array_collect_grouped_series(op, data, aggcontext=None, **kwargs):
     return data.agg(collect_list)

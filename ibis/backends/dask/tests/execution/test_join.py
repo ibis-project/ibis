@@ -435,12 +435,14 @@ def test_keyed_asof_join_with_tolerance(
     raises=(com.IbisError, AttributeError),
     reason="Select from unambiguous joins not implemented",
 )
-def test_select_on_unambiguous_join(how, func):
+def test_select_on_unambiguous_join(how, func, npartitions):
     df_t = dd.from_pandas(
-        pd.DataFrame(dict(a0=[1, 2, 3], b1=list("aab"))), npartitions=1,
+        pd.DataFrame(dict(a0=[1, 2, 3], b1=list("aab"))),
+        npartitions=npartitions,
     )
     df_s = dd.from_pandas(
-        pd.DataFrame(dict(a1=[2, 3, 4], b2=list("abc"))), npartitions=1,
+        pd.DataFrame(dict(a1=[2, 3, 4], b2=list("abc"))),
+        npartitions=npartitions,
     )
     con = connect({"t": df_t, "s": df_s})
     t = con.table("t")
@@ -472,14 +474,14 @@ def test_select_on_unambiguous_join(how, func):
     reason="Select from unambiguous joins not implemented",
 )
 @merge_asof_minversion
-def test_select_on_unambiguous_asof_join(func):
+def test_select_on_unambiguous_asof_join(func, npartitions):
     df_t = dd.from_pandas(
         pd.DataFrame(dict(a0=[1, 2, 3], b1=date_range("20180101", periods=3))),
-        npartitions=1,
+        npartitions=npartitions,
     )
     df_s = dd.from_pandas(
         pd.DataFrame(dict(a1=[2, 3, 4], b2=date_range("20171230", periods=3))),
-        npartitions=1,
+        npartitions=npartitions,
     )
     con = connect({"t": df_t, "s": df_s})
     t = con.table("t")

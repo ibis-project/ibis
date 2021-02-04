@@ -460,7 +460,7 @@ def test_day_of_week_column(backend, con, alltypes, df):
         ),
     ],
 )
-# TODO - grouping - #2553
+# TODO - pandas - #2553
 @pytest.mark.xfail_backends(['dask'])
 @pytest.mark.xfail_unsupported
 def test_day_of_week_column_group_by(

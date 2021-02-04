@@ -56,30 +56,28 @@ aggregate_test_params = [
 @pytest.mark.parametrize(
     ('result_fn', 'expected_fn', 'expected_col'), aggregate_test_params,
 )
-@pytest.mark.skip_backends(
-    ['dask']
-)  # TODO - aggregations - #2553 (and pd.concat)
 @pytest.mark.xfail_unsupported
 def test_aggregate(
-    backend, alltypes, df, result_fn, expected_fn, expected_col
+    backend, alltypes, pandas_df, result_fn, expected_fn, expected_col
 ):
     expr = alltypes.aggregate(tmp=result_fn)
     result = expr.execute()
 
     # Create a single-row single-column dataframe with the Pandas `agg` result
     # (to match the output format of Ibis `aggregate`)
-    expected = pd.DataFrame({'tmp': [df[expected_col].agg(expected_fn)]})
+    expected = pd.DataFrame(
+        {'tmp': [pandas_df[expected_col].agg(expected_fn)]}
+    )
 
-    pd.testing.assert_frame_equal(result, expected)
+    backend.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize(
     ('result_fn', 'expected_fn', 'expected_col'), aggregate_test_params,
 )
-@pytest.mark.skip_backends(['dask'])  # TODO - aggregations - #2553
 @pytest.mark.xfail_unsupported
 def test_aggregate_grouped(
-    backend, alltypes, df, result_fn, expected_fn, expected_col
+    backend, alltypes, pandas_df, result_fn, expected_fn, expected_col
 ):
     grouping_key_col = 'bigint_col'
 
@@ -93,19 +91,28 @@ def test_aggregate_grouped(
 
     # Note: Using `reset_index` to get the grouping key as a column
     expected = (
-        df.groupby(grouping_key_col)[expected_col]
+        pandas_df.groupby(grouping_key_col)[expected_col]
         .agg(expected_fn)
         .rename('tmp')
         .reset_index()
     )
 
-    # Row ordering may differ depending on backend, so sort on the grouping key
-    result1 = result1.sort_values(by=grouping_key_col).reset_index(drop=True)
-    result2 = result2.sort_values(by=grouping_key_col).reset_index(drop=True)
-    expected = expected.sort_values(by=grouping_key_col).reset_index(drop=True)
+    # TODO - sorting - #2553
+    if backend.name() != 'dask':
+        # Row ordering may differ depending on backend, so sort on the
+        # grouping key
+        result1 = result1.sort_values(by=grouping_key_col).reset_index(
+            drop=True
+        )
+        result2 = result2.sort_values(by=grouping_key_col).reset_index(
+            drop=True
+        )
+        expected = expected.sort_values(by=grouping_key_col).reset_index(
+            drop=True
+        )
 
-    pd.testing.assert_frame_equal(result1, expected)
-    pd.testing.assert_frame_equal(result2, expected)
+    backend.assert_frame_equal(result1, expected)
+    backend.assert_frame_equal(result2, expected)
 
 
 @pytest.mark.parametrize(
@@ -231,14 +238,20 @@ def test_aggregate_grouped(
         ),
     ],
 )
-@pytest.mark.skip_backends(['dask'])  # TODO - iloc - #2553
 @pytest.mark.xfail_unsupported
 def test_reduction_ops(
-    backend, alltypes, df, result_fn, expected_fn, ibis_cond, pandas_cond
+    backend,
+    alltypes,
+    pandas_df,
+    result_fn,
+    expected_fn,
+    ibis_cond,
+    pandas_cond,
 ):
     expr = result_fn(alltypes, ibis_cond(alltypes))
     result = expr.execute()
-    expected = expected_fn(df, pandas_cond(df))
+
+    expected = expected_fn(pandas_df, pandas_cond(pandas_df))
     np.testing.assert_allclose(result, expected)
 
 
@@ -261,12 +274,12 @@ def test_reduction_ops(
         )
     ],
 )
-@pytest.mark.skip_backends(['dask'])  # TODO - aggregations - #2553
 @pytest.mark.xfail_unsupported
-def test_group_concat(backend, alltypes, df, result_fn, expected_fn):
+def test_group_concat(backend, alltypes, pandas_df, result_fn, expected_fn):
     expr = result_fn(alltypes)
     result = expr.execute()
-    expected = expected_fn(df)
+
+    expected = expected_fn(pandas_df)
 
     assert set(result.iloc[:, 1]) == set(expected.iloc[:, 1])
 

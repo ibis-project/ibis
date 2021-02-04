@@ -35,7 +35,6 @@ from ibis.backends.pandas.execution.generic import (
     execute_intersection_dataframe_dataframe,
     execute_isinf,
     execute_isnan,
-    execute_node,
     execute_node_contains_series_sequence,
     execute_node_ifnull_series,
     execute_node_not_contains_series_sequence,
@@ -52,7 +51,13 @@ from ibis.backends.pandas.execution.generic import (
 )
 
 from ..client import DaskClient, DaskTable
-from .util import TypeRegistrationDict, register_types_to_dispatcher
+from ..core import execute
+from ..dispatch import execute_node
+from .util import (
+    TypeRegistrationDict,
+    make_selected_obj,
+    register_types_to_dispatcher,
+)
 
 # Many dask and pandas functions are functionally equivalent, so we just add
 # on registrations for dask types
@@ -132,34 +137,56 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
     ],
     ops.Distinct: [((dd.DataFrame,), execute_distinct_dataframe)],
 }
+
 register_types_to_dispatcher(execute_node, DASK_DISPATCH_TYPES)
 
 execute_node.register(DaskTable, DaskClient)(execute_database_table_client)
+
+
+@execute_node.register(ops.ValueList, collections.abc.Sequence)
+def execute_node_value_list(op, _, **kwargs):
+    return [execute(arg, **kwargs) for arg in op.values]
 
 
 @execute_node.register(ops.Arbitrary, dd.Series, (dd.Series, type(None)))
 def execute_arbitrary_series_mask(op, data, mask, aggcontext=None, **kwargs):
     """
     Note: we cannot use the pandas version because Dask does not support .iloc
+    See https://docs.dask.org/en/latest/dataframe-indexing.html. .loc will
+    only work if our index lines up with the label.
     """
+    data = data[mask] if mask is not None else data
     if op.how == 'first':
         index = 0
     elif op.how == 'last':
-        index = -1
+        index = len(data) - 1  # TODO - computation
     else:
         raise com.OperationNotDefinedError(
             'Arbitrary {!r} is not supported'.format(op.how)
         )
 
-    data = data[mask] if mask is not None else data
     return data.loc[index]
 
 
-# TODO - grouping - #2553
+@execute_node.register(ops.Arbitrary, ddgb.SeriesGroupBy, type(None))
+def execute_arbitrary_series_groupby(op, data, _, aggcontext=None, **kwargs):
+    how = op.how
+    if how is None:
+        how = 'first'
+
+    if how not in {'first', 'last'}:
+        raise com.OperationNotDefinedError(
+            'Arbitrary {!r} is not supported'.format(how)
+        )
+    return aggcontext.agg(data, how)
+
+
 @execute_node.register(ops.Cast, ddgb.SeriesGroupBy, dt.DataType)
 def execute_cast_series_group_by(op, data, type, **kwargs):
-    result = execute_cast_series_generic(op, data.obj, type, **kwargs)
-    return result.groupby(data.grouper.groupings)
+    result = execute_cast_series_generic(
+        op, make_selected_obj(data), type, **kwargs
+    )
+    return result.groupby(data.index)
 
 
 @execute_node.register(ops.Cast, dd.Series, dt.Timestamp)
@@ -264,65 +291,55 @@ def execute_binary_op(op, left, right, **kwargs):
         return operation(left, right)
 
 
-# TODO - grouping - #2553
 @execute_node.register(ops.BinaryOp, ddgb.SeriesGroupBy, ddgb.SeriesGroupBy)
 def execute_binary_op_series_group_by(op, left, right, **kwargs):
-    left_groupings = left.grouper.groupings
-    right_groupings = right.grouper.groupings
-    if left_groupings != right_groupings:
+    if left.index != right.index:
         raise ValueError(
             'Cannot perform {} operation on two series with '
             'different groupings'.format(type(op).__name__)
         )
-    result = execute_binary_op(op, left.obj, right.obj, **kwargs)
-    return result.groupby(left_groupings)
+    result = execute_binary_op(
+        op, make_selected_obj(left), make_selected_obj(right), **kwargs
+    )
+    return result.groupby(left.index)
 
 
 @execute_node.register(ops.BinaryOp, ddgb.SeriesGroupBy, simple_types)
 def execute_binary_op_series_gb_simple(op, left, right, **kwargs):
-    op_type = type(op)
-    try:
-        operation = constants.BINARY_OPERATIONS[op_type]
-    except KeyError:
-        raise NotImplementedError(
-            'Binary operation {} not implemented'.format(op_type.__name__)
-        )
-    else:
-        return left.apply(lambda x, op=operation, right=right: op(x, right))
+    result = execute_binary_op(op, make_selected_obj(left), right, **kwargs)
+    return result.groupby(left.index)
 
 
-# TODO - grouping - #2553
 @execute_node.register(ops.BinaryOp, simple_types, ddgb.SeriesGroupBy)
 def execute_binary_op_simple_series_gb(op, left, right, **kwargs):
-    result = execute_binary_op(op, left, right, **kwargs)
-    return result.groupby(right.grouper.groupings)
+    result = execute_binary_op(op, left, make_selected_obj(right), **kwargs)
+    return result.groupby(right.index)
 
 
-# TODO - grouping - #2553
 @execute_node.register(ops.UnaryOp, ddgb.SeriesGroupBy)
 def execute_unary_op_series_gb(op, operand, **kwargs):
-    result = execute_node(op, operand.obj, **kwargs)
-    return result
+    result = execute_node(op, make_selected_obj(operand), **kwargs)
+    return result.groupby(operand.index)
 
 
-# TODO - grouping - #2553
 @execute_node.register(
     (ops.Log, ops.Round),
     ddgb.SeriesGroupBy,
     (numbers.Real, decimal.Decimal, type(None)),
 )
 def execute_log_series_gb_others(op, left, right, **kwargs):
-    result = execute_node(op, left.obj, right, **kwargs)
-    return result.groupby(left.grouper.groupings)
+    result = execute_node(op, make_selected_obj(left), right, **kwargs)
+    return result.groupby(left.index)
 
 
-# TODO - grouping - #2553
 @execute_node.register(
     (ops.Log, ops.Round), ddgb.SeriesGroupBy, ddgb.SeriesGroupBy
 )
 def execute_log_series_gb_series_gb(op, left, right, **kwargs):
-    result = execute_node(op, left.obj, right.obj, **kwargs)
-    return result.groupby(left.grouper.groupings)
+    result = execute_node(
+        op, make_selected_obj(left), make_selected_obj(right), **kwargs
+    )
+    return result.groupby(left.index)
 
 
 @execute_node.register(ops.DistinctColumn, dd.Series)

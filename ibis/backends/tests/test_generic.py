@@ -118,3 +118,47 @@ def test_notin(backend, alltypes, sorted_df, column, elements):
     expected = ~sorted_df[column].isin(elements)
     expected = backend.default_series_rename(expected)
     backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    ('predicate_fn', 'expected_fn'),
+    [
+        (lambda t: t['bool_col'], lambda df: df['bool_col']),
+        (lambda t: ~t['bool_col'], lambda df: ~df['bool_col']),
+    ],
+)
+@pytest.mark.skip_backends(['dask'])  # TODO - sorting - #2553
+@pytest.mark.xfail_unsupported
+def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
+    sorted_alltypes = alltypes.sort_by('id')
+    table = sorted_alltypes[predicate_fn(sorted_alltypes)].sort_by('id')
+    result = table.execute()
+    expected = sorted_df[expected_fn(sorted_df)]
+
+
+@pytest.mark.xfail_unsupported
+def test_case_where(backend, alltypes, pandas_df):
+    table = alltypes
+    table = table.mutate(
+        new_col=(
+            ibis.case()
+            .when(table['int_col'] == 1, 20)
+            .when(table['int_col'] == 0, 10)
+            .else_(0)
+            .end()
+            .cast('int64')
+        )
+    )
+
+    result = table.execute()
+
+    expected = pandas_df.copy()
+    mask_0 = expected['int_col'] == 1
+    mask_1 = expected['int_col'] == 0
+
+    expected['new_col'] = 0
+    expected['new_col'][mask_0] = 20
+    expected['new_col'][mask_1] = 10
+    expected['new_col'] = expected['new_col']
+
+    backend.assert_frame_equal(result, expected)
