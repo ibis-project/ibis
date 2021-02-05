@@ -44,6 +44,12 @@ collect_list = dd.Aggregation(
 )
 
 
+@execute_node.register(ops.ArrayColumn, list)
+def execute_array_column(op, cols, **kwargs):
+    df = dd.concat(cols, axis=1)
+    return df.apply(lambda row: list(row), axis=1, meta=(None, 'object'))
+
+
 # TODO - aggregations - #2553
 @execute_node.register(ops.ArrayCollect, dd.Series)
 def execute_array_collect(op, data, aggcontext=None, **kwargs):

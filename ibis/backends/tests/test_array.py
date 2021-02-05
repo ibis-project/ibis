@@ -8,6 +8,19 @@ import ibis
 @pytest.mark.skip_missing_feature(
     ['supports_arrays', 'supports_arrays_outside_of_select']
 )
+def test_array_column(backend, alltypes, df):
+    expr = ibis.array_column(alltypes['double_col'], alltypes['double_col'],)
+    result = expr.execute()
+    expected = df.apply(
+        lambda row: [row['double_col'], row['double_col']], axis=1
+    )
+    backend.assert_series_equal(result, expected, check_names=False)
+
+
+@pytest.mark.xfail_unsupported
+@pytest.mark.skip_missing_feature(
+    ['supports_arrays', 'supports_arrays_outside_of_select']
+)
 # Issues #2370
 @pytest.mark.xfail_backends(['bigquery'])
 def test_array_concat(backend, con):

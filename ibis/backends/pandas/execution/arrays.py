@@ -8,6 +8,12 @@ import ibis.expr.operations as ops
 from ..dispatch import execute_node
 
 
+@execute_node.register(ops.ArrayColumn, list)
+def execute_array_column(op, cols, **kwargs):
+    df = pd.concat(cols, axis=1)
+    return df.apply(lambda row: list(row), axis=1)
+
+
 @execute_node.register(ops.ArrayLength, pd.Series)
 def execute_array_length(op, data, **kwargs):
     return data.apply(len)

@@ -1267,6 +1267,36 @@ def as_value_expr(val):
     return val
 
 
+def array_column(*cols):
+    """Create an array column.
+
+    The input columns are concatenated row-wise to produce each array in the
+    output array column. Each array will have length n, where n is the number
+    of input columns.
+
+    All input columns should be of the same datatype.
+
+    Parameters
+    ----------
+    cols : list
+        List of Ibis column expressions
+
+    Returns
+    -------
+    array_column : ArrayColumn
+        An array column composed of values from the input columns
+
+    Examples
+    --------
+    >>> import ibis
+    >>> t = ibis.table([('a', 'int64'), ('b', 'int64')], name='t')
+    >>> result = ibis.array_column(t.a, t.b)
+    """
+    import ibis.expr.operations as ops
+
+    return ops.ArrayColumn(cols).to_expr()
+
+
 def param(type):
     """Create a parameter of a particular type to be defined just before
     execution.
