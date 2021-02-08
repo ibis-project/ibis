@@ -2,6 +2,7 @@ import itertools
 
 import dask.dataframe as dd
 import dask.dataframe.groupby as ddgb
+import numpy as np
 
 import ibis.expr.operations as ops
 from ibis.backends.pandas.execution.arrays import (
@@ -47,7 +48,9 @@ collect_list = dd.Aggregation(
 @execute_node.register(ops.ArrayColumn, list)
 def execute_array_column(op, cols, **kwargs):
     df = dd.concat(cols, axis=1)
-    return df.apply(lambda row: list(row), axis=1, meta=(None, 'object'))
+    return df.apply(
+        lambda row: np.array(row, dtype=object), axis=1, meta=(None, 'object')
+    )
 
 
 # TODO - aggregations - #2553
