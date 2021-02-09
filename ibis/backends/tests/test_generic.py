@@ -135,6 +135,8 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
     result = table.execute()
     expected = sorted_df[expected_fn(sorted_df)]
 
+    backend.assert_frame_equal(result, expected)
+
 
 @pytest.mark.xfail_unsupported
 def test_case_where(backend, alltypes, pandas_df):
