@@ -2846,8 +2846,8 @@ class ArrayColumn(ValueOp):
             )
 
     def output_type(self):
-        scalar_dtype = self.cols[0].type()
-        return dt.Array(scalar_dtype).column_type()
+        first_dtype = self.cols[0].type()
+        return dt.Array(first_dtype).column_type()
 
 
 class ArrayLength(UnaryOp):

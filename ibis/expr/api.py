@@ -99,7 +99,7 @@ from ibis.expr.types import (  # noqa
     TimestampValue,
     TimeValue,
     ValueExpr,
-    array_column,
+    array,
     as_value_expr,
     literal,
     null,
@@ -117,7 +117,7 @@ from ibis.expr.window import (
 
 __all__ = (
     'aggregate',
-    'array_column',
+    'array',
     'case',
     'cast',
     'coalesce',

@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 import ibis
+import ibis.expr.types as ir
 
 
 @pytest.mark.xfail_unsupported
@@ -9,12 +10,30 @@ import ibis
     ['supports_arrays', 'supports_arrays_outside_of_select']
 )
 def test_array_column(backend, alltypes, df):
-    expr = ibis.array_column(alltypes['double_col'], alltypes['double_col'],)
+    expr = ibis.array([alltypes['double_col'], alltypes['double_col']])
+    assert isinstance(expr, ir.ArrayColumn)
+
     result = expr.execute()
     expected = df.apply(
-        lambda row: [row['double_col'], row['double_col']], axis=1
+        lambda row: np.array(
+            [row['double_col'], row['double_col']], dtype=object
+        ),
+        axis=1,
     )
     backend.assert_series_equal(result, expected, check_names=False)
+
+
+@pytest.mark.xfail_unsupported
+@pytest.mark.skip_missing_feature(
+    ['supports_arrays', 'supports_arrays_outside_of_select']
+)
+def test_array_scalar(backend, con, alltypes, df):
+    expr = ibis.array([1.0, 2.0, 3.0])
+    assert isinstance(expr, ir.ArrayScalar)
+
+    result = con.execute(expr)
+    expected = np.array([1.0, 2.0, 3.0])
+    assert np.array_equal(result, expected)
 
 
 @pytest.mark.xfail_unsupported
