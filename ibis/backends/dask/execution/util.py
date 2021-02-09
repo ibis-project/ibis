@@ -1,12 +1,18 @@
-from typing import Any, Callable, Dict, List, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
 import dask.dataframe as dd
 import pandas as pd
 from dask.dataframe.groupby import SeriesGroupBy
 
+import ibis.common.exceptions as com
 import ibis.expr.operations as ops
+import ibis.util
 from ibis.backends.pandas.trace import TraceTwoLevelDispatcher
 from ibis.expr import types as ir
+from ibis.expr.scope import Scope
+from ibis.expr.typing import TimeContext
+
+from ..core import execute
 
 DispatchRule = Tuple[Tuple[Type], Callable]
 
@@ -89,4 +95,46 @@ def safe_concat(dfs: List[Union[dd.Series, dd.DataFrame]]) -> dd.DataFrame:
     else:
         result = dd.concat(dfs, axis=1)
 
+    return result
+
+
+def compute_sort_key(
+    key: ops.SortKey,
+    data: dd.DataFrame,
+    timecontext: Optional[TimeContext] = None,
+    scope: Scope = None,
+    **kwargs,
+):
+    """
+    Note - we use this function instead of the pandas.execution.util so that
+    we use the dask `execute` method
+    """
+    by = key.to_expr()
+    name = ibis.util.guid()
+    try:
+        if isinstance(by, str):
+            return name, data[by]
+        return name, data[by.get_name()]
+    except com.ExpressionError:
+        if scope is None:
+            scope = Scope()
+        scope = scope.merge_scopes(
+            Scope({t: data}, timecontext) for t in by.op().root_tables()
+        )
+        new_column = execute(by, scope=scope, **kwargs)
+        new_column.name = name
+        return name, new_column
+
+
+def compute_sorted_frame(
+    df: dd.DataFrame,
+    order_by: ir.SortExpr,
+    timecontext: Optional[TimeContext] = None,
+    **kwargs,
+) -> dd.DataFrame:
+    sort_col_name, temporary_column = compute_sort_key(
+        order_by.op(), df, timecontext, **kwargs
+    )
+    result = df.assign(**{sort_col_name: temporary_column})
+    result = result.set_index(sort_col_name).reset_index(drop=True)
     return result

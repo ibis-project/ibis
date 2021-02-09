@@ -479,20 +479,26 @@ def test_series_limit(t, df, offset):
     tm.assert_series_equal(result, df.plain_int64.iloc[offset : offset + n])
 
 
-@pytest.mark.xfail(reason="TODO - sorting - #2553")
 @pytest.mark.parametrize(
     ('key', 'dask_by', 'dask_ascending'),
     [
-        (lambda t, col: [ibis.desc(t[col])], lambda col: [col], False),
-        (
-            lambda t, col: [t[col], ibis.desc(t.plain_int64)],
+        (lambda t, col: [t[col]], lambda col: [col], True),
+        pytest.param(
+            lambda t, col: [ibis.desc(t[col])],
+            lambda col: [col],
+            False,
+            marks=pytest.mark.xfail(reason="TODO -sorting - #2553"),
+        ),
+        pytest.param(
+            lambda t, col: [t[col], t.plain_int64],
             lambda col: [col, 'plain_int64'],
             [True, False],
+            marks=pytest.mark.xfail(reason="TODO - sorting - #2553"),
         ),
         (
-            lambda t, col: [ibis.desc(t.plain_int64 * 2)],
+            lambda t, col: [t.plain_int64 * 2],
             lambda col: ['plain_int64'],
-            False,
+            True,
         ),
     ],
 )
