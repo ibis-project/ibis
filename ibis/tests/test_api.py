@@ -8,6 +8,7 @@ def test_top_level_api():
         'NA',
         'Schema',
         'aggregate',
+        'array',
         'api',
         'case',
         'cast',

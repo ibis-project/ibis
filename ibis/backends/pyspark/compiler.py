@@ -1564,6 +1564,14 @@ def compile_interval_from_integer(t, expr, scope, timecontext, **kwargs):
 # -------------------------- Array Operations ----------------------------
 
 
+@compiles(ops.ArrayColumn)
+def compile_array_column(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+
+    cols = t.translate(op.cols, scope, timecontext)
+    return F.array(cols)
+
+
 @compiles(ops.ArrayLength)
 def compile_array_length(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
