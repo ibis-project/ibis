@@ -25,7 +25,7 @@ from ibis.expr.typing import TimeContext
 
 from ..core import execute
 from ..dispatch import execute_node
-from ..execution import constants
+from ..execution import constants, util
 
 
 @compute_projection.register(ir.ScalarExpr, ops.Selection, dd.DataFrame)
@@ -131,7 +131,6 @@ compute_projection.register(ir.TableExpr, ops.Selection, dd.DataFrame)(
 )
 
 
-# TODO - sorting - #2553
 @execute_node.register(ops.Selection, dd.DataFrame)
 def execute_selection_dataframe(
     op, data, scope: Scope, timecontext: Optional[TimeContext], **kwargs
@@ -169,16 +168,27 @@ def execute_selection_dataframe(
         result = result.loc[predicate]
 
     if sort_keys:
-        raise NotImplementedError(
-            "Sorting is not implemented for the Dask backend"
+        if len(sort_keys) > 1:
+            raise NotImplementedError(
+                """
+                Multi-key sorting is not implemented for the Dask backend
+                """
+            )
+        sort_key = sort_keys[0]
+        ascending = getattr(sort_key.op(), 'ascending', True)
+        if not ascending:
+            raise NotImplementedError(
+                "Descending sort is not supported for the Dask backend"
+            )
+        result = util.compute_sorted_frame(
+            result,
+            order_by=sort_key,
+            scope=scope,
+            timecontext=timecontext,
+            **kwargs,
         )
-        # result, grouping_keys, ordering_keys = util.compute_sorted_frame(
-        #     result,
-        #     order_by=sort_keys,
-        #     scope=scope,
-        #     timecontext=timecontext,
-        #     **kwargs,
-        # )
+
+        return result
     else:
         grouping_keys = ordering_keys = ()
 

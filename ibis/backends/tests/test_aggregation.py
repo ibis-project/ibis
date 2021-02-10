@@ -97,7 +97,7 @@ def test_aggregate_grouped(
         .reset_index()
     )
 
-    # TODO - sorting - #2553
+    # TODO - pandas - #2553
     if backend.name() != 'dask':
         # Row ordering may differ depending on backend, so sort on the
         # grouping key
@@ -295,17 +295,16 @@ def test_group_concat(backend, alltypes, pandas_df, result_fn, expected_fn):
     ],
 )
 @pytest.mark.xfail_unsupported
-# TODO - sorting - #2553
-@pytest.mark.xfail_backends(['dask', 'pyspark'])  # Issue #2130
-def test_topk_op(backend, alltypes, df, result_fn, expected_fn):
+@pytest.mark.xfail_backends(['pyspark'])  # Issue #2130
+def test_topk_op(backend, alltypes, pandas_df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend
     # can have different result for that.
     # Note: Maybe would be good if TopK could order by "count"
     # and the field used by TopK
     t = alltypes.sort_by(alltypes.string_col)
-    df = df.sort_values('string_col')
+    pandas_df = pandas_df.sort_values('string_col')
     result = result_fn(t).execute()
-    expected = expected_fn(df)
+    expected = expected_fn(pandas_df)
     assert all(result['count'].values == expected.values)
 
 
@@ -325,18 +324,15 @@ def test_topk_op(backend, alltypes, df, result_fn, expected_fn):
 )
 @pytest.mark.xfail_unsupported
 # Issues #2369 #2133 #2131 #2132
-# TODO - sorting - #2553
-@pytest.mark.xfail_backends(
-    ['bigquery', 'clickhouse', 'dask', 'mysql', 'postgres']
-)
+@pytest.mark.xfail_backends(['bigquery', 'clickhouse', 'mysql', 'postgres'])
 @pytest.mark.skip_backends(['sqlite'], reason='Issue #2128')
-def test_topk_filter_op(backend, alltypes, df, result_fn, expected_fn):
+def test_topk_filter_op(backend, alltypes, pandas_df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend
     # can have different result for that.
     # Note: Maybe would be good if TopK could order by "count"
     # and the field used by TopK
     t = alltypes.sort_by(alltypes.string_col)
-    df = df.sort_values('string_col')
+    pandas_df = pandas_df.sort_values('string_col')
     result = result_fn(t).execute()
-    expected = expected_fn(df)
+    expected = expected_fn(pandas_df)
     assert result.shape[0] == expected.shape[0]

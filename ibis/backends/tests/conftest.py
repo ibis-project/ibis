@@ -160,8 +160,6 @@ def alltypes(backend):
 
 @pytest.fixture(scope='session')
 def sorted_alltypes(backend, alltypes):
-    if backend.name() == 'dask':
-        pytest.skip("# TODO - sorting - #2553")
     return alltypes.sort_by('id')
 
 
@@ -200,10 +198,8 @@ def pandas_df(backend, alltypes):
 
 
 @pytest.fixture(scope='session')
-def sorted_df(backend, df):
-    if backend.name() == 'dask':
-        pytest.skip("# TODO - sorting - #2553")
-    return df.sort_values('id').reset_index(drop=True)
+def sorted_df(backend, pandas_df):
+    return pandas_df.sort_values('id').reset_index(drop=True)
 
 
 @pytest.fixture(scope='session')
