@@ -91,7 +91,6 @@ jobs:
   Tests_impala_clickhouse:
     name: Tests Impala / Clickhouse
     runs-on: ubuntu-latest
-    if: false # TODO: temporary disabling this build, since Ibis can't connect to Impala yet, see #2533
     env:
       BACKENDS: "impala clickhouse"
       IBIS_TEST_NN_HOST: localhost
