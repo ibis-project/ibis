@@ -106,8 +106,12 @@ def compute_sort_key(
     **kwargs,
 ):
     """
-    Note - we use this function instead of the pandas.execution.util so that
-    we use the dask `execute` method
+    Note - we use this function instead of the pandas.execution.util so that we
+    use the dask `execute` method
+
+    This function borrows the logic in the pandas backend. ``by`` can be a
+    string or an expression. If ``by.get_name()`` raises an exception, we must
+    ``execute`` the expression and sort by the new derived column.
     """
     by = key.to_expr()
     name = ibis.util.guid()
