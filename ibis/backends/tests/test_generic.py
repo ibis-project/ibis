@@ -138,7 +138,7 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
 
 
 @pytest.mark.xfail_unsupported
-def test_case_where(backend, alltypes, pandas_df):
+def test_case_where(backend, alltypes, df):
     table = alltypes
     table = table.mutate(
         new_col=(
@@ -153,7 +153,7 @@ def test_case_where(backend, alltypes, pandas_df):
 
     result = table.execute()
 
-    expected = pandas_df.copy()
+    expected = df.copy()
     mask_0 = expected['int_col'] == 1
     mask_1 = expected['int_col'] == 0
 

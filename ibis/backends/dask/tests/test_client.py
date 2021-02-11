@@ -83,7 +83,7 @@ def test_drop(table):
     expr = table.drop(['a'])
     result = expr.execute()
     expected = table[['b', 'c']].execute()
-    tm.assert_frame_equal(result.compute(), expected.compute())
+    tm.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize(
