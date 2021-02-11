@@ -488,3 +488,34 @@ def test_ungrouped_unbounded_window(
     left, right = result.val, expected.val
 
     backend.assert_series_equal(left, right)
+
+
+@pytest.mark.xfail_unsupported
+def test_grouped_bounded_range_window(backend, alltypes, df, con):
+    if not backend.supports_window_operations:
+        pytest.skip(
+            'Backend {} does not support window operations'.format(backend)
+        )
+
+    window = ibis.range_window(
+        preceding=2, order_by='id', group_by='string_col',
+    )
+
+    expr = alltypes.mutate(val=alltypes.double_col.sum().over(window))
+
+    result = expr.execute().set_index('id').sort_index()
+    gdf = df.sort_values('id').groupby('string_col')
+    expected = (
+        df.assign(
+            val=gdf.double_col.rolling(3, min_periods=1)
+            .sum()
+            .sort_index(level=1)
+            .reset_index(drop=True)
+        )
+        .set_index('id')
+        .sort_index()
+    )
+
+    left, right = result.val, expected.val
+
+    backend.assert_series_equal(left, right)
