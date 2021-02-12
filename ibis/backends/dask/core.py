@@ -1,8 +1,8 @@
 """The dask backend is a very close port of the pandas backend, and thus
-has the same caveats.
+has the similar caveats.
 
 The dask backend is a departure from the typical ibis backend in that it
-doesn't compile to anything, and the execution of the ibis expression
+doesn't compile to anything and the execution of the ibis expression
 is under the purview of ibis itself rather than executing SQL on a server.
 
 Design
@@ -17,9 +17,8 @@ polymorphism to multiple arguments.
 
 Compilation
 -----------
-This is a no-op because we execute ibis expressions directly. However, the
-dask backend will pass back a dask expression that you can run `.compute()`
-on to evaluate it.
+The ibis backend uses the ibis dispatching machinery to "compile" a dask
+TaskGraph you can run `.compute()` on to evaluate it.
 
 Execution
 ---------

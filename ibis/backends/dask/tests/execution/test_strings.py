@@ -103,7 +103,7 @@ def test_string_ops(t, df, case_func, expected_func):
     # ignore matching UserWarnings
     with catch_warnings(record=True):
         expr = case_func(t.strings_with_space)
-        result = expr.execute()
+        result = expr.compile()
         series = expected_func(df.strings_with_space)
         tm.assert_series_equal(result.compute(), series.compute())
 
@@ -113,7 +113,7 @@ def test_grouped_string_re_search(t, df):
         sum=t.strings_with_space.re_search('(ab)+').cast('int64').sum()
     )
 
-    result = expr.execute()
+    result = expr.compile()
     expected = (
         df.groupby('dup_strings')
         .strings_with_space.apply(
