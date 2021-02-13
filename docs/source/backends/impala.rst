@@ -1440,13 +1440,13 @@ Sweet, now let’s aggregate by year and region:
     >>> annual_amounts = (joined_all
     ...                   .group_by(['region', year])
     ...                   .aggregate(total))
-    >>> annual_amounts.limit(5)
-         region  year         total
-0        EUROPE  1994  6.979473e+09
-1        EUROPE  1996  7.015421e+09
-2          ASIA  1997  6.910663e+09
-3          ASIA  1998  4.058824e+09
-4        EUROPE  1992  6.926705e+09
+        >>> annual_amounts.limit(5)
+             region  year         total
+    0        EUROPE  1994  6.979473e+09
+    1        EUROPE  1996  7.015421e+09
+    2          ASIA  1997  6.910663e+09
+    3          ASIA  1998  4.058824e+09
+    4        EUROPE  1992  6.926705e+09
 
 Looking good so far. Now, we need to join this table on itself, by
 subtracting 1 from one of the year columns.
