@@ -13,6 +13,5 @@ Here we show Jupyter notebooks that take you through various tasks using ibis.
    03-Expressions-Lazy-Mode-Logging.ipynb
    04-More-Value-Expressions.ipynb
    05-IO-Create-Insert-External-Data.ipynb
-   06-Advanced-Topics-TopK-SelfJoins.ipynb
-   07-Advanced-Topics-ComplexFiltering.ipynb
-   08-More-Analytics-Helpers.ipynb
+   06-Advanced-Topics-ComplexFiltering.ipynb
+   07-Advanced-Topics-Analytics-Tools.ipynb
