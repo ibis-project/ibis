@@ -800,17 +800,8 @@ class Projector:
             try:
                 # Try to resolve from parent
                 resolved = root_table._resolve(self.input_exprs)
-                # resolved = self.parent._resolve(self.input_exprs)
             except (AttributeError, IbisTypeError):
                 resolved = clean_exprs
-                # Try to resolve from root_table
-                # try:
-                #     resolved = root_table._resolve(self.input_exprs)
-                # except (AttributeError, IbisTypeError):
-                #     # If we cannot resolve it from either
-                #     # parent or root_table. We use the original
-                #     # expr.
-                #     resolved = clean_exprs
         else:
             # joins cannot be used to resolve expressions, but we still may be
             # able to fuse columns from a projection off of a join. In that
