@@ -794,11 +794,7 @@ class Projector:
         clean_exprs = self.clean_exprs
 
         if not isinstance(root_table.op(), ops.Join):
-            # If a column exists in both parent and root_table
-            # (parent of parent), then we should resolve it from
-            # the parent instead of root_table.
             try:
-                # Try to resolve from parent
                 resolved = root_table._resolve(self.input_exprs)
             except (AttributeError, IbisTypeError):
                 resolved = clean_exprs
