@@ -357,6 +357,12 @@ class ExprSimplifier:
                 if sel.has_name()
             )
 
+            # If there are predicates or sort keys,
+            # then we cannot lift the root
+            no_predicates_or_sort_keys = not (
+                root.predicates or root.sort_keys
+            )
+
             for val in root.selections:
                 value_op = val.op()
                 if (
@@ -367,6 +373,7 @@ class ExprSimplifier:
                     lifted_root = self.lift(val)
                 elif (
                     all_simple_columns
+                    and no_predicates_or_sort_keys
                     and isinstance(val, ir.ValueExpr)
                     and val.has_name()
                     and node.name == val.get_name()
@@ -777,6 +784,8 @@ class Projector:
         return ops.Selection(self.parent, self.clean_exprs)
 
     def try_fusion(self, root):
+        assert self.parent.op() == root
+
         root_table = root.table
         roots = root_table._root_tables()
         validator = ExprValidator([root_table])
@@ -785,10 +794,23 @@ class Projector:
         clean_exprs = self.clean_exprs
 
         if not isinstance(root_table.op(), ops.Join):
+            # If a column exists in both parent and root_table
+            # (parent of parent), then we should resolve it from
+            # the parent instead of root_table.
             try:
+                # Try to resolve from parent
                 resolved = root_table._resolve(self.input_exprs)
+                # resolved = self.parent._resolve(self.input_exprs)
             except (AttributeError, IbisTypeError):
                 resolved = clean_exprs
+                # Try to resolve from root_table
+                # try:
+                #     resolved = root_table._resolve(self.input_exprs)
+                # except (AttributeError, IbisTypeError):
+                #     # If we cannot resolve it from either
+                #     # parent or root_table. We use the original
+                #     # expr.
+                #     resolved = clean_exprs
         else:
             # joins cannot be used to resolve expressions, but we still may be
             # able to fuse columns from a projection off of a join. In that
