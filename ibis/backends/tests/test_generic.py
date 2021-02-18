@@ -167,6 +167,7 @@ def test_case_where(backend, alltypes, df):
 
 
 @pytest.mark.xfail_unsupported
+@pytest.mark.skip_backends(['postgres'])
 def test_select_filter_mutate(backend, alltypes, df):
     t = alltypes
     t = t.mutate(
