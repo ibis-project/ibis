@@ -1,5 +1,6 @@
 import decimal
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -171,7 +172,7 @@ def test_select_filter_mutate(backend, alltypes, df):
     t = t.mutate(
         float_col=ibis.case()
         .when(t['bool_col'], t['float_col'])
-        .else_(None)
+        .else_(np.nan)
         .end()
     )
     t = t[t.columns]
