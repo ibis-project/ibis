@@ -163,3 +163,24 @@ def test_case_where(backend, alltypes, df):
     expected['new_col'] = expected['new_col']
 
     backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.xfail_unsupported
+def test_filter_then_mutate(backend, alltypes, pandas_df):
+    t = alltypes
+    t = t.mutate(
+        float_col=ibis.case()
+        .when(t['bool_col'], t['float_col'])
+        .else_(None)
+        .end()
+    )
+    t = t[~t['float_col'].isnan()]
+    t = t.mutate(float_col=t['float_col'].cast('int32'))
+    result = t.execute()
+
+    expected = pandas_df.copy()
+    expected['float_col'][~expected['bool_col']] = None
+    expected = expected[~expected['float_col'].isna()]
+    expected['float_col'] = expected['float_col'].astype('int32')
+
+    backend.assert_frame_equal(result, expected)
