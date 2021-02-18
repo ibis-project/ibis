@@ -174,13 +174,12 @@ def test_select_filter_mutate(backend, alltypes, df):
         .else_(None)
         .end()
     )
-    t = t[['float_col']]
+    t = t[t.columns]
     t = t[~t['float_col'].isnan()]
     t = t.mutate(float_col=t['float_col'].cast('int32'))
     result = t.execute()
 
     expected = df.copy()
-    expected = expected[['float_col']]
     expected['float_col'][~df['bool_col']] = None
     expected = expected[~expected['float_col'].isna()]
     expected['float_col'] = expected['float_col'].astype('int32')
