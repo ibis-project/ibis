@@ -176,16 +176,8 @@ def test_select_filter_mutate(backend, alltypes, df):
     )
     t = t[['float_col']]
     t = t[~t['float_col'].isnan()]
-    import pdb
-
-    pdb.set_trace()
-
     t = t.mutate(float_col=t['float_col'].cast('int32'))
     result = t.execute()
-
-    import pdb
-
-    pdb.set_trace()
 
     expected = df.copy()
     expected = expected[['float_col']]
