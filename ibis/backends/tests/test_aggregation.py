@@ -58,16 +58,14 @@ aggregate_test_params = [
 )
 @pytest.mark.xfail_unsupported
 def test_aggregate(
-    backend, alltypes, pandas_df, result_fn, expected_fn, expected_col
+    backend, alltypes, df, result_fn, expected_fn, expected_col
 ):
     expr = alltypes.aggregate(tmp=result_fn)
     result = expr.execute()
 
     # Create a single-row single-column dataframe with the Pandas `agg` result
     # (to match the output format of Ibis `aggregate`)
-    expected = pd.DataFrame(
-        {'tmp': [pandas_df[expected_col].agg(expected_fn)]}
-    )
+    expected = pd.DataFrame({'tmp': [df[expected_col].agg(expected_fn)]})
 
     backend.assert_frame_equal(result, expected)
 
@@ -77,7 +75,7 @@ def test_aggregate(
 )
 @pytest.mark.xfail_unsupported
 def test_aggregate_grouped(
-    backend, alltypes, pandas_df, result_fn, expected_fn, expected_col
+    backend, alltypes, df, result_fn, expected_fn, expected_col
 ):
     grouping_key_col = 'bigint_col'
 
@@ -91,25 +89,17 @@ def test_aggregate_grouped(
 
     # Note: Using `reset_index` to get the grouping key as a column
     expected = (
-        pandas_df.groupby(grouping_key_col)[expected_col]
+        df.groupby(grouping_key_col)[expected_col]
         .agg(expected_fn)
         .rename('tmp')
         .reset_index()
     )
 
-    # TODO - sorting - #2553
-    if backend.name() != 'dask':
-        # Row ordering may differ depending on backend, so sort on the
-        # grouping key
-        result1 = result1.sort_values(by=grouping_key_col).reset_index(
-            drop=True
-        )
-        result2 = result2.sort_values(by=grouping_key_col).reset_index(
-            drop=True
-        )
-        expected = expected.sort_values(by=grouping_key_col).reset_index(
-            drop=True
-        )
+    # Row ordering may differ depending on backend, so sort on the
+    # grouping key
+    result1 = result1.sort_values(by=grouping_key_col).reset_index(drop=True)
+    result2 = result2.sort_values(by=grouping_key_col).reset_index(drop=True)
+    expected = expected.sort_values(by=grouping_key_col).reset_index(drop=True)
 
     backend.assert_frame_equal(result1, expected)
     backend.assert_frame_equal(result2, expected)
@@ -240,18 +230,12 @@ def test_aggregate_grouped(
 )
 @pytest.mark.xfail_unsupported
 def test_reduction_ops(
-    backend,
-    alltypes,
-    pandas_df,
-    result_fn,
-    expected_fn,
-    ibis_cond,
-    pandas_cond,
+    backend, alltypes, df, result_fn, expected_fn, ibis_cond, pandas_cond,
 ):
     expr = result_fn(alltypes, ibis_cond(alltypes))
     result = expr.execute()
 
-    expected = expected_fn(pandas_df, pandas_cond(pandas_df))
+    expected = expected_fn(df, pandas_cond(df))
     np.testing.assert_allclose(result, expected)
 
 
@@ -275,11 +259,11 @@ def test_reduction_ops(
     ],
 )
 @pytest.mark.xfail_unsupported
-def test_group_concat(backend, alltypes, pandas_df, result_fn, expected_fn):
+def test_group_concat(backend, alltypes, df, result_fn, expected_fn):
     expr = result_fn(alltypes)
     result = expr.execute()
 
-    expected = expected_fn(pandas_df)
+    expected = expected_fn(df)
 
     assert set(result.iloc[:, 1]) == set(expected.iloc[:, 1])
 
@@ -295,8 +279,7 @@ def test_group_concat(backend, alltypes, pandas_df, result_fn, expected_fn):
     ],
 )
 @pytest.mark.xfail_unsupported
-# TODO - sorting - #2553
-@pytest.mark.xfail_backends(['dask', 'pyspark'])  # Issue #2130
+@pytest.mark.xfail_backends(['pyspark'])  # Issue #2130
 def test_topk_op(backend, alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend
     # can have different result for that.
@@ -325,10 +308,7 @@ def test_topk_op(backend, alltypes, df, result_fn, expected_fn):
 )
 @pytest.mark.xfail_unsupported
 # Issues #2369 #2133 #2131 #2132
-# TODO - sorting - #2553
-@pytest.mark.xfail_backends(
-    ['bigquery', 'clickhouse', 'dask', 'mysql', 'postgres']
-)
+@pytest.mark.xfail_backends(['bigquery', 'clickhouse', 'mysql', 'postgres'])
 @pytest.mark.skip_backends(['sqlite'], reason='Issue #2128')
 def test_topk_filter_op(backend, alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend

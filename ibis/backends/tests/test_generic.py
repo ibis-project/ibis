@@ -50,6 +50,7 @@ def test_coalesce(backend, con, expr, expected):
         assert result == expected
 
 
+@pytest.mark.skip_backends(['dask'])  # TODO - identicalTo - #2553
 @pytest.mark.xfail_unsupported
 def test_identical_to(backend, alltypes, con, sorted_df):
     sorted_alltypes = alltypes.sort_by('id')
@@ -81,7 +82,6 @@ def test_identical_to(backend, alltypes, con, sorted_df):
         ('int_col', frozenset({1})),
     ],
 )
-@pytest.mark.skip_backends(['dask'])  # TODO - sorting - #2553
 @pytest.mark.xfail_unsupported
 def test_isin(backend, alltypes, sorted_df, column, elements):
     sorted_alltypes = alltypes.sort_by('id')
@@ -106,7 +106,6 @@ def test_isin(backend, alltypes, sorted_df, column, elements):
         ('int_col', frozenset({1})),
     ],
 )
-@pytest.mark.skip_backends(['dask'])  # TODO - sorting - #2553
 @pytest.mark.xfail_unsupported
 def test_notin(backend, alltypes, sorted_df, column, elements):
     sorted_alltypes = alltypes.sort_by('id')
@@ -135,9 +134,11 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
     result = table.execute()
     expected = sorted_df[expected_fn(sorted_df)]
 
+    backend.assert_frame_equal(result, expected)
+
 
 @pytest.mark.xfail_unsupported
-def test_case_where(backend, alltypes, pandas_df):
+def test_case_where(backend, alltypes, df):
     table = alltypes
     table = table.mutate(
         new_col=(
@@ -152,7 +153,7 @@ def test_case_where(backend, alltypes, pandas_df):
 
     result = table.execute()
 
-    expected = pandas_df.copy()
+    expected = df.copy()
     mask_0 = expected['int_col'] == 1
     mask_1 = expected['int_col'] == 0
 

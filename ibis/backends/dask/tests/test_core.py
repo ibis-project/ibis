@@ -29,16 +29,16 @@ def test_from_dataframe(dataframe, ibis_table, core_client):
     t = from_dataframe(dataframe)
     result = t.execute()
     expected = ibis_table.execute()
-    tm.assert_frame_equal(result.compute(), expected.compute())
+    tm.assert_frame_equal(result, expected)
 
     t = from_dataframe(dataframe, name='foo')
     expected = ibis_table.execute()
-    tm.assert_frame_equal(result.compute(), expected.compute())
+    tm.assert_frame_equal(result, expected)
 
     client = core_client
     t = from_dataframe(dataframe, name='foo', client=client)
     expected = ibis_table.execute()
-    tm.assert_frame_equal(result.compute(), expected.compute())
+    tm.assert_frame_equal(result, expected)
 
 
 def test_pre_execute_basic():

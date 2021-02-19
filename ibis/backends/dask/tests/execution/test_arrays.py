@@ -18,7 +18,7 @@ def test_array_length(t, df):
             t.array_of_strings.length().name('array_of_strings_length'),
         ]
     )
-    result = expr.execute()
+    result = expr.compile()
     expected = dd.from_pandas(
         pd.DataFrame(
             {
@@ -46,7 +46,7 @@ def test_array_collect(t, df):
     expr = t.group_by(t.dup_strings).aggregate(
         collected=t.float64_with_zeros.collect()
     )
-    result = expr.execute()
+    result = expr.compile()
     expected = (
         df.groupby('dup_strings')
         .float64_with_zeros.apply(list)
@@ -63,7 +63,7 @@ def test_array_collect_rolling_partitioned(t, df):
     window = ibis.trailing_window(1, order_by=t.plain_int64)
     colexpr = t.plain_float64.collect().over(window)
     expr = t['dup_strings', 'plain_int64', colexpr.name('collected')]
-    result = expr.execute()
+    result = expr.compile()
     expected = dd.from_pandas(
         pd.DataFrame(
             {
@@ -123,7 +123,7 @@ def test_array_collect_scalar(client):
 )
 def test_array_slice(t, df, start, stop):
     expr = t.array_of_strings[start:stop]
-    result = expr.execute()
+    result = expr.compile()
     slicer = operator.itemgetter(slice(start, stop))
     expected = df.array_of_strings.apply(slicer)
     tm.assert_series_equal(result.compute(), expected.compute())
@@ -175,7 +175,7 @@ def test_array_slice_scalar(client, start, stop):
 @pytest.mark.parametrize('index', [1, 3, 4, 11, -11])
 def test_array_index(t, df, index):
     expr = t[t.array_of_float64[index].name('indexed')]
-    result = expr.execute()
+    result = expr.compile()
     expected = dd.from_pandas(
         pd.DataFrame(
             {
@@ -203,7 +203,7 @@ def test_array_index_scalar(client, index):
 @pytest.mark.parametrize('mul', [lambda x, n: x * n, lambda x, n: n * x])
 def test_array_repeat(t, df, n, mul):
     expr = t.projection([mul(t.array_of_strings, n).name('repeated')])
-    result = expr.execute()
+    result = expr.compile()
     expected = dd.from_pandas(
         pd.DataFrame({'repeated': df.array_of_strings * n}), npartitions=1,
     )
@@ -226,7 +226,7 @@ def test_array_concat(t, df, op):
     x = t.array_of_float64.cast('array<string>')
     y = t.array_of_strings
     expr = op(x, y)
-    result = expr.execute()
+    result = expr.compile()
     expected = op(
         df.array_of_float64.apply(lambda x: list(map(str, x))),
         df.array_of_strings,

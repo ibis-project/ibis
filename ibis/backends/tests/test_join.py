@@ -29,7 +29,7 @@ all_db_join_supported = ['pandas', 'pyspark']
 )
 @pytest.mark.only_on_backends(all_db_join_supported)
 # Csv is a subclass of Pandas so need to skip it explicitly.
-# TODO - sorting - #2553
+# TODO - pandas - #2553
 @pytest.mark.skip_backends(['csv', 'dask'])
 @pytest.mark.xfail_unsupported
 def test_join_project_left_table(backend, con, batting, awards_players, how):
