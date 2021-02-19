@@ -296,6 +296,7 @@ def test_is_ancestor_analytic():
     assert not subquery.op().equals(with_analytic.op())
 
 
+# Pr 2635
 def test_mutation_fusion_no_overwrite():
     """Test fusion with chained mutation that doesn't overwrite existing
     columns.
@@ -321,6 +322,7 @@ def test_mutation_fusion_no_overwrite():
     )
 
 
+# Pr 2635
 def test_mutation_fusion_overwrite():
     """Test fusion with chained mutation that overwrites existing columns."""
     t = ibis.table(ibis.schema([('col', 'int32')]), 't')
@@ -361,6 +363,7 @@ def test_mutation_fusion_overwrite():
     )
 
 
+# Pr 2635
 def test_select_filter_mutate_fusion():
     """Test fusion with filter followed by mutation on the same input."""
 
