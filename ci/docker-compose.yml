@@ -101,16 +101,3 @@ services:
       dockerfile: ci/Dockerfile.dev
       args:
         PYTHON_VERSION: ${PYTHON_VERSION:-3.7}
-
-  ibis-docs:
-    image: ibis-docs:${PYTHON_VERSION:-3.7}
-    env_file:
-      - ./.env
-    volumes:
-      - /tmp/ibis:/tmp
-      - ..:/ibis
-    build:
-      context: ..
-      dockerfile: ci/Dockerfile.docs
-      args:
-        PYTHON_VERSION: ${PYTHON_VERSION:-3.7}

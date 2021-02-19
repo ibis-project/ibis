@@ -1,4 +1,4 @@
-.PHONY: all clean develop typecheck stop build start load restart init test testmost testfast testparams docclean doc black
+.PHONY: all clean develop typecheck stop build start load restart init test testmost testfast testparams black
 
 SHELL := /bin/bash
 MAKEFILE_DIR = $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
@@ -163,30 +163,7 @@ testpyspark:
 fastopt:
 	@echo -m 'not (backend or bigquery or clickhouse or hdfs or impala or kudu or mysql or postgis or postgresql or superuser or udf)'
 
-# Targets for documentation builds
-
-docclean:
-	$(DOCKER_RUN) ibis-docs rm -rf /tmp/docs.ibis-project.org
-
-builddoc: build
-	# build the ibis-docs image
-	$(DOCKER_BUILD) ibis-docs
-
-doc: builddoc docclean
-	$(DOCKER_RUN) ibis-docs ping -c 1 impala
-	$(DOCKER_RUN) ibis-docs rm -rf /tmp/docs.ibis-project.org
-	$(DOCKER_RUN) ibis-docs git clone --branch gh-pages https://github.com/ibis-project/docs.ibis-project.org /tmp/docs.ibis-project.org --depth 1
-	$(DOCKER_RUN) ibis-docs find /tmp/docs.ibis-project.org \
-	    -maxdepth 1 \
-	    ! -wholename /tmp/docs.ibis-project.org \
-	    ! -name '*.git' \
-	    ! -name '.' \
-	    ! -name CNAME \
-	    ! -name '*.nojekyll' \
-	    -exec rm -rf {} \;
-	$(DOCKER_RUN) ibis-docs sphinx-build -b html docs/source /tmp/docs.ibis-project.org -W -T
-
-# Targets for run commands inside ibis and ibis-docs containers
+# Targets for run commands inside ibis container
 
 docker_run:
 	$(DOCKER_RUN) ibis $(DOCKER_RUN_COMMAND)

@@ -6,9 +6,11 @@
 
 PYTHON_VERSION="${1:-3.7}"
 BACKENDS="$2"
+LOAD_TEST_DATA="${3:-true}"
 
 echo "PYTHON_VERSION: $PYTHON_VERSION"
 echo "BACKENDS: $BACKENDS"
+echo "LOAD_TEST_DATA: $LOAD_TEST_DATA"
 
 if [[ -n "$CONDA" ]]; then
     # Add conda to Path
@@ -39,7 +41,10 @@ conda env update -n base --file=environment.yml
 python -m pip install -e .
 
 if [[ -n "$BACKENDS" ]]; then
-    python ci/datamgr.py download
+    if [[ $LOAD_TEST_DATA == "true" ]]; then
+        python ci/datamgr.py download
+    fi
+
     for BACKEND in $BACKENDS; do
         # For the oldest python version supported (currently 3.7) we first try to
         # install the minimum supported dependencies `ci/deps/$BACKEND-min.yml`.
@@ -54,11 +59,13 @@ if [[ -n "$BACKENDS" ]]; then
             fi
         fi
 
-        # TODO load impala data in the same way as the rest of the backends
-        if [[ "$BACKEND" == "impala" ]]; then
-            python ci/impalamgr.py load --data
-        else
-            python ci/datamgr.py $BACKEND
+        if [[ $LOAD_TEST_DATA == "true" ]]; then
+            # TODO load impala data in the same way as the rest of the backends
+            if [[ "$BACKEND" == "impala" ]]; then
+                python ci/impalamgr.py load --data
+            else
+                python ci/datamgr.py $BACKEND
+            fi
         fi
     done
 fi
