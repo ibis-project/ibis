@@ -357,6 +357,12 @@ class ExprSimplifier:
                 if sel.has_name()
             )
 
+            # If there are predicates or sort keys,
+            # then we cannot lift the root
+            no_predicates_or_sort_keys = not (
+                root.predicates or root.sort_keys
+            )
+
             for val in root.selections:
                 value_op = val.op()
                 if (
@@ -367,6 +373,7 @@ class ExprSimplifier:
                     lifted_root = self.lift(val)
                 elif (
                     all_simple_columns
+                    and no_predicates_or_sort_keys
                     and isinstance(val, ir.ValueExpr)
                     and val.has_name()
                     and node.name == val.get_name()
@@ -777,6 +784,8 @@ class Projector:
         return ops.Selection(self.parent, self.clean_exprs)
 
     def try_fusion(self, root):
+        assert self.parent.op() == root
+
         root_table = root.table
         roots = root_table._root_tables()
         validator = ExprValidator([root_table])
