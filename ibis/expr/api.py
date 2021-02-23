@@ -4193,25 +4193,58 @@ def mutate(table, exprs=None, **mutations):
         for name, expr in sorted(mutations.items(), key=operator.itemgetter(0))
     )
 
+    selection_exprs_by_name = collections.OrderedDict()
     for expr in exprs:
-        if expr.get_name() and isinstance(expr, ir.DestructColumn):
-            raise com.ExpressionError(
-                f"Cannot name a destruct column: {expr.get_name()}"
-            )
+        if isinstance(expr, ir.DestructColumn):
+            if expr.get_name():
+                raise com.ExpressionError(
+                    f"Cannot name a destruct column: {expr.get_name()}"
+                )
+            struct_type = expr.type()
+            for name in struct_type.names:
+                selection_exprs_by_name[name] = expr
+        elif isinstance(expr, ir.ValueExpr):
+            selection_exprs_by_name[expr.get_name()] = expr
 
-    by_name = collections.OrderedDict(
-        (expr.get_name(), expr) for expr in exprs
-    )
     columns = table.columns
-    used = by_name.keys() & columns
+    used = selection_exprs_by_name.keys() & columns
 
     if used:
         proj_exprs = [
-            by_name.get(column, table[column]) for column in columns
-        ] + [expr for name, expr in by_name.items() if name not in used]
+            selection_exprs_by_name.get(column, table[column])
+            for column in columns
+        ]
+        # We do an additional check below that the expr is not already in
+        # proj_exprs because multiple columns can be encapsulated within a
+        # DestructColumn, and without this check, we could be duplicating the
+        # same DestructColumn multiple times in proj_exprs.
+        # Example: DestructColumn(['existing_column', 'new_column'])
+        # The DestructColumn will be added to proj_exprs above because
+        # 'existing_column' is being overwritten, and therefore 'new_column'
+        # is also already represented in proj_exprs, so we shouldn't add the
+        # DestructColumn expr below even though 'new_column' isn't in 'used'.
+        [
+            proj_exprs.append(expr)
+            for name, expr in selection_exprs_by_name.items()
+            if name not in used
+            and name not in _get_names_from_selections(proj_exprs)
+        ]
     else:
         proj_exprs = [table] + exprs
     return table.projection(proj_exprs)
+
+
+def _get_names_from_selections(selections):
+    """Helper method to return the names of all
+    columns represented in the given list of selections."""
+    names = []
+    for expr in selections:
+        if isin(expr, ir.DestructColumn):
+            struct_type = expr.type()
+            names.extend(struct_type.names)
+        elif isinstance(expr, ir.ValueExpr):
+            names.append(expr.get_name())
+    return names
 
 
 def projection(table, exprs):
