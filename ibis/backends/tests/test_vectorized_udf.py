@@ -34,6 +34,16 @@ def add_one_struct(v):
 
 @analytic(
     input_type=[dt.double, dt.double],
+    output_type=dt.Struct(
+        ['double_col', 'demean_weight'], [dt.double, dt.double]
+    ),
+)
+def overwrite_struct_analytic(v, w):
+    return v - v.mean(), w - w.mean()
+
+
+@analytic(
+    input_type=[dt.double, dt.double],
     output_type=dt.Struct(['demean', 'demean_weight'], [dt.double, dt.double]),
 )
 def demean_struct(v, w):
@@ -45,6 +55,16 @@ def demean_struct(v, w):
     output_type=dt.Struct(['mean', 'mean_weight'], [dt.double, dt.double]),
 )
 def mean_struct(v, w):
+    return v.mean(), w.mean()
+
+
+@reduction(
+    input_type=[dt.double, dt.double],
+    output_type=dt.Struct(
+        ['double_col', 'mean_weight'], [dt.double, dt.double]
+    ),
+)
+def overwrite_struct_reduction(v, w):
     return v.mean(), w.mean()
 
 
@@ -302,6 +322,30 @@ def test_analytic_udf_destruct(backend, alltypes):
 @pytest.mark.only_on_backends(['pandas'])
 # TODO - udf - #2553
 @pytest.mark.xfail_backends(['dask'])
+def test_analytic_udf_destruct_overwrite(backend, alltypes):
+    w = window(preceding=None, following=None, group_by='year')
+
+    result = alltypes.mutate(
+        overwrite_struct_analytic(alltypes['double_col'], alltypes['int_col'])
+        .over(w)
+        .destructure()
+    ).execute()
+
+    expected = alltypes.mutate(
+        double_col=alltypes['double_col']
+        - alltypes['double_col'].mean().over(w),
+        demean_weight=alltypes['int_col'] - alltypes['int_col'].mean().over(w),
+    ).execute()
+
+    # TODO currently when overwriting a column via a multi-col UDF, any
+    # new columns will be materialized directly after those overwritten
+    # columns rather than appended to the end.
+    backend.assert_frame_equal(result, expected, check_like=True)
+
+
+@pytest.mark.only_on_backends(['pandas'])
+# TODO - udf - #2553
+@pytest.mark.xfail_backends(['dask'])
 def test_reduction_udf_destruct_groupby(backend, alltypes):
     result = (
         alltypes.groupby('year')
@@ -339,6 +383,24 @@ def test_reduction_udf_destruct_no_groupby(backend, alltypes):
     ).execute()
 
     backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.only_on_backends(['pandas'])
+# TODO - udf - #2553
+@pytest.mark.xfail_backends(['dask'])
+def test_reduction_udf_destruct_no_groupby_overwrite(backend, alltypes):
+    result = alltypes.aggregate(
+        overwrite_struct_reduction(
+            alltypes['double_col'], alltypes['int_col']
+        ).destructure()
+    ).execute()
+
+    expected = alltypes.aggregate(
+        double_col=alltypes['double_col'].mean(),
+        mean_weight=alltypes['int_col'].mean(),
+    ).execute()
+
+    backend.assert_frame_equal(result, expected, check_like=True)
 
 
 @pytest.mark.only_on_backends(['pandas'])
