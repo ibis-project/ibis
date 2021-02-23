@@ -1,5 +1,6 @@
 import decimal
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -138,7 +139,7 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
 
 
 @pytest.mark.xfail_unsupported
-def test_case_where(backend, alltypes, pandas_df):
+def test_case_where(backend, alltypes, df):
     table = alltypes
     table = table.mutate(
         new_col=(
@@ -153,7 +154,7 @@ def test_case_where(backend, alltypes, pandas_df):
 
     result = table.execute()
 
-    expected = pandas_df.copy()
+    expected = df.copy()
     mask_0 = expected['int_col'] == 1
     mask_1 = expected['int_col'] == 0
 
@@ -161,5 +162,40 @@ def test_case_where(backend, alltypes, pandas_df):
     expected['new_col'][mask_0] = 20
     expected['new_col'][mask_1] = 10
     expected['new_col'] = expected['new_col']
+
+    backend.assert_frame_equal(result, expected)
+
+
+# Pr 2635
+@pytest.mark.xfail_unsupported
+@pytest.mark.skip_backends(['postgres'])
+def test_select_filter_mutate(backend, alltypes, df):
+    """Test that select, filter and mutate are executed in right order.
+
+    Before Pr 2635, try_fusion in analysis.py would fuse these operations
+    together in a way that the order of the operations were wrong. (mutate
+    was executed before filter).
+    """
+    t = alltypes
+
+    # Prepare the float_col so that filter must execute
+    # before the cast to get the correct result.
+    t = t.mutate(
+        float_col=ibis.case()
+        .when(t['bool_col'], t['float_col'])
+        .else_(np.nan)
+        .end()
+    )
+
+    # Actual test
+    t = t[t.columns]
+    t = t[~t['float_col'].isnan()]
+    t = t.mutate(float_col=t['float_col'].cast('int32'))
+    result = t.execute()
+
+    expected = df.copy()
+    expected.loc[~df['bool_col'], 'float_col'] = None
+    expected = expected[~expected['float_col'].isna()]
+    expected = expected.assign(float_col=expected['float_col'].astype('int32'))
 
     backend.assert_frame_equal(result, expected)

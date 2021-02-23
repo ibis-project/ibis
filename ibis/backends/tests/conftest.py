@@ -191,15 +191,8 @@ def df(alltypes):
 
 
 @pytest.fixture(scope='session')
-def pandas_df(backend, alltypes):
-    if backend.name() == "dask":
-        return alltypes.execute().compute()
-    return alltypes.execute()
-
-
-@pytest.fixture(scope='session')
-def sorted_df(backend, pandas_df):
-    return pandas_df.sort_values('id').reset_index(drop=True)
+def sorted_df(backend, df):
+    return df.sort_values('id').reset_index(drop=True)
 
 
 @pytest.fixture(scope='session')

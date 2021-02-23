@@ -86,8 +86,8 @@ def test_context_adjustment_asof_join(
         on='time',
         by='key',
         tolerance=Timedelta('4D'),
-    )
-    tm.assert_frame_equal(result.compute(), expected.compute())
+    ).compute()
+    tm.assert_frame_equal(result, expected)
 
 
 @pytest.mark.xfail(reason="TODO - windowing - #2553")

@@ -32,7 +32,7 @@ pytestmark = pytest.mark.dask
 )
 def test_binary_operations(t, df, op):
     expr = op(t.plain_float64, t.plain_int64)
-    result = expr.execute()
+    result = expr.compile()
     expected = op(df.plain_float64, df.plain_int64)
     tm.assert_series_equal(result.compute(), expected.compute())
 
@@ -40,7 +40,7 @@ def test_binary_operations(t, df, op):
 @pytest.mark.parametrize('op', [operator.and_, operator.or_, operator.xor])
 def test_binary_boolean_operations(t, df, op):
     expr = op(t.plain_int64 == 1, t.plain_int64 == 2)
-    result = expr.execute()
+    result = expr.compile()
     expected = op(df.plain_int64 == 1, df.plain_int64 == 2)
     tm.assert_series_equal(result.compute(), expected.compute())
 
@@ -90,7 +90,7 @@ def operate(func):
 )
 def test_math_functions_decimal(t, df, ibis_func, dask_func):
     dtype = dt.Decimal(12, 3)
-    result = ibis_func(t.float64_as_strings.cast(dtype)).execute()
+    result = ibis_func(t.float64_as_strings.cast(dtype)).compile()
     context = decimal.Context(prec=dtype.precision)
     expected = df.float64_as_strings.apply(
         lambda x: context.create_decimal(x).quantize(
@@ -116,7 +116,7 @@ def test_math_functions_decimal(t, df, ibis_func, dask_func):
 def test_round_decimal_with_negative_places(t, df):
     type = dt.Decimal(12, 3)
     expr = t.float64_as_strings.cast(type).round(-1)
-    result = expr.execute()
+    result = expr.compile()
     expected = dd.from_pandas(
         pd.Series(
             list(map(decimal.Decimal, ['1.0E+2', '2.3E+2', '-1.00E+3'])),
@@ -148,7 +148,7 @@ def test_round_decimal_with_negative_places(t, df):
     ],
 )
 def test_clip(t, df, ibis_func, dask_func):
-    result = ibis_func(t.float64_with_zeros).execute()
+    result = ibis_func(t.float64_with_zeros).compile()
     expected = dask_func(df.float64_with_zeros)
     tm.assert_series_equal(result.compute(), expected.compute())
 
@@ -165,7 +165,7 @@ def test_clip(t, df, ibis_func, dask_func):
 @pytest.mark.parametrize('column', ['float64_with_zeros', 'int64_with_zeros'])
 def test_quantile_list(t, df, ibis_func, dask_func, column):
     expr = ibis_func(t[column])
-    result = expr.execute()
+    result = expr.compile()
     expected = dask_func(df[column])
     assert result == expected
 
@@ -180,10 +180,11 @@ def test_quantile_list(t, df, ibis_func, dask_func, column):
 )
 def test_quantile_scalar(t, df, ibis_func, dask_func):
     # TODO - interpolation
-    result = ibis_func(t.float64_with_zeros).execute()
+    result = ibis_func(t.float64_with_zeros).compile()
     expected = dask_func(df.float64_with_zeros)
+    assert result.compute() == expected.compute()
 
-    result = ibis_func(t.int64_with_zeros).execute()
+    result = ibis_func(t.int64_with_zeros).compile()
     expected = dask_func(df.int64_with_zeros)
     assert result.compute() == expected.compute()
 

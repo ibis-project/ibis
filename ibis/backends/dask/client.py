@@ -12,6 +12,7 @@ import dateutil.parser
 import numpy as np
 import pandas as pd
 import toolz
+from dask.base import DaskMethodsMixin
 from pandas.api.types import DatetimeTZDtype
 from pkg_resources import parse_version
 
@@ -193,17 +194,25 @@ class DaskClient(client.Client):
                     type(query).__name__
                 )
             )
-        return execute_and_reset(query, params=params, **kwargs)
 
-    def compile(self, expr: ir.Expr, *args, **kwargs):
+        result = self.compile(query, params, **kwargs)
+        if isinstance(result, DaskMethodsMixin):
+            return result.compute()
+        else:
+            return result
+
+    def compile(
+        self, query: ir.Expr, params: Mapping[ir.Expr, object] = None, **kwargs
+    ):
         """Compile `expr`.
 
         Notes
         -----
-        For the dask backend this is a no-op.
+        For the dask backend returns a dask graph that you can run ``.compute``
+        on to get a pandas object.
 
         """
-        return expr
+        return execute_and_reset(query, params=params, **kwargs)
 
     def database(self, name: str = None) -> DaskDatabase:
         """Construct a database called `name`."""

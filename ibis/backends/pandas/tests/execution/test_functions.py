@@ -177,6 +177,8 @@ def test_quantile_scalar(t, df, ibis_func, pandas_func):
     expected = pandas_func(df.float64_with_zeros)
     assert result == expected
 
+    assert result == expected
+
     result = ibis_func(t.int64_with_zeros).execute()
     expected = pandas_func(df.int64_with_zeros)
     assert result == expected
