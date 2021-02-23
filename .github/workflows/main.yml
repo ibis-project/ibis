@@ -274,7 +274,7 @@ jobs:
     - name: Install github key
       run: |
         mkdir -m 700 -p ~/.ssh
-        echo "${{ secrets.github_key }}" > ~/.ssh/id_rsa
+        echo "${{ secrets.DOCS_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
       if: github.event_name == 'push'
 
