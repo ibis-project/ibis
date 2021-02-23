@@ -117,6 +117,7 @@ jobs:
           - 8051:8051
         env:
           KUDU_MASTER: "true"
+        options: "--network-alias=kudu --cap-add=SYS_TIME"
       kudu-tserver:
         image: ibisproject/kudu:latest
         ports:
@@ -124,6 +125,7 @@ jobs:
           - 8050:8050
         env:
           KUDU_MASTER: "false"
+        options: "--cap-add=SYS_TIME"
       impala:
         image: ibisproject/impala:latest
         env:
