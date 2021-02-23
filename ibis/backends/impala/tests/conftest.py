@@ -382,7 +382,7 @@ CREATE TABLE {database}.{name} (
 PARTITION BY HASH PARTITIONS 2
 STORED AS KUDU
 TBLPROPERTIES (
-  'kudu.master_addresses' = 'kudu',
+  'kudu.master_addresses' = 'kudu-master',
   'kudu.num_tablet_replicas' = '1'
 )""".format(
             database=test_data_db, name=name
