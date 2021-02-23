@@ -4239,7 +4239,7 @@ def _get_names_from_selections(selections):
     columns represented in the given list of selections."""
     names = []
     for expr in selections:
-        if isin(expr, ir.DestructColumn):
+        if isinstance(expr, ir.DestructColumn):
             struct_type = expr.type()
             names.extend(struct_type.names)
         elif isinstance(expr, ir.ValueExpr):
