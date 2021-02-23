@@ -16,16 +16,6 @@ Below we provide notebooks showing how to extend ibis in each of these ways.
 Adding a New Expression
 -----------------------
 
-.. note::
-
-   Make sure you've run the following commands before executing the notebook
-
-   .. code-block:: sh
-
-      docker-compose up -d --no-build postgres dns
-      docker-compose run waiter
-      docker-compose run ibis ci/load-data.sh postgres
-
 Here we show how to add a ``sha1`` method to the PostgreSQL backend as well as
 how to add a new ``bitwise_and`` reduction operation:
 
@@ -41,21 +31,16 @@ Adding a New Backend
 
 Run test suite for separate Backend
 -----------------------------------
-.. note::
-   By following the steps below, you get the opportunity to run tests with one
-   command: `make test BACKEND='[your added backend]'`
 
-1) you need to add a new backend to `BACKENDS` variable in `Makefile`.
+To run the tests for specific backends you can use:
 
-2) if backend needs to start services (implemented as docker containers and
-   added into `docker-compose.yml` file) then add the services to `SERVICES`
-   variable in `Makefile`, add case for switch-case construction inside
-   `./ci/dockerize.sh` for proper waiting the services.
+.. code:: shell
 
-3) if backend needs to load some data then add the backend to `LOADS` variable
-   in `Makefile` and implement necessary functionality in `./ci/load-data.sh`
+    PYTEST_BACKENDS="sqlite pandas" python -m pytest ibis/tests
 
-4) the necessary markers for `pytest` will be generated inside
-   `./ci/backends-markers.sh`. By default, a marker will be generated that
-   matches the name of the backend (you can manually correct the generated
-   name for the marker inside the file)
+Some backends may require a database server running. The CI file
+`.github/workflows/main.yml` contains the configuration to run
+servers for all backends using docker images.
+
+The backends may need data to be loaded, run or check `ci/setup.py` to
+see how it is loaded in the CI, and loaded for your local containers.
