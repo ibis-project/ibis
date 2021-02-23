@@ -283,8 +283,8 @@ jobs:
         cd /tmp/docs.ibis-project.org
         echo "ibis-project.org" > CNAME
         git init
-        git remote add origin git@github.com:ibis-project/docs.ibis-project.org
-        git config user.name 'Ibis Documentation Bot'
+        git remote add origin git@github.com:ibis-project/ibis-project.org
+        git config user.name 'Ibis GitHub actions'
         git config user.email ''
         git add --all .
         git commit -m "Ibis docs - $(date) - $GITHUB_SHA"
