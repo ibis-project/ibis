@@ -281,6 +281,7 @@ jobs:
     - name: Push docs
       run: |
         cd /tmp/docs.ibis-project.org
+        touch .nojekyll
         echo "ibis-project.org" > CNAME
         git init
         git remote add origin git@github.com:ibis-project/ibis-project.org
