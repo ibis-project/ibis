@@ -115,7 +115,6 @@ setup(
             'mysql = ibis.backends.mysql',
             'clickhouse = ibis.backends.clickhouse',
             'bigquery = ibis.backends.bigquery',
-            'omniscidb = ibis.backends.omniscidb',
             'spark = ibis.backends.spark',
             'pyspark = ibis.backends.pyspark',
             'dask = ibis.backends.dask',
