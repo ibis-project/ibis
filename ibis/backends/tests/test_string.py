@@ -275,6 +275,7 @@ def test_special_strings(backend, con, alltypes, data, data_type):
     assert df['tmp'].iloc[0] == data
 
 
+@pytest.mark.xfail_backends(['clickhouse'])  # #2642
 @pytest.mark.xfail_unsupported
 def test_substr_with_null_values(backend, alltypes, df):
     table = alltypes.mutate(

@@ -91,7 +91,6 @@ jobs:
   Tests_impala_clickhouse:
     name: Tests Impala / Clickhouse
     runs-on: ubuntu-latest
-    if: false # TODO: temporary disabling this build, since Ibis can't connect to Impala yet, see #2533
     env:
       BACKENDS: "impala clickhouse"
       IBIS_TEST_NN_HOST: localhost
@@ -111,6 +110,22 @@ jobs:
         env:
           POSTGRES_PASSWORD: ''
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 3
+      kudu-master:
+        image: ibisproject/kudu:latest
+        ports:
+          - 7051:7051
+          - 8051:8051
+        env:
+          KUDU_MASTER: "true"
+        options: "--network-alias=kudu --cap-add=SYS_TIME"
+      kudu-tserver:
+        image: ibisproject/kudu:latest
+        ports:
+          - 7050:7050
+          - 8050:8050
+        env:
+          KUDU_MASTER: "false"
+        options: "--cap-add=SYS_TIME"
       impala:
         image: ibisproject/impala:latest
         env:
