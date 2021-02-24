@@ -6,6 +6,7 @@ import re
 import string
 import warnings
 
+import numpy as np
 import sqlalchemy as sa
 import sqlalchemy.dialects.postgresql as pg
 from sqlalchemy.ext.compiler import compiles
@@ -606,6 +607,8 @@ def _literal(t, expr):
     elif isinstance(expr, ir.GeoSpatialScalar):
         # inline_metadata ex: 'SRID=4326;POINT( ... )'
         return sa.text(geo.translate_literal(expr, inline_metadata=True))
+    elif isinstance(value, np.ndarray):
+        return sa.literal(value.tolist())
     else:
         return sa.literal(value)
 

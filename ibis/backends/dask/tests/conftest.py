@@ -11,6 +11,13 @@ from ibis.backends.pandas.tests.conftest import TestConf as PandasTest
 
 from .. import connect
 
+NPARTITIONS = 2
+
+
+@pytest.fixture(scope="module")
+def npartitions():
+    return NPARTITIONS
+
 
 class TestConf(PandasTest):
     @staticmethod
@@ -28,46 +35,32 @@ class TestConf(PandasTest):
                         parse_dates=['timestamp_col'],
                         encoding='utf-8',
                     ),
-                    npartitions=1,
+                    npartitions=NPARTITIONS,
                 ),
                 'batting': dd.from_pandas(
                     pd.read_csv(str(data_directory / 'batting.csv')),
-                    npartitions=1,
+                    npartitions=NPARTITIONS,
                 ),
                 'awards_players': dd.from_pandas(
                     pd.read_csv(str(data_directory / 'awards_players.csv')),
-                    npartitions=1,
+                    npartitions=NPARTITIONS,
                 ),
             }
         )
 
-    # @staticmethod
-    # def default_series_rename(
-    #     series: pd.Series, name: str = 'tmp'
-    # ) -> pd.Series:
-    #     return series.compute().rename(name)
-
     @classmethod
     def assert_series_equal(
-        cls, left, right, *args: Any, **kwargs: Any
+        cls, left: pd.DataFrame, right: pd.DataFrame, *args: Any, **kwargs: Any
     ) -> None:
         kwargs.setdefault('check_dtype', cls.check_dtype)
         kwargs.setdefault('check_names', cls.check_names)
-        # we sometimes use pandas to build the "expected" case in tests
-        right = right.compute() if isinstance(right, dd.Series) else right
-        tm.assert_series_equal(left.compute(), right, *args, **kwargs)
-
-    @classmethod
-    def assert_frame_equal(
-        cls, left, right, *args: Any, **kwargs: Any
-    ) -> None:
-        left = left.compute().reset_index(drop=True)
-        right = right.compute().reset_index(drop=True)
-        tm.assert_frame_equal(left, right, *args, **kwargs)
+        left = left.reset_index(drop=True)
+        right = right.reset_index(drop=True)
+        tm.assert_series_equal(left, right, *args, **kwargs)
 
 
 @pytest.fixture
-def dataframe():
+def dataframe(npartitions):
     return dd.from_pandas(
         pd.DataFrame(
             {
@@ -76,7 +69,7 @@ def dataframe():
                 'dup_strings': list('dad'),
             }
         ),
-        npartitions=1,
+        npartitions=npartitions,
     )
 
 

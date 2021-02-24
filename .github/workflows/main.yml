@@ -91,7 +91,6 @@ jobs:
   Tests_impala_clickhouse:
     name: Tests Impala / Clickhouse
     runs-on: ubuntu-latest
-    if: false # TODO: temporary disabling this build, since Ibis can't connect to Impala yet, see #2533
     env:
       BACKENDS: "impala clickhouse"
       IBIS_TEST_NN_HOST: localhost
@@ -111,6 +110,22 @@ jobs:
         env:
           POSTGRES_PASSWORD: ''
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 3
+      kudu-master:
+        image: ibisproject/kudu:latest
+        ports:
+          - 7051:7051
+          - 8051:8051
+        env:
+          KUDU_MASTER: "true"
+        options: "--network-alias=kudu --cap-add=SYS_TIME"
+      kudu-tserver:
+        image: ibisproject/kudu:latest
+        ports:
+          - 7050:7050
+          - 8050:8050
+        env:
+          KUDU_MASTER: "false"
+        options: "--cap-add=SYS_TIME"
       impala:
         image: ibisproject/impala:latest
         env:
@@ -175,13 +190,17 @@ jobs:
   Lint_and_benchmarks:
     name: Lint and benckmarks
     runs-on: ubuntu-latest
+    env:
+      PYTHON_VERSION: "3.7"
+      BACKENDS: ""
+      LOAD_TEST_DATA: "false"
     steps:
 
     - name: checkout
       uses: actions/checkout@v1
 
     - name: set up environment
-      run: ./ci/setup_env.sh
+      run: ./ci/setup_env.sh "$PYTHON_VERSION" "$BACKENDS" "$LOAD_TEST_DATA"
 
     - name: black
       run: black --check .
@@ -215,13 +234,17 @@ jobs:
   Conda_package:
     name: Conda package
     runs-on: ubuntu-latest
+    env:
+      PYTHON_VERSION: "3.7"
+      BACKENDS: ""
+      LOAD_TEST_DATA: "false"
     steps:
 
     - name: checkout
       uses: actions/checkout@v1
 
     - name: set up environment
-      run: ./ci/setup_env.sh
+      run: ./ci/setup_env.sh "$PYTHON_VERSION" "$BACKENDS" "$LOAD_TEST_DATA"
 
     - name: clone feedstock repo
       run: git clone https://github.com/conda-forge/ibis-framework-feedstock /tmp/feedstock
@@ -244,3 +267,42 @@ jobs:
         cp -r /usr/share/miniconda/conda-bld/noarch /tmp/packages/noarch
         cp -r /usr/share/miniconda/conda-bld/linux-64 /tmp/packages/linux-64
         conda index /tmp/packages
+
+  Docs:
+    name: Docs
+    runs-on: ubuntu-latest
+    env:
+      PYTHON_VERSION: "3.7"
+      BACKENDS: "bigquery clickhouse dask impala mysql parquet postgres pyspark spark"
+      LOAD_TEST_DATA: "false"
+    steps:
+
+    - name: checkout
+      uses: actions/checkout@v1
+
+    - name: set up environment
+      run: ./ci/setup_env.sh "$PYTHON_VERSION" "$BACKENDS" "$LOAD_TEST_DATA"
+
+    - name: build docs
+      run: sphinx-build -b html docs/source /tmp/docs.ibis-project.org -W -T
+
+    - name: Install github key
+      run: |
+        mkdir -m 700 -p ~/.ssh
+        echo "${{ secrets.DOCS_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+      if: github.event_name == 'push'
+
+    - name: Push docs
+      run: |
+        cd /tmp/docs.ibis-project.org
+        touch .nojekyll
+        echo "ibis-project.org" > CNAME
+        git init
+        git remote add origin git@github.com:ibis-project/ibis-project.org
+        git config user.name 'Ibis GitHub actions'
+        git config user.email ''
+        git add --all .
+        git commit -m "Ibis docs - $(date) - $GITHUB_SHA"
+        git push -f -u origin master
+      if: github.event_name == 'push'

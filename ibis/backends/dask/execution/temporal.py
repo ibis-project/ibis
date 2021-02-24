@@ -28,7 +28,6 @@ from ibis.backends.pandas.execution.temporal import (
     execute_interval_add_multiply_delta_series,
     execute_interval_from_integer_series,
     execute_interval_multiply_fdiv_series_numeric,
-    execute_node,
     execute_strftime_series_str,
     execute_timestamp_add_datetime_series,
     execute_timestamp_date,
@@ -41,7 +40,12 @@ from ibis.backends.pandas.execution.temporal import (
     execute_timestamp_sub_series_timedelta,
 )
 
-from .util import TypeRegistrationDict, register_types_to_dispatcher
+from ..dispatch import execute_node
+from .util import (
+    TypeRegistrationDict,
+    make_selected_obj,
+    register_types_to_dispatcher,
+)
 
 DASK_DISPATCH_TYPES: TypeRegistrationDict = {
     ops.Cast: [
@@ -164,14 +168,15 @@ def execute_timestamp_truncate(op, data, **kwargs):
     return data.astype(dtype)
 
 
-# TODO - grouping - #2553
 @execute_node.register(ops.DayOfWeekIndex, ddgb.SeriesGroupBy)
 def execute_day_of_week_index_series_group_by(op, data, **kwargs):
-    groupings = data.grouper.groupings
-    return data.obj.dt.dayofweek.astype(np.int16).groupby(groupings)
+    return (
+        make_selected_obj(data)
+        .dt.dayofweek.astype(np.int16)
+        .groupby(data.index)
+    )
 
 
-# TODO - grouping - #2553
 @execute_node.register(ops.DayOfWeekName, ddgb.SeriesGroupBy)
 def execute_day_of_week_name_series_group_by(op, data, **kwargs):
-    return day_name(data.obj.dt).groupby(data.grouper.groupings)
+    return day_name(make_selected_obj(data).dt).groupby(data.index)

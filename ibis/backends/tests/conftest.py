@@ -90,7 +90,7 @@ def pytest_runtest_call(item):
             feature for feature in features if not getattr(backend, feature)
         ]
         if missing_features:
-            pytest.mark.skip(
+            pytest.skip(
                 f'Backend {backend} is missing features {missing_features} '
                 f'needed to run {nodeid}'
             )
@@ -160,8 +160,6 @@ def alltypes(backend):
 
 @pytest.fixture(scope='session')
 def sorted_alltypes(backend, alltypes):
-    if backend.name() == 'dask':
-        pytest.skip("# TODO - sorting - #2553")
     return alltypes.sort_by('id')
 
 
@@ -194,8 +192,6 @@ def df(alltypes):
 
 @pytest.fixture(scope='session')
 def sorted_df(backend, df):
-    if backend.name() == 'dask':
-        pytest.skip("# TODO - sorting - #2553")
     return df.sort_values('id').reset_index(drop=True)
 
 

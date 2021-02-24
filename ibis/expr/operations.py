@@ -2835,6 +2835,21 @@ class IntervalFromInteger(ValueOp):
         return rlz.shape_like(self.arg, dtype=dtype)
 
 
+class ArrayColumn(ValueOp):
+    cols = Arg(rlz.list_of(rlz.column(rlz.any), min_length=1))
+
+    def _validate(self):
+        if len(set([col.type() for col in self.cols])) > 1:
+            raise com.IbisTypeError(
+                f'The types of all input columns must match exactly in a '
+                f'{type(self).__name__} operation.'
+            )
+
+    def output_type(self):
+        first_dtype = self.cols[0].type()
+        return dt.Array(first_dtype).column_type()
+
+
 class ArrayLength(UnaryOp):
     arg = Arg(rlz.array)
     output_type = rlz.shape_like('arg', dt.int64)

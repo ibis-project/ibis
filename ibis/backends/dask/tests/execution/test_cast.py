@@ -132,7 +132,7 @@ def test_timestamp_with_timezone_is_inferred_correctly(t, df):
 )
 def test_cast_date(t, df, column):
     expr = t[column].cast('date')
-    result = expr.execute()
+    result = expr.compile()
     expected = df[column].dt.normalize()
     tm.assert_series_equal(result.compute(), expected.compute())
 
@@ -140,7 +140,7 @@ def test_cast_date(t, df, column):
 @pytest.mark.parametrize('type', [dt.Decimal(9, 0), dt.Decimal(12, 3)])
 def test_cast_to_decimal(t, df, type):
     expr = t.float64_as_strings.cast(type)
-    result = expr.execute()
+    result = expr.compile()
     context = decimal.Context(prec=type.precision)
     expected = df.float64_as_strings.apply(
         lambda x: context.create_decimal(x).quantize(
@@ -167,7 +167,7 @@ def test_cast_to_decimal(t, df, type):
     'column', ['plain_int64', 'dup_strings', 'dup_ints', 'strings_with_nulls'],
 )
 def test_cast_to_category(t, df, column):
-    test = t[column].cast('category').execute()
+    test = t[column].cast('category').compile()
     tm.assert_series_equal(
         test.compute(), df[column].astype('category').compute()
     )

@@ -13,7 +13,7 @@ from ... import connect
 
 
 @pytest.fixture(scope='module')
-def df():
+def df(npartitions):
     pandas_df = pd.DataFrame(
         {
             'plain_int64': list(range(1, 4)),
@@ -71,7 +71,7 @@ def df():
             'map_of_complex_values': [None, {'a': [1, 2, 3], 'b': []}, {}],
         }
     )
-    return dd.from_pandas(pandas_df, npartitions=1)
+    return dd.from_pandas(pandas_df, npartitions=npartitions)
 
 
 @pytest.fixture(scope='module')
@@ -103,47 +103,47 @@ def awards_players_df():
 
 
 @pytest.fixture(scope='module')
-def df1():
+def df1(npartitions):
     pandas_df = pd.DataFrame(
         {'key': list('abcd'), 'value': [3, 4, 5, 6], 'key2': list('eeff')}
     )
-    return dd.from_pandas(pandas_df, npartitions=1)
+    return dd.from_pandas(pandas_df, npartitions=npartitions)
 
 
 @pytest.fixture(scope='module')
-def df2():
+def df2(npartitions):
     pandas_df = pd.DataFrame(
         {'key': list('ac'), 'other_value': [4.0, 6.0], 'key3': list('fe')}
     )
-    return dd.from_pandas(pandas_df, npartitions=1)
+    return dd.from_pandas(pandas_df, npartitions=npartitions)
 
 
 @pytest.fixture(scope='module')
-def intersect_df2():
+def intersect_df2(npartitions):
     pandas_df = pd.DataFrame(
         {'key': list('cd'), 'value': [5, 6], 'key2': list('ff')}
     )
-    return dd.from_pandas(pandas_df, npartitions=1)
+    return dd.from_pandas(pandas_df, npartitions=npartitions)
 
 
 @pytest.fixture(scope='module')
-def time_df1():
+def time_df1(npartitions):
     pandas_df = pd.DataFrame(
         {'time': pd.to_datetime([1, 2, 3, 4]), 'value': [1.1, 2.2, 3.3, 4.4]}
     )
-    return dd.from_pandas(pandas_df, npartitions=1)
+    return dd.from_pandas(pandas_df, npartitions=npartitions)
 
 
 @pytest.fixture(scope='module')
-def time_df2():
+def time_df2(npartitions):
     pandas_df = pd.DataFrame(
         {'time': pd.to_datetime([2, 4]), 'other_value': [1.2, 2.0]}
     )
-    return dd.from_pandas(pandas_df, npartitions=1)
+    return dd.from_pandas(pandas_df, npartitions=npartitions)
 
 
 @pytest.fixture(scope='module')
-def time_df3():
+def time_df3(npartitions):
     pandas_df = pd.DataFrame(
         {
             'time': pd.Series(
@@ -155,11 +155,11 @@ def time_df3():
             'value': [1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, 8.8],
         }
     )
-    return dd.from_pandas(pandas_df, npartitions=1)
+    return dd.from_pandas(pandas_df, npartitions=npartitions)
 
 
 @pytest.fixture(scope='module')
-def time_keyed_df1():
+def time_keyed_df1(npartitions):
     pandas_df = pd.DataFrame(
         {
             'time': pd.Series(
@@ -171,11 +171,11 @@ def time_keyed_df1():
             'value': [1.2, 1.4, 2.0, 4.0, 8.0, 16.0],
         }
     )
-    return dd.from_pandas(pandas_df, npartitions=1)
+    return dd.from_pandas(pandas_df, npartitions=npartitions)
 
 
 @pytest.fixture(scope='module')
-def time_keyed_df2():
+def time_keyed_df2(npartitions):
     pandas_df = pd.DataFrame(
         {
             'time': pd.Series(
@@ -187,7 +187,7 @@ def time_keyed_df2():
             'other_value': [1.1, 1.2, 2.2],
         }
     )
-    return dd.from_pandas(pandas_df, npartitions=1)
+    return dd.from_pandas(pandas_df, npartitions=npartitions)
 
 
 @pytest.fixture(scope='module')
@@ -222,7 +222,7 @@ def client(
 
 
 @pytest.fixture(scope='module')
-def df3():
+def df3(npartitions):
     pandas_df = pd.DataFrame(
         {
             'key': list('ac'),
@@ -231,7 +231,7 @@ def df3():
             'key3': list('fe'),
         }
     )
-    return dd.from_pandas(pandas_df, npartitions=1)
+    return dd.from_pandas(pandas_df, npartitions=npartitions)
 
 
 t_schema = {

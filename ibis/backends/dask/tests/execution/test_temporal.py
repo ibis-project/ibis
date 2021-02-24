@@ -64,9 +64,8 @@ def test_timestamp_functions(case_func, expected_func):
     ['datetime_strings_naive', 'datetime_strings_ny', 'datetime_strings_utc'],
 )
 def test_cast_datetime_strings_to_date(t, df, column):
-    # TODO - this is changed from the pandas test, double check
     expr = t[column].cast('date')
-    result = expr.execute()
+    result = expr.compile()
     df_computed = df.compute()
     expected = dd.from_pandas(
         pd.to_datetime(
@@ -83,7 +82,7 @@ def test_cast_datetime_strings_to_date(t, df, column):
 )
 def test_cast_datetime_strings_to_timestamp(t, df, column):
     expr = t[column].cast('timestamp')
-    result = expr.execute()
+    result = expr.compile()
     df_computed = df.compute()
     expected = dd.from_pandas(
         pd.to_datetime(df_computed[column], infer_datetime_format=True),
@@ -101,7 +100,7 @@ def test_cast_datetime_strings_to_timestamp(t, df, column):
 def test_cast_integer_to_temporal_type(t, df, column):
     column_type = t[column].type()
     expr = t.plain_int64.cast(column_type)
-    result = expr.execute()
+    result = expr.compile()
     df_computed = df.compute()
     expected = dd.from_pandas(
         pd.Series(
@@ -116,7 +115,7 @@ def test_cast_integer_to_temporal_type(t, df, column):
 
 def test_cast_integer_to_date(t, df):
     expr = t.plain_int64.cast('date')
-    result = expr.execute()
+    result = expr.compile()
     df_computed = df.compute()
     expected = dd.from_pandas(
         pd.Series(
@@ -130,11 +129,11 @@ def test_cast_integer_to_date(t, df):
 
 
 def test_times_ops(t, df):
-    result = t.plain_datetimes_naive.time().between('10:00', '10:00').execute()
+    result = t.plain_datetimes_naive.time().between('10:00', '10:00').compile()
     expected = dd.from_array(np.zeros(len(df), dtype=bool))
     tm.assert_series_equal(result.compute(), expected.compute())
 
-    result = t.plain_datetimes_naive.time().between('01:00', '02:00').execute()
+    result = t.plain_datetimes_naive.time().between('01:00', '02:00').compile()
     expected = dd.from_array(np.ones(len(df), dtype=bool))
     tm.assert_series_equal(result.compute(), expected.compute())
 
@@ -150,13 +149,13 @@ def test_times_ops_with_tz(t, df, tz, rconstruct, column):
     expected = dd.from_array(rconstruct(len(df), dtype=bool),)
     time = t[column].time()
     expr = time.between('01:00', '02:00', timezone=tz)
-    result = expr.execute()
+    result = expr.compile()
     tm.assert_series_equal(result.compute(), expected.compute())
 
     # Test that casting behavior is the same as using the timezone kwarg
     ts = t[column].cast(dt.Timestamp(timezone=tz))
     expr = ts.time().between('01:00', '02:00')
-    result = expr.execute()
+    result = expr.compile()
     tm.assert_series_equal(result.compute(), expected.compute())
 
 
@@ -192,7 +191,7 @@ def test_interval_arithmetic(op, expected):
     )
     t1 = con.table('df1')
     expr = op(t1.td, t1.td)
-    result = expr.execute()
+    result = expr.compile()
     expected = dd.from_pandas(
         pd.Series(expected(data, data), name='td'), npartitions=1,
     )
