@@ -7,13 +7,14 @@ from typing import Any, List, NoReturn, Optional
 
 import pandas as pd
 import toolz
+from pandas.api.types import is_datetime64_dtype
 from pandas.core.groupby import SeriesGroupBy
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.window as win
 from ibis.expr.scope import Scope
-from ibis.expr.timecontext import TIME_COL
+from ibis.expr.timecontext import TIME_COL, construct_multi_index_series
 from ibis.expr.typing import TimeContext
 
 from .. import aggcontext as agg_ctx
@@ -178,12 +179,14 @@ def trim_with_timecontext(data, timecontext: Optional[TimeContext]):
         return data
     # reset multiindex and turn series into a dateframe
     df = data.reset_index()
-    name = data.name
+    # if Series dosen't contain a name, reset_index will assign
+    # '0' as the column name for the column of value
+    name = data.name if data.name else 0
 
     # Filter the data, here we preserve the time index so that when user is
     # computing a single column, the computation and the relevant time
-    # indexes are retturned.
-    if TIME_COL not in df:
+    # indexes are returned.
+    if TIME_COL not in df or not is_datetime64_dtype(df[TIME_COL]):
         return data
     subset = df.loc[df[TIME_COL].between(*timecontext)]
 
@@ -338,6 +341,8 @@ def execute_window_op(
     )
     series = post_process(result, data, ordering_keys, grouping_keys)
 
+    if timecontext:
+        series = construct_multi_index_series(series, data)
     assert len(data) == len(
         series
     ), 'input data source and computed column do not have the same length'

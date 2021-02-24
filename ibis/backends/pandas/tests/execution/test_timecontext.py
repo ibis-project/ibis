@@ -4,6 +4,7 @@ import pytest
 
 import ibis
 import ibis.common.exceptions as com
+from ibis.backends.pandas import udf
 from ibis.expr.timecontext import (
     TimeContextRelation,
     adjust_context,
@@ -222,3 +223,29 @@ def test_context_adjustment_window_groupby_id(time_table, time_df3):
     # result should adjust time context accordingly
     result = expr.execute(timecontext=context)
     tm.assert_series_equal(result, expected)
+
+
+@udf.reduction(['double'], 'double')
+def my_mean(series):
+    return series.mean()
+
+
+def test_context_adjustment_window_udf(time_table, time_df3):
+    """ This test case aims to test context adjustment of
+        udfs in window method.
+    """
+    expected = (
+        time_df3.set_index('time')
+        .rename(columns={'value': 'v1'})['v1']
+        .rolling('3d', closed='both')
+        .mean()
+    )
+    expected = expected[
+        expected.index >= pd.Timestamp('20170105')
+    ].reset_index(drop=True)
+
+    context = pd.Timestamp('20170105'), pd.Timestamp('20170111')
+    window = ibis.trailing_window(3 * ibis.interval(days=1), order_by='time')
+    expr = time_table.mutate(v1=my_mean(time_table['value']).over(window),)
+    result = expr.execute(timecontext=context)
+    tm.assert_series_equal(result["v1"], expected)

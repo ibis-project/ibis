@@ -127,6 +127,40 @@ def canonicalize_context(
     return begin, end
 
 
+def construct_multi_index_series(
+    series: pd.Series, frame: pd.DataFrame
+) -> pd.Series:
+    """ Construct a pd.MultiIndex of IntIndex and 'time'
+
+    In window execution, the result Series of udf may need
+    to be trimmed by timecontext. In order to do so, 'time'
+    must be added as an index to the Series. We extract
+    time column from the parent Dataframe `frame`.
+    See `trim_with_timecontext` in execution/window.py for
+    trimming implementation.
+
+    Parameters
+    ----------
+    series: pd.Series
+    frame: pd.DataFrame
+
+    Returns
+    -------
+    pd.Series
+    """
+    if TIME_COL == frame.index.name:
+        time_index = frame.index
+    elif TIME_COL in frame:
+        time_index = frame.set_index(TIME_COL).index
+    else:
+        raise com.IbisError(f'"time" column not present in DataFrame {frame}')
+
+    series.index = pd.MultiIndex.from_arrays(
+        [series.index] + [time_index], names=[series.index.name] + [TIME_COL],
+    )
+    return series
+
+
 """ Time context adjustment algorithm
     In an Ibis tree, time context is local for each node, and they should be
     adjusted accordingly for some specific nodes. Those operations may
