@@ -4193,41 +4193,8 @@ def mutate(table, exprs=None, **mutations):
         for name, expr in sorted(mutations.items(), key=operator.itemgetter(0))
     )
 
-    selection_exprs_by_name = _get_selection_exprs_by_name(exprs)
-    columns = table.columns
-    used = selection_exprs_by_name.keys() & columns
-
-    if used:
-        proj_exprs = [
-            selection_exprs_by_name.get(column, table[column])
-            for column in columns
-        ]
-        # We do an additional check below that the expr is not already in
-        # proj_exprs because multiple columns can be encapsulated within a
-        # DestructColumn, and without this check, we could be duplicating the
-        # same DestructColumn multiple times in proj_exprs.
-        # Example: DestructColumn(['existing_column', 'new_column'])
-        # The DestructColumn will be added to proj_exprs above because
-        # 'existing_column' is being overwritten, and therefore 'new_column'
-        # is also already represented in proj_exprs, so we shouldn't add the
-        # DestructColumn expr below even though 'new_column' isn't in 'used'.
-        [
-            proj_exprs.append(expr)
-            for name, expr in selection_exprs_by_name.items()
-            if name not in used
-            and name not in _get_selection_exprs_by_name(proj_exprs).keys()
-        ]
-    else:
-        proj_exprs = [table] + exprs
-    return table.projection(proj_exprs)
-
-
-def _get_selection_exprs_by_name(selections):
-    """Helper method to return dict of names to exprs
-    for all columns represented in the given list of
-    selections."""
     selection_exprs_by_name = {}
-    for expr in selections:
+    for expr in exprs:
         if isinstance(expr, ir.DestructColumn):
             if expr.get_name():
                 raise com.ExpressionError(
@@ -4238,7 +4205,30 @@ def _get_selection_exprs_by_name(selections):
                 selection_exprs_by_name[name] = expr
         elif isinstance(expr, ir.ValueExpr):
             selection_exprs_by_name[expr.get_name()] = expr
-    return selection_exprs_by_name
+
+    columns = table.columns
+    overwriting_cols_to_expr = {
+        name: expr
+        for name, expr in selection_exprs_by_name.items()
+        if name in columns
+    }
+    non_overwriting_exprs = [
+        expr
+        for _, expr in selection_exprs_by_name.items()
+        if not any(
+            overwriting_expr.equals(expr)
+            for overwriting_expr in overwriting_cols_to_expr.values()
+        )
+    ]
+
+    if overwriting_cols_to_expr:
+        proj_exprs = [
+            overwriting_cols_to_expr.get(column, table[column])
+            for column in columns
+        ] + non_overwriting_exprs
+    else:
+        proj_exprs = [table] + exprs
+    return table.projection(proj_exprs)
 
 
 def projection(table, exprs):
