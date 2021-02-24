@@ -871,6 +871,63 @@ class Arbitrary(Reduction):
     output_type = rlz.scalar_like('arg')
 
 
+class BitAnd(Reduction):
+    """Aggregate bitwise AND operation.
+
+    All elements in an integer column are ``AND``ed together. This can be used
+    to determine which bit flags are set on all elements.
+
+    Resources:
+
+    * `BigQuery BIT_AND
+      <https://cloud.google.com/bigquery/docs/reference/standard-sql/aggregate_functions#bit_and>`_
+    * `MySQL BIT_AND
+      <https://dev.mysql.com/doc/refman/5.7/en/aggregate-functions.html#function_bit-and>`_
+    """
+
+    arg = Arg(rlz.column(rlz.integer))
+    where = Arg(rlz.boolean, default=None)
+    output_type = rlz.scalar_like('arg')
+
+
+class BitOr(Reduction):
+    """Aggregate bitwise OR operation.
+
+    All elements in an integer column are ``OR``ed together. This can be used
+    to determine which bit flags are set on any element.
+
+    Resources:
+
+    * `BigQuery BIT_OR
+      <https://cloud.google.com/bigquery/docs/reference/standard-sql/aggregate_functions#bit_or>`_
+    * `MySQL BIT_OR
+      <https://dev.mysql.com/doc/refman/5.7/en/aggregate-functions.html#function_bit-or>`_
+    """
+
+    arg = Arg(rlz.column(rlz.integer))
+    where = Arg(rlz.boolean, default=None)
+    output_type = rlz.scalar_like('arg')
+
+
+class BitXor(Reduction):
+    """Aggregate bitwise XOR operation.
+
+    All elements in an integer column are ``XOR``ed together. This can be used
+    as a parity checksum of element values.
+
+    Resources:
+
+    * `BigQuery BIT_XOR
+      <https://cloud.google.com/bigquery/docs/reference/standard-sql/aggregate_functions#bit_xor>`_
+    * `MySQL BIT_XOR
+      <https://dev.mysql.com/doc/refman/5.7/en/aggregate-functions.html#function_bit-xor>`_
+    """
+
+    arg = Arg(rlz.column(rlz.integer))
+    where = Arg(rlz.boolean, default=None)
+    output_type = rlz.scalar_like('arg')
+
+
 class Sum(Reduction):
     arg = Arg(rlz.column(rlz.numeric))
     where = Arg(rlz.boolean, default=None)

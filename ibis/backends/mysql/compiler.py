@@ -9,6 +9,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.base_sqlalchemy.alchemy import (
+    _reduction,
     _variance_reduction,
     fixed_arity,
     infix_op,
@@ -240,6 +241,9 @@ _operation_registry.update(
         ops.ExtractSecond: _extract('second'),
         ops.ExtractMillisecond: _extract('millisecond'),
         # reductions
+        ops.BitAnd: _reduction(sa.func.bit_and),
+        ops.BitOr: _reduction(sa.func.bit_or),
+        ops.BitXor: _reduction(sa.func.bit_xor),
         ops.Variance: _variance_reduction('var'),
         ops.StandardDev: _variance_reduction('stddev'),
         ops.IdenticalTo: _identical_to,

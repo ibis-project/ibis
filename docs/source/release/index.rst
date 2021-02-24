@@ -12,6 +12,7 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :feature:`2641` Add `bit_and`, `bit_or`, and `bit_xor` integer column aggregates (BigQuery and MySQL backends)
 * :feature:`2379` Backends are defined as entry points
 * :bug: `2635` Fix fusion optimization bug that incorrectly changes operation order
 * :feature:`2615` Add `ibis.array` for creating array expressions
