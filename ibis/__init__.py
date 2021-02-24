@@ -38,13 +38,10 @@ __version__ = get_versions()['version']
 del get_versions
 
 
-print('******************* LOADING BACKENDS ******************')
 for entry_point in pkg_resources.iter_entry_points(
     group='ibis.backends', name=None
 ):
-    print(f'{entry_point.name}')
     try:
         setattr(ibis, entry_point.name, entry_point.resolve())
-    except ImportError as exc:
-        print(f'- failed: {exc}')
+    except ImportError:
         pass
