@@ -4193,19 +4193,7 @@ def mutate(table, exprs=None, **mutations):
         for name, expr in sorted(mutations.items(), key=operator.itemgetter(0))
     )
 
-    selection_exprs_by_name = collections.OrderedDict()
-    for expr in exprs:
-        if isinstance(expr, ir.DestructColumn):
-            if expr.get_name():
-                raise com.ExpressionError(
-                    f"Cannot name a destruct column: {expr.get_name()}"
-                )
-            struct_type = expr.type()
-            for name in struct_type.names:
-                selection_exprs_by_name[name] = expr
-        elif isinstance(expr, ir.ValueExpr):
-            selection_exprs_by_name[expr.get_name()] = expr
-
+    selection_exprs_by_name = _get_selection_exprs_by_name(exprs)
     columns = table.columns
     used = selection_exprs_by_name.keys() & columns
 
@@ -4227,24 +4215,30 @@ def mutate(table, exprs=None, **mutations):
             proj_exprs.append(expr)
             for name, expr in selection_exprs_by_name.items()
             if name not in used
-            and name not in _get_names_from_selections(proj_exprs)
+            and name not in _get_selection_exprs_by_name(proj_exprs).keys()
         ]
     else:
         proj_exprs = [table] + exprs
     return table.projection(proj_exprs)
 
 
-def _get_names_from_selections(selections):
-    """Helper method to return the names of all
-    columns represented in the given list of selections."""
-    names = []
+def _get_selection_exprs_by_name(selections):
+    """Helper method to return dict of names to exprs
+    for all columns represented in the given list of
+    selections."""
+    selection_exprs_by_name = {}
     for expr in selections:
         if isinstance(expr, ir.DestructColumn):
+            if expr.get_name():
+                raise com.ExpressionError(
+                    f"Cannot name a destruct column: {expr.get_name()}"
+                )
             struct_type = expr.type()
-            names.extend(struct_type.names)
+            for name in struct_type.names:
+                selection_exprs_by_name[name] = expr
         elif isinstance(expr, ir.ValueExpr):
-            names.append(expr.get_name())
-    return names
+            selection_exprs_by_name[expr.get_name()] = expr
+    return selection_exprs_by_name
 
 
 def projection(table, exprs):
