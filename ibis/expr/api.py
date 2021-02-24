@@ -4193,34 +4193,34 @@ def mutate(table, exprs=None, **mutations):
         for name, expr in sorted(mutations.items(), key=operator.itemgetter(0))
     )
 
-    selection_exprs_by_name = {}
+    overwriting_cols_to_expr = {}
+    non_overwriting_exprs = []
+    table_schema = table.schema()
     for expr in exprs:
+        expr_contains_overwrite = False
         if isinstance(expr, ir.DestructColumn):
             if expr.get_name():
                 raise com.ExpressionError(
                     f"Cannot name a destruct column: {expr.get_name()}"
                 )
-            struct_type = expr.type()
-            for name in struct_type.names:
-                selection_exprs_by_name[name] = expr
-        elif isinstance(expr, ir.ValueExpr):
-            selection_exprs_by_name[expr.get_name()] = expr
+            for name in expr.type().names:
+                if name in table_schema:
+                    # We can short-circuit if there is at least one column
+                    # here that overwrites an existing column, because all
+                    # cols in a DestructColumn expr come 'packaged' together.
+                    overwriting_cols_to_expr[name] = expr
+                    expr_contains_overwrite = True
+                    break
+        elif (
+            isinstance(expr, ir.ValueExpr) and expr.get_name() in table_schema
+        ):
+            overwriting_cols_to_expr[expr.get_name()] = expr
+            expr_contains_overwrite = True
+
+        if not expr_contains_overwrite:
+            non_overwriting_exprs.append(expr)
 
     columns = table.columns
-    overwriting_cols_to_expr = {
-        name: expr
-        for name, expr in selection_exprs_by_name.items()
-        if name in columns
-    }
-    non_overwriting_exprs = [
-        expr
-        for _, expr in selection_exprs_by_name.items()
-        if not any(
-            overwriting_expr.equals(expr)
-            for overwriting_expr in overwriting_cols_to_expr.values()
-        )
-    ]
-
     if overwriting_cols_to_expr:
         proj_exprs = [
             overwriting_cols_to_expr.get(column, table[column])
