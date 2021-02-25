@@ -4193,6 +4193,14 @@ def mutate(table, exprs=None, **mutations):
         for name, expr in sorted(mutations.items(), key=operator.itemgetter(0))
     )
 
+    # The below logic computes the mutation node exprs by splitting the
+    # assignment exprs into two disjoint sets:
+    # 1) overwriting_cols_to_expr, which maps a column name to its expr
+    # if the expr contains a column that overwrites an existing table column
+    # 2) non_overwriting_exprs, which is a list of all exprs that do not do
+    # any overwriting.
+    # Given these two data structures, we can compute the mutation node exprs
+    # based on whether any columns are being overwritten.
     overwriting_cols_to_expr = {}
     non_overwriting_exprs = []
     table_schema = table.schema()
