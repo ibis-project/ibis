@@ -13,6 +13,7 @@ Release Notes
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
 * :feature:`2646` Support context adjustment for udfs for pandas backend
+* :feature:`2379` Backends are defined as entry points
 * :bug: `2635` Fix fusion optimization bug that incorrectly changes operation order
 * :feature:`2615` Add `ibis.array` for creating array expressions
 * :feature:`2607` Implement Not operation in PySpark backend
