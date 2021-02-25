@@ -404,9 +404,10 @@ def test_analytic_udf_destruct(backend, alltypes):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.only_on_backends(['pandas'])
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
 # TODO - udf - #2553
 @pytest.mark.xfail_backends(['dask'])
+@pytest.mark.xfail_unsupported
 def test_analytic_udf_destruct_overwrite(backend, alltypes):
     w = window(preceding=None, following=None, group_by='year')
 
@@ -470,9 +471,10 @@ def test_reduction_udf_destruct_no_groupby(backend, alltypes):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.only_on_backends(['pandas'])
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
 # TODO - udf - #2553
 @pytest.mark.xfail_backends(['dask'])
+@pytest.mark.xfail_unsupported
 def test_reduction_udf_destruct_no_groupby_overwrite(backend, alltypes):
     result = alltypes.aggregate(
         overwrite_struct_reduction(

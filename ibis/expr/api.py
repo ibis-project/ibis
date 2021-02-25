@@ -4196,9 +4196,18 @@ def mutate(table, exprs=None, **mutations):
     # The below logic computes the mutation node exprs by splitting the
     # assignment exprs into two disjoint sets:
     # 1) overwriting_cols_to_expr, which maps a column name to its expr
-    # if the expr contains a column that overwrites an existing table column
+    # if the expr contains a column that overwrites an existing table column.
+    # All keys in this dict are columns in the original table that are being
+    # overwritten by an assignment expr. All values in this dict are either:
+    #     (a) The expr of the overwriting column. Note that in the case of
+    #     DestructColumn, this will specifically only happen for the first
+    #     overwriting column within that expr.
+    #     (b) None. This is the case for the second (and beyond) overwriting
+    #     column(s) inside the DestructColumn and is used as a flag to prevent
+    #     the same DestructColumn expr from being duplicated in the output.
     # 2) non_overwriting_exprs, which is a list of all exprs that do not do
-    # any overwriting.
+    # any overwriting. That is, if an expr is in this list, then its column
+    # name does not exist in the original table.
     # Given these two data structures, we can compute the mutation node exprs
     # based on whether any columns are being overwritten.
     overwriting_cols_to_expr = {}
