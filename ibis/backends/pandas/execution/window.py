@@ -14,7 +14,7 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.window as win
 from ibis.expr.scope import Scope
-from ibis.expr.timecontext import TIME_COL, construct_multi_index_series
+from ibis.expr.timecontext import TIME_COL, construct_time_context_aware_series
 from ibis.expr.typing import TimeContext
 
 from .. import aggcontext as agg_ctx
@@ -33,12 +33,18 @@ from ..execution import util
 
 
 def _post_process_empty(
-    result: Any, parent: pd.DataFrame, order_by: List[str], group_by: List[str]
+    result: Any,
+    parent: pd.DataFrame,
+    order_by: List[str],
+    group_by: List[str],
+    timecontext: Optional[TimeContext],
 ) -> pd.Series:
     assert not order_by and not group_by
     if isinstance(result, pd.Series):
         # `result` is a Series when an analytic operation is being
         # applied over the window, since analytic operations are N->N
+        if timecontext:
+            result = construct_time_context_aware_series(result, parent)
         return result
     else:
         # `result` is a scalar when a reduction operation is being
@@ -46,6 +52,8 @@ def _post_process_empty(
         index = parent.index
         result = pd.Series([result]).repeat(len(index))
         result.index = index
+        if timecontext:
+            result = construct_time_context_aware_series(result, parent)
         return result
 
 
@@ -54,13 +62,18 @@ def _post_process_group_by(
     parent: pd.DataFrame,
     order_by: List[str],
     group_by: List[str],
+    **kwargs,
 ) -> pd.Series:
     assert not order_by and group_by
     return series
 
 
 def _post_process_order_by(
-    series, parent: pd.DataFrame, order_by: List[str], group_by: List[str]
+    series,
+    parent: pd.DataFrame,
+    order_by: List[str],
+    group_by: List[str],
+    **kwargs,
 ) -> pd.Series:
     assert order_by and not group_by
     indexed_parent = parent.set_index(order_by)
@@ -77,6 +90,7 @@ def _post_process_group_by_order_by(
     parent: pd.DataFrame,
     order_by: List[str],
     group_by: List[str],
+    **kwargs,
 ) -> pd.Series:
     indexed_parent = parent.set_index(group_by + order_by, append=True)
     index = indexed_parent.index
@@ -339,10 +353,13 @@ def execute_window_op(
         clients=clients,
         **kwargs,
     )
-    series = post_process(result, data, ordering_keys, grouping_keys)
-
-    if timecontext:
-        series = construct_multi_index_series(series, data)
+    series = post_process(
+        result,
+        data,
+        ordering_keys,
+        grouping_keys,
+        timecontext=adjusted_timecontext,
+    )
     assert len(data) == len(
         series
     ), 'input data source and computed column do not have the same length'

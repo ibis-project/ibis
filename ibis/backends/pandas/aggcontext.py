@@ -228,6 +228,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.util
+from ibis.expr.timecontext import TIME_COL, construct_time_context_aware_series
 
 
 class AggregationContext(abc.ABC):
@@ -620,13 +621,23 @@ class Window(AggregationContext):
                 mask = ~(window_sizes.isna())
                 window_upper_indices = pd.Series(range(len(window_sizes))) + 1
                 window_lower_indices = window_upper_indices - window_sizes
+                # The result Series of udf may need to be trimmed by
+                # timecontext. In order to do so, 'time' must be added
+                # as an index to the Series, if present. Here We extract
+                # time column from the parent Dataframe `frame`.
+                if TIME_COL in frame or TIME_COL in frame.index.names:
+                    result_index = construct_time_context_aware_series(
+                        obj, frame
+                    ).index
+                else:
+                    result_index = obj.index
                 result = window_agg_udf(
                     grouped_data,
                     function,
                     window_lower_indices,
                     window_upper_indices,
                     mask,
-                    obj.index,
+                    result_index,
                     self.dtype,
                     self.max_lookback,
                     *args,

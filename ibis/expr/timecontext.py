@@ -127,10 +127,10 @@ def canonicalize_context(
     return begin, end
 
 
-def construct_multi_index_series(
+def construct_time_context_aware_series(
     series: pd.Series, frame: pd.DataFrame
 ) -> pd.Series:
-    """ Construct a pd.MultiIndex of IntIndex and 'time'
+    """ Construct a Series by adding 'time' in its MultiIndex
 
     In window execution, the result Series of udf may need
     to be trimmed by timecontext. In order to do so, 'time'
@@ -139,10 +139,54 @@ def construct_multi_index_series(
     See `trim_with_timecontext` in execution/window.py for
     trimming implementation.
 
+    Examples:
+        Assume frame is:
+                             time  id  value
+        0 2017-01-02 01:02:03.234   1    1.1
+        1 2017-01-03 01:02:03.234   2    2.2
+        2 2017-01-04 01:02:03.234   3    3.3
+
+        For a series of:
+        0    1.1
+        1    2.2
+        2    3.3
+        Name: value, dtype: float64
+
+        The result series will be:
+                             time
+        0 2017-01-02 01:02:03.234     1.1
+        1 2017-01-03 01:02:03.234     2.2
+        2 2017-01-04 01:02:03.234     3.3
+        Name: value, dtype: float64
+        The index will be a MultiIndex of the original RangeIndex
+        and a DateTimeIndex.
+
+        For a series already has 'time' as its index:
+                             time
+        2017-01-02 01:02:03.234     1.1
+        2017-01-03 01:02:03.234     2.2
+        2017-01-04 01:02:03.234     3.3
+        Name: value, dtype: float64
+        The result is unchanged.
+
+        For a series with MultiIndex but 'time' is not present in
+        the MultiIndex:
+          id
+        0  1     1.1
+        1  2     2.2
+        2  3     3.3
+        Name: value, dtype: float64
+        'time' will be added into the MultiIndex in result:
+          id                     time
+        0  1  2017-01-02 01:02:03.234     1.1
+        1  2  2017-01-03 01:02:03.234     2.2
+        2  3  2017-01-04 01:02:03.234     3.3
+        Name: value, dtype: float64
+
     Parameters
     ----------
-    series: pd.Series
-    frame: pd.DataFrame
+    series: pd.Series, the result series of an udf execution
+    frame: pd.DataFrame, the parent Dataframe of `series`
 
     Returns
     -------
@@ -154,10 +198,14 @@ def construct_multi_index_series(
         time_index = frame.set_index(TIME_COL).index
     else:
         raise com.IbisError(f'"time" column not present in DataFrame {frame}')
-
-    series.index = pd.MultiIndex.from_arrays(
-        [series.index] + [time_index], names=[series.index.name] + [TIME_COL],
-    )
+    if TIME_COL not in series.index.names:
+        series.index = pd.MultiIndex.from_arrays(
+            list(
+                map(series.index.get_level_values, range(series.index.nlevels))
+            )
+            + [time_index],
+            names=series.index.names + [TIME_COL],
+        )
     return series
 
 

@@ -9,6 +9,7 @@ from ibis.expr.timecontext import (
     TimeContextRelation,
     adjust_context,
     compare_timecontext,
+    construct_time_context_aware_series,
 )
 
 pytestmark = pytest.mark.pandas
@@ -225,12 +226,78 @@ def test_context_adjustment_window_groupby_id(time_table, time_df3):
     tm.assert_series_equal(result, expected)
 
 
+def test_construct_time_context_aware_series(time_df3):
+    """Unit test for `construct_time_context_aware_series`
+    """
+    # Series without 'time' index will result in a MultiIndex with 'time'
+    df = time_df3
+    expected = df['value']
+    time_index = df.set_index('time').index
+    expected.index = pd.MultiIndex.from_arrays(
+        [expected.index, time_index], names=expected.index.names + ['time'],
+    )
+    result = construct_time_context_aware_series(df['value'], df)
+    tm.assert_series_equal(result, expected)
+    # Series with 'time' as index will not change
+    time_indexed_df = time_df3.set_index('time')
+    expected_time_aware = time_indexed_df['value']
+    result_time_aware = construct_time_context_aware_series(
+        time_indexed_df['value'], time_indexed_df
+    )
+    tm.assert_series_equal(result_time_aware, expected_time_aware)
+    # Series with a MultiIndex, where 'time' is in the MultiIndex,
+    # will not change
+    multi_index_time_aware_series = result_time_aware
+    expected_multi_index_time_aware = result_time_aware
+    result_multi_index_time_aware = construct_time_context_aware_series(
+        multi_index_time_aware_series, time_indexed_df
+    )
+    tm.assert_series_equal(
+        result_multi_index_time_aware, expected_multi_index_time_aware
+    )
+    # Series with a MultiIndex, where 'time' is NOT in the MultiIndex,
+    # 'time' will be added into the MultiIndex
+    multi_index_series = df['id']
+    expected_multi_index = df['id'].copy()
+    other_index = df.set_index('value').index
+    expected_multi_index.index = pd.MultiIndex.from_arrays(
+        [expected_multi_index.index, other_index, time_index],
+        names=expected_multi_index.index.names + ['value', 'time'],
+    )
+    multi_index_series.index = pd.MultiIndex.from_arrays(
+        [multi_index_series.index, other_index],
+        names=multi_index_series.index.names + ['value'],
+    )
+    result_multi_index = construct_time_context_aware_series(
+        multi_index_series, df
+    )
+    tm.assert_series_equal(result_multi_index, expected_multi_index)
+
+
 @udf.reduction(['double'], 'double')
 def my_mean(series):
     return series.mean()
 
 
-def test_context_adjustment_window_udf(time_table, time_df3):
+def test_context_adjustment_window_udf_nogroupby_noorderby(
+    time_table, time_df3
+):
+    """ This test case aims to test context adjustment of
+        udfs in window method.
+    """
+    expected = time_df3.set_index('time').assign(v1=time_df3['value'].mean())
+    expected = expected[
+        expected.index >= pd.Timestamp('20170105')
+    ].reset_index(drop=True)['v1']
+
+    context = pd.Timestamp('20170105'), pd.Timestamp('20170111')
+    window = ibis.trailing_window(3 * ibis.interval(days=1))
+    expr = time_table.mutate(v1=my_mean(time_table['value']).over(window))
+    result = expr.execute(timecontext=context)
+    tm.assert_series_equal(result["v1"], expected)
+
+
+def test_context_adjustment_window_udf_nogroupby(time_table, time_df3):
     """ This test case aims to test context adjustment of
         udfs in window method.
     """
@@ -246,6 +313,32 @@ def test_context_adjustment_window_udf(time_table, time_df3):
 
     context = pd.Timestamp('20170105'), pd.Timestamp('20170111')
     window = ibis.trailing_window(3 * ibis.interval(days=1), order_by='time')
-    expr = time_table.mutate(v1=my_mean(time_table['value']).over(window),)
+    expr = time_table.mutate(v1=my_mean(time_table['value']).over(window))
+    result = expr.execute(timecontext=context)
+    tm.assert_series_equal(result["v1"], expected)
+
+
+def test_context_adjustment_window_udf_groupby(time_table, time_df3):
+    """ This test case aims to test context adjustment of
+        udfs in window method, with groupby in window
+    """
+    expected = (
+        time_df3.set_index('time')
+        .groupby('id')
+        .rolling('3d', closed='both')
+        .mean()
+    )['value']
+    # Result is a MultiIndexed Series
+    expected = expected.reset_index()
+    expected = (
+        expected[expected.time >= pd.Timestamp('20170105')]
+        .reset_index(drop=True)['value']
+        .rename('v1')
+    )
+    context = pd.Timestamp('20170105'), pd.Timestamp('20170111')
+    window = ibis.trailing_window(
+        3 * ibis.interval(days=1), order_by='time', group_by='id'
+    )
+    expr = time_table.mutate(v1=my_mean(time_table['value']).over(window))
     result = expr.execute(timecontext=context)
     tm.assert_series_equal(result["v1"], expected)
