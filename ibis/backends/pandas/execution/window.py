@@ -70,7 +70,7 @@ def _post_process_group_by(
     parent: pd.DataFrame,
     order_by: List[str],
     group_by: List[str],
-    **kwargs,
+    timecontext: Optional[TimeContext],
 ) -> pd.Series:
     assert not order_by and group_by
     return series
@@ -81,7 +81,7 @@ def _post_process_order_by(
     parent: pd.DataFrame,
     order_by: List[str],
     group_by: List[str],
-    **kwargs,
+    timecontext: Optional[TimeContext],
 ) -> pd.Series:
     assert order_by and not group_by
     indexed_parent = parent.set_index(order_by)
@@ -98,7 +98,7 @@ def _post_process_group_by_order_by(
     parent: pd.DataFrame,
     order_by: List[str],
     group_by: List[str],
-    **kwargs,
+    timecontext: Optional[TimeContext],
 ) -> pd.Series:
     indexed_parent = parent.set_index(group_by + order_by, append=True)
     index = indexed_parent.index
@@ -362,11 +362,7 @@ def execute_window_op(
         **kwargs,
     )
     series = post_process(
-        result,
-        data,
-        ordering_keys,
-        grouping_keys,
-        timecontext=adjusted_timecontext,
+        result, data, ordering_keys, grouping_keys, adjusted_timecontext,
     )
     assert len(data) == len(
         series

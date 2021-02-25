@@ -271,7 +271,7 @@ def test_construct_time_context_aware_series(time_df3):
     # Series without 'time' index will result in a MultiIndex with 'time'
     df = time_df3
     expected = df['value']
-    time_index = df.set_index('time').index
+    time_index = pd.Index(df['time'])
     expected.index = pd.MultiIndex.from_arrays(
         [expected.index, time_index], names=expected.index.names + ['time'],
     )
@@ -298,7 +298,7 @@ def test_construct_time_context_aware_series(time_df3):
     # 'time' will be added into the MultiIndex
     multi_index_series = df['id']
     expected_multi_index = df['id'].copy()
-    other_index = df.set_index('value').index
+    other_index = pd.Index(df['value'])
     expected_multi_index.index = pd.MultiIndex.from_arrays(
         [expected_multi_index.index, other_index, time_index],
         names=expected_multi_index.index.names + ['value', 'time'],

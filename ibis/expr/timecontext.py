@@ -139,50 +139,6 @@ def construct_time_context_aware_series(
     See `trim_with_timecontext` in execution/window.py for
     trimming implementation.
 
-    Examples:
-        Assume frame is:
-                             time  id  value
-        0 2017-01-02 01:02:03.234   1    1.1
-        1 2017-01-03 01:02:03.234   2    2.2
-        2 2017-01-04 01:02:03.234   3    3.3
-
-        For a series of:
-        0    1.1
-        1    2.2
-        2    3.3
-        Name: value, dtype: float64
-
-        The result series will be:
-                             time
-        0 2017-01-02 01:02:03.234     1.1
-        1 2017-01-03 01:02:03.234     2.2
-        2 2017-01-04 01:02:03.234     3.3
-        Name: value, dtype: float64
-        The index will be a MultiIndex of the original RangeIndex
-        and a DateTimeIndex.
-
-        For a series already has 'time' as its index:
-                             time
-        2017-01-02 01:02:03.234     1.1
-        2017-01-03 01:02:03.234     2.2
-        2017-01-04 01:02:03.234     3.3
-        Name: value, dtype: float64
-        The result is unchanged.
-
-        For a series with MultiIndex but 'time' is not present in
-        the MultiIndex:
-          id
-        0  1     1.1
-        1  2     2.2
-        2  3     3.3
-        Name: value, dtype: float64
-        'time' will be added into the MultiIndex in result:
-          id                     time
-        0  1  2017-01-02 01:02:03.234     1.1
-        1  2  2017-01-03 01:02:03.234     2.2
-        2  3  2017-01-04 01:02:03.234     3.3
-        Name: value, dtype: float64
-
     Parameters
     ----------
     series: pd.Series, the result series of an udf execution
@@ -191,11 +147,63 @@ def construct_time_context_aware_series(
     Returns
     -------
     pd.Series
+
+    Examples
+    -----------
+    >>> import pandas as pd
+    >>> from ibis.expr.timecontext import construct_time_context_aware_series
+    >>> df = pd.DataFrame(
+    ...     {
+    ...         'time': pd.Series(
+    ...             pd.date_range(
+    ...                 start='2017-01-02', periods=3
+    ...             ).values
+    ...         ),
+    ...         'id': [1,2,3],
+    ...         'value': [1.1, 2.2, 3.3],
+    ...     }
+    ... )
+    >>> df
+            time  id  value
+    0 2017-01-02   1    1.1
+    1 2017-01-03   2    2.2
+    2 2017-01-04   3    3.3
+    >>> series = df['value']
+    >>> series
+    0    1.1
+    1    2.2
+    2    3.3
+    Name: value, dtype: float64
+    >>> construct_time_context_aware_series(series, df)
+       time
+    0  2017-01-02    1.1
+    1  2017-01-03    2.2
+    2  2017-01-04    3.3
+    Name: value, dtype: float64
+
+    The index will be a MultiIndex of the original RangeIndex
+    and a DateTimeIndex.
+
+    >>> timed_series = construct_time_context_aware_series(series, df)
+    >>> timed_series
+       time
+    0  2017-01-02    1.1
+    1  2017-01-03    2.2
+    2  2017-01-04    3.3
+    Name: value, dtype: float64
+
+    >>> construct_time_context_aware_series(timed_series, df)
+       time
+    0  2017-01-02    1.1
+    1  2017-01-03    2.2
+    2  2017-01-04    3.3
+    Name: value, dtype: float64
+    The result is unchanged for a series already has 'time' as its index.
     """
     if TIME_COL == frame.index.name:
         time_index = frame.index
     elif TIME_COL in frame:
-        time_index = frame.set_index(TIME_COL).index
+        time_index = pd.Index(frame[TIME_COL])
     else:
         raise com.IbisError(f'"time" column not present in DataFrame {frame}')
     if TIME_COL not in series.index.names:

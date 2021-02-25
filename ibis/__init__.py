@@ -1,5 +1,5 @@
 """Initialize Ibis module."""
-from contextlib import suppress
+import pkg_resources
 
 import ibis.config
 import ibis.expr.types as ir
@@ -34,53 +34,14 @@ notebook.
 )
 ibis.config.register_option('default_backend', None)
 
-with suppress(ImportError):
-    # pip install ibis-framework[csv]
-    from ibis.backends import csv  # noqa: F401
-
-with suppress(ImportError):
-    # pip install ibis-framework[parquet]
-    from ibis.backends import parquet  # noqa: F401
-
-with suppress(ImportError):
-    # pip install  ibis-framework[hdf5]
-    from ibis.backends import hdf5  # noqa: F401
-
-with suppress(ImportError):
-    # pip install ibis-framework[impala]
-    from ibis.backends import impala  # noqa: F401
-
-with suppress(ImportError):
-    # pip install ibis-framework[sqlite]
-    from ibis.backends import sqlite  # noqa: F401
-
-with suppress(ImportError):
-    # pip install ibis-framework[postgres]
-    from ibis.backends import postgres  # noqa: F401
-
-with suppress(ImportError):
-    # pip install ibis-framework[mysql]
-    from ibis.backends import mysql  # noqa: F401
-
-with suppress(ImportError):
-    # pip install ibis-framework[clickhouse]
-    from ibis.backends import clickhouse  # noqa: F401
-
-with suppress(ImportError):
-    # pip install ibis-framework[bigquery]
-    from ibis.backends import bigquery  # noqa: F401
-
-with suppress(ImportError):
-    # pip install ibis-framework[spark]
-    from ibis.backends import spark  # noqa: F401
-
-with suppress(ImportError):
-    from ibis.backends import pyspark  # noqa: F401
-
-with suppress(ImportError):
-    # pip install ibis-framework[dask]
-    from ibis.backends import dask  # noqa: F401
-
-
 __version__ = get_versions()['version']
 del get_versions
+
+
+for entry_point in pkg_resources.iter_entry_points(
+    group='ibis.backends', name=None
+):
+    try:
+        setattr(ibis, entry_point.name, entry_point.resolve())
+    except ImportError:
+        pass
