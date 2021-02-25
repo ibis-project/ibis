@@ -5,6 +5,7 @@ import pytest
 import ibis
 import ibis.common.exceptions as com
 from ibis.backends.pandas import udf
+from ibis.backends.pandas.execution.window import trim_with_timecontext
 from ibis.expr.timecontext import (
     TimeContextRelation,
     adjust_context,
@@ -132,6 +133,44 @@ def test_context_adjustment_window(
     # result should adjust time context accordingly
     result = expr.execute(timecontext=context)
     tm.assert_series_equal(result, expected)
+
+
+def test_trim_with_timecontext(time_df3):
+    """ Unit test `trim_with_timecontext` in Window execution
+    """
+    df = time_df3.copy()
+    context = pd.Timestamp('20170105'), pd.Timestamp('20170111')
+    # trim_with_timecontext takes a MultiIndex Series as input
+    series = df['value']
+    time_index = df.set_index('time').index
+    series.index = pd.MultiIndex.from_arrays(
+        [series.index, time_index], names=series.index.names + ['time'],
+    )
+    result = trim_with_timecontext(series, context)
+    expected = df['time'][df['time'] >= pd.Timestamp('20170105')].reset_index(
+        drop=True
+    )
+    # result should adjust time context accordingly
+    tm.assert_series_equal(result.reset_index()['time'], expected)
+
+    # trim with a non-datetime type of 'time'
+    wrong_series = df['id']
+    df['time'] = df['time'].astype(str)
+    time_index = df.set_index('time').index
+    wrong_series.index = pd.MultiIndex.from_arrays(
+        [wrong_series.index, time_index],
+        names=wrong_series.index.names + ['time'],
+    )
+    wrong_result = trim_with_timecontext(wrong_series, context)
+    expected_unchanged = df['time']
+    # column is ignored and result is not trimmed
+    tm.assert_series_equal(
+        wrong_result.reset_index()['time'], expected_unchanged
+    )
+
+    no_context_result = trim_with_timecontext(series, None)
+    # column is ignored and series is not trimmed
+    tm.assert_series_equal(no_context_result, series)
 
 
 def test_setting_timecontext_in_scope(time_table, time_df3):
