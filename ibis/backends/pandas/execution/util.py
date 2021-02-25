@@ -84,6 +84,25 @@ def coerce_to_output(
     Returns
     -------
     result: A Series or DataFrame
+
+    Examples
+    --------
+    For dataframe outputs, see ``ibis.util.coerce_to_dataframe``.
+
+    >>> coerce_to_output(pd.Series(1), expr)
+    0    1
+    Name: result, dtype: int64
+    >>> coerce_to_output(1, expr)
+    0    1
+    Name: result, dtype: int64
+    >>> coerce_to_output(1, expr, [1,2,3])
+    1    1
+    2    1
+    3    1
+    Name: result, dtype: int64
+    >>> coerce_to_output([1,2,3], expr)
+    0    [1, 2, 3]
+    Name: result, dtype: object
     """
     result_name = getattr(expr, '_name', None)
 
