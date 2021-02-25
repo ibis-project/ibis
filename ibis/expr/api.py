@@ -4205,6 +4205,7 @@ def mutate(table, exprs=None, **mutations):
     non_overwriting_exprs = []
     table_schema = table.schema()
     for expr in exprs:
+        is_first_overwrite = True
         expr_contains_overwrite = False
         if isinstance(expr, ir.DestructColumn):
             if expr.get_name():
@@ -4213,12 +4214,20 @@ def mutate(table, exprs=None, **mutations):
                 )
             for name in expr.type().names:
                 if name in table_schema:
-                    # We can short-circuit if there is at least one column
-                    # here that overwrites an existing column, because all
-                    # cols in a DestructColumn expr come 'packaged' together.
-                    overwriting_cols_to_expr[name] = expr
+                    # The below is necessary to ensure that:
+                    # A) all overwritten cols inside the DestructColumn are
+                    # accounted for, while
+                    # B) we don't repeat the same DestructColumn expr more
+                    # than once inside the final mutation node exprs.
+                    # This is both okay and necessary because DestructColumn
+                    # columns are all packaged together, so the expr should
+                    # appear exactly once in the mutation node exprs.
+                    if is_first_overwrite:
+                        overwriting_cols_to_expr[name] = expr
+                        is_first_overwrite = False
+                    else:
+                        overwriting_cols_to_expr[name] = None
                     expr_contains_overwrite = True
-                    break
         elif (
             isinstance(expr, ir.ValueExpr) and expr.get_name() in table_schema
         ):
@@ -4233,6 +4242,7 @@ def mutate(table, exprs=None, **mutations):
         proj_exprs = [
             overwriting_cols_to_expr.get(column, table[column])
             for column in columns
+            if overwriting_cols_to_expr.get(column, table[column]) is not None
         ] + non_overwriting_exprs
     else:
         proj_exprs = [table] + exprs

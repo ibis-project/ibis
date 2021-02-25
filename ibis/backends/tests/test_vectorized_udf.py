@@ -40,6 +40,16 @@ def overwrite_struct_elementwise(v):
     return v + 1, v + 2
 
 
+@elementwise(
+    input_type=[dt.double],
+    output_type=dt.Struct(
+        ['double_col', 'col2', 'float_col'], [dt.double, dt.double, dt.double]
+    ),
+)
+def multiple_overwrite_struct_elementwise(v):
+    return v + 1, v + 2, v + 3
+
+
 @analytic(
     input_type=[dt.double, dt.double],
     output_type=dt.Struct(
@@ -312,6 +322,29 @@ def test_elementwise_udf_overwrite_destruct_and_assign(backend, alltypes):
         double_col=alltypes['double_col'] + 1,
         col2=alltypes['double_col'] + 2,
         col3=alltypes['int_col'] * 3,
+    ).execute()
+
+    # TODO currently when overwriting a column via a multi-col UDF, any
+    # new columns will be materialized directly after those overwritten
+    # columns rather than appended to the end.
+    backend.assert_frame_equal(result, expected, check_like=True)
+
+
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
+# TODO - udf - #2553
+@pytest.mark.xfail_backends(['dask'])
+@pytest.mark.xfail_unsupported
+def test_elementwise_udf_multiple_overwrite_destruct(backend, alltypes):
+    result = alltypes.mutate(
+        multiple_overwrite_struct_elementwise(
+            alltypes['double_col']
+        ).destructure()
+    ).execute()
+
+    expected = alltypes.mutate(
+        double_col=alltypes['double_col'] + 1,
+        col2=alltypes['double_col'] + 2,
+        float_col=alltypes['double_col'] + 3,
     ).execute()
 
     # TODO currently when overwriting a column via a multi-col UDF, any
