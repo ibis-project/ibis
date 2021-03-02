@@ -358,6 +358,9 @@ _operation_registry = {
 }
 _operation_registry.update(
     {
+        ops.BitAnd: reduction('BIT_AND'),
+        ops.BitOr: reduction('BIT_OR'),
+        ops.BitXor: reduction('BIT_XOR'),
         ops.ExtractYear: _extract_field('year'),
         ops.ExtractQuarter: _extract_field('quarter'),
         ops.ExtractMonth: _extract_field('month'),

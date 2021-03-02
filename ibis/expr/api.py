@@ -678,6 +678,7 @@ def _agg_function(name, klass, assign_default_name=True):
         return expr
 
     f.__name__ = name
+    f.__doc__ = klass.__doc__
     return f
 
 
@@ -1523,6 +1524,10 @@ _integer_value_methods = {
 }
 
 
+bit_and = _agg_function('bit_and', ops.BitAnd, True)
+bit_or = _agg_function('bit_or', ops.BitOr, True)
+bit_xor = _agg_function('bit_xor', ops.BitXor, True)
+
 mean = _agg_function('mean', ops.Mean, True)
 cummean = _unary_op('cummean', ops.CumulativeMean)
 
@@ -1611,6 +1616,12 @@ _numeric_column_methods = {
     'summary': _numeric_summary,
 }
 
+_integer_column_methods = {
+    'bit_and': bit_and,
+    'bit_or': bit_or,
+    'bit_xor': bit_xor,
+}
+
 _floating_value_methods = {
     'isnan': _unary_op('isnull', ops.IsNan),
     'isinf': _unary_op('isinf', ops.IsInf),
@@ -1621,6 +1632,7 @@ _add_methods(ir.IntegerValue, _integer_value_methods)
 _add_methods(ir.FloatingValue, _floating_value_methods)
 
 _add_methods(ir.NumericColumn, _numeric_column_methods)
+_add_methods(ir.IntegerColumn, _integer_column_methods)
 
 # ----------------------------------------------------------------------
 # GeoSpatial API
@@ -4193,22 +4205,72 @@ def mutate(table, exprs=None, **mutations):
         for name, expr in sorted(mutations.items(), key=operator.itemgetter(0))
     )
 
+    # The below logic computes the mutation node exprs by splitting the
+    # assignment exprs into two disjoint sets:
+    # 1) overwriting_cols_to_expr, which maps a column name to its expr
+    # if the expr contains a column that overwrites an existing table column.
+    # All keys in this dict are columns in the original table that are being
+    # overwritten by an assignment expr. All values in this dict are either:
+    #     (a) The expr of the overwriting column. Note that in the case of
+    #     DestructColumn, this will specifically only happen for the first
+    #     overwriting column within that expr.
+    #     (b) None. This is the case for the second (and beyond) overwriting
+    #     column(s) inside the DestructColumn and is used as a flag to prevent
+    #     the same DestructColumn expr from being duplicated in the output.
+    # 2) non_overwriting_exprs, which is a list of all exprs that do not do
+    # any overwriting. That is, if an expr is in this list, then its column
+    # name does not exist in the original table.
+    # Given these two data structures, we can compute the mutation node exprs
+    # based on whether any columns are being overwritten.
+    # TODO issue #2649
+    # Due to a known limitation with how we treat DestructColumn
+    # in assignments, the ordering of op.selections may not exactly
+    # correspond with the column ordering we want (i.e. all new columns
+    # should appear at the end, but currently they are materialized
+    # directly after those overwritten columns).
+    overwriting_cols_to_expr = {}
+    non_overwriting_exprs = []
+    table_schema = table.schema()
     for expr in exprs:
-        if expr.get_name() and isinstance(expr, ir.DestructColumn):
-            raise com.ExpressionError(
-                f"Cannot name a destruct column: {expr.get_name()}"
-            )
+        is_first_overwrite = True
+        expr_contains_overwrite = False
+        if isinstance(expr, ir.DestructColumn):
+            if expr.get_name():
+                raise com.ExpressionError(
+                    f"Cannot name a destruct column: {expr.get_name()}"
+                )
+            for name in expr.type().names:
+                if name in table_schema:
+                    # The below is necessary to ensure that:
+                    # A) all overwritten cols inside the DestructColumn are
+                    # accounted for, while
+                    # B) we don't repeat the same DestructColumn expr more
+                    # than once inside the final mutation node exprs.
+                    # This is both okay and necessary because DestructColumn
+                    # columns are all packaged together, so the expr should
+                    # appear exactly once in the mutation node exprs.
+                    if is_first_overwrite:
+                        overwriting_cols_to_expr[name] = expr
+                        is_first_overwrite = False
+                    else:
+                        overwriting_cols_to_expr[name] = None
+                    expr_contains_overwrite = True
+        elif (
+            isinstance(expr, ir.ValueExpr) and expr.get_name() in table_schema
+        ):
+            overwriting_cols_to_expr[expr.get_name()] = expr
+            expr_contains_overwrite = True
 
-    by_name = collections.OrderedDict(
-        (expr.get_name(), expr) for expr in exprs
-    )
+        if not expr_contains_overwrite:
+            non_overwriting_exprs.append(expr)
+
     columns = table.columns
-    used = by_name.keys() & columns
-
-    if used:
+    if overwriting_cols_to_expr:
         proj_exprs = [
-            by_name.get(column, table[column]) for column in columns
-        ] + [expr for name, expr in by_name.items() if name not in used]
+            overwriting_cols_to_expr.get(column, table[column])
+            for column in columns
+            if overwriting_cols_to_expr.get(column, table[column]) is not None
+        ] + non_overwriting_exprs
     else:
         proj_exprs = [table] + exprs
     return table.projection(proj_exprs)
