@@ -678,6 +678,7 @@ def _agg_function(name, klass, assign_default_name=True):
         return expr
 
     f.__name__ = name
+    f.__doc__ = klass.__doc__
     return f
 
 
@@ -1523,6 +1524,10 @@ _integer_value_methods = {
 }
 
 
+bit_and = _agg_function('bit_and', ops.BitAnd, True)
+bit_or = _agg_function('bit_or', ops.BitOr, True)
+bit_xor = _agg_function('bit_xor', ops.BitXor, True)
+
 mean = _agg_function('mean', ops.Mean, True)
 cummean = _unary_op('cummean', ops.CumulativeMean)
 
@@ -1611,6 +1616,12 @@ _numeric_column_methods = {
     'summary': _numeric_summary,
 }
 
+_integer_column_methods = {
+    'bit_and': bit_and,
+    'bit_or': bit_or,
+    'bit_xor': bit_xor,
+}
+
 _floating_value_methods = {
     'isnan': _unary_op('isnull', ops.IsNan),
     'isinf': _unary_op('isinf', ops.IsInf),
@@ -1621,6 +1632,7 @@ _add_methods(ir.IntegerValue, _integer_value_methods)
 _add_methods(ir.FloatingValue, _floating_value_methods)
 
 _add_methods(ir.NumericColumn, _numeric_column_methods)
+_add_methods(ir.IntegerColumn, _integer_column_methods)
 
 # ----------------------------------------------------------------------
 # GeoSpatial API
