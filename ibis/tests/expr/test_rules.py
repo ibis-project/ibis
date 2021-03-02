@@ -159,6 +159,7 @@ class Baz:
         (Bar, 'a', 'A'),
         (Bar, 'b', 'B'),
         (Baz(2), 'a', 2),
+        (Foo, ibis.literal(Foo.a), Foo.a),
     ],
 )
 def test_valid_member_of(obj, value, expected):
