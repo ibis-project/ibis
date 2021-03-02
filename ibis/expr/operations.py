@@ -874,7 +874,7 @@ class Arbitrary(Reduction):
 class BitAnd(Reduction):
     """Aggregate bitwise AND operation.
 
-    All elements in an integer column are ``AND``ed together. This can be used
+    All elements in an integer column are ANDed together. This can be used
     to determine which bit flags are set on all elements.
 
     Resources:
@@ -893,7 +893,7 @@ class BitAnd(Reduction):
 class BitOr(Reduction):
     """Aggregate bitwise OR operation.
 
-    All elements in an integer column are ``OR``ed together. This can be used
+    All elements in an integer column are ORed together. This can be used
     to determine which bit flags are set on any element.
 
     Resources:
@@ -912,7 +912,7 @@ class BitOr(Reduction):
 class BitXor(Reduction):
     """Aggregate bitwise XOR operation.
 
-    All elements in an integer column are ``XOR``ed together. This can be used
+    All elements in an integer column are XORed together. This can be used
     as a parity checksum of element values.
 
     Resources:
