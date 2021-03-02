@@ -299,9 +299,12 @@ def test_elementwise_udf_overwrite_destruct(backend, alltypes):
         double_col=alltypes['double_col'] + 1, col2=alltypes['double_col'] + 2,
     ).execute()
 
-    # TODO currently when overwriting a column via a multi-col UDF, any
-    # new columns will be materialized directly after those overwritten
-    # columns rather than appended to the end.
+    # TODO issue #2649
+    # Due to a known limitation with how we treat DestructColumn
+    # in assignments, the ordering of op.selections may not exactly
+    # correspond with the column ordering we want (i.e. all new columns
+    # should appear at the end, but currently they are materialized
+    # directly after those overwritten columns).
     backend.assert_frame_equal(result, expected, check_like=True)
 
 
@@ -324,9 +327,12 @@ def test_elementwise_udf_overwrite_destruct_and_assign(backend, alltypes):
         col3=alltypes['int_col'] * 3,
     ).execute()
 
-    # TODO currently when overwriting a column via a multi-col UDF, any
-    # new columns will be materialized directly after those overwritten
-    # columns rather than appended to the end.
+    # TODO issue #2649
+    # Due to a known limitation with how we treat DestructColumn
+    # in assignments, the ordering of op.selections may not exactly
+    # correspond with the column ordering we want (i.e. all new columns
+    # should appear at the end, but currently they are materialized
+    # directly after those overwritten columns).
     backend.assert_frame_equal(result, expected, check_like=True)
 
 
@@ -347,9 +353,12 @@ def test_elementwise_udf_multiple_overwrite_destruct(backend, alltypes):
         float_col=alltypes['double_col'] + 3,
     ).execute()
 
-    # TODO currently when overwriting a column via a multi-col UDF, any
-    # new columns will be materialized directly after those overwritten
-    # columns rather than appended to the end.
+    # TODO issue #2649
+    # Due to a known limitation with how we treat DestructColumn
+    # in assignments, the ordering of op.selections may not exactly
+    # correspond with the column ordering we want (i.e. all new columns
+    # should appear at the end, but currently they are materialized
+    # directly after those overwritten columns).
     backend.assert_frame_equal(result, expected, check_like=True)
 
 
@@ -423,9 +432,12 @@ def test_analytic_udf_destruct_overwrite(backend, alltypes):
         demean_weight=alltypes['int_col'] - alltypes['int_col'].mean().over(w),
     ).execute()
 
-    # TODO currently when overwriting a column via a multi-col UDF, any
-    # new columns will be materialized directly after those overwritten
-    # columns rather than appended to the end.
+    # TODO issue #2649
+    # Due to a known limitation with how we treat DestructColumn
+    # in assignments, the ordering of op.selections may not exactly
+    # correspond with the column ordering we want (i.e. all new columns
+    # should appear at the end, but currently they are materialized
+    # directly after those overwritten columns).
     backend.assert_frame_equal(result, expected, check_like=True)
 
 
@@ -486,10 +498,12 @@ def test_reduction_udf_destruct_no_groupby_overwrite(backend, alltypes):
         double_col=alltypes['double_col'].mean(),
         mean_weight=alltypes['int_col'].mean(),
     ).execute()
-
-    # TODO currently when overwriting a column via a multi-col UDF, any
-    # new columns will be materialized directly after those overwritten
-    # columns rather than appended to the end.
+    # TODO issue #2649
+    # Due to a known limitation with how we treat DestructColumn
+    # in assignments, the ordering of op.selections may not exactly
+    # correspond with the column ordering we want (i.e. all new columns
+    # should appear at the end, but currently they are materialized
+    # directly after those overwritten columns).
     backend.assert_frame_equal(result, expected, check_like=True)
 
 

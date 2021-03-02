@@ -4210,6 +4210,12 @@ def mutate(table, exprs=None, **mutations):
     # name does not exist in the original table.
     # Given these two data structures, we can compute the mutation node exprs
     # based on whether any columns are being overwritten.
+    # TODO issue #2649
+    # Due to a known limitation with how we treat DestructColumn
+    # in assignments, the ordering of op.selections may not exactly
+    # correspond with the column ordering we want (i.e. all new columns
+    # should appear at the end, but currently they are materialized
+    # directly after those overwritten columns).
     overwriting_cols_to_expr = {}
     non_overwriting_exprs = []
     table_schema = table.schema()
