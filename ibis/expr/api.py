@@ -5,7 +5,7 @@ import datetime
 import functools
 import numbers
 import operator
-from typing import Union
+from typing import List, Union
 
 import dateutil.parser
 import pandas as pd
@@ -4144,67 +4144,11 @@ def _safe_get_name(expr):
         return None
 
 
-def mutate(table, exprs=None, **mutations):
-    """
-    Convenience function for table projections involving adding columns
-
-    Parameters
-    ----------
-    exprs : list, default None
-      List of named expressions to add as columns
-    mutations : keywords for new columns
-
-    Returns
-    -------
-    mutated : TableExpr
-
-    Examples
-    --------
-    Using keywords arguments to name the new columns
-
-    >>> import ibis
-    >>> table = ibis.table([('foo', 'double'), ('bar', 'double')], name='t')
-    >>> expr = table.mutate(qux=table.foo + table.bar, baz=5)
-    >>> expr  # doctest: +NORMALIZE_WHITESPACE
-    ref_0
-    UnboundTable[table]
-      name: t
-      schema:
-        foo : float64
-        bar : float64
-    <BLANKLINE>
-    Selection[table]
-      table:
-        Table: ref_0
-      selections:
-        Table: ref_0
-        baz = Literal[int8]
-          5
-        qux = Add[float64*]
-          left:
-            foo = Column[float64*] 'foo' from table
-              ref_0
-          right:
-            bar = Column[float64*] 'bar' from table
-              ref_0
-
-    Using the :meth:`ibis.expr.types.Expr.name` method to name the new columns
-
-    >>> new_columns = [ibis.literal(5).name('baz',),
-    ...                (table.foo + table.bar).name('qux')]
-    >>> expr2 = table.mutate(new_columns)
-    >>> expr.equals(expr2)
-    True
-
-    """
-    exprs = [] if exprs is None else util.promote_list(exprs)
-    exprs.extend(
-        (expr(table) if util.is_function(expr) else as_value_expr(expr)).name(
-            name
-        )
-        for name, expr in sorted(mutations.items(), key=operator.itemgetter(0))
-    )
-
+def get_mutation_exprs(
+    exprs: List[ir.Expr], table: ir.TableExpr
+) -> List[ir.Expr]:
+    """Given the list of exprs and the underlying table of a mutation op,
+    return the exprs to use to instantiate the mutation."""
     # The below logic computes the mutation node exprs by splitting the
     # assignment exprs into two disjoint sets:
     # 1) overwriting_cols_to_expr, which maps a column name to its expr
@@ -4273,7 +4217,72 @@ def mutate(table, exprs=None, **mutations):
         ] + non_overwriting_exprs
     else:
         proj_exprs = [table] + exprs
-    return table.projection(proj_exprs)
+    return proj_exprs
+
+
+def mutate(table, exprs=None, **mutations):
+    """
+    Convenience function for table projections involving adding columns
+
+    Parameters
+    ----------
+    exprs : list, default None
+      List of named expressions to add as columns
+    mutations : keywords for new columns
+
+    Returns
+    -------
+    mutated : TableExpr
+
+    Examples
+    --------
+    Using keywords arguments to name the new columns
+
+    >>> import ibis
+    >>> table = ibis.table([('foo', 'double'), ('bar', 'double')], name='t')
+    >>> expr = table.mutate(qux=table.foo + table.bar, baz=5)
+    >>> expr  # doctest: +NORMALIZE_WHITESPACE
+    ref_0
+    UnboundTable[table]
+      name: t
+      schema:
+        foo : float64
+        bar : float64
+    <BLANKLINE>
+    Selection[table]
+      table:
+        Table: ref_0
+      selections:
+        Table: ref_0
+        baz = Literal[int8]
+          5
+        qux = Add[float64*]
+          left:
+            foo = Column[float64*] 'foo' from table
+              ref_0
+          right:
+            bar = Column[float64*] 'bar' from table
+              ref_0
+
+    Using the :meth:`ibis.expr.types.Expr.name` method to name the new columns
+
+    >>> new_columns = [ibis.literal(5).name('baz',),
+    ...                (table.foo + table.bar).name('qux')]
+    >>> expr2 = table.mutate(new_columns)
+    >>> expr.equals(expr2)
+    True
+
+    """
+    exprs = [] if exprs is None else util.promote_list(exprs)
+    exprs.extend(
+        (expr(table) if util.is_function(expr) else as_value_expr(expr)).name(
+            name
+        )
+        for name, expr in sorted(mutations.items(), key=operator.itemgetter(0))
+    )
+
+    mutation_exprs = get_mutation_exprs(exprs, table)
+    return table.projection(mutation_exprs)
 
 
 def projection(table, exprs):
