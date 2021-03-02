@@ -137,6 +137,8 @@ def isin(values, arg):
 
 @validator
 def member_of(obj, arg):
+    if isinstance(arg, ir.EnumValue):
+        arg = arg.op().value
     if isinstance(arg, enum.Enum):
         enum.unique(obj)  # check that enum has unique values
         arg = arg.name

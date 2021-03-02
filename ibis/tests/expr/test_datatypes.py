@@ -1,4 +1,5 @@
 import datetime
+import enum
 from collections import OrderedDict
 
 import pandas as pd
@@ -366,6 +367,11 @@ def test_time_valid():
     assert dt.dtype('time').equals(dt.time)
 
 
+class Foo(enum.Enum):
+    a = 1
+    b = 2
+
+
 @pytest.mark.parametrize(
     ('value', 'expected_dtype'),
     [
@@ -431,6 +437,7 @@ def test_time_valid():
                 ]
             ),
         ),
+        (Foo.a, dt.Enum(dt.string, dt.int8)),
         param(
             datetime.timedelta(hours=5),
             dt.Interval(unit='h'),
