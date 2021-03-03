@@ -475,6 +475,60 @@ FROM `{project_id}.testing.functional_alltypes`"""  # noqa: E501
     assert result == expected
 
 
+def test_bit_and(alltypes, project_id):
+    i = alltypes.int_col
+    expr = i.bit_and()
+    result = expr.compile()
+    expected = f"""\
+SELECT BIT_AND(`int_col`) AS `bit_and`
+FROM `{project_id}.testing.functional_alltypes`"""
+    assert result == expected
+
+    b = alltypes.bigint_col
+    expr2 = i.bit_and(where=b > 6)
+    result = expr2.compile()
+    expected = f"""\
+SELECT BIT_AND(CASE WHEN `bigint_col` > 6 THEN `int_col` ELSE NULL END) AS `bit_and`
+FROM `{project_id}.testing.functional_alltypes`"""  # noqa: E501
+    assert result == expected
+
+
+def test_bit_or(alltypes, project_id):
+    i = alltypes.int_col
+    expr = i.bit_or()
+    result = expr.compile()
+    expected = f"""\
+SELECT BIT_OR(`int_col`) AS `bit_or`
+FROM `{project_id}.testing.functional_alltypes`"""
+    assert result == expected
+
+    b = alltypes.bigint_col
+    expr2 = i.bit_or(where=b > 6)
+    result = expr2.compile()
+    expected = f"""\
+SELECT BIT_OR(CASE WHEN `bigint_col` > 6 THEN `int_col` ELSE NULL END) AS `bit_or`
+FROM `{project_id}.testing.functional_alltypes`"""  # noqa: E501
+    assert result == expected
+
+
+def test_bit_xor(alltypes, project_id):
+    i = alltypes.int_col
+    expr = i.bit_xor()
+    result = expr.compile()
+    expected = f"""\
+SELECT BIT_XOR(`int_col`) AS `bit_xor`
+FROM `{project_id}.testing.functional_alltypes`"""
+    assert result == expected
+
+    b = alltypes.bigint_col
+    expr2 = i.bit_xor(where=b > 6)
+    result = expr2.compile()
+    expected = f"""\
+SELECT BIT_XOR(CASE WHEN `bigint_col` > 6 THEN `int_col` ELSE NULL END) AS `bit_xor`
+FROM `{project_id}.testing.functional_alltypes`"""  # noqa: E501
+    assert result == expected
+
+
 def test_cov(alltypes, project_id):
     d = alltypes.double_col
     expr = d.cov(d)
@@ -545,6 +599,16 @@ def test_now():
     expr = ibis.now()
     result = ibis.bigquery.compile(expr)
     expected = 'SELECT CURRENT_TIMESTAMP() AS `tmp`'
+    assert result == expected
+
+
+def test_binary():
+    t = ibis.table([('value', 'double')], name='t')
+    expr = t["value"].cast(dt.binary).name("value_hash")
+    result = ibis.bigquery.compile(expr)
+    expected = """\
+SELECT CAST(`value` AS BYTES) AS `tmp`
+FROM t"""
     assert result == expected
 
 

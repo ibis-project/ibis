@@ -18,17 +18,24 @@ pytestmark = pytest.mark.dask
         param(lambda s: s.substr(1, 2), lambda s: s.str[1:3], id='substr'),
         param(lambda s: s[1:3], lambda s: s.str[1:3], id='slice'),
         # TODO - execute_substring_series_series is broken
-        # param(
-        #     lambda s: s[s.length() - 1 :],
-        #     lambda s: s.str[-1:],
-        #     id='expr_slice_begin',
-        # ),
-        # param(lambda s: s[: s.length()], lambda s: s, id='expr_slice_end'),
-        # param(
-        #     lambda s: s[s.length() - 2 : s.length() - 1],
-        #     lambda s: s.str[-2:-1],
-        #     id='expr_slice_begin_end',
-        # ),
+        param(
+            lambda s: s[s.length() - 1 :],
+            lambda s: s.str[-1:],
+            id='expr_slice_begin',
+            marks=pytest.mark.xfail,
+        ),
+        param(
+            lambda s: s[: s.length()],
+            lambda s: s,
+            id='expr_slice_end',
+            marks=pytest.mark.xfail,
+        ),
+        param(
+            lambda s: s[s.length() - 2 : s.length() - 1],
+            lambda s: s.str[-2:-1],
+            id='expr_slice_begin_end',
+            marks=pytest.mark.xfail,
+        ),
         param(lambda s: s.strip(), lambda s: s.str.strip(), id='strip'),
         param(lambda s: s.lstrip(), lambda s: s.str.lstrip(), id='lstrip'),
         param(lambda s: s.rstrip(), lambda s: s.str.rstrip(), id='rstrip'),
@@ -96,6 +103,24 @@ def test_string_ops(t, df, case_func, expected_func):
     # ignore matching UserWarnings
     with catch_warnings(record=True):
         expr = case_func(t.strings_with_space)
-        result = expr.execute()
+        result = expr.compile()
         series = expected_func(df.strings_with_space)
         tm.assert_series_equal(result.compute(), series.compute())
+
+
+def test_grouped_string_re_search(t, df):
+    expr = t.groupby(t.dup_strings).aggregate(
+        sum=t.strings_with_space.re_search('(ab)+').cast('int64').sum()
+    )
+
+    result = expr.compile()
+    expected = (
+        df.groupby('dup_strings')
+        .strings_with_space.apply(
+            lambda s: s.str.contains('(ab)+', regex=True).sum()
+        )
+        .reset_index()
+        .rename(columns={'strings_with_space': 'sum'})
+    )
+
+    tm.assert_frame_equal(result.compute(), expected.compute())

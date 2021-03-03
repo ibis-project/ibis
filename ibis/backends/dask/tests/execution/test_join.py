@@ -49,7 +49,7 @@ def test_join(how, left, right, df1, df2):
     expr = left.join(right, left.key == right.key, how=how)[
         left, right.other_value, right.key3
     ]
-    result = expr.execute()
+    result = expr.compile()
     expected = dd.merge(df1, df2, how=how, on='key')
     tm.assert_frame_equal(
         result[expected.columns].compute(scheduler='single-threaded'),
@@ -59,7 +59,7 @@ def test_join(how, left, right, df1, df2):
 
 def test_cross_join(left, right, df1, df2):
     expr = left.cross_join(right)[left, right.other_value, right.key3]
-    result = expr.execute()
+    result = expr.compile()
     expected = dd.merge(
         df1.assign(dummy=1), df2.assign(dummy=1), how='inner', on='dummy'
     ).rename(columns=dict(key_x='key'))
@@ -73,7 +73,7 @@ def test_cross_join(left, right, df1, df2):
 @join_type
 def test_join_project_left_table(how, left, right, df1, df2):
     expr = left.join(right, left.key == right.key, how=how)[left, right.key3]
-    result = expr.execute()
+    result = expr.compile()
     expected = dd.merge(df1, df2, how=how, on='key')[
         list(left.columns) + ['key3']
     ]
@@ -85,7 +85,7 @@ def test_join_project_left_table(how, left, right, df1, df2):
 
 def test_cross_join_project_left_table(left, right, df1, df2):
     expr = left.cross_join(right)[left, right.key3]
-    result = expr.execute()
+    result = expr.compile()
     expected = dd.merge(
         df1.assign(dummy=1), df2.assign(dummy=1), how='inner', on='dummy'
     ).rename(columns=dict(key_x='key'))[list(left.columns) + ['key3']]
@@ -100,7 +100,7 @@ def test_join_with_multiple_predicates(how, left, right, df1, df2):
     expr = left.join(
         right, [left.key == right.key, left.key2 == right.key3], how=how
     )[left, right.key3, right.other_value]
-    result = expr.execute()
+    result = expr.compile()
     expected = dd.merge(
         df1, df2, how=how, left_on=['key', 'key2'], right_on=['key', 'key3']
     ).reset_index(drop=True)
@@ -118,7 +118,7 @@ def test_join_with_multiple_predicates_written_as_one(
     expr = left.join(right, predicate, how=how)[
         left, right.key3, right.other_value
     ]
-    result = expr.execute()
+    result = expr.compile()
     expected = dd.merge(
         df1, df2, how=how, left_on=['key', 'key2'], right_on=['key', 'key3']
     ).reset_index(drop=True)
@@ -133,12 +133,12 @@ def test_join_with_invalid_predicates(how, left, right):
     predicate = (left.key == right.key) & (left.key2 <= right.key3)
     expr = left.join(right, predicate, how=how)
     with pytest.raises(TypeError):
-        expr.execute()
+        expr.compile()
 
     predicate = left.key >= right.key
     expr = left.join(right, predicate, how=how)
     with pytest.raises(TypeError):
-        expr.execute()
+        expr.compile()
 
 
 @join_type
@@ -151,7 +151,7 @@ def test_join_with_duplicate_non_key_columns(how, left, right, df1, df2):
     # This is undefined behavior because `x` is duplicated. This is difficult
     # to detect
     with pytest.raises(ValueError):
-        expr.execute()
+        expr.compile()
 
 
 @join_type
@@ -164,7 +164,7 @@ def test_join_with_duplicate_non_key_columns_not_selected(
     expr = left.join(right, left.key == right.key, how=how)[
         left, right.other_value
     ]
-    result = expr.execute()
+    result = expr.compile()
     expected = dd.merge(
         df1.assign(x=df1.value * 2),
         df2[['key', 'other_value']],
@@ -181,7 +181,7 @@ def test_join_with_duplicate_non_key_columns_not_selected(
 def test_join_with_post_expression_selection(how, left, right, df1, df2):
     join = left.join(right, left.key == right.key, how=how)
     expr = join[left.key, left.value, right.other_value]
-    result = expr.execute()
+    result = expr.compile()
     expected = dd.merge(df1, df2, on='key', how=how)[
         ['key', 'value', 'other_value']
     ]
@@ -199,10 +199,10 @@ def test_join_with_post_expression_filter(how, left):
     joined = lhs.join(rhs, 'key2', how=how)
     projected = joined[lhs, rhs.value]
     expr = projected[projected.value == 4]
-    result = expr.execute()
+    result = expr.compile()
 
-    df1 = lhs.execute()
-    df2 = rhs.execute()
+    df1 = lhs.compile()
+    df2 = rhs.compile()
     expected = dd.merge(df1, df2, on='key2', how=how)
     expected = expected.loc[expected.value == 4].reset_index(drop=True)
 
@@ -226,11 +226,11 @@ def test_multi_join_with_post_expression_filter(how, left, df1):
     projected2 = joined2[filtered.key, rhs2.value2]
     expr = projected2[projected2.value2 == 3]
 
-    result = expr.execute()
+    result = expr.compile()
 
-    df1 = lhs.execute()
-    df2 = rhs.execute()
-    df3 = rhs2.execute()
+    df1 = lhs.compile()
+    df2 = rhs.compile()
+    df3 = rhs2.compile()
     expected = dd.merge(df1, df2, on='key2', how=how)
     expected = expected.loc[expected.value == 4].reset_index(drop=True)
     expected = dd.merge(expected, df3, on='key2')[['key', 'value2']]
@@ -248,7 +248,7 @@ def test_join_with_non_trivial_key(how, left, right, df1, df2):
     # also test that the order of operands in the predicate doesn't matter
     join = left.join(right, right.key.length() == left.key.length(), how=how)
     expr = join[left.key, left.value, right.other_value]
-    result = expr.execute()
+    result = expr.compile()
 
     expected = (
         dd.merge(
@@ -273,7 +273,7 @@ def test_join_with_non_trivial_key_project_table(how, left, right, df1, df2):
     join = left.join(right, right.key.length() == left.key.length(), how=how)
     expr = join[left, right.other_value]
     expr = expr[expr.key.length() == 1]
-    result = expr.execute()
+    result = expr.compile()
 
     expected = (
         dd.merge(
@@ -298,7 +298,7 @@ def test_join_with_project_right_duplicate_column(client, how, left, df1, df3):
     right = client.table('df3')
     join = left.join(right, ['key'], how=how)
     expr = join[left.key, right.key2, right.other_value]
-    result = expr.execute()
+    result = expr.compile()
 
     expected = (
         dd.merge(df1, df3, on='key', how=how)
@@ -323,7 +323,7 @@ def test_join_with_window_function(
         team_avg=lambda d: d.G.mean(),
         demeaned_by_player=lambda d: d.G - d.G.mean(),
     )
-    result = expr.execute()
+    result = expr.compile()
 
     expected = dd.merge(
         batting_df, players_df[['playerID']], on='playerID', how='left'
@@ -350,7 +350,7 @@ def test_asof_join(time_left, time_right, time_df1, time_df2):
     expr = time_left.asof_join(time_right, 'time')[
         time_left, time_right.other_value
     ]
-    result = expr.execute()
+    result = expr.compile()
     expected = dd.merge_asof(time_df1, time_df2, on='time')
     tm.assert_frame_equal(
         result[expected.columns].compute(scheduler='single-threaded'),
@@ -363,7 +363,7 @@ def test_asof_join_predicate(time_left, time_right, time_df1, time_df2):
     expr = time_left.asof_join(time_right, time_left.time == time_right.time)[
         time_left, time_right.other_value
     ]
-    result = expr.execute()
+    result = expr.compile()
     expected = dd.merge_asof(time_df1, time_df2, on='time')
     tm.assert_frame_equal(
         result[expected.columns].compute(scheduler='single-threaded'),
@@ -378,7 +378,7 @@ def test_keyed_asof_join(
     expr = time_keyed_left.asof_join(time_keyed_right, 'time', by='key')[
         time_keyed_left, time_keyed_right.other_value
     ]
-    result = expr.execute()
+    result = expr.compile()
     expected = dd.merge_asof(
         time_keyed_df1, time_keyed_df2, on='time', by='key'
     )
@@ -395,7 +395,7 @@ def test_keyed_asof_join_with_tolerance(
     expr = time_keyed_left.asof_join(
         time_keyed_right, 'time', by='key', tolerance=2 * ibis.interval(days=1)
     )[time_keyed_left, time_keyed_right.other_value]
-    result = expr.execute()
+    result = expr.compile()
     expected = dd.merge_asof(
         time_keyed_df1,
         time_keyed_df2,
@@ -435,12 +435,14 @@ def test_keyed_asof_join_with_tolerance(
     raises=(com.IbisError, AttributeError),
     reason="Select from unambiguous joins not implemented",
 )
-def test_select_on_unambiguous_join(how, func):
+def test_select_on_unambiguous_join(how, func, npartitions):
     df_t = dd.from_pandas(
-        pd.DataFrame(dict(a0=[1, 2, 3], b1=list("aab"))), npartitions=1,
+        pd.DataFrame(dict(a0=[1, 2, 3], b1=list("aab"))),
+        npartitions=npartitions,
     )
     df_s = dd.from_pandas(
-        pd.DataFrame(dict(a1=[2, 3, 4], b2=list("abc"))), npartitions=1,
+        pd.DataFrame(dict(a1=[2, 3, 4], b2=list("abc"))),
+        npartitions=npartitions,
     )
     con = connect({"t": df_t, "s": df_s})
     t = con.table("t")
@@ -452,7 +454,7 @@ def test_select_on_unambiguous_join(how, func):
     ]
     assert not expected.compute(scheduler='single-threaded').empty
     expr = func(join)
-    result = expr.execute()
+    result = expr.compile()
     tm.assert_frame_equal(
         result.compute(scheduler='single-threaded'),
         expected.compute(scheduler='single-threaded'),
@@ -472,14 +474,14 @@ def test_select_on_unambiguous_join(how, func):
     reason="Select from unambiguous joins not implemented",
 )
 @merge_asof_minversion
-def test_select_on_unambiguous_asof_join(func):
+def test_select_on_unambiguous_asof_join(func, npartitions):
     df_t = dd.from_pandas(
         pd.DataFrame(dict(a0=[1, 2, 3], b1=date_range("20180101", periods=3))),
-        npartitions=1,
+        npartitions=npartitions,
     )
     df_s = dd.from_pandas(
         pd.DataFrame(dict(a1=[2, 3, 4], b2=date_range("20171230", periods=3))),
-        npartitions=1,
+        npartitions=npartitions,
     )
     con = connect({"t": df_t, "s": df_s})
     t = con.table("t")
@@ -490,7 +492,7 @@ def test_select_on_unambiguous_asof_join(func):
     ]
     assert not expected.compute(scheduler='single-threaded').empty
     expr = func(join)
-    result = expr.execute()
+    result = expr.compile()
     tm.assert_frame_equal(
         result.compute(scheduler='single-threaded'),
         expected.compute(scheduler='single-threaded'),

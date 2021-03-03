@@ -5,7 +5,6 @@ import ibis
 import ibis.expr.datatypes as dt
 
 
-@pytest.mark.xfail_backends(['dask'])  # TODO - pandas - #2553
 def test_string_col_is_unicode(backend, alltypes, df):
     dtype = alltypes.string_col.type()
     assert dtype == dt.String(nullable=dtype.nullable)
@@ -274,3 +273,25 @@ def test_special_strings(backend, con, alltypes, data, data_type):
     expr = alltypes[[alltypes.id, lit]].head(1)
     df = expr.execute()
     assert df['tmp'].iloc[0] == data
+
+
+@pytest.mark.xfail_backends(['clickhouse'])  # #2642
+@pytest.mark.xfail_unsupported
+def test_substr_with_null_values(backend, alltypes, df):
+    table = alltypes.mutate(
+        substr_col_null=ibis.case()
+        .when(alltypes['bool_col'], alltypes['string_col'])
+        .else_(None)
+        .end()
+        .substr(0, 2)
+    )
+
+    result = table.execute()
+
+    expected = df.copy()
+    mask = ~expected['bool_col']
+    expected['substr_col_null'] = expected['string_col']
+    expected['substr_col_null'][mask] = None
+    expected['substr_col_null'] = expected['substr_col_null'].str.slice(0, 2)
+
+    backend.assert_frame_equal(result, expected)

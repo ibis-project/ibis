@@ -14,21 +14,21 @@ from ..client import DaskTable
 pytestmark = pytest.mark.dask
 
 
-def make_dask_data_frame():
-    return dd.from_pandas(pandas_tm.makeDataFrame(), npartitions=1)
+def make_dask_data_frame(npartitions):
+    return dd.from_pandas(pandas_tm.makeDataFrame(), npartitions=npartitions)
 
 
 @pytest.fixture
-def client():
+def client(npartitions):
     return connect(
         {
             'df': dd.from_pandas(
                 pd.DataFrame({'a': [1, 2, 3], 'b': list('abc')}),
-                npartitions=1,
+                npartitions=npartitions,
             ),
             'df_unknown': dd.from_pandas(
                 pd.DataFrame({'array_of_strings': [['a', 'b'], [], ['c']]}),
-                npartitions=1,
+                npartitions=npartitions,
             ),
         }
     )
@@ -48,14 +48,14 @@ def test_client_table_repr(table):
     assert 'DaskTable' in repr(table)
 
 
-def test_load_data(client):
-    client.load_data('testing', make_dask_data_frame())
+def test_load_data(client, npartitions):
+    client.load_data('testing', make_dask_data_frame(npartitions))
     assert client.exists_table('testing')
     assert client.get_schema('testing')
 
 
-def test_create_table(client):
-    client.create_table('testing', obj=make_dask_data_frame())
+def test_create_table(client, npartitions):
+    client.create_table('testing', obj=make_dask_data_frame(npartitions))
     assert client.exists_table('testing')
     client.create_table('testingschema', schema=client.get_schema('testing'))
     assert client.exists_table('testingschema')
@@ -83,7 +83,7 @@ def test_drop(table):
     expr = table.drop(['a'])
     result = expr.execute()
     expected = table[['b', 'c']].execute()
-    tm.assert_frame_equal(result.compute(), expected.compute())
+    tm.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize(

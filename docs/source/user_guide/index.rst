@@ -16,6 +16,8 @@ the information is available in the :ref:`api`.
 
    configuration
    sql
+   topk
+   self_joins
    udf
    geospatial_analysis
    design

@@ -9,16 +9,13 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.pandas.dispatch import (  # noqa: F401
-    execute_node,
-    post_execute,
-    pre_execute,
-)
+from ibis.backends.pandas.dispatch import execute_node as pandas_execute_node
 from ibis.expr.scope import Scope
 
-from .. import execute, from_dataframe
+from .. import from_dataframe
 from ..client import DaskClient
-from ..core import is_computable_input
+from ..core import execute, is_computable_input
+from ..dispatch import execute_node, post_execute, pre_execute
 
 pytestmark = pytest.mark.dask
 
@@ -32,16 +29,16 @@ def test_from_dataframe(dataframe, ibis_table, core_client):
     t = from_dataframe(dataframe)
     result = t.execute()
     expected = ibis_table.execute()
-    tm.assert_frame_equal(result.compute(), expected.compute())
+    tm.assert_frame_equal(result, expected)
 
     t = from_dataframe(dataframe, name='foo')
     expected = ibis_table.execute()
-    tm.assert_frame_equal(result.compute(), expected.compute())
+    tm.assert_frame_equal(result, expected)
 
     client = core_client
     t = from_dataframe(dataframe, name='foo', client=client)
     expected = ibis_table.execute()
-    tm.assert_frame_equal(result.compute(), expected.compute())
+    tm.assert_frame_equal(result, expected)
 
 
 def test_pre_execute_basic():
@@ -177,3 +174,9 @@ def test_scope_look_up():
     scope = scope.merge_scope(Scope({one_day: 1}, None))
     assert scope.get_value(one_hour) is None
     assert scope.get_value(one_day) is not None
+
+
+def test_new_dispatcher():
+    types = (ops.TableColumn, dd.DataFrame)
+    assert execute_node.dispatch(*types) is not None
+    assert pandas_execute_node.dispatch(*types) is None

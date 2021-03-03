@@ -4,7 +4,7 @@ from pytest import param
 
 import ibis.expr.datatypes as dt
 
-from .datatypes import (
+from ..datatypes import (
     TypeTranslationContext,
     UDFContext,
     ibis_type_to_bigquery_type,

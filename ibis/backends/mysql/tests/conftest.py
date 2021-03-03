@@ -12,6 +12,8 @@ class TestConf(BackendTest, RoundHalfToEven):
     check_dtype = False
     supports_window_operations = False
     returned_timestamp_unit = 's'
+    supports_arrays = False
+    supports_arrays_outside_of_select = supports_arrays
 
     def __init__(self, data_directory: Path) -> None:
         super().__init__(data_directory)

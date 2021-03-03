@@ -871,6 +871,63 @@ class Arbitrary(Reduction):
     output_type = rlz.scalar_like('arg')
 
 
+class BitAnd(Reduction):
+    """Aggregate bitwise AND operation.
+
+    All elements in an integer column are ANDed together. This can be used
+    to determine which bit flags are set on all elements.
+
+    Resources:
+
+    * `BigQuery BIT_AND
+      <https://cloud.google.com/bigquery/docs/reference/standard-sql/aggregate_functions#bit_and>`_
+    * `MySQL BIT_AND
+      <https://dev.mysql.com/doc/refman/5.7/en/aggregate-functions.html#function_bit-and>`_
+    """
+
+    arg = Arg(rlz.column(rlz.integer))
+    where = Arg(rlz.boolean, default=None)
+    output_type = rlz.scalar_like('arg')
+
+
+class BitOr(Reduction):
+    """Aggregate bitwise OR operation.
+
+    All elements in an integer column are ORed together. This can be used
+    to determine which bit flags are set on any element.
+
+    Resources:
+
+    * `BigQuery BIT_OR
+      <https://cloud.google.com/bigquery/docs/reference/standard-sql/aggregate_functions#bit_or>`_
+    * `MySQL BIT_OR
+      <https://dev.mysql.com/doc/refman/5.7/en/aggregate-functions.html#function_bit-or>`_
+    """
+
+    arg = Arg(rlz.column(rlz.integer))
+    where = Arg(rlz.boolean, default=None)
+    output_type = rlz.scalar_like('arg')
+
+
+class BitXor(Reduction):
+    """Aggregate bitwise XOR operation.
+
+    All elements in an integer column are XORed together. This can be used
+    as a parity checksum of element values.
+
+    Resources:
+
+    * `BigQuery BIT_XOR
+      <https://cloud.google.com/bigquery/docs/reference/standard-sql/aggregate_functions#bit_xor>`_
+    * `MySQL BIT_XOR
+      <https://dev.mysql.com/doc/refman/5.7/en/aggregate-functions.html#function_bit-xor>`_
+    """
+
+    arg = Arg(rlz.column(rlz.integer))
+    where = Arg(rlz.boolean, default=None)
+    output_type = rlz.scalar_like('arg')
+
+
 class Sum(Reduction):
     arg = Arg(rlz.column(rlz.numeric))
     where = Arg(rlz.boolean, default=None)
@@ -2833,6 +2890,21 @@ class IntervalFromInteger(ValueOp):
     def output_type(self):
         dtype = dt.Interval(self.unit, self.arg.type())
         return rlz.shape_like(self.arg, dtype=dtype)
+
+
+class ArrayColumn(ValueOp):
+    cols = Arg(rlz.list_of(rlz.column(rlz.any), min_length=1))
+
+    def _validate(self):
+        if len(set([col.type() for col in self.cols])) > 1:
+            raise com.IbisTypeError(
+                f'The types of all input columns must match exactly in a '
+                f'{type(self).__name__} operation.'
+            )
+
+    def output_type(self):
+        first_dtype = self.cols[0].type()
+        return dt.Array(first_dtype).column_type()
 
 
 class ArrayLength(UnaryOp):

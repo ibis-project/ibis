@@ -6,7 +6,8 @@ import dask.dataframe as dd
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.pandas.execution.decimal import execute_node
+
+from ..dispatch import execute_node
 
 
 @execute_node.register(ops.Cast, dd.Series, dt.Decimal)
