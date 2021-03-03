@@ -1,7 +1,6 @@
 import collections
 import datetime
 import decimal
-from unittest import mock
 
 import numpy as np
 import pandas as pd
@@ -18,8 +17,7 @@ bq = pytest.importorskip('google.cloud.bigquery')
 ga = pytest.importorskip('google.auth')
 exceptions = pytest.importorskip('google.api_core.exceptions')
 
-from .client import bigquery_param  # noqa: E402, isort:skip
-from .tests.conftest import connect  # noqa: E402, isort:skip
+from ..client import bigquery_param  # noqa: E402, isort:skip
 
 
 def test_table(alltypes):
@@ -542,11 +540,6 @@ def test_exists_database_different_project(client, name, expected):
     assert client.exists_database(name) is expected
 
 
-def test_repeated_project_name(project_id):
-    con = connect(project_id, dataset_id='{}.testing'.format(project_id))
-    assert 'functional_alltypes' in con.list_tables()
-
-
 def test_multiple_project_queries(client):
     so = client.table(
         'posts_questions', database='bigquery-public-data.stackoverflow'
@@ -721,23 +714,3 @@ def test_approx_median(alltypes):
     # Since 6 and 7 are right on the edge for median in the range of months
     # (1-12), accept either for the approximate function.
     assert result in (6, 7)
-
-
-def test_client_without_dataset(project_id):
-    con = connect(project_id, dataset_id=None)
-    with pytest.raises(ValueError, match="Unable to determine BigQuery"):
-        con.list_tables()
-
-
-def test_client_sets_user_agent(project_id, monkeypatch):
-    mock_client = mock.create_autospec(bq.Client)
-    monkeypatch.setattr(bq, 'Client', mock_client)
-    connect(
-        project_id,
-        dataset_id='bigquery-public-data.stackoverflow',
-        application_name='my-great-app/0.7.0',
-    )
-    info = mock_client.call_args[1]['client_info']
-    user_agent = info.to_user_agent()
-    assert ' ibis/{}'.format(ibis.__version__) in user_agent
-    assert 'my-great-app/0.7.0 ' in user_agent
