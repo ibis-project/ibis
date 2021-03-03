@@ -11,7 +11,7 @@ from .client import (  # noqa: F401
     ImpalaDatabase,
     ImpalaTable,
 )
-from .compiler import dialect, ImpalaDialect, ImpalaQueryBuilder  # noqa: F401
+from .compiler import ImpalaDialect, ImpalaQueryBuilder, dialect  # noqa: F401
 from .hdfs import HDFS, WebHDFS, hdfs_connect  # noqa: F401
 from .udf import *  # noqa: F401,F403
 

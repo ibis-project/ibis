@@ -13,11 +13,13 @@
 # limitations under the License.
 
 from ibis.backends.base import BaseBackend
-from ibis.backends.base_sqlalchemy.alchemy import (to_sqlalchemy,
-                                                   AlchemyQueryBuilder)
+from ibis.backends.base_sqlalchemy.alchemy import (
+    AlchemyQueryBuilder,
+    to_sqlalchemy,
+)
 
 from .client import SQLiteClient
-from .compiler import dialect, rewrites, SQLiteDialect  # noqa: F401
+from .compiler import SQLiteDialect, dialect, rewrites  # noqa: F401
 
 
 def compile(expr, params=None):

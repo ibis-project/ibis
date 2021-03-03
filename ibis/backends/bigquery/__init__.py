@@ -12,7 +12,7 @@ from ibis.backends.base import BaseBackend
 from ibis.config import options  # noqa: F401
 
 from .client import BigQueryClient
-from .compiler import dialect, BigQueryQueryBuilder, BigQueryDialect
+from .compiler import BigQueryDialect, BigQueryQueryBuilder, dialect
 
 try:
     from .udf import udf
