@@ -4144,82 +4144,6 @@ def _safe_get_name(expr):
         return None
 
 
-def get_mutation_exprs(
-    exprs: List[ir.Expr], table: ir.TableExpr
-) -> List[ir.Expr]:
-    """Given the list of exprs and the underlying table of a mutation op,
-    return the exprs to use to instantiate the mutation."""
-    # The below logic computes the mutation node exprs by splitting the
-    # assignment exprs into two disjoint sets:
-    # 1) overwriting_cols_to_expr, which maps a column name to its expr
-    # if the expr contains a column that overwrites an existing table column.
-    # All keys in this dict are columns in the original table that are being
-    # overwritten by an assignment expr. All values in this dict are either:
-    #     (a) The expr of the overwriting column. Note that in the case of
-    #     DestructColumn, this will specifically only happen for the first
-    #     overwriting column within that expr.
-    #     (b) None. This is the case for the second (and beyond) overwriting
-    #     column(s) inside the DestructColumn and is used as a flag to prevent
-    #     the same DestructColumn expr from being duplicated in the output.
-    # 2) non_overwriting_exprs, which is a list of all exprs that do not do
-    # any overwriting. That is, if an expr is in this list, then its column
-    # name does not exist in the original table.
-    # Given these two data structures, we can compute the mutation node exprs
-    # based on whether any columns are being overwritten.
-    # TODO issue #2649
-    # Due to a known limitation with how we treat DestructColumn
-    # in assignments, the ordering of op.selections may not exactly
-    # correspond with the column ordering we want (i.e. all new columns
-    # should appear at the end, but currently they are materialized
-    # directly after those overwritten columns).
-    overwriting_cols_to_expr = {}
-    non_overwriting_exprs = []
-    table_schema = table.schema()
-    for expr in exprs:
-        is_first_overwrite = True
-        expr_contains_overwrite = False
-        if isinstance(expr, ir.DestructColumn):
-            if expr.get_name():
-                raise com.ExpressionError(
-                    f"Cannot name a destruct column: {expr.get_name()}"
-                )
-            for name in expr.type().names:
-                if name in table_schema:
-                    # The below is necessary to ensure that:
-                    # A) all overwritten cols inside the DestructColumn are
-                    # accounted for, while
-                    # B) we don't repeat the same DestructColumn expr more
-                    # than once inside the final mutation node exprs.
-                    # This is both okay and necessary because DestructColumn
-                    # columns are all packaged together, so the expr should
-                    # appear exactly once in the mutation node exprs.
-                    if is_first_overwrite:
-                        overwriting_cols_to_expr[name] = expr
-                        is_first_overwrite = False
-                    else:
-                        overwriting_cols_to_expr[name] = None
-                    expr_contains_overwrite = True
-        elif (
-            isinstance(expr, ir.ValueExpr) and expr.get_name() in table_schema
-        ):
-            overwriting_cols_to_expr[expr.get_name()] = expr
-            expr_contains_overwrite = True
-
-        if not expr_contains_overwrite:
-            non_overwriting_exprs.append(expr)
-
-    columns = table.columns
-    if overwriting_cols_to_expr:
-        proj_exprs = [
-            overwriting_cols_to_expr.get(column, table[column])
-            for column in columns
-            if overwriting_cols_to_expr.get(column, table[column]) is not None
-        ] + non_overwriting_exprs
-    else:
-        proj_exprs = [table] + exprs
-    return proj_exprs
-
-
 def mutate(
     table: ir.TableExpr, exprs: List[ir.Expr] = None, **mutations: Any
 ) -> ir.TableExpr:
@@ -4283,7 +4207,7 @@ def mutate(
         for name, expr in sorted(mutations.items(), key=operator.itemgetter(0))
     )
 
-    mutation_exprs = get_mutation_exprs(exprs, table)
+    mutation_exprs = _L.get_mutation_exprs(exprs, table)
     return table.projection(mutation_exprs)
 
 
