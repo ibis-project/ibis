@@ -5,7 +5,7 @@ import datetime
 import functools
 import numbers
 import operator
-from typing import List, Union
+from typing import Any, List, Union
 
 import dateutil.parser
 import pandas as pd
@@ -4220,7 +4220,9 @@ def get_mutation_exprs(
     return proj_exprs
 
 
-def mutate(table, exprs=None, **mutations):
+def mutate(
+    table: ir.TableExpr, exprs: List[ir.Expr] = None, **mutations: Any
+) -> ir.TableExpr:
     """
     Convenience function for table projections involving adding columns
 
