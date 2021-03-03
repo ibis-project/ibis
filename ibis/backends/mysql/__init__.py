@@ -1,8 +1,9 @@
 from ibis.backends.base import BaseBackend
-from ibis.backends.base_sqlalchemy.alchemy import to_sqlalchemy
+from ibis.backends.base_sqlalchemy.alchemy import (to_sqlalchemy,
+                                                   AlchemyQueryBuilder)
 
 from .client import MySQLClient
-from .compiler import dialect, rewrites  # noqa: F401
+from .compiler import dialect, rewrites, MySQLDialect  # noqa: F401
 
 
 def compile(expr, params=None):
@@ -125,6 +126,6 @@ def connect(
 
 class Backend(BaseBackend):
     name = 'mysql'
-    buider = None
-    dialect = None
+    builder = AlchemyQueryBuilder
+    dialect = MySQLDialect
     connect = connect
