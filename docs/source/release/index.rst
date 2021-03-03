@@ -12,6 +12,12 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :feature:`2655` Add `auth_local_webserver`, `auth_external_data`, and
+  `auth_cache` parameters to BigQuery connect method. Set
+  `auth_local_webserver` to use a local server instead of copy-pasting an
+  authorization code. Set `auth_external_data` to true to request additional
+  scopes required to query Google Drive and Sheets. Set `auth_cache` to
+  `reauth` or `none` to force reauthentication.
 * :bug:`2588` Fix BigQuery connect bug that ignored project ID parameter
 * :bug: `2636` Fix overwrite logic to account for DestructColumn inside mutate API
 * :feature:`2641` Add `bit_and`, `bit_or`, and `bit_xor` integer column aggregates (BigQuery and MySQL backends)
