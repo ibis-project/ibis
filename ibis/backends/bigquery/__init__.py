@@ -109,6 +109,6 @@ def connect(
 
 class Backend(BaseBackend):
     name = 'bigquery'
-    buider = None
+    builder = None
     dialect = None
     connect = connect

@@ -99,6 +99,6 @@ PandasClient.dialect = dialect = PandasDialect
 
 class Backend(BaseBackend):
     name = 'pandas'
-    buider = None
+    builder = None
     dialect = None
     connect = connect

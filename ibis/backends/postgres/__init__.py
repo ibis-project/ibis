@@ -127,6 +127,6 @@ def connect(
 
 class Backend(BaseBackend):
     name = 'postgres'
-    buider = None
+    builder = None
     dialect = None
     connect = connect

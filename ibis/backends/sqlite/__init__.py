@@ -49,6 +49,6 @@ def connect(path=None, create=False):
 
 class Backend(BaseBackend):
     name = 'sqlite'
-    buider = None
+    builder = None
     dialect = None
     connect = connect

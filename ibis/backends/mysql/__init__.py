@@ -125,6 +125,6 @@ def connect(
 
 class Backend(BaseBackend):
     name = 'mysql'
-    buider = None
+    builder = None
     dialect = None
     connect = connect

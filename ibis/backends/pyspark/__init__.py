@@ -25,6 +25,6 @@ def connect(session):
 
 class Backend(BaseBackend):
     name = 'pyspark'
-    buider = None
+    builder = None
     dialect = None  # noqa: F811
     connect = connect

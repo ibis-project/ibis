@@ -118,6 +118,6 @@ def connect(
 
 class Backend(BaseBackend):
     name = 'clickhouse'
-    buider = None
+    builder = None
     dialect = None
     connect = connect

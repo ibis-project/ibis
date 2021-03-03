@@ -147,6 +147,6 @@ def connect(
 
 class Backend(BaseBackend):
     name = 'impala'
-    buider = None
+    builder = None
     dialect = None
     connect = connect
