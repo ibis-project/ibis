@@ -1,6 +1,5 @@
 """BigQuery public API."""
 
-from collections import namedtuple
 from typing import Optional
 
 import google.auth.credentials
@@ -65,9 +64,6 @@ CLIENT_ID = (
     "546535678771-gvffde27nd83kfl6qbrnletqvkdmsese.apps.googleusercontent.com"
 )
 CLIENT_SECRET = "iU5ohAF2qcqrujegE3hQ1cPt"
-
-
-AuthOptions = namedtuple("AuthOptions", [],)
 
 
 def connect(
