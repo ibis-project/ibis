@@ -37,7 +37,7 @@ def connect(path):
     -------
     CSVClient
     """
-    return CSVClient(path)
+    return CSVClient(backend=Backend, root=path)
 
 
 class CSVTable(ops.DatabaseTable):
@@ -47,11 +47,6 @@ class CSVTable(ops.DatabaseTable):
 
 
 class CSVClient(FileClient):
-
-    dialect = dialect
-    extension = 'csv'
-    table_class = CSVTable
-
     def insert(self, path, expr, index=False, **kwargs):
         path = self.root / path
         data = execute(expr)
@@ -137,5 +132,7 @@ def csv_pre_execute_selection(
 class Backend(BaseBackend):
     name = 'csv'
     buider = None
-    dialect = None
+    dialect = dialect
+    extension = 'csv'
+    table_class = CSVTable
     connect = connect

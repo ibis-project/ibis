@@ -18,7 +18,7 @@ from ibis.backends.base_sqlalchemy.alchemy import (
     to_sqlalchemy,
 )
 
-from .client import SQLiteClient
+from .client import SQLiteClient, SQLiteDatabase, SQLiteTable
 from .compiler import SQLiteDialect, dialect, rewrites  # noqa: F401
 
 
@@ -52,4 +52,6 @@ class Backend(BaseBackend):
     name = 'sqlite'
     builder = AlchemyQueryBuilder
     dialect = SQLiteDialect
+    database_class = SQLiteDatabase
+    table_class = SQLiteTable
     connect = connect

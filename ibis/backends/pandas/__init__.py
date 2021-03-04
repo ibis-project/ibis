@@ -6,7 +6,7 @@ import ibis.config
 from ibis.backends.base import BaseBackend
 from ibis.backends.base_sqlalchemy.compiler import Dialect
 
-from .client import PandasClient
+from .client import PandasClient, PandasDatabase, PandasTable
 from .execution import execute, execute_node
 from .udf import udf
 
@@ -100,5 +100,9 @@ PandasClient.dialect = dialect = PandasDialect
 class Backend(BaseBackend):
     name = 'pandas'
     builder = None
+    # XXX dialect in client was None. Maybe to avoid circular imports
+    # since it's define here and not in `compile.py`?
     dialect = PandasDialect
+    database_class = PandasDatabase
+    table_class = PandasTable
     connect = connect

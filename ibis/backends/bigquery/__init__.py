@@ -11,7 +11,10 @@ import ibis.config
 from ibis.backends.base import BaseBackend
 from ibis.config import options  # noqa: F401
 
-from .client import BigQueryClient
+from .client import (BigQueryClient,
+                     BigQueryQuery,
+                     BigQueryDatabase,
+                     BigQueryTable)
 from .compiler import BigQueryDialect, BigQueryQueryBuilder, dialect
 
 try:
@@ -100,7 +103,8 @@ def connect(
     project_id = project_id or default_project_id
 
     return BigQueryClient(
-        project_id,
+        backend=Backend,
+        project_id=project_id,
         dataset_id=dataset_id,
         credentials=credentials,
         application_name=application_name,
@@ -111,4 +115,7 @@ class Backend(BaseBackend):
     name = 'bigquery'
     builder = BigQueryQueryBuilder
     dialect = BigQueryDialect
+    query_class = BigQueryQuery
+    database_class = BigQueryDatabase
+    table_class = BigQueryTable
     connect = connect

@@ -18,7 +18,7 @@ def connect(path):
     -------
     HDF5Client
     """
-    return HDFClient(path)
+    return HDFClient(backend=Backend, root=path)
 
 
 class HDFTable(ops.DatabaseTable):
@@ -26,9 +26,6 @@ class HDFTable(ops.DatabaseTable):
 
 
 class HDFClient(FileClient):
-    extension = 'h5'
-    table_class = HDFTable
-
     def insert(
         self, path, key, expr, format='table', data_columns=True, **kwargs
     ):
@@ -82,4 +79,6 @@ class Backend(BaseBackend):
     name = 'hdf5'
     buider = None
     dialect = None
+    extension = 'h5'
+    table_class = HDFTable
     connect = connect

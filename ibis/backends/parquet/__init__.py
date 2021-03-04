@@ -60,7 +60,7 @@ def infer_parquet_schema(schema):
 
 
 def connect(dictionary):
-    return ParquetClient(dictionary)
+    return ParquetClient(backend=Backend, root=dictionary)
 
 
 class ParquetTable(ops.DatabaseTable):
@@ -68,11 +68,6 @@ class ParquetTable(ops.DatabaseTable):
 
 
 class ParquetClient(FileClient):
-
-    dialect = dialect
-    extension = 'parquet'
-    table_class = ParquetTable
-
     def insert(self, path, expr, **kwargs):
         path = self.root / path
         df = execute(expr)
@@ -122,5 +117,7 @@ def parquet_read_table(op, client, scope, **kwargs):
 class Backend(BaseBackend):
     name = 'parquet'
     builder = None
-    dialect = None
+    dialect = dialect
+    extension = 'parquet'
+    table_class = ParquetTable
     connect = connect

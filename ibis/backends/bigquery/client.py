@@ -373,14 +373,9 @@ def parse_project_and_dataset(
 
 class BigQueryClient(SQLClient):
     """An ibis BigQuery client implementation."""
-
-    query_class = BigQueryQuery
-    database_class = BigQueryDatabase
-    table_class = BigQueryTable
-    dialect = comp.BigQueryDialect
-
     def __init__(
         self,
+        backend,
         project_id,
         dataset_id=None,
         credentials=None,
@@ -399,6 +394,10 @@ class BigQueryClient(SQLClient):
             A string identifying your application to Google API endpoints.
 
         """
+        self.query_class = backend.query_class
+        self.database_class = backend.database_class
+        self.table_class = backend.table_class
+        self.dialect = backend.dialect
         (
             self.data_project,
             self.billing_project,

@@ -9,8 +9,6 @@ import sqlalchemy.dialects.mysql as mysql
 import ibis.backends.base_sqlalchemy.alchemy as alch
 import ibis.expr.datatypes as dt
 
-from .compiler import MySQLDialect
-
 # TODO(kszucs): unsigned integers
 
 
@@ -54,13 +52,9 @@ class MySQLClient(alch.AlchemyClient):
     ----------
     con : sqlalchemy.engine.Engine
     """
-
-    dialect = MySQLDialect
-    database_class = MySQLDatabase
-    table_class = MySQLTable
-
     def __init__(
         self,
+        backend,
         host='localhost',
         user=None,
         password=None,
@@ -69,6 +63,9 @@ class MySQLClient(alch.AlchemyClient):
         url=None,
         driver='pymysql',
     ):
+        self.dialect = backend.dialect
+        self.database_class = backend.database_class
+        self.table_class = backend.table_class
         if url is None:
             if driver != 'pymysql':
                 raise NotImplementedError(

@@ -780,15 +780,14 @@ class ImpalaClient(SQLClient):
     """
     An Ibis client interface that uses Impala
     """
-
-    dialect = ImpalaDialect
-    database_class = ImpalaDatabase
-    query_class = ImpalaQuery
-    table_class = ImpalaDatabaseTable
-    table_expr_class = ImpalaTable
-
-    def __init__(self, con, hdfs_client=None, **params):
+    def __init__(self, backend, con, hdfs_client=None, **params):
         import hdfs
+
+        self.dialect = backend.dialect
+        self.database_class = backend.database_class
+        self.query_class = backend.query_class
+        self.table_class = backend.table_class
+        self.table_expr_class = backend.table_expr_class
 
         self.con = con
 

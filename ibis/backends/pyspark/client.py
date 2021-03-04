@@ -6,18 +6,13 @@ from ibis.backends.spark.client import SparkClient
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import canonicalize_context
 
-from .compiler import PySparkDialect, PySparkExprTranslator
-from .operations import PySparkTable
+from .compiler import PySparkExprTranslator
 
 
 class PySparkClient(SparkClient):
     """
     An ibis client that uses PySpark SQL Dataframe
     """
-
-    dialect = PySparkDialect
-    table_class = PySparkTable
-
     def __init__(self, session):
         super().__init__(session)
         self.translator = PySparkExprTranslator()
