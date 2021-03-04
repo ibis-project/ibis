@@ -19,27 +19,26 @@ from .client import SQLiteClient
 from .compiler import SQLiteDialect
 
 
-def connect(path=None, create=False):
-
-    """
-    Create an Ibis client connected to a SQLite database.
-
-    Multiple database files can be created using the attach() method
-
-    Parameters
-    ----------
-    path : string, default None
-        File path to the SQLite database file. If None, creates an in-memory
-        transient database and you can use attach() to add more files
-    create : boolean, default False
-        If file does not exist, create it
-    """
-
-    return SQLiteClient(path, create=create)
-
-
 class Backend(BaseBackend):
     name = 'sqlite'
     builder = AlchemyQueryBuilder
     dialect = SQLiteDialect
-    connect = connect
+
+    def connect(self, path=None, create=False):
+
+        """
+        Create an Ibis client connected to a SQLite database.
+
+        Multiple database files can be created using the attach() method
+
+        Parameters
+        ----------
+        path : string, default None
+            File path to the SQLite database file. If None, creates an
+            in-memory transient database and you can use attach() to add more
+            files
+        create : boolean, default False
+            If file does not exist, create it
+        """
+
+        return SQLiteClient(path, create=create)

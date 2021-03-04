@@ -26,20 +26,6 @@ def _read_csv(path, schema, **kwargs):
     )
 
 
-def connect(path):
-    """Create a CSVClient for use with Ibis
-
-    Parameters
-    ----------
-    path: str or pathlib.Path
-
-    Returns
-    -------
-    CSVClient
-    """
-    return CSVClient(path)
-
-
 class CSVTable(ops.DatabaseTable):
     def __init__(self, name, schema, source, **kwargs):
         super().__init__(name, schema, source)
@@ -138,4 +124,16 @@ class Backend(BaseBackend):
     name = 'csv'
     builder = None
     dialect = None
-    connect = connect
+
+    def connect(self, path):
+        """Create a CSVClient for use with Ibis
+
+        Parameters
+        ----------
+        path: str or pathlib.Path
+
+        Returns
+        -------
+        CSVClient
+        """
+        return CSVClient(path)

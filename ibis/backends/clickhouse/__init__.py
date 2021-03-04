@@ -1,12 +1,8 @@
-import ibis.common.exceptions as com
 import ibis.config
 from ibis.backends.base import BaseBackend
-from ibis.config import options
 
 from .client import ClickhouseClient
-from .compiler import ClickhouseDialect, ClickhouseQueryBuilder, dialect
-
-__all__ = 'compile', 'verify', 'connect', 'dialect'
+from .compiler import ClickhouseDialect, ClickhouseQueryBuilder
 
 
 try:
@@ -25,70 +21,69 @@ with ibis.config.config_prefix('clickhouse'):
     )
 
 
-def connect(
-    host='localhost',
-    port=9000,
-    database='default',
-    user='default',
-    password='',
-    client_name='ibis',
-    compression=_default_compression,
-):
-    """Create an ClickhouseClient for use with Ibis.
-
-    Parameters
-    ----------
-    host : str, optional
-        Host name of the clickhouse server
-    port : int, optional
-        Clickhouse server's  port
-    database : str, optional
-        Default database when executing queries
-    user : str, optional
-        User to authenticate with
-    password : str, optional
-        Password to authenticate with
-    client_name: str, optional
-        This will appear in clickhouse server logs
-    compression: str, optional
-        Weather or not to use compression.
-        Default is lz4 if installed else False.
-        Possible choices: lz4, lz4hc, quicklz, zstd, True, False
-        True is equivalent to 'lz4'.
-
-    Examples
-    --------
-    >>> import ibis
-    >>> import os
-    >>> clickhouse_host = os.environ.get('IBIS_TEST_CLICKHOUSE_HOST',
-    ...                                  'localhost')
-    >>> clickhouse_port = int(os.environ.get('IBIS_TEST_CLICKHOUSE_PORT',
-    ...                                      9000))
-    >>> client = ibis.clickhouse.connect(
-    ...     host=clickhouse_host,
-    ...     port=clickhouse_port
-    ... )
-    >>> client  # doctest: +ELLIPSIS
-    <ibis.clickhouse.client.ClickhouseClient object at 0x...>
-
-    Returns
-    -------
-    ClickhouseClient
-    """
-    client = ClickhouseClient(
-        host,
-        port=port,
-        database=database,
-        user=user,
-        password=password,
-        client_name=client_name,
-        compression=compression,
-    )
-    return client
-
-
 class Backend(BaseBackend):
     name = 'clickhouse'
     builder = ClickhouseQueryBuilder
     dialect = ClickhouseDialect
-    connect = connect
+
+    def connect(
+        self,
+        host='localhost',
+        port=9000,
+        database='default',
+        user='default',
+        password='',
+        client_name='ibis',
+        compression=_default_compression,
+    ):
+        """Create an ClickhouseClient for use with Ibis.
+
+        Parameters
+        ----------
+        host : str, optional
+            Host name of the clickhouse server
+        port : int, optional
+            Clickhouse server's  port
+        database : str, optional
+            Default database when executing queries
+        user : str, optional
+            User to authenticate with
+        password : str, optional
+            Password to authenticate with
+        client_name: str, optional
+            This will appear in clickhouse server logs
+        compression: str, optional
+            Weather or not to use compression.
+            Default is lz4 if installed else False.
+            Possible choices: lz4, lz4hc, quicklz, zstd, True, False
+            True is equivalent to 'lz4'.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> import os
+        >>> clickhouse_host = os.environ.get('IBIS_TEST_CLICKHOUSE_HOST',
+        ...                                  'localhost')
+        >>> clickhouse_port = int(os.environ.get('IBIS_TEST_CLICKHOUSE_PORT',
+        ...                                      9000))
+        >>> client = ibis.clickhouse.connect(
+        ...     host=clickhouse_host,
+        ...     port=clickhouse_port
+        ... )
+        >>> client  # doctest: +ELLIPSIS
+        <ibis.clickhouse.client.ClickhouseClient object at 0x...>
+
+        Returns
+        -------
+        ClickhouseClient
+        """
+        client = ClickhouseClient(
+            host,
+            port=port,
+            database=database,
+            user=user,
+            password=password,
+            client_name=client_name,
+            compression=compression,
+        )
+        return client

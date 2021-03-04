@@ -32,55 +32,54 @@ CLIENT_ID = (
 CLIENT_SECRET = "iU5ohAF2qcqrujegE3hQ1cPt"
 
 
-def connect(
-    project_id: Optional[str] = None,
-    dataset_id: Optional[str] = None,
-    credentials: Optional[google.auth.credentials.Credentials] = None,
-    application_name: Optional[str] = None,
-) -> BigQueryClient:
-    """Create a BigQueryClient for use with Ibis.
-
-    Parameters
-    ----------
-    project_id : str
-        A BigQuery project id.
-    dataset_id : str
-        A dataset id that lives inside of the project indicated by
-        `project_id`.
-    credentials : google.auth.credentials.Credentials
-    application_name : str
-        A string identifying your application to Google API endpoints.
-
-    Returns
-    -------
-    BigQueryClient
-
-    """
-    default_project_id = None
-
-    if credentials is None:
-        credentials_cache = pydata_google_auth.cache.ReadWriteCredentialsCache(
-            filename="ibis.json"
-        )
-        credentials, default_project_id = pydata_google_auth.default(
-            SCOPES,
-            client_id=CLIENT_ID,
-            client_secret=CLIENT_SECRET,
-            credentials_cache=credentials_cache,
-        )
-
-    project_id = project_id or default_project_id
-
-    return BigQueryClient(
-        project_id,
-        dataset_id=dataset_id,
-        credentials=credentials,
-        application_name=application_name,
-    )
-
-
 class Backend(BaseBackend):
     name = 'bigquery'
     builder = BigQueryQueryBuilder
     dialect = BigQueryDialect
-    connect = connect
+
+    def connect(
+        self,
+        project_id: Optional[str] = None,
+        dataset_id: Optional[str] = None,
+        credentials: Optional[google.auth.credentials.Credentials] = None,
+        application_name: Optional[str] = None,
+    ) -> BigQueryClient:
+        """Create a BigQueryClient for use with Ibis.
+
+        Parameters
+        ----------
+        project_id : str
+            A BigQuery project id.
+        dataset_id : str
+            A dataset id that lives inside of the project indicated by
+            `project_id`.
+        credentials : google.auth.credentials.Credentials
+        application_name : str
+            A string identifying your application to Google API endpoints.
+
+        Returns
+        -------
+        BigQueryClient
+
+        """
+        default_project_id = None
+
+        if credentials is None:
+            credentials_cache = (pydata_google_auth.cache
+                                                   .ReadWriteCredentialsCache(
+                                                       filename="ibis.json"))
+            credentials, default_project_id = pydata_google_auth.default(
+                SCOPES,
+                client_id=CLIENT_ID,
+                client_secret=CLIENT_SECRET,
+                credentials_cache=credentials_cache,
+            )
+
+        project_id = project_id or default_project_id
+
+        return BigQueryClient(
+            project_id,
+            dataset_id=dataset_id,
+            credentials=credentials,
+            application_name=application_name,
+        )

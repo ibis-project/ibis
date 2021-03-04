@@ -59,10 +59,6 @@ def infer_parquet_schema(schema):
     return sch.schema(pairs)
 
 
-def connect(dictionary):
-    return ParquetClient(dictionary)
-
-
 class ParquetTable(ops.DatabaseTable):
     pass
 
@@ -123,4 +119,6 @@ class Backend(BaseBackend):
     name = 'parquet'
     builder = None
     dialect = None
-    connect = connect
+
+    def connect(self, dictionary):
+        return ParquetClient(dictionary)
