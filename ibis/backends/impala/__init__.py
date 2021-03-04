@@ -10,7 +10,7 @@ from .client import (  # noqa: F401
     ImpalaTable,
 )
 from .compiler import ImpalaDialect, ImpalaQueryBuilder
-from .hdfs import HDFS, WebHDFS, hdfs_connect  # noqa: F401
+from .hdfs import HDFS, WebHDFS, hdfs_connect
 from .udf import *  # noqa: F401,F403
 
 with ibis.config.config_prefix('impala'):
@@ -30,6 +30,12 @@ class Backend(BaseBackend):
     name = 'impala'
     builder = ImpalaQueryBuilder
     dialect = ImpalaDialect
+
+    HDFS = HDFS
+    WebHDFS = WebHDFS
+
+    def hdfs_connect(self, *args, **kwargs):
+        return hdfs_connect(*args, **kwargs)
 
     def connect(
         self,

@@ -77,6 +77,9 @@ class Backend(BaseBackend):
         """
         return PandasClient(dictionary)
 
+    def execute(self, *args, **kwargs):
+        return execute(*args, **kwargs)
+
     def from_dataframe(self, df, name='df', client=None):
         """
         convenience function to construct an ibis table

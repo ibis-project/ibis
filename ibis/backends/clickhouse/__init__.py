@@ -4,7 +4,6 @@ from ibis.backends.base import BaseBackend
 from .client import ClickhouseClient
 from .compiler import ClickhouseDialect, ClickhouseQueryBuilder
 
-
 try:
     import lz4  # noqa: F401
 
