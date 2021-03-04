@@ -65,9 +65,8 @@ class Backend(BaseBackend):
         default_project_id = None
 
         if credentials is None:
-            credentials_cache = pydata_google_auth.cache.ReadWriteCredentialsCache(
-                filename="ibis.json"
-            )
+            cache_func = pydata_google_auth.cache.ReadWriteCredentialsCache
+            credentials_cache = cache_func(filename="ibis.json")
             credentials, default_project_id = pydata_google_auth.default(
                 SCOPES,
                 client_id=CLIENT_ID,
