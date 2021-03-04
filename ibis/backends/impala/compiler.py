@@ -15,7 +15,6 @@ from ibis.backends.base_sql.compiler import (
     BaseTableSetFormatter,
 )
 
-
 # ----------------------------------------------------------------------
 # Select compilation
 
