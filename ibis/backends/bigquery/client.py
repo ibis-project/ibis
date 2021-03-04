@@ -373,6 +373,7 @@ def parse_project_and_dataset(
 
 class BigQueryClient(SQLClient):
     """An ibis BigQuery client implementation."""
+
     def __init__(
         self,
         backend,

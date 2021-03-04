@@ -313,6 +313,7 @@ def _register_aggregate(agg, con):
 
 class SQLiteClient(alch.AlchemyClient):
     """The Ibis SQLite client class."""
+
     def __init__(self, backend, path=None, create=False):
         super().__init__(sa.create_engine("sqlite://"))
         self.dialect = backend.dialect

@@ -88,13 +88,6 @@ class CSVClient(FileClient):
         return parse_version(pd.__version__)
 
 
-@execute_node.register(CSVClient.table_class, CSVClient)
-def csv_read_table(op, client, scope, **kwargs):
-    path = client.dictionary[op.name]
-    df = _read_csv(path, schema=op.schema, header=0, **op.read_csv_kwargs)
-    return df
-
-
 @pre_execute.register(ops.Selection, CSVClient)
 def csv_pre_execute_selection(
     op: ops.Node,
@@ -136,3 +129,10 @@ class Backend(BaseBackend):
     extension = 'csv'
     table_class = CSVTable
     connect = connect
+
+
+@execute_node.register(Backend.table_class, CSVClient)
+def csv_read_table(op, client, scope, **kwargs):
+    path = client.dictionary[op.name]
+    df = _read_csv(path, schema=op.schema, header=0, **op.read_csv_kwargs)
+    return df

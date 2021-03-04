@@ -2,12 +2,14 @@
 import ibis.common.exceptions as com
 from ibis.backends.base import BaseBackend
 
-from .client import (SparkClient,
-                     SparkDatabase,
-                     SparkQuery,
-                     SparkDatabaseTable,
-                     SparkTable)
-from .compiler import dialect, SparkDialect
+from .client import (
+    SparkClient,
+    SparkDatabase,
+    SparkDatabaseTable,
+    SparkQuery,
+    SparkTable,
+)
+from .compiler import SparkDialect, dialect
 from .udf import udf  # noqa: F401
 
 

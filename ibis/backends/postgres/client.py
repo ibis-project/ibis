@@ -29,6 +29,7 @@ class PostgreSQLClient(alch.AlchemyClient):
     ----------
     con : sqlalchemy.engine.Engine
     """
+
     def __init__(
         self,
         backend,

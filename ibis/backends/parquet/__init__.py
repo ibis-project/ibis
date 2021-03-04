@@ -106,14 +106,6 @@ class ParquetClient(FileClient):
         return parse_version(pa.__version__)
 
 
-@execute_node.register(ParquetClient.table_class, ParquetClient)
-def parquet_read_table(op, client, scope, **kwargs):
-    path = client.dictionary[op.name]
-    table = pq.read_table(str(path))
-    df = table.to_pandas()
-    return df
-
-
 class Backend(BaseBackend):
     name = 'parquet'
     builder = None
@@ -121,3 +113,11 @@ class Backend(BaseBackend):
     extension = 'parquet'
     table_class = ParquetTable
     connect = connect
+
+
+@execute_node.register(Backend.table_class, ParquetClient)
+def parquet_read_table(op, client, scope, **kwargs):
+    path = client.dictionary[op.name]
+    table = pq.read_table(str(path))
+    df = table.to_pandas()
+    return df

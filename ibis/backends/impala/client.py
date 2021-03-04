@@ -780,6 +780,7 @@ class ImpalaClient(SQLClient):
     """
     An Ibis client interface that uses Impala
     """
+
     def __init__(self, backend, con, hdfs_client=None, **params):
         import hdfs
 

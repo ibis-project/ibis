@@ -3,11 +3,13 @@ import ibis.config
 from ibis.backends.base import BaseBackend
 from ibis.config import options
 
-from .client import (ClickhouseClient,
-                     ClickhouseDatabase,
-                     ClickhouseQuery,
-                     ClickhouseDatabaseTable,
-                     ClickhouseTable)
+from .client import (
+    ClickhouseClient,
+    ClickhouseDatabase,
+    ClickhouseDatabaseTable,
+    ClickhouseQuery,
+    ClickhouseTable,
+)
 from .compiler import ClickhouseDialect, ClickhouseQueryBuilder, dialect
 
 __all__ = 'compile', 'verify', 'connect', 'dialect'

@@ -11,10 +11,12 @@ import ibis.config
 from ibis.backends.base import BaseBackend
 from ibis.config import options  # noqa: F401
 
-from .client import (BigQueryClient,
-                     BigQueryQuery,
-                     BigQueryDatabase,
-                     BigQueryTable)
+from .client import (
+    BigQueryClient,
+    BigQueryDatabase,
+    BigQueryQuery,
+    BigQueryTable,
+)
 from .compiler import BigQueryDialect, BigQueryQueryBuilder, dialect
 
 try:

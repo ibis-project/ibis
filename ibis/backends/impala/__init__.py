@@ -9,9 +9,9 @@ from .client import (  # noqa: F401
     ImpalaClient,
     ImpalaConnection,
     ImpalaDatabase,
-    ImpalaTable,
-    ImpalaQuery,
     ImpalaDatabaseTable,
+    ImpalaQuery,
+    ImpalaTable,
 )
 from .compiler import ImpalaDialect, ImpalaQueryBuilder, dialect  # noqa: F401
 from .hdfs import HDFS, WebHDFS, hdfs_connect  # noqa: F401
@@ -136,9 +136,9 @@ def connect(
 
     con = ImpalaConnection(pool_size=pool_size, **params)
     try:
-        client = ImpalaClient(backend=Backend,
-                              con=con,
-                              hdfs_client=hdfs_client)
+        client = ImpalaClient(
+            backend=Backend, con=con, hdfs_client=hdfs_client
+        )
     except Exception:
         con.close()
         raise

@@ -34,7 +34,7 @@ def connect(dictionary):
     -------
     PandasClient
     """
-    return PandasClient(dictionary)
+    return PandasClient(backend=Backend, dictionary=dictionary)
 
 
 def from_dataframe(df, name='df', client=None):

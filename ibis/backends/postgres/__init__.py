@@ -5,7 +5,7 @@ from ibis.backends.base_sqlalchemy.alchemy import (
     to_sqlalchemy,
 )
 
-from .client import PostgreSQLClient, PostgreSQLTable, PostgreSQLDatabase
+from .client import PostgreSQLClient, PostgreSQLDatabase, PostgreSQLTable
 from .compiler import (  # noqa: F401, E501
     PostgreSQLDialect,
     compiles,

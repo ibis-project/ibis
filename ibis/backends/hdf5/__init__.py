@@ -67,14 +67,6 @@ class HDFClient(FileClient):
         return self._list_databases_dirs_or_files(path)
 
 
-@execute_node.register(HDFClient.table_class, HDFClient)
-def hdf_read_table(op, client, scope, **kwargs):
-    key = op.name
-    path = client.dictionary[key]
-    df = pd.read_hdf(str(path), key, mode='r')
-    return df
-
-
 class Backend(BaseBackend):
     name = 'hdf5'
     buider = None
@@ -82,3 +74,11 @@ class Backend(BaseBackend):
     extension = 'h5'
     table_class = HDFTable
     connect = connect
+
+
+@execute_node.register(Backend.table_class, HDFClient)
+def hdf_read_table(op, client, scope, **kwargs):
+    key = op.name
+    path = client.dictionary[key]
+    df = pd.read_hdf(str(path), key, mode='r')
+    return df

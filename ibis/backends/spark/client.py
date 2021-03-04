@@ -275,6 +275,7 @@ class SparkClient(SQLClient):
     """
     An Ibis client interface that uses Spark SQL.
     """
+
     def __init__(self, backend, session):
         self.dialect = backend.dialect
         self.database_class = backend.database_class
