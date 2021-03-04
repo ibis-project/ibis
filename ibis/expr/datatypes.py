@@ -1,6 +1,7 @@
 import builtins
 import collections
 import datetime
+import enum
 import functools
 import itertools
 import numbers
@@ -1712,6 +1713,11 @@ def infer_integer(value: int, allow_overflow: bool = False) -> Integer:
         raise OverflowError(value)
 
     return int64
+
+
+@infer.register(enum.Enum)
+def infer_enum(value: enum.Enum) -> Enum:
+    return Enum(infer(value.name), infer(value.value),)
 
 
 @infer.register(bool)

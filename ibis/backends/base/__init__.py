@@ -12,9 +12,7 @@ class BaseBackend(abc.ABC):
     and implement all the required methods.
     """
 
-    def __init__(self, connection_string):
-        self.connection_string = connection_string
-
+    def __init__(self):
         with ibis.config.config_prefix(self.name):
             self.register_options()
 

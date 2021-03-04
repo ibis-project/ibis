@@ -5,7 +5,7 @@ import datetime
 import functools
 import numbers
 import operator
-from typing import Union
+from typing import Any, List, Union
 
 import dateutil.parser
 import pandas as pd
@@ -678,6 +678,7 @@ def _agg_function(name, klass, assign_default_name=True):
         return expr
 
     f.__name__ = name
+    f.__doc__ = klass.__doc__
     return f
 
 
@@ -1523,6 +1524,10 @@ _integer_value_methods = {
 }
 
 
+bit_and = _agg_function('bit_and', ops.BitAnd, True)
+bit_or = _agg_function('bit_or', ops.BitOr, True)
+bit_xor = _agg_function('bit_xor', ops.BitXor, True)
+
 mean = _agg_function('mean', ops.Mean, True)
 cummean = _unary_op('cummean', ops.CumulativeMean)
 
@@ -1611,6 +1616,12 @@ _numeric_column_methods = {
     'summary': _numeric_summary,
 }
 
+_integer_column_methods = {
+    'bit_and': bit_and,
+    'bit_or': bit_or,
+    'bit_xor': bit_xor,
+}
+
 _floating_value_methods = {
     'isnan': _unary_op('isnull', ops.IsNan),
     'isinf': _unary_op('isinf', ops.IsInf),
@@ -1621,6 +1632,7 @@ _add_methods(ir.IntegerValue, _integer_value_methods)
 _add_methods(ir.FloatingValue, _floating_value_methods)
 
 _add_methods(ir.NumericColumn, _numeric_column_methods)
+_add_methods(ir.IntegerColumn, _integer_column_methods)
 
 # ----------------------------------------------------------------------
 # GeoSpatial API
@@ -4132,7 +4144,9 @@ def _safe_get_name(expr):
         return None
 
 
-def mutate(table, exprs=None, **mutations):
+def mutate(
+    table: ir.TableExpr, exprs: List[ir.Expr] = None, **mutations: Any
+) -> ir.TableExpr:
     """
     Convenience function for table projections involving adding columns
 
@@ -4193,25 +4207,8 @@ def mutate(table, exprs=None, **mutations):
         for name, expr in sorted(mutations.items(), key=operator.itemgetter(0))
     )
 
-    for expr in exprs:
-        if expr.get_name() and isinstance(expr, ir.DestructColumn):
-            raise com.ExpressionError(
-                f"Cannot name a destruct column: {expr.get_name()}"
-            )
-
-    by_name = collections.OrderedDict(
-        (expr.get_name(), expr) for expr in exprs
-    )
-    columns = table.columns
-    used = by_name.keys() & columns
-
-    if used:
-        proj_exprs = [
-            by_name.get(column, table[column]) for column in columns
-        ] + [expr for name, expr in by_name.items() if name not in used]
-    else:
-        proj_exprs = [table] + exprs
-    return table.projection(proj_exprs)
+    mutation_exprs = _L.get_mutation_exprs(exprs, table)
+    return table.projection(mutation_exprs)
 
 
 def projection(table, exprs):

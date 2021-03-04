@@ -52,6 +52,6 @@ def connect(spark_session):
 
 class Backend(BaseBackend):
     name = 'spark'
-    buider = None
-    dialect = None
+    builder = None
+    dialect = dialect
     connect = connect

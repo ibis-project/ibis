@@ -136,6 +136,6 @@ def csv_pre_execute_selection(
 
 class Backend(BaseBackend):
     name = 'csv'
-    buider = None
+    builder = None
     dialect = None
     connect = connect

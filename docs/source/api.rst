@@ -230,6 +230,9 @@ Scalar or column methods
 
    IntegerValue.convert_base
    IntegerValue.to_timestamp
+   IntegerColumn.bit_and
+   IntegerColumn.bit_or
+   IntegerColumn.bit_xor
 
 .. _api.string:
 

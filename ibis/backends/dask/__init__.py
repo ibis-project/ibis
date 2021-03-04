@@ -88,6 +88,6 @@ DaskClient.dialect = dialect = DaskDialect
 
 class Backend(BaseBackend):
     name = 'dask'
-    buider = None
+    builder = None
     dialect = None
     connect = connect
