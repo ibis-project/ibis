@@ -343,18 +343,8 @@ def test_elementwise_udf_overwrite_destruct_and_assign(backend, alltypes):
 # TODO - udf - #2553
 @pytest.mark.xfail_backends(['dask'])
 @pytest.mark.xfail_unsupported
+@pytest.mark.min_spark_version('3.1')
 def test_elementwise_udf_destruct_exact_once(backend, alltypes):
-    # xfail on Spark version < 3.1.1
-    try:
-        from distutils.version import LooseVersion
-
-        import pyspark
-
-        if LooseVersion(pyspark.__version__) < LooseVersion("3.1.1"):
-            pytest.xfail("This test only works on Spark >= 3.1.1")
-    except ImportError:
-        pass
-
     with tempfile.TemporaryDirectory() as tempdir:
 
         @elementwise(
