@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from ibis.backends.base import BaseBackend
+from ibis.backends.base_sqlalchemy.alchemy import AlchemyQueryBuilder
 
 from .client import SQLiteClient
+from .compiler import SQLiteDialect
 
 
 def connect(path=None, create=False):
@@ -39,6 +40,6 @@ def connect(path=None, create=False):
 
 class Backend(BaseBackend):
     name = 'sqlite'
-    buider = None
-    dialect = None
+    builder = AlchemyQueryBuilder
+    dialect = SQLiteDialect
     connect = connect

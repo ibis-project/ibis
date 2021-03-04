@@ -4,7 +4,7 @@ from ibis.backends.base import BaseBackend
 from ibis.config import options
 
 from .client import ClickhouseClient
-from .compiler import dialect
+from .compiler import ClickhouseDialect, ClickhouseQueryBuilder, dialect
 
 __all__ = 'compile', 'verify', 'connect', 'dialect'
 
@@ -89,6 +89,6 @@ def connect(
 
 class Backend(BaseBackend):
     name = 'clickhouse'
-    buider = None
-    dialect = None
+    builder = ClickhouseQueryBuilder
+    dialect = ClickhouseDialect
     connect = connect

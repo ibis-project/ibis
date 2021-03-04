@@ -1,7 +1,9 @@
 """PostgreSQL backend."""
 from ibis.backends.base import BaseBackend
+from ibis.backends.base_sqlalchemy.alchemy import AlchemyQueryBuilder
 
 from .client import PostgreSQLClient
+from .compiler import PostgreSQLDialect
 
 
 def connect(
@@ -83,6 +85,6 @@ def connect(
 
 class Backend(BaseBackend):
     name = 'postgres'
-    buider = None
-    dialect = None
+    builder = AlchemyQueryBuilder
+    dialect = PostgreSQLDialect
     connect = connect

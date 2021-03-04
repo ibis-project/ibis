@@ -9,6 +9,7 @@ from .client import (  # noqa: F401
     ImpalaDatabase,
     ImpalaTable,
 )
+from .compiler import ImpalaDialect, ImpalaQueryBuilder
 from .hdfs import HDFS, WebHDFS, hdfs_connect  # noqa: F401
 from .udf import *  # noqa: F401,F403
 
@@ -116,6 +117,6 @@ def connect(
 
 class Backend(BaseBackend):
     name = 'impala'
-    buider = None
-    dialect = None
+    builder = ImpalaQueryBuilder
+    dialect = ImpalaDialect
     connect = connect

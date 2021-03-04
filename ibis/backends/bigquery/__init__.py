@@ -10,6 +10,7 @@ import ibis.config
 from ibis.backends.base import BaseBackend
 
 from .client import BigQueryClient
+from .compiler import BigQueryDialect, BigQueryQueryBuilder
 
 try:
     from .udf import udf
@@ -80,6 +81,6 @@ def connect(
 
 class Backend(BaseBackend):
     name = 'bigquery'
-    buider = None
-    dialect = None
+    builder = BigQueryQueryBuilder
+    dialect = BigQueryDialect
     connect = connect
