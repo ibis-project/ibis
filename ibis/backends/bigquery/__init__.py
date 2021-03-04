@@ -12,7 +12,7 @@ from ibis.backends.base import BaseBackend
 from ibis.config import options  # noqa: F401
 
 from .client import BigQueryClient
-from .compiler import dialect
+from .compiler import BigQueryDialect, BigQueryQueryBuilder, dialect
 
 try:
     from .udf import udf
@@ -105,8 +105,8 @@ def connect(
 
 class Backend(BaseBackend):
     name = 'bigquery'
-    buider = None
-    dialect = None
+    builder = BigQueryQueryBuilder
+    dialect = BigQueryDialect
     connect = connect
 
     def register_options(self):

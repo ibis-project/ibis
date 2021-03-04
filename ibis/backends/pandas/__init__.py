@@ -89,8 +89,8 @@ PandasClient.dialect = dialect = PandasDialect
 
 class Backend(BaseBackend):
     name = 'pandas'
-    buider = None
-    dialect = None
+    builder = None
+    dialect = PandasDialect
     connect = connect
 
     def register_options(self):
