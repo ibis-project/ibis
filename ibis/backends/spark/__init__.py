@@ -1,34 +1,8 @@
 """Spark backend."""
-import ibis.common.exceptions as com
 from ibis.backends.base import BaseBackend
 
 from .client import SparkClient
-from .compiler import dialect  # noqa: F401
 from .udf import udf  # noqa: F401
-
-
-def compile(expr, params=None):
-    """Force compilation of expression.
-
-    Returns
-    -------
-    str
-
-    """
-    from .compiler import to_sql
-
-    return to_sql(expr, dialect.make_context(params=params))
-
-
-def verify(expr, params=None):
-    """
-    Determine if expression can be successfully translated to execute on Impala
-    """
-    try:
-        compile(expr, params=params)
-        return True
-    except com.TranslationError:
-        return False
 
 
 def connect(spark_session):

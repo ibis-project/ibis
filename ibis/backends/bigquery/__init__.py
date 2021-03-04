@@ -6,13 +6,10 @@ import google.auth.credentials
 import google.cloud.bigquery  # noqa: F401, fail early if bigquery is missing
 import pydata_google_auth
 
-import ibis.common.exceptions as com
 import ibis.config
 from ibis.backends.base import BaseBackend
-from ibis.config import options  # noqa: F401
 
 from .client import BigQueryClient
-from .compiler import dialect
 
 try:
     from .udf import udf
@@ -25,32 +22,6 @@ __all__ = ('compile', 'connect', 'verify', 'udf')
 
 with ibis.config.config_prefix('bigquery'):
     ibis.config.register_option('partition_col', 'PARTITIONTIME')
-
-
-def compile(expr, params=None):
-    """Compile an expression for BigQuery.
-
-    Returns
-    -------
-    compiled : str
-
-    See Also
-    --------
-    ibis.expr.types.Expr.compile
-
-    """
-    from .compiler import to_sql
-
-    return to_sql(expr, dialect.make_context(params=params))
-
-
-def verify(expr, params=None):
-    """Check if an expression can be compiled using BigQuery."""
-    try:
-        compile(expr, params=params)
-        return True
-    except com.TranslationError:
-        return False
 
 
 SCOPES = ["https://www.googleapis.com/auth/bigquery"]

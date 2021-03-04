@@ -1,51 +1,7 @@
 """PostgreSQL backend."""
 from ibis.backends.base import BaseBackend
-from ibis.backends.base_sqlalchemy.alchemy import to_sqlalchemy
 
 from .client import PostgreSQLClient
-from .compiler import compiles, dialect, rewrites  # noqa: F401, E501
-
-__all__ = 'compile', 'connect'
-
-
-def compile(expr, params=None):
-    """Compile an ibis expression to the PostgreSQL target.
-
-    Parameters
-    ----------
-    expr : ibis.expr.types.Expr
-        The ibis expression to compile
-    params : dict or None
-        ``dict`` mapping :class:`ibis.expr.types.ScalarParameter` objects to
-        values
-
-    Returns
-    -------
-    sqlalchemy_expression : sqlalchemy.sql.expression.ClauseElement
-
-    Examples
-    --------
-    >>> import os
-    >>> import getpass
-    >>> host = os.environ.get('IBIS_TEST_POSTGRES_HOST', 'localhost')
-    >>> user = os.environ.get('IBIS_TEST_POSTGRES_USER', getpass.getuser())
-    >>> password = os.environ.get('IBIS_TEST_POSTGRES_PASSWORD')
-    >>> database = os.environ.get('IBIS_TEST_POSTGRES_DATABASE',
-    ...                           'ibis_testing')
-    >>> con = connect(
-    ...     database=database,
-    ...     host=host,
-    ...     user=user,
-    ...     password=password
-    ... )
-    >>> t = con.table('functional_alltypes')
-    >>> expr = t.double_col + 1
-    >>> sqla = compile(expr)
-    >>> print(str(sqla))  # doctest: +NORMALIZE_WHITESPACE
-    SELECT t0.double_col + %(param_1)s AS tmp
-    FROM functional_alltypes AS t0
-    """
-    return to_sqlalchemy(expr, dialect.make_context(params=params))
 
 
 def connect(

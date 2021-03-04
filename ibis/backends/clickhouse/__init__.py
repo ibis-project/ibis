@@ -25,32 +25,6 @@ with ibis.config.config_prefix('clickhouse'):
     )
 
 
-def compile(expr, params=None):
-    """
-    Force compilation of expression as though it were an expression depending
-    on Clickhouse. Note you can also call expr.compile()
-
-    Returns
-    -------
-    compiled : string
-    """
-    from .compiler import to_sql
-
-    return to_sql(expr, dialect.make_context(params=params))
-
-
-def verify(expr, params=None):
-    """
-    Determine if expression can be successfully translated to execute on
-    Clickhouse
-    """
-    try:
-        compile(expr, params=params)
-        return True
-    except com.TranslationError:
-        return False
-
-
 def connect(
     host='localhost',
     port=9000,
@@ -110,9 +84,6 @@ def connect(
         client_name=client_name,
         compression=compression,
     )
-    if options.default_backend is None:
-        options.default_backend = client
-
     return client
 
 

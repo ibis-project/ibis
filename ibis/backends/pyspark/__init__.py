@@ -1,7 +1,6 @@
 from ibis.backends.base import BaseBackend
 
 from .client import PySparkClient
-from .compiler import dialect  # noqa: F401
 
 
 def connect(session):

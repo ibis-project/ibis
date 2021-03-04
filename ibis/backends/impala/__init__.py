@@ -1,8 +1,6 @@
 """Impala backend"""
-import ibis.common.exceptions as com
 import ibis.config
 from ibis.backends.base import BaseBackend
-from ibis.config import options
 
 # these objects are exposed in the public API and are not used in the module
 from .client import (  # noqa: F401
@@ -11,7 +9,6 @@ from .client import (  # noqa: F401
     ImpalaDatabase,
     ImpalaTable,
 )
-from .compiler import dialect  # noqa: F401
 from .hdfs import HDFS, WebHDFS, hdfs_connect  # noqa: F401
 from .udf import *  # noqa: F401,F403
 
@@ -26,30 +23,6 @@ with ibis.config.config_prefix('impala'):
         '/tmp/ibis',
         'HDFS path for storage of temporary data',
     )
-
-
-def compile(expr, params=None):
-    """Force compilation of expression.
-
-    Returns
-    -------
-    str
-
-    """
-    from .compiler import to_sql
-
-    return to_sql(expr, dialect.make_context(params=params))
-
-
-def verify(expr, params=None):
-    """
-    Determine if expression can be successfully translated to execute on Impala
-    """
-    try:
-        compile(expr, params=params)
-        return True
-    except com.TranslationError:
-        return False
 
 
 def connect(
@@ -138,10 +111,6 @@ def connect(
     except Exception:
         con.close()
         raise
-    else:
-        if options.default_backend is None:
-            options.default_backend = client
-
     return client
 
 
