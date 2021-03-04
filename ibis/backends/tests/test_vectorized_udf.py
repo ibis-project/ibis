@@ -352,7 +352,6 @@ def test_elementwise_udf_destruct_exact_once(backend, alltypes):
             output_type=dt.Struct(['col1', 'col2'], [dt.double, dt.double]),
         )
         def add_one_struct_exact_once(v):
-            print(v)
             key = v.iloc[0]
             path = Path(f"{tempdir}/{key}")
             assert not path.exists()
