@@ -100,5 +100,5 @@ PandasClient.dialect = dialect = PandasDialect
 class Backend(BaseBackend):
     name = 'pandas'
     builder = None
-    dialect = None
+    dialect = PandasDialect
     connect = connect

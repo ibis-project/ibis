@@ -12,19 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from ibis.backends.base import BaseBackend
+from ibis.backends.base_sqlalchemy.alchemy import (
+    AlchemyQueryBuilder,
+    to_sqlalchemy,
+)
 
 from .client import SQLiteClient
-from .compiler import dialect, rewrites  # noqa: F401
+from .compiler import SQLiteDialect, dialect, rewrites  # noqa: F401
 
 
 def compile(expr, params=None):
     """
     Force compilation of expression for the SQLite target
     """
-    from ibis.backends.base_sqlalchemy.alchemy import to_sqlalchemy
-
     return to_sqlalchemy(expr, dialect.make_context(params=params))
 
 
@@ -49,6 +50,6 @@ def connect(path=None, create=False):
 
 class Backend(BaseBackend):
     name = 'sqlite'
-    builder = None
-    dialect = None
+    builder = AlchemyQueryBuilder
+    dialect = SQLiteDialect
     connect = connect
