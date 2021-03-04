@@ -1,3 +1,6 @@
+import tempfile
+from pathlib import Path
+
 import pytest
 
 import ibis
@@ -334,6 +337,45 @@ def test_elementwise_udf_overwrite_destruct_and_assign(backend, alltypes):
     # should appear at the end, but currently they are materialized
     # directly after those overwritten columns).
     backend.assert_frame_equal(result, expected, check_like=True)
+
+
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
+# TODO - udf - #2553
+@pytest.mark.xfail_backends(['dask'])
+@pytest.mark.xfail_unsupported
+def test_elementwise_udf_destruct_exact_once(backend, alltypes):
+    # xfail on Spark version < 3.1.1
+    try:
+        from distutils.version import LooseVersion
+
+        import pyspark
+
+        if LooseVersion(pyspark.__version__) < LooseVersion("3.1.1"):
+            pytest.xfail("This test only works on Spark >= 3.1.1")
+    except ImportError:
+        pass
+
+    with tempfile.TemporaryDirectory() as tempdir:
+
+        @elementwise(
+            input_type=[dt.double],
+            output_type=dt.Struct(['col1', 'col2'], [dt.double, dt.double]),
+        )
+        def add_one_struct_exact_once(v):
+            print(v)
+            key = v.iloc[0]
+            path = Path(f"{tempdir}/{key}")
+            assert not path.exists()
+            path.touch()
+            return v + 1, v + 2
+
+        result = alltypes.mutate(
+            add_one_struct_exact_once(alltypes['double_col']).destructure()
+        )
+
+        result = result.execute()
+
+        assert len(result) > 0
 
 
 @pytest.mark.only_on_backends(['pandas', 'pyspark'])
