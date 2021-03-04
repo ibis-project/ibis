@@ -4,7 +4,6 @@ import pytest
 
 import ibis
 import ibis.common.exceptions as com
-from ibis.backends.pandas import udf
 from ibis.backends.pandas.execution.window import trim_with_timecontext
 from ibis.expr.timecontext import (
     TimeContextRelation,
@@ -311,73 +310,3 @@ def test_construct_time_context_aware_series(time_df3):
         multi_index_series, df
     )
     tm.assert_series_equal(result_multi_index, expected_multi_index)
-
-
-@udf.reduction(['double'], 'double')
-def my_mean(series):
-    return series.mean()
-
-
-def test_context_adjustment_window_udf_nogroupby_noorderby(
-    time_table, time_df3
-):
-    """ This test case aims to test context adjustment of
-        udfs in window method.
-    """
-    expected = time_df3.set_index('time').assign(v1=time_df3['value'].mean())
-    expected = expected[
-        expected.index >= pd.Timestamp('20170105')
-    ].reset_index(drop=True)['v1']
-
-    context = pd.Timestamp('20170105'), pd.Timestamp('20170111')
-    window = ibis.trailing_window(3 * ibis.interval(days=1))
-    expr = time_table.mutate(v1=my_mean(time_table['value']).over(window))
-    result = expr.execute(timecontext=context)
-    tm.assert_series_equal(result["v1"], expected)
-
-
-def test_context_adjustment_window_udf_nogroupby(time_table, time_df3):
-    """ This test case aims to test context adjustment of
-        udfs in window method.
-    """
-    expected = (
-        time_df3.set_index('time')
-        .rename(columns={'value': 'v1'})['v1']
-        .rolling('3d', closed='both')
-        .mean()
-    )
-    expected = expected[
-        expected.index >= pd.Timestamp('20170105')
-    ].reset_index(drop=True)
-
-    context = pd.Timestamp('20170105'), pd.Timestamp('20170111')
-    window = ibis.trailing_window(3 * ibis.interval(days=1), order_by='time')
-    expr = time_table.mutate(v1=my_mean(time_table['value']).over(window))
-    result = expr.execute(timecontext=context)
-    tm.assert_series_equal(result["v1"], expected)
-
-
-def test_context_adjustment_window_udf_groupby(time_table, time_df3):
-    """ This test case aims to test context adjustment of
-        udfs in window method, with groupby in window
-    """
-    expected = (
-        time_df3.set_index('time')
-        .groupby('id')
-        .rolling('3d', closed='both')
-        .mean()
-    )['value']
-    # Result is a MultiIndexed Series
-    expected = expected.reset_index()
-    expected = (
-        expected[expected.time >= pd.Timestamp('20170105')]
-        .reset_index(drop=True)['value']
-        .rename('v1')
-    )
-    context = pd.Timestamp('20170105'), pd.Timestamp('20170111')
-    window = ibis.trailing_window(
-        3 * ibis.interval(days=1), order_by='time', group_by='id'
-    )
-    expr = time_table.mutate(v1=my_mean(time_table['value']).over(window))
-    result = expr.execute(timecontext=context)
-    tm.assert_series_equal(result["v1"], expected)
