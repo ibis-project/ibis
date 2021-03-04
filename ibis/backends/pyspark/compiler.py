@@ -87,7 +87,6 @@ class PySparkDialect(SparkDialect):
 
 
 compiles = PySparkExprTranslator.compiles
-dialect = PySparkDialect
 
 
 @compiles(PySparkTable)

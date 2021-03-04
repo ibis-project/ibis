@@ -394,6 +394,3 @@ class SparkSelect(BaseSelect):
 
 class SparkDialect(BaseDialect):
     translator = SparkExprTranslator
-
-
-dialect = SparkDialect
