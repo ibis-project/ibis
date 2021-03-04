@@ -37,11 +37,16 @@ ibis.config.register_option('default_backend', None)
 __version__ = get_versions()['version']
 del get_versions
 
-
 for entry_point in pkg_resources.iter_entry_points(
     group='ibis.backends', name=None
 ):
     try:
-        setattr(ibis, entry_point.name, entry_point.resolve())
+        backend_module = entry_point.resolve()
     except ImportError:
         pass
+    else:
+        backend = backend_module.Backend()
+        # In the future we will set the backend and to the Backend instance,
+        # and just expose it, not the module:
+        # >>> setattr(ibis, entry_point.name, backend)
+        setattr(ibis, entry_point.name, backend_module)
