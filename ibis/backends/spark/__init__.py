@@ -2,13 +2,13 @@
 from ibis.backends.base import BaseBackend
 
 from .client import SparkClient
-from .compiler import SparkDialect
+from .compiler import SparkDialect, SparkQueryBuilder
 from .udf import udf  # noqa: F401
 
 
 class Backend(BaseBackend):
     name = 'spark'
-    builder = None
+    builder = SparkQueryBuilder
     dialect = SparkDialect
 
     def connect(self, spark_session):
