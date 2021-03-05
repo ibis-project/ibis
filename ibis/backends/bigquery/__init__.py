@@ -13,16 +13,9 @@ from .client import BigQueryClient
 from .compiler import BigQueryDialect, BigQueryQueryBuilder
 
 try:
-    from .udf import udf
+    from .udf import udf  # noqa F401
 except ImportError:
     pass
-
-
-__all__ = ('compile', 'connect', 'verify', 'udf')
-
-
-with ibis.config.config_prefix('bigquery'):
-    ibis.config.register_option('partition_col', 'PARTITIONTIME')
 
 
 SCOPES = ["https://www.googleapis.com/auth/bigquery"]
@@ -82,3 +75,6 @@ class Backend(BaseBackend):
             credentials=credentials,
             application_name=application_name,
         )
+
+    def register_options(self):
+        ibis.config.register_option('partition_col', 'PARTITIONTIME')

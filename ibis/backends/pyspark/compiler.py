@@ -23,7 +23,7 @@ from ibis.backends.spark.datatypes import (
     spark_dtype,
 )
 from ibis.expr.timecontext import adjust_context
-from ibis.util import coerce_to_dataframe
+from ibis.util import coerce_to_dataframe, guid
 
 from .operations import PySparkTable
 from .timecontext import combine_time_context, filter_by_time_context
@@ -120,15 +120,24 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
     src_table = t.translate(op.table, scope, combined_timecontext)
 
     col_in_selection_order = []
+    col_to_drop = []
+    result_table = src_table
     for selection in op.selections:
         if isinstance(selection, types.TableExpr):
             col_in_selection_order.extend(selection.columns)
         elif isinstance(selection, types.DestructColumn):
             struct_col = t.translate(selection, scope, combined_timecontext)
+            # assign struct col and drop it later
+            # This is a work around to ensure that the struct_col
+            # is only executed once
+            struct_col_name = f"destruct_col_{guid()}"
+            result_table = result_table.withColumn(struct_col_name, struct_col)
+            col_to_drop.append(struct_col_name)
             cols = [
-                struct_col[name].alias(name) for name in selection.type().names
+                result_table[struct_col_name][name].alias(name)
+                for name in selection.type().names
             ]
-            col_in_selection_order += cols
+            col_in_selection_order.extend(cols)
         elif isinstance(selection, (types.ColumnExpr, types.ScalarExpr)):
             col = t.translate(selection, scope, combined_timecontext).alias(
                 selection.get_name()
@@ -140,19 +149,22 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
             )
 
     if col_in_selection_order:
-        src_table = src_table[col_in_selection_order]
+        result_table = result_table[col_in_selection_order]
+
+    if col_to_drop:
+        result_table = result_table.drop(*col_to_drop)
 
     for predicate in op.predicates:
         col = t.translate(predicate, scope, timecontext)
-        src_table = src_table[col]
+        result_table = result_table[col]
 
     if op.sort_keys:
         sort_cols = [
             t.translate(key, scope, timecontext) for key in op.sort_keys
         ]
-        src_table = src_table.sort(*sort_cols)
+        result_table = result_table.sort(*sort_cols)
 
-    return filter_by_time_context(src_table, timecontext)
+    return filter_by_time_context(result_table, timecontext)
 
 
 @compiles(ops.SortKey)

@@ -12,14 +12,6 @@ except ImportError:
     _default_compression = False
 
 
-with ibis.config.config_prefix('clickhouse'):
-    ibis.config.register_option(
-        'temp_db',
-        '__ibis_tmp',
-        'Database to use for temporary tables, views. functions, etc.',
-    )
-
-
 class Backend(BaseBackend):
     name = 'clickhouse'
     builder = ClickhouseQueryBuilder
@@ -86,3 +78,10 @@ class Backend(BaseBackend):
             compression=compression,
         )
         return client
+
+    def register_options(self):
+        ibis.config.register_option(
+            'temp_db',
+            '__ibis_tmp',
+            'Database to use for temporary tables, views. functions, etc.',
+        )

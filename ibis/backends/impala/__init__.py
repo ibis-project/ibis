@@ -13,18 +13,6 @@ from .compiler import ImpalaDialect, ImpalaQueryBuilder
 from .hdfs import HDFS, WebHDFS, hdfs_connect
 from .udf import *  # noqa: F401,F403
 
-with ibis.config.config_prefix('impala'):
-    ibis.config.register_option(
-        'temp_db',
-        '__ibis_tmp',
-        'Database to use for temporary tables, views. functions, etc.',
-    )
-    ibis.config.register_option(
-        'temp_hdfs_path',
-        '/tmp/ibis',
-        'HDFS path for storage of temporary data',
-    )
-
 
 class Backend(BaseBackend):
     name = 'impala'
@@ -125,3 +113,15 @@ class Backend(BaseBackend):
             con.close()
             raise
         return client
+
+    def register_options(self):
+        ibis.config.register_option(
+            'temp_db',
+            '__ibis_tmp',
+            'Database to use for temporary tables, views. functions, etc.',
+        )
+        ibis.config.register_option(
+            'temp_hdfs_path',
+            '/tmp/ibis',
+            'HDFS path for storage of temporary data',
+        )

@@ -11,19 +11,7 @@ from ibis.backends.base_sqlalchemy.compiler import Dialect
 from ibis.backends.pandas import _flatten_subclass_tree
 
 from .client import DaskClient, DaskTable
-from .execution import execute, execute_node
-
-__all__ = ('connect', 'dialect', 'execute')
-
-
-with ibis.config.config_prefix('dask'):
-    ibis.config.register_option(
-        'enable_trace',
-        False,
-        'Whether enable tracing for dask execution. '
-        'See ibis.dask.trace for details.',
-        validator=ibis.config.is_bool,
-    )
+from .execution import execute, execute_node  # noqa F401
 
 
 class DaskExprTranslator:
@@ -49,7 +37,7 @@ DaskClient.dialect = dialect = DaskDialect
 class Backend(BaseBackend):
     name = 'dask'
     builder = None
-    dialect = None
+    dialect = DaskDialect
 
     def connect(self, dictionary: Dict[str, DataFrame]) -> DaskClient:
         """Construct a dask client from a dictionary of DataFrames.
@@ -88,3 +76,12 @@ class Backend(BaseBackend):
             return self.connect({name: df}).table(name)
         client.dictionary[name] = df
         return client.table(name)
+
+    def register_options(self):
+        ibis.config.register_option(
+            'enable_trace',
+            False,
+            'Whether enable tracing for dask execution. '
+            'See ibis.dask.trace for details.',
+            validator=ibis.config.is_bool,
+        )

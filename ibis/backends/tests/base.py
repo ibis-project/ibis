@@ -145,7 +145,7 @@ class BackendTest(abc.ABC):
 
     @property
     def api(self):
-        return getattr(ibis, self.name())
+        return getattr(ibis.backends, self.name())
 
     def make_context(
         self, params: Optional[Mapping[ir.ValueExpr, Any]] = None
@@ -163,7 +163,8 @@ def get_spark_testing_client(data_directory):
     global _spark_testing_client
     if _spark_testing_client is None:
         _spark_testing_client = get_common_spark_testing_client(
-            data_directory, lambda session: ibis.spark.connect(session)
+            data_directory,
+            lambda session: ibis.backends.spark.connect(session),
         )
     return _spark_testing_client
 
@@ -173,7 +174,8 @@ def get_pyspark_testing_client(data_directory):
     global _pyspark_testing_client
     if _pyspark_testing_client is None:
         _pyspark_testing_client = get_common_spark_testing_client(
-            data_directory, lambda session: ibis.pyspark.connect(session)
+            data_directory,
+            lambda session: ibis.backends.pyspark.connect(session),
         )
     return _pyspark_testing_client
 
