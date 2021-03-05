@@ -16,7 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        python_version: ["3.7", "3.8"]
+        python_version: ["3.7", "3.9"]
     steps:
     - name: checkout
       uses: actions/checkout@v1
@@ -38,7 +38,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        python_version: ["3.7", "3.8"]
+        python_version: ["3.7", "3.9"]
     steps:
     - name: checkout
       uses: actions/checkout@v1
@@ -59,7 +59,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: ["3.7", "3.8"]
+        python_version: ["3.7", "3.9"]
     services:
       postgres:
         image: shajekpivotal/ibis-docker-postgres-9.5
@@ -101,7 +101,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: ["3.7", "3.8"]
+        python_version: ["3.7", "3.9"]
     services:
       postgres:
         image: shajekpivotal/ibis-docker-postgres-9.5
@@ -175,7 +175,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: ["3.7", "3.8"]
+        python_version: ["3.7", "3.9"]
     steps:
     - name: checkout
       uses: actions/checkout@v1
@@ -191,7 +191,7 @@ jobs:
     name: Lint and benckmarks
     runs-on: ubuntu-latest
     env:
-      PYTHON_VERSION: "3.7"
+      PYTHON_VERSION: "3.9"
       BACKENDS: ""
       LOAD_TEST_DATA: "false"
     steps:
@@ -235,7 +235,7 @@ jobs:
     name: Conda package
     runs-on: ubuntu-latest
     env:
-      PYTHON_VERSION: "3.7"
+      PYTHON_VERSION: "3.9"
       BACKENDS: ""
       LOAD_TEST_DATA: "false"
     steps:
@@ -272,7 +272,7 @@ jobs:
     name: Docs
     runs-on: ubuntu-latest
     env:
-      PYTHON_VERSION: "3.7"
+      PYTHON_VERSION: "3.9"
       BACKENDS: "bigquery clickhouse dask impala mysql parquet postgres pyspark spark"
       LOAD_TEST_DATA: "false"
     steps:
