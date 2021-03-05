@@ -1,6 +1,5 @@
 import abc
 
-import ibis.config
 from ibis.common.exceptions import TranslationError
 
 
@@ -11,11 +10,6 @@ class BaseBackend(abc.ABC):
     All Ibis backends are expected to subclass this `Backend` class,
     and implement all the required methods.
     """
-
-    def __init__(self):
-        with ibis.config.config_prefix(self.name):
-            self.register_options()
-
     @property
     @abc.abstractmethod
     def name(self) -> str:

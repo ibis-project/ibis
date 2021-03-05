@@ -47,3 +47,5 @@ for entry_point in pkg_resources.iter_entry_points(
     else:
         backend = backend_module.Backend()
         setattr(ibis, entry_point.name, backend)
+        with ibis.config.config_prefix(entry_point.name):
+            backend.register_options()
