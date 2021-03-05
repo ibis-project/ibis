@@ -15,6 +15,12 @@ from ibis.backends.base_sql.compiler import (
     BaseTableSetFormatter,
 )
 
+
+def build_ast(expr, context):
+    assert context is not None, 'context is None'
+    builder = ImpalaQueryBuilder(expr, context=context)
+    return builder.get_result()
+
 # ----------------------------------------------------------------------
 # Select compilation
 
