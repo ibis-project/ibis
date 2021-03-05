@@ -31,7 +31,7 @@ jobs:
 
   Tests_dask:
     name: Tests dask
-    runs-on: ubutu-latest
+    runs-on: ubuntu-latest
     env:
       BACKENDS: "dask"
     strategy:
