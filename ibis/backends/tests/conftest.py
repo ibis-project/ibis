@@ -113,6 +113,22 @@ def pytest_runtest_call(item):
                 )
             )
 
+    for marker in item.iter_markers(name='min_spark_version'):
+        min_version = marker.args[0]
+        if backend.name() in ['spark', 'pyspark']:
+            from distutils.version import LooseVersion
+
+            import pyspark
+
+            if LooseVersion(pyspark.__version__) < LooseVersion(min_version):
+                item.add_marker(
+                    pytest.mark.xfail(
+                        reason=f'Require minimal spark version {min_version}, '
+                        f'but is {pyspark.__version__}',
+                        **marker.kwargs,
+                    )
+                )
+
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_pyfunc_call(pyfuncitem):
