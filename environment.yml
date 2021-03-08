@@ -20,7 +20,6 @@ dependencies:
   - asv
   - black=19.10b0
   - click # few scripts in ci/
-  # - cmake
   - flake8
   - flake8-comprehensions # used by flake8, linting of unnecessary comprehensions
   - isort
@@ -31,9 +30,6 @@ dependencies:
   - pytest
   - pytest-cov
   - pytest-mock
-  # - libiconv  # bug in repo2docker, see https://github.com/jupyter/repo2docker/issues/758
-  # - xorg-libxpm
-  # - xorg-libxrender
 
   # Release
   - twine
