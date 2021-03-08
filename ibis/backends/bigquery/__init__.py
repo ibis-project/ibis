@@ -13,7 +13,7 @@ from ibis.backends.base import BaseBackend
 from ibis.config import options  # noqa: F401
 
 from .client import BigQueryClient
-from .compiler import dialect
+from .compiler import BigQueryDialect, BigQueryQueryBuilder, dialect
 
 try:
     from .udf import udf
@@ -22,10 +22,6 @@ except ImportError:
 
 
 __all__ = ('compile', 'connect', 'verify', 'udf')
-
-
-with ibis.config.config_prefix('bigquery'):
-    ibis.config.register_option('partition_col', 'PARTITIONTIME')
 
 
 def compile(expr, params=None):
@@ -161,6 +157,9 @@ def connect(
 
 class Backend(BaseBackend):
     name = 'bigquery'
-    buider = None
-    dialect = None
+    builder = BigQueryQueryBuilder
+    dialect = BigQueryDialect
     connect = connect
+
+    def register_options(self):
+        ibis.config.register_option('partition_col', 'PARTITIONTIME')

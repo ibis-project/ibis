@@ -80,6 +80,6 @@ def hdf_read_table(op, client, scope, **kwargs):
 
 class Backend(BaseBackend):
     name = 'hdf5'
-    buider = None
+    builder = None
     dialect = None
     connect = connect

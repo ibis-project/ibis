@@ -4,7 +4,7 @@ from ibis.backends.base import BaseBackend
 from ibis.config import options
 
 from .client import ClickhouseClient
-from .compiler import dialect
+from .compiler import ClickhouseDialect, ClickhouseQueryBuilder, dialect
 
 __all__ = 'compile', 'verify', 'connect', 'dialect'
 
@@ -15,14 +15,6 @@ try:
     _default_compression = 'lz4'
 except ImportError:
     _default_compression = False
-
-
-with ibis.config.config_prefix('clickhouse'):
-    ibis.config.register_option(
-        'temp_db',
-        '__ibis_tmp',
-        'Database to use for temporary tables, views. functions, etc.',
-    )
 
 
 def compile(expr, params=None):
@@ -118,6 +110,13 @@ def connect(
 
 class Backend(BaseBackend):
     name = 'clickhouse'
-    buider = None
-    dialect = None
+    builder = ClickhouseQueryBuilder
+    dialect = ClickhouseDialect
     connect = connect
+
+    def register_options(self):
+        ibis.config.register_option(
+            'temp_db',
+            '__ibis_tmp',
+            'Database to use for temporary tables, views. functions, etc.',
+        )
