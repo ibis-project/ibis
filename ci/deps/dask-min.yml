@@ -1,1 +1,2 @@
- dask=2.22.0
+dask=2.22.0
+pyarrow
