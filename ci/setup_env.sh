@@ -12,32 +12,14 @@ echo "PYTHON_VERSION: $PYTHON_VERSION"
 echo "BACKENDS: $BACKENDS"
 echo "LOAD_TEST_DATA: $LOAD_TEST_DATA"
 
-if [[ -n "$CONDA" ]]; then
-    # Add conda to Path
-    OS_NAME=$(uname)
-    case $OS_NAME in
-        Linux)
-            CONDA_PATH="$CONDA/bin"
-            ;;
-        MINGW*)
-            # Windows
-            CONDA_POSIX=$(cygpath -u "$CONDA")
-            CONDA_PATH="$CONDA_POSIX:$CONDA_POSIX/Scripts:$CONDA_POSIX/Library:$CONDA_POSIX/Library/bin:$CONDA_POSIX/Library/mingw-w64/bin"
-            ;;
-        *)
-            echo "$OS_NAME not supported."
-            exit 1
-    esac
-    PATH=${CONDA_PATH}:${PATH}
-    # Prepend conda path to system path for the subsequent GitHub Actions
-    echo "${CONDA_PATH}" >> $GITHUB_PATH
-else
-    echo "Running without adding conda to PATH."
-fi
+# Install micromamba
+wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba
+./bin/micromamba shell init -s bash -p ~/micromamba
+source ~/.bashrc
 
-conda update -n base -c anaconda --all --yes conda
-conda install -n base -c anaconda --yes  python=${PYTHON_VERSION}
-conda env update -n base --file=environment.yml
+# Install base environment
+sed "s/dependencies:/dependencies:\n  - python=${PYTHON_VERSION}\n/" environment.yml
+micromamba install --file=environment.yml
 python -m pip install -e .
 
 if [[ -n "$BACKENDS" ]]; then
@@ -52,10 +34,10 @@ if [[ -n "$BACKENDS" ]]; then
         # (if there are dependencies). For other python versions we simply install
         # the normal dependencies if they exist.
         if [[ $PYTHON_VERSION == "3.7" && -f "ci/deps/$BACKEND-min.yml" ]]; then
-            conda install -n base -c conda-forge --file="ci/deps/$BACKEND-min.yml"
+            micromamba install --file="ci/deps/$BACKEND-min.yml"
         else
             if [[ -f "ci/deps/$BACKEND.yml" ]]; then
-                conda install -n base -c conda-forge --file="ci/deps/$BACKEND.yml"
+                micromamba install --file="ci/deps/$BACKEND.yml"
             fi
         fi
 
