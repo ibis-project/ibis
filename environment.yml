@@ -4,63 +4,57 @@ channels:
   - conda-forge
 dependencies:
   # Ibis hard dependencies
-  - multipledispatch>=0.6.0
-  - numpy>=1.19
-  - pandas>=0.25 # XXX pymapd does not support pandas 1.0
-  - pytz>=2020.1
-  - regex>=2020.7
-  - toolz>=0.10
+  - multipledispatch
+  - numpy
+  - pandas
+  - pytz
+  - regex
+  - toolz
 
   # Ibis soft dependencies
-  # TODO This section is probably not very accurate right now (some dependencies should probably be in the backends files)
-  - sqlalchemy>=1.3
-  - dask>=2.22.0
+  - sqlalchemy
   - graphviz>=2.38, <= 2.42.3
-  - openjdk=8
-  - pytables>=3.6
   - python-graphviz>=0.14, <=0.15
-  - python-hdfs>=2.0.16 # XXX this verison can probably be increased
-
+  #
   # Dev tools
-  - asv>=0.4.2
+  - asv
   - black=19.10b0
-  - click>=7.1 # few scripts in ci/
+  - click # few scripts in ci/
   - conda-build # feedstock
-  - cmake>=3.17
-  - flake8>=3.8
-  - flake8-comprehensions>=3.3.0 # used by flake8, linting of unnecessary comprehensions
-  - isort>=5.3
-  - jinja2>=2.11 # feedstock
-  - mypy>=0.782
-  - plumbum>=1.6 # few scripts in ci/ and dev/
-  - pre-commit>=2.6
-  - pydocstyle>=4.0
-  - pygit2>=1.2 # dev/genrelease.py
-  - pytest>=5.4
-  - pytest-cov>=2.10
-  - pytest-mock>=3.1
-  - ruamel.yaml>=0.16 # feedstock
-  - libiconv>=1.15  # bug in repo2docker, see https://github.com/jupyter/repo2docker/issues/758
-  - xorg-libxpm>=3.5
-  - xorg-libxrender>=0.9
+  - cmake
+  - flake8
+  - flake8-comprehensions # used by flake8, linting of unnecessary comprehensions
+  - isort
+  - jinja2 # feedstock
+  - mypy
+  - plumbum # few scripts in ci/ and dev/
+  - pre-commit
+  - pydocstyle
+  - pygit2 # dev/genrelease.py
+  - pytest
+  - pytest-cov
+  - pytest-mock
+  - ruamel.yaml # feedstock
+  - libiconv  # bug in repo2docker, see https://github.com/jupyter/repo2docker/issues/758
+  - xorg-libxpm
+  - xorg-libxrender
 
   # Release
-  - twine>=3.2.0
-  - wheel>=0.35.1
-  - conda-smithy>=3.8.5
+  - twine
+  - wheel
+  - conda-smithy
 
   # Docs
-  - ipython>=7.17
-  - jupyter>=1.0
-  - matplotlib>=2 # XXX test if this can be bumped
+  - ipython
+  - jupyter
+  - matplotlib
   - nbconvert
-  - nbsphinx>=0.7
+  - nbsphinx
   - nomkl
-  - pyarrow>=0.12 # must pin again otherwise strange things happen
   - semantic_version=2.6 # https://github.com/ibis-project/ibis/issues/2027
-  - sphinx>=2.0.1
+  - sphinx
   - sphinx-releases
-  - sphinx_rtd_theme>=0.5
+  - sphinx_rtd_theme
   - pip
   - pip:
     - pysuerga

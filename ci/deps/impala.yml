@@ -4,3 +4,4 @@ requests>=2.24
 thrift>=0.9.3
 thriftpy2>=0.4
 thrift_sasl>=0.2.1
+python-hdfs
