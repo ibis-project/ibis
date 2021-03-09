@@ -121,6 +121,6 @@ def parquet_read_table(op, client, scope, **kwargs):
 
 class Backend(BaseBackend):
     name = 'parquet'
-    buider = None
+    builder = None
     dialect = None
     connect = connect

@@ -32,6 +32,34 @@ def add_one_struct(v):
     return v + 1, v + 2
 
 
+@elementwise(
+    input_type=[dt.double],
+    output_type=dt.Struct(['double_col', 'col2'], [dt.double, dt.double]),
+)
+def overwrite_struct_elementwise(v):
+    return v + 1, v + 2
+
+
+@elementwise(
+    input_type=[dt.double],
+    output_type=dt.Struct(
+        ['double_col', 'col2', 'float_col'], [dt.double, dt.double, dt.double]
+    ),
+)
+def multiple_overwrite_struct_elementwise(v):
+    return v + 1, v + 2, v + 3
+
+
+@analytic(
+    input_type=[dt.double, dt.double],
+    output_type=dt.Struct(
+        ['double_col', 'demean_weight'], [dt.double, dt.double]
+    ),
+)
+def overwrite_struct_analytic(v, w):
+    return v - v.mean(), w - w.mean()
+
+
 @analytic(
     input_type=[dt.double, dt.double],
     output_type=dt.Struct(['demean', 'demean_weight'], [dt.double, dt.double]),
@@ -45,6 +73,16 @@ def demean_struct(v, w):
     output_type=dt.Struct(['mean', 'mean_weight'], [dt.double, dt.double]),
 )
 def mean_struct(v, w):
+    return v.mean(), w.mean()
+
+
+@reduction(
+    input_type=[dt.double, dt.double],
+    output_type=dt.Struct(
+        ['double_col', 'mean_weight'], [dt.double, dt.double]
+    ),
+)
+def overwrite_struct_reduction(v, w):
     return v.mean(), w.mean()
 
 
@@ -249,6 +287,82 @@ def test_elementwise_udf_destruct(backend, alltypes):
 
 
 @pytest.mark.only_on_backends(['pandas', 'pyspark'])
+# TODO - udf - #2553
+@pytest.mark.xfail_backends(['dask'])
+@pytest.mark.xfail_unsupported
+def test_elementwise_udf_overwrite_destruct(backend, alltypes):
+    result = alltypes.mutate(
+        overwrite_struct_elementwise(alltypes['double_col']).destructure()
+    ).execute()
+
+    expected = alltypes.mutate(
+        double_col=alltypes['double_col'] + 1, col2=alltypes['double_col'] + 2,
+    ).execute()
+
+    # TODO issue #2649
+    # Due to a known limitation with how we treat DestructColumn
+    # in assignments, the ordering of op.selections may not exactly
+    # correspond with the column ordering we want (i.e. all new columns
+    # should appear at the end, but currently they are materialized
+    # directly after those overwritten columns).
+    backend.assert_frame_equal(result, expected, check_like=True)
+
+
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
+# TODO - udf - #2553
+@pytest.mark.xfail_backends(['dask'])
+@pytest.mark.xfail_unsupported
+def test_elementwise_udf_overwrite_destruct_and_assign(backend, alltypes):
+    result = (
+        alltypes.mutate(
+            overwrite_struct_elementwise(alltypes['double_col']).destructure()
+        )
+        .mutate(col3=alltypes['int_col'] * 3)
+        .execute()
+    )
+
+    expected = alltypes.mutate(
+        double_col=alltypes['double_col'] + 1,
+        col2=alltypes['double_col'] + 2,
+        col3=alltypes['int_col'] * 3,
+    ).execute()
+
+    # TODO issue #2649
+    # Due to a known limitation with how we treat DestructColumn
+    # in assignments, the ordering of op.selections may not exactly
+    # correspond with the column ordering we want (i.e. all new columns
+    # should appear at the end, but currently they are materialized
+    # directly after those overwritten columns).
+    backend.assert_frame_equal(result, expected, check_like=True)
+
+
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
+# TODO - udf - #2553
+@pytest.mark.xfail_backends(['dask'])
+@pytest.mark.xfail_unsupported
+def test_elementwise_udf_multiple_overwrite_destruct(backend, alltypes):
+    result = alltypes.mutate(
+        multiple_overwrite_struct_elementwise(
+            alltypes['double_col']
+        ).destructure()
+    ).execute()
+
+    expected = alltypes.mutate(
+        double_col=alltypes['double_col'] + 1,
+        col2=alltypes['double_col'] + 2,
+        float_col=alltypes['double_col'] + 3,
+    ).execute()
+
+    # TODO issue #2649
+    # Due to a known limitation with how we treat DestructColumn
+    # in assignments, the ordering of op.selections may not exactly
+    # correspond with the column ordering we want (i.e. all new columns
+    # should appear at the end, but currently they are materialized
+    # directly after those overwritten columns).
+    backend.assert_frame_equal(result, expected, check_like=True)
+
+
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
 @pytest.mark.xfail_unsupported
 def test_elementwise_udf_named_destruct(backend, alltypes):
     """Test error when assigning name to a destruct column."""
@@ -299,6 +413,34 @@ def test_analytic_udf_destruct(backend, alltypes):
     backend.assert_frame_equal(result, expected)
 
 
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
+# TODO - udf - #2553
+@pytest.mark.xfail_backends(['dask'])
+@pytest.mark.xfail_unsupported
+def test_analytic_udf_destruct_overwrite(backend, alltypes):
+    w = window(preceding=None, following=None, group_by='year')
+
+    result = alltypes.mutate(
+        overwrite_struct_analytic(alltypes['double_col'], alltypes['int_col'])
+        .over(w)
+        .destructure()
+    ).execute()
+
+    expected = alltypes.mutate(
+        double_col=alltypes['double_col']
+        - alltypes['double_col'].mean().over(w),
+        demean_weight=alltypes['int_col'] - alltypes['int_col'].mean().over(w),
+    ).execute()
+
+    # TODO issue #2649
+    # Due to a known limitation with how we treat DestructColumn
+    # in assignments, the ordering of op.selections may not exactly
+    # correspond with the column ordering we want (i.e. all new columns
+    # should appear at the end, but currently they are materialized
+    # directly after those overwritten columns).
+    backend.assert_frame_equal(result, expected, check_like=True)
+
+
 @pytest.mark.only_on_backends(['pandas'])
 # TODO - udf - #2553
 @pytest.mark.xfail_backends(['dask'])
@@ -339,6 +481,30 @@ def test_reduction_udf_destruct_no_groupby(backend, alltypes):
     ).execute()
 
     backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
+# TODO - udf - #2553
+@pytest.mark.xfail_backends(['dask'])
+@pytest.mark.xfail_unsupported
+def test_reduction_udf_destruct_no_groupby_overwrite(backend, alltypes):
+    result = alltypes.aggregate(
+        overwrite_struct_reduction(
+            alltypes['double_col'], alltypes['int_col']
+        ).destructure()
+    ).execute()
+
+    expected = alltypes.aggregate(
+        double_col=alltypes['double_col'].mean(),
+        mean_weight=alltypes['int_col'].mean(),
+    ).execute()
+    # TODO issue #2649
+    # Due to a known limitation with how we treat DestructColumn
+    # in assignments, the ordering of op.selections may not exactly
+    # correspond with the column ordering we want (i.e. all new columns
+    # should appear at the end, but currently they are materialized
+    # directly after those overwritten columns).
+    backend.assert_frame_equal(result, expected, check_like=True)
 
 
 @pytest.mark.only_on_backends(['pandas'])
