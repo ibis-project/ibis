@@ -135,8 +135,7 @@ def test_context_adjustment_window(
 
 
 def test_trim_with_timecontext(time_df3):
-    """ Unit test `trim_with_timecontext` in Window execution
-    """
+    """ Unit test `trim_with_timecontext` in Window execution"""
     df = time_df3.copy()
     context = pd.Timestamp('20170105'), pd.Timestamp('20170111')
     # trim_with_timecontext takes a MultiIndex Series as input

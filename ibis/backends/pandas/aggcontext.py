@@ -228,7 +228,10 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.util
-from ibis.expr.timecontext import TIME_COL, construct_time_context_aware_series
+from ibis.expr.timecontext import (
+    construct_time_context_aware_series,
+    get_time_col,
+)
 
 
 class AggregationContext(abc.ABC):
@@ -625,7 +628,7 @@ class Window(AggregationContext):
                 # timecontext. In order to do so, 'time' must be added
                 # as an index to the Series, if present. Here We extract
                 # time column from the parent Dataframe `frame`.
-                if TIME_COL in frame or TIME_COL in frame.index.names:
+                if get_time_col() in frame:
                     result_index = construct_time_context_aware_series(
                         obj, frame
                     ).index

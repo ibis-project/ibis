@@ -4,7 +4,7 @@ import pyspark.sql.functions as F
 from pyspark.sql.dataframe import DataFrame
 
 import ibis.common.exceptions as com
-from ibis.expr.timecontext import TIME_COL
+from ibis.expr.timecontext import get_time_col
 from ibis.expr.typing import TimeContext
 
 
@@ -24,6 +24,7 @@ def filter_by_time_context(
     if not timecontext:
         return df
 
+    TIME_COL = get_time_col()
     if TIME_COL in df.columns:
         # For py3.8, underlying spark type converter calls utctimetuple()
         # and will throw excpetion for Timestamp type if tz is set.

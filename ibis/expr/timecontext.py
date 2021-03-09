@@ -37,6 +37,7 @@ import numpy as np
 import pandas as pd
 
 import ibis.common.exceptions as com
+import ibis.config as config
 import ibis.expr.api as ir
 import ibis.expr.operations as ops
 from ibis.expr.operations import Node
@@ -44,8 +45,12 @@ from ibis.expr.typing import TimeContext
 
 # In order to use time context feature, there must be a column of Timestamp
 # type, and named as 'time' in TableExpr. This TIME_COL constant will be
-# used in filtering data from a table or columns of a table.
-TIME_COL = 'time'
+# used in filtering data from a table or columns of a table. It can be changed
+# by ibis.set_option('time_col')
+
+
+def get_time_col():
+    return config.options.time_col
 
 
 class TimeContextRelation(enum.Enum):
@@ -200,6 +205,7 @@ def construct_time_context_aware_series(
     Name: value, dtype: float64
     The result is unchanged for a series already has 'time' as its index.
     """
+    TIME_COL = get_time_col()
     if TIME_COL == frame.index.name:
         time_index = frame.index
     elif TIME_COL in frame:

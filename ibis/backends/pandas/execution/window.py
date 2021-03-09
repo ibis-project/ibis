@@ -14,7 +14,10 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.window as win
 from ibis.expr.scope import Scope
-from ibis.expr.timecontext import TIME_COL, construct_time_context_aware_series
+from ibis.expr.timecontext import (
+    construct_time_context_aware_series,
+    get_time_col,
+)
 from ibis.expr.typing import TimeContext
 
 from .. import aggcontext as agg_ctx
@@ -208,6 +211,7 @@ def trim_with_timecontext(data, timecontext: Optional[TimeContext]):
     # Filter the data, here we preserve the time index so that when user is
     # computing a single column, the computation and the relevant time
     # indexes are returned.
+    TIME_COL = get_time_col()
     if TIME_COL not in df or not is_datetime64_dtype(df[TIME_COL]):
         return data
     subset = df.loc[df[TIME_COL].between(*timecontext)]
