@@ -46,6 +46,12 @@ from ibis.backends.base_sql.compiler import (
 )
 
 
+def build_ast(expr, context):
+    assert context is not None, 'context is None'
+    builder = SparkQueryBuilder(expr, context=context)
+    return builder.get_result()
+
+
 # ----------------------------------------------------------------------
 # Select compilation
 
