@@ -7,7 +7,6 @@ from pytest import param
 
 import ibis
 
-pytest.importorskip('pyspark')
 pytestmark = pytest.mark.pyspark
 
 

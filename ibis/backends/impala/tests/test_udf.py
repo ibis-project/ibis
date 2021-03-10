@@ -18,10 +18,6 @@ from ibis.tests.expr.mocks import MockConnection
 
 from .. import ddl  # noqa: E402
 
-pytest.importorskip('hdfs')
-pytest.importorskip('sqlalchemy')
-pytest.importorskip('impala.dbapi')
-
 pytestmark = [pytest.mark.impala, pytest.mark.udf]
 
 

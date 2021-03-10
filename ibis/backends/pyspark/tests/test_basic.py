@@ -6,7 +6,6 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 
-pytest.importorskip('pyspark')
 pytestmark = pytest.mark.pyspark
 
 

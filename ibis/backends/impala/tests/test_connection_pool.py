@@ -2,9 +2,6 @@ import pytest
 
 import ibis
 
-pytest.importorskip('sqlalchemy')
-pytest.importorskip('impala.dbapi')
-
 pytestmark = pytest.mark.impala
 
 

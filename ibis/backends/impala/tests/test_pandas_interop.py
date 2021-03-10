@@ -10,10 +10,6 @@ from ibis.backends.impala.pandas_interop import DataFrameWriter  # noqa: E402
 
 pytestmark = pytest.mark.impala
 
-pytest.importorskip('hdfs')
-pytest.importorskip('sqlalchemy')
-pytest.importorskip('impala.dbapi')
-
 
 @pytest.fixture
 def exhaustive_df():

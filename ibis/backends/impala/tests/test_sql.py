@@ -8,10 +8,6 @@ from ibis.backends.impala.compiler import to_sql  # noqa: E402
 from ibis.backends.impala.tests.mocks import MockImpalaConnection
 from ibis.tests.sql.test_compiler import ExprTestCases
 
-pytest.importorskip('sqlalchemy')
-pytest.importorskip('impala.dbapi')
-
-
 pytestmark = pytest.mark.impala
 
 

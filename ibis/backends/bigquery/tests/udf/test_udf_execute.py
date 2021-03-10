@@ -11,8 +11,6 @@ from ibis.compat import PY38
 
 from ... import udf  # noqa: E402
 
-pytest.importorskip('google.cloud.bigquery')
-
 if PY38:
     # ref: https://github.com/ibis-project/ibis/issues/2098
     # note: UDF is already skipt on CI
