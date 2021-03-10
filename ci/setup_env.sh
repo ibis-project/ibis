@@ -36,15 +36,11 @@ else
 fi
 conda update -n base -c anaconda --all --yes conda
 
-# Install micromamba
-conda install -c conda-forge mamba
-# wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba
-# ./bin/micromamba shell init -s bash -p ~/micromamba
-# source ~/.bashrc
 
 # Install base environment
+conda install -c conda-forge mamba
 sed "s/dependencies:/dependencies:\n  - python=${PYTHON_VERSION}\n/" environment.yml
-mamba env update --file=environment.yml
+mamba env update -n base --file=environment.yml
 python -m pip install -e .
 
 if [[ -n "$BACKENDS" ]]; then
