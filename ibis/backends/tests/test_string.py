@@ -162,7 +162,7 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.string_col.ascii_str(),
             lambda t: t.string_col.map(ord).astype('int32'),
             id='ascii_str',
-            # TODO - pandas - #2553
+            # TODO - dtype - #2553
             marks=pytest.mark.skip_backends(['dask']),
         ),
         param(
