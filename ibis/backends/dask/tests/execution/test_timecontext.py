@@ -47,7 +47,7 @@ def test_bad_timecontext(time_table, t):
         context = (Timestamp('20101010'), Timestamp('20090101'))
         expr.execute(timecontext=context)
 
-    # execute context with a table without TIME_COL
+    # execute context with a table without time column
     with pytest.raises(com.IbisError, match=r".*must have a time column.*"):
         context = (Timestamp('20090101'), Timestamp('20100101'))
         t.execute(timecontext=context)
