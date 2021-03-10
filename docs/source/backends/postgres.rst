@@ -39,7 +39,7 @@ create a client.
 .. autosummary::
    :toctree: ../generated/
 
-   connect
+   Backend.connect
    PostgreSQLClient.database
    PostgreSQLClient.list_tables
    PostgreSQLClient.list_databases

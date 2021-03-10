@@ -30,7 +30,7 @@ Use ``ibis.clickhouse.connect`` to create a client.
 .. autosummary::
    :toctree: ../generated/
 
-   connect
+   Backend.connect
    ClickhouseClient.close
    ClickhouseClient.exists_table
    ClickhouseClient.exists_database
