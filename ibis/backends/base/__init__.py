@@ -10,6 +10,7 @@ class BaseBackend(abc.ABC):
     All Ibis backends are expected to subclass this `Backend` class,
     and implement all the required methods.
     """
+
     @property
     @abc.abstractmethod
     def name(self) -> str:

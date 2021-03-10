@@ -8,7 +8,7 @@ from ibis.backends.base_sqlalchemy.compiler import Dialect
 
 from .client import PandasClient
 from .execution import execute, execute_node
-from .udf import udf # noqa F401
+from .udf import udf  # noqa F401
 
 
 def _flatten_subclass_tree(cls):
