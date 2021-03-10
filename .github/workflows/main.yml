@@ -31,13 +31,12 @@ jobs:
 
   Tests_dask:
     name: Tests dask
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     env:
       BACKENDS: "dask"
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
         python_version: ["3.7", "3.8"]
     steps:
     - name: checkout

@@ -13,16 +13,6 @@ from .udf import udf
 __all__ = ('connect', 'dialect', 'execute', 'udf')
 
 
-with ibis.config.config_prefix('pandas'):
-    ibis.config.register_option(
-        'enable_trace',
-        False,
-        'Whether enable tracing for pandas execution. '
-        'See ibis.pandas.trace for details.',
-        validator=ibis.config.is_bool,
-    )
-
-
 def connect(dictionary):
     """Construct a pandas client from a dictionary of DataFrames.
 
@@ -102,3 +92,12 @@ class Backend(BaseBackend):
     builder = None
     dialect = PandasDialect
     connect = connect
+
+    def register_options(self):
+        ibis.config.register_option(
+            'enable_trace',
+            False,
+            'Whether enable tracing for pandas execution. '
+            'See ibis.pandas.trace for details.',
+            validator=ibis.config.is_bool,
+        )
