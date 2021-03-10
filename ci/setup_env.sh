@@ -44,7 +44,7 @@ conda install -c conda-forge micromamba
 
 # Install base environment
 sed "s/dependencies:/dependencies:\n  - python=${PYTHON_VERSION}\n/" environment.yml
-micromamba install --file=environment.yml
+micromamba env install --file=environment.yml
 python -m pip install -e .
 
 if [[ -n "$BACKENDS" ]]; then
