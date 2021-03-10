@@ -53,6 +53,7 @@ def expected_series(df, context):
         .rolling('3d', closed='both')[TARGET_COL]
         .mean()
     ).reset_index()
+
     # Result is a MultiIndexed Series
     exp_groupby_orderby = exp_groupby_orderby[
         exp_groupby_orderby[ORDERBY_COL] >= context[0]
