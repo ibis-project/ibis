@@ -12,10 +12,35 @@ echo "PYTHON_VERSION: $PYTHON_VERSION"
 echo "BACKENDS: $BACKENDS"
 echo "LOAD_TEST_DATA: $LOAD_TEST_DATA"
 
+if [[ -n "$CONDA" ]]; then
+    # Add conda to Path
+    OS_NAME=$(uname)
+    case $OS_NAME in
+        Linux)
+            CONDA_PATH="$CONDA/bin"
+            ;;
+        MINGW*)
+            # Windows
+            CONDA_POSIX=$(cygpath -u "$CONDA")
+            CONDA_PATH="$CONDA_POSIX:$CONDA_POSIX/Scripts:$CONDA_POSIX/Library:$CONDA_POSIX/Library/bin:$CONDA_POSIX/Library/mingw-w64/bin"
+            ;;
+        *)
+            echo "$OS_NAME not supported."
+            exit 1
+    esac
+    PATH=${CONDA_PATH}:${PATH}
+    # Prepend conda path to system path for the subsequent GitHub Actions
+    echo "${CONDA_PATH}" >> $GITHUB_PATH
+else
+    echo "Running without adding conda to PATH."
+fi
+conda update -n base -c anaconda --all --yes conda
+
 # Install micromamba
-wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba
-./bin/micromamba shell init -s bash -p ~/micromamba
-source ~/.bashrc
+conda install -c conda-forge micromamba
+# wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba
+# ./bin/micromamba shell init -s bash -p ~/micromamba
+# source ~/.bashrc
 
 # Install base environment
 sed "s/dependencies:/dependencies:\n  - python=${PYTHON_VERSION}\n/" environment.yml
