@@ -37,14 +37,14 @@ fi
 conda update -n base -c anaconda --all --yes conda
 
 # Install micromamba
-conda install -c conda-forge micromamba
+conda install -c conda-forge mamba
 # wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba
 # ./bin/micromamba shell init -s bash -p ~/micromamba
 # source ~/.bashrc
 
 # Install base environment
 sed "s/dependencies:/dependencies:\n  - python=${PYTHON_VERSION}\n/" environment.yml
-micromamba env install --file=environment.yml
+mamba env install --file=environment.yml
 python -m pip install -e .
 
 if [[ -n "$BACKENDS" ]]; then
@@ -59,10 +59,10 @@ if [[ -n "$BACKENDS" ]]; then
         # (if there are dependencies). For other python versions we simply install
         # the normal dependencies if they exist.
         if [[ $PYTHON_VERSION == "3.7" && -f "ci/deps/$BACKEND-min.yml" ]]; then
-            micromamba install --file="ci/deps/$BACKEND-min.yml"
+            mamba install --file="ci/deps/$BACKEND-min.yml"
         else
             if [[ -f "ci/deps/$BACKEND.yml" ]]; then
-                micromamba install --file="ci/deps/$BACKEND.yml"
+                mamba install --file="ci/deps/$BACKEND.yml"
             fi
         fi
 
