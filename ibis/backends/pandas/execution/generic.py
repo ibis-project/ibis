@@ -920,14 +920,14 @@ def execute_database_table_client(
     df = client.dictionary[op.name]
     if timecontext:
         begin, end = timecontext
-        TIME_COL = get_time_col()
-        if TIME_COL not in df:
+        time_col = get_time_col()
+        if time_col not in df:
             raise com.IbisError(
-                f'Table {op.name} must have a time column named {TIME_COL}'
+                f'Table {op.name} must have a time column named {time_col}'
                 ' to execute with time context.'
             )
         # filter with time context
-        mask = df[TIME_COL].between(begin, end)
+        mask = df[time_col].between(begin, end)
         return df.loc[mask].reset_index(drop=True)
     return df
 

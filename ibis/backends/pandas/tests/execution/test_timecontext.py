@@ -148,6 +148,7 @@ def test_trim_with_timecontext(time_df3):
     expected = df['time'][df['time'] >= pd.Timestamp('20170105')].reset_index(
         drop=True
     )
+
     # result should adjust time context accordingly
     tm.assert_series_equal(result.reset_index()['time'], expected)
 
@@ -161,13 +162,14 @@ def test_trim_with_timecontext(time_df3):
     )
     wrong_result = trim_with_timecontext(wrong_series, context)
     expected_unchanged = df['time']
+
     # column is ignored and result is not trimmed
     tm.assert_series_equal(
         wrong_result.reset_index()['time'], expected_unchanged
     )
 
-    no_context_result = trim_with_timecontext(series, None)
     # column is ignored and series is not trimmed
+    no_context_result = trim_with_timecontext(series, None)
     tm.assert_series_equal(no_context_result, series)
 
 
@@ -275,6 +277,7 @@ def test_construct_time_context_aware_series(time_df3):
     )
     result = construct_time_context_aware_series(df['value'], df)
     tm.assert_series_equal(result, expected)
+
     # Series with 'time' as index will not change
     time_indexed_df = time_df3.set_index('time')
     expected_time_aware = time_indexed_df['value']
@@ -282,6 +285,7 @@ def test_construct_time_context_aware_series(time_df3):
         time_indexed_df['value'], time_indexed_df
     )
     tm.assert_series_equal(result_time_aware, expected_time_aware)
+
     # Series with a MultiIndex, where 'time' is in the MultiIndex,
     # will not change
     multi_index_time_aware_series = result_time_aware
@@ -292,6 +296,7 @@ def test_construct_time_context_aware_series(time_df3):
     tm.assert_series_equal(
         result_multi_index_time_aware, expected_multi_index_time_aware
     )
+
     # Series with a MultiIndex, where 'time' is NOT in the MultiIndex,
     # 'time' will be added into the MultiIndex
     multi_index_series = df['id']

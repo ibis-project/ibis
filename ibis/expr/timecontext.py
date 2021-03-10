@@ -154,7 +154,7 @@ def construct_time_context_aware_series(
     pd.Series
 
     Examples
-    -----------
+    --------
     >>> import pandas as pd
     >>> from ibis.expr.timecontext import construct_time_context_aware_series
     >>> df = pd.DataFrame(
@@ -205,20 +205,20 @@ def construct_time_context_aware_series(
     Name: value, dtype: float64
     The result is unchanged for a series already has 'time' as its index.
     """
-    TIME_COL = get_time_col()
-    if TIME_COL == frame.index.name:
+    time_col = get_time_col()
+    if time_col == frame.index.name:
         time_index = frame.index
-    elif TIME_COL in frame:
-        time_index = pd.Index(frame[TIME_COL])
+    elif time_col in frame:
+        time_index = pd.Index(frame[time_col])
     else:
         raise com.IbisError(f'"time" column not present in DataFrame {frame}')
-    if TIME_COL not in series.index.names:
+    if time_col not in series.index.names:
         series.index = pd.MultiIndex.from_arrays(
             list(
                 map(series.index.get_level_values, range(series.index.nlevels))
             )
             + [time_index],
-            names=series.index.names + [TIME_COL],
+            names=series.index.names + [time_col],
         )
     return series
 

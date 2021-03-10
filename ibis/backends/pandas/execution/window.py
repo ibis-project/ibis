@@ -211,10 +211,10 @@ def trim_with_timecontext(data, timecontext: Optional[TimeContext]):
     # Filter the data, here we preserve the time index so that when user is
     # computing a single column, the computation and the relevant time
     # indexes are returned.
-    TIME_COL = get_time_col()
-    if TIME_COL not in df or not is_datetime64_dtype(df[TIME_COL]):
+    time_col = get_time_col()
+    if time_col not in df or not is_datetime64_dtype(df[time_col]):
         return data
-    subset = df.loc[df[TIME_COL].between(*timecontext)]
+    subset = df.loc[df[time_col].between(*timecontext)]
 
     # re-indexing index to count from 0
     subset = subset.reset_index(drop=True).reset_index()
