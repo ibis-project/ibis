@@ -44,7 +44,7 @@ conda install -c conda-forge mamba
 
 # Install base environment
 sed "s/dependencies:/dependencies:\n  - python=${PYTHON_VERSION}\n/" environment.yml
-mamba env install --file=environment.yml
+mamba env update --file=environment.yml
 python -m pip install -e .
 
 if [[ -n "$BACKENDS" ]]; then
