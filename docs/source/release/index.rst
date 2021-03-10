@@ -13,6 +13,13 @@ Release Notes
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
 * :feature:`2646` Support context adjustment for udfs for pandas backend
+* :feature:`2655` Add `auth_local_webserver`, `auth_external_data`, and
+  `auth_cache` parameters to BigQuery connect method. Set
+  `auth_local_webserver` to use a local server instead of copy-pasting an
+  authorization code. Set `auth_external_data` to true to request additional
+  scopes required to query Google Drive and Sheets. Set `auth_cache` to
+  `reauth` or `none` to force reauthentication.
+* :bug:`2657` Add temporary struct col in pyspark backend to ensure that UDFs are executed only once
 * :bug:`2588` Fix BigQuery connect bug that ignored project ID parameter
 * :bug: `2636` Fix overwrite logic to account for DestructColumn inside mutate API
 * :feature:`2641` Add `bit_and`, `bit_or`, and `bit_xor` integer column aggregates (BigQuery and MySQL backends)

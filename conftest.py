@@ -23,7 +23,4 @@ def data_directory() -> Path:
     datadir = os.environ.get('IBIS_TEST_DATA_DIRECTORY', default)
     datadir = Path(datadir)
 
-    if not datadir.exists():
-        pytest.skip('test data directory not found')
-
     return datadir

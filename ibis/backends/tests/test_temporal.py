@@ -78,7 +78,9 @@ def test_timestamp_extract(backend, alltypes, df, attr):
         # Pandas backend is probably doing this wrong
         param(
             'W',
-            marks=pytest.mark.xpass_backends(('csv', 'pandas', 'parquet')),
+            marks=pytest.mark.xpass_backends(
+                ('csv', 'pandas', 'dask', 'parquet')
+            ),
         ),
         'h',
         'm',
@@ -88,7 +90,6 @@ def test_timestamp_extract(backend, alltypes, df, attr):
         'ns',
     ],
 )
-@pytest.mark.skip_backends(['dask'])  # TODO - pandas - #2553
 @pytest.mark.xfail_unsupported
 def test_timestamp_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.truncate(unit)
@@ -110,11 +111,12 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
         'D',
         param(
             'W',
-            marks=pytest.mark.xpass_backends(('csv', 'pandas', 'parquet')),
+            marks=pytest.mark.xpass_backends(
+                ('csv', 'pandas', 'dask', 'parquet')
+            ),
         ),
     ],
 )
-@pytest.mark.skip_backends(['dask'])  # TODO - pandas - #2553
 @pytest.mark.xfail_unsupported
 def test_date_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.date().truncate(unit)
@@ -487,7 +489,7 @@ def test_now(backend, con):
     assert result.year == pandas_now.year
 
 
-# TODO - pandas - #2553
+# # TODO - limit - #2553
 @pytest.mark.xfail_backends(['dask'])
 @pytest.mark.xfail_unsupported
 def test_now_from_projection(backend, con, alltypes, df):
