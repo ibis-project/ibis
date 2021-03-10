@@ -21,6 +21,23 @@ def build_ast(expr, context):
     builder = ImpalaQueryBuilder(expr, context=context)
     return builder.get_result()
 
+
+def _get_query(expr, context):
+    assert context is not None, 'context is None'
+    ast = build_ast(expr, context)
+    query = ast.queries[0]
+
+    return query
+
+
+def to_sql(expr, context=None):
+    if context is None:
+        context = BaseDialect.make_context()
+    assert context is not None, 'context is None'
+    query = _get_query(expr, context)
+    return query.compile()
+
+
 # ----------------------------------------------------------------------
 # Select compilation
 
