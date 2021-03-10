@@ -164,7 +164,7 @@ def get_spark_testing_client(data_directory):
     if _spark_testing_client is None:
         _spark_testing_client = get_common_spark_testing_client(
             data_directory,
-            lambda session: ibis.backends.spark.connect(session),
+            lambda session: ibis.backends.spark.Backend().connect(session),
         )
     return _spark_testing_client
 
@@ -175,7 +175,7 @@ def get_pyspark_testing_client(data_directory):
     if _pyspark_testing_client is None:
         _pyspark_testing_client = get_common_spark_testing_client(
             data_directory,
-            lambda session: ibis.backends.pyspark.connect(session),
+            lambda session: ibis.backends.pyspark.Backend().connect(session),
         )
     return _pyspark_testing_client
 
