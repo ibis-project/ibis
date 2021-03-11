@@ -34,7 +34,7 @@ notebook.
 )
 ibis.config.register_option('default_backend', None)
 ibis.config.register_option(
-    'time_col',
+    'timecontext.time_col',
     'time',
     'Name of the timestamp col for execution with a timecontext'
     'See ibis.expr.timecontext for details.',
