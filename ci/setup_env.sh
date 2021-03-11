@@ -35,33 +35,34 @@ else
     echo "Running without adding conda to PATH."
 fi
 conda update -n base -c anaconda --all --yes conda
-
-
-# Install base environment
 conda install -c conda-forge mamba
-sed "s/dependencies:/dependencies:\n  - python=${PYTHON_VERSION}\n/" environment.yml
+
+# Add selected Python version and backend dependencies to environment.yml and install
+echo "  - python=${PYTHON_VERSION}\n" >> environment.yml
+for BACKEND in $BACKENDS; do
+    # For the oldest python version supported (currently 3.7) we first try to
+    # install the minimum supported dependencies `ci/deps/$BACKEND-min.yml`.
+    # If the file does not exist then we install the normal dependencies
+    # (if there are dependencies). For other python versions we simply install
+    # the normal dependencies if they exist.
+    if [[ $PYTHON_VERSION == "3.7" && -f "ci/deps/$BACKEND-min.yml" ]]; then
+        sed -e 's/^/  - /' "ci/deps/$BACKEND-min.yml" >> environment.yml
+    else
+        if [[ -f "ci/deps/$BACKEND.yml" ]]; then
+            sed -e 's/^/  - /' "ci/deps/$BACKEND.yml" >> environment.yml
+        fi
+    fi
+done
+cat environment.yml
 mamba env update -n base --file=environment.yml
 python -m pip install -e .
 
 if [[ -n "$BACKENDS" ]]; then
+    # Load test data
     if [[ $LOAD_TEST_DATA == "true" ]]; then
         python ci/datamgr.py download
     fi
-
     for BACKEND in $BACKENDS; do
-        # For the oldest python version supported (currently 3.7) we first try to
-        # install the minimum supported dependencies `ci/deps/$BACKEND-min.yml`.
-        # If the file does not exist then we install the normal dependencies
-        # (if there are dependencies). For other python versions we simply install
-        # the normal dependencies if they exist.
-        if [[ $PYTHON_VERSION == "3.7" && -f "ci/deps/$BACKEND-min.yml" ]]; then
-            mamba install --file="ci/deps/$BACKEND-min.yml"
-        else
-            if [[ -f "ci/deps/$BACKEND.yml" ]]; then
-                mamba install --file="ci/deps/$BACKEND.yml"
-            fi
-        fi
-
         if [[ $LOAD_TEST_DATA == "true" ]]; then
             # TODO load impala data in the same way as the rest of the backends
             if [[ "$BACKEND" == "impala" ]]; then

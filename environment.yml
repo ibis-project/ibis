@@ -40,6 +40,9 @@ dependencies:
   - pygit2 # dev/genrelease.py
 
   # Docs
+  - pip
+  - pip:
+    - pysuerga
   - ipython
   - jupyter
   - matplotlib
@@ -50,6 +53,3 @@ dependencies:
   - sphinx
   - sphinx-releases
   - sphinx_rtd_theme
-  - pip
-  - pip:
-    - pysuerga
