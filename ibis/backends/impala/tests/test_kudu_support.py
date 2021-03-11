@@ -9,10 +9,6 @@ import ibis.util as util  # noqa: E402
 from ibis.tests.expr.mocks import MockConnection  # noqa: E402
 from ibis.tests.util import assert_equal  # noqa: E402
 
-pytest.importorskip('hdfs')
-pytest.importorskip('sqlalchemy')
-pytest.importorskip('impala.dbapi')
-
 ksupport = pytest.importorskip('ibis.backends.impala.kudu_support')
 kudu = pytest.importorskip('kudu')
 

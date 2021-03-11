@@ -17,15 +17,13 @@ import os
 import numpy as np
 import pandas as pd
 import pytest
+import sqlalchemy as sa
 
 import ibis
 import ibis.backends.base_sqlalchemy.alchemy as alch  # noqa: E402
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.tests.util import assert_equal
-
-sa = pytest.importorskip('sqlalchemy')
-pytest.importorskip('psycopg2')
 
 pytestmark = pytest.mark.postgres
 

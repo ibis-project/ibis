@@ -1,6 +1,7 @@
 import os
 from posixpath import join as pjoin
 
+import pyspark as ps
 import pytest
 
 import ibis
@@ -9,7 +10,6 @@ import ibis.util as util
 from ibis.tests.util import assert_equal
 
 pytestmark = pytest.mark.spark
-ps = pytest.importorskip('pyspark')
 
 
 def test_create_exists_view(con, alltypes, temp_view):
