@@ -38,7 +38,7 @@ conda update -n base -c anaconda --all --yes conda
 conda install -c conda-forge mamba
 
 # Add selected Python version and backend dependencies to environment.yml and install
-echo "  - python=${PYTHON_VERSION}\n" >> environment.yml
+echo "  - python=${PYTHON_VERSION}" >> environment.yml
 for BACKEND in $BACKENDS; do
     # For the oldest python version supported (currently 3.7) we first try to
     # install the minimum supported dependencies `ci/deps/$BACKEND-min.yml`.
