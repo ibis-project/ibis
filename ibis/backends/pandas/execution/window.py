@@ -7,7 +7,6 @@ from typing import Any, List, NoReturn, Optional
 
 import pandas as pd
 import toolz
-from pandas.api.types import is_datetime64_any_dtype
 from pandas.core.groupby import SeriesGroupBy
 
 import ibis.common.exceptions as com
@@ -210,7 +209,7 @@ def trim_with_timecontext(data, timecontext: Optional[TimeContext]):
     # computing a single column, the computation and the relevant time
     # indexes are returned.
     time_col = get_time_col()
-    if time_col not in df or not is_datetime64_any_dtype(df[time_col]):
+    if time_col not in df:
         return data
 
     # if Series dosen't contain a name, reset_index will assign

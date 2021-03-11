@@ -95,7 +95,7 @@ def test_context_adjustment_window_udf(
     """ This test case aims to test context adjustment of
         udfs in window method.
     """
-    with option_context('timecontext.time_col', 'timestamp_col'):
+    with option_context('context_adjustment.time_col', 'timestamp_col'):
         expr = alltypes.mutate(v1=calc_mean(alltypes[TARGET_COL]).over(window))
         result = expr.execute(timecontext=context)
         tm.assert_series_equal(result["v1"], expected_series[exp_idx])

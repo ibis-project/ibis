@@ -375,9 +375,14 @@ class Transform(AggregationContext):
         # Instead, we need to use "apply", which can return a non
         # numeric type, e.g, tuple of two double.
         if isinstance(self.output_type, dt.Struct):
-            return grouped_data.apply(function, *args, **kwargs)
+            res = grouped_data.apply(function, *args, **kwargs)
         else:
-            return grouped_data.transform(function, *args, **kwargs)
+            res = grouped_data.transform(function, *args, **kwargs)
+
+        # The result series uses the name of the input. We should
+        # unset it to avoid confusion
+        res.name = None
+        return res
 
 
 @functools.singledispatch
