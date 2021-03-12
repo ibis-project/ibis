@@ -91,7 +91,9 @@ jobs:
     name: Tests Impala / Clickhouse
     runs-on: ubuntu-latest
     env:
-      BACKENDS: "impala clickhouse"
+      # FIXME checking if clickhouse dependencies are the ones causing problems
+      BACKENDS: "impala"
+      # BACKENDS: "impala clickhouse"
       IBIS_TEST_NN_HOST: localhost
       IBIS_TEST_IMPALA_HOST: localhost
       IBIS_TEST_IMPALA_PORT: 21050

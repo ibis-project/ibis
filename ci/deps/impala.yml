@@ -1,4 +1,4 @@
 impyla
-# requests
-# thrift_sasl
-# python-hdfs
+requests
+thrift_sasl
+python-hdfs
