@@ -179,6 +179,7 @@ def test_udaf_analytic_groupby(con, t, df):
         return s.sub(s.mean()).div(s.std())
 
     expected = df.groupby('key').c.transform(f)
+    expected.name = None
     tm.assert_series_equal(result, expected)
 
 

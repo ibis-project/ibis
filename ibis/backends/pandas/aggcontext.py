@@ -380,7 +380,8 @@ class Transform(AggregationContext):
             res = grouped_data.transform(function, *args, **kwargs)
 
         # The result series uses the name of the input. We should
-        # unset it to avoid confusion
+        # unset it to avoid confusion, when result is not guranteed
+        # to be the same series / have the same type after transform
         res.name = None
         return res
 
