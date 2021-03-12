@@ -21,11 +21,6 @@ from ..compiler import (  # noqa: E402
     to_sql,
 )
 
-pytest.importorskip('hdfs')
-pytest.importorskip('sqlalchemy')
-pytest.importorskip('impala.dbapi')
-
-
 pytestmark = pytest.mark.impala
 
 

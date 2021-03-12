@@ -1,13 +1,14 @@
 from unittest import mock
 
+import pydata_google_auth
 import pytest
+from google.auth import credentials as auth
+from google.cloud import bigquery as bq
 
 import ibis
+from ibis.backends import bigquery as bq_backend
 
 pytestmark = pytest.mark.bigquery
-bq = pytest.importorskip('google.cloud.bigquery')
-bq_backend = pytest.importorskip('ibis.backends.bigquery')
-pydata_google_auth = pytest.importorskip('pydata_google_auth')
 
 
 def test_repeated_project_name(project_id, credentials):
@@ -20,7 +21,6 @@ def test_repeated_project_name(project_id, credentials):
 
 
 def test_project_id_different_from_default_credentials(monkeypatch):
-    auth = pytest.importorskip('google.auth.credentials')
     creds = mock.create_autospec(auth.Credentials)
 
     def mock_credentials(*args, **kwargs):

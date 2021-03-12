@@ -42,7 +42,6 @@ def test_data_db(client):
 
 @pytest.fixture(scope='session')
 def client(data_directory):
-    pytest.importorskip('pyspark')
     return get_spark_testing_client(data_directory)
 
 

@@ -1,7 +1,6 @@
 import pandas.testing as tm
 import pytest
 
-pytest.importorskip('pyspark')
 pytestmark = pytest.mark.pyspark
 
 
