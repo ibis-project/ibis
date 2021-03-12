@@ -1,5 +1,6 @@
 sqlalchemy
-impyla
+# FIXME testing if the environment resolves without impyla, must restore
+# impyla
 requests
 thrift
 thriftpy2
