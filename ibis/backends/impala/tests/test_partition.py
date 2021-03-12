@@ -6,15 +6,8 @@ import pytest
 
 import ibis
 import ibis.util as util
+from ibis.backends.impala.compat import ImpylaError
 from ibis.tests.util import assert_equal
-
-pytest.importorskip('hdfs')
-pytest.importorskip('sqlalchemy')
-pytest.importorskip('impala.dbapi')
-
-impala = pytest.importorskip('impala')
-
-from ibis.backends.impala.compat import ImpylaError  # noqa: E402, isort:skip
 
 pytestmark = pytest.mark.impala
 

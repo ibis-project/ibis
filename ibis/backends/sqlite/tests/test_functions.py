@@ -8,14 +8,12 @@ import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
+import sqlalchemy as sa
 
 import ibis  # noqa: E402
 import ibis.config as config  # noqa: E402
 import ibis.expr.datatypes as dt  # noqa: E402
 from ibis import literal as L  # noqa: E402
-
-sa = pytest.importorskip('sqlalchemy')
-
 
 try:
     from packaging.version import parse as get_version

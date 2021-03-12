@@ -4,9 +4,8 @@ import pytest
 
 @pytest.mark.parametrize('distinct', [False, True])
 @pytest.mark.only_on_backends(
-    ['bigquery', 'impala', 'pandas', 'postrges', 'pyspark']
+    ['bigquery', 'impala', 'pandas', 'postrges', 'pyspark', 'dask']
 )
-@pytest.mark.skip_backends(['dask'])  # TODO - pandas - #2553
 @pytest.mark.xfail_unsupported
 def test_union(backend, alltypes, df, distinct):
     result = alltypes.union(alltypes, distinct=distinct).execute()

@@ -14,10 +14,6 @@ import ibis.expr.types as ir
 import ibis.util as util
 from ibis.tests.util import assert_equal
 
-pytest.importorskip('sqlalchemy')
-pytest.importorskip('hdfs')
-pytest.importorskip('impala.dbapi')
-
 pytestmark = pytest.mark.impala
 
 

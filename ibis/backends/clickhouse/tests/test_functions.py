@@ -13,7 +13,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import literal as L
 
-clickhouse_driver = pytest.importorskip('clickhouse_driver')
 pytestmark = pytest.mark.clickhouse
 
 
