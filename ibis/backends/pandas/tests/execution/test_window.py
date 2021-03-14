@@ -616,6 +616,7 @@ def test_window_grouping_key_has_scope(t, df):
     expr = t.plain_int64.mean().over(window)
     result = expr.execute(params={param: "a"})
     expected = df.groupby(df.dup_strings + "a").plain_int64.transform("mean")
+    expected.name = None
     tm.assert_series_equal(result, expected)
 
 

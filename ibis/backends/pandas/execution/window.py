@@ -7,7 +7,6 @@ from typing import Any, List, NoReturn, Optional
 
 import pandas as pd
 import toolz
-from pandas.api.types import is_datetime64_dtype
 from pandas.core.groupby import SeriesGroupBy
 
 import ibis.common.exceptions as com
@@ -202,18 +201,20 @@ def trim_with_timecontext(data, timecontext: Optional[TimeContext]):
     # noop if timecontext is None
     if not timecontext:
         return data
+
     # reset multiindex and turn series into a dateframe
     df = data.reset_index()
-    # if Series dosen't contain a name, reset_index will assign
-    # '0' as the column name for the column of value
-    name = data.name if data.name else 0
 
     # Filter the data, here we preserve the time index so that when user is
     # computing a single column, the computation and the relevant time
     # indexes are returned.
     time_col = get_time_col()
-    if time_col not in df or not is_datetime64_dtype(df[time_col]):
+    if time_col not in df:
         return data
+
+    # if Series dosen't contain a name, reset_index will assign
+    # '0' as the column name for the column of value
+    name = data.name if data.name else 0
     subset = df.loc[df[time_col].between(*timecontext)]
 
     # re-indexing index to count from 0

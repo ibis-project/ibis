@@ -153,7 +153,7 @@ def test_trim_with_timecontext(time_df3):
     # result should adjust time context accordingly
     tm.assert_series_equal(result.reset_index()['time'], expected)
 
-    # trim with a non-datetime type of 'time'
+    # trim with a non-datetime type of 'time' throws Exception
     wrong_series = df['id']
     df['time'] = df['time'].astype(str)
     time_index = df.set_index('time').index
@@ -161,13 +161,10 @@ def test_trim_with_timecontext(time_df3):
         [wrong_series.index, time_index],
         names=wrong_series.index.names + ['time'],
     )
-    wrong_result = trim_with_timecontext(wrong_series, context)
-    expected_unchanged = df['time']
-
-    # column is ignored and result is not trimmed
-    tm.assert_series_equal(
-        wrong_result.reset_index()['time'], expected_unchanged
-    )
+    with pytest.raises(
+        TypeError, match=r".*not supported between instances.*"
+    ):
+        trim_with_timecontext(wrong_series, context)
 
     # column is ignored and series is not trimmed
     no_context_result = trim_with_timecontext(series, None)
