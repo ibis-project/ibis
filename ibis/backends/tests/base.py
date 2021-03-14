@@ -186,85 +186,101 @@ def get_common_spark_testing_client(data_directory, connect):
     import pyspark.sql.types as pt
     from pyspark.sql import SparkSession
 
-    spark = SparkSession.builder.getOrCreate()
+    spark = SparkSession.builder.config(
+        'spark.default.parallelism', 4
+    ).getOrCreate()
     _spark_testing_client = connect(spark)
     s = _spark_testing_client._session
+    num_partitions = 4
 
-    df_functional_alltypes = s.read.csv(
-        path=str(data_directory / 'functional_alltypes.csv'),
-        schema=pt.StructType(
-            [
-                pt.StructField('index', pt.IntegerType(), True),
-                pt.StructField('Unnamed: 0', pt.IntegerType(), True),
-                pt.StructField('id', pt.IntegerType(), True),
-                # cast below, Spark can't read 0/1 as bool
-                pt.StructField('bool_col', pt.ByteType(), True),
-                pt.StructField('tinyint_col', pt.ByteType(), True),
-                pt.StructField('smallint_col', pt.ShortType(), True),
-                pt.StructField('int_col', pt.IntegerType(), True),
-                pt.StructField('bigint_col', pt.LongType(), True),
-                pt.StructField('float_col', pt.FloatType(), True),
-                pt.StructField('double_col', pt.DoubleType(), True),
-                pt.StructField('date_string_col', pt.StringType(), True),
-                pt.StructField('string_col', pt.StringType(), True),
-                pt.StructField('timestamp_col', pt.TimestampType(), True),
-                pt.StructField('year', pt.IntegerType(), True),
-                pt.StructField('month', pt.IntegerType(), True),
-            ]
-        ),
-        mode='FAILFAST',
-        header=True,
+    df_functional_alltypes = (
+        s.read.csv(
+            path=str(data_directory / 'functional_alltypes.csv'),
+            schema=pt.StructType(
+                [
+                    pt.StructField('index', pt.IntegerType(), True),
+                    pt.StructField('Unnamed: 0', pt.IntegerType(), True),
+                    pt.StructField('id', pt.IntegerType(), True),
+                    # cast below, Spark can't read 0/1 as bool
+                    pt.StructField('bool_col', pt.ByteType(), True),
+                    pt.StructField('tinyint_col', pt.ByteType(), True),
+                    pt.StructField('smallint_col', pt.ShortType(), True),
+                    pt.StructField('int_col', pt.IntegerType(), True),
+                    pt.StructField('bigint_col', pt.LongType(), True),
+                    pt.StructField('float_col', pt.FloatType(), True),
+                    pt.StructField('double_col', pt.DoubleType(), True),
+                    pt.StructField('date_string_col', pt.StringType(), True),
+                    pt.StructField('string_col', pt.StringType(), True),
+                    pt.StructField('timestamp_col', pt.TimestampType(), True),
+                    pt.StructField('year', pt.IntegerType(), True),
+                    pt.StructField('month', pt.IntegerType(), True),
+                ]
+            ),
+            mode='FAILFAST',
+            header=True,
+        )
+        .repartition(num_partitions)
+        .sort('index')
     )
+
     df_functional_alltypes = df_functional_alltypes.withColumn(
         "bool_col", df_functional_alltypes["bool_col"].cast("boolean")
     )
     df_functional_alltypes.createOrReplaceTempView('functional_alltypes')
 
-    df_batting = s.read.csv(
-        path=str(data_directory / 'batting.csv'),
-        schema=pt.StructType(
-            [
-                pt.StructField('playerID', pt.StringType(), True),
-                pt.StructField('yearID', pt.IntegerType(), True),
-                pt.StructField('stint', pt.IntegerType(), True),
-                pt.StructField('teamID', pt.StringType(), True),
-                pt.StructField('lgID', pt.StringType(), True),
-                pt.StructField('G', pt.IntegerType(), True),
-                pt.StructField('AB', pt.DoubleType(), True),
-                pt.StructField('R', pt.DoubleType(), True),
-                pt.StructField('H', pt.DoubleType(), True),
-                pt.StructField('X2B', pt.DoubleType(), True),
-                pt.StructField('X3B', pt.DoubleType(), True),
-                pt.StructField('HR', pt.DoubleType(), True),
-                pt.StructField('RBI', pt.DoubleType(), True),
-                pt.StructField('SB', pt.DoubleType(), True),
-                pt.StructField('CS', pt.DoubleType(), True),
-                pt.StructField('BB', pt.DoubleType(), True),
-                pt.StructField('SO', pt.DoubleType(), True),
-                pt.StructField('IBB', pt.DoubleType(), True),
-                pt.StructField('HBP', pt.DoubleType(), True),
-                pt.StructField('SH', pt.DoubleType(), True),
-                pt.StructField('SF', pt.DoubleType(), True),
-                pt.StructField('GIDP', pt.DoubleType(), True),
-            ]
-        ),
-        header=True,
+    df_batting = (
+        s.read.csv(
+            path=str(data_directory / 'batting.csv'),
+            schema=pt.StructType(
+                [
+                    pt.StructField('playerID', pt.StringType(), True),
+                    pt.StructField('yearID', pt.IntegerType(), True),
+                    pt.StructField('stint', pt.IntegerType(), True),
+                    pt.StructField('teamID', pt.StringType(), True),
+                    pt.StructField('lgID', pt.StringType(), True),
+                    pt.StructField('G', pt.IntegerType(), True),
+                    pt.StructField('AB', pt.DoubleType(), True),
+                    pt.StructField('R', pt.DoubleType(), True),
+                    pt.StructField('H', pt.DoubleType(), True),
+                    pt.StructField('X2B', pt.DoubleType(), True),
+                    pt.StructField('X3B', pt.DoubleType(), True),
+                    pt.StructField('HR', pt.DoubleType(), True),
+                    pt.StructField('RBI', pt.DoubleType(), True),
+                    pt.StructField('SB', pt.DoubleType(), True),
+                    pt.StructField('CS', pt.DoubleType(), True),
+                    pt.StructField('BB', pt.DoubleType(), True),
+                    pt.StructField('SO', pt.DoubleType(), True),
+                    pt.StructField('IBB', pt.DoubleType(), True),
+                    pt.StructField('HBP', pt.DoubleType(), True),
+                    pt.StructField('SH', pt.DoubleType(), True),
+                    pt.StructField('SF', pt.DoubleType(), True),
+                    pt.StructField('GIDP', pt.DoubleType(), True),
+                ]
+            ),
+            header=True,
+        )
+        .repartition(num_partitions)
+        .sort('playerID')
     )
     df_batting.createOrReplaceTempView('batting')
 
-    df_awards_players = s.read.csv(
-        path=str(data_directory / 'awards_players.csv'),
-        schema=pt.StructType(
-            [
-                pt.StructField('playerID', pt.StringType(), True),
-                pt.StructField('awardID', pt.StringType(), True),
-                pt.StructField('yearID', pt.IntegerType(), True),
-                pt.StructField('lgID', pt.StringType(), True),
-                pt.StructField('tie', pt.StringType(), True),
-                pt.StructField('notes', pt.StringType(), True),
-            ]
-        ),
-        header=True,
+    df_awards_players = (
+        s.read.csv(
+            path=str(data_directory / 'awards_players.csv'),
+            schema=pt.StructType(
+                [
+                    pt.StructField('playerID', pt.StringType(), True),
+                    pt.StructField('awardID', pt.StringType(), True),
+                    pt.StructField('yearID', pt.IntegerType(), True),
+                    pt.StructField('lgID', pt.StringType(), True),
+                    pt.StructField('tie', pt.StringType(), True),
+                    pt.StructField('notes', pt.StringType(), True),
+                ]
+            ),
+            header=True,
+        )
+        .repartition(num_partitions)
+        .sort('playerID')
     )
     df_awards_players.createOrReplaceTempView('awards_players')
 
