@@ -17,7 +17,7 @@ dependencies:
   - python-graphviz>=0.14, <=0.15
 
   # Dev tools
-  - asv
+  # - asv
   - black=19.10b0
   - click # few scripts in ci/
   - flake8
