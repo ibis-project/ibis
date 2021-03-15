@@ -286,7 +286,7 @@ jobs:
       run: python -m pysuerga docs/web --target-path=/tmp/ibis-project.org/
 
     - name: build docs
-      run: sphinx-build -b html docs/source /tmp/docs.ibis-project.org/docs -W -T
+      run: sphinx-build -b html docs/source /tmp/ibis-project.org/docs -W -T
 
     - name: Install github key
       run: |
@@ -297,7 +297,7 @@ jobs:
 
     - name: Push docs
       run: |
-        cd /tmp/docs.ibis-project.org
+        cd /tmp/ibis-project.org
         touch .nojekyll
         echo "ibis-project.org" > CNAME
         git init
