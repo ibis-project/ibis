@@ -50,7 +50,7 @@ from ibis.expr.typing import TimeContext
 
 
 def get_time_col():
-    return config.options.time_col
+    return config.options.context_adjustment.time_col
 
 
 class TimeContextRelation(enum.Enum):
