@@ -100,7 +100,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: ["3.7", "3.9"]
+        # TODO Latest impyla (0.16.3) doesn't support Python 3.9. Use 3.9 instead of 3.8 once a new impyla is released
+        python_version: ["3.7", "3.8"]
     services:
       postgres:
         image: shajekpivotal/ibis-docker-postgres-9.5
@@ -271,7 +272,7 @@ jobs:
     name: Docs
     runs-on: ubuntu-latest
     env:
-      PYTHON_VERSION: "3.9"
+      PYTHON_VERSION: "3.8"
       BACKENDS: "bigquery clickhouse dask impala mysql parquet postgres pyspark spark"
       LOAD_TEST_DATA: "false"
     steps:
