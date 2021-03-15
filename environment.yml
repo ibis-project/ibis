@@ -37,7 +37,7 @@ dependencies:
   - conda-smithy
   - conda-build # feedstock
   - ruamel.yaml # feedstock
-  - pygit2 # dev/genrelease.py
+  # - pygit2 # dev/genrelease.py
 
   # Docs
   - pip
