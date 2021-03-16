@@ -1,7 +1,4 @@
-sqlalchemy
 impyla
 requests
-thrift
-thriftpy2
 thrift_sasl
 python-hdfs
