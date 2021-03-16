@@ -48,44 +48,15 @@ class TestConf(PandasTest):
             }
         )
 
-    # @staticmethod
-    # def default_series_rename(
-    #     series: pd.Series, name: str = 'tmp'
-    # ) -> pd.Series:
-    #     return series.compute().rename(name)
-
     @classmethod
     def assert_series_equal(
-        cls, left, right, *args: Any, **kwargs: Any
+        cls, left: pd.DataFrame, right: pd.DataFrame, *args: Any, **kwargs: Any
     ) -> None:
         kwargs.setdefault('check_dtype', cls.check_dtype)
         kwargs.setdefault('check_names', cls.check_names)
-        # we sometimes use pandas to build the "expected" case in tests
-        incoming_types = tuple(map(type, (left, right)))
-        if incoming_types == (dd.Series, pd.Series):
-            if left.npartitions > 1:
-                # if there is more than one partition `reset_index` in
-                # `core.execute_and_reset` will not lead to a monotonically
-                # increasing index, so we reset to match our expected case.
-                left = left.compute().reset_index(drop=True)
-            else:
-                left = left.compute()
-        else:
-            left = left.compute()
-            right = right.compute()
-
-        tm.assert_series_equal(left, right, *args, **kwargs)
-
-    @classmethod
-    def assert_frame_equal(
-        cls, left, right, *args: Any, **kwargs: Any
-    ) -> None:
-        left = left.compute().reset_index(drop=True)
-        # we sometimes use pandas to build the "expected" case in tests
-        if isinstance(right, dd.DataFrame):
-            right = right.compute()
+        left = left.reset_index(drop=True)
         right = right.reset_index(drop=True)
-        tm.assert_frame_equal(left, right, *args, **kwargs)
+        tm.assert_series_equal(left, right, *args, **kwargs)
 
 
 @pytest.fixture

@@ -37,6 +37,7 @@ import numpy as np
 import pandas as pd
 
 import ibis.common.exceptions as com
+import ibis.config as config
 import ibis.expr.api as ir
 import ibis.expr.operations as ops
 from ibis.expr.operations import Node
@@ -44,8 +45,12 @@ from ibis.expr.typing import TimeContext
 
 # In order to use time context feature, there must be a column of Timestamp
 # type, and named as 'time' in TableExpr. This TIME_COL constant will be
-# used in filtering data from a table or columns of a table.
-TIME_COL = 'time'
+# used in filtering data from a table or columns of a table. It can be changed
+# by ibis.set_option('time_col')
+
+
+def get_time_col():
+    return config.options.context_adjustment.time_col
 
 
 class TimeContextRelation(enum.Enum):
@@ -125,6 +130,97 @@ def canonicalize_context(
             f'begin time {begin} must be before or equal' f' to end time {end}'
         )
     return begin, end
+
+
+def construct_time_context_aware_series(
+    series: pd.Series, frame: pd.DataFrame
+) -> pd.Series:
+    """ Construct a Series by adding 'time' in its MultiIndex
+
+    In window execution, the result Series of udf may need
+    to be trimmed by timecontext. In order to do so, 'time'
+    must be added as an index to the Series. We extract
+    time column from the parent Dataframe `frame`.
+    See `trim_with_timecontext` in execution/window.py for
+    trimming implementation.
+
+    Parameters
+    ----------
+    series: pd.Series, the result series of an udf execution
+    frame: pd.DataFrame, the parent Dataframe of `series`
+
+    Returns
+    -------
+    pd.Series
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> from ibis.expr.timecontext import construct_time_context_aware_series
+    >>> df = pd.DataFrame(
+    ...     {
+    ...         'time': pd.Series(
+    ...             pd.date_range(
+    ...                 start='2017-01-02', periods=3
+    ...             ).values
+    ...         ),
+    ...         'id': [1,2,3],
+    ...         'value': [1.1, 2.2, 3.3],
+    ...     }
+    ... )
+    >>> df
+            time  id  value
+    0 2017-01-02   1    1.1
+    1 2017-01-03   2    2.2
+    2 2017-01-04   3    3.3
+    >>> series = df['value']
+    >>> series
+    0    1.1
+    1    2.2
+    2    3.3
+    Name: value, dtype: float64
+    >>> construct_time_context_aware_series(series, df)
+       time
+    0  2017-01-02    1.1
+    1  2017-01-03    2.2
+    2  2017-01-04    3.3
+    Name: value, dtype: float64
+
+    The index will be a MultiIndex of the original RangeIndex
+    and a DateTimeIndex.
+
+    >>> timed_series = construct_time_context_aware_series(series, df)
+    >>> timed_series
+       time
+    0  2017-01-02    1.1
+    1  2017-01-03    2.2
+    2  2017-01-04    3.3
+    Name: value, dtype: float64
+
+    >>> construct_time_context_aware_series(timed_series, df)
+       time
+    0  2017-01-02    1.1
+    1  2017-01-03    2.2
+    2  2017-01-04    3.3
+    Name: value, dtype: float64
+    The result is unchanged for a series already has 'time' as its index.
+    """
+    time_col = get_time_col()
+    if time_col == frame.index.name:
+        time_index = frame.index
+    elif time_col in frame:
+        time_index = pd.Index(frame[time_col])
+    else:
+        raise com.IbisError(f'"time" column not present in DataFrame {frame}')
+    if time_col not in series.index.names:
+        series.index = pd.MultiIndex.from_arrays(
+            list(
+                map(series.index.get_level_values, range(series.index.nlevels))
+            )
+            + [time_index],
+            names=series.index.names + [time_col],
+        )
+    return series
 
 
 """ Time context adjustment algorithm

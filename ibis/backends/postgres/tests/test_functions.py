@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
+import sqlalchemy as sa
 from pytest import param
 
 import ibis
@@ -16,9 +17,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import literal as L
 from ibis.expr.window import rows_with_max_lookback
-
-sa = pytest.importorskip('sqlalchemy')
-pytest.importorskip('psycopg2')
 
 pytestmark = pytest.mark.postgres
 

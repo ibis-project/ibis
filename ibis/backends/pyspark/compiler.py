@@ -4,6 +4,7 @@ import functools
 import operator
 
 import numpy as np
+import pyspark
 import pyspark.sql.functions as F
 from pyspark.sql import Window
 from pyspark.sql.functions import PandasUDFType, pandas_udf
@@ -22,7 +23,7 @@ from ibis.backends.spark.datatypes import (
     spark_dtype,
 )
 from ibis.expr.timecontext import adjust_context
-from ibis.util import coerce_to_dataframe
+from ibis.util import coerce_to_dataframe, guid
 
 from .operations import PySparkTable
 from .timecontext import combine_time_context, filter_by_time_context
@@ -120,15 +121,24 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
     src_table = t.translate(op.table, scope, combined_timecontext)
 
     col_in_selection_order = []
+    col_to_drop = []
+    result_table = src_table
     for selection in op.selections:
         if isinstance(selection, types.TableExpr):
             col_in_selection_order.extend(selection.columns)
         elif isinstance(selection, types.DestructColumn):
             struct_col = t.translate(selection, scope, combined_timecontext)
+            # assign struct col and drop it later
+            # This is a work around to ensure that the struct_col
+            # is only executed once
+            struct_col_name = f"destruct_col_{guid()}"
+            result_table = result_table.withColumn(struct_col_name, struct_col)
+            col_to_drop.append(struct_col_name)
             cols = [
-                struct_col[name].alias(name) for name in selection.type().names
+                result_table[struct_col_name][name].alias(name)
+                for name in selection.type().names
             ]
-            col_in_selection_order += cols
+            col_in_selection_order.extend(cols)
         elif isinstance(selection, (types.ColumnExpr, types.ScalarExpr)):
             col = t.translate(selection, scope, combined_timecontext).alias(
                 selection.get_name()
@@ -140,19 +150,22 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
             )
 
     if col_in_selection_order:
-        src_table = src_table[col_in_selection_order]
+        result_table = result_table[col_in_selection_order]
+
+    if col_to_drop:
+        result_table = result_table.drop(*col_to_drop)
 
     for predicate in op.predicates:
         col = t.translate(predicate, scope, timecontext)
-        src_table = src_table[col]
+        result_table = result_table[col]
 
     if op.sort_keys:
         sort_cols = [
             t.translate(key, scope, timecontext) for key in op.sort_keys
         ]
-        src_table = src_table.sort(*sort_cols)
+        result_table = result_table.sort(*sort_cols)
 
-    return filter_by_time_context(src_table, timecontext)
+    return filter_by_time_context(result_table, timecontext)
 
 
 @compiles(ops.SortKey)
@@ -244,6 +257,12 @@ def compile_equals(t, expr, scope, timecontext, **kwargs):
     return t.translate(op.left, scope, timecontext) == t.translate(
         op.right, scope, timecontext
     )
+
+
+@compiles(ops.Not)
+def compile_not(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+    return ~t.translate(op.arg, scope, timecontext)
 
 
 @compiles(ops.NotEquals)
@@ -819,16 +838,19 @@ def compile_capitalize(t, expr, scope, timecontext, **kwargs):
 @compiles(ops.Substring)
 def compile_substring(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
-
-    @F.udf('string')
-    def substring(s, start, length):
-        end = start + length
-        return s[start:end]
-
     src_column = t.translate(op.arg, scope, timecontext)
-    start_column = t.translate(op.start, scope, timecontext)
-    length_column = t.translate(op.length, scope, timecontext)
-    return substring(src_column, start_column, length_column)
+    start = t.translate(op.start, scope, timecontext, raw=True) + 1
+    length = t.translate(op.length, scope, timecontext, raw=True)
+
+    if isinstance(start, pyspark.sql.Column) or isinstance(
+        length, pyspark.sql.Column
+    ):
+        raise NotImplementedError(
+            "Specifiying Start and length with column expressions "
+            "are not supported."
+        )
+
+    return src_column.substr(start, length)
 
 
 @compiles(ops.StringLength)
@@ -1554,6 +1576,14 @@ def compile_interval_from_integer(t, expr, scope, timecontext, **kwargs):
 # -------------------------- Array Operations ----------------------------
 
 
+@compiles(ops.ArrayColumn)
+def compile_array_column(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+
+    cols = t.translate(op.cols, scope, timecontext)
+    return F.array(cols)
+
+
 @compiles(ops.ArrayLength)
 def compile_array_length(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
@@ -1692,3 +1722,25 @@ def compile_reduction_udf(t, expr, scope, timecontext, context=None, **kwargs):
     else:
         src_table = t.translate(op.func_args[0].op().table, scope, timecontext)
         return src_table.agg(col)
+
+
+@compiles(ops.SearchedCase)
+def compile_searched_case(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+    existing_when = None
+
+    for case, result in zip(op.cases, op.results):
+        if existing_when is not None:
+            # Spark allowed chained when statement
+            when = existing_when.when
+        else:
+            when = F.when
+
+        existing_when = when(
+            t.translate(case, scope, timecontext, **kwargs),
+            t.translate(result, scope, timecontext, **kwargs),
+        )
+
+    return existing_when.otherwise(
+        t.translate(op.default, scope, timecontext, **kwargs)
+    )

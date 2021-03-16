@@ -7,11 +7,6 @@ from ibis.backends.impala.compiler import to_sql  # noqa: E402
 from ibis.expr.window import rows_with_max_lookback
 from ibis.tests.util import assert_equal
 
-pytest.importorskip('hdfs')
-pytest.importorskip('sqlalchemy')
-pytest.importorskip('impala.dbapi')
-
-
 pytestmark = pytest.mark.impala
 
 

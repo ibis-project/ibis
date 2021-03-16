@@ -3,10 +3,6 @@ from unittest import mock
 import pandas as pd
 import pytest
 
-pytest.importorskip('hdfs')
-pytest.importorskip('sqlalchemy')
-pytest.importorskip('impala.dbapi')
-
 pytestmark = pytest.mark.impala
 
 

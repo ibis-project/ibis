@@ -1,6 +1,4 @@
-sqlalchemy>=1.3
-impyla>=0.15.0
-requests>=2.24
-thrift>=0.9.3
-thriftpy2>=0.4
-thrift_sasl>=0.2.1
+impyla
+requests
+thrift_sasl
+python-hdfs

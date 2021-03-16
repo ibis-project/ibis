@@ -1,5 +1,5 @@
 """Initialize Ibis module."""
-from contextlib import suppress
+import pkg_resources
 
 import ibis.config
 import ibis.expr.types as ir
@@ -33,54 +33,28 @@ notebook.
     validator=ibis.config.is_bool,
 )
 ibis.config.register_option('default_backend', None)
-
-with suppress(ImportError):
-    # pip install ibis-framework[csv]
-    from ibis.backends import csv  # noqa: F401
-
-with suppress(ImportError):
-    # pip install ibis-framework[parquet]
-    from ibis.backends import parquet  # noqa: F401
-
-with suppress(ImportError):
-    # pip install  ibis-framework[hdf5]
-    from ibis.backends import hdf5  # noqa: F401
-
-with suppress(ImportError):
-    # pip install ibis-framework[impala]
-    from ibis.backends import impala  # noqa: F401
-
-with suppress(ImportError):
-    # pip install ibis-framework[sqlite]
-    from ibis.backends import sqlite  # noqa: F401
-
-with suppress(ImportError):
-    # pip install ibis-framework[postgres]
-    from ibis.backends import postgres  # noqa: F401
-
-with suppress(ImportError):
-    # pip install ibis-framework[mysql]
-    from ibis.backends import mysql  # noqa: F401
-
-with suppress(ImportError):
-    # pip install ibis-framework[clickhouse]
-    from ibis.backends import clickhouse  # noqa: F401
-
-with suppress(ImportError):
-    # pip install ibis-framework[bigquery]
-    from ibis.backends import bigquery  # noqa: F401
-
-with suppress(ImportError):
-    # pip install ibis-framework[spark]
-    from ibis.backends import spark  # noqa: F401
-
-with suppress(ImportError):
-    from ibis.backends import pyspark  # noqa: F401
-
-with suppress(ImportError):
-    # pip install ibis-framework[dask]
-    from ibis.backends import dask  # noqa: F401
-
+with ibis.config.config_prefix('context_adjustment'):
+    ibis.config.register_option(
+        'time_col',
+        'time',
+        'Name of the timestamp col for execution with a timecontext'
+        'See ibis.expr.timecontext for details.',
+        validator=ibis.config.is_str,
+    )
 
 __version__ = get_versions()['version']
 del get_versions
+
+for entry_point in pkg_resources.iter_entry_points(
+    group='ibis.backends', name=None
+):
+    try:
+        backend_module = entry_point.resolve()
+    except ImportError:
+        pass
+    else:
+        backend = backend_module.Backend()
+        # In the future we will set the backend and to the Backend instance,
+        # and just expose it, not the module:
+        # >>> setattr(ibis, entry_point.name, backend)
+        setattr(ibis, entry_point.name, backend_module)

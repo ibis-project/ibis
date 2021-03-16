@@ -529,7 +529,7 @@ class BigQueryClient(SQLClient):
 
     def list_tables(self, like=None, database=None):
         project, dataset = self._parse_project_and_dataset(database)
-        dataset_ref = self.client.dataset(dataset, project=project)
+        dataset_ref = bq.DatasetReference(project, dataset)
         result = [
             table.table_id for table in self.client.list_tables(dataset_ref)
         ]

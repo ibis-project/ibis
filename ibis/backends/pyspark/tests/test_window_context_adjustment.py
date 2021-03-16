@@ -6,7 +6,6 @@ from pyspark.sql import Window
 
 import ibis
 
-pytest.importorskip('pyspark')
 pytestmark = pytest.mark.pyspark
 
 

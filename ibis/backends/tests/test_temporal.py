@@ -78,7 +78,9 @@ def test_timestamp_extract(backend, alltypes, df, attr):
         # Pandas backend is probably doing this wrong
         param(
             'W',
-            marks=pytest.mark.xpass_backends(('csv', 'pandas', 'parquet')),
+            marks=pytest.mark.xpass_backends(
+                ('csv', 'pandas', 'dask', 'parquet')
+            ),
         ),
         'h',
         'm',
@@ -88,7 +90,6 @@ def test_timestamp_extract(backend, alltypes, df, attr):
         'ns',
     ],
 )
-@pytest.mark.skip_backends(['dask'])  # TODO - pandas - #2553
 @pytest.mark.xfail_unsupported
 def test_timestamp_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.truncate(unit)
@@ -110,11 +111,12 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
         'D',
         param(
             'W',
-            marks=pytest.mark.xpass_backends(('csv', 'pandas', 'parquet')),
+            marks=pytest.mark.xpass_backends(
+                ('csv', 'pandas', 'dask', 'parquet')
+            ),
         ),
     ],
 )
-@pytest.mark.skip_backends(['dask'])  # TODO - pandas - #2553
 @pytest.mark.xfail_unsupported
 def test_date_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.date().truncate(unit)
@@ -150,12 +152,7 @@ def test_date_truncate(backend, alltypes, df, unit):
             # TODO - DateOffset - #2553
             marks=pytest.mark.xfail_backends(['dask']),
         ),
-        param(
-            'D',
-            pd.offsets.DateOffset,
-            # TODO - DateOffset - #2553
-            marks=pytest.mark.xfail_backends(['dask']),
-        ),
+        ('D', pd.offsets.DateOffset),
         ('h', pd.Timedelta),
         ('m', pd.Timedelta),
         ('s', pd.Timedelta),
@@ -288,8 +285,7 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
                 )
             ),
             id='timestamp-subtract-timestamp',
-            # TODO - pandas - #2553
-            marks=pytest.mark.xfail_backends(['dask', 'spark']),
+            marks=pytest.mark.xfail_backends(['spark']),
         ),
         param(
             lambda t, be: t.timestamp_col.date() - ibis.date(date_value),
@@ -322,9 +318,8 @@ def test_interval_add_cast_scalar(backend, alltypes):
 
 
 @pytest.mark.xfail_unsupported
-# TODO - pandas - #2553
 # PySpark does not support casting columns to intervals
-@pytest.mark.xfail_backends(['dask', 'pyspark'])
+@pytest.mark.xfail_backends(['pyspark'])
 @pytest.mark.skip_backends(['spark'])
 def test_interval_add_cast_column(backend, alltypes, df):
     timestamp_date = alltypes.timestamp_col.date()
@@ -460,8 +455,6 @@ def test_day_of_week_column(backend, con, alltypes, df):
         ),
     ],
 )
-# TODO - pandas - #2553
-@pytest.mark.xfail_backends(['dask'])
 @pytest.mark.xfail_unsupported
 def test_day_of_week_column_group_by(
     backend, con, alltypes, df, day_of_week_expr, day_of_week_pandas
@@ -496,7 +489,7 @@ def test_now(backend, con):
     assert result.year == pandas_now.year
 
 
-# TODO - pandas - #2553
+# # TODO - limit - #2553
 @pytest.mark.xfail_backends(['dask'])
 @pytest.mark.xfail_unsupported
 def test_now_from_projection(backend, con, alltypes, df):

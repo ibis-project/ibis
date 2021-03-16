@@ -113,6 +113,22 @@ def pytest_runtest_call(item):
                 )
             )
 
+    for marker in item.iter_markers(name='min_spark_version'):
+        min_version = marker.args[0]
+        if backend.name() in ['spark', 'pyspark']:
+            from distutils.version import LooseVersion
+
+            import pyspark
+
+            if LooseVersion(pyspark.__version__) < LooseVersion(min_version):
+                item.add_marker(
+                    pytest.mark.xfail(
+                        reason=f'Require minimal spark version {min_version}, '
+                        f'but is {pyspark.__version__}',
+                        **marker.kwargs,
+                    )
+                )
+
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_pyfunc_call(pyfuncitem):
@@ -160,8 +176,6 @@ def alltypes(backend):
 
 @pytest.fixture(scope='session')
 def sorted_alltypes(backend, alltypes):
-    if backend.name() == 'dask':
-        pytest.skip("# TODO - sorting - #2553")
     return alltypes.sort_by('id')
 
 
@@ -193,16 +207,7 @@ def df(alltypes):
 
 
 @pytest.fixture(scope='session')
-def pandas_df(backend, alltypes):
-    if backend.name() == "dask":
-        return alltypes.execute().compute()
-    return alltypes.execute()
-
-
-@pytest.fixture(scope='session')
 def sorted_df(backend, df):
-    if backend.name() == 'dask':
-        pytest.skip("# TODO - sorting - #2553")
     return df.sort_values('id').reset_index(drop=True)
 
 

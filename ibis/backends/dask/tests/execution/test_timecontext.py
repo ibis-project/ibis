@@ -47,7 +47,7 @@ def test_bad_timecontext(time_table, t):
         context = (Timestamp('20101010'), Timestamp('20090101'))
         expr.execute(timecontext=context)
 
-    # execute context with a table without TIME_COL
+    # execute context with a table without time column
     with pytest.raises(com.IbisError, match=r".*must have a time column.*"):
         context = (Timestamp('20090101'), Timestamp('20100101'))
         t.execute(timecontext=context)
@@ -86,8 +86,8 @@ def test_context_adjustment_asof_join(
         on='time',
         by='key',
         tolerance=Timedelta('4D'),
-    )
-    tm.assert_frame_equal(result.compute(), expected.compute())
+    ).compute()
+    tm.assert_frame_equal(result, expected)
 
 
 @pytest.mark.xfail(reason="TODO - windowing - #2553")

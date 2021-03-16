@@ -3,6 +3,7 @@ import os
 import warnings
 from pathlib import Path
 
+import impala
 import pytest
 
 import ibis
@@ -159,8 +160,6 @@ def hdfs_superuser(env):
 
 @pytest.fixture(scope='session')
 def hdfs(env, tmp_dir):
-    pytest.importorskip('requests')
-
     if env.auth_mechanism in {'GSSAPI', 'LDAP'}:
         warnings.warn("Ignoring invalid Certificate Authority errors")
 
@@ -232,7 +231,6 @@ CREATE TABLE IF NOT EXISTS {} (
 
 @pytest.fixture(scope='session')
 def tmp_db(env, con, test_data_db):
-    impala = pytest.importorskip("impala")
     tmp_db = env.tmp_db
 
     if not con.exists_database(tmp_db):

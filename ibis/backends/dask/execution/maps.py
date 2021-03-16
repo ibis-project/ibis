@@ -14,13 +14,13 @@ from ibis.backends.pandas.execution.maps import (
     execute_map_value_for_key_dict_series,
     execute_map_value_for_key_series_scalar,
     execute_map_values_series,
-    execute_node,
     map_value_default_series_scalar_scalar,
     map_value_default_series_scalar_series,
     map_value_default_series_series_scalar,
     safe_merge,
 )
 
+from ..dispatch import execute_node
 from .util import TypeRegistrationDict, register_types_to_dispatcher
 
 # NOTE - to avoid dispatch ambiguities we must unregister pandas, only to

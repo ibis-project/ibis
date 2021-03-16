@@ -2,9 +2,11 @@ import os
 from pathlib import Path
 
 import pytest
+from google.oauth2 import service_account
 
 import ibis
 import ibis.expr.types as ir
+from ibis.backends import bigquery as bq
 from ibis.backends.tests.base import (
     BackendTest,
     RoundAwayFromZero,
@@ -15,9 +17,7 @@ PROJECT_ID = os.environ.get('GOOGLE_BIGQUERY_PROJECT_ID', 'ibis-gbq')
 DATASET_ID = 'testing'
 
 
-def connect(project_id, dataset_id, application_name=None):
-    ga = pytest.importorskip('google.auth')
-    service_account = pytest.importorskip('google.oauth2.service_account')
+def _credentials():
     google_application_credentials = os.environ.get(
         "GOOGLE_APPLICATION_CREDENTIALS", None
     )
@@ -38,22 +38,9 @@ def connect(project_id, dataset_id, application_name=None):
             )
         )
 
-    skip_message = (
-        'No BigQuery credentials found using project_id={}, '
-        'dataset_id={}. Skipping BigQuery tests.'
-    ).format(project_id, dataset_id)
-    credentials = service_account.Credentials.from_service_account_file(
+    return service_account.Credentials.from_service_account_file(
         google_application_credentials
     )
-    try:
-        return ibis.bigquery.connect(
-            project_id,
-            dataset_id,
-            credentials=credentials,
-            application_name=application_name,
-        )
-    except ga.exceptions.DefaultCredentialsError:
-        pytest.skip(skip_message)
 
 
 class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
@@ -73,7 +60,11 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
             pytest.skip(
                 'Environment variable GOOGLE_BIGQUERY_PROJECT_ID is empty'
             )
-        return connect(project_id, dataset_id='testing')
+        return bq.connect(
+            project_id=project_id,
+            dataset_id=DATASET_ID,
+            credentials=_credentials(),
+        )
 
     @property
     def batting(self) -> ir.TableExpr:
@@ -90,13 +81,22 @@ def project_id():
 
 
 @pytest.fixture(scope='session')
-def client():
-    return connect(PROJECT_ID, DATASET_ID)
+def credentials():
+    return _credentials()
 
 
 @pytest.fixture(scope='session')
-def client2():
-    return connect(PROJECT_ID, DATASET_ID)
+def client(credentials, project_id):
+    return bq.connect(
+        project_id=project_id, dataset_id=DATASET_ID, credentials=credentials,
+    )
+
+
+@pytest.fixture(scope='session')
+def client2(credentials, project_id):
+    return bq.connect(
+        project_id=project_id, dataset_id=DATASET_ID, credentials=credentials,
+    )
 
 
 @pytest.fixture(scope='session')
@@ -130,5 +130,9 @@ def numeric_table(client):
 
 
 @pytest.fixture(scope='session')
-def public():
-    return connect(PROJECT_ID, dataset_id='bigquery-public-data.stackoverflow')
+def public(project_id, credentials):
+    return bq.connect(
+        project_id=project_id,
+        dataset_id='bigquery-public-data.stackoverflow',
+        credentials=credentials,
+    )

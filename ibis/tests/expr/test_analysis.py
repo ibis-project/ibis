@@ -294,3 +294,96 @@ def test_is_ancestor_analytic():
     ]
 
     assert not subquery.op().equals(with_analytic.op())
+
+
+# Pr 2635
+def test_mutation_fusion_no_overwrite():
+    """Test fusion with chained mutation that doesn't overwrite existing
+    columns.
+    """
+    t = ibis.table(ibis.schema([('col', 'int32')]), 't')
+
+    result = t
+    result = result.mutate(col1=t['col'] + 1)
+    result = result.mutate(col2=t['col'] + 2)
+    result = result.mutate(col3=t['col'] + 3)
+
+    first_selection = result
+
+    assert len(result.op().selections) == 4
+    assert (
+        first_selection.op().selections[1].equals((t['col'] + 1).name('col1'))
+    )
+    assert (
+        first_selection.op().selections[2].equals((t['col'] + 2).name('col2'))
+    )
+    assert (
+        first_selection.op().selections[3].equals((t['col'] + 3).name('col3'))
+    )
+
+
+# Pr 2635
+def test_mutation_fusion_overwrite():
+    """Test fusion with chained mutation that overwrites existing columns."""
+    t = ibis.table(ibis.schema([('col', 'int32')]), 't')
+
+    result = t
+
+    result = result.mutate(col1=t['col'] + 1)
+    result = result.mutate(col2=t['col'] + 2)
+    result = result.mutate(col3=t['col'] + 3)
+    result = result.mutate(col=t['col'] - 1)
+    result = result.mutate(col4=t['col'] + 4)
+
+    second_selection = result
+    first_selection = second_selection.op().table
+
+    assert len(first_selection.op().selections) == 4
+    assert (
+        first_selection.op().selections[1].equals((t['col'] + 1).name('col1'))
+    )
+    assert (
+        first_selection.op().selections[2].equals((t['col'] + 2).name('col2'))
+    )
+    assert (
+        first_selection.op().selections[3].equals((t['col'] + 3).name('col3'))
+    )
+
+    # Since the second selection overwrites existing columns, it will
+    # not have the TableExpr as the first selection
+    assert len(second_selection.op().selections) == 5
+    assert (
+        second_selection.op().selections[0].equals((t['col'] - 1).name('col'))
+    )
+    assert second_selection.op().selections[1].equals(first_selection['col1'])
+    assert second_selection.op().selections[2].equals(first_selection['col2'])
+    assert second_selection.op().selections[3].equals(first_selection['col3'])
+    assert (
+        second_selection.op().selections[4].equals((t['col'] + 4).name('col4'))
+    )
+
+
+# Pr 2635
+def test_select_filter_mutate_fusion():
+    """Test fusion with filter followed by mutation on the same input."""
+
+    t = ibis.table(ibis.schema([('col', 'float32')]), 't')
+
+    result = t[['col']]
+    result = result[result['col'].isnan()]
+    result = result.mutate(col=result['col'].cast('int32'))
+
+    second_selection = result
+    first_selection = second_selection.op().table
+
+    assert len(second_selection.op().selections) == 1
+    assert (
+        second_selection.op()
+        .selections[0]
+        .equals(first_selection['col'].cast('int32').name('col'))
+    )
+
+    assert len(first_selection.op().selections) == 1
+    assert len(first_selection.op().predicates) == 1
+    assert first_selection.op().selections[0].equals(t['col'])
+    assert first_selection.op().predicates[0].equals(t['col'].isnan())

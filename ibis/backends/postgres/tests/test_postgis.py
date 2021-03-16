@@ -3,8 +3,6 @@ import pytest
 from numpy import testing
 
 gp = pytest.importorskip('geopandas')
-sa = pytest.importorskip('sqlalchemy')
-pytest.importorskip('psycopg2')
 
 pytestmark = [
     pytest.mark.postgres,

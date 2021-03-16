@@ -22,7 +22,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.expr.scope import Scope
-from ibis.expr.timecontext import TIME_COL
+from ibis.expr.timecontext import get_time_col
 from ibis.expr.typing import TimeContext
 
 from .. import aggcontext as agg_ctx
@@ -920,13 +920,14 @@ def execute_database_table_client(
     df = client.dictionary[op.name]
     if timecontext:
         begin, end = timecontext
-        if TIME_COL not in df:
+        time_col = get_time_col()
+        if time_col not in df:
             raise com.IbisError(
-                f'Table {op.name} must have a time column named {TIME_COL}'
+                f'Table {op.name} must have a time column named {time_col}'
                 ' to execute with time context.'
             )
         # filter with time context
-        mask = df[TIME_COL].between(begin, end)
+        mask = df[time_col].between(begin, end)
         return df.loc[mask].reset_index(drop=True)
     return df
 

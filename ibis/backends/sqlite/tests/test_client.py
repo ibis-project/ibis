@@ -10,9 +10,6 @@ import ibis.config as config
 import ibis.expr.types as ir
 from ibis.util import guid
 
-sa = pytest.importorskip('sqlalchemy')
-
-
 pytestmark = pytest.mark.sqlite
 
 

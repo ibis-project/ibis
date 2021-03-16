@@ -9,8 +9,8 @@ import numpy as np
 
 import ibis.expr.operations as ops
 from ibis.backends.pandas.core import numeric_types
-from ibis.backends.pandas.execution.generic import execute_node
 
+from ..dispatch import execute_node
 from .util import make_selected_obj
 
 

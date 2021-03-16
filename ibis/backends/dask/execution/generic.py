@@ -35,7 +35,6 @@ from ibis.backends.pandas.execution.generic import (
     execute_intersection_dataframe_dataframe,
     execute_isinf,
     execute_isnan,
-    execute_node,
     execute_node_contains_series_sequence,
     execute_node_ifnull_series,
     execute_node_not_contains_series_sequence,
@@ -52,6 +51,8 @@ from ibis.backends.pandas.execution.generic import (
 )
 
 from ..client import DaskClient, DaskTable
+from ..core import execute
+from ..dispatch import execute_node
 from .util import (
     TypeRegistrationDict,
     make_selected_obj,
@@ -136,9 +137,15 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
     ],
     ops.Distinct: [((dd.DataFrame,), execute_distinct_dataframe)],
 }
+
 register_types_to_dispatcher(execute_node, DASK_DISPATCH_TYPES)
 
 execute_node.register(DaskTable, DaskClient)(execute_database_table_client)
+
+
+@execute_node.register(ops.ValueList, collections.abc.Sequence)
+def execute_node_value_list(op, _, **kwargs):
+    return [execute(arg, **kwargs) for arg in op.values]
 
 
 @execute_node.register(ops.Arbitrary, dd.Series, (dd.Series, type(None)))

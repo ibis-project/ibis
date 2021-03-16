@@ -2,6 +2,7 @@ import itertools
 
 import dask.dataframe as dd
 import dask.dataframe.groupby as ddgb
+import numpy as np
 
 import ibis.expr.operations as ops
 from ibis.backends.pandas.execution.arrays import (
@@ -10,9 +11,9 @@ from ibis.backends.pandas.execution.arrays import (
     execute_array_length,
     execute_array_repeat,
     execute_array_slice,
-    execute_node,
 )
 
+from ..dispatch import execute_node
 from .util import TypeRegistrationDict, register_types_to_dispatcher
 
 DASK_DISPATCH_TYPES: TypeRegistrationDict = {
@@ -42,6 +43,14 @@ collect_list = dd.Aggregation(
         lambda chunks: list(itertools.chain.from_iterable(chunks))
     ),
 )
+
+
+@execute_node.register(ops.ArrayColumn, list)
+def execute_array_column(op, cols, **kwargs):
+    df = dd.concat(cols, axis=1)
+    return df.apply(
+        lambda row: np.array(row, dtype=object), axis=1, meta=(None, 'object')
+    )
 
 
 # TODO - aggregations - #2553

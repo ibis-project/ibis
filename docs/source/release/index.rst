@@ -12,6 +12,24 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :support:`2680` Namespace time_col config, fix type check for trim_with_timecontext for pandas window execution 
+* :feature:`2646` Support context adjustment for udfs for pandas backend
+* :feature:`2655` Add `auth_local_webserver`, `auth_external_data`, and
+  `auth_cache` parameters to BigQuery connect method. Set
+  `auth_local_webserver` to use a local server instead of copy-pasting an
+  authorization code. Set `auth_external_data` to true to request additional
+  scopes required to query Google Drive and Sheets. Set `auth_cache` to
+  `reauth` or `none` to force reauthentication.
+* :bug:`2657` Add temporary struct col in pyspark backend to ensure that UDFs are executed only once
+* :bug:`2588` Fix BigQuery connect bug that ignored project ID parameter
+* :bug: `2636` Fix overwrite logic to account for DestructColumn inside mutate API
+* :feature:`2641` Add `bit_and`, `bit_or`, and `bit_xor` integer column aggregates (BigQuery and MySQL backends)
+* :feature:`2379` Backends are defined as entry points
+* :bug: `2635` Fix fusion optimization bug that incorrectly changes operation order
+* :feature:`2615` Add `ibis.array` for creating array expressions
+* :feature:`2607` Implement Not operation in PySpark backend
+* :feature:`2610` Added support for case/when in PySpark backend
+* :bug:`2610` Fixes a NPE issue with substr in PySpark backend
 * :feature:`2603` Add support for np.array as literals for backends that already support lists as literals
 * :bug:`2354` Fixes binary data type translation into BigQuery bytes data type
 * :bug:`2577` Make StructValue picklable
