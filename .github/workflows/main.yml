@@ -16,7 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        python_version: ["3.7", "3.9"]
+        python_version: ["3.7", "3.8"]
     steps:
     - name: checkout
       uses: actions/checkout@v1
@@ -37,7 +37,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: ["3.7", "3.9"]
+        python_version: ["3.7", "3.8"]
     steps:
     - name: checkout
       uses: actions/checkout@v1
@@ -58,7 +58,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: ["3.7", "3.9"]
+        python_version: ["3.7", "3.8"]
     services:
       postgres:
         image: shajekpivotal/ibis-docker-postgres-9.5
@@ -100,7 +100,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # TODO Latest impyla (0.16.3) doesn't support Python 3.9. Use 3.9 instead of 3.8 once a new impyla is released
         python_version: ["3.7", "3.8"]
     services:
       postgres:
@@ -175,7 +174,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: ["3.7", "3.9"]
+        python_version: ["3.7", "3.8"]
     steps:
     - name: checkout
       uses: actions/checkout@v1
@@ -191,7 +190,7 @@ jobs:
     name: Lint and benckmarks
     runs-on: ubuntu-latest
     env:
-      PYTHON_VERSION: "3.9"
+      PYTHON_VERSION: "3.7"
       BACKENDS: ""
       LOAD_TEST_DATA: "false"
     steps:
@@ -235,7 +234,7 @@ jobs:
     name: Conda package
     runs-on: ubuntu-latest
     env:
-      PYTHON_VERSION: "3.9"
+      PYTHON_VERSION: "3.7"
       BACKENDS: ""
       LOAD_TEST_DATA: "false"
     steps:
@@ -272,7 +271,7 @@ jobs:
     name: Docs
     runs-on: ubuntu-latest
     env:
-      PYTHON_VERSION: "3.8"
+      PYTHON_VERSION: "3.7"
       BACKENDS: "bigquery clickhouse dask impala mysql parquet postgres pyspark spark"
       LOAD_TEST_DATA: "false"
     steps:
