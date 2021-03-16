@@ -291,7 +291,7 @@ def schema_from_table(table, schema=None):
     """
     schema = schema if schema is not None else {}
     pairs = []
-    for name, column in table.columns.items():
+    for name, column in zip(table.columns.keys(), table.columns):
         if name in schema:
             dtype = dt.dtype(schema[name])
         else:
