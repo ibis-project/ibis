@@ -13,7 +13,8 @@ dependencies:
 
   # Ibis soft dependencies
   - sqlalchemy
-  - python-graphviz
+  - graphviz>=2.38, <= 2.42.3
+  - python-graphviz>=0.14, <=0.15
 
   # Dev tools
   - asv
