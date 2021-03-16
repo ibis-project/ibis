@@ -8,6 +8,7 @@ import pyspark
 import pyspark.sql.functions as F
 from pyspark.sql import Window
 from pyspark.sql.functions import PandasUDFType, pandas_udf
+from pyspark.sql.utils import AnalysisException
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dtypes
@@ -161,7 +162,17 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
 
     for predicate in op.predicates:
         col = t.translate(predicate, scope, timecontext)
-        result_table = result_table[col]
+        # Due to an upstream Spark issue (SPARK-33057) we cannot
+        # directly use filter with a window operation. The workaround
+        # here is to assign a temporary column for the filter predicate,
+        # do the filtering, and then drop the temporary column.
+        try:
+            filter_column = 'internal_column_for_filtering_only'
+            result_table = result_table.withColumn(filter_column, col)
+            result_table = result_table.filter(F.col(filter_column))
+            result_table = result_table.drop(F.col(filter_column))
+        except AnalysisException:
+            result_table = result_table[col]
 
     if op.sort_keys:
         sort_cols = [
