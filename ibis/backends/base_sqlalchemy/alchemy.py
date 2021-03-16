@@ -44,7 +44,7 @@ _ibis_type_to_sqla = {
     dt.Date: sa.Date,
     dt.Time: sa.Time,
     dt.Boolean: sa.Boolean,
-    dt.Binary: sa.Binary,
+    dt.Binary: sa.LargeBinary,
     dt.String: sa.Text,
     dt.Decimal: sa.NUMERIC,
     # Mantissa-based
@@ -245,7 +245,7 @@ def sa_string(_, satype, nullable=True):
     return dt.String(nullable=nullable)
 
 
-@dt.dtype.register(SQLAlchemyDialect, sa.types.Binary)
+@dt.dtype.register(SQLAlchemyDialect, sa.LargeBinary)
 def sa_binary(_, satype, nullable=True):
     return dt.Binary(nullable=nullable)
 
