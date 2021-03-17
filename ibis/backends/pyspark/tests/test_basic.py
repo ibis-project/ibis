@@ -162,19 +162,6 @@ def test_filter(client, filter_fn, expected_fn):
     tm.assert_frame_equal(result.toPandas(), expected.toPandas())
 
 
-def test_filter_with_window_op(client):
-    table = client.table('basic_table')
-    window = ibis.window(group_by=table.id)
-    result = table.filter(lambda t: t['id'].mean().over(window) > 3).compile()
-    df = table.compile().toPandas()
-    expected = (
-        df.groupby(['id'])
-        .filter(lambda t: t['id'].mean() > 3)
-        .reset_index(drop=True)
-    )
-    tm.assert_frame_equal(result.toPandas(), expected)
-
-
 def test_cast(client):
     table = client.table('basic_table')
 
