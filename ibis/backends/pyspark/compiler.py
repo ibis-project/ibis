@@ -8,7 +8,6 @@ import pyspark
 import pyspark.sql.functions as F
 from pyspark.sql import Window
 from pyspark.sql.functions import PandasUDFType, pandas_udf
-from pyspark.sql.utils import AnalysisException
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dtypes
@@ -145,15 +144,22 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
             ]
             col_in_selection_order.extend(cols)
         elif isinstance(selection, (types.ColumnExpr, types.ScalarExpr)):
-            col = t.translate(selection, scope, adjusted_timecontext).alias(
-                selection.get_name()
-            )
-            col_in_selection_order.append(col)
+            # If the selection is a table column from the root table itself,
+            # we can get the selection name directly.
+            if (
+                isinstance(selection.op(), ops.TableColumn)
+                and selection.op().table == op.table
+            ):
+                col_in_selection_order.append(selection.op().name)
+            else:
+                col = t.translate(
+                    selection, scope, adjusted_timecontext
+                ).alias(selection.get_name())
+                col_in_selection_order.append(col)
         else:
             raise NotImplementedError(
                 f"Unrecoginized type in selections: {type(selection)}"
             )
-
     if col_in_selection_order:
         result_table = result_table[col_in_selection_order]
 
@@ -166,13 +172,10 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
         # directly use filter with a window operation. The workaround
         # here is to assign a temporary column for the filter predicate,
         # do the filtering, and then drop the temporary column.
-        try:
-            filter_column = 'internal_column_for_filtering_only'
-            result_table = result_table.withColumn(filter_column, col)
-            result_table = result_table.filter(F.col(filter_column))
-            result_table = result_table.drop(F.col(filter_column))
-        except AnalysisException:
-            result_table = result_table[col]
+        filter_column = 'internal_column_for_filtering_only'
+        result_table = result_table.withColumn(filter_column, col)
+        result_table = result_table.filter(F.col(filter_column))
+        result_table = result_table.drop(F.col(filter_column))
 
     if op.sort_keys:
         sort_cols = [
