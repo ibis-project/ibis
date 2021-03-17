@@ -548,7 +548,7 @@ def _translate_case(t, cases, results, default):
     whens = zip(case_args, result_args)
     default = t.translate(default)
 
-    return sa.case(whens, else_=default)
+    return sa.case(list(whens), else_=default)
 
 
 def _negate(t, expr):
