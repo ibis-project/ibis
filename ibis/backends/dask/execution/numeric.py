@@ -1,4 +1,3 @@
-import collections
 import decimal
 import functools
 import numbers
@@ -85,18 +84,16 @@ def execute_series_quantile(op, data, quantile, aggcontext=None, **kwargs):
     return data.quantile(q=quantile)
 
 
-@execute_node.register(ops.MultiQuantile, dd.Series, collections.abc.Sequence)
-def execute_series_quantile_sequence(
+@execute_node.register(ops.MultiQuantile, dd.Series, np.ndarray)
+def execute_series_quantile_multi(
     op, data, quantile, aggcontext=None, **kwargs
 ):
-    return list(data.quantile(q=quantile))
+    return np.array(data.quantile(q=quantile))
 
 
 # TODO - aggregations - #2553
-@execute_node.register(
-    ops.MultiQuantile, ddgb.SeriesGroupBy, collections.abc.Sequence
-)
-def execute_series_quantile_groupby(
+@execute_node.register(ops.MultiQuantile, ddgb.SeriesGroupBy, np.ndarray)
+def execute_series_quantile_multi_groupby(
     op, data, quantile, aggcontext=None, **kwargs
 ):
     def q(x, quantile, interpolation):

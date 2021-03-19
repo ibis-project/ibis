@@ -1,6 +1,7 @@
 import collections
 import functools
 
+import numpy as np
 import pandas as pd
 import toolz
 
@@ -148,14 +149,14 @@ def safe_keys(mapping):
     result = safe_method(mapping, 'keys')
     if result is None:
         return None
-    return list(result)
+    return np.array(list(result))
 
 
 def safe_values(mapping):
     result = safe_method(mapping, 'values')
     if result is None:
         return None
-    return list(result)
+    return np.array(list(result))
 
 
 @execute_node.register(ops.MapKeys, pd.Series)
@@ -167,7 +168,7 @@ def execute_map_keys_series(op, data, **kwargs):
 def execute_map_keys_dict(op, data, **kwargs):
     if data is None:
         return None
-    return list(data.keys())
+    return np.array(list(data.keys()))
 
 
 @execute_node.register(ops.MapValues, pd.Series)
@@ -179,7 +180,7 @@ def execute_map_values_series(op, data, **kwargs):
 def execute_map_values_dict(op, data, **kwargs):
     if data is None:
         return None
-    return list(data.values())
+    return np.array(list(data.values()))
 
 
 def safe_merge(*maps):

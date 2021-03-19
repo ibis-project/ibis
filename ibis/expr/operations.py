@@ -7,6 +7,8 @@ from typing import List
 
 import toolz
 
+import numpy as np
+
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
@@ -3035,12 +3037,19 @@ class Literal(ValueOp):
         )
 
     def equals(self, other, cache=None):
-        return (
+        # Check types
+        if not (
             isinstance(other, Literal)
             and isinstance(other.value, type(self.value))
-            and self.value == other.value
             and self.dtype == other.dtype
-        )
+        ):
+            return False
+
+        # Check values
+        if isinstance(self.value, np.ndarray):
+            return np.array_equal(self.value, other.value)
+        else:
+            return self.value == other.value
 
     def output_type(self):
         return self.dtype.scalar_type()

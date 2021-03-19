@@ -1,5 +1,6 @@
 from warnings import catch_warnings
 
+import numpy as np
 import pytest
 from dask.dataframe.utils import tm  # noqa: E402
 from pytest import param
@@ -93,7 +94,7 @@ pytestmark = pytest.mark.dask
         ),
         param(
             lambda s: s.split(' '),
-            lambda s: s.str.split(' '),
+            lambda s: s.apply(lambda x: np.array(x.split(' '))),
             id='split_spaces',
         ),
     ],

@@ -46,7 +46,6 @@ from ibis.backends.pandas.execution.generic import (
     execute_series_isnull,
     execute_series_notnnull,
     execute_sort_key_series_bool,
-    execute_string_split,
     execute_table_column_df_or_df_groupby,
 )
 
@@ -88,7 +87,6 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
         ((dd.DataFrame, type(None)), execute_count_frame),
     ],
     ops.NullIfZero: [((dd.Series,), execute_null_if_zero_series)],
-    ops.StringSplit: [((dd.Series, (dd.Series, str)), execute_string_split)],
     ops.Between: [
         (
             (
@@ -262,6 +260,13 @@ def execute_limit_frame(op, data, nrows, offset, **kwargs):
 @execute_node.register(ops.Not, (dd.core.Scalar, dd.Series))
 def execute_not_scalar_or_series(op, data, **kwargs):
     return ~data
+
+
+@execute_node.register(ops.StringSplit, dd.Series, (pd.Series, str))
+def execute_string_split(op, data, delimiter, **kwargs):
+    return data.apply(
+        lambda s: np.array(s.split(delimiter)), meta=dd.utils.make_meta(data)
+    )
 
 
 @execute_node.register(ops.BinaryOp, dd.Series, dd.Series)

@@ -4,6 +4,7 @@ import decimal
 import os
 
 import dask.dataframe as dd
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -63,9 +64,17 @@ def df(npartitions):
             .dt.tz_localize('UTC')
             .astype(str),
             'decimal': list(map(decimal.Decimal, ['1.0', '2', '3.234'])),
-            'array_of_float64': [[1.0, 2.0], [3.0], []],
-            'array_of_int64': [[1, 2], [], [3]],
-            'array_of_strings': [['a', 'b'], [], ['c']],
+            'array_of_float64': [
+                np.array([1.0, 2.0]),
+                np.array([3.0]),
+                np.array([]),
+            ],
+            'array_of_int64': [np.array([1, 2]), np.array([]), np.array([3])],
+            'array_of_strings': [
+                np.array(['a', 'b']),
+                np.array([]),
+                np.array(['c']),
+            ],
             'map_of_strings_integers': [{'a': 1, 'b': 2}, None, {}],
             'map_of_integers_strings': [{}, None, {1: 'a', 2: 'b'}],
             'map_of_complex_values': [None, {'a': [1, 2, 3], 'b': []}, {}],
