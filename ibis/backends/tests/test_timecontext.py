@@ -99,3 +99,25 @@ def test_context_adjustment_window_udf(
         expr = alltypes.mutate(v1=calc_mean(alltypes[TARGET_COL]).over(window))
         result = expr.execute(timecontext=context)
         tm.assert_series_equal(result["v1"], expected_series[exp_idx])
+
+
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
+@pytest.mark.xfail_unsupported
+def test_context_adjustment_filter_before_window(alltypes, context):
+    with option_context('context_adjustment.time_col', 'timestamp_col'):
+        window = ibis.trailing_window(
+            ibis.interval(days=3), order_by=ORDERBY_COL
+        )
+
+        # add a filter before window
+        expr = alltypes[alltypes['bool_col']]
+        expr = expr.mutate(v1=expr[TARGET_COL].count().over(window))
+
+        result = expr.execute(timecontext=context)
+        expected = expr.execute()
+        expected = expected[
+            (expected['timestamp_col'] >= context[0])
+            & (expected['timestamp_col'] < context[1])
+        ]
+        expected = expected.reset_index(drop=True)
+        tm.assert_frame_equal(result, expected)
