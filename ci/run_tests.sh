@@ -13,16 +13,6 @@ done
 echo "TESTS_DIRS: $TESTS_DIRS"
 echo "PYTEST_EXPRESSION: $PYTEST_EXPRESSION"
 
-# if [[ "$PYTEST_BACKENDS" == *"spark"* ]]; then
-#     PYSPARK_VERSION=$(python -c "import pyspark; print(pyspark.__version__)")
-#     if [[ $PYSPARK_VERSION == '2'* ]]; then
-#            echo "Set JAVA_HOME to JAVA_HOME_8_X64"
-#            export JAVA_HOME=$JAVA_HOME_8_X64
-#     fi
-# fi
-
-# env
-
 pytest $TESTS_DIRS \
     -m "${PYTEST_EXPRESSION}" \
     -ra \
