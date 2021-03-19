@@ -444,6 +444,26 @@ def test_analytic_udf_destruct(backend, alltypes):
     backend.assert_frame_equal(result, expected)
 
 
+@pytest.mark.only_on_backends(['pandas'])
+# TODO - udf - #2553
+@pytest.mark.xfail_backends(['dask'])
+def test_analytic_udf_destruct_no_groupby(backend, alltypes):
+    w = window(preceding=None, following=None)
+
+    result = alltypes.mutate(
+        demean_struct(alltypes['double_col'], alltypes['int_col'])
+        .over(w)
+        .destructure()
+    ).execute()
+
+    expected = alltypes.mutate(
+        demean=alltypes['double_col'] - alltypes['double_col'].mean().over(w),
+        demean_weight=alltypes['int_col'] - alltypes['int_col'].mean().over(w),
+    ).execute()
+
+    backend.assert_frame_equal(result, expected)
+
+
 @pytest.mark.only_on_backends(['pandas', 'pyspark'])
 # TODO - udf - #2553
 @pytest.mark.xfail_backends(['dask'])
