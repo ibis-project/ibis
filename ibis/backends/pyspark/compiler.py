@@ -117,8 +117,12 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
         for node in op.selections
         if timecontext
     ]
-    combined_timecontext = combine_time_context(arg_timecontexts)
-    src_table = t.translate(op.table, scope, combined_timecontext)
+    adjusted_timecontext = combine_time_context(arg_timecontexts)
+    # If this is a sort or filter node, op.selections is empty
+    # in this case, we use the original timecontext
+    if not adjusted_timecontext:
+        adjusted_timecontext = timecontext
+    src_table = t.translate(op.table, scope, adjusted_timecontext)
 
     col_in_selection_order = []
     col_to_drop = []
@@ -127,7 +131,7 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
         if isinstance(selection, types.TableExpr):
             col_in_selection_order.extend(selection.columns)
         elif isinstance(selection, types.DestructColumn):
-            struct_col = t.translate(selection, scope, combined_timecontext)
+            struct_col = t.translate(selection, scope, adjusted_timecontext)
             # assign struct col and drop it later
             # This is a work around to ensure that the struct_col
             # is only executed once
@@ -140,7 +144,7 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
             ]
             col_in_selection_order.extend(cols)
         elif isinstance(selection, (types.ColumnExpr, types.ScalarExpr)):
-            col = t.translate(selection, scope, combined_timecontext).alias(
+            col = t.translate(selection, scope, adjusted_timecontext).alias(
                 selection.get_name()
             )
             col_in_selection_order.append(col)
@@ -165,7 +169,9 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
         ]
         result_table = result_table.sort(*sort_cols)
 
-    return filter_by_time_context(result_table, timecontext)
+    return filter_by_time_context(
+        result_table, timecontext, adjusted_timecontext
+    )
 
 
 @compiles(ops.SortKey)
