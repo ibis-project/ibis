@@ -75,3 +75,5 @@ if [[ -n "$BACKENDS" ]]; then
 fi
 
 conda list
+
+env
