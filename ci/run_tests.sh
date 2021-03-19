@@ -13,6 +13,8 @@ done
 echo "TESTS_DIRS: $TESTS_DIRS"
 echo "PYTEST_EXPRESSION: $PYTEST_EXPRESSION"
 
+env
+
 pytest $TESTS_DIRS \
     -m "${PYTEST_EXPRESSION}" \
     -ra \
