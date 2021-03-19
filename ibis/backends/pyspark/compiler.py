@@ -145,12 +145,14 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
             ]
             col_in_selection_order.extend(cols)
         elif isinstance(selection, (types.ColumnExpr, types.ScalarExpr)):
-            # If the selection is a projection of a table column from the
-            # root table itself, we can get the selection name directly.
+            # If the selection is a straightforward projection of a table
+            # column from the root table itself (i.e. excluding mutations and
+            # renames), we can get the selection name directly.
             if (
                 isinstance(selection.op(), ops.TableColumn)
                 and selection.op().table == op.table
-                and selection.get_name() in op.table.columns
+                and selection.get_name() in op.table.schema()
+                and selection.op() == op.table[selection.get_name()].op()
             ):
                 col_in_selection_order.append(selection.get_name())
             else:
