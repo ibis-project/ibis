@@ -256,6 +256,7 @@ def convert_datetime64_to_timestamp(in_dtype, out_dtype, column):
     except pd.errors.OutOfBoundsDatetime:
         inferred_dtype = infer_pandas_dtype(column, skipna=True)
         if inferred_dtype in PANDAS_DATE_TYPES:
+            column.fillna(value=pd.NaT, inplace=True)
             # not great, but not really any other option
             return column.map(
                 partial(convert_timezone, timezone=out_dtype.timezone)
