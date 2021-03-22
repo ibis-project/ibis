@@ -2,7 +2,6 @@ import collections
 import enum
 import functools
 import operator
-import uuid
 
 import numpy as np
 import pyspark
@@ -147,7 +146,10 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
         elif isinstance(selection, (types.ColumnExpr, types.ScalarExpr)):
             # If the selection is a straightforward projection of a table
             # column from the root table itself (i.e. excluding mutations and
-            # renames), we can get the selection name directly.
+            # renames), we can get the selection name directly. Each check
+            # below is necessary to distinguish a pure projection from other
+            # valid selections, such as a mutation that assigns a new column
+            # or changes the value of an existing column.
             if (
                 isinstance(selection.op(), ops.TableColumn)
                 and selection.op().table == op.table
@@ -176,7 +178,7 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
         # directly use filter with a window operation. The workaround
         # here is to assign a temporary column for the filter predicate,
         # do the filtering, and then drop the temporary column.
-        filter_column = f'predicate_{uuid.uuid4()}'
+        filter_column = f'predicate_{guid()}'
         result_table = result_table.withColumn(filter_column, col)
         result_table = result_table.filter(F.col(filter_column))
         result_table = result_table.drop(filter_column)
