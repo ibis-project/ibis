@@ -25,6 +25,8 @@ mysql_requires = sqlite_requires + ['pymysql']
 kerberos_requires = ['requests-kerberos']
 visualization_requires = ['graphviz']
 clickhouse_requires = [
+    'sqlalchemy<1.4',
+    'clickhouse-sqlalchemy',
     'clickhouse-driver>=0.1.3',
     'clickhouse-cityhash',
 ]
