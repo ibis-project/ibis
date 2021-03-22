@@ -25,7 +25,6 @@ def context():
 
 
 def filter_by_time_context(df, context):
-    # timestamp_col is tz naive, so we need to tz_localize context
     return df[
         (df['timestamp_col'] >= context[0])
         & (df['timestamp_col'] < context[1])
