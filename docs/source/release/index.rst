@@ -12,6 +12,7 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :support:`2689` Supporting SQLAlchemy 1.4, and requiring minimum 1.3
 * :support:`2680` Namespace time_col config, fix type check for trim_with_timecontext for pandas window execution 
 * :feature:`2646` Support context adjustment for udfs for pandas backend
 * :feature:`2655` Add `auth_local_webserver`, `auth_external_data`, and
