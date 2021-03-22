@@ -1349,9 +1349,9 @@ class AlchemySelect(Select):
             helper = _AlchemyTableSet(self, self.table_set)
             result = helper.get_result()
             if isinstance(result, sql.selectable.Select) and hasattr(
-                result, 'scalar_subquery'
+                result, 'subquery'
             ):
-                return result.scalar_subquery()
+                return result.subquery()
             return result
         else:
             return None
