@@ -1348,8 +1348,10 @@ class AlchemySelect(Select):
         if self.table_set is not None:
             helper = _AlchemyTableSet(self, self.table_set)
             result = helper.get_result()
-            if isinstance(result, sql.selectable.Select):
-                return result.subquery()
+            if isinstance(result, sql.selectable.Select) and hasattr(
+                result, 'scalar_subquery'
+            ):
+                return result.scalar_subquery()
             return result
         else:
             return None
