@@ -32,6 +32,7 @@ def filter_by_time_context(df, context):
 
 
 @pytest.mark.only_on_backends(['pandas', 'pyspark'])
+@pytest.mark.min_spark_version('3.1')
 @pytest.mark.parametrize(
     'window',
     [
