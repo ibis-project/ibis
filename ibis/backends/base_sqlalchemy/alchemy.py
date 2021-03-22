@@ -1347,7 +1347,7 @@ class AlchemySelect(Select):
     def _compile_table_set(self):
         if self.table_set is not None:
             helper = _AlchemyTableSet(self, self.table_set)
-            return helper.get_result()
+            return helper.get_result().subquery()
         else:
             return None
 
