@@ -1255,11 +1255,10 @@ def test_anti_join(t, s):
     t_a, s_a = t.op().sqla_table.alias('t0'), s.op().sqla_table.alias('t1')
     expr = t.anti_join(s, t.id == s.id)
     result = expr.compile().compile(compile_kwargs={'literal_binds': True})
-    expected = sa.select([sa.column('id'), sa.column('name')]).select_from(
-        sa.select([t_a.c.id, t_a.c.name]).where(
-            ~(sa.exists(sa.select([1]).where(t_a.c.id == s_a.c.id)))
-        )
+    base = sa.select([t_a.c.id, t_a.c.name]).where(
+        ~sa.exists(sa.select([1]).where(t_a.c.id == s_a.c.id))
     )
+    expected = sa.select([base.c.id, base.c.name])
     assert str(result) == str(expected)
 
 

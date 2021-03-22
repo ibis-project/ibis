@@ -44,7 +44,7 @@ _ibis_type_to_sqla = {
     dt.Date: sa.Date,
     dt.Time: sa.Time,
     dt.Boolean: sa.Boolean,
-    dt.Binary: sa.Binary,
+    dt.Binary: sa.LargeBinary,
     dt.String: sa.Text,
     dt.Decimal: sa.NUMERIC,
     # Mantissa-based
@@ -245,7 +245,7 @@ def sa_string(_, satype, nullable=True):
     return dt.String(nullable=nullable)
 
 
-@dt.dtype.register(SQLAlchemyDialect, sa.types.Binary)
+@dt.dtype.register(SQLAlchemyDialect, sa.LargeBinary)
 def sa_binary(_, satype, nullable=True):
     return dt.Binary(nullable=nullable)
 
@@ -291,7 +291,7 @@ def schema_from_table(table, schema=None):
     """
     schema = schema if schema is not None else {}
     pairs = []
-    for name, column in table.columns.items():
+    for name, column in zip(table.columns.keys(), table.columns):
         if name in schema:
             dtype = dt.dtype(schema[name])
         else:
@@ -548,7 +548,7 @@ def _translate_case(t, cases, results, default):
     whens = zip(case_args, result_args)
     default = t.translate(default)
 
-    return sa.case(whens, else_=default)
+    return sa.case(list(whens), else_=default)
 
 
 def _negate(t, expr):
@@ -1347,7 +1347,12 @@ class AlchemySelect(Select):
     def _compile_table_set(self):
         if self.table_set is not None:
             helper = _AlchemyTableSet(self, self.table_set)
-            return helper.get_result()
+            result = helper.get_result()
+            if isinstance(result, sql.selectable.Select) and hasattr(
+                result, 'subquery'
+            ):
+                return result.subquery()
+            return result
         else:
             return None
 
