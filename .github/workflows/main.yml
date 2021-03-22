@@ -169,7 +169,7 @@ jobs:
 
   Tests_spark:
     name: Tests PySpark / Spark
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     env:
       BACKENDS: "spark pyspark"
     strategy:
