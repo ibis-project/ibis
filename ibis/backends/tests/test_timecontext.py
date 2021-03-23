@@ -58,7 +58,7 @@ def test_context_adjustment_window_udf(alltypes, df, context, window):
         tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.only_on_backends(['pyspark'])
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
 def test_context_adjustment_filter_before_window(alltypes, df, context):
     with option_context('context_adjustment.time_col', 'timestamp_col'):
         window = ibis.trailing_window(

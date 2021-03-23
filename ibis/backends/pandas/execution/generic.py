@@ -928,7 +928,7 @@ def execute_database_table_client(
             )
         # filter with time context
         mask = df[time_col].between(begin, end)
-        return df.loc[mask].reset_index(drop=True)
+        return df.loc[mask]
     return df
 
 

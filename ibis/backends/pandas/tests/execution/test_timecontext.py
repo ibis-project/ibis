@@ -4,7 +4,7 @@ import pytest
 
 import ibis
 import ibis.common.exceptions as com
-from ibis.backends.pandas.execution.window import trim_with_timecontext
+from ibis.backends.pandas.execution.window import trim_window_series
 from ibis.expr.timecontext import (
     TimeContextRelation,
     adjust_context,
@@ -134,18 +134,18 @@ def test_context_adjustment_window(
     tm.assert_series_equal(result, expected)
 
 
-def test_trim_with_timecontext(time_df3):
-    """ Unit test `trim_with_timecontext` in Window execution"""
+def test_trim_window_series(time_df3):
+    """ Unit test `trim_window_series` in Window execution"""
     df = time_df3.copy()
     context = pd.Timestamp('20170105'), pd.Timestamp('20170111')
 
-    # trim_with_timecontext takes a MultiIndex Series as input
+    # trim_window_series takes a MultiIndex Series as input
     series = df['value']
     time_index = df.set_index('time').index
     series.index = pd.MultiIndex.from_arrays(
         [series.index, time_index], names=series.index.names + ['time'],
     )
-    result = trim_with_timecontext(series, context)
+    result = trim_window_series(series, context)
     expected = df['time'][df['time'] >= pd.Timestamp('20170105')].reset_index(
         drop=True
     )
@@ -164,10 +164,10 @@ def test_trim_with_timecontext(time_df3):
     with pytest.raises(
         TypeError, match=r".*not supported between instances.*"
     ):
-        trim_with_timecontext(wrong_series, context)
+        trim_window_series(wrong_series, context)
 
     # column is ignored and series is not trimmed
-    no_context_result = trim_with_timecontext(series, None)
+    no_context_result = trim_window_series(series, None)
     tm.assert_series_equal(no_context_result, series)
 
 
@@ -235,7 +235,7 @@ def test_context_adjustment_multi_window(time_table, time_df3):
 
 
 def test_context_adjustment_window_groupby_id(time_table, time_df3):
-    """ This test case is meant to test trim_with_timecontext method
+    """ This test case is meant to test trim_window_series method
         in pandas/execution/window.py to see if it could trim Series
         correctly with groupby params
     """

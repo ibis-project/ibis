@@ -153,7 +153,7 @@ def construct_time_context_aware_series(
     to be trimmed by timecontext. In order to do so, 'time'
     must be added as an index to the Series. We extract
     time column from the parent Dataframe `frame`.
-    See `trim_with_timecontext` in execution/window.py for
+    See `trim_window_series` in execution/window.py for
     trimming implementation.
 
     Parameters

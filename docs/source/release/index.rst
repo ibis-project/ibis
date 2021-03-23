@@ -12,6 +12,7 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :bug:`2696` Fix wrong row indexing in the result for 'window after filter' for timecontext adjustment
 * :bug:`2702` Fix `aggregate` exploding the output of Reduction ops that return a list/ndarray
 * :bug:`2693` Fix issues with context adjustment for filter with PySpark backend
 * :support:`2689` Supporting SQLAlchemy 1.4, and requiring minimum 1.3
