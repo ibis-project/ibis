@@ -140,7 +140,7 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
 
 @pytest.mark.xfail_unsupported
 @pytest.mark.skip_backends(
-    ['spark', 'mysql', 'postgres', 'sql', 'clickhouse', 'impala']
+    ['spark', 'mysql', 'sqlite', 'postgres', 'sql', 'clickhouse', 'impala']
 )
 def test_filter_with_window_op(backend, alltypes, sorted_df):
     sorted_alltypes = alltypes.sort_by('id')
