@@ -330,7 +330,7 @@ def test_topk_filter_op(backend, alltypes, df, result_fn, expected_fn):
     ],
 )
 @pytest.mark.xfail_unsupported
-def test_aggregate_list_like(backend, alltypes, pandas_df, agg_fn):
+def test_aggregate_list_like(backend, alltypes, df, agg_fn):
     """Tests .aggregate() where the result of an aggregation is a list-like.
 
     We expect the list / np.array to be treated as a scalar (in other words,
@@ -346,6 +346,6 @@ def test_aggregate_list_like(backend, alltypes, pandas_df, agg_fn):
     result = expr.execute()
 
     # Expecting a 1-row DataFrame
-    expected = pd.DataFrame({'result_col': [agg_fn(pandas_df.double_col)]})
+    expected = pd.DataFrame({'result_col': [agg_fn(df.double_col)]})
 
     backend.assert_frame_equal(result, expected)
