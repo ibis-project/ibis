@@ -5,6 +5,7 @@ from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
+from ibis.backends.pyspark.compiler import _can_be_replaced_by_column_name
 
 pytestmark = pytest.mark.pyspark
 
@@ -214,3 +215,25 @@ def test_alias_after_select(client):
 
     result = table.compile().toPandas()
     tm.assert_series_equal(result['id'], result['id2'], check_names=False)
+
+
+@pytest.mark.parametrize(
+    ('selection_fn', 'expected'),
+    [
+        (lambda t: t[['id']], [True]),
+        (lambda t: t.mutate(v=t['id']), [False, False]),
+        (lambda t: t.mutate(id=t['str_col']), [False, True]),
+        (lambda t: t.mutate(id=t['id']), [True, True]),
+        (lambda t: t.mutate(id=t['id'] + 1), [False, True]),
+        (lambda t: t.relabel({'id': 'id'}), [True, True]),
+        (lambda t: t.relabel({'id': 'id2'}), [False, True]),
+    ],
+)
+def test_can_be_replaced_by_column_name(client, selection_fn, expected):
+    table = client.table('basic_table')
+    table = selection_fn(table)
+    result = [
+        _can_be_replaced_by_column_name(sel, table.op().table)
+        for sel in table.op().selections
+    ]
+    assert result == expected
