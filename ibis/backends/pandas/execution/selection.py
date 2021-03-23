@@ -335,17 +335,11 @@ def execute_selection_dataframe(
         new_pieces = [
             piece.reset_index(
                 level=list(range(1, piece.index.nlevels)), drop=True
-            ).sort_index()
+            )
             if piece.index.nlevels > 1
             else piece
             for piece in data_pieces
         ]
-        # assign data index to new_pieces manually, in case that
-        # indexes are not aligned when series are trimmed by time
-        # context
-        for i in range(len(new_pieces)):
-            assert len(new_pieces[i].index) == len(data.index)
-            new_pieces[i].index = data.index
         result = pd.concat(new_pieces, axis=1)
 
     if predicates:
