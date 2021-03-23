@@ -132,6 +132,18 @@ def canonicalize_context(
     return begin, end
 
 
+def localize_context(timecontext: TimeContext, timezone: str) -> TimeContext:
+    """Localize tz-naive context."""
+    begin, end = timecontext
+    if begin.tz is None:
+        begin = begin.tz_localize(timezone)
+
+    if end.tz is None:
+        end = end.tz_localize(timezone)
+
+    return begin, end
+
+
 def construct_time_context_aware_series(
     series: pd.Series, frame: pd.DataFrame
 ) -> pd.Series:
