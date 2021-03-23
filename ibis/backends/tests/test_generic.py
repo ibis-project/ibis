@@ -138,8 +138,8 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.xfail_unsupported
 @pytest.mark.only_on_backends(['dask', 'pandas', 'pyspark'])
+@pytest.mark.xfail_unsupported
 def test_filter_with_window_op(backend, alltypes, sorted_df):
     sorted_alltypes = alltypes.sort_by('id')
     table = sorted_alltypes
