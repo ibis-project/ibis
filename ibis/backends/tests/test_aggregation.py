@@ -320,3 +320,32 @@ def test_topk_filter_op(backend, alltypes, df, result_fn, expected_fn):
     result = result_fn(t).execute()
     expected = expected_fn(df)
     assert result.shape[0] == expected.shape[0]
+
+
+@pytest.mark.parametrize(
+    'agg_fn',
+    [
+        param(lambda s: list(s), id='agg_to_list'),
+        param(lambda s: np.array(s), id='agg_to_ndarray'),
+    ],
+)
+@pytest.mark.xfail_unsupported
+def test_aggregate_list_like(backend, alltypes, df, agg_fn):
+    """Tests .aggregate() where the result of an aggregation is a list-like.
+
+    We expect the list / np.array to be treated as a scalar (in other words,
+    the resulting table expression should have one element, which is the
+    list / np.array).
+    """
+
+    udf = reduction(input_type=[dt.double], output_type=dt.Array(dt.double))(
+        agg_fn
+    )
+
+    expr = alltypes.aggregate(result_col=udf(alltypes.double_col))
+    result = expr.execute()
+
+    # Expecting a 1-row DataFrame
+    expected = pd.DataFrame({'result_col': [agg_fn(df.double_col)]})
+
+    backend.assert_frame_equal(result, expected)

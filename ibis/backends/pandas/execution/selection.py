@@ -340,6 +340,13 @@ def execute_selection_dataframe(
             else piece
             for piece in data_pieces
         ]
+        # Result series might be trimmed by time context, thus index may
+        # have changed. To concat rows properly, we first `sort_index` on
+        # each pieces then assign data index manually to series
+        for i in range(len(new_pieces)):
+            assert len(new_pieces[i].index) == len(data.index)
+            new_pieces[i] = new_pieces[i].sort_index()
+            new_pieces[i].index = data.index
         result = pd.concat(new_pieces, axis=1)
 
     if predicates:

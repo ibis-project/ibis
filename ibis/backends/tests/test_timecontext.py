@@ -75,3 +75,31 @@ def test_context_adjustment_filter_before_window(alltypes, df, context):
         expected = expected.reset_index(drop=True)
 
         tm.assert_frame_equal(result, expected)
+
+
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
+def test_grouped_bounded_expanding_window(
+    backend, alltypes, df, context,
+):
+    """ This test case aims to test indexes are aligned properly
+        for concating window series with timecontext
+    """
+    with option_context('context_adjustment.time_col', 'timestamp_col'):
+        win = ibis.window(
+            following=0, group_by=[alltypes.string_col], order_by=[alltypes.id]
+        )
+        expr = alltypes.mutate(val=alltypes.double_col.mean().over(win))
+        result = expr.execute(timecontext=context).set_index('id').sort_index()
+
+        df = filter_by_time_context(df, context)
+        column = (
+            df.sort_values('id')
+            .groupby('string_col')
+            .double_col.expanding()
+            .mean()
+            .reset_index(drop=True, level=0)
+        )
+        expected = df.assign(val=column).set_index('id').sort_index()
+
+        left, right = result.val, expected.val
+        tm.assert_series_equal(left, right)
