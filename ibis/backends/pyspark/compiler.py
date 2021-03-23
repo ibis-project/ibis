@@ -106,7 +106,7 @@ def compile_sql_query_result(t, expr, scope, timecontext, **kwargs):
 
 def _can_be_replaced_by_column_name(column_expr, table):
     """
-    Return whether the column_expr can be replaced by its literal
+    Return whether the given column_expr can be replaced by its literal
     name, which is True when column_expr and table[column_expr.get_name()]
     is semantically the same.
     """
