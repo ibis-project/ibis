@@ -18,84 +18,60 @@ def calc_mean(series):
 
 
 @pytest.fixture
-def df(alltypes):
-    return alltypes.execute().sort_values(by=[ORDERBY_COL])
-
-
-@pytest.fixture
 def context():
+    # These need to be tz-naive because the timestamp_col in
+    # the test data is tz-naive
     return pd.Timestamp('20090105'), pd.Timestamp('20090111')
 
 
-@pytest.fixture
-def expected_series(df, context):
-    # expected result series for context adjustment tests
-    exp_raw_win = df.set_index(ORDERBY_COL).assign(v1=df[TARGET_COL].mean())
-    exp_raw_win = exp_raw_win[exp_raw_win.index >= context[0]]
-    exp_raw_win = exp_raw_win[exp_raw_win.index <= context[1]].reset_index(
-        drop=True
-    )['v1']
-
-    exp_orderby = (
-        df.set_index(ORDERBY_COL)
-        .rename(columns={TARGET_COL: 'v1'})['v1']
-        .rolling('3d', closed='both')
-        .mean()
-    )
-    exp_orderby = exp_orderby[exp_orderby.index >= context[0]]
-    exp_orderby = exp_orderby[exp_orderby.index <= context[1]].reset_index(
-        drop=True
-    )
-
-    exp_groupby_orderby = (
-        df.set_index(ORDERBY_COL)
-        .groupby(GROUPBY_COL)
-        .rolling('3d', closed='both')[TARGET_COL]
-        .mean()
-    ).reset_index()
-
-    # Result is a MultiIndexed Series
-    exp_groupby_orderby = exp_groupby_orderby[
-        exp_groupby_orderby[ORDERBY_COL] >= context[0]
+def filter_by_time_context(df, context):
+    return df[
+        (df['timestamp_col'] >= context[0])
+        & (df['timestamp_col'] < context[1])
     ]
-    exp_groupby_orderby = exp_groupby_orderby[
-        exp_groupby_orderby[ORDERBY_COL] <= context[1]
-    ]
-    exp_groupby_orderby = exp_groupby_orderby.reset_index(drop=True)[
-        TARGET_COL
-    ].rename('v1')
-    return [exp_raw_win, exp_orderby, exp_groupby_orderby]
 
 
 @pytest.mark.only_on_backends(['pandas', 'pyspark'])
-@pytest.mark.xfail_unsupported
+@pytest.mark.min_spark_version('3.1')
 @pytest.mark.parametrize(
-    ['window', 'exp_idx'],
+    'window',
     [
-        (ibis.trailing_window(3 * ibis.interval(days=1)), 0),
-        (
-            ibis.trailing_window(
-                3 * ibis.interval(days=1), order_by=ORDERBY_COL
-            ),
-            1,
-        ),
-        (
-            ibis.trailing_window(
-                3 * ibis.interval(days=1),
-                order_by=ORDERBY_COL,
-                group_by=GROUPBY_COL,
-            ),
-            2,
+        ibis.trailing_window(ibis.interval(days=3), order_by=ORDERBY_COL),
+        ibis.trailing_window(
+            ibis.interval(days=3), order_by=ORDERBY_COL, group_by=GROUPBY_COL,
         ),
     ],
 )
-def test_context_adjustment_window_udf(
-    alltypes, df, context, expected_series, window, exp_idx
-):
+def test_context_adjustment_window_udf(alltypes, df, context, window):
     """ This test case aims to test context adjustment of
         udfs in window method.
     """
     with option_context('context_adjustment.time_col', 'timestamp_col'):
         expr = alltypes.mutate(v1=calc_mean(alltypes[TARGET_COL]).over(window))
         result = expr.execute(timecontext=context)
-        tm.assert_series_equal(result["v1"], expected_series[exp_idx])
+
+        expected = expr.execute()
+        expected = filter_by_time_context(expected, context).reset_index(
+            drop=True
+        )
+
+        tm.assert_frame_equal(result, expected)
+
+
+@pytest.mark.only_on_backends(['pyspark'])
+def test_context_adjustment_filter_before_window(alltypes, df, context):
+    with option_context('context_adjustment.time_col', 'timestamp_col'):
+        window = ibis.trailing_window(
+            ibis.interval(days=3), order_by=ORDERBY_COL
+        )
+
+        expr = alltypes[alltypes['bool_col']]
+        expr = expr.mutate(v1=expr[TARGET_COL].count().over(window))
+
+        result = expr.execute(timecontext=context)
+
+        expected = expr.execute()
+        expected = filter_by_time_context(expected, context)
+        expected = expected.reset_index(drop=True)
+
+        tm.assert_frame_equal(result, expected)
