@@ -104,6 +104,23 @@ def compile_sql_query_result(t, expr, scope, timecontext, **kwargs):
     return client._session.sql(query)
 
 
+def _can_be_replaced_by_column_name(column_expr, table):
+    """
+    Return whether the column_expr can be replaced by its literal
+    name, which is True when column_expr and table[column_expr.get_name()]
+    is semantically the same.
+    """
+    # Each check below is necessary to distinguish a pure projection from
+    # other valid selections, such as a mutation that assigns a new column
+    # or changes the value of an existing column.
+    return (
+        isinstance(column_expr.op(), ops.TableColumn)
+        and column_expr.op().table == table
+        and column_expr.get_name() in table.schema()
+        and column_expr.op() == table[column_expr.get_name()].op()
+    )
+
+
 @compiles(ops.Selection)
 def compile_selection(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
@@ -146,16 +163,8 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
         elif isinstance(selection, (types.ColumnExpr, types.ScalarExpr)):
             # If the selection is a straightforward projection of a table
             # column from the root table itself (i.e. excluding mutations and
-            # renames), we can get the selection name directly. Each check
-            # below is necessary to distinguish a pure projection from other
-            # valid selections, such as a mutation that assigns a new column
-            # or changes the value of an existing column.
-            if (
-                isinstance(selection.op(), ops.TableColumn)
-                and selection.op().table == op.table
-                and selection.get_name() in op.table.schema()
-                and selection.op() == op.table[selection.get_name()].op()
-            ):
+            # renames), we can get the selection name directly.
+            if _can_be_replaced_by_column_name(selection, op.table):
                 col_in_selection_order.append(selection.get_name())
             else:
                 col = t.translate(
