@@ -220,7 +220,20 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
     # 3) an ungrouped custom aggregation context
     @execute_node.register(type(op), *(itertools.repeat(pd.Series, nargs)))
     def execute_udaf_node_no_groupby(op, *args, aggcontext, **kwargs):
-        return aggcontext.agg(args[0], op.func, *args[1:])
+        func = op.func
+
+        def aggregator(first, *rest):
+            result = func(first, *rest)
+
+            # Here we don't user execution.util.coerce_to_output
+            # because this is the inner loop and we do not want
+            # to wrap a scalar value with a series.
+            if isinstance(op._output_type, dt.Struct):
+                return coerce_to_dataframe(result, op._output_type.names)
+            else:
+                return result
+
+        return aggcontext.agg(args[0], aggregator, *args[1:])
 
     # An execution rule to handle analytic and reduction UDFs over
     # 1) a grouped window,
