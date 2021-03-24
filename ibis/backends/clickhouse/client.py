@@ -219,7 +219,7 @@ class ClickhouseClient(SQLClient):
         self.database_class = backend.database_class
         self.query_class = backend.query_class
         self.dialect = backend.dialect
-        self.table_class = backend.backend_table_class
+        self.table_class = backend.table_class
         self.table_expr_class = backend.table_expr_class
         self.con = _DriverClient(*args, **kwargs)
 
