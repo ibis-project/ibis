@@ -10,7 +10,7 @@ import pytest
 import ibis
 import ibis.expr.datatypes as dt
 
-from ... import connect, execute
+from ... import Backend, execute
 
 pytestmark = pytest.mark.pandas
 
@@ -321,7 +321,7 @@ def test_nullif(t, df, left, right, expected, compare):
 
 def test_nullif_inf():
     df = pd.DataFrame({'a': [np.inf, 3.14, -np.inf, 42.0]})
-    con = connect({'t': df})
+    con = Backend().connect({'t': df})
     t = con.table('t')
     expr = t.a.nullif(np.inf).nullif(-np.inf)
     result = expr.execute()

@@ -12,7 +12,7 @@ from pytest import param
 from ibis import literal as L  # noqa: E402
 from ibis.expr import datatypes as dt
 
-from ... import connect, execute
+from ... import Backend, execute
 
 pytestmark = pytest.mark.dask
 
@@ -183,7 +183,7 @@ def test_times_ops_with_tz(t, df, tz, rconstruct, column):
 def test_interval_arithmetic(op, expected):
     data = pd.timedelta_range('0 days', '10 days', freq='D')
     pandas_df = pd.DataFrame({'td': data})
-    con = connect(
+    con = Backend().connect(
         {
             'df1': dd.from_pandas(pandas_df, npartitions=1),
             'df2': dd.from_pandas(pandas_df, npartitions=1),

@@ -14,18 +14,6 @@ def build_ast(expr, context):
     return builder.get_result()
 
 
-def _get_query(expr, context):
-    ast = build_ast(expr, context)
-    query = ast.queries[0]
-
-    return query
-
-
-def to_sql(expr, context=None):
-    query = _get_query(expr, context)
-    return query.compile()
-
-
 class ClickhouseSelectBuilder(comp.SelectBuilder):
     @property
     def _select_class(self):
@@ -42,7 +30,10 @@ class ClickhouseQueryBuilder(comp.QueryBuilder):
 
 class ClickhouseQueryContext(comp.QueryContext):
     def _to_sql(self, expr, ctx):
-        return to_sql(expr, context=ctx)
+        builder = ClickhouseQueryBuilder(expr, context=ctx)
+        ast = builder.get_result()
+        query = ast.queries[0]
+        return query.compile()
 
 
 class ClickhouseSelect(comp.Select):
@@ -164,8 +155,6 @@ class ClickhouseDialect(comp.Dialect):
 
     translator = ClickhouseExprTranslator
 
-
-dialect = ClickhouseDialect
 
 compiles = ClickhouseExprTranslator.compiles
 rewrites = ClickhouseExprTranslator.rewrites

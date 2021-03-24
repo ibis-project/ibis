@@ -162,9 +162,6 @@ class ImpalaDialect(BaseDialect):
     pass
 
 
-dialect = ImpalaDialect
-
-
 compiles = ImpalaExprTranslator.compiles
 rewrites = ImpalaExprTranslator.rewrites
 

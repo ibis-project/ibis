@@ -6,7 +6,7 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 
-from ... import connect
+from ... import Backend
 
 pytestmark = pytest.mark.pandas
 
@@ -372,7 +372,7 @@ def test_keyed_asof_join_with_tolerance(
 def test_select_on_unambiguous_join(how, func):
     df_t = pd.DataFrame({'a0': [1, 2, 3], 'b1': list("aab")})
     df_s = pd.DataFrame({'a1': [2, 3, 4], 'b2': list("abc")})
-    con = connect({"t": df_t, "s": df_s})
+    con = Backend().connect({"t": df_t, "s": df_s})
     t = con.table("t")
     s = con.table("s")
     method = getattr(t, "{}_join".format(how))
@@ -406,7 +406,7 @@ def test_select_on_unambiguous_asof_join(func):
     df_s = pd.DataFrame(
         {'a1': [2, 3, 4], 'b2': pd.date_range("20171230", periods=3)}
     )
-    con = connect({"t": df_t, "s": df_s})
+    con = Backend().connect({"t": df_t, "s": df_s})
     t = con.table("t")
     s = con.table("s")
     join = t.asof_join(s, t.b1 == s.b2)

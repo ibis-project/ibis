@@ -58,7 +58,7 @@ backend.
 .. autosummary::
    :toctree: ../generated/
 
-   connect
+   Backend.connect
    ImpalaClient.close
    ImpalaClient.database
 

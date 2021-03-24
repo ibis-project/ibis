@@ -8,47 +8,7 @@ from ibis.backends.base_sqlalchemy.compiler import Dialect
 
 from .client import PandasClient
 from .execution import execute, execute_node
-from .udf import udf
-
-__all__ = ('connect', 'dialect', 'execute', 'udf')
-
-
-def connect(dictionary):
-    """Construct a pandas client from a dictionary of DataFrames.
-
-    Parameters
-    ----------
-    dictionary : dict
-
-    Returns
-    -------
-    PandasClient
-    """
-    return PandasClient(dictionary)
-
-
-def from_dataframe(df, name='df', client=None):
-    """
-    convenience function to construct an ibis table
-    from a DataFrame
-
-    Parameters
-    ----------
-    df : DataFrame
-    name : str, default 'df'
-    client : Client, default new PandasClient
-        client dictionary will be mutated with the
-        name of the DataFrame
-
-    Returns
-    -------
-    Table
-    """
-
-    if client is None:
-        return connect({name: df}).table(name)
-    client.dictionary[name] = df
-    return client.table(name)
+from .udf import udf  # noqa F401
 
 
 def _flatten_subclass_tree(cls):
@@ -91,7 +51,45 @@ class Backend(BaseBackend):
     name = 'pandas'
     builder = None
     dialect = PandasDialect
-    connect = connect
+
+    def connect(self, dictionary):
+        """Construct a pandas client from a dictionary of DataFrames.
+
+        Parameters
+        ----------
+        dictionary : dict
+
+        Returns
+        -------
+        PandasClient
+        """
+        return PandasClient(dictionary)
+
+    def execute(self, *args, **kwargs):
+        return execute(*args, **kwargs)
+
+    def from_dataframe(self, df, name='df', client=None):
+        """
+        convenience function to construct an ibis table
+        from a DataFrame
+
+        Parameters
+        ----------
+        df : DataFrame
+        name : str, default 'df'
+        client : Client, default new PandasClient
+            client dictionary will be mutated with the
+            name of the DataFrame
+
+        Returns
+        -------
+        Table
+        """
+
+        if client is None:
+            return self.connect({name: df}).table(name)
+        client.dictionary[name] = df
+        return client.table(name)
 
     def register_options(self):
         ibis.config.register_option(

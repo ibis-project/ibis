@@ -65,7 +65,7 @@ client. If no ``credentials`` are provided, the
 .. autosummary::
    :toctree: ../generated/
 
-   connect
+   Backend.connect
    BigQueryClient.database
    BigQueryClient.list_databases
    BigQueryClient.list_tables
