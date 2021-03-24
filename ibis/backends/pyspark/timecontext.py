@@ -9,7 +9,9 @@ from ibis.expr.typing import TimeContext
 
 
 def filter_by_time_context(
-    df: DataFrame, timecontext: Optional[TimeContext] = None
+    df: DataFrame,
+    timecontext: Optional[TimeContext],
+    adjusted_timecontext: Optional[TimeContext] = None,
 ) -> DataFrame:
     """ Filter a Dataframe by given time context
     Parameters
@@ -21,7 +23,13 @@ def filter_by_time_context(
     -------
     filtered Spark Dataframe
     """
-    if not timecontext:
+    # Return original df if there is no timecontext (timecontext is not used)
+    # or timecontext and adjusted_timecontext are the same
+    if (not timecontext) or (
+        timecontext
+        and adjusted_timecontext
+        and timecontext == adjusted_timecontext
+    ):
         return df
 
     time_col = get_time_col()

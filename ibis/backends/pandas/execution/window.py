@@ -181,7 +181,7 @@ def get_aggcontext_window(
     return aggcontext
 
 
-def trim_with_timecontext(data, timecontext: Optional[TimeContext]):
+def trim_window_series(data, timecontext: Optional[TimeContext]):
     """ Trim data within time range defined by timecontext
 
         This is a util function used in ``execute_window_op``, where time
@@ -216,9 +216,6 @@ def trim_with_timecontext(data, timecontext: Optional[TimeContext]):
     # '0' as the column name for the column of value
     name = data.name if data.name else 0
     subset = df.loc[df[time_col].between(*timecontext)]
-
-    # re-indexing index to count from 0
-    subset = subset.reset_index(drop=True).reset_index()
 
     # get index columns for the Series
     non_target_columns = list(subset.columns.difference([name]))
@@ -373,7 +370,7 @@ def execute_window_op(
         series
     ), 'input data source and computed column do not have the same length'
     # trim data to original time context
-    series = trim_with_timecontext(series, timecontext)
+    series = trim_window_series(series, timecontext)
     return series
 
 

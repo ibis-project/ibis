@@ -138,6 +138,24 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
     backend.assert_frame_equal(result, expected)
 
 
+@pytest.mark.only_on_backends(['dask', 'pandas', 'pyspark'])
+@pytest.mark.xfail_unsupported
+def test_filter_with_window_op(backend, alltypes, sorted_df):
+    sorted_alltypes = alltypes.sort_by('id')
+    table = sorted_alltypes
+    window = ibis.window(group_by=table.id)
+    table = table.filter(lambda t: t['id'].mean().over(window) > 3).sort_by(
+        'id'
+    )
+    result = table.execute()
+    expected = (
+        sorted_df.groupby(['id'])
+        .filter(lambda t: t['id'].mean() > 3)
+        .reset_index(drop=True)
+    )
+    backend.assert_frame_equal(result, expected)
+
+
 @pytest.mark.xfail_unsupported
 def test_case_where(backend, alltypes, df):
     table = alltypes
