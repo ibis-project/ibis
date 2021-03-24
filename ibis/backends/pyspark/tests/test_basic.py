@@ -5,6 +5,7 @@ from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
+from ibis.backends.pyspark.compiler import _can_be_replaced_by_column_name
 
 pytestmark = pytest.mark.pyspark
 
@@ -214,3 +215,39 @@ def test_alias_after_select(client):
 
     result = table.compile().toPandas()
     tm.assert_series_equal(result['id'], result['id2'], check_names=False)
+
+
+@pytest.mark.parametrize(
+    ('selection_fn', 'selection_idx', 'expected'),
+    [
+        # selected column id is selections[0], OK to replace since
+        # id == t['id'] (straightforward column projection)
+        (lambda t: t[['id']], 0, True),
+        # new column v is selections[1], cannot be replaced since it does
+        # not exist in the root table
+        (lambda t: t.mutate(v=t['id']), 1, False),
+        # new column id is selections[0], cannot be replaced since
+        # new id != t['id']
+        (lambda t: t.mutate(id=t['str_col']), 0, False),
+        # new column id is selections[0], OK to replace since
+        # new id == t['id'] (mutation is no-op)
+        (lambda t: t.mutate(id=t['id']), 0, True),
+        # new column id is selections[0], cannot be replaced since
+        # new id != t['id']
+        (lambda t: t.mutate(id=t['id'] + 1), 0, False),
+        # new column id is selections[0], OK to replace since
+        # new id == t['id'] (relabel is a no-op)
+        (lambda t: t.relabel({'id': 'id'}), 0, True),
+        # new column id2 is selections[0], cannot be replaced since
+        # id2 does not exist in the table
+        (lambda t: t.relabel({'id': 'id2'}), 0, False),
+    ],
+)
+def test_can_be_replaced_by_column_name(selection_fn, selection_idx, expected):
+    table = ibis.table([('id', 'double'), ('str_col', 'string')])
+    table = selection_fn(table)
+    selection_to_test = table.op().selections[selection_idx]
+    result = _can_be_replaced_by_column_name(
+        selection_to_test, table.op().table
+    )
+    assert result == expected
