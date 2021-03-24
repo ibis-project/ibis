@@ -12,8 +12,6 @@ from ibis.backends.pandas.execution.selection import physical_tables
 from ibis.expr.scope import Scope
 from ibis.expr.typing import TimeContext
 
-dialect = PandasDialect
-
 
 def _read_csv(path, schema, **kwargs):
     dtypes = dict(schema.to_pandas())
@@ -33,11 +31,6 @@ class CSVTable(ops.DatabaseTable):
 
 
 class CSVClient(FileClient):
-
-    dialect = dialect
-    extension = 'csv'
-    table_class = CSVTable
-
     def insert(self, path, expr, index=False, **kwargs):
         path = self.root / path
         data = execute(expr)
@@ -79,13 +72,6 @@ class CSVClient(FileClient):
         return parse_version(pd.__version__)
 
 
-@execute_node.register(CSVClient.table_class, CSVClient)
-def csv_read_table(op, client, scope, **kwargs):
-    path = client.dictionary[op.name]
-    df = _read_csv(path, schema=op.schema, header=0, **op.read_csv_kwargs)
-    return df
-
-
 @pre_execute.register(ops.Selection, CSVClient)
 def csv_pre_execute_selection(
     op: ops.Node,
@@ -122,8 +108,10 @@ def csv_pre_execute_selection(
 
 class Backend(BaseBackend):
     name = 'csv'
+    dialect = PandasDialect
+    extension = 'csv'
+    table_class = CSVTable
     builder = None
-    dialect = None
 
     def connect(self, path):
         """Create a CSVClient for use with Ibis
@@ -136,4 +124,11 @@ class Backend(BaseBackend):
         -------
         CSVClient
         """
-        return CSVClient(path)
+        return CSVClient(backend=self, root=path)
+
+
+@execute_node.register(Backend.table_class, CSVClient)
+def csv_read_table(op, client, scope, **kwargs):
+    path = client.dictionary[op.name]
+    df = _read_csv(path, schema=op.schema, header=0, **op.read_csv_kwargs)
+    return df

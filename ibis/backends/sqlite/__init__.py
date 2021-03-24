@@ -15,7 +15,7 @@
 from ibis.backends.base import BaseBackend
 from ibis.backends.base_sqlalchemy.alchemy import AlchemyQueryBuilder
 
-from .client import SQLiteClient
+from .client import SQLiteClient, SQLiteDatabase, SQLiteTable
 from .compiler import SQLiteDialect
 
 
@@ -23,6 +23,8 @@ class Backend(BaseBackend):
     name = 'sqlite'
     builder = AlchemyQueryBuilder
     dialect = SQLiteDialect
+    database_class = SQLiteDatabase
+    table_class = SQLiteTable
 
     def connect(self, path=None, create=False):
 
@@ -40,5 +42,4 @@ class Backend(BaseBackend):
         create : boolean, default False
             If file does not exist, create it
         """
-
-        return SQLiteClient(path, create=create)
+        return SQLiteClient(backend=self, path=path, create=create)

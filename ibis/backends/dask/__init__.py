@@ -10,7 +10,7 @@ from ibis.backends.base import BaseBackend
 from ibis.backends.base_sqlalchemy.compiler import Dialect
 from ibis.backends.pandas import _flatten_subclass_tree
 
-from .client import DaskClient, DaskTable
+from .client import DaskClient, DaskDatabase, DaskTable
 from .execution import execute, execute_node  # noqa F401
 
 
@@ -31,13 +31,14 @@ class DaskDialect(Dialect):
     translator = DaskExprTranslator
 
 
-DaskClient.dialect = dialect = DaskDialect
-
-
 class Backend(BaseBackend):
     name = 'dask'
     builder = None
+    # XXX dialect in client was None. Maybe to avoid circular imports
+    # since it's define here and not in `compile.py`? (same in pandas backend)
     dialect = DaskDialect
+    database_class = DaskDatabase
+    table_class = DaskTable
 
     def connect(self, dictionary: Dict[str, DataFrame]) -> DaskClient:
         """Construct a dask client from a dictionary of DataFrames.
@@ -50,7 +51,7 @@ class Backend(BaseBackend):
         -------
         DaskClient
         """
-        return DaskClient(dictionary)
+        return DaskClient(backend=self, dictionary=dictionary)
 
     def from_dataframe(
         self, df: DataFrame, name: str = 'df', client: DaskClient = None

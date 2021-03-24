@@ -4,7 +4,7 @@ from pandas.util import testing as tm
 
 import ibis
 from ibis.backends.base_file import FileDatabase
-from ibis.backends.hdf5 import HDFClient, HDFTable
+from ibis.backends.hdf5 import HDFTable
 
 
 @pytest.fixture
@@ -42,11 +42,11 @@ def test_client(tmpdir, file_backends_data):
     for k, v in file_backends_data.items():
         v.to_hdf(str(f), k, format='table', data_columns=True)
 
-    c = HDFClient(tmpdir)
+    c = ibis.hdf5.connect(tmpdir)
     assert c.list_databases() == ['prices']
     assert c.database().prices.list_tables() == ['close', 'open']
 
-    c = HDFClient(tmpdir / 'prices.h5')
+    c = ibis.hdf5.connect(tmpdir / 'prices.h5')
     assert c.list_databases() == []
     assert c.list_tables() == ['close', 'open']
 
@@ -108,7 +108,7 @@ def test_insert(transformed, tmpdir):
     assert path.exists()
 
     # readback
-    c = HDFClient(str(tpath)).database()
+    c = ibis.hdf5.connect(str(tpath)).database()
     result = c.list_databases()
     assert result == ['foo']
 

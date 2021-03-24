@@ -7,6 +7,8 @@ from .client import (  # noqa: F401
     ImpalaClient,
     ImpalaConnection,
     ImpalaDatabase,
+    ImpalaDatabaseTable,
+    ImpalaQuery,
     ImpalaTable,
 )
 from .compiler import ImpalaDialect, ImpalaQueryBuilder
@@ -18,7 +20,10 @@ class Backend(BaseBackend):
     name = 'impala'
     builder = ImpalaQueryBuilder
     dialect = ImpalaDialect
-
+    database_class = ImpalaDatabase
+    query_class = ImpalaQuery
+    table_class = ImpalaDatabaseTable
+    table_expr_class = ImpalaTable
     HDFS = HDFS
     WebHDFS = WebHDFS
 
@@ -108,7 +113,9 @@ class Backend(BaseBackend):
 
         con = ImpalaConnection(pool_size=pool_size, **params)
         try:
-            client = ImpalaClient(con, hdfs_client=hdfs_client)
+            client = ImpalaClient(
+                backend=self, con=con, hdfs_client=hdfs_client
+            )
         except Exception:
             con.close()
             raise

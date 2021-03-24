@@ -343,16 +343,16 @@ class PandasTable(ops.DatabaseTable):
 
 
 class PandasClient(client.Client):
-
-    dialect = None  # defined in ibis.pandas.api
-
-    def __init__(self, dictionary):
+    def __init__(self, backend, dictionary):
+        self.dialect = backend.dialect
+        self.database_class = backend.database_class
+        self.table_class = backend.table_class
         self.dictionary = dictionary
 
     def table(self, name, schema=None):
         df = self.dictionary[name]
         schema = sch.infer(df, schema=schema)
-        return PandasTable(name, schema, self).to_expr()
+        return self.table_class(name, schema, self).to_expr()
 
     def execute(self, query, params=None, limit='default', **kwargs):
         if limit != 'default':
@@ -381,7 +381,7 @@ class PandasClient(client.Client):
 
     def database(self, name=None):
         """Construct a database called `name`."""
-        return PandasDatabase(name, self)
+        return self.database_class(name, self)
 
     def list_tables(self, like=None):
         """List the available tables."""

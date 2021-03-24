@@ -6,7 +6,6 @@ import pytest
 
 import ibis
 from ibis.backends.pandas.tests.conftest import TestConf as PandasTest
-from ibis.backends.parquet import ParquetClient
 
 
 class TestConf(PandasTest):
@@ -32,4 +31,4 @@ def parquet(tmpdir, file_backends_data):
         table = pa.Table.from_pandas(v)
         pq.write_table(table, str(f))
 
-    return ParquetClient(tmpdir).database()
+    return ibis.parquet.connect(tmpdir).database()

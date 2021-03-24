@@ -2,7 +2,7 @@
 from ibis.backends.base import BaseBackend
 from ibis.backends.base_sqlalchemy.alchemy import AlchemyQueryBuilder
 
-from .client import PostgreSQLClient
+from .client import PostgreSQLClient, PostgreSQLDatabase, PostgreSQLTable
 from .compiler import PostgreSQLDialect
 
 
@@ -10,6 +10,8 @@ class Backend(BaseBackend):
     name = 'postgres'
     builder = AlchemyQueryBuilder
     dialect = PostgreSQLDialect
+    database_class = PostgreSQLDatabase
+    table_class = PostgreSQLTable
 
     def connect(
         self,
@@ -79,6 +81,7 @@ class Backend(BaseBackend):
             month : int32
         """
         return PostgreSQLClient(
+            backend=self,
             host=host,
             user=user,
             password=password,

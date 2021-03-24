@@ -10,7 +10,12 @@ from pydata_google_auth import cache
 import ibis.config
 from ibis.backends.base import BaseBackend
 
-from .client import BigQueryClient
+from .client import (
+    BigQueryClient,
+    BigQueryDatabase,
+    BigQueryQuery,
+    BigQueryTable,
+)
 from .compiler import BigQueryDialect, BigQueryQueryBuilder
 
 try:
@@ -35,6 +40,9 @@ class Backend(BaseBackend):
     name = 'bigquery'
     builder = BigQueryQueryBuilder
     dialect = BigQueryDialect
+    query_class = BigQueryQuery
+    database_class = BigQueryDatabase
+    table_class = BigQueryTable
 
     def connect(
         self,
@@ -124,7 +132,8 @@ class Backend(BaseBackend):
         project_id = project_id or default_project_id
 
         return BigQueryClient(
-            project_id,
+            backend=self,
+            project_id=project_id,
             dataset_id=dataset_id,
             credentials=credentials,
             application_name=application_name,

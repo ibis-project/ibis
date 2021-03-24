@@ -11,8 +11,6 @@ import sqlalchemy as sa
 import ibis.backends.base_sqlalchemy.alchemy as alch
 from ibis.client import Database
 
-from .compiler import SQLiteDialect
-
 
 class SQLiteTable(alch.AlchemyTable):
     pass
@@ -316,12 +314,11 @@ def _register_aggregate(agg, con):
 class SQLiteClient(alch.AlchemyClient):
     """The Ibis SQLite client class."""
 
-    dialect = SQLiteDialect
-    database_class = SQLiteDatabase
-    table_class = SQLiteTable
-
-    def __init__(self, path=None, create=False):
+    def __init__(self, backend, path=None, create=False):
         super().__init__(sa.create_engine("sqlite://"))
+        self.dialect = backend.dialect
+        self.database_class = backend.database_class
+        self.table_class = backend.table_class
         self.name = path
         self.database_name = "base"
 

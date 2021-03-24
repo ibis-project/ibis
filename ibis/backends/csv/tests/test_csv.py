@@ -3,7 +3,7 @@ from pandas.util import testing as tm
 
 import ibis
 from ibis.backends.base_file import FileDatabase
-from ibis.backends.csv import CSVClient, CSVTable
+from ibis.backends.csv import CSVTable
 
 
 @pytest.fixture
@@ -32,11 +32,11 @@ def test_client(tmpdir, file_backends_data):
         f = csv / '{}.csv'.format(k)
         v.to_csv(str(f), index=False)
 
-    c = CSVClient(csv / 'open.csv')
+    c = ibis.csv.connect(csv / 'open.csv')
     assert c.list_databases() == []
     assert c.list_tables() == ['open']
 
-    c = CSVClient(csv / 'close.csv')
+    c = ibis.csv.connect(csv / 'close.csv')
     assert c.list_databases() == []
     assert c.list_tables() == ['close']
 
@@ -108,7 +108,7 @@ def test_insert(transformed, tmpdir):
     assert path.exists()
 
     # readback
-    t = CSVClient(str(tpath)).database()
+    t = ibis.csv.connect(str(tpath)).database()
     result = t.list_tables()
     assert result == ['foo']
 

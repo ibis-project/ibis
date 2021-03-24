@@ -1,7 +1,7 @@
 from ibis.backends.base import BaseBackend
 from ibis.backends.base_sqlalchemy.alchemy import AlchemyQueryBuilder
 
-from .client import MySQLClient
+from .client import MySQLClient, MySQLDatabase, MySQLTable
 from .compiler import MySQLDialect
 
 
@@ -9,6 +9,8 @@ class Backend(BaseBackend):
     name = 'mysql'
     builder = AlchemyQueryBuilder
     dialect = MySQLDialect
+    database_class = MySQLDatabase
+    table_class = MySQLTable
 
     def connect(
         self,
@@ -79,6 +81,7 @@ class Backend(BaseBackend):
             month : int32
         """
         return MySQLClient(
+            backend=self,
             host=host,
             user=user,
             password=password,

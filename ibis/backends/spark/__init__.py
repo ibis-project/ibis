@@ -1,7 +1,13 @@
 """Spark backend."""
 from ibis.backends.base import BaseBackend
 
-from .client import SparkClient
+from .client import (
+    SparkClient,
+    SparkDatabase,
+    SparkDatabaseTable,
+    SparkQuery,
+    SparkTable,
+)
 from .compiler import SparkDialect, SparkQueryBuilder
 from .udf import udf  # noqa: F401
 
@@ -10,6 +16,10 @@ class Backend(BaseBackend):
     name = 'spark'
     builder = SparkQueryBuilder
     dialect = SparkDialect
+    database_class = SparkDatabase
+    query_class = SparkQuery
+    table_class = SparkDatabaseTable
+    table_expr_class = SparkTable
 
     def connect(self, spark_session):
         """
@@ -19,7 +29,7 @@ class Backend(BaseBackend):
         See documentation for SparkContext:
         https://spark.apache.org/docs/latest/api/python/_modules/pyspark/context.html#SparkContext
         """
-        client = SparkClient(spark_session)
+        client = SparkClient(backend=self, session=spark_session)
 
         # Spark internally stores timestamps as UTC values, and timestamp data
         # that is brought in without a specified time zone is converted as

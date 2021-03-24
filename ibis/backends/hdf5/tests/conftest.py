@@ -3,7 +3,6 @@ from pathlib import Path
 import pytest
 
 import ibis
-from ibis.backends.hdf5 import HDFClient
 from ibis.backends.pandas.tests.conftest import TestConf as PandasTest
 
 
@@ -28,4 +27,4 @@ def hdf(tmpdir, file_backends_data):
     for k, v in file_backends_data.items():
         v.to_hdf(str(f), k, format='table', data_columns=True)
 
-    return HDFClient(tmpdir).database()
+    return ibis.hdf5.connect(tmpdir).database()
