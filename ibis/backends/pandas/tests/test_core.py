@@ -101,7 +101,7 @@ def test_missing_data_on_custom_client():
                 name, ibis.schema([('a', 'int64')]), self
             ).to_expr()
 
-    con = MyClient({})
+    con = MyClient(Backend(), {})
     t = con.table('t')
     with pytest.raises(
         NotImplementedError,

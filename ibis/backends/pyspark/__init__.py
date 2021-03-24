@@ -1,7 +1,8 @@
 from ibis.backends.base import BaseBackend
 from ibis.backends.spark.client import SparkDatabase, SparkQuery, SparkTable
 
-from .client import PySparkClient, PySparkDialect, PySparkTable
+from .client import PySparkClient, PySparkTable
+from .compiler import PySparkDialect
 
 
 class Backend(BaseBackend):

@@ -113,9 +113,9 @@ class Backend(BaseBackend):
 
         con = ImpalaConnection(pool_size=pool_size, **params)
         try:
-            client = ImpalaClient(backend=self,
-                                  con=con,
-                                  hdfs_client=hdfs_client)
+            client = ImpalaClient(
+                backend=self, con=con, hdfs_client=hdfs_client
+            )
         except Exception:
             con.close()
             raise

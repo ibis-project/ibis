@@ -10,7 +10,6 @@ from .client import (
 )
 from .compiler import ClickhouseDialect, ClickhouseQueryBuilder
 
-
 try:
     import lz4  # noqa: F401
 
