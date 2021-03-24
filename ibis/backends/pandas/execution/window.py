@@ -42,7 +42,7 @@ def _post_process_empty(
     timecontext: Optional[TimeContext],
 ) -> pd.Series:
     # This is the post process of the no groupby nor orderby window
-    # `result` could be a Series, DataFrame, tuple, or a scalar. generated
+    # `result` could be a Series, DataFrame, or a scalar. generated
     # by `agg` method of class `Window`. For window without grouby or
     # orderby, `agg` calls pands method directly. So if timecontext is
     # present, we need to insert 'time' column into index for trimming the
