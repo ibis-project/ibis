@@ -47,7 +47,7 @@ def test_bad_timecontext(time_table, t):
         context = (Timestamp('20101010'), Timestamp('20090101'))
         expr.execute(timecontext=context)
 
-    # execute context with a table without TIME_COL
+    # execute context with a table without time column
     with pytest.raises(com.IbisError, match=r".*must have a time column.*"):
         context = (Timestamp('20090101'), Timestamp('20100101'))
         t.execute(timecontext=context)
@@ -193,7 +193,7 @@ def test_context_adjustment_multi_window(time_table, time_df3):
 
 @pytest.mark.xfail(reason="TODO - windowing - #2553")
 def test_context_adjustment_window_groupby_id(time_table, time_df3):
-    """ This test case is meant to test trim_with_timecontext method
+    """ This test case is meant to test trim_window_series method
         in dask/execution/window.py to see if it could trim Series
         correctly with groupby params
     """

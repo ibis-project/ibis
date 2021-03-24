@@ -9,11 +9,9 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.backends.spark.tests.conftest import TestConf as SparkTest
 
-pytestmark = [pytest.mark.spark, pytest.mark.udf]
+from ..udf import udf
 
-py4j = pytest.importorskip('py4j')
-ps = pytest.importorskip('pyspark')
-from ..udf import udf  # noqa: E402, isort:skip
+pytestmark = [pytest.mark.spark, pytest.mark.udf]
 
 
 @pytest.fixture(scope='session')

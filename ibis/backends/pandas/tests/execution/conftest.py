@@ -8,7 +8,7 @@ import pytest
 
 import ibis.expr.datatypes as dt
 
-from ... import connect
+from ... import Backend
 
 
 @pytest.fixture(scope='module')
@@ -144,7 +144,7 @@ def time_df3():
                     start='2017-01-02 01:02:03.234', periods=8
                 ).values
             ),
-            'id': list(range(1, 9)),
+            'id': list(range(1, 5)) * 2,
             'value': [1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, 8.8],
         }
     )
@@ -193,7 +193,7 @@ def client(
     time_keyed_df2,
     intersect_df2,
 ):
-    return connect(
+    return Backend().connect(
         {
             'df': df,
             'df1': df1,
@@ -241,7 +241,7 @@ def t(client):
 
 @pytest.fixture(scope='module')
 def lahman(batting_df, awards_players_df):
-    return connect(
+    return Backend().connect(
         {'batting': batting_df, 'awards_players': awards_players_df}
     )
 

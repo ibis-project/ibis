@@ -228,6 +228,10 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.util
+from ibis.expr.timecontext import (
+    construct_time_context_aware_series,
+    get_time_col,
+)
 
 
 class AggregationContext(abc.ABC):
@@ -371,9 +375,15 @@ class Transform(AggregationContext):
         # Instead, we need to use "apply", which can return a non
         # numeric type, e.g, tuple of two double.
         if isinstance(self.output_type, dt.Struct):
-            return grouped_data.apply(function, *args, **kwargs)
+            res = grouped_data.apply(function, *args, **kwargs)
         else:
-            return grouped_data.transform(function, *args, **kwargs)
+            res = grouped_data.transform(function, *args, **kwargs)
+
+        # The result series uses the name of the input. We should
+        # unset it to avoid confusion, when result is not guranteed
+        # to be the same series / have the same type after transform
+        res.name = None
+        return res
 
 
 @functools.singledispatch
@@ -620,13 +630,23 @@ class Window(AggregationContext):
                 mask = ~(window_sizes.isna())
                 window_upper_indices = pd.Series(range(len(window_sizes))) + 1
                 window_lower_indices = window_upper_indices - window_sizes
+                # The result Series of udf may need to be trimmed by
+                # timecontext. In order to do so, 'time' must be added
+                # as an index to the Series, if present. Here We extract
+                # time column from the parent Dataframe `frame`.
+                if get_time_col() in frame:
+                    result_index = construct_time_context_aware_series(
+                        obj, frame
+                    ).index
+                else:
+                    result_index = obj.index
                 result = window_agg_udf(
                     grouped_data,
                     function,
                     window_lower_indices,
                     window_upper_indices,
                     mask,
-                    obj.index,
+                    result_index,
                     self.dtype,
                     self.max_lookback,
                     *args,

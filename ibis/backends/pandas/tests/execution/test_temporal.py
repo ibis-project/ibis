@@ -11,7 +11,7 @@ from pytest import param
 from ibis import literal as L  # noqa: E402
 from ibis.expr import datatypes as dt
 
-from ... import connect, execute
+from ... import Backend, execute
 
 pytestmark = pytest.mark.pandas
 
@@ -167,7 +167,7 @@ def test_times_ops_with_tz(t, df, tz, rconstruct, column):
 )
 def test_interval_arithmetic(op, expected):
     data = pd.timedelta_range('0 days', '10 days', freq='D')
-    con = connect(
+    con = Backend().connect(
         {'df1': pd.DataFrame({'td': data}), 'df2': pd.DataFrame({'td': data})}
     )
     t1 = con.table('df1')

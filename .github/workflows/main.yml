@@ -16,7 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        python_version: ["3.7", "3.8"]
+        python_version: ["3.7", "3.9"]
     steps:
     - name: checkout
       uses: actions/checkout@v1
@@ -31,14 +31,13 @@ jobs:
 
   Tests_dask:
     name: Tests dask
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     env:
       BACKENDS: "dask"
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        python_version: ["3.7", "3.8"]
+        python_version: ["3.7", "3.9"]
     steps:
     - name: checkout
       uses: actions/checkout@v1
@@ -59,7 +58,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: ["3.7", "3.8"]
+        python_version: ["3.7", "3.9"]
     services:
       postgres:
         image: shajekpivotal/ibis-docker-postgres-9.5
@@ -101,6 +100,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # TODO Latest impyla (0.16.3) doesn't support Python 3.9. Use 3.9 instead of 3.8 once a new impyla is released
         python_version: ["3.7", "3.8"]
     services:
       postgres:
@@ -169,13 +169,13 @@ jobs:
 
   Tests_spark:
     name: Tests PySpark / Spark
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     env:
       BACKENDS: "spark pyspark"
     strategy:
       fail-fast: false
       matrix:
-        python_version: ["3.7", "3.8"]
+        python_version: ["3.7", "3.9"]
     steps:
     - name: checkout
       uses: actions/checkout@v1
@@ -191,7 +191,7 @@ jobs:
     name: Lint and benckmarks
     runs-on: ubuntu-latest
     env:
-      PYTHON_VERSION: "3.7"
+      PYTHON_VERSION: "3.9"
       BACKENDS: ""
       LOAD_TEST_DATA: "false"
     steps:
@@ -235,7 +235,7 @@ jobs:
     name: Conda package
     runs-on: ubuntu-latest
     env:
-      PYTHON_VERSION: "3.7"
+      PYTHON_VERSION: "3.9"
       BACKENDS: ""
       LOAD_TEST_DATA: "false"
     steps:
@@ -272,7 +272,7 @@ jobs:
     name: Docs
     runs-on: ubuntu-latest
     env:
-      PYTHON_VERSION: "3.7"
+      PYTHON_VERSION: "3.8"
       BACKENDS: "bigquery clickhouse dask impala mysql parquet postgres pyspark spark"
       LOAD_TEST_DATA: "false"
     steps:
@@ -283,8 +283,11 @@ jobs:
     - name: set up environment
       run: ./ci/setup_env.sh "$PYTHON_VERSION" "$BACKENDS" "$LOAD_TEST_DATA"
 
+    - name: build web
+      run: python -m pysuerga docs/web --target-path=/tmp/ibis-project.org/
+
     - name: build docs
-      run: sphinx-build -b html docs/source /tmp/docs.ibis-project.org -W -T
+      run: sphinx-build -b html docs/source /tmp/ibis-project.org/docs -W -T
 
     - name: Install github key
       run: |
@@ -295,7 +298,7 @@ jobs:
 
     - name: Push docs
       run: |
-        cd /tmp/docs.ibis-project.org
+        cd /tmp/ibis-project.org
         touch .nojekyll
         echo "ibis-project.org" > CNAME
         git init

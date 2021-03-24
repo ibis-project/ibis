@@ -14,10 +14,6 @@ import ibis.expr.types as ir
 import ibis.util as util
 from ibis.tests.util import assert_equal
 
-pytest.importorskip('sqlalchemy')
-pytest.importorskip('hdfs')
-pytest.importorskip('impala.dbapi')
-
 pytestmark = pytest.mark.impala
 
 
@@ -42,6 +38,10 @@ def test_kerberos_deps_installed(env, test_data_db):
         )
 
 
+@pytest.mark.xfail(
+    raises=AssertionError,
+    reason='Temporary not setting default backends. #2676',
+)
 def test_execute_exprs_default_backend(con_no_hdfs):
     expr = ibis.literal(2)
     expected = 2

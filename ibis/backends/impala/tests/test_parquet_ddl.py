@@ -3,14 +3,8 @@ from posixpath import join as pjoin
 import pytest
 
 import ibis
+from ibis.backends.impala.compat import HS2Error
 from ibis.tests.util import assert_equal
-
-pytest.importorskip('hdfs')
-pytest.importorskip('sqlalchemy')
-pytest.importorskip('impala.dbapi')
-
-from ibis.backends.impala.compat import HS2Error  # noqa: E402, isort:skip
-
 
 pytestmark = pytest.mark.impala
 

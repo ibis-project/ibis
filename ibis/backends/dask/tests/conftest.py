@@ -9,7 +9,7 @@ import pytest
 import ibis
 from ibis.backends.pandas.tests.conftest import TestConf as PandasTest
 
-from .. import connect
+from .. import Backend
 
 NPARTITIONS = 2
 
@@ -25,7 +25,7 @@ class TestConf(PandasTest):
         # Note - we use `dd.from_pandas(pd.read_csv(...))` instead of
         # `dd.read_csv` due to https://github.com/dask/dask/issues/6970
 
-        return ibis.backends.dask.connect(
+        return ibis.backends.dask.Backend().connect(
             {
                 'functional_alltypes': dd.from_pandas(
                     pd.read_csv(
@@ -75,7 +75,7 @@ def dataframe(npartitions):
 
 @pytest.fixture
 def core_client(dataframe):
-    return connect({'df': dataframe})
+    return Backend().connect({'df': dataframe})
 
 
 @pytest.fixture

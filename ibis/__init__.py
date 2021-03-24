@@ -33,15 +33,27 @@ notebook.
     validator=ibis.config.is_bool,
 )
 ibis.config.register_option('default_backend', None)
+with ibis.config.config_prefix('context_adjustment'):
+    ibis.config.register_option(
+        'time_col',
+        'time',
+        'Name of the timestamp col for execution with a timecontext'
+        'See ibis.expr.timecontext for details.',
+        validator=ibis.config.is_str,
+    )
 
 __version__ = get_versions()['version']
 del get_versions
-
 
 for entry_point in pkg_resources.iter_entry_points(
     group='ibis.backends', name=None
 ):
     try:
-        setattr(ibis, entry_point.name, entry_point.resolve())
+        backend_module = entry_point.resolve()
     except ImportError:
         pass
+    else:
+        backend = backend_module.Backend()
+        setattr(ibis, entry_point.name, backend)
+        with ibis.config.config_prefix(entry_point.name):
+            backend.register_options()

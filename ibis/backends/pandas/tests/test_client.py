@@ -6,7 +6,7 @@ from pytest import param
 
 import ibis
 
-from .. import connect
+from .. import Backend
 from ..client import PandasTable  # noqa: E402
 
 pytestmark = pytest.mark.pandas
@@ -14,7 +14,7 @@ pytestmark = pytest.mark.pandas
 
 @pytest.fixture
 def client():
-    return connect(
+    return Backend().connect(
         {
             'df': pd.DataFrame({'a': [1, 2, 3], 'b': list('abc')}),
             'df_unknown': pd.DataFrame(

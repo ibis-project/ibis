@@ -1,3 +1,6 @@
+import tempfile
+from pathlib import Path
+
 import pytest
 
 import ibis
@@ -193,22 +196,22 @@ def test_valid_kwargs(backend, alltypes, df):
 def test_valid_args(backend, alltypes, df):
     # Test different forms of UDF definition with *args
 
-    @elementwise(input_type=[dt.double, dt.string], output_type=dt.double)
+    @elementwise(input_type=[dt.double, dt.int32], output_type=dt.double)
     def foo1(*args):
-        return args[0] + len(args[1])
+        return args[0] + args[1]
 
-    @elementwise(input_type=[dt.double, dt.string], output_type=dt.double)
+    @elementwise(input_type=[dt.double, dt.int32], output_type=dt.double)
     def foo2(v, *args):
-        return v + len(args[0])
+        return v + args[0]
 
     result = alltypes.mutate(
-        v1=foo1(alltypes['double_col'], alltypes['string_col']),
-        v2=foo2(alltypes['double_col'], alltypes['string_col']),
+        v1=foo1(alltypes['double_col'], alltypes['int_col']),
+        v2=foo2(alltypes['double_col'], alltypes['int_col']),
     ).execute()
 
     expected = df.assign(
-        v1=df['double_col'] + len(df['string_col']),
-        v2=df['double_col'] + len(df['string_col']),
+        v1=df['double_col'] + df['int_col'],
+        v2=df['double_col'] + df['int_col'],
     )
 
     backend.assert_frame_equal(result, expected)
@@ -219,39 +222,39 @@ def test_valid_args(backend, alltypes, df):
 def test_valid_args_and_kwargs(backend, alltypes, df):
     # Test UDFs with both *args and keyword arguments
 
-    @elementwise(input_type=[dt.double, dt.string], output_type=dt.double)
+    @elementwise(input_type=[dt.double, dt.int32], output_type=dt.double)
     def foo1(*args, amount):
         # UDF with *args and a keyword-only argument
-        return args[0] + len(args[1]) + amount
+        return args[0] + args[1] + amount
 
-    @elementwise(input_type=[dt.double, dt.string], output_type=dt.double)
+    @elementwise(input_type=[dt.double, dt.int32], output_type=dt.double)
     def foo2(*args, **kwargs):
         # UDF with *args and **kwargs
-        return args[0] + len(args[1]) + kwargs.get('amount', 1)
+        return args[0] + args[1] + kwargs.get('amount', 1)
 
-    @elementwise(input_type=[dt.double, dt.string], output_type=dt.double)
+    @elementwise(input_type=[dt.double, dt.int32], output_type=dt.double)
     def foo3(v, *args, amount):
         # UDF with an explicit positional argument, *args, and a keyword-only
         # argument
-        return v + len(args[0]) + amount
+        return v + args[0] + amount
 
-    @elementwise(input_type=[dt.double, dt.string], output_type=dt.double)
+    @elementwise(input_type=[dt.double, dt.int32], output_type=dt.double)
     def foo4(v, *args, **kwargs):
         # UDF with an explicit positional argument, *args, and **kwargs
-        return v + len(args[0]) + kwargs.get('amount', 1)
+        return v + args[0] + kwargs.get('amount', 1)
 
     result = alltypes.mutate(
-        v1=foo1(alltypes['double_col'], alltypes['string_col'], amount=2),
-        v2=foo2(alltypes['double_col'], alltypes['string_col'], amount=2),
-        v3=foo3(alltypes['double_col'], alltypes['string_col'], amount=2),
-        v4=foo4(alltypes['double_col'], alltypes['string_col'], amount=2),
+        v1=foo1(alltypes['double_col'], alltypes['int_col'], amount=2),
+        v2=foo2(alltypes['double_col'], alltypes['int_col'], amount=2),
+        v3=foo3(alltypes['double_col'], alltypes['int_col'], amount=2),
+        v4=foo4(alltypes['double_col'], alltypes['int_col'], amount=2),
     ).execute()
 
     expected = df.assign(
-        v1=df['double_col'] + len(df['string_col']) + 2,
-        v2=df['double_col'] + len(df['string_col']) + 2,
-        v3=df['double_col'] + len(df['string_col']) + 2,
-        v4=df['double_col'] + len(df['string_col']) + 2,
+        v1=df['double_col'] + df['int_col'] + 2,
+        v2=df['double_col'] + df['int_col'] + 2,
+        v3=df['double_col'] + df['int_col'] + 2,
+        v4=df['double_col'] + df['int_col'] + 2,
     )
 
     backend.assert_frame_equal(result, expected)
@@ -334,6 +337,34 @@ def test_elementwise_udf_overwrite_destruct_and_assign(backend, alltypes):
     # should appear at the end, but currently they are materialized
     # directly after those overwritten columns).
     backend.assert_frame_equal(result, expected, check_like=True)
+
+
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
+# TODO - udf - #2553
+@pytest.mark.xfail_backends(['dask'])
+@pytest.mark.xfail_unsupported
+@pytest.mark.min_spark_version('3.1')
+def test_elementwise_udf_destruct_exact_once(backend, alltypes):
+    with tempfile.TemporaryDirectory() as tempdir:
+
+        @elementwise(
+            input_type=[dt.double],
+            output_type=dt.Struct(['col1', 'col2'], [dt.double, dt.double]),
+        )
+        def add_one_struct_exact_once(v):
+            key = v.iloc[0]
+            path = Path(f"{tempdir}/{key}")
+            assert not path.exists()
+            path.touch()
+            return v + 1, v + 2
+
+        result = alltypes.mutate(
+            add_one_struct_exact_once(alltypes['index']).destructure()
+        )
+
+        result = result.execute()
+
+        assert len(result) > 0
 
 
 @pytest.mark.only_on_backends(['pandas', 'pyspark'])

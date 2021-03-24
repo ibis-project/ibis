@@ -52,22 +52,6 @@ def build_ast(expr, context):
     return builder.get_result()
 
 
-def _get_query(expr, context):
-    assert context is not None, 'context is None'
-    ast = build_ast(expr, context)
-    query = ast.queries[0]
-
-    return query
-
-
-def to_sql(expr, context=None):
-    if context is None:
-        context = SparkDialect.make_context()
-    assert context is not None, 'context is None'
-    query = _get_query(expr, context)
-    return query.compile()
-
-
 # ----------------------------------------------------------------------
 # Select compilation
 
@@ -94,7 +78,12 @@ class SparkQueryBuilder(comp.QueryBuilder):
 
 class SparkContext(comp.QueryContext):
     def _to_sql(self, expr, ctx):
-        return to_sql(expr, ctx)
+        if ctx is None:
+            ctx = SparkDialect.make_context()
+        builder = SparkQueryBuilder(expr, context=ctx)
+        ast = builder.get_result()
+        query = ast.queries[0]
+        return query.compile()
 
 
 _sql_type_names = sql_type_names.copy()
@@ -394,6 +383,3 @@ class SparkSelect(BaseSelect):
 
 class SparkDialect(BaseDialect):
     translator = SparkExprTranslator
-
-
-dialect = SparkDialect

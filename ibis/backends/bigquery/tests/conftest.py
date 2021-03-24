@@ -2,9 +2,11 @@ import os
 from pathlib import Path
 
 import pytest
+from google.oauth2 import service_account
 
 import ibis
 import ibis.expr.types as ir
+from ibis.backends import bigquery as bq
 from ibis.backends.tests.base import (
     BackendTest,
     RoundAwayFromZero,
@@ -16,7 +18,6 @@ DATASET_ID = 'testing'
 
 
 def _credentials():
-    service_account = pytest.importorskip('google.oauth2.service_account')
     google_application_credentials = os.environ.get(
         "GOOGLE_APPLICATION_CREDENTIALS", None
     )
@@ -49,7 +50,6 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
 
     @staticmethod
     def connect(data_directory: Path) -> ibis.client.Client:
-        bq = pytest.importorskip('ibis.backends.bigquery')
         project_id = os.environ.get('GOOGLE_BIGQUERY_PROJECT_ID')
         if project_id is None:
             pytest.skip(
@@ -87,7 +87,6 @@ def credentials():
 
 @pytest.fixture(scope='session')
 def client(credentials, project_id):
-    bq = pytest.importorskip('ibis.backends.bigquery')
     return bq.connect(
         project_id=project_id, dataset_id=DATASET_ID, credentials=credentials,
     )
@@ -95,7 +94,6 @@ def client(credentials, project_id):
 
 @pytest.fixture(scope='session')
 def client2(credentials, project_id):
-    bq = pytest.importorskip('ibis.backends.bigquery')
     return bq.connect(
         project_id=project_id, dataset_id=DATASET_ID, credentials=credentials,
     )
@@ -133,7 +131,6 @@ def numeric_table(client):
 
 @pytest.fixture(scope='session')
 def public(project_id, credentials):
-    bq = pytest.importorskip('ibis.backends.bigquery')
     return bq.connect(
         project_id=project_id,
         dataset_id='bigquery-public-data.stackoverflow',

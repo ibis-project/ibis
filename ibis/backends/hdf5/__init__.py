@@ -7,20 +7,6 @@ from ibis.backends.base_file import FileClient
 from ibis.backends.pandas.core import execute, execute_node
 
 
-def connect(path):
-    """Create a HDF5Client for use with Ibis
-
-    Parameters
-    ----------
-    path: str or pathlib.Path
-
-    Returns
-    -------
-    HDF5Client
-    """
-    return HDFClient(backend=Backend, root=path)
-
-
 class HDFTable(ops.DatabaseTable):
     pass
 
@@ -69,11 +55,23 @@ class HDFClient(FileClient):
 
 class Backend(BaseBackend):
     name = 'hdf5'
-    buider = None
+    builder = None
     dialect = None
     extension = 'h5'
     table_class = HDFTable
-    connect = connect
+
+    def connect(self, path):
+        """Create a HDF5Client for use with Ibis
+
+        Parameters
+        ----------
+        path: str or pathlib.Path
+
+        Returns
+        -------
+        HDF5Client
+        """
+        return HDFClient(backend=self, root=path)
 
 
 @execute_node.register(Backend.table_class, HDFClient)

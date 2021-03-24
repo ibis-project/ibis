@@ -4,7 +4,6 @@ import pytest
 
 from ibis.backends.pyspark.timecontext import combine_time_context
 
-pytest.importorskip('pyspark')
 pytestmark = pytest.mark.pyspark
 
 

@@ -36,7 +36,7 @@ create a client.
 .. autosummary::
    :toctree: ../generated/
 
-   connect
+   Backend.connect
    MySQLClient.database
    MySQLClient.list_databases
    MySQLClient.list_tables

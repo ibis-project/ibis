@@ -12,6 +12,20 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :feature:`2687` Support Spark filter with window operation
+* :bug:`2696` Fix wrong row indexing in the result for 'window after filter' for timecontext adjustment
+* :bug:`2702` Fix `aggregate` exploding the output of Reduction ops that return a list/ndarray
+* :bug:`2693` Fix issues with context adjustment for filter with PySpark backend
+* :support:`2689` Supporting SQLAlchemy 1.4, and requiring minimum 1.3
+* :support:`2680` Namespace time_col config, fix type check for trim_with_timecontext for pandas window execution
+* :feature:`2646` Support context adjustment for udfs for pandas backend
+* :feature:`2655` Add `auth_local_webserver`, `auth_external_data`, and
+  `auth_cache` parameters to BigQuery connect method. Set
+  `auth_local_webserver` to use a local server instead of copy-pasting an
+  authorization code. Set `auth_external_data` to true to request additional
+  scopes required to query Google Drive and Sheets. Set `auth_cache` to
+  `reauth` or `none` to force reauthentication.
+* :bug:`2657` Add temporary struct col in pyspark backend to ensure that UDFs are executed only once
 * :bug:`2588` Fix BigQuery connect bug that ignored project ID parameter
 * :bug: `2636` Fix overwrite logic to account for DestructColumn inside mutate API
 * :feature:`2641` Add `bit_and`, `bit_or`, and `bit_xor` integer column aggregates (BigQuery and MySQL backends)

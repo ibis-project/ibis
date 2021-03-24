@@ -7,17 +7,15 @@ import pandas as pd
 import pandas.testing as tm
 import pytest
 import pytz
+from google.api_core import exceptions
 
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 
-pytestmark = pytest.mark.bigquery
-bq = pytest.importorskip('google.cloud.bigquery')
-ga = pytest.importorskip('google.auth')
-exceptions = pytest.importorskip('google.api_core.exceptions')
+from ..client import bigquery_param
 
-from ..client import bigquery_param  # noqa: E402, isort:skip
+pytestmark = pytest.mark.bigquery
 
 
 def test_table(alltypes):

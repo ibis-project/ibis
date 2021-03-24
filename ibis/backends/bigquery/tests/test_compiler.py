@@ -10,7 +10,6 @@ import ibis.expr.operations as ops
 from ibis.expr.types import TableExpr
 
 pytestmark = pytest.mark.bigquery
-pytest.importorskip('google.cloud.bigquery')
 
 
 def test_timestamp_accepts_date_literals(alltypes, project_id):

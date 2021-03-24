@@ -1,2 +1,3 @@
 def test_backend_name(backend):
-    assert backend.api.Backend.name == backend.name()
+    # backend is the TestConf for the backend
+    assert backend.api.name == backend.name()

@@ -15,16 +15,18 @@ See http://ibis-project.org
 
 VERSION = sys.version_info.major, sys.version_info.minor
 
-impala_requires = ['hdfs>=2.0.16', 'sqlalchemy>=1.1,<1.3.7', 'requests']
+impala_requires = ['hdfs>=2.0.16', 'sqlalchemy>=1.3', 'requests']
 impala_requires.append('impyla[kerberos]>=0.15.0')
 
-sqlite_requires = ['sqlalchemy>=1.1,<1.3.7']
+sqlite_requires = ['sqlalchemy>=1.3']
 postgres_requires = sqlite_requires + ['psycopg2']
 mysql_requires = sqlite_requires + ['pymysql']
 
 kerberos_requires = ['requests-kerberos']
 visualization_requires = ['graphviz']
 clickhouse_requires = [
+    'sqlalchemy<1.4',
+    'clickhouse-sqlalchemy',
     'clickhouse-driver>=0.1.3',
     'clickhouse-cityhash',
 ]

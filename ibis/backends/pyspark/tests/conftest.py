@@ -38,7 +38,7 @@ def client():
     from pyspark.sql import SparkSession
 
     session = SparkSession.builder.getOrCreate()
-    client = ibis.pyspark.connect(session)
+    client = ibis.backends.pyspark.Backend().connect(session)
 
     df = client._session.range(0, 10)
     df = df.withColumn("str_col", F.lit('value'))

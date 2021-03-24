@@ -1,6 +1,5 @@
 import abc
 
-import ibis.config
 from ibis.common.exceptions import TranslationError
 
 
@@ -11,12 +10,6 @@ class BaseBackend(abc.ABC):
     All Ibis backends are expected to subclass this `Backend` class,
     and implement all the required methods.
     """
-
-    def __init__(self, connection_string):
-        self.connection_string = connection_string
-
-        with ibis.config.config_prefix(self.name):
-            self.register_options()
 
     @property
     @abc.abstractmethod
@@ -57,8 +50,10 @@ class BaseBackend(abc.ABC):
         context = self.dialect.make_context(params=params)
         builder = self.builder(expr, context=context)
         query_ast = builder.get_result()
-        # TODO bigquery doesn't use [0]
-        compiled = query_ast[0].compile()
+        # TODO make all builders return a QueryAST object
+        if isinstance(query_ast, list):
+            query_ast = query_ast[0]
+        compiled = query_ast.compile()
         return compiled
 
     def verify(self, expr, params=None):
