@@ -18,7 +18,6 @@ from ibis.expr.timecontext import (
     get_time_col,
 )
 from ibis.expr.typing import TimeContext
-from ibis.util import coerce_to_dataframe
 
 from .. import aggcontext as agg_ctx
 from ..aggcontext import AggregationContext
@@ -51,14 +50,7 @@ def _post_process_empty(
     # Ibis method `window_agg_built_in` and `window_agg_udf`, time
     # context is already inserted there.
     assert not order_by and not group_by
-    if isinstance(result, (pd.Series, pd.DataFrame)) or (
-        isinstance(result, (tuple, list)) and isinstance(result[0], pd.Series)
-    ):
-        # `result` is a Series when an analytic operation is being
-        # applied over the window, since analytic operations are N->N
-        if isinstance(result, (tuple, list)):
-            names = [col.name for col in result]
-            result = coerce_to_dataframe(result, names)
+    if isinstance(result, (pd.Series, pd.DataFrame)):
         if timecontext:
             result = construct_time_context_aware_series(result, parent)
         return result
