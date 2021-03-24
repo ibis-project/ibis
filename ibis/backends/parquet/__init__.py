@@ -14,8 +14,6 @@ from ibis.backends.base_file import FileClient
 from ibis.backends.pandas import PandasDialect
 from ibis.backends.pandas.core import execute, execute_node
 
-dialect = PandasDialect
-
 
 # TODO(jreback) complex types are not implemented
 _arrow_dtypes = {

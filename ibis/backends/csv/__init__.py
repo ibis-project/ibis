@@ -12,8 +12,6 @@ from ibis.backends.pandas.execution.selection import physical_tables
 from ibis.expr.scope import Scope
 from ibis.expr.typing import TimeContext
 
-dialect = PandasDialect
-
 
 def _read_csv(path, schema, **kwargs):
     dtypes = dict(schema.to_pandas())
@@ -110,12 +108,10 @@ def csv_pre_execute_selection(
 
 class Backend(BaseBackend):
     name = 'csv'
-    buider = None
-    dialect = dialect
+    dialect = PandasDialect
     extension = 'csv'
     table_class = CSVTable
     builder = None
-    dialect = None
 
     def connect(self, path):
         """Create a CSVClient for use with Ibis

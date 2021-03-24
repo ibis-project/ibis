@@ -31,19 +31,14 @@ class DaskDialect(Dialect):
     translator = DaskExprTranslator
 
 
-DaskClient.dialect = dialect = DaskDialect
-
-
 class Backend(BaseBackend):
     name = 'dask'
-    buider = None
+    builder = None
     # XXX dialect in client was None. Maybe to avoid circular imports
     # since it's define here and not in `compile.py`? (same in pandas backend)
     dialect = DaskDialect
     database_class = DaskDatabase
     table_class = DaskTable
-    builder = None
-    dialect = DaskDialect
 
     def connect(self, dictionary: Dict[str, DataFrame]) -> DaskClient:
         """Construct a dask client from a dictionary of DataFrames.
