@@ -218,27 +218,36 @@ def test_alias_after_select(client):
 
 
 @pytest.mark.parametrize(
-    ('selection_fn', 'expected'),
+    ('selection_fn', 'selection_idx', 'expected'),
     [
-        (lambda t: t[['id']], [True]),
-        (lambda t: t.mutate(v=t['id']), [False, False]),
-        (lambda t: t.mutate(id=t['str_col']), [False, True]),
-        (lambda t: t.mutate(id=t['id']), [True, True]),
-        (lambda t: t.mutate(id=t['id'] + 1), [False, True]),
-        (lambda t: t.relabel({'id': 'id'}), [True, True]),
-        (lambda t: t.relabel({'id': 'id2'}), [False, True]),
+        # selected column id is selections[0], OK to replace since
+        # id == t['id'] (straightforward column projection)
+        (lambda t: t[['id']], 0, True),
+        # new column v is selections[1], cannot be replaced since it does
+        # not exist in the root table
+        (lambda t: t.mutate(v=t['id']), 1, False),
+        # new column id is selections[0], cannot be replaced since
+        # new id != t['id']
+        (lambda t: t.mutate(id=t['str_col']), 0, False),
+        # new column id is selections[0], OK to replace since
+        # new id == t['id'] (mutation is no-op)
+        (lambda t: t.mutate(id=t['id']), 0, True),
+        # new column id is selections[0], cannot be replaced since
+        # new id != t['id']
+        (lambda t: t.mutate(id=t['id'] + 1), 0, False),
+        # new column id is selections[0], OK to replace since
+        # new id == t['id'] (relabel is a no-op)
+        (lambda t: t.relabel({'id': 'id'}), 0, True),
+        # new column id2 is selections[0], cannot be replaced since
+        # id2 does not exist in the table
+        (lambda t: t.relabel({'id': 'id2'}), 0, False),
     ],
 )
-def test_can_be_replaced_by_column_name(client, selection_fn, expected):
-    table = client.table('basic_table')
+def test_can_be_replaced_by_column_name(selection_fn, selection_idx, expected):
+    table = ibis.table([('id', 'double'), ('str_col', 'string')])
     table = selection_fn(table)
-    # Compute the result for each selection in the Selection op.
-    # Depending on the type of operation (projection, mutation,
-    # overwrite, relabel), the selections created differ in type
-    # and number, so we assert the result for each selection using
-    # the boolean array of expected outcomes.
-    result = [
-        _can_be_replaced_by_column_name(sel, table.op().table)
-        for sel in table.op().selections
-    ]
+    selection_to_test = table.op().selections[selection_idx]
+    result = _can_be_replaced_by_column_name(
+        selection_to_test, table.op().table
+    )
     assert result == expected
