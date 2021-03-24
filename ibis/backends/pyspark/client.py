@@ -14,8 +14,8 @@ class PySparkClient(SparkClient):
     An ibis client that uses PySpark SQL Dataframe
     """
 
-    def __init__(self, session):
-        super().__init__(session)
+    def __init__(self, backend, session):
+        super().__init__(backend, session)
         self.translator = PySparkExprTranslator()
 
     def compile(self, expr, timecontext=None, params=None, *args, **kwargs):
