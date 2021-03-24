@@ -232,6 +232,11 @@ def test_alias_after_select(client):
 def test_can_be_replaced_by_column_name(client, selection_fn, expected):
     table = client.table('basic_table')
     table = selection_fn(table)
+    # Compute the result for each selection in the Selection op.
+    # Depending on the type of operation (projection, mutation,
+    # overwrite, relabel), the selections created differ in type
+    # and number, so we assert the result for each selection using
+    # the boolean array of expected outcomes.
     result = [
         _can_be_replaced_by_column_name(sel, table.op().table)
         for sel in table.op().selections
