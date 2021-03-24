@@ -498,7 +498,7 @@ def test_grouped_bounded_range_window(backend, alltypes, df, con):
         )
 
     window = ibis.range_window(
-        preceding=2, order_by='id', group_by='string_col',
+        preceding=2, following=0, order_by='id', group_by='string_col',
     )
 
     expr = alltypes.mutate(val=alltypes.double_col.sum().over(window))

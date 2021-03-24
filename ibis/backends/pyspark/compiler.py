@@ -104,6 +104,23 @@ def compile_sql_query_result(t, expr, scope, timecontext, **kwargs):
     return client._session.sql(query)
 
 
+def _can_be_replaced_by_column_name(column_expr, table):
+    """
+    Return whether the given column_expr can be replaced by its literal
+    name, which is True when column_expr and table[column_expr.get_name()]
+    is semantically the same.
+    """
+    # Each check below is necessary to distinguish a pure projection from
+    # other valid selections, such as a mutation that assigns a new column
+    # or changes the value of an existing column.
+    return (
+        isinstance(column_expr.op(), ops.TableColumn)
+        and column_expr.op().table == table
+        and column_expr.get_name() in table.schema()
+        and column_expr.op() == table[column_expr.get_name()].op()
+    )
+
+
 @compiles(ops.Selection)
 def compile_selection(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
@@ -117,8 +134,12 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
         for node in op.selections
         if timecontext
     ]
-    combined_timecontext = combine_time_context(arg_timecontexts)
-    src_table = t.translate(op.table, scope, combined_timecontext)
+    adjusted_timecontext = combine_time_context(arg_timecontexts)
+    # If this is a sort or filter node, op.selections is empty
+    # in this case, we use the original timecontext
+    if not adjusted_timecontext:
+        adjusted_timecontext = timecontext
+    src_table = t.translate(op.table, scope, adjusted_timecontext)
 
     col_in_selection_order = []
     col_to_drop = []
@@ -127,7 +148,7 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
         if isinstance(selection, types.TableExpr):
             col_in_selection_order.extend(selection.columns)
         elif isinstance(selection, types.DestructColumn):
-            struct_col = t.translate(selection, scope, combined_timecontext)
+            struct_col = t.translate(selection, scope, adjusted_timecontext)
             # assign struct col and drop it later
             # This is a work around to ensure that the struct_col
             # is only executed once
@@ -140,15 +161,20 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
             ]
             col_in_selection_order.extend(cols)
         elif isinstance(selection, (types.ColumnExpr, types.ScalarExpr)):
-            col = t.translate(selection, scope, combined_timecontext).alias(
-                selection.get_name()
-            )
-            col_in_selection_order.append(col)
+            # If the selection is a straightforward projection of a table
+            # column from the root table itself (i.e. excluding mutations and
+            # renames), we can get the selection name directly.
+            if _can_be_replaced_by_column_name(selection, op.table):
+                col_in_selection_order.append(selection.get_name())
+            else:
+                col = t.translate(
+                    selection, scope, adjusted_timecontext
+                ).alias(selection.get_name())
+                col_in_selection_order.append(col)
         else:
             raise NotImplementedError(
                 f"Unrecoginized type in selections: {type(selection)}"
             )
-
     if col_in_selection_order:
         result_table = result_table[col_in_selection_order]
 
@@ -157,7 +183,14 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
 
     for predicate in op.predicates:
         col = t.translate(predicate, scope, timecontext)
-        result_table = result_table[col]
+        # Due to an upstream Spark issue (SPARK-33057) we cannot
+        # directly use filter with a window operation. The workaround
+        # here is to assign a temporary column for the filter predicate,
+        # do the filtering, and then drop the temporary column.
+        filter_column = f'predicate_{guid()}'
+        result_table = result_table.withColumn(filter_column, col)
+        result_table = result_table.filter(F.col(filter_column))
+        result_table = result_table.drop(filter_column)
 
     if op.sort_keys:
         sort_cols = [
@@ -165,7 +198,9 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
         ]
         result_table = result_table.sort(*sort_cols)
 
-    return filter_by_time_context(result_table, timecontext)
+    return filter_by_time_context(
+        result_table, timecontext, adjusted_timecontext
+    )
 
 
 @compiles(ops.SortKey)

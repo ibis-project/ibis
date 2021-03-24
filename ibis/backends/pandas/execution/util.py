@@ -96,16 +96,17 @@ def coerce_to_output(
         return ibis.util.coerce_to_dataframe(result, expr.type().names)
     elif isinstance(result, pd.Series):
         return result.rename(result_name)
-    elif isinstance(result, np.ndarray):
-        return pd.Series(result, name=result_name)
     elif isinstance(expr.op(), ops.Reduction):
-        # We either wrap a scalar into a single element Series
-        # or broadcast the scalar to a multi element Series
         if index is None:
-            return pd.Series(result, name=result_name)
+            # Wrap `result` into a single-element Series.
+            return pd.Series([result], name=result_name)
         else:
+            # Broadcast `result` to a multi-element Series according to the
+            # given `index`.
             return pd.Series(
                 np.repeat(result, len(index)), index=index, name=result_name,
             )
+    elif isinstance(result, np.ndarray):
+        return pd.Series(result, name=result_name)
     else:
         raise ValueError(f"Cannot coerce_to_output. Result: {result}")
