@@ -32,7 +32,7 @@ Use ``ibis.spark.connect`` to create a client.
 .. autosummary::
    :toctree: ../generated/
 
-   connect
+   Backend.connect
    SparkClient.database
    SparkClient.list_databases
    SparkClient.list_tables
@@ -51,7 +51,7 @@ Use ``ibis.pyspark.connect`` to create a client.
 .. autosummary::
    :toctree: ../generated/
 
-   connect
+   Backend.connect
    PySparkClient.database
    PySparkClient.list_databases
    PySparkClient.list_tables

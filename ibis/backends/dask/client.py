@@ -164,16 +164,16 @@ class DaskDatabase(client.Database):
 
 
 class DaskClient(client.Client):
-
-    dialect = None  # defined in ibis.dask.api
-
-    def __init__(self, dictionary: Dict[str, dd.DataFrame]):
+    def __init__(self, backend, dictionary: Dict[str, dd.DataFrame]):
+        self.dialect = backend.dialect
+        self.database_class = backend.database_class
+        self.table_class = backend.table_class
         self.dictionary = dictionary
 
     def table(self, name: str, schema: sch.Schema = None) -> DaskTable:
         df = self.dictionary[name]
         schema = sch.infer(df, schema=schema)
-        return DaskTable(name, schema, self).to_expr()
+        return self.table_class(name, schema, self).to_expr()
 
     def execute(
         self,
@@ -216,7 +216,7 @@ class DaskClient(client.Client):
 
     def database(self, name: str = None) -> DaskDatabase:
         """Construct a database called `name`."""
-        return DaskDatabase(name, self)
+        return self.database_class(name, self)
 
     def list_tables(self, like: str = None) -> List[str]:
         """List the available tables."""

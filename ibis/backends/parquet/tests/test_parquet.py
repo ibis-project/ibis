@@ -7,7 +7,7 @@ from pandas.util import testing as tm
 
 import ibis
 from ibis.backends.base_file import FileDatabase
-from ibis.backends.parquet import ParquetClient, ParquetTable
+from ibis.backends.parquet import ParquetTable
 
 pytestmark = pytest.mark.skipif(
     sys.platform == 'win32', reason='See ibis issue #1698'
@@ -48,7 +48,7 @@ def test_client(tmpdir, file_backends_data):
         table = pa.Table.from_pandas(v)
         pq.write_table(table, str(f))
 
-    c = ParquetClient(tmpdir)
+    c = ibis.parquet.connect(tmpdir)
     assert c.list_databases() == ['pq']
     assert c.database().pq.list_tables() == ['close', 'open']
 
@@ -102,7 +102,7 @@ def test_write(transformed, tmpdir):
     assert path.exists()
 
     # readback
-    c = ParquetClient(str(tpath)).database()
+    c = ibis.parquet.connect(str(tpath)).database()
     result = c.list_databases()
     assert result == []
 

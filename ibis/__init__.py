@@ -54,7 +54,6 @@ for entry_point in pkg_resources.iter_entry_points(
         pass
     else:
         backend = backend_module.Backend()
-        # In the future we will set the backend and to the Backend instance,
-        # and just expose it, not the module:
-        # >>> setattr(ibis, entry_point.name, backend)
-        setattr(ibis, entry_point.name, backend_module)
+        setattr(ibis, entry_point.name, backend)
+        with ibis.config.config_prefix(entry_point.name):
+            backend.register_options()

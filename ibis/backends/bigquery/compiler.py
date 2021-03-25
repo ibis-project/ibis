@@ -76,20 +76,12 @@ class BigQueryQueryBuilder(comp.QueryBuilder):
         )
 
 
-def build_ast(expr, context):
-    builder = BigQueryQueryBuilder(expr, context=context)
-    return builder.get_result()
-
-
-def to_sql(expr, context):
-    query_ast = build_ast(expr, context)
-    compiled = query_ast.compile()
-    return compiled
-
-
 class BigQueryContext(comp.QueryContext):
     def _to_sql(self, expr, ctx):
-        return to_sql(expr, context=ctx)
+        builder = BigQueryQueryBuilder(expr, context=ctx)
+        query_ast = builder.get_result()
+        compiled = query_ast.compile()
+        return compiled
 
 
 def _extract_field(sql_attr):
@@ -635,6 +627,3 @@ def bigquery_compile_notall(translator, expr):
 
 class BigQueryDialect(comp.Dialect):
     translator = BigQueryExprTranslator
-
-
-dialect = BigQueryDialect

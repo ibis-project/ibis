@@ -6,7 +6,6 @@ import pytest
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-from ibis.backends.csv import CSVClient
 from ibis.backends.pandas.tests.conftest import TestConf as PandasTest
 
 
@@ -70,7 +69,7 @@ def csv(tmpdir, file_backends_data):
         f = csv / '{}.csv'.format(k)
         v.to_csv(str(f), index=False)
 
-    return CSVClient(tmpdir).database()
+    return ibis.csv.connect(tmpdir).database()
 
 
 @pytest.fixture
@@ -80,4 +79,4 @@ def csv2(tmpdir, file_backends_data):
     f = csv2 / 'df.csv'
     df.to_csv(str(f), index=False)
 
-    return CSVClient(tmpdir).database()
+    return ibis.csv.connect(tmpdir).database()

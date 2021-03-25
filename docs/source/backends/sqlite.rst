@@ -33,7 +33,7 @@ Use ``ibis.sqlite.connect`` to create a SQLite client.
 .. autosummary::
    :toctree: ../generated/
 
-   connect
+   Backend.connect
    SQLiteClient.attach
    SQLiteClient.database
    SQLiteClient.list_tables

@@ -16,7 +16,7 @@ from ibis.client import Database, DatabaseEntity, Query, SQLClient
 from ibis.config import options
 from ibis.util import log
 
-from .compiler import ClickhouseDialect, build_ast
+from .compiler import build_ast
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
 base_typename_re = re.compile(r"(\w+)")
@@ -215,13 +215,12 @@ class ClickhouseDatabaseTable(ops.DatabaseTable):
 class ClickhouseClient(SQLClient):
     """An Ibis client interface that uses Clickhouse"""
 
-    database_class = ClickhouseDatabase
-    query_class = ClickhouseQuery
-    dialect = ClickhouseDialect
-    table_class = ClickhouseDatabaseTable
-    table_expr_class = ClickhouseTable
-
-    def __init__(self, *args, **kwargs):
+    def __init__(self, backend, *args, **kwargs):
+        self.database_class = backend.database_class
+        self.query_class = backend.query_class
+        self.dialect = backend.dialect
+        self.table_class = backend.table_class
+        self.table_expr_class = backend.table_expr_class
         self.con = _DriverClient(*args, **kwargs)
 
     def _build_ast(self, expr, context):

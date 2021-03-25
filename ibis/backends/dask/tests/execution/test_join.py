@@ -8,7 +8,7 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 
-from ... import connect
+from ... import Backend
 
 # Note - computations in this file use the single threadsed scheduler (instead
 # of the default multithreaded scheduler) in order to avoid a flaky interaction
@@ -444,7 +444,7 @@ def test_select_on_unambiguous_join(how, func, npartitions):
         pd.DataFrame(dict(a1=[2, 3, 4], b2=list("abc"))),
         npartitions=npartitions,
     )
-    con = connect({"t": df_t, "s": df_s})
+    con = Backend().connect({"t": df_t, "s": df_s})
     t = con.table("t")
     s = con.table("s")
     method = getattr(t, "{}_join".format(how))
@@ -483,7 +483,7 @@ def test_select_on_unambiguous_asof_join(func, npartitions):
         pd.DataFrame(dict(a1=[2, 3, 4], b2=date_range("20171230", periods=3))),
         npartitions=npartitions,
     )
-    con = connect({"t": df_t, "s": df_s})
+    con = Backend().connect({"t": df_t, "s": df_s})
     t = con.table("t")
     s = con.table("s")
     join = t.asof_join(s, t.b1 == s.b2)

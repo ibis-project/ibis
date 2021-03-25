@@ -14,9 +14,6 @@ from ibis.backends.base_file import FileClient
 from ibis.backends.pandas import PandasDialect
 from ibis.backends.pandas.core import execute, execute_node
 
-dialect = PandasDialect
-
-
 # TODO(jreback) complex types are not implemented
 _arrow_dtypes = {
     'int8': dt.Int8,
@@ -59,20 +56,11 @@ def infer_parquet_schema(schema):
     return sch.schema(pairs)
 
 
-def connect(dictionary):
-    return ParquetClient(dictionary)
-
-
 class ParquetTable(ops.DatabaseTable):
     pass
 
 
 class ParquetClient(FileClient):
-
-    dialect = dialect
-    extension = 'parquet'
-    table_class = ParquetTable
-
     def insert(self, path, expr, **kwargs):
         path = self.root / path
         df = execute(expr)
@@ -111,16 +99,20 @@ class ParquetClient(FileClient):
         return parse_version(pa.__version__)
 
 
-@execute_node.register(ParquetClient.table_class, ParquetClient)
+class Backend(BaseBackend):
+    name = 'parquet'
+    builder = None
+    dialect = PandasDialect
+    extension = 'parquet'
+    table_class = ParquetTable
+
+    def connect(self, dictionary):
+        return ParquetClient(backend=self, root=dictionary)
+
+
+@execute_node.register(Backend.table_class, ParquetClient)
 def parquet_read_table(op, client, scope, **kwargs):
     path = client.dictionary[op.name]
     table = pq.read_table(str(path))
     df = table.to_pandas()
     return df
-
-
-class Backend(BaseBackend):
-    name = 'parquet'
-    builder = None
-    dialect = None
-    connect = connect

@@ -7,7 +7,7 @@ import pytest
 import ibis
 import ibis.expr.datatypes as dt
 
-from ... import connect, execute
+from ... import Backend, execute
 
 
 @pytest.fixture(scope="module")
@@ -28,7 +28,7 @@ def struct_client(value):
             "value": [1, 2, 3],
         }
     )
-    return connect({"t": df})
+    return Backend().connect({"t": df})
 
 
 @pytest.fixture
