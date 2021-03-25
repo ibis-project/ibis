@@ -9,7 +9,7 @@ import itertools
 import math
 from io import StringIO
 from operator import add, mul, sub
-from typing import Optional
+from typing import Optional, Union
 
 import ibis
 import ibis.common.exceptions as com
@@ -757,7 +757,9 @@ _map_interval_op_to_op = {
 }
 
 
-def _replace_interval_with_scalar(expr):
+def _replace_interval_with_scalar(
+    expr: Union[ir.Expr, dt.Interval, float]
+) -> Union[ir.FloatingScalar, float]:
     """
     Good old Depth-First Search to identify the Interval and IntervalValue
     components of the expression and return a comparable scalar expression.
