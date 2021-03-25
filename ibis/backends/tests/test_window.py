@@ -491,9 +491,11 @@ def test_ungrouped_unbounded_window(
 
 
 @pytest.mark.xfail_unsupported
-# Postgres does not support range window that is bounded on both sides
-@pytest.mark.xfail_backends(['postgres'])
-@pytest.mark.skip_backends(['pandas', 'pyspark'], reason='Issue #2709')
+# Postgres and Impala do not support range window bounded on both sides
+@pytest.mark.xfail_backends(['postgres', 'impala'])
+@pytest.mark.skip_backends(
+    ['pandas', 'csv', 'parquet', 'pyspark'], reason='Issue #2709'
+)
 def test_grouped_bounded_range_window(backend, alltypes, df, con):
     if not backend.supports_window_operations:
         pytest.skip(
