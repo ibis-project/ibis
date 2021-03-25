@@ -8,7 +8,8 @@ import datetime
 import itertools
 import math
 from io import StringIO
-from typing import Optional
+from operator import add, mul, sub
+from typing import Optional, Union
 
 import ibis
 import ibis.common.exceptions as com
@@ -733,6 +734,77 @@ def from_unixtime(translator, expr):
 # Semi/anti-join supports
 
 
+_map_interval_to_microseconds = {
+    'W': 604800000000,
+    'D': 86400000000,
+    'h': 3600000000,
+    'm': 60000000,
+    's': 1000000,
+    'ms': 1000,
+    'us': 1,
+    'ns': 0.001,
+}
+
+
+_map_interval_op_to_op = {
+    # Literal Intervals have two args, i.e.
+    # Literal(1, Interval(value_type=int8, unit='D', nullable=True))
+    # Parse both args and multipy 1 * _map_interval_to_microseconds['D']
+    ops.Literal: mul,
+    ops.IntervalMultiply: mul,
+    ops.IntervalAdd: add,
+    ops.IntervalSubtract: sub,
+}
+
+
+def _replace_interval_with_scalar(
+    expr: Union[ir.Expr, dt.Interval, float]
+) -> Union[ir.FloatingScalar, float]:
+    """
+    Good old Depth-First Search to identify the Interval and IntervalValue
+    components of the expression and return a comparable scalar expression.
+
+    Parameters
+    ----------
+    expr : float or expression of intervals
+        For example, ``ibis.interval(days=1) + ibis.interval(hours=5)``
+
+    Returns
+    -------
+    preceding : float or ir.FloatingScalar, depending upon the expr
+    """
+    try:
+        expr_op = expr.op()
+    except AttributeError:
+        expr_op = None
+
+    if not isinstance(expr, (dt.Interval, ir.IntervalValue)):
+        # Literal expressions have op method but native types do not.
+        if isinstance(expr_op, ops.Literal):
+            return expr_op.value
+        else:
+            return expr
+    elif isinstance(expr, dt.Interval):
+        try:
+            microseconds = _map_interval_to_microseconds[expr.unit]
+            return microseconds
+        except KeyError:
+            raise ValueError(
+                "Expected preceding values of week(), "
+                + "day(), hour(), minute(), second(), millisecond(), "
+                + "microseconds(), nanoseconds(); got {}".format(expr)
+            )
+    elif expr_op.args and isinstance(expr, ir.IntervalValue):
+        if len(expr_op.args) > 2:
+            raise com.NotImplementedError(
+                "'preceding' argument cannot be parsed."
+            )
+        left_arg = _replace_interval_with_scalar(expr_op.args[0])
+        right_arg = _replace_interval_with_scalar(expr_op.args[1])
+        method = _map_interval_op_to_op[type(expr_op)]
+        return method(left_arg, right_arg)
+
+
 def exists_subquery(translator, expr):
     op = expr.op()
     ctx = translator.context
@@ -825,6 +897,18 @@ def time_range_to_range_window(translator, window):
         raise com.IbisInputError(
             "Expected 1 order-by variable, got {}".format(len(order_by_vars))
         )
+
+    order_var = window._order_by[0].op().args[0]
+    timestamp_order_var = order_var.cast('int64')
+    window = window._replace(order_by=timestamp_order_var, how='range')
+
+    # Need to change preceding interval expression to scalars
+    preceding = window.preceding
+    if isinstance(preceding, ir.IntervalScalar):
+        new_preceding = _replace_interval_with_scalar(preceding)
+        window = window._replace(preceding=new_preceding)
+
+    return window
 
 
 def format_window(translator, op, window):
