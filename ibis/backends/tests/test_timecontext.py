@@ -3,26 +3,13 @@ import pandas.testing as tm
 import pytest
 
 import ibis
-import ibis.expr.datatypes as dt
 from ibis.config import option_context
-from ibis.udf.vectorized import analytic, reduction
+
+from .test_vectorized_udf import calc_mean, demean_struct
 
 GROUPBY_COL = 'month'
 ORDERBY_COL = 'timestamp_col'
 TARGET_COL = 'float_col'
-
-
-@reduction(input_type=[dt.double], output_type=dt.double)
-def calc_mean(series):
-    return series.mean()
-
-
-@analytic(
-    input_type=[dt.double, dt.double],
-    output_type=dt.Struct(['demean', 'demean_weight'], [dt.double, dt.double]),
-)
-def demean_struct(v, w):
-    return v - v.mean(), w - w.mean()
 
 
 @pytest.fixture

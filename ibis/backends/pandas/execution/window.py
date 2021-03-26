@@ -202,8 +202,8 @@ def trim_window_result(data, timecontext: Optional[TimeContext]):
     # noop if timecontext is None
     if not timecontext:
         return data
-    assert isinstance(data, pd.Series) or isinstance(
-        data, pd.DataFrame
+    assert isinstance(
+        data, (pd.Series, pd.DataFrame)
     ), 'window computed columns is not a pd.Series nor a pd.DataFrame'
 
     # reset multiindex and turn series into a dateframe
@@ -225,7 +225,7 @@ def trim_window_result(data, timecontext: Optional[TimeContext]):
         name = data.name if data.name else 0
         index_columns = list(subset.columns.difference([name]))
     else:
-        name = data.columns.tolist()
+        name = data.columns
         index_columns = list(subset.columns.difference(name))
 
     # set the correct index for return Seires
@@ -371,16 +371,16 @@ def execute_window_op(
         clients=clients,
         **kwargs,
     )
-    computed = post_process(
+    result = post_process(
         result, data, ordering_keys, grouping_keys, adjusted_timecontext,
     )
     assert len(data) == len(
-        computed
+        result
     ), 'input data source and computed column do not have the same length'
 
     # trim data to original time context
-    computed = trim_window_result(computed, timecontext)
-    return computed
+    result = trim_window_result(result, timecontext)
+    return result
 
 
 @execute_node.register(
