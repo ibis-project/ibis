@@ -57,7 +57,7 @@ def test_mutate(t, df):
     )
 
 
-@pytest.mark.xfail(reason='TODO - windowing -  #2553')
+@pytest.mark.xfail(reason='TODO - windowing - #2553')
 def test_project_scope_does_not_override(t, df):
     col = t.plain_int64
     expr = t[

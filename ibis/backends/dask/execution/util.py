@@ -1,13 +1,17 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
 import dask.dataframe as dd
+import dask.delayed
 import pandas as pd
 from dask.dataframe.groupby import SeriesGroupBy
 
+import ibis.backends.pandas.execution.util as pd_util
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.util
+from ibis.backends.pandas.client import ibis_dtype_to_pandas
 from ibis.backends.pandas.trace import TraceTwoLevelDispatcher
+from ibis.expr import datatypes as dt
 from ibis.expr import types as ir
 from ibis.expr.scope import Scope
 from ibis.expr.typing import TimeContext
@@ -31,7 +35,13 @@ def register_types_to_dispatcher(
             dispatcher.register(ibis_op, *types_to_register)(fn)
 
 
-def make_selected_obj(gs: SeriesGroupBy):
+def make_meta_series(dtype, name=None, index_name=None):
+    return pd.Series(
+        [], index=pd.Index([], name=index_name), dtype=dtype, name=name,
+    )
+
+
+def make_selected_obj(gs: SeriesGroupBy) -> Union[dd.DataFrame, dd.Series]:
     """
     When you select a column from a `pandas.DataFrameGroupBy` the underlying
     `.obj` reflects that selection. This function emulates that behavior.
@@ -47,23 +57,181 @@ def make_selected_obj(gs: SeriesGroupBy):
         ]
 
 
-def maybe_wrap_scalar(result: Any, expr: ir.Expr) -> Any:
-    """
-    A partial implementation of `coerce_to_output` in the pandas backend.
+def coerce_to_output(
+    result: Any, expr: ir.Expr, index: Optional[pd.Index] = None
+) -> Union[dd.Series, dd.DataFrame]:
+    """Cast the result to either a Series of DataFrame, renaming as needed.
 
-    Currently only wraps scalars, but will change when udfs are added to the
-    dask backend.
+    Reimplementation of `coerce_to_output` in the pandas backend, but
+    creates dask objects and adds special handling for dd.Scalars.
+
+    Parameters
+    ----------
+    result: Any
+        The result to cast
+    expr: ibis.expr.types.Expr
+        The expression associated with the result
+    index: pd.Index
+        Optional. If passed, scalar results will be broadcasted according
+        to the index.
+
+    Returns
+    -------
+    result: A `dd.Series` or `dd.DataFrame`
+
+    Raises
+    ------
+    ValueError
+        If unable to coerce result
+
+    Examples
+    --------
+    For dataframe outputs, see ``_coerce_to_dataframe``. Examples below use
+    pandas objects for legibility, but functionality is the same on dask
+    objects.
+
+    >>> coerce_to_output(pd.Series(1), expr)
+    0    1
+    Name: result, dtype: int64
+    >>> coerce_to_output(1, expr)
+    0    1
+    Name: result, dtype: int64
+    >>> coerce_to_output(1, expr, [1,2,3])
+    1    1
+    2    1
+    3    1
+    Name: result, dtype: int64
+    >>> coerce_to_output([1,2,3], expr)
+    0    [1, 2, 3]
+    Name: result, dtype: object
     """
     result_name = expr.get_name()
-    if isinstance(result, dd.core.Scalar) and isinstance(
-        expr.op(), ops.Reduction
-    ):
-        # TODO - computation
-        return dd.from_pandas(
-            pd.Series(result.compute(), name=result_name), npartitions=1
+    dataframe_exprs = (
+        ir.DestructColumn,
+        ir.StructColumn,
+        ir.DestructScalar,
+        ir.StructScalar,
+    )
+    if isinstance(expr, dataframe_exprs):
+        return _coerce_to_dataframe(
+            result, expr.type().names, expr.type().types
         )
-    else:
+    elif isinstance(result, (pd.Series, dd.Series)):
+        # Series from https://github.com/ibis-project/ibis/issues/2711
         return result.rename(result_name)
+    elif isinstance(expr.op(), ops.Reduction):
+        if isinstance(result, dd.core.Scalar):
+            # wrap the scalar in a series
+            out_dtype = _pandas_dtype_from_dd_scalar(result)
+            out_len = 1 if index is None else len(index)
+            meta = make_meta_series(dtype=out_dtype, name=result_name)
+            series = dd.from_delayed(
+                _wrap_dd_scalar(result, result_name, out_len), meta=meta,
+            )
+
+            return series
+        else:
+            return dd.from_pandas(
+                pd_util.coerce_to_output(result, expr, index), npartitions=1
+            )
+    else:
+        raise ValueError(f"Cannot coerce_to_output. Result: {result}")
+
+
+@dask.delayed
+def _wrap_dd_scalar(x, name=None, series_len=1):
+    return pd.Series([x for _ in range(series_len)], name=name)
+
+
+def _pandas_dtype_from_dd_scalar(x: dd.core.Scalar):
+    try:
+        return x.dtype
+    except AttributeError:
+        return pd.Series([x._meta]).dtype
+
+
+def _coerce_to_dataframe(
+    data: Any,
+    column_names: List[str],
+    types: Optional[List[dt.DataType]] = None,
+) -> dd.DataFrame:
+    """
+    Clone of ibis.util.coerce_to_dataframe that deals well with dask types
+
+    Coerce the following shapes to a DataFrame.
+
+    The following shapes are allowed:
+    (1) A list/tuple of Series -> each series is a column
+    (2) A list/tuple of scalars -> each scalar is a column
+    (3) A Dask Series of list/tuple -> each element inside becomes a column
+    (4) dd.DataFrame -> the data is unchanged
+
+    Examples
+    --------
+    Note: these examples demonstrate functionality with pandas objects in order
+    to make them more legible, but this works the same with dask.
+
+    >>> coerce_to_dataframe(pd.DataFrame({'a': [1, 2, 3]}), ['b'])
+       b
+    0  1
+    1  2
+    2  3
+    >>> coerce_to_dataframe(pd.Series([[1, 2, 3]]), ['a', 'b', 'c'])
+       a  b  c
+    0  1  2  3
+    >>> coerce_to_dataframe(pd.Series([range(3), range(3)]), ['a', 'b', 'c'])
+       a  b  c
+    0  0  1  2
+    1  0  1  2
+    >>> coerce_to_dataframe([pd.Series(x) for x in [1, 2, 3]], ['a', 'b', 'c'])
+       a  b  c
+    0  1  2  3
+    >>>  coerce_to_dataframe([1, 2, 3], ['a', 'b', 'c'])
+       a  b  c
+    0  1  2  3
+    """
+    if isinstance(data, dd.DataFrame):
+        result = data
+
+    elif isinstance(data, dd.Series):
+        # This takes a series where the values are iterables and converts each
+        # value into its own row in a new dataframe.
+
+        # NOTE - We add a detailed meta here so we do not drop the key index
+        # downstream. This seems to be fixed in versions of dask > 2020.12.0
+        dtypes = map(ibis_dtype_to_pandas, types)
+
+        series = [
+            data.apply(
+                _select_item_in_iter,
+                selection=i,
+                meta=make_meta_series(dtype, index_name=data.index.name),
+            )
+            for i, dtype in enumerate(dtypes)
+        ]
+        result = dd.concat(series, axis=1)
+
+    elif isinstance(data, (tuple, list)):
+        if len(data) == 0:
+            result = dd.from_pandas(
+                pd.DataFrame(columns=column_names), npartitions=1
+            )
+        elif isinstance(data[0], dd.Series):
+            result = dd.concat(data, axis=1)
+        else:
+            result = dd.from_pandas(
+                pd.concat([pd.Series([v]) for v in data], axis=1),
+                npartitions=1,
+            )
+    else:
+        raise ValueError(f"Cannot coerce to DataFrame: {data}")
+
+    result.columns = column_names
+    return result
+
+
+def _select_item_in_iter(t, selection):
+    return t[selection]
 
 
 def safe_concat(dfs: List[Union[dd.Series, dd.DataFrame]]) -> dd.DataFrame:
@@ -79,13 +247,19 @@ def safe_concat(dfs: List[Union[dd.Series, dd.DataFrame]]) -> dd.DataFrame:
 
     See https://github.com/dask/dask/blob/2c2e837674895cafdb0612be81250ef2657d947e/dask/dataframe/multi.py#L907 # noqa
 
-    Note - this is likely to be quite slow, but this should be hit rarely in
-    real usage. A situtation that triggeres this slow path is aggregations
-    where aggregations return different numbers of rows (see
-    `test_aggregation_group_by` for a specific example).
-
+    Note - Repeatedly joining dataframes is likely to be quite slow, but this
+    should be hit rarely in real usage. A situtation that triggeres this slow
+    path is aggregations where aggregations return different numbers of rows
+    (see `test_aggregation_group_by` for a specific example).
     TODO - performance.
     """
+    if len(dfs) == 1:
+        maybe_df = dfs[0]
+        if isinstance(maybe_df, dd.Series):
+            return maybe_df.to_frame()
+        else:
+            return maybe_df
+
     lengths = list(map(len, dfs))
     if len(set(lengths)) != 1:
         result = dfs[0].to_frame()
@@ -142,3 +316,16 @@ def compute_sorted_frame(
     result = df.assign(**{sort_col_name: temporary_column})
     result = result.set_index(sort_col_name).reset_index(drop=True)
     return result
+
+
+def assert_identical_grouping_keys(*args):
+    indices = [arg.index for arg in args]
+    # Depending on whether groupby was called like groupby("col") or
+    # groupby(["cold"]) index will be a string or a list
+    if isinstance(indices[0], list):
+        indices = [tuple(index) for index in indices]
+    grouping_keys = set(indices)
+    if len(grouping_keys) != 1:
+        raise AssertionError(
+            f"Differing grouping keys passed: {grouping_keys}"
+        )

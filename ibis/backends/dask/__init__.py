@@ -10,6 +10,7 @@ from ibis.backends.base import BaseBackend
 from ibis.backends.base_sqlalchemy.compiler import Dialect
 from ibis.backends.pandas import _flatten_subclass_tree
 
+from . import udf  # noqa: F401,F403 - register dispatchers
 from .client import DaskClient, DaskDatabase, DaskTable
 from .execution import execute, execute_node  # noqa F401
 

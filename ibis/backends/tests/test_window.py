@@ -488,3 +488,51 @@ def test_ungrouped_unbounded_window(
     left, right = result.val, expected.val
 
     backend.assert_series_equal(left, right)
+
+
+@pytest.mark.xfail_unsupported
+# Postgres and Impala do not support range window bounded on both sides
+@pytest.mark.xfail_backends(['postgres', 'impala'])
+@pytest.mark.skip_backends(
+    ['pandas', 'csv', 'parquet', 'pyspark'], reason='Issue #2709'
+)
+def test_grouped_bounded_range_window(backend, alltypes, df, con):
+    if not backend.supports_window_operations:
+        pytest.skip(
+            'Backend {} does not support window operations'.format(backend)
+        )
+
+    # Explanation of the range window spec below:
+    #
+    # `preceding=10, following=0, order_by='id'``:
+    #     The window at a particular row (call its `id` value x) will contain
+    #     some other row (call its `id` value y) if x-10 <= y <= x.
+    # `group_by='string_col'`:
+    #     The window at a particular row will only contain other rows that
+    #     have the same 'string_col' value.
+    #
+    window = ibis.range_window(
+        preceding=10, following=0, order_by='id', group_by='string_col',
+    )
+    expr = alltypes.mutate(val=alltypes.double_col.sum().over(window))
+    result = expr.execute().set_index('id').sort_index()
+
+    expected = (
+        df.assign(
+            # Mimic our range window spec using .apply()
+            val=df.apply(
+                lambda x: df.double_col[
+                    (df.string_col == x.string_col)  # Grouping by string_col
+                    & ((x.id - 10) <= df.id)  # Corresponds to `preceding=10`
+                    & (df.id <= x.id)  # Corresponds to `following=0`
+                ].sum(),
+                axis=1,
+            )
+        )
+        .set_index('id')
+        .sort_index()
+    )
+
+    left, right = result.val, expected.val
+
+    backend.assert_series_equal(left, right)

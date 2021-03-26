@@ -57,7 +57,7 @@ def test_array_collect(t, df):
 
 
 @pytest.mark.xfail(
-    raises=NotImplementedError, reason='TODO - windowing -  #2553'
+    raises=NotImplementedError, reason='TODO - windowing - #2553'
 )
 def test_array_collect_rolling_partitioned(t, df):
     window = ibis.trailing_window(1, order_by=t.plain_int64)

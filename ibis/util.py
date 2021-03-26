@@ -94,6 +94,27 @@ def coerce_to_dataframe(data: Any, names: List[str]) -> pd.DataFrame:
     Returns
     -------
     pd.DataFrame
+
+    Examples
+    --------
+    >>> coerce_to_dataframe(pd.DataFrame({'a': [1, 2, 3]}), ['b'])
+       b
+    0  1
+    1  2
+    2  3
+    >>> coerce_to_dataframe(pd.Series([[1, 2, 3]]), ['a', 'b', 'c'])
+       a  b  c
+    0  1  2  3
+    >>> coerce_to_dataframe(pd.Series([range(3), range(3)]), ['a', 'b', 'c'])
+       a  b  c
+    0  0  1  2
+    1  0  1  2
+    >>> coerce_to_dataframe([pd.Series(x) for x in [1, 2, 3]], ['a', 'b', 'c'])
+       a  b  c
+    0  1  2  3
+    >>>  coerce_to_dataframe([1, 2, 3], ['a', 'b', 'c'])
+       a  b  c
+    0  1  2  3
     """
     if isinstance(data, pd.DataFrame):
         result = data
