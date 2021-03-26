@@ -22,7 +22,7 @@ from ibis.expr.typing import TimeContext
 
 from ..core import execute
 from ..dispatch import execute_node
-from .util import maybe_wrap_scalar, safe_concat
+from .util import coerce_to_output, safe_concat
 
 
 # TODO - aggregations - #2553
@@ -77,7 +77,7 @@ def execute_aggregation_dataframe(
     pieces = []
     for metric in op.metrics:
         piece = execute(metric, scope=scope, timecontext=timecontext, **kwargs)
-        piece = maybe_wrap_scalar(piece, metric)
+        piece = coerce_to_output(piece, metric)
         pieces.append(piece)
 
     # We must perform this check here otherwise dask will throw a ValueError
