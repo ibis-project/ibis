@@ -193,7 +193,7 @@ def test_context_adjustment_multi_window(time_table, time_df3):
 
 @pytest.mark.xfail(reason="TODO - windowing - #2553")
 def test_context_adjustment_window_groupby_id(time_table, time_df3):
-    """ This test case is meant to test trim_window_series method
+    """ This test case is meant to test trim_window_result method
         in dask/execution/window.py to see if it could trim Series
         correctly with groupby params
     """

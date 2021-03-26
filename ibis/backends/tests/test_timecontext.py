@@ -5,7 +5,7 @@ import pytest
 import ibis
 import ibis.expr.datatypes as dt
 from ibis.config import option_context
-from ibis.udf.vectorized import reduction
+from ibis.udf.vectorized import analytic, reduction
 
 GROUPBY_COL = 'month'
 ORDERBY_COL = 'timestamp_col'
@@ -15,6 +15,14 @@ TARGET_COL = 'float_col'
 @reduction(input_type=[dt.double], output_type=dt.double)
 def calc_mean(series):
     return series.mean()
+
+
+@analytic(
+    input_type=[dt.double, dt.double],
+    output_type=dt.Struct(['demean', 'demean_weight'], [dt.double, dt.double]),
+)
+def demean_struct(v, w):
+    return v - v.mean(), w - w.mean()
 
 
 @pytest.fixture
@@ -74,4 +82,24 @@ def test_context_adjustment_filter_before_window(alltypes, df, context):
         expected = filter_by_time_context(expected, context)
         expected = expected.reset_index(drop=True)
 
+        tm.assert_frame_equal(result, expected)
+
+
+@pytest.mark.only_on_backends(['pandas'])
+def test_context_adjustment_multi_col_udf_non_grouped(alltypes, df, context):
+    with option_context('context_adjustment.time_col', 'timestamp_col'):
+        w = ibis.window(preceding=None, following=None)
+
+        result = alltypes.mutate(
+            demean_struct(alltypes['double_col'], alltypes['int_col'])
+            .over(w)
+            .destructure()
+        ).execute(timecontext=context)
+
+        expected = alltypes.mutate(
+            demean=alltypes['double_col']
+            - alltypes['double_col'].mean().over(w),
+            demean_weight=alltypes['int_col']
+            - alltypes['int_col'].mean().over(w),
+        ).execute(timecontext=context)
         tm.assert_frame_equal(result, expected)
