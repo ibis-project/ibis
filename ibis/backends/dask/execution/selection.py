@@ -8,7 +8,6 @@ import operator
 from typing import Optional
 
 import dask.dataframe as dd
-import numpy as np
 import pandas
 from toolz import concatv
 
@@ -25,7 +24,8 @@ from ibis.expr.typing import TimeContext
 
 from ..core import execute
 from ..dispatch import execute_node
-from ..execution import constants, util
+from ..execution import constants
+from ..execution.util import coerce_to_output, compute_sorted_frame
 
 
 @compute_projection.register(ir.ScalarExpr, ops.Selection, dd.DataFrame)
@@ -117,13 +117,10 @@ def compute_projection_column_expr(
     )
 
     result = execute(expr, scope=scope, timecontext=timecontext, **kwargs)
+    result = coerce_to_output(result, expr, data.index)
     assert result_name is not None, 'Column selection name is None'
-    if np.isscalar(result):
-        series = dd.from_array(np.repeat(result, len(data.index)))
-        series.name = result_name
-        series.index = data.index
-        return series
-    return result.rename(result_name)
+
+    return result
 
 
 compute_projection.register(ir.TableExpr, ops.Selection, dd.DataFrame)(
@@ -154,8 +151,7 @@ def execute_selection_dataframe(
             )
             data_pieces.append(dask_object)
 
-        new_pieces = [piece for piece in data_pieces]
-        result = dd.concat(new_pieces, axis=1)
+        result = dd.concat(data_pieces, axis=1)
 
     if predicates:
         predicates = _compute_predicates(
@@ -180,7 +176,7 @@ def execute_selection_dataframe(
             raise NotImplementedError(
                 "Descending sort is not supported for the Dask backend"
             )
-        result = util.compute_sorted_frame(
+        result = compute_sorted_frame(
             result,
             order_by=sort_key,
             scope=scope,

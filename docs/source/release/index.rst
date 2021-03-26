@@ -13,6 +13,7 @@ Release Notes
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
 * :bug:`2712` Fix time context trimming error for multi column udfs in pandas backend
+* :bug:`2710` Fix error during compilation of range_window in base_sql backends (:issue:`2608`)
 * :feature:`2687` Support Spark filter with window operation
 * :bug:`2696` Fix wrong row indexing in the result for 'window after filter' for timecontext adjustment
 * :bug:`2702` Fix `aggregate` exploding the output of Reduction ops that return a list/ndarray
