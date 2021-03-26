@@ -208,7 +208,7 @@ def trim_window_result(
         data, (pd.Series, pd.DataFrame)
     ), 'window computed columns is not a pd.Series nor a pd.DataFrame'
 
-    # reset multiindex and turn series into a dateframe
+    # reset multiindex, convert Series into a DataFrame
     df = data.reset_index()
 
     # Filter the data, here we preserve the time index so that when user is
@@ -230,7 +230,7 @@ def trim_window_result(
         name = data.columns
         index_columns = list(subset.columns.difference(name))
 
-    # set the correct index for return Seires / DataFrame
+    # set the correct index for return Series / DataFrame
     indexed_subset = subset.set_index(index_columns)
     return indexed_subset[name]
 
