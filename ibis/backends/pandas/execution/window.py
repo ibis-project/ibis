@@ -3,7 +3,7 @@
 import functools
 import operator
 import re
-from typing import Any, List, NoReturn, Optional
+from typing import Any, List, NoReturn, Optional, Union
 
 import pandas as pd
 import toolz
@@ -179,7 +179,9 @@ def get_aggcontext_window(
     return aggcontext
 
 
-def trim_window_result(data, timecontext: Optional[TimeContext]):
+def trim_window_result(
+    data: Union[pd.Series, pd.DataFrame], timecontext: Optional[TimeContext]
+):
     """ Trim data within time range defined by timecontext
 
         This is a util function used in ``execute_window_op``, where time
@@ -228,7 +230,7 @@ def trim_window_result(data, timecontext: Optional[TimeContext]):
         name = data.columns
         index_columns = list(subset.columns.difference(name))
 
-    # set the correct index for return Seires
+    # set the correct index for return Seires / DataFrame
     indexed_subset = subset.set_index(index_columns)
     return indexed_subset[name]
 
