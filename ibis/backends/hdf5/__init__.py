@@ -4,6 +4,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis.backends.base import BaseBackend
 from ibis.backends.base_file import FileClient
+from ibis.backends.pandas import PandasExprTranslator
 from ibis.backends.pandas.core import execute, execute_node
 
 
@@ -59,6 +60,7 @@ class Backend(BaseBackend):
     builder = None
     extension = 'h5'
     table_class = HDFTable
+    translator = PandasExprTranslator
 
     def connect(self, path):
         """Create a HDF5Client for use with Ibis

@@ -42,6 +42,7 @@ class Backend(BaseBackend):
     builder = None
     database_class = PandasDatabase
     table_class = PandasTable
+    translator = PandasExprTranslator
 
     def connect(self, dictionary):
         """Construct a pandas client from a dictionary of DataFrames.

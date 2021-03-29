@@ -62,23 +62,14 @@ class BaseBackend(abc.ABC):
             from ibis.backends.base_sqlalchemy.alchemy import AlchemyDialect
 
             dialect_class = AlchemyDialect
-            dialect_class.translator = self.translator
-        elif self.kind == 'sql':
+        elif self.kind in ('sql', 'pandas'):
             from ibis.backends.base_sqlalchemy.compiler import Dialect
 
             dialect_class = Dialect
-            dialect_class.translator = self.translator
         elif self.kind == 'spark':
             from ibis.backends.base_sql.compiler import BaseDialect
 
             dialect_class = BaseDialect
-            dialect_class.translator = self.translator
-        elif self.kind == 'pandas':
-            from ibis.backends.base_sqlalchemy.compiler import Dialect
-            from ibis.backends.pandas import PandasExprTranslator
-
-            dialect_class = Dialect
-            dialect_class.translator = PandasExprTranslator
         else:
             raise ValueError(
                 f'Backend class "{self.kind}" unknown. '
@@ -86,6 +77,7 @@ class BaseBackend(abc.ABC):
                 '"pandas" or "spark".'
             )
 
+        dialect_class.translator = self.translator
         return dialect_class
 
     @abc.abstractmethod

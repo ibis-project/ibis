@@ -11,6 +11,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend
 from ibis.backends.base_file import FileClient
+from ibis.backends.pandas import PandasExprTranslator
 from ibis.backends.pandas.core import execute, execute_node
 
 # TODO(jreback) complex types are not implemented
@@ -104,6 +105,7 @@ class Backend(BaseBackend):
     builder = None
     extension = 'parquet'
     table_class = ParquetTable
+    translator = PandasExprTranslator
 
     def connect(self, dictionary):
         return ParquetClient(backend=self, root=dictionary)
