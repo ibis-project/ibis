@@ -12,7 +12,8 @@ from pytest import param
 from ibis import literal as L  # noqa: E402
 from ibis.expr import datatypes as dt
 
-from ... import Backend, execute
+from ... import Backend
+from ...execution import execute
 
 pytestmark = pytest.mark.dask
 

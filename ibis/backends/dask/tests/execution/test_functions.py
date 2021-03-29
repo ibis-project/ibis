@@ -13,7 +13,7 @@ from dask.dataframe.utils import tm  # noqa: E402
 import ibis
 import ibis.expr.datatypes as dt  # noqa: E402
 
-from ... import execute
+from ...execution import execute
 
 pytestmark = pytest.mark.dask
 

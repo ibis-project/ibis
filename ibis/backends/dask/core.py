@@ -106,9 +106,6 @@ stored in value
 
 See ibis.common.scope for details about the implementaion.
 """
-
-from __future__ import absolute_import
-
 import functools
 from typing import Optional
 

@@ -42,6 +42,7 @@ class BaseBackend(abc.ABC):
         pass
 
     @property
+    @abc.abstractmethod
     def translator(self):
         pass
 
