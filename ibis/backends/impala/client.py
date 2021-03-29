@@ -804,6 +804,9 @@ class ImpalaClient(SQLClient):
 
         self._ensure_temp_db_exists()
 
+    def _build_ast(self, expr, context):
+        return build_ast(expr, context)
+
     def _get_hdfs(self):
         if self._hdfs is None:
             raise com.IbisError(

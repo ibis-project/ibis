@@ -46,8 +46,10 @@ from ibis.backends.base_sql.compiler import (
 )
 
 
-def build_ast(expr, context):
-    assert context is not None, 'context is None'
+def build_ast(expr, context=None):
+    from ibis.backends.spark import Backend
+    if context is None:
+        context = Backend().dialect.make_context()
     builder = SparkQueryBuilder(expr, context=context)
     return builder.get_result()
 
