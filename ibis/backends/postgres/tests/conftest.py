@@ -132,7 +132,7 @@ def intervals(con):
 def translate():
     from ibis.backends.postgres import Backend
 
-    dialect = Backend.dialect
+    dialect = Backend().dialect
     context = dialect.make_context()
     return lambda expr: dialect.translator(expr, context).get_result()
 

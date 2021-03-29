@@ -17,6 +17,7 @@ from ibis.backends.base_sql.compiler import (
 
 def _get_context():
     from ibis.backends.impala import Backend
+
     return Backend().dialect.make_context()
 
 
