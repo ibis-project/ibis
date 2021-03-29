@@ -158,10 +158,6 @@ class ImpalaExprTranslator(BaseExprTranslator):
     context_class = BaseContext
 
 
-class ImpalaDialect(BaseDialect):
-    pass
-
-
 compiles = ImpalaExprTranslator.compiles
 rewrites = ImpalaExprTranslator.rewrites
 

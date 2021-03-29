@@ -79,7 +79,7 @@ class SparkQueryBuilder(comp.QueryBuilder):
 class SparkContext(comp.QueryContext):
     def _to_sql(self, expr, ctx):
         if ctx is None:
-            ctx = SparkDialect.make_context()
+            ctx = BaseDialect.make_context()
         builder = SparkQueryBuilder(expr, context=ctx)
         ast = builder.get_result()
         query = ast.queries[0]
@@ -378,8 +378,4 @@ def spark_rewrites_is_inf(expr):
 
 
 class SparkSelect(BaseSelect):
-    translator = SparkExprTranslator
-
-
-class SparkDialect(BaseDialect):
     translator = SparkExprTranslator

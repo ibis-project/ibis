@@ -7,7 +7,6 @@ from dask.dataframe import DataFrame
 
 import ibis.config
 from ibis.backends.base import BaseBackend
-from ibis.backends.base_sqlalchemy.compiler import Dialect
 from ibis.backends.pandas import _flatten_subclass_tree
 
 from . import udf  # noqa: F401,F403 - register dispatchers
@@ -15,6 +14,8 @@ from .client import DaskClient, DaskDatabase, DaskTable
 from .execution import execute, execute_node  # noqa F401
 
 
+# TODO This is a copy of PandasExprTranslator, can we remove it and use
+# the pandas translator instead?
 class DaskExprTranslator:
     # get the dispatched functions from the execute_node dispatcher and compute
     # and flatten the type tree of the first argument which is always the Node
@@ -27,17 +28,11 @@ class DaskExprTranslator:
     _rewrites = {}
 
 
-class DaskDialect(Dialect):
-
-    translator = DaskExprTranslator
-
-
 class Backend(BaseBackend):
     name = 'dask'
+    kind = 'pandas'
     builder = None
-    # XXX dialect in client was None. Maybe to avoid circular imports
-    # since it's define here and not in `compile.py`? (same in pandas backend)
-    dialect = DaskDialect
+    translator = DaskExprTranslator
     database_class = DaskDatabase
     table_class = DaskTable
 

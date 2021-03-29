@@ -8,14 +8,15 @@ from .client import (
     SparkQuery,
     SparkTable,
 )
-from .compiler import SparkDialect, SparkQueryBuilder
+from .compiler import SparkExprTranslator, SparkQueryBuilder
 from .udf import udf  # noqa: F401
 
 
 class Backend(BaseBackend):
     name = 'spark'
+    kind = 'spark'
     builder = SparkQueryBuilder
-    dialect = SparkDialect
+    translator = SparkExprTranslator
     database_class = SparkDatabase
     query_class = SparkQuery
     table_class = SparkDatabaseTable

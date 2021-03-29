@@ -21,13 +21,64 @@ class BaseBackend(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def builder(self):
+    def kind(self):
+        """
+        Backend kind. One of:
+
+        sqlalchemy
+            Backends using a SQLAlchemy dialect.
+        sql
+            SQL based backends, not based on a SQLAlchemy dialect.
+        pandas
+            Backends using pandas to store data and perform computations.
+        """
         pass
 
     @property
     @abc.abstractmethod
-    def dialect(self):
+    def builder(self):
         pass
+
+    @property
+    def translator(self):
+        pass
+
+    @property
+    def dialect(self):
+        """
+        Dialect class of the backend.
+
+        We generate it dynamically to avoid repeating the code for each
+        backend.
+        """
+        # TODO importing dialects inside the function to avoid circular
+        # imports. In the future instead of this if statement we probably
+        # want to create subclasses for each of the kinds
+        # (e.g. `BaseSQLAlchemyBackend`)
+        # TODO check if the below dialects can be merged into a single one
+        if self.kind == 'sqlalchemy':
+            from ibis.backends.base_sqlalchemy.alchemy import AlchemyDialect
+            dialect_class = AlchemyDialect
+            dialect_class.translator = self.translator
+        elif self.kind == 'sql':
+            from ibis.backends.base_sqlalchemy.compiler import Dialect
+            dialect_class = Dialect
+            dialect_class.translator = self.translator
+        elif self.kind == 'spark':
+            from ibis.backends.base_sql.compiler import BaseDialect
+            dialect_class = BaseDialect
+            dialect_class.translator = self.translator
+        elif self.kind == 'pandas':
+            from ibis.backends.base_sqlalchemy.compiler import Dialect
+            from ibis.backends.pandas import PandasExprTranslator
+            dialect_class = Dialect
+            dialect_class.translator = PandasExprTranslator
+        else:
+            raise ValueError(f'Backend class "{self.kind}" unknown. '
+                             'Expected one of "sqlalchemy", "sql", '
+                             '"pandas" or "spark".')
+
+        return dialect_class
 
     @abc.abstractmethod
     def connect(connection_string, **options):

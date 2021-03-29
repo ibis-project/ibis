@@ -278,11 +278,6 @@ rewrites = MySQLExprTranslator.rewrites
 compiles = MySQLExprTranslator.compiles
 
 
-class MySQLDialect(alch.AlchemyDialect):
-
-    translator = MySQLExprTranslator
-
-
 @compiles(ops.GroupConcat)
 def mysql_compiles_group_concat(t, expr):
     op = expr.op()

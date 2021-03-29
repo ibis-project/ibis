@@ -55,8 +55,8 @@ class HDFClient(FileClient):
 
 class Backend(BaseBackend):
     name = 'hdf5'
+    kind = 'pandas'
     builder = None
-    dialect = None
     extension = 'h5'
     table_class = HDFTable
 
