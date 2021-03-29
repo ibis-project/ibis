@@ -31,6 +31,8 @@ class BaseBackend(abc.ABC):
             SQL based backends, not based on a SQLAlchemy dialect.
         pandas
             Backends using pandas to store data and perform computations.
+        spark
+            Spark based backends.
         """
         pass
 
