@@ -39,9 +39,9 @@ from ibis.client import Database, DatabaseEntity, Query, SQLClient
 from ibis.config import options
 from ibis.util import log
 
-from . import ddl, udf
+from . import Backend, ddl, udf
 from .compat import HS2Error, ImpylaError, impyla
-from .compiler import ImpalaDialect, build_ast
+from .compiler import build_ast
 from .hdfs import HDFS, WebHDFS
 
 
@@ -521,7 +521,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         else:
             partition_schema = None
 
-        ast = build_ast(expr, ImpalaDialect.make_context())
+        ast = build_ast(expr, Backend().dialect.make_context())
         select = ast.queries[0]
         statement = InsertSelect(
             self._qualified_name,
@@ -1111,7 +1111,7 @@ class ImpalaClient(SQLClient):
         expr : ibis TableExpr
         database : string, default None
         """
-        ast = self._build_ast(expr, ImpalaDialect.make_context())
+        ast = self._build_ast(expr, Backend().dialect.make_context())
         select = ast.queries[0]
         statement = CreateView(name, select, database=database)
         return self._execute(statement)
@@ -1187,7 +1187,7 @@ class ImpalaClient(SQLClient):
                 writer, to_insert = write_temp_dataframe(self, obj)
             else:
                 to_insert = obj
-            ast = self._build_ast(to_insert, ImpalaDialect.make_context())
+            ast = self._build_ast(to_insert, Backend().dialect.make_context())
             select = ast.queries[0]
 
             statement = CTAS(

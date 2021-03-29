@@ -4,7 +4,7 @@ import ibis.config
 from ibis.backends.base import BaseBackend
 
 from .client import PandasClient, PandasDatabase, PandasTable
-from .execution import execute_node, execute
+from .execution import execute, execute_node
 from .udf import udf  # noqa F401
 
 
