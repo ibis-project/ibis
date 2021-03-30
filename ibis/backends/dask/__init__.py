@@ -1,20 +1,34 @@
 from typing import Dict
 
+import toolz
 from dask.dataframe import DataFrame
 
 import ibis.config
 from ibis.backends.base import BaseBackend
-from ibis.backends.pandas import PandasExprTranslator
+from ibis.backends.pandas import _flatten_subclass_tree
 
 from . import udf  # noqa: F401,F403 - register dispatchers
 from .client import DaskClient, DaskDatabase, DaskTable
+from .execution import execute, execute_node  # noqa F401
+
+
+class DaskExprTranslator:
+    # get the dispatched functions from the execute_node dispatcher and compute
+    # and flatten the type tree of the first argument which is always the Node
+    # subclass
+    _registry = frozenset(
+        toolz.concat(
+            _flatten_subclass_tree(types[0]) for types in execute_node.funcs
+        )
+    )
+    _rewrites = {}
 
 
 class Backend(BaseBackend):
     name = 'dask'
     kind = 'pandas'
     builder = None
-    translator = PandasExprTranslator
+    translator = DaskExprTranslator
     database_class = DaskDatabase
     table_class = DaskTable
 
