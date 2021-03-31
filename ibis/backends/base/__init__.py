@@ -2,13 +2,8 @@ import abc
 
 from ibis.common.exceptions import TranslationError
 
-from .registry import (
-    binary_infix_ops,
-    fixed_arity,
-    operation_registry,
-    reduction,
-    unary,
-)
+from .registry import binary_infix_ops, fixed_arity, operation_registry, unary
+from .registry.aggregate import reduction
 from .registry.helpers import (
     quote_identifier,
     sql_type_names,
