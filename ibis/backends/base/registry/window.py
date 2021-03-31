@@ -1,14 +1,12 @@
 from operator import add, mul, sub
 from typing import Optional, Union
 
-
 import ibis
-import ibis.expr.datatypes as dt
-import ibis.expr.analysis as L
-import ibis.expr.operations as ops
 import ibis.common.exceptions as com
+import ibis.expr.analysis as L
+import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 import ibis.expr.types as ir
-
 
 _map_interval_to_microseconds = {
     'W': 604800000000,

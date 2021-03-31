@@ -1,14 +1,14 @@
 import itertools
 
 import ibis
-import ibis.util as util
-import ibis.expr.datatypes as dt
 import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+import ibis.util as util
 from ibis.backends.base_sqlalchemy import transforms
 
-from . import helpers, window, case, literal
+from . import case, helpers, literal, window
 
 
 def binary_infix_op(infix_sym):

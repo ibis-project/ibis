@@ -2,24 +2,33 @@ import abc
 
 from ibis.common.exceptions import TranslationError
 
-from .registry import (operation_registry, fixed_arity, reduction, unary,
-                       binary_infix_ops)
+from .registry import (
+    binary_infix_ops,
+    fixed_arity,
+    operation_registry,
+    reduction,
+    unary,
+)
+from .registry.helpers import (
+    quote_identifier,
+    sql_type_names,
+    type_to_sql_string,
+)
 from .registry.literal import literal, literal_formatters
-from .registry.helpers import (quote_identifier, sql_type_names,
-                               type_to_sql_string)
 
-
-__all__ = ('BaseBackend',
-           'quote_identifier',
-           'operation_registry',
-           'binary_infix_ops',
-           'fixed_arity',
-           'literal',
-           'literal_formatters',
-           'sql_type_names',
-           'type_to_sql_string',
-           'reduction',
-           'unary')
+__all__ = (
+    'BaseBackend',
+    'quote_identifier',
+    'operation_registry',
+    'binary_infix_ops',
+    'fixed_arity',
+    'literal',
+    'literal_formatters',
+    'sql_type_names',
+    'type_to_sql_string',
+    'reduction',
+    'unary',
+)
 
 
 class BaseBackend(abc.ABC):

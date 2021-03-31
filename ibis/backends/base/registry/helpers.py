@@ -1,7 +1,7 @@
+import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.expr.datatypes as dt
-import ibis.common.exceptions as com
 
 from . import identifiers
 

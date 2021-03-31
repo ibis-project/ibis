@@ -14,8 +14,13 @@ import ibis.expr.datatypes as dt
 import ibis.expr.lineage as lin
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.backends.base import (fixed_arity, literal, reduction, unary,
-                                operation_registry)
+from ibis.backends.base import (
+    fixed_arity,
+    literal,
+    operation_registry,
+    reduction,
+    unary,
+)
 from ibis.backends.base_sql.compiler import (
     BaseExprTranslator,
     BaseSelect,
