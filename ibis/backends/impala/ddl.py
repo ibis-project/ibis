@@ -15,7 +15,7 @@
 import json
 
 from ibis.backends.base_sql import ddl as base_sql_ddl
-from ibis.backends.base_sql import type_to_sql_string
+from ibis.backends.base import type_to_sql_string
 from ibis.backends.base_sql.ddl import (
     AlterTable,
     BaseDDL,

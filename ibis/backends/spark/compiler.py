@@ -31,7 +31,7 @@ import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 import ibis.util as util
-from ibis.backends.base_sql import (
+from ibis.backends.base import (
     fixed_arity,
     literal_formatters,
     operation_registry,

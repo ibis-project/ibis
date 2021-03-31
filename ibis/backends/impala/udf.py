@@ -20,7 +20,7 @@ import ibis.expr.rules as rlz
 import ibis.expr.signature as sig
 import ibis.udf.validate as v
 import ibis.util as util
-from ibis.backends.base_sql import fixed_arity
+from ibis.backends.base import fixed_arity, sql_type_names
 
 from . import compiler as comp
 
@@ -358,8 +358,6 @@ def _impala_type_to_ibis(tval):
 
 
 def _ibis_string_to_impala(tval):
-    from ibis.backends.base_sql import sql_type_names
-
     if tval in sql_type_names:
         return sql_type_names[tval]
     result = dt.validate_type(tval)
