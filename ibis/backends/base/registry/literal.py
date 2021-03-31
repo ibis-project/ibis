@@ -96,3 +96,7 @@ def literal(translator, expr):
         raise NotImplementedError
 
     return literal_formatters[typeclass](translator, expr)
+
+
+def null_literal(translator, expr):
+    return 'NULL'

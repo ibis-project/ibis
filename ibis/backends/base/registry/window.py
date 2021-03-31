@@ -289,3 +289,46 @@ def window(translator, expr):
         return _expr_transforms[type(window_op)](result)
     else:
         return result
+
+
+def nth_value(translator, expr):
+    op = expr.op()
+    arg, rank = op.args
+
+    arg_formatted = translator.translate(arg)
+    rank_formatted = translator.translate(rank - 1)
+
+    return 'first_value(lag({}, {}))'.format(arg_formatted, rank_formatted)
+
+
+def shift_like(name):
+    def formatter(translator, expr):
+        op = expr.op()
+        arg, offset, default = op.args
+
+        arg_formatted = translator.translate(arg)
+
+        if default is not None:
+            if offset is None:
+                offset_formatted = '1'
+            else:
+                offset_formatted = translator.translate(offset)
+
+            default_formatted = translator.translate(default)
+
+            return '{}({}, {}, {})'.format(
+                name, arg_formatted, offset_formatted, default_formatted
+            )
+        elif offset is not None:
+            offset_formatted = translator.translate(offset)
+            return '{}({}, {})'.format(name, arg_formatted, offset_formatted)
+        else:
+            return '{}({})'.format(name, arg_formatted)
+
+    return formatter
+
+
+def ntile(translator, expr):
+    op = expr.op()
+    arg, buckets = map(translator.translate, op.args)
+    return 'ntile({})'.format(buckets)
