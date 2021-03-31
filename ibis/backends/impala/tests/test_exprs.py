@@ -10,16 +10,13 @@ import ibis
 import ibis.expr.api as api
 import ibis.expr.types as ir
 from ibis import literal as L
+from ibis.backends.impala import Backend
 from ibis.common.exceptions import RelationError
 from ibis.expr.datatypes import Category
 from ibis.tests.expr.mocks import MockConnection
-from ibis.tests.sql.test_compiler import ExprTestCases  # noqa: E402
+from ibis.tests.sql.test_compiler import ExprTestCases
 
-from ..compiler import (  # noqa: E402
-    ImpalaDialect,
-    ImpalaExprTranslator,
-    to_sql,
-)
+from ..compiler import ImpalaExprTranslator, to_sql
 
 pytestmark = pytest.mark.impala
 
@@ -37,7 +34,7 @@ class ExprSQLTest:
 
     def _translate(self, expr, context=None, named=False):
         if context is None:
-            context = ImpalaDialect.make_context()
+            context = Backend().dialect.make_context()
         translator = ImpalaExprTranslator(expr, context=context, named=named)
         return translator.get_result()
 
@@ -83,7 +80,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
         self._check_literals(cases)
 
     def test_column_ref_table_aliases(self):
-        context = ImpalaDialect.make_context()
+        context = Backend().dialect.make_context()
 
         table1 = ibis.table([('key1', 'string'), ('value1', 'double')])
 
@@ -335,7 +332,7 @@ FROM alltypes"""
 
         expr = t0.g == t1.g
 
-        ctx = ImpalaDialect.make_context()
+        ctx = Backend().dialect.make_context()
         ctx.make_alias(t0)
 
         # Grab alias from parent context

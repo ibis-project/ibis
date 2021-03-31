@@ -451,9 +451,9 @@ class GeoMockConnectionPostGIS(MockAlchemyConnection):
 
     @property
     def dialect(self):
-        from ibis.backends.postgres.compiler import PostgreSQLDialect
+        from ibis.backends.postgres import Backend
 
-        return PostgreSQLDialect
+        return Backend.dialect
 
 
 class GeoMockConnectionOmniSciDB(SQLClient):

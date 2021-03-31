@@ -623,7 +623,3 @@ def bigquery_compile_notall(translator, expr):
     return "LOGICAL_OR(NOT ({}))".format(
         *map(translator.translate, expr.op().args)
     )
-
-
-class BigQueryDialect(comp.Dialect):
-    translator = BigQueryExprTranslator

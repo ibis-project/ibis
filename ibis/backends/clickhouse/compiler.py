@@ -151,11 +151,6 @@ class ClickhouseExprTranslator(comp.ExprTranslator):
         return _name_expr(translated, quote_identifier(name, force=force))
 
 
-class ClickhouseDialect(comp.Dialect):
-
-    translator = ClickhouseExprTranslator
-
-
 compiles = ClickhouseExprTranslator.compiles
 rewrites = ClickhouseExprTranslator.rewrites
 

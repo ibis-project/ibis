@@ -46,8 +46,11 @@ from ibis.backends.base_sql.compiler import (
 )
 
 
-def build_ast(expr, context):
-    assert context is not None, 'context is None'
+def build_ast(expr, context=None):
+    from ibis.backends.spark import Backend
+
+    if context is None:
+        context = Backend().dialect.make_context()
     builder = SparkQueryBuilder(expr, context=context)
     return builder.get_result()
 
@@ -79,7 +82,7 @@ class SparkQueryBuilder(comp.QueryBuilder):
 class SparkContext(comp.QueryContext):
     def _to_sql(self, expr, ctx):
         if ctx is None:
-            ctx = SparkDialect.make_context()
+            ctx = BaseDialect.make_context()
         builder = SparkQueryBuilder(expr, context=ctx)
         ast = builder.get_result()
         query = ast.queries[0]
@@ -378,8 +381,4 @@ def spark_rewrites_is_inf(expr):
 
 
 class SparkSelect(BaseSelect):
-    translator = SparkExprTranslator
-
-
-class SparkDialect(BaseDialect):
     translator = SparkExprTranslator

@@ -2,14 +2,15 @@ from ibis.backends.base import BaseBackend
 from ibis.backends.spark.client import SparkDatabase, SparkQuery, SparkTable
 
 from .client import PySparkClient
-from .compiler import PySparkDialect
+from .compiler import PySparkExprTranslator
 from .operations import PySparkTable
 
 
 class Backend(BaseBackend):
     name = 'pyspark'
+    kind = 'spark'
     builder = None
-    dialect = PySparkDialect
+    translator = PySparkExprTranslator
     database_class = SparkDatabase
     query_class = SparkQuery
     table_class = PySparkTable

@@ -1,10 +1,7 @@
-from __future__ import absolute_import
-
 import toolz
 
 import ibis.config
 from ibis.backends.base import BaseBackend
-from ibis.backends.base_sqlalchemy.compiler import Dialect
 
 from .client import PandasClient, PandasDatabase, PandasTable
 from .execution import execute, execute_node
@@ -39,22 +36,13 @@ class PandasExprTranslator:
     _rewrites = {}
 
 
-class PandasDialect(Dialect):
-
-    translator = PandasExprTranslator
-
-
-PandasClient.dialect = dialect = PandasDialect
-
-
 class Backend(BaseBackend):
     name = 'pandas'
+    kind = 'pandas'
     builder = None
-    # XXX dialect in client was None. Maybe to avoid circular imports
-    # since it's define here and not in `compile.py`?
-    dialect = PandasDialect
     database_class = PandasDatabase
     table_class = PandasTable
+    translator = PandasExprTranslator
 
     def connect(self, dictionary):
         """Construct a pandas client from a dictionary of DataFrames.

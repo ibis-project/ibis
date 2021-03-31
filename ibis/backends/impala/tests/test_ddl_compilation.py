@@ -2,14 +2,8 @@ import pytest
 
 import ibis
 from ibis.backends.base_sql import ddl as base_ddl
-
-from ibis.backends.impala.compiler import (  # noqa: E402, isort:skip
-    ImpalaDialect,
-)
-
-from ibis.backends.impala import ddl  # noqa: E402, isort:skip
-from ibis.backends.impala.client import build_ast  # noqa: E402, isort:skip
-
+from ibis.backends.impala import ddl
+from ibis.backends.impala.client import build_ast
 
 pytestmark = pytest.mark.impala
 
@@ -35,7 +29,7 @@ def test_select_basics(t):
     name = 'testing123456'
 
     expr = t.limit(10)
-    select, _ = _get_select(expr, ImpalaDialect.make_context())
+    select, _ = _get_select(expr)
 
     stmt = base_ddl.InsertSelect(name, select, database='foo')
     result = stmt.compile()
@@ -254,9 +248,7 @@ def expr(t):
 
 def test_create_external_table_as(mockcon):
     path = '/path/to/table'
-    select, _ = _get_select(
-        mockcon.table('test1'), ImpalaDialect.make_context()
-    )
+    select, _ = _get_select(mockcon.table('test1'))
     statement = base_ddl.CTAS(
         'another_table',
         select,
@@ -538,7 +530,7 @@ def test_partition_by():
 def _create_table(
     table_name, expr, database=None, can_exist=False, format='parquet'
 ):
-    ast = build_ast(expr, ImpalaDialect.make_context())
+    ast = build_ast(expr)
     select = ast.queries[0]
     statement = base_ddl.CTAS(
         table_name,
@@ -550,7 +542,7 @@ def _create_table(
     return statement
 
 
-def _get_select(expr, context):
+def _get_select(expr, context=None):
     ast = build_ast(expr, context)
     select = ast.queries[0]
     context = ast.context

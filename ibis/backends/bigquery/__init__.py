@@ -16,7 +16,7 @@ from .client import (
     BigQueryQuery,
     BigQueryTable,
 )
-from .compiler import BigQueryDialect, BigQueryQueryBuilder
+from .compiler import BigQueryExprTranslator, BigQueryQueryBuilder
 
 try:
     from .udf import udf  # noqa F401
@@ -38,8 +38,9 @@ CLIENT_SECRET = "iU5ohAF2qcqrujegE3hQ1cPt"
 
 class Backend(BaseBackend):
     name = 'bigquery'
+    kind = 'sql'
     builder = BigQueryQueryBuilder
-    dialect = BigQueryDialect
+    translator = BigQueryExprTranslator
     query_class = BigQueryQuery
     database_class = BigQueryDatabase
     table_class = BigQueryTable

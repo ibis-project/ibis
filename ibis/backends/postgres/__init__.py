@@ -3,13 +3,14 @@ from ibis.backends.base import BaseBackend
 from ibis.backends.base_sqlalchemy.alchemy import AlchemyQueryBuilder
 
 from .client import PostgreSQLClient, PostgreSQLDatabase, PostgreSQLTable
-from .compiler import PostgreSQLDialect
+from .compiler import PostgreSQLExprTranslator
 
 
 class Backend(BaseBackend):
     name = 'postgres'
+    kind = 'sqlalchemy'
     builder = AlchemyQueryBuilder
-    dialect = PostgreSQLDialect
+    translator = PostgreSQLExprTranslator
     database_class = PostgreSQLDatabase
     table_class = PostgreSQLTable
 

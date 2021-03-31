@@ -16,13 +16,14 @@ from ibis.backends.base import BaseBackend
 from ibis.backends.base_sqlalchemy.alchemy import AlchemyQueryBuilder
 
 from .client import SQLiteClient, SQLiteDatabase, SQLiteTable
-from .compiler import SQLiteDialect
+from .compiler import SQLiteExprTranslator
 
 
 class Backend(BaseBackend):
     name = 'sqlite'
+    kind = 'sqlalchemy'
     builder = AlchemyQueryBuilder
-    dialect = SQLiteDialect
+    translator = SQLiteExprTranslator
     database_class = SQLiteDatabase
     table_class = SQLiteTable
 

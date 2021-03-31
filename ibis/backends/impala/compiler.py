@@ -8,7 +8,6 @@ import ibis.expr.types as ir
 from ibis.backends.base_sql import binary_infix_ops, operation_registry
 from ibis.backends.base_sql.compiler import (
     BaseContext,
-    BaseDialect,
     BaseExprTranslator,
     BaseQueryBuilder,
     BaseSelectBuilder,
@@ -16,14 +15,22 @@ from ibis.backends.base_sql.compiler import (
 )
 
 
-def build_ast(expr, context):
-    assert context is not None, 'context is None'
+def _get_context():
+    from ibis.backends.impala import Backend
+
+    return Backend().dialect.make_context()
+
+
+def build_ast(expr, context=None):
+    if context is None:
+        context = _get_context()
     builder = ImpalaQueryBuilder(expr, context=context)
     return builder.get_result()
 
 
 def _get_query(expr, context):
-    assert context is not None, 'context is None'
+    if context is None:
+        context = _get_context()
     ast = build_ast(expr, context)
     query = ast.queries[0]
 
@@ -32,8 +39,7 @@ def _get_query(expr, context):
 
 def to_sql(expr, context=None):
     if context is None:
-        context = BaseDialect.make_context()
-    assert context is not None, 'context is None'
+        context = _get_context()
     query = _get_query(expr, context)
     return query.compile()
 
@@ -156,10 +162,6 @@ _operation_registry = {**operation_registry, **binary_infix_ops}
 class ImpalaExprTranslator(BaseExprTranslator):
     _registry = _operation_registry
     context_class = BaseContext
-
-
-class ImpalaDialect(BaseDialect):
-    pass
 
 
 compiles = ImpalaExprTranslator.compiles

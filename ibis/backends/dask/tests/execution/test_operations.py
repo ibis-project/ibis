@@ -12,7 +12,8 @@ from dask.dataframe.utils import tm
 import ibis
 import ibis.expr.datatypes as dt
 
-from ... import Backend, execute
+from ... import Backend
+from ...execution import execute
 
 pytestmark = pytest.mark.dask
 

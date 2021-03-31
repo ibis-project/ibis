@@ -8,7 +8,7 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt  # noqa: E402
 
-from ... import execute
+from ...execution import execute
 
 pytestmark = pytest.mark.dask
 

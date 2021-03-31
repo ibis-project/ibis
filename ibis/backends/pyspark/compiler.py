@@ -16,7 +16,7 @@ import ibis.expr.types as ir
 import ibis.expr.types as types
 from ibis import interval
 from ibis.backends.pandas.execution import execute
-from ibis.backends.spark.compiler import SparkContext, SparkDialect
+from ibis.backends.spark.compiler import SparkContext
 from ibis.backends.spark.datatypes import (
     ibis_array_dtype_to_spark_dtype,
     ibis_dtype_to_spark_dtype,
@@ -80,10 +80,6 @@ class PySparkExprTranslator:
             raise com.OperationNotDefinedError(
                 'No translation rule for {}'.format(type(op))
             )
-
-
-class PySparkDialect(SparkDialect):
-    translator = PySparkExprTranslator
 
 
 compiles = PySparkExprTranslator.compiles

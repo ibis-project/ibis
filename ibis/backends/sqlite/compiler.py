@@ -311,11 +311,6 @@ rewrites = SQLiteExprTranslator.rewrites
 compiles = SQLiteExprTranslator.compiles
 
 
-class SQLiteDialect(alch.AlchemyDialect):
-
-    translator = SQLiteExprTranslator
-
-
 @rewrites(ops.DayOfWeekIndex)
 def day_of_week_index(expr):
     return ((expr.op().arg.strftime('%w').cast(dt.int16) + 6) % 7).cast(

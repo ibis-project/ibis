@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 from typing import Dict
 
 import toolz
@@ -7,7 +5,6 @@ from dask.dataframe import DataFrame
 
 import ibis.config
 from ibis.backends.base import BaseBackend
-from ibis.backends.base_sqlalchemy.compiler import Dialect
 from ibis.backends.pandas import _flatten_subclass_tree
 
 from . import udf  # noqa: F401,F403 - register dispatchers
@@ -27,17 +24,11 @@ class DaskExprTranslator:
     _rewrites = {}
 
 
-class DaskDialect(Dialect):
-
-    translator = DaskExprTranslator
-
-
 class Backend(BaseBackend):
     name = 'dask'
+    kind = 'pandas'
     builder = None
-    # XXX dialect in client was None. Maybe to avoid circular imports
-    # since it's define here and not in `compile.py`? (same in pandas backend)
-    dialect = DaskDialect
+    translator = DaskExprTranslator
     database_class = DaskDatabase
     table_class = DaskTable
 
