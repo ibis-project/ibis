@@ -458,10 +458,12 @@ class SQLiteClient(alch.AlchemyClient):
         """
 
         if data_obj is None and from_table_name is None:
-            raise ValueError('You must pass either data_obj (pandas Dataframe) or from_table_name (table name to insert data from)')
+            raise ValueError('You must pass either data_obj (pandas Dataframe)'
+                ' or from_table_name (table name to insert data from)')
 
         if values is not None:
-            raise NotImplementedError("Inserting with values is not implemented for SQLite")
+            raise NotImplementedError('Inserting with values is not '
+                'implemented for SQLite')
 
         params = {}
         if database is None:
