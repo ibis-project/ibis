@@ -414,9 +414,9 @@ class SQLiteClient(alch.AlchemyClient):
         columns = self._columns_from_schema(name, schema)
         return sa.Table(name, self.meta, schema=database, *columns)
 
-    def insert(
-        self, to_table_name: str, database: str = None, data_obj=None, 
-        from_table_name: str = None, if_exists: str='append', values=None):
+    def insert(self, to_table_name: str, database: str = None, 
+        data_obj = None, from_table_name: str = None, 
+        if_exists: str = 'append', values = None):
         """
         Insert the given data to a table in SQL
 
@@ -426,17 +426,21 @@ class SQLiteClient(alch.AlchemyClient):
           name of the table to which data needs to be inserted
         database : string, optional
           name of the attached database that the table is located in.
-        data_obj : pd.Dataframe (Later can be used also for sending in table_expr)
-          data_obj is the dataframe containing data which needs to be inserted to to_table_name
-          (Later when table_expr related implementation is done this variable can be 
-          used to take in that data)
+        data_obj : pd.Dataframe (Later can also be used for sending in 
+        table_expr)
+          data_obj is the dataframe containing data which needs to be inserted 
+          to to_table_name
+          (Later when table_expr related implementation is done this variable 
+          can be used to take in that data)
         from_table_name: string, optional
           name of the table from which data needs to be inserted
         if_exists : string, optional, default 'append'
           The values available are: {‘fail’, ‘replace’, ‘append’}
         values: None, optional
-          values can be used to fill in data (in some ordered form of rows and colums) which 
-          can be used to insert data into the to_table_name directly (Not implemented yet) 
+          values can be used to fill in data (in some ordered form of rows 
+          and colums) 
+          which can be used to insert data into the to_table_name directly 
+          (Not implemented yet) 
 
         Returns
         -------
@@ -445,10 +449,12 @@ class SQLiteClient(alch.AlchemyClient):
         Raises
         -------
         ValueError
-          You must pass either data_obj (pandas Dataframe) or from_table_name (table name to insert data from)
+          You must pass either data_obj (pandas Dataframe) or from_table_name 
+          (table name to insert data from)
 
         NotImplementedError
           Inserting with values is not implemented for SQLite
+
         """
 
         if data_obj is None and from_table_name is None:
@@ -462,9 +468,9 @@ class SQLiteClient(alch.AlchemyClient):
             params['schema'] = self.database_name
 
         if isinstance(data_obj, pd.DataFrame):
-            data_obj.to_sql(to_table_name, self.con, index=False, if_exists=if_exists, 
-                **params)
+            data_obj.to_sql(to_table_name, self.con, index=False, 
+                            if_exists=if_exists, **params)
         elif data_obj is None and from_table_name is not None:
             data_obj = pd.read_sql_table(from_table_name, self.con, **params)
-            data_obj.to_sql(to_table_name, self.con, index=False, if_exists=if_exists, 
-                **params)
+            data_obj.to_sql(to_table_name, self.con, index=False, 
+                            if_exists=if_exists, **params)
