@@ -444,7 +444,7 @@ class SQLiteClient(alch.AlchemyClient):
 
         Returns
         -------
-        Nothing if things work fine
+        TableExpr of table where insert is done 
 
         Raises
         -------
@@ -466,6 +466,7 @@ class SQLiteClient(alch.AlchemyClient):
         params = {}
         if database is None:
             params['schema'] = self.database_name
+            database = self.database_name
 
         if isinstance(data_obj, pd.DataFrame):
             data_obj.to_sql(to_table_name, self.con, index=False, 
@@ -474,3 +475,5 @@ class SQLiteClient(alch.AlchemyClient):
             data_obj = pd.read_sql_table(from_table_name, self.con, **params)
             data_obj.to_sql(to_table_name, self.con, index=False, 
                             if_exists=if_exists, **params)
+
+        return self.table(to_table_name, database)
