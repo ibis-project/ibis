@@ -414,9 +414,9 @@ class SQLiteClient(alch.AlchemyClient):
         columns = self._columns_from_schema(name, schema)
         return sa.Table(name, self.meta, schema=database, *columns)
 
-    def insert(self, to_table_name: str, database: str = None, 
-        data_obj = None, from_table_name: str = None, 
-        if_exists: str = 'append', values = None):
+    def insert(self, to_table_name: str, database: Optional[str] = None, 
+               data_obj=None, from_table_name: Optional[str] = None, 
+               if_exists: Optional[str] = 'append', values=None):
         """
         Insert the given data to a table in SQL
 
@@ -458,12 +458,15 @@ class SQLiteClient(alch.AlchemyClient):
         """
 
         if data_obj is None and from_table_name is None:
-            raise ValueError('You must pass either data_obj (pandas Dataframe)'
-                ' or from_table_name (table name to insert data from)')
+            raise ValueError(
+                'You must pass either data_obj (pandas Dataframe)'
+                ' or from_table_name (table name to insert data from)'
+            )
 
         if values is not None:
-            raise NotImplementedError('Inserting with values is not '
-                'implemented for SQLite')
+            raise NotImplementedError(
+                'Inserting with values is not implemented for SQLite'
+            )
 
         params = {}
         if database is None:
