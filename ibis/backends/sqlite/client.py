@@ -438,7 +438,7 @@ class SQLiteClient(alch.AlchemyClient):
           The values available are: {‘fail’, ‘replace’, ‘append’}
         values: None, optional
           values can be used to fill in data (in some ordered form of rows
-          and columns) 
+          and columns)
           which can be used to insert data into the to_table_name directly
           (Not implemented yet)
 
