@@ -14,7 +14,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.lineage as lin
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.backends.base import (
+from ibis.backends.base.sql import (
     fixed_arity,
     literal,
     operation_registry,
