@@ -5,9 +5,9 @@ import math
 import os
 from typing import Optional
 
+import pandas as pd
 import regex as re
 import sqlalchemy as sa
-import pandas as pd
 
 import ibis.backends.base_sqlalchemy.alchemy as alch
 from ibis.client import Database
@@ -414,9 +414,15 @@ class SQLiteClient(alch.AlchemyClient):
         columns = self._columns_from_schema(name, schema)
         return sa.Table(name, self.meta, schema=database, *columns)
 
-    def insert(self, to_table_name: str, database: Optional[str] = None,
-               data_obj=None, from_table_name: Optional[str] = None,
-               if_exists: Optional[str] = 'append', values=None):
+    def insert(
+        self,
+        to_table_name: str,
+        database: Optional[str] = None,
+        data_obj=None,
+        from_table_name: Optional[str] = None,
+        if_exists: Optional[str] = 'append',
+        values=None
+    ):
         """
         Insert the given data to a table in SQL
 
@@ -474,11 +480,21 @@ class SQLiteClient(alch.AlchemyClient):
             database = self.database_name
 
         if isinstance(data_obj, pd.DataFrame):
-            data_obj.to_sql(to_table_name, self.con, index=False,
-                            if_exists=if_exists, **params)
+            data_obj.to_sql(
+                to_table_name,
+                self.con,
+                index=False,
+                if_exists=if_exists,
+                **params
+            )
         elif data_obj is None and from_table_name is not None:
             data_obj = pd.read_sql_table(from_table_name, self.con, **params)
-            data_obj.to_sql(to_table_name, self.con, index=False,
-                            if_exists=if_exists, **params)
+            data_obj.to_sql(
+                to_table_name,
+                self.con,
+                index=False,
+                if_exists=if_exists,
+                **params
+            )
 
         return self.table(to_table_name, database)
