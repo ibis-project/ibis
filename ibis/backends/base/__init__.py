@@ -2,6 +2,8 @@ import abc
 
 from ibis.common.exceptions import TranslationError
 
+__all__ = ('BaseBackend',)
+
 
 class BaseBackend(abc.ABC):
     """

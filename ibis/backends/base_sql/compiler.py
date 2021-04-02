@@ -1,6 +1,6 @@
 import ibis.backends.base_sqlalchemy.compiler as comp
 import ibis.expr.operations as ops
-from ibis.backends.base_sql import (
+from ibis.backends.base.sql import (
     binary_infix_ops,
     operation_registry,
     quote_identifier,
