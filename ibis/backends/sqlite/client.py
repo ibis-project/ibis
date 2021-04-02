@@ -421,7 +421,7 @@ class SQLiteClient(alch.AlchemyClient):
         data_obj=None,
         from_table_name: Optional[str] = None,
         if_exists: Optional[str] = 'append',
-        values=None
+        values=None,
     ):
         """
         Insert the given data to a table in SQL
@@ -485,7 +485,7 @@ class SQLiteClient(alch.AlchemyClient):
                 self.con,
                 index=False,
                 if_exists=if_exists,
-                **params
+                **params,
             )
         elif data_obj is None and from_table_name is not None:
             data_obj = pd.read_sql_table(from_table_name, self.con, **params)
@@ -494,7 +494,7 @@ class SQLiteClient(alch.AlchemyClient):
                 self.con,
                 index=False,
                 if_exists=if_exists,
-                **params
+                **params,
             )
 
         return self.table(to_table_name, database)
