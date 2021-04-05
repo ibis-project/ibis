@@ -25,6 +25,11 @@ from ibis.backends.base_sql.compiler import (
 from .datatypes import ibis_type_to_bigquery_type
 
 
+def build_ast(expr, context):
+    builder = BigQueryQueryBuilder(expr, context=context)
+    return builder.get_result()
+
+
 class BigQueryUDFNode(ops.ValueOp):
     pass
 
