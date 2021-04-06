@@ -18,7 +18,7 @@ import ibis.expr.format as fmt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
-from ibis.backends.base_sql import (
+from ibis.backends.base.sql import (
     binary_infix_ops,
     operation_registry,
     quote_identifier,

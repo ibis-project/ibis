@@ -5,7 +5,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.backends.base_sql import binary_infix_ops, operation_registry
+from ibis.backends.base.sql import binary_infix_ops, operation_registry
 from ibis.backends.base_sql.compiler import (
     BaseContext,
     BaseExprTranslator,
