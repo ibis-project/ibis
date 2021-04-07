@@ -9,8 +9,8 @@ import pandas.testing as tm
 import pytest
 
 import ibis
-from ibis.backends.base.sql.compiler import QueryContext
 import ibis.expr.types as ir
+from ibis.backends.base.sql.compiler import QueryContext
 
 
 # TODO: Merge into BackendTest, #2564

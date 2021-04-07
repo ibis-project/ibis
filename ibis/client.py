@@ -2,12 +2,12 @@
 import abc
 from typing import List, Optional
 
-from ibis.backends.base.sql.compiler import Dialect, Select
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
+from ibis.backends.base.sql.compiler import Dialect, Select
 from ibis.config import options
 from ibis.expr.typing import TimeContext
 

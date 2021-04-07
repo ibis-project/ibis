@@ -31,10 +31,7 @@ from ibis.backends.base.sql.compiler import (
     TableSetFormatter,
     Union,
 )
-from ibis.backends.base.sql.transforms import (
-    NotExistsSubquery,
-    ExistsSubquery,
-)
+from ibis.backends.base.sql.transforms import ExistsSubquery, NotExistsSubquery
 from ibis.client import Database, Query, SQLClient
 
 geospatial_supported = False

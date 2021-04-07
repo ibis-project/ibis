@@ -5,10 +5,13 @@ import ibis.expr.analysis as L
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
-
 from ibis.backends.base.sql.transforms import (
-    ExistsSubquery, NotExistsSubquery, AnyToExistsTransform)
-from . import extract_subqueries
+    AnyToExistsTransform,
+    ExistsSubquery,
+    NotExistsSubquery,
+)
+
+from . import extract_subqueries, select
 
 
 def _adapt_expr(expr):
@@ -162,12 +165,7 @@ class _CorrelatedRefCheck:
     def is_subquery(self, node):
         # XXX
         if isinstance(
-            node,
-            (
-                ops.TableArrayView,
-                ExistsSubquery,
-                NotExistsSubquery,
-            ),
+            node, (ops.TableArrayView, ExistsSubquery, NotExistsSubquery,),
         ):
             return True
 
@@ -314,6 +312,10 @@ class SelectBuilder:
         self.queries.append(select_query)
 
         return select_query
+
+    @property
+    def _select_class(self):
+        return select.Select
 
     def _build_result_query(self):
         self._collect_elements()
@@ -525,9 +527,7 @@ class SelectBuilder:
     def _visit_filter_Any(self, expr):
         # Rewrite semi/anti-join predicates in way that can hook into SQL
         # translation step
-        transform = AnyToExistsTransform(
-            self.context, expr, self.table_set
-        )
+        transform = AnyToExistsTransform(self.context, expr, self.table_set)
         return transform.get_result()
 
     _visit_filter_NotAny = _visit_filter_Any

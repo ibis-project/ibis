@@ -1,11 +1,11 @@
 from datetime import date, datetime
 from io import StringIO
 
-from ibis.backends.base.sql import ExistsSubquery, NotExistsSubquery
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
+from ibis.backends.base.sql.transforms import ExistsSubquery, NotExistsSubquery
 
 from .identifiers import quote_identifier
 
