@@ -39,11 +39,7 @@ from ibis.backends.base.sql import (
     sql_type_names,
     unary,
 )
-from ibis.backends.base_sql.compiler import (
-    BaseDialect,
-    BaseExprTranslator,
-    BaseSelect,
-)
+from ibis.backends.base.sql.compiler import Dialect, ExprTranslator, Select
 
 
 def build_ast(expr, context=None):
@@ -82,7 +78,7 @@ class SparkQueryBuilder(comp.QueryBuilder):
 class SparkContext(comp.QueryContext):
     def _to_sql(self, expr, ctx):
         if ctx is None:
-            ctx = BaseDialect.make_context()
+            ctx = Dialect.make_context()
         builder = SparkQueryBuilder(expr, context=ctx)
         ast = builder.get_result()
         query = ast.queries[0]
@@ -341,7 +337,7 @@ _operation_registry.update(
 )
 
 
-class SparkExprTranslator(BaseExprTranslator):
+class SparkExprTranslator(ExprTranslator):
     _registry = _operation_registry
 
     context_class = SparkContext
@@ -380,5 +376,5 @@ def spark_rewrites_is_inf(expr):
     return (arg == ibis.literal(math.inf)) | (arg == ibis.literal(-math.inf))
 
 
-class SparkSelect(BaseSelect):
+class SparkSelect(Select):
     translator = SparkExprTranslator

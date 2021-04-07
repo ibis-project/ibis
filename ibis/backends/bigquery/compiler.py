@@ -8,7 +8,6 @@ import toolz
 from multipledispatch import Dispatcher
 
 import ibis
-import ibis.backends.base_sqlalchemy.compiler as comp
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.lineage as lin
@@ -21,10 +20,15 @@ from ibis.backends.base.sql import (
     reduction,
     unary,
 )
-from ibis.backends.base_sql.compiler import (
-    BaseExprTranslator,
-    BaseSelect,
-    BaseTableSetFormatter,
+from ibis.backends.base.sql.compiler import (
+    DDL,
+    ExprTranslator,
+    QueryBuilder,
+    QueryContext,
+    Select,
+    SelectBuilder,
+    TableSetFormatter,
+    Union,
 )
 
 from .datatypes import ibis_type_to_bigquery_type
@@ -34,13 +38,13 @@ class BigQueryUDFNode(ops.ValueOp):
     pass
 
 
-class BigQuerySelectBuilder(comp.SelectBuilder):
+class BigQuerySelectBuilder(SelectBuilder):
     @property
     def _select_class(self):
         return BigQuerySelect
 
 
-class BigQueryUDFDefinition(comp.DDL):
+class BigQueryUDFDefinition(DDL):
     def __init__(self, expr, context):
         self.expr = expr
         self.context = context
@@ -49,7 +53,7 @@ class BigQueryUDFDefinition(comp.DDL):
         return self.expr.op().js
 
 
-class BigQueryUnion(comp.Union):
+class BigQueryUnion(Union):
     @staticmethod
     def keyword(distinct):
         return 'UNION DISTINCT' if distinct else 'UNION ALL'
@@ -63,7 +67,7 @@ def find_bigquery_udf(expr):
     return lin.proceed, result
 
 
-class BigQueryQueryBuilder(comp.QueryBuilder):
+class BigQueryQueryBuilder(QueryBuilder):
 
     select_builder = BigQuerySelectBuilder
     union_class = BigQueryUnion
@@ -81,7 +85,7 @@ class BigQueryQueryBuilder(comp.QueryBuilder):
         )
 
 
-class BigQueryContext(comp.QueryContext):
+class BigQueryContext(QueryContext):
     def _to_sql(self, expr, ctx):
         builder = BigQueryQueryBuilder(expr, context=ctx)
         query_ast = builder.get_result()
@@ -428,9 +432,9 @@ _operation_registry = {
 }
 
 
-class BigQueryExprTranslator(BaseExprTranslator):
+class BigQueryExprTranslator(ExprTranslator):
     _registry = _operation_registry
-    _rewrites = BaseExprTranslator._rewrites.copy()
+    _rewrites = ExprTranslator._rewrites.copy()
 
     context_class = BigQueryContext
 
@@ -495,14 +499,14 @@ def compiles_string_to_timestamp(translator, expr):
     return 'PARSE_TIMESTAMP({}, {})'.format(fmt_string, arg_formatted)
 
 
-class BigQueryTableSetFormatter(BaseTableSetFormatter):
+class BigQueryTableSetFormatter(TableSetFormatter):
     def _quote_identifier(self, name):
         if re.match(r'^[A-Za-z][A-Za-z_0-9]*$', name):
             return name
         return '`{}`'.format(name)
 
 
-class BigQuerySelect(BaseSelect):
+class BigQuerySelect(Select):
 
     translator = BigQueryExprTranslator
 

@@ -6,12 +6,12 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.base.sql import binary_infix_ops, operation_registry
-from ibis.backends.base_sql.compiler import (
-    BaseContext,
-    BaseExprTranslator,
-    BaseQueryBuilder,
-    BaseSelectBuilder,
-    BaseTableSetFormatter,
+from ibis.backends.base.sql.compiler import (
+    Context,
+    ExprTranslator,
+    QueryBuilder,
+    SelectBuilder,
+    TableSetFormatter,
 )
 
 
@@ -48,13 +48,13 @@ def to_sql(expr, context=None):
 # Select compilation
 
 
-class ImpalaSelectBuilder(BaseSelectBuilder):
+class ImpalaSelectBuilder(SelectBuilder):
     @property
     def _select_class(self):
         return ImpalaSelect
 
 
-class ImpalaQueryBuilder(BaseQueryBuilder):
+class ImpalaQueryBuilder(QueryBuilder):
 
     select_builder = ImpalaSelectBuilder
 
@@ -76,7 +76,7 @@ class ImpalaSelect(comp.Select):
         return ImpalaTableSetFormatter
 
 
-class ImpalaTableSetFormatter(BaseTableSetFormatter):
+class ImpalaTableSetFormatter(TableSetFormatter):
     def _get_join_type(self, op):
         jname = self._join_names[type(op)]
 
@@ -159,9 +159,9 @@ def _replace_interval_with_scalar(expr):
 _operation_registry = {**operation_registry, **binary_infix_ops}
 
 
-class ImpalaExprTranslator(BaseExprTranslator):
+class ImpalaExprTranslator(ExprTranslator):
     _registry = _operation_registry
-    context_class = BaseContext
+    context_class = Context
 
 
 compiles = ImpalaExprTranslator.compiles

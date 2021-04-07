@@ -2,7 +2,7 @@
 import abc
 from typing import List, Optional
 
-import ibis.backends.base_sqlalchemy.compiler as comp
+from ibis.backends.base.sql.compiler import Dialect, Select
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
@@ -96,7 +96,7 @@ class Query:
 class SQLClient(Client, metaclass=abc.ABCMeta):
     """Generic SQL client."""
 
-    dialect = comp.Dialect
+    dialect = Dialect
     query_class = Query
     table_class = ops.DatabaseTable
     table_expr_class = ir.TableExpr
@@ -263,7 +263,7 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         # default_limit is None
         for query in reversed(query_ast.queries):
             if (
-                isinstance(query, comp.Select)
+                isinstance(query, Select)
                 and not isinstance(expr, ir.ScalarExpr)
                 and query.table_set is not None
             ):

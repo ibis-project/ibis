@@ -21,11 +21,21 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.expr.window as W
 import ibis.util as util
+from ibis.backends.base.sql.compiler import (
+    Dialect,
+    ExprTranslator,
+    QueryBuilder,
+    QueryContext,
+    Select,
+    SelectBuilder,
+    TableSetFormatter,
+    Union,
+)
+from ibis.backends.base.sql.transforms import (
+    NotExistsSubquery,
+    ExistsSubquery,
+)
 from ibis.client import Database, Query, SQLClient
-
-from . import compiler as comp
-from . import transforms
-from .compiler import Dialect, Select, TableSetFormatter, Union
 
 geospatial_supported = False
 try:
@@ -426,7 +436,7 @@ def _exists_subquery(t, expr):
     sub_ctx = ctx.subcontext()
     clause = to_sqlalchemy(filtered, sub_ctx, exists=True)
 
-    if isinstance(op, transforms.NotExistsSubquery):
+    if isinstance(op, NotExistsSubquery):
         clause = sa.not_(clause)
 
     return clause
@@ -717,8 +727,8 @@ _operation_registry = {
     ops.SearchedCase: _searched_case,
     ops.TableColumn: _table_column,
     ops.TableArrayView: _table_array_view,
-    transforms.ExistsSubquery: _exists_subquery,
-    transforms.NotExistsSubquery: _exists_subquery,
+    ExistsSubquery: _exists_subquery,
+    NotExistsSubquery: _exists_subquery,
     # miscellaneous varargs
     ops.Least: varargs(sa.func.least),
     ops.Greatest: varargs(sa.func.greatest),
@@ -858,7 +868,7 @@ for _k, _v in _binary_ops.items():
     _operation_registry[_k] = fixed_arity(_v, 2)
 
 
-class AlchemySelectBuilder(comp.SelectBuilder):
+class AlchemySelectBuilder(SelectBuilder):
     @property
     def _select_class(self):
         return AlchemySelect
@@ -867,7 +877,7 @@ class AlchemySelectBuilder(comp.SelectBuilder):
         return exprs
 
 
-class AlchemyContext(comp.QueryContext):
+class AlchemyContext(QueryContext):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._table_objects = {}
@@ -928,7 +938,7 @@ class AlchemyUnion(Union):
         return functools.reduce(reduce_union, selects)
 
 
-class AlchemyQueryBuilder(comp.QueryBuilder):
+class AlchemyQueryBuilder(QueryBuilder):
 
     select_builder = AlchemySelectBuilder
     union_class = AlchemyUnion
@@ -1026,10 +1036,10 @@ class AlchemyTable(ops.DatabaseTable):
         self.sqla_table = table
 
 
-class AlchemyExprTranslator(comp.ExprTranslator):
+class AlchemyExprTranslator(ExprTranslator):
 
     _registry = _operation_registry
-    _rewrites = comp.ExprTranslator._rewrites.copy()
+    _rewrites = ExprTranslator._rewrites.copy()
     _type_map = _ibis_type_to_sqla
 
     context_class = AlchemyContext

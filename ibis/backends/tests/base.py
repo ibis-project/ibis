@@ -9,7 +9,7 @@ import pandas.testing as tm
 import pytest
 
 import ibis
-import ibis.backends.base_sqlalchemy.compiler as comp
+from ibis.backends.base.sql.compiler import QueryContext
 import ibis.expr.types as ir
 
 
@@ -149,7 +149,7 @@ class BackendTest(abc.ABC):
 
     def make_context(
         self, params: Optional[Mapping[ir.ValueExpr, Any]] = None
-    ) -> comp.QueryContext:
+    ) -> QueryContext:
         return self.api.dialect.make_context(params=params)
 
 
