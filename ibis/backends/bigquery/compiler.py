@@ -21,10 +21,10 @@ from ibis.backends.base.sql import (
     reduction,
     unary,
 )
-from ibis.backends.base_sql.compiler import (
-    BaseExprTranslator,
-    BaseSelect,
-    BaseTableSetFormatter,
+from ibis.backends.base_sqlalchemy.compiler import (
+    ExprTranslator,
+    Select,
+    TableSetFormatter,
 )
 
 from .datatypes import ibis_type_to_bigquery_type
@@ -428,9 +428,9 @@ _operation_registry = {
 }
 
 
-class BigQueryExprTranslator(BaseExprTranslator):
+class BigQueryExprTranslator(ExprTranslator):
     _registry = _operation_registry
-    _rewrites = BaseExprTranslator._rewrites.copy()
+    _rewrites = ExprTranslator._rewrites.copy()
 
     context_class = BigQueryContext
 
@@ -495,14 +495,14 @@ def compiles_string_to_timestamp(translator, expr):
     return 'PARSE_TIMESTAMP({}, {})'.format(fmt_string, arg_formatted)
 
 
-class BigQueryTableSetFormatter(BaseTableSetFormatter):
+class BigQueryTableSetFormatter(TableSetFormatter):
     def _quote_identifier(self, name):
         if re.match(r'^[A-Za-z][A-Za-z_0-9]*$', name):
             return name
         return '`{}`'.format(name)
 
 
-class BigQuerySelect(BaseSelect):
+class BigQuerySelect(Select):
 
     translator = BigQueryExprTranslator
 
