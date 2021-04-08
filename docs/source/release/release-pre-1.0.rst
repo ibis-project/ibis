@@ -20,8 +20,8 @@ New Features
 * Splat args into Node subclasses instead of requiring a list (:ghissue:`969`)
 * Add support for ``UNION`` in the BigQuery backend (:ghissue:`1408`,
   :ghissue:`1409`)
-* Support for writing UDFs in BigQuery (:ghissue:`1377`). See :ref:`the BigQuery
-  UDF docs <udf.bigquery>` for more details.
+* Support for writing UDFs in BigQuery (:ghissue:`1377`). See the BigQuery
+  UDF docs for more details.
 * Support for cross-project expressions in the BigQuery backend.
   (:ghissue:`1427`, :ghissue:`1428`)
 * Add ``strftime`` and ``to_timestamp`` support for BigQuery (:ghissue:`1422`,
