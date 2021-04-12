@@ -20,7 +20,7 @@ import pytest
 import sqlalchemy as sa
 
 import ibis
-import ibis.backends.base_sqlalchemy.alchemy as alch  # noqa: E402
+from ibis.backends.base.sql.alchemy import schema_from_table
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.tests.util import assert_equal
@@ -158,7 +158,7 @@ def test_schema_type_conversion():
 
     # Check that we can correctly create a schema with dt.any for the
     # missing types.
-    schema = alch.schema_from_table(table)
+    schema = schema_from_table(table)
     expected = ibis.schema(ibis_types)
 
     assert_equal(schema, expected)

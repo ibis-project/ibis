@@ -14,24 +14,25 @@ from sqlalchemy.sql import expression
 from sqlalchemy.sql.functions import GenericFunction
 
 import ibis
-import ibis.backends.base_sqlalchemy.alchemy as alch
 import ibis.common.exceptions as com
 import ibis.common.geospatial as geo
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 
-# used for literal translate
-from ibis.backends.base_sqlalchemy.alchemy import (
-    _get_sqla_table,
-    _variance_reduction,
+from ibis.backends.base.sql.alchemy import (
+    AlchemyExprTranslator,
+    sqlalchemy_operation_registry,
+    sqlalchemy_window_functions_registry,
+    get_sqla_table,
+    variance_reduction,
     fixed_arity,
     infix_op,
     unary,
 )
 
-_operation_registry = alch._operation_registry.copy()
-_operation_registry.update(alch._window_functions)
+_operation_registry = sqlalchemy_operation_registry.copy()
+_operation_registry.update(sqlalchemy_window_functions_registry)
 
 
 class PostgresUDFNode(ops.ValueOp):
@@ -526,7 +527,7 @@ def _table_column(t, expr):
     ctx = t.context
     table = op.table
 
-    sa_table = _get_sqla_table(ctx, table)
+    sa_table = get_sqla_table(ctx, table)
     out_expr = getattr(sa_table.c, op.name)
 
     expr_type = expr.type()
@@ -694,8 +695,8 @@ _operation_registry.update(
         ops.Mean: _reduction('avg'),
         ops.Min: _reduction('min'),
         ops.Max: _reduction('max'),
-        ops.Variance: _variance_reduction('var'),
-        ops.StandardDev: _variance_reduction('stddev'),
+        ops.Variance: variance_reduction('var'),
+        ops.StandardDev: variance_reduction('stddev'),
         ops.RandomScalar: _random,
         # now is in the timezone of the server, but we want UTC
         ops.TimestampNow: lambda *args: sa.func.timezone('UTC', sa.func.now()),
@@ -720,11 +721,11 @@ def add_operation(op, translation_func):
     _operation_registry[op] = translation_func
 
 
-class PostgreSQLExprTranslator(alch.AlchemyExprTranslator):
+class PostgreSQLExprTranslator(AlchemyExprTranslator):
 
     _registry = _operation_registry
-    _rewrites = alch.AlchemyExprTranslator._rewrites.copy()
-    _type_map = alch.AlchemyExprTranslator._type_map.copy()
+    _rewrites = AlchemyExprTranslator._rewrites.copy()
+    _type_map = AlchemyExprTranslator._type_map.copy()
     _type_map.update({dt.Double: pg.DOUBLE_PRECISION, dt.Float: pg.REAL})
 
 

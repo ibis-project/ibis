@@ -5,23 +5,24 @@ from typing import Optional
 import psycopg2  # NOQA fail early if the driver is missing
 import sqlalchemy as sa
 
-import ibis.backends.base_sqlalchemy.alchemy as alch
+from ibis.backends.base.sql.alchemy import (
+    AlchemyTable, AlchemyDatabaseSchema, AlchemyDatabase, AlchemyClient)
 from ibis.backends.postgres import udf
 
 
-class PostgreSQLTable(alch.AlchemyTable):
+class PostgreSQLTable(AlchemyTable):
     pass
 
 
-class PostgreSQLSchema(alch.AlchemyDatabaseSchema):
+class PostgreSQLSchema(AlchemyDatabaseSchema):
     pass
 
 
-class PostgreSQLDatabase(alch.AlchemyDatabase):
+class PostgreSQLDatabase(AlchemyDatabase):
     schema_class = PostgreSQLSchema
 
 
-class PostgreSQLClient(alch.AlchemyClient):
+class PostgreSQLClient(AlchemyClient):
 
     """The Ibis PostgreSQL client class
 

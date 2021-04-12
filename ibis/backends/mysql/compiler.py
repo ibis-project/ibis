@@ -3,23 +3,25 @@ import sqlalchemy as sa
 import sqlalchemy.dialects.mysql as mysql
 
 import ibis
-import ibis.backends.base_sqlalchemy.alchemy as alch
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.backends.base_sqlalchemy.alchemy import (
-    _reduction,
-    _variance_reduction,
+from ibis.backends.base.sql.alchemy import (
+    AlchemyExprTranslator,
+    sqlalchemy_operation_registry,
+    sqlalchemy_window_functions_registry,
+    reduction,
+    variance_reduction,
     fixed_arity,
     infix_op,
     unary,
 )
 
-_operation_registry = alch._operation_registry.copy()
+_operation_registry = sqlalchemy_operation_registry.copy()
 
 # NOTE: window functions are available from MySQL 8 and MariaDB 10.2
-_operation_registry.update(alch._window_functions)
+_operation_registry.update(sqlalchemy_window_functions_registry)
 
 
 def _substr(t, expr):
@@ -241,11 +243,11 @@ _operation_registry.update(
         ops.ExtractSecond: _extract('second'),
         ops.ExtractMillisecond: _extract('millisecond'),
         # reductions
-        ops.BitAnd: _reduction(sa.func.bit_and),
-        ops.BitOr: _reduction(sa.func.bit_or),
-        ops.BitXor: _reduction(sa.func.bit_xor),
-        ops.Variance: _variance_reduction('var'),
-        ops.StandardDev: _variance_reduction('stddev'),
+        ops.BitAnd: reduction(sa.func.bit_and),
+        ops.BitOr: reduction(sa.func.bit_or),
+        ops.BitXor: reduction(sa.func.bit_xor),
+        ops.Variance: variance_reduction('var'),
+        ops.StandardDev: variance_reduction('stddev'),
         ops.IdenticalTo: _identical_to,
         ops.TimestampNow: fixed_arity(sa.func.now, 0),
     }
@@ -256,11 +258,11 @@ def add_operation(op, translation_func):
     _operation_registry[op] = translation_func
 
 
-class MySQLExprTranslator(alch.AlchemyExprTranslator):
+class MySQLExprTranslator(AlchemyExprTranslator):
 
     _registry = _operation_registry
-    _rewrites = alch.AlchemyExprTranslator._rewrites.copy()
-    _type_map = alch.AlchemyExprTranslator._type_map.copy()
+    _rewrites = AlchemyExprTranslator._rewrites.copy()
+    _type_map = AlchemyExprTranslator._type_map.copy()
     _type_map.update(
         {
             dt.Boolean: mysql.BOOLEAN,

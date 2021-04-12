@@ -62,7 +62,7 @@ class BaseBackend(abc.ABC):
         # (e.g. `BaseSQLAlchemyBackend`)
         # TODO check if the below dialects can be merged into a single one
         if self.kind == 'sqlalchemy':
-            from ibis.backends.base_sqlalchemy.alchemy import AlchemyDialect
+            from ibis.backends.base.sql.alchemy import AlchemyDialect
 
             dialect_class = AlchemyDialect
         elif self.kind in ('sql', 'pandas'):

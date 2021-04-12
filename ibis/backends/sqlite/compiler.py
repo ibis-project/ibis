@@ -16,20 +16,22 @@ import sqlalchemy as sa
 import toolz
 
 import ibis
-import ibis.backends.base_sqlalchemy.alchemy as alch
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.backends.base_sqlalchemy.alchemy import (
-    _variance_reduction,
+from ibis.backends.base.sql.alchemy import (
+    AlchemyExprTranslator,
+    sqlalchemy_operation_registry,
+    sqlalchemy_window_functions_registry,
+    variance_reduction,
     fixed_arity,
     unary,
     varargs,
 )
 
-_operation_registry = alch._operation_registry.copy()
-_operation_registry.update(alch._window_functions)
+_operation_registry = sqlalchemy_operation_registry.copy()
+_operation_registry.update(sqlalchemy_window_functions_registry)
 
 
 def _cast(t, expr):
@@ -286,9 +288,9 @@ _operation_registry.update(
         ops.Sign: unary(sa.func._ibis_sqlite_sign),
         ops.FloorDivide: fixed_arity(sa.func._ibis_sqlite_floordiv, 2),
         ops.Modulus: fixed_arity(sa.func._ibis_sqlite_mod, 2),
-        ops.Variance: _variance_reduction('_ibis_sqlite_var'),
+        ops.Variance: variance_reduction('_ibis_sqlite_var'),
         ops.StandardDev: toolz.compose(
-            sa.func._ibis_sqlite_sqrt, _variance_reduction('_ibis_sqlite_var')
+            sa.func._ibis_sqlite_sqrt, variance_reduction('_ibis_sqlite_var')
         ),
         ops.RowID: lambda t, expr: sa.literal_column('rowid'),
     }
@@ -299,11 +301,11 @@ def add_operation(op, translation_func):
     _operation_registry[op] = translation_func
 
 
-class SQLiteExprTranslator(alch.AlchemyExprTranslator):
+class SQLiteExprTranslator(AlchemyExprTranslator):
 
     _registry = _operation_registry
-    _rewrites = alch.AlchemyExprTranslator._rewrites.copy()
-    _type_map = alch.AlchemyExprTranslator._type_map.copy()
+    _rewrites = AlchemyExprTranslator._rewrites.copy()
+    _type_map = AlchemyExprTranslator._type_map.copy()
     _type_map.update({dt.Double: sa.types.REAL, dt.Float: sa.types.REAL})
 
 
