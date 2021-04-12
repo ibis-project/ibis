@@ -148,8 +148,9 @@ class ClickhouseExprTranslator(comp.ExprTranslator):
     context_class = ClickhouseQueryContext
 
     def name(self, translated, name, force=True):
-        return '{0!s} AS {1!s}'.format(translated,
-                                       quote_identifier(name, force=force))
+        return '{0!s} AS {1!s}'.format(
+            translated, quote_identifier(name, force=force)
+        )
 
 
 compiles = ClickhouseExprTranslator.compiles
