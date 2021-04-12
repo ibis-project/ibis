@@ -19,16 +19,15 @@ import ibis.common.geospatial as geo
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-
 from ibis.backends.base.sql.alchemy import (
     AlchemyExprTranslator,
+    fixed_arity,
+    get_sqla_table,
+    infix_op,
     sqlalchemy_operation_registry,
     sqlalchemy_window_functions_registry,
-    get_sqla_table,
-    variance_reduction,
-    fixed_arity,
-    infix_op,
     unary,
+    variance_reduction,
 )
 
 _operation_registry = sqlalchemy_operation_registry.copy()

@@ -20,9 +20,9 @@ import pytest
 import sqlalchemy as sa
 
 import ibis
-from ibis.backends.base.sql.alchemy import schema_from_table
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
+from ibis.backends.base.sql.alchemy import schema_from_table
 from ibis.tests.util import assert_equal
 
 pytestmark = pytest.mark.postgres

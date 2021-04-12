@@ -22,12 +22,12 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.base.sql.alchemy import (
     AlchemyExprTranslator,
+    fixed_arity,
     sqlalchemy_operation_registry,
     sqlalchemy_window_functions_registry,
-    variance_reduction,
-    fixed_arity,
     unary,
     varargs,
+    variance_reduction,
 )
 
 _operation_registry = sqlalchemy_operation_registry.copy()

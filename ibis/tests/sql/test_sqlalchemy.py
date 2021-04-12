@@ -21,14 +21,14 @@ from sqlalchemy import func as F
 from sqlalchemy import types as sat  # noqa: E402
 
 import ibis
+import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy import (
+    AlchemyContext,
     AlchemyDialect,
     AlchemyExprTranslator,
-    AlchemyContext,
     schema_from_table,
     to_sqlalchemy,
 )
-import ibis.expr.datatypes as dt
 from ibis.tests.expr.mocks import MockAlchemyConnection
 from ibis.tests.sql.test_compiler import ExprTestCases  # noqa: E402
 from ibis.tests.util import assert_equal
@@ -79,9 +79,7 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
 
     def _translate(self, expr, named=False):
         context = AlchemyDialect.make_context()
-        translator = AlchemyExprTranslator(
-            expr, context=context, named=named
-        )
+        translator = AlchemyExprTranslator(expr, context=context, named=named)
         return translator.get_result()
 
     def test_sqla_schema_conversion(self):

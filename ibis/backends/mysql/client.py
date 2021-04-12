@@ -6,9 +6,13 @@ import pymysql  # NOQA fail early if the driver is missing
 import sqlalchemy as sa
 import sqlalchemy.dialects.mysql as mysql
 
-from ibis.backends.base.sql.alchemy import (
-    AlchemyTable, AlchemyDatabaseSchema, AlchemyDatabase, AlchemyClient)
 import ibis.expr.datatypes as dt
+from ibis.backends.base.sql.alchemy import (
+    AlchemyClient,
+    AlchemyDatabase,
+    AlchemyDatabaseSchema,
+    AlchemyTable,
+)
 
 # TODO(kszucs): unsigned integers
 

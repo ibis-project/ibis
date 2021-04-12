@@ -6,10 +6,15 @@ import sqlalchemy.sql as sql
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.base_sqlalchemy.compiler import (
-    Select, TableSetFormatter, Union, SelectBuilder, QueryBuilder)
+    QueryBuilder,
+    Select,
+    SelectBuilder,
+    TableSetFormatter,
+    Union,
+)
 
-from .datatypes import to_sqla_type
 from .database import AlchemyTable
+from .datatypes import to_sqla_type
 
 
 class _AlchemyTableSet(TableSetFormatter):

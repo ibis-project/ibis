@@ -6,8 +6,8 @@ from sqlalchemy.dialects.postgresql.base import PGDialect as PostgreSQLDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from sqlalchemy.engine.interfaces import Dialect as SQLAlchemyDialect
 
-import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
+import ibis.expr.schema as sch
 
 from .geospatial import geospatial_supported
 

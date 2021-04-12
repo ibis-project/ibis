@@ -6,7 +6,11 @@ import psycopg2  # NOQA fail early if the driver is missing
 import sqlalchemy as sa
 
 from ibis.backends.base.sql.alchemy import (
-    AlchemyTable, AlchemyDatabaseSchema, AlchemyDatabase, AlchemyClient)
+    AlchemyClient,
+    AlchemyDatabase,
+    AlchemyDatabaseSchema,
+    AlchemyTable,
+)
 from ibis.backends.postgres import udf
 
 

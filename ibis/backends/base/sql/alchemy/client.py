@@ -1,5 +1,5 @@
-import functools
 import contextlib
+import functools
 from typing import List, Optional
 
 import pandas as pd
@@ -7,11 +7,11 @@ import sqlalchemy as sa
 from pkg_resources import parse_version
 
 import ibis
-import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
-from ibis.client import SQLClient, Query
+import ibis.expr.schema as sch
 import ibis.util as util
 from ibis.backends.base_sqlalchemy.compiler import Dialect
+from ibis.client import Query, SQLClient
 
 from .datatypes import to_sqla_type
 from .geospatial import geospatial_supported

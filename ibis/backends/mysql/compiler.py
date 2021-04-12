@@ -9,13 +9,13 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.base.sql.alchemy import (
     AlchemyExprTranslator,
-    sqlalchemy_operation_registry,
-    sqlalchemy_window_functions_registry,
-    reduction,
-    variance_reduction,
     fixed_arity,
     infix_op,
+    reduction,
+    sqlalchemy_operation_registry,
+    sqlalchemy_window_functions_registry,
     unary,
+    variance_reduction,
 )
 
 _operation_registry = sqlalchemy_operation_registry.copy()

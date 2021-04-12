@@ -18,15 +18,15 @@ from typing import Optional
 import pytest
 
 import ibis.expr.types as ir
-from ibis.client import SQLClient
-from ibis.expr.schema import Schema
-from ibis.expr.typing import TimeContext
 from ibis.backends.base.sql.alchemy import (
     AlchemyDialect,
     AlchemyTable,
-    table_from_schema,
     build_ast,
+    table_from_schema,
 )
+from ibis.client import SQLClient
+from ibis.expr.schema import Schema
+from ibis.expr.typing import TimeContext
 
 
 class BaseMockConnection(SQLClient, metaclass=abc.ABCMeta):

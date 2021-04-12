@@ -6,9 +6,9 @@ import ibis.expr.types as ir
 import ibis.util as util
 from ibis.backends.base_sqlalchemy.compiler import ExprTranslator, QueryContext
 
-from .datatypes import to_sqla_type, ibis_type_to_sqla
-from .registry import sqlalchemy_operation_registry, fixed_arity
+from .datatypes import ibis_type_to_sqla, to_sqla_type
 from .query_builder import to_sqlalchemy
+from .registry import fixed_arity, sqlalchemy_operation_registry
 
 
 class AlchemyContext(QueryContext):

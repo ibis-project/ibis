@@ -1,9 +1,6 @@
 import ibis.backends.base_sqlalchemy.compiler as comp
 import ibis.expr.operations as ops
-from ibis.backends.base.sql import (
-    operation_registry,
-    quote_identifier,
-)
+from ibis.backends.base.sql import operation_registry, quote_identifier
 
 
 def build_ast(expr, context):

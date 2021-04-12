@@ -4,17 +4,17 @@ import sqlalchemy as sa
 import sqlalchemy.sql as sql
 
 import ibis
+import ibis.common.exceptions as com
+import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.common.exceptions as com
 import ibis.expr.types as ir
-import ibis.expr.analysis as L
 import ibis.expr.window as W
 from ibis.backends.base_sqlalchemy import transforms
 
 from .database import AlchemyTable
-from .query_builder import to_sqlalchemy
 from .geospatial import geospatial_supported
+from .query_builder import to_sqlalchemy
 
 
 def variance_reduction(func_name):
