@@ -443,7 +443,7 @@ def _regex_extract(t, expr):
         [
             (
                 sa.func.textregexeq(string, pattern),
-                sa.func.regex_extract(string, pattern, index + 1),
+                sa.func._regex_extract(string, pattern, index + 1),
             )
         ],
         else_='',

@@ -22,7 +22,7 @@ import ibis.udf.validate as v
 import ibis.util as util
 from ibis.backends.base.sql import fixed_arity, sql_type_names
 
-from . import compiler as comp
+from .compiler import ImpalaExprTranslator
 
 __all__ = [
     'add_operation',
@@ -322,7 +322,7 @@ def add_operation(op, func_name, db):
     arity = len(op.signature)
     translator = fixed_arity(full_name, arity)
 
-    comp._operation_registry[op] = translator
+    ImpalaExprTranslator._registry[op] = translator
 
 
 def parse_type(t):

@@ -12,14 +12,10 @@ from ibis.backends.base.sql import (
     literal_formatters,
     operation_registry,
     reduction,
-    sql_type_names,
     unary,
 )
 
-
-_sql_type_names = sql_type_names.copy()
-
-_sql_type_names.update({'date': 'date'})
+from .datatypes import type_to_sql_string
 
 
 def _cast(translator, expr):
@@ -32,18 +28,8 @@ def _cast(translator, expr):
     if isinstance(arg, ir.TemporalValue) and target_type == dt.int64:
         return '1000000 * unix_timestamp({})'.format(arg_formatted)
     else:
-        sql_type = _type_to_sql_string(target_type)
+        sql_type = type_to_sql_string(target_type)
         return 'CAST({} AS {})'.format(arg_formatted, sql_type)
-
-
-def _type_to_sql_string(tval):
-    if isinstance(tval, dt.Decimal):
-        return 'decimal({}, {})'.format(tval.precision, tval.scale)
-    name = tval.name.lower()
-    try:
-        return _sql_type_names[name]
-    except KeyError:
-        raise com.UnsupportedBackendType(name)
 
 
 _spark_date_unit_names = {'Y': 'YEAR', 'Q': 'QUARTER'}
