@@ -14,7 +14,6 @@ from ibis.backends.base_sqlalchemy.alchemy import (
     unary,
 )
 
-
 operation_registry = alch._operation_registry.copy()
 
 # NOTE: window functions are available from MySQL 8 and MariaDB 10.2

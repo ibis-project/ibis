@@ -8,18 +8,19 @@ import warnings
 
 import numpy as np
 import sqlalchemy as sa
+import sqlalchemy.dialects.postgresql as pg
+from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql import expression
 from sqlalchemy.sql.functions import GenericFunction
-from sqlalchemy.ext.compiler import compiles
-import sqlalchemy.dialects.postgresql as pg
 
 import ibis
 import ibis.backends.base_sqlalchemy.alchemy as alch
-import ibis.expr.types as ir
 import ibis.common.exceptions as com
 import ibis.common.geospatial as geo
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
+
 # used for literal translate
 from ibis.backends.base_sqlalchemy.alchemy import (
     _get_sqla_table,

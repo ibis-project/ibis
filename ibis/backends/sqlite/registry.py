@@ -5,15 +5,14 @@ import ibis
 import ibis.backends.base_sqlalchemy.alchemy as alch
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
-import ibis.expr.types as ir
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
 from ibis.backends.base_sqlalchemy.alchemy import (
     _variance_reduction,
     fixed_arity,
     unary,
     varargs,
 )
-
 
 operation_registry = alch._operation_registry.copy()
 operation_registry.update(alch._window_functions)
