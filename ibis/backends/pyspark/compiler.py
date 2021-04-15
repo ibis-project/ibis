@@ -25,8 +25,11 @@ from ibis.backends.spark.datatypes import (
 from ibis.expr.timecontext import adjust_context
 from ibis.util import coerce_to_dataframe, guid
 
-from .operations import PySparkTable
 from .timecontext import combine_time_context, filter_by_time_context
+
+
+class PySparkTable(ops.DatabaseTable):
+    pass
 
 
 class PySparkContext(SparkContext):
