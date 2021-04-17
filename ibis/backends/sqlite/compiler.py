@@ -35,7 +35,6 @@ class SQLiteExprTranslator(alch.AlchemyExprTranslator):
 
 
 rewrites = SQLiteExprTranslator.rewrites
-compiles = SQLiteExprTranslator.compiles
 
 
 @rewrites(ops.DayOfWeekIndex)

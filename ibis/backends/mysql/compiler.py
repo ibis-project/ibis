@@ -1,10 +1,7 @@
-import sqlalchemy as sa
 import sqlalchemy.dialects.mysql as mysql
 
-import ibis
 import ibis.backends.base_sqlalchemy.alchemy as alch
 import ibis.expr.datatypes as dt
-import ibis.expr.operations as ops
 
 from .registry import operation_registry
 
@@ -32,16 +29,3 @@ class MySQLExprTranslator(alch.AlchemyExprTranslator):
 
 
 rewrites = MySQLExprTranslator.rewrites
-compiles = MySQLExprTranslator.compiles
-
-
-@compiles(ops.GroupConcat)
-def mysql_compiles_group_concat(t, expr):
-    op = expr.op()
-    arg, sep, where = op.args
-    if where is not None:
-        case = where.ifelse(arg, ibis.NA)
-        arg = t.translate(case)
-    else:
-        arg = t.translate(arg)
-    return sa.func.group_concat(arg.op('SEPARATOR')(t.translate(sep)))

@@ -87,7 +87,6 @@ class ImpalaExprTranslator(BaseExprTranslator):
     context_class = BaseContext
 
 
-compiles = ImpalaExprTranslator.compiles
 rewrites = ImpalaExprTranslator.rewrites
 
 

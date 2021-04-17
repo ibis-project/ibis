@@ -1417,14 +1417,6 @@ class ExprTranslator:
 
         return decorator
 
-    @classmethod
-    def compiles(cls, klass):
-        def decorator(f):
-            cls._registry[klass] = f
-            return f
-
-        return decorator
-
 
 rewrites = ExprTranslator.rewrites
 

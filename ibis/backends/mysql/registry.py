@@ -1,6 +1,7 @@
 import pandas as pd
 import sqlalchemy as sa
 
+import ibis
 import ibis.backends.base_sqlalchemy.alchemy as alch
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -201,6 +202,17 @@ def _random(t, expr):
     return sa.func.random()
 
 
+def _group_concat(t, expr):
+    op = expr.op()
+    arg, sep, where = op.args
+    if where is not None:
+        case = where.ifelse(arg, ibis.NA)
+        arg = t.translate(case)
+    else:
+        arg = t.translate(arg)
+    return sa.func.group_concat(arg.op('SEPARATOR')(t.translate(sep)))
+
+
 operation_registry.update(
     {
         ops.Literal: _literal,
@@ -246,5 +258,7 @@ operation_registry.update(
         ops.StandardDev: _variance_reduction('stddev'),
         ops.IdenticalTo: _identical_to,
         ops.TimestampNow: fixed_arity(sa.func.now, 0),
+        # others
+        ops.GroupConcat: _group_concat,
     }
 )

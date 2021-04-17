@@ -153,7 +153,6 @@ class ClickhouseExprTranslator(comp.ExprTranslator):
         )
 
 
-compiles = ClickhouseExprTranslator.compiles
 rewrites = ClickhouseExprTranslator.rewrites
 
 
