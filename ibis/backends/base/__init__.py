@@ -97,18 +97,19 @@ class BaseBackend(abc.ABC):
         """
         pass
 
+    def build_ast(self, expr, context):
+        """
+        Return a QueryAST object for the given expression.
+        """
+        return self.builder(expr, context=context).get_result()
+
     def compile(self, expr, params=None):
         """
         Compile the expression.
         """
         context = self.dialect.make_context(params=params)
-        builder = self.builder(expr, context=context)
-        query_ast = builder.get_result()
-        # TODO make all builders return a QueryAST object
-        if isinstance(query_ast, list):
-            query_ast = query_ast[0]
-        compiled = query_ast.compile()
-        return compiled
+        ast = self.build_ast(expr, context)
+        return ast.compile()
 
     def verify(self, expr, params=None):
         """
