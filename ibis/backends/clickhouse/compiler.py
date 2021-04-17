@@ -6,7 +6,7 @@ import ibis.expr.operations as ops
 import ibis.util as util
 
 from .identifiers import quote_identifier
-from .operations import _name_expr, _operation_registry
+from .registry import operation_registry
 
 
 def build_ast(expr, context):
@@ -144,11 +144,13 @@ class ClickhouseTableSetFormatter(comp.TableSetFormatter):
 
 class ClickhouseExprTranslator(comp.ExprTranslator):
 
-    _registry = _operation_registry
+    _registry = operation_registry
     context_class = ClickhouseQueryContext
 
     def name(self, translated, name, force=True):
-        return _name_expr(translated, quote_identifier(name, force=force))
+        return '{0!s} AS {1!s}'.format(
+            translated, quote_identifier(name, force=force)
+        )
 
 
 compiles = ClickhouseExprTranslator.compiles

@@ -53,8 +53,8 @@ def _parenthesize(translator, expr):
         return what_
 
 
-def unary(func_name):
-    return fixed_arity(func_name, 1)
+def _unary(func_name):
+    return _fixed_arity(func_name, 1)
 
 
 def _extract_epoch_seconds(translator, expr):
@@ -62,7 +62,7 @@ def _extract_epoch_seconds(translator, expr):
     return _call(translator, 'toRelativeSecondNum', *op.args)
 
 
-def fixed_arity(func_name, arity):
+def _fixed_arity(func_name, arity):
     def formatter(translator, expr):
         op = expr.op()
         arg_count = len(op.args)
@@ -74,14 +74,14 @@ def fixed_arity(func_name, arity):
     return formatter
 
 
-def agg(func):
+def _agg(func):
     def formatter(translator, expr):
         return _aggregate(translator, func, *expr.op().args)
 
     return formatter
 
 
-def agg_variance_like(func):
+def _agg_variance_like(func):
     variants = {'sample': '{0}Samp'.format(func), 'pop': '{0}Pop'.format(func)}
 
     def formatter(translator, expr):
@@ -91,7 +91,7 @@ def agg_variance_like(func):
     return formatter
 
 
-def binary_infix_op(infix_sym):
+def _binary_infix_op(infix_sym):
     def formatter(translator, expr):
         op = expr.op()
 
@@ -123,11 +123,7 @@ def _xor(translator, expr):
     return 'xor({0}, {1})'.format(left_, right_)
 
 
-def _name_expr(formatted_expr, quoted_name):
-    return '{0!s} AS {1!s}'.format(formatted_expr, quoted_name)
-
-
-def varargs(func_name):
+def _varargs(func_name):
     def varargs_formatter(translator, expr):
         op = expr.op()
         return _call(translator, func_name, *op.arg)
@@ -306,7 +302,7 @@ def _interval_from_integer(translator, expr):
     return 'INTERVAL {} {}'.format(arg_, dtype.resolution.upper())
 
 
-def literal(translator, expr):
+def _literal(translator, expr):
     value = expr.op().value
     if isinstance(expr, ir.BooleanValue):
         return '1' if value else '0'
@@ -335,7 +331,7 @@ def literal(translator, expr):
         raise NotImplementedError(type(expr))
 
 
-class CaseFormatter:
+class _CaseFormatter:
     def __init__(self, translator, base, cases, results, default):
         self.translator = translator
         self.base = base
@@ -386,7 +382,7 @@ class CaseFormatter:
 
 def _simple_case(translator, expr):
     op = expr.op()
-    formatter = CaseFormatter(
+    formatter = _CaseFormatter(
         translator, op.base, op.cases, op.results, op.default
     )
     return formatter.get_result()
@@ -394,7 +390,7 @@ def _simple_case(translator, expr):
 
 def _searched_case(translator, expr):
     op = expr.op()
-    formatter = CaseFormatter(
+    formatter = _CaseFormatter(
         translator, None, op.cases, op.results, op.default
     )
     return formatter.get_result()
@@ -522,126 +518,126 @@ def _string_like(translator, expr):
 
 _binary_infix_ops = {
     # Binary operations
-    ops.Add: binary_infix_op('+'),
-    ops.Subtract: binary_infix_op('-'),
-    ops.Multiply: binary_infix_op('*'),
-    ops.Divide: binary_infix_op('/'),
-    ops.Power: fixed_arity('pow', 2),
-    ops.Modulus: binary_infix_op('%'),
+    ops.Add: _binary_infix_op('+'),
+    ops.Subtract: _binary_infix_op('-'),
+    ops.Multiply: _binary_infix_op('*'),
+    ops.Divide: _binary_infix_op('/'),
+    ops.Power: _fixed_arity('pow', 2),
+    ops.Modulus: _binary_infix_op('%'),
     # Comparisons
-    ops.Equals: binary_infix_op('='),
-    ops.NotEquals: binary_infix_op('!='),
-    ops.GreaterEqual: binary_infix_op('>='),
-    ops.Greater: binary_infix_op('>'),
-    ops.LessEqual: binary_infix_op('<='),
-    ops.Less: binary_infix_op('<'),
+    ops.Equals: _binary_infix_op('='),
+    ops.NotEquals: _binary_infix_op('!='),
+    ops.GreaterEqual: _binary_infix_op('>='),
+    ops.Greater: _binary_infix_op('>'),
+    ops.LessEqual: _binary_infix_op('<='),
+    ops.Less: _binary_infix_op('<'),
     # Boolean comparisons
-    ops.And: binary_infix_op('AND'),
-    ops.Or: binary_infix_op('OR'),
+    ops.And: _binary_infix_op('AND'),
+    ops.Or: _binary_infix_op('OR'),
     ops.Xor: _xor,
 }
 
 _unary_ops = {ops.Negate: _negate, ops.Not: _not}
 
 
-_operation_registry = {
+operation_registry = {
     # Unary operations
-    ops.TypeOf: unary('toTypeName'),
-    ops.IsNan: unary('isNaN'),
-    ops.IsInf: unary('isInfinite'),
-    ops.Abs: unary('abs'),
-    ops.Ceil: unary('ceil'),
-    ops.Floor: unary('floor'),
-    ops.Exp: unary('exp'),
+    ops.TypeOf: _unary('toTypeName'),
+    ops.IsNan: _unary('isNaN'),
+    ops.IsInf: _unary('isInfinite'),
+    ops.Abs: _unary('abs'),
+    ops.Ceil: _unary('ceil'),
+    ops.Floor: _unary('floor'),
+    ops.Exp: _unary('exp'),
     ops.Round: _round,
     ops.Sign: _sign,
-    ops.Sqrt: unary('sqrt'),
+    ops.Sqrt: _unary('sqrt'),
     ops.Hash: _hash,
     ops.Log: _log,
-    ops.Ln: unary('log'),
-    ops.Log2: unary('log2'),
-    ops.Log10: unary('log10'),
+    ops.Ln: _unary('log'),
+    ops.Log2: _unary('log2'),
+    ops.Log10: _unary('log10'),
     # Unary aggregates
-    ops.CMSMedian: agg('median'),
+    ops.CMSMedian: _agg('median'),
     # TODO: there is also a `uniq` function which is the
     #       recommended way to approximate cardinality
-    ops.HLLCardinality: agg('uniqHLL12'),
-    ops.Mean: agg('avg'),
-    ops.Sum: agg('sum'),
-    ops.Max: agg('max'),
-    ops.Min: agg('min'),
-    ops.StandardDev: agg_variance_like('stddev'),
-    ops.Variance: agg_variance_like('var'),
+    ops.HLLCardinality: _agg('uniqHLL12'),
+    ops.Mean: _agg('avg'),
+    ops.Sum: _agg('sum'),
+    ops.Max: _agg('max'),
+    ops.Min: _agg('min'),
+    ops.StandardDev: _agg_variance_like('stddev'),
+    ops.Variance: _agg_variance_like('var'),
     # ops.GroupConcat: fixed_arity('group_concat', 2),
-    ops.Count: agg('count'),
-    ops.CountDistinct: agg('uniq'),
+    ops.Count: _agg('count'),
+    ops.CountDistinct: _agg('uniq'),
     ops.Arbitrary: _arbitrary,
     # string operations
-    ops.StringLength: unary('length'),
-    ops.Lowercase: unary('lower'),
-    ops.Uppercase: unary('upper'),
-    ops.Reverse: unary('reverse'),
+    ops.StringLength: _unary('length'),
+    ops.Lowercase: _unary('lower'),
+    ops.Uppercase: _unary('upper'),
+    ops.Reverse: _unary('reverse'),
     ops.Substring: _substring,
     ops.StringFind: _string_find,
     ops.FindInSet: _index_of,
-    ops.StringReplace: fixed_arity('replaceAll', 3),
+    ops.StringReplace: _fixed_arity('replaceAll', 3),
     ops.StringJoin: _string_join,
     ops.StringSplit: _string_split,
     ops.StringSQLLike: _string_like,
     ops.Repeat: _string_repeat,
-    ops.RegexSearch: fixed_arity('match', 2),
+    ops.RegexSearch: _fixed_arity('match', 2),
     # TODO: extractAll(haystack, pattern)[index + 1]
     ops.RegexExtract: _regex_extract,
-    ops.RegexReplace: fixed_arity('replaceRegexpAll', 3),
+    ops.RegexReplace: _fixed_arity('replaceRegexpAll', 3),
     ops.ParseURL: _parse_url,
     # Temporal operations
-    ops.Date: unary('toDate'),
+    ops.Date: _unary('toDate'),
     ops.DateTruncate: _truncate,
     ops.TimestampNow: lambda *args: 'now()',
     ops.TimestampTruncate: _truncate,
     ops.TimeTruncate: _truncate,
     ops.IntervalFromInteger: _interval_from_integer,
-    ops.ExtractYear: unary('toYear'),
-    ops.ExtractMonth: unary('toMonth'),
-    ops.ExtractDay: unary('toDayOfMonth'),
-    ops.ExtractDayOfYear: unary('toDayOfYear'),
-    ops.ExtractQuarter: unary('toQuarter'),
+    ops.ExtractYear: _unary('toYear'),
+    ops.ExtractMonth: _unary('toMonth'),
+    ops.ExtractDay: _unary('toDayOfMonth'),
+    ops.ExtractDayOfYear: _unary('toDayOfYear'),
+    ops.ExtractQuarter: _unary('toQuarter'),
     ops.ExtractEpochSeconds: _extract_epoch_seconds,
-    ops.ExtractWeekOfYear: unary('toISOWeek'),
-    ops.ExtractHour: unary('toHour'),
-    ops.ExtractMinute: unary('toMinute'),
-    ops.ExtractSecond: unary('toSecond'),
+    ops.ExtractWeekOfYear: _unary('toISOWeek'),
+    ops.ExtractHour: _unary('toHour'),
+    ops.ExtractMinute: _unary('toMinute'),
+    ops.ExtractSecond: _unary('toSecond'),
     # Other operations
     ops.E: lambda *args: 'e()',
-    ops.Literal: literal,
+    ops.Literal: _literal,
     ops.ValueList: _value_list,
     ops.Cast: _cast,
     # for more than 2 args this should be arrayGreatest|Least(array([]))
     # because clickhouse's greatest and least doesn't support varargs
-    ops.Greatest: varargs('greatest'),
-    ops.Least: varargs('least'),
-    ops.Where: fixed_arity('if', 3),
+    ops.Greatest: _varargs('greatest'),
+    ops.Least: _varargs('least'),
+    ops.Where: _fixed_arity('if', 3),
     ops.Between: _between,
-    ops.Contains: binary_infix_op('IN'),
-    ops.NotContains: binary_infix_op('NOT IN'),
+    ops.Contains: _binary_infix_op('IN'),
+    ops.NotContains: _binary_infix_op('NOT IN'),
     ops.SimpleCase: _simple_case,
     ops.SearchedCase: _searched_case,
     ops.TableColumn: _table_column,
     ops.TableArrayView: _table_array_view,
-    ops.DateAdd: binary_infix_op('+'),
-    ops.DateSub: binary_infix_op('-'),
-    ops.DateDiff: binary_infix_op('-'),
-    ops.TimestampAdd: binary_infix_op('+'),
-    ops.TimestampSub: binary_infix_op('-'),
-    ops.TimestampDiff: binary_infix_op('-'),
+    ops.DateAdd: _binary_infix_op('+'),
+    ops.DateSub: _binary_infix_op('-'),
+    ops.DateDiff: _binary_infix_op('-'),
+    ops.TimestampAdd: _binary_infix_op('+'),
+    ops.TimestampSub: _binary_infix_op('-'),
+    ops.TimestampDiff: _binary_infix_op('-'),
     ops.TimestampFromUNIX: _timestamp_from_unix,
     transforms.ExistsSubquery: _exists_subquery,
     transforms.NotExistsSubquery: _exists_subquery,
-    ops.ArrayLength: unary('length'),
+    ops.ArrayLength: _unary('length'),
 }
 
 
-def raise_error(translator, expr, *args):
+def _raise_error(translator, expr, *args):
     msg = "Clickhouse backend doesn't support {0} operation!"
     op = expr.op()
     raise com.UnsupportedOperationError(msg.format(type(op)))
@@ -667,11 +663,11 @@ def _zero_if_null(translator, expr):
 
 _undocumented_operations = {
     ops.NullLiteral: _null_literal,  # undocumented
-    ops.IsNull: unary('isNull'),
-    ops.NotNull: unary('isNotNull'),
-    ops.IfNull: fixed_arity('ifNull', 2),
-    ops.NullIf: fixed_arity('nullIf', 2),
-    ops.Coalesce: varargs('coalesce'),
+    ops.IsNull: _unary('isNull'),
+    ops.NotNull: _unary('isNotNull'),
+    ops.IfNull: _fixed_arity('ifNull', 2),
+    ops.NullIf: _fixed_arity('nullIf', 2),
+    ops.Coalesce: _varargs('coalesce'),
     ops.NullIfZero: _null_if_zero,
     ops.ZeroIfNull: _zero_if_null,
 }
@@ -700,10 +696,10 @@ _unsupported_ops = [
     ops.Lead,
     ops.NTile,
 ]
-_unsupported_ops = {k: raise_error for k in _unsupported_ops}
+_unsupported_ops = {k: _raise_error for k in _unsupported_ops}
 
 
-_operation_registry.update(_undocumented_operations)
-_operation_registry.update(_unsupported_ops)
-_operation_registry.update(_unary_ops)
-_operation_registry.update(_binary_infix_ops)
+operation_registry.update(_undocumented_operations)
+operation_registry.update(_unsupported_ops)
+operation_registry.update(_unary_ops)
+operation_registry.update(_binary_infix_ops)

@@ -1,7 +1,7 @@
 from ibis.backends.base.sql import quote_identifier
 from ibis.backends.base_sql import ddl as base_ddl
 
-from .compiler import _type_to_sql_string
+from .datatypes import type_to_sql_string
 
 _format_aliases = {'TEXTFILE': 'TEXT'}
 
@@ -146,7 +146,7 @@ def format_schema(schema):
 
 def _format_schema_element(name, t):
     return '{} {}'.format(
-        quote_identifier(name, force=True), _type_to_sql_string(t),
+        quote_identifier(name, force=True), type_to_sql_string(t),
     )
 
 

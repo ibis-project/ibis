@@ -2,8 +2,7 @@ from ibis.backends.base import BaseBackend
 from ibis.backends.spark.client import SparkDatabase, SparkQuery, SparkTable
 
 from .client import PySparkClient
-from .compiler import PySparkExprTranslator
-from .operations import PySparkTable
+from .compiler import PySparkExprTranslator, PySparkTable
 
 
 class Backend(BaseBackend):
