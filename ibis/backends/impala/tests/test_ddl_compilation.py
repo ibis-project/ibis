@@ -3,7 +3,7 @@ import pytest
 import ibis
 from ibis.backends.base_sql import ddl as base_ddl
 from ibis.backends.impala import ddl
-from ibis.backends.impala.client import build_ast
+from ibis.backends.impala import Backend
 
 pytestmark = pytest.mark.impala
 
@@ -530,7 +530,7 @@ def test_partition_by():
 def _create_table(
     table_name, expr, database=None, can_exist=False, format='parquet'
 ):
-    ast = build_ast(expr)
+    ast = Backend().build_ast(expr)
     select = ast.queries[0]
     statement = base_ddl.CTAS(
         table_name,
@@ -543,7 +543,7 @@ def _create_table(
 
 
 def _get_select(expr, context=None):
-    ast = build_ast(expr, context)
+    ast = Backend().build_ast(expr, context)
     select = ast.queries[0]
     context = ast.context
     return select, context

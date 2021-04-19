@@ -16,8 +16,6 @@ from ibis.client import Database, DatabaseEntity, Query, SQLClient
 from ibis.config import options
 from ibis.util import log
 
-from .compiler import build_ast
-
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
 base_typename_re = re.compile(r"(\w+)")
 
@@ -222,9 +220,6 @@ class ClickhouseClient(SQLClient):
         self.table_class = backend.table_class
         self.table_expr_class = backend.table_expr_class
         self.con = _DriverClient(*args, **kwargs)
-
-    def _build_ast(self, expr, context):
-        return build_ast(expr, context)
 
     @property
     def current_database(self):

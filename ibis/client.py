@@ -258,7 +258,7 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
     def _build_ast_ensure_limit(self, expr, limit, params=None):
         context = self.dialect.make_context(params=params)
 
-        query_ast = self._build_ast(expr, context)
+        query_ast = self.backend.build_ast(expr, context)
         # note: limit can still be None at this point, if the global
         # default_limit is None
         for query in reversed(query_ast.queries):
@@ -290,7 +290,7 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         """
         if isinstance(expr, ir.Expr):
             context = self.dialect.make_context(params=params)
-            query_ast = self._build_ast(expr, context)
+            query_ast = self.backend.build_ast(expr, context)
             if len(query_ast.queries) > 1:
                 raise Exception('Multi-query expression')
 
@@ -306,10 +306,6 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         return 'Query:\n{0}\n\n{1}'.format(
             util.indent(query, 2), '\n'.join(result)
         )
-
-    def _build_ast(self, expr, context):
-        # Implement in clients
-        raise NotImplementedError(type(self).__name__)
 
 
 class QueryPipeline:

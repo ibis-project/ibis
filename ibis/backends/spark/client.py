@@ -22,7 +22,6 @@ from ibis.util import log
 
 from . import compiler as comp
 from . import ddl
-from .compiler import build_ast
 from .datatypes import spark_dtype
 
 
@@ -222,7 +221,7 @@ class SparkTable(ir.TableExpr):
             if not insert_schema.equals(existing_schema):
                 _validate_compatible(insert_schema, existing_schema)
 
-        ast = build_ast(expr)
+        ast = self._client.backend.build_ast(expr)
         select = ast.queries[0]
         statement = ddl.InsertSelect(
             self._qualified_name, select, overwrite=overwrite
@@ -277,6 +276,7 @@ class SparkClient(SQLClient):
     """
 
     def __init__(self, backend, session):
+        self.backend = backend
         self.dialect = backend.dialect
         self.database_class = backend.database_class
         self.query_class = backend.query_class
@@ -292,10 +292,6 @@ class SparkClient(SQLClient):
         Close Spark connection and drop any temporary objects
         """
         self._context.stop()
-
-    def _build_ast(self, expr, context):
-        result = build_ast(expr, context)
-        return result
 
     def _execute(self, stmt, results=False):
         query = self._session.sql(stmt)
@@ -600,7 +596,7 @@ class SparkClient(SQLClient):
                 )
                 return
 
-            ast = build_ast(obj)
+            ast = self.backend.build_ast(obj)
             select = ast.queries[0]
 
             statement = ddl.CTAS(
@@ -638,7 +634,7 @@ class SparkClient(SQLClient):
           Replace an existing view of the same name if it exists
         temporary : boolean, default False
         """
-        ast = build_ast(expr)
+        ast = self.backend.build_ast(expr)
         select = ast.queries[0]
         statement = ddl.CreateView(
             name,

@@ -6,10 +6,14 @@ import pytest
 import ibis
 import ibis.expr.api as api
 import ibis.expr.operations as ops
-from ibis.backends.base_sql.compiler import BaseDialect, build_ast, to_sql
+from ibis.backends.base import BaseBackend
 from ibis.tests.expr.mocks import MockConnection
 
 pytest.importorskip('sqlalchemy')
+
+
+def to_sql(expr):
+    return BaseBackend().to_sql(expr)
 
 
 class TestASTBuilder(unittest.TestCase):
@@ -247,7 +251,7 @@ FROM alltypes"""
 
 
 def _get_query(expr):
-    ast = build_ast(expr, BaseDialect.make_context())
+    ast = BaseBackend().build_ast(expr)
     return ast.queries[0]
 
 

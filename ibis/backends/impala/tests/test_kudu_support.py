@@ -3,11 +3,12 @@ import unittest
 
 import pytest
 
-import ibis  # noqa: E402
-import ibis.expr.datatypes as dt  # noqa: E402
-import ibis.util as util  # noqa: E402
-from ibis.tests.expr.mocks import MockConnection  # noqa: E402
-from ibis.tests.util import assert_equal  # noqa: E402
+import ibis
+import ibis.expr.datatypes as dt
+import ibis.util as util
+from ibis.tests.expr.mocks import MockConnection
+from ibis.tests.util import assert_equal
+from ibis.backends.impala import Backend
 
 ksupport = pytest.importorskip('ibis.backends.impala.kudu_support')
 kudu = pytest.importorskip('kudu')
@@ -16,8 +17,6 @@ from ibis.backends.impala.tests.conftest import (  # noqa: E402, isort:skip
     IbisTestEnv,
     ImpalaE2E,
 )
-
-from ibis.backends.impala.client import build_ast  # noqa: E402, isort:skip
 
 
 pytestmark = pytest.mark.kudu
@@ -117,7 +116,7 @@ TBLPROPERTIES (
     def test_ctas_ddl(self):
         con = MockConnection()
 
-        select = build_ast(con.table('test1')).queries[0]
+        select = Backend().build_ast(con.table('test1')).queries[0]
         statement = ksupport.CTASKudu(
             'another_table',
             'kudu_name',
