@@ -6,9 +6,9 @@ import pytest
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.util as util
+from ibis.backends.impala import Backend
 from ibis.tests.expr.mocks import MockConnection
 from ibis.tests.util import assert_equal
-from ibis.backends.impala import Backend
 
 ksupport = pytest.importorskip('ibis.backends.impala.kudu_support')
 kudu = pytest.importorskip('kudu')

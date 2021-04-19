@@ -2,8 +2,7 @@ import pytest
 
 import ibis
 from ibis.backends.base_sql import ddl as base_ddl
-from ibis.backends.impala import ddl
-from ibis.backends.impala import Backend
+from ibis.backends.impala import Backend, ddl
 
 pytestmark = pytest.mark.impala
 

@@ -6,7 +6,6 @@ from ibis.backends.base.sql import (
     quote_identifier,
 )
 
-
 # ----------------------------------------------------------------------
 # Select compilation
 
@@ -24,7 +23,11 @@ class BaseQueryBuilder(comp.QueryBuilder):
 
 class BaseContext(comp.QueryContext):
     def _to_sql(self, expr, ctx):
-        from ibis.backends.base import Backend
+        from ibis.backends.base import BaseBackend
+
+        class Backend(BaseBackend):
+            pass
+
         return Backend().compile(expr, ctx)
 
 

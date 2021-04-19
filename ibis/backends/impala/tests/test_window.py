@@ -3,11 +3,15 @@ import pytest
 import ibis
 import ibis.common.exceptions as com
 from ibis import window
-from ibis.backends.impala.compiler import to_sql  # noqa: E402
+from ibis.backends.impala import Backend
 from ibis.expr.window import rows_with_max_lookback
 from ibis.tests.util import assert_equal
 
 pytestmark = pytest.mark.impala
+
+
+def to_sql(expr):
+    return Backend().compile(expr)
 
 
 @pytest.fixture

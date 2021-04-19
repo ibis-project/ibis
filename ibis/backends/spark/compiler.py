@@ -35,7 +35,6 @@ from ibis.backends.base_sql.compiler import (
 
 from .registry import operation_registry
 
-
 # ----------------------------------------------------------------------
 # Select compilation
 

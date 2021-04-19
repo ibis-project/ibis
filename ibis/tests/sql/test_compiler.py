@@ -251,7 +251,10 @@ FROM alltypes"""
 
 
 def _get_query(expr):
-    ast = BaseBackend().build_ast(expr)
+    class Backend(BaseBackend):
+        pass
+
+    ast = Backend().build_ast(expr)
     return ast.queries[0]
 
 

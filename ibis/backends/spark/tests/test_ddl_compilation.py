@@ -3,8 +3,7 @@ import pytest
 import ibis
 from ibis.backends.base_sql import ddl as base_ddl
 
-from .. import ddl
-from .. import Backend
+from .. import Backend, ddl
 
 pytestmark = pytest.mark.spark
 
