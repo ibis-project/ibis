@@ -41,6 +41,7 @@ class PostgreSQLClient(alch.AlchemyClient):
         url: Optional[str] = None,
         driver: str = 'psycopg2',
     ):
+        self.backend = backend
         self.dialect = backend.dialect
         self.database_class = backend.database_class
         self.table_class = backend.table_class
