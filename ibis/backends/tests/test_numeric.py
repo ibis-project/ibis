@@ -379,7 +379,7 @@ def test_sa_default_numeric_precision_and_scale(
     con, backend, dialects, default_precisions, default_scales
 ):
     # TODO: find a better way to access ibis.sql.alchemy
-    import ibis.backends.base_sqlalchemy.alchemy as alch
+    from ibis.backends.base.sql.alchemy import schema_from_table
 
     dialect = dialects[backend.name()]
     default_precision = default_precisions[backend.name()]
@@ -406,7 +406,7 @@ def test_sa_default_numeric_precision_and_scale(
     table = sa.Table(table_name, sa.MetaData(bind=engine), *sqla_types)
 
     # Check that we can correctly recover the default precision and scale.
-    schema = alch.schema_from_table(table)
+    schema = schema_from_table(table)
     expected = ibis.schema(ibis_types)
 
     assert_equal(schema, expected)

@@ -186,9 +186,11 @@ def get_common_spark_testing_client(data_directory, connect):
     import pyspark.sql.types as pt
     from pyspark.sql import SparkSession
 
-    spark = SparkSession.builder.config(
-        'spark.default.parallelism', 4
-    ).getOrCreate()
+    spark = (
+        SparkSession.builder.config('spark.default.parallelism', 4)
+        .config('spark.driver.bindAddress', '127.0.0.1')
+        .getOrCreate()
+    )
     _spark_testing_client = connect(spark)
     s = _spark_testing_client._session
     num_partitions = 4

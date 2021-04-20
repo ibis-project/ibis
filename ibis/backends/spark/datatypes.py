@@ -4,7 +4,21 @@ import pyspark.sql.types as pt
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
+from ibis.backends.base.sql import sql_type_names
 from ibis.expr.schema import Schema
+
+_sql_type_names = dict(sql_type_names, date='date')
+
+
+def type_to_sql_string(tval):
+    if isinstance(tval, dt.Decimal):
+        return 'decimal({}, {})'.format(tval.precision, tval.scale)
+    name = tval.name.lower()
+    try:
+        return _sql_type_names[name]
+    except KeyError:
+        raise com.UnsupportedBackendType(name)
+
 
 # maps pyspark type class to ibis type class
 _SPARK_DTYPE_TO_IBIS_DTYPE = {
