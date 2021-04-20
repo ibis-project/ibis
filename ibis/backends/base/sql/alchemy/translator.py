@@ -1,14 +1,10 @@
-import sqlalchemy as sa
-
 import ibis
 import ibis.expr.operations as ops
-import ibis.expr.types as ir
-import ibis.util as util
 from ibis.backends.base_sqlalchemy.compiler import ExprTranslator, QueryContext
 
 from .datatypes import ibis_type_to_sqla, to_sqla_type
 from .query_builder import to_sqlalchemy
-from .registry import fixed_arity, sqlalchemy_operation_registry
+from .registry import sqlalchemy_operation_registry
 
 
 class AlchemyContext(QueryContext):
@@ -73,29 +69,9 @@ class AlchemyExprTranslator(ExprTranslator):
 
 
 rewrites = AlchemyExprTranslator.rewrites
-compiles = AlchemyExprTranslator.compiles
 
 
 @rewrites(ops.NullIfZero)
 def _nullifzero(expr):
     arg = expr.op().args[0]
     return (arg == 0).ifelse(ibis.NA, arg)
-
-
-@compiles(ops.Divide)
-def _true_divide(t, expr):
-    op = expr.op()
-    left, right = args = op.args
-
-    if util.all_of(args, ir.IntegerValue):
-        return t.translate(left.div(right.cast('double')))
-
-    return fixed_arity(lambda x, y: x / y, 2)(t, expr)
-
-
-@compiles(ops.SortKey)
-def _sort_key(t, expr):
-    # We need to define this for window functions that have an order by
-    by, ascending = expr.op().args
-    sort_direction = sa.asc if ascending else sa.desc
-    return sort_direction(t.translate(by))

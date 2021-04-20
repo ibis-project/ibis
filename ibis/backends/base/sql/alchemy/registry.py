@@ -10,6 +10,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.window as W
+from ibis import util
 from ibis.backends.base_sqlalchemy import transforms
 
 from .database import AlchemyTable
@@ -388,6 +389,23 @@ def _ntile(t, expr):
     return sa.func.ntile(buckets)
 
 
+def _true_divide(t, expr):
+    op = expr.op()
+    left, right = args = op.args
+
+    if util.all_of(args, ir.IntegerValue):
+        return t.translate(left.div(right.cast('double')))
+
+    return fixed_arity(lambda x, y: x / y, 2)(t, expr)
+
+
+def _sort_key(t, expr):
+    # We need to define this for window functions that have an order by
+    by, ascending = expr.op().args
+    sort_direction = sa.asc if ascending else sa.desc
+    return sort_direction(t.translate(by))
+
+
 sqlalchemy_operation_registry = {
     ops.And: fixed_arity(sql.and_, 2),
     ops.Or: fixed_arity(sql.or_, 2),
@@ -447,6 +465,9 @@ sqlalchemy_operation_registry = {
     ops.Floor: unary(sa.func.floor),
     ops.Power: fixed_arity(sa.func.pow, 2),
     ops.FloorDivide: _floor_divide,
+    ops.Divide: _true_divide,
+    # other
+    ops.SortKey: _sort_key,
 }
 
 
