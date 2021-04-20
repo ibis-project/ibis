@@ -465,7 +465,6 @@ sqlalchemy_operation_registry = {
     ops.Floor: unary(sa.func.floor),
     ops.Power: fixed_arity(sa.func.pow, 2),
     ops.FloorDivide: _floor_divide,
-    ops.Divide: _true_divide,
     # other
     ops.SortKey: _sort_key,
 }
@@ -477,7 +476,10 @@ _binary_ops = {
     ops.Add: operator.add,
     ops.Subtract: operator.sub,
     ops.Multiply: operator.mul,
-    ops.Divide: operator.truediv,
+    # XXX operator.truediv was defined here, but then overwriten
+    # by _true_divide using `@compiles`. Not sure why
+    # ops.Divide: operator.truediv,
+    ops.Divide: _true_divide,
     ops.Modulus: operator.mod,
     # Comparisons
     ops.Equals: operator.eq,
