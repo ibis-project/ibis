@@ -1366,6 +1366,17 @@ class ExprTranslator:
             translated = self.name(translated, name)
         return translated
 
+    @classmethod
+    def add_operation(cls, operation, translate_function):
+        """
+        Adds an operation to the operation registry. In general, operations
+        should be defined directly in the registry, in `registry.py`. But
+        there are couple of exceptions why this is needed. Operations defined
+        by Ibis users (not Ibis or backend developers). and UDF, which are
+        added dynamically.
+        """
+        cls._registry[operation] = translate_function
+
     def _needs_name(self, expr):
         if not self.named:
             return False
