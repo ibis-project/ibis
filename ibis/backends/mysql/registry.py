@@ -1,23 +1,24 @@
 import pandas as pd
 import sqlalchemy as sa
 
-import ibis.backends.base_sqlalchemy.alchemy as alch
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.backends.base_sqlalchemy.alchemy import (
-    _reduction,
-    _variance_reduction,
+from ibis.backends.base.sql.alchemy import (
     fixed_arity,
     infix_op,
+    reduction,
+    sqlalchemy_operation_registry,
+    sqlalchemy_window_functions_registry,
     unary,
+    variance_reduction,
 )
 
-operation_registry = alch._operation_registry.copy()
+operation_registry = sqlalchemy_operation_registry.copy()
 
 # NOTE: window functions are available from MySQL 8 and MariaDB 10.2
-operation_registry.update(alch._window_functions)
+operation_registry.update(sqlalchemy_window_functions_registry)
 
 
 def _substr(t, expr):
@@ -239,11 +240,11 @@ operation_registry.update(
         ops.ExtractSecond: _extract('second'),
         ops.ExtractMillisecond: _extract('millisecond'),
         # reductions
-        ops.BitAnd: _reduction(sa.func.bit_and),
-        ops.BitOr: _reduction(sa.func.bit_or),
-        ops.BitXor: _reduction(sa.func.bit_xor),
-        ops.Variance: _variance_reduction('var'),
-        ops.StandardDev: _variance_reduction('stddev'),
+        ops.BitAnd: reduction(sa.func.bit_and),
+        ops.BitOr: reduction(sa.func.bit_or),
+        ops.BitXor: reduction(sa.func.bit_xor),
+        ops.Variance: variance_reduction('var'),
+        ops.StandardDev: variance_reduction('stddev'),
         ops.IdenticalTo: _identical_to,
         ops.TimestampNow: fixed_arity(sa.func.now, 0),
     }

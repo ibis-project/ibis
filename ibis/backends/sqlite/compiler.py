@@ -15,9 +15,9 @@
 import sqlalchemy as sa
 
 import ibis
-import ibis.backends.base_sqlalchemy.alchemy as alch
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.backends.base.sql.alchemy import AlchemyExprTranslator
 
 from .registry import operation_registry
 
@@ -26,11 +26,10 @@ def add_operation(op, translation_func):
     operation_registry[op] = translation_func
 
 
-class SQLiteExprTranslator(alch.AlchemyExprTranslator):
-
+class SQLiteExprTranslator(AlchemyExprTranslator):
     _registry = operation_registry
-    _rewrites = alch.AlchemyExprTranslator._rewrites.copy()
-    _type_map = alch.AlchemyExprTranslator._type_map.copy()
+    _rewrites = AlchemyExprTranslator._rewrites.copy()
+    _type_map = AlchemyExprTranslator._type_map.copy()
     _type_map.update({dt.Double: sa.types.REAL, dt.Float: sa.types.REAL})
 
 
