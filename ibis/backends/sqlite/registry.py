@@ -2,20 +2,21 @@ import sqlalchemy as sa
 import toolz
 
 import ibis
-import ibis.backends.base_sqlalchemy.alchemy as alch
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.backends.base_sqlalchemy.alchemy import (
-    _variance_reduction,
+from ibis.backends.base.sql.alchemy import (
     fixed_arity,
+    sqlalchemy_operation_registry,
+    sqlalchemy_window_functions_registry,
     unary,
     varargs,
+    variance_reduction,
 )
 
-operation_registry = alch._operation_registry.copy()
-operation_registry.update(alch._window_functions)
+operation_registry = sqlalchemy_operation_registry.copy()
+operation_registry.update(sqlalchemy_window_functions_registry)
 
 
 def _cast(t, expr):
@@ -272,9 +273,9 @@ operation_registry.update(
         ops.Sign: unary(sa.func._ibis_sqlite_sign),
         ops.FloorDivide: fixed_arity(sa.func._ibis_sqlite_floordiv, 2),
         ops.Modulus: fixed_arity(sa.func._ibis_sqlite_mod, 2),
-        ops.Variance: _variance_reduction('_ibis_sqlite_var'),
+        ops.Variance: variance_reduction('_ibis_sqlite_var'),
         ops.StandardDev: toolz.compose(
-            sa.func._ibis_sqlite_sqrt, _variance_reduction('_ibis_sqlite_var')
+            sa.func._ibis_sqlite_sqrt, variance_reduction('_ibis_sqlite_var')
         ),
         ops.RowID: lambda t, expr: sa.literal_column('rowid'),
     }

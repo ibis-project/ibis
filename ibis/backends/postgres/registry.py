@@ -14,7 +14,6 @@ from sqlalchemy.sql import expression
 from sqlalchemy.sql.functions import GenericFunction
 
 import ibis
-import ibis.backends.base_sqlalchemy.alchemy as alch
 import ibis.common.exceptions as com
 import ibis.common.geospatial as geo
 import ibis.expr.datatypes as dt
@@ -22,16 +21,18 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 
 # used for literal translate
-from ibis.backends.base_sqlalchemy.alchemy import (
-    _get_sqla_table,
-    _variance_reduction,
+from ibis.backends.base.sql.alchemy import (
     fixed_arity,
+    get_sqla_table,
     infix_op,
+    sqlalchemy_operation_registry,
+    sqlalchemy_window_functions_registry,
     unary,
+    variance_reduction,
 )
 
-operation_registry = alch._operation_registry.copy()
-operation_registry.update(alch._window_functions)
+operation_registry = sqlalchemy_operation_registry.copy()
+operation_registry.update(sqlalchemy_window_functions_registry)
 
 
 # TODO: substr and find are copied from SQLite, we should really have a
@@ -522,7 +523,7 @@ def _table_column(t, expr):
     ctx = t.context
     table = op.table
 
-    sa_table = _get_sqla_table(ctx, table)
+    sa_table = get_sqla_table(ctx, table)
     out_expr = getattr(sa_table.c, op.name)
 
     expr_type = expr.type()
@@ -690,8 +691,8 @@ operation_registry.update(
         ops.Mean: _reduction('avg'),
         ops.Min: _reduction('min'),
         ops.Max: _reduction('max'),
-        ops.Variance: _variance_reduction('var'),
-        ops.StandardDev: _variance_reduction('stddev'),
+        ops.Variance: variance_reduction('var'),
+        ops.StandardDev: variance_reduction('stddev'),
         ops.RandomScalar: _random,
         # now is in the timezone of the server, but we want UTC
         ops.TimestampNow: lambda *args: sa.func.timezone('UTC', sa.func.now()),
