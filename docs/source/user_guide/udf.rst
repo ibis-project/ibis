@@ -18,4 +18,4 @@ The next backends provide UDF support:
 
 - :ref:`udf.impala`
 - :ref:`udf.pandas`
-- :ref:`udf.bigquery`
+- Bigquery
