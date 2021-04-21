@@ -22,8 +22,6 @@ class TestConf(BackendTest, RoundAwayFromZero):
                 'IBIS_TEST_SQLITE_DATABASE', data_directory / 'ibis_testing.db'
             )
         )
-        if not path.exists():
-            pytest.skip('SQLite testing db {} does not exist'.format(path))
         return ibis.sqlite.connect(str(path))
 
     @property
@@ -35,11 +33,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
 @pytest.fixture(scope='module')
 def dbpath(data_directory):
     default = str(data_directory / 'ibis_testing.db')
-    path = os.environ.get('IBIS_TEST_SQLITE_DATABASE', default)
-    if not os.path.exists(path):
-        pytest.skip('SQLite testing db {} does not exist'.format(path))
-    else:
-        return path
+    return os.environ.get('IBIS_TEST_SQLITE_DATABASE', default)
 
 
 @pytest.fixture(scope='module')
