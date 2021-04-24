@@ -1,5 +1,5 @@
 impyla=0.15
-bitarray=1.8
+bitarray>=2
 requests
 thrift_sasl
 python-hdfs
