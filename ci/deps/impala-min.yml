@@ -1,6 +1,0 @@
-impyla=0.15
-bitarray>=2
-thriftpy2
-requests
-thrift_sasl
-python-hdfs
