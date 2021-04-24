@@ -75,3 +75,27 @@ rewrites = AlchemyExprTranslator.rewrites
 def _nullifzero(expr):
     arg = expr.op().args[0]
     return (arg == 0).ifelse(ibis.NA, arg)
+
+
+# TODO This was previously implemented with the legacy `@compiles` decorator.
+# This definition should now be in the registry, but there is some magic going
+# on that things fail if it's not defined here (and in the registry
+# `operator.truediv` is used.
+def _true_divide(t, expr):
+    # Having imports here, so this is self-contained and faster to clean up
+    # when this function is moved to the registry
+    import ibis.expr.types as ir
+    from ibis import util
+
+    from .registry import fixed_arity
+
+    op = expr.op()
+    left, right = args = op.args
+
+    if util.all_of(args, ir.IntegerValue):
+        return t.translate(left.div(right.cast('double')))
+
+    return fixed_arity(lambda x, y: x / y, 2)(t, expr)
+
+
+AlchemyExprTranslator._registry[ops.Divide] = _true_divide

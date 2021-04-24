@@ -10,7 +10,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.window as W
-from ibis import util
 from ibis.backends.base_sqlalchemy import transforms
 
 from .database import AlchemyTable
@@ -389,16 +388,6 @@ def _ntile(t, expr):
     return sa.func.ntile(buckets)
 
 
-def _true_divide(t, expr):
-    op = expr.op()
-    left, right = args = op.args
-
-    if util.all_of(args, ir.IntegerValue):
-        return t.translate(left.div(right.cast('double')))
-
-    return fixed_arity(lambda x, y: x / y, 2)(t, expr)
-
-
 def _sort_key(t, expr):
     # We need to define this for window functions that have an order by
     by, ascending = expr.op().args
@@ -476,10 +465,9 @@ _binary_ops = {
     ops.Add: operator.add,
     ops.Subtract: operator.sub,
     ops.Multiply: operator.mul,
-    # XXX operator.truediv was defined here, but then overwriten
-    # by _true_divide using `@compiles`. Not sure why
-    # ops.Divide: operator.truediv,
-    ops.Divide: _true_divide,
+    # XXX `ops.Divide` is overwritten in `translator.py` with a custom
+    # function `_true_divide`, but for some reason both are required
+    ops.Divide: operator.truediv,
     ops.Modulus: operator.mod,
     # Comparisons
     ops.Equals: operator.eq,
