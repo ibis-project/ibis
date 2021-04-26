@@ -18,6 +18,7 @@ import ibis.expr.format as fmt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
+from ibis.backends.base.sql import operation_registry, quote_identifier
 
 from . import transforms
 
@@ -111,6 +112,10 @@ class SelectBuilder:
         self.queries.append(select_query)
 
         return select_query
+
+    @property
+    def _select_class(self):
+        return Select
 
     def _build_result_query(self):
         self._collect_elements()
@@ -1188,7 +1193,7 @@ class QueryContext:
         return self._to_sql(expr, sub_ctx)
 
     def _to_sql(self, expr, ctx):
-        raise NotImplementedError
+        return to_sql(expr, ctx)
 
     def collapse(self, queries):
         """Turn a sequence of queries into something executable.
@@ -1338,7 +1343,7 @@ class ExprTranslator:
     """Class that performs translation of ibis expressions into executable
     SQL.
     """
-
+    _registry = operation_registry
     _rewrites = {}
 
     context_class = QueryContext
@@ -1381,6 +1386,14 @@ class ExprTranslator:
             return False
 
         return True
+
+    @staticmethod
+    def _name_expr(formatted_expr, quoted_name):
+        return '{} AS {}'.format(formatted_expr, quoted_name)
+
+    def name(self, translated, name, force=True):
+        """Return expression with its identifier."""
+        return self._name_expr(translated, quote_identifier(name, force=force))
 
     def translate(self, expr):
         # The operation node type the typed expression wraps
@@ -1522,6 +1535,12 @@ def _rewrite_cast(expr):
     return expr
 
 
+@rewrites(ops.FloorDivide)
+def _floor_divide(expr):
+    left, right = expr.op().args
+    return left.div(right).floor()
+
+
 class Dialect:
 
     """Dialects encode the properties of a particular flavor of SQL.
@@ -1588,7 +1607,7 @@ class Select(DML):
 
     @property
     def translator(self):
-        return self.context.dialect.translator
+        return ExprTranslator
 
     def _translate(self, expr, named=False, permit_subquery=False):
         context = self.context
@@ -1922,7 +1941,7 @@ class TableSetFormatter:
         return self._join_names[type(op)]
 
     def _quote_identifier(self, name):
-        return name
+        return quote_identifier(name)
 
     def _format_table(self, expr):
         # TODO: This could probably go in a class and be significantly nicer
@@ -2002,3 +2021,25 @@ class TableSetFormatter:
                 buf.write(fmt_preds)
 
         return buf.getvalue()
+
+
+def build_ast(expr, context):
+    assert context is not None, 'context is None'
+    builder = QueryBuilder(expr, context=context)
+    return builder.get_result()
+
+
+def _get_query(expr, context):
+    assert context is not None, 'context is None'
+    ast = build_ast(expr, context)
+    query = ast.queries[0]
+
+    return query
+
+
+def to_sql(expr, context=None):
+    if context is None:
+        context = Dialect.make_context()
+    assert context is not None, 'context is None'
+    query = _get_query(expr, context)
+    return query.compile()
