@@ -1,11 +1,15 @@
 #!/usr/bin/env python
 """Ibis setup module."""
 import pathlib
+import site
 import sys
 
 from setuptools import find_packages, setup
 
 import versioneer
+
+# See https://github.com/pypa/pip/issues/7953
+site.ENABLE_USER_SITE = "--user" in sys.argv[1:]
 
 LONG_DESCRIPTION = """
 Ibis is a productivity-centric Python big data framework.
