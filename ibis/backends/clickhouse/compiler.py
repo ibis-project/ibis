@@ -4,6 +4,13 @@ import ibis.backends.base_sqlalchemy.compiler as comp
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.util as util
+from ibis.backends.base_sql.compiler import (
+    BaseContext,
+    BaseExprTranslator,
+    BaseQueryBuilder,
+    BaseSelectBuilder,
+    BaseTableSetFormatter,
+)
 
 from .identifiers import quote_identifier
 from .registry import operation_registry
@@ -14,7 +21,7 @@ def build_ast(expr, context):
     return builder.get_result()
 
 
-class ClickhouseSelectBuilder(comp.SelectBuilder):
+class ClickhouseSelectBuilder(BaseSelectBuilder):
     @property
     def _select_class(self):
         return ClickhouseSelect
@@ -23,12 +30,12 @@ class ClickhouseSelectBuilder(comp.SelectBuilder):
         return exprs
 
 
-class ClickhouseQueryBuilder(comp.QueryBuilder):
+class ClickhouseQueryBuilder(BaseQueryBuilder):
 
     select_builder = ClickhouseSelectBuilder
 
 
-class ClickhouseQueryContext(comp.QueryContext):
+class ClickhouseQueryContext(BaseContext):
     def _to_sql(self, expr, ctx):
         builder = ClickhouseQueryBuilder(expr, context=ctx)
         ast = builder.get_result()
@@ -81,7 +88,7 @@ class ClickhouseSelect(comp.Select):
         return buf.getvalue()
 
 
-class ClickhouseTableSetFormatter(comp.TableSetFormatter):
+class ClickhouseTableSetFormatter(BaseTableSetFormatter):
 
     _join_names = {
         ops.InnerJoin: 'ALL INNER JOIN',
@@ -142,7 +149,7 @@ class ClickhouseTableSetFormatter(comp.TableSetFormatter):
         return quote_identifier(name)
 
 
-class ClickhouseExprTranslator(comp.ExprTranslator):
+class ClickhouseExprTranslator(BaseExprTranslator):
 
     _registry = operation_registry
     context_class = ClickhouseQueryContext
