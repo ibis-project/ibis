@@ -5,9 +5,8 @@ import operator
 from contextlib import suppress
 from typing import List
 
-import toolz
-
 import numpy as np
+import toolz
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
