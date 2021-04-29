@@ -41,9 +41,7 @@ def execute_array_column(op, cols, **kwargs):
 @execute_node.register(ops.ArrayConcat, dd.Series, dd.Series)
 def execute_array_concat_series(op, left, right, **kwargs):
     df = dd.concat([left, right], axis=1)
-    return df.apply(
-        lambda row: np.concatenate(row), axis=1, meta=dd.utils.make_meta(left),
-    )
+    return df.apply(lambda row: np.concatenate(row), axis=1, meta=left._meta,)
 
 
 @execute_node.register(ops.ArrayConcat, dd.Series, np.ndarray)
@@ -53,13 +51,11 @@ def execute_array_concat_mixed(op, left, right, **kwargs):
         # "Iterate" over `left` Series, concatenating each array/element
         # in the Series with `right`, which is a single ndarray.
         return left.apply(
-            lambda arr: np.concatenate([arr, right]),
-            meta=dd.utils.make_meta(left),
+            lambda arr: np.concatenate([arr, right]), meta=left._meta,
         )
     elif isinstance(right, dd.Series):
         return right.apply(
-            lambda arr: np.concatenate([left, arr]),
-            meta=dd.utils.make_meta(right),
+            lambda arr: np.concatenate([left, arr]), meta=right._meta,
         )
 
 
@@ -72,9 +68,7 @@ def execute_array_concat_scalar(op, left, right, **kwargs):
 def execute_array_repeat(op, data, n, **kwargs):
     # Negative n will be treated as 0 (repeat will produce empty array)
     n = max(n, 0)
-    return data.apply(
-        lambda arr: np.repeat(arr, n), meta=dd.utils.make_meta(data)
-    )
+    return data.apply(lambda arr: np.repeat(arr, n), meta=data._meta)
 
 
 @execute_node.register(ops.ArrayRepeat, np.ndarray, int)

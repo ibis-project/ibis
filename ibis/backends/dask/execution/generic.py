@@ -264,9 +264,7 @@ def execute_not_scalar_or_series(op, data, **kwargs):
 
 @execute_node.register(ops.StringSplit, dd.Series, (pd.Series, str))
 def execute_string_split(op, data, delimiter, **kwargs):
-    return data.apply(
-        lambda s: np.array(s.split(delimiter)), meta=dd.utils.make_meta(data)
-    )
+    return data.apply(lambda s: np.array(s.split(delimiter)), meta=data._meta)
 
 
 @execute_node.register(ops.BinaryOp, dd.Series, dd.Series)
