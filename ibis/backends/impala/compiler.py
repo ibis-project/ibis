@@ -1,6 +1,10 @@
 import ibis.backends.base_sqlalchemy.compiler as comp
 import ibis.expr.operations as ops
-from ibis.backends.base.sql import binary_infix_ops, operation_registry
+from ibis.backends.base.sql import (
+    binary_infix_ops,
+    operation_registry,
+    quote_identifier,
+)
 
 
 def _get_context():
@@ -78,6 +82,14 @@ class ImpalaTableSetFormatter(comp.TableSetFormatter):
 class ImpalaExprTranslator(comp.ExprTranslator):
     _registry = {**operation_registry, **binary_infix_ops}
     context_class = comp.QueryContext
+
+    @staticmethod
+    def _name_expr(formatted_expr, quoted_name):
+        return '{} AS {}'.format(formatted_expr, quoted_name)
+
+    def name(self, translated, name, force=True):
+        """Return expression with its identifier."""
+        return self._name_expr(translated, quote_identifier(name, force=force))
 
 
 compiles = ImpalaExprTranslator.compiles

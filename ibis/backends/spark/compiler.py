@@ -27,6 +27,7 @@ import ibis.backends.base_sqlalchemy.compiler as comp
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
+from ibis.backends.base.sql import quote_identifier
 
 from .registry import operation_registry
 
@@ -78,6 +79,14 @@ class SparkExprTranslator(comp.ExprTranslator):
     _registry = operation_registry
 
     context_class = SparkContext
+
+    @staticmethod
+    def _name_expr(formatted_expr, quoted_name):
+        return '{} AS {}'.format(formatted_expr, quoted_name)
+
+    def name(self, translated, name, force=True):
+        """Return expression with its identifier."""
+        return self._name_expr(translated, quote_identifier(name, force=force))
 
 
 compiles = SparkExprTranslator.compiles
