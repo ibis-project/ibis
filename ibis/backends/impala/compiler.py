@@ -1,13 +1,6 @@
 import ibis.backends.base_sqlalchemy.compiler as comp
 import ibis.expr.operations as ops
 from ibis.backends.base.sql import binary_infix_ops, operation_registry
-from ibis.backends.base_sql.compiler import (
-    BaseContext,
-    BaseExprTranslator,
-    BaseQueryBuilder,
-    BaseSelectBuilder,
-    BaseTableSetFormatter,
-)
 
 
 def _get_context():
@@ -43,13 +36,13 @@ def to_sql(expr, context=None):
 # Select compilation
 
 
-class ImpalaSelectBuilder(BaseSelectBuilder):
+class ImpalaSelectBuilder(comp.SelectBuilder):
     @property
     def _select_class(self):
         return ImpalaSelect
 
 
-class ImpalaQueryBuilder(BaseQueryBuilder):
+class ImpalaQueryBuilder(comp.QueryBuilder):
 
     select_builder = ImpalaSelectBuilder
 
@@ -71,7 +64,7 @@ class ImpalaSelect(comp.Select):
         return ImpalaTableSetFormatter
 
 
-class ImpalaTableSetFormatter(BaseTableSetFormatter):
+class ImpalaTableSetFormatter(comp.TableSetFormatter):
     def _get_join_type(self, op):
         jname = self._join_names[type(op)]
 
@@ -82,9 +75,9 @@ class ImpalaTableSetFormatter(BaseTableSetFormatter):
         return jname
 
 
-class ImpalaExprTranslator(BaseExprTranslator):
+class ImpalaExprTranslator(comp.ExprTranslator):
     _registry = {**operation_registry, **binary_infix_ops}
-    context_class = BaseContext
+    context_class = comp.QueryContext
 
 
 compiles = ImpalaExprTranslator.compiles
