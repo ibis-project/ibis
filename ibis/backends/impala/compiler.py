@@ -78,6 +78,9 @@ class ImpalaTableSetFormatter(comp.TableSetFormatter):
 
         return jname
 
+    def _quote_identifier(self, name):
+        return quote_identifier(name)
+
 
 class ImpalaQueryContext(comp.QueryContext):
     def _to_sql(self, expr, ctx):
