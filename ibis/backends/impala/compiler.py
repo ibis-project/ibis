@@ -79,17 +79,20 @@ class ImpalaTableSetFormatter(comp.TableSetFormatter):
         return jname
 
 
+class ImpalaQueryContext(comp.QueryContext):
+    def _to_sql(self, expr, ctx):
+        return to_sql(expr, ctx)
+
+
 class ImpalaExprTranslator(comp.ExprTranslator):
     _registry = {**operation_registry, **binary_infix_ops}
-    context_class = comp.QueryContext
-
-    @staticmethod
-    def _name_expr(formatted_expr, quoted_name):
-        return '{} AS {}'.format(formatted_expr, quoted_name)
+    context_class = ImpalaQueryContext
 
     def name(self, translated, name, force=True):
         """Return expression with its identifier."""
-        return self._name_expr(translated, quote_identifier(name, force=force))
+        return '{} AS {}'.format(
+            translated, quote_identifier(name, force=force)
+        )
 
 
 compiles = ImpalaExprTranslator.compiles
