@@ -80,13 +80,10 @@ class SparkExprTranslator(comp.ExprTranslator):
 
     context_class = SparkContext
 
-    @staticmethod
-    def _name_expr(formatted_expr, quoted_name):
-        return '{} AS {}'.format(formatted_expr, quoted_name)
-
     def name(self, translated, name, force=True):
-        """Return expression with its identifier."""
-        return self._name_expr(translated, quote_identifier(name, force=force))
+        return '{} AS {}'.format(
+            translated, quote_identifier(name, force=force)
+        )
 
 
 compiles = SparkExprTranslator.compiles

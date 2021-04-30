@@ -7,7 +7,11 @@ from ibis.backends.base.sql import (
 )
 
 
-def build_ast(expr, context):
+def build_ast(expr, context=None):
+    from ibis.backends.impala import Backend
+
+    if context is None:
+        context = Backend().dialect.make_context()
     builder = ImpalaQueryBuilder(expr, context=context)
     return builder.get_result()
 
@@ -67,7 +71,6 @@ class ImpalaExprTranslator(comp.ExprTranslator):
     context_class = ImpalaQueryContext
 
     def name(self, translated, name, force=True):
-        """Return expression with its identifier."""
         return '{} AS {}'.format(
             translated, quote_identifier(name, force=force)
         )
