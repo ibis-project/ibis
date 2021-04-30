@@ -6,8 +6,7 @@ import pytest
 import ibis
 import ibis.expr.api as api
 import ibis.expr.operations as ops
-from ibis.backends.base_sql.compiler import build_ast, to_sql
-from ibis.backends.base_sqlalchemy.compiler import Dialect
+from ibis.backends.base_sql.compiler import BaseDialect, build_ast, to_sql
 from ibis.tests.expr.mocks import MockConnection
 
 pytest.importorskip('sqlalchemy')
@@ -248,7 +247,7 @@ FROM alltypes"""
 
 
 def _get_query(expr):
-    ast = build_ast(expr, Dialect.make_context())
+    ast = build_ast(expr, BaseDialect.make_context())
     return ast.queries[0]
 
 
