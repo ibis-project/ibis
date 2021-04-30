@@ -19,6 +19,7 @@ import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
+from ibis.backends.base_sqlalchemy.compiler import DDL, DML
 from ibis.backends.base_sqlalchemy.ddl import (
     CTAS,
     AlterTable,
@@ -34,7 +35,6 @@ from ibis.backends.base_sqlalchemy.ddl import (
     fully_qualified_re,
     is_fully_qualified,
 )
-from ibis.backends.base_sqlalchemy.compiler import DDL, DML
 from ibis.client import Database, DatabaseEntity, Query, SQLClient
 from ibis.config import options
 from ibis.util import log
