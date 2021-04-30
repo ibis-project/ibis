@@ -10,7 +10,7 @@ import ibis.expr.lineage as lin
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.base_sql.ddl import (
+from ibis.backends.base_sqlalchemy.ddl import (
     CreateDatabase,
     DropTable,
     TruncateTable,
