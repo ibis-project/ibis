@@ -7,39 +7,6 @@ from ibis.backends.base.sql import (
 )
 
 
-def _get_context():
-    from ibis.backends.impala import Backend
-
-    return Backend().dialect.make_context()
-
-
-def build_ast(expr, context=None):
-    if context is None:
-        context = _get_context()
-    builder = ImpalaQueryBuilder(expr, context=context)
-    return builder.get_result()
-
-
-def _get_query(expr, context):
-    if context is None:
-        context = _get_context()
-    ast = build_ast(expr, context)
-    query = ast.queries[0]
-
-    return query
-
-
-def to_sql(expr, context=None):
-    if context is None:
-        context = _get_context()
-    query = _get_query(expr, context)
-    return query.compile()
-
-
-# ----------------------------------------------------------------------
-# Select compilation
-
-
 class ImpalaSelectBuilder(comp.SelectBuilder):
     @property
     def _select_class(self):
@@ -84,7 +51,10 @@ class ImpalaTableSetFormatter(comp.TableSetFormatter):
 
 class ImpalaQueryContext(comp.QueryContext):
     def _to_sql(self, expr, ctx):
-        return to_sql(expr, ctx)
+        builder = ImpalaQueryBuilder(expr, context=ctx)
+        ast = builder.get_result()
+        query = ast.queries[0]
+        return query.compile()
 
 
 class ImpalaExprTranslator(comp.ExprTranslator):
