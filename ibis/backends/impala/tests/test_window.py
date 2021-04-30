@@ -3,7 +3,8 @@ import pytest
 import ibis
 import ibis.common.exceptions as com
 from ibis import window
-from ibis.backends.impala.compiler import to_sql  # noqa: E402
+from ibis.backends.impala import Backend
+from ibis.backends.impala.compiler import ImpalaQueryContext
 from ibis.expr.window import rows_with_max_lookback
 from ibis.tests.util import assert_equal
 
@@ -13,6 +14,11 @@ pytestmark = pytest.mark.impala
 @pytest.fixture
 def alltypes(con):
     return con.table('alltypes')
+
+
+def to_sql(expr):
+    ctx = Backend().dialect.make_context()
+    return ImpalaQueryContext()._to_sql(expr, ctx)
 
 
 def assert_sql_equal(expr, expected):
