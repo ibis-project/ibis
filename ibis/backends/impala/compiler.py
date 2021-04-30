@@ -7,6 +7,11 @@ from ibis.backends.base.sql import (
 )
 
 
+def build_ast(expr, context):
+    builder = ImpalaQueryBuilder(expr, context=context)
+    return builder.get_result()
+
+
 class ImpalaSelectBuilder(comp.SelectBuilder):
     @property
     def _select_class(self):
