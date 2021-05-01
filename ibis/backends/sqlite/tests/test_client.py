@@ -117,6 +117,7 @@ def test_verbose_log_queries(con):
     expected += ' LIMIT ? OFFSET ?'
     assert query == expected
 
+
 def test_insert_from_dataframe(con, df):
     drop = 'DROP TABLE IF EXISTS temporary_alltypes'
     create = (
