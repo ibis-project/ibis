@@ -12,6 +12,7 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :feature:`2613` Implement .insert() for SQLite
 * :bug:`2712` Fix time context trimming error for multi column udfs in pandas backend
 * :bug:`2710` Fix error during compilation of range_window in base_sql backends (:issue:`2608`)
 * :feature:`2687` Support Spark filter with window operation
@@ -29,10 +30,10 @@ Release Notes
   `reauth` or `none` to force reauthentication.
 * :bug:`2657` Add temporary struct col in pyspark backend to ensure that UDFs are executed only once
 * :bug:`2588` Fix BigQuery connect bug that ignored project ID parameter
-* :bug: `2636` Fix overwrite logic to account for DestructColumn inside mutate API
+* :bug:`2636` Fix overwrite logic to account for DestructColumn inside mutate API
 * :feature:`2641` Add `bit_and`, `bit_or`, and `bit_xor` integer column aggregates (BigQuery and MySQL backends)
 * :feature:`2379` Backends are defined as entry points
-* :bug: `2635` Fix fusion optimization bug that incorrectly changes operation order
+* :bug:`2635` Fix fusion optimization bug that incorrectly changes operation order
 * :feature:`2615` Add `ibis.array` for creating array expressions
 * :feature:`2607` Implement Not operation in PySpark backend
 * :feature:`2610` Added support for case/when in PySpark backend
