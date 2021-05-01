@@ -116,3 +116,41 @@ def test_verbose_log_queries(con):
     expected += 'FROM base.functional_alltypes AS t0\n'
     expected += ' LIMIT ? OFFSET ?'
     assert query == expected
+
+def test_insert_from_dataframe(con, df):
+    drop = 'DROP TABLE IF EXISTS temporary_alltypes'
+    create = (
+        'CREATE TABLE IF NOT EXISTS '
+        'temporary_alltypes AS functional_alltypes'
+    )
+
+    con.raw_sql(drop)
+    con.raw_sql(create)
+
+    temporary = con.table('temporary_alltypes')
+    records = df[:10]
+
+    assert len(temporary.execute()) == 0
+    temporary_post_insert = con.insert('temporary_alltypes', data_obj=records)
+
+    tm.assert_frame_equal(temporary_post_insert.execute(), records)
+
+
+def test_insert_from_table(con, from_table_name):
+    drop = 'DROP TABLE IF EXISTS temporary_alltypes'
+    create = (
+        'CREATE TABLE IF NOT EXISTS '
+        'temporary_alltypes AS functional_alltypes'
+    )
+
+    con.raw_sql(drop)
+    con.raw_sql(create)
+
+    temporary = con.table('temporary_alltypes')
+
+    assert len(temporary.execute()) == 0
+    temporary_post_insert = con.insert('temporary_alltypes', from_table_name=from_table_name)
+
+    from_table = con.table(from_table_name)
+
+    tm.assert_frame_equal(temporary_post_insert.execute(), from_table.execute())
