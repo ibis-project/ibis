@@ -41,6 +41,12 @@ with ibis.config.config_prefix('context_adjustment'):
         'See ibis.expr.timecontext for details.',
         validator=ibis.config.is_str,
     )
+with ibis.config.config_prefix('sql'):
+    ibis.config.register_option(
+        'default_limit',
+        10_000,
+        'Number of rows to be retrieved for an unlimited table expression',
+    )
 
 __version__ = get_versions()['version']
 del get_versions
