@@ -1,10 +1,12 @@
 import ibis
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
+from ibis import util
 from ibis.backends.base_sqlalchemy.compiler import ExprTranslator, QueryContext
 
 from .datatypes import ibis_type_to_sqla, to_sqla_type
 from .query_builder import to_sqlalchemy
-from .registry import sqlalchemy_operation_registry
+from .registry import fixed_arity, sqlalchemy_operation_registry
 
 
 class AlchemyContext(QueryContext):
@@ -82,13 +84,6 @@ def _nullifzero(expr):
 # on that things fail if it's not defined here (and in the registry
 # `operator.truediv` is used.
 def _true_divide(t, expr):
-    # Having imports here, so this is self-contained and faster to clean up
-    # when this function is moved to the registry
-    import ibis.expr.types as ir
-    from ibis import util
-
-    from .registry import fixed_arity
-
     op = expr.op()
     left, right = args = op.args
 
