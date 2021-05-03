@@ -1,6 +1,5 @@
 import operator
 
-import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
@@ -8,15 +7,6 @@ from pytest import param
 
 import ibis
 from ibis.common.exceptions import IbisTypeError
-
-
-@pytest.mark.parametrize('arr', [[1, 3, 5], np.array([1, 3, 5])])
-@pytest.mark.parametrize('create_arr_expr', [ibis.literal, ibis.array])
-def test_array_literal(client, arr, create_arr_expr):
-    expr = create_arr_expr(arr)
-    result = client.execute(expr)
-    expected = np.array([1, 3, 5])
-    assert type(result) == type(expected) and np.array_equal(result, expected)
 
 
 def test_array_length(t, df):
@@ -40,8 +30,8 @@ def test_array_length(t, df):
 
 
 def test_array_length_scalar(client):
-    raw_value = np.array([1, 2, 4])
-    value = ibis.array(raw_value)
+    raw_value = [1, 2, 4]
+    value = ibis.literal(raw_value)
     expr = value.length()
     result = client.execute(expr)
     expected = len(raw_value)
@@ -49,20 +39,13 @@ def test_array_length_scalar(client):
 
 
 def test_array_collect(t, df):
-    expr = t.float64_with_zeros.collect()
-    result = expr.execute()
-    expected = np.array(df.float64_with_zeros)
-    assert type(result) == type(expected) and np.array_equal(result, expected)
-
-
-def test_array_collect_grouped(t, df):
     expr = t.group_by(t.dup_strings).aggregate(
         collected=t.float64_with_zeros.collect()
     )
     result = expr.execute().sort_values('dup_strings').reset_index(drop=True)
     expected = (
         df.groupby('dup_strings')
-        .float64_with_zeros.apply(np.array)
+        .float64_with_zeros.apply(list)
         .reset_index()
         .rename(columns={'float64_with_zeros': 'collected'})
     )
@@ -91,7 +74,7 @@ def test_array_collect_scalar(client):
     expr = value.collect()
     result = client.execute(expr)
     expected = [raw_value]
-    assert type(result) == type(expected) and np.array_equal(result, expected)
+    assert result == expected
 
 
 @pytest.mark.parametrize(
@@ -171,12 +154,12 @@ def test_array_slice(t, df, start, stop):
     ],
 )
 def test_array_slice_scalar(client, start, stop):
-    raw_value = np.array([-11, 42, 10])
-    value = ibis.array(raw_value)
+    raw_value = [-11, 42, 10]
+    value = ibis.literal(raw_value)
     expr = value[start:stop]
     result = client.execute(expr)
     expected = raw_value[start:stop]
-    assert type(result) == type(expected) and np.array_equal(result, expected)
+    assert result == expected
 
 
 @pytest.mark.parametrize('index', [1, 3, 4, 11, -11])
@@ -195,8 +178,8 @@ def test_array_index(t, df, index):
 
 @pytest.mark.parametrize('index', [1, 3, 4, 11])
 def test_array_index_scalar(client, index):
-    raw_value = np.array([-10, 1, 2, 42])
-    value = ibis.array(raw_value)
+    raw_value = [-10, 1, 2, 42]
+    value = ibis.literal(raw_value)
     expr = value[index]
     result = client.execute(expr)
     expected = raw_value[index] if index < len(raw_value) else None
@@ -206,63 +189,42 @@ def test_array_index_scalar(client, index):
 @pytest.mark.parametrize('n', [1, 3, 4, 7, -2])  # negative returns empty list
 @pytest.mark.parametrize('mul', [lambda x, n: x * n, lambda x, n: n * x])
 def test_array_repeat(t, df, n, mul):
-    expr = mul(t.array_of_strings, n)
+    expr = t.projection([mul(t.array_of_strings, n).name('repeated')])
     result = expr.execute()
-    expected = df.apply(
-        lambda row: np.repeat(row.array_of_strings, max(n, 0)), axis=1,
-    )
-    tm.assert_series_equal(result, expected)
+    expected = pd.DataFrame({'repeated': df.array_of_strings * n})
+    tm.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize('n', [1, 3, 4, 7, -2])  # negative returns empty list
 @pytest.mark.parametrize('mul', [lambda x, n: x * n, lambda x, n: n * x])
 def test_array_repeat_scalar(client, n, mul):
-    raw_array = np.array([1, 2])
-    array = ibis.array(raw_array)
+    raw_array = [1, 2]
+    array = ibis.literal(raw_array)
     expr = mul(array, n)
     result = client.execute(expr)
-    if n > 0:
-        expected = np.repeat(raw_array, n)
-    else:
-        expected = np.array([])
-    assert type(result) == type(expected) and np.array_equal(result, expected)
+    expected = mul(raw_array, n)
+    assert result == expected
 
 
-@pytest.mark.parametrize(
-    ['op', 'op_raw'],
-    [
-        (lambda x, y: x + y, lambda x, y: np.concatenate([x, y])),
-        (lambda x, y: y + x, lambda x, y: np.concatenate([y, x])),
-    ],
-)
-def test_array_concat(t, df, op, op_raw):
+@pytest.mark.parametrize('op', [lambda x, y: x + y, lambda x, y: y + x])
+def test_array_concat(t, df, op):
     x = t.array_of_float64.cast('array<string>')
     y = t.array_of_strings
     expr = op(x, y)
     result = expr.execute()
-    expected = df.apply(
-        lambda row: op_raw(
-            np.array(list(map(str, row.array_of_float64))),  # Mimic .cast()
-            row.array_of_strings,
-        ),
-        axis=1,
+    expected = op(
+        df.array_of_float64.apply(lambda x: list(map(str, x))),
+        df.array_of_strings,
     )
     tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.parametrize(
-    ['op', 'op_raw'],
-    [
-        (lambda x, y: x + y, lambda x, y: np.concatenate([x, y])),
-        (lambda x, y: y + x, lambda x, y: np.concatenate([y, x])),
-    ],
-)
-def test_array_concat_scalar(client, op, op_raw):
-    raw_left = np.array([1, 2, 3])
-    raw_right = np.array([3, 4])
-    left = ibis.array(raw_left)
-    right = ibis.array(raw_right)
+@pytest.mark.parametrize('op', [lambda x, y: x + y, lambda x, y: y + x])
+def test_array_concat_scalar(client, op):
+    raw_left = [1, 2, 3]
+    raw_right = [3, 4]
+    left = ibis.literal(raw_left)
+    right = ibis.literal(raw_right)
     expr = op(left, right)
     result = client.execute(expr)
-    expected = op_raw(raw_left, raw_right)
-    assert type(result) == type(expected) and np.array_equal(result, expected)
+    assert result == op(raw_left, raw_right)

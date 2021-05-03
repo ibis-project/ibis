@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 import pandas.testing as tm
 
@@ -29,45 +28,27 @@ def test_map_value_or_default_for_key_expr(t):
 
 
 def safe_sorter(element):
-    return np.sort(element) if isinstance(element, np.ndarray) else element
+    return sorted(element) if isinstance(element, list) else element
 
 
 def test_map_keys_expr(t):
     expr = t.map_of_strings_integers.keys()
     result = expr.execute().map(safe_sorter)
     expected = pd.Series(
-        np.array([['a', 'b'], None, []]),
-        dtype='object',
-        name='map_of_strings_integers',
+        [['a', 'b'], None, []], dtype='object', name='map_of_strings_integers'
     )
     tm.assert_series_equal(result, expected)
-
-
-def test_map_keys_scalar(client, t):
-    expr = ibis.literal({'a': 10, 'b': 50, 'c': 20, 'd': 40})
-    expr = expr.keys()
-    result = client.execute(expr)
-    expected = np.array(['a', 'b', 'c', 'd'])
-    assert type(result) == type(expected) and np.array_equal(result, expected)
 
 
 def test_map_values_expr(t):
     expr = t.map_of_complex_values.values()
     result = expr.execute().map(safe_sorter)
     expected = pd.Series(
-        [None, np.array([[], [1, 2, 3]]), np.array([])],
+        [None, [[], [1, 2, 3]], []],
         dtype='object',
         name='map_of_complex_values',
     )
     tm.assert_series_equal(result, expected)
-
-
-def test_map_values_scalar(client, t):
-    expr = ibis.literal({'a': 10, 'b': 50, 'c': 20, 'd': 40})
-    expr = expr.values()
-    result = client.execute(expr)
-    expected = np.array([10, 50, 20, 40])
-    assert type(result) == type(expected) and np.array_equal(result, expected)
 
 
 def test_map_concat_expr(t):
