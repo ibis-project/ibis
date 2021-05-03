@@ -1,12 +1,11 @@
 import tempfile
 
-import pytest
 import numpy as np
 import pandas as pd
+import pytest
 
 import ibis
 import ibis.expr.datatypes as dt
-
 
 pa = pytest.importorskip('pyarrow')
 pq = pytest.importorskip('pyarrow.parquet')
