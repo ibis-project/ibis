@@ -6,10 +6,21 @@ import pytest
 import ibis
 import ibis.expr.api as api
 import ibis.expr.operations as ops
-from ibis.backends.base_sql.compiler import BaseDialect, build_ast, to_sql
+from ibis.backends.base_sqlalchemy.compiler import Dialect, QueryBuilder
 from ibis.tests.expr.mocks import MockConnection
 
 pytest.importorskip('sqlalchemy')
+
+
+def _get_query(expr):
+    builder = QueryBuilder(expr, Dialect.make_context())
+    ast = builder.get_result()
+    return ast.queries[0]
+
+
+def to_sql(expr):
+    query = _get_query(expr)
+    return query.compile()
 
 
 class TestASTBuilder(unittest.TestCase):
@@ -244,11 +255,6 @@ SELECT 1 AS `a`, now() AS `b`, ln(2) AS `c`"""
 SELECT sum(CASE WHEN `g` IS NULL THEN 1 ELSE 0 END) AS `sum`
 FROM alltypes"""
         assert result == expected
-
-
-def _get_query(expr):
-    ast = build_ast(expr, BaseDialect.make_context())
-    return ast.queries[0]
 
 
 nation = api.table(
