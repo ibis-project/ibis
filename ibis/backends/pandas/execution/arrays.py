@@ -92,13 +92,13 @@ def execute_array_concat_scalar(op, left, right, **kwargs):
 def execute_array_repeat(op, data, n, **kwargs):
     # Negative n will be treated as 0 (repeat will produce empty array)
     n = max(n, 0)
-    return pd.Series(map(lambda arr: np.repeat(arr, n), data,))
+    return pd.Series(map(lambda arr: np.tile(arr, n), data,))
 
 
 @execute_node.register(ops.ArrayRepeat, np.ndarray, int)
 def execute_array_repeat_scalar(op, data, n, **kwargs):
     # Negative n will be treated as 0 (repeat will produce empty array)
-    return np.repeat(data, max(n, 0))
+    return np.tile(data, max(n, 0))
 
 
 @execute_node.register(ops.ArrayCollect, (pd.Series, SeriesGroupBy))

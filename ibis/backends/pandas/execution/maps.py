@@ -173,7 +173,8 @@ def execute_map_keys_dict(op, data, **kwargs):
 
 @execute_node.register(ops.MapValues, pd.Series)
 def execute_map_values_series(op, data, **kwargs):
-    return data.map(safe_values)
+    res = data.map(safe_values)
+    return res
 
 
 @execute_node.register(ops.MapValues, (collections.abc.Mapping, type(None)))
