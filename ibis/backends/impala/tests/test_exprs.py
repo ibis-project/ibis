@@ -11,12 +11,13 @@ import ibis.expr.api as api
 import ibis.expr.types as ir
 from ibis import literal as L
 from ibis.backends.impala import Backend
+from ibis.backends.impala.tests.mocks import to_sql
 from ibis.common.exceptions import RelationError
 from ibis.expr.datatypes import Category
 from ibis.tests.expr.mocks import MockConnection
 from ibis.tests.sql.test_compiler import ExprTestCases
 
-from ..compiler import ImpalaExprTranslator, to_sql
+from ..compiler import ImpalaExprTranslator
 
 pytestmark = pytest.mark.impala
 

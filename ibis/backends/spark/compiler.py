@@ -27,11 +27,7 @@ import ibis.backends.base_sqlalchemy.compiler as comp
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
-from ibis.backends.base_sql.compiler import (
-    BaseDialect,
-    BaseExprTranslator,
-    BaseSelect,
-)
+from ibis.backends.base.sql import quote_identifier
 
 from .registry import operation_registry
 
@@ -72,17 +68,22 @@ class SparkQueryBuilder(comp.QueryBuilder):
 class SparkContext(comp.QueryContext):
     def _to_sql(self, expr, ctx):
         if ctx is None:
-            ctx = BaseDialect.make_context()
+            ctx = comp.Dialect.make_context()
         builder = SparkQueryBuilder(expr, context=ctx)
         ast = builder.get_result()
         query = ast.queries[0]
         return query.compile()
 
 
-class SparkExprTranslator(BaseExprTranslator):
+class SparkExprTranslator(comp.ExprTranslator):
     _registry = operation_registry
 
     context_class = SparkContext
+
+    def name(self, translated, name, force=True):
+        return '{} AS {}'.format(
+            translated, quote_identifier(name, force=force)
+        )
 
 
 compiles = SparkExprTranslator.compiles
@@ -118,5 +119,5 @@ def spark_rewrites_is_inf(expr):
     return (arg == ibis.literal(math.inf)) | (arg == ibis.literal(-math.inf))
 
 
-class SparkSelect(BaseSelect):
+class SparkSelect(comp.Select):
     translator = SparkExprTranslator

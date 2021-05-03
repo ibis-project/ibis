@@ -1,55 +1,28 @@
 import ibis.backends.base_sqlalchemy.compiler as comp
 import ibis.expr.operations as ops
-from ibis.backends.base.sql import binary_infix_ops, operation_registry
-from ibis.backends.base_sql.compiler import (
-    BaseContext,
-    BaseExprTranslator,
-    BaseQueryBuilder,
-    BaseSelectBuilder,
-    BaseTableSetFormatter,
+from ibis.backends.base.sql import (
+    binary_infix_ops,
+    operation_registry,
+    quote_identifier,
 )
 
 
-def _get_context():
+def build_ast(expr, context=None):
     from ibis.backends.impala import Backend
 
-    return Backend().dialect.make_context()
-
-
-def build_ast(expr, context=None):
     if context is None:
-        context = _get_context()
+        context = Backend().dialect.make_context()
     builder = ImpalaQueryBuilder(expr, context=context)
     return builder.get_result()
 
 
-def _get_query(expr, context):
-    if context is None:
-        context = _get_context()
-    ast = build_ast(expr, context)
-    query = ast.queries[0]
-
-    return query
-
-
-def to_sql(expr, context=None):
-    if context is None:
-        context = _get_context()
-    query = _get_query(expr, context)
-    return query.compile()
-
-
-# ----------------------------------------------------------------------
-# Select compilation
-
-
-class ImpalaSelectBuilder(BaseSelectBuilder):
+class ImpalaSelectBuilder(comp.SelectBuilder):
     @property
     def _select_class(self):
         return ImpalaSelect
 
 
-class ImpalaQueryBuilder(BaseQueryBuilder):
+class ImpalaQueryBuilder(comp.QueryBuilder):
 
     select_builder = ImpalaSelectBuilder
 
@@ -71,7 +44,7 @@ class ImpalaSelect(comp.Select):
         return ImpalaTableSetFormatter
 
 
-class ImpalaTableSetFormatter(BaseTableSetFormatter):
+class ImpalaTableSetFormatter(comp.TableSetFormatter):
     def _get_join_type(self, op):
         jname = self._join_names[type(op)]
 
@@ -81,10 +54,26 @@ class ImpalaTableSetFormatter(BaseTableSetFormatter):
 
         return jname
 
+    def _quote_identifier(self, name):
+        return quote_identifier(name)
 
-class ImpalaExprTranslator(BaseExprTranslator):
+
+class ImpalaQueryContext(comp.QueryContext):
+    def _to_sql(self, expr, ctx):
+        builder = ImpalaQueryBuilder(expr, context=ctx)
+        ast = builder.get_result()
+        query = ast.queries[0]
+        return query.compile()
+
+
+class ImpalaExprTranslator(comp.ExprTranslator):
     _registry = {**operation_registry, **binary_infix_ops}
-    context_class = BaseContext
+    context_class = ImpalaQueryContext
+
+    def name(self, translated, name, force=True):
+        return '{} AS {}'.format(
+            translated, quote_identifier(name, force=force)
+        )
 
 
 compiles = ImpalaExprTranslator.compiles
