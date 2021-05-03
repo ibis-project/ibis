@@ -24,7 +24,6 @@ import math
 
 import ibis
 import ibis.backends.base_sqlalchemy.compiler as comp
-import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 from ibis.backends.base.sql import quote_identifier
@@ -86,31 +85,7 @@ class SparkExprTranslator(comp.ExprTranslator):
         )
 
 
-compiles = SparkExprTranslator.compiles
 rewrites = SparkExprTranslator.rewrites
-
-
-@compiles(ops.Arbitrary)
-def spark_compiles_arbitrary(translator, expr):
-    arg, how, where = expr.op().args
-
-    if where is not None:
-        arg = where.ifelse(arg, ibis.NA)
-
-    if how in (None, 'first'):
-        return 'first({}, True)'.format(translator.translate(arg))
-    elif how == 'last':
-        return 'last({}, True)'.format(translator.translate(arg))
-    else:
-        raise com.UnsupportedOperationError(
-            '{!r} value not supported for arbitrary in Spark SQL'.format(how)
-        )
-
-
-@compiles(ops.DayOfWeekName)
-def spark_compiles_day_of_week_name(translator, expr):
-    arg = expr.op().arg
-    return 'date_format({}, {!r})'.format(translator.translate(arg), 'EEEE')
 
 
 @rewrites(ops.IsInf)

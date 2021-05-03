@@ -388,6 +388,13 @@ def _ntile(t, expr):
     return sa.func.ntile(buckets)
 
 
+def _sort_key(t, expr):
+    # We need to define this for window functions that have an order by
+    by, ascending = expr.op().args
+    sort_direction = sa.asc if ascending else sa.desc
+    return sort_direction(t.translate(by))
+
+
 sqlalchemy_operation_registry = {
     ops.And: fixed_arity(sql.and_, 2),
     ops.Or: fixed_arity(sql.or_, 2),
@@ -447,6 +454,8 @@ sqlalchemy_operation_registry = {
     ops.Floor: unary(sa.func.floor),
     ops.Power: fixed_arity(sa.func.pow, 2),
     ops.FloorDivide: _floor_divide,
+    # other
+    ops.SortKey: _sort_key,
 }
 
 
@@ -456,6 +465,8 @@ _binary_ops = {
     ops.Add: operator.add,
     ops.Subtract: operator.sub,
     ops.Multiply: operator.mul,
+    # XXX `ops.Divide` is overwritten in `translator.py` with a custom
+    # function `_true_divide`, but for some reason both are required
     ops.Divide: operator.truediv,
     ops.Modulus: operator.mod,
     # Comparisons

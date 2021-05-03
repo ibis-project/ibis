@@ -220,6 +220,27 @@ def _round(translator, expr):
     return 'bround({})'.format(arg_formatted)
 
 
+def _arbitrary(translator, expr):
+    arg, how, where = expr.op().args
+
+    if where is not None:
+        arg = where.ifelse(arg, ibis.NA)
+
+    if how in (None, 'first'):
+        return 'first({}, True)'.format(translator.translate(arg))
+    elif how == 'last':
+        return 'last({}, True)'.format(translator.translate(arg))
+    else:
+        raise com.UnsupportedOperationError(
+            '{!r} value not supported for arbitrary in Spark SQL'.format(how)
+        )
+
+
+def _day_of_week_name(translator, expr):
+    arg = expr.op().arg
+    return 'date_format({}, {!r})'.format(translator.translate(arg), 'EEEE')
+
+
 operation_registry = {**operation_registry}
 
 operation_registry.update(
@@ -251,5 +272,7 @@ operation_registry.update(
         ops.TimestampFromUNIX: _timestamp_from_unix,
         ops.DateTruncate: _date_truncate,
         ops.Literal: _literal,
+        ops.Arbitrary: _arbitrary,
+        ops.DayOfWeekName: _day_of_week_name,
     }
 )

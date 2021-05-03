@@ -23,7 +23,6 @@ class PostgreSQLExprTranslator(AlchemyExprTranslator):
 
 
 rewrites = PostgreSQLExprTranslator.rewrites
-compiles = PostgreSQLExprTranslator.compiles
 
 
 @rewrites(ops.Any)

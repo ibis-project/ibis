@@ -76,7 +76,6 @@ class ImpalaExprTranslator(comp.ExprTranslator):
         )
 
 
-compiles = ImpalaExprTranslator.compiles
 rewrites = ImpalaExprTranslator.rewrites
 
 

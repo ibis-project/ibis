@@ -103,7 +103,6 @@ class BaseDialect(comp.Dialect):
     translator = BaseExprTranslator
 
 
-compiles = BaseExprTranslator.compiles
 rewrites = BaseExprTranslator.rewrites
 
 

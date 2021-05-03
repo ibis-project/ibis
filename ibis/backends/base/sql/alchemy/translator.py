@@ -1,9 +1,7 @@
-import sqlalchemy as sa
-
 import ibis
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.util as util
+from ibis import util
 from ibis.backends.base_sqlalchemy.compiler import ExprTranslator, QueryContext
 
 from .datatypes import ibis_type_to_sqla, to_sqla_type
@@ -73,7 +71,6 @@ class AlchemyExprTranslator(ExprTranslator):
 
 
 rewrites = AlchemyExprTranslator.rewrites
-compiles = AlchemyExprTranslator.compiles
 
 
 @rewrites(ops.NullIfZero)
@@ -82,7 +79,10 @@ def _nullifzero(expr):
     return (arg == 0).ifelse(ibis.NA, arg)
 
 
-@compiles(ops.Divide)
+# TODO This was previously implemented with the legacy `@compiles` decorator.
+# This definition should now be in the registry, but there is some magic going
+# on that things fail if it's not defined here (and in the registry
+# `operator.truediv` is used.
 def _true_divide(t, expr):
     op = expr.op()
     left, right = args = op.args
@@ -93,9 +93,4 @@ def _true_divide(t, expr):
     return fixed_arity(lambda x, y: x / y, 2)(t, expr)
 
 
-@compiles(ops.SortKey)
-def _sort_key(t, expr):
-    # We need to define this for window functions that have an order by
-    by, ascending = expr.op().args
-    sort_direction = sa.asc if ascending else sa.desc
-    return sort_direction(t.translate(by))
+AlchemyExprTranslator._registry[ops.Divide] = _true_divide
