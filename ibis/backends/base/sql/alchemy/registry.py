@@ -10,7 +10,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.window as W
-from ibis.backends.base_sqlalchemy import transforms
+from ibis.backends.base.sql.compiler import ExistsSubquery, NotExistsSubquery
 
 from .database import AlchemyTable
 from .geospatial import geospatial_supported
@@ -127,7 +127,7 @@ def _exists_subquery(t, expr):
     sub_ctx = ctx.subcontext()
     clause = to_sqlalchemy(filtered, sub_ctx, exists=True)
 
-    if isinstance(op, transforms.NotExistsSubquery):
+    if isinstance(op, NotExistsSubquery):
         clause = sa.not_(clause)
 
     return clause
@@ -425,8 +425,8 @@ sqlalchemy_operation_registry = {
     ops.SearchedCase: _searched_case,
     ops.TableColumn: _table_column,
     ops.TableArrayView: _table_array_view,
-    transforms.ExistsSubquery: _exists_subquery,
-    transforms.NotExistsSubquery: _exists_subquery,
+    ExistsSubquery: _exists_subquery,
+    NotExistsSubquery: _exists_subquery,
     # miscellaneous varargs
     ops.Least: varargs(sa.func.least),
     ops.Greatest: varargs(sa.func.greatest),

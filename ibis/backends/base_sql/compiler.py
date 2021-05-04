@@ -1,5 +1,13 @@
-import ibis.backends.base_sqlalchemy.compiler as comp
 import ibis.expr.operations as ops
+from ibis.backends.base.sql.compiler import (
+    Dialect,
+    ExprTranslator,
+    QueryBuilder,
+    QueryContext,
+    Select,
+    SelectBuilder,
+    TableSetFormatter,
+)
 from ibis.backends.base.sql.registry import (
     operation_registry,
     quote_identifier,
@@ -32,23 +40,23 @@ def to_sql(expr, context=None):
 # Select compilation
 
 
-class BaseSelectBuilder(comp.SelectBuilder):
+class BaseSelectBuilder(SelectBuilder):
     @property
     def _select_class(self):
         return BaseSelect
 
 
-class BaseQueryBuilder(comp.QueryBuilder):
+class BaseQueryBuilder(QueryBuilder):
 
     select_builder = BaseSelectBuilder
 
 
-class BaseContext(comp.QueryContext):
+class BaseContext(QueryContext):
     def _to_sql(self, expr, ctx):
         return to_sql(expr, ctx)
 
 
-class BaseSelect(comp.Select):
+class BaseSelect(Select):
 
     """
     A SELECT statement which, after execution, might yield back to the user a
@@ -65,7 +73,7 @@ class BaseSelect(comp.Select):
         return BaseTableSetFormatter
 
 
-class BaseTableSetFormatter(comp.TableSetFormatter):
+class BaseTableSetFormatter(TableSetFormatter):
 
     _join_names = {
         ops.InnerJoin: 'INNER JOIN',
@@ -86,8 +94,8 @@ class BaseTableSetFormatter(comp.TableSetFormatter):
         return quote_identifier(name)
 
 
-# TODO move the name method to comp.ExprTranslator and use that instead
-class BaseExprTranslator(comp.ExprTranslator):
+# TODO move the name method to ExprTranslator and use that instead
+class BaseExprTranslator(ExprTranslator):
     """Base expression translator."""
 
     _registry = operation_registry
@@ -102,7 +110,7 @@ class BaseExprTranslator(comp.ExprTranslator):
         return self._name_expr(translated, quote_identifier(name, force=force))
 
 
-class BaseDialect(comp.Dialect):
+class BaseDialect(Dialect):
     translator = BaseExprTranslator
 
 
