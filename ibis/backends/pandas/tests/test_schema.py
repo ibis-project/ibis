@@ -195,6 +195,10 @@ def test_infer_array_type():
         ('string_series_col', dt.Array(dt.string)),
     ]
 
+    # TODO: will remove before merging
+    print(sch.infer(df))
+    print(ibis.schema(expected))
+
     assert sch.infer(df) == ibis.schema(expected)
 
 
