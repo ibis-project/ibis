@@ -76,7 +76,7 @@ def format_partition(partition, partition_schema):
     return 'PARTITION ({})'.format(', '.join(tokens))
 
 
-def format_properties(props):
+def _format_properties(props):
     tokens = []
     for k, v in sorted(props.items()):
         tokens.append("  '{}'='{}'".format(k, v))
@@ -85,16 +85,16 @@ def format_properties(props):
 
 
 def format_tblproperties(props):
-    formatted_props = format_properties(props)
+    formatted_props = _format_properties(props)
     return 'TBLPROPERTIES {}'.format(formatted_props)
 
 
 def _serdeproperties(props):
-    formatted_props = format_properties(props)
+    formatted_props = _format_properties(props)
     return 'SERDEPROPERTIES {}'.format(formatted_props)
 
 
-class BaseQualifiedSQLStatement:
+class _BaseQualifiedSQLStatement:
     def _get_scoped_name(self, obj_name, database):
         if database:
             scoped_name = '{}.`{}`'.format(database, obj_name)
@@ -109,20 +109,20 @@ class BaseQualifiedSQLStatement:
         return scoped_name
 
 
-class BaseDDL(DDL, BaseQualifiedSQLStatement):
+class _BaseDDL(DDL, _BaseQualifiedSQLStatement):
     pass
 
 
-class BaseDML(DML, BaseQualifiedSQLStatement):
+class _BaseDML(DML, _BaseQualifiedSQLStatement):
     pass
 
 
-class CreateDDL(BaseDDL):
+class _CreateDDL(_BaseDDL):
     def _if_exists(self):
         return 'IF NOT EXISTS ' if self.can_exist else ''
 
 
-class CreateTable(CreateDDL):
+class CreateTable(_CreateDDL):
 
     """
 
@@ -282,7 +282,7 @@ class CreateTableWithSchema(CreateTable):
         yield self._location()
 
 
-class CreateDatabase(CreateDDL):
+class CreateDatabase(_CreateDDL):
     def __init__(self, name, path=None, can_exist=False):
         self.name = name
         self.path = path
@@ -299,7 +299,7 @@ class CreateDatabase(CreateDDL):
         return create_line
 
 
-class DropObject(BaseDDL):
+class DropObject(_BaseDDL):
     def __init__(self, must_exist=True):
         self.must_exist = must_exist
 
@@ -339,7 +339,7 @@ class DropView(DropTable):
     _object_type = 'VIEW'
 
 
-class TruncateTable(BaseDDL):
+class TruncateTable(_BaseDDL):
 
     _object_type = 'TABLE'
 
@@ -352,7 +352,7 @@ class TruncateTable(BaseDDL):
         return 'TRUNCATE TABLE {}'.format(name)
 
 
-class InsertSelect(BaseDML):
+class InsertSelect(_BaseDML):
     def __init__(
         self,
         table_name,
@@ -390,7 +390,7 @@ class InsertSelect(BaseDML):
         )
 
 
-class AlterTable(BaseDDL):
+class AlterTable(_BaseDDL):
     def __init__(
         self,
         table,
@@ -486,3 +486,26 @@ class RenameTable(AlterTable):
             self.old_qualified_name, self.new_qualified_name
         )
         return self._wrap_command(cmd)
+
+
+__all__ = (
+    'fully_qualified_re',
+    'is_fully_qualified',
+    'format_schema',
+    'format_partition',
+    'format_tblproperties',
+    'CreateTable',
+    'CTAS',
+    'CreateView',
+    'CreateTableWithSchema',
+    'CreateDatabase',
+    'DropObject',
+    'DropDatabase',
+    'DropTable',
+    'DropView',
+    'TruncateTable',
+    'InsertSelect',
+    'AlterTable',
+    'DropFunction',
+    'RenameTable',
+)
