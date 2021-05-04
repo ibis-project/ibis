@@ -8,8 +8,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
 
-from . import transforms
-from . import translator
+from . import transforms, translator
 from .base import DML, QueryAST, SetOp
 from .extract_subqueries import ExtractSubqueries
 
@@ -600,6 +599,7 @@ class SelectBuilder:
     select statements (and other DDL types, where necessary), and records
     relevant query unit aliases to be used when actually generating SQL.
     """
+
     _select_class = Select
 
     def __init__(self, expr, context):
