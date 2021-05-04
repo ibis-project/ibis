@@ -157,12 +157,12 @@ def test_infer_basic_types():
 def test_infer_array_type():
     df = pd.DataFrame(
         {
-            'int_arr_col': [
-                np.array([0, 1]),
-                np.array([3, 4]),
-                np.array([5, 6]),
-                np.array([7, 8]),
-                np.array([9, 10]),
+            'int64_arr_col': [
+                np.array([0, 1], dtype='int64'),
+                np.array([3, 4], dtype='int64'),
+                np.array([5, 6], dtype='int64'),
+                np.array([7, 8], dtype='int64'),
+                np.array([9, 10], dtype='int64'),
             ],
             'string_arr_col': [
                 np.array(['0', '1']),
@@ -171,12 +171,12 @@ def test_infer_array_type():
                 np.array(['7', '8']),
                 np.array(['9', '10']),
             ],
-            'int_series_col': [
-                pd.Series([0, 1]),
-                pd.Series([3, 4]),
-                pd.Series([5, 6]),
-                pd.Series([7, 8]),
-                pd.Series([9, 10]),
+            'int64_series_col': [
+                pd.Series([0, 1], dtype='int64'),
+                pd.Series([3, 4], dtype='int64'),
+                pd.Series([5, 6], dtype='int64'),
+                pd.Series([7, 8], dtype='int64'),
+                pd.Series([9, 10], dtype='int64'),
             ],
             'string_series_col': [
                 pd.Series(['0', '1']),
@@ -189,15 +189,11 @@ def test_infer_array_type():
     )
 
     expected = [
-        ('int_arr_col', dt.Array(dt.int64)),
+        ('int64_arr_col', dt.Array(dt.int64)),
         ('string_arr_col', dt.Array(dt.string)),
-        ('int_series_col', dt.Array(dt.int64)),
+        ('int64_series_col', dt.Array(dt.int64)),
         ('string_series_col', dt.Array(dt.string)),
     ]
-
-    # TODO: will remove before merging
-    print(sch.infer(df))
-    print(ibis.schema(expected))
 
     assert sch.infer(df) == ibis.schema(expected)
 
