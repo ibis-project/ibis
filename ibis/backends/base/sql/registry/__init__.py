@@ -3,7 +3,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
-from ibis.backends.base_sqlalchemy import transforms
+from ibis.backends.base.sql.compiler import ExistsSubquery, NotExistsSubquery
 
 from . import (
     aggregate,
@@ -184,9 +184,9 @@ def exists_subquery(translator, expr):
 
     subquery = ctx.get_compiled_expr(expr)
 
-    if isinstance(op, transforms.ExistsSubquery):
+    if isinstance(op, ExistsSubquery):
         key = 'EXISTS'
-    elif isinstance(op, transforms.NotExistsSubquery):
+    elif isinstance(op, NotExistsSubquery):
         key = 'NOT EXISTS'
     else:
         raise NotImplementedError
@@ -349,8 +349,8 @@ operation_registry = {
     ops.TimestampSub: timestamp.timestamp_op('date_sub'),
     ops.TimestampDiff: timestamp.timestamp_diff,
     ops.TimestampFromUNIX: timestamp.timestamp_from_unix,
-    transforms.ExistsSubquery: exists_subquery,
-    transforms.NotExistsSubquery: exists_subquery,
+    ExistsSubquery: exists_subquery,
+    NotExistsSubquery: exists_subquery,
     # RowNumber, and rank functions starts with 0 in Ibis-land
     ops.RowNumber: lambda *args: 'row_number()',
     ops.DenseRank: lambda *args: 'dense_rank()',
