@@ -17,8 +17,13 @@ from typing import Optional
 
 import pytest
 
-import ibis.backends.base_sqlalchemy.alchemy as alch  # noqa: E402
 import ibis.expr.types as ir
+from ibis.backends.base.sql.alchemy import (
+    AlchemyDialect,
+    AlchemyTable,
+    build_ast,
+    table_from_schema,
+)
 from ibis.client import SQLClient
 from ibis.expr.schema import Schema
 from ibis.expr.typing import TimeContext
@@ -411,20 +416,16 @@ class MockAlchemyConnection(BaseMockConnection):
         if name in self.meta.tables:
             table = self.meta.tables[name]
         else:
-            table = alch.table_from_schema(name, self.meta, schema)
+            table = table_from_schema(name, self.meta, schema)
 
-        node = alch.AlchemyTable(table, self)
+        node = AlchemyTable(table, self)
         return ir.TableExpr(node)
 
     @property
     def dialect(self):
-        from ibis.backends.base_sqlalchemy.alchemy import AlchemyDialect
-
         return AlchemyDialect
 
     def _build_ast(self, expr, context):
-        from ibis.backends.base_sqlalchemy.alchemy import build_ast
-
         return build_ast(expr, context)
 
 

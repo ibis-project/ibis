@@ -15,7 +15,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.signature as sig
 import ibis.udf.validate as v
 
-from .compiler import SparkUDAFNode, SparkUDFNode, compiles
+from .compiler import SparkExprTranslator, SparkUDAFNode, SparkUDFNode
 from .datatypes import spark_dtype
 
 _udf_name_cache = collections.defaultdict(itertools.count)
@@ -79,11 +79,12 @@ class SparkUDF:
         # interpreted as self.
         UDFNode.udf_func = property(lambda self, udf_func=udf_func: udf_func)
 
-        @compiles(UDFNode)
         def compiles_udf_node(t, expr):
             return '{}({})'.format(
                 UDFNode.__name__, ', '.join(map(t.translate, expr.op().args))
             )
+
+        SparkExprTranslator._registry[UDFNode] = compiles_udf_node
 
         return UDFNode
 

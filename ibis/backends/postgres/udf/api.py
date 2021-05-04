@@ -9,7 +9,7 @@ from sqlalchemy.dialects.postgresql import dialect as sa_postgres_dialect
 import ibis.expr.rules as rlz
 import ibis.udf.validate as v
 from ibis import IbisError
-from ibis.backends.base_sqlalchemy.alchemy import _to_sqla_type
+from ibis.backends.base.sql.alchemy import to_sqla_type
 from ibis.backends.postgres.compiler import (
     PostgreSQLExprTranslator,
     PostgresUDFNode,
@@ -26,9 +26,7 @@ class PostgresUDFError(IbisError):
 
 def ibis_to_pg_sa_type(ibis_type):
     """Map an ibis DataType to a Postgres-compatible sqlalchemy type"""
-    return _to_sqla_type(
-        ibis_type, type_map=PostgreSQLExprTranslator._type_map
-    )
+    return to_sqla_type(ibis_type, type_map=PostgreSQLExprTranslator._type_map)
 
 
 def sa_type_to_postgres_str(sa_type):

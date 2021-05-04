@@ -12,7 +12,11 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
-* :feature:`2613` Implement .insert() for SQLite
+
+* :feature:`2613` Implement `.insert()` for SQLite
+* :support:`2665` Move BigQuery backend to a `separate repository <https://github.com/ibis-project/ibis-bigquery>`_.
+  The backend will be released separately, use `pip install ibis-bigquery` or `conda install ibis-bigquery` to
+  install it, and then use as before.
 * :bug:`2712` Fix time context trimming error for multi column udfs in pandas backend
 * :bug:`2710` Fix error during compilation of range_window in base_sql backends (:issue:`2608`)
 * :feature:`2687` Support Spark filter with window operation

@@ -1,60 +1,28 @@
-from operator import add, mul, sub
-
 import ibis.backends.base_sqlalchemy.compiler as comp
-import ibis.common.exceptions as com
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.types as ir
-from ibis.backends.base_sql import binary_infix_ops, operation_registry
-from ibis.backends.base_sql.compiler import (
-    BaseContext,
-    BaseExprTranslator,
-    BaseQueryBuilder,
-    BaseSelectBuilder,
-    BaseTableSetFormatter,
+from ibis.backends.base.sql import (
+    binary_infix_ops,
+    operation_registry,
+    quote_identifier,
 )
 
 
-def _get_context():
+def build_ast(expr, context=None):
     from ibis.backends.impala import Backend
 
-    return Backend().dialect.make_context()
-
-
-def build_ast(expr, context=None):
     if context is None:
-        context = _get_context()
+        context = Backend().dialect.make_context()
     builder = ImpalaQueryBuilder(expr, context=context)
     return builder.get_result()
 
 
-def _get_query(expr, context):
-    if context is None:
-        context = _get_context()
-    ast = build_ast(expr, context)
-    query = ast.queries[0]
-
-    return query
-
-
-def to_sql(expr, context=None):
-    if context is None:
-        context = _get_context()
-    query = _get_query(expr, context)
-    return query.compile()
-
-
-# ----------------------------------------------------------------------
-# Select compilation
-
-
-class ImpalaSelectBuilder(BaseSelectBuilder):
+class ImpalaSelectBuilder(comp.SelectBuilder):
     @property
     def _select_class(self):
         return ImpalaSelect
 
 
-class ImpalaQueryBuilder(BaseQueryBuilder):
+class ImpalaQueryBuilder(comp.QueryBuilder):
 
     select_builder = ImpalaSelectBuilder
 
@@ -76,7 +44,7 @@ class ImpalaSelect(comp.Select):
         return ImpalaTableSetFormatter
 
 
-class ImpalaTableSetFormatter(BaseTableSetFormatter):
+class ImpalaTableSetFormatter(comp.TableSetFormatter):
     def _get_join_type(self, op):
         jname = self._join_names[type(op)]
 
@@ -86,85 +54,28 @@ class ImpalaTableSetFormatter(BaseTableSetFormatter):
 
         return jname
 
-
-_map_interval_to_microseconds = {
-    'W': 604800000000,
-    'D': 86400000000,
-    'h': 3600000000,
-    'm': 60000000,
-    's': 1000000,
-    'ms': 1000,
-    'us': 1,
-    'ns': 0.001,
-}
+    def _quote_identifier(self, name):
+        return quote_identifier(name)
 
 
-_map_interval_op_to_op = {
-    # Literal Intervals have two args, i.e.
-    # Literal(1, Interval(value_type=int8, unit='D', nullable=True))
-    # Parse both args and multipy 1 * _map_interval_to_microseconds['D']
-    ops.Literal: mul,
-    ops.IntervalMultiply: mul,
-    ops.IntervalAdd: add,
-    ops.IntervalSubtract: sub,
-}
+class ImpalaQueryContext(comp.QueryContext):
+    def _to_sql(self, expr, ctx):
+        builder = ImpalaQueryBuilder(expr, context=ctx)
+        ast = builder.get_result()
+        query = ast.queries[0]
+        return query.compile()
 
 
-def _replace_interval_with_scalar(expr):
-    """
-    Good old Depth-First Search to identify the Interval and IntervalValue
-    components of the expression and return a comparable scalar expression.
+class ImpalaExprTranslator(comp.ExprTranslator):
+    _registry = {**operation_registry, **binary_infix_ops}
+    context_class = ImpalaQueryContext
 
-    Parameters
-    ----------
-    expr : float or expression of intervals
-        For example, ``ibis.interval(days=1) + ibis.interval(hours=5)``
-
-    Returns
-    -------
-    preceding : float or ir.FloatingScalar, depending upon the expr
-    """
-    try:
-        expr_op = expr.op()
-    except AttributeError:
-        expr_op = None
-
-    if not isinstance(expr, (dt.Interval, ir.IntervalValue)):
-        # Literal expressions have op method but native types do not.
-        if isinstance(expr_op, ops.Literal):
-            return expr_op.value
-        else:
-            return expr
-    elif isinstance(expr, dt.Interval):
-        try:
-            microseconds = _map_interval_to_microseconds[expr.unit]
-            return microseconds
-        except KeyError:
-            raise ValueError(
-                "Expected preceding values of week(), "
-                + "day(), hour(), minute(), second(), millisecond(), "
-                + "microseconds(), nanoseconds(); got {}".format(expr)
-            )
-    elif expr_op.args and isinstance(expr, ir.IntervalValue):
-        if len(expr_op.args) > 2:
-            raise com.NotImplementedError(
-                "'preceding' argument cannot be parsed."
-            )
-        left_arg = _replace_interval_with_scalar(expr_op.args[0])
-        right_arg = _replace_interval_with_scalar(expr_op.args[1])
-        method = _map_interval_op_to_op[type(expr_op)]
-        return method(left_arg, right_arg)
+    def name(self, translated, name, force=True):
+        return '{} AS {}'.format(
+            translated, quote_identifier(name, force=force)
+        )
 
 
-_operation_registry = {**operation_registry, **binary_infix_ops}
-
-
-class ImpalaExprTranslator(BaseExprTranslator):
-    _registry = _operation_registry
-    context_class = BaseContext
-
-
-compiles = ImpalaExprTranslator.compiles
 rewrites = ImpalaExprTranslator.rewrites
 
 

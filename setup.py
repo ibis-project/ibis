@@ -30,10 +30,6 @@ clickhouse_requires = [
     'clickhouse-driver>=0.1.3',
     'clickhouse-cityhash',
 ]
-bigquery_requires = [
-    'google-cloud-bigquery[bqstorage,pandas]>=1.12.0,<2.0.0dev',
-    'pydata-google-auth',
-]
 hdf5_requires = ['tables>=3.0.0']
 
 parquet_requires = ['pyarrow>=0.12.0']
@@ -52,7 +48,6 @@ all_requires = (
     + kerberos_requires
     + visualization_requires
     + clickhouse_requires
-    + bigquery_requires
     + hdf5_requires
     + parquet_requires
     + spark_requires
@@ -85,7 +80,6 @@ setup(
         'sqlite': sqlite_requires,
         'visualization': visualization_requires,
         'clickhouse': clickhouse_requires,
-        'bigquery': bigquery_requires,
         'hdf5': hdf5_requires,
         'parquet': parquet_requires,
         'spark': spark_requires,
@@ -116,7 +110,6 @@ setup(
             'postgres = ibis.backends.postgres',
             'mysql = ibis.backends.mysql',
             'clickhouse = ibis.backends.clickhouse',
-            'bigquery = ibis.backends.bigquery',
             'spark = ibis.backends.spark',
             'pyspark = ibis.backends.pyspark',
             'dask = ibis.backends.dask',

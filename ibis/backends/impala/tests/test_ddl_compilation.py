@@ -1,7 +1,7 @@
 import pytest
 
 import ibis
-from ibis.backends.base_sql import ddl as base_ddl
+from ibis.backends.base_sqlalchemy import ddl as base_ddl
 from ibis.backends.impala import ddl
 from ibis.backends.impala.client import build_ast
 

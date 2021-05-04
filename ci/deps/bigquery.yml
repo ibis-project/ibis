@@ -1,2 +1,0 @@
-google-cloud-bigquery-core >=1.12.0,<1.24.0dev
-pydata-google-auth

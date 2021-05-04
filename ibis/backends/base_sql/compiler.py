@@ -1,10 +1,6 @@
 import ibis.backends.base_sqlalchemy.compiler as comp
 import ibis.expr.operations as ops
-from ibis.backends.base_sql import (
-    binary_infix_ops,
-    operation_registry,
-    quote_identifier,
-)
+from ibis.backends.base.sql import operation_registry, quote_identifier
 
 
 def build_ast(expr, context):
@@ -87,14 +83,11 @@ class BaseTableSetFormatter(comp.TableSetFormatter):
         return quote_identifier(name)
 
 
-_operation_registry = {**operation_registry, **binary_infix_ops}
-
-
 # TODO move the name method to comp.ExprTranslator and use that instead
 class BaseExprTranslator(comp.ExprTranslator):
     """Base expression translator."""
 
-    _registry = _operation_registry
+    _registry = operation_registry
     context_class = BaseContext
 
     @staticmethod
@@ -110,7 +103,6 @@ class BaseDialect(comp.Dialect):
     translator = BaseExprTranslator
 
 
-compiles = BaseExprTranslator.compiles
 rewrites = BaseExprTranslator.rewrites
 
 
