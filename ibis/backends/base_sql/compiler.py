@@ -14,38 +14,9 @@ from ibis.backends.base.sql.registry import (
 )
 
 
-def build_ast(expr, context):
-    assert context is not None, 'context is None'
-    builder = BaseQueryBuilder(expr, context=context)
-    return builder.get_result()
-
-
-def _get_query(expr, context):
-    assert context is not None, 'context is None'
-    ast = build_ast(expr, context)
-    query = ast.queries[0]
-
-    return query
-
-
-def to_sql(expr, context=None):
-    if context is None:
-        context = BaseDialect.make_context()
-    assert context is not None, 'context is None'
-    query = _get_query(expr, context)
-    return query.compile()
-
-
-# ----------------------------------------------------------------------
-# Select compilation
-
-
-class BaseSelectBuilder(SelectBuilder):
-    pass
-
-
-class BaseQueryBuilder(QueryBuilder):
-    pass
+class BaseTableSetFormatter(TableSetFormatter):
+    def _quote_identifier(self, name):
+        return quote_identifier(name)
 
 
 class BaseContext(QueryContext):
@@ -53,39 +24,44 @@ class BaseContext(QueryContext):
         return to_sql(expr, ctx)
 
 
-class BaseSelect(Select):
-    pass
-
-
-class BaseTableSetFormatter(TableSetFormatter):
-    def _quote_identifier(self, name):
-        return quote_identifier(name)
-
-
-# TODO move the name method to ExprTranslator and use that instead
 class BaseExprTranslator(ExprTranslator):
-    """Base expression translator."""
-
     _registry = operation_registry
     context_class = BaseContext
 
-    @staticmethod
-    def _name_expr(formatted_expr, quoted_name):
-        return '{} AS {}'.format(formatted_expr, quoted_name)
-
     def name(self, translated, name, force=True):
-        """Return expression with its identifier."""
-        return self._name_expr(translated, quote_identifier(name, force=force))
+        return '{} AS {}'.format(
+            translated, quote_identifier(name, force=force)
+        )
+
+
+@BaseExprTranslator.rewrites(ops.FloorDivide)
+def _floor_divide(expr):
+    left, right = expr.op().args
+    return left.div(right).floor()
 
 
 class BaseDialect(Dialect):
     translator = BaseExprTranslator
 
 
-rewrites = BaseExprTranslator.rewrites
+class BaseSelect(Select):
+    translator = BaseExprTranslator
+    table_set_formatter = BaseTableSetFormatter
 
 
-@rewrites(ops.FloorDivide)
-def _floor_divide(expr):
-    left, right = expr.op().args
-    return left.div(right).floor()
+class BaseSelectBuilder(SelectBuilder):
+    _select_class = BaseSelect
+
+
+class BaseQueryBuilder(QueryBuilder):
+    select_builder = BaseSelectBuilder
+
+
+def build_ast(expr, context):
+    return BaseQueryBuilder(expr, context=context).get_result()
+
+
+def to_sql(expr, context=None):
+    if context is None:
+        context = BaseDialect.make_context()
+    return build_ast(expr, context).queries[0].compile()

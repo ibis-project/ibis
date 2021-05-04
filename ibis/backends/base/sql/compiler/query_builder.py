@@ -8,7 +8,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
 
-from . import transforms, translator
+from . import transforms
 from .base import DML, QueryAST, SetOp
 from .extract_subqueries import ExtractSubqueries
 
@@ -334,7 +334,7 @@ class Select(DML):
 
     @property
     def translator(self):
-        return translator.ExprTranslator
+        return self.context.dialect.translator
 
     def _translate(self, expr, named=False, permit_subquery=False):
         context = self.context
