@@ -1,4 +1,3 @@
-import ibis.expr.operations as ops
 from ibis.backends.base.sql.compiler import (
     Dialect,
     ExprTranslator,
@@ -32,12 +31,6 @@ class BaseExprTranslator(ExprTranslator):
         return '{} AS {}'.format(
             translated, quote_identifier(name, force=force)
         )
-
-
-@BaseExprTranslator.rewrites(ops.FloorDivide)
-def _floor_divide(expr):
-    left, right = expr.op().args
-    return left.div(right).floor()
 
 
 class BaseDialect(Dialect):
