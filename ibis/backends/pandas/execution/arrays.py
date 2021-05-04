@@ -62,6 +62,8 @@ def _concat_iterables_to_series(
     Used for ArrayConcat implementation.
     """
     assert len(iter1) == len(iter2)
+    # Doing the iteration using `map` is much faster than doing the iteration
+    # using `Series.apply` due to Pandas-related overhead.
     result = pd.Series(map(lambda x, y: np.concatenate([x, y]), iter1, iter2))
     return result
 

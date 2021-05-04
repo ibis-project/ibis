@@ -149,6 +149,7 @@ def safe_keys(mapping):
     result = safe_method(mapping, 'keys')
     if result is None:
         return None
+    # list(...) to unpack iterable
     return np.array(list(result))
 
 
@@ -156,6 +157,7 @@ def safe_values(mapping):
     result = safe_method(mapping, 'values')
     if result is None:
         return None
+    # list(...) to unpack iterable
     return np.array(list(result))
 
 
@@ -168,6 +170,7 @@ def execute_map_keys_series(op, data, **kwargs):
 def execute_map_keys_dict(op, data, **kwargs):
     if data is None:
         return None
+    # list(...) to unpack iterable
     return np.array(list(data.keys()))
 
 
@@ -181,6 +184,7 @@ def execute_map_values_series(op, data, **kwargs):
 def execute_map_values_dict(op, data, **kwargs):
     if data is None:
         return None
+    # list(...) to unpack iterable
     return np.array(list(data.values()))
 
 

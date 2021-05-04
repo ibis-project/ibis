@@ -764,6 +764,8 @@ def execute_null_if_zero_series(op, data, **kwargs):
 
 @execute_node.register(ops.StringSplit, pd.Series, (pd.Series, str))
 def execute_string_split(op, data, delimiter, **kwargs):
+    # Doing the iteration using `map` is much faster than doing the iteration
+    # using `Series.apply` due to Pandas-related overhead.
     return pd.Series(map(lambda s: np.array(s.split(delimiter)), data))
 
 
