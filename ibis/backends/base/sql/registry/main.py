@@ -5,16 +5,8 @@ import ibis.expr.types as ir
 import ibis.util as util
 from ibis.backends.base_sqlalchemy import transforms
 
-from . import (
-    aggregate,
-    binary_infix,
-    case,
-    helpers,
-    literal,
-    string,
-    timestamp,
-    window,
-)
+from . import aggregate, binary_infix, case, helpers, string, timestamp, window
+from .literal import literal, null_literal
 
 
 def fixed_arity(func_name, arity):
@@ -327,8 +319,8 @@ operation_registry = {
     ops.IntervalFromInteger: timestamp.interval_from_integer,
     # Other operations
     ops.E: lambda *args: 'e()',
-    ops.Literal: literal.literal,
-    ops.NullLiteral: literal.null_literal,
+    ops.Literal: literal,
+    ops.NullLiteral: null_literal,
     ops.ValueList: value_list,
     ops.Cast: cast,
     ops.Coalesce: varargs('coalesce'),
