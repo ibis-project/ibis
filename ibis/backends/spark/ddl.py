@@ -1,4 +1,4 @@
-from ibis.backends.base.sql import quote_identifier
+from ibis.backends.base.sql.registry import quote_identifier
 from ibis.backends.base_sqlalchemy import ddl as base_ddl
 
 from .datatypes import type_to_sql_string

@@ -89,7 +89,7 @@ def _replace_interval_with_scalar(
         return method(left_arg, right_arg)
 
 
-def _cumulative_to_window(translator, expr, window):
+def cumulative_to_window(translator, expr, window):
     win = ibis.cumulative_window()
     win = win.group_by(window._group_by).order_by(window._order_by)
 
@@ -106,7 +106,7 @@ def _cumulative_to_window(translator, expr, window):
     return new_expr
 
 
-def _time_range_to_range_window(translator, window):
+def time_range_to_range_window(translator, window):
     # Check that ORDER BY column is a single time column:
     order_by_vars = [x.op().args[0] for x in window._order_by]
     if len(order_by_vars) > 1:
@@ -127,7 +127,7 @@ def _time_range_to_range_window(translator, window):
     return window
 
 
-def _format_window(translator, op, window):
+def format_window(translator, op, window):
     components = []
 
     if window.max_lookback is not None:
@@ -265,7 +265,7 @@ def window(translator, expr):
         )
 
     if isinstance(window_op, ops.CumulativeOp):
-        arg = _cumulative_to_window(translator, arg, window)
+        arg = cumulative_to_window(translator, arg, window)
         return translator.translate(arg)
 
     # Some analytic functions need to have the expression of interest in
@@ -278,9 +278,9 @@ def window(translator, expr):
         order_by_types = [type(x.op().args[0]) for x in window._order_by]
         time_range_types = (ir.TimeColumn, ir.DateColumn, ir.TimestampColumn)
         if any(col_type in time_range_types for col_type in order_by_types):
-            window = _time_range_to_range_window(translator, window)
+            window = time_range_to_range_window(translator, window)
 
-    window_formatted = _format_window(translator, op, window)
+    window_formatted = format_window(translator, op, window)
 
     arg_formatted = translator.translate(arg)
     result = '{} {}'.format(arg_formatted, window_formatted)
