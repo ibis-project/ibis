@@ -135,9 +135,17 @@ def infer_pandas_timestamp(value):
 def infer_array(value):
     np_dtype_name = value.dtype.name
     if np_dtype_name == 'object':
+        # The dtype of the np.array is ambiguous, so we need to infer the type
+        # of the elements manually.
         if value.size == 0:
             return dt.Array(dt.null)
         return dt.Array(dt.highest_precedence(map(dt.infer, value)))
+    elif np_dtype_name == 'str32':
+        # 'str32' doesn't map well to Ibis names for types (you can find a
+        # list of these in the `TypeParser` class).
+        return dt.Array(dt.string)
+    # The dtype of the np.array is not ambiguous, and we can directly use it
+    # as the type of the elements.
     return dt.Array(dt.dtype(value.dtype.name))
 
 
