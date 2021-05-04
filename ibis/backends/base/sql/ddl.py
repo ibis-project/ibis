@@ -109,7 +109,7 @@ class _BaseQualifiedSQLStatement:
         return scoped_name
 
 
-class _BaseDDL(DDL, _BaseQualifiedSQLStatement):
+class BaseDDL(DDL, _BaseQualifiedSQLStatement):
     pass
 
 
@@ -117,7 +117,7 @@ class _BaseDML(DML, _BaseQualifiedSQLStatement):
     pass
 
 
-class _CreateDDL(_BaseDDL):
+class _CreateDDL(BaseDDL):
     def _if_exists(self):
         return 'IF NOT EXISTS ' if self.can_exist else ''
 
@@ -299,7 +299,7 @@ class CreateDatabase(_CreateDDL):
         return create_line
 
 
-class DropObject(_BaseDDL):
+class DropObject(BaseDDL):
     def __init__(self, must_exist=True):
         self.must_exist = must_exist
 
@@ -339,7 +339,7 @@ class DropView(DropTable):
     _object_type = 'VIEW'
 
 
-class TruncateTable(_BaseDDL):
+class TruncateTable(BaseDDL):
 
     _object_type = 'TABLE'
 
@@ -390,7 +390,7 @@ class InsertSelect(_BaseDML):
         )
 
 
-class AlterTable(_BaseDDL):
+class AlterTable(BaseDDL):
     def __init__(
         self,
         table,
@@ -494,6 +494,7 @@ __all__ = (
     'format_schema',
     'format_partition',
     'format_tblproperties',
+    'BaseDDL',
     'CreateTable',
     'CTAS',
     'CreateView',
