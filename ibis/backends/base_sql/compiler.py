@@ -1,5 +1,4 @@
 import ibis.expr.operations as ops
-from ibis.backends.base.sql import operation_registry, quote_identifier
 from ibis.backends.base.sql.compiler import (
     Dialect,
     ExprTranslator,
@@ -8,6 +7,10 @@ from ibis.backends.base.sql.compiler import (
     Select,
     SelectBuilder,
     TableSetFormatter,
+)
+from ibis.backends.base.sql.registry import (
+    operation_registry,
+    quote_identifier,
 )
 
 

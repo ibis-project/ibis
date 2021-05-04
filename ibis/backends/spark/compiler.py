@@ -25,7 +25,6 @@ import math
 import ibis
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
-from ibis.backends.base.sql import quote_identifier
 from ibis.backends.base.sql.compiler import (
     Dialect,
     ExprTranslator,
@@ -34,6 +33,7 @@ from ibis.backends.base.sql.compiler import (
     Select,
     SelectBuilder,
 )
+from ibis.backends.base.sql.registry import quote_identifier
 
 from .registry import operation_registry
 

@@ -2,8 +2,11 @@ import re
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
-from ibis.backends.base.sql import quote_identifier, type_to_sql_string
 from ibis.backends.base.sql.compiler import DDL, DML
+from ibis.backends.base.sql.registry import (
+    quote_identifier,
+    type_to_sql_string,
+)
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
 _format_aliases = {'TEXT': 'TEXTFILE'}
