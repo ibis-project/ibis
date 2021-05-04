@@ -132,7 +132,7 @@ def test_insert_from_dataframe(con, df):
     records = df[:10]
 
     assert len(temporary.execute()) == 0
-    con.insert('temporary_alltypes',data_obj=records)
+    con.insert('temporary_alltypes', data_obj=records)
 
     temporary_post_insert = con.table('temporary_alltypes')
 
@@ -160,7 +160,7 @@ def test_insert_from_table(con, from_table_name):
         from_table_name=from_table_name
     )
 
-    temporary_post_insert = con.table('temporary_alltypes') 
+    temporary_post_insert = con.table('temporary_alltypes')
 
     from_table = con.table(from_table_name)
 
