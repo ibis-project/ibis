@@ -329,3 +329,82 @@ class AlchemyClient(SQLClient):
     def version(self):
         vstring = '.'.join(map(str, self.con.dialect.server_version_info))
         return parse_version(vstring)
+
+    def insert(
+        self,
+        to_table_name: str,
+        database: Optional[str] = None,
+        data_obj=None,
+        from_table_name: Optional[str] = None,
+        if_exists: Optional[str] = 'append',
+        values=None,
+    ):
+        """
+        Insert the given data to a table in SQL
+
+        Parameters
+        ----------
+        to_table_name : string
+          name of the table to which data needs to be inserted
+        database : string, optional
+          name of the attached database that the table is located in.
+        data_obj : pd.Dataframe (Later can also be used for sending in
+        table_expr)
+          data_obj is the dataframe containing data which needs to be inserted
+          to to_table_name
+          (Later when table_expr related implementation is done this variable
+          can be used to take in that data)
+        from_table_name: string, optional
+          name of the table from which data needs to be inserted
+        if_exists : string, optional, default 'append'
+          The values available are: {‘fail’, ‘replace’, ‘append’}
+        values: None, optional
+          values can be used to fill in data (in some ordered form of rows
+          and columns)
+          which can be used to insert data into the to_table_name directly
+          (Not implemented yet)
+
+        Raises
+        -------
+        ValueError
+          You must pass either data_obj (pandas Dataframe) or from_table_name
+          (table name to insert data from)
+
+        NotImplementedError
+          Inserting with values is not implemented for SQLite
+
+        """
+
+        if data_obj is None and from_table_name is None:
+            raise ValueError(
+                'You must pass either data_obj (pandas Dataframe)'
+                ' or from_table_name (table name to insert data from)'
+            )
+
+        if values is not None:
+            raise NotImplementedError(
+                'Inserting with values is not implemented for SQLite'
+            )
+
+        params = {}
+        if database is None:
+            params['schema'] = self.database_name
+            database = self.database_name
+
+        if isinstance(data_obj, pd.DataFrame):
+            data_obj.to_sql(
+                to_table_name,
+                self.con,
+                index=False,
+                if_exists=if_exists,
+                **params,
+            )
+        elif data_obj is None and from_table_name is not None:
+            data_obj = pd.read_sql_table(from_table_name, self.con, **params)
+            data_obj.to_sql(
+                to_table_name,
+                self.con,
+                index=False,
+                if_exists=if_exists,
+                **params,
+            )
