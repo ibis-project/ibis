@@ -9,6 +9,7 @@ import ibis.expr.types as ir
 import ibis.util as util
 
 from . import transforms
+from . import translator
 from .base import DML, QueryAST, SetOp
 from .extract_subqueries import ExtractSubqueries
 
@@ -334,7 +335,7 @@ class Select(DML):
 
     @property
     def translator(self):
-        return self.context.dialect.translator
+        return translator.ExprTranslator
 
     def _translate(self, expr, named=False, permit_subquery=False):
         context = self.context
@@ -599,6 +600,7 @@ class SelectBuilder:
     select statements (and other DDL types, where necessary), and records
     relevant query unit aliases to be used when actually generating SQL.
     """
+    _select_class = Select
 
     def __init__(self, expr, context):
         self.expr = expr

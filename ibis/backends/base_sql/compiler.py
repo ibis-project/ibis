@@ -41,14 +41,11 @@ def to_sql(expr, context=None):
 
 
 class BaseSelectBuilder(SelectBuilder):
-    @property
-    def _select_class(self):
-        return BaseSelect
+    pass
 
 
 class BaseQueryBuilder(QueryBuilder):
-
-    select_builder = BaseSelectBuilder
+    pass
 
 
 class BaseContext(QueryContext):
@@ -57,39 +54,10 @@ class BaseContext(QueryContext):
 
 
 class BaseSelect(Select):
-
-    """
-    A SELECT statement which, after execution, might yield back to the user a
-    table, array/list, or scalar value, depending on the expression that
-    generated it
-    """
-
-    @property
-    def translator(self):
-        return BaseExprTranslator
-
-    @property
-    def table_set_formatter(self):
-        return BaseTableSetFormatter
+    pass
 
 
 class BaseTableSetFormatter(TableSetFormatter):
-
-    _join_names = {
-        ops.InnerJoin: 'INNER JOIN',
-        ops.LeftJoin: 'LEFT OUTER JOIN',
-        ops.RightJoin: 'RIGHT OUTER JOIN',
-        ops.OuterJoin: 'FULL OUTER JOIN',
-        ops.LeftAntiJoin: 'LEFT ANTI JOIN',
-        ops.LeftSemiJoin: 'LEFT SEMI JOIN',
-        ops.CrossJoin: 'CROSS JOIN',
-    }
-
-    def _get_join_type(self, op):
-        jname = self._join_names[type(op)]
-
-        return jname
-
     def _quote_identifier(self, name):
         return quote_identifier(name)
 
