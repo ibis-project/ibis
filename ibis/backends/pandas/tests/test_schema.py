@@ -10,7 +10,7 @@ from ibis.expr import schema as sch
 pytestmark = pytest.mark.pandas
 
 
-def test_infer_exhaustive_dataframe():
+def test_infer_basic_types():
     df = pd.DataFrame(
         {
             'bigint_col': np.array(
@@ -149,6 +149,50 @@ def test_infer_exhaustive_dataframe():
         ('timestamp_col', dt.timestamp),
         ('tinyint_col', dt.int8),
         ('year', dt.int64),
+    ]
+
+    assert sch.infer(df) == ibis.schema(expected)
+
+
+def test_infer_array_type():
+    df = pd.DataFrame(
+        {
+            'int_arr_col': [
+                np.array([0, 1]),
+                np.array([3, 4]),
+                np.array([5, 6]),
+                np.array([7, 8]),
+                np.array([9, 10]),
+            ],
+            'string_arr_col': [
+                np.array(['0', '1']),
+                np.array(['3', '4']),
+                np.array(['5', '6']),
+                np.array(['7', '8']),
+                np.array(['9', '10']),
+            ],
+            'int_series_col': [
+                pd.Series([0, 1]),
+                pd.Series([3, 4]),
+                pd.Series([5, 6]),
+                pd.Series([7, 8]),
+                pd.Series([9, 10]),
+            ],
+            'string_series_col': [
+                pd.Series(['0', '1']),
+                pd.Series(['3', '4']),
+                pd.Series(['5', '6']),
+                pd.Series(['7', '8']),
+                pd.Series(['9', '10']),
+            ],
+        }
+    )
+
+    expected = [
+        ('int_arr_col', dt.Array(dt.int64)),
+        ('string_arr_col', dt.Array(dt.string)),
+        ('int_series_col', dt.Array(dt.int64)),
+        ('string_series_col', dt.Array(dt.string)),
     ]
 
     assert sch.infer(df) == ibis.schema(expected)
