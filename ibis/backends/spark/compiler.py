@@ -26,7 +26,7 @@ import ibis
 import ibis.backends.base_sqlalchemy.compiler as comp
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
-from ibis.backends.base.sql import quote_identifier
+from ibis.backends.base.sql.registry import quote_identifier
 
 from .registry import operation_registry
 
