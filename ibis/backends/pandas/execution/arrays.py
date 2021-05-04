@@ -74,6 +74,8 @@ def execute_array_concat_series(op, left, right, **kwargs):
 @execute_node.register(ops.ArrayConcat, pd.Series, np.ndarray)
 @execute_node.register(ops.ArrayConcat, np.ndarray, pd.Series)
 def execute_array_concat_mixed(op, left, right, **kwargs):
+    # ArrayConcat given a column (pd.Series) and a scalar (np.ndarray).
+    # We will broadcast the scalar to the length of the column.
     if isinstance(left, np.ndarray):
         # Broadcast `left` to the length of `right`
         left = np.tile(left, (len(right), 1))

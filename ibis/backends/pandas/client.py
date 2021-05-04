@@ -133,7 +133,6 @@ def infer_pandas_timestamp(value):
 
 @dt.infer.register(np.ndarray)
 def infer_array(value):
-    # TODO(kszucs): infer series
     np_dtype_name = value.dtype.name
     if np_dtype_name == 'object':
         if value.size == 0:
