@@ -1,5 +1,13 @@
+from ibis.backends.base.sql.ddl import (
+    CTAS,
+    AlterTable,
+    CreateTable,
+    CreateTableWithSchema,
+    DropObject,
+    InsertSelect,
+    RenameTable,
+)
 from ibis.backends.base.sql.registry import quote_identifier
-from ibis.backends.base_sqlalchemy import ddl as base_ddl
 
 from .datatypes import type_to_sql_string
 
@@ -40,7 +48,7 @@ def _format_properties(props):
     return '(\n{}\n)'.format(',\n'.join(tokens))
 
 
-class CreateTable(base_ddl.CreateTable):
+class CreateTable(CreateTable):
 
     """Create a table"""
 
@@ -66,12 +74,12 @@ class CreateTable(base_ddl.CreateTable):
         return 'USING {}'.format(self.format)
 
 
-class CreateTableWithSchema(base_ddl.CreateTableWithSchema):
+class CreateTableWithSchema(CreateTableWithSchema):
     def _storage(self):
         return 'USING {}'.format(self.format)
 
 
-class CTAS(base_ddl.CTAS):
+class CTAS(CTAS):
 
     """
     Create Table As Select
@@ -150,7 +158,7 @@ def _format_schema_element(name, t):
     )
 
 
-class DropDatabase(base_ddl.DropObject):
+class DropDatabase(DropObject):
 
     _object_type = 'DATABASE'
 
@@ -170,7 +178,7 @@ class DropDatabase(base_ddl.DropObject):
             return compiled
 
 
-class DropFunction(base_ddl.DropObject):
+class DropFunction(DropObject):
 
     _object_type = 'TEMPORARY FUNCTION'
 
@@ -183,7 +191,7 @@ class DropFunction(base_ddl.DropObject):
         return self.name
 
 
-class InsertSelect(base_ddl.InsertSelect):
+class InsertSelect(InsertSelect):
     def __init__(
         self, table_name, select_expr, database=None, overwrite=False
     ):
@@ -207,7 +215,7 @@ class InsertSelect(base_ddl.InsertSelect):
         return '{0} {1}\n{2}'.format(cmd, scoped_name, select_query)
 
 
-class AlterTable(base_ddl.AlterTable):
+class AlterTable(AlterTable):
     def __init__(self, table, tbl_properties=None):
         super().__init__(
             table,
@@ -223,7 +231,7 @@ class AlterTable(base_ddl.AlterTable):
         return self._wrap_command(action)
 
 
-class RenameTable(base_ddl.RenameTable):
+class RenameTable(RenameTable):
     def __init__(self, old_name, new_name):
         super().__init__(
             old_name, new_name, old_database=None, new_database=None
