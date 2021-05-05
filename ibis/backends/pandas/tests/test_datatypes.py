@@ -32,7 +32,6 @@ def test_no_infer_ambiguities():
         (np.float64(5.55), dt.double),
         (np.bool_(True), dt.boolean),
         (np.bool_(False), dt.boolean),
-        (np.arange(5, dtype='int32'), dt.Array(dt.int32)),
         # pandas types
         (
             pd.Timestamp('2015-01-01 12:00:00', tz='US/Eastern'),
@@ -41,6 +40,59 @@ def test_no_infer_ambiguities():
     ],
 )
 def test_infer_dtype(value, expected_dtype):
+    assert dt.infer(value) == expected_dtype
+
+
+@pytest.mark.parametrize(
+    ('value', 'expected_dtype'),
+    [
+        # Explicitly-defined dtype
+        (np.array([1, 2, 3], dtype='int8'), dt.Array(dt.int8)),
+        (np.array([1, 2, 3], dtype='int16'), dt.Array(dt.int16)),
+        (np.array([1, 2, 3], dtype='int32'), dt.Array(dt.int32)),
+        (np.array([1, 2, 3], dtype='int64'), dt.Array(dt.int64)),
+        (np.array([1, 2, 3], dtype='uint8'), dt.Array(dt.uint8)),
+        (np.array([1, 2, 3], dtype='uint16'), dt.Array(dt.uint16)),
+        (np.array([1, 2, 3], dtype='uint32'), dt.Array(dt.uint32)),
+        (np.array([1, 2, 3], dtype='uint64'), dt.Array(dt.uint64)),
+        (np.array([1.0, 2.0, 3.0], dtype='float32'), dt.Array(dt.float32)),
+        (np.array([1.0, 2.0, 3.0], dtype='float64'), dt.Array(dt.float64)),
+        (np.array([True, False, True], dtype='bool'), dt.Array(dt.boolean)),
+        # Implicit dtype
+        (np.array([1, 2, 3]), dt.Array(dt.int64)),
+        (np.array([1.0, 2.0, 3.0]), dt.Array(dt.float64)),
+        (np.array([np.nan, np.nan, np.nan]), dt.Array(dt.float64)),
+        (np.array([True, False, True]), dt.Array(dt.boolean)),
+        (np.array(['1', '2', '3']), dt.Array(dt.string)),
+        (
+            np.array(
+                [
+                    pd.Timestamp('2015-01-01 12:00:00'),
+                    pd.Timestamp('2015-01-02 12:00:00'),
+                    pd.Timestamp('2015-01-03 12:00:00'),
+                ]
+            ),
+            dt.Array(dt.timestamp),
+        ),
+        # Implied from object dtype
+        (np.array([1, 2, 3], dtype=object), dt.Array(dt.int64)),
+        (np.array([1.0, 2.0, 3.0], dtype=object), dt.Array(dt.float64)),
+        (np.array([True, False, True], dtype=object), dt.Array(dt.boolean)),
+        (np.array(['1', '2', '3'], dtype=object), dt.Array(dt.string)),
+        (
+            np.array(
+                [
+                    pd.Timestamp('2015-01-01 12:00:00'),
+                    pd.Timestamp('2015-01-02 12:00:00'),
+                    pd.Timestamp('2015-01-03 12:00:00'),
+                ],
+                dtype=object,
+            ),
+            dt.Array(dt.timestamp),
+        ),
+    ],
+)
+def test_infer_np_array(value, expected_dtype):
     assert dt.infer(value) == expected_dtype
 
 

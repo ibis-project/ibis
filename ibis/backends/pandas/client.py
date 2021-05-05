@@ -80,11 +80,26 @@ _numpy_dtypes = toolz.keymap(
 
 
 _inferable_pandas_dtypes = {
-    'boolean': dt.boolean,
     'string': dt.string,
-    'unicode': dt.string,
     'bytes': dt.string,
-    'empty': dt.string,
+    'floating': dt.float64,
+    'integer': dt.int64,
+    'mixed-integer': dt.binary,
+    'mixed-integer-float': dt.float64,
+    'decimal': dt.binary,
+    'complex': dt.binary,
+    'categorical': dt.binary,
+    'boolean': dt.boolean,
+    'datetime64': dt.timestamp,
+    'datetime': dt.timestamp,
+    'date': dt.date,
+    'timedelta64': dt.interval,
+    'timedelta': dt.interval,
+    'time': dt.time,
+    'period': dt.binary,
+    'mixed': dt.binary,
+    'empty': dt.binary,
+    'unicode': dt.string,
 }
 
 
@@ -123,19 +138,29 @@ def infer_numpy_scalar(value):
     return dt.dtype(value.dtype)
 
 
-def _infer_pandas_series_contents(s):
+def _infer_pandas_series_contents(s: pd.Series) -> dt.DataType:
     """Infer the type of the **contents** of a pd.Series.
 
     No dispatch for this because there is no class representing "the contents
     of a Series". Instead, this is meant to be used internally, mainly by
     `infer_pandas_series`.
+
+    Parameters
+    ----------
+    s : pd.Series
+        The Series whose contents we want to know the type of
+
+    Returns
+    -------
+    dtype : dt.DataType
+        The dtype of the contents of the Series
     """
     if s.dtype == np.object_:
         inferred_dtype = infer_pandas_dtype(s, skipna=True)
         if inferred_dtype in {'mixed', 'decimal'}:
             # We need to inspect an element to determine the Ibis dtype
             value = s.iloc[0]
-            if isinstance(value, (np.ndarray, list, pd.core.series.Series)):
+            if isinstance(value, (np.ndarray, list, pd.Series)):
                 # Defer to individual `infer` functions for these
                 return dt.infer(value)
             else:
@@ -168,20 +193,18 @@ def infer_pandas_timestamp(value):
 
 @dt.infer.register(np.ndarray)
 def infer_array(value):
-    np_dtype_name = value.dtype.name
-    if np_dtype_name == 'object':
+    if value.dtype == np.object_:
         # The dtype of the np.array is ambiguous, so we need to infer the type
-        # of the elements manually.
-        if value.size == 0:
-            return dt.Array(dt.null)
-        return dt.Array(dt.highest_precedence(map(dt.infer, value)))
-    elif np_dtype_name == 'str32':
+        # of the elements some other way.
+        inferred_dtype = infer_pandas_dtype(value, skipna=True)
+        return dt.Array(_inferable_pandas_dtypes[inferred_dtype])
+    elif value.dtype.name == 'str32':
         # 'str32' doesn't map well to Ibis names for types (you can find a
         # list of these in the `TypeParser` class).
         return dt.Array(dt.string)
     # The dtype of the np.array is not ambiguous, and we can directly use it
     # as the type of the elements.
-    return dt.Array(dt.dtype(value.dtype.name))
+    return dt.Array(dt.dtype(value.dtype))
 
 
 @sch.schema.register(pd.Series)
