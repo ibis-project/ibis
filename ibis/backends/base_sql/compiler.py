@@ -7,10 +7,7 @@ from ibis.backends.base.sql.compiler import (
     SelectBuilder,
     TableSetFormatter,
 )
-from ibis.backends.base.sql.registry import (
-    operation_registry,
-    quote_identifier,
-)
+from ibis.backends.base.sql.registry import quote_identifier
 
 
 class BaseTableSetFormatter(TableSetFormatter):
@@ -24,13 +21,7 @@ class BaseContext(QueryContext):
 
 
 class BaseExprTranslator(ExprTranslator):
-    _registry = operation_registry
     context_class = BaseContext
-
-    def name(self, translated, name, force=True):
-        return '{} AS {}'.format(
-            translated, quote_identifier(name, force=force)
-        )
 
 
 class BaseDialect(Dialect):

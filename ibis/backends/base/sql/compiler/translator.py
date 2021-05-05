@@ -7,7 +7,10 @@ import ibis.expr.datatypes as dt
 import ibis.expr.format as fmt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.backends.base.sql.registry import operation_registry
+from ibis.backends.base.sql.registry import (
+    operation_registry,
+    quote_identifier,
+)
 
 
 class QueryContext:
@@ -246,6 +249,11 @@ class ExprTranslator:
             return False
 
         return True
+
+    def name(self, translated, name, force=True):
+        return '{} AS {}'.format(
+            translated, quote_identifier(name, force=force)
+        )
 
     def translate(self, expr):
         # The operation node type the typed expression wraps
