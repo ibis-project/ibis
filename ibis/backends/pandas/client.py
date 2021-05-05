@@ -193,18 +193,23 @@ def infer_pandas_timestamp(value):
 
 @dt.infer.register(np.ndarray)
 def infer_array(value):
-    if value.dtype == np.object_:
-        # The dtype of the np.array is ambiguous, so we need to infer the type
-        # of the elements some other way.
+    # In this function, by default we'll directly map the dtype of the
+    # np.array to a corresponding Ibis dtype (see bottom)
+    np_dtype = value.dtype
+
+    # However, there are some special cases where we can't use the np.array's
+    # dtype:
+    if np_dtype.type == np.object_:
+        # np.array dtype is `dtype('O')`, which is ambiguous.
         inferred_dtype = infer_pandas_dtype(value, skipna=True)
         return dt.Array(_inferable_pandas_dtypes[inferred_dtype])
-    elif value.dtype.name == 'str32':
-        # 'str32' doesn't map well to Ibis names for types (you can find a
-        # list of these in the `TypeParser` class).
+    elif np_dtype.type == np.str_:
+        # np.array dtype is `dtype('<U1')` (for np.arrays containing strings),
+        # which is ambiguous.
         return dt.Array(dt.string)
-    # The dtype of the np.array is not ambiguous, and we can directly use it
-    # as the type of the elements.
-    return dt.Array(dt.dtype(value.dtype))
+
+    # The dtype of the np.array is not ambiguous, and can be used directly.
+    return dt.Array(dt.dtype(np_dtype))
 
 
 @sch.schema.register(pd.Series)
