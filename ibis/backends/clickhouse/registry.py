@@ -5,7 +5,6 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
-from ibis.backends.base.sql.compiler import ExistsSubquery, NotExistsSubquery
 
 from .identifiers import quote_identifier
 
@@ -448,9 +447,9 @@ def _exists_subquery(translator, expr):
 
     subquery = ctx.get_compiled_expr(expr)
 
-    if isinstance(op, ExistsSubquery):
+    if isinstance(op, ops.ExistsSubquery):
         key = 'EXISTS'
-    elif isinstance(op, NotExistsSubquery):
+    elif isinstance(op, ops.NotExistsSubquery):
         key = 'NOT EXISTS'
     else:
         raise NotImplementedError
@@ -631,8 +630,8 @@ operation_registry = {
     ops.TimestampSub: _binary_infix_op('-'),
     ops.TimestampDiff: _binary_infix_op('-'),
     ops.TimestampFromUNIX: _timestamp_from_unix,
-    ExistsSubquery: _exists_subquery,
-    NotExistsSubquery: _exists_subquery,
+    ops.ExistsSubquery: _exists_subquery,
+    ops.NotExistsSubquery: _exists_subquery,
     ops.ArrayLength: _unary('length'),
 }
 
