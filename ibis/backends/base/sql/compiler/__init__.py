@@ -6,7 +6,6 @@ from .query_builder import (
     TableSetFormatter,
     Union,
 )
-from .transforms import ExistsSubquery, NotExistsSubquery
 from .translator import Dialect, ExprTranslator, QueryContext
 
 __all__ = (
@@ -20,6 +19,4 @@ __all__ = (
     'Dialect',
     'DML',
     'DDL',
-    'ExistsSubquery',
-    'NotExistsSubquery',
 )

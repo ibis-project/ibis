@@ -3668,3 +3668,21 @@ class AnalyticVectorizedUDF(AnalyticOp):
         )
 
         return result
+
+
+class ExistsSubquery(Node):
+    """Helper class"""
+
+    foreign_table = Arg(rlz.noop)
+    predicates = Arg(rlz.noop)
+
+    def output_type(self):
+        return ir.ExistsExpr
+
+
+class NotExistsSubquery(Node):
+    foreign_table = Arg(rlz.noop)
+    predicates = Arg(rlz.noop)
+
+    def output_type(self):
+        return ir.ExistsExpr
