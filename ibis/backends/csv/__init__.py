@@ -5,7 +5,7 @@ from pkg_resources import parse_version
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis.backends.base import BaseBackend
-from ibis.backends.base_file import FileClient
+from ibis.backends.base.file import FileClient
 from ibis.backends.pandas import PandasExprTranslator
 from ibis.backends.pandas.core import execute, execute_node, pre_execute
 from ibis.backends.pandas.execution.selection import physical_tables

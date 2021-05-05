@@ -60,19 +60,14 @@ class BaseBackend(abc.ABC):
         # imports. In the future instead of this if statement we probably
         # want to create subclasses for each of the kinds
         # (e.g. `BaseSQLAlchemyBackend`)
-        # TODO check if the below dialects can be merged into a single one
         if self.kind == 'sqlalchemy':
             from ibis.backends.base.sql.alchemy import AlchemyDialect
 
             dialect_class = AlchemyDialect
-        elif self.kind in ('sql', 'pandas'):
-            from ibis.backends.base_sqlalchemy.compiler import Dialect
+        elif self.kind in ('sql', 'pandas', 'spark'):
+            from ibis.backends.base.sql.compiler import Dialect
 
             dialect_class = Dialect
-        elif self.kind == 'spark':
-            from ibis.backends.base_sql.compiler import BaseDialect
-
-            dialect_class = BaseDialect
         else:
             raise ValueError(
                 f'Backend class "{self.kind}" unknown. '
@@ -119,3 +114,26 @@ class BaseBackend(abc.ABC):
             return True
         except TranslationError:
             return False
+
+    def add_operation(self, operation):
+        """
+        Decorator to add a translation function to the backend for a specific
+        operation.
+
+        Operations are defined in `ibis.expr.operations`, and a translation
+        function receives the translator object and an expression as
+        parameters, and returns a value depending on the backend. For example,
+        in SQL backends, a NullLiteral operation could be translated simply
+        with the string "NULL".
+
+        Examples
+        --------
+        >>> @ibis.sqlite.add_operation(ibis.expr.operations.NullLiteral)
+        ... def _null_literal(translator, expression):
+        ...     return 'NULL'
+        """
+
+        def decorator(translation_function):
+            self.translator.add_operation(operation, translation_function)
+
+        return decorator

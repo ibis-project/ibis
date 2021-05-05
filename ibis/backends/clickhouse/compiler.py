@@ -1,9 +1,16 @@
 from io import StringIO
 
-import ibis.backends.base_sqlalchemy.compiler as comp
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.util as util
+from ibis.backends.base.sql.compiler import (
+    ExprTranslator,
+    QueryBuilder,
+    QueryContext,
+    Select,
+    SelectBuilder,
+    TableSetFormatter,
+)
 
 from .identifiers import quote_identifier
 from .registry import operation_registry
@@ -14,7 +21,7 @@ def build_ast(expr, context):
     return builder.get_result()
 
 
-class ClickhouseSelectBuilder(comp.SelectBuilder):
+class ClickhouseSelectBuilder(SelectBuilder):
     @property
     def _select_class(self):
         return ClickhouseSelect
@@ -23,12 +30,12 @@ class ClickhouseSelectBuilder(comp.SelectBuilder):
         return exprs
 
 
-class ClickhouseQueryBuilder(comp.QueryBuilder):
+class ClickhouseQueryBuilder(QueryBuilder):
 
     select_builder = ClickhouseSelectBuilder
 
 
-class ClickhouseQueryContext(comp.QueryContext):
+class ClickhouseQueryContext(QueryContext):
     def _to_sql(self, expr, ctx):
         builder = ClickhouseQueryBuilder(expr, context=ctx)
         ast = builder.get_result()
@@ -36,7 +43,7 @@ class ClickhouseQueryContext(comp.QueryContext):
         return query.compile()
 
 
-class ClickhouseSelect(comp.Select):
+class ClickhouseSelect(Select):
     @property
     def translator(self):
         return ClickhouseExprTranslator
@@ -81,7 +88,7 @@ class ClickhouseSelect(comp.Select):
         return buf.getvalue()
 
 
-class ClickhouseTableSetFormatter(comp.TableSetFormatter):
+class ClickhouseTableSetFormatter(TableSetFormatter):
 
     _join_names = {
         ops.InnerJoin: 'ALL INNER JOIN',
@@ -142,7 +149,7 @@ class ClickhouseTableSetFormatter(comp.TableSetFormatter):
         return quote_identifier(name)
 
 
-class ClickhouseExprTranslator(comp.ExprTranslator):
+class ClickhouseExprTranslator(ExprTranslator):
 
     _registry = operation_registry
     context_class = ClickhouseQueryContext
@@ -153,7 +160,6 @@ class ClickhouseExprTranslator(comp.ExprTranslator):
         )
 
 
-compiles = ClickhouseExprTranslator.compiles
 rewrites = ClickhouseExprTranslator.rewrites
 
 

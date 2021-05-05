@@ -247,6 +247,11 @@ def array_of(inner, arg):
     return value(dt.Array(inner(val[0]).type()), val)
 
 
+@validator
+def optional(validator, arg):
+    return one_of([instance_of(type(None)), validator], arg)
+
+
 any = value(dt.any)
 double = value(dt.double)
 string = value(dt.string)
