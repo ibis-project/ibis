@@ -8,6 +8,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
+from ibis.backends.base.sql.registry import quote_identifier
 
 from .base import DML, QueryAST, SetOp
 from .extract_subqueries import ExtractSubqueries
@@ -278,10 +279,6 @@ class TableSetFormatter:
         return self._join_names[type(op)]
 
     def _quote_identifier(self, name):
-        # TODO the circular import shouldn't be a problem when
-        # ExistsSubquery is moved to the operations #2761
-        from ibis.backends.base.sql.registry import quote_identifier
-
         return quote_identifier(name)
 
     def _format_table(self, expr):
