@@ -7,12 +7,10 @@ from ibis.backends.base.sql.compiler import (
     SelectBuilder,
     TableSetFormatter,
 )
-from ibis.backends.base.sql.registry import quote_identifier
 
 
 class BaseTableSetFormatter(TableSetFormatter):
-    def _quote_identifier(self, name):
-        return quote_identifier(name)
+    pass
 
 
 class BaseContext(QueryContext):
