@@ -7,6 +7,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.format as fmt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+from ibis.backends.base.sql.registry import operation_registry
 
 
 class QueryContext:
@@ -191,6 +192,7 @@ class ExprTranslator:
     SQL.
     """
 
+    _registry = operation_registry
     _rewrites = {}
 
     context_class = QueryContext
