@@ -278,7 +278,11 @@ class TableSetFormatter:
         return self._join_names[type(op)]
 
     def _quote_identifier(self, name):
-        return name
+        # TODO the circular import shouldn't be a problem when
+        # ExistsSubquery is moved to the operations #2761
+        from ibis.backends.base.sql.registry import quote_identifier
+
+        return quote_identifier(name)
 
     def _format_table(self, expr):
         # TODO: This could probably go in a class and be significantly nicer
@@ -673,6 +677,8 @@ class SelectBuilder:
     select statements (and other DDL types, where necessary), and records
     relevant query unit aliases to be used when actually generating SQL.
     """
+
+    _select_class = Select
 
     def __init__(self, expr, context):
         self.expr = expr

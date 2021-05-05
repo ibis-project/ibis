@@ -45,6 +45,7 @@ def df2(npartitions):
                 'b': np.arange(4, dtype=float).tolist()
                 + np.random.rand(3).tolist(),
                 'c': np.arange(7, dtype=int).tolist(),
+                'd': list('aaaaddd'),
                 'key': list('ddeefff'),
             }
         ),
@@ -212,7 +213,7 @@ def test_udaf_analytic_groupby(con, t, df):
 def test_udaf_groupby(t2, df2):
     expr = t2.groupby(t2.key).aggregate(my_corr=my_corr(t2.a, t2.b))
 
-    result = expr.execute().sort_values('key').reset_index()
+    result = expr.execute().sort_values('key').reset_index(drop=True)
 
     dfi = df2.set_index('key').compute()
     expected = pd.DataFrame(
@@ -225,8 +226,26 @@ def test_udaf_groupby(t2, df2):
         }
     )
 
-    columns = ['key', 'my_corr']
-    tm.assert_frame_equal(result[columns], expected[columns])
+    tm.assert_frame_equal(result, expected)
+
+
+def test_udaf_groupby_multikey(t2, df2):
+    expr = t2.groupby([t2.key, t2.d]).aggregate(my_corr=my_corr(t2.a, t2.b))
+
+    result = expr.execute().sort_values('key').reset_index(drop=True)
+
+    dfi = df2.set_index('key').compute()
+    expected = pd.DataFrame(
+        {
+            'key': list('def'),
+            'd': list('aad'),
+            'my_corr': [
+                dfi.loc[value, 'a'].corr(dfi.loc[value, 'b'])
+                for value in 'def'
+            ],
+        }
+    )
+    tm.assert_frame_equal(result, expected)
 
 
 def test_nullable():

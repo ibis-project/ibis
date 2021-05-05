@@ -20,7 +20,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis.backends.base.sql.compiler import DDL, DML
-from ibis.backends.base_sqlalchemy.ddl import (
+from ibis.backends.base.sql.ddl import (
     CTAS,
     AlterTable,
     CreateDatabase,

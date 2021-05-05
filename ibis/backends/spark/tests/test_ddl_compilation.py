@@ -1,7 +1,7 @@
 import pytest
 
 import ibis
-from ibis.backends.base_sqlalchemy import ddl as base_ddl
+from ibis.backends.base.sql.ddl import DropTable
 
 from .. import ddl
 from ..compiler import build_ast
@@ -10,12 +10,12 @@ pytestmark = pytest.mark.spark
 
 
 def test_drop_table_compile():
-    statement = base_ddl.DropTable('foo', database='bar', must_exist=True)
+    statement = DropTable('foo', database='bar', must_exist=True)
     query = statement.compile()
     expected = "DROP TABLE bar.`foo`"
     assert query == expected
 
-    statement = base_ddl.DropTable('foo', database='bar', must_exist=False)
+    statement = DropTable('foo', database='bar', must_exist=False)
     query = statement.compile()
     expected = "DROP TABLE IF EXISTS bar.`foo`"
     assert query == expected
