@@ -53,8 +53,20 @@ def df2(npartitions):
 
 
 @pytest.fixture
-def con(df, df2):
-    return Backend().connect({'df': df, 'df2': df2})
+def df_timestamp(npartitions):
+    return dd.from_pandas(
+        pd.DataFrame(
+            {'a': list(range(10))}, dtype=pd.DatetimeTZDtype(tz='UTC')
+        ),
+        npartitions=npartitions,
+    )
+
+
+@pytest.fixture
+def con(df, df2, df_timestamp):
+    return Backend().connect(
+        {'df': df, 'df2': df2, 'df_timestamp': df_timestamp}
+    )
 
 
 @pytest.fixture
@@ -65,6 +77,11 @@ def t(con):
 @pytest.fixture
 def t2(con):
     return con.table('df2')
+
+
+@pytest.fixture
+def t_timestamp(con):
+    return con.table('df_timestamp')
 
 
 # -------------
@@ -85,6 +102,14 @@ def my_add(series1, series2, **kwargs):
 @reduction(['double'], 'double')
 def my_mean(series):
     return series.mean()
+
+
+@reduction(
+    input_type=[dt.Timestamp(timezone="UTC")],
+    output_type=dt.Timestamp(timezone="UTC"),
+)
+def my_tz_min(series):
+    return series.min()
 
 
 @reduction(input_type=[dt.string], output_type=dt.int64)
@@ -175,6 +200,15 @@ def test_udaf(con, t, df):
 
     result = expr.execute()
     expected = t.a.execute().str.len().mul(2).sum()
+    assert result == expected
+
+
+def test_udaf_analytic_tzcol(con, t_timestamp, df_timestamp):
+    expr = my_tz_min(t_timestamp.a)
+
+    result = expr.execute()
+
+    expected = (df_timestamp.a.min()).compute()
     assert result == expected
 
 
