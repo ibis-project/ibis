@@ -95,6 +95,11 @@ pytestmark = pytest.mark.dask
             lambda s: s.split(' '),
             lambda s: s.str.split(' '),
             id='split_spaces',
+            marks=pytest.mark.xfail(
+                raises=NotImplementedError,
+                reason='TODO - arrays - #2553'
+                # Need ops.StringSplit exec func that dispatches on dd.Series
+            ),
         ),
     ],
 )

@@ -1,5 +1,6 @@
 from warnings import catch_warnings
 
+import numpy as np
 import pandas.testing as tm
 import pytest
 from pytest import param
@@ -87,7 +88,7 @@ pytestmark = pytest.mark.pandas
         ),
         param(
             lambda s: s.split(' '),
-            lambda s: s.str.split(' '),
+            lambda s: s.apply(lambda x: np.array(x.split(' '))),
             id='split_spaces',
         ),
     ],
@@ -99,7 +100,7 @@ def test_string_ops(t, df, case_func, expected_func):
         expr = case_func(t.strings_with_space)
         result = expr.execute()
         series = expected_func(df.strings_with_space)
-        tm.assert_series_equal(result, series)
+        tm.assert_series_equal(result, series, check_names=False)
 
 
 @pytest.mark.parametrize(

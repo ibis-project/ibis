@@ -68,6 +68,11 @@ def execute_node_literal_any_floating_datatype(op, value, datatype, **kwargs):
     return float(value)
 
 
+@execute_literal.register(ops.Literal, object, dt.Array)
+def execute_node_literal_any_array_datatype(op, value, datatype, **kwargs):
+    return np.array(value)
+
+
 @execute_literal.register(ops.Literal, dt.DataType)
 def execute_node_literal_datatype(op, datatype, **kwargs):
     return op.value
@@ -258,20 +263,18 @@ def execute_series_quantile(op, data, quantile, aggcontext=None, **kwargs):
     )
 
 
-@execute_node.register(ops.MultiQuantile, pd.Series, collections.abc.Sequence)
-def execute_series_quantile_sequence(
+@execute_node.register(ops.MultiQuantile, pd.Series, np.ndarray)
+def execute_series_quantile_multi(
     op, data, quantile, aggcontext=None, **kwargs
 ):
     result = aggcontext.agg(
         data, 'quantile', q=quantile, interpolation=op.interpolation
     )
-    return list(result)
+    return np.array(result)
 
 
-@execute_node.register(
-    ops.MultiQuantile, SeriesGroupBy, collections.abc.Sequence
-)
-def execute_series_quantile_groupby(
+@execute_node.register(ops.MultiQuantile, SeriesGroupBy, np.ndarray)
+def execute_series_quantile_multi_groupby(
     op, data, quantile, aggcontext=None, **kwargs
 ):
     def q(x, quantile, interpolation):
@@ -761,7 +764,9 @@ def execute_null_if_zero_series(op, data, **kwargs):
 
 @execute_node.register(ops.StringSplit, pd.Series, (pd.Series, str))
 def execute_string_split(op, data, delimiter, **kwargs):
-    return data.str.split(delimiter)
+    # Doing the iteration using `map` is much faster than doing the iteration
+    # using `Series.apply` due to Pandas-related overhead.
+    return pd.Series(map(lambda s: np.array(s.split(delimiter)), data))
 
 
 @execute_node.register(

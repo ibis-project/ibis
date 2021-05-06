@@ -61,7 +61,7 @@ def test_map_values_expr(t):
     result = expr.compile().map(safe_sorter)
     expected = dd.from_pandas(
         pd.Series(
-            [None, [[], [1, 2, 3]], []],
+            [None, [[1, 2, 3], []], []],
             dtype='object',
             name='map_of_complex_values',
         ),

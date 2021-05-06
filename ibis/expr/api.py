@@ -614,7 +614,8 @@ def _binop_expr(name, klass):
             other = as_value_expr(other)
             op = klass(self, other)
             return op.to_expr()
-        except (com.IbisTypeError, NotImplementedError):
+        except (com.IbisTypeError, NotImplementedError) as e:
+            print(e)
             return NotImplemented
 
     f.__name__ = name
