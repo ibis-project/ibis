@@ -1,3 +1,6 @@
+from datetime import time
+from decimal import Decimal
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -177,6 +180,40 @@ def test_series_to_ibis_literal():
         ),
         (['foo', 'bar', 'hello'], "string"),
         (pd.Series(['a', 'b', 'c', 'a']).astype('category'), dt.Category()),
+        (pd.Series([b'1', b'2', b'3']), dt.string),
+        (pd.Series([1, 2, '3']), dt.binary),
+        (pd.Series([1, 2, 3.0]), dt.float64),
+        (
+            pd.Series([Decimal('1.0'), Decimal('2.0'), Decimal('3.0')]),
+            dt.binary,
+        ),
+        (pd.Series([1 + 1j, 1 + 2j, 1 + 3j], dtype=object), dt.binary),
+        (
+            pd.Series(
+                [
+                    pd.to_datetime('2010-11-01'),
+                    pd.to_datetime('2010-11-02'),
+                    pd.to_datetime('2010-11-03'),
+                ]
+            ),
+            dt.timestamp,
+        ),
+        (pd.Series([time(1), time(2), time(3)]), dt.time),
+        (
+            pd.Series(
+                [
+                    pd.Period('2011-01'),
+                    pd.Period('2011-02'),
+                    pd.Period('2011-03'),
+                ],
+                dtype=object,
+            ),
+            dt.binary,
+        ),
+        # mixed
+        (pd.Series([b'1', '2', 3.0]), dt.binary),
+        # empty
+        (pd.Series([], dtype='object'), dt.binary),
     ],
 )
 def test_schema_infer(col_data, schema_type):

@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import pandas.testing as tm
+import pandas._testing as tm
 
 import ibis
 
@@ -48,7 +48,7 @@ def test_map_keys_scalar(client, t):
     expr = expr.keys()
     result = client.execute(expr)
     expected = np.array(['a', 'b', 'c', 'd'])
-    assert type(result) == type(expected) and np.array_equal(result, expected)
+    tm.assert_numpy_array_equal(result, expected)
 
 
 def test_map_values_expr(t):
@@ -67,7 +67,7 @@ def test_map_values_scalar(client, t):
     expr = expr.values()
     result = client.execute(expr)
     expected = np.array([10, 50, 20, 40])
-    assert type(result) == type(expected) and np.array_equal(result, expected)
+    tm.assert_numpy_array_equal(result, expected)
 
 
 def test_map_concat_expr(t):

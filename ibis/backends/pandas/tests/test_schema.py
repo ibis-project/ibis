@@ -154,36 +154,23 @@ def test_infer_basic_types():
     assert sch.infer(df) == ibis.schema(expected)
 
 
-def test_infer_array_type():
+def test_infer_array():
     df = pd.DataFrame(
         {
+            # Columns containing np.arrays
             'int64_arr_col': [
                 np.array([0, 1], dtype='int64'),
                 np.array([3, 4], dtype='int64'),
-                np.array([5, 6], dtype='int64'),
-                np.array([7, 8], dtype='int64'),
-                np.array([9, 10], dtype='int64'),
             ],
-            'string_arr_col': [
-                np.array(['0', '1']),
-                np.array(['3', '4']),
-                np.array(['5', '6']),
-                np.array(['7', '8']),
-                np.array(['9', '10']),
-            ],
+            'string_arr_col': [np.array(['0', '1']), np.array(['3', '4'])],
+            # Columns containing pd.Series
             'int64_series_col': [
                 pd.Series([0, 1], dtype='int64'),
                 pd.Series([3, 4], dtype='int64'),
-                pd.Series([5, 6], dtype='int64'),
-                pd.Series([7, 8], dtype='int64'),
-                pd.Series([9, 10], dtype='int64'),
             ],
             'string_series_col': [
                 pd.Series(['0', '1']),
                 pd.Series(['3', '4']),
-                pd.Series(['5', '6']),
-                pd.Series(['7', '8']),
-                pd.Series(['9', '10']),
             ],
         }
     )

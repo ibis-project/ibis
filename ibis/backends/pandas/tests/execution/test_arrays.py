@@ -2,7 +2,7 @@ import operator
 
 import numpy as np
 import pandas as pd
-import pandas.testing as tm
+import pandas._testing as tm
 import pytest
 from pytest import param
 
@@ -16,7 +16,7 @@ def test_array_literal(client, arr, create_arr_expr):
     expr = create_arr_expr(arr)
     result = client.execute(expr)
     expected = np.array([1, 3, 5])
-    assert type(result) == type(expected) and np.array_equal(result, expected)
+    tm.assert_numpy_array_equal(result, expected)
 
 
 def test_array_length(t, df):
@@ -52,7 +52,7 @@ def test_array_collect(t, df):
     expr = t.float64_with_zeros.collect()
     result = expr.execute()
     expected = np.array(df.float64_with_zeros)
-    assert type(result) == type(expected) and np.array_equal(result, expected)
+    tm.assert_numpy_array_equal(result, expected)
 
 
 def test_array_collect_grouped(t, df):
@@ -91,7 +91,7 @@ def test_array_collect_scalar(client):
     expr = value.collect()
     result = client.execute(expr)
     expected = [raw_value]
-    assert type(result) == type(expected) and np.array_equal(result, expected)
+    tm.assert_numpy_array_equal(result, expected)
 
 
 @pytest.mark.parametrize(
@@ -176,7 +176,7 @@ def test_array_slice_scalar(client, start, stop):
     expr = value[start:stop]
     result = client.execute(expr)
     expected = raw_value[start:stop]
-    assert type(result) == type(expected) and np.array_equal(result, expected)
+    tm.assert_numpy_array_equal(result, expected)
 
 
 @pytest.mark.parametrize('index', [1, 3, 4, 11, -11])
@@ -224,8 +224,8 @@ def test_array_repeat_scalar(client, n, mul):
     if n > 0:
         expected = np.tile(raw_array, n)
     else:
-        expected = np.array([])
-    assert type(result) == type(expected) and np.array_equal(result, expected)
+        expected = np.array([], dtype=raw_array.dtype)
+    tm.assert_numpy_array_equal(result, expected)
 
 
 @pytest.mark.parametrize(
@@ -265,4 +265,4 @@ def test_array_concat_scalar(client, op, op_raw):
     expr = op(left, right)
     result = client.execute(expr)
     expected = op_raw(raw_left, raw_right)
-    assert type(result) == type(expected) and np.array_equal(result, expected)
+    tm.assert_numpy_array_equal(result, expected)

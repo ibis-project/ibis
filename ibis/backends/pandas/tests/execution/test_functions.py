@@ -6,7 +6,7 @@ from operator import methodcaller
 
 import numpy as np
 import pandas as pd
-import pandas.testing as tm
+import pandas._testing as tm
 import pytest
 
 import ibis
@@ -181,7 +181,7 @@ def test_quantile_multi(t, df, ibis_func, pandas_func, column):
     expr = ibis_func(t[column])
     result = expr.execute()
     expected = pandas_func(df[column])
-    assert type(result) == type(expected) and np.array_equal(result, expected)
+    tm.assert_numpy_array_equal(result, expected)
 
 
 @pytest.mark.parametrize(
