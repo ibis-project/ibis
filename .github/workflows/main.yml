@@ -1,0 +1,238 @@
+name: Main
+
+on:
+  push:
+    branches: master
+  pull_request:
+    branches: master
+
+jobs:
+  Tests_pandas:
+    name: Tests pandas / files
+    runs-on: ${{ matrix.os }}
+    env:
+      BACKENDS: "pandas csv parquet hdf5"
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python_version: ["3.7", "3.8"]
+    steps:
+    - name: checkout
+      uses: actions/checkout@v1
+
+    - name: set up environment
+      run: ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
+      shell: bash
+
+    - name: run tests
+      run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not hdfs" ./ci/run_tests.sh
+      shell: bash
+
+  Tests_sql:
+    name: Tests SQL
+    runs-on: ubuntu-latest
+    env:
+      BACKENDS: "postgres mysql sqlite"
+    strategy:
+      fail-fast: false
+      matrix:
+        python_version: ["3.7", "3.8"]
+    services:
+      postgres:
+        image: shajekpivotal/ibis-docker-postgres-9.5
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_PASSWORD: ''
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 3
+      mysql:
+        image: mariadb:10.4.12
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: true
+          MYSQL_DATABASE: ibis_testing
+          MYSQL_USER: ibis
+          MYSQL_PASSWORD: ibis
+        options: --health-cmd="mysqladmin ping" --health-interval 10s --health-timeout 5s --health-retries 3
+    steps:
+    - name: checkout
+      uses: actions/checkout@v1
+
+    - name: set up environment
+      run: ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
+
+    - name: run tests
+      run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not udf and not hdfs" ./ci/run_tests.sh
+
+  Tests_impala_clickhouse:
+    name: Tests Impala / Clickhouse
+    runs-on: ubuntu-latest
+    if: false # TODO: temporary disabling this build, since the impala container seems to not be starting properly
+    env:
+      BACKENDS: "impala clickhouse"
+    strategy:
+      fail-fast: false
+      matrix:
+        python_version: ["3.7", "3.8"]
+    services:
+      impala:
+        image: ibisproject/impala:latest
+        env:
+          PGPASSWORD: postgres
+        ports:
+          # HDFS
+          - 9020:9020
+          - 50070:50070
+          - 50075:50075
+          - 8020:8020
+          - 8042:8042
+          # Hive
+          - 9083:9083
+
+          # Impala
+          - 21000:21000
+          - 21050:21050
+          - 25000:25000
+          - 25010:25010
+          - 25020:25020
+        options: --health-cmd "nc -z 127.0.0.1 21050 && nc -z 127.0.0.1 50070" --health-interval 30s --health-timeout 10s --health-retries 20
+      clickhouse:
+        # XXX does clickhouse backend require the impala container too?
+        image: yandex/clickhouse-server:18.14
+        ports:
+          - 8123:8123
+          - 9000:9000
+
+    steps:
+    - name: checkout
+      uses: actions/checkout@v1
+
+    - name: set up environment
+      run: ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
+
+    - name: run tests
+      run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh
+
+  Tests_omniscidb:
+    name: Tests OmniSciDB
+    runs-on: ubuntu-latest
+    env:
+      BACKENDS: "omniscidb"
+    strategy:
+      fail-fast: false
+      matrix:
+        python_version: ["3.7"]
+    services:
+      omnisci:
+        # NOTE: Keep the documentation about the OmniSciDB supported version
+        #       updated (docs/source/backends/omnisci.rst).
+        image: omnisci/core-os-cpu:v5.3.0
+        ports:
+          - 6274:6274
+          - 6278:6278
+        volumes:
+          - omniscidb.conf:/omnisci-storage/omnisci.conf
+    steps:
+    - name: checkout
+      uses: actions/checkout@v1
+
+    - name: set up environment
+      run: ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
+
+    - name: run tests
+      run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not hdfs" ./ci/run_tests.sh
+
+  Tests_spark:
+    name: Tests PySpark / Spark
+    runs-on: ubuntu-latest
+    env:
+      BACKENDS: "spark pyspark"
+    strategy:
+      fail-fast: false
+      matrix:
+        python_version: ["3.7", "3.8"]
+    steps:
+    - name: checkout
+      uses: actions/checkout@v1
+
+    - name: set up environment
+      run: ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
+
+    - name: run tests
+      run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not hdfs" ./ci/run_tests.sh
+
+
+  Lint_and_benchmarks:
+    name: Lint and benckmarks
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: checkout
+      uses: actions/checkout@v1
+
+    - name: set up environment
+      run: ./ci/setup_env.sh
+
+    - name: black
+      run: black --check .
+      if: always()
+
+    - name: mypy
+      # TODO: mypy has errors that need to be fixed before it can be added
+      run: mypy --ignore-missing-imports ibis || true
+      if: always()
+
+    - name: pydocstyle
+      # TODO: change match-dir when docstrings are fixed for other backends
+      run: pydocstyle --match-dir="(ibis|omniscidb)"
+      if: always()
+
+    - name: isort
+      run: isort --check-only .
+      if: always()
+
+    - name: publish feedstock artifact
+      uses: actions/upload-artifact@master
+      with:
+        name: LinuxCondaPackage
+        path: /tmp/ibis/packages
+      if: github.event_name == 'push'
+
+    - name: benckmark
+      run: asv machine --yes && asv dev
+      if: always()
+
+  Conda_package:
+    name: Conda package
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: checkout
+      uses: actions/checkout@v1
+
+    - name: set up environment
+      run: ./ci/setup_env.sh
+
+    - name: clone feedstock repo
+      run: git clone https://github.com/conda-forge/ibis-framework-feedstock /tmp/feedstock
+
+    - name: update recipe file
+      run: |
+        set -x
+        IBIS_PATH=`pwd`
+        sed -i "s|url:.*|path: $IBIS_PATH|g" ci/recipe/meta.yaml
+        IBIS_VERSION=`python -c "import ibis; print(ibis.__version__)"`
+        sed -i "s/{{ version }}/$IBIS_VERSION/g" ci/recipe/meta.yaml
+        cat ci/recipe/meta.yaml
+
+    - name: build recipe
+      run: conda build -c conda-forge --python 3.7 ci/recipe
+
+    - name: deploy recipe package
+      run: |
+        mkdir /tmp/packages
+        cp -r /usr/share/miniconda/conda-bld/noarch /tmp/packages/noarch
+        cp -r /usr/share/miniconda/conda-bld/linux-64 /tmp/packages/linux-64
+        conda index /tmp/packages

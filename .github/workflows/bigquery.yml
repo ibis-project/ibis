@@ -1,0 +1,28 @@
+name: BigQuery
+
+on:
+  push:
+    branches: master
+
+jobs:
+  Tests_bigquery:
+    name: Tests bigquery
+    runs-on: ubuntu-latest
+    env:
+      BACKENDS: "bigquery"
+    strategy:
+      fail-fast: false
+      matrix:
+        python_version: ["3.7", "3.8"]
+    steps:
+    - name: checkout
+      uses: actions/checkout@v1
+
+    - name: set up bigquery credentials
+      run: echo '${{ secrets.GCLOUD_SERVICE_KEY }}' > gcloud-service-key.json
+
+    - name: set up environment
+      run: GOOGLE_BIGQUERY_PROJECT_ID="ibis-gbq" GOOGLE_APPLICATION_CREDENTIALS=gcloud-service-key.json ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
+
+    - name: run tests
+      run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not hdfs" GOOGLE_BIGQUERY_PROJECT_ID="ibis-gbq" GOOGLE_APPLICATION_CREDENTIALS=gcloud-service-key.json ./ci/run_tests.sh

@@ -1,12 +1,13 @@
 import collections
+
 from multipledispatch import Dispatcher
 
-import ibis.common as com
-import ibis.util as util
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
+import ibis.util as util
 
 
-class Schema(object):
+class Schema:
 
     """An object for holding table schema information, i.e., column names and
     types.
@@ -32,17 +33,22 @@ class Schema(object):
         self._name_locs = dict((v, i) for i, v in enumerate(self.names))
 
         if len(self._name_locs) < len(self.names):
-            raise com.IntegrityError('Duplicate column names')
+            duplicate_names = list(self.names)
+            for v in self._name_locs.keys():
+                duplicate_names.remove(v)
+            raise com.IntegrityError(
+                'Duplicate column name(s): {}'.format(duplicate_names)
+            )
 
     def __repr__(self):
-        space = 2 + max(map(len, self.names))
+        space = 2 + max(map(len, self.names), default=0)
         return "ibis.Schema {{{}\n}}".format(
             util.indent(
                 ''.join(
                     '\n{}{}'.format(name.ljust(space), str(type))
                     for name, type in zip(self.names, self.types)
                 ),
-                2
+                2,
             )
         )
 
@@ -62,9 +68,7 @@ class Schema(object):
         return self.types[self._name_locs[name]]
 
     def __getstate__(self):
-        return {
-            slot: getattr(self, slot) for slot in self.__class__.__slots__
-        }
+        return {slot: getattr(self, slot) for slot in self.__class__.__slots__}
 
     def __setstate__(self, instance_dict):
         for key, value in instance_dict.items():
@@ -127,7 +131,7 @@ class Schema(object):
         return self.names[i]
 
 
-class HasSchema(object):
+class HasSchema:
 
     """
     Base class representing a structured dataset with a well-defined
@@ -165,16 +169,16 @@ def identity(s):
     return s
 
 
-@schema.register(collections.Mapping)
+@schema.register(collections.abc.Mapping)
 def schema_from_mapping(d):
     return Schema.from_dict(d)
 
 
-@schema.register(collections.Iterable)
+@schema.register(collections.abc.Iterable)
 def schema_from_pairs(lst):
     return Schema.from_tuples(lst)
 
 
-@schema.register(collections.Iterable, collections.Iterable)
+@schema.register(collections.abc.Iterable, collections.abc.Iterable)
 def schema_from_names_types(names, types):
     return Schema(names, types)

@@ -1,21 +1,19 @@
 import collections
 import enum
+import functools
+from contextlib import suppress
+from itertools import product, starmap
 
-from itertools import starmap, product
-
-import six
-
-from ibis.compat import suppress
-import ibis.util as util
-import ibis.common as com
-import ibis.expr.types as ir
-import ibis.expr.schema as sch
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
+import ibis.expr.schema as sch
+import ibis.expr.types as ir
+import ibis.util as util
 
 try:
-    from cytoolz import curry, compose, identity
+    from cytoolz import compose, curry, identity
 except ImportError:
-    from toolz import curry, compose, identity
+    from toolz import compose, curry, identity
 
 
 def highest_precedence_dtype(exprs):
@@ -77,12 +75,13 @@ def cast(source, target):
 
 
 class validator(curry):
-
     def __repr__(self):
         return '{}({}{})'.format(
             self.func.__name__,
             repr(self.args)[1:-1],
-            ', '.join('{}={!r}'.format(k, v) for k, v in self.keywords.items())
+            ', '.join(
+                '{}={!r}'.format(k, v) for k, v in self.keywords.items()
+            ),
         )
 
 
@@ -151,8 +150,8 @@ def member_of(obj, arg):
 
 @validator
 def list_of(inner, arg, min_length=0):
-    if isinstance(arg, six.string_types) or not isinstance(
-        arg, (collections.Sequence, ir.ListExpr)
+    if isinstance(arg, str) or not isinstance(
+        arg, (collections.abc.Sequence, ir.ListExpr)
     ):
         raise com.IbisTypeError('Argument must be a sequence')
 
@@ -201,8 +200,10 @@ def value(dtype, arg):
         arg = ir.literal(arg)
 
     if not isinstance(arg, ir.AnyValue):
-        raise com.IbisTypeError('Given argument with type {} is not a value '
-                                'expression'.format(type(arg)))
+        raise com.IbisTypeError(
+            'Given argument with type {} is not a value '
+            'expression'.format(type(arg))
+        )
 
     # retrieve literal values for implicit cast check
     value = getattr(arg.op(), 'value', None)
@@ -215,9 +216,11 @@ def value(dtype, arg):
         # implicitly castable to it, like dt.int8 is castable to dt.int64
         return arg
     else:
-        raise com.IbisTypeError('Given argument with datatype {} is not '
-                                'subtype of {} nor implicitly castable to '
-                                'it'.format(arg.type(), dtype))
+        raise com.IbisTypeError(
+            'Given argument with datatype {} is not '
+            'subtype of {} nor implicitly castable to '
+            'it'.format(arg.type(), dtype)
+        )
 
 
 @validator
@@ -237,7 +240,8 @@ def array_of(inner, arg):
     if not isinstance(argtype, dt.Array):
         raise com.IbisTypeError(
             'Argument must be an array, got expression {} which is of type '
-            '{}'.format(val, val.type()))
+            '{}'.format(val, val.type())
+        )
     return value(dt.Array(inner(val[0]).type()), val)
 
 
@@ -263,6 +267,14 @@ array = value(dt.Array)
 struct = value(dt.Struct)
 mapping = value(dt.Map(dt.any, dt.any))
 
+geospatial = value(dt.GeoSpatial)
+point = value(dt.Point)
+linestring = value(dt.LineString)
+polygon = value(dt.Polygon)
+multilinestring = value(dt.MultiLineString)
+multipoint = value(dt.MultiPoint)
+multipolygon = value(dt.MultiPolygon)
+
 
 @validator
 def interval(arg, units=None):
@@ -277,6 +289,7 @@ def interval(arg, units=None):
 @validator
 def client(arg):
     from ibis.client import Client
+
     return instance_of(Client, arg)
 
 
@@ -285,12 +298,15 @@ def client(arg):
 
 
 def promoter(fn):
+    @functools.wraps(fn)
     def wrapper(name_or_value, *args, **kwargs):
         if isinstance(name_or_value, str):
-            return lambda self: fn(getattr(self, name_or_value),
-                                   *args, **kwargs)
+            return lambda self: fn(
+                getattr(self, name_or_value), *args, **kwargs
+            )
         else:
             return fn(name_or_value, *args, **kwargs)
+
     return wrapper
 
 
@@ -306,7 +322,7 @@ def shape_like(arg, dtype=None):
     dtype = dt.dtype(datatype)
 
     if columnar:
-        return dtype.array_type()
+        return dtype.column_type()
     else:
         return dtype.scalar_type()
 
@@ -320,7 +336,7 @@ def scalar_like(arg):
 @promoter
 def array_like(arg):
     output_dtype = arg.type()
-    return output_dtype.array_type()
+    return output_dtype.column_type()
 
 
 column_like = array_like

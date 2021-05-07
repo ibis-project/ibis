@@ -1,11 +1,8 @@
-import six
-import itertools
-
-import ibis.util as util
-import ibis.expr.rules as rlz
-
-from ibis.compat import PY2
+import inspect
 from collections import OrderedDict
+
+import ibis.expr.rules as rlz
+import ibis.util as util
 
 try:
     from cytoolz import unique
@@ -16,36 +13,31 @@ except ImportError:
 _undefined = object()  # marker for missing argument
 
 
-class Argument(object):
-    """Argument definition
+class Argument:
+    """Argument definition."""
 
-    """
-    if PY2:
-        # required to maintain definition order in Annotated metaclass
-        _counter = itertools.count()
-        __slots__ = '_serial', 'validator', 'default'
-    else:
-        __slots__ = 'validator', 'default'
+    __slots__ = 'validator', 'default', 'show'
 
-    def __init__(self, validator, default=_undefined):
+    def __init__(self, validator, default=_undefined, show=True):
         """Argument constructor
 
         Parameters
         ----------
         validator : Union[Callable[[arg], coerced], Type, Tuple[Type]]
-          Function which handles validation and/or coercion of the given
-          argument.
+            Function which handles validation and/or coercion of the given
+            argument.
         default : Union[Any, Callable[[], str]]
-          In case of missing (None) value for validation this will be used.
-          Note, that default value (except for None) must also pass the inner
-          validator.
-          If callable is passed, it will be executed just before the inner, and
-          itsreturn value will be treaded as default.
+            In case of missing (None) value for validation this will be used.
+            Note, that default value (except for None) must also pass the inner
+            validator.
+            If callable is passed, it will be executed just before the inner,
+            and itsreturn value will be treaded as default.
+        show : bool
+            Whether to show this argument in an :class:`~ibis.expr.types.Expr`
+            that contains it.
         """
-        if PY2:
-            self._serial = next(self._counter)
-
         self.default = default
+        self.show = show
         if isinstance(validator, type):
             self.validator = rlz.instance_of(validator)
         elif isinstance(validator, tuple):
@@ -54,13 +46,14 @@ class Argument(object):
         elif callable(validator):
             self.validator = validator
         else:
-            raise TypeError('Argument validator must be a callable, type or '
-                            'tuple of types, given: {}'.format(validator))
+            raise TypeError(
+                'Argument validator must be a callable, type or '
+                'tuple of types, given: {}'.format(validator)
+            )
 
     def __eq__(self, other):
         return (
-            self.validator == other.validator and
-            self.default == other.default
+            self.validator == other.validator and self.default == other.default
         )
 
     @property
@@ -87,8 +80,10 @@ class Argument(object):
                     value = self.default
         elif value is _undefined:
             if name is not None:
-                name = ' `{}`'.format(name)
-            raise TypeError('Missing required value for argument' + name)
+                name_msg = "argument `{}`".format(name)
+            else:
+                name_msg = "unnamed argument"
+            raise TypeError("Missing required value for {}".format(name_msg))
 
         return self.validator(value)
 
@@ -101,23 +96,37 @@ class TypeSignature(OrderedDict):
 
     @classmethod
     def from_dtypes(cls, dtypes):
-        return cls(('_{}'.format(i), Argument(rlz.value(dtype)))
-                   for i, dtype in enumerate(dtypes))
+        return cls(
+            ('_{}'.format(i), Argument(rlz.value(dtype)))
+            for i, dtype in enumerate(dtypes)
+        )
 
     def validate(self, *args, **kwargs):
-        result = []
-        for i, (name, argument) in enumerate(self.items()):
-            if i < len(args):
-                if name in kwargs:
-                    raise TypeError(
-                        'Got multiple values for argument {}'.format(name)
-                    )
-                value = argument.validate(args[i], name=name)
-            elif name in kwargs:
-                value = argument.validate(kwargs[name], name=name)
-            else:
-                value = argument.validate(name=name)
+        parameters = [
+            inspect.Parameter(
+                name,
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                default=_undefined,
+            )
+            for (name, argument) in self.items()
+        ]
+        sig = inspect.Signature(parameters)
+        bindings = sig.bind(*args, **kwargs)
 
+        # The inspect.Parameter objects in parameters all have default
+        # value _undefined, which will be bound to all arguments that weren't
+        # passed in.
+        bindings.apply_defaults()
+
+        result = []
+        for (name, arg_value) in bindings.arguments.items():
+            argument = self[name]
+            # If this arg wasn't passed in: since argument.default has the
+            # correct value and _undefined was given as the default for the
+            # Parameter object corresponding to this argument, arg_value got
+            # the value _undefined when bindings.apply_defaults() was called,
+            # so the behavior of argument.validate here is correct.
+            value = argument.validate(arg_value, name=name)
             result.append((name, value))
 
         return result
@@ -129,16 +138,9 @@ class TypeSignature(OrderedDict):
 
 
 class AnnotableMeta(type):
-
-    if PY2:
-        @staticmethod
-        def _precedes(arg1, arg2):
-            """Comparator helper for sorting name-argument pairs"""
-            return cmp(arg1[1]._serial, arg2[1]._serial)  # noqa: F821
-    else:
-        @classmethod
-        def __prepare__(metacls, name, bases, **kwds):
-            return OrderedDict()
+    @classmethod
+    def __prepare__(metacls, name, bases, **kwds):
+        return OrderedDict()
 
     def __new__(meta, name, bases, dct):
         slots, signature = [], TypeSignature()
@@ -152,26 +154,14 @@ class AnnotableMeta(type):
                 signature.update(parent.signature)
 
         # finally apply definitions from the currently created class
-        if PY2:
-            # on python 2 we cannot maintain definition order
-            attribs, arguments = {}, []
-            for k, v in dct.items():
-                if isinstance(v, Argument):
-                    arguments.append((k, v))
-                else:
-                    attribs[k] = v
-
-            # so we need to sort arguments based on their unique counter
-            signature.update(sorted(arguments, cmp=meta._precedes))
-        else:
-            # thanks to __prepare__ attrs are already ordered
-            attribs = {}
-            for k, v in dct.items():
-                if isinstance(v, Argument):
-                    # so we can set directly
-                    signature[k] = v
-                else:
-                    attribs[k] = v
+        # thanks to __prepare__ attrs are already ordered
+        attribs = {}
+        for k, v in dct.items():
+            if isinstance(v, Argument):
+                # so we can set directly
+                signature[k] = v
+            else:
+                attribs[k] = v
 
         # if slots or signature are defined no inheritance happens
         signature = attribs.get('signature', signature)
@@ -180,11 +170,10 @@ class AnnotableMeta(type):
         attribs['signature'] = signature
         attribs['__slots__'] = tuple(unique(slots))
 
-        return super(AnnotableMeta, meta).__new__(meta, name, bases, attribs)
+        return super().__new__(meta, name, bases, attribs)
 
 
-@six.add_metaclass(AnnotableMeta)
-class Annotable(object):
+class Annotable(metaclass=AnnotableMeta):
 
     __slots__ = ()
 

@@ -1,28 +1,14 @@
-#!/usr/bin/env bash
+#!/bin/bash -e
 
 CWD="$(dirname "${0}")"
 
-declare -A argcommands=([sqlite]=sqlite
-                        [parquet]="parquet -i"
-                        [postgres]=postgres
-                        [clickhouse]=clickhouse
-                        [mapd]=mapd
-                        [mysql]=mysql
-                        [impala]=impala)
-
-if [[ "$#" == 0 ]]; then
-    ARGS=(${!argcommands[@]})  # keys of argcommands
-else
-    ARGS=($*)
-fi
-
 python $CWD/datamgr.py download
 
-for arg in ${ARGS[@]}; do
+for arg in $@; do
     if [[ "${arg}" == "impala" ]]; then
-	python "${CWD}"/impalamgr.py load --data &
+	    python "${CWD}"/impalamgr.py load --data &
     else
-	python "${CWD}"/datamgr.py ${argcommands[${arg}]} &
+	    python "${CWD}"/datamgr.py ${arg} &
     fi
 done
 

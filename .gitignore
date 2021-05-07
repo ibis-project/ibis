@@ -12,6 +12,7 @@
 *.swo
 *.pdb
 .idea
+.vscode
 
 # Compiled source
 *.a
@@ -65,3 +66,4 @@ ibis_testing*
 .asv/
 .ipynb_checkpoints/
 .pytest_cache
+.mypy_cache

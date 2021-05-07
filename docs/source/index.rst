@@ -31,6 +31,21 @@ http://ibis-project.org.
 
 Source code is on GitHub: https://github.com/ibis-project/ibis
 
+.. _install:
+
+Installation
+------------
+
+System Dependencies
+~~~~~~~~~~~~~~~~~~~
+
+Ibis requires a working Python 3.7+ installation. We recommend using
+`Anaconda <http://continuum.io/downloads>`_ to manage Python versions and
+environments.
+
+Installing the Python Package
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Install Ibis from PyPI with:
 
 ::
@@ -43,16 +58,34 @@ Or from `conda-forge <http://conda-forge.github.io>`_ with
 
   conda install ibis-framework -c conda-forge
 
+This installs the ``ibis`` library to your configured Python environment.
+
+Ibis can also be installed with Kerberos support for its HDFS functionality:
+
+::
+
+  pip install ibis-framework[kerberos]
+
+Some platforms will require that you have Kerberos installed to build properly.
+
+* Redhat / CentOS: ``yum install krb5-devel``
+* Ubuntu / Debian: ``apt-get install libkrb5-dev``
+* Arch Linux     : ``pacman -S krb5``
+
 At this time, Ibis offers some level of support for the following systems:
 
-- `Apache Impala (incubating) <http://impala.io/>`_
-- `Apache Kudu (incubating) <http://getkudu.io/>`_
+- `Apache Impala <https://impala.apache.org/>`_
+- `Apache Kudu <https://kudu.apache.org/>`_
+- `Hadoop Distributed File System (HDFS) <https://hadoop.apache.org/>`_
 - `PostgreSQL <https://www.postgresql.org/>`_
+- `MySQL <https://www.mysql.com/>`_ (Experimental)
 - `SQLite <https://www.sqlite.org/>`_
 - `Google BigQuery <https://cloud.google.com/bigquery/>`_
 - `Yandex Clickhouse <https://clickhouse.yandex/>`_
 - Direct execution of ibis expressions against `Pandas
   <http://pandas.pydata.org/>`_ objects
+- `OmniSciDB <https://www.omnisci.com/>`_
+- `PySpark/Spark SQL <https://spark.apache.org/sql/>`_ (Experimental)
 
 Coming from SQL? Check out :ref:`Ibis for SQL Programmers <sql>`.
 
@@ -69,28 +102,25 @@ SQL engine support needing code contributors:
 
 - `Redshift <https://aws.amazon.com/redshift/>`_
 - `Vertica <https://www.vertica.com/>`_
-- `Spark SQL <https://spark.apache.org/sql/>`_
-- `Presto <https://prestodb.io/>`_
+- `Presto <https://prestosql.io/>`_
 - `Hive <https://hive.apache.org/>`_
 
 .. toctree::
    :maxdepth: 1
 
-   getting-started
-   configuration
-   impala
-   tutorial
+   tutorial/index
+   user_guide/index
    api
-   sql
-   udf
-   contributing
-   developer
-   design
-   extending
-   backends
-   release
-   legal
+   backends/index
+   release/index
 
+Learning Resources
+------------------
+
+We collect Jupyter notebooks for learning how to use ibis here:
+https://github.com/ibis-project/ibis/tree/master/docs/source/notebooks/tutorial.
+Some of these notebooks will be reproduced as part of the documentation
+:ref:`in the tutorial section <tutorial>`.
 
 Indices and tables
 ==================
@@ -98,3 +128,8 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+.. Use the meta tags to verify the site for use in Google OAuth2 consent flow.
+
+.. meta::
+    :google-site-verification: IVqzkYiD5E35oD4kkVOcTYCTfqWKU1f6zOHCnLIPkUU

@@ -1,0 +1,6 @@
+jobs:
+
+- template: ci/azure/linux.yml
+  parameters:
+    name: Linux
+    vmImage: ubuntu-16.04

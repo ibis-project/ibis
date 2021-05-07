@@ -1,18 +1,23 @@
-import os
-import six
-import sys
 import itertools
+import os
 import webbrowser
+from typing import TYPE_CHECKING, Optional
+
+import numpy as np
 
 import ibis
-import ibis.util as util
-import ibis.common as com
+import ibis.common.exceptions as com
 import ibis.config as config
+import ibis.util as util
+from ibis.expr.typing import TimeContext
 
+if TYPE_CHECKING:
+    from ibis.expr.format import FormatMemo
 
 # TODO move methods containing ops import to api.py
 
-class Expr(object):
+
+class Expr:
     """Base expression class"""
 
     def _type_display(self):
@@ -23,32 +28,65 @@ class Expr(object):
         self._arg = arg
 
     def __repr__(self):
-        if config.options.interactive:
-            try:
-                result = self.execute()
-                return repr(result)
-            except com.TranslationError as e:
-                output = ('Translation to backend failed\n'
-                          'Error message: {0}\n'
-                          'Expression repr follows:\n{1}'
-                          .format(e.args[0], self._repr()))
-                return output
+        from ibis.expr.format import FormatMemo
+
+        if not config.options.interactive:
+            return self._repr(memo=FormatMemo(get_text_repr=True))
+
+        try:
+            result = self.execute()
+        except com.TranslationError as e:
+            output = (
+                'Translation to backend failed\n'
+                'Error message: {0}\n'
+                'Expression repr follows:\n{1}'.format(e.args[0], self._repr())
+            )
+            return output
         else:
-            return self._repr()
+            return repr(result)
+
+    def __hash__(self):
+        return hash(self._key)
 
     def __bool__(self):
-        raise ValueError("The truth value of an Ibis expression is not "
-                         "defined")
+        raise ValueError(
+            "The truth value of an Ibis expression is not " "defined"
+        )
 
-    def __nonzero__(self):
-        return self.__bool__()
+    __nonzero__ = __bool__
 
-    def _repr(self, memo=None):
+    def _repr(self, memo: 'Optional[FormatMemo]' = None):
         from ibis.expr.format import ExprFormatter
+
         return ExprFormatter(self, memo=memo).get_result()
 
+    @property
+    def _safe_name(self):
+        """Get the name of an expression `expr`, returning ``None`` if the
+        expression has no name.
+
+        Returns
+        -------
+        Optional[str]
+        """
+        try:
+            return self.get_name()
+        except (com.ExpressionError, AttributeError):
+            return None
+
+    @property
+    def _key(self):
+        """Key suitable for hashing an expression.
+
+        Returns
+        -------
+        Tuple[Type[Expr], Optional[str], ibis.expr.operations.Node]
+            A tuple of hashable objects uniquely identifying this expression.
+        """
+        return type(self), self._safe_name, self.op()
+
     def _repr_png_(self):
-        if not ibis.options.graphviz_repr:
+        if config.options.interactive or not ibis.options.graphviz_repr:
             return None
         try:
             import ibis.expr.visualize as viz
@@ -83,6 +121,7 @@ class Expr(object):
             If ``graphviz`` is not installed.
         """
         import ibis.expr.visualize as viz
+
         path = viz.draw(viz.to_graph(self), format=format)
         webbrowser.open('file://{}'.format(os.path.abspath(path)))
 
@@ -147,11 +186,15 @@ class Expr(object):
 
     @property
     def _factory(self):
-        def factory(arg, name=None):
-            return type(self)(arg, name=name)
-        return factory
+        return type(self)
 
-    def execute(self, limit='default', params=None, **kwargs):
+    def execute(
+        self,
+        limit='default',
+        timecontext: Optional[TimeContext] = None,
+        params=None,
+        **kwargs,
+    ):
         """
         If this expression is based on physical tables in a database backend,
         execute it against that backend.
@@ -162,15 +205,31 @@ class Expr(object):
           Pass an integer to effect a specific row limit. limit=None means "no
           limit". The default is whatever is in ibis.options.
 
+        timecontext: Optional[TimeContext], default None.
+           Defines a time range of (begin, end). When defined, the execution
+           will only compute result for data inside the time range. The time
+           range is inclusive of both endpoints. This is conceptually same as
+           a time filter.
+           The time column must be named as 'time' and should preserve
+           across the expression. e.g. If that column is dropped then
+           execute will result in an error.
         Returns
         -------
         result : expression-dependent
           Result of compiling expression and executing in backend
         """
         from ibis.client import execute
-        return execute(self, limit=limit, params=params, **kwargs)
 
-    def compile(self, limit=None, params=None):
+        return execute(
+            self, limit=limit, timecontext=timecontext, params=params, **kwargs
+        )
+
+    def compile(
+        self,
+        limit=None,
+        timecontext: Optional[TimeContext] = None,
+        params=None,
+    ):
         """
         Compile expression to whatever execution target, to verify
 
@@ -180,7 +239,10 @@ class Expr(object):
            query representation or list thereof
         """
         from ibis.client import compile
-        return compile(self, limit=limit, params=params)
+
+        return compile(
+            self, limit=limit, timecontext=timecontext, params=params
+        )
 
     def verify(self):
         """
@@ -202,14 +264,7 @@ class Expr(object):
         return self.op().root_tables()
 
 
-if sys.version_info.major == 2:
-    # Python 2.7 doesn't return NotImplemented unless the other operand has
-    # an attribute called "timetuple". This is a bug that's fixed in Python 3
-    Expr.timetuple = None
-
-
 class ExprList(Expr):
-
     def _type_display(self):
         return ', '.join(expr._type_display() for expr in self.exprs())
 
@@ -224,10 +279,12 @@ class ExprList(Expr):
 
     def schema(self):
         import ibis.expr.schema as sch
+
         return sch.Schema(self.names(), self.types())
 
     def rename(self, f):
         import ibis.expr.operations as ops
+
         new_exprs = [x.name(f(x.get_name())) for x in self.exprs()]
         return ops.ExpressionList(new_exprs).to_expr()
 
@@ -246,6 +303,7 @@ class ExprList(Expr):
         combined : ExprList
         """
         import ibis.expr.operations as ops
+
         exprs = list(self.exprs())
         for o in others:
             if not isinstance(o, ExprList):
@@ -266,16 +324,16 @@ class ValueExpr(Expr):
     """
 
     def __init__(self, arg, dtype, name=None):
-        super(ValueExpr, self).__init__(arg)
+        super().__init__(arg)
         self._name = name
         self._dtype = dtype
 
     def equals(self, other, cache=None):
         return (
-            isinstance(other, ValueExpr) and
-            self._name == other._name and
-            self._dtype == other._dtype and
-            super(ValueExpr, self).equals(other, cache=cache)
+            isinstance(other, ValueExpr)
+            and self._name == other._name
+            and self._dtype == other._dtype
+            and super().equals(other, cache=cache)
         )
 
     def has_name(self):
@@ -302,17 +360,16 @@ class ValueExpr(Expr):
     def _factory(self):
         def factory(arg, name=None):
             return type(self)(arg, dtype=self.type(), name=name)
+
         return factory
 
 
 class ScalarExpr(ValueExpr):
-
     def _type_display(self):
         return str(self.type())
 
 
 class ColumnExpr(ValueExpr):
-
     def _type_display(self):
         return '{}*'.format(self.type())
 
@@ -325,20 +382,22 @@ class ColumnExpr(ValueExpr):
         """
         roots = self._root_tables()
         if len(roots) > 1:
-            raise com.RelationError('Cannot convert array expression '
-                                    'involving multiple base table references '
-                                    'to a projection')
+            raise com.RelationError(
+                'Cannot convert array expression '
+                'involving multiple base table references '
+                'to a projection'
+            )
 
         table = TableExpr(roots[0])
         return table.projection([self])
 
 
 class AnalyticExpr(Expr):
-
     @property
     def _factory(self):
         def factory(arg):
             return type(self)(arg)
+
         return factory
 
     def _type_display(self):
@@ -349,11 +408,11 @@ class AnalyticExpr(Expr):
 
 
 class TableExpr(Expr):
-
     @property
     def _factory(self):
         def factory(arg):
             return TableExpr(arg)
+
         return factory
 
     def _type_display(self):
@@ -369,13 +428,14 @@ class TableExpr(Expr):
 
     def _assert_valid(self, exprs):
         from ibis.expr.analysis import ExprValidator
+
         ExprValidator([self]).validate_all(exprs)
 
     def __contains__(self, name):
         return name in self.schema()
 
     def __getitem__(self, what):
-        if isinstance(what, six.string_types + six.integer_types):
+        if isinstance(what, (str, int)):
             return self.get_column(what)
 
         if isinstance(what, slice):
@@ -441,18 +501,12 @@ class TableExpr(Expr):
 
     def _resolve(self, exprs):
         exprs = util.promote_list(exprs)
-
-        # Stash this helper method here for now
-        out_exprs = []
-        for expr in exprs:
-            expr = self._ensure_expr(expr)
-            out_exprs.append(expr)
-        return out_exprs
+        return list(map(self._ensure_expr, exprs))
 
     def _ensure_expr(self, expr):
-        if isinstance(expr, six.string_types):
+        if isinstance(expr, str):
             return self[expr]
-        elif isinstance(expr, six.integer_types):
+        elif isinstance(expr, (int, np.integer)):
             return self[self.schema().name_at_position(expr)]
         elif not isinstance(expr, Expr):
             return expr(self)
@@ -495,6 +549,7 @@ class TableExpr(Expr):
         column : array expression
         """
         import ibis.expr.operations as ops
+
         ref = ops.TableColumn(name, self)
         return ref.to_expr()
 
@@ -541,6 +596,7 @@ class TableExpr(Expr):
         grouped_expr : GroupedTableExpr
         """
         from ibis.expr.groupby import GroupedTableExpr
+
         return GroupedTableExpr(self, by, **additional_grouping_expressions)
 
     groupby = group_by
@@ -552,109 +608,414 @@ class TableExpr(Expr):
 # defined for each type.
 
 
-class AnyValue(ValueExpr): pass  # noqa: E701,E302
-class AnyScalar(ScalarExpr, AnyValue): pass  # noqa: E701,E302
-class AnyColumn(ColumnExpr, AnyValue): pass  # noqa: E701,E302
+class AnyValue(ValueExpr):
+    pass  # noqa: E701,E302
 
 
-class NullValue(AnyValue): pass  # noqa: E701,E302
-class NullScalar(AnyScalar, NullValue): pass  # noqa: E701,E302
-class NullColumn(AnyColumn, NullValue): pass  # noqa: E701,E302
+class AnyScalar(ScalarExpr, AnyValue):
+    pass  # noqa: E701,E302
 
 
-class NumericValue(AnyValue): pass  # noqa: E701,E302
-class NumericScalar(AnyScalar, NumericValue): pass  # noqa: E701,E302
-class NumericColumn(AnyColumn, NumericValue): pass  # noqa: E701,E302
+class AnyColumn(ColumnExpr, AnyValue):
+    pass  # noqa: E701,E302
 
 
-class BooleanValue(NumericValue): pass  # noqa: E701,E302
-class BooleanScalar(NumericScalar, BooleanValue): pass  # noqa: E701,E302
-class BooleanColumn(NumericColumn, BooleanValue): pass  # noqa: E701,E302
+class NullValue(AnyValue):
+    pass  # noqa: E701,E302
 
 
-class IntegerValue(NumericValue): pass  # noqa: E701,E302
-class IntegerScalar(NumericScalar, IntegerValue): pass  # noqa: E701,E302
-class IntegerColumn(NumericColumn, IntegerValue): pass  # noqa: E701,E302
+class NullScalar(AnyScalar, NullValue):
+    pass  # noqa: E701,E302
 
 
-class FloatingValue(NumericValue): pass  # noqa: E701,E302
-class FloatingScalar(NumericScalar, FloatingValue): pass  # noqa: E701,E302
-class FloatingColumn(NumericColumn, FloatingValue): pass  # noqa: E701,E302
+class NullColumn(AnyColumn, NullValue):
+    pass  # noqa: E701,E302
 
 
-class DecimalValue(NumericValue): pass  # noqa: E701,E302
-class DecimalScalar(NumericScalar, DecimalValue): pass  # noqa: E701,E302
-class DecimalColumn(NumericColumn, DecimalValue): pass  # noqa: E701,E302
+class NumericValue(AnyValue):
+    pass  # noqa: E701,E302
 
 
-class StringValue(AnyValue): pass  # noqa: E701,E302
-class StringScalar(AnyScalar, StringValue): pass  # noqa: E701,E302
-class StringColumn(AnyColumn, StringValue): pass  # noqa: E701,E302
+class NumericScalar(AnyScalar, NumericValue):
+    pass  # noqa: E701,E302
 
 
-class BinaryValue(AnyValue): pass  # noqa: E701,E302
-class BinaryScalar(AnyScalar, BinaryValue): pass  # noqa: E701,E302
-class BinaryColumn(AnyColumn, BinaryValue): pass  # noqa: E701,E302
+class NumericColumn(AnyColumn, NumericValue):
+    pass  # noqa: E701,E302
 
 
-class TimeValue(AnyValue): pass  # noqa: E701,E302
-class TimeScalar(AnyScalar, TimeValue): pass  # noqa: E701,E302
-class TimeColumn(AnyColumn, TimeValue): pass  # noqa: E701,E302
+class BooleanValue(NumericValue):
+    pass  # noqa: E701,E302
 
 
-class DateValue(AnyValue): pass  # noqa: E701,E302
-class DateScalar(AnyScalar, DateValue): pass  # noqa: E701,E302
-class DateColumn(AnyColumn, DateValue): pass  # noqa: E701,E302
+class BooleanScalar(NumericScalar, BooleanValue):
+    pass  # noqa: E701,E302
 
 
-class TimestampValue(AnyValue): pass  # noqa: E701,E302
-class TimestampScalar(AnyScalar, TimestampValue): pass  # noqa: E701,E302
-class TimestampColumn(AnyColumn, TimestampValue): pass  # noqa: E701,E302
+class BooleanColumn(NumericColumn, BooleanValue):
+    pass  # noqa: E701,E302
 
 
-class CategoryValue(AnyValue): pass  # noqa: E701,E302
-class CategoryScalar(AnyScalar, CategoryValue): pass  # noqa: E701,E302
-class CategoryColumn(AnyColumn, CategoryValue): pass  # noqa: E701,E302
+class IntegerValue(NumericValue):
+    pass  # noqa: E701,E302
 
 
-class EnumValue(AnyValue): pass  # noqa: E701,E302
-class EnumScalar(AnyScalar, EnumValue): pass  # noqa: E701,E302
-class EnumColumn(AnyColumn, EnumValue): pass  # noqa: E701,E302
+class IntegerScalar(NumericScalar, IntegerValue):
+    pass  # noqa: E701,E302
 
 
-class ArrayValue(AnyValue): pass  # noqa: E701,E302
-class ArrayScalar(AnyScalar, ArrayValue): pass  # noqa: E701,E302
-class ArrayColumn(AnyColumn, ArrayValue): pass  # noqa: E701,E302
+class IntegerColumn(NumericColumn, IntegerValue):
+    pass  # noqa: E701,E302
 
 
-class SetValue(AnyValue): pass  # noqa: E701,E302
-class SetScalar(AnyScalar, SetValue): pass  # noqa: E701,E302
-class SetColumn(AnyColumn, SetValue): pass  # noqa: E701,E302
+class FloatingValue(NumericValue):
+    pass  # noqa: E701,E302
 
 
-class MapValue(AnyValue): pass  # noqa: E701,E302
-class MapScalar(AnyScalar, MapValue): pass  # noqa: E701,E302
-class MapColumn(AnyColumn, MapValue): pass  # noqa: E701,E302
+class FloatingScalar(NumericScalar, FloatingValue):
+    pass  # noqa: E701,E302
+
+
+class FloatingColumn(NumericColumn, FloatingValue):
+    pass  # noqa: E701,E302
+
+
+class DecimalValue(NumericValue):
+    pass  # noqa: E701,E302
+
+
+class DecimalScalar(NumericScalar, DecimalValue):
+    pass  # noqa: E701,E302
+
+
+class DecimalColumn(NumericColumn, DecimalValue):
+    pass  # noqa: E701,E302
+
+
+class StringValue(AnyValue):
+    pass  # noqa: E701,E302
+
+
+class StringScalar(AnyScalar, StringValue):
+    pass  # noqa: E701,E302
+
+
+class StringColumn(AnyColumn, StringValue):
+    pass  # noqa: E701,E302
+
+
+class BinaryValue(AnyValue):
+    pass  # noqa: E701,E302
+
+
+class BinaryScalar(AnyScalar, BinaryValue):
+    pass  # noqa: E701,E302
+
+
+class BinaryColumn(AnyColumn, BinaryValue):
+    pass  # noqa: E701,E302
+
+
+class TemporalValue(AnyValue):
+    pass  # noqa: E701,E302
+
+
+class TemporalScalar(AnyScalar, TemporalValue):
+    pass  # noqa: E701,E302
+
+
+class TemporalColumn(AnyColumn, TemporalValue):
+    pass  # noqa: E701,E302
+
+
+class TimeValue(TemporalValue):
+    pass  # noqa: E701,E302
+
+
+class TimeScalar(TemporalScalar, TimeValue):
+    pass  # noqa: E701,E302
+
+
+class TimeColumn(TemporalColumn, TimeValue):
+    pass  # noqa: E701,E302
+
+
+class DateValue(TemporalValue):
+    pass  # noqa: E701,E302
+
+
+class DateScalar(TemporalScalar, DateValue):
+    pass  # noqa: E701,E302
+
+
+class DateColumn(TemporalColumn, DateValue):
+    pass  # noqa: E701,E302
+
+
+class TimestampValue(TemporalValue):
+    pass  # noqa: E701,E302
+
+
+class TimestampScalar(TemporalScalar, TimestampValue):
+    pass  # noqa: E701,E302
+
+
+class TimestampColumn(TemporalColumn, TimestampValue):
+    pass  # noqa: E701,E302
+
+
+class CategoryValue(AnyValue):
+    pass  # noqa: E701,E302
+
+
+class CategoryScalar(AnyScalar, CategoryValue):
+    pass  # noqa: E701,E302
+
+
+class CategoryColumn(AnyColumn, CategoryValue):
+    pass  # noqa: E701,E302
+
+
+class EnumValue(AnyValue):
+    pass  # noqa: E701,E302
+
+
+class EnumScalar(AnyScalar, EnumValue):
+    pass  # noqa: E701,E302
+
+
+class EnumColumn(AnyColumn, EnumValue):
+    pass  # noqa: E701,E302
+
+
+class ArrayValue(AnyValue):
+    pass  # noqa: E701,E302
+
+
+class ArrayScalar(AnyScalar, ArrayValue):
+    pass  # noqa: E701,E302
+
+
+class ArrayColumn(AnyColumn, ArrayValue):
+    pass  # noqa: E701,E302
+
+
+class SetValue(AnyValue):
+    pass  # noqa: E701,E302
+
+
+class SetScalar(AnyScalar, SetValue):
+    pass  # noqa: E701,E302
+
+
+class SetColumn(AnyColumn, SetValue):
+    pass  # noqa: E701,E302
+
+
+class MapValue(AnyValue):
+    pass  # noqa: E701,E302
+
+
+class MapScalar(AnyScalar, MapValue):
+    pass  # noqa: E701,E302
+
+
+class MapColumn(AnyColumn, MapValue):
+    pass  # noqa: E701,E302
+
+
+class JSONValue(StringValue):
+    pass  # noqa: E701,E302
+
+
+class JSONScalar(StringScalar, JSONValue):
+    pass  # noqa: E701,E302
+
+
+class JSONColumn(StringColumn, JSONValue):
+    pass  # noqa: E701,E302
+
+
+class JSONBValue(BinaryValue):
+    pass  # noqa: E701,E302
+
+
+class JSONBScalar(BinaryScalar, JSONBValue):
+    pass  # noqa: E701,E302
+
+
+class JSONBColumn(BinaryColumn, JSONBValue):
+    pass  # noqa: E701,E302
 
 
 class StructValue(AnyValue):
-
     def __dir__(self):
-        return sorted(frozenset(
-            itertools.chain(dir(type(self)), self.type().names)
-        ))
-
-class StructScalar(AnyScalar, StructValue): pass  # noqa: E701,E302
-class StructColumn(AnyColumn, StructValue): pass  # noqa: E701,E302
+        return sorted(
+            frozenset(itertools.chain(dir(type(self)), self.type().names))
+        )
 
 
-class IntervalValue(AnyValue): pass  # noqa: E701,E302
-class IntervalScalar(AnyScalar, IntervalValue): pass  # noqa: E701,E302
-class IntervalColumn(AnyColumn, IntervalValue): pass  # noqa: E701,E302
+class StructScalar(AnyScalar, StructValue):
+    pass  # noqa: E701,E302
+
+
+class StructColumn(AnyColumn, StructValue):
+    pass  # noqa: E701,E302
+
+
+class DestructValue(AnyValue):
+    """ Class that represents a destruct value.
+
+    When assigning a destruct column, the field inside this destruct column
+    will be destructured and assigned to multipe columnns.
+    """
+
+
+class DestructScalar(AnyScalar, DestructValue):
+    pass
+
+
+class DestructColumn(AnyColumn, DestructValue):
+    pass
+
+
+class IntervalValue(AnyValue):
+    pass  # noqa: E701,E302
+
+
+class IntervalScalar(AnyScalar, IntervalValue):
+    pass  # noqa: E701,E302
+
+
+class IntervalColumn(AnyColumn, IntervalValue):
+    pass  # noqa: E701,E302
+
+
+class GeoSpatialValue(NumericValue):
+    pass  # noqa: E701,E302
+
+
+class GeoSpatialScalar(NumericScalar, GeoSpatialValue):
+    pass  # noqa: E701,E302,E501
+
+
+class GeoSpatialColumn(NumericColumn, GeoSpatialValue):
+    pass  # noqa: E701,E302,E501
+
+
+class PointValue(GeoSpatialValue):
+    pass  # noqa: E701,E302
+
+
+class PointScalar(GeoSpatialScalar, PointValue):
+    pass  # noqa: E701,E302
+
+
+class PointColumn(GeoSpatialColumn, PointValue):
+    pass  # noqa: E701,E302
+
+
+class LineStringValue(GeoSpatialValue):
+    pass  # noqa: E701,E302
+
+
+class LineStringScalar(GeoSpatialScalar, LineStringValue):
+    pass  # noqa: E701,E302,E501
+
+
+class LineStringColumn(GeoSpatialColumn, LineStringValue):
+    pass  # noqa: E701,E302,E501
+
+
+class PolygonValue(GeoSpatialValue):
+    pass  # noqa: E701,E302
+
+
+class PolygonScalar(GeoSpatialScalar, PolygonValue):
+    pass  # noqa: E701,E302
+
+
+class PolygonColumn(GeoSpatialColumn, PolygonValue):
+    pass  # noqa: E701,E302
+
+
+class MultiLineStringValue(GeoSpatialValue):
+    pass  # noqa: E701,E302
+
+
+class MultiLineStringScalar(
+    GeoSpatialScalar, MultiLineStringValue
+):  # noqa: E302
+    pass  # noqa: E701
+
+
+class MultiLineStringColumn(
+    GeoSpatialColumn, MultiLineStringValue
+):  # noqa: E302
+    pass  # noqa: E701
+
+
+class MultiPointValue(GeoSpatialValue):
+    pass  # noqa: E701,E302
+
+
+class MultiPointScalar(GeoSpatialScalar, MultiPointValue):  # noqa: E302
+    pass  # noqa: E701
+
+
+class MultiPointColumn(GeoSpatialColumn, MultiPointValue):  # noqa: E302
+    pass  # noqa: E701
+
+
+class MultiPolygonValue(GeoSpatialValue):
+    pass  # noqa: E701,E302
+
+
+class MultiPolygonScalar(GeoSpatialScalar, MultiPolygonValue):  # noqa: E302
+    pass  # noqa: E701
+
+
+class MultiPolygonColumn(GeoSpatialColumn, MultiPolygonValue):  # noqa: E302
+    pass  # noqa: E701
+
+
+class UUIDValue(StringValue):
+    pass  # noqa: E701,E302
+
+
+class UUIDScalar(StringScalar, UUIDValue):
+    pass  # noqa: E701,E302
+
+
+class UUIDColumn(StringColumn, UUIDValue):
+    pass  # noqa: E701,E302
+
+
+class MACADDRValue(StringValue):
+    pass  # noqa: E701,E302
+
+
+class MACADDRScalar(StringScalar, MACADDRValue):
+    pass  # noqa: E701,E302
+
+
+class MACADDRColumn(StringColumn, MACADDRValue):
+    pass  # noqa: E701,E302
+
+
+class INETValue(StringValue):
+    pass  # noqa: E701,E302
+
+
+class INETScalar(StringScalar, INETValue):
+    pass  # noqa: E701,E302
+
+
+class INETColumn(StringColumn, INETValue):
+    pass  # noqa: E701,E302
 
 
 class ListExpr(ColumnExpr, AnyValue):
-
     @property
     def values(self):
         return self.op().values
@@ -676,12 +1037,13 @@ class ListExpr(ColumnExpr, AnyValue):
     def __bool__(self):
         return bool(self.values)
 
+    __nonzero__ = __bool__
+
     def __len__(self):
         return len(self.values)
 
 
 class TopKExpr(AnalyticExpr):
-
     def type(self):
         return 'topk'
 
@@ -691,10 +1053,12 @@ class TopKExpr(AnalyticExpr):
     def to_filter(self):
         # TODO: move to api.py
         import ibis.expr.operations as ops
+
         return ops.SummaryFilter(self).to_expr()
 
-    def to_aggregation(self, metric_name=None, parent_table=None,
-                       backup_metric_name=None):
+    def to_aggregation(
+        self, metric_name=None, parent_table=None, backup_metric_name=None
+    ):
         """
         Convert the TopK operation to a table aggregation
         """
@@ -720,14 +1084,14 @@ class TopKExpr(AnalyticExpr):
         elif parent_table is not None:
             agg = parent_table.aggregate(by, by=[op.arg])
         else:
-            raise com.IbisError('Cross-table TopK; must provide a parent '
-                                'joined table')
+            raise com.IbisError(
+                'Cross-table TopK; must provide a parent ' 'joined table'
+            )
 
         return agg.sort_by([(by.get_name(), False)]).limit(op.k)
 
 
 class SortExpr(Expr):
-
     def _type_display(self):
         return 'array-sort'
 
@@ -746,6 +1110,7 @@ class DayOfWeek(Expr):
             where **Monday = 0 and Sunday = 6**.
         """
         import ibis.expr.operations as ops
+
         return ops.DayOfWeekIndex(self.op().arg).to_expr()
 
     def full_name(self):
@@ -757,6 +1122,7 @@ class DayOfWeek(Expr):
             The name of the day of the week
         """
         import ibis.expr.operations as ops
+
         return ops.DayOfWeekName(self.op().arg).to_expr()
 
 
@@ -819,7 +1185,7 @@ def literal(value, type=None):
     int8
     >>> y = ibis.literal(42, type='double')
     >>> y.type()
-    double
+    float64
     >>> ibis.literal('foobar', type='int64')  # doctest: +ELLIPSIS
     Traceback (most recent call last):
       ...
@@ -831,18 +1197,37 @@ def literal(value, type=None):
     if hasattr(value, 'op') and isinstance(value.op(), ops.Literal):
         return value
 
-    if value is null:
-        dtype = dt.null
+    try:
+        inferred_dtype = dt.infer(value)
+    except com.InputTypeError:
+        has_inferred = False
     else:
-        dtype = dt.infer(value)
+        has_inferred = True
 
-    if type is not None:
+    if type is None:
+        has_explicit = False
+    else:
+        has_explicit = True
+        explicit_dtype = dt.dtype(type)
+
+    if has_explicit and has_inferred:
         try:
-            # check that dtype is implicitly castable to explicitly given dtype
-            dtype = dtype.cast(type, value=value)
+            # ensure type correctness: check that the inferred dtype is
+            # implicitly castable to the explicitly given dtype and value
+            dtype = inferred_dtype.cast(explicit_dtype, value=value)
         except com.IbisTypeError:
-            raise TypeError('Value {!r} cannot be safely coerced '
-                            'to {}'.format(value, type))
+            raise TypeError(
+                'Value {!r} cannot be safely coerced to {}'.format(value, type)
+            )
+    elif has_explicit:
+        dtype = explicit_dtype
+    elif has_inferred:
+        dtype = inferred_dtype
+    else:
+        raise TypeError(
+            'The datatype of value {!r} cannot be inferred, try '
+            'passing it explicitly with the `type` keyword.'.format(value)
+        )
 
     if dtype is dt.null:
         return null().cast(dtype)
@@ -870,6 +1255,7 @@ def sequence(values):
 
 def as_value_expr(val):
     import pandas as pd
+
     if not isinstance(val, Expr):
         if isinstance(val, (tuple, list)):
             val = sequence(val)
@@ -907,10 +1293,11 @@ def param(type):
     """
     import ibis.expr.datatypes as dt
     import ibis.expr.operations as ops
+
     return ops.ScalarParameter(dt.dtype(type)).to_expr()
 
 
-class UnnamedMarker(object):
+class UnnamedMarker:
     pass
 
 

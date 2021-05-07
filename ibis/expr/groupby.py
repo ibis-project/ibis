@@ -18,14 +18,13 @@ from __future__ import absolute_import
 
 import types
 
+import toolz
+
 import ibis.expr.analysis as L
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.window as _window
 import ibis.util as util
-
-import six
-import toolz
 
 
 def _resolve_exprs(table, exprs):
@@ -43,20 +42,20 @@ _function_types = tuple(
             types.LambdaType,
             types.MethodType,
             getattr(types, 'UnboundMethodType', None),
-        )
+        ),
     )
 )
 
 
 def _get_group_by_key(table, value):
-    if isinstance(value, six.string_types):
+    if isinstance(value, str):
         return table[value]
     if isinstance(value, _function_types):
         return value(table)
     return value
 
 
-class GroupedTableExpr(object):
+class GroupedTableExpr:
 
     """
     Helper intermediate construct
@@ -92,8 +91,9 @@ class GroupedTableExpr(object):
             return GroupedArray(col, self)
 
     def aggregate(self, metrics=None, **kwds):
-        return self.table.aggregate(metrics, by=self.by,
-                                    having=self._having, **kwds)
+        return self.table.aggregate(
+            metrics, by=self.by, having=self._having, **kwds
+        )
 
     def having(self, expr):
         """
@@ -111,8 +111,11 @@ class GroupedTableExpr(object):
         exprs = util.promote_list(expr)
         new_having = self._having + exprs
         return GroupedTableExpr(
-            self.table, self.by,
-            having=new_having, order_by=self._order_by, window=self._window
+            self.table,
+            self.by,
+            having=new_having,
+            order_by=self._order_by,
+            window=self._window,
         )
 
     def order_by(self, expr):
@@ -131,8 +134,11 @@ class GroupedTableExpr(object):
         exprs = util.promote_list(expr)
         new_order = self._order_by + exprs
         return GroupedTableExpr(
-            self.table, self.by,
-            having=self._having, order_by=new_order, window=self._window
+            self.table,
+            self.by,
+            having=self._having,
+            order_by=new_order,
+            window=self._window,
         )
 
     def mutate(self, exprs=None, **kwds):
@@ -159,7 +165,7 @@ class GroupedTableExpr(object):
           schema:
             foo : string
             bar : string
-            baz : double
+            baz : float64
         >>> expr = (t.group_by('foo')
         ...          .order_by(ibis.desc('bar'))
         ...          .mutate(qux=lambda x: x.baz.lag(),
@@ -171,24 +177,24 @@ class GroupedTableExpr(object):
           schema:
             foo : string
             bar : string
-            baz : double
+            baz : float64
         Selection[table]
           table:
             Table: ref_0
           selections:
             Table: ref_0
-            qux = WindowOp[double*]
-              qux = Lag[double*]
-                baz = Column[double*] 'baz' from table
+            qux = WindowOp[float64*]
+              qux = Lag[float64*]
+                baz = Column[float64*] 'baz' from table
                   ref_0
                 offset:
                   None
                 default:
                   None
               <ibis.expr.window.Window object at 0x...>
-            qux2 = WindowOp[double*]
-              qux2 = Lead[double*]
-                baz = Column[double*] 'baz' from table
+            qux2 = WindowOp[float64*]
+              qux2 = Lead[float64*]
+                baz = Column[float64*] 'baz' from table
                   ref_0
                 offset:
                   None
@@ -241,16 +247,24 @@ class GroupedTableExpr(object):
 
         groups = _resolve_exprs(self.table, groups)
 
-        return _window.window(preceding=preceding, following=following,
-                              group_by=groups, order_by=sorts)
+        return _window.window(
+            preceding=preceding,
+            following=following,
+            group_by=groups,
+            order_by=sorts,
+        )
 
     def over(self, window):
         """
         Add a window clause to be applied to downstream analytic expressions
         """
-        return GroupedTableExpr(self.table, self.by, having=self._having,
-                                order_by=self._order_by,
-                                window=window)
+        return GroupedTableExpr(
+            self.table,
+            self.by,
+            having=self._having,
+            order_by=self._order_by,
+            window=window,
+        )
 
     def count(self, metric_name='count'):
         """
@@ -284,8 +298,7 @@ def _group_agg_dispatch(name):
     return wrapper
 
 
-class GroupedArray(object):
-
+class GroupedArray:
     def __init__(self, arr, parent):
         self.arr = arr
         self.parent = parent

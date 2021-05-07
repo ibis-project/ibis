@@ -1,14 +1,43 @@
-try:
-    import queue as q
-except ImportError:
-    import Queue as q  # noqa
+import collections
+import itertools
 
-from itertools import chain
-from toolz import identity, compose
-from collections import deque, Iterable
+from toolz import compose, identity
 
-import ibis.expr.types as ir
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
+
+
+def find_nodes(expr, node_types):
+    """Depth-first search of the expression tree yielding nodes of a given
+    type or set of types.
+
+    Parameters
+    ----------
+    expr: ibis.expr.types.Expr
+    node_types: type or tuple of types
+
+    Yields
+    ------
+    op: type
+        A node of given node_types
+    """
+
+    def extender(op):
+        return (arg for arg in op.args if isinstance(arg, ir.Expr))
+
+    return _search_for_nodes([expr], extender, node_types)
+
+
+def _search_for_nodes(stack, extender, node_types):
+    seen = set()
+    while stack:
+        expr = stack.pop()
+        op = expr.op()
+        if op not in seen:
+            if isinstance(op, node_types):
+                yield op
+            seen.add(op)
+            stack.extend(extender(op))
 
 
 def roots(expr, types=(ops.PhysicalTable,)):
@@ -33,31 +62,32 @@ def roots(expr, types=(ops.PhysicalTable,)):
     you've come to the right place. By default, we yield the physical tables
     that an expression depends on.
     """
-    seen = set()
+    stack = [
+        arg.to_expr()
+        for arg in reversed(expr.op().root_tables())
+        if isinstance(arg, types)
+    ]
 
-    stack = [arg for arg in reversed(expr.op().root_tables())
-             if isinstance(arg, types)]
+    def extender(op):
+        return reversed(
+            list(
+                itertools.chain.from_iterable(
+                    arg.op().root_tables()
+                    for arg in op.flat_args()
+                    if isinstance(arg, types)
+                )
+            )
+        )
 
-    while stack:
-        table = stack.pop()
-
-        if table not in seen:
-            seen.add(table)
-            yield table
-
-        # flatten and reverse so that we traverse in preorder
-        stack.extend(reversed(list(chain.from_iterable(
-            arg.op().root_tables() for arg in table.flat_args()
-            if isinstance(arg, types)
-        ))))
+    return _search_for_nodes(stack, extender, types)
 
 
-class Container(object):
+class Container:
 
-    __slots__ = 'data',
+    __slots__ = ('data',)
 
     def __init__(self, data):
-        self.data = deque(self.visitor(data))
+        self.data = collections.deque(self.visitor(data))
 
     def append(self, item):
         self.data.append(item)
@@ -81,7 +111,7 @@ class Stack(Container):
     """Wrapper around a list to provide a common API for graph traversal
     """
 
-    __slots__ = 'data',
+    __slots__ = ('data',)
 
     def get(self):
         return self.data.pop()
@@ -96,7 +126,7 @@ class Queue(Container):
     """Wrapper around a queue.Queue to provide a common API for graph traversal
     """
 
-    __slots__ = 'data',
+    __slots__ = ('data',)
 
     def get(self):
         return self.data.popleft()
@@ -121,7 +151,11 @@ def _get_args(op, name):
         return [col for col in result if col._name == name]
     elif isinstance(op, ops.Aggregation):
         assert name is not None, 'name is None'
-        return [col for col in chain(op.by, op.metrics) if col._name == name]
+        return [
+            col
+            for col in itertools.chain(op.by, op.metrics)
+            if col._name == name
+        ]
     else:
         return op.args
 
@@ -192,7 +226,7 @@ def traverse(fn, expr, type=ir.Expr, container=Stack):
     container: Union[Stack, Queue], default Stack
         Defines the traversing order.
     """
-    args = expr if isinstance(expr, Iterable) else [expr]
+    args = expr if isinstance(expr, collections.abc.Iterable) else [expr]
     todo = container(arg for arg in args if isinstance(arg, type))
     seen = set()
 
@@ -211,11 +245,14 @@ def traverse(fn, expr, type=ir.Expr, container=Stack):
         if control is not halt:
             if control is proceed:
                 args = op.flat_args()
-            elif isinstance(control, Iterable):
+            elif isinstance(control, collections.abc.Iterable):
                 args = control
             else:
-                raise TypeError('First item of the returned tuple must be '
-                                'an instance of boolean or iterable')
+                raise TypeError(
+                    'First item of the returned tuple must be '
+                    'an instance of boolean or iterable'
+                )
 
-            todo.extend(arg for arg in todo.visitor(args)
-                        if isinstance(arg, type))
+            todo.extend(
+                arg for arg in todo.visitor(args) if isinstance(arg, type)
+            )

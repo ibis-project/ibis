@@ -1,3 +1,4 @@
+"""Initialize default configuration."""
 # Copyright 2014 Cloudera Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,7 +26,7 @@ cf.register_option(
 Whether to render expressions as GraphViz PNGs when repr-ing in a Jupyter
 notebook.
 """,
-    validator=cf.is_bool
+    validator=cf.is_bool,
 )
 
 cf.register_option('default_backend', None)
@@ -50,8 +51,9 @@ HDFS path for storage of temporary data
 
 with cf.config_prefix('impala'):
     cf.register_option('temp_db', '__ibis_tmp', impala_temp_db_doc)
-    cf.register_option('temp_hdfs_path', '/tmp/ibis',
-                       impala_temp_hdfs_path_doc)
+    cf.register_option(
+        'temp_hdfs_path', '/tmp/ibis', impala_temp_hdfs_path_doc
+    )
 
 
 clickhouse_temp_db_doc = """
@@ -64,3 +66,14 @@ with cf.config_prefix('clickhouse'):
 
 with cf.config_prefix('bigquery'):
     cf.register_option('partition_col', 'PARTITIONTIME')
+
+
+with cf.config_prefix('pandas'):
+    cf.register_option(
+        'enable_trace',
+        False,
+        """
+Whether enable tracing for pandas execution. See ibis.panads.trace for details.
+""",
+        validator=cf.is_bool,
+    )

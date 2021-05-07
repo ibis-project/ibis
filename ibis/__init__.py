@@ -1,142 +1,84 @@
-# Copyright 2014 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+"""Initialize Ibis module."""
+import warnings
+from contextlib import suppress
 
-
-# flake8: noqa
-import sys
-from multipledispatch import halt_ordering, restart_ordering
-
-import ibis.config_init
-import ibis.util as util
-import ibis.expr.api as api
-import ibis.expr.types as ir
-
-from ibis.config import options
-from ibis.common import IbisError
-from ibis.compat import suppress
-from ibis.filesystems import HDFS, WebHDFS
-
-# __all__ is defined
-from ibis.expr.api import *
-
-# speeds up signature registration
-halt_ordering()
+import ibis.config_init  # noqa: F401
+import ibis.expr.api as api  # noqa: F401
+import ibis.expr.types as ir  # noqa: F401
+import ibis.util as util  # noqa: F401
 
 # pandas backend is mandatory
-import ibis.pandas.api as pandas
+from ibis.backends import pandas  # noqa: F401
+from ibis.common.exceptions import IbisError  # noqa: F401
+from ibis.config import options  # noqa: F401
+from ibis.expr.api import *  # noqa: F401,F403
+
+from ._version import get_versions  # noqa: E402
 
 with suppress(ImportError):
     # pip install ibis-framework[csv]
-    import ibis.file.csv as csv
+    from ibis.backends import csv  # noqa: F401
 
 with suppress(ImportError):
     # pip install ibis-framework[parquet]
-    import ibis.file.parquet as parquet
+    from ibis.backends import parquet  # noqa: F401
 
 with suppress(ImportError):
     # pip install  ibis-framework[hdf5]
-    import ibis.file.hdf5 as hdf5
+    from ibis.backends import hdf5  # noqa: F401
 
 with suppress(ImportError):
     # pip install ibis-framework[impala]
-    import ibis.impala.api as impala
+    from ibis.backends import impala  # noqa: F401
 
 with suppress(ImportError):
     # pip install ibis-framework[sqlite]
-    import ibis.sql.sqlite.api as sqlite
+    from ibis.backends import sqlite  # noqa: F401
 
 with suppress(ImportError):
     # pip install ibis-framework[postgres]
-    import ibis.sql.postgres.api as postgres
+    from ibis.backends import postgres  # noqa: F401
 
 with suppress(ImportError):
     # pip install ibis-framework[mysql]
-    import ibis.sql.mysql.api as mysql
+    from ibis.backends import mysql  # noqa: F401
 
 with suppress(ImportError):
     # pip install ibis-framework[clickhouse]
-    import ibis.clickhouse.api as clickhouse
+    from ibis.backends import clickhouse  # noqa: F401
 
 with suppress(ImportError):
     # pip install ibis-framework[bigquery]
-    import ibis.bigquery.api as bigquery
+    from ibis.backends import bigquery  # noqa: F401
 
 with suppress(ImportError):
-    # pip install ibis-framework[mapd]
-    if sys.version_info.major < 3:
-        raise ImportError('The MapD backend is not supported under Python 2.')
-    import ibis.mapd.api as mapd
+    # pip install ibis-framework[omniscidb]
+    from ibis.backends import omniscidb  # noqa: F401
 
-restart_ordering()
+with suppress(ImportError):
+    # pip install ibis-framework[spark]
+    from ibis.backends import spark  # noqa: F401
 
-
-def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
-                 use_https='default', auth_mechanism='NOSASL',
-                 verify=True, **kwds):
-    """
-    Connect to HDFS
-
-    Parameters
-    ----------
-    host : string, Host name of the HDFS NameNode
-    port : int, NameNode's WebHDFS port (default 50070)
-    protocol : {'webhdfs'}
-    use_https : boolean, default 'default'
-        Connect to WebHDFS with HTTPS, otherwise plain HTTP. For secure
-        authentication, the default for this is True, otherwise False
-    auth_mechanism : string, Set to NOSASL or PLAIN for non-secure clusters.
-        Set to GSSAPI or LDAP for Kerberos-secured clusters.
-    verify : boolean, Set to False to turn off verifying SSL certificates.
-        (default True)
-
-    Other keywords are forwarded to hdfs library classes
-
-    Returns
-    -------
-    client : WebHDFS
-    """
-    import requests
-    session = kwds.setdefault('session', requests.Session())
-    session.verify = verify
-    if auth_mechanism in ['GSSAPI', 'LDAP']:
-        if use_https == 'default':
-            prefix = 'https'
-        else:
-            prefix = 'https' if use_https else 'http'
-        try:
-            import requests_kerberos
-        except ImportError:
-            raise IbisError(
-                "Unable to import requests-kerberos, which is required for "
-                "Kerberos HDFS support. Install it by executing `pip install "
-                "requests-kerberos` or `pip install hdfs[kerberos]`.")
-        from hdfs.ext.kerberos import KerberosClient
-        # note SSL
-        url = '{0}://{1}:{2}'.format(prefix, host, port)
-        kwds.setdefault('mutual_auth', 'OPTIONAL')
-        hdfs_client = KerberosClient(url, **kwds)
-    else:
-        if use_https == 'default':
-            prefix = 'http'
-        else:
-            prefix = 'https' if use_https else 'http'
-        from hdfs.client import InsecureClient
-        url = '{0}://{1}:{2}'.format(prefix, host, port)
-        hdfs_client = InsecureClient(url, **kwds)
-    return WebHDFS(hdfs_client)
+with suppress(ImportError):
+    from ibis.backends import pyspark  # noqa: F401
 
 
-from ._version import get_versions
 __version__ = get_versions()['version']
 del get_versions
+
+
+def __getattr__(name):
+    if name in ('HDFS', 'WebHDFS', 'hdfs_connect'):
+        warnings.warn(
+            f'`ibis.{name}` has been deprecated and will be removed in a '
+            f'future version, use `ibis.impala.{name}` instead',
+            FutureWarning,
+            stacklevel=2,
+        )
+        if 'impala' in globals():
+            return getattr(impala, name)
+        else:
+            raise AttributeError(
+                f'`ibis.{name}` requires impala backend to be installed'
+            )
+    raise AttributeError

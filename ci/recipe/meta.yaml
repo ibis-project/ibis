@@ -1,0 +1,94 @@
+# This is a copy of https://github.com/conda-forge/ibis-framework-feedstock/blob/master/recipe/meta.yaml
+# Changes required to the recipe will be performed and tested with this file during
+# development of Ibis, and this file needs to replace the original one on releases.
+#
+# Changes to the original file that need to be restored when copying to release:
+# - Set the version in the first line: {% set version = "1.3.0" %}
+# - Add `sha256` key to the `source` section, with the tar.gz hash
+# - Set the `number` in the `build` section to the appropriate build number
+# - Remove this comment from the beginning of the file
+
+package:
+  name: ibis-framework
+  version: {{ version }}
+
+source:
+  url: https://github.com/ibis-project/ibis/archive/{{ version }}.tar.gz
+
+build:
+  number: 1
+  script: {{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+  # uncomment noarch when pymapd and pyspark issues are fixed for py38
+  # noarch: python
+
+requirements:
+  host:
+    - pip
+    - python
+    - setuptools
+
+  run:
+    - clickhouse-driver >=0.1.3
+    - clickhouse-cityhash  # [not win]
+    - clickhouse-sqlalchemy
+    - geoalchemy2
+    - geopandas
+    - google-cloud-bigquery-core >=1.12.0,<1.24.0dev
+    - graphviz
+    - impyla >=0.15.0
+    - lz4
+    - multipledispatch >=0.6
+    - numpy >=1.15
+    - pandas >=0.25.3
+    - psycopg2
+    - pyarrow >=0.15
+    - pydata-google-auth
+    - pymapd 0.24  # [py<38]
+    - pymysql
+    - pyspark >=2.4.3  # [py<38]
+    - pytables >=3.0.0
+    - python
+    - python-graphviz
+    - python-hdfs >=2.0.16
+    - pytz
+    - regex
+    - requests
+    - shapely
+    - setuptools
+    - sqlalchemy >=1.1
+    - thrift >=0.11
+    - thriftpy2
+    - toolz
+
+test:
+  imports:
+    - ibis
+    - ibis.backends.bigquery
+    - ibis.backends.clickhouse
+    - ibis.backends.csv
+    - ibis.backends.parquet
+    - ibis.backends.hdf5
+    - ibis.backends.impala
+    - ibis.backends.mysql
+    - ibis.backends.omniscidb  # [py<38]
+    - ibis.backends.pandas
+    - ibis.backends.postgres
+    - ibis.backends.pyspark  # [py<38]
+    - ibis.backends.spark
+    - ibis.backends.sqlite
+
+about:
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE.txt
+  home: http://www.ibis-project.org
+  summary: Productivity-centric Python Big Data Framework
+
+extra:
+  recipe-maintainers:
+    - cpcloud
+    - mariusvniekerk
+    - wesm
+    - kszucs
+    - xmnlab
+    - jreback

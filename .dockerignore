@@ -1,3 +1,5 @@
 ci/udf/CMakeCache.txt
 ci/udf/CMakeFiles/
 ci/udf/Makefile
+**/*.pyc
+**/__pycache__

@@ -1,0 +1,68 @@
+pysuerga:
+  extensions:
+  - pysuerga.contrib.team
+  markdown_extensions:
+  - toc
+  - tables
+  - fenced_code
+  - codehilite
+
+ibis:
+  project_name: Ibis
+  github_repo_url: ibis-project/ibis
+
+layout:
+  title: "Ibis: Python data analysis productivity framework"
+  favicon: /static/img/favicon.ico
+  stylesheets:
+  - /static/css/ibis.css
+  - /static/css/codehilite.css
+  logo: /static/img/logo_ibis.svg
+  header_text: Ibis
+  navbar:
+    - name: "About us"
+      sections:
+      - name: "About Ibis"
+        target: /about/index.html
+      - name: "Team"
+        target: /about/team.html
+      - name: "Roadmap"
+        target: /about/roadmap.html
+      - name: "License"
+        target: /about/license.html
+    - name: "Getting started"
+      target: /getting_started.html
+    - name: "Documentation"
+      target: /docs/
+    - name: "Community"
+      sections:
+      - name: "Ask a question (StackOverflow)"
+        target: https://stackoverflow.com/questions/tagged/ibis
+      - name: "Chat (Gitter)"
+        target: https://gitter.im/ibis-dev/Lobby
+      - name: "Code of conduct"
+        target: /community/coc.html
+      - name: "Ecosystem"
+        target: /community/ecosystem.html
+    - name: "Contribute"
+      target: /contribute.html
+  social_media:
+    - font_awesome: twitter
+      url: https://twitter.com/IbisData
+    - font_awesome: github
+      url: https://github.com/ibis-project/ibis/
+  footer_note: "© Copyright 2020, Ibis developers"
+  google_analytics: ""
+
+team:
+- name: "Active maintainers"
+  kind: github
+  members:
+  - jreback
+  - datapythonista
+- name: "Former maintainers"
+  kind: github
+  members:
+  - wesm
+  - cpcloud
+  - kszucs

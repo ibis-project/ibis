@@ -1,59 +1,118 @@
-from __future__ import print_function
+"""Ibis expression API definitions."""
 
 import collections
 import datetime
 import functools
+import numbers
 import operator
-import warnings
-
-import six
-import toolz
+from typing import Union
 
 import dateutil.parser
-
 import pandas as pd
+import toolz
 
 import ibis
-import ibis.util as util
-import ibis.common as com
-import ibis.expr.types as ir
+import ibis.common.exceptions as com
+import ibis.expr.analysis as _L
+import ibis.expr.analytics as _analytics
+import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
-import ibis.expr.analysis as _L
-import ibis.expr.datatypes as dt
-import ibis.expr.analytics as _analytics
-import ibis.expr.operations as ops
-
-from ibis.compat import PY2, to_time, to_date
-from ibis.expr.types import Expr, null, param, literal, sequence, as_value_expr
-from ibis.expr.schema import Schema
-
+import ibis.expr.types as ir
+import ibis.util as util
 from ibis.expr.analytics import bucket, histogram
 from ibis.expr.groupby import GroupedTableExpr  # noqa
-from ibis.expr.window import (
-    window, range_window, trailing_window, cumulative_window,
-    trailing_range_window
-)
-
+from ibis.expr.random import random  # noqa
+from ibis.expr.schema import Schema
 from ibis.expr.types import (  # noqa
-    ValueExpr, ScalarExpr, ColumnExpr, TableExpr,
-    NumericValue, NumericScalar, NumericColumn,
-    IntegerValue, IntegerScalar, IntegerColumn,
-    NullValue, NullScalar, NullColumn,
-    BooleanValue, BooleanScalar, BooleanColumn,
-    FloatingValue, FloatingScalar, FloatingColumn,
-    StringValue, StringScalar, StringColumn,
-    DecimalValue, DecimalScalar, DecimalColumn,
-    TimestampValue, TimestampScalar, TimestampColumn,
-    IntervalValue, IntervalScalar, IntervalColumn,
-    DateValue, DateScalar, DateColumn,
-    TimeValue, TimeScalar, TimeColumn,
-    ArrayValue, ArrayScalar, ArrayColumn,
-    MapValue, MapScalar, MapColumn,
-    StructValue, StructScalar, StructColumn,
-    CategoryValue, CategoryScalar, CategoryValue
+    ArrayColumn,
+    ArrayScalar,
+    ArrayValue,
+    BooleanColumn,
+    BooleanScalar,
+    BooleanValue,
+    CategoryScalar,
+    CategoryValue,
+    ColumnExpr,
+    DateColumn,
+    DateScalar,
+    DateValue,
+    DecimalColumn,
+    DecimalScalar,
+    DecimalValue,
+    DestructColumn,
+    DestructScalar,
+    DestructValue,
+    Expr,
+    FloatingColumn,
+    FloatingScalar,
+    FloatingValue,
+    GeoSpatialColumn,
+    GeoSpatialScalar,
+    GeoSpatialValue,
+    IntegerColumn,
+    IntegerScalar,
+    IntegerValue,
+    IntervalColumn,
+    IntervalScalar,
+    IntervalValue,
+    LineStringColumn,
+    LineStringScalar,
+    LineStringValue,
+    MapColumn,
+    MapScalar,
+    MapValue,
+    MultiLineStringColumn,
+    MultiLineStringScalar,
+    MultiLineStringValue,
+    MultiPointColumn,
+    MultiPointScalar,
+    MultiPointValue,
+    MultiPolygonColumn,
+    MultiPolygonScalar,
+    MultiPolygonValue,
+    NullColumn,
+    NullScalar,
+    NullValue,
+    NumericColumn,
+    NumericScalar,
+    NumericValue,
+    PointColumn,
+    PointScalar,
+    PointValue,
+    PolygonColumn,
+    PolygonScalar,
+    PolygonValue,
+    ScalarExpr,
+    StringColumn,
+    StringScalar,
+    StringValue,
+    StructColumn,
+    StructScalar,
+    StructValue,
+    TableExpr,
+    TimeColumn,
+    TimeScalar,
+    TimestampColumn,
+    TimestampScalar,
+    TimestampValue,
+    TimeValue,
+    ValueExpr,
+    as_value_expr,
+    literal,
+    null,
+    param,
+    sequence,
 )
-
+from ibis.expr.window import (
+    cumulative_window,
+    range_window,
+    rows_with_max_lookback,
+    trailing_range_window,
+    trailing_window,
+    window,
+)
 
 __all__ = (
     'aggregate',
@@ -63,12 +122,62 @@ __all__ = (
     'cross_join',
     'cumulative_window',
     'date',
-    'day',
     'desc',
     'Expr',
     'expr_list',
+    'geo_area',
+    'geo_as_binary',
+    'geo_as_ewkb',
+    'geo_as_ewkt',
+    'geo_as_text',
+    'geo_azimuth',
+    'geo_buffer',
+    'geo_centroid',
+    'geo_contains',
+    'geo_contains_properly',
+    'geo_covers',
+    'geo_covered_by',
+    'geo_crosses',
+    'geo_d_fully_within',
+    'geo_disjoint',
+    'geo_difference',
+    'geo_d_within',
+    'geo_envelope',
+    'geo_equals',
+    'geo_geometry_n',
+    'geo_geometry_type',
+    'geo_intersection',
+    'geo_intersects',
+    'geo_is_valid',
+    'geo_line_locate_point',
+    'geo_line_merge',
+    'geo_line_substring',
+    'geo_ordering_equals',
+    'geo_overlaps',
+    'geo_touches',
+    'geo_distance',
+    'geo_end_point',
+    'geo_length',
+    'geo_max_distance',
+    'geo_n_points',
+    'geo_n_rings',
+    'geo_perimeter',
+    'geo_point',
+    'geo_point_n',
+    'geo_simplify',
+    'geo_srid',
+    'geo_start_point',
+    'geo_transform',
+    'geo_unary_union',
+    'geo_union',
+    'geo_within',
+    'geo_x',
+    'geo_x_max',
+    'geo_x_min',
+    'geo_y',
+    'geo_y_max',
+    'geo_y_min',
     'greatest',
-    'hour',
     'ifelse',
     'infer_dtype',
     'infer_schema',
@@ -76,33 +185,27 @@ __all__ = (
     'join',
     'least',
     'literal',
-    'microsecond',
-    'millisecond',
-    'minute',
-    'month',
     'NA',
-    'nanosecond',
     'negate',
     'now',
     'null',
     'param',
     'pi',
     'prevent_rewrite',
+    'random',
     'range_window',
     'row_number',
+    'rows_with_max_lookback',
     'schema',
     'Schema',
-    'second',
     'sequence',
     'table',
     'time',
     'timestamp',
     'trailing_range_window',
     'trailing_window',
-    'week',
     'where',
     'window',
-    'year',
 )
 
 
@@ -188,30 +291,34 @@ def desc(expr):
         return ops.SortKey(expr, ascending=False).to_expr()
 
 
-def timestamp(value):
+def timestamp(value, timezone=None):
     """
     Returns a timestamp literal if value is likely coercible to a timestamp
 
     Parameters
     ----------
     value : timestamp value as string
+    timezone: timezone as string
+        defaults to None
 
     Returns
     --------
     result : TimestampScalar
     """
-    if isinstance(value, six.string_types):
+    if isinstance(value, str):
         try:
-            value = pd.Timestamp(value)
+            value = pd.Timestamp(value, tz=timezone)
         except pd.errors.OutOfBoundsDatetime:
             value = dateutil.parser.parse(value)
-    if isinstance(value, six.integer_types):
-        warnings.warn(
-            'Integer values for timestamp literals are deprecated in 0.11.0 '
-            'and will be removed in 0.12.0. To pass integers as timestamp '
-            'literals, use pd.Timestamp({:d}, unit=...)'.format(value)
+    if isinstance(value, numbers.Integral):
+        raise TypeError(
+            (
+                "Passing an integer to ibis.timestamp is not supported. Use "
+                "ibis.literal({value:d}).to_timestamp() to create a timestamp "
+                "expression from an integer."
+            ).format(value=value)
         )
-    return literal(value, type=dt.timestamp)
+    return literal(value, type=dt.Timestamp(timezone=timezone))
 
 
 def date(value):
@@ -226,8 +333,8 @@ def date(value):
     --------
     result : TimeScalar
     """
-    if isinstance(value, six.string_types):
-        value = to_date(value)
+    if isinstance(value, str):
+        value = pd.to_datetime(value).date()
     return literal(value, type=dt.date)
 
 
@@ -243,14 +350,26 @@ def time(value):
     --------
     result : TimeScalar
     """
-    if isinstance(value, six.string_types):
-        value = to_time(value)
+    if isinstance(value, str):
+        value = pd.to_datetime(value).time()
     return literal(value, type=dt.time)
 
 
-def interval(value=None, unit='s', years=None, quarters=None, months=None,
-             weeks=None, days=None, hours=None, minutes=None, seconds=None,
-             milliseconds=None, microseconds=None, nanoseconds=None):
+def interval(
+    value=None,
+    unit='s',
+    years=None,
+    quarters=None,
+    months=None,
+    weeks=None,
+    days=None,
+    hours=None,
+    minutes=None,
+    seconds=None,
+    milliseconds=None,
+    microseconds=None,
+    nanoseconds=None,
+):
     """
     Returns an interval literal
 
@@ -277,7 +396,7 @@ def interval(value=None, unit='s', years=None, quarters=None, months=None,
         if isinstance(value, datetime.timedelta):
             unit = 's'
             value = int(value.total_seconds())
-        elif not isinstance(value, six.integer_types):
+        elif not isinstance(value, int):
             raise ValueError('Interval value must be an integer')
     else:
         kwds = [
@@ -291,7 +410,7 @@ def interval(value=None, unit='s', years=None, quarters=None, months=None,
             ('s', seconds),
             ('ms', milliseconds),
             ('us', microseconds),
-            ('ns', nanoseconds)
+            ('ns', nanoseconds),
         ]
         defined_units = [(k, v) for k, v in kwds if v is not None]
 
@@ -306,39 +425,10 @@ def interval(value=None, unit='s', years=None, quarters=None, months=None,
     return literal(value, type=type).op().to_expr()
 
 
-@functools.wraps(interval)
-def timedelta(*args, **kwargs):
-    warnings.warn('ibis.timedelta is deprecated, use ibis.interval instead',
-                  DeprecationWarning)
-    return interval(*args, **kwargs)
-
-
-def _timedelta(name, unit):
-    def f(value=1):
-        msg = 'ibis.{0} is deprecated, use ibis.interval({0}s=n) instead'
-        warnings.warn(msg.format(name), DeprecationWarning)
-        return interval(value, unit=unit)
-    f.__name__ = name
-    return f
-
-
-year = _timedelta('year', 'Y')
-quarter = _timedelta('quarter', 'Q')
-month = _timedelta('month', 'M')
-week = _timedelta('week', 'W')
-day = _timedelta('day', 'D')
-hour = _timedelta('hour', 'h')
-minute = _timedelta('minute', 'm')
-second = _timedelta('second', 's')
-millisecond = _timedelta('millisecond', 'ms')
-microsecond = _timedelta('microsecond', 'us')
-nanosecond = _timedelta('nanosecond', 'ns')
-
-
 schema.__doc__ = """\
 Validate and return an Ibis Schema object
 
-{0}
+{}
 
 Parameters
 ----------
@@ -361,7 +451,9 @@ Examples
 Returns
 -------
 schema : Schema
-""".format(_data_type_docs)
+""".format(
+    _data_type_docs
+)
 
 
 def case():
@@ -428,6 +520,7 @@ def _add_methods(klass, method_table):
 def _unary_op(name, klass, doc=None):
     def f(arg):
         return klass(arg).to_expr()
+
     f.__name__ = name
     if doc is not None:
         f.__doc__ = doc
@@ -494,7 +587,7 @@ def group_concat(arg, sep=',', where=None):
     return ops.GroupConcat(arg, sep, where).to_expr()
 
 
-def arbitrary(arg, where=None, how='first'):
+def arbitrary(arg, where=None, how=None):
     """
     Selects the first / last non-null value in a column
 
@@ -556,6 +649,7 @@ def _boolean_binary_op(name, klass):
 def _boolean_unary_op(name, klass):
     def f(self):
         return klass(self).to_expr()
+
     f.__name__ = name
     return f
 
@@ -580,6 +674,7 @@ def _agg_function(name, klass, assign_default_name=True):
         if assign_default_name:
             expr = expr.name(name)
         return expr
+
     f.__name__ = name
     return f
 
@@ -588,6 +683,7 @@ def _extract_field(name, klass):
     def f(self):
         expr = klass(self).to_expr()
         return expr.name(name)
+
     f.__name__ = name
     return f
 
@@ -603,12 +699,18 @@ def cast(arg, target_type):
     if op.to.equals(arg.type()):
         # noop case if passed type is the same
         return arg
-    else:
-        result = op.to_expr()
-        if not arg.has_name():
-            return result
-        expr_name = 'cast({}, {})'.format(arg.get_name(), op.to)
-        return result.name(expr_name)
+
+    if isinstance(op.to, (dt.Geography, dt.Geometry)):
+        from_geotype = arg.type().geotype or 'geometry'
+        to_geotype = op.to.geotype
+        if from_geotype == to_geotype:
+            return arg
+
+    result = op.to_expr()
+    if not arg.has_name():
+        return result
+    expr_name = 'cast({}, {})'.format(arg.get_name(), op.to)
+    return result.name(expr_name)
 
 
 cast.__doc__ = """
@@ -626,7 +728,9 @@ Notes
 Returns
 -------
 cast_expr : ValueExpr
-""".format(_data_type_docs)
+""".format(
+    _data_type_docs
+)
 
 
 def typeof(arg):
@@ -647,7 +751,7 @@ def hash(arg, how='fnv'):
     Parameters
     ----------
     arg : value expression
-    how : {'fnv'}, default 'fnv'
+    how : {'fnv', 'farm_fingerprint'}, default 'fnv'
       Hash algorithm to use
 
     Returns
@@ -996,13 +1100,10 @@ _generic_value_methods = dict(
     notin=notin,
     isnull=_unary_op('isnull', ops.IsNull),
     notnull=_unary_op('notnull', ops.NotNull),
-
     over=over,
-
     case=_case,
     cases=cases,
     substitute=substitute,
-
     __eq__=_binop_expr('__eq__', ops.Equals),
     __ne__=_binop_expr('__ne__', ops.NotEquals),
     __ge__=_binop_expr('__ge__', ops.GreaterEqual),
@@ -1099,10 +1200,7 @@ def _generic_summary(arg, exact_nunique=False, prefix=None):
     -------
     summary : (count, # nulls, nunique)
     """
-    metrics = [
-        arg.count(),
-        arg.isnull().sum().name('nulls')
-    ]
+    metrics = [arg.count(), arg.isnull().sum().name('nulls')]
 
     if exact_nunique:
         unique_metric = arg.nunique().name('uniques')
@@ -1134,7 +1232,7 @@ def _numeric_summary(arg, exact_nunique=False, prefix=None):
         arg.min(),
         arg.max(),
         arg.sum(),
-        arg.mean()
+        arg.mean(),
     ]
 
     if exact_nunique:
@@ -1173,7 +1271,6 @@ _generic_column_methods = dict(
     approx_nunique=approx_nunique,
     group_concat=group_concat,
     value_counts=value_counts,
-
     first=first,
     last=last,
     dense_rank=dense_rank,
@@ -1196,6 +1293,7 @@ _add_methods(ir.ColumnExpr, _generic_column_methods)
 
 # ---------------------------------------------------------------------
 # Numeric API
+
 
 def round(arg, digits=None):
     """
@@ -1246,8 +1344,7 @@ def clip(arg, lower=None, upper=None):
     clipped : same as type of the input
     """
     if lower is None and upper is None:
-        raise ValueError("at least one of lower and "
-                         "upper must be provided")
+        raise ValueError("at least one of lower and " "upper must be provided")
 
     op = ops.Clip(arg, lower, upper)
     return op.to_expr()
@@ -1279,7 +1376,7 @@ def quantile(arg, quantile, interpolation='linear'):
         if scalar input, scalar type, same as input
         if array input, list of scalar type
     """
-    if isinstance(quantile, collections.Sequence):
+    if isinstance(quantile, collections.abc.Sequence):
         op = ops.MultiQuantile(arg, quantile, interpolation)
     else:
         op = ops.Quantile(arg, quantile, interpolation)
@@ -1362,40 +1459,30 @@ _numeric_value_methods = dict(
     nullifzero=_unary_op('nullifzero', ops.NullIfZero),
     zeroifnull=_unary_op('zeroifnull', ops.ZeroIfNull),
     clip=clip,
-
     __add__=add,
     add=add,
-
     __sub__=sub,
     sub=sub,
-
     __mul__=mul,
     mul=mul,
-
     __div__=div,
     __truediv__=div,
     __floordiv__=floordiv,
     div=div,
     floordiv=floordiv,
-
     __rdiv__=rdiv,
     __rtruediv__=rdiv,
     __rfloordiv__=rfloordiv,
     rdiv=rdiv,
     rfloordiv=rfloordiv,
-
     __pow__=pow,
     pow=pow,
-
     __radd__=add,
     radd=add,
-
     __rsub__=rsub,
     rsub=rsub,
-
     __rmul__=_rbinop_expr('__rmul__', ops.Multiply),
     __rpow__=_rbinop_expr('__rpow__', ops.Power),
-
     __mod__=mod,
     __rmod__=_rbinop_expr('__rmod__', ops.Modulus),
     # trigonometric operations
@@ -1430,7 +1517,7 @@ def convert_base(arg, from_base, to_base):
 _integer_value_methods = dict(
     to_timestamp=_integer_to_timestamp,
     to_interval=_integer_to_interval,
-    convert_base=convert_base
+    convert_base=convert_base,
 )
 
 
@@ -1510,25 +1597,20 @@ def covariance(left, right, where=None, how='sample'):
 _numeric_column_methods = dict(
     mean=mean,
     cummean=cummean,
-
     sum=sum,
     cumsum=cumsum,
-
     quantile=quantile,
-
     std=std,
     var=variance,
     corr=correlation,
     cov=covariance,
-
     bucket=bucket,
     histogram=histogram,
     summary=_numeric_summary,
 )
 
 _floating_value_methods = dict(
-    isnan=_unary_op('isnull', ops.IsNan),
-    isinf=_unary_op('isinf', ops.IsInf),
+    isnan=_unary_op('isnull', ops.IsNan), isinf=_unary_op('isinf', ops.IsInf)
 )
 
 _add_methods(ir.NumericValue, _numeric_value_methods)
@@ -1537,6 +1619,979 @@ _add_methods(ir.FloatingValue, _floating_value_methods)
 
 _add_methods(ir.NumericColumn, _numeric_column_methods)
 
+# ----------------------------------------------------------------------
+# GeoSpatial API
+
+
+def geo_area(arg):
+    """
+    Compute area of a geo spatial data
+
+    Parameters
+    ----------
+    arg : geometry or geography
+
+    Returns
+    -------
+    area : double scalar
+    """
+    op = ops.GeoArea(arg)
+    return op.to_expr()
+
+
+def geo_as_binary(arg):
+    """
+    Get the geometry as well-known bytes (WKB) without the SRID data.
+
+    Parameters
+    ----------
+    arg : geometry or geography
+
+    Returns
+    -------
+    wkb : binary
+    """
+    op = ops.GeoAsBinary(arg)
+    return op.to_expr()
+
+
+def geo_as_ewkt(arg):
+    """
+    Get the geometry as well-known text (WKT) with the SRID data.
+
+    Parameters
+    ----------
+    arg : geometry or geography
+
+    Returns
+    -------
+    wkt : string
+    """
+    op = ops.GeoAsEWKT(arg)
+    return op.to_expr()
+
+
+def geo_as_text(arg):
+    """
+    Get the geometry as well-known text (WKT) without the SRID data.
+
+    Parameters
+    ----------
+    arg : geometry or geography
+
+    Returns
+    -------
+    wkt : string
+    """
+    op = ops.GeoAsText(arg)
+    return op.to_expr()
+
+
+def geo_as_ewkb(arg):
+    """
+    Get the geometry as well-known bytes (WKB) with the SRID data.
+
+    Parameters
+    ----------
+    arg : geometry or geography
+
+    Returns
+    -------
+    wkb : binary
+    """
+    op = ops.GeoAsEWKB(arg)
+    return op.to_expr()
+
+
+def geo_contains(left, right):
+    """
+    Check if the first geometry contains the second one
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    contains : bool scalar
+    """
+    op = ops.GeoContains(left, right)
+    return op.to_expr()
+
+
+def geo_contains_properly(left, right):
+    """
+    Check if the first geometry contains the second one,
+    with no common border points.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    contains_properly : bool scalar
+    """
+    op = ops.GeoContainsProperly(left, right)
+    return op.to_expr()
+
+
+def geo_covers(left, right):
+    """
+    Check if the first geometry covers the second one.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    covers : bool scalar
+    """
+    op = ops.GeoCovers(left, right)
+    return op.to_expr()
+
+
+def geo_covered_by(left, right):
+    """
+    Check if the first geometry is covered by the second one.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    covered_by : bool scalar
+    """
+    op = ops.GeoCoveredBy(left, right)
+    return op.to_expr()
+
+
+def geo_crosses(left, right):
+    """
+    Check if the geometries have some, but not all, interior points in common.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    crosses : bool scalar
+    """
+    op = ops.GeoCrosses(left, right)
+    return op.to_expr()
+
+
+def geo_d_fully_within(left, right, distance):
+    """
+    Check if the first geometry is fully within a specified distance from
+    the second one.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+    distance: double
+
+    Returns
+    -------
+    d_fully_within : bool scalar
+    """
+    op = ops.GeoDFullyWithin(left, right, distance)
+    return op.to_expr()
+
+
+def geo_disjoint(left, right):
+    """
+    Check if the geometries have no points in common.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    disjoint : bool scalar
+    """
+    op = ops.GeoDisjoint(left, right)
+    return op.to_expr()
+
+
+def geo_d_within(left, right, distance):
+    """
+    Check if the first geometry is within a specified distance from
+    the second one.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+    distance: double
+
+    Returns
+    -------
+    d_within : bool scalar
+    """
+    op = ops.GeoDWithin(left, right, distance)
+    return op.to_expr()
+
+
+def geo_equals(left, right):
+    """
+    Check if the geometries are the same.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    equals : bool scalar
+    """
+    op = ops.GeoEquals(left, right)
+    return op.to_expr()
+
+
+def geo_geometry_n(arg, n):
+    """
+    Get the 1-based Nth geometry of a multi geometry.
+
+    Parameters
+    ----------
+    arg : geometry
+    n : integer
+
+    Returns
+    -------
+    geom : geometry scalar
+    """
+    op = ops.GeoGeometryN(arg, n)
+    return op.to_expr()
+
+
+def geo_geometry_type(arg):
+    """
+    Get the type of a geometry.
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    type : string scalar
+    """
+    op = ops.GeoGeometryType(arg)
+    return op.to_expr()
+
+
+def geo_intersects(left, right):
+    """
+    Check if the geometries share any points.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    intersects : bool scalar
+    """
+    op = ops.GeoIntersects(left, right)
+    return op.to_expr()
+
+
+def geo_is_valid(arg):
+    """
+    Check if the geometry is valid.
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    valid : bool scalar
+    """
+    op = ops.GeoIsValid(arg)
+    return op.to_expr()
+
+
+def geo_line_locate_point(left, right):
+    """
+    Locate the distance a point falls along the length of a line.
+
+    Returns a float between zero and one representing the location of the
+    closest point on the linestring to the given point, as a fraction of the
+    total 2d line length.
+
+    Parameters
+    ----------
+    left : linestring
+    right: point
+
+    Returns
+    -------
+    distance: float scalar
+    """
+    op = ops.GeoLineLocatePoint(left, right)
+    return op.to_expr()
+
+
+def geo_line_merge(arg):
+    """
+    Merge a MultiLineString into a LineString.
+
+    Returns a (set of) LineString(s) formed by sewing together the
+    constituent line work of a MultiLineString. If a geometry other than
+    a LineString or MultiLineString is given, this will return an empty
+    geometry collection.
+
+    Parameters
+    ----------
+    arg : (multi)linestring
+
+    Returns
+    -------
+    merged: geometry scalar
+    """
+    op = ops.GeoLineMerge(arg)
+    return op.to_expr()
+
+
+def geo_line_substring(arg, start, end):
+    """
+    Clip a substring from a LineString.
+
+    Returns a linestring that is a substring of the input one, starting
+    and ending at the given fractions of the total 2d length. The second
+    and third arguments are floating point values between zero and one.
+    This only works with linestrings.
+
+    Parameters
+    ----------
+    arg: linestring
+    start: float
+    end: float
+
+    Returns
+    -------
+    substring: linestring scalar
+    """
+    op = ops.GeoLineSubstring(arg, start, end)
+    return op.to_expr()
+
+
+def geo_ordering_equals(left, right):
+    """
+    Check if two geometries are equal and have the same point ordering.
+
+    Returns true if the two geometries are equal and the coordinates
+    are in the same order.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    ordering_equals : bool scalar
+    """
+    op = ops.GeoOrderingEquals(left, right)
+    return op.to_expr()
+
+
+def geo_overlaps(left, right):
+    """
+    Check if the geometries share space, are of the same dimension,
+    but are not completely contained by each other.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    overlaps : bool scalar
+    """
+    op = ops.GeoOverlaps(left, right)
+    return op.to_expr()
+
+
+def geo_point(
+    left: Union[NumericValue, int, float],
+    right: Union[NumericValue, int, float],
+) -> ops.GeoPoint:
+    """
+    Return a point constructed on the fly from the provided coordinate values.
+    Constant coordinates result in construction of a POINT literal.
+
+    Parameters
+    ----------
+    left : NumericValue, integer or float
+    right : NumericValue, integer or float
+
+    Returns
+    -------
+    point
+    """
+    op = ops.GeoPoint(left, right)
+    return op.to_expr()
+
+
+def geo_touches(left, right):
+    """
+    Check if the geometries have at least one point in common,
+    but do not intersect.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    touches : bool scalar
+    """
+    op = ops.GeoTouches(left, right)
+    return op.to_expr()
+
+
+def geo_distance(left, right):
+    """
+    Compute distance between two geo spatial data
+
+    Parameters
+    ----------
+    left : geometry or geography
+    right : geometry or geography
+
+    Returns
+    -------
+    distance : double scalar
+    """
+    op = ops.GeoDistance(left, right)
+    return op.to_expr()
+
+
+def geo_length(arg):
+    """
+    Compute length of a geo spatial data
+
+    Parameters
+    ----------
+    arg : geometry or geography
+
+    Returns
+    -------
+    length : double scalar
+    """
+    op = ops.GeoLength(arg)
+    return op.to_expr()
+
+
+def geo_perimeter(arg):
+    """
+    Compute perimeter of a geo spatial data
+
+    Parameters
+    ----------
+    arg : geometry or geography
+
+    Returns
+    -------
+    perimeter : double scalar
+    """
+    op = ops.GeoPerimeter(arg)
+    return op.to_expr()
+
+
+def geo_max_distance(left, right):
+    """Returns the 2-dimensional maximum distance between two geometries in
+    projected units. If g1 and g2 is the same geometry the function will
+    return the distance between the two vertices most far from each other
+    in that geometry
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    MaxDistance : double scalar
+    """
+    op = ops.GeoMaxDistance(left, right)
+    return op.to_expr()
+
+
+def geo_unary_union(arg):
+    """
+    Aggregate a set of geometries into a union.
+
+    This corresponds to the aggregate version of the PostGIS ST_Union.
+    We give it a different name (following the corresponding method
+    in GeoPandas) to avoid name conflicts with the non-aggregate version.
+
+    Parameters
+    ----------
+    arg : geometry column
+
+    Returns
+    -------
+    union : geometry scalar
+    """
+    expr = ops.GeoUnaryUnion(arg).to_expr()
+    expr = expr.name('union')
+    return expr
+
+
+def geo_union(left, right):
+    """
+    Merge two geometries into a union geometry.
+
+    Returns the pointwise union of the two geometries.
+    This corresponds to the non-aggregate version the PostGIS ST_Union.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    union : geometry scalar
+    """
+    op = ops.GeoUnion(left, right)
+    return op.to_expr()
+
+
+def geo_x(arg):
+    """Return the X coordinate of the point, or NULL if not available.
+    Input must be a point
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    X : double scalar
+    """
+    op = ops.GeoX(arg)
+    return op.to_expr()
+
+
+def geo_y(arg):
+    """Return the Y coordinate of the point, or NULL if not available.
+    Input must be a point
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    Y : double scalar
+    """
+    op = ops.GeoY(arg)
+    return op.to_expr()
+
+
+def geo_x_min(arg):
+    """Returns Y minima of a geometry
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    XMin : double scalar
+    """
+    op = ops.GeoXMin(arg)
+    return op.to_expr()
+
+
+def geo_x_max(arg):
+    """Returns X maxima of a geometry
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    XMax : double scalar
+    """
+    op = ops.GeoXMax(arg)
+    return op.to_expr()
+
+
+def geo_y_min(arg):
+    """Returns Y minima of a geometry
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    YMin : double scalar
+    """
+    op = ops.GeoYMin(arg)
+    return op.to_expr()
+
+
+def geo_y_max(arg):
+    """Returns Y maxima of a geometry
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    YMax : double scalar
+    """
+    op = ops.GeoYMax(arg)
+    return op.to_expr()
+
+
+def geo_start_point(arg):
+    """Returns the first point of a LINESTRING geometry as a POINT or
+    NULL if the input parameter is not a LINESTRING
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    Point : geometry scalar
+    """
+    op = ops.GeoStartPoint(arg)
+    return op.to_expr()
+
+
+def geo_end_point(arg):
+    """Returns the last point of a LINESTRING geometry as a POINT or
+    NULL if the input parameter is not a LINESTRING
+
+    Parameters
+    ----------
+    arg : geometry or geography
+
+    Returns
+    -------
+    EndPoint : geometry scalar
+    """
+    op = ops.GeoEndPoint(arg)
+    return op.to_expr()
+
+
+def geo_point_n(arg, n):
+    """Return the Nth point in a single linestring in the geometry.
+    Negative values are counted backwards from the end of the LineString,
+    so that -1 is the last point. Returns NULL if there is no linestring in
+    the geometry
+
+    Parameters
+    ----------
+    arg : geometry
+    n : integer
+
+    Returns
+    -------
+    PointN : geometry scalar
+    """
+    op = ops.GeoPointN(arg, n)
+    return op.to_expr()
+
+
+def geo_n_points(arg):
+    """Return the number of points in a geometry. Works for all geometries
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    NPoints : double scalar
+    """
+    op = ops.GeoNPoints(arg)
+    return op.to_expr()
+
+
+def geo_n_rings(arg):
+    """If the geometry is a polygon or multi-polygon returns the number of
+    rings. It counts the outer rings as well
+
+    Parameters
+    ----------
+    arg : geometry or geography
+
+    Returns
+    -------
+    NRings : double scalar
+    """
+    op = ops.GeoNRings(arg)
+    return op.to_expr()
+
+
+def geo_srid(arg):
+    """Returns the spatial reference identifier for the ST_Geometry
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    SRID : Integer scalar
+    """
+    op = ops.GeoSRID(arg)
+    return op.to_expr()
+
+
+def geo_set_srid(arg, srid):
+    """Set the spatial reference identifier for the ST_Geometry
+
+    Parameters
+    ----------
+    arg : geometry
+    srid : integer
+
+    Returns
+    -------
+    SetSRID : geometry
+    """
+    op = ops.GeoSetSRID(arg, srid)
+    return op.to_expr()
+
+
+def geo_buffer(arg, radius):
+    """Returns a geometry that represents all points whose distance from this
+    Geometry is less than or equal to distance. Calculations are in the
+    Spatial Reference System of this Geometry.
+
+    Parameters
+    ----------
+    arg : geometry
+    radius: double
+
+    Returns
+    -------
+    buffer : geometry scalar
+    """
+    op = ops.GeoBuffer(arg, radius)
+    return op.to_expr()
+
+
+def geo_centroid(arg):
+    """Returns the centroid of the geometry.
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    centroid : geometry scalar
+    """
+    op = ops.GeoCentroid(arg)
+    return op.to_expr()
+
+
+def geo_envelope(arg):
+    """Returns a geometry representing the bounding box of the arg.
+
+    Parameters
+    ----------
+    arg : geometry
+
+    Returns
+    -------
+    envelope : geometry scalar
+    """
+    op = ops.GeoEnvelope(arg)
+    return op.to_expr()
+
+
+def geo_within(left, right):
+    """
+    Check if the first geometry is completely inside of the second.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    within : bool scalar
+    """
+    op = ops.GeoWithin(left, right)
+    return op.to_expr()
+
+
+def geo_azimuth(left, right):
+    """
+    Check if the geometries have at least one point in common,
+    but do not intersect.
+
+    Parameters
+    ----------
+    left : point
+    right : point
+
+    Returns
+    -------
+    azimuth : float scalar
+    """
+    op = ops.GeoAzimuth(left, right)
+    return op.to_expr()
+
+
+def geo_intersection(left, right):
+    """
+    Return the intersection of two geometries.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    intersection : geometry scalar
+    """
+    op = ops.GeoIntersection(left, right)
+    return op.to_expr()
+
+
+def geo_difference(left, right):
+    """
+    Return the difference of two geometries.
+
+    Parameters
+    ----------
+    left : geometry
+    right : geometry
+
+    Returns
+    -------
+    difference : geometry scalar
+    """
+    op = ops.GeoDifference(left, right)
+    return op.to_expr()
+
+
+def geo_simplify(arg, tolerance, preserve_collapsed):
+    """
+    Simplify a given geometry.
+
+    Parameters
+    ----------
+    arg : geometry
+    tolerance: float
+    preserved_collapsed: boolean
+
+    Returns
+    -------
+    simplified : geometry scalar
+    """
+    op = ops.GeoSimplify(arg, tolerance, preserve_collapsed)
+    return op.to_expr()
+
+
+def geo_transform(arg, srid):
+    """
+    Transform a geometry into a new SRID.
+
+    Parameters
+    ----------
+    arg : geometry
+    srid: integer
+
+    Returns
+    -------
+    transformed : geometry scalar
+    """
+    op = ops.GeoTransform(arg, srid)
+    return op.to_expr()
+
+
+_geospatial_value_methods = dict(
+    area=geo_area,
+    as_binary=geo_as_binary,
+    as_ewkb=geo_as_ewkb,
+    as_ewkt=geo_as_ewkt,
+    as_text=geo_as_text,
+    azimuth=geo_azimuth,
+    buffer=geo_buffer,
+    centroid=geo_centroid,
+    contains=geo_contains,
+    contains_properly=geo_contains_properly,
+    covers=geo_covers,
+    covered_by=geo_covered_by,
+    crosses=geo_crosses,
+    d_fully_within=geo_d_fully_within,
+    difference=geo_difference,
+    disjoint=geo_disjoint,
+    distance=geo_distance,
+    d_within=geo_d_within,
+    end_point=geo_end_point,
+    envelope=geo_envelope,
+    equals=geo_equals,
+    geometry_n=geo_geometry_n,
+    geometry_type=geo_geometry_type,
+    intersection=geo_intersection,
+    intersects=geo_intersects,
+    is_valid=geo_is_valid,
+    line_locate_point=geo_line_locate_point,
+    line_merge=geo_line_merge,
+    line_substring=geo_line_substring,
+    length=geo_length,
+    max_distance=geo_max_distance,
+    n_points=geo_n_points,
+    n_rings=geo_n_rings,
+    ordering_equals=geo_ordering_equals,
+    overlaps=geo_overlaps,
+    perimeter=geo_perimeter,
+    point_n=geo_point_n,
+    set_srid=geo_set_srid,
+    simplify=geo_simplify,
+    srid=geo_srid,
+    start_point=geo_start_point,
+    touches=geo_touches,
+    transform=geo_transform,
+    union=geo_union,
+    within=geo_within,
+    x=geo_x,
+    x_max=geo_x_max,
+    x_min=geo_x_min,
+    y=geo_y,
+    y_max=geo_y_max,
+    y_min=geo_y_min,
+)
+_geospatial_column_methods = dict(unary_union=geo_unary_union)
+
+_add_methods(ir.GeoSpatialValue, _geospatial_value_methods)
+_add_methods(ir.GeoSpatialColumn, _geospatial_column_methods)
 
 # ----------------------------------------------------------------------
 # Boolean API
@@ -1577,7 +2632,7 @@ _boolean_column_methods = dict(
     all=_unary_op('all', ops.All),
     notall=_unary_op('notany', ops.NotAll),
     cumany=_unary_op('cumany', ops.CumulativeAny),
-    cumall=_unary_op('cumall', ops.CumulativeAll)
+    cumall=_unary_op('cumall', ops.CumulativeAll),
 )
 
 
@@ -1586,7 +2641,33 @@ _add_methods(ir.BooleanColumn, _boolean_column_methods)
 
 
 # ---------------------------------------------------------------------
+# Binary API
+
+
+def hashbytes(arg, how='sha256'):
+    """
+    Compute a binary hash value for the indicated value expression.
+
+    Parameters
+    ----------
+    arg : binary or string value expression
+    how : {'md5', 'sha1', 'sha256', 'sha512'}, default 'sha256'
+      Hash algorithm to use
+
+    Returns
+    -------
+    hash_value : binary expression
+    """
+    return ops.HashBytes(arg, how).to_expr()
+
+
+_binary_value_methods = dict(hashbytes=hashbytes)
+_add_methods(ir.BinaryValue, _binary_value_methods)
+
+
+# ---------------------------------------------------------------------
 # String API
+
 
 def _string_substr(self, start, length=None):
     """
@@ -1815,7 +2896,7 @@ def _string_like(self, patterns):
         (
             ops.StringSQLLike(self, pattern).to_expr()
             for pattern in util.promote_list(patterns)
-        )
+        ),
     )
 
 
@@ -1843,7 +2924,7 @@ def _string_ilike(self, patterns):
         (
             ops.StringSQLILike(self, pattern).to_expr()
             for pattern in util.promote_list(patterns)
-        )
+        ),
     )
 
 
@@ -1958,8 +3039,9 @@ def parse_url(arg, extract, key=None):
 
     Parameters
     ----------
-    extract : one of {'PROTOCOL', 'HOST', 'PATH', 'REF',
-                'AUTHORITY', 'FILE', 'USERINFO', 'QUERY'}
+    extract : str
+        One of {'PROTOCOL', 'HOST', 'PATH', 'REF', 'AUTHORITY', 'FILE',
+            'USERINFO', 'QUERY'}
     key : string (optional)
 
     Examples
@@ -2016,26 +3098,38 @@ def _string_dunder_contains(arg, substr):
 def _string_getitem(self, key):
     if isinstance(key, slice):
         start, stop, step = key.start, key.stop, key.step
-        if step and step != 1:
+
+        if step is not None and not isinstance(step, ir.Expr) and step != 1:
             raise ValueError('Step can only be 1')
 
-        start = start or 0
+        if not isinstance(start, ir.Expr):
+            if start is not None and start < 0:
+                raise ValueError(
+                    'Negative slicing not yet supported, got start value of '
+                    '{:d}'.format(start)
+                )
+            if start is None:
+                start = 0
 
-        if start < 0 or stop < 0:
-            raise ValueError('negative slicing not yet supported')
+        if not isinstance(stop, ir.Expr):
+            if stop is not None and stop < 0:
+                raise ValueError(
+                    'Negative slicing not yet supported, got stop value of '
+                    '{:d}'.format(stop)
+                )
+            if stop is None:
+                stop = self.length()
 
         return self.substr(start, stop - start)
-    elif isinstance(key, six.integer_types):
+    elif isinstance(key, int):
         return self.substr(key, 1)
-    else:
-        raise NotImplementedError(
-            'string __getitem__[{}]'.format(type(key).__name__)
-        )
+    raise NotImplementedError(
+        'string __getitem__[{}]'.format(type(key).__name__)
+    )
 
 
 _string_value_methods = dict(
     __getitem__=_string_getitem,
-
     length=_unary_op('length', ops.StringLength),
     lower=_unary_op('lower', ops.Lowercase),
     upper=_unary_op('upper', ops.Uppercase),
@@ -2045,11 +3139,10 @@ _string_value_methods = dict(
     lstrip=_unary_op('lstrip', ops.LStrip),
     rstrip=_unary_op('rstrip', ops.RStrip),
     capitalize=_unary_op('initcap', ops.Capitalize),
-
     convert_base=convert_base,
-
     __contains__=_string_dunder_contains,
     contains=_string_contains,
+    hashbytes=hashbytes,
     like=_string_like,
     ilike=_string_ilike,
     rlike=re_search,
@@ -2059,7 +3152,6 @@ _string_value_methods = dict(
     re_replace=regex_replace,
     to_timestamp=to_timestamp,
     parse_url=parse_url,
-
     substr=_string_substr,
     left=_string_left,
     right=_string_right,
@@ -2102,8 +3194,9 @@ def _array_slice(array, index):
     if isinstance(index, slice):
         start = index.start
         stop = index.stop
-        if ((start is not None and start < 0) or
-                (stop is not None and stop < 0)):
+        if (start is not None and start < 0) or (
+            stop is not None and stop < 0
+        ):
             raise ValueError('negative slicing not yet supported')
 
         step = index.step
@@ -2111,11 +3204,7 @@ def _array_slice(array, index):
         if step is not None and step != 1:
             raise NotImplementedError('step can only be 1')
 
-        op = ops.ArraySlice(
-            array,
-            start if start is not None else 0,
-            stop,
-        )
+        op = ops.ArraySlice(array, start if start is not None else 0, stop)
     else:
         op = ops.ArrayIndex(array, index)
     return op.to_expr()
@@ -2135,6 +3224,7 @@ _add_methods(ir.ArrayValue, _array_column_methods)
 
 # ---------------------------------------------------------------------
 # Map API
+
 
 def get(expr, key, default=None):
     """
@@ -2183,16 +3273,46 @@ def _struct_get_field(expr, field_name):
     return ops.StructField(expr, field_name).to_expr().name(field_name)
 
 
-_struct_column_methods = dict(
+def _destructure(expr: StructColumn) -> DestructColumn:
+    """ Destructure a ``Struct`` to create a destruct column.
+
+    When assigned, a destruct column will destructured and assigned to multiple
+    columns.
+
+    Parameters
+    ----------
+    expr : StructColumn
+        The struct column to destructure.
+
+    Returns
+    -------
+    destruct_expr: ibis.expr.types.DestructColumn
+        A destruct column expression.
+    """
+    # Set name to empty string here so that we can detect and error when
+    # user set name for a destruct column.
+    if isinstance(expr, StructScalar):
+        return DestructScalar(expr._arg, expr._dtype).name("")
+    elif isinstance(expr, StructColumn):
+        return DestructColumn(expr._arg, expr._dtype).name("")
+    elif isinstance(expr, StructValue):
+        return DestructValue(expr._arg, expr._dtype).name("")
+    else:
+        raise AssertionError()
+
+
+_struct_value_methods = dict(
+    destructure=_destructure,
     __getattr__=_struct_get_field,
     __getitem__=_struct_get_field,
 )
 
-_add_methods(ir.StructValue, _struct_column_methods)
+_add_methods(ir.StructValue, _struct_value_methods)
 
 
 # ---------------------------------------------------------------------
 # Timestamp API
+
 
 def _timestamp_truncate(arg, unit):
     """
@@ -2239,31 +3359,24 @@ def _timestamp_strftime(arg, format_str):
 
 
 def _timestamp_time(arg):
-    """
-    Return a Time node for a Timestamp
-    We can then perform certain operations on this node
-    w/o actually instantiating the underlying structure
-    (which is inefficient in pandas/numpy)
+    """Return a Time node for a Timestamp.
+
+    We can perform certain operations on this node w/o actually instantiating
+    the underlying structure (which is inefficient in pandas/numpy)
 
     Returns
     -------
-    Time node
+    TimeValue
     """
-    if PY2:
-        raise ValueError("time support is not enabled on python 2")
     return ops.Time(arg).to_expr()
 
 
 def _timestamp_date(arg):
-    """
-    Return a Date node for a Timestamp
-    We can then perform certain operations on this node
-    w/o actually instantiating the underlying structure
-    (which is inefficient in pandas/numpy)
+    """Return a Date for a Timestamp.
 
     Returns
     -------
-    Date node
+    DateValue
     """
     return ops.Date(arg).to_expr()
 
@@ -2293,7 +3406,7 @@ Returns
 -------
 DayOfWeek
     An namespace expression containing methods to use to extract information.
-"""
+""",
 )
 
 
@@ -2302,6 +3415,11 @@ _timestamp_value_methods = dict(
     year=_extract_field('year', ops.ExtractYear),
     month=_extract_field('month', ops.ExtractMonth),
     day=_extract_field('day', ops.ExtractDay),
+    day_of_week=_day_of_week,
+    day_of_year=_extract_field('day_of_year', ops.ExtractDayOfYear),
+    quarter=_extract_field('quarter', ops.ExtractQuarter),
+    epoch_seconds=_extract_field('epoch', ops.ExtractEpochSeconds),
+    week_of_year=_extract_field('week_of_year', ops.ExtractWeekOfYear),
     hour=_extract_field('hour', ops.ExtractHour),
     minute=_extract_field('minute', ops.ExtractMinute),
     second=_extract_field('second', ops.ExtractSecond),
@@ -2309,19 +3427,14 @@ _timestamp_value_methods = dict(
     truncate=_timestamp_truncate,
     time=_timestamp_time,
     date=_timestamp_date,
-
     __sub__=_timestamp_sub,
     sub=_timestamp_sub,
-
     __add__=_timestamp_add,
     add=_timestamp_add,
-
     __radd__=_timestamp_radd,
     radd=_timestamp_radd,
-
     __rsub__=_timestamp_sub,
     rsub=_timestamp_sub,
-    day_of_week=_day_of_week,
 )
 
 _add_methods(ir.TimestampValue, _timestamp_value_methods)
@@ -2371,20 +3484,19 @@ _date_value_methods = dict(
     month=_extract_field('month', ops.ExtractMonth),
     day=_extract_field('day', ops.ExtractDay),
     day_of_week=_day_of_week,
-
+    day_of_year=_extract_field('day_of_year', ops.ExtractDayOfYear),
+    quarter=_extract_field('quarter', ops.ExtractQuarter),
+    epoch_seconds=_extract_field('epoch', ops.ExtractEpochSeconds),
+    week_of_year=_extract_field('week_of_year', ops.ExtractWeekOfYear),
     truncate=_date_truncate,
-
     __sub__=_date_sub,
     sub=_date_sub,
-
     __rsub__=_date_sub,
     rsub=_date_sub,
-
     __add__=_date_add,
     add=_date_add,
-
     __radd__=_date_add,
-    radd=_date_add
+    radd=_date_add,
 )
 
 _add_methods(ir.DateValue, _date_value_methods)
@@ -2406,7 +3518,10 @@ Returns
 -------
 IntegerValue
     The number of {0}s in the expression
-""".format(name))
+""".format(
+            name
+        ),
+    )
 
 
 _interval_add = _binop_expr('__add__', ops.IntervalAdd)
@@ -2429,25 +3544,18 @@ _interval_value_methods = dict(
     milliseconds=_interval_property('ms', 'millisecond'),
     microseconds=_interval_property('us', 'microsecond'),
     nanoseconds=_interval_property('ns', 'nanosecond'),
-
     __add__=_interval_add,
     add=_interval_add,
-
     __sub__=_interval_sub,
     sub=_interval_sub,
-
     __radd__=_interval_radd,
     radd=_interval_radd,
-
     __mul__=_interval_mul,
     mul=_interval_mul,
-
     __rmul__=_interval_rmul,
     rmul=_interval_rmul,
-
     __floordiv__=_interval_floordiv,
     floordiv=_interval_floordiv,
-
     __neg__=negate,
     negate=negate,
 )
@@ -2457,6 +3565,7 @@ _add_methods(ir.IntervalValue, _interval_value_methods)
 
 # ---------------------------------------------------------------------
 # Time API
+
 
 def between_time(arg, lower, upper, timezone=None):
     """Check if the input expr falls between the lower/upper bounds passed.
@@ -2472,15 +3581,15 @@ def between_time(arg, lower, upper, timezone=None):
     -------
     BooleanValue
     """
-
-    if isinstance(arg.op(), ops.Time):
+    op = arg.op()
+    if isinstance(op, ops.Time):
         # Here we pull out the first argument to the underlying Time operation
         # which is by definition (in _timestamp_value_methods) a
         # TimestampValue. We do this so that we can potentially specialize the
         # "between time" operation for timestamp_value_expr.time().between().
         # A similar mechanism is triggered when creating expressions like
         # t.column.distinct().count(), which is turned into t.column.nunique().
-        arg = arg.op().args[0]
+        arg = op.arg
         if timezone is not None:
             arg = arg.cast(dt.Timestamp(timezone=timezone))
         op = ops.BetweenTime(arg, lower, upper)
@@ -2533,18 +3642,14 @@ _time_value_methods = dict(
     minute=_extract_field('minute', ops.ExtractMinute),
     second=_extract_field('second', ops.ExtractSecond),
     millisecond=_extract_field('millisecond', ops.ExtractMillisecond),
-
     __sub__=_time_sub,
     sub=_time_sub,
-
     __rsub__=_time_sub,
     rsub=_time_sub,
-
     __add__=_time_add,
     add=_time_add,
-
     __radd__=_time_add,
-    radd=_time_add
+    radd=_time_add,
 )
 
 _add_methods(ir.TimeValue, _time_value_methods)
@@ -2566,9 +3671,7 @@ _add_methods(ir.DecimalValue, _decimal_value_methods)
 # Category API
 
 
-_category_value_methods = dict(
-    label=_analytics.category_label
-)
+_category_value_methods = dict(label=_analytics.category_label)
 
 _add_methods(ir.CategoryValue, _category_value_methods)
 
@@ -2586,7 +3689,7 @@ _join_classes = {
     'left_semi': ops.LeftSemiJoin,
     'semi': ops.LeftSemiJoin,
     'anti': ops.LeftAntiJoin,
-    'cross': ops.CrossJoin
+    'cross': ops.CrossJoin,
 }
 
 
@@ -2783,6 +3886,7 @@ def _table_set_column(table, name, expr):
 def _regular_join_method(name, how, doc=None):
     def f(self, other, predicates=()):
         return self.join(other, predicates, how=how)
+
     if doc:
         f.__doc__ = doc
     else:
@@ -2934,6 +4038,7 @@ def _table_union(left, right, distinct=False):
 
     Parameters
     ----------
+    left : TableExpr
     right : TableExpr
     distinct : boolean, default False
         Only union distinct rows not occurring in the calling table (this
@@ -2943,8 +4048,42 @@ def _table_union(left, right, distinct=False):
     -------
     union : TableExpr
     """
-    op = ops.Union(left, right, distinct=distinct)
-    return op.to_expr()
+    return ops.Union(left, right, distinct=distinct).to_expr()
+
+
+def _table_intersect(left: TableExpr, right: TableExpr):
+    """
+    Form the table set intersect of two table expressions having identical
+    schemas. An intersect returns only the common rows between the two tables.
+
+    Parameters
+    ----------
+    left : TableExpr
+    right : TableExpr
+
+    Returns
+    -------
+    intersection : TableExpr
+    """
+    return ops.Intersection(left, right).to_expr()
+
+
+def _table_difference(left: TableExpr, right: TableExpr):
+    """
+    Form the table set difference of two table expressions having identical
+    schemas. A set difference returns only the rows present in the left table
+    that are not present in the right table
+
+    Parameters
+    ----------
+    left : TableExpr
+    right : TableExpr
+
+    Returns
+    -------
+    difference : TableExpr
+    """
+    return ops.Difference(left, right).to_expr()
 
 
 def _table_to_array(self):
@@ -2965,23 +4104,6 @@ def _table_materialize(table):
 
     op = ops.MaterializedJoin(table)
     return op.to_expr()
-
-
-def add_column(table, expr, name=None):
-    """
-    Add indicated column expression to table, producing a new table. Note:
-    this is a shortcut for performing a projection having the same effect.
-
-    Returns
-    -------
-    modified_table : TableExpr
-    """
-    warnings.warn('add_column is deprecated, use mutate(name=expr, ...)',
-                  DeprecationWarning)
-    if name is not None:
-        return table.mutate(**{name: expr})
-    else:
-        return table.mutate(expr)
 
 
 def _safe_get_name(expr):
@@ -3017,8 +4139,8 @@ def mutate(table, exprs=None, **mutations):
     UnboundTable[table]
       name: t
       schema:
-        foo : double
-        bar : double
+        foo : float64
+        bar : float64
     <BLANKLINE>
     Selection[table]
       table:
@@ -3027,12 +4149,12 @@ def mutate(table, exprs=None, **mutations):
         Table: ref_0
         baz = Literal[int8]
           5
-        qux = Add[double*]
+        qux = Add[float64*]
           left:
-            foo = Column[double*] 'foo' from table
+            foo = Column[float64*] 'foo' from table
               ref_0
           right:
-            bar = Column[double*] 'bar' from table
+            bar = Column[float64*] 'bar' from table
               ref_0
 
     Using the :meth:`ibis.expr.types.Expr.name` method to name the new columns
@@ -3042,45 +4164,35 @@ def mutate(table, exprs=None, **mutations):
     >>> expr2 = table.mutate(new_columns)
     >>> expr.equals(expr2)
     True
+
     """
-    if exprs is None:
-        exprs = []
-    else:
-        exprs = util.promote_list(exprs)
+    exprs = [] if exprs is None else util.promote_list(exprs)
+    exprs.extend(
+        (expr(table) if util.is_function(expr) else as_value_expr(expr)).name(
+            name
+        )
+        for name, expr in sorted(mutations.items(), key=operator.itemgetter(0))
+    )
 
-    for k, v in sorted(mutations.items()):
-        if util.is_function(v):
-            v = v(table)
-        else:
-            v = as_value_expr(v)
-
-        # TODO(phillipc): Fix this by making expressions hashable
-        named_v = v.name(k) if _safe_get_name(v) != k else v
-        exprs.append(named_v)
-
-    has_replacement = False
     for expr in exprs:
-        if expr.get_name() in table:
-            has_replacement = True
+        if expr.get_name() and isinstance(expr, ir.DestructColumn):
+            raise com.ExpressionError(
+                f"Cannot name a destruct column: {expr.get_name()}"
+            )
 
-    if has_replacement:
-        by_name = dict((x.get_name(), x) for x in exprs)
-        used = set()
-        proj_exprs = []
-        for c in table.columns:
-            if c in by_name:
-                proj_exprs.append(by_name[c])
-                used.add(c)
-            else:
-                proj_exprs.append(c)
+    by_name = collections.OrderedDict(
+        (expr.get_name(), expr) for expr in exprs
+    )
+    columns = table.columns
+    used = by_name.keys() & columns
 
-        for x in exprs:
-            if x.get_name() not in used:
-                proj_exprs.append(x)
-
-        return table.projection(proj_exprs)
+    if used:
+        proj_exprs = [
+            by_name.get(column, table[column]) for column in columns
+        ] + [expr for name, expr in by_name.items() if name not in used]
     else:
-        return table.projection([table] + exprs)
+        proj_exprs = [table] + exprs
+    return table.projection(proj_exprs)
 
 
 def projection(table, exprs):
@@ -3117,7 +4229,7 @@ def projection(table, exprs):
       name: t
       schema:
         a : int64
-        b : double
+        b : float64
     <BLANKLINE>
     Selection[table]
       table:
@@ -3125,9 +4237,9 @@ def projection(table, exprs):
       selections:
         a = Column[int64*] 'a' from table
           ref_0
-        b_plus_1 = Add[double*]
+        b_plus_1 = Add[float64*]
           left:
-            b = Column[double*] 'b' from table
+            b = Column[float64*] 'b' from table
               ref_0
           right:
             Literal[int8]
@@ -3145,7 +4257,7 @@ def projection(table, exprs):
       name: t
       schema:
         a : int64
-        b : double
+        b : float64
     <BLANKLINE>
     Selection[table]
       table:
@@ -3158,9 +4270,9 @@ def projection(table, exprs):
             where:
               None
           <ibis.expr.window.Window object at 0x...>
-        mean_b = WindowOp[double*]
-          mean_b = Mean[double]
-            b = Column[double*] 'b' from table
+        mean_b = WindowOp[float64*]
+          mean_b = Mean[float64]
+            b = Column[float64*] 'b' from table
               ref_0
             where:
               None
@@ -3177,11 +4289,10 @@ def projection(table, exprs):
     """
     import ibis.expr.analysis as L
 
-    if isinstance(exprs, (Expr,) + six.string_types):
+    if isinstance(exprs, (Expr, str)):
         exprs = [exprs]
 
     projector = L.Projector(table, exprs)
-
     op = projector.get_result()
     return op.to_expr()
 
@@ -3237,22 +4348,44 @@ def _table_view(self):
 
 
 def _table_drop(self, fields):
-    if len(fields) == 0:
-        # noop
+    if not fields:
+        # no-op if nothing to be dropped
         return self
 
-    fields = set(fields)
-    to_project = []
-    for name in self.schema():
-        if name in fields:
-            fields.remove(name)
-        else:
-            to_project.append(name)
+    schema = self.schema()
+    field_set = frozenset(fields)
+    missing_fields = field_set.difference(schema)
 
-    if len(fields) > 0:
-        raise KeyError('Fields not in table: {0!s}'.format(fields))
+    if missing_fields:
+        raise KeyError('Fields not in table: {0!s}'.format(missing_fields))
 
-    return self.projection(to_project)
+    return self[[field for field in schema if field not in field_set]]
+
+
+def _rowid(self):
+    """
+    An autonumeric representing the row number of the results.
+
+    It can be 0 or 1 indexed depending on the backend. Check the backend
+    documentation.
+
+    Note that this is different from the window function row number
+    (even if they are conceptually the same), and different from row
+    id in backends where it represents the physical location (e.g. Oracle
+    or PostgreSQL's ctid).
+
+    Returns
+    -------
+    ir.IntegerColumn
+
+    Examples
+    --------
+    >>> my_table[my_table.rowid(), my_table.name].execute()
+    1|Ibis
+    2|pandas
+    3|Dask
+    """
+    return ops.RowID().to_expr()
 
 
 _table_methods = dict(
@@ -3266,7 +4399,6 @@ _table_methods = dict(
     set_column=_table_set_column,
     filter=filter,
     materialize=_table_materialize,
-    add_column=add_column,
     mutate=mutate,
     projection=projection,
     select=projection,
@@ -3284,7 +4416,10 @@ _table_methods = dict(
     sort_by=_table_sort_by,
     to_array=_table_to_array,
     union=_table_union,
-    view=_table_view
+    intersect=_table_intersect,
+    difference=_table_difference,
+    view=_table_view,
+    rowid=_rowid,
 )
 
 
@@ -3308,6 +4443,6 @@ def prevent_rewrite(expr, client=None):
     sql_query_result : ir.TableExpr
     """
     if client is None:
-        client, = ibis.client.find_backends(expr)
+        (client,) = ibis.client.find_backends(expr)
     query = client.compile(expr)
     return ops.SQLQueryResult(query, expr.schema(), client).to_expr()

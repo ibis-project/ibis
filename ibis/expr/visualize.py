@@ -1,62 +1,12 @@
-import itertools
 import tempfile
+from html import escape
 
-import graphviz as g
-
-from ibis.compat import zip_longest
+import graphviz as gv
 
 import ibis
-import ibis.common as com
-import ibis.expr.types as ir
+import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-
-
-def get_args(node):
-
-    if isinstance(node, (ops.Aggregation, ops.Selection)):
-        return get_args_selection_aggregation(node)
-    elif isinstance(node, ops.Join):
-        return get_args_join(node)
-    else:
-        args = (arg for arg in node.args if isinstance(arg, ir.Expr))
-        names = getattr(node, 'argnames', [])
-        return zip_longest(args, names)
-
-
-def get_args_selection_aggregation(node):
-    return zip_longest(
-        itertools.chain(
-            [node.table],
-            itertools.chain.from_iterable(
-                getattr(node, argname) or [None]
-                for argname in (node.argnames or []) if argname != 'table'
-            )
-        ),
-        itertools.chain(
-            ['table'],
-            itertools.chain.from_iterable(
-                [
-                    '{}[{:d}]'.format(argname, i)
-                    for i in range(len(getattr(node, argname)))
-                ] or [None]
-                for argname in (node.argnames or []) if argname != 'table'
-            )
-        ),
-    )
-
-
-def get_args_join(node):
-    return zip(
-        [node.left, node.right] + node.predicates,
-        ['left', 'right'] + list(itertools.chain.from_iterable(
-            [
-                '{}[{:d}]'.format(argname, i)
-                for i in range(len(getattr(node, argname)))
-            ] or [None]
-            for argname in (node.argnames or [])
-            if argname not in {'left', 'right'}
-        ))
-    )
+import ibis.expr.types as ir
 
 
 def get_type(expr):
@@ -76,9 +26,11 @@ def get_type(expr):
     except com.IbisError:
         op = expr.op()
         assert isinstance(op, ops.Join)
-        left_table_name = op.left.op().name or ops.genname()
+        left_table_name = getattr(op.left.op(), 'name', None) or ops.genname()
         left_schema = op.left.schema()
-        right_table_name = op.right.op().name or ops.genname()
+        right_table_name = (
+            getattr(op.right.op(), 'name', None) or ops.genname()
+        )
         right_schema = op.right.schema()
         pairs = [
             ('{}.{}'.format(left_table_name, left_column), type)
@@ -89,17 +41,22 @@ def get_type(expr):
         ]
         schema = ibis.schema(pairs)
 
-    return ''.join(
-        '<BR ALIGN="LEFT" />  <I>{}</I>: {}'.format(name, type)
-        for name, type in zip(schema.names, schema.types)
-    ) + '<BR ALIGN="LEFT" />'
+    return (
+        ''.join(
+            '<BR ALIGN="LEFT" />  <I>{}</I>: {}'.format(
+                escape(name), escape(str(type))
+            )
+            for name, type in zip(schema.names, schema.types)
+        )
+        + '<BR ALIGN="LEFT" />'
+    )
 
 
 def get_label(expr, argname=None):
     import ibis.expr.operations as ops
 
     node = expr.op()
-    typename = get_type(expr)
+    typename = get_type(expr)  # Already an escaped string
     name = type(node).__name__
     nodename = getattr(node, 'name', argname)
     if nodename is not None:
@@ -107,55 +64,51 @@ def get_label(expr, argname=None):
             label_fmt = '<<I>{}</I>: <B>{}</B>{}>'
         else:
             label_fmt = '<<I>{}</I>: <B>{}</B> \u27f6 {}>'
-        label = label_fmt.format(nodename, name, typename)
+        label = label_fmt.format(escape(nodename), escape(name), typename)
     else:
         if isinstance(node, ops.TableNode):
             label_fmt = '<<B>{}</B>{}>'
         else:
-            label_fmt = '<{} \u27f6 {}>'
-        label = label_fmt.format(name, typename)
+            label_fmt = '<<B>{}</B> \u27f6 {}>'
+        label = label_fmt.format(escape(name), typename)
     return label
 
 
+DEFAULT_NODE_ATTRS = {'shape': 'box', 'fontname': 'Deja Vu Sans Mono'}
+
+
 def to_graph(expr, node_attr=None, edge_attr=None):
-    if node_attr is None:
-        node_attr = {
-            'shape': 'box',
-            'fontname': 'Deja Vu Sans Mono',
-        }
-
-    if edge_attr is None:
-        edge_attr = {
-            'dir': 'back',
-        }
-
-    stack = [expr]
+    stack = [(expr, expr._safe_name)]
     seen = set()
-    labeled = set()
+    g = gv.Digraph(
+        node_attr=node_attr or DEFAULT_NODE_ATTRS, edge_attr=edge_attr or {}
+    )
 
-    graph = g.Digraph(node_attr=node_attr, edge_attr=edge_attr)
+    g.attr(rankdir='BT')
 
     while stack:
-        e = stack.pop()
-        node = e.op()
-        a = str(hash(node))
+        e, ename = stack.pop()
+        vkey = e._key, ename
 
-        if a not in seen:
-            seen.add(a)
+        if vkey not in seen:
+            seen.add(vkey)
 
-            if a not in labeled:
-                label = get_label(e)
-                graph.node(a, label=label)
+            vlabel = get_label(e, argname=ename)
+            vhash = str(hash(vkey))
+            g.node(vhash, label=vlabel)
 
-            for arg, arg_name in get_args(node):
-                if arg is not None:
-                    b = str(hash(arg.op()))
-                    label = get_label(arg, arg_name)
-                    graph.node(b, label=label)
-                    labeled.add(b)
-                    graph.edge(a, b)
-                    stack.append(arg)
-    return graph
+            node = e.op()
+            args = node.args
+            for arg, name in zip(args, node.signature.names()):
+                if isinstance(arg, ir.Expr):
+                    u = arg, name
+                    ukey = arg._key, name
+                    uhash = str(hash(ukey))
+                    ulabel = get_label(arg, argname=name)
+                    g.node(uhash, label=ulabel)
+                    g.edge(uhash, vhash)
+                    stack.append(u)
+    return g
 
 
 def draw(graph, path=None, format='png'):
@@ -185,7 +138,6 @@ if __name__ == '__main__':
     b = df.b
     filt = df[(a + b * 2 * b / b ** 3 > 4) & (b > 5)]
     expr = filt.groupby(filt.c).aggregate(
-        amean=filt.a.mean(),
-        bsum=filt.b.sum(),
+        amean=filt.a.mean(), bsum=filt.b.sum()
     )
     expr.visualize()

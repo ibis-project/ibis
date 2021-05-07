@@ -12,8 +12,13 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import glob
 import datetime
+import glob
+import os
+
+import sphinx_rtd_theme  # noqa: E402
+
+from ibis import __version__ as version  # noqa: E402
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -31,19 +36,23 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.extlinks',
+    'sphinx.ext.intersphinx',
     'sphinx.ext.mathjax',
-    'numpydoc',
+    'sphinx.ext.napoleon',
     'nbsphinx',
-
     'IPython.sphinxext.ipython_directive',
     'IPython.sphinxext.ipython_console_highlighting',
+    'releases',
 ]
-
-autosummary_generate = glob.glob("*.rst")
-
-# autosummary_generate = True
-
-numpydoc_show_class_members = False
+napoleon_google_docstring = False
+napoleon_numpy_docstring = True
+releases_github_path = "ibis-project/ibis"
+releases_unstable_prehistory = True
+releases_document_name = [os.path.join("release", "index")]
+ipython_warning_is_error = True
+autosummary_generate = glob.glob("*.rst") + glob.glob(
+    os.path.join("backends", "*.rst")
+)
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -68,7 +77,6 @@ copyright = '{}, Ibis Developers'.format(datetime.date.today().year)
 # The short X.Y version.
 # version = '0.2'
 
-from ibis import __version__ as version  # noqa: E402
 
 # The full version, including alpha/beta/rc tags.
 release = version
@@ -85,7 +93,7 @@ release = version
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build', '**.ipynb_checkpoints']
+exclude_patterns = ['_build', '**.ipynb_checkpoints', 'tutorial/data']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -111,13 +119,20 @@ pygments_style = 'sphinx'
 # If true, keep warnings as "system message" paragraphs in the built documents.
 # keep_warnings = False
 
+# -- Options for intersphinx ----------------------------------------------
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+    'pydata-google-auth': (
+        'https://pydata-google-auth.readthedocs.io/en/latest/',
+        None,
+    ),
+}
 
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 
-import sphinx_rtd_theme  # noqa: E402
 
 html_theme = "sphinx_rtd_theme"
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
@@ -217,7 +232,7 @@ latex_elements = {}
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ('index', 'Ibis.tex', 'Ibis Documentation', 'Ibis Developers', 'manual'),
+    ('index', 'Ibis.tex', 'Ibis Documentation', 'Ibis Developers', 'manual')
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -242,17 +257,14 @@ latex_documents = [
 
 
 # extlinks alias
-extlinks = {'issue': ('https://github.com/ibis-project/ibis/issues/%s', '#')}
+extlinks = {'ghissue': ('https://github.com/ibis-project/ibis/issues/%s', '#')}
 
 
 # -- Options for manual page output ---------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    ('index', 'ibis', 'Ibis Documentation',
-     ['Ibis Developers'], 1)
-]
+man_pages = [('index', 'ibis', 'Ibis Documentation', ['Ibis Developers'], 1)]
 
 # If true, show URL addresses after external links.
 # man_show_urls = False
@@ -264,9 +276,15 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'Ibis', 'Ibis Documentation',
-   'Ibis Developers', 'Ibis', 'Pandas-like expressions for analytics',
-   'Miscellaneous'),
+    (
+        'index',
+        'Ibis',
+        'Ibis Documentation',
+        'Ibis Developers',
+        'Ibis',
+        'Pandas-like expressions for analytics',
+        'Miscellaneous',
+    )
 ]
 
 # Documents to append as an appendix to all manuals.

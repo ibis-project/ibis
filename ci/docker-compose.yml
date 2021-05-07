@@ -2,16 +2,18 @@ version: '3'
 services:
 
   postgres:
-    image: postgres
+    image: shajekpivotal/ibis-docker-postgres-9.5
+    hostname: postgres
     ports:
       - 5432:5432
     environment:
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ''
 
   mysql:
-    image: mariadb:10.2
+    image: mariadb:10.4.12
+    hostname: mysql
     ports:
-      - 3306:3306
+      - 3307:3306
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: 1
       MYSQL_DATABASE: ibis_testing
@@ -21,10 +23,6 @@ services:
   impala:
     image: ibisproject/impala:latest
     hostname: impala
-    networks:
-      default:
-        aliases:
-          - quickstart.cloudera
     environment:
       PGPASSWORD: postgres
     ports:
@@ -43,15 +41,28 @@ services:
       - 25000:25000
       - 25010:25010
       - 25020:25020
+    depends_on:
+      - postgres
+    # as postgres restart some times until be ready,
+    # dockerize -wait could finish before postgres
+    # be indead ready.
+    # Using sleep 40 seconds before in fact start
+    # helps to ensure postgres will be available.
+    entrypoint:
+      - bash
+      - -c
+      - "sleep 80 && supervisord -c /etc/supervisord.conf -n"
 
   clickhouse:
-    image: yandex/clickhouse-server:1.1.54388
+    image: yandex/clickhouse-server:18.14
+    hostname: clickhouse
     ports:
       - 8123:8123
       - 9000:9000
 
   kudu-master:
     image: ibisproject/kudu:latest
+    hostname: kudu-master
     networks:
       default:
         aliases:
@@ -66,6 +77,7 @@ services:
 
   kudu-tserver:
     image: ibisproject/kudu:latest
+    hostname: kudu-tserver
     cap_add:
       - SYS_TIME
     ports:
@@ -74,70 +86,43 @@ services:
     environment:
       KUDU_MASTER: "false"
 
-  mapd:
-    image: mapd/mapd-ce-cpu:v3.6.0
+  omniscidb:
+    # NOTE: Keep the documentation about the OmniSciDB supported version
+    #       updated (docs/source/backends/omnisci.rst).
+    image: omnisci/core-os-cpu:v5.3.0
+    hostname: omniscidb
+
     ports:
-      - "9091-9092:9091-9092"
-    environment:
-      - MAPD_HOST=mapd
-      - MAPD_PORT=9091
-      - MAPD_DATABASE=ibis_testing
-      - MAPD_USER=mapd
+      - 6274:6274
+      - 6278:6278
     volumes:
-      - ./mapd.conf:/mapd-storage/mapd.conf
+      - ./omniscidb.conf:/omnisci-storage/omnisci.conf
 
   waiter:
     image: jwilder/dockerize
-    command: |
-      dockerize -wait tcp://mapd:9091
-                -wait tcp://mysql:3306
-                -wait tcp://postgres:5432
-                -wait tcp://impala:21050
-                -wait tcp://impala:50070
-                -wait tcp://kudu-master:7051
-                -wait tcp://kudu-master:8051
-                -wait tcp://kudu-tserver:7050
-                -wait tcp://kudu-tserver:8050
-                -wait tcp://clickhouse:9000
-                -wait-retry-interval 5s
-                -timeout 5m
 
   ibis:
-    image: ibis:${PYTHON_VERSION:-3.6}
-    environment:
-      IBIS_TEST_DOWNLOAD_DIRECTORY: /tmp
-      IBIS_TEST_DATA_DIRECTORY: /tmp/ibis-testing-data
-      IBIS_TEST_SQLITE_DATABASE: /tmp/ibis_testing.db
-      IBIS_TEST_NN_HOST: impala
-      IBIS_TEST_IMPALA_HOST: impala
-      IBIS_TEST_IMPALA_PORT: 21050
-      IBIS_TEST_WEBHDFS_PORT: 50070
-      IBIS_TEST_WEBHDFS_USER: hdfs
-      IBIS_TEST_MYSQL_HOST: mysql
-      IBIS_TEST_MYSQL_PORT: 3306
-      IBIS_TEST_MYSQL_USER: ibis
-      IBIS_TEST_MYSQL_PASSWORD: ibis
-      IBIS_TEST_MYSQL_DATABASE: ibis_testing
-      IBIS_TEST_POSTGRES_HOST: postgres
-      IBIS_TEST_POSTGRES_PORT: 5432
-      IBIS_TEST_POSTGRES_USER: postgres
-      IBIS_TEST_POSTGRES_PASSWORD: postgres
-      IBIS_TEST_POSTGRES_DATABASE: ibis_testing
-      IBIS_TEST_CLICKHOUSE_HOST: clickhouse
-      IBIS_TEST_CLICKHOUSE_PORT: 9000
-      IBIS_TEST_CLICKHOUSE_DATABASE: ibis_testing
-      IBIS_TEST_MAPD_HOST: mapd
-      IBIS_TEST_MAPD_PORT: 9091
-      IBIS_TEST_MAPD_DATABASE: ibis_testing
-      IBIS_TEST_MAPD_USER: mapd
-      IBIS_TEST_MAPD_PASSWORD: HyperInteractive
-      GOOGLE_BIGQUERY_PROJECT_ID: ibis-gbq
-      GOOGLE_APPLICATION_CREDENTIALS: /tmp/gcloud-service-key.json
+    image: ibis:${PYTHON_VERSION:-3.7}
+    env_file:
+      - ./.env
     volumes:
       - /tmp/ibis:/tmp
+      - ..:/ibis
     build:
       context: ..
-      dockerfile: ci/Dockerfile
+      dockerfile: ci/Dockerfile.dev
       args:
-        PYTHON: ${PYTHON_VERSION:-3.6}
-        ENVKIND: ${ENVKIND:-dev}
+        PYTHON_VERSION: ${PYTHON_VERSION:-3.7}
+
+  ibis-docs:
+    image: ibis-docs:${PYTHON_VERSION:-3.7}
+    env_file:
+      - ./.env
+    volumes:
+      - /tmp/ibis:/tmp
+      - ..:/ibis
+    build:
+      context: ..
+      dockerfile: ci/Dockerfile.docs
+      args:
+        PYTHON_VERSION: ${PYTHON_VERSION:-3.7}

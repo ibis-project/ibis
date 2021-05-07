@@ -5,202 +5,10 @@
 API Reference
 *************
 
-.. currentmodule:: ibis
-
-.. _api.client:
-
-Creating connections
---------------------
-
-These methods are in the ``ibis`` module namespace, and your main point of
-entry to using Ibis.
-
-.. autosummary::
-   :toctree: generated/
-
-   hdfs_connect
-
-Impala client
--------------
-.. currentmodule:: ibis.impala.api
-
-These methods are available on the Impala client object after connecting to
-your HDFS cluster (``ibis.hdfs_connect``) and connecting to Impala with
-``ibis.impala.connect``.
-
-.. autosummary::
-   :toctree: generated/
-
-   connect
-   ImpalaClient.close
-   ImpalaClient.database
-
-Database methods
-~~~~~~~~~~~~~~~~
-
-.. autosummary::
-   :toctree: generated/
-
-   ImpalaClient.set_database
-   ImpalaClient.create_database
-   ImpalaClient.drop_database
-   ImpalaClient.list_databases
-   ImpalaClient.exists_database
-
-.. autosummary::
-   :toctree: generated/
-
-   ImpalaDatabase.create_table
-   ImpalaDatabase.drop
-   ImpalaDatabase.namespace
-   ImpalaDatabase.table
-
-Table methods
-~~~~~~~~~~~~~
-
-The ``ImpalaClient`` object itself has many helper utility methods. You'll find
-the most methods on ``ImpalaTable``.
-
-.. autosummary::
-   :toctree: generated/
-
-   ImpalaClient.database
-   ImpalaClient.table
-   ImpalaClient.sql
-   ImpalaClient.raw_sql
-   ImpalaClient.list_tables
-   ImpalaClient.exists_table
-   ImpalaClient.drop_table
-   ImpalaClient.create_table
-   ImpalaClient.insert
-   ImpalaClient.truncate_table
-   ImpalaClient.get_schema
-   ImpalaClient.cache_table
-   ImpalaClient.load_data
-   ImpalaClient.get_options
-   ImpalaClient.set_options
-   ImpalaClient.set_compression_codec
-
-
-The best way to interact with a single table is through the ``ImpalaTable``
-object you get back from ``ImpalaClient.table``.
-
-.. autosummary::
-   :toctree: generated/
-
-   ImpalaTable.add_partition
-   ImpalaTable.alter
-   ImpalaTable.alter_partition
-   ImpalaTable.column_stats
-   ImpalaTable.compute_stats
-   ImpalaTable.describe_formatted
-   ImpalaTable.drop
-   ImpalaTable.drop_partition
-   ImpalaTable.files
-   ImpalaTable.insert
-   ImpalaTable.invalidate_metadata
-   ImpalaTable.load_data
-   ImpalaTable.metadata
-   ImpalaTable.partition_schema
-   ImpalaTable.partitions
-   ImpalaTable.refresh
-   ImpalaTable.rename
-   ImpalaTable.stats
-
-Creating views is also possible:
-
-.. autosummary::
-   :toctree: generated/
-
-   ImpalaClient.create_view
-   ImpalaClient.drop_view
-   ImpalaClient.drop_table_or_view
-
-Accessing data formats in HDFS
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-   :toctree: generated/
-
-   ImpalaClient.avro_file
-   ImpalaClient.delimited_file
-   ImpalaClient.parquet_file
-
-Executing expressions
-~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-   :toctree: generated/
-
-   ImpalaClient.execute
-   ImpalaClient.disable_codegen
-
-.. _api.postgres:
-
-PostgreSQL client
------------------
-.. currentmodule:: ibis.sql.postgres.api
-
-The PostgreSQL client is accessible through the ``ibis.postgres`` namespace.
-
-Use ``ibis.postgres.connect`` with a SQLAlchemy-compatible connection string to
-create a client.
-
-.. autosummary::
-   :toctree: generated/
-
-   connect
-   PostgreSQLClient.database
-   PostgreSQLClient.list_tables
-   PostgreSQLClient.list_databases
-   PostgreSQLClient.table
-
-.. _api.sqlite:
-
-SQLite client
--------------
-.. currentmodule:: ibis.sql.sqlite.api
-
-The SQLite client is accessible through the ``ibis.sqlite`` namespace.
-
-Use ``ibis.sqlite.connect`` to create a SQLite client.
-
-.. autosummary::
-   :toctree: generated/
-
-   connect
-   SQLiteClient.attach
-   SQLiteClient.database
-   SQLiteClient.list_tables
-   SQLiteClient.table
-
-.. _api.hdfs:
-
-HDFS
-----
-
-Client objects have an ``hdfs`` attribute you can use to interact directly with
-HDFS.
-
-.. currentmodule:: ibis
-
-.. autosummary::
-   :toctree: generated/
-
-   HDFS.ls
-   HDFS.chmod
-   HDFS.chown
-   HDFS.get
-   HDFS.head
-   HDFS.put
-   HDFS.put_tarfile
-   HDFS.rm
-   HDFS.rmdir
-   HDFS.size
-   HDFS.status
-
 Top-level expression APIs
 -------------------------
+
+.. currentmodule:: ibis
 
 These methods are available directly in the ``ibis`` module namespace.
 
@@ -225,8 +33,11 @@ These methods are available directly in the ``ibis`` module namespace.
    expr_list
    row_number
    window
+   range_window
    trailing_window
    cumulative_window
+   trailing_range_window
+   random
 
 .. _api.expr:
 
@@ -254,10 +65,10 @@ Table methods
 .. autosummary::
    :toctree: generated/
 
-   TableExpr.add_column
    TableExpr.aggregate
    TableExpr.count
    TableExpr.distinct
+   TableExpr.drop
    TableExpr.info
    TableExpr.filter
    TableExpr.get_column
@@ -268,6 +79,7 @@ Table methods
    TableExpr.mutate
    TableExpr.projection
    TableExpr.relabel
+   TableExpr.rowid
    TableExpr.schema
    TableExpr.set_column
    TableExpr.sort_by
@@ -474,6 +286,7 @@ All timestamp operations are valid either on scalar or array values
    TimestampValue.month
    TimestampValue.day
    TimestampValue.day_of_week
+   TimestampValue.epoch_seconds
    TimestampValue.hour
    TimestampValue.minute
    TimestampValue.second
@@ -499,6 +312,7 @@ Date methods
    DateValue.month
    DateValue.day
    DateValue.day_of_week
+   DateValue.epoch_seconds
    DateValue.truncate
    DateValue.add
    DateValue.radd
@@ -604,3 +418,74 @@ Decimal methods
 
    DecimalValue.precision
    DecimalValue.scale
+
+.. _api.geospatial:
+
+Geospatial methods
+-------------------
+
+Scalar or column methods
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   GeoSpatialValue.area
+   GeoSpatialValue.as_binary
+   GeoSpatialValue.as_ewkb
+   GeoSpatialValue.as_ewkt
+   GeoSpatialValue.as_text
+   GeoSpatialValue.azimuth
+   GeoSpatialValue.buffer
+   GeoSpatialValue.centroid
+   GeoSpatialValue.contains
+   GeoSpatialValue.contains_properly
+   GeoSpatialValue.covers
+   GeoSpatialValue.covered_by
+   GeoSpatialValue.crosses
+   GeoSpatialValue.d_fully_within
+   GeoSpatialValue.d_within
+   GeoSpatialValue.difference
+   GeoSpatialValue.disjoint
+   GeoSpatialValue.distance
+   GeoSpatialValue.end_point
+   GeoSpatialValue.envelope
+   GeoSpatialValue.equals
+   GeoSpatialValue.geometry_n
+   GeoSpatialValue.geometry_type
+   GeoSpatialValue.intersection
+   GeoSpatialValue.intersects
+   GeoSpatialValue.is_valid
+   GeoSpatialValue.line_locate_point
+   GeoSpatialValue.line_merge
+   GeoSpatialValue.line_substring
+   GeoSpatialValue.length
+   GeoSpatialValue.max_distance
+   GeoSpatialValue.n_points
+   GeoSpatialValue.n_rings
+   GeoSpatialValue.ordering_equals
+   GeoSpatialValue.overlaps
+   GeoSpatialValue.perimeter
+   GeoSpatialValue.point_n
+   GeoSpatialValue.set_srid
+   GeoSpatialValue.simplify
+   GeoSpatialValue.srid
+   GeoSpatialValue.start_point
+   GeoSpatialValue.touches
+   GeoSpatialValue.transform
+   GeoSpatialValue.union
+   GeoSpatialValue.within
+   GeoSpatialValue.x
+   GeoSpatialValue.x_max
+   GeoSpatialValue.x_min
+   GeoSpatialValue.y
+   GeoSpatialValue.y_max
+   GeoSpatialValue.y_min
+
+Column methods
+~~~~~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   GeoSpatialColumn.unary_union

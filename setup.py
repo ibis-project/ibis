@@ -1,11 +1,11 @@
 #!/usr/bin/env python
+"""Ibis setup module."""
+import pathlib
+import sys
 
-import os
-
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 import versioneer
-
 
 LONG_DESCRIPTION = """
 Ibis is a productivity-centric Python big data framework.
@@ -13,47 +13,67 @@ Ibis is a productivity-centric Python big data framework.
 See http://ibis-project.org
 """
 
-impala_requires = [
-    'hdfs>=2.0.16',
-    'impyla>=0.14.0',
-    'sqlalchemy',
-    'requests',
-]
+VERSION = sys.version_info.major, sys.version_info.minor
 
-sqlite_requires = ['sqlalchemy']
+impala_requires = ['hdfs>=2.0.16', 'sqlalchemy>=1.1,<1.3.7', 'requests']
+impala_requires.append('impyla[kerberos]>=0.15.0')
+
+sqlite_requires = ['sqlalchemy>=1.1,<1.3.7']
 postgres_requires = sqlite_requires + ['psycopg2']
 mysql_requires = sqlite_requires + ['pymysql']
-mapd_requires = ['pymapd']
+
+omniscidb_requires = ['pymapd==0.24', 'pyarrow']
 kerberos_requires = ['requests-kerberos']
 visualization_requires = ['graphviz']
-clickhouse_requires = ['clickhouse-driver>=0.0.8', 'clickhouse-cityhash']
-bigquery_requires = ['google-cloud-bigquery>=1.0.0']
+clickhouse_requires = [
+    'clickhouse-driver>=0.1.3',
+    'clickhouse-cityhash',
+]
+bigquery_requires = [
+    'google-cloud-bigquery[bqstorage,pandas]>=1.12.0,<2.0.0dev',
+    'pydata-google-auth',
+]
 hdf5_requires = ['tables>=3.0.0']
-parquet_requires = ['pyarrow>=0.6.0']
+
+parquet_requires = ['pyarrow>=0.12.0']
+spark_requires = ['pyspark>=2.4.3']
+
+geospatial_requires = ['geoalchemy2', 'geopandas', 'shapely']
 
 all_requires = (
-    impala_requires +
-    postgres_requires +
-    mapd_requires +
-    mysql_requires +
-    kerberos_requires +
-    visualization_requires +
-    clickhouse_requires +
-    bigquery_requires +
-    hdf5_requires +
-    parquet_requires
+    impala_requires
+    + postgres_requires
+    + omniscidb_requires
+    + mysql_requires
+    + kerberos_requires
+    + visualization_requires
+    + clickhouse_requires
+    + bigquery_requires
+    + hdf5_requires
+    + parquet_requires
+    + spark_requires
+    + geospatial_requires
 )
 
 develop_requires = all_requires + [
+    'black',
     'click',
+    'pydocstyle==4.0.1',
     'flake8',
-    'pytest>=3',
+    'isort',
+    'mypy',
+    'pre-commit',
+    'pygit2',
+    'pytest>=4.5',
 ]
 
-with open(
-    os.path.join(os.path.dirname(__file__), 'requirements.txt'), 'rt'
-) as f:
-    install_requires = list(map(str.strip, f))
+install_requires = [
+    line.strip()
+    for line in pathlib.Path(__file__)
+    .parent.joinpath('requirements.txt')
+    .read_text()
+    .splitlines()
+]
 
 setup(
     name='ibis-framework',
@@ -62,33 +82,23 @@ setup(
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     install_requires=install_requires,
-    python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*',
+    python_requires='>=3.7',
     extras_require={
         'all': all_requires,
-        'develop:python_version < "3"': develop_requires + [
-            'thriftpy<=0.3.9',
-            'thrift<=0.9.3',
-            'mock',
-        ],
-        'develop:python_version >= "3"': develop_requires,
-        'impala:python_version < "3"': impala_requires + [
-            'thriftpy<=0.3.9',
-            'thrift<=0.9.3',
-        ],
-        'impala:python_version >= "3"': impala_requires,
+        'develop': develop_requires,
+        'impala': impala_requires,
         'kerberos': kerberos_requires,
         'postgres': postgres_requires,
-        'mapd:python_version >= "3"': mapd_requires,
+        'omniscidb': omniscidb_requires,
         'mysql': mysql_requires,
         'sqlite': sqlite_requires,
         'visualization': visualization_requires,
         'clickhouse': clickhouse_requires,
         'bigquery': bigquery_requires,
-        'csv:python_version < "3"': ['pathlib2'],
         'hdf5': hdf5_requires,
-        'hdf5:python_version < "3"': hdf5_requires + ['pathlib2'],
         'parquet': parquet_requires,
-        'parquet:python_version < "3"': parquet_requires + ['pathlib2'],
+        'spark': spark_requires,
+        'geospatial': geospatial_requires,
     },
     description="Productivity-centric Python Big Data Framework",
     long_description=LONG_DESCRIPTION,
@@ -97,12 +107,10 @@ setup(
         'Operating System :: OS Independent',
         'Intended Audience :: Science/Research',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 2.7',
         'Topic :: Scientific/Engineering',
     ],
     license='Apache License, Version 2.0',
     maintainer="Phillip Cloud",
-    maintainer_email="phillip.cloud@twosigma.com"
+    maintainer_email="phillip.cloud@twosigma.com",
 )

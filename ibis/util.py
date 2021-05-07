@@ -1,36 +1,72 @@
-from __future__ import print_function
-
+"""Ibis util functions."""
 import collections
 import functools
+import itertools
 import logging
 import operator
 import os
 import types
+from numbers import Real
+from typing import (
+    Any,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Type,
+    TypeVar,
+    Union,
+)
+from uuid import uuid4
 
-import six
-
+import pandas as pd
 import toolz
 
-import ibis.compat as compat
 from ibis.config import options
 
-
-def guid():
-    try:
-        from ibis.comms import uuid4_hex
-        return uuid4_hex()
-    except ImportError:
-        from uuid import uuid4
-        guid = uuid4()
-        return guid.hex if not compat.PY2 else guid.get_hex()
+T = TypeVar("T", covariant=True)
+U = TypeVar("U", covariant=True)
+V = TypeVar("V")
 
 
-def indent(text, spaces):
+def guid() -> str:
+    """Return a uuid4 hexadecimal value.
+
+    Returns
+    -------
+    string
+    """
+    return uuid4().hex
+
+
+def indent(text: str, spaces: int) -> str:
+    """Apply an indentation using the given spaces into the given text.
+
+    Parameters
+    ----------
+    text : string
+    spaces : string
+
+    Returns
+    -------
+    string
+    """
     prefix = ' ' * spaces
     return ''.join(prefix + line for line in text.splitlines(True))
 
 
-def is_one_of(values, t):
+def is_one_of(values: Sequence[T], t: Type[U]) -> Iterator[bool]:
+    """Check if the type of each value is the same of the given type.
+
+    Parameters
+    ----------
+    values : list or tuple
+    t : type
+
+    Returns
+    -------
+    tuple
+    """
     return (isinstance(x, t) for x in values)
 
 
@@ -38,133 +74,144 @@ any_of = toolz.compose(any, is_one_of)
 all_of = toolz.compose(all, is_one_of)
 
 
-def promote_list(val):
+def coerce_to_dataframe(data: Any, names: List[str]) -> pd.DataFrame:
+    """Coerce the following shapes to a DataFrame.
+
+    The following shapes are allowed:
+    (1) A list/tuple of Series
+    (2) A list/tuple of scalars
+    (3) A Series of list/tuple
+    (4) pd.DataFrame
+
+    Note:
+    This method does NOT always return a new DataFrame. If a DataFrame is
+    passed in, this method will return the original object.
+
+    Parameters
+    ----------
+    val : pd.DataFrame, a tuple/list of pd.Series or a pd.Series of tuple/list
+
+    Returns
+    -------
+    pd.DataFrame
+    """
+    if isinstance(data, pd.DataFrame):
+        result = data
+    elif isinstance(data, pd.Series):
+        num_cols = len(data.iloc[0])
+        series = [data.apply(lambda t: t[i]) for i in range(num_cols)]
+        result = pd.concat(series, axis=1)
+    elif isinstance(data, (tuple, list)):
+        if isinstance(data[0], pd.Series):
+            result = pd.concat(data, axis=1)
+        else:
+            # Promote scalar to Series
+            result = pd.concat([pd.Series([v]) for v in data], axis=1)
+    else:
+        raise ValueError(f"Cannot coerce to DataFrame: {data}")
+
+    result.columns = names
+    return result
+
+
+def promote_list(val: Union[V, List[V]]) -> List[V]:
+    """Ensure that the value is a list.
+
+    Parameters
+    ----------
+    val : list or object
+
+    Returns
+    -------
+    list
+    """
     if not isinstance(val, list):
         val = [val]
     return val
 
 
-class IbisSet(object):
+def is_function(v: Any) -> bool:
+    """Check if the given object is a function.
 
-    def __init__(self, keys=None):
-        self.keys = keys or []
+    Parameters
+    ----------
+    v : object
 
-    @classmethod
-    def from_list(cls, keys):
-        return IbisSet(keys)
-
-    def __contains__(self, obj):
-        for other in self.keys:
-            if obj.equals(other):
-                return True
-        return False
-
-    def add(self, obj):
-        self.keys.append(obj)
-
-
-class IbisMap(object):
-
-    def __init__(self):
-        self.keys = []
-        self.values = []
-
-    def __contains__(self, obj):
-        for other in self.keys:
-            if obj.equals(other):
-                return True
-        return False
-
-    def set(self, key, value):
-        self.keys.append(key)
-        self.values.append(value)
-
-    def get(self, key):
-        for k, v in zip(self.keys, self.values):
-            if key.equals(k):
-                return v
-        raise KeyError(key)
-
-
-def is_function(v):
+    Returns
+    -------
+    bool
+    """
     return isinstance(v, (types.FunctionType, types.LambdaType))
 
 
-def adjoin(space, *lists):
-    """
-    Glues together two sets of strings using the amount of space requested.
-    The idea is to prettify.
+def adjoin(space: int, *lists: Sequence[str]) -> str:
+    """Glue together two sets of strings using `space`.
 
-    Brought over from from pandas
+    Parameters
+    ----------
+    space : int
+    lists : list or tuple
+
+    Returns
+    -------
+    string
     """
-    out_lines = []
-    newLists = []
     lengths = [max(map(len, x)) + space for x in lists[:-1]]
 
     # not the last one
     lengths.append(max(map(len, lists[-1])))
-
-    maxLen = max(map(len, lists))
-    for i, lst in enumerate(lists):
-        nl = [x.ljust(lengths[i]) for x in lst]
-        nl.extend([' ' * lengths[i]] * (maxLen - len(lst)))
-        newLists.append(nl)
-    toJoin = zip(*newLists)
-    for lines in toJoin:
-        out_lines.append(_join_unicode(lines))
-    return _join_unicode(out_lines, sep='\n')
-
-
-def _join_unicode(lines, sep=''):
-    try:
-        return sep.join(lines)
-    except UnicodeDecodeError:
-        sep = compat.unicode_type(sep)
-        return sep.join([x.decode('utf-8') if isinstance(x, str) else x
-                         for x in lines])
+    max_len = max(map(len, lists))
+    chains = (
+        itertools.chain(
+            (x.ljust(length) for x in lst),
+            itertools.repeat(' ' * length, max_len - len(lst)),
+        )
+        for lst, length in zip(lists, lengths)
+    )
+    return '\n'.join(map(''.join, zip(*chains)))
 
 
-def log(msg):
+def log(msg: str) -> None:
+    """Log `msg` using ``options.verbose_log`` if set, otherwise ``print``.
+
+    Parameters
+    ----------
+    msg : string
+    """
     if options.verbose:
         (options.verbose_log or print)(msg)
 
 
-def approx_equal(a, b, eps):
+def approx_equal(a: Real, b: Real, eps: Real):
     """Return whether the difference between `a` and `b` is less than `eps`.
 
     Parameters
     ----------
-    a : numbers.Real
-    b : numbers.Real
-    eps : numbers.Real
+    a : real
+    b : real
+    eps : real
 
-    Returns
-    -------
-    are_diff : bool
+    Raises
+    ------
+    AssertionError
     """
     assert abs(a - b) < eps
 
 
-def implements(f):
-    # TODO: is this any different from functools.wraps?
-    def decorator(g):
-        g.__doc__ = f.__doc__
-        return g
-    return decorator
+def safe_index(elements: Sequence[T], value: T) -> int:
+    """Find the location of `value` in `elements`.
 
-
-def safe_index(elements, value):
-    """Find the location of `value` in `elements`, return -1 if `value` is
-    not found instead of raising ``ValueError``.
+    Return -1 if `value` is not found instead of raising ``ValueError``.
 
     Parameters
     ----------
-    elements : Sequence
-    value : object
+    elements : list or tuple
+    value : int
+        Index of the given sequence/elements
 
     Returns
     -------
-    location : object
+    int
 
     Examples
     --------
@@ -173,6 +220,7 @@ def safe_index(elements, value):
     1
     >>> safe_index(sequence, 4)
     -1
+
     """
     try:
         return elements.index(value)
@@ -180,8 +228,8 @@ def safe_index(elements, value):
         return -1
 
 
-def is_iterable(o):
-    """Return whether `o` is a non-string iterable.
+def is_iterable(o: Any) -> bool:
+    """Return whether `o` is iterable and not a :class:`str` or :class:`bytes`.
 
     Parameters
     ----------
@@ -190,14 +238,15 @@ def is_iterable(o):
 
     Returns
     -------
-    is_seq : bool
+    bool
 
     Examples
     --------
-    >>> x = '1'
-    >>> is_iterable(x)
+    >>> is_iterable('1')
     False
-    >>> is_iterable(iter(x))
+    >>> is_iterable(b'1')
+    False
+    >>> is_iterable(iter('1'))
     True
     >>> is_iterable(i for i in range(1))
     True
@@ -205,22 +254,28 @@ def is_iterable(o):
     False
     >>> is_iterable([])
     True
+
     """
-    return (not isinstance(o, six.string_types) and
-            isinstance(o, collections.Iterable))
+    return not isinstance(o, (str, bytes)) and isinstance(
+        o, collections.abc.Iterable
+    )
 
 
-def convert_unit(value, unit, to):
-    """Convert `value`--which is assumed to be in units of `unit`--to units of
-    `to`.
+def convert_unit(value, unit, to, floor=True):
+    """Convert a value between different units.
+
+    Convert `value`, is assumed to be in units of `unit`, to units of `to`.
+    If `floor` is true, then use floor division on `value` if necessary.
 
     Parameters
     ----------
     value : Union[numbers.Real, ibis.expr.types.NumericValue]
+    floor : Boolean
+        Flags whether or not to use floor division on `value` if necessary.
 
     Returns
     -------
-    result : Union[numbers.Integral, ibis.expr.types.NumericValue]
+    Union[numbers.Integral, ibis.expr.types.NumericValue]
 
     Examples
     --------
@@ -239,6 +294,7 @@ def convert_unit(value, unit, to):
     Traceback (most recent call last):
         ...
     ValueError: Cannot convert to or from variable length interval
+
     """
     # Don't do anything if from and to units are equivalent
     if unit == to:
@@ -261,17 +317,35 @@ def convert_unit(value, unit, to):
                 'Cannot convert to or from variable length interval'
             )
 
-    factor = functools.reduce(operator.mul, factors[min(i, j):max(i, j)], 1)
+    factor = functools.reduce(operator.mul, factors[min(i, j) : max(i, j)], 1)
     assert factor > 1
 
     if i < j:
         return value * factor
 
     assert i > j
-    return value // factor
+    if floor:
+        return value // factor
+    else:
+        return value / factor
 
 
-def get_logger(name, level=None, format=None, propagate=False):
+def get_logger(
+    name: str, level: str = None, format: str = None, propagate: bool = False
+) -> logging.Logger:
+    """Get a logger.
+
+    Parameters
+    ----------
+    name : string
+    level : string
+    format : string
+    propagate : bool, default False
+
+    Returns
+    -------
+    logging.Logger
+    """
     logging.basicConfig()
     handler = logging.StreamHandler()
 
@@ -287,7 +361,26 @@ def get_logger(name, level=None, format=None, propagate=False):
     logger = logging.getLogger(name)
     logger.propagate = propagate
     logger.setLevel(
-        level or getattr(
-            logging, os.environ.get('LOGLEVEL', 'WARNING').upper()))
+        level
+        or getattr(logging, os.environ.get('LOGLEVEL', 'WARNING').upper())
+    )
     logger.addHandler(handler)
     return logger
+
+
+# taken from the itertools documentation
+def consume(iterator: Iterator[T], n: Optional[int] = None) -> None:
+    """Advance the iterator n-steps ahead. If n is None, consume entirely.
+
+    Parameters
+    ----------
+    iterator : list or tuple
+    n : int, optional
+    """
+    # Use functions that consume iterators at C speed.
+    if n is None:
+        # feed the entire iterator into a zero-length deque
+        collections.deque(iterator, maxlen=0)
+    else:
+        # advance to the empty slice starting at position n
+        next(itertools.islice(iterator, n, n), None)
