@@ -363,7 +363,13 @@ class Summarize(AggregationContext):
                 'Object {} is not callable or a string'.format(function)
             )
 
-        return grouped_data.agg(wrap_for_agg(function, args, kwargs))
+        if isinstance(grouped_data, pd.core.groupby.generic.SeriesGroupBy):
+            # Using `apply` as a workaround for the fact that
+            # `SeriesGroupBy.agg` does not allow np.arrays to be returned
+            # from UDFs.
+            return grouped_data.apply(wrap_for_agg(function, args, kwargs))
+        else:
+            return grouped_data.agg(wrap_for_agg(function, args, kwargs))
 
 
 class Transform(AggregationContext):

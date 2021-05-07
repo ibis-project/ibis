@@ -432,6 +432,19 @@ def test_array_return_type_reduction_window(con, t, df, qs):
     tm.assert_series_equal(result, expected)
 
 
+def test_array_return_type_reduction_group_by(con, t, df, qs):
+    expr = t.groupby(t.key).aggregate(
+        quantiles_col=quantiles(t.b, quantiles=qs)
+    )
+    result = expr.execute()
+
+    df = df.compute()  # Convert to Pandas
+    expected_col = df.groupby(df.key).b.agg(lambda s: s.quantile(qs).tolist())
+    expected = pd.DataFrame({'quantiles_col': expected_col}).reset_index()
+
+    tm.assert_frame_equal(result, expected)
+
+
 def test_elementwise_udf_with_many_args(t2):
     @elementwise(
         input_type=[dt.double] * 16 + [dt.int32] * 8, output_type=dt.double
