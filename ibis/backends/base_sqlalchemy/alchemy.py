@@ -1345,7 +1345,7 @@ class AlchemyClient(SQLClient):
         Raises
         -------
         ValueError
-            You must pass either data_obj (pandas Dataframe) or 
+            You must pass either data_obj (pandas Dataframe) or
             from_table_name (table name to insert data from)
 
         NotImplementedError
