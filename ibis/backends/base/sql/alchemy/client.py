@@ -383,7 +383,8 @@ class AlchemyClient(SQLClient):
 
         if values is not None:
             raise NotImplementedError(
-                'Inserting with values is not implemented for SQLAlchemy backends'
+                'Inserting with values is not implemented for '
+                'SQLAlchemy backends'
             )
 
         params = {}
