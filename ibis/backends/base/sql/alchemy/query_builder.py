@@ -5,7 +5,7 @@ import sqlalchemy.sql as sql
 
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.backends.base_sqlalchemy.compiler import (
+from ibis.backends.base.sql.compiler import (
     QueryBuilder,
     Select,
     SelectBuilder,

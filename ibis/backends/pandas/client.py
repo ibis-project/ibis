@@ -80,11 +80,26 @@ _numpy_dtypes = toolz.keymap(
 
 
 _inferable_pandas_dtypes = {
-    'boolean': dt.boolean,
     'string': dt.string,
-    'unicode': dt.string,
     'bytes': dt.string,
-    'empty': dt.string,
+    'floating': dt.float64,
+    'integer': dt.int64,
+    'mixed-integer': dt.binary,
+    'mixed-integer-float': dt.float64,
+    'decimal': dt.binary,
+    'complex': dt.binary,
+    'categorical': dt.binary,
+    'boolean': dt.boolean,
+    'datetime64': dt.timestamp,
+    'datetime': dt.timestamp,
+    'date': dt.date,
+    'timedelta64': dt.interval,
+    'timedelta': dt.interval,
+    'time': dt.time,
+    'period': dt.binary,
+    'mixed': dt.binary,
+    'empty': dt.binary,
+    'unicode': dt.string,
 }
 
 
@@ -123,6 +138,51 @@ def infer_numpy_scalar(value):
     return dt.dtype(value.dtype)
 
 
+def _infer_pandas_series_contents(s: pd.Series) -> dt.DataType:
+    """Infer the type of the **contents** of a pd.Series.
+
+    No dispatch for this because there is no class representing "the contents
+    of a Series". Instead, this is meant to be used internally, mainly by
+    `infer_pandas_series`.
+
+    Parameters
+    ----------
+    s : pd.Series
+        The Series whose contents we want to know the type of
+
+    Returns
+    -------
+    dtype : dt.DataType
+        The dtype of the contents of the Series
+    """
+    if s.dtype == np.object_:
+        inferred_dtype = infer_pandas_dtype(s, skipna=True)
+        if inferred_dtype in {'mixed', 'decimal'}:
+            # We need to inspect an element to determine the Ibis dtype
+            value = s.iloc[0]
+            if isinstance(value, (np.ndarray, list, pd.Series)):
+                # Defer to individual `infer` functions for these
+                return dt.infer(value)
+            else:
+                return dt.dtype('binary')
+        else:
+            return _inferable_pandas_dtypes[inferred_dtype]
+    else:
+        return dt.dtype(s.dtype)
+
+
+@dt.infer.register(pd.Series)
+def infer_pandas_series(s):
+    """Infer the type of a pd.Series.
+
+    Note that the returned datatype will be an array type, which corresponds
+    to the fact that a Series is a collection of elements. Please use
+    `_infer_pandas_series_contents` if you are interested in the datatype
+    of the **contents** of the Series.
+    """
+    return dt.Array(_infer_pandas_series_contents(s))
+
+
 @dt.infer.register(pd.Timestamp)
 def infer_pandas_timestamp(value):
     if value.tz is not None:
@@ -133,8 +193,23 @@ def infer_pandas_timestamp(value):
 
 @dt.infer.register(np.ndarray)
 def infer_array(value):
-    # TODO(kszucs): infer series
-    return dt.Array(dt.dtype(value.dtype.name))
+    # In this function, by default we'll directly map the dtype of the
+    # np.array to a corresponding Ibis dtype (see bottom)
+    np_dtype = value.dtype
+
+    # However, there are some special cases where we can't use the np.array's
+    # dtype:
+    if np_dtype.type == np.object_:
+        # np.array dtype is `dtype('O')`, which is ambiguous.
+        inferred_dtype = infer_pandas_dtype(value, skipna=True)
+        return dt.Array(_inferable_pandas_dtypes[inferred_dtype])
+    elif np_dtype.type == np.str_:
+        # np.array dtype is `dtype('<U1')` (for np.arrays containing strings),
+        # which is ambiguous.
+        return dt.Array(dt.string)
+
+    # The dtype of the np.array is not ambiguous, and can be used directly.
+    return dt.Array(dt.dtype(np_dtype))
 
 
 @sch.schema.register(pd.Series)
@@ -155,21 +230,8 @@ def infer_pandas_schema(df, schema=None):
 
         if column_name in schema:
             ibis_dtype = dt.dtype(schema[column_name])
-        elif pandas_dtype == np.object_:
-            inferred_dtype = infer_pandas_dtype(df[column_name], skipna=True)
-            if inferred_dtype in {'mixed', 'decimal'}:
-                # TODO: in principal we can handle decimal (added in pandas
-                # 0.23)
-                raise TypeError(
-                    'Unable to infer type of column {0!r}. Try instantiating '
-                    'your table from the client with client.table('
-                    "'my_table', schema={{{0!r}: <explicit type>}})".format(
-                        column_name
-                    )
-                )
-            ibis_dtype = _inferable_pandas_dtypes[inferred_dtype]
         else:
-            ibis_dtype = dt.dtype(pandas_dtype)
+            ibis_dtype = _infer_pandas_series_contents(df[column_name])
 
         pairs.append((column_name, ibis_dtype))
 

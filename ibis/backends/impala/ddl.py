@@ -14,17 +14,17 @@
 
 import json
 
-from ibis.backends.base.sql import type_to_sql_string
-from ibis.backends.base_sqlalchemy import ddl as base_sql_ddl
-from ibis.backends.base_sqlalchemy.ddl import (
+from ibis.backends.base.sql.ddl import (
     AlterTable,
     BaseDDL,
     CreateTable,
     CreateTableWithSchema,
+    DropFunction,
     format_partition,
     format_schema,
     format_tblproperties,
 )
+from ibis.backends.base.sql.registry import type_to_sql_string
 
 
 class CreateTableParquet(CreateTable):
@@ -312,7 +312,7 @@ class CreateUDA(CreateFunction):
         return ' '.join([create_decl, impala_sig]) + ' ' + '\n'.join(tokens)
 
 
-class DropFunction(base_sql_ddl.DropFunction):
+class DropFunction(DropFunction):
     def _impala_signature(self):
         full_name = self._get_scoped_name(self.name, self.database)
         input_sig = _impala_input_signature(self.inputs)

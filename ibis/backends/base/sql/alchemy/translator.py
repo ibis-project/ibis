@@ -2,7 +2,7 @@ import ibis
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base_sqlalchemy.compiler import ExprTranslator, QueryContext
+from ibis.backends.base.sql.compiler import ExprTranslator, QueryContext
 
 from .datatypes import ibis_type_to_sqla, to_sqla_type
 from .query_builder import to_sqlalchemy

@@ -72,11 +72,6 @@ def test_list_tables(client):
     assert client.list_tables()
 
 
-def test_read_with_undiscoverable_type(client):
-    with pytest.raises(TypeError):
-        client.table('df_unknown')
-
-
 def test_drop(table):
     table = table.mutate(c=table.a)
     expr = table.drop(['a'])

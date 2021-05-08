@@ -13,7 +13,8 @@ Release Notes
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
 
-* :feature:`2613` Implement `.insert()` for SQLite
+* :feature:`2613` Implement `.insert()` for SQLAlchemy backends
+* :feature:`2753` Use `ndarray` as array representation in Pandas backend
 * :support:`2665` Move BigQuery backend to a `separate repository <https://github.com/ibis-project/ibis-bigquery>`_.
   The backend will be released separately, use `pip install ibis-bigquery` or `conda install ibis-bigquery` to
   install it, and then use as before.

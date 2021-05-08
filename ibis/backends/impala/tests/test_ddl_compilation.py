@@ -1,7 +1,12 @@
 import pytest
 
 import ibis
-from ibis.backends.base_sqlalchemy import ddl as base_ddl
+from ibis.backends.base.sql.ddl import (
+    CTAS,
+    CreateTableWithSchema,
+    DropTable,
+    InsertSelect,
+)
 from ibis.backends.impala import ddl
 from ibis.backends.impala.client import build_ast
 
@@ -9,12 +14,12 @@ pytestmark = pytest.mark.impala
 
 
 def test_drop_table_compile():
-    statement = base_ddl.DropTable('foo', database='bar', must_exist=True)
+    statement = DropTable('foo', database='bar', must_exist=True)
     query = statement.compile()
     expected = "DROP TABLE bar.`foo`"
     assert query == expected
 
-    statement = base_ddl.DropTable('foo', database='bar', must_exist=False)
+    statement = DropTable('foo', database='bar', must_exist=False)
     query = statement.compile()
     expected = "DROP TABLE IF EXISTS bar.`foo`"
     assert query == expected
@@ -31,7 +36,7 @@ def test_select_basics(t):
     expr = t.limit(10)
     select, _ = _get_select(expr)
 
-    stmt = base_ddl.InsertSelect(name, select, database='foo')
+    stmt = InsertSelect(name, select, database='foo')
     result = stmt.compile()
 
     expected = """\
@@ -41,7 +46,7 @@ FROM functional_alltypes
 LIMIT 10"""
     assert result == expected
 
-    stmt = base_ddl.InsertSelect(name, select, database='foo', overwrite=True)
+    stmt = InsertSelect(name, select, database='foo', overwrite=True)
     result = stmt.compile()
 
     expected = """\
@@ -249,7 +254,7 @@ def expr(t):
 def test_create_external_table_as(mockcon):
     path = '/path/to/table'
     select, _ = _get_select(mockcon.table('test1'))
-    statement = base_ddl.CTAS(
+    statement = CTAS(
         'another_table',
         select,
         external=True,
@@ -276,7 +281,7 @@ def test_create_table_with_location_compile():
     schema = ibis.schema(
         [('foo', 'string'), ('bar', 'int8'), ('baz', 'int16')]
     )
-    statement = base_ddl.CreateTableWithSchema(
+    statement = CreateTableWithSchema(
         'another_table',
         schema,
         can_exist=False,
@@ -532,7 +537,7 @@ def _create_table(
 ):
     ast = build_ast(expr)
     select = ast.queries[0]
-    statement = base_ddl.CTAS(
+    statement = CTAS(
         table_name,
         select,
         database=database,

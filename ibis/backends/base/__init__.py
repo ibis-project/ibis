@@ -65,7 +65,7 @@ class BaseBackend(abc.ABC):
 
             dialect_class = AlchemyDialect
         elif self.kind in ('sql', 'pandas', 'spark'):
-            from ibis.backends.base_sqlalchemy.compiler import Dialect
+            from ibis.backends.base.sql.compiler import Dialect
 
             dialect_class = Dialect
         else:

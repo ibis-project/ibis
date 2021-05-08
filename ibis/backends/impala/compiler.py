@@ -1,6 +1,13 @@
-import ibis.backends.base_sqlalchemy.compiler as comp
 import ibis.expr.operations as ops
-from ibis.backends.base.sql import (
+from ibis.backends.base.sql.compiler import (
+    ExprTranslator,
+    QueryBuilder,
+    QueryContext,
+    Select,
+    SelectBuilder,
+    TableSetFormatter,
+)
+from ibis.backends.base.sql.registry import (
     binary_infix_ops,
     operation_registry,
     quote_identifier,
@@ -16,18 +23,18 @@ def build_ast(expr, context=None):
     return builder.get_result()
 
 
-class ImpalaSelectBuilder(comp.SelectBuilder):
+class ImpalaSelectBuilder(SelectBuilder):
     @property
     def _select_class(self):
         return ImpalaSelect
 
 
-class ImpalaQueryBuilder(comp.QueryBuilder):
+class ImpalaQueryBuilder(QueryBuilder):
 
     select_builder = ImpalaSelectBuilder
 
 
-class ImpalaSelect(comp.Select):
+class ImpalaSelect(Select):
 
     """
     A SELECT statement which, after execution, might yield back to the user a
@@ -44,7 +51,7 @@ class ImpalaSelect(comp.Select):
         return ImpalaTableSetFormatter
 
 
-class ImpalaTableSetFormatter(comp.TableSetFormatter):
+class ImpalaTableSetFormatter(TableSetFormatter):
     def _get_join_type(self, op):
         jname = self._join_names[type(op)]
 
@@ -58,7 +65,7 @@ class ImpalaTableSetFormatter(comp.TableSetFormatter):
         return quote_identifier(name)
 
 
-class ImpalaQueryContext(comp.QueryContext):
+class ImpalaQueryContext(QueryContext):
     def _to_sql(self, expr, ctx):
         builder = ImpalaQueryBuilder(expr, context=ctx)
         ast = builder.get_result()
@@ -66,7 +73,7 @@ class ImpalaQueryContext(comp.QueryContext):
         return query.compile()
 
 
-class ImpalaExprTranslator(comp.ExprTranslator):
+class ImpalaExprTranslator(ExprTranslator):
     _registry = {**operation_registry, **binary_infix_ops}
     context_class = ImpalaQueryContext
 

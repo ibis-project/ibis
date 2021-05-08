@@ -26,11 +26,6 @@ def test_literal(client):
     assert client.execute(ibis.literal(1)) == 1
 
 
-def test_read_with_undiscoverable_type(client):
-    with pytest.raises(TypeError):
-        client.table('df')
-
-
 def test_selection(t, df):
     expr = t[
         ((t.plain_strings == 'a') | (t.plain_int64 == 3))

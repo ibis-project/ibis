@@ -10,7 +10,7 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.util as util
-from ibis.backends.base_sqlalchemy.compiler import Dialect
+from ibis.backends.base.sql.compiler import Dialect
 from ibis.client import Query, SQLClient
 
 from .datatypes import to_sqla_type

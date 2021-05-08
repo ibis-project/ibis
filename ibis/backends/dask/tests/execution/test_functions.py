@@ -153,6 +153,11 @@ def test_clip(t, df, ibis_func, dask_func):
     tm.assert_series_equal(result.compute(), expected.compute())
 
 
+@pytest.mark.xfail(
+    raises=NotImplementedError,
+    reason='TODO - arrays - #2553'
+    # Need an ops.MultiQuantile execution func that dispatches on ndarrays
+)
 @pytest.mark.parametrize(
     ('ibis_func', 'dask_func'),
     [
@@ -205,6 +210,11 @@ def test_arraylike_functions_transform_errors(t, df, ibis_func, exc):
         ibis_func(t.float64_with_zeros).execute()
 
 
+@pytest.mark.xfail(
+    raises=NotImplementedError,
+    reason='TODO - arrays - #2553'
+    # Need an ops.MultiQuantile execution func that dispatches on ndarrays
+)
 def test_quantile_array_access(client, t, df):
     quantile = t.float64_with_zeros.quantile([0.25, 0.5])
     expr = quantile[0], quantile[1]
