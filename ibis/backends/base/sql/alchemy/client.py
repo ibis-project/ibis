@@ -371,7 +371,7 @@ class AlchemyClient(SQLClient):
           (table name to insert data from)
 
         NotImplementedError
-          Inserting with values is not implemented for SQLite
+          Inserting with values is not implemented for SQLAlchemy backends
 
         """
 
@@ -383,7 +383,7 @@ class AlchemyClient(SQLClient):
 
         if values is not None:
             raise NotImplementedError(
-                'Inserting with values is not implemented for SQLite'
+                'Inserting with values is not implemented for SQLAlchemy backends'
             )
 
         params = {}
