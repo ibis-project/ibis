@@ -136,10 +136,7 @@ def test_insert_from_dataframe(con, df):
 
     temporary_post_insert = con.table('temporary_alltypes')
 
-    tm.assert_frame_equal(
-        temporary_post_insert.execute(),
-        records
-    )
+    tm.assert_frame_equal(temporary_post_insert.execute(), records)
 
 
 def test_insert_from_table(con, from_table_name):
@@ -155,16 +152,12 @@ def test_insert_from_table(con, from_table_name):
     temporary = con.table('temporary_alltypes')
 
     assert len(temporary.execute()) == 0
-    con.insert(
-        'temporary_alltypes',
-        from_table_name=from_table_name
-    )
+    con.insert('temporary_alltypes', from_table_name=from_table_name)
 
     temporary_post_insert = con.table('temporary_alltypes')
 
     from_table = con.table(from_table_name)
 
     tm.assert_frame_equal(
-        temporary_post_insert.execute(),
-        from_table.execute()
+        temporary_post_insert.execute(), from_table.execute()
     )
