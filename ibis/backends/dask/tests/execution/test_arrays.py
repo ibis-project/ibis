@@ -1,6 +1,7 @@
 import operator
 
 import dask.dataframe as dd
+import numpy as np
 import pandas as pd
 import pytest
 from dask.dataframe.utils import tm
@@ -87,6 +88,11 @@ def test_array_collect_scalar(client):
     assert result == expected
 
 
+@pytest.mark.xfail(
+    raises=NotImplementedError,
+    reason='TODO - arrays - #2553'
+    # Need an ops.ArraySlice execution func that dispatches on dd.Series
+)
 @pytest.mark.parametrize(
     ['start', 'stop'],
     [
@@ -98,27 +104,28 @@ def test_array_collect_scalar(client):
         (None, None),
         (3, None),
         # negative slices are not supported
-        param(
-            -3,
-            None,
-            marks=pytest.mark.xfail(
-                raises=ValueError, reason='Negative slicing not supported'
-            ),
-        ),
-        param(
-            None,
-            -3,
-            marks=pytest.mark.xfail(
-                raises=ValueError, reason='Negative slicing not supported'
-            ),
-        ),
-        param(
-            -3,
-            -1,
-            marks=pytest.mark.xfail(
-                raises=ValueError, reason='Negative slicing not supported'
-            ),
-        ),
+        # TODO: uncomment once test as a whole is not xfailed
+        # param(
+        #     -3,
+        #     None,
+        #     marks=pytest.mark.xfail(
+        #         raises=ValueError, reason='Negative slicing not supported'
+        #     ),
+        # ),
+        # param(
+        #     None,
+        #     -3,
+        #     marks=pytest.mark.xfail(
+        #         raises=ValueError, reason='Negative slicing not supported'
+        #     ),
+        # ),
+        # param(
+        #     -3,
+        #     -1,
+        #     marks=pytest.mark.xfail(
+        #         raises=ValueError, reason='Negative slicing not supported'
+        #     ),
+        # ),
     ],
 )
 def test_array_slice(t, df, start, stop):
@@ -169,7 +176,7 @@ def test_array_slice_scalar(client, start, stop):
     expr = value[start:stop]
     result = client.execute(expr)
     expected = raw_value[start:stop]
-    assert result == expected
+    assert np.array_equal(result, expected)
 
 
 @pytest.mark.parametrize('index', [1, 3, 4, 11, -11])
@@ -199,6 +206,11 @@ def test_array_index_scalar(client, index):
     assert result == expected
 
 
+@pytest.mark.xfail(
+    raises=NotImplementedError,
+    reason='TODO - arrays - #2553'
+    # Need an ops.ArrayRepeat execution func that dispatches on dd.Series
+)
 @pytest.mark.parametrize('n', [1, 3, 4, 7, -2])  # negative returns empty list
 @pytest.mark.parametrize('mul', [lambda x, n: x * n, lambda x, n: n * x])
 def test_array_repeat(t, df, n, mul):
@@ -218,9 +230,14 @@ def test_array_repeat_scalar(client, n, mul):
     expr = mul(array, n)
     result = client.execute(expr)
     expected = mul(raw_array, n)
-    assert result == expected
+    assert np.array_equal(result, expected)
 
 
+@pytest.mark.xfail(
+    raises=NotImplementedError,
+    reason='TODO - arrays - #2553'
+    # Need an ops.ArrayConcat execution func that dispatches on dd.Series
+)
 @pytest.mark.parametrize('op', [lambda x, y: x + y, lambda x, y: y + x])
 def test_array_concat(t, df, op):
     x = t.array_of_float64.cast('array<string>')
@@ -242,4 +259,5 @@ def test_array_concat_scalar(client, op):
     right = ibis.literal(raw_right)
     expr = op(left, right)
     result = client.execute(expr)
-    assert result == op(raw_left, raw_right)
+    expected = op(raw_left, raw_right)
+    assert np.array_equal(result, expected)

@@ -122,10 +122,14 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
                 # we compute so we can work with items inside downstream.
                 result = lazy_result.compute()
             else:
+                output_meta = op._output_type.to_dask()
+                if isinstance(output_meta, pandas.DatetimeTZDtype):
+                    # patch until https://github.com/dask/dask/pull/7627
+                    output_meta = pandas.Timestamp(
+                        1, tz=output_meta.tz, unit=output_meta.unit
+                    )
                 result = dd.from_delayed(
-                    lazy_result,
-                    meta=op._output_type.to_dask(),
-                    verify_meta=False,
+                    lazy_result, meta=output_meta, verify_meta=False
                 )
 
         return result
