@@ -49,6 +49,6 @@ dependencies:
   - nbsphinx
   - nomkl
   - semantic_version=2.6 # https://github.com/ibis-project/ibis/issues/2027
-  - sphinx
+  - sphinx #
   - sphinx-releases
   - sphinx_rtd_theme
