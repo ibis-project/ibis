@@ -364,10 +364,15 @@ class Summarize(AggregationContext):
             )
 
         if isinstance(grouped_data, pd.core.groupby.generic.SeriesGroupBy):
-            # Using `apply` as a workaround for the fact that
             # `SeriesGroupBy.agg` does not allow np.arrays to be returned
-            # from UDFs.
-            return grouped_data.apply(wrap_for_agg(function, args, kwargs))
+            # from UDFs. To work around this, we will use `Series.agg`
+            # manually on each group. (#2768)
+            return pd.Series(
+                {
+                    k: v.agg(wrap_for_agg(function, args, kwargs))
+                    for k, v in grouped_data
+                }
+            )
         else:
             return grouped_data.agg(wrap_for_agg(function, args, kwargs))
 
