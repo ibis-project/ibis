@@ -98,7 +98,7 @@ def zscore(series):
     input_type=[dt.double], output_type=dt.Array(dt.double),
 )
 def quantiles(series, *, quantiles):
-    return list(series.quantile(quantiles))
+    return np.array(series.quantile(quantiles))
 
 
 def test_udf(t, df):
