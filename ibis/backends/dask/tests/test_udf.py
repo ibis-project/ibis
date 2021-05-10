@@ -449,6 +449,7 @@ def qs(request):
 
 
 def test_array_return_type_reduction(con, t, df, qs):
+    """Tests reduction UDF returning an array."""
     expr = quantiles(t.b, quantiles=qs)
     result = expr.execute()
     expected = df.b.quantile(qs).compute()
@@ -459,11 +460,26 @@ def test_array_return_type_reduction(con, t, df, qs):
     raises=NotImplementedError, reason='TODO - windowing - #2553'
 )
 def test_array_return_type_reduction_window(con, t, df, qs):
+    """Tests reduction UDF returning an array, used over a window."""
     expr = quantiles(t.b, quantiles=qs).over(ibis.window())
     result = expr.execute()
     expected_raw = df.b.quantile(qs).tolist()
     expected = pd.Series([expected_raw] * len(df))
     tm.assert_series_equal(result, expected)
+
+
+def test_array_return_type_reduction_group_by(con, t, df, qs):
+    """Tests reduction UDF returning an array, used in a grouped agg."""
+    expr = t.groupby(t.key).aggregate(
+        quantiles_col=quantiles(t.b, quantiles=qs)
+    )
+    result = expr.execute()
+
+    df = df.compute()  # Convert to Pandas
+    expected_col = df.groupby(df.key).b.agg(lambda s: s.quantile(qs).tolist())
+    expected = pd.DataFrame({'quantiles_col': expected_col}).reset_index()
+
+    tm.assert_frame_equal(result, expected)
 
 
 def test_elementwise_udf_with_many_args(t2):
