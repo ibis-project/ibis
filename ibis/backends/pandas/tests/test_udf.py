@@ -2,7 +2,7 @@ import collections
 
 import numpy as np
 import pandas as pd
-import pandas.testing as tm
+import pandas._testing as tm
 import pytest
 
 import ibis
@@ -397,8 +397,8 @@ def test_array_return_type_reduction(con, t, df, qs):
     """Tests reduction UDF returning an array."""
     expr = quantiles(t.b, quantiles=qs)
     result = expr.execute()
-    expected = df.b.quantile(qs)
-    assert result == expected.tolist()
+    expected = np.array(df.b.quantile(qs))
+    tm.assert_numpy_array_equal(result, expected)
 
 
 def test_array_return_type_reduction_window(con, t, df, qs):
