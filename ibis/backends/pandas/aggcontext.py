@@ -365,14 +365,20 @@ class Summarize(AggregationContext):
 
         if isinstance(grouped_data, pd.core.groupby.generic.SeriesGroupBy):
             # `SeriesGroupBy.agg` does not allow np.arrays to be returned
-            # from UDFs. To work around this, we will use `Series.agg`
-            # manually on each group. (#2768)
-            return pd.Series(
-                {
-                    k: v.agg(wrap_for_agg(function, args, kwargs))
-                    for k, v in grouped_data
-                }
-            )
+            # from UDFs. To avoid `SeriesGroupBy.agg`, we will us
+            # `Series.agg` manually on each group. (#2768)
+            aggs = {
+                k: v.agg(wrap_for_agg(function, args, kwargs))
+                for k, v in grouped_data
+            }
+            result = pd.Series(aggs)
+
+            # The indices of the Series we return must be named with the
+            # groupby column names (to fully mimic `SeriesGroupBy.agg`).
+            # This logic handles both single and multiple groupby columns.
+            result = result.rename_axis(grouped_data.grouper.names)
+
+            return result
         else:
             return grouped_data.agg(wrap_for_agg(function, args, kwargs))
 
