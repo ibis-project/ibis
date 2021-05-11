@@ -202,3 +202,56 @@ def test_separate_database(con, alternate_current_database, current_data_db):
     db = con.database(current_data_db)
     assert db.name == current_data_db
     assert tmp_db.name == alternate_current_database
+
+
+@pytest.mark.only_on_backends(
+    ['sqlite', 'postgres', 'mysql'],
+    reason="run only if backend is SQLAlchemy based",
+)
+def test_insert_from_dataframe(con, df):
+    drop = 'DROP TABLE IF EXISTS temporary_alltypes'
+    create = (
+        'CREATE TABLE IF NOT EXISTS '
+        'temporary_alltypes AS functional_alltypes'
+    )
+
+    con.raw_sql(drop)
+    con.raw_sql(create)
+
+    temporary = con.table('temporary_alltypes')
+    records = df[:10]
+
+    assert len(temporary.execute()) == 0
+    con.insert('temporary_alltypes', data_obj=records)
+
+    temporary_post_insert = con.table('temporary_alltypes')
+
+    tm.assert_frame_equal(temporary_post_insert.execute(), records)
+
+
+@pytest.mark.only_on_backends(
+    ['sqlite', 'postgres', 'mysql'],
+    reason="run only if backend is SQLAlchemy based",
+)
+def test_insert_from_table(con, from_table_name):
+    drop = 'DROP TABLE IF EXISTS temporary_alltypes'
+    create = (
+        'CREATE TABLE IF NOT EXISTS '
+        'temporary_alltypes AS functional_alltypes'
+    )
+
+    con.raw_sql(drop)
+    con.raw_sql(create)
+
+    temporary = con.table('temporary_alltypes')
+
+    assert len(temporary.execute()) == 0
+    con.insert('temporary_alltypes', from_table_name=from_table_name)
+
+    temporary_post_insert = con.table('temporary_alltypes')
+
+    from_table = con.table(from_table_name)
+
+    tm.assert_frame_equal(
+        temporary_post_insert.execute(), from_table.execute()
+    )
