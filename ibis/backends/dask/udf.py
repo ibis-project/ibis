@@ -12,7 +12,11 @@ import ibis.udf.vectorized
 from ibis.backends.pandas.udf import nullable  # noqa
 
 from .dispatch import execute_node, pre_execute
-from .execution.util import assert_identical_grouping_keys, make_selected_obj
+from .execution.util import (
+    assert_identical_grouping_keys,
+    make_selected_obj,
+    safe_scalar_type,
+)
 
 
 @pre_execute.register(ops.ElementWiseVectorizedUDF)
@@ -67,9 +71,11 @@ def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
             df.index = args[0].index
             return df
         else:
-            df = dd.map_partitions(
-                op.func, *args, meta=op._output_type.to_dask()
+            name = args[0].name if len(args) == 1 else None
+            meta = pandas.Series(
+                [], name=name, dtype=op._output_type.to_dask()
             )
+            df = dd.map_partitions(op.func, *args, meta=meta)
 
             return df
 
@@ -99,8 +105,6 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
     @execute_node.register(type(op), *(itertools.repeat(dd.Series, nargs)))
     def execute_udaf_node_no_groupby(op, *args, aggcontext, **kwargs):
 
-        meta = pandas.Series([], dtype=op._output_type.to_dask())
-
         # This function is in essence fully materializing the dd.Series and
         # passing that (now) pd.Series to aggctx. This materialization
         # happens at `.compute()` time, making this "lazy"
@@ -113,6 +117,9 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
         # Depending on the type of operation, lazy_result is a Delayed that
         # could become a dd.Series or a dd.core.Scalar
         if isinstance(op, ops.AnalyticVectorizedUDF):
+            meta = pandas.Series(
+                [], name=args[0].name, dtype=op._output_type.to_dask()
+            )
             result = dd.from_delayed(lazy_result, meta=meta)
         else:
             # lazy_result is a dd.core.Scalar from an ungrouped reduction
@@ -122,12 +129,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
                 # we compute so we can work with items inside downstream.
                 result = lazy_result.compute()
             else:
-                output_meta = op._output_type.to_dask()
-                if isinstance(output_meta, pandas.DatetimeTZDtype):
-                    # patch until https://github.com/dask/dask/pull/7627
-                    output_meta = pandas.Timestamp(
-                        1, tz=output_meta.tz, unit=output_meta.unit
-                    )
+                output_meta = safe_scalar_type(op._output_type.to_dask())
                 result = dd.from_delayed(
                     lazy_result, meta=output_meta, verify_meta=False
                 )
@@ -162,7 +164,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
             meta_index = pandas.MultiIndex.from_arrays(
                 [[0], [0]], names=groupings
             )
-            meta_value = [dd.utils.make_meta(out_type)]
+            meta_value = [dd.utils.make_meta(safe_scalar_type(out_type))]
         else:
             meta_index = pandas.Index([], name=groupings[0])
             meta_value = list()
