@@ -371,7 +371,8 @@ class AlchemyClient(SQLClient):
             from_table_name (table name to insert data from)
 
         NotImplementedError
-            Inserting with values is not implemented for SQLAlchemy based backends
+            Inserting with values is not implemented for SQLAlchemy
+            based backends
 
         """
 
@@ -383,7 +384,8 @@ class AlchemyClient(SQLClient):
 
         if values is not None:
             raise NotImplementedError(
-                'Inserting with values is not implemented for SQLAlchemy based backends'
+                'Inserting with values is not implemented for'
+                ' SQLAlchemy based backends'
             )
 
         params = {}
@@ -401,8 +403,8 @@ class AlchemyClient(SQLClient):
             )
         elif data_obj is None and from_table_name is not None:
             self.raw_sql(
-                "INSERT INTO {to_table_name} SELECT * FROM {from_table_name}".format(
-                    to_table_name=to_table_name,
-                    from_table_name=from_table_name,
+                "INSERT INTO {to_table} SELECT * FROM {from_table}".format(
+                    to_table=to_table_name,
+                    from_table=from_table_name,
                 )
             )
