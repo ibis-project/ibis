@@ -404,7 +404,6 @@ class AlchemyClient(SQLClient):
         elif data_obj is None and from_table_name is not None:
             self.raw_sql(
                 "INSERT INTO {to_table} SELECT * FROM {from_table}".format(
-                    to_table=to_table_name,
-                    from_table=from_table_name,
+                    to_table=to_table_name, from_table=from_table_name,
                 )
             )
