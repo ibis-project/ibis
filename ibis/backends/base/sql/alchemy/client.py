@@ -400,11 +400,8 @@ class AlchemyClient(SQLClient):
                 **params,
             )
         elif data_obj is None and from_table_name is not None:
-            data_obj = pd.read_sql_table(from_table_name, self.con, **params)
-            data_obj.to_sql(
-                to_table_name,
-                self.con,
-                index=False,
-                if_exists=if_exists,
-                **params,
+            self.raw_sql(
+                "INSERT INTO {to_table_name} SELECT * FROM {from_table_name}".format(
+                    to_table_name=to_table_name, from_table_name=from_table_name
+                )
             )
