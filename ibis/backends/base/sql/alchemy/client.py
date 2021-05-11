@@ -403,6 +403,6 @@ class AlchemyClient(SQLClient):
             self.raw_sql(
                 "INSERT INTO {to_table_name} SELECT * FROM {from_table_name}".format(
                     to_table_name=to_table_name,
-                    from_table_name=from_table_name
+                    from_table_name=from_table_name,
                 )
             )
