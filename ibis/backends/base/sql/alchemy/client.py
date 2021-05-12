@@ -356,7 +356,7 @@ class AlchemyClient(SQLClient):
             variable can be used to take in that data)
         from_table_name : string, optional
             name of the table from which data needs to be inserted
-        if_exists : string, optional, default 'append'
+        if_exists : string, default 'append'
             The values available are: {‘fail’, ‘replace’, ‘append’}
         values : None, optional
             values can be used to fill in data (in some ordered form of
