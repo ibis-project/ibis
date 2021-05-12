@@ -396,24 +396,21 @@ class AlchemyClient(SQLClient):
             params['schema'] = self.database_name
             database = self.database_name
 
-        if isinstance(data_obj, pd.DataFrame) or isinstance(
-            from_table_name, str
-        ):
-            if isinstance(data_obj, pd.DataFrame):
-                data_obj.to_sql(
-                    to_table_name,
-                    self.con,
-                    index=False,
-                    if_exists=if_exists,
-                    **params,
+        if isinstance(data_obj, pd.DataFrame):
+            data_obj.to_sql(
+                to_table_name,
+                self.con,
+                index=False,
+                if_exists=if_exists,
+                **params,
+            )
+        elif isinstance(from_table_name, str):
+            self.raw_sql(
+                "INSERT INTO {to_table} "
+                "SELECT * FROM {from_table}".format(
+                    to_table=to_table_name, from_table=from_table_name,
                 )
-            elif isinstance(from_table_name, str):
-                self.raw_sql(
-                    "INSERT INTO {to_table} "
-                    "SELECT * FROM {from_table}".format(
-                        to_table=to_table_name, from_table=from_table_name,
-                    )
-                )
+            )
         else:
             raise ValueError(
                 'No operation is being performed. Either the data_obj'
