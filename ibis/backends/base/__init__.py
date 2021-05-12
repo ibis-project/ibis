@@ -44,39 +44,14 @@ class BaseBackend(abc.ABC):
         pass
 
     @property
-    @abc.abstractmethod
-    def translator(self):
+    def context_class(self):
+        # TODO this and builder should be attributes of a base SQL backend
         pass
 
     @property
-    def dialect(self):
-        """
-        Dialect class of the backend.
-
-        We generate it dynamically to avoid repeating the code for each
-        backend.
-        """
-        # TODO importing dialects inside the function to avoid circular
-        # imports. In the future instead of this if statement we probably
-        # want to create subclasses for each of the kinds
-        # (e.g. `BaseSQLAlchemyBackend`)
-        if self.kind == 'sqlalchemy':
-            from ibis.backends.base.sql.alchemy import AlchemyDialect
-
-            dialect_class = AlchemyDialect
-        elif self.kind in ('sql', 'pandas', 'spark'):
-            from ibis.backends.base.sql.compiler import Dialect
-
-            dialect_class = Dialect
-        else:
-            raise ValueError(
-                f'Backend class "{self.kind}" unknown. '
-                'Expected one of "sqlalchemy", "sql", '
-                '"pandas" or "spark".'
-            )
-
-        dialect_class.translator = self.translator
-        return dialect_class
+    @abc.abstractmethod
+    def translator(self):
+        pass
 
     @abc.abstractmethod
     def connect(connection_string, **options):
@@ -96,7 +71,8 @@ class BaseBackend(abc.ABC):
         """
         Compile the expression.
         """
-        context = self.dialect.make_context(params=params)
+        params = {expr.op(): value for expr, value in (params or {}).items()}
+        context = self.context_class(params=params)
         builder = self.builder(expr, context=context)
         query_ast = builder.get_result()
         # TODO make all builders return a QueryAST object

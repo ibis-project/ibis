@@ -13,7 +13,11 @@
 # limitations under the License.
 
 from ibis.backends.base import BaseBackend
-from ibis.backends.base.sql.alchemy import AlchemyQueryBuilder
+from ibis.backends.base.sql.alchemy import (
+    AlchemyContext,
+    AlchemyQuery,
+    AlchemyQueryBuilder,
+)
 
 from .client import SQLiteClient, SQLiteDatabase, SQLiteTable
 from .compiler import SQLiteExprTranslator
@@ -26,6 +30,8 @@ class Backend(BaseBackend):
     translator = SQLiteExprTranslator
     database_class = SQLiteDatabase
     table_class = SQLiteTable
+    context_class = AlchemyContext
+    query_class = AlchemyQuery
 
     def connect(self, path=None, create=False):
 

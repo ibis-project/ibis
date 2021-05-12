@@ -10,13 +10,11 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.util as util
-from ibis.backends.base.sql.compiler import Dialect
 from ibis.client import Query, SQLClient
 
 from .datatypes import to_sqla_type
 from .geospatial import geospatial_supported
 from .query_builder import build_ast
-from .translator import AlchemyExprTranslator
 
 if geospatial_supported:
     import geoalchemy2.shape as shape
@@ -103,19 +101,11 @@ class AlchemyQuery(Query):
         return _maybe_to_geodataframe(schema.apply_to(df), schema)
 
 
-class AlchemyDialect(Dialect):
-
-    translator = AlchemyExprTranslator
-
-
 class AlchemyClient(SQLClient):
-
-    dialect = AlchemyDialect
-    query_class = AlchemyQuery
     has_attachment = False
 
-    def __init__(self, con: sa.engine.Engine) -> None:
-        super().__init__()
+    def __init__(self, backend, con: sa.engine.Engine) -> None:
+        super().__init__(backend=backend)
         self.con = con
         self.meta = sa.MetaData(bind=con)
         self._inspector = sa.inspect(con)

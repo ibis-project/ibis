@@ -1,7 +1,12 @@
-from .client import AlchemyClient, AlchemyDialect
+from .client import AlchemyClient, AlchemyQuery
 from .database import AlchemyDatabase, AlchemyDatabaseSchema, AlchemyTable
 from .datatypes import schema_from_table, table_from_schema, to_sqla_type
-from .query_builder import AlchemyQueryBuilder, build_ast, to_sqlalchemy
+from .query_builder import (
+    AlchemyQueryBuilder,
+    AlchemyTableSetFormatter,
+    build_ast,
+    to_sqlalchemy,
+)
 from .registry import (
     fixed_arity,
     get_sqla_table,
@@ -19,9 +24,10 @@ __all__ = (
     'AlchemyExprTranslator',
     'AlchemyContext',
     'AlchemyQueryBuilder',
-    'AlchemyDialect',
+    'AlchemyQuery',
     'AlchemyClient',
     'AlchemyTable',
+    'AlchemyTableSetFormatter',
     'AlchemyDatabaseSchema',
     'AlchemyDatabase',
     'AlchemyContext',

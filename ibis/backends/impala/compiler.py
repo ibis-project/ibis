@@ -23,34 +23,6 @@ def build_ast(expr, context=None):
     return builder.get_result()
 
 
-class ImpalaSelectBuilder(SelectBuilder):
-    @property
-    def _select_class(self):
-        return ImpalaSelect
-
-
-class ImpalaQueryBuilder(QueryBuilder):
-
-    select_builder = ImpalaSelectBuilder
-
-
-class ImpalaSelect(Select):
-
-    """
-    A SELECT statement which, after execution, might yield back to the user a
-    table, array/list, or scalar value, depending on the expression that
-    generated it
-    """
-
-    @property
-    def translator(self):
-        return ImpalaExprTranslator
-
-    @property
-    def table_set_formatter(self):
-        return ImpalaTableSetFormatter
-
-
 class ImpalaTableSetFormatter(TableSetFormatter):
     def _get_join_type(self, op):
         jname = self._join_names[type(op)]
@@ -63,6 +35,20 @@ class ImpalaTableSetFormatter(TableSetFormatter):
 
     def _quote_identifier(self, name):
         return quote_identifier(name)
+
+
+class ImpalaSelect(Select):
+    """
+    A SELECT statement which, after execution, might yield back to the user a
+    table, array/list, or scalar value, depending on the expression that
+    generated it
+    """
+
+    table_set_formatter = ImpalaTableSetFormatter
+
+
+class ImpalaSelectBuilder(SelectBuilder):
+    _select_class = ImpalaSelect
 
 
 class ImpalaQueryContext(QueryContext):
@@ -81,6 +67,11 @@ class ImpalaExprTranslator(ExprTranslator):
         return '{} AS {}'.format(
             translated, quote_identifier(name, force=force)
         )
+
+
+class ImpalaQueryBuilder(QueryBuilder):
+    translator = ImpalaExprTranslator
+    select_builder = ImpalaSelectBuilder
 
 
 rewrites = ImpalaExprTranslator.rewrites

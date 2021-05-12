@@ -7,15 +7,21 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
-from ibis.backends.base.sql.compiler import Dialect, Select
+from ibis.backends.base.sql.compiler import QueryContext, Select
 from ibis.config import options
 from ibis.expr.typing import TimeContext
 
 
 class Client:
-    """Generic Ibis client."""
+    def __init__(self, backend):
+        self.database_class = backend.database_class
+        self.table_class = backend.table_class
 
-    pass
+        if backend.kind in ('sql', 'sqlalchemy', 'spark'):
+            self.context_class = backend.context_class
+            self.query_class = backend.query_class
+            if backend.kind in ('sql', 'spark'):
+                self.table_expr_class = backend.table_expr_class
 
 
 Backends = List[Client]
@@ -96,7 +102,7 @@ class Query:
 class SQLClient(Client, metaclass=abc.ABCMeta):
     """Generic SQL client."""
 
-    dialect = Dialect
+    context_class = QueryContext
     query_class = Query
     table_class = ops.DatabaseTable
     table_expr_class = ir.TableExpr
@@ -256,7 +262,7 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         return query_ast.compile()
 
     def _build_ast_ensure_limit(self, expr, limit, params=None):
-        context = self.dialect.make_context(params=params)
+        context = self.context_class(params=params)
 
         query_ast = self._build_ast(expr, context)
         # note: limit can still be None at this point, if the global
@@ -289,7 +295,7 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         plan : string
         """
         if isinstance(expr, ir.Expr):
-            context = self.dialect.make_context(params=params)
+            context = self.context_class(params=params)
             query_ast = self._build_ast(expr, context)
             if len(query_ast.queries) > 1:
                 raise Exception('Multi-query expression')
@@ -322,7 +328,7 @@ class QueryPipeline:
 
 
 def validate_backends(backends) -> list:
-    """Validate bacckends.
+    """Validate backends.
 
     Parameters
     ----------

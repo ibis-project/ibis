@@ -19,7 +19,7 @@ import pytest
 
 import ibis.expr.types as ir
 from ibis.backends.base.sql.alchemy import (
-    AlchemyDialect,
+    AlchemyContext,
     AlchemyTable,
     build_ast,
     table_from_schema,
@@ -32,11 +32,6 @@ from ibis.expr.typing import TimeContext
 class BaseMockConnection(SQLClient, metaclass=abc.ABCMeta):
     def __init__(self):
         self.executed_queries = []
-
-    @property
-    @abc.abstractmethod
-    def dialect(self):
-        pass
 
     @abc.abstractmethod
     def _build_ast(self, expr, context):
@@ -390,12 +385,6 @@ class MockConnection(BaseMockConnection):
     # TODO: Refactor/rename to MockImpalaConnection
     # TODO: Should some tests using MockImpalaConnection really use
     #       MockAlchemyConnection instead?
-    @property
-    def dialect(self):
-        from ibis.backends.base_sql.compiler import BaseDialect
-
-        return BaseDialect
-
     def _build_ast(self, expr, context):
         from ibis.backends.base_sql.compiler import build_ast
 
@@ -403,6 +392,8 @@ class MockConnection(BaseMockConnection):
 
 
 class MockAlchemyConnection(BaseMockConnection):
+    context_class = AlchemyContext
+
     def __init__(self):
         super().__init__()
         sa = pytest.importorskip('sqlalchemy')
@@ -420,10 +411,6 @@ class MockAlchemyConnection(BaseMockConnection):
 
         node = AlchemyTable(table, self)
         return ir.TableExpr(node)
-
-    @property
-    def dialect(self):
-        return AlchemyDialect
 
     def _build_ast(self, expr, context):
         return build_ast(expr, context)
@@ -450,12 +437,6 @@ class GeoMockConnectionPostGIS(MockAlchemyConnection):
     def _get_table_schema(self, name):
         return Schema.from_tuples(self._tables[name])
 
-    @property
-    def dialect(self):
-        from ibis.backends.postgres import Backend
-
-        return Backend.dialect
-
 
 class GeoMockConnectionOmniSciDB(SQLClient):
     _tables = GEO_TABLE
@@ -466,12 +447,6 @@ class GeoMockConnectionOmniSciDB(SQLClient):
 
     def _get_table_schema(self, name):
         return Schema.from_tuples(self._tables[name])
-
-    @property
-    def dialect(self):
-        from ibis.backends.omniscidb.compiler import OmniSciDBDialect
-
-        return OmniSciDBDialect
 
     def _build_ast(self, expr, context):
         from ibis.backends.omniscidb.compiler import build_ast

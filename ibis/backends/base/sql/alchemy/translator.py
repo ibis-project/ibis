@@ -25,9 +25,7 @@ class AlchemyContext(QueryContext):
         return queries[0]
 
     def subcontext(self):
-        return type(self)(
-            dialect=self.dialect, parent=self, params=self.params
-        )
+        return type(self)(parent=self, params=self.params)
 
     def _to_sql(self, expr, ctx):
         return to_sqlalchemy(expr, ctx)

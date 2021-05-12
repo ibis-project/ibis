@@ -24,7 +24,6 @@ import ibis
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy import (
     AlchemyContext,
-    AlchemyDialect,
     AlchemyExprTranslator,
     schema_from_table,
     to_sqlalchemy,
@@ -78,7 +77,7 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
                 assert result.name == expected.name
 
     def _translate(self, expr, named=False):
-        context = AlchemyDialect.make_context()
+        context = AlchemyContext()
         translator = AlchemyExprTranslator(expr, context=context, named=named)
         return translator.get_result()
 
@@ -623,7 +622,7 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         self._compare_sqla(expr, ex)
 
     def _compare_sqla(self, expr, sqla):
-        context = AlchemyContext(dialect=AlchemyDialect())
+        context = AlchemyContext()
         result = to_sqlalchemy(expr, context)
         assert str(result.compile()) == str(sqla.compile())
 

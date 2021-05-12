@@ -21,20 +21,6 @@ def build_ast(expr, context):
     return builder.get_result()
 
 
-class ClickhouseSelectBuilder(SelectBuilder):
-    @property
-    def _select_class(self):
-        return ClickhouseSelect
-
-    def _convert_group_by(self, exprs):
-        return exprs
-
-
-class ClickhouseQueryBuilder(QueryBuilder):
-
-    select_builder = ClickhouseSelectBuilder
-
-
 class ClickhouseQueryContext(QueryContext):
     def _to_sql(self, expr, ctx):
         builder = ClickhouseQueryBuilder(expr, context=ctx)
@@ -44,10 +30,6 @@ class ClickhouseQueryContext(QueryContext):
 
 
 class ClickhouseSelect(Select):
-    @property
-    def translator(self):
-        return ClickhouseExprTranslator
-
     @property
     def table_set_formatter(self):
         return ClickhouseTableSetFormatter
@@ -86,6 +68,13 @@ class ClickhouseSelect(Select):
             buf.write(', {}'.format(offset))
 
         return buf.getvalue()
+
+
+class ClickhouseSelectBuilder(SelectBuilder):
+    _select_class = ClickhouseSelect
+
+    def _convert_group_by(self, exprs):
+        return exprs
 
 
 class ClickhouseTableSetFormatter(TableSetFormatter):
@@ -158,6 +147,11 @@ class ClickhouseExprTranslator(ExprTranslator):
         return '{0!s} AS {1!s}'.format(
             translated, quote_identifier(name, force=force)
         )
+
+
+class ClickhouseQueryBuilder(QueryBuilder):
+    translator = ClickhouseExprTranslator
+    select_builder = ClickhouseSelectBuilder
 
 
 rewrites = ClickhouseExprTranslator.rewrites

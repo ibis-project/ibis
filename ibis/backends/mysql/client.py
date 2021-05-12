@@ -69,9 +69,6 @@ class MySQLClient(AlchemyClient):
         url=None,
         driver='pymysql',
     ):
-        self.dialect = backend.dialect
-        self.database_class = backend.database_class
-        self.table_class = backend.table_class
         if url is None:
             if driver != 'pymysql':
                 raise NotImplementedError(
@@ -89,7 +86,7 @@ class MySQLClient(AlchemyClient):
         else:
             url = sa.engine.url.make_url(url)
 
-        super().__init__(sa.create_engine(url))
+        super().__init__(backend=backend, con=sa.create_engine(url))
         self.database_name = url.database
 
     @contextlib.contextmanager

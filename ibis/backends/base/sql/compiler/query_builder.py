@@ -212,6 +212,7 @@ class TableSetFormatter:
     }
 
     def __init__(self, parent, expr, indent=2):
+        # `parent` is a `Select` instance, not a `TableSetFormatter`
         self.parent = parent
         self.context = parent.context
         self.expr = expr
@@ -374,6 +375,8 @@ class Select(DML):
         table_set,
         select_set,
         context,
+        translator,
+        table_set_formatter,
         subqueries=None,
         where=None,
         group_by=None,
@@ -386,6 +389,8 @@ class Select(DML):
         parent_expr=None,
     ):
         self.context = context
+        self.translator = translator
+        self.table_set_formatter = table_set_formatter
 
         self.select_set = select_set
         self.table_set = table_set
@@ -406,10 +411,6 @@ class Select(DML):
         self.indent = indent
 
         self.result_handler = result_handler
-
-    @property
-    def translator(self):
-        return self.context.dialect.translator
 
     def _translate(self, expr, named=False, permit_subquery=False):
         context = self.context
@@ -577,10 +578,6 @@ class Select(DML):
 
         return '{}{}'.format(select_key, buf.getvalue())
 
-    @property
-    def table_set_formatter(self):
-        return TableSetFormatter
-
     def format_table_set(self):
         if self.table_set is None:
             return None
@@ -677,16 +674,15 @@ class SelectBuilder:
 
     _select_class = Select
 
-    def __init__(self, expr, context):
+    def __init__(self, expr, context, translator, table_set_formatter):
         self.expr = expr
+        self.context = context
+        self.translator = translator
+        self.table_set_formatter = table_set_formatter
 
         self.query_expr, self.result_handler = self._adapt_expr(self.expr)
-
         self.sub_memo = {}
-
-        self.context = context
         self.queries = []
-
         self.table_set = None
         self.select_set = None
         self.group_by = None
@@ -696,7 +692,6 @@ class SelectBuilder:
         self.sort_by = []
         self.subqueries = []
         self.distinct = False
-
         self.op_memo = set()
 
     def get_result(self):
@@ -869,6 +864,8 @@ class SelectBuilder:
         return klass(
             self.table_set,
             self.select_set,
+            translator=self.translator,
+            table_set_formatter=self.table_set_formatter,
             subqueries=self.subqueries,
             where=self.filters,
             group_by=self.group_by,
@@ -1378,15 +1375,21 @@ def flatten_difference(table: ir.TableExpr):
 
 
 class QueryBuilder:
-
     select_builder = SelectBuilder
     union_class = Union
     intersect_class = Intersection
     difference_class = Difference
+    table_set_formatter = TableSetFormatter
 
     def __init__(self, expr, context):
         self.expr = expr
         self.context = context
+
+    @property
+    def translator(self):
+        from .translator import ExprTranslator
+
+        return ExprTranslator
 
     def generate_setup_queries(self):
         return []
@@ -1454,5 +1457,10 @@ class QueryBuilder:
         )
 
     def _make_select(self):
-        builder = self.select_builder(self.expr, self.context)
+        builder = self.select_builder(
+            expr=self.expr,
+            context=self.context,
+            translator=self.translator,
+            table_set_formatter=self.table_set_formatter,
+        )
         return builder.get_result()

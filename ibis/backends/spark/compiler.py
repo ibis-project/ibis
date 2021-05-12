@@ -26,7 +26,6 @@ import ibis
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 from ibis.backends.base.sql.compiler import (
-    Dialect,
     ExprTranslator,
     QueryBuilder,
     QueryContext,
@@ -39,10 +38,7 @@ from .registry import operation_registry
 
 
 def build_ast(expr, context=None):
-    from ibis.backends.spark import Backend
-
-    if context is None:
-        context = Backend().dialect.make_context()
+    context = context or SparkContext()
     builder = SparkQueryBuilder(expr, context=context)
     return builder.get_result()
 
@@ -61,20 +57,18 @@ class SparkUDAFNode(ops.Reduction):
         return self.return_type.scalar_type()
 
 
+class SparkSelect(Select):
+    pass
+
+
 class SparkSelectBuilder(SelectBuilder):
-    @property
-    def _select_class(self):
-        return SparkSelect
-
-
-class SparkQueryBuilder(QueryBuilder):
-    select_builder = SparkSelectBuilder
+    _select_class = SparkSelect
 
 
 class SparkContext(QueryContext):
     def _to_sql(self, expr, ctx):
-        if ctx is None:
-            ctx = Dialect.make_context()
+        # XXX seems like this should be SparkContext
+        ctx = ctx or QueryContext()
         builder = SparkQueryBuilder(expr, context=ctx)
         ast = builder.get_result()
         query = ast.queries[0]
@@ -92,6 +86,11 @@ class SparkExprTranslator(ExprTranslator):
         )
 
 
+class SparkQueryBuilder(QueryBuilder):
+    translator = SparkExprTranslator
+    select_builder = SparkSelectBuilder
+
+
 rewrites = SparkExprTranslator.rewrites
 
 
@@ -99,7 +98,3 @@ rewrites = SparkExprTranslator.rewrites
 def spark_rewrites_is_inf(expr):
     arg = expr.op().arg
     return (arg == ibis.literal(math.inf)) | (arg == ibis.literal(-math.inf))
-
-
-class SparkSelect(Select):
-    translator = SparkExprTranslator

@@ -1,5 +1,4 @@
 from ibis.backends.base.sql.compiler import (
-    Dialect,
     ExprTranslator,
     QueryBuilder,
     QueryContext,
@@ -22,10 +21,6 @@ class BaseExprTranslator(ExprTranslator):
     context_class = BaseContext
 
 
-class BaseDialect(Dialect):
-    translator = BaseExprTranslator
-
-
 class BaseSelect(Select):
     translator = BaseExprTranslator
     table_set_formatter = BaseTableSetFormatter
@@ -44,6 +39,5 @@ def build_ast(expr, context):
 
 
 def to_sql(expr, context=None):
-    if context is None:
-        context = BaseDialect.make_context()
+    context = context or BaseContext()
     return build_ast(expr, context).queries[0].compile()

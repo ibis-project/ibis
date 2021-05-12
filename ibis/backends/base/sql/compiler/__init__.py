@@ -6,7 +6,7 @@ from .query_builder import (
     TableSetFormatter,
     Union,
 )
-from .translator import Dialect, ExprTranslator, QueryContext
+from .translator import ExprTranslator, QueryContext
 
 __all__ = (
     'QueryBuilder',
@@ -16,7 +16,6 @@ __all__ = (
     'TableSetFormatter',
     'ExprTranslator',
     'QueryContext',
-    'Dialect',
     'DML',
     'DDL',
 )

@@ -46,9 +46,6 @@ class PostgreSQLClient(AlchemyClient):
         url: Optional[str] = None,
         driver: str = 'psycopg2',
     ):
-        self.dialect = backend.dialect
-        self.database_class = backend.database_class
-        self.table_class = backend.table_class
         if url is None:
             if driver != 'psycopg2':
                 raise NotImplementedError(
@@ -65,7 +62,7 @@ class PostgreSQLClient(AlchemyClient):
         else:
             sa_url = sa.engine.url.make_url(url)
 
-        super().__init__(sa.create_engine(sa_url))
+        super().__init__(backend=backend, con=sa.create_engine(sa_url))
         self.database_name = sa_url.database
 
     @contextlib.contextmanager

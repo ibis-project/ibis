@@ -8,7 +8,11 @@ from .client import (
     ClickhouseQuery,
     ClickhouseTable,
 )
-from .compiler import ClickhouseExprTranslator, ClickhouseQueryBuilder
+from .compiler import (
+    ClickhouseExprTranslator,
+    ClickhouseQueryBuilder,
+    ClickhouseQueryContext,
+)
 
 try:
     import lz4  # noqa: F401
@@ -27,6 +31,7 @@ class Backend(BaseBackend):
     query_class = ClickhouseQuery
     table_class = ClickhouseDatabaseTable
     table_expr_class = ClickhouseTable
+    context_class = ClickhouseQueryContext
 
     def connect(
         self,

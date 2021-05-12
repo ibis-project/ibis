@@ -11,13 +11,11 @@ def new_schema():
     return ibis.schema([('a', 'string'), ('b', 'bool'), ('c', 'int32')])
 
 
-@pytest.mark.xfail_unsupported
+@pytest.mark.only_on_backends(
+    ['sqlite', 'postgres', 'mysql'],
+    reason="run only if backend is SQLAlchemy based",
+)
 def test_load_data_sqlalchemy(backend, con, temp_table):
-    if not isinstance(
-        con.dialect(), ibis.backends.base.sql.alchemy.AlchemyDialect
-    ):
-        pytest.skip(f'{backend} is not a SQL Alchemy Client.')
-
     sch = ibis.schema(
         [
             ('first_name', 'string'),

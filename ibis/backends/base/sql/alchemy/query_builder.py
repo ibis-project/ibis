@@ -17,7 +17,7 @@ from .database import AlchemyTable
 from .datatypes import to_sqla_type
 
 
-class _AlchemyTableSet(TableSetFormatter):
+class AlchemyTableSetFormatter(TableSetFormatter):
     def get_result(self):
         # Got to unravel the join stack; the nesting order could be
         # arbitrary, so we do a depth first search and push the join tokens
@@ -172,7 +172,7 @@ class AlchemySelect(Select):
 
     def _compile_table_set(self):
         if self.table_set is not None:
-            helper = _AlchemyTableSet(self, self.table_set)
+            helper = self.table_set_formatter(self, self.table_set)
             result = helper.get_result()
             if isinstance(result, sql.selectable.Select) and hasattr(
                 result, 'subquery'
@@ -294,15 +294,9 @@ class AlchemySelect(Select):
 
         return fragment
 
-    @property
-    def dialect(self):
-        return self.context.dialect
-
 
 class AlchemySelectBuilder(SelectBuilder):
-    @property
-    def _select_class(self):
-        return AlchemySelect
+    _select_class = AlchemySelect
 
     def _convert_group_by(self, exprs):
         return exprs
@@ -326,9 +320,15 @@ class AlchemyUnion(Union):
 
 
 class AlchemyQueryBuilder(QueryBuilder):
+    @property
+    def translator(self):
+        from .translator import AlchemyExprTranslator
+
+        return AlchemyExprTranslator
 
     select_builder = AlchemySelectBuilder
     union_class = AlchemyUnion
+    table_set_formatter = AlchemyTableSetFormatter
 
 
 def build_ast(expr, context):

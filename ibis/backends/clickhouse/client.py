@@ -216,11 +216,6 @@ class ClickhouseClient(SQLClient):
     """An Ibis client interface that uses Clickhouse"""
 
     def __init__(self, backend, *args, **kwargs):
-        self.database_class = backend.database_class
-        self.query_class = backend.query_class
-        self.dialect = backend.dialect
-        self.table_class = backend.table_class
-        self.table_expr_class = backend.table_expr_class
         self.con = _DriverClient(*args, **kwargs)
 
     def _build_ast(self, expr, context):

@@ -7,9 +7,8 @@ from ibis.backends.pandas.core import execute_and_reset
 
 class FileClient(ibis.client.Client):
     def __init__(self, backend, root):
-        self.dialect = backend.dialect
+        super().__init__(backend=backend)
         self.extension = backend.extension
-        self.table_class = backend.table_class
         self.root = Path(str(root))
         self.dictionary = {}
 
