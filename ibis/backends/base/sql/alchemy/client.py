@@ -337,7 +337,6 @@ class AlchemyClient(SQLClient):
         data_obj=None,
         from_table_name: Optional[str] = None,
         if_exists: Optional[str] = 'append',
-        values=None,
     ) -> None:
         """
         Insert the given data to a table in backend.
@@ -358,11 +357,6 @@ class AlchemyClient(SQLClient):
             name of the table from which data needs to be inserted
         if_exists : string, default 'append'
             The values available are: {‘fail’, ‘replace’, ‘append’}
-        values : None, optional
-            values can be used to fill in data (in some ordered form of
-            rows and columns) which can be used to insert data into
-            the to_table_name directly
-            (Not implemented yet)
 
         Raises
         -------
@@ -374,10 +368,6 @@ class AlchemyClient(SQLClient):
             Sorry, can't insert from both the data_obj (dataframe)
             and the from_table_name (table). Please use only one
             parameter.
-
-        NotImplementedError
-            Inserting with values is not implemented for SQLAlchemy
-            based backends
 
         ValueError
             No operation is being performed. Either the data_obj
@@ -398,12 +388,6 @@ class AlchemyClient(SQLClient):
                 "Sorry, can't insert from both the data_obj (dataframe)"
                 " and the from_table_name (table). Please use only one"
                 " parameter."
-            )
-
-        if values is not None:
-            raise NotImplementedError(
-                'Inserting with values is not implemented for'
-                ' SQLAlchemy based backends'
             )
 
         params = {}
