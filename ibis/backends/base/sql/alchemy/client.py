@@ -370,9 +370,19 @@ class AlchemyClient(SQLClient):
             You must pass either data_obj (pandas Dataframe) or
             from_table_name (table name to insert data from)
 
+        ValueError
+            Sorry, can't insert from both the data_obj (dataframe)
+            and the from_table_name (table). Please use only one
+            parameter.
+
         NotImplementedError
             Inserting with values is not implemented for SQLAlchemy
             based backends
+
+        ValueError
+            No operation is being performed. Either the data_obj
+            parameter is not a pandas dataframe or the
+            from_table_name parameter is not of string datatype.
 
         """
 
@@ -380,6 +390,14 @@ class AlchemyClient(SQLClient):
             raise ValueError(
                 'You must pass either data_obj (pandas Dataframe)'
                 ' or from_table_name (table name to insert data from)'
+            )
+
+        if isinstance(data_obj, pd.DataFrame) and isinstance(
+            from_table_name, str):
+            raise ValueError(
+                "Sorry, can't insert from both the data_obj (dataframe)"
+                " and the from_table_name (table). Please use only one"
+                " parameter."
             )
 
         if values is not None:
@@ -393,17 +411,27 @@ class AlchemyClient(SQLClient):
             params['schema'] = self.database_name
             database = self.database_name
 
-        if isinstance(data_obj, pd.DataFrame):
-            data_obj.to_sql(
-                to_table_name,
-                self.con,
-                index=False,
-                if_exists=if_exists,
-                **params,
-            )
-        elif data_obj is None and from_table_name is not None:
-            self.raw_sql(
-                "INSERT INTO {to_table} SELECT * FROM {from_table}".format(
-                    to_table=to_table_name, from_table=from_table_name,
+        if isinstance(data_obj, pd.DataFrame) or isinstance(
+            from_table_name, str):
+            if isinstance(data_obj, pd.DataFrame):
+                data_obj.to_sql(
+                    to_table_name,
+                    self.con,
+                    index=False,
+                    if_exists=if_exists,
+                    **params,
                 )
+            elif isinstance(from_table_name, str):
+                self.raw_sql(
+                    "INSERT INTO {to_table} "
+                    "SELECT * FROM {from_table}".format(
+                        to_table=to_table_name,
+                        from_table=from_table_name,
+                    )
+                )
+        else:
+            raise ValueError(
+                'No operation is being performed. Either the data_obj'
+                ' parameter is not a pandas dataframe or the'
+                ' from_table_name parameter is not of string datatype.'
             )
