@@ -48,7 +48,9 @@ class UserDefinedFunction(object):
                 saved_index = args[0].index
             else:
                 saved_index = None
+
             result = self.func(*args, **kwargs)
+
             if isinstance(self.output_type, dt.Struct):
                 if isinstance(result, pd.DataFrame) or (
                     isinstance(result[0], (pd.Series, list, np.ndarray))
@@ -72,7 +74,9 @@ class UserDefinedFunction(object):
                     # returning np.ndarray
                     result = tuple(result)
             else:
-                if isinstance(result, (list, np.ndarray)):
+                if isinstance(result, (list, np.ndarray)) and not isinstance(
+                    self.output_type, dt.Array
+                ):
                     result = pd.Series(result)
                 if isinstance(result, pd.Series):
                     # Restore original index so that the result can later be
