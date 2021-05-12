@@ -383,7 +383,8 @@ class AlchemyClient(SQLClient):
             )
 
         if isinstance(data_obj, pd.DataFrame) and isinstance(
-            from_table_name, str):
+            from_table_name, str
+        ):
             raise ValueError(
                 "Sorry, can't insert from both the data_obj (dataframe)"
                 " and the from_table_name (table). Please use only one"
@@ -396,7 +397,8 @@ class AlchemyClient(SQLClient):
             database = self.database_name
 
         if isinstance(data_obj, pd.DataFrame) or isinstance(
-            from_table_name, str):
+            from_table_name, str
+        ):
             if isinstance(data_obj, pd.DataFrame):
                 data_obj.to_sql(
                     to_table_name,
@@ -409,8 +411,7 @@ class AlchemyClient(SQLClient):
                 self.raw_sql(
                     "INSERT INTO {to_table} "
                     "SELECT * FROM {from_table}".format(
-                        to_table=to_table_name,
-                        from_table=from_table_name,
+                        to_table=to_table_name, from_table=from_table_name,
                     )
                 )
         else:
