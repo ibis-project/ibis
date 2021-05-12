@@ -229,7 +229,7 @@ class AlchemyClient(SQLClient):
         Parameters
         ----------
         table_name : string
-        data: pandas.DataFrame
+        data : pandas.DataFrame
         database : string, optional
         if_exists : string, optional, default 'fail'
             The values available are: {‘fail’, ‘replace’, ‘append’}
@@ -354,11 +354,11 @@ class AlchemyClient(SQLClient):
             inserted to to_table_name
             (Later when table_expr related implementation is done this
             variable can be used to take in that data)
-        from_table_name: string, optional
+        from_table_name : string, optional
             name of the table from which data needs to be inserted
         if_exists : string, optional, default 'append'
             The values available are: {‘fail’, ‘replace’, ‘append’}
-        values: None, optional
+        values : None, optional
             values can be used to fill in data (in some ordered form of
             rows and columns) which can be used to insert data into
             the to_table_name directly
