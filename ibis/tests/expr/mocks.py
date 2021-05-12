@@ -21,7 +21,6 @@ import ibis.expr.types as ir
 from ibis.backends.base.sql.alchemy import (
     AlchemyDialect,
     AlchemyTable,
-    build_ast,
     table_from_schema,
 )
 from ibis.client import SQLClient
@@ -36,10 +35,6 @@ class BaseMockConnection(SQLClient, metaclass=abc.ABCMeta):
     @property
     @abc.abstractmethod
     def dialect(self):
-        pass
-
-    @abc.abstractmethod
-    def _build_ast(self, expr, context):
         pass
 
     _tables = {
@@ -396,11 +391,6 @@ class MockConnection(BaseMockConnection):
 
         return BaseDialect
 
-    def _build_ast(self, expr, context):
-        from ibis.backends.base_sql.compiler import build_ast
-
-        return build_ast(expr, context)
-
 
 class MockAlchemyConnection(BaseMockConnection):
     def __init__(self):
@@ -424,9 +414,6 @@ class MockAlchemyConnection(BaseMockConnection):
     @property
     def dialect(self):
         return AlchemyDialect
-
-    def _build_ast(self, expr, context):
-        return build_ast(expr, context)
 
 
 GEO_TABLE = {
@@ -472,8 +459,3 @@ class GeoMockConnectionOmniSciDB(SQLClient):
         from ibis.backends.omniscidb.compiler import OmniSciDBDialect
 
         return OmniSciDBDialect
-
-    def _build_ast(self, expr, context):
-        from ibis.backends.omniscidb.compiler import build_ast
-
-        return build_ast(expr, context)

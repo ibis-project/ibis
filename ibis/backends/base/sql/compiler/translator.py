@@ -303,9 +303,7 @@ class Dialect:
 
     @classmethod
     def make_context(cls, params=None):
-        if params is None:
-            params = {}
-        params = {expr.op(): value for expr, value in params.items()}
+        params = {expr.op(): value for expr, value in (params or {}).items()}
         return cls.translator.context_class(dialect=cls(), params=params)
 
 

@@ -8,7 +8,7 @@ from ibis.backends.base.sql.ddl import (
     InsertSelect,
 )
 from ibis.backends.impala import ddl
-from ibis.backends.impala.client import build_ast
+from ibis.backends.impala.client import ImpalaQueryBuilder
 
 pytestmark = pytest.mark.impala
 
@@ -535,7 +535,7 @@ def test_partition_by():
 def _create_table(
     table_name, expr, database=None, can_exist=False, format='parquet'
 ):
-    ast = build_ast(expr)
+    ast = ImpalaQueryBuilder(expr).get_result()
     select = ast.queries[0]
     statement = CTAS(
         table_name,
@@ -548,7 +548,7 @@ def _create_table(
 
 
 def _get_select(expr, context=None):
-    ast = build_ast(expr, context)
+    ast = ImpalaQueryBuilder(expr, context).get_result()
     select = ast.queries[0]
     context = ast.context
     return select, context

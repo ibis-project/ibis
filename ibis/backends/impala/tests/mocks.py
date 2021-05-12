@@ -8,11 +8,6 @@ class MockImpalaConnection(BaseMockConnection):
 
         return Backend().dialect
 
-    def _build_ast(self, expr, context):
-        from ibis.backends.impala.compiler import build_ast
-
-        return build_ast(expr, context)
-
 
 def to_sql(expr):
     """

@@ -4,7 +4,7 @@ import ibis
 from ibis.backends.base.sql.ddl import DropTable
 
 from .. import ddl
-from ..compiler import build_ast
+from ..compiler import SparkQueryBuilder
 
 pytestmark = pytest.mark.spark
 
@@ -30,7 +30,7 @@ def test_select_basics(t):
     name = 'testing123456'
 
     expr = t.limit(10)
-    ast = build_ast(expr)
+    ast = SparkQueryBuilder(expr).get_result()
     select = ast.queries[0]
 
     stmt = ddl.InsertSelect(name, select, database='foo')
@@ -138,7 +138,7 @@ def test_partition_by():
 def _create_table(
     table_name, expr, database=None, can_exist=False, format='parquet'
 ):
-    ast = build_ast(expr)
+    ast = SparkQueryBuilder(expr).get_result()
     select = ast.queries[0]
     statement = ddl.CTAS(
         table_name,

@@ -16,11 +16,6 @@ from .identifiers import quote_identifier
 from .registry import operation_registry
 
 
-def build_ast(expr, context):
-    builder = ClickhouseQueryBuilder(expr, context=context)
-    return builder.get_result()
-
-
 class ClickhouseSelectBuilder(SelectBuilder):
     @property
     def _select_class(self):

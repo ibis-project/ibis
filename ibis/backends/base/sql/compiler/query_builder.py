@@ -12,6 +12,7 @@ from ibis.backends.base.sql.registry import quote_identifier
 
 from .base import DML, QueryAST, SetOp
 from .extract_subqueries import ExtractSubqueries
+from .translator import ExprTranslator
 
 
 class _AnyToExistsTransform:
@@ -410,13 +411,13 @@ class Select(DML):
     @property
     def translator(self):
         return self.context.dialect.translator
+        return ExprTranslator
 
     def _translate(self, expr, named=False, permit_subquery=False):
-        context = self.context
-        translator = self.translator(
-            expr, context=context, named=named, permit_subquery=permit_subquery
-        )
-        return translator.get_result()
+        return self.translator(expr,
+                               context=self.context,
+                               named=named,
+                               permit_subquery=permit_subquery).get_result()
 
     def equals(self, other, cache=None):
         if cache is None:
@@ -864,9 +865,7 @@ class SelectBuilder:
         self._analyze_subqueries()
         self._populate_context()
 
-        klass = self._select_class
-
-        return klass(
+        return self._select_class(
             self.table_set,
             self.select_set,
             subqueries=self.subqueries,

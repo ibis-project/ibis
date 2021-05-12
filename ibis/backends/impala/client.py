@@ -41,7 +41,7 @@ from ibis.util import log
 
 from . import ddl, udf
 from .compat import HS2Error, ImpylaError, impyla
-from .compiler import build_ast
+from .compiler import ImpalaQueryBuilder
 from .hdfs import HDFS, WebHDFS
 
 
@@ -521,7 +521,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         else:
             partition_schema = None
 
-        ast = build_ast(expr)
+        ast = ImpalaQueryBuilder(expr).get_result()
         select = ast.queries[0]
         statement = InsertSelect(
             self._qualified_name,
@@ -803,9 +803,6 @@ class ImpalaClient(SQLClient):
         self._temp_objects = weakref.WeakSet()
 
         self._ensure_temp_db_exists()
-
-    def _build_ast(self, expr, context):
-        return build_ast(expr, context)
 
     def _get_hdfs(self):
         if self._hdfs is None:
@@ -1111,7 +1108,7 @@ class ImpalaClient(SQLClient):
         expr : ibis TableExpr
         database : string, default None
         """
-        ast = build_ast(expr)
+        ast = self.builder(expr).get_result()
         select = ast.queries[0]
         statement = CreateView(name, select, database=database)
         return self._execute(statement)
@@ -1187,7 +1184,7 @@ class ImpalaClient(SQLClient):
                 writer, to_insert = write_temp_dataframe(self, obj)
             else:
                 to_insert = obj
-            ast = build_ast(to_insert)
+            ast = self.builder(to_insert).get_result()
             select = ast.queries[0]
 
             statement = CTAS(

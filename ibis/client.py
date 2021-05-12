@@ -7,7 +7,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
-from ibis.backends.base.sql.compiler import Dialect, Select
+from ibis.backends.base.sql.compiler import Dialect, QueryBuilder, Select
 from ibis.config import options
 from ibis.expr.typing import TimeContext
 
@@ -98,6 +98,7 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
 
     dialect = Dialect
     query_class = Query
+    builder = QueryBuilder
     table_class = ops.DatabaseTable
     table_expr_class = ir.TableExpr
 
@@ -217,16 +218,10 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
           Scalar expressions: Python scalar value
         """
         query_ast = self._build_ast_ensure_limit(expr, limit, params=params)
-        query = self._get_query(query_ast, **kwargs)
+        query = self.query_class(self, query_ast, **kwargs)
         self._log(query.compiled_sql)
-        result = self._execute_query(query, **kwargs)
+        result = query.execute()
         return result
-
-    def _get_query(self, dml, **kwargs):
-        return self.query_class(self, dml, **kwargs)
-
-    def _execute_query(self, query, **kwargs):
-        return query.execute()
 
     def _log(self, sql):
         """Log the SQL, usually to the standard output.
@@ -258,7 +253,7 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
     def _build_ast_ensure_limit(self, expr, limit, params=None):
         context = self.dialect.make_context(params=params)
 
-        query_ast = self._build_ast(expr, context)
+        query_ast = self.builder(expr, context).get_result()
         # note: limit can still be None at this point, if the global
         # default_limit is None
         for query in reversed(query_ast.queries):
@@ -290,7 +285,7 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         """
         if isinstance(expr, ir.Expr):
             context = self.dialect.make_context(params=params)
-            query_ast = self._build_ast(expr, context)
+            query_ast = self.builder(expr, context).get_result()
             if len(query_ast.queries) > 1:
                 raise Exception('Multi-query expression')
 
@@ -306,10 +301,6 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         return 'Query:\n{0}\n\n{1}'.format(
             util.indent(query, 2), '\n'.join(result)
         )
-
-    def _build_ast(self, expr, context):
-        # Implement in clients
-        raise NotImplementedError(type(self).__name__)
 
 
 class QueryPipeline:

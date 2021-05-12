@@ -14,15 +14,6 @@ from ibis.backends.base.sql.registry import (
 )
 
 
-def build_ast(expr, context=None):
-    from ibis.backends.impala import Backend
-
-    if context is None:
-        context = Backend().dialect.make_context()
-    builder = ImpalaQueryBuilder(expr, context=context)
-    return builder.get_result()
-
-
 class ImpalaSelectBuilder(SelectBuilder):
     @property
     def _select_class(self):

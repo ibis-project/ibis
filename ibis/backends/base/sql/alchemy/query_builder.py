@@ -140,6 +140,12 @@ class AlchemySelect(Select):
         self.exists = kwargs.pop('exists', False)
         super().__init__(*args, **kwargs)
 
+    @property
+    def translator_(self):
+        from .translator import AlchemyExprTranslator
+
+        return AlchemyExprTranslator
+
     def compile(self):
         # Can't tell if this is a hack or not. Revisit later
         self.context.set_query(self)
@@ -331,13 +337,8 @@ class AlchemyQueryBuilder(QueryBuilder):
     union_class = AlchemyUnion
 
 
-def build_ast(expr, context):
-    builder = AlchemyQueryBuilder(expr, context)
-    return builder.get_result()
-
-
 def to_sqlalchemy(expr, context, exists=False):
-    ast = build_ast(expr, context)
+    ast = AlchemyQueryBuilder(expr, context).get_result()
     query = ast.queries[0]
 
     if exists:

@@ -39,11 +39,7 @@ class BaseQueryBuilder(QueryBuilder):
     select_builder = BaseSelectBuilder
 
 
-def build_ast(expr, context):
-    return BaseQueryBuilder(expr, context=context).get_result()
-
-
 def to_sql(expr, context=None):
     if context is None:
         context = BaseDialect.make_context()
-    return build_ast(expr, context).queries[0].compile()
+    return BaseQueryBuilder(expr, context).get_result().queries[0].compile()

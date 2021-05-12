@@ -15,8 +15,9 @@ from ibis.client import Query, SQLClient
 
 from .datatypes import to_sqla_type
 from .geospatial import geospatial_supported
-from .query_builder import build_ast
 from .translator import AlchemyExprTranslator
+from .query_builder import AlchemyQueryBuilder
+
 
 if geospatial_supported:
     import geoalchemy2.shape as shape
@@ -111,6 +112,7 @@ class AlchemyDialect(Dialect):
 class AlchemyClient(SQLClient):
 
     dialect = AlchemyDialect
+    builder = AlchemyQueryBuilder
     query_class = AlchemyQuery
     has_attachment = False
 
@@ -306,9 +308,6 @@ class AlchemyClient(SQLClient):
     @_invalidates_reflection_cache
     def raw_sql(self, query: str, results: bool = False):
         return super().raw_sql(query, results=results)
-
-    def _build_ast(self, expr, context):
-        return build_ast(expr, context)
 
     def _log(self, sql):
         try:
