@@ -7,6 +7,9 @@ DO NOT USE DIRECTLY.
 
 import functools
 
+import numpy as np
+import pandas as pd
+
 import ibis.expr.datatypes as dt
 import ibis.udf.validate as v
 from ibis.expr.operations import (
@@ -14,6 +17,7 @@ from ibis.expr.operations import (
     ElementWiseVectorizedUDF,
     ReductionVectorizedUDF,
 )
+from ibis.util import coerce_to_dataframe
 
 
 class UserDefinedFunction(object):
@@ -38,7 +42,46 @@ class UserDefinedFunction(object):
         # kwargs.
         @functools.wraps(self.func)
         def func(*args):
-            return self.func(*args, **kwargs)
+            # If cols are pd.Series, then we save and restore the index.
+            # Otherwise, we will reset the index to the natural index.
+            if hasattr(args[0], 'index'):
+                saved_index = args[0].index
+            else:
+                saved_index = None
+            result = self.func(*args, **kwargs)
+            if isinstance(self.output_type, dt.Struct):
+                if isinstance(result, pd.DataFrame) or (
+                    isinstance(result[0], (pd.Series, list, np.ndarray))
+                    and not any(
+                        isinstance(t, dt.Array) for t in self.output_type.types
+                    )
+                ):
+                    # We need to coerce_to_dataframe here because Spark
+                    # only allows DataFrame for struct output.
+                    result = coerce_to_dataframe(
+                        result, self.output_type.names
+                    )
+                    # Restore original index so that the result can later be
+                    # assigned to the original table with rows aligned
+                    if saved_index is not None:
+                        result.index = saved_index
+                    else:
+                        result = result.reset_index(drop=True)
+                elif isinstance(result, (list, np.ndarray)):
+                    # Multi-col aggregation does not support
+                    # returning np.ndarray
+                    result = tuple(result)
+            else:
+                if isinstance(result, (list, np.ndarray)):
+                    result = pd.Series(result)
+                if isinstance(result, pd.Series):
+                    # Restore original index so that the result can later be
+                    # assigned to the original table with rows aligned
+                    if saved_index is not None:
+                        result.index = saved_index
+                    else:
+                        result = result.reset_index(drop=True)
+            return result
 
         op = self.func_type(
             func=func,

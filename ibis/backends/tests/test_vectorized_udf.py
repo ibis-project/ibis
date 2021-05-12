@@ -43,6 +43,15 @@ def add_one_struct(v):
 
 @elementwise(
     input_type=[dt.double],
+    output_type=dt.Struct(['col1', 'col2'], [dt.double, dt.double]),
+)
+def add_one_struct_tuple_np_array(v):
+    assert isinstance(v, pd.Series)
+    return np.array(v + 1), np.array(v + 2)
+
+
+@elementwise(
+    input_type=[dt.double],
     output_type=dt.Struct(['double_col', 'col2'], [dt.double, dt.double]),
 )
 def overwrite_struct_elementwise(v):
@@ -81,6 +90,16 @@ def demean_struct(v, w):
     assert isinstance(v, pd.Series)
     assert isinstance(w, pd.Series)
     return v - v.mean(), w - w.mean()
+
+
+@analytic(
+    input_type=[dt.double, dt.double],
+    output_type=dt.Struct(['demean', 'demean_weight'], [dt.double, dt.double]),
+)
+def demean_struct_tuple_of_np_array(v, w):
+    assert isinstance(v, pd.Series)
+    assert isinstance(w, pd.Series)
+    return np.array(v - v.mean()), np.array(w - w.mean())
 
 
 @reduction(
@@ -306,6 +325,20 @@ def test_elementwise_udf_destruct(backend, alltypes):
 
 @pytest.mark.only_on_backends(['pandas', 'pyspark', 'dask'])
 @pytest.mark.xfail_unsupported
+def test_elementwise_udf_destruct_tuple_np_array(backend, alltypes):
+    result = alltypes.mutate(
+        add_one_struct_tuple_np_array(alltypes['double_col']).destructure()
+    ).execute()
+
+    expected = alltypes.mutate(
+        col1=alltypes['double_col'] + 1, col2=alltypes['double_col'] + 2,
+    ).execute()
+
+    backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.only_on_backends(['pandas', 'pyspark', 'dask'])
+@pytest.mark.xfail_unsupported
 def test_elementwise_udf_overwrite_destruct(backend, alltypes):
     result = alltypes.mutate(
         overwrite_struct_elementwise(alltypes['double_col']).destructure()
@@ -439,6 +472,28 @@ def test_analytic_udf_destruct(backend, alltypes):
 
     result = alltypes.mutate(
         demean_struct(alltypes['double_col'], alltypes['int_col'])
+        .over(w)
+        .destructure()
+    ).execute()
+
+    expected = alltypes.mutate(
+        demean=alltypes['double_col'] - alltypes['double_col'].mean().over(w),
+        demean_weight=alltypes['int_col'] - alltypes['int_col'].mean().over(w),
+    ).execute()
+
+    backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.only_on_backends(['pandas'])
+# TODO - windowing - #2553
+@pytest.mark.xfail_backends(['dask'])
+def test_analytic_udf_destruct_tuple_of_np_array(backend, alltypes):
+    w = window(preceding=None, following=None, group_by='year')
+
+    result = alltypes.mutate(
+        demean_struct_tuple_of_np_array(
+            alltypes['double_col'], alltypes['int_col']
+        )
         .over(w)
         .destructure()
     ).execute()

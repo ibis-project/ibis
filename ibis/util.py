@@ -19,6 +19,7 @@ from typing import (
 )
 from uuid import uuid4
 
+import numpy as np
 import pandas as pd
 import toolz
 
@@ -125,6 +126,8 @@ def coerce_to_dataframe(data: Any, names: List[str]) -> pd.DataFrame:
     elif isinstance(data, (tuple, list)):
         if isinstance(data[0], pd.Series):
             result = pd.concat(data, axis=1)
+        elif isinstance(data[0], np.ndarray):
+            result = pd.concat([pd.Series(v) for v in data], axis=1)
         else:
             # Promote scalar to Series
             result = pd.concat([pd.Series([v]) for v in data], axis=1)
