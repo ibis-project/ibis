@@ -80,9 +80,10 @@ def coerce_to_dataframe(data: Any, names: List[str]) -> pd.DataFrame:
 
     The following shapes are allowed:
     (1) A list/tuple of Series
-    (2) A list/tuple of scalars
-    (3) A Series of list/tuple
-    (4) pd.DataFrame
+    (2) A list/tuple np.ndarray
+    (3) A list/tuple of scalars
+    (4) A Series of list/tuple
+    (5) pd.DataFrame
 
     Note:
     This method does NOT always return a new DataFrame. If a DataFrame is

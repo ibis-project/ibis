@@ -20,10 +20,34 @@ def add_one(s):
     return s + 1
 
 
+@elementwise(input_type=[dt.double], output_type=dt.double)
+def add_one_np_array(s):
+    assert isinstance(s, pd.Series)
+    return np.array(s + 1)
+
+
+@elementwise(input_type=[dt.double], output_type=dt.double)
+def add_one_list(s):
+    assert isinstance(s, pd.Series)
+    return list(s + 1)
+
+
 @analytic(input_type=[dt.double], output_type=dt.double)
 def calc_zscore(s):
     assert isinstance(s, pd.Series)
     return (s - s.mean()) / s.std()
+
+
+@analytic(input_type=[dt.double], output_type=dt.double)
+def calc_zscore_np_array(s):
+    assert isinstance(s, pd.Series)
+    return np.array((s - s.mean()) / s.std())
+
+
+@analytic(input_type=[dt.double], output_type=dt.double)
+def calc_zscore_list(s):
+    assert isinstance(s, pd.Series)
+    return list(s - s.mean()) / s.std()
 
 
 @reduction(input_type=[dt.double], output_type=dt.double)
@@ -48,6 +72,24 @@ def add_one_struct(v):
 def add_one_struct_tuple_np_array(v):
     assert isinstance(v, pd.Series)
     return np.array(v + 1), np.array(v + 2)
+
+
+@elementwise(
+    input_type=[dt.double],
+    output_type=dt.Struct(['col1', 'col2'], [dt.double, dt.double]),
+)
+def add_one_struct_list_np_array(v):
+    assert isinstance(v, pd.Series)
+    return [np.array(v + 1), np.array(v + 2)]
+
+
+@elementwise(
+    input_type=[dt.double],
+    output_type=dt.Struct(['col1', 'col2'], [dt.double, dt.double]),
+)
+def add_one_struct_list_pd_series(v):
+    assert isinstance(v, pd.Series)
+    return [v + 1, v + 2]
 
 
 @elementwise(
@@ -96,10 +138,30 @@ def demean_struct(v, w):
     input_type=[dt.double, dt.double],
     output_type=dt.Struct(['demean', 'demean_weight'], [dt.double, dt.double]),
 )
-def demean_struct_tuple_of_np_array(v, w):
+def demean_struct_tuple_np_array(v, w):
     assert isinstance(v, pd.Series)
     assert isinstance(w, pd.Series)
     return np.array(v - v.mean()), np.array(w - w.mean())
+
+
+@analytic(
+    input_type=[dt.double, dt.double],
+    output_type=dt.Struct(['demean', 'demean_weight'], [dt.double, dt.double]),
+)
+def demean_struct_list_np_array(v, w):
+    assert isinstance(v, pd.Series)
+    assert isinstance(w, pd.Series)
+    return [np.array(v - v.mean()), np.array(w - w.mean())]
+
+
+@analytic(
+    input_type=[dt.double, dt.double],
+    output_type=dt.Struct(['demean', 'demean_weight'], [dt.double, dt.double]),
+)
+def demean_struct_list_pd_series(v, w):
+    assert isinstance(v, pd.Series)
+    assert isinstance(w, pd.Series)
+    return [v - v.mean(), w - w.mean()]
 
 
 @reduction(
@@ -110,6 +172,26 @@ def mean_struct(v, w):
     assert isinstance(v, (np.ndarray, pd.Series))
     assert isinstance(w, (np.ndarray, pd.Series))
     return v.mean(), w.mean()
+
+
+@reduction(
+    input_type=[dt.double, dt.double],
+    output_type=dt.Struct(['mean', 'mean_weight'], [dt.double, dt.double]),
+)
+def mean_struct_np_array(v, w):
+    assert isinstance(v, (np.ndarray, pd.Series))
+    assert isinstance(w, (np.ndarray, pd.Series))
+    return np.array([v.mean(), w.mean()])
+
+
+@reduction(
+    input_type=[dt.double, dt.double],
+    output_type=dt.Struct(['mean', 'mean_weight'], [dt.double, dt.double]),
+)
+def mean_struct_list(v, w):
+    assert isinstance(v, (np.ndarray, pd.Series))
+    assert isinstance(w, (np.ndarray, pd.Series))
+    return [v.mean(), w.mean()]
 
 
 @reduction(
@@ -134,11 +216,12 @@ def test_elementwise_udf(backend, alltypes, df):
 
 @pytest.mark.only_on_backends(['pandas', 'pyspark', 'dask'])
 @pytest.mark.xfail_unsupported
-def test_elementwise_udf_mutate(backend, alltypes, df):
-    expr = alltypes.mutate(incremented=add_one(alltypes['double_col']))
+@pytest.mark.parametrize('udf', [add_one, add_one_np_array, add_one_list])
+def test_elementwise_udf_mutate(backend, alltypes, df, udf):
+    expr = alltypes.mutate(incremented=udf(alltypes['double_col']))
     result = expr.execute()
 
-    expected = df.assign(incremented=add_one.func(df['double_col']))
+    expected = df.assign(incremented=udf.func(df['double_col']))
 
     backend.assert_series_equal(result['incremented'], expected['incremented'])
 
@@ -154,11 +237,14 @@ def test_analytic_udf(backend, alltypes, df):
 @pytest.mark.only_on_backends(['pandas', 'pyspark'])
 # TODO - windowing - #2553
 @pytest.mark.xfail_unsupported
-def test_analytic_udf_mutate(backend, alltypes, df):
-    expr = alltypes.mutate(zscore=calc_zscore(alltypes['double_col']))
+@pytest.mark.parametrize(
+    'udf', [calc_zscore, calc_zscore_np_array, calc_zscore_list]
+)
+def test_analytic_udf_mutate(backend, alltypes, df, udf):
+    expr = alltypes.mutate(zscore=udf(alltypes['double_col']))
     result = expr.execute()
 
-    expected = df.assign(zscore=calc_zscore.func(df['double_col']))
+    expected = df.assign(zscore=udf.func(df['double_col']))
 
     backend.assert_series_equal(result['zscore'], expected['zscore'])
 
@@ -311,23 +397,18 @@ def test_invalid_kwargs(backend, alltypes):
 
 @pytest.mark.only_on_backends(['pandas', 'pyspark', 'dask'])
 @pytest.mark.xfail_unsupported
-def test_elementwise_udf_destruct(backend, alltypes):
+@pytest.mark.parametrize(
+    'udf',
+    [
+        add_one_struct,
+        add_one_struct_tuple_np_array,
+        add_one_struct_list_np_array,
+        add_one_struct_list_pd_series,
+    ],
+)
+def test_elementwise_udf_destruct(backend, alltypes, udf):
     result = alltypes.mutate(
-        add_one_struct(alltypes['double_col']).destructure()
-    ).execute()
-
-    expected = alltypes.mutate(
-        col1=alltypes['double_col'] + 1, col2=alltypes['double_col'] + 2,
-    ).execute()
-
-    backend.assert_frame_equal(result, expected)
-
-
-@pytest.mark.only_on_backends(['pandas', 'pyspark', 'dask'])
-@pytest.mark.xfail_unsupported
-def test_elementwise_udf_destruct_tuple_np_array(backend, alltypes):
-    result = alltypes.mutate(
-        add_one_struct_tuple_np_array(alltypes['double_col']).destructure()
+        udf(alltypes['double_col']).destructure()
     ).execute()
 
     expected = alltypes.mutate(
@@ -467,35 +548,20 @@ def test_elementwise_udf_struct(backend, alltypes):
 @pytest.mark.only_on_backends(['pandas'])
 # TODO - windowing - #2553
 @pytest.mark.xfail_backends(['dask'])
-def test_analytic_udf_destruct(backend, alltypes):
+@pytest.mark.parametrize(
+    'udf',
+    [
+        demean_struct,
+        demean_struct_tuple_np_array,
+        demean_struct_list_np_array,
+        demean_struct_list_pd_series,
+    ],
+)
+def test_analytic_udf_destruct(backend, alltypes, udf):
     w = window(preceding=None, following=None, group_by='year')
 
     result = alltypes.mutate(
-        demean_struct(alltypes['double_col'], alltypes['int_col'])
-        .over(w)
-        .destructure()
-    ).execute()
-
-    expected = alltypes.mutate(
-        demean=alltypes['double_col'] - alltypes['double_col'].mean().over(w),
-        demean_weight=alltypes['int_col'] - alltypes['int_col'].mean().over(w),
-    ).execute()
-
-    backend.assert_frame_equal(result, expected)
-
-
-@pytest.mark.only_on_backends(['pandas'])
-# TODO - windowing - #2553
-@pytest.mark.xfail_backends(['dask'])
-def test_analytic_udf_destruct_tuple_of_np_array(backend, alltypes):
-    w = window(preceding=None, following=None, group_by='year')
-
-    result = alltypes.mutate(
-        demean_struct_tuple_of_np_array(
-            alltypes['double_col'], alltypes['int_col']
-        )
-        .over(w)
-        .destructure()
+        udf(alltypes['double_col'], alltypes['int_col']).over(w).destructure()
     ).execute()
 
     expected = alltypes.mutate(
@@ -555,13 +621,14 @@ def test_analytic_udf_destruct_overwrite(backend, alltypes):
 
 
 @pytest.mark.only_on_backends(['pandas', 'dask'])
-def test_reduction_udf_destruct_groupby(backend, alltypes):
+@pytest.mark.parametrize(
+    'udf', [mean_struct, mean_struct_np_array, mean_struct_list]
+)
+def test_reduction_udf_destruct_groupby(backend, alltypes, udf):
     result = (
         alltypes.groupby('year')
         .aggregate(
-            mean_struct(
-                alltypes['double_col'], alltypes['int_col']
-            ).destructure()
+            udf(alltypes['double_col'], alltypes['int_col']).destructure()
         )
         .execute()
     ).sort_values('year')
