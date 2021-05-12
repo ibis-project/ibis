@@ -2,7 +2,7 @@ import pytest
 from pandas.util import testing as tm
 
 import ibis
-from ibis.backends.base_file import FileDatabase
+from ibis.backends.base.file import FileDatabase
 from ibis.backends.csv import CSVTable
 
 

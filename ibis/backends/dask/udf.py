@@ -122,10 +122,14 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
                 # we compute so we can work with items inside downstream.
                 result = lazy_result.compute()
             else:
+                output_meta = op._output_type.to_dask()
+                if isinstance(output_meta, pandas.DatetimeTZDtype):
+                    # patch until https://github.com/dask/dask/pull/7627
+                    output_meta = pandas.Timestamp(
+                        1, tz=output_meta.tz, unit=output_meta.unit
+                    )
                 result = dd.from_delayed(
-                    lazy_result,
-                    meta=op._output_type.to_dask(),
-                    verify_meta=False,
+                    lazy_result, meta=output_meta, verify_meta=False
                 )
 
         return result
@@ -142,26 +146,32 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
         # This way we rely on dask dealing with groups and pass the udf down
         # to the frame level.
         assert_identical_grouping_keys(*args)
-        func = op.func
 
-        grouped_df = args[0].obj.groupby(args[0].index)
+        func = op.func
+        groupings = args[0].index
+        out_type = op._output_type.to_dask()
+
+        grouped_df = args[0].obj.groupby(groupings)
         col_names = [col._meta._selected_obj.name for col in args]
 
         def apply_wrapper(df, apply_func, col_names):
             cols = (df[col] for col in col_names)
             return apply_func(*cols)
 
-        # NOTE - We add a detailed meta here so we do not drop the key index
-        # downstream. This seems to be fixed in versions of dask > 2020.12.0
+        if len(groupings) > 1:
+            meta_index = pandas.MultiIndex.from_arrays(
+                [[0], [0]], names=groupings
+            )
+            meta_value = [dd.utils.make_meta(out_type)]
+        else:
+            meta_index = pandas.Index([], name=groupings[0])
+            meta_value = list()
+
         return grouped_df.apply(
             apply_wrapper,
             func,
             col_names,
-            meta=pandas.Series(
-                [],
-                index=pandas.Index([], name=args[0].index[0]),
-                dtype=op._output_type.to_dask(),
-            ),
+            meta=pandas.Series(meta_value, index=meta_index, dtype=out_type),
         )
 
     return scope

@@ -3,6 +3,7 @@ import operator
 import dask.dataframe as dd
 import numpy as np
 import pandas as pd
+import pandas._testing as ptm
 import pytest
 from dask.dataframe.utils import tm
 from pytest import param
@@ -17,7 +18,7 @@ def test_array_literal(client, arr, arr_expr_creator):
     expr = arr_expr_creator(arr)
     result = client.execute(expr)
     expected = np.array([1, 3, 5])
-    assert type(result) == type(expected) and np.array_equal(result, expected)
+    ptm.assert_numpy_array_equal(result, expected)
 
 
 def test_array_length(t, df):
@@ -59,7 +60,7 @@ def test_array_collect(t, df):
     expr = t.float64_with_zeros.collect()
     result = expr.execute()
     expected = np.array(df.float64_with_zeros)
-    assert type(result) == type(expected) and np.array_equal(result, expected)
+    ptm.assert_numpy_array_equal(result, expected)
 
 
 def test_array_collect_grouped(t, df):
@@ -104,9 +105,14 @@ def test_array_collect_scalar(client):
     expr = value.collect()
     result = client.execute(expr)
     expected = [raw_value]
-    assert type(result) == type(expected) and np.array_equal(result, expected)
+    ptm.assert_numpy_array_equal(result, expected)
 
 
+@pytest.mark.xfail(
+    raises=NotImplementedError,
+    reason='TODO - arrays - #2553'
+    # Need an ops.ArraySlice execution func that dispatches on dd.Series
+)
 @pytest.mark.parametrize(
     ['start', 'stop'],
     [
@@ -118,27 +124,28 @@ def test_array_collect_scalar(client):
         (None, None),
         (3, None),
         # negative slices are not supported
-        param(
-            -3,
-            None,
-            marks=pytest.mark.xfail(
-                raises=ValueError, reason='Negative slicing not supported'
-            ),
-        ),
-        param(
-            None,
-            -3,
-            marks=pytest.mark.xfail(
-                raises=ValueError, reason='Negative slicing not supported'
-            ),
-        ),
-        param(
-            -3,
-            -1,
-            marks=pytest.mark.xfail(
-                raises=ValueError, reason='Negative slicing not supported'
-            ),
-        ),
+        # TODO: uncomment once test as a whole is not xfailed
+        # param(
+        #     -3,
+        #     None,
+        #     marks=pytest.mark.xfail(
+        #         raises=ValueError, reason='Negative slicing not supported'
+        #     ),
+        # ),
+        # param(
+        #     None,
+        #     -3,
+        #     marks=pytest.mark.xfail(
+        #         raises=ValueError, reason='Negative slicing not supported'
+        #     ),
+        # ),
+        # param(
+        #     -3,
+        #     -1,
+        #     marks=pytest.mark.xfail(
+        #         raises=ValueError, reason='Negative slicing not supported'
+        #     ),
+        # ),
     ],
 )
 def test_array_slice(t, df, start, stop):
@@ -189,7 +196,7 @@ def test_array_slice_scalar(client, start, stop):
     expr = value[start:stop]
     result = client.execute(expr)
     expected = raw_value[start:stop]
-    assert type(result) == type(expected) and np.array_equal(result, expected)
+    ptm.assert_numpy_array_equal(result, expected)
 
 
 @pytest.mark.parametrize('index', [1, 3, 4, 11, -11])
@@ -219,6 +226,11 @@ def test_array_index_scalar(client, index):
     assert result == expected
 
 
+@pytest.mark.xfail(
+    raises=NotImplementedError,
+    reason='TODO - arrays - #2553'
+    # Need an ops.ArrayRepeat execution func that dispatches on dd.Series
+)
 @pytest.mark.parametrize('n', [1, 3, 4, 7, -2])  # negative returns empty list
 @pytest.mark.parametrize('mul', [lambda x, n: x * n, lambda x, n: n * x])
 def test_array_repeat(t, df, n, mul):
@@ -243,7 +255,7 @@ def test_array_repeat_scalar(client, n, mul):
         expected = np.repeat(raw_array, n)
     else:
         expected = np.array([])
-    assert type(result) == type(expected) and np.array_equal(result, expected)
+    ptm.assert_numpy_array_equal(result, expected)
 
 
 @pytest.mark.parametrize(
@@ -286,4 +298,4 @@ def test_array_concat_scalar(client, op, op_raw):
     expr = op(left, right)
     result = client.execute(expr)
     expected = op_raw(raw_left, raw_right)
-    assert type(result) == type(expected) and np.array_equal(result, expected)
+    ptm.assert_numpy_array_equal(result, expected)

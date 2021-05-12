@@ -4,7 +4,7 @@ import kudu
 import pandas as pd
 
 import ibis.expr.datatypes as dt
-from ibis.backends.base_sql.ddl import (
+from ibis.backends.base.sql.ddl import (
     CreateTable,
     format_schema,
     format_tblproperties,

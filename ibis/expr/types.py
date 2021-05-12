@@ -407,6 +407,11 @@ class AnalyticExpr(Expr):
         return 'analytic'
 
 
+class ExistsExpr(AnalyticExpr):
+    def type(self):
+        return 'exists'
+
+
 class TableExpr(Expr):
     @property
     def _factory(self):

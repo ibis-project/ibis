@@ -151,7 +151,7 @@ def execute_selection_dataframe(
             )
             data_pieces.append(dask_object)
 
-        result = dd.concat(data_pieces, axis=1)
+        result = dd.concat(data_pieces, axis=1, ignore_unknown_divisions=True)
 
     if predicates:
         predicates = _compute_predicates(

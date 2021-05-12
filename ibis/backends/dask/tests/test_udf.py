@@ -45,6 +45,7 @@ def df2(npartitions):
                 'b': np.arange(4, dtype=float).tolist()
                 + np.random.rand(3).tolist(),
                 'c': np.arange(7, dtype=int).tolist(),
+                'd': list('aaaaddd'),
                 'key': list('ddeefff'),
             }
         ),
@@ -53,8 +54,20 @@ def df2(npartitions):
 
 
 @pytest.fixture
-def con(df, df2):
-    return Backend().connect({'df': df, 'df2': df2})
+def df_timestamp(npartitions):
+    return dd.from_pandas(
+        pd.DataFrame(
+            {'a': list(range(10))}, dtype=pd.DatetimeTZDtype(tz='UTC')
+        ),
+        npartitions=npartitions,
+    )
+
+
+@pytest.fixture
+def con(df, df2, df_timestamp):
+    return Backend().connect(
+        {'df': df, 'df2': df2, 'df_timestamp': df_timestamp}
+    )
 
 
 @pytest.fixture
@@ -65,6 +78,11 @@ def t(con):
 @pytest.fixture
 def t2(con):
     return con.table('df2')
+
+
+@pytest.fixture
+def t_timestamp(con):
+    return con.table('df_timestamp')
 
 
 # -------------
@@ -85,6 +103,14 @@ def my_add(series1, series2, **kwargs):
 @reduction(['double'], 'double')
 def my_mean(series):
     return series.mean()
+
+
+@reduction(
+    input_type=[dt.Timestamp(timezone="UTC")],
+    output_type=dt.Timestamp(timezone="UTC"),
+)
+def my_tz_min(series):
+    return series.min()
 
 
 @reduction(input_type=[dt.string], output_type=dt.int64)
@@ -178,6 +204,15 @@ def test_udaf(con, t, df):
     assert result == expected
 
 
+def test_udaf_analytic_tzcol(con, t_timestamp, df_timestamp):
+    expr = my_tz_min(t_timestamp.a)
+
+    result = expr.execute()
+
+    expected = (df_timestamp.a.min()).compute()
+    assert result == expected
+
+
 def test_udaf_analytic(con, t, df):
     expr = zscore(t.c)
 
@@ -212,7 +247,7 @@ def test_udaf_analytic_groupby(con, t, df):
 def test_udaf_groupby(t2, df2):
     expr = t2.groupby(t2.key).aggregate(my_corr=my_corr(t2.a, t2.b))
 
-    result = expr.execute().sort_values('key').reset_index()
+    result = expr.execute().sort_values('key').reset_index(drop=True)
 
     dfi = df2.set_index('key').compute()
     expected = pd.DataFrame(
@@ -225,8 +260,26 @@ def test_udaf_groupby(t2, df2):
         }
     )
 
-    columns = ['key', 'my_corr']
-    tm.assert_frame_equal(result[columns], expected[columns])
+    tm.assert_frame_equal(result, expected)
+
+
+def test_udaf_groupby_multikey(t2, df2):
+    expr = t2.groupby([t2.key, t2.d]).aggregate(my_corr=my_corr(t2.a, t2.b))
+
+    result = expr.execute().sort_values('key').reset_index(drop=True)
+
+    dfi = df2.set_index('key').compute()
+    expected = pd.DataFrame(
+        {
+            'key': list('def'),
+            'd': list('aad'),
+            'my_corr': [
+                dfi.loc[value, 'a'].corr(dfi.loc[value, 'b'])
+                for value in 'def'
+            ],
+        }
+    )
+    tm.assert_frame_equal(result, expected)
 
 
 def test_nullable():
@@ -396,6 +449,7 @@ def qs(request):
 
 
 def test_array_return_type_reduction(con, t, df, qs):
+    """Tests reduction UDF returning an array."""
     expr = quantiles(t.b, quantiles=qs)
     result = expr.execute()
     expected = df.b.quantile(qs).compute()
@@ -406,11 +460,26 @@ def test_array_return_type_reduction(con, t, df, qs):
     raises=NotImplementedError, reason='TODO - windowing - #2553'
 )
 def test_array_return_type_reduction_window(con, t, df, qs):
+    """Tests reduction UDF returning an array, used over a window."""
     expr = quantiles(t.b, quantiles=qs).over(ibis.window())
     result = expr.execute()
     expected_raw = df.b.quantile(qs).tolist()
     expected = pd.Series([expected_raw] * len(df))
     tm.assert_series_equal(result, expected)
+
+
+def test_array_return_type_reduction_group_by(con, t, df, qs):
+    """Tests reduction UDF returning an array, used in a grouped agg."""
+    expr = t.groupby(t.key).aggregate(
+        quantiles_col=quantiles(t.b, quantiles=qs)
+    )
+    result = expr.execute()
+
+    df = df.compute()  # Convert to Pandas
+    expected_col = df.groupby(df.key).b.agg(lambda s: s.quantile(qs).tolist())
+    expected = pd.DataFrame({'quantiles_col': expected_col}).reset_index()
+
+    tm.assert_frame_equal(result, expected)
 
 
 def test_elementwise_udf_with_many_args(t2):

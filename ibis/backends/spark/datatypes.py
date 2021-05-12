@@ -4,7 +4,7 @@ import pyspark.sql.types as pt
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
-from ibis.backends.base.sql import sql_type_names
+from ibis.backends.base.sql.registry import sql_type_names
 from ibis.expr.schema import Schema
 
 _sql_type_names = dict(sql_type_names, date='date')

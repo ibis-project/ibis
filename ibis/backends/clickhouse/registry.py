@@ -1,7 +1,6 @@
 from datetime import date, datetime
 from io import StringIO
 
-import ibis.backends.base_sqlalchemy.transforms as transforms
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
@@ -448,9 +447,9 @@ def _exists_subquery(translator, expr):
 
     subquery = ctx.get_compiled_expr(expr)
 
-    if isinstance(op, transforms.ExistsSubquery):
+    if isinstance(op, ops.ExistsSubquery):
         key = 'EXISTS'
-    elif isinstance(op, transforms.NotExistsSubquery):
+    elif isinstance(op, ops.NotExistsSubquery):
         key = 'NOT EXISTS'
     else:
         raise NotImplementedError
@@ -631,8 +630,8 @@ operation_registry = {
     ops.TimestampSub: _binary_infix_op('-'),
     ops.TimestampDiff: _binary_infix_op('-'),
     ops.TimestampFromUNIX: _timestamp_from_unix,
-    transforms.ExistsSubquery: _exists_subquery,
-    transforms.NotExistsSubquery: _exists_subquery,
+    ops.ExistsSubquery: _exists_subquery,
+    ops.NotExistsSubquery: _exists_subquery,
     ops.ArrayLength: _unary('length'),
 }
 

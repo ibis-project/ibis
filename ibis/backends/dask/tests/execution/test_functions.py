@@ -7,6 +7,7 @@ from operator import methodcaller
 import dask.dataframe as dd
 import numpy as np
 import pandas as pd
+import pandas._testing as ptm
 import pytest
 from dask.dataframe.utils import tm  # noqa: E402
 
@@ -153,6 +154,11 @@ def test_clip(t, df, ibis_func, dask_func):
     tm.assert_series_equal(result.compute(), expected.compute())
 
 
+@pytest.mark.xfail(
+    raises=NotImplementedError,
+    reason='TODO - arrays - #2553'
+    # Need an ops.MultiQuantile execution func that dispatches on ndarrays
+)
 @pytest.mark.parametrize(
     ('ibis_func', 'dask_func'),
     [
@@ -186,7 +192,7 @@ def test_quantile_multi(t, df, ibis_func, dask_func, column):
     expr = ibis_func(t[column])
     result = expr.compile()
     expected = dask_func(df[column])
-    assert type(result) == type(expected) and np.array_equal(result, expected)
+    ptm.assert_numpy_array_equal(result, expected)
 
 
 @pytest.mark.parametrize(

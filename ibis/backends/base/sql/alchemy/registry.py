@@ -10,7 +10,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.window as W
-from ibis.backends.base_sqlalchemy import transforms
 
 from .database import AlchemyTable
 from .geospatial import geospatial_supported
@@ -127,7 +126,7 @@ def _exists_subquery(t, expr):
     sub_ctx = ctx.subcontext()
     clause = to_sqlalchemy(filtered, sub_ctx, exists=True)
 
-    if isinstance(op, transforms.NotExistsSubquery):
+    if isinstance(op, ops.NotExistsSubquery):
         clause = sa.not_(clause)
 
     return clause
@@ -388,6 +387,13 @@ def _ntile(t, expr):
     return sa.func.ntile(buckets)
 
 
+def _sort_key(t, expr):
+    # We need to define this for window functions that have an order by
+    by, ascending = expr.op().args
+    sort_direction = sa.asc if ascending else sa.desc
+    return sort_direction(t.translate(by))
+
+
 sqlalchemy_operation_registry = {
     ops.And: fixed_arity(sql.and_, 2),
     ops.Or: fixed_arity(sql.or_, 2),
@@ -418,8 +424,8 @@ sqlalchemy_operation_registry = {
     ops.SearchedCase: _searched_case,
     ops.TableColumn: _table_column,
     ops.TableArrayView: _table_array_view,
-    transforms.ExistsSubquery: _exists_subquery,
-    transforms.NotExistsSubquery: _exists_subquery,
+    ops.ExistsSubquery: _exists_subquery,
+    ops.NotExistsSubquery: _exists_subquery,
     # miscellaneous varargs
     ops.Least: varargs(sa.func.least),
     ops.Greatest: varargs(sa.func.greatest),
@@ -447,6 +453,8 @@ sqlalchemy_operation_registry = {
     ops.Floor: unary(sa.func.floor),
     ops.Power: fixed_arity(sa.func.pow, 2),
     ops.FloorDivide: _floor_divide,
+    # other
+    ops.SortKey: _sort_key,
 }
 
 
@@ -456,6 +464,8 @@ _binary_ops = {
     ops.Add: operator.add,
     ops.Subtract: operator.sub,
     ops.Multiply: operator.mul,
+    # XXX `ops.Divide` is overwritten in `translator.py` with a custom
+    # function `_true_divide`, but for some reason both are required
     ops.Divide: operator.truediv,
     ops.Modulus: operator.mod,
     # Comparisons
