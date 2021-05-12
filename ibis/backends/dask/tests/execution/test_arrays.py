@@ -108,11 +108,6 @@ def test_array_collect_scalar(client):
     ptm.assert_numpy_array_equal(result, expected)
 
 
-@pytest.mark.xfail(
-    raises=NotImplementedError,
-    reason='TODO - arrays - #2553'
-    # Need an ops.ArraySlice execution func that dispatches on dd.Series
-)
 @pytest.mark.parametrize(
     ['start', 'stop'],
     [
@@ -124,28 +119,27 @@ def test_array_collect_scalar(client):
         (None, None),
         (3, None),
         # negative slices are not supported
-        # TODO: uncomment once test as a whole is not xfailed
-        # param(
-        #     -3,
-        #     None,
-        #     marks=pytest.mark.xfail(
-        #         raises=ValueError, reason='Negative slicing not supported'
-        #     ),
-        # ),
-        # param(
-        #     None,
-        #     -3,
-        #     marks=pytest.mark.xfail(
-        #         raises=ValueError, reason='Negative slicing not supported'
-        #     ),
-        # ),
-        # param(
-        #     -3,
-        #     -1,
-        #     marks=pytest.mark.xfail(
-        #         raises=ValueError, reason='Negative slicing not supported'
-        #     ),
-        # ),
+        param(
+            -3,
+            None,
+            marks=pytest.mark.xfail(
+                raises=ValueError, reason='Negative slicing not supported'
+            ),
+        ),
+        param(
+            None,
+            -3,
+            marks=pytest.mark.xfail(
+                raises=ValueError, reason='Negative slicing not supported'
+            ),
+        ),
+        param(
+            -3,
+            -1,
+            marks=pytest.mark.xfail(
+                raises=ValueError, reason='Negative slicing not supported'
+            ),
+        ),
     ],
 )
 def test_array_slice(t, df, start, stop):
@@ -226,18 +220,13 @@ def test_array_index_scalar(client, index):
     assert result == expected
 
 
-@pytest.mark.xfail(
-    raises=NotImplementedError,
-    reason='TODO - arrays - #2553'
-    # Need an ops.ArrayRepeat execution func that dispatches on dd.Series
-)
 @pytest.mark.parametrize('n', [1, 3, 4, 7, -2])  # negative returns empty list
 @pytest.mark.parametrize('mul', [lambda x, n: x * n, lambda x, n: n * x])
 def test_array_repeat(t, df, n, mul):
     expr = mul(t.array_of_strings, n)
     result = expr.compile()
     expected = df.apply(
-        lambda row: np.repeat(row.array_of_strings, max(n, 0)), axis=1,
+        lambda row: np.tile(row.array_of_strings, max(n, 0)), axis=1,
     )
     tm.assert_series_equal(
         result.compute(), expected.compute(), check_names=False,
@@ -252,9 +241,9 @@ def test_array_repeat_scalar(client, n, mul):
     expr = mul(array, n)
     result = client.execute(expr)
     if n > 0:
-        expected = np.repeat(raw_array, n)
+        expected = np.tile(raw_array, n)
     else:
-        expected = np.array([])
+        expected = np.array([], dtype=raw_array.dtype)
     ptm.assert_numpy_array_equal(result, expected)
 
 

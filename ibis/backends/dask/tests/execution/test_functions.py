@@ -154,11 +154,6 @@ def test_clip(t, df, ibis_func, dask_func):
     tm.assert_series_equal(result.compute(), expected.compute())
 
 
-@pytest.mark.xfail(
-    raises=NotImplementedError,
-    reason='TODO - arrays - #2553'
-    # Need an ops.MultiQuantile execution func that dispatches on ndarrays
-)
 @pytest.mark.parametrize(
     ('ibis_func', 'dask_func'),
     [
