@@ -209,46 +209,92 @@ def test_separate_database(con, alternate_current_database, current_data_db):
     ['sqlite', 'postgres', 'mysql'],
     reason="run only if backend is SQLAlchemy based",
 )
-def test_insert_from_dataframe(con, df):
-    drop = 'DROP TABLE IF EXISTS temporary_alltypes'
-    create = (
-        'CREATE TABLE IF NOT EXISTS '
-        'temporary_alltypes AS functional_alltypes'
+def test_insert_from_dataframe(con):
+
+    sch = ibis.schema(
+        [
+            ('first_name', 'string'),
+            ('last_name', 'string'),
+            ('department_name', 'string'),
+            ('salary', 'float64'),
+        ]
     )
 
-    con.raw_sql(drop)
-    con.raw_sql(create)
+    df = pd.DataFrame(
+        {
+            'first_name': ['A', 'B', 'C'],
+            'last_name': ['D', 'E', 'F'],
+            'department_name': ['AA', 'BB', 'CC'],
+            'salary': [100.0, 200.0, 300.0],
+        }
+    )
 
-    temporary = con.table('temporary_alltypes')
-    records = df[:10]
+    temp_table = 'temp_to_table'
+    con.drop_table(temp_table, force=True)
+    con.create_table(temp_table, schema=sch)
+    con.load_data(temp_table, df, if_exists='replace')
+    temporary = con.table(temp_table)
+    assert len(temporary.execute()) == 3
 
-    assert len(temporary.execute()) == 0
-    con.insert('temporary_alltypes', data_obj=records)
-
-    tm.assert_frame_equal(temporary.execute(), records)
+    records = pd.DataFrame(
+        {
+            'first_name': ['X', 'Y', 'Z'],
+            'last_name': ['A', 'B', 'C'],
+            'department_name': ['XX', 'YY', 'ZZ'],
+            'salary': [400.0, 500.0, 600.0],
+        }
+    )
+  
+    con.insert('temp_to_table', data_obj=records)
+    assert len(temporary.execute()) == 6
+    
 
 
 @pytest.mark.only_on_backends(
     ['sqlite', 'postgres', 'mysql'],
     reason="run only if backend is SQLAlchemy based",
 )
-def test_insert_from_table(con, from_table_name):
-    drop = 'DROP TABLE IF EXISTS temporary_alltypes'
-    create = (
-        'CREATE TABLE IF NOT EXISTS '
-        'temporary_alltypes AS functional_alltypes'
+def test_insert_from_table(con):
+    sch = ibis.schema(
+        [
+            ('first_name', 'string'),
+            ('last_name', 'string'),
+            ('department_name', 'string'),
+            ('salary', 'float64'),
+        ]
     )
 
-    con.raw_sql(drop)
-    con.raw_sql(create)
+    df = pd.DataFrame(
+        {
+            'first_name': ['A', 'B', 'C'],
+            'last_name': ['D', 'E', 'F'],
+            'department_name': ['AA', 'BB', 'CC'],
+            'salary': [100.0, 200.0, 300.0],
+        }
+    )
 
-    temporary = con.table('temporary_alltypes')
+    temp_table = 'temp_to_table'
+    con.drop_table(temp_table, force=True)
+    con.create_table(temp_table, schema=sch)
+    con.load_data(temp_table, df, if_exists='replace')
+    temporary = con.table(temp_table)
+    assert len(temporary.execute()) == 3
 
-    assert len(temporary.execute()) == 0
-    con.insert('temporary_alltypes', from_table_name=from_table_name)
+    df2 = pd.DataFrame(
+        {
+            'first_name': ['X', 'Y', 'Z'],
+            'last_name': ['A', 'B', 'C'],
+            'department_name': ['XX', 'YY', 'ZZ'],
+            'salary': [400.0, 500.0, 600.0],
+        }
+    )
 
+    from_table_name = 'temp_from_table'
+    con.drop_table(from_table_name, force=True)
+    con.create_table(temp_table, schema=sch)
+    con.load_data(temp_table, df2, if_exists='replace')
     from_table = con.table(from_table_name)
+    assert len(from_table.execute()) == 3
 
-    tm.assert_frame_equal(
-        temporary.execute(), from_table.execute()
-    )
+    con.insert('temp_to_table', from_table_name=from_table_name)
+    assert len(from_table.execute()) == 6
