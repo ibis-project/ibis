@@ -244,10 +244,9 @@ def test_insert_from_dataframe(con):
             'salary': [400.0, 500.0, 600.0],
         }
     )
-  
+
     con.insert('temp_to_table', data_obj=records)
     assert len(temporary.execute()) == 6
-    
 
 
 @pytest.mark.only_on_backends(
