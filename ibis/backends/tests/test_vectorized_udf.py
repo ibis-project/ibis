@@ -14,40 +14,52 @@ from ibis.udf.vectorized import analytic, elementwise, reduction
 pytestmark = pytest.mark.udf
 
 
-@elementwise(input_type=[dt.double], output_type=dt.double)
+# elementwise UDF
 def add_one(s):
     assert isinstance(s, pd.Series)
     return s + 1
 
 
-@elementwise(input_type=[dt.double], output_type=dt.double)
-def add_one_np_array(s):
-    assert isinstance(s, pd.Series)
-    return np.array(s + 1)
+def create_add_one_udf(result_formatter):
+    return elementwise(input_type=[dt.double], output_type=dt.double)(
+        _format_udf_return_type(add_one, result_formatter)
+    )
 
 
-@elementwise(input_type=[dt.double], output_type=dt.double)
-def add_one_list(s):
-    assert isinstance(s, pd.Series)
-    return list(s + 1)
+def _format_udf_return_type(func, result_formatter):
+    def _wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        return result_formatter(result)
+
+    return _wrapper
 
 
-@analytic(input_type=[dt.double], output_type=dt.double)
+add_one_udfs = [
+    create_add_one_udf(result_formatter=lambda v: v),  # pd.Series,
+    create_add_one_udf(result_formatter=lambda v: np.array(v)),  # np.array,
+    create_add_one_udf(result_formatter=lambda v: list(v)),  # list,
+]
+
+
+# analytic UDF
 def calc_zscore(s):
     assert isinstance(s, pd.Series)
     return (s - s.mean()) / s.std()
 
 
-@analytic(input_type=[dt.double], output_type=dt.double)
-def calc_zscore_np_array(s):
-    assert isinstance(s, pd.Series)
-    return np.array((s - s.mean()) / s.std())
+def create_calc_zscore_udf(result_formatter):
+    return analytic(input_type=[dt.double], output_type=dt.double)(
+        _format_udf_return_type(calc_zscore, result_formatter)
+    )
 
 
-@analytic(input_type=[dt.double], output_type=dt.double)
-def calc_zscore_list(s):
-    assert isinstance(s, pd.Series)
-    return list(s - s.mean()) / s.std()
+calc_zscore_udfs = [
+    create_calc_zscore_udf(result_formatter=lambda v: v),  # pd.Series,
+    create_calc_zscore_udf(
+        result_formatter=lambda v: np.array(v)
+    ),  # np.array,
+    create_calc_zscore_udf(result_formatter=lambda v: list(v)),  # list,
+]
 
 
 @reduction(input_type=[dt.double], output_type=dt.double)
@@ -56,40 +68,41 @@ def calc_mean(s):
     return s.mean()
 
 
-@elementwise(
-    input_type=[dt.double],
-    output_type=dt.Struct(['col1', 'col2'], [dt.double, dt.double]),
-)
+def _format_struct_udf_return_type(func, result_formatter):
+    def _wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        return result_formatter(*result)
+
+    return _wrapper
+
+
+# elementwise multi-column UDF
 def add_one_struct(v):
     assert isinstance(v, pd.Series)
     return v + 1, v + 2
 
 
-@elementwise(
-    input_type=[dt.double],
-    output_type=dt.Struct(['col1', 'col2'], [dt.double, dt.double]),
-)
-def add_one_struct_tuple_np_array(v):
-    assert isinstance(v, pd.Series)
-    return np.array(v + 1), np.array(v + 2)
+def create_add_one_struct_udf(result_formatter):
+    return elementwise(
+        input_type=[dt.double],
+        output_type=dt.Struct(['col1', 'col2'], [dt.double, dt.double]),
+    )(_format_struct_udf_return_type(add_one_struct, result_formatter))
 
 
-@elementwise(
-    input_type=[dt.double],
-    output_type=dt.Struct(['col1', 'col2'], [dt.double, dt.double]),
-)
-def add_one_struct_list_np_array(v):
-    assert isinstance(v, pd.Series)
-    return [np.array(v + 1), np.array(v + 2)]
-
-
-@elementwise(
-    input_type=[dt.double],
-    output_type=dt.Struct(['col1', 'col2'], [dt.double, dt.double]),
-)
-def add_one_struct_list_pd_series(v):
-    assert isinstance(v, pd.Series)
-    return [v + 1, v + 2]
+add_one_struct_udfs = [
+    create_add_one_struct_udf(
+        result_formatter=lambda v1, v2: (v1, v2)
+    ),  # tuple of pd.Series,
+    create_add_one_struct_udf(
+        result_formatter=lambda v1, v2: [v1, v2]
+    ),  # list of pd.Series,
+    create_add_one_struct_udf(
+        result_formatter=lambda v1, v2: (np.array(v1), np.array(v2))
+    ),  # tuple of np.array,
+    create_add_one_struct_udf(
+        result_formatter=lambda v1, v2: [np.array(v1), np.array(v2)]
+    ),  # list of np.array,
+]
 
 
 @elementwise(
@@ -124,74 +137,63 @@ def overwrite_struct_analytic(v, w):
     return v - v.mean(), w - w.mean()
 
 
-@analytic(
-    input_type=[dt.double, dt.double],
-    output_type=dt.Struct(['demean', 'demean_weight'], [dt.double, dt.double]),
-)
+# analytic multi-column UDF
 def demean_struct(v, w):
     assert isinstance(v, pd.Series)
     assert isinstance(w, pd.Series)
     return v - v.mean(), w - w.mean()
 
 
-@analytic(
-    input_type=[dt.double, dt.double],
-    output_type=dt.Struct(['demean', 'demean_weight'], [dt.double, dt.double]),
-)
-def demean_struct_tuple_np_array(v, w):
-    assert isinstance(v, pd.Series)
-    assert isinstance(w, pd.Series)
-    return np.array(v - v.mean()), np.array(w - w.mean())
+def create_demean_struct_udf(result_formatter):
+    return analytic(
+        input_type=[dt.double, dt.double],
+        output_type=dt.Struct(
+            ['demean', 'demean_weight'], [dt.double, dt.double]
+        ),
+    )(_format_struct_udf_return_type(demean_struct, result_formatter))
 
 
-@analytic(
-    input_type=[dt.double, dt.double],
-    output_type=dt.Struct(['demean', 'demean_weight'], [dt.double, dt.double]),
-)
-def demean_struct_list_np_array(v, w):
-    assert isinstance(v, pd.Series)
-    assert isinstance(w, pd.Series)
-    return [np.array(v - v.mean()), np.array(w - w.mean())]
+demean_struct_udfs = [
+    create_demean_struct_udf(
+        result_formatter=lambda v1, v2: (v1, v2)
+    ),  # tuple of pd.Series,
+    create_demean_struct_udf(
+        result_formatter=lambda v1, v2: [v1, v2]
+    ),  # list of pd.Series,
+    create_demean_struct_udf(
+        result_formatter=lambda v1, v2: (np.array(v1), np.array(v2))
+    ),  # tuple of np.array,
+    create_demean_struct_udf(
+        result_formatter=lambda v1, v2: [np.array(v1), np.array(v2)]
+    ),  # list of np.array,
+]
 
 
-@analytic(
-    input_type=[dt.double, dt.double],
-    output_type=dt.Struct(['demean', 'demean_weight'], [dt.double, dt.double]),
-)
-def demean_struct_list_pd_series(v, w):
-    assert isinstance(v, pd.Series)
-    assert isinstance(w, pd.Series)
-    return [v - v.mean(), w - w.mean()]
-
-
-@reduction(
-    input_type=[dt.double, dt.double],
-    output_type=dt.Struct(['mean', 'mean_weight'], [dt.double, dt.double]),
-)
+# reduction multi-column UDF
 def mean_struct(v, w):
     assert isinstance(v, (np.ndarray, pd.Series))
     assert isinstance(w, (np.ndarray, pd.Series))
     return v.mean(), w.mean()
 
 
-@reduction(
-    input_type=[dt.double, dt.double],
-    output_type=dt.Struct(['mean', 'mean_weight'], [dt.double, dt.double]),
-)
-def mean_struct_np_array(v, w):
-    assert isinstance(v, (np.ndarray, pd.Series))
-    assert isinstance(w, (np.ndarray, pd.Series))
-    return np.array([v.mean(), w.mean()])
+def create_mean_struct_udf(result_formatter):
+    return reduction(
+        input_type=[dt.double, dt.double],
+        output_type=dt.Struct(['mean', 'mean_weight'], [dt.double, dt.double]),
+    )(_format_struct_udf_return_type(mean_struct, result_formatter))
 
 
-@reduction(
-    input_type=[dt.double, dt.double],
-    output_type=dt.Struct(['mean', 'mean_weight'], [dt.double, dt.double]),
-)
-def mean_struct_list(v, w):
-    assert isinstance(v, (np.ndarray, pd.Series))
-    assert isinstance(w, (np.ndarray, pd.Series))
-    return [v.mean(), w.mean()]
+mean_struct_udfs = [
+    create_mean_struct_udf(
+        result_formatter=lambda v1, v2: (v1, v2)
+    ),  # tuple of scalar,
+    create_mean_struct_udf(
+        result_formatter=lambda v1, v2: [v1, v2]
+    ),  # list of scalar,
+    create_mean_struct_udf(
+        result_formatter=lambda v1, v2: np.array([v1, v2])
+    ),  # np.array of scalar
+]
 
 
 @reduction(
@@ -209,14 +211,15 @@ def overwrite_struct_reduction(v, w):
 @pytest.mark.only_on_backends(['pandas', 'pyspark', 'dask'])
 @pytest.mark.xfail_unsupported
 def test_elementwise_udf(backend, alltypes, df):
-    result = add_one(alltypes['double_col']).execute()
-    expected = add_one.func(df['double_col'])
+    add_one_udf = create_add_one_udf(result_formatter=lambda v: v)
+    result = add_one_udf(alltypes['double_col']).execute()
+    expected = add_one_udf.func(df['double_col'])
     backend.assert_series_equal(result, expected, check_names=False)
 
 
 @pytest.mark.only_on_backends(['pandas', 'pyspark', 'dask'])
 @pytest.mark.xfail_unsupported
-@pytest.mark.parametrize('udf', [add_one, add_one_np_array, add_one_list])
+@pytest.mark.parametrize('udf', add_one_udfs)
 def test_elementwise_udf_mutate(backend, alltypes, df, udf):
     expr = alltypes.mutate(incremented=udf(alltypes['double_col']))
     result = expr.execute()
@@ -229,17 +232,16 @@ def test_elementwise_udf_mutate(backend, alltypes, df, udf):
 @pytest.mark.only_on_backends(['pandas', 'pyspark', 'dask'])
 @pytest.mark.xfail_unsupported
 def test_analytic_udf(backend, alltypes, df):
-    result = calc_zscore(alltypes['double_col']).execute()
-    expected = calc_zscore.func(df['double_col'])
+    calc_zscore_udf = create_calc_zscore_udf(result_formatter=lambda v: v)
+    result = calc_zscore_udf(alltypes['double_col']).execute()
+    expected = calc_zscore_udf.func(df['double_col'])
     backend.assert_series_equal(result, expected, check_names=False)
 
 
 @pytest.mark.only_on_backends(['pandas', 'pyspark'])
 # TODO - windowing - #2553
 @pytest.mark.xfail_unsupported
-@pytest.mark.parametrize(
-    'udf', [calc_zscore, calc_zscore_np_array, calc_zscore_list]
-)
+@pytest.mark.parametrize('udf', calc_zscore_udfs)
 def test_analytic_udf_mutate(backend, alltypes, df, udf):
     expr = alltypes.mutate(zscore=udf(alltypes['double_col']))
     result = expr.execute()
@@ -395,17 +397,10 @@ def test_invalid_kwargs(backend, alltypes):
             return v + 1
 
 
-@pytest.mark.only_on_backends(['pandas', 'pyspark', 'dask'])
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
+@pytest.mark.xfail_backends(['dask'])
 @pytest.mark.xfail_unsupported
-@pytest.mark.parametrize(
-    'udf',
-    [
-        add_one_struct,
-        add_one_struct_tuple_np_array,
-        add_one_struct_list_np_array,
-        add_one_struct_list_pd_series,
-    ],
-)
+@pytest.mark.parametrize('udf', add_one_struct_udfs)
 def test_elementwise_udf_destruct(backend, alltypes, udf):
     result = alltypes.mutate(
         udf(alltypes['double_col']).destructure()
@@ -418,7 +413,8 @@ def test_elementwise_udf_destruct(backend, alltypes, udf):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.only_on_backends(['pandas', 'pyspark', 'dask'])
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
+@pytest.mark.xfail_backends(['dask'])
 @pytest.mark.xfail_unsupported
 def test_elementwise_udf_overwrite_destruct(backend, alltypes):
     result = alltypes.mutate(
@@ -464,7 +460,8 @@ def test_elementwise_udf_overwrite_destruct_and_assign(backend, alltypes):
     backend.assert_frame_equal(result, expected, check_like=True)
 
 
-@pytest.mark.only_on_backends(['pandas', 'pyspark', 'dask'])
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
+@pytest.mark.xfail_backends(['dask'])
 @pytest.mark.xfail_unsupported
 @pytest.mark.min_spark_version('3.1')
 def test_elementwise_udf_destruct_exact_once(backend, alltypes):
@@ -490,7 +487,8 @@ def test_elementwise_udf_destruct_exact_once(backend, alltypes):
         assert len(result) > 0
 
 
-@pytest.mark.only_on_backends(['pandas', 'pyspark', 'dask'])
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
+@pytest.mark.xfail_backends(['dask'])
 @pytest.mark.xfail_unsupported
 def test_elementwise_udf_multiple_overwrite_destruct(backend, alltypes):
     result = alltypes.mutate(
@@ -519,11 +517,14 @@ def test_elementwise_udf_multiple_overwrite_destruct(backend, alltypes):
 def test_elementwise_udf_named_destruct(backend, alltypes):
     """Test error when assigning name to a destruct column."""
 
+    add_one_struct_udf = create_add_one_struct_udf(
+        result_formatter=lambda v1, v2: (v1, v2)
+    )
     with pytest.raises(
         com.ExpressionError, match=r".*Cannot name a destruct.*"
     ):
         alltypes.mutate(
-            new_struct=add_one_struct(alltypes['double_col']).destructure()
+            new_struct=add_one_struct_udf(alltypes['double_col']).destructure()
         )
 
 
@@ -548,15 +549,7 @@ def test_elementwise_udf_struct(backend, alltypes):
 @pytest.mark.only_on_backends(['pandas'])
 # TODO - windowing - #2553
 @pytest.mark.xfail_backends(['dask'])
-@pytest.mark.parametrize(
-    'udf',
-    [
-        demean_struct,
-        demean_struct_tuple_np_array,
-        demean_struct_list_np_array,
-        demean_struct_list_pd_series,
-    ],
-)
+@pytest.mark.parametrize('udf', demean_struct_udfs)
 def test_analytic_udf_destruct(backend, alltypes, udf):
     w = window(preceding=None, following=None, group_by='year')
 
@@ -578,8 +571,11 @@ def test_analytic_udf_destruct(backend, alltypes, udf):
 def test_analytic_udf_destruct_no_groupby(backend, alltypes):
     w = window(preceding=None, following=None)
 
+    demean_struct_udf = create_demean_struct_udf(
+        result_formatter=lambda v1, v2: (v1, v2)
+    )
     result = alltypes.mutate(
-        demean_struct(alltypes['double_col'], alltypes['int_col'])
+        demean_struct_udf(alltypes['double_col'], alltypes['int_col'])
         .over(w)
         .destructure()
     ).execute()
@@ -621,9 +617,7 @@ def test_analytic_udf_destruct_overwrite(backend, alltypes):
 
 
 @pytest.mark.only_on_backends(['pandas', 'dask'])
-@pytest.mark.parametrize(
-    'udf', [mean_struct, mean_struct_np_array, mean_struct_list]
-)
+@pytest.mark.parametrize('udf', mean_struct_udfs)
 def test_reduction_udf_destruct_groupby(backend, alltypes, udf):
     result = (
         alltypes.groupby('year')
@@ -647,8 +641,13 @@ def test_reduction_udf_destruct_groupby(backend, alltypes, udf):
 
 @pytest.mark.only_on_backends(['pandas', 'dask'])
 def test_reduction_udf_destruct_no_groupby(backend, alltypes):
+    mean_struct_udf = create_mean_struct_udf(
+        result_formatter=lambda v1, v2: (v1, v2)
+    )
     result = alltypes.aggregate(
-        mean_struct(alltypes['double_col'], alltypes['int_col']).destructure()
+        mean_struct_udf(
+            alltypes['double_col'], alltypes['int_col']
+        ).destructure()
     ).execute()
 
     expected = alltypes.aggregate(
@@ -690,9 +689,12 @@ def test_reduction_udf_destruct_window(backend, alltypes):
         group_by='year',
         order_by='timestamp_col',
     )
+    mean_struct_udf = create_mean_struct_udf(
+        result_formatter=lambda v1, v2: (v1, v2)
+    )
 
     result = alltypes.mutate(
-        mean_struct(alltypes['double_col'], alltypes['int_col'])
+        mean_struct_udf(alltypes['double_col'], alltypes['int_col'])
         .over(win)
         .destructure()
     ).execute()

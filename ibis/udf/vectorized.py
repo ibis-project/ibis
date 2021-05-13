@@ -43,7 +43,6 @@ class UserDefinedFunction(object):
         @functools.wraps(self.func)
         def func(*args):
             # If cols are pd.Series, then we save and restore the index.
-            # Otherwise, we will reset the index to the natural index.
             if hasattr(args[0], 'index'):
                 saved_index = args[0].index
             else:
@@ -67,8 +66,6 @@ class UserDefinedFunction(object):
                     # assigned to the original table with rows aligned
                     if saved_index is not None:
                         result.index = saved_index
-                    else:
-                        result = result.reset_index(drop=True)
                 elif isinstance(result, (list, np.ndarray)):
                     # Multi-col aggregation does not support
                     # returning np.ndarray
@@ -83,8 +80,6 @@ class UserDefinedFunction(object):
                     # assigned to the original table with rows aligned
                     if saved_index is not None:
                         result.index = saved_index
-                    else:
-                        result = result.reset_index(drop=True)
             return result
 
         op = self.func_type(
