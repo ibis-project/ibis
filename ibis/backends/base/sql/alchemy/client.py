@@ -410,7 +410,7 @@ class AlchemyClient(SQLClient):
 
             to_table = self._table_from_schema(
                 to_table_name,
-                schema,
+                to_table_schema,
                 database=database or self.current_database,
             )
 
@@ -418,7 +418,7 @@ class AlchemyClient(SQLClient):
 
             with self.begin() as bind:
                 to_table.create(bind=bind)
-                if expr is not None:
+                if from_table_expr is not None:
                     bind.execute(
                         to_table.insert().from_select(
                             list(from_table_expr.columns),

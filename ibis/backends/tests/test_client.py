@@ -1,5 +1,4 @@
 import pandas as pd
-import pandas.testing as tm
 import pytest
 from pkg_resources import parse_version
 
