@@ -102,6 +102,9 @@ add_one_struct_udfs = [
     create_add_one_struct_udf(
         result_formatter=lambda v1, v2: [np.array(v1), np.array(v2)]
     ),  # list of np.array,
+    create_add_one_struct_udf(
+        result_formatter=lambda v1, v2: pd.DataFrame({'col1': v1, 'col2': v2})
+    ),  # pd.DataFrame,
 ]
 
 
@@ -166,6 +169,11 @@ demean_struct_udfs = [
     create_demean_struct_udf(
         result_formatter=lambda v1, v2: [np.array(v1), np.array(v2)]
     ),  # list of np.array,
+    create_demean_struct_udf(
+        result_formatter=lambda v1, v2: pd.DataFrame(
+            {'demean': v1, 'demean_weight': v2}
+        )
+    ),  # pd.DataFrame,
 ]
 
 
@@ -193,6 +201,9 @@ mean_struct_udfs = [
     create_mean_struct_udf(
         result_formatter=lambda v1, v2: np.array([v1, v2])
     ),  # np.array of scalar
+    create_mean_struct_udf(
+        result_formatter=lambda v1, v2: pd.Series([v1, v2])
+    ),  # pd.Series of scalar
 ]
 
 
