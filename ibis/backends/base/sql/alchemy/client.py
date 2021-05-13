@@ -405,12 +405,26 @@ class AlchemyClient(SQLClient):
                 **params,
             )
         elif isinstance(from_table_name, str):
-            self.raw_sql(
-                "INSERT INTO {to_table} "
-                "SELECT * FROM {from_table}".format(
-                    to_table=to_table_name, from_table=from_table_name,
-                )
+            to_table_expr = self.table(to_table_name)
+            to_table_schema = to_table_expr.schema()
+
+            to_table = self._table_from_schema(
+                to_table_name,
+                schema,
+                database=database or self.current_database,
             )
+
+            from_table_expr = self.table(from_table_name)
+
+            with self.begin() as bind:
+                to_table.create(bind=bind)
+                if expr is not None:
+                    bind.execute(
+                        to_table.insert().from_select(
+                            list(from_table_expr.columns),
+                            from_table_expr.compile(),
+                        )
+                    )
         else:
             raise ValueError(
                 'No operation is being performed. Either the data_obj'
