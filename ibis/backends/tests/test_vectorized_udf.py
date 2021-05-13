@@ -434,7 +434,8 @@ def test_elementwise_udf_overwrite_destruct(backend, alltypes):
     backend.assert_frame_equal(result, expected, check_like=True)
 
 
-@pytest.mark.only_on_backends(['pandas', 'pyspark', 'dask'])
+@pytest.mark.only_on_backends(['pandas', 'pyspark'])
+@pytest.mark.xfail_backends(['dask'])
 @pytest.mark.xfail_unsupported
 def test_elementwise_udf_overwrite_destruct_and_assign(backend, alltypes):
     result = (
@@ -531,8 +532,11 @@ def test_elementwise_udf_named_destruct(backend, alltypes):
 @pytest.mark.only_on_backends(['pyspark'])
 @pytest.mark.xfail_unsupported
 def test_elementwise_udf_struct(backend, alltypes):
+    add_one_struct_udf = create_add_one_struct_udf(
+        result_formatter=lambda v1, v2: (v1, v2)
+    )
     result = alltypes.mutate(
-        new_col=add_one_struct(alltypes['double_col'])
+        new_col=add_one_struct_udf(alltypes['double_col'])
     ).execute()
     result = result.assign(
         col1=result['new_col'].apply(lambda x: x[0]),
