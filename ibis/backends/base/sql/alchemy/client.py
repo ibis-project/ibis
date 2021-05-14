@@ -364,12 +364,10 @@ class AlchemyClient(SQLClient):
             You must pass either data_obj (pandas Dataframe) or
             from_table_name (table name to insert data from)
 
-        ValueError
             Sorry, can't insert from both the data_obj (dataframe)
             and the from_table_name (table). Please use only one
             parameter.
 
-        ValueError
             No operation is being performed. Either the data_obj
             parameter is not a pandas dataframe or the
             from_table_name parameter is not of string datatype.
