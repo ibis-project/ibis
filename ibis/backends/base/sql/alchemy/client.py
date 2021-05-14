@@ -352,8 +352,11 @@ class AlchemyClient(SQLClient):
             inserted to to_table_name
         from_table_name : string, optional
             name of the table from which data needs to be inserted
-        if_exists : string, default 'append'
-            The values available are: {‘fail’, ‘replace’, ‘append’}
+        if_exists : {'append', 'fail', 'replace'}
+            With append, the rows will be added to the table. With fail,
+            an exception will be raised if the table exists. With replace,
+            if the table exists, it'll be dropped, and recreated before
+            inserting the rows.
 
         Raises
         -------
@@ -364,6 +367,9 @@ class AlchemyClient(SQLClient):
             Sorry, can't insert from both the data_obj (dataframe)
             and the from_table_name (table). Please use only one
             parameter.
+
+        RuntimeError
+            The table already exists
 
         TypeError
             No operation is being performed. Either the data_obj
@@ -401,26 +407,59 @@ class AlchemyClient(SQLClient):
                 **params,
             )
         elif isinstance(from_table_name, str):
-            to_table_expr = self.table(to_table_name)
-            to_table_schema = to_table_expr.schema()
+            if if_exists == 'fail' and to_table_name in self.list_tables():
+                raise RuntimeError('The table already exists')
+            elif if_exists == 'replace' and to_table_name in self.list_tables(
+                ):
+                to_table_expr = self.table(to_table_name)
+                to_table_schema = to_table_expr.schema()
 
-            to_table = self._table_from_schema(
-                to_table_name,
-                to_table_schema,
-                database=database or self.current_database,
-            )
+                self.drop_table(to_table_name, database=database)
+                self.create_table(
+                    to_table_name,
+                    schema=to_table_schema,
+                    database=database
+                )
 
-            from_table_expr = self.table(from_table_name)
+                to_table = self._table_from_schema(
+                    to_table_name,
+                    to_table_schema,
+                    database=database or self.current_database,
+                )
 
-            with self.begin() as bind:
-                to_table.create(bind=bind)
-                if from_table_expr is not None:
-                    bind.execute(
-                        to_table.insert().from_select(
-                            list(from_table_expr.columns),
-                            from_table_expr.compile(),
+                from_table_expr = self.table(from_table_name)
+
+                with self.begin() as bind:
+                    to_table.create(bind=bind)
+                    if from_table_expr is not None:
+                        bind.execute(
+                            to_table.insert().from_select(
+                                list(from_table_expr.columns),
+                                from_table_expr.compile(),
+                            )
                         )
-                    )
+            elif if_exists == 'append' and to_table_name in self.list_tables(
+                ):
+                to_table_expr = self.table(to_table_name)
+                to_table_schema = to_table_expr.schema()
+
+                to_table = self._table_from_schema(
+                    to_table_name,
+                    to_table_schema,
+                    database=database or self.current_database,
+                )
+
+                from_table_expr = self.table(from_table_name)
+
+                with self.begin() as bind:
+                    to_table.create(bind=bind)
+                    if from_table_expr is not None:
+                        bind.execute(
+                            to_table.insert().from_select(
+                                list(from_table_expr.columns),
+                                from_table_expr.compile(),
+                            )
+                        )
         else:
             raise TypeError(
                 'No operation is being performed. Either the data_obj'
