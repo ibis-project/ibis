@@ -1,4 +1,5 @@
 import pandas as pd
+import pandas.testing as tm
 import pytest
 from pkg_resources import parse_version
 
@@ -219,21 +220,11 @@ def test_insert_from_dataframe(con):
         ]
     )
 
-    df = pd.DataFrame(
-        {
-            'first_name': ['A', 'B', 'C'],
-            'last_name': ['D', 'E', 'F'],
-            'department_name': ['AA', 'BB', 'CC'],
-            'salary': [100.0, 200.0, 300.0],
-        }
-    )
-
     temp_table = 'temp_to_table'
     con.drop_table(temp_table, force=True)
     con.create_table(temp_table, schema=sch)
-    con.load_data(temp_table, df, if_exists='replace')
     temporary = con.table(temp_table)
-    assert len(temporary.execute()) == 3
+    assert len(temporary.execute()) == 0
 
     records = pd.DataFrame(
         {
@@ -245,7 +236,8 @@ def test_insert_from_dataframe(con):
     )
 
     con.insert('temp_to_table', data_obj=records)
-    assert len(temporary.execute()) == 6
+    assert len(temporary.execute()) == 3
+    tm.assert_frame_equal(temporary.execute(), records)
 
 
 @pytest.mark.only_on_backends(
@@ -262,21 +254,11 @@ def test_insert_from_table(con):
         ]
     )
 
-    df = pd.DataFrame(
-        {
-            'first_name': ['A', 'B', 'C'],
-            'last_name': ['D', 'E', 'F'],
-            'department_name': ['AA', 'BB', 'CC'],
-            'salary': [100.0, 200.0, 300.0],
-        }
-    )
-
     temp_table = 'temp_to_table'
     con.drop_table(temp_table, force=True)
     con.create_table(temp_table, schema=sch)
-    con.load_data(temp_table, df, if_exists='replace')
     temporary = con.table(temp_table)
-    assert len(temporary.execute()) == 3
+    assert len(temporary.execute()) == 0
 
     df2 = pd.DataFrame(
         {
@@ -295,4 +277,5 @@ def test_insert_from_table(con):
     assert len(from_table.execute()) == 3
 
     con.insert('temp_to_table', from_table_name=from_table_name)
-    assert len(from_table.execute()) == 6
+    assert len(from_table.execute()) == 3
+    tm.assert_frame_equal(temporary.execute(), from_table.execute())
