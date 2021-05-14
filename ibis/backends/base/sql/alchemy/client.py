@@ -348,11 +348,8 @@ class AlchemyClient(SQLClient):
         database : string, optional
             name of the attached database that the table is located in.
         data_obj : pd.Dataframe
-            (Later can also be used for sending in table_expr)
             data_obj is the dataframe containing data which needs to be
             inserted to to_table_name
-            (Later when table_expr related implementation is done this
-            variable can be used to take in that data)
         from_table_name : string, optional
             name of the table from which data needs to be inserted
         if_exists : string, default 'append'
