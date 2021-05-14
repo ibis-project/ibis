@@ -368,6 +368,7 @@ class AlchemyClient(SQLClient):
             and the from_table_name (table). Please use only one
             parameter.
 
+        TypeError
             No operation is being performed. Either the data_obj
             parameter is not a pandas dataframe or the
             from_table_name parameter is not of string datatype.
@@ -424,7 +425,7 @@ class AlchemyClient(SQLClient):
                         )
                     )
         else:
-            raise ValueError(
+            raise TypeError(
                 'No operation is being performed. Either the data_obj'
                 ' parameter is not a pandas dataframe or the'
                 ' from_table_name parameter is not of string datatype.'
