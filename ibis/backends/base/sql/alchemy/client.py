@@ -347,8 +347,8 @@ class AlchemyClient(SQLClient):
             name of the table to which data needs to be inserted
         database : string, optional
             name of the attached database that the table is located in.
-        data_obj : pd.Dataframe (Later can also be used for sending in
-        table_expr)
+        data_obj : pd.Dataframe
+            (Later can also be used for sending in table_expr)
             data_obj is the dataframe containing data which needs to be
             inserted to to_table_name
             (Later when table_expr related implementation is done this
