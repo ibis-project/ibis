@@ -409,16 +409,15 @@ class AlchemyClient(SQLClient):
         elif isinstance(from_table_name, str):
             if if_exists == 'fail' and to_table_name in self.list_tables():
                 raise RuntimeError('The table already exists')
-            elif if_exists == 'replace' and to_table_name in self.list_tables(
-                ):
+            elif (
+                if_exists == 'replace' and to_table_name in self.list_tables()
+            ):
                 to_table_expr = self.table(to_table_name)
                 to_table_schema = to_table_expr.schema()
 
                 self.drop_table(to_table_name, database=database)
                 self.create_table(
-                    to_table_name,
-                    schema=to_table_schema,
-                    database=database
+                    to_table_name, schema=to_table_schema, database=database
                 )
 
                 to_table = self._table_from_schema(
@@ -438,8 +437,7 @@ class AlchemyClient(SQLClient):
                                 from_table_expr.compile(),
                             )
                         )
-            elif if_exists == 'append' and to_table_name in self.list_tables(
-                ):
+            elif if_exists == 'append' and to_table_name in self.list_tables():
                 to_table_expr = self.table(to_table_name)
                 to_table_schema = to_table_expr.schema()
 
