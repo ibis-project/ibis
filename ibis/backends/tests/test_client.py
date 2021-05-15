@@ -271,8 +271,8 @@ def test_insert_from_table(con):
 
     from_table_name = 'temp_from_table'
     con.drop_table(from_table_name, force=True)
-    con.create_table(temp_table, schema=sch)
-    con.load_data(temp_table, df2, if_exists='replace')
+    con.create_table(from_table_name, schema=sch)
+    con.load_data(from_table_name, df2, if_exists='replace')
     from_table = con.table(from_table_name)
     assert len(from_table.execute()) == 3
 
