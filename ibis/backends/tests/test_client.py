@@ -272,6 +272,7 @@ def test_insert_replace_from_dataframe(con):
         }
     )
     con.load_data(temp_table, df, if_exists='append')
+    assert len(temporary.execute()) == 3
 
     records = pd.DataFrame(
         {
@@ -313,6 +314,7 @@ def test_insert_fail_from_dataframe(con):
         }
     )
     con.load_data(temp_table, df, if_exists='append')
+    assert len(temporary.execute()) == 3
 
     records = pd.DataFrame(
         {
@@ -390,6 +392,7 @@ def test_insert_replace_from_table(con):
         }
     )
     con.load_data(temp_table, df, if_exists='append')
+    assert len(temporary.execute()) == 3
 
     df2 = pd.DataFrame(
         {
@@ -439,6 +442,7 @@ def test_insert_fail_from_table(con):
         }
     )
     con.load_data(temp_table, df, if_exists='append')
+    assert len(temporary.execute()) == 3
 
     df2 = pd.DataFrame(
         {
