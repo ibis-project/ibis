@@ -205,12 +205,21 @@ def test_separate_database(con, alternate_current_database, current_data_db):
     assert tmp_db.name == alternate_current_database
 
 
+def create_temp_table_with_schema(con, temp_table_name, schema):
+
+    con.drop_table(temp_table_name, force=True)
+    con.create_table(temp_table_name, schema=schema)
+    temporary = con.table(temp_table_name)
+    assert len(temporary.execute()) == 0
+
+    return temporary
+
+
 @pytest.mark.only_on_backends(
     ['sqlite', 'postgres', 'mysql'],
     reason="run only if backend is SQLAlchemy based",
 )
 def test_insert_from_dataframe(con):
-
     sch = ibis.schema(
         [
             ('first_name', 'string'),
@@ -221,10 +230,7 @@ def test_insert_from_dataframe(con):
     )
 
     temp_table = 'temp_to_table'
-    con.drop_table(temp_table, force=True)
-    con.create_table(temp_table, schema=sch)
-    temporary = con.table(temp_table)
-    assert len(temporary.execute()) == 0
+    temporary = create_temp_table_with_schema(con, temp_table, sch)
 
     records = pd.DataFrame(
         {
@@ -235,7 +241,7 @@ def test_insert_from_dataframe(con):
         }
     )
 
-    con.insert('temp_to_table', data_obj=records)
+    con.insert(temp_table, data_obj=records)
     assert len(temporary.execute()) == 3
     tm.assert_frame_equal(temporary.execute(), records)
 
@@ -255,10 +261,7 @@ def test_insert_from_table(con):
     )
 
     temp_table = 'temp_to_table'
-    con.drop_table(temp_table, force=True)
-    con.create_table(temp_table, schema=sch)
-    temporary = con.table(temp_table)
-    assert len(temporary.execute()) == 0
+    temporary = create_temp_table_with_schema(con, temp_table, sch)
 
     df2 = pd.DataFrame(
         {
@@ -270,12 +273,11 @@ def test_insert_from_table(con):
     )
 
     from_table_name = 'temp_from_table'
-    con.drop_table(from_table_name, force=True)
-    con.create_table(from_table_name, schema=sch)
+    from_table = create_temp_table_with_schema(con, from_table_name, sch)
+
     con.load_data(from_table_name, df2, if_exists='replace')
-    from_table = con.table(from_table_name)
     assert len(from_table.execute()) == 3
 
-    con.insert('temp_to_table', from_table_name=from_table_name)
+    con.insert(temp_table, from_table_name=from_table_name)
     assert len(from_table.execute()) == 3
     tm.assert_frame_equal(temporary.execute(), from_table.execute())
