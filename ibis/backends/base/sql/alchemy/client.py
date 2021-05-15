@@ -410,36 +410,20 @@ class AlchemyClient(SQLClient):
             if if_exists == 'fail' and to_table_name in self.list_tables():
                 raise RuntimeError('The table already exists')
             elif (
-                if_exists == 'replace' and to_table_name in self.list_tables()
+                (
+                    if_exists == 'replace' or if_exists == 'append'
+                ) and to_table_name in self.list_tables()
             ):
                 to_table_expr = self.table(to_table_name)
                 to_table_schema = to_table_expr.schema()
 
-                self.drop_table(to_table_name, database=database)
-                self.create_table(
-                    to_table_name, schema=to_table_schema, database=database
-                )
-
-                to_table = self._table_from_schema(
-                    to_table_name,
-                    to_table_schema,
-                    database=database or self.current_database,
-                )
-
-                from_table_expr = self.table(from_table_name)
-
-                with self.begin() as bind:
-                    to_table.create(bind=bind)
-                    if from_table_expr is not None:
-                        bind.execute(
-                            to_table.insert().from_select(
-                                list(from_table_expr.columns),
-                                from_table_expr.compile(),
-                            )
-                        )
-            elif if_exists == 'append' and to_table_name in self.list_tables():
-                to_table_expr = self.table(to_table_name)
-                to_table_schema = to_table_expr.schema()
+                if if_exists == 'replace':
+                    self.drop_table(to_table_name, database=database)
+                    self.create_table(
+                        to_table_name,
+                        schema=to_table_schema,
+                        database=database
+                    )
 
                 to_table = self._table_from_schema(
                     to_table_name,
