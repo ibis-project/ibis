@@ -406,7 +406,9 @@ def test_insert_replace_from_table(con):
     con.load_data(from_table_name, df2, if_exists='append')
     assert len(from_table.execute()) == 3
 
-    con.insert(temp_table, from_table_name=from_table_name, if_exists='replace')
+    con.insert(
+        temp_table, from_table_name=from_table_name, if_exists='replace'
+    )
     assert len(from_table.execute()) == 3
     tm.assert_frame_equal(temporary.execute(), from_table.execute())
 
@@ -454,4 +456,6 @@ def test_insert_fail_from_table(con):
     assert len(from_table.execute()) == 3
 
     with pytest.raises(RuntimeError):
-        con.insert(temp_table, from_table_name=from_table_name, if_exists='fail')
+        con.insert(
+            temp_table, from_table_name=from_table_name, if_exists='fail'
+        )
