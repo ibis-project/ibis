@@ -219,7 +219,7 @@ def create_temp_table_with_schema(con, temp_table_name, schema):
     ['sqlite', 'postgres', 'mysql'],
     reason="run only if backend is SQLAlchemy based",
 )
-def test_insert_from_dataframe(con):
+def test_insert_append_from_dataframe(con):
     sch = ibis.schema(
         [
             ('first_name', 'string'),
@@ -241,7 +241,7 @@ def test_insert_from_dataframe(con):
         }
     )
 
-    con.insert(temp_table, data_obj=records)
+    con.insert(temp_table, data_obj=records, if_exists='append')
     assert len(temporary.execute()) == 3
     tm.assert_frame_equal(temporary.execute(), records)
 
@@ -250,7 +250,88 @@ def test_insert_from_dataframe(con):
     ['sqlite', 'postgres', 'mysql'],
     reason="run only if backend is SQLAlchemy based",
 )
-def test_insert_from_table(con):
+def test_insert_replace_from_dataframe(con):
+    sch = ibis.schema(
+        [
+            ('first_name', 'string'),
+            ('last_name', 'string'),
+            ('department_name', 'string'),
+            ('salary', 'float64'),
+        ]
+    )
+
+    temp_table = 'temp_to_table'
+    temporary = create_temp_table_with_schema(con, temp_table, sch)
+
+    df = pd.DataFrame(
+        {
+            'first_name': ['A', 'B', 'C'],
+            'last_name': ['D', 'E', 'F'],
+            'department_name': ['AA', 'BB', 'CC'],
+            'salary': [100.0, 200.0, 300.0],
+        }
+    )
+    con.load_data(temp_table, df, if_exists='append')
+
+    records = pd.DataFrame(
+        {
+            'first_name': ['X', 'Y', 'Z'],
+            'last_name': ['A', 'B', 'C'],
+            'department_name': ['XX', 'YY', 'ZZ'],
+            'salary': [400.0, 500.0, 600.0],
+        }
+    )
+
+    con.insert(temp_table, data_obj=records, if_exists='replace')
+    assert len(temporary.execute()) == 3
+    tm.assert_frame_equal(temporary.execute(), records)
+
+
+@pytest.mark.only_on_backends(
+    ['sqlite', 'postgres', 'mysql'],
+    reason="run only if backend is SQLAlchemy based",
+)
+def test_insert_fail_from_dataframe(con):
+    sch = ibis.schema(
+        [
+            ('first_name', 'string'),
+            ('last_name', 'string'),
+            ('department_name', 'string'),
+            ('salary', 'float64'),
+        ]
+    )
+
+    temp_table = 'temp_to_table'
+    temporary = create_temp_table_with_schema(con, temp_table, sch)
+
+    df = pd.DataFrame(
+        {
+            'first_name': ['A', 'B', 'C'],
+            'last_name': ['D', 'E', 'F'],
+            'department_name': ['AA', 'BB', 'CC'],
+            'salary': [100.0, 200.0, 300.0],
+        }
+    )
+    con.load_data(temp_table, df, if_exists='append')
+
+    records = pd.DataFrame(
+        {
+            'first_name': ['X', 'Y', 'Z'],
+            'last_name': ['A', 'B', 'C'],
+            'department_name': ['XX', 'YY', 'ZZ'],
+            'salary': [400.0, 500.0, 600.0],
+        }
+    )
+
+    with pytest.raises(ValueError):
+        con.insert(temp_table, data_obj=records, if_exists='fail')
+
+
+@pytest.mark.only_on_backends(
+    ['sqlite', 'postgres', 'mysql'],
+    reason="run only if backend is SQLAlchemy based",
+)
+def test_insert_append_from_table(con):
     sch = ibis.schema(
         [
             ('first_name', 'string'),
@@ -275,9 +356,102 @@ def test_insert_from_table(con):
     from_table_name = 'temp_from_table'
     from_table = create_temp_table_with_schema(con, from_table_name, sch)
 
-    con.load_data(from_table_name, df2, if_exists='replace')
+    con.load_data(from_table_name, df2, if_exists='append')
     assert len(from_table.execute()) == 3
 
-    con.insert(temp_table, from_table_name=from_table_name)
+    con.insert(temp_table, from_table_name=from_table_name, if_exists='append')
     assert len(from_table.execute()) == 3
     tm.assert_frame_equal(temporary.execute(), from_table.execute())
+
+
+@pytest.mark.only_on_backends(
+    ['sqlite', 'postgres', 'mysql'],
+    reason="run only if backend is SQLAlchemy based",
+)
+def test_insert_replace_from_table(con):
+    sch = ibis.schema(
+        [
+            ('first_name', 'string'),
+            ('last_name', 'string'),
+            ('department_name', 'string'),
+            ('salary', 'float64'),
+        ]
+    )
+
+    temp_table = 'temp_to_table'
+    temporary = create_temp_table_with_schema(con, temp_table, sch)
+
+    df = pd.DataFrame(
+        {
+            'first_name': ['A', 'B', 'C'],
+            'last_name': ['D', 'E', 'F'],
+            'department_name': ['AA', 'BB', 'CC'],
+            'salary': [100.0, 200.0, 300.0],
+        }
+    )
+    con.load_data(temp_table, df, if_exists='append')
+
+    df2 = pd.DataFrame(
+        {
+            'first_name': ['X', 'Y', 'Z'],
+            'last_name': ['A', 'B', 'C'],
+            'department_name': ['XX', 'YY', 'ZZ'],
+            'salary': [400.0, 500.0, 600.0],
+        }
+    )
+
+    from_table_name = 'temp_from_table'
+    from_table = create_temp_table_with_schema(con, from_table_name, sch)
+
+    con.load_data(from_table_name, df2, if_exists='append')
+    assert len(from_table.execute()) == 3
+
+    con.insert(temp_table, from_table_name=from_table_name, if_exists='replace')
+    assert len(from_table.execute()) == 3
+    tm.assert_frame_equal(temporary.execute(), from_table.execute())
+
+
+@pytest.mark.only_on_backends(
+    ['sqlite', 'postgres', 'mysql'],
+    reason="run only if backend is SQLAlchemy based",
+)
+def test_insert_fail_from_table(con):
+    sch = ibis.schema(
+        [
+            ('first_name', 'string'),
+            ('last_name', 'string'),
+            ('department_name', 'string'),
+            ('salary', 'float64'),
+        ]
+    )
+
+    temp_table = 'temp_to_table'
+    temporary = create_temp_table_with_schema(con, temp_table, sch)
+
+    df = pd.DataFrame(
+        {
+            'first_name': ['A', 'B', 'C'],
+            'last_name': ['D', 'E', 'F'],
+            'department_name': ['AA', 'BB', 'CC'],
+            'salary': [100.0, 200.0, 300.0],
+        }
+    )
+    con.load_data(temp_table, df, if_exists='append')
+
+    df2 = pd.DataFrame(
+        {
+            'first_name': ['X', 'Y', 'Z'],
+            'last_name': ['A', 'B', 'C'],
+            'department_name': ['XX', 'YY', 'ZZ'],
+            'salary': [400.0, 500.0, 600.0],
+        }
+    )
+
+    from_table_name = 'temp_from_table'
+    from_table = create_temp_table_with_schema(con, from_table_name, sch)
+
+    con.load_data(from_table_name, df2, if_exists='append')
+    assert len(from_table.execute()) == 3
+
+    with pytest.raises(RuntimeError):
+        con.insert(temp_table, from_table_name=from_table_name, if_exists='fail')
