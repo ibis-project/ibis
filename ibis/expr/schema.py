@@ -1,5 +1,8 @@
 import collections
+from typing import Any, List
 
+import numpy as np
+import pandas as pd
 from multipledispatch import Dispatcher
 
 import ibis.common.exceptions as com
@@ -182,3 +185,78 @@ def schema_from_pairs(lst):
 @schema.register(collections.abc.Iterable, collections.abc.Iterable)
 def schema_from_names_types(names, types):
     return Schema(names, types)
+
+
+def coerce_to_dataframe(
+    data: Any, column_names: List[str], types: List[dt.DataType]
+) -> pd.DataFrame:
+    """Coerce the following shapes to a DataFrame.
+
+    The following shapes are allowed:
+    (1) A list/tuple of Series
+    (2) A list/tuple np.ndarray
+    (3) A list/tuple of scalars
+    (4) A Series of list/tuple
+    (5) pd.DataFrame
+
+    Note:
+    This method does NOT always return a new DataFrame. If a DataFrame is
+    passed in, this method will return the original object.
+
+    Parameters
+    ----------
+    data : pd.DataFrame, a tuple/list of pd.Series, a tuple/list of np.array
+    or a pd.Series of tuple/list
+
+    column_names : a list containing the names of the output
+
+    types : a list containing the types of the output
+
+    Returns
+    -------
+    pd.DataFrame
+
+    Examples
+    --------
+    >>> coerce_to_dataframe(pd.DataFrame({'a': [1, 2, 3]}), ['b'], [dt.int32])
+       b
+    0  1
+    1  2
+    2  3
+    >>> coerce_to_dataframe(pd.Series([[1, 2, 3]]), ['a', 'b', 'c'], [dt.int32, dt.int32, dt.int32])  # noqa: E501
+       a  b  c
+    0  1  2  3
+    >>> coerce_to_dataframe(pd.Series([range(3), range(3)]), ['a', 'b', 'c'], [dt.int32, dt.int32, dt.int32])  # noqa: E501
+       a  b  c
+    0  0  1  2
+    1  0  1  2
+    >>> coerce_to_dataframe([pd.Series(x) for x in [1, 2, 3]], ['a', 'b', 'c'], [dt.int32, dt.int32, dt.int32])  # noqa: E501
+       a  b  c
+    0  1  2  3
+    >>>  coerce_to_dataframe([1, 2, 3], ['a', 'b', 'c'], [dt.int32, dt.int32, dt.int32])  # noqa: E501
+       a  b  c
+    0  1  2  3
+    """
+    # We don't want to coerce any output that is intended as
+    # an array shape.
+    if any(isinstance(t, dt.Array) for t in types):
+        return data
+    if isinstance(data, pd.DataFrame):
+        result = data
+    elif isinstance(data, pd.Series):
+        num_cols = len(data.iloc[0])
+        series = [data.apply(lambda t: t[i]) for i in range(num_cols)]
+        result = pd.concat(series, axis=1)
+    elif isinstance(data, (tuple, list)):
+        if isinstance(data[0], pd.Series):
+            result = pd.concat(data, axis=1)
+        elif isinstance(data[0], np.ndarray):
+            result = pd.concat([pd.Series(v) for v in data], axis=1)
+        else:
+            # Promote scalar to Series
+            result = pd.concat([pd.Series([v]) for v in data], axis=1)
+    else:
+        raise ValueError(f"Cannot coerce to DataFrame: {data}")
+
+    result.columns = column_names
+    return result

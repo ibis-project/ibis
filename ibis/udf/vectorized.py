@@ -17,7 +17,7 @@ from ibis.expr.operations import (
     ElementWiseVectorizedUDF,
     ReductionVectorizedUDF,
 )
-from ibis.util import coerce_to_dataframe
+from ibis.expr.schema import coerce_to_dataframe
 
 
 class UserDefinedFunction(object):
@@ -53,14 +53,11 @@ class UserDefinedFunction(object):
             if isinstance(self.output_type, dt.Struct):
                 if isinstance(result, pd.DataFrame) or (
                     isinstance(result[0], (pd.Series, list, np.ndarray))
-                    and not any(
-                        isinstance(t, dt.Array) for t in self.output_type.types
-                    )
                 ):
                     # We need to coerce_to_dataframe here because Spark
                     # only allows DataFrame for struct output.
                     result = coerce_to_dataframe(
-                        result, self.output_type.names
+                        result, self.output_type.names, self.output_type.types
                     )
                     # Restore original index so that the result can later be
                     # assigned to the original table with rows aligned
@@ -71,6 +68,8 @@ class UserDefinedFunction(object):
                     # returning np.ndarray
                     result = tuple(result)
             else:
+                # We don't want to coerce any output that is intended as
+                # an array shape.
                 if isinstance(result, (list, np.ndarray)) and not isinstance(
                     self.output_type, dt.Array
                 ):

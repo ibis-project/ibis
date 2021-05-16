@@ -201,9 +201,6 @@ mean_struct_udfs = [
     create_mean_struct_udf(
         result_formatter=lambda v1, v2: np.array([v1, v2])
     ),  # np.array of scalar
-    create_mean_struct_udf(
-        result_formatter=lambda v1, v2: pd.Series([v1, v2])
-    ),  # pd.Series of scalar
 ]
 
 

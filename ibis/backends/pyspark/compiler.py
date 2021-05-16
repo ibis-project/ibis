@@ -22,8 +22,9 @@ from ibis.backends.spark.datatypes import (
     ibis_dtype_to_spark_dtype,
     spark_dtype,
 )
+from ibis.expr.schema import coerce_to_dataframe
 from ibis.expr.timecontext import adjust_context
-from ibis.util import coerce_to_dataframe, guid
+from ibis.util import guid
 
 from .timecontext import combine_time_context, filter_by_time_context
 
@@ -1750,11 +1751,11 @@ def compile_not_null(t, expr, scope, timecontext, **kwargs):
 # ------------------------- User defined function ------------------------
 
 
-def _wrap_struct_func(func, output_cols):
+def _wrap_struct_func(func, output_cols, output_types):
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
         result = func(*args, **kwargs)
-        return coerce_to_dataframe(result, output_cols)
+        return coerce_to_dataframe(result, output_cols, output_types)
 
     return wrapped
 
@@ -1764,7 +1765,9 @@ def compile_elementwise_udf(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
     spark_output_type = spark_dtype(op._output_type)
     if isinstance(expr, (types.StructColumn, types.DestructColumn)):
-        func = _wrap_struct_func(op.func, spark_output_type.names)
+        func = _wrap_struct_func(
+            op.func, spark_output_type.names, spark_output_type.types
+        )
     else:
         func = op.func
 

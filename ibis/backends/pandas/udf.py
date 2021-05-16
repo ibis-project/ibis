@@ -17,7 +17,7 @@ import ibis.client
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.udf.vectorized
-from ibis.util import coerce_to_dataframe
+from ibis.expr.schema import coerce_to_dataframe
 
 from .aggcontext import Summarize, Transform
 from .core import date_types, time_types, timedelta_types, timestamp_types
@@ -229,7 +229,9 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
             # because this is the inner loop and we do not want
             # to wrap a scalar value with a series.
             if isinstance(op._output_type, dt.Struct):
-                return coerce_to_dataframe(result, op._output_type.names)
+                return coerce_to_dataframe(
+                    result, op._output_type.names, op._output_type.types
+                )
             else:
                 return result
 
@@ -269,7 +271,9 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
                 # because this is the inner loop and we do not want
                 # to wrap a scalar value with a series.
                 if isinstance(op._output_type, dt.Struct):
-                    return coerce_to_dataframe(result, op._output_type.names)
+                    return coerce_to_dataframe(
+                        result, op._output_type.names, op._output_type.types
+                    )
                 else:
                     return result
 
