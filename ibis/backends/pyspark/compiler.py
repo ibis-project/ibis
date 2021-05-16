@@ -1766,7 +1766,7 @@ def compile_elementwise_udf(t, expr, scope, timecontext, **kwargs):
     spark_output_type = spark_dtype(op._output_type)
     if isinstance(expr, (types.StructColumn, types.DestructColumn)):
         func = _wrap_struct_func(
-            op.func, spark_output_type.names, spark_output_type.types
+            op.func, spark_output_type.names, op._output_type.types
         )
     else:
         func = op.func
