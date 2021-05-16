@@ -649,6 +649,27 @@ def compile_abs(t, expr, scope, timecontext, **kwargs):
     return F.abs(src_column)
 
 
+@compiles(ops.Clip)
+def compile_clip(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+    col = t.translate(op.arg, scope, timecontext)
+    if op.upper is not None and op.lower is not None:
+        upper = t.translate(op.upper, scope, timecontext)
+        lower = t.translate(op.lower, scope, timecontext)
+        expr = F.when(col >= upper, F.lit(upper)).otherwise(
+            F.when(col <= lower, F.lit(lower)).otherwise(col)
+        )
+    elif op.lower is not None:
+        lower = t.translate(op.lower, scope, timecontext)
+        expr = F.when(col <= lower, F.lit(lower)).otherwise(col)
+    elif op.upper is not None:
+        upper = t.translate(op.upper, scope, timecontext)
+        expr = F.when(col >= upper, F.lit(upper)).otherwise(col)
+    else:
+        raise ValueError('at least one of lower and upper must be provided.')
+    return expr
+
+
 @compiles(ops.Round)
 def compile_round(t, expr, scope, timecontext, **kwargs):
     op = expr.op()

@@ -127,32 +127,6 @@ def test_round_decimal_with_negative_places(t, df):
     tm.assert_series_equal(result.compute(), expected.compute())
 
 
-@pytest.mark.parametrize(
-    ('ibis_func', 'dask_func'),
-    [
-        (lambda x: x.clip(lower=0), lambda x: x.clip(lower=0)),
-        (lambda x: x.clip(lower=0.0), lambda x: x.clip(lower=0.0)),
-        (lambda x: x.clip(upper=0), lambda x: x.clip(upper=0)),
-        (
-            lambda x: x.clip(lower=x - 1, upper=x + 1),
-            lambda x: x.clip(lower=x - 1, upper=x + 1),
-        ),
-        (
-            lambda x: x.clip(lower=0, upper=1),
-            lambda x: x.clip(lower=0, upper=1),
-        ),
-        (
-            lambda x: x.clip(lower=0, upper=1.0),
-            lambda x: x.clip(lower=0, upper=1.0),
-        ),
-    ],
-)
-def test_clip(t, df, ibis_func, dask_func):
-    result = ibis_func(t.float64_with_zeros).compile()
-    expected = dask_func(df.float64_with_zeros)
-    tm.assert_series_equal(result.compute(), expected.compute())
-
-
 @pytest.mark.xfail(
     raises=NotImplementedError,
     reason='TODO - arrays - #2553'
