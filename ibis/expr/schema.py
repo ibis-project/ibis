@@ -223,19 +223,23 @@ def coerce_to_dataframe(
     0  1
     1  2
     2  3
+    dtype: int32
     >>> coerce_to_dataframe(pd.Series([[1, 2, 3]]), ['a', 'b', 'c'], [dt.int32, dt.int32, dt.int32])  # noqa: E501
        a  b  c
     0  1  2  3
+    dtypes: [int32, int32, int32]
     >>> coerce_to_dataframe(pd.Series([range(3), range(3)]), ['a', 'b', 'c'], [dt.int32, dt.int32, dt.int32])  # noqa: E501
        a  b  c
     0  0  1  2
     1  0  1  2
+    dtypes: [int32, int32, int32]
     >>> coerce_to_dataframe([pd.Series(x) for x in [1, 2, 3]], ['a', 'b', 'c'], [dt.int32, dt.int32, dt.int32])  # noqa: E501
        a  b  c
     0  1  2  3
     >>>  coerce_to_dataframe([1, 2, 3], ['a', 'b', 'c'], [dt.int32, dt.int32, dt.int32])  # noqa: E501
        a  b  c
     0  1  2  3
+    dtypes: [int32, int32, int32]
     """
     # We don't want to coerce any output that is intended as
     # an array shape.
@@ -247,7 +251,7 @@ def coerce_to_dataframe(
         num_cols = len(data.iloc[0])
         series = [data.apply(lambda t: t[i]) for i in range(num_cols)]
         result = pd.concat(series, axis=1)
-    elif isinstance(data, (tuple, list)):
+    elif isinstance(data, (tuple, list, np.ndarray)):
         if isinstance(data[0], pd.Series):
             result = pd.concat(data, axis=1)
         elif isinstance(data[0], np.ndarray):

@@ -14,6 +14,28 @@ from ibis.udf.vectorized import analytic, elementwise, reduction
 pytestmark = pytest.mark.udf
 
 
+def _format_udf_return_type(func, result_formatter):
+    """Call the given udf and return its result according to the given
+    format (e.g. in the form of a list, pd.Series, np.array, etc.)"""
+
+    def _wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        return result_formatter(result)
+
+    return _wrapper
+
+
+def _format_struct_udf_return_type(func, result_formatter):
+    """Call the given struct udf and return its result according to the given
+    format (e.g. in the form of a list, pd.Series, np.array, etc.)"""
+
+    def _wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        return result_formatter(*result)
+
+    return _wrapper
+
+
 # elementwise UDF
 def add_one(s):
     assert isinstance(s, pd.Series)
@@ -24,14 +46,6 @@ def create_add_one_udf(result_formatter):
     return elementwise(input_type=[dt.double], output_type=dt.double)(
         _format_udf_return_type(add_one, result_formatter)
     )
-
-
-def _format_udf_return_type(func, result_formatter):
-    def _wrapper(*args, **kwargs):
-        result = func(*args, **kwargs)
-        return result_formatter(result)
-
-    return _wrapper
 
 
 add_one_udfs = [
@@ -68,14 +82,6 @@ def calc_mean(s):
     return s.mean()
 
 
-def _format_struct_udf_return_type(func, result_formatter):
-    def _wrapper(*args, **kwargs):
-        result = func(*args, **kwargs)
-        return result_formatter(*result)
-
-    return _wrapper
-
-
 # elementwise multi-column UDF
 def add_one_struct(v):
     assert isinstance(v, pd.Series)
@@ -102,6 +108,9 @@ add_one_struct_udfs = [
     create_add_one_struct_udf(
         result_formatter=lambda v1, v2: [np.array(v1), np.array(v2)]
     ),  # list of np.array,
+    create_add_one_struct_udf(
+        result_formatter=lambda v1, v2: np.array([np.array(v1), np.array(v2)])
+    ),  # np.array of np.array,
     create_add_one_struct_udf(
         result_formatter=lambda v1, v2: pd.DataFrame({'col1': v1, 'col2': v2})
     ),  # pd.DataFrame,
@@ -169,6 +178,9 @@ demean_struct_udfs = [
     create_demean_struct_udf(
         result_formatter=lambda v1, v2: [np.array(v1), np.array(v2)]
     ),  # list of np.array,
+    create_demean_struct_udf(
+        result_formatter=lambda v1, v2: np.array([np.array(v1), np.array(v2)])
+    ),  # np.array of np.array,
     create_demean_struct_udf(
         result_formatter=lambda v1, v2: pd.DataFrame(
             {'demean': v1, 'demean_weight': v2}

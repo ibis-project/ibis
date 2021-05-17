@@ -43,7 +43,7 @@ class UserDefinedFunction(object):
         @functools.wraps(self.func)
         def func(*args):
             # If cols are pd.Series, then we save and restore the index.
-            if hasattr(args[0], 'index'):
+            if isinstance(args[0], pd.Series):
                 saved_index = args[0].index
             else:
                 saved_index = None
