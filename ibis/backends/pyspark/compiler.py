@@ -654,23 +654,33 @@ def compile_clip(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
     spark_dtype = ibis_dtype_to_spark_dtype(expr.type())
     col = t.translate(op.arg, scope, timecontext)
-    if op.upper is not None and op.lower is not None:
-        upper = t.translate(op.upper, scope, timecontext)
-        lower = t.translate(op.lower, scope, timecontext)
-        result = F.when(col >= upper, F.lit(upper)).otherwise(
-            F.when(col <= lower, F.lit(lower)).otherwise(col)
+    upper = (
+        t.translate(op.upper, scope, timecontext)
+        if op.upper is not None
+        else float('inf')
+    )
+    lower = (
+        t.translate(op.lower, scope, timecontext)
+        if op.lower is not None
+        else float('-inf')
+    )
+
+    def column_min(value, limit):
+        """Given the minimum limit, return values that are greater
+        than or equal to this limit."""
+        return F.when(value < limit, limit).otherwise(value)
+
+    def column_max(value, limit):
+        """Given the maximum limit, return values that are less
+        than or equal to this limit."""
+        return F.when(value > limit, limit).otherwise(value)
+
+    def clip(column, lower_value, upper_value):
+        return column_max(
+            column_min(column, F.lit(lower_value)), F.lit(upper_value)
         )
-    elif op.lower is not None:
-        lower = t.translate(op.lower, scope, timecontext)
-        result = F.when(col <= lower, F.lit(lower)).otherwise(col)
-    elif op.upper is not None:
-        upper = t.translate(op.upper, scope, timecontext)
-        result = F.when(col >= upper, F.lit(upper)).otherwise(col)
-    else:
-        raise ValueError('at least one of lower and upper must be provided.')
-    # If the user does `dt['col'].clip(0.0, 1.0)` on an integer column,
-    # the result should still be an integer column.
-    return result.cast(spark_dtype)
+
+    return clip(col, lower, upper).cast(spark_dtype)
 
 
 @compiles(ops.Round)
