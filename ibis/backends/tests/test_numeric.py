@@ -452,5 +452,7 @@ def test_random(con):
 )
 def test_clip(alltypes, df, ibis_func, pandas_func):
     result = ibis_func(alltypes.int_col).execute()
-    expected = pandas_func(df.int_col)
-    tm.assert_series_equal(result, expected)
+    expected = pandas_func(df.int_col).astype(result.dtype)
+    # Names won't match in the Pyspark backend since Pyspark
+    # gives 'tmp' name when executing a ColumnExpr
+    tm.assert_series_equal(result, expected, check_names=False)

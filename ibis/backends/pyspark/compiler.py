@@ -652,22 +652,25 @@ def compile_abs(t, expr, scope, timecontext, **kwargs):
 @compiles(ops.Clip)
 def compile_clip(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
+    spark_dtype = ibis_dtype_to_spark_dtype(expr.type())
     col = t.translate(op.arg, scope, timecontext)
     if op.upper is not None and op.lower is not None:
         upper = t.translate(op.upper, scope, timecontext)
         lower = t.translate(op.lower, scope, timecontext)
-        expr = F.when(col >= upper, F.lit(upper)).otherwise(
+        result = F.when(col >= upper, F.lit(upper)).otherwise(
             F.when(col <= lower, F.lit(lower)).otherwise(col)
         )
     elif op.lower is not None:
         lower = t.translate(op.lower, scope, timecontext)
-        expr = F.when(col <= lower, F.lit(lower)).otherwise(col)
+        result = F.when(col <= lower, F.lit(lower)).otherwise(col)
     elif op.upper is not None:
         upper = t.translate(op.upper, scope, timecontext)
-        expr = F.when(col >= upper, F.lit(upper)).otherwise(col)
+        result = F.when(col >= upper, F.lit(upper)).otherwise(col)
     else:
         raise ValueError('at least one of lower and upper must be provided.')
-    return expr
+    # If the user does `dt['col'].clip(0.0, 1.0)` on an integer column,
+    # the result should still be an integer column.
+    return result.cast(spark_dtype)
 
 
 @compiles(ops.Round)
