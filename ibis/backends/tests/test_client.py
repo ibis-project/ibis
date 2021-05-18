@@ -314,7 +314,7 @@ def test_insert_fail_from_dataframe(con):
     )
 
     temp_table = 'temp_to_table'
-    temporary = _create_temp_table_with_schema(con, temp_table, sch, data=df)
+    _create_temp_table_with_schema(con, temp_table, sch, data=df)
 
     records = pd.DataFrame(
         {
@@ -436,7 +436,7 @@ def test_insert_fail_from_table(con):
     )
 
     temp_table = 'temp_to_table'
-    temporary = _create_temp_table_with_schema(con, temp_table, sch, data=df)
+    _create_temp_table_with_schema(con, temp_table, sch, data=df)
 
     df2 = pd.DataFrame(
         {
@@ -448,9 +448,7 @@ def test_insert_fail_from_table(con):
     )
 
     from_table_name = 'temp_from_table'
-    from_table = _create_temp_table_with_schema(
-        con, from_table_name, sch, data=df2
-    )
+    _create_temp_table_with_schema(con, from_table_name, sch, data=df2)
 
     runtime_error_match = 'The table already exists'
     with pytest.raises(RuntimeError, match=runtime_error_match):
