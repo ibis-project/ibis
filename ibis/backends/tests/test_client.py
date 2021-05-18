@@ -325,7 +325,9 @@ def test_insert_fail_from_dataframe(con):
         }
     )
 
-    with pytest.raises(ValueError):
+    value_error_match = 'Table {temp_table} already exists.'.format(
+        temp_table=temp_table)
+    with pytest.raises(ValueError, match=value_error_match):
         con.insert(temp_table, data_obj=records, if_exists='fail')
 
 
@@ -459,7 +461,8 @@ def test_insert_fail_from_table(con):
     con.load_data(from_table_name, df2, if_exists='append')
     assert len(from_table.execute()) == 3
 
-    with pytest.raises(RuntimeError):
+    runtime_error_match = 'The table already exists'
+    with pytest.raises(RuntimeError, match=runtime_error_match):
         con.insert(
             temp_table, from_table_name=from_table_name, if_exists='fail'
         )
