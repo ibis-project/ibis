@@ -227,7 +227,7 @@ def coerce_to_series(
     (3) A Series
 
     Note:
-    This method does NOT always return a new Series. If a DataFrame is
+    This method does NOT always return a new Series. If a Series is
     passed in, this method will return the original object.
 
     Parameters
@@ -247,7 +247,9 @@ def coerce_to_series(
     elif isinstance(data, pd.Series):
         result = data
     else:
-        raise ValueError(f"Cannot coerce to Series: {data}")
+        # This case is a non-vector elementwise or analytic UDF that should
+        # not be coerced to a Series.
+        return data
     if original_index is not None:
         result.index = original_index
     return result
