@@ -4,6 +4,7 @@ import operator
 
 import numpy as np
 import pandas as pd
+import pandas.testing as tm
 import pytest
 from pytest import param
 
@@ -425,3 +426,33 @@ def test_random(con):
     assert isinstance(result2, float)
     assert 0 <= result2 < 1
     assert result != result2
+
+
+@pytest.mark.only_on_backends(['pandas', 'dask', 'pyspark'])
+@pytest.mark.xfail_unsupported
+@pytest.mark.parametrize(
+    ('ibis_func', 'pandas_func'),
+    [
+        (lambda x: x.clip(lower=0), lambda x: x.clip(lower=0)),
+        (lambda x: x.clip(lower=0.0), lambda x: x.clip(lower=0.0)),
+        (lambda x: x.clip(upper=0), lambda x: x.clip(upper=0)),
+        (
+            lambda x: x.clip(lower=x - 1, upper=x + 1),
+            lambda x: x.clip(lower=x - 1, upper=x + 1),
+        ),
+        (
+            lambda x: x.clip(lower=0, upper=1),
+            lambda x: x.clip(lower=0, upper=1),
+        ),
+        (
+            lambda x: x.clip(lower=0, upper=1.0),
+            lambda x: x.clip(lower=0, upper=1.0),
+        ),
+    ],
+)
+def test_clip(alltypes, df, ibis_func, pandas_func):
+    result = ibis_func(alltypes.int_col).execute()
+    expected = pandas_func(df.int_col).astype(result.dtype)
+    # Names won't match in the Pyspark backend since Pyspark
+    # gives 'tmp' name when executing a ColumnExpr
+    tm.assert_series_equal(result, expected, check_names=False)

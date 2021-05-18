@@ -649,6 +649,40 @@ def compile_abs(t, expr, scope, timecontext, **kwargs):
     return F.abs(src_column)
 
 
+@compiles(ops.Clip)
+def compile_clip(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+    spark_dtype = ibis_dtype_to_spark_dtype(expr.type())
+    col = t.translate(op.arg, scope, timecontext)
+    upper = (
+        t.translate(op.upper, scope, timecontext)
+        if op.upper is not None
+        else float('inf')
+    )
+    lower = (
+        t.translate(op.lower, scope, timecontext)
+        if op.lower is not None
+        else float('-inf')
+    )
+
+    def column_min(value, limit):
+        """Given the minimum limit, return values that are greater
+        than or equal to this limit."""
+        return F.when(value < limit, limit).otherwise(value)
+
+    def column_max(value, limit):
+        """Given the maximum limit, return values that are less
+        than or equal to this limit."""
+        return F.when(value > limit, limit).otherwise(value)
+
+    def clip(column, lower_value, upper_value):
+        return column_max(
+            column_min(column, F.lit(lower_value)), F.lit(upper_value)
+        )
+
+    return clip(col, lower, upper).cast(spark_dtype)
+
+
 @compiles(ops.Round)
 def compile_round(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
