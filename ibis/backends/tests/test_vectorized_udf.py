@@ -228,6 +228,13 @@ def overwrite_struct_reduction(v, w):
     return v.mean(), w.mean()
 
 
+@reduction(
+    input_type=[dt.double], output_type=dt.Array(dt.double),
+)
+def quantiles(series, *, quantiles):
+    return series.quantile(quantiles)
+
+
 @pytest.mark.only_on_backends(['pandas', 'pyspark', 'dask'])
 @pytest.mark.xfail_unsupported
 def test_elementwise_udf(backend, alltypes, df):
@@ -277,6 +284,22 @@ def test_reduction_udf(backend, alltypes, df):
     result = calc_mean(alltypes['double_col']).execute()
     expected = df['double_col'].mean()
     assert result == expected
+
+
+@pytest.mark.only_on_backends(['pandas', 'pyspark', 'dask'])
+@pytest.mark.xfail_unsupported
+def test_reduction_udf_array_return_type(backend, alltypes, df):
+    """Tests reduction UDF returning an array."""
+    qs = [0.25, 0.75]
+    expr = alltypes.mutate(q=quantiles(alltypes['int_col'], quantiles=qs))
+    result = expr.execute()
+
+    expected = df.assign(
+        q=pd.Series([quantiles.func(df['int_col'], quantiles=qs)])
+        .repeat(len(df))
+        .reset_index(drop=True)
+    )
+    backend.assert_frame_equal(result, expected)
 
 
 @pytest.mark.only_on_backends(['pandas', 'pyspark', 'dask'])
