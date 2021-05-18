@@ -14,6 +14,12 @@ from ibis.expr.operations import (
     ElementWiseVectorizedUDF,
     ReductionVectorizedUDF,
 )
+from ibis.expr.schema import (
+    coerce_to_dataframe,
+    coerce_to_np_array,
+    coerce_to_series,
+    coerce_to_tuple,
+)
 
 
 class UserDefinedFunction(object):
@@ -30,6 +36,34 @@ class UserDefinedFunction(object):
         self.func_type = func_type
         self.input_type = list(map(dt.dtype, input_type))
         self.output_type = dt.dtype(output_type)
+        self.coercion_fn = self._get_coercion_function()
+
+    def _get_coercion_function(self):
+        """Return the appropriate function to coerce the result of the UDF,
+        according to the func type and output type of the UDF."""
+        if isinstance(self.output_type, dt.Struct):
+            # Case 1: Struct output, non-reduction UDF -> coerce to DataFrame
+            if (
+                self.func_type is ElementWiseVectorizedUDF
+                or self.func_type is AnalyticVectorizedUDF
+            ):
+                return coerce_to_dataframe
+            else:
+                # Case 2: Struct output, reduction UDF -> coerce to tuple
+                return coerce_to_tuple
+        # Case 3: Vector output, non-reduction UDF -> coerce to Series
+        elif (
+            self.func_type is ElementWiseVectorizedUDF
+            or self.func_type is AnalyticVectorizedUDF
+        ):
+            return coerce_to_series
+        # Case 4: Array output type, reduction UDF -> coerce to np.ndarray
+        elif isinstance(self.output_type, dt.Array):
+            return coerce_to_np_array
+        else:
+            # Case 5: Default, do nothing (e.g. reduction UDF returning
+            # len-0 value such as a single integer or float).
+            return None
 
     def __call__(self, *args, **kwargs):
         # kwargs cannot be part of the node object because it can contain
@@ -38,7 +72,16 @@ class UserDefinedFunction(object):
         # kwargs.
         @functools.wraps(self.func)
         def func(*args):
-            return self.func(*args, **kwargs)
+            # If cols are pd.Series, then we save and restore the index.
+            saved_index = getattr(args[0], 'index', None)
+            result = self.func(*args, **kwargs)
+            if self.coercion_fn:
+                # coercion function signature must take result, output type,
+                # and optionally the index
+                result = self.coercion_fn(
+                    result, self.output_type, saved_index
+                )
+            return result
 
         op = self.func_type(
             func=func,

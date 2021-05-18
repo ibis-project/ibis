@@ -19,7 +19,6 @@ from typing import (
 )
 from uuid import uuid4
 
-import pandas as pd
 import toolz
 
 from ibis.config import options
@@ -72,67 +71,6 @@ def is_one_of(values: Sequence[T], t: Type[U]) -> Iterator[bool]:
 
 any_of = toolz.compose(any, is_one_of)
 all_of = toolz.compose(all, is_one_of)
-
-
-def coerce_to_dataframe(data: Any, names: List[str]) -> pd.DataFrame:
-    """Coerce the following shapes to a DataFrame.
-
-    The following shapes are allowed:
-    (1) A list/tuple of Series
-    (2) A list/tuple of scalars
-    (3) A Series of list/tuple
-    (4) pd.DataFrame
-
-    Note:
-    This method does NOT always return a new DataFrame. If a DataFrame is
-    passed in, this method will return the original object.
-
-    Parameters
-    ----------
-    val : pd.DataFrame, a tuple/list of pd.Series or a pd.Series of tuple/list
-
-    Returns
-    -------
-    pd.DataFrame
-
-    Examples
-    --------
-    >>> coerce_to_dataframe(pd.DataFrame({'a': [1, 2, 3]}), ['b'])
-       b
-    0  1
-    1  2
-    2  3
-    >>> coerce_to_dataframe(pd.Series([[1, 2, 3]]), ['a', 'b', 'c'])
-       a  b  c
-    0  1  2  3
-    >>> coerce_to_dataframe(pd.Series([range(3), range(3)]), ['a', 'b', 'c'])
-       a  b  c
-    0  0  1  2
-    1  0  1  2
-    >>> coerce_to_dataframe([pd.Series(x) for x in [1, 2, 3]], ['a', 'b', 'c'])
-       a  b  c
-    0  1  2  3
-    >>>  coerce_to_dataframe([1, 2, 3], ['a', 'b', 'c'])
-       a  b  c
-    0  1  2  3
-    """
-    if isinstance(data, pd.DataFrame):
-        result = data
-    elif isinstance(data, pd.Series):
-        num_cols = len(data.iloc[0])
-        series = [data.apply(lambda t: t[i]) for i in range(num_cols)]
-        result = pd.concat(series, axis=1)
-    elif isinstance(data, (tuple, list)):
-        if isinstance(data[0], pd.Series):
-            result = pd.concat(data, axis=1)
-        else:
-            # Promote scalar to Series
-            result = pd.concat([pd.Series([v]) for v in data], axis=1)
-    else:
-        raise ValueError(f"Cannot coerce to DataFrame: {data}")
-
-    result.columns = names
-    return result
 
 
 def promote_list(val: Union[V, List[V]]) -> List[V]:
