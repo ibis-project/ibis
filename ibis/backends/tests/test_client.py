@@ -205,7 +205,7 @@ def test_separate_database(con, alternate_current_database, current_data_db):
     assert tmp_db.name == alternate_current_database
 
 
-def create_temp_table_with_schema(con, temp_table_name, schema):
+def _create_temp_table_with_schema(con, temp_table_name, schema):
 
     con.drop_table(temp_table_name, force=True)
     con.create_table(temp_table_name, schema=schema)
@@ -230,7 +230,7 @@ def test_insert_append_from_dataframe(con):
     )
 
     temp_table = 'temp_to_table'
-    temporary = create_temp_table_with_schema(con, temp_table, sch)
+    temporary = _create_temp_table_with_schema(con, temp_table, sch)
 
     records = pd.DataFrame(
         {
@@ -261,7 +261,7 @@ def test_insert_replace_from_dataframe(con):
     )
 
     temp_table = 'temp_to_table'
-    temporary = create_temp_table_with_schema(con, temp_table, sch)
+    temporary = _create_temp_table_with_schema(con, temp_table, sch)
 
     df = pd.DataFrame(
         {
@@ -303,7 +303,7 @@ def test_insert_fail_from_dataframe(con):
     )
 
     temp_table = 'temp_to_table'
-    temporary = create_temp_table_with_schema(con, temp_table, sch)
+    temporary = _create_temp_table_with_schema(con, temp_table, sch)
 
     df = pd.DataFrame(
         {
@@ -344,7 +344,7 @@ def test_insert_append_from_table(con):
     )
 
     temp_table = 'temp_to_table'
-    temporary = create_temp_table_with_schema(con, temp_table, sch)
+    temporary = _create_temp_table_with_schema(con, temp_table, sch)
 
     df2 = pd.DataFrame(
         {
@@ -356,7 +356,7 @@ def test_insert_append_from_table(con):
     )
 
     from_table_name = 'temp_from_table'
-    from_table = create_temp_table_with_schema(con, from_table_name, sch)
+    from_table = _create_temp_table_with_schema(con, from_table_name, sch)
 
     con.load_data(from_table_name, df2, if_exists='append')
     assert len(from_table.execute()) == 3
@@ -381,7 +381,7 @@ def test_insert_replace_from_table(con):
     )
 
     temp_table = 'temp_to_table'
-    temporary = create_temp_table_with_schema(con, temp_table, sch)
+    temporary = _create_temp_table_with_schema(con, temp_table, sch)
 
     df = pd.DataFrame(
         {
@@ -404,7 +404,7 @@ def test_insert_replace_from_table(con):
     )
 
     from_table_name = 'temp_from_table'
-    from_table = create_temp_table_with_schema(con, from_table_name, sch)
+    from_table = _create_temp_table_with_schema(con, from_table_name, sch)
 
     con.load_data(from_table_name, df2, if_exists='append')
     assert len(from_table.execute()) == 3
@@ -431,7 +431,7 @@ def test_insert_fail_from_table(con):
     )
 
     temp_table = 'temp_to_table'
-    temporary = create_temp_table_with_schema(con, temp_table, sch)
+    temporary = _create_temp_table_with_schema(con, temp_table, sch)
 
     df = pd.DataFrame(
         {
@@ -454,7 +454,7 @@ def test_insert_fail_from_table(con):
     )
 
     from_table_name = 'temp_from_table'
-    from_table = create_temp_table_with_schema(con, from_table_name, sch)
+    from_table = _create_temp_table_with_schema(con, from_table_name, sch)
 
     con.load_data(from_table_name, df2, if_exists='append')
     assert len(from_table.execute()) == 3
