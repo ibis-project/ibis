@@ -14,6 +14,7 @@ Release Notes
 
 
 * :feature:`2613` Implement `.insert()` for SQLAlchemy backends
+* :feature:`2779` Implement Clip in the Pyspark backend
 * :bug:`2770` Fix error when using reduction UDF that returns np.array in a grouped aggregation
 * :feature:`2753` Use `ndarray` as array representation in Pandas backend
 * :support:`2665` Move BigQuery backend to a `separate repository <https://github.com/ibis-project/ibis-bigquery>`_.
