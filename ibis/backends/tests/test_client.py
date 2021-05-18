@@ -325,7 +325,7 @@ def test_insert_fail_from_dataframe(con):
         }
     )
 
-    value_error_match = 'Table {temp_table} already exists.'.format(
+    value_error_match = "Table '{temp_table}' already exists.".format(
         temp_table=temp_table
     )
     with pytest.raises(ValueError, match=value_error_match):
