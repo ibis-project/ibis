@@ -8,6 +8,7 @@ import ibis.expr.datatypes as dt
 
 SQLALCHEMY_BACKENDS = ['sqlite', 'postgres', 'mysql']
 
+
 @pytest.fixture
 def new_schema():
     return ibis.schema([('a', 'string'), ('b', 'bool'), ('c', 'int32')])
@@ -222,8 +223,7 @@ def _create_temp_table_with_schema(con, temp_table_name, schema, data=None):
 
 
 @pytest.mark.only_on_backends(
-    SQLALCHEMY_BACKENDS,
-    reason="run only if backend is SQLAlchemy based",
+    SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
 )
 def test_insert_append_from_dataframe(con):
     sch = ibis.schema(
@@ -253,8 +253,7 @@ def test_insert_append_from_dataframe(con):
 
 
 @pytest.mark.only_on_backends(
-    SQLALCHEMY_BACKENDS,
-    reason="run only if backend is SQLAlchemy based",
+    SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
 )
 def test_insert_replace_from_dataframe(con):
     sch = ibis.schema(
@@ -293,8 +292,7 @@ def test_insert_replace_from_dataframe(con):
 
 
 @pytest.mark.only_on_backends(
-    SQLALCHEMY_BACKENDS,
-    reason="run only if backend is SQLAlchemy based",
+    SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
 )
 def test_insert_fail_from_dataframe(con):
     sch = ibis.schema(
@@ -335,8 +333,7 @@ def test_insert_fail_from_dataframe(con):
 
 
 @pytest.mark.only_on_backends(
-    SQLALCHEMY_BACKENDS,
-    reason="run only if backend is SQLAlchemy based",
+    SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
 )
 def test_insert_append_from_table(con):
     sch = ibis.schema(
@@ -371,8 +368,7 @@ def test_insert_append_from_table(con):
 
 
 @pytest.mark.only_on_backends(
-    SQLALCHEMY_BACKENDS,
-    reason="run only if backend is SQLAlchemy based",
+    SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
 )
 def test_insert_replace_from_table(con):
     sch = ibis.schema(
@@ -418,8 +414,7 @@ def test_insert_replace_from_table(con):
 
 
 @pytest.mark.only_on_backends(
-    SQLALCHEMY_BACKENDS,
-    reason="run only if backend is SQLAlchemy based",
+    SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
 )
 def test_insert_fail_from_table(con):
     sch = ibis.schema(
