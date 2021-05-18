@@ -1,5 +1,5 @@
 import collections
-from typing import Any, List
+from typing import Any, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -187,8 +187,76 @@ def schema_from_names_types(names, types):
     return Schema(names, types)
 
 
+def coerce_to_tuple(
+    data: Union[List, np.ndarray, pd.Series],
+    output_type: dt.Struct,
+    index: Optional[pd.Index] = None,
+) -> Tuple:
+    """Coerce the following shapes to a tuple.
+
+    (1) A list
+    (2) An np.ndarray
+    (3) A Series
+    """
+    return tuple(data)
+
+
+def coerce_to_np_array(
+    data: Union[List, np.ndarray, pd.Series],
+    output_type: dt.Struct,
+    index: Optional[pd.Index] = None,
+) -> np.ndarray:
+    """Coerce the following shapes to an np.ndarray.
+
+    (1) A list
+    (2) An np.ndarray
+    (3) A Series
+    """
+    return np.array(data)
+
+
+def coerce_to_series(
+    data: Union[List, np.ndarray, pd.Series],
+    output_type: dt.DataType,
+    original_index: Optional[pd.Index] = None,
+) -> pd.Series:
+    """Coerce the following shapes to a Series.
+
+    (1) A list
+    (2) An np.ndarray
+    (3) A Series
+
+    Note:
+    This method does NOT always return a new Series. If a DataFrame is
+    passed in, this method will return the original object.
+
+    Parameters
+    ----------
+    data : pd.Series, a list, or an np.array
+
+    output_type : the type of the output
+
+    original_index : Optional parameter containing the index of the output
+
+    Returns
+    -------
+    pd.Series
+    """
+    if isinstance(data, (list, np.ndarray)):
+        result = pd.Series(data)
+    elif isinstance(data, pd.Series):
+        result = data
+    else:
+        raise ValueError(f"Cannot coerce to Series: {data}")
+    if original_index is not None:
+        result.index = original_index
+    return result
+
+
 def coerce_to_dataframe(
-    data: Any, column_names: List[str], types: List[dt.DataType]
+    data: Any,
+    output_type: dt.Struct,
+    original_index: Optional[pd.Index] = None,
 ) -> pd.DataFrame:
     """Coerce the following shapes to a DataFrame.
 
@@ -208,9 +276,9 @@ def coerce_to_dataframe(
     data : pd.DataFrame, a tuple/list of pd.Series, a tuple/list of np.array
     or a pd.Series of tuple/list
 
-    column_names : a list containing the names of the output
+    output_type : a Struct containing the names and types of the output
 
-    types : a list containing the types of the output
+    original_index : Optional parameter containing the index of the output
 
     Returns
     -------
@@ -218,32 +286,32 @@ def coerce_to_dataframe(
 
     Examples
     --------
-    >>> coerce_to_dataframe(pd.DataFrame({'a': [1, 2, 3]}), ['b'], [dt.int32])
+    >>> coerce_to_dataframe(pd.DataFrame({'a': [1, 2, 3]}), dt.Struct([('b', 'int32')]))  # noqa: E501
        b
     0  1
     1  2
     2  3
     dtype: int32
-    >>> coerce_to_dataframe(pd.Series([[1, 2, 3]]), ['a', 'b', 'c'], [dt.int32, dt.int32, dt.int32])  # noqa: E501
+    >>> coerce_to_dataframe(pd.Series([[1, 2, 3]]), dt.Struct([('a', 'int32'), ('b', 'int32'), ('c', 'int32')]))  # noqa: E501
        a  b  c
     0  1  2  3
     dtypes: [int32, int32, int32]
-    >>> coerce_to_dataframe(pd.Series([range(3), range(3)]), ['a', 'b', 'c'], [dt.int32, dt.int32, dt.int32])  # noqa: E501
+    >>> coerce_to_dataframe(pd.Series([range(3), range(3)]), dt.Struct([('a', 'int32'), ('b', 'int32'), ('c', 'int32')]))  # noqa: E501
        a  b  c
     0  0  1  2
     1  0  1  2
     dtypes: [int32, int32, int32]
-    >>> coerce_to_dataframe([pd.Series(x) for x in [1, 2, 3]], ['a', 'b', 'c'], [dt.int32, dt.int32, dt.int32])  # noqa: E501
+    >>> coerce_to_dataframe([pd.Series(x) for x in [1, 2, 3]], dt.Struct([('a', 'int32'), ('b', 'int32'), ('c', 'int32')]))  # noqa: E501
        a  b  c
     0  1  2  3
-    >>>  coerce_to_dataframe([1, 2, 3], ['a', 'b', 'c'], [dt.int32, dt.int32, dt.int32])  # noqa: E501
+    >>>  coerce_to_dataframe([1, 2, 3], dt.Struct([('a', 'int32'), ('b', 'int32'), ('c', 'int32')]))  # noqa: E501
        a  b  c
     0  1  2  3
     dtypes: [int32, int32, int32]
     """
     # We don't want to coerce any output that is intended as
     # an array shape.
-    if any(isinstance(t, dt.Array) for t in types):
+    if any(isinstance(t, dt.Array) for t in output_type.types):
         return data
     if isinstance(data, pd.DataFrame):
         result = data
@@ -262,5 +330,7 @@ def coerce_to_dataframe(
     else:
         raise ValueError(f"Cannot coerce to DataFrame: {data}")
 
-    result.columns = column_names
+    result.columns = output_type.names
+    if original_index is not None:
+        result.index = original_index
     return result

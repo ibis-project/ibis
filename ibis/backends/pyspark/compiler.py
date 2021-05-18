@@ -1751,11 +1751,11 @@ def compile_not_null(t, expr, scope, timecontext, **kwargs):
 # ------------------------- User defined function ------------------------
 
 
-def _wrap_struct_func(func, output_cols, output_types):
+def _wrap_struct_func(func, output_type):
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
         result = func(*args, **kwargs)
-        return coerce_to_dataframe(result, output_cols, output_types)
+        return coerce_to_dataframe(result, output_type)
 
     return wrapped
 
@@ -1765,9 +1765,7 @@ def compile_elementwise_udf(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
     spark_output_type = spark_dtype(op._output_type)
     if isinstance(expr, (types.StructColumn, types.DestructColumn)):
-        func = _wrap_struct_func(
-            op.func, spark_output_type.names, op._output_type.types
-        )
+        func = _wrap_struct_func(op.func, op._output_type)
     else:
         func = op.func
 

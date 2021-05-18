@@ -7,9 +7,6 @@ DO NOT USE DIRECTLY.
 
 import functools
 
-import numpy as np
-import pandas as pd
-
 import ibis.expr.datatypes as dt
 import ibis.udf.validate as v
 from ibis.expr.operations import (
@@ -17,7 +14,12 @@ from ibis.expr.operations import (
     ElementWiseVectorizedUDF,
     ReductionVectorizedUDF,
 )
-from ibis.expr.schema import coerce_to_dataframe
+from ibis.expr.schema import (
+    coerce_to_dataframe,
+    coerce_to_np_array,
+    coerce_to_series,
+    coerce_to_tuple,
+)
 
 
 class UserDefinedFunction(object):
@@ -34,6 +36,34 @@ class UserDefinedFunction(object):
         self.func_type = func_type
         self.input_type = list(map(dt.dtype, input_type))
         self.output_type = dt.dtype(output_type)
+        self.coercion_fn = self._get_coercion_function()
+
+    def _get_coercion_function(self):
+        """Return the appropriate function to coerce the result of the UDF,
+        according to the func type and output type of the struct."""
+        if isinstance(self.output_type, dt.Struct):
+            # Case 1: Struct output, non-reduction UDF -> coerce to DataFrame
+            if (
+                self.func_type is ElementWiseVectorizedUDF
+                or self.func_type is AnalyticVectorizedUDF
+            ):
+                return coerce_to_dataframe
+            else:
+                # Case 2: Struct output, reduction UDF -> coerce to tuple
+                return coerce_to_tuple
+        # Case 3: List-like output, non-reduction UDF -> coerce to Series
+        elif (
+            self.func_type is ElementWiseVectorizedUDF
+            or self.func_type is AnalyticVectorizedUDF
+        ):
+            return coerce_to_series
+        # Case 4: Array output type, reduction UDF -> coerce to np.ndarray
+        elif isinstance(self.output_type, dt.Array):
+            return coerce_to_np_array
+        else:
+            # Case 5: Default, do nothing (e.g. reduction UDF returning
+            # len-0 value such as a single integer or float).
+            return None
 
     def __call__(self, *args, **kwargs):
         # kwargs cannot be part of the node object because it can contain
@@ -43,42 +73,14 @@ class UserDefinedFunction(object):
         @functools.wraps(self.func)
         def func(*args):
             # If cols are pd.Series, then we save and restore the index.
-            if isinstance(args[0], pd.Series):
-                saved_index = args[0].index
-            else:
-                saved_index = None
-
+            saved_index = getattr(args[0], 'index', None)
             result = self.func(*args, **kwargs)
-
-            if isinstance(self.output_type, dt.Struct):
-                if isinstance(result, pd.DataFrame) or (
-                    isinstance(result[0], (pd.Series, list, np.ndarray))
-                ):
-                    # We need to coerce_to_dataframe here because Spark
-                    # only allows DataFrame for struct output.
-                    result = coerce_to_dataframe(
-                        result, self.output_type.names, self.output_type.types
-                    )
-                    # Restore original index so that the result can later be
-                    # assigned to the original table with rows aligned
-                    if saved_index is not None:
-                        result.index = saved_index
-                elif isinstance(result, (list, np.ndarray)):
-                    # Multi-col aggregation does not support
-                    # returning np.ndarray
-                    result = tuple(result)
-            else:
-                # We don't want to coerce any output that is intended as
-                # an array shape.
-                if isinstance(result, (list, np.ndarray)) and not isinstance(
-                    self.output_type, dt.Array
-                ):
-                    result = pd.Series(result)
-                if isinstance(result, pd.Series):
-                    # Restore original index so that the result can later be
-                    # assigned to the original table with rows aligned
-                    if saved_index is not None:
-                        result.index = saved_index
+            if self.coercion_fn:
+                # coercion function signature must take result, output type,
+                # and optionally the index
+                result = self.coercion_fn(
+                    result, self.output_type, saved_index
+                )
             return result
 
         op = self.func_type(

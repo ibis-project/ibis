@@ -229,9 +229,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
             # because this is the inner loop and we do not want
             # to wrap a scalar value with a series.
             if isinstance(op._output_type, dt.Struct):
-                return coerce_to_dataframe(
-                    result, op._output_type.names, op._output_type.types
-                )
+                return coerce_to_dataframe(result, op._output_type)
             else:
                 return result
 
@@ -271,9 +269,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
                 # because this is the inner loop and we do not want
                 # to wrap a scalar value with a series.
                 if isinstance(op._output_type, dt.Struct):
-                    return coerce_to_dataframe(
-                        result, op._output_type.names, op._output_type.types
-                    )
+                    return coerce_to_dataframe(result, op._output_type)
                 else:
                     return result
 
