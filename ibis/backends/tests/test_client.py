@@ -205,12 +205,17 @@ def test_separate_database(con, alternate_current_database, current_data_db):
     assert tmp_db.name == alternate_current_database
 
 
-def _create_temp_table_with_schema(con, temp_table_name, schema):
+def _create_temp_table_with_schema(con, temp_table_name, schema, data=None):
 
     con.drop_table(temp_table_name, force=True)
     con.create_table(temp_table_name, schema=schema)
     temporary = con.table(temp_table_name)
     assert len(temporary.execute()) == 0
+
+    if data is not None and isinstance(data, pd.DataFrame):
+        con.load_data(temp_table_name, data, if_exists='append')
+        assert len(temporary.execute()) == len(data.index)
+        tm.assert_frame_equal(temporary.execute(), data)
 
     return temporary
 
@@ -260,9 +265,6 @@ def test_insert_replace_from_dataframe(con):
         ]
     )
 
-    temp_table = 'temp_to_table'
-    temporary = _create_temp_table_with_schema(con, temp_table, sch)
-
     df = pd.DataFrame(
         {
             'first_name': ['A', 'B', 'C'],
@@ -271,8 +273,9 @@ def test_insert_replace_from_dataframe(con):
             'salary': [100.0, 200.0, 300.0],
         }
     )
-    con.load_data(temp_table, df, if_exists='append')
-    assert len(temporary.execute()) == 3
+
+    temp_table = 'temp_to_table'
+    temporary = _create_temp_table_with_schema(con, temp_table, sch, data=df)
 
     records = pd.DataFrame(
         {
@@ -302,9 +305,6 @@ def test_insert_fail_from_dataframe(con):
         ]
     )
 
-    temp_table = 'temp_to_table'
-    temporary = _create_temp_table_with_schema(con, temp_table, sch)
-
     df = pd.DataFrame(
         {
             'first_name': ['A', 'B', 'C'],
@@ -313,8 +313,9 @@ def test_insert_fail_from_dataframe(con):
             'salary': [100.0, 200.0, 300.0],
         }
     )
-    con.load_data(temp_table, df, if_exists='append')
-    assert len(temporary.execute()) == 3
+
+    temp_table = 'temp_to_table'
+    temporary = _create_temp_table_with_schema(con, temp_table, sch, data=df)
 
     records = pd.DataFrame(
         {
@@ -359,13 +360,12 @@ def test_insert_append_from_table(con):
     )
 
     from_table_name = 'temp_from_table'
-    from_table = _create_temp_table_with_schema(con, from_table_name, sch)
-
-    con.load_data(from_table_name, df2, if_exists='append')
-    assert len(from_table.execute()) == 3
+    from_table = _create_temp_table_with_schema(
+        con, from_table_name, sch, data=df2
+    )
 
     con.insert(temp_table, from_table_name=from_table_name, if_exists='append')
-    assert len(from_table.execute()) == 3
+    assert len(temporary.execute()) == 3
     tm.assert_frame_equal(temporary.execute(), from_table.execute())
 
 
@@ -383,9 +383,6 @@ def test_insert_replace_from_table(con):
         ]
     )
 
-    temp_table = 'temp_to_table'
-    temporary = _create_temp_table_with_schema(con, temp_table, sch)
-
     df = pd.DataFrame(
         {
             'first_name': ['A', 'B', 'C'],
@@ -394,8 +391,9 @@ def test_insert_replace_from_table(con):
             'salary': [100.0, 200.0, 300.0],
         }
     )
-    con.load_data(temp_table, df, if_exists='append')
-    assert len(temporary.execute()) == 3
+
+    temp_table = 'temp_to_table'
+    temporary = _create_temp_table_with_schema(con, temp_table, sch, data=df)
 
     df2 = pd.DataFrame(
         {
@@ -407,15 +405,14 @@ def test_insert_replace_from_table(con):
     )
 
     from_table_name = 'temp_from_table'
-    from_table = _create_temp_table_with_schema(con, from_table_name, sch)
-
-    con.load_data(from_table_name, df2, if_exists='append')
-    assert len(from_table.execute()) == 3
+    from_table = _create_temp_table_with_schema(
+        con, from_table_name, sch, data=df2
+    )
 
     con.insert(
         temp_table, from_table_name=from_table_name, if_exists='replace'
     )
-    assert len(from_table.execute()) == 3
+    assert len(temporary.execute()) == 3
     tm.assert_frame_equal(temporary.execute(), from_table.execute())
 
 
@@ -433,9 +430,6 @@ def test_insert_fail_from_table(con):
         ]
     )
 
-    temp_table = 'temp_to_table'
-    temporary = _create_temp_table_with_schema(con, temp_table, sch)
-
     df = pd.DataFrame(
         {
             'first_name': ['A', 'B', 'C'],
@@ -444,8 +438,9 @@ def test_insert_fail_from_table(con):
             'salary': [100.0, 200.0, 300.0],
         }
     )
-    con.load_data(temp_table, df, if_exists='append')
-    assert len(temporary.execute()) == 3
+
+    temp_table = 'temp_to_table'
+    temporary = _create_temp_table_with_schema(con, temp_table, sch, data=df)
 
     df2 = pd.DataFrame(
         {
@@ -457,10 +452,9 @@ def test_insert_fail_from_table(con):
     )
 
     from_table_name = 'temp_from_table'
-    from_table = _create_temp_table_with_schema(con, from_table_name, sch)
-
-    con.load_data(from_table_name, df2, if_exists='append')
-    assert len(from_table.execute()) == 3
+    from_table = _create_temp_table_with_schema(
+        con, from_table_name, sch, data=df2
+    )
 
     runtime_error_match = 'The table already exists'
     with pytest.raises(RuntimeError, match=runtime_error_match):
