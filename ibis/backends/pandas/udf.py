@@ -17,7 +17,6 @@ import ibis.client
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.udf.vectorized
-from ibis.expr.schema import coerce_to_dataframe
 
 from .aggcontext import Summarize, Transform
 from .core import date_types, time_types, timedelta_types, timestamp_types
@@ -221,19 +220,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
     @execute_node.register(type(op), *(itertools.repeat(pd.Series, nargs)))
     def execute_udaf_node_no_groupby(op, *args, aggcontext, **kwargs):
         func = op.func
-
-        def aggregator(first, *rest):
-            result = func(first, *rest)
-
-            # Here we don't user execution.util.coerce_to_output
-            # because this is the inner loop and we do not want
-            # to wrap a scalar value with a series.
-            if isinstance(op._output_type, dt.Struct):
-                return coerce_to_dataframe(result, op._output_type)
-            else:
-                return result
-
-        return aggcontext.agg(args[0], aggregator, *args[1:])
+        return aggcontext.agg(args[0], func, *args[1:])
 
     # An execution rule to handle analytic and reduction UDFs over
     # 1) a grouped window,
@@ -264,14 +251,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
                 # map(next, *rest) gets the inputs for the next group
                 # TODO: might be inefficient to do this on every call
                 result = func(first, *map(next, rest))
-
-                # Here we don't user execution.util.coerce_to_output
-                # because this is the inner loop and we do not want
-                # to wrap a scalar value with a series.
-                if isinstance(op._output_type, dt.Struct):
-                    return coerce_to_dataframe(result, op._output_type)
-                else:
-                    return result
+                return result
 
             return aggcontext.agg(args[0], aggregator, *iters)
         elif isinstance(aggcontext, Summarize):
