@@ -40,7 +40,7 @@ class UserDefinedFunction(object):
 
     def _get_coercion_function(self):
         """Return the appropriate function to coerce the result of the UDF,
-        according to the func type and output type of the struct."""
+        according to the func type and output type of the UDF."""
         if isinstance(self.output_type, dt.Struct):
             # Case 1: Struct output, non-reduction UDF -> coerce to DataFrame
             if (
@@ -51,7 +51,7 @@ class UserDefinedFunction(object):
             else:
                 # Case 2: Struct output, reduction UDF -> coerce to tuple
                 return coerce_to_tuple
-        # Case 3: List-like output, non-reduction UDF -> coerce to Series
+        # Case 3: Vector output, non-reduction UDF -> coerce to Series
         elif (
             self.func_type is ElementWiseVectorizedUDF
             or self.func_type is AnalyticVectorizedUDF

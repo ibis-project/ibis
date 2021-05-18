@@ -489,7 +489,7 @@ def test_array_return_type_reduction(con, t, df, qs):
     expr = quantiles(t.b, quantiles=qs)
     result = expr.execute()
     expected = df.b.quantile(qs).compute()
-    assert result == expected.tolist()
+    assert list(result) == expected.tolist()
 
 
 @pytest.mark.xfail(
