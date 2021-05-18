@@ -22,7 +22,7 @@ dependencies:
   - flake8
   - flake8-comprehensions # used by flake8, linting of unnecessary comprehensions
   - isort
-  - jinja2 # feedstock
+  - jinja2<3 # feedstock
   - mypy
   - plumbum # few scripts in ci/ and dev/
   - pydocstyle

@@ -55,12 +55,15 @@ def df2(npartitions):
 
 @pytest.fixture
 def df_timestamp(npartitions):
-    return dd.from_pandas(
-        pd.DataFrame(
-            {'a': list(range(10))}, dtype=pd.DatetimeTZDtype(tz='UTC')
-        ),
-        npartitions=npartitions,
+    df = pd.DataFrame(
+        {
+            'a': list(range(10)),
+            'b': list('wwwwwxxxxx'),
+            'c': list('yyyzzzyyzz'),
+        }
     )
+    df["a"] = df.a.astype(pd.DatetimeTZDtype(tz='UTC'))
+    return dd.from_pandas(df, npartitions=npartitions,)
 
 
 @pytest.fixture
@@ -111,6 +114,14 @@ def my_mean(series):
 )
 def my_tz_min(series):
     return series.min()
+
+
+@elementwise(
+    input_type=[dt.Timestamp(timezone="UTC")],
+    output_type=dt.Timestamp(timezone="UTC"),
+)
+def my_tz_add_one(series):
+    return series + pd.Timedelta(1, unit="D")
 
 
 @reduction(input_type=[dt.string], output_type=dt.int64)
@@ -209,8 +220,17 @@ def test_udaf_analytic_tzcol(con, t_timestamp, df_timestamp):
 
     result = expr.execute()
 
-    expected = (df_timestamp.a.min()).compute()
+    expected = my_tz_min.func(df_timestamp.a.compute())
     assert result == expected
+
+
+def test_udaf_elementwise_tzcol(con, t_timestamp, df_timestamp):
+    expr = my_tz_add_one(t_timestamp.a)
+
+    result = expr.execute().reset_index(drop=True)
+
+    expected = my_tz_add_one.func(df_timestamp.a.compute())
+    tm.assert_series_equal(result, expected)
 
 
 def test_udaf_analytic(con, t, df):
@@ -278,6 +298,22 @@ def test_udaf_groupby_multikey(t2, df2):
                 for value in 'def'
             ],
         }
+    )
+    tm.assert_frame_equal(result, expected)
+
+
+def test_udaf_groupby_multikey_tzcol(t_timestamp, df_timestamp):
+    expr = t_timestamp.groupby([t_timestamp.b, t_timestamp.c]).aggregate(
+        my_min_time=my_tz_min(t_timestamp.a)
+    )
+
+    result = expr.execute().sort_values('b').reset_index(drop=True)
+    expected = (
+        df_timestamp.groupby(["b", "c"])
+        .min()
+        .reset_index()
+        .rename(columns={'a': "my_min_time"})
+        .compute()
     )
     tm.assert_frame_equal(result, expected)
 
