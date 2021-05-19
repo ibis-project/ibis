@@ -419,10 +419,9 @@ class AlchemyClient(SQLClient):
                         database=database,
                     )
 
-                to_table = self._table_from_schema(
+                to_table = self._get_sqla_table(
                     to_table_name,
-                    to_table_schema,
-                    database=database or self.current_database,
+                    schema=to_table_schema,
                 )
 
                 from_table_expr = self.table(from_table_name)
