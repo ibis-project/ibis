@@ -364,9 +364,8 @@ class AlchemyClient(SQLClient):
             You must pass either data (pandas Dataframe) or
             from_table_name (table name to insert data from)
 
-            Sorry, can't insert from both the data (dataframe)
-            and the from_table_name (table). Please use only one
-            parameter.
+           Cannot insert from both data (dataframe) and the
+           {from_table_name} table. Use only one of the parameters.
 
             The table already exists
 
@@ -387,9 +386,9 @@ class AlchemyClient(SQLClient):
             from_table_name, str
         ):
             raise ValueError(
-                "Sorry, can't insert from both the data (dataframe)"
-                " and the from_table_name (table). Please use only one"
-                " parameter."
+                "Cannot insert from both data (dataframe) and the"
+                " {from_table_name} table. Use only one of the "
+                " parameters.".format(from_table_name=from_table_name)
             )
 
         params = {}
