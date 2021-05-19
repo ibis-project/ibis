@@ -260,7 +260,9 @@ def test_udaf_analytic_groupby(con, t, df):
     def f(s):
         return s.sub(s.mean()).div(s.std())
 
-    expected = df.groupby('key').c.transform(f)
+    # these are named differenty.
+    # where can I get names from?
+    expected = df.groupby('key').c.transform(f).compute()
     tm.assert_series_equal(result, expected)
 
 
@@ -492,14 +494,11 @@ def test_array_return_type_reduction(con, t, df, qs):
     assert list(result) == expected.tolist()
 
 
-@pytest.mark.xfail(
-    raises=NotImplementedError, reason='TODO - windowing - #2553'
-)
 def test_array_return_type_reduction_window(con, t, df, qs):
     """Tests reduction UDF returning an array, used over a window."""
     expr = quantiles(t.b, quantiles=qs).over(ibis.window())
     result = expr.execute()
-    expected_raw = df.b.quantile(qs).tolist()
+    expected_raw = df.b.quantile(qs).compute().tolist()
     expected = pd.Series([expected_raw] * len(df))
     tm.assert_series_equal(result, expected)
 

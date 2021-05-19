@@ -25,7 +25,11 @@ from ibis.expr.typing import TimeContext
 from ..core import execute
 from ..dispatch import execute_node
 from ..execution import constants
-from ..execution.util import coerce_to_output, compute_sorted_frame
+from ..execution.util import (
+    add_partitioned_sorted_column,
+    coerce_to_output,
+    compute_sorted_frame,
+)
 
 
 @compute_projection.register(ir.ScalarExpr, ops.Selection, dd.DataFrame)
@@ -138,6 +142,7 @@ def execute_selection_dataframe(
     # Build up the individual dask structures from column expressions
     if selections:
         data_pieces = []
+        selection_ops = []
         for selection in selections:
             dask_object = compute_projection(
                 selection,
@@ -148,6 +153,18 @@ def execute_selection_dataframe(
                 **kwargs,
             )
             data_pieces.append(dask_object)
+            selection_ops.append(type(selection.op()))
+        if ops.WindowOp in selection_ops:
+            # if we do not do this essentially no-op windows are calculated
+            # in the wrong order
+            new_pieces = []
+            for sop, data in zip(selection_ops, data_pieces):
+                if sop == ops.WindowOp:
+                    new_pieces.append(data)
+                else:
+                    data, _ = add_partitioned_sorted_column(data)
+                    new_pieces.append(data.drop("_ibis_index", axis=1))
+            data_pieces = new_pieces
 
         result = dd.concat(data_pieces, axis=1, ignore_unknown_divisions=True)
 

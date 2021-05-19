@@ -13,6 +13,7 @@ from ibis.backends.pandas.udf import nullable  # noqa
 
 from .dispatch import execute_node, pre_execute
 from .execution.util import (
+    add_partitioned_sorted_column,
     assert_identical_grouping_keys,
     make_selected_obj,
     safe_scalar_type,
@@ -137,9 +138,10 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
         return result
 
     @execute_node.register(
-        type(op), *(itertools.repeat(ddgb.SeriesGroupBy, nargs))
+        ops.ReductionVectorizedUDF,
+        *(itertools.repeat(ddgb.SeriesGroupBy, nargs)),
     )
-    def execute_udaf_node_groupby(op, *args, aggcontext, **kwargs):
+    def execute_udf_reduction_node_groupby(op, *args, aggcontext, **kwargs):
         # To apply a udf func to a list of grouped series we:
         # 1. Grab the dataframe they're grouped off of
         # 2. Grab the column name for each series
@@ -175,5 +177,76 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
             col_names,
             meta=pandas.Series(meta_value, index=meta_index, dtype=out_type),
         )
+
+    @execute_node.register(
+        ops.AnalyticVectorizedUDF,
+        *(itertools.repeat(ddgb.SeriesGroupBy, nargs)),
+    )
+    def execute_udf_analytic_node_groupby(op, *args, aggcontext, **kwargs):
+        # To apply a udf func to a list of grouped series we:
+        # 1. Grab the dataframe they're grouped off of
+        # 2. Grab the column name for each series
+        # 3. .apply a wrapper that performs the selection using the col name
+        #    and applies the udf on to those
+        # This way we rely on dask dealing with groups and pass the udf down
+        # to the frame level.
+        # This code is similar to the above case, but we must deal with
+        # grouping operations rearranging the data
+        assert_identical_grouping_keys(*args)
+
+        func = op.func
+        df = args[0].obj
+        row_tracking_col = "_ibis_index"
+
+        df, divisions = add_partitioned_sorted_column(
+            df, col_name=row_tracking_col
+        )
+
+        groupings = args[0].index
+        out_type = op._output_type.to_dask()
+
+        grouped_df = df.groupby(groupings)
+        col_names = [col._meta._selected_obj.name for col in args]
+
+        def apply_wrapper(df, apply_func, col_names):
+            cols = (df[col] for col in col_names)
+            return apply_func(*cols)
+
+        if len(groupings) > 1:
+            meta_index = pandas.MultiIndex.from_arrays(
+                [[0], [0]], names=groupings
+            )
+            meta_value = [dd.utils.make_meta(safe_scalar_type(out_type))]
+            tracker_value = [1]
+        else:
+            meta_index = pandas.Index([], name=groupings[0])
+            meta_value = list()
+            tracker_value = list()
+
+        data = grouped_df.apply(
+            apply_wrapper,
+            func,
+            col_names,
+            meta=pandas.Series(meta_value, index=meta_index, dtype=out_type),
+        )
+        row_tracker = grouped_df.apply(
+            apply_wrapper,
+            lambda x: x,
+            [row_tracking_col],
+            meta=pandas.Series(tracker_value, index=meta_index, dtype="int"),
+        )
+        # we know this will align now
+        tracked_values = dd.concat([data, row_tracker], axis=1).reset_index(
+            drop=True
+        )
+        tracked_values.columns = ["value", row_tracking_col]
+        left = df.set_index(
+            [row_tracking_col], sorted=True, divisions=divisions
+        )
+        out = left.merge(
+            tracked_values, left_index=True, right_on=row_tracking_col
+        )
+
+        return out.reset_index(drop=True)["value"]
 
     return scope

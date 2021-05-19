@@ -119,15 +119,21 @@ def coerce_to_output(
     elif isinstance(result, (pd.Series, dd.Series)):
         # Series from https://github.com/ibis-project/ibis/issues/2711
         return result.rename(result_name)
-    elif isinstance(expr.op(), ops.Reduction):
+    elif isinstance(expr.op(), (ops.Reduction, ops.WindowOp)):
         if isinstance(result, dd.core.Scalar):
             # wrap the scalar in a series
             out_dtype = _pandas_dtype_from_dd_scalar(result)
-            out_len = 1 if index is None else len(index)
+            if index is None:
+                out_lens = (1,)
+            else:
+                # TODO - computation
+                out_lens = tuple(index.map_partitions(len).compute())
             meta = make_meta_series(dtype=out_dtype, name=result_name)
-            series = dd.from_delayed(
-                _wrap_dd_scalar(result, result_name, out_len), meta=meta,
-            )
+            delayeds = [
+                _wrap_dd_scalar(result, result_name, out_len)
+                for out_len in out_lens
+            ]
+            series = dd.from_delayed(delayeds, meta=meta,)
 
             return series
         else:
@@ -340,3 +346,56 @@ def safe_scalar_type(output_meta):
         output_meta = pd.Timestamp(1, tz=output_meta.tz, unit=output_meta.unit)
 
     return output_meta
+
+
+def add_partitioned_sorted_column(
+    df: dd.DataFrame, set_index: bool = False, col_name: str = "_ibis_index"
+) -> Tuple[dd.DataFrame, List]:
+    """Add a column that is already partitioned and sorted
+
+    This columns acts as if we had a global index across the distributed data.
+    Important properties:
+
+    - Each row has a unique id (i.e. a value in this column)
+    - IDs within each partition are already sorted
+    - Any id in partition N_{t} is less than any id in partition N_{t+1}
+
+    We do this by designating a sufficiently large space of integers per
+    partition via a base and adding the existing index to that base. See
+    `helper` below.
+
+    Though the space per partition is bounded, real world usage should not
+    hit these bounds. We also do not explicity deal with overflow in the
+    bounds.
+
+    Parameters
+    ----------
+    df : dd.DataFrame
+        Dataframe to add a column to
+    set_index : bool, optional
+        Whether to also set that column as the index, by default False
+    col_name : str, optional
+        The column name, by default "_ibis_index"
+
+    Returns
+    -------
+    Tuple[dd.DataFrame, List]
+        Tuple of the new dataframe with column and divisions of that column
+    """
+
+    def helper(df, partition_info, col_name):
+        base = partition_info["number"] << 32
+        return df.assign(**{col_name: [base + idx for idx in df.index]})
+
+    original_meta = df._meta.dtypes.to_dict()
+    new_meta = {**original_meta, **{col_name: "int"}}
+
+    df = df.map_partitions(helper, col_name=col_name, meta=new_meta)
+    # Divisions include the minimum value of every partition's index and the
+    # maximum value of the last partition's index
+    divisions = tuple(x << 32 for x in range(df.npartitions + 1))
+
+    if set_index:
+        df = df.set_index(col_name, sorted=True, divisions=divisions)
+
+    return (df, divisions)
