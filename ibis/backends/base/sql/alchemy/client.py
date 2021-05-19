@@ -368,7 +368,6 @@ class AlchemyClient(SQLClient):
             and the from_table_name (table). Please use only one
             parameter.
 
-        RuntimeError
             The table already exists
 
         TypeError
@@ -408,7 +407,7 @@ class AlchemyClient(SQLClient):
             )
         elif isinstance(from_table_name, str):
             if if_exists == 'fail' and to_table_name in self.list_tables():
-                raise RuntimeError('The table already exists')
+                raise ValueError('The table already exists')
             elif (
                 if_exists in ['replace', 'append']
             ) and to_table_name in self.list_tables():

@@ -450,8 +450,8 @@ def test_insert_fail_from_table(con):
     from_table_name = 'temp_from_table'
     _create_temp_table_with_schema(con, from_table_name, sch, data=df2)
 
-    runtime_error_match = 'The table already exists'
-    with pytest.raises(RuntimeError, match=runtime_error_match):
+    value_error_match = 'The table already exists'
+    with pytest.raises(ValueError, match=value_error_match):
         con.insert(
             temp_table, from_table_name=from_table_name, if_exists='fail'
         )
