@@ -420,8 +420,7 @@ class AlchemyClient(SQLClient):
                     )
 
                 to_table = self._get_sqla_table(
-                    to_table_name,
-                    schema=to_table_schema,
+                    to_table_name, schema=to_table_schema
                 )
 
                 from_table_expr = self.table(from_table_name)
