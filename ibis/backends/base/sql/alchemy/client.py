@@ -360,6 +360,10 @@ class AlchemyClient(SQLClient):
 
         Raises
         -------
+        NotImplementedError
+            Inserting data to a table from a different database is not
+            yet implemented
+
         ValueError
             You must pass either data (pandas Dataframe) or
             from_table_name (table name to insert data from)
@@ -375,6 +379,16 @@ class AlchemyClient(SQLClient):
             from_table_name parameter is not of string datatype.
 
         """
+
+        if database == self.database_name:
+            # avoid fully qualified name
+            database = None
+
+        if database is not None:
+            raise NotImplementedError(
+                'Inserting data to a table from a different database is not '
+                'yet implemented'
+            )
 
         if data is None and from_table_name is None:
             raise ValueError(
@@ -420,7 +434,7 @@ class AlchemyClient(SQLClient):
                     )
 
                 to_table = self._get_sqla_table(
-                    to_table_name, schema=to_table_schema
+                    to_table_name, schema=database
                 )
 
                 from_table_expr = self.table(from_table_name)
