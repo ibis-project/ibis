@@ -334,7 +334,7 @@ class AlchemyClient(SQLClient):
         self,
         to_table_name: str,
         database: Optional[str] = None,
-        data: Optional[pd.Dataframe]=None,
+        data: Optional[pd.Dataframe] = None,
         from_table_name: Optional[str] = None,
         if_exists: Optional[str] = 'append',
     ) -> None:
@@ -382,9 +382,7 @@ class AlchemyClient(SQLClient):
                 ' or from_table_name (table name to insert data from)'
             )
 
-        if isinstance(data, pd.DataFrame) and isinstance(
-            from_table_name, str
-        ):
+        if isinstance(data, pd.DataFrame) and isinstance(from_table_name, str):
             raise ValueError(
                 "Cannot insert from both data (dataframe) and the"
                 " {from_table_name} table. Use only one of the "
