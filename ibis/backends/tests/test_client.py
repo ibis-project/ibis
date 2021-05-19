@@ -247,7 +247,7 @@ def test_insert_append_from_dataframe(con):
         }
     )
 
-    con.insert(temp_table, data_obj=records, if_exists='append')
+    con.insert(temp_table, data=records, if_exists='append')
     assert len(temporary.execute()) == 3
     tm.assert_frame_equal(temporary.execute(), records)
 
@@ -286,7 +286,7 @@ def test_insert_replace_from_dataframe(con):
         }
     )
 
-    con.insert(temp_table, data_obj=records, if_exists='replace')
+    con.insert(temp_table, data=records, if_exists='replace')
     assert len(temporary.execute()) == 3
     tm.assert_frame_equal(temporary.execute(), records)
 
@@ -329,7 +329,7 @@ def test_insert_fail_from_dataframe(con):
         temp_table=temp_table
     )
     with pytest.raises(ValueError, match=value_error_match):
-        con.insert(temp_table, data_obj=records, if_exists='fail')
+        con.insert(temp_table, data=records, if_exists='fail')
 
 
 @pytest.mark.only_on_backends(

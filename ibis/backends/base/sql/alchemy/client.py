@@ -334,7 +334,7 @@ class AlchemyClient(SQLClient):
         self,
         to_table_name: str,
         database: Optional[str] = None,
-        data_obj=None,
+        data=None,
         from_table_name: Optional[str] = None,
         if_exists: Optional[str] = 'append',
     ) -> None:
@@ -347,8 +347,8 @@ class AlchemyClient(SQLClient):
             name of the table to which data needs to be inserted
         database : string, optional
             name of the attached database that the table is located in.
-        data_obj : pd.Dataframe
-            data_obj is the dataframe containing data which needs to be
+        data : pd.Dataframe
+            data is the dataframe containing data which needs to be
             inserted to to_table_name
         from_table_name : string, optional
             name of the table from which data needs to be inserted
@@ -361,10 +361,10 @@ class AlchemyClient(SQLClient):
         Raises
         -------
         ValueError
-            You must pass either data_obj (pandas Dataframe) or
+            You must pass either data (pandas Dataframe) or
             from_table_name (table name to insert data from)
 
-            Sorry, can't insert from both the data_obj (dataframe)
+            Sorry, can't insert from both the data (dataframe)
             and the from_table_name (table). Please use only one
             parameter.
 
@@ -372,23 +372,23 @@ class AlchemyClient(SQLClient):
             The table already exists
 
         TypeError
-            No operation is being performed. Either the data_obj
+            No operation is being performed. Either the data
             parameter is not a pandas dataframe or the
             from_table_name parameter is not of string datatype.
 
         """
 
-        if data_obj is None and from_table_name is None:
+        if data is None and from_table_name is None:
             raise ValueError(
-                'You must pass either data_obj (pandas Dataframe)'
+                'You must pass either data (pandas Dataframe)'
                 ' or from_table_name (table name to insert data from)'
             )
 
-        if isinstance(data_obj, pd.DataFrame) and isinstance(
+        if isinstance(data, pd.DataFrame) and isinstance(
             from_table_name, str
         ):
             raise ValueError(
-                "Sorry, can't insert from both the data_obj (dataframe)"
+                "Sorry, can't insert from both the data (dataframe)"
                 " and the from_table_name (table). Please use only one"
                 " parameter."
             )
@@ -398,8 +398,8 @@ class AlchemyClient(SQLClient):
             params['schema'] = self.database_name
             database = self.database_name
 
-        if isinstance(data_obj, pd.DataFrame):
-            data_obj.to_sql(
+        if isinstance(data, pd.DataFrame):
+            data.to_sql(
                 to_table_name,
                 self.con,
                 index=False,
@@ -442,7 +442,7 @@ class AlchemyClient(SQLClient):
                         )
         else:
             raise TypeError(
-                'No operation is being performed. Either the data_obj'
+                'No operation is being performed. Either the data'
                 ' parameter is not a pandas dataframe or the'
                 ' from_table_name parameter is not of string datatype.'
             )
