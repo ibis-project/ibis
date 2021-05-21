@@ -311,10 +311,6 @@ def coerce_to_dataframe(
     0  1  2  3
     dtypes: [int32, int32, int32]
     """
-    # We don't want to coerce any output that is intended as
-    # an array shape.
-    if any(isinstance(t, dt.Array) for t in output_type.types):
-        return data
     if isinstance(data, pd.DataFrame):
         result = data
     elif isinstance(data, pd.Series):
