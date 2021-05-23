@@ -8,7 +8,7 @@ from .client import (
     SparkQuery,
     SparkTable,
 )
-from .compiler import SparkExprTranslator, SparkQueryBuilder, SparkQueryContext
+from .compiler import SparkContext, SparkExprTranslator, SparkQueryBuilder
 from .udf import udf  # noqa: F401
 
 
@@ -21,7 +21,7 @@ class Backend(BaseBackend):
     query_class = SparkQuery
     table_class = SparkDatabaseTable
     table_expr_class = SparkTable
-    context_class = SparkQueryContext
+    context_class = SparkContext
 
     def connect(self, spark_session):
         """

@@ -2,7 +2,7 @@ from ibis.backends.base import BaseBackend
 from ibis.backends.spark.client import SparkDatabase, SparkQuery, SparkTable
 
 from .client import PySparkClient
-from .compiler import PySparkExprTranslator, PySparkQueryContext, PySparkTable
+from .compiler import PySparkContext, PySparkExprTranslator, PySparkTable
 
 
 class Backend(BaseBackend):
@@ -14,7 +14,7 @@ class Backend(BaseBackend):
     query_class = SparkQuery
     table_class = PySparkTable
     table_expr_class = SparkTable
-    context_class = PySparkQueryContext
+    context_class = PySparkContext
 
     def connect(self, session):
         """
