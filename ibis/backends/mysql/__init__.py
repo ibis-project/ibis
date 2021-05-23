@@ -1,8 +1,12 @@
 from ibis.backends.base import BaseBackend
-from ibis.backends.base.sql.alchemy import AlchemyQuery, AlchemyQueryBuilder
+from ibis.backends.base.sql.alchemy import (
+    AlchemyContext,
+    AlchemyQuery,
+    AlchemyQueryBuilder,
+)
 
 from .client import MySQLClient, MySQLDatabase, MySQLTable
-from .compiler import MySQLExprTranslator, MySQLQueryContext
+from .compiler import MySQLExprTranslator
 
 
 class Backend(BaseBackend):
@@ -12,7 +16,7 @@ class Backend(BaseBackend):
     translator = MySQLExprTranslator
     database_class = MySQLDatabase
     table_class = MySQLTable
-    context_class = MySQLQueryContext
+    context_class = AlchemyContext
     query_class = AlchemyQuery
 
     def connect(

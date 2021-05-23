@@ -59,6 +59,7 @@ class Backend(BaseBackend):
     kind = 'pandas'
     builder = None
     extension = 'h5'
+    database_class = None
     table_class = HDFTable
     translator = PandasExprTranslator
 

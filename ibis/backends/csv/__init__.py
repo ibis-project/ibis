@@ -110,6 +110,7 @@ class Backend(BaseBackend):
     name = 'csv'
     kind = 'pandas'
     extension = 'csv'
+    database_class = None
     table_class = CSVTable
     builder = None
     translator = PandasExprTranslator

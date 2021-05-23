@@ -1,9 +1,13 @@
 """PostgreSQL backend."""
 from ibis.backends.base import BaseBackend
-from ibis.backends.base.sql.alchemy import AlchemyQuery, AlchemyQueryBuilder
+from ibis.backends.base.sql.alchemy import (
+    AlchemyContext,
+    AlchemyQuery,
+    AlchemyQueryBuilder,
+)
 
 from .client import PostgreSQLClient, PostgreSQLDatabase, PostgreSQLTable
-from .compiler import PostgreSQLExprTranslator, PostgreSQLQueryContext
+from .compiler import PostgreSQLExprTranslator
 
 
 class Backend(BaseBackend):
@@ -13,7 +17,7 @@ class Backend(BaseBackend):
     translator = PostgreSQLExprTranslator
     database_class = PostgreSQLDatabase
     table_class = PostgreSQLTable
-    context_class = PostgreSQLQueryContext
+    context_class = AlchemyContext
     query_class = AlchemyQuery
 
     def connect(

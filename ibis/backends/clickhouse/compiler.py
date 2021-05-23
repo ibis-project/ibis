@@ -21,62 +21,6 @@ def build_ast(expr, context):
     return builder.get_result()
 
 
-class ClickhouseQueryContext(QueryContext):
-    def _to_sql(self, expr, ctx):
-        builder = ClickhouseQueryBuilder(expr, context=ctx)
-        ast = builder.get_result()
-        query = ast.queries[0]
-        return query.compile()
-
-
-class ClickhouseSelect(Select):
-    @property
-    def table_set_formatter(self):
-        return ClickhouseTableSetFormatter
-
-    def format_group_by(self):
-        if not len(self.group_by):
-            # There is no aggregation, nothing to see here
-            return None
-
-        lines = []
-        if len(self.group_by) > 0:
-            columns = [
-                '`{0}`'.format(expr.get_name()) for expr in self.group_by
-            ]
-            clause = 'GROUP BY {0}'.format(', '.join(columns))
-            lines.append(clause)
-
-        if len(self.having) > 0:
-            trans_exprs = []
-            for expr in self.having:
-                translated = self._translate(expr)
-                trans_exprs.append(translated)
-            lines.append('HAVING {0}'.format(' AND '.join(trans_exprs)))
-
-        return '\n'.join(lines)
-
-    def format_limit(self):
-        if not self.limit:
-            return None
-
-        buf = StringIO()
-
-        n, offset = self.limit['n'], self.limit['offset']
-        buf.write('LIMIT {}'.format(n))
-        if offset is not None and offset != 0:
-            buf.write(', {}'.format(offset))
-
-        return buf.getvalue()
-
-
-class ClickhouseSelectBuilder(SelectBuilder):
-    _select_class = ClickhouseSelect
-
-    def _convert_group_by(self, exprs):
-        return exprs
-
-
 class ClickhouseTableSetFormatter(TableSetFormatter):
 
     _join_names = {
@@ -136,6 +80,60 @@ class ClickhouseTableSetFormatter(TableSetFormatter):
 
     def _quote_identifier(self, name):
         return quote_identifier(name)
+
+
+class ClickhouseQueryContext(QueryContext):
+    def _to_sql(self, expr, ctx):
+        builder = ClickhouseQueryBuilder(expr, context=ctx)
+        ast = builder.get_result()
+        query = ast.queries[0]
+        return query.compile()
+
+
+class ClickhouseSelect(Select):
+    table_set_formatter = ClickhouseTableSetFormatter
+
+    def format_group_by(self):
+        if not len(self.group_by):
+            # There is no aggregation, nothing to see here
+            return None
+
+        lines = []
+        if len(self.group_by) > 0:
+            columns = [
+                '`{0}`'.format(expr.get_name()) for expr in self.group_by
+            ]
+            clause = 'GROUP BY {0}'.format(', '.join(columns))
+            lines.append(clause)
+
+        if len(self.having) > 0:
+            trans_exprs = []
+            for expr in self.having:
+                translated = self._translate(expr)
+                trans_exprs.append(translated)
+            lines.append('HAVING {0}'.format(' AND '.join(trans_exprs)))
+
+        return '\n'.join(lines)
+
+    def format_limit(self):
+        if not self.limit:
+            return None
+
+        buf = StringIO()
+
+        n, offset = self.limit['n'], self.limit['offset']
+        buf.write('LIMIT {}'.format(n))
+        if offset is not None and offset != 0:
+            buf.write(', {}'.format(offset))
+
+        return buf.getvalue()
+
+
+class ClickhouseSelectBuilder(SelectBuilder):
+    _select_class = ClickhouseSelect
+
+    def _convert_group_by(self, exprs):
+        return exprs
 
 
 class ClickhouseExprTranslator(ExprTranslator):

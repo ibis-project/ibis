@@ -104,6 +104,7 @@ class Backend(BaseBackend):
     kind = 'pandas'
     builder = None
     extension = 'parquet'
+    database_class = None
     table_class = ParquetTable
     translator = PandasExprTranslator
 
