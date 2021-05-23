@@ -5,7 +5,7 @@ import pytest
 import ibis
 from ibis.config import option_context
 
-from .test_vectorized_udf import calc_mean, demean_struct
+from .test_vectorized_udf import calc_mean, create_demean_struct_udf
 
 GROUPBY_COL = 'month'
 ORDERBY_COL = 'timestamp_col'
@@ -77,8 +77,12 @@ def test_context_adjustment_multi_col_udf_non_grouped(alltypes, df, context):
     with option_context('context_adjustment.time_col', 'timestamp_col'):
         w = ibis.window(preceding=None, following=None)
 
+        demean_struct_udf = create_demean_struct_udf(
+            result_formatter=lambda v1, v2: (v1, v2)
+        )
+
         result = alltypes.mutate(
-            demean_struct(alltypes['double_col'], alltypes['int_col'])
+            demean_struct_udf(alltypes['double_col'], alltypes['int_col'])
             .over(w)
             .destructure()
         ).execute(timecontext=context)

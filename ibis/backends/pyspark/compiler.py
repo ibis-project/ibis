@@ -23,7 +23,7 @@ from ibis.backends.spark.datatypes import (
     spark_dtype,
 )
 from ibis.expr.timecontext import adjust_context
-from ibis.util import coerce_to_dataframe, guid
+from ibis.util import guid
 
 from .timecontext import combine_time_context, filter_by_time_context
 
@@ -647,6 +647,40 @@ def compile_abs(t, expr, scope, timecontext, **kwargs):
 
     src_column = t.translate(op.arg, scope, timecontext)
     return F.abs(src_column)
+
+
+@compiles(ops.Clip)
+def compile_clip(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+    spark_dtype = ibis_dtype_to_spark_dtype(expr.type())
+    col = t.translate(op.arg, scope, timecontext)
+    upper = (
+        t.translate(op.upper, scope, timecontext)
+        if op.upper is not None
+        else float('inf')
+    )
+    lower = (
+        t.translate(op.lower, scope, timecontext)
+        if op.lower is not None
+        else float('-inf')
+    )
+
+    def column_min(value, limit):
+        """Given the minimum limit, return values that are greater
+        than or equal to this limit."""
+        return F.when(value < limit, limit).otherwise(value)
+
+    def column_max(value, limit):
+        """Given the maximum limit, return values that are less
+        than or equal to this limit."""
+        return F.when(value > limit, limit).otherwise(value)
+
+    def clip(column, lower_value, upper_value):
+        return column_max(
+            column_min(column, F.lit(lower_value)), F.lit(upper_value)
+        )
+
+    return clip(col, lower, upper).cast(spark_dtype)
 
 
 @compiles(ops.Round)
@@ -1716,24 +1750,11 @@ def compile_not_null(t, expr, scope, timecontext, **kwargs):
 # ------------------------- User defined function ------------------------
 
 
-def _wrap_struct_func(func, output_cols):
-    @functools.wraps(func)
-    def wrapped(*args, **kwargs):
-        result = func(*args, **kwargs)
-        return coerce_to_dataframe(result, output_cols)
-
-    return wrapped
-
-
 @compiles(ops.ElementWiseVectorizedUDF)
 def compile_elementwise_udf(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
     spark_output_type = spark_dtype(op._output_type)
-    if isinstance(expr, (types.StructColumn, types.DestructColumn)):
-        func = _wrap_struct_func(op.func, spark_output_type.names)
-    else:
-        func = op.func
-
+    func = op.func
     spark_udf = pandas_udf(func, spark_output_type, PandasUDFType.SCALAR)
     func_args = (t.translate(arg, scope, timecontext) for arg in op.func_args)
     return spark_udf(*func_args)

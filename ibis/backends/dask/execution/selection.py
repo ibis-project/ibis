@@ -60,9 +60,7 @@ def compute_projection_scalar_expr(
         for t in op.root_tables()
     )
     scalar = execute(expr, scope=scope, **kwargs)
-    result = pandas.Series([scalar], name=name).repeat(len(data.index))
-    result.index = data.index
-    return dd.from_pandas(result, npartitions=data.npartitions)
+    return data.assign(**{name: scalar})[name]
 
 
 @compute_projection.register(ir.ColumnExpr, ops.Selection, dd.DataFrame)
