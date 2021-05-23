@@ -334,7 +334,7 @@ class AlchemyClient(SQLClient):
         self,
         to_table_name: str,
         database: Optional[str] = None,
-        data: Optional[pd.Dataframe] = None,
+        data: Optional[pd.DataFrame] = None,
         from_table_name: Optional[str] = None,
         if_exists: Optional[str] = 'append',
     ) -> None:
@@ -347,7 +347,7 @@ class AlchemyClient(SQLClient):
             name of the table to which data needs to be inserted
         database : string, optional
             name of the attached database that the table is located in.
-        data : pd.Dataframe, optional
+        data : pd.DataFrame, optional
             data is the dataframe containing data which needs to be
             inserted to to_table_name
         from_table_name : string, optional
