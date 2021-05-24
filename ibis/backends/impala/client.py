@@ -1005,7 +1005,6 @@ class ImpalaClient(SQLClient):
 
         cur = self.raw_sql(statement)
         results = self._get_list(cur)
-        raise ValueError(str(dir(cur)))
         cur.release()
 
         return results
