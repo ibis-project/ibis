@@ -111,7 +111,7 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         Backend cursor
         """
         cursor = self.con.execute(query)
-        if query.upper().startswith('SELECT'):
+        if cursor:
             return cursor
         cursor.release()
 
