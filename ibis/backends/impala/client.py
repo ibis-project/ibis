@@ -881,7 +881,7 @@ class ImpalaClient(SQLClient):
 
         cur = self.raw_sql(statement)
         result = self._get_list(cur)
-        cur.close()
+        cur.release()
 
         return result
 
@@ -1006,7 +1006,7 @@ class ImpalaClient(SQLClient):
         cur = self.raw_sql(statement)
         results = self._get_list(cur)
         raise ValueError(str(dir(cur)))
-        cur.close()
+        cur.release()
 
         return results
 
@@ -1044,7 +1044,7 @@ class ImpalaClient(SQLClient):
     def version(self):
         cur = self.raw_sql('select version()')
         raw = self._get_list(cur)[0]
-        cur.close()
+        cur.release()
 
         vstring = raw.split()[2]
         return parse_version(vstring)
@@ -1568,7 +1568,7 @@ class ImpalaClient(SQLClient):
         # resets the state of the cursor and closes operation
         cur.fetchall()
         names, ibis_types = self._adapt_types(cur.description)
-        cur.close()
+        cur.release()
 
         # per #321; most Impala tables will be lower case already, but Avro
         # data, depending on the version of Impala, might have field names in
@@ -1717,7 +1717,7 @@ class ImpalaClient(SQLClient):
         statement = ddl.ListFunction(database, like=like, aggregate=False)
         cur = self.raw_sql(statement)
         result = self._get_udfs(cur, udf.ImpalaUDF)
-        cur.close()
+        cur.release()
         return result
 
     def list_udas(self, database=None, like=None):
@@ -1734,7 +1734,7 @@ class ImpalaClient(SQLClient):
         statement = ddl.ListFunction(database, like=like, aggregate=True)
         cur = self.raw_sql(statement)
         result = self._get_udfs(cur, udf.ImpalaUDA)
-        cur.close()
+        cur.release()
 
         return result
 
