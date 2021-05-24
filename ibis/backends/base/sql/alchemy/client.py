@@ -404,9 +404,10 @@ class AlchemyClient(SQLClient):
             )
 
         params = {}
-        if database is None:
+        if self.has_attachment:
+            # for database with attachment
+            # see: https://github.com/ibis-project/ibis/issues/1930
             params['schema'] = self.database_name
-            database = self.database_name
 
         if isinstance(data, pd.DataFrame):
             data.to_sql(
