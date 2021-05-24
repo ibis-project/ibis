@@ -515,7 +515,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
             partition_schema=partition_schema,
             overwrite=overwrite,
         )
-        return self._execute(statement)
+        return self.raw_sql(statement)
 
     def load_data(self, path, overwrite=False, partition=None):
         """
@@ -547,7 +547,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
             partition_schema=partition_schema,
         )
 
-        return self._execute(stmt)
+        return self.raw_sql(stmt)
 
     @property
     def name(self):
@@ -573,13 +573,10 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         statement = RenameTable(
             self._qualified_name, new_name, new_database=database
         )
-        self._client._execute(statement)
+        self._client.raw_sql(statement)
 
         op = self.op().change_name(statement.new_qualified_name)
         return type(self)(op)
-
-    def _execute(self, stmt):
-        return self._client._execute(stmt)
 
     @property
     def is_partitioned(self):
@@ -627,7 +624,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         stmt = ddl.AddPartition(
             self._qualified_name, spec, part_schema, location=location
         )
-        return self._execute(stmt)
+        return self._client.raw_sql(stmt)
 
     def alter(
         self,
@@ -654,7 +651,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
 
         def _run_ddl(**kwds):
             stmt = AlterTable(self._qualified_name, **kwds)
-            return self._execute(stmt)
+            return self._client.raw_sql(stmt)
 
         return self._alter_table_helper(
             _run_ddl,
@@ -700,7 +697,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
             stmt = ddl.AlterPartition(
                 self._qualified_name, spec, part_schema, **kwds
             )
-            return self._execute(stmt)
+            return self._client.raw_sql(stmt)
 
         return self._alter_table_helper(
             _run_ddl,
@@ -725,7 +722,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         """
         part_schema = self.partition_schema()
         stmt = ddl.DropPartition(self._qualified_name, spec, part_schema)
-        return self._execute(stmt)
+        return self._client.raw_sql(stmt)
 
     def partitions(self):
         """
@@ -882,7 +879,7 @@ class ImpalaClient(SQLClient):
                 return self.list_tables(like=like, database=database)
             statement += " LIKE '{0}'".format(like)
 
-        with self._execute(statement, results=True) as cur:
+        with self.raw_sql(statement, results=True) as cur:
             result = self._get_list(cur)
 
         return result
@@ -929,7 +926,7 @@ class ImpalaClient(SQLClient):
             # which is easier for manual cleanup, if necessary
             self.hdfs.mkdir(path)
         statement = CreateDatabase(name, path=path, can_exist=force)
-        return self._execute(statement)
+        return self.raw_sql(statement)
 
     def drop_database(self, name, force=False):
         """Drop an Impala database.
@@ -985,7 +982,7 @@ class ImpalaClient(SQLClient):
                     'force=True'.format(name)
                 )
         statement = DropDatabase(name, must_exist=not force)
-        return self._execute(statement)
+        return self.raw_sql(statement)
 
     def list_databases(self, like=None):
         """
@@ -1005,8 +1002,8 @@ class ImpalaClient(SQLClient):
         if like:
             statement += " LIKE '{0}'".format(like)
 
-        with self._execute(statement, results=True) as cur:
-            results = self._get_list(cur)
+        cur = self.raw_sql(statement, results=True)
+        results = self._get_list(cur)
 
         return results
 
@@ -1042,8 +1039,8 @@ class ImpalaClient(SQLClient):
 
     @property
     def version(self):
-        with self._execute('select version()', results=True) as cur:
-            raw = self._get_list(cur)[0]
+        cur = self.raw_sql('select version()', results=True)
+        raw = self._get_list(cur)[0]
 
         vstring = raw.split()[2]
         return parse_version(vstring)
@@ -1104,7 +1101,7 @@ class ImpalaClient(SQLClient):
         ast = build_ast(expr)
         select = ast.queries[0]
         statement = CreateView(name, select, database=database)
-        return self._execute(statement)
+        return self.raw_sql(statement)
 
     def drop_view(self, name, database=None, force=False):
         """
@@ -1118,7 +1115,7 @@ class ImpalaClient(SQLClient):
           Database may throw exception if table does not exist
         """
         statement = DropView(name, database=database, must_exist=not force)
-        return self._execute(statement)
+        return self.raw_sql(statement)
 
     def create_table(
         self,
@@ -1204,7 +1201,7 @@ class ImpalaClient(SQLClient):
         else:
             raise com.IbisError('Must pass obj or schema')
 
-        return self._execute(statement)
+        return self.raw_sql(statement)
 
     def avro_file(
         self,
@@ -1240,7 +1237,7 @@ class ImpalaClient(SQLClient):
         stmt = ddl.CreateTableAvro(
             name, hdfs_dir, avro_schema, database=database, external=external
         )
-        self._execute(stmt)
+        self.raw_sql(stmt)
         return self._wrap_new_table(name, database, persist)
 
     def delimited_file(
@@ -1303,7 +1300,7 @@ class ImpalaClient(SQLClient):
             lineterminator=lineterminator,
             escapechar=escapechar,
         )
-        self._execute(stmt)
+        self.raw_sql(stmt)
         return self._wrap_new_table(name, database, persist)
 
     def parquet_file(
@@ -1375,7 +1372,7 @@ class ImpalaClient(SQLClient):
             external=external,
             can_exist=False,
         )
-        self._execute(stmt)
+        self.raw_sql(stmt)
         return self._wrap_new_table(name, database, persist)
 
     def _get_concrete_table_path(self, name, database, persist=False):
@@ -1422,7 +1419,7 @@ class ImpalaClient(SQLClient):
                 qualified_name, cardinality
             )
         )
-        self._execute(set_card)
+        self.raw_sql(set_card)
 
         self._temp_objects.add(t)
         return t
@@ -1512,7 +1509,7 @@ class ImpalaClient(SQLClient):
         statement = DropTable(
             table_name, database=database, must_exist=not force
         )
-        self._execute(statement)
+        self.raw_sql(statement)
 
     def truncate_table(self, table_name, database=None):
         """
@@ -1524,7 +1521,7 @@ class ImpalaClient(SQLClient):
         database : string, default None (optional)
         """
         statement = TruncateTable(table_name, database=database)
-        self._execute(statement)
+        self.raw_sql(statement)
 
     def drop_table_or_view(self, name, database=None, force=False):
         """
@@ -1557,16 +1554,16 @@ class ImpalaClient(SQLClient):
         >>> con.cache_table('my_table', database=db, pool=pool)  # noqa: E501 # doctest: +SKIP
         """
         statement = ddl.CacheTable(table_name, database=database, pool=pool)
-        self._execute(statement)
+        self.raw_sql(statement)
 
     def _get_table_schema(self, tname):
         return self.get_schema(tname)
 
     def _get_schema_using_query(self, query):
-        with self._execute(query, results=True) as cur:
-            # resets the state of the cursor and closes operation
-            cur.fetchall()
-            names, ibis_types = self._adapt_types(cur.description)
+        cur = self.raw_sql(query, results=True)
+        # resets the state of the cursor and closes operation
+        cur.fetchall()
+        names, ibis_types = self._adapt_types(cur.description)
 
         # per #321; most Impala tables will be lower case already, but Avro
         # data, depending on the version of Impala, might have field names in
@@ -1598,7 +1595,7 @@ class ImpalaClient(SQLClient):
             stmt = ddl.CreateUDA(func, name=name, database=database)
         else:
             raise TypeError(func)
-        self._execute(stmt)
+        self.raw_sql(stmt)
 
     def drop_udf(
         self,
@@ -1677,7 +1674,7 @@ class ImpalaClient(SQLClient):
             aggregate=aggregate,
             database=database,
         )
-        self._execute(stmt)
+        self.raw_sql(stmt)
 
     def _drop_all_functions(self, database):
         udfs = self.list_udfs(database=database)
@@ -1689,7 +1686,7 @@ class ImpalaClient(SQLClient):
                 aggregate=False,
                 database=database,
             )
-            self._execute(stmt)
+            self.raw_sql(stmt)
         udafs = self.list_udas(database=database)
         for udaf in udafs:
             stmt = ddl.DropFunction(
@@ -1699,7 +1696,7 @@ class ImpalaClient(SQLClient):
                 aggregate=True,
                 database=database,
             )
-            self._execute(stmt)
+            self.raw_sql(stmt)
 
     def list_udfs(self, database=None, like=None):
         """
@@ -1713,8 +1710,8 @@ class ImpalaClient(SQLClient):
         if not database:
             database = self.current_database
         statement = ddl.ListFunction(database, like=like, aggregate=False)
-        with self._execute(statement, results=True) as cur:
-            result = self._get_udfs(cur, udf.ImpalaUDF)
+        cur = self.raw_sql(statement, results=True)
+        result = self._get_udfs(cur, udf.ImpalaUDF)
         return result
 
     def list_udas(self, database=None, like=None):
@@ -1729,8 +1726,8 @@ class ImpalaClient(SQLClient):
         if not database:
             database = self.current_database
         statement = ddl.ListFunction(database, like=like, aggregate=True)
-        with self._execute(statement, results=True) as cur:
-            result = self._get_udfs(cur, udf.ImpalaUDA)
+        cur = self.raw_sql(statement, results=True)
+        result = self._get_udfs(cur, udf.ImpalaUDA)
 
         return result
 
@@ -1813,7 +1810,7 @@ class ImpalaClient(SQLClient):
         cmd = 'COMPUTE {0}STATS'.format(maybe_inc)
 
         stmt = self._table_command(cmd, name, database=database)
-        self._execute(stmt)
+        self.raw_sql(stmt)
 
     def invalidate_metadata(self, name=None, database=None):
         """
@@ -1829,7 +1826,7 @@ class ImpalaClient(SQLClient):
         stmt = 'INVALIDATE METADATA'
         if name is not None:
             stmt = self._table_command(stmt, name, database=database)
-        self._execute(stmt)
+        self.raw_sql(stmt)
 
     def refresh(self, name, database=None):
         """
@@ -1845,7 +1842,7 @@ class ImpalaClient(SQLClient):
         """
         # TODO(wesm): can this statement be cancelled?
         stmt = self._table_command('REFRESH', name, database=database)
-        self._execute(stmt)
+        self.raw_sql(stmt)
 
     def describe_formatted(self, name, database=None):
         """
