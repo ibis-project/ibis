@@ -284,7 +284,7 @@ class SparkClient(SQLClient):
 
         for node in udf_nodes_unique:
             stmt = ddl.DropFunction(type(node).__name__, must_exist=True)
-            self._execute(stmt.compile())
+            self.raw_sql(stmt.compile())
 
         return result
 

@@ -191,14 +191,14 @@ class ClickhouseClient(SQLClient):
     def log(self, msg):
         log(msg)
 
-    def fetch_from_cursor(self, cursor):
+    def fetch_from_cursor(self, cursor, schema):
         data, colnames, _ = cursor
         if not len(data):
             # handle empty resultset
             return pd.DataFrame([], columns=colnames)
 
         df = pd.DataFrame.from_dict(OrderedDict(zip(colnames, data)))
-        return self.schema().apply_to(df)
+        return schema.apply_to(df)
 
     def close(self):
         """Close Clickhouse connection and drop any temporary objects"""
