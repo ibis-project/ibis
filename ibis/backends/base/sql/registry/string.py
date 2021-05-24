@@ -80,3 +80,20 @@ def parse_url(translator, expr):
         return "parse_url({}, '{}', {})".format(
             arg_formatted, extract, key_fmt
         )
+
+
+def startswith(translator, expr):
+    arg, start = expr.op().args
+    
+    arg_formatted= translator.translate(arg)
+    start_formatted = translator.translate(start)
+
+    return f"starts_with({arg_formatted}, {start_formatted})"
+
+def endswith(translator, expr):
+    arg, start = expr.op().args
+    
+    arg_formatted= translator.translate(arg)
+    end_formatted = translator.translate(start)
+
+    return f"ends_with({arg_formatted}, {end_formatted})"
