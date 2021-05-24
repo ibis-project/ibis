@@ -5,6 +5,7 @@ import pytest
 
 import ibis
 import ibis.expr.types as ir
+from ibis.backends.base.sql.alchemy import AlchemyContext, AlchemyQueryBuilder
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 
 
@@ -47,29 +48,18 @@ def db(con):
 
 
 @pytest.fixture
-def dialect():
-    import sqlalchemy as sa
-
-    return sa.dialects.sqlite.dialect()
-
-
-@pytest.fixture
-def translate(dialect):
-    from ibis.backends.sqlite import Backend
-
-    ibis_dialect = Backend().dialect()
-    context = ibis_dialect.make_context()
+def translate():
     return lambda expr: str(
-        ibis_dialect.translator(expr, context)
+        AlchemyQueryBuilder(expr, AlchemyContext())
         .get_result()
-        .compile(dialect=dialect, compile_kwargs={'literal_binds': True})
+        .compile(compile_kwargs={'literal_binds': True})
     )
 
 
 @pytest.fixture
-def sqla_compile(dialect):
+def sqla_compile():
     return lambda expr: str(
-        expr.compile(dialect=dialect, compile_kwargs={'literal_binds': True})
+        expr.compile(compile_kwargs={'literal_binds': True})
     )
 
 

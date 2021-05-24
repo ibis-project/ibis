@@ -13,9 +13,7 @@ from ibis.expr.typing import TimeContext
 
 
 class Client:
-    """
-    Base class for all clients.
-    """
+    """Base class for all clients."""
 
     def __init__(self, backend):
         self.database_class = backend.database_class
