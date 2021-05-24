@@ -438,7 +438,6 @@ class AlchemyClient(SQLClient):
                 from_table_expr = self.table(from_table_name)
 
                 with self.begin() as bind:
-                    to_table.create(bind=bind)
                     if from_table_expr is not None:
                         bind.execute(
                             to_table.insert().from_select(
