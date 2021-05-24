@@ -11,7 +11,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.base.sql.compiler import DDL
 from ibis.client import Database, DatabaseEntity, SQLClient
 from ibis.config import options
 from ibis.util import log
@@ -191,38 +190,34 @@ class ClickhouseClient(SQLClient):
     def log(self, msg):
         log(msg)
 
-    def fetch_from_cursor(self, cursor, schema):
-        data, colnames, _ = cursor
-        if not len(data):
-            # handle empty resultset
-            return pd.DataFrame([], columns=colnames)
+    def raw_sql(self, query: str):
+        response = self.con.execute(
+            query, columnar=True, with_column_types=True, external_tables=[],
+        )
+        data, columns = response
+        data._columns = columns
+        return data
 
-        df = pd.DataFrame.from_dict(OrderedDict(zip(colnames, data)))
+    def ast_schema(self, query_ast):
+        query = query_ast.compile()
+        columns = self.raw_sql(query)._columns
+
+        colnames, typenames = zip(*columns)
+        coltypes = list(map(ClickhouseDataType.parse, typenames))
+
+        return sch.schema(colnames, coltypes)
+
+    def fetch_from_cursor(self, cursor, schema):
+        if not len(cursor):
+            # handle empty resultset
+            return pd.DataFrame([], columns=schema.colnames)
+
+        df = pd.DataFrame.from_dict(OrderedDict(zip(schema.colnames, cursor)))
         return schema.apply_to(df)
 
     def close(self):
         """Close Clickhouse connection and drop any temporary objects"""
         self.con.disconnect()
-
-    def _execute(self, query, external_tables=(), results=True):
-        if isinstance(query, DDL):
-            query = query.compile()
-        self.log(query)
-
-        response = self.con.execute(
-            query,
-            columnar=True,
-            with_column_types=True,
-            external_tables=external_tables,
-        )
-        if not results:
-            return response
-
-        data, columns = response
-        colnames, typenames = zip(*columns)
-        coltypes = list(map(ClickhouseDataType.parse, typenames))
-
-        return data, colnames, coltypes
 
     def _fully_qualified_name(self, name, database):
         if bool(fully_qualified_re.search(name)):
@@ -258,7 +253,7 @@ class ClickhouseClient(SQLClient):
                 return self.list_tables(like=like, database=database)
             statement += " LIKE '{0}'".format(like)
 
-        data, _, _ = self._execute(statement, results=True)
+        data = self.raw_sql(statement)
         return data[0]
 
     def set_database(self, name):
@@ -300,7 +295,7 @@ class ClickhouseClient(SQLClient):
         if like:
             statement += " WHERE name LIKE '{0}'".format(like)
 
-        data, _, _ = self._execute(statement, results=True)
+        data = self.raw_sql(statement)
         return data[0]
 
     def get_schema(self, table_name, database=None):
@@ -319,11 +314,12 @@ class ClickhouseClient(SQLClient):
         """
         qualified_name = self._fully_qualified_name(table_name, database)
         query = 'DESC {0}'.format(qualified_name)
-        data, _, _ = self._execute(query, results=True)
-
+        response = self.con.execute(
+            query, columnar=True, with_column_types=True, external_tables=[],
+        )
+        data, columns = response
         colnames, coltypes = data[:2]
         coltypes = list(map(ClickhouseDataType.parse, coltypes))
-
         return sch.schema(colnames, coltypes)
 
     @property
@@ -356,13 +352,6 @@ class ClickhouseClient(SQLClient):
         name = (options.clickhouse.temp_db,)
         if not self.exists_database(name):
             self.create_database(name, force=True)
-
-    def _get_table_schema(self, tname):
-        return self.get_schema(tname)
-
-    def _get_schema_using_query(self, query):
-        _, colnames, coltypes = self._execute(query)
-        return sch.schema(colnames, coltypes)
 
     def _table_command(self, cmd, name, database=None):
         qualified_name = self._fully_qualified_name(name, database)
