@@ -2887,6 +2887,7 @@ def _string_join(self, strings):
     """
     return ops.StringJoin(self, strings).to_expr()
 
+
 def _startswith(self, start):
     """
     Determine if `self` string starts with `start` string.
@@ -2906,6 +2907,7 @@ def _startswith(self, start):
     result : boolean
     """
     return ops.StartsWith(self, self, start).to_expr()
+
 
 def _endswith(self, end):
     """

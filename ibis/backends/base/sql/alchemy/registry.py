@@ -266,13 +266,16 @@ def _string_like(t, expr):
     result = t.translate(arg).like(t.translate(pattern), escape=escape)
     return result
 
+
 def _startswith(t, expr):
     arg, start = expr.op().args
     return t.translate(arg).startswith(t.translate(start))
 
+
 def _endswith(t, expr):
     arg, start = expr.op().args
     return t.translate(arg).endswith(t.translate(start))
+
 
 _cumulative_to_reduction = {
     ops.CumulativeSum: ops.Sum,

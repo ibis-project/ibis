@@ -204,7 +204,7 @@ class TableNode(Node):
         if self.equals(other):
             return True
 
-        fn = lambda e: (lin.proceed, e.op())  # noqa: E731
+        def fn(e): return (lin.proceed, e.op())  # noqa: E731
         expr = self.to_expr()
         for child in lin.traverse(fn, expr):
             if child.equals(other):
@@ -755,10 +755,12 @@ class StringJoin(ValueOp):
     def output_type(self):
         return rlz.shape_like(tuple(self.flat_args()), dt.string)
 
+
 class StartsWith(ValueOp):
     arg = Arg(rlz.string)
     start = Arg(rlz.string)
     output_type = rlz.shape_like("arg", dt.boolean)
+
 
 class EndsWith(ValueOp):
     arg = Arg(rlz.string)
