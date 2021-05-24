@@ -119,6 +119,6 @@ def test_startswith(table):
     assert isinstance(literal('bar').startswith('foo'), ir.BooleanScalar)
 
 
-def test_startswith(table):
+def test_endswith(table):
     assert isinstance(table.g.endswith('foo'), ir.BooleanColumn)
     assert isinstance(literal('bar').endswith('foo'), ir.BooleanScalar)
