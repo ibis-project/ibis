@@ -300,8 +300,8 @@ class AlchemyClient(SQLClient):
         return _AlchemyProxy(self.con.execute(query))
 
     @_invalidates_reflection_cache
-    def raw_sql(self, query: str, results: bool = False, **kwargs):
-        return super().raw_sql(query, results=results, **kwargs)
+    def raw_sql(self, query: str):
+        return super().raw_sql(query)
 
     def _build_ast(self, expr, context):
         return build_ast(expr, context)

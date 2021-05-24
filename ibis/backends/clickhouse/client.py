@@ -142,9 +142,6 @@ class ClickhouseTable(ir.TableExpr, DatabaseEntity):
     def name(self):
         return self.op().name
 
-    def _execute(self, stmt):
-        return self._client._execute(stmt)
-
     def insert(self, obj, **kwargs):
         from .identifiers import quote_identifier
 
@@ -261,7 +258,7 @@ class ClickhouseClient(SQLClient):
                 return self.list_tables(like=like, database=database)
             statement += " LIKE '{0}'".format(like)
 
-        data, _, _ = self.raw_sql(statement, results=True)
+        data, _, _ = self._execute(statement, results=True)
         return data[0]
 
     def set_database(self, name):
@@ -303,7 +300,7 @@ class ClickhouseClient(SQLClient):
         if like:
             statement += " WHERE name LIKE '{0}'".format(like)
 
-        data, _, _ = self.raw_sql(statement, results=True)
+        data, _, _ = self._execute(statement, results=True)
         return data[0]
 
     def get_schema(self, table_name, database=None):
@@ -322,7 +319,7 @@ class ClickhouseClient(SQLClient):
         """
         qualified_name = self._fully_qualified_name(table_name, database)
         query = 'DESC {0}'.format(qualified_name)
-        data, _, _ = self.raw_sql(query, results=True)
+        data, _, _ = self._execute(query, results=True)
 
         colnames, coltypes = data[:2]
         coltypes = list(map(ClickhouseDataType.parse, coltypes))

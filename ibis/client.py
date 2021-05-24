@@ -95,7 +95,7 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         schema = self._get_schema_using_query(limited_query)
         return ops.SQLQueryResult(query, schema, self).to_expr()
 
-    def raw_sql(self, query, results=False, **kwargs):
+    def raw_sql(self, query):
         """Execute a given query string.
 
         Could have unexpected results if the query modifies the behavior of
@@ -105,19 +105,12 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         ----------
         query : string
           DML or DDL statement
-        results : boolean, default False
-          Pass True if the query as a result set
 
         Returns
         -------
-        cur : ImpalaCursor if results=True, None otherwise
-          You must call cur.release() after you are finished using the cursor.
+        cur : Cursor
         """
-        cur = self.con.execute(query)
-        if results:
-            return cur
-        elif hasattr(cur, 'release'):
-            cur.release()
+        return self.con.execute(query)
 
     def execute(self, expr, params=None, limit='default', **kwargs):
         """Compile and execute the given Ibis expression.
@@ -141,10 +134,9 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
           Scalar expressions: Python scalar value
         """
         query_ast = self._build_ast_ensure_limit(expr, limit, params=params)
-        compiled_sql = query_ast.compile()
-        self._log(compiled_sql)
-
-        cursor = self.raw_sql(compiled_sql, results=True, **kwargs)
+        sql = query_ast.compile()
+        self._log(sql)
+        cursor = self.raw_sql(sql)
         schema = self.ast_schema(query_ast)
         result = self.fetch_from_cursor(cursor, schema)
 
@@ -255,12 +247,11 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
 
         statement = 'EXPLAIN {0}'.format(query)
 
-        with self._execute(statement, results=True) as cur:
-            result = self._get_list(cur)
+        cur = self._execute(statement)
+        result = self._get_list(cur)
+        cur.close()
 
-        return 'Query:\n{0}\n\n{1}'.format(
-            util.indent(query, 2), '\n'.join(result)
-        )
+        return '\n'.join(['Query:', util.indent(query, 2), '', *result])
 
     def _build_ast(self, expr, context):
         # Implement in clients

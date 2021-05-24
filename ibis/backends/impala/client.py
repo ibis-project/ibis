@@ -879,8 +879,9 @@ class ImpalaClient(SQLClient):
                 return self.list_tables(like=like, database=database)
             statement += " LIKE '{0}'".format(like)
 
-        with self.raw_sql(statement, results=True) as cur:
-            result = self._get_list(cur)
+        cur = self.raw_sql(statement)
+        result = self._get_list(cur)
+        cur.close()
 
         return result
 
@@ -1002,8 +1003,9 @@ class ImpalaClient(SQLClient):
         if like:
             statement += " LIKE '{0}'".format(like)
 
-        cur = self.raw_sql(statement, results=True)
+        cur = self.raw_sql(statement)
         results = self._get_list(cur)
+        cur.close()
 
         return results
 
@@ -1039,8 +1041,9 @@ class ImpalaClient(SQLClient):
 
     @property
     def version(self):
-        cur = self.raw_sql('select version()', results=True)
+        cur = self.raw_sql('select version()')
         raw = self._get_list(cur)[0]
+        cur.close()
 
         vstring = raw.split()[2]
         return parse_version(vstring)
@@ -1560,10 +1563,11 @@ class ImpalaClient(SQLClient):
         return self.get_schema(tname)
 
     def _get_schema_using_query(self, query):
-        cur = self.raw_sql(query, results=True)
+        cur = self.raw_sql(query)
         # resets the state of the cursor and closes operation
         cur.fetchall()
         names, ibis_types = self._adapt_types(cur.description)
+        cur.close()
 
         # per #321; most Impala tables will be lower case already, but Avro
         # data, depending on the version of Impala, might have field names in
@@ -1710,8 +1714,9 @@ class ImpalaClient(SQLClient):
         if not database:
             database = self.current_database
         statement = ddl.ListFunction(database, like=like, aggregate=False)
-        cur = self.raw_sql(statement, results=True)
+        cur = self.raw_sql(statement)
         result = self._get_udfs(cur, udf.ImpalaUDF)
+        cur.close()
         return result
 
     def list_udas(self, database=None, like=None):
@@ -1726,8 +1731,9 @@ class ImpalaClient(SQLClient):
         if not database:
             database = self.current_database
         statement = ddl.ListFunction(database, like=like, aggregate=True)
-        cur = self.raw_sql(statement, results=True)
+        cur = self.raw_sql(statement)
         result = self._get_udfs(cur, udf.ImpalaUDA)
+        cur.close()
 
         return result
 
@@ -1860,7 +1866,7 @@ class ImpalaClient(SQLClient):
         stmt = self._table_command(
             'DESCRIBE FORMATTED', name, database=database
         )
-        result = self.raw_sql(stmt, results=True)
+        result = self.raw_sql(stmt)
 
         # Leave formatting to pandas
         for c in result.columns:
@@ -1905,7 +1911,7 @@ class ImpalaClient(SQLClient):
         return self._exec_statement(stmt)
 
     def _exec_statement(self, stmt, adapter=None):
-        result = self.raw_sql(stmt, results=True)
+        result = self.raw_sql(stmt)
         if adapter is not None:
             result = adapter(result)
         return result

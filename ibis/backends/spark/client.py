@@ -135,9 +135,6 @@ class SparkTable(ir.TableExpr):
     def _client(self):
         return self.op().source
 
-    def _execute(self, stmt):
-        return self._client._execute(stmt)
-
     def compute_stats(self, noscan=False):
         """
         Invoke Spark ANALYZE TABLE <tbl> COMPUTE STATISTICS command to
@@ -197,7 +194,7 @@ class SparkTable(ir.TableExpr):
         statement = ddl.InsertSelect(
             self._qualified_name, select, overwrite=overwrite
         )
-        return self._execute(statement.compile())
+        return self._client.execute(statement.compile())
 
     def rename(self, new_name):
         """
@@ -216,7 +213,7 @@ class SparkTable(ir.TableExpr):
         new_qualified_name = _fully_qualified_name(new_name, self._database)
 
         statement = ddl.RenameTable(self._qualified_name, new_name)
-        self._client._execute(statement.compile())
+        self._client._client.execute(statement.compile())
 
         op = self.op().change_name(new_qualified_name)
         return type(self)(op)
@@ -237,7 +234,7 @@ class SparkTable(ir.TableExpr):
         stmt = ddl.AlterTable(
             self._qualified_name, tbl_properties=tbl_properties
         )
-        return self._execute(stmt.compile())
+        return self._client.execute(stmt.compile())
 
 
 class SparkClient(SQLClient):
@@ -293,10 +290,9 @@ class SparkClient(SQLClient):
 
         return result
 
-    def raw_sql(self, stmt, results=False, **kwargs):
+    def raw_sql(self, stmt):
         query = self._session.sql(stmt)
-        if results:
-            return SparkCursor(query)
+        return SparkCursor(query)
 
     def database(self, name=None):
         return self.database_class(name or self.current_database, self)
@@ -312,7 +308,7 @@ class SparkClient(SQLClient):
         return self.get_schema(table_name)
 
     def _get_schema_using_query(self, query):
-        cur = self._execute(query, results=True)
+        cur = self.raw_sql(query)
         return spark_dataframe_schema(cur.query)
 
     def log(self, msg):
@@ -452,7 +448,7 @@ class SparkClient(SQLClient):
           default
         """
         statement = CreateDatabase(name, path=path, can_exist=force)
-        return self._execute(statement.compile())
+        return self.raw_sql(statement.compile())
 
     def drop_database(self, name, force=False):
         """Drop a Spark database.
@@ -466,7 +462,7 @@ class SparkClient(SQLClient):
           database does not exist
         """
         statement = ddl.DropDatabase(name, must_exist=not force, cascade=force)
-        return self._execute(statement.compile())
+        return self.raw_sql(statement.compile())
 
     def get_schema(self, table_name, database=None):
         """
@@ -617,7 +613,7 @@ class SparkClient(SQLClient):
         else:
             raise com.IbisError('Must pass expr or schema')
 
-        return self._execute(statement.compile())
+        return self.raw_sql(statement.compile())
 
     def create_view(
         self, name, expr, database=None, can_exist=False, temporary=False
@@ -643,7 +639,7 @@ class SparkClient(SQLClient):
             can_exist=can_exist,
             temporary=temporary,
         )
-        return self._execute(statement.compile())
+        return self.raw_sql(statement.compile())
 
     def drop_table(self, name, database=None, force=False):
         self.drop_table_or_view(name, database, force)
@@ -669,7 +665,7 @@ class SparkClient(SQLClient):
         >>> con.drop_table_or_view(table, db, force=True)  # doctest: +SKIP
         """
         statement = DropTable(name, database=database, must_exist=not force)
-        self._execute(statement.compile())
+        self.raw_sql(statement.compile())
 
     def truncate_table(self, table_name, database=None):
         """
@@ -681,7 +677,7 @@ class SparkClient(SQLClient):
         database : string, default None (optional)
         """
         statement = TruncateTable(table_name, database=database)
-        self._execute(statement.compile())
+        self.raw_sql(statement.compile())
 
     def insert(
         self,
@@ -732,7 +728,7 @@ class SparkClient(SQLClient):
         stmt = 'ANALYZE TABLE {0} COMPUTE STATISTICS{1}'.format(
             _fully_qualified_name(name, database), maybe_noscan
         )
-        return self._execute(stmt)
+        return self.raw_sql(stmt)
 
 
 def _fully_qualified_name(name, database):
