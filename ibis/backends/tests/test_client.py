@@ -73,8 +73,7 @@ def test_query_schema(backend, con, alltypes, expr_fn, expected):
 
     # we might need a public API for it
     ast = con._build_ast(expr, backend.make_context())
-    query = con.query_class(con, ast)
-    schema = query.schema()
+    schema = con.ast_schema(ast)
 
     # clickhouse columns has been defined as non-nullable
     # whereas other backends don't support non-nullable columns yet
@@ -84,7 +83,7 @@ def test_query_schema(backend, con, alltypes, expr_fn, expected):
             for name, dtype in expected
         ]
     )
-    assert query.schema().equals(expected)
+    assert schema.equals(expected)
 
 
 @pytest.mark.parametrize(

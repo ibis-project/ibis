@@ -95,7 +95,7 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         schema = self._get_schema_using_query(limited_query)
         return ops.SQLQueryResult(query, schema, self).to_expr()
 
-    def raw_sql(self, query):
+    def raw_sql(self, query: str):
         """Execute a given query string.
 
         Could have unexpected results if the query modifies the behavior of
@@ -108,9 +108,12 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
 
         Returns
         -------
-        cur : Cursor
+        Backend cursor
         """
-        return self.con.execute(query)
+        cursor = self.con.execute(query)
+        if query.upper().startswith('SELECT'):
+            return cursor
+        cursor.release()
 
     def execute(self, expr, params=None, limit='default', **kwargs):
         """Compile and execute the given Ibis expression.

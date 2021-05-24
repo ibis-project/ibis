@@ -278,15 +278,13 @@ class SparkClient(SQLClient):
 
         # register UDFs in pyspark
         for node in udf_nodes_unique:
-            self.client._session.udf.register(
-                type(node).__name__, node.udf_func
-            )
+            self._session.udf.register(type(node).__name__, node.udf_func)
 
         result = super().execute(expr, params, limit, **kwargs)
 
         for node in udf_nodes_unique:
             stmt = ddl.DropFunction(type(node).__name__, must_exist=True)
-            self.client._execute(stmt.compile())
+            self._execute(stmt.compile())
 
         return result
 
