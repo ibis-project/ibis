@@ -86,9 +86,9 @@ _inferable_pandas_dtypes = {
     'integer': dt.int64,
     'mixed-integer': dt.binary,
     'mixed-integer-float': dt.float64,
-    'decimal': dt.binary,
+    'decimal': dt.float64,
     'complex': dt.binary,
-    'categorical': dt.binary,
+    'categorical': dt.category,
     'boolean': dt.boolean,
     'datetime64': dt.timestamp,
     'datetime': dt.timestamp,
@@ -98,7 +98,7 @@ _inferable_pandas_dtypes = {
     'time': dt.time,
     'period': dt.binary,
     'mixed': dt.binary,
-    'empty': dt.binary,
+    'empty': dt.string,
     'unicode': dt.string,
 }
 
@@ -157,7 +157,7 @@ def _infer_pandas_series_contents(s: pd.Series) -> dt.DataType:
     """
     if s.dtype == np.object_:
         inferred_dtype = infer_pandas_dtype(s, skipna=True)
-        if inferred_dtype in {'mixed', 'decimal'}:
+        if inferred_dtype == 'mixed':
             # We need to inspect an element to determine the Ibis dtype
             value = s.iloc[0]
             if isinstance(value, (np.ndarray, list, pd.Series)):
