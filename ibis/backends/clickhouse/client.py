@@ -195,12 +195,14 @@ class ClickhouseClient(SQLClient):
             query, columnar=True, with_column_types=True, external_tables=[],
         )
         data, columns = response
-        data._columns = columns
         return data
 
     def ast_schema(self, query_ast):
         query = query_ast.compile()
-        columns = self.raw_sql(query)._columns
+        response = self.con.execute(
+            query, columnar=True, with_column_types=True, external_tables=[],
+        )
+        data, columns = response
 
         colnames, typenames = zip(*columns)
         coltypes = list(map(ClickhouseDataType.parse, typenames))
