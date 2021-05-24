@@ -204,7 +204,7 @@ class TableNode(Node):
         if self.equals(other):
             return True
 
-        def fn(e): return (lin.proceed, e.op())  # noqa: E731
+        fn = lambda e: (lin.proceed, e.op())  # noqa: E731
         expr = self.to_expr()
         for child in lin.traverse(fn, expr):
             if child.equals(other):

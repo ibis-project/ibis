@@ -112,3 +112,13 @@ def test_add_radd(table, string_col):
     assert isinstance('bar' + literal('foo'), ir.StringScalar)
     assert isinstance(string_col + 'bar', ir.StringColumn)
     assert isinstance('bar' + string_col, ir.StringColumn)
+
+
+def test_startswith(table):
+    assert isinstance(table.g.startswith('foo'), ir.BooleanColumn)
+    assert isinstance(literal('bar').startswith('foo'), ir.BooleanScalar)
+
+
+def test_startswith(table):
+    assert isinstance(table.g.endswith('foo'), ir.BooleanColumn)
+    assert isinstance(literal('bar').endswith('foo'), ir.BooleanScalar)

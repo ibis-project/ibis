@@ -2906,7 +2906,7 @@ def _startswith(self, start):
     -------
     result : boolean
     """
-    return ops.StartsWith(self, self, start).to_expr()
+    return ops.StartsWith(self, start).to_expr()
 
 
 def _endswith(self, end):
