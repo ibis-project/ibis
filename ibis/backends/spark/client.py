@@ -17,7 +17,7 @@ from ibis.backends.base.sql.ddl import (
     fully_qualified_re,
     is_fully_qualified,
 )
-from ibis.client import Database, Query, SQLClient
+from ibis.client import Database, SQLClient
 from ibis.util import log
 
 from . import compiler as comp
@@ -97,36 +97,6 @@ def find_spark_udf(expr):
     if not isinstance(result, (comp.SparkUDFNode, comp.SparkUDAFNode)):
         result = None
     return lin.proceed, result
-
-
-class SparkQuery(Query):
-    def execute(self):
-        udf_nodes = lin.traverse(find_spark_udf, self.expr)
-
-        # UDFs are uniquely identified by the name of the Node subclass we
-        # generate.
-        udf_nodes_unique = list(
-            toolz.unique(udf_nodes, key=lambda node: type(node).__name__)
-        )
-
-        # register UDFs in pyspark
-        for node in udf_nodes_unique:
-            self.client._session.udf.register(
-                type(node).__name__, node.udf_func
-            )
-
-        result = super().execute()
-
-        for node in udf_nodes_unique:
-            stmt = ddl.DropFunction(type(node).__name__, must_exist=True)
-            self.client._execute(stmt.compile())
-
-        return result
-
-    def _fetch(self, cursor):
-        df = cursor.query.toPandas()  # blocks until finished
-        schema = self.schema()
-        return schema.apply_to(df)
 
 
 class SparkDatabase(Database):
@@ -279,7 +249,6 @@ class SparkClient(SQLClient):
     def __init__(self, backend, session):
         self.dialect = backend.dialect
         self.database_class = backend.database_class
-        self.query_class = backend.query_class
         self.table_class = backend.table_class
         self.table_expr_class = backend.table_expr_class
 
@@ -293,11 +262,38 @@ class SparkClient(SQLClient):
         """
         self._context.stop()
 
+    def fetch_from_cursor(self, cursor, schema):
+        df = cursor.query.toPandas()  # blocks until finished
+        return schema.apply_to(df)
+
     def _build_ast(self, expr, context):
         result = build_ast(expr, context)
         return result
 
-    def _execute(self, stmt, results=False):
+    def execute(self, expr, params=None, limit='default', **kwargs):
+        udf_nodes = lin.traverse(find_spark_udf, expr)
+
+        # UDFs are uniquely identified by the name of the Node subclass we
+        # generate.
+        udf_nodes_unique = list(
+            toolz.unique(udf_nodes, key=lambda node: type(node).__name__)
+        )
+
+        # register UDFs in pyspark
+        for node in udf_nodes_unique:
+            self.client._session.udf.register(
+                type(node).__name__, node.udf_func
+            )
+
+        result = super().execute(expr, params, limit, **kwargs)
+
+        for node in udf_nodes_unique:
+            stmt = ddl.DropFunction(type(node).__name__, must_exist=True)
+            self.client._execute(stmt.compile())
+
+        return result
+
+    def raw_sql(self, stmt, results=False, **kwargs):
         query = self._session.sql(stmt)
         if results:
             return SparkCursor(query)

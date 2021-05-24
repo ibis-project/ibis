@@ -364,6 +364,9 @@ class BaseMockConnection(SQLClient, metaclass=abc.ABCMeta):
         ],
     }
 
+    def fetch_from_cursor(self, cursor, schema):
+        pass
+
     def _get_table_schema(self, name):
         name = name.replace('`', '')
         return Schema.from_tuples(self._tables[name])

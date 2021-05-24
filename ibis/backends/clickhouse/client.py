@@ -12,7 +12,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base.sql.compiler import DDL
-from ibis.client import Database, DatabaseEntity, Query, SQLClient
+from ibis.client import Database, DatabaseEntity, SQLClient
 from ibis.config import options
 from ibis.util import log
 
@@ -91,45 +91,6 @@ def clickhouse_to_ibis_dtype(clickhouse_dtype):
 
 class ClickhouseDatabase(Database):
     pass
-
-
-class ClickhouseQuery(Query):
-    def _external_tables(self):
-        tables = []
-        for name, df in self.extra_options.get('external_tables', {}).items():
-            if not isinstance(df, pd.DataFrame):
-                raise TypeError(
-                    'External table is not an instance of pandas ' 'dataframe'
-                )
-
-            schema = sch.infer(df)
-            chtypes = map(ClickhouseDataType.from_ibis, schema.types)
-            structure = list(zip(schema.names, map(str, chtypes)))
-
-            tables.append(
-                {
-                    'name': name,
-                    'data': df.to_dict('records'),
-                    'structure': structure,
-                }
-            )
-        return tables
-
-    def execute(self):
-        cursor = self.client._execute(
-            self.compiled_sql, external_tables=self._external_tables()
-        )
-        result = self._fetch(cursor)
-        return self._wrap_result(result)
-
-    def _fetch(self, cursor):
-        data, colnames, _ = cursor
-        if not len(data):
-            # handle empty resultset
-            return pd.DataFrame([], columns=colnames)
-
-        df = pd.DataFrame.from_dict(OrderedDict(zip(colnames, data)))
-        return self.schema().apply_to(df)
 
 
 class ClickhouseTable(ir.TableExpr, DatabaseEntity):
@@ -217,7 +178,6 @@ class ClickhouseClient(SQLClient):
 
     def __init__(self, backend, *args, **kwargs):
         self.database_class = backend.database_class
-        self.query_class = backend.query_class
         self.dialect = backend.dialect
         self.table_class = backend.table_class
         self.table_expr_class = backend.table_expr_class
@@ -233,6 +193,15 @@ class ClickhouseClient(SQLClient):
 
     def log(self, msg):
         log(msg)
+
+    def fetch_from_cursor(self, cursor):
+        data, colnames, _ = cursor
+        if not len(data):
+            # handle empty resultset
+            return pd.DataFrame([], columns=colnames)
+
+        df = pd.DataFrame.from_dict(OrderedDict(zip(colnames, data)))
+        return self.schema().apply_to(df)
 
     def close(self):
         """Close Clickhouse connection and drop any temporary objects"""
@@ -397,13 +366,6 @@ class ClickhouseClient(SQLClient):
     def _get_schema_using_query(self, query):
         _, colnames, coltypes = self._execute(query)
         return sch.schema(colnames, coltypes)
-
-    def _exec_statement(self, stmt, adapter=None):
-        query = ClickhouseQuery(self, stmt)
-        result = query.execute()
-        if adapter is not None:
-            result = adapter(result)
-        return result
 
     def _table_command(self, cmd, name, database=None):
         qualified_name = self._fully_qualified_name(name, database)

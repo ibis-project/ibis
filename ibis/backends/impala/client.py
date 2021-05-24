@@ -35,7 +35,7 @@ from ibis.backends.base.sql.ddl import (
     fully_qualified_re,
     is_fully_qualified,
 )
-from ibis.client import Database, DatabaseEntity, Query, SQLClient
+from ibis.client import Database, DatabaseEntity, SQLClient
 from ibis.config import options
 from ibis.util import log
 
@@ -286,21 +286,6 @@ class ImpalaCursor:
             return self._cursor.fetchcolumnar()
         else:
             return self._cursor.fetchall()
-
-
-class ImpalaQuery(Query):
-    def _fetch(self, cursor):
-        batches = cursor.fetchall(columnar=True)
-        names = [x[0] for x in cursor.description]
-        df = _column_batches_to_dataframe(names, batches)
-
-        # Ugly Hack for PY2 to ensure unicode values for string columns
-        if self.expr is not None:
-            # in case of metadata queries there is no expr and
-            # self.schema() would raise an exception
-            return self.schema().apply_to(df)
-
-        return df
 
 
 def _column_batches_to_dataframe(names, batches):
@@ -803,6 +788,12 @@ class ImpalaClient(SQLClient):
         self._temp_objects = weakref.WeakSet()
 
         self._ensure_temp_db_exists()
+
+    def fetch_from_cursor(self, cursor, schema):
+        batches = cursor.fetchall(columnar=True)
+        names = [x[0] for x in cursor.description]
+        df = _column_batches_to_dataframe(names, batches)
+        return df
 
     def _build_ast(self, expr, context):
         return build_ast(expr, context)
@@ -1873,8 +1864,7 @@ class ImpalaClient(SQLClient):
         stmt = self._table_command(
             'DESCRIBE FORMATTED', name, database=database
         )
-        query = ImpalaQuery(self, stmt)
-        result = query.execute()
+        result = self.raw_sql(stmt, results=True)
 
         # Leave formatting to pandas
         for c in result.columns:
@@ -1919,8 +1909,7 @@ class ImpalaClient(SQLClient):
         return self._exec_statement(stmt)
 
     def _exec_statement(self, stmt, adapter=None):
-        query = ImpalaQuery(self, stmt)
-        result = query.execute()
+        result = self.raw_sql(stmt, results=True)
         if adapter is not None:
             result = adapter(result)
         return result

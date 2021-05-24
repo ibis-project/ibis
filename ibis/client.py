@@ -21,83 +21,10 @@ class Client:
 Backends = List[Client]
 
 
-class Query:
-    """Abstraction for DML query execution.
-
-    This class enables queries, progress, and more
-    (for backends supporting such functionality).
-    """
-
-    def __init__(self, client, sql, **kwargs):
-        self.client = client
-
-        dml = getattr(sql, 'dml', sql)
-        self.expr = getattr(
-            dml, 'parent_expr', getattr(dml, 'table_set', None)
-        )
-
-        if not isinstance(sql, str):
-            self.compiled_sql = sql.compile()
-        else:
-            self.compiled_sql = sql
-
-        self.result_wrapper = getattr(dml, 'result_handler', None)
-        self.extra_options = kwargs
-
-    def execute(self, **kwargs):
-        """Execute a DML expression.
-
-        Returns
-        -------
-        output : input type dependent
-          Table expressions: pandas.DataFrame
-          Array expressions: pandas.Series
-          Scalar expressions: Python scalar value
-        """
-        # synchronous by default
-        with self.client._execute(
-            self.compiled_sql, results=True, **kwargs
-        ) as cur:
-            result = self._fetch(cur)
-
-        return self._wrap_result(result)
-
-    def _wrap_result(self, result):
-        if self.result_wrapper is not None:
-            result = self.result_wrapper(result)
-        return result
-
-    def _fetch(self, cursor):
-        raise NotImplementedError
-
-    def schema(self):
-        """Return the schema of the expression.
-
-        Returns
-        -------
-        Schema
-
-        Raises
-        ------
-        ValueError
-            if self.expr doesn't have a schema.
-        """
-        if isinstance(self.expr, (ir.TableExpr, ir.ExprList, sch.HasSchema)):
-            return self.expr.schema()
-        elif isinstance(self.expr, ir.ValueExpr):
-            return sch.schema([(self.expr.get_name(), self.expr.type())])
-        else:
-            raise ValueError(
-                'Expression with type {} does not have a '
-                'schema'.format(type(self.expr))
-            )
-
-
 class SQLClient(Client, metaclass=abc.ABCMeta):
     """Generic SQL client."""
 
     dialect = Dialect
-    query_class = Query
     table_class = ops.DatabaseTable
     table_expr_class = ir.TableExpr
 
@@ -151,13 +78,6 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         # XXX
         return name
 
-    def _execute(self, query, results=False, **kwargs):
-        cur = self.con.execute(query)
-        if results:
-            return cur
-        else:
-            cur.release()
-
     def sql(self, query):
         """Convert a SQL query to an Ibis table expression.
 
@@ -175,7 +95,7 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         schema = self._get_schema_using_query(limited_query)
         return ops.SQLQueryResult(query, schema, self).to_expr()
 
-    def raw_sql(self, query, results=False):
+    def raw_sql(self, query, results=False, **kwargs):
         """Execute a given query string.
 
         Could have unexpected results if the query modifies the behavior of
@@ -193,7 +113,11 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         cur : ImpalaCursor if results=True, None otherwise
           You must call cur.release() after you are finished using the cursor.
         """
-        return self._execute(query, results=results)
+        cur = self.con.execute(query)
+        if results:
+            return cur
+        elif hasattr(cur, 'release'):
+            cur.release()
 
     def execute(self, expr, params=None, limit='default', **kwargs):
         """Compile and execute the given Ibis expression.
@@ -217,16 +141,46 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
           Scalar expressions: Python scalar value
         """
         query_ast = self._build_ast_ensure_limit(expr, limit, params=params)
-        query = self._get_query(query_ast, **kwargs)
-        self._log(query.compiled_sql)
-        result = self._execute_query(query, **kwargs)
+        compiled_sql = query_ast.compile()
+        self._log(compiled_sql)
+
+        cursor = self.raw_sql(compiled_sql, results=True, **kwargs)
+        schema = self.ast_schema(query_ast)
+        result = self.fetch_from_cursor(cursor, schema)
+
+        if getattr(query_ast, 'result_handler'):
+            result = query_ast.result_handler(result)
+
         return result
 
-    def _get_query(self, dml, **kwargs):
-        return self.query_class(self, dml, **kwargs)
+    @abc.abstractmethod
+    def fetch_from_cursor(self, cursor, schema):
+        pass
 
-    def _execute_query(self, query, **kwargs):
-        return query.execute()
+    def ast_schema(self, query_ast):
+        """Return the schema of the expression.
+
+        Returns
+        -------
+        Schema
+
+        Raises
+        ------
+        ValueError
+            if self.expr doesn't have a schema.
+        """
+        dml = getattr(query_ast, 'dml', query_ast)
+        expr = getattr(dml, 'parent_expr', getattr(dml, 'table_set', None))
+
+        if isinstance(expr, (ir.TableExpr, ir.ExprList, sch.HasSchema)):
+            return expr.schema()
+        elif isinstance(expr, ir.ValueExpr):
+            return sch.schema([(expr.get_name(), expr.type())])
+        else:
+            raise ValueError(
+                'Expression with type {} does not have a '
+                'schema'.format(type(self.expr))
+            )
 
     def _log(self, sql):
         """Log the SQL, usually to the standard output.
@@ -310,15 +264,6 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
     def _build_ast(self, expr, context):
         # Implement in clients
         raise NotImplementedError(type(self).__name__)
-
-
-class QueryPipeline:
-    """Execute a series of queries, and capture any result sets generated.
-
-    Note: No query pipelines have yet been implemented.
-    """
-
-    pass
 
 
 def validate_backends(backends) -> list:
