@@ -172,9 +172,9 @@ def test_string_col_is_unicode(backend, alltypes, df):
             marks=pytest.mark.xfail_backends(['omniscidb']),  # #2338
         ),
         param(lambda t: t.string_col.startswith('foo'),
-              lambda t: t.string_col.startswith('foo'), id='startswith'),
+              lambda t: t.string_col.str.startswith('foo'), id='startswith'),
         param(lambda t: t.string_col.endswith('foo'),
-              lambda t: t.string_col.endswith('foo'), id='endsswith'),
+              lambda t: t.string_col.str.endswith('foo'), id='endswith'),
         param(
             lambda t: t.string_col.strip(),
             lambda t: t.string_col.str.strip(),

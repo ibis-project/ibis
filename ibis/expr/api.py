@@ -2900,8 +2900,13 @@ def _startswith(self, start):
     --------
     >>> import ibis
     >>> text = ibis.literal('Ibis project)
-    >>> result = text.startswith('Ibis')
-
+    >>> text.startswith('Ibis')
+    StartsWith[boolean]
+      Literal[string]
+        Ibis project
+      start:
+        Literal[string]
+          Ibis
     Returns
     -------
     result : boolean
@@ -2921,7 +2926,13 @@ def _endswith(self, end):
     --------
     >>> import ibis
     >>> text = ibis.literal('Ibis project)
-    >>> result = text.endswith('project')
+    >>> text.endswith('project')
+    EndsWith[boolean]
+      Literal[string]
+        Ibis project
+      end:
+        Literal[string]
+          project
 
     Returns
     -------
