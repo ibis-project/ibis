@@ -99,6 +99,16 @@ def execute_string_upper(op, data, **kwargs):
     return data.str.upper()
 
 
+@execute_node.register(ops.StartsWith, pd.Series)
+def execute_startswith(op, data, start, **kwargs):
+    return data.str.startswith(start)
+
+
+@execute_node.register(ops.EndsWith, pd.Series)
+def execute_startswith(op, data, end, **kwargs):
+    return data.str.endswith(end)
+
+
 @execute_node.register(ops.Capitalize, pd.Series)
 def execute_string_capitalize(op, data, **kwargs):
     return data.str.capitalize()
