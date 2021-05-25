@@ -216,7 +216,7 @@ def test_series_to_ibis_literal():
         # mixed
         (pd.Series([b'1', '2', 3.0]), dt.binary),
         # empty
-        (pd.Series([], dtype='object'), dt.string),
+        (pd.Series([], dtype='object'), dt.binary),
     ],
 )
 def test_schema_infer(col_data, schema_type):

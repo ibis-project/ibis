@@ -98,7 +98,7 @@ _inferable_pandas_dtypes = {
     'time': dt.time,
     'period': dt.binary,
     'mixed': dt.binary,
-    'empty': dt.string,
+    'empty': dt.binary,
     'unicode': dt.string,
 }
 
