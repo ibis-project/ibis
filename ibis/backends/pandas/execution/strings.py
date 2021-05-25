@@ -105,7 +105,7 @@ def execute_startswith(op, data, start, **kwargs):
 
 
 @execute_node.register(ops.EndsWith, pd.Series)
-def execute_startswith(op, data, end, **kwargs):
+def execute_endswith(op, data, end, **kwargs):
     return data.str.endswith(end)
 
 
