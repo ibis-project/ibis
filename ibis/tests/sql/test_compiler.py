@@ -2209,14 +2209,14 @@ FROM (
     def test_startswith(self):
         expr = self._case_startswith()
         expected = """\
-SELECT `foo_id` like 'foo' || % AS `tmp`
+SELECT `foo_id` like 'foo' || '%' AS `tmp`
 FROM star1"""
         assert to_sql(expr) == expected
 
     def test_endswith(self):
         expr = self._case_endswith()
         expected = """\
-SELECT `foo_id` like % || 'foo' AS `tmp`
+SELECT `foo_id` like '%' || 'foo' AS `tmp`
 FROM star1"""
         assert to_sql(expr) == expected
 
