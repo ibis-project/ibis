@@ -332,7 +332,7 @@ class AlchemyClient(SQLClient):
 
     def insert(
         self,
-        to_table_name: str,
+        table_name: str,
         database: Optional[str] = None,
         data: Optional[pd.DataFrame] = None,
         from_table_name: Optional[str] = None,
@@ -343,13 +343,13 @@ class AlchemyClient(SQLClient):
 
         Parameters
         ----------
-        to_table_name : string
+        table_name : string
             name of the table to which data needs to be inserted
         database : string, optional
             name of the attached database that the table is located in.
         data : pd.DataFrame, optional
             data is the dataframe containing data which needs to be
-            inserted to to_table_name
+            inserted to table_name
         from_table_name : string, optional
             name of the table from which data needs to be inserted
         if_exists : {'append', 'fail', 'replace'}
@@ -411,30 +411,30 @@ class AlchemyClient(SQLClient):
 
         if isinstance(data, pd.DataFrame):
             data.to_sql(
-                to_table_name,
+                table_name,
                 self.con,
                 index=False,
                 if_exists=if_exists,
                 **params,
             )
         elif isinstance(from_table_name, str):
-            if if_exists == 'fail' and to_table_name in self.list_tables():
+            if if_exists == 'fail' and table_name in self.list_tables():
                 raise ValueError('The table already exists')
             elif (
                 if_exists in ['replace', 'append']
-            ) and to_table_name in self.list_tables():
-                to_table_expr = self.table(to_table_name)
+            ) and table_name in self.list_tables():
+                to_table_expr = self.table(table_name)
                 to_table_schema = to_table_expr.schema()
 
                 if if_exists == 'replace':
-                    self.drop_table(to_table_name, database=database)
+                    self.drop_table(table_name, database=database)
                     self.create_table(
-                        to_table_name,
+                        table_name,
                         schema=to_table_schema,
                         database=database,
                     )
 
-                to_table = self._get_sqla_table(to_table_name, schema=database)
+                to_table = self._get_sqla_table(table_name, schema=database)
 
                 from_table_expr = self.table(from_table_name)
 
