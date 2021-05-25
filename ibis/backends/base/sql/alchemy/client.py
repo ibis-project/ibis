@@ -333,10 +333,9 @@ class AlchemyClient(SQLClient):
     def insert(
         self,
         table_name: str,
+        obj=None,
         database: Optional[str] = None,
-        data: Optional[pd.DataFrame] = None,
-        from_table_name: Optional[str] = None,
-        if_exists: Optional[str] = 'append',
+        overwrite: Optional[bool] = False,
     ) -> None:
         """
         Insert the given data to a table in backend.
@@ -345,18 +344,15 @@ class AlchemyClient(SQLClient):
         ----------
         table_name : string
             name of the table to which data needs to be inserted
+        obj : pandas DataFrame or string
+            obj is either the dataframe (pd.DataFrame) containing data
+            which needs to be inserted to table_name or
+            the name of the table from which data needs to be inserted
+            to table_name
         database : string, optional
             name of the attached database that the table is located in.
-        data : pd.DataFrame, optional
-            data is the dataframe containing data which needs to be
-            inserted to table_name
-        from_table_name : string, optional
-            name of the table from which data needs to be inserted
-        if_exists : {'append', 'fail', 'replace'}
-            With append, the rows will be added to the table. With fail,
-            an exception will be raised if the table exists. With replace,
-            if the table exists, it'll be dropped, and recreated before
-            inserting the rows.
+        overwrite : boolean, default False
+            If True, will replace existing contents of table else not
 
         Raises
         -------
@@ -365,18 +361,12 @@ class AlchemyClient(SQLClient):
             yet implemented
 
         ValueError
-            You must pass either data (pandas Dataframe) or
-            from_table_name (table name to insert data from)
-
-           Cannot insert from both data (dataframe) and the
-           {from_table_name} table. Use only one of the parameters.
-
-            The table already exists
+            You must pass obj variable (pandas Dataframe or table name)
+            to insert data from
 
         TypeError
-            No operation is being performed. Either the data
-            parameter is not a pandas dataframe or the
-            from_table_name parameter is not of string datatype.
+            No operation is being performed. Either the obj parameter
+            is not a pandas dataframe or is not of string datatype.
 
         """
 
@@ -390,18 +380,11 @@ class AlchemyClient(SQLClient):
                 'yet implemented'
             )
 
-        if data is None and from_table_name is None:
+        if obj is None:
             raise ValueError(
-                'You must pass either data (pandas Dataframe)'
-                ' or from_table_name (table name to insert data from)'
-            )
-
-        if isinstance(data, pd.DataFrame) and isinstance(from_table_name, str):
-            raise ValueError(
-                "Cannot insert from both data (dataframe) and the"
-                " {from_table_name} table. Use only one of the "
-                " parameters.".format(from_table_name=from_table_name)
-            )
+                'You must pass obj variable (pandas Dataframe or table name)'
+                ' to insert data from'
+            )   
 
         params = {}
         if self.has_attachment:
@@ -409,44 +392,48 @@ class AlchemyClient(SQLClient):
             # see: https://github.com/ibis-project/ibis/issues/1930
             params['schema'] = self.database_name
 
-        if isinstance(data, pd.DataFrame):
-            data.to_sql(
-                table_name,
-                self.con,
-                index=False,
-                if_exists=if_exists,
-                **params,
-            )
-        elif isinstance(from_table_name, str):
-            if if_exists == 'fail' and table_name in self.list_tables():
-                raise ValueError('The table already exists')
-            elif (
-                if_exists in ['replace', 'append']
-            ) and table_name in self.list_tables():
-                to_table_expr = self.table(table_name)
-                to_table_schema = to_table_expr.schema()
+        if isinstance(obj, pd.DataFrame):
+            if overwrite:
+                obj.to_sql(
+                    table_name,
+                    self.con,
+                    index=False,
+                    if_exists='replace',
+                    **params,
+                )
+            else:
+                obj.to_sql(
+                    table_name,
+                    self.con,
+                    index=False,
+                    if_exists='append',
+                    **params,
+                )
+        elif isinstance(obj, str):
+            to_table_expr = self.table(table_name)
+            to_table_schema = to_table_expr.schema()
 
-                if if_exists == 'replace':
-                    self.drop_table(table_name, database=database)
-                    self.create_table(
-                        table_name, schema=to_table_schema, database=database,
-                    )
+            if overwrite:
+                self.drop_table(table_name, database=database)
+                self.create_table(
+                    table_name, schema=to_table_schema, database=database,
+                )
 
-                to_table = self._get_sqla_table(table_name, schema=database)
+            to_table = self._get_sqla_table(table_name, schema=database)
 
-                from_table_expr = self.table(from_table_name)
+            from_table_expr = self.table(obj)
 
-                with self.begin() as bind:
-                    if from_table_expr is not None:
-                        bind.execute(
-                            to_table.insert().from_select(
-                                list(from_table_expr.columns),
-                                from_table_expr.compile(),
-                            )
+            with self.begin() as bind:
+                if from_table_expr is not None:
+                    bind.execute(
+                        to_table.insert().from_select(
+                            list(from_table_expr.columns),
+                            from_table_expr.compile(),
                         )
+                    )
         else:
             raise TypeError(
-                'No operation is being performed. Either the data'
-                ' parameter is not a pandas dataframe or the'
-                ' from_table_name parameter is not of string datatype.'
+                'No operation is being performed. Either the obj'
+                ' parameter is not a pandas dataframe or'
+                ' is not of string datatype.'
             )
