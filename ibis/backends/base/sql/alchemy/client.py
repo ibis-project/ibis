@@ -384,7 +384,7 @@ class AlchemyClient(SQLClient):
             raise ValueError(
                 'You must pass obj variable (pandas Dataframe or table name)'
                 ' to insert data from'
-            )   
+            )
 
         params = {}
         if self.has_attachment:
