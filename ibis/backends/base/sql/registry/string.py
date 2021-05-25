@@ -88,7 +88,7 @@ def startswith(translator, expr):
     arg_formatted = translator.translate(arg)
     start_formatted = translator.translate(start)
 
-    return f"starts_with({arg_formatted}, {start_formatted})"
+    return f"{arg_formatted} like {start_formatted} || %"
 
 
 def endswith(translator, expr):
@@ -97,4 +97,4 @@ def endswith(translator, expr):
     arg_formatted = translator.translate(arg)
     end_formatted = translator.translate(start)
 
-    return f"ends_with({arg_formatted}, {end_formatted})"
+    return f"{arg_formatted} like % || {end_formatted}"
