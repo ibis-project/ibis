@@ -61,14 +61,14 @@ def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
         # file.
         # See ibis.udf.vectorized.UserDefinedFunction
         if isinstance(op._output_type, dt.Struct):
-            # dask does not know how to glue together Tuple[*pd.Series].
-            # We create a wrapper that performs the "gluing" in each partition
-            def wrapper(func, *cols):
-                raw = func(*cols)
-                return pandas.Series(zip(*raw))
+            meta = list(
+                zip(
+                    op._output_type.names,
+                    [x.to_dask() for x in op._output_type.types],
+                )
+            )
 
-            df = dd.map_partitions(wrapper, op.func, *args, meta="object")
-            df.index = args[0].index
+            df = dd.map_partitions(op.func, *args, meta=meta)
             return df
         else:
             name = args[0].name if len(args) == 1 else None
