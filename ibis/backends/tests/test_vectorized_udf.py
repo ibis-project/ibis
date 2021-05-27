@@ -440,8 +440,7 @@ def test_invalid_kwargs(backend, alltypes):
             return v + 1
 
 
-@pytest.mark.only_on_backends(['pandas', 'pyspark'])
-@pytest.mark.xfail_backends(['dask'])
+@pytest.mark.only_on_backends(['pandas', 'pyspark', 'dask'])
 @pytest.mark.xfail_unsupported
 @pytest.mark.parametrize('udf', add_one_struct_udfs)
 def test_elementwise_udf_destruct(backend, alltypes, udf):
@@ -456,8 +455,7 @@ def test_elementwise_udf_destruct(backend, alltypes, udf):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.only_on_backends(['pandas', 'pyspark'])
-@pytest.mark.xfail_backends(['dask'])
+@pytest.mark.only_on_backends(['pandas', 'pyspark', 'dask'])
 @pytest.mark.xfail_unsupported
 def test_elementwise_udf_overwrite_destruct(backend, alltypes):
     result = alltypes.mutate(
@@ -477,8 +475,7 @@ def test_elementwise_udf_overwrite_destruct(backend, alltypes):
     backend.assert_frame_equal(result, expected, check_like=True)
 
 
-@pytest.mark.only_on_backends(['pandas', 'pyspark'])
-@pytest.mark.xfail_backends(['dask'])
+@pytest.mark.only_on_backends(['pandas', 'pyspark', 'dask'])
 @pytest.mark.xfail_unsupported
 def test_elementwise_udf_overwrite_destruct_and_assign(backend, alltypes):
     result = (
@@ -504,8 +501,7 @@ def test_elementwise_udf_overwrite_destruct_and_assign(backend, alltypes):
     backend.assert_frame_equal(result, expected, check_like=True)
 
 
-@pytest.mark.only_on_backends(['pandas', 'pyspark'])
-@pytest.mark.xfail_backends(['dask'])
+@pytest.mark.only_on_backends(['pandas', 'pyspark', 'dask'])
 @pytest.mark.xfail_unsupported
 @pytest.mark.min_spark_version('3.1')
 def test_elementwise_udf_destruct_exact_once(backend, alltypes):
@@ -531,8 +527,7 @@ def test_elementwise_udf_destruct_exact_once(backend, alltypes):
         assert len(result) > 0
 
 
-@pytest.mark.only_on_backends(['pandas', 'pyspark'])
-@pytest.mark.xfail_backends(['dask'])
+@pytest.mark.only_on_backends(['pandas', 'pyspark', 'dask'])
 @pytest.mark.xfail_unsupported
 def test_elementwise_udf_multiple_overwrite_destruct(backend, alltypes):
     result = alltypes.mutate(
