@@ -9,6 +9,7 @@ from pkg_resources import parse_version
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
+import ibis.expr.types as ir
 import ibis.util as util
 from ibis.backends.base.sql.compiler import Dialect
 from ibis.client import Query, SQLClient
@@ -344,11 +345,13 @@ class AlchemyClient(SQLClient):
         ----------
         table_name : string
             name of the table to which data needs to be inserted
-        obj : pandas DataFrame or string
+        obj : pandas DataFrame or string or ibis TableExpr
             obj is either the dataframe (pd.DataFrame) containing data
             which needs to be inserted to table_name or
             the name of the table from which data needs to be inserted
-            to table_name
+            to table_name or
+            the TableExpr type which ibis provides with data which needs
+            to be inserted to table_name
         database : string, optional
             name of the attached database that the table is located in.
         overwrite : boolean, default False
@@ -409,7 +412,7 @@ class AlchemyClient(SQLClient):
                     if_exists='append',
                     **params,
                 )
-        elif isinstance(obj, str):
+        elif isinstance(obj, str) or isinstance(obj, ir.TableExpr):
             to_table_expr = self.table(table_name)
             to_table_schema = to_table_expr.schema()
 
@@ -421,7 +424,10 @@ class AlchemyClient(SQLClient):
 
             to_table = self._get_sqla_table(table_name, schema=database)
 
-            from_table_expr = self.table(obj)
+            if isinstance(obj, str): 
+                from_table_expr = self.table(obj)
+            elif isinstance(obj, ir.TableExpr):
+                from_table_expr = obj
 
             with self.begin() as bind:
                 if from_table_expr is not None:
