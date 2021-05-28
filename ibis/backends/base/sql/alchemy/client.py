@@ -424,6 +424,7 @@ class AlchemyClient(SQLClient):
 
             to_table = self._get_sqla_table(table_name, schema=database)
 
+            from_table_expr = None
             if isinstance(obj, str):
                 from_table_expr = self.table(obj)
             elif isinstance(obj, ir.TableExpr):
