@@ -396,22 +396,13 @@ class AlchemyClient(SQLClient):
             params['schema'] = self.database_name
 
         if isinstance(obj, pd.DataFrame):
-            if overwrite:
-                obj.to_sql(
-                    table_name,
-                    self.con,
-                    index=False,
-                    if_exists='replace',
-                    **params,
-                )
-            else:
-                obj.to_sql(
-                    table_name,
-                    self.con,
-                    index=False,
-                    if_exists='append',
-                    **params,
-                )
+            obj.to_sql(
+                table_name,
+                self.con,
+                index=False,
+                if_exists='replace' if overwrite else 'append',
+                **params,
+            )
         elif isinstance(obj, str) or isinstance(obj, ir.TableExpr):
             to_table_expr = self.table(table_name)
             to_table_schema = to_table_expr.schema()
