@@ -369,7 +369,8 @@ class AlchemyClient(SQLClient):
 
         TypeError
             No operation is being performed. Either the obj parameter
-            is not a pandas dataframe or is not of string datatype.
+            is not a pandas DataFrame or is not of string data type for
+            sending table name or is not a ibis Table Expression.
 
         """
 
@@ -431,7 +432,7 @@ class AlchemyClient(SQLClient):
                     )
         else:
             raise TypeError(
-                'No operation is being performed. Either the obj'
-                ' parameter is not a pandas dataframe or'
-                ' is not of string datatype.'
+                'No operation is being performed. Either the obj parameter'
+                ' is not a pandas DataFrame or is not of string data type for'
+                ' sending table name or is not a ibis Table Expression.'
             )
