@@ -364,13 +364,10 @@ class AlchemyClient(SQLClient):
             yet implemented
 
         ValueError
-            You must pass obj variable (pandas Dataframe or table name)
-            to insert data from
-
-        TypeError
             No operation is being performed. Either the obj parameter
             is not a pandas DataFrame or is not of string data type for
             sending table name or is not a ibis Table Expression.
+            The given obj is of type type(obj).__name__ .
 
         """
 
@@ -382,12 +379,6 @@ class AlchemyClient(SQLClient):
             raise NotImplementedError(
                 'Inserting data to a table from a different database is not '
                 'yet implemented'
-            )
-
-        if obj is None:
-            raise ValueError(
-                'You must pass obj variable (pandas Dataframe or table name)'
-                ' to insert data from'
             )
 
         params = {}
@@ -431,8 +422,9 @@ class AlchemyClient(SQLClient):
                         )
                     )
         else:
-            raise TypeError(
-                'No operation is being performed. Either the obj parameter'
-                ' is not a pandas DataFrame or is not of string data type for'
-                ' sending table name or is not a ibis Table Expression.'
+            raise ValueError(
+                f"No operation is being performed. Either the obj parameter"
+                f" is not a pandas DataFrame or is not of string data type for"
+                f"sending table name or is not a ibis Table Expression."
+                f"The given obj is of type {type(obj).__name__} ."
             )
