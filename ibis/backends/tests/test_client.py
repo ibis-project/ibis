@@ -225,100 +225,42 @@ def _create_temp_table_with_schema(con, temp_table_name, schema, data=None):
 @pytest.mark.only_on_backends(
     SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
 )
-def test_insert_no_overwrite_from_dataframe(con):
-    sch = ibis.schema(
-        [
-            ('first_name', 'string'),
-            ('last_name', 'string'),
-            ('department_name', 'string'),
-            ('salary', 'float64'),
-        ]
-    )
+def test_insert_no_overwrite_from_dataframe(con, schema, temp_dataframe_2):
 
     temp_table = 'temp_to_table'
-    temporary = _create_temp_table_with_schema(con, temp_table, sch)
+    temporary = _create_temp_table_with_schema(con, temp_table, schema)
 
-    records = pd.DataFrame(
-        {
-            'first_name': ['X', 'Y', 'Z'],
-            'last_name': ['A', 'B', 'C'],
-            'department_name': ['XX', 'YY', 'ZZ'],
-            'salary': [400.0, 500.0, 600.0],
-        }
-    )
-
-    con.insert(temp_table, obj=records, overwrite=False)
+    con.insert(temp_table, obj=temp_dataframe_2, overwrite=False)
     assert len(temporary.execute()) == 3
-    tm.assert_frame_equal(temporary.execute(), records)
+    tm.assert_frame_equal(temporary.execute(), temp_dataframe_2)
 
 
 @pytest.mark.only_on_backends(
     SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
 )
-def test_insert_overwrite_from_dataframe(con):
-    sch = ibis.schema(
-        [
-            ('first_name', 'string'),
-            ('last_name', 'string'),
-            ('department_name', 'string'),
-            ('salary', 'float64'),
-        ]
-    )
-
-    df = pd.DataFrame(
-        {
-            'first_name': ['A', 'B', 'C'],
-            'last_name': ['D', 'E', 'F'],
-            'department_name': ['AA', 'BB', 'CC'],
-            'salary': [100.0, 200.0, 300.0],
-        }
-    )
+def test_insert_overwrite_from_dataframe(con, schema, temp_dataframe_1, temp_dataframe_2):
 
     temp_table = 'temp_to_table'
-    temporary = _create_temp_table_with_schema(con, temp_table, sch, data=df)
-
-    records = pd.DataFrame(
-        {
-            'first_name': ['X', 'Y', 'Z'],
-            'last_name': ['A', 'B', 'C'],
-            'department_name': ['XX', 'YY', 'ZZ'],
-            'salary': [400.0, 500.0, 600.0],
-        }
+    temporary = _create_temp_table_with_schema(
+        con, temp_table, schema, data=temp_dataframe_1,
     )
 
-    con.insert(temp_table, obj=records, overwrite=True)
+    con.insert(temp_table, obj=temp_dataframe_2, overwrite=True)
     assert len(temporary.execute()) == 3
-    tm.assert_frame_equal(temporary.execute(), records)
+    tm.assert_frame_equal(temporary.execute(), temp_dataframe_2)
 
 
 @pytest.mark.only_on_backends(
     SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
 )
-def test_insert_no_overwite_from_table(con):
-    sch = ibis.schema(
-        [
-            ('first_name', 'string'),
-            ('last_name', 'string'),
-            ('department_name', 'string'),
-            ('salary', 'float64'),
-        ]
-    )
+def test_insert_no_overwite_from_table(con, schema, temp_dataframe_2):
 
     temp_table = 'temp_to_table'
-    temporary = _create_temp_table_with_schema(con, temp_table, sch)
-
-    df2 = pd.DataFrame(
-        {
-            'first_name': ['X', 'Y', 'Z'],
-            'last_name': ['A', 'B', 'C'],
-            'department_name': ['XX', 'YY', 'ZZ'],
-            'salary': [400.0, 500.0, 600.0],
-        }
-    )
+    temporary = _create_temp_table_with_schema(con, temp_table, schema)
 
     from_table_name = 'temp_from_table'
     from_table = _create_temp_table_with_schema(
-        con, from_table_name, sch, data=df2
+        con, from_table_name, schema, data=temp_dataframe_2,
     )
 
     con.insert(temp_table, obj=from_table_name, overwrite=False)
@@ -329,40 +271,17 @@ def test_insert_no_overwite_from_table(con):
 @pytest.mark.only_on_backends(
     SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
 )
-def test_insert_overwrite_from_table(con):
-    sch = ibis.schema(
-        [
-            ('first_name', 'string'),
-            ('last_name', 'string'),
-            ('department_name', 'string'),
-            ('salary', 'float64'),
-        ]
-    )
-
-    df = pd.DataFrame(
-        {
-            'first_name': ['A', 'B', 'C'],
-            'last_name': ['D', 'E', 'F'],
-            'department_name': ['AA', 'BB', 'CC'],
-            'salary': [100.0, 200.0, 300.0],
-        }
-    )
+def test_insert_overwrite_from_table(con, schema, temp_dataframe_1,
+                                     temp_dataframe_2):
 
     temp_table = 'temp_to_table'
-    temporary = _create_temp_table_with_schema(con, temp_table, sch, data=df)
-
-    df2 = pd.DataFrame(
-        {
-            'first_name': ['X', 'Y', 'Z'],
-            'last_name': ['A', 'B', 'C'],
-            'department_name': ['XX', 'YY', 'ZZ'],
-            'salary': [400.0, 500.0, 600.0],
-        }
+    temporary = _create_temp_table_with_schema(
+        con, temp_table, schema, data=temp_dataframe_1,
     )
 
     from_table_name = 'temp_from_table'
     from_table = _create_temp_table_with_schema(
-        con, from_table_name, sch, data=df2
+        con, from_table_name, schema, data=temp_dataframe_2,
     )
 
     con.insert(temp_table, obj=from_table_name, overwrite=True)
@@ -373,31 +292,14 @@ def test_insert_overwrite_from_table(con):
 @pytest.mark.only_on_backends(
     SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
 )
-def test_insert_no_overwite_from_expr(con):
-    sch = ibis.schema(
-        [
-            ('first_name', 'string'),
-            ('last_name', 'string'),
-            ('department_name', 'string'),
-            ('salary', 'float64'),
-        ]
-    )
+def test_insert_no_overwite_from_expr(con, schema, temp_dataframe_2):
 
     temp_table = 'temp_to_table'
-    temporary = _create_temp_table_with_schema(con, temp_table, sch)
-
-    df2 = pd.DataFrame(
-        {
-            'first_name': ['X', 'Y', 'Z'],
-            'last_name': ['A', 'B', 'C'],
-            'department_name': ['XX', 'YY', 'ZZ'],
-            'salary': [400.0, 500.0, 600.0],
-        }
-    )
+    temporary = _create_temp_table_with_schema(con, temp_table, schema)
 
     from_table_name = 'temp_from_table'
     from_table = _create_temp_table_with_schema(
-        con, from_table_name, sch, data=df2
+        con, from_table_name, schema, data=temp_dataframe_2,
     )
 
     con.insert(temp_table, obj=from_table, overwrite=False)
@@ -408,40 +310,17 @@ def test_insert_no_overwite_from_expr(con):
 @pytest.mark.only_on_backends(
     SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
 )
-def test_insert_overwrite_from_expr(con):
-    sch = ibis.schema(
-        [
-            ('first_name', 'string'),
-            ('last_name', 'string'),
-            ('department_name', 'string'),
-            ('salary', 'float64'),
-        ]
-    )
-
-    df = pd.DataFrame(
-        {
-            'first_name': ['A', 'B', 'C'],
-            'last_name': ['D', 'E', 'F'],
-            'department_name': ['AA', 'BB', 'CC'],
-            'salary': [100.0, 200.0, 300.0],
-        }
-    )
+def test_insert_overwrite_from_expr(con, schema, temp_dataframe_1,
+                                    temp_dataframe_2):
 
     temp_table = 'temp_to_table'
-    temporary = _create_temp_table_with_schema(con, temp_table, sch, data=df)
-
-    df2 = pd.DataFrame(
-        {
-            'first_name': ['X', 'Y', 'Z'],
-            'last_name': ['A', 'B', 'C'],
-            'department_name': ['XX', 'YY', 'ZZ'],
-            'salary': [400.0, 500.0, 600.0],
-        }
+    temporary = _create_temp_table_with_schema(
+        con, temp_table, schema, data=temp_dataframe_1,
     )
 
     from_table_name = 'temp_from_table'
     from_table = _create_temp_table_with_schema(
-        con, from_table_name, sch, data=df2
+        con, from_table_name, schema, data=temp_dataframe_2,
     )
 
     con.insert(temp_table, obj=from_table, overwrite=True)

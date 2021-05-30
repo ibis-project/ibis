@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 from typing import List
 
+import pandas as pd
 import pytest
 
 import ibis
@@ -306,3 +307,45 @@ def alternate_current_database(con, backend, current_data_db: str) -> str:
     finally:
         con.set_database(current_data_db)
         con.drop_database(name, force=True)
+
+
+@pytest.fixture
+def schema() -> ibis.schema:
+    sch = ibis.schema(
+        [
+            ('first_name', 'string'),
+            ('last_name', 'string'),
+            ('department_name', 'string'),
+            ('salary', 'float64'),
+        ]
+    )
+
+    return sch
+
+
+@pytest.fixture
+def temp_dataframe_1():
+    df = pd.DataFrame(
+        {
+            'first_name': ['A', 'B', 'C'],
+            'last_name': ['D', 'E', 'F'],
+            'department_name': ['AA', 'BB', 'CC'],
+            'salary': [100.0, 200.0, 300.0],
+        }
+    )
+
+    return df
+
+
+@pytest.fixture
+def temp_dataframe_2():
+    df2 = pd.DataFrame(
+        {
+            'first_name': ['X', 'Y', 'Z'],
+            'last_name': ['A', 'B', 'C'],
+            'department_name': ['XX', 'YY', 'ZZ'],
+            'salary': [400.0, 500.0, 600.0],
+        }
+    )
+
+    return df2
