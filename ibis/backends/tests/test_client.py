@@ -238,7 +238,8 @@ def test_insert_no_overwrite_from_dataframe(con, schema, temp_dataframe_2):
 @pytest.mark.only_on_backends(
     SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
 )
-def test_insert_overwrite_from_dataframe(con, schema, temp_dataframe_1, temp_dataframe_2):
+def test_insert_overwrite_from_dataframe(con, schema, temp_dataframe_1,
+                                         temp_dataframe_2):
 
     temp_table = 'temp_to_table'
     temporary = _create_temp_table_with_schema(
