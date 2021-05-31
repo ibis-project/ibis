@@ -199,15 +199,7 @@ class ClickhouseClient(SQLClient):
 
     def ast_schema(self, query_ast):
         query = query_ast.compile()
-        response = self.con.execute(
-            query, columnar=True, with_column_types=True, external_tables=[],
-        )
-        data, columns = response
-
-        colnames, typenames = zip(*columns)
-        coltypes = list(map(ClickhouseDataType.parse, typenames))
-
-        return sch.schema(colnames, coltypes)
+        return self._get_schema_using_query(query)
 
     def fetch_from_cursor(self, cursor, schema):
         if not len(cursor):
@@ -354,6 +346,17 @@ class ClickhouseClient(SQLClient):
         name = (options.clickhouse.temp_db,)
         if not self.exists_database(name):
             self.create_database(name, force=True)
+
+    def _get_schema_using_query(self, query):
+        response = self.con.execute(
+            query, columnar=True, with_column_types=True, external_tables=[],
+        )
+        data, columns = response
+
+        colnames, typenames = zip(*columns)
+        coltypes = list(map(ClickhouseDataType.parse, typenames))
+
+        return sch.schema(colnames, coltypes)
 
     def _table_command(self, cmd, name, database=None):
         qualified_name = self._fully_qualified_name(name, database)
