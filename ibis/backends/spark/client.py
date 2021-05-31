@@ -302,9 +302,6 @@ class SparkClient(SQLClient):
         """
         return self._catalog.currentDatabase()
 
-    def _get_table_schema(self, table_name):
-        return self.get_schema(table_name)
-
     def _get_schema_using_query(self, query):
         cur = self.raw_sql(query)
         return spark_dataframe_schema(cur.query)
@@ -340,7 +337,7 @@ class SparkClient(SQLClient):
 
         qualified_name = _fully_qualified_name(name, database)
 
-        schema = self._get_table_schema(qualified_name)
+        schema = self.get_schema(qualified_name)
         node = self.table_class(qualified_name, schema, self)
         return self.table_expr_class(node)
 

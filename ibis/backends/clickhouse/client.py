@@ -212,9 +212,9 @@ class ClickhouseClient(SQLClient):
     def fetch_from_cursor(self, cursor, schema):
         if not len(cursor):
             # handle empty resultset
-            return pd.DataFrame([], columns=schema.colnames)
+            return pd.DataFrame([], columns=schema.names)
 
-        df = pd.DataFrame.from_dict(OrderedDict(zip(schema.colnames, cursor)))
+        df = pd.DataFrame.from_dict(OrderedDict(zip(schema.names, cursor)))
         return schema.apply_to(df)
 
     def close(self):

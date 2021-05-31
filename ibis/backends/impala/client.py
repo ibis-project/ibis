@@ -1410,7 +1410,7 @@ class ImpalaClient(SQLClient):
         if persist:
             t = self.table(qualified_name)
         else:
-            schema = self._get_table_schema(qualified_name)
+            schema = self.get_schema(qualified_name)
             node = ImpalaTemporaryTable(qualified_name, schema, self)
             t = self.table_expr_class(node)
 
@@ -1558,9 +1558,6 @@ class ImpalaClient(SQLClient):
         """
         statement = ddl.CacheTable(table_name, database=database, pool=pool)
         self.raw_sql(statement)
-
-    def _get_table_schema(self, tname):
-        return self.get_schema(tname)
 
     def _get_schema_using_query(self, query):
         cur = self.raw_sql(query)
