@@ -423,8 +423,8 @@ class AlchemyClient(SQLClient):
                     )
         else:
             raise ValueError(
-                f"No operation is being performed. Either the obj parameter"
-                f" is not a pandas DataFrame or is not of string data type for"
-                f"sending table name or is not a ibis Table Expression."
+                "No operation is being performed. Either the obj parameter"
+                " is not a pandas DataFrame or is not of string data type for"
+                "sending table name or is not a ibis Table Expression."
                 f"The given obj is of type {type(obj).__name__} ."
             )
