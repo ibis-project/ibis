@@ -143,15 +143,14 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         schema = self.ast_schema(query_ast)
         result = self.fetch_from_cursor(cursor, schema)
 
-        if hasattr(query_ast, 'result_handler'):
-            result = query_ast.result_handler(result)
+        if hasattr(getattr(query_ast, 'dml', query_ast), 'result_handler'):
+            result = query_ast.dml.result_handler(result)
 
         return result
 
     @abc.abstractmethod
     def fetch_from_cursor(self, cursor, schema):
         """Fetch data from cursor."""
-        pass
 
     def ast_schema(self, query_ast):
         """Return the schema of the expression.
