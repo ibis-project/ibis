@@ -226,7 +226,7 @@ def _create_temp_table_with_schema(con, temp_table_name, schema, data=None):
     SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
 )
 def test_insert_no_overwrite_from_dataframe(
-        con, test_employee_schema, test_employee_data_2
+    con, test_employee_schema, test_employee_data_2
 ):
 
     temp_table = 'temp_to_table'
@@ -260,7 +260,7 @@ def test_insert_overwrite_from_dataframe(
     SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
 )
 def test_insert_no_overwite_from_expr(
-        con, test_employee_schema, test_employee_data_2
+    con, test_employee_schema, test_employee_data_2
 ):
 
     temp_table = 'temp_to_table'
