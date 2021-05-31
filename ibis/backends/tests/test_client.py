@@ -225,44 +225,52 @@ def _create_temp_table_with_schema(con, temp_table_name, schema, data=None):
 @pytest.mark.only_on_backends(
     SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
 )
-def test_insert_no_overwrite_from_dataframe(con, schema, temp_dataframe_2):
+def test_insert_no_overwrite_from_dataframe(
+        con, test_employee_schema, test_employee_data_2
+):
 
     temp_table = 'temp_to_table'
-    temporary = _create_temp_table_with_schema(con, temp_table, schema)
+    temporary = _create_temp_table_with_schema(
+        con, temp_table, test_employee_schema,
+    )
 
-    con.insert(temp_table, obj=temp_dataframe_2, overwrite=False)
+    con.insert(temp_table, obj=test_employee_data_2, overwrite=False)
     assert len(temporary.execute()) == 3
-    tm.assert_frame_equal(temporary.execute(), temp_dataframe_2)
+    tm.assert_frame_equal(temporary.execute(), test_employee_data_2)
 
 
 @pytest.mark.only_on_backends(
     SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
 )
 def test_insert_overwrite_from_dataframe(
-    con, schema, temp_dataframe_1, temp_dataframe_2
+    con, test_employee_schema, test_employee_data_1, test_employee_data_2
 ):
 
     temp_table = 'temp_to_table'
     temporary = _create_temp_table_with_schema(
-        con, temp_table, schema, data=temp_dataframe_1,
+        con, temp_table, test_employee_schema, data=test_employee_data_1,
     )
 
-    con.insert(temp_table, obj=temp_dataframe_2, overwrite=True)
+    con.insert(temp_table, obj=test_employee_data_2, overwrite=True)
     assert len(temporary.execute()) == 3
-    tm.assert_frame_equal(temporary.execute(), temp_dataframe_2)
+    tm.assert_frame_equal(temporary.execute(), test_employee_data_2)
 
 
 @pytest.mark.only_on_backends(
     SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
 )
-def test_insert_no_overwite_from_expr(con, schema, temp_dataframe_2):
+def test_insert_no_overwite_from_expr(
+        con, test_employee_schema, test_employee_data_2
+):
 
     temp_table = 'temp_to_table'
-    temporary = _create_temp_table_with_schema(con, temp_table, schema)
+    temporary = _create_temp_table_with_schema(
+        con, temp_table, test_employee_schema,
+    )
 
     from_table_name = 'temp_from_table'
     from_table = _create_temp_table_with_schema(
-        con, from_table_name, schema, data=temp_dataframe_2,
+        con, from_table_name, test_employee_schema, data=test_employee_data_2,
     )
 
     con.insert(temp_table, obj=from_table, overwrite=False)
@@ -274,17 +282,17 @@ def test_insert_no_overwite_from_expr(con, schema, temp_dataframe_2):
     SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
 )
 def test_insert_overwrite_from_expr(
-    con, schema, temp_dataframe_1, temp_dataframe_2
+    con, test_employee_schema, test_employee_data_1, test_employee_data_2
 ):
 
     temp_table = 'temp_to_table'
     temporary = _create_temp_table_with_schema(
-        con, temp_table, schema, data=temp_dataframe_1,
+        con, temp_table, test_employee_schema, data=test_employee_data_1,
     )
 
     from_table_name = 'temp_from_table'
     from_table = _create_temp_table_with_schema(
-        con, from_table_name, schema, data=temp_dataframe_2,
+        con, from_table_name, test_employee_schema, data=test_employee_data_2,
     )
 
     con.insert(temp_table, obj=from_table, overwrite=True)

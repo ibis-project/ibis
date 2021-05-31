@@ -310,7 +310,7 @@ def alternate_current_database(con, backend, current_data_db: str) -> str:
 
 
 @pytest.fixture
-def schema() -> ibis.schema:
+def test_employee_schema() -> ibis.schema:
     sch = ibis.schema(
         [
             ('first_name', 'string'),
@@ -324,7 +324,7 @@ def schema() -> ibis.schema:
 
 
 @pytest.fixture
-def temp_dataframe_1():
+def test_employee_data_1():
     df = pd.DataFrame(
         {
             'first_name': ['A', 'B', 'C'],
@@ -338,7 +338,7 @@ def temp_dataframe_1():
 
 
 @pytest.fixture
-def temp_dataframe_2():
+def test_employee_data_2():
     df2 = pd.DataFrame(
         {
             'first_name': ['X', 'Y', 'Z'],
