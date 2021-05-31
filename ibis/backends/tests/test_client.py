@@ -255,46 +255,6 @@ def test_insert_overwrite_from_dataframe(
 @pytest.mark.only_on_backends(
     SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
 )
-def test_insert_no_overwite_from_table(con, schema, temp_dataframe_2):
-
-    temp_table = 'temp_to_table'
-    temporary = _create_temp_table_with_schema(con, temp_table, schema)
-
-    from_table_name = 'temp_from_table'
-    from_table = _create_temp_table_with_schema(
-        con, from_table_name, schema, data=temp_dataframe_2,
-    )
-
-    con.insert(temp_table, obj=from_table_name, overwrite=False)
-    assert len(temporary.execute()) == 3
-    tm.assert_frame_equal(temporary.execute(), from_table.execute())
-
-
-@pytest.mark.only_on_backends(
-    SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
-)
-def test_insert_overwrite_from_table(
-    con, schema, temp_dataframe_1, temp_dataframe_2
-):
-
-    temp_table = 'temp_to_table'
-    temporary = _create_temp_table_with_schema(
-        con, temp_table, schema, data=temp_dataframe_1,
-    )
-
-    from_table_name = 'temp_from_table'
-    from_table = _create_temp_table_with_schema(
-        con, from_table_name, schema, data=temp_dataframe_2,
-    )
-
-    con.insert(temp_table, obj=from_table_name, overwrite=True)
-    assert len(temporary.execute()) == 3
-    tm.assert_frame_equal(temporary.execute(), from_table.execute())
-
-
-@pytest.mark.only_on_backends(
-    SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
-)
 def test_insert_no_overwite_from_expr(con, schema, temp_dataframe_2):
 
     temp_table = 'temp_to_table'

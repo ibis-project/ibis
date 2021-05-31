@@ -334,7 +334,7 @@ class AlchemyClient(SQLClient):
     def insert(
         self,
         table_name: str,
-        obj=None,
+        obj,
         database: Optional[str] = None,
         overwrite: Optional[bool] = False,
     ) -> None:
@@ -345,11 +345,9 @@ class AlchemyClient(SQLClient):
         ----------
         table_name : string
             name of the table to which data needs to be inserted
-        obj : pandas DataFrame or string or ibis TableExpr
+        obj : pandas DataFrame or ibis TableExpr
             obj is either the dataframe (pd.DataFrame) containing data
             which needs to be inserted to table_name or
-            the name of the table from which data needs to be inserted
-            to table_name or
             the TableExpr type which ibis provides with data which needs
             to be inserted to table_name
         database : string, optional
@@ -365,8 +363,7 @@ class AlchemyClient(SQLClient):
 
         ValueError
             No operation is being performed. Either the obj parameter
-            is not a pandas DataFrame or is not of string data type for
-            sending table name or is not a ibis Table Expression.
+            is not a pandas DataFrame or is not a ibis TableExpr.
             The given obj is of type type(obj).__name__ .
 
         """
@@ -395,7 +392,7 @@ class AlchemyClient(SQLClient):
                 if_exists='replace' if overwrite else 'append',
                 **params,
             )
-        elif isinstance(obj, str) or isinstance(obj, ir.TableExpr):
+        elif isinstance(obj, ir.TableExpr):
             to_table_expr = self.table(table_name)
             to_table_schema = to_table_expr.schema()
 
@@ -407,11 +404,7 @@ class AlchemyClient(SQLClient):
 
             to_table = self._get_sqla_table(table_name, schema=database)
 
-            from_table_expr = None
-            if isinstance(obj, str):
-                from_table_expr = self.table(obj)
-            elif isinstance(obj, ir.TableExpr):
-                from_table_expr = obj
+            from_table_expr = obj
 
             with self.begin() as bind:
                 if from_table_expr is not None:
@@ -423,8 +416,7 @@ class AlchemyClient(SQLClient):
                     )
         else:
             raise ValueError(
-                "No operation is being performed. Either the obj parameter"
-                " is not a pandas DataFrame or is not of string data type for"
-                "sending table name or is not a ibis Table Expression."
+                "No operation is being performed. Either the obj parameter "
+                "is not a pandas DataFrame or is not a ibis TableExpr."
                 f"The given obj is of type {type(obj).__name__} ."
             )
