@@ -23,29 +23,26 @@ if geospatial_supported:
     import geopandas
 
 
-class _AlchemyProxy:
+class _AutoCloseCursor:
     """
     Wraps a SQLAlchemy ResultProxy and ensures that .close() is called on
     garbage collection
     """
 
-    def __init__(self, proxy):
-        self.proxy = proxy
+    def __init__(self, original_cursor):
+        self.original_cursor = original_cursor
 
     def __del__(self):
-        self._close_cursor()
-
-    def _close_cursor(self):
-        self.proxy.close()
+        self.original_cursor.close()
 
     def __enter__(self):
         return self
 
     def __exit__(self, type, value, tb):
-        self._close_cursor()
+        self.original_cursor.close()
 
     def fetchall(self):
-        return self.proxy.fetchall()
+        return self.original_cursor.fetchall()
 
 
 def _invalidates_reflection_cache(f):
@@ -118,8 +115,8 @@ class AlchemyClient(SQLClient):
 
     def fetch_from_cursor(self, cursor, schema):
         df = pd.DataFrame.from_records(
-            cursor.proxy.fetchall(),
-            columns=cursor.proxy.keys(),
+            cursor.original_cursor.fetchall(),
+            columns=cursor.original_cursor.keys(),
             coerce_float=True,
         )
         return _maybe_to_geodataframe(schema.apply_to(df), schema)
@@ -296,12 +293,9 @@ class AlchemyClient(SQLClient):
             names = [x for x in names if like in x]
         return sorted(names)
 
-    def _execute(self, query: str, results: bool = True):
-        return _AlchemyProxy(self.con.execute(query))
-
     @_invalidates_reflection_cache
     def raw_sql(self, query: str):
-        return super().raw_sql(query)
+        return _AutoCloseCursor(super().raw_sql(query))
 
     def _build_ast(self, expr, context):
         return build_ast(expr, context)
