@@ -213,7 +213,7 @@ class SparkTable(ir.TableExpr):
         new_qualified_name = _fully_qualified_name(new_name, self._database)
 
         statement = ddl.RenameTable(self._qualified_name, new_name)
-        self._client._client.execute(statement.compile())
+        self._client.execute(statement.compile())
 
         op = self.op().change_name(new_qualified_name)
         return type(self)(op)
