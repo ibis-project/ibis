@@ -194,7 +194,7 @@ class SparkTable(ir.TableExpr):
         statement = ddl.InsertSelect(
             self._qualified_name, select, overwrite=overwrite
         )
-        return self._client.execute(statement.compile())
+        return self._client.raw_sql(statement.compile())
 
     def rename(self, new_name):
         """
@@ -213,7 +213,7 @@ class SparkTable(ir.TableExpr):
         new_qualified_name = _fully_qualified_name(new_name, self._database)
 
         statement = ddl.RenameTable(self._qualified_name, new_name)
-        self._client.execute(statement.compile())
+        self._client.raw_sql(statement.compile())
 
         op = self.op().change_name(new_qualified_name)
         return type(self)(op)
@@ -234,7 +234,7 @@ class SparkTable(ir.TableExpr):
         stmt = ddl.AlterTable(
             self._qualified_name, tbl_properties=tbl_properties
         )
-        return self._client.execute(stmt.compile())
+        return self._client.raw_sql(stmt.compile())
 
 
 class SparkClient(SQLClient):
