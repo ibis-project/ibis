@@ -13,7 +13,6 @@ Release Notes
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
 * :feature:`2792` Infer categorical and decimal Series to more specific Ibis types in Pandas backend
-* :feature:`2776` Allow more flexible return type for UDFs
 * :feature:`2776` :feature:`2797` Allow more flexible return type for UDFs
 * :feature:`2779` Implement Clip in the Pyspark backend
 * :bug:`2770` Fix error when using reduction UDF that returns np.array in a grouped aggregation
