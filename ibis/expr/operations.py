@@ -756,6 +756,18 @@ class StringJoin(ValueOp):
         return rlz.shape_like(tuple(self.flat_args()), dt.string)
 
 
+class StartsWith(ValueOp):
+    arg = Arg(rlz.string)
+    start = Arg(rlz.string)
+    output_type = rlz.shape_like("arg", dt.boolean)
+
+
+class EndsWith(ValueOp):
+    arg = Arg(rlz.string)
+    end = Arg(rlz.string)
+    output_type = rlz.shape_like("arg", dt.boolean)
+
+
 class BooleanValueOp:
     pass
 
