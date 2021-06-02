@@ -74,6 +74,8 @@ def test_ops_smoke():
     ops.StringReplace('asd', 'as', 'a')
     ops.StringSplit('asd', 's')
     ops.StringConcat(['s', 'e'])
+    ops.StartsWith('asd', 'as')
+    ops.EndsWith('asd', 'xyz')
 
 
 def test_instance_of_operation():

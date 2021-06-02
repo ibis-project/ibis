@@ -808,6 +808,14 @@ class ExprTestCases:
 
         return expr1, expr2, expr3
 
+    def _case_startswith(self):
+        t1 = self.con.table('star1')
+        return t1.foo_id.startswith('foo')
+
+    def _case_endswith(self):
+        t1 = self.con.table('star1')
+        return t1.foo_id.endswith('foo')
+
 
 class TestSelectSQL(unittest.TestCase, ExprTestCases):
     @classmethod
@@ -2197,6 +2205,20 @@ FROM (
        (t0.`desc` = t1.`desc`)"""
 
         assert result == expected
+
+    def test_startswith(self):
+        expr = self._case_startswith()
+        expected = """\
+SELECT `foo_id` like concat('foo', '%') AS `tmp`
+FROM star1"""
+        assert to_sql(expr) == expected
+
+    def test_endswith(self):
+        expr = self._case_endswith()
+        expected = """\
+SELECT `foo_id` like concat('%', 'foo') AS `tmp`
+FROM star1"""
+        assert to_sql(expr) == expected
 
 
 class TestUnions(unittest.TestCase, ExprTestCases):

@@ -438,6 +438,22 @@ def compile_not_contains(t, expr, scope, timecontext, **kwargs):
     return ~(col.isin(t.translate(op.options, scope, timecontext)))
 
 
+@compiles(ops.StartsWith)
+def compile_startswith(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+    col = t.translate(op.arg, scope, timecontext)
+    start = t.translate(op.start, scope, timecontext)
+    return col.startswith(start)
+
+
+@compiles(ops.EndsWith)
+def compile_endswith(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+    col = t.translate(op.arg, scope, timecontext)
+    end = t.translate(op.end, scope, timecontext)
+    return col.startswith(end)
+
+
 def compile_aggregator(
     t, expr, scope, timecontext, *, fn, context=None, **kwargs
 ):

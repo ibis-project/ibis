@@ -267,6 +267,16 @@ def _string_like(t, expr):
     return result
 
 
+def _startswith(t, expr):
+    arg, start = expr.op().args
+    return t.translate(arg).startswith(t.translate(start))
+
+
+def _endswith(t, expr):
+    arg, start = expr.op().args
+    return t.translate(arg).endswith(t.translate(start))
+
+
 _cumulative_to_reduction = {
     ops.CumulativeSum: ops.Sum,
     ops.CumulativeMin: ops.Min,
@@ -444,6 +454,8 @@ sqlalchemy_operation_registry = {
     ops.StringLength: unary(sa.func.length),
     ops.StringReplace: fixed_arity(sa.func.replace, 3),
     ops.StringSQLLike: _string_like,
+    ops.StartsWith: _startswith,
+    ops.EndsWith: _endswith,
     # math
     ops.Ln: unary(sa.func.ln),
     ops.Exp: unary(sa.func.exp),
