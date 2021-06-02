@@ -258,7 +258,7 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
 
         cur = self.raw_sql(statement)
         result = self._get_list(cur)
-        cur.close()
+        cur.release()
 
         return '\n'.join(['Query:', util.indent(query, 2), '', *result])
 
