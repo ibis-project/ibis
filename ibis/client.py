@@ -128,6 +128,8 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
           For expressions yielding result yets; retrieve at most this number of
           values/rows. Overrides any limit already set on the expression.
         params : not yet implemented
+        kwargs : Backends can receive extra params. For example, clickhouse
+            uses this to receive external_tables as dataframes.
 
         Returns
         -------
@@ -136,11 +138,16 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
           Array expressions: pandas.Series
           Scalar expressions: Python scalar value
         """
+        # TODO Reconsider having `kwargs` here. It's needed to support
+        # `external_tables` in clickhouse, but better to deprecate that
+        # feature than all this magic.
+        # we don't want to pass `timecontext` to `raw_sql`
+        kwargs.pop('timecontext', None)
         query_ast = self._build_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
         self._log(sql)
-        cursor = self.raw_sql(sql)
-        schema = self.ast_schema(query_ast)
+        cursor = self.raw_sql(sql, **kwargs)
+        schema = self.ast_schema(query_ast, **kwargs)
         result = self.fetch_from_cursor(cursor, schema)
 
         if hasattr(getattr(query_ast, 'dml', query_ast), 'result_handler'):

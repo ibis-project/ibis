@@ -190,23 +190,49 @@ class ClickhouseClient(SQLClient):
     def log(self, msg):
         log(msg)
 
-    def raw_sql(self, query: str):
-        response = self.con.execute(
-            query, columnar=True, with_column_types=True, external_tables=[],
-        )
-        data, columns = response
-        return data
+    def raw_sql(self, query: str, external_tables={}):
+        external_tables_list = []
+        for name, df in external_tables.items():
+            if not isinstance(df, pd.DataFrame):
+                raise TypeError(
+                    'External table is not an instance of pandas ' 'dataframe'
+                )
+            schema = sch.infer(df)
+            external_tables_list.append(
+                {
+                    'name': name,
+                    'data': df.to_dict('records'),
+                    'structure': list(
+                        zip(
+                            schema.names,
+                            [
+                                str(ClickhouseDataType.from_ibis(t))
+                                for t in schema.types
+                            ],
+                        )
+                    ),
+                }
+            )
 
-    def ast_schema(self, query_ast):
+        self.log(query)
+        return self.con.execute(
+            query,
+            columnar=True,
+            with_column_types=True,
+            external_tables=external_tables_list,
+        )
+
+    def ast_schema(self, query_ast, **kwargs):
         query = query_ast.compile()
-        return self._get_schema_using_query(query)
+        return self._get_schema_using_query(query, **kwargs)
 
     def fetch_from_cursor(self, cursor, schema):
-        if not len(cursor):
+        data, columns = cursor
+        if not len(data):
             # handle empty resultset
             return pd.DataFrame([], columns=schema.names)
 
-        df = pd.DataFrame.from_dict(OrderedDict(zip(schema.names, cursor)))
+        df = pd.DataFrame.from_dict(OrderedDict(zip(schema.names, data)))
         return schema.apply_to(df)
 
     def close(self):
@@ -308,17 +334,10 @@ class ClickhouseClient(SQLClient):
         """
         qualified_name = self._fully_qualified_name(table_name, database)
         query = 'DESC {0}'.format(qualified_name)
-        response = self.con.execute(
-            query, columnar=True, with_column_types=True, external_tables=[],
+        data, columns = self.raw_sql(query)
+        return sch.schema(
+            data[0], list(map(ClickhouseDataType.parse, data[1]))
         )
-        data, columns = response
-        colnames, coltypes = data[:2]
-        coltypes = list(map(ClickhouseDataType.parse, coltypes))
-        return sch.schema(colnames, coltypes)
-
-    @property
-    def client_options(self):
-        return self.con.options
 
     def set_options(self, options):
         self.con.set_options(options)
@@ -347,15 +366,10 @@ class ClickhouseClient(SQLClient):
         if not self.exists_database(name):
             self.create_database(name, force=True)
 
-    def _get_schema_using_query(self, query):
-        response = self.con.execute(
-            query, columnar=True, with_column_types=True, external_tables=[],
-        )
-        data, columns = response
-
+    def _get_schema_using_query(self, query, **kwargs):
+        data, columns = self.raw_sql(query, **kwargs)
         colnames, typenames = zip(*columns)
         coltypes = list(map(ClickhouseDataType.parse, typenames))
-
         return sch.schema(colnames, coltypes)
 
     def _table_command(self, cmd, name, database=None):
