@@ -789,7 +789,7 @@ class ImpalaClient(SQLClient):
         batches = cursor.fetchall(columnar=True)
         names = [x[0] for x in cursor.description]
         df = _column_batches_to_dataframe(names, batches)
-        return df
+        return schema.apply_to(df)
 
     def _build_ast(self, expr, context):
         return build_ast(expr, context)
