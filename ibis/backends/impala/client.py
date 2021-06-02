@@ -515,7 +515,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
             partition_schema=partition_schema,
             overwrite=overwrite,
         )
-        return self.raw_sql(statement)
+        return self._client.raw_sql(statement.compile())
 
     def load_data(self, path, overwrite=False, partition=None):
         """
@@ -547,7 +547,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
             partition_schema=partition_schema,
         )
 
-        return self.raw_sql(stmt)
+        return self.raw_sql(stmt.compile())
 
     @property
     def name(self):
@@ -1883,11 +1883,11 @@ class ImpalaClient(SQLClient):
         database : string, optional
         """
         stmt = self._table_command('SHOW FILES IN', name, database=database)
-        return self._exec_statement(stmt)
+        return self.raw_sql(stmt)
 
     def list_partitions(self, name, database=None):
         stmt = self._table_command('SHOW PARTITIONS', name, database=database)
-        return self._exec_statement(stmt)
+        return self.raw_sql(stmt)
 
     def table_stats(self, name, database=None):
         """
@@ -1895,7 +1895,7 @@ class ImpalaClient(SQLClient):
         ImpalaTable.stats
         """
         stmt = self._table_command('SHOW TABLE STATS', name, database=database)
-        return self._exec_statement(stmt)
+        return self.raw_sql(stmt)
 
     def column_stats(self, name, database=None):
         """
@@ -1905,13 +1905,7 @@ class ImpalaClient(SQLClient):
         stmt = self._table_command(
             'SHOW COLUMN STATS', name, database=database
         )
-        return self._exec_statement(stmt)
-
-    def _exec_statement(self, stmt, adapter=None):
-        result = self.raw_sql(stmt)
-        if adapter is not None:
-            result = adapter(result)
-        return result
+        return self.raw_sql(stmt)
 
     def _table_command(self, cmd, name, database=None):
         qualified_name = self._fully_qualified_name(name, database)

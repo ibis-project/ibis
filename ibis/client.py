@@ -256,7 +256,7 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
 
         statement = 'EXPLAIN {0}'.format(query)
 
-        cur = self._execute(statement)
+        cur = self.raw_sql(statement)
         result = self._get_list(cur)
         cur.close()
 
