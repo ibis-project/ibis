@@ -222,10 +222,6 @@ class ClickhouseClient(SQLClient):
             external_tables=external_tables_list,
         )
 
-    def ast_schema(self, query_ast, **kwargs):
-        query = query_ast.compile()
-        return self._get_schema_using_query(query, **kwargs)
-
     def fetch_from_cursor(self, cursor, schema):
         data, columns = cursor
         if not len(data):
