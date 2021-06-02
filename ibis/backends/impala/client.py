@@ -1863,7 +1863,7 @@ class ImpalaClient(SQLClient):
         stmt = self._table_command(
             'DESCRIBE FORMATTED', name, database=database
         )
-        result = self.fetch_from_cursor(self.raw_sql(stmt), schema=None)
+        result = self._exec_statement(stmt)
 
         # Leave formatting to pandas
         for c in result.columns:
@@ -1883,11 +1883,11 @@ class ImpalaClient(SQLClient):
         database : string, optional
         """
         stmt = self._table_command('SHOW FILES IN', name, database=database)
-        return self.raw_sql(stmt)
+        return self._exec_statement(stmt)
 
     def list_partitions(self, name, database=None):
         stmt = self._table_command('SHOW PARTITIONS', name, database=database)
-        return self.raw_sql(stmt)
+        return self._exec_statement(stmt)
 
     def table_stats(self, name, database=None):
         """
@@ -1895,7 +1895,7 @@ class ImpalaClient(SQLClient):
         ImpalaTable.stats
         """
         stmt = self._table_command('SHOW TABLE STATS', name, database=database)
-        return self.raw_sql(stmt)
+        return self._exec_statement(stmt)
 
     def column_stats(self, name, database=None):
         """
@@ -1905,7 +1905,10 @@ class ImpalaClient(SQLClient):
         stmt = self._table_command(
             'SHOW COLUMN STATS', name, database=database
         )
-        return self.raw_sql(stmt)
+        return self._exec_statement(stmt)
+
+    def _exec_statement(self, stmt):
+        return self.fetch_from_cursor(self.raw_sql(stmt), schema=None)
 
     def _table_command(self, cmd, name, database=None):
         qualified_name = self._fully_qualified_name(name, database)
