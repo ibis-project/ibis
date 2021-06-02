@@ -1863,7 +1863,7 @@ class ImpalaClient(SQLClient):
         stmt = self._table_command(
             'DESCRIBE FORMATTED', name, database=database
         )
-        result = self.raw_sql(stmt)
+        result = self.fetch_from_cursor(self.raw_sql(stmt), schema=None)
 
         # Leave formatting to pandas
         for c in result.columns:
