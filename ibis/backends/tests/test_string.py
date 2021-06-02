@@ -5,10 +5,13 @@ import ibis
 import ibis.expr.datatypes as dt
 
 
+def is_text_type(x):
+    return isinstance(x, str)
+
+
 def test_string_col_is_unicode(backend, alltypes, df):
     dtype = alltypes.string_col.type()
     assert dtype == dt.String(nullable=dtype.nullable)
-    is_text_type = lambda x: isinstance(x, str)  # noqa: E731
     assert df.string_col.map(is_text_type).all()
     result = alltypes.string_col.execute()
     assert result.map(is_text_type).all()
