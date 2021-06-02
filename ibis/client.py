@@ -95,7 +95,7 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         schema = self._get_schema_using_query(limited_query)
         return ops.SQLQueryResult(query, schema, self).to_expr()
 
-    def raw_sql(self, query: str):
+    def raw_sql(self, query: str, results=False):
         """Execute a given query string.
 
         Could have unexpected results if the query modifies the behavior of
@@ -110,6 +110,8 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         -------
         Backend cursor
         """
+        # TODO results is unused, it can be removed
+        # (requires updating Impala tests)
         cursor = self.con.execute(query)
         if cursor:
             return cursor

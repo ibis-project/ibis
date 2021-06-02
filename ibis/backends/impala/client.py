@@ -547,7 +547,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
             partition_schema=partition_schema,
         )
 
-        return self.raw_sql(stmt.compile())
+        return self._client.raw_sql(stmt.compile())
 
     @property
     def name(self):
