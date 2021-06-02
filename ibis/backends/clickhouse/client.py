@@ -222,6 +222,10 @@ class ClickhouseClient(SQLClient):
             external_tables=external_tables_list,
         )
 
+    def ast_schema(self, query_ast, external_tables={}):
+        # Allowing signature to accept `external_tables`
+        return super().ast_schema(query_ast)
+
     def fetch_from_cursor(self, cursor, schema):
         data, columns = cursor
         if not len(data):
