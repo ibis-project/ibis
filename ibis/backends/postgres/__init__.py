@@ -1,9 +1,6 @@
 """PostgreSQL backend."""
 from ibis.backends.base import BaseBackend
-from ibis.backends.base.sql.alchemy import (
-    AlchemyContext,
-    AlchemyQueryBuilder,
-)
+from ibis.backends.base.sql.alchemy import AlchemyContext, AlchemyQueryBuilder
 
 from .client import PostgreSQLClient, PostgreSQLDatabase, PostgreSQLTable
 from .compiler import PostgreSQLExprTranslator

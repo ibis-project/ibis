@@ -21,7 +21,6 @@ class Client:
 
         if backend.kind in ('sql', 'sqlalchemy', 'spark'):
             self.context_class = backend.context_class
-            self.query_class = backend.query_class
             if backend.kind in ('sql', 'spark'):
                 self.table_expr_class = backend.table_expr_class
 

@@ -13,10 +13,7 @@
 # limitations under the License.
 
 from ibis.backends.base import BaseBackend
-from ibis.backends.base.sql.alchemy import (
-    AlchemyContext,
-    AlchemyQueryBuilder,
-)
+from ibis.backends.base.sql.alchemy import AlchemyContext, AlchemyQueryBuilder
 
 from .client import SQLiteClient, SQLiteDatabase, SQLiteTable
 from .compiler import SQLiteExprTranslator

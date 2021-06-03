@@ -1,8 +1,5 @@
 from ibis.backends.base import BaseBackend
-from ibis.backends.base.sql.alchemy import (
-    AlchemyContext,
-    AlchemyQueryBuilder,
-)
+from ibis.backends.base.sql.alchemy import AlchemyContext, AlchemyQueryBuilder
 
 from .client import MySQLClient, MySQLDatabase, MySQLTable
 from .compiler import MySQLExprTranslator
