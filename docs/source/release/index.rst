@@ -12,6 +12,7 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :feature:`2613` :feature:`2778` Implement `.insert()` for SQLAlchemy backends
 * :feature:`2792` Infer categorical and decimal Series to more specific Ibis types in Pandas backend
 * :feature:`2790` Add `startswith` and `endswith` operations
 * :feature:`2776` :feature:`2797` Allow more flexible return type for UDFs
@@ -38,10 +39,10 @@ Release Notes
   `reauth` or `none` to force reauthentication.
 * :bug:`2657` Add temporary struct col in pyspark backend to ensure that UDFs are executed only once
 * :bug:`2588` Fix BigQuery connect bug that ignored project ID parameter
-* :bug: `2636` Fix overwrite logic to account for DestructColumn inside mutate API
+* :bug:`2636` Fix overwrite logic to account for DestructColumn inside mutate API
 * :feature:`2641` Add `bit_and`, `bit_or`, and `bit_xor` integer column aggregates (BigQuery and MySQL backends)
 * :feature:`2379` Backends are defined as entry points
-* :bug: `2635` Fix fusion optimization bug that incorrectly changes operation order
+* :bug:`2635` Fix fusion optimization bug that incorrectly changes operation order
 * :feature:`2615` Add `ibis.array` for creating array expressions
 * :feature:`2607` Implement Not operation in PySpark backend
 * :feature:`2610` Added support for case/when in PySpark backend
