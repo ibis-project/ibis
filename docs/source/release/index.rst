@@ -13,6 +13,7 @@ Release Notes
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
 * :support:`2789` Simplification of data fetching. Backends don't need to implement `Query` anymore
+* :feature:`2805` Make op schema a cached property
 * :feature:`2613` :feature:`2778` Implement `.insert()` for SQLAlchemy backends
 * :feature:`2792` Infer categorical and decimal Series to more specific Ibis types in Pandas backend
 * :feature:`2790` Add `startswith` and `endswith` operations

@@ -4,3 +4,4 @@ pandas>=0.21
 pytz
 regex
 toolz
+cached_property
