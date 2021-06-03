@@ -7,6 +7,7 @@ from typing import List
 
 import numpy as np
 import toolz
+from cached_property import cached_property
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -1329,7 +1330,7 @@ class Distinct(TableNode, HasSchema):
         # check whether schema has overlapping columns or not
         assert self.schema
 
-    @property
+    @cached_property
     def schema(self):
         return self.table.schema()
 
@@ -1773,7 +1774,7 @@ class MaterializedJoin(TableNode, HasSchema):
         # check whether the underlying schema has overlapping columns or not
         assert self.schema
 
-    @property
+    @cached_property
     def schema(self):
         return self.join.op()._get_schema()
 
@@ -1835,7 +1836,7 @@ class SetOp(TableNode, HasSchema):
                 'Table schemas must be equal for set operations'
             )
 
-    @property
+    @cached_property
     def schema(self):
         return self.left.schema()
 
@@ -1949,7 +1950,7 @@ class DeferredSortKey:
 class SelfReference(TableNode, HasSchema):
     table = Arg(ir.TableExpr)
 
-    @property
+    @cached_property
     def schema(self):
         return self.table.schema()
 
@@ -2026,7 +2027,7 @@ class Selection(TableNode, HasSchema):
         # Validate no overlapping columns in schema
         assert self.schema
 
-    @property
+    @cached_property
     def schema(self):
         # Resolve schema and initialize
         if not self.selections:
@@ -2287,7 +2288,7 @@ class Aggregation(TableNode, HasSchema):
             table_expr, self.metrics, by=self.by, having=self.having
         )
 
-    @property
+    @cached_property
     def schema(self):
         names = []
         types = []
