@@ -318,7 +318,7 @@ def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
     ],
 )
 @pytest.mark.xfail_unsupported
-@pytest.mark.skip_backends(['spark'])
+@pytest.mark.skip_backends(['spark', 'sqlite'])
 def test_timestamp_comparison_filter(
     backend, con, alltypes, df, comparison_fn
 ):
