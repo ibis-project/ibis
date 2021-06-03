@@ -1,6 +1,6 @@
 import contextlib
 import functools
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import pandas as pd
 import sqlalchemy as sa
@@ -334,7 +334,7 @@ class AlchemyClient(SQLClient):
     def insert(
         self,
         table_name: str,
-        obj,
+        obj: Union[pd.DataFrame, ir.TableExpr],
         database: Optional[str] = None,
         overwrite: Optional[bool] = False,
     ) -> None:
