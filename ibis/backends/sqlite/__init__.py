@@ -15,7 +15,6 @@
 from ibis.backends.base import BaseBackend
 from ibis.backends.base.sql.alchemy import (
     AlchemyContext,
-    AlchemyQuery,
     AlchemyQueryBuilder,
 )
 
@@ -31,7 +30,6 @@ class Backend(BaseBackend):
     database_class = SQLiteDatabase
     table_class = SQLiteTable
     context_class = AlchemyContext
-    query_class = AlchemyQuery
 
     def connect(self, path=None, create=False):
 

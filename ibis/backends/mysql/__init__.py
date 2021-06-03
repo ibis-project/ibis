@@ -1,7 +1,6 @@
 from ibis.backends.base import BaseBackend
 from ibis.backends.base.sql.alchemy import (
     AlchemyContext,
-    AlchemyQuery,
     AlchemyQueryBuilder,
 )
 
@@ -17,7 +16,6 @@ class Backend(BaseBackend):
     database_class = MySQLDatabase
     table_class = MySQLTable
     context_class = AlchemyContext
-    query_class = AlchemyQuery
 
     def connect(
         self,
