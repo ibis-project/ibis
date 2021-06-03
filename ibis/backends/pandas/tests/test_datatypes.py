@@ -181,12 +181,15 @@ def test_series_to_ibis_literal():
         (['foo', 'bar', 'hello'], "string"),
         (pd.Series(['a', 'b', 'c', 'a']).astype('category'), dt.Category()),
         (pd.Series([b'1', b'2', b'3']), dt.string),
+        # mixed-integer
         (pd.Series([1, 2, '3']), dt.binary),
+        # mixed-integer-float
         (pd.Series([1, 2, 3.0]), dt.float64),
         (
             pd.Series([Decimal('1.0'), Decimal('2.0'), Decimal('3.0')]),
-            dt.binary,
+            dt.float64,
         ),
+        # complex
         (pd.Series([1 + 1j, 1 + 2j, 1 + 3j], dtype=object), dt.binary),
         (
             pd.Series(

@@ -2888,6 +2888,59 @@ def _string_join(self, strings):
     return ops.StringJoin(self, strings).to_expr()
 
 
+def _startswith(self, start):
+    """
+    Determine if `self` string starts with `start` string.
+
+    Parameters
+    ----------
+    start: string
+
+    Examples
+    --------
+    >>> import ibis
+    >>> text = ibis.literal('Ibis project)
+    >>> text.startswith('Ibis')
+    StartsWith[boolean]
+      Literal[string]
+        Ibis project
+      start:
+        Literal[string]
+          Ibis
+    Returns
+    -------
+    result : boolean
+    """
+    return ops.StartsWith(self, start).to_expr()
+
+
+def _endswith(self, end):
+    """
+    Determine if `self` string ends with `end` string.
+
+    Parameters
+    ----------
+    end: string
+
+    Examples
+    --------
+    >>> import ibis
+    >>> text = ibis.literal('Ibis project)
+    >>> text.endswith('project')
+    EndsWith[boolean]
+      Literal[string]
+        Ibis project
+      end:
+        Literal[string]
+          project
+
+    Returns
+    -------
+    result : boolean
+    """
+    return ops.EndsWith(self, end).to_expr()
+
+
 def _string_like(self, patterns):
     """
     Wildcard fuzzy matching function equivalent to the SQL LIKE directive. Use
@@ -3177,6 +3230,8 @@ _string_value_methods = {
     'find_in_set': _find_in_set,
     'split': _string_split,
     'join': _string_join,
+    'startswith': _startswith,
+    'endswith': _endswith,
     'lpad': _lpad,
     'rpad': _rpad,
     '__add__': _string_concat,
