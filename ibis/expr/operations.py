@@ -1864,7 +1864,7 @@ class Limit(TableNode):
     def blocks(self):
         return True
 
-    @cached_property
+    @property
     def schema(self):
         return self.table.schema()
 
