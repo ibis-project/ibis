@@ -21,6 +21,7 @@ from ibis.backends.pandas.core import (
     integer_types,
     numeric_types,
     simple_types,
+    timestamp_types,
 )
 from ibis.backends.pandas.execution import constants
 from ibis.backends.pandas.execution.generic import (
@@ -277,6 +278,8 @@ def execute_not_scalar_or_series(op, data, **kwargs):
 )
 @execute_node.register((ops.Comparison, ops.Add, ops.Multiply), dd.Series, str)
 @execute_node.register((ops.Comparison, ops.Add, ops.Multiply), str, dd.Series)
+@execute_node.register(ops.Comparison, dd.Series, timestamp_types)
+@execute_node.register(ops.Comparison, timestamp_types, dd.Series)
 def execute_binary_op(op, left, right, **kwargs):
     op_type = type(op)
     try:

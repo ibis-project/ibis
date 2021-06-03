@@ -306,6 +306,28 @@ def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
     backend.assert_series_equal(result, expected)
 
 
+@pytest.mark.parametrize(
+    'comparison_fn',
+    [
+        lambda t: t.timestamp_col > pd.Timestamp('20100301'),
+        lambda t: t.timestamp_col >= pd.Timestamp('20100301'),
+        lambda t: t.timestamp_col < pd.Timestamp('20100301'),
+        lambda t: t.timestamp_col <= pd.Timestamp('20100301'),
+        lambda t: t.timestamp_col == pd.Timestamp('20100301'),
+        lambda t: t.timestamp_col != pd.Timestamp('20100301'),
+    ],
+)
+@pytest.mark.xfail_unsupported
+@pytest.mark.skip_backends(['spark'])
+def test_timestamp_comparison_filter(
+    backend, con, alltypes, df, comparison_fn
+):
+    expr = alltypes.filter(comparison_fn(alltypes))
+    expected = df[comparison_fn(df)]
+    result = con.execute(expr)
+    backend.assert_frame_equal(result, expected)
+
+
 @pytest.mark.xfail_unsupported
 @pytest.mark.skip_backends(['spark'])
 def test_interval_add_cast_scalar(backend, alltypes):
