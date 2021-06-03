@@ -7,7 +7,7 @@ pytestmark = pytest.mark.impala
 
 
 def patch_execute(con):
-    return mock.patch.object(con, '_execute', wraps=con._execute)
+    return mock.patch.object(con, 'raw_sql', wraps=con.raw_sql)
 
 
 def test_invalidate_metadata(con, test_data_db):

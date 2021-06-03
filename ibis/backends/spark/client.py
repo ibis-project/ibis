@@ -17,7 +17,7 @@ from ibis.backends.base.sql.ddl import (
     fully_qualified_re,
     is_fully_qualified,
 )
-from ibis.client import Database, Query, SQLClient
+from ibis.client import Database, SQLClient
 from ibis.util import log
 
 from . import compiler as comp
@@ -99,36 +99,6 @@ def find_spark_udf(expr):
     return lin.proceed, result
 
 
-class SparkQuery(Query):
-    def execute(self):
-        udf_nodes = lin.traverse(find_spark_udf, self.expr)
-
-        # UDFs are uniquely identified by the name of the Node subclass we
-        # generate.
-        udf_nodes_unique = list(
-            toolz.unique(udf_nodes, key=lambda node: type(node).__name__)
-        )
-
-        # register UDFs in pyspark
-        for node in udf_nodes_unique:
-            self.client._session.udf.register(
-                type(node).__name__, node.udf_func
-            )
-
-        result = super().execute()
-
-        for node in udf_nodes_unique:
-            stmt = ddl.DropFunction(type(node).__name__, must_exist=True)
-            self.client._execute(stmt.compile())
-
-        return result
-
-    def _fetch(self, cursor):
-        df = cursor.query.toPandas()  # blocks until finished
-        schema = self.schema()
-        return schema.apply_to(df)
-
-
 class SparkDatabase(Database):
     pass
 
@@ -164,9 +134,6 @@ class SparkTable(ir.TableExpr):
     @property
     def _client(self):
         return self.op().source
-
-    def _execute(self, stmt):
-        return self._client._execute(stmt)
 
     def compute_stats(self, noscan=False):
         """
@@ -227,7 +194,7 @@ class SparkTable(ir.TableExpr):
         statement = ddl.InsertSelect(
             self._qualified_name, select, overwrite=overwrite
         )
-        return self._execute(statement.compile())
+        return self._client.raw_sql(statement.compile())
 
     def rename(self, new_name):
         """
@@ -246,7 +213,7 @@ class SparkTable(ir.TableExpr):
         new_qualified_name = _fully_qualified_name(new_name, self._database)
 
         statement = ddl.RenameTable(self._qualified_name, new_name)
-        self._client._execute(statement.compile())
+        self._client.raw_sql(statement.compile())
 
         op = self.op().change_name(new_qualified_name)
         return type(self)(op)
@@ -267,7 +234,7 @@ class SparkTable(ir.TableExpr):
         stmt = ddl.AlterTable(
             self._qualified_name, tbl_properties=tbl_properties
         )
-        return self._execute(stmt.compile())
+        return self._client.raw_sql(stmt.compile())
 
 
 class SparkClient(SQLClient):
@@ -278,7 +245,6 @@ class SparkClient(SQLClient):
 
     def __init__(self, backend, session):
         super().__init__(backend=backend)
-
         self._context = session.sparkContext
         self._session = session
         self._catalog = session.catalog
@@ -289,14 +255,38 @@ class SparkClient(SQLClient):
         """
         self._context.stop()
 
+    def fetch_from_cursor(self, cursor, schema):
+        df = cursor.query.toPandas()  # blocks until finished
+        return schema.apply_to(df)
+
     def _build_ast(self, expr, context):
         result = build_ast(expr, context)
         return result
 
-    def _execute(self, stmt, results=False):
+    def execute(self, expr, params=None, limit='default', **kwargs):
+        udf_nodes = lin.traverse(find_spark_udf, expr)
+
+        # UDFs are uniquely identified by the name of the Node subclass we
+        # generate.
+        udf_nodes_unique = list(
+            toolz.unique(udf_nodes, key=lambda node: type(node).__name__)
+        )
+
+        # register UDFs in pyspark
+        for node in udf_nodes_unique:
+            self._session.udf.register(type(node).__name__, node.udf_func)
+
+        result = super().execute(expr, params, limit, **kwargs)
+
+        for node in udf_nodes_unique:
+            stmt = ddl.DropFunction(type(node).__name__, must_exist=True)
+            self.raw_sql(stmt.compile())
+
+        return result
+
+    def raw_sql(self, stmt):
         query = self._session.sql(stmt)
-        if results:
-            return SparkCursor(query)
+        return SparkCursor(query)
 
     def database(self, name=None):
         return self.database_class(name or self.current_database, self)
@@ -308,11 +298,8 @@ class SparkClient(SQLClient):
         """
         return self._catalog.currentDatabase()
 
-    def _get_table_schema(self, table_name):
-        return self.get_schema(table_name)
-
     def _get_schema_using_query(self, query):
-        cur = self._execute(query, results=True)
+        cur = self.raw_sql(query)
         return spark_dataframe_schema(cur.query)
 
     def log(self, msg):
@@ -346,7 +333,7 @@ class SparkClient(SQLClient):
 
         qualified_name = _fully_qualified_name(name, database)
 
-        schema = self._get_table_schema(qualified_name)
+        schema = self.get_schema(qualified_name)
         node = self.table_class(qualified_name, schema, self)
         return self.table_expr_class(node)
 
@@ -452,7 +439,7 @@ class SparkClient(SQLClient):
           default
         """
         statement = CreateDatabase(name, path=path, can_exist=force)
-        return self._execute(statement.compile())
+        return self.raw_sql(statement.compile())
 
     def drop_database(self, name, force=False):
         """Drop a Spark database.
@@ -466,7 +453,7 @@ class SparkClient(SQLClient):
           database does not exist
         """
         statement = ddl.DropDatabase(name, must_exist=not force, cascade=force)
-        return self._execute(statement.compile())
+        return self.raw_sql(statement.compile())
 
     def get_schema(self, table_name, database=None):
         """
@@ -617,7 +604,7 @@ class SparkClient(SQLClient):
         else:
             raise com.IbisError('Must pass expr or schema')
 
-        return self._execute(statement.compile())
+        return self.raw_sql(statement.compile())
 
     def create_view(
         self, name, expr, database=None, can_exist=False, temporary=False
@@ -643,7 +630,7 @@ class SparkClient(SQLClient):
             can_exist=can_exist,
             temporary=temporary,
         )
-        return self._execute(statement.compile())
+        return self.raw_sql(statement.compile())
 
     def drop_table(self, name, database=None, force=False):
         self.drop_table_or_view(name, database, force)
@@ -669,7 +656,7 @@ class SparkClient(SQLClient):
         >>> con.drop_table_or_view(table, db, force=True)  # doctest: +SKIP
         """
         statement = DropTable(name, database=database, must_exist=not force)
-        self._execute(statement.compile())
+        self.raw_sql(statement.compile())
 
     def truncate_table(self, table_name, database=None):
         """
@@ -681,7 +668,7 @@ class SparkClient(SQLClient):
         database : string, default None (optional)
         """
         statement = TruncateTable(table_name, database=database)
-        self._execute(statement.compile())
+        self.raw_sql(statement.compile())
 
     def insert(
         self,
@@ -732,7 +719,7 @@ class SparkClient(SQLClient):
         stmt = 'ANALYZE TABLE {0} COMPUTE STATISTICS{1}'.format(
             _fully_qualified_name(name, database), maybe_noscan
         )
-        return self._execute(stmt)
+        return self.raw_sql(stmt)
 
 
 def _fully_qualified_name(name, database):

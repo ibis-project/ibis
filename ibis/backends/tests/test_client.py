@@ -1,9 +1,12 @@
 import pandas as pd
+import pandas.testing as tm
 import pytest
 from pkg_resources import parse_version
 
 import ibis
 import ibis.expr.datatypes as dt
+
+SQLALCHEMY_BACKENDS = ['sqlite', 'postgres', 'mysql']
 
 
 @pytest.fixture
@@ -71,8 +74,7 @@ def test_query_schema(backend, con, alltypes, expr_fn, expected):
 
     # we might need a public API for it
     ast = con._build_ast(expr, backend.make_context())
-    query = con.query_class(con, ast)
-    schema = query.schema()
+    schema = con.ast_schema(ast)
 
     # clickhouse columns has been defined as non-nullable
     # whereas other backends don't support non-nullable columns yet
@@ -82,7 +84,7 @@ def test_query_schema(backend, con, alltypes, expr_fn, expected):
             for name, dtype in expected
         ]
     )
-    assert query.schema().equals(expected)
+    assert schema.equals(expected)
 
 
 @pytest.mark.parametrize(
@@ -200,3 +202,96 @@ def test_separate_database(con, alternate_current_database, current_data_db):
     db = con.database(current_data_db)
     assert db.name == current_data_db
     assert tmp_db.name == alternate_current_database
+
+
+def _create_temp_table_with_schema(con, temp_table_name, schema, data=None):
+
+    con.drop_table(temp_table_name, force=True)
+    con.create_table(temp_table_name, schema=schema)
+    temporary = con.table(temp_table_name)
+    assert len(temporary.execute()) == 0
+
+    if data is not None and isinstance(data, pd.DataFrame):
+        con.load_data(temp_table_name, data, if_exists='append')
+        assert len(temporary.execute()) == len(data.index)
+        tm.assert_frame_equal(temporary.execute(), data)
+
+    return temporary
+
+
+@pytest.mark.only_on_backends(
+    SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
+)
+def test_insert_no_overwrite_from_dataframe(
+    con, test_employee_schema, test_employee_data_2
+):
+
+    temp_table = 'temp_to_table'
+    temporary = _create_temp_table_with_schema(
+        con, temp_table, test_employee_schema,
+    )
+
+    con.insert(temp_table, obj=test_employee_data_2, overwrite=False)
+    assert len(temporary.execute()) == 3
+    tm.assert_frame_equal(temporary.execute(), test_employee_data_2)
+
+
+@pytest.mark.only_on_backends(
+    SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
+)
+def test_insert_overwrite_from_dataframe(
+    con, test_employee_schema, test_employee_data_1, test_employee_data_2
+):
+
+    temp_table = 'temp_to_table'
+    temporary = _create_temp_table_with_schema(
+        con, temp_table, test_employee_schema, data=test_employee_data_1,
+    )
+
+    con.insert(temp_table, obj=test_employee_data_2, overwrite=True)
+    assert len(temporary.execute()) == 3
+    tm.assert_frame_equal(temporary.execute(), test_employee_data_2)
+
+
+@pytest.mark.only_on_backends(
+    SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
+)
+def test_insert_no_overwite_from_expr(
+    con, test_employee_schema, test_employee_data_2
+):
+
+    temp_table = 'temp_to_table'
+    temporary = _create_temp_table_with_schema(
+        con, temp_table, test_employee_schema,
+    )
+
+    from_table_name = 'temp_from_table'
+    from_table = _create_temp_table_with_schema(
+        con, from_table_name, test_employee_schema, data=test_employee_data_2,
+    )
+
+    con.insert(temp_table, obj=from_table, overwrite=False)
+    assert len(temporary.execute()) == 3
+    tm.assert_frame_equal(temporary.execute(), from_table.execute())
+
+
+@pytest.mark.only_on_backends(
+    SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
+)
+def test_insert_overwrite_from_expr(
+    con, test_employee_schema, test_employee_data_1, test_employee_data_2
+):
+
+    temp_table = 'temp_to_table'
+    temporary = _create_temp_table_with_schema(
+        con, temp_table, test_employee_schema, data=test_employee_data_1,
+    )
+
+    from_table_name = 'temp_from_table'
+    from_table = _create_temp_table_with_schema(
+        con, from_table_name, test_employee_schema, data=test_employee_data_2,
+    )
+
+    con.insert(temp_table, obj=from_table, overwrite=True)
+    assert len(temporary.execute()) == 3
+    tm.assert_frame_equal(temporary.execute(), from_table.execute())

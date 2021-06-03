@@ -5,7 +5,6 @@ from .client import (
     ClickhouseClient,
     ClickhouseDatabase,
     ClickhouseDatabaseTable,
-    ClickhouseQuery,
     ClickhouseTable,
 )
 from .compiler import (
@@ -28,7 +27,6 @@ class Backend(BaseBackend):
     builder = ClickhouseQueryBuilder
     translator = ClickhouseExprTranslator
     database_class = ClickhouseDatabase
-    query_class = ClickhouseQuery
     table_class = ClickhouseDatabaseTable
     table_expr_class = ClickhouseTable
     context_class = ClickhouseQueryContext

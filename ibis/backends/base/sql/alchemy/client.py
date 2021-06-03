@@ -1,6 +1,6 @@
 import contextlib
 import functools
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import pandas as pd
 import sqlalchemy as sa
@@ -9,8 +9,9 @@ from pkg_resources import parse_version
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
+import ibis.expr.types as ir
 import ibis.util as util
-from ibis.client import Query, SQLClient
+from ibis.client import SQLClient
 
 from .datatypes import to_sqla_type
 from .geospatial import geospatial_supported
@@ -21,29 +22,26 @@ if geospatial_supported:
     import geopandas
 
 
-class _AlchemyProxy:
+class _AutoCloseCursor:
     """
     Wraps a SQLAlchemy ResultProxy and ensures that .close() is called on
     garbage collection
     """
 
-    def __init__(self, proxy):
-        self.proxy = proxy
+    def __init__(self, original_cursor):
+        self.original_cursor = original_cursor
 
     def __del__(self):
-        self._close_cursor()
-
-    def _close_cursor(self):
-        self.proxy.close()
+        self.original_cursor.close()
 
     def __enter__(self):
         return self
 
     def __exit__(self, type, value, tb):
-        self._close_cursor()
+        self.original_cursor.close()
 
     def fetchall(self):
-        return self.proxy.fetchall()
+        return self.original_cursor.fetchall()
 
 
 def _invalidates_reflection_cache(f):
@@ -90,17 +88,6 @@ def _maybe_to_geodataframe(df, schema):
     return df
 
 
-class AlchemyQuery(Query):
-    def _fetch(self, cursor):
-        df = pd.DataFrame.from_records(
-            cursor.proxy.fetchall(),
-            columns=cursor.proxy.keys(),
-            coerce_float=True,
-        )
-        schema = self.schema()
-        return _maybe_to_geodataframe(schema.apply_to(df), schema)
-
-
 class AlchemyClient(SQLClient):
     has_attachment = False
 
@@ -117,6 +104,14 @@ class AlchemyClient(SQLClient):
         if self._reflection_cache_is_dirty:
             self._inspector.info_cache.clear()
         return self._inspector
+
+    def fetch_from_cursor(self, cursor, schema):
+        df = pd.DataFrame.from_records(
+            cursor.original_cursor.fetchall(),
+            columns=cursor.original_cursor.keys(),
+            coerce_float=True,
+        )
+        return _maybe_to_geodataframe(schema.apply_to(df), schema)
 
     @contextlib.contextmanager
     def begin(self):
@@ -219,7 +214,7 @@ class AlchemyClient(SQLClient):
         Parameters
         ----------
         table_name : string
-        data: pandas.DataFrame
+        data : pandas.DataFrame
         database : string, optional
         if_exists : string, optional, default 'fail'
             The values available are: {‘fail’, ‘replace’, ‘append’}
@@ -290,12 +285,9 @@ class AlchemyClient(SQLClient):
             names = [x for x in names if like in x]
         return sorted(names)
 
-    def _execute(self, query: str, results: bool = True):
-        return _AlchemyProxy(self.con.execute(query))
-
     @_invalidates_reflection_cache
-    def raw_sql(self, query: str, results: bool = False):
-        return super().raw_sql(query, results=results)
+    def raw_sql(self, query: str):
+        return _AutoCloseCursor(super().raw_sql(query))
 
     def _build_ast(self, expr, context):
         return build_ast(expr, context)
@@ -319,3 +311,93 @@ class AlchemyClient(SQLClient):
     def version(self):
         vstring = '.'.join(map(str, self.con.dialect.server_version_info))
         return parse_version(vstring)
+
+    def insert(
+        self,
+        table_name: str,
+        obj: Union[pd.DataFrame, ir.TableExpr],
+        database: Optional[str] = None,
+        overwrite: Optional[bool] = False,
+    ) -> None:
+        """
+        Insert the given data to a table in backend.
+
+        Parameters
+        ----------
+        table_name : string
+            name of the table to which data needs to be inserted
+        obj : pandas DataFrame or ibis TableExpr
+            obj is either the dataframe (pd.DataFrame) containing data
+            which needs to be inserted to table_name or
+            the TableExpr type which ibis provides with data which needs
+            to be inserted to table_name
+        database : string, optional
+            name of the attached database that the table is located in.
+        overwrite : boolean, default False
+            If True, will replace existing contents of table else not
+
+        Raises
+        -------
+        NotImplementedError
+            Inserting data to a table from a different database is not
+            yet implemented
+
+        ValueError
+            No operation is being performed. Either the obj parameter
+            is not a pandas DataFrame or is not a ibis TableExpr.
+            The given obj is of type type(obj).__name__ .
+
+        """
+
+        if database == self.database_name:
+            # avoid fully qualified name
+            database = None
+
+        if database is not None:
+            raise NotImplementedError(
+                'Inserting data to a table from a different database is not '
+                'yet implemented'
+            )
+
+        params = {}
+        if self.has_attachment:
+            # for database with attachment
+            # see: https://github.com/ibis-project/ibis/issues/1930
+            params['schema'] = self.database_name
+
+        if isinstance(obj, pd.DataFrame):
+            obj.to_sql(
+                table_name,
+                self.con,
+                index=False,
+                if_exists='replace' if overwrite else 'append',
+                **params,
+            )
+        elif isinstance(obj, ir.TableExpr):
+            to_table_expr = self.table(table_name)
+            to_table_schema = to_table_expr.schema()
+
+            if overwrite:
+                self.drop_table(table_name, database=database)
+                self.create_table(
+                    table_name, schema=to_table_schema, database=database,
+                )
+
+            to_table = self._get_sqla_table(table_name, schema=database)
+
+            from_table_expr = obj
+
+            with self.begin() as bind:
+                if from_table_expr is not None:
+                    bind.execute(
+                        to_table.insert().from_select(
+                            list(from_table_expr.columns),
+                            from_table_expr.compile(),
+                        )
+                    )
+        else:
+            raise ValueError(
+                "No operation is being performed. Either the obj parameter "
+                "is not a pandas DataFrame or is not a ibis TableExpr."
+                f"The given obj is of type {type(obj).__name__} ."
+            )

@@ -300,6 +300,8 @@ operation_registry = {
     ops.RegexExtract: fixed_arity('regexp_extract', 3),
     ops.RegexReplace: fixed_arity('regexp_replace', 3),
     ops.ParseURL: string.parse_url,
+    ops.StartsWith: string.startswith,
+    ops.EndsWith: string.endswith,
     # Timestamp operations
     ops.Date: unary('to_date'),
     ops.TimestampNow: lambda *args: 'now()',
