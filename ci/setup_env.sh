@@ -54,7 +54,7 @@ for BACKEND in $BACKENDS; do
     fi
 done
 cat environment.yml
-mamba env update -n base -c conda-forge --file=environment.yml
+mamba env update -n base --file=environment.yml
 python -m pip install -e .
 
 if [[ -n "$BACKENDS" ]]; then
