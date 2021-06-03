@@ -12,7 +12,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis.backends.base.sql.compiler import Dialect
-from ibis.client import Query, SQLClient
+from ibis.client import SQLClient
 
 from .datatypes import to_sqla_type
 from .geospatial import geospatial_supported
@@ -24,29 +24,26 @@ if geospatial_supported:
     import geopandas
 
 
-class _AlchemyProxy:
+class _AutoCloseCursor:
     """
     Wraps a SQLAlchemy ResultProxy and ensures that .close() is called on
     garbage collection
     """
 
-    def __init__(self, proxy):
-        self.proxy = proxy
+    def __init__(self, original_cursor):
+        self.original_cursor = original_cursor
 
     def __del__(self):
-        self._close_cursor()
-
-    def _close_cursor(self):
-        self.proxy.close()
+        self.original_cursor.close()
 
     def __enter__(self):
         return self
 
     def __exit__(self, type, value, tb):
-        self._close_cursor()
+        self.original_cursor.close()
 
     def fetchall(self):
-        return self.proxy.fetchall()
+        return self.original_cursor.fetchall()
 
 
 def _invalidates_reflection_cache(f):
@@ -93,17 +90,6 @@ def _maybe_to_geodataframe(df, schema):
     return df
 
 
-class AlchemyQuery(Query):
-    def _fetch(self, cursor):
-        df = pd.DataFrame.from_records(
-            cursor.proxy.fetchall(),
-            columns=cursor.proxy.keys(),
-            coerce_float=True,
-        )
-        schema = self.schema()
-        return _maybe_to_geodataframe(schema.apply_to(df), schema)
-
-
 class AlchemyDialect(Dialect):
 
     translator = AlchemyExprTranslator
@@ -112,7 +98,6 @@ class AlchemyDialect(Dialect):
 class AlchemyClient(SQLClient):
 
     dialect = AlchemyDialect
-    query_class = AlchemyQuery
     has_attachment = False
 
     def __init__(self, con: sa.engine.Engine) -> None:
@@ -128,6 +113,14 @@ class AlchemyClient(SQLClient):
         if self._reflection_cache_is_dirty:
             self._inspector.info_cache.clear()
         return self._inspector
+
+    def fetch_from_cursor(self, cursor, schema):
+        df = pd.DataFrame.from_records(
+            cursor.original_cursor.fetchall(),
+            columns=cursor.original_cursor.keys(),
+            coerce_float=True,
+        )
+        return _maybe_to_geodataframe(schema.apply_to(df), schema)
 
     @contextlib.contextmanager
     def begin(self):
@@ -301,12 +294,9 @@ class AlchemyClient(SQLClient):
             names = [x for x in names if like in x]
         return sorted(names)
 
-    def _execute(self, query: str, results: bool = True):
-        return _AlchemyProxy(self.con.execute(query))
-
     @_invalidates_reflection_cache
-    def raw_sql(self, query: str, results: bool = False):
-        return super().raw_sql(query, results=results)
+    def raw_sql(self, query: str):
+        return _AutoCloseCursor(super().raw_sql(query))
 
     def _build_ast(self, expr, context):
         return build_ast(expr, context)

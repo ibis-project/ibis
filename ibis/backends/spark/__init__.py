@@ -1,13 +1,7 @@
 """Spark backend."""
 from ibis.backends.base import BaseBackend
 
-from .client import (
-    SparkClient,
-    SparkDatabase,
-    SparkDatabaseTable,
-    SparkQuery,
-    SparkTable,
-)
+from .client import SparkClient, SparkDatabase, SparkDatabaseTable, SparkTable
 from .compiler import SparkExprTranslator, SparkQueryBuilder
 from .udf import udf  # noqa: F401
 
@@ -18,7 +12,6 @@ class Backend(BaseBackend):
     builder = SparkQueryBuilder
     translator = SparkExprTranslator
     database_class = SparkDatabase
-    query_class = SparkQuery
     table_class = SparkDatabaseTable
     table_expr_class = SparkTable
 

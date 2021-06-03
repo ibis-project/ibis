@@ -221,9 +221,7 @@ def test_change_properties(con, table):
     props = {'foo': '1', 'bar': '2'}
 
     table.alter(tbl_properties=props)
-    tbl_props_rows = con.raw_sql(
-        "show tblproperties {}".format(table.name), results=True
-    ).fetchall()
+    tbl_props_rows = con.raw_sql(f"show tblproperties {table.name}").fetchall()
     for row in tbl_props_rows:
         key = row.key
         value = row.value

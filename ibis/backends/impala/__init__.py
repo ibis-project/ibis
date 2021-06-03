@@ -8,7 +8,6 @@ from .client import (  # noqa: F401
     ImpalaConnection,
     ImpalaDatabase,
     ImpalaDatabaseTable,
-    ImpalaQuery,
     ImpalaTable,
 )
 from .compiler import ImpalaExprTranslator, ImpalaQueryBuilder
@@ -22,7 +21,6 @@ class Backend(BaseBackend):
     builder = ImpalaQueryBuilder
     translator = ImpalaExprTranslator
     database_class = ImpalaDatabase
-    query_class = ImpalaQuery
     table_class = ImpalaDatabaseTable
     table_expr_class = ImpalaTable
     HDFS = HDFS

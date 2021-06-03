@@ -364,7 +364,10 @@ class BaseMockConnection(SQLClient, metaclass=abc.ABCMeta):
         ],
     }
 
-    def _get_table_schema(self, name):
+    def fetch_from_cursor(self, cursor, schema):
+        pass
+
+    def get_schema(self, name):
         name = name.replace('`', '')
         return Schema.from_tuples(self._tables[name])
 
@@ -409,7 +412,7 @@ class MockAlchemyConnection(BaseMockConnection):
         self.meta = sa.MetaData()
 
     def table(self, name, database=None):
-        schema = self._get_table_schema(name)
+        schema = self.get_schema(name)
         return self._inject_table(name, schema)
 
     def _inject_table(self, name, schema):
@@ -447,7 +450,7 @@ class GeoMockConnectionPostGIS(MockAlchemyConnection):
         super().__init__()
         self.executed_queries = []
 
-    def _get_table_schema(self, name):
+    def get_schema(self, name):
         return Schema.from_tuples(self._tables[name])
 
     @property
@@ -464,7 +467,7 @@ class GeoMockConnectionOmniSciDB(SQLClient):
         super().__init__()
         self.executed_queries = []
 
-    def _get_table_schema(self, name):
+    def get_schema(self, name):
         return Schema.from_tuples(self._tables[name])
 
     @property
