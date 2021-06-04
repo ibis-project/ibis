@@ -121,7 +121,6 @@ from ibis.backends.pandas.core import (
     is_computable_input,
     is_computable_input_arg,
 )
-from ibis.client import find_backends
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import canonicalize_context
 from ibis.expr.typing import TimeContext
@@ -166,7 +165,7 @@ def execute_with_scope(
     # computing anything *and* before associating leaf nodes with data. This
     # allows clients to provide their own data for each leaf.
     if clients is None:
-        clients = list(find_backends(expr))
+        clients = expr._find_backend(return_all=True)
 
     if aggcontext is None:
         aggcontext = agg_ctx.Summarize()
@@ -220,7 +219,7 @@ def execute_until_in_scope(
     scope : Scope
     timecontext : Optional[TimeContext]
     aggcontext : Optional[AggregationContext]
-    clients : List[ibis.client.Client]
+    clients : List[ibis.backends.base.Client]
     kwargs : Mapping
     """
     # these should never be None

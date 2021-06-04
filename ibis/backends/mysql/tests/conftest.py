@@ -41,7 +41,7 @@ class TestConf(BackendTest, RoundHalfToEven):
             self.__class__.supports_window_operations = True
 
     @staticmethod
-    def connect(data_directory: Path) -> ibis.client.Client:
+    def connect(data_directory: Path):
         user = os.environ.get('IBIS_TEST_MYSQL_USER', 'ibis')
         password = os.environ.get('IBIS_TEST_MYSQL_PASSWORD', 'ibis')
         host = os.environ.get('IBIS_TEST_MYSQL_HOST', 'localhost')

@@ -11,7 +11,6 @@ import dateutil.parser
 import pandas as pd
 import toolz
 
-import ibis
 import ibis.common.exceptions as com
 import ibis.expr.analysis as _L
 import ibis.expr.analytics as _analytics
@@ -4505,7 +4504,7 @@ def prevent_rewrite(expr, client=None):
     ----------
     expr : ir.TableExpr
         Any table expression whose optimization you want to prevent
-    client : ibis.client.Client, optional, default None
+    client : ibis.backends.base.Client, optional, default None
         A client to use to create the SQLQueryResult operation. This is useful
         if you're compiling an expression that derives from an
         :class:`~ibis.expr.operations.UnboundTable` operation.
@@ -4515,6 +4514,6 @@ def prevent_rewrite(expr, client=None):
     sql_query_result : ir.TableExpr
     """
     if client is None:
-        (client,) = ibis.client.find_backends(expr)
+        client = expr._find_backend(return_all=True)[0]
     query = client.compile(expr)
     return ops.SQLQueryResult(query, expr.schema(), client).to_expr()

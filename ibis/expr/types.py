@@ -190,7 +190,7 @@ class Expr:
     def _factory(self):
         return type(self)
 
-    def _find_backend(self):
+    def _find_backend(self, return_all=False):
         """Find backends.
 
         Parameters
@@ -222,6 +222,9 @@ class Expr:
                         stack.append(arg.op())
 
         backends = list(seen_backends)
+
+        if return_all:
+            return backends
 
         if not backends:
             default = options.default_backend

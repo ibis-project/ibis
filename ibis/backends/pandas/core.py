@@ -168,40 +168,6 @@ ibis.util.consume(
 )
 
 
-def _find_backends(self):
-    """Find backends.
-
-    Parameters
-    ----------
-    expr : Expr
-
-    Returns
-    -------
-    client : Client
-        Backend found.
-    """
-    from ibis.backends.base.client import Client
-
-    seen_backends = set()
-
-    stack = [self.op()]
-    seen = set()
-
-    while stack:
-        node = stack.pop()
-
-        if node not in seen:
-            seen.add(node)
-
-            for arg in node.flat_args():
-                if isinstance(arg, Client):
-                    seen_backends.add(arg)
-                elif isinstance(arg, ir.Expr):
-                    stack.append(arg.op())
-
-    return list(seen_backends)
-
-
 def execute_with_scope(
     expr,
     scope: Scope,
@@ -236,7 +202,7 @@ def execute_with_scope(
     # computing anything *and* before associating leaf nodes with data. This
     # allows clients to provide their own data for each leaf.
     if clients is None:
-        clients = _find_backends(expr)
+        clients = expr._find_backends(return_all=True)
 
     if aggcontext is None:
         aggcontext = agg_ctx.Summarize()
@@ -290,7 +256,7 @@ def execute_until_in_scope(
     scope : Scope
     timecontext : Optional[TimeContext]
     aggcontext : Optional[AggregationContext]
-    clients : List[ibis.client.Client]
+    clients : List[ibis.backends.base.Client]
     kwargs : Mapping
     """
     # these should never be None
@@ -552,7 +518,7 @@ are going to be used in executeion and passes these attributes to children
 nodes.
 
 Param:
-clients: List[ibis.client.Client]
+clients: List[ibis.backends.base.Client]
     backends for execution
 timecontext : Optional[TimeContext]
     begin and end time context needed for execution

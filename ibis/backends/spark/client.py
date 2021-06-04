@@ -10,6 +10,8 @@ import ibis.expr.lineage as lin
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis.backends.base import Database
+from ibis.backends.base.sql import SQLClient
 from ibis.backends.base.sql.ddl import (
     CreateDatabase,
     DropTable,
@@ -17,7 +19,6 @@ from ibis.backends.base.sql.ddl import (
     fully_qualified_re,
     is_fully_qualified,
 )
-from ibis.client import Database, SQLClient
 from ibis.util import log
 
 from . import compiler as comp
@@ -39,7 +40,7 @@ class SparkCursor:
     """Spark cursor.
 
     This allows the Spark client to reuse machinery in
-    :file:`ibis/client.py`.
+    :file:`ibis/backends/base/sql/client.py`.
 
     """
 
@@ -73,23 +74,11 @@ class SparkCursor:
 
     def __enter__(self):
         # For compatibility when constructed from Query.execute()
-        """No-op for compatibility.
-
-        See Also
-        --------
-        ibis.client.Query.execute
-
-        """
+        """No-op for compatibility."""
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        """No-op for compatibility.
-
-        See Also
-        --------
-        ibis.client.Query.execute
-
-        """
+        """No-op for compatibility."""
 
 
 def find_spark_udf(expr):

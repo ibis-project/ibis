@@ -21,7 +21,7 @@ def npartitions():
 
 class TestConf(PandasTest):
     @staticmethod
-    def connect(data_directory: Path) -> ibis.client.Client:
+    def connect(data_directory: Path):
         # Note - we use `dd.from_pandas(pd.read_csv(...))` instead of
         # `dd.read_csv` due to https://github.com/dask/dask/issues/6970
 

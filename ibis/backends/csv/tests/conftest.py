@@ -15,7 +15,7 @@ class TestConf(PandasTest):
     returned_timestamp_unit = 'ns'
 
     @staticmethod
-    def connect(data_directory: Path) -> ibis.client.Client:
+    def connect(data_directory: Path):
         filename = data_directory / 'functional_alltypes.csv'
         if not filename.exists():
             pytest.skip('test data set {} not found'.format(filename))
