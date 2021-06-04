@@ -97,8 +97,7 @@ class BaseBackend(abc.ABC):
         Compile the expression.
         """
         context = self.dialect.make_context(params=params)
-        builder = self.builder(expr, context=context)
-        query_ast = builder.get_result()
+        query_ast = self.builder.to_ast(expr, context=context)
         # TODO make all builders return a QueryAST object
         if isinstance(query_ast, list):
             query_ast = query_ast[0]
