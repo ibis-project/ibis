@@ -11,7 +11,8 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.client import Database, DatabaseEntity, SQLClient
+from ibis.backends.base import Database
+from ibis.backends.base.sql import SQLClient
 from ibis.config import options
 from ibis.util import log
 
@@ -92,7 +93,7 @@ class ClickhouseDatabase(Database):
     pass
 
 
-class ClickhouseTable(ir.TableExpr, DatabaseEntity):
+class ClickhouseTable(ir.TableExpr):
     """References a physical table in Clickhouse"""
 
     @property

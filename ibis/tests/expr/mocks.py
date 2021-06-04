@@ -18,13 +18,13 @@ from typing import Optional
 import pytest
 
 import ibis.expr.types as ir
+from ibis.backends.base.sql import SQLClient
 from ibis.backends.base.sql.alchemy import (
     AlchemyDialect,
     AlchemyTable,
     build_ast,
     table_from_schema,
 )
-from ibis.client import SQLClient
 from ibis.expr.schema import Schema
 from ibis.expr.typing import TimeContext
 

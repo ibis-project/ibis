@@ -231,13 +231,13 @@ def geo_df(geo):
 
 
 @pytest.fixture
-def temp_table(con: ibis.client.Client) -> str:
+def temp_table(con) -> str:
     """
     Return a temporary table name.
 
     Parameters
     ----------
-    con : ibis.client.Client
+    con : ibis.backends.base.Client
 
     Yields
     ------
@@ -290,7 +290,7 @@ def alternate_current_database(con, backend, current_data_db: str) -> str:
 
     Parameters
     ----------
-    con : ibis.client.Client
+    con : ibis.backends.base.Client
     current_data_db : str
     Yields
     -------

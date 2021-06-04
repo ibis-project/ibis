@@ -2,7 +2,9 @@ import abc
 
 from ibis.common.exceptions import TranslationError
 
-__all__ = ('BaseBackend',)
+from .client import Client, Database
+
+__all__ = ('BaseBackend', 'Client', 'Database')
 
 
 class BaseBackend(abc.ABC):

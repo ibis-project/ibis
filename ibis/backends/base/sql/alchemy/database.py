@@ -1,6 +1,6 @@
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
-from ibis.client import Database
+from ibis.backends.base import Database
 
 
 class AlchemyDatabaseSchema(Database):
