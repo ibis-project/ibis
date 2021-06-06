@@ -33,7 +33,6 @@ from ibis.backends.base.sql.compiler import (
     Select,
     SelectBuilder,
 )
-from ibis.backends.base.sql.registry import quote_identifier
 
 from .registry import operation_registry
 
@@ -85,11 +84,6 @@ class SparkExprTranslator(ExprTranslator):
     _registry = operation_registry
 
     context_class = SparkContext
-
-    def name(self, translated, name, force=True):
-        return '{} AS {}'.format(
-            translated, quote_identifier(name, force=force)
-        )
 
 
 rewrites = SparkExprTranslator.rewrites

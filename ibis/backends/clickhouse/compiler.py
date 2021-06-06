@@ -154,11 +154,6 @@ class ClickhouseExprTranslator(ExprTranslator):
     _registry = operation_registry
     context_class = ClickhouseQueryContext
 
-    def name(self, translated, name, force=True):
-        return '{0!s} AS {1!s}'.format(
-            translated, quote_identifier(name, force=force)
-        )
-
 
 rewrites = ClickhouseExprTranslator.rewrites
 

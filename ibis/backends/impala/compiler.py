@@ -77,11 +77,6 @@ class ImpalaExprTranslator(ExprTranslator):
     _registry = {**operation_registry, **binary_infix_ops}
     context_class = ImpalaQueryContext
 
-    def name(self, translated, name, force=True):
-        return '{} AS {}'.format(
-            translated, quote_identifier(name, force=force)
-        )
-
 
 rewrites = ImpalaExprTranslator.rewrites
 
