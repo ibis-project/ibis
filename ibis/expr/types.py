@@ -190,8 +190,8 @@ class Expr:
     def _factory(self):
         return type(self)
 
-    def _find_backend(self, return_all=False):
-        """Find backends.
+    def _find_backends(self):
+        """Find possible backends for an expression.
 
         Parameters
         ----------
@@ -221,10 +221,10 @@ class Expr:
                     elif isinstance(arg, ir.Expr):
                         stack.append(arg.op())
 
-        backends = list(seen_backends)
+        return list(seen_backends)
 
-        if return_all:
-            return backends
+    def _find_backend(self):
+        backends = self._find_backends()
 
         if not backends:
             default = options.default_backend

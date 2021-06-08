@@ -4514,6 +4514,6 @@ def prevent_rewrite(expr, client=None):
     sql_query_result : ir.TableExpr
     """
     if client is None:
-        client = expr._find_backend(return_all=True)[0]
+        client = expr._find_backend()
     query = client.compile(expr)
     return ops.SQLQueryResult(query, expr.schema(), client).to_expr()

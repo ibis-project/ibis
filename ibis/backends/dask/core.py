@@ -165,7 +165,7 @@ def execute_with_scope(
     # computing anything *and* before associating leaf nodes with data. This
     # allows clients to provide their own data for each leaf.
     if clients is None:
-        clients = expr._find_backend(return_all=True)
+        clients = expr._find_backends()
 
     if aggcontext is None:
         aggcontext = agg_ctx.Summarize()
