@@ -16,31 +16,9 @@ from .identifiers import quote_identifier
 from .registry import operation_registry
 
 
-def build_ast(expr, context):
-    builder = ClickhouseQueryBuilder(expr, context=context)
-    return builder.get_result()
-
-
 class ClickhouseSelectBuilder(SelectBuilder):
-    @property
-    def _select_class(self):
-        return ClickhouseSelect
-
     def _convert_group_by(self, exprs):
         return exprs
-
-
-class ClickhouseQueryBuilder(QueryBuilder):
-
-    select_builder = ClickhouseSelectBuilder
-
-
-class ClickhouseQueryContext(QueryContext):
-    def _to_sql(self, expr, ctx):
-        builder = ClickhouseQueryBuilder(expr, context=ctx)
-        ast = builder.get_result()
-        query = ast.queries[0]
-        return query.compile()
 
 
 class ClickhouseSelect(Select):
@@ -86,6 +64,19 @@ class ClickhouseSelect(Select):
             buf.write(', {}'.format(offset))
 
         return buf.getvalue()
+
+
+class ClickhouseQueryBuilder(QueryBuilder):
+    select_builder = ClickhouseSelectBuilder
+    select_class = ClickhouseSelect
+
+
+build_ast = ClickhouseQueryBuilder.to_ast
+
+
+class ClickhouseQueryContext(QueryContext):
+    def _to_sql(self, expr, ctx):
+        return ClickhouseQueryBuilder.to_sql(expr, context=ctx)
 
 
 class ClickhouseTableSetFormatter(TableSetFormatter):
