@@ -4,7 +4,6 @@ from ibis.backends.base.sql.compiler import (
     QueryBuilder,
     QueryContext,
     Select,
-    SelectBuilder,
     TableSetFormatter,
 )
 
@@ -31,19 +30,14 @@ class BaseSelect(Select):
     table_set_formatter = BaseTableSetFormatter
 
 
-class BaseSelectBuilder(SelectBuilder):
-    _select_class = BaseSelect
-
-
 class BaseQueryBuilder(QueryBuilder):
-    select_builder = BaseSelectBuilder
+    select_class = BaseSelect
 
 
-def build_ast(expr, context):
-    return BaseQueryBuilder(expr, context=context).get_result()
+build_ast = BaseQueryBuilder.to_ast
 
 
 def to_sql(expr, context=None):
     if context is None:
         context = BaseDialect.make_context()
-    return build_ast(expr, context).queries[0].compile()
+    return BaseQueryBuilder.to_sql(expr, context)
