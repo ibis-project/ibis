@@ -31,7 +31,6 @@ from ibis.backends.base.sql.compiler import (
     QueryBuilder,
     QueryContext,
     Select,
-    SelectBuilder,
 )
 from ibis.backends.base.sql.registry import quote_identifier
 
@@ -43,8 +42,7 @@ def build_ast(expr, context=None):
 
     if context is None:
         context = Backend().dialect.make_context()
-    builder = SparkQueryBuilder(expr, context=context)
-    return builder.get_result()
+    return SparkQueryBuilder.to_ast(expr, context=context)
 
 
 # ----------------------------------------------------------------------
@@ -61,24 +59,11 @@ class SparkUDAFNode(ops.Reduction):
         return self.return_type.scalar_type()
 
 
-class SparkSelectBuilder(SelectBuilder):
-    @property
-    def _select_class(self):
-        return SparkSelect
-
-
-class SparkQueryBuilder(QueryBuilder):
-    select_builder = SparkSelectBuilder
-
-
 class SparkContext(QueryContext):
     def _to_sql(self, expr, ctx):
         if ctx is None:
             ctx = Dialect.make_context()
-        builder = SparkQueryBuilder(expr, context=ctx)
-        ast = builder.get_result()
-        query = ast.queries[0]
-        return query.compile()
+        return SparkQueryBuilder.to_sql(expr, context=ctx)
 
 
 class SparkExprTranslator(ExprTranslator):
@@ -103,3 +88,7 @@ def spark_rewrites_is_inf(expr):
 
 class SparkSelect(Select):
     translator = SparkExprTranslator
+
+
+class SparkQueryBuilder(QueryBuilder):
+    select_class = SparkSelect

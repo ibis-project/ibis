@@ -300,10 +300,6 @@ class AlchemySelect(Select):
 
 
 class AlchemySelectBuilder(SelectBuilder):
-    @property
-    def _select_class(self):
-        return AlchemySelect
-
     def _convert_group_by(self, exprs):
         return exprs
 
@@ -328,12 +324,11 @@ class AlchemyUnion(Union):
 class AlchemyQueryBuilder(QueryBuilder):
 
     select_builder = AlchemySelectBuilder
+    select_class = AlchemySelect
     union_class = AlchemyUnion
 
 
-def build_ast(expr, context):
-    builder = AlchemyQueryBuilder(expr, context)
-    return builder.get_result()
+build_ast = AlchemyQueryBuilder.to_ast
 
 
 def to_sqlalchemy(expr, context, exists=False):
