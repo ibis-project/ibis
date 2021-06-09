@@ -400,6 +400,7 @@ class SelectBuilder:
         return self.select_class(
             self.table_set,
             self.select_set,
+            translator=self.translator,
             subqueries=self.subqueries,
             where=self.filters,
             group_by=self.group_by,

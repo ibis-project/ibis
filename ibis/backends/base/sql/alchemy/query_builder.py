@@ -15,9 +15,10 @@ from ibis.backends.base.sql.compiler import (
 
 from .database import AlchemyTable
 from .datatypes import to_sqla_type
+from .translator import AlchemyContext, AlchemyExprTranslator
 
 
-class _AlchemyTableSet(TableSetFormatter):
+class _AlchemyTableSetFormatter(TableSetFormatter):
     def get_result(self):
         # Got to unravel the join stack; the nesting order could be
         # arbitrary, so we do a depth first search and push the join tokens
@@ -172,7 +173,7 @@ class AlchemySelect(Select):
 
     def _compile_table_set(self):
         if self.table_set is not None:
-            helper = _AlchemyTableSet(self, self.table_set)
+            helper = _AlchemyTableSetFormatter(self, self.table_set)
             result = helper.get_result()
             if isinstance(result, sql.selectable.Select) and hasattr(
                 result, 'subquery'
@@ -294,10 +295,6 @@ class AlchemySelect(Select):
 
         return fragment
 
-    @property
-    def dialect(self):
-        return self.context.dialect
-
 
 class AlchemySelectBuilder(SelectBuilder):
     def _convert_group_by(self, exprs):
@@ -322,7 +319,9 @@ class AlchemyUnion(Union):
 
 
 class AlchemyCompiler(Compiler):
-
+    translator = AlchemyExprTranslator
+    context_class = AlchemyContext
+    table_set_formatter = _AlchemyTableSetFormatter
     select_builder = AlchemySelectBuilder
     select_class = AlchemySelect
     union_class = AlchemyUnion

@@ -6,17 +6,15 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis.backends.base import Client
-from ibis.config import options
 from ibis.expr.typing import TimeContext
 
-from .compiler import Dialect, Select, Compiler
+from .compiler import Compiler
 
 
 class SQLClient(Client, metaclass=abc.ABCMeta):
     """Generic SQL client."""
 
     _compiler = Compiler
-    dialect = Dialect
     table_class = ops.DatabaseTable
     table_expr_class = ir.TableExpr
 
@@ -137,7 +135,9 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         # feature than all this magic.
         # we don't want to pass `timecontext` to `raw_sql`
         kwargs.pop('timecontext', None)
-        query_ast = self._build_ast_ensure_limit(expr, limit, params=params)
+        query_ast = self._compiler.to_ast_ensure_limit(
+            expr, limit, params=params
+        )
         sql = query_ast.compile()
         self._log(sql)
         cursor = self.raw_sql(sql, **kwargs)
@@ -202,31 +202,9 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         -------
         output : single query or list of queries
         """
-        query_ast = self._build_ast_ensure_limit(expr, limit, params=params)
-        return query_ast.compile()
-
-    def _build_ast_ensure_limit(self, expr, limit, params=None):
-        context = self.dialect.make_context(params=params)
-
-        query_ast = self._compiler.to_ast(expr, context)
-        # note: limit can still be None at this point, if the global
-        # default_limit is None
-        for query in reversed(query_ast.queries):
-            if (
-                isinstance(query, Select)
-                and not isinstance(expr, ir.ScalarExpr)
-                and query.table_set is not None
-            ):
-                if query.limit is None:
-                    if limit == 'default':
-                        query_limit = options.sql.default_limit
-                    else:
-                        query_limit = limit
-                    if query_limit:
-                        query.limit = {'n': query_limit, 'offset': 0}
-                elif limit is not None and limit != 'default':
-                    query.limit = {'n': limit, 'offset': query.limit['offset']}
-        return query_ast
+        return self._compiler.to_ast_ensure_limit(
+            expr, limit, params=params
+        ).compile()
 
     def explain(self, expr, params=None):
         """Explain expression.
@@ -239,7 +217,7 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         plan : string
         """
         if isinstance(expr, ir.Expr):
-            context = self.dialect.make_context(params=params)
+            context = self._compile.make_context(params=params)
             query_ast = self._compiler.to_ast(expr, context)
             if len(query_ast.queries) > 1:
                 raise Exception('Multi-query expression')

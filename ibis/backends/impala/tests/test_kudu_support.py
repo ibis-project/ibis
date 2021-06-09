@@ -18,7 +18,7 @@ from ibis.backends.impala.tests.conftest import (  # noqa: E402, isort:skip
 )
 
 from ibis.backends.impala.compiler import (  # noqa: E402, isort:skip
-    ImpalaCompiler
+    ImpalaCompiler,
 )
 
 

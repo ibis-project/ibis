@@ -1,36 +1,13 @@
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.compiler import (
-    ExprTranslator,
     Compiler,
-    QueryContext,
-    Select,
+    ExprTranslator,
     TableSetFormatter,
 )
 from ibis.backends.base.sql.registry import (
     binary_infix_ops,
     operation_registry,
 )
-
-
-class ImpalaSelect(Select):
-
-    """
-    A SELECT statement which, after execution, might yield back to the user a
-    table, array/list, or scalar value, depending on the expression that
-    generated it
-    """
-
-    @property
-    def translator(self):
-        return ImpalaExprTranslator
-
-    @property
-    def table_set_formatter(self):
-        return ImpalaTableSetFormatter
-
-
-class ImpalaCompiler(Compiler):
-    select_class = ImpalaSelect
 
 
 class ImpalaTableSetFormatter(TableSetFormatter):
@@ -44,13 +21,8 @@ class ImpalaTableSetFormatter(TableSetFormatter):
         return jname
 
 
-class ImpalaQueryContext(QueryContext):
-    pass
-
-
 class ImpalaExprTranslator(ExprTranslator):
     _registry = {**operation_registry, **binary_infix_ops}
-    context_class = ImpalaQueryContext
 
 
 rewrites = ImpalaExprTranslator.rewrites
@@ -60,3 +32,8 @@ rewrites = ImpalaExprTranslator.rewrites
 def _floor_divide(expr):
     left, right = expr.op().args
     return left.div(right).floor()
+
+
+class ImpalaCompiler(Compiler):
+    translator = ImpalaExprTranslator
+    table_set_formatter = ImpalaTableSetFormatter

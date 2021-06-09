@@ -20,24 +20,17 @@ import pytest
 import ibis.expr.types as ir
 from ibis.backends.base.sql import SQLClient
 from ibis.backends.base.sql.alchemy import (
-    AlchemyDialect,
-    AlchemyTable,
     AlchemyCompiler,
+    AlchemyTable,
     table_from_schema,
 )
-from ibis.backends.base_sql.compiler import BaseCompiler
 from ibis.expr.schema import Schema
 from ibis.expr.typing import TimeContext
 
 
-class BaseMockConnection(SQLClient, metaclass=abc.ABCMeta):
+class MockConnection(SQLClient, metaclass=abc.ABCMeta):
     def __init__(self):
         self.executed_queries = []
-
-    @property
-    @abc.abstractmethod
-    def dialect(self):
-        pass
 
     _tables = {
         'alltypes': [
@@ -369,7 +362,7 @@ class BaseMockConnection(SQLClient, metaclass=abc.ABCMeta):
         return Schema.from_tuples(self._tables[name])
 
     def execute(self, expr, limit=None, params=None, **kwargs):
-        ast = self._build_ast_ensure_limit(expr, limit, params=params)
+        ast = self._compiler.to_ast_ensure_limit(expr, limit, params=params)
         for query in ast.queries:
             self.executed_queries.append(query.compile())
         return None
@@ -381,25 +374,12 @@ class BaseMockConnection(SQLClient, metaclass=abc.ABCMeta):
         params=None,
         timecontext: Optional[TimeContext] = None,
     ):
-        ast = self._build_ast_ensure_limit(expr, limit, params=params)
+        ast = self._compiler.to_ast_ensure_limit(expr, limit, params=params)
         queries = [q.compile() for q in ast.queries]
         return queries[0] if len(queries) == 1 else queries
 
 
-class MockConnection(BaseMockConnection):
-    # TODO: Refactor/rename to MockImpalaConnection
-    # TODO: Should some tests using MockImpalaConnection really use
-    #       MockAlchemyConnection instead?
-    _compiler = BaseCompiler
-
-    @property
-    def dialect(self):
-        from ibis.backends.base_sql.compiler import BaseDialect
-
-        return BaseDialect
-
-
-class MockAlchemyConnection(BaseMockConnection):
+class MockAlchemyConnection(MockConnection):
     _compiler = AlchemyCompiler
 
     def __init__(self):
@@ -419,10 +399,6 @@ class MockAlchemyConnection(BaseMockConnection):
 
         node = AlchemyTable(table, self)
         return ir.TableExpr(node)
-
-    @property
-    def dialect(self):
-        return AlchemyDialect
 
 
 GEO_TABLE = {
@@ -446,12 +422,6 @@ class GeoMockConnectionPostGIS(MockAlchemyConnection):
     def get_schema(self, name):
         return Schema.from_tuples(self._tables[name])
 
-    @property
-    def dialect(self):
-        from ibis.backends.postgres import Backend
-
-        return Backend.dialect
-
 
 class GeoMockConnectionOmniSciDB(SQLClient):
     _tables = GEO_TABLE
@@ -462,9 +432,3 @@ class GeoMockConnectionOmniSciDB(SQLClient):
 
     def get_schema(self, name):
         return Schema.from_tuples(self._tables[name])
-
-    @property
-    def dialect(self):
-        from ibis.backends.omniscidb.compiler import OmniSciDBDialect
-
-        return OmniSciDBDialect

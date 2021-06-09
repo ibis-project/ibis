@@ -25,15 +25,9 @@ import math
 import ibis
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
-from ibis.backends.base.sql.compiler import (
-    ExprTranslator,
-    Compiler,
-    QueryContext,
-    Select,
-)
+from ibis.backends.base.sql.compiler import Compiler, ExprTranslator
 
 from .registry import operation_registry
-
 
 # ----------------------------------------------------------------------
 # Select compilation
@@ -49,14 +43,8 @@ class SparkUDAFNode(ops.Reduction):
         return self.return_type.scalar_type()
 
 
-class SparkContext(QueryContext):
-    pass
-
-
 class SparkExprTranslator(ExprTranslator):
     _registry = operation_registry
-
-    context_class = SparkContext
 
 
 rewrites = SparkExprTranslator.rewrites
@@ -68,9 +56,5 @@ def spark_rewrites_is_inf(expr):
     return (arg == ibis.literal(math.inf)) | (arg == ibis.literal(-math.inf))
 
 
-class SparkSelect(Select):
-    translator = SparkExprTranslator
-
-
 class SparkCompiler(Compiler):
-    select_class = SparkSelect
+    translator = SparkExprTranslator

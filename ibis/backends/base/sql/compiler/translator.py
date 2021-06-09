@@ -22,7 +22,7 @@ class QueryContext:
     """
 
     def __init__(
-        self, indent=2, parent=None, memo=None, dialect=None, params=None
+        self, translator, indent=2, parent=None, memo=None, params=None
     ):
         self._table_refs = {}
         self.extracted_subexprs = set()
@@ -36,7 +36,6 @@ class QueryContext:
 
         self._table_key_memo = {}
         self.memo = memo or fmt.FormatMemo()
-        self.dialect = dialect
         self.params = params if params is not None else {}
 
     def _compile_subquery(self, expr):
@@ -44,6 +43,7 @@ class QueryContext:
         return self._to_sql(expr, sub_ctx)
 
     def _to_sql(self, expr, ctx):
+        # FIXME this needs to call `Compiler.to_sql`, not clear how
         raise NotImplementedError
 
     def collapse(self, queries):
@@ -289,24 +289,6 @@ class ExprTranslator:
             return f
 
         return decorator
-
-
-class Dialect:
-
-    """Dialects encode the properties of a particular flavor of SQL.
-
-    For example, quoting behavior is a property that should be encoded by
-    ``Dialect``. Each backend has its own dialect.
-    """
-
-    translator = ExprTranslator
-
-    @classmethod
-    def make_context(cls, params=None):
-        if params is None:
-            params = {}
-        params = {expr.op(): value for expr, value in params.items()}
-        return cls.translator.context_class(dialect=cls(), params=params)
 
 
 rewrites = ExprTranslator.rewrites

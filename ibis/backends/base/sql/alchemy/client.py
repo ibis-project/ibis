@@ -12,12 +12,10 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis.backends.base.sql import SQLClient
-from ibis.backends.base.sql.compiler import Dialect
 
 from .datatypes import to_sqla_type
 from .geospatial import geospatial_supported
 from .query_builder import AlchemyCompiler
-from .translator import AlchemyExprTranslator
 
 if geospatial_supported:
     import geoalchemy2.shape as shape
@@ -90,15 +88,9 @@ def _maybe_to_geodataframe(df, schema):
     return df
 
 
-class AlchemyDialect(Dialect):
-
-    translator = AlchemyExprTranslator
-
-
 class AlchemyClient(SQLClient):
 
     _compiler = AlchemyCompiler
-    dialect = AlchemyDialect
     has_attachment = False
 
     def __init__(self, con: sa.engine.Engine) -> None:

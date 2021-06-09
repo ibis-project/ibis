@@ -15,6 +15,7 @@ from ibis.backends.base import Database
 from ibis.backends.base.sql import SQLClient
 from ibis.config import options
 from ibis.util import log
+
 from .compiler import ClickhouseCompiler
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
@@ -171,11 +172,11 @@ class ClickhouseDatabaseTable(ops.DatabaseTable):
 
 class ClickhouseClient(SQLClient):
     """An Ibis client interface that uses Clickhouse"""
+
     _compiler = ClickhouseCompiler
 
     def __init__(self, backend, *args, **kwargs):
         self.database_class = backend.database_class
-        self.dialect = backend.dialect
         self.table_class = backend.table_class
         self.table_expr_class = backend.table_expr_class
         self.con = _DriverClient(*args, **kwargs)

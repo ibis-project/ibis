@@ -7,9 +7,11 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis.backends.base.sql.registry import quote_identifier
+from ibis.config import options
 
 from .base import DML, QueryAST, SetOp
 from .select_builder import SelectBuilder
+from .translator import ExprTranslator, QueryContext
 
 
 class TableSetFormatter:
@@ -552,6 +554,8 @@ def flatten_difference(table: ir.TableExpr):
 
 
 class Compiler:
+    translator = ExprTranslator
+    context_class = QueryContext
     select_builder = SelectBuilder
     select_class = Select
     union_class = Union
@@ -559,7 +563,11 @@ class Compiler:
     difference_class = Difference
 
     @classmethod
-    def to_ast(cls, expr, context):
+    def make_context(cls, params=None):
+        return cls.context_class(params=params)
+
+    @classmethod
+    def to_ast(cls, expr, context=None):
         op = expr.op()
 
         # collect setup and teardown queries
@@ -576,8 +584,10 @@ class Compiler:
             query = cls._make_difference(cls.difference_class, expr, context)
         else:
             query = cls.select_builder().to_select(
-                select_class=cls.select_class, expr=expr, context=context,
-                translator=context.dialect.translator,
+                select_class=cls.select_class,
+                expr=expr,
+                context=context,
+                translator=cls.translator,
             )
 
         return QueryAST(
@@ -588,7 +598,34 @@ class Compiler:
         )
 
     @classmethod
-    def to_sql(cls, expr, context=None):
+    def to_ast_ensure_limit(cls, expr, limit, params=None):
+        context = cls.make_context(params=params)
+        query_ast = cls.to_ast(expr, context)
+
+        # note: limit can still be None at this point, if the global
+        # default_limit is None
+        for query in reversed(query_ast.queries):
+            if (
+                isinstance(query, Select)
+                and not isinstance(expr, ir.ScalarExpr)
+                and query.table_set is not None
+            ):
+                if query.limit is None:
+                    if limit == 'default':
+                        query_limit = options.sql.default_limit
+                    else:
+                        query_limit = limit
+                    if query_limit:
+                        query.limit = {'n': query_limit, 'offset': 0}
+                elif limit is not None and limit != 'default':
+                    query.limit = {'n': limit, 'offset': query.limit['offset']}
+
+        return query_ast
+
+    @classmethod
+    def to_sql(cls, expr, context=None, params=None):
+        if context is None:
+            context = cls.make_context(params=params)
         return cls.to_ast(expr, context).queries[0].compile()
 
     @staticmethod
