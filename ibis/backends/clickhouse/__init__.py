@@ -7,7 +7,6 @@ from .client import (
     ClickhouseDatabaseTable,
     ClickhouseTable,
 )
-from .compiler import ClickhouseExprTranslator
 
 try:
     import lz4  # noqa: F401
