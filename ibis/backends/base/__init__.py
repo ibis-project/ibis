@@ -42,11 +42,6 @@ class BaseBackend(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def builder(self):
-        pass
-
-    @property
-    @abc.abstractmethod
     def translator(self):
         pass
 
@@ -99,12 +94,7 @@ class BaseBackend(abc.ABC):
         Compile the expression.
         """
         context = self.dialect.make_context(params=params)
-        query_ast = self.builder.to_ast(expr, context=context)
-        # TODO make all builders return a QueryAST object
-        if isinstance(query_ast, list):
-            query_ast = query_ast[0]
-        compiled = query_ast.compile()
-        return compiled
+        return self.client._compiler.to_sql(expr, context)
 
     def verify(self, expr, params=None):
         """

@@ -26,22 +26,13 @@ import ibis
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 from ibis.backends.base.sql.compiler import (
-    Dialect,
     ExprTranslator,
-    QueryBuilder,
+    Compiler,
     QueryContext,
     Select,
 )
 
 from .registry import operation_registry
-
-
-def build_ast(expr, context=None):
-    from ibis.backends.spark import Backend
-
-    if context is None:
-        context = Backend().dialect.make_context()
-    return SparkQueryBuilder.to_ast(expr, context=context)
 
 
 # ----------------------------------------------------------------------
@@ -59,10 +50,7 @@ class SparkUDAFNode(ops.Reduction):
 
 
 class SparkContext(QueryContext):
-    def _to_sql(self, expr, ctx):
-        if ctx is None:
-            ctx = Dialect.make_context()
-        return SparkQueryBuilder.to_sql(expr, context=ctx)
+    pass
 
 
 class SparkExprTranslator(ExprTranslator):
@@ -84,5 +72,5 @@ class SparkSelect(Select):
     translator = SparkExprTranslator
 
 
-class SparkQueryBuilder(QueryBuilder):
+class SparkCompiler(Compiler):
     select_class = SparkSelect

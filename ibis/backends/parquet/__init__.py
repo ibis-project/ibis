@@ -102,7 +102,6 @@ class ParquetClient(FileClient):
 class Backend(BaseBackend):
     name = 'parquet'
     kind = 'pandas'
-    builder = None
     extension = 'parquet'
     table_class = ParquetTable
     translator = PandasExprTranslator

@@ -6,7 +6,7 @@ import sqlalchemy.sql as sql
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.base.sql.compiler import (
-    QueryBuilder,
+    Compiler,
     Select,
     SelectBuilder,
     TableSetFormatter,
@@ -321,21 +321,15 @@ class AlchemyUnion(Union):
         return functools.reduce(reduce_union, selects)
 
 
-class AlchemyQueryBuilder(QueryBuilder):
+class AlchemyCompiler(Compiler):
 
     select_builder = AlchemySelectBuilder
     select_class = AlchemySelect
     union_class = AlchemyUnion
 
-
-build_ast = AlchemyQueryBuilder.to_ast
-
-
-def to_sqlalchemy(expr, context, exists=False):
-    ast = build_ast(expr, context)
-    query = ast.queries[0]
-
-    if exists:
-        query.exists = exists
-
-    return query.compile()
+    @classmethod
+    def to_sql(cls, expr, context, exists=False):
+        query = cls.to_ast(expr, context).queries[0]
+        if exists:
+            query.exists = True
+        return query.compile()

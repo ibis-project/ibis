@@ -1,7 +1,7 @@
 from ibis.backends.base.sql.compiler import (
     Dialect,
     ExprTranslator,
-    QueryBuilder,
+    Compiler,
     QueryContext,
     Select,
     TableSetFormatter,
@@ -13,8 +13,7 @@ class BaseTableSetFormatter(TableSetFormatter):
 
 
 class BaseContext(QueryContext):
-    def _to_sql(self, expr, ctx):
-        return to_sql(expr, ctx)
+    pass
 
 
 class BaseExprTranslator(ExprTranslator):
@@ -30,14 +29,5 @@ class BaseSelect(Select):
     table_set_formatter = BaseTableSetFormatter
 
 
-class BaseQueryBuilder(QueryBuilder):
+class BaseCompiler(Compiler):
     select_class = BaseSelect
-
-
-build_ast = BaseQueryBuilder.to_ast
-
-
-def to_sql(expr, context=None):
-    if context is None:
-        context = BaseDialect.make_context()
-    return BaseQueryBuilder.to_sql(expr, context)

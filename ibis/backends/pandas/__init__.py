@@ -39,7 +39,6 @@ class PandasExprTranslator:
 class Backend(BaseBackend):
     name = 'pandas'
     kind = 'pandas'
-    builder = None
     database_class = PandasDatabase
     table_class = PandasTable
     translator = PandasExprTranslator

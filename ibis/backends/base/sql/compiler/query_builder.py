@@ -187,6 +187,7 @@ class Select(DML):
         self,
         table_set,
         select_set,
+        translator,
         context,
         subqueries=None,
         where=None,
@@ -199,6 +200,7 @@ class Select(DML):
         result_handler=None,
         parent_expr=None,
     ):
+        self.translator = translator
         self.context = context
 
         self.select_set = select_set
@@ -220,10 +222,6 @@ class Select(DML):
         self.indent = indent
 
         self.result_handler = result_handler
-
-    @property
-    def translator(self):
-        return self.context.dialect.translator
 
     def _translate(self, expr, named=False, permit_subquery=False):
         context = self.context
@@ -553,7 +551,7 @@ def flatten_difference(table: ir.TableExpr):
     return [table]
 
 
-class QueryBuilder:
+class Compiler:
     select_builder = SelectBuilder
     select_class = Select
     union_class = Union
@@ -579,6 +577,7 @@ class QueryBuilder:
         else:
             query = cls.select_builder().to_select(
                 select_class=cls.select_class, expr=expr, context=context,
+                translator=context.dialect.translator,
             )
 
         return QueryAST(
@@ -589,7 +588,7 @@ class QueryBuilder:
         )
 
     @classmethod
-    def to_sql(cls, expr, context):
+    def to_sql(cls, expr, context=None):
         return cls.to_ast(expr, context).queries[0].compile()
 
     @staticmethod

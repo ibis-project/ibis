@@ -111,7 +111,6 @@ class Backend(BaseBackend):
     kind = 'pandas'
     extension = 'csv'
     table_class = CSVTable
-    builder = None
     translator = PandasExprTranslator
 
     def connect(self, path):

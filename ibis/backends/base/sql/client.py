@@ -9,12 +9,13 @@ from ibis.backends.base import Client
 from ibis.config import options
 from ibis.expr.typing import TimeContext
 
-from .compiler import Dialect, Select
+from .compiler import Dialect, Select, Compiler
 
 
 class SQLClient(Client, metaclass=abc.ABCMeta):
     """Generic SQL client."""
 
+    _compiler = Compiler
     dialect = Dialect
     table_class = ops.DatabaseTable
     table_expr_class = ir.TableExpr
@@ -207,7 +208,7 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
     def _build_ast_ensure_limit(self, expr, limit, params=None):
         context = self.dialect.make_context(params=params)
 
-        query_ast = self._build_ast(expr, context)
+        query_ast = self._compiler.to_ast(expr, context)
         # note: limit can still be None at this point, if the global
         # default_limit is None
         for query in reversed(query_ast.queries):
@@ -239,7 +240,7 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         """
         if isinstance(expr, ir.Expr):
             context = self.dialect.make_context(params=params)
-            query_ast = self._build_ast(expr, context)
+            query_ast = self._compiler.to_ast(expr, context)
             if len(query_ast.queries) > 1:
                 raise Exception('Multi-query expression')
 
@@ -254,7 +255,3 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         cur.release()
 
         return '\n'.join(['Query:', util.indent(query, 2), '', *result])
-
-    def _build_ast(self, expr, context):
-        # Implement in clients
-        raise NotImplementedError(type(self).__name__)

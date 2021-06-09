@@ -5,7 +5,7 @@ import ibis.expr.operations as ops
 import ibis.util as util
 from ibis.backends.base.sql.compiler import (
     ExprTranslator,
-    QueryBuilder,
+    Compiler,
     QueryContext,
     Select,
     SelectBuilder,
@@ -66,17 +66,13 @@ class ClickhouseSelect(Select):
         return buf.getvalue()
 
 
-class ClickhouseQueryBuilder(QueryBuilder):
+class ClickhouseCompiler(Compiler):
     select_builder = ClickhouseSelectBuilder
     select_class = ClickhouseSelect
 
 
-build_ast = ClickhouseQueryBuilder.to_ast
-
-
 class ClickhouseQueryContext(QueryContext):
-    def _to_sql(self, expr, ctx):
-        return ClickhouseQueryBuilder.to_sql(expr, context=ctx)
+    pass
 
 
 class ClickhouseTableSetFormatter(TableSetFormatter):

@@ -1,7 +1,7 @@
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.compiler import (
     ExprTranslator,
-    QueryBuilder,
+    Compiler,
     QueryContext,
     Select,
     TableSetFormatter,
@@ -10,14 +10,6 @@ from ibis.backends.base.sql.registry import (
     binary_infix_ops,
     operation_registry,
 )
-
-
-def build_ast(expr, context=None):
-    from ibis.backends.impala import Backend
-
-    if context is None:
-        context = Backend().dialect.make_context()
-    return ImpalaQueryBuilder.to_ast(expr, context=context)
 
 
 class ImpalaSelect(Select):
@@ -37,7 +29,7 @@ class ImpalaSelect(Select):
         return ImpalaTableSetFormatter
 
 
-class ImpalaQueryBuilder(QueryBuilder):
+class ImpalaCompiler(Compiler):
     select_class = ImpalaSelect
 
 
@@ -53,8 +45,7 @@ class ImpalaTableSetFormatter(TableSetFormatter):
 
 
 class ImpalaQueryContext(QueryContext):
-    def _to_sql(self, expr, ctx):
-        return ImpalaQueryBuilder.to_sql(expr, context=ctx)
+    pass
 
 
 class ImpalaExprTranslator(ExprTranslator):

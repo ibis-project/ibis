@@ -27,7 +27,6 @@ class DaskExprTranslator:
 class Backend(BaseBackend):
     name = 'dask'
     kind = 'pandas'
-    builder = None
     translator = DaskExprTranslator
     database_class = DaskDatabase
     table_class = DaskTable

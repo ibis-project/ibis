@@ -1,5 +1,4 @@
 from ibis.backends.base import BaseBackend
-from ibis.backends.base.sql.alchemy import AlchemyQueryBuilder
 
 from .client import MySQLClient, MySQLDatabase, MySQLTable
 from .compiler import MySQLExprTranslator
@@ -8,7 +7,6 @@ from .compiler import MySQLExprTranslator
 class Backend(BaseBackend):
     name = 'mysql'
     kind = 'sqlalchemy'
-    builder = AlchemyQueryBuilder
     translator = MySQLExprTranslator
     database_class = MySQLDatabase
     table_class = MySQLTable

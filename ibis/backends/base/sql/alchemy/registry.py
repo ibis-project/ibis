@@ -13,7 +13,7 @@ import ibis.expr.window as W
 
 from .database import AlchemyTable
 from .geospatial import geospatial_supported
-from .query_builder import to_sqlalchemy
+from .query_builder import AlchemyCompiler
 
 
 def variance_reduction(func_name):
@@ -124,7 +124,7 @@ def _exists_subquery(t, expr):
     )
 
     sub_ctx = ctx.subcontext()
-    clause = to_sqlalchemy(filtered, sub_ctx, exists=True)
+    clause = AlchemyCompiler.to_sql(filtered, sub_ctx, exists=True)
 
     if isinstance(op, ops.NotExistsSubquery):
         clause = sa.not_(clause)

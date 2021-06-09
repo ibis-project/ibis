@@ -17,7 +17,9 @@ from ibis.backends.impala.tests.conftest import (  # noqa: E402, isort:skip
     ImpalaE2E,
 )
 
-from ibis.backends.impala.client import build_ast  # noqa: E402, isort:skip
+from ibis.backends.impala.compiler import (  # noqa: E402, isort:skip
+    ImpalaCompiler
+)
 
 
 pytestmark = pytest.mark.kudu
@@ -117,7 +119,7 @@ TBLPROPERTIES (
     def test_ctas_ddl(self):
         con = MockConnection()
 
-        select = build_ast(con.table('test1')).queries[0]
+        select = ImpalaCompiler.to_ast(con.table('test1')).queries[0]
         statement = ksupport.CTASKudu(
             'another_table',
             'kudu_name',

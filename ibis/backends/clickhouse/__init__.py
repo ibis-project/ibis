@@ -7,7 +7,7 @@ from .client import (
     ClickhouseDatabaseTable,
     ClickhouseTable,
 )
-from .compiler import ClickhouseExprTranslator, ClickhouseQueryBuilder
+from .compiler import ClickhouseExprTranslator
 
 try:
     import lz4  # noqa: F401
@@ -20,7 +20,6 @@ except ImportError:
 class Backend(BaseBackend):
     name = 'clickhouse'
     kind = 'sql'
-    builder = ClickhouseQueryBuilder
     translator = ClickhouseExprTranslator
     database_class = ClickhouseDatabase
     table_class = ClickhouseDatabaseTable

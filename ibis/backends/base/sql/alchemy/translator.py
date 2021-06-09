@@ -5,7 +5,6 @@ from ibis import util
 from ibis.backends.base.sql.compiler import ExprTranslator, QueryContext
 
 from .datatypes import ibis_type_to_sqla, to_sqla_type
-from .query_builder import to_sqlalchemy
 from .registry import fixed_arity, sqlalchemy_operation_registry
 
 
@@ -28,9 +27,6 @@ class AlchemyContext(QueryContext):
         return type(self)(
             dialect=self.dialect, parent=self, params=self.params
         )
-
-    def _to_sql(self, expr, ctx):
-        return to_sqlalchemy(expr, ctx)
 
     def _compile_subquery(self, expr):
         sub_ctx = self.subcontext()

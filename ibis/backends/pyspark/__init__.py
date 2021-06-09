@@ -8,7 +8,6 @@ from .compiler import PySparkExprTranslator, PySparkTable
 class Backend(BaseBackend):
     name = 'pyspark'
     kind = 'spark'
-    builder = None
     translator = PySparkExprTranslator
     database_class = SparkDatabase
     table_class = PySparkTable

@@ -25,9 +25,9 @@ import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy import (
     AlchemyContext,
     AlchemyDialect,
+    AlchemyCompiler,
     AlchemyExprTranslator,
     schema_from_table,
-    to_sqlalchemy,
 )
 from ibis.tests.expr.mocks import MockAlchemyConnection
 from ibis.tests.sql.test_compiler import ExprTestCases  # noqa: E402
@@ -624,7 +624,7 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
 
     def _compare_sqla(self, expr, sqla):
         context = AlchemyContext(dialect=AlchemyDialect())
-        result = to_sqlalchemy(expr, context)
+        result = AlchemyCompiler.to_sql(expr, context)
         assert str(result.compile()) == str(sqla.compile())
 
     def _to_sqla(self, table):

@@ -65,9 +65,9 @@ def test_version(backend, con):
     ],
 )
 def test_query_schema(backend, con, alltypes, expr_fn, expected):
-    if not hasattr(con, '_build_ast'):
+    if not hasattr(con, '_compiler'):
         pytest.skip(
-            '{} backend has no _build_ast method'.format(
+            '{} backend has no _compiler attribute'.format(
                 type(backend).__name__
             )
         )
@@ -75,7 +75,7 @@ def test_query_schema(backend, con, alltypes, expr_fn, expected):
     expr = expr_fn(alltypes)
 
     # we might need a public API for it
-    ast = con._build_ast(expr, backend.make_context())
+    ast = con._compiler.to_ast(expr, backend.make_context())
     schema = con.ast_schema(ast)
 
     # clickhouse columns has been defined as non-nullable
