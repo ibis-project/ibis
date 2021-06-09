@@ -58,7 +58,7 @@ class BaseBackend(abc.ABC):
         """
         Compile the expression.
         """
-        return self.client._compiler.to_sql(expr, params=params)
+        return self._compiler.to_sql(expr, params=params)
 
     def verify(self, expr, params=None):
         """

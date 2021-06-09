@@ -1,4 +1,4 @@
-from ibis.backends.impala import ImpalaCompiler
+from ibis.backends.impala.compiler import ImpalaCompiler
 from ibis.tests.expr.mocks import BaseMockConnection
 
 
