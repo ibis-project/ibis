@@ -564,7 +564,7 @@ class Compiler:
 
     @classmethod
     def make_context(cls, params=None):
-        return cls.context_class(params=params)
+        return cls.context_class(compiler=cls, params=params)
 
     @classmethod
     def to_ast(cls, expr, context=None):

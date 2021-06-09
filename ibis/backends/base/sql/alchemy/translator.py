@@ -25,7 +25,7 @@ class AlchemyContext(QueryContext):
 
     def subcontext(self):
         return type(self)(
-            dialect=self.dialect, parent=self, params=self.params
+            compiler=self.compiler, parent=self, params=self.params
         )
 
     def _compile_subquery(self, expr):

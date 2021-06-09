@@ -22,8 +22,9 @@ class QueryContext:
     """
 
     def __init__(
-        self, translator, indent=2, parent=None, memo=None, params=None
+        self, compiler, indent=2, parent=None, memo=None, params=None
     ):
+        self.compiler = compiler
         self._table_refs = {}
         self.extracted_subexprs = set()
         self.subquery_memo = {}
@@ -43,8 +44,7 @@ class QueryContext:
         return self._to_sql(expr, sub_ctx)
 
     def _to_sql(self, expr, ctx):
-        # FIXME this needs to call `Compiler.to_sql`, not clear how
-        raise NotImplementedError
+        return self.compiler.to_sql(expr, ctx)
 
     def collapse(self, queries):
         """Turn a sequence of queries into something executable.
@@ -137,7 +137,12 @@ class QueryContext:
         self.make_alias(expr)
 
     def subcontext(self):
-        return type(self)(indent=self.indent, parent=self, params=self.params)
+        return type(self)(
+            compiler=self.compiler,
+            indent=self.indent,
+            parent=self,
+            params=self.params,
+        )
 
     # Maybe temporary hacks for correlated / uncorrelated subqueries
 

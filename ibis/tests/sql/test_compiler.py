@@ -247,7 +247,7 @@ FROM alltypes"""
 
 
 def _get_query(expr):
-    ast = Compiler.to_ast(expr, QueryContext())
+    ast = Compiler.to_ast(expr, QueryContext(compiler=Compiler))
     return ast.queries[0]
 
 
