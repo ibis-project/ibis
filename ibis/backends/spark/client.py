@@ -235,7 +235,6 @@ class SparkClient(SQLClient):
     _compiler = SparkCompiler
 
     def __init__(self, backend, session):
-        self.dialect = backend.dialect
         self.database_class = backend.database_class
         self.table_class = backend.table_class
         self.table_expr_class = backend.table_expr_class

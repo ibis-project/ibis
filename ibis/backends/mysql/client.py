@@ -69,7 +69,6 @@ class MySQLClient(AlchemyClient):
         url=None,
         driver='pymysql',
     ):
-        self.dialect = backend.dialect
         self.database_class = backend.database_class
         self.table_class = backend.table_class
         if url is None:
