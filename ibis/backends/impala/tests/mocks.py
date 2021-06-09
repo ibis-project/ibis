@@ -1,6 +1,6 @@
 from ibis.backends.impala.compiler import ImpalaCompiler
-from ibis.tests.expr.mocks import BaseMockConnection
+from ibis.tests.expr.mocks import MockConnection
 
 
-class MockImpalaConnection(BaseMockConnection):
+class MockImpalaConnection(MockConnection):
     _compiler = ImpalaCompiler
