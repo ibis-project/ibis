@@ -16,12 +16,12 @@ from dask.base import DaskMethodsMixin
 from pandas.api.types import DatetimeTZDtype
 from pkg_resources import parse_version
 
-import ibis.client as client
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis.backends.base import Client, Database
 from ibis.backends.pandas.client import (
     PANDAS_DATE_TYPES,
     PANDAS_STRING_TYPES,
@@ -159,11 +159,11 @@ class DaskTable(ops.DatabaseTable):
     pass
 
 
-class DaskDatabase(client.Database):
+class DaskDatabase(Database):
     pass
 
 
-class DaskClient(client.Client):
+class DaskClient(Client):
     def __init__(self, backend, dictionary: Dict[str, dd.DataFrame]):
         self.dialect = backend.dialect
         self.database_class = backend.database_class

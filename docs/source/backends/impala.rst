@@ -79,7 +79,6 @@ Database methods
 
    ImpalaDatabase.create_table
    ImpalaDatabase.drop
-   ImpalaDatabase.namespace
    ImpalaDatabase.table
 
 Table methods

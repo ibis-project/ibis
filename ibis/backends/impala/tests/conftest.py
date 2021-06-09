@@ -26,7 +26,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
     returned_timestamp_unit = 's'
 
     @staticmethod
-    def connect(data_directory: Path) -> ibis.client.Client:
+    def connect(data_directory: Path):
         from ibis.backends.impala.tests.conftest import IbisTestEnv
 
         env = IbisTestEnv()

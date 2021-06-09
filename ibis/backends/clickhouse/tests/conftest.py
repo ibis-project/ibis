@@ -27,7 +27,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundHalfToEven):
     supports_floating_modulus = False
 
     @staticmethod
-    def connect(data_directory: Path) -> ibis.client.Client:
+    def connect(data_directory: Path):
         host = os.environ.get('IBIS_TEST_CLICKHOUSE_HOST', 'localhost')
         port = int(os.environ.get('IBIS_TEST_CLICKHOUSE_PORT', 9000))
         user = os.environ.get('IBIS_TEST_CLICKHOUSE_USER', 'default')

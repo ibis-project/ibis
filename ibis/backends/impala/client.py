@@ -19,6 +19,8 @@ import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
+from ibis.backends.base import Database
+from ibis.backends.base.sql import SQLClient
 from ibis.backends.base.sql.compiler import DDL, DML
 from ibis.backends.base.sql.ddl import (
     CTAS,
@@ -35,7 +37,6 @@ from ibis.backends.base.sql.ddl import (
     fully_qualified_re,
     is_fully_qualified,
 )
-from ibis.client import Database, DatabaseEntity, SQLClient
 from ibis.config import options
 from ibis.util import log
 
@@ -367,7 +368,7 @@ class ImpalaDatabaseTable(ops.DatabaseTable):
     pass
 
 
-class ImpalaTable(ir.TableExpr, DatabaseEntity):
+class ImpalaTable(ir.TableExpr):
 
     """
     References a physical table in the Impala-Hive metastore
@@ -1959,12 +1960,12 @@ class ImpalaClient(SQLClient):
 # ORM-ish usability layer
 
 
-class ScalarFunction(DatabaseEntity):
+class ScalarFunction:
     def drop(self):
         pass
 
 
-class AggregateFunction(DatabaseEntity):
+class AggregateFunction:
     def drop(self):
         pass
 

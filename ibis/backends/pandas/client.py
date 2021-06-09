@@ -14,12 +14,12 @@ from multipledispatch import Dispatcher
 from pandas.api.types import CategoricalDtype, DatetimeTZDtype
 from pkg_resources import parse_version
 
-import ibis.client as client
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis.backends.base import Client, Database
 
 from .core import execute_and_reset
 
@@ -404,7 +404,7 @@ class PandasTable(ops.DatabaseTable):
     pass
 
 
-class PandasClient(client.Client):
+class PandasClient(Client):
     def __init__(self, backend, dictionary):
         self.dialect = backend.dialect
         self.database_class = backend.database_class
@@ -517,5 +517,5 @@ class PandasClient(client.Client):
         return parse_version(pd.__version__)
 
 
-class PandasDatabase(client.Database):
+class PandasDatabase(Database):
     pass

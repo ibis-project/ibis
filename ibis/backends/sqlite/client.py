@@ -8,8 +8,8 @@ from typing import Optional
 import regex as re
 import sqlalchemy as sa
 
+from ibis.backends.base import Database
 from ibis.backends.base.sql.alchemy import AlchemyClient, AlchemyTable
-from ibis.client import Database
 
 
 class SQLiteTable(AlchemyTable):

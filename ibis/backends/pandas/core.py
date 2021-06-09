@@ -61,9 +61,9 @@ By default this function does nothing.
 -------------------
 
 Then, when an expression is ready to be evaluated we call
-:func:`~ibis.backends.pandas.core.execute` on the expressions arguments and then
-:func:`~ibis.backends.pandas.dispatch.execute_node` on the expression with its
-now-materialized arguments.
+:func:`~ibis.backends.pandas.core.execute` on the expressions arguments and
+then :func:`~ibis.backends.pandas.dispatch.execute_node` on the expression
+with its now-materialized arguments.
 
 4. ``post_execute``
 -------------------
@@ -120,7 +120,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.window as win
 import ibis.util
-from ibis.client import find_backends
+from ibis.backends.base import Client
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import canonicalize_context
 from ibis.expr.typing import TimeContext
@@ -149,7 +149,7 @@ def is_computable_input(arg):
     return False
 
 
-@is_computable_input.register(ibis.client.Client)
+@is_computable_input.register(Client)
 @is_computable_input.register(ir.Expr)
 @is_computable_input.register(dt.DataType)
 @is_computable_input.register(type(None))
@@ -202,7 +202,7 @@ def execute_with_scope(
     # computing anything *and* before associating leaf nodes with data. This
     # allows clients to provide their own data for each leaf.
     if clients is None:
-        clients = list(find_backends(expr))
+        clients = expr._find_backends()
 
     if aggcontext is None:
         aggcontext = agg_ctx.Summarize()
@@ -256,7 +256,7 @@ def execute_until_in_scope(
     scope : Scope
     timecontext : Optional[TimeContext]
     aggcontext : Optional[AggregationContext]
-    clients : List[ibis.client.Client]
+    clients : List[ibis.backends.base.Client]
     kwargs : Mapping
     """
     # these should never be None
@@ -447,9 +447,9 @@ def execute_and_reset(
 
     Notes
     -----
-    The difference between this function and :func:`~ibis.backends.pandas.core.execute`
-    is that this function resets the index of the result, if the result has
-    an index.
+    The difference between this function and
+    :func:`~ibis.backends.pandas.core.execute` is that this function resets
+    the index of the result, if the result has an index.
 
     Parameters
     ----------
@@ -518,7 +518,7 @@ are going to be used in executeion and passes these attributes to children
 nodes.
 
 Param:
-clients: List[ibis.client.Client]
+clients: List[ibis.backends.base.Client]
     backends for execution
 timecontext : Optional[TimeContext]
     begin and end time context needed for execution

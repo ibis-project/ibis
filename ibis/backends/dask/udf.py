@@ -5,10 +5,9 @@ import dask.dataframe.groupby as ddgb
 import dask.delayed
 import pandas
 
-import ibis.client
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.udf.vectorized
+from ibis.backends.base import Client
 from ibis.backends.pandas.udf import nullable  # noqa
 
 from .dispatch import execute_node, pre_execute
@@ -20,7 +19,7 @@ from .execution.util import (
 
 
 @pre_execute.register(ops.ElementWiseVectorizedUDF)
-@pre_execute.register(ops.ElementWiseVectorizedUDF, ibis.client.Client)
+@pre_execute.register(ops.ElementWiseVectorizedUDF, Client)
 def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
     """Register execution rules for elementwise UDFs.
     """
@@ -89,9 +88,9 @@ def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
 
 
 @pre_execute.register(ops.AnalyticVectorizedUDF)
-@pre_execute.register(ops.AnalyticVectorizedUDF, ibis.client.Client)
+@pre_execute.register(ops.AnalyticVectorizedUDF, Client)
 @pre_execute.register(ops.ReductionVectorizedUDF)
-@pre_execute.register(ops.ReductionVectorizedUDF, ibis.client.Client)
+@pre_execute.register(ops.ReductionVectorizedUDF, Client)
 def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
     input_type = op.input_type
     nargs = len(input_type)
@@ -167,7 +166,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
             meta_value = [dd.utils.make_meta(safe_scalar_type(out_type))]
         else:
             meta_index = pandas.Index([], name=groupings[0])
-            meta_value = list()
+            meta_value = []
 
         return grouped_df.apply(
             apply_wrapper,

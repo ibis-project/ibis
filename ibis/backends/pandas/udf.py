@@ -13,10 +13,10 @@ import numpy as np
 import pandas as pd
 from pandas.core.groupby import SeriesGroupBy
 
-import ibis.client
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.udf.vectorized
+from ibis.backends.base import Client
 
 from .aggcontext import Summarize, Transform
 from .core import date_types, time_types, timedelta_types, timestamp_types
@@ -152,7 +152,7 @@ class udf:
 
 
 @pre_execute.register(ops.ElementWiseVectorizedUDF)
-@pre_execute.register(ops.ElementWiseVectorizedUDF, ibis.client.Client)
+@pre_execute.register(ops.ElementWiseVectorizedUDF, Client)
 def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
     """Register execution rules for elementwise UDFs.
     """
@@ -206,9 +206,9 @@ def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
 
 
 @pre_execute.register(ops.AnalyticVectorizedUDF)
-@pre_execute.register(ops.AnalyticVectorizedUDF, ibis.client.Client)
+@pre_execute.register(ops.AnalyticVectorizedUDF, Client)
 @pre_execute.register(ops.ReductionVectorizedUDF)
-@pre_execute.register(ops.ReductionVectorizedUDF, ibis.client.Client)
+@pre_execute.register(ops.ReductionVectorizedUDF, Client)
 def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
     input_type = op.input_type
     nargs = len(input_type)

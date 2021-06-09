@@ -16,7 +16,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
     returned_timestamp_unit = 's'
 
     @staticmethod
-    def connect(data_directory: Path) -> ibis.client.Client:
+    def connect(data_directory: Path):
         path = Path(
             os.environ.get(
                 'IBIS_TEST_SQLITE_DATABASE', data_directory / 'ibis_testing.db'

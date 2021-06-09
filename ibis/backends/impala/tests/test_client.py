@@ -268,20 +268,6 @@ def test_database_default_current_database(con):
     assert db.name == con.current_database
 
 
-def test_namespace(db):
-    ns = db.namespace('tpch_')
-
-    assert 'tpch_' in repr(ns)
-
-    table = ns.lineitem
-    expected = db.tpch_lineitem
-    attrs = dir(ns)
-    assert 'lineitem' in attrs
-    assert 'functional_alltypes' not in attrs
-
-    assert_equal(table, expected)
-
-
 def test_close_drops_temp_tables(con, test_data_dir):
     from posixpath import join as pjoin
 

@@ -47,7 +47,7 @@ class TestConf(BackendTest, RoundHalfToEven):
     returned_timestamp_unit = 's'
 
     @staticmethod
-    def connect(data_directory: Path) -> ibis.client.Client:
+    def connect(data_directory: Path):
         user = os.environ.get(
             'IBIS_TEST_POSTGRES_USER', os.environ.get('PGUSER', 'postgres')
         )
