@@ -492,7 +492,7 @@ class Union(SetOp):
 
 class Intersection(SetOp):
     def _get_keyword_list(self):
-        return ["INTERSECT" for _ in range(len(self.tables) - 1)]
+        return ["INTERSECT"] * (len(self.tables) - 1)
 
 
 class Difference(SetOp):
@@ -519,8 +519,8 @@ def flatten_union(table: ir.TableExpr):
     return [table]
 
 
-def flatten_intersection(table: ir.TableExpr):
-    """Extract all intersection queries from `table`.
+def flatten(table: ir.TableExpr):
+    """Extract all intersection or difference queries from `table`.
 
     Parameters
     ----------
@@ -531,34 +531,13 @@ def flatten_intersection(table: ir.TableExpr):
     Iterable[Union[TableExpr]]
     """
     op = table.op()
-    if isinstance(op, ops.Intersection):
-        return toolz.concatv(flatten_union(op.left), flatten_union(op.right))
-    return [table]
-
-
-def flatten_difference(table: ir.TableExpr):
-    """Extract all intersection queries from `table`.
-
-    Parameters
-    ----------
-    table : TableExpr
-
-    Returns
-    -------
-    Iterable[Union[TableExpr]]
-    """
-    op = table.op()
-    if isinstance(op, ops.Difference):
-        return toolz.concatv(flatten_union(op.left), flatten_union(op.right))
-    return [table]
+    return list(toolz.concatv(flatten_union(op.left), flatten_union(op.right)))
 
 
 class QueryBuilder:
     select_builder = SelectBuilder
     select_class = Select
     union_class = Union
-    intersect_class = Intersection
-    difference_class = Difference
 
     @classmethod
     def to_ast(cls, expr, context):
@@ -573,9 +552,9 @@ class QueryBuilder:
         if isinstance(op, ops.Union):
             query = cls._make_union(cls.union_class, expr, context)
         elif isinstance(op, ops.Intersection):
-            query = cls._make_intersect(cls.intersect_class, expr, context)
+            query = Intersection(flatten(expr), expr, context=context)
         elif isinstance(op, ops.Difference):
-            query = cls._make_difference(cls.difference_class, expr, context)
+            query = Difference(flatten(expr), expr, context=context)
         else:
             query = cls.select_builder().to_select(
                 select_class=cls.select_class, expr=expr, context=context,
@@ -620,15 +599,3 @@ class QueryBuilder:
         return union_class(
             table_exprs, expr, distincts=distincts, context=context
         )
-
-    @staticmethod
-    def _make_intersect(intersect_class, expr, context):
-        # flatten intersections so that we can codegen them all at once
-        table_exprs = list(flatten_intersection(expr))
-        return intersect_class(table_exprs, expr, context=context)
-
-    @staticmethod
-    def _make_difference(difference_class, expr, context):
-        # flatten differences so that we can codegen them all at once
-        table_exprs = list(flatten_difference(expr))
-        return difference_class(table_exprs, expr, context=context)
