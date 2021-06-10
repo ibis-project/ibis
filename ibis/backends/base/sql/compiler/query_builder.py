@@ -545,8 +545,9 @@ class Compiler:
         return cls.context_class(compiler=cls, params=params)
 
     @classmethod
-    def to_ast(cls, expr, context):
-        assert context is not None
+    def to_ast(cls, expr, context=None):
+        if context is None:
+            context = cls.make_context()
 
         op = expr.op()
 
