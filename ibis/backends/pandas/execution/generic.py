@@ -112,7 +112,7 @@ def execute_cast_series_array(op, data, type, **kwargs):
             '(e.g., number, string, or timestamp)'
         )
     return data.map(
-        lambda array, numpy_type=numpy_type: list(map(numpy_type, array))
+        lambda array, numpy_type=numpy_type: array.astype(numpy_type)
     )
 
 
