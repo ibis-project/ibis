@@ -207,8 +207,11 @@ class SelectBuilder:
     relevant query unit aliases to be used when actually generating SQL.
     """
 
-    def to_select(self, select_class, expr, context, translator):
+    def to_select(
+        self, select_class, table_set_formatter, expr, context, translator
+    ):
         self.select_class = select_class
+        self.table_set_formatter = table_set_formatter
         self.expr = expr
         self.context = context
         self.translator = translator
@@ -401,6 +404,8 @@ class SelectBuilder:
             self.table_set,
             self.select_set,
             translator=self.translator,
+            table_set_formatter=self.table_set_formatter,
+            context=self.context,
             subqueries=self.subqueries,
             where=self.filters,
             group_by=self.group_by,
@@ -410,7 +415,6 @@ class SelectBuilder:
             distinct=self.distinct,
             result_handler=self.result_handler,
             parent_expr=self.query_expr,
-            context=self.context,
         )
 
     def _populate_context(self):

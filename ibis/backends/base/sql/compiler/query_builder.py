@@ -190,6 +190,7 @@ class Select(DML):
         table_set,
         select_set,
         translator,
+        table_set_formatter,
         context,
         subqueries=None,
         where=None,
@@ -203,6 +204,7 @@ class Select(DML):
         parent_expr=None,
     ):
         self.translator = translator
+        self.table_set_formatter = table_set_formatter
         self.context = context
 
         self.select_set = select_set
@@ -391,10 +393,6 @@ class Select(DML):
 
         return '{}{}'.format(select_key, buf.getvalue())
 
-    @property
-    def table_set_formatter(self):
-        return TableSetFormatter
-
     def format_table_set(self):
         if self.table_set is None:
             return None
@@ -538,6 +536,7 @@ class Compiler:
     translator = ExprTranslator
     context_class = QueryContext
     select_builder = SelectBuilder
+    table_set_formatter = TableSetFormatter
     select_class = Select
     union_class = Union
 
@@ -564,6 +563,7 @@ class Compiler:
         else:
             query = cls.select_builder().to_select(
                 select_class=cls.select_class,
+                table_set_formatter=cls.table_set_formatter,
                 expr=expr,
                 context=context,
                 translator=cls.translator,
