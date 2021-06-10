@@ -4,8 +4,10 @@ import unittest
 import pytest
 
 import ibis
-from ibis.backends.impala.tests.mocks import MockImpalaConnection, to_sql
+from ibis.backends.impala.tests.mocks import MockImpalaConnection
 from ibis.tests.sql.test_compiler import ExprTestCases
+
+from ..compiler import ImpalaCompiler
 
 pytestmark = pytest.mark.impala
 
@@ -17,7 +19,7 @@ class TestImpalaSQL(unittest.TestCase):
         table = ibis.table(zip(['foo', 'bar', 'baz'], types), name='table')
         relabeled = table.relabel({'foo': 'one', 'baz': 'three'})
 
-        result = to_sql(relabeled)
+        result = ImpalaCompiler.to_sql(relabeled)
         expected = """\
 SELECT `foo` AS `one`, `bar`, `baz` AS `three`
 FROM `table`"""
@@ -41,18 +43,18 @@ class TestSelectSQL(unittest.TestCase, ExprTestCases):
         expected = """SELECT t0.*
 FROM star1 t0
   CROSS JOIN star2 t1"""
-        result2 = to_sql(joined2)
+        result2 = ImpalaCompiler.to_sql(joined2)
         assert result2 == expected
 
         for jtype in ['inner_join', 'left_join', 'outer_join']:
             joined = getattr(t1, jtype)(t2)[[t1]]
 
-            result = to_sql(joined)
+            result = ImpalaCompiler.to_sql(joined)
             assert result == expected
 
     def test_limit_cte_extract(self):
         case = self._case_limit_cte_extract()
-        result = to_sql(case)
+        result = ImpalaCompiler.to_sql(case)
 
         expected = """\
 WITH t0 AS (
@@ -74,7 +76,7 @@ def test_nested_join_base():
         max_count=lambda x: x['count'].max()
     )
     result = max_counts.left_join(counts, 'uuid').projection([counts])
-    compiled_result = to_sql(result)
+    compiled_result = ImpalaCompiler.to_sql(result)
 
     expected = """\
 WITH t0 AS (
@@ -136,7 +138,7 @@ FROM (
     GROUP BY 1
   ) t2
     ON t1.`uuid` = t2.`uuid`"""
-    compiled_result = to_sql(result)
+    compiled_result = ImpalaCompiler.to_sql(result)
     assert compiled_result == expected
 
 
@@ -198,7 +200,7 @@ WHERE t2.`movieid` IN (
           (extract(t1.`datetime`, 'year') < 2009)
   ) t4
 )"""
-    compiled_result = to_sql(result)
+    compiled_result = ImpalaCompiler.to_sql(result)
     assert compiled_result == expected
 
 
@@ -212,7 +214,7 @@ def test_logically_negate_complex_boolean_expr():
         return t.a.isin(['foo']) & t.c.notnull()
 
     expr = f(t)
-    result = to_sql(~expr)
+    result = ImpalaCompiler.to_sql(~expr)
     expected = """\
 SELECT NOT (`a` IN ('foo') AND (`c` IS NOT NULL)) AS `tmp`
 FROM t"""
@@ -232,7 +234,7 @@ FROM t t0
   INNER JOIN t t1
     ON (t0.`a` = t1.`a`) AND
        ((t0.`a` != t1.`b`) OR (t0.`b` != t1.`a`))"""
-    assert to_sql(expr) == expected
+    assert ImpalaCompiler.to_sql(expr) == expected
 
 
 def test_join_with_nested_xor_condition():
@@ -248,7 +250,7 @@ FROM t t0
   INNER JOIN t t1
     ON (t0.`a` = t1.`a`) AND
        (((t0.`a` != t1.`b`) OR (t0.`b` != t1.`a`)) AND NOT ((t0.`a` != t1.`b`) AND (t0.`b` != t1.`a`)))"""  # noqa: E501
-    assert to_sql(expr) == expected
+    assert ImpalaCompiler.to_sql(expr) == expected
 
 
 @pytest.mark.parametrize(
@@ -259,7 +261,7 @@ def test_is_parens(method, sql):
     func = operator.methodcaller(method)
     expr = t[func(t.a) == func(t.b)]
 
-    result = to_sql(expr)
+    result = ImpalaCompiler.to_sql(expr)
     expected = """\
 SELECT *
 FROM `table`
@@ -273,7 +275,7 @@ def test_is_parens_identical_to():
     t = ibis.table([('a', 'string'), ('b', 'string')], 'table')
     expr = t[t.a.identical_to(None) == t.b.identical_to(None)]
 
-    result = to_sql(expr)
+    result = ImpalaCompiler.to_sql(expr)
     expected = """\
 SELECT *
 FROM `table`
@@ -305,7 +307,7 @@ def test_join_aliasing():
     )
     joined = agg.join(test5, agg.d == test5.d)[agg, test5.total]
     result = joined
-    result = to_sql(result)
+    result = ImpalaCompiler.to_sql(result)
     expected = """\
 WITH t0 AS (
   SELECT *, `a` + 20 AS `d`
@@ -348,7 +350,7 @@ def test_multiple_filters():
     t = ibis.table([('a', 'int64'), ('b', 'string')], name='t0')
     filt = t[t.a < 100]
     expr = filt[filt.a == filt.a.max()]
-    result = to_sql(expr)
+    result = ImpalaCompiler.to_sql(expr)
     expected = """\
 SELECT *
 FROM (
@@ -369,7 +371,7 @@ def test_multiple_filters2():
     filt = t[t.a < 100]
     expr = filt[filt.a == filt.a.max()]
     expr = expr[expr.b == 'a']
-    result = to_sql(expr)
+    result = ImpalaCompiler.to_sql(expr)
     expected = """\
 SELECT *
 FROM (

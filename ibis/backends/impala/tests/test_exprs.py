@@ -10,7 +10,6 @@ import ibis
 import ibis.expr.api as api
 import ibis.expr.types as ir
 from ibis import literal as L
-from ibis.backends.impala.tests.mocks import to_sql
 from ibis.common.exceptions import RelationError
 from ibis.expr.datatypes import Category
 from ibis.tests.expr.mocks import MockConnection
@@ -235,7 +234,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
             self.table.i.day().name('day'),
         ]
 
-        result = to_sql(expr)
+        result = ImpalaCompiler.to_sql(expr)
         expected = """SELECT extract(`i`, 'year') AS `year`, extract(`i`, 'month') AS `month`,
        extract(`i`, 'day') AS `day`
 FROM alltypes"""
@@ -542,7 +541,7 @@ END"""
     def test_identical_to(self):
         t = self.con.table('functional_alltypes')
         expr = t.tinyint_col.identical_to(t.double_col)
-        result = to_sql(expr)
+        result = ImpalaCompiler.to_sql(expr)
         expected = """\
 SELECT `tinyint_col` IS NOT DISTINCT FROM `double_col` AS `tmp`
 FROM functional_alltypes"""
@@ -550,7 +549,7 @@ FROM functional_alltypes"""
 
     def test_identical_to_special_case(self):
         expr = ibis.NA.cast('int64').identical_to(ibis.NA.cast('int64'))
-        result = to_sql(expr)
+        result = ImpalaCompiler.to_sql(expr)
         assert result == 'SELECT TRUE AS `tmp`'
 
 
@@ -741,7 +740,7 @@ FROM (
   GROUP BY 1
 ) t0"""
 
-        result = to_sql(expr)
+        result = ImpalaCompiler.to_sql(expr)
 
         assert result == expected
 
@@ -786,14 +785,14 @@ class TestInNotIn(unittest.TestCase, ExprSQLTest):
         values_formatted = tuple(set(values))
 
         filtered = self.table[self.table.g.isin(values)]
-        result = to_sql(filtered)
+        result = ImpalaCompiler.to_sql(filtered)
         expected = """SELECT *
 FROM alltypes
 WHERE `g` IN {}"""
         assert result == expected.format(values_formatted)
 
         filtered = self.table[self.table.g.notin(values)]
-        result = to_sql(filtered)
+        result = ImpalaCompiler.to_sql(filtered)
         expected = """SELECT *
 FROM alltypes
 WHERE `g` NOT IN {}"""
@@ -1180,7 +1179,7 @@ def test_builtins_1(con, alltypes):
 
 
 def _check_impala_output_types_match(con, table):
-    query = to_sql(table)
+    query = ImpalaCompiler.to_sql(table)
     t = con.sql(query)
 
     def _clean_type(x):
@@ -1218,7 +1217,7 @@ def _check_impala_output_types_match(con, table):
 )
 def test_int_builtins(con, expr, expected):
     result = con.execute(expr)
-    assert result == expected, to_sql(expr)
+    assert result == expected, ImpalaCompiler.to_sql(expr)
 
 
 def test_column_types(alltypes):
@@ -1270,7 +1269,7 @@ def test_column_types(alltypes):
 )
 def test_timestamp_builtins(con, expr, expected):
     result = con.execute(expr)
-    assert result == expected, to_sql(expr)
+    assert result == expected, ImpalaCompiler.to_sql(expr)
 
 
 @pytest.mark.parametrize(
@@ -1289,7 +1288,7 @@ def test_timestamp_builtins(con, expr, expected):
 )
 def test_decimal_builtins(con, expr, expected):
     result = con.execute(expr)
-    assert result == expected, to_sql(expr)
+    assert result == expected, ImpalaCompiler.to_sql(expr)
 
 
 @pytest.mark.parametrize(
