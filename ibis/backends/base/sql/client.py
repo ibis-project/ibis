@@ -217,7 +217,7 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         plan : string
         """
         if isinstance(expr, ir.Expr):
-            context = self._compile.make_context(params=params)
+            context = self._compiler.make_context(params=params)
             query_ast = self._compiler.to_ast(expr, context)
             if len(query_ast.queries) > 1:
                 raise Exception('Multi-query expression')

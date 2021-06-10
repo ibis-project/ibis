@@ -327,7 +327,9 @@ class AlchemyCompiler(Compiler):
     union_class = AlchemyUnion
 
     @classmethod
-    def to_sql(cls, expr, context, exists=False):
+    def to_sql(cls, expr, context=None, params=None, exists=False):
+        if context is None:
+            context = cls.make_context(params=params)
         query = cls.to_ast(expr, context).queries[0]
         if exists:
             query.exists = True
