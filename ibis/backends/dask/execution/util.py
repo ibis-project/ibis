@@ -125,8 +125,13 @@ def coerce_to_output(
             out_dtype = _pandas_dtype_from_dd_scalar(result)
             out_len = 1 if index is None else len(index)
             meta = make_meta_series(dtype=out_dtype, name=result_name)
+            # Specify `divisions` so that the created Dask object has
+            # known divisions (to be concatenatable with Dask objects
+            # created using `dd.from_pandas`)
             series = dd.from_delayed(
-                _wrap_dd_scalar(result, result_name, out_len), meta=meta,
+                _wrap_dd_scalar(result, result_name, out_len),
+                meta=meta,
+                divisions=(0, out_len - 1),
             )
 
             return series
