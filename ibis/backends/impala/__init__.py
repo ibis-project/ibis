@@ -17,6 +17,7 @@ from .udf import *  # noqa: F401,F403
 class Backend(BaseBackend):
     name = 'impala'
     kind = 'sql'
+    client = ImpalaClient
     database_class = ImpalaDatabase
     table_class = ImpalaDatabaseTable
     table_expr_class = ImpalaTable

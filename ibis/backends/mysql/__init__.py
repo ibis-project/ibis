@@ -1,13 +1,12 @@
 from ibis.backends.base import BaseBackend
 
 from .client import MySQLClient, MySQLDatabase, MySQLTable
-from .compiler import MySQLExprTranslator
 
 
 class Backend(BaseBackend):
     name = 'mysql'
     kind = 'sqlalchemy'
-    translator = MySQLExprTranslator
+    client = MySQLClient
     database_class = MySQLDatabase
     table_class = MySQLTable
 

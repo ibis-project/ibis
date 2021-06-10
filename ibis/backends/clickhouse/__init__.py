@@ -19,6 +19,7 @@ except ImportError:
 class Backend(BaseBackend):
     name = 'clickhouse'
     kind = 'sql'
+    client = ClickhouseClient
     database_class = ClickhouseDatabase
     table_class = ClickhouseDatabaseTable
     table_expr_class = ClickhouseTable

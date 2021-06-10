@@ -2,13 +2,12 @@
 from ibis.backends.base import BaseBackend
 
 from .client import PostgreSQLClient, PostgreSQLDatabase, PostgreSQLTable
-from .compiler import PostgreSQLExprTranslator
 
 
 class Backend(BaseBackend):
     name = 'postgres'
     kind = 'sqlalchemy'
-    translator = PostgreSQLExprTranslator
+    client = PostgreSQLClient
     database_class = PostgreSQLDatabase
     table_class = PostgreSQLTable
 

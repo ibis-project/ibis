@@ -8,6 +8,7 @@ from .udf import udf  # noqa: F401
 class Backend(BaseBackend):
     name = 'spark'
     kind = 'spark'
+    client = SparkClient
     database_class = SparkDatabase
     table_class = SparkDatabaseTable
     table_expr_class = SparkTable
