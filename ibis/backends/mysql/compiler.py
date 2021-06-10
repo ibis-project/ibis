@@ -1,7 +1,10 @@
 import sqlalchemy.dialects.mysql as mysql
 
 import ibis.expr.datatypes as dt
-from ibis.backends.base.sql.alchemy import AlchemyExprTranslator
+from ibis.backends.base.sql.alchemy import (
+    AlchemyCompiler,
+    AlchemyExprTranslator,
+)
 
 from .registry import operation_registry
 
@@ -28,3 +31,7 @@ class MySQLExprTranslator(AlchemyExprTranslator):
 
 
 rewrites = MySQLExprTranslator.rewrites
+
+
+class MySQLCompiler(AlchemyCompiler):
+    translator = MySQLExprTranslator

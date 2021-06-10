@@ -545,7 +545,9 @@ class Compiler:
         return cls.context_class(compiler=cls, params=params)
 
     @classmethod
-    def to_ast(cls, expr, context=None):
+    def to_ast(cls, expr, context):
+        assert context is not None
+
         op = expr.op()
 
         # collect setup and teardown queries
@@ -577,7 +579,7 @@ class Compiler:
         )
 
     @classmethod
-    def to_ast_ensure_limit(cls, expr, limit, params=None):
+    def to_ast_ensure_limit(cls, expr, limit=None, params=None):
         context = cls.make_context(params=params)
         query_ast = cls.to_ast(expr, context)
 

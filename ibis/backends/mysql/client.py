@@ -14,6 +14,8 @@ from ibis.backends.base.sql.alchemy import (
     AlchemyTable,
 )
 
+from .compiler import MySQLCompiler
+
 # TODO(kszucs): unsigned integers
 
 
@@ -57,6 +59,8 @@ class MySQLClient(AlchemyClient):
     ----------
     con : sqlalchemy.engine.Engine
     """
+
+    _compiler = MySQLCompiler
 
     def __init__(
         self,

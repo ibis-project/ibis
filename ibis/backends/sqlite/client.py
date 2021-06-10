@@ -8,6 +8,7 @@ from ibis.backends.base import Database
 from ibis.backends.base.sql.alchemy import AlchemyClient, AlchemyTable
 
 from . import udf
+from .compiler import SQLiteCompiler
 
 
 class SQLiteTable(AlchemyTable):
@@ -20,6 +21,8 @@ class SQLiteDatabase(Database):
 
 class SQLiteClient(AlchemyClient):
     """The Ibis SQLite client class."""
+
+    _compiler = SQLiteCompiler
 
     def __init__(self, backend, path=None, create=False):
         super().__init__(sa.create_engine("sqlite://"))

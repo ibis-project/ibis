@@ -2,7 +2,10 @@ import sqlalchemy.dialects.postgresql as pg
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.alchemy import AlchemyExprTranslator
+from ibis.backends.base.sql.alchemy import (
+    AlchemyCompiler,
+    AlchemyExprTranslator,
+)
 
 from .registry import operation_registry
 
@@ -31,3 +34,7 @@ rewrites = PostgreSQLExprTranslator.rewrites
 @rewrites(ops.NotAll)
 def _any_all_no_op(expr):
     return expr
+
+
+class PostgreSQLCompiler(AlchemyCompiler):
+    translator = PostgreSQLExprTranslator

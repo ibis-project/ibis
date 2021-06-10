@@ -13,6 +13,8 @@ from ibis.backends.base.sql.alchemy import (
 )
 from ibis.backends.postgres import udf
 
+from .compiler import PostgreSQLCompiler
+
 
 class PostgreSQLTable(AlchemyTable):
     pass
@@ -34,6 +36,8 @@ class PostgreSQLClient(AlchemyClient):
     ----------
     con : sqlalchemy.engine.Engine
     """
+
+    _compiler = PostgreSQLCompiler
 
     def __init__(
         self,
