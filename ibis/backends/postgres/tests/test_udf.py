@@ -6,7 +6,7 @@ import pytest
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.backends.postgres.udf.api import PostgresUDFError, existing_udf, udf
+from ibis.backends.postgres.udf import PostgresUDFError, existing_udf, udf
 
 # mark test module as postgresql (for ability to easily exclude,
 # e.g. in conda build tests)
