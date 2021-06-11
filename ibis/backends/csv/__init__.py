@@ -6,7 +6,6 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis.backends.base import BaseBackend
 from ibis.backends.base.file import FileClient
-from ibis.backends.pandas import PandasExprTranslator
 from ibis.backends.pandas.core import execute, execute_node, pre_execute
 from ibis.backends.pandas.execution.selection import physical_tables
 from ibis.expr.scope import Scope
@@ -111,7 +110,6 @@ class Backend(BaseBackend):
     kind = 'pandas'
     extension = 'csv'
     table_class = CSVTable
-    translator = PandasExprTranslator
 
     def connect(self, path):
         """Create a CSVClient for use with Ibis
