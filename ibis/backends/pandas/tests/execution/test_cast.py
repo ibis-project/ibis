@@ -49,7 +49,7 @@ def test_cast_string(t, df, from_, to, expected):
 @pytest.mark.parametrize('from_', ['array_of_int64', 'array_of_float64'])
 @pytest.mark.parametrize(
     ('to', 'expected'),
-    [('array<double>', 'float64'), ('array<int64>', 'int64')],
+    [('array<double>', 'float64'), ('array<int32>', 'int32')],
 )
 def test_cast_array(t, df, from_, to, expected):
     c = t[from_].cast(to)
