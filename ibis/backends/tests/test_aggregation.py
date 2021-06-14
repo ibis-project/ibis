@@ -349,3 +349,35 @@ def test_aggregate_list_like(backend, alltypes, df, agg_fn):
     expected = pd.DataFrame({'result_col': [agg_fn(df.double_col)]})
 
     backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.xfail_unsupported
+def test_aggregate_mixed(backend, alltypes, df):
+    """Tests .aggregate() with multiple aggregations with mixed result types.
+
+    (In particular, one aggregation that results in an array, and other
+    aggregation(s) that result in a non-array)
+    """
+
+    @reduction(input_type=[dt.double], output_type=dt.double)
+    def sum_udf(v):
+        return np.sum(v)
+
+    @reduction(input_type=[dt.double], output_type=dt.Array(dt.double))
+    def collect_udf(v):
+        return np.array(v)
+
+    expr = alltypes.aggregate(
+        sum_col=sum_udf(alltypes.double_col),
+        collect_udf=collect_udf(alltypes.double_col),
+    )
+    result = expr.execute()
+
+    expected = pd.DataFrame(
+        {
+            'sum_col': [sum_udf.func(df.double_col)],
+            'collect_udf': [collect_udf.func(df.double_col)],
+        }
+    )
+
+    backend.assert_frame_equal(result, expected, check_like=True)
