@@ -2910,7 +2910,7 @@ class ArrayColumn(ValueOp):
     cols = Arg(rlz.list_of(rlz.column(rlz.any), min_length=1))
 
     def _validate(self):
-        if len(set([col.type() for col in self.cols])) > 1:
+        if len({col.type() for col in self.cols}) > 1:
             raise com.IbisTypeError(
                 f'The types of all input columns must match exactly in a '
                 f'{type(self).__name__} operation.'

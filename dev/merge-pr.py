@@ -64,11 +64,11 @@ def merge_pr(
         "{GITHUB_API_BASE}/pulls/{pr_num:d}/merge".format(
             GITHUB_API_BASE=GITHUB_API_BASE, pr_num=pr_num
         ),
-        json=dict(
-            commit_title=commit_title,
-            commit_message=commit_message,
-            merge_method=merge_method,
-        ),
+        json={
+            'commit_title': commit_title,
+            'commit_message': commit_message,
+            'merge_method': merge_method,
+        },
         auth=(github_user, password),
     )
     status_code = resp.status_code
