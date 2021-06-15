@@ -37,7 +37,7 @@ class PostgreSQLClient(AlchemyClient):
     con : sqlalchemy.engine.Engine
     """
 
-    _compiler = PostgreSQLCompiler
+    compiler = PostgreSQLCompiler
 
     def __init__(
         self,

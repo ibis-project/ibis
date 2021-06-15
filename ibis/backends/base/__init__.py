@@ -58,7 +58,7 @@ class BaseBackend(abc.ABC):
         """
         Compile the expression.
         """
-        return self.client._compiler.to_sql(expr, params=params)
+        return self.client.compiler.to_sql(expr, params=params)
 
     def verify(self, expr, params=None):
         """
@@ -87,13 +87,13 @@ class BaseBackend(abc.ABC):
         ... def _null_literal(translator, expression):
         ...     return 'NULL'
         """
-        if not hasattr(self.client, '_compiler'):
+        if not hasattr(self.client, 'compiler'):
             raise RuntimeError(
                 'Only SQL-based backends support `add_operation`'
             )
 
         def decorator(translation_function):
-            self.client._compiler.translator.add_operation(
+            self.client.compiler.translator.add_operation(
                 operation, translation_function
             )
 

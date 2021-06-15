@@ -507,7 +507,7 @@ class ImpalaTable(ir.TableExpr):
         else:
             partition_schema = None
 
-        ast = self._client._compiler.to_ast(expr)
+        ast = self._client.compiler.to_ast(expr)
         select = ast.queries[0]
         statement = InsertSelect(
             self._qualified_name,
@@ -764,7 +764,7 @@ class ImpalaClient(SQLClient):
     An Ibis client interface that uses Impala
     """
 
-    _compiler = ImpalaCompiler
+    compiler = ImpalaCompiler
 
     def __init__(self, backend, con, hdfs_client=None, **params):
         import hdfs
@@ -1102,7 +1102,7 @@ class ImpalaClient(SQLClient):
         expr : ibis TableExpr
         database : string, default None
         """
-        ast = self._compiler.to_ast(expr)
+        ast = self.compiler.to_ast(expr)
         select = ast.queries[0]
         statement = CreateView(name, select, database=database)
         return self.raw_sql(statement)
@@ -1178,7 +1178,7 @@ class ImpalaClient(SQLClient):
                 writer, to_insert = write_temp_dataframe(self, obj)
             else:
                 to_insert = obj
-            ast = self._compiler.to_ast(to_insert)
+            ast = self.compiler.to_ast(to_insert)
             select = ast.queries[0]
 
             statement = CTAS(

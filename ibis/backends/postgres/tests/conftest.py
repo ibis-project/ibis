@@ -132,9 +132,9 @@ def intervals(con):
 def translate():
     from ibis.backends.postgres import PostgreSQLClient
 
-    context = PostgreSQLClient._compiler.make_context()
+    context = PostgreSQLClient.compiler.make_context()
     return lambda expr: (
-        PostgreSQLClient._compiler.translator(expr, context).get_result()
+        PostgreSQLClient.compiler.translator(expr, context).get_result()
     )
 
 

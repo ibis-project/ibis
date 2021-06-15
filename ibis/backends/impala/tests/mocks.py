@@ -3,4 +3,4 @@ from ibis.tests.expr.mocks import MockConnection
 
 
 class MockImpalaConnection(MockConnection):
-    _compiler = ImpalaCompiler
+    compiler = ImpalaCompiler

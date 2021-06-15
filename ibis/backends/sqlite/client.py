@@ -22,7 +22,7 @@ class SQLiteDatabase(Database):
 class SQLiteClient(AlchemyClient):
     """The Ibis SQLite client class."""
 
-    _compiler = SQLiteCompiler
+    compiler = SQLiteCompiler
 
     def __init__(self, backend, path=None, create=False):
         super().__init__(sa.create_engine("sqlite://"))

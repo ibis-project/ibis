@@ -58,9 +58,9 @@ def translate(dialect):
     from ibis.backends.sqlite import SQLiteClient
 
     client = SQLiteClient
-    context = client._compiler.make_context()
+    context = client.compiler.make_context()
     return lambda expr: str(
-        client._compiler.translator(expr, context)
+        client.compiler.translator(expr, context)
         .get_result()
         .compile(dialect=dialect, compile_kwargs={'literal_binds': True})
     )

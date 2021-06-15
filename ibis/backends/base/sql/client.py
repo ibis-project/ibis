@@ -14,7 +14,7 @@ from .compiler import Compiler
 class SQLClient(Client, metaclass=abc.ABCMeta):
     """Generic SQL client."""
 
-    _compiler = Compiler
+    compiler = Compiler
     table_class = ops.DatabaseTable
     table_expr_class = ir.TableExpr
 
@@ -135,7 +135,7 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         # feature than all this magic.
         # we don't want to pass `timecontext` to `raw_sql`
         kwargs.pop('timecontext', None)
-        query_ast = self._compiler.to_ast_ensure_limit(
+        query_ast = self.compiler.to_ast_ensure_limit(
             expr, limit, params=params
         )
         sql = query_ast.compile()
@@ -202,7 +202,7 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         -------
         output : single query or list of queries
         """
-        return self._compiler.to_ast_ensure_limit(
+        return self.compiler.to_ast_ensure_limit(
             expr, limit, params=params
         ).compile()
 
@@ -217,8 +217,8 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         plan : string
         """
         if isinstance(expr, ir.Expr):
-            context = self._compiler.make_context(params=params)
-            query_ast = self._compiler.to_ast(expr, context)
+            context = self.compiler.make_context(params=params)
+            query_ast = self.compiler.to_ast(expr, context)
             if len(query_ast.queries) > 1:
                 raise Exception('Multi-query expression')
 

@@ -90,7 +90,7 @@ def _maybe_to_geodataframe(df, schema):
 
 class AlchemyClient(SQLClient):
 
-    _compiler = AlchemyCompiler
+    compiler = AlchemyCompiler
     has_attachment = False
 
     def __init__(self, con: sa.engine.Engine) -> None:

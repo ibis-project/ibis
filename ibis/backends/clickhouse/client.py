@@ -173,7 +173,7 @@ class ClickhouseDatabaseTable(ops.DatabaseTable):
 class ClickhouseClient(SQLClient):
     """An Ibis client interface that uses Clickhouse"""
 
-    _compiler = ClickhouseCompiler
+    compiler = ClickhouseCompiler
 
     def __init__(self, backend, *args, **kwargs):
         self.database_class = backend.database_class

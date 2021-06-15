@@ -149,7 +149,7 @@ class BackendTest(abc.ABC):
     def make_context(
         self, params: Optional[Mapping[ir.ValueExpr, Any]] = None
     ):
-        return self.api.client._compiler.make_context(params=params)
+        return self.api.client.compiler.make_context(params=params)
 
 
 # TODO move to the spark/pyspark backends, #2565

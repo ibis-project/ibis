@@ -362,7 +362,7 @@ class MockConnection(SQLClient, metaclass=abc.ABCMeta):
         return Schema.from_tuples(self._tables[name])
 
     def execute(self, expr, limit=None, params=None, **kwargs):
-        ast = self._compiler.to_ast_ensure_limit(expr, limit, params=params)
+        ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         for query in ast.queries:
             self.executed_queries.append(query.compile())
         return None
@@ -374,13 +374,13 @@ class MockConnection(SQLClient, metaclass=abc.ABCMeta):
         params=None,
         timecontext: Optional[TimeContext] = None,
     ):
-        ast = self._compiler.to_ast_ensure_limit(expr, limit, params=params)
+        ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         queries = [q.compile() for q in ast.queries]
         return queries[0] if len(queries) == 1 else queries
 
 
 class MockAlchemyConnection(MockConnection):
-    _compiler = AlchemyCompiler
+    compiler = AlchemyCompiler
 
     def __init__(self):
         super().__init__()

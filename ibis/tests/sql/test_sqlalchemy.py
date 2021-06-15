@@ -77,7 +77,7 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
                 assert result.name == expected.name
 
     def _translate(self, expr, named=False):
-        context = AlchemyContext(compiler=self.con._compiler)
+        context = AlchemyContext(compiler=self.con.compiler)
         translator = AlchemyExprTranslator(expr, context=context, named=named)
         return translator.get_result()
 

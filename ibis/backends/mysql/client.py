@@ -60,7 +60,7 @@ class MySQLClient(AlchemyClient):
     con : sqlalchemy.engine.Engine
     """
 
-    _compiler = MySQLCompiler
+    compiler = MySQLCompiler
 
     def __init__(
         self,
