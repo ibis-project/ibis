@@ -99,8 +99,8 @@ def df(alltypes):
 def translate():
     from ibis.backends.clickhouse.compiler import (
         ClickhouseExprTranslator,
-        ClickhouseQueryContext,
+        ClickhouseCompiler,
     )
 
-    context = ClickhouseQueryContext()
+    context = ClickhouseCompiler.make_context()
     return lambda expr: ClickhouseExprTranslator(expr, context).get_result()
