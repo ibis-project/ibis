@@ -98,8 +98,8 @@ def df(alltypes):
 @pytest.fixture
 def translate():
     from ibis.backends.clickhouse.compiler import (
-        ClickhouseExprTranslator,
         ClickhouseCompiler,
+        ClickhouseExprTranslator,
     )
 
     context = ClickhouseCompiler.make_context()

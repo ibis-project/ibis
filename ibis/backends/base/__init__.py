@@ -87,13 +87,13 @@ class BaseBackend(abc.ABC):
         ... def _null_literal(translator, expression):
         ...     return 'NULL'
         """
-        if not hasattr(self, '_compiler'):
+        if not hasattr(self.client, '_compiler'):
             raise RuntimeError(
                 'Only SQL-based backends support `add_operation`'
             )
 
         def decorator(translation_function):
-            self._compiler.translator.add_operation(
+            self.client._compiler.translator.add_operation(
                 operation, translation_function
             )
 
