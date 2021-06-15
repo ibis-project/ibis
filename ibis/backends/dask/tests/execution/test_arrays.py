@@ -234,9 +234,12 @@ def test_array_repeat_scalar(client, n, mul):
 
 
 @pytest.mark.xfail(
-    raises=NotImplementedError,
+    raises=ValueError,
     reason='TODO - arrays - #2553'
-    # Need an ops.ArrayConcat execution func that dispatches on dd.Series
+    # ValueError: Dask backend borrows Pandas backend's Cast execution
+    # function, which assumes array representation is np.array.
+    # NotImplementedError: Need an ops.ArrayConcat execution func that
+    # dispatches on dd.Series
 )
 @pytest.mark.parametrize('op', [lambda x, y: x + y, lambda x, y: y + x])
 def test_array_concat(t, df, op):
