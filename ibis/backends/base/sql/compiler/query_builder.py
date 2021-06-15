@@ -228,9 +228,11 @@ class Select(DML):
         self.result_handler = result_handler
 
     def _translate(self, expr, named=False, permit_subquery=False):
-        context = self.context
         translator = self.translator(
-            expr, context=context, named=named, permit_subquery=permit_subquery
+            expr,
+            context=self.context,
+            named=named,
+            permit_subquery=permit_subquery,
         )
         return translator.get_result()
 
@@ -542,6 +544,8 @@ class Compiler:
 
     @classmethod
     def make_context(cls, params=None):
+        params = params or {}
+        params = {expr.op(): value for expr, value in params.items()}
         return cls.context_class(compiler=cls, params=params)
 
     @classmethod

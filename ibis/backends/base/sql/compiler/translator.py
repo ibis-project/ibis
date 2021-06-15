@@ -203,8 +203,6 @@ class ExprTranslator:
     _registry = operation_registry
     _rewrites = {}
 
-    context_class = QueryContext
-
     def __init__(self, expr, context, named=False, permit_subquery=False):
         self.expr = expr
         self.permit_subquery = permit_subquery
