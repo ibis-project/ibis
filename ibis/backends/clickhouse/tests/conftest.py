@@ -97,8 +97,10 @@ def df(alltypes):
 
 @pytest.fixture
 def translate():
-    from ibis.backends.clickhouse import Backend
+    from ibis.backends.clickhouse.compiler import (
+        ClickhouseCompiler,
+        ClickhouseExprTranslator,
+    )
 
-    dialect = Backend().dialect
-    context = dialect.make_context()
-    return lambda expr: dialect.translator(expr, context).get_result()
+    context = ClickhouseCompiler.make_context()
+    return lambda expr: ClickhouseExprTranslator(expr, context).get_result()

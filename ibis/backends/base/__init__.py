@@ -40,46 +40,6 @@ class BaseBackend(abc.ABC):
         """
         pass
 
-    @property
-    @abc.abstractmethod
-    def builder(self):
-        pass
-
-    @property
-    @abc.abstractmethod
-    def translator(self):
-        pass
-
-    @property
-    def dialect(self):
-        """
-        Dialect class of the backend.
-
-        We generate it dynamically to avoid repeating the code for each
-        backend.
-        """
-        # TODO importing dialects inside the function to avoid circular
-        # imports. In the future instead of this if statement we probably
-        # want to create subclasses for each of the kinds
-        # (e.g. `BaseSQLAlchemyBackend`)
-        if self.kind == 'sqlalchemy':
-            from ibis.backends.base.sql.alchemy import AlchemyDialect
-
-            dialect_class = AlchemyDialect
-        elif self.kind in ('sql', 'pandas', 'spark'):
-            from ibis.backends.base.sql.compiler import Dialect
-
-            dialect_class = Dialect
-        else:
-            raise ValueError(
-                f'Backend class "{self.kind}" unknown. '
-                'Expected one of "sqlalchemy", "sql", '
-                '"pandas" or "spark".'
-            )
-
-        dialect_class.translator = self.translator
-        return dialect_class
-
     @abc.abstractmethod
     def connect(connection_string, **options):
         """
@@ -98,13 +58,7 @@ class BaseBackend(abc.ABC):
         """
         Compile the expression.
         """
-        context = self.dialect.make_context(params=params)
-        query_ast = self.builder.to_ast(expr, context=context)
-        # TODO make all builders return a QueryAST object
-        if isinstance(query_ast, list):
-            query_ast = query_ast[0]
-        compiled = query_ast.compile()
-        return compiled
+        return self.client.compiler.to_sql(expr, params=params)
 
     def verify(self, expr, params=None):
         """
@@ -133,8 +87,14 @@ class BaseBackend(abc.ABC):
         ... def _null_literal(translator, expression):
         ...     return 'NULL'
         """
+        if not hasattr(self.client, 'compiler'):
+            raise RuntimeError(
+                'Only SQL-based backends support `add_operation`'
+            )
 
         def decorator(translation_function):
-            self.translator.add_operation(operation, translation_function)
+            self.client.compiler.translator.add_operation(
+                operation, translation_function
+            )
 
         return decorator

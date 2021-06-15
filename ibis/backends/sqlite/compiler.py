@@ -17,7 +17,10 @@ import sqlalchemy as sa
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.alchemy import AlchemyExprTranslator
+from ibis.backends.base.sql.alchemy import (
+    AlchemyCompiler,
+    AlchemyExprTranslator,
+)
 
 from .registry import operation_registry
 
@@ -59,3 +62,7 @@ def day_of_week_name(expr):
         .else_(ibis.NA)
         .end()
     )
+
+
+class SQLiteCompiler(AlchemyCompiler):
+    translator = SQLiteExprTranslator

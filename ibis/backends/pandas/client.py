@@ -406,7 +406,6 @@ class PandasTable(ops.DatabaseTable):
 
 class PandasClient(Client):
     def __init__(self, backend, dictionary):
-        self.dialect = backend.dialect
         self.database_class = backend.database_class
         self.table_class = backend.table_class
         self.dictionary = dictionary

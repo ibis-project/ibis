@@ -55,12 +55,12 @@ def dialect():
 
 @pytest.fixture
 def translate(dialect):
-    from ibis.backends.sqlite import Backend
+    from ibis.backends.sqlite import SQLiteClient
 
-    ibis_dialect = Backend().dialect()
-    context = ibis_dialect.make_context()
+    client = SQLiteClient
+    context = client.compiler.make_context()
     return lambda expr: str(
-        ibis_dialect.translator(expr, context)
+        client.compiler.translator(expr, context)
         .get_result()
         .compile(dialect=dialect, compile_kwargs={'literal_binds': True})
     )

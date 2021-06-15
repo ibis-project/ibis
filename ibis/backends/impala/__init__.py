@@ -10,7 +10,6 @@ from .client import (  # noqa: F401
     ImpalaDatabaseTable,
     ImpalaTable,
 )
-from .compiler import ImpalaExprTranslator, ImpalaQueryBuilder
 from .hdfs import HDFS, WebHDFS, hdfs_connect
 from .udf import *  # noqa: F401,F403
 
@@ -18,8 +17,7 @@ from .udf import *  # noqa: F401,F403
 class Backend(BaseBackend):
     name = 'impala'
     kind = 'sql'
-    builder = ImpalaQueryBuilder
-    translator = ImpalaExprTranslator
+    client = ImpalaClient
     database_class = ImpalaDatabase
     table_class = ImpalaDatabaseTable
     table_expr_class = ImpalaTable
