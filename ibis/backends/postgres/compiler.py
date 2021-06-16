@@ -37,4 +37,4 @@ def _any_all_no_op(expr):
 
 
 class PostgreSQLCompiler(AlchemyCompiler):
-    translator = PostgreSQLExprTranslator
+    translator_class = PostgreSQLExprTranslator
