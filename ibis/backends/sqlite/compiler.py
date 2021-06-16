@@ -22,10 +22,6 @@ from ibis.backends.base.sql.alchemy import AlchemyExprTranslator
 from .registry import operation_registry
 
 
-def add_operation(op, translation_func):
-    operation_registry[op] = translation_func
-
-
 class SQLiteExprTranslator(AlchemyExprTranslator):
     _registry = operation_registry
     _rewrites = AlchemyExprTranslator._rewrites.copy()
