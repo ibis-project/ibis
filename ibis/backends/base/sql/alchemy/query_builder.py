@@ -319,10 +319,10 @@ class AlchemyUnion(Union):
 
 
 class AlchemyCompiler(Compiler):
-    translator = AlchemyExprTranslator
+    translator_class = AlchemyExprTranslator
     context_class = AlchemyContext
-    table_set_formatter = _AlchemyTableSetFormatter
-    select_builder = AlchemySelectBuilder
+    table_set_formatter_class = _AlchemyTableSetFormatter
+    select_builder_class = AlchemySelectBuilder
     select_class = AlchemySelect
     union_class = AlchemyUnion
 

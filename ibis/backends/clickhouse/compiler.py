@@ -132,7 +132,7 @@ def _floor_divide(expr):
 
 
 class ClickhouseCompiler(Compiler):
-    translator = ClickhouseExprTranslator
-    table_set_formatter = ClickhouseTableSetFormatter
-    select_builder = ClickhouseSelectBuilder
+    translator_class = ClickhouseExprTranslator
+    table_set_formatter_class = ClickhouseTableSetFormatter
+    select_builder_class = ClickhouseSelectBuilder
     select_class = ClickhouseSelect

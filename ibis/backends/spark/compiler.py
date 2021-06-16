@@ -57,4 +57,4 @@ def spark_rewrites_is_inf(expr):
 
 
 class SparkCompiler(Compiler):
-    translator = SparkExprTranslator
+    translator_class = SparkExprTranslator
