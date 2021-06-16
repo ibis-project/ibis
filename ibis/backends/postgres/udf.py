@@ -11,7 +11,7 @@ import ibis.udf.validate as v
 from ibis import IbisError
 from ibis.backends.base.sql.alchemy import to_sqla_type
 from ibis.backends.postgres.compiler import (
-    PostgresCompiler,
+    PostgreSQLCompiler,
     PostgreSQLExprTranslator,
     PostgresUDFNode,
 )
@@ -120,7 +120,7 @@ def existing_udf(name, input_types, output_type, schema=None, parameters=None):
 
         return func_obj(*sa_args)
 
-    PostgresCompiler.add_operation(udf_node, _translate_udf)
+    PostgreSQLCompiler.add_operation(udf_node, _translate_udf)
 
     def wrapped(*args, **kwargs):
         node = udf_node(*args, **kwargs)
