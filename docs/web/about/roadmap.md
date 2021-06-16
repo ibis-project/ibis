@@ -25,6 +25,44 @@ the base SQL backend) in separate projects. So, new backends based on SQLAlchemy
 can be developed in parallel, without conflicts or extra complexity, and
 users can decide which one to use for a given backend.
 
+## Simplify development of SQLAlchemy backends
+
+Given a SQLAlchemy engine, Ibis should be able to have most of the information
+it needs to worh with that engine. There are some cases where backends need to
+extend SQLAlchemy engines, such as with non-standard operations, custom types,
+UDFs or GIS functionality. Other than those cases, for simple queries, Ibis
+should be able to simply work given a SQLAlchemy engine. We should make Ibis
+work with arbitrary engines without implementing a backend. And for engines
+that are extended, it should be possible to write backends in the simplest and
+fastest way.
+
+## Execution output
+
+Currently, the output of executing an expression (i.e. `expr.execute()`) is
+returned as a pandas DataFrame. This is convenient, and the output can
+be further processed with the extensive features of pandas, or saved to
+different formats, with the pandas exporting interfaces. But in some cases,
+exporting to pandas implies adding pandas as an undesired dependency, or
+having an extra overheat. Often, Ibis backends are implemented using a
+[Python DB API 2.0](https://www.python.org/dev/peps/pep-0249/) interface,
+and accessing its Cursor object can be more convenient. In other cases,
+serializing from the backend to Apache Arrow is possible (and efficient)
+and accessing in this format would be the preferred way. Ibis should provide
+a more flexible way to access the results. For example, via an Ibis option,
+an argument (e.g. `.execute(format='cursor')`), different methods for
+different formats, or another way.
+
+## Base pandas-API backend
+
+There are currently backends for pandas and Dask, which share a very similar
+API. Other projects also implement the same API based on pandas, such as
+Vaex, Modin, Koalas. The current backends (pandas and Dask) have a significant
+amount of duplication. And implementing more backends based on the pandas API
+require the same duplication, and a big effort. It should be possible to
+create a base backend where Ibis operations are mapped to pandas operations,
+and that backends for pandas-like backends can reuse, and don't need to
+reimplement.
+
 ## Standardize UDFs (User Defined Functions)
 
 A few backends have support for UDFs. Impala, Pandas and BigQuery all have at
