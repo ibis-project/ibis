@@ -1,5 +1,6 @@
 import decimal
 
+import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
@@ -43,6 +44,21 @@ def test_cast_string(t, df, from_, to, expected):
     c = t[from_].cast(to)
     result = c.execute()
     assert str(result.dtype) == expected
+
+
+@pytest.mark.parametrize('from_', ['array_of_int64', 'array_of_float64'])
+@pytest.mark.parametrize(
+    ('to', 'expected'),
+    [('array<double>', 'float64'), ('array<int32>', 'int32')],
+)
+def test_cast_array(t, df, from_, to, expected):
+    c = t[from_].cast(to)
+    result = c.execute()
+    # The Series of arrays
+    assert str(result.dtype) == 'object'
+    # One of the arrays in the Series
+    assert isinstance(result[0], np.ndarray)
+    assert str(result[0].dtype) == expected
 
 
 @pytest.mark.parametrize(

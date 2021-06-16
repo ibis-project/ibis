@@ -14,6 +14,8 @@ from ibis.backends.base.sql.alchemy import (
     AlchemyTable,
 )
 
+from .compiler import MySQLCompiler
+
 # TODO(kszucs): unsigned integers
 
 
@@ -58,6 +60,8 @@ class MySQLClient(AlchemyClient):
     con : sqlalchemy.engine.Engine
     """
 
+    compiler = MySQLCompiler
+
     def __init__(
         self,
         backend,
@@ -69,7 +73,6 @@ class MySQLClient(AlchemyClient):
         url=None,
         driver='pymysql',
     ):
-        self.dialect = backend.dialect
         self.database_class = backend.database_class
         self.table_class = backend.table_class
         if url is None:

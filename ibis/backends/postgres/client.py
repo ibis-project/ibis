@@ -13,6 +13,8 @@ from ibis.backends.base.sql.alchemy import (
 )
 from ibis.backends.postgres import udf
 
+from .compiler import PostgreSQLCompiler
+
 
 class PostgreSQLTable(AlchemyTable):
     pass
@@ -35,6 +37,8 @@ class PostgreSQLClient(AlchemyClient):
     con : sqlalchemy.engine.Engine
     """
 
+    compiler = PostgreSQLCompiler
+
     def __init__(
         self,
         backend,
@@ -46,7 +50,6 @@ class PostgreSQLClient(AlchemyClient):
         url: Optional[str] = None,
         driver: str = 'psycopg2',
     ):
-        self.dialect = backend.dialect
         self.database_class = backend.database_class
         self.table_class = backend.table_class
         if url is None:

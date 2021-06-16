@@ -6,7 +6,7 @@ import sqlalchemy.sql as sql
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.base.sql.compiler import (
-    QueryBuilder,
+    Compiler,
     Select,
     SelectBuilder,
     TableSetFormatter,
@@ -15,9 +15,10 @@ from ibis.backends.base.sql.compiler import (
 
 from .database import AlchemyTable
 from .datatypes import to_sqla_type
+from .translator import AlchemyContext, AlchemyExprTranslator
 
 
-class _AlchemyTableSet(TableSetFormatter):
+class _AlchemyTableSetFormatter(TableSetFormatter):
     def get_result(self):
         # Got to unravel the join stack; the nesting order could be
         # arbitrary, so we do a depth first search and push the join tokens
@@ -172,7 +173,7 @@ class AlchemySelect(Select):
 
     def _compile_table_set(self):
         if self.table_set is not None:
-            helper = _AlchemyTableSet(self, self.table_set)
+            helper = _AlchemyTableSetFormatter(self, self.table_set)
             result = helper.get_result()
             if isinstance(result, sql.selectable.Select) and hasattr(
                 result, 'subquery'
@@ -294,10 +295,6 @@ class AlchemySelect(Select):
 
         return fragment
 
-    @property
-    def dialect(self):
-        return self.context.dialect
-
 
 class AlchemySelectBuilder(SelectBuilder):
     def _convert_group_by(self, exprs):
@@ -321,21 +318,19 @@ class AlchemyUnion(Union):
         return functools.reduce(reduce_union, selects)
 
 
-class AlchemyQueryBuilder(QueryBuilder):
-
+class AlchemyCompiler(Compiler):
+    translator = AlchemyExprTranslator
+    context_class = AlchemyContext
+    table_set_formatter = _AlchemyTableSetFormatter
     select_builder = AlchemySelectBuilder
     select_class = AlchemySelect
     union_class = AlchemyUnion
 
-
-build_ast = AlchemyQueryBuilder.to_ast
-
-
-def to_sqlalchemy(expr, context, exists=False):
-    ast = build_ast(expr, context)
-    query = ast.queries[0]
-
-    if exists:
-        query.exists = exists
-
-    return query.compile()
+    @classmethod
+    def to_sql(cls, expr, context=None, params=None, exists=False):
+        if context is None:
+            context = cls.make_context(params=params)
+        query = cls.to_ast(expr, context).queries[0]
+        if exists:
+            query.exists = True
+        return query.compile()

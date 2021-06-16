@@ -3,9 +3,10 @@ import pytest
 import ibis
 import ibis.common.exceptions as com
 from ibis import window
-from ibis.backends.impala.tests.mocks import to_sql
 from ibis.expr.window import rows_with_max_lookback
 from ibis.tests.util import assert_equal
+
+from ..compiler import ImpalaCompiler
 
 pytestmark = pytest.mark.impala
 
@@ -16,7 +17,7 @@ def alltypes(con):
 
 
 def assert_sql_equal(expr, expected):
-    result = to_sql(expr)
+    result = ImpalaCompiler.to_sql(expr)
     assert result == expected
 
 
@@ -124,7 +125,7 @@ def test_window_rows_with_max_lookback(con):
     w = ibis.trailing_window(mlb, order_by=t.i)
     expr = t.a.sum().over(w)
     with pytest.raises(NotImplementedError):
-        to_sql(expr)
+        ImpalaCompiler.to_sql(expr)
 
 
 @pytest.mark.parametrize(
@@ -147,7 +148,7 @@ def test_cumulative_functions(alltypes, cumulative, static):
     expr1 = t.projection(actual)
     expr2 = t.projection(expected)
 
-    assert to_sql(expr1) == to_sql(expr2)
+    assert ImpalaCompiler.to_sql(expr1) == ImpalaCompiler.to_sql(expr2)
 
 
 def test_nested_analytic_function(alltypes):
@@ -247,7 +248,7 @@ def test_unsupported_aggregate_functions(alltypes, column, op):
     expr = getattr(t[column], op)()
     proj = t.projection([expr.over(w).name('foo')])
     with pytest.raises(com.TranslationError):
-        to_sql(proj)
+        ImpalaCompiler.to_sql(proj)
 
 
 def test_propagate_nested_windows(alltypes):

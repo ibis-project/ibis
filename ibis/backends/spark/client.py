@@ -23,7 +23,7 @@ from ibis.util import log
 
 from . import compiler as comp
 from . import ddl
-from .compiler import build_ast
+from .compiler import SparkCompiler
 from .datatypes import spark_dtype
 
 
@@ -178,7 +178,7 @@ class SparkTable(ir.TableExpr):
             if not insert_schema.equals(existing_schema):
                 _validate_compatible(insert_schema, existing_schema)
 
-        ast = build_ast(expr)
+        ast = self._client.compiler.to_ast(expr)
         select = ast.queries[0]
         statement = ddl.InsertSelect(
             self._qualified_name, select, overwrite=overwrite
@@ -232,8 +232,9 @@ class SparkClient(SQLClient):
     An Ibis client interface that uses Spark SQL.
     """
 
+    compiler = SparkCompiler
+
     def __init__(self, backend, session):
-        self.dialect = backend.dialect
         self.database_class = backend.database_class
         self.table_class = backend.table_class
         self.table_expr_class = backend.table_expr_class
@@ -251,10 +252,6 @@ class SparkClient(SQLClient):
     def fetch_from_cursor(self, cursor, schema):
         df = cursor.query.toPandas()  # blocks until finished
         return schema.apply_to(df)
-
-    def _build_ast(self, expr, context):
-        result = build_ast(expr, context)
-        return result
 
     def execute(self, expr, params=None, limit='default', **kwargs):
         udf_nodes = lin.traverse(find_spark_udf, expr)
@@ -576,7 +573,7 @@ class SparkClient(SQLClient):
                 )
                 return
 
-            ast = build_ast(obj)
+            ast = self.compiler.to_ast(obj)
             select = ast.queries[0]
 
             statement = ddl.CTAS(
@@ -614,7 +611,7 @@ class SparkClient(SQLClient):
           Replace an existing view of the same name if it exists
         temporary : boolean, default False
         """
-        ast = build_ast(expr)
+        ast = self.compiler.to_ast(expr)
         select = ast.queries[0]
         statement = ddl.CreateView(
             name,

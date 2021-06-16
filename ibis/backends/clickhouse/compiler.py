@@ -4,9 +4,8 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.util as util
 from ibis.backends.base.sql.compiler import (
+    Compiler,
     ExprTranslator,
-    QueryBuilder,
-    QueryContext,
     Select,
     SelectBuilder,
     TableSetFormatter,
@@ -22,14 +21,6 @@ class ClickhouseSelectBuilder(SelectBuilder):
 
 
 class ClickhouseSelect(Select):
-    @property
-    def translator(self):
-        return ClickhouseExprTranslator
-
-    @property
-    def table_set_formatter(self):
-        return ClickhouseTableSetFormatter
-
     def format_group_by(self):
         if not len(self.group_by):
             # There is no aggregation, nothing to see here
@@ -64,19 +55,6 @@ class ClickhouseSelect(Select):
             buf.write(', {}'.format(offset))
 
         return buf.getvalue()
-
-
-class ClickhouseQueryBuilder(QueryBuilder):
-    select_builder = ClickhouseSelectBuilder
-    select_class = ClickhouseSelect
-
-
-build_ast = ClickhouseQueryBuilder.to_ast
-
-
-class ClickhouseQueryContext(QueryContext):
-    def _to_sql(self, expr, ctx):
-        return ClickhouseQueryBuilder.to_sql(expr, context=ctx)
 
 
 class ClickhouseTableSetFormatter(TableSetFormatter):
@@ -141,9 +119,7 @@ class ClickhouseTableSetFormatter(TableSetFormatter):
 
 
 class ClickhouseExprTranslator(ExprTranslator):
-
     _registry = operation_registry
-    context_class = ClickhouseQueryContext
 
 
 rewrites = ClickhouseExprTranslator.rewrites
@@ -153,3 +129,10 @@ rewrites = ClickhouseExprTranslator.rewrites
 def _floor_divide(expr):
     left, right = expr.op().args
     return left.div(right).floor()
+
+
+class ClickhouseCompiler(Compiler):
+    translator = ClickhouseExprTranslator
+    table_set_formatter = ClickhouseTableSetFormatter
+    select_builder = ClickhouseSelectBuilder
+    select_class = ClickhouseSelect
