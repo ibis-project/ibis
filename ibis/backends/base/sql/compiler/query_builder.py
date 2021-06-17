@@ -189,8 +189,8 @@ class Select(DML):
         self,
         table_set,
         select_set,
-        translator,
-        table_set_formatter,
+        translator_class,
+        table_set_formatter_class,
         context,
         subqueries=None,
         where=None,
@@ -203,8 +203,8 @@ class Select(DML):
         result_handler=None,
         parent_expr=None,
     ):
-        self.translator = translator
-        self.table_set_formatter = table_set_formatter
+        self.translator_class = translator_class
+        self.table_set_formatter_class = table_set_formatter_class
         self.context = context
 
         self.select_set = select_set
@@ -228,7 +228,7 @@ class Select(DML):
         self.result_handler = result_handler
 
     def _translate(self, expr, named=False, permit_subquery=False):
-        translator = self.translator(
+        translator = self.translator_class(
             expr,
             context=self.context,
             named=named,
@@ -401,7 +401,7 @@ class Select(DML):
 
         fragment = 'FROM '
 
-        helper = self.table_set_formatter(self, self.table_set)
+        helper = self.table_set_formatter_class(self, self.table_set)
         fragment += helper.get_result()
 
         return fragment
@@ -535,10 +535,10 @@ def flatten(table: ir.TableExpr):
 
 
 class Compiler:
-    translator = ExprTranslator
+    translator_class = ExprTranslator
     context_class = QueryContext
-    select_builder = SelectBuilder
-    table_set_formatter = TableSetFormatter
+    select_builder_class = SelectBuilder
+    table_set_formatter_class = TableSetFormatter
     select_class = Select
     union_class = Union
 
@@ -568,12 +568,12 @@ class Compiler:
         elif isinstance(op, ops.Difference):
             query = Difference(flatten(expr), expr, context=context)
         else:
-            query = cls.select_builder().to_select(
+            query = cls.select_builder_class().to_select(
                 select_class=cls.select_class,
-                table_set_formatter=cls.table_set_formatter,
+                table_set_formatter_class=cls.table_set_formatter_class,
                 expr=expr,
                 context=context,
-                translator=cls.translator,
+                translator_class=cls.translator_class,
             )
 
         return QueryAST(

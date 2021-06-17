@@ -60,7 +60,7 @@ def translate(dialect):
     client = SQLiteClient
     context = client.compiler.make_context()
     return lambda expr: str(
-        client.compiler.translator(expr, context)
+        client.compiler.translator_class(expr, context)
         .get_result()
         .compile(dialect=dialect, compile_kwargs={'literal_binds': True})
     )

@@ -34,4 +34,4 @@ rewrites = MySQLExprTranslator.rewrites
 
 
 class MySQLCompiler(AlchemyCompiler):
-    translator = MySQLExprTranslator
+    translator_class = MySQLExprTranslator

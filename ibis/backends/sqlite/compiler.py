@@ -65,4 +65,4 @@ def day_of_week_name(expr):
 
 
 class SQLiteCompiler(AlchemyCompiler):
-    translator = SQLiteExprTranslator
+    translator_class = SQLiteExprTranslator

@@ -35,5 +35,5 @@ def _floor_divide(expr):
 
 
 class ImpalaCompiler(Compiler):
-    translator = ImpalaExprTranslator
-    table_set_formatter = ImpalaTableSetFormatter
+    translator_class = ImpalaExprTranslator
+    table_set_formatter_class = ImpalaTableSetFormatter

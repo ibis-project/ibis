@@ -93,7 +93,7 @@ class BaseBackend(abc.ABC):
             )
 
         def decorator(translation_function):
-            self.client.compiler.translator.add_operation(
+            self.client.compiler.translator_class.add_operation(
                 operation, translation_function
             )
 

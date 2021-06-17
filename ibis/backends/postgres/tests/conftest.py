@@ -134,7 +134,7 @@ def translate():
 
     context = PostgreSQLClient.compiler.make_context()
     return lambda expr: (
-        PostgreSQLClient.compiler.translator(expr, context).get_result()
+        PostgreSQLClient.compiler.translator_class(expr, context).get_result()
     )
 
 

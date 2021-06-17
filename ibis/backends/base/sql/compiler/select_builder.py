@@ -208,13 +208,18 @@ class SelectBuilder:
     """
 
     def to_select(
-        self, select_class, table_set_formatter, expr, context, translator
+        self,
+        select_class,
+        table_set_formatter_class,
+        expr,
+        context,
+        translator_class,
     ):
         self.select_class = select_class
-        self.table_set_formatter = table_set_formatter
+        self.table_set_formatter_class = table_set_formatter_class
         self.expr = expr
         self.context = context
-        self.translator = translator
+        self.translator_class = translator_class
 
         self.query_expr, self.result_handler = self._adapt_expr(self.expr)
 
@@ -403,8 +408,8 @@ class SelectBuilder:
         return self.select_class(
             self.table_set,
             self.select_set,
-            translator=self.translator,
-            table_set_formatter=self.table_set_formatter,
+            translator_class=self.translator_class,
+            table_set_formatter_class=self.table_set_formatter_class,
             context=self.context,
             subqueries=self.subqueries,
             where=self.filters,
