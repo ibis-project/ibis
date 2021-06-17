@@ -28,7 +28,7 @@ users can decide which one to use for a given backend.
 ## Simplify development of SQLAlchemy backends
 
 Given a SQLAlchemy engine, Ibis should be able to have most of the information
-it needs to worh with that engine. There are some cases where backends need to
+it needs to work with that engine. There are cases where backends need to
 extend SQLAlchemy engines, such as with non-standard operations, custom types,
 UDFs or GIS functionality. Other than those cases, for simple queries, Ibis
 should be able to simply work given a SQLAlchemy engine. We should make Ibis
@@ -63,6 +63,23 @@ create a base backend where Ibis operations are mapped to pandas operations,
 and that backends for pandas-like backends can reuse, and don't need to
 reimplement.
 
+## Improve API for file psuedo-backends
+
+Ibis currently supports loading from files to the pandas backend for few formats,
+csv, hdf5 and parquet. Those are implemented as backends, while they actually
+use the pandas backend under the hood. Besides loading the data into the pandas
+backend, those pseudo-backends provides functionalities to list files as if
+they were tables, and to save the data back to files. While the current approach
+kind of makes sense, it's misleading, as in the future Ibis could implement
+actual file base backends. For example, a csv backend that for a filter
+expression, reads the csv file ignoring the filtered lines. So, the current
+backends create the wrong expectations, and make the concept of backend
+confusing. Implementing the current functionality as a different concept,
+like `FileManager` instead of backend, that interacts with the pandas backend
+(or any other backend), would make things clearer. Also, it could possibly
+be implemented in a way that different formats are supported at the same
+time (like dealing with a directory with a mix of csv and parquet files).
+
 ## Standardize UDFs (User Defined Functions)
 
 A few backends have support for UDFs. Impala, Pandas and BigQuery all have at
@@ -71,3 +88,17 @@ be extended to other backends where possible. We outline different approaches
 to adding UDFs to the backends that are well-supported but currently do not
 have a UDF implementation. Development of a standard interface for UDFs is
 ideal, so that it’s easy for new backends to implement the interface.
+
+## Better integration of the website and the docs
+
+We are using Sphinx for the docs, and Pysuerga for the website. This makes
+sense, since Sphinx work well for documentation (automatic API docs,
+cross-referencing of pages,...), and Pysuerga works well in generating
+a website in a very simple way. But the experience for the user is that
+the two are different, with different look and feel, and with just one
+link from the website to the docs. While internally keeping what we've
+got, we can use the Pysuerga base template as the base template for
+Sphinx, and keep the same styles, the same navigation bar and the footer
+in all pages of the docs. The experience for the users will be much
+better, as well as the navigation, and the whole site will feel a single
+one.
