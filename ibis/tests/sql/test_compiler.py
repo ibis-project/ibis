@@ -2557,3 +2557,22 @@ FROM (
     ON t0.`b` = t1.`b`
 WHERE t0.`a` < 1.0"""
     assert result == expected
+
+
+def test_table_drop_consistency():
+    t = ibis.table(
+        [('a', 'int64'), ('b', 'string'), ('c', 'timestamp')], name='t'
+    )
+
+    e1 = t.projection(["a", "c"])
+    e2 = t.drop(["b"])
+    e3 = t.drop("b")
+
+    assert e1.schema() == e2.schema()
+    assert e1.schema() == e3.schema()
+
+    assert not(e1.schema() == t.schema())
+
+    assert not("b" in e1.columns)
+    assert "a" in e1.columns
+    assert "c" in e2.columns
