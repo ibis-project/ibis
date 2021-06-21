@@ -2264,8 +2264,6 @@ class Aggregation(TableNode, HasSchema):
         assert self.schema
 
     def _rewrite_exprs(self, table, what):
-        from ibis.expr.analysis import substitute_parents
-
         what = util.promote_list(what)
 
         all_exprs = []
@@ -2276,9 +2274,15 @@ class Aggregation(TableNode, HasSchema):
                 bound_expr = ir.bind_expr(table, expr)
                 all_exprs.append(bound_expr)
 
-        return [
-            substitute_parents(x, past_projection=False) for x in all_exprs
-        ]
+        return all_exprs
+        # TODO this optimization becomes O(n^2) when it calls into
+        #  _lift_TableColumn in analysis.py, which itself is O(n) and is
+        # called on each input to the aggregation - thus creating the
+        # aggregation expression can be extremely slow on wide tables
+        # that contain a Selection.
+        # return [
+        #     substitute_parents(x, past_projection=False) for x in all_exprs
+        # ]
 
     def blocks(self):
         return True
