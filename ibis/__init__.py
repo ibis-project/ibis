@@ -1,12 +1,11 @@
 """Initialize Ibis module."""
+import warnings
+
 import pkg_resources
 
 import ibis.config
 import ibis.expr.types as ir
 from ibis import util
-
-# pandas backend is mandatory
-from ibis.backends import pandas  # noqa: F401
 from ibis.common.exceptions import IbisError
 from ibis.config import options
 from ibis.expr import api
@@ -51,15 +50,29 @@ with ibis.config.config_prefix('sql'):
 __version__ = get_versions()['version']
 del get_versions
 
-for entry_point in pkg_resources.iter_entry_points(
-    group='ibis.backends', name=None
-):
-    try:
-        backend_module = entry_point.resolve()
-    except ImportError:
-        pass
-    else:
-        backend = backend_module.Backend()
-        setattr(ibis, entry_point.name, backend)
-        with ibis.config.config_prefix(entry_point.name):
-            backend.register_options()
+
+def __getattr__(name: str):
+    entry_points = list(
+        pkg_resources.iter_entry_points(group='ibis.backends', name=name)
+    )
+    if len(entry_points) == 0:
+        raise AttributeError(
+            f"module 'ibis' has no attribute '{name}'. "
+            f"If you are trying to access the '{name}' backend, "
+            f"try installing it first with `pip install ibis-{name}`"
+        )
+    elif len(entry_points) > 1:
+        warnings.warn(
+            f"More than one entrypoint found for backend '{name}', "
+            f"using {entry_points[0].module_name}"
+        )
+
+    backend = entry_points[0].resolve().Backend()
+
+    # The first time a backend is loaded, we register its options, and we set
+    # it as an attribute, so `__getattr__` is not loaded again.
+    with ibis.config.config_prefix(name):
+        backend.register_options()
+
+    setattr(ibis, name, backend)
+    return backend
