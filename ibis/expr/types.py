@@ -237,10 +237,6 @@ class Expr:
         if len(backends) > 1:
             raise ValueError('Multiple backends found')
 
-        # Make sure that options are registered
-        backend_name = backends[0].__class__.__name__.lower()[: -len('client')]
-        getattr(ibis, backend_name)
-
         return backends[0]
 
     def execute(
