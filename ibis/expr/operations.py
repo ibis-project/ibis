@@ -2275,8 +2275,9 @@ class Aggregation(TableNode, HasSchema):
                 all_exprs.append(bound_expr)
 
         return all_exprs
-        # TODO this optimization becomes O(n^2) when it calls into
-        #  _lift_TableColumn in analysis.py, which itself is O(n) and is
+        # TODO - #2832
+        # this optimization becomes O(n^2) when it calls into
+        # _lift_TableColumn in analysis.py, which itself is O(n) and is
         # called on each input to the aggregation - thus creating the
         # aggregation expression can be extremely slow on wide tables
         # that contain a Selection.
