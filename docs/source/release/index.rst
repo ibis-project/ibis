@@ -12,8 +12,8 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
-* :bug:`2829` Fix .drop(fields). The argument can now be either a list of strings or a
-string. In the latter case, the given string is transformed into one element list.
+* :bug:`2829` Fix .drop(fields). The argument can now be either a list of strings or a string.
+  In the latter case, the given string is transformed into one element list.
 * :bug:`2821` Fix `.cast()` to array outputting list instead of np.array in Pandas backend
 * :bug:`2820` Fix aggregation with mixed reduction datatypes (array + scalar) on Dask backend
 * :feature:`2808` Support comparison of ColumnExpr to timestamp literal

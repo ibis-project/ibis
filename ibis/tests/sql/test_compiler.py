@@ -2571,8 +2571,8 @@ def test_table_drop_consistency():
     assert e1.schema() == e2.schema()
     assert e1.schema() == e3.schema()
 
-    assert not(e1.schema() == t.schema())
+    assert e1.schema() != t.schema()
 
-    assert not("b" in e1.columns)
+    assert "b" not in e1.columns
     assert "a" in e1.columns
     assert "c" in e2.columns

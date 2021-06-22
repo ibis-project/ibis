@@ -4420,13 +4420,13 @@ def _table_view(self):
 
 def _table_drop(self, fields):
 
-    if isinstance(fields, str):
-        #  We want to  drop just one attribute.
-        return _table_drop(self, [fields])
-
     if not fields:
         # no-op if nothing to be dropped
         return self
+
+    if isinstance(fields, str):
+        #  We want to  drop just one attribute.
+        fields = [fields]
 
     schema = self.schema()
     field_set = frozenset(fields)
