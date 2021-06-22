@@ -6,6 +6,9 @@ import pkg_resources
 # Converting an Ibis schema to a pandas DataFrame requires registering
 # some type conversions that are currently registered in the pandas backend
 import ibis.backends.pandas
+
+# The parquet backend registers the pyarrow types. Loading it eagerly
+import ibis.backends.parquet
 import ibis.config
 import ibis.expr.types as ir
 from ibis import util
