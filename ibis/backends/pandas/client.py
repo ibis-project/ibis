@@ -10,7 +10,6 @@ import numpy as np
 import pandas as pd
 import pytz
 import toolz
-from multipledispatch import Dispatcher
 from pandas.api.types import CategoricalDtype, DatetimeTZDtype
 from pkg_resources import parse_version
 
@@ -258,30 +257,7 @@ def ibis_schema_to_pandas(schema):
     return list(zip(schema.names, map(ibis_dtype_to_pandas, schema.types)))
 
 
-convert = Dispatcher(
-    'convert',
-    doc="""\
-Convert `column` to the pandas dtype corresponding to `out_dtype`, where the
-dtype of `column` is `in_dtype`.
-
-Parameters
-----------
-in_dtype : Union[np.dtype, pandas_dtype]
-    The dtype of `column`, used for dispatching
-out_dtype : ibis.expr.datatypes.DataType
-    The requested ibis type of the output
-column : pd.Series
-    The column to convert
-
-Returns
--------
-result : pd.Series
-    The converted column
-""",
-)
-
-
-@convert.register(DatetimeTZDtype, dt.Timestamp, pd.Series)
+@sch.convert.register(DatetimeTZDtype, dt.Timestamp, pd.Series)
 def convert_datetimetz_to_timestamp(in_dtype, out_dtype, column):
     output_timezone = out_dtype.timezone
     if output_timezone is not None:
@@ -309,7 +285,7 @@ PANDAS_STRING_TYPES = {'string', 'unicode', 'bytes'}
 PANDAS_DATE_TYPES = {'datetime', 'datetime64', 'date'}
 
 
-@convert.register(np.dtype, dt.Timestamp, pd.Series)
+@sch.convert.register(np.dtype, dt.Timestamp, pd.Series)
 def convert_datetime64_to_timestamp(in_dtype, out_dtype, column):
     if in_dtype.type == np.datetime64:
         return column.astype(out_dtype.to_pandas(), errors='ignore')
@@ -335,18 +311,18 @@ def convert_datetime64_to_timestamp(in_dtype, out_dtype, column):
         return series.astype(utc_dtype).dt.tz_convert(out_dtype.timezone)
 
 
-@convert.register(np.dtype, dt.Interval, pd.Series)
+@sch.convert.register(np.dtype, dt.Interval, pd.Series)
 def convert_any_to_interval(_, out_dtype, column):
     return column.values.astype(out_dtype.to_pandas())
 
 
-@convert.register(np.dtype, dt.String, pd.Series)
+@sch.convert.register(np.dtype, dt.String, pd.Series)
 def convert_any_to_string(_, out_dtype, column):
     result = column.astype(out_dtype.to_pandas(), errors='ignore')
     return result
 
 
-@convert.register(np.dtype, dt.Boolean, pd.Series)
+@sch.convert.register(np.dtype, dt.Boolean, pd.Series)
 def convert_boolean_to_series(in_dtype, out_dtype, column):
     # XXX: this is a workaround until #1595 can be addressed
     in_dtype_type = in_dtype.type
@@ -356,48 +332,13 @@ def convert_boolean_to_series(in_dtype, out_dtype, column):
     return column
 
 
-@convert.register(object, dt.DataType, pd.Series)
+@sch.convert.register(object, dt.DataType, pd.Series)
 def convert_any_to_any(_, out_dtype, column):
     return column.astype(out_dtype.to_pandas(), errors='ignore')
 
 
-def ibis_schema_apply_to(schema, df):
-    """Applies the Ibis schema to a pandas DataFrame
-
-    Parameters
-    ----------
-    schema : ibis.schema.Schema
-    df : pandas.DataFrame
-
-    Returns
-    -------
-    df : pandas.DataFrame
-
-    Notes
-    -----
-    Mutates `df`
-    """
-
-    for column, dtype in schema.items():
-        pandas_dtype = dtype.to_pandas()
-        col = df[column]
-        col_dtype = col.dtype
-
-        try:
-            not_equal = pandas_dtype != col_dtype
-        except TypeError:
-            # ugh, we can't compare dtypes coming from pandas, assume not equal
-            not_equal = True
-
-        if not_equal or isinstance(dtype, dt.String):
-            df[column] = convert(col_dtype, dtype, col)
-
-    return df
-
-
 dt.DataType.to_pandas = ibis_dtype_to_pandas
 sch.Schema.to_pandas = ibis_schema_to_pandas
-sch.Schema.apply_to = ibis_schema_apply_to
 
 
 class PandasTable(ops.DatabaseTable):
