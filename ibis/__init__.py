@@ -73,7 +73,7 @@ def __getattr__(name: str):
     backend = entry_points[0].resolve().Backend()
 
     # The first time a backend is loaded, we register its options, and we set
-    # it as an attribute, so `__getattr__` is not loaded again.
+    # it as an attribute of `ibis`, so `__getattr__` is not called again for it
     with ibis.config.config_prefix(name):
         backend.register_options()
 

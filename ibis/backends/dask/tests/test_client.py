@@ -8,7 +8,6 @@ from pytest import param
 
 import ibis
 
-from .. import Backend
 from ..client import DaskTable
 
 pytestmark = pytest.mark.dask
@@ -20,7 +19,7 @@ def make_dask_data_frame(npartitions):
 
 @pytest.fixture
 def client(npartitions):
-    return Backend().connect(
+    return ibis.dask.connect(
         {
             'df': dd.from_pandas(
                 pd.DataFrame({'a': [1, 2, 3], 'b': list('abc')}),
