@@ -54,7 +54,9 @@ del get_versions
 
 
 def __getattr__(name: str) -> BaseBackend:
-    """Used to load backends in a lazy way.
+    """Load backends in a lazy way with `ibis.<backend-name>`.
+
+    This also registers the backend options.
 
     Examples
     --------
