@@ -50,6 +50,12 @@ class SparkExprTranslator(ExprTranslator):
 rewrites = SparkExprTranslator.rewrites
 
 
+@rewrites(ops.FloorDivide)
+def _floor_divide(expr):
+    left, right = expr.op().args
+    return left.div(right).floor()
+
+
 @rewrites(ops.IsInf)
 def spark_rewrites_is_inf(expr):
     arg = expr.op().arg
