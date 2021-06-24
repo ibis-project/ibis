@@ -1,4 +1,7 @@
+import pytest
+
 import ibis
+from ibis.backends.base import BaseBackend
 
 
 def test_top_level_api():
@@ -103,3 +106,27 @@ def test_top_level_api():
     ]
 
     assert sorted(ibis.__all__) == sorted(known_api)
+
+
+def test_backends_are_cached():
+    # can't use `hasattr` since it calls `__getattr__`
+    assert 'sqlite' not in dir(ibis)
+    assert isinstance(ibis.sqlite, BaseBackend)
+    assert 'sqlite' in dir(ibis)
+
+
+def test_missing_backend():
+    msg = "If you are trying to access the 'foo' backend"
+    with pytest.raises(AttributeError, match=msg):
+        ibis.foo
+
+
+def test_multiple_backends(mocker):
+    mocker.patch(
+        'pkg_resources.iter_entry_points',
+        return_value=['backend1', 'backend2', 'backend3'],
+    )
+
+    msg = "3 packages found for backend 'foo'"
+    with pytest.raises(RuntimeError, match=msg):
+        ibis.foo

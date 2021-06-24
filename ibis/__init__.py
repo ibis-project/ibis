@@ -1,6 +1,4 @@
 """Initialize Ibis module."""
-import warnings
-
 import pkg_resources
 
 # Converting an Ibis schema to a pandas DataFrame requires registering
@@ -9,6 +7,7 @@ import ibis.backends.pandas
 import ibis.config
 import ibis.expr.types as ir
 from ibis import util
+from ibis.backends.base import BaseBackend
 from ibis.common.exceptions import IbisError
 from ibis.config import options
 from ibis.expr import api
@@ -54,7 +53,19 @@ __version__ = get_versions()['version']
 del get_versions
 
 
-def __getattr__(name: str):
+def __getattr__(name: str) -> BaseBackend:
+    """Used to load backends in a lazy way.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> con = ibis.sqlite.connect(...)
+
+    When accessing the `sqlite` attribute of the `ibis` module, this function
+    is called, and a backend with the `sqlite` name is tried to load from
+    the `ibis.backends` entrypoints. If successful, the `ibis.sqlite`
+    attribute is "cached", so this function is only called the first time.
+    """
     entry_points = list(
         pkg_resources.iter_entry_points(group='ibis.backends', name=name)
     )
@@ -65,9 +76,10 @@ def __getattr__(name: str):
             f"try installing it first with `pip install ibis-{name}`"
         )
     elif len(entry_points) > 1:
-        warnings.warn(
-            f"More than one entrypoint found for backend '{name}', "
-            f"using {entry_points[0].module_name}"
+        raise RuntimeError(
+            f"{len(entry_points)} packages found for backend '{name}'. "
+            "There should be only one, please uninstall the unused packages "
+            "and just leave the one that needs to be used."
         )
 
     backend = entry_points[0].resolve().Backend()
