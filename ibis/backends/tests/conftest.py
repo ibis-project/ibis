@@ -1,9 +1,9 @@
 import importlib
 import os
-import pkg_resources
 from typing import List
 
 import pandas as pd
+import pkg_resources
 import pytest
 
 import ibis
@@ -21,9 +21,12 @@ def _get_all_backends() -> List[str]:
     """
     Return the list of known backend names.
     """
-    return [entry_point.name
-            for entry_point in
-            pkg_resources.iter_entry_points(group='ibis.backends', name=None)]
+    return [
+        entry_point.name
+        for entry_point in pkg_resources.iter_entry_points(
+            group='ibis.backends', name=None
+        )
+    ]
 
 
 def _backend_name_to_class(backend_str: str):
