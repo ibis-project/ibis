@@ -4418,10 +4418,9 @@ def _table_view(self):
     return new_view.to_expr()
 
 
-def _table_drop(
-        self: ir.TableExpr,
-        fields: Union[str, List[str]]
-        ) -> ir.TableExpr:
+def _table_drop(self: ir.TableExpr,
+                fields: Union[str, List[str]]
+                ) -> ir.TableExpr:
     """
     Remove one or more fields from a table.
 
