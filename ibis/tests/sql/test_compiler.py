@@ -2560,19 +2560,22 @@ WHERE t0.`a` < 1.0"""
 
 
 def test_table_drop_consistency():
+
+    # issue 2829
+
     t = ibis.table(
         [('a', 'int64'), ('b', 'string'), ('c', 'timestamp')], name='t'
     )
 
-    e1 = t.projection(["a", "c"])
-    e2 = t.drop(["b"])
-    e3 = t.drop("b")
+    expected = t.projection(["a", "c"])
+    result_1 = t.drop(["b"])
+    result_2 = t.drop("b")
 
-    assert e1.schema() == e2.schema()
-    assert e1.schema() == e3.schema()
+    assert expected.schema() == result_1.schema()
+    assert expected.schema() == result_2.schema()
 
-    assert e1.schema() != t.schema()
+    assert expected.schema() != t.schema()
 
-    assert "b" not in e1.columns
-    assert "a" in e1.columns
-    assert "c" in e2.columns
+    assert "b" not in expected.columns
+    assert "a" in result_1.columns
+    assert "c" in result_2.columns

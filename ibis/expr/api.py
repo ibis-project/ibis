@@ -4418,14 +4418,31 @@ def _table_view(self):
     return new_view.to_expr()
 
 
-def _table_drop(self, fields):
+def _table_drop(
+        self: ir.TableExpr,
+        fields: Union[str, List[str]]
+        ) -> ir.TableExpr:
+    """
+    Remove one or more fields from a table.
+
+    _table_drop(table, "a-string") is equivalent
+    to _table_drop(table, ["a-string"]).
+
+    Parameters
+    ----------
+    fields : The field(s) to be removed from the target table.
+
+    Returns
+    -------
+    A TableExpr with specified fields removed
+    """
 
     if not fields:
         # no-op if nothing to be dropped
         return self
 
     if isinstance(fields, str):
-        #  We want to  drop just one attribute.
+        #  We want to drop just one attribute.
         fields = [fields]
 
     schema = self.schema()
