@@ -39,6 +39,40 @@ These methods are available directly in the ``ibis`` module namespace.
    trailing_range_window
    random
 
+.. _api.connection:
+
+Connection methods
+------------------
+
+.. currentmodule:: ibis.backends.base
+
+.. autosummary::
+   :toctree: generated/
+
+   BaseConnection.connect
+   BaseConnection.database
+   BaseConnection.current_database
+   BaseConnection.list_tables
+   BaseConnection.table
+   BaseConnection.get_schema
+   BaseConnection.version
+
+.. _api.connection_sql:
+
+Connection methods (SQL-based backends)
+---------------------------------------
+
+.. currentmodule:: ibis.backends.base.sql
+
+.. autosummary::
+   :toctree: generated/
+
+   BaseSQLConnection.compile
+   BaseSQLConnection.raw_sql
+   BaseSQLConnection.execute
+   BaseSQLConnection.explain
+
+
 .. _api.expr:
 
 General expression methods
