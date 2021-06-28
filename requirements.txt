@@ -5,3 +5,4 @@ pytz
 regex
 toolz
 cached_property
+setuptools
