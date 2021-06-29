@@ -110,7 +110,8 @@ def test_top_level_api():
 
 def test_backends_are_cached():
     # can't use `hasattr` since it calls `__getattr__`
-    assert 'sqlite' not in dir(ibis)
+    if 'sqlite' in dir(ibis):
+        del ibis.sqlite
     assert isinstance(ibis.sqlite, BaseBackend)
     assert 'sqlite' in dir(ibis)
 

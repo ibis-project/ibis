@@ -33,16 +33,15 @@ def _backend_name_to_class(backend_str: str):
     """
     Convert a backend string to the test configuration class for the backend.
     """
-    known_backends = _get_all_backends()
-    if backend_str not in known_backends:
+    try:
+        backend_package = getattr(ibis, backend_str).__module__
+    except AttributeError:
         raise ValueError(
             f'Unknown backend {backend_str}. '
-            f'Known backends: {known_backends}'
+            f'Known backends: {_get_all_backends()}'
         )
 
-    conftest = importlib.import_module(
-        f'ibis.backends.{backend_str}.tests.conftest'
-    )
+    conftest = importlib.import_module(f'{backend_package}.tests.conftest')
     return conftest.TestConf
 
 
