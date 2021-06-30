@@ -3,8 +3,9 @@ import abc
 from ibis.common.exceptions import TranslationError
 
 from .client import Client, Database
+from .connection import BaseConnection
 
-__all__ = ('BaseBackend', 'Client', 'Database')
+__all__ = ('BaseConnection', 'BaseBackend', 'Client', 'Database')
 
 
 class BaseBackend(abc.ABC):

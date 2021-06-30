@@ -1,5 +1,5 @@
 import abc
-from typing import Any, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -113,3 +113,28 @@ class BaseSQLConnection(BaseConnection):
         cur.release()
 
         return '\n'.join(['Query:', util.indent(query, 2), '', *result])
+
+    def add_operation(self, operation: Callable) -> Callable:
+        """
+        Decorator to add a translation function to the backend for a specific
+        operation.
+
+        Operations are defined in `ibis.expr.operations`, and a translation
+        function receives the translator object and an expression as
+        parameters, and returns a value depending on the backend. For example,
+        in SQL backends, a NullLiteral operation could be translated simply
+        with the string "NULL".
+
+        Examples
+        --------
+        >>> @ibis.sqlite.add_operation(ibis.expr.operations.NullLiteral)
+        ... def _null_literal(translator, expression):
+        ...     return 'NULL'
+        """
+
+        def decorator(translation_function):
+            self.client.compiler.translator_class.add_operation(
+                operation, translation_function
+            )
+
+        return decorator

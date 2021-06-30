@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import abc
-from typing import Callable, List, Optional
+from typing import List, Optional
 
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis.backends.base import Database
 from ibis.common.exceptions import TranslationError
 
 
@@ -22,7 +23,6 @@ class BaseConnection(abc.ABC):
         """
         Name of the backend, for example 'sqlite'.
         """
-        pass
 
     @property
     @abc.abstractmethod
@@ -39,21 +39,18 @@ class BaseConnection(abc.ABC):
         spark
             Spark based backends.
         """
-        pass
 
     @abc.abstractmethod
     def connect(connection_string: str, **options) -> BaseConnection:
         """
         Connect to the underlying database and return a client object.
         """
-        pass
 
     def register_options(self) -> None:
         """
         If the backend has custom options, register them here.
         They will be prefixed with the name of the backend.
         """
-        pass
 
     def compile(self, expr: ir.Expr, params=None) -> str:
         """
@@ -72,42 +69,13 @@ class BaseConnection(abc.ABC):
         else:
             return True
 
-    def add_operation(self, operation: Callable) -> Callable:
-        """
-        Decorator to add a translation function to the backend for a specific
-        operation.
-
-        Operations are defined in `ibis.expr.operations`, and a translation
-        function receives the translator object and an expression as
-        parameters, and returns a value depending on the backend. For example,
-        in SQL backends, a NullLiteral operation could be translated simply
-        with the string "NULL".
-
-        Examples
-        --------
-        >>> @ibis.sqlite.add_operation(ibis.expr.operations.NullLiteral)
-        ... def _null_literal(translator, expression):
-        ...     return 'NULL'
-        """
-        if not hasattr(self.client, 'compiler'):
-            raise RuntimeError(
-                'Only SQL-based backends support `add_operation`'
-            )
-
-        def decorator(translation_function):
-            self.client.compiler.translator_class.add_operation(
-                operation, translation_function
-            )
-
-        return decorator
-
     @property
     def current_database(self) -> str:
         """Return the current database."""
         # TODO: If we can assume this, we should define the `con` attribute
         return self.con.database
 
-    def database(self, name: Optional[str] = None):
+    def database(self, name: Optional[str] = None) -> Database:
         """Create a database object.
 
         Create a Database object for a given database name that can be used for
