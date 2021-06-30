@@ -1,4 +1,4 @@
-import sqlalchemy.dialects.postgresql as pg
+from sqlalchemy.dialects import postgresql
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -18,7 +18,9 @@ class PostgreSQLExprTranslator(AlchemyExprTranslator):
     _registry = operation_registry
     _rewrites = AlchemyExprTranslator._rewrites.copy()
     _type_map = AlchemyExprTranslator._type_map.copy()
-    _type_map.update({dt.Double: pg.DOUBLE_PRECISION, dt.Float: pg.REAL})
+    _type_map.update(
+        {dt.Double: postgresql.DOUBLE_PRECISION, dt.Float: postgresql.REAL}
+    )
 
 
 rewrites = PostgreSQLExprTranslator.rewrites

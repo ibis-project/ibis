@@ -10,6 +10,7 @@ import pandas.testing as tm
 import pytest
 import sqlalchemy as sa
 from pytest import param
+from sqlalchemy.dialects import postgresql
 
 import ibis
 import ibis.config as config
@@ -54,9 +55,7 @@ def guid2(con):
         ),
         param(
             lambda t: t.string_col.cast('double'),
-            lambda at: sa.cast(
-                at.c.string_col, sa.dialects.postgresql.DOUBLE_PRECISION
-            ),
+            lambda at: sa.cast(at.c.string_col, postgresql.DOUBLE_PRECISION),
             id='string_to_double',
         ),
         param(
