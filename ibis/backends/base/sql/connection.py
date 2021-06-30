@@ -5,7 +5,8 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base import BaseConnection
-from ibis.backends.base.sql import Compiler
+
+from .compiler.query_builder import Compiler
 
 # TODO Is there a type for any DBAPI2 cursor?
 Cursor = Any
