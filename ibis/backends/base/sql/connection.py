@@ -13,8 +13,8 @@ Cursor = Any
 
 
 class BaseSQLConnection(BaseConnection):
-    @abc.abstractmethod
     @property
+    @abc.abstractmethod
     def compiler(self) -> Compiler:
         """Compiler class for the backend.
 
