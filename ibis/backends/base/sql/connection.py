@@ -1,5 +1,5 @@
 import abc
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Dict, Optional, Union
 
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -19,6 +19,14 @@ class BaseSQLConnection(BaseConnection):
 
         Must be a subclass of `ibis.backends.base.sql.Compiler`.
         """
+
+    def compile(
+        self, expr: ir.Expr, params: Optional[Dict[str, Any]] = None
+    ) -> str:
+        """
+        Compile the expression.
+        """
+        return self.client.compiler.to_sql(expr, params=params)
 
     def raw_sql(self, query: str) -> Optional[Cursor]:
         """Execute a given query string.
@@ -40,7 +48,13 @@ class BaseSQLConnection(BaseConnection):
             return cursor
         cursor.release()
 
-    def execute(self, expr, params=None, limit='default', **kwargs):
+    def execute(
+        self,
+        expr: ir.Expr,
+        params: Optional[Dict[str, Any]] = None,
+        limit: Optional[Union[int, str]] = 'default',
+        **kwargs,
+    ):
         """Compile and execute the given Ibis expression.
 
         Compile and execute Ibis expression using this backend client
@@ -63,6 +77,8 @@ class BaseSQLConnection(BaseConnection):
           Array expressions: pandas.Series
           Scalar expressions: Python scalar value
         """
+        # TODO `limit` default should be None, and `str` shouldn't be
+        # a supported type (requires changing `to_ast_ensure_limit`)
         # TODO Reconsider having `kwargs` here. It's needed to support
         # `external_tables` in clickhouse, but better to deprecate that
         # feature than all this magic.
