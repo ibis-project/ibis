@@ -3,6 +3,8 @@ from __future__ import annotations
 import abc
 from typing import List, Optional
 
+import packaging
+
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import Database
@@ -70,6 +72,13 @@ class BaseConnection(abc.ABC):
             return True
 
     @property
+    @abc.abstractmethod
+    def version(self) -> packaging.version._BaseVersion:
+        """Version of the backend server.
+
+        For example, for a PostgreSQL backend this could be 13.3."""
+
+    @property
     def current_database(self) -> str:
         """Return the current database."""
         # TODO: If we can assume this, we should define the `con` attribute
@@ -113,6 +122,11 @@ class BaseConnection(abc.ABC):
         -------
         schema : ibis Schema
         """
+
+    def _fully_qualified_name(self, name, database):
+        """Full name of a database object, including the database."""
+        # TODO this default should include the database
+        return name
 
     def table(self, name: str, database: Optional[str] = None) -> ir.TableExpr:
         """Create a table expression.
