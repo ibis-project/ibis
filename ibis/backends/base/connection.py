@@ -3,8 +3,6 @@ from __future__ import annotations
 import abc
 from typing import List, Optional
 
-import packaging
-
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import Database
@@ -73,10 +71,11 @@ class BaseConnection(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def version(self) -> packaging.version._BaseVersion:
+    def version(self):
         """Version of the backend server.
 
-        For example, for a PostgreSQL backend this could be 13.3."""
+        For example, for a PostgreSQL backend this could be 13.3. The returned
+        object is a `Version` object of the `packaging` package."""
 
     @property
     def current_database(self) -> str:
