@@ -1,10 +1,11 @@
 from typing import Optional
 
 import sqlalchemy as sa
+from sqlalchemy.dialects import mysql, postgresql, sqlite
 from sqlalchemy.dialects.mysql.base import MySQLDialect
-from sqlalchemy.dialects.postgresql.base import PGDialect as PostgreSQLDialect
+from sqlalchemy.dialects.postgresql.base import PGDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
-from sqlalchemy.engine.interfaces import Dialect as SQLAlchemyDialect
+from sqlalchemy.engine.interfaces import Dialect
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
@@ -77,17 +78,17 @@ def to_sqla_type(itype, type_map=None):
         return type_map[type(itype)]
 
 
-@dt.dtype.register(SQLAlchemyDialect, sa.types.NullType)
+@dt.dtype.register(Dialect, sa.types.NullType)
 def sa_null(_, satype, nullable=True):
     return dt.null
 
 
-@dt.dtype.register(SQLAlchemyDialect, sa.types.Boolean)
+@dt.dtype.register(Dialect, sa.types.Boolean)
 def sa_boolean(_, satype, nullable=True):
     return dt.Boolean(nullable=nullable)
 
 
-@dt.dtype.register(MySQLDialect, sa.dialects.mysql.NUMERIC)
+@dt.dtype.register(MySQLDialect, mysql.NUMERIC)
 def sa_mysql_numeric(_, satype, nullable=True):
     # https://dev.mysql.com/doc/refman/8.0/en/fixed-point-types.html
     return dt.Decimal(
@@ -95,7 +96,7 @@ def sa_mysql_numeric(_, satype, nullable=True):
     )
 
 
-@dt.dtype.register(PostgreSQLDialect, sa.dialects.postgresql.NUMERIC)
+@dt.dtype.register(PGDialect, postgresql.NUMERIC)
 def sa_postgres_numeric(_, satype, nullable=True):
     # PostgreSQL allows any precision for numeric values if not specified,
     # up to the implementation limit. Here, default to the maximum value that
@@ -106,71 +107,71 @@ def sa_postgres_numeric(_, satype, nullable=True):
     )
 
 
-@dt.dtype.register(SQLAlchemyDialect, sa.types.Numeric)
-@dt.dtype.register(SQLiteDialect, sa.dialects.sqlite.NUMERIC)
+@dt.dtype.register(Dialect, sa.types.Numeric)
+@dt.dtype.register(SQLiteDialect, sqlite.NUMERIC)
 def sa_numeric(_, satype, nullable=True):
     return dt.Decimal(satype.precision, satype.scale, nullable=nullable)
 
 
-@dt.dtype.register(SQLAlchemyDialect, sa.types.SmallInteger)
+@dt.dtype.register(Dialect, sa.types.SmallInteger)
 def sa_smallint(_, satype, nullable=True):
     return dt.Int16(nullable=nullable)
 
 
-@dt.dtype.register(SQLAlchemyDialect, sa.types.Integer)
+@dt.dtype.register(Dialect, sa.types.Integer)
 def sa_integer(_, satype, nullable=True):
     return dt.Int32(nullable=nullable)
 
 
-@dt.dtype.register(SQLAlchemyDialect, sa.dialects.mysql.TINYINT)
+@dt.dtype.register(Dialect, mysql.TINYINT)
 def sa_mysql_tinyint(_, satype, nullable=True):
     return dt.Int8(nullable=nullable)
 
 
-@dt.dtype.register(SQLAlchemyDialect, sa.types.BigInteger)
+@dt.dtype.register(Dialect, sa.types.BigInteger)
 def sa_bigint(_, satype, nullable=True):
     return dt.Int64(nullable=nullable)
 
 
-@dt.dtype.register(SQLAlchemyDialect, sa.types.Float)
+@dt.dtype.register(Dialect, sa.types.Float)
 def sa_float(_, satype, nullable=True):
     return dt.Float(nullable=nullable)
 
 
 @dt.dtype.register(SQLiteDialect, sa.types.Float)
-@dt.dtype.register(PostgreSQLDialect, sa.dialects.postgresql.DOUBLE_PRECISION)
+@dt.dtype.register(PGDialect, postgresql.DOUBLE_PRECISION)
 def sa_double(_, satype, nullable=True):
     return dt.Double(nullable=nullable)
 
 
-@dt.dtype.register(PostgreSQLDialect, sa.dialects.postgresql.UUID)
+@dt.dtype.register(PGDialect, postgresql.UUID)
 def sa_uuid(_, satype, nullable=True):
     return dt.UUID(nullable=nullable)
 
 
-@dt.dtype.register(PostgreSQLDialect, sa.dialects.postgresql.MACADDR)
+@dt.dtype.register(PGDialect, postgresql.MACADDR)
 def sa_macaddr(_, satype, nullable=True):
     return dt.MACADDR(nullable=nullable)
 
 
-@dt.dtype.register(PostgreSQLDialect, sa.dialects.postgresql.INET)
+@dt.dtype.register(PGDialect, postgresql.INET)
 def sa_inet(_, satype, nullable=True):
     return dt.INET(nullable=nullable)
 
 
-@dt.dtype.register(PostgreSQLDialect, sa.dialects.postgresql.JSON)
+@dt.dtype.register(PGDialect, postgresql.JSON)
 def sa_json(_, satype, nullable=True):
     return dt.JSON(nullable=nullable)
 
 
-@dt.dtype.register(PostgreSQLDialect, sa.dialects.postgresql.JSONB)
+@dt.dtype.register(PGDialect, postgresql.JSONB)
 def sa_jsonb(_, satype, nullable=True):
     return dt.JSONB(nullable=nullable)
 
 
 if geospatial_supported:
 
-    @dt.dtype.register(SQLAlchemyDialect, (ga.Geometry, ga.types._GISType))
+    @dt.dtype.register(Dialect, (ga.Geometry, ga.types._GISType))
     def ga_geometry(_, gatype, nullable=True):
         t = gatype.geometry_type
         if t == 'POINT':
@@ -208,7 +209,7 @@ POSTGRES_FIELD_TO_IBIS_UNIT = {
 }
 
 
-@dt.dtype.register(PostgreSQLDialect, sa.dialects.postgresql.INTERVAL)
+@dt.dtype.register(PGDialect, postgresql.INTERVAL)
 def sa_postgres_interval(_, satype, nullable=True):
     field = satype.fields.upper()
     unit = POSTGRES_FIELD_TO_IBIS_UNIT.get(field, None)
@@ -223,39 +224,39 @@ def sa_postgres_interval(_, satype, nullable=True):
     return dt.Interval(unit=unit, nullable=nullable)
 
 
-@dt.dtype.register(MySQLDialect, sa.dialects.mysql.DOUBLE)
+@dt.dtype.register(MySQLDialect, mysql.DOUBLE)
 def sa_mysql_double(_, satype, nullable=True):
     # TODO: handle asdecimal=True
     return dt.Double(nullable=nullable)
 
 
-@dt.dtype.register(SQLAlchemyDialect, sa.types.String)
+@dt.dtype.register(Dialect, sa.types.String)
 def sa_string(_, satype, nullable=True):
     return dt.String(nullable=nullable)
 
 
-@dt.dtype.register(SQLAlchemyDialect, sa.LargeBinary)
+@dt.dtype.register(Dialect, sa.LargeBinary)
 def sa_binary(_, satype, nullable=True):
     return dt.Binary(nullable=nullable)
 
 
-@dt.dtype.register(SQLAlchemyDialect, sa.Time)
+@dt.dtype.register(Dialect, sa.Time)
 def sa_time(_, satype, nullable=True):
     return dt.Time(nullable=nullable)
 
 
-@dt.dtype.register(SQLAlchemyDialect, sa.Date)
+@dt.dtype.register(Dialect, sa.Date)
 def sa_date(_, satype, nullable=True):
     return dt.Date(nullable=nullable)
 
 
-@dt.dtype.register(SQLAlchemyDialect, sa.DateTime)
+@dt.dtype.register(Dialect, sa.DateTime)
 def sa_datetime(_, satype, nullable=True, default_timezone='UTC'):
     timezone = default_timezone if satype.timezone else None
     return dt.Timestamp(timezone=timezone, nullable=nullable)
 
 
-@dt.dtype.register(SQLAlchemyDialect, sa.ARRAY)
+@dt.dtype.register(Dialect, sa.ARRAY)
 def sa_array(dialect, satype, nullable=True):
     dimensions = satype.dimensions
     if dimensions is not None and dimensions != 1:
@@ -285,7 +286,7 @@ def schema_from_table(table, schema=None):
             dtype = dt.dtype(schema[name])
         else:
             dtype = dt.dtype(
-                getattr(table.bind, 'dialect', SQLAlchemyDialect()),
+                getattr(table.bind, 'dialect', Dialect()),
                 column.type,
                 nullable=column.nullable,
             )
