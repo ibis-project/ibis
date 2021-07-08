@@ -1,5 +1,4 @@
 import contextlib
-import functools
 from typing import List, Optional, Union
 
 import pandas as pd
@@ -16,10 +15,6 @@ from ibis.backends.base.sql import SQLClient
 from .datatypes import to_sqla_type
 from .geospatial import geospatial_supported
 from .query_builder import AlchemyCompiler
-
-if geospatial_supported:
-    import geoalchemy2.shape as shape
-    import geopandas
 
 
 class _AutoCloseCursor:
@@ -44,50 +39,6 @@ class _AutoCloseCursor:
         return self.original_cursor.fetchall()
 
 
-def _invalidates_reflection_cache(f):
-    """Invalidate the SQLAlchemy reflection cache if `f` performs an operation
-    that mutates database or table metadata such as ``CREATE TABLE``,
-    ``DROP TABLE``, etc.
-
-    Parameters
-    ----------
-    f : callable
-        A method on :class:`ibis.sql.alchemy.AlchemyClient`
-    """
-
-    @functools.wraps(f)
-    def wrapped(self, *args, **kwargs):
-        result = f(self, *args, **kwargs)
-
-        # only invalidate the cache after we've succesfully called the wrapped
-        # function
-        self._reflection_cache_is_dirty = True
-        return result
-
-    return wrapped
-
-
-def _maybe_to_geodataframe(df, schema):
-    """
-    If the required libraries for geospatial support are installed, and if a
-    geospatial column is present in the dataframe, convert it to a
-    GeoDataFrame.
-    """
-
-    def to_shapely(row, name):
-        return shape.to_shape(row[name]) if row[name] is not None else None
-
-    if len(df) and geospatial_supported:
-        geom_col = None
-        for name, dtype in schema.items():
-            if isinstance(dtype, dt.GeoSpatial):
-                geom_col = geom_col or name
-                df[name] = df.apply(lambda x: to_shapely(x, name), axis=1)
-        if geom_col:
-            df = geopandas.GeoDataFrame(df, geometry=geom_col)
-    return df
-
-
 class AlchemyClient(SQLClient):
 
     compiler = AlchemyCompiler
@@ -97,15 +48,28 @@ class AlchemyClient(SQLClient):
         super().__init__()
         self.con = con
         self.meta = sa.MetaData(bind=con)
-        self._inspector = sa.inspect(con)
-        self._reflection_cache_is_dirty = False
         self._schemas = {}
 
-    @property
-    def inspector(self):
-        if self._reflection_cache_is_dirty:
-            self._inspector.info_cache.clear()
-        return self._inspector
+    def _to_geodataframe(df, schema):
+        """
+        If the required libraries for geospatial support are installed, and if
+        a geospatial column is present in the dataframe, convert it to a
+        GeoDataFrame.
+        """
+        import geopandas
+        from geoalchemy2 import shape
+
+        def to_shapely(row, name):
+            return shape.to_shape(row[name]) if row[name] is not None else None
+
+        geom_col = None
+        for name, dtype in schema.items():
+            if isinstance(dtype, dt.GeoSpatial):
+                geom_col = geom_col or name
+                df[name] = df.apply(lambda x: to_shapely(x, name), axis=1)
+        if geom_col:
+            df = geopandas.GeoDataFrame(df, geometry=geom_col)
+        return df
 
     def fetch_from_cursor(self, cursor, schema):
         df = pd.DataFrame.from_records(
@@ -113,14 +77,15 @@ class AlchemyClient(SQLClient):
             columns=cursor.original_cursor.keys(),
             coerce_float=True,
         )
-        return _maybe_to_geodataframe(schema.apply_to(df), schema)
+        if len(df) and geospatial_supported:
+            return self._to_geodataframe(schema.apply_to(df), schema)
+        return df
 
     @contextlib.contextmanager
     def begin(self):
         with self.con.begin() as bind:
             yield bind
 
-    @_invalidates_reflection_cache
     def create_table(self, name, expr=None, schema=None, database=None):
         if database == self.database_name:
             # avoid fully qualified name
@@ -170,7 +135,6 @@ class AlchemyClient(SQLClient):
         columns = self._columns_from_schema(name, schema)
         return sa.Table(name, self.meta, *columns)
 
-    @_invalidates_reflection_cache
     def drop_table(
         self,
         table_name: str,
@@ -279,15 +243,14 @@ class AlchemyClient(SQLClient):
         List[str]
 
         """
-        inspector = self.inspector
-        # inspector returns a mutable version of its names, so make a copy.
-        names = inspector.get_table_names(schema=schema).copy()
-        names.extend(inspector.get_view_names(schema=schema))
+        inspector = sa.inspect(self.con)
+        names = inspector.get_table_names(
+            schema=schema
+        ) + inspector.get_view_names(schema=schema)
         if like is not None:
             names = [x for x in names if like in x]
         return sorted(names)
 
-    @_invalidates_reflection_cache
     def raw_sql(self, query: str):
         return _AutoCloseCursor(super().raw_sql(query))
 
