@@ -75,43 +75,6 @@ class SQLiteClient(AlchemyClient):
         )
         self.has_attachment = True
 
-    @property
-    def client(self):
-        return self
-
-    def _get_sqla_table(self, name, schema=None, autoload=True):
-        return sa.Table(
-            name,
-            self.meta,
-            schema=schema or self.current_database,
-            autoload=autoload,
-        )
-
-    def table(self, name, database=None):
-        """
-        Create a table expression that references a particular table in the
-        SQLite database
-
-        Parameters
-        ----------
-        name : string
-        database : string, optional
-          name of the attached database that the table is located in.
-
-        Returns
-        -------
-        TableExpr
-
-        """
-        alch_table = self._get_sqla_table(name, schema=database)
-        node = self.table_class(alch_table, self)
-        return self.table_expr_class(node)
-
-    def list_tables(self, like=None, database=None, schema=None):
-        if database is None:
-            database = self.database_name
-        return super().list_tables(like, schema=database)
-
     def _table_from_schema(
         self, name, schema, database: Optional[str] = None
     ) -> sa.Table:

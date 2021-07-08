@@ -77,8 +77,9 @@ class AlchemyClient(SQLClient):
             columns=cursor.original_cursor.keys(),
             coerce_float=True,
         )
+        df = schema.apply_to(df)
         if len(df) and geospatial_supported:
-            return self._to_geodataframe(schema.apply_to(df), schema)
+            return self._to_geodataframe(df, schema)
         return df
 
     @contextlib.contextmanager
@@ -221,6 +222,10 @@ class AlchemyClient(SQLClient):
         t = self._get_sqla_table(table_name, schema=database)
         t.delete().execute()
 
+    def list_schemas(self):
+        """List all the schemas in the current database."""
+        return self.inspector.get_schema_names()
+
     def list_tables(
         self,
         like: Optional[str] = None,
@@ -250,6 +255,33 @@ class AlchemyClient(SQLClient):
         if like is not None:
             names = [x for x in names if like in x]
         return sorted(names)
+
+    def table(self, name, database=None, schema=None):
+        """Create a table expression that references a particular a table
+        called `name` in a PostgreSQL database called `database`.
+
+        Parameters
+        ----------
+        name : str
+            The name of the table to retrieve.
+        database : str, optional
+            The database in which the table referred to by `name` resides. If
+            ``None`` then the ``current_database`` is used.
+        schema : str, optional
+            The schema in which the table resides.  If ``None`` then the
+            `public` schema is assumed.
+
+        Returns
+        -------
+        table : TableExpr
+            A table expression.
+        """
+        if database is not None and database != self.current_database:
+            return self.database(name=database).table(name=name, schema=schema)
+        else:
+            alch_table = self._get_sqla_table(name, schema=schema)
+            node = self.table_class(alch_table, self, self._schemas.get(name))
+            return self.table_expr_class(node)
 
     def raw_sql(self, query: str):
         return _AutoCloseCursor(super().raw_sql(query))
