@@ -224,7 +224,7 @@ class AlchemyClient(SQLClient):
 
     def list_schemas(self):
         """List all the schemas in the current database."""
-        return self.inspector.get_schema_names()
+        return sa.inspect(self.con).get_schema_names()
 
     def list_tables(
         self,
