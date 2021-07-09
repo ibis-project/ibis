@@ -1,6 +1,7 @@
 # This file should have all the dependencies for development excluding the specific to the backends.
 name: ibis-dev
 channels:
+  - nodefaults
   - conda-forge
 dependencies:
   # Ibis hard dependencies
@@ -10,6 +11,8 @@ dependencies:
   - pytz
   - regex
   - toolz
+  - cached_property # for 3.7 compat, functools.cached_property is for >=3.8
+  - setuptools
 
   # Ibis soft dependencies
   - sqlalchemy

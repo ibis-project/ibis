@@ -12,7 +12,6 @@ import ibis.expr.operations as ops
 from ibis.backends.pandas.dispatch import execute_node as pandas_execute_node
 from ibis.expr.scope import Scope
 
-from .. import Backend
 from ..client import DaskClient
 from ..core import execute, is_computable_input
 from ..dispatch import execute_node, post_execute, pre_execute
@@ -26,17 +25,17 @@ def test_no_execute_ambiguities(func):
 
 
 def test_from_dataframe(dataframe, ibis_table, core_client):
-    t = Backend().from_dataframe(dataframe)
+    t = ibis.dask.from_dataframe(dataframe)
     result = t.execute()
     expected = ibis_table.execute()
     tm.assert_frame_equal(result, expected)
 
-    t = Backend().from_dataframe(dataframe, name='foo')
+    t = ibis.dask.from_dataframe(dataframe, name='foo')
     expected = ibis_table.execute()
     tm.assert_frame_equal(result, expected)
 
     client = core_client
-    t = Backend().from_dataframe(dataframe, name='foo', client=client)
+    t = ibis.dask.from_dataframe(dataframe, name='foo', client=client)
     expected = ibis_table.execute()
     tm.assert_frame_equal(result, expected)
 
@@ -81,7 +80,7 @@ def test_missing_data_on_custom_client():
                 name, ibis.schema([('a', 'int64')]), self
             ).to_expr()
 
-    con = MyClient(Backend(), {})
+    con = MyClient(ibis.dask, {})
     t = con.table('t')
     with pytest.raises(
         NotImplementedError,

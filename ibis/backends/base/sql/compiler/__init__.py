@@ -1,22 +1,21 @@
 from .base import DDL, DML
 from .query_builder import (
-    QueryBuilder,
+    Compiler,
     Select,
     SelectBuilder,
     TableSetFormatter,
     Union,
 )
-from .translator import Dialect, ExprTranslator, QueryContext
+from .translator import ExprTranslator, QueryContext
 
 __all__ = (
-    'QueryBuilder',
+    'Compiler',
     'Select',
     'SelectBuilder',
     'Union',
     'TableSetFormatter',
     'ExprTranslator',
     'QueryContext',
-    'Dialect',
     'DML',
     'DDL',
 )

@@ -1,13 +1,12 @@
 from pathlib import Path
 
-import ibis
 import ibis.expr.types as ir
+from ibis.backends.base import Client, Database
 from ibis.backends.pandas.core import execute_and_reset
 
 
-class FileClient(ibis.client.Client):
+class FileClient(Client):
     def __init__(self, backend, root):
-        self.dialect = backend.dialect
         self.extension = backend.extension
         self.table_class = backend.table_class
         self.root = Path(str(root))
@@ -94,7 +93,7 @@ class FileClient(ibis.client.Client):
         return tables
 
 
-class FileDatabase(ibis.client.Database):
+class FileDatabase(Database):
     def __init__(self, name, client, path=None):
         super().__init__(name, client)
         self.path = path

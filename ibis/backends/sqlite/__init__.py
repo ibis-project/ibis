@@ -13,17 +13,14 @@
 # limitations under the License.
 
 from ibis.backends.base import BaseBackend
-from ibis.backends.base.sql.alchemy import AlchemyQueryBuilder
 
 from .client import SQLiteClient, SQLiteDatabase, SQLiteTable
-from .compiler import SQLiteExprTranslator
 
 
 class Backend(BaseBackend):
     name = 'sqlite'
     kind = 'sqlalchemy'
-    builder = AlchemyQueryBuilder
-    translator = SQLiteExprTranslator
+    client = SQLiteClient
     database_class = SQLiteDatabase
     table_class = SQLiteTable
 

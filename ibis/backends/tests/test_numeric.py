@@ -16,7 +16,9 @@ from ibis.tests.util import assert_equal
 try:
     import sqlalchemy as sa
 except ImportError:
-    sa = None
+    sa = postgresql = mysql = None
+else:
+    from sqlalchemy.dialects import mysql, postgresql
 
 
 @pytest.fixture
@@ -369,7 +371,7 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
     'dialects, default_precisions, default_scales',
     [
         (
-            {'postgres': sa.dialects.postgresql, 'mysql': sa.dialects.mysql},
+            {'postgres': postgresql, 'mysql': mysql},
             {'postgres': 1000, 'mysql': 10},
             {'postgres': 0, 'mysql': 0},
         )

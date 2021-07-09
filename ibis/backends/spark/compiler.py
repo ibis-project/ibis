@@ -25,27 +25,9 @@ import math
 import ibis
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
-from ibis.backends.base.sql.compiler import (
-    Dialect,
-    ExprTranslator,
-    QueryBuilder,
-    QueryContext,
-    Select,
-    SelectBuilder,
-)
-from ibis.backends.base.sql.registry import quote_identifier
+from ibis.backends.base.sql.compiler import Compiler, ExprTranslator
 
 from .registry import operation_registry
-
-
-def build_ast(expr, context=None):
-    from ibis.backends.spark import Backend
-
-    if context is None:
-        context = Backend().dialect.make_context()
-    builder = SparkQueryBuilder(expr, context=context)
-    return builder.get_result()
-
 
 # ----------------------------------------------------------------------
 # Select compilation
@@ -61,38 +43,17 @@ class SparkUDAFNode(ops.Reduction):
         return self.return_type.scalar_type()
 
 
-class SparkSelectBuilder(SelectBuilder):
-    @property
-    def _select_class(self):
-        return SparkSelect
-
-
-class SparkQueryBuilder(QueryBuilder):
-    select_builder = SparkSelectBuilder
-
-
-class SparkContext(QueryContext):
-    def _to_sql(self, expr, ctx):
-        if ctx is None:
-            ctx = Dialect.make_context()
-        builder = SparkQueryBuilder(expr, context=ctx)
-        ast = builder.get_result()
-        query = ast.queries[0]
-        return query.compile()
-
-
 class SparkExprTranslator(ExprTranslator):
     _registry = operation_registry
 
-    context_class = SparkContext
-
-    def name(self, translated, name, force=True):
-        return '{} AS {}'.format(
-            translated, quote_identifier(name, force=force)
-        )
-
 
 rewrites = SparkExprTranslator.rewrites
+
+
+@rewrites(ops.FloorDivide)
+def _floor_divide(expr):
+    left, right = expr.op().args
+    return left.div(right).floor()
 
 
 @rewrites(ops.IsInf)
@@ -101,5 +62,5 @@ def spark_rewrites_is_inf(expr):
     return (arg == ibis.literal(math.inf)) | (arg == ibis.literal(-math.inf))
 
 
-class SparkSelect(Select):
-    translator = SparkExprTranslator
+class SparkCompiler(Compiler):
+    translator_class = SparkExprTranslator

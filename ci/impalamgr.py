@@ -232,7 +232,7 @@ def upload_udfs(con):
 # ==========================================
 
 
-@click.group(context_settings=dict(help_option_names=['-h', '--help']))
+@click.group(context_settings={'help_option_names': ['-h', '--help']})
 def main():
     """Manage impala test data for Ibis."""
 

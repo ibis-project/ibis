@@ -1,54 +1,13 @@
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.compiler import (
+    Compiler,
     ExprTranslator,
-    QueryBuilder,
-    QueryContext,
-    Select,
-    SelectBuilder,
     TableSetFormatter,
 )
 from ibis.backends.base.sql.registry import (
     binary_infix_ops,
     operation_registry,
-    quote_identifier,
 )
-
-
-def build_ast(expr, context=None):
-    from ibis.backends.impala import Backend
-
-    if context is None:
-        context = Backend().dialect.make_context()
-    builder = ImpalaQueryBuilder(expr, context=context)
-    return builder.get_result()
-
-
-class ImpalaSelectBuilder(SelectBuilder):
-    @property
-    def _select_class(self):
-        return ImpalaSelect
-
-
-class ImpalaQueryBuilder(QueryBuilder):
-
-    select_builder = ImpalaSelectBuilder
-
-
-class ImpalaSelect(Select):
-
-    """
-    A SELECT statement which, after execution, might yield back to the user a
-    table, array/list, or scalar value, depending on the expression that
-    generated it
-    """
-
-    @property
-    def translator(self):
-        return ImpalaExprTranslator
-
-    @property
-    def table_set_formatter(self):
-        return ImpalaTableSetFormatter
 
 
 class ImpalaTableSetFormatter(TableSetFormatter):
@@ -61,26 +20,9 @@ class ImpalaTableSetFormatter(TableSetFormatter):
 
         return jname
 
-    def _quote_identifier(self, name):
-        return quote_identifier(name)
-
-
-class ImpalaQueryContext(QueryContext):
-    def _to_sql(self, expr, ctx):
-        builder = ImpalaQueryBuilder(expr, context=ctx)
-        ast = builder.get_result()
-        query = ast.queries[0]
-        return query.compile()
-
 
 class ImpalaExprTranslator(ExprTranslator):
     _registry = {**operation_registry, **binary_infix_ops}
-    context_class = ImpalaQueryContext
-
-    def name(self, translated, name, force=True):
-        return '{} AS {}'.format(
-            translated, quote_identifier(name, force=force)
-        )
 
 
 rewrites = ImpalaExprTranslator.rewrites
@@ -90,3 +32,8 @@ rewrites = ImpalaExprTranslator.rewrites
 def _floor_divide(expr):
     left, right = expr.op().args
     return left.div(right).floor()
+
+
+class ImpalaCompiler(Compiler):
+    translator_class = ImpalaExprTranslator
+    table_set_formatter_class = ImpalaTableSetFormatter

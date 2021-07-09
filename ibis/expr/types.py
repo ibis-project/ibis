@@ -8,7 +8,9 @@ import numpy as np
 import ibis
 import ibis.common.exceptions as com
 import ibis.config as config
+import ibis.expr.types as ir
 import ibis.util as util
+from ibis.config import options
 from ibis.expr.typing import TimeContext
 
 if TYPE_CHECKING:
@@ -188,6 +190,55 @@ class Expr:
     def _factory(self):
         return type(self)
 
+    def _find_backends(self):
+        """Find possible backends for an expression.
+
+        Parameters
+        ----------
+        expr : Expr
+
+        Returns
+        -------
+        client : Client
+            Backend found.
+        """
+        from ibis.backends.base.client import Client
+
+        seen_backends = set()
+
+        stack = [self.op()]
+        seen = set()
+
+        while stack:
+            node = stack.pop()
+
+            if node not in seen:
+                seen.add(node)
+
+                for arg in node.flat_args():
+                    if isinstance(arg, Client):
+                        seen_backends.add(arg)
+                    elif isinstance(arg, ir.Expr):
+                        stack.append(arg.op())
+
+        return list(seen_backends)
+
+    def _find_backend(self):
+        backends = self._find_backends()
+
+        if not backends:
+            default = options.default_backend
+            if default is None:
+                raise com.IbisError(
+                    'Expression depends on no backends, and found no default'
+                )
+            return default
+
+        if len(backends) > 1:
+            raise ValueError('Multiple backends found')
+
+        return backends[0]
+
     def execute(
         self,
         limit='default',
@@ -218,9 +269,7 @@ class Expr:
         result : expression-dependent
           Result of compiling expression and executing in backend
         """
-        from ibis.client import execute
-
-        return execute(
+        return self._find_backend().execute(
             self, limit=limit, timecontext=timecontext, params=params, **kwargs
         )
 
@@ -238,9 +287,7 @@ class Expr:
         compiled : value or list
            query representation or list thereof
         """
-        from ibis.client import compile
-
-        return compile(
+        return self._find_backend().compile(
             self, limit=limit, timecontext=timecontext, params=params
         )
 

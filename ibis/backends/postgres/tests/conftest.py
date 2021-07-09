@@ -47,7 +47,7 @@ class TestConf(BackendTest, RoundHalfToEven):
     returned_timestamp_unit = 's'
 
     @staticmethod
-    def connect(data_directory: Path) -> ibis.client.Client:
+    def connect(data_directory: Path):
         user = os.environ.get(
             'IBIS_TEST_POSTGRES_USER', os.environ.get('PGUSER', 'postgres')
         )
@@ -130,11 +130,12 @@ def intervals(con):
 
 @pytest.fixture
 def translate():
-    from ibis.backends.postgres import Backend
+    from ibis.backends.postgres import PostgreSQLClient
 
-    dialect = Backend().dialect
-    context = dialect.make_context()
-    return lambda expr: dialect.translator(expr, context).get_result()
+    context = PostgreSQLClient.compiler.make_context()
+    return lambda expr: (
+        PostgreSQLClient.compiler.translator_class(expr, context).get_result()
+    )
 
 
 @pytest.fixture

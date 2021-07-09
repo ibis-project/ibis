@@ -8,7 +8,7 @@ import warnings
 
 import numpy as np
 import sqlalchemy as sa
-import sqlalchemy.dialects.postgresql as pg
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql import expression
 from sqlalchemy.sql.functions import GenericFunction
@@ -380,7 +380,7 @@ def _find_in_set(t, expr):
     #       itself also have this property?
     needle, haystack = expr.op().args
     return _array_search(
-        t.translate(needle), pg.array(list(map(t.translate, haystack)))
+        t.translate(needle), postgresql.array(list(map(t.translate, haystack)))
     )
 
 

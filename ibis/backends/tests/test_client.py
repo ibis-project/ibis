@@ -14,13 +14,11 @@ def new_schema():
     return ibis.schema([('a', 'string'), ('b', 'bool'), ('c', 'int32')])
 
 
+@pytest.mark.only_on_backends(
+    SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
+)
 @pytest.mark.xfail_unsupported
 def test_load_data_sqlalchemy(backend, con, temp_table):
-    if not isinstance(
-        con.dialect(), ibis.backends.base.sql.alchemy.AlchemyDialect
-    ):
-        pytest.skip(f'{backend} is not a SQL Alchemy Client.')
-
     sch = ibis.schema(
         [
             ('first_name', 'string'),
@@ -65,9 +63,9 @@ def test_version(backend, con):
     ],
 )
 def test_query_schema(backend, con, alltypes, expr_fn, expected):
-    if not hasattr(con, '_build_ast'):
+    if not hasattr(con, 'compiler'):
         pytest.skip(
-            '{} backend has no _build_ast method'.format(
+            '{} backend has no `compiler` attribute'.format(
                 type(backend).__name__
             )
         )
@@ -75,9 +73,8 @@ def test_query_schema(backend, con, alltypes, expr_fn, expected):
     expr = expr_fn(alltypes)
 
     # we might need a public API for it
-    ast = con._build_ast(expr, backend.make_context())
-    query = con.query_class(con, ast)
-    schema = query.schema()
+    ast = con.compiler.to_ast(expr, backend.make_context())
+    schema = con.ast_schema(ast)
 
     # clickhouse columns has been defined as non-nullable
     # whereas other backends don't support non-nullable columns yet
@@ -87,7 +84,7 @@ def test_query_schema(backend, con, alltypes, expr_fn, expected):
             for name, dtype in expected
         ]
     )
-    assert query.schema().equals(expected)
+    assert schema.equals(expected)
 
 
 @pytest.mark.parametrize(

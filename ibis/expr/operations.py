@@ -7,6 +7,7 @@ from typing import List
 
 import numpy as np
 import toolz
+from cached_property import cached_property
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -1329,7 +1330,7 @@ class Distinct(TableNode, HasSchema):
         # check whether schema has overlapping columns or not
         assert self.schema
 
-    @property
+    @cached_property
     def schema(self):
         return self.table.schema()
 
@@ -1773,7 +1774,7 @@ class MaterializedJoin(TableNode, HasSchema):
         # check whether the underlying schema has overlapping columns or not
         assert self.schema
 
-    @property
+    @cached_property
     def schema(self):
         return self.join.op()._get_schema()
 
@@ -1835,7 +1836,7 @@ class SetOp(TableNode, HasSchema):
                 'Table schemas must be equal for set operations'
             )
 
-    @property
+    @cached_property
     def schema(self):
         return self.left.schema()
 
@@ -1949,7 +1950,7 @@ class DeferredSortKey:
 class SelfReference(TableNode, HasSchema):
     table = Arg(ir.TableExpr)
 
-    @property
+    @cached_property
     def schema(self):
         return self.table.schema()
 
@@ -2026,7 +2027,7 @@ class Selection(TableNode, HasSchema):
         # Validate no overlapping columns in schema
         assert self.schema
 
-    @property
+    @cached_property
     def schema(self):
         # Resolve schema and initialize
         if not self.selections:
@@ -2263,8 +2264,6 @@ class Aggregation(TableNode, HasSchema):
         assert self.schema
 
     def _rewrite_exprs(self, table, what):
-        from ibis.expr.analysis import substitute_parents
-
         what = util.promote_list(what)
 
         all_exprs = []
@@ -2275,9 +2274,16 @@ class Aggregation(TableNode, HasSchema):
                 bound_expr = ir.bind_expr(table, expr)
                 all_exprs.append(bound_expr)
 
-        return [
-            substitute_parents(x, past_projection=False) for x in all_exprs
-        ]
+        return all_exprs
+        # TODO - #2832
+        # this optimization becomes O(n^2) when it calls into
+        # _lift_TableColumn in analysis.py, which itself is O(n) and is
+        # called on each input to the aggregation - thus creating the
+        # aggregation expression can be extremely slow on wide tables
+        # that contain a Selection.
+        # return [
+        #     substitute_parents(x, past_projection=False) for x in all_exprs
+        # ]
 
     def blocks(self):
         return True
@@ -2287,7 +2293,7 @@ class Aggregation(TableNode, HasSchema):
             table_expr, self.metrics, by=self.by, having=self.having
         )
 
-    @property
+    @cached_property
     def schema(self):
         names = []
         types = []
@@ -2909,7 +2915,7 @@ class ArrayColumn(ValueOp):
     cols = Arg(rlz.list_of(rlz.column(rlz.any), min_length=1))
 
     def _validate(self):
-        if len(set([col.type() for col in self.cols])) > 1:
+        if len({col.type() for col in self.cols}) > 1:
             raise com.IbisTypeError(
                 f'The types of all input columns must match exactly in a '
                 f'{type(self).__name__} operation.'

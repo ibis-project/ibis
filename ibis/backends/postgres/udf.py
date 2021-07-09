@@ -4,16 +4,16 @@ import itertools
 from textwrap import dedent
 
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import dialect as sa_postgres_dialect
+from sqlalchemy.dialects.postgresql import dialect
 
 import ibis.expr.rules as rlz
 import ibis.udf.validate as v
 from ibis import IbisError
 from ibis.backends.base.sql.alchemy import to_sqla_type
 from ibis.backends.postgres.compiler import (
+    PostgreSQLCompiler,
     PostgreSQLExprTranslator,
     PostgresUDFNode,
-    add_operation,
 )
 from ibis.expr.signature import Argument as Arg
 
@@ -24,25 +24,25 @@ class PostgresUDFError(IbisError):
     pass
 
 
-def ibis_to_pg_sa_type(ibis_type):
+def _ibis_to_pg_sa_type(ibis_type):
     """Map an ibis DataType to a Postgres-compatible sqlalchemy type"""
     return to_sqla_type(ibis_type, type_map=PostgreSQLExprTranslator._type_map)
 
 
-def sa_type_to_postgres_str(sa_type):
+def _sa_type_to_postgres_str(sa_type):
     """Map a Postgres-compatible sqlalchemy type to a Postgres-appropriate
     string"""
     if callable(sa_type):
         sa_type = sa_type()
-    return sa_type.compile(dialect=sa_postgres_dialect())
+    return sa_type.compile(dialect=dialect())
 
 
-def ibis_to_postgres_str(ibis_type):
+def _ibis_to_postgres_str(ibis_type):
     """Map an ibis DataType to a Postgres-appropriate string"""
-    return sa_type_to_postgres_str(ibis_to_pg_sa_type(ibis_type))
+    return _sa_type_to_postgres_str(_ibis_to_pg_sa_type(ibis_type))
 
 
-def create_udf_node(name, fields):
+def _create_udf_node(name, fields):
     """Create a new UDF node type.
 
     Parameters
@@ -108,7 +108,7 @@ def existing_udf(name, input_types, output_type, schema=None, parameters=None):
     )
     udf_node_fields['resolve_name'] = lambda self: name
 
-    udf_node = create_udf_node(name, udf_node_fields)
+    udf_node = _create_udf_node(name, udf_node_fields)
 
     def _translate_udf(t, expr):
         func_obj = sa.func
@@ -120,7 +120,7 @@ def existing_udf(name, input_types, output_type, schema=None, parameters=None):
 
         return func_obj(*sa_args)
 
-    add_operation(udf_node, _translate_udf)
+    PostgreSQLCompiler.add_operation(udf_node, _translate_udf)
 
     def wrapped(*args, **kwargs):
         node = udf_node(*args, **kwargs)
@@ -175,10 +175,10 @@ $$;
 """
 
     postgres_signature = ', '.join(
-        '{name} {type}'.format(name=name, type=ibis_to_postgres_str(type_))
+        '{name} {type}'.format(name=name, type=_ibis_to_postgres_str(type_))
         for name, type_ in zip(parameter_names, in_types)
     )
-    return_type = ibis_to_postgres_str(out_type)
+    return_type = _ibis_to_postgres_str(out_type)
     # If function definition is indented extra,
     # Postgres UDF will fail with indentation error.
     func_definition = dedent(inspect.getsource(python_func))

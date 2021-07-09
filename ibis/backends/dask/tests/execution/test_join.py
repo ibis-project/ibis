@@ -8,8 +8,6 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 
-from ... import Backend
-
 # Note - computations in this file use the single threadsed scheduler (instead
 # of the default multithreaded scheduler) in order to avoid a flaky interaction
 # between dask and pandas in merges. There is evidence this has been fixed in
@@ -62,7 +60,7 @@ def test_cross_join(left, right, df1, df2):
     result = expr.compile()
     expected = dd.merge(
         df1.assign(dummy=1), df2.assign(dummy=1), how='inner', on='dummy'
-    ).rename(columns=dict(key_x='key'))
+    ).rename(columns={'key_x': 'key'})
     del expected['dummy'], expected['key_y']
     tm.assert_frame_equal(
         result[expected.columns].compute(scheduler='single-threaded'),
@@ -88,7 +86,7 @@ def test_cross_join_project_left_table(left, right, df1, df2):
     result = expr.compile()
     expected = dd.merge(
         df1.assign(dummy=1), df2.assign(dummy=1), how='inner', on='dummy'
-    ).rename(columns=dict(key_x='key'))[list(left.columns) + ['key3']]
+    ).rename(columns={'key_x': 'key'})[list(left.columns) + ['key3']]
     tm.assert_frame_equal(
         result[expected.columns].compute(scheduler='single-threaded'),
         expected.compute(scheduler='single-threaded'),
@@ -216,7 +214,7 @@ def test_join_with_post_expression_filter(how, left):
 def test_multi_join_with_post_expression_filter(how, left, df1):
     lhs = left[['key', 'key2']]
     rhs = left[['key2', 'value']]
-    rhs2 = left[['key2', 'value']].relabel(dict(value='value2'))
+    rhs2 = left[['key2', 'value']].relabel({'value': 'value2'})
 
     joined = lhs.join(rhs, 'key2', how=how)
     projected = joined[lhs, rhs.value]
@@ -437,14 +435,14 @@ def test_keyed_asof_join_with_tolerance(
 )
 def test_select_on_unambiguous_join(how, func, npartitions):
     df_t = dd.from_pandas(
-        pd.DataFrame(dict(a0=[1, 2, 3], b1=list("aab"))),
+        pd.DataFrame({'a0': [1, 2, 3], 'b1': list("aab")}),
         npartitions=npartitions,
     )
     df_s = dd.from_pandas(
-        pd.DataFrame(dict(a1=[2, 3, 4], b2=list("abc"))),
+        pd.DataFrame({'a1': [2, 3, 4], 'b2': list("abc")}),
         npartitions=npartitions,
     )
-    con = Backend().connect({"t": df_t, "s": df_s})
+    con = ibis.dask.connect({"t": df_t, "s": df_s})
     t = con.table("t")
     s = con.table("s")
     method = getattr(t, "{}_join".format(how))
@@ -476,14 +474,18 @@ def test_select_on_unambiguous_join(how, func, npartitions):
 @merge_asof_minversion
 def test_select_on_unambiguous_asof_join(func, npartitions):
     df_t = dd.from_pandas(
-        pd.DataFrame(dict(a0=[1, 2, 3], b1=date_range("20180101", periods=3))),
+        pd.DataFrame(
+            {'a0': [1, 2, 3], 'b1': date_range("20180101", periods=3)}
+        ),
         npartitions=npartitions,
     )
     df_s = dd.from_pandas(
-        pd.DataFrame(dict(a1=[2, 3, 4], b2=date_range("20171230", periods=3))),
+        pd.DataFrame(
+            {'a1': [2, 3, 4], 'b2': date_range("20171230", periods=3)}
+        ),
         npartitions=npartitions,
     )
-    con = Backend().connect({"t": df_t, "s": df_s})
+    con = ibis.dask.connect({"t": df_t, "s": df_s})
     t = con.table("t")
     s = con.table("s")
     join = t.asof_join(s, t.b1 == s.b2)

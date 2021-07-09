@@ -16,7 +16,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
     returned_timestamp_unit = 's'
 
     @staticmethod
-    def connect(data_directory: Path) -> ibis.client.Client:
+    def connect(data_directory: Path):
         path = Path(
             os.environ.get(
                 'IBIS_TEST_SQLITE_DATABASE', data_directory / 'ibis_testing.db'
@@ -55,12 +55,12 @@ def dialect():
 
 @pytest.fixture
 def translate(dialect):
-    from ibis.backends.sqlite import Backend
+    from ibis.backends.sqlite import SQLiteClient
 
-    ibis_dialect = Backend().dialect()
-    context = ibis_dialect.make_context()
+    client = SQLiteClient
+    context = client.compiler.make_context()
     return lambda expr: str(
-        ibis_dialect.translator(expr, context)
+        client.compiler.translator_class(expr, context)
         .get_result()
         .compile(dialect=dialect, compile_kwargs={'literal_binds': True})
     )

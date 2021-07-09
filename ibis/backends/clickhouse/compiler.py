@@ -4,9 +4,8 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.util as util
 from ibis.backends.base.sql.compiler import (
+    Compiler,
     ExprTranslator,
-    QueryBuilder,
-    QueryContext,
     Select,
     SelectBuilder,
     TableSetFormatter,
@@ -16,42 +15,12 @@ from .identifiers import quote_identifier
 from .registry import operation_registry
 
 
-def build_ast(expr, context):
-    builder = ClickhouseQueryBuilder(expr, context=context)
-    return builder.get_result()
-
-
 class ClickhouseSelectBuilder(SelectBuilder):
-    @property
-    def _select_class(self):
-        return ClickhouseSelect
-
     def _convert_group_by(self, exprs):
         return exprs
 
 
-class ClickhouseQueryBuilder(QueryBuilder):
-
-    select_builder = ClickhouseSelectBuilder
-
-
-class ClickhouseQueryContext(QueryContext):
-    def _to_sql(self, expr, ctx):
-        builder = ClickhouseQueryBuilder(expr, context=ctx)
-        ast = builder.get_result()
-        query = ast.queries[0]
-        return query.compile()
-
-
 class ClickhouseSelect(Select):
-    @property
-    def translator(self):
-        return ClickhouseExprTranslator
-
-    @property
-    def table_set_formatter(self):
-        return ClickhouseTableSetFormatter
-
     def format_group_by(self):
         if not len(self.group_by):
             # There is no aggregation, nothing to see here
@@ -150,14 +119,7 @@ class ClickhouseTableSetFormatter(TableSetFormatter):
 
 
 class ClickhouseExprTranslator(ExprTranslator):
-
     _registry = operation_registry
-    context_class = ClickhouseQueryContext
-
-    def name(self, translated, name, force=True):
-        return '{0!s} AS {1!s}'.format(
-            translated, quote_identifier(name, force=force)
-        )
 
 
 rewrites = ClickhouseExprTranslator.rewrites
@@ -167,3 +129,10 @@ rewrites = ClickhouseExprTranslator.rewrites
 def _floor_divide(expr):
     left, right = expr.op().args
     return left.div(right).floor()
+
+
+class ClickhouseCompiler(Compiler):
+    translator_class = ClickhouseExprTranslator
+    table_set_formatter_class = ClickhouseTableSetFormatter
+    select_builder_class = ClickhouseSelectBuilder
+    select_class = ClickhouseSelect

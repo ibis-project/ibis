@@ -1,8 +1,11 @@
-import sqlalchemy.dialects.postgresql as pg
+from sqlalchemy.dialects import postgresql
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.alchemy import AlchemyExprTranslator
+from ibis.backends.base.sql.alchemy import (
+    AlchemyCompiler,
+    AlchemyExprTranslator,
+)
 
 from .registry import operation_registry
 
@@ -11,15 +14,13 @@ class PostgresUDFNode(ops.ValueOp):
     pass
 
 
-def add_operation(op, translation_func):
-    operation_registry[op] = translation_func
-
-
 class PostgreSQLExprTranslator(AlchemyExprTranslator):
     _registry = operation_registry
     _rewrites = AlchemyExprTranslator._rewrites.copy()
     _type_map = AlchemyExprTranslator._type_map.copy()
-    _type_map.update({dt.Double: pg.DOUBLE_PRECISION, dt.Float: pg.REAL})
+    _type_map.update(
+        {dt.Double: postgresql.DOUBLE_PRECISION, dt.Float: postgresql.REAL}
+    )
 
 
 rewrites = PostgreSQLExprTranslator.rewrites
@@ -31,3 +32,7 @@ rewrites = PostgreSQLExprTranslator.rewrites
 @rewrites(ops.NotAll)
 def _any_all_no_op(expr):
     return expr
+
+
+class PostgreSQLCompiler(AlchemyCompiler):
+    translator_class = PostgreSQLExprTranslator

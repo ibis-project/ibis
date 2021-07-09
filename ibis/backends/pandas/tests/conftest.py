@@ -17,7 +17,7 @@ class TestConf(BackendTest, RoundHalfToEven):
     returned_timestamp_unit = 'ns'
 
     @staticmethod
-    def connect(data_directory: Path) -> ibis.client.Client:
+    def connect(data_directory: Path):
         return ibis.pandas.connect(
             {
                 'functional_alltypes': pd.read_csv(

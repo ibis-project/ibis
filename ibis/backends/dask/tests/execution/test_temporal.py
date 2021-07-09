@@ -9,10 +9,10 @@ from dask.dataframe.utils import tm  # noqa: E402
 from pkg_resources import parse_version
 from pytest import param
 
+import ibis
 from ibis import literal as L  # noqa: E402
 from ibis.expr import datatypes as dt
 
-from ... import Backend
 from ...execution import execute
 
 pytestmark = pytest.mark.dask
@@ -184,7 +184,7 @@ def test_times_ops_with_tz(t, df, tz, rconstruct, column):
 def test_interval_arithmetic(op, expected):
     data = pd.timedelta_range('0 days', '10 days', freq='D')
     pandas_df = pd.DataFrame({'td': data})
-    con = Backend().connect(
+    con = ibis.dask.connect(
         {
             'df1': dd.from_pandas(pandas_df, npartitions=1),
             'df2': dd.from_pandas(pandas_df, npartitions=1),

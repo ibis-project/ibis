@@ -2,9 +2,9 @@ from functools import partial
 
 from multipledispatch import Dispatcher
 
-import ibis.client
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
+from ibis.backends.base import Client
 from ibis.expr.scope import Scope
 
 from .trace import TraceTwoLevelDispatcher
@@ -46,13 +46,13 @@ depth-first traversal of the tree.
 
 # Default returns an empty scope
 @pre_execute.register(ops.Node)
-@pre_execute.register(ops.Node, ibis.client.Client)
+@pre_execute.register(ops.Node, Client)
 def pre_execute_default(node, *clients, **kwargs):
     return Scope()
 
 
 # Merge the results of all client pre-execution with scope
-@pre_execute.register(ops.Node, [ibis.client.Client])
+@pre_execute.register(ops.Node, [Client])
 def pre_execute_multiple_clients(node, *clients, scope=None, **kwargs):
     scope = scope.merge_scopes(
         list(map(partial(pre_execute, node, scope=scope, **kwargs), clients))

@@ -27,7 +27,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundHalfToEven):
     supports_floating_modulus = False
 
     @staticmethod
-    def connect(data_directory: Path) -> ibis.client.Client:
+    def connect(data_directory: Path):
         host = os.environ.get('IBIS_TEST_CLICKHOUSE_HOST', 'localhost')
         port = int(os.environ.get('IBIS_TEST_CLICKHOUSE_PORT', 9000))
         user = os.environ.get('IBIS_TEST_CLICKHOUSE_USER', 'default')
@@ -97,8 +97,10 @@ def df(alltypes):
 
 @pytest.fixture
 def translate():
-    from ibis.backends.clickhouse import Backend
+    from ibis.backends.clickhouse.compiler import (
+        ClickhouseCompiler,
+        ClickhouseExprTranslator,
+    )
 
-    dialect = Backend().dialect
-    context = dialect.make_context()
-    return lambda expr: dialect.translator(expr, context).get_result()
+    context = ClickhouseCompiler.make_context()
+    return lambda expr: ClickhouseExprTranslator(expr, context).get_result()

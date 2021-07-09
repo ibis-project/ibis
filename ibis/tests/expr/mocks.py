@@ -18,29 +18,19 @@ from typing import Optional
 import pytest
 
 import ibis.expr.types as ir
+from ibis.backends.base.sql import SQLClient
 from ibis.backends.base.sql.alchemy import (
-    AlchemyDialect,
+    AlchemyCompiler,
     AlchemyTable,
-    build_ast,
     table_from_schema,
 )
-from ibis.client import SQLClient
 from ibis.expr.schema import Schema
 from ibis.expr.typing import TimeContext
 
 
-class BaseMockConnection(SQLClient, metaclass=abc.ABCMeta):
+class MockConnection(SQLClient, metaclass=abc.ABCMeta):
     def __init__(self):
         self.executed_queries = []
-
-    @property
-    @abc.abstractmethod
-    def dialect(self):
-        pass
-
-    @abc.abstractmethod
-    def _build_ast(self, expr, context):
-        pass
 
     _tables = {
         'alltypes': [
@@ -364,12 +354,15 @@ class BaseMockConnection(SQLClient, metaclass=abc.ABCMeta):
         ],
     }
 
-    def _get_table_schema(self, name):
+    def fetch_from_cursor(self, cursor, schema):
+        pass
+
+    def get_schema(self, name):
         name = name.replace('`', '')
         return Schema.from_tuples(self._tables[name])
 
     def execute(self, expr, limit=None, params=None, **kwargs):
-        ast = self._build_ast_ensure_limit(expr, limit, params=params)
+        ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         for query in ast.queries:
             self.executed_queries.append(query.compile())
         return None
@@ -381,35 +374,21 @@ class BaseMockConnection(SQLClient, metaclass=abc.ABCMeta):
         params=None,
         timecontext: Optional[TimeContext] = None,
     ):
-        ast = self._build_ast_ensure_limit(expr, limit, params=params)
+        ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         queries = [q.compile() for q in ast.queries]
         return queries[0] if len(queries) == 1 else queries
 
 
-class MockConnection(BaseMockConnection):
-    # TODO: Refactor/rename to MockImpalaConnection
-    # TODO: Should some tests using MockImpalaConnection really use
-    #       MockAlchemyConnection instead?
-    @property
-    def dialect(self):
-        from ibis.backends.base_sql.compiler import BaseDialect
+class MockAlchemyConnection(MockConnection):
+    compiler = AlchemyCompiler
 
-        return BaseDialect
-
-    def _build_ast(self, expr, context):
-        from ibis.backends.base_sql.compiler import build_ast
-
-        return build_ast(expr, context)
-
-
-class MockAlchemyConnection(BaseMockConnection):
     def __init__(self):
         super().__init__()
         sa = pytest.importorskip('sqlalchemy')
         self.meta = sa.MetaData()
 
     def table(self, name, database=None):
-        schema = self._get_table_schema(name)
+        schema = self.get_schema(name)
         return self._inject_table(name, schema)
 
     def _inject_table(self, name, schema):
@@ -420,13 +399,6 @@ class MockAlchemyConnection(BaseMockConnection):
 
         node = AlchemyTable(table, self)
         return ir.TableExpr(node)
-
-    @property
-    def dialect(self):
-        return AlchemyDialect
-
-    def _build_ast(self, expr, context):
-        return build_ast(expr, context)
 
 
 GEO_TABLE = {
@@ -447,14 +419,8 @@ class GeoMockConnectionPostGIS(MockAlchemyConnection):
         super().__init__()
         self.executed_queries = []
 
-    def _get_table_schema(self, name):
+    def get_schema(self, name):
         return Schema.from_tuples(self._tables[name])
-
-    @property
-    def dialect(self):
-        from ibis.backends.postgres import Backend
-
-        return Backend.dialect
 
 
 class GeoMockConnectionOmniSciDB(SQLClient):
@@ -464,16 +430,5 @@ class GeoMockConnectionOmniSciDB(SQLClient):
         super().__init__()
         self.executed_queries = []
 
-    def _get_table_schema(self, name):
+    def get_schema(self, name):
         return Schema.from_tuples(self._tables[name])
-
-    @property
-    def dialect(self):
-        from ibis.backends.omniscidb.compiler import OmniSciDBDialect
-
-        return OmniSciDBDialect
-
-    def _build_ast(self, expr, context):
-        from ibis.backends.omniscidb.compiler import build_ast
-
-        return build_ast(expr, context)

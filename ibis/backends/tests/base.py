@@ -85,7 +85,7 @@ class BackendTest(abc.ABC):
 
     @staticmethod
     @abc.abstractmethod
-    def connect(data_directory: Path) -> ibis.client.Client:
+    def connect(data_directory: Path):
         """Return a connection with data loaded from `data_directory`."""
 
     @classmethod
@@ -123,7 +123,7 @@ class BackendTest(abc.ABC):
         return f(*args)
 
     @property
-    def db(self) -> ibis.client.Database:
+    def db(self):
         return self.connection.database()
 
     @property
@@ -149,7 +149,7 @@ class BackendTest(abc.ABC):
     def make_context(
         self, params: Optional[Mapping[ir.ValueExpr, Any]] = None
     ):
-        return self.api.dialect.make_context(params=params)
+        return self.api.client.compiler.make_context(params=params)
 
 
 # TODO move to the spark/pyspark backends, #2565

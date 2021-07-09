@@ -37,6 +37,7 @@ from ..core import (
     scalar_types,
     simple_types,
     timedelta_types,
+    timestamp_types,
 )
 from ..dispatch import execute_literal, execute_node
 from ..execution import constants
@@ -111,7 +112,7 @@ def execute_cast_series_array(op, data, type, **kwargs):
             '(e.g., number, string, or timestamp)'
         )
     return data.map(
-        lambda array, numpy_type=numpy_type: list(map(numpy_type, array))
+        lambda array, numpy_type=numpy_type: array.astype(numpy_type)
     )
 
 
@@ -693,6 +694,8 @@ def execute_not_bool(op, data, **kwargs):
 @execute_node.register((ops.Comparison, ops.Add), str, str)
 @execute_node.register(ops.Multiply, integer_types, str)
 @execute_node.register(ops.Multiply, str, integer_types)
+@execute_node.register(ops.Comparison, pd.Series, timestamp_types)
+@execute_node.register(ops.Comparison, timestamp_types, pd.Series)
 def execute_binary_op(op, left, right, **kwargs):
     op_type = type(op)
     try:
