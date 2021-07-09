@@ -715,7 +715,7 @@ class SelectBuilder:
     def _collect_Intersection(self, expr, toplevel=False):
         if toplevel:
             raise NotImplementedError()
-            
+
     def _collect_Aggregation(self, expr, toplevel=False):
         # The select set includes the grouping keys (if any), and these are
         # duplicated in the group_by set. SQL translator can decide how to
