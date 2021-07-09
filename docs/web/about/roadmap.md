@@ -43,7 +43,7 @@ returned as a pandas DataFrame. This is convenient, and the output can
 be further processed with the extensive features of pandas, or saved to
 different formats, with the pandas exporting interfaces. But in some cases,
 exporting to pandas implies adding pandas as an undesired dependency, or
-having an extra overheat. Often, Ibis backends are implemented using a
+having an extra overhead. Often, Ibis backends are implemented using a
 [Python DB API 2.0](https://www.python.org/dev/peps/pep-0249/) interface,
 and accessing its Cursor object can be more convenient. In other cases,
 serializing from the backend to Apache Arrow is possible (and efficient)
