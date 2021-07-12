@@ -2298,6 +2298,41 @@ EXCEPT
 SELECT `string_col` AS `key`, `double_col` AS `value`
 FROM functional_alltypes
 WHERE `int_col` <= 0"""
+
+        assert result == expected
+
+    def test_intersect_project_column(self):
+        # select a column, get a subquery
+        intersection = self._case_intersect()
+        expr = intersection[[intersection.key]]
+        result = Compiler.to_sql(expr)
+        expected = """SELECT `key`
+FROM (
+  SELECT `string_col` AS `key`, CAST(`float_col` AS double) AS `value`
+  FROM functional_alltypes
+  WHERE `int_col` > 0
+  INTERSECT
+  SELECT `string_col` AS `key`, `double_col` AS `value`
+  FROM functional_alltypes
+  WHERE `int_col` <= 0
+) t0"""
+        assert result == expected
+
+    def test_difference_project_column(self):
+        # select a column, get a subquery
+        difference = self._case_difference()
+        expr = difference[[difference.key]]
+        result = Compiler.to_sql(expr)
+        expected = """SELECT `key`
+FROM (
+  SELECT `string_col` AS `key`, CAST(`float_col` AS double) AS `value`
+  FROM functional_alltypes
+  WHERE `int_col` > 0
+  EXCEPT
+  SELECT `string_col` AS `key`, `double_col` AS `value`
+  FROM functional_alltypes
+  WHERE `int_col` <= 0
+) t0"""
         assert result == expected
 
 
