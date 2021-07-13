@@ -239,7 +239,7 @@ except AttributeError:
 
 
 # translate strftime spec into mostly equivalent PostgreSQL spec
-_scanner = re.Scanner(
+_scanner = re.Scanner(  # type: ignore # re does have a Scanner attribute
     # double quotes need to be escaped
     [('"', lambda scanner, token: r'\"')]
     + [
@@ -421,7 +421,7 @@ def _log(t, expr):
     return sa.func.ln(sa_arg)
 
 
-class _regex_extract(GenericFunction):
+class _regex_extract_class(GenericFunction):
     def __init__(self, string, pattern, index):
         super().__init__(string, pattern, index)
         self.string = string
@@ -429,7 +429,7 @@ class _regex_extract(GenericFunction):
         self.index = index
 
 
-@compiles(_regex_extract, 'postgresql')
+@compiles(_regex_extract_class, 'postgresql')
 def _compile_regex_extract(element, compiler, **kw):
     result = '(SELECT * FROM REGEXP_MATCHES({}, {}))[{}]'.format(
         compiler.process(element.string, **kw),
