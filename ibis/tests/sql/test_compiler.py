@@ -2,7 +2,7 @@ import datetime
 import unittest
 
 import pytest
-
+import textwrap
 import ibis
 import ibis.expr.api as api
 import ibis.expr.operations as ops
@@ -2230,16 +2230,7 @@ SELECT `string_col` AS `key`, `double_col` AS `value`
 FROM functional_alltypes
 WHERE `int_col` <= 0"""
 
-SELECT_QUERY = """SELECT `key`
-FROM (
-  SELECT `string_col` AS `key`, CAST(`float_col` AS double) AS `value`
-  FROM functional_alltypes
-  WHERE `int_col` > 0
-  {}
-  SELECT `string_col` AS `key`, `double_col` AS `value`
-  FROM functional_alltypes
-  WHERE `int_col` <= 0
-) t0"""
+SELECT_QUERY = f"SELECT `key`\nFROM (\n{textwrap.indent(QUERY, '  ')}\n) t0"
 
 
 class TestUnions(unittest.TestCase, ExprTestCases):
