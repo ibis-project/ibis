@@ -1,8 +1,9 @@
 import datetime
+import textwrap
 import unittest
 
 import pytest
-import textwrap
+
 import ibis
 import ibis.expr.api as api
 import ibis.expr.operations as ops
