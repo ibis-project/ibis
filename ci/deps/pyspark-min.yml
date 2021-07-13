@@ -2,3 +2,4 @@
 double-conversion
 pyarrow=0.12.1
 pyspark=2.4.3
+pandas=1.2.5
