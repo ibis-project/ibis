@@ -421,7 +421,7 @@ def _log(t, expr):
     return sa.func.ln(sa_arg)
 
 
-class _regex_extract_class(GenericFunction):
+class _regex_extract(GenericFunction):
     def __init__(self, string, pattern, index):
         super().__init__(string, pattern, index)
         self.string = string
@@ -429,7 +429,7 @@ class _regex_extract_class(GenericFunction):
         self.index = index
 
 
-@compiles(_regex_extract_class, 'postgresql')
+@compiles(_regex_extract, 'postgresql')
 def _compile_regex_extract(element, compiler, **kw):
     result = '(SELECT * FROM REGEXP_MATCHES({}, {}))[{}]'.format(
         compiler.process(element.string, **kw),
@@ -439,7 +439,7 @@ def _compile_regex_extract(element, compiler, **kw):
     return result
 
 
-def _regex_extract(t, expr):
+def _regex_extract_(t, expr):
     string, pattern, index = map(t.translate, expr.op().args)
     result = sa.case(
         [
@@ -652,7 +652,7 @@ operation_registry.update(
         ops.RegexSearch: infix_op('~'),
         ops.RegexReplace: _regex_replace,
         ops.Translate: fixed_arity('translate', 3),
-        ops.RegexExtract: _regex_extract,
+        ops.RegexExtract: _regex_extract_,
         ops.StringSplit: fixed_arity(sa.func.string_to_array, 2),
         ops.StringJoin: _string_join,
         ops.FindInSet: _find_in_set,
