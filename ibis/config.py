@@ -25,6 +25,8 @@ from collections import namedtuple
 from contextlib import contextmanager
 from typing import Callable
 
+import ibis
+
 DeprecatedOption = namedtuple('DeprecatedOption', 'key msg rkey removal_ver')
 RegisteredOption = namedtuple(
     'RegisteredOption', 'key defval doc validator cb'
@@ -200,7 +202,17 @@ class DictWrapper:
         try:
             v = self.d[key]
         except KeyError as e:
-            raise AttributeError(*e.args)
+            # See if the options doesn't exist because it's from a backend
+            # not yet loaded. Try to load, and try the option again.
+            try:
+                getattr(ibis, key)
+            except Exception:
+                raise AttributeError(*e.args)
+            else:
+                try:
+                    v = self.d[key]
+                except KeyError as e:
+                    raise AttributeError(*e.args)
 
         if isinstance(v, dict):
             return DictWrapper(v, prefix)

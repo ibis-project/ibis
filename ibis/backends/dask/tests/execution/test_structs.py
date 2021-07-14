@@ -8,7 +8,6 @@ from dask.dataframe.utils import tm
 import ibis
 import ibis.expr.datatypes as dt
 
-from ... import Backend
 from ...execution import execute
 
 
@@ -33,7 +32,7 @@ def struct_client(value, npartitions):
         ),
         npartitions=npartitions,
     )
-    return Backend().connect({"t": df})
+    return ibis.dask.connect({"t": df})
 
 
 @pytest.fixture

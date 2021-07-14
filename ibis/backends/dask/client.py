@@ -26,7 +26,6 @@ from ibis.backends.pandas.client import (
     PANDAS_DATE_TYPES,
     PANDAS_STRING_TYPES,
     _inferable_pandas_dtypes,
-    convert,
     convert_timezone,
     ibis_dtype_to_pandas,
     ibis_schema_to_pandas,
@@ -86,7 +85,7 @@ ibis_dtype_to_dask = ibis_dtype_to_pandas
 ibis_schema_to_dask = ibis_schema_to_pandas
 
 
-@convert.register(DatetimeTZDtype, dt.Timestamp, dd.Series)
+@sch.convert.register(DatetimeTZDtype, dt.Timestamp, dd.Series)
 def convert_datetimetz_to_timestamp(in_dtype, out_dtype, column):
     output_timezone = out_dtype.timezone
     if output_timezone is not None:
@@ -98,7 +97,7 @@ DASK_STRING_TYPES = PANDAS_STRING_TYPES
 DASK_DATE_TYPES = PANDAS_DATE_TYPES
 
 
-@convert.register(np.dtype, dt.Timestamp, dd.Series)
+@sch.convert.register(np.dtype, dt.Timestamp, dd.Series)
 def convert_datetime64_to_timestamp(in_dtype, out_dtype, column):
     if in_dtype.type == np.datetime64:
         return column.astype(out_dtype.to_dask())
@@ -125,18 +124,18 @@ def convert_datetime64_to_timestamp(in_dtype, out_dtype, column):
         return series.astype(utc_dtype).dt.tz_convert(out_dtype.timezone)
 
 
-@convert.register(np.dtype, dt.Interval, dd.Series)
+@sch.convert.register(np.dtype, dt.Interval, dd.Series)
 def convert_any_to_interval(_, out_dtype, column):
     return column.values.astype(out_dtype.to_dask())
 
 
-@convert.register(np.dtype, dt.String, dd.Series)
+@sch.convert.register(np.dtype, dt.String, dd.Series)
 def convert_any_to_string(_, out_dtype, column):
     result = column.astype(out_dtype.to_dask())
     return result
 
 
-@convert.register(np.dtype, dt.Boolean, dd.Series)
+@sch.convert.register(np.dtype, dt.Boolean, dd.Series)
 def convert_boolean_to_series(in_dtype, out_dtype, column):
     # XXX: this is a workaround until #1595 can be addressed
     in_dtype_type = in_dtype.type
@@ -146,7 +145,7 @@ def convert_boolean_to_series(in_dtype, out_dtype, column):
     return column
 
 
-@convert.register(object, dt.DataType, dd.Series)
+@sch.convert.register(object, dt.DataType, dd.Series)
 def convert_any_to_any(_, out_dtype, column):
     return column.astype(out_dtype.to_dask())
 
@@ -165,7 +164,6 @@ class DaskDatabase(Database):
 
 class DaskClient(Client):
     def __init__(self, backend, dictionary: Dict[str, dd.DataFrame]):
-        self.dialect = backend.dialect
         self.database_class = backend.database_class
         self.table_class = backend.table_class
         self.dictionary = dictionary

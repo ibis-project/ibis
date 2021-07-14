@@ -1,12 +1,13 @@
 """Initialize Ibis module."""
 import pkg_resources
 
+# Converting an Ibis schema to a pandas DataFrame requires registering
+# some type conversions that are currently registered in the pandas backend
+import ibis.backends.pandas
 import ibis.config
 import ibis.expr.types as ir
 from ibis import util
-
-# pandas backend is mandatory
-from ibis.backends import pandas  # noqa: F401
+from ibis.backends.base import BaseBackend
 from ibis.common.exceptions import IbisError
 from ibis.config import options
 from ibis.expr import api
@@ -51,15 +52,44 @@ with ibis.config.config_prefix('sql'):
 __version__ = get_versions()['version']
 del get_versions
 
-for entry_point in pkg_resources.iter_entry_points(
-    group='ibis.backends', name=None
-):
-    try:
-        backend_module = entry_point.resolve()
-    except ImportError:
-        pass
-    else:
-        backend = backend_module.Backend()
-        setattr(ibis, entry_point.name, backend)
-        with ibis.config.config_prefix(entry_point.name):
-            backend.register_options()
+
+def __getattr__(name: str) -> BaseBackend:
+    """Load backends in a lazy way with `ibis.<backend-name>`.
+
+    This also registers the backend options.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> con = ibis.sqlite.connect(...)
+
+    When accessing the `sqlite` attribute of the `ibis` module, this function
+    is called, and a backend with the `sqlite` name is tried to load from
+    the `ibis.backends` entrypoints. If successful, the `ibis.sqlite`
+    attribute is "cached", so this function is only called the first time.
+    """
+    entry_points = list(
+        pkg_resources.iter_entry_points(group='ibis.backends', name=name)
+    )
+    if len(entry_points) == 0:
+        raise AttributeError(
+            f"module 'ibis' has no attribute '{name}'. "
+            f"If you are trying to access the '{name}' backend, "
+            f"try installing it first with `pip install ibis-{name}`"
+        )
+    elif len(entry_points) > 1:
+        raise RuntimeError(
+            f"{len(entry_points)} packages found for backend '{name}'. "
+            "There should be only one, please uninstall the unused packages "
+            "and just leave the one that needs to be used."
+        )
+
+    backend = entry_points[0].resolve().Backend()
+
+    # The first time a backend is loaded, we register its options, and we set
+    # it as an attribute of `ibis`, so `__getattr__` is not called again for it
+    with ibis.config.config_prefix(name):
+        backend.register_options()
+
+    setattr(ibis, name, backend)
+    return backend

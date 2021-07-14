@@ -16,7 +16,6 @@ import ibis.expr.types as ir
 import ibis.expr.types as types
 from ibis import interval
 from ibis.backends.pandas.execution import execute
-from ibis.backends.spark.compiler import SparkContext
 from ibis.backends.spark.datatypes import (
     ibis_array_dtype_to_spark_dtype,
     ibis_dtype_to_spark_dtype,
@@ -32,10 +31,6 @@ class PySparkTable(ops.DatabaseTable):
     pass
 
 
-class PySparkContext(SparkContext):
-    pass
-
-
 class AggregationContext(enum.Enum):
     ENTIRE = 0
     WINDOW = 1
@@ -44,7 +39,6 @@ class AggregationContext(enum.Enum):
 
 class PySparkExprTranslator:
     _registry = {}
-    context_class = PySparkContext
 
     @classmethod
     def compiles(cls, klass):

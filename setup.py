@@ -38,7 +38,7 @@ spark_requires = ['pyspark>=2.4.3']
 geospatial_requires = ['geoalchemy2', 'geopandas', 'shapely']
 
 dask_requires = [
-    'dask[dataframe, array]>=2021.1.1,<2021.5.1',
+    'dask[dataframe, array]>=2021.1.1,!=2021.5.*,!=2021.6.0',
 ]
 
 all_requires = (

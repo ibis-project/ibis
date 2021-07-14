@@ -145,7 +145,7 @@ class KuduImpalaInterface:
             else:
                 to_insert = obj
             # XXX: exposing a lot of internals
-            ast = self.impala_client._build_ast(to_insert)
+            ast = self.impala_client.compiler.to_ast(to_insert)
             select = ast.queries[0]
 
             stmt = CTASKudu(

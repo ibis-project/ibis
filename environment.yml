@@ -12,6 +12,7 @@ dependencies:
   - regex
   - toolz
   - cached_property # for 3.7 compat, functools.cached_property is for >=3.8
+  - setuptools
 
   # Ibis soft dependencies
   - sqlalchemy

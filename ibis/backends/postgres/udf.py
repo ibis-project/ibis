@@ -4,16 +4,16 @@ import itertools
 from textwrap import dedent
 
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import dialect as sa_postgres_dialect
+from sqlalchemy.dialects.postgresql import dialect
 
 import ibis.expr.rules as rlz
 import ibis.udf.validate as v
 from ibis import IbisError
 from ibis.backends.base.sql.alchemy import to_sqla_type
 from ibis.backends.postgres.compiler import (
+    PostgreSQLCompiler,
     PostgreSQLExprTranslator,
     PostgresUDFNode,
-    add_operation,
 )
 from ibis.expr.signature import Argument as Arg
 
@@ -34,7 +34,7 @@ def _sa_type_to_postgres_str(sa_type):
     string"""
     if callable(sa_type):
         sa_type = sa_type()
-    return sa_type.compile(dialect=sa_postgres_dialect())
+    return sa_type.compile(dialect=dialect())
 
 
 def _ibis_to_postgres_str(ibis_type):
@@ -120,7 +120,7 @@ def existing_udf(name, input_types, output_type, schema=None, parameters=None):
 
         return func_obj(*sa_args)
 
-    add_operation(udf_node, _translate_udf)
+    PostgreSQLCompiler.add_operation(udf_node, _translate_udf)
 
     def wrapped(*args, **kwargs):
         node = udf_node(*args, **kwargs)

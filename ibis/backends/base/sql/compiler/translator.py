@@ -22,8 +22,9 @@ class QueryContext:
     """
 
     def __init__(
-        self, indent=2, parent=None, memo=None, dialect=None, params=None
+        self, compiler, indent=2, parent=None, memo=None, params=None
     ):
+        self.compiler = compiler
         self._table_refs = {}
         self.extracted_subexprs = set()
         self.subquery_memo = {}
@@ -36,7 +37,6 @@ class QueryContext:
 
         self._table_key_memo = {}
         self.memo = memo or fmt.FormatMemo()
-        self.dialect = dialect
         self.params = params if params is not None else {}
 
     def _compile_subquery(self, expr):
@@ -44,7 +44,7 @@ class QueryContext:
         return self._to_sql(expr, sub_ctx)
 
     def _to_sql(self, expr, ctx):
-        raise NotImplementedError
+        return self.compiler.to_sql(expr, ctx)
 
     def collapse(self, queries):
         """Turn a sequence of queries into something executable.
@@ -137,7 +137,12 @@ class QueryContext:
         self.make_alias(expr)
 
     def subcontext(self):
-        return type(self)(indent=self.indent, parent=self, params=self.params)
+        return type(self)(
+            compiler=self.compiler,
+            indent=self.indent,
+            parent=self,
+            params=self.params,
+        )
 
     # Maybe temporary hacks for correlated / uncorrelated subqueries
 
@@ -197,8 +202,6 @@ class ExprTranslator:
 
     _registry = operation_registry
     _rewrites = {}
-
-    context_class = QueryContext
 
     def __init__(self, expr, context, named=False, permit_subquery=False):
         self.expr = expr
@@ -289,24 +292,6 @@ class ExprTranslator:
             return f
 
         return decorator
-
-
-class Dialect:
-
-    """Dialects encode the properties of a particular flavor of SQL.
-
-    For example, quoting behavior is a property that should be encoded by
-    ``Dialect``. Each backend has its own dialect.
-    """
-
-    translator = ExprTranslator
-
-    @classmethod
-    def make_context(cls, params=None):
-        if params is None:
-            params = {}
-        params = {expr.op(): value for expr, value in params.items()}
-        return cls.translator.context_class(dialect=cls(), params=params)
 
 
 rewrites = ExprTranslator.rewrites

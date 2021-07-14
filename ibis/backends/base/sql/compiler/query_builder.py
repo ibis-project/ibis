@@ -7,9 +7,11 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis.backends.base.sql.registry import quote_identifier
+from ibis.config import options
 
 from .base import DML, QueryAST, SetOp
 from .select_builder import SelectBuilder
+from .translator import ExprTranslator, QueryContext
 
 
 class TableSetFormatter:
@@ -187,6 +189,8 @@ class Select(DML):
         self,
         table_set,
         select_set,
+        translator_class,
+        table_set_formatter_class,
         context,
         subqueries=None,
         where=None,
@@ -199,6 +203,8 @@ class Select(DML):
         result_handler=None,
         parent_expr=None,
     ):
+        self.translator_class = translator_class
+        self.table_set_formatter_class = table_set_formatter_class
         self.context = context
 
         self.select_set = select_set
@@ -221,14 +227,12 @@ class Select(DML):
 
         self.result_handler = result_handler
 
-    @property
-    def translator(self):
-        return self.context.dialect.translator
-
     def _translate(self, expr, named=False, permit_subquery=False):
-        context = self.context
-        translator = self.translator(
-            expr, context=context, named=named, permit_subquery=permit_subquery
+        translator = self.translator_class(
+            expr,
+            context=self.context,
+            named=named,
+            permit_subquery=permit_subquery,
         )
         return translator.get_result()
 
@@ -391,17 +395,13 @@ class Select(DML):
 
         return '{}{}'.format(select_key, buf.getvalue())
 
-    @property
-    def table_set_formatter(self):
-        return TableSetFormatter
-
     def format_table_set(self):
         if self.table_set is None:
             return None
 
         fragment = 'FROM '
 
-        helper = self.table_set_formatter(self, self.table_set)
+        helper = self.table_set_formatter_class(self, self.table_set)
         fragment += helper.get_result()
 
         return fragment
@@ -534,13 +534,25 @@ def flatten(table: ir.TableExpr):
     return list(toolz.concatv(flatten_union(op.left), flatten_union(op.right)))
 
 
-class QueryBuilder:
-    select_builder = SelectBuilder
+class Compiler:
+    translator_class = ExprTranslator
+    context_class = QueryContext
+    select_builder_class = SelectBuilder
+    table_set_formatter_class = TableSetFormatter
     select_class = Select
     union_class = Union
 
     @classmethod
-    def to_ast(cls, expr, context):
+    def make_context(cls, params=None):
+        params = params or {}
+        params = {expr.op(): value for expr, value in params.items()}
+        return cls.context_class(compiler=cls, params=params)
+
+    @classmethod
+    def to_ast(cls, expr, context=None):
+        if context is None:
+            context = cls.make_context()
+
         op = expr.op()
 
         # collect setup and teardown queries
@@ -556,8 +568,12 @@ class QueryBuilder:
         elif isinstance(op, ops.Difference):
             query = Difference(flatten(expr), expr, context=context)
         else:
-            query = cls.select_builder().to_select(
-                select_class=cls.select_class, expr=expr, context=context,
+            query = cls.select_builder_class().to_select(
+                select_class=cls.select_class,
+                table_set_formatter_class=cls.table_set_formatter_class,
+                expr=expr,
+                context=context,
+                translator_class=cls.translator_class,
             )
 
         return QueryAST(
@@ -568,7 +584,34 @@ class QueryBuilder:
         )
 
     @classmethod
-    def to_sql(cls, expr, context):
+    def to_ast_ensure_limit(cls, expr, limit=None, params=None):
+        context = cls.make_context(params=params)
+        query_ast = cls.to_ast(expr, context)
+
+        # note: limit can still be None at this point, if the global
+        # default_limit is None
+        for query in reversed(query_ast.queries):
+            if (
+                isinstance(query, Select)
+                and not isinstance(expr, ir.ScalarExpr)
+                and query.table_set is not None
+            ):
+                if query.limit is None:
+                    if limit == 'default':
+                        query_limit = options.sql.default_limit
+                    else:
+                        query_limit = limit
+                    if query_limit:
+                        query.limit = {'n': query_limit, 'offset': 0}
+                elif limit is not None and limit != 'default':
+                    query.limit = {'n': limit, 'offset': query.limit['offset']}
+
+        return query_ast
+
+    @classmethod
+    def to_sql(cls, expr, context=None, params=None):
+        if context is None:
+            context = cls.make_context(params=params)
         return cls.to_ast(expr, context).queries[0].compile()
 
     @staticmethod
