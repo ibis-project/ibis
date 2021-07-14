@@ -116,45 +116,6 @@ class PostgreSQLClient(AlchemyClient):
             )
             return self.database_class(name, new_client)
 
-    def schema(self, name):
-        """Get a schema object from the current database for the schema named `name`.
-
-        Parameters
-        ----------
-        name : str
-
-        Returns
-        -------
-        schema : PostgreSQLSchema
-            An :class:`ibis.sql.postgres.client.PostgreSQLSchema` instance.
-
-        """
-        return self.database().schema(name)
-
-    @property
-    def current_database(self):
-        """The name of the current database this client is connected to."""
-        return self.database_name
-
-    def list_databases(self):
-        # http://dba.stackexchange.com/a/1304/58517
-        return [
-            row.datname
-            for row in self.con.execute(
-                'SELECT datname FROM pg_database WHERE NOT datistemplate'
-            )
-        ]
-
-    def list_schemas(self):
-        """List all the schemas in the current database."""
-        return self.inspector.get_schema_names()
-
-    def set_database(self, name):
-        raise NotImplementedError(
-            'Cannot set database with PostgreSQL client. To use a different'
-            ' database, use client.database({!r})'.format(name)
-        )
-
     @property
     def client(self):
         return self

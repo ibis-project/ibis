@@ -257,6 +257,36 @@ class AlchemyClient(SQLClient):
         t = self._get_sqla_table(table_name, schema=database)
         t.delete().execute()
 
+    def schema(self, name):
+        """Get a schema object from the current database for the schema named `name`.
+
+        Parameters
+        ----------
+        name : str
+
+        Returns
+        -------
+        schema : ibis Schema
+            The schema of the object `name`.
+
+        """
+        return self.database().schema(name)
+
+    @property
+    def current_database(self):
+        """The name of the current database this client is connected to."""
+        return self.database_name
+
+    def set_database(self, name):
+        raise NotImplementedError(
+            f'Cannot set database with {self.__class__.__name__} client. '
+            f'To use a different database, use `client.database("{name}")`'
+        )
+
+    def list_databases(self):
+        """List databases in the current server."""
+        return self.inspector.get_schema_names()
+
     def list_tables(
         self,
         like: Optional[str] = None,
