@@ -1,5 +1,4 @@
 import contextlib
-import functools
 from typing import List, Optional, Union
 
 import pandas as pd
@@ -44,29 +43,6 @@ class _AutoCloseCursor:
         return self.original_cursor.fetchall()
 
 
-def _invalidates_reflection_cache(f):
-    """Invalidate the SQLAlchemy reflection cache if `f` performs an operation
-    that mutates database or table metadata such as ``CREATE TABLE``,
-    ``DROP TABLE``, etc.
-
-    Parameters
-    ----------
-    f : callable
-        A method on :class:`ibis.sql.alchemy.AlchemyClient`
-    """
-
-    @functools.wraps(f)
-    def wrapped(self, *args, **kwargs):
-        result = f(self, *args, **kwargs)
-
-        # only invalidate the cache after we've succesfully called the wrapped
-        # function
-        self._reflection_cache_is_dirty = True
-        return result
-
-    return wrapped
-
-
 def _maybe_to_geodataframe(df, schema):
     """
     If the required libraries for geospatial support are installed, and if a
@@ -98,13 +74,11 @@ class AlchemyClient(SQLClient):
         self.con = con
         self.meta = sa.MetaData(bind=con)
         self._inspector = sa.inspect(con)
-        self._reflection_cache_is_dirty = False
         self._schemas = {}
 
     @property
     def inspector(self):
-        if self._reflection_cache_is_dirty:
-            self._inspector.info_cache.clear()
+        self._inspector.info_cache.clear()
         return self._inspector
 
     def fetch_from_cursor(self, cursor, schema):
@@ -120,7 +94,6 @@ class AlchemyClient(SQLClient):
         with self.con.begin() as bind:
             yield bind
 
-    @_invalidates_reflection_cache
     def create_table(self, name, expr=None, schema=None, database=None):
         if database == self.database_name:
             # avoid fully qualified name
@@ -170,7 +143,6 @@ class AlchemyClient(SQLClient):
         columns = self._columns_from_schema(name, schema)
         return sa.Table(name, self.meta, *columns)
 
-    @_invalidates_reflection_cache
     def drop_table(
         self,
         table_name: str,
@@ -287,7 +259,6 @@ class AlchemyClient(SQLClient):
             names = [x for x in names if like in x]
         return sorted(names)
 
-    @_invalidates_reflection_cache
     def raw_sql(self, query: str):
         return _AutoCloseCursor(super().raw_sql(query))
 
