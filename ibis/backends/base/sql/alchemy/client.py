@@ -1,5 +1,6 @@
 import contextlib
 import functools
+import warnings
 from typing import List, Optional, Union
 
 import pandas as pd
@@ -282,6 +283,13 @@ class AlchemyClient(SQLClient):
             f'Cannot set database with {self.__class__.__name__} client. '
             f'To use a different database, use `client.database("{name}")`'
         )
+
+    def list_schemas(self):
+        warnings.warn(
+            '`list_schemas` is deprecated, use `list_databases` instead',
+            FutureWarning,
+        )
+        return self.list_databases()
 
     def list_databases(self):
         """List databases in the current server."""
