@@ -116,6 +116,21 @@ class PostgreSQLClient(AlchemyClient):
             )
             return self.database_class(name, new_client)
 
+    def list_databases(self):
+        # http://dba.stackexchange.com/a/1304/58517
+        return [
+            row.datname
+            for row in self.con.execute(
+                'SELECT datname FROM pg_database WHERE NOT datistemplate'
+            )
+        ]
+
+    def list_schemas(self):
+        """List all the schemas in the current database."""
+        # In Postgres we support schemas, which in other engines (e.g. MySQL)
+        # are databases
+        return super().list_databases()
+
     @property
     def client(self):
         return self
