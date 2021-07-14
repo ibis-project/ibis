@@ -2,6 +2,7 @@ import collections
 import inspect
 import itertools
 from textwrap import dedent
+from typing import Any, Dict
 
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import dialect
@@ -17,7 +18,7 @@ from ibis.backends.postgres.compiler import (
 )
 from ibis.expr.signature import Argument as Arg
 
-_udf_name_cache = collections.defaultdict(itertools.count)
+_udf_name_cache: Dict[str, Any] = collections.defaultdict(itertools.count)
 
 
 class PostgresUDFError(IbisError):

@@ -9,17 +9,12 @@ import pandas as pd
 import pandas.testing as tm
 import pytest
 import sqlalchemy as sa
+from packaging.version import parse
 
-import ibis  # noqa: E402
-import ibis.config as config  # noqa: E402
-import ibis.expr.datatypes as dt  # noqa: E402
-from ibis import literal as L  # noqa: E402
-
-try:
-    from packaging.version import parse as get_version
-except ImportError:
-    from distutils.version import LooseVersion as get_version
-
+import ibis
+import ibis.expr.datatypes as dt
+from ibis import config
+from ibis import literal as L
 
 pytestmark = pytest.mark.sqlite
 
@@ -426,7 +421,7 @@ def test_category_label(alltypes, df):
 
 
 @pytest.mark.xfail(
-    get_version(sqlite3.sqlite_version) < get_version('3.8.3'),
+    parse(sqlite3.sqlite_version) < parse('3.8.3'),
     raises=sa.exc.OperationalError,
     reason='SQLite versions < 3.8.3 do not support the WITH statement',
 )
