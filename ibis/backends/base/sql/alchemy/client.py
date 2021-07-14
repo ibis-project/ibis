@@ -110,8 +110,9 @@ class AlchemyClient(SQLClient):
             columns=cursor.original_cursor.keys(),
             coerce_float=True,
         )
+        df = schema.apply_to(df)
         if len(df) and geospatial_supported:
-            return self._to_geodataframe(schema.apply_to(df), schema)
+            return self._to_geodataframe(df, schema)
         return df
 
     @contextlib.contextmanager
