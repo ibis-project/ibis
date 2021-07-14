@@ -246,9 +246,6 @@ def test_udaf_analytic(con, t, df):
     tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.xfail(
-    raises=NotImplementedError, reason='TODO - windowing - #2553'
-)
 def test_udaf_analytic_groupby(con, t, df):
     expr = zscore(t.c).over(ibis.window(group_by=t.key))
 
@@ -260,7 +257,10 @@ def test_udaf_analytic_groupby(con, t, df):
         return s.sub(s.mean()).div(s.std())
 
     expected = df.groupby('key').c.transform(f).compute()
-    tm.assert_series_equal(result, expected)
+    # We don't check names here because the udf is used "directly".
+    # We could potentially special case this and set the name directly
+    # if the udf is only being run on one column.
+    tm.assert_series_equal(result, expected, check_names=False)
 
 
 def test_udaf_groupby(t2, df2):

@@ -1,5 +1,6 @@
 """Code for computing window functions in the dask backend."""
 
+import operator
 from typing import Any, Optional, Union
 
 import dask.dataframe as dd
@@ -9,7 +10,7 @@ import ibis.expr.window as win
 from ibis.expr.scope import Scope
 from ibis.expr.typing import TimeContext
 
-from ..core import execute_with_scope
+from ..core import execute, execute_with_scope
 from ..dispatch import execute_node
 from .util import (
     _pandas_dtype_from_dd_scalar,
@@ -68,13 +69,27 @@ def execute_window_op(
         [
             window.preceding is None,
             window.following is None,
-            window._group_by == [],
             window._order_by == [],
         ]
     ):
         raise NotImplementedError(
             "Window operations are unsuported in the dask backend"
         )
+
+    if window._group_by:
+        # there's lots of complicated logic that only applies to grouped
+        # windows
+        return execute_grouped_window_op(
+            op,
+            data,
+            window,
+            scope,
+            timecontext,
+            aggcontext,
+            clients,
+            **kwargs,
+        )
+
     result = execute_with_scope(
         expr=op.expr,
         scope=scope,
@@ -84,3 +99,55 @@ def execute_window_op(
         **kwargs,
     )
     return _post_process_empty(result, data, timecontext)
+
+
+def execute_grouped_window_op(
+    op, data, window, scope, timecontext, aggcontext, clients, **kwargs,
+):
+    # extract the parent
+    (root,) = op.root_tables()
+    root_expr = root.to_expr()
+
+    root_data = execute(
+        root_expr,
+        scope=scope,
+        timecontext=timecontext,
+        clients=clients,
+        aggcontext=aggcontext,
+        **kwargs,
+    )
+
+    group_by = window._group_by
+    grouping_keys = [
+        key_op.name for key_op in map(operator.methodcaller('op'), group_by)
+    ]
+
+    grouped_root_data = root_data.groupby(grouping_keys)
+    scope = scope.merge_scopes(
+        [
+            Scope({t: grouped_root_data}, timecontext)
+            for t in op.expr.op().root_tables()
+        ],
+        overwrite=True,
+    )
+
+    result = execute_with_scope(
+        expr=op.expr,
+        scope=scope,
+        timecontext=timecontext,
+        aggcontext=aggcontext,
+        clients=clients,
+        **kwargs,
+    )
+    # If the grouped operation we performed is not an analytic UDF we have to
+    # realign the output to the input.
+    if not isinstance(op.expr._arg, ops.AnalyticVectorizedUDF):
+        result = dd.merge(
+            root_data[result.index.name].to_frame(),
+            result.to_frame(),
+            left_on=result.index.name,
+            right_index=True,
+        )[result.name]
+        result.divisions = root_data.divisions
+
+    return result
