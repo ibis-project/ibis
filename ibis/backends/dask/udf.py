@@ -1,21 +1,35 @@
 import itertools
+from typing import List, Tuple
 
 import dask.dataframe as dd
 import dask.dataframe.groupby as ddgb
 import dask.delayed
+import numpy as np
 import pandas
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
 from ibis.backends.base import Client
 from ibis.backends.pandas.udf import nullable  # noqa
 
 from .dispatch import execute_node, pre_execute
 from .execution.util import (
     assert_identical_grouping_keys,
+    make_meta_series,
     make_selected_obj,
     safe_scalar_type,
 )
+
+
+def make_struct_op_meta(op: ir.Expr) -> List[Tuple[str, np.dtype]]:
+    """Unpacks a dt.Struct into a DataFrame meta"""
+    return list(
+        zip(
+            op._output_type.names,
+            [x.to_dask() for x in op._output_type.types],
+        )
+    )
 
 
 @pre_execute.register(ops.ElementWiseVectorizedUDF)
@@ -60,12 +74,7 @@ def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
         # file.
         # See ibis.udf.vectorized.UserDefinedFunction
         if isinstance(op._output_type, dt.Struct):
-            meta = list(
-                zip(
-                    op._output_type.names,
-                    [x.to_dask() for x in op._output_type.types],
-                )
-            )
+            meta = make_struct_op_meta(op)
 
             df = dd.map_partitions(op.func, *args, meta=meta)
             return df
@@ -116,10 +125,30 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
         # Depending on the type of operation, lazy_result is a Delayed that
         # could become a dd.Series or a dd.core.Scalar
         if isinstance(op, ops.AnalyticVectorizedUDF):
-            meta = pandas.Series(
-                [], name=args[0].name, dtype=op._output_type.to_dask()
-            )
+            if isinstance(op._output_type, dt.Struct):
+                meta = make_struct_op_meta(op)
+            else:
+                meta = make_meta_series(
+                    dtype=op._output_type.to_dask(), name=args[0].name,
+                )
             result = dd.from_delayed(lazy_result, meta=meta)
+
+            if args[0].known_divisions:
+                if not len({a.divisions for a in args}) == 1:
+                    raise ValueError(
+                        "Mixed divisions passed to AnalyticVectorized UDF"
+                    )
+                # result is going to be a single partitioned thing, but we
+                # need it to be able to dd.concat it with other data
+                # downstream. We know that this udf operation did not change
+                # the index. Thus, we know the divisions, allowing dd.concat
+                # to align this piece with the other pieces.
+                original_divisions = args[0].divisions
+                result.divisions = (
+                    original_divisions[0],
+                    original_divisions[-1],
+                )
+                result = result.repartition(divisions=original_divisions)
         else:
             # lazy_result is a dd.core.Scalar from an ungrouped reduction
             if isinstance(op._output_type, (dt.Array, dt.Struct)):

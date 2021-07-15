@@ -15,7 +15,7 @@
 
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Generator, Optional
 
 import pytest
 
@@ -76,6 +76,7 @@ class TestConf(BackendTest, RoundHalfToEven):
     def geo(self) -> Optional[ir.TableExpr]:
         if 'geo' in self.db.list_tables():
             return self.db.geo
+        return None
 
 
 def _random_identifier(suffix):
@@ -139,7 +140,7 @@ def translate():
 
 
 @pytest.fixture
-def temp_table(con) -> str:
+def temp_table(con) -> Generator[str, None, None]:
     """
     Return a temporary table name.
 

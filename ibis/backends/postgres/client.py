@@ -131,10 +131,6 @@ class PostgreSQLClient(AlchemyClient):
         # are databases
         return super().list_databases()
 
-    @property
-    def client(self):
-        return self
-
     def table(self, name, database=None, schema=None):
         """Create a table expression that references a particular a table
         called `name` in a PostgreSQL database called `database`.

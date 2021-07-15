@@ -147,10 +147,6 @@ class MySQLClient(AlchemyClient):
             )
             return self.database_class(name, new_client)
 
-    @property
-    def client(self):
-        return self
-
     def table(self, name, database=None, schema=None):
         """Create a table expression that references a particular a table
         called `name` in a MySQL database called `database`.

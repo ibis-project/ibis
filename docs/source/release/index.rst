@@ -13,6 +13,7 @@ Release Notes
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
 * :support:`2862` Deprecated `list_schemas` in SQLAlchemy backends in favor of `list_databases`
+* :bug:`2845` Fix projection on differences and intersections for SQL backends
 * :bug:`2827` Backends are loaded in a lazy way, so third-party backends can import Ibis without circular imports
 * :bug:`2830` Disable aggregation optimization due to N squared performance
 * :bug:`2821` Fix `.cast()` to array outputting list instead of np.array in Pandas backend
