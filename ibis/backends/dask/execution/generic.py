@@ -43,6 +43,7 @@ from ibis.backends.pandas.execution.generic import (
     execute_node_nullif_series_scalar,
     execute_node_self_reference_dataframe,
     execute_null_if_zero_series,
+    execute_searched_case,
     execute_series_clip,
     execute_series_isnull,
     execute_series_notnnull,
@@ -55,6 +56,7 @@ from ..core import execute
 from ..dispatch import execute_node
 from .util import (
     TypeRegistrationDict,
+    dask_array_select,
     make_selected_obj,
     register_types_to_dispatcher,
 )
@@ -399,6 +401,30 @@ def wrap_case_result(raw: np.ndarray, expr: ir.ValueExpr):
     if isinstance(expr, ir.ScalarExpr) and result.size.compute() == 1:
         return result.head().item()
     return result
+
+
+@execute_node.register(ops.SearchedCase, list, list, object)
+def execute_searched_case_dask(op, whens, thens, otherwise, **kwargs):
+    if not isinstance(whens[0], dd.Series):
+        # if we are not dealing with dask specific objects, fallback to the
+        # pandas logic. For example, in the case of ibis literals.
+        # See `test_functions/test_ifelse_returning_bool` or
+        # `test_operations/test_searched_case_scalar` for code that hits this.
+        return execute_searched_case(op, whens, thens, otherwise, **kwargs)
+    if otherwise is None:
+        otherwise = np.nan
+    idx = whens[0].index
+    whens = [w.to_dask_array() for w in whens]
+    if isinstance(thens[0], dd.Series):
+        # some computed column
+        thens = [t.to_dask_array() for t in thens]
+    else:
+        # scalar
+        thens = [da.from_array(np.array([t])) for t in thens]
+    # TODO this only exists as of 2021.6.1
+    raw = dask_array_select(whens, thens, otherwise)
+    out = dd.from_dask_array(raw, index=idx,)
+    return out
 
 
 @execute_node.register(ops.SimpleCase, dd.Series, list, list, object)

@@ -1,4 +1,5 @@
 import datetime
+import textwrap
 import unittest
 
 import pytest
@@ -2221,6 +2222,18 @@ FROM star1"""
         assert Compiler.to_sql(expr) == expected
 
 
+QUERY = """\
+SELECT `string_col` AS `key`, CAST(`float_col` AS double) AS `value`
+FROM functional_alltypes
+WHERE `int_col` > 0
+{}
+SELECT `string_col` AS `key`, `double_col` AS `value`
+FROM functional_alltypes
+WHERE `int_col` <= 0"""
+
+SELECT_QUERY = f"SELECT `key`\nFROM (\n{textwrap.indent(QUERY, '  ')}\n) t0"
+
+
 class TestUnions(unittest.TestCase, ExprTestCases):
     def setUp(self):
         self.con = MockConnection()
@@ -2229,27 +2242,13 @@ class TestUnions(unittest.TestCase, ExprTestCases):
         union1 = self._case_union()
 
         result = Compiler.to_sql(union1)
-        expected = """\
-SELECT `string_col` AS `key`, CAST(`float_col` AS double) AS `value`
-FROM functional_alltypes
-WHERE `int_col` > 0
-UNION ALL
-SELECT `string_col` AS `key`, `double_col` AS `value`
-FROM functional_alltypes
-WHERE `int_col` <= 0"""
+        expected = QUERY.format('UNION ALL')
         assert result == expected
 
     def test_union_distinct(self):
         union = self._case_union(distinct=True)
         result = Compiler.to_sql(union)
-        expected = """\
-SELECT `string_col` AS `key`, CAST(`float_col` AS double) AS `value`
-FROM functional_alltypes
-WHERE `int_col` > 0
-UNION
-SELECT `string_col` AS `key`, `double_col` AS `value`
-FROM functional_alltypes
-WHERE `int_col` <= 0"""
+        expected = QUERY.format('UNION')
         assert result == expected
 
     def test_union_project_column(self):
@@ -2257,16 +2256,7 @@ WHERE `int_col` <= 0"""
         union1 = self._case_union()
         expr = union1[[union1.key]]
         result = Compiler.to_sql(expr)
-        expected = """SELECT `key`
-FROM (
-  SELECT `string_col` AS `key`, CAST(`float_col` AS double) AS `value`
-  FROM functional_alltypes
-  WHERE `int_col` > 0
-  UNION ALL
-  SELECT `string_col` AS `key`, `double_col` AS `value`
-  FROM functional_alltypes
-  WHERE `int_col` <= 0
-) t0"""
+        expected = SELECT_QUERY.format("UNION ALL")
         assert result == expected
 
 
@@ -2277,27 +2267,30 @@ class TestIntersect(unittest.TestCase, ExprTestCases):
     def test_table_intersect(self):
         intersection = self._case_intersect()
         result = Compiler.to_sql(intersection)
-        expected = """\
-SELECT `string_col` AS `key`, CAST(`float_col` AS double) AS `value`
-FROM functional_alltypes
-WHERE `int_col` > 0
-INTERSECT
-SELECT `string_col` AS `key`, `double_col` AS `value`
-FROM functional_alltypes
-WHERE `int_col` <= 0"""
+        expected = QUERY.format('INTERSECT')
         assert result == expected
 
     def test_table_difference(self):
         difference = self._case_difference()
         result = Compiler.to_sql(difference)
-        expected = """\
-SELECT `string_col` AS `key`, CAST(`float_col` AS double) AS `value`
-FROM functional_alltypes
-WHERE `int_col` > 0
-EXCEPT
-SELECT `string_col` AS `key`, `double_col` AS `value`
-FROM functional_alltypes
-WHERE `int_col` <= 0"""
+        expected = QUERY.format('EXCEPT')
+
+        assert result == expected
+
+    def test_intersect_project_column(self):
+        # select a column, get a subquery
+        intersection = self._case_intersect()
+        expr = intersection[[intersection.key]]
+        result = Compiler.to_sql(expr)
+        expected = SELECT_QUERY.format('INTERSECT')
+        assert result == expected
+
+    def test_difference_project_column(self):
+        # select a column, get a subquery
+        difference = self._case_difference()
+        expr = difference[[difference.key]]
+        result = Compiler.to_sql(expr)
+        expected = SELECT_QUERY.format('EXCEPT')
         assert result == expected
 
 

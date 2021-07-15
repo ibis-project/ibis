@@ -22,7 +22,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
                 'IBIS_TEST_SQLITE_DATABASE', data_directory / 'ibis_testing.db'
             )
         )
-        return ibis.sqlite.connect(str(path))
+        return ibis.sqlite.connect(str(path))  # type: ignore
 
     @property
     def functional_alltypes(self) -> ir.TableExpr:
