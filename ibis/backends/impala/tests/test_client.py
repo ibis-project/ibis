@@ -239,26 +239,6 @@ def test_sql_query_limits(con, test_data_db):
         assert table.count().execute(limit=10) == 25
 
 
-def test_expr_compile_verify(db):
-    table = db.functional_alltypes
-    expr = table.double_col.sum()
-
-    assert isinstance(expr.compile(), str)
-    assert expr.verify()
-
-
-def test_api_compile_verify(db):
-    t = db.functional_alltypes
-
-    s = t.string_col
-
-    supported = s.lower()
-    unsupported = s.replace('foo', 'bar')
-
-    assert ibis.impala.verify(supported)
-    assert not ibis.impala.verify(unsupported)
-
-
 def test_database_repr(db, test_data_db):
     assert test_data_db in repr(db)
 

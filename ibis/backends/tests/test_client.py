@@ -5,6 +5,7 @@ from pkg_resources import parse_version
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis.common.exceptions import TranslationError
 
 SQLALCHEMY_BACKENDS = ['sqlite', 'postgres', 'mysql']
 
@@ -295,3 +296,30 @@ def test_insert_overwrite_from_expr(
     con.insert(temp_table, obj=from_table, overwrite=True)
     assert len(temporary.execute()) == 3
     tm.assert_frame_equal(temporary.execute(), from_table.execute())
+
+
+def test_verify(con, backend):
+    if not hasattr(con, 'compiler'):
+        pytest.skip(
+            '{} backend has no `compiler` attribute'.format(
+                type(backend).__name__
+            )
+        )
+    expr = con.table('functional_alltypes').double_col.sum()
+
+    with pytest.warns(FutureWarning):
+        assert expr.verify()
+
+    with pytest.warns(FutureWarning):
+        assert backend.api.verify(expr)
+
+    # This exception only fails in some backends, just testing on those
+    expr = con.table('functional_alltypes').string_col.replace('foo', 'bar')
+    try:
+        expr.compile()
+    except TranslationError:
+        with pytest.warns(FutureWarning):
+            assert not expr.verify()
+
+        with pytest.warns(FutureWarning):
+            assert not backend.api.verify(expr)
