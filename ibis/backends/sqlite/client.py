@@ -26,6 +26,7 @@ class SQLiteClient(AlchemyClient):
 
     def __init__(self, backend, path=None, create=False):
         super().__init__(sa.create_engine("sqlite://"))
+        self.backend = backend
         self.database_class = backend.database_class
         self.table_class = backend.table_class
         self.name = path

@@ -1,3 +1,5 @@
+from ibis.backends.base.sql import BaseSQLBackend
+
 from .client import AlchemyClient
 from .database import AlchemyDatabase, AlchemyDatabaseSchema, AlchemyTable
 from .datatypes import schema_from_table, table_from_schema, to_sqla_type
@@ -16,6 +18,7 @@ from .registry import (
 from .translator import AlchemyContext, AlchemyExprTranslator
 
 __all__ = (
+    'BaseAlchemyBackend',
     'AlchemyExprTranslator',
     'AlchemyContext',
     'AlchemyCompiler',
@@ -37,3 +40,9 @@ __all__ = (
     'table_from_schema',
     'varargs',
 )
+
+
+class BaseAlchemyBackend(BaseSQLBackend):
+    """
+    Base backend class for backends that compile to SQL with SQLAlchemy.
+    """
