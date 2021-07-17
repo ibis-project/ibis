@@ -314,7 +314,7 @@ def test_verify(con, backend):
         assert backend.api.verify(expr)
 
     # This exception only fails in some backends, just testing on those
-    expr = con.table('functional_alltypes').string_col.replace('foo', 'bar')
+    expr = con.table('functional_alltypes').double_col.approx_median()
     try:
         expr.compile()
     except TranslationError:
