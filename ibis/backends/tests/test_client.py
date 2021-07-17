@@ -304,8 +304,8 @@ def test_list_databases(con):
     # Every backend has its own databases
     TEST_DATABASES = {
         'SQLiteClient': ['main', 'base'],
-        'PostgresClient': [],
-        'MySQLClient': [],
+        'PostgreSQLClient': ['ibis_testing'],
+        'MySQLClient': ['ibis_testing', 'information_schema'],
     }
     assert con.list_databases() == TEST_DATABASES[con.__class__.__name__]
 
