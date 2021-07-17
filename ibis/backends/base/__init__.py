@@ -1,5 +1,4 @@
 import abc
-import warnings
 from typing import Any, Callable
 
 import ibis.expr.operations as ops
@@ -53,11 +52,6 @@ class BaseBackend(abc.ABC):
         """
         Verify `expr` is an expression that can be compiled.
         """
-        warnings.warn(
-            '`verify` is deprecated, use `compile` and capture the '
-            '`TranslationError` exception instead',
-            FutureWarning,
-        )
         try:
             self.compile(expr, params=params)
             return True
