@@ -5,7 +5,6 @@ from pkg_resources import parse_version
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.common.exceptions import TranslationError
 
 SQLALCHEMY_BACKENDS = ['sqlite', 'postgres', 'mysql']
 
@@ -313,11 +312,10 @@ def test_verify(con, backend):
     with pytest.warns(FutureWarning):
         assert backend.api.verify(expr)
 
-    # This exception only fails in some backends, just testing on those
-    expr = con.table('functional_alltypes').double_col.approx_median()
-    try:
-        expr.compile()
-    except TranslationError:
+    # There is no expression that can't be compiled to any backend
+    # Testing `not verify()` only for an expression not supported in postgres
+    if backend.api.name == 'postgres':
+        expr = con.table('functional_alltypes').double_col.approx_median()
         with pytest.warns(FutureWarning):
             assert not expr.verify()
 
