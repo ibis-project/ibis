@@ -9,7 +9,7 @@ import ibis.common.exceptions as com
 import ibis.util as util
 from ibis.tests.util import assert_equal
 
-pytestmark = pytest.mark.spark
+pytestmark = pytest.mark.pyspark
 
 
 def test_create_exists_view(con, alltypes, temp_view):
