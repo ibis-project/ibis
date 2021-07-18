@@ -16,7 +16,7 @@ def data_directory() -> Path:
     Path
         Test data directory
     """
-    root = Path(__file__).absolute().parent.parent.parent.parent
+    root = Path(__file__).absolute().parent.parent.parent
 
     default = root / 'ci' / 'ibis-testing-data'
     datadir = os.environ.get('IBIS_TEST_DATA_DIRECTORY', default)
