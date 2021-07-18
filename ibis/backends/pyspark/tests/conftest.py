@@ -5,6 +5,7 @@ import pytest
 
 import ibis
 import ibis.expr.types as ir
+from ibis import util
 from ibis.backends.tests.base import (
     BackendTest,
     RoundAwayFromZero,
@@ -111,3 +112,40 @@ class IbisWindow:
 @pytest.fixture
 def ibis_windows(request):
     return IbisWindow(request.param).get_windows()
+
+
+def _random_identifier(suffix):
+    return '__ibis_test_{}_{}'.format(suffix, util.guid())
+
+
+@pytest.fixture
+def temp_database(client, test_data_db):
+    name = _random_identifier('database')
+    client.create_database(name)
+    try:
+        yield name
+    finally:
+        client.set_database(test_data_db)
+        client.drop_database(name, force=True)
+
+
+@pytest.fixture
+def temp_table(client):
+    name = _random_identifier('table')
+    try:
+        yield name
+    finally:
+        assert client.exists_table(name), name
+        client.drop_table(name)
+
+
+@pytest.fixture(scope='session')
+def alltypes(client):
+    return client.table('functional_alltypes').relabel(
+        {'Unnamed: 0': 'Unnamed:0'}
+    )
+
+
+@pytest.fixture(scope='session')
+def tmp_dir():
+    return '/tmp/__ibis_test_{}'.format(util.guid())
