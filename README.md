@@ -39,6 +39,6 @@ Ibis currently provides tools for interacting with the following systems:
 - [BigQuery](https://cloud.google.com/bigquery)
 - [OmniSciDB](https://www.omnisci.com)
 - [PySpark](https://spark.apache.org)
-- [Dask](https://dask.org/)
+- [Dask](https://dask.org/) (Experimental)
 
 Learn more about using the library at http://ibis-project.org.

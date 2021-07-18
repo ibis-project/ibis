@@ -1,13 +1,13 @@
 import pandas as pd
 import pyspark as ps
 import regex as re
-from pyspark.sql.column import Column
 from pkg_resources import parse_version
+from pyspark.sql.column import Column
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
-import ibis.expr.types as types
 import ibis.expr.schema as sch
+import ibis.expr.types as types
 import ibis.expr.types as ir
 from ibis.backends.base import Database
 from ibis.backends.base.sql import SQLClient
@@ -22,10 +22,9 @@ from ibis.expr.scope import Scope
 from ibis.expr.timecontext import canonicalize_context, localize_context
 from ibis.util import log
 
-from .compiler import PySparkExprTranslator
 from . import ddl
+from .compiler import PySparkExprTranslator
 from .datatypes import spark_dtype
-
 
 _read_csv_defaults = {
     'header': True,
@@ -165,7 +164,8 @@ class PySparkTable(ir.TableExpr):
         renamed : SparkTable
         """
         new_qualified_name = self._client._fully_qualified_name(
-            new_name, self._database)
+            new_name, self._database
+        )
 
         statement = ddl.RenameTable(self._qualified_name, new_name)
         self._client.raw_sql(statement.compile())

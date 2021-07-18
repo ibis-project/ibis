@@ -70,4 +70,4 @@ docstring of the pandas backend located in ``ibis/backends/pandas/core.py``.
 
 - `Pandas <http://pandas.pydata.org/>`_
 - `PySpark <https://spark.apache.org/sql/>`_
-- `Dask <https://dask.org/>`_
+- `Dask <https://dask.org/>`_ (Experimental)
