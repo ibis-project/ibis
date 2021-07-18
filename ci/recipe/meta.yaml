@@ -69,7 +69,6 @@ test:
     - ibis.backends.pandas
     - ibis.backends.postgres
     - ibis.backends.pyspark
-    - ibis.backends.spark
     - ibis.backends.sqlite
 
 about:
