@@ -1,6 +1,28 @@
+import os
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
+
+
+@pytest.fixture(scope='session')
+def data_directory() -> Path:
+    """
+    Fixture that returns the test data directory.
+
+    Returns
+    -------
+    Path
+        Test data directory
+    """
+    root = Path(__file__).absolute().parent.parent.parent.parent
+
+    default = root / 'ci' / 'ibis-testing-data'
+    datadir = os.environ.get('IBIS_TEST_DATA_DIRECTORY', default)
+    datadir = Path(datadir)
+
+    return datadir
 
 
 @pytest.fixture
