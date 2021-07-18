@@ -149,3 +149,23 @@ def alltypes(client):
 @pytest.fixture(scope='session')
 def tmp_dir():
     return '/tmp/__ibis_test_{}'.format(util.guid())
+
+
+@pytest.fixture
+def temp_table_db(client, temp_database):
+    name = _random_identifier('table')
+    try:
+        yield temp_database, name
+    finally:
+        assert client.exists_table(name, database=temp_database), name
+        client.drop_table(name, database=temp_database)
+
+
+@pytest.fixture
+def temp_view(client):
+    name = _random_identifier('view')
+    try:
+        yield name
+    finally:
+        assert client.exists_table(name), name
+        client.drop_view(name)
