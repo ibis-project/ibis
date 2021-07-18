@@ -15,7 +15,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.signature as sig
 import ibis.udf.validate as v
 
-from .compiler import SparkExprTranslator, SparkUDAFNode, SparkUDFNode
+from .compiler import PySparkExprTranslator, SparkUDAFNode, SparkUDFNode
 from .datatypes import spark_dtype
 
 _udf_name_cache = collections.defaultdict(itertools.count)
