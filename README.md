@@ -32,12 +32,13 @@ Ibis currently provides tools for interacting with the following systems:
 - [Apache Kudu](https://kudu.apache.org/)
 - [Hadoop Distributed File System (HDFS)](https://hadoop.apache.org/)
 - [PostgreSQL](https://www.postgresql.org/)
-- [MySQL](https://www.mysql.com/) (Experimental)
+- [MySQL](https://www.mysql.com/)
 - [SQLite](https://www.sqlite.org/)
 - [Pandas](https://pandas.pydata.org/) [DataFrames](http://pandas.pydata.org/pandas-docs/stable/dsintro.html#dataframe)
 - [Clickhouse](https://clickhouse.yandex)
 - [BigQuery](https://cloud.google.com/bigquery)
 - [OmniSciDB](https://www.omnisci.com)
-- [Spark](https://spark.apache.org) (Experimental)
+- [PySpark](https://spark.apache.org)
+- [Dask](https://dask.org/)
 
 Learn more about using the library at http://ibis-project.org.

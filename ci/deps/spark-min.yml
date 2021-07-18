@@ -1,5 +1,0 @@
-# Need to import double-conversion below otherwise `import pyarrow` fails with ImportError: libdouble-conversion.so.3
-double-conversion
-pyarrow=0.12.1
-pyspark=2.4.3
-pandas=1.2.5

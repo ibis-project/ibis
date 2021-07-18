@@ -425,16 +425,6 @@ def hdf5(**params):
 
 
 @cli.command()
-def spark(**params):
-    """
-    The spark backend does not need test data, but we still
-    have an option for the backend for consistency, and to not
-    have to avoid calling `./datamgr.py spark` in the CI.
-    """
-    pass
-
-
-@cli.command()
 def pyspark(**params):
     """
     The hdf5 backend does not need test data, but we still
