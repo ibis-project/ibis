@@ -84,7 +84,7 @@ class SparkUDF:
                 UDFNode.__name__, ', '.join(map(t.translate, expr.op().args))
             )
 
-        SparkExprTranslator._registry[UDFNode] = compiles_udf_node
+        PySparkExprTranslator._registry[UDFNode] = compiles_udf_node
 
         return UDFNode
 
