@@ -144,7 +144,7 @@ class BackendTest(abc.ABC):
 
     @property
     def api(self):
-        return getattr(ibis.backends, self.name()).Backend()
+        return getattr(ibis, self.name())
 
     def make_context(
         self, params: Optional[Mapping[ir.ValueExpr, Any]] = None
