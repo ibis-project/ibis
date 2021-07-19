@@ -2,13 +2,25 @@ import os
 
 import pytest
 
+import ibis
 import ibis.expr.types as ir
 import ibis.util as util
-from ibis.backends.tests.base import (
-    BackendTest,
-    RoundHalfToEven,
-    get_spark_testing_client,
+from ibis.backends.pyspark.tests.conftest import (
+    get_common_spark_testing_client,
 )
+from ibis.backends.tests.base import BackendTest, RoundHalfToEven
+
+_spark_testing_client = None
+
+
+def get_spark_testing_client(data_directory):
+    global _spark_testing_client
+    if _spark_testing_client is None:
+        _spark_testing_client = get_common_spark_testing_client(
+            data_directory,
+            lambda session: ibis.backends.spark.Backend().connect(session),
+        )
+    return _spark_testing_client
 
 
 class TestConf(BackendTest, RoundHalfToEven):
