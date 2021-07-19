@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timezone
 
 import numpy as np
@@ -116,6 +117,17 @@ def ibis_windows(request):
 
 def _random_identifier(suffix):
     return '__ibis_test_{}_{}'.format(suffix, util.guid())
+
+
+@pytest.fixture(scope='session', autouse=True)
+def test_data_db(client):
+    try:
+        name = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
+        client.create_database(name)
+        client.set_database(name)
+        yield name
+    finally:
+        client.drop_database(name, force=True)
 
 
 @pytest.fixture
