@@ -57,14 +57,6 @@ def test_list_tables(con):
     assert len(con.list_tables(like='functional')) == 1
 
 
-def test_compile_verify(alltypes):
-    unsupported_expr = alltypes.string_col.approx_nunique()
-    assert not unsupported_expr.verify()
-
-    supported_expr = alltypes.double_col.sum()
-    assert supported_expr.verify()
-
-
 def test_attach_file(dbpath):
     client = ibis.sqlite.connect()
 

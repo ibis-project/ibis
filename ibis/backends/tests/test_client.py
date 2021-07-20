@@ -295,3 +295,29 @@ def test_insert_overwrite_from_expr(
     con.insert(temp_table, obj=from_table, overwrite=True)
     assert len(temporary.execute()) == 3
     tm.assert_frame_equal(temporary.execute(), from_table.execute())
+
+
+def test_verify(con, backend):
+    if not hasattr(con, 'compiler'):
+        pytest.skip(
+            '{} backend has no `compiler` attribute'.format(
+                type(backend).__name__
+            )
+        )
+    expr = con.table('functional_alltypes').double_col.sum()
+
+    with pytest.warns(FutureWarning):
+        assert expr.verify()
+
+    with pytest.warns(FutureWarning):
+        assert backend.api.verify(expr)
+
+    # There is no expression that can't be compiled to any backend
+    # Testing `not verify()` only for an expression not supported in postgres
+    if backend.api.name == 'postgres':
+        expr = con.table('functional_alltypes').double_col.approx_median()
+        with pytest.warns(FutureWarning):
+            assert not expr.verify()
+
+        with pytest.warns(FutureWarning):
+            assert not backend.api.verify(expr)
