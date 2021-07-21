@@ -1,5 +1,6 @@
 import itertools
 import os
+import warnings
 import webbrowser
 from typing import TYPE_CHECKING, Optional
 
@@ -295,6 +296,11 @@ class Expr:
         """
         Returns True if expression can be compiled to its attached client
         """
+        warnings.warn(
+            '`verify` is deprecated, use `compile` and capture the '
+            '`TranslationError` exception instead',
+            FutureWarning,
+        )
         try:
             self.compile()
         except Exception:

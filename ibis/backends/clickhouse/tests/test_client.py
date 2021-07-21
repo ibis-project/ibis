@@ -114,23 +114,6 @@ def test_sql_query_limits(alltypes):
         assert table.count().execute(limit=10) == 7300
 
 
-def test_expr_compile_verify(alltypes):
-    expr = alltypes.double_col.sum()
-
-    assert isinstance(expr.compile(), str)
-    assert expr.verify()
-
-
-def test_api_compile_verify(alltypes):
-    t = alltypes.timestamp_col
-
-    supported = t.year()
-    unsupported = t.rank()
-
-    assert ibis.clickhouse.verify(supported)
-    assert not ibis.clickhouse.verify(unsupported)
-
-
 def test_database_repr(db):
     assert db.name in repr(db)
 
