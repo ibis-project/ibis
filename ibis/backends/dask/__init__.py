@@ -62,3 +62,5 @@ class Backend(BaseBackend):
             'See ibis.dask.trace for details.',
             validator=ibis.config.is_bool,
         )
+        # forces the pandas backend to register options
+        getattr(ibis, "pandas")

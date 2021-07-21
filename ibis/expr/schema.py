@@ -9,6 +9,28 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.util as util
 
+convert = Dispatcher(
+    'convert',
+    doc="""\
+Convert `column` to the pandas dtype corresponding to `out_dtype`, where the
+dtype of `column` is `in_dtype`.
+
+Parameters
+----------
+in_dtype : Union[np.dtype, pandas_dtype]
+    The dtype of `column`, used for dispatching
+out_dtype : ibis.expr.datatypes.DataType
+    The requested ibis type of the output
+column : pd.Series
+    The column to convert
+
+Returns
+-------
+result : pd.Series
+    The converted column
+""",
+)
+
 
 class Schema:
 
@@ -132,6 +154,39 @@ class Schema:
                 )
             )
         return self.names[i]
+
+    def apply_to(self, df):
+        """Applies the Ibis schema to a pandas DataFrame
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+
+        Returns
+        -------
+        df : pandas.DataFrame
+
+        Notes
+        -----
+        Mutates `df`
+        """
+
+        for column, dtype in self.items():
+            pandas_dtype = dtype.to_pandas()
+            col = df[column]
+            col_dtype = col.dtype
+
+            try:
+                not_equal = pandas_dtype != col_dtype
+            except TypeError:
+                # ugh, we can't compare dtypes coming from pandas,
+                # assume not equal
+                not_equal = True
+
+            if not_equal or isinstance(dtype, dt.String):
+                df[column] = convert(col_dtype, dtype, col)
+
+        return df
 
 
 class HasSchema:

@@ -18,6 +18,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -61,14 +62,6 @@ def test_simple_aggregate_execute(alltypes):
 def test_list_tables(con):
     assert len(con.list_tables()) > 0
     assert len(con.list_tables(like='functional')) == 1
-
-
-def test_compile_verify(alltypes):
-    unsupported_expr = alltypes.double_col.approx_median()
-    assert not unsupported_expr.verify()
-
-    supported_expr = alltypes.double_col.sum()
-    assert supported_expr.verify()
 
 
 def test_database_layer(con, alltypes):
@@ -138,11 +131,11 @@ def test_schema_table():
 def test_schema_type_conversion():
     typespec = [
         # name, type, nullable
-        ('json', sa.dialects.postgresql.JSON, True, dt.JSON),
-        ('jsonb', sa.dialects.postgresql.JSONB, True, dt.JSONB),
-        ('uuid', sa.dialects.postgresql.UUID, True, dt.UUID),
-        ('macaddr', sa.dialects.postgresql.MACADDR, True, dt.MACADDR),
-        ('inet', sa.dialects.postgresql.INET, True, dt.INET),
+        ('json', postgresql.JSON, True, dt.JSON),
+        ('jsonb', postgresql.JSONB, True, dt.JSONB),
+        ('uuid', postgresql.UUID, True, dt.UUID),
+        ('macaddr', postgresql.MACADDR, True, dt.MACADDR),
+        ('inet', postgresql.INET, True, dt.INET),
     ]
 
     sqla_types = []

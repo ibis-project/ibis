@@ -2,9 +2,10 @@ import collections
 import inspect
 import itertools
 from textwrap import dedent
+from typing import Any, Dict
 
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import dialect as sa_postgres_dialect
+from sqlalchemy.dialects.postgresql import dialect
 
 import ibis.expr.rules as rlz
 import ibis.udf.validate as v
@@ -17,7 +18,7 @@ from ibis.backends.postgres.compiler import (
 )
 from ibis.expr.signature import Argument as Arg
 
-_udf_name_cache = collections.defaultdict(itertools.count)
+_udf_name_cache: Dict[str, Any] = collections.defaultdict(itertools.count)
 
 
 class PostgresUDFError(IbisError):
@@ -34,7 +35,7 @@ def _sa_type_to_postgres_str(sa_type):
     string"""
     if callable(sa_type):
         sa_type = sa_type()
-    return sa_type.compile(dialect=sa_postgres_dialect())
+    return sa_type.compile(dialect=dialect())
 
 
 def _ibis_to_postgres_str(ibis_type):

@@ -11,7 +11,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.udf.vectorized import analytic, elementwise, reduction
 
-from .. import Backend
 from ..udf import nullable
 
 # --------
@@ -68,7 +67,7 @@ def df_timestamp(npartitions):
 
 @pytest.fixture
 def con(df, df2, df_timestamp):
-    return Backend().connect(
+    return ibis.dask.connect(
         {'df': df, 'df2': df2, 'df_timestamp': df_timestamp}
     )
 
@@ -260,7 +259,7 @@ def test_udaf_analytic_groupby(con, t, df):
     def f(s):
         return s.sub(s.mean()).div(s.std())
 
-    expected = df.groupby('key').c.transform(f)
+    expected = df.groupby('key').c.transform(f).compute()
     tm.assert_series_equal(result, expected)
 
 
@@ -371,7 +370,7 @@ def test_udaf_window_interval(npartitions):
     )
     df = dd.from_pandas(df, npartitions=npartitions)
 
-    con = Backend().connect({'df': df})
+    con = ibis.dask.connect({'df': df})
     t = con.table('df')
     window = ibis.trailing_range_window(
         ibis.interval(days=2), order_by='time', group_by='key'
@@ -416,7 +415,7 @@ def test_multiple_argument_udaf_window(npartitions):
     )
     df = dd.from_pandas(df, npartitions=npartitions)
 
-    con = Backend().connect({'df': df})
+    con = ibis.dask.connect({'df': df})
     t = con.table('df')
     window = ibis.trailing_window(2, order_by='a', group_by='key')
     window2 = ibis.trailing_window(1, order_by='b', group_by='key')
@@ -465,7 +464,7 @@ def test_udaf_window_nan(npartitions):
     )
     df = dd.from_pandas(df, npartitions=npartitions)
 
-    con = Backend().connect({'df': df})
+    con = ibis.dask.connect({'df': df})
     t = con.table('df')
     window = ibis.trailing_window(2, order_by='a', group_by='key')
     expr = t.mutate(rolled=my_mean(t.b).over(window))
@@ -492,14 +491,11 @@ def test_array_return_type_reduction(con, t, df, qs):
     assert list(result) == expected.tolist()
 
 
-@pytest.mark.xfail(
-    raises=NotImplementedError, reason='TODO - windowing - #2553'
-)
 def test_array_return_type_reduction_window(con, t, df, qs):
     """Tests reduction UDF returning an array, used over a window."""
     expr = quantiles(t.b, quantiles=qs).over(ibis.window())
     result = expr.execute()
-    expected_raw = df.b.quantile(qs).tolist()
+    expected_raw = df.b.quantile(qs).compute().tolist()
     expected = pd.Series([expected_raw] * len(df))
     tm.assert_series_equal(result, expected)
 

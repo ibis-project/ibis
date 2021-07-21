@@ -265,8 +265,7 @@ def test_analytic_udf(backend, alltypes, df):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
-@pytest.mark.only_on_backends(['pandas', 'pyspark'])
-# TODO - windowing - #2553
+@pytest.mark.only_on_backends(['pandas', 'pyspark', 'dask'])
 @pytest.mark.xfail_unsupported
 @pytest.mark.parametrize('udf', calc_zscore_udfs)
 def test_analytic_udf_mutate(backend, alltypes, df, udf):

@@ -8,7 +8,7 @@ import warnings
 
 import numpy as np
 import sqlalchemy as sa
-import sqlalchemy.dialects.postgresql as pg
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql import expression
 from sqlalchemy.sql.functions import GenericFunction
@@ -239,7 +239,7 @@ except AttributeError:
 
 
 # translate strftime spec into mostly equivalent PostgreSQL spec
-_scanner = re.Scanner(
+_scanner = re.Scanner(  # type: ignore # re does have a Scanner attribute
     # double quotes need to be escaped
     [('"', lambda scanner, token: r'\"')]
     + [
@@ -380,7 +380,7 @@ def _find_in_set(t, expr):
     #       itself also have this property?
     needle, haystack = expr.op().args
     return _array_search(
-        t.translate(needle), pg.array(list(map(t.translate, haystack)))
+        t.translate(needle), postgresql.array(list(map(t.translate, haystack)))
     )
 
 
@@ -439,7 +439,7 @@ def _compile_regex_extract(element, compiler, **kw):
     return result
 
 
-def _regex_extract(t, expr):
+def _regex_extract_(t, expr):
     string, pattern, index = map(t.translate, expr.op().args)
     result = sa.case(
         [
@@ -652,7 +652,7 @@ operation_registry.update(
         ops.RegexSearch: infix_op('~'),
         ops.RegexReplace: _regex_replace,
         ops.Translate: fixed_arity('translate', 3),
-        ops.RegexExtract: _regex_extract,
+        ops.RegexExtract: _regex_extract_,
         ops.StringSplit: fixed_arity(sa.func.string_to_array, 2),
         ops.StringJoin: _string_join,
         ops.FindInSet: _find_in_set,

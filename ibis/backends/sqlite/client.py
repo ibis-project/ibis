@@ -75,10 +75,6 @@ class SQLiteClient(AlchemyClient):
         )
         self.has_attachment = True
 
-    @property
-    def client(self):
-        return self
-
     def _get_sqla_table(self, name, schema=None, autoload=True):
         return sa.Table(
             name,

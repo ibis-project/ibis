@@ -12,7 +12,6 @@ from dask.dataframe.utils import tm
 import ibis
 import ibis.expr.datatypes as dt
 
-from ... import Backend
 from ...execution import execute
 
 pytestmark = pytest.mark.dask
@@ -429,7 +428,7 @@ def test_nullif_inf(npartitions):
         pd.DataFrame({'a': [np.inf, 3.14, -np.inf, 42.0]}),
         npartitions=npartitions,
     )
-    con = Backend().connect({'t': df})
+    con = ibis.dask.connect({'t': df})
     t = con.table('t')
     expr = t.a.nullif(np.inf).nullif(-np.inf)
     result = expr.compile()

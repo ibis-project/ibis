@@ -1,7 +1,9 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
+import dask.array as da
 import dask.dataframe as dd
 import dask.delayed
+import numpy as np
 import pandas as pd
 from dask.dataframe.groupby import SeriesGroupBy
 
@@ -345,3 +347,153 @@ def safe_scalar_type(output_meta):
         output_meta = pd.Timestamp(1, tz=output_meta.tz, unit=output_meta.unit)
 
     return output_meta
+
+
+def add_partitioned_sorted_column(
+    df: Union[dd.DataFrame, dd.Series],
+) -> dd.DataFrame:
+    """Add a column that is already partitioned and sorted
+    This columns acts as if we had a global index across the distributed data.
+    Important properties:
+    - Each row has a unique id (i.e. a value in this column)
+    - IDs within each partition are already sorted
+    - Any id in partition N_{t} is less than any id in partition N_{t+1}
+    We do this by designating a sufficiently large space of integers per
+    partition via a base and adding the existing index to that base. See
+    `helper` below.
+    Though the space per partition is bounded, real world usage should not
+    hit these bounds. We also do not explicity deal with overflow in the
+    bounds.
+
+    Parameters
+    ----------
+    df : dd.DataFrame
+        Dataframe to add the column to
+
+    Returns
+    -------
+    dd.DataFrame
+        New dask dataframe with sorted partitioned index
+
+    Examples
+    --------
+
+    >>> ddf = dd.from_pandas(pd.DataFrame({'a': [1, 2,3, 4]}), npartitions=2)
+    >>> ddf
+    Dask DataFrame Structure:
+                    a
+    npartitions=2
+    0              int64
+    2                ...
+    3                ...
+    Dask Name: from_pandas, 2 task
+    >>> ddf.compute()
+       a
+    0  1
+    1  2
+    2  3
+    3  4
+    >>> ddf = add_partitioned_sorted_column(ddf)
+    >>> ddf
+    Dask DataFrame Structure:
+                    a
+    npartitions=2
+    0              int64
+    4294967296       ...
+    8589934592       ...
+    Dask Name: set_index, 8 tasks
+    Name: result, dtype: int64
+    >>> ddf.compute()
+                a
+    _ibis_index
+    0            1
+    1            2
+    4294967296   3
+    4294967297   4
+    """
+    if isinstance(df, dd.Series):
+        df = df.to_frame()
+
+    col_name = "_ibis_index"
+
+    if col_name in df.columns:
+        raise ValueError(f"Column {col_name} is already present in DataFrame")
+
+    def helper(
+        df: Union[pd.Series, pd.DataFrame],
+        partition_info: Dict[str, Any],  # automatically injected by dask
+        col_name: str,
+    ):
+        """Assigns a column with a unique id for each row"""
+        if len(df) > (2 ** 31):
+            raise ValueError(
+                f"Too many items in partition {partition_info} to add"
+                "partitioned sorted column without overflowing."
+            )
+        base = partition_info["number"] << 32
+        return df.assign(**{col_name: [base + idx for idx in df.index]})
+
+    original_meta = df._meta.dtypes.to_dict()
+    new_meta = {**original_meta, **{col_name: "int64"}}
+    df = df.reset_index(drop=True)
+    df = df.map_partitions(helper, col_name=col_name, meta=new_meta)
+    # Divisions include the minimum value of every partition's index and the
+    # maximum value of the last partition's index
+    divisions = tuple(x << 32 for x in range(df.npartitions + 1))
+
+    df = df.set_index(col_name, sorted=True, divisions=divisions)
+
+    return df
+
+
+def dask_array_select(condlist, choicelist, default=0):
+    # shim taken from dask.array 2021.6.1
+    # https://github.com/ibis-project/ibis/issues/2847
+    try:
+        from dask.array import select
+
+        return select(condlist, choicelist, default)
+    except ImportError:
+
+        def _select(*args, **kwargs):
+            split_at = len(args) // 2
+            condlist = args[:split_at]
+            choicelist = args[split_at:]
+            return np.select(condlist, choicelist, **kwargs)
+
+        if len(condlist) != len(choicelist):
+            raise ValueError(
+                "list of cases must be same length as list of conditions"
+            )
+
+        if len(condlist) == 0:
+            raise ValueError(
+                "select with an empty condition list is not possible"
+            )
+
+        choicelist = [da.asarray(choice) for choice in choicelist]
+
+        try:
+            intermediate_dtype = da.result_type(*choicelist)
+        except TypeError as e:
+            msg = "Choicelist elements do not have a common dtype."
+            raise TypeError(msg) from e
+
+        blockwise_shape = tuple(range(choicelist[0].ndim))
+
+        condargs = [
+            arg for elem in condlist for arg in (elem, blockwise_shape)
+        ]
+        choiceargs = [
+            arg for elem in choicelist for arg in (elem, blockwise_shape)
+        ]
+
+        return da.blockwise(
+            _select,
+            blockwise_shape,
+            *condargs,
+            *choiceargs,
+            dtype=intermediate_dtype,
+            name="select",
+            default=default,
+        )
