@@ -1,3 +1,4 @@
+import itertools
 import warnings
 
 import numpy as np
@@ -299,6 +300,29 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
 def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
     expr = expr_fn(alltypes, backend)
     expected = expected_fn(df, backend)
+
+    result = con.execute(expr)
+    expected = backend.default_series_rename(expected)
+
+    backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    ('timedelta', 'temporal_fn'),
+    itertools.product(
+        ['5W', '3d', '2h', '3m', '10s'],
+        [
+            lambda t, td: t.timestamp_col + pd.Timedelta(td),
+            lambda t, td: t.timestamp_col - pd.Timedelta(td),
+        ],
+    ),
+)
+@pytest.mark.xfail_unsupported
+def test_temporal_binop_pandas_timedelta(
+    backend, con, alltypes, df, timedelta, temporal_fn
+):
+    expr = temporal_fn(alltypes, timedelta)
+    expected = temporal_fn(df, timedelta)
 
     result = con.execute(expr)
     expected = backend.default_series_rename(expected)

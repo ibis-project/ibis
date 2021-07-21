@@ -4,6 +4,7 @@ import functools
 import operator
 
 import numpy as np
+import pandas as pd
 import pyspark
 import pyspark.sql.functions as F
 from pyspark.sql import Window
@@ -1319,6 +1320,16 @@ _time_unit_mapping = {
     's': 'second',
 }
 
+# Ibis value to Pandas Timedelta value
+# The below mapping contains the union of the units represented
+# by Pandas Timedelta + units supported by PySpark.
+_time_unit_mapping_pd_timedelta = {
+    'D': 'days',
+    'h': 'hours',
+    'm': 'minutes',
+    's': 'seconds',
+}
+
 
 @compiles(ops.Date)
 def compile_date(t, expr, scope, timecontext, **kwargs):
@@ -1532,8 +1543,15 @@ def _get_interval_col(
             'Interval unit "{}" is not allowed. Allowed units are: '
             '{}'.format(dtype.unit, allowed_units)
         )
+
+    if isinstance(op.value, pd.Timedelta):
+        pandas_unit = _time_unit_mapping_pd_timedelta[dtype.unit]
+        value = getattr(op.value.components, pandas_unit)
+    else:
+        value = op.value
+
     return F.expr(
-        'INTERVAL {} {}'.format(op.value, _time_unit_mapping[dtype.unit])
+        'INTERVAL {} {}'.format(value, _time_unit_mapping[dtype.unit])
     )
 
 
