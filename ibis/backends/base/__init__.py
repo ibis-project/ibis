@@ -1,6 +1,6 @@
 import abc
-from typing import Any, Callable
 import warnings
+from typing import Any, Callable
 
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
