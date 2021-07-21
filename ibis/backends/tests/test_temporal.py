@@ -317,7 +317,7 @@ def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
         ],
     ),
 )
-@pytest.mark.xfail_unsupported
+@pytest.mark.only_on_backends(['dask', 'pandas', 'pyspark'])
 def test_temporal_binop_pandas_timedelta(
     backend, con, alltypes, df, timedelta, temporal_fn
 ):
