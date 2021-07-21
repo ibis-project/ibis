@@ -16,10 +16,6 @@ from .datatypes import to_sqla_type
 from .geospatial import geospatial_supported
 from .query_builder import AlchemyCompiler
 
-if geospatial_supported:
-    import geoalchemy2.shape as shape
-    import geopandas
-
 
 class _AutoCloseCursor:
     """
@@ -43,27 +39,6 @@ class _AutoCloseCursor:
         return self.original_cursor.fetchall()
 
 
-def _maybe_to_geodataframe(df, schema):
-    """
-    If the required libraries for geospatial support are installed, and if a
-    geospatial column is present in the dataframe, convert it to a
-    GeoDataFrame.
-    """
-
-    def to_shapely(row, name):
-        return shape.to_shape(row[name]) if row[name] is not None else None
-
-    if len(df) and geospatial_supported:
-        geom_col = None
-        for name, dtype in schema.items():
-            if isinstance(dtype, dt.GeoSpatial):
-                geom_col = geom_col or name
-                df[name] = df.apply(lambda x: to_shapely(x, name), axis=1)
-        if geom_col:
-            df = geopandas.GeoDataFrame(df, geometry=geom_col)
-    return df
-
-
 class AlchemyClient(SQLClient):
 
     compiler = AlchemyCompiler
@@ -81,13 +56,38 @@ class AlchemyClient(SQLClient):
         self._inspector.info_cache.clear()
         return self._inspector
 
+    @staticmethod
+    def _to_geodataframe(df, schema):
+        """
+        If the required libraries for geospatial support are installed, and if
+        a geospatial column is present in the dataframe, convert it to a
+        GeoDataFrame.
+        """
+        import geopandas
+        from geoalchemy2 import shape
+
+        def to_shapely(row, name):
+            return shape.to_shape(row[name]) if row[name] is not None else None
+
+        geom_col = None
+        for name, dtype in schema.items():
+            if isinstance(dtype, dt.GeoSpatial):
+                geom_col = geom_col or name
+                df[name] = df.apply(lambda x: to_shapely(x, name), axis=1)
+        if geom_col:
+            df = geopandas.GeoDataFrame(df, geometry=geom_col)
+        return df
+
     def fetch_from_cursor(self, cursor, schema):
         df = pd.DataFrame.from_records(
             cursor.original_cursor.fetchall(),
             columns=cursor.original_cursor.keys(),
             coerce_float=True,
         )
-        return _maybe_to_geodataframe(schema.apply_to(df), schema)
+        df = schema.apply_to(df)
+        if len(df) and geospatial_supported:
+            return self._to_geodataframe(df, schema)
+        return df
 
     @contextlib.contextmanager
     def begin(self):
