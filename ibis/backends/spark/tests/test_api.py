@@ -16,7 +16,3 @@ def expr():
 def test_compile(client, expr):
     expected = 'SELECT `c2`, `c1` + 1 AS `c3`, length(`c2`) AS `c4`\nFROM tbl'
     assert client.compile(expr) == ibis.spark.compile(expr) == expected
-
-
-def test_verify(expr):
-    assert ibis.spark.verify(expr)
