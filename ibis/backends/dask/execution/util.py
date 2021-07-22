@@ -22,7 +22,7 @@ from ..core import execute
 
 DispatchRule = Tuple[Tuple[Type, ...], Callable]
 
-TypeRegistrationDict = Dict[ops.Node, List[DispatchRule]]
+TypeRegistrationDict = Dict[Type[ops.Node], List[DispatchRule]]
 
 
 def register_types_to_dispatcher(
