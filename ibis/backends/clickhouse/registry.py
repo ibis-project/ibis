@@ -672,7 +672,7 @@ _undocumented_operations = {
 }
 
 
-_unsupported_ops = [
+_unsupported_ops_list = [
     ops.WindowOp,
     ops.DecimalPrecision,
     ops.DecimalScale,
@@ -695,7 +695,7 @@ _unsupported_ops = [
     ops.Lead,
     ops.NTile,
 ]
-_unsupported_ops = {k: _raise_error for k in _unsupported_ops}
+_unsupported_ops = {k: _raise_error for k in _unsupported_ops_list}
 
 
 operation_registry.update(_undocumented_operations)
