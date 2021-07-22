@@ -20,7 +20,7 @@ from ibis.expr.typing import TimeContext
 
 from ..core import execute
 
-DispatchRule = Tuple[Tuple[Type], Callable]
+DispatchRule = Tuple[Tuple[Type, ...], Callable]
 
 TypeRegistrationDict = Dict[ops.Node, List[DispatchRule]]
 
