@@ -15,12 +15,11 @@
 
 import os
 from pathlib import Path
-from typing import Generator, Optional
+from typing import Generator
 
 import pytest
 
 import ibis
-import ibis.expr.types as ir
 from ibis.backends.tests.base import BackendTest, RoundHalfToEven
 
 PG_USER = os.environ.get(
@@ -71,12 +70,6 @@ class TestConf(BackendTest, RoundHalfToEven):
             password=password,
             database=database,
         )
-
-    @property
-    def geo(self) -> Optional[ir.TableExpr]:
-        if 'geo' in self.db.list_tables():
-            return self.db.geo
-        return None
 
 
 def _random_identifier(suffix):
