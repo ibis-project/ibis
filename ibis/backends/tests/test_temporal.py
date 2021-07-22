@@ -8,6 +8,7 @@ import pytest
 from pytest import param
 
 import ibis
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends.pandas.execution.temporal import day_name
 
@@ -310,7 +311,7 @@ def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
 @pytest.mark.parametrize(
     ('timedelta', 'temporal_fn'),
     itertools.product(
-        ['5W', '3d', '2h', '3m', '10s'],
+        ['100Y', '5W', '3d', '1.5d', '2h', '3m', '10s'],
         [
             lambda t, td: t.timestamp_col + pd.Timedelta(td),
             lambda t, td: t.timestamp_col - pd.Timedelta(td),
@@ -328,6 +329,16 @@ def test_temporal_binop_pandas_timedelta(
     expected = backend.default_series_rename(expected)
 
     backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.only_on_backends(['pyspark'])
+def test_temporal_binop_invalid_interval_unit(con, alltypes):
+    expr = alltypes.timestamp_col + pd.Timedelta('1ns')
+    with pytest.raises(
+        com.UnsupportedArgumentError,
+        match='Interval unit "ns" is not allowed*',
+    ):
+        con.execute(expr)
 
 
 @pytest.mark.parametrize(
