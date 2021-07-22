@@ -69,6 +69,7 @@ class BackendTest(abc.ABC):
     returned_timestamp_unit = 'us'
     supported_to_timestamp_units = {'s', 'ms', 'us'}
     supports_floating_modulus = True
+    bool_is_int = False
 
     def __init__(self, data_directory: Path) -> None:
         self.api  # skips if we can't access the backend
@@ -122,23 +123,24 @@ class BackendTest(abc.ABC):
         return f(*args)
 
     @property
-    def db(self):
-        return self.connection.database()
-
-    @property
     def functional_alltypes(self) -> ir.TableExpr:
-        return self.db.functional_alltypes
+        t = self.connection.table('functional_alltypes')
+        if self.bool_is_int:
+            return t.mutate(bool_col=t.bool_col == 1)
+        return t
 
     @property
     def batting(self) -> ir.TableExpr:
-        return self.db.batting
+        return self.connection.table('batting')
 
     @property
     def awards_players(self) -> ir.TableExpr:
-        return self.db.awards_players
+        return self.connection.table('awards_players')
 
     @property
     def geo(self) -> Optional[ir.TableExpr]:
+        if 'geo' in self.connection.list_tables():
+            return self.connection.table('geo')
         return None
 
     @property

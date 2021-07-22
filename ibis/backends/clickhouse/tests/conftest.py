@@ -25,6 +25,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundHalfToEven):
     returned_timestamp_unit = 's'
     supported_to_timestamp_units = {'s'}
     supports_floating_modulus = False
+    bool_is_int = True
 
     @staticmethod
     def connect(data_directory: Path):
@@ -42,11 +43,6 @@ class TestConf(UnorderedComparator, BackendTest, RoundHalfToEven):
             database=database,
             user=user,
         )
-
-    @property
-    def functional_alltypes(self) -> ir.TableExpr:
-        t = super().functional_alltypes
-        return t.mutate(bool_col=t.bool_col == 1)
 
     @staticmethod
     def greatest(

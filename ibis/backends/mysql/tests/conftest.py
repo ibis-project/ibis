@@ -14,6 +14,7 @@ class TestConf(BackendTest, RoundHalfToEven):
     returned_timestamp_unit = 's'
     supports_arrays = False
     supports_arrays_outside_of_select = supports_arrays
+    bool_is_int = True
 
     def __init__(self, data_directory: Path) -> None:
         super().__init__(data_directory)
@@ -54,9 +55,3 @@ class TestConf(BackendTest, RoundHalfToEven):
             password=password,
             database=database,
         )
-
-    @property
-    def functional_alltypes(self):
-        # BOOLEAN <-> TINYINT(1)
-        t = super().functional_alltypes
-        return t.mutate(bool_col=t.bool_col == 1)
