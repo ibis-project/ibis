@@ -37,7 +37,7 @@ def compute_projection_scalar_expr(
     expr,
     parent,
     data,
-    scope: Scope = None,
+    scope: Scope,
     timecontext: Optional[TimeContext] = None,
     **kwargs,
 ):
