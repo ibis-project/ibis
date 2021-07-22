@@ -56,7 +56,7 @@ def execute_window_op(
     op,
     data,
     window,
-    scope: Scope = None,
+    scope: Scope,
     timecontext: Optional[TimeContext] = None,
     aggcontext=None,
     clients=None,
