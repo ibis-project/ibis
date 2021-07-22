@@ -176,6 +176,7 @@ class ClickhouseClient(SQLClient):
     compiler = ClickhouseCompiler
 
     def __init__(self, backend, *args, **kwargs):
+        self.backend = backend
         self.database_class = backend.database_class
         self.table_class = backend.table_class
         self.table_expr_class = backend.table_expr_class

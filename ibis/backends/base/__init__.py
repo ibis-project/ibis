@@ -1,6 +1,9 @@
 import abc
 import warnings
+from typing import Any, Callable
 
+import ibis.expr.operations as ops
+import ibis.expr.types as ir
 from ibis.common.exceptions import TranslationError
 
 from .client import Client, Database
@@ -22,46 +25,31 @@ class BaseBackend(abc.ABC):
         """
         Name of the backend, for example 'sqlite'.
         """
-        pass
 
     @property
     @abc.abstractmethod
-    def kind(self):
-        """
-        Backend kind. One of:
-
-        sqlalchemy
-            Backends using a SQLAlchemy dialect.
-        sql
-            SQL based backends, not based on a SQLAlchemy dialect.
-        pandas
-            Backends using pandas to store data and perform computations.
-        spark
-            Spark based backends.
-        """
-        pass
+    def client_class(self):
+        """Class of the client, like `PandasClient`."""
 
     @abc.abstractmethod
     def connect(connection_string, **options):
         """
         Connect to the underlying database and return a client object.
         """
-        pass
 
-    def register_options(self):
+    def register_options(self) -> None:
         """
         If the backend has custom options, register them here.
         They will be prefixed with the name of the backend.
         """
-        pass
 
-    def compile(self, expr, params=None):
+    def compile(self, expr: ir.Expr, params=None) -> Any:
         """
         Compile the expression.
         """
-        return self.client.compiler.to_sql(expr, params=params)
+        return self.client_class.compiler.to_sql(expr, params=params)
 
-    def verify(self, expr, params=None):
+    def verify(self, expr: ir.Expr, params=None) -> bool:
         """
         Verify `expr` is an expression that can be compiled.
         """
@@ -76,7 +64,7 @@ class BaseBackend(abc.ABC):
         except TranslationError:
             return False
 
-    def add_operation(self, operation):
+    def add_operation(self, operation: ops.Node) -> Callable:
         """
         Decorator to add a translation function to the backend for a specific
         operation.
@@ -93,13 +81,13 @@ class BaseBackend(abc.ABC):
         ... def _null_literal(translator, expression):
         ...     return 'NULL'
         """
-        if not hasattr(self.client, 'compiler'):
+        if not hasattr(self.client_class, 'compiler'):
             raise RuntimeError(
                 'Only SQL-based backends support `add_operation`'
             )
 
-        def decorator(translation_function):
-            self.client.compiler.translator_class.add_operation(
+        def decorator(translation_function: Callable) -> None:
+            self.client_class.compiler.translator_class.add_operation(
                 operation, translation_function
             )
 

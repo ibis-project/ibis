@@ -12,15 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis.backends.base import BaseBackend
+from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 
 from .client import SQLiteClient, SQLiteDatabase, SQLiteTable
 
 
-class Backend(BaseBackend):
+class Backend(BaseAlchemyBackend):
     name = 'sqlite'
-    kind = 'sqlalchemy'
-    client = SQLiteClient
+    client_class = SQLiteClient
     database_class = SQLiteDatabase
     table_class = SQLiteTable
 
