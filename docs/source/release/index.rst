@@ -12,6 +12,7 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :bug:`2829` Fix .drop(fields). The argument can now be either a list of strings or a string.
 * :feature:`2873` Support binary operation with Timedelta in Pyspark backend
 * :support:`2865` Deprecated `ibis.<backend>.verify()` in favor of capturing exception in `ibis.<backend>.compile()`
 * :bug:`2845` Fix projection on differences and intersections for SQL backends
