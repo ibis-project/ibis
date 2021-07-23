@@ -2,8 +2,7 @@ import pandas as pd
 
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
-from ibis.backends.base import BaseBackend
-from ibis.backends.base.file import FileClient
+from ibis.backends.base.file import BaseFileBackend, FileClient
 from ibis.backends.pandas.core import execute, execute_node
 
 
@@ -53,24 +52,11 @@ class HDFClient(FileClient):
         return self._list_databases_dirs_or_files(path)
 
 
-class Backend(BaseBackend):
+class Backend(BaseFileBackend):
     name = 'hdf5'
-    kind = 'pandas'
     extension = 'h5'
     table_class = HDFTable
-
-    def connect(self, path):
-        """Create a HDF5Client for use with Ibis
-
-        Parameters
-        ----------
-        path: str or pathlib.Path
-
-        Returns
-        -------
-        HDF5Client
-        """
-        return HDFClient(backend=self, root=path)
+    client_class = HDFClient
 
 
 @execute_node.register(Backend.table_class, HDFClient)
