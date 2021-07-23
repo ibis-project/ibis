@@ -8,13 +8,17 @@ from .client import (
     ClickhouseTable,
 )
 
+from __future__ import annotations
+_default_compression: str | bool
+
+
+
 try:
     import lz4  # noqa: F401
 
     _default_compression = 'lz4'
 except ImportError:
     _default_compression = False
-
 
 class Backend(BaseBackend):
     name = 'clickhouse'
