@@ -160,9 +160,7 @@ def _pandas_dtype_from_dd_scalar(x: dd.core.Scalar):
 
 
 def _coerce_to_dataframe(
-    data: Any,
-    column_names: List[str],
-    types: Optional[List[dt.DataType]] = None,
+    data: Any, column_names: List[str], types: List[dt.DataType],
 ) -> dd.DataFrame:
     """
     Clone of ibis.util.coerce_to_dataframe that deals well with dask types
