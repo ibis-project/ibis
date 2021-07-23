@@ -1,3 +1,4 @@
+from __future__ import annotations
 import ibis.config
 from ibis.backends.base import BaseBackend
 
@@ -8,10 +9,7 @@ from .client import (
     ClickhouseTable,
 )
 
-from __future__ import annotations
 _default_compression: str | bool
-
-
 
 try:
     import lz4  # noqa: F401
