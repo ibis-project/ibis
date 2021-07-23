@@ -244,12 +244,9 @@ class DaskClient(Client):
         schema: sch.Schema = None,
     ):
         """Create a table."""
-        if obj is None and schema is None:
-            raise com.IbisError('Must pass expr or schema')
-
         if obj is not None:
             df = obj
-        else:
+        elif schema is not None:
             dtypes = ibis_schema_to_dask(schema)
             df = schema.apply_to(
                 dd.from_pandas(
@@ -257,6 +254,8 @@ class DaskClient(Client):
                     npartitions=1,
                 )
             )
+        else:
+            raise com.IbisError('Must pass expr or schema')
 
         self.dictionary[table_name] = df
 
