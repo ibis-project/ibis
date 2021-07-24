@@ -297,6 +297,30 @@ def test_insert_overwrite_from_expr(
     tm.assert_frame_equal(temporary.execute(), from_table.execute())
 
 
+@pytest.mark.only_on_backends(
+    SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
+)
+def test_list_databases(con):
+    # Every backend has its own databases
+    TEST_DATABASES = {
+        'SQLiteClient': ['main', 'base'],
+        'PostgreSQLClient': ['postgres', 'ibis_testing'],
+        'MySQLClient': ['ibis_testing', 'information_schema'],
+    }
+    assert con.list_databases() == TEST_DATABASES[con.__class__.__name__]
+
+
+@pytest.mark.only_on_backends(
+    set(SQLALCHEMY_BACKENDS) - {'postgres'},
+    reason="run only if backend is SQLAlchemy based, except postgres which "
+    "which has schemas different than databases",
+)
+def test_list_schemas(con):
+    with pytest.warns(FutureWarning):
+        schemas = con.list_schemas()
+    assert schemas == con.list_databases()
+
+
 def test_verify(con, backend):
     if not hasattr(con, 'compiler'):
         pytest.skip(

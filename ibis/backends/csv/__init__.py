@@ -4,8 +4,7 @@ from pkg_resources import parse_version
 
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
-from ibis.backends.base import BaseBackend
-from ibis.backends.base.file import FileClient
+from ibis.backends.base.file import BaseFileBackend, FileClient
 from ibis.backends.pandas.core import execute, execute_node, pre_execute
 from ibis.backends.pandas.execution.selection import physical_tables
 from ibis.expr.scope import Scope
@@ -105,24 +104,11 @@ def csv_pre_execute_selection(
     return ops
 
 
-class Backend(BaseBackend):
+class Backend(BaseFileBackend):
     name = 'csv'
-    kind = 'pandas'
     extension = 'csv'
     table_class = CSVTable
-
-    def connect(self, path):
-        """Create a CSVClient for use with Ibis
-
-        Parameters
-        ----------
-        path: str or pathlib.Path
-
-        Returns
-        -------
-        CSVClient
-        """
-        return CSVClient(backend=self, root=path)
+    client_class = CSVClient
 
 
 @execute_node.register(Backend.table_class, CSVClient)

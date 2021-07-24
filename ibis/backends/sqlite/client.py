@@ -26,6 +26,7 @@ class SQLiteClient(AlchemyClient):
 
     def __init__(self, backend, path=None, create=False):
         super().__init__(sa.create_engine("sqlite://"))
+        self.backend = backend
         self.database_class = backend.database_class
         self.table_class = backend.table_class
         self.name = path
@@ -35,18 +36,6 @@ class SQLiteClient(AlchemyClient):
             self.attach(self.database_name, path, create=create)
 
         udf.register_all(self.con)
-
-    @property
-    def current_database(self) -> Optional[str]:
-        return self.database_name
-
-    def list_databases(self):
-        raise NotImplementedError(
-            'Listing databases in SQLite is not implemented'
-        )
-
-    def set_database(self, name: str) -> None:
-        raise NotImplementedError('set_database is not implemented for SQLite')
 
     def attach(self, name, path, create: bool = False) -> None:
         """Connect another SQLite database file

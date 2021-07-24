@@ -9,8 +9,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.base import BaseBackend
-from ibis.backends.base.file import FileClient
+from ibis.backends.base.file import BaseFileBackend, FileClient
 from ibis.backends.pandas.core import execute, execute_node
 
 # TODO(jreback) complex types are not implemented
@@ -98,14 +97,11 @@ class ParquetClient(FileClient):
         return parse_version(pa.__version__)
 
 
-class Backend(BaseBackend):
+class Backend(BaseFileBackend):
     name = 'parquet'
-    kind = 'pandas'
     extension = 'parquet'
     table_class = ParquetTable
-
-    def connect(self, dictionary):
-        return ParquetClient(backend=self, root=dictionary)
+    client_class = ParquetClient
 
 
 @execute_node.register(Backend.table_class, ParquetClient)

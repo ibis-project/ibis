@@ -5,12 +5,8 @@ from .client import SparkClient, SparkDatabase, SparkDatabaseTable, SparkTable
 from .udf import udf  # noqa: F401
 
 
-class Backend(BaseBackend):
-    name = 'spark'
-    kind = 'spark'
-    client = SparkClient
+class BaseSparkBackend(BaseBackend):
     database_class = SparkDatabase
-    table_class = SparkDatabaseTable
     table_expr_class = SparkTable
 
     def connect(self, spark_session):
@@ -21,7 +17,7 @@ class Backend(BaseBackend):
         See documentation for SparkContext:
         https://spark.apache.org/docs/latest/api/python/_modules/pyspark/context.html#SparkContext
         """
-        client = SparkClient(backend=self, session=spark_session)
+        client = self.client_class(backend=self, session=spark_session)
 
         # Spark internally stores timestamps as UTC values, and timestamp data
         # that is brought in without a specified time zone is converted as
@@ -30,3 +26,9 @@ class Backend(BaseBackend):
         client._session.conf.set('spark.sql.session.timeZone', 'UTC')
 
         return client
+
+
+class Backend(BaseSparkBackend):
+    name = 'spark'
+    client_class = SparkClient
+    table_class = SparkDatabaseTable
