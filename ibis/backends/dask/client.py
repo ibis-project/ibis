@@ -164,6 +164,7 @@ class DaskDatabase(Database):
 
 class DaskClient(Client):
     def __init__(self, backend, dictionary: Dict[str, dd.DataFrame]):
+        self.backend = backend
         self.database_class = backend.database_class
         self.table_class = backend.table_class
         self.dictionary = dictionary

@@ -1,6 +1,6 @@
 """Impala backend"""
 import ibis.config
-from ibis.backends.base import BaseBackend
+from ibis.backends.base.sql import BaseSQLBackend
 
 # these objects are exposed in the public API and are not used in the module
 from .client import (  # noqa: F401
@@ -14,10 +14,9 @@ from .hdfs import HDFS, WebHDFS, hdfs_connect
 from .udf import *  # noqa: F401,F403
 
 
-class Backend(BaseBackend):
+class Backend(BaseSQLBackend):
     name = 'impala'
-    kind = 'sql'
-    client = ImpalaClient
+    client_class = ImpalaClient
     database_class = ImpalaDatabase
     table_class = ImpalaDatabaseTable
     table_expr_class = ImpalaTable

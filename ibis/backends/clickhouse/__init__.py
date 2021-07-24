@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import ibis.config
-from ibis.backends.base import BaseBackend
+from ibis.backends.base.sql import BaseSQLBackend
 
 from .client import (
     ClickhouseClient,
@@ -19,10 +19,10 @@ try:
 except ImportError:
     _default_compression = False
 
-class Backend(BaseBackend):
+
+class Backend(BaseSQLBackend):
     name = 'clickhouse'
-    kind = 'sql'
-    client = ClickhouseClient
+    client_class = ClickhouseClient
     database_class = ClickhouseDatabase
     table_class = ClickhouseDatabaseTable
     table_expr_class = ClickhouseTable

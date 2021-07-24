@@ -1,12 +1,13 @@
 from pathlib import Path
 
 import ibis.expr.types as ir
-from ibis.backends.base import Client, Database
+from ibis.backends.base import BaseBackend, Client, Database
 from ibis.backends.pandas.core import execute_and_reset
 
 
 class FileClient(Client):
     def __init__(self, backend, root):
+        self.backend = backend
         self.extension = backend.extension
         self.table_class = backend.table_class
         self.root = Path(str(root))
@@ -127,3 +128,22 @@ class FileDatabase(Database):
         if path is None:
             path = self.path
         return sorted(self.client.list_tables(path=path))
+
+
+class BaseFileBackend(BaseBackend):
+    """
+    Base backend class for pandas pseudo-backends for file formats.
+    """
+
+    def connect(self, path):
+        """Create a Client for use with Ibis
+
+        Parameters
+        ----------
+        path : str or pathlib.Path
+
+        Returns
+        -------
+        Client
+        """
+        return self.client_class(backend=self, root=path)
