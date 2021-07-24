@@ -9,7 +9,6 @@ import pytest
 from pyspark.sql import SparkSession
 
 import ibis
-import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 
@@ -196,18 +195,6 @@ class TestConf(BackendTest, RoundAwayFromZero):
     @staticmethod
     def connect(data_directory):
         return get_pyspark_testing_client(data_directory)
-
-    @property
-    def functional_alltypes(self) -> ir.TableExpr:
-        return self.connection.table('functional_alltypes')
-
-    @property
-    def batting(self) -> ir.TableExpr:
-        return self.connection.table('batting')
-
-    @property
-    def awards_players(self) -> ir.TableExpr:
-        return self.connection.table('awards_players')
 
 
 @pytest.fixture(scope='session')

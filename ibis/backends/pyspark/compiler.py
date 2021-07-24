@@ -4,6 +4,7 @@ import functools
 import operator
 
 import numpy as np
+import pandas as pd
 import pyspark
 import pyspark.sql.functions as F
 from pyspark.sql import Window
@@ -1535,17 +1536,26 @@ def _get_interval_col(
     dtype = op.dtype
     if not isinstance(dtype, dtypes.Interval):
         raise com.UnsupportedArgumentError(
-            '{} expression cannot be converted to interval column. '
-            'Must be Interval dtype.'.format(dtype)
+            f'{dtype} expression cannot be converted to interval column. '
+            'Must be Interval dtype.'
         )
     if allowed_units and dtype.unit not in allowed_units:
         raise com.UnsupportedArgumentError(
-            'Interval unit "{}" is not allowed. Allowed units are: '
-            '{}'.format(dtype.unit, allowed_units)
+            f'Interval unit "{dtype.unit}" is not allowed. Allowed units are: '
+            f'{allowed_units}'
         )
-    return F.expr(
-        'INTERVAL {} {}'.format(op.value, _time_unit_mapping[dtype.unit])
-    )
+
+    if isinstance(op.value, pd.Timedelta):
+        td_nanos = op.value.value
+        if td_nanos % 1000 != 0:
+            raise com.UnsupportedArgumentError(
+                'Interval with nanoseconds is not supported. The '
+                'smallest unit supported by Spark is microseconds.'
+            )
+        td_micros = td_nanos // 1000
+        return F.expr(f'INTERVAL {td_micros} MICROSECOND')
+    else:
+        return F.expr(f'INTERVAL {op.value} {_time_unit_mapping[dtype.unit]}')
 
 
 def _compile_datetime_binop(

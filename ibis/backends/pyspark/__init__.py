@@ -6,8 +6,7 @@ from .compiler import PySparkDatabaseTable
 
 class Backend(BaseBackend):
     name = 'pyspark'
-    kind = 'spark'
-    client = PySparkClient
+    client_class = PySparkClient
     database_class = PySparkDatabase
     table_class = PySparkDatabaseTable
     table_expr_class = PySparkTable
@@ -20,7 +19,7 @@ class Backend(BaseBackend):
         See documentation for SparkContext:
         https://spark.apache.org/docs/latest/api/python/_modules/pyspark/context.html#SparkContext
         """
-        client = PySparkClient(backend=self, session=session)
+        client = self.client_class(backend=self, session=session)
 
         # Spark internally stores timestamps as UTC values, and timestamp data
         # that is brought in without a specified time zone is converted as

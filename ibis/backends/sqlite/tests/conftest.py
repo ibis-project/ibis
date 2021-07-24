@@ -26,7 +26,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
 
     @property
     def functional_alltypes(self) -> ir.TableExpr:
-        t = self.db.functional_alltypes
+        t = super().functional_alltypes
         return t.mutate(timestamp_col=t.timestamp_col.cast('timestamp'))
 
 
