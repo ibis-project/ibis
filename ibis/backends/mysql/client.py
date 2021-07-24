@@ -148,39 +148,6 @@ class MySQLClient(AlchemyClient):
             )
             return self.database_class(name, new_client)
 
-    def schema(self, name):
-        """Get a schema object from the current database for the schema named `name`.
-
-        Parameters
-        ----------
-        name : str
-
-        Returns
-        -------
-        schema : MySQLSchema
-            An :class:`ibis.sql.mysql.client.MySQLSchema` instance.
-
-        """
-        return self.database().schema(name)
-
-    @property
-    def current_database(self):
-        """The name of the current database this client is connected to."""
-        return self.database_name
-
-    def list_databases(self):
-        return [row.Database for row in self.con.execute('SHOW DATABASES')]
-
-    def list_schemas(self):
-        """List all the schemas in the current database."""
-        return self.inspector.get_schema_names()
-
-    def set_database(self, name):
-        raise NotImplementedError(
-            'Cannot set database with MySQL client. To use a different'
-            ' database, use client.database({!r})'.format(name)
-        )
-
     def table(self, name, database=None, schema=None):
         """Create a table expression that references a particular a table
         called `name` in a MySQL database called `database`.
