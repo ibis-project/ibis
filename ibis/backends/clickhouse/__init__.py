@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import ibis.config
 from ibis.backends.base import BaseBackend
 
