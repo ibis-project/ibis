@@ -13,7 +13,6 @@ from pyspark.sql.functions import PandasUDFType, pandas_udf
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dtypes
 import ibis.expr.operations as ops
-import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 import ibis.expr.types as types
 from ibis import interval
@@ -27,16 +26,6 @@ from .datatypes import (
     spark_dtype,
 )
 from .timecontext import combine_time_context, filter_by_time_context
-
-
-class SparkUDFNode(ops.ValueOp):
-    def output_type(self):
-        return rlz.shape_like(self.args, dtype=self.return_type)
-
-
-class SparkUDAFNode(ops.Reduction):
-    def output_type(self):
-        return self.return_type.scalar_type()
 
 
 class PySparkDatabaseTable(ops.DatabaseTable):
