@@ -74,7 +74,7 @@ class Backend(BaseSQLBackend):
         -------
         ClickhouseClient
         """
-        client = ClickhouseClient(
+        self.client = ClickhouseClient(
             backend=self,
             host=host,
             port=port,
@@ -84,7 +84,7 @@ class Backend(BaseSQLBackend):
             client_name=client_name,
             compression=compression,
         )
-        return client
+        return self.client
 
     def register_options(self):
         ibis.config.register_option(
@@ -92,3 +92,14 @@ class Backend(BaseSQLBackend):
             '__ibis_tmp',
             'Database to use for temporary tables, views. functions, etc.',
         )
+
+    @property
+    def version(self) -> str:
+        self.cient.con.connection.force_connect()
+        try:
+            info = self.client.con.connection.server_info
+        except Exception:
+            self.client.con.connection.disconnect()
+            raise
+
+        return f'{info.version_major}.{info.version_minor}.{info.revision}'
