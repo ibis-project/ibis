@@ -59,7 +59,7 @@ def test_drop_table_not_exist(client):
 
 @pytest.mark.xfail(
     reason='Moved from the legacy spark backend, '
-    'but not working in the pyspark one'
+    'but not working in the pyspark one #2879'
 )
 def test_truncate_table(client, alltypes, temp_table):
     expr = alltypes.limit(1)
@@ -76,7 +76,7 @@ def test_truncate_table(client, alltypes, temp_table):
 
 @pytest.mark.xfail(
     reason='Moved from the legacy spark backend, '
-    'but not working in the pyspark one'
+    'but not working in the pyspark one #2879'
 )
 def test_truncate_table_expression(client, alltypes, temp_table):
     expr = alltypes.limit(1)
@@ -117,7 +117,7 @@ def test_create_empty_table(client, temp_table):
 
 @pytest.mark.xfail(
     reason='Moved from the legacy spark backend, '
-    'but not working in the pyspark one'
+    'but not working in the pyspark one #2879'
 )
 def test_insert_table(client, alltypes, temp_table, test_data_db):
     expr = alltypes
@@ -244,7 +244,7 @@ def test_change_properties(client, table):
 
 @pytest.mark.xfail(
     reason='Moved from the legacy spark backend, '
-    'but not working in the pyspark one'
+    'but not working in the pyspark one #2879'
 )
 def test_create_table_reserved_identifier(client, alltypes):
     table_name = 'distinct'
@@ -290,7 +290,7 @@ def test_schema_from_csv(client, awards_players_filename):
 
 @pytest.mark.xfail(
     reason='Moved from the legacy spark backend, '
-    'but not working in the pyspark one'
+    'but not working in the pyspark one #2879'
 )
 def test_create_table_or_temp_view_from_csv(client, awards_players_filename):
     client._create_table_or_temp_view_from_csv(
