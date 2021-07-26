@@ -17,18 +17,18 @@ import ibis.expr.types as ir
 import ibis.expr.types as types
 from ibis import interval
 from ibis.backends.pandas.execution import execute
-from ibis.backends.spark.datatypes import (
+from ibis.expr.timecontext import adjust_context
+from ibis.util import guid
+
+from .datatypes import (
     ibis_array_dtype_to_spark_dtype,
     ibis_dtype_to_spark_dtype,
     spark_dtype,
 )
-from ibis.expr.timecontext import adjust_context
-from ibis.util import guid
-
 from .timecontext import combine_time_context, filter_by_time_context
 
 
-class PySparkTable(ops.DatabaseTable):
+class PySparkDatabaseTable(ops.DatabaseTable):
     pass
 
 
@@ -83,7 +83,7 @@ class PySparkExprTranslator:
 compiles = PySparkExprTranslator.compiles
 
 
-@compiles(PySparkTable)
+@compiles(PySparkDatabaseTable)
 def compile_datasource(t, expr, scope, timecontext):
     op = expr.op()
     name, _, client = op.args
