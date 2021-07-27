@@ -305,8 +305,8 @@ def wrap_for_apply(
 
 def wrap_for_agg(
     function: Callable,
-    args: Optional[Tuple[Any]],
-    kwargs: Optional[Dict[Any, Any]],
+    args: Tuple[Any, ...],
+    kwargs: Dict[str, Any],
 ) -> Callable:
     """Wrap a function for use with Pandas `agg`.
 
@@ -330,9 +330,9 @@ def wrap_for_agg(
     ----------
     function : Callable
         An aggregation function to be used with Pandas `agg`.
-    args : Optional[Tuple[Any]]
+    args : Tuple[Any, ...]
         args to be passed to function when it is called by Pandas `agg`
-    kwargs : Optional[Dict[Any, Any]]
+    kwargs : Dict[str, Any]
         kwargs to be passed to function when it is called by Pandas `agg`
 
     """
@@ -342,8 +342,8 @@ def wrap_for_agg(
     def wrapped_func(
         data: Any,
         function: Callable = function,
-        args: Optional[Tuple[Any]] = args,
-        kwargs: Optional[Dict[Any, Any]] = kwargs,
+        args: Tuple[Any, ...] = args,
+        kwargs: Dict[str, Any] = kwargs,
     ) -> Callable:
         # `data` will be a scalar here if Pandas `agg` is trying to behave like
         # like Pandas `apply`.
