@@ -19,6 +19,7 @@ def test_isnull(client, is_null_fn):
             .toPandas()
             .reset_index(drop=True)
         )
+        result['height'] = result['height'].astype('float64')
         pandas_is_null_series = is_null_fn(table_pandas, col)
         expected = table_pandas[pandas_is_null_series].reset_index(drop=True)
         tm.assert_frame_equal(result, expected)
@@ -35,6 +36,7 @@ def test_isna(client):
             .toPandas()
             .reset_index(drop=True)
         )
+        result['height'] = result['height'].astype('float64')
 
         expected = table_pandas[table_pandas[col].isna()].reset_index(
             drop=True
