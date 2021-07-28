@@ -208,11 +208,11 @@ def client():
 
     df_nans = client._session.createDataFrame(
         [
-            [np.NaN, 'Alfred', None],
-            [27.0, 'Batman', 'motocycle'],
-            [3.0, None, 'joker'],
+            [np.NaN, 'Alfred', None, 60.0],
+            [27.0, 'Batman', 'motocycle', None],
+            [3.0, None, 'joker', 48.0],
         ],
-        ['age', 'user', 'toy'],
+        ['age', 'user', 'toy', 'height'],
     )
     df_nans.createTempView('nan_table')
 
