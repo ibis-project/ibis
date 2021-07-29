@@ -1,8 +1,12 @@
 from pathlib import Path
 
+import ibis
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend, Client, Database
 from ibis.backends.pandas.core import execute_and_reset
+
+# Load options of pandas backend
+ibis.pandas
 
 
 class FileClient(Client):

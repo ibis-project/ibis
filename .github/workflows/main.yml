@@ -11,7 +11,8 @@ jobs:
     name: Tests pandas / files
     runs-on: ${{ matrix.os }}
     env:
-      BACKENDS: "pandas csv parquet hdf5"
+      # FIXME removing pandas just to test the CI, restore before merging
+      BACKENDS: "csv parquet hdf5"
     strategy:
       fail-fast: false
       matrix:
