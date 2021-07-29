@@ -99,7 +99,7 @@ class Backend(BaseSQLBackend):
 
     @property
     def version(self) -> str:
-        self.cient.con.connection.force_connect()
+        self.client.con.connection.force_connect()
         try:
             info = self.client.con.connection.server_info
         except Exception:
