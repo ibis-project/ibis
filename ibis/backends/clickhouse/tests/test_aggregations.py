@@ -40,8 +40,8 @@ def test_std_var_pop(con, alltypes, translate):
 
     assert translate(expr1) == 'stddevPopIf(`double_col`, `bigint_col` < 70)'
     assert translate(expr2) == 'varPopIf(`double_col`, `bigint_col` < 70)'
-    assert isinstance(con.execute(expr1), np.float)
-    assert isinstance(con.execute(expr2), np.float)
+    assert isinstance(con.execute(expr1), float)
+    assert isinstance(con.execute(expr2), float)
 
 
 @pytest.mark.parametrize('reduction', ['sum', 'count', 'max', 'min'])

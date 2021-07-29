@@ -59,7 +59,7 @@ def test_string_col_is_unicode(backend, alltypes, df):
         ),
         param(
             lambda t: t.string_col.re_replace(r'[[:digit:]]+', 'a'),
-            lambda t: t.string_col.str.replace(r'\d+', 'a'),
+            lambda t: t.string_col.str.replace(r'\d+', 'a', regex=True),
             id='re_replace',
             marks=pytest.mark.xfail_backends(('spark', 'pyspark')),
         ),
@@ -81,7 +81,7 @@ def test_string_col_is_unicode(backend, alltypes, df):
         ),
         param(
             lambda t: t.string_col.re_replace(r'\\d+', 'a'),
-            lambda t: t.string_col.str.replace(r'\d+', 'a'),
+            lambda t: t.string_col.str.replace(r'\d+', 'a', regex=True),
             id='re_replace_spark',
             marks=pytest.mark.xpass_backends(
                 ('clickhouse', 'impala', 'spark')
@@ -105,7 +105,7 @@ def test_string_col_is_unicode(backend, alltypes, df):
         ),
         param(
             lambda t: t.string_col.re_replace(r'\d+', 'a'),
-            lambda t: t.string_col.str.replace(r'\d+', 'a'),
+            lambda t: t.string_col.str.replace(r'\d+', 'a', regex=True),
             id='re_replace_spark',
             marks=pytest.mark.xfail_backends(
                 ('clickhouse', 'impala', 'spark')
