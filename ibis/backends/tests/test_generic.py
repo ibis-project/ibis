@@ -30,6 +30,43 @@ def test_fillna_nullif(backend, con, expr, expected):
         assert con.execute(expr) == expected
 
 
+@pytest.mark.xfail_unsupported
+def test_isna(backend, alltypes):
+    table = alltypes.mutate(na_col=np.nan)
+    table = table.mutate(none_col=None)
+    table = table.mutate(none_col=table['none_col'].cast('float64'))
+    table_pandas = table.execute()
+
+    for col in ['na_col', 'none_col']:
+        result = table[table[col].isnan()].execute().reset_index(drop=True)
+
+        expected = table_pandas[table_pandas[col].isna()].reset_index(
+            drop=True
+        )
+        backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.xfail_unsupported
+def test_fillna(backend, alltypes):
+    table = alltypes.mutate(na_col=np.nan)
+    table = table.mutate(none_col=None)
+    table = table.mutate(none_col=table['none_col'].cast('float64'))
+    table_pandas = table.execute()
+
+    for col in ['na_col', 'none_col']:
+        result = (
+            table.mutate(filled=table[col].fillna(0.0))
+            .execute()
+            .reset_index(drop=True)
+        )
+
+        expected = table_pandas.assign(
+            filled=table_pandas[col].fillna(0.0)
+        ).reset_index(drop=True)
+
+        backend.assert_frame_equal(result, expected)
+
+
 @pytest.mark.parametrize(
     ('expr', 'expected'),
     [

@@ -1742,9 +1742,7 @@ def compile_if_null(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
     col = t.translate(op.arg, scope, timecontext)
     ifnull_col = t.translate(op.ifnull_expr, scope, timecontext)
-    return F.when(col.isNull(), ifnull_col).otherwise(
-        F.when(F.isnan(col), ifnull_col).otherwise(col)
-    )
+    return F.when(col.isNull() | F.isnan(col), ifnull_col).otherwise(col)
 
 
 @compiles(ops.NullIf)
