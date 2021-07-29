@@ -24,5 +24,5 @@ def test_columns_types_with_additional_argument(con):
     sql = 'SELECT {}'.format(', '.join(sql_types))
     df = con.sql(sql).execute()
     assert df.fixedstring_col.dtype.name == 'object'
-    if con.version.base_version >= '1.1.54337':
+    if parse_version(con.version.base_version) >= '1.1.54337':
         assert df.datetime_col.dtype.name == 'datetime64[ns]'
