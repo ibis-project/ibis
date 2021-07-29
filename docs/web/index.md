@@ -22,8 +22,8 @@ multiple engines.
 
 - Standard DBMS: [PostgreSQL](/docs/backends/postgres.html), [MySQL](/docs/backends/mysql.html), [SQLite](/docs/backends/sqlite.html)
 - Analytical DBMS: [OmniSciDB](/docs/backends/omnisci.html), [ClickHouse](/docs/backends/clickhouse.html)
-- Distributed platforms: [Impala](/docs/backends/impala.html), [Spark](/docs/backends/spark.html), [BigQuery](/docs/backends/bigquery.html)
-- In memory execution: [pandas](/docs/backends/pandas.html)
+- Distributed platforms: [Impala](/docs/backends/impala.html), [PySpark](/docs/backends/pyspark.html), [BigQuery](/docs/backends/bigquery.html)
+- In memory execution: [pandas](/docs/backends/pandas.html), [Dask](/docs/backends/dask.html)
 
 ## Example
 
@@ -76,5 +76,4 @@ representations.
 Dask provides advanced parallelism, and can distribute pandas jobs. Ibis can
 process data in a similar way, but for a different number of backends. For
 example, given a Spark cluster, Ibis allows to perform analytics using it,
-with a familiar Python syntax. Ibis plans to add support for a Dask backend
-in the future.
+with a familiar Python syntax. Ibis supports Dask as a backend.

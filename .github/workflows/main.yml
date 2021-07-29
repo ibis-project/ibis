@@ -167,11 +167,11 @@ jobs:
     - name: run tests
       run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh
 
-  Tests_spark:
-    name: Tests PySpark / Spark
+  Tests_pyspark:
+    name: Tests PySpark
     runs-on: ubuntu-18.04
     env:
-      BACKENDS: "spark pyspark"
+      BACKENDS: "pyspark"
     strategy:
       fail-fast: false
       matrix:

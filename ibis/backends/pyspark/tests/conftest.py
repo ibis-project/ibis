@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timezone
 
 import numpy as np
@@ -8,6 +9,7 @@ import pytest
 from pyspark.sql import SparkSession
 
 import ibis
+from ibis import util
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 
 _pyspark_testing_client = None
@@ -271,3 +273,71 @@ class IbisWindow:
 @pytest.fixture
 def ibis_windows(request):
     return IbisWindow(request.param).get_windows()
+
+
+def _random_identifier(suffix):
+    return '__ibis_test_{}_{}'.format(suffix, util.guid())
+
+
+@pytest.fixture(scope='session', autouse=True)
+def test_data_db(client):
+    try:
+        name = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
+        client.create_database(name)
+        client.set_database(name)
+        yield name
+    finally:
+        client.drop_database(name, force=True)
+
+
+@pytest.fixture
+def temp_database(client, test_data_db):
+    name = _random_identifier('database')
+    client.create_database(name)
+    try:
+        yield name
+    finally:
+        client.set_database(test_data_db)
+        client.drop_database(name, force=True)
+
+
+@pytest.fixture
+def temp_table(client):
+    name = _random_identifier('table')
+    try:
+        yield name
+    finally:
+        assert client.exists_table(name), name
+        client.drop_table(name)
+
+
+@pytest.fixture(scope='session')
+def alltypes(client):
+    return client.table('functional_alltypes').relabel(
+        {'Unnamed: 0': 'Unnamed:0'}
+    )
+
+
+@pytest.fixture(scope='session')
+def tmp_dir():
+    return '/tmp/__ibis_test_{}'.format(util.guid())
+
+
+@pytest.fixture
+def temp_table_db(client, temp_database):
+    name = _random_identifier('table')
+    try:
+        yield temp_database, name
+    finally:
+        assert client.exists_table(name, database=temp_database), name
+        client.drop_table(name, database=temp_database)
+
+
+@pytest.fixture
+def temp_view(client):
+    name = _random_identifier('view')
+    try:
+        yield name
+    finally:
+        assert client.exists_table(name), name
+        client.drop_view(name)

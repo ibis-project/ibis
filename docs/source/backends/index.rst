@@ -16,8 +16,9 @@ For more information on a specific backend, check the next backend pages:
    mysql
    impala
    clickhouse
-   spark
+   pyspark
    pandas
+   dask
 
 
 .. _classes_of_backends:
@@ -42,7 +43,6 @@ string to the database through a driver API.
 - `Google BigQuery <https://cloud.google.com/bigquery/>`_
 - `Hadoop Distributed File System (HDFS) <https://hadoop.apache.org/>`_
 - `OmniSciDB <https://www.omnisci.com/>`_
-- `PySpark/Spark SQL <https://spark.apache.org/sql/>`_ (Experimental)
 
 .. _expression_generating_backends:
 
@@ -59,7 +59,7 @@ dependencies).
 
 - `PostgreSQL <https://www.postgresql.org/>`_
 - `SQLite <https://www.sqlite.org/>`_
-- `MySQL <https://www.mysql.com/>`_ (Experimental)
+- `MySQL <https://www.mysql.com/>`_
 
 .. _direct_execution_backends:
 
@@ -70,3 +70,5 @@ backend. A full description of the implementation can be found in the module
 docstring of the pandas backend located in ``ibis/backends/pandas/core.py``.
 
 - `Pandas <http://pandas.pydata.org/>`_
+- `PySpark <https://spark.apache.org/sql/>`_
+- `Dask <https://dask.org/>`_ (Experimental)
