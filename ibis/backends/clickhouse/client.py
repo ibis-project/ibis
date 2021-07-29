@@ -374,7 +374,3 @@ class ClickhouseClient(SQLClient):
     def _table_command(self, cmd, name, database=None):
         qualified_name = self._fully_qualified_name(name, database)
         return '{0} {1}'.format(cmd, qualified_name)
-
-    @property
-    def version(self) -> str:
-        return self.backend.version

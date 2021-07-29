@@ -3,8 +3,8 @@ import warnings
 from typing import Any, Callable, List
 
 import ibis.expr.operations as ops
-import ibis.expr.types as ir
 import ibis.expr.schema as sch
+import ibis.expr.types as ir
 from ibis.common.exceptions import TranslationError
 
 from .client import Client, Database
@@ -57,10 +57,12 @@ class BaseBackend(abc.ABC):
     def table(self, name: str, database: str = None) -> ir.TableExpr:
         """
         """
-        warnings.warn('`database` argument of `.table()` is deprecated and '
-                      'will be removed in a future version of Ibis. Change '
-                      'the current database before calling `.table()` instead',
-                      FutureWarning)
+        warnings.warn(
+            '`database` argument of `.table()` is deprecated and '
+            'will be removed in a future version of Ibis. Change '
+            'the current database before calling `.table()` instead',
+            FutureWarning,
+        )
 
     def get_schema(self, table_name: str, database: str = None) -> sch.Schema:
         """
@@ -68,10 +70,12 @@ class BaseBackend(abc.ABC):
 
         Deprecated in Ibis 2.0. Use `.table(name).schema()` instead.
         """
-        warnings.warn('`.get_schema(name)` is deprecated, and will be '
-                      'removed in a future version of Ibis. Use '
-                      '`.table(name).schema()` instead',
-                      FutureWarning)
+        warnings.warn(
+            '`.get_schema(name)` is deprecated, and will be '
+            'removed in a future version of Ibis. Use '
+            '`.table(name).schema()` instead',
+            FutureWarning,
+        )
         return self.table(name=table_name, database=database).schema()
 
     @property

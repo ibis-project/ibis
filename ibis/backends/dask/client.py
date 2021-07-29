@@ -6,7 +6,6 @@ import re
 from functools import partial
 from typing import Dict, List, Mapping
 
-import dask
 import dask.dataframe as dd
 import dateutil.parser
 import numpy as np
@@ -14,7 +13,6 @@ import pandas as pd
 import toolz
 from dask.base import DaskMethodsMixin
 from pandas.api.types import DatetimeTZDtype
-from pkg_resources import parse_version
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -290,8 +288,3 @@ class DaskClient(Client):
 
         """
         return bool(self.list_tables(like=name))
-
-    @property
-    def version(self) -> str:
-        """Return the version of the underlying backend library."""
-        return parse_version(dask.__version__)

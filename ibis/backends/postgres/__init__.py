@@ -77,7 +77,7 @@ class Backend(BaseAlchemyBackend):
             year : int32
             month : int32
         """
-        return PostgreSQLClient(
+        self.client = PostgreSQLClient(
             backend=self,
             host=host,
             user=user,
@@ -87,3 +87,4 @@ class Backend(BaseAlchemyBackend):
             url=url,
             driver=driver,
         )
+        return self.client

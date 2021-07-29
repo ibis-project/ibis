@@ -4,7 +4,9 @@ import ibis.expr.types as ir
 class Client:
     """Generic Ibis client."""
 
-    pass
+    @property
+    def version(self):
+        return self.backend.version
 
 
 class Database:

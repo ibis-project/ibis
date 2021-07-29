@@ -448,11 +448,6 @@ class PandasClient(Client):
         """
         return bool(self.list_tables(like=name))
 
-    @property
-    def version(self) -> str:
-        """Return the version of the underlying backend library."""
-        return self.backend.version
-
 
 class PandasDatabase(Database):
     pass

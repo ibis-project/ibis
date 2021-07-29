@@ -1041,15 +1041,6 @@ class ImpalaClient(SQLClient):
     def client_options(self):
         return self.con.options
 
-    @property
-    def version(self):
-        cur = self.raw_sql('select version()')
-        raw = self._get_list(cur)[0]
-        cur.release()
-
-        vstring = raw.split()[2]
-        return parse_version(vstring)
-
     def get_options(self):
         """
         Return current query options for the Impala session
