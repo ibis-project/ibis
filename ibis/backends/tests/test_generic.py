@@ -30,7 +30,7 @@ def test_fillna_nullif(backend, con, expr, expected):
         assert con.execute(expr) == expected
 
 
-@pytest.mark.xfail_unsupported
+@pytest.mark.only_on_backends(['pandas', 'dask', 'pyspark'])
 def test_isna(backend, alltypes):
     table = alltypes.mutate(na_col=np.nan)
     table = table.mutate(none_col=None)
@@ -46,7 +46,7 @@ def test_isna(backend, alltypes):
         backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.xfail_unsupported
+@pytest.mark.only_on_backends(['pandas', 'dask', 'pyspark'])
 def test_fillna(backend, alltypes):
     table = alltypes.mutate(na_col=np.nan)
     table = table.mutate(none_col=None)
