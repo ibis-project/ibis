@@ -10,7 +10,6 @@ from posixpath import join as pjoin
 
 import numpy as np
 import pandas as pd
-from pkg_resources import parse_version
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
