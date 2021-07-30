@@ -51,6 +51,8 @@ def test_timestamp_extract(backend, alltypes, df, attr):
         expected = (df.timestamp_col.dt.microsecond // 1000).astype('int32')
     elif attr == 'epoch_seconds':
         expected = df.timestamp_col.astype('int64') // int(1e9)
+    elif attr == 'week_of_year':
+        expected = df.timestamp_col.dt.isocalendar().week.astype('int32')
     else:
         expected = getattr(df.timestamp_col.dt, attr.replace('_', '')).astype(
             'int32'
