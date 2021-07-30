@@ -312,9 +312,7 @@ def test_binary_arithmetic_operations(backend, alltypes, df, op):
         result = result.astype('float64')
 
     expected = backend.default_series_rename(expected)
-    backend.assert_series_equal(
-        result, expected, check_exact=False, check_less_precise=True
-    )
+    backend.assert_series_equal(result, expected, check_exact=False)
 
 
 def test_mod(backend, alltypes, df):
@@ -336,9 +334,7 @@ def test_floating_mod(backend, alltypes, df):
     expected = operator.mod(df.double_col, df.smallint_col + 1)
 
     expected = backend.default_series_rename(expected)
-    backend.assert_series_equal(
-        result, expected, check_exact=False, check_less_precise=True
-    )
+    backend.assert_series_equal(result, expected, check_exact=False)
 
 
 @pytest.mark.parametrize(
