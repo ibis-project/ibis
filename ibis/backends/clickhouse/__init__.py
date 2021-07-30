@@ -3,12 +3,7 @@ from __future__ import annotations
 import ibis.config
 from ibis.backends.base.sql import BaseSQLBackend
 
-from .client import (
-    ClickhouseClient,
-    ClickhouseDatabase,
-    ClickhouseDatabaseTable,
-    ClickhouseTable,
-)
+from .client import ClickhouseClient, ClickhouseTable
 
 _default_compression: str | bool
 
@@ -23,8 +18,6 @@ except ImportError:
 class Backend(BaseSQLBackend):
     name = 'clickhouse'
     client_class = ClickhouseClient
-    database_class = ClickhouseDatabase
-    table_class = ClickhouseDatabaseTable
     table_expr_class = ClickhouseTable
 
     def connect(

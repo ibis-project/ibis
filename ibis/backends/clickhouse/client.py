@@ -8,10 +8,8 @@ from pkg_resources import parse_version
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
-import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.base import Database
 from ibis.backends.base.sql import SQLClient
 from ibis.config import options
 from ibis.util import log
@@ -89,10 +87,6 @@ def clickhouse_to_ibis_dtype(clickhouse_dtype):
     return clickhouse_dtype.to_ibis()
 
 
-class ClickhouseDatabase(Database):
-    pass
-
-
 class ClickhouseTable(ir.TableExpr):
     """References a physical table in Clickhouse"""
 
@@ -164,10 +158,6 @@ class ClickhouseTable(ir.TableExpr):
 
         data = obj.to_dict('records')
         return self._client.con.execute(query, data, **kwargs)
-
-
-class ClickhouseDatabaseTable(ops.DatabaseTable):
-    pass
 
 
 class ClickhouseClient(SQLClient):
