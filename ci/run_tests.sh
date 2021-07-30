@@ -15,8 +15,9 @@ echo "PYTEST_EXPRESSION: $PYTEST_EXPRESSION"
 
 
 pytest $TESTS_DIRS \
+    -q \
     -m "${PYTEST_EXPRESSION}" \
     -ra \
     --junitxml=junit.xml \
     --cov=ibis \
-    --cov-report=xml:coverage.xml
+    --cov-report=xml:coverage.xml | tee pytest.log

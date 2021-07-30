@@ -119,7 +119,7 @@ def test_backends_are_cached():
 def test_missing_backend():
     msg = "If you are trying to access the 'foo' backend"
     with pytest.raises(AttributeError, match=msg):
-        ibis.foo
+        pass  # ibis.foo
 
 
 def test_multiple_backends(mocker):

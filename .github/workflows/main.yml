@@ -29,6 +29,9 @@ jobs:
       run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh
       shell: bash
 
+    - name: pytest errors
+      run: ./ci/pytest_errors.sh
+
   Tests_dask:
     name: Tests dask
     runs-on: ubuntu-latest
@@ -49,6 +52,9 @@ jobs:
     - name: run tests
       run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh
       shell: bash
+
+    - name: pytest errors
+      run: ./ci/pytest_errors.sh
 
   Tests_sql:
     name: Tests SQL
@@ -86,6 +92,9 @@ jobs:
 
     - name: run tests
       run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not udf" ./ci/run_tests.sh
+
+    - name: pytest errors
+      run: ./ci/pytest_errors.sh
 
   Tests_impala_clickhouse:
     name: Tests Impala / Clickhouse
@@ -167,6 +176,9 @@ jobs:
     - name: run tests
       run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh
 
+    - name: pytest errors
+      run: ./ci/pytest_errors.sh
+
   Tests_pyspark:
     name: Tests PySpark
     runs-on: ubuntu-18.04
@@ -186,6 +198,11 @@ jobs:
     - name: run tests
       run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh
 
+    - name: tests summary
+      run: cat pytest_summary.log
+
+    - name: pytest errors
+      run: ./ci/pytest_errors.sh
 
   Lint_and_benchmarks:
     name: Lint and benckmarks
