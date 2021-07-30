@@ -165,9 +165,10 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
         return result
 
     @execute_node.register(
-        type(op), *(itertools.repeat(ddgb.SeriesGroupBy, nargs))
+        ops.ReductionVectorizedUDF,
+        *(itertools.repeat(ddgb.SeriesGroupBy, nargs)),
     )
-    def execute_udaf_node_groupby(op, *args, aggcontext, **kwargs):
+    def execute_reduction_node_groupby(op, *args, aggcontext, **kwargs):
         # To apply a udf func to a list of grouped series we:
         # 1. Grab the dataframe they're grouped off of
         # 2. Grab the column name for each series
@@ -179,9 +180,10 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
 
         func = op.func
         groupings = args[0].index
+        parent_df = args[0].obj
         out_type = op._output_type.to_dask()
 
-        grouped_df = args[0].obj.groupby(groupings)
+        grouped_df = parent_df.groupby(groupings)
         col_names = [col._meta._selected_obj.name for col in args]
 
         def apply_wrapper(df, apply_func, col_names):
@@ -190,7 +192,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
 
         if len(groupings) > 1:
             meta_index = pandas.MultiIndex.from_arrays(
-                [[0], [0]], names=groupings
+                [[0]] * len(groupings), names=groupings
             )
             meta_value = [dd.utils.make_meta(safe_scalar_type(out_type))]
         else:
@@ -203,5 +205,71 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
             col_names,
             meta=pandas.Series(meta_value, index=meta_index, dtype=out_type),
         )
+
+    @execute_node.register(
+        ops.AnalyticVectorizedUDF,
+        *(itertools.repeat(ddgb.SeriesGroupBy, nargs)),
+    )
+    def execute_analytic_node_groupby(op, *args, aggcontext, **kwargs):
+        # To apply a udf func to a list of grouped series we:
+        # 1. Grab the dataframe they're grouped off of
+        # 2. Grab the column name for each series
+        # 3. .apply a wrapper that performs the selection using the col name
+        #    and applies the udf on to those
+        # This way we rely on dask dealing with groups and pass the udf down
+        # to the frame level.
+        assert_identical_grouping_keys(*args)
+
+        func = op.func
+        groupings = args[0].index
+        parent_df = args[0].obj
+        out_type = op._output_type.to_dask()
+
+        grouped_df = parent_df.groupby(groupings)
+        col_names = [col._meta._selected_obj.name for col in args]
+
+        def apply_wrapper(df, apply_func, col_names):
+            cols = (df[col] for col in col_names)
+            return apply_func(*cols)
+
+        if isinstance(op._output_type, dt.Struct):
+            # with struct output we destruct to a dataframe directly
+            meta = dd.utils.make_meta(make_struct_op_meta(op))
+            meta.index.name = parent_df.index.name
+            result = grouped_df.apply(
+                apply_wrapper, func, col_names, meta=meta,
+            )
+            # we don't know how data moved around here
+            result = result.reset_index().set_index(parent_df.index.name)
+        else:
+            # after application we will get a series with a multi-index of
+            # groupings + index
+            meta_index = pandas.MultiIndex.from_arrays(
+                [[0]] * (len(groupings) + 1),
+                names=groupings + [parent_df.index.name],
+            )
+            meta_value = [dd.utils.make_meta(safe_scalar_type(out_type))]
+
+            result = grouped_df.apply(
+                apply_wrapper,
+                func,
+                col_names,
+                meta=pandas.Series(
+                    meta_value, index=meta_index, dtype=out_type
+                ),
+            )
+            # If you use the UDF directly (as in `test_udaf_analytic_groupby`)
+            # we need to do some renaming/cleanup to get the result to
+            # conform to what the pandas output would look like. Nomrally this
+            # is handled in `util.coerce_to_output`.
+            parent_idx_name = parent_df.index.name
+            # These defaults are chosen by pandas
+            result_idx_name = parent_idx_name if parent_idx_name else "level_1"
+            result_value_name = result.name if result.name else 0
+            # align the results back to the parent frame
+            result = result.reset_index().set_index(result_idx_name)
+            result = result[result_value_name]
+
+        return result
 
     return scope
