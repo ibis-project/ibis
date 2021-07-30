@@ -13,6 +13,7 @@ done
 echo "TESTS_DIRS: $TESTS_DIRS"
 echo "PYTEST_EXPRESSION: $PYTEST_EXPRESSION"
 
+set -o pipefail
 
 pytest $TESTS_DIRS \
     -q \
