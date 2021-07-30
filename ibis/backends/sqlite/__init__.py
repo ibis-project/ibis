@@ -14,14 +14,12 @@
 
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 
-from .client import SQLiteClient, SQLiteDatabase, SQLiteTable
+from .client import SQLiteClient
 
 
 class Backend(BaseAlchemyBackend):
     name = 'sqlite'
     client_class = SQLiteClient
-    database_class = SQLiteDatabase
-    table_class = SQLiteTable
 
     def connect(self, path=None, create=False):
 

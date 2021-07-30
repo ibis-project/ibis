@@ -46,3 +46,6 @@ class BaseAlchemyBackend(BaseSQLBackend):
     """
     Base backend class for backends that compile to SQL with SQLAlchemy.
     """
+
+    database_class = AlchemyDatabase
+    table_class = AlchemyTable
