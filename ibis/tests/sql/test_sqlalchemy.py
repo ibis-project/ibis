@@ -457,7 +457,11 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         subq = sa.select([F.avg(t1.c.y).label('mean')]).where(
             t0.c.dept_id == t1.c.dept_id
         )
-        stmt = sa.select([t0]).where(t0.c.y > subq.scalar_subquery())
+        # For versions of SQLAlchemy where scalar_subquery exists,
+        # it should be used (otherwise, a deprecation warning is raised)
+        if hasattr(subq, 'scalar_subquery'):
+            subq = subq.scalar_subquery()
+        stmt = sa.select([t0]).where(t0.c.y > subq)
         self._compare_sqla(expr, stmt)
 
     def test_subquery_aliased(self):
