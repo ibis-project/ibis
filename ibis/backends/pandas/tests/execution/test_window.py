@@ -165,7 +165,7 @@ def test_lead_delta(t, df, range_offset, default, range_window):
         df[['plain_datetimes_naive', 'dup_strings']]
         .set_index('plain_datetimes_naive')
         .squeeze()
-        .tshift(freq=execute(-range_offset))
+        .shift(freq=execute(-range_offset))
         .reindex(df.plain_datetimes_naive)
         .reset_index(drop=True)
     )
@@ -183,7 +183,7 @@ def test_lag_delta(t, df, range_offset, default, range_window):
         df[['plain_datetimes_naive', 'dup_strings']]
         .set_index('plain_datetimes_naive')
         .squeeze()
-        .tshift(freq=execute(range_offset))
+        .shift(freq=execute(range_offset))
         .reindex(df.plain_datetimes_naive)
         .reset_index(drop=True)
     )

@@ -220,7 +220,9 @@ def test_integer_to_interval_date(backend, con, alltypes, df, unit):
         ibis.literal('-').join(['20' + year, month, day]).cast('date')
     )
     expr = date_col + interval
-    result = con.execute(expr)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=pd.errors.PerformanceWarning)
+        result = con.execute(expr)
 
     def convert_to_offset(x):
         resolution = '{}s'.format(interval.type().resolution)
@@ -313,7 +315,7 @@ def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
 @pytest.mark.parametrize(
     ('timedelta', 'temporal_fn'),
     itertools.product(
-        ['100Y', '5W', '3d', '1.5d', '2h', '3m', '10s'],
+        ['36500d', '5W', '3d', '1.5d', '2h', '3m', '10s'],
         [
             lambda t, td: t.timestamp_col + pd.Timedelta(td),
             lambda t, td: t.timestamp_col - pd.Timedelta(td),
