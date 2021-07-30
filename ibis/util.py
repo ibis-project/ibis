@@ -157,7 +157,7 @@ def approx_equal(a: Real, b: Real, eps: Real):
     assert abs(a - b) < eps
 
 
-def safe_index(elements: Sequence[T], value: T) -> int:
+def safe_index(elements: Sequence[int], value: int) -> int:
     """Find the location of `value` in `elements`.
 
     Return -1 if `value` is not found instead of raising ``ValueError``.

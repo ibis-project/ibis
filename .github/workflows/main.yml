@@ -211,8 +211,10 @@ jobs:
       if: always()
 
     - name: mypy
-      # TODO: mypy has errors that need to be fixed before it can be added
-      run: mypy --ignore-missing-imports ibis || true
+      run: |
+        mypy --exclude 'ibis/expr|ibis/backends' ibis
+        # TODO: mypy has errors that need to be fixed before it can be added to all directories
+        mypy --ignore-missing-imports ibis || true
       if: always()
 
     - name: pydocstyle

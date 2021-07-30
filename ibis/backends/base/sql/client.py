@@ -189,8 +189,8 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
     def compile(
         self,
         expr,
-        params=None,
         limit=None,
+        params=None,
         timecontext: Optional[TimeContext] = None,
     ):
         """Translate expression.
