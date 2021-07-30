@@ -198,9 +198,6 @@ jobs:
     - name: run tests
       run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh
 
-    - name: tests summary
-      run: cat pytest_summary.log
-
     - name: pytest errors
       run: ./ci/pytest_errors.sh
 
