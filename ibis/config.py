@@ -17,13 +17,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
 import pprint
 import re
 import warnings
 from collections import namedtuple
 from contextlib import contextmanager
-from typing import Callable
+from typing import Callable, Dict, List, Tuple
 
 import ibis
 
@@ -33,8 +34,10 @@ RegisteredOption = namedtuple(
 )
 
 _deprecated_options = {}  # holds deprecated option metdata
-_registered_options = {}  # holds registered option metdata
-_global_config = {}  # holds the current values for registered options
+# holds registered option metdata
+_registered_options: Dict[str, RegisteredOption] = {}
+# holds the current values for registered options
+_global_config: Dict[str, RegisteredOption] = {}
 _reserved_keys = ['all']  # keys which have a special meaning
 
 
@@ -245,7 +248,7 @@ class CallableDynamicDoc:
         return self.__func__(*args, **kwds)
 
     @property
-    def __doc__(self) -> str:
+    def __doc__(self):
         """Create automatically a documentation using a template.
 
         Returns
@@ -553,7 +556,9 @@ def _select_options(pat: str) -> list:
     return [k for k in keys if re.search(pat, k, re.I)]
 
 
-def _get_root(key: str) -> tuple:
+def _get_root(
+    key: str,
+) -> Tuple[RegisteredOption | Dict[str, RegisteredOption], str]:
     """Return the parent node of an option.
 
     Parameters
@@ -565,10 +570,14 @@ def _get_root(key: str) -> tuple:
     tuple
     """
     path = key.split('.')
-    cursor = _global_config
-    for p in path[:-1]:
-        cursor = cursor[p]
-    return cursor, path[-1]
+    if len(path) == 1:
+        return _global_config, path[0]
+    elif len(path) == 2:
+        return _global_config[path[0]], path[1]
+    else:
+        raise AssertionError(
+            f'Option keys cannot have more than 2 levels, found: {key}'
+        )
 
 
 def _is_deprecated(key: str) -> bool:
@@ -708,7 +717,9 @@ def _build_option_description(k: str) -> str:
     return ''.join(buf)
 
 
-def pp_options_list(keys: str, width: int = 80, _print: bool = False) -> str:
+def pp_options_list(
+    keys: List[str], width: int = 80, _print: bool = False
+) -> str | None:
     """
     Build a concise listing of available options, grouped by prefix.
 
@@ -750,6 +761,7 @@ def pp_options_list(keys: str, width: int = 80, _print: bool = False) -> str:
     s = '\n'.join(ls)
     if _print:
         print(s)
+        return None
     else:
         return s
 

@@ -5,14 +5,14 @@ Warning: This is an experimental module and API here can change without notice.
 DO NOT USE DIRECTLY.
 """
 
-from inspect import Parameter, signature
+from inspect import Parameter, Signature, signature
 from typing import Any, Callable, List
 
 import ibis.common.exceptions as com
 from ibis.expr.datatypes import DataType
 
 
-def _parameter_count(funcsig: signature) -> int:
+def _parameter_count(funcsig: Signature) -> int:
     """Get the number of positional-or-keyword or position-only parameters in a
     function signature.
 
@@ -35,7 +35,7 @@ def _parameter_count(funcsig: signature) -> int:
 
 def validate_input_type(
     input_type: List[DataType], func: Callable
-) -> signature:
+) -> Signature:
     """Check that the declared number of inputs (the length of `input_type`)
     and the number of inputs to `func` are equal.
 

@@ -55,3 +55,7 @@ dependencies:
   - sphinx
   - sphinx-releases
   - sphinx_rtd_theme
+
+  # Type annotations
+  - types-setuptools
+  - types-pytz
