@@ -304,7 +304,7 @@ def test_substr_with_null_values(backend, alltypes, df):
     expected = df.copy()
     mask = ~expected['bool_col']
     expected['substr_col_null'] = expected['string_col']
-    expected['substr_col_null'][mask] = None
+    expected.loc[mask, 'substr_col_null'] = None
     expected['substr_col_null'] = expected['substr_col_null'].str.slice(0, 2)
 
     backend.assert_frame_equal(result, expected)

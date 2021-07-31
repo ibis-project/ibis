@@ -158,7 +158,7 @@ def safe_values(mapping):
     if result is None:
         return None
     # list(...) to unpack iterable
-    return np.array(list(result))
+    return np.array(list(result), dtype='object')
 
 
 @execute_node.register(ops.MapKeys, pd.Series)
