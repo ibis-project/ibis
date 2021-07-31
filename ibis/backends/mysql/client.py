@@ -7,12 +7,7 @@ import sqlalchemy as sa
 import sqlalchemy.dialects.mysql as mysql
 
 import ibis.expr.datatypes as dt
-from ibis.backends.base.sql.alchemy import (
-    AlchemyClient,
-    AlchemyDatabase,
-    AlchemyDatabaseSchema,
-    AlchemyTable,
-)
+from ibis.backends.base.sql.alchemy import AlchemyClient
 
 from .compiler import MySQLCompiler
 
@@ -37,18 +32,6 @@ def mysql_tinyint(satype, nullable=True):
 @dt.dtype.register(mysql.BLOB)
 def mysql_blob(satype, nullable=True):
     return dt.Binary(nullable=nullable)
-
-
-class MySQLTable(AlchemyTable):
-    pass
-
-
-class MySQLSchema(AlchemyDatabaseSchema):
-    pass
-
-
-class MySQLDatabase(AlchemyDatabase):
-    schema_class = MySQLSchema
 
 
 class MySQLClient(AlchemyClient):

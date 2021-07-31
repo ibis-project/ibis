@@ -9,7 +9,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as types
 import ibis.expr.types as ir
-from ibis.backends.base import Database
 from ibis.backends.base.sql import SQLClient
 from ibis.backends.base.sql.ddl import (
     CreateDatabase,
@@ -41,10 +40,6 @@ def spark_dataframe_schema(df):
     schema_struct = dt.dtype(df.schema)
 
     return sch.schema(schema_struct.names, schema_struct.types)
-
-
-class PySparkDatabase(Database):
-    pass
 
 
 class PySparkTable(ir.TableExpr):

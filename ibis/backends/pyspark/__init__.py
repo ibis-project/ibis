@@ -1,13 +1,12 @@
 from ibis.backends.base import BaseBackend
 
-from .client import PySparkClient, PySparkDatabase, PySparkTable
+from .client import PySparkClient, PySparkTable
 from .compiler import PySparkDatabaseTable
 
 
 class Backend(BaseBackend):
     name = 'pyspark'
     client_class = PySparkClient
-    database_class = PySparkDatabase
     table_class = PySparkDatabaseTable
     table_expr_class = PySparkTable
 

@@ -4,19 +4,10 @@ from typing import Optional
 
 import sqlalchemy as sa
 
-from ibis.backends.base import Database
-from ibis.backends.base.sql.alchemy import AlchemyClient, AlchemyTable
+from ibis.backends.base.sql.alchemy import AlchemyClient
 
 from . import udf
 from .compiler import SQLiteCompiler
-
-
-class SQLiteTable(AlchemyTable):
-    pass
-
-
-class SQLiteDatabase(Database):
-    pass
 
 
 class SQLiteClient(AlchemyClient):

@@ -19,6 +19,9 @@ class BaseBackend(abc.ABC):
     and implement all the required methods.
     """
 
+    database_class = Database
+    table_class = ops.DatabaseTable
+
     @property
     @abc.abstractmethod
     def name(self) -> str:
