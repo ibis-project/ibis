@@ -16,9 +16,9 @@ import operator
 import unittest
 
 import pytest
-import sqlalchemy.sql as sql  # noqa: E402
+import sqlalchemy.sql as sql
 from sqlalchemy import func as F
-from sqlalchemy import types as sat  # noqa: E402
+from sqlalchemy import types as sat
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -29,7 +29,7 @@ from ibis.backends.base.sql.alchemy import (
     schema_from_table,
 )
 from ibis.tests.expr.mocks import MockAlchemyConnection
-from ibis.tests.sql.test_compiler import ExprTestCases  # noqa: E402
+from ibis.tests.sql.test_compiler import ExprTestCases
 from ibis.tests.util import assert_equal
 
 sa = pytest.importorskip('sqlalchemy')
@@ -457,6 +457,10 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         subq = sa.select([F.avg(t1.c.y).label('mean')]).where(
             t0.c.dept_id == t1.c.dept_id
         )
+        # For versions of SQLAlchemy where scalar_subquery exists,
+        # it should be used (otherwise, a deprecation warning is raised)
+        if hasattr(subq, 'scalar_subquery'):
+            subq = subq.scalar_subquery()
         stmt = sa.select([t0]).where(t0.c.y > subq)
         self._compare_sqla(expr, stmt)
 

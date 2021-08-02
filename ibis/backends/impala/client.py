@@ -363,10 +363,6 @@ _HS2_TTypeId_to_dtype = {
 }
 
 
-class ImpalaDatabaseTable(ops.DatabaseTable):
-    pass
-
-
 class ImpalaTable(ir.TableExpr):
 
     """

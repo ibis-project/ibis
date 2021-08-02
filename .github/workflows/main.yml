@@ -29,6 +29,10 @@ jobs:
       run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh
       shell: bash
 
+    - name: pytest errors
+      run: ./ci/pytest_errors.sh
+      if: failure()
+
   Tests_dask:
     name: Tests dask
     runs-on: ubuntu-latest
@@ -49,6 +53,10 @@ jobs:
     - name: run tests
       run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh
       shell: bash
+
+    - name: pytest errors
+      run: ./ci/pytest_errors.sh
+      if: failure()
 
   Tests_sql:
     name: Tests SQL
@@ -86,6 +94,10 @@ jobs:
 
     - name: run tests
       run: PYTEST_BACKENDS=$BACKENDS PYTEST_EXPRESSION="not udf" ./ci/run_tests.sh
+
+    - name: pytest errors
+      run: ./ci/pytest_errors.sh
+      if: failure()
 
   Tests_impala_clickhouse:
     name: Tests Impala / Clickhouse
@@ -167,6 +179,10 @@ jobs:
     - name: run tests
       run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh
 
+    - name: pytest errors
+      run: ./ci/pytest_errors.sh
+      if: failure()
+
   Tests_pyspark:
     name: Tests PySpark
     runs-on: ubuntu-18.04
@@ -186,6 +202,9 @@ jobs:
     - name: run tests
       run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh
 
+    - name: pytest errors
+      run: ./ci/pytest_errors.sh
+      if: failure()
 
   Lint_and_benchmarks:
     name: Lint and benckmarks
@@ -211,8 +230,10 @@ jobs:
       if: always()
 
     - name: mypy
-      # TODO: mypy has errors that need to be fixed before it can be added
-      run: mypy --ignore-missing-imports ibis || true
+      run: |
+        mypy --ignore-missing-imports --exclude 'ibis/expr|ibis/backends' ibis
+        # TODO: mypy has errors that need to be fixed before it can be added to all directories
+        mypy --ignore-missing-imports ibis || true
       if: always()
 
     - name: pydocstyle

@@ -7,7 +7,6 @@ from .client import (  # noqa: F401
     ImpalaClient,
     ImpalaConnection,
     ImpalaDatabase,
-    ImpalaDatabaseTable,
     ImpalaTable,
 )
 from .hdfs import HDFS, WebHDFS, hdfs_connect
@@ -18,7 +17,6 @@ class Backend(BaseSQLBackend):
     name = 'impala'
     client_class = ImpalaClient
     database_class = ImpalaDatabase
-    table_class = ImpalaDatabaseTable
     table_expr_class = ImpalaTable
     HDFS = HDFS
     WebHDFS = WebHDFS

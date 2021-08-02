@@ -36,7 +36,7 @@ def test_map_keys_expr(t):
     expr = t.map_of_strings_integers.keys()
     result = expr.execute().map(safe_sorter)
     expected = pd.Series(
-        np.array([['a', 'b'], None, []]),
+        np.array([['a', 'b'], None, []], dtype='object'),
         dtype='object',
         name='map_of_strings_integers',
     )
@@ -55,7 +55,7 @@ def test_map_values_expr(t):
     expr = t.map_of_complex_values.values()
     result = expr.execute().map(safe_sorter)
     expected = pd.Series(
-        [None, np.array([[], [1, 2, 3]]), np.array([])],
+        [None, np.array([[], [1, 2, 3]], dtype='object'), np.array([])],
         dtype='object',
         name='map_of_complex_values',
     )

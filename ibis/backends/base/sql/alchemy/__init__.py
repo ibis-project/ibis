@@ -47,6 +47,9 @@ class BaseAlchemyBackend(BaseSQLBackend):
     Base backend class for backends that compile to SQL with SQLAlchemy.
     """
 
+    database_class = AlchemyDatabase
+    table_class = AlchemyTable
+
     @property
     def version(self):
         return '.'.join(map(str, self.client.con.dialect.server_version_info))

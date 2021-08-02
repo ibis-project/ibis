@@ -1,4 +1,4 @@
-from typing import Iterable, TypeVar
+from typing import Iterable, List, TypeVar
 
 import ibis.expr.types as ir
 from ibis.common import exceptions as ex
@@ -14,12 +14,12 @@ except ImportError:
 NumberType = TypeVar('NumberType', int, float)
 # Geometry primitives (2D)
 PointType = Iterable[NumberType]
-LineStringType = Iterable[PointType]
-PolygonType = Iterable[LineStringType]
+LineStringType = List[PointType]
+PolygonType = List[LineStringType]
 # Multipart geometries (2D)
-MultiPointType = Iterable[PointType]
-MultiLineStringType = Iterable[LineStringType]
-MultiPolygonType = Iterable[PolygonType]
+MultiPointType = List[PointType]
+MultiLineStringType = List[LineStringType]
+MultiPolygonType = List[PolygonType]
 
 
 def _format_point_value(value: PointType) -> str:
@@ -112,27 +112,27 @@ def translate_point(value: Iterable) -> str:
     return "POINT ({})".format(_format_point_value(value))
 
 
-def translate_linestring(value: Iterable) -> str:
+def translate_linestring(value: List) -> str:
     """Translate a linestring to WKT."""
     return "LINESTRING ({})".format(_format_linestring_value(value))
 
 
-def translate_polygon(value: Iterable) -> str:
+def translate_polygon(value: List) -> str:
     """Translate a polygon to WKT."""
     return "POLYGON ({})".format(_format_polygon_value(value))
 
 
-def translate_multilinestring(value: Iterable) -> str:
+def translate_multilinestring(value: List) -> str:
     """Translate a multilinestring to WKT."""
     return "MULTILINESTRING ({})".format(_format_multilinestring_value(value))
 
 
-def translate_multipoint(value: Iterable) -> str:
+def translate_multipoint(value: List) -> str:
     """Translate a multipoint to WKT."""
     return "MULTIPOINT ({})".format(_format_multipoint_value(value))
 
 
-def translate_multipolygon(value: Iterable) -> str:
+def translate_multipolygon(value: List) -> str:
     """Translate a multipolygon to WKT."""
     return "MULTIPOLYGON ({})".format(_format_multipolygon_value(value))
 

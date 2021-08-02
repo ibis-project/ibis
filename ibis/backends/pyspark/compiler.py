@@ -846,7 +846,7 @@ def compile_isnan(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
 
     src_column = t.translate(op.arg, scope, timecontext)
-    return F.isnan(src_column)
+    return F.isnan(src_column) | F.isnull(src_column)
 
 
 @compiles(ops.IsInf)
@@ -1742,7 +1742,7 @@ def compile_if_null(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
     col = t.translate(op.arg, scope, timecontext)
     ifnull_col = t.translate(op.ifnull_expr, scope, timecontext)
-    return F.when(col.isNull(), ifnull_col).otherwise(col)
+    return F.when(col.isNull() | F.isnan(col), ifnull_col).otherwise(col)
 
 
 @compiles(ops.NullIf)

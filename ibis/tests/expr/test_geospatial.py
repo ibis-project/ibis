@@ -2,10 +2,7 @@
 import pytest
 
 import ibis
-from ibis.tests.expr.mocks import (
-    GeoMockConnectionOmniSciDB,
-    GeoMockConnectionPostGIS,
-)
+from ibis.tests.expr.mocks import GeoMockConnectionPostGIS
 
 pytest.importorskip('geoalchemy2')
 pytest.importorskip('shapely')
@@ -14,7 +11,6 @@ pytest.importorskip('geopandas')
 pytest.mark.postgis
 pytest.mark.omniscidb
 
-mock_omniscidb = GeoMockConnectionOmniSciDB()
 mock_postgis = GeoMockConnectionPostGIS()
 
 
@@ -168,7 +164,7 @@ def test_geo_literals_smoke(backend, shape, value, modifier, expected):
         #       yet, but once they do, add some more tests here.
     ],
 )
-@pytest.mark.parametrize('backend', [mock_omniscidb, mock_postgis])
+@pytest.mark.parametrize('backend', [mock_postgis])
 @pytest.mark.xfail_unsupported
 def test_geo_ops_smoke(backend, fn_expr):
     """Smoke tests for geo spatial operations."""

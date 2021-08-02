@@ -12,6 +12,7 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :feature:`2882` Unify implementation of fillna and isna in Pyspark backend
 * :support:`2862` Deprecated `list_schemas` in SQLAlchemy backends in favor of `list_databases`
 * :bug:`2829` Fix .drop(fields). The argument can now be either a list of strings or a string.
 * :feature:`2873` Support binary operation with Timedelta in Pyspark backend

@@ -1,7 +1,6 @@
 import dask.dataframe as dd
 import numpy as np
 import pandas as pd
-import pandas.util.testing as pandas_tm
 import pytest
 from dask.dataframe.utils import tm
 from pytest import param
@@ -14,7 +13,8 @@ pytestmark = pytest.mark.dask
 
 
 def make_dask_data_frame(npartitions):
-    return dd.from_pandas(pandas_tm.makeDataFrame(), npartitions=npartitions)
+    df = pd.DataFrame(np.random.randn(30, 4), columns=list('ABCD'))
+    return dd.from_pandas(df, npartitions=npartitions)
 
 
 @pytest.fixture
