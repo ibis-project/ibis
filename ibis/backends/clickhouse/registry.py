@@ -1,6 +1,7 @@
 from datetime import date, datetime
 from io import StringIO
 
+import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
@@ -512,6 +513,15 @@ def _string_like(translator, expr):
     )
 
 
+def _group_concat(translator, expr):
+    arg, sep, where = expr.op().args
+    if where is not None:
+        arg = where.ifelse(arg, ibis.NA)
+    return 'arrayStringConcat(groupArray({}), {})'.format(
+        *map(translator.translate, (arg, sep))
+    )
+
+
 # TODO: clickhouse uses different string functions
 #       for ascii and utf-8 encodings,
 
@@ -567,7 +577,7 @@ operation_registry = {
     ops.Min: _agg('min'),
     ops.StandardDev: _agg_variance_like('stddev'),
     ops.Variance: _agg_variance_like('var'),
-    # ops.GroupConcat: fixed_arity('group_concat', 2),
+    ops.GroupConcat: _group_concat,
     ops.Count: _agg('count'),
     ops.CountDistinct: _agg('uniq'),
     ops.Arbitrary: _arbitrary,

@@ -532,3 +532,32 @@ def test_count_distinct_with_filter(alltypes):
     expected = alltypes.string_col.execute()
     expected = expected[expected.astype('int64') > 1].nunique()
     assert result == expected
+
+
+@pytest.mark.parametrize(
+    ('sep', 'where_case', 'expected'),
+    [
+        (',', None, "arrayStringConcat(groupArray(`string_col`), ',')"),
+        ('-', None, "arrayStringConcat(groupArray(`string_col`), '-')"),
+        pytest.param(
+            ',',
+            0,
+            (
+                "arrayStringConcat(groupArray("
+                "CASE WHEN `bool_col` = 0 THEN "
+                "`string_col` ELSE Null END), ',')"
+            ),
+            marks=pytest.mark.xfail(
+                reason=(
+                    '`where` param needs `Nullable` column '
+                    'but the all in testing data is not.'
+                    'See also issue #2891'
+                )
+            ),
+        ),
+    ],
+)
+def test_group_concat(alltypes, sep, where_case, expected, translate):
+    where = None if where_case is None else alltypes.bool_col == where_case
+    expr = alltypes.string_col.group_concat(sep, where)
+    assert translate(expr) == expected
