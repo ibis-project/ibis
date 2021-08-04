@@ -35,7 +35,7 @@
 
 """
 from collections import namedtuple
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, Optional
 
 from ibis.expr.operations import Node
 from ibis.expr.timecontext import TimeContextRelation, compare_timecontext
@@ -186,13 +186,13 @@ class Scope:
         return result
 
     def merge_scopes(
-        self, other_scopes: List['Scope'], overwrite=False
+        self, other_scopes: Iterable['Scope'], overwrite=False
     ) -> 'Scope':
         """merge items in other_scopes into this scope
 
         Parameters
         ----------
-        other_scopes: List[Scope]
+        other_scopes: Iterable[Scope]
             scopes to be merged with
         overwrite: Bool
             if set to be True, force overwrite value if op already exists.
