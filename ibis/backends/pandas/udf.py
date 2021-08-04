@@ -229,7 +229,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
     @execute_node.register(type(op), *(itertools.repeat(SeriesGroupBy, nargs)))
     def execute_udaf_node_groupby(op, *args, aggcontext, **kwargs):
         func = op.func
-        if isinstance(aggcontext, Transform):
+        if isinstance(aggcontext, (Summarize, Transform)):
             # We are either:
             # 1) Aggregating over an unbounded (and GROUPED) window, which
             #   uses a Transform aggregation context
@@ -243,18 +243,6 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
             # for every argument excluding the first (pandas performs
             # the iteration for the first argument) for each argument
             # that is a SeriesGroupBy.
-            iters = create_gens_from_args_groupby(args[1:])
-
-            # TODO: Unify calling convension here to be more like
-            # window
-            def aggregator(first, *rest):
-                # map(next, *rest) gets the inputs for the next group
-                # TODO: might be inefficient to do this on every call
-                result = func(first, *map(next, rest))
-                return result
-
-            return aggcontext.agg(args[0], aggregator, *iters)
-        elif isinstance(aggcontext, Summarize):
             iters = create_gens_from_args_groupby(args[1:])
 
             # TODO: Unify calling convension here to be more like
