@@ -10,7 +10,7 @@ import ibis.expr.types as ir
 import ibis.util as util
 from ibis.backends.base.sql.registry import quote_identifier
 from ibis.config import options
-from ibis.expr.signaure import Argument
+from ibis.expr.signature import Argument
 
 from .base import DML, QueryAST, SetOp
 from .select_builder import SelectBuilder
