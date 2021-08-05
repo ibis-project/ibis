@@ -1,6 +1,6 @@
 import abc
 import warnings
-from typing import Any, Callable
+from typing import Any, Callable, Type
 
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
@@ -20,7 +20,7 @@ class BaseBackend(abc.ABC):
     """
 
     database_class = Database
-    table_class = ops.DatabaseTable
+    table_class: Type[ops.DatabaseTable] = ops.DatabaseTable
 
     @property
     @abc.abstractmethod

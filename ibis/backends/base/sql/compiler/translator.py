@@ -1,4 +1,5 @@
 import operator
+from typing import Callable, Dict
 
 import ibis
 import ibis.common.exceptions as com
@@ -201,7 +202,7 @@ class ExprTranslator:
     """
 
     _registry = operation_registry
-    _rewrites = {}
+    _rewrites: Dict[ops.Node, Callable] = {}
 
     def __init__(self, expr, context, named=False, permit_subquery=False):
         self.expr = expr

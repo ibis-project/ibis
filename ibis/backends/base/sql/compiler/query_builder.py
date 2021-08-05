@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from io import StringIO
 
 import toolz
@@ -8,6 +10,7 @@ import ibis.expr.types as ir
 import ibis.util as util
 from ibis.backends.base.sql.registry import quote_identifier
 from ibis.config import options
+from ibis.expr.signaure import Argument
 
 from .base import DML, QueryAST, SetOp
 from .select_builder import SelectBuilder
@@ -500,7 +503,7 @@ class Difference(SetOp):
         return ["EXCEPT"] * (len(self.tables) - 1)
 
 
-def flatten_union(table: ir.TableExpr):
+def flatten_union(table: ir.TableExpr | Argument):
     """Extract all union queries from `table`.
 
     Parameters
