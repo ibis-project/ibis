@@ -56,9 +56,6 @@ class CSVClient(FileClient):
 
         return table
 
-    def list_tables(self, path=None):
-        return self._list_tables_files(path)
-
     def list_databases(self, path=None):
         return self._list_databases_dirs(path)
 

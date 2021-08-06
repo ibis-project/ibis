@@ -34,20 +34,6 @@ class HDFClient(FileClient):
         self.dictionary[name] = path
         return t
 
-    def list_tables(self, path=None):
-        # tables are individual tables within a file
-
-        if path is None:
-            path = self.root
-
-        if path.is_file() and str(path).endswith(self.extension):
-
-            with pd.HDFStore(str(path), mode='r') as store:
-                # strip leading /
-                return [k[1:] for k in store.keys()]
-
-        return []
-
     def list_databases(self, path=None):
         return self._list_databases_dirs_or_files(path)
 
@@ -57,6 +43,17 @@ class Backend(BaseFileBackend):
     extension = 'h5'
     table_class = HDFTable
     client_class = HDFClient
+
+    def list_tables(self, like=None):
+        """
+        For HDF5, tables are the HDF5 tables inside the file.
+        """
+        if self.path.is_file() and self.path.suffix == '.' + self.extension:
+            with pd.HDFStore(str(self.path), mode='r') as store:
+                # strip leading /
+                return [k[1:] for k in store.keys()]
+
+        return []
 
 
 @execute_node.register(Backend.table_class, HDFClient)

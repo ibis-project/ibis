@@ -33,8 +33,8 @@ class KuduImpalaInterface:
         self.client = None
 
     @copydoc(kudu.client.Client.list_tables)
-    def list_tables(self, filter=''):
-        return self.client.list_tables(filter)
+    def list_tables(self, like=None):
+        return self.client.list_tables(like)
 
     @copydoc(kudu.client.Client.table_exists)
     def table_exists(self, name):

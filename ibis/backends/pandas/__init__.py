@@ -24,7 +24,8 @@ class BasePandasBackend(BaseBackend):
         -------
         Client
         """
-        return self.client_class(backend=self, dictionary=dictionary)
+        self.client = self.client_class(backend=self, dictionary=dictionary)
+        return self.client
 
     def from_dataframe(self, df, name='df', client=None):
         """
@@ -60,6 +61,12 @@ class BasePandasBackend(BaseBackend):
     @property
     def version(self) -> str:
         return pd.__version__
+
+    def list_tables(self, like=None):
+        """List the available tables."""
+        return self._filter_tables_with_like(
+            tables=list(self.client.dictionary.keys()), like=like
+        )
 
 
 class Backend(BasePandasBackend):

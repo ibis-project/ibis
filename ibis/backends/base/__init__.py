@@ -1,4 +1,5 @@
 import abc
+import re
 import warnings
 from typing import Any, Callable, List
 
@@ -51,9 +52,42 @@ class BaseBackend(abc.ABC):
         """
         """
 
-    # @abc.abstractmethod
+    @staticmethod
+    def _filter_tables_with_like(
+        tables: List[str], like: str = None
+    ) -> List[str]:
+        """
+        Filter table names with a `like` pattern (regex).
+
+        The method `list_tables` accepts a `like` argument, which filters the
+        returned tables with tables that match the provided pattern.
+
+        We provide this method in the base backend, so backends can use it
+        instead of reinventing the wheel.
+        """
+        if like is None:
+            return tables
+
+        pattern = re.compile(like)
+        return sorted(filter(lambda t: pattern.findall(t), tables))
+
+    @abc.abstractmethod
     def list_tables(self, like: str = None) -> List[str]:
         """
+        Return the list of table names in the current database.
+
+        For some backends, the tables may be files in a directory,
+        or other equivalent entities in a SQL database.
+
+        Parameters
+        ----------
+        like : str
+            A pattern in Python's regex format.
+
+        Returns
+        -------
+        list of str
+            The list of the table names that match the pattern `like`.
         """
 
     # @abc.abstractmethod

@@ -33,3 +33,10 @@ class Backend(BaseBackend):
     @property
     def version(self):
         return pyspark.__version__
+
+    def list_tables(self, like=None):
+        tables = [
+            t.name
+            for t in self._catalog.listTables(dbName=self.current_database)
+        ]
+        return self._filter_tables_with_like(tables)

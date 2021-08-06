@@ -46,58 +46,8 @@ class FileClient(Client):
         assert isinstance(expr, ir.Expr)
         return execute_and_reset(expr, params=params, **kwargs)
 
-    def list_tables(self, path=None):
-        raise NotImplementedError
-
-    def _list_tables_files(self, path=None):
-        # tables are files in a dir
-        if path is None:
-            path = self.root
-
-        tables = []
-        if path.is_dir():
-            for d in path.iterdir():
-                if d.is_file():
-                    if str(d).endswith(self.extension):
-                        tables.append(d.stem)
-        elif path.is_file():
-            if str(path).endswith(self.extension):
-                tables.append(path.stem)
-        return tables
-
     def list_databases(self, path=None):
         raise NotImplementedError
-
-    def _list_databases_dirs(self, path=None):
-        # databases are dir
-        if path is None:
-            path = self.root
-
-        tables = []
-        if path.is_dir():
-            for d in path.iterdir():
-                if d.is_dir():
-                    tables.append(d.name)
-        return tables
-
-    def _list_databases_dirs_or_files(self, path=None):
-        # databases are dir & file
-        if path is None:
-            path = self.root
-
-        tables = []
-        if path.is_dir():
-            for d in path.iterdir():
-                if d.is_dir():
-                    tables.append(d.name)
-                elif d.is_file():
-                    if str(d).endswith(self.extension):
-                        tables.append(d.stem)
-        elif path.is_file():
-            # by definition we are at the db level at this point
-            pass
-
-        return tables
 
 
 class FileDatabase(Database):
@@ -130,11 +80,6 @@ class FileDatabase(Database):
             path = self.path
         return sorted(self.client.list_databases(path=path))
 
-    def list_tables(self, path=None):
-        if path is None:
-            path = self.path
-        return sorted(self.client.list_tables(path=path))
-
 
 class BaseFileBackend(BaseBackend):
     """
@@ -152,8 +97,23 @@ class BaseFileBackend(BaseBackend):
         -------
         Client
         """
-        return self.client_class(backend=self, root=path)
+        self.path = path
+        self.client = self.client_class(backend=self, root=path)
+        return self.client
 
     @property
     def version(self) -> str:
         return pd.__version__
+
+    def list_tables(self, like=None):
+        """
+        For file backends, we return files in the `path` directory.
+        """
+
+        def is_valid(path):
+            return path.is_file() and path.suffix == '.' + self.extension
+
+        if self.path.is_dir():
+            return [f.stem for f in self.path.iterdir() if is_valid(f)]
+        elif is_valid(self.path):
+            return [self.path.stem]

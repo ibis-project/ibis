@@ -1,3 +1,5 @@
+import sqlalchemy
+
 from ibis.backends.base.sql import BaseSQLBackend
 
 from .client import AlchemyClient
@@ -53,3 +55,8 @@ class BaseAlchemyBackend(BaseSQLBackend):
     @property
     def version(self):
         return '.'.join(map(str, self.client.con.dialect.server_version_info))
+
+    def list_tables(self, like=None):
+        inspector = sqlalchemy.inspect(self.client.con)
+        tables = inspector.get_table_names() + inspector.get_view_names()
+        return self._filter_tables_with_like(tables, like)

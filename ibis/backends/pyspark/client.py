@@ -366,32 +366,6 @@ class PySparkClient(SQLClient):
         node = self.table_class(qualified_name, schema, self)
         return self.table_expr_class(node)
 
-    def list_tables(self, like=None, database=None):
-        """
-        List tables in the current (or indicated) database. Like the SHOW
-        TABLES command.
-
-        Parameters
-        ----------
-        like : string, default None
-          e.g. 'foo*' to match all tables starting with 'foo'
-        database : string, default None
-          If not passed, uses the current/default database
-
-        Returns
-        -------
-        results : list of strings
-        """
-        results = [t.name for t in self._catalog.listTables(dbName=database)]
-        if like:
-            results = [
-                table_name
-                for table_name in results
-                if re.match(like, table_name) is not None
-            ]
-
-        return results
-
     def exists_table(self, name, database=None):
         """
         Determine if the indicated table or view exists

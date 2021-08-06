@@ -1,10 +1,6 @@
 """The dask client implementation."""
-
-from __future__ import absolute_import
-
-import re
 from functools import partial
-from typing import Dict, List, Mapping
+from typing import Dict, Mapping
 
 import dask.dataframe as dd
 import dateutil.parser
@@ -214,14 +210,6 @@ class DaskClient(Client):
     def database(self, name: str = None) -> DaskDatabase:
         """Construct a database called `name`."""
         return self.database_class(name, self)
-
-    def list_tables(self, like: str = None) -> List[str]:
-        """List the available tables."""
-        tables = list(self.dictionary.keys())
-        if like is not None:
-            pattern = re.compile(like)
-            return list(filter(lambda t: pattern.findall(t), tables))
-        return tables
 
     def load_data(self, table_name: str, obj: dd.DataFrame, **kwargs):
         """Load data from `obj` into `table_name`.

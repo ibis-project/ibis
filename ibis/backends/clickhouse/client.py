@@ -235,36 +235,6 @@ class ClickhouseClient(SQLClient):
         database = database or self.current_database
         return '{0}.`{1}`'.format(database, name)
 
-    def list_tables(self, like=None, database=None):
-        """
-        List tables in the current (or indicated) database. Like the SHOW
-        TABLES command in the clickhouse-shell.
-
-        Parameters
-        ----------
-        like : string, default None
-          e.g. 'foo*' to match all tables starting with 'foo'
-        database : string, default None
-          If not passed, uses the current/default database
-
-        Returns
-        -------
-        tables : list of strings
-        """
-        statement = 'SHOW TABLES'
-        if database:
-            statement += " FROM `{0}`".format(database)
-        if like:
-            m = fully_qualified_re.match(like)
-            if m:
-                database, quoted, unquoted = m.groups()
-                like = quoted or unquoted
-                return self.list_tables(like=like, database=database)
-            statement += " LIKE '{0}'".format(like)
-
-        data = self.raw_sql(statement)
-        return data[0]
-
     def set_database(self, name):
         """
         Set the default database scope for client

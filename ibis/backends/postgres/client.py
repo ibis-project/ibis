@@ -142,15 +142,6 @@ class PostgreSQLClient(AlchemyClient):
             node = self.table_class(alch_table, self, self._schemas.get(name))
             return self.table_expr_class(node)
 
-    def list_tables(self, like=None, database=None, schema=None):
-        if database is not None and database != self.current_database:
-            return self.database(name=database).list_tables(
-                like=like, schema=schema
-            )
-        else:
-            parent = super(PostgreSQLClient, self)
-            return parent.list_tables(like=like, schema=schema)
-
     def udf(
         self, pyfunc, in_types, out_type, schema=None, replace=False, name=None
     ):
