@@ -315,7 +315,7 @@ def timestamp(value, timezone=None):
         raise TypeError(
             (
                 "Passing an integer to ibis.timestamp is not supported. Use "
-                "ibis.literal({value:d}).to_timestamp() to create a timestamp "
+                "ibis.literal({value}).to_timestamp() to create a timestamp "
                 "expression from an integer."
             ).format(value=value)
         )

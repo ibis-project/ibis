@@ -41,7 +41,7 @@ from ibis.expr.operations import Node
 from ibis.expr.timecontext import TimeContextRelation, compare_timecontext
 from ibis.expr.typing import TimeContext
 
-ScopeItem = namedtuple('item', ['timecontext', 'value'])
+ScopeItem = namedtuple('ScopeItem', ['timecontext', 'value'])
 
 
 class Scope:
