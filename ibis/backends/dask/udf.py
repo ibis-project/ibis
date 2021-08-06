@@ -222,7 +222,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
 
         func = op.func
         groupings = args[0].index
-        parent_df = args[0].obj
+        parent_df = args[0].obj.to_frame()
         out_type = op._output_type.to_dask()
 
         grouped_df = parent_df.groupby(groupings)
