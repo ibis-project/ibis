@@ -18,22 +18,6 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
     table_class = ops.DatabaseTable
     table_expr_class = ir.TableExpr
 
-    @property
-    def con(self):
-        """
-        Subclasses must set a `con` attribute with a DBAPI2 connection.
-
-        This is defined here to make mypy happy.
-        """
-        raise NotImplementedError(
-            'Subclasses of SQLClient must set a `con` attribute with the '
-            'connection to the database'
-        )
-
-    @con.setter
-    def con(self, value):
-        self.con
-
     def table(self, name, database=None):
         """Create a table expression.
 
@@ -118,7 +102,10 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         """
         # TODO results is unused, it can be removed
         # (requires updating Impala tests)
-        cursor = self.con.execute(query)
+        # TODO `self.con` is assumed to be defined in subclasses, but there
+        # is nothing that enforces it. We should find a way to make sure
+        # `self.con` is always a DBAPI2 connection, or raise an error
+        cursor = self.con.execute(query)  # type: ignore
         if cursor:
             return cursor
         cursor.release()

@@ -10,7 +10,6 @@ import ibis.expr.types as ir
 import ibis.util as util
 from ibis.backends.base.sql.registry import quote_identifier
 from ibis.config import options
-from ibis.expr.signature import Argument
 
 from .base import DML, QueryAST, SetOp
 from .select_builder import SelectBuilder
@@ -503,7 +502,7 @@ class Difference(SetOp):
         return ["EXCEPT"] * (len(self.tables) - 1)
 
 
-def flatten_union(table: ir.TableExpr | Argument):
+def flatten_union(table: ir.TableExpr):
     """Extract all union queries from `table`.
 
     Parameters
@@ -516,8 +515,13 @@ def flatten_union(table: ir.TableExpr | Argument):
     """
     op = table.op()
     if isinstance(op, ops.Union):
+        # For some reason mypy considers `op.left` and `op.right`
+        # of `Argument` type, and fails the validation. While in
+        # `flatten` types are the same, and it works
         return toolz.concatv(
-            flatten_union(op.left), [op.distinct], flatten_union(op.right)
+            flatten_union(op.left),  # type: ignore
+            [op.distinct],
+            flatten_union(op.right),  # type: ignore
         )
     return [table]
 
