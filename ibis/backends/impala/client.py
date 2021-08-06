@@ -10,7 +10,6 @@ from posixpath import join as pjoin
 
 import numpy as np
 import pandas as pd
-from pkg_resources import parse_version
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -1036,15 +1035,6 @@ class ImpalaClient(SQLClient):
     @property
     def client_options(self):
         return self.con.options
-
-    @property
-    def version(self):
-        cur = self.raw_sql('select version()')
-        raw = self._get_list(cur)[0]
-        cur.release()
-
-        vstring = raw.split()[2]
-        return parse_version(vstring)
 
     def get_options(self):
         """

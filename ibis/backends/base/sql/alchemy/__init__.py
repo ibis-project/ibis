@@ -49,3 +49,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
     database_class = AlchemyDatabase
     table_class = AlchemyTable
+
+    @property
+    def version(self):
+        return '.'.join(map(str, self.client.con.dialect.server_version_info))

@@ -1,3 +1,5 @@
+import pyspark
+
 from ibis.backends.base import BaseBackend
 
 from .client import PySparkClient, PySparkTable
@@ -27,3 +29,7 @@ class Backend(BaseBackend):
         client._session.conf.set('spark.sql.session.timeZone', 'UTC')
 
         return client
+
+    @property
+    def version(self):
+        return pyspark.__version__

@@ -1,3 +1,5 @@
+import dask
+
 import ibis.config
 from ibis.backends.pandas import BasePandasBackend
 
@@ -15,3 +17,7 @@ class Backend(BasePandasBackend):
     database_class = DaskDatabase
     table_class = DaskTable
     client_class = DaskClient
+
+    @property
+    def version(self):
+        return dask.__version__

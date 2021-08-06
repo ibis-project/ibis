@@ -1,3 +1,5 @@
+import pandas as pd
+
 import ibis.config
 from ibis.backends.base import BaseBackend
 
@@ -54,6 +56,10 @@ class BasePandasBackend(BaseBackend):
             'See ibis.{self.name}.trace for details.',
             validator=ibis.config.is_bool,
         )
+
+    @property
+    def version(self) -> str:
+        return pd.__version__
 
 
 class Backend(BasePandasBackend):
