@@ -156,7 +156,8 @@ class BaseFileBackend(BaseBackend):
         -------
         Client
         """
-        return self.client_class(backend=self, root=path)
+        self.client = self.client_class(backend=self, root=path)
+        return self.client
 
     @property
     def version(self) -> str:
