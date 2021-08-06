@@ -11,7 +11,45 @@ from ibis.backends.pandas.core import execute_and_reset
 ibis.pandas
 
 
+class FileDatabase(Database):
+    def __init__(self, name, client):
+        super().__init__(name, client)
+        self.path = client.path
+
+    def __str__(self):
+        return '{0.__class__.__name__}({0.name})'.format(self)
+
+    def __dir__(self):
+        dbs = self.list_databases(path=self.path)
+        tables = self.list_tables(path=self.path)
+        return sorted(set(dbs).union(set(tables)))
+
+    def __getattr__(self, name):
+        try:
+            return self.table(name, path=self.path)
+        except AttributeError:
+            return self.database(name, path=self.path)
+
+    def table(self, name, path):
+        return self.client.table(name, path=path)
+
+    def database(self, name=None, path=None):
+        return self.client.database(name=name, path=path)
+
+    def list_databases(self, path=None):
+        if path is None:
+            path = self.path
+        return sorted(self.client.list_databases(path=path))
+
+    def list_tables(self, path=None):
+        if path is None:
+            path = self.path
+        return sorted(self.client.list_tables(path=path))
+
+
 class FileClient(Client):
+    database_class = FileDatabase
+
     def __init__(self, backend, root):
         self.backend = backend
         self.extension = backend.extension
@@ -27,7 +65,8 @@ class FileClient(Client):
 
     def database(self, name=None, path=None):
         if name is None:
-            return FileDatabase('root', self, path=path)
+            self.path = path
+            return super().database(name)
 
         if name not in self.list_databases(path):
             raise AttributeError(name)
@@ -40,7 +79,8 @@ class FileClient(Client):
         elif not str(path).endswith(new_name):
             path /= new_name
 
-        return FileDatabase(name, self, path=path)
+        self.path = path
+        return super().database(name)
 
     def execute(self, expr, params=None, **kwargs):  # noqa
         assert isinstance(expr, ir.Expr)
@@ -98,42 +138,6 @@ class FileClient(Client):
             pass
 
         return tables
-
-
-class FileDatabase(Database):
-    def __init__(self, name, client, path=None):
-        super().__init__(name, client)
-        self.path = path
-
-    def __str__(self):
-        return '{0.__class__.__name__}({0.name})'.format(self)
-
-    def __dir__(self):
-        dbs = self.list_databases(path=self.path)
-        tables = self.list_tables(path=self.path)
-        return sorted(set(dbs).union(set(tables)))
-
-    def __getattr__(self, name):
-        try:
-            return self.table(name, path=self.path)
-        except AttributeError:
-            return self.database(name, path=self.path)
-
-    def table(self, name, path):
-        return self.client.table(name, path=path)
-
-    def database(self, name=None, path=None):
-        return self.client.database(name=name, path=path)
-
-    def list_databases(self, path=None):
-        if path is None:
-            path = self.path
-        return sorted(self.client.list_databases(path=path))
-
-    def list_tables(self, path=None):
-        if path is None:
-            path = self.path
-        return sorted(self.client.list_tables(path=path))
 
 
 class BaseFileBackend(BaseBackend):

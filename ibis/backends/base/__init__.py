@@ -41,10 +41,29 @@ class BaseBackend(abc.ABC):
         Connect to the underlying database and return a client object.
         """
 
-    # @abc.abstractmethod
-    def database(self) -> Database:
+    def database(self, name: str = None) -> Database:
         """
+        Return a Database object for the `name` database.
+
+        Parameters
+        ----------
+        name : str
+            Name of the database to return the object for.
+
+        Returns
+        -------
+        Database
+            A database object for the specified database.
         """
+        warnings.warn(
+            'The `database` method and the `Database` object are '
+            'deprecated and will be removed in a future version of Ibis. '
+            'Use the equivalent methods in the backend instead.',
+            FutureWarning,
+        )
+        return self.database_class(
+            name=name or self.current_database, client=self.client
+        )
 
     # @abc.abstractmethod
     def current_database(self) -> str:

@@ -65,41 +65,6 @@ class PostgreSQLClient(AlchemyClient):
             finally:
                 bind.execute("SET TIMEZONE = '{}'".format(previous_timezone))
 
-    def database(self, name=None):
-        """Connect to a database called `name`.
-
-        Parameters
-        ----------
-        name : str, optional
-            The name of the database to connect to. If ``None``, return
-            the database named ``self.current_database``.
-
-        Returns
-        -------
-        db : PostgreSQLDatabase
-            An :class:`ibis.sql.postgres.client.PostgreSQLDatabase` instance.
-
-        Notes
-        -----
-        This creates a new connection if `name` is both not ``None`` and not
-        equal to the current database.
-        """
-        if name == self.current_database or (
-            name is None and name != self.current_database
-        ):
-            return self.database_class(self.current_database, self)
-        else:
-            url = self.con.url
-            client_class = type(self)
-            new_client = client_class(
-                host=url.host,
-                user=url.username,
-                port=url.port,
-                password=url.password,
-                database=name,
-            )
-            return self.database_class(name, new_client)
-
     def list_databases(self):
         # http://dba.stackexchange.com/a/1304/58517
         return [
