@@ -39,6 +39,25 @@ These methods are available directly in the ``ibis`` module namespace.
    trailing_range_window
    random
 
+.. _api.basebackend:
+
+Backend methods
+------------------
+
+.. currentmodule:: ibis.backends.base
+
+.. autosummary::
+   :toctree: generated/
+
+   BaseBackend.connect
+   BaseBackend.database
+   BaseBackend.current_database
+   BaseBackend.list_tables
+   BaseBackend.table
+   BaseBackend.version
+   BaseBackend.compile
+   BaseBackend.execute
+
 .. _api.expr:
 
 General expression methods

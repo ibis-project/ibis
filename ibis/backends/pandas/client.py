@@ -1,7 +1,4 @@
 """The pandas client implementation."""
-
-from __future__ import absolute_import
-
 import re
 from functools import partial
 
@@ -11,7 +8,6 @@ import pandas as pd
 import pytz
 import toolz
 from pandas.api.types import CategoricalDtype, DatetimeTZDtype
-from pkg_resources import parse_version
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -451,11 +447,6 @@ class PandasClient(Client):
 
         """
         return bool(self.list_tables(like=name))
-
-    @property
-    def version(self) -> str:
-        """Return the version of the underlying backend library."""
-        return parse_version(pd.__version__)
 
 
 class PandasDatabase(Database):

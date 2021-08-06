@@ -1,4 +1,5 @@
 import pytest
+from pkg_resources import parse_version
 
 pytestmark = pytest.mark.clickhouse
 
@@ -16,12 +17,12 @@ def test_column_types(alltypes):
 
 def test_columns_types_with_additional_argument(con):
     sql_types = ["toFixedString('foo', 8) AS fixedstring_col"]
-    if con.version.base_version >= '1.1.54337':
+    if parse_version(con.version).base_version >= '1.1.54337':
         sql_types.append(
             "toDateTime('2018-07-02 00:00:00', 'UTC') AS datetime_col"
         )
     sql = 'SELECT {}'.format(', '.join(sql_types))
     df = con.sql(sql).execute()
     assert df.fixedstring_col.dtype.name == 'object'
-    if con.version.base_version >= '1.1.54337':
+    if parse_version(con.version).base_version >= '1.1.54337':
         assert df.datetime_col.dtype.name == 'datetime64[ns]'

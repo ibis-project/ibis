@@ -1,7 +1,6 @@
 import pandas as pd
 import pyspark as ps
 import regex as re
-from pkg_resources import parse_version
 from pyspark.sql.column import Column
 
 import ibis.common.exceptions as com
@@ -567,10 +566,6 @@ class PySparkClient(SQLClient):
             if force:
                 mode = 'overwrite'
             df.write.saveAsTable(qualified_name, format=format, mode=mode)
-
-    @property
-    def version(self):
-        return parse_version(ps.__version__)
 
     def create_table(
         self,

@@ -107,13 +107,20 @@ class Backend(BaseSQLBackend):
 
         con = ImpalaConnection(pool_size=pool_size, **params)
         try:
-            client = ImpalaClient(
+            self.client = ImpalaClient(
                 backend=self, con=con, hdfs_client=hdfs_client
             )
         except Exception:
             con.close()
             raise
-        return client
+        return self.client
+
+    @property
+    def version(self):
+        cursor = self.client.raw_sql('select version()')
+        result = cursor.fetchone()[0]
+        cursor.release()
+        return result
 
     def register_options(self):
         ibis.config.register_option(
