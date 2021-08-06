@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pandas as pd
+
 import ibis
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend, Client, Database
@@ -151,3 +153,7 @@ class BaseFileBackend(BaseBackend):
         Client
         """
         return self.client_class(backend=self, root=path)
+
+    @property
+    def version(self) -> str:
+        return pd.__version__

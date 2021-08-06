@@ -75,7 +75,7 @@ class Backend(BaseAlchemyBackend):
             year : int32
             month : int32
         """
-        return MySQLClient(
+        self.client = MySQLClient(
             backend=self,
             host=host,
             user=user,
@@ -85,3 +85,4 @@ class Backend(BaseAlchemyBackend):
             url=url,
             driver=driver,
         )
+        return self.client

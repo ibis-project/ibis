@@ -41,4 +41,5 @@ class Backend(BaseAlchemyBackend):
         create : boolean, default False
             If file does not exist, create it
         """
-        return SQLiteClient(backend=self, path=path, create=create)
+        self.client = SQLiteClient(backend=self, path=path, create=create)
+        return self.client

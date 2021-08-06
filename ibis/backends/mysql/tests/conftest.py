@@ -37,7 +37,7 @@ class TestConf(BackendTest, RoundHalfToEven):
                 else version_detail[3:6]
             )
             self.__class__.supports_window_operations = version >= (10, 2)
-        elif con.version >= parse_version('8.0'):
+        elif parse_version(con.version) >= parse_version('8.0'):
             # mysql supports window operations after version 8
             self.__class__.supports_window_operations = True
 

@@ -4,7 +4,6 @@ from typing import Dict, List, Optional, Union
 
 import pandas as pd
 import sqlalchemy as sa
-from pkg_resources import parse_version
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -314,11 +313,6 @@ class AlchemyClient(SQLClient):
     def _sqla_table_to_expr(self, table):
         node = self.table_class(table, self)
         return self.table_expr_class(node)
-
-    @property
-    def version(self):
-        vstring = '.'.join(map(str, self.con.dialect.server_version_info))
-        return parse_version(vstring)
 
     def insert(
         self,

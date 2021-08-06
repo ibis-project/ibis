@@ -1,8 +1,9 @@
 import abc
 import warnings
-from typing import Any, Callable, Type
+from typing import Any, Callable, List, Type
 
 import ibis.expr.operations as ops
+import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.common.exceptions import TranslationError
 
@@ -40,6 +41,57 @@ class BaseBackend(abc.ABC):
         Connect to the underlying database and return a client object.
         """
 
+    # @abc.abstractmethod
+    def database(self) -> Database:
+        """
+        """
+
+    # @abc.abstractmethod
+    def current_database(self) -> str:
+        """
+        """
+
+    # @abc.abstractmethod
+    def list_tables(self, like: str = None) -> List[str]:
+        """
+        """
+
+    # @abc.abstractmethod
+    def table(self, name: str, database: str = None) -> ir.TableExpr:
+        """
+        """
+        warnings.warn(
+            '`database` argument of `.table()` is deprecated and '
+            'will be removed in a future version of Ibis. Change '
+            'the current database before calling `.table()` instead',
+            FutureWarning,
+        )
+
+    def get_schema(self, table_name: str, database: str = None) -> sch.Schema:
+        """
+        Return the schema of `table_name`.
+
+        Deprecated in Ibis 2.0. Use `.table(name).schema()` instead.
+        """
+        warnings.warn(
+            '`.get_schema(name)` is deprecated, and will be '
+            'removed in a future version of Ibis. Use '
+            '`.table(name).schema()` instead',
+            FutureWarning,
+        )
+        return self.table(name=table_name, database=database).schema()
+
+    @property
+    @abc.abstractmethod
+    def version(self) -> str:
+        """
+        Return the version of the backend engine.
+
+        For database servers, that's the version of the PostgreSQL,
+        MySQL,... server. For pandas, it would be the version of
+        pandas, etc.
+        """
+
     def register_options(self) -> None:
         """
         If the backend has custom options, register them here.
@@ -51,6 +103,10 @@ class BaseBackend(abc.ABC):
         Compile the expression.
         """
         return self.client_class.compiler.to_sql(expr, params=params)
+
+    def execute(self, expr: ir.Expr) -> Any:  # XXX DataFrame for now?
+        """
+        """
 
     def verify(self, expr: ir.Expr, params=None) -> bool:
         """

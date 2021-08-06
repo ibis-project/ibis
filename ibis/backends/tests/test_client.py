@@ -1,7 +1,6 @@
 import pandas as pd
 import pandas.testing as tm
 import pytest
-from pkg_resources import parse_version
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -41,15 +40,6 @@ def test_load_data_sqlalchemy(backend, con, temp_table):
     result = con.table(temp_table).execute()
 
     backend.assert_frame_equal(df, result)
-
-
-@pytest.mark.xfail_unsupported
-def test_version(backend, con):
-    expected_type = (
-        type(parse_version('1.0')),
-        type(parse_version('1.0-legacy')),
-    )
-    assert isinstance(con.version, expected_type)
 
 
 @pytest.mark.parametrize(

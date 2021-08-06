@@ -4,7 +4,6 @@ from collections import OrderedDict
 import numpy as np
 import pandas as pd
 from clickhouse_driver.client import Client as _DriverClient
-from pkg_resources import parse_version
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -365,18 +364,3 @@ class ClickhouseClient(SQLClient):
     def _table_command(self, cmd, name, database=None):
         qualified_name = self._fully_qualified_name(name, database)
         return '{0} {1}'.format(cmd, qualified_name)
-
-    @property
-    def version(self):
-        self.con.connection.force_connect()
-
-        try:
-            server = self.con.connection.server_info
-            vstring = '{}.{}.{}'.format(
-                server.version_major, server.version_minor, server.revision
-            )
-        except Exception:
-            self.con.connection.disconnect()
-            raise
-        else:
-            return parse_version(vstring)
