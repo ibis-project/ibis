@@ -66,6 +66,9 @@ def compute_projection_scalar_expr(
 
     data_columns = frozenset(data.columns)
 
+    if scope is None:
+        scope = Scope()
+
     scope = scope.merge_scopes(
         Scope(
             {
