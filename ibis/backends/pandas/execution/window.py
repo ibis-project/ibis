@@ -1,12 +1,12 @@
 """Code for computing window functions with ibis and pandas."""
 
-import functools
 import operator
 import re
 from typing import Any, List, NoReturn, Optional, Union
 
 import pandas as pd
 import toolz
+from multipledispatch import Dispatcher
 from pandas.core.groupby import SeriesGroupBy
 
 import ibis.common.exceptions as com
@@ -117,8 +117,11 @@ def _post_process_group_by_order_by(
     return series
 
 
-@functools.singledispatch
-def get_aggcontext(
+get_aggcontext = Dispatcher('get_aggcontext')
+
+
+@get_aggcontext.register(object)
+def get_aggcontext_default(
     window, *, scope, operand, parent, group_by, order_by, **kwargs,
 ) -> NoReturn:
     raise NotImplementedError(
