@@ -105,6 +105,7 @@ def compute_projection_column_expr(
     if isinstance(op, ops.TableColumn):
         # slightly faster path for simple column selection
         name = op.name
+        assert isinstance(name, str)
 
         if name in data:
             return data[name].rename(result_name or name)
