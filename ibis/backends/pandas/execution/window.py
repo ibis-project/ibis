@@ -2,7 +2,7 @@
 
 import operator
 import re
-from typing import Any, List, NoReturn, Optional, Union
+from typing import Any, Callable, List, NoReturn, Optional, Union
 
 import pandas as pd
 import toolz
@@ -324,6 +324,11 @@ def execute_window_op(
     if not order_by:
         ordering_keys = []
 
+    post_process: Callable[[Any,
+                            pd.DataFrame,
+                            List[str],
+                            List[str],
+                            Optional[TimeContext]], pd.Series]
     if group_by:
         if order_by:
             (
