@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from io import StringIO
 
 import toolz
@@ -513,8 +515,13 @@ def flatten_union(table: ir.TableExpr):
     """
     op = table.op()
     if isinstance(op, ops.Union):
+        # For some reason mypy considers `op.left` and `op.right`
+        # of `Argument` type, and fails the validation. While in
+        # `flatten` types are the same, and it works
         return toolz.concatv(
-            flatten_union(op.left), [op.distinct], flatten_union(op.right)
+            flatten_union(op.left),  # type: ignore
+            [op.distinct],
+            flatten_union(op.right),  # type: ignore
         )
     return [table]
 
