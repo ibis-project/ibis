@@ -275,7 +275,10 @@ def execute_window_op(
         aggcontext=aggcontext,
         **kwargs,
     )
-    scope = scope.merge_scope(pre_executed_scope)
+    if scope is None:
+        scope = pre_executed_scope
+    else:
+        scope = scope.merge_scope(pre_executed_scope)
     (root,) = op.root_tables()
     root_expr = root.to_expr()
 
