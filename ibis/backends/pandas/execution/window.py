@@ -141,6 +141,7 @@ def get_aggcontext_window(
     # otherwise we're transforming
     output_type = operand.type()
 
+    aggcontext: agg_ctx.AggregationContext
     if not group_by and not order_by:
         aggcontext = agg_ctx.Summarize(parent=parent, output_type=output_type)
     elif (
