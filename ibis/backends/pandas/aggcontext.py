@@ -304,9 +304,7 @@ def wrap_for_apply(
 
 
 def wrap_for_agg(
-    function: Callable,
-    args: Tuple[Any, ...],
-    kwargs: Dict[str, Any],
+    function: Callable, args: Tuple[Any, ...], kwargs: Dict[str, Any],
 ) -> Callable:
     """Wrap a function for use with Pandas `agg`.
 
