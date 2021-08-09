@@ -45,9 +45,6 @@ dependencies:
   - pip
   - pip:
     - pysuerga
-    - types-python-dateutil
-    - types-pytz
-    - types-setuptools
   - ipython
   - jupyter
   - matplotlib
@@ -62,3 +59,4 @@ dependencies:
   # Type annotations
   - types-setuptools
   - types-pytz
+  - types-python-dateutil
