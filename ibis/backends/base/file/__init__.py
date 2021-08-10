@@ -48,8 +48,6 @@ class FileDatabase(Database):
 
 
 class FileClient(Client):
-    database_class = FileDatabase
-
     def __init__(self, backend, root):
         self.backend = backend
         self.extension = backend.extension
@@ -144,6 +142,8 @@ class BaseFileBackend(BaseBackend):
     """
     Base backend class for pandas pseudo-backends for file formats.
     """
+
+    database_class = FileDatabase
 
     def connect(self, path):
         """Create a Client for use with Ibis
