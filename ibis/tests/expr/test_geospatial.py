@@ -8,9 +8,7 @@ pytest.importorskip('geoalchemy2')
 pytest.importorskip('shapely')
 pytest.importorskip('geopandas')
 
-pytest.mark.postgis
-pytest.mark.omniscidb
-
+mock_omniscidb = GeoMockConnectionOmniSciDB()
 mock_postgis = GeoMockConnectionPostGIS()
 
 
