@@ -2,7 +2,10 @@
 import pytest
 
 import ibis
-from ibis.tests.expr.mocks import GeoMockConnectionPostGIS
+from ibis.tests.expr.mocks import (
+    GeoMockConnectionOmniSciDB,
+    GeoMockConnectionPostGIS,
+)
 
 pytest.importorskip('geoalchemy2')
 pytest.importorskip('shapely')

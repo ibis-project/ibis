@@ -13,6 +13,7 @@ dependencies:
   - toolz
   - cached_property # for 3.7 compat, functools.cached_property is for >=3.8
   - setuptools
+  - python 3.8.*
 
   # Ibis soft dependencies
   - sqlalchemy

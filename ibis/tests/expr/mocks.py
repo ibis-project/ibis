@@ -423,7 +423,7 @@ class GeoMockConnectionPostGIS(MockAlchemyConnection):
         return Schema.from_tuples(self._tables[name])
 
 
-class GeoMockConnectionOmniSciDB(BaseMockConnection):
+class GeoMockConnectionOmniSciDB(MockConnection):
     _tables = GEO_TABLE
 
     def __init__(self):
