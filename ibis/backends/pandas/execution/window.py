@@ -1,12 +1,12 @@
 """Code for computing window functions with ibis and pandas."""
 
-import functools
 import operator
 import re
-from typing import Any, List, NoReturn, Optional, Union
+from typing import Any, Callable, List, NoReturn, Optional, Union
 
 import pandas as pd
 import toolz
+from multipledispatch import Dispatcher
 from pandas.core.groupby import SeriesGroupBy
 
 import ibis.common.exceptions as com
@@ -117,8 +117,11 @@ def _post_process_group_by_order_by(
     return series
 
 
-@functools.singledispatch
-def get_aggcontext(
+get_aggcontext = Dispatcher('get_aggcontext')
+
+
+@get_aggcontext.register(object)
+def get_aggcontext_default(
     window, *, scope, operand, parent, group_by, order_by, **kwargs,
 ) -> NoReturn:
     raise NotImplementedError(
@@ -138,6 +141,7 @@ def get_aggcontext_window(
     # otherwise we're transforming
     output_type = operand.type()
 
+    aggcontext: agg_ctx.AggregationContext
     if not group_by and not order_by:
         aggcontext = agg_ctx.Summarize(parent=parent, output_type=output_type)
     elif (
@@ -271,7 +275,10 @@ def execute_window_op(
         aggcontext=aggcontext,
         **kwargs,
     )
-    scope = scope.merge_scope(pre_executed_scope)
+    if scope is None:
+        scope = pre_executed_scope
+    else:
+        scope = scope.merge_scope(pre_executed_scope)
     (root,) = op.root_tables()
     root_expr = root.to_expr()
 
@@ -317,6 +324,10 @@ def execute_window_op(
     if not order_by:
         ordering_keys = []
 
+    post_process: Callable[
+        [Any, pd.DataFrame, List[str], List[str], Optional[TimeContext]],
+        pd.Series,
+    ]
     if group_by:
         if order_by:
             (

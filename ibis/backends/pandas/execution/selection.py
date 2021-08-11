@@ -66,6 +66,9 @@ def compute_projection_scalar_expr(
 
     data_columns = frozenset(data.columns)
 
+    if scope is None:
+        scope = Scope()
+
     scope = scope.merge_scopes(
         Scope(
             {
@@ -102,6 +105,7 @@ def compute_projection_column_expr(
     if isinstance(op, ops.TableColumn):
         # slightly faster path for simple column selection
         name = op.name
+        assert isinstance(name, str)
 
         if name in data:
             return data[name].rename(result_name or name)

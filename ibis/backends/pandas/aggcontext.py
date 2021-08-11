@@ -266,8 +266,8 @@ class AggregationContext(abc.ABC):
 
 def wrap_for_apply(
     function: Callable,
-    args: Optional[Tuple[Any]],
-    kwargs: Optional[Dict[Any, Any]],
+    args: Optional[Tuple[Any, ...]] = None,
+    kwargs: Optional[Dict[str, Any]] = None,
 ) -> Callable:
     """Wrap a function for use with Pandas `apply`.
 
@@ -275,20 +275,28 @@ def wrap_for_apply(
     ----------
     function : Callable
         A function to be used with Pandas `apply`.
-    args : Optional[Tuple[Any]]
+    args : Optional[Tuple[Any, ...]]
         args to be passed to function when it is called by Pandas `apply`
-    kwargs : Optional[Dict[Any, Any]]
+    kwargs : Optional[Dict[str, Any]]
         kwargs to be passed to function when it is called by Pandas `apply`
 
     """
     assert callable(function), f'function {function} is not callable'
 
+    new_args: Tuple[Any, ...] = ()
+    if args is not None:
+        new_args = args
+
+    new_kwargs: Dict[str, Any] = {}
+    if kwargs is not None:
+        new_kwargs = kwargs
+
     @functools.wraps(function)
     def wrapped_func(
         data: Any,
         function: Callable = function,
-        args: Optional[Tuple[Any]] = args,
-        kwargs: Optional[Dict[Any, Any]] = kwargs,
+        args: Tuple[Any, ...] = new_args,
+        kwargs: Dict[str, Any] = new_kwargs,
     ) -> Callable:
         return function(data, *args, **kwargs)
 
@@ -296,9 +304,7 @@ def wrap_for_apply(
 
 
 def wrap_for_agg(
-    function: Callable,
-    args: Optional[Tuple[Any]],
-    kwargs: Optional[Dict[Any, Any]],
+    function: Callable, args: Tuple[Any, ...], kwargs: Dict[str, Any],
 ) -> Callable:
     """Wrap a function for use with Pandas `agg`.
 
@@ -322,9 +328,9 @@ def wrap_for_agg(
     ----------
     function : Callable
         An aggregation function to be used with Pandas `agg`.
-    args : Optional[Tuple[Any]]
+    args : Tuple[Any, ...]
         args to be passed to function when it is called by Pandas `agg`
-    kwargs : Optional[Dict[Any, Any]]
+    kwargs : Dict[str, Any]
         kwargs to be passed to function when it is called by Pandas `agg`
 
     """
@@ -334,8 +340,8 @@ def wrap_for_agg(
     def wrapped_func(
         data: Any,
         function: Callable = function,
-        args: Optional[Tuple[Any]] = args,
-        kwargs: Optional[Dict[Any, Any]] = kwargs,
+        args: Tuple[Any, ...] = args,
+        kwargs: Dict[str, Any] = kwargs,
     ) -> Callable:
         # `data` will be a scalar here if Pandas `agg` is trying to behave like
         # like Pandas `apply`.
@@ -558,8 +564,8 @@ class Window(AggregationContext):
         self,
         grouped_data: Union[pd.Series, SeriesGroupBy],
         function: Union[str, Callable],
-        *args: Tuple[Any],
-        **kwargs: Dict[str, Any],
+        *args: Any,
+        **kwargs: Any,
     ) -> pd.Series:
         # avoid a pandas warning about numpy arrays being passed through
         # directly
