@@ -66,10 +66,16 @@ class BaseBackend(abc.ABC):
         )
 
     # @abc.abstractmethod
-    def current_database(self) -> str:
+    def current_database(self) -> str | None:
         """
         """
-        return self.client.current_database()
+        # TODO standardize `current_database` in a follow up PR
+        if hasattr(self.client, 'current_database'):
+            current_database = self.client.current_database
+            if callable(current_database):
+                return current_database()
+            return current_database
+        return None
 
     # @abc.abstractmethod
     def list_tables(self, like: str = None) -> List[str]:
