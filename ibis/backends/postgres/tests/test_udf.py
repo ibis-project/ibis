@@ -8,18 +8,7 @@ import ibis
 import ibis.expr.datatypes as dt
 from ibis.backends.postgres.udf import PostgresUDFError, existing_udf, udf
 
-# mark test module as postgresql (for ability to easily exclude,
-# e.g. in conda build tests)
-# (Temporarily adding `postgis` marker so Azure Windows pipeline will exclude
-#     pl/python tests.
-#     TODO: update Windows pipeline to exclude postgres_extensions
-#     TODO: remove postgis marker below once Windows pipeline updated
-pytestmark = [
-    pytest.mark.postgres,
-    pytest.mark.udf,
-    pytest.mark.postgis,
-    pytest.mark.postgres_extensions,
-]
+pytestmark = [pytest.mark.postgres, pytest.mark.udf]
 
 # Database setup (tables and UDFs)
 

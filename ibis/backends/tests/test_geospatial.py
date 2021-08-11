@@ -6,6 +6,9 @@ from pytest import param
 
 import ibis
 
+pytestmark = pytest.mark.geo
+
+
 # TODO find a way to just run for the backends that support geo, without
 # skipping if dependencies are missing
 shapely = pytest.importorskip('shapely')
