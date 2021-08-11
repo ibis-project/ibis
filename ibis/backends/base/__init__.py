@@ -69,6 +69,7 @@ class BaseBackend(abc.ABC):
     def current_database(self) -> str:
         """
         """
+        return self.client.current_database()
 
     # @abc.abstractmethod
     def list_tables(self, like: str = None) -> List[str]:
