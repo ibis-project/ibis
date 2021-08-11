@@ -121,14 +121,7 @@ def from_pandas_categorical(value):
     return dt.Category()
 
 
-_numpy_scalar_types: Tuple[Type, ...] = (np.generic,)
-# we need this because in Python 2 int is a parent of np.integer
-_numpy_scalar_types += tuple(frozenset(np.signedinteger.__subclasses__()))
-# np.int64, np.uint64, etc.
-_numpy_scalar_types += tuple(frozenset(np.unsignedinteger.__subclasses__()))
-
-
-@dt.infer.register(_numpy_scalar_types)
+@dt.infer.register(np.generic)
 def infer_numpy_scalar(value):
     return dt.dtype(value.dtype)
 
