@@ -7,8 +7,6 @@ import ibis
 import ibis.common.exceptions as com
 from ibis.expr.timecontext import TimeContextRelation, compare_timecontext
 
-pytestmark = pytest.mark.dask
-
 
 def test_execute_with_timecontext(time_table):
     expr = time_table

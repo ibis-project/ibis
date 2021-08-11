@@ -4,8 +4,6 @@ import pytest
 from dask.dataframe.utils import tm  # noqa: E402
 from pytest import param
 
-pytestmark = pytest.mark.dask
-
 
 @pytest.mark.parametrize(
     ('case_func', 'expected_func'),

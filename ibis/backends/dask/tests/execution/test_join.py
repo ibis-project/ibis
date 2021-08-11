@@ -16,9 +16,6 @@ import ibis.common.exceptions as com
 # - https://github.com/dask/dask/issues/5060
 
 
-pytestmark = pytest.mark.dask
-
-
 join_type = pytest.mark.parametrize(
     'how',
     [
