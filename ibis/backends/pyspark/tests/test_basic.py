@@ -7,8 +7,6 @@ import ibis
 import ibis.common.exceptions as com
 from ibis.backends.pyspark.compiler import _can_be_replaced_by_column_name
 
-pytestmark = pytest.mark.pyspark
-
 
 def test_basic(client):
     table = client.table('basic_table')

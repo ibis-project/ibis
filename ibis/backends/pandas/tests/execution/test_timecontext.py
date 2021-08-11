@@ -12,8 +12,6 @@ from ibis.expr.timecontext import (
     construct_time_context_aware_series,
 )
 
-pytestmark = pytest.mark.pandas
-
 
 def test_execute_with_timecontext(time_table):
     expr = time_table
