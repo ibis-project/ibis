@@ -1,7 +1,6 @@
 """The pandas client implementation."""
 import re
 from functools import partial
-from typing import Tuple, Type
 
 import dateutil.parser
 import numpy as np
