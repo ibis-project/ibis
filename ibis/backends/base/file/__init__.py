@@ -49,6 +49,18 @@ class FileClient(Client):
     def list_databases(self, path=None):
         raise NotImplementedError
 
+    def _list_databases_dirs(self, path=None):
+        # databases are dir
+        if path is None:
+            path = self.root
+
+        tables = []
+        if path.is_dir():
+            for d in path.iterdir():
+                if d.is_dir():
+                    tables.append(d.name)
+        return tables
+
 
 class FileDatabase(Database):
     def __init__(self, name, client, path=None):

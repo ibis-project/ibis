@@ -17,5 +17,5 @@ class BaseSQLBackend(BaseBackend):
         Backends with other ways can overwrite this method.
         """
         return self._filter_tables_with_like(
-            self.client.raw_sql('SHOW TABLES')[0]
+            [row[0] for row in self.client.raw_sql('SHOW TABLES').fetchall()]
         )
