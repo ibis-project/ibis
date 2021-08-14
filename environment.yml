@@ -59,3 +59,4 @@ dependencies:
   # Type annotations
   - types-setuptools
   - types-pytz
+  - types-python-dateutil

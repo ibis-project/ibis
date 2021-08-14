@@ -119,15 +119,7 @@ def from_pandas_categorical(value):
     return dt.Category()
 
 
-@dt.infer.register(
-    (np.generic,)
-    + tuple(
-        frozenset(
-            np.signedinteger.__subclasses__()
-            + np.unsignedinteger.__subclasses__()  # np.int64, np.uint64, etc.
-        )
-    )  # we need this because in Python 2 int is a parent of np.integer
-)
+@dt.infer.register(np.generic)
 def infer_numpy_scalar(value):
     return dt.dtype(value.dtype)
 
@@ -332,8 +324,8 @@ def convert_any_to_any(_, out_dtype, column):
     return column.astype(out_dtype.to_pandas(), errors='ignore')
 
 
-dt.DataType.to_pandas = ibis_dtype_to_pandas
-sch.Schema.to_pandas = ibis_schema_to_pandas
+dt.DataType.to_pandas = ibis_dtype_to_pandas  # type: ignore
+sch.Schema.to_pandas = ibis_schema_to_pandas  # type: ignore
 
 
 class PandasTable(ops.DatabaseTable):

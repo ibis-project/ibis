@@ -1,4 +1,5 @@
-from typing import Optional
+from collections import defaultdict
+from typing import Any, Dict, Set
 
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
@@ -20,21 +21,19 @@ class FormatMemo:
     """
 
     def __init__(self, get_text_repr: bool = False):
-        from collections import defaultdict
-
-        self.formatted = {}
-        self.aliases = {}
-        self.ops = {}
-        self.counts = defaultdict(int)
-        self._repr_memo = {}
-        self.subexprs = {}
-        self.visit_memo = set()
+        self.formatted: Dict[str, Any] = {}
+        self.aliases: Dict[str, str] = {}
+        self.ops: Dict[str, ops.Node] = {}
+        self.counts: Dict[str, int] = defaultdict(int)
+        self._repr_memo: Dict[ir.Expr, str] = {}
+        self.subexprs: Dict[ops.Node, str] = {}
+        self.visit_memo: Set[ops.Node] = set()
         self.get_text_repr = get_text_repr
 
     def __contains__(self, obj):
         return self._key(obj) in self.formatted
 
-    def _key(self, expr):
+    def _key(self, expr) -> str:
         memo = self._repr_memo
         try:
             result = memo[expr]
@@ -80,7 +79,7 @@ class ExprFormatter:
         expr,
         indent_size: int = 2,
         base_level: int = 0,
-        memo: Optional[FormatMemo] = None,
+        memo: FormatMemo = None,
         memoize: bool = True,
     ):
         self.expr = expr

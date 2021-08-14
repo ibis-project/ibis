@@ -1,6 +1,6 @@
 import contextlib
 import warnings
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import pandas as pd
 import sqlalchemy as sa
@@ -49,7 +49,7 @@ class AlchemyClient(SQLClient):
         self.con = con
         self.meta = sa.MetaData(bind=con)
         self._inspector = sa.inspect(con)
-        self._schemas = {}
+        self._schemas: Dict[str, sch.Schema] = {}
 
     @property
     def inspector(self):
@@ -95,7 +95,7 @@ class AlchemyClient(SQLClient):
             yield bind
 
     def create_table(self, name, expr=None, schema=None, database=None):
-        if database == self.database_name:
+        if database == self.current_database:
             # avoid fully qualified name
             database = None
 
@@ -149,7 +149,7 @@ class AlchemyClient(SQLClient):
         database: Optional[str] = None,
         force: bool = False,
     ) -> None:
-        if database == self.database_name:
+        if database == self.current_database:
             # avoid fully qualified name
             database = None
 
@@ -199,7 +199,7 @@ class AlchemyClient(SQLClient):
             Loading data to a table from a different database is not
             yet implemented
         """
-        if database == self.database_name:
+        if database == self.current_database:
             # avoid fully qualified name
             database = None
 
@@ -213,7 +213,7 @@ class AlchemyClient(SQLClient):
         if self.has_attachment:
             # for database with attachment
             # see: https://github.com/ibis-project/ibis/issues/1930
-            params['schema'] = self.database_name
+            params['schema'] = self.current_database
 
         data.to_sql(
             table_name,
@@ -266,7 +266,7 @@ class AlchemyClient(SQLClient):
         """List databases in the current server."""
         return self.inspector.get_schema_names()
 
-    def raw_sql(self, query: str):
+    def raw_sql(self, query: str, results=False):
         return _AutoCloseCursor(super().raw_sql(query))
 
     def _log(self, sql):
@@ -321,7 +321,7 @@ class AlchemyClient(SQLClient):
 
         """
 
-        if database == self.database_name:
+        if database == self.current_database:
             # avoid fully qualified name
             database = None
 
@@ -335,7 +335,7 @@ class AlchemyClient(SQLClient):
         if self.has_attachment:
             # for database with attachment
             # see: https://github.com/ibis-project/ibis/issues/1930
-            params['schema'] = self.database_name
+            params['schema'] = self.current_database
 
         if isinstance(obj, pd.DataFrame):
             obj.to_sql(

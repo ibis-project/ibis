@@ -7,6 +7,7 @@ import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+from ibis.expr.signature import Argument
 
 _map_interval_to_microseconds = {
     'W': 604800000000,
@@ -43,7 +44,7 @@ _cumulative_to_reduction = {
 
 def _replace_interval_with_scalar(
     expr: Union[ir.Expr, dt.Interval, float]
-) -> Union[ir.FloatingScalar, float]:
+) -> Union[ir.Expr, float, Argument]:
     """
     Good old Depth-First Search to identify the Interval and IntervalValue
     components of the expression and return a comparable scalar expression.
@@ -57,9 +58,9 @@ def _replace_interval_with_scalar(
     -------
     preceding : float or ir.FloatingScalar, depending upon the expr
     """
-    try:
+    if isinstance(expr, ir.Expr):
         expr_op = expr.op()
-    except AttributeError:
+    else:
         expr_op = None
 
     if not isinstance(expr, (dt.Interval, ir.IntervalValue)):
@@ -80,13 +81,13 @@ def _replace_interval_with_scalar(
             )
     elif expr_op.args and isinstance(expr, ir.IntervalValue):
         if len(expr_op.args) > 2:
-            raise com.NotImplementedError(
-                "'preceding' argument cannot be parsed."
-            )
+            raise NotImplementedError("'preceding' argument cannot be parsed.")
         left_arg = _replace_interval_with_scalar(expr_op.args[0])
         right_arg = _replace_interval_with_scalar(expr_op.args[1])
         method = _map_interval_op_to_op[type(expr_op)]
         return method(left_arg, right_arg)
+    else:
+        raise TypeError(f'expr has unknown type {type(expr).__name__}')
 
 
 def cumulative_to_window(translator, expr, window):

@@ -19,7 +19,7 @@ class TestConf(BackendTest, RoundHalfToEven):
     @staticmethod
     def connect(data_directory: Path):
         return ibis.pandas.connect(
-            {
+            dictionary={
                 'functional_alltypes': pd.read_csv(
                     str(data_directory / 'functional_alltypes.csv'),
                     index_col=None,
