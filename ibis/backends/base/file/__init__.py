@@ -72,7 +72,7 @@ class FileDatabase(Database):
 
     def __dir__(self):
         dbs = self.list_databases(path=self.path)
-        tables = self.list_tables(path=self.path)
+        tables = self.list_tables()
         return sorted(set(dbs).union(set(tables)))
 
     def __getattr__(self, name):
