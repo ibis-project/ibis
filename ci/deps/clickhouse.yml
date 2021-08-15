@@ -3,3 +3,4 @@ clickhouse-cityhash
 clickhouse-driver
 clickhouse-sqlalchemy
 lz4
+tzlocal<3
