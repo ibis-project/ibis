@@ -621,7 +621,7 @@ def test_geo_literals_smoke(backend, shape, value, modifier, expected):
         '::{}'.format(modifier['geo_type']) if 'geo_type' in modifier else '',
     )
 
-    assert str(backend.compile(expr)) == result_expected
+    assert str(backend.api.compile(expr)) == result_expected
 
 
 @pytest.mark.only_on_backends(all_db_geo_supported)
@@ -684,5 +684,5 @@ def test_geo_literals_smoke(backend, shape, value, modifier, expected):
 @pytest.mark.xfail_unsupported
 def test_geo_ops_smoke(backend, fn_expr):
     """Smoke tests for geo spatial operations."""
-    geo_table = backend.table('geo')
+    geo_table = backend.geo
     assert fn_expr(geo_table).compile() != ''
