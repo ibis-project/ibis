@@ -24,7 +24,8 @@ class BasePandasBackend(BaseBackend):
         -------
         Client
         """
-        return self.client_class(backend=self, dictionary=dictionary)
+        self.client = self.client_class(backend=self, dictionary=dictionary)
+        return self.client
 
     def from_dataframe(self, df, name='df', client=None):
         """
