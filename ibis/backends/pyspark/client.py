@@ -392,25 +392,6 @@ class PySparkClient(SQLClient):
 
         return results
 
-    def exists_table(self, name, database=None):
-        """
-        Determine if the indicated table or view exists
-
-        Parameters
-        ----------
-        name : string
-        database : string, default None
-
-        Returns
-        -------
-        if_exists : boolean
-        """
-        try:
-            self._get_jtable(name, database)
-            return True
-        except com.IbisInputError:
-            return False
-
     def set_database(self, name):
         """
         Set the default database scope for client

@@ -1064,21 +1064,6 @@ class ImpalaClient(SQLClient):
 
         self.set_options({'COMPRESSION_CODEC': codec})
 
-    def exists_table(self, name, database=None):
-        """
-        Determine if the indicated table or view exists
-
-        Parameters
-        ----------
-        name : string
-        database : string, default None
-
-        Returns
-        -------
-        if_exists : boolean
-        """
-        return len(self.list_tables(like=name, database=database)) > 0
-
     def create_view(self, name, expr, database=None):
         """
         Create an Impala view from a table expression

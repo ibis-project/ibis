@@ -56,6 +56,20 @@ class BaseBackend(abc.ABC):
         """
         """
 
+    def exists_table(self, name: str, database: str = None) -> bool:
+        """
+        Return whether a table name exists in the database.
+
+        Deprecated in Ibis 2.0. Use `name in client.list_tables()` instead.
+        """
+        warnings.warn(
+            '`client.exists_table(name)` is deprecated, and will be '
+            'removed in a future version of Ibis. Use '
+            '`name in client.list_tables()` instead.',
+            FutureWarning,
+        )
+        return name in self.client.list_tables()
+
     # @abc.abstractmethod
     def table(self, name: str, database: str = None) -> ir.TableExpr:
         """
