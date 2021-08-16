@@ -56,6 +56,7 @@ requirements:
     - thrift >=0.11
     - thriftpy2
     - toolz
+    - tzlocal < 3 # not directly needed, but need to pin since 3.0 is broken
 
 test:
   imports:
