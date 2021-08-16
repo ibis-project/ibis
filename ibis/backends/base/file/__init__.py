@@ -109,8 +109,8 @@ class BaseFileBackend(BaseBackend):
         -------
         Client
         """
-        self.path = path
-        self.client = self.client_class(backend=self, root=path)
+        self.path = Path(path)
+        self.client = self.client_class(backend=self, root=self.path)
         return self.client
 
     @property
