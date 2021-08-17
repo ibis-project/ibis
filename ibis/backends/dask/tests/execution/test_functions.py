@@ -15,8 +15,6 @@ import ibis.expr.datatypes as dt  # noqa: E402
 
 from ...execution import execute
 
-pytestmark = pytest.mark.dask
-
 
 @pytest.mark.parametrize(
     'op',

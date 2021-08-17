@@ -1,7 +1,4 @@
 import pandas.testing as tm
-import pytest
-
-pytestmark = pytest.mark.pyspark
 
 
 def test_isnull(client):

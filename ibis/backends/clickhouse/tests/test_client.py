@@ -9,8 +9,6 @@ import ibis.config as config
 import ibis.expr.types as ir
 from ibis import literal as L
 
-pytestmark = pytest.mark.clickhouse
-
 
 def test_get_table_ref(db):
     table = db.functional_alltypes

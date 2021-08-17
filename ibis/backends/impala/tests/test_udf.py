@@ -18,7 +18,7 @@ from ibis.tests.expr.mocks import MockConnection
 
 from .. import ddl  # noqa: E402
 
-pytestmark = [pytest.mark.impala, pytest.mark.udf]
+pytestmark = pytest.mark.udf
 
 
 class TestWrapping(unittest.TestCase):

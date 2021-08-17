@@ -15,8 +15,6 @@ from ibis.expr import datatypes as dt
 
 from ...execution import execute
 
-pytestmark = pytest.mark.dask
-
 
 @pytest.mark.parametrize(
     ('case_func', 'expected_func'),

@@ -16,8 +16,6 @@ from ..client import DaskClient
 from ..core import execute, is_computable_input
 from ..dispatch import execute_node, post_execute, pre_execute
 
-pytestmark = pytest.mark.dask
-
 
 @pytest.mark.parametrize('func', [execute_node, pre_execute, post_execute])
 def test_no_execute_ambiguities(func):

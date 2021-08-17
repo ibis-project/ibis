@@ -17,8 +17,6 @@ from ibis.tests.sql.test_compiler import ExprTestCases
 
 from ..compiler import ImpalaCompiler, ImpalaExprTranslator
 
-pytestmark = pytest.mark.impala
-
 
 def approx_equal(a, b, eps):
     assert abs(a - b) < eps
