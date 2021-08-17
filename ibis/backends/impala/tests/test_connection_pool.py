@@ -1,8 +1,4 @@
-import pytest
-
 import ibis
-
-pytestmark = pytest.mark.impala
 
 
 def test_connection_pool_size(hdfs, env, test_data_db):

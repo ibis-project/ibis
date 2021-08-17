@@ -13,8 +13,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import literal as L
 
-pytestmark = pytest.mark.clickhouse
-
 
 @pytest.mark.parametrize(
     ('to_type', 'expected'),

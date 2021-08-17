@@ -13,8 +13,6 @@ from ibis.expr import datatypes as dt
 
 from ... import Backend, execute
 
-pytestmark = pytest.mark.pandas
-
 
 @pytest.mark.parametrize(
     ('case_func', 'expected_func'),

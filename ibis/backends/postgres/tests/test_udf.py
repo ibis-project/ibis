@@ -15,7 +15,6 @@ from ibis.backends.postgres.udf import PostgresUDFError, existing_udf, udf
 #     TODO: update Windows pipeline to exclude postgres_extensions
 #     TODO: remove postgis marker below once Windows pipeline updated
 pytestmark = [
-    pytest.mark.postgres,
     pytest.mark.udf,
     pytest.mark.postgis,
     pytest.mark.postgres_extensions,

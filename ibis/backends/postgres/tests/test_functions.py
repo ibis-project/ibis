@@ -19,8 +19,6 @@ import ibis.expr.types as ir
 from ibis import literal as L
 from ibis.expr.window import rows_with_max_lookback
 
-pytestmark = pytest.mark.postgres
-
 
 @pytest.fixture
 def guid(con):

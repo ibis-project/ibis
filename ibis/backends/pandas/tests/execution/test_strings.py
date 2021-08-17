@@ -7,8 +7,6 @@ from pytest import param
 
 from ...execution.strings import sql_like_to_regex
 
-pytestmark = pytest.mark.pandas
-
 
 @pytest.mark.parametrize(
     ('case_func', 'expected_func'),

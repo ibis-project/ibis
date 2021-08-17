@@ -6,8 +6,6 @@ import ibis
 from ibis.backends.impala.compat import HS2Error
 from ibis.tests.util import assert_equal
 
-pytestmark = pytest.mark.impala
-
 
 def test_cleanup_tmp_table_on_gc(con, test_data_dir):
     import gc
