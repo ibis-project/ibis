@@ -8,7 +8,7 @@ import ibis
 import ibis.expr.datatypes as dt
 from ibis.backends.postgres.udf import PostgresUDFError, existing_udf, udf
 
-pytestmark = [pytest.mark.postgres, pytest.mark.udf]
+pytestmark = pytest.mark.udf
 
 # Database setup (tables and UDFs)
 

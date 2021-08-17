@@ -2,7 +2,7 @@ import pandas.testing as tm
 import pytest
 from numpy import testing
 
-pytestmark = [pytest.mark.postgres, pytest.mark.geo]
+pytestmark = pytest.mark.geo
 
 
 def test_load_geodata(con):
