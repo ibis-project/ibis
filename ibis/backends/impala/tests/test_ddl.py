@@ -10,8 +10,6 @@ import ibis.util as util
 from ibis.backends.impala.compat import HS2Error
 from ibis.tests.util import assert_equal
 
-pytestmark = pytest.mark.impala
-
 
 def test_create_exists_view(con, temp_view):
     tmp_name = temp_view

@@ -7,8 +7,6 @@ import pytest
 
 from ibis import literal as L
 
-pytestmark = pytest.mark.clickhouse
-
 
 @pytest.mark.parametrize(
     ('reduction', 'func_translated'),

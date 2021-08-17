@@ -5,7 +5,6 @@ from numpy import testing
 gp = pytest.importorskip('geopandas')
 
 pytestmark = [
-    pytest.mark.postgres,
     pytest.mark.postgis,
     pytest.mark.postgres_extensions,
 ]

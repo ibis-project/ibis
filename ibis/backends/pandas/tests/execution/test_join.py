@@ -8,9 +8,6 @@ import ibis.common.exceptions as com
 
 from ... import Backend
 
-pytestmark = pytest.mark.pandas
-
-
 join_type = pytest.mark.parametrize(
     'how',
     [

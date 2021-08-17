@@ -1,14 +1,11 @@
 import dask.dataframe as dd
 import numpy as np
 import pandas as pd
-import pytest
 from dask.dataframe.utils import tm
 
 import ibis
 from ibis.expr import datatypes as dt
 from ibis.expr import schema as sch
-
-pytestmark = pytest.mark.dask
 
 
 def test_infer_exhaustive_dataframe(npartitions):

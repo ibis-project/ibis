@@ -26,8 +26,6 @@ import ibis.expr.types as ir
 from ibis.backends.base.sql.alchemy import schema_from_table
 from ibis.tests.util import assert_equal
 
-pytestmark = pytest.mark.postgres
-
 POSTGRES_TEST_DB = os.environ.get(
     'IBIS_TEST_POSTGRES_DATABASE', 'ibis_testing'
 )

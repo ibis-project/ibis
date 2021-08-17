@@ -1,7 +1,4 @@
-import pytest
 from pkg_resources import parse_version
-
-pytestmark = pytest.mark.clickhouse
 
 
 def test_column_types(alltypes):

@@ -6,8 +6,6 @@ import pytest
 import ibis
 import ibis.common.exceptions as com
 
-pytestmark = pytest.mark.clickhouse
-
 
 @pytest.fixture(scope='module')
 def diamonds(con):

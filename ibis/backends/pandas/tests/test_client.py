@@ -9,8 +9,6 @@ import ibis
 from .. import Backend
 from ..client import PandasTable  # noqa: E402
 
-pytestmark = pytest.mark.pandas
-
 
 @pytest.fixture
 def client():

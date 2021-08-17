@@ -16,8 +16,6 @@ import ibis.expr.datatypes as dt
 from ibis import config
 from ibis import literal as L
 
-pytestmark = pytest.mark.sqlite
-
 
 @pytest.mark.parametrize(
     ('func', 'expected'),

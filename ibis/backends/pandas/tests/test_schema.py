@@ -1,13 +1,10 @@
 import numpy as np
 import pandas as pd
 import pandas.testing as tm
-import pytest
 
 import ibis
 from ibis.expr import datatypes as dt
 from ibis.expr import schema as sch
-
-pytestmark = pytest.mark.pandas
 
 
 def test_infer_basic_types():

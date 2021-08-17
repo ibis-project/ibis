@@ -6,8 +6,6 @@ from pyspark.sql import Window
 
 import ibis
 
-pytestmark = pytest.mark.pyspark
-
 
 @pytest.mark.parametrize(
     ('ibis_windows', 'spark_range'),

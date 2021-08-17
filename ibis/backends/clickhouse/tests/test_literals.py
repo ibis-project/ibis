@@ -4,8 +4,6 @@ from pandas import Timestamp
 import ibis
 from ibis import literal as L
 
-pytestmark = pytest.mark.clickhouse
-
 
 @pytest.mark.parametrize(
     'expr',
