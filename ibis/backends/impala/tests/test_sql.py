@@ -9,8 +9,6 @@ from ibis.tests.sql.test_compiler import ExprTestCases
 
 from ..compiler import ImpalaCompiler
 
-pytestmark = pytest.mark.impala
-
 
 class TestImpalaSQL(unittest.TestCase):
     def test_relabel_projection(self):

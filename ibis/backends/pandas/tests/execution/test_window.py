@@ -18,9 +18,6 @@ from ...aggcontext import AggregationContext, window_agg_udf
 from ...dispatch import pre_execute
 from ...execution.window import get_aggcontext
 
-pytestmark = pytest.mark.pandas
-
-
 # These custom classes are used inn test_custom_window_udf
 
 

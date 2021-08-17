@@ -4,8 +4,6 @@ import pytest
 
 from ibis.backends.pyspark.timecontext import combine_time_context
 
-pytestmark = pytest.mark.pyspark
-
 
 def test_table_with_timecontext(client):
     table = client.table('time_indexed_table')

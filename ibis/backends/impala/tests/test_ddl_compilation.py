@@ -10,8 +10,6 @@ from ibis.backends.base.sql.ddl import (
 from ibis.backends.impala import ddl
 from ibis.backends.impala.compiler import ImpalaCompiler
 
-pytestmark = pytest.mark.impala
-
 
 def test_drop_table_compile():
     statement = DropTable('foo', database='bar', must_exist=True)

@@ -1,9 +1,6 @@
 from unittest import mock
 
 import pandas as pd
-import pytest
-
-pytestmark = pytest.mark.impala
 
 
 def patch_execute(con):

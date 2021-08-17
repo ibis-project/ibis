@@ -9,8 +9,6 @@ import ibis
 
 from ..client import DaskTable
 
-pytestmark = pytest.mark.dask
-
 
 def make_dask_data_frame(npartitions):
     df = pd.DataFrame(np.random.randn(30, 4), columns=list('ABCD'))

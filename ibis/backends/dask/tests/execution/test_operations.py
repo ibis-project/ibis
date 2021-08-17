@@ -14,8 +14,6 @@ import ibis.expr.datatypes as dt
 
 from ...execution import execute
 
-pytestmark = pytest.mark.dask
-
 
 def test_table_column(t, df):
     expr = t.plain_int64

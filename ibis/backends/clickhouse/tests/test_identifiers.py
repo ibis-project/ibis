@@ -1,8 +1,4 @@
-import pytest
-
 import ibis
-
-pytestmark = pytest.mark.clickhouse
 
 
 def test_column_ref_quoting(translate):
