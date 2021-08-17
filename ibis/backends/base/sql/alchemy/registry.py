@@ -1,4 +1,5 @@
 import operator
+from typing import Any, Dict
 
 import sqlalchemy as sa
 import sqlalchemy.sql as sql
@@ -405,7 +406,7 @@ def _sort_key(t, expr):
     return sort_direction(t.translate(by))
 
 
-sqlalchemy_operation_registry = {
+sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.And: fixed_arity(sql.and_, 2),
     ops.Or: fixed_arity(sql.or_, 2),
     ops.Not: unary(sa.not_),

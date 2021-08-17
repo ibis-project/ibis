@@ -9,8 +9,6 @@ import ibis.util as util
 from ibis.backends.impala.compat import ImpylaError
 from ibis.tests.util import assert_equal
 
-pytestmark = pytest.mark.impala
-
 
 @pytest.fixture
 def df():

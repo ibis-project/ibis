@@ -10,8 +10,6 @@ import ibis
 import ibis.expr.datatypes as dt
 from ibis import literal as L
 
-pytestmark = pytest.mark.clickhouse
-
 
 @pytest.mark.parametrize(
     ('left', 'right', 'type'),

@@ -15,8 +15,6 @@ import ibis.expr.datatypes as dt  # noqa: E402
 from ... import execute
 from ...udf import udf
 
-pytestmark = pytest.mark.pandas
-
 
 @pytest.mark.parametrize(
     'op',

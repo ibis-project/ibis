@@ -10,8 +10,6 @@ import ibis.config as config
 import ibis.expr.types as ir
 from ibis.util import guid
 
-pytestmark = pytest.mark.sqlite
-
 
 def test_file_not_exist_and_create():
     path = '__ibis_tmp_{}.db'.format(guid())

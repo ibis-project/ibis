@@ -8,8 +8,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis.backends.impala.pandas_interop import DataFrameWriter  # noqa: E402
 
-pytestmark = pytest.mark.impala
-
 
 @pytest.fixture
 def exhaustive_df():

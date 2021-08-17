@@ -11,8 +11,6 @@ import ibis.expr.datatypes as dt  # noqa: E402
 
 from ... import execute
 
-pytestmark = pytest.mark.pandas
-
 
 @pytest.mark.parametrize('from_', ['plain_float64', 'plain_int64'])
 @pytest.mark.parametrize(

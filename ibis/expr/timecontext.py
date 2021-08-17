@@ -108,12 +108,12 @@ def canonicalize_context(
        for its begin and end time. Raise Exception for illegal inputs
     """
     SUPPORTS_TIMESTAMP_TYPE = pd.Timestamp
-    try:
-        begin, end = timecontext
-    except (ValueError, TypeError) as e:
+    if not isinstance(timecontext, tuple) or len(timecontext) != 2:
         raise com.IbisError(
             f'Timecontext {timecontext} should specify (begin, end)'
-        ) from e
+        )
+
+    begin, end = timecontext
 
     if not isinstance(begin, SUPPORTS_TIMESTAMP_TYPE):
         raise com.IbisError(
@@ -274,7 +274,7 @@ def adjust_context_node(op: Node, timecontext: TimeContext) -> TimeContext:
 
 @adjust_context.register(ops.AsOfJoin)
 def adjust_context_asof_join(
-    op: Node, timecontext: TimeContext
+    op: ops.AsOfJoin, timecontext: TimeContext
 ) -> TimeContext:
     begin, end = timecontext
 
@@ -288,7 +288,9 @@ def adjust_context_asof_join(
 
 
 @adjust_context.register(ops.WindowOp)
-def adjust_context_window(op: Node, timecontext: TimeContext) -> TimeContext:
+def adjust_context_window(
+    op: ops.WindowOp, timecontext: TimeContext
+) -> TimeContext:
     # adjust time context by preceding and following
     begin, end = timecontext
 

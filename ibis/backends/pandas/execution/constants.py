@@ -28,7 +28,7 @@ ALTERNATE_SUFFIXES = {
 }
 
 
-IBIS_TYPE_TO_PANDAS_TYPE: Dict[Type, Union[Type, str]] = {
+IBIS_TYPE_TO_PANDAS_TYPE: Dict[dt.DataType, Union[Type, str]] = {
     dt.float16: np.float16,
     dt.float32: np.float32,
     dt.float64: np.float64,

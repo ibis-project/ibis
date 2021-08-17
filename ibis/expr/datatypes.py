@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import builtins
 import collections
 import datetime
@@ -7,7 +9,6 @@ import itertools
 import numbers
 import re
 import typing
-from typing import Any as GenericAny
 from typing import (
     Callable,
     Iterator,
@@ -16,9 +17,10 @@ from typing import (
     NamedTuple,
     Optional,
     Sequence,
+    Tuple,
+    TypeVar,
+    Union,
 )
-from typing import Set as GenericSet
-from typing import Tuple, TypeVar, Union
 
 import pandas as pd
 import toolz
@@ -41,7 +43,7 @@ class DataType:
 
     __slots__ = ('nullable',)
 
-    def __init__(self, nullable: bool = True) -> None:
+    def __init__(self, nullable: bool = True, **kwargs) -> None:
         self.nullable = nullable
 
     def __call__(self, nullable: bool = True) -> 'DataType':
@@ -95,7 +97,7 @@ class DataType:
     def equals(
         self,
         other: 'DataType',
-        cache: Optional[Mapping[GenericAny, bool]] = None,
+        cache: Optional[Mapping[typing.Any, bool]] = None,
     ) -> bool:
         if isinstance(other, str):
             raise TypeError(
@@ -124,7 +126,7 @@ class DataType:
     def column_type(self):
         return functools.partial(self.column, dtype=self)
 
-    def _literal_value_hash_key(self, value) -> int:
+    def _literal_value_hash_key(self, value) -> Tuple[DataType, typing.Any]:
         """Return a hash for `value`."""
         return self, value
 
@@ -1117,7 +1119,7 @@ _TYPE_KEYS = tuple(_TYPE_RULES.keys())
 _TYPE_PATTERN = re.compile('|'.join(_TYPE_KEYS), flags=re.IGNORECASE)
 
 
-def _generate_tokens(pat: GenericAny, text: str) -> Iterator[Token]:
+def _generate_tokens(pat: re.Pattern, text: str) -> Iterator[Token]:
     """Generate a sequence of tokens from `text` that match `pat`
 
     Parameters
@@ -1132,6 +1134,7 @@ def _generate_tokens(pat: GenericAny, text: str) -> Iterator[Token]:
     keys = _TYPE_KEYS
     groupindex = pat.groupindex
     scanner = pat.scanner(text)
+    m: re.Match
     for m in iter(scanner.match, None):
         lastgroup = m.lastgroup
         func = rules[keys[groupindex[lastgroup] - 1]]
@@ -1550,9 +1553,11 @@ dtype = Dispatcher('dtype')
 validate_type = dtype
 
 
-def _get_timedelta_units(timedelta: datetime.timedelta) -> List[str]:
+def _get_timedelta_units(
+    timedelta: datetime.timedelta | pd.Timedelta,
+) -> List[str]:
     # pandas Timedelta has more granularity
-    if hasattr(timedelta, 'components'):
+    if isinstance(timedelta, pd.Timedelta):
         unit_fields = timedelta.components._fields
         base_object = timedelta.components
     # datetime.timedelta only stores days, seconds, and microseconds internally
@@ -1560,11 +1565,8 @@ def _get_timedelta_units(timedelta: datetime.timedelta) -> List[str]:
         unit_fields = ['days', 'seconds', 'microseconds']
         base_object = timedelta
 
-    time_units = []
-    [
-        time_units.append(field)
-        for field in unit_fields
-        if getattr(base_object, field) > 0
+    time_units = [
+        field for field in unit_fields if getattr(base_object, field) > 0
     ]
     return time_units
 
@@ -1590,14 +1592,14 @@ def from_string(value: str) -> DataType:
 
 
 @dtype.register(list)
-def from_list(values: List[GenericAny]) -> Array:
+def from_list(values: List[typing.Any]) -> Array:
     if not values:
         return Array(null)
     return Array(highest_precedence(map(dtype, values)))
 
 
 @dtype.register(collections.abc.Set)
-def from_set(values: GenericSet) -> Set:
+def from_set(values: typing.Set) -> Set:
     if not values:
         return Set(null)
     return Set(highest_precedence(map(dtype, values)))
@@ -1623,13 +1625,13 @@ def highest_precedence(dtypes: Iterator[DataType]) -> DataType:
 
 
 @infer.register(object)
-def infer_dtype_default(value: GenericAny) -> DataType:
+def infer_dtype_default(value: typing.Any) -> DataType:
     """Default implementation of :func:`~ibis.expr.datatypes.infer`."""
     raise com.InputTypeError(value)
 
 
 @infer.register(collections.OrderedDict)
-def infer_struct(value: Mapping[str, GenericAny]) -> Struct:
+def infer_struct(value: Mapping[str, typing.Any]) -> Struct:
     """Infer the :class:`~ibis.expr.datatypes.Struct` type of `value`."""
     if not value:
         raise TypeError('Empty struct type not supported')
@@ -1637,7 +1639,7 @@ def infer_struct(value: Mapping[str, GenericAny]) -> Struct:
 
 
 @infer.register(collections.abc.Mapping)
-def infer_map(value: Mapping[GenericAny, GenericAny]) -> Map:
+def infer_map(value: Mapping[typing.Any, typing.Any]) -> Map:
     """Infer the :class:`~ibis.expr.datatypes.Map` type of `value`."""
     if not value:
         return Map(null, null)
@@ -1648,7 +1650,7 @@ def infer_map(value: Mapping[GenericAny, GenericAny]) -> Map:
 
 
 @infer.register(list)
-def infer_list(values: List[GenericAny]) -> Array:
+def infer_list(values: List[typing.Any]) -> Array:
     """Infer the :class:`~ibis.expr.datatypes.Array` type of `values`."""
     if not values:
         return Array(null)
@@ -1656,7 +1658,7 @@ def infer_list(values: List[GenericAny]) -> Array:
 
 
 @infer.register((set, frozenset))
-def infer_set(values: GenericSet) -> Set:
+def infer_set(values: typing.Set) -> Set:
     """Infer the :class:`~ibis.expr.datatypes.Set` type of `values`."""
     if not values:
         return Set(null)

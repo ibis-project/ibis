@@ -8,7 +8,7 @@ import math
 import numbers
 import operator
 from collections.abc import Sized
-from typing import Optional
+from typing import Dict, Optional
 
 import numpy as np
 import pandas as pd
@@ -412,7 +412,7 @@ def execute_aggregation_dataframe(
         )
         data = data.loc[predicate]
 
-    columns = {}
+    columns: Dict[str, str] = {}
 
     if op.by:
         grouping_key_pairs = list(

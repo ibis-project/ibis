@@ -1,12 +1,9 @@
 import unittest
 
 import pandas as pd
-import pytest
 from numpy import nan
 
 from ibis.backends.impala.metadata import parse_metadata
-
-pytestmark = pytest.mark.impala
 
 
 def _glue_lists_spacer(spacer, lists):

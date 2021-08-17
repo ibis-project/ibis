@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import abc
 import warnings
-from typing import Any, Callable, List
+from typing import Any, Callable, List, Type
 
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
@@ -23,7 +23,7 @@ class BaseBackend(abc.ABC):
     """
 
     database_class = Database
-    table_class = ops.DatabaseTable
+    table_class: Type[ops.DatabaseTable] = ops.DatabaseTable
 
     @property
     @abc.abstractmethod

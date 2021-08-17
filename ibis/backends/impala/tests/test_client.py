@@ -14,8 +14,6 @@ import ibis.expr.types as ir
 import ibis.util as util
 from ibis.tests.util import assert_equal
 
-pytestmark = pytest.mark.impala
-
 
 @pytest.fixture(scope='module')
 def db(con, test_data_db):

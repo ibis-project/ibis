@@ -7,9 +7,6 @@ from pytest import param
 
 import ibis
 
-pytestmark = pytest.mark.pyspark
-
-
 if pyspark.__version__ < '3.0.0':
     null_representation = None
 else:

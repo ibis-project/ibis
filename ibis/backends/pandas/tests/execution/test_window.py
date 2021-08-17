@@ -18,9 +18,6 @@ from ...aggcontext import AggregationContext, window_agg_udf
 from ...dispatch import pre_execute
 from ...execution.window import get_aggcontext
 
-pytestmark = pytest.mark.pandas
-
-
 # These custom classes are used inn test_custom_window_udf
 
 
@@ -276,7 +273,7 @@ def test_batting_avg_change_in_games_per_year(players, players_df):
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.xfail(AssertionError, reason='NYI')
+@pytest.mark.xfail(raises=AssertionError, reason='NYI')
 def test_batting_most_hits(players, players_df):
     expr = players.mutate(
         hits_rank=lambda t: t.H.rank().over(
