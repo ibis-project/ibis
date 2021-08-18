@@ -12,6 +12,9 @@ class Client:
     def version(self):
         return self.backend.version
 
+    def database(self, name=None):
+        return self.backend.database(name)
+
 
 class Database:
     """Generic Database class."""
