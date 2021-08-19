@@ -211,10 +211,6 @@ class DaskClient(Client):
         """
         return execute_and_reset(query, params=params, **kwargs)
 
-    def database(self, name: str = None) -> DaskDatabase:
-        """Construct a database called `name`."""
-        return self.database_class(name, self)
-
     def list_tables(self, like: str = None) -> List[str]:
         """List the available tables."""
         tables = list(self.dictionary.keys())

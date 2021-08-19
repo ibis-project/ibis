@@ -370,10 +370,6 @@ class PandasClient(Client):
         """
         return expr
 
-    def database(self, name=None):
-        """Construct a database called `name`."""
-        return self.database_class(name, self)
-
     def list_tables(self, like=None):
         """List the available tables."""
         tables = list(self.dictionary.keys())
