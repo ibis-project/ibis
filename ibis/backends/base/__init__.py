@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import abc
 import re
 import warnings
@@ -42,15 +44,41 @@ class BaseBackend(abc.ABC):
         Connect to the underlying database and return a client object.
         """
 
-    # @abc.abstractmethod
-    def database(self) -> Database:
+    def database(self, name: str = None) -> Database:
         """
+        Return a Database object for the `name` database.
+
+        Parameters
+        ----------
+        name : str
+            Name of the database to return the object for.
+
+        Returns
+        -------
+        Database
+            A database object for the specified database.
         """
+        warnings.warn(
+            'The `database` method and the `Database` object are '
+            'deprecated and will be removed in a future version of Ibis. '
+            'Use the equivalent methods in the backend instead.',
+            FutureWarning,
+        )
+        return self.database_class(
+            name=name or self.current_database(), client=self.client
+        )
 
     # @abc.abstractmethod
-    def current_database(self) -> str:
+    def current_database(self) -> str | None:
         """
         """
+        # TODO standardize `current_database` in a follow up PR
+        if hasattr(self.client, 'current_database'):
+            current_database = self.client.current_database
+            if callable(current_database):
+                return current_database()
+            return current_database
+        return None
 
     @staticmethod
     def _filter_tables_with_like(

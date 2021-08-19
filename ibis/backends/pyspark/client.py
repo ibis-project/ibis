@@ -317,9 +317,6 @@ class PySparkClient(SQLClient):
         query = self._session.sql(stmt)
         return PySparkCursor(query)
 
-    def database(self, name=None):
-        return self.database_class(name or self.current_database, self)
-
     @property
     def current_database(self):
         """
