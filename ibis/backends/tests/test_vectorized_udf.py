@@ -303,6 +303,20 @@ def test_reduction_udf_array_return_type(backend, alltypes, df):
 
 @pytest.mark.only_on_backends(['pandas', 'pyspark', 'dask'])
 @pytest.mark.xfail_unsupported
+def test_reduction_udf_on_empty_data(backend, alltypes):
+    """Test that summarization can handle empty data"""
+    # First filter down to zero rows
+    t = alltypes[alltypes['int_col'] > np.inf]
+    result = (
+        t.groupby('year').aggregate(mean=calc_mean(t['int_col'])).execute()
+    )
+    expected = pd.DataFrame({'year': [], 'mean': []})
+    expected = expected.assign(year=expected['year'].astype('int'))
+    backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.only_on_backends(['pandas', 'pyspark', 'dask'])
+@pytest.mark.xfail_unsupported
 def test_output_type_in_list_invalid(backend, alltypes, df):
     # Test that an error is raised if UDF output type is wrapped in a list
 
