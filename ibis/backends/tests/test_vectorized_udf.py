@@ -311,8 +311,9 @@ def test_reduction_udf_on_empty_data(backend, alltypes):
         t.groupby('year').aggregate(mean=calc_mean(t['int_col'])).execute()
     )
     expected = pd.DataFrame({'year': [], 'mean': []})
-    expected = expected.assign(year=expected['year'].astype('int'))
-    backend.assert_frame_equal(result, expected)
+    # We check that the result is an empty DataFrame,
+    # rather than an error.
+    backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
 @pytest.mark.only_on_backends(['pandas', 'pyspark', 'dask'])
