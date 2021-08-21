@@ -102,6 +102,6 @@ class Backend(BaseSQLBackend):
         return f'{info.version_major}.{info.version_minor}.{info.revision}'
 
     def list_databases(self, like=None):
-        databases = self.client.raw_sql('SELECT name FROM system.databases')
-        return databases
+        data, schema = self.client.raw_sql('SELECT name FROM system.databases')
+        databases = list(data[0])
         return self._filter_with_like(databases, like)
