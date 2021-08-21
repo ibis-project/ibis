@@ -12,4 +12,5 @@ def test_list_databases(con):
     # exact names for now
     databases = con.list_databases()
     assert isinstance(databases, list)
+    assert databases == []
     assert all(isinstance(database, str) for database in databases)
