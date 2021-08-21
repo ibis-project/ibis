@@ -8,4 +8,5 @@ def test_version(backend):
 
 
 def test_current_database(backend):
-    assert isinstance(backend.api.current_database, (str, None))
+    current_database = backend.api.current_database
+    assert isinstance(current_database, str) or current_database is None
