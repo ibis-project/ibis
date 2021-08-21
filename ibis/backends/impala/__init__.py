@@ -105,13 +105,13 @@ class Backend(BaseSQLBackend):
             'kerberos_service_name': kerberos_service_name,
         }
 
-        self.con = ImpalaConnection(pool_size=pool_size, **params)
+        con = ImpalaConnection(pool_size=pool_size, **params)
         try:
             self.client = ImpalaClient(
-                backend=self, con=self.con, hdfs_client=hdfs_client
+                backend=self, con=con, hdfs_client=hdfs_client
             )
         except Exception:
-            self.con.close()
+            con.close()
             raise
         return self.client
 
@@ -136,4 +136,4 @@ class Backend(BaseSQLBackend):
 
     @property
     def current_database(self):
-        return self.con.database
+        return self.client.con.database
