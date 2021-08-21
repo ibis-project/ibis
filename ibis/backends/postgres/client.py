@@ -65,6 +65,9 @@ class PostgreSQLClient(AlchemyClient):
             finally:
                 bind.execute("SET TIMEZONE = '{}'".format(previous_timezone))
 
+    def list_schemas(self, like=None):
+        return self.backend.list_schemas(like)
+
     def table(self, name, database=None, schema=None):
         """Create a table expression that references a particular a table
         called `name` in a PostgreSQL database called `database`.

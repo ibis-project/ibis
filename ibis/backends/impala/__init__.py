@@ -113,6 +113,7 @@ class Backend(BaseSQLBackend):
         except Exception:
             con.close()
             raise
+        self.client._ensure_temp_db_exists()
         return self.client
 
     @property

@@ -781,8 +781,6 @@ class ImpalaClient(SQLClient):
 
         self._temp_objects = weakref.WeakSet()
 
-        self._ensure_temp_db_exists()
-
     def fetch_from_cursor(self, cursor, schema):
         batches = cursor.fetchall(columnar=True)
         names = [x[0] for x in cursor.description]
