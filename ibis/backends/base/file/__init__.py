@@ -162,3 +162,12 @@ class BaseFileBackend(BaseBackend):
     @property
     def version(self) -> str:
         return pd.__version__
+
+    @property
+    def current_database(self):
+        # Databases for the file backend are a bit confusing
+        # `list_databases()` will return the directories in the current path
+        # The  `current_database` is not in that list. Probably we want to
+        # rethink this eventually.  For now we just return `None` here, as if
+        # databases were not supported
+        return None

@@ -5,3 +5,7 @@ def test_backend_name(backend):
 
 def test_version(backend):
     assert isinstance(backend.api.version, str)
+
+
+def test_current_database(backend):
+    assert isinstance(backend.api.current_database, (str, None))

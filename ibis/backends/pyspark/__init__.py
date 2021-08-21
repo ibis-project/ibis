@@ -33,3 +33,7 @@ class Backend(BaseBackend):
     @property
     def version(self):
         return pyspark.__version__
+
+    @property
+    def current_database(self):
+        return self.client._catalog.currentDatabase()

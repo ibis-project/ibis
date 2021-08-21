@@ -53,3 +53,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
     @property
     def version(self):
         return '.'.join(map(str, self.client.con.dialect.server_version_info))
+
+    @property
+    def current_database(self):
+        return self.client.database_name

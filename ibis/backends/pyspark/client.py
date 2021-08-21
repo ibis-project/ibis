@@ -317,13 +317,6 @@ class PySparkClient(SQLClient):
         query = self._session.sql(stmt)
         return PySparkCursor(query)
 
-    @property
-    def current_database(self):
-        """
-        String name of the current database.
-        """
-        return self._catalog.currentDatabase()
-
     def _get_schema_using_query(self, query):
         cur = self.raw_sql(query)
         return spark_dataframe_schema(cur.query)

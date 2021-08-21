@@ -61,6 +61,10 @@ class BasePandasBackend(BaseBackend):
     def version(self) -> str:
         return pd.__version__
 
+    @property
+    def current_database(self):
+        return None
+
 
 class Backend(BasePandasBackend):
     name = 'pandas'

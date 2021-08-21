@@ -100,3 +100,7 @@ class Backend(BaseSQLBackend):
             raise
 
         return f'{info.version_major}.{info.version_minor}.{info.revision}'
+
+    @property
+    def current_database(self):
+        return self.client.con.connection.database
