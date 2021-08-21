@@ -133,3 +133,6 @@ class Backend(BaseSQLBackend):
             '/tmp/ibis',
             'HDFS path for storage of temporary data',
         )
+
+    def set_database(self, name):
+        self.client.con.set_database(name)

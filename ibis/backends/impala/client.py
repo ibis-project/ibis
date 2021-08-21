@@ -886,12 +886,6 @@ class ImpalaClient(SQLClient):
         tuples = cur.fetchall()
         return list(map(operator.itemgetter(0), tuples))
 
-    def set_database(self, name):
-        """
-        Set the default database scope for client
-        """
-        self.con.set_database(name)
-
     def exists_database(self, name):
         """
         Checks if a given database exists

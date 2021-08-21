@@ -79,6 +79,20 @@ class BaseBackend(abc.ABC):
             return current_database
         return None
 
+    def set_database(self, name: str) -> None:
+        """
+        Set the current database.
+
+        Parameters
+        ----------
+        name : str
+            The name of the new current database.
+        """
+        raise NotImplementedError(
+            f'Cannot set database with {self.__class__.__name__} client. '
+            'To use a different database create a new client.'
+        )
+
     # @abc.abstractmethod
     def list_tables(self, like: str = None) -> List[str]:
         """

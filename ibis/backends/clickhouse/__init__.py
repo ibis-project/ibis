@@ -100,3 +100,6 @@ class Backend(BaseSQLBackend):
             raise
 
         return f'{info.version_major}.{info.version_minor}.{info.revision}'
+
+    def set_database(self, name):
+        self.client.con.database = name

@@ -20,16 +20,19 @@ class Backend(BaseBackend):
         See documentation for SparkContext:
         https://spark.apache.org/docs/latest/api/python/_modules/pyspark/context.html#SparkContext
         """
-        client = self.client_class(backend=self, session=session)
+        self.client = self.client_class(backend=self, session=session)
 
         # Spark internally stores timestamps as UTC values, and timestamp data
         # that is brought in without a specified time zone is converted as
         # local time to UTC with microsecond resolution.
         # https://spark.apache.org/docs/latest/sql-pyspark-pandas-with-arrow.html#timestamp-with-time-zone-semantics
-        client._session.conf.set('spark.sql.session.timeZone', 'UTC')
+        self.client._session.conf.set('spark.sql.session.timeZone', 'UTC')
 
-        return client
+        return self.client
 
     @property
     def version(self):
         return pyspark.__version__
+
+    def set_database(self, name):
+        self.client._catalog.setCurrentDatabase(name)

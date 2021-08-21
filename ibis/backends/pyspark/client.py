@@ -408,12 +408,6 @@ class PySparkClient(SQLClient):
         except com.IbisInputError:
             return False
 
-    def set_database(self, name):
-        """
-        Set the default database scope for client
-        """
-        self._catalog.setCurrentDatabase(name)
-
     def list_databases(self, like=None):
         """
         List databases in the Spark SQL cluster.

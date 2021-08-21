@@ -265,12 +265,6 @@ class ClickhouseClient(SQLClient):
         data = self.raw_sql(statement)
         return data[0]
 
-    def set_database(self, name):
-        """
-        Set the default database scope for client
-        """
-        self.con.database = name
-
     def exists_database(self, name):
         """
         Checks if a given database exists
