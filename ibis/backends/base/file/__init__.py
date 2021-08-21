@@ -86,7 +86,7 @@ class FileClient(Client):
         return execute_and_reset(expr, params=params, **kwargs)
 
     def list_databases(self, path=None, like=None):
-        return self.backend.list_databases(like)
+        return self.backend.list_databases(path=path, like=like)
 
     def list_tables(self, path=None):
         raise NotImplementedError
