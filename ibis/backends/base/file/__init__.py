@@ -1,3 +1,4 @@
+import warnings
 from pathlib import Path
 
 import pandas as pd
@@ -103,40 +104,6 @@ class FileClient(Client):
                 tables.append(path.stem)
         return tables
 
-    def list_databases(self, path=None):
-        raise NotImplementedError
-
-    def _list_databases_dirs(self, path=None):
-        # databases are dir
-        if path is None:
-            path = self.root
-
-        tables = []
-        if path.is_dir():
-            for d in path.iterdir():
-                if d.is_dir():
-                    tables.append(d.name)
-        return tables
-
-    def _list_databases_dirs_or_files(self, path=None):
-        # databases are dir & file
-        if path is None:
-            path = self.root
-
-        tables = []
-        if path.is_dir():
-            for d in path.iterdir():
-                if d.is_dir():
-                    tables.append(d.name)
-                elif d.is_file():
-                    if str(d).endswith(self.extension):
-                        tables.append(d.stem)
-        elif path.is_file():
-            # by definition we are at the db level at this point
-            pass
-
-        return tables
-
 
 class BaseFileBackend(BaseBackend):
     """
@@ -156,9 +123,31 @@ class BaseFileBackend(BaseBackend):
         -------
         Client
         """
+        self.path = path
         self.client = self.client_class(backend=self, root=path)
         return self.client
 
     @property
     def version(self) -> str:
         return pd.__version__
+
+    def _list_databases_dirs(self, path=None):
+        tables = []
+        if path.is_dir():
+            for d in path.iterdir():
+                if d.is_dir():
+                    tables.append(d.name)
+        return tables
+
+    def list_databases(self, path=None, like=None):
+        if path is None:
+            path = self.path
+        else:
+            warnings.warn(
+                'The `path` argument of `list_databases` is deprecated and '
+                'will be removed in a future version of Ibis. Connect to a '
+                'different path with the `connect()` method instead.',
+                FutureWarning,
+            )
+        databases = self._list_databases_dirs(path)
+        return self._filter_with_like(databases, like)

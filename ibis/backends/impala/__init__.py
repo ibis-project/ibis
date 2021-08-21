@@ -133,3 +133,9 @@ class Backend(BaseSQLBackend):
             '/tmp/ibis',
             'HDFS path for storage of temporary data',
         )
+
+    def list_databases(self, like=None):
+        cur = self.client.raw_sql('SHOW DATABASES')
+        databases = self.client._get_list(cur)
+        cur.release()
+        return self._filter_with_like(databases, like)

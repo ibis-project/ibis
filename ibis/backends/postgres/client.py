@@ -65,21 +65,6 @@ class PostgreSQLClient(AlchemyClient):
             finally:
                 bind.execute("SET TIMEZONE = '{}'".format(previous_timezone))
 
-    def list_databases(self):
-        # http://dba.stackexchange.com/a/1304/58517
-        return [
-            row.datname
-            for row in self.con.execute(
-                'SELECT datname FROM pg_database WHERE NOT datistemplate'
-            )
-        ]
-
-    def list_schemas(self):
-        """List all the schemas in the current database."""
-        # In Postgres we support schemas, which in other engines (e.g. MySQL)
-        # are databases
-        return super().list_databases()
-
     def table(self, name, database=None, schema=None):
         """Create a table expression that references a particular a table
         called `name` in a PostgreSQL database called `database`.

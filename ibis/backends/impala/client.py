@@ -892,21 +892,6 @@ class ImpalaClient(SQLClient):
         """
         self.con.set_database(name)
 
-    def exists_database(self, name):
-        """
-        Checks if a given database exists
-
-        Parameters
-        ----------
-        name : string
-          Database name
-
-        Returns
-        -------
-        if_exists : boolean
-        """
-        return bool(self.list_databases(like=name))
-
     def create_database(self, name, path=None, force=False):
         """
         Create a new Impala database
@@ -938,7 +923,7 @@ class ImpalaClient(SQLClient):
           IntegrityError
 
         """
-        if not force or self.exists_database(name):
+        if not force or name in self.list_databases():
             tables = self.list_tables(database=name)
             udfs = self.list_udfs(database=name)
             udas = self.list_udas(database=name)
@@ -981,30 +966,6 @@ class ImpalaClient(SQLClient):
                 )
         statement = DropDatabase(name, must_exist=not force)
         return self.raw_sql(statement)
-
-    def list_databases(self, like=None):
-        """
-        List databases in the Impala cluster. Like the SHOW DATABASES command
-        in the impala-shell.
-
-        Parameters
-        ----------
-        like : string, default None
-          e.g. 'foo*' to match all tables starting with 'foo'
-
-        Returns
-        -------
-        databases : list of strings
-        """
-        statement = 'SHOW DATABASES'
-        if like:
-            statement += " LIKE '{0}'".format(like)
-
-        cur = self.raw_sql(statement)
-        results = self._get_list(cur)
-        cur.release()
-
-        return results
 
     def get_schema(self, table_name, database=None):
         """
@@ -1383,7 +1344,7 @@ class ImpalaClient(SQLClient):
     def _ensure_temp_db_exists(self):
         # TODO: session memoize to avoid unnecessary `SHOW DATABASES` calls
         name, path = options.impala.temp_db, options.impala.temp_hdfs_path
-        if not self.exists_database(name):
+        if name not in self.list_databases():
             if self._hdfs is None:
                 print(
                     'Without an HDFS connection, certain functionality'
