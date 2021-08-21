@@ -85,6 +85,9 @@ class FileClient(Client):
         assert isinstance(expr, ir.Expr)
         return execute_and_reset(expr, params=params, **kwargs)
 
+    def list_databases(self, path=None, like=None):
+        return self.backend.list_databases(like)
+
     def list_tables(self, path=None):
         raise NotImplementedError
 
@@ -123,8 +126,8 @@ class BaseFileBackend(BaseBackend):
         -------
         Client
         """
-        self.path = path
-        self.client = self.client_class(backend=self, root=path)
+        self.path = Path(path)
+        self.client = self.client_class(backend=self, root=self.path)
         return self.client
 
     @property
