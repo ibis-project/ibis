@@ -11,9 +11,9 @@ def test_version(backend):
 
 
 @pytest.mark.xfail_unsupported
-def test_set_database(backend):
-    databases = backend.api.list_databases()
-    current_database = backend.api.current_database
+def test_set_database(con):
+    databases = con.list_databases()
+    current_database = con.current_database
     if len(databases) < 2:
         # If there are no more databases, we set the database
         # again to the current database. While not a perfect
@@ -22,5 +22,5 @@ def test_set_database(backend):
     else:
         another_database = databases.remove(current_database)
 
-    backend.api.set_database(another_database)
-    assert backend.api.current_database == another_database
+    con.set_database(another_database)
+    assert con.current_database == another_database
