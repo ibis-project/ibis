@@ -886,6 +886,12 @@ class ImpalaClient(SQLClient):
         tuples = cur.fetchall()
         return list(map(operator.itemgetter(0), tuples))
 
+    def set_database(self, name):
+        # XXX The parent `Client` has a generic method that calls this same
+        # method in the backend. But for whatever reason calling this code from
+        # that method doesn't seem to work. Maybe `con` is a copy?
+        self.con.set_database(name)
+
     def exists_database(self, name):
         """
         Checks if a given database exists
