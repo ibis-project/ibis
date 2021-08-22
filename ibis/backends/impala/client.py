@@ -892,6 +892,14 @@ class ImpalaClient(SQLClient):
         """
         self.con.set_database(name)
 
+    @property
+    def current_database(self):
+        # FIXME The parent `Client` has a generic method that calls this same
+        # method in the backend. But for whatever reason calling this code from
+        # that method doesn't seem to work. Checking if overwriting here fix
+        # the problem
+        return self.con.database
+
     def exists_database(self, name):
         """
         Checks if a given database exists
