@@ -113,6 +113,7 @@ class Backend(BaseSQLBackend):
         except Exception:
             con.close()
             raise
+        self.client._ensure_temp_db_exists()
         return self.client
 
     @property
@@ -136,3 +137,13 @@ class Backend(BaseSQLBackend):
 
     def set_database(self, name):
         self.client.con.set_database(name)
+
+    @property
+    def current_database(self):
+        return self.client.con.database
+
+    def list_databases(self, like=None):
+        cur = self.client.raw_sql('SHOW DATABASES')
+        databases = self.client._get_list(cur)
+        cur.release()
+        return self._filter_with_like(databases, like)

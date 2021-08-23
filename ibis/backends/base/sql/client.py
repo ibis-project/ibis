@@ -38,11 +38,6 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         node = self.table_class(qualified_name, schema, self)
         return self.table_expr_class(node)
 
-    @property
-    def current_database(self):
-        """Return the current database."""
-        return self.con.database
-
     def _fully_qualified_name(self, name, database):
         # XXX
         return name

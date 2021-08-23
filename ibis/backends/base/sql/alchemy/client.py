@@ -249,16 +249,18 @@ class AlchemyClient(SQLClient):
         """The name of the current database this client is connected to."""
         return self.database_name
 
+    def set_database(self, name):
+        raise NotImplementedError(
+            f'Cannot set database with {self.__class__.__name__} client. '
+            f'To use a different database, use `client.database("{name}")`'
+        )
+
     def list_schemas(self):
         warnings.warn(
             '`list_schemas` is deprecated, use `list_databases` instead',
             FutureWarning,
         )
         return self.list_databases()
-
-    def list_databases(self):
-        """List databases in the current server."""
-        return self.inspector.get_schema_names()
 
     def list_tables(
         self,

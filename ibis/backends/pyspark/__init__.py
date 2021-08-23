@@ -36,3 +36,11 @@ class Backend(BaseBackend):
 
     def set_database(self, name):
         self.client._catalog.setCurrentDatabase(name)
+
+    @property
+    def current_database(self):
+        return self.client._catalog.currentDatabase()
+
+    def list_databases(self, like=None):
+        databases = [db.name for db in self.client._catalog.listDatabases()]
+        return self._filter_with_like(databases, like)

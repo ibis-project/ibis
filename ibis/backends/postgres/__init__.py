@@ -86,3 +86,19 @@ class Backend(BaseAlchemyBackend):
             driver=driver,
         )
         return self.client
+
+    def list_databases(self, like=None):
+        # http://dba.stackexchange.com/a/1304/58517
+        databases = [
+            row.datname
+            for row in self.client.con.execute(
+                'SELECT datname FROM pg_database WHERE NOT datistemplate'
+            )
+        ]
+        return self._filter_with_like(databases, like)
+
+    def list_schemas(self, like=None):
+        """List all the schemas in the current database."""
+        # In Postgres we support schemas, which in other engines (e.g. MySQL)
+        # are databases
+        return super().list_databases(like)
