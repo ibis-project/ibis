@@ -31,5 +31,10 @@ def test_database_consistency(con):
     else:
         assert con.current_database == new_database
         assert con.list_databases() == databases
-    finally:
+
+    # restoring the original database, in case the same connection is used
+    # in other tests
+    try:
         con.set_database(current_database)
+    except NotImplementedError:
+        pass
