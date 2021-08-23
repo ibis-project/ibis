@@ -141,10 +141,10 @@ class BaseFileBackend(BaseBackend):
         # The  `current_database` is not in that list. Probably we want to
         # rethink this eventually.  For now we just return `None` here, as if
         # databases were not supported
-        return None
+        return '.'
 
     def _list_databases_dirs(self, path=None):
-        tables = []
+        tables = ['.']
         if path.is_dir():
             for d in path.iterdir():
                 if d.is_dir():
