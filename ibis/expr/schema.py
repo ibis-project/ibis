@@ -370,7 +370,7 @@ def coerce_to_dataframe(
         result = data
     elif isinstance(data, pd.Series):
         if not len(data):
-            result = pd.concat([data], axis=1)
+            result = data.to_frame()
         else:
             num_cols = len(data.iloc[0])
             series = [data.apply(lambda t: t[i]) for i in range(num_cols)]
