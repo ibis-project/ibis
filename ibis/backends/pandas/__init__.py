@@ -62,18 +62,16 @@ class BasePandasBackend(BaseBackend):
     def version(self) -> str:
         return pd.__version__
 
-    def list_tables(self, like=None):
-        """List the available tables."""
-        return self._filter_with_like(
-            tables=list(self.client.dictionary.keys()), like=like
-        )
-
     @property
     def current_database(self):
         return None
 
     def list_databases(self, like=None):
         return []
+
+    def list_tables(self, like=None):
+        return self._filter_with_like(list(self.client.dictionary.keys()),
+                                      like)
 
 
 class Backend(BasePandasBackend):

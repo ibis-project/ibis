@@ -20,8 +20,8 @@ def test_list_databases(con):
     assert all(isinstance(database, str) for database in databases)
 
 
-def test_list_tables(backend):
-    tables = backend.api.list_tables()
+def test_list_tables(con):
+    tables = con.list_tables()
     assert isinstance(tables, list)
     assert 'awards_players' in tables
     assert 'batting' in tables
