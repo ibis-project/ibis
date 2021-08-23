@@ -101,6 +101,10 @@ class Backend(BaseSQLBackend):
 
         return f'{info.version_major}.{info.version_minor}.{info.revision}'
 
+    @property
+    def current_database(self):
+        return self.client.con.connection.database
+
     def list_databases(self, like=None):
         data, schema = self.client.raw_sql('SELECT name FROM system.databases')
         databases = list(data[0])

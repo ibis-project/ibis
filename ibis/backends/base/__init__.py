@@ -65,20 +65,22 @@ class BaseBackend(abc.ABC):
             FutureWarning,
         )
         return self.database_class(
-            name=name or self.current_database(), client=self.client
+            name=name or self.current_database, client=self.client
         )
 
-    # @abc.abstractmethod
+    @property
+    @abc.abstractmethod
     def current_database(self) -> str | None:
         """
+        Name of the current database.
+
+        Backends that don't support different databases will return None.
+
+        Returns
+        -------
+        str
+            Name of the current database.
         """
-        # TODO standardize `current_database` in a follow up PR
-        if hasattr(self.client, 'current_database'):
-            current_database = self.client.current_database
-            if callable(current_database):
-                return current_database()
-            return current_database
-        return None
 
     @abc.abstractmethod
     def list_databases(self, like: str = None) -> List[str]:

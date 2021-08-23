@@ -890,6 +890,13 @@ class ImpalaClient(SQLClient):
         """
         self.con.set_database(name)
 
+    @property
+    def current_database(self):
+        # XXX The parent `Client` has a generic method that calls this same
+        # method in the backend. But for whatever reason calling this code from
+        # that method doesn't seem to work. Maybe `con` is a copy?
+        return self.con.database
+
     def create_database(self, name, path=None, force=False):
         """
         Create a new Impala database

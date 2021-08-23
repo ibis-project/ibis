@@ -171,11 +171,6 @@ class ClickhouseClient(SQLClient):
         self.table_expr_class = backend.table_expr_class
         self.con = _DriverClient(*args, **kwargs)
 
-    @property
-    def current_database(self):
-        # might be better to use driver.Connection instead of Client
-        return self.con.connection.database
-
     def log(self, msg):
         log(msg)
 

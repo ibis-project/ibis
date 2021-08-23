@@ -15,6 +15,10 @@ class Client:
     def database(self, name=None):
         return self.backend.database(name)
 
+    @property
+    def current_database(self):
+        return self.backend.current_database
+
     def list_databases(self, like=None):
         return self.backend.list_databases(like)
 

@@ -135,6 +135,10 @@ class Backend(BaseSQLBackend):
             'HDFS path for storage of temporary data',
         )
 
+    @property
+    def current_database(self):
+        return self.client.con.database
+
     def list_databases(self, like=None):
         cur = self.client.raw_sql('SHOW DATABASES')
         databases = self.client._get_list(cur)
