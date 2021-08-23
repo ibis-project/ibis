@@ -31,3 +31,5 @@ def test_database_consistency(con):
     else:
         assert con.current_database == new_database
         assert con.list_databases() == databases
+    finally:
+        con.set_database(current_database)
