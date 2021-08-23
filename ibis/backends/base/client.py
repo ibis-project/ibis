@@ -15,6 +15,12 @@ class Client:
     def database(self, name=None):
         return self.backend.database(name)
 
+    def list_databases(self, like=None):
+        return self.backend.list_databases(like)
+
+    def exists_database(self, name):
+        return self.backend.exists_database(name)
+
 
 class Database:
     """Generic Database class."""
