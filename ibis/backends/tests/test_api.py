@@ -7,14 +7,34 @@ def test_version(backend):
     assert isinstance(backend.api.version, str)
 
 
-def test_current_database(con):
-    current_database = con.current_database
-    assert isinstance(current_database, str) or current_database is None
-
-
-def test_list_databases(con):
+def test_database_consistency(con):
     # every backend has a different set of databases, not testing the
     # exact names for now
     databases = con.list_databases()
     assert isinstance(databases, list)
+    assert len(databases) >= 1
     assert all(isinstance(database, str) for database in databases)
+
+    current_database = con.current_database
+    assert isinstance(current_database, str)
+    assert current_database in databases
+
+    if len(databases) == 1:
+        new_database = current_database
+    else:
+        new_database = next(db for db in databases if db != current_database)
+
+    try:
+        con.set_database(new_database)
+    except NotImplementedError:
+        pass
+    else:
+        assert con.current_database == new_database
+        assert con.list_databases() == databases
+
+    # restoring the original database, in case the same connection is used
+    # in other tests
+    try:
+        con.set_database(current_database)
+    except NotImplementedError:
+        pass

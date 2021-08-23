@@ -25,6 +25,9 @@ class Client:
     def exists_database(self, name):
         return self.backend.exists_database(name)
 
+    def set_database(self, name):
+        return self.backend.set_database(name)
+
 
 class Database:
     """Generic Database class."""

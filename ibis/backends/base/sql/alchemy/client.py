@@ -244,6 +244,11 @@ class AlchemyClient(SQLClient):
         """
         return self.database().schema(name)
 
+    @property
+    def current_database(self):
+        """The name of the current database this client is connected to."""
+        return self.database_name
+
     def set_database(self, name):
         raise NotImplementedError(
             f'Cannot set database with {self.__class__.__name__} client. '

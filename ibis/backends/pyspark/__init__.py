@@ -34,6 +34,9 @@ class Backend(BaseBackend):
     def version(self):
         return pyspark.__version__
 
+    def set_database(self, name):
+        self.client._catalog.setCurrentDatabase(name)
+
     @property
     def current_database(self):
         return self.client._catalog.currentDatabase()

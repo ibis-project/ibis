@@ -49,7 +49,7 @@ def test_client(tmpdir, file_backends_data):
         pq.write_table(table, str(f))
 
     c = ibis.parquet.connect(tmpdir)
-    assert c.list_databases() == ['pq']
+    assert c.list_databases() == ['.', 'pq']
     assert c.database().pq.list_tables() == ['close', 'open']
 
 
@@ -57,12 +57,12 @@ def test_navigation(parquet):
     # directory navigation
     assert isinstance(parquet, FileDatabase)
     result = dir(parquet)
-    assert result == ['pq']
+    assert result == ['.', 'pq']
 
     d = parquet.pq
     assert isinstance(d, FileDatabase)
     result = dir(d)
-    assert result == ['close', 'open']
+    assert result == ['.', 'close', 'open']
 
     result = d.list_tables()
     assert result == ['close', 'open']
@@ -104,7 +104,7 @@ def test_write(transformed, tmpdir):
     # readback
     c = ibis.parquet.connect(str(tpath)).database()
     result = c.list_databases()
-    assert result == []
+    assert result == ['.']
 
     result = c.foo.execute()
     tm.assert_frame_equal(result, expected)

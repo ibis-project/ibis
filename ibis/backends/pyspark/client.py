@@ -402,12 +402,6 @@ class PySparkClient(SQLClient):
         except com.IbisInputError:
             return False
 
-    def set_database(self, name):
-        """
-        Set the default database scope for client
-        """
-        self._catalog.setCurrentDatabase(name)
-
     def create_database(self, name, path=None, force=False):
         """
         Create a new Spark database

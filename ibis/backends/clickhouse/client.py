@@ -260,12 +260,6 @@ class ClickhouseClient(SQLClient):
         data = self.raw_sql(statement)
         return data[0]
 
-    def set_database(self, name):
-        """
-        Set the default database scope for client
-        """
-        self.con.database = name
-
     def get_schema(self, table_name, database=None):
         """
         Return a Schema object for the indicated table and database
