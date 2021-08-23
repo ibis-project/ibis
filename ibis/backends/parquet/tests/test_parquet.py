@@ -57,12 +57,12 @@ def test_navigation(parquet):
     # directory navigation
     assert isinstance(parquet, FileDatabase)
     result = dir(parquet)
-    assert result == ['pq']
+    assert result == ['.', 'pq']
 
     d = parquet.pq
     assert isinstance(d, FileDatabase)
     result = dir(d)
-    assert result == ['close', 'open']
+    assert result == ['.', 'close', 'open']
 
     result = d.list_tables()
     assert result == ['close', 'open']

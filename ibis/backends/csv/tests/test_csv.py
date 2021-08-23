@@ -46,12 +46,12 @@ def test_navigation(csv):
     # directory navigation
     assert isinstance(csv, FileDatabase)
     result = dir(csv)
-    assert result == ['csv_dir']
+    assert result == ['.', 'csv_dir']
 
     prices = csv.csv_dir
     assert isinstance(prices, FileDatabase)
     result = dir(prices)
-    assert result == ['close', 'open']
+    assert result == ['.', 'close', 'open']
     result = prices.list_tables()
     assert result == ['close', 'open']
 
