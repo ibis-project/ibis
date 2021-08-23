@@ -37,7 +37,7 @@ def test_client(tmpdir, file_backends_data):
     assert c.list_tables() == ['open']
 
     c = ibis.csv.connect(csv / 'close.csv')
-    assert c.list_databases() == []
+    assert c.list_databases() == ['.']
     assert c.list_tables() == ['close']
 
 
@@ -46,7 +46,7 @@ def test_navigation(csv):
     # directory navigation
     assert isinstance(csv, FileDatabase)
     result = dir(csv)
-    assert result == ['.', 'csv_dir']
+    assert result == ['csv_dir']
 
     prices = csv.csv_dir
     assert isinstance(prices, FileDatabase)

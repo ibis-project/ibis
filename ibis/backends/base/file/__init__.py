@@ -144,7 +144,7 @@ class BaseFileBackend(BaseBackend):
         return '.'
 
     def _list_databases_dirs(self, path=None):
-        tables = ['.']
+        tables = []
         if path.is_dir():
             for d in path.iterdir():
                 if d.is_dir():
@@ -161,5 +161,5 @@ class BaseFileBackend(BaseBackend):
                 'different path with the `connect()` method instead.',
                 FutureWarning,
             )
-        databases = self._list_databases_dirs(path)
+        databases = ['.'] + self._list_databases_dirs(path)
         return self._filter_with_like(databases, like)
