@@ -34,14 +34,8 @@ class Backend(BaseBackend):
     def version(self):
         return pyspark.__version__
 
-    def list_tables(self, like=None):
-        tables = [
-            t.name
-            for t in self.client._catalog.listTables(
-                dbName=self.current_database
-            )
-        ]
-        return self._filter_with_like(tables, like)
+    def set_database(self, name):
+        self.client._catalog.setCurrentDatabase(name)
 
     @property
     def current_database(self):
@@ -50,3 +44,12 @@ class Backend(BaseBackend):
     def list_databases(self, like=None):
         databases = [db.name for db in self.client._catalog.listDatabases()]
         return self._filter_with_like(databases, like)
+
+    def list_tables(self, like=None):
+        tables = [
+            t.name
+            for t in self.client._catalog.listTables(
+                dbName=self.current_database
+            )
+        ]
+        return self._filter_with_like(tables, like)

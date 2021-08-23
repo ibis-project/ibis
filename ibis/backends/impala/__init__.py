@@ -135,6 +135,9 @@ class Backend(BaseSQLBackend):
             'HDFS path for storage of temporary data',
         )
 
+    def set_database(self, name):
+        self.client.con.set_database(name)
+
     @property
     def current_database(self):
         return self.client.con.database

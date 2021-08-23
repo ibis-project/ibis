@@ -150,7 +150,7 @@ class BaseFileBackend(BaseBackend):
         # The  `current_database` is not in that list. Probably we want to
         # rethink this eventually.  For now we just return `None` here, as if
         # databases were not supported
-        return None
+        return '.'
 
     def _list_databases_dirs(self, path=None):
         tables = []
@@ -170,5 +170,5 @@ class BaseFileBackend(BaseBackend):
                 'different path with the `connect()` method instead.',
                 FutureWarning,
             )
-        databases = self._list_databases_dirs(path)
+        databases = ['.'] + self._list_databases_dirs(path)
         return self._filter_with_like(databases, like)

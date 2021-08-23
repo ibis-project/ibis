@@ -852,9 +852,9 @@ class ImpalaClient(SQLClient):
         return list(map(operator.itemgetter(0), tuples))
 
     def set_database(self, name):
-        """
-        Set the default database scope for client
-        """
+        # XXX The parent `Client` has a generic method that calls this same
+        # method in the backend. But for whatever reason calling this code from
+        # that method doesn't seem to work. Maybe `con` is a copy?
         self.con.set_database(name)
 
     @property

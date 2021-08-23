@@ -64,10 +64,10 @@ class BasePandasBackend(BaseBackend):
 
     @property
     def current_database(self):
-        return None
+        return 'main'
 
     def list_databases(self, like=None):
-        return []
+        return self._filter_with_like(['main'])
 
     def list_tables(self, like=None):
         return self._filter_with_like(list(self.client.dictionary.keys()),
