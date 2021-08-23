@@ -12,15 +12,11 @@ def test_version(backend):
 
 @pytest.mark.xfail_unsupported
 def test_set_database(con):
-    if not hasattr(con, 'list_databases') or not hasattr(
-        con, 'current_database'
-    ):
-        # TODO Some backends currently do not have those methods, and we can't
-        # test much without. In #2910 and #2911 we are adding them, and this
-        # can be tested better after those are merged
+    current_database = con.current_database
+    if current_database is None:
+        # Backend does not support multiple databases
         return
     databases = con.list_databases()
-    current_database = con.current_database
     if len(databases) < 2:
         # If there are no more databases, we set the database
         # again to the current database. While not a perfect
