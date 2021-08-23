@@ -57,3 +57,8 @@ class BaseAlchemyBackend(BaseSQLBackend):
     @property
     def current_database(self):
         return self.client.database_name
+
+    def list_databases(self, like=None):
+        """List databases in the current server."""
+        databases = self.client.inspector.get_schema_names()
+        return self._filter_with_like(databases, like)

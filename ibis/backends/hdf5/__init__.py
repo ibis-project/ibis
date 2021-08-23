@@ -1,3 +1,5 @@
+import warnings
+
 import pandas as pd
 
 import ibis.expr.operations as ops
@@ -48,15 +50,41 @@ class HDFClient(FileClient):
 
         return []
 
-    def list_databases(self, path=None):
-        return self._list_databases_dirs_or_files(path)
-
 
 class Backend(BaseFileBackend):
     name = 'hdf5'
     extension = 'h5'
     table_class = HDFTable
     client_class = HDFClient
+
+    def _list_databases_dirs_or_files(self, path=None):
+        # databases are dir & file
+        tables = []
+        if path.is_dir():
+            for d in path.iterdir():
+                if d.is_dir():
+                    tables.append(d.name)
+                elif d.is_file():
+                    if str(d).endswith(self.extension):
+                        tables.append(d.stem)
+        elif path.is_file():
+            # by definition we are at the db level at this point
+            pass
+
+        return tables
+
+    def list_databases(self, path=None, like=None):
+        if path is None:
+            path = self.path
+        else:
+            warnings.warn(
+                'The `path` argument of `list_databases` is deprecated and '
+                'will be removed in a future version of Ibis. Connect to a '
+                'different path with the `connect()` method instead.',
+                FutureWarning,
+            )
+        databases = self._list_databases_dirs_or_files(path)
+        return self._filter_with_like(databases, like)
 
 
 @execute_node.register(Backend.table_class, HDFClient)

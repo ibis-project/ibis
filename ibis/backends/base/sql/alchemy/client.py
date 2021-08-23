@@ -257,10 +257,6 @@ class AlchemyClient(SQLClient):
         )
         return self.list_databases()
 
-    def list_databases(self):
-        """List databases in the current server."""
-        return self.inspector.get_schema_names()
-
     def list_tables(
         self,
         like: Optional[str] = None,

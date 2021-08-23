@@ -104,3 +104,8 @@ class Backend(BaseSQLBackend):
     @property
     def current_database(self):
         return self.client.con.connection.database
+
+    def list_databases(self, like=None):
+        data, schema = self.client.raw_sql('SELECT name FROM system.databases')
+        databases = list(data[0])
+        return self._filter_with_like(databases, like)

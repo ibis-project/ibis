@@ -65,6 +65,9 @@ class BasePandasBackend(BaseBackend):
     def current_database(self):
         return None
 
+    def list_databases(self, like=None):
+        return []
+
 
 class Backend(BasePandasBackend):
     name = 'pandas'
