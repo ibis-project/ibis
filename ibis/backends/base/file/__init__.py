@@ -1,3 +1,4 @@
+import warnings
 from pathlib import Path
 
 import pandas as pd
@@ -79,19 +80,23 @@ class FileClient(Client):
         assert isinstance(expr, ir.Expr)
         return execute_and_reset(expr, params=params, **kwargs)
 
-    def list_databases(self, path=None):
-        raise NotImplementedError
+    def list_databases(self, path=None, like=None):
+        return self.backend.list_databases(path=path, like=like)
 
-    def _list_databases_dirs(self, path=None):
-        # databases are dir
+    def _list_tables_files(self, path=None):
+        # tables are files in a dir
         if path is None:
             path = self.root
 
         tables = []
         if path.is_dir():
             for d in path.iterdir():
-                if d.is_dir():
-                    tables.append(d.name)
+                if d.is_file():
+                    if str(d).endswith(self.extension):
+                        tables.append(d.stem)
+        elif path.is_file():
+            if str(path).endswith(self.extension):
+                tables.append(path.stem)
         return tables
 
 
@@ -130,6 +135,40 @@ class BaseFileBackend(BaseBackend):
             return path.is_file() and path.suffix == '.' + self.extension
 
         if self.path.is_dir():
-            return [f.stem for f in self.path.iterdir() if is_valid(f)]
+            tables = [f.stem for f in self.path.iterdir() if is_valid(f)]
         elif is_valid(self.path):
-            return [self.path.stem]
+            tables = [self.path.stem]
+        else:
+            tables = []
+
+        return self._filter_with_like(tables, like)
+
+    @property
+    def current_database(self):
+        # Databases for the file backend are a bit confusing
+        # `list_databases()` will return the directories in the current path
+        # The  `current_database` is not in that list. Probably we want to
+        # rethink this eventually.  For now we just return `None` here, as if
+        # databases were not supported
+        return None
+
+    def _list_databases_dirs(self, path=None):
+        tables = []
+        if path.is_dir():
+            for d in path.iterdir():
+                if d.is_dir():
+                    tables.append(d.name)
+        return tables
+
+    def list_databases(self, path=None, like=None):
+        if path is None:
+            path = self.path
+        else:
+            warnings.warn(
+                'The `path` argument of `list_databases` is deprecated and '
+                'will be removed in a future version of Ibis. Connect to a '
+                'different path with the `connect()` method instead.',
+                FutureWarning,
+            )
+        databases = self._list_databases_dirs(path)
+        return self._filter_with_like(databases, like)

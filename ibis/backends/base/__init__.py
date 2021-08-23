@@ -65,39 +65,72 @@ class BaseBackend(abc.ABC):
             FutureWarning,
         )
         return self.database_class(
-            name=name or self.current_database(), client=self.client
+            name=name or self.current_database, client=self.client
         )
 
-    # @abc.abstractmethod
+    @property
+    @abc.abstractmethod
     def current_database(self) -> str | None:
         """
+        Name of the current database.
+
+        Backends that don't support different databases will return None.
+
+        Returns
+        -------
+        str
+            Name of the current database.
         """
-        # TODO standardize `current_database` in a follow up PR
-        if hasattr(self.client, 'current_database'):
-            current_database = self.client.current_database
-            if callable(current_database):
-                return current_database()
-            return current_database
-        return None
+
+    @abc.abstractmethod
+    def list_databases(self, like: str = None) -> List[str]:
+        """
+        List existing databases in the current connection.
+
+        Parameters
+        ----------
+        like : str
+            A pattern in Python's regex format to filter returned database
+            names.
+
+        Returns
+        -------
+        list of str
+            The database names that exist in the current connection, that match
+            the `like` pattern if provided.
+        """
+
+    def exists_database(self, name: str) -> bool:
+        """
+        Return whether a database name exists in the current connection.
+
+        Deprecated in Ibis 2.0. Use `name in client.list_databases()` instead.
+        """
+        warnings.warn(
+            '`client.exists_database(name)` is deprecated, and will be '
+            'removed in a future version of Ibis. Use '
+            '`name in client.list_databases()` instead.',
+            FutureWarning,
+        )
+        return name in self.client.list_databases()
 
     @staticmethod
-    def _filter_tables_with_like(
-        tables: List[str], like: str = None
-    ) -> List[str]:
+    def _filter_with_like(values: List[str], like: str = None) -> List[str]:
         """
-        Filter table names with a `like` pattern (regex).
+        Filter names with a `like` pattern (regex).
 
-        The method `list_tables` accepts a `like` argument, which filters the
-        returned tables with tables that match the provided pattern.
+        The methods `list_databases` and `list_tables` accept a `like`
+        argument, which filters the returned tables with tables that match the
+        provided pattern.
 
         We provide this method in the base backend, so backends can use it
         instead of reinventing the wheel.
         """
         if like is None:
-            return tables
+            return values
 
         pattern = re.compile(like)
-        return sorted(filter(lambda t: pattern.findall(t), tables))
+        return sorted(filter(lambda t: pattern.findall(t), values))
 
     @abc.abstractmethod
     def list_tables(self, like: str = None) -> List[str]:

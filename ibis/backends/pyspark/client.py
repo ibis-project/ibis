@@ -237,6 +237,7 @@ class PySparkClient(SQLClient):
     """
 
     def __init__(self, backend, session):
+        self.backend = backend
         self.database_class = backend.database_class
         self.table_class = backend.table_class
         self.table_expr_class = backend.table_expr_class
@@ -317,13 +318,6 @@ class PySparkClient(SQLClient):
         query = self._session.sql(stmt)
         return PySparkCursor(query)
 
-    @property
-    def current_database(self):
-        """
-        String name of the current database.
-        """
-        return self._catalog.currentDatabase()
-
     def _get_schema_using_query(self, query):
         cur = self.raw_sql(query)
         return spark_dataframe_schema(cur.query)
@@ -387,44 +381,6 @@ class PySparkClient(SQLClient):
         Set the default database scope for client
         """
         self._catalog.setCurrentDatabase(name)
-
-    def list_databases(self, like=None):
-        """
-        List databases in the Spark SQL cluster.
-
-        Parameters
-        ----------
-        like : string, default None
-          e.g. 'foo*' to match all tables starting with 'foo'
-
-        Returns
-        -------
-        results : list of strings
-        """
-        results = [db.name for db in self._catalog.listDatabases()]
-        if like:
-            results = [
-                database_name
-                for database_name in results
-                if re.match(like, database_name) is not None
-            ]
-
-        return results
-
-    def exists_database(self, name):
-        """
-        Checks if a given database exists
-
-        Parameters
-        ----------
-        name : string
-          Database name
-
-        Returns
-        -------
-        if_exists : boolean
-        """
-        return bool(self.list_databases(like=name))
 
     def create_database(self, name, path=None, force=False):
         """

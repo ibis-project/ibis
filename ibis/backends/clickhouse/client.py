@@ -171,11 +171,6 @@ class ClickhouseClient(SQLClient):
         self.table_expr_class = backend.table_expr_class
         self.con = _DriverClient(*args, **kwargs)
 
-    @property
-    def current_database(self):
-        # might be better to use driver.Connection instead of Client
-        return self.con.connection.database
-
     def log(self, msg):
         log(msg)
 
@@ -241,42 +236,6 @@ class ClickhouseClient(SQLClient):
         """
         self.con.database = name
 
-    def exists_database(self, name):
-        """
-        Checks if a given database exists
-
-        Parameters
-        ----------
-        name : string
-          Database name
-
-        Returns
-        -------
-        if_exists : boolean
-        """
-        return len(self.list_databases(like=name)) > 0
-
-    def list_databases(self, like=None):
-        """
-        List databases in the Clickhouse cluster.
-        Like the SHOW DATABASES command in the clickhouse-shell.
-
-        Parameters
-        ----------
-        like : string, default None
-          e.g. 'foo*' to match all tables starting with 'foo'
-
-        Returns
-        -------
-        databases : list of strings
-        """
-        statement = 'SELECT name FROM system.databases'
-        if like:
-            statement += " WHERE name LIKE '{0}'".format(like)
-
-        data = self.raw_sql(statement)
-        return data[0]
-
     def get_schema(self, table_name, database=None):
         """
         Return a Schema object for the indicated table and database
@@ -322,7 +281,7 @@ class ClickhouseClient(SQLClient):
 
     def _ensure_temp_db_exists(self):
         name = (options.clickhouse.temp_db,)
-        if not self.exists_database(name):
+        if name not in self.list_databases():
             self.create_database(name, force=True)
 
     def _get_schema_using_query(self, query, **kwargs):

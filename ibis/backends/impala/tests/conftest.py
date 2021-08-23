@@ -233,7 +233,7 @@ CREATE TABLE IF NOT EXISTS {} (
 def tmp_db(env, con, test_data_db):
     tmp_db = env.tmp_db
 
-    if not con.exists_database(tmp_db):
+    if tmp_db not in con.list_databases():
         con.create_database(tmp_db)
     try:
         yield tmp_db
