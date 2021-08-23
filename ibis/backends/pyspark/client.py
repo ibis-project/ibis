@@ -18,7 +18,6 @@ from ibis.backends.base.sql.ddl import (
 )
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import canonicalize_context, localize_context
-from ibis.util import log
 
 from . import ddl
 from .compiler import PySparkExprTranslator
@@ -321,9 +320,6 @@ class PySparkClient(SQLClient):
     def _get_schema_using_query(self, query):
         cur = self.raw_sql(query)
         return spark_dataframe_schema(cur.query)
-
-    def log(self, msg):
-        log(msg)
 
     def _get_jtable(self, name, database=None):
         try:
