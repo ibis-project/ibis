@@ -369,7 +369,9 @@ class Summarize(AggregationContext):
                 'Object {} is not callable or a string'.format(function)
             )
 
-        if isinstance(grouped_data, pd.core.groupby.generic.SeriesGroupBy):
+        if isinstance(
+            grouped_data, pd.core.groupby.generic.SeriesGroupBy
+        ) and len(grouped_data):
             # `SeriesGroupBy.agg` does not allow np.arrays to be returned
             # from UDFs. To avoid `SeriesGroupBy.agg`, we will us
             # `Series.agg` manually on each group. (#2768)

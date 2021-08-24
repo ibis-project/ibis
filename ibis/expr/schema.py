@@ -369,9 +369,12 @@ def coerce_to_dataframe(
     if isinstance(data, pd.DataFrame):
         result = data
     elif isinstance(data, pd.Series):
-        num_cols = len(data.iloc[0])
-        series = [data.apply(lambda t: t[i]) for i in range(num_cols)]
-        result = pd.concat(series, axis=1)
+        if not len(data):
+            result = data.to_frame()
+        else:
+            num_cols = len(data.iloc[0])
+            series = [data.apply(lambda t: t[i]) for i in range(num_cols)]
+            result = pd.concat(series, axis=1)
     elif isinstance(data, (tuple, list, np.ndarray)):
         if isinstance(data[0], pd.Series):
             result = pd.concat(data, axis=1)
