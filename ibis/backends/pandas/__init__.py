@@ -70,8 +70,9 @@ class BasePandasBackend(BaseBackend):
         return self._filter_with_like(['main'])
 
     def list_tables(self, like=None):
-        return self._filter_with_like(list(self.client.dictionary.keys()),
-                                      like)
+        return self._filter_with_like(
+            list(self.client.dictionary.keys()), like
+        )
 
 
 class Backend(BasePandasBackend):

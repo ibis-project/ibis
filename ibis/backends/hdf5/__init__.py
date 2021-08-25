@@ -43,12 +43,14 @@ class Backend(BaseFileBackend):
     table_class = HDFTable
     client_class = HDFClient
 
-    def list_tables(self, like=None):
+    def list_tables(self, path=None, like=None):
         """
         For HDF5, tables are the HDF5 tables inside the file.
         """
-        if self.path.is_file() and self.path.suffix == '.' + self.extension:
-            with pd.HDFStore(str(self.path), mode='r') as store:
+        path = path or self.path
+
+        if path.is_file() and path.suffix == '.' + self.extension:
+            with pd.HDFStore(str(path), mode='r') as store:
                 # strip leading /
                 return [k[1:] for k in store.keys()]
 
