@@ -1,6 +1,5 @@
 import pandas as pd
 import pyspark as ps
-import regex as re
 from pyspark.sql.column import Column
 
 import ibis.common.exceptions as com

@@ -10,7 +10,7 @@ class BaseSQLBackend(BaseBackend):
     Base backend class for backends that compile to SQL.
     """
 
-    def list_tables(self, like=None):
+    def list_tables(self, like=None, database=None):
         """
         By default we call `SHOW TABLES` against the database.
 

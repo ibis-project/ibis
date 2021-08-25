@@ -12,8 +12,8 @@ class Client:
     def version(self):
         return self.backend.version
 
-    def list_tables(self, like=None):
-        return self.backend.list_tables(like)
+    def list_tables(self, like=None, database=None):
+        return self.backend.list_tables(like, database)
 
     def database(self, name=None):
         return self.backend.database(name)

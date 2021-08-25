@@ -43,7 +43,7 @@ class Backend(BaseFileBackend):
     table_class = HDFTable
     client_class = HDFClient
 
-    def list_tables(self, path=None, like=None):
+    def list_tables(self, path=None, like=None, database=None):
         """
         For HDF5, tables are the HDF5 tables inside the file.
         """

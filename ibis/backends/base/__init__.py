@@ -147,7 +147,7 @@ class BaseBackend(abc.ABC):
         )
 
     @abc.abstractmethod
-    def list_tables(self, like: str = None) -> List[str]:
+    def list_tables(self, like: str = None, database: str = None) -> List[str]:
         """
         Return the list of table names in the current database.
 
@@ -156,8 +156,10 @@ class BaseBackend(abc.ABC):
 
         Parameters
         ----------
-        like : str
+        like : str, optional
             A pattern in Python's regex format.
+        database : str, optional
+            The database to list tables of, if not the current one.
 
         Returns
         -------

@@ -61,10 +61,8 @@ def test_attach_file(dbpath):
     client.attach('foo', dbpath)
     client.attach('bar', dbpath)
 
-    client.set_database('foo')
-    foo_tables = client.list_tables()
-    client.set_database('bar')
-    bar_tables = client.list_tables()
+    foo_tables = client.list_tables(database='foo')
+    bar_tables = client.list_tables(database='bar')
 
     assert foo_tables == bar_tables
 
