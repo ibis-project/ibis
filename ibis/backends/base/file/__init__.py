@@ -42,6 +42,11 @@ class FileDatabase(Database):
             path = self.path
         return sorted(self.client.list_databases(path=path))
 
+    def list_tables(self, path=None):
+        if path is None:
+            path = self.path
+        return sorted(self.client.list_tables(path=path))
+
 
 class FileClient(Client):
     def __init__(self, backend, root):
