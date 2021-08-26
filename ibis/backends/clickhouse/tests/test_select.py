@@ -1,3 +1,5 @@
+from itertools import product
+
 import clickhouse_driver
 import pandas as pd
 import pandas.testing as tm
@@ -265,43 +267,46 @@ def test_non_equijoin(alltypes):
         expr.execute()
 
 
-def test_join_with_predicate_on_different_columns_raises(
-    con, batting, awards_players
-):
-    t1 = batting
-    t2 = awards_players
-
-    pred = t1['playerID'] == t2['awardID']
-    expr = t1.inner_join(t2, [pred])[[t1]]
-
-    with pytest.raises(com.TranslationError):
-        ibis.clickhouse.compile(expr)
-
-
 @pytest.mark.parametrize(
-    ('join_type', 'join_clause'),
-    [
-        ('any_inner_join', 'ANY INNER JOIN'),
-        ('inner_join', 'ALL INNER JOIN'),
-        ('any_left_join', 'ANY LEFT JOIN'),
-        ('left_join', 'ALL LEFT JOIN'),
-    ],
+    ('join_type_and_clause', 'join_keys'),
+    product(
+        [
+            ('any_inner_join', 'ANY INNER JOIN'),
+            ('inner_join', 'ALL INNER JOIN'),
+            ('any_left_join', 'ANY LEFT JOIN'),
+            ('left_join', 'ALL LEFT JOIN'),
+        ],
+        [
+            ('playerID',),
+            ('playerID', 'awardID'),
+        ],
+    ),
 )
 def test_simple_joins(
-    con, db, batting, awards_players, join_type, join_clause
+    con, db, batting, awards_players, join_type_and_clause, join_keys
 ):
+    join_type, join_clause = join_type_and_clause
     t1, t2 = batting, awards_players
-    expr = getattr(t1, join_type)(t2, ['playerID'])[[t1]]
+    if len(join_keys) == 1:
+        pred = join_keys
+        join_keys_str = f'    USING `{join_keys[0]}`'
+    else:
+        pred = [t1[join_keys[0]] == t2[join_keys[1]]]
+        join_keys_str = f'    ON t0.`{join_keys[0]}` = t1.`{join_keys[1]}`'
+    expr = getattr(t1, join_type)(t2, pred)[[t1]]
 
-    expected = """SELECT t0.*
-FROM {0}.`batting` t0
-  {join_clause} {0}.`awards_players` t1
-    USING `playerID`""".format(
-        db.name, join_clause=join_clause
+    expected = (
+        'SELECT t0.*\n'
+        f'FROM {db.name}.`batting` t0\n'
+        f'  {join_clause} {db.name}.`awards_players` t1\n'
+        f'{join_keys_str}'
     )
 
     assert ibis.clickhouse.compile(expr) == expected
-    assert len(con.execute(expr))
+    try:
+        con.execute(expr)
+    except clickhouse_driver.errors.ServerException:
+        pytest.fail('ClickHouse raise a `ServerException` error.')
 
 
 def test_self_reference_simple(con, db, alltypes):
