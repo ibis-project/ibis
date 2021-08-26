@@ -276,10 +276,7 @@ def test_non_equijoin(alltypes):
             ('any_left_join', 'ANY LEFT JOIN'),
             ('left_join', 'ALL LEFT JOIN'),
         ],
-        [
-            ('playerID',),
-            ('playerID', 'awardID'),
-        ],
+        [('playerID',), ('playerID', 'awardID'),],  # noqa: E231
     ),
 )
 def test_simple_joins(
@@ -296,7 +293,7 @@ def test_simple_joins(
     expr = getattr(t1, join_type)(t2, pred)[[t1]]
 
     expected = (
-        'SELECT t0.*\n'
+        f'SELECT t0.*\n'
         f'FROM {db.name}.`batting` t0\n'
         f'  {join_clause} {db.name}.`awards_players` t1\n'
         f'{join_keys_str}'
