@@ -12,6 +12,7 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :feature:`2916` Support joining on different columns in ClickHouse backend
 * :feature:`2908` Support summarization of empty data in Pandas backend
 * :support:`2883` Output of `Client.version` returned as a string, instead of a setuptools `Version`
 * :feature:`2882` Unify implementation of fillna and isna in Pyspark backend
