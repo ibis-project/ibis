@@ -84,14 +84,35 @@ class ClickhouseTableSetFormatter(TableSetFormatter):
             self.join_types, self.join_tables[1:], self.join_predicates
         ):
             buf.write('\n')
-            buf.write(util.indent('{0} {1}'.format(jtype, table), self.indent))
+            buf.write(util.indent(f'{jtype} {table}', self.indent))
 
-            if len(preds):
+            fmt_preds = []
+            npreds = len(preds)
+            using_clause_flag = True
+            for pred in preds:
+                op = pred.op()
+                if (
+                    not isinstance(op, ops.Equals)
+                    or op.args[0].get_name() != op.args[1].get_name()
+                ):
+                    using_clause_flag = False
+                new_pred = self._translate(pred)
+                if npreds > 1:
+                    new_pred = f'({new_pred})'
+                fmt_preds.append(new_pred)
+
+            if npreds > 0:
                 buf.write('\n')
-                fmt_preds = map(self._format_predicate, preds)
-                fmt_preds = util.indent(
-                    'USING ' + ', '.join(fmt_preds), self.indent * 2
-                )
+                if using_clause_flag:
+                    fmt_preds = map(self._format_predicate, preds)
+                    fmt_preds = util.indent(
+                        'USING ' + ', '.join(fmt_preds), self.indent * 2
+                    )
+                else:
+                    conj = f' AND\n{" " * 3}'
+                    fmt_preds = util.indent(
+                        'ON ' + conj.join(fmt_preds), self.indent * 2
+                    )
                 buf.write(fmt_preds)
 
         return buf.getvalue()
@@ -102,12 +123,6 @@ class ClickhouseTableSetFormatter(TableSetFormatter):
             if not isinstance(op, ops.Equals):
                 raise com.TranslationError(
                     'Non-equality join predicates are ' 'not supported'
-                )
-
-            left_on, right_on = op.args
-            if left_on.get_name() != right_on.get_name():
-                raise com.TranslationError(
-                    'Joining on different column names ' 'is not supported'
                 )
 
     def _format_predicate(self, predicate):
