@@ -1,5 +1,4 @@
 import datetime
-import time
 
 import pandas as pd
 import pytest
@@ -363,11 +362,13 @@ def test_day_of_week(con):
     assert result == 'Sunday'
 
 
-def test_time_to_int_cast(con):
-    now = pytz.utc.localize(datetime.datetime.now())
-    d = ibis.literal(now)
+def test_datetime_to_int_cast(con):
+    timestamp = pytz.utc.localize(
+        datetime.datetime(2021, 9, 12, 14, 45, 33, 0)
+    )
+    d = ibis.literal(timestamp)
     result = con.execute(d.cast('int64'))
-    assert result == int(time.mktime(now.timetuple())) * 1000000
+    assert result == pd.Timestamp(timestamp).value // 1000
 
 
 def test_set_option_with_dot(con):

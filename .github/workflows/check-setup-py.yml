@@ -3,6 +3,7 @@ name: Check setup.py
 on:
   push:
     paths:
+      - ./dev/poetry2setup
       - ./dev/poetry2setup.py
       - README.md
       - poetry.lock
@@ -10,11 +11,13 @@ on:
       - setup.py
   pull_request:
     paths:
+      - ./dev/poetry2setup
       - ./dev/poetry2setup.py
       - README.md
       - poetry.lock
       - pyproject.toml
       - setup.py
+
 jobs:
   check_setup_py:
     runs-on: ubuntu-latest
@@ -26,33 +29,19 @@ jobs:
       - name: checkout
         uses: actions/checkout@v2
 
-      - name: install python
-        uses: actions/setup-python@v2
-        id: install_python
+      - name: install nix
+        uses: cachix/install-nix-action@v12
         with:
-          python-version: ${{ matrix.python-version }}
+          nix_path: nixpkgs=channel:nixos-unstable-small
 
-      - name: install poetry
-        run: pip install black poetry poetry-core tomli
-
-      - name: cache dependencies
-        uses: actions/cache@v2
+      - name: setup cachix
+        uses: cachix/cachix-action@v10
         with:
-          path: ~/.cache/pypoetry
-          key: check-setup-py-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}
-
-      - name: install base ibis env
-        run: poetry install
+          name: ibis
+          extraPullNames: nix-community,poetry2nix
 
       - name: generate setup.py
-        env:
-          # this environment variable is set is to ensure reproducible setup.py
-          # generation
-          #
-          # because various data structures in poetry are unordered, an can
-          # result in things like package extras appearing in a different order
-          PYTHONHASHSEED: 42
-        run: python ./dev/poetry2setup.py -o setup.py
+        run: ./dev/poetry2setup -o setup.py
 
       - name: check whether setup.py needs to be regenerated
         run: git diff --exit-code setup.py

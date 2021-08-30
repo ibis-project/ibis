@@ -1,0 +1,38 @@
+{
+    "nixpkgs": {
+        "branch": "nixos-unstable-small",
+        "description": "Nix Packages collection",
+        "homepage": "",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "c9cf5729cf63b2e1b45b8a40833fb18cb8d4b8af",
+        "sha256": "0hnzbv7nzz8q9rc908ka64hdnf5gzrsjy5b45zzxqnxm38mwsvd9",
+        "type": "tarball",
+        "url": "https://github.com/NixOS/nixpkgs/archive/c9cf5729cf63b2e1b45b8a40833fb18cb8d4b8af.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "poetry2nix": {
+        "branch": "master",
+        "description": "Convert poetry projects to nix automagically [maintainer=@adisbladis] ",
+        "homepage": "",
+        "owner": "nix-community",
+        "repo": "poetry2nix",
+        "rev": "2ab5f606d30b042228241f400314067aa9a609af",
+        "sha256": "1mvmms90qxjx9maxaw1vcgq01g3ll13c9pv1b4f5fnq1xbri6w21",
+        "type": "tarball",
+        "url": "https://github.com/nix-community/poetry2nix/archive/2ab5f606d30b042228241f400314067aa9a609af.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "pre-commit-hooks": {
+        "branch": "master",
+        "description": "Seamless integration of https://pre-commit.com git hooks with Nix.",
+        "homepage": "",
+        "owner": "cachix",
+        "repo": "pre-commit-hooks.nix",
+        "rev": "c3b4f94350b0e59c2546fa85890cc70d03616b9c",
+        "sha256": "1x90b2m8kzxzslfssvnaq9s1m0n9rxqw41qhz298gnv4nvahcr0f",
+        "type": "tarball",
+        "url": "https://github.com/cachix/pre-commit-hooks.nix/archive/c3b4f94350b0e59c2546fa85890cc70d03616b9c.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    }
+}

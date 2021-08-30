@@ -1,3 +1,5 @@
-setup.py linguist-generated=true
-poetry.lock linguist-generated=true
 conda-lock/*.lock linguist-generated=true
+nix/sources.json linguist-generated=true
+nix/sources.nix linguist-generated=true
+poetry.lock linguist-generated=true
+setup.py linguist-generated=true

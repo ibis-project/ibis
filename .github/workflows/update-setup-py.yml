@@ -3,6 +3,7 @@ name: Update setup.py
 on:
   pull_request:
     paths:
+      - ./dev/poetry2setup
       - ./dev/poetry2setup.py
       - pyproject.toml
       - poetry.lock
@@ -30,30 +31,17 @@ jobs:
         with:
           token: ${{ steps.generate_token.outputs.token }}
 
-      - name: install python
-        uses: actions/setup-python@v2
-        id: install_python
-        with:
-          python-version: "3.x"
+      - name: install nix
+        uses: cachix/install-nix-action@v12
 
-      - name: install deps for poetry2setup
-        run: pip install black poetry-core tomli
-
-      - name: cache dependencies
-        uses: actions/cache@v2
+      - name: setup cachix
+        uses: cachix/cachix-action@v10
         with:
-          path: ~/.cache/pypoetry
-          key: update-setup-py-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}
+          name: ibis
+          extraPullNames: nix-community,poetry2nix
 
       - name: generate setup.py
-        env:
-          # this environment variable is set is to ensure reproducible setup.py
-          # generation
-          #
-          # because various data structures in poetry are unordered, an can
-          # result in things like package extras appearing in a different order
-          PYTHONHASHSEED: 42
-        run: python ./dev/poetry2setup.py -o setup.py
+        run: ./dev/poetry2setup -o setup.py
 
       - name: setup git credentials
         uses: OleksiyRudenko/gha-git-credentials@v2.1
