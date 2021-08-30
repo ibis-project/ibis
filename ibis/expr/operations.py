@@ -139,7 +139,7 @@ class ValueOp(Node):
         return distinct_roots(*exprs)
 
     def resolve_name(self):
-        raise com.ExpressionError('Expression is not named: %s' % repr(self))
+        raise com.ExpressionError('Expression is not named: %s' % type(self))
 
     def has_resolved_name(self):
         return False
