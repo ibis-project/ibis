@@ -262,7 +262,7 @@ class AlchemyClient(SQLClient):
         )
         return self.list_databases()
 
-    def list_tables(self, like, database, schema):
+    def list_tables(self, like=None, database=None, schema=None):
         return self.backend.list_tables(like, database, schema)
 
     def raw_sql(self, query: str, results=False):
