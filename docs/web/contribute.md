@@ -2,13 +2,48 @@
 
 ## Set up a development environment
 
-1. Create a fork of the [Ibis repository](https://github.com/ibis-project/ibis), and clone it.
+There are two primary ways to setup a development environment.
 
+* [`nix`](#nix): fewer steps, isolated
+* [`conda`](#miniconda): more steps, not isolated
+
+### Initial steps
+
+**Dependencies:**
+
+- required: [`git`](https://git-scm.com/)
+- required: [`gh`](https://github.com/cli/cli)
+- optional: [`nix`](https://nixos.org/download.html#nix-quick-install)
+- optional: [`conda`](https://docs.conda.io/en/latest/)
+
+Installing both `nix` and `conda` is fine, but you should use one or the other for contributing, not both.
+
+Use `gh` to fork and clone the `ibis-project/ibis` repository:
+
+     :::sh
+     gh repo fork --clone --remote ibis-project/ibis
+     cd ibis
+
+### Nix
+
+1. [Download and install `nix`](https://nixos.org/guides/install-nix.html)
+2. Run `nix-shell` in the checkout directory:
+   
         :::sh
-        git clone https://github.com/<your-github-username>/ibis
+        cd ibis
 
+        # set up the cache to avoid building everything from scratch
+        nix-shell -p cachix --run 'cachix use ibis'
 
-2. [Download](https://docs.conda.io/en/latest/miniconda.html) and install Miniconda
+        # start a nix-shell
+        #
+        # this may take awhile to download artifacts from the cache
+        nix-shell
+
+### Miniconda
+
+1. [Download](https://docs.conda.io/en/latest/miniconda.html) and install Miniconda
+2. [Download the latest `environment.yaml`](https://github.com/ibis-project/ibis/releases/latest/download/environment.yaml)
 3. Create a Conda environment suitable for ibis development:
 
         :::sh
@@ -21,13 +56,14 @@
         :::sh
         conda activate ibis-dev
 
-5. Install your local copy of Ibis into the Conda environment. In the root of the project run:
+5. Install your local copy of `ibis` into the Conda environment. In the root of the project run:
 
         :::sh
         pip install -e .
 
+### General workflow
 
-## Find an issue to work on
+#### Find an issue to work on
 
 If you are working with Ibis, and find a bug, or you are reading the documentation and see something
 wrong, or that could be clearer, you can work on that.
@@ -43,104 +79,190 @@ assign the issue to yourself. This way, nobody else will work on it at the same 
 issue that someone else is assigned to, please contact the assignee to know if they are still working
 on it.
 
+#### Make a branch
 
-## Working with backends
+**Dependencies:**
 
-Ibis comes with several backends. If you want to work with a specific backend, you will have to install
-the dependencies for the backend with `conda install -n ibis-dev -c conda-forge --file="ci/deps/<backend>.yml"`.
+- required: `git`
 
-If you don't have a database for the backend you want to work on, you can check the configuration of the
-continuos integration, where docker images are used for different backend. This is defined in
-`.github/workflows/main.yml`.
+The first thing you want to do is make a branch. Let's call it `useful-bugfix`.
 
-## Run the test suite
+       :::sh
+       git checkout -b useful-bugfix
 
-To run Ibis tests use the next command:
+#### Make the desired change
+
+**Dependencies:**
+
+- required: `git`
+
+Let's say you've made a change to `ibis/expr/types.py` to fix a bug reported in issue #424242 (not actually an issue).
+
+Running `git status` should give output similar to this:
+
+        :::sh
+        $ git status
+        On branch useful-bugfix
+        Your branch is up to date with 'origin/useful-bugfix'.
+        
+        Changes not staged for commit:
+          (use "git add <file>..." to update what will be committed)
+          (use "git restore <file>..." to discard changes in working directory)
+                modified:   ibis/expr/types.py
+        
+        no changes added to commit (use "git add" and/or "git commit -a")
+
+#### Run the test suite
+
+Next, you'll want to run a subset of the test suite.
+
+**Dependencies:**
+
+- required: [`nix`](#nix) environment or [`conda`](#miniconda) environment
+
+To run a subset of the ibis tests use the following command:
 
 ```sh
-PYTEST_BACKENDS="sqlite pandas" python -m pytest ibis/tests
+PYTEST_BACKENDS="sqlite pandas" pytest ibis/tests ibis/backends/tests
 ```
 
-You can change `sqlite pandas` by the backend or backends (space separated) that
-you want to test.
+You can change `"sqlite pandas"` to include one or more space-separated
+supported backends that you want to test.
 
+It isn't necessary to provide `PYTEST_BACKENDS` at all, but it's useful for
+exercising more of the library's test suite.
 
-## Style and formatting
+#### Commit your changes
 
-We use [flake8](http://flake8.pycqa.org/en/latest/),
-[black](https://github.com/psf/black) and
-[isort](https://github.com/pre-commit/mirrors-isort) to ensure our code
-is formatted and linted properly. If you have properly set up your development
-environment by running ``make develop``, the pre-commit hooks should check
-that your proposed changes continue to conform to our style guide.
+**Dependencies:**
 
-We use [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html) as
-our standard format for docstrings.
+- required: `git`
+- optional: [`cz`](https://commitizen-tools.github.io/commitizen/)
 
+Next, you'll want to commit your changes.
 
-## Commit philosophy
+Ibis's commit message structure follows [`semantic-release`
+conventions](https://github.com/semantic-release/semantic-release).
 
-We aim to make our individual commits small and tightly focused on the feature
-they are implementing. If you find yourself making functional changes to
-different areas of the codebase, we prefer you break up your changes into
-separate Pull Requests. In general, a philosophy of one Github Issue per
-Pull Request is a good rule of thumb, though that isn't always possible.
+**NOTE:** It isn't necessary to use `cz commit` to make commits, but it is
+necessary to follow outlined in this table in [this
+table](https://github.com/semantic-release/semantic-release).
 
-We avoid merge commits (and in fact they are disabled in the Github repository)
-so you may be asked to rebase your changes on top of the latest commits to
-master if there have been changes since you last updated a Pull Request.
-Rebasing your changes is usually as simple as running
-``git pull upstream master --rebase`` and then force-pushing to your branch:
-``git push origin <branch-name> -f``.
+`cz` is already configured and ready to go if you've setup an environment, so
+stage your changes and run `cz commit`:
 
+        :::sh
+        $ git add .
+        $ cz commit
 
-## Commit/PR messages
+You should see a series of prompts about actions to take next:
 
-Well-structed commit messages allow us to generate comprehensive release notes
-and make it very easy to understand what a commit/PR contributes to our
-codebase. Commit messages and PR titles should be prefixed with a standard
-code the states what kind of change it is. They fall broadly into 3 categories:
-``FEAT (feature)``, ``BUG (bug)``, and ``SUPP (support)``. The ``SUPP``
-category has some more fine-grained aliases that you can use, such as ``BLD``
-(build), ``CI`` (continuous integration), ``DOC`` (documentation), ``TST``
-(testing), and ``RLS`` (releases).
+1. Select the type of change you're committing. In this case, we're committing a bug fix, so we'll select fix:
 
+        :::sh
+        ? Select the type of change you are committing (Use arrow keys)
+         » fix: A bug fix. Correlates with PATCH in SemVer
+           feat: A new feature. Correlates with MINOR in SemVer
+           docs: Documentation only changes
+           style: Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)
+           refactor: A code change that neither fixes a bug nor adds a feature
+           perf: A code change that improves performance
+           test: Adding missing or correcting existing tests
+           build: Changes that affect the build system or external dependencies (example scopes: pip, docker, npm)
+           ci: Changes to our CI configuration files and scripts (example scopes: GitLabCI)
 
-## Maintainer's guide
+   Generally you don't need to think too hard about what category to select, but note that:
 
-Maintainers generally perform two roles, merging PRs and making official
-releases.
+   * `feat` will cause a minor version bump
+   * `fix` will cause a patch version bump
+   * everything else will not cause a version bump, **unless it's a breaking
+       change** (continue reading these instructions for more info on that)
 
+2. Next, you're asked what the scope of this change is:
 
-### Merging PRs
+        :::sh
+        ? What is the scope of this change? (class or file name): (press [enter] to skip)
 
-We have a CLI script that will merge Pull Requests automatically once they have
-been reviewed and approved. See the help message in ``dev/merge-pr.py`` for
-full details. If you have two-factor authentication turned on in Github, you
-will have to generate an application-specific password by following this
-[guide](https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line).
-You will then use that generated password on the command line for the ``-P``
-argument.
+   This is optional, but if there's a clear component or single file that is
+   modified you should put it. In our case, let's assume the bug fixed a type
+   inference problem, so we'd type in `type-inference` at this prompt.
 
-Access the [Ibis "Merging PRs" wiki](https://github.com/ibis-project/ibis/wiki/Merging-PRs) page
-for more information.
+3. You'll then be asked to type in a short description of the change which will be the commit message title:
 
+        :::sh
+        ? Write a short and imperative summary of the code changes: (lower case and no period)
+         fix a type inference issue where floats were incorrectly cast to ints
+
+   Let's say there was a problem with spurious casting of float to integers, so
+   we type in the message above.  That number on the left (here `(69)`) is the
+   length of description you've typed in.
+
+4. Next you'll be asked for a longer description, which is entirely optional
+   **unless the change is a breaking change**, or you feel like a bit of prose
+
+        :::sh
+        ? Provide additional contextual information about the code changes: (press [enter] to skip)
+         A bug was triggered by some incorrect code that caused floats to be incorrectly cast to integers.
+
+   For non breaking changes, this isn't strictly necessary but it can be very
+   helpful when a change is large, obscure, or complex. For this example let's just reiterate
+   most of what the commit title says.
+
+5. Next you're asked about breaking changes:
+
+        :::sh
+        ? Is this a BREAKING CHANGE? Correlates with MAJOR in SemVer (y/N)
+
+   If you answer `y`, then you'll get an additional prompt asking you to
+   describe the breaking changes. This description will ultimately make its way
+   into the user-facing release notes. If there aren't any breaking changes, press enter.
+   Let's say this bug fix does **not** introduce a breaking change.
+
+6. Finally, you're asked whether this change affects any open issues (ignore
+   the bit about breaking changes) and if yes then to reference them:
+
+        :::sh
+        ? Footer. Information about Breaking Changes and reference issues that this commit closes: (press [enter] to skip)
+         fixes #424242
+
+   Here we typed `fixes #424242` to indicate that we fixed issue #9000.
+
+Whew! Seems like a lot, but it's rather quick once you get used to it. After
+that you should have a commit that looks roughly like this, ready to be automatically rolled into the next release:
+
+        commit 4049adbd66b0df48e37ca105da0b9139101a1318 (HEAD -> useful-bugfix)
+        Author: Phillip Cloud <417981+cpcloud@users.noreply.github.com>
+        Date:   Tue Dec 21 10:30:50 2021 -0500
+
+            fix(type-inference): fix a type inference issue where floats were incorrectly cast to ints
+
+            A bug was triggered by some incorrect code that caused floats to be incorrectly cast to integers.
+
+            fixes #424242
+
+#### Push your changes
+
+Now that you've got a commit, you're ready to push your changes and make a pull request!
+
+        :::sh
+        $ gh pr create
+
+Follow the prompts, and `gh` will print a link to your PR upon successfuly submission.
 
 ### Updating dependencies
 
 #### Automatic dependency updates
 
-WhiteSource Renovate will run every day (outside of traditional business hours)
-and submit PRs that attempt to update dependencies.
+[WhiteSource
+Renovate](https://www.whitesourcesoftware.com/free-developer-tools/renovate/)
+will run at some cadence (outside of traditional business hours) and submit PRs
+that update dependencies.
 
-These upgrades use a very conservative update strategy, which is only to
-**widen** the dependency range, as opposed to increasing the lower bound.
+These upgrades use a conservative update strategy, which is currently to
+increase the upper bound of a dependency's range.
 
-The PRs will also automatically regenerate `poetry.lock` and `setup.py`, so
-that in most cases, maintainers and contributors do not have to remember to
-generate and commit these files.
-
-In case you need to manually update a dependency see the next section.
+The PRs it generates will regenerate a number of other files so that in most
+cases contributors do not have to remember to generate and commit these files.
 
 #### Manually updating dependencies
 
@@ -151,82 +273,92 @@ In case you need to manually update a dependency see the next section.
 3. Run
 
 ```sh
+# if using nix
+$ ./dev/poetry2setup -o setup.py
+
+# it not using nix, requires installation of tomli and poetry-core
 $ PYTHONHASHSEED=42 python ./dev/poetry2setup.py -o setup.py
 ```
 
-from the repository root. `tomli` and `poetry-core` are necessary to run this
-script, they can be `pip install`ed.
+from the repository root.
 
-4. Commit your changes and make a pull request.
-
-Updates of minor versions of dependencies are handled automatically by
+Updates of minor and patch versions of dependencies are handled automatically by
 [`renovate`](https://github.com/renovatebot/renovate).
 
-Do not make PRs from changes resulting from running `poetry update` unless
-absolutely necessary.
-
 ### Releasing
+
+## Style and formatting
+
+The following tools are run in both CI and pre-commit checks to check various
+kinds of code style and lint rules:
+
+- [black](https://github.com/psf/black) for general formatting of Python code
+- [isort](https://github.com/PyCQA/isort) for formatting and sorting Python `import` statements
+- [flake8](https://flake8.pycqa.org/en/latest/) for linting Python code
+- [nix-linter](https://github.com/Synthetica9/nix-linter) for linting nix files
+- [nixpkgs-fmt](https://github.com/nix-community/nixpkgs-fmt) for formatting nix files
+- [prettier](https://prettier.io/) for formatting handwritten TOML, YAML, and JSON files in the repo
+- [shellcheck](https://github.com/koalaman/shellcheck) for linting various shell script things
+- [shfmt](https://github.com/mvdan/sh) for formatting shell scripts
+
+**Note:** If you use `nix-shell` all of these are setup for you and ready to use, you don't
+need to install any of these tools.
+
+We use [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html) as our
+standard format for docstrings.
+
+## Commit philosophy
+
+We aim to make our individual commits small and tightly focused on the feature
+they are implementing or bug being fixed. If you find yourself making
+functional changes to different areas of the codebase, we prefer you break up
+your changes into separate Pull Requests. In general, a philosophy of one
+Github Issue per Pull Request is a good rule of thumb.
+
+## Maintainer's guide
+
+Maintainers should be performing a minimum number of tasks, deferring to automation
+as much as possible:
+
+* Merging pull requests
+* Making releases to conda-forge
+
+A number of tasks that are typically associated with maintenance are either partially or fully automated:
+
+* Updating library dependencies: this is handled automatically by WhiteSource Renovate
+* Updating github-actions: this is handled automatically by WhiteSource Renovate
+* Updating nix dependencies: this is a job run at a regular cadence to update nix dependencies
+  and publish them to a public cache
+
+Occasionally you may need to manually lock poetry dependencies, which can be done by running
+
+        :::sh
+        poetry update --lock
+
+If a dependency was updated, you'll see changes to `poetry.lock` in the current directory.
+
+### Merging PRs
+
+PRs can be merged using the [`gh` command line tool](https://github.com/cli/cli)
+or with the GitHub web UI.
+
+### Release
+
+#### PyPI
+
+Releases to PyPI are handled automatically using a [Python
+implementation](https://python-semantic-release.readthedocs.io/en/latest/) of
+[semantic
+release](https://egghead.io/lessons/javascript-automating-releases-with-semantic-release).
 
 Ibis is released in two places:
 
 - [PyPI](https://pypi.org/) (the **PY**thon **P**ackage **I**ndex), to enable `pip install ibis-framework`
 - [Conda Forge](https://conda-forge.org/), to enable `conda install ibis-framework`
 
-Steps to release:
-
-#### Create a new version
-
-In the `master` branch, after the last commit to include in the release, create a tag:
-
-- `git tag <version>` (e.g. `git tag 2.0.0`)
-
-Originally, Ibis used a version like `v0.0.1`, but the `v` was eventually dropped, and recently we
-have been using just the `0.0.1` format.
-
-Push the tag to the remote branch:
-
-- `git push --tags upstream master`
-
-The remote `upstream` is assumed to be the main Ibis repo (i.e. https://github.com/ibis-project/ibis).
-
-#### Release to PyPI
-
-Just after the tag (without pulling new commits from master, build the Python package:
-
-- `python setup.py sdist bdist_wheel`
-
-This requires `twine` and `wheel` installed, which you should have if you created your environment
-with the repo `environment.yml` file.
-
-The package will be built in the `dist/` directory. To upload it to the PyPI server, use:
-
-- `twine upload dist/*`
-
-This will create the new package, and will be available immediately via `pip install ibis-framework`.
-
-#### Release to conda-forge
+#### `conda-forge`
 
 The conda-forge package is released using the conda-forge feedstock repository: https://github.com/conda-forge/ibis-framework-feedstock/
 
-We need to update its recipe in a pull request, and the new version will be automatically released.
-After cloning the feedstock repository, update its recipe with the one in the main Ibis repository:
-
-- `cp <ibis-repo>/ci/recipe/meta.yaml <feedstock-repo/recipe/meta.yaml`
-
-Remove the comment at the header of the `meta.yaml` file. And update the next yaml values:
-
-- Add at the beginning `{% set version = "2.0.0" %}` (replace `2.0.0` by the version being released)
-- Set `number` in the `build` section to `0` (unless it's a different build for the previous release, then increase by one)
-- Add the `sha256` value in the `source` section. Use `sha256sum` of the `tar.gz` file in `dist/` to know the value.
-
-Once the recipe is final, run:
-
-- `conda smithy rerender`
-
-This will update the azure configuration files in the feedstock repository, and possibly other files. Open a pull request with all the changes.
-
-The conda-forge package should be ready not long after the pull request is merged, and it can
-be installed with `conda install -c conda-forge ibis-framework`.
-
-Finally, if extra changes have been required to the recipe, besides the version, build and sha256
-mentioned before, copy the recipe to the Ibis repository. Keeping the header.
+After a release to PyPI, the conda-forge bot automatically update the ibis
+package.

@@ -71,3 +71,9 @@ docs/source/backends/generated
 
 # temporary doc build
 docbuild
+
+# nix generated files
+.direnv
+.pre-commit-config.yaml
+result
+result-*

@@ -46,6 +46,8 @@ layout:
         target: /community/ecosystem.html
     - name: "Contribute"
       target: /contribute.html
+    - name: "Release Notes"
+      target: /release_notes.html
   social_media:
     - font_awesome: twitter
       url: https://twitter.com/IbisData

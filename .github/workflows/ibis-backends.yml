@@ -25,7 +25,7 @@ jobs:
           - windows-latest
         python-version:
           - "3.7"
-          - "3.9"
+          - "3.10"
         backend:
           - name: csv
             title: CSV
@@ -45,13 +45,25 @@ jobs:
             title: SQLite
         exclude:
           - os: windows-latest
-            python-version: "3.9"
+            python-version: "3.10"
+            backend:
+              name: hdf5
+              title: HDF5
+          # TODO: remove this when HDF5 becomes 3.10 compatible
+          - os: ubuntu-latest
+            python-version: "3.10"
             backend:
               name: hdf5
               title: HDF5
         include:
           - os: windows-latest
             python-version: "3.8"
+            backend:
+              name: hdf5
+              title: HDF5
+          # TODO: remove this when HDF5 becomes 3.10 compatible
+          - os: ubuntu-latest
+            python-version: "3.9"
             backend:
               name: hdf5
               title: HDF5
@@ -121,7 +133,12 @@ jobs:
           - []
         include:
           - python-version: "3.7"
-            deps: ["sqlalchemy@1.3", "psycopg2@2.7", "geoalchemy@0.6", "geopandas@0.6", "shapely@1.6"]
+            deps:
+              - "sqlalchemy@1.3"
+              - "psycopg2@2.7"
+              - "geoalchemy@0.6"
+              - "geopandas@0.6"
+              - "shapely@1.6"
     services:
       postgres:
         image: shajekpivotal/ibis-docker-postgres-9.5
@@ -188,7 +205,7 @@ jobs:
       matrix:
         python-version:
           - "3.7"
-          - "3.9"
+          - "3.10"
         pyspark:
           - version: "2.4.3"
             jdk: "8"
@@ -199,7 +216,7 @@ jobs:
             env:
               ARROW_PRE_0_15_IPC_FORMAT: 0
         exclude:
-          - python-version: "3.9"
+          - python-version: "3.10"
             pyspark:
               version: "2.4.3"
               jdk: "8"
@@ -267,6 +284,7 @@ jobs:
       matrix:
         python-version:
           - "3.7"
+          # XXX: unlikely that impala will ever support 3.10
           - "3.9"
     services:
       postgres:
@@ -364,7 +382,7 @@ jobs:
       matrix:
         python-version:
           - "3.7"
-          - "3.9"
+          - "3.10"
         backend:
           - name: mysql
             title: MySQL

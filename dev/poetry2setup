@@ -1,0 +1,14 @@
+#!/usr/bin/env nix-shell
+#!nix-shell --pure -p python3Packages.black -p python3Packages.tomli -p python3Packages.poetry-core -p bash -i bash
+# vim: filetype=sh
+
+set -euo pipefail
+
+dir="$(readlink -f "$(dirname "$0")")"
+
+# PYTHONHASHSEED is set is to ensure reproducible setup.py generation
+#
+# Because the `extras` data structure in poetry is a frozenset and therefore
+# arbitrarily ordered, regenerating setup.py without a fixed hash seed can
+# cause unnecessary reordering of extras.
+PYTHONHASHSEED=42 python "$dir/poetry2setup.py" "$@"
