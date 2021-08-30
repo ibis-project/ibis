@@ -43,8 +43,6 @@ def test_database_consistency(con):
 def test_list_tables(con):
     tables = con.list_tables()
     assert isinstance(tables, list)
+    # only table that is garanteed to be in all backends
     assert 'functional_alltypes' in tables
-    assert 'batting' in tables
-    # impala doesn't seem to use 'awards_players'
-    # assert 'awards_players' in tables
     assert all(isinstance(table, str) for table in tables)
