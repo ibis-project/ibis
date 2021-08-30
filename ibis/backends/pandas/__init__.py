@@ -69,7 +69,7 @@ class BasePandasBackend(BaseBackend):
     def list_databases(self, like=None):
         return self._filter_with_like(['main'])
 
-    def list_tables(self, like=None):
+    def list_tables(self, like=None, database=None):
         return self._filter_with_like(
             list(self.client.dictionary.keys()), like
         )
