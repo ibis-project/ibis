@@ -147,3 +147,12 @@ class Backend(BaseSQLBackend):
         databases = self.client._get_list(cur)
         cur.release()
         return self._filter_with_like(databases, like)
+
+    def list_tables(self, like=None, database=None):
+        statement = 'SHOW TABLES'
+        if database is not None:
+            statement += f'IN {database}'
+
+        return self._filter_with_like(
+            [row[0] for row in self.client.raw_sql(statement).fetchall()]
+        )
