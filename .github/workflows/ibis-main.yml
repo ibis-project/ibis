@@ -14,6 +14,82 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  commitlint:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: install nix
+        uses: cachix/install-nix-action@v14
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable-small
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: lint commits
+        run: nix shell -L --keep-going -f '<nixpkgs>' commitlint -c commitlint --from=${{ github.event.pull_request.base.sha }} --to=${{ github.sha }} --verbose
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: install nix
+        uses: cachix/install-nix-action@v12
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable-small
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: setup cachix
+        uses: cachix/cachix-action@v10
+        with:
+          name: ibis
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          extraPullNames: nix-community,poetry2nix
+
+      - name: pre-commit checks
+        run: nix-shell pre-commit-shell.nix --keep-going --pure --run 'pre-commit run --all-files'
+
+  nix:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-11
+        python-version:
+          - "3.7"
+          - "3.8"
+          - "3.9"
+          - "3.10"
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: install nix
+        uses: cachix/install-nix-action@v16
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable-small
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: setup cachix
+        uses: cachix/cachix-action@v10
+        with:
+          name: ibis
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          extraPullNames: nix-community,poetry2nix
+
+      - name: nix build and run tests
+        run: nix build --keep-going --print-build-logs --file . --argstr python ${{ matrix.python-version }}
+
   test_no_backends:
     name: Test ${{ matrix.os }} python-${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
@@ -76,7 +152,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          - "3.9"
+          - "3.10"
     steps:
       - name: checkout
         uses: actions/checkout@v2
@@ -258,3 +334,29 @@ jobs:
 
       - name: build recipe
         run: conda mambabuild -c conda-forge --python "${{ matrix.python-version }}" ci/recipe/meta.yaml
+
+  simulate_release:
+    runs-on: ubuntu-latest
+    concurrency: release
+    steps:
+      - name: checkout pr
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: set git user name
+        run: git config --global user.name 'github-actions[bot]'
+
+      - name: set git user email
+        run: git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+      - name: setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
+
+      - name: install poetry and semantic-release
+        run: pip install poetry python-semantic-release
+
+      - name: semantic release
+        run: semantic-release publish --noop --verbosity=DEBUG
