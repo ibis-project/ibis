@@ -140,4 +140,4 @@ class Database:
         return self.client.table(qualified_name, self.name)
 
     def list_tables(self, like=None):
-        return self.client.list_tables(like)
+        return self.client.list_tables(like, database=self.name)

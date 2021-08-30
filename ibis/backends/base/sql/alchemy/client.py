@@ -262,6 +262,9 @@ class AlchemyClient(SQLClient):
         )
         return self.list_databases()
 
+    def list_tables(self, like, database, schema):
+        return self.backend.list_tables(like, database, schema)
+
     def raw_sql(self, query: str, results=False):
         return _AutoCloseCursor(super().raw_sql(query))
 
