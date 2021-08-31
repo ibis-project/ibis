@@ -276,7 +276,7 @@ def test_non_equijoin(alltypes):
             ('any_left_join', 'ANY LEFT JOIN'),
             ('left_join', 'ALL LEFT JOIN'),
         ],
-        [('playerID',), ('playerID', 'awardID'),],  # noqa: E231
+        [('playerID', 'playerID'), ('playerID', 'awardID'),],  # noqa: E231
     ),
 )
 def test_simple_joins(
@@ -284,26 +284,19 @@ def test_simple_joins(
 ):
     join_type, join_clause = join_type_and_clause
     t1, t2 = batting, awards_players
-    if len(join_keys) == 1:
-        pred = join_keys
-        join_keys_str = f'    USING `{join_keys[0]}`'
-    else:
-        pred = [t1[join_keys[0]] == t2[join_keys[1]]]
-        join_keys_str = f'    ON t0.`{join_keys[0]}` = t1.`{join_keys[1]}`'
+    pred = [t1[join_keys[0]] == t2[join_keys[1]]]
+    join_keys_str = f'    ON t0.`{join_keys[0]}` = t1.`{join_keys[1]}`'
     expr = getattr(t1, join_type)(t2, pred)[[t1]]
 
     expected = (
-        f'SELECT t0.*\n'
+        'SELECT t0.*\n'
         f'FROM {db.name}.`batting` t0\n'
         f'  {join_clause} {db.name}.`awards_players` t1\n'
         f'{join_keys_str}'
     )
 
     assert ibis.clickhouse.compile(expr) == expected
-    try:
-        con.execute(expr)
-    except clickhouse_driver.errors.ServerException:
-        pytest.fail('ClickHouse raise a `ServerException` error.')
+    con.execute(expr)
 
 
 def test_self_reference_simple(con, db, alltypes):
@@ -320,11 +313,13 @@ def test_join_self_reference(con, db, alltypes):
     expr = t1.any_inner_join(t2, ['id'])[[t1]]
 
     result_sql = ibis.clickhouse.compile(expr)
-    expected_sql = """SELECT t0.*
-FROM {0}.`functional_alltypes` t0
-  ANY INNER JOIN {0}.`functional_alltypes` t1
-    USING `id`"""
-    assert result_sql == expected_sql.format(db.name)
+    expected_sql = (
+        'SELECT t0.*\n'
+        f'FROM {db.name}.`functional_alltypes` t0\n'
+        f'  ANY INNER JOIN {db.name}.`functional_alltypes` t1\n'
+        '    ON t0.`id` = t1.`id`'
+    )
+    assert result_sql == expected_sql
     assert len(con.execute(expr))
 
 
