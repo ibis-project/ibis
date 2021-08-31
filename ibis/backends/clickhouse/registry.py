@@ -474,7 +474,7 @@ def _table_column(translator, expr):
     if ctx.need_aliases():
         alias = ctx.get_ref(table)
         if alias is not None:
-            quoted_name = '{0}.{1}'.format(alias, quoted_name)
+            quoted_name = f'{alias}.{quoted_name}'
 
     return quoted_name
 
