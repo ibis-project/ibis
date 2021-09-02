@@ -60,6 +60,7 @@ def _get_backends_to_test():
         pytest.param(
             _backend_name_to_class(backend),
             marks=getattr(pytest.mark, backend),
+            id=backend,
         )
         for backend in sorted(backends)
     ]
