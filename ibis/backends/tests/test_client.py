@@ -4,6 +4,7 @@ import pytest
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis.util import guid
 
 SQLALCHEMY_BACKENDS = ['sqlite', 'postgres', 'mysql']
 
@@ -216,7 +217,7 @@ def test_insert_no_overwrite_from_dataframe(
     con, test_employee_schema, test_employee_data_2
 ):
 
-    temp_table = 'temp_to_table'
+    temp_table = f'temp_to_table_{guid()}'
     temporary = _create_temp_table_with_schema(
         con, temp_table, test_employee_schema,
     )
@@ -233,7 +234,7 @@ def test_insert_overwrite_from_dataframe(
     con, test_employee_schema, test_employee_data_1, test_employee_data_2
 ):
 
-    temp_table = 'temp_to_table'
+    temp_table = f'temp_to_table_{guid()}'
     temporary = _create_temp_table_with_schema(
         con, temp_table, test_employee_schema, data=test_employee_data_1,
     )
@@ -250,12 +251,12 @@ def test_insert_no_overwite_from_expr(
     con, test_employee_schema, test_employee_data_2
 ):
 
-    temp_table = 'temp_to_table'
+    temp_table = f'temp_to_table_{guid()}'
     temporary = _create_temp_table_with_schema(
         con, temp_table, test_employee_schema,
     )
 
-    from_table_name = 'temp_from_table'
+    from_table_name = f'temp_from_table_{guid()}'
     from_table = _create_temp_table_with_schema(
         con, from_table_name, test_employee_schema, data=test_employee_data_2,
     )
@@ -272,12 +273,12 @@ def test_insert_overwrite_from_expr(
     con, test_employee_schema, test_employee_data_1, test_employee_data_2
 ):
 
-    temp_table = 'temp_to_table'
+    temp_table = f'temp_to_table_{guid()}'
     temporary = _create_temp_table_with_schema(
         con, temp_table, test_employee_schema, data=test_employee_data_1,
     )
 
-    from_table_name = 'temp_from_table'
+    from_table_name = f'temp_from_table_{guid()}'
     from_table = _create_temp_table_with_schema(
         con, from_table_name, test_employee_schema, data=test_employee_data_2,
     )
