@@ -1,6 +1,7 @@
 """Impala backend"""
 import ibis.config
 from ibis.backends.base.sql import BaseSQLBackend
+from ibis.backends.base.sql.ddl import fully_qualified_re
 
 # these objects are exposed in the public API and are not used in the module
 from .client import (  # noqa: F401
@@ -152,6 +153,13 @@ class Backend(BaseSQLBackend):
         statement = 'SHOW TABLES'
         if database is not None:
             statement += f'IN {database}'
+        if like:
+            m = fully_qualified_re.match(like)
+            if m:
+                database, quoted, unquoted = m.groups()
+                like = quoted or unquoted
+                return self.list_tables(like=like, database=database)
+            statement += f" LIKE '{like}'"
 
         return self._filter_with_like(
             [row[0] for row in self.client.raw_sql(statement).fetchall()]
