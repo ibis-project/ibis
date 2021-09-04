@@ -59,7 +59,8 @@ def _get_backends_to_test():
     return [
         pytest.param(
             _backend_name_to_class(backend),
-            marks=getattr(pytest.mark, backend),
+            marks=[getattr(pytest.mark, backend), pytest.mark.backend],
+            id=backend,
         )
         for backend in sorted(backends)
     ]

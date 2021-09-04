@@ -1,8 +1,6 @@
 from io import StringIO
 
-import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-import ibis.util as util
 from ibis.backends.base.sql.compiler import (
     Compiler,
     ExprTranslator,
@@ -11,7 +9,6 @@ from ibis.backends.base.sql.compiler import (
     TableSetFormatter,
 )
 
-from .identifiers import quote_identifier
 from .registry import operation_registry
 
 
@@ -66,56 +63,7 @@ class ClickhouseTableSetFormatter(TableSetFormatter):
         ops.AnyLeftJoin: 'ANY LEFT JOIN',
     }
 
-    def get_result(self):
-        # Got to unravel the join stack; the nesting order could be
-        # arbitrary, so we do a depth first search and push the join tokens
-        # and predicates onto a flat list, then format them
-        op = self.expr.op()
-
-        if isinstance(op, ops.Join):
-            self._walk_join_tree(op)
-        else:
-            self.join_tables.append(self._format_table(self.expr))
-
-        # TODO: Now actually format the things
-        buf = StringIO()
-        buf.write(self.join_tables[0])
-        for jtype, table, preds in zip(
-            self.join_types, self.join_tables[1:], self.join_predicates
-        ):
-            buf.write('\n')
-            buf.write(util.indent('{0} {1}'.format(jtype, table), self.indent))
-
-            if len(preds):
-                buf.write('\n')
-                fmt_preds = map(self._format_predicate, preds)
-                fmt_preds = util.indent(
-                    'USING ' + ', '.join(fmt_preds), self.indent * 2
-                )
-                buf.write(fmt_preds)
-
-        return buf.getvalue()
-
-    def _validate_join_predicates(self, predicates):
-        for pred in predicates:
-            op = pred.op()
-            if not isinstance(op, ops.Equals):
-                raise com.TranslationError(
-                    'Non-equality join predicates are ' 'not supported'
-                )
-
-            left_on, right_on = op.args
-            if left_on.get_name() != right_on.get_name():
-                raise com.TranslationError(
-                    'Joining on different column names ' 'is not supported'
-                )
-
-    def _format_predicate(self, predicate):
-        column = predicate.op().args[0]
-        return quote_identifier(column.get_name(), force=True)
-
-    def _quote_identifier(self, name):
-        return quote_identifier(name)
+    _non_equijoin_supported = False
 
 
 class ClickhouseExprTranslator(ExprTranslator):
