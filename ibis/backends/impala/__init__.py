@@ -152,7 +152,7 @@ class Backend(BaseSQLBackend):
     def list_tables(self, like=None, database=None):
         statement = 'SHOW TABLES'
         if database is not None:
-            statement += f'IN {database}'
+            statement += f' IN {database}'
         if like:
             m = fully_qualified_re.match(like)
             if m:

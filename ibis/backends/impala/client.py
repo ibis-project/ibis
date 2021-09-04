@@ -56,14 +56,10 @@ class ImpalaDatabase(Database):
         )
 
     def list_udfs(self, like=None):
-        return self.client.list_udfs(
-            like=self._qualify_like(like), database=self.name
-        )
+        return self.client.list_udfs(like=like, database=self.name)
 
     def list_udas(self, like=None):
-        return self.client.list_udas(
-            like=self._qualify_like(like), database=self.name
-        )
+        return self.client.list_udas(like=like, database=self.name)
 
 
 class ImpalaConnection:
