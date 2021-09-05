@@ -26,7 +26,7 @@ jobs:
       shell: bash
 
     - name: run tests
-      run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh --numprocesses 2
+      run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh --numprocesses auto
       shell: bash
 
     - name: pytest errors
@@ -51,7 +51,7 @@ jobs:
       shell: bash
 
     - name: run tests
-      run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh --numprocesses 2
+      run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh --numprocesses auto
       shell: bash
 
     - name: pytest errors
