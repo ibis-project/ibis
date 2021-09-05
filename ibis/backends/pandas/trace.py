@@ -117,13 +117,21 @@ def _log_trace(func, start=None):
 
 
 def trace(func):
-    """ Return a function decorator that wraped the decorated function with
+    """Return a function decorator that wraped the decorated function with
     tracing.
     """
     _trace_funcs.add(func.__name__)
 
     @functools.wraps(func)
     def traced_func(*args, **kwargs):
+        # Unfortunately, this function can be called before the `ibis.pandas`
+        # attribute has ever been accessed, which means the trace configuration
+        # option might never get registered and will raise an error. Accessing
+        # the pandas attribute here forces the option initialization
+        import ibis
+
+        ibis.pandas
+
         trace_enabled = get_option(_TRACE_CONFIG)
 
         if not trace_enabled:
@@ -139,13 +147,13 @@ def trace(func):
 
 
 class TraceTwoLevelDispatcher(TwoLevelDispatcher):
-    """ A Dispatcher that also wraps the registered function with tracing."""
+    """A Dispatcher that also wraps the registered function with tracing."""
 
     def __init__(self, name, doc=None):
         super().__init__(name, doc)
 
     def register(self, *types, **kwargs):
-        """ Register a function with this Dispatcher.
+        """Register a function with this Dispatcher.
 
         The function will also be wrapped with tracing information.
         """
