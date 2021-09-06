@@ -38,4 +38,4 @@ skip = ["versioneer.py"]
 [tool.pydocstyle]
 inherit = false
 convention = "numpy"
-match_dir = "(ibis|omniscidb)"
+match_dir = "ibis"
