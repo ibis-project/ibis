@@ -1,4 +1,4 @@
-# import sqlalchemy
+import sqlalchemy
 
 from ibis.backends.base.sql import BaseSQLBackend
 
@@ -57,8 +57,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         return '.'.join(map(str, self.client.con.dialect.server_version_info))
 
     def list_tables(self, like=None, database=None, schema=None):
-        inspector = self.client.inspector
-        # inspector = sqlalchemy.inspect(self.client.con)
+        inspector = sqlalchemy.inspect(self.client.con)
         tables = inspector.get_table_names(
             schema=schema
         ) + inspector.get_view_names(schema=schema)
