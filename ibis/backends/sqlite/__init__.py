@@ -43,8 +43,3 @@ class Backend(BaseAlchemyBackend):
         """
         self.client = SQLiteClient(backend=self, path=path, create=create)
         return self.client
-
-    def list_tables(self, like=None, database=None, schema=None):
-        if database is None:
-            database = self.client.database_name
-        return super().list_tables(like, schema=database)

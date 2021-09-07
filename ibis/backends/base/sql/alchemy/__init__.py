@@ -56,11 +56,13 @@ class BaseAlchemyBackend(BaseSQLBackend):
     def version(self):
         return '.'.join(map(str, self.client.con.dialect.server_version_info))
 
-    def list_tables(self, like=None, database=None, schema=None):
+    def list_tables(self, like=None, database=None):
+        if database is None:
+            database = self.current_database
         inspector = sqlalchemy.inspect(self.client.con)
         tables = inspector.get_table_names(
-            schema=schema
-        ) + inspector.get_view_names(schema=schema)
+            schema=database
+        ) + inspector.get_view_names(schema=database)
         return self._filter_with_like(tables, like)
 
     @property
