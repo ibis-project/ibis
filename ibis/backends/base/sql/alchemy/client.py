@@ -19,26 +19,6 @@ from .geospatial import geospatial_supported
 from .query_builder import AlchemyCompiler
 
 
-class AlchemyDatabase(Database):
-    """
-
-    Attributes
-    ----------
-    client : AlchemyClient
-
-    """
-
-    def table(self, name, schema=None):
-        return self.client.table(name, schema=schema)
-
-
-class AlchemyTable(ops.DatabaseTable):
-    def __init__(self, table, source, schema=None):
-        schema = sch.infer(table, schema=schema)
-        super().__init__(table.name, schema, source)
-        self.sqla_table = table
-
-
 class _AutoCloseCursor:
     """
     Wraps a SQLAlchemy ResultProxy and ensures that .close() is called on
