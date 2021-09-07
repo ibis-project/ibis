@@ -45,7 +45,7 @@ class AlchemyDatabaseSchema(Database):
         return self.database.table(qualified_name, self.name)
 
     def list_tables(self, like=None):
-        return self.database.list_tables(like, schema=self.name)
+        return self.database.list_tables(like, database=self.name)
 
 
 class AlchemyDatabase(Database):
@@ -62,8 +62,8 @@ class AlchemyDatabase(Database):
     def table(self, name, schema=None):
         return self.client.table(name, schema=schema)
 
-    def list_tables(self, like=None, schema=None):
-        return self.client.list_tables(like, database=self.name, schema=schema)
+    def list_tables(self, like=None):
+        return self.client.list_tables(like, database=self.name)
 
     def schema(self, name):
         return self.schema_class(name, self)
