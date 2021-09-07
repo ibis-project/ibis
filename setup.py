@@ -110,7 +110,7 @@ setup(
             'postgres = ibis.backends.postgres',
             'mysql = ibis.backends.mysql',
             'clickhouse = ibis.backends.clickhouse',
-            'spark = ibis.backends.spark',
+            'spark = ibis.backends.pyspark',
             'pyspark = ibis.backends.pyspark',
             'dask = ibis.backends.dask',
         ]
