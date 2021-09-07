@@ -70,10 +70,6 @@ def test_database_layer(con, alltypes):
 
     assert db.list_tables() == con.list_tables()
 
-    db_schema = con.schema("information_schema")
-
-    assert db_schema.list_tables() != con.list_tables()
-
 
 def test_compile_toplevel():
     t = ibis.table([('foo', 'double')], name='t0')

@@ -7,14 +7,36 @@ import sqlalchemy as sa
 
 import ibis
 import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
+from ibis.backends.base import Database
 from ibis.backends.base.sql import SQLClient
 
 from .datatypes import to_sqla_type
 from .geospatial import geospatial_supported
 from .query_builder import AlchemyCompiler
+
+
+class AlchemyDatabase(Database):
+    """
+
+    Attributes
+    ----------
+    client : AlchemyClient
+
+    """
+
+    def table(self, name, schema=None):
+        return self.client.table(name, schema=schema)
+
+
+class AlchemyTable(ops.DatabaseTable):
+    def __init__(self, table, source, schema=None):
+        schema = sch.infer(table, schema=schema)
+        super().__init__(table.name, schema, source)
+        self.sqla_table = table
 
 
 class _AutoCloseCursor:
