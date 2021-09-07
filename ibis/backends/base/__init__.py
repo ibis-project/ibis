@@ -65,7 +65,7 @@ class BaseBackend(abc.ABC):
             FutureWarning,
         )
         return self.database_class(
-            name=name or self.current_database, client=self.client
+            name=name, client=self.client
         )
 
     @property

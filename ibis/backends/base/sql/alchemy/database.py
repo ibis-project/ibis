@@ -62,9 +62,6 @@ class AlchemyDatabase(Database):
     def table(self, name, schema=None):
         return self.client.table(name, schema=schema)
 
-    def list_tables(self, like=None):
-        return self.client.list_tables(like, database=self.name)
-
     def schema(self, name):
         return self.schema_class(name, self)
 
