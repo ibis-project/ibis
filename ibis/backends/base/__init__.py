@@ -64,9 +64,7 @@ class BaseBackend(abc.ABC):
             'Use the equivalent methods in the backend instead.',
             FutureWarning,
         )
-        return self.database_class(
-            name=name, client=self.client
-        )
+        return self.database_class(name=name, client=self.client)
 
     @property
     @abc.abstractmethod
