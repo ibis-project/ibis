@@ -1,6 +1,7 @@
 import ibis
 from ibis.expr import datatypes
 from ibis.expr.operations import Literal
+from ibis.tests.util import assert_pickle_roundtrip
 
 
 def test_literal_equality_basic():
@@ -45,3 +46,17 @@ def test_literal_equality_interval():
     d = ibis.interval(minutes=1).op()
 
     assert c != d
+
+
+def test_pickle_literal():
+    a = Literal(1, datatypes.int16)
+    b = Literal(1, datatypes.int32)
+
+    assert_pickle_roundtrip(a)
+    assert_pickle_roundtrip(b)
+
+
+def test_pickle_literal_interval():
+    a = ibis.interval(seconds=1).op()
+
+    assert_pickle_roundtrip(a)
