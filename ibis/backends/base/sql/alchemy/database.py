@@ -45,7 +45,7 @@ class AlchemyDatabaseSchema(Database):
         return self.database.table(qualified_name, self.name)
 
     def list_tables(self, like=None):
-        return self.database.list_tables(like, database=self.name)
+        return self.database.list_tables(like)
 
 
 class AlchemyDatabase(Database):
