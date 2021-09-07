@@ -134,10 +134,8 @@ class BaseFileBackend(BaseBackend):
     def version(self) -> str:
         return pd.__version__
 
-    def list_tables(self, path=None, like=None):
-        """
-        For file backends, we return files in the `path` directory.
-        """
+    def list_tables(self, path: Path = None, like: str = None):
+        # For file backends, we return files in the `path` directory.
 
         def is_valid(path):
             return path.is_file() and path.suffix == '.' + self.extension
