@@ -51,7 +51,7 @@ layout:
       url: https://twitter.com/IbisData
     - font_awesome: github
       url: https://github.com/ibis-project/ibis/
-  footer_note: "© Copyright 2020, Ibis developers"
+  footer_note: "© Copyright 2014-2021, Ibis developers"
   google_analytics: ""
 
 team:
@@ -60,9 +60,9 @@ team:
   members:
   - jreback
   - datapythonista
+  - cpcloud
 - name: "Former maintainers"
   kind: github
   members:
   - wesm
-  - cpcloud
   - kszucs
