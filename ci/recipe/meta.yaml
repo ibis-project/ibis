@@ -24,7 +24,7 @@ requirements:
   host:
     - pip
     - python
-    - setuptools
+    - poetry
 
   run:
     - cached_property

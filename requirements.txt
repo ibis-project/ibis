@@ -1,9 +1,0 @@
-multipledispatch>=0.6.0
-numpy>=1.11
-pandas>=0.21
-pytz
-regex
-toolz
-cached_property
-setuptools
-parsy

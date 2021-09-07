@@ -12,9 +12,6 @@ on:
 jobs:
   test_no_backends:
     runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        shell: bash -l {0}
     strategy:
       fail-fast: false
       matrix:
@@ -28,35 +25,44 @@ jobs:
       - name: checkout
         uses: actions/checkout@v2
 
-      - uses: conda-incubator/setup-miniconda@v2
+      - name: install python
+        uses: actions/setup-python@v2
         with:
-          mamba-version: "*"
-          miniforge-version: latest
-          miniforge-variant: Mambaforge
-          channel-priority: strict
-          activate-environment: ibis
           python-version: ${{ matrix.python-version }}
-          environment-file: environment.yml
-          condarc-file: ci/condarc
+
+      - name: install poetry
+        run: pip install poetry
+
+      - name: cache dependencies linux
+        uses: actions/cache@v2
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        with:
+          path: ~/.cache/pypoetry
+          key: no-backends-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+
+      - name: cache dependencies windows
+        uses: actions/cache@v2
+        if: ${{ matrix.os == 'windows-latest' }}
+        with:
+          path: ~\AppData\Local\pypoetry
+          key: no-backends-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
 
       - name: install ibis
-        run: pip install .
+        run: poetry install
 
       - name: run tests
+        shell: bash
         run: ./ci/run_tests.sh ibis/tests
 
       - name: publish test report
         uses: actions/upload-artifact@v2
         if: success() || failure()
         with:
-          name: no_backends_${{ matrix.python-version }}-${{ matrix.os }}
+          name: no-backends-${{ matrix.os }}-${{ matrix.python-version }}
           path: junit.xml
 
   test_simple_backends:
     runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        shell: bash -l {0}
     strategy:
       fail-fast: false
       matrix:
@@ -66,130 +72,91 @@ jobs:
         python-version:
           - "3.7"
           - "3.9"
-        additional-deps:
-          - [dask-min]
-          - []
+        backend:
+          - name: csv
+          - name: dask
+          - name: dask
+            deps:
+              - "dask@2021.2.0 --extras array --extras dataframe"
+          - name: hdf5
+          - name: pandas
+          - name: parquet
+          - name: sqlite
+        exclude:
+          - os: windows-latest
+            python-version: "3.9"
+            backend:
+              name: hdf5
+        include:
+          - os: windows-latest
+            python-version: "3.8"
+            backend:
+              name: hdf5
     steps:
       - name: checkout
         uses: actions/checkout@v2
 
-      - uses: conda-incubator/setup-miniconda@v2
+      - name: install python
+        uses: actions/setup-python@v2
         with:
-          mamba-version: "*"
-          miniforge-version: latest
-          miniforge-variant: Mambaforge
-          channel-priority: strict
-          activate-environment: ibis
           python-version: ${{ matrix.python-version }}
-          condarc-file: ci/condarc
 
-      - name: set backends
-        id: set_backends
-        run: echo '::set-output name=backends::["csv", "dask", "hdf5", "pandas", "parquet", "sqlite"]'
+      - name: install poetry
+        run: pip install poetry
 
-      - name: merge environments
-        run: ./ci/merge_and_update_env.sh ${{ join(fromJSON(steps.set_backends.outputs.backends), ' ') }} ${{ join(matrix.additional-deps, ' ') }}
+      - name: cache dependencies linux
+        uses: actions/cache@v2
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        with:
+          path: ~/.cache/pypoetry
+          key: ${{ matrix.backend.name }}-${{ join(matrix.backend.deps, '-') }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+
+      - name: cache dependencies windows
+        uses: actions/cache@v2
+        if: ${{ matrix.os == 'windows-latest' }}
+        with:
+          path: ~\AppData\Local\pypoetry
+          key: ${{ matrix.backend.name }}-${{ join(matrix.backend.deps, '-') }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+
+      - name: install minimum dask version
+        if: ${{ matrix.backend.name == 'dask' && matrix.backend.deps != null }}
+        run: poetry add --lock --optional ${{ join(matrix.backend.deps, ' ') }}
 
       - name: install ibis
-        run: pip install .
+        run: poetry install --extras ${{ matrix.backend.name }}
 
       - name: download backend data
-        run: python ci/datamgr.py download
+        run: poetry run python ci/datamgr.py download
 
       - name: install backend data
-        run: |
-          set -euo pipefail
-
-          for backend in ${{ join(fromJSON(steps.set_backends.outputs.backends), ' ') }}; do
-            python ci/datamgr.py "$backend"
-          done
+        run: poetry run python ci/datamgr.py ${{ matrix.backend.name }}
 
       - name: run tests
-        run: ./ci/run_tests.sh
+        shell: bash
         env:
-          PYTEST_BACKENDS: ${{ join(fromJSON(steps.set_backends.outputs.backends), ' ') }}
+          PYTEST_BACKENDS: ${{ matrix.backend.name }}
+        run: ./ci/run_tests.sh
 
       - name: publish test report
         uses: actions/upload-artifact@v2
         if: success() || failure()
         with:
-          name: simple_backends_${{ matrix.python-version }}-${{ matrix.os }}-${{ join(matrix.additional-deps, '-') }}
+          name: ${{ matrix.backend.name }}-${{ join(matrix.backend.deps, '-') }}-${{ matrix.os }}-${{ matrix.python-version }}
           path: junit.xml
 
-  test_pyspark:
+  test_postgres:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash -l {0}
-    strategy:
-      fail-fast: false
-      matrix:
-        deps:
-          - python-version: "3.7"
-            additional-deps: [pyspark-min]
-            env:
-              ARROW_PRE_0_15_IPC_FORMAT: 1
-          - python-version: "3.9"
-            additional-deps: []
-            env:
-              ARROW_PRE_0_15_IPC_FORMAT: 0
-    steps:
-      - name: checkout
-        uses: actions/checkout@v2
-
-      - uses: conda-incubator/setup-miniconda@v2
-        with:
-          mamba-version: "*"
-          miniforge-version: latest
-          miniforge-variant: Mambaforge
-          channel-priority: strict
-          activate-environment: ibis
-          python-version: ${{ matrix.deps.python-version }}
-          condarc-file: ci/condarc
-
-      - name: merge environments
-        run: ./ci/merge_and_update_env.sh pyspark ${{ join(matrix.deps.additional-deps, ' ') }}
-
-      - name: install ibis
-        run: pip install .
-
-      - name: download backend data
-        run: python ci/datamgr.py download
-
-      - name: install backend data
-        run: python ci/datamgr.py pyspark
-
-      - name: run tests
-        run: ./ci/run_tests.sh
-        env:
-          PYTEST_BACKENDS: pyspark
-          ARROW_PRE_0_15_IPC_FORMAT: ${{ matrix.deps.env.ARROW_PRE_0_15_IPC_FORMAT }}
-
-      - name: publish test report
-        uses: actions/upload-artifact@v2
-        if: success() || failure()
-        with:
-          name: pyspark_${{ matrix.deps.python-version }}-${{ matrix.dep.env.ARROW_PRE_0_15_IPC_FORMAT }}-${{ join(matrix.deps.additional-deps, '-') }}
-          path: junit.xml
-  #
-  test_mysql_postgres:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash -l {0}
     strategy:
       fail-fast: false
       matrix:
         python-version:
           - "3.7"
           - "3.9"
-        additional-deps:
-          - [postgres-min]
+        deps:
           - []
-        exclude:
-          # FIXME: this combination is broken and untested in current CI
-          - python-version: "3.9"
-            additional-deps: [postgres-min]
+        include:
+          - python-version: "3.7"
+            deps: ["sqlalchemy@1.3", "psycopg2@2.7", "geoalchemy@0.6", "geopandas@0.6", "shapely@1.6"]
     services:
       postgres:
         image: shajekpivotal/ibis-docker-postgres-9.5
@@ -198,69 +165,125 @@ jobs:
         env:
           POSTGRES_PASSWORD: ""
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 3
-      mysql:
-        image: mariadb:10.4.12
-        ports:
-          - 3306:3306
-        env:
-          MYSQL_ALLOW_EMPTY_PASSWORD: true
-          MYSQL_DATABASE: ibis_testing
-          MYSQL_USER: ibis
-          MYSQL_PASSWORD: ibis
-        options: --health-cmd="mysqladmin ping" --health-interval 10s --health-timeout 5s --health-retries 3
     steps:
       - name: checkout
         uses: actions/checkout@v2
 
-      - uses: conda-incubator/setup-miniconda@v2
+      - name: install python
+        uses: actions/setup-python@v2
         with:
-          mamba-version: "*"
-          miniforge-version: latest
-          miniforge-variant: Mambaforge
-          channel-priority: strict
-          activate-environment: ibis
           python-version: ${{ matrix.python-version }}
-          condarc-file: ci/condarc
 
-      - name: set backends
-        id: set_backends
-        run: echo '::set-output name=backends::["mysql", "postgres"]'
+      - name: install poetry
+        run: pip install poetry
 
-      - name: merge environments
-        run: ./ci/merge_and_update_env.sh ${{ join(fromJSON(steps.set_backends.outputs.backends), ' ') }} ${{ join(matrix.additional-deps, ' ') }}
+      - name: install libgeos for shapely
+        run: sudo apt-get install -qq -y build-essential libgeos-dev python-dev
 
-      - name: install ibis
-        run: pip install .
+      - name: cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pypoetry
+          key: postgres-geospatial-${{ join(matrix.deps, '-') }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
 
-      - name: download backend data
-        run: python ci/datamgr.py download
-
-      - name: install backend data
+      - name: install minimum postgres dependencies
         run: |
-          set -euo pipefail
-
-          # TODO: unify impala data loading?
-          for backend in ${{ join(fromJSON(steps.set_backends.outputs.backends), ' ') }}; do
-            python ci/datamgr.py "$backend"
+          for dep in ${{ join(matrix.deps, ' ') }}; do
+            poetry add --lock --optional "$dep"
           done
 
+      - name: install ibis
+        run: poetry install --extras postgres --extras geospatial
+
+      - name: download backend data
+        run: poetry run python ci/datamgr.py download
+
+      - name: install backend data
+        run: poetry run python ci/datamgr.py postgres
+
       - name: run tests
-        run: ./ci/run_tests.sh -m "not udf"
         env:
-          PYTEST_BACKENDS: ${{ join(fromJSON(steps.set_backends.outputs.backends), ' ') }}
+          PYTEST_BACKENDS: postgres
+        run: ./ci/run_tests.sh -m "not udf"
 
       - name: publish test report
         uses: actions/upload-artifact@v2
         if: success() || failure()
         with:
-          name: mysql_postgres_${{ matrix.python-version }}-${{ join(matrix.additional-deps, '-') }}
+          name: postgres-${{ join(matrix.deps, '-') }}-${{ matrix.python-version }}
           path: junit.xml
 
-  test_impala_clickhouse:
+  test_pyspark:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash -l {0}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - "3.7"
+          - "3.9"
+        pyspark:
+          - version: "2.4.3"
+            jdk: "8"
+            env:
+              ARROW_PRE_0_15_IPC_FORMAT: 1
+          - jdk: "11"
+            env:
+              ARROW_PRE_0_15_IPC_FORMAT: 0
+        exclude:
+          - python-version: "3.9"
+            pyspark:
+              version: "2.4.3"
+              jdk: "8"
+              env:
+                ARROW_PRE_0_15_IPC_FORMAT: 1
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: install python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: actions/setup-java@v2
+        with:
+          distribution: zulu
+          java-version: ${{ matrix.pyspark.jdk }}
+
+      - name: install poetry
+        run: pip install poetry
+
+      - name: cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pypoetry
+          key: ${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}-pyspark-${{ matrix.pyspark.version }}
+
+      - name: pin pyspark
+        if: ${{ matrix.pyspark.version != null }}
+        run: poetry add --lock --optional "pyspark@${{ matrix.pyspark.version }}"
+
+      - name: install ibis
+        run: poetry install --extras pyspark
+
+      - name: download backend data
+        run: poetry run python ci/datamgr.py download
+
+      - name: run tests
+        env:
+          PYTEST_BACKENDS: pyspark
+          ARROW_PRE_0_15_IPC_FORMAT: ${{ matrix.pyspark.env.ARROW_PRE_0_15_IPC_FORMAT }}
+        run: ./ci/run_tests.sh
+
+      - name: publish test report
+        uses: actions/upload-artifact@v2
+        if: success() || failure()
+        with:
+          name: pyspark-${{ matrix.python-version }}-${{ matrix.pyspark.version }}-${{ matrix.pyspark.jdk }}-${{ matrix.pyspark.env.ARROW_PRE_0_15_IPC_FORMAT }}
+          path: junit.xml
+
+  test_impala:
+    runs-on: ubuntu-latest
     env:
       IBIS_TEST_NN_HOST: localhost
       IBIS_TEST_IMPALA_HOST: localhost
@@ -272,7 +295,7 @@ jobs:
       matrix:
         python-version:
           - "3.7"
-          - "3.8"
+          - "3.9"
     services:
       postgres:
         image: shajekpivotal/ibis-docker-postgres-9.5
@@ -281,16 +304,6 @@ jobs:
         env:
           POSTGRES_PASSWORD: ""
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 3
-      mysql:
-        image: mariadb:10.4.12
-        ports:
-          - 3306:3306
-        env:
-          MYSQL_ALLOW_EMPTY_PASSWORD: true
-          MYSQL_DATABASE: ibis_testing
-          MYSQL_USER: ibis
-          MYSQL_PASSWORD: ibis
-        options: --health-cmd="mysqladmin ping" --health-interval 10s --health-timeout 5s --health-retries 3
       kudu-master:
         image: ibisproject/kudu:latest
         ports:
@@ -328,57 +341,112 @@ jobs:
           - 25010:25010
           - 25020:25020
         options: --hostname localhost --health-cmd "nc -z 127.0.0.1 21050 && nc -z 127.0.0.1 50070" --health-interval 30s --health-timeout 10s --health-retries 20
-      clickhouse:
-        # XXX does clickhouse backend require the impala container too?
-        image: yandex/clickhouse-server:18.14
-        ports:
-          - 8123:8123
-          - 9000:9000
-
     steps:
       - name: checkout
         uses: actions/checkout@v2
 
-      - uses: conda-incubator/setup-miniconda@v2
+      - name: install python
+        uses: actions/setup-python@v2
         with:
-          mamba-version: "*"
-          miniforge-version: latest
-          miniforge-variant: Mambaforge
-          channel-priority: strict
-          activate-environment: ibis
           python-version: ${{ matrix.python-version }}
-          environment-file: environment.yml
-          condarc-file: ci/condarc
 
-      - name: set backends
-        id: set_backends
-        run: echo '::set-output name=backends::["impala", "clickhouse"]'
+      - name: install system dependencies
+        run: sudo apt-get install -qq -y build-essential cmake krb5-config python-dev libkrb5-dev libboost-all-dev
 
-      - name: merge environments
-        run: ./ci/merge_and_update_env.sh ${{ join(fromJSON(steps.set_backends.outputs.backends), ' ') }} ${{ join(matrix.additional-deps, ' ') }}
+      - name: install poetry
+        run: pip install poetry
+
+      - name: cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pypoetry
+          key: ${{ matrix.backend }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
 
       - name: install ibis
-        run: pip install .
+        run: poetry install --extras impala
 
       - name: download backend data
-        run: python ci/datamgr.py download
+        run: poetry run python ci/datamgr.py download
 
-      - name: install impala data
-        run: python ci/impalamgr.py load --data
-
-      - name: install clickhouse data
-        run: python ci/datamgr.py clickhouse
+      - name: install backend data
+        run: poetry run python ci/impalamgr.py load --data
 
       - name: run tests
-        run: ./ci/run_tests.sh
         env:
-          PYTEST_BACKENDS: ${{ join(fromJSON(steps.set_backends.outputs.backends), ' ') }}
+          PYTEST_BACKENDS: impala
+        run: ./ci/run_tests.sh
 
       - name: publish test report
         uses: actions/upload-artifact@v2
         if: success() || failure()
         with:
-          name: impala_clickhouse_${{ matrix.python-version }}
+          name: impala-${{ matrix.python-version }}
+          path: junit.xml
+
+  test_mysql_clickhouse:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - "3.7"
+          - "3.9"
+        backend:
+          - mysql
+          - clickhouse
+    services:
+      mysql:
+        image: mariadb:10.4.12
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: true
+          MYSQL_DATABASE: ibis_testing
+          MYSQL_USER: ibis
+          MYSQL_PASSWORD: ibis
+        options: --health-cmd="mysqladmin ping" --health-interval 10s --health-timeout 5s --health-retries 3
+      clickhouse:
+        image: yandex/clickhouse-server:18.14
+        ports:
+          - 8123:8123
+          - 9000:9000
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: install python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: install poetry
+        run: pip install poetry
+
+      - name: cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pypoetry
+          key: ${{ matrix.backend }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+
+      - name: install ibis
+        run: poetry install --extras ${{ matrix.backend }}
+
+      - name: download backend data
+        run: poetry run python ci/datamgr.py download
+
+      - name: install backend data
+        run: poetry run python ci/datamgr.py ${{ matrix.backend }}
+
+      - name: run tests
+        env:
+          PYTEST_BACKENDS: ${{ matrix.backend }}
+        run: ./ci/run_tests.sh
+
+      - name: publish test report
+        uses: actions/upload-artifact@v2
+        if: success() || failure()
+        with:
+          name: ${{ matrix.backend }}-${{ matrix.python-version }}
           path: junit.xml
 
   benchmarks:
@@ -386,74 +454,75 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9"]
-    defaults:
-      run:
-        shell: bash -l {0}
+        python-version:
+          - "3.9"
     steps:
       - name: checkout
         uses: actions/checkout@v2
 
-      - uses: conda-incubator/setup-miniconda@v2
+      - name: install python
+        uses: actions/setup-python@v2
         with:
-          mamba-version: "*"
-          miniforge-version: latest
-          miniforge-variant: Mambaforge
-          channel-priority: strict
-          activate-environment: ibis
           python-version: ${{ matrix.python-version }}
-          environment-file: environment.yml
-          condarc-file: ci/condarc
+
+      - name: install system dependencies
+        run: sudo apt-get install -qq -y build-essential cmake krb5-config python-dev libkrb5-dev libboost-all-dev
+
+      - name: install poetry
+        run: pip install poetry
+
+      - name: cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pypoetry
+          key: benchmarks-impala-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
 
       - name: install ibis
-        run: pip install .
+        run: poetry install --extras impala
 
       - name: benchmark
         run: |
           set -euo pipefail
 
-          asv machine --yes
-          asv dev
+          poetry run asv machine --yes
+          poetry run asv dev
 
   docs:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash -l {0}
     strategy:
       fail-fast: false
       matrix:
-        # FIXME: docs are broken on 3.9
-        python-version: ["3.8"]
+        python-version:
+          - "3.9"
     steps:
       - name: checkout
         uses: actions/checkout@v2
 
-      - uses: conda-incubator/setup-miniconda@v2
+      - name: install system dependencies
+        run: sudo apt-get install -qq -y build-essential cmake krb5-config python-dev libkrb5-dev libboost-all-dev pandoc
+
+      - name: install python
+        uses: actions/setup-python@v2
         with:
-          mamba-version: "*"
-          miniforge-version: latest
-          miniforge-variant: Mambaforge
-          channel-priority: strict
-          activate-environment: ibis
           python-version: ${{ matrix.python-version }}
-          condarc-file: ci/condarc
 
-      - name: set backends
-        id: set_backends
-        run: echo '::set-output name=backends::["clickhouse", "csv", "dask", "hdf5", "impala", "mysql", "pandas", "parquet", "postgres", "pyspark", "spark", "sqlite"]'
+      - name: install poetry
+        run: pip install poetry
 
-      - name: merge environments
-        run: ./ci/merge_and_update_env.sh ${{ join(fromJSON(steps.set_backends.outputs.backends), ' ') }}
+      - name: cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pypoetry
+          key: docs-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
 
       - name: install ibis
-        run: pip install .
+        run: poetry install --extras all
 
       - name: build web
-        run: python -m pysuerga docs/web --target-path=docbuild
+        run: poetry run python -m pysuerga docs/web --target-path=docbuild
 
       - name: build docs
-        run: sphinx-build -b html docs/source docbuild/docs -W -T
+        run: poetry run sphinx-build -b html docs/source docbuild/docs -W -T
 
       - name: Add config to docs
         run: |
@@ -482,13 +551,27 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.7"]
+        python-version:
+          - "3.7"
     defaults:
       run:
         shell: bash -l {0}
     steps:
       - name: checkout
         uses: actions/checkout@v2
+
+      - name: update recipe file
+        run: |
+          set -euo pipefail
+
+          # TODO: this is a hack that should be fixed by automatically generating
+          # a recipe from pyproject.toml once we move to poetry
+          set -x
+          IBIS_PATH=`pwd`
+          sed -i "s|url:.*|path: $IBIS_PATH|g" ci/recipe/meta.yaml
+          IBIS_VERSION=$(grep -Po '(?<=^version = ").+(?=")' pyproject.toml)
+          sed -i "s/{{ version }}/$IBIS_VERSION/g" ci/recipe/meta.yaml
+          cat ci/recipe/meta.yaml
 
       - uses: conda-incubator/setup-miniconda@v2
         with:
@@ -498,24 +581,7 @@ jobs:
           channel-priority: strict
           activate-environment: ibis
           python-version: ${{ matrix.python-version }}
-          environment-file: environment.yml
           condarc-file: ci/condarc
-
-      # TODO: this isn't necessary if we generate the recipe from
-      # pyproject.toml
-      - name: install ibis
-        run: pip install .
-
-      - name: update recipe file
-        run: |
-          # TODO: this is a hack that should be fixed by automatically generating
-          # a recipe from pyproject.toml once we move to poetry
-          set -x
-          IBIS_PATH=`pwd`
-          sed -i "s|url:.*|path: $IBIS_PATH|g" ci/recipe/meta.yaml
-          IBIS_VERSION=`python -c "import ibis; print(ibis.__version__)"`
-          sed -i "s/{{ version }}/$IBIS_VERSION/g" ci/recipe/meta.yaml
-          cat ci/recipe/meta.yaml
 
       - name: install boa
         run: mamba install boa

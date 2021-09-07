@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# Run the Ibis tests. Two environment variables are considered:
+#
+# Run the Ibis test suite.
+#
+# One environment variable is considered:
 # - PYTEST_BACKENDS: Space-separated list of backends to run
 
 set -eo pipefail
@@ -19,7 +22,8 @@ done
 
 set -x
 
-pytest "${TESTS_DIRS[@]}" \
+poetry run pytest "${TESTS_DIRS[@]}" \
+    --durations=25 \
     -ra \
     --junitxml=junit.xml \
     --cov=ibis \

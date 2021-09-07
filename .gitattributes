@@ -1,1 +1,2 @@
-ibis/_version.py export-subst
+setup.py linguist-generated=true
+poetry.lock linguist-generated=true
