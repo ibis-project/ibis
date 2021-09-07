@@ -1,5 +1,7 @@
-sqlalchemy
-psycopg2
-geoalchemy2
-geopandas
-shapely
+name: ibis
+dependencies:
+  - sqlalchemy
+  - psycopg2
+  - geoalchemy2
+  - geopandas
+  - shapely
