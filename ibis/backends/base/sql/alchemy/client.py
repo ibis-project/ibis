@@ -7,11 +7,9 @@ import sqlalchemy as sa
 
 import ibis
 import ibis.expr.datatypes as dt
-import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
-from ibis.backends.base import Database
 from ibis.backends.base.sql import SQLClient
 
 from .datatypes import to_sqla_type
