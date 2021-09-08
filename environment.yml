@@ -47,8 +47,7 @@ dependencies:
   - pip:
     - pysuerga
   - ipython
-  - jupyter
-  - matplotlib
+  - ipykernel
   - nbconvert
   - nbsphinx
   - nomkl
