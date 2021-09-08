@@ -15,8 +15,6 @@ set -u
 
 echo "TESTS_DIRS: $TESTS_DIRS"
 
-pytest --version
-
 pytest $TESTS_DIRS \
     -q \
     -ra \
