@@ -8,6 +8,7 @@ import pytest
 import ibis
 import ibis.config as config
 import ibis.expr.types as ir
+from ibis.backends.sqlite import Backend
 from ibis.util import guid
 
 
@@ -56,7 +57,7 @@ def test_list_tables(con):
 
 
 def test_attach_file(dbpath):
-    client = ibis.sqlite.connect()
+    client = Backend().connect()
 
     client.attach('foo', dbpath)
     client.attach('bar', dbpath)

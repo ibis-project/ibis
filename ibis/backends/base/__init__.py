@@ -146,9 +146,25 @@ class BaseBackend(abc.ABC):
             'To use a different database create a new client.'
         )
 
-    # @abc.abstractmethod
-    def list_tables(self, like: str = None) -> List[str]:
+    @abc.abstractmethod
+    def list_tables(self, like: str = None, database: str = None) -> List[str]:
         """
+        Return the list of table names in the current database.
+
+        For some backends, the tables may be files in a directory,
+        or other equivalent entities in a SQL database.
+
+        Parameters
+        ----------
+        like : str, optional
+            A pattern in Python's regex format.
+        database : str, optional
+            The database to list tables of, if not the current one.
+
+        Returns
+        -------
+        list of str
+            The list of the table names that match the pattern `like`.
         """
 
     # @abc.abstractmethod

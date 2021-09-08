@@ -262,35 +262,8 @@ class AlchemyClient(SQLClient):
         )
         return self.list_databases()
 
-    def list_tables(
-        self,
-        like: Optional[str] = None,
-        database: Optional[str] = None,
-        schema: Optional[str] = None,
-    ) -> List[str]:
-        """List tables/views in the current or indicated database.
-
-        Parameters
-        ----------
-        like
-            Checks for this string contained in name
-        database
-            If not passed, uses the current database
-        schema
-            The schema namespace that tables should be listed from
-
-        Returns
-        -------
-        List[str]
-
-        """
-        inspector = self.inspector
-        # inspector returns a mutable version of its names, so make a copy.
-        names = inspector.get_table_names(schema=schema).copy()
-        names.extend(inspector.get_view_names(schema=schema))
-        if like is not None:
-            names = [x for x in names if like in x]
-        return sorted(names)
+    def list_tables(self, like=None, database=None):
+        return self.backend.list_tables(like, database)
 
     def raw_sql(self, query: str, results=False):
         return _AutoCloseCursor(super().raw_sql(query))

@@ -88,8 +88,8 @@ class FileClient(Client):
     def list_databases(self, path=None, like=None):
         return self.backend.list_databases(path=path, like=like)
 
-    def list_tables(self, path=None):
-        raise NotImplementedError
+    def list_tables(self, path=None, like=None):
+        return self.backend.list_tables(path=path, like=like)
 
     def _list_tables_files(self, path=None):
         # tables are files in a dir
@@ -133,6 +133,23 @@ class BaseFileBackend(BaseBackend):
     @property
     def version(self) -> str:
         return pd.__version__
+
+    def list_tables(self, path: Path = None, like: str = None):
+        # For file backends, we return files in the `path` directory.
+
+        def is_valid(path):
+            return path.is_file() and path.suffix == '.' + self.extension
+
+        path = path or self.path
+
+        if path.is_dir():
+            tables = [f.stem for f in path.iterdir() if is_valid(f)]
+        elif is_valid(path):
+            tables = [path.stem]
+        else:
+            tables = []
+
+        return self._filter_with_like(tables, like)
 
     @property
     def current_database(self):

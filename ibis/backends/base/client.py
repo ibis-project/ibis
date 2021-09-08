@@ -12,6 +12,9 @@ class Client:
     def version(self):
         return self.backend.version
 
+    def list_tables(self, like=None, database=None):
+        return self.backend.list_tables(like, database)
+
     def database(self, name=None):
         return self.backend.database(name)
 
@@ -136,22 +139,5 @@ class Database:
         qualified_name = self._qualify(name)
         return self.client.table(qualified_name, self.name)
 
-    def list_tables(self, like: str = None) -> list:
-        """Return a list of all tables available for the current database.
-
-        Parameters
-        ----------
-        like : string, default None
-          e.g. 'foo*' to match all tables starting with 'foo'.
-
-        Returns
-        -------
-        list
-            A list with all tables available for the current database.
-        """
-        return self.client.list_tables(
-            like=self._qualify_like(like), database=self.name
-        )
-
-    def _qualify_like(self, like: str | None) -> str | None:
-        return like
+    def list_tables(self, like=None):
+        return self.client.list_tables(like, database=self.name)

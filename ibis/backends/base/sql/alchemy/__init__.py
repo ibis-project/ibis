@@ -1,7 +1,9 @@
+import sqlalchemy
+
 from ibis.backends.base.sql import BaseSQLBackend
 
 from .client import AlchemyClient
-from .database import AlchemyDatabase, AlchemyDatabaseSchema, AlchemyTable
+from .database import AlchemyDatabase, AlchemyTable
 from .datatypes import schema_from_table, table_from_schema, to_sqla_type
 from .query_builder import AlchemyCompiler
 from .registry import (
@@ -24,7 +26,6 @@ __all__ = (
     'AlchemyCompiler',
     'AlchemyClient',
     'AlchemyTable',
-    'AlchemyDatabaseSchema',
     'AlchemyDatabase',
     'AlchemyContext',
     'sqlalchemy_operation_registry',
@@ -53,6 +54,13 @@ class BaseAlchemyBackend(BaseSQLBackend):
     @property
     def version(self):
         return '.'.join(map(str, self.client.con.dialect.server_version_info))
+
+    def list_tables(self, like=None, database=None):
+        inspector = sqlalchemy.inspect(self.client.con)
+        tables = inspector.get_table_names(
+            schema=database
+        ) + inspector.get_view_names(schema=database)
+        return self._filter_with_like(tables, like)
 
     @property
     def current_database(self):

@@ -38,3 +38,11 @@ def test_database_consistency(con):
         con.set_database(current_database)
     except NotImplementedError:
         pass
+
+
+def test_list_tables(con):
+    tables = con.list_tables()
+    assert isinstance(tables, list)
+    # only table that is garanteed to be in all backends
+    assert 'functional_alltypes' in tables
+    assert all(isinstance(table, str) for table in tables)

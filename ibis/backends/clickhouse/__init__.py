@@ -109,3 +109,8 @@ class Backend(BaseSQLBackend):
         data, schema = self.client.raw_sql('SELECT name FROM system.databases')
         databases = list(data[0])
         return self._filter_with_like(databases, like)
+
+    def list_tables(self, like=None, database=None):
+        data, schema = self.client.raw_sql('SHOW TABLES')
+        databases = list(data[0])
+        return self._filter_with_like(databases, like)

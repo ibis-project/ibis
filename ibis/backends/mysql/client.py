@@ -122,12 +122,3 @@ class MySQLClient(AlchemyClient):
             alch_table = self._get_sqla_table(name, schema=schema)
             node = self.table_class(alch_table, self, self._schemas.get(name))
             return self.table_expr_class(node)
-
-    def list_tables(self, like=None, database=None, schema=None):
-        if database is not None and database != self.current_database:
-            return self.database(name=database).list_tables(
-                like=like, schema=schema
-            )
-        else:
-            parent = super(MySQLClient, self)
-            return parent.list_tables(like=like, schema=schema)

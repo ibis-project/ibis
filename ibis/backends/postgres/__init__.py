@@ -102,3 +102,9 @@ class Backend(BaseAlchemyBackend):
         # In Postgres we support schemas, which in other engines (e.g. MySQL)
         # are databases
         return super().list_databases(like)
+
+    def list_tables(self, like=None, database=None):
+        # PostgreSQL requires passing `database=None` for current database
+        if database == self.current_database:
+            database = None
+        return super().list_tables(like, database)

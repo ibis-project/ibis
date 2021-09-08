@@ -44,3 +44,12 @@ class Backend(BaseBackend):
     def list_databases(self, like=None):
         databases = [db.name for db in self.client._catalog.listDatabases()]
         return self._filter_with_like(databases, like)
+
+    def list_tables(self, like=None, database=None):
+        tables = [
+            t.name
+            for t in self.client._catalog.listTables(
+                dbName=database or self.current_database
+            )
+        ]
+        return self._filter_with_like(tables, like)

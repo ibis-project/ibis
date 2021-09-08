@@ -24,7 +24,8 @@ class BasePandasBackend(BaseBackend):
         -------
         Client
         """
-        return self.client_class(backend=self, dictionary=dictionary)
+        self.client = self.client_class(backend=self, dictionary=dictionary)
+        return self.client
 
     def from_dataframe(self, df, name='df', client=None):
         """
@@ -67,6 +68,11 @@ class BasePandasBackend(BaseBackend):
 
     def list_databases(self, like=None):
         return self._filter_with_like(['main'])
+
+    def list_tables(self, like=None, database=None):
+        return self._filter_with_like(
+            list(self.client.dictionary.keys()), like
+        )
 
 
 class Backend(BasePandasBackend):
