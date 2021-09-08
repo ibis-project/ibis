@@ -37,7 +37,6 @@ from ibis.backends.base.sql.ddl import (
     is_fully_qualified,
 )
 from ibis.config import options
-from ibis.util import log
 
 from . import ddl, udf
 from .compat import HS2Error, ImpylaError, impyla
@@ -110,13 +109,13 @@ class ImpalaConnection:
             query = query.compile()
 
         cursor = self._get_cursor()
-        self.log(query)
+        util.log(query)
 
         try:
             cursor.execute(query)
         except Exception:
             cursor.release()
-            self.error(
+            util.log(
                 'Exception caused by {}: {}'.format(
                     query, traceback.format_exc()
                 )
@@ -124,12 +123,6 @@ class ImpalaConnection:
             raise
 
         return cursor
-
-    def log(self, msg):
-        log(msg)
-
-    def error(self, msg):
-        self.log(msg)
 
     def fetchall(self, query):
         with self.execute(query) as cur:
@@ -833,9 +826,6 @@ class ImpalaClient(SQLClient):
         """
         self.con.disable_codegen(disabled)
 
-    def log(self, msg):
-        log(msg)
-
     def _fully_qualified_name(self, name, database):
         if is_fully_qualified(name):
             return name
@@ -901,10 +891,10 @@ class ImpalaClient(SQLClient):
             udas = []
         if force:
             for table in tables:
-                self.log('Dropping {0}'.format('{0}.{1}'.format(name, table)))
+                util.log('Dropping {0}'.format('{0}.{1}'.format(name, table)))
                 self.drop_table_or_view(table, database=name)
             for func in udfs:
-                self.log(
+                util.log(
                     'Dropping function {0}({1})'.format(func.name, func.inputs)
                 )
                 self.drop_udf(
@@ -914,7 +904,7 @@ class ImpalaClient(SQLClient):
                     force=True,
                 )
             for func in udas:
-                self.log(
+                util.log(
                     'Dropping aggregate function {0}({1})'.format(
                         func.name, func.inputs
                     )

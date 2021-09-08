@@ -5,13 +5,13 @@ import numpy as np
 import pandas as pd
 from clickhouse_driver.client import Client as _DriverClient
 
+import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base.sql import SQLClient
 from ibis.config import options
-from ibis.util import log
 
 from .compiler import ClickhouseCompiler
 
@@ -171,9 +171,6 @@ class ClickhouseClient(SQLClient):
         self.table_expr_class = backend.table_expr_class
         self.con = _DriverClient(*args, **kwargs)
 
-    def log(self, msg):
-        log(msg)
-
     def raw_sql(self, query: str, external_tables={}):
         external_tables_list = []
         for name, df in external_tables.items():
@@ -198,7 +195,7 @@ class ClickhouseClient(SQLClient):
                 }
             )
 
-        self.log(query)
+        ibis.util.log(query)
         return self.con.execute(
             query,
             columnar=True,
