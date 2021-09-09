@@ -1,6 +1,8 @@
-#!/bin/bash -e
+#!/usr/bin/env bash
 # Run the Ibis tests. Two environment variables are considered:
 # - PYTEST_BACKENDS: Space-separated list of backends to run
+
+set -eo pipefail
 
 TESTS_DIRS="ibis/tests ibis/backends/tests"
 for BACKEND in $PYTEST_BACKENDS; do
@@ -9,9 +11,9 @@ for BACKEND in $PYTEST_BACKENDS; do
     fi
 done
 
-echo "TESTS_DIRS: $TESTS_DIRS"
+set -u
 
-set -o pipefail
+echo "TESTS_DIRS: $TESTS_DIRS"
 
 pytest $TESTS_DIRS \
     -q \
