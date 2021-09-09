@@ -1132,9 +1132,7 @@ class WindowOp(ValueOp):
 
     def root_tables(self):
         return distinct_roots(
-            self.expr,
-            *self.window._order_by,
-            *self.window._group_by
+            self.expr, *self.window._order_by, *self.window._group_by
         )
 
 
