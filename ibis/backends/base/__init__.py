@@ -179,14 +179,7 @@ class BaseBackend(abc.ABC):
             '`name in client.list_tables()` instead.',
             FutureWarning,
         )
-        # TODO: Some backends support the `database` argument and some
-        # don't. For now we try to pass it, and if it doesn't exist, we
-        # fallback to not passing it. In #2899 this is being standardized,
-        # we should always pass it in that PR, or a follow up once it's merged
-        try:
-            return name in self.client.list_tables(database=database)
-        except TypeError:
-            return name in self.client.list_tables()
+        return name in self.client.list_tables(database=database)
 
     # @abc.abstractmethod
     def table(self, name: str, database: str = None) -> ir.TableExpr:
