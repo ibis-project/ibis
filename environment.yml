@@ -37,7 +37,6 @@ dependencies:
   # Release
   - twine
   - wheel
-  - conda-smithy
   - conda-build # feedstock
   - ruamel.yaml # feedstock
   - pygit2 # dev/genrelease.py
@@ -48,8 +47,7 @@ dependencies:
   - pip:
     - pysuerga
   - ipython
-  - jupyter
-  - matplotlib
+  - ipykernel
   - nbconvert
   - nbsphinx
   - nomkl
