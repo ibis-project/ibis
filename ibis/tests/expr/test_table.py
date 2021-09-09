@@ -15,7 +15,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.common.exceptions import ExpressionError, RelationError
 from ibis.expr.types import ColumnExpr, TableExpr
-from ibis.tests.util import assert_equal
+from ibis.tests.util import assert_equal, assert_pickle_roundtrip
 
 
 @pytest.fixture
@@ -1296,6 +1296,39 @@ def test_pickle_table_expr():
     raw = pickle.dumps(t0, protocol=2)
     t1 = pickle.loads(raw)
     assert t1.equals(t0)
+
+
+def test_pickle_table_node(table):
+    n0 = table.op()
+    assert_pickle_roundtrip(n0)
+
+
+def test_pickle_projection_node(table):
+    m = table.mutate(foo=table.f * 2)
+
+    def f(x):
+        return (x.foo * 2).name('bar')
+
+    node = m.projection([f, 'f']).op()
+
+    assert_pickle_roundtrip(node)
+
+
+def test_pickle_group_by(table):
+    m = table.mutate(foo=table.f * 2, bar=table.e / 2)
+    expr = m.group_by(lambda x: x.foo).size()
+    node = expr.op()
+
+    assert_pickle_roundtrip(node)
+
+
+def test_pickle_asof_join():
+    left = ibis.table([('time', 'int32'), ('value', 'double')])
+    right = ibis.table([('time', 'int32'), ('value2', 'double')])
+    joined = api.asof_join(left, right, 'time')
+    node = joined.op()
+
+    assert_pickle_roundtrip(node)
 
 
 def test_group_by_key_function():

@@ -4,7 +4,7 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.tests.util import assert_equal
+from ibis.tests.util import assert_equal, assert_pickle_roundtrip
 
 
 def test_ifelse(table):
@@ -64,6 +64,29 @@ def test_multiple_case_expr(table):
     assert isinstance(expr, ir.FloatingColumn)
     assert isinstance(op, ops.SearchedCase)
     assert op.default is default
+
+
+def test_pickle_multiple_case_node(table):
+    case1 = table.a == 5
+    case2 = table.b == 128
+    case3 = table.c == 1000
+
+    result1 = table.f
+    result2 = table.b * 2
+    result3 = table.e
+
+    default = table.d
+    expr = (
+        ibis.case()
+        .when(case1, result1)
+        .when(case2, result2)
+        .when(case3, result3)
+        .else_(default)
+        .end()
+    )
+
+    op = expr.op()
+    assert_pickle_roundtrip(op)
 
 
 @pytest.mark.xfail(raises=AssertionError, reason='NYT')

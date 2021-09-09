@@ -1,9 +1,9 @@
-import pickle
 from collections import OrderedDict
 
 import ibis
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+from ibis.tests.util import assert_pickle_roundtrip
 
 
 def test_struct_operations():
@@ -31,7 +31,4 @@ def test_struct_pickle():
         OrderedDict([("fruit", "pear"), ("weight", 0)])
     )
 
-    raw = pickle.dumps(struct_scalar_expr)
-    loaded = pickle.loads(raw)
-
-    assert loaded.equals(struct_scalar_expr)
+    assert_pickle_roundtrip(struct_scalar_expr)
