@@ -434,18 +434,17 @@ jobs:
         run: pip install .
 
       - name: build web
-        run: python -m pysuerga docs/web --target-path=/tmp/ibis-project.org/
+        run: python -m pysuerga docs/web --target-path=docbuild
 
       - name: build docs
-        run: sphinx-build -b html docs/source /tmp/ibis-project.org/docs -W -T
+        run: sphinx-build -b html docs/source docbuild/docs -W -T
 
       - name: Add config to docs
         run: |
           set -euo pipefail
 
-          cd /tmp/ibis-project.org
-          touch .nojekyll
-          echo "ibis-project.org" > CNAME
+          touch docbuild/.nojekyll
+          echo "ibis-project.org" > docbuild/CNAME
 
       - name: Push docs
         if: ${{ github.event_name == 'push' }}
@@ -453,11 +452,14 @@ jobs:
         env:
           API_TOKEN_GITHUB: ${{ secrets.IBIS_PROJECT_DOCS_PAT }}
         with:
-          source-directory: /tmp/ibis-project.org
+          source-directory: docbuild
           destination-github-username: ibis-project
           destination-repository-name: ibis-project.org
           user-name: github-actions
           user-email: github-actions@github.com
+
+      - name: Clean up doc build
+        run: rm -r docbuild
 
   conda_package:
     # TODO: fully automate the conda-forge PR submission on release
