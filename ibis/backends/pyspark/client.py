@@ -1,6 +1,5 @@
 import pandas as pd
 import pyspark as ps
-import regex as re
 from pyspark.sql.column import Column
 
 import ibis.common.exceptions as com
@@ -18,7 +17,6 @@ from ibis.backends.base.sql.ddl import (
 )
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import canonicalize_context, localize_context
-from ibis.util import log
 
 from . import ddl
 from .compiler import PySparkExprTranslator
@@ -322,9 +320,6 @@ class PySparkClient(SQLClient):
         cur = self.raw_sql(query)
         return spark_dataframe_schema(cur.query)
 
-    def log(self, msg):
-        log(msg)
-
     def _get_jtable(self, name, database=None):
         try:
             jtable = self._catalog._jcatalog.getTable(
@@ -357,37 +352,24 @@ class PySparkClient(SQLClient):
         node = self.table_class(qualified_name, schema, self)
         return self.table_expr_class(node)
 
-    def list_tables(self, like=None, database=None):
+    def exists_table(self, name, database=None):
         """
-        List tables in the current (or indicated) database. Like the SHOW
-        TABLES command.
+        Determine if the indicated table or view exists
 
         Parameters
         ----------
-        like : string, default None
-          e.g. 'foo*' to match all tables starting with 'foo'
+        name : string
         database : string, default None
-          If not passed, uses the current/default database
 
         Returns
         -------
-        results : list of strings
+        if_exists : boolean
         """
-        results = [t.name for t in self._catalog.listTables(dbName=database)]
-        if like:
-            results = [
-                table_name
-                for table_name in results
-                if re.match(like, table_name) is not None
-            ]
-
-        return results
-
-    def set_database(self, name):
-        """
-        Set the default database scope for client
-        """
-        self._catalog.setCurrentDatabase(name)
+        try:
+            self._get_jtable(name, database)
+            return True
+        except com.IbisInputError:
+            return False
 
     def create_database(self, name, path=None, force=False):
         """

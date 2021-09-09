@@ -5,13 +5,13 @@ import numpy as np
 import pandas as pd
 from clickhouse_driver.client import Client as _DriverClient
 
+import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base.sql import SQLClient
 from ibis.config import options
-from ibis.util import log
 
 from .compiler import ClickhouseCompiler
 
@@ -171,9 +171,6 @@ class ClickhouseClient(SQLClient):
         self.table_expr_class = backend.table_expr_class
         self.con = _DriverClient(*args, **kwargs)
 
-    def log(self, msg):
-        log(msg)
-
     def raw_sql(self, query: str, external_tables={}):
         external_tables_list = []
         for name, df in external_tables.items():
@@ -198,7 +195,7 @@ class ClickhouseClient(SQLClient):
                 }
             )
 
-        self.log(query)
+        ibis.util.log(query)
         return self.con.execute(
             query,
             columnar=True,
@@ -229,42 +226,6 @@ class ClickhouseClient(SQLClient):
 
         database = database or self.current_database
         return '{0}.`{1}`'.format(database, name)
-
-    def list_tables(self, like=None, database=None):
-        """
-        List tables in the current (or indicated) database. Like the SHOW
-        TABLES command in the clickhouse-shell.
-
-        Parameters
-        ----------
-        like : string, default None
-          e.g. 'foo*' to match all tables starting with 'foo'
-        database : string, default None
-          If not passed, uses the current/default database
-
-        Returns
-        -------
-        tables : list of strings
-        """
-        statement = 'SHOW TABLES'
-        if database:
-            statement += " FROM `{0}`".format(database)
-        if like:
-            m = fully_qualified_re.match(like)
-            if m:
-                database, quoted, unquoted = m.groups()
-                like = quoted or unquoted
-                return self.list_tables(like=like, database=database)
-            statement += " LIKE '{0}'".format(like)
-
-        data = self.raw_sql(statement)
-        return data[0]
-
-    def set_database(self, name):
-        """
-        Set the default database scope for client
-        """
-        self.con.database = name
 
     def get_schema(self, table_name, database=None):
         """

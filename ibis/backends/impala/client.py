@@ -37,7 +37,6 @@ from ibis.backends.base.sql.ddl import (
     is_fully_qualified,
 )
 from ibis.config import options
-from ibis.util import log
 
 from . import ddl, udf
 from .compat import HS2Error, ImpylaError, impyla
@@ -56,14 +55,10 @@ class ImpalaDatabase(Database):
         )
 
     def list_udfs(self, like=None):
-        return self.client.list_udfs(
-            like=self._qualify_like(like), database=self.name
-        )
+        return self.client.list_udfs(like=like, database=self.name)
 
     def list_udas(self, like=None):
-        return self.client.list_udas(
-            like=self._qualify_like(like), database=self.name
-        )
+        return self.client.list_udas(like=like, database=self.name)
 
 
 class ImpalaConnection:
@@ -114,13 +109,13 @@ class ImpalaConnection:
             query = query.compile()
 
         cursor = self._get_cursor()
-        self.log(query)
+        util.log(query)
 
         try:
             cursor.execute(query)
         except Exception:
             cursor.release()
-            self.error(
+            util.log(
                 'Exception caused by {}: {}'.format(
                     query, traceback.format_exc()
                 )
@@ -128,12 +123,6 @@ class ImpalaConnection:
             raise
 
         return cursor
-
-    def log(self, msg):
-        log(msg)
-
-    def error(self, msg):
-        self.log(msg)
 
     def fetchall(self, query):
         with self.execute(query) as cur:
@@ -837,9 +826,6 @@ class ImpalaClient(SQLClient):
         """
         self.con.disable_codegen(disabled)
 
-    def log(self, msg):
-        log(msg)
-
     def _fully_qualified_name(self, name, database):
         if is_fully_qualified(name):
             return name
@@ -847,47 +833,14 @@ class ImpalaClient(SQLClient):
         database = database or self.current_database
         return '{0}.`{1}`'.format(database, name)
 
-    def list_tables(self, like=None, database=None):
-        """
-        List tables in the current (or indicated) database. Like the SHOW
-        TABLES command in the impala-shell.
-
-        Parameters
-        ----------
-        like : string, default None
-          e.g. 'foo*' to match all tables starting with 'foo'
-        database : string, default None
-          If not passed, uses the current/default database
-
-        Returns
-        -------
-        tables : list of strings
-        """
-        statement = 'SHOW TABLES'
-        if database:
-            statement += ' IN {0}'.format(database)
-        if like:
-            m = fully_qualified_re.match(like)
-            if m:
-                database, quoted, unquoted = m.groups()
-                like = quoted or unquoted
-                return self.list_tables(like=like, database=database)
-            statement += " LIKE '{0}'".format(like)
-
-        cur = self.raw_sql(statement)
-        result = self._get_list(cur)
-        cur.release()
-
-        return result
-
     def _get_list(self, cur):
         tuples = cur.fetchall()
         return list(map(operator.itemgetter(0), tuples))
 
     def set_database(self, name):
-        """
-        Set the default database scope for client
-        """
+        # XXX The parent `Client` has a generic method that calls this same
+        # method in the backend. But for whatever reason calling this code from
+        # that method doesn't seem to work. Maybe `con` is a copy?
         self.con.set_database(name)
 
     @property
@@ -938,10 +891,10 @@ class ImpalaClient(SQLClient):
             udas = []
         if force:
             for table in tables:
-                self.log('Dropping {0}'.format('{0}.{1}'.format(name, table)))
+                util.log('Dropping {0}'.format('{0}.{1}'.format(name, table)))
                 self.drop_table_or_view(table, database=name)
             for func in udfs:
-                self.log(
+                util.log(
                     'Dropping function {0}({1})'.format(func.name, func.inputs)
                 )
                 self.drop_udf(
@@ -951,7 +904,7 @@ class ImpalaClient(SQLClient):
                     force=True,
                 )
             for func in udas:
-                self.log(
+                util.log(
                     'Dropping aggregate function {0}({1})'.format(
                         func.name, func.inputs
                     )

@@ -132,9 +132,39 @@ class BaseBackend(abc.ABC):
         pattern = re.compile(like)
         return sorted(filter(lambda t: pattern.findall(t), values))
 
-    # @abc.abstractmethod
-    def list_tables(self, like: str = None) -> List[str]:
+    def set_database(self, name: str) -> None:
         """
+        Set the current database.
+
+        Parameters
+        ----------
+        name : str
+            The name of the new current database.
+        """
+        raise NotImplementedError(
+            f'Cannot set database with {self.__class__.__name__} client. '
+            'To use a different database create a new client.'
+        )
+
+    @abc.abstractmethod
+    def list_tables(self, like: str = None, database: str = None) -> List[str]:
+        """
+        Return the list of table names in the current database.
+
+        For some backends, the tables may be files in a directory,
+        or other equivalent entities in a SQL database.
+
+        Parameters
+        ----------
+        like : str, optional
+            A pattern in Python's regex format.
+        database : str, optional
+            The database to list tables of, if not the current one.
+
+        Returns
+        -------
+        list of str
+            The list of the table names that match the pattern `like`.
         """
 
     def exists_table(self, name: str, database: str = None) -> bool:

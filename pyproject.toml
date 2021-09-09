@@ -1,5 +1,41 @@
+[tool.pytest.ini_options]
+xfail_strict = true
+addopts = [
+  "--ignore=site-packages",
+  "--ignore=dist-packages",
+  "--strict-markers"
+]
+norecursedirs = ["site-packages", "dist-packages"]
+markers = [
+  "backend",
+  "geo",
+  "hdfs",
+  "kudu",
+  "min_spark_version",
+  "only_on_backends",
+  "skip_backends",
+  "skip_missing_feature",
+  "superuser",
+  "udf",
+  "xfail_backends",
+  "xfail_unsupported",
+  "xpass_backends",
+]
+
 [tool.black]
-line-length = 79
-skip-string-normalization = true
-target-version = ["py36", "py37", "py38"]
+line_length = 79
+skip_string_normalization = true
 exclude = "(ibis/_version|versioneer)\\.py"
+
+[tool.isort]
+ensure_newline_before_comments = true
+line_length = 79
+multi_line_output = 3
+include_trailing_comma = true
+profile = "black"
+skip = ["versioneer.py"]
+
+[tool.pydocstyle]
+inherit = false
+convention = "numpy"
+match_dir = "ibis"

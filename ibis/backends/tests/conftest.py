@@ -49,17 +49,26 @@ def _get_backends_to_test():
     """
     Get a list of `TestConf` classes of the backends to test.
 
-    The list of backends can be specified by theuse rwith the `PYTEST_BACKENDS`
-    environment variable, or otherwise all backends are being tested.
+    The list of backends can be specified by the user with the
+    `PYTEST_BACKENDS` environment variable.
+
+    - If the variable is undefined or empty, then no backends are returned
+    - Otherwise the variable must contain a space-separated list of backends to
+      test
+
     """
-    backends = os.environ.get('PYTEST_BACKENDS', '').split(' ')
-    if backends == ['']:
-        backends = _get_all_backends()
+    backends_raw = os.environ.get('PYTEST_BACKENDS')
+
+    if not backends_raw:
+        return []
+
+    backends = backends_raw.split()
 
     return [
         pytest.param(
             _backend_name_to_class(backend),
-            marks=getattr(pytest.mark, backend),
+            marks=[getattr(pytest.mark, backend), pytest.mark.backend],
+            id=backend,
         )
         for backend in sorted(backends)
     ]

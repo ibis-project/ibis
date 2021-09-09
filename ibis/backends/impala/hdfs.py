@@ -35,15 +35,6 @@ class HDFS:
     user/developer against) various 3rd party library API differences.
     """
 
-    def log(self, message: str):
-        """Print a log message.
-
-        Parameters
-        ----------
-        message: string
-        """
-        print(message)
-
     def exists(self, path: str) -> bool:
         """Check if the file exists.
 

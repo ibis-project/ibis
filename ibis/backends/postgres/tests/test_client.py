@@ -70,10 +70,6 @@ def test_database_layer(con, alltypes):
 
     assert db.list_tables() == con.list_tables()
 
-    db_schema = con.schema("information_schema")
-
-    assert db_schema.list_tables() != con.list_tables()
-
 
 def test_compile_toplevel():
     t = ibis.table([('foo', 'double')], name='t0')
@@ -109,21 +105,6 @@ def test_metadata_is_per_table():
     t = con.table('functional_alltypes')  # noqa
     assert 'functional_alltypes' in con.meta.tables
     assert len(con.meta.tables) == 1
-
-
-def test_schema_table():
-    con = ibis.postgres.connect(
-        host=IBIS_POSTGRES_HOST,
-        database=POSTGRES_TEST_DB,
-        user=IBIS_POSTGRES_USER,
-        password=IBIS_POSTGRES_PASS,
-    )
-
-    # ensure that we can reflect the information schema (which is guaranteed
-    # to exist)
-    schema = con.schema('information_schema')
-
-    assert isinstance(schema['tables'], ir.TableExpr)
 
 
 def test_schema_type_conversion():

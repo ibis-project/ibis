@@ -110,6 +110,13 @@ def trace(func):
 
     @functools.wraps(func)
     def traced_func(*args, **kwargs):
+        import ibis
+
+        # Similar to the pandas backend, it is possible to call this function
+        # without having initialized the configuration option. This can happen
+        # when tests are distributed across multiple processes, for example.
+        ibis.dask
+
         trace_enabled = get_option(_TRACE_CONFIG)
 
         if not trace_enabled:

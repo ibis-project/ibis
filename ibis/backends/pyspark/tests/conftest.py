@@ -198,9 +198,8 @@ class TestConf(BackendTest, RoundAwayFromZero):
 
 
 @pytest.fixture(scope='session')
-def client():
-    session = SparkSession.builder.getOrCreate()
-    client = ibis.backends.pyspark.Backend().connect(session)
+def client(data_directory):
+    client = get_pyspark_testing_client(data_directory)
 
     df = client._session.range(0, 10)
     df = df.withColumn("str_col", F.lit('value'))

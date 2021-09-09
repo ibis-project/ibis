@@ -83,11 +83,6 @@ class SQLiteClient(AlchemyClient):
         node = self.table_class(alch_table, self)
         return self.table_expr_class(node)
 
-    def list_tables(self, like=None, database=None, schema=None):
-        if database is None:
-            database = self.database_name
-        return super().list_tables(like, schema=database)
-
     def _table_from_schema(
         self, name, schema, database: Optional[str] = None
     ) -> sa.Table:
