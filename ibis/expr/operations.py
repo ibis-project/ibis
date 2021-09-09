@@ -27,7 +27,7 @@ def _safe_repr(x, memo=None):
 # TODO: move to analysis
 def distinct_roots(*expressions):
     roots = toolz.concat(
-        expression._root_tables() for expression in expressions
+        expression.op().root_tables() for expression in expressions
     )
     return list(toolz.unique(roots))
 
@@ -243,7 +243,7 @@ class TableColumn(ValueOp):
         return True
 
     def root_tables(self):
-        return self.table._root_tables()
+        return self.table.op().root_tables()
 
     def _make_expr(self):
         dtype = self.table._get_type(self.name)
@@ -1136,7 +1136,7 @@ class WindowOp(ValueOp):
         result = list(
             toolz.unique(
                 toolz.concatv(
-                    self.expr._root_tables(),
+                    self.expr.op().root_tables(),
                     distinct_roots(
                         *toolz.concatv(
                             self.window._order_by, self.window._group_by
@@ -1377,7 +1377,7 @@ class Any(ValueOp):
 
     @property
     def _reduction(self):
-        roots = self.arg._root_tables()
+        roots = self.arg.op().root_tables()
         return len(roots) < 2
 
     def output_type(self):
@@ -1779,7 +1779,7 @@ class MaterializedJoin(TableNode, HasSchema):
         return self.join.op()._get_schema()
 
     def root_tables(self):
-        return self.join._root_tables()
+        return self.join.op().root_tables()
 
     def blocks(self):
         return True
@@ -1922,7 +1922,7 @@ class SortKey(Node):
         return ir.SortExpr
 
     def root_tables(self):
-        return self.expr._root_tables()
+        return self.expr.op().root_tables()
 
     def equals(self, other, cache=None):
         # TODO: might generalize this equals based on fields
@@ -3627,7 +3627,7 @@ class ElementWiseVectorizedUDF(ValueOp):
     def root_tables(self):
         result = list(
             toolz.unique(
-                toolz.concat(arg._root_tables() for arg in self.func_args)
+                toolz.concat(arg.op().root_tables() for arg in self.func_args)
             )
         )
 
@@ -3658,7 +3658,7 @@ class ReductionVectorizedUDF(Reduction):
     def root_tables(self):
         result = list(
             toolz.unique(
-                toolz.concat(arg._root_tables() for arg in self.func_args)
+                toolz.concat(arg.op().root_tables() for arg in self.func_args)
             )
         )
 
@@ -3689,7 +3689,7 @@ class AnalyticVectorizedUDF(AnalyticOp):
     def root_tables(self):
         result = list(
             toolz.unique(
-                toolz.concat(arg._root_tables() for arg in self.func_args)
+                toolz.concat(arg.op().root_tables() for arg in self.func_args)
             )
         )
 

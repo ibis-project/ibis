@@ -866,7 +866,7 @@ class Projector:
         assert self.parent.op() == root
 
         root_table = root.table
-        roots = root_table._root_tables()
+        roots = root_table.op().root_tables()
         validator = ExprValidator([root_table])
         fused_exprs = []
         can_fuse = False
@@ -899,7 +899,7 @@ class Projector:
                 # gross we share the same table root. Better way to
                 # detect?
                 or len(roots) == 1
-                and val._root_tables()[0] is roots[0]
+                and val.op().root_tables()[0] is roots[0]
             ):
                 can_fuse = True
                 have_root = False
@@ -939,7 +939,7 @@ class ExprValidator:
 
         self.roots = []
         for expr in self.parent_exprs:
-            self.roots.extend(expr._root_tables())
+            self.roots.extend(expr.op().root_tables())
 
     def has_common_roots(self, expr):
         return self.validate(expr)
@@ -953,7 +953,7 @@ class ExprValidator:
             if self._among_roots(op):
                 return True
 
-        expr_roots = expr._root_tables()
+        expr_roots = expr.op().root_tables()
         for root in expr_roots:
             if not self._among_roots(root):
                 return False
@@ -966,16 +966,16 @@ class ExprValidator:
         return sum(root.is_ancestor(node) for root in self.roots)
 
     def shares_some_roots(self, expr):
-        expr_roots = expr._root_tables()
+        expr_roots = expr.op().root_tables()
         return any(self._among_roots(root) for root in expr_roots)
 
     def shares_one_root(self, expr):
-        expr_roots = expr._root_tables()
+        expr_roots = expr.op().root_tables()
         total = sum(self.roots_shared(root) for root in expr_roots)
         return total == 1
 
     def shares_multiple_roots(self, expr):
-        expr_roots = expr._root_tables()
+        expr_roots = expr.op().root_tables()
         total = sum(self.roots_shared(expr_roots) for root in expr_roots)
         return total > 1
 
