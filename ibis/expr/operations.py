@@ -26,9 +26,7 @@ def _safe_repr(x, memo=None):
 
 # TODO: move to analysis
 def distinct_roots(*expressions):
-    roots = toolz.concat(
-        expression.op().root_tables() for expression in expressions
-    )
+    roots = toolz.concat(expr.op().root_tables() for expr in expressions)
     return list(toolz.unique(roots))
 
 
@@ -1133,19 +1131,11 @@ class WindowOp(ValueOp):
         return self.expr.op().inputs[0], self.window
 
     def root_tables(self):
-        result = list(
-            toolz.unique(
-                toolz.concatv(
-                    self.expr.op().root_tables(),
-                    distinct_roots(
-                        *toolz.concatv(
-                            self.window._order_by, self.window._group_by
-                        )
-                    ),
-                )
-            )
+        return distinct_roots(
+            self.expr,
+            *self.window._order_by,
+            *self.window._group_by
         )
-        return result
 
 
 class ShiftBase(AnalyticOp):
@@ -3625,13 +3615,7 @@ class ElementWiseVectorizedUDF(ValueOp):
         return self._output_type.column_type()
 
     def root_tables(self):
-        result = list(
-            toolz.unique(
-                toolz.concat(arg.op().root_tables() for arg in self.func_args)
-            )
-        )
-
-        return result
+        return distinct_roots(*self.func_args)
 
 
 class ReductionVectorizedUDF(Reduction):
@@ -3656,13 +3640,7 @@ class ReductionVectorizedUDF(Reduction):
         return self._output_type.scalar_type()
 
     def root_tables(self):
-        result = list(
-            toolz.unique(
-                toolz.concat(arg.op().root_tables() for arg in self.func_args)
-            )
-        )
-
-        return result
+        return distinct_roots(*self.func_args)
 
 
 class AnalyticVectorizedUDF(AnalyticOp):
@@ -3687,13 +3665,7 @@ class AnalyticVectorizedUDF(AnalyticOp):
         return self._output_type.column_type()
 
     def root_tables(self):
-        result = list(
-            toolz.unique(
-                toolz.concat(arg.op().root_tables() for arg in self.func_args)
-            )
-        )
-
-        return result
+        return distinct_roots(*self.func_args)
 
 
 class ExistsSubquery(Node):
