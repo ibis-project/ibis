@@ -6,6 +6,7 @@ set -euo pipefail
 
 if [ "$#" -eq 0 ]; then
   >&2 echo "error: must provide at least one backend"
+  exit 1
 fi
 
 # install conda-merge
