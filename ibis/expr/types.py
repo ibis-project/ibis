@@ -313,9 +313,6 @@ class Expr:
             return False
         return self._arg.equals(other._arg, cache=cache)
 
-    def _root_tables(self):
-        return self.op().root_tables()
-
 
 class ExprList(Expr):
     def _type_display(self):
@@ -433,7 +430,7 @@ class ColumnExpr(ValueExpr):
         """
         Promote this column expression to a table projection
         """
-        roots = self._root_tables()
+        roots = self.op().root_tables()
         if len(roots) > 1:
             raise com.RelationError(
                 'Cannot convert array expression '
