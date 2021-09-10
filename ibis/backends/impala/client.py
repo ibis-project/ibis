@@ -4,6 +4,7 @@ import re
 import threading
 import time
 import traceback
+import warnings
 import weakref
 from collections import deque
 from posixpath import join as pjoin
@@ -841,6 +842,12 @@ class ImpalaClient(SQLClient):
         # XXX The parent `Client` has a generic method that calls this same
         # method in the backend. But for whatever reason calling this code from
         # that method doesn't seem to work. Maybe `con` is a copy?
+        warnings.warn(
+            '`set_database` is deprecated and will be removed in a future '
+            'version of Ibis. Create a new connection to the desired database '
+            'instead',
+            FutureWarning,
+        )
         self.con.set_database(name)
 
     @property

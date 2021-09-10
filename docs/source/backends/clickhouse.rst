@@ -35,6 +35,5 @@ Use ``ibis.clickhouse.connect`` to create a client.
    ClickhouseClient.exists_table
    ClickhouseClient.exists_database
    ClickhouseClient.get_schema
-   ClickhouseClient.set_database
    ClickhouseClient.list_databases
    ClickhouseClient.list_tables

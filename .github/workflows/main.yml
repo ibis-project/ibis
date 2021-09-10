@@ -44,9 +44,12 @@ jobs:
       - name: run tests
         run: ./ci/run_tests.sh --numprocesses auto
 
-      - name: pytest errors
-        run: ./ci/pytest_errors.sh
-        if: failure()
+      - name: publish test report
+        uses: actions/upload-artifact@v2
+        if: success() || failure()
+        with:
+          name: no_backends_${{ matrix.python-version }}-${{ matrix.os }}
+          path: junit.xml
 
   test_simple_backends:
     runs-on: ${{ matrix.os }}
@@ -105,9 +108,12 @@ jobs:
         env:
           PYTEST_BACKENDS: ${{ join(fromJSON(steps.set_backends.outputs.backends), ' ') }}
 
-      - name: pytest errors
-        run: ./ci/pytest_errors.sh
-        if: failure()
+      - name: publish test report
+        uses: actions/upload-artifact@v2
+        if: success() || failure()
+        with:
+          name: simple_backends_${{ matrix.python-version }}-${{ matrix.os }}-${{ join(matrix.additional-deps, '-') }}
+          path: junit.xml
 
   test_pyspark:
     runs-on: ubuntu-latest
@@ -158,9 +164,12 @@ jobs:
           PYTEST_BACKENDS: pyspark
           ARROW_PRE_0_15_IPC_FORMAT: ${{ matrix.deps.env.ARROW_PRE_0_15_IPC_FORMAT }}
 
-      - name: pytest errors
-        run: ./ci/pytest_errors.sh
-        if: failure()
+      - name: publish test report
+        uses: actions/upload-artifact@v2
+        if: success() || failure()
+        with:
+          name: pyspark_${{ matrix.deps.python-version }}-${{ matrix.dep.env.ARROW_PRE_0_15_IPC_FORMAT }}-${{ join(matrix.deps.additional-deps, '-') }}
+          path: junit.xml
   #
   test_mysql_postgres:
     runs-on: ubuntu-latest
@@ -239,9 +248,12 @@ jobs:
         env:
           PYTEST_BACKENDS: ${{ join(fromJSON(steps.set_backends.outputs.backends), ' ') }}
 
-      - name: pytest errors
-        run: ./ci/pytest_errors.sh
-        if: failure()
+      - name: publish test report
+        uses: actions/upload-artifact@v2
+        if: success() || failure()
+        with:
+          name: mysql_postgres_${{ matrix.python-version }}-${{ join(matrix.additional-deps, '-') }}
+          path: junit.xml
 
   test_impala_clickhouse:
     runs-on: ubuntu-latest
@@ -361,9 +373,12 @@ jobs:
         env:
           PYTEST_BACKENDS: ${{ join(fromJSON(steps.set_backends.outputs.backends), ' ') }}
 
-      - name: pytest errors
-        run: ./ci/pytest_errors.sh
-        if: failure()
+      - name: publish test report
+        uses: actions/upload-artifact@v2
+        if: success() || failure()
+        with:
+          name: impala_clickhouse_${{ matrix.python-version }}
+          path: junit.xml
 
   benchmarks:
     runs-on: ubuntu-latest

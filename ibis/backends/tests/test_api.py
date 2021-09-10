@@ -19,26 +19,6 @@ def test_database_consistency(con):
     assert isinstance(current_database, str)
     assert current_database in databases
 
-    if len(databases) == 1:
-        new_database = current_database
-    else:
-        new_database = next(db for db in databases if db != current_database)
-
-    try:
-        con.set_database(new_database)
-    except NotImplementedError:
-        pass
-    else:
-        assert con.current_database == new_database
-        assert con.list_databases() == databases
-
-    # restoring the original database, in case the same connection is used
-    # in other tests
-    try:
-        con.set_database(current_database)
-    except NotImplementedError:
-        pass
-
 
 def test_list_tables(con):
     tables = con.list_tables()
