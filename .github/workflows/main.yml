@@ -46,7 +46,7 @@ jobs:
 
       - name: publish test report
         uses: actions/upload-artifact@v2
-        if: failure()
+        if: success() || failure()
         with:
           name: no_backends_${{ matrix.python-version }}-${{ matrix.os }}
           path: junit.xml
@@ -110,7 +110,7 @@ jobs:
 
       - name: publish test report
         uses: actions/upload-artifact@v2
-        if: failure()
+        if: success() || failure()
         with:
           name: simple_backends_${{ matrix.python-version }}-${{ matrix.os }}-${{ join(matrix.additional-deps, '-') }}
           path: junit.xml
@@ -166,7 +166,7 @@ jobs:
 
       - name: publish test report
         uses: actions/upload-artifact@v2
-        if: failure()
+        if: success() || failure()
         with:
           name: pyspark_${{ matrix.deps.python-version }}-${{ matrix.dep.env.ARROW_PRE_0_15_IPC_FORMAT }}-${{ join(matrix.deps.additional-deps, '-') }}
           path: junit.xml
@@ -250,7 +250,7 @@ jobs:
 
       - name: publish test report
         uses: actions/upload-artifact@v2
-        if: failure()
+        if: success() || failure()
         with:
           name: mysql_postgres_${{ matrix.python-version }}-${{ join(matrix.additional-deps, '-') }}
           path: junit.xml
@@ -375,30 +375,10 @@ jobs:
 
       - name: publish test report
         uses: actions/upload-artifact@v2
-        if: failure()
+        if: success() || failure()
         with:
           name: impala_clickhouse_${{ matrix.python-version }}
           path: junit.xml
-
-  publish_test_reports:
-    runs-on: ubuntu-latest
-    if: failure()
-    needs:
-      - test_no_backends
-      - test_simple_backends
-      - test_pyspark
-      - test_mysql_postgres
-      - test_impala_clickhouse
-    steps:
-      - name: download test report artifacts
-        uses: actions/download-artifact@v2
-        with:
-          path: artifacts
-
-      - name: publish test report
-        uses: mikepenz/action-junit-report@v2
-        with:
-          report_paths: artifacts/**/junit.xml
 
   benchmarks:
     runs-on: ubuntu-latest
