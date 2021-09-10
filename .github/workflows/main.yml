@@ -45,10 +45,11 @@ jobs:
         run: ./ci/run_tests.sh --numprocesses auto
 
       - name: publish test report
-        uses: mikepenz/action-junit-report@v2
+        uses: actions/upload-artifact@v2
         if: failure()
         with:
-          report_paths: junit.xml
+          name: no_backends_${{ matrix.python-version }}-${{ matrix.os }}
+          path: junit.xml
 
   test_simple_backends:
     runs-on: ${{ matrix.os }}
@@ -108,10 +109,11 @@ jobs:
           PYTEST_BACKENDS: ${{ join(fromJSON(steps.set_backends.outputs.backends), ' ') }}
 
       - name: publish test report
-        uses: mikepenz/action-junit-report@v2
+        uses: actions/upload-artifact@v2
         if: failure()
         with:
-          report_paths: junit.xml
+          name: simple_backends_${{ matrix.python-version }}-${{ matrix.os }}-${{ join(matrix.additional-deps, '-') }}
+          path: junit.xml
 
   test_pyspark:
     runs-on: ubuntu-latest
@@ -163,10 +165,11 @@ jobs:
           ARROW_PRE_0_15_IPC_FORMAT: ${{ matrix.deps.env.ARROW_PRE_0_15_IPC_FORMAT }}
 
       - name: publish test report
-        uses: mikepenz/action-junit-report@v2
+        uses: actions/upload-artifact@v2
         if: failure()
         with:
-          report_paths: junit.xml
+          name: pyspark_${{ matrix.deps.python-version }}-${{ matrix.dep.env.ARROW_PRE_0_15_IPC_FORMAT }}-${{ join(matrix.deps.additional-deps, '-') }}
+          path: junit.xml
   #
   test_mysql_postgres:
     runs-on: ubuntu-latest
@@ -246,10 +249,11 @@ jobs:
           PYTEST_BACKENDS: ${{ join(fromJSON(steps.set_backends.outputs.backends), ' ') }}
 
       - name: publish test report
-        uses: mikepenz/action-junit-report@v2
+        uses: actions/upload-artifact@v2
         if: failure()
         with:
-          report_paths: junit.xml
+          name: mysql_postgres_${{ matrix.python-version }}-${{ join(matrix.additional-deps, '-') }}
+          path: junit.xml
 
   test_impala_clickhouse:
     runs-on: ubuntu-latest
@@ -370,10 +374,31 @@ jobs:
           PYTEST_BACKENDS: ${{ join(fromJSON(steps.set_backends.outputs.backends), ' ') }}
 
       - name: publish test report
-        uses: mikepenz/action-junit-report@v2
+        uses: actions/upload-artifact@v2
         if: failure()
         with:
-          report_paths: junit.xml
+          name: impala_clickhouse_${{ matrix.python-version }}
+          path: junit.xml
+
+  publish_test_reports:
+    runs-on: ubuntu-latest
+    if: failure()
+    needs:
+      - test_no_backends
+      - test_simple_backends
+      - test_pyspark
+      - test_mysql_postgres
+      - test_impala_clickhouse
+    steps:
+      - name: download test report artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: artifacts
+
+      - name: publish test report
+        uses: mikepenz/action-junit-report@v2
+        with:
+          report_paths: artifacts/**/junit.xml
 
   benchmarks:
     runs-on: ubuntu-latest
