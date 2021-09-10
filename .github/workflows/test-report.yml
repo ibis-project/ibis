@@ -1,0 +1,19 @@
+name: Test Report
+on:
+  workflow_run:
+    workflows: ['Continuous Integration']
+    types:
+      - completed
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: download test report artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: artifacts
+
+      - name: publish test report
+        uses: EnricoMi/publish-unit-test-result-action@v1
+        with:
+          files: artifacts/**/junit.xml
