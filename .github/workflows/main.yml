@@ -396,9 +396,10 @@ jobs:
           path: artifacts
 
       - name: publish test report
-        uses: mikepenz/action-junit-report@v2
+        uses: KyleAure/junit-report-annotations-action@1.5
+        name: pytest results
         with:
-          report_paths: artifacts/**/junit.xml
+          path: artifacts/**/junit.xml
 
   benchmarks:
     runs-on: ubuntu-latest
