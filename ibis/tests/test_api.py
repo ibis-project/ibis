@@ -131,3 +131,7 @@ def test_multiple_backends(mocker):
     msg = "3 packages found for backend 'foo'"
     with pytest.raises(RuntimeError, match=msg):
         ibis.foo
+
+
+def test_bogus():
+    assert 1 + 1 == 3
