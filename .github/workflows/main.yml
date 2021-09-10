@@ -385,10 +385,10 @@ jobs:
     if: failure()
     needs:
       - test_no_backends
-      - test_simple_backends
-      - test_pyspark
-      - test_mysql_postgres
-      - test_impala_clickhouse
+      # - test_simple_backends
+      # - test_pyspark
+      # - test_mysql_postgres
+      # - test_impala_clickhouse
     steps:
       - name: download test report artifacts
         uses: actions/download-artifact@v2
@@ -396,10 +396,9 @@ jobs:
           path: artifacts
 
       - name: publish test report
-        uses: KyleAure/junit-report-annotations-action@1.5
+        uses: EnricoMi/publish-unit-test-result-action@v1
         with:
-          name: pytest results
-          path: artifacts/**/junit.xml
+          files: artifacts/**/junit.xml
 
   benchmarks:
     runs-on: ubuntu-latest
