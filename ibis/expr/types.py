@@ -53,7 +53,7 @@ class Expr:
 
     def __bool__(self):
         raise ValueError(
-            "The truth value of an Ibis expression is not " "defined"
+            "The truth value of an Ibis expression is not defined"
         )
 
     __nonzero__ = __bool__

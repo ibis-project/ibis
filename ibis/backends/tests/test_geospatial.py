@@ -686,3 +686,45 @@ def test_geo_ops_smoke(backend, fn_expr):
     """Smoke tests for geo spatial operations."""
     geo_table = backend.geo
     assert fn_expr(geo_table).compile() != ''
+
+
+@pytest.mark.only_on_backends(["postgres"])
+@pytest.mark.xfail_unsupported
+def test_geo_equals(backend, geo):
+    """
+    Test geo_equals/equals.
+
+    Notes
+    -----
+    Previously, the code used by this test was raising the following error:
+
+    ``TypeError: geo_equals() got an unexpected keyword argument 'cache'``
+
+    Changing the map for GeoEquals from ``equals`` to ``geo_equals`` fixed
+    the problem.
+
+    """
+    expr = geo.mutate(
+        [
+            geo.geo_point.y().name('Location_Latitude'),
+            geo.geo_point.y().name('Latitude'),
+        ]
+    )
+
+    result = str(expr.compile().compile())
+
+    assert result == (
+        'SELECT t0.id, ST_AsEWKB(t0.geo_point) AS geo_point, '
+        'ST_AsEWKB(t0.geo_linestring) AS geo_linestring, '
+        'ST_AsEWKB(t0.geo_polygon) AS geo_polygon, '
+        'ST_AsEWKB(t0.geo_multipolygon) AS geo_multipolygon, '
+        'ST_Y(t0.geo_point) AS "Location_Latitude", '
+        'ST_Y(t0.geo_point) AS "Latitude" \n'
+        'FROM geo AS t0'
+    )
+
+    # test a simple equal operation
+    expr = geo.geo_point == geo.geo_point
+    assert str(expr.compile().compile()) == (
+        'SELECT t0.geo_point = t0.geo_point AS tmp \nFROM geo AS t0'
+    )

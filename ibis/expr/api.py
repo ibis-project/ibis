@@ -2571,7 +2571,7 @@ _geospatial_value_methods = {
     'd_within': geo_d_within,
     'end_point': geo_end_point,
     'envelope': geo_envelope,
-    'equals': geo_equals,
+    'geo_equals': geo_equals,
     'geometry_n': geo_geometry_n,
     'geometry_type': geo_geometry_type,
     'intersection': geo_intersection,
