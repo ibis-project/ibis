@@ -397,8 +397,8 @@ jobs:
 
       - name: publish test report
         uses: KyleAure/junit-report-annotations-action@1.5
-        name: pytest results
         with:
+          name: pytest results
           path: artifacts/**/junit.xml
 
   benchmarks:
