@@ -157,7 +157,7 @@ def test_geo_equals(geotable):
     assert expr.execute().all()
 
     expr = geotable.geo_point.geo_equals(geotable.geo_linestring)
-    assert not expr.execute().all()
+    assert not expr.execute().any()
 
 
 def test_geo_geometry_n(geotable, gdf):
