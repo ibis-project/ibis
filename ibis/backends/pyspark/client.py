@@ -371,6 +371,9 @@ class PySparkClient(SQLClient):
         except com.IbisInputError:
             return False
 
+    def set_database(self, name):
+        return self.backend.set_database(name)
+
     def create_database(self, name, path=None, force=False):
         """
         Create a new Spark database
