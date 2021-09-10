@@ -689,21 +689,8 @@ def test_geo_ops_smoke(backend, fn_expr):
 
 
 @pytest.mark.only_on_backends(["postgres"])
-@pytest.mark.xfail_unsupported
 def test_geo_equals(backend, geo):
-    """
-    Test geo_equals/equals.
-
-    Notes
-    -----
-    Previously, the code used by this test was raising the following error:
-
-    ``TypeError: geo_equals() got an unexpected keyword argument 'cache'``
-
-    Changing the map for GeoEquals from ``equals`` to ``geo_equals`` fixed
-    the problem.
-
-    """
+    # Fix https://github.com/ibis-project/ibis/pull/2956
     expr = geo.mutate(
         [
             geo.geo_point.y().name('Location_Latitude'),
@@ -723,8 +710,19 @@ def test_geo_equals(backend, geo):
         'FROM geo AS t0'
     )
 
-    # test a simple equal operation
+    # simple test using ==
+    expected = 'SELECT t0.geo_point = t0.geo_point AS tmp \nFROM geo AS t0'
     expr = geo.geo_point == geo.geo_point
-    assert str(expr.compile().compile()) == (
-        'SELECT t0.geo_point = t0.geo_point AS tmp \nFROM geo AS t0'
+    assert str(expr.compile().compile()) == expected
+    assert expr.execute().all()
+
+    # using geo_equals
+    expected = (
+        'SELECT ST_Equals(t0.geo_point, t0.geo_point) AS tmp \nFROM geo AS t0'
     )
+    expr = geo.geo_point.geo_equals(geo.geo_point)
+    assert str(expr.compile().compile()) == expected
+    assert expr.execute().all()
+
+    # equals returns a boolean object
+    assert geo.geo_point.equals(geo.geo_point)

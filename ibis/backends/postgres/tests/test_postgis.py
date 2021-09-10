@@ -14,7 +14,7 @@ def test_load_geodata(con):
 
 
 def test_empty_select(geotable):
-    expr = geotable[geotable.geo_point.equals(geotable.geo_linestring)]
+    expr = geotable[geotable.geo_point.geo_equals(geotable.geo_linestring)]
     result = expr.execute()
     assert len(result) == 0
 
@@ -149,8 +149,15 @@ def test_geo_disjoint(geotable):
 
 
 def test_geo_equals(geotable):
-    expr = geotable.geo_point.equals(geotable.geo_point)
+    # note: == operation just works for comparison between same datatypes
+    expr = geotable.geo_point == geotable.geo_point
     assert expr.execute().all()
+
+    expr = geotable.geo_point.geo_equals(geotable.geo_point)
+    assert expr.execute().all()
+
+    expr = geotable.geo_point.geo_equals(geotable.geo_linestring)
+    assert not expr.execute().all()
 
 
 def test_geo_geometry_n(geotable, gdf):
