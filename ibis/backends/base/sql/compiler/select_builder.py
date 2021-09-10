@@ -21,7 +21,7 @@ class _AnyToExistsTransform:
         self.context = context
         self.expr = expr
         self.parent_table = parent_table
-        self.query_roots = frozenset(self.parent_table._root_tables())
+        self.query_roots = frozenset(self.parent_table.op().root_tables())
 
     def get_result(self):
         self.foreign_table = None
@@ -93,7 +93,7 @@ class _CorrelatedRefCheck:
         self.query = query
         self.ctx = query.context
         self.expr = expr
-        self.query_roots = frozenset(self.query.table_set._root_tables())
+        self.query_roots = frozenset(self.query.table_set.op().root_tables())
 
         # aliasing required
         self.foreign_refs = []

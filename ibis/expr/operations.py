@@ -3,7 +3,7 @@ import functools
 import itertools
 import operator
 from contextlib import suppress
-from typing import List
+from typing import Any, Dict, List
 
 import numpy as np
 import toolz
@@ -26,9 +26,7 @@ def _safe_repr(x, memo=None):
 
 # TODO: move to analysis
 def distinct_roots(*expressions):
-    roots = toolz.concat(
-        expression._root_tables() for expression in expressions
-    )
+    roots = toolz.concat(expr.op().root_tables() for expr in expressions)
     return list(toolz.unique(roots))
 
 
@@ -58,6 +56,37 @@ class Node(Annotable):
             pprint_args.append(pp)
 
         return '{}({})'.format(opname, ', '.join(pprint_args))
+
+    def __getstate__(self) -> Dict[str, Any]:
+        """The attributes _expr_cached and _hash are
+        used as caches; they can be excluded from
+        serialization without affecting correctness.
+
+        Excluding _expr_cached and _hash from serialization
+        will allow the serialized bytes to be the same for
+        equivalent Node objets.
+
+        Returns
+        -------
+        Dict[str, Any]
+            A dictionary storing the objects attributes.
+        """
+        excluded_slots = {'_expr_cached', '_hash'}
+        return {
+            slot: getattr(self, slot)
+            for slot in self.__slots__
+            if slot not in excluded_slots
+        }
+
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        """
+        Parameters
+        ----------
+        state: Dict[str, Any]
+            A dictionary storing the objects attributes.
+        """
+        for slot in state:
+            setattr(self, slot, state[slot])
 
     @property
     def inputs(self):
@@ -243,7 +272,7 @@ class TableColumn(ValueOp):
         return True
 
     def root_tables(self):
-        return self.table._root_tables()
+        return self.table.op().root_tables()
 
     def _make_expr(self):
         dtype = self.table._get_type(self.name)
@@ -1133,19 +1162,9 @@ class WindowOp(ValueOp):
         return self.expr.op().inputs[0], self.window
 
     def root_tables(self):
-        result = list(
-            toolz.unique(
-                toolz.concatv(
-                    self.expr._root_tables(),
-                    distinct_roots(
-                        *toolz.concatv(
-                            self.window._order_by, self.window._group_by
-                        )
-                    ),
-                )
-            )
+        return distinct_roots(
+            self.expr, *self.window._order_by, *self.window._group_by
         )
-        return result
 
 
 class ShiftBase(AnalyticOp):
@@ -1377,7 +1396,7 @@ class Any(ValueOp):
 
     @property
     def _reduction(self):
-        roots = self.arg._root_tables()
+        roots = self.arg.op().root_tables()
         return len(roots) < 2
 
     def output_type(self):
@@ -1779,7 +1798,7 @@ class MaterializedJoin(TableNode, HasSchema):
         return self.join.op()._get_schema()
 
     def root_tables(self):
-        return self.join._root_tables()
+        return self.join.op().root_tables()
 
     def blocks(self):
         return True
@@ -1922,7 +1941,7 @@ class SortKey(Node):
         return ir.SortExpr
 
     def root_tables(self):
-        return self.expr._root_tables()
+        return self.expr.op().root_tables()
 
     def equals(self, other, cache=None):
         # TODO: might generalize this equals based on fields
@@ -3625,13 +3644,7 @@ class ElementWiseVectorizedUDF(ValueOp):
         return self._output_type.column_type()
 
     def root_tables(self):
-        result = list(
-            toolz.unique(
-                toolz.concat(arg._root_tables() for arg in self.func_args)
-            )
-        )
-
-        return result
+        return distinct_roots(*self.func_args)
 
 
 class ReductionVectorizedUDF(Reduction):
@@ -3656,13 +3669,7 @@ class ReductionVectorizedUDF(Reduction):
         return self._output_type.scalar_type()
 
     def root_tables(self):
-        result = list(
-            toolz.unique(
-                toolz.concat(arg._root_tables() for arg in self.func_args)
-            )
-        )
-
-        return result
+        return distinct_roots(*self.func_args)
 
 
 class AnalyticVectorizedUDF(AnalyticOp):
@@ -3687,13 +3694,7 @@ class AnalyticVectorizedUDF(AnalyticOp):
         return self._output_type.column_type()
 
     def root_tables(self):
-        result = list(
-            toolz.unique(
-                toolz.concat(arg._root_tables() for arg in self.func_args)
-            )
-        )
-
-        return result
+        return distinct_roots(*self.func_args)
 
 
 class ExistsSubquery(Node):

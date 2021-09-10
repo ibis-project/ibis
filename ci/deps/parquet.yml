@@ -1,1 +1,3 @@
-pyarrow
+name: ibis
+dependencies:
+  - pyarrow

@@ -1,2 +1,4 @@
-sqlalchemy
-pymysql
+name: ibis
+dependencies:
+  - sqlalchemy
+  - pymysql

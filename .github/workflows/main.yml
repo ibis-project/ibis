@@ -1,79 +1,201 @@
-name: Main
+name: Continuous Integration
 
 on:
   push:
-    branches: master
+    branches:
+      - master
   pull_request:
-    branches: master
+    branches:
+      - master
 
 jobs:
-  Tests_pandas:
-    name: Tests pandas / files
+  test_no_backends:
     runs-on: ${{ matrix.os }}
-    env:
-      BACKENDS: "pandas csv parquet hdf5"
+    defaults:
+      run:
+        shell: bash -l {0}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        python_version: ["3.7", "3.9"]
+        os:
+          - ubuntu-latest
+          - windows-latest
+        python-version:
+          - "3.7"
+          - "3.9"
     steps:
-    - name: checkout
-      uses: actions/checkout@v1
+      - name: checkout
+        uses: actions/checkout@v2
 
-    - name: set up environment
-      run: ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
-      shell: bash
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          mamba-version: "*"
+          miniforge-version: latest
+          miniforge-variant: Mambaforge
+          channel-priority: strict
+          activate-environment: ibis
+          python-version: ${{ matrix.python-version }}
+          environment-file: environment.yml
+          condarc-file: ci/condarc
 
-    - name: run tests
-      run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh --numprocesses auto
-      shell: bash
+      - name: install ibis
+        run: pip install .
 
-    - name: pytest errors
-      run: ./ci/pytest_errors.sh
-      if: failure()
+      - name: run tests
+        run: ./ci/run_tests.sh --numprocesses auto
 
-  Tests_dask:
-    name: Tests dask
-    runs-on: ubuntu-latest
-    env:
-      BACKENDS: "dask"
+      - name: publish test report
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: no_backends_${{ matrix.python-version }}-${{ matrix.os }}
+          path: junit.xml
+
+  test_simple_backends:
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash -l {0}
     strategy:
       fail-fast: false
       matrix:
-        python_version: ["3.7", "3.9"]
+        os:
+          - ubuntu-latest
+          - windows-latest
+        python-version:
+          - "3.7"
+          - "3.9"
+        additional-deps:
+          - [dask-min]
+          - []
     steps:
-    - name: checkout
-      uses: actions/checkout@v1
+      - name: checkout
+        uses: actions/checkout@v2
 
-    - name: set up environment
-      run: ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
-      shell: bash
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          mamba-version: "*"
+          miniforge-version: latest
+          miniforge-variant: Mambaforge
+          channel-priority: strict
+          activate-environment: ibis
+          python-version: ${{ matrix.python-version }}
+          condarc-file: ci/condarc
 
-    - name: run tests
-      run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh --numprocesses auto
-      shell: bash
+      - name: set backends
+        id: set_backends
+        run: echo '::set-output name=backends::["csv", "dask", "hdf5", "pandas", "parquet", "sqlite"]'
 
-    - name: pytest errors
-      run: ./ci/pytest_errors.sh
-      if: failure()
+      - name: merge environments
+        run: ./ci/merge_and_update_env.sh ${{ join(fromJSON(steps.set_backends.outputs.backends), ' ') }} ${{ join(matrix.additional-deps, ' ') }}
 
-  Tests_sql:
-    name: Tests SQL
+      - name: install ibis
+        run: pip install .
+
+      - name: download backend data
+        run: python ci/datamgr.py download
+
+      - name: install backend data
+        run: |
+          set -euo pipefail
+
+          for backend in ${{ join(fromJSON(steps.set_backends.outputs.backends), ' ') }}; do
+            python ci/datamgr.py "$backend"
+          done
+
+      - name: run tests
+        run: ./ci/run_tests.sh --numprocesses auto
+        env:
+          PYTEST_BACKENDS: ${{ join(fromJSON(steps.set_backends.outputs.backends), ' ') }}
+
+      - name: publish test report
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: simple_backends_${{ matrix.python-version }}-${{ matrix.os }}-${{ join(matrix.additional-deps, '-') }}
+          path: junit.xml
+
+  test_pyspark:
     runs-on: ubuntu-latest
-    env:
-      BACKENDS: "postgres mysql sqlite"
+    defaults:
+      run:
+        shell: bash -l {0}
     strategy:
       fail-fast: false
       matrix:
-        python_version: ["3.7", "3.9"]
+        deps:
+          - python-version: "3.7"
+            additional-deps: [pyspark-min]
+            env:
+              ARROW_PRE_0_15_IPC_FORMAT: 1
+          - python-version: "3.9"
+            additional-deps: []
+            env:
+              ARROW_PRE_0_15_IPC_FORMAT: 0
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          mamba-version: "*"
+          miniforge-version: latest
+          miniforge-variant: Mambaforge
+          channel-priority: strict
+          activate-environment: ibis
+          python-version: ${{ matrix.deps.python-version }}
+          condarc-file: ci/condarc
+
+      - name: merge environments
+        run: ./ci/merge_and_update_env.sh pyspark ${{ join(matrix.deps.additional-deps, ' ') }}
+
+      - name: install ibis
+        run: pip install .
+
+      - name: download backend data
+        run: python ci/datamgr.py download
+
+      - name: install backend data
+        run: python ci/datamgr.py pyspark
+
+      - name: run tests
+        run: ./ci/run_tests.sh --numprocesses auto
+        env:
+          PYTEST_BACKENDS: pyspark
+          ARROW_PRE_0_15_IPC_FORMAT: ${{ matrix.deps.env.ARROW_PRE_0_15_IPC_FORMAT }}
+
+      - name: publish test report
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: pyspark_${{ matrix.deps.python-version }}-${{ matrix.dep.env.ARROW_PRE_0_15_IPC_FORMAT }}-${{ join(matrix.deps.additional-deps, '-') }}
+          path: junit.xml
+  #
+  test_mysql_postgres:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - "3.7"
+          - "3.9"
+        additional-deps:
+          - [postgres-min]
+          - []
+        exclude:
+          # FIXME: this combination is broken and untested in current CI
+          - python-version: "3.9"
+            additional-deps: [postgres-min]
     services:
       postgres:
         image: shajekpivotal/ibis-docker-postgres-9.5
         ports:
           - 5432:5432
         env:
-          POSTGRES_PASSWORD: ''
+          POSTGRES_PASSWORD: ""
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 3
       mysql:
         image: mariadb:10.4.12
@@ -86,24 +208,59 @@ jobs:
           MYSQL_PASSWORD: ibis
         options: --health-cmd="mysqladmin ping" --health-interval 10s --health-timeout 5s --health-retries 3
     steps:
-    - name: checkout
-      uses: actions/checkout@v1
+      - name: checkout
+        uses: actions/checkout@v2
 
-    - name: set up environment
-      run: ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          mamba-version: "*"
+          miniforge-version: latest
+          miniforge-variant: Mambaforge
+          channel-priority: strict
+          activate-environment: ibis
+          python-version: ${{ matrix.python-version }}
+          condarc-file: ci/condarc
 
-    - name: run tests
-      run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh -m "not udf"
+      - name: set backends
+        id: set_backends
+        run: echo '::set-output name=backends::["mysql", "postgres"]'
 
-    - name: pytest errors
-      run: ./ci/pytest_errors.sh
-      if: failure()
+      - name: merge environments
+        run: ./ci/merge_and_update_env.sh ${{ join(fromJSON(steps.set_backends.outputs.backends), ' ') }} ${{ join(matrix.additional-deps, ' ') }}
 
-  Tests_impala_clickhouse:
-    name: Tests Impala / Clickhouse
+      - name: install ibis
+        run: pip install .
+
+      - name: download backend data
+        run: python ci/datamgr.py download
+
+      - name: install backend data
+        run: |
+          set -euo pipefail
+
+          # TODO: unify impala data loading?
+          for backend in ${{ join(fromJSON(steps.set_backends.outputs.backends), ' ') }}; do
+            python ci/datamgr.py "$backend"
+          done
+
+      - name: run tests
+        run: ./ci/run_tests.sh -m "not udf" --numprocesses auto
+        env:
+          PYTEST_BACKENDS: ${{ join(fromJSON(steps.set_backends.outputs.backends), ' ') }}
+
+      - name: publish test report
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: mysql_postgres_${{ matrix.python-version }}-${{ join(matrix.additional-deps, '-') }}
+          path: junit.xml
+
+  test_impala_clickhouse:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
     env:
-      BACKENDS: "impala clickhouse"
       IBIS_TEST_NN_HOST: localhost
       IBIS_TEST_IMPALA_HOST: localhost
       IBIS_TEST_IMPALA_PORT: 21050
@@ -112,16 +269,27 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # TODO Latest impyla (0.16.3) doesn't support Python 3.9. Use 3.9 instead of 3.8 once a new impyla is released
-        python_version: ["3.7", "3.8"]
+        python-version:
+          - "3.7"
+          - "3.8"
     services:
       postgres:
         image: shajekpivotal/ibis-docker-postgres-9.5
         ports:
           - 5432:5432
         env:
-          POSTGRES_PASSWORD: ''
+          POSTGRES_PASSWORD: ""
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 3
+      mysql:
+        image: mariadb:10.4.12
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: true
+          MYSQL_DATABASE: ibis_testing
+          MYSQL_USER: ibis
+          MYSQL_PASSWORD: ibis
+        options: --health-cmd="mysqladmin ping" --health-interval 10s --health-timeout 5s --health-retries 3
       kudu-master:
         image: ibisproject/kudu:latest
         ports:
@@ -167,170 +335,209 @@ jobs:
           - 9000:9000
 
     steps:
-    - name: checkout
-      uses: actions/checkout@v1
+      - name: checkout
+        uses: actions/checkout@v2
 
-    - name: install boost
-      run: sudo apt-get -qq update --yes && sudo apt-get -qq install --yes --no-install-recommends libboost-dev
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          mamba-version: "*"
+          miniforge-version: latest
+          miniforge-variant: Mambaforge
+          channel-priority: strict
+          activate-environment: ibis
+          python-version: ${{ matrix.python-version }}
+          environment-file: environment.yml
+          condarc-file: ci/condarc
 
-    - name: set up environment
-      run: ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
+      - name: set backends
+        id: set_backends
+        run: echo '::set-output name=backends::["impala", "clickhouse"]'
 
-    - name: run tests
-      run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh
+      - name: merge environments
+        run: ./ci/merge_and_update_env.sh ${{ join(fromJSON(steps.set_backends.outputs.backends), ' ') }} ${{ join(matrix.additional-deps, ' ') }}
 
-    - name: pytest errors
-      run: ./ci/pytest_errors.sh
-      if: failure()
+      - name: install ibis
+        run: pip install .
 
-  Tests_pyspark:
-    name: Tests PySpark
-    runs-on: ubuntu-18.04
-    env:
-      BACKENDS: "pyspark"
+      - name: download backend data
+        run: python ci/datamgr.py download
+
+      - name: install impala data
+        run: python ci/impalamgr.py load --data
+
+      - name: install clickhouse data
+        run: python ci/datamgr.py clickhouse
+
+      - name: run tests
+        run: ./ci/run_tests.sh
+        env:
+          PYTEST_BACKENDS: ${{ join(fromJSON(steps.set_backends.outputs.backends), ' ') }}
+
+      - name: publish test report
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: impala_clickhouse_${{ matrix.python-version }}
+          path: junit.xml
+
+  publish_test_reports:
+    runs-on: ubuntu-latest
+    if: failure()
+    needs:
+      - test_no_backends
+      - test_simple_backends
+      - test_pyspark
+      - test_mysql_postgres
+      - test_impala_clickhouse
+    steps:
+      - name: download test report artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: artifacts
+
+      - name: publish test report
+        uses: mikepenz/action-junit-report@v2
+        with:
+          report_paths: artifacts/**/junit.xml
+
+  benchmarks:
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python_version: ["3.7", "3.9"]
+        python-version: ["3.9"]
+    defaults:
+      run:
+        shell: bash -l {0}
     steps:
-    - name: checkout
-      uses: actions/checkout@v1
+      - name: checkout
+        uses: actions/checkout@v2
 
-    - name: set up environment
-      run: ./ci/setup_env.sh "${{ matrix.python_version }}" "$BACKENDS"
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          mamba-version: "*"
+          miniforge-version: latest
+          miniforge-variant: Mambaforge
+          channel-priority: strict
+          activate-environment: ibis
+          python-version: ${{ matrix.python-version }}
+          environment-file: environment.yml
+          condarc-file: ci/condarc
 
-    - name: run tests
-      run: PYTEST_BACKENDS=$BACKENDS ./ci/run_tests.sh
+      - name: install ibis
+        run: pip install .
 
-    - name: pytest errors
-      run: ./ci/pytest_errors.sh
-      if: failure()
+      - name: benchmark
+        run: |
+          set -euo pipefail
 
-  Lint_and_benchmarks:
-    name: Lint and benckmarks
+          asv machine --yes
+          asv dev
+
+  docs:
     runs-on: ubuntu-latest
-    env:
-      PYTHON_VERSION: "3.9"
-      BACKENDS: ""
-      LOAD_TEST_DATA: "false"
+    defaults:
+      run:
+        shell: bash -l {0}
+    strategy:
+      fail-fast: false
+      matrix:
+        # FIXME: docs are broken on 3.9
+        python-version: ["3.8"]
     steps:
+      - name: checkout
+        uses: actions/checkout@v2
 
-    - name: checkout
-      uses: actions/checkout@v1
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          mamba-version: "*"
+          miniforge-version: latest
+          miniforge-variant: Mambaforge
+          channel-priority: strict
+          activate-environment: ibis
+          python-version: ${{ matrix.python-version }}
+          condarc-file: ci/condarc
 
-    - name: set up environment
-      run: ./ci/setup_env.sh "$PYTHON_VERSION" "$BACKENDS" "$LOAD_TEST_DATA"
+      - name: set backends
+        id: set_backends
+        run: echo '::set-output name=backends::["clickhouse", "csv", "dask", "hdf5", "impala", "mysql", "pandas", "parquet", "postgres", "pyspark", "spark", "sqlite"]'
 
-    - name: flake8
-      run: flake8 .
-      if: always()
+      - name: merge environments
+        run: ./ci/merge_and_update_env.sh ${{ join(fromJSON(steps.set_backends.outputs.backends), ' ') }}
 
-    - name: black
-      run: black --check .
-      if: always()
+      - name: install ibis
+        run: pip install .
 
-    - name: mypy
-      run: |
-        mypy --ignore-missing-imports --exclude 'ibis/expr|ibis/backends' ibis
-        # TODO: mypy has errors that need to be fixed before it can be added to all directories
-        mypy --ignore-missing-imports ibis || true
-      if: always()
+      - name: build web
+        run: python -m pysuerga docs/web --target-path=docbuild
 
-    - name: pydocstyle
-      # TODO: change match-dir when docstrings are fixed for other backends
-      run: pydocstyle --match-dir="(ibis|omniscidb)"
-      if: always()
+      - name: build docs
+        run: sphinx-build -b html docs/source docbuild/docs -W -T
 
-    - name: isort
-      run: isort --check-only .
-      if: always()
+      - name: Add config to docs
+        run: |
+          set -euo pipefail
 
-    - name: publish feedstock artifact
-      uses: actions/upload-artifact@master
-      with:
-        name: LinuxCondaPackage
-        path: /tmp/ibis/packages
-      if: github.event_name == 'push'
+          touch docbuild/.nojekyll
+          echo "ibis-project.org" > docbuild/CNAME
 
-    - name: benckmark
-      run: asv machine --yes && asv dev
-      if: always()
+      - name: Push docs
+        if: ${{ github.event_name == 'push' }}
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.IBIS_PROJECT_DOCS_PAT }}
+        with:
+          source-directory: docbuild
+          destination-github-username: ibis-project
+          destination-repository-name: ibis-project.org
+          user-name: github-actions
+          user-email: github-actions@github.com
 
-  Conda_package:
-    name: Conda package
+      - name: Clean up doc build
+        run: rm -r docbuild
+
+  conda_package:
+    # TODO: fully automate the conda-forge PR submission on release
     runs-on: ubuntu-latest
-    env:
-      PYTHON_VERSION: "3.9"
-      BACKENDS: ""
-      LOAD_TEST_DATA: "false"
+    strategy:
+      matrix:
+        python-version: ["3.7"]
+    defaults:
+      run:
+        shell: bash -l {0}
     steps:
+      - name: checkout
+        uses: actions/checkout@v2
 
-    - name: checkout
-      uses: actions/checkout@v1
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          mamba-version: "*"
+          miniforge-version: latest
+          miniforge-variant: Mambaforge
+          channel-priority: strict
+          activate-environment: ibis
+          python-version: ${{ matrix.python-version }}
+          environment-file: environment.yml
+          condarc-file: ci/condarc
 
-    - name: set up environment
-      run: ./ci/setup_env.sh "$PYTHON_VERSION" "$BACKENDS" "$LOAD_TEST_DATA"
+      # TODO: this isn't necessary if we generate the recipe from
+      # pyproject.toml
+      - name: install ibis
+        run: pip install .
 
-    - name: clone feedstock repo
-      run: git clone https://github.com/conda-forge/ibis-framework-feedstock /tmp/feedstock
+      - name: update recipe file
+        run: |
+          # TODO: this is a hack that should be fixed by automatically generating
+          # a recipe from pyproject.toml once we move to poetry
+          set -x
+          IBIS_PATH=`pwd`
+          sed -i "s|url:.*|path: $IBIS_PATH|g" ci/recipe/meta.yaml
+          IBIS_VERSION=`python -c "import ibis; print(ibis.__version__)"`
+          sed -i "s/{{ version }}/$IBIS_VERSION/g" ci/recipe/meta.yaml
+          cat ci/recipe/meta.yaml
 
-    - name: update recipe file
-      run: |
-        set -x
-        IBIS_PATH=`pwd`
-        sed -i "s|url:.*|path: $IBIS_PATH|g" ci/recipe/meta.yaml
-        IBIS_VERSION=`python -c "import ibis; print(ibis.__version__)"`
-        sed -i "s/{{ version }}/$IBIS_VERSION/g" ci/recipe/meta.yaml
-        cat ci/recipe/meta.yaml
+      - name: install boa
+        run: mamba install boa
 
-    - name: build recipe
-      run: conda build -c conda-forge --python 3.7 ci/recipe
-
-    - name: deploy recipe package
-      run: |
-        mkdir /tmp/packages
-        cp -r /usr/share/miniconda/conda-bld/noarch /tmp/packages/noarch
-        cp -r /usr/share/miniconda/conda-bld/linux-64 /tmp/packages/linux-64
-        conda index /tmp/packages
-
-  Docs:
-    name: Docs
-    runs-on: ubuntu-latest
-    env:
-      PYTHON_VERSION: "3.8"
-      BACKENDS: "bigquery clickhouse dask impala mysql parquet postgres pyspark spark"
-      LOAD_TEST_DATA: "false"
-    steps:
-
-    - name: checkout
-      uses: actions/checkout@v1
-
-    - name: set up environment
-      run: ./ci/setup_env.sh "$PYTHON_VERSION" "$BACKENDS" "$LOAD_TEST_DATA"
-
-    - name: build web
-      run: python -m pysuerga docs/web --target-path=/tmp/ibis-project.org/
-
-    - name: build docs
-      run: sphinx-build -b html docs/source /tmp/ibis-project.org/docs -W -T
-
-    - name: Install github key
-      run: |
-        mkdir -m 700 -p ~/.ssh
-        echo "${{ secrets.DOCS_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-      if: github.event_name == 'push'
-
-    - name: Push docs
-      run: |
-        cd /tmp/ibis-project.org
-        touch .nojekyll
-        echo "ibis-project.org" > CNAME
-        git init
-        git remote add origin git@github.com:ibis-project/ibis-project.org
-        git config user.name 'Ibis GitHub actions'
-        git config user.email ''
-        git add --all .
-        git commit -m "Ibis docs - $(date) - $GITHUB_SHA"
-        git push -f -u origin master
-      if: github.event_name == 'push'
+      - name: build recipe
+        run: conda mambabuild -c conda-forge --python "${{ matrix.python-version }}" ci/recipe/meta.yaml

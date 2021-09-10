@@ -1,8 +1,5 @@
 # This file should have all the dependencies for development excluding the specific to the backends.
-name: ibis-dev
-channels:
-  - nodefaults
-  - conda-forge
+name: ibis
 dependencies:
   # Ibis hard dependencies
   - multipledispatch
