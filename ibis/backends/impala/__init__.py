@@ -1,4 +1,6 @@
 """Impala backend"""
+import warnings
+
 import ibis.config
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.base.sql.ddl import fully_qualified_re
@@ -137,6 +139,12 @@ class Backend(BaseSQLBackend):
         )
 
     def set_database(self, name):
+        warnings.warn(
+            '`set_database` is deprecated and will be removed in a future '
+            'version of Ibis. Create a new connection to the desired database '
+            'instead',
+            FutureWarning,
+        )
         self.client.con.set_database(name)
 
     @property

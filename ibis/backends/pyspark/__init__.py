@@ -1,3 +1,5 @@
+import warnings
+
 import pyspark
 
 from ibis.backends.base import BaseBackend
@@ -35,6 +37,12 @@ class Backend(BaseBackend):
         return pyspark.__version__
 
     def set_database(self, name):
+        warnings.warn(
+            '`set_database` is deprecated and will be removed in a future '
+            'version of Ibis. Create a new connection to the desired database '
+            'instead',
+            FutureWarning,
+        )
         self.client._catalog.setCurrentDatabase(name)
 
     @property

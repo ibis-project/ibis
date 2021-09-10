@@ -52,7 +52,6 @@ Backend methods
    BaseBackend.connect
    BaseBackend.database
    BaseBackend.current_database
-   BaseBackend.set_database
    BaseBackend.list_tables
    BaseBackend.table
    BaseBackend.version
