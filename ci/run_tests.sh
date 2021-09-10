@@ -20,4 +20,4 @@ pytest $TESTS_DIRS \
     -ra \
     --junitxml=junit.xml \
     --cov=ibis \
-    --cov-report=xml:coverage.xml "$@" | tee pytest.log
+    --cov-report=xml:coverage.xml "$@"

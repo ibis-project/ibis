@@ -44,9 +44,11 @@ jobs:
       - name: run tests
         run: ./ci/run_tests.sh --numprocesses auto
 
-      - name: pytest errors
-        run: ./ci/pytest_errors.sh
+      - name: publish test report
+        uses: mikepenz/action-junit-report@v2
         if: failure()
+        with:
+          report_paths: junit.xml
 
   test_simple_backends:
     runs-on: ${{ matrix.os }}
@@ -105,9 +107,11 @@ jobs:
         env:
           PYTEST_BACKENDS: ${{ join(fromJSON(steps.set_backends.outputs.backends), ' ') }}
 
-      - name: pytest errors
-        run: ./ci/pytest_errors.sh
+      - name: publish test report
+        uses: mikepenz/action-junit-report@v2
         if: failure()
+        with:
+          report_paths: junit.xml
 
   test_pyspark:
     runs-on: ubuntu-latest
@@ -158,9 +162,11 @@ jobs:
           PYTEST_BACKENDS: pyspark
           ARROW_PRE_0_15_IPC_FORMAT: ${{ matrix.deps.env.ARROW_PRE_0_15_IPC_FORMAT }}
 
-      - name: pytest errors
-        run: ./ci/pytest_errors.sh
+      - name: publish test report
+        uses: mikepenz/action-junit-report@v2
         if: failure()
+        with:
+          report_paths: junit.xml
   #
   test_mysql_postgres:
     runs-on: ubuntu-latest
@@ -239,9 +245,11 @@ jobs:
         env:
           PYTEST_BACKENDS: ${{ join(fromJSON(steps.set_backends.outputs.backends), ' ') }}
 
-      - name: pytest errors
-        run: ./ci/pytest_errors.sh
+      - name: publish test report
+        uses: mikepenz/action-junit-report@v2
         if: failure()
+        with:
+          report_paths: junit.xml
 
   test_impala_clickhouse:
     runs-on: ubuntu-latest
@@ -361,9 +369,11 @@ jobs:
         env:
           PYTEST_BACKENDS: ${{ join(fromJSON(steps.set_backends.outputs.backends), ' ') }}
 
-      - name: pytest errors
-        run: ./ci/pytest_errors.sh
+      - name: publish test report
+        uses: mikepenz/action-junit-report@v2
         if: failure()
+        with:
+          report_paths: junit.xml
 
   benchmarks:
     runs-on: ubuntu-latest
