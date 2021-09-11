@@ -295,7 +295,7 @@ def test_query_avro(con, test_data_dir, tmp_db):
 
     name = table.op().name
     assert name.startswith('{}.'.format(tmp_db))
-    name, database = name.split('.')
+    database, name = name.split('.')
 
     # table exists
     assert name in con.list_tables(database=tmp_db)
