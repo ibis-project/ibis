@@ -252,7 +252,7 @@ def test_close_drops_temp_tables(con, test_data_dir):
 
     table = con.parquet_file(hdfs_path)
 
-    name = table.op().name
+    name, database = table.op().name.split('.')
     assert name in con.list_tables()
     con.close()
 
