@@ -47,15 +47,15 @@ def test_client_table_repr(table):
 
 def test_load_data(client, npartitions):
     client.load_data('testing', make_dask_data_frame(npartitions))
-    assert client.exists_table('testing')
+    assert 'testing' in client.list_tables()
     assert client.get_schema('testing')
 
 
 def test_create_table(client, npartitions):
     client.create_table('testing', obj=make_dask_data_frame(npartitions))
-    assert client.exists_table('testing')
+    assert 'testing' in client.list_tables()
     client.create_table('testingschema', schema=client.get_schema('testing'))
-    assert client.exists_table('testingschema')
+    assert 'testingschema' in client.list_tables()
 
 
 def test_literal(client):

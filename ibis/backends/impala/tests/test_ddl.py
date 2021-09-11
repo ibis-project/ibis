@@ -13,12 +13,12 @@ from ibis.tests.util import assert_equal
 
 def test_create_exists_view(con, temp_view):
     tmp_name = temp_view
-    assert not con.exists_table(tmp_name)
+    assert tmp_name not in con.list_tables()
 
     expr = con.table('functional_alltypes').group_by('string_col').size()
 
     con.create_view(tmp_name, expr)
-    assert con.exists_table(tmp_name)
+    assert tmp_name in con.list_tables()
 
     # just check it works for now
     expr2 = con.table(tmp_name)
@@ -28,7 +28,7 @@ def test_create_exists_view(con, temp_view):
 def test_drop_non_empty_database(con, alltypes, temp_table_db):
     temp_database, temp_table = temp_table_db
     con.create_table(temp_table, alltypes, database=temp_database)
-    assert con.exists_table(temp_table, database=temp_database)
+    assert temp_table in con.list_tables(database=temp_database)
 
     with pytest.raises(com.IntegrityError):
         con.drop_database(temp_database)
@@ -201,7 +201,7 @@ def created_view(con, alltypes):
 
 def test_drop_view(con, alltypes, created_view):
     con.drop_view(created_view)
-    assert not con.exists_table(created_view)
+    assert created_view not in con.list_tables()
 
 
 def test_rename_table(con, temp_database):
@@ -297,7 +297,7 @@ def test_query_avro(con, test_data_dir, tmp_db):
     assert name.startswith('{}.'.format(tmp_db))
 
     # table exists
-    assert con.exists_table(name, database=tmp_db)
+    assert name in con.list_tables(database=tmp_db)
 
     expr = table.r_name.value_counts()
     expr.execute()

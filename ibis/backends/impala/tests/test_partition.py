@@ -32,7 +32,7 @@ def unpart_t(con, df, tmp_db):
     try:
         yield con.table(pd_name, database=tmp_db)
     finally:
-        assert con.exists_table(pd_name, database=tmp_db), pd_name
+        assert pd_name in con.list_tables(database=tmp_db), pd_name
         con.drop_table(pd_name, database=tmp_db)
 
 

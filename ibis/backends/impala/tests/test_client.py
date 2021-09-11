@@ -11,7 +11,6 @@ import ibis.common.exceptions as com
 import ibis.config as config
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-import ibis.util as util
 from ibis.tests.util import assert_equal
 
 
@@ -391,18 +390,3 @@ def test_tables_robust_to_set_database(con, test_data_db, temp_database):
     n = 10
     df = table.limit(n).execute()
     assert len(df) == n
-
-
-def test_exists_table(con):
-    assert con.exists_table('functional_alltypes')
-    assert not con.exists_table('foobarbaz_{}'.format(util.guid()))
-
-
-def text_exists_table_with_database(
-    con, alltypes, test_data_db, temp_table, temp_database
-):
-    tmp_db = test_data_db
-    con.create_table(temp_table, alltypes, database=tmp_db)
-
-    assert con.exists_table(temp_table, database=tmp_db)
-    assert not con.exists_table(temp_table, database=temp_database)
