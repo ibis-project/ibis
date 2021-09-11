@@ -293,8 +293,9 @@ def test_query_avro(con, test_data_dir, tmp_db):
 
     table = con.avro_file(hdfs_path, avro_schema, database=tmp_db)
 
-    name, database = table.op().name.split('.')
+    name = table.op().name
     assert name.startswith('{}.'.format(tmp_db))
+    name, database = name.split('.')
 
     # table exists
     assert name in con.list_tables(database=tmp_db)
