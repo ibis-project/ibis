@@ -489,7 +489,7 @@ Scalar or column methods
    GeoSpatialValue.distance
    GeoSpatialValue.end_point
    GeoSpatialValue.envelope
-   GeoSpatialValue.equals
+   GeoSpatialValue.geo_equals
    GeoSpatialValue.geometry_n
    GeoSpatialValue.geometry_type
    GeoSpatialValue.intersection
