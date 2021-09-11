@@ -165,8 +165,6 @@ class BaseBackend(abc.ABC):
             '`name in client.list_tables()` instead.',
             FutureWarning,
         )
-        if '.' in name:
-            database, name = name.split('.')
         return name in self.client.list_tables(database=database)
 
     # @abc.abstractmethod
