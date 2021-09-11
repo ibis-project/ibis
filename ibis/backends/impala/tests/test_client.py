@@ -11,6 +11,7 @@ import ibis.common.exceptions as com
 import ibis.config as config
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
+from ibis.backends.base.sql.ddl import fully_qualified_re
 from ibis.tests.util import assert_equal
 
 
@@ -252,7 +253,8 @@ def test_close_drops_temp_tables(con, test_data_dir):
 
     table = con.parquet_file(hdfs_path)
 
-    name = table.op()._unqualified_name
+    qualified_name = table.op().name
+    _, _, name = fully_qualified_re.match(qualified_name).groups()
     assert name in con.list_tables()
     con.close()
 

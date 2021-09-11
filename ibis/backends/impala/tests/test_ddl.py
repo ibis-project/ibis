@@ -7,6 +7,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.util as util
+from ibis.backends.base.sql.ddl import fully_qualified_re
 from ibis.backends.impala.compat import HS2Error
 from ibis.tests.util import assert_equal
 
@@ -293,7 +294,8 @@ def test_query_avro(con, test_data_dir, tmp_db):
 
     table = con.avro_file(hdfs_path, avro_schema, database=tmp_db)
 
-    name = table.op()._unqualified_name
+    qualified_name = table.op().name
+    _, _, name = fully_qualified_re.match(qualified_name).groups()
 
     # table exists
     assert name in con.list_tables(database=tmp_db)
