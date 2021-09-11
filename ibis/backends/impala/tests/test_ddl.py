@@ -295,7 +295,7 @@ def test_query_avro(con, test_data_dir, tmp_db):
     table = con.avro_file(hdfs_path, avro_schema, database=tmp_db)
 
     qualified_name = table.op().name
-    _, _, name = fully_qualified_re.match(qualified_name).groups()
+    _, name, _ = fully_qualified_re.match(qualified_name).groups()
 
     # table exists
     assert name in con.list_tables(database=tmp_db)

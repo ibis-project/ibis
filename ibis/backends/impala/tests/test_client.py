@@ -254,7 +254,7 @@ def test_close_drops_temp_tables(con, test_data_dir):
     table = con.parquet_file(hdfs_path)
 
     qualified_name = table.op().name
-    _, _, name = fully_qualified_re.match(qualified_name).groups()
+    _, name, _ = fully_qualified_re.match(qualified_name).groups()
     assert name in con.list_tables()
     con.close()
 
