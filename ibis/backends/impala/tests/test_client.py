@@ -254,10 +254,10 @@ def test_close_drops_temp_tables(con, test_data_dir):
     table = con.parquet_file(hdfs_path)
 
     name = table.op().name
-    assert con.exists_table(name) is True
+    assert name in con.list_tables()
     con.close()
 
-    assert not con.exists_table(name)
+    assert name not in con.list_tables()
 
 
 def test_set_compression_codec(con):
