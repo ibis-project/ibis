@@ -18,6 +18,7 @@ echo "TESTS_DIRS: $TESTS_DIRS"
 pytest $TESTS_DIRS \
     -q \
     -ra \
+    -vv \
     --junitxml=junit.xml \
     --cov=ibis \
     --cov-report=xml:coverage.xml "$@"
