@@ -990,9 +990,6 @@ class ImpalaClient(SQLClient):
 
         self.set_options({'COMPRESSION_CODEC': codec})
 
-    def exists_table(self, name, database=None):
-        return name in self.list_tables(database=database)
-
     def create_view(self, name, expr, database=None):
         """
         Create an Impala view from a table expression
