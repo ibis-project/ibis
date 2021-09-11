@@ -52,7 +52,6 @@ Backend methods
    BaseBackend.connect
    BaseBackend.database
    BaseBackend.current_database
-   BaseBackend.set_database
    BaseBackend.list_tables
    BaseBackend.table
    BaseBackend.version
@@ -490,7 +489,7 @@ Scalar or column methods
    GeoSpatialValue.distance
    GeoSpatialValue.end_point
    GeoSpatialValue.envelope
-   GeoSpatialValue.equals
+   GeoSpatialValue.geo_equals
    GeoSpatialValue.geometry_n
    GeoSpatialValue.geometry_type
    GeoSpatialValue.intersection

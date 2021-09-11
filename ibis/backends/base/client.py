@@ -28,9 +28,6 @@ class Client:
     def exists_database(self, name):
         return self.backend.exists_database(name)
 
-    def set_database(self, name):
-        return self.backend.set_database(name)
-
     def exists_table(self, name, database=None):
         return self.backend.exists_table(name, database)
 
