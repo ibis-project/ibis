@@ -19,4 +19,5 @@ jobs:
       - name: publish test report
         uses: EnricoMi/publish-unit-test-result-action@v1
         with:
+          commit: ${{ github.event.workflow_run.head_sha }}
           files: artifacts/**/junit.xml
