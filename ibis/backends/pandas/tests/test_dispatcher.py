@@ -29,7 +29,7 @@ class B3(B2):
     pass
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture
 def foo_dispatchers():
 
     foo = TwoLevelDispatcher('foo', doc='Test dispatcher foo')
@@ -67,12 +67,12 @@ def foo_dispatchers():
     return foo, foo_m
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture
 def foo(foo_dispatchers):
     return foo_dispatchers[0]
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture
 def foo_m(foo_dispatchers):
     return foo_dispatchers[1]
 
