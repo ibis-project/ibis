@@ -50,7 +50,7 @@ class Scope:
         param: Dict[Node, Any] = None,
         timecontext: Optional[TimeContext] = None,
     ):
-        """ Take a dict of `op`, `result`, create a new scope and save
+        """Take a dict of `op`, `result`, create a new scope and save
         those pairs in scope. Associate None as timecontext by default.
         This is mostly used to init a scope with a set of given params.
         """
@@ -61,7 +61,7 @@ class Scope:
         )
 
     def __contains__(self, op):
-        """ Given an `op`, return if `op` is present in Scope.
+        """Given an `op`, return if `op` is present in Scope.
         Note that this `__contain__` method doesn't take `timecontext`
         as a parameter. This could be used to iterate all keys in
         current scope, or any case that doesn't care about value, just
@@ -80,7 +80,7 @@ class Scope:
     def set_value(
         self, op: Node, timecontext: Optional[TimeContext], value: Any
     ) -> None:
-        """ Set values in scope.
+        """Set values in scope.
 
             Given an `op`, `timecontext` and `value`, set `op` and
             `(value, timecontext)` in scope.
@@ -110,7 +110,7 @@ class Scope:
     def get_value(
         self, op: Node, timecontext: Optional[TimeContext] = None
     ) -> Any:
-        """ Given a op and timecontext, get the result from scope
+        """Given a op and timecontext, get the result from scope
 
         Parameters
         ----------

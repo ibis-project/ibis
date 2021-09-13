@@ -248,7 +248,8 @@ def test_ungrouped_bounded_expanding_window(
 
     expr = alltypes.mutate(
         val=result_fn(
-            alltypes, win=ibis.window(following=0, order_by=[alltypes.id]),
+            alltypes,
+            win=ibis.window(following=0, order_by=[alltypes.id]),
         )
     )
     result = expr.execute().set_index('id').sort_index()
@@ -369,7 +370,8 @@ def test_grouped_bounded_preceding_windows(
     ],
 )
 @pytest.mark.parametrize(
-    ('ordered'), [param(True, id='orderered'), param(False, id='unordered')],
+    ('ordered'),
+    [param(True, id='orderered'), param(False, id='unordered')],
 )
 @pytest.mark.xfail_unsupported
 def test_grouped_unbounded_window(
@@ -386,7 +388,12 @@ def test_grouped_unbounded_window(
     # 3) Unbounded
     order_by = [alltypes.id] if ordered else None
     window = ibis.window(group_by=[alltypes.string_col], order_by=order_by)
-    expr = alltypes.mutate(val=result_fn(alltypes, win=window,))
+    expr = alltypes.mutate(
+        val=result_fn(
+            alltypes,
+            win=window,
+        )
+    )
     result = expr.execute()
     result = result.set_index('id').sort_index()
 
@@ -474,7 +481,12 @@ def test_ungrouped_unbounded_window(
     # 3) Unbounded
     order_by = [alltypes.id] if ordered else None
     window = ibis.window(order_by=order_by)
-    expr = alltypes.mutate(val=result_fn(alltypes, win=window,))
+    expr = alltypes.mutate(
+        val=result_fn(
+            alltypes,
+            win=window,
+        )
+    )
     result = expr.execute()
     result = result.set_index('id').sort_index()
 
@@ -512,7 +524,10 @@ def test_grouped_bounded_range_window(backend, alltypes, df, con):
     #     have the same 'string_col' value.
     #
     window = ibis.range_window(
-        preceding=10, following=0, order_by='id', group_by='string_col',
+        preceding=10,
+        following=0,
+        order_by='id',
+        group_by='string_col',
     )
     expr = alltypes.mutate(val=alltypes.double_col.sum().over(window))
     result = expr.execute().set_index('id').sort_index()

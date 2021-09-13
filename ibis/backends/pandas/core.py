@@ -430,7 +430,11 @@ def main_execute(
     params = {k.op() if hasattr(k, 'op') else k: v for k, v in params.items()}
     scope = scope.merge_scope(Scope(params, timecontext))
     return execute_with_scope(
-        expr, scope, timecontext=timecontext, aggcontext=aggcontext, **kwargs,
+        expr,
+        scope,
+        timecontext=timecontext,
+        aggcontext=aggcontext,
+        **kwargs,
     )
 
 

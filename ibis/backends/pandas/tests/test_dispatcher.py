@@ -55,8 +55,12 @@ def foo_dispatchers():
     def foo3(x, y):
         return 3
 
-    @foo.register((A1, A2),)
-    @foo_m.register((A1, A2),)
+    @foo.register(
+        (A1, A2),
+    )
+    @foo_m.register(
+        (A1, A2),
+    )
     def foo4(x):
         return 4
 

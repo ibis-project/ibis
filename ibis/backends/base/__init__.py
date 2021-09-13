@@ -155,8 +155,7 @@ class BaseBackend(abc.ABC):
 
     # @abc.abstractmethod
     def table(self, name: str, database: str = None) -> ir.TableExpr:
-        """
-        """
+        """ """
         warnings.warn(
             '`database` argument of `.table()` is deprecated and '
             'will be removed in a future version of Ibis. Change '
@@ -202,8 +201,7 @@ class BaseBackend(abc.ABC):
         return self.client_class.compiler.to_sql(expr, params=params)
 
     def execute(self, expr: ir.Expr) -> Any:  # XXX DataFrame for now?
-        """
-        """
+        """ """
 
     def verify(self, expr: ir.Expr, params=None) -> bool:
         """

@@ -9,7 +9,8 @@ def test_map_length_expr(t):
     expr = t.map_of_integers_strings.length()
     result = expr.compile()
     expected = dd.from_pandas(
-        pd.Series([0, None, 2], name='map_of_integers_strings'), npartitions=1,
+        pd.Series([0, None, 2], name='map_of_integers_strings'),
+        npartitions=1,
     )
     tm.assert_series_equal(result.compute(), expected.compute())
 
@@ -93,6 +94,7 @@ def test_map_value_for_key_literal_broadcast(t):
     expr = lookup_table.get(t.dup_strings)
     result = expr.compile()
     expected = dd.from_pandas(
-        pd.Series([4, 1, 4], name='dup_strings'), npartitions=1,
+        pd.Series([4, 1, 4], name='dup_strings'),
+        npartitions=1,
     )
     tm.assert_series_equal(result.compute(), expected.compute())

@@ -246,8 +246,7 @@ class PySparkClient(SQLClient):
         self.translator = PySparkExprTranslator()
 
     def compile(self, expr, timecontext=None, params=None, *args, **kwargs):
-        """Compile an ibis expression to a PySpark DataFrame object
-        """
+        """Compile an ibis expression to a PySpark DataFrame object"""
 
         if timecontext is not None:
             session_timezone = self._session.conf.get(

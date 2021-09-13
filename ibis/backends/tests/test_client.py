@@ -15,7 +15,8 @@ def new_schema():
 
 
 @pytest.mark.only_on_backends(
-    SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
+    SQLALCHEMY_BACKENDS,
+    reason="run only if backend is SQLAlchemy based",
 )
 @pytest.mark.xfail_unsupported
 def test_load_data_sqlalchemy(backend, con, temp_table):
@@ -211,7 +212,8 @@ def _create_temp_table_with_schema(con, temp_table_name, schema, data=None):
 
 
 @pytest.mark.only_on_backends(
-    SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
+    SQLALCHEMY_BACKENDS,
+    reason="run only if backend is SQLAlchemy based",
 )
 def test_insert_no_overwrite_from_dataframe(
     con, test_employee_schema, test_employee_data_2
@@ -219,7 +221,9 @@ def test_insert_no_overwrite_from_dataframe(
 
     temp_table = f'temp_to_table_{guid()}'
     temporary = _create_temp_table_with_schema(
-        con, temp_table, test_employee_schema,
+        con,
+        temp_table,
+        test_employee_schema,
     )
 
     con.insert(temp_table, obj=test_employee_data_2, overwrite=False)
@@ -228,7 +232,8 @@ def test_insert_no_overwrite_from_dataframe(
 
 
 @pytest.mark.only_on_backends(
-    SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
+    SQLALCHEMY_BACKENDS,
+    reason="run only if backend is SQLAlchemy based",
 )
 def test_insert_overwrite_from_dataframe(
     con, test_employee_schema, test_employee_data_1, test_employee_data_2
@@ -236,7 +241,10 @@ def test_insert_overwrite_from_dataframe(
 
     temp_table = f'temp_to_table_{guid()}'
     temporary = _create_temp_table_with_schema(
-        con, temp_table, test_employee_schema, data=test_employee_data_1,
+        con,
+        temp_table,
+        test_employee_schema,
+        data=test_employee_data_1,
     )
 
     con.insert(temp_table, obj=test_employee_data_2, overwrite=True)
@@ -245,7 +253,8 @@ def test_insert_overwrite_from_dataframe(
 
 
 @pytest.mark.only_on_backends(
-    SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
+    SQLALCHEMY_BACKENDS,
+    reason="run only if backend is SQLAlchemy based",
 )
 def test_insert_no_overwite_from_expr(
     con, test_employee_schema, test_employee_data_2
@@ -253,12 +262,17 @@ def test_insert_no_overwite_from_expr(
 
     temp_table = f'temp_to_table_{guid()}'
     temporary = _create_temp_table_with_schema(
-        con, temp_table, test_employee_schema,
+        con,
+        temp_table,
+        test_employee_schema,
     )
 
     from_table_name = f'temp_from_table_{guid()}'
     from_table = _create_temp_table_with_schema(
-        con, from_table_name, test_employee_schema, data=test_employee_data_2,
+        con,
+        from_table_name,
+        test_employee_schema,
+        data=test_employee_data_2,
     )
 
     con.insert(temp_table, obj=from_table, overwrite=False)
@@ -267,7 +281,8 @@ def test_insert_no_overwite_from_expr(
 
 
 @pytest.mark.only_on_backends(
-    SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
+    SQLALCHEMY_BACKENDS,
+    reason="run only if backend is SQLAlchemy based",
 )
 def test_insert_overwrite_from_expr(
     con, test_employee_schema, test_employee_data_1, test_employee_data_2
@@ -275,12 +290,18 @@ def test_insert_overwrite_from_expr(
 
     temp_table = f'temp_to_table_{guid()}'
     temporary = _create_temp_table_with_schema(
-        con, temp_table, test_employee_schema, data=test_employee_data_1,
+        con,
+        temp_table,
+        test_employee_schema,
+        data=test_employee_data_1,
     )
 
     from_table_name = f'temp_from_table_{guid()}'
     from_table = _create_temp_table_with_schema(
-        con, from_table_name, test_employee_schema, data=test_employee_data_2,
+        con,
+        from_table_name,
+        test_employee_schema,
+        data=test_employee_data_2,
     )
 
     con.insert(temp_table, obj=from_table, overwrite=True)
@@ -289,7 +310,8 @@ def test_insert_overwrite_from_expr(
 
 
 @pytest.mark.only_on_backends(
-    SQLALCHEMY_BACKENDS, reason="run only if backend is SQLAlchemy based",
+    SQLALCHEMY_BACKENDS,
+    reason="run only if backend is SQLAlchemy based",
 )
 def test_list_databases(con):
     # Every backend has its own databases

@@ -531,7 +531,9 @@ class Struct(DataType):
 
     @classmethod
     def from_dict(
-        cls, pairs: Mapping[str, Union[str, DataType]], nullable: bool = True,
+        cls,
+        pairs: Mapping[str, Union[str, DataType]],
+        nullable: bool = True,
     ) -> 'Struct':
         names, types = pairs.keys(), pairs.values()
         return cls(list(names), list(map(dtype, types)), nullable=nullable)
@@ -1719,7 +1721,10 @@ def infer_integer(value: int, allow_overflow: bool = False) -> Integer:
 
 @infer.register(enum.Enum)
 def infer_enum(value: enum.Enum) -> Enum:
-    return Enum(infer(value.name), infer(value.value),)
+    return Enum(
+        infer(value.name),
+        infer(value.value),
+    )
 
 
 @infer.register(bool)

@@ -304,7 +304,9 @@ def wrap_for_apply(
 
 
 def wrap_for_agg(
-    function: Callable, args: Tuple[Any, ...], kwargs: Dict[str, Any],
+    function: Callable,
+    args: Tuple[Any, ...],
+    kwargs: Dict[str, Any],
 ) -> Callable:
     """Wrap a function for use with Pandas `agg`.
 
@@ -443,8 +445,7 @@ def window_agg_built_in(
     *args: Tuple[Any],
     **kwargs: Dict[str, Any],
 ) -> pd.Series:
-    """Apply window aggregation with built-in aggregators.
-    """
+    """Apply window aggregation with built-in aggregators."""
     assert isinstance(function, str)
     method = operator.methodcaller(function, *args, **kwargs)
 
