@@ -268,8 +268,8 @@ def con_no_db(env, hdfs):
 
 
 @pytest.fixture(scope='session')
-def alltypes(con, test_data_db):
-    return con.database(test_data_db).functional_alltypes
+def alltypes(con):
+    return con.table('functional_alltypes')
 
 
 @pytest.fixture(scope='session')
