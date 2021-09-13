@@ -286,12 +286,11 @@ def temp_view(con) -> str:
 def current_data_db(con, backend) -> str:
     """Return current database name."""
     try:
-        current_database = con.current_database
+        return con.current_database
     except NotImplementedError:
         pytest.skip(
-            f'{backend.name()} backend doesn\'t have current_database method.'
+            f"{backend.name()} backend doesn't have current_database method."
         )
-    return current_database
 
 
 @pytest.fixture
