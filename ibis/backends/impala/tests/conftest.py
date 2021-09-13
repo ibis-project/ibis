@@ -206,10 +206,8 @@ def con(env, hdfs, test_data_db):
     if not env.use_codegen:
         con.disable_codegen()
     assert con.get_options()['DISABLE_CODEGEN'] == '1'
-    try:
-        yield con
-    finally:
-        con.set_database(test_data_db)
+    con.set_database(test_data_db)
+    return con
 
 
 @pytest.fixture(scope='session')
