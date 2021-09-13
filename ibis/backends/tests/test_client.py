@@ -142,7 +142,7 @@ def test_nullable_input_output(con, backend, temp_table):
         [
             ('foo', 'int64'),
             ('bar', ibis.expr.datatypes.int64(nullable=False)),
-            ('baz', 'boolean*'),
+            ('baz', 'boolean'),
         ]
     )
 
