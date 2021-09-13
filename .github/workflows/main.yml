@@ -104,7 +104,7 @@ jobs:
           done
 
       - name: run tests
-        run: ./ci/run_tests.sh --numprocesses auto
+        run: ./ci/run_tests.sh
         env:
           PYTEST_BACKENDS: ${{ join(fromJSON(steps.set_backends.outputs.backends), ' ') }}
 
