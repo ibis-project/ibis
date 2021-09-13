@@ -43,7 +43,7 @@ jobs:
         run: pip install .
 
       - name: run tests
-        run: ./ci/run_tests.sh ibis/tests --numprocesses auto
+        run: ./ci/run_tests.sh ibis/tests
 
       - name: publish test report
         uses: actions/upload-artifact@v2
@@ -160,7 +160,7 @@ jobs:
         run: python ci/datamgr.py pyspark
 
       - name: run tests
-        run: ./ci/run_tests.sh --numprocesses auto
+        run: ./ci/run_tests.sh
         env:
           PYTEST_BACKENDS: pyspark
           ARROW_PRE_0_15_IPC_FORMAT: ${{ matrix.deps.env.ARROW_PRE_0_15_IPC_FORMAT }}
@@ -245,7 +245,7 @@ jobs:
           done
 
       - name: run tests
-        run: ./ci/run_tests.sh -m "not udf" --numprocesses auto
+        run: ./ci/run_tests.sh -m "not udf"
         env:
           PYTEST_BACKENDS: ${{ join(fromJSON(steps.set_backends.outputs.backends), ' ') }}
 
