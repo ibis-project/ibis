@@ -64,10 +64,10 @@ class BasePandasBackend(BaseBackend):
 
     @property
     def current_database(self):
-        return 'main'
+        raise NotImplementedError('pandas backend does not support databases')
 
     def list_databases(self, like=None):
-        return self._filter_with_like(['main'])
+        raise NotImplementedError('pandas backend does not support databases')
 
     def list_tables(self, like=None, database=None):
         return self._filter_with_like(

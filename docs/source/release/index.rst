@@ -12,6 +12,7 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :support:`2962` Methods `current_database` and `list_databases` raise an exception for backends that do not support databases
 * :bug:`2956` Replace `equals` operation for geospatial datatype to `geo_equals` 
 * :support:`2913` Method `set_database` has been deprecated, in favor of creating a new connection to a different database
 * :feature:`2938` Serialization-deserialization of Node via pickle is now byte compatible between different processes

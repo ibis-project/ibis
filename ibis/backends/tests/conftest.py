@@ -285,11 +285,12 @@ def temp_view(con) -> str:
 @pytest.fixture(scope='session')
 def current_data_db(con, backend) -> str:
     """Return current database name."""
-    if not hasattr(con, 'current_database'):
+    try:
+        return con.current_database
+    except NotImplementedError:
         pytest.skip(
-            f'{backend.name()} backend doesn\'t have current_database method.'
+            f"{backend.name()} backend doesn't have current_database method."
         )
-    return con.current_database
 
 
 @pytest.fixture
