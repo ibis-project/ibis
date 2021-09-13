@@ -41,7 +41,10 @@ def register_types_to_dispatcher(
 
 def make_meta_series(dtype, name=None, index_name=None):
     return pd.Series(
-        [], index=pd.Index([], name=index_name), dtype=dtype, name=name,
+        [],
+        index=pd.Index([], name=index_name),
+        dtype=dtype,
+        name=name,
     )
 
 
@@ -160,7 +163,9 @@ def _pandas_dtype_from_dd_scalar(x: dd.core.Scalar):
 
 
 def _coerce_to_dataframe(
-    data: Any, column_names: List[str], types: List[dt.DataType],
+    data: Any,
+    column_names: List[str],
+    types: List[dt.DataType],
 ) -> dd.DataFrame:
     """
     Clone of ibis.util.coerce_to_dataframe that deals well with dask types

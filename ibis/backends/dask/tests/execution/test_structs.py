@@ -67,7 +67,8 @@ def test_struct_field_series(struct_table):
     expr = t.s['fruit']
     result = expr.compile()
     expected = dd.from_pandas(
-        pd.Series(["apple", "pear", "pear"], name="fruit"), npartitions=1,
+        pd.Series(["apple", "pear", "pear"], name="fruit"),
+        npartitions=1,
     )
     tm.assert_series_equal(result.compute(), expected.compute())
 

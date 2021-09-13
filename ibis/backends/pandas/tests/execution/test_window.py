@@ -36,7 +36,7 @@ class CustomInterval:
 
 
 class CustomWindow(ibis.expr.window.Window):
-    """ This is a dummy custom window that return n preceding rows
+    """This is a dummy custom window that return n preceding rows
     where n is defined by CustomInterval.value."""
 
     def _replace(self, **kwds):
@@ -670,7 +670,7 @@ def test_window_on_and_by_key_as_window_input(t, df):
 
 
 def test_custom_window_udf(t, custom_window):
-    """ Test implementing  a (dummy) custom window.
+    """Test implementing  a (dummy) custom window.
 
     This test covers the advance use case to support custom window with udfs.
 

@@ -140,7 +140,11 @@ class _CorrelatedRefCheck:
         # XXX
         if isinstance(
             node,
-            (ops.TableArrayView, ops.ExistsSubquery, ops.NotExistsSubquery,),
+            (
+                ops.TableArrayView,
+                ops.ExistsSubquery,
+                ops.NotExistsSubquery,
+            ),
         ):
             return True
 

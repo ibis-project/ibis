@@ -91,9 +91,7 @@ class TestASTBuilder(unittest.TestCase):
 
 class TestNonTabularResults(unittest.TestCase):
 
-    """
-
-    """
+    """ """
 
     def setUp(self):
         self.con = MockConnection()

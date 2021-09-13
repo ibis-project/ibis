@@ -351,8 +351,7 @@ def compile_subtract(t, expr, scope, timecontext, **kwargs):
 
 @compiles(ops.Literal)
 def compile_literal(t, expr, scope, timecontext, raw=False, **kwargs):
-    """ If raw is True, don't wrap the result with F.lit()
-    """
+    """If raw is True, don't wrap the result with F.lit()"""
     value = expr.op().value
     dtype = expr.op().dtype
 
@@ -511,7 +510,12 @@ def compile_notany(t, expr, scope, timecontext, *, context=None, **kwargs):
         )
     else:
         return ~compile_any(
-            t, expr, scope, timecontext, context=context, **kwargs,
+            t,
+            expr,
+            scope,
+            timecontext,
+            context=context,
+            **kwargs,
         )
 
 
@@ -535,7 +539,12 @@ def compile_notall(t, expr, scope, timecontext, *, context=None, **kwargs):
         )
     else:
         return ~compile_all(
-            t, expr, scope, timecontext, context=context, **kwargs,
+            t,
+            expr,
+            scope,
+            timecontext,
+            context=context,
+            **kwargs,
         )
 
 
@@ -1148,7 +1157,7 @@ def compile_join(t, expr, scope, timecontext, *, how):
 
 
 def _canonicalize_interval(t, interval, scope, timecontext, **kwargs):
-    """ Convert interval to integer timestamp of second
+    """Convert interval to integer timestamp of second
 
     When pyspark cast timestamp to integer type, it uses the number of seconds
     since epoch. Therefore, we need cast ibis interval correspondingly.

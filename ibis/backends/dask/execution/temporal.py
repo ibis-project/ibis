@@ -91,7 +91,10 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
     ],
     ops.IntervalFloorDivide: [
         (
-            ((Timedelta, dd.Series), numeric_types + (dd.Series,),),
+            (
+                (Timedelta, dd.Series),
+                numeric_types + (dd.Series,),
+            ),
             execute_interval_multiply_fdiv_series_numeric,
         )
     ],

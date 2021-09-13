@@ -423,7 +423,10 @@ def execute_searched_case_dask(op, whens, thens, otherwise, **kwargs):
         thens = [da.from_array(np.array([t])) for t in thens]
     # TODO this only exists as of 2021.6.1
     raw = dask_array_select(whens, thens, otherwise)
-    out = dd.from_dask_array(raw, index=idx,)
+    out = dd.from_dask_array(
+        raw,
+        index=idx,
+    )
     return out
 
 

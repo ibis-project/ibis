@@ -133,7 +133,7 @@ def test_context_adjustment_window(
 
 
 def test_trim_window_result(time_df3):
-    """ Unit test `trim_window_result` in Window execution"""
+    """Unit test `trim_window_result` in Window execution"""
     df = time_df3.copy()
     context = pd.Timestamp('20170105'), pd.Timestamp('20170111')
 
@@ -141,7 +141,8 @@ def test_trim_window_result(time_df3):
     series = df['value']
     time_index = df.set_index('time').index
     series.index = pd.MultiIndex.from_arrays(
-        [series.index, time_index], names=series.index.names + ['time'],
+        [series.index, time_index],
+        names=series.index.names + ['time'],
     )
     result = trim_window_result(series, context)
     expected = df['time'][df['time'] >= pd.Timestamp('20170105')].reset_index(
@@ -233,9 +234,9 @@ def test_context_adjustment_multi_window(time_table, time_df3):
 
 
 def test_context_adjustment_window_groupby_id(time_table, time_df3):
-    """ This test case is meant to test trim_window_result method
-        in pandas/execution/window.py to see if it could trim Series
-        correctly with groupby params
+    """This test case is meant to test trim_window_result method
+    in pandas/execution/window.py to see if it could trim Series
+    correctly with groupby params
     """
     expected = (
         time_df3.set_index('time')
@@ -262,14 +263,14 @@ def test_context_adjustment_window_groupby_id(time_table, time_df3):
 
 
 def test_construct_time_context_aware_series(time_df3):
-    """Unit test for `construct_time_context_aware_series`
-    """
+    """Unit test for `construct_time_context_aware_series`"""
     # Series without 'time' index will result in a MultiIndex with 'time'
     df = time_df3
     expected = df['value']
     time_index = pd.Index(df['time'])
     expected.index = pd.MultiIndex.from_arrays(
-        [expected.index, time_index], names=expected.index.names + ['time'],
+        [expected.index, time_index],
+        names=expected.index.names + ['time'],
     )
     result = construct_time_context_aware_series(df['value'], df)
     tm.assert_series_equal(result, expected)
