@@ -35,7 +35,7 @@ def test_drop_non_empty_database(client, alltypes, temp_table_db):
 
 def test_create_database_with_location(client, tmp_dir):
     base = pjoin(tmp_dir, util.guid())
-    name = '__ibis_test_{}'.format(util.guid())
+    name = f'__ibis_test_{util.guid()}'
     tmp_path = pjoin(base, name)
 
     client.create_database(name, path=tmp_path)
@@ -49,7 +49,7 @@ def test_create_database_with_location(client, tmp_dir):
 
 
 def test_drop_table_not_exist(client):
-    non_existent_table = 'ibis_table_{}'.format(util.guid())
+    non_existent_table = f'ibis_table_{util.guid()}'
     with pytest.raises(Exception):
         client.drop_table(non_existent_table)
     client.drop_table(non_existent_table, force=True)
@@ -216,7 +216,7 @@ def test_rename_table(client, alltypes):
 
 @pytest.fixture
 def table(client, temp_database):
-    table_name = 'table_{}'.format(util.guid())
+    table_name = f'table_{util.guid()}'
     schema = ibis.schema([('foo', 'string'), ('bar', 'int64')])
     client.create_table(
         table_name, database=temp_database, schema=schema, format='parquet'

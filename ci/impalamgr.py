@@ -30,9 +30,9 @@ ENV = IbisTestEnv()
 
 env_items = ENV.items()
 maxlen = max(map(len, map(toolz.first, env_items))) + len('IbisTestEnv[""]')
-format_string = '%-{:d}s == %r'.format(maxlen)
+format_string = f'%-{maxlen:d}s == %r'
 for key, value in env_items:
-    logger.info(format_string, 'IbisTestEnv[{!r}]'.format(key), value)
+    logger.info(format_string, f'IbisTestEnv[{key!r}]', value)
 
 
 def make_ibis_client(env):

@@ -72,7 +72,7 @@ sql_type_names = {
 
 def type_to_sql_string(tval):
     if isinstance(tval, dt.Decimal):
-        return 'decimal({}, {})'.format(tval.precision, tval.scale)
+        return f'decimal({tval.precision}, {tval.scale})'
     name = tval.name.lower()
     try:
         return sql_type_names[name]

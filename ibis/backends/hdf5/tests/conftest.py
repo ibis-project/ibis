@@ -15,7 +15,7 @@ class TestConf(PandasTest):
     def connect(data_directory: Path):
         filename = data_directory / 'functional_alltypes.h5'
         if not filename.exists():
-            pytest.skip('test data set {} not found'.format(filename))
+            pytest.skip(f'test data set {filename} not found')
         return ibis.hdf5.connect(data_directory)
 
 

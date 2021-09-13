@@ -425,7 +425,7 @@ def execute_series_cumulative_sum_min_max(op, data, **kwargs):
         .group(1)
         .lower()
     )
-    method = getattr(data, "cum{}".format(method_name))
+    method = getattr(data, f"cum{method_name}")
     return method()
 
 
@@ -444,17 +444,17 @@ def execute_series_cumulative_op(op, data, aggcontext=None, **kwargs):
     typename = type(op).__name__
     match = re.match(r'^Cumulative([A-Za-z_][A-Za-z0-9_]*)$', typename)
     if match is None:
-        raise ValueError('Unknown operation {}'.format(typename))
+        raise ValueError(f'Unknown operation {typename}')
 
     try:
         (operation_name,) = match.groups()
     except ValueError:
         raise ValueError(
-            'More than one operation name found in {} class'.format(typename)
+            f'More than one operation name found in {typename} class'
         )
 
     dtype = op.to_expr().type().to_pandas()
-    assert isinstance(aggcontext, agg_ctx.Cumulative), 'Got {}'.format(type())
+    assert isinstance(aggcontext, agg_ctx.Cumulative), f'Got {type()}'
     result = aggcontext.agg(data, operation_name.lower())
 
     # all expanding window operations are required to be int64 or float64, so

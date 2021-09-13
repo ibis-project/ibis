@@ -211,7 +211,7 @@ class ImpalaCursor:
 
     def set_options(self):
         for k, v in self.options.items():
-            query = 'SET {} = {!r}'.format(k, v)
+            query = f'SET {k} = {v!r}'
             self._cursor.execute(query)
 
     @property
@@ -280,7 +280,7 @@ class ImpalaCursor:
 
 def _column_batches_to_dataframe(names, batches):
     cols = {}
-    for name, chunks in zip(names, zip(*[b.columns for b in batches])):
+    for name, chunks in zip(names, zip(*(b.columns for b in batches))):
         cols[name] = _chunks_to_pandas_array(chunks)
     return pd.DataFrame(cols, columns=names)
 
@@ -375,7 +375,7 @@ class ImpalaTable(ir.TableExpr):
         m = fully_qualified_re.match(self._qualified_name)
         if not m:
             raise com.IbisError(
-                'Cannot determine database name from {0}'.format(
+                'Cannot determine database name from {}'.format(
                     self._qualified_name
                 )
             )
@@ -832,7 +832,7 @@ class ImpalaClient(SQLClient):
             return name
 
         database = database or self.current_database
-        return '{0}.`{1}`'.format(database, name)
+        return f'{database}.`{name}`'
 
     def _get_list(self, cur):
         tuples = cur.fetchall()
@@ -898,12 +898,10 @@ class ImpalaClient(SQLClient):
             udas = []
         if force:
             for table in tables:
-                util.log('Dropping {0}'.format('{0}.{1}'.format(name, table)))
+                util.log('Dropping {}'.format(f'{name}.{table}'))
                 self.drop_table_or_view(table, database=name)
             for func in udfs:
-                util.log(
-                    'Dropping function {0}({1})'.format(func.name, func.inputs)
-                )
+                util.log(f'Dropping function {func.name}({func.inputs})')
                 self.drop_udf(
                     func.name,
                     input_types=func.inputs,
@@ -912,7 +910,7 @@ class ImpalaClient(SQLClient):
                 )
             for func in udas:
                 util.log(
-                    'Dropping aggregate function {0}({1})'.format(
+                    'Dropping aggregate function {}({})'.format(
                         func.name, func.inputs
                     )
                 )
@@ -925,7 +923,7 @@ class ImpalaClient(SQLClient):
         else:
             if len(tables) > 0 or len(udfs) > 0 or len(udas) > 0:
                 raise com.IntegrityError(
-                    'Database {0} must be empty before '
+                    'Database {} must be empty before '
                     'being dropped, or set '
                     'force=True'.format(name)
                 )
@@ -947,7 +945,7 @@ class ImpalaClient(SQLClient):
         schema : ibis Schema
         """
         qualified_name = self._fully_qualified_name(table_name, database)
-        query = 'DESCRIBE {}'.format(qualified_name)
+        query = f'DESCRIBE {qualified_name}'
 
         # only pull out the first two columns which are names and types
         pairs = [row[:2] for row in self.con.fetchall(query)]
@@ -986,7 +984,7 @@ class ImpalaClient(SQLClient):
             codec = codec.lower()
 
         if codec not in ('none', 'gzip', 'snappy'):
-            raise ValueError('Unknown codec: {0}'.format(codec))
+            raise ValueError(f'Unknown codec: {codec}')
 
         self.set_options({'COMPRESSION_CODEC': codec})
 
@@ -1295,7 +1293,7 @@ class ImpalaClient(SQLClient):
     def _get_concrete_table_path(self, name, database, persist=False):
         if not persist:
             if name is None:
-                name = '__ibis_tmp_{0}'.format(util.guid())
+                name = f'__ibis_tmp_{util.guid()}'
 
             if database is None:
                 self._ensure_temp_db_exists()
@@ -1331,7 +1329,7 @@ class ImpalaClient(SQLClient):
         # Compute number of rows in table for better default query planning
         cardinality = t.count().execute()
         set_card = (
-            "alter table {0} set tblproperties('numRows'='{1}', "
+            "alter table {} set tblproperties('numRows'='{}', "
             "'STATS_GENERATED_VIA_STATS_TASK' = 'true')".format(
                 qualified_name, cardinality
             )
@@ -1557,7 +1555,7 @@ class ImpalaClient(SQLClient):
                 else:
                     raise Exception(
                         "More than one function "
-                        + "with {0} found.".format(name)
+                        + f"with {name} found."
                         + "Please specify force=True"
                     )
             elif len(result) == 1:
@@ -1570,7 +1568,7 @@ class ImpalaClient(SQLClient):
                 )
                 return
             else:
-                raise Exception("No function found with name {0}".format(name))
+                raise Exception(f"No function found with name {name}")
         self._drop_single_function(
             name, input_types, database=database, aggregate=aggregate
         )
@@ -1729,7 +1727,7 @@ class ImpalaClient(SQLClient):
           If True, issue COMPUTE INCREMENTAL STATS
         """
         maybe_inc = 'INCREMENTAL ' if incremental else ''
-        cmd = 'COMPUTE {0}STATS'.format(maybe_inc)
+        cmd = f'COMPUTE {maybe_inc}STATS'
 
         stmt = self._table_command(cmd, name, database=database)
         self.raw_sql(stmt)
@@ -1833,7 +1831,7 @@ class ImpalaClient(SQLClient):
 
     def _table_command(self, cmd, name, database=None):
         qualified_name = self._fully_qualified_name(name, database)
-        return '{0} {1}'.format(cmd, qualified_name)
+        return f'{cmd} {qualified_name}'
 
     def _adapt_types(self, descr):
         names = []
@@ -1909,9 +1907,7 @@ def _validate_compatible(from_schema, to_schema):
         lt = from_schema[name]
         rt = to_schema[name]
         if not lt.castable(rt):
-            raise com.IbisInputError(
-                'Cannot safely cast {0!r} to {1!r}'.format(lt, rt)
-            )
+            raise com.IbisInputError(f'Cannot safely cast {lt!r} to {rt!r}')
 
 
 def _split_signature(x):

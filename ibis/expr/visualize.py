@@ -33,10 +33,10 @@ def get_type(expr):
         )
         right_schema = op.right.schema()
         pairs = [
-            ('{}.{}'.format(left_table_name, left_column), type)
+            (f'{left_table_name}.{left_column}', type)
             for left_column, type in left_schema.items()
         ] + [
-            ('{}.{}'.format(right_table_name, right_column), type)
+            (f'{right_table_name}.{right_column}', type)
             for right_column, type in right_schema.items()
         ]
         schema = ibis.schema(pairs)
@@ -116,7 +116,7 @@ def draw(graph, path=None, format='png'):
 
     if path is None:
         with tempfile.NamedTemporaryFile(
-            delete=False, suffix='.{}'.format(format), mode='wb'
+            delete=False, suffix=f'.{format}', mode='wb'
         ) as f:
             f.write(piped_source)
         return f.name

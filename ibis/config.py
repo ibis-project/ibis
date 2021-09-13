@@ -24,7 +24,7 @@ import re
 import warnings
 from collections import namedtuple
 from contextlib import contextmanager
-from typing import Callable, Dict, List, Tuple
+from typing import Callable
 
 import ibis
 
@@ -35,9 +35,9 @@ RegisteredOption = namedtuple(
 
 _deprecated_options = {}  # holds deprecated option metdata
 # holds registered option metdata
-_registered_options: Dict[str, RegisteredOption] = {}
+_registered_options: dict[str, RegisteredOption] = {}
 # holds the current values for registered options
-_global_config: Dict[str, RegisteredOption] = {}
+_global_config: dict[str, RegisteredOption] = {}
 _reserved_keys = ['all']  # keys which have a special meaning
 
 
@@ -558,7 +558,7 @@ def _select_options(pat: str) -> list:
 
 def _get_root(
     key: str,
-) -> Tuple[RegisteredOption | Dict[str, RegisteredOption], str]:
+) -> tuple[RegisteredOption | dict[str, RegisteredOption], str]:
     """Return the parent node of an option.
 
     Parameters
@@ -690,7 +690,7 @@ def _build_option_description(k: str) -> str:
     o = _get_registered_option(k)
     d = _get_deprecated_option(k)
 
-    buf = ['{} '.format(k)]
+    buf = [f'{k} ']
 
     if o.doc:
         doc = '\n'.join(o.doc.strip().splitlines())
@@ -709,7 +709,7 @@ def _build_option_description(k: str) -> str:
     if d:
         buf.append(
             '\n    (Deprecated{})'.format(
-                ', use `{}` instead.'.format(d.rkey) if d.rkey else ''
+                f', use `{d.rkey}` instead.' if d.rkey else ''
             )
         )
 
@@ -718,7 +718,7 @@ def _build_option_description(k: str) -> str:
 
 
 def pp_options_list(
-    keys: List[str], width: int = 80, _print: bool = False
+    keys: list[str], width: int = 80, _print: bool = False
 ) -> str | None:
     """
     Build a concise listing of available options, grouped by prefix.
@@ -799,7 +799,7 @@ def config_prefix(prefix):
 
     def wrap(func):
         def inner(key, *args, **kwds):
-            pkey = '%s.%s' % (prefix, key)
+            pkey = f'{prefix}.{key}'
             return func(pkey, *args, **kwds)
 
         return inner

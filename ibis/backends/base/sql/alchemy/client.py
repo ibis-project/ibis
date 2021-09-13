@@ -164,7 +164,7 @@ class AlchemyClient(SQLClient):
 
         assert (
             not t.exists()
-        ), 'Something went wrong during DROP of table {!r}'.format(t.name)
+        ), f'Something went wrong during DROP of table {t.name!r}'
 
         self.meta.remove(t)
 

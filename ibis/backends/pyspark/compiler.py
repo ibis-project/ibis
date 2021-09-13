@@ -76,7 +76,7 @@ class PySparkExprTranslator:
             return result
         else:
             raise com.OperationNotDefinedError(
-                'No translation rule for {}'.format(type(op))
+                f'No translation rule for {type(op)}'
             )
 
 
@@ -370,11 +370,11 @@ def compile_literal(t, expr, scope, timecontext, raw=False, **kwargs):
         else:
             return value
     elif isinstance(value, list):
-        return F.array(*[F.lit(v) for v in value])
+        return F.array(*(F.lit(v) for v in value))
     elif isinstance(value, np.ndarray):
         # Unpack np.generic's using .item(), otherwise Spark
         # will not accept
-        return F.array(*[F.lit(v.item()) for v in value])
+        return F.array(*(F.lit(v.item()) for v in value))
     else:
         return F.lit(value)
 
@@ -596,9 +596,7 @@ def compile_std(t, expr, scope, timecontext, context=None, **kwargs):
     elif how == 'pop':
         fn = F.stddev_pop
     else:
-        raise com.TranslationError(
-            "Unexpected 'how' in translation: {}".format(how)
-        )
+        raise com.TranslationError(f"Unexpected 'how' in translation: {how}")
 
     return compile_aggregator(
         t, expr, scope, timecontext, fn=fn, context=context
@@ -614,9 +612,7 @@ def compile_variance(t, expr, scope, timecontext, context=None, **kwargs):
     elif how == 'pop':
         fn = F.var_pop
     else:
-        raise com.TranslationError(
-            "Unexpected 'how' in translation: {}".format(how)
-        )
+        raise com.TranslationError(f"Unexpected 'how' in translation: {how}")
 
     return compile_aggregator(
         t, expr, scope, timecontext, fn=fn, context=context
@@ -632,7 +628,7 @@ def compile_arbitrary(t, expr, scope, timecontext, context=None, **kwargs):
     elif how == 'last':
         fn = functools.partial(F.last, ignorenulls=True)
     else:
-        raise NotImplementedError("Does not support 'how': {}".format(how))
+        raise NotImplementedError(f"Does not support 'how': {how}")
 
     return compile_aggregator(
         t, expr, scope, timecontext, fn=fn, context=context
@@ -1430,7 +1426,7 @@ def compile_date_truncate(t, expr, scope, timecontext, **kwargs):
         unit = _time_unit_mapping[op.unit]
     except KeyError:
         raise com.UnsupportedOperationError(
-            '{!r} unit is not supported in timestamp truncate'.format(op.unit)
+            f'{op.unit!r} unit is not supported in timestamp truncate'
         )
 
     src_column = t.translate(op.arg, scope, timecontext)

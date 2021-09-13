@@ -75,7 +75,7 @@ def test_noop_cast(alltypes, translate, column):
     col = alltypes[column]
     result = col.cast(col.type())
     assert result.equals(col)
-    assert translate(result) == '`{}`'.format(column)
+    assert translate(result) == f'`{column}`'
 
 
 def test_timestamp_cast_noop(alltypes, translate):

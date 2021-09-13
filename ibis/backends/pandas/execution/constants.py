@@ -19,8 +19,8 @@ JOIN_TYPES = {
 }
 
 
-LEFT_JOIN_SUFFIX = '_ibis_left_{}'.format(ibis.util.guid())
-RIGHT_JOIN_SUFFIX = '_ibis_right_{}'.format(ibis.util.guid())
+LEFT_JOIN_SUFFIX = f'_ibis_left_{ibis.util.guid()}'
+RIGHT_JOIN_SUFFIX = f'_ibis_right_{ibis.util.guid()}'
 JOIN_SUFFIXES = LEFT_JOIN_SUFFIX, RIGHT_JOIN_SUFFIX
 ALTERNATE_SUFFIXES = {
     LEFT_JOIN_SUFFIX: RIGHT_JOIN_SUFFIX,

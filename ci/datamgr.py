@@ -77,7 +77,7 @@ def init_database(driver, params, schema=None, recreate=True, **kwargs):
 
 def read_tables(names, data_directory):
     for name in names:
-        path = data_directory / '{}.csv'.format(name)
+        path = data_directory / f'{name}.csv'
 
         params = {}
 
@@ -153,7 +153,7 @@ def download(repo_url, directory):
     path = directory.with_suffix('.zip')
 
     if not path.exists():
-        logger.info('Downloading {} to {}...'.format(url, path))
+        logger.info(f'Downloading {url} to {path}...')
         path.parent.mkdir(parents=True, exist_ok=True)
         download = curl[url, '-o', path, '-L']
         download(
@@ -161,9 +161,9 @@ def download(repo_url, directory):
             stderr=click.get_binary_stream('stderr'),
         )
     else:
-        logger.info('Skipping download: {} already exists'.format(path))
+        logger.info(f'Skipping download: {path} already exists')
 
-    logger.info('Extracting archive to {}'.format(directory))
+    logger.info(f'Extracting archive to {directory}')
 
     # extract all files
     extract_to = directory.with_name(directory.name + '_extracted')
@@ -200,7 +200,7 @@ def parquet(tables, data_directory, ignore_missing_dependency, **params):
     data_directory = Path(data_directory)
     for table, df in read_tables(tables, data_directory):
         arrow_table = pa.Table.from_pandas(df)
-        target_path = data_directory / '{}.parquet'.format(table)
+        target_path = data_directory / f'{table}.parquet'
         pq.write_table(arrow_table, str(target_path))
 
 
@@ -251,7 +251,7 @@ def postgres(schema, tables, data_directory, psql_path, plpython, **params):
     query = "COPY {} FROM STDIN WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',')"
     database = params['database']
     for table in tables:
-        src = data_directory / '{}.csv'.format(table)
+        src = data_directory / f'{table}.csv'
 
         # If we are loading the geo sample data, handle the data types
         # specifically so that PostGIS understands them as geometries.

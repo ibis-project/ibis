@@ -90,7 +90,7 @@ class IbisTestEnv:
         return tmp_db
 
     options.impala.temp_hdfs_path = tmp_dir = os.environ.get(
-        'IBIS_TEST_TMP_HDFS_DIR', '/tmp/__ibis_test_{}'.format(util.guid())
+        'IBIS_TEST_TMP_HDFS_DIR', f'/tmp/__ibis_test_{util.guid()}'
     )
 
     @property
@@ -280,7 +280,7 @@ def alltypes_df(alltypes):
 
 
 def _random_identifier(suffix):
-    return '__ibis_test_{}_{}'.format(suffix, util.guid())
+    return f'__ibis_test_{suffix}_{util.guid()}'
 
 
 @pytest.fixture

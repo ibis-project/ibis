@@ -281,7 +281,7 @@ def test_isin_invalid_cases():
 
 
 def test_isin_notin_scalars():
-    a, b, c = [ibis.literal(x) for x in [1, 1, 2]]
+    a, b, c = (ibis.literal(x) for x in [1, 1, 2])
 
     result = a.isin([1, 2])
     assert isinstance(result, ir.BooleanScalar)
@@ -902,7 +902,7 @@ def test_prefix(expr):
 
 
 def test_rename(expr):
-    renamed = expr.rename(lambda x: 'foo({0})'.format(x))
+    renamed = expr.rename(lambda x: f'foo({x})')
     result = renamed.names()
     assert result == ['foo(a)', 'foo(b)']
 
@@ -1410,7 +1410,7 @@ def test_invalid_negate(value, expected_type):
     ],
 )
 def test_valid_negate(type):
-    value = type(1)
+    value = int
     expr = ibis.literal(value)
     assert -expr is not None
 

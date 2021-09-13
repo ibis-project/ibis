@@ -36,7 +36,7 @@ def test_drop_non_empty_database(con, alltypes, temp_table_db):
 
 def test_create_database_with_location(con, tmp_dir, hdfs):
     base = pjoin(tmp_dir, util.guid())
-    name = '__ibis_test_{}'.format(util.guid())
+    name = f'__ibis_test_{util.guid()}'
     tmp_path = pjoin(base, name)
 
     con.create_database(name, path=tmp_path)
@@ -53,7 +53,7 @@ def test_create_table_with_location_execute(
     con, hdfs, tmp_dir, alltypes, test_data_db, temp_table
 ):
     base = pjoin(tmp_dir, util.guid())
-    name = 'test_{}'.format(util.guid())
+    name = f'test_{util.guid()}'
     tmp_path = pjoin(base, name)
 
     expr = alltypes
@@ -66,7 +66,7 @@ def test_create_table_with_location_execute(
 
 
 def test_drop_table_not_exist(con):
-    non_existent_table = 'ibis_table_{}'.format(util.guid())
+    non_existent_table = f'ibis_table_{util.guid()}'
     with pytest.raises(Exception):
         con.drop_table(non_existent_table)
     con.drop_table(non_existent_table, force=True)
@@ -225,12 +225,12 @@ def test_rename_table(con, temp_database):
 
 @pytest.fixture
 def path_uuid():
-    return 'change-location-{0}'.format(util.guid())
+    return f'change-location-{util.guid()}'
 
 
 @pytest.fixture
 def table(con, tmp_db, tmp_dir, path_uuid):
-    table_name = 'table_{}'.format(util.guid())
+    table_name = f'table_{util.guid()}'
     fake_path = pjoin(tmp_dir, path_uuid)
     schema = ibis.schema([('foo', 'string'), ('bar', 'int64')])
     con.create_table(
@@ -294,7 +294,7 @@ def test_query_avro(con, test_data_dir, tmp_db):
     table = con.avro_file(hdfs_path, avro_schema, database=tmp_db)
 
     name = table.op().name
-    assert name.startswith('{}.'.format(tmp_db))
+    assert name.startswith(f'{tmp_db}.')
 
     # table exists
     assert con.exists_table(name, database=tmp_db)

@@ -367,9 +367,7 @@ class Summarize(AggregationContext):
             return getattr(grouped_data, function)(*args, **kwargs)
 
         if not callable(function):
-            raise TypeError(
-                'Object {} is not callable or a string'.format(function)
-            )
+            raise TypeError(f'Object {function} is not callable or a string')
 
         if isinstance(
             grouped_data, pd.core.groupby.generic.SeriesGroupBy

@@ -55,7 +55,7 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         """
         # Get the schema by adding a LIMIT 0 on to the end of the query. If
         # there is already a limit in the query, we find and remove it
-        limited_query = 'SELECT * FROM ({}) t0 LIMIT 0'.format(query)
+        limited_query = f'SELECT * FROM ({query}) t0 LIMIT 0'
         schema = self._get_schema_using_query(limited_query)
         return ops.SQLQueryResult(query, schema, self).to_expr()
 
@@ -203,7 +203,7 @@ class SQLClient(Client, metaclass=abc.ABCMeta):
         else:
             query = expr
 
-        statement = 'EXPLAIN {0}'.format(query)
+        statement = f'EXPLAIN {query}'
 
         cur = self.raw_sql(statement)
         result = self._get_list(cur)

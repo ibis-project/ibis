@@ -134,7 +134,7 @@ class MetadataParser:
         if 'col_name' not in tup[0]:
             raise ValueError(
                 'DESCRIBE FORMATTED did not return '
-                'the expected results: {0}'.format(tup)
+                'the expected results: {}'.format(tup)
             )
         self._next_tuple()
 

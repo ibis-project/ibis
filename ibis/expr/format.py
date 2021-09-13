@@ -49,7 +49,7 @@ class FormatMemo:
             formatter = self._format
         key = self._key(expr)
         if key not in self.formatted:
-            self.aliases[key] = 'ref_{:d}'.format(len(self.formatted))
+            self.aliases[key] = f'ref_{len(self.formatted):d}'
             self.formatted[key] = formatter(expr)
             self.ops[key] = expr.op()
 
@@ -117,12 +117,12 @@ class ExprFormatter:
                 self._get_type_display(), str(what.value)
             )
         elif isinstance(what, ops.ScalarParameter):
-            text = 'ScalarParameter[{}]'.format(self._get_type_display())
+            text = f'ScalarParameter[{self._get_type_display()}]'
         elif isinstance(what, ops.Node):
             text = self._format_node(self.expr)
 
         if isinstance(self.expr, ir.ValueExpr) and self.expr._name is not None:
-            text = '{} = {}'.format(self.expr.get_name(), text)
+            text = f'{self.expr.get_name()} = {text}'
 
         if self.memoize:
             alias_to_text = [
@@ -184,13 +184,13 @@ class ExprFormatter:
     def _format_table(self, expr):
         table = expr.op()
         # format the schema
-        rows = ['name: {}\nschema:'.format(table.name)]
+        rows = [f'name: {table.name}\nschema:']
         rows.extend(
             map('  {} : {}'.format, table.schema.names, table.schema.types)
         )
         opname = type(table).__name__
         type_display = self._get_type_display(expr)
-        opline = '{}[{}]'.format(opname, type_display)
+        opline = f'{opname}[{type_display}]'
         return '{}\n{}'.format(opline, self._indent('\n'.join(rows)))
 
     def _format_column(self, expr):
@@ -206,7 +206,7 @@ class ExprFormatter:
         table_formatted = self._indent(table_formatted)
 
         type_display = self._get_type_display(self.expr)
-        return "Column[{0}] '{1}' from table\n{2}".format(
+        return "Column[{}] '{}' from table\n{}".format(
             type_display, col.name, table_formatted
         )
 
@@ -242,7 +242,7 @@ class ExprFormatter:
                     # don't display first argument's name in repr
                     name = None
                 if name is not None:
-                    name = self._indent('{}:'.format(name))
+                    name = self._indent(f'{name}:')
                 if util.is_iterable(arg):
                     if name is not None and len(arg) > 0:
                         formatted_args.append(name)
@@ -261,7 +261,7 @@ class ExprFormatter:
 
         opname = type(op).__name__
         type_display = self._get_type_display(expr)
-        opline = '{}[{}]'.format(opname, type_display)
+        opline = f'{opname}[{type_display}]'
         return '\n'.join([opline] + formatted_args)
 
     def _format_subexpr(self, expr):

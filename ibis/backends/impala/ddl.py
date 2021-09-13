@@ -52,9 +52,9 @@ class CreateTableParquet(CreateTable):
     @property
     def _pieces(self):
         if self.example_file is not None:
-            yield "LIKE PARQUET '{0}'".format(self.example_file)
+            yield f"LIKE PARQUET '{self.example_file}'"
         elif self.example_table is not None:
-            yield "LIKE {0}".format(self.example_table)
+            yield f"LIKE {self.example_table}"
         elif self.schema is not None:
             yield format_schema(self.schema)
         else:
@@ -83,15 +83,15 @@ class DelimitedFormat:
         yield 'ROW FORMAT DELIMITED'
 
         if self.delimiter is not None:
-            yield "FIELDS TERMINATED BY '{}'".format(self.delimiter)
+            yield f"FIELDS TERMINATED BY '{self.delimiter}'"
 
         if self.escapechar is not None:
-            yield "ESCAPED BY '{}'".format(self.escapechar)
+            yield f"ESCAPED BY '{self.escapechar}'"
 
         if self.lineterminator is not None:
-            yield "LINES TERMINATED BY '{}'".format(self.lineterminator)
+            yield f"LINES TERMINATED BY '{self.lineterminator}'"
 
-        yield "LOCATION '{}'".format(self.path)
+        yield f"LOCATION '{self.path}'"
 
         if self.na_rep is not None:
             props = {'serialization.null.format': self.na_rep}
@@ -105,7 +105,7 @@ class AvroFormat:
 
     def to_ddl(self):
         yield 'STORED AS AVRO'
-        yield "LOCATION '{}'".format(self.path)
+        yield f"LOCATION '{self.path}'"
 
         schema = json.dumps(self.avro_schema, indent=2, sort_keys=True)
         schema = '\n'.join(x.rstrip() for x in schema.splitlines())
@@ -120,7 +120,7 @@ class ParquetFormat:
 
     def to_ddl(self):
         yield 'STORED AS PARQUET'
-        yield "LOCATION '{}'".format(self.path)
+        yield f"LOCATION '{self.path}'"
 
 
 class CreateTableDelimited(CreateTableWithSchema):
@@ -222,10 +222,10 @@ class PartitionProperties(AlterTable):
     def _compile(self, cmd, property_prefix=''):
         part = format_partition(self.partition, self.partition_schema)
         if cmd:
-            part = '{} {}'.format(cmd, part)
+            part = f'{cmd} {part}'
 
         props = self._format_properties(property_prefix)
-        action = '{} {}{}'.format(self.table, part, props)
+        action = f'{self.table} {part}{props}'
         return self._wrap_command(action)
 
 
@@ -277,7 +277,7 @@ class CreateFunction(BaseDDL):
         input_sig = _impala_input_signature(self.func.inputs)
         output_sig = type_to_sql_string(self.func.output)
 
-        return '{}({}) returns {}'.format(scoped_name, input_sig, output_sig)
+        return f'{scoped_name}({input_sig}) returns {output_sig}'
 
 
 class CreateUDF(CreateFunction):
@@ -294,7 +294,7 @@ class CreateUDA(CreateFunction):
     def compile(self):
         create_decl = 'CREATE AGGREGATE FUNCTION'
         impala_sig = self._impala_signature()
-        tokens = ["location '{}'".format(self.func.lib_path)]
+        tokens = [f"location '{self.func.lib_path}'"]
 
         fn_names = (
             'init_fn',
@@ -307,7 +307,7 @@ class CreateUDA(CreateFunction):
         for fn in fn_names:
             value = getattr(self.func, fn)
             if value is not None:
-                tokens.append("{}='{}'".format(fn, value))
+                tokens.append(f"{fn}='{value}'")
 
         return ' '.join([create_decl, impala_sig]) + ' ' + '\n'.join(tokens)
 
@@ -316,7 +316,7 @@ class DropFunction(DropFunction):
     def _impala_signature(self):
         full_name = self._get_scoped_name(self.name, self.database)
         input_sig = _impala_input_signature(self.inputs)
-        return '{}({})'.format(full_name, input_sig)
+        return f'{full_name}({input_sig})'
 
 
 class ListFunction(BaseDDL):
@@ -329,9 +329,9 @@ class ListFunction(BaseDDL):
         statement = 'SHOW '
         if self.aggregate:
             statement += 'AGGREGATE '
-        statement += 'FUNCTIONS IN {}'.format(self.database)
+        statement += f'FUNCTIONS IN {self.database}'
         if self.like:
-            statement += " LIKE '{}'".format(self.like)
+            statement += f" LIKE '{self.like}'"
         return statement
 
 

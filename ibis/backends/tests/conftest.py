@@ -14,7 +14,7 @@ from .base import BackendTest
 
 
 def _random_identifier(suffix):
-    return '__ibis_test_{}_{}'.format(suffix, util.guid())
+    return f'__ibis_test_{suffix}_{util.guid()}'
 
 
 def _get_all_backends() -> List[str]:
@@ -162,8 +162,8 @@ def pytest_pyfunc_call(pyfuncitem):
         backend = pyfuncitem.funcargs["backend"]
         assert isinstance(
             backend, BackendTest
-        ), "backend has type {!r}".format(type(backend).__name__)
-        pytest.xfail(reason='{}: {}'.format(type(backend).__name__, e))
+        ), f"backend has type {type(backend).__name__!r}"
+        pytest.xfail(reason=f'{type(backend).__name__}: {e}')
 
 
 pytestmark = pytest.mark.backend

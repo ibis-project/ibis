@@ -29,13 +29,13 @@ def test_refresh(con, test_data_db):
     tname = 'functional_alltypes'
     with patch_execute(con) as ex_mock:
         con.refresh(tname)
-        ex_cmd = 'REFRESH {0}.`{1}`'.format(test_data_db, tname)
+        ex_cmd = f'REFRESH {test_data_db}.`{tname}`'
         ex_mock.assert_called_with(ex_cmd)
 
     t = con.table(tname)
     with patch_execute(con) as ex_mock:
         t.refresh()
-        ex_cmd = 'REFRESH {0}.`{1}`'.format(test_data_db, tname)
+        ex_cmd = f'REFRESH {test_data_db}.`{tname}`'
         ex_mock.assert_called_with(ex_cmd)
 
 
@@ -47,7 +47,7 @@ def test_describe_formatted(con, test_data_db):
         desc = t.describe_formatted()
         ex_mock.assert_called_with(
             'DESCRIBE FORMATTED '
-            '{0}.`{1}`'.format(test_data_db, 'functional_alltypes'),
+            '{}.`{}`'.format(test_data_db, 'functional_alltypes'),
             results=True,
         )
         assert isinstance(desc, TableMetadata)
@@ -55,11 +55,11 @@ def test_describe_formatted(con, test_data_db):
 
 def test_show_files(con, test_data_db):
     t = con.table('functional_alltypes')
-    qualified_name = '{0}.`{1}`'.format(test_data_db, 'functional_alltypes')
+    qualified_name = '{}.`{}`'.format(test_data_db, 'functional_alltypes')
     with patch_execute(con) as ex_mock:
         desc = t.files()
         ex_mock.assert_called_with(
-            'SHOW FILES IN {0}'.format(qualified_name), results=True
+            f'SHOW FILES IN {qualified_name}', results=True
         )
         assert isinstance(desc, pd.DataFrame)
 
@@ -67,17 +67,17 @@ def test_show_files(con, test_data_db):
 def test_table_column_stats(con, test_data_db):
     t = con.table('functional_alltypes')
 
-    qualified_name = '{0}.`{1}`'.format(test_data_db, 'functional_alltypes')
+    qualified_name = '{}.`{}`'.format(test_data_db, 'functional_alltypes')
     with patch_execute(con) as ex_mock:
         desc = t.stats()
         ex_mock.assert_called_with(
-            'SHOW TABLE STATS {0}'.format(qualified_name), results=True
+            f'SHOW TABLE STATS {qualified_name}', results=True
         )
         assert isinstance(desc, pd.DataFrame)
 
     with patch_execute(con) as ex_mock:
         desc = t.column_stats()
         ex_mock.assert_called_with(
-            'SHOW COLUMN STATS {0}'.format(qualified_name), results=True
+            f'SHOW COLUMN STATS {qualified_name}', results=True
         )
         assert isinstance(desc, pd.DataFrame)

@@ -29,7 +29,7 @@ def test_client(tmpdir, file_backends_data):
     csv = tmpdir
 
     for k, v in file_backends_data.items():
-        f = csv / '{}.csv'.format(k)
+        f = csv / f'{k}.csv'
         v.to_csv(str(f), index=False)
 
     c = ibis.csv.connect(csv / 'open.csv')

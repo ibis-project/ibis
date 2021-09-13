@@ -23,18 +23,18 @@ class _CaseFormatter:
         self.buf.write('CASE')
         if self.base is not None:
             base_str = self._trans(self.base)
-            self.buf.write(' {}'.format(base_str))
+            self.buf.write(f' {base_str}')
 
         for case, result in zip(self.cases, self.results):
             self._next_case()
             case_str = self._trans(case)
             result_str = self._trans(result)
-            self.buf.write('WHEN {} THEN {}'.format(case_str, result_str))
+            self.buf.write(f'WHEN {case_str} THEN {result_str}')
 
         if self.default is not None:
             self._next_case()
             default_str = self._trans(self.default)
-            self.buf.write('ELSE {}'.format(default_str))
+            self.buf.write(f'ELSE {default_str}')
 
         if self.multiline:
             self.buf.write('\nEND')

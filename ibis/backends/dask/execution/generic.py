@@ -163,7 +163,7 @@ def execute_arbitrary_series_mask(op, data, mask, aggcontext=None, **kwargs):
         index = len(data) - 1  # TODO - computation
     else:
         raise com.OperationNotDefinedError(
-            'Arbitrary {!r} is not supported'.format(op.how)
+            f'Arbitrary {op.how!r} is not supported'
         )
 
     return data.loc[index]
@@ -177,7 +177,7 @@ def execute_arbitrary_series_groupby(op, data, _, aggcontext=None, **kwargs):
 
     if how not in {'first', 'last'}:
         raise com.OperationNotDefinedError(
-            'Arbitrary {!r} is not supported'.format(how)
+            f'Arbitrary {how!r} is not supported'
         )
     return aggcontext.agg(data, how)
 
@@ -218,7 +218,7 @@ def execute_cast_series_timestamp(op, data, type, **kwargs):
         else:
             return timestamps.dt.tz_localize(tz)
 
-    raise TypeError("Don't know how to cast {} to {}".format(from_type, type))
+    raise TypeError(f"Don't know how to cast {from_type} to {type}")
 
 
 @execute_node.register(ops.Cast, dd.Series, dt.Date)
@@ -251,7 +251,7 @@ def execute_cast_series_date(op, data, type, **kwargs):
             to_datetime, unit='D', meta=(data.name, 'datetime64[ns]')
         )
 
-    raise TypeError("Don't know how to cast {} to {}".format(from_type, type))
+    raise TypeError(f"Don't know how to cast {from_type} to {type}")
 
 
 @execute_node.register(ops.Limit, dd.DataFrame, integer_types, integer_types)
@@ -288,7 +288,7 @@ def execute_binary_op(op, left, right, **kwargs):
         operation = constants.BINARY_OPERATIONS[op_type]
     except KeyError:
         raise NotImplementedError(
-            'Binary operation {} not implemented'.format(op_type.__name__)
+            f'Binary operation {op_type.__name__} not implemented'
         )
     else:
         return operation(left, right)

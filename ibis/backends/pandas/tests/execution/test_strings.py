@@ -129,4 +129,4 @@ def test_string_ops(t, df, case_func, expected_func):
 )
 def test_sql_like_to_regex(pattern, expected):
     result = sql_like_to_regex(pattern, escape='^')
-    assert result == '^{}$'.format(expected)
+    assert result == f'^{expected}$'

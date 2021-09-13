@@ -372,7 +372,7 @@ def test_select_on_unambiguous_join(how, func):
     con = Backend().connect({"t": df_t, "s": df_s})
     t = con.table("t")
     s = con.table("s")
-    method = getattr(t, "{}_join".format(how))
+    method = getattr(t, f"{how}_join")
     join = method(s, t.b1 == s.b2)
     expected = pd.merge(df_t, df_s, left_on=["b1"], right_on=["b2"], how=how)[
         ["a0", "a1"]

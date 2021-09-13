@@ -712,7 +712,7 @@ def cast(arg, target_type):
     result = op.to_expr()
     if not arg.has_name():
         return result
-    expr_name = 'cast({}, {})'.format(arg.get_name(), op.to)
+    expr_name = f'cast({arg.get_name()}, {op.to})'
     return result.name(expr_name)
 
 
@@ -726,7 +726,7 @@ target_type : data type name
 
 Notes
 -----
-{0}
+{}
 
 Returns
 -------
@@ -3191,9 +3191,7 @@ def _string_getitem(self, key):
         return self.substr(start, stop - start)
     elif isinstance(key, int):
         return self.substr(key, 1)
-    raise NotImplementedError(
-        'string __getitem__[{}]'.format(type(key).__name__)
-    )
+    raise NotImplementedError(f'string __getitem__[{type(key).__name__}]')
 
 
 _string_value_methods = {
@@ -3929,7 +3927,7 @@ def _table_info(self, buf=None):
     types = ['Type', '----'] + [repr(x) for x in self.schema().types]
     counts = ['Non-null #', '----------'] + [str(x) for x in metrics[1:]]
     col_metrics = util.adjoin(2, names, types, counts)
-    result = 'Table rows: {}\n\n{}'.format(metrics[0], col_metrics)
+    result = f'Table rows: {metrics[0]}\n\n{col_metrics}'
 
     print(result, file=buf)
 
@@ -3956,7 +3954,7 @@ def _table_set_column(table, name, expr):
         expr = expr.name(name)
 
     if name not in table:
-        raise KeyError('{0} is not in the table'.format(name))
+        raise KeyError(f'{name} is not in the table')
 
     # TODO: This assumes that projection is required; may be backend-dependent
     proj_exprs = []
@@ -4395,7 +4393,7 @@ def _table_relabel(table, substitutions, replacements=None):
 
     for c in substitutions:
         if c not in observed:
-            raise KeyError('{0!r} is not an existing column'.format(c))
+            raise KeyError(f'{c!r} is not an existing column')
 
     return table.projection(exprs)
 
@@ -4444,7 +4442,7 @@ def _table_drop(self, fields: Union[str, List[str]]) -> ir.TableExpr:
     missing_fields = field_set.difference(schema)
 
     if missing_fields:
-        raise KeyError('Fields not in table: {0!s}'.format(missing_fields))
+        raise KeyError(f'Fields not in table: {missing_fields!s}')
 
     return self[[field for field in schema if field not in field_set]]
 

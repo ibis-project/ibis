@@ -98,7 +98,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
 def test_timestamp_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.truncate(unit)
 
-    dtype = 'datetime64[{}]'.format(unit)
+    dtype = f'datetime64[{unit}]'
     expected = pd.Series(df.timestamp_col.values.astype(dtype))
 
     result = expr.execute()
@@ -125,7 +125,7 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
 def test_date_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.date().truncate(unit)
 
-    dtype = 'datetime64[{}]'.format(unit)
+    dtype = f'datetime64[{unit}]'
     expected = pd.Series(df.timestamp_col.values.astype(dtype))
 
     result = expr.execute()
@@ -191,7 +191,7 @@ def test_integer_to_interval_timestamp(
     expr = alltypes.timestamp_col + interval
 
     def convert_to_offset(offset, displacement_type=displacement_type):
-        resolution = '{}s'.format(interval.type().resolution)
+        resolution = f'{interval.type().resolution}s'
         return displacement_type(**{resolution: offset})
 
     with warnings.catch_warnings():
@@ -225,7 +225,7 @@ def test_integer_to_interval_date(backend, con, alltypes, df, unit):
         result = con.execute(expr)
 
     def convert_to_offset(x):
-        resolution = '{}s'.format(interval.type().resolution)
+        resolution = f'{interval.type().resolution}s'
         return pd.offsets.DateOffset(**{resolution: x})
 
     offset = df.int_col.apply(convert_to_offset)
@@ -287,7 +287,7 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
             lambda t, be: t.timestamp_col - ibis.timestamp(timestamp_value),
             lambda t, be: pd.Series(
                 t.timestamp_col.sub(timestamp_value).values.astype(
-                    'timedelta64[{}]'.format(be.returned_timestamp_unit)
+                    f'timedelta64[{be.returned_timestamp_unit}]'
                 )
             ),
             id='timestamp-subtract-timestamp',
@@ -445,9 +445,7 @@ unit_factors = {'s': int(1e9), 'ms': int(1e6), 'us': int(1e3), 'ns': 1}
 @pytest.mark.xfail_unsupported
 def test_to_timestamp(backend, con, unit):
     if unit not in backend.supported_to_timestamp_units:
-        pytest.skip(
-            'Unit {!r} not supported by {} to_timestamp'.format(unit, backend)
-        )
+        pytest.skip(f'Unit {unit!r} not supported by {backend} to_timestamp')
 
     backend_unit = backend.returned_timestamp_unit
     factor = unit_factors[unit]

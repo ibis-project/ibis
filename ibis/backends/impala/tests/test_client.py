@@ -69,7 +69,7 @@ def test_get_table_ref(db):
 
 def test_run_sql(con, test_data_db):
     query = """SELECT li.*
-FROM {0}.tpch_lineitem li
+FROM {}.tpch_lineitem li
 """.format(
         test_data_db
     )
@@ -201,7 +201,7 @@ def test_verbose_log_queries(con, test_data_db):
 
     assert len(queries) == 1
     (query,) = queries
-    expected = 'DESCRIBE {}.`tpch_orders`'.format(test_data_db)
+    expected = f'DESCRIBE {test_data_db}.`tpch_orders`'
     assert query == expected
 
 
@@ -395,7 +395,7 @@ def test_tables_robust_to_set_database(con, test_data_db, temp_database):
 
 def test_exists_table(con):
     assert con.exists_table('functional_alltypes')
-    assert not con.exists_table('foobarbaz_{}'.format(util.guid()))
+    assert not con.exists_table(f'foobarbaz_{util.guid()}')
 
 
 def text_exists_table_with_database(
