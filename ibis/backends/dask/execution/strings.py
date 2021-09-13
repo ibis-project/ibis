@@ -48,7 +48,11 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
     ops.StringLength: [((dd.Series,), execute_string_length_series)],
     ops.Substring: [
         (
-            (dd.Series, integer_types, integer_types,),
+            (
+                dd.Series,
+                integer_types,
+                integer_types,
+            ),
             execute_substring_int_int,
         ),
     ],
@@ -57,13 +61,21 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
     ops.RStrip: [((dd.Series,), execute_string_rstrip)],
     ops.LPad: [
         (
-            (dd.Series, (dd.Series,) + integer_types, (dd.Series, str),),
+            (
+                dd.Series,
+                (dd.Series,) + integer_types,
+                (dd.Series, str),
+            ),
             execute_string_lpad,
         ),
     ],
     ops.RPad: [
         (
-            (dd.Series, (dd.Series,) + integer_types, (dd.Series, str),),
+            (
+                dd.Series,
+                (dd.Series,) + integer_types,
+                (dd.Series, str),
+            ),
             execute_string_rpad,
         ),
     ],
@@ -87,11 +99,23 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
     ],
     ops.StringSQLLike: [
         (
-            (dd.Series, str, (str, type(None)),),
+            (
+                dd.Series,
+                str,
+                (str, type(None)),
+            ),
             execute_string_like_series_string,
         ),
     ],
-    ops.RegexSearch: [((dd.Series, str,), execute_series_regex_search)],
+    ops.RegexSearch: [
+        (
+            (
+                dd.Series,
+                str,
+            ),
+            execute_series_regex_search,
+        )
+    ],
     ops.RegexExtract: [
         (
             (dd.Series, (dd.Series, str), integer_types),
@@ -99,7 +123,14 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
         ),
     ],
     ops.RegexReplace: [
-        ((dd.Series, str, str,), execute_series_regex_replace),
+        (
+            (
+                dd.Series,
+                str,
+                str,
+            ),
+            execute_series_regex_replace,
+        ),
     ],
     ops.Translate: [
         (
@@ -143,7 +174,9 @@ def execute_substring_series_series(op, data, start, length, **kwargs):
 
     # TODO - this is broken
     def iterate(
-        value, start_iter=start.iteritems(), end_iter=end.iteritems(),
+        value,
+        start_iter=start.iteritems(),
+        end_iter=end.iteritems(),
     ):
         _, begin = next(start_iter)
         _, end = next(end_iter)

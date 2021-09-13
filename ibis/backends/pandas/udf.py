@@ -47,7 +47,7 @@ def rule_to_python_type(datatype):
 
 
 def create_gens_from_args_groupby(args: Tuple[SeriesGroupBy]):
-    """ Create generators for each args for groupby udaf.
+    """Create generators for each args for groupby udaf.
 
     Returns a generator that outputs each group.
 
@@ -154,8 +154,7 @@ class udf:
 @pre_execute.register(ops.ElementWiseVectorizedUDF)
 @pre_execute.register(ops.ElementWiseVectorizedUDF, Client)
 def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
-    """Register execution rules for elementwise UDFs.
-    """
+    """Register execution rules for elementwise UDFs."""
     input_type = op.input_type
 
     # definitions

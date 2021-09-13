@@ -217,7 +217,8 @@ def test_array_repeat(t, df, n, mul):
     expr = t.projection([mul(t.array_of_strings, n).name('repeated')])
     result = expr.compile()
     expected = dd.from_pandas(
-        pd.DataFrame({'repeated': df.array_of_strings * n}), npartitions=1,
+        pd.DataFrame({'repeated': df.array_of_strings * n}),
+        npartitions=1,
     )
     tm.assert_frame_equal(result.compute(), expected.compute())
 

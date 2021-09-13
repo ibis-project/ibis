@@ -62,7 +62,10 @@ def df_timestamp(npartitions):
         }
     )
     df["a"] = df.a.astype(pd.DatetimeTZDtype(tz='UTC'))
-    return dd.from_pandas(df, npartitions=npartitions,)
+    return dd.from_pandas(
+        df,
+        npartitions=npartitions,
+    )
 
 
 @pytest.fixture
@@ -149,7 +152,8 @@ def zscore(series):
 
 
 @reduction(
-    input_type=[dt.double], output_type=dt.Array(dt.double),
+    input_type=[dt.double],
+    output_type=dt.Array(dt.double),
 )
 def quantiles(series, *, quantiles):
     return list(series.quantile(quantiles))

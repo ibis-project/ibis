@@ -152,7 +152,10 @@ def test_quantile_list(t, df, ibis_func, dask_func, column):
     [
         (lambda x: x.quantile(0), lambda x: x.quantile(0)),
         (lambda x: x.quantile(1), lambda x: x.quantile(1)),
-        (lambda x: x.quantile(0.5), lambda x: x.quantile(0.5),),
+        (
+            lambda x: x.quantile(0.5),
+            lambda x: x.quantile(0.5),
+        ),
     ],
 )
 def test_quantile_scalar(t, df, ibis_func, dask_func):

@@ -144,8 +144,7 @@ class Schema:
         return zip(self.names, self.types)
 
     def name_at_position(self, i):
-        """
-        """
+        """ """
         upper = len(self.names) - 1
         if not 0 <= i <= upper:
             raise ValueError(

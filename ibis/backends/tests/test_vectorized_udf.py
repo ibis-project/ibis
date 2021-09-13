@@ -229,7 +229,8 @@ def overwrite_struct_reduction(v, w):
 
 
 @reduction(
-    input_type=[dt.double], output_type=dt.Array(dt.double),
+    input_type=[dt.double],
+    output_type=dt.Array(dt.double),
 )
 def quantiles(series, *, quantiles):
     return series.quantile(quantiles)
@@ -463,7 +464,8 @@ def test_elementwise_udf_destruct(backend, alltypes, udf):
     ).execute()
 
     expected = alltypes.mutate(
-        col1=alltypes['double_col'] + 1, col2=alltypes['double_col'] + 2,
+        col1=alltypes['double_col'] + 1,
+        col2=alltypes['double_col'] + 2,
     ).execute()
 
     backend.assert_frame_equal(result, expected)
@@ -477,7 +479,8 @@ def test_elementwise_udf_overwrite_destruct(backend, alltypes):
     ).execute()
 
     expected = alltypes.mutate(
-        double_col=alltypes['double_col'] + 1, col2=alltypes['double_col'] + 2,
+        double_col=alltypes['double_col'] + 1,
+        col2=alltypes['double_col'] + 2,
     ).execute()
 
     # TODO issue #2649
@@ -596,7 +599,8 @@ def test_elementwise_udf_struct(backend, alltypes):
     )
     result = result.drop('new_col', axis=1)
     expected = alltypes.mutate(
-        col1=alltypes['double_col'] + 1, col2=alltypes['double_col'] + 2,
+        col1=alltypes['double_col'] + 1,
+        col2=alltypes['double_col'] + 2,
     ).execute()
 
     backend.assert_frame_equal(result, expected)

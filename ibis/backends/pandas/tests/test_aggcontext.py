@@ -18,8 +18,16 @@ df = pd.DataFrame(
 @pytest.mark.parametrize(
     ('agg_fn', 'expected_fn'),
     [
-        param(lambda v1: v1.mean(), lambda df: df['v1'].mean(), id='udf',),
-        param('mean', lambda df: df['v1'].mean(), id='string',),
+        param(
+            lambda v1: v1.mean(),
+            lambda df: df['v1'].mean(),
+            id='udf',
+        ),
+        param(
+            'mean',
+            lambda df: df['v1'].mean(),
+            id='string',
+        ),
     ],
 )
 def test_summarize_single_series(agg_fn, expected_fn):
@@ -36,8 +44,16 @@ def test_summarize_single_series(agg_fn, expected_fn):
 @pytest.mark.parametrize(
     ('agg_fn', 'expected_fn'),
     [
-        param(lambda v1: v1.mean(), lambda df: df['v1'].mean(), id='udf',),
-        param('mean', lambda df: df['v1'].mean(), id='string',),
+        param(
+            lambda v1: v1.mean(),
+            lambda df: df['v1'].mean(),
+            id='udf',
+        ),
+        param(
+            'mean',
+            lambda df: df['v1'].mean(),
+            id='string',
+        ),
     ],
 )
 def test_summarize_single_seriesgroupby(agg_fn, expected_fn):
@@ -96,7 +112,7 @@ def test_summarize_multiple_series(agg_fn, expected_fn):
     ],
 )
 def test_window_agg_udf(param):
-    """ Test passing custom window indices for window aggregation."""
+    """Test passing custom window indices for window aggregation."""
 
     mask, expected = param
 
@@ -123,7 +139,7 @@ def test_window_agg_udf(param):
 
 
 def test_window_agg_udf_different_freq():
-    """ Test that window_agg_udf works when the window series and data series
+    """Test that window_agg_udf works when the window series and data series
     have different frequencies.
     """
 

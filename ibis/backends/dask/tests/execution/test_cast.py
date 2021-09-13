@@ -162,7 +162,8 @@ def test_cast_to_decimal(t, df, type):
 
 
 @pytest.mark.parametrize(
-    'column', ['plain_int64', 'dup_strings', 'dup_ints', 'strings_with_nulls'],
+    'column',
+    ['plain_int64', 'dup_strings', 'dup_ints', 'strings_with_nulls'],
 )
 def test_cast_to_category(t, df, column):
     test = t[column].cast('category').compile()

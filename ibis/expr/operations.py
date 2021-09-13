@@ -3533,8 +3533,7 @@ class GeoDWithin(GeoSpatialBinOp):
 
 
 class GeoEnvelope(GeoSpatialUnOp):
-    """Returns a geometry representing the boundingbox of the supplied geometry.
-    """
+    """Returns a geometry representing the boundingbox of the supplied geometry."""
 
     output_type = rlz.shape_like('arg', dt.polygon)
 

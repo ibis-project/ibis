@@ -345,7 +345,9 @@ class AlchemyClient(SQLClient):
             if overwrite:
                 self.drop_table(table_name, database=database)
                 self.create_table(
-                    table_name, schema=to_table_schema, database=database,
+                    table_name,
+                    schema=to_table_schema,
+                    database=database,
                 )
 
             to_table = self._get_sqla_table(table_name, schema=database)

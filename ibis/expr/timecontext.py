@@ -54,7 +54,7 @@ def get_time_col():
 
 
 class TimeContextRelation(enum.Enum):
-    """ Enum to classify the relationship between two time contexts
+    """Enum to classify the relationship between two time contexts
     Assume that we have two timecontext `c1 (begin1, end1)`,
     `c2(begin2, end2)`:
         - SUBSET means `c1` is a subset of `c2`, `begin1` is greater than or
@@ -105,7 +105,7 @@ def canonicalize_context(
     timecontext: Optional[TimeContext],
 ) -> Optional[TimeContext]:
     """Convert a timecontext to canonical one with type pandas.Timestamp
-       for its begin and end time. Raise Exception for illegal inputs
+    for its begin and end time. Raise Exception for illegal inputs
     """
     SUPPORTS_TIMESTAMP_TYPE = pd.Timestamp
     if not isinstance(timecontext, tuple) or len(timecontext) != 2:
@@ -147,7 +147,7 @@ def localize_context(timecontext: TimeContext, timezone: str) -> TimeContext:
 def construct_time_context_aware_series(
     series: pd.Series, frame: pd.DataFrame
 ) -> pd.Series:
-    """ Construct a Series by adding 'time' in its MultiIndex
+    """Construct a Series by adding 'time' in its MultiIndex
 
     In window execution, the result Series of udf may need
     to be trimmed by timecontext. In order to do so, 'time'

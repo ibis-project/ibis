@@ -108,8 +108,7 @@ class Container:
 
 class Stack(Container):
 
-    """Wrapper around a list to provide a common API for graph traversal
-    """
+    """Wrapper around a list to provide a common API for graph traversal"""
 
     __slots__ = ('data',)
 
@@ -123,8 +122,7 @@ class Stack(Container):
 
 class Queue(Container):
 
-    """Wrapper around a queue.Queue to provide a common API for graph traversal
-    """
+    """Wrapper around a queue.Queue to provide a common API for graph traversal"""
 
     __slots__ = ('data',)
 
