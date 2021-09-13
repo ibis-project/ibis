@@ -1410,8 +1410,7 @@ def test_invalid_negate(value, expected_type):
     ],
 )
 def test_valid_negate(type):
-    value = int
-    expr = ibis.literal(value)
+    expr = ibis.literal(1)
     assert -expr is not None
 
 
