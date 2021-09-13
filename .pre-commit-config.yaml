@@ -1,10 +1,10 @@
 repos:
-  - repo: https://github.com/timothycrosley/isort
-    rev: 5.6.4
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.9.3
     hooks:
       - id: isort
   - repo: https://github.com/psf/black
-    rev: 19.10b0
+    rev: 21.8b0
     hooks:
       - id: black
         exclude: (ibis/_version|versioneer).py
