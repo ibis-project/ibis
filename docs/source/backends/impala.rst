@@ -26,7 +26,7 @@ Install dependencies for Ibis's Impala dialect:
 
 ::
 
-  pip install ibis-framework[impala]
+  pip install 'ibis-framework[impala]'
 
 To create an Ibis client, you must first connect your services and assemble the
 client using :func:`ibis.impala.connect`:
