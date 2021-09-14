@@ -4,18 +4,22 @@
 
 set -eo pipefail
 
-TESTS_DIRS="ibis/tests ibis/backends/tests"
-for BACKEND in $PYTEST_BACKENDS; do
-    if [[ -d ibis/backends/$BACKEND/tests ]]; then
-        TESTS_DIRS="$TESTS_DIRS ibis/backends/$BACKEND/tests"
+TESTS_DIRS=()
+
+if [ -n "$PYTEST_BACKENDS" ]; then
+    TESTS_DIRS+=("ibis/backends/tests")
+fi
+
+for backend in $PYTEST_BACKENDS; do
+    backend_test_dir="ibis/backends/$backend/tests"
+    if [ -d "$backend_test_dir" ]; then
+        TESTS_DIRS+=("$backend_test_dir")
     fi
 done
 
-set -u
+set -x
 
-echo "TESTS_DIRS: $TESTS_DIRS"
-
-pytest $TESTS_DIRS \
+pytest "${TESTS_DIRS[@]}" \
     -q \
     -ra \
     --junitxml=junit.xml \

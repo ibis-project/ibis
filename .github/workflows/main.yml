@@ -42,7 +42,7 @@ jobs:
         run: pip install .
 
       - name: run tests
-        run: ./ci/run_tests.sh --numprocesses auto
+        run: ./ci/run_tests.sh ibis/tests --numprocesses auto
 
       - name: publish test report
         uses: actions/upload-artifact@v2
