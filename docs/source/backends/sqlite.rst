@@ -7,7 +7,7 @@ Install dependencies for Ibis's SQLite dialect:
 
 ::
 
-  pip install ibis-framework[sqlite]
+  pip install 'ibis-framework[sqlite]'
 
 Create a client by passing a path to a SQLite database to
 :func:`ibis.sqlite.connect`:
