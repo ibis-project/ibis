@@ -385,7 +385,7 @@ class InsertSelect(_BaseDML):
 
         select_query = self.select.compile()
         scoped_name = self._get_scoped_name(self.table_name, self.database)
-        return '{} {}{}\n{}'.format(cmd, scoped_name, partition, select_query)
+        return f'{cmd} {scoped_name}{partition}\n{select_query}'
 
 
 class AlterTable(BaseDDL):
