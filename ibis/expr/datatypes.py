@@ -962,6 +962,8 @@ def parse_type(text: str) -> DataType:
         | spaceless_string("time").result(time)
         | spaceless_string("date").result(date)
         | spaceless_string("category").result(category)
+        | spaceless_string("geometry").result(GeoSpatial(geotype='geometry'))
+        | spaceless_string("geography").result(GeoSpatial(geotype='geography'))
         | geotype_parser("linestring", LineString)
         | geotype_parser("polygon", Polygon)
         | geotype_parser("point", Point)
