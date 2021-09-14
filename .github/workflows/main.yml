@@ -1,4 +1,5 @@
-name: Continuous Integration
+# vim: filetype=yaml
+name: CI
 
 on:
   push:
