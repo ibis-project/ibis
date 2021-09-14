@@ -47,7 +47,7 @@ class ExtractSubqueries:
 
     def visit(self, expr):
         node = expr.op()
-        method = 'visit_{}'.format(type(node).__name__)
+        method = f'visit_{type(node).__name__}'
 
         if hasattr(self, method):
             f = getattr(self, method)

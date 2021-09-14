@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import decimal
 
 import dask.dataframe as dd

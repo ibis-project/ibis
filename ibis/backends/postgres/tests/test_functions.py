@@ -949,7 +949,7 @@ def test_cumulative_partitioned_ordered_window(alltypes, func, df):
     f = getattr(t.double_col, func)
     expr = t.projection([(t.double_col - f().over(window)).name('double_col')])
     result = expr.execute().double_col
-    method = operator.methodcaller('cum{}'.format(func))
+    method = operator.methodcaller(f'cum{func}')
     expected = df.groupby(df.string_col).double_col.transform(
         lambda c: c - method(c)
     )
@@ -1231,9 +1231,7 @@ def trunc(con, guid):
             guid
         )
     )
-    con.raw_sql(
-        """INSERT INTO "{}" (name) VALUES ('a'), ('b'), ('c')""".format(guid)
-    )
+    con.raw_sql(f"""INSERT INTO "{guid}" (name) VALUES ('a'), ('b'), ('c')""")
     return con.table(guid)
 
 

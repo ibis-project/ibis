@@ -16,10 +16,9 @@ def _sequence_to_tuple(x):
     return tuple(x) if util.is_iterable(x) else x
 
 
-RowsWithMaxLookback = NamedTuple(
-    'RowsWithMaxLookback',
-    [('rows', Union[int, np.integer]), ('max_lookback', ir.IntervalValue)],
-)
+class RowsWithMaxLookback(NamedTuple):
+    rows: Union[int, np.integer]
+    max_lookback: ir.IntervalValue
 
 
 def _choose_non_empty_val(first, second):
@@ -216,7 +215,7 @@ class Window:
                     )
         if self.how not in {'rows', 'range'}:
             raise com.IbisInputError(
-                "'how' must be 'rows' or 'range', got {}".format(self.how)
+                f"'how' must be 'rows' or 'range', got {self.how}"
             )
 
         if self.max_lookback is not None:

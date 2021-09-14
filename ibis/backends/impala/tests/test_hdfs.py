@@ -32,13 +32,13 @@ class TestHDFSRandom(unittest.TestCase):
 
     def test_find_any_file(self):
         ls_contents = [
-            (u'foo', {u'type': u'DIRECTORY'}),
-            (u'bar.tmp', {u'type': u'FILE'}),
-            (u'baz.copying', {u'type': u'FILE'}),
-            (u'_SUCCESS', {u'type': u'FILE'}),
-            (u'.peekaboo', {u'type': u'FILE'}),
-            (u'0.parq', {u'type': u'FILE'}),
-            (u'_FILE', {u'type': u'DIRECTORY'}),
+            ('foo', {'type': 'DIRECTORY'}),
+            ('bar.tmp', {'type': 'FILE'}),
+            ('baz.copying', {'type': 'FILE'}),
+            ('_SUCCESS', {'type': 'FILE'}),
+            ('.peekaboo', {'type': 'FILE'}),
+            ('0.parq', {'type': 'FILE'}),
+            ('_FILE', {'type': 'DIRECTORY'}),
         ]
 
         self.con.set_ls(ls_contents)
@@ -354,8 +354,8 @@ class TestHDFSE2E(unittest.TestCase):
 
         import subprocess
 
-        tf_name = '{0}.tar.gz'.format(dirname)
-        cmd = 'tar zc {0} > {1}'.format(dirname, tf_name)
+        tf_name = f'{dirname}.tar.gz'
+        cmd = f'tar zc {dirname} > {tf_name}'
 
         retcode = subprocess.call(cmd, shell=True)
         if retcode:

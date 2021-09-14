@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import operator
-from typing import Dict, List
 
 import toolz
 
@@ -533,8 +532,8 @@ def has_reduction(expr):
 
 
 def get_mutation_exprs(
-    exprs: List[ir.Expr], table: ir.TableExpr
-) -> List[ir.Expr | None]:
+    exprs: list[ir.Expr], table: ir.TableExpr
+) -> list[ir.Expr | None]:
     """Given the list of exprs and the underlying table of a mutation op,
     return the exprs to use to instantiate the mutation."""
     # The below logic computes the mutation node exprs by splitting the
@@ -560,8 +559,8 @@ def get_mutation_exprs(
     # correspond with the column ordering we want (i.e. all new columns
     # should appear at the end, but currently they are materialized
     # directly after those overwritten columns).
-    overwriting_cols_to_expr: Dict[str, ir.Expr | None] = {}
-    non_overwriting_exprs: List[ir.Expr] = []
+    overwriting_cols_to_expr: dict[str, ir.Expr | None] = {}
+    non_overwriting_exprs: list[ir.Expr] = []
     table_schema = table.schema()
     for expr in exprs:
         is_first_overwrite = True

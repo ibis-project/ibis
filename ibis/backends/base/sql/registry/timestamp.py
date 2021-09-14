@@ -10,14 +10,14 @@ def extract_field(sql_attr):
 
         # This is pre-2.0 Impala-style, which did not used to support the
         # SQL-99 format extract($FIELD from expr)
-        return "extract({}, '{}')".format(arg, sql_attr)
+        return f"extract({arg}, '{sql_attr}')"
 
     return extract_field_formatter
 
 
 def extract_epoch_seconds(t, expr):
     (arg,) = expr.op().args
-    return 'unix_timestamp({})'.format(t.translate(arg))
+    return f'unix_timestamp({t.translate(arg)})'
 
 
 def truncate(translator, expr):
@@ -38,10 +38,10 @@ def truncate(translator, expr):
         unit = base_unit_names[unit]
     except KeyError:
         raise com.UnsupportedOperationError(
-            '{!r} unit is not supported in timestamp truncate'.format(unit)
+            f'{unit!r} unit is not supported in timestamp truncate'
         )
 
-    return "trunc({}, '{}')".format(arg_formatted, unit)
+    return f"trunc({arg_formatted}, '{unit}')"
 
 
 def interval_from_integer(translator, expr):
@@ -63,12 +63,12 @@ def timestamp_op(func):
         formatted_right = translator.translate(right)
 
         if isinstance(left, (ir.TimestampScalar, ir.DateValue)):
-            formatted_left = 'cast({} as timestamp)'.format(formatted_left)
+            formatted_left = f'cast({formatted_left} as timestamp)'
 
         if isinstance(right, (ir.TimestampScalar, ir.DateValue)):
-            formatted_right = 'cast({} as timestamp)'.format(formatted_right)
+            formatted_right = f'cast({formatted_right} as timestamp)'
 
-        return '{}({}, {})'.format(func, formatted_left, formatted_right)
+        return f'{func}({formatted_left}, {formatted_right})'
 
     return _formatter
 
@@ -84,7 +84,7 @@ def timestamp_diff(translator, expr):
 
 def _from_unixtime(translator, expr):
     arg = translator.translate(expr)
-    return 'from_unixtime({}, "yyyy-MM-dd HH:mm:ss")'.format(arg)
+    return f'from_unixtime({arg}, "yyyy-MM-dd HH:mm:ss")'
 
 
 def timestamp_from_unix(translator, expr):
@@ -94,14 +94,14 @@ def timestamp_from_unix(translator, expr):
     val = util.convert_unit(val, unit, 's').cast('int32')
 
     arg = _from_unixtime(translator, val)
-    return 'CAST({} AS timestamp)'.format(arg)
+    return f'CAST({arg} AS timestamp)'
 
 
 def day_of_week_index(t, expr):
     (arg,) = expr.op().args
-    return 'pmod(dayofweek({}) - 2, 7)'.format(t.translate(arg))
+    return f'pmod(dayofweek({t.translate(arg)}) - 2, 7)'
 
 
 def day_of_week_name(t, expr):
     (arg,) = expr.op().args
-    return 'dayname({})'.format(t.translate(arg))
+    return f'dayname({t.translate(arg)})'

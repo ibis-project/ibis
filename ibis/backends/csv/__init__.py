@@ -42,7 +42,7 @@ class CSVClient(FileClient):
             path = self.root
 
         # get the schema
-        f = path / "{}.{}".format(name, self.extension)
+        f = path / f"{name}.{self.extension}"
 
         # read sample
         schema = schema or sch.schema([])

@@ -275,7 +275,7 @@ def ibis_windows(request):
 
 
 def _random_identifier(suffix):
-    return '__ibis_test_{}_{}'.format(suffix, util.guid())
+    return f'__ibis_test_{suffix}_{util.guid()}'
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -319,7 +319,7 @@ def alltypes(client):
 
 @pytest.fixture(scope='session')
 def tmp_dir():
-    return '/tmp/__ibis_test_{}'.format(util.guid())
+    return f'/tmp/__ibis_test_{util.guid()}'
 
 
 @pytest.fixture

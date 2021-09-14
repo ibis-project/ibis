@@ -112,9 +112,7 @@ class TableSetFormatter:
         if isinstance(ref_op, ops.PhysicalTable):
             name = ref_op.name
             if name is None:
-                raise com.RelationError(
-                    'Table did not have a name: {0!r}'.format(expr)
-                )
+                raise com.RelationError(f'Table did not have a name: {expr!r}')
             result = self._quote_identifier(name)
             is_subquery = False
         else:
@@ -126,16 +124,16 @@ class TableSetFormatter:
 
                 # HACK: self-references have to be treated more carefully here
                 if isinstance(op, ops.SelfReference):
-                    return '{} {}'.format(ctx.get_ref(ref_expr), alias)
+                    return f'{ctx.get_ref(ref_expr)} {alias}'
                 else:
                     return alias
 
             subquery = ctx.get_compiled_expr(expr)
-            result = '(\n{}\n)'.format(util.indent(subquery, self.indent))
+            result = f'(\n{util.indent(subquery, self.indent)}\n)'
             is_subquery = True
 
         if is_subquery or ctx.need_aliases(expr):
-            result += ' {}'.format(ctx.get_ref(expr))
+            result += f' {ctx.get_ref(expr)}'
 
         return result
 
@@ -157,14 +155,14 @@ class TableSetFormatter:
             self.join_types, self.join_tables[1:], self.join_predicates
         ):
             buf.write('\n')
-            buf.write(util.indent('{} {}'.format(jtype, table), self.indent))
+            buf.write(util.indent(f'{jtype} {table}', self.indent))
 
             fmt_preds = []
             npreds = len(preds)
             for pred in preds:
                 new_pred = self._translate(pred)
                 if npreds > 1:
-                    new_pred = '({})'.format(new_pred)
+                    new_pred = f'({new_pred})'
                 fmt_preds.append(new_pred)
 
             if len(fmt_preds):
@@ -333,7 +331,7 @@ class Select(DML):
         for i, expr in enumerate(self.subqueries):
             formatted = util.indent(context.get_compiled_expr(expr), 2)
             alias = context.get_ref(expr)
-            buf.append('{} AS (\n{}\n)'.format(alias, formatted))
+            buf.append(f'{alias} AS (\n{formatted}\n)')
 
         return 'WITH {}'.format(',\n'.join(buf))
 
@@ -350,7 +348,7 @@ class Select(DML):
                     alias = context.get_ref(expr)
 
                     # materialized join will not have an alias. see #491
-                    expr_str = '{}.*'.format(alias) if alias else '*'
+                    expr_str = f'{alias}.*' if alias else '*'
                 else:
                     expr_str = '*'
             formatted.append(expr_str)
@@ -395,7 +393,7 @@ class Select(DML):
         else:
             select_key = 'SELECT'
 
-        return '{}{}'.format(select_key, buf.getvalue())
+        return f'{select_key}{buf.getvalue()}'
 
     def format_table_set(self):
         if self.table_set is None:
@@ -440,7 +438,7 @@ class Select(DML):
         for pred in self.where:
             new_pred = self._translate(pred, permit_subquery=True)
             if npreds > 1:
-                new_pred = '({})'.format(new_pred)
+                new_pred = f'({new_pred})'
             fmt_preds.append(new_pred)
 
         conj = ' AND\n{}'.format(' ' * 6)
@@ -472,9 +470,9 @@ class Select(DML):
         buf = StringIO()
 
         n, offset = self.limit['n'], self.limit['offset']
-        buf.write('LIMIT {}'.format(n))
+        buf.write(f'LIMIT {n}')
         if offset is not None and offset != 0:
-            buf.write(' OFFSET {}'.format(offset))
+            buf.write(f' OFFSET {offset}')
 
         return buf.getvalue()
 

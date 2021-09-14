@@ -15,7 +15,7 @@ def binary_infix_op(infix_sym):
         if helpers.needs_parens(right):
             right_arg = helpers.parenthesize(right_arg)
 
-        return '{} {} {}'.format(left_arg, infix_sym, right_arg)
+        return f'{left_arg} {infix_sym} {right_arg}'
 
     return formatter
 
@@ -34,7 +34,7 @@ def identical_to(translator, expr):
         left = helpers.parenthesize(left)
     if helpers.needs_parens(right_expr):
         right = helpers.parenthesize(right)
-    return '{} IS NOT DISTINCT FROM {}'.format(left, right)
+    return f'{left} IS NOT DISTINCT FROM {right}'
 
 
 def xor(translator, expr):

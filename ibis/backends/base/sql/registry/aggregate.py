@@ -24,8 +24,8 @@ def reduction(func_name):
 
 def variance_like(func_name):
     func_names = {
-        'sample': '{}_samp'.format(func_name),
-        'pop': '{}_pop'.format(func_name),
+        'sample': f'{func_name}_samp',
+        'pop': f'{func_name}_pop',
     }
 
     def formatter(translator, expr):
@@ -42,4 +42,4 @@ def count_distinct(translator, expr):
         arg_formatted = translator.translate(where.ifelse(arg, None))
     else:
         arg_formatted = translator.translate(arg)
-    return 'count(DISTINCT {})'.format(arg_formatted)
+    return f'count(DISTINCT {arg_formatted})'

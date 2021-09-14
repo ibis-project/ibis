@@ -5,7 +5,7 @@ from multipledispatch.conflict import AmbiguityWarning
 from ..trace import TwoLevelDispatcher
 
 
-class A1(object):
+class A1:
     pass
 
 
@@ -17,7 +17,7 @@ class A3(A2):
     pass
 
 
-class B1(object):
+class B1:
     pass
 
 

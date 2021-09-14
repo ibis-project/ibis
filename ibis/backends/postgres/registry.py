@@ -112,7 +112,7 @@ def _timestamp_truncate(t, expr):
         precision = _truncate_precisions[unit]
     except KeyError:
         raise com.UnsupportedOperationError(
-            'Unsupported truncate unit {!r}'.format(unit)
+            f'Unsupported truncate unit {unit!r}'
         )
     return sa.func.date_trunc(precision, sa_arg)
 
@@ -120,7 +120,7 @@ def _timestamp_truncate(t, expr):
 def _interval_from_integer(t, expr):
     arg, unit = expr.op().args
     sa_arg = t.translate(arg)
-    interval = sa.text("INTERVAL '1 {}'".format(expr.type().resolution))
+    interval = sa.text(f"INTERVAL '1 {expr.type().resolution}'")
     return sa_arg * interval
 
 
@@ -256,8 +256,8 @@ _scanner = re.Scanner(  # type: ignore # re does have a Scanner attribute
                             # need to special case it in the scanner
                             '%e',
                             r'\s+',
-                            r'[{}]'.format(re.escape(string.punctuation)),
-                            r'[^{}\s]+'.format(re.escape(string.punctuation)),
+                            fr'[{re.escape(string.punctuation)}]',
+                            fr'[^{re.escape(string.punctuation)}\s]+',
                         ],
                     ),
                 )
@@ -293,7 +293,7 @@ def _reduce_tokens(tokens, arg):
         # we have a string like DD, to escape this we
         # surround it with double quotes
         elif token in _lexicon_values:
-            curtokens.append('"{}"'.format(token))
+            curtokens.append(f'"{token}"')
 
         # we have a token that needs special treatment
         elif token in _strftime_blacklist:
@@ -597,7 +597,7 @@ def _literal(t, expr):
     value = op.value
 
     if isinstance(dtype, dt.Interval):
-        return sa.text("INTERVAL '{} {}'".format(value, dtype.resolution))
+        return sa.text(f"INTERVAL '{value} {dtype.resolution}'")
     elif isinstance(dtype, dt.Set):
         return list(map(sa.literal, value))
     # geo spatial data type

@@ -298,13 +298,13 @@ def test_timestamp_with_timezone_parser_invalid_timezone():
     ],
 )
 def test_interval(unit):
-    definition = "interval('{}')".format(unit)
+    definition = f"interval('{unit}')"
     dt.Interval(unit, dt.int32) == dt.dtype(definition)
 
-    definition = "interval<uint16>('{}')".format(unit)
+    definition = f"interval<uint16>('{unit}')"
     dt.Interval(unit, dt.uint16) == dt.dtype(definition)
 
-    definition = "interval<int64>('{}')".format(unit)
+    definition = f"interval<int64>('{unit}')"
     dt.Interval(unit, dt.int64) == dt.dtype(definition)
 
 
@@ -318,7 +318,7 @@ def test_interval_invalid_type():
 
 @pytest.mark.parametrize('unit', ['H', 'unsupported'])
 def test_interval_unvalid_unit(unit):
-    definition = "interval('{}')".format(unit)
+    definition = f"interval('{unit}')"
 
     with pytest.raises(ValueError):
         dt.dtype(definition)

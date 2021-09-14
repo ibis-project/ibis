@@ -301,7 +301,7 @@ def test_batting_quantile(players, players_df):
 
 @pytest.mark.parametrize('op', ['sum', 'mean', 'min', 'max'])
 def test_batting_specific_cumulative(batting, batting_df, op, sort_kind):
-    ibis_method = methodcaller('cum{}'.format(op))
+    ibis_method = methodcaller(f'cum{op}')
     expr = ibis_method(batting.sort_by([batting.yearID]).G)
     result = expr.execute().astype('float64')
 

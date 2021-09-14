@@ -90,7 +90,7 @@ def test_query_schema(backend, con, alltypes, expr_fn, expected):
 @pytest.mark.xfail_unsupported
 def test_sql(backend, con, sql):
     if not hasattr(con, 'sql') or not hasattr(con, '_get_schema_using_query'):
-        pytest.skip('Backend {} does not support sql method'.format(backend))
+        pytest.skip(f'Backend {backend} does not support sql method')
 
     # execute the expression using SQL query
     con.sql(sql).execute()
@@ -119,7 +119,7 @@ def test_rename_table(con, backend, temp_table, new_schema):
     if not hasattr(con, 'rename_table'):
         pytest.xfail('{} backend doesn\'t have rename_table method.')
 
-    temp_table_original = '{}_original'.format(temp_table)
+    temp_table_original = f'{temp_table}_original'
     con.create_table(temp_table_original, schema=new_schema)
 
     t = con.table(temp_table_original)

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import List
-
 import ibis.expr.types as ir
 
 
@@ -39,9 +37,9 @@ class Database:
 
     def __repr__(self) -> str:
         """Return type name and the name of the database."""
-        return '{}({!r})'.format(type(self).__name__, self.name)
+        return f'{type(self).__name__}({self.name!r})'
 
-    def __dir__(self) -> List[str]:
+    def __dir__(self) -> list[str]:
         """Return a set of attributes and tables available for the database.
 
         Returns

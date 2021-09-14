@@ -30,20 +30,20 @@ def _sanitize_format(format):
         'DELTA',
         'LIBSVM',
     ):
-        raise ValueError('Invalid format: {!r}'.format(format))
+        raise ValueError(f'Invalid format: {format!r}')
 
     return format
 
 
 def format_tblproperties(props):
     formatted_props = _format_properties(props)
-    return 'TBLPROPERTIES {}'.format(formatted_props)
+    return f'TBLPROPERTIES {formatted_props}'
 
 
 def _format_properties(props):
     tokens = []
     for k, v in sorted(props.items()):
-        tokens.append("  '{}'='{}'".format(k, v))
+        tokens.append(f"  '{k}'='{v}'")
 
     return '(\n{}\n)'.format(',\n'.join(tokens))
 
@@ -71,12 +71,12 @@ class CreateTable(CreateTable):
         )
 
     def _storage(self):
-        return 'USING {}'.format(self.format)
+        return f'USING {self.format}'
 
 
 class CreateTableWithSchema(CreateTableWithSchema):
     def _storage(self):
-        return 'USING {}'.format(self.format)
+        return f'USING {self.format}'
 
 
 class CTAS(CTAS):
@@ -103,7 +103,7 @@ class CTAS(CTAS):
         self.select = select
 
     def _storage(self):
-        return 'USING {}'.format(self.format)
+        return f'USING {self.format}'
 
 
 class CreateView(CTAS):
@@ -174,7 +174,7 @@ class DropDatabase(DropObject):
     def compile(self):
         compiled = super().compile()
         if self.cascade:
-            return '{} CASCADE'.format(compiled)
+            return f'{compiled} CASCADE'
         else:
             return compiled
 
@@ -213,7 +213,7 @@ class InsertSelect(InsertSelect):
 
         select_query = self.select.compile()
         scoped_name = self._get_scoped_name(self.table_name, self.database)
-        return '{0} {1}\n{2}'.format(cmd, scoped_name, select_query)
+        return f'{cmd} {scoped_name}\n{select_query}'
 
 
 class AlterTable(AlterTable):
@@ -228,7 +228,7 @@ class AlterTable(AlterTable):
 
     def compile(self):
         props = self._format_properties()
-        action = '{} SET{}'.format(self.table, props)
+        action = f'{self.table} SET{props}'
         return self._wrap_command(action)
 
 

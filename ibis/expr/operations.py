@@ -102,8 +102,7 @@ class Node(Annotable):
             if not isinstance(arg, str) and isinstance(
                 arg, collections.abc.Iterable
             ):
-                for x in arg:
-                    yield x
+                yield from arg
             else:
                 yield arg
 
@@ -205,7 +204,7 @@ def all_equal(left, right, cache=None):
     return left == right
 
 
-_table_names = ('unbound_table_{:d}'.format(i) for i in itertools.count())
+_table_names = (f'unbound_table_{i:d}' for i in itertools.count())
 
 
 def genname():
@@ -1932,7 +1931,7 @@ class SortKey(Node):
         # Temporary
         rows = [
             'Sort key:',
-            '  ascending: {0!s}'.format(self.ascending),
+            f'  ascending: {self.ascending!s}',
             util.indent(_safe_repr(self.expr), 2),
         ]
         return '\n'.join(rows)
@@ -2268,7 +2267,7 @@ class Aggregation(TableNode, HasSchema):
             if not isinstance(expr, ir.BooleanScalar):
                 raise com.ExpressionError(
                     'Having clause must be boolean '
-                    'expression, was: {0!s}'.format(_safe_repr(expr))
+                    'expression, was: {!s}'.format(_safe_repr(expr))
                 )
 
         # All non-scalar refs originate from the input table
@@ -2562,7 +2561,7 @@ class TopK(ValueOp):
             raise TypeError(arg)
 
         if not isinstance(k, int) or k < 0:
-            raise ValueError('k must be positive integer, was: {0}'.format(k))
+            raise ValueError(f'k must be positive integer, was: {k}')
 
         super().__init__(arg, k, by)
 
@@ -3117,10 +3116,10 @@ class ScalarParameter(ValueOp):
     counter = Arg(int, default=lambda: next(ScalarParameter._counter))
 
     def resolve_name(self):
-        return 'param_{:d}'.format(self.counter)
+        return f'param_{self.counter:d}'
 
     def __repr__(self):
-        return '{}(type={})'.format(type(self).__name__, self.dtype)
+        return f'{type(self).__name__}(type={self.dtype})'
 
     def __hash__(self):
         return hash((self.dtype, self.counter))

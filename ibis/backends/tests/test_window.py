@@ -190,9 +190,7 @@ def test_grouped_bounded_expanding_window(
     backend, alltypes, df, con, result_fn, expected_fn
 ):
     if not backend.supports_window_operations:
-        pytest.skip(
-            'Backend {} does not support window operations'.format(backend)
-        )
+        pytest.skip(f'Backend {backend} does not support window operations')
 
     expr = alltypes.mutate(
         val=result_fn(
@@ -242,9 +240,7 @@ def test_ungrouped_bounded_expanding_window(
     backend, alltypes, df, con, result_fn, expected_fn
 ):
     if not backend.supports_window_operations:
-        pytest.skip(
-            'Backend {} does not support window operations'.format(backend)
-        )
+        pytest.skip(f'Backend {backend} does not support window operations')
 
     expr = alltypes.mutate(
         val=result_fn(
@@ -265,9 +261,7 @@ def test_ungrouped_bounded_expanding_window(
 @pytest.mark.xfail_unsupported
 def test_grouped_bounded_following_window(backend, alltypes, df, con):
     if not backend.supports_window_operations:
-        pytest.skip(
-            'Backend {} does not support window operations'.format(backend)
-        )
+        pytest.skip(f'Backend {backend} does not support window operations')
 
     window = ibis.window(
         preceding=0,
@@ -327,9 +321,7 @@ def test_grouped_bounded_preceding_windows(
     backend, alltypes, df, con, window_fn
 ):
     if not backend.supports_window_operations:
-        pytest.skip(
-            'Backend {} does not support window operations'.format(backend)
-        )
+        pytest.skip(f'Backend {backend} does not support window operations')
 
     window = window_fn(alltypes)
 
@@ -378,9 +370,7 @@ def test_grouped_unbounded_window(
     backend, alltypes, df, con, result_fn, expected_fn, ordered
 ):
     if not backend.supports_window_operations:
-        pytest.skip(
-            'Backend {} does not support window operations'.format(backend)
-        )
+        pytest.skip(f'Backend {backend} does not support window operations')
 
     # Define a window that is
     # 1) Grouped
@@ -471,9 +461,7 @@ def test_ungrouped_unbounded_window(
     backend, alltypes, df, con, result_fn, expected_fn, ordered
 ):
     if not backend.supports_window_operations:
-        pytest.skip(
-            'Backend {} does not support window operations'.format(backend)
-        )
+        pytest.skip(f'Backend {backend} does not support window operations')
 
     # Define a window that is
     # 1) Ungrouped
@@ -510,9 +498,7 @@ def test_ungrouped_unbounded_window(
 )
 def test_grouped_bounded_range_window(backend, alltypes, df, con):
     if not backend.supports_window_operations:
-        pytest.skip(
-            'Backend {} does not support window operations'.format(backend)
-        )
+        pytest.skip(f'Backend {backend} does not support window operations')
 
     # Explanation of the range window spec below:
     #

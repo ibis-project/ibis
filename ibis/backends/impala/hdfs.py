@@ -219,9 +219,7 @@ class HDFS:
         modes = {None: 'r', 'gzip': 'r:gz', 'bz2': 'r:bz2'}
 
         if compression not in modes:
-            raise ValueError(
-                'Invalid compression type {0}'.format(compression)
-            )
+            raise ValueError(f'Invalid compression type {compression}')
         mode = modes[compression]
 
         tf = tarfile.open(local_path, mode=mode)
@@ -706,7 +704,7 @@ def hdfs_connect(
         from hdfs.ext.kerberos import KerberosClient
 
         # note SSL
-        url = '{0}://{1}:{2}'.format(prefix, host, port)
+        url = f'{prefix}://{host}:{port}'
         kwds.setdefault('mutual_auth', 'OPTIONAL')
         hdfs_client = KerberosClient(url, session=session, **kwds)
     else:
@@ -716,6 +714,6 @@ def hdfs_connect(
             prefix = 'https' if use_https else 'http'
         from hdfs.client import InsecureClient
 
-        url = '{}://{}:{}'.format(prefix, host, port)
+        url = f'{prefix}://{host}:{port}'
         hdfs_client = InsecureClient(url, session=session, **kwds)
     return WebHDFS(hdfs_client)

@@ -219,7 +219,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
         cases = [
             (
                 getattr(self.table.i, field)(),
-                "extract(`i`, '{0}')".format(field),
+                f"extract(`i`, '{field}')",
             )
             for field in fields
         ]
@@ -387,9 +387,7 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
 
             for cname in ['double_col', 'int_col']:
                 expr = getattr(self.table[cname], ibis_name)()
-                cases.append(
-                    (expr, '{0}({1})'.format(sql_name, '`{0}`'.format(cname)))
-                )
+                cases.append((expr, '{}({})'.format(sql_name, f'`{cname}`')))
 
         self._check_expr_cases(cases)
 
@@ -757,10 +755,10 @@ class TestInNotIn(unittest.TestCase, ExprSQLTest):
         values = ['foo', 'bar', 'baz']
         values_formatted = tuple(set(values))
         cases = [
-            (self.table.g.isin(values), "`g` IN {}".format(values_formatted)),
+            (self.table.g.isin(values), f"`g` IN {values_formatted}"),
             (
                 self.table.g.notin(values),
-                "`g` NOT IN {}".format(values_formatted),
+                f"`g` NOT IN {values_formatted}",
             ),
         ]
         self._check_expr_cases(cases)
@@ -1194,8 +1192,8 @@ def _check_impala_output_types_match(con, table):
 
         if left != right:
             pytest.fail(
-                'Value for {0} had left type {1}'
-                ' and right type {2}'.format(n, left, right)
+                'Value for {} had left type {}'
+                ' and right type {}'.format(n, left, right)
             )
 
 

@@ -19,7 +19,6 @@ from typing import (
     Sequence,
     Tuple,
     TypeVar,
-    Union,
 )
 
 import pandas as pd
@@ -46,7 +45,7 @@ class DataType:
     def __init__(self, nullable: bool = True, **kwargs) -> None:
         self.nullable = nullable
 
-    def __call__(self, nullable: bool = True) -> 'DataType':
+    def __call__(self, nullable: bool = True) -> DataType:
         if nullable is not True and nullable is not False:
             raise TypeError(
                 "__call__ only accepts the 'nullable' argument. "
@@ -55,7 +54,7 @@ class DataType:
             )
         return self._factory(nullable=nullable)
 
-    def _factory(self, nullable: bool = True) -> 'DataType':
+    def _factory(self, nullable: bool = True) -> DataType:
         slots = {
             slot: getattr(self, slot)
             for slot in self.__slots__
@@ -80,7 +79,7 @@ class DataType:
         return '{}({})'.format(
             self.name,
             ', '.join(
-                '{}={!r}'.format(slot, getattr(self, slot))
+                f'{slot}={getattr(self, slot)!r}'
                 for slot in toolz.unique(self.__slots__ + ('nullable',))
             ),
         )
@@ -96,8 +95,8 @@ class DataType:
 
     def equals(
         self,
-        other: 'DataType',
-        cache: Optional[Mapping[typing.Any, bool]] = None,
+        other: DataType,
+        cache: Mapping[typing.Any, bool] | None = None,
     ) -> bool:
         if isinstance(other, str):
             raise TypeError(
@@ -126,7 +125,7 @@ class DataType:
     def column_type(self):
         return functools.partial(self.column, dtype=self)
 
-    def _literal_value_hash_key(self, value) -> Tuple[DataType, typing.Any]:
+    def _literal_value_hash_key(self, value) -> tuple[DataType, typing.Any]:
         """Return a hash for `value`."""
         return self, value
 
@@ -141,7 +140,7 @@ class Primitive(DataType):
     def __repr__(self) -> str:
         name = self.name.lower()
         if not self.nullable:
-            return '{}[non-nullable]'.format(name)
+            return f'{name}[non-nullable]'
         return name
 
 
@@ -163,7 +162,9 @@ class Boolean(Primitive):
     __slots__ = ()
 
 
-Bounds = NamedTuple('Bounds', [('lower', int), ('upper', int)])
+class Bounds(NamedTuple):
+    lower: int
+    upper: int
 
 
 class Integer(Primitive):
@@ -232,7 +233,7 @@ class Timestamp(DataType):
     __slots__ = ('timezone',)
 
     def __init__(
-        self, timezone: Optional[str] = None, nullable: bool = True
+        self, timezone: str | None = None, nullable: bool = True
     ) -> None:
         super().__init__(nullable=nullable)
         self.timezone = timezone
@@ -242,7 +243,7 @@ class Timestamp(DataType):
         typename = self.name.lower()
         if timezone is None:
             return typename
-        return '{}({!r})'.format(typename, timezone)
+        return f'{typename}({timezone!r})'
 
 
 class SignedInteger(Integer):
@@ -384,7 +385,7 @@ class Decimal(DataType):
         )
 
     @property
-    def largest(self) -> 'Decimal':
+    def largest(self) -> Decimal:
         return Decimal(38, self.scale)
 
 
@@ -435,7 +436,7 @@ class Interval(DataType):
             try:
                 unit = self._convert_timedelta_unit_to_interval_unit(unit)
             except ValueError:
-                raise ValueError('Unsupported interval unit `{}`'.format(unit))
+                raise ValueError(f'Unsupported interval unit `{unit}`')
 
         if value_type is None:
             value_type = int32
@@ -461,7 +462,7 @@ class Interval(DataType):
         unit = self.unit
         typename = self.name.lower()
         value_type_name = self.value_type.name.lower()
-        return '{}<{}>(unit={!r})'.format(typename, value_type_name, unit)
+        return f'{typename}<{value_type_name}>(unit={unit!r})'
 
 
 class Category(DataType):
@@ -479,7 +480,7 @@ class Category(DataType):
             cardinality = self.cardinality
         else:
             cardinality = 'unknown'
-        return '{}(cardinality={!r})'.format(self.name, cardinality)
+        return f'{self.name}(cardinality={cardinality!r})'
 
     def to_integer_type(self):
         # TODO: this should be removed I guess
@@ -496,7 +497,7 @@ class Struct(DataType):
     __slots__ = 'names', 'types'
 
     def __init__(
-        self, names: List[str], types: List[DataType], nullable: bool = True
+        self, names: list[str], types: list[DataType], nullable: bool = True
     ) -> None:
         """Construct a ``Struct`` type from a `names` and `types`.
 
@@ -523,18 +524,18 @@ class Struct(DataType):
     @classmethod
     def from_tuples(
         cls,
-        pairs: Sequence[Tuple[str, Union[str, DataType]]],
+        pairs: Sequence[tuple[str, str | DataType]],
         nullable: bool = True,
-    ) -> 'Struct':
+    ) -> Struct:
         names, types = zip(*pairs)
         return cls(list(names), list(map(dtype, types)), nullable=nullable)
 
     @classmethod
     def from_dict(
         cls,
-        pairs: Mapping[str, Union[str, DataType]],
+        pairs: Mapping[str, str | DataType],
         nullable: bool = True,
-    ) -> 'Struct':
+    ) -> Struct:
         names, types = pairs.keys(), pairs.values()
         return cls(list(names), list(map(dtype, types)), nullable=nullable)
 
@@ -584,13 +585,13 @@ class Array(Variadic):
     __slots__ = ('value_type',)
 
     def __init__(
-        self, value_type: Union[str, DataType], nullable: bool = True
+        self, value_type: str | DataType, nullable: bool = True
     ) -> None:
         super().__init__(nullable=nullable)
         self.value_type = dtype(value_type)
 
     def __str__(self) -> str:
-        return '{}<{}>'.format(self.name.lower(), self.value_type)
+        return f'{self.name.lower()}<{self.value_type}>'
 
     def _literal_value_hash_key(self, value):
         return self, _tuplize(value)
@@ -603,13 +604,13 @@ class Set(Variadic):
     __slots__ = ('value_type',)
 
     def __init__(
-        self, value_type: Union[str, DataType], nullable: bool = True
+        self, value_type: str | DataType, nullable: bool = True
     ) -> None:
         super().__init__(nullable=nullable)
         self.value_type = dtype(value_type)
 
     def __str__(self) -> str:
-        return '{}<{}>'.format(self.name.lower(), self.value_type)
+        return f'{self.name.lower()}<{self.value_type}>'
 
 
 class Enum(DataType):
@@ -986,7 +987,7 @@ _TYPE_RULES = collections.OrderedDict(
     + [
         # primitive types
         (
-            '(?P<{}>{})'.format(token.upper(), token),
+            f'(?P<{token.upper()}>{token})',
             typing.cast(
                 Action,
                 lambda token, value=value: Token(Tokens.PRIMITIVE, value),
@@ -1017,7 +1018,7 @@ _TYPE_RULES = collections.OrderedDict(
     + [
         # decimal + complex types
         (
-            '(?P<{}>{})'.format(token.upper(), token),
+            f'(?P<{token.upper()}>{token})',
             typing.cast(
                 Action, lambda token, toktype=toktype: Token(toktype, token)
             ),
@@ -1048,7 +1049,7 @@ _TYPE_RULES = collections.OrderedDict(
     + [
         # geo spatial data type
         (
-            '(?P<{}>{})'.format(token.upper(), token),
+            f'(?P<{token.upper()}>{token})',
             lambda token, toktype=toktype: Token(toktype, token),
         )
         for token, toktype in zip(
@@ -1077,7 +1078,7 @@ _TYPE_RULES = collections.OrderedDict(
     + [
         # json data type
         (
-            '(?P<{}>{})'.format(token.upper(), token),
+            f'(?P<{token.upper()}>{token})',
             lambda token, toktype=toktype: Token(toktype, token),
         )
         for token, toktype in zip(
@@ -1110,7 +1111,7 @@ _TYPE_RULES = collections.OrderedDict(
         ('(?P<RBRACKET>>)', lambda token: Token(Tokens.RBRACKET, token)),
         (r'(?P<WHITESPACE>\s+)', None),
         (
-            '(?P<STRARG>{})'.format(_STRING_REGEX),
+            f'(?P<STRARG>{_STRING_REGEX})',
             lambda token: Token(Tokens.STRARG, token),
         ),
     ]
@@ -1207,9 +1208,7 @@ class TypeParser:
             while self.nexttok is not None:
                 additional_tokens.append(self.nexttok.value)
                 self._advance()
-            raise SyntaxError(
-                'Found additional tokens {}'.format(additional_tokens)
-            )
+            raise SyntaxError(f'Found additional tokens {additional_tokens}')
 
     def type(self) -> DataType:
         """
@@ -1547,7 +1546,7 @@ class TypeParser:
             return INET()
 
         else:
-            raise SyntaxError('Type cannot be parsed: {}'.format(self.text))
+            raise SyntaxError(f'Type cannot be parsed: {self.text}')
 
 
 dtype = Dispatcher('dtype')
@@ -1557,7 +1556,7 @@ validate_type = dtype
 
 def _get_timedelta_units(
     timedelta: datetime.timedelta | pd.Timedelta,
-) -> List[str]:
+) -> list[str]:
     # pandas Timedelta has more granularity
     if isinstance(timedelta, pd.Timedelta):
         unit_fields = timedelta.components._fields
@@ -1575,7 +1574,7 @@ def _get_timedelta_units(
 
 @dtype.register(object)
 def default(value, **kwargs) -> DataType:
-    raise com.IbisTypeError('Value {!r} is not a valid datatype'.format(value))
+    raise com.IbisTypeError(f'Value {value!r} is not a valid datatype')
 
 
 @dtype.register(DataType)
@@ -1588,20 +1587,18 @@ def from_string(value: str) -> DataType:
     try:
         return TypeParser(value).parse()
     except SyntaxError:
-        raise com.IbisTypeError(
-            '{!r} cannot be parsed as a datatype'.format(value)
-        )
+        raise com.IbisTypeError(f'{value!r} cannot be parsed as a datatype')
 
 
 @dtype.register(list)
-def from_list(values: List[typing.Any]) -> Array:
+def from_list(values: list[typing.Any]) -> Array:
     if not values:
         return Array(null)
     return Array(highest_precedence(map(dtype, values)))
 
 
 @dtype.register(collections.abc.Set)
-def from_set(values: typing.Set) -> Set:
+def from_set(values: set) -> Set:
     if not values:
         return Set(null)
     return Set(highest_precedence(map(dtype, values)))
@@ -1617,7 +1614,7 @@ def higher_precedence(left: DataType, right: DataType) -> DataType:
         return left
 
     raise com.IbisTypeError(
-        'Cannot compute precedence for {} and {} types'.format(left, right)
+        f'Cannot compute precedence for {left} and {right} types'
     )
 
 
@@ -1652,7 +1649,7 @@ def infer_map(value: Mapping[typing.Any, typing.Any]) -> Map:
 
 
 @infer.register(list)
-def infer_list(values: List[typing.Any]) -> Array:
+def infer_list(values: list[typing.Any]) -> Array:
     """Infer the :class:`~ibis.expr.datatypes.Array` type of `values`."""
     if not values:
         return Array(null)
@@ -1660,7 +1657,7 @@ def infer_list(values: List[typing.Any]) -> Array:
 
 
 @infer.register((set, frozenset))
-def infer_set(values: typing.Set) -> Set:
+def infer_set(values: set) -> Set:
     """Infer the :class:`~ibis.expr.datatypes.Set` type of `values`."""
     if not values:
         return Set(null)
@@ -1733,7 +1730,7 @@ def infer_boolean(value: bool) -> Boolean:
 
 
 @infer.register((type(None), Null))
-def infer_null(value: Optional[Null]) -> Null:
+def infer_null(value: Null | None) -> Null:
     return null
 
 
@@ -1803,7 +1800,7 @@ Integral = TypeVar('Integral', SignedInteger, UnsignedInteger)
 @castable.register(SignedInteger, UnsignedInteger)
 @castable.register(UnsignedInteger, SignedInteger)
 def can_cast_to_differently_signed_integer_type(
-    source: Integral, target: Integral, value: Optional[int] = None, **kwargs
+    source: Integral, target: Integral, value: int | None = None, **kwargs
 ) -> bool:
     if value is None:
         return False
@@ -1845,7 +1842,7 @@ def can_cast_intervals(source: Interval, target: Interval, **kwargs) -> bool:
 
 @castable.register(Integer, Boolean)
 def can_cast_integer_to_boolean(
-    source: Integer, target: Boolean, value: Optional[int] = None, **kwargs
+    source: Integer, target: Boolean, value: int | None = None, **kwargs
 ) -> bool:
     return value is not None and (value == 0 or value == 1)
 
@@ -1860,8 +1857,8 @@ def can_cast_integer_to_interval(
 @castable.register(String, (Date, Time, Timestamp))
 def can_cast_string_to_temporal(
     source: String,
-    target: Union[Date, Time, Timestamp],
-    value: Optional[str] = None,
+    target: Date | Time | Timestamp,
+    value: str | None = None,
     **kwargs,
 ) -> bool:
     if value is None:
@@ -1929,9 +1926,7 @@ def can_cast_special_string(source, target, **kwargs):
 # TODO cast category
 
 
-def cast(
-    source: Union[DataType, str], target: Union[DataType, str], **kwargs
-) -> DataType:
+def cast(source: DataType | str, target: DataType | str, **kwargs) -> DataType:
     """Attempts to implicitly cast from source dtype to target dtype"""
     source, result_target = dtype(source), dtype(target)
 

@@ -17,7 +17,7 @@ def substring(translator, expr):
                 arg_formatted, start_formatted, lvalue
             )
         else:
-            return 'substr({}, {} + 1)'.format(arg_formatted, start_formatted)
+            return f'substr({arg_formatted}, {start_formatted} + 1)'
     else:
         length_formatted = translator.translate(length)
         return 'substr({}, {} + 1, {})'.format(
@@ -42,7 +42,7 @@ def string_find(translator, expr):
             substr_formatted, arg_formatted, sval + 1
         )
     else:
-        return 'locate({}, {}) - 1'.format(substr_formatted, arg_formatted)
+        return f'locate({substr_formatted}, {arg_formatted}) - 1'
 
 
 def find_in_set(translator, expr):
@@ -51,7 +51,7 @@ def find_in_set(translator, expr):
     arg, str_list = op.args
     arg_formatted = translator.translate(arg)
     str_formatted = ','.join([x._arg.value for x in str_list])
-    return "find_in_set({}, '{}') - 1".format(arg_formatted, str_formatted)
+    return f"find_in_set({arg_formatted}, '{str_formatted}') - 1"
 
 
 def string_join(translator, expr):
@@ -74,7 +74,7 @@ def parse_url(translator, expr):
     arg_formatted = translator.translate(arg)
 
     if key is None:
-        return "parse_url({}, '{}')".format(arg_formatted, extract)
+        return f"parse_url({arg_formatted}, '{extract}')"
     else:
         key_fmt = translator.translate(key)
         return "parse_url({}, '{}', {})".format(

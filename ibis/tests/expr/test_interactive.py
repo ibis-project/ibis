@@ -67,7 +67,7 @@ class TestInteractiveUse(unittest.TestCase):
         expected = """\
 SELECT *
 FROM functional_alltypes
-LIMIT {0}""".format(
+LIMIT {}""".format(
             config.options.sql.default_limit
         )
 

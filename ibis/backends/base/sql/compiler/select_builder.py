@@ -292,7 +292,7 @@ class SelectBuilder:
                         name = expr.get_name()
                         assert (
                             name is not None
-                        ), 'scalar parameter {} has no name'.format(expr)
+                        ), f'scalar parameter {expr} has no name'
                         return expr, _get_scalar(name)
                     return expr.name('tmp'), _get_scalar('tmp')
 
@@ -355,7 +355,7 @@ class SelectBuilder:
             return table_expr, result_handler
         else:
             raise com.TranslationError(
-                'Do not know how to execute: {0}'.format(type(expr))
+                f'Do not know how to execute: {type(expr)}'
             )
 
     @staticmethod
@@ -480,7 +480,7 @@ class SelectBuilder:
     def _visit_select_expr(self, expr):
         op = expr.op()
 
-        method = '_visit_select_{0}'.format(type(op).__name__)
+        method = f'_visit_select_{type(op).__name__}'
         if hasattr(self, method):
             f = getattr(self, method)
             return f(expr)
@@ -561,7 +561,7 @@ class SelectBuilder:
 
         op = expr.op()
 
-        method = '_visit_filter_{0}'.format(type(op).__name__)
+        method = f'_visit_filter_{type(op).__name__}'
         if hasattr(self, method):
             f = getattr(self, method)
             return f(expr)
@@ -671,7 +671,7 @@ class SelectBuilder:
 
     def _collect(self, expr, toplevel=False):
         op = expr.op()
-        method = '_collect_{0}'.format(type(op).__name__)
+        method = f'_collect_{type(op).__name__}'
 
         # Do not visit nodes twice
         if op in self.op_memo:
