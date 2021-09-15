@@ -395,7 +395,10 @@ def test_tables_robust_to_set_database(con, test_data_db, temp_database):
 
 def test_exists_table(con):
     assert con.exists_table('functional_alltypes')
-    assert not con.exists_table(f'foobarbaz_{util.guid()}')
+
+
+def test_not_exists_table(con):
+    assert not con.exists_table(util.guid())
 
 
 def text_exists_table_with_database(
