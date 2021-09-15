@@ -206,8 +206,10 @@ def con(env, hdfs, test_data_db):
     if not env.use_codegen:
         con.disable_codegen()
     assert con.get_options()['DISABLE_CODEGEN'] == '1'
-    con.set_database(test_data_db)
-    return con
+    try:
+        yield con
+    finally:
+        con.set_database(test_data_db)
 
 
 @pytest.fixture(scope='session')
@@ -268,8 +270,8 @@ def con_no_db(env, hdfs):
 
 
 @pytest.fixture(scope='session')
-def alltypes(con):
-    return con.table('functional_alltypes')
+def alltypes(con, test_data_db):
+    return con.database(test_data_db).functional_alltypes
 
 
 @pytest.fixture(scope='session')
