@@ -15,7 +15,7 @@ import ibis.util as util
 from ibis.tests.util import assert_equal
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture
 def db(con, test_data_db):
     return con.database(test_data_db)
 
@@ -307,7 +307,7 @@ def test_attr_name_conflict(
     assert left.join(right, ['id', 'files']) is not None
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def con2(env):
     con = ibis.impala.connect(
         host=env.impala_host,
@@ -395,7 +395,10 @@ def test_tables_robust_to_set_database(con, test_data_db, temp_database):
 
 def test_exists_table(con):
     assert con.exists_table('functional_alltypes')
-    assert not con.exists_table(f'foobarbaz_{util.guid()}')
+
+
+def test_not_exists_table(con):
+    assert not con.exists_table(util.guid())
 
 
 def text_exists_table_with_database(
