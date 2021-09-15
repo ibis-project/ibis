@@ -175,7 +175,7 @@ class TestWrapping(unittest.TestCase):
         return func
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def udfcon(con):
     con.disable_codegen(False)
     try:
@@ -184,22 +184,22 @@ def udfcon(con):
         con.disable_codegen(True)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def alltypes(udfcon):
     return udfcon.table('functional_alltypes')
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def udf_ll(udfcon, test_data_dir):
     return pjoin(test_data_dir, 'udf/udf-sample.ll')
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def uda_ll(udfcon, test_data_dir):
     return pjoin(test_data_dir, 'udf/uda-sample.ll')
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def uda_so(udfcon, test_data_dir):
     return pjoin(test_data_dir, 'udf/libudasample.so')
 
