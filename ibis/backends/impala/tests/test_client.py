@@ -15,7 +15,7 @@ import ibis.util as util
 from ibis.tests.util import assert_equal
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture
 def db(con, test_data_db):
     return con.database(test_data_db)
 
@@ -307,7 +307,7 @@ def test_attr_name_conflict(
     assert left.join(right, ['id', 'files']) is not None
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def con2(env):
     con = ibis.impala.connect(
         host=env.impala_host,
