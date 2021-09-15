@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import builtins
 import collections
 import datetime
@@ -9,19 +10,10 @@ import itertools
 import numbers
 import re
 import typing
-from typing import (
-    Callable,
-    Iterator,
-    List,
-    Mapping,
-    NamedTuple,
-    Optional,
-    Sequence,
-    Tuple,
-    TypeVar,
-)
+from typing import Iterator, Mapping, NamedTuple, Sequence, TypeVar
 
 import pandas as pd
+import parsy as p
 import toolz
 from multipledispatch import Dispatcher
 
@@ -882,671 +874,212 @@ uuid = UUID()
 macaddr = MACADDR()
 inet = INET()
 
-_primitive_types = [
-    ('any', any),
-    ('null', null),
-    ('boolean', boolean),
-    ('bool', boolean),
-    ('int8', int8),
-    ('int16', int16),
-    ('int32', int32),
-    ('int64', int64),
-    ('uint8', uint8),
-    ('uint16', uint16),
-    ('uint32', uint32),
-    ('uint64', uint64),
-    ('float16', float16),
-    ('float32', float32),
-    ('float64', float64),
-    ('float', float),
-    ('halffloat', float16),
-    ('double', double),
-    ('string', string),
-    ('binary', binary),
-    ('date', date),
-    ('time', time),
-    ('timestamp', timestamp),
-    ('interval', interval),
-    ('category', category),
-]  # type: List[Tuple[str, DataType]]
 
-
-class Tokens:
-    """Class to hold tokens for lexing."""
-
-    __slots__ = ()
-
-    ANY = 0
-    NULL = 1
-    PRIMITIVE = 2
-    DECIMAL = 3
-    VARCHAR = 4
-    CHAR = 5
-    ARRAY = 6
-    MAP = 7
-    STRUCT = 8
-    INTEGER = 9
-    FIELD = 10
-    COMMA = 11
-    COLON = 12
-    LPAREN = 13
-    RPAREN = 14
-    LBRACKET = 15
-    RBRACKET = 16
-    STRARG = 17
-    TIMESTAMP = 18
-    TIME = 19
-    INTERVAL = 20
-    SET = 21
-    GEOGRAPHY = 22
-    GEOMETRY = 23
-    POINT = 24
-    LINESTRING = 25
-    POLYGON = 26
-    MULTILINESTRING = 27
-    MULTIPOINT = 28
-    MULTIPOLYGON = 29
-    SEMICOLON = 30
-    JSON = 31
-    JSONB = 32
-    UUID = 33
-    MACADDR = 34
-    INET = 35
-
-    @staticmethod
-    def name(value):
-        return _token_names[value]
-
-
-_token_names = {
-    getattr(Tokens, n): n for n in dir(Tokens) if n.isalpha() and n.isupper()
-}
-
-Token = collections.namedtuple('Token', ('type', 'value'))
-
-
-# Adapted from tokenize.String
 _STRING_REGEX = """('[^\n'\\\\]*(?:\\\\.[^\n'\\\\]*)*'|"[^\n"\\\\"]*(?:\\\\.[^\n"\\\\]*)*")"""  # noqa: E501
 
+_SPACES = p.regex(r'\s*', re.MULTILINE)
 
-Action = Optional[Callable[[str], Token]]
+
+def spaceless(parser):
+    return _SPACES.then(parser).skip(_SPACES)
 
 
-_TYPE_RULES = collections.OrderedDict(
-    [
-        # any, null, bool|boolean
-        ('(?P<ANY>any)', lambda token: Token(Tokens.ANY, any)),
-        ('(?P<NULL>null)', lambda token: Token(Tokens.NULL, null)),
-        (
-            '(?P<BOOLEAN>bool(?:ean)?)',
-            typing.cast(
-                Action, lambda token: Token(Tokens.PRIMITIVE, boolean)
-            ),
-        ),
-    ]
-    + [
-        # primitive types
-        (
-            f'(?P<{token.upper()}>{token})',
-            typing.cast(
-                Action,
-                lambda token, value=value: Token(Tokens.PRIMITIVE, value),
-            ),
+def spaceless_string(s: str):
+    return spaceless(p.string(s, transform=str.lower))
+
+
+def parse_type(text: str) -> DataType:
+    precision = scale = srid = p.digit.at_least(1).concat().map(int)
+
+    lparen = spaceless_string("(")
+    rparen = spaceless_string(")")
+
+    langle = spaceless_string("<")
+    rangle = spaceless_string(">")
+
+    comma = spaceless_string(",")
+    colon = spaceless_string(":")
+    semicolon = spaceless_string(";")
+
+    raw_string = p.regex(_STRING_REGEX).map(ast.literal_eval)
+
+    geotype = spaceless_string("geography") | spaceless_string("geometry")
+
+    @p.generate
+    def srid_geotype():
+        yield semicolon
+        sr = yield srid
+        yield colon
+        gt = yield geotype
+        return (gt, sr)
+
+    @p.generate
+    def geotype_part():
+        yield colon
+        gt = yield geotype
+        return (gt, None)
+
+    @p.generate
+    def srid_part():
+        yield semicolon
+        sr = yield srid
+        return (None, sr)
+
+    def geotype_parser(name, type):
+        name_parser = spaceless_string(name)
+        geosubtype_parser = srid_geotype | geotype_part | srid_part
+
+        @p.generate
+        def parser():
+            yield name_parser
+            sr_gt = yield geosubtype_parser.optional()
+            return type(*sr_gt) if sr_gt is not None else type()
+
+        return parser
+
+    primitive = (
+        spaceless_string("any").result(any)
+        | spaceless_string("null").result(null)
+        | spaceless_string("boolean").result(boolean)
+        | spaceless_string("bool").result(boolean)
+        | spaceless_string("int8").result(int8)
+        | spaceless_string("int16").result(int16)
+        | spaceless_string("int32").result(int32)
+        | spaceless_string("int64").result(int64)
+        | spaceless_string("uint8").result(uint8)
+        | spaceless_string("uint16").result(uint16)
+        | spaceless_string("uint32").result(uint32)
+        | spaceless_string("uint64").result(uint64)
+        | spaceless_string("halffloat").result(halffloat)
+        | spaceless_string("double").result(double)
+        | spaceless_string("float16").result(float16)
+        | spaceless_string("float32").result(float32)
+        | spaceless_string("float64").result(float64)
+        | spaceless_string("float").result(float)
+        | spaceless_string("string").result(string)
+        | spaceless_string("binary").result(binary)
+        | spaceless_string("timestamp").result(Timestamp())
+        | spaceless_string("time").result(time)
+        | spaceless_string("date").result(date)
+        | spaceless_string("category").result(category)
+        | spaceless_string("geometry").result(GeoSpatial(geotype='geometry'))
+        | spaceless_string("geography").result(GeoSpatial(geotype='geography'))
+        | geotype_parser("linestring", LineString)
+        | geotype_parser("polygon", Polygon)
+        | geotype_parser("point", Point)
+        | geotype_parser("multilinestring", MultiLineString)
+        | geotype_parser("multipolygon", MultiPolygon)
+        | geotype_parser("multipoint", MultiPoint)
+    )
+
+    @p.generate
+    def varchar_or_char():
+        yield p.alt(
+            spaceless_string("varchar"), spaceless_string("char")
+        ).then(
+            lparen.then(p.digit.at_least(1).concat()).skip(rparen).optional()
         )
-        for token, value in _primitive_types
-        if token
-        not in {'any', 'null', 'timestamp', 'time', 'interval', 'boolean'}
-    ]
-    + [
-        # timestamp
-        (
-            r'(?P<TIMESTAMP>timestamp)',
-            lambda token: Token(Tokens.TIMESTAMP, token),
-        )
-    ]
-    + [
-        # interval - should remove?
-        (
-            r'(?P<INTERVAL>interval)',
-            lambda token: Token(Tokens.INTERVAL, token),
-        )
-    ]
-    + [
-        # time
-        (r'(?P<TIME>time)', lambda token: Token(Tokens.TIME, token))
-    ]
-    + [
-        # decimal + complex types
-        (
-            f'(?P<{token.upper()}>{token})',
-            typing.cast(
-                Action, lambda token, toktype=toktype: Token(toktype, token)
-            ),
-        )
-        for token, toktype in zip(
-            (
-                'decimal',
-                'varchar',
-                'char',
-                'array',
-                'set',
-                'map',
-                'struct',
-                'interval',
-            ),
-            (
-                Tokens.DECIMAL,
-                Tokens.VARCHAR,
-                Tokens.CHAR,
-                Tokens.ARRAY,
-                Tokens.SET,
-                Tokens.MAP,
-                Tokens.STRUCT,
-                Tokens.INTERVAL,
-            ),
-        )
-    ]
-    + [
-        # geo spatial data type
-        (
-            f'(?P<{token.upper()}>{token})',
-            lambda token, toktype=toktype: Token(toktype, token),
-        )
-        for token, toktype in zip(
-            (
-                'geometry',
-                'geography',
-                'point',
-                'linestring',
-                'polygon',
-                'multilinestring',
-                'multipoint',
-                'multipolygon',
-            ),
-            (
-                Tokens.GEOMETRY,
-                Tokens.GEOGRAPHY,
-                Tokens.POINT,
-                Tokens.LINESTRING,
-                Tokens.POLYGON,
-                Tokens.MULTILINESTRING,
-                Tokens.MULTIPOINT,
-                Tokens.MULTIPOLYGON,
-            ),
-        )
-    ]
-    + [
-        # json data type
-        (
-            f'(?P<{token.upper()}>{token})',
-            lambda token, toktype=toktype: Token(toktype, token),
-        )
-        for token, toktype in zip(
-            # note: `jsonb` should be first to avoid conflict with `json`
-            ('jsonb', 'json'),
-            (Tokens.JSONB, Tokens.JSON),
-        )
-    ]
-    + [
-        # special string based data types
-        ('(?P<UUID>uuid)', lambda token: Token(Tokens.UUID, token)),
-        ('(?P<MACADDR>macaddr)', lambda token: Token(Tokens.MACADDR, token)),
-        ('(?P<INET>inet)', lambda token: Token(Tokens.INET, token)),
-    ]
-    + [
-        # integers, for decimal spec
-        (r'(?P<INTEGER>\d+)', lambda token: Token(Tokens.INTEGER, int(token))),
-        # struct fields
-        (
-            r'(?P<FIELD>[a-zA-Z_][a-zA-Z_0-9]*)',
-            lambda token: Token(Tokens.FIELD, token),
-        ),
-        # timezones
-        ('(?P<COMMA>,)', lambda token: Token(Tokens.COMMA, token)),
-        ('(?P<COLON>:)', lambda token: Token(Tokens.COLON, token)),
-        ('(?P<SEMICOLON>;)', lambda token: Token(Tokens.SEMICOLON, token)),
-        (r'(?P<LPAREN>\()', lambda token: Token(Tokens.LPAREN, token)),
-        (r'(?P<RPAREN>\))', lambda token: Token(Tokens.RPAREN, token)),
-        ('(?P<LBRACKET><)', lambda token: Token(Tokens.LBRACKET, token)),
-        ('(?P<RBRACKET>>)', lambda token: Token(Tokens.RBRACKET, token)),
-        (r'(?P<WHITESPACE>\s+)', None),
-        (
-            f'(?P<STRARG>{_STRING_REGEX})',
-            lambda token: Token(Tokens.STRARG, token),
-        ),
-    ]
-)
+        return String()
 
-
-_TYPE_KEYS = tuple(_TYPE_RULES.keys())
-_TYPE_PATTERN = re.compile('|'.join(_TYPE_KEYS), flags=re.IGNORECASE)
-
-
-def _generate_tokens(pat: re.Pattern, text: str) -> Iterator[Token]:
-    """Generate a sequence of tokens from `text` that match `pat`
-
-    Parameters
-    ----------
-    pat : compiled regex
-        The pattern to use for tokenization
-    text : str
-        The text to tokenize
-
-    """
-    rules = _TYPE_RULES
-    keys = _TYPE_KEYS
-    groupindex = pat.groupindex
-    scanner = pat.scanner(text)
-    m: re.Match
-    for m in iter(scanner.match, None):
-        lastgroup = m.lastgroup
-        func = rules[keys[groupindex[lastgroup] - 1]]
-        if func is not None:
-            yield func(m.group(lastgroup))
-
-
-class TypeParser:
-    """A type parser for complex types.
-
-    Parameters
-    ----------
-    text : str
-        The text to parse
-
-    Notes
-    -----
-    Adapted from David Beazley's and Brian Jones's Python Cookbook
-
-    """
-
-    __slots__ = 'text', 'tokens', 'tok', 'nexttok'
-
-    def __init__(self, text: str) -> None:
-        self.text = text  # type: str
-        self.tokens = _generate_tokens(_TYPE_PATTERN, text)
-        self.tok = None  # type: Optional[Token]
-        self.nexttok = None  # type: Optional[Token]
-
-    def _advance(self) -> None:
-        self.tok, self.nexttok = self.nexttok, next(self.tokens, None)
-
-    def _accept(self, toktype: int) -> bool:
-        if self.nexttok is not None and self.nexttok.type == toktype:
-            self._advance()
-            assert (
-                self.tok is not None
-            ), 'self.tok should not be None when _accept succeeds'
-            return True
-        return False
-
-    def _expect(self, toktype: int) -> None:
-        if not self._accept(toktype):
-            raise SyntaxError(
-                'Expected {} after {!r} in {!r}'.format(
-                    Tokens.name(toktype),
-                    getattr(self.tok, 'value', self.tok),
-                    self.text,
+    @p.generate
+    def decimal():
+        yield spaceless_string("decimal")
+        prec_scale = (
+            yield lparen.then(
+                p.seq(precision.skip(comma), scale).combine(
+                    lambda prec, scale: (prec, scale)
                 )
             )
-
-    def parse(self) -> DataType:
-        self._advance()
-
-        # any and null types cannot be nested
-        if self._accept(Tokens.ANY) or self._accept(Tokens.NULL):
-            assert (
-                self.tok is not None
-            ), 'self.tok was None when parsing ANY or NULL type'
-            return self.tok.value
-
-        t = self.type()
-        if self.nexttok is None:
-            return t
-        else:
-            # additional junk was passed at the end, throw an error
-            additional_tokens = []
-            while self.nexttok is not None:
-                additional_tokens.append(self.nexttok.value)
-                self._advance()
-            raise SyntaxError(f'Found additional tokens {additional_tokens}')
-
-    def type(self) -> DataType:
-        """
-        type : primitive
-             | decimal
-             | array
-             | set
-             | map
-             | struct
-
-        primitive : "any"
-                  | "null"
-                  | "bool"
-                  | "boolean"
-                  | "int8"
-                  | "int16"
-                  | "int32"
-                  | "int64"
-                  | "uint8"
-                  | "uint16"
-                  | "uint32"
-                  | "uint64"
-                  | "halffloat"
-                  | "float"
-                  | "double"
-                  | "float16"
-                  | "float32"
-                  | "float64"
-                  | "string"
-                  | "time"
-
-        timestamp : "timestamp"
-                  | "timestamp" "(" timezone ")"
-
-        interval : "interval"
-                 | "interval" "(" unit ")"
-                 | "interval" "<" type ">" "(" unit ")"
-
-        decimal : "decimal"
-                | "decimal" "(" integer "," integer ")"
-
-        integer : [0-9]+
-
-        array : "array" "<" type ">"
-
-        set : "set" "<" type ">"
-
-        map : "map" "<" type "," type ">"
-
-        struct : "struct" "<" field ":" type ("," field ":" type)* ">"
-
-        field : [a-zA-Z_][a-zA-Z_0-9]*
-
-        geography: "geography"
-
-        geometry: "geometry"
-
-        point : "point"
-              | "point" ";" srid
-              | "point" ":" geotype
-              | "point" ";" srid ":" geotype
-
-        linestring : "linestring"
-                   | "linestring" ";" srid
-                   | "linestring" ":" geotype
-                   | "linestring" ";" srid ":" geotype
-
-        polygon : "polygon"
-                | "polygon" ";" srid
-                | "polygon" ":" geotype
-                | "polygon" ";" srid ":" geotype
-
-        multilinestring : "multilinestring"
-                   | "multilinestring" ";" srid
-                   | "multilinestring" ":" geotype
-                   | "multilinestring" ";" srid ":" geotype
-
-        multipoint : "multipoint"
-                   | "multipoint" ";" srid
-                   | "multipoint" ":" geotype
-                   | "multipoint" ";" srid ":" geotype
-
-        multipolygon : "multipolygon"
-                     | "multipolygon" ";" srid
-                     | "multipolygon" ":" geotype
-                     | "multipolygon" ";" srid ":" geotype
-
-        json : "json"
-
-        jsonb : "jsonb"
-
-        uuid : "uuid"
-
-        macaddr : "macaddr"
-
-        inet : "inet"
-
-        """
-        if self._accept(Tokens.PRIMITIVE):
-            assert self.tok is not None
-            return self.tok.value
-
-        elif self._accept(Tokens.TIMESTAMP):
-            if self._accept(Tokens.LPAREN):
-                self._expect(Tokens.STRARG)
-                assert self.tok is not None
-                timezone = self.tok.value[1:-1]  # remove surrounding quotes
-                self._expect(Tokens.RPAREN)
-                return Timestamp(timezone=timezone)
-            return timestamp
-
-        elif self._accept(Tokens.TIME):
-            return Time()
-
-        elif self._accept(Tokens.INTERVAL):
-            if self._accept(Tokens.LBRACKET):
-                self._expect(Tokens.PRIMITIVE)
-                assert self.tok is not None
-                value_type = self.tok.value
-                self._expect(Tokens.RBRACKET)
-            else:
-                value_type = int32
-
-            if self._accept(Tokens.LPAREN):
-                self._expect(Tokens.STRARG)
-                assert self.tok is not None
-                unit = self.tok.value[1:-1]  # remove surrounding quotes
-                self._expect(Tokens.RPAREN)
-            else:
-                unit = 's'
-
-            return Interval(unit, value_type)
-
-        elif self._accept(Tokens.DECIMAL):
-            if self._accept(Tokens.LPAREN):
-                self._expect(Tokens.INTEGER)
-                assert self.tok is not None
-                precision = self.tok.value
-
-                self._expect(Tokens.COMMA)
-
-                self._expect(Tokens.INTEGER)
-                scale = self.tok.value
-
-                self._expect(Tokens.RPAREN)
-            else:
-                precision = 9
-                scale = 0
-            return Decimal(precision, scale)
-
-        elif self._accept(Tokens.VARCHAR) or self._accept(Tokens.CHAR):
-            # VARCHAR, VARCHAR(n), CHAR, and CHAR(n) all parse as STRING
-            if self._accept(Tokens.LPAREN):
-                self._expect(Tokens.INTEGER)
-                self._expect(Tokens.RPAREN)
-                return string
-            return string
-
-        elif self._accept(Tokens.ARRAY):
-            self._expect(Tokens.LBRACKET)
-
-            value_type = self.type()
-
-            self._expect(Tokens.RBRACKET)
-            return Array(value_type)
-
-        elif self._accept(Tokens.SET):
-            self._expect(Tokens.LBRACKET)
-
-            value_type = self.type()
-
-            self._expect(Tokens.RBRACKET)
-            return Set(value_type)
-
-        elif self._accept(Tokens.MAP):
-            self._expect(Tokens.LBRACKET)
-
-            self._expect(Tokens.PRIMITIVE)
-            assert self.tok is not None
-            key_type = self.tok.value
-
-            self._expect(Tokens.COMMA)
-
-            value_type = self.type()
-
-            self._expect(Tokens.RBRACKET)
-
-            return Map(key_type, value_type)
-
-        elif self._accept(Tokens.STRUCT):
-            self._expect(Tokens.LBRACKET)
-
-            self._expect(Tokens.FIELD)
-            assert self.tok is not None
-            names = [self.tok.value]
-
-            self._expect(Tokens.COLON)
-
-            types = [self.type()]
-
-            while self._accept(Tokens.COMMA):
-                self._expect(Tokens.FIELD)
-                names.append(self.tok.value)
-
-                self._expect(Tokens.COLON)
-                types.append(self.type())
-
-            self._expect(Tokens.RBRACKET)
-            return Struct(names, types)
-
-        # json data types
-        elif self._accept(Tokens.JSON):
-            return JSON()
-
-        elif self._accept(Tokens.JSONB):
-            return JSONB()
-
-        # geo spatial data type
-        elif self._accept(Tokens.GEOMETRY):
-            return Geometry()
-
-        elif self._accept(Tokens.GEOGRAPHY):
-            return Geography()
-
-        elif self._accept(Tokens.POINT):
-            geotype = None
-            srid = None
-
-            if self._accept(Tokens.SEMICOLON):
-                self._expect(Tokens.INTEGER)
-                assert self.tok is not None
-                srid = self.tok.value
-
-            if self._accept(Tokens.COLON):
-                if self._accept(Tokens.GEOGRAPHY):
-                    geotype = 'geography'
-                elif self._accept(Tokens.GEOMETRY):
-                    geotype = 'geometry'
-
-            return Point(geotype=geotype, srid=srid)
-
-        elif self._accept(Tokens.LINESTRING):
-            geotype = None
-            srid = None
-
-            if self._accept(Tokens.SEMICOLON):
-                self._expect(Tokens.INTEGER)
-                assert self.tok is not None
-                srid = self.tok.value
-
-            if self._accept(Tokens.COLON):
-                if self._accept(Tokens.GEOGRAPHY):
-                    geotype = 'geography'
-                elif self._accept(Tokens.GEOMETRY):
-                    geotype = 'geometry'
-
-            return LineString(geotype=geotype, srid=srid)
-
-        elif self._accept(Tokens.POLYGON):
-            geotype = None
-            srid = None
-
-            if self._accept(Tokens.SEMICOLON):
-                self._expect(Tokens.INTEGER)
-                assert self.tok is not None
-                srid = self.tok.value
-
-            if self._accept(Tokens.COLON):
-                if self._accept(Tokens.GEOGRAPHY):
-                    geotype = 'geography'
-                elif self._accept(Tokens.GEOMETRY):
-                    geotype = 'geometry'
-
-            return Polygon(geotype=geotype, srid=srid)
-
-        elif self._accept(Tokens.MULTILINESTRING):
-            geotype = None
-            srid = None
-
-            if self._accept(Tokens.SEMICOLON):
-                self._expect(Tokens.INTEGER)
-                assert self.tok is not None
-                srid = self.tok.value
-
-            if self._accept(Tokens.COLON):
-                if self._accept(Tokens.GEOGRAPHY):
-                    geotype = 'geography'
-                elif self._accept(Tokens.GEOMETRY):
-                    geotype = 'geometry'
-
-            return MultiLineString(geotype=geotype, srid=srid)
-
-        elif self._accept(Tokens.MULTIPOINT):
-            geotype = None
-            srid = None
-
-            if self._accept(Tokens.SEMICOLON):
-                self._expect(Tokens.INTEGER)
-                assert self.tok is not None
-                srid = self.tok.value
-
-            if self._accept(Tokens.COLON):
-                if self._accept(Tokens.GEOGRAPHY):
-                    geotype = 'geography'
-                elif self._accept(Tokens.GEOMETRY):
-                    geotype = 'geometry'
-
-            return MultiPoint(geotype=geotype, srid=srid)
-
-        elif self._accept(Tokens.MULTIPOLYGON):
-            geotype = None
-            srid = None
-
-            if self._accept(Tokens.SEMICOLON):
-                self._expect(Tokens.INTEGER)
-                assert self.tok is not None
-                srid = self.tok.value
-
-            if self._accept(Tokens.COLON):
-                if self._accept(Tokens.GEOGRAPHY):
-                    geotype = 'geography'
-                elif self._accept(Tokens.GEOMETRY):
-                    geotype = 'geometry'
-
-            return MultiPolygon(geotype=geotype, srid=srid)
-
-        # special string based data types
-        elif self._accept(Tokens.UUID):
-            return UUID()
-
-        elif self._accept(Tokens.MACADDR):
-            return MACADDR()
-
-        elif self._accept(Tokens.INET):
-            return INET()
-
-        else:
-            raise SyntaxError(f'Type cannot be parsed: {self.text}')
+            .skip(rparen)
+            .optional()
+        ) or (9, 0)
+        return Decimal(*prec_scale)
+
+    @p.generate
+    def parened_string():
+        yield lparen
+        s = yield raw_string
+        yield rparen
+        return s
+
+    @p.generate
+    def timestamp():
+        yield spaceless_string("timestamp")
+        tz = yield parened_string
+        return Timestamp(tz)
+
+    @p.generate
+    def angle_type():
+        yield langle
+        value_type = yield ty
+        yield rangle
+        return value_type
+
+    @p.generate
+    def interval():
+        yield spaceless_string("interval")
+        value_type = yield angle_type.optional()
+        un = yield parened_string.optional()
+        return Interval(
+            value_type=value_type, unit=un if un is not None else 's'
+        )
+
+    @p.generate
+    def array():
+        yield spaceless_string("array")
+        value_type = yield angle_type
+        return Array(value_type)
+
+    @p.generate
+    def set():
+        yield spaceless_string("set")
+        value_type = yield angle_type
+        return Set(value_type)
+
+    @p.generate
+    def map():
+        yield spaceless_string("map")
+        yield langle
+        key_type = yield primitive
+        yield comma
+        value_type = yield ty
+        yield rangle
+        return Map(key_type, value_type)
+
+    field = spaceless(p.regex("[a-zA-Z_][a-zA-Z_0-9]*"))
+
+    @p.generate
+    def struct():
+        yield spaceless_string("struct")
+        yield langle
+        field_names_types = yield (
+            p.seq(field.skip(colon), ty)
+            .combine(lambda field, ty: (field, ty))
+            .sep_by(comma)
+        )
+        yield rangle
+        return Struct.from_tuples(field_names_types)
+
+    ty = (
+        timestamp
+        | primitive
+        | decimal
+        | varchar_or_char
+        | interval
+        | array
+        | set
+        | map
+        | struct
+        | spaceless_string("jsonb").result(jsonb)
+        | spaceless_string("json").result(json)
+        | spaceless_string("uuid").result(uuid)
+        | spaceless_string("macaddr").result(macaddr)
+        | spaceless_string("inet").result(inet)
+        | spaceless_string("geography").result(geography)
+        | spaceless_string("geometry").result(geometry)
+    )
+
+    return ty.parse(text)
 
 
 dtype = Dispatcher('dtype')
@@ -1585,7 +1118,7 @@ def from_ibis_dtype(value: DataType) -> DataType:
 @dtype.register(str)
 def from_string(value: str) -> DataType:
     try:
-        return TypeParser(value).parse()
+        return parse_type(value)
     except SyntaxError:
         raise com.IbisTypeError(f'{value!r} cannot be parsed as a datatype')
 

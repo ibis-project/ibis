@@ -6,3 +6,4 @@ regex
 toolz
 cached_property
 setuptools
+parsy

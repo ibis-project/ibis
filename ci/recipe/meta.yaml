@@ -39,6 +39,7 @@ requirements:
     - multipledispatch >=0.6
     - numpy >=1.15
     - pandas >=0.25.3
+    - parsy
     - psycopg2
     - pyarrow >=0.15
     - pymysql
