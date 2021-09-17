@@ -304,6 +304,8 @@ def _interval_from_integer(translator, expr):
 
 def _literal(translator, expr):
     value = expr.op().value
+    if value is None and expr._dtype.nullable:
+        return _null_literal(translator, expr)
     if isinstance(expr, ir.BooleanValue):
         return '1' if value else '0'
     elif isinstance(expr, ir.StringValue):
