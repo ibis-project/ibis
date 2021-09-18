@@ -276,10 +276,7 @@ def test_non_equijoin(alltypes):
             ('any_left_join', 'ANY LEFT JOIN'),
             ('left_join', 'ALL LEFT JOIN'),
         ],
-        [
-            ('playerID', 'playerID'),
-            ('playerID', 'awardID'),
-        ],  # noqa: E231
+        [('playerID', 'playerID'), ('playerID', 'awardID'),],  # noqa: E231
     ),
 )
 def test_simple_joins(
