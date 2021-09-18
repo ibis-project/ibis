@@ -500,6 +500,19 @@ def test_null_column(alltypes, translate):
     tm.assert_series_equal(result, expected)
 
 
+def test_literal_none_to_nullable_colum(alltypes):
+    t = alltypes
+    nrows = t.count().execute()
+    expr = t.mutate(
+        ibis.literal(None, dt.String(nullable=True)).name(
+            'nullable_string_column'
+        )
+    )
+    result = expr['nullable_string_column'].execute()
+    expected = pd.Series([None] * nrows, name='nullable_string_column')
+    tm.assert_series_equal(result, expected)
+
+
 @pytest.mark.parametrize(
     ('attr', 'expected'),
     [
