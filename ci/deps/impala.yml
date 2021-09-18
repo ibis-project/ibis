@@ -6,3 +6,5 @@ dependencies:
   - thrift_sasl
   - python-hdfs
   - boost
+  # TODO:remove when https://github.com/conda-forge/impyla-feedstock/pull/28 lands
+  - pure-sasl

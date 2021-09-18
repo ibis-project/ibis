@@ -26,7 +26,19 @@ def test_kerberos_deps_installed(env, test_data_db):
     # errors and occur, because there is no kerberos server in
     # the CI pipeline, but they imply our imports have succeeded.
     # See: https://github.com/ibis-project/ibis/issues/2342
-    with pytest.raises((AttributeError, TTransportException)):
+    excs = (AttributeError, TTransportException)
+    try:
+        # TLDR: puresasl is using kerberos, and not pykerberos
+        #
+        # see https://github.com/requests/requests-kerberos/issues/63
+        # for why both libraries exist
+        from kerberos import GSSError
+    except ImportError:
+        pass
+    else:
+        excs += (GSSError,)
+
+    with pytest.raises(excs):
         ibis.impala.connect(
             host=env.impala_host,
             database=test_data_db,
