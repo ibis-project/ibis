@@ -20,7 +20,6 @@ done
 set -x
 
 pytest "${TESTS_DIRS[@]}" \
-    -q \
     -ra \
     --junitxml=junit.xml \
     --cov=ibis \
