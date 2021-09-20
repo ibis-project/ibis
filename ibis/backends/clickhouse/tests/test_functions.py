@@ -501,6 +501,7 @@ def test_null_column(alltypes, translate):
 
 
 def test_literal_none_to_nullable_colum(alltypes):
+    # GH: 2985
     t = alltypes
     nrows = t.count().execute()
     expr = t.mutate(
