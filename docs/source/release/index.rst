@@ -12,6 +12,7 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :bug:`2991` Fix data races in impala connection pool accounting
 * :support:`2977` Remove handwritten type parser; parsing errors that were previously `IbisTypeError` are now `parsy.ParseError`. `parsy` is now a hard requirement.
 * :support:`2962` Methods `current_database` and `list_databases` raise an exception for backends that do not support databases
 * :bug:`2956` Replace `equals` operation for geospatial datatype to `geo_equals` 
