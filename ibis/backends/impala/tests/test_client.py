@@ -211,10 +211,11 @@ def test_verbose_log_queries(con, test_data_db):
         with config.option_context('verbose_log', queries.append):
             con.table('tpch_orders', database=test_data_db)
 
-    assert len(queries) == 1
-    (query,) = queries
+    # we can't make assertions about the length of queries, since the Python GC
+    # could've collected a temporary pandas table any time between construction
+    # of `queries` and the assertion
     expected = f'DESCRIBE {test_data_db}.`tpch_orders`'
-    assert query == expected
+    assert expected in queries
 
 
 def test_sql_query_limits(con, test_data_db):
