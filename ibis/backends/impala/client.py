@@ -80,7 +80,8 @@ class ImpalaConnection:
         self._connections = weakref.WeakSet()
 
         self.connection_pool = deque(maxlen=pool_size)
-        self.connection_pool_size = 0
+        with self.lock:
+            self.connection_pool_size = 0
 
     def set_options(self, options):
         self.options.update(options)
@@ -134,7 +135,9 @@ class ImpalaConnection:
         try:
             cursor = self.connection_pool.popleft()
         except IndexError:  # deque is empty
-            if self.connection_pool_size < self.max_pool_size:
+            with self.lock:
+                connection_pool_size = self.connection_pool_size
+            if connection_pool_size < self.max_pool_size:
                 return self._new_cursor()
             raise com.InternalError('Too many concurrent / hung queries')
         else:
@@ -177,7 +180,8 @@ class ImpalaCursor:
         self.database = database
         self.options = options
         self.released = False
-        self.con.connection_pool_size += 1
+        with self.con.lock:
+            self.con.connection_pool_size += 1
 
     def __del__(self):
         try:
