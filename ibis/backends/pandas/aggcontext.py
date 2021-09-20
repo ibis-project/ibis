@@ -373,11 +373,12 @@ class Summarize(AggregationContext):
             grouped_data, pd.core.groupby.generic.SeriesGroupBy
         ) and len(grouped_data):
             # `SeriesGroupBy.agg` does not allow np.arrays to be returned
-            # from UDFs. To avoid `SeriesGroupBy.agg`, we will us
-            # `Series.agg` manually on each group. (#2768)
+            # from UDFs. To avoid `SeriesGroupBy.agg`, we will call the
+            # aggregation function manually on each group. (#2768)
             aggs = {}
             for k, v in grouped_data:
-                aggs[k] = v.agg(wrap_for_agg(function, args, kwargs))
+                func_args = [d.get_group(k) for d in args]
+                aggs[k] = function(v, *func_args, **kwargs)
                 grouped_col_name = v.name
             return (
                 pd.Series(aggs)

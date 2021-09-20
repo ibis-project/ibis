@@ -17,7 +17,7 @@ import ibis.expr.operations as ops
 import ibis.udf.vectorized
 from ibis.backends.base import Client
 
-from .aggcontext import Summarize, Transform
+from .aggcontext import Transform
 from .core import date_types, time_types, timedelta_types, timestamp_types
 from .dispatch import execute_node, pre_execute
 
@@ -227,15 +227,11 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
     @execute_node.register(type(op), *(itertools.repeat(SeriesGroupBy, nargs)))
     def execute_udaf_node_groupby(op, *args, aggcontext, **kwargs):
         func = op.func
-        if isinstance(aggcontext, (Summarize, Transform)):
-            # We are either:
-            # 1) Aggregating over an unbounded (and GROUPED) window, which
-            #   uses a Transform aggregation context
-            # 2) Aggregating using an Aggregate node (with GROUPING), which
-            #   uses a Summarize aggregation context
+        if isinstance(aggcontext, Transform):
+            # We are aggregating over an unbounded (and GROUPED) window,
+            # which uses a Transform aggregation context.
             # We need to do some pre-processing to func and args so that
-            # Transform or Summarize can pull data out of the SeriesGroupBys
-            # in args.
+            # Transform can pull data out of the SeriesGroupBys in args.
 
             # Construct a generator that yields the next group of data
             # for every argument excluding the first (pandas performs
@@ -256,7 +252,9 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
             # 1) Aggregating over a bounded window, which uses a Window
             #  aggregation context
             # 2) Aggregating over a custom aggregation context
-            # No pre-processing to be done for either case.
+            # 3) Aggregating using an Aggregate node (with GROUPING), which
+            #   uses a Summarize aggregation context
+            # No pre-processing to be done for any case.
             return aggcontext.agg(args[0], func, *args[1:])
 
     return scope
