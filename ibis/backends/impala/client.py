@@ -136,6 +136,10 @@ class ImpalaConnection:
             cursor = self.connection_pool.popleft()
         except IndexError:  # deque is empty
             with self.lock:
+                # NB: Do not put a lock around the entire if statement.
+                # This will cause a deadlock because _new_cursor calls the
+                # ImpalaCursor constructor which takes a lock to increment the
+                # connection pool size.
                 connection_pool_size = self.connection_pool_size
             if connection_pool_size < self.max_pool_size:
                 return self._new_cursor()
