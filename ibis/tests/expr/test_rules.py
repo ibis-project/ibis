@@ -1,5 +1,6 @@
 import enum
 
+import parsy
 import pytest
 from toolz import identity
 
@@ -29,8 +30,8 @@ def test_valid_datatype(value, expected):
 @pytest.mark.parametrize(
     ('value', 'expected'),
     [
-        ('exception', IbisTypeError),
-        ('array<cat>', IbisTypeError),
+        ('exception', parsy.ParseError),
+        ('array<cat>', parsy.ParseError),
         (int, IbisTypeError),
         ([float], IbisTypeError),
     ],

@@ -64,7 +64,7 @@ Ibis can also be installed with Kerberos support for its HDFS functionality:
 
 ::
 
-  pip install ibis-framework[kerberos]
+  pip install 'ibis-framework[kerberos]'
 
 Some platforms will require that you have Kerberos installed to build properly.
 

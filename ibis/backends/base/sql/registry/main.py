@@ -24,12 +24,12 @@ def unary(func_name):
 
 def not_null(translator, expr):
     formatted_arg = translator.translate(expr.op().args[0])
-    return '{} IS NOT NULL'.format(formatted_arg)
+    return f'{formatted_arg} IS NOT NULL'
 
 
 def is_null(translator, expr):
     formatted_arg = translator.translate(expr.op().args[0])
-    return '{} IS NULL'.format(formatted_arg)
+    return f'{formatted_arg} IS NULL'
 
 
 def not_(translator, expr):
@@ -37,7 +37,7 @@ def not_(translator, expr):
     formatted_arg = translator.translate(arg)
     if helpers.needs_parens(arg):
         formatted_arg = helpers.parenthesize(formatted_arg)
-    return 'NOT {}'.format(formatted_arg)
+    return f'NOT {formatted_arg}'
 
 
 def negate(translator, expr):
@@ -48,7 +48,7 @@ def negate(translator, expr):
     else:
         if helpers.needs_parens(arg):
             formatted_arg = helpers.parenthesize(formatted_arg)
-        return '-{}'.format(formatted_arg)
+        return f'-{formatted_arg}'
 
 
 def ifnull_workaround(translator, expr):
@@ -67,8 +67,8 @@ def sign(translator, expr):
     translated_arg = translator.translate(arg)
     translated_type = helpers.type_to_sql_string(expr.type())
     if expr.type() != dt.float:
-        return 'CAST(sign({}) AS {})'.format(translated_arg, translated_type)
-    return 'sign({})'.format(translated_arg)
+        return f'CAST(sign({translated_arg}) AS {translated_type})'
+    return f'sign({translated_arg})'
 
 
 def hashbytes(translator, expr):
@@ -95,10 +95,10 @@ def log(translator, expr):
     arg_formatted = translator.translate(arg)
 
     if base is None:
-        return 'ln({})'.format(arg_formatted)
+        return f'ln({arg_formatted})'
 
     base_formatted = translator.translate(base)
-    return 'log({}, {})'.format(base_formatted, arg_formatted)
+    return f'log({base_formatted}, {arg_formatted})'
 
 
 def value_list(translator, expr):
@@ -115,10 +115,10 @@ def cast(translator, expr):
     if isinstance(arg, ir.CategoryValue) and target_type == dt.int32:
         return arg_formatted
     if isinstance(arg, ir.TemporalValue) and target_type == dt.int64:
-        return '1000000 * unix_timestamp({})'.format(arg_formatted)
+        return f'1000000 * unix_timestamp({arg_formatted})'
     else:
         sql_type = helpers.type_to_sql_string(target_type)
-        return 'CAST({} AS {})'.format(arg_formatted, sql_type)
+        return f'CAST({arg_formatted} AS {sql_type})'
 
 
 def varargs(func_name):
@@ -131,15 +131,15 @@ def varargs(func_name):
 
 def between(translator, expr):
     op = expr.op()
-    comp, lower, upper = [translator.translate(x) for x in op.args]
-    return '{} BETWEEN {} AND {}'.format(comp, lower, upper)
+    comp, lower, upper = (translator.translate(x) for x in op.args)
+    return f'{comp} BETWEEN {lower} AND {upper}'
 
 
 def table_array_view(translator, expr):
     ctx = translator.context
     table = expr.op().table
     query = ctx.get_compiled_expr(table)
-    return '(\n{}\n)'.format(util.indent(query, ctx.indent))
+    return f'(\n{util.indent(query, ctx.indent)}\n)'
 
 
 def table_column(translator, expr):
@@ -159,7 +159,7 @@ def table_column(translator, expr):
     if ctx.need_aliases():
         alias = ctx.get_ref(table)
         if alias is not None:
-            quoted_name = '{}.{}'.format(alias, quoted_name)
+            quoted_name = f'{alias}.{quoted_name}'
 
     return quoted_name
 
@@ -182,7 +182,7 @@ def exists_subquery(translator, expr):
     else:
         raise NotImplementedError
 
-    return '{} (\n{}\n)'.format(key, util.indent(subquery, ctx.indent))
+    return f'{key} (\n{util.indent(subquery, ctx.indent)}\n)'
 
 
 # XXX this is not added to operation_registry, but looks like impala is
@@ -195,8 +195,8 @@ def round(translator, expr):
 
     if digits is not None:
         digits_formatted = translator.translate(digits)
-        return 'round({}, {})'.format(arg_formatted, digits_formatted)
-    return 'round({})'.format(arg_formatted)
+        return f'round({arg_formatted}, {digits_formatted})'
+    return f'round({arg_formatted})'
 
 
 # XXX this is not added to operation_registry, but looks like impala is

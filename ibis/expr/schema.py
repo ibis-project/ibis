@@ -62,7 +62,7 @@ class Schema:
             for v in self._name_locs.keys():
                 duplicate_names.remove(v)
             raise com.IntegrityError(
-                'Duplicate column name(s): {}'.format(duplicate_names)
+                f'Duplicate column name(s): {duplicate_names}'
             )
 
     def __repr__(self):
@@ -70,7 +70,7 @@ class Schema:
         return "ibis.Schema {{{}\n}}".format(
             util.indent(
                 ''.join(
-                    '\n{}{}'.format(name.ljust(space), str(type))
+                    f'\n{name.ljust(space)}{str(type)}'
                     for name, type in zip(self.names, self.types)
                 ),
                 2,
@@ -144,8 +144,7 @@ class Schema:
         return zip(self.names, self.types)
 
     def name_at_position(self, i):
-        """
-        """
+        """ """
         upper = len(self.names) - 1
         if not 0 <= i <= upper:
             raise ValueError(
@@ -200,7 +199,7 @@ class HasSchema:
     """
 
     def __repr__(self):
-        return '{}({})'.format(type(self).__name__, repr(self.schema))
+        return f'{type(self).__name__}({repr(self.schema)})'
 
     def has_schema(self):
         return True

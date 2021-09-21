@@ -18,7 +18,7 @@ class TestConf(PandasTest):
     def connect(data_directory: Path):
         filename = data_directory / 'functional_alltypes.csv'
         if not filename.exists():
-            pytest.skip('test data set {} not found'.format(filename))
+            pytest.skip(f'test data set {filename} not found')
         return ibis.csv.connect(data_directory)
 
     @property
@@ -66,7 +66,7 @@ def csv(tmpdir, file_backends_data):
     csv = tmpdir.mkdir('csv_dir')
 
     for k, v in file_backends_data.items():
-        f = csv / '{}.csv'.format(k)
+        f = csv / f'{k}.csv'
         v.to_csv(str(f), index=False)
 
     return ibis.csv.connect(tmpdir).database()

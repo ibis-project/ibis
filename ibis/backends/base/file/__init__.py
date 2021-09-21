@@ -72,7 +72,7 @@ class FileClient(Client):
         if path is None:
             path = self.root
 
-        new_name = "{}.{}".format(name, self.extension)
+        new_name = f"{name}.{self.extension}"
         if (self.root / name).is_dir():
             path /= name
         elif not str(path).endswith(new_name):

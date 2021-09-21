@@ -36,7 +36,7 @@ class CustomInterval:
 
 
 class CustomWindow(ibis.expr.window.Window):
-    """ This is a dummy custom window that return n preceding rows
+    """This is a dummy custom window that return n preceding rows
     where n is defined by CustomInterval.value."""
 
     def _replace(self, **kwds):
@@ -301,7 +301,7 @@ def test_batting_quantile(players, players_df):
 
 @pytest.mark.parametrize('op', ['sum', 'mean', 'min', 'max'])
 def test_batting_specific_cumulative(batting, batting_df, op, sort_kind):
-    ibis_method = methodcaller('cum{}'.format(op))
+    ibis_method = methodcaller(f'cum{op}')
     expr = ibis_method(batting.sort_by([batting.yearID]).G)
     result = expr.execute().astype('float64')
 
@@ -670,7 +670,7 @@ def test_window_on_and_by_key_as_window_input(t, df):
 
 
 def test_custom_window_udf(t, custom_window):
-    """ Test implementing  a (dummy) custom window.
+    """Test implementing  a (dummy) custom window.
 
     This test covers the advance use case to support custom window with udfs.
 

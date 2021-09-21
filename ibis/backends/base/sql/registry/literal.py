@@ -38,7 +38,7 @@ def _number_literal_format(translator, expr):
                 formatted_val = 'Infinity'
             else:
                 formatted_val = '-Infinity'
-        formatted = "CAST({!r} AS DOUBLE)".format(formatted_val)
+        formatted = f"CAST({formatted_val!r} AS DOUBLE)"
 
     return formatted
 

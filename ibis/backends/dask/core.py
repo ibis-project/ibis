@@ -305,7 +305,7 @@ def execute_until_in_scope(
     # if we're unable to find data then raise an exception
     if not scopes and computable_args:
         raise com.UnboundExpressionError(
-            'Unable to find data for expression:\n{}'.format(repr(expr))
+            f'Unable to find data for expression:\n{repr(expr)}'
         )
 
     # there should be exactly one dictionary per computable argument
@@ -394,7 +394,11 @@ def main_execute(
     params = {k.op() if hasattr(k, 'op') else k: v for k, v in params.items()}
     scope = scope.merge_scope(Scope(params, timecontext))
     return execute_with_scope(
-        expr, scope, timecontext=timecontext, aggcontext=aggcontext, **kwargs,
+        expr,
+        scope,
+        timecontext=timecontext,
+        aggcontext=aggcontext,
+        **kwargs,
     )
 
 

@@ -123,7 +123,7 @@ shp_multipolygon_0 = shapely.geometry.MultiPolygon([shp_polygon_0])
 @pytest.mark.only_on_backends(all_db_geo_supported)
 def test_literal_geospatial_explicit(backend, con, expr, expected):
     result = str(con.compile(expr))
-    result_expected = "SELECT {} AS tmp".format(expected[backend.name()])
+    result_expected = f"SELECT {expected[backend.name()]} AS tmp"
     # use `in` op because if name is specified omniscidb doesn't compile
     # with alias but postgresql does. but if name is not provided,
     # omniscidb uses tmp as a default alias but postgres doesn't use alias
@@ -192,7 +192,7 @@ def test_literal_geospatial_explicit(backend, con, expr, expected):
 @pytest.mark.xfail_unsupported
 def test_literal_geospatial_inferred(backend, con, shp, expected):
     result = str(con.compile(ibis.literal(shp)))
-    result_expected = "SELECT {} AS tmp".format(expected[backend.name()])
+    result_expected = f"SELECT {expected[backend.name()]} AS tmp"
     # use `in` op because if name is specified omniscidb doesn't compile
     # with alias but postgresql does. but if name is not provided,
     # omniscidb uses tmp as a default alias but postgres doesn't use alias
@@ -227,7 +227,7 @@ def test_literal_geospatial_inferred(backend, con, shp, expected):
 @pytest.mark.xfail_unsupported
 def test_literal_multi_geospatial_inferred(backend, con, shp, expected):
     result = str(con.compile(ibis.literal(shp)))
-    result_expected = "SELECT {} AS tmp".format(expected[backend.name()])
+    result_expected = f"SELECT {expected[backend.name()]} AS tmp"
     assert result in result_expected
 
 

@@ -31,7 +31,8 @@ def test_time_indexed_window(client, ibis_windows, spark_range):
         .rangeBetween(*spark_range)
     )
     expected = spark_table.withColumn(
-        'mean', F.mean(spark_table['value']).over(spark_window),
+        'mean',
+        F.mean(spark_table['value']).over(spark_window),
     ).toPandas()
     tm.assert_frame_equal(result_pd, expected)
 
@@ -67,10 +68,12 @@ def test_multiple_windows(client, ibis_windows, spark_range):
     )
     expected = (
         spark_table.withColumn(
-            'mean_1h', F.mean(spark_table['value']).over(spark_window),
+            'mean_1h',
+            F.mean(spark_table['value']).over(spark_window),
         )
         .withColumn(
-            'mean_2h', F.mean(spark_table['value']).over(spark_window_2),
+            'mean_2h',
+            F.mean(spark_table['value']).over(spark_window_2),
         )
         .toPandas()
     )

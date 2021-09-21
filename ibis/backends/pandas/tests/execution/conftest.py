@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import decimal
 import os
 
@@ -87,9 +85,9 @@ def batting_df():
         os.environ.get('IBIS_TEST_DATA_DIRECTORY', ''), 'batting.csv'
     )
     if not os.path.exists(path):
-        pytest.skip('{} not found'.format(path))
+        pytest.skip(f'{path} not found')
     elif not os.path.isfile(path):
-        pytest.skip('{} is not a file'.format(path))
+        pytest.skip(f'{path} is not a file')
 
     df = pd.read_csv(path, index_col=None, sep=',')
     num_rows = int(0.01 * len(df))
@@ -102,9 +100,9 @@ def awards_players_df():
         os.environ.get('IBIS_TEST_DATA_DIRECTORY', ''), 'awards_players.csv'
     )
     if not os.path.exists(path):
-        pytest.skip('{} not found'.format(path))
+        pytest.skip(f'{path} not found')
     elif not os.path.isfile(path):
-        pytest.skip('{} is not a file'.format(path))
+        pytest.skip(f'{path} is not a file')
 
     return pd.read_csv(path, index_col=None, sep=',')
 

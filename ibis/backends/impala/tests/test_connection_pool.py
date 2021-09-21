@@ -8,7 +8,10 @@ def test_connection_pool_size(hdfs, env, test_data_db):
         host=env.impala_host,
         database=test_data_db,
     )
-    assert len(client.con.connection_pool) == 1
+
+    # the client cursor may or may not be GC'd, so the connection
+    # pool will contain either zero or one cursor
+    assert len(client.con.connection_pool) in (0, 1)
 
 
 def test_connection_pool_size_after_close(hdfs, env, test_data_db):

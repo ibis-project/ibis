@@ -107,8 +107,9 @@ class Container:
 
 
 class Stack(Container):
+    """Wrapper around `collections.deque`.
 
-    """Wrapper around a list to provide a common API for graph traversal
+    Implements the `Container` API for depth-first graph traversal.
     """
 
     __slots__ = ('data',)
@@ -122,8 +123,9 @@ class Stack(Container):
 
 
 class Queue(Container):
+    """Wrapper around `collections.deque`.
 
-    """Wrapper around a queue.Queue to provide a common API for graph traversal
+    Implements the `Container` API for breadth-first graph traversal.
     """
 
     __slots__ = ('data',)

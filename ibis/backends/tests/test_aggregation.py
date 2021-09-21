@@ -54,7 +54,8 @@ aggregate_test_params = [
 
 
 @pytest.mark.parametrize(
-    ('result_fn', 'expected_fn', 'expected_col'), aggregate_test_params,
+    ('result_fn', 'expected_fn', 'expected_col'),
+    aggregate_test_params,
 )
 @pytest.mark.xfail_unsupported
 def test_aggregate(
@@ -71,7 +72,8 @@ def test_aggregate(
 
 
 @pytest.mark.parametrize(
-    ('result_fn', 'expected_fn', 'expected_col'), aggregate_test_params,
+    ('result_fn', 'expected_fn', 'expected_col'),
+    aggregate_test_params,
 )
 @pytest.mark.xfail_unsupported
 def test_aggregate_grouped(
@@ -230,7 +232,13 @@ def test_aggregate_grouped(
 )
 @pytest.mark.xfail_unsupported
 def test_reduction_ops(
-    backend, alltypes, df, result_fn, expected_fn, ibis_cond, pandas_cond,
+    backend,
+    alltypes,
+    df,
+    result_fn,
+    expected_fn,
+    ibis_cond,
+    pandas_cond,
 ):
     expr = result_fn(alltypes, ibis_cond(alltypes))
     result = expr.execute()

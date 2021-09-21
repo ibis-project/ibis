@@ -33,13 +33,15 @@ def filter_by_time_context(df, context):
     [
         ibis.trailing_window(ibis.interval(days=3), order_by=ORDERBY_COL),
         ibis.trailing_window(
-            ibis.interval(days=3), order_by=ORDERBY_COL, group_by=GROUPBY_COL,
+            ibis.interval(days=3),
+            order_by=ORDERBY_COL,
+            group_by=GROUPBY_COL,
         ),
     ],
 )
 def test_context_adjustment_window_udf(alltypes, df, context, window):
-    """ This test case aims to test context adjustment of
-        udfs in window method.
+    """This test case aims to test context adjustment of
+    udfs in window method.
     """
     with option_context('context_adjustment.time_col', 'timestamp_col'):
         expr = alltypes.mutate(v1=calc_mean(alltypes[TARGET_COL]).over(window))

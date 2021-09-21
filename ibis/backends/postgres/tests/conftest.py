@@ -73,7 +73,7 @@ class TestConf(BackendTest, RoundHalfToEven):
 
 
 def _random_identifier(suffix):
-    return '__ibis_test_{}_{}'.format(suffix, ibis.util.guid())
+    return f'__ibis_test_{suffix}_{ibis.util.guid()}'
 
 
 @pytest.fixture(scope='session')

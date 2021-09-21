@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Ibis documentation build configuration file, created by
 # sphinx-quickstart on Wed Jun 10 11:06:29 2015.
@@ -68,7 +67,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Ibis'
-copyright = '{}, Ibis Developers'.format(datetime.date.today().year)
+copyright = f'{datetime.date.today().year}, Ibis Developers'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

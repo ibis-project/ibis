@@ -12,7 +12,7 @@ _sql_type_names = dict(sql_type_names, date='date')
 
 def type_to_sql_string(tval):
     if isinstance(tval, dt.Decimal):
-        return 'decimal({}, {})'.format(tval.precision, tval.scale)
+        return f'decimal({tval.precision}, {tval.scale})'
     name = tval.name.lower()
     try:
         return _sql_type_names[name]
@@ -87,7 +87,7 @@ spark_dtype = functools.singledispatch('spark_dtype')
 
 @spark_dtype.register(object)
 def default(value, **kwargs) -> pt.DataType:
-    raise com.IbisTypeError('Value {!r} is not a valid datatype'.format(value))
+    raise com.IbisTypeError(f'Value {value!r} is not a valid datatype')
 
 
 @spark_dtype.register(pt.DataType)

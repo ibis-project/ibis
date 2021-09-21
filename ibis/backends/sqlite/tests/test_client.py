@@ -13,7 +13,7 @@ from ibis.util import guid
 
 
 def test_file_not_exist_and_create():
-    path = '__ibis_tmp_{}.db'.format(guid())
+    path = f'__ibis_tmp_{guid()}.db'
 
     with pytest.raises(FileNotFoundError):
         ibis.sqlite.connect(path)

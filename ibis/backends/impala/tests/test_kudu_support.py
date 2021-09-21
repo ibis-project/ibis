@@ -157,7 +157,7 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
         cls.con.kudu.connect(cls.env.master_host, cls.env.master_port)
 
     def _new_kudu_example_table(self, kschema):
-        kudu_name = 'ibis-tmp-{0}'.format(util.guid())
+        kudu_name = f'ibis-tmp-{util.guid()}'
 
         self.kclient.create_table(kudu_name, kschema)
         self.temp_tables.append(kudu_name)
@@ -254,7 +254,7 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
         impala_name2 = self._temp_impala_name()
         expr = self.con.table(impala_name, database=impala_db)
 
-        kudu_name2 = 'ibis-ctas-{0}'.format(util.guid())
+        kudu_name2 = f'ibis-ctas-{util.guid()}'
 
         self.con.kudu.create_table(
             impala_name2,
@@ -276,7 +276,7 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
         ischema = ksupport.schema_kudu_to_ibis(kschema, drop_nn=True)
 
         impala_name = self._temp_impala_name()
-        kudu_name = 'ibis-empty-{0}'.format(util.guid())
+        kudu_name = f'ibis-empty-{util.guid()}'
 
         self.con.kudu.create_table(
             impala_name,
@@ -291,4 +291,4 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
         self.temp_tables.append(kudu_name)
 
     def _temp_impala_name(self):
-        return 'kudu_test_{0}'.format(util.guid())
+        return f'kudu_test_{util.guid()}'

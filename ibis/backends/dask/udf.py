@@ -35,8 +35,7 @@ def make_struct_op_meta(op: ir.Expr) -> List[Tuple[str, np.dtype]]:
 @pre_execute.register(ops.ElementWiseVectorizedUDF)
 @pre_execute.register(ops.ElementWiseVectorizedUDF, Client)
 def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
-    """Register execution rules for elementwise UDFs.
-    """
+    """Register execution rules for elementwise UDFs."""
     input_type = op.input_type
 
     # definitions
@@ -129,7 +128,8 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
                 meta = make_struct_op_meta(op)
             else:
                 meta = make_meta_series(
-                    dtype=op._output_type.to_dask(), name=args[0].name,
+                    dtype=op._output_type.to_dask(),
+                    name=args[0].name,
                 )
             result = dd.from_delayed(lazy_result, meta=meta)
 
@@ -237,7 +237,10 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
             meta = dd.utils.make_meta(make_struct_op_meta(op))
             meta.index.name = parent_df.index.name
             result = grouped_df.apply(
-                apply_wrapper, func, col_names, meta=meta,
+                apply_wrapper,
+                func,
+                col_names,
+                meta=meta,
             )
             # we don't know how data moved around here
             result = result.reset_index().set_index(parent_df.index.name)

@@ -75,7 +75,7 @@ def test_noop_cast(alltypes, translate, column):
     col = alltypes[column]
     result = col.cast(col.type())
     assert result.equals(col)
-    assert translate(result) == '`{}`'.format(column)
+    assert translate(result) == f'`{column}`'
 
 
 def test_timestamp_cast_noop(alltypes, translate):
@@ -497,6 +497,20 @@ def test_null_column(alltypes, translate):
     expr = t.mutate(na_column=ibis.NA).na_column
     result = expr.execute()
     expected = pd.Series([None] * nrows, name='na_column')
+    tm.assert_series_equal(result, expected)
+
+
+def test_literal_none_to_nullable_colum(alltypes):
+    # GH: 2985
+    t = alltypes
+    nrows = t.count().execute()
+    expr = t.mutate(
+        ibis.literal(None, dt.String(nullable=True)).name(
+            'nullable_string_column'
+        )
+    )
+    result = expr['nullable_string_column'].execute()
+    expected = pd.Series([None] * nrows, name='nullable_string_column')
     tm.assert_series_equal(result, expected)
 
 

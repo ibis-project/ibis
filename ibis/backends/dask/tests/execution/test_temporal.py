@@ -68,7 +68,8 @@ def test_cast_datetime_strings_to_date(t, df, column):
     df_computed = df.compute()
     expected = dd.from_pandas(
         pd.to_datetime(
-            df_computed[column], infer_datetime_format=True,
+            df_computed[column],
+            infer_datetime_format=True,
         ).dt.normalize(),
         npartitions=1,
     )
@@ -145,7 +146,9 @@ def test_times_ops(t, df):
     'column', ['plain_datetimes_utc', 'plain_datetimes_naive']
 )
 def test_times_ops_with_tz(t, df, tz, rconstruct, column):
-    expected = dd.from_array(rconstruct(len(df), dtype=bool),)
+    expected = dd.from_array(
+        rconstruct(len(df), dtype=bool),
+    )
     time = t[column].time()
     expr = time.between('01:00', '02:00', timezone=tz)
     result = expr.compile()
@@ -192,6 +195,7 @@ def test_interval_arithmetic(op, expected):
     expr = op(t1.td, t1.td)
     result = expr.compile()
     expected = dd.from_pandas(
-        pd.Series(expected(data, data), name='td'), npartitions=1,
+        pd.Series(expected(data, data), name='td'),
+        npartitions=1,
     )
     tm.assert_series_equal(result.compute(), expected.compute())

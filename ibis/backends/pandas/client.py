@@ -231,7 +231,7 @@ def ibis_dtype_to_pandas(ibis_dtype):
     if isinstance(ibis_dtype, dt.Timestamp) and ibis_dtype.timezone:
         return DatetimeTZDtype('ns', ibis_dtype.timezone)
     elif isinstance(ibis_dtype, dt.Interval):
-        return np.dtype('timedelta64[{}]'.format(ibis_dtype.unit))
+        return np.dtype(f'timedelta64[{ibis_dtype.unit}]')
     elif isinstance(ibis_dtype, dt.Category):
         return CategoricalDtype()
     elif type(ibis_dtype) in _ibis_dtypes:

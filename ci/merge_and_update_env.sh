@@ -9,8 +9,8 @@ if [ "$#" -eq 0 ]; then
   exit 1
 fi
 
-# install conda-merge
-mamba install --name ibis conda-merge
+# install conda-merge, don't try to update already installed dependencies
+mamba install --freeze-installed --name ibis conda-merge
 
 additional_env_files=()
 

@@ -156,7 +156,7 @@ def test_nullable_output():
         [
             ('foo', 'int64'),
             ('bar', ibis.expr.datatypes.int64(nullable=False)),
-            ('baz', 'boolean*'),
+            ('baz', 'boolean'),
         ]
     )
 

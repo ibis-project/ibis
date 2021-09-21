@@ -141,7 +141,7 @@ def execute_cast_series_timestamp(op, data, type, **kwargs):
         timestamps = method(tz)
         return pd.Series(timestamps, index=data.index, name=data.name)
 
-    raise TypeError("Don't know how to cast {} to {}".format(from_type, type))
+    raise TypeError(f"Don't know how to cast {from_type} to {type}")
 
 
 def _normalize(values, original_index, name, timezone=None):
@@ -179,7 +179,7 @@ def execute_cast_series_date(op, data, type, **kwargs):
             name=data.name,
         )
 
-    raise TypeError("Don't know how to cast {} to {}".format(from_type, type))
+    raise TypeError(f"Don't know how to cast {from_type} to {type}")
 
 
 @execute_node.register(ops.SortKey, pd.Series, bool)
@@ -363,9 +363,7 @@ def execute_cast_string_literal(op, data, type, **kwargs):
     try:
         cast_function = constants.IBIS_TO_PYTHON_LITERAL_TYPES[type]
     except KeyError:
-        raise TypeError(
-            "Don't know how to cast {!r} to type {}".format(data, type)
-        )
+        raise TypeError(f"Don't know how to cast {data!r} to type {type}")
     else:
         return cast_function(data)
 
@@ -518,7 +516,7 @@ def execute_arbitrary_series_groupby(op, data, _, aggcontext=None, **kwargs):
 
     if how not in {'first', 'last'}:
         raise com.OperationNotDefinedError(
-            'Arbitrary {!r} is not supported'.format(how)
+            f'Arbitrary {how!r} is not supported'
         )
     return aggcontext.agg(data, how)
 
@@ -600,7 +598,7 @@ def execute_arbitrary_series_mask(op, data, mask, aggcontext=None, **kwargs):
         index = -1
     else:
         raise com.OperationNotDefinedError(
-            'Arbitrary {!r} is not supported'.format(op.how)
+            f'Arbitrary {op.how!r} is not supported'
         )
 
     data = data[mask] if mask is not None else data
@@ -702,7 +700,7 @@ def execute_binary_op(op, left, right, **kwargs):
         operation = constants.BINARY_OPERATIONS[op_type]
     except KeyError:
         raise NotImplementedError(
-            'Binary operation {} not implemented'.format(op_type.__name__)
+            f'Binary operation {op_type.__name__} not implemented'
         )
     else:
         return operation(left, right)

@@ -7,7 +7,7 @@ Install dependencies for Ibis's Clickhouse dialect(minimal supported version is 
 
 ::
 
-  pip install ibis-framework[clickhouse]
+  pip install 'ibis-framework[clickhouse]'
 
 Create a client by passing in database connection parameters such as ``host``,
 ``port``, ``database``, and ``user`` to :func:`ibis.clickhouse.connect`:

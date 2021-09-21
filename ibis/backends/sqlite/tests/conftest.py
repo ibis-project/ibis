@@ -30,18 +30,18 @@ class TestConf(BackendTest, RoundAwayFromZero):
         return t.mutate(timestamp_col=t.timestamp_col.cast('timestamp'))
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture
 def dbpath(data_directory):
     default = str(data_directory / 'ibis_testing.db')
     return os.environ.get('IBIS_TEST_SQLITE_DATABASE', default)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture
 def con(dbpath):
     return ibis.sqlite.connect(dbpath)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture
 def db(con):
     return con.database()
 
@@ -73,16 +73,16 @@ def sqla_compile(dialect):
     )
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture
 def alltypes(db):
     return db.functional_alltypes
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture
 def alltypes_sqla(alltypes):
     return alltypes.op().sqla_table
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture
 def df(alltypes):
     return alltypes.execute()

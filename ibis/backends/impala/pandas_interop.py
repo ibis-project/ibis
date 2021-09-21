@@ -41,7 +41,7 @@ class DataFrameWriter:
 
     def write_temp_csv(self):
         temp_hdfs_dir = pjoin(
-            options.impala.temp_hdfs_path, 'pandas_{}'.format(util.guid())
+            options.impala.temp_hdfs_path, f'pandas_{util.guid()}'
         )
         self.hdfs.mkdir(temp_hdfs_dir)
 
@@ -80,7 +80,7 @@ class DataFrameWriter:
             )
 
             if options.verbose:
-                util.log('Writing CSV to: {0}'.format(path))
+                util.log(f'Writing CSV to: {path}')
 
             self.hdfs.put(path, tmp_file_path)
         return path
@@ -90,7 +90,7 @@ class DataFrameWriter:
         return sch.infer(self.df)
 
     def delimited_table(self, csv_dir, name=None, database=None):
-        temp_delimited_name = 'ibis_tmp_pandas_{0}'.format(util.guid())
+        temp_delimited_name = f'ibis_tmp_pandas_{util.guid()}'
         schema = self.get_schema()
 
         return self.client.delimited_file(

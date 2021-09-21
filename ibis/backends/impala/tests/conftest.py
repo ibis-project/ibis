@@ -90,7 +90,7 @@ class IbisTestEnv:
         return tmp_db
 
     options.impala.temp_hdfs_path = tmp_dir = os.environ.get(
-        'IBIS_TEST_TMP_HDFS_DIR', '/tmp/__ibis_test_{}'.format(util.guid())
+        'IBIS_TEST_TMP_HDFS_DIR', f'/tmp/__ibis_test_{util.guid()}'
     )
 
     @property
@@ -131,34 +131,34 @@ class IbisTestEnv:
         return os.environ.get('IBIS_TEST_WEBHDFS_USER', 'hdfs')
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def env():
     return IbisTestEnv()
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def tmp_dir(env):
     options.impala.temp_hdfs_path = tmp_dir = env.tmp_dir
     return tmp_dir
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def test_data_db(env):
     return env.test_data_db
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def test_data_dir(env):
     return env.test_data_dir
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def hdfs_superuser(env):
     return env.hdfs_superuser
     return os.environ.get('IBIS_TEST_HDFS_SUPERUSER', 'hdfs')
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def hdfs(env, tmp_dir):
     if env.auth_mechanism in {'GSSAPI', 'LDAP'}:
         warnings.warn("Ignoring invalid Certificate Authority errors")
@@ -177,7 +177,7 @@ def hdfs(env, tmp_dir):
     return client
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def con_no_hdfs(env, test_data_db):
     con = ibis.impala.connect(
         host=env.impala_host,
@@ -194,7 +194,7 @@ def con_no_hdfs(env, test_data_db):
         con.set_database(test_data_db)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def con(env, hdfs, test_data_db):
     con = ibis.impala.connect(
         host=env.impala_host,
@@ -212,7 +212,7 @@ def con(env, hdfs, test_data_db):
         con.set_database(test_data_db)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def temp_char_table(con):
     statement = """\
 CREATE TABLE IF NOT EXISTS {} (
@@ -229,7 +229,7 @@ CREATE TABLE IF NOT EXISTS {} (
         con.drop_table(name)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def tmp_db(env, con, test_data_db):
     tmp_db = env.tmp_db
 
@@ -251,7 +251,7 @@ def tmp_db(env, con, test_data_db):
             pass
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def con_no_db(env, hdfs):
     con = ibis.impala.connect(
         host=env.impala_host,
@@ -269,18 +269,18 @@ def con_no_db(env, hdfs):
         con.set_database(None)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def alltypes(con, test_data_db):
     return con.database(test_data_db).functional_alltypes
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def alltypes_df(alltypes):
     return alltypes.execute()
 
 
 def _random_identifier(suffix):
-    return '__ibis_test_{}_{}'.format(suffix, util.guid())
+    return f'__ibis_test_{suffix}_{util.guid()}'
 
 
 @pytest.fixture
@@ -368,7 +368,7 @@ def mockcon():
     return MockConnection()
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def kudu_table(con, test_data_db):
     name = 'kudu_backed_table'
     con.raw_sql(

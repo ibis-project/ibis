@@ -209,7 +209,8 @@ def test_array_repeat(t, df, n, mul):
     expr = mul(t.array_of_strings, n)
     result = expr.execute()
     expected = df.apply(
-        lambda row: np.tile(row.array_of_strings, max(n, 0)), axis=1,
+        lambda row: np.tile(row.array_of_strings, max(n, 0)),
+        axis=1,
     )
     tm.assert_series_equal(result, expected)
 

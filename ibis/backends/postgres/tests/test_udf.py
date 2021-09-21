@@ -25,8 +25,8 @@ def next_serial(con):
 
 @pytest.fixture(scope='session')
 def test_schema(con, next_serial):
-    schema_name = 'udf_test_{}'.format(next_serial)
-    con.con.execute("CREATE SCHEMA IF NOT EXISTS {};".format(schema_name))
+    schema_name = f'udf_test_{next_serial}'
+    con.con.execute(f"CREATE SCHEMA IF NOT EXISTS {schema_name};")
     return schema_name
 
 
@@ -90,7 +90,7 @@ def con_for_udf(
         yield con
     finally:
         # teardown
-        con.con.execute("DROP SCHEMA IF EXISTS {} CASCADE".format(test_schema))
+        con.con.execute(f"DROP SCHEMA IF EXISTS {test_schema} CASCADE")
 
 
 @pytest.fixture
