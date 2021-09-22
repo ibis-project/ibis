@@ -165,7 +165,7 @@ class BaseBackend(abc.ABC):
             '`name in client.list_tables()` instead.',
             FutureWarning,
         )
-        return name in self.client.list_tables(database=database)
+        return len(self.client.list_tables(like=name, database=database)) > 0
 
     # @abc.abstractmethod
     def table(self, name: str, database: str = None) -> ir.TableExpr:
