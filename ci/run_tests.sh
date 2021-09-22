@@ -21,7 +21,6 @@ set -x
 
 pytest "${TESTS_DIRS[@]}" \
     -ra \
-    -vv \
     --junitxml=junit.xml \
     --cov=ibis \
     --cov-report=xml:coverage.xml "$@"

@@ -258,6 +258,20 @@ def test_database_default_current_database(con):
     assert db.name == con.current_database
 
 
+def test_close_drops_temp_tables(con, test_data_dir):
+    from posixpath import join as pjoin
+
+    hdfs_path = pjoin(test_data_dir, 'parquet/tpch_region')
+
+    table = con.parquet_file(hdfs_path)
+
+    name = table.op().name
+    assert name in con.list_tables(like=name)
+    con.close()
+
+    assert name not in con.list_tables(like=name)
+
+
 def test_set_compression_codec(con):
     old_opts = con.get_options()
     assert old_opts['COMPRESSION_CODEC'].upper() in ('NONE', '')
