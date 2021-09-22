@@ -36,6 +36,9 @@ class HDFClient(FileClient):
         self.dictionary[name] = path
         return t
 
+    def compile(self, expr, *args, **kwargs):
+        return expr
+
 
 class Backend(BaseFileBackend):
     name = 'hdf5'
