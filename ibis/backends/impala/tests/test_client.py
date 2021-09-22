@@ -268,6 +268,9 @@ def test_close_drops_temp_tables(con, test_data_dir):
 
     qualified_name = table.op().name
     _, name, _ = fully_qualified_re.match(qualified_name).groups()
+    print('LIST OF TABLES')
+    for table in con.list_tables():
+        print(table)
     assert name in con.list_tables()
     con.close()
 
