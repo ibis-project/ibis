@@ -29,7 +29,7 @@ class HDFClient(FileClient):
 
         # get the schema
         with pd.HDFStore(str(path), mode='r') as store:
-            df = store.select(name, start=0, stop=0)
+            df = store.select(name, start=0, stop=50)
             schema = sch.infer(df)
 
         t = self.table_class(name, schema, self).to_expr()
