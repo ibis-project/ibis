@@ -183,7 +183,19 @@ def download(repo_url, directory):
 
 @cli.command()
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
-@click.option('-d', '--data-directory', default=DATA_DIR)
+@click.option(
+    '-d',
+    '--data-directory',
+    default=DATA_DIR,
+    type=click.Path(
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+        writable=True,
+        readable=True,
+        path_type=Path,
+    ),
+)
 @click.option('-i', '--ignore-missing-dependency', is_flag=True, default=True)
 def parquet(tables, data_directory, ignore_missing_dependency, **params):
     try:
@@ -197,7 +209,6 @@ def parquet(tables, data_directory, ignore_missing_dependency, **params):
         else:
             raise click.ClickException(msg)
 
-    data_directory = Path(data_directory)
     for table, df in read_tables(tables, data_directory):
         arrow_table = pa.Table.from_pandas(df)
         target_path = data_directory / f'{table}.parquet'
@@ -214,11 +225,23 @@ def parquet(tables, data_directory, ignore_missing_dependency, **params):
     '-S',
     '--schema',
     type=click.File('rt'),
-    default=str(SCRIPT_DIR / 'schema' / 'postgresql.sql'),
+    default=SCRIPT_DIR / 'schema' / 'postgresql.sql',
     help='Path to SQL file that initializes the database via DDL.',
 )
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES + ['geo'])
-@click.option('-d', '--data-directory', default=DATA_DIR)
+@click.option(
+    '-d',
+    '--data-directory',
+    default=DATA_DIR,
+    type=click.Path(
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+        writable=True,
+        readable=True,
+        path_type=Path,
+    ),
+)
 @click.option(
     '-l',
     '--psql-path',
@@ -233,7 +256,6 @@ def parquet(tables, data_directory, ignore_missing_dependency, **params):
 )
 def postgres(schema, tables, data_directory, psql_path, plpython, **params):
     psql = local[psql_path]
-    data_directory = Path(data_directory)
     logger.info('Initializing PostgreSQL...')
     engine = init_database(
         'postgresql', params, schema, isolation_level='AUTOCOMMIT'
@@ -298,19 +320,34 @@ def postgres(schema, tables, data_directory, psql_path, plpython, **params):
 
 
 @cli.command()
-@click.option('-D', '--database', default=SCRIPT_DIR / 'ibis_testing.db')
+@click.option(
+    '-D',
+    '--database',
+    default=SCRIPT_DIR / 'ibis_testing.db',
+    type=click.Path(path_type=Path),
+)
 @click.option(
     '-S',
     '--schema',
     type=click.File('rt'),
-    default=str(SCRIPT_DIR / 'schema' / 'sqlite.sql'),
+    default=SCRIPT_DIR / 'schema' / 'sqlite.sql',
     help='Path to SQL file that initializes the database via DDL.',
 )
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
-@click.option('-d', '--data-directory', default=DATA_DIR)
+@click.option(
+    '-d',
+    '--data-directory',
+    default=DATA_DIR,
+    type=click.Path(
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+        writable=True,
+        readable=True,
+        path_type=Path,
+    ),
+)
 def sqlite(database, schema, tables, data_directory, **params):
-    database = Path(database)
-    data_directory = Path(data_directory)
     logger.info('Initializing SQLite...')
 
     try:
@@ -333,13 +370,24 @@ def sqlite(database, schema, tables, data_directory, **params):
     '-S',
     '--schema',
     type=click.File('rt'),
-    default=str(SCRIPT_DIR / 'schema' / 'mysql.sql'),
+    default=SCRIPT_DIR / 'schema' / 'mysql.sql',
     help='Path to SQL file that initializes the database via DDL.',
 )
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
-@click.option('-d', '--data-directory', default=DATA_DIR)
+@click.option(
+    '-d',
+    '--data-directory',
+    default=DATA_DIR,
+    type=click.Path(
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+        writable=True,
+        readable=True,
+        path_type=Path,
+    ),
+)
 def mysql(schema, tables, data_directory, **params):
-    data_directory = Path(data_directory)
     logger.info('Initializing MySQL...')
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -359,13 +407,24 @@ def mysql(schema, tables, data_directory, **params):
     '-S',
     '--schema',
     type=click.File('rt'),
-    default=str(SCRIPT_DIR / 'schema' / 'clickhouse.sql'),
+    default=SCRIPT_DIR / 'schema' / 'clickhouse.sql',
     help='Path to SQL file that initializes the database via DDL.',
 )
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
-@click.option('-d', '--data-directory', default=DATA_DIR)
+@click.option(
+    '-d',
+    '--data-directory',
+    default=DATA_DIR,
+    type=click.Path(
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+        writable=True,
+        readable=True,
+        path_type=Path,
+    ),
+)
 def clickhouse(schema, tables, data_directory, **params):
-    data_directory = Path(data_directory)
     logger.info('Initializing ClickHouse...')
     engine = init_database('clickhouse+native', params, schema)
 
@@ -391,7 +450,6 @@ def pandas(**params):
     have an option for the backend for consistency, and to not
     have to avoid calling `./datamgr.py pandas` in the CI.
     """
-    pass
 
 
 @cli.command()
@@ -401,7 +459,6 @@ def dask(**params):
     have an option for the backend for consistency, and to not
     have to avoid calling `./datamgr.py dask` in the CI.
     """
-    pass
 
 
 @cli.command()
@@ -411,17 +468,36 @@ def csv(**params):
     have an option for the backend for consistency, and to not
     have to avoid calling `./datamgr.py csv` in the CI.
     """
-    pass
 
 
 @cli.command()
-def hdf5(**params):
+@click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
+@click.option(
+    '-d',
+    '--data-directory',
+    default=DATA_DIR,
+    type=click.Path(
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+        writable=True,
+        readable=True,
+        path_type=Path,
+    ),
+)
+def hdf5(tables, data_directory, **params):
     """
     The hdf5 backend does not need test data, but we still
     have an option for the backend for consistency, and to not
     have to avoid calling `./datamgr.py hdf5` in the CI.
     """
-    pass
+    for table, df in read_tables(tables, data_directory):
+        df.to_hdf(
+            data_directory / f'{table}.h5',
+            key=table,
+            mode='w',
+            format='table',
+        )
 
 
 @cli.command()
@@ -431,7 +507,6 @@ def pyspark(**params):
     have an option for the backend for consistency, and to not
     have to avoid calling `./datamgr.py pyspark` in the CI.
     """
-    pass
 
 
 if __name__ == '__main__':
