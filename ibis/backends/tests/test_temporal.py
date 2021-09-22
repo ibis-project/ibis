@@ -83,7 +83,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
         param(
             'W',
             marks=pytest.mark.xpass_backends(
-                ('csv', 'pandas', 'dask', 'parquet')
+                ('csv', 'pandas', 'dask', 'parquet', 'hdf5')
             ),
         ),
         'h',
@@ -116,7 +116,7 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
         param(
             'W',
             marks=pytest.mark.xpass_backends(
-                ('csv', 'pandas', 'dask', 'parquet')
+                ('csv', 'pandas', 'dask', 'parquet', 'hdf5')
             ),
         ),
     ],
@@ -172,6 +172,7 @@ def test_date_truncate(backend, alltypes, df, unit):
                     'impala',
                     'postgres',
                     'dask',
+                    'hdf5',
                 )
             ),
         ),
@@ -431,13 +432,14 @@ unit_factors = {'s': int(1e9), 'ms': int(1e6), 'us': int(1e3), 'ns': 1}
                     'parquet',
                     'spark',
                     'dask',
+                    'hdf5',
                 )
             ),
         ),
         param(
             'ns',
             marks=pytest.mark.xpass_backends(
-                ('csv', 'pandas', 'parquet', 'dask')
+                ('csv', 'pandas', 'parquet', 'dask', 'hdf5')
             ),
         ),
     ],
