@@ -83,9 +83,6 @@ class ParquetClient(FileClient):
 
         return table
 
-    def compile(self, expr, *args, **kwargs):
-        return expr
-
     @property
     def version(self):
         return parse_version(pa.__version__)
