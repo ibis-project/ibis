@@ -85,9 +85,9 @@ class UserDefinedFunction:
 
         op = self.func_type(
             func=func,
-            args=args,
+            func_args=args,
             input_type=self.input_type,
-            output_type=self.output_type,
+            return_type=self.output_type,
         )
 
         return op.to_expr()
