@@ -56,9 +56,6 @@ class CSVClient(FileClient):
 
         return table
 
-    def compile(self, expr, *args, **kwargs):
-        return expr
-
     @property
     def version(self):
         return parse_version(pd.__version__)

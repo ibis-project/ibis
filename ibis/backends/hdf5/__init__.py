@@ -23,13 +23,16 @@ class HDFClient(FileClient):
             str(path), key, format=format, data_columns=data_columns, **kwargs
         )
 
-    def table(self, name, path):
+    def table(self, name, path=None):
+        if path is None:
+            path = self.root / f"{name}.{self.extension}"
+
         if name not in self.list_tables(path):
             raise AttributeError(name)
 
         # get the schema
         with pd.HDFStore(str(path), mode='r') as store:
-            df = store.select(name, start=0, stop=0)
+            df = store.select(name, start=0, stop=50)
             schema = sch.infer(df)
 
         t = self.table_class(name, schema, self).to_expr()
