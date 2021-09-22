@@ -94,6 +94,33 @@ class AlchemyClient(SQLClient):
         with self.con.begin() as bind:
             yield bind
 
+    def table(self, name, database=None, schema=None):
+        """Create a table expression that references a particular table
+        `name` in a database called `database`.
+
+        Parameters
+        ----------
+        name : str
+            The name of the table to retrieve.
+        database : str, optional
+            The database in which the table referred to by `name` resides. If
+            ``None`` then the ``current_database`` is used.
+        schema : str, optional
+            The schema in which the table resides.  If ``None`` then the
+            `public` schema is assumed.
+
+        Returns
+        -------
+        table : TableExpr
+            A table expression.
+        """
+        if database is not None and database != self.current_database:
+            return self.database(name=database).table(name=name, schema=schema)
+
+        alch_table = self._get_sqla_table(name, schema=schema)
+        node = self.table_class(alch_table, self, self._schemas.get(name))
+        return self.table_expr_class(node)
+
     def create_table(self, name, expr=None, schema=None, database=None):
         if database == self.current_database:
             # avoid fully qualified name
