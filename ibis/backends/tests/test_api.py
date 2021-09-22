@@ -10,6 +10,12 @@ def test_version(backend):
     assert isinstance(backend.api.version, str)
 
 
+# `list_databases` is underspecified for the HDF5 backend, so it's skipped
+# until that can be specified more clearly.
+# 1. `current_database` returns '.', but isn't listed in list_databases()
+# 2. list_databases() returns directories which don't make sense as HDF5
+#    databases
+@pytest.mark.xfail_backends(['hdf5'])
 @pytest.mark.xfail_unsupported
 def test_database_consistency(con):
     # every backend has a different set of databases, not testing the
@@ -24,6 +30,8 @@ def test_database_consistency(con):
     assert current_database in databases
 
 
+# HDF5 requires a path argument
+@pytest.mark.xfail_backends(['hdf5'])
 def test_list_tables(con):
     tables = con.list_tables()
     assert isinstance(tables, list)
