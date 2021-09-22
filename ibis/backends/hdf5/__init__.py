@@ -23,7 +23,10 @@ class HDFClient(FileClient):
             str(path), key, format=format, data_columns=data_columns, **kwargs
         )
 
-    def table(self, name, path):
+    def table(self, name, path=None):
+        if path is None:
+            path = self.root / f"{name}.{self.extension}"
+
         if name not in self.list_tables(path):
             raise AttributeError(name)
 
