@@ -81,6 +81,9 @@ class FileClient(Client):
         self.path = path
         return super().database(name)
 
+    def compile(self, expr, *args, **kwargs):
+        return expr
+
     def execute(self, expr, params=None, **kwargs):  # noqa
         assert isinstance(expr, ir.Expr)
         return execute_and_reset(expr, params=params, **kwargs)
