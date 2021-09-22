@@ -51,7 +51,7 @@ def calc_zscore(s):
             lambda t: t.id.rank(pct=True),
             id='percent_rank',
             marks=pytest.mark.xpass_backends(
-                ['csv', 'pandas', 'parquet', 'pyspark', 'omniscidb'],
+                ['csv', 'pandas', 'parquet', 'pyspark', 'omniscidb', 'hdf5'],
                 raises=AssertionError,
             ),
         ),
@@ -76,7 +76,7 @@ def calc_zscore(s):
             lambda t: t.cumcount(),
             id='row_number',
             marks=pytest.mark.xfail_backends(
-                ('pandas', 'dask', 'csv', 'parquet'),
+                ('pandas', 'dask', 'csv', 'parquet', 'hdf5'),
                 raises=(IndexError, com.UnboundExpressionError),
             ),
         ),
