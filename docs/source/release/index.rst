@@ -12,6 +12,7 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :support:`2905` Deprecate `exists_table(table)` in favor of `table in list_tables()`
 * :bug:`2991` Fix data races in impala connection pool accounting
 * :bug:`2985` Fix null literal compilation in the Clickhouse backend
 * :bug:`2984` Fix order of limit and offset parameters in the Clickhouse backend

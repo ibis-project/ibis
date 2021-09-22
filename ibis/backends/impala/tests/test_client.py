@@ -11,7 +11,6 @@ import ibis.common.exceptions as com
 import ibis.config as config
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-from ibis.backends.base.sql.ddl import fully_qualified_re
 from ibis.tests.util import assert_equal
 
 
@@ -257,24 +256,6 @@ def test_database_repr(db, test_data_db):
 def test_database_default_current_database(con):
     db = con.database()
     assert db.name == con.current_database
-
-
-def test_close_drops_temp_tables(con, test_data_dir):
-    from posixpath import join as pjoin
-
-    hdfs_path = pjoin(test_data_dir, 'parquet/tpch_region')
-
-    table = con.parquet_file(hdfs_path)
-
-    qualified_name = table.op().name
-    _, name, _ = fully_qualified_re.match(qualified_name).groups()
-    print('LIST OF TABLES')
-    for table in con.list_tables(like=name, database=None):
-        print(table)
-    assert name in con.list_tables()
-    con.close()
-
-    assert name not in con.list_tables()
 
 
 def test_set_compression_codec(con):
