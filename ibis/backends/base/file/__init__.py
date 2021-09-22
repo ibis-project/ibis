@@ -42,10 +42,10 @@ class FileDatabase(Database):
             path = self.path
         return sorted(self.client.list_databases(path=path))
 
-    def list_tables(self, path=None):
+    def list_tables(self, path=None, database=None):
         if path is None:
             path = self.path
-        return sorted(self.client.list_tables(path=path))
+        return sorted(self.client.list_tables(path=path, database=database))
 
 
 class FileClient(Client):
@@ -91,8 +91,10 @@ class FileClient(Client):
     def list_databases(self, path=None, like=None):
         return self.backend.list_databases(path=path, like=like)
 
-    def list_tables(self, path=None, like=None):
-        return self.backend.list_tables(path=path, like=like)
+    def list_tables(self, path=None, like=None, database=None):
+        return self.backend.list_tables(
+            path=path, like=like, database=database
+        )
 
     def _list_tables_files(self, path=None):
         # tables are files in a dir
@@ -137,7 +139,9 @@ class BaseFileBackend(BaseBackend):
     def version(self) -> str:
         return pd.__version__
 
-    def list_tables(self, path: Path = None, like: str = None):
+    def list_tables(
+        self, path: Path = None, like: str = None, database: str = None
+    ):
         # For file backends, we return files in the `path` directory.
 
         def is_valid(path):

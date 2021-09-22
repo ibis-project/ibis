@@ -255,21 +255,6 @@ class ClickhouseClient(SQLClient):
         # Must nuke all cursors
         raise NotImplementedError
 
-    def exists_table(self, name, database=None):
-        """
-        Determine if the indicated table or view exists
-
-        Parameters
-        ----------
-        name : string
-        database : string, default None
-
-        Returns
-        -------
-        if_exists : boolean
-        """
-        return len(self.list_tables(like=name, database=database)) > 0
-
     def _ensure_temp_db_exists(self):
         name = (options.clickhouse.temp_db,)
         if name not in self.list_databases():

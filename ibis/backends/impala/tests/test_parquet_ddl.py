@@ -15,7 +15,7 @@ def test_cleanup_tmp_table_on_gc(con, test_data_dir):
     name = table.op().name
     table = None
     gc.collect()
-    assert not con.exists_table(name)
+    assert name not in con.list_tables()
 
 
 def test_persist_parquet_file_with_name(con, test_data_dir, temp_table_db):

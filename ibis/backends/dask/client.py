@@ -260,18 +260,3 @@ class DaskClient(Client):
 
         """
         return sch.infer(self.dictionary[table_name])
-
-    def exists_table(self, name: str) -> bool:
-        """Determine if the indicated table or view exists.
-
-        Parameters
-        ----------
-        name : str
-        database : str
-
-        Returns
-        -------
-        bool
-
-        """
-        return bool(self.list_tables(like=name))

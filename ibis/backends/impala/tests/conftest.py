@@ -225,7 +225,7 @@ CREATE TABLE IF NOT EXISTS {} (
     try:
         yield con.table(name)
     finally:
-        assert con.exists_table(name), name
+        assert name in con.list_tables(), name
         con.drop_table(name)
 
 
@@ -300,7 +300,7 @@ def temp_table(con):
     try:
         yield name
     finally:
-        assert con.exists_table(name), name
+        assert name in con.list_tables(), name
         con.drop_table(name)
 
 
@@ -310,7 +310,7 @@ def temp_table_db(con, temp_database):
     try:
         yield temp_database, name
     finally:
-        assert con.exists_table(name, database=temp_database), name
+        assert name in con.list_tables(database=temp_database), name
         con.drop_table(name, database=temp_database)
 
 
@@ -320,7 +320,7 @@ def temp_view(con):
     try:
         yield name
     finally:
-        assert con.exists_table(name), name
+        assert name in con.list_tables(), name
         con.drop_view(name)
 
 
@@ -330,7 +330,7 @@ def temp_view_db(con, temp_database):
     try:
         yield temp_database, name
     finally:
-        assert con.exists_table(name, database=temp_database), name
+        assert name in con.list_tables(database=temp_database), name
         con.drop_view(name, database=temp_database)
 
 

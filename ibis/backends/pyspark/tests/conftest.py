@@ -306,7 +306,7 @@ def temp_table(client):
     try:
         yield name
     finally:
-        assert client.exists_table(name), name
+        assert name in client.list_tables(), name
         client.drop_table(name)
 
 
@@ -328,7 +328,7 @@ def temp_table_db(client, temp_database):
     try:
         yield temp_database, name
     finally:
-        assert client.exists_table(name, database=temp_database), name
+        assert name in client.list_tables(database=temp_database), name
         client.drop_table(name, database=temp_database)
 
 
@@ -338,5 +338,5 @@ def temp_view(client):
     try:
         yield name
     finally:
-        assert client.exists_table(name), name
+        assert name in client.list_tables(), name
         client.drop_view(name)
