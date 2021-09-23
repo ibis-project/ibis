@@ -277,7 +277,6 @@ class SelectBuilder:
             return scalar_handler
 
         if isinstance(expr, ir.ScalarExpr):
-
             if L.is_scalar_reduction(expr):
                 table_expr, name = L.reduction_to_aggregation(
                     expr, default_name='tmp'
@@ -300,26 +299,6 @@ class SelectBuilder:
 
         elif isinstance(expr, ir.AnalyticExpr):
             return expr.to_aggregation(), toolz.identity
-
-        elif isinstance(expr, ir.ExprList):
-            exprs = expr.exprs()
-
-            is_aggregation = True
-            any_aggregation = False
-
-            for x in exprs:
-                if not L.is_scalar_reduction(x):
-                    is_aggregation = False
-                else:
-                    any_aggregation = True
-
-            if is_aggregation:
-                table = ir.find_base_table(exprs[0])
-                return table.aggregate(exprs), toolz.identity
-            elif not any_aggregation:
-                return expr, toolz.identity
-            else:
-                raise NotImplementedError(expr._repr())
 
         elif isinstance(expr, ir.ColumnExpr):
             op = expr.op()

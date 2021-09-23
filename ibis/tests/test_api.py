@@ -20,7 +20,6 @@ def test_top_level_api():
         'cumulative_window',
         'date',
         'desc',
-        'expr_list',
         'geo_area',
         'geo_as_binary',
         'geo_as_ewkb',
