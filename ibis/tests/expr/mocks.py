@@ -18,7 +18,8 @@ from typing import Optional
 import pytest
 
 import ibis.expr.types as ir
-from ibis.backends.base.sql import SQLClient
+from ibis.backends.base import Client
+from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.base.sql.alchemy import (
     AlchemyCompiler,
     AlchemyTable,
@@ -28,7 +29,7 @@ from ibis.expr.schema import Schema
 from ibis.expr.typing import TimeContext
 
 
-class MockConnection(SQLClient, metaclass=abc.ABCMeta):
+class MockConnection(BaseSQLBackend, Client, metaclass=abc.ABCMeta):
     def __init__(self):
         self.executed_queries = []
 
@@ -423,7 +424,7 @@ class GeoMockConnectionPostGIS(MockAlchemyConnection):
         return Schema.from_tuples(self._tables[name])
 
 
-class GeoMockConnectionOmniSciDB(SQLClient):
+class GeoMockConnectionOmniSciDB(BaseSQLBackend, Client):
     _tables = GEO_TABLE
 
     def __init__(self):
