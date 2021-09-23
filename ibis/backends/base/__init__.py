@@ -15,7 +15,7 @@ from .client import Client, Database
 __all__ = ('BaseBackend', 'Client', 'Database')
 
 
-class BaseBackend(abc.ABC):
+class BaseBackend(Client, abc.ABC):
     """
     Base backend class.
 
@@ -32,11 +32,6 @@ class BaseBackend(abc.ABC):
         """
         Name of the backend, for example 'sqlite'.
         """
-
-    @property
-    @abc.abstractmethod
-    def client_class(self):
-        """Class of the client, like `PandasClient`."""
 
     @abc.abstractmethod
     def connect(connection_string, **options):
@@ -64,8 +59,9 @@ class BaseBackend(abc.ABC):
             'Use the equivalent methods in the backend instead.',
             FutureWarning,
         )
+        client = self.client if hasattr(self, 'client') else self
         return self.database_class(
-            name=name or self.current_database, client=self.client
+            name=name or self.current_database, client=client
         )
 
     @property
@@ -165,7 +161,11 @@ class BaseBackend(abc.ABC):
             '`name in client.list_tables()` instead.',
             FutureWarning,
         )
-        return len(self.client.list_tables(like=name, database=database)) > 0
+        if hasattr(self, 'client'):
+            return (
+                len(self.client.list_tables(like=name, database=database)) > 0
+            )
+        return len(self.list_tables(like=name, database=database)) > 0
 
     # @abc.abstractmethod
     def table(self, name: str, database: str = None) -> ir.TableExpr:
@@ -212,7 +212,9 @@ class BaseBackend(abc.ABC):
         """
         Compile the expression.
         """
-        return self.client_class.compiler.to_sql(expr, params=params)
+        if hasattr(self, 'client_class'):
+            return self.client_class.compiler.to_sql(expr, params=params)
+        return self.compiler.to_sql(expr, params=params)
 
     def execute(self, expr: ir.Expr) -> Any:  # XXX DataFrame for now?
         """ """

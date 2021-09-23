@@ -150,4 +150,6 @@ class BackendTest(abc.ABC):
     def make_context(
         self, params: Optional[Mapping[ir.ValueExpr, Any]] = None
     ):
-        return self.api.client_class.compiler.make_context(params=params)
+        if hasattr(self.api, 'client_class'):
+            return self.api.client_class.compiler.make_context(params=params)
+        return self.api.compiler.make_context(params=params)

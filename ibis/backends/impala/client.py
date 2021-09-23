@@ -19,8 +19,8 @@ import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
-from ibis.backends.base import Database
-from ibis.backends.base.sql import SQLClient
+from ibis.backends.base import Client, Database
+from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.base.sql.compiler import DDL, DML
 from ibis.backends.base.sql.ddl import (
     CTAS,
@@ -751,7 +751,7 @@ class ImpalaTable(ir.TableExpr):
         return self._client.column_stats(self._qualified_name)
 
 
-class ImpalaClient(SQLClient):
+class ImpalaClient(BaseSQLBackend, Client):
 
     """
     An Ibis client interface that uses Impala

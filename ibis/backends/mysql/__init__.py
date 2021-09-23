@@ -1,9 +1,10 @@
+from ibis.backends.base import BaseBackend
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 
 from .client import MySQLClient
 
 
-class Backend(BaseAlchemyBackend):
+class Backend(BaseAlchemyBackend, BaseBackend):
     name = 'mysql'
     client_class = MySQLClient
 

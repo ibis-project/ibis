@@ -10,7 +10,8 @@ import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
-from ibis.backends.base.sql import SQLClient
+from ibis.backends.base import Client
+from ibis.backends.base.sql import BaseSQLBackend
 
 from .datatypes import to_sqla_type
 from .geospatial import geospatial_supported
@@ -39,7 +40,7 @@ class _AutoCloseCursor:
         return self.original_cursor.fetchall()
 
 
-class AlchemyClient(SQLClient):
+class AlchemyClient(Client, BaseSQLBackend):
 
     compiler = AlchemyCompiler
     has_attachment = False

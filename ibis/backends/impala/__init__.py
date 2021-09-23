@@ -2,6 +2,7 @@
 import warnings
 
 import ibis.config
+from ibis.backends.base import BaseBackend
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.base.sql.ddl import fully_qualified_re
 
@@ -16,7 +17,7 @@ from .hdfs import HDFS, WebHDFS, hdfs_connect
 from .udf import *  # noqa: F401,F403
 
 
-class Backend(BaseSQLBackend):
+class Backend(BaseSQLBackend, BaseBackend):
     name = 'impala'
     client_class = ImpalaClient
     database_class = ImpalaDatabase

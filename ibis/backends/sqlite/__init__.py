@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis.backends.base import Database
+from ibis.backends.base import BaseBackend, Database
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 
 from .client import SQLiteClient
 
 
-class Backend(BaseAlchemyBackend):
+class Backend(BaseAlchemyBackend, BaseBackend):
     name = 'sqlite'
     client_class = SQLiteClient
     # TODO check if there is a reason to not use the parent AlchemyDatabase, or
