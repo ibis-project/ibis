@@ -9,8 +9,8 @@ import numpy as np
 import ibis
 import ibis.common.exceptions as com
 import ibis.config as config
-import ibis.expr.types as ir  # TODO(kszucs) remove this
 import ibis.expr.operations as ops
+import ibis.expr.types as ir  # TODO(kszucs) remove this
 import ibis.util as util
 from ibis.config import options
 from ibis.expr.typing import TimeContext
