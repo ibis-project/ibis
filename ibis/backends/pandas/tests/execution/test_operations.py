@@ -729,6 +729,7 @@ def test_summary_non_numeric(batting, batting_df):
 
 def test_summary_non_numeric_group_by(batting, batting_df):
     expr = batting.groupby('teamID').playerID.summary()
+
     result = expr.execute()
     expected = (
         batting_df.groupby('teamID')

@@ -1039,15 +1039,6 @@ def execute_node_coalesce(op, values, **kwargs):
     return compute_row_reduction(coalesce, values)
 
 
-@execute_node.register(ops.ExpressionList, collections.abc.Sequence)
-def execute_node_expr_list(op, sequence, **kwargs):
-    # TODO: no true approx count distinct for pandas, so we use exact for now
-    columns = [e.get_name() for e in op.exprs]
-    schema = ibis.schema(list(zip(columns, (e.type() for e in op.exprs))))
-    data = {col: [execute(el, **kwargs)] for col, el in zip(columns, sequence)}
-    return schema.apply_to(pd.DataFrame(data, columns=columns))
-
-
 def wrap_case_result(raw, expr):
     """Wrap a CASE statement result in a Series and handle returning scalars.
 

@@ -9,7 +9,8 @@ import numpy as np
 import ibis
 import ibis.common.exceptions as com
 import ibis.config as config
-import ibis.expr.types as ir
+import ibis.expr.types as ir  # TODO(kszucs) remove this
+import ibis.expr.operations as ops
 import ibis.util as util
 from ibis.config import options
 from ibis.expr.typing import TimeContext
@@ -314,54 +315,6 @@ class Expr:
         return self._arg.equals(other._arg, cache=cache)
 
 
-class ExprList(Expr):
-    def _type_display(self):
-        return ', '.join(expr._type_display() for expr in self.exprs())
-
-    def exprs(self):
-        return self.op().exprs
-
-    def names(self):
-        return [x.get_name() for x in self.exprs()]
-
-    def types(self):
-        return [x.type() for x in self.exprs()]
-
-    def schema(self):
-        import ibis.expr.schema as sch
-
-        return sch.Schema(self.names(), self.types())
-
-    def rename(self, f):
-        import ibis.expr.operations as ops
-
-        new_exprs = [x.name(f(x.get_name())) for x in self.exprs()]
-        return ops.ExpressionList(new_exprs).to_expr()
-
-    def prefix(self, value):
-        return self.rename(lambda x: value + x)
-
-    def suffix(self, value):
-        return self.rename(lambda x: x + value)
-
-    def concat(self, *others):
-        """
-        Concatenate expression lists
-
-        Returns
-        -------
-        combined : ExprList
-        """
-        import ibis.expr.operations as ops
-
-        exprs = list(self.exprs())
-        for o in others:
-            if not isinstance(o, ExprList):
-                raise TypeError(o)
-            exprs.extend(o.exprs())
-        return ops.ExpressionList(exprs).to_expr()
-
-
 # ---------------------------------------------------------------------
 # Helper / factory functions
 
@@ -430,7 +383,8 @@ class ColumnExpr(ValueExpr):
         """
         Promote this column expression to a table projection
         """
-        roots = self.op().root_tables()
+        roots = ops.distinct_roots(self)
+
         if len(roots) > 1:
             raise com.RelationError(
                 'Cannot convert array expression '
@@ -438,8 +392,8 @@ class ColumnExpr(ValueExpr):
                 'to a projection'
             )
 
-        table = TableExpr(roots[0])
-        return table.projection([self])
+        table = ir.TableExpr(roots[0])
+        return table.projection(self)
 
 
 class AnalyticExpr(Expr):

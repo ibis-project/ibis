@@ -178,15 +178,3 @@ def execute_standard_dev_series(op, data, mask, aggcontext=None, **kwargs):
         'std',
         ddof=variance_ddof[op.how],
     )
-
-
-@execute_node.register(ops.ExpressionList, collections.abc.Sequence)
-def dask_execute_node_expr_list(op, sequence, **kwargs):
-    if all(type(s) != dd.Series for s in sequence):
-        execute_node_expr_list(op, sequence, **kwargs)
-    columns = [e.get_name() for e in op.exprs]
-    schema = ibis.schema(list(zip(columns, (e.type() for e in op.exprs))))
-    data = {col: [execute(el, **kwargs)] for col, el in zip(columns, sequence)}
-    return schema.apply_to(
-        dd.from_pandas(pd.DataFrame(data, columns=columns), npartitions=1)
-    )

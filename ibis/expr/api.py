@@ -125,7 +125,6 @@ __all__ = (
     'date',
     'desc',
     'Expr',
-    'expr_list',
     'geo_area',
     'geo_as_binary',
     'geo_as_ewkb',
@@ -614,7 +613,6 @@ def _binop_expr(name, klass):
             op = klass(self, other)
             return op.to_expr()
         except (com.IbisTypeError, NotImplementedError) as e:
-            print(e)
             return NotImplemented
 
     f.__name__ = name
@@ -1211,7 +1209,10 @@ def _generic_summary(arg, exact_nunique=False, prefix=None):
         unique_metric = arg.approx_nunique().name('uniques')
 
     metrics.append(unique_metric)
-    return _wrap_summary_metrics(metrics, prefix)
+    if prefix is not None:
+        metrics = [e.name(f"{prefix}{e.get_name()}") for e in metrics]
+
+    return ir.find_base_table(arg).aggregate(metrics)
 
 
 def _numeric_summary(arg, exact_nunique=False, prefix=None):
@@ -1244,20 +1245,10 @@ def _numeric_summary(arg, exact_nunique=False, prefix=None):
         unique_metric = arg.approx_nunique().name('approx_nunique')
 
     metrics.append(unique_metric)
-    return _wrap_summary_metrics(metrics, prefix)
-
-
-def _wrap_summary_metrics(metrics, prefix):
-    result = expr_list(metrics)
     if prefix is not None:
-        result = result.prefix(prefix)
-    return result
+        metrics = [e.name(f"{prefix}{e.get_name()}") for e in metrics]
 
-
-def expr_list(exprs):
-    for e in exprs:
-        e.get_name()
-    return ops.ExpressionList(exprs).to_expr()
+    return ir.find_base_table(arg).aggregate(metrics)
 
 
 _generic_column_methods = {

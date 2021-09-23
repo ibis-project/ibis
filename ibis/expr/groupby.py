@@ -311,8 +311,9 @@ class GroupedArray:
     group_concat = _group_agg_dispatch('group_concat')
 
     def summary(self, exact_nunique=False):
-        metric = self.arr.summary(exact_nunique=exact_nunique)
-        return self.parent.aggregate(metric)
+        expr = self.arr.summary(exact_nunique=exact_nunique)
+        metrics = expr.op().metrics
+        return self.parent.aggregate(metrics)
 
 
 class GroupedNumbers(GroupedArray):
@@ -321,5 +322,6 @@ class GroupedNumbers(GroupedArray):
     sum = _group_agg_dispatch('sum')
 
     def summary(self, exact_nunique=False):
-        metric = self.arr.summary(exact_nunique=exact_nunique)
-        return self.parent.aggregate(metric)
+        expr = self.arr.summary(exact_nunique=exact_nunique)
+        metrics = expr.op().metrics
+        return self.parent.aggregate(metrics)

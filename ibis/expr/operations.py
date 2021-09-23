@@ -329,6 +329,7 @@ class DatabaseTable(PhysicalTable):
         return type(self)(new_name, self.args[1], self.source)
 
 
+# TODO(kszucs): WHAT IS THIS?
 class SQLQueryResult(TableNode, HasSchema):
     """A table sourced from the result set of a select query"""
 
@@ -2286,22 +2287,10 @@ class Aggregation(TableNode, HasSchema):
 
         all_exprs = []
         for expr in what:
-            if isinstance(expr, ir.ExprList):
-                all_exprs.extend(expr.exprs())
-            else:
-                bound_expr = ir.bind_expr(table, expr)
-                all_exprs.append(bound_expr)
+            bound_expr = ir.bind_expr(table, expr)
+            all_exprs.append(bound_expr)
 
         return all_exprs
-        # TODO - #2832
-        # this optimization becomes O(n^2) when it calls into
-        # _lift_TableColumn in analysis.py, which itself is O(n) and is
-        # called on each input to the aggregation - thus creating the
-        # aggregation expression can be extremely slow on wide tables
-        # that contain a Selection.
-        # return [
-        #     substitute_parents(x, past_projection=False) for x in all_exprs
-        # ]
 
     def blocks(self):
         return True
@@ -3140,25 +3129,6 @@ class ScalarParameter(ValueOp):
 
     def root_tables(self):
         return []
-
-
-class ExpressionList(Node):
-    """Data structure for a list of arbitrary expressions"""
-
-    exprs = Arg(rlz.noop)
-
-    def __init__(self, values):
-        super().__init__(list(map(rlz.any, values)))
-
-    @property
-    def inputs(self):
-        return (tuple(self.exprs),)
-
-    def root_tables(self):
-        return distinct_roots(self.exprs)
-
-    def output_type(self):
-        return ir.ExprList
 
 
 class ValueList(ValueOp):

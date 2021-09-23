@@ -663,11 +663,7 @@ class SelectBuilder:
             if self.table_set is None:
                 raise com.InternalError('no table set')
         else:
-            # Expressions not depending on any table
-            if isinstance(root_op, ops.ExpressionList):
-                self.select_set = source_expr.exprs()
-            else:
-                self.select_set = [source_expr]
+            self.select_set = [source_expr]
 
     def _collect(self, expr, toplevel=False):
         op = expr.op()
