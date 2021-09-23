@@ -1445,8 +1445,7 @@ class TypedCaseBuilder:
     __slots__ = ()
 
     def type(self):
-        types = [result.type() for result in self.results]
-        return dt.highest_precedence(types)
+        return rlz.highest_precedence_dtype(self.results)
 
     def else_(self, result_expr):
         """
