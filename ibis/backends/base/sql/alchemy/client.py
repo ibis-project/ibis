@@ -117,7 +117,9 @@ class AlchemyClient(SQLClient):
         if database is not None and database != self.current_database:
             return self.database(name=database).table(name=name, schema=schema)
 
-        alch_table = self._get_sqla_table(name, schema=schema)
+        alch_table = self._get_sqla_table(
+            name, schema=schema or self.current_database
+        )
         node = self.table_class(alch_table, self, self._schemas.get(name))
         return self.table_expr_class(node)
 
