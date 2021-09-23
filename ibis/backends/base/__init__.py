@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 import re
 import warnings
-from typing import Any, Callable, List, Type
+from typing import Any, Callable
 
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
@@ -24,7 +24,7 @@ class BaseBackend(abc.ABC):
     """
 
     database_class = Database
-    table_class: Type[ops.DatabaseTable] = ops.DatabaseTable
+    table_class: type[ops.DatabaseTable] = ops.DatabaseTable
 
     @property
     @abc.abstractmethod
@@ -83,7 +83,7 @@ class BaseBackend(abc.ABC):
         """
 
     @abc.abstractmethod
-    def list_databases(self, like: str = None) -> List[str]:
+    def list_databases(self, like: str = None) -> list[str]:
         """
         List existing databases in the current connection.
 
@@ -115,7 +115,7 @@ class BaseBackend(abc.ABC):
         return name in self.client.list_databases()
 
     @staticmethod
-    def _filter_with_like(values: List[str], like: str = None) -> List[str]:
+    def _filter_with_like(values: list[str], like: str = None) -> list[str]:
         """
         Filter names with a `like` pattern (regex).
 
@@ -133,7 +133,7 @@ class BaseBackend(abc.ABC):
         return sorted(filter(lambda t: pattern.findall(t), values))
 
     @abc.abstractmethod
-    def list_tables(self, like: str = None, database: str = None) -> List[str]:
+    def list_tables(self, like: str = None, database: str = None) -> list[str]:
         """
         Return the list of table names in the current database.
 
@@ -153,10 +153,23 @@ class BaseBackend(abc.ABC):
             The list of the table names that match the pattern `like`.
         """
 
+    def exists_table(self, name: str, database: str = None) -> bool:
+        """
+        Return whether a table name exists in the database.
+
+        Deprecated in Ibis 2.0. Use `name in client.list_tables()` instead.
+        """
+        warnings.warn(
+            '`client.exists_table(name)` is deprecated, and will be '
+            'removed in a future version of Ibis. Use '
+            '`name in client.list_tables()` instead.',
+            FutureWarning,
+        )
+        return len(self.client.list_tables(like=name, database=database)) > 0
+
     # @abc.abstractmethod
     def table(self, name: str, database: str = None) -> ir.TableExpr:
-        """
-        """
+        """ """
         warnings.warn(
             '`database` argument of `.table()` is deprecated and '
             'will be removed in a future version of Ibis. Change '
@@ -202,8 +215,7 @@ class BaseBackend(abc.ABC):
         return self.client_class.compiler.to_sql(expr, params=params)
 
     def execute(self, expr: ir.Expr) -> Any:  # XXX DataFrame for now?
-        """
-        """
+        """ """
 
     def verify(self, expr: ir.Expr, params=None) -> bool:
         """

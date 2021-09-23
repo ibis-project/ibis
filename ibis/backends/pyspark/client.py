@@ -95,7 +95,7 @@ class PySparkTable(ir.TableExpr):
             rt = to_schema[name]
             if not lt.castable(rt):
                 raise com.IbisInputError(
-                    'Cannot safely cast {0!r} to {1!r}'.format(lt, rt)
+                    f'Cannot safely cast {lt!r} to {rt!r}'
                 )
 
     def insert(self, obj=None, overwrite=False, values=None, validate=True):
@@ -246,8 +246,7 @@ class PySparkClient(SQLClient):
         self.translator = PySparkExprTranslator()
 
     def compile(self, expr, timecontext=None, params=None, *args, **kwargs):
-        """Compile an ibis expression to a PySpark DataFrame object
-        """
+        """Compile an ibis expression to a PySpark DataFrame object"""
 
         if timecontext is not None:
             session_timezone = self._session.conf.get(
@@ -291,7 +290,7 @@ class PySparkClient(SQLClient):
             return compiled.toPandas().iloc[0, 0]
         else:
             raise com.IbisError(
-                "Cannot execute expression of type: {}".format(type(expr))
+                f"Cannot execute expression of type: {type(expr)}"
             )
 
     @staticmethod
@@ -299,7 +298,7 @@ class PySparkClient(SQLClient):
         if is_fully_qualified(name):
             return name
         if database:
-            return '{0}.`{1}`'.format(database, name)
+            return f'{database}.`{name}`'
         return name
 
     def close(self):
@@ -351,25 +350,6 @@ class PySparkClient(SQLClient):
         schema = self.get_schema(qualified_name)
         node = self.table_class(qualified_name, schema, self)
         return self.table_expr_class(node)
-
-    def exists_table(self, name, database=None):
-        """
-        Determine if the indicated table or view exists
-
-        Parameters
-        ----------
-        name : string
-        database : string, default None
-
-        Returns
-        -------
-        if_exists : boolean
-        """
-        try:
-            self._get_jtable(name, database)
-            return True
-        except com.IbisInputError:
-            return False
 
     def set_database(self, name):
         return self.backend.set_database(name)
@@ -660,7 +640,7 @@ class PySparkClient(SQLClient):
           rows, size in bytes).
         """
         maybe_noscan = ' NOSCAN' if noscan else ''
-        stmt = 'ANALYZE TABLE {0} COMPUTE STATISTICS{1}'.format(
+        stmt = 'ANALYZE TABLE {} COMPUTE STATISTICS{}'.format(
             self._fully_qualified_name(name, database), maybe_noscan
         )
         return self.raw_sql(stmt)

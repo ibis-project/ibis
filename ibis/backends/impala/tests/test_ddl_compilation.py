@@ -265,7 +265,7 @@ def test_create_external_table_as(mockcon):
     expected = """\
 CREATE EXTERNAL TABLE foo.`another_table`
 STORED AS PARQUET
-LOCATION '{0}'
+LOCATION '{}'
 AS
 SELECT *
 FROM test1""".format(
@@ -295,7 +295,7 @@ CREATE TABLE foo.`another_table`
  `bar` tinyint,
  `baz` smallint)
 STORED AS PARQUET
-LOCATION '{0}'""".format(
+LOCATION '{}'""".format(
         path
     )
     assert result == expected
@@ -315,9 +315,9 @@ def test_create_table_like_parquet():
     result = statement.compile()
     expected = """\
 CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
-LIKE PARQUET '{0}'
+LIKE PARQUET '{}'
 STORED AS PARQUET
-LOCATION '{1}'""".format(
+LOCATION '{}'""".format(
         path, directory
     )
 
@@ -340,9 +340,9 @@ def test_create_table_parquet_like_other():
     result = statement.compile()
     expected = """\
 CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
-LIKE {0}
+LIKE {}
 STORED AS PARQUET
-LOCATION '{1}'""".format(
+LOCATION '{}'""".format(
         example_table, directory
     )
 
@@ -372,7 +372,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
  `bar` tinyint,
  `baz` smallint)
 STORED AS PARQUET
-LOCATION '{0}'""".format(
+LOCATION '{}'""".format(
         directory
     )
 
@@ -412,7 +412,7 @@ ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '|'
 ESCAPED BY '\\'
 LINES TERMINATED BY '\0'
-LOCATION '{0}'""".format(
+LOCATION '{}'""".format(
         path
     )
     assert result == expected

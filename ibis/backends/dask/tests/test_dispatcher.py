@@ -5,7 +5,7 @@ from multipledispatch.conflict import AmbiguityWarning
 from ..trace import TwoLevelDispatcher
 
 
-class A1(object):
+class A1:
     pass
 
 
@@ -17,7 +17,7 @@ class A3(A2):
     pass
 
 
-class B1(object):
+class B1:
     pass
 
 
@@ -29,7 +29,7 @@ class B3(B2):
     pass
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture
 def foo_dispatchers():
 
     foo = TwoLevelDispatcher('foo', doc='Test dispatcher foo')
@@ -55,20 +55,24 @@ def foo_dispatchers():
     def foo3(x, y):
         return 3
 
-    @foo.register((A1, A2),)
-    @foo_m.register((A1, A2),)
+    @foo.register(
+        (A1, A2),
+    )
+    @foo_m.register(
+        (A1, A2),
+    )
     def foo4(x):
         return 4
 
     return foo, foo_m
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture
 def foo(foo_dispatchers):
     return foo_dispatchers[0]
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture
 def foo_m(foo_dispatchers):
     return foo_dispatchers[1]
 

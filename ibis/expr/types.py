@@ -41,8 +41,8 @@ class Expr:
         except com.TranslationError as e:
             output = (
                 'Translation to backend failed\n'
-                'Error message: {0}\n'
-                'Expression repr follows:\n{1}'.format(e.args[0], self._repr())
+                'Error message: {}\n'
+                'Expression repr follows:\n{}'.format(e.args[0], self._repr())
             )
             return output
         else:
@@ -126,7 +126,7 @@ class Expr:
         import ibis.expr.visualize as viz
 
         path = viz.draw(viz.to_graph(self), format=format)
-        webbrowser.open('file://{}'.format(os.path.abspath(path)))
+        webbrowser.open(f'file://{os.path.abspath(path)}')
 
     def pipe(self, f, *args, **kwargs):
         """Generic composition function to enable expression pipelining.
@@ -421,7 +421,7 @@ class ScalarExpr(ValueExpr):
 
 class ColumnExpr(ValueExpr):
     def _type_display(self):
-        return '{}*'.format(self.type())
+        return f'{self.type()}*'
 
     def parent(self):
         return self._arg
@@ -919,7 +919,7 @@ class StructColumn(AnyColumn, StructValue):
 
 
 class DestructValue(AnyValue):
-    """ Class that represents a destruct value.
+    """Class that represents a destruct value.
 
     When assigning a destruct column, the field inside this destruct column
     will be destructured and assigned to multipe columnns.
@@ -1272,7 +1272,7 @@ def literal(value, type=None):
             dtype = inferred_dtype.cast(explicit_dtype, value=value)
         except com.IbisTypeError:
             raise TypeError(
-                'Value {!r} cannot be safely coerced to {}'.format(value, type)
+                f'Value {value!r} cannot be safely coerced to {type}'
             )
     elif has_explicit:
         dtype = explicit_dtype

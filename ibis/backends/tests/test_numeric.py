@@ -351,9 +351,7 @@ def test_floating_mod(backend, alltypes, df):
 @pytest.mark.parametrize('denominator', [0, 0.0])
 def test_divide_by_zero(backend, alltypes, df, column, denominator):
     if not backend.supports_divide_by_zero:
-        pytest.skip(
-            '{} does not support safe division by zero'.format(backend)
-        )
+        pytest.skip(f'{backend} does not support safe division by zero')
     expr = alltypes[column] / denominator
     expected = backend.default_series_rename(df[column].div(denominator))
     result = expr.execute()

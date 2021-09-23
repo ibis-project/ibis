@@ -105,7 +105,7 @@ class QueryContext:
 
             i += len(ctx._table_refs)
 
-        alias = 't{:d}'.format(i)
+        alias = f't{i:d}'
         self.set_ref(expr, alias)
 
     def need_aliases(self, expr=None):
@@ -278,7 +278,7 @@ class ExprTranslator:
             return formatter(self, expr)
         else:
             raise com.OperationNotDefinedError(
-                'No translation rule for {}'.format(type(op))
+                f'No translation rule for {type(op)}'
             )
 
     def _trans_param(self, expr):

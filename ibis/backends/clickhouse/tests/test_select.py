@@ -76,8 +76,8 @@ def test_limit_offset(alltypes):
     tm.assert_frame_equal(alltypes.limit(4).execute(), expected.head(4))
     tm.assert_frame_equal(alltypes.limit(8).execute(), expected.head(8))
     tm.assert_frame_equal(
-        alltypes.limit(4, offset=4).execute(),
-        expected.iloc[4:8].reset_index(drop=True),
+        alltypes.limit(4, offset=2).execute(),
+        expected.iloc[2:6].reset_index(drop=True),
     )
 
 
@@ -276,7 +276,10 @@ def test_non_equijoin(alltypes):
             ('any_left_join', 'ANY LEFT JOIN'),
             ('left_join', 'ALL LEFT JOIN'),
         ],
-        [('playerID', 'playerID'), ('playerID', 'awardID'),],  # noqa: E231
+        [
+            ('playerID', 'playerID'),
+            ('playerID', 'awardID'),
+        ],  # noqa: E231
     ),
 )
 def test_simple_joins(

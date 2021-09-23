@@ -14,7 +14,6 @@
 
 # User API for grouped data operations
 
-from __future__ import absolute_import
 
 import types
 
@@ -291,7 +290,7 @@ def _group_agg_dispatch(name):
     def wrapper(self, *args, **kwargs):
         f = getattr(self.arr, name)
         metric = f(*args, **kwargs)
-        alias = '{0}({1})'.format(name, self.arr.get_name())
+        alias = f'{name}({self.arr.get_name()})'
         return self.parent.aggregate(metric.name(alias))
 
     wrapper.__name__ = name

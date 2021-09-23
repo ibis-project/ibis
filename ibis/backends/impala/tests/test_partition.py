@@ -27,12 +27,12 @@ def df():
 
 @pytest.fixture
 def unpart_t(con, df, tmp_db):
-    pd_name = '__ibis_test_partition_{}'.format(util.guid())
+    pd_name = f'__ibis_test_partition_{util.guid()}'
     con.create_table(pd_name, df, database=tmp_db)
     try:
         yield con.table(pd_name, database=tmp_db)
     finally:
-        assert con.exists_table(pd_name, database=tmp_db), pd_name
+        assert pd_name in con.list_tables(database=tmp_db), pd_name
         con.drop_table(pd_name, database=tmp_db)
 
 
@@ -132,7 +132,7 @@ def test_insert_select_partitioned_table(con, df, temp_table, unpart_t):
 def test_create_partitioned_table_from_expr(con, alltypes):
     t = alltypes
     expr = t[t.id <= 10][['id', 'double_col', 'month', 'year']]
-    name = 'tmppart_{}'.format(util.guid())
+    name = f'tmppart_{util.guid()}'
     try:
         con.create_table(name, expr, partition=[t.year])
     except Exception:
@@ -188,10 +188,10 @@ def test_add_drop_partition_owned_by_impala(hdfs, con, temp_table):
 
     subdir = util.guid()
     basename = util.guid()
-    path = '/tmp/{}/{}'.format(subdir, basename)
+    path = f'/tmp/{subdir}/{basename}'
 
-    hdfs.mkdir('/tmp/{}'.format(subdir))
-    hdfs.chown('/tmp/{}'.format(subdir), owner='impala', group='supergroup')
+    hdfs.mkdir(f'/tmp/{subdir}')
+    hdfs.chown(f'/tmp/{subdir}', owner='impala', group='supergroup')
 
     table.add_partition(part, location=path)
 
@@ -213,7 +213,7 @@ def test_add_drop_partition_hive_bug(con, temp_table):
 
     part = {'year': 2007, 'month': 4}
 
-    path = '/tmp/{}'.format(util.guid())
+    path = f'/tmp/{util.guid()}'
 
     table.add_partition(part, location=path)
 
@@ -248,7 +248,7 @@ def test_load_data_partition(con, hdfs, tmp_dir, unpart_t, df, temp_table):
 
     for i, (year, month) in enumerate(unique_keys.itertuples(index=False)):
         chunk = df2[(df.year == year) & (df.month == month)]
-        chunk_path = pjoin(hdfs_dir, '{}.csv'.format(i))
+        chunk_path = pjoin(hdfs_dir, f'{i}.csv')
 
         con.write_dataframe(chunk, chunk_path)
 

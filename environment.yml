@@ -10,6 +10,7 @@ dependencies:
   - toolz
   - cached_property # for 3.7 compat, functools.cached_property is for >=3.8
   - setuptools
+  - parsy
 
   # Ibis soft dependencies
   - sqlalchemy
@@ -29,7 +30,6 @@ dependencies:
   - pytest
   - pytest-cov
   - pytest-mock
-  - pytest-xdist
 
   # Release
   - twine
@@ -43,6 +43,7 @@ dependencies:
   - pip
   - pip:
     - pysuerga
+    - pytest-randomly
   - ipython
   - ipykernel
   - nbconvert

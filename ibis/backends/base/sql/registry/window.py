@@ -77,7 +77,7 @@ def _replace_interval_with_scalar(
             raise ValueError(
                 "Expected preceding values of week(), "
                 + "day(), hour(), minute(), second(), millisecond(), "
-                + "microseconds(), nanoseconds(); got {}".format(expr)
+                + f"microseconds(), nanoseconds(); got {expr}"
             )
     elif expr_op.args and isinstance(expr, ir.IntervalValue):
         if len(expr_op.args) > 2:
@@ -112,7 +112,7 @@ def time_range_to_range_window(translator, window):
     order_by_vars = [x.op().args[0] for x in window._order_by]
     if len(order_by_vars) > 1:
         raise com.IbisInputError(
-            "Expected 1 order-by variable, got {}".format(len(order_by_vars))
+            f"Expected 1 order-by variable, got {len(order_by_vars)}"
         )
 
     order_var = window._order_by[0].op().args[0]
@@ -163,7 +163,7 @@ def format_window(translator, op, window):
             if not p:
                 return 'CURRENT ROW'
             prefix = str(p)
-        return '{} PRECEDING'.format(prefix)
+        return f'{prefix} PRECEDING'
 
     def _foll(f: Optional[int]) -> str:
         assert f is None or f >= 0
@@ -175,7 +175,7 @@ def format_window(translator, op, window):
                 return 'CURRENT ROW'
             prefix = str(f)
 
-        return '{} FOLLOWING'.format(prefix)
+        return f'{prefix} FOLLOWING'
 
     frame_clause_not_allowed = (
         ops.Lag,
@@ -262,7 +262,7 @@ def window(translator, expr):
 
     if isinstance(window_op, _unsupported_reductions):
         raise com.UnsupportedOperationError(
-            '{} is not supported in window functions'.format(type(window_op))
+            f'{type(window_op)} is not supported in window functions'
         )
 
     if isinstance(window_op, ops.CumulativeOp):
@@ -284,7 +284,7 @@ def window(translator, expr):
     window_formatted = format_window(translator, op, window)
 
     arg_formatted = translator.translate(arg)
-    result = '{} {}'.format(arg_formatted, window_formatted)
+    result = f'{arg_formatted} {window_formatted}'
 
     if type(window_op) in _expr_transforms:
         return _expr_transforms[type(window_op)](result)
@@ -299,7 +299,7 @@ def nth_value(translator, expr):
     arg_formatted = translator.translate(arg)
     rank_formatted = translator.translate(rank - 1)
 
-    return 'first_value(lag({}, {}))'.format(arg_formatted, rank_formatted)
+    return f'first_value(lag({arg_formatted}, {rank_formatted}))'
 
 
 def shift_like(name):
@@ -322,9 +322,9 @@ def shift_like(name):
             )
         elif offset is not None:
             offset_formatted = translator.translate(offset)
-            return '{}({}, {})'.format(name, arg_formatted, offset_formatted)
+            return f'{name}({arg_formatted}, {offset_formatted})'
         else:
-            return '{}({})'.format(name, arg_formatted)
+            return f'{name}({arg_formatted})'
 
     return formatter
 
@@ -332,4 +332,4 @@ def shift_like(name):
 def ntile(translator, expr):
     op = expr.op()
     arg, buckets = map(translator.translate, op.args)
-    return 'ntile({})'.format(buckets)
+    return f'ntile({buckets})'

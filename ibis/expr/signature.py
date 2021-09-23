@@ -80,10 +80,10 @@ class Argument:
                     value = self.default
         elif value is _undefined:
             if name is not None:
-                name_msg = "argument `{}`".format(name)
+                name_msg = f"argument `{name}`"
             else:
                 name_msg = "unnamed argument"
-            raise TypeError("Missing required value for {}".format(name_msg))
+            raise TypeError(f"Missing required value for {name_msg}")
 
         return self.validator(value)
 
@@ -97,7 +97,7 @@ class TypeSignature(OrderedDict):
     @classmethod
     def from_dtypes(cls, dtypes):
         return cls(
-            ('_{}'.format(i), Argument(rlz.value(dtype)))
+            (f'_{i}', Argument(rlz.value(dtype)))
             for i, dtype in enumerate(dtypes)
         )
 

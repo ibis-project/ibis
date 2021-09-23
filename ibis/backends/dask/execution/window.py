@@ -102,7 +102,14 @@ def execute_window_op(
 
 
 def execute_grouped_window_op(
-    op, data, window, scope, timecontext, aggcontext, clients, **kwargs,
+    op,
+    data,
+    window,
+    scope,
+    timecontext,
+    aggcontext,
+    clients,
+    **kwargs,
 ):
     # extract the parent
     (root,) = op.root_tables()

@@ -166,11 +166,11 @@ def test_field_in_literals(con, alltypes, translate, container):
     expected = tuple(set(foobar))
 
     expr = alltypes.string_col.isin(foobar)
-    assert translate(expr) == "`string_col` IN {}".format(expected)
+    assert translate(expr) == f"`string_col` IN {expected}"
     assert len(con.execute(expr))
 
     expr = alltypes.string_col.notin(foobar)
-    assert translate(expr) == "`string_col` NOT IN {}".format(expected)
+    assert translate(expr) == f"`string_col` NOT IN {expected}"
     assert len(con.execute(expr))
 
 
@@ -178,7 +178,7 @@ def test_field_in_literals(con, alltypes, translate, container):
 def test_negate(con, alltypes, translate, column):
     # clickhouse represent boolean as UInt8
     expr = -getattr(alltypes, column)
-    assert translate(expr) == '-`{0}`'.format(column)
+    assert translate(expr) == f'-`{column}`'
     assert len(con.execute(expr))
 
 

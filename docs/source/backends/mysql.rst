@@ -7,7 +7,7 @@ Install dependencies for Ibis's MySQL dialect:
 
 ::
 
-  pip install ibis-framework[mysql]
+  pip install 'ibis-framework[mysql]'
 
 Create a client by passing a connection string or individual parameters to
 :func:`ibis.mysql.connect`:

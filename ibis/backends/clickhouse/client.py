@@ -55,12 +55,12 @@ class ClickhouseDataType:
 
     def __str__(self):
         if self.nullable:
-            return 'Nullable({})'.format(self.typename)
+            return f'Nullable({self.typename})'
         else:
             return self.typename
 
     def __repr__(self):
-        return '<Clickhouse {}>'.format(str(self))
+        return f'<Clickhouse {str(self)}>'
 
     @classmethod
     def parse(cls, spec):
@@ -105,7 +105,7 @@ class ClickhouseTable(ir.TableExpr):
         m = fully_qualified_re.match(self._qualified_name)
         if not m:
             raise com.IbisError(
-                'Cannot determine database name from {0}'.format(
+                'Cannot determine database name from {}'.format(
                     self._qualified_name
                 )
             )
@@ -225,7 +225,7 @@ class ClickhouseClient(SQLClient):
             return name
 
         database = database or self.current_database
-        return '{0}.`{1}`'.format(database, name)
+        return f'{database}.`{name}`'
 
     def get_schema(self, table_name, database=None):
         """
@@ -242,7 +242,7 @@ class ClickhouseClient(SQLClient):
         schema : ibis Schema
         """
         qualified_name = self._fully_qualified_name(table_name, database)
-        query = 'DESC {0}'.format(qualified_name)
+        query = f'DESC {qualified_name}'
         data, columns = self.raw_sql(query)
         return sch.schema(
             data[0], list(map(ClickhouseDataType.parse, data[1]))
@@ -254,21 +254,6 @@ class ClickhouseClient(SQLClient):
     def reset_options(self):
         # Must nuke all cursors
         raise NotImplementedError
-
-    def exists_table(self, name, database=None):
-        """
-        Determine if the indicated table or view exists
-
-        Parameters
-        ----------
-        name : string
-        database : string, default None
-
-        Returns
-        -------
-        if_exists : boolean
-        """
-        return len(self.list_tables(like=name, database=database)) > 0
 
     def _ensure_temp_db_exists(self):
         name = (options.clickhouse.temp_db,)
@@ -283,4 +268,4 @@ class ClickhouseClient(SQLClient):
 
     def _table_command(self, cmd, name, database=None):
         qualified_name = self._fully_qualified_name(name, database)
-        return '{0} {1}'.format(cmd, qualified_name)
+        return f'{cmd} {qualified_name}'

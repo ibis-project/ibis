@@ -44,7 +44,7 @@ def test_client(tmpdir, file_backends_data):
     d.mkdir()
 
     for k, v in file_backends_data.items():
-        f = d / "{}.parquet".format(k)
+        f = d / f"{k}.parquet"
         table = pa.Table.from_pandas(v)
         pq.write_table(table, str(f))
 

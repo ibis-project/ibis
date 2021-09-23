@@ -79,9 +79,7 @@ class validator(curry):
         return '{}({}{})'.format(
             self.func.__name__,
             repr(self.args)[1:-1],
-            ', '.join(
-                '{}={!r}'.format(k, v) for k, v in self.keywords.items()
-            ),
+            ', '.join(f'{k}={v!r}' for k, v in self.keywords.items()),
         )
 
 
@@ -97,7 +95,7 @@ def one_of(inners, arg):
 
     rules_formatted = ', '.join(map(repr, inners))
     raise com.IbisTypeError(
-        'Arg passes neither of the following rules: {}'.format(rules_formatted)
+        f'Arg passes neither of the following rules: {rules_formatted}'
     )
 
 
@@ -126,9 +124,7 @@ def all_of(inners, arg):
 @validator
 def isin(values, arg):
     if arg not in values:
-        raise ValueError(
-            'Value with type {} is not in {!r}'.format(type(arg), values)
-        )
+        raise ValueError(f'Value with type {type(arg)} is not in {values!r}')
     if isinstance(values, dict):  # TODO check for mapping instead
         return values[arg]
     else:
@@ -145,7 +141,7 @@ def member_of(obj, arg):
 
     if not hasattr(obj, arg):
         raise com.IbisTypeError(
-            'Value with type {} is not a member of {}'.format(type(arg), obj)
+            f'Value with type {type(arg)} is not a member of {obj}'
         )
     return getattr(obj, arg)
 
@@ -159,7 +155,7 @@ def list_of(inner, arg, min_length=0):
 
     if len(arg) < min_length:
         raise com.IbisTypeError(
-            'Arg must have at least {} number of elements'.format(min_length)
+            f'Arg must have at least {min_length} number of elements'
         )
     return ir.sequence(list(map(inner, arg)))
 
@@ -381,7 +377,7 @@ def table(schema, arg):
         return arg
 
     raise com.IbisTypeError(
-        'Argument is not a table with column subset of {}'.format(schema)
+        f'Argument is not a table with column subset of {schema}'
     )
 
 

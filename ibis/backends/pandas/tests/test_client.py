@@ -45,15 +45,15 @@ def test_client_table_repr(table):
 def test_load_data(client, test_data):
 
     client.load_data('testing', test_data)
-    assert client.exists_table('testing')
+    assert 'testing' in client.list_tables()
     assert client.get_schema('testing')
 
 
 def test_create_table(client, test_data):
     client.create_table('testing', obj=test_data)
-    assert client.exists_table('testing')
+    assert 'testing' in client.list_tables()
     client.create_table('testingschema', schema=client.get_schema('testing'))
-    assert client.exists_table('testingschema')
+    assert 'testingschema' in client.list_tables()
 
 
 def test_literal(client):

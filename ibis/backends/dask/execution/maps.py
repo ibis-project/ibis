@@ -47,9 +47,18 @@ for registered_type in PANDAS_REGISTERED_TYPES:
 
 DASK_DISPATCH_TYPES: TypeRegistrationDict = {
     ops.MapValueForKey: [
-        ((dd.Series, object,), execute_map_value_for_key_series_scalar),
         (
-            (collections.abc.Mapping, dd.Series,),
+            (
+                dd.Series,
+                object,
+            ),
+            execute_map_value_for_key_series_scalar,
+        ),
+        (
+            (
+                collections.abc.Mapping,
+                dd.Series,
+            ),
             execute_map_value_for_key_dict_series,
         ),
     ],
@@ -78,11 +87,19 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
             execute_map_value_default_dict_series_series,
         ),
         (
-            (collections.abc.Mapping, object, (dd.Series, pandas.Series),),
+            (
+                collections.abc.Mapping,
+                object,
+                (dd.Series, pandas.Series),
+            ),
             execute_map_value_default_dict_scalar_series,
         ),
         (
-            (collections.abc.Mapping, (dd.Series, pandas.Series), object,),
+            (
+                collections.abc.Mapping,
+                (dd.Series, pandas.Series),
+                object,
+            ),
             execute_map_value_default_dict_series_scalar,
         ),
     ],
@@ -121,7 +138,8 @@ def execute_map_concat_dict_series(op, lhs, rhs, **kwargs):
     if lhs is None:
         return none_filled_dask_series(len(rhs))
     return rhs.map(
-        lambda m, lhs=lhs: safe_merge(lhs, m), meta=(rhs.name, rhs.dtype),
+        lambda m, lhs=lhs: safe_merge(lhs, m),
+        meta=(rhs.name, rhs.dtype),
     )
 
 
@@ -132,7 +150,8 @@ def execute_map_concat_series_dict(op, lhs, rhs, **kwargs):
     if rhs is None:
         return none_filled_dask_series(len(lhs))
     return lhs.map(
-        lambda m, rhs=rhs: safe_merge(m, rhs), meta=(lhs.name, lhs.dtype),
+        lambda m, rhs=rhs: safe_merge(m, rhs),
+        meta=(lhs.name, lhs.dtype),
     )
 
 

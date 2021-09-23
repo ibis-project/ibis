@@ -25,10 +25,8 @@ class ClickhouseSelect(Select):
 
         lines = []
         if len(self.group_by) > 0:
-            columns = [
-                '`{0}`'.format(expr.get_name()) for expr in self.group_by
-            ]
-            clause = 'GROUP BY {0}'.format(', '.join(columns))
+            columns = [f'`{expr.get_name()}`' for expr in self.group_by]
+            clause = 'GROUP BY {}'.format(', '.join(columns))
             lines.append(clause)
 
         if len(self.having) > 0:
@@ -36,7 +34,7 @@ class ClickhouseSelect(Select):
             for expr in self.having:
                 translated = self._translate(expr)
                 trans_exprs.append(translated)
-            lines.append('HAVING {0}'.format(' AND '.join(trans_exprs)))
+            lines.append('HAVING {}'.format(' AND '.join(trans_exprs)))
 
         return '\n'.join(lines)
 
@@ -47,9 +45,10 @@ class ClickhouseSelect(Select):
         buf = StringIO()
 
         n, offset = self.limit['n'], self.limit['offset']
-        buf.write('LIMIT {}'.format(n))
         if offset is not None and offset != 0:
-            buf.write(', {}'.format(offset))
+            buf.write(f'LIMIT {offset}, {n}')
+        else:
+            buf.write(f'LIMIT {n}')
 
         return buf.getvalue()
 

@@ -122,7 +122,14 @@ get_aggcontext = Dispatcher('get_aggcontext')
 
 @get_aggcontext.register(object)
 def get_aggcontext_default(
-    window, *, scope, operand, parent, group_by, order_by, **kwargs,
+    window,
+    *,
+    scope,
+    operand,
+    parent,
+    group_by,
+    order_by,
+    **kwargs,
 ) -> NoReturn:
     raise NotImplementedError(
         f"get_aggcontext is not implemented for {type(window).__name__}"
@@ -131,7 +138,14 @@ def get_aggcontext_default(
 
 @get_aggcontext.register(win.Window)
 def get_aggcontext_window(
-    window, *, scope, operand, parent, group_by, order_by, **kwargs,
+    window,
+    *,
+    scope,
+    operand,
+    parent,
+    group_by,
+    order_by,
+    **kwargs,
 ) -> AggregationContext:
     # no order by or group by: default summarization aggcontext
     #
@@ -186,23 +200,23 @@ def get_aggcontext_window(
 def trim_window_result(
     data: Union[pd.Series, pd.DataFrame], timecontext: Optional[TimeContext]
 ):
-    """ Trim data within time range defined by timecontext
+    """Trim data within time range defined by timecontext
 
-        This is a util function used in ``execute_window_op``, where time
-        context might be adjusted for calculation. Data must be trimmed
-        within the original time context before return.
-        `data` is a pd.Series with Multiindex for most cases, for multi
-        column udf result, `data` could be a pd.DataFrame
+    This is a util function used in ``execute_window_op``, where time
+    context might be adjusted for calculation. Data must be trimmed
+    within the original time context before return.
+    `data` is a pd.Series with Multiindex for most cases, for multi
+    column udf result, `data` could be a pd.DataFrame
 
-        Params
-        ------
-        data: pd.Series or pd.DataFrame
-        timecontext: Optional[TimeContext]
+    Params
+    ------
+    data: pd.Series or pd.DataFrame
+    timecontext: Optional[TimeContext]
 
-        Returns:
-        ------
-        a trimmed pd.Series or or pd.DataFrame with the same Multiindex
-        as data's
+    Returns:
+    ------
+    a trimmed pd.Series or or pd.DataFrame with the same Multiindex
+    as data's
 
     """
     # noop if timecontext is None
@@ -385,7 +399,11 @@ def execute_window_op(
         **kwargs,
     )
     result = post_process(
-        result, data, ordering_keys, grouping_keys, adjusted_timecontext,
+        result,
+        data,
+        ordering_keys,
+        grouping_keys,
+        adjusted_timecontext,
     )
     assert len(data) == len(
         result
@@ -407,7 +425,7 @@ def execute_series_cumulative_sum_min_max(op, data, **kwargs):
         .group(1)
         .lower()
     )
-    method = getattr(data, "cum{}".format(method_name))
+    method = getattr(data, f"cum{method_name}")
     return method()
 
 
@@ -426,17 +444,17 @@ def execute_series_cumulative_op(op, data, aggcontext=None, **kwargs):
     typename = type(op).__name__
     match = re.match(r'^Cumulative([A-Za-z_][A-Za-z0-9_]*)$', typename)
     if match is None:
-        raise ValueError('Unknown operation {}'.format(typename))
+        raise ValueError(f'Unknown operation {typename}')
 
     try:
         (operation_name,) = match.groups()
     except ValueError:
         raise ValueError(
-            'More than one operation name found in {} class'.format(typename)
+            f'More than one operation name found in {typename} class'
         )
 
     dtype = op.to_expr().type().to_pandas()
-    assert isinstance(aggcontext, agg_ctx.Cumulative), 'Got {}'.format(type())
+    assert isinstance(aggcontext, agg_ctx.Cumulative), f'Got {type()}'
     result = aggcontext.agg(data, operation_name.lower())
 
     # all expanding window operations are required to be int64 or float64, so

@@ -63,7 +63,7 @@ class PostgreSQLClient(AlchemyClient):
             try:
                 yield bind
             finally:
-                bind.execute("SET TIMEZONE = '{}'".format(previous_timezone))
+                bind.execute(f"SET TIMEZONE = '{previous_timezone}'")
 
     def list_schemas(self, like=None):
         return self.backend.list_schemas(like)

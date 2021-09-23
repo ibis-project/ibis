@@ -7,7 +7,7 @@ Install dependencies for Ibis's PostgreSQL dialect:
 
 ::
 
-  pip install ibis-framework[postgres]
+  pip install 'ibis-framework[postgres]'
 
 Create a client by passing a connection string to the ``url`` parameter or
 individual parameters to :func:`ibis.postgres.connect`:

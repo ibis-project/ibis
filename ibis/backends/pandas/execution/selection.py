@@ -1,7 +1,6 @@
 """Dispatching code for Selection operations.
 """
 
-from __future__ import absolute_import
 
 import functools
 import operator

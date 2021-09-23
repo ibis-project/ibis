@@ -80,7 +80,7 @@ class SetOp(DML):
     def format_relation(self, expr):
         ref = self.context.get_ref(expr)
         if ref is not None:
-            return 'SELECT *\nFROM {}'.format(ref)
+            return f'SELECT *\nFROM {ref}'
         return self.context.get_compiled_expr(expr)
 
     def _get_keyword_list(self):
@@ -94,7 +94,7 @@ class SetOp(DML):
         buf = []
 
         if extracted:
-            buf.append('WITH {}'.format(extracted))
+            buf.append(f'WITH {extracted}')
 
         buf.extend(
             toolz.interleave(

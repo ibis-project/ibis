@@ -59,7 +59,7 @@ def _create_udf_node(name, fields):
         A new PostgresUDFNode subclass
     """
     definition = next(_udf_name_cache[name])
-    external_name = '{}_{:d}'.format(name, definition)
+    external_name = f'{name}_{definition:d}'
     return type(external_name, (PostgresUDFNode,), fields)
 
 
@@ -82,7 +82,7 @@ def existing_udf(name, input_types, output_type, schema=None, parameters=None):
     """
 
     if parameters is None:
-        parameters = ['v{}'.format(i) for i in range(len(input_types))]
+        parameters = [f'v{i}' for i in range(len(input_types))]
     elif len(input_types) != len(parameters):
         raise ValueError(
             (
@@ -176,7 +176,7 @@ $$;
 """
 
     postgres_signature = ', '.join(
-        '{name} {type}'.format(name=name, type=_ibis_to_postgres_str(type_))
+        f'{name} {_ibis_to_postgres_str(type_)}'
         for name, type_ in zip(parameter_names, in_types)
     )
     return_type = _ibis_to_postgres_str(out_type)

@@ -42,7 +42,7 @@ class CSVClient(FileClient):
             path = self.root
 
         # get the schema
-        f = path / "{}.{}".format(name, self.extension)
+        f = path / f"{name}.{self.extension}"
 
         # read sample
         schema = schema or sch.schema([])
@@ -55,9 +55,6 @@ class CSVClient(FileClient):
         self.dictionary[name] = f
 
         return table
-
-    def compile(self, expr, *args, **kwargs):
-        return expr
 
     @property
     def version(self):

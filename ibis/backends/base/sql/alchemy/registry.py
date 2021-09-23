@@ -149,7 +149,7 @@ def _cast(t, expr):
 def _contains(t, expr):
     op = expr.op()
 
-    left, right = [t.translate(arg) for arg in op.args]
+    left, right = (t.translate(arg) for arg in op.args)
 
     return left.in_(right)
 

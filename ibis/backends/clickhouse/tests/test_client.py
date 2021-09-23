@@ -19,7 +19,7 @@ def test_get_table_ref(db):
 
 
 def test_run_sql(con, db):
-    query = 'SELECT * FROM {0}.`functional_alltypes`'.format(db.name)
+    query = f'SELECT * FROM {db.name}.`functional_alltypes`'
     table = con.sql(query)
 
     fa = con.table('functional_alltypes')
@@ -74,7 +74,7 @@ def test_verbose_log_queries(con, db):
         with config.option_context('verbose_log', logger):
             con.table('functional_alltypes', database=db.name)
 
-    expected = 'DESC {0}.`functional_alltypes`'.format(db.name)
+    expected = f'DESC {db.name}.`functional_alltypes`'
 
     assert len(queries) == 1
     assert queries[0] == expected

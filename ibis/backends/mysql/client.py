@@ -88,7 +88,7 @@ class MySQLClient(AlchemyClient):
             try:
                 bind.execute("SET @@session.time_zone = 'UTC'")
             except Exception as e:
-                warnings.warn("Couldn't set mysql timezone: {}".format(str(e)))
+                warnings.warn(f"Couldn't set mysql timezone: {str(e)}")
 
             try:
                 yield bind

@@ -60,18 +60,14 @@ def _format_multipoint_value(value: MultiPointType) -> str:
     """Convert a iterable with a multipoint to text."""
     if not isinstance(value[0], (tuple, list)):
         raise ex.IbisInputError('Data structure expected: MultiPointType')
-    return ', '.join(
-        '({})'.format(_format_point_value(point)) for point in value
-    )
+    return ', '.join(f'({_format_point_value(point)})' for point in value)
 
 
 def _format_multilinestring_value(value: MultiLineStringType) -> str:
     """Convert a iterable with a multilinestring to text."""
     if not isinstance(value[0][0], (tuple, list)):
         raise ex.IbisInputError('Data structure expected: MultiLineStringType')
-    return ', '.join(
-        '({})'.format(_format_linestring_value(line)) for line in value
-    )
+    return ', '.join(f'({_format_linestring_value(line)})' for line in value)
 
 
 def _format_multipolygon_value(value: MultiPolygonType) -> str:
@@ -90,9 +86,9 @@ def _format_geo_metadata(op, value: str, inline_metadata: bool = False) -> str:
 
     if inline_metadata:
         value = "'{}{}'{}".format(
-            'SRID={};'.format(srid) if srid else '',
+            f'SRID={srid};' if srid else '',
             value,
-            '::{}'.format(geotype) if geotype else '',
+            f'::{geotype}' if geotype else '',
         )
         return value
 
@@ -102,39 +98,39 @@ def _format_geo_metadata(op, value: str, inline_metadata: bool = False) -> str:
 
     value = repr(value)
     if srid:
-        value += ', {}'.format(srid)
+        value += f', {srid}'
 
-    return "{}({})".format(geofunc, value)
+    return f"{geofunc}({value})"
 
 
 def translate_point(value: Iterable) -> str:
     """Translate a point to WKT."""
-    return "POINT ({})".format(_format_point_value(value))
+    return f"POINT ({_format_point_value(value)})"
 
 
 def translate_linestring(value: List) -> str:
     """Translate a linestring to WKT."""
-    return "LINESTRING ({})".format(_format_linestring_value(value))
+    return f"LINESTRING ({_format_linestring_value(value)})"
 
 
 def translate_polygon(value: List) -> str:
     """Translate a polygon to WKT."""
-    return "POLYGON ({})".format(_format_polygon_value(value))
+    return f"POLYGON ({_format_polygon_value(value)})"
 
 
 def translate_multilinestring(value: List) -> str:
     """Translate a multilinestring to WKT."""
-    return "MULTILINESTRING ({})".format(_format_multilinestring_value(value))
+    return f"MULTILINESTRING ({_format_multilinestring_value(value)})"
 
 
 def translate_multipoint(value: List) -> str:
     """Translate a multipoint to WKT."""
-    return "MULTIPOINT ({})".format(_format_multipoint_value(value))
+    return f"MULTIPOINT ({_format_multipoint_value(value)})"
 
 
 def translate_multipolygon(value: List) -> str:
     """Translate a multipolygon to WKT."""
-    return "MULTIPOLYGON ({})".format(_format_multipolygon_value(value))
+    return f"MULTIPOLYGON ({_format_multipolygon_value(value)})"
 
 
 def translate_literal(expr, inline_metadata: bool = False) -> str:

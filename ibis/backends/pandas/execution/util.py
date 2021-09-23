@@ -67,7 +67,7 @@ def compute_sorted_frame(
 def coerce_to_output(
     result: Any, expr: ir.Expr, index: Optional[pd.Index] = None
 ) -> Union[pd.Series, pd.DataFrame]:
-    """ Cast the result to either a Series or DataFrame.
+    """Cast the result to either a Series or DataFrame.
 
     This method casts result of an execution to a Series or DataFrame,
     depending on the type of the expression and shape of the result.
@@ -124,7 +124,9 @@ def coerce_to_output(
             # Broadcast `result` to a multi-element Series according to the
             # given `index`.
             return pd.Series(
-                np.repeat(result, len(index)), index=index, name=result_name,
+                np.repeat(result, len(index)),
+                index=index,
+                name=result_name,
             )
     elif isinstance(result, np.ndarray):
         return pd.Series(result, name=result_name)

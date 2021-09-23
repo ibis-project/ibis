@@ -24,7 +24,11 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
             execute_node_where_series_series_series,
         ),
         (
-            (boolean_types, dd.Series, dd.Series,),
+            (
+                boolean_types,
+                dd.Series,
+                dd.Series,
+            ),
             execute_node_where_scalar_scalar_scalar,
         ),
     ]

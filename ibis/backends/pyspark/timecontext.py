@@ -13,7 +13,7 @@ def filter_by_time_context(
     timecontext: Optional[TimeContext],
     adjusted_timecontext: Optional[TimeContext] = None,
 ) -> DataFrame:
-    """ Filter a Dataframe by given time context
+    """Filter a Dataframe by given time context
     Parameters
     ----------
     df : pyspark.sql.dataframe.DataFrame
@@ -56,7 +56,7 @@ def filter_by_time_context(
 def combine_time_context(
     timecontexts: List[TimeContext],
 ) -> Optional[TimeContext]:
-    """ Return a combined time context of `timecontexts`
+    """Return a combined time context of `timecontexts`
 
     The combined time context starts from the earliest begin time
     of `timecontexts`, and ends with the latest end time of `timecontexts`

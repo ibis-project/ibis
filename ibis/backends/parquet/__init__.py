@@ -73,7 +73,7 @@ class ParquetClient(FileClient):
             path = self.root
 
         # get the schema
-        f = path / "{}.parquet".format(name)
+        f = path / f"{name}.parquet"
 
         parquet_file = pq.ParquetFile(str(f))
         schema = sch.infer(parquet_file.schema)
@@ -82,9 +82,6 @@ class ParquetClient(FileClient):
         self.dictionary[name] = f
 
         return table
-
-    def compile(self, expr, *args, **kwargs):
-        return expr
 
     @property
     def version(self):

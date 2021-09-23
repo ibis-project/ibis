@@ -18,7 +18,7 @@ def _sanitize_format(format):
     format = format.upper()
     format = _format_aliases.get(format, format)
     if format not in ('PARQUET', 'AVRO', 'TEXTFILE'):
-        raise ValueError('Invalid format: {!r}'.format(format))
+        raise ValueError(f'Invalid format: {format!r}')
 
     return format
 
@@ -43,17 +43,18 @@ def format_schema(schema):
 
 def _format_schema_element(name, t):
     return '{} {}'.format(
-        quote_identifier(name, force=True), type_to_sql_string(t),
+        quote_identifier(name, force=True),
+        type_to_sql_string(t),
     )
 
 
 def _format_partition_kv(k, v, type):
     if type == dt.string:
-        value_formatted = '"{}"'.format(v)
+        value_formatted = f'"{v}"'
     else:
         value_formatted = str(v)
 
-    return '{}={}'.format(k, value_formatted)
+    return f'{k}={value_formatted}'
 
 
 def format_partition(partition, partition_schema):
@@ -79,31 +80,31 @@ def format_partition(partition, partition_schema):
 def _format_properties(props):
     tokens = []
     for k, v in sorted(props.items()):
-        tokens.append("  '{}'='{}'".format(k, v))
+        tokens.append(f"  '{k}'='{v}'")
 
     return '(\n{}\n)'.format(',\n'.join(tokens))
 
 
 def format_tblproperties(props):
     formatted_props = _format_properties(props)
-    return 'TBLPROPERTIES {}'.format(formatted_props)
+    return f'TBLPROPERTIES {formatted_props}'
 
 
 def _serdeproperties(props):
     formatted_props = _format_properties(props)
-    return 'SERDEPROPERTIES {}'.format(formatted_props)
+    return f'SERDEPROPERTIES {formatted_props}'
 
 
 class _BaseQualifiedSQLStatement:
     def _get_scoped_name(self, obj_name, database):
         if database:
-            scoped_name = '{}.`{}`'.format(database, obj_name)
+            scoped_name = f'{database}.`{obj_name}`'
         else:
             if not is_fully_qualified(obj_name):
                 if _is_quoted(obj_name):
                     return obj_name
                 else:
-                    return '`{}`'.format(obj_name)
+                    return f'`{obj_name}`'
             else:
                 return obj_name
         return scoped_name
@@ -161,20 +162,19 @@ class CreateTable(_CreateDDL):
 
     def _create_line(self):
         scoped_name = self._get_scoped_name(self.table_name, self.database)
-        return '{} {}{}'.format(self._prefix, self._if_exists(), scoped_name)
+        return f'{self._prefix} {self._if_exists()}{scoped_name}'
 
     def _location(self):
-        return "LOCATION '{}'".format(self.path) if self.path else None
+        return f"LOCATION '{self.path}'" if self.path else None
 
     def _storage(self):
         # By the time we're here, we have a valid format
-        return 'STORED AS {}'.format(self.format)
+        return f'STORED AS {self.format}'
 
     @property
     def pieces(self):
         yield self._create_line()
-        for piece in filter(None, self._pieces):
-            yield piece
+        yield from filter(None, self._pieces)
 
     def compile(self):
         return '\n'.join(self.pieces)
@@ -270,7 +270,7 @@ class CreateTableWithSchema(CreateTable):
                 main_schema = main_schema.delete(to_delete)
 
             yield format_schema(main_schema)
-            yield 'PARTITIONED BY {}'.format(format_schema(part_schema))
+            yield f'PARTITIONED BY {format_schema(part_schema)}'
         else:
             yield format_schema(self.schema)
 
@@ -292,9 +292,9 @@ class CreateDatabase(_CreateDDL):
         name = quote_identifier(self.name)
 
         create_decl = 'CREATE DATABASE'
-        create_line = '{} {}{}'.format(create_decl, self._if_exists(), name)
+        create_line = f'{create_decl} {self._if_exists()}{name}'
         if self.path is not None:
-            create_line += "\nLOCATION '{}'".format(self.path)
+            create_line += f"\nLOCATION '{self.path}'"
 
         return create_line
 
@@ -306,7 +306,7 @@ class DropObject(BaseDDL):
     def compile(self):
         if_exists = '' if self.must_exist else 'IF EXISTS '
         object_name = self._object_name()
-        return 'DROP {} {}{}'.format(self._object_type, if_exists, object_name)
+        return f'DROP {self._object_type} {if_exists}{object_name}'
 
 
 class DropDatabase(DropObject):
@@ -349,7 +349,7 @@ class TruncateTable(BaseDDL):
 
     def compile(self):
         name = self._get_scoped_name(self.table_name, self.database)
-        return 'TRUNCATE TABLE {}'.format(name)
+        return f'TRUNCATE TABLE {name}'
 
 
 class InsertSelect(_BaseDML):
@@ -379,15 +379,13 @@ class InsertSelect(_BaseDML):
 
         if self.partition is not None:
             part = format_partition(self.partition, self.partition_schema)
-            partition = ' {} '.format(part)
+            partition = f' {part} '
         else:
             partition = ''
 
         select_query = self.select.compile()
         scoped_name = self._get_scoped_name(self.table_name, self.database)
-        return '{0} {1}{2}\n{3}'.format(
-            cmd, scoped_name, partition, select_query
-        )
+        return f'{cmd} {scoped_name}{partition}\n{select_query}'
 
 
 class AlterTable(BaseDDL):
@@ -406,16 +404,16 @@ class AlterTable(BaseDDL):
         self.serde_properties = serde_properties
 
     def _wrap_command(self, cmd):
-        return 'ALTER TABLE {}'.format(cmd)
+        return f'ALTER TABLE {cmd}'
 
     def _format_properties(self, prefix=''):
         tokens = []
 
         if self.location is not None:
-            tokens.append("LOCATION '{}'".format(self.location))
+            tokens.append(f"LOCATION '{self.location}'")
 
         if self.format is not None:
-            tokens.append("FILEFORMAT {}".format(self.format))
+            tokens.append(f"FILEFORMAT {self.format}")
 
         if self.tbl_properties is not None:
             tokens.append(format_tblproperties(self.tbl_properties))
@@ -430,7 +428,7 @@ class AlterTable(BaseDDL):
 
     def compile(self):
         props = self._format_properties()
-        action = '{} SET {}'.format(self.table, props)
+        action = f'{self.table} SET {props}'
         return self._wrap_command(action)
 
 

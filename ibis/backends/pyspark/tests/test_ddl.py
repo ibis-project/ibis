@@ -12,12 +12,12 @@ from ibis.tests.util import assert_equal
 
 def test_create_exists_view(client, alltypes, temp_view):
     tmp_name = temp_view
-    assert not client.exists_table(tmp_name)
+    assert tmp_name not in client.list_tables()
 
     expr = alltypes.group_by('string_col').size()
 
     client.create_view(tmp_name, expr, temporary=True)
-    assert client.exists_table(tmp_name)
+    assert tmp_name in client.list_tables()
 
     # just check it works for now
     expr2 = client.table(tmp_name)
@@ -27,7 +27,7 @@ def test_create_exists_view(client, alltypes, temp_view):
 def test_drop_non_empty_database(client, alltypes, temp_table_db):
     temp_database, temp_table = temp_table_db
     client.create_table(temp_table, alltypes, database=temp_database)
-    assert client.exists_table(temp_table, database=temp_database)
+    assert temp_table in client.list_tables(database=temp_database)
 
     with pytest.raises(ps.sql.utils.AnalysisException):
         client.drop_database(temp_database)
@@ -35,7 +35,7 @@ def test_drop_non_empty_database(client, alltypes, temp_table_db):
 
 def test_create_database_with_location(client, tmp_dir):
     base = pjoin(tmp_dir, util.guid())
-    name = '__ibis_test_{}'.format(util.guid())
+    name = f'__ibis_test_{util.guid()}'
     tmp_path = pjoin(base, name)
 
     client.create_database(name, path=tmp_path)
@@ -49,7 +49,7 @@ def test_create_database_with_location(client, tmp_dir):
 
 
 def test_drop_table_not_exist(client):
-    non_existent_table = 'ibis_table_{}'.format(util.guid())
+    non_existent_table = f'ibis_table_{util.guid()}'
     with pytest.raises(Exception):
         client.drop_table(non_existent_table)
     client.drop_table(non_existent_table, force=True)
@@ -194,7 +194,7 @@ def created_view(client, alltypes):
 
 def test_drop_view(client, alltypes, created_view):
     client.drop_view(created_view)
-    assert not client.exists_table(created_view)
+    assert created_view not in client.list_tables()
 
 
 def test_rename_table(client, alltypes):
@@ -216,7 +216,7 @@ def test_rename_table(client, alltypes):
 
 @pytest.fixture
 def table(client, temp_database):
-    table_name = 'table_{}'.format(util.guid())
+    table_name = f'table_{util.guid()}'
     schema = ibis.schema([('foo', 'string'), ('bar', 'int64')])
     client.create_table(
         table_name, database=temp_database, schema=schema, format='parquet'

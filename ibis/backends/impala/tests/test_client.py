@@ -11,11 +11,10 @@ import ibis.common.exceptions as com
 import ibis.config as config
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-import ibis.util as util
 from ibis.tests.util import assert_equal
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture
 def db(con, test_data_db):
     return con.database(test_data_db)
 
@@ -26,7 +25,19 @@ def test_kerberos_deps_installed(env, test_data_db):
     # errors and occur, because there is no kerberos server in
     # the CI pipeline, but they imply our imports have succeeded.
     # See: https://github.com/ibis-project/ibis/issues/2342
-    with pytest.raises((AttributeError, TTransportException)):
+    excs = (AttributeError, TTransportException)
+    try:
+        # TLDR: puresasl is using kerberos, and not pykerberos
+        #
+        # see https://github.com/requests/requests-kerberos/issues/63
+        # for why both libraries exist
+        from kerberos import GSSError
+    except ImportError:
+        pass
+    else:
+        excs += (GSSError,)
+
+    with pytest.raises(excs):
         ibis.impala.connect(
             host=env.impala_host,
             database=test_data_db,
@@ -69,7 +80,7 @@ def test_get_table_ref(db):
 
 def test_run_sql(con, test_data_db):
     query = """SELECT li.*
-FROM {0}.tpch_lineitem li
+FROM {}.tpch_lineitem li
 """.format(
         test_data_db
     )
@@ -199,10 +210,11 @@ def test_verbose_log_queries(con, test_data_db):
         with config.option_context('verbose_log', queries.append):
             con.table('tpch_orders', database=test_data_db)
 
-    assert len(queries) == 1
-    (query,) = queries
-    expected = 'DESCRIBE {}.`tpch_orders`'.format(test_data_db)
-    assert query == expected
+    # we can't make assertions about the length of queries, since the Python GC
+    # could've collected a temporary pandas table any time between construction
+    # of `queries` and the assertion
+    expected = f'DESCRIBE {test_data_db}.`tpch_orders`'
+    assert expected in queries
 
 
 def test_sql_query_limits(con, test_data_db):
@@ -254,10 +266,10 @@ def test_close_drops_temp_tables(con, test_data_dir):
     table = con.parquet_file(hdfs_path)
 
     name = table.op().name
-    assert con.exists_table(name) is True
+    assert len(con.list_tables(like=name))
     con.close()
 
-    assert not con.exists_table(name)
+    assert not len(con.list_tables(like=name))
 
 
 def test_set_compression_codec(con):
@@ -307,7 +319,7 @@ def test_attr_name_conflict(
     assert left.join(right, ['id', 'files']) is not None
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def con2(env):
     con = ibis.impala.connect(
         host=env.impala_host,
@@ -391,18 +403,3 @@ def test_tables_robust_to_set_database(con, test_data_db, temp_database):
     n = 10
     df = table.limit(n).execute()
     assert len(df) == n
-
-
-def test_exists_table(con):
-    assert con.exists_table('functional_alltypes')
-    assert not con.exists_table('foobarbaz_{}'.format(util.guid()))
-
-
-def text_exists_table_with_database(
-    con, alltypes, test_data_db, temp_table, temp_database
-):
-    tmp_db = test_data_db
-    con.create_table(temp_table, alltypes, database=tmp_db)
-
-    assert con.exists_table(temp_table, database=tmp_db)
-    assert not con.exists_table(temp_table, database=temp_database)

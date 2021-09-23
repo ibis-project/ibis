@@ -152,7 +152,7 @@ def _truncate(func):
             modifier = _truncate_modifiers[unit]
         except KeyError:
             raise com.UnsupportedOperationError(
-                'Unsupported truncate unit {!r}'.format(unit)
+                f'Unsupported truncate unit {unit!r}'
             )
         return func(sa_arg, modifier)
 

@@ -189,7 +189,7 @@ if geospatial_supported:
         if t == 'GEOMETRY':
             return dt.Geometry(nullable=nullable)
         else:
-            raise ValueError("Unrecognized geometry type: {}".format(t))
+            raise ValueError(f"Unrecognized geometry type: {t}")
 
 
 POSTGRES_FIELD_TO_IBIS_UNIT = {
@@ -214,9 +214,7 @@ def sa_postgres_interval(_, satype, nullable=True):
     field = satype.fields.upper()
     unit = POSTGRES_FIELD_TO_IBIS_UNIT.get(field, None)
     if unit is None:
-        raise ValueError(
-            "Unknown PostgreSQL interval field {!r}".format(field)
-        )
+        raise ValueError(f"Unknown PostgreSQL interval field {field!r}")
     elif unit in {"Y", "M"}:
         raise ValueError(
             "Variable length timedeltas are not yet supported with PostgreSQL"

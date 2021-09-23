@@ -47,7 +47,7 @@ class Function:
 
     def __repr__(self):
         klass = type(self).__name__
-        return '{0}({1}, {2!r}, {3!r})'.format(
+        return '{}({}, {!r}, {!r})'.format(
             klass, self.name, self.inputs, self.output
         )
 
@@ -71,7 +71,7 @@ class ScalarFunction(Function):
     def _get_class_name(self, name):
         if name is None:
             name = util.guid()
-        return 'UDF_{0}'.format(name)
+        return f'UDF_{name}'
 
     def _type_signature(self):
         input_type = _ibis_signature(self.inputs)
@@ -88,7 +88,7 @@ class AggregateFunction(Function):
     def _get_class_name(self, name):
         if name is None:
             name = util.guid()
-        return 'UDA_{0}'.format(name)
+        return f'UDA_{name}'
 
     def _type_signature(self):
         def output_type(op):
@@ -292,7 +292,7 @@ def _ibis_signature(inputs):
         return inputs
 
     arguments = [
-        ('_{}'.format(i), sig.Argument(rlz.value(dtype)))
+        (f'_{i}', sig.Argument(rlz.value(dtype)))
         for i, dtype in enumerate(inputs)
     ]
     return sig.TypeSignature(arguments)
@@ -314,7 +314,7 @@ def add_operation(op, func_name, db):
     name: used in issuing statements to SQL engine
     database: database the relevant operator is registered to
     """
-    full_name = '{0}.{1}'.format(db, func_name)
+    full_name = f'{db}.{func_name}'
     # TODO
     # if op.input_type is rlz.listof:
     #     translator = comp.varargs(full_name)

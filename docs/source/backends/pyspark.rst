@@ -7,7 +7,7 @@ Install dependencies for Ibis's PySpark dialect:
 
 ::
 
-  pip install ibis-framework[pyspark]
+  pip install 'ibis-framework[pyspark]'
 
 .. note::
 

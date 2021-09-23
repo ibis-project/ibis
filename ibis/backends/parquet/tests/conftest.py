@@ -17,7 +17,7 @@ class TestConf(PandasTest):
     def connect(data_directory: Path):
         filename = data_directory / 'functional_alltypes.parquet'
         if not filename.exists():
-            pytest.skip('test data set {} not found'.format(filename))
+            pytest.skip(f'test data set {filename} not found')
         return ibis.parquet.connect(data_directory)
 
 
@@ -27,7 +27,7 @@ def parquet(tmpdir, file_backends_data):
     d = tmpdir.mkdir('pq')
 
     for k, v in file_backends_data.items():
-        f = d / '{}.parquet'.format(k)
+        f = d / f'{k}.parquet'
         table = pa.Table.from_pandas(v)
         pq.write_table(table, str(f))
 

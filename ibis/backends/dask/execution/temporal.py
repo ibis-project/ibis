@@ -91,7 +91,10 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
     ],
     ops.IntervalFloorDivide: [
         (
-            ((Timedelta, dd.Series), numeric_types + (dd.Series,),),
+            (
+                (Timedelta, dd.Series),
+                numeric_types + (dd.Series,),
+            ),
             execute_interval_multiply_fdiv_series_numeric,
         )
     ],
@@ -164,7 +167,7 @@ def execute_between_time(op, data, lower, upper, **kwargs):
 
 @execute_node.register((ops.TimestampTruncate, ops.DateTruncate), dd.Series)
 def execute_timestamp_truncate(op, data, **kwargs):
-    dtype = 'datetime64[{}]'.format(op.unit)
+    dtype = f'datetime64[{op.unit}]'
     return data.astype(dtype)
 
 

@@ -175,7 +175,7 @@ class TestWrapping(unittest.TestCase):
         return func
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def udfcon(con):
     con.disable_codegen(False)
     try:
@@ -184,22 +184,22 @@ def udfcon(con):
         con.disable_codegen(True)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def alltypes(udfcon):
     return udfcon.table('functional_alltypes')
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def udf_ll(udfcon, test_data_dir):
     return pjoin(test_data_dir, 'udf/udf-sample.ll')
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def uda_ll(udfcon, test_data_dir):
     return pjoin(test_data_dir, 'udf/uda-sample.ll')
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def uda_so(udfcon, test_data_dir):
     return pjoin(test_data_dir, 'udf/libudasample.so')
 
@@ -388,7 +388,7 @@ def test_all_type_args(udfcon, test_data_db, udf_ll):
 def test_udf_varargs(udfcon, alltypes, udf_ll, test_data_db):
     t = alltypes
 
-    name = 'add_numbers_{0}'.format(util.guid()[:4])
+    name = f'add_numbers_{util.guid()[:4]}'
 
     input_sig = rules.varargs(rules.double)
     func = api.wrap_udf(udf_ll, input_sig, 'double', 'AddNumbers', name=name)
@@ -437,22 +437,22 @@ def conforming_wrapper(
 ):
     kwds = {'name': name}
     if serialize:
-        kwds['serialize_fn'] = '{0}Serialize'.format(prefix)
+        kwds['serialize_fn'] = f'{prefix}Serialize'
     return api.wrap_uda(
         where,
         inputs,
         output,
-        '{0}Update'.format(prefix),
-        init_fn='{0}Init'.format(prefix),
-        merge_fn='{0}Merge'.format(prefix),
-        finalize_fn='{0}Finalize'.format(prefix),
+        f'{prefix}Update',
+        init_fn=f'{prefix}Init',
+        merge_fn=f'{prefix}Merge',
+        finalize_fn=f'{prefix}Finalize',
         **kwds,
     )
 
 
 @pytest.fixture
 def wrapped_count_uda(uda_so):
-    name = 'user_count_{0}'.format(util.guid())
+    name = f'user_count_{util.guid()}'
     return api.wrap_uda(uda_so, ['int32'], 'int64', 'CountUpdate', name=name)
 
 
@@ -492,7 +492,7 @@ def test_drop_database_with_udfs_and_udas(
         ['boolean'],
         'boolean',
         'Identity',
-        'udf_{0}'.format(util.guid()),
+        f'udf_{util.guid()}',
     )
 
     db = temp_database
