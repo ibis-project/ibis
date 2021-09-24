@@ -1,7 +1,6 @@
 from functools import wraps as copydoc
 
 import kudu
-import pandas as pd
 
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.ddl import (
@@ -136,26 +135,21 @@ class KuduImpalaInterface:
                     'from an expression or DataFrame'
                 )
 
-            if isinstance(obj, pd.DataFrame):
-                from .pandas_interop import write_temp_dataframe
+            with self.impala_client._setup_insert(obj) as to_insert:
+                # XXX: exposing a lot of internals
+                ast = self.impala_client.compiler.to_ast(to_insert)
+                select = ast.queries[0]
 
-                writer, to_insert = write_temp_dataframe(
-                    self.impala_client, obj
+                self.impala_client.raw_sql(
+                    CTASKudu(
+                        impala_name,
+                        kudu_name,
+                        self.client.master_addrs,
+                        select,
+                        primary_keys,
+                        database=database,
+                    )
                 )
-            else:
-                to_insert = obj
-            # XXX: exposing a lot of internals
-            ast = self.impala_client.compiler.to_ast(to_insert)
-            select = ast.queries[0]
-
-            stmt = CTASKudu(
-                impala_name,
-                kudu_name,
-                self.client.master_addrs,
-                select,
-                primary_keys,
-                database=database,
-            )
         else:
             if external:
                 ktable = self.client.table(kudu_name)
@@ -164,21 +158,21 @@ class KuduImpalaInterface:
                 primary_keys = kschema.primary_keys()
             elif schema is None:
                 raise ValueError(
-                    'Must specify schema for new empty ' 'Kudu-backed table'
+                    'Must specify schema for new empty Kudu-backed table'
                 )
 
-            stmt = CreateTableKudu(
-                impala_name,
-                kudu_name,
-                self.client.master_addrs,
-                schema,
-                primary_keys,
-                external=external,
-                database=database,
-                can_exist=False,
+            self.impala_client.raw_sql(
+                CreateTableKudu(
+                    impala_name,
+                    kudu_name,
+                    self.client.master_addrs,
+                    schema,
+                    primary_keys,
+                    external=external,
+                    database=database,
+                    can_exist=False,
+                )
             )
-
-        self.impala_client._execute(stmt)
 
     def table(
         self, kudu_name, name=None, database=None, persist=False, external=True
