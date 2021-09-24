@@ -139,6 +139,15 @@ def test_writer_cleanup_deletes_hdfs_dir(con, hdfs, alltypes_df):
     assert not hdfs.exists(path)
 
 
+def test_writer_cleanup_context_manager(con, hdfs, alltypes_df):
+    with DataFrameWriter(con, alltypes_df) as writer:
+        path = writer.write_temp_csv()
+        assert hdfs.exists(path)
+
+    # the path shouldn't exist after the context manager exits
+    assert not hdfs.exists(path)
+
+
 def test_create_table_from_dataframe(con, alltypes_df, temp_table_db):
     tmp_db, tname = temp_table_db
     con.create_table(tname, alltypes_df, database=tmp_db)
