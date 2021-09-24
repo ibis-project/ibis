@@ -15,7 +15,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.base import Client, Database
+from ibis.backends.base import BaseBackendForClient, Client, Database
 from ibis.backends.pandas.client import (
     PANDAS_DATE_TYPES,
     PANDAS_STRING_TYPES,
@@ -156,7 +156,7 @@ class DaskDatabase(Database):
     pass
 
 
-class DaskClient(Client):
+class DaskClient(Client, BaseBackendForClient):
     def __init__(self, backend, dictionary: Dict[str, dd.DataFrame]):
         self.backend = backend
         self.database_class = backend.database_class

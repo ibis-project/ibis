@@ -10,6 +10,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis.backends.base import BaseBackendForClient
 from ibis.backends.base.sql import SQLClient
 from ibis.config import options
 
@@ -159,7 +160,7 @@ class ClickhouseTable(ir.TableExpr):
         return self._client.con.execute(query, data, **kwargs)
 
 
-class ClickhouseClient(SQLClient):
+class ClickhouseClient(SQLClient, BaseBackendForClient):
     """An Ibis client interface that uses Clickhouse"""
 
     compiler = ClickhouseCompiler

@@ -323,7 +323,7 @@ class UnboundTable(PhysicalTable):
 class DatabaseTable(PhysicalTable):
     name = Arg(str)
     schema = Arg(sch.Schema)
-    source = Arg(rlz.client)
+    source = Arg(rlz.backend)
 
     def change_name(self, new_name):
         return type(self)(new_name, self.args[1], self.source)
@@ -334,7 +334,7 @@ class SQLQueryResult(TableNode, HasSchema):
 
     query = Arg(rlz.noop)
     schema = Arg(sch.Schema)
-    source = Arg(rlz.client)
+    source = Arg(rlz.backend)
 
     def blocks(self):
         return True

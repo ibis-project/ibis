@@ -7,6 +7,7 @@ import sqlalchemy as sa
 import sqlalchemy.dialects.mysql as mysql
 
 import ibis.expr.datatypes as dt
+from ibis.backends.base import BaseBackendForClient
 from ibis.backends.base.sql.alchemy import AlchemyClient
 
 from .compiler import MySQLCompiler
@@ -34,7 +35,7 @@ def mysql_blob(satype, nullable=True):
     return dt.Binary(nullable=nullable)
 
 
-class MySQLClient(AlchemyClient):
+class MySQLClient(AlchemyClient, BaseBackendForClient):
 
     """The Ibis MySQL client class
 

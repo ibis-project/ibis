@@ -18,6 +18,7 @@ from typing import Optional
 import pytest
 
 import ibis.expr.types as ir
+from ibis.backends.base import BaseBackendForClient
 from ibis.backends.base.sql import SQLClient
 from ibis.backends.base.sql.alchemy import (
     AlchemyCompiler,
@@ -28,7 +29,7 @@ from ibis.expr.schema import Schema
 from ibis.expr.typing import TimeContext
 
 
-class MockConnection(SQLClient, metaclass=abc.ABCMeta):
+class MockConnection(SQLClient, BaseBackendForClient, metaclass=abc.ABCMeta):
     def __init__(self):
         self.executed_queries = []
 

@@ -13,7 +13,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.base import Client, Database
+from ibis.backends.base import BaseBackendForClient, Client, Database
 
 from .core import execute_and_reset
 
@@ -332,7 +332,7 @@ class PandasTable(ops.DatabaseTable):
     pass
 
 
-class PandasClient(Client):
+class PandasClient(Client, BaseBackendForClient):
     def __init__(self, backend, dictionary):
         self.backend = backend
         self.database_class = backend.database_class

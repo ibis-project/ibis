@@ -4,6 +4,7 @@ from pkg_resources import parse_version
 
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
+from ibis.backends.base import BaseBackendForClient
 from ibis.backends.base.file import BaseFileBackend, FileClient
 from ibis.backends.pandas.core import execute, execute_node, pre_execute
 from ibis.backends.pandas.execution.selection import physical_tables
@@ -28,7 +29,7 @@ class CSVTable(ops.DatabaseTable):
         self.read_csv_kwargs = kwargs
 
 
-class CSVClient(FileClient):
+class CSVClient(FileClient, BaseBackendForClient):
     def insert(self, path, expr, index=False, **kwargs):
         path = self.root / path
         data = execute(expr)

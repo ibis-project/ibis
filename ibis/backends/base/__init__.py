@@ -33,10 +33,36 @@ class BaseBackend(abc.ABC):
         Name of the backend, for example 'sqlite'.
         """
 
+    # XXX For backends where `Backend` and `Client` coexist, `client`,
+    # `client_class` and `backend` will be overwritten by the associated
+    # instances. For backends where `Client` was fully removed, these
+    # properties will be used instead, using the `Backend` class, containing
+    # all `Client` methods
+    # TODO remove once all backends have been ported to the new API
     @property
-    @abc.abstractmethod
+    def client(self):
+        return self._set_client if hasattr(self, '_set_client') else self
+
+    @client.setter
+    def client(self, value):
+        self._set_client = value
+
+    @property
     def client_class(self):
-        """Class of the client, like `PandasClient`."""
+        return (
+            self._set_client_class
+            if hasattr(self, '_set_client_class')
+            else self.__class__
+        )
+
+    @client_class.setter
+    def client_class(self, value):
+        self._set_client_class = value
+
+    def backend(self):
+        return self
+
+    # End of TODO
 
     @abc.abstractmethod
     def connect(connection_string, **options):
@@ -260,3 +286,17 @@ class BaseBackend(abc.ABC):
             )
 
         return decorator
+
+
+class BaseBackendForClient(BaseBackend):
+    # This class is implemented so `Client` can implement from it, without
+    # having to overwrite abstract methods.
+    # We want clients to subclass backend, so then they can be merged to
+    # backend without requiring further changes to Ibis, only to the backend
+    # being moved.
+    # TODO this class should be deleted when all subclasses of `Client` have
+    # been deleted
+    name = None
+
+    def connect(connection_string, **options):
+        pass

@@ -7,6 +7,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as types
 import ibis.expr.types as ir
+from ibis.backends.base import BaseBackendForClient
 from ibis.backends.base.sql import SQLClient
 from ibis.backends.base.sql.ddl import (
     CreateDatabase,
@@ -229,7 +230,7 @@ class PySparkCursor:
         """No-op for compatibility."""
 
 
-class PySparkClient(SQLClient):
+class PySparkClient(SQLClient, BaseBackendForClient):
     """
     An ibis client that uses PySpark SQL Dataframe
     """

@@ -4,6 +4,7 @@ import pandas as pd
 
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
+from ibis.backends.base import BaseBackendForClient
 from ibis.backends.base.file import BaseFileBackend, FileClient
 from ibis.backends.pandas.core import execute, execute_node
 
@@ -12,7 +13,7 @@ class HDFTable(ops.DatabaseTable):
     pass
 
 
-class HDFClient(FileClient):
+class HDFClient(FileClient, BaseBackendForClient):
     def insert(
         self, path, key, expr, format='table', data_columns=True, **kwargs
     ):

@@ -5,13 +5,14 @@ from typing import Optional
 import psycopg2  # NOQA fail early if the driver is missing
 import sqlalchemy as sa
 
+from ibis.backends.base import BaseBackendForClient
 from ibis.backends.base.sql.alchemy import AlchemyClient
 from ibis.backends.postgres import udf
 
 from .compiler import PostgreSQLCompiler
 
 
-class PostgreSQLClient(AlchemyClient):
+class PostgreSQLClient(AlchemyClient, BaseBackendForClient):
 
     """The Ibis PostgreSQL client class
 

@@ -290,10 +290,10 @@ def interval(arg, units=None):
 
 
 @validator
-def client(arg):
-    from ibis.backends.base import Client
+def backend(arg):
+    from ibis.backends.base import BaseBackend
 
-    return instance_of(Client, arg)
+    return instance_of(BaseBackend, arg)
 
 
 # ---------------------------------------------------------------------

@@ -9,6 +9,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis.backends.base import BaseBackendForClient
 from ibis.backends.base.file import BaseFileBackend, FileClient
 from ibis.backends.pandas.core import execute, execute_node
 
@@ -58,7 +59,7 @@ class ParquetTable(ops.DatabaseTable):
     pass
 
 
-class ParquetClient(FileClient):
+class ParquetClient(FileClient, BaseBackendForClient):
     def insert(self, path, expr, **kwargs):
         path = self.root / path
         df = execute(expr)

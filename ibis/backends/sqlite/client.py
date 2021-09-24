@@ -4,13 +4,14 @@ from typing import Optional
 
 import sqlalchemy as sa
 
+from ibis.backends.base import BaseBackendForClient
 from ibis.backends.base.sql.alchemy import AlchemyClient
 
 from . import udf
 from .compiler import SQLiteCompiler
 
 
-class SQLiteClient(AlchemyClient):
+class SQLiteClient(AlchemyClient, BaseBackendForClient):
     """The Ibis SQLite client class."""
 
     compiler = SQLiteCompiler
