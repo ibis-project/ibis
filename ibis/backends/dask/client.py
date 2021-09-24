@@ -1,6 +1,6 @@
 """The dask client implementation."""
 from functools import partial
-from typing import Dict, Mapping
+from typing import Mapping
 
 import dask.dataframe as dd
 import dateutil.parser
@@ -15,10 +15,11 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.base import Client, Database
+from ibis.backends.base import Database
 from ibis.backends.pandas.client import (
     PANDAS_DATE_TYPES,
     PANDAS_STRING_TYPES,
+    PandasClient,
     _inferable_pandas_dtypes,
     convert_timezone,
     ibis_dtype_to_pandas,
@@ -156,18 +157,7 @@ class DaskDatabase(Database):
     pass
 
 
-class DaskClient(Client):
-    def __init__(self, backend, dictionary: Dict[str, dd.DataFrame]):
-        self.backend = backend
-        self.database_class = backend.database_class
-        self.table_class = backend.table_class
-        self.dictionary = dictionary
-
-    def table(self, name: str, schema: sch.Schema = None) -> DaskTable:
-        df = self.dictionary[name]
-        schema = sch.infer(df, schema=schema)
-        return self.table_class(name, schema, self).to_expr()
-
+class DaskClient(PandasClient):
     def execute(
         self,
         query: ir.Expr,
@@ -207,22 +197,6 @@ class DaskClient(Client):
         """
         return execute_and_reset(query, params=params, **kwargs)
 
-    def database(self, name: str = None) -> DaskDatabase:
-        """Construct a database called `name`."""
-        return self.database_class(name, self)
-
-    def load_data(self, table_name: str, obj: dd.DataFrame, **kwargs):
-        """Load data from `obj` into `table_name`.
-
-        Parameters
-        ----------
-        table_name : str
-        obj : dask.dataframe.DataFrame
-
-        """
-        # kwargs is a catch all for any options required by other backends.
-        self.dictionary[table_name] = obj
-
     def create_table(
         self,
         table_name: str,
@@ -244,19 +218,3 @@ class DaskClient(Client):
             raise com.IbisError('Must pass expr or schema')
 
         self.dictionary[table_name] = df
-
-    def get_schema(self, table_name: str, database: str = None) -> sch.Schema:
-        """Return a Schema object for the indicated table and database.
-
-        Parameters
-        ----------
-        table_name : str
-            May be fully qualified
-        database : str
-
-        Returns
-        -------
-        ibis.expr.schema.Schema
-
-        """
-        return sch.infer(self.dictionary[table_name])

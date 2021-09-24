@@ -383,7 +383,7 @@ class PandasClient(Client):
 
         """
         # kwargs is a catch all for any options required by other backends.
-        self.dictionary[table_name] = pd.DataFrame(obj)
+        self.dictionary[table_name] = obj
 
     def create_table(self, table_name, obj=None, schema=None):
         """Create a table."""
@@ -394,6 +394,7 @@ class PandasClient(Client):
             df = pd.DataFrame(obj)
         else:
             dtypes = ibis_schema_to_pandas(schema)
+            print(list(map(toolz.first, dtypes)))
             df = schema.apply_to(
                 pd.DataFrame(columns=list(map(toolz.first, dtypes)))
             )
