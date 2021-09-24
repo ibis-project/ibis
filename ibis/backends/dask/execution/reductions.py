@@ -3,7 +3,6 @@ Reduces sequences
 
 NOTE: This file overwrite the pandas backend registered handlers for:
 
-- execute_node_expr_list,
 - execute_node_greatest_list,
 - execute_node_least_list
 
@@ -26,7 +25,6 @@ import toolz
 import ibis
 import ibis.expr.operations as ops
 from ibis.backends.pandas.execution.generic import (
-    execute_node_expr_list,
     execute_node_greatest_list,
     execute_node_least_list,
 )

@@ -135,18 +135,18 @@ def test_table_info(alltypes):
     assert buf.getvalue() is not None
 
 
-def test_execute_exprs_no_table_ref(con):
-    cases = [(L(1) + L(2), 3)]
+# def test_execute_exprs_no_table_ref(con):
+#     cases = [(L(1) + L(2), 3)]
 
-    for expr, expected in cases:
-        result = con.execute(expr)
-        assert result == expected
+#     for expr, expected in cases:
+#         result = con.execute(expr)
+#         assert result == expected
 
-    # ExprList
-    exlist = ibis.api.expr_list(
-        [L(1).name('a'), ibis.now().name('b'), L(2).log().name('c')]
-    )
-    con.execute(exlist)
+#     # ExprList
+#     exlist = ibis.api.expr_list(
+#         [L(1).name('a'), ibis.now().name('b'), L(2).log().name('c')]
+#     )
+#     con.execute(exlist)
 
 
 @pytest.mark.skip(reason="FIXME: it is raising KeyError: 'Unnamed: 0'")
