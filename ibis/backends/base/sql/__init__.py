@@ -18,6 +18,7 @@ class BaseSQLBackend(BaseBackend):
     """
     Base backend class for backends that compile to SQL.
     """
+
     compiler = Compiler
     table_class = ops.DatabaseTable
     table_expr_class = ir.TableExpr

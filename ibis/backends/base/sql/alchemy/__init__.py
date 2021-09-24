@@ -210,8 +210,9 @@ class BaseAlchemyBackend(BaseSQLBackend):
         self, name: str, schema: sch.Schema
     ) -> List[sqlalchemy.Column]:
         return [
-            sqlalchemy.Column(colname, to_sqla_type(dtype),
-                              nullable=dtype.nullable)
+            sqlalchemy.Column(
+                colname, to_sqla_type(dtype), nullable=dtype.nullable
+            )
             for colname, dtype in zip(schema.names, schema.types)
         ]
 
@@ -341,8 +342,9 @@ class BaseAlchemyBackend(BaseSQLBackend):
             util.log(query_str)
 
     def _get_sqla_table(self, name, schema=None, autoload=True):
-        return sqlalchemy.Table(name, self.meta, schema=schema,
-                                autoload=autoload)
+        return sqlalchemy.Table(
+            name, self.meta, schema=schema, autoload=autoload
+        )
 
     def _sqla_table_to_expr(self, table):
         node = self.table_class(table, self)
