@@ -1,3 +1,4 @@
+import contextlib
 import io
 import operator
 import re
@@ -14,7 +15,6 @@ import pandas as pd
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
-import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -777,7 +777,7 @@ class ImpalaClient(SQLClient):
         self._hdfs = hdfs_client
         self._kudu = None
 
-        self._temp_objects = weakref.WeakSet()
+        self._temp_objects = set()
 
     def fetch_from_cursor(self, cursor, schema):
         batches = cursor.fetchall(columnar=True)
@@ -812,14 +812,11 @@ class ImpalaClient(SQLClient):
         return self._kudu
 
     def close(self):
-        """
-        Close Impala connection and drop any temporary objects
-        """
-        for obj in self._temp_objects:
-            try:
-                obj.drop()
-            except HS2Error:
-                pass
+        """Close the connection and drop temporary objects."""
+        while self._temp_objects:
+            finalizer = self._temp_objects.pop()
+            with contextlib.suppress(HS2Error):
+                finalizer()
 
         self.con.close()
 
@@ -1309,15 +1306,19 @@ class ImpalaClient(SQLClient):
             else:
                 self.create_database(name, path=path, force=True)
 
+    def _drop_table(self, name: str) -> None:
+        # database might have been dropped, so we suppress the
+        # corresponding Exception
+        with contextlib.suppress(ImpylaError):
+            self.drop_table(name)
+
     def _wrap_new_table(self, name, database, persist):
         qualified_name = self._fully_qualified_name(name, database)
-
-        if persist:
-            t = self.table(qualified_name)
-        else:
-            schema = self.get_schema(qualified_name)
-            node = ImpalaTemporaryTable(qualified_name, schema, self)
-            t = self.table_expr_class(node)
+        t = self.table(qualified_name)
+        if not persist:
+            self._temp_objects.add(
+                weakref.finalize(t, self._drop_table, qualified_name)
+            )
 
         # Compute number of rows in table for better default query planning
         cardinality = t.count().execute()
@@ -1329,7 +1330,6 @@ class ImpalaClient(SQLClient):
         )
         self.raw_sql(set_card)
 
-        self._temp_objects.add(t)
         return t
 
     def text_file(self, hdfs_path, column_name='value'):
@@ -1875,21 +1875,6 @@ class ScalarFunction:
 class AggregateFunction:
     def drop(self):
         pass
-
-
-class ImpalaTemporaryTable(ops.DatabaseTable):
-    def __del__(self):
-        try:
-            self.drop()
-        except com.IbisError:
-            pass
-
-    def drop(self):
-        try:
-            self.source.drop_table(self.name)
-        except ImpylaError:
-            # database might have been dropped
-            pass
 
 
 def _validate_compatible(from_schema, to_schema):
