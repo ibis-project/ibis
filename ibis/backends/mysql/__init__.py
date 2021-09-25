@@ -1,11 +1,16 @@
+import contextlib
+import warnings
+
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 
 from .client import MySQLClient
+from .compiler import MySQLCompiler
 
 
 class Backend(BaseAlchemyBackend):
     name = 'mysql'
     client_class = MySQLClient
+    compiler = MySQLCompiler
 
     def connect(
         self,
@@ -86,3 +91,47 @@ class Backend(BaseAlchemyBackend):
             driver=driver,
         )
         return self.client
+
+    @contextlib.contextmanager
+    def begin(self):
+        with super().begin() as bind:
+            previous_timezone = bind.execute(
+                'SELECT @@session.time_zone'
+            ).scalar()
+            try:
+                bind.execute("SET @@session.time_zone = 'UTC'")
+            except Exception as e:
+                warnings.warn(f"Couldn't set mysql timezone: {str(e)}")
+
+            try:
+                yield bind
+            finally:
+                query = "SET @@session.time_zone = '{}'"
+                bind.execute(query.format(previous_timezone))
+
+    def table(self, name, database=None, schema=None):
+        """Create a table expression that references a particular a table
+        called `name` in a MySQL database called `database`.
+
+        Parameters
+        ----------
+        name : str
+            The name of the table to retrieve.
+        database : str, optional
+            The database in which the table referred to by `name` resides. If
+            ``None`` then the ``current_database`` is used.
+        schema : str, optional
+            The schema in which the table resides.  If ``None`` then the
+            `public` schema is assumed.
+
+        Returns
+        -------
+        table : TableExpr
+            A table expression.
+        """
+        if database is not None and database != self.current_database:
+            return self.database(name=database).table(name=name, schema=schema)
+        else:
+            alch_table = self._get_sqla_table(name, schema=schema)
+            node = self.table_class(alch_table, self, self._schemas.get(name))
+            return self.table_expr_class(node)

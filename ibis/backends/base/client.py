@@ -29,6 +29,48 @@ class Client:
     def exists_table(self, name, database=None):
         return self.backend.exists_table(name, database)
 
+    # Non-standard methods
+
+    def attach(self, name, path, create=False):
+        return self.backend.attach(name, path, create)
+
+    def execute(self, *args, **kwargs):
+        return self.backend.execute(*args, **kwargs)
+
+    def table(self, *args, **kwargs):
+        return self.backend.table(*args, **kwargs)
+
+    def compile(self, *args, **kwargs):
+        return self.backend.compile(*args, **kwargs)
+
+    def create_table(self, *args, **kwargs):
+        return self.backend.create_table(*args, **kwargs)
+
+    def raw_sql(self, *args, **kwargs):
+        return self.backend.raw_sql(*args, **kwargs)
+
+    def load_data(self, *args, **kwargs):
+        return self.backend.load_data(*args, **kwargs)
+
+    def drop_table(self, *args, **kwargs):
+        return self.backend.drop_table(*args, **kwargs)
+
+    def inspector(self, *args, **kwargs):
+        return self.backend.inspector(*args, **kwargs)
+
+    def insert(self, *args, **kwargs):
+        return self.backend.insert(*args, **kwargs)
+
+    def list_schemas(self, *args, **kwargs):
+        return self.backend.list_schemas(*args, **kwargs)
+
+    def ast_schema(self, *args, **kwargs):
+        return self.backend.ast_schema(*args, **kwargs)
+
+    @property
+    def compiler(self):
+        return self.backend.compiler
+
 
 class Database:
     """Generic Database class."""
