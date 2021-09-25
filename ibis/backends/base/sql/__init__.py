@@ -23,7 +23,7 @@ class BaseSQLBackend(BaseBackend):
     table_class = ops.DatabaseTable
     table_expr_class = ir.TableExpr
 
-    def table2(self, name, database=None):
+    def table(self, name, database=None):
         """Create a table expression.
 
         Create a table expression that references a particular table in the
