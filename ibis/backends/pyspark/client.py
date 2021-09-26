@@ -9,7 +9,6 @@ from ibis.backends.base.sql import SQLClient
 from ibis.backends.base.sql.ddl import fully_qualified_re
 
 from . import ddl
-from .compiler import PySparkExprTranslator
 
 
 @sch.infer.register(ps.sql.dataframe.DataFrame)
@@ -176,4 +175,3 @@ class PySparkClient(SQLClient):
         self.backend._context = session.sparkContext
         self.backend._session = session
         self.backend._catalog = session.catalog
-        self.backend.translator = PySparkExprTranslator()

@@ -20,7 +20,7 @@ from ibis.expr.timecontext import canonicalize_context, localize_context
 
 from . import ddl
 from .client import PySparkClient, PySparkTable, spark_dataframe_schema
-from .compiler import PySparkDatabaseTable
+from .compiler import PySparkDatabaseTable, PySparkExprTranslator
 from .datatypes import spark_dtype
 
 _read_csv_defaults = {
@@ -151,7 +151,7 @@ class Backend(BaseSQLBackend):
                 {param.op(): raw_value for param, raw_value in params.items()},
                 timecontext,
             )
-        return self.translator.translate(
+        return PySparkExprTranslator().translate(
             expr, scope=scope, timecontext=timecontext
         )
 

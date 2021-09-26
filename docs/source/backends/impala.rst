@@ -84,7 +84,7 @@ Database methods
 Table methods
 ~~~~~~~~~~~~~
 
-The ``ImpalaClient`` object itself has many helper utility methods. You'll find
+The ``Backend`` object itself has many helper utility methods. You'll find
 the most methods on ``ImpalaTable``.
 
 .. autosummary::
@@ -110,7 +110,7 @@ the most methods on ``ImpalaTable``.
 
 
 The best way to interact with a single table is through the ``ImpalaTable``
-object you get back from ``ImpalaClient.table``.
+object you get back from ``Backend.table``.
 
 .. autosummary::
    :toctree: ../generated/
@@ -738,7 +738,7 @@ These DDL commands are available as table-level and client-level methods:
 .. autosummary::
    :toctree: ../generated/
 
-   ImpalaClient.invalidate_metadata
+   Backend.invalidate_metadata
    ImpalaTable.invalidate_metadata
    ImpalaTable.refresh
 
@@ -771,7 +771,7 @@ name conflicts so data is not lost in such cases.
 .. autosummary::
    :toctree: ../generated/
 
-   ImpalaClient.load_data
+   Backend.load_data
    ImpalaTable.load_data
 
 To use these methods, pass the path of a single file or a directory of files
@@ -800,10 +800,10 @@ execution:
 .. autosummary::
    :toctree: ../generated/
 
-   ImpalaClient.disable_codegen
-   ImpalaClient.get_options
-   ImpalaClient.set_options
-   ImpalaClient.set_compression_codec
+   Backend.disable_codegen
+   Backend.get_options
+   Backend.set_options
+   Backend.set_compression_codec
 
 For example:
 

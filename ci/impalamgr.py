@@ -55,16 +55,11 @@ def make_ibis_client(env):
     )
 
 
-def can_write_to_hdfs(con):
+def raise_if_cannot_write_to_hdfs(con):
     test_path = os.path.join(ENV.test_data_dir, ibis.util.guid())
     test_file = BytesIO(ibis.util.guid().encode('utf-8'))
-    try:
-        con.hdfs.put(test_path, test_file)
-        con.hdfs.rm(test_path)
-        return True
-    except Exception:
-        logger.exception('Could not write to HDFS')
-        return False
+    con.hdfs.put(test_path, test_file)
+    con.hdfs.rm(test_path)
 
 
 def can_build_udfs():
@@ -260,8 +255,8 @@ def load(data, udf, data_dir, overwrite):
     con = make_ibis_client(ENV)
 
     # validate our environment before performing possibly expensive operations
-    if not can_write_to_hdfs(con):
-        raise IbisError('Failed to write to HDFS; check your settings')
+    raise_if_cannot_write_to_hdfs(con)
+
     if udf and not can_build_udfs():
         raise IbisError('Build environment does not support building UDFs')
 

@@ -84,6 +84,10 @@ class Client:
         return self.backend.sql(*args, **kwargs)
 
     @property
+    def meta(self):
+        return self.backend.con
+
+    @property
     def con(self):
         return self.backend.con
 
