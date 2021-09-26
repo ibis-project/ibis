@@ -4,7 +4,7 @@ import pandas as pd
 
 
 def patch_execute(con):
-    return mock.patch.object(con, 'raw_sql', wraps=con.raw_sql)
+    return mock.patch.object(con.backend, 'raw_sql', wraps=con.raw_sql)
 
 
 def test_invalidate_metadata(con, test_data_db):

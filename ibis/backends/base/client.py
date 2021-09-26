@@ -144,6 +144,12 @@ class Client:
     def create_function(self, *args, **kwargs):
         return self.backend.create_function(*args, **kwargs)
 
+    def drop_view(self, *args, **kwargs):
+        return self.backend.drop_view(*args, **kwargs)
+
+    def list_udas(self, *args, **kwargs):
+        return self.backend.list_udas(*args, **kwargs)
+
 
 class Database:
     """Generic Database class."""
