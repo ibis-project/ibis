@@ -4,8 +4,6 @@ import traceback
 import weakref
 from collections import deque
 
-import pandas as pd
-
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -376,45 +374,39 @@ class ImpalaTable(ir.TableExpr):
         # Completely overwrite contents
         >>> t.insert(table_expr, overwrite=True)  # doctest: +SKIP
         """
-        if isinstance(obj, pd.DataFrame):
-            from .pandas_interop import write_temp_dataframe
-
-            writer, expr = write_temp_dataframe(self._client, obj)
-        else:
-            expr = obj
-
         if values is not None:
             raise NotImplementedError
 
-        if validate:
-            existing_schema = self.schema()
-            insert_schema = expr.schema()
-            if not insert_schema.equals(existing_schema):
-                _validate_compatible(insert_schema, existing_schema)
+        with self._client._setup_insert(obj) as expr:
+            if validate:
+                existing_schema = self.schema()
+                insert_schema = expr.schema()
+                if not insert_schema.equals(existing_schema):
+                    _validate_compatible(insert_schema, existing_schema)
 
-        if partition is not None:
-            partition_schema = self.partition_schema()
-            partition_schema_names = frozenset(partition_schema.names)
-            expr = expr.projection(
-                [
-                    column
-                    for column in expr.columns
-                    if column not in partition_schema_names
-                ]
+            if partition is not None:
+                partition_schema = self.partition_schema()
+                partition_schema_names = frozenset(partition_schema.names)
+                expr = expr.projection(
+                    [
+                        column
+                        for column in expr.columns
+                        if column not in partition_schema_names
+                    ]
+                )
+            else:
+                partition_schema = None
+
+            ast = self._client.compiler.to_ast(expr)
+            select = ast.queries[0]
+            statement = InsertSelect(
+                self._qualified_name,
+                select,
+                partition=partition,
+                partition_schema=partition_schema,
+                overwrite=overwrite,
             )
-        else:
-            partition_schema = None
-
-        ast = self._client.compiler.to_ast(expr)
-        select = ast.queries[0]
-        statement = InsertSelect(
-            self._qualified_name,
-            select,
-            partition=partition,
-            partition_schema=partition_schema,
-            overwrite=overwrite,
-        )
-        return self._client.raw_sql(statement.compile())
+            return self._client.raw_sql(statement.compile())
 
     def load_data(self, path, overwrite=False, partition=None):
         """

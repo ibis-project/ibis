@@ -44,6 +44,7 @@ from .client import (  # noqa: F401
 from .compat import HS2Error, ImpylaError
 from .compiler import ImpalaCompiler
 from .hdfs import HDFS, WebHDFS, hdfs_connect
+from .pandas_interop import DataFrameWriter
 
 _HS2_TTypeId_to_dtype = {
     'BOOLEAN': 'bool',
@@ -548,6 +549,14 @@ class Backend(BaseSQLBackend):
         statement = DropView(name, database=database, must_exist=not force)
         return self.raw_sql(statement)
 
+    @contextlib.contextmanager
+    def _setup_insert(self, obj):
+        if isinstance(obj, pd.DataFrame):
+            with DataFrameWriter(self, obj) as writer:
+                yield writer.delimited_table(writer.write_temp_csv())
+        else:
+            yield obj
+
     def create_table(
         self,
         table_name,
@@ -599,40 +608,37 @@ class Backend(BaseSQLBackend):
             raise NotImplementedError
 
         if obj is not None:
-            if isinstance(obj, pd.DataFrame):
-                from .pandas_interop import write_temp_dataframe
+            with self._setup_insert(obj) as to_insert:
+                ast = self.compiler.to_ast(to_insert)
+                select = ast.queries[0]
 
-                writer, to_insert = write_temp_dataframe(self, obj)
-            else:
-                to_insert = obj
-            ast = self.compiler.to_ast(to_insert)
-            select = ast.queries[0]
-
-            statement = CTAS(
-                table_name,
-                select,
-                database=database,
-                can_exist=force,
-                format=format,
-                external=external,
-                partition=partition,
-                path=location,
-            )
+                self.raw_sql(
+                    CTAS(
+                        table_name,
+                        select,
+                        database=database,
+                        can_exist=force,
+                        format=format,
+                        external=external,
+                        partition=partition,
+                        path=location,
+                    )
+                )
         elif schema is not None:
-            statement = CreateTableWithSchema(
-                table_name,
-                schema,
-                database=database,
-                format=format,
-                can_exist=force,
-                external=external,
-                path=location,
-                partition=partition,
+            self.raw_sql(
+                CreateTableWithSchema(
+                    table_name,
+                    schema,
+                    database=database,
+                    format=format,
+                    can_exist=force,
+                    external=external,
+                    path=location,
+                    partition=partition,
+                )
             )
         else:
             raise com.IbisError('Must pass obj or schema')
-
-        return self.raw_sql(statement)
 
     def avro_file(
         self,
@@ -1383,7 +1389,5 @@ class Backend(BaseSQLBackend):
         -------
         None (for now)
         """
-        from .pandas_interop import DataFrameWriter
-
         writer = DataFrameWriter(self, df)
         return writer.write_csv(path)

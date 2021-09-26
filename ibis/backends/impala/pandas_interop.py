@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import contextlib
 import csv
 import os
 import tempfile
@@ -33,20 +34,17 @@ class DataFrameWriter:
 
     def __init__(self, client, df, path=None):
         self.client = client
-        self.hdfs = client.hdfs
-
         self.df = df
-
-        self.temp_hdfs_dirs = []
+        self.temp_hdfs_dirs = set()
 
     def write_temp_csv(self):
         temp_hdfs_dir = pjoin(
             options.impala.temp_hdfs_path, f'pandas_{util.guid()}'
         )
-        self.hdfs.mkdir(temp_hdfs_dir)
+        self.client.hdfs.mkdir(temp_hdfs_dir)
 
         # Keep track of the temporary HDFS file
-        self.temp_hdfs_dirs.append(temp_hdfs_dir)
+        self.temp_hdfs_dirs.add(temp_hdfs_dir)
 
         # Write the file to HDFS
         hdfs_path = pjoin(temp_hdfs_dir, '0.csv')
@@ -82,7 +80,7 @@ class DataFrameWriter:
             if options.verbose:
                 util.log(f'Writing CSV to: {path}')
 
-            self.hdfs.put(path, tmp_file_path)
+            self.client.hdfs.put(path, tmp_file_path)
         return path
 
     def get_schema(self):
@@ -105,20 +103,14 @@ class DataFrameWriter:
             persist=False,
         )
 
-    def __del__(self):
-        try:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        with contextlib.suppress(com.IbisError):
             self.cleanup()
-        except com.IbisError:
-            pass
+        return False
 
     def cleanup(self):
-        for path in self.temp_hdfs_dirs:
-            self.hdfs.rmdir(path)
-        self.temp_hdfs_dirs = []
-        self.csv_dir = None
-
-
-def write_temp_dataframe(client, df):
-    writer = DataFrameWriter(client, df)
-    path = writer.write_temp_csv()
-    return writer, writer.delimited_table(path)
+        while self.temp_hdfs_dirs:
+            self.client.hdfs.rmdir(self.temp_hdfs_dirs.pop())
