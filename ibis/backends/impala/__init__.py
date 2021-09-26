@@ -31,7 +31,6 @@ from ibis.backends.base.sql.ddl import (
 )
 from ibis.config import options
 
-# from .udf import *  # noqa: F401,F403
 from . import ddl, udf
 
 # these objects are exposed in the public API and are not used in the module
@@ -45,6 +44,12 @@ from .compat import HS2Error, ImpylaError
 from .compiler import ImpalaCompiler
 from .hdfs import HDFS, WebHDFS, hdfs_connect
 from .pandas_interop import DataFrameWriter
+from .udf import (  # noqa F408
+    aggregate_function,
+    scalar_function,
+    wrap_uda,
+    wrap_udf,
+)
 
 _HS2_TTypeId_to_dtype = {
     'BOOLEAN': 'bool',

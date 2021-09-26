@@ -91,6 +91,12 @@ class Client:
     def set_database(self, *args, **kwargs):
         return self.backend.set_database(*args, **kwargs)
 
+    def close(self, *args, **kwargs):
+        return self.backend.close(*args, **kwargs)
+
+    def disable_codegen(self, *args, **kwargs):
+        return self.backend.disable_codegen(*args, **kwargs)
+
     @property
     def meta(self):
         return self.backend.meta
