@@ -85,6 +85,12 @@ class Client:
     def avro_file(self, *args, **kwargs):
         return self.backend.avro_file(*args, **kwargs)
 
+    def parquet_file(self, *args, **kwargs):
+        return self.backend.parquet_file(*args, **kwargs)
+
+    def set_database(self, *args, **kwargs):
+        return self.backend.set_database(*args, **kwargs)
+
     @property
     def meta(self):
         return self.backend.meta
