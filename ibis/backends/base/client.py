@@ -97,6 +97,9 @@ class Client:
     def disable_codegen(self, *args, **kwargs):
         return self.backend.disable_codegen(*args, **kwargs)
 
+    def get_options(self, *args, **kwargs):
+        return self.backend.get_options(*args, **kwargs)
+
     @property
     def meta(self):
         return self.backend.meta
