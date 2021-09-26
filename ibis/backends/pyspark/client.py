@@ -173,11 +173,7 @@ class PySparkClient(SQLClient):
 
     def __init__(self, backend, session):
         self.backend = backend
-        self.database_class = backend.database_class
-        self.table_class = backend.table_class
-        self.table_expr_class = backend.table_expr_class
-
-        self._context = session.sparkContext
-        self._session = session
-        self._catalog = session.catalog
-        self.translator = PySparkExprTranslator()
+        self.backend._context = session.sparkContext
+        self.backend._session = session
+        self.backend._catalog = session.catalog
+        self.backend.translator = PySparkExprTranslator()

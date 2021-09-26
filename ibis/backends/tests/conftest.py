@@ -257,8 +257,10 @@ def temp_table(con) -> str:
     try:
         yield name
     finally:
-        if hasattr(con, 'drop_table'):
+        try:
             con.drop_table(name, force=True)
+        except NotImplementedError:
+            pass
 
 
 @pytest.fixture

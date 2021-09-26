@@ -101,11 +101,6 @@ def test_sql(backend, con, sql):
 
 @pytest.mark.xfail_unsupported
 def test_create_table_from_schema(con, backend, new_schema, temp_table):
-    if not hasattr(con, 'create_table') or not hasattr(con, 'drop_table'):
-        pytest.xfail(
-            '{} backend doesn\'t have create_table or drop_table methods.'
-        )
-
     con.create_table(temp_table, schema=new_schema)
 
     t = con.table(temp_table)
@@ -133,11 +128,6 @@ def test_rename_table(con, backend, temp_table, new_schema):
 @pytest.mark.xfail_backends(['impala', 'pyspark', 'spark'])
 def test_nullable_input_output(con, backend, temp_table):
     # - Impala, PySpark and Spark non-nullable issues #2138 and #2137
-    if not hasattr(con, 'create_table') or not hasattr(con, 'drop_table'):
-        pytest.xfail(
-            '{} backend doesn\'t have create_table or drop_table methods.'
-        )
-
     sch = ibis.schema(
         [
             ('foo', 'int64'),

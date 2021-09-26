@@ -7,7 +7,7 @@ import pyspark as ps
 
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
-from ibis.backends.base import BaseBackend
+from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.base.sql.ddl import (
     CreateDatabase,
     DropTable,
@@ -77,7 +77,7 @@ class _PySparkCursor:
         """No-op for compatibility."""
 
 
-class Backend(BaseBackend):
+class Backend(BaseSQLBackend):
     name = 'pyspark'
     client_class = PySparkClient
     table_class = PySparkDatabaseTable
@@ -97,7 +97,7 @@ class Backend(BaseBackend):
         # that is brought in without a specified time zone is converted as
         # local time to UTC with microsecond resolution.
         # https://spark.apache.org/docs/latest/sql-pyspark-pandas-with-arrow.html#timestamp-with-time-zone-semantics
-        self.client._session.conf.set('spark.sql.session.timeZone', 'UTC')
+        self._session.conf.set('spark.sql.session.timeZone', 'UTC')
 
         return self.client
 
@@ -112,20 +112,20 @@ class Backend(BaseBackend):
             'instead',
             FutureWarning,
         )
-        self.client._catalog.setCurrentDatabase(name)
+        self._catalog.setCurrentDatabase(name)
 
     @property
     def current_database(self):
-        return self.client._catalog.currentDatabase()
+        return self._catalog.currentDatabase()
 
     def list_databases(self, like=None):
-        databases = [db.name for db in self.client._catalog.listDatabases()]
+        databases = [db.name for db in self._catalog.listDatabases()]
         return self._filter_with_like(databases, like)
 
     def list_tables(self, like=None, database=None):
         tables = [
             t.name
-            for t in self.client._catalog.listTables(
+            for t in self._catalog.listTables(
                 dbName=database or self.current_database
             )
         ]

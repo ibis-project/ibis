@@ -665,21 +665,17 @@ class ImpalaClient(SQLClient):
         import hdfs
 
         self.backend = backend
-        self.database_class = backend.database_class
-        self.table_class = backend.table_class
-        self.table_expr_class = backend.table_expr_class
-
-        self.con = con
+        self.backend.con = con
 
         if isinstance(hdfs_client, hdfs.Client):
             hdfs_client = WebHDFS(hdfs_client)
         elif hdfs_client is not None and not isinstance(hdfs_client, HDFS):
             raise TypeError(hdfs_client)
 
-        self._hdfs = hdfs_client
-        self._kudu = None
+        self.backend._hdfs = hdfs_client
+        self.backend._kudu = None
 
-        self._temp_objects = set()
+        self.backend._temp_objects = set()
 
 
 # ----------------------------------------------------------------------

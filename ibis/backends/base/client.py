@@ -44,16 +44,20 @@ class Client:
         return self.backend.compile(*args, **kwargs)
 
     def create_table(self, *args, **kwargs):
+        if not hasattr(self.backend, 'create_table'):
+            raise NotImplementedError
         return self.backend.create_table(*args, **kwargs)
+
+    def drop_table(self, *args, **kwargs):
+        if not hasattr(self.backend, 'drop_table'):
+            raise NotImplementedError
+        return self.backend.drop_table(*args, **kwargs)
 
     def raw_sql(self, *args, **kwargs):
         return self.backend.raw_sql(*args, **kwargs)
 
     def load_data(self, *args, **kwargs):
         return self.backend.load_data(*args, **kwargs)
-
-    def drop_table(self, *args, **kwargs):
-        return self.backend.drop_table(*args, **kwargs)
 
     def inspector(self, *args, **kwargs):
         return self.backend.inspector(*args, **kwargs)
@@ -67,8 +71,17 @@ class Client:
     def ast_schema(self, *args, **kwargs):
         return self.backend.ast_schema(*args, **kwargs)
 
+    def drop_database(self, *args, **kwargs):
+        return self.backend.drop_database(*args, **kwargs)
+
     def truncate_table(self, *args, **kwargs):
         return self.backend.truncate_table(*args, **kwargs)
+
+    def get_schema(self, *args, **kwargs):
+        return self.backend.get_schema(*args, **kwargs)
+
+    def sql(self, *args, **kwargs):
+        return self.backend.sql(*args, **kwargs)
 
     @property
     def con(self):

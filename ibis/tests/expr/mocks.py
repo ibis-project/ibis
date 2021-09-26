@@ -49,6 +49,9 @@ class MockBackend(BaseSQLBackend):
     def get_schema(self, name):
         return self.client.get_schema(name)
 
+    def execute(self, expr, limit=None, params=None, **kwargs):
+        return self.client.execute(expr, limit, params, **kwargs)
+
     def fetch_from_cursor(self):
         pass
 
