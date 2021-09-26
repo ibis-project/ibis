@@ -27,6 +27,7 @@ def test_invalidate_metadata(con, test_data_db):
 
 
 def test_refresh(con, test_data_db):
+    con = con.backend
     tname = 'functional_alltypes'
     with patch_execute(con) as ex_mock:
         con.refresh(tname)
@@ -43,6 +44,7 @@ def test_refresh(con, test_data_db):
 def test_describe_formatted(con, test_data_db):
     from ibis.backends.impala.metadata import TableMetadata
 
+    con = con.backend
     t = con.table('functional_alltypes')
     with patch_execute(con) as ex_mock:
         desc = t.describe_formatted()
@@ -55,6 +57,7 @@ def test_describe_formatted(con, test_data_db):
 
 
 def test_show_files(con, test_data_db):
+    con = con.backend
     t = con.table('functional_alltypes')
     qualified_name = '{}.`{}`'.format(test_data_db, 'functional_alltypes')
     with patch_execute(con) as ex_mock:
@@ -66,6 +69,7 @@ def test_show_files(con, test_data_db):
 
 
 def test_table_column_stats(con, test_data_db):
+    con = con.backend
     t = con.table('functional_alltypes')
 
     qualified_name = '{}.`{}`'.format(test_data_db, 'functional_alltypes')

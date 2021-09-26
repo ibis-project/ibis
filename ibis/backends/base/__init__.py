@@ -330,7 +330,7 @@ class BaseBackend(abc.ABC):
             f'Backend "{self.name}" does not implement "drop_table"'
         )
 
-    def create_view(self, name: str, expr, database: str) -> None:
+    def create_view(self, name: str, expr, database: str = None) -> None:
         """
         Create a new view.
 

@@ -280,8 +280,10 @@ def temp_view(con) -> str:
     try:
         yield name
     finally:
-        if hasattr(con, 'drop_view'):
+        try:
             con.drop_view(name, force=True)
+        except NotImplementedError:
+            pass
 
 
 @pytest.fixture(scope='session')
