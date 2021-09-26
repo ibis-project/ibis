@@ -31,6 +31,18 @@ class Client:
 
     # Methods below haven't been standardized among backends yet, #3019
 
+    @property
+    def meta(self):
+        return self.backend.meta
+
+    @property
+    def con(self):
+        return self.backend.con
+
+    @property
+    def compiler(self):
+        return self.backend.compiler
+
     def attach(self, name, path, create=False):
         return self.backend.attach(name, path, create)
 
@@ -79,6 +91,14 @@ class Client:
     def sql(self, *args, **kwargs):
         return self.backend.sql(*args, **kwargs)
 
+    def set_database(self, *args, **kwargs):
+        return self.backend.set_database(*args, **kwargs)
+
+    def close(self, *args, **kwargs):
+        return self.backend.close(*args, **kwargs)
+
+    # impala
+
     def create_database(self, *args, **kwargs):
         return self.backend.create_database(*args, **kwargs)
 
@@ -88,29 +108,41 @@ class Client:
     def parquet_file(self, *args, **kwargs):
         return self.backend.parquet_file(*args, **kwargs)
 
-    def set_database(self, *args, **kwargs):
-        return self.backend.set_database(*args, **kwargs)
-
-    def close(self, *args, **kwargs):
-        return self.backend.close(*args, **kwargs)
-
     def disable_codegen(self, *args, **kwargs):
         return self.backend.disable_codegen(*args, **kwargs)
 
     def get_options(self, *args, **kwargs):
         return self.backend.get_options(*args, **kwargs)
 
-    @property
-    def meta(self):
-        return self.backend.meta
+    def set_options(self, *args, **kwargs):
+        return self.backend.set_options(*args, **kwargs)
 
-    @property
-    def con(self):
-        return self.backend.con
+    def create_view(self, *args, **kwargs):
+        return self.backend.create_view(*args, **kwargs)
 
-    @property
-    def compiler(self):
-        return self.backend.compiler
+    def delimited_file(self, *args, **kwargs):
+        return self.backend.delimited_file(*args, **kwargs)
+
+    def compute_stats(self, *args, **kwargs):
+        return self.backend.compute_stats(*args, **kwargs)
+
+    def explain(self, *args, **kwargs):
+        return self.backend.explain(*args, **kwargs)
+
+    def set_compression_codec(self, *args, **kwargs):
+        return self.backend.set_compression_codec(*args, **kwargs)
+
+    def refresh(self, *args, **kwargs):
+        return self.backend.refresh(*args, **kwargs)
+
+    def invalidate_metadata(self, *args, **kwargs):
+        return self.backend.invalidate_metadata(*args, **kwargs)
+
+    def write_dataframe(self, *args, **kwargs):
+        return self.backend.write_dataframe(*args, **kwargs)
+
+    def create_function(self, *args, **kwargs):
+        return self.backend.create_function(*args, **kwargs)
 
 
 class Database:
