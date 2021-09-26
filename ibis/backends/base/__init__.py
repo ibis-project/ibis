@@ -262,6 +262,23 @@ class BaseBackend(abc.ABC):
 
         return decorator
 
+    def create_database(self, name: str, force: bool = False) -> None:
+        """
+        Create a new database.
+
+        Not all backends implement this method.
+
+        Parameters
+        ----------
+        name : str
+            Name for the new database.
+        force : bool, default False
+            If `True`, an exception is raised if the database already exists.
+        """
+        raise NotImplementedError(
+            f'Backend "{self.name}" does not implement "create_database"'
+        )
+
     def create_table(
         self, table_name: str, obj=None, schema: ibis.Schema = None
     ) -> None:

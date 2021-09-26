@@ -309,11 +309,12 @@ def alternate_current_database(con, backend, current_data_db: str) -> str:
     str
     """
     name = _random_identifier('database')
-    if not hasattr(con, 'create_database'):
+    try:
+        con.create_database(name)
+    except NotImplementedError:
         pytest.skip(
             f'{backend.name()} backend doesn\'t have create_database method.'
         )
-    con.create_database(name)
     try:
         yield name
     finally:

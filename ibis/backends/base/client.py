@@ -82,6 +82,9 @@ class Client:
     def create_database(self, *args, **kwargs):
         return self.backend.create_database(*args, **kwargs)
 
+    def avro_file(self, *args, **kwargs):
+        return self.backend.avro_file(*args, **kwargs)
+
     @property
     def meta(self):
         return self.backend.meta
