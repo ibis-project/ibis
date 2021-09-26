@@ -256,7 +256,7 @@ class BaseBackend(abc.ABC):
             )
 
         def decorator(translation_function: Callable) -> None:
-            self.client_class.compiler.translator_class.add_operation(
+            self.compiler.translator_class.add_operation(
                 operation, translation_function
             )
 

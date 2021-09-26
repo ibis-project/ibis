@@ -29,7 +29,7 @@ class Client:
     def exists_table(self, name, database=None):
         return self.backend.exists_table(name, database)
 
-    # Non-standard methods
+    # Methods below haven't been standardized among backends yet, #3019
 
     def attach(self, name, path, create=False):
         return self.backend.attach(name, path, create)
@@ -78,6 +78,13 @@ class Client:
 
     def sql(self, *args, **kwargs):
         return self.backend.sql(*args, **kwargs)
+
+    def create_database(self, *args, **kwargs):
+        return self.backend.create_database(*args, **kwargs)
+
+    @property
+    def meta(self):
+        return self.backend.meta
 
     @property
     def con(self):
