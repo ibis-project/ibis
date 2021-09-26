@@ -34,7 +34,7 @@ Use ``ibis.sqlite.connect`` to create a SQLite client.
    :toctree: ../generated/
 
    Backend.connect
-   SQLiteClient.attach
-   SQLiteClient.database
-   SQLiteClient.list_tables
-   SQLiteClient.table
+   Backend.attach
+   Backend.database
+   Backend.list_tables
+   Backend.table

@@ -40,7 +40,7 @@ create a client.
    :toctree: ../generated/
 
    Backend.connect
-   PostgreSQLClient.database
-   PostgreSQLClient.list_tables
-   PostgreSQLClient.list_databases
-   PostgreSQLClient.table
+   Backend.database
+   Backend.list_tables
+   Backend.list_databases
+   Backend.table

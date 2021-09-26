@@ -262,12 +262,12 @@ class Backend(BaseSQLBackend):
         except Exception:
             con.close()
             raise
-        self.client._ensure_temp_db_exists()
+        self._ensure_temp_db_exists()
         return self.client
 
     @property
     def version(self):
-        cursor = self.client.raw_sql('select version()')
+        cursor = self.raw_sql('select version()')
         result = cursor.fetchone()[0]
         cursor.release()
         return result
@@ -285,8 +285,8 @@ class Backend(BaseSQLBackend):
         )
 
     def list_databases(self, like=None):
-        cur = self.client.raw_sql('SHOW DATABASES')
-        databases = self.client._get_list(cur)
+        cur = self.raw_sql('SHOW DATABASES')
+        databases = self._get_list(cur)
         cur.release()
         return self._filter_with_like(databases, like)
 
@@ -303,7 +303,7 @@ class Backend(BaseSQLBackend):
             statement += f" LIKE '{like}'"
 
         return self._filter_with_like(
-            [row[0] for row in self.client.raw_sql(statement).fetchall()]
+            [row[0] for row in self.raw_sql(statement).fetchall()]
         )
 
     def fetch_from_cursor(self, cursor, schema):

@@ -31,9 +31,9 @@ Use ``ibis.clickhouse.connect`` to create a client.
    :toctree: ../generated/
 
    Backend.connect
-   ClickhouseClient.close
-   ClickhouseClient.exists_table
-   ClickhouseClient.exists_database
-   ClickhouseClient.get_schema
-   ClickhouseClient.list_databases
-   ClickhouseClient.list_tables
+   Backend.close
+   Backend.exists_table
+   Backend.exists_database
+   Backend.get_schema
+   Backend.list_databases
+   Backend.list_tables

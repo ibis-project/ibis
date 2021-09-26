@@ -37,7 +37,7 @@ create a client.
    :toctree: ../generated/
 
    Backend.connect
-   MySQLClient.database
-   MySQLClient.list_databases
-   MySQLClient.list_tables
-   MySQLClient.table
+   Backend.database
+   Backend.list_databases
+   Backend.list_tables
+   Backend.table

@@ -30,7 +30,7 @@ Use ``ibis.pyspark.connect`` to create a client.
    :toctree: ../generated/
 
    Backend.connect
-   PySparkClient.database
-   PySparkClient.list_databases
-   PySparkClient.list_tables
-   PySparkClient.table
+   Backend.database
+   Backend.list_databases
+   Backend.list_tables
+   Backend.table
