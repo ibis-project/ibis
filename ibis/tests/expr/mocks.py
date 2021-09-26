@@ -414,7 +414,7 @@ class MockAlchemyConnection(MockConnection):
     def __init__(self):
         super().__init__()
         sa = pytest.importorskip('sqlalchemy')
-        self.meta = sa.MetaData()
+        self.backend.meta = sa.MetaData()
 
     def table(self, name, database=None):
         schema = self.get_schema(name)
