@@ -670,6 +670,22 @@ class ImpalaClient(SQLClient):
 
         self.backend._temp_objects = set()
 
+    def _get_hdfs(self):
+        if self.backend._hdfs is None:
+            raise com.IbisError(
+                'No HDFS connection; must pass connection '
+                'using the hdfs_client argument to '
+                'ibis.impala.connect'
+            )
+        return self.backend._hdfs
+
+    def _set_hdfs(self, hdfs):
+        if not isinstance(hdfs, HDFS):
+            raise TypeError('must be HDFS instance')
+        self.backend._hdfs = hdfs
+
+    hdfs = property(fget=_get_hdfs, fset=_set_hdfs)
+
 
 # ----------------------------------------------------------------------
 # ORM-ish usability layer
