@@ -152,10 +152,6 @@ def test_nullable_input_output(con, backend, temp_table):
 @pytest.mark.xfail_backends(['pyspark', 'spark'])
 def test_create_drop_view(con, backend, temp_view):
     # pyspark and spark skipt because table actually is a temporary view
-    if not hasattr(con, 'create_view') or not hasattr(con, 'drop_view'):
-        pytest.xfail(
-            '{} backend doesn\'t have create_view or drop_view methods.'
-        )
 
     # setup
     table_name = 'functional_alltypes'

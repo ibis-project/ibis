@@ -280,7 +280,11 @@ class BaseBackend(abc.ABC):
         )
 
     def create_table(
-        self, table_name: str, obj=None, schema: ibis.Schema = None
+        self,
+        name: str,
+        obj=None,
+        schema: ibis.Schema = None,
+        database: str = None,
     ) -> None:
         """
         Create a new table.
@@ -289,7 +293,7 @@ class BaseBackend(abc.ABC):
 
         Parameters
         ----------
-        table_name : str
+        name : str
             Name for the new table.
         obj : TableExpr or pandas.DataFrame, optional
             An Ibis or pandas table that will be used to extract the schema and
@@ -297,13 +301,16 @@ class BaseBackend(abc.ABC):
         schema : ibis.Schema, optional
             The schema for the new table. Only one of `schema` or `obj` can be
             provided.
+        database : str, optional
+            Name of the database where the table will be created, if not the
+            default.
         """
         raise NotImplementedError(
             f'Backend "{self.name}" does not implement "create_table"'
         )
 
     def drop_table(
-        self, table_name: str, database: str = None, force: bool = False
+        self, name: str, database: str = None, force: bool = False
     ) -> None:
         """
         Drop a table.
@@ -312,7 +319,7 @@ class BaseBackend(abc.ABC):
 
         Parameters
         ----------
-        table_name : str
+        name : str
             Name of the table to drop.
         database : str, optional
             Name of the database where the table exists, if not the default.
@@ -321,4 +328,46 @@ class BaseBackend(abc.ABC):
         """
         raise NotImplementedError(
             f'Backend "{self.name}" does not implement "drop_table"'
+        )
+
+    def create_view(self, name: str, expr, database: str) -> None:
+        """
+        Create a new view.
+
+        Not all backends implement this method.
+
+        Parameters
+        ----------
+        name : str
+            Name for the new view.
+        expr : TableExpr
+            An Ibis table expression that will be used to extract the query
+            of the view.
+        database : str, optional
+            Name of the database where the view will be created, if not the
+            default.
+        """
+        raise NotImplementedError(
+            f'Backend "{self.name}" does not implement "create_view"'
+        )
+
+    def drop_view(
+        self, name: str, database: str = None, force: bool = False
+    ) -> None:
+        """
+        Drop a view.
+
+        Not all backends implement this method.
+
+        Parameters
+        ----------
+        name : str
+            Name of the view to drop.
+        database : str, optional
+            Name of the database where the view exists, if not the default.
+        force : bool, default False
+            If `True`, an exception is raised if the view does not exist.
+        """
+        raise NotImplementedError(
+            f'Backend "{self.name}" does not implement "drop_view"'
         )
