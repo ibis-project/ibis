@@ -5,6 +5,7 @@ import re
 import warnings
 from typing import Any, Callable
 
+import ibis
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -260,3 +261,47 @@ class BaseBackend(abc.ABC):
             )
 
         return decorator
+
+    def create_table(
+        self, table_name: str, obj=None, schema: ibis.Schema = None
+    ) -> None:
+        """
+        Create a new table.
+
+        Not all backends implement this method.
+
+        Parameters
+        ----------
+        table_name : str
+            Name for the new table.
+        obj : TableExpr or pandas.DataFrame, optional
+            An Ibis or pandas table that will be used to extract the schema and
+            the data of the new table. If not provided, `schema` must be.
+        schema : ibis.Schema, optional
+            The schema for the new table. Only one of `schema` or `obj` can be
+            provided.
+        """
+        raise NotImplementedError(
+            f'Backend "{self.name}" does not implement "create_table"'
+        )
+
+    def drop_table(
+        self, table_name: str, database: str = None, force: bool = False
+    ) -> None:
+        """
+        Drop a table.
+
+        Not all backends implement this method.
+
+        Parameters
+        ----------
+        table_name : str
+            Name of the table to drop.
+        database : str, optional
+            Name of the database where the table exists, if not the default.
+        force : bool, default False
+            If `True`, an exception is raised if the table does not exist.
+        """
+        raise NotImplementedError(
+            f'Backend "{self.name}" does not implement "drop_table"'
+        )

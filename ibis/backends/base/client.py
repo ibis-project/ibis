@@ -44,13 +44,9 @@ class Client:
         return self.backend.compile(*args, **kwargs)
 
     def create_table(self, *args, **kwargs):
-        if not hasattr(self.backend, 'create_table'):
-            raise NotImplementedError
         return self.backend.create_table(*args, **kwargs)
 
     def drop_table(self, *args, **kwargs):
-        if not hasattr(self.backend, 'drop_table'):
-            raise NotImplementedError
         return self.backend.drop_table(*args, **kwargs)
 
     def raw_sql(self, *args, **kwargs):
