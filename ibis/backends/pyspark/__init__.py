@@ -1,12 +1,13 @@
 import warnings
 
-import pyspark
 import pandas as pd
-from pyspark.sql.column import Column
+import pyspark
 import pyspark as ps
+from pyspark.sql.column import Column
 
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
+import ibis.expr.types as types
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.base.sql.ddl import (
     CreateDatabase,
@@ -14,15 +15,13 @@ from ibis.backends.base.sql.ddl import (
     TruncateTable,
     is_fully_qualified,
 )
-import ibis.expr.types as types
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import canonicalize_context, localize_context
 
+from . import ddl
 from .client import PySparkClient, PySparkTable, spark_dataframe_schema
 from .compiler import PySparkDatabaseTable
 from .datatypes import spark_dtype
-from . import ddl
-
 
 _read_csv_defaults = {
     'header': True,

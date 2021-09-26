@@ -18,7 +18,7 @@ from typing import Optional
 import pytest
 
 import ibis.expr.types as ir
-from ibis.backends.base.sql import SQLClient, BaseSQLBackend
+from ibis.backends.base.sql import BaseSQLBackend, SQLClient
 from ibis.backends.base.sql.alchemy import (
     AlchemyCompiler,
     AlchemyTable,

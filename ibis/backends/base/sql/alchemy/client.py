@@ -7,7 +7,6 @@ from ibis.backends.base.sql import SQLClient
 
 
 class AlchemyClient(SQLClient):
-
     def __init__(self, con: sa.engine.Engine) -> None:
         super().__init__()
         self.backend.con = con

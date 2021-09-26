@@ -1,39 +1,22 @@
 """Impala backend"""
-import io
-import re
 import contextlib
+import io
 import operator
+import re
 import warnings
-from posixpath import join as pjoin
 import weakref
+from posixpath import join as pjoin
 
 import numpy as np
 import pandas as pd
 
 import ibis.common.exceptions as com
-import ibis.expr.schema as sch
-import ibis.util as util
 import ibis.config
-from ibis.backends.base.sql import BaseSQLBackend
-from ibis.backends.base.sql.ddl import fully_qualified_re
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
-from ibis.config import options
-
-
-# these objects are exposed in the public API and are not used in the module
-from .client import (  # noqa: F401
-    ImpalaClient,
-    ImpalaConnection,
-    ImpalaDatabase,
-    ImpalaTable,
-)
-from .hdfs import HDFS, WebHDFS, hdfs_connect
-# from .udf import *  # noqa: F401,F403
-from . import ddl, udf
-from .compat import HS2Error, ImpylaError
-from .compiler import ImpalaCompiler
-
+import ibis.expr.schema as sch
+import ibis.util as util
+from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.base.sql.ddl import (
     CTAS,
     CreateDatabase,
@@ -43,9 +26,24 @@ from ibis.backends.base.sql.ddl import (
     DropTable,
     DropView,
     TruncateTable,
+    fully_qualified_re,
     is_fully_qualified,
 )
+from ibis.config import options
 
+# from .udf import *  # noqa: F401,F403
+from . import ddl, udf
+
+# these objects are exposed in the public API and are not used in the module
+from .client import (  # noqa: F401
+    ImpalaClient,
+    ImpalaConnection,
+    ImpalaDatabase,
+    ImpalaTable,
+)
+from .compat import HS2Error, ImpylaError
+from .compiler import ImpalaCompiler
+from .hdfs import HDFS, WebHDFS, hdfs_connect
 
 _HS2_TTypeId_to_dtype = {
     'BOOLEAN': 'bool',

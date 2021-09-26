@@ -7,11 +7,15 @@ import pandas as pd
 import ibis
 import ibis.config
 import ibis.expr.schema as sch
-from ibis.config import options
 from ibis.backends.base.sql import BaseSQLBackend
+from ibis.config import options
 
 from .client import (
-    ClickhouseClient, ClickhouseTable, ClickhouseDataType, fully_qualified_re)
+    ClickhouseClient,
+    ClickhouseDataType,
+    ClickhouseTable,
+    fully_qualified_re,
+)
 from .compiler import ClickhouseCompiler
 
 _default_compression: str | bool

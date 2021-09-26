@@ -3,9 +3,9 @@ import contextlib
 
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 
+from . import udf
 from .client import PostgreSQLClient
 from .compiler import PostgreSQLCompiler
-from . import udf
 
 
 class Backend(BaseAlchemyBackend):

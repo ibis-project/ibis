@@ -19,9 +19,10 @@ from ibis.backends.base.sql.ddl import (
     RenameTable,
     fully_qualified_re,
 )
-from .hdfs import HDFS, WebHDFS
-from .compat import impyla, HS2Error
+
 from . import ddl
+from .compat import HS2Error, impyla
+from .hdfs import HDFS, WebHDFS
 
 
 class ImpalaDatabase(Database):

@@ -16,6 +16,7 @@ class SQLiteClient(AlchemyClient):
 
         if path is not None:
             self.backend.attach(
-                self.backend.database_name, path, create=create)
+                self.backend.database_name, path, create=create
+            )
 
         udf.register_all(self.backend.con)

@@ -5,12 +5,11 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
+from ibis.backends.base import BaseBackend
 from ibis.expr.typing import TimeContext
 
-from .compiler import Compiler
-from ibis.backends.base import BaseBackend
-
 from .client import SQLClient
+from .compiler import Compiler
 
 __all__ = ('SQLClient', 'BaseSQLBackend')
 
@@ -19,6 +18,7 @@ class BaseSQLBackend(BaseBackend):
     """
     Base backend class for backends that compile to SQL.
     """
+
     compiler = Compiler
     table_class = ops.DatabaseTable
     table_expr_class = ir.TableExpr

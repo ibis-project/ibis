@@ -1,6 +1,6 @@
-from typing import List, Optional, Union
 import contextlib
 import warnings
+from typing import List, Optional, Union
 
 import pandas as pd
 import sqlalchemy
@@ -15,6 +15,7 @@ from ibis.backends.base.sql import BaseSQLBackend
 from .client import AlchemyClient
 from .database import AlchemyDatabase, AlchemyTable
 from .datatypes import schema_from_table, table_from_schema, to_sqla_type
+from .geospatial import geospatial_supported
 from .query_builder import AlchemyCompiler
 from .registry import (
     fixed_arity,
@@ -28,7 +29,6 @@ from .registry import (
     variance_reduction,
 )
 from .translator import AlchemyContext, AlchemyExprTranslator
-from .geospatial import geospatial_supported
 
 __all__ = (
     'BaseAlchemyBackend',
@@ -185,7 +185,8 @@ class BaseAlchemyBackend(BaseSQLBackend):
     ) -> List[sqlalchemy.Column]:
         return [
             sqlalchemy.Column(
-                colname, to_sqla_type(dtype), nullable=dtype.nullable)
+                colname, to_sqla_type(dtype), nullable=dtype.nullable
+            )
             for colname, dtype in zip(schema.names, schema.types)
         ]
 
@@ -321,7 +322,8 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
     def _get_sqla_table(self, name, schema=None, autoload=True):
         return sqlalchemy.Table(
-            name, self.meta, schema=schema, autoload=autoload)
+            name, self.meta, schema=schema, autoload=autoload
+        )
 
     def _sqla_table_to_expr(self, table):
         node = self.table_class(table, self)
