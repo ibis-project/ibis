@@ -67,6 +67,13 @@ class Client:
     def ast_schema(self, *args, **kwargs):
         return self.backend.ast_schema(*args, **kwargs)
 
+    def truncate_table(self, *args, **kwargs):
+        return self.backend.truncate_table(*args, **kwargs)
+
+    @property
+    def con(self):
+        return self.backend.con
+
     @property
     def compiler(self):
         return self.backend.compiler

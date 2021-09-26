@@ -46,6 +46,9 @@ class MockBackend(BaseSQLBackend):
     def list_databases(self):
         return ['mockdb']
 
+    def get_schema(self, name):
+        return self.client.get_schema(name)
+
     def fetch_from_cursor(self):
         pass
 

@@ -291,9 +291,12 @@ def interval(arg, units=None):
 
 @validator
 def client(arg):
-    from ibis.backends.base import Client
+    from ibis.backends.base import Client, BaseBackend
 
-    return instance_of(Client, arg)
+    try:
+        return instance_of(Client, arg)
+    except com.IbisTypeError:
+        return instance_of(BaseBackend, arg)
 
 
 # ---------------------------------------------------------------------

@@ -11,7 +11,7 @@ class SQLiteClient(AlchemyClient):
     def __init__(self, backend, path=None, create=False):
         self.backend = backend
         super().__init__(sa.create_engine("sqlite://"))
-        self.backend.name = path
+        # self.backend.name = path
         self.backend.database_name = "base"
 
         if path is not None:

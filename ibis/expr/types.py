@@ -203,6 +203,7 @@ class Expr:
         client : Client
             Backend found.
         """
+        from ibis.backends.base import BaseBackend
         from ibis.backends.base.client import Client
 
         seen_backends = set()
@@ -217,7 +218,7 @@ class Expr:
                 seen.add(node)
 
                 for arg in node.flat_args():
-                    if isinstance(arg, Client):
+                    if isinstance(arg, (Client, BaseBackend)):
                         seen_backends.add(arg)
                     elif isinstance(arg, ir.Expr):
                         stack.append(arg.op())
