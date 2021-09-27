@@ -1,6 +1,4 @@
-import contextlib
 import getpass
-import warnings
 
 import pymysql  # NOQA fail early if the driver is missing
 import sqlalchemy as sa
@@ -8,8 +6,6 @@ import sqlalchemy.dialects.mysql as mysql
 
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy import AlchemyClient
-
-from .compiler import MySQLCompiler
 
 # TODO(kszucs): unsigned integers
 
@@ -43,8 +39,6 @@ class MySQLClient(AlchemyClient):
     con : sqlalchemy.engine.Engine
     """
 
-    compiler = MySQLCompiler
-
     def __init__(
         self,
         backend,
@@ -57,8 +51,6 @@ class MySQLClient(AlchemyClient):
         driver='pymysql',
     ):
         self.backend = backend
-        self.database_class = backend.database_class
-        self.table_class = backend.table_class
         if url is None:
             if driver != 'pymysql':
                 raise NotImplementedError(
@@ -77,48 +69,4 @@ class MySQLClient(AlchemyClient):
             url = sa.engine.url.make_url(url)
 
         super().__init__(sa.create_engine(url))
-        self.database_name = url.database
-
-    @contextlib.contextmanager
-    def begin(self):
-        with super().begin() as bind:
-            previous_timezone = bind.execute(
-                'SELECT @@session.time_zone'
-            ).scalar()
-            try:
-                bind.execute("SET @@session.time_zone = 'UTC'")
-            except Exception as e:
-                warnings.warn(f"Couldn't set mysql timezone: {str(e)}")
-
-            try:
-                yield bind
-            finally:
-                query = "SET @@session.time_zone = '{}'"
-                bind.execute(query.format(previous_timezone))
-
-    def table(self, name, database=None, schema=None):
-        """Create a table expression that references a particular a table
-        called `name` in a MySQL database called `database`.
-
-        Parameters
-        ----------
-        name : str
-            The name of the table to retrieve.
-        database : str, optional
-            The database in which the table referred to by `name` resides. If
-            ``None`` then the ``current_database`` is used.
-        schema : str, optional
-            The schema in which the table resides.  If ``None`` then the
-            `public` schema is assumed.
-
-        Returns
-        -------
-        table : TableExpr
-            A table expression.
-        """
-        if database is not None and database != self.current_database:
-            return self.database(name=database).table(name=name, schema=schema)
-        else:
-            alch_table = self._get_sqla_table(name, schema=schema)
-            node = self.table_class(alch_table, self, self._schemas.get(name))
-            return self.table_expr_class(node)
+        self.backend.database_name = url.database

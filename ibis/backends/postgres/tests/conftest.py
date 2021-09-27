@@ -124,11 +124,11 @@ def intervals(con):
 
 @pytest.fixture
 def translate():
-    from ibis.backends.postgres import PostgreSQLClient
+    from ibis.backends.postgres import Backend
 
-    context = PostgreSQLClient.compiler.make_context()
+    context = Backend.compiler.make_context()
     return lambda expr: (
-        PostgreSQLClient.compiler.translator_class(expr, context).get_result()
+        Backend.compiler.translator_class(expr, context).get_result()
     )
 
 

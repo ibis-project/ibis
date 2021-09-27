@@ -18,7 +18,7 @@ from typing import Optional
 import pytest
 
 import ibis.expr.types as ir
-from ibis.backends.base.sql import SQLClient
+from ibis.backends.base.sql import BaseSQLBackend, SQLClient
 from ibis.backends.base.sql.alchemy import (
     AlchemyCompiler,
     AlchemyTable,
@@ -28,8 +28,37 @@ from ibis.expr.schema import Schema
 from ibis.expr.typing import TimeContext
 
 
+class MockBackend(BaseSQLBackend):
+    name = 'mock'
+    version = '1.0'
+    client_class = None
+    current_database = 'mockdb'
+
+    def __init__(self, client):
+        self.client = client
+
+    def connect(self):
+        pass
+
+    def list_tables(self):
+        return list(self.client._tables)
+
+    def list_databases(self):
+        return ['mockdb']
+
+    def get_schema(self, name):
+        return self.client.get_schema(name)
+
+    def execute(self, expr, limit=None, params=None, **kwargs):
+        return self.client.execute(expr, limit, params, **kwargs)
+
+    def fetch_from_cursor(self):
+        pass
+
+
 class MockConnection(SQLClient, metaclass=abc.ABCMeta):
     def __init__(self):
+        self.backend = MockBackend(client=self)
         self.executed_queries = []
 
     _tables = {
@@ -385,7 +414,7 @@ class MockAlchemyConnection(MockConnection):
     def __init__(self):
         super().__init__()
         sa = pytest.importorskip('sqlalchemy')
-        self.meta = sa.MetaData()
+        self.backend.meta = sa.MetaData()
 
     def table(self, name, database=None):
         schema = self.get_schema(name)

@@ -3,7 +3,83 @@ from __future__ import annotations
 import ibis.expr.types as ir
 
 
-class Client:
+class NonStandardizedClientMethodsMixin:
+    # See #3019
+    # To have a clear and properly defined API for backend, we've been
+    # adding all standard methods of backends in the `BaseBackend` class
+    # with a signature that should be standard across backends.
+    # The methods in this class are pending consideration to add them
+    # to `BaseBackend`, standardize the signatures across backends, and
+    # document.
+
+    @property
+    def meta(self):
+        return self.backend.meta
+
+    @property
+    def con(self):
+        return self.backend.con
+
+    @property
+    def compiler(self):
+        return self.backend.compiler
+
+    def attach(self, name, path, create=False):
+        return self.backend.attach(name, path, create)
+
+    def execute(self, *args, **kwargs):
+        return self.backend.execute(*args, **kwargs)
+
+    def table(self, *args, **kwargs):
+        return self.backend.table(*args, **kwargs)
+
+    def compile(self, *args, **kwargs):
+        return self.backend.compile(*args, **kwargs)
+
+    def raw_sql(self, *args, **kwargs):
+        return self.backend.raw_sql(*args, **kwargs)
+
+    def load_data(self, *args, **kwargs):
+        return self.backend.load_data(*args, **kwargs)
+
+    def inspector(self, *args, **kwargs):
+        return self.backend.inspector(*args, **kwargs)
+
+    def insert(self, *args, **kwargs):
+        return self.backend.insert(*args, **kwargs)
+
+    def list_schemas(self, *args, **kwargs):
+        return self.backend.list_schemas(*args, **kwargs)
+
+    def ast_schema(self, *args, **kwargs):
+        return self.backend.ast_schema(*args, **kwargs)
+
+    def drop_database(self, *args, **kwargs):
+        return self.backend.drop_database(*args, **kwargs)
+
+    def truncate_table(self, *args, **kwargs):
+        return self.backend.truncate_table(*args, **kwargs)
+
+    def get_schema(self, *args, **kwargs):
+        return self.backend.get_schema(*args, **kwargs)
+
+    def sql(self, *args, **kwargs):
+        return self.backend.sql(*args, **kwargs)
+
+    def set_database(self, *args, **kwargs):
+        return self.backend.set_database(*args, **kwargs)
+
+    def close(self, *args, **kwargs):
+        return self.backend.close(*args, **kwargs)
+
+    def create_database(self, *args, **kwargs):
+        return self.backend.create_database(*args, **kwargs)
+
+    def explain(self, *args, **kwargs):
+        return self.backend.explain(*args, **kwargs)
+
+
+class Client(NonStandardizedClientMethodsMixin):
     """Generic Ibis client."""
 
     @property
@@ -28,6 +104,18 @@ class Client:
 
     def exists_table(self, name, database=None):
         return self.backend.exists_table(name, database)
+
+    def create_table(self, *args, **kwargs):
+        return self.backend.create_table(*args, **kwargs)
+
+    def drop_table(self, *args, **kwargs):
+        return self.backend.drop_table(*args, **kwargs)
+
+    def create_view(self, *args, **kwargs):
+        return self.backend.create_view(*args, **kwargs)
+
+    def drop_view(self, *args, **kwargs):
+        return self.backend.drop_view(*args, **kwargs)
 
 
 class Database:

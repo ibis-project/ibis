@@ -59,8 +59,8 @@ backend.
    :toctree: ../generated/
 
    Backend.connect
-   ImpalaClient.close
-   ImpalaClient.database
+   Backend.close
+   Backend.database
 
 Database methods
 ~~~~~~~~~~~~~~~~
@@ -68,11 +68,11 @@ Database methods
 .. autosummary::
    :toctree: ../generated/
 
-   ImpalaClient.set_database
-   ImpalaClient.create_database
-   ImpalaClient.drop_database
-   ImpalaClient.list_databases
-   ImpalaClient.exists_database
+   Backend.set_database
+   Backend.create_database
+   Backend.drop_database
+   Backend.list_databases
+   Backend.exists_database
 
 .. autosummary::
    :toctree: ../generated/
@@ -84,33 +84,33 @@ Database methods
 Table methods
 ~~~~~~~~~~~~~
 
-The ``ImpalaClient`` object itself has many helper utility methods. You'll find
+The ``Backend`` object itself has many helper utility methods. You'll find
 the most methods on ``ImpalaTable``.
 
 .. autosummary::
    :toctree: ../generated/
 
-   ImpalaClient.database
-   ImpalaClient.table
-   ImpalaClient.sql
-   ImpalaClient.raw_sql
-   ImpalaClient.list_tables
-   ImpalaClient.exists_table
-   ImpalaClient.drop_table
-   ImpalaClient.create_table
-   ImpalaClient.insert
-   ImpalaClient.invalidate_metadata
-   ImpalaClient.truncate_table
-   ImpalaClient.get_schema
-   ImpalaClient.cache_table
-   ImpalaClient.load_data
-   ImpalaClient.get_options
-   ImpalaClient.set_options
-   ImpalaClient.set_compression_codec
+   Backend.database
+   Backend.table
+   Backend.sql
+   Backend.raw_sql
+   Backend.list_tables
+   Backend.exists_table
+   Backend.drop_table
+   Backend.create_table
+   Backend.insert
+   Backend.invalidate_metadata
+   Backend.truncate_table
+   Backend.get_schema
+   Backend.cache_table
+   Backend.load_data
+   Backend.get_options
+   Backend.set_options
+   Backend.set_compression_codec
 
 
 The best way to interact with a single table is through the ``ImpalaTable``
-object you get back from ``ImpalaClient.table``.
+object you get back from ``Backend.table``.
 
 .. autosummary::
    :toctree: ../generated/
@@ -141,9 +141,9 @@ Creating views is also possible:
 .. autosummary::
    :toctree: ../generated/
 
-   ImpalaClient.create_view
-   ImpalaClient.drop_view
-   ImpalaClient.drop_table_or_view
+   Backend.create_view
+   Backend.drop_view
+   Backend.drop_table_or_view
 
 Accessing data formats in HDFS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -151,9 +151,9 @@ Accessing data formats in HDFS
 .. autosummary::
    :toctree: ../generated/
 
-   ImpalaClient.avro_file
-   ImpalaClient.delimited_file
-   ImpalaClient.parquet_file
+   Backend.avro_file
+   Backend.delimited_file
+   Backend.parquet_file
 
 Executing expressions
 ~~~~~~~~~~~~~~~~~~~~~
@@ -161,8 +161,8 @@ Executing expressions
 .. autosummary::
    :toctree: ../generated/
 
-   ImpalaClient.execute
-   ImpalaClient.disable_codegen
+   Backend.execute
+   Backend.disable_codegen
 
 .. _api.hdfs:
 
@@ -225,8 +225,8 @@ Database and Table objects
 .. autosummary::
    :toctree: ../generated/
 
-   ImpalaClient.database
-   ImpalaClient.table
+   Backend.database
+   Backend.table
 
 The client's ``table`` method allows you to create an Ibis table expression
 referencing a physical Impala table:
@@ -312,7 +312,7 @@ top-level client connection or a database object.
 .. autosummary::
    :toctree: ../generated/
 
-   ImpalaClient.create_table
+   Backend.create_table
    ImpalaDatabase.create_table
 
 Creating tables from a table expression
@@ -738,7 +738,7 @@ These DDL commands are available as table-level and client-level methods:
 .. autosummary::
    :toctree: ../generated/
 
-   ImpalaClient.invalidate_metadata
+   Backend.invalidate_metadata
    ImpalaTable.invalidate_metadata
    ImpalaTable.refresh
 
@@ -771,7 +771,7 @@ name conflicts so data is not lost in such cases.
 .. autosummary::
    :toctree: ../generated/
 
-   ImpalaClient.load_data
+   Backend.load_data
    ImpalaTable.load_data
 
 To use these methods, pass the path of a single file or a directory of files
@@ -800,10 +800,10 @@ execution:
 .. autosummary::
    :toctree: ../generated/
 
-   ImpalaClient.disable_codegen
-   ImpalaClient.get_options
-   ImpalaClient.set_options
-   ImpalaClient.set_compression_codec
+   Backend.disable_codegen
+   Backend.get_options
+   Backend.set_options
+   Backend.set_compression_codec
 
 For example:
 
