@@ -1022,26 +1022,26 @@ def test_table_info(alltypes):
 #     con.execute(exlist)
 
 
-def test_summary_execute(alltypes):
-    table = alltypes
+# def test_summary_execute(alltypes):
+#     table = alltypes
 
-    # also test set_column while we're at it
-    table = table.set_column('double_col', table.double_col * 2)
+#     # also test set_column while we're at it
+#     table = table.set_column('double_col', table.double_col * 2)
 
-    expr = table.double_col.summary()
-    repr(expr)
+#     expr = table.double_col.summary()
+#     repr(expr)
 
-    result = expr.execute()
-    assert isinstance(result, pd.DataFrame)
+#     result = expr.execute()
+#     assert isinstance(result, pd.DataFrame)
 
-    expr = table.group_by('string_col').aggregate(
-        [
-            table.double_col.summary(prefix='double_'),
-            table.float_col.summary(prefix='float_'),
-        ]
-    )
-    result = expr.execute()
-    assert isinstance(result, pd.DataFrame)
+#     expr = table.group_by('string_col').aggregate(
+#         [
+#             table.double_col.summary(prefix='double_'),
+#             table.float_col.summary(prefix='float_'),
+#         ]
+#     )
+#     result = expr.execute()
+#     assert isinstance(result, pd.DataFrame)
 
 
 def test_distinct_array(con, alltypes):

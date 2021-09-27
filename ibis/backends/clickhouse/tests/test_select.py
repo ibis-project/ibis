@@ -211,18 +211,18 @@ def test_scalar_exprs_no_table_refs(expr, expected):
     assert ibis.clickhouse.compile(expr) == expected
 
 
-def test_expr_list_no_table_refs():
-    exlist = ibis.api.expr_list(
-        [
-            ibis.literal(1).name('a'),
-            ibis.now().name('b'),
-            ibis.literal(2).log().name('c'),
-        ]
-    )
-    result = ibis.clickhouse.compile(exlist)
-    expected = """\
-SELECT 1 AS `a`, now() AS `b`, log(2) AS `c`"""
-    assert result == expected
+# def test_expr_list_no_table_refs():
+#     exlist = ibis.api.expr_list(
+#         [
+#             ibis.literal(1).name('a'),
+#             ibis.now().name('b'),
+#             ibis.literal(2).log().name('c'),
+#         ]
+#     )
+#     result = ibis.clickhouse.compile(exlist)
+#     expected = """\
+# SELECT 1 AS `a`, now() AS `b`, log(2) AS `c`"""
+#     assert result == expected
 
 
 # TODO: use alltypes
