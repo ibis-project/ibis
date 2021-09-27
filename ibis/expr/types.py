@@ -1377,36 +1377,6 @@ def array(values):
             ) from e
 
 
-def param(type):
-    """Create a parameter of a particular type to be defined just before
-    execution.
-
-    Parameters
-    ----------
-    type : dt.DataType
-        The type of the unbound parameter, e.g., double, int64, date, etc.
-
-    Returns
-    -------
-    ScalarExpr
-
-    Examples
-    --------
-    >>> import ibis
-    >>> import ibis.expr.datatypes as dt
-    >>> start = ibis.param(dt.date)
-    >>> end = ibis.param(dt.date)
-    >>> schema = [('timestamp_col', 'timestamp'), ('value', 'double')]
-    >>> t = ibis.table(schema)
-    >>> predicates = [t.timestamp_col >= start, t.timestamp_col <= end]
-    >>> expr = t.filter(predicates).value.sum()
-    """
-    import ibis.expr.datatypes as dt
-    import ibis.expr.operations as ops
-
-    return ops.ScalarParameter(dt.dtype(type)).to_expr()
-
-
 class UnnamedMarker:
     pass
 
