@@ -293,10 +293,7 @@ def interval(arg, units=None):
 def client(arg):
     from ibis.backends.base import BaseBackend, Client
 
-    try:
-        return instance_of(Client, arg)
-    except com.IbisTypeError:
-        return instance_of(BaseBackend, arg)
+    return instance_of((Client, BaseBackend), arg)
 
 
 # ---------------------------------------------------------------------
