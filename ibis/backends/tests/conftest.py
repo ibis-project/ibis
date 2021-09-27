@@ -171,12 +171,33 @@ pytestmark = pytest.mark.backend
 
 @pytest.fixture(params=_get_backends_to_test(), scope='session')
 def backend(request, data_directory):
+    """
+    Instance of BackendTest.
+    """
+    # See #3021
+    # TODO Remove this to backend_test, since now that a `Backend` class exists
     return request.param(data_directory)
 
 
 @pytest.fixture(scope='session')
 def con(backend):
+    """
+    Instance of Client, already connected to the db (if applies).
+    """
+    # See #3021
+    # TODO Rename this to `backend` when the existing `backend` is renamed to
+    # `backend_test`, and when `connect` returns `Backend` and not `Client`
     return backend.connection
+
+
+@pytest.fixture(scope='session')
+def backend_instance(con):
+    """
+    Instance of Backend.
+    """
+    # See #3021
+    # TODO Remove when `connect` returns `Backend` and not `Client`
+    return con.backend
 
 
 @pytest.fixture(scope='session')
