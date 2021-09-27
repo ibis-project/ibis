@@ -19,17 +19,14 @@ import dask.array as da
 import dask.dataframe as dd
 import dask.dataframe.groupby as ddgb
 import numpy as np
-import pandas as pd
 import toolz
 
-import ibis
 import ibis.expr.operations as ops
 from ibis.backends.pandas.execution.generic import (
     execute_node_greatest_list,
     execute_node_least_list,
 )
 
-from ..core import execute
 from ..dispatch import execute_node
 from .util import make_selected_obj
 

@@ -523,7 +523,8 @@ def test_groupby_alias(table):
     assert_equal(result, expected)
 
 
-# TODO(kszucs): we should perhaps change the API to table.aggregate(metrics=table.f.summary()) ?
+# TODO(kszucs): we should perhaps change the API to
+# table.aggregate(metrics=table.f.summary()) ?
 # def test_summary_expand_list(table):
 #     summ = table.f.summary()
 #     metric = table.g.group_concat().name('bar')
