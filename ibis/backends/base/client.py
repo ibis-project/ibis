@@ -3,33 +3,14 @@ from __future__ import annotations
 import ibis.expr.types as ir
 
 
-class Client:
-    """Generic Ibis client."""
-
-    @property
-    def version(self):
-        return self.backend.version
-
-    def list_tables(self, like=None, database=None):
-        return self.backend.list_tables(like, database)
-
-    def database(self, name=None):
-        return self.backend.database(name)
-
-    @property
-    def current_database(self):
-        return self.backend.current_database
-
-    def list_databases(self, like=None):
-        return self.backend.list_databases(like)
-
-    def exists_database(self, name):
-        return self.backend.exists_database(name)
-
-    def exists_table(self, name, database=None):
-        return self.backend.exists_table(name, database)
-
-    # Methods below haven't been standardized among backends yet, #3019
+class NonStandardizedClientMethodsMixin:
+    # See #3019
+    # To have a clear and properly defined API for backend, we've been
+    # adding all standard methods of backends in the `BaseBackend` class
+    # with a signature that should be standard across backends.
+    # The methods in this class are pending consideration to add them
+    # to `BaseBackend`, standardize the signatures across backends, and
+    # document.
 
     @property
     def meta(self):
@@ -54,12 +35,6 @@ class Client:
 
     def compile(self, *args, **kwargs):
         return self.backend.compile(*args, **kwargs)
-
-    def create_table(self, *args, **kwargs):
-        return self.backend.create_table(*args, **kwargs)
-
-    def drop_table(self, *args, **kwargs):
-        return self.backend.drop_table(*args, **kwargs)
 
     def raw_sql(self, *args, **kwargs):
         return self.backend.raw_sql(*args, **kwargs)
@@ -97,58 +72,50 @@ class Client:
     def close(self, *args, **kwargs):
         return self.backend.close(*args, **kwargs)
 
-    # impala
-
     def create_database(self, *args, **kwargs):
         return self.backend.create_database(*args, **kwargs)
-
-    def avro_file(self, *args, **kwargs):
-        return self.backend.avro_file(*args, **kwargs)
-
-    def parquet_file(self, *args, **kwargs):
-        return self.backend.parquet_file(*args, **kwargs)
-
-    def disable_codegen(self, *args, **kwargs):
-        return self.backend.disable_codegen(*args, **kwargs)
-
-    def get_options(self, *args, **kwargs):
-        return self.backend.get_options(*args, **kwargs)
-
-    def set_options(self, *args, **kwargs):
-        return self.backend.set_options(*args, **kwargs)
-
-    def create_view(self, *args, **kwargs):
-        return self.backend.create_view(*args, **kwargs)
-
-    def delimited_file(self, *args, **kwargs):
-        return self.backend.delimited_file(*args, **kwargs)
-
-    def compute_stats(self, *args, **kwargs):
-        return self.backend.compute_stats(*args, **kwargs)
 
     def explain(self, *args, **kwargs):
         return self.backend.explain(*args, **kwargs)
 
-    def set_compression_codec(self, *args, **kwargs):
-        return self.backend.set_compression_codec(*args, **kwargs)
 
-    def refresh(self, *args, **kwargs):
-        return self.backend.refresh(*args, **kwargs)
+class Client(NonStandardizedClientMethodsMixin):
+    """Generic Ibis client."""
 
-    def invalidate_metadata(self, *args, **kwargs):
-        return self.backend.invalidate_metadata(*args, **kwargs)
+    @property
+    def version(self):
+        return self.backend.version
 
-    def write_dataframe(self, *args, **kwargs):
-        return self.backend.write_dataframe(*args, **kwargs)
+    def list_tables(self, like=None, database=None):
+        return self.backend.list_tables(like, database)
 
-    def create_function(self, *args, **kwargs):
-        return self.backend.create_function(*args, **kwargs)
+    def database(self, name=None):
+        return self.backend.database(name)
+
+    @property
+    def current_database(self):
+        return self.backend.current_database
+
+    def list_databases(self, like=None):
+        return self.backend.list_databases(like)
+
+    def exists_database(self, name):
+        return self.backend.exists_database(name)
+
+    def exists_table(self, name, database=None):
+        return self.backend.exists_table(name, database)
+
+    def create_table(self, *args, **kwargs):
+        return self.backend.create_table(*args, **kwargs)
+
+    def drop_table(self, *args, **kwargs):
+        return self.backend.drop_table(*args, **kwargs)
+
+    def create_view(self, *args, **kwargs):
+        return self.backend.create_view(*args, **kwargs)
 
     def drop_view(self, *args, **kwargs):
         return self.backend.drop_view(*args, **kwargs)
-
-    def list_udas(self, *args, **kwargs):
-        return self.backend.list_udas(*args, **kwargs)
 
 
 class Database:

@@ -686,6 +686,45 @@ class ImpalaClient(SQLClient):
 
     hdfs = property(fget=_get_hdfs, fset=_set_hdfs)
 
+    def avro_file(self, *args, **kwargs):
+        return self.backend.avro_file(*args, **kwargs)
+
+    def parquet_file(self, *args, **kwargs):
+        return self.backend.parquet_file(*args, **kwargs)
+
+    def disable_codegen(self, *args, **kwargs):
+        return self.backend.disable_codegen(*args, **kwargs)
+
+    def get_options(self, *args, **kwargs):
+        return self.backend.get_options(*args, **kwargs)
+
+    def set_options(self, *args, **kwargs):
+        return self.backend.set_options(*args, **kwargs)
+
+    def delimited_file(self, *args, **kwargs):
+        return self.backend.delimited_file(*args, **kwargs)
+
+    def compute_stats(self, *args, **kwargs):
+        return self.backend.compute_stats(*args, **kwargs)
+
+    def refresh(self, *args, **kwargs):
+        return self.backend.refresh(*args, **kwargs)
+
+    def invalidate_metadata(self, *args, **kwargs):
+        return self.backend.invalidate_metadata(*args, **kwargs)
+
+    def write_dataframe(self, *args, **kwargs):
+        return self.backend.write_dataframe(*args, **kwargs)
+
+    def create_function(self, *args, **kwargs):
+        return self.backend.create_function(*args, **kwargs)
+
+    def set_compression_codec(self, *args, **kwargs):
+        return self.backend.set_compression_codec(*args, **kwargs)
+
+    def list_udas(self, *args, **kwargs):
+        return self.backend.list_udas(*args, **kwargs)
+
 
 # ----------------------------------------------------------------------
 # ORM-ish usability layer
