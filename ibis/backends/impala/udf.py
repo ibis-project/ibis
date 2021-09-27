@@ -81,7 +81,7 @@ class ScalarFunction(Function):
 
 class AggregateFunction(Function):
     def _create_operation(self, name):
-        klass = Function._create_operation(self, name)
+        klass = super()._create_operation(name)
         klass._reduction = True
         return klass
 

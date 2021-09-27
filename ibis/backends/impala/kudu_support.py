@@ -242,7 +242,7 @@ class CreateTableKudu(CreateTable):
         self.master_addrs = master_addrs
         self.schema = schema
         self.key_columns = key_columns
-        CreateTable.__init__(self, table_name, external=external, **kwargs)
+        super().__init__(table_name, external=external, **kwargs)
 
         self._validate()
 
@@ -290,8 +290,7 @@ class CTASKudu(CreateTableKudu):
         can_exist=False,
     ):
         self.select = select
-        CreateTableKudu.__init__(
-            self,
+        super().__init__(
             table_name,
             kudu_name,
             master_addrs,
