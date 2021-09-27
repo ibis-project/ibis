@@ -14,6 +14,7 @@ import toolz
 import ibis.common.exceptions as com
 import ibis.expr.analysis as _L
 import ibis.expr.analytics as _analytics
+import ibis.expr.builders as bl
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
@@ -99,10 +100,8 @@ from ibis.expr.types import (  # noqa
     TimeValue,
     ValueExpr,
     array,
-    as_value_expr,
     literal,
     null,
-    sequence,
 )
 from ibis.expr.window import (
     cumulative_window,
@@ -262,7 +261,24 @@ def param(type):
     return ops.ScalarParameter(dt.dtype(type)).to_expr()
 
 
+def sequence(values):
+    """
+    Wrap a list of Python values as an Ibis sequence type
+
+    Parameters
+    ----------
+    values : list
+      Should all be None or the same type
+
+    Returns
+    -------
+    seq : Sequence
+    """
+    return ops.ValueList(values).to_expr()
+
+
 def schema(pairs=None, names=None, types=None):
+    # TODO(kszucs): if isinstance(pairs, dict): Schema.from_dict
     if pairs is not None:
         return Schema.from_tuples(pairs)
     else:
@@ -286,6 +302,7 @@ def table(schema, name=None):
     -------
     table : TableExpr
     """
+    # TODO(kszucs): use schema function above
     if not isinstance(schema, Schema):
         if isinstance(schema, dict):
             schema = Schema.from_dict(schema)
@@ -507,7 +524,7 @@ def case():
     -------
     case : CaseBuilder
     """
-    return ops.SearchedCaseBuilder()
+    return bl.SearchedCaseBuilder()
 
 
 def now():
@@ -636,7 +653,7 @@ def arbitrary(arg, where=None, how=None):
 def _binop_expr(name, klass):
     def f(self, other):
         try:
-            other = as_value_expr(other)
+            other = rlz.any(other)
             op = klass(self, other)
             return op.to_expr()
         except (com.IbisTypeError, NotImplementedError):
@@ -650,7 +667,7 @@ def _binop_expr(name, klass):
 def _rbinop_expr(name, klass):
     # For reflexive binary ops, like radd, etc.
     def f(self, other):
-        other = as_value_expr(other)
+        other = rlz.any(other)
         op = klass(other, self)
         return op.to_expr()
 
@@ -660,7 +677,7 @@ def _rbinop_expr(name, klass):
 
 def _boolean_binary_op(name, klass):
     def f(self, other):
-        other = as_value_expr(other)
+        other = rlz.any(other)
 
         if not isinstance(other, ir.BooleanValue):
             raise TypeError(other)
@@ -683,7 +700,7 @@ def _boolean_unary_op(name, klass):
 
 def _boolean_binary_rop(name, klass):
     def f(self, other):
-        other = as_value_expr(other)
+        other = rlz.any(other)
 
         if not isinstance(other, ir.BooleanValue):
             raise TypeError(other)
@@ -965,9 +982,7 @@ def between(arg, lower, upper):
     -------
     is_between : BooleanValue
     """
-    lower = as_value_expr(lower)
-    upper = as_value_expr(upper)
-
+    lower, upper = rlz.any(lower), rlz.any(upper)
     op = ops.Between(arg, lower, upper)
     return op.to_expr()
 
@@ -1097,7 +1112,7 @@ def _case(arg):
         Literal[string]
           null or (not a and not b)
     """
-    return ops.SimpleCaseBuilder(arg)
+    return bl.SimpleCaseBuilder(arg)
 
 
 def cases(arg, case_result_pairs, default=None):
@@ -2650,7 +2665,7 @@ def ifelse(arg, true_expr, false_expr):
     # Result will be the result of promotion of true/false exprs. These
     # might be conflicting types; same type resolution as case expressions
     # must be used.
-    case = ops.SearchedCaseBuilder()
+    case = bl.SearchedCaseBuilder()
     return case.when(arg, true_expr).else_(false_expr).end()
 
 
@@ -3491,7 +3506,7 @@ def _timestamp_date(arg):
 
 
 def _timestamp_sub(left, right):
-    right = as_value_expr(right)
+    right = rlz.any(right)
 
     if isinstance(right, ir.TimestampValue):
         op = ops.TimestampDiff(left, right)
@@ -3731,7 +3746,7 @@ def _time_truncate(arg, unit):
 
 
 def _time_sub(left, right):
-    right = as_value_expr(right)
+    right = rlz.any(right)
 
     if isinstance(right, ir.TimeValue):
         op = ops.TimeDiff(left, right)
@@ -4278,12 +4293,12 @@ def mutate(
 
     """
     exprs = [] if exprs is None else util.promote_list(exprs)
-    exprs.extend(
-        (expr(table) if util.is_function(expr) else as_value_expr(expr)).name(
-            name
-        )
-        for name, expr in sorted(mutations.items(), key=operator.itemgetter(0))
-    )
+    for name, expr in sorted(mutations.items(), key=operator.itemgetter(0)):
+        if util.is_function(expr):
+            value = expr(table)
+        else:
+            value = rlz.any(expr)
+        exprs.append(value.name(name))
 
     mutation_exprs = _L.get_mutation_exprs(exprs, table)
     return table.projection(mutation_exprs)

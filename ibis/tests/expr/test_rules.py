@@ -183,19 +183,10 @@ def test_invalid_member_of(obj, value, expected):
 @pytest.mark.parametrize(
     ('validator', 'values', 'expected'),
     [
-        (rlz.list_of(identity), (3, 2), ibis.sequence([3, 2])),
-        (rlz.list_of(rlz.integer), (3, 2), ibis.sequence([3, 2])),
+        (rlz.list_of(rlz.integer), (3, 2), [ibis.literal(3), ibis.literal(2)]),
         (rlz.list_of(rlz.integer), (3, None), ibis.sequence([3, ibis.NA])),
         (rlz.list_of(rlz.string), ('a',), ibis.sequence(['a'])),
         (rlz.list_of(rlz.string), ['a', 'b'], ibis.sequence(['a', 'b'])),
-        pytest.param(
-            rlz.list_of(rlz.list_of(rlz.string)),
-            [[], ['a']],
-            ibis.sequence([[], ['a']]),
-            marks=pytest.mark.xfail(
-                raises=ValueError, reason='Not yet implemented'
-            ),
-        ),
         (
             rlz.list_of(rlz.boolean, min_length=2),
             [True, False],
@@ -205,7 +196,19 @@ def test_invalid_member_of(obj, value, expected):
 )
 def test_valid_list_of(validator, values, expected):
     result = validator(values)
-    assert result.equals(expected)
+    assert isinstance(result, list)
+    assert len(result) == len(values)
+    for a, b in zip(result, expected):
+        assert a.equals(b)
+
+
+def test_valid_list_of_extra():
+    validator = rlz.list_of(identity)
+    assert validator((3, 2)) == [3, 2]
+
+    validator = rlz.list_of(rlz.list_of(rlz.string))
+    result = validator([[], ['a']])
+    assert result[1][0].equals(ibis.literal('a'))
 
 
 @pytest.mark.parametrize(
@@ -330,18 +333,11 @@ def test_array_of_invalid_input(rule, input):
         rule(input)
 
 
-@pytest.mark.parametrize(
-    ('validator', 'input'),
-    [
-        (rlz.array_of(rlz.integer), [1, 2, 3]),
-        (rlz.list_of(rlz.integer), (3, 2)),
-        (rlz.instance_of(int), 32),
-    ],
-)
-def test_optional(validator, input):
-    expected = validator(input)
-    if isinstance(expected, ibis.Expr):
-        assert rlz.optional(validator)(input).equals(expected)
-    else:
-        assert rlz.optional(validator)(input) == expected
-    assert rlz.optional(validator)(None) is None
+def test_optional():
+    fn = rlz.optional(rlz.array_of(rlz.integer))
+    assert fn([1, 2, 3]).equals(ibis.array([1, 2, 3]))
+    assert fn(None) is None
+
+    fn = rlz.optional(rlz.instance_of(int))
+    assert fn(32) == 32
+    assert fn(None) is None

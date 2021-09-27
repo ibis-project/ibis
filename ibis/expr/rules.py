@@ -1,4 +1,3 @@
-import collections
 import enum
 import functools
 from contextlib import suppress
@@ -148,16 +147,26 @@ def member_of(obj, arg):
 
 @validator
 def list_of(inner, arg, min_length=0):
-    if isinstance(arg, str) or not isinstance(
-        arg, (collections.abc.Sequence, ir.ListExpr)
-    ):
+    if not util.is_iterable(arg) and not isinstance(arg, ir.ListExpr):
         raise com.IbisTypeError('Argument must be a sequence')
 
     if len(arg) < min_length:
         raise com.IbisTypeError(
             f'Arg must have at least {min_length} number of elements'
         )
-    return ir.sequence(list(map(inner, arg)))
+    return list(map(inner, arg))
+
+
+@validator
+def value_list_of(inner, arg, min_length=0):
+    # TODO(kszucs): would be nice to remove ops.ValueList
+    # the main blocker is that some of the backends execution
+    # model depends on the wrapper operation, for example
+    # the dispatcher in pandas requires operation objects
+    import ibis.expr.operations as ops
+
+    values = list_of(inner, arg, min_length=min_length)
+    return ops.ValueList(values).to_expr()
 
 
 @validator

@@ -1290,38 +1290,6 @@ def literal(value, type=None):
         return ops.Literal(value, dtype=dtype).to_expr()
 
 
-def sequence(values):
-    """
-    Wrap a list of Python values as an Ibis sequence type
-
-    Parameters
-    ----------
-    values : list
-      Should all be None or the same type
-
-    Returns
-    -------
-    seq : Sequence
-    """
-    import ibis.expr.operations as ops
-
-    return ops.ValueList(values).to_expr()
-
-
-def as_value_expr(val):
-    import pandas as pd
-
-    if not isinstance(val, Expr):
-        if isinstance(val, (tuple, list)):
-            val = sequence(val)
-        elif isinstance(val, pd.Series):
-            val = sequence(list(val))
-        else:
-            val = literal(val)
-
-    return val
-
-
 def array(values):
     """Create an array expression.
 
