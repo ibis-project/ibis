@@ -23,7 +23,6 @@ class TypedCaseBuilder:
             if slot != 'default'
         }
 
-        # result_expr = ir.as_value_expr(result_expr)
         result_expr = rlz.any(result_expr)
         kwargs['default'] = result_expr
         # Maintain immutability
@@ -69,8 +68,6 @@ class SimpleCaseBuilder(TypedCaseBuilder):
         -------
         builder : CaseBuilder
         """
-        # case_expr = ir.as_value_expr(case_expr)
-        # result_expr = ir.as_value_expr(result_expr)
         case_expr = rlz.any(case_expr)
         result_expr = rlz.any(result_expr)
 
@@ -115,9 +112,6 @@ class SearchedCaseBuilder(TypedCaseBuilder):
         -------
         builder : CaseBuilder
         """
-        # case_expr = ir.as_value_expr(case_expr)
-        # result_expr = ir.as_value_expr(result_expr)
-
         case_expr = rlz.any(case_expr)
         result_expr = rlz.any(result_expr)
 
