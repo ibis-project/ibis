@@ -1710,8 +1710,8 @@ FROM t0
             'airlines',
         )
 
-        dests = ['ORD', 'JFK', 'SFO']
-        dests_formatted = repr(tuple(set(dests)))
+        dests = {'ORD', 'JFK', 'SFO'}
+        dests_formatted = repr(tuple(dests))
         delay_filter = airlines.dest.topk(10, by=airlines.arrdelay.mean())
         t = airlines[airlines.dest.isin(dests)]
         expr = t[delay_filter].group_by('origin').size()
