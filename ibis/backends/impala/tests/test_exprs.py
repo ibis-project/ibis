@@ -752,7 +752,7 @@ class TestInNotIn(unittest.TestCase, ExprSQLTest):
         self.table = self.con.table('alltypes')
 
     def test_field_in_literals(self):
-        values = ['foo', 'bar', 'baz']
+        values = {'foo', 'bar', 'baz'}
         values_formatted = tuple(set(values))
         cases = [
             (self.table.g.isin(values), f"`g` IN {values_formatted}"),
