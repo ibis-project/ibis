@@ -59,6 +59,15 @@ class ParquetTable(ops.DatabaseTable):
 
 
 class ParquetClient(FileClient):
+    pass
+
+
+class Backend(BaseFileBackend):
+    name = 'parquet'
+    extension = 'parquet'
+    table_class = ParquetTable
+    client_class = ParquetClient
+
     def insert(self, path, expr, **kwargs):
         path = self.root / path
         df = execute(expr)
@@ -86,13 +95,6 @@ class ParquetClient(FileClient):
     @property
     def version(self):
         return parse_version(pa.__version__)
-
-
-class Backend(BaseFileBackend):
-    name = 'parquet'
-    extension = 'parquet'
-    table_class = ParquetTable
-    client_class = ParquetClient
 
 
 @execute_node.register(Backend.table_class, ParquetClient)

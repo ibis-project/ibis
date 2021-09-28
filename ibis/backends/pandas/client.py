@@ -8,14 +8,10 @@ import pytz
 import toolz
 from pandas.api.types import CategoricalDtype, DatetimeTZDtype
 
-import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
-import ibis.expr.types as ir
 from ibis.backends.base import Client, Database
-
-from .core import execute_and_reset
 
 infer_pandas_dtype = pd.api.types.infer_dtype
 
@@ -335,86 +331,7 @@ class PandasTable(ops.DatabaseTable):
 class PandasClient(Client):
     def __init__(self, backend, dictionary):
         self.backend = backend
-        self.database_class = backend.database_class
-        self.table_class = backend.table_class
-        self.dictionary = dictionary
-
-    def table(self, name, schema=None):
-        df = self.dictionary[name]
-        schema = sch.infer(df, schema=schema)
-        return self.table_class(name, schema, self).to_expr()
-
-    def execute(self, query, params=None, limit='default', **kwargs):
-        if limit != 'default':
-            raise ValueError(
-                'limit parameter to execute is not yet implemented in the '
-                'pandas backend'
-            )
-
-        if not isinstance(query, ir.Expr):
-            raise TypeError(
-                "`query` has type {!r}, expected ibis.expr.types.Expr".format(
-                    type(query).__name__
-                )
-            )
-        return execute_and_reset(query, params=params, **kwargs)
-
-    def compile(self, expr, *args, **kwargs):
-        """Compile `expr`.
-
-        Notes
-        -----
-        For the pandas backend this is a no-op.
-
-        """
-        return expr
-
-    def database(self, name=None):
-        """Construct a database called `name`."""
-        return self.database_class(name, self)
-
-    def load_data(self, table_name, obj, **kwargs):
-        """Load data from `obj` into `table_name`.
-
-        Parameters
-        ----------
-        table_name : str
-        obj : pandas.DataFrame
-
-        """
-        # kwargs is a catch all for any options required by other backends.
-        self.dictionary[table_name] = pd.DataFrame(obj)
-
-    def create_table(self, table_name, obj=None, schema=None):
-        """Create a table."""
-        if obj is None and schema is None:
-            raise com.IbisError('Must pass expr or schema')
-
-        if obj is not None:
-            df = pd.DataFrame(obj)
-        else:
-            dtypes = ibis_schema_to_pandas(schema)
-            df = schema.apply_to(
-                pd.DataFrame(columns=list(map(toolz.first, dtypes)))
-            )
-
-        self.dictionary[table_name] = df
-
-    def get_schema(self, table_name, database=None):
-        """Return a Schema object for the indicated table and database.
-
-        Parameters
-        ----------
-        table_name : str
-            May be fully qualified
-        database : str
-
-        Returns
-        -------
-        ibis.expr.schema.Schema
-
-        """
-        return sch.infer(self.dictionary[table_name])
+        self.backend.dictionary = dictionary
 
 
 class PandasDatabase(Database):

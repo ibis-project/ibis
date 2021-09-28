@@ -1,6 +1,5 @@
 import pandas as pd
 import toolz
-from pkg_resources import parse_version
 
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
@@ -29,36 +28,7 @@ class CSVTable(ops.DatabaseTable):
 
 
 class CSVClient(FileClient):
-    def insert(self, path, expr, index=False, **kwargs):
-        path = self.root / path
-        data = execute(expr)
-        data.to_csv(str(path), index=index, **kwargs)
-
-    def table(self, name, path=None, schema=None, **kwargs):
-        if name not in self.list_tables(path):
-            raise AttributeError(name)
-
-        if path is None:
-            path = self.root
-
-        # get the schema
-        f = path / f"{name}.{self.extension}"
-
-        # read sample
-        schema = schema or sch.schema([])
-        sample = _read_csv(f, schema=schema, header=0, nrows=50, **kwargs)
-
-        # infer sample's schema and define table
-        schema = sch.infer(sample, schema=schema)
-        table = self.table_class(name, schema, self, **kwargs).to_expr()
-
-        self.dictionary[name] = f
-
-        return table
-
-    @property
-    def version(self):
-        return parse_version(pd.__version__)
+    pass
 
 
 @pre_execute.register(ops.Selection, CSVClient)
@@ -100,6 +70,33 @@ class Backend(BaseFileBackend):
     extension = 'csv'
     table_class = CSVTable
     client_class = CSVClient
+
+    def insert(self, path, expr, index=False, **kwargs):
+        path = self.root / path
+        data = execute(expr)
+        data.to_csv(str(path), index=index, **kwargs)
+
+    def table(self, name, path=None, schema=None, **kwargs):
+        if name not in self.list_tables(path):
+            raise AttributeError(name)
+
+        if path is None:
+            path = self.root
+
+        # get the schema
+        f = path / f"{name}.{self.extension}"
+
+        # read sample
+        schema = schema or sch.schema([])
+        sample = _read_csv(f, schema=schema, header=0, nrows=50, **kwargs)
+
+        # infer sample's schema and define table
+        schema = sch.infer(sample, schema=schema)
+        table = self.table_class(name, schema, self, **kwargs).to_expr()
+
+        self.dictionary[name] = f
+
+        return table
 
 
 @execute_node.register(Backend.table_class, CSVClient)

@@ -1,3 +1,4 @@
+import abc
 import warnings
 from pathlib import Path
 
@@ -51,66 +52,18 @@ class FileDatabase(Database):
 class FileClient(Client):
     def __init__(self, backend, root):
         self.backend = backend
-        self.extension = backend.extension
-        self.table_class = backend.table_class
-        self.root = Path(str(root))
-        self.dictionary = {}
+        self.backend.root = Path(str(root))
+        self.backend.dictionary = {}
 
-    def insert(self, path, expr, **kwargs):
-        raise NotImplementedError
+    @property
+    def path(self):
+        return self.backend.path
 
-    def table(self, name, path):
-        raise NotImplementedError
+    def database(self, *args, **kwargs):
+        return self.backend.database(*args, **kwargs)
 
-    def database(self, name=None, path=None):
-        if name is None:
-            self.path = path
-            return super().database(name)
-
-        if name not in self.list_databases(path):
-            raise AttributeError(name)
-        if path is None:
-            path = self.root
-
-        new_name = f"{name}.{self.extension}"
-        if (self.root / name).is_dir():
-            path /= name
-        elif not str(path).endswith(new_name):
-            path /= new_name
-
-        self.path = path
-        return super().database(name)
-
-    def compile(self, expr, *args, **kwargs):
-        return expr
-
-    def execute(self, expr, params=None, **kwargs):  # noqa
-        assert isinstance(expr, ir.Expr)
-        return execute_and_reset(expr, params=params, **kwargs)
-
-    def list_databases(self, path=None, like=None):
-        return self.backend.list_databases(path=path, like=like)
-
-    def list_tables(self, path=None, like=None, database=None):
-        return self.backend.list_tables(
-            path=path, like=like, database=database
-        )
-
-    def _list_tables_files(self, path=None):
-        # tables are files in a dir
-        if path is None:
-            path = self.root
-
-        tables = []
-        if path.is_dir():
-            for d in path.iterdir():
-                if d.is_file():
-                    if str(d).endswith(self.extension):
-                        tables.append(d.stem)
-        elif path.is_file():
-            if str(path).endswith(self.extension):
-                tables.append(path.stem)
-        return tables
+    def list_databases(self, *args, **kwargs):
+        return self.backend.list_databases(*args, **kwargs)
 
 
 class BaseFileBackend(BaseBackend):
@@ -175,6 +128,22 @@ class BaseFileBackend(BaseBackend):
                     tables.append(d.name)
         return tables
 
+    def _list_tables_files(self, path=None):
+        # tables are files in a dir
+        if path is None:
+            path = self.root
+
+        tables = []
+        if path.is_dir():
+            for d in path.iterdir():
+                if d.is_file():
+                    if str(d).endswith(self.extension):
+                        tables.append(d.stem)
+        elif path.is_file():
+            if str(path).endswith(self.extension):
+                tables.append(path.stem)
+        return tables
+
     def list_databases(self, path=None, like=None):
         if path is None:
             path = self.path
@@ -187,3 +156,34 @@ class BaseFileBackend(BaseBackend):
             )
         databases = ['.'] + self._list_databases_dirs(path)
         return self._filter_with_like(databases, like)
+
+    @abc.abstractmethod
+    def insert(self, path, expr, **kwargs):
+        pass
+
+    @abc.abstractmethod
+    def table(self, name, path):
+        pass
+
+    def database(self, name=None, path=None):
+        if name is None:
+            self.path = path
+            return super().database(name)
+
+        if path is None:
+            path = self.root
+        if name not in self.list_databases(path):
+            raise AttributeError(name)
+
+        new_name = f"{name}.{self.extension}"
+        if (self.root / name).is_dir():
+            path /= name
+        elif not str(path).endswith(new_name):
+            path /= new_name
+
+        self.path = path
+        return super().database(name)
+
+    def execute(self, expr, params=None, **kwargs):  # noqa
+        assert isinstance(expr, ir.Expr)
+        return execute_and_reset(expr, params=params, **kwargs)

@@ -102,7 +102,6 @@ from ibis.expr.types import (  # noqa
     as_value_expr,
     literal,
     null,
-    param,
     sequence,
 )
 from ibis.expr.window import (
@@ -234,6 +233,33 @@ infer_schema = sch.infer
 
 
 NA = null()
+
+
+def param(type):
+    """Create a parameter of a particular type to be defined just before
+    execution.
+
+    Parameters
+    ----------
+    type : dt.DataType
+        The type of the unbound parameter, e.g., double, int64, date, etc.
+
+    Returns
+    -------
+    ScalarExpr
+
+    Examples
+    --------
+    >>> import ibis
+    >>> import ibis.expr.datatypes as dt
+    >>> start = ibis.param(dt.date)
+    >>> end = ibis.param(dt.date)
+    >>> schema = [('timestamp_col', 'timestamp'), ('value', 'double')]
+    >>> t = ibis.table(schema)
+    >>> predicates = [t.timestamp_col >= start, t.timestamp_col <= end]
+    >>> expr = t.filter(predicates).value.sum()
+    """
+    return ops.ScalarParameter(dt.dtype(type)).to_expr()
 
 
 def schema(pairs=None, names=None, types=None):
