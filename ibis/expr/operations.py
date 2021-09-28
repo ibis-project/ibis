@@ -475,7 +475,7 @@ class CoalesceLike(ValueOp):
     # Return type: same as the initial argument value, except that integer
     # values are promoted to BIGINT and floating-point values are promoted to
     # DOUBLE; use CAST() when inserting into a smaller numeric column
-    arg = Arg(rlz.list_of(rlz.any))
+    arg = Arg(rlz.value_list_of(rlz.any))
 
     def output_type(self):
         first = self.arg[0]
@@ -773,13 +773,13 @@ class RPad(ValueOp):
 
 class FindInSet(ValueOp):
     needle = Arg(rlz.string)
-    values = Arg(rlz.list_of(rlz.string, min_length=1))
+    values = Arg(rlz.value_list_of(rlz.string, min_length=1))
     output_type = rlz.shape_like('needle', dt.int64)
 
 
 class StringJoin(ValueOp):
     sep = Arg(rlz.string)
-    arg = Arg(rlz.list_of(rlz.string, min_length=1))
+    arg = Arg(rlz.value_list_of(rlz.string, min_length=1))
 
     def output_type(self):
         return rlz.shape_like(tuple(self.flat_args()), dt.string)
@@ -2773,7 +2773,7 @@ class IntervalFromInteger(ValueOp):
 
 
 class ArrayColumn(ValueOp):
-    cols = Arg(rlz.list_of(rlz.column(rlz.any), min_length=1))
+    cols = Arg(rlz.value_list_of(rlz.column(rlz.any), min_length=1))
 
     def _validate(self):
         if len({col.type() for col in self.cols}) > 1:
