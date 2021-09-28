@@ -1,6 +1,6 @@
+import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
-import ibis.expr.operations as ops
 
 
 class TypedCaseBuilder:
