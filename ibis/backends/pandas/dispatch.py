@@ -4,7 +4,7 @@ from multipledispatch import Dispatcher
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-from ibis.backends.base import Client
+from ibis.backends.base import BaseBackend, Client
 from ibis.expr.scope import Scope
 
 from .trace import TraceTwoLevelDispatcher
@@ -46,7 +46,7 @@ depth-first traversal of the tree.
 
 # Default returns an empty scope
 @pre_execute.register(ops.Node)
-@pre_execute.register(ops.Node, Client)
+@pre_execute.register(ops.Node, (BaseBackend, Client))
 def pre_execute_default(node, *clients, **kwargs):
     return Scope()
 
