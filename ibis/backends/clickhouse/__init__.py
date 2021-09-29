@@ -179,7 +179,7 @@ class Backend(BaseSQLBackend):
         self.con.disconnect()
 
     def _fully_qualified_name(self, name, database):
-        if bool(fully_qualified_re.search(name)):
+        if fully_qualified_re.search(name):
             return name
 
         database = database or self.current_database
