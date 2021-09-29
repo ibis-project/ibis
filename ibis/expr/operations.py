@@ -1706,8 +1706,8 @@ def _validate_join_predicates(left, right, predicates):
 
 
 class Join(TableNode):
-    left = Arg(rlz.noop)
-    right = Arg(rlz.noop)
+    left = Arg(ir.TableExpr)
+    right = Arg(ir.TableExpr)
     predicates = Arg(rlz.noop)
 
     def __init__(self, left, right, predicates):
