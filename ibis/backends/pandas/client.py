@@ -333,6 +333,10 @@ class PandasClient(Client):
         self.backend = backend
         self.backend.dictionary = dictionary
 
+    @property
+    def dictionary(self):
+        return self.backend.dictionary
+
 
 class PandasDatabase(Database):
     pass

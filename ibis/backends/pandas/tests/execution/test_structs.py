@@ -6,8 +6,8 @@ import pytest
 
 import ibis
 import ibis.expr.datatypes as dt
-
-from ... import Backend, execute
+from ibis.backends.pandas import Backend
+from ibis.backends.pandas.execution import execute
 
 
 @pytest.fixture(scope="module")

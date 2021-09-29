@@ -17,6 +17,7 @@ class FileDatabase(Database):
     def __init__(self, name, client):
         super().__init__(name, client)
         self.path = client.path
+        self.root = self.path
 
     def __str__(self):
         return '{0.__class__.__name__}({0.name})'.format(self)

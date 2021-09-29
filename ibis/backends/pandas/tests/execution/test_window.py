@@ -9,14 +9,15 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.backends.pandas import Backend
+from ibis.backends.pandas.aggcontext import AggregationContext, window_agg_udf
+from ibis.backends.pandas.client import PandasClient
+from ibis.backends.pandas.dispatch import pre_execute
+from ibis.backends.pandas.execution import execute
+from ibis.backends.pandas.execution.window import get_aggcontext
 from ibis.expr.scope import Scope
 from ibis.expr.window import get_preceding_value, rows_with_max_lookback
 from ibis.udf.vectorized import reduction
-
-from ... import Backend, PandasClient, execute
-from ...aggcontext import AggregationContext, window_agg_udf
-from ...dispatch import pre_execute
-from ...execution.window import get_aggcontext
 
 # These custom classes are used inn test_custom_window_udf
 
@@ -584,7 +585,7 @@ def test_window_with_mlb():
 
 
 def test_window_has_pre_execute_scope():
-    signature = ops.Lag, PandasClient
+    signature = ops.Lag, (Backend, PandasClient)
     called = [0]
 
     @pre_execute.register(*signature)

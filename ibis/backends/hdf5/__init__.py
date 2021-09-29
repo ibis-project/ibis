@@ -91,7 +91,7 @@ class Backend(BaseFileBackend):
         return t
 
 
-@execute_node.register(Backend.table_class, HDFClient)
+@execute_node.register(Backend.table_class, (Backend, HDFClient))
 def hdf_read_table(op, client, scope, **kwargs):
     key = op.name
     path = client.dictionary[key]

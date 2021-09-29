@@ -51,6 +51,7 @@ from ibis.backends.pandas.execution.generic import (
     execute_table_column_df_or_df_groupby,
 )
 
+from .. import Backend as DaskBackend
 from ..client import DaskClient, DaskTable
 from ..core import execute
 from ..dispatch import execute_node
@@ -141,7 +142,9 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
 
 register_types_to_dispatcher(execute_node, DASK_DISPATCH_TYPES)
 
-execute_node.register(DaskTable, DaskClient)(execute_database_table_client)
+execute_node.register(DaskTable, (DaskBackend, DaskClient))(
+    execute_database_table_client
+)
 
 
 @execute_node.register(ops.ValueList, collections.abc.Sequence)

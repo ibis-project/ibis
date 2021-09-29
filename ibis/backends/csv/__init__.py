@@ -31,40 +31,6 @@ class CSVClient(FileClient):
     pass
 
 
-@pre_execute.register(ops.Selection, CSVClient)
-def csv_pre_execute_selection(
-    op: ops.Node,
-    client: CSVClient,
-    scope: Scope,
-    timecontext: TimeContext = None,
-    **kwargs,
-):
-    tables = filter(
-        lambda t: scope.get_value(t, timecontext) is None,
-        physical_tables(op.table.op()),
-    )
-
-    ops = Scope()
-    for table in tables:
-        path = client.dictionary[table.name]
-        usecols = None
-
-        if op.selections:
-            header = _read_csv(path, schema=table.schema, header=0, nrows=1)
-            usecols = [
-                getattr(s.op(), 'name', None) or s.get_name()
-                for s in op.selections
-            ]
-
-            # we cannot read all the columns that we would like
-            if len(pd.Index(usecols) & header.columns) != len(usecols):
-                usecols = None
-        result = _read_csv(path, table.schema, usecols=usecols, header=0)
-        ops = ops.merge_scope(Scope({table: result}, timecontext))
-
-    return ops
-
-
 class Backend(BaseFileBackend):
     name = 'csv'
     extension = 'csv'
@@ -99,7 +65,41 @@ class Backend(BaseFileBackend):
         return table
 
 
-@execute_node.register(Backend.table_class, CSVClient)
+@pre_execute.register(ops.Selection, (Backend, CSVClient))
+def csv_pre_execute_selection(
+    op: ops.Node,
+    client: CSVClient,
+    scope: Scope,
+    timecontext: TimeContext = None,
+    **kwargs,
+):
+    tables = filter(
+        lambda t: scope.get_value(t, timecontext) is None,
+        physical_tables(op.table.op()),
+    )
+
+    ops = Scope()
+    for table in tables:
+        path = client.dictionary[table.name]
+        usecols = None
+
+        if op.selections:
+            header = _read_csv(path, schema=table.schema, header=0, nrows=1)
+            usecols = [
+                getattr(s.op(), 'name', None) or s.get_name()
+                for s in op.selections
+            ]
+
+            # we cannot read all the columns that we would like
+            if len(pd.Index(usecols) & header.columns) != len(usecols):
+                usecols = None
+        result = _read_csv(path, table.schema, usecols=usecols, header=0)
+        ops = ops.merge_scope(Scope({table: result}, timecontext))
+
+    return ops
+
+
+@execute_node.register(Backend.table_class, (Backend, CSVClient))
 def csv_read_table(op, client, scope, **kwargs):
     path = client.dictionary[op.name]
     df = _read_csv(path, schema=op.schema, header=0, **op.read_csv_kwargs)

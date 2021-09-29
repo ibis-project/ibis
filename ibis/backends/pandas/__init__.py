@@ -13,9 +13,6 @@ from .client import (
     PandasTable,
     ibis_schema_to_pandas,
 )
-from .core import execute_and_reset
-from .execution import execute
-from .udf import udf  # noqa F401
 
 
 class BasePandasBackend(BaseBackend):
@@ -34,6 +31,10 @@ class BasePandasBackend(BaseBackend):
         -------
         Client
         """
+        # register dispatchers
+        from . import execution  # noqa F401
+        from . import udf  # noqa F401
+
         self.client = self.client_class(backend=self, dictionary=dictionary)
         return self.client
 
@@ -110,6 +111,9 @@ class Backend(BasePandasBackend):
     client_class = PandasClient
 
     def execute(self, query, params=None, limit='default', **kwargs):
+        from .core import execute_and_reset
+        from .execution import execute
+
         if not hasattr(self, 'dictionary'):
             return execute(query, params, limit, **kwargs)
 

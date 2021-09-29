@@ -9,12 +9,16 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.backends.pandas import Backend
+from ibis.backends.pandas.client import PandasClient
+from ibis.backends.pandas.core import is_computable_input
+from ibis.backends.pandas.dispatch import (
+    execute_node,
+    post_execute,
+    pre_execute,
+)
+from ibis.backends.pandas.execution import execute
 from ibis.expr.scope import Scope
-
-from .. import Backend, execute
-from ..client import PandasClient
-from ..core import is_computable_input
-from ..dispatch import execute_node, post_execute, pre_execute
 
 
 @pytest.fixture

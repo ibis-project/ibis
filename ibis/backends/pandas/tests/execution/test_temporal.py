@@ -9,9 +9,9 @@ from pkg_resources import parse_version
 from pytest import param
 
 from ibis import literal as L  # noqa: E402
+from ibis.backends.pandas import Backend
+from ibis.backends.pandas.execution import execute
 from ibis.expr import datatypes as dt
-
-from ... import Backend, execute
 
 
 @pytest.mark.parametrize(

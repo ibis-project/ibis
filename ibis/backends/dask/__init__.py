@@ -12,7 +12,6 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.pandas import BasePandasBackend
 
-from . import udf  # noqa: F401,F403 - register dispatchers
 from .client import DaskClient, DaskDatabase, DaskTable, ibis_schema_to_dask
 from .core import execute_and_reset
 
@@ -26,6 +25,12 @@ class Backend(BasePandasBackend):
     database_class = DaskDatabase
     table_class = DaskTable
     client_class = DaskClient
+
+    def connect(self, dictionary):
+        # register dispatchers
+        from . import udf  # noqa: F401
+
+        return super().connect(dictionary)
 
     @property
     def version(self):

@@ -10,7 +10,7 @@ import pandas
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.backends.base import Client
+from ibis.backends.base import BaseBackend, Client
 from ibis.backends.pandas.udf import nullable  # noqa
 
 from .dispatch import execute_node, pre_execute
@@ -33,7 +33,7 @@ def make_struct_op_meta(op: ir.Expr) -> List[Tuple[str, np.dtype]]:
 
 
 @pre_execute.register(ops.ElementWiseVectorizedUDF)
-@pre_execute.register(ops.ElementWiseVectorizedUDF, Client)
+@pre_execute.register(ops.ElementWiseVectorizedUDF, (BaseBackend, Client))
 def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
     """Register execution rules for elementwise UDFs."""
     input_type = op.input_type
@@ -96,9 +96,9 @@ def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
 
 
 @pre_execute.register(ops.AnalyticVectorizedUDF)
-@pre_execute.register(ops.AnalyticVectorizedUDF, Client)
+@pre_execute.register(ops.AnalyticVectorizedUDF, (BaseBackend, Client))
 @pre_execute.register(ops.ReductionVectorizedUDF)
-@pre_execute.register(ops.ReductionVectorizedUDF, Client)
+@pre_execute.register(ops.ReductionVectorizedUDF, (BaseBackend, Client))
 def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
     input_type = op.input_type
     nargs = len(input_type)

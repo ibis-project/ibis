@@ -5,7 +5,7 @@ import pandas.testing as tm
 import pytest
 from pytest import param
 
-from ...execution.strings import sql_like_to_regex
+from ibis.backends.pandas.execution.strings import sql_like_to_regex
 
 
 @pytest.mark.parametrize(

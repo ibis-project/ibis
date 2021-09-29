@@ -5,8 +5,7 @@ from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
-
-from ... import Backend
+from ibis.backends.pandas import Backend
 
 join_type = pytest.mark.parametrize(
     'how',

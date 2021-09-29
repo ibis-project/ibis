@@ -52,7 +52,7 @@ def pre_execute_default(node, *clients, **kwargs):
 
 
 # Merge the results of all client pre-execution with scope
-@pre_execute.register(ops.Node, [Client])
+@pre_execute.register(ops.Node, [(BaseBackend, Client)])
 def pre_execute_multiple_clients(node, *clients, scope=None, **kwargs):
     scope = scope.merge_scopes(
         list(map(partial(pre_execute, node, scope=scope, **kwargs), clients))

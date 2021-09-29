@@ -97,7 +97,7 @@ class Backend(BaseFileBackend):
         return parse_version(pa.__version__)
 
 
-@execute_node.register(Backend.table_class, ParquetClient)
+@execute_node.register(Backend.table_class, (Backend, ParquetClient))
 def parquet_read_table(op, client, scope, **kwargs):
     path = client.dictionary[op.name]
     table = pq.read_table(str(path))
