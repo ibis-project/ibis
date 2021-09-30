@@ -435,7 +435,6 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         ex_semi = sa.select([s1]).where(cond)
         ex_anti = sa.select([s1]).where(~cond)
 
-        #  breakpoint()
         self._compare_sqla(semi, ex_semi)
         self._compare_sqla(anti, ex_anti)
 
