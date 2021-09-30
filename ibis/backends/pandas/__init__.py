@@ -82,7 +82,7 @@ class BasePandasBackend(BaseBackend):
 
     def list_tables(self, like=None, database=None):
         return self._filter_with_like(
-            list(self.client.dictionary.keys()), like
+            list(self.dictionary.keys()), like
         )
 
     def table(self, name: str, schema: sch.Schema = None):
