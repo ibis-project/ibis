@@ -1661,8 +1661,6 @@ def _make_distinct_join_predicates(left, right, predicates):
 
 
 def _clean_join_predicates(left, right, predicates):
-    import ibis.expr.analysis as L
-
     result = []
 
     if not isinstance(predicates, (list, tuple)):
@@ -1684,8 +1682,7 @@ def _clean_join_predicates(left, right, predicates):
         if not isinstance(pred, ir.BooleanColumn):
             raise com.ExpressionError('Join predicate must be comparison')
 
-        preds = L.flatten_predicate(pred)
-        result.extend(preds)
+        result.append(pred)
 
     _validate_join_predicates(left, right, result)
     return result
@@ -1991,8 +1988,6 @@ class Selection(TableNode, HasSchema):
     def __init__(
         self, table, selections=None, predicates=None, sort_keys=None
     ):
-        import ibis.expr.analysis as L
-
         # Argument cleaning
         selections = util.promote_list(
             selections if selections is not None else []
@@ -2013,14 +2008,8 @@ class Selection(TableNode, HasSchema):
             )
         ]
 
-        predicates = list(
-            toolz.concat(
-                map(
-                    L.flatten_predicate,
-                    predicates if predicates is not None else [],
-                )
-            )
-        )
+        if predicates is None:
+            predicates = []
 
         super().__init__(
             table=table,

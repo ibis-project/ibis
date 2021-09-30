@@ -1019,36 +1019,6 @@ def test_join_non_boolean_expr(con):
         t1.inner_join(t2, [predicate])
 
 
-def test_unravel_compound_equijoin(table):
-    t1 = ibis.table(
-        [
-            ('key1', 'string'),
-            ('key2', 'string'),
-            ('key3', 'string'),
-            ('value1', 'double'),
-        ],
-        'foo_table',
-    )
-
-    t2 = ibis.table(
-        [
-            ('key1', 'string'),
-            ('key2', 'string'),
-            ('key3', 'string'),
-            ('value2', 'double'),
-        ],
-        'bar_table',
-    )
-
-    p1 = t1.key1 == t2.key1
-    p2 = t1.key2 == t2.key2
-    p3 = t1.key3 == t2.key3
-
-    joined = t1.inner_join(t2, [p1 & p2 & p3])
-    expected = t1.inner_join(t2, [p1, p2, p3])
-    assert_equal(joined, expected)
-
-
 @pytest.mark.xfail(raises=AssertionError, reason='NYT')
 def test_join_add_prefixes(table):
     assert False

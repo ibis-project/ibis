@@ -967,64 +967,6 @@ def find_source_table(expr):
     return options[0]
 
 
-def flatten_predicate(expr):
-    """Yield the expressions corresponding to the `And` nodes of a predicate.
-
-    Parameters
-    ----------
-    expr : ir.BooleanColumn
-
-    Returns
-    -------
-    exprs : List[ir.BooleanColumn]
-
-    Examples
-    --------
-    >>> import ibis
-    >>> t = ibis.table([('a', 'int64'), ('b', 'string')], name='t')
-    >>> filt = (t.a == 1) & (t.b == 'foo')
-    >>> predicates = flatten_predicate(filt)
-    >>> len(predicates)
-    2
-    >>> predicates[0]  # doctest: +NORMALIZE_WHITESPACE
-    ref_0
-    UnboundTable[table]
-      name: t
-      schema:
-        a : int64
-        b : string
-    Equals[boolean*]
-      left:
-        a = Column[int64*] 'a' from table
-          ref_0
-      right:
-        Literal[int64]
-          1
-    >>> predicates[1]  # doctest: +NORMALIZE_WHITESPACE
-    ref_0
-    UnboundTable[table]
-      name: t
-      schema:
-        a : int64
-        b : string
-    Equals[boolean*]
-      left:
-        b = Column[string*] 'b' from table
-          ref_0
-      right:
-        Literal[string]
-          foo
-    """
-
-    def predicate(expr):
-        if isinstance(expr.op(), ops.And):
-            return lin.proceed, None
-        else:
-            return lin.halt, expr
-
-    return list(lin.traverse(predicate, expr, type=ir.BooleanColumn))
-
-
 def is_analytic(expr, exclude_windows=False):
     def _is_analytic(op):
         if isinstance(op, (ops.Reduction, ops.AnalyticOp, ops.Any, ops.All)):

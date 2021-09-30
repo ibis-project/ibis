@@ -44,9 +44,14 @@ class _AnyToExistsTransform:
             if isinstance(arg, ir.TableExpr):
                 self._visit_table(arg)
             elif isinstance(arg, ir.BooleanColumn):
-                for sub_expr in L.flatten_predicate(arg):
-                    self.predicates.append(sub_expr)
-                    self._visit(sub_expr)
+                op = arg.op()
+                if isinstance(op, ops.And):
+                    for pred in (op.left, op.right):
+                        self._visit(pred)
+                        self.predicates.append(pred)
+                else:
+                    self.predicates.append(arg)
+                    self._visit(arg)
             elif isinstance(arg, ir.Expr):
                 self._visit(arg)
             else:
