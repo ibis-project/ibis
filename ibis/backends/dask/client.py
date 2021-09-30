@@ -1,6 +1,5 @@
 """The dask client implementation."""
 from functools import partial
-from typing import Dict
 
 import dask.dataframe as dd
 import dateutil.parser
@@ -11,7 +10,7 @@ from pandas.api.types import DatetimeTZDtype
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
-from ibis.backends.base import Client, Database
+from ibis.backends.base import Database
 from ibis.backends.pandas.client import (
     PANDAS_DATE_TYPES,
     PANDAS_STRING_TYPES,
@@ -148,9 +147,3 @@ class DaskTable(ops.DatabaseTable):
 
 class DaskDatabase(Database):
     pass
-
-
-class DaskClient(Client):
-    def __init__(self, backend, dictionary: Dict[str, dd.DataFrame]):
-        self.backend = backend
-        self.backend.dictionary = dictionary

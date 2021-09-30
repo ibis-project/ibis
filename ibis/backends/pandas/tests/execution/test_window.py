@@ -11,7 +11,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.pandas import Backend
 from ibis.backends.pandas.aggcontext import AggregationContext, window_agg_udf
-from ibis.backends.pandas.client import PandasClient
 from ibis.backends.pandas.dispatch import pre_execute
 from ibis.backends.pandas.execution import execute
 from ibis.backends.pandas.execution.window import get_aggcontext
@@ -585,7 +584,7 @@ def test_window_with_mlb():
 
 
 def test_window_has_pre_execute_scope():
-    signature = ops.Lag, (Backend, PandasClient)
+    signature = ops.Lag, Backend
     called = [0]
 
     @pre_execute.register(*signature)

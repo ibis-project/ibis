@@ -4,7 +4,7 @@ import pandas as pd
 
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
-from ibis.backends.base.file import BaseFileBackend, FileClient
+from ibis.backends.base.file import BaseFileBackend
 from ibis.backends.pandas.core import execute, execute_node
 
 
@@ -12,15 +12,10 @@ class HDFTable(ops.DatabaseTable):
     pass
 
 
-class HDFClient(FileClient):
-    pass
-
-
 class Backend(BaseFileBackend):
     name = 'hdf5'
     extension = 'h5'
     table_class = HDFTable
-    client_class = HDFClient
 
     def list_tables(self, path=None, like=None, database=None):
         """
@@ -91,7 +86,7 @@ class Backend(BaseFileBackend):
         return t
 
 
-@execute_node.register(Backend.table_class, (Backend, HDFClient))
+@execute_node.register(Backend.table_class, Backend)
 def hdf_read_table(op, client, scope, **kwargs):
     key = op.name
     path = client.dictionary[key]

@@ -11,7 +11,7 @@ from pandas.api.types import CategoricalDtype, DatetimeTZDtype
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
-from ibis.backends.base import Client, Database
+from ibis.backends.base import Database
 
 infer_pandas_dtype = pd.api.types.infer_dtype
 
@@ -326,16 +326,6 @@ sch.Schema.to_pandas = ibis_schema_to_pandas  # type: ignore
 
 class PandasTable(ops.DatabaseTable):
     pass
-
-
-class PandasClient(Client):
-    def __init__(self, backend, dictionary):
-        self.backend = backend
-        self.backend.dictionary = dictionary
-
-    @property
-    def dictionary(self):
-        return self.backend.dictionary
 
 
 class PandasDatabase(Database):

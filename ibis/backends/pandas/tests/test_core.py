@@ -10,7 +10,6 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.pandas import Backend
-from ibis.backends.pandas.client import PandasClient
 from ibis.backends.pandas.core import is_computable_input
 from ibis.backends.pandas.dispatch import (
     execute_node,
@@ -97,19 +96,19 @@ def test_missing_data_sources():
 
 
 def test_missing_data_on_custom_client():
-    class MyClient(PandasClient):
+    class MyBackend(Backend):
         def table(self, name):
             return ops.DatabaseTable(
                 name, ibis.schema([('a', 'int64')]), self
             ).to_expr()
 
-    con = MyClient(Backend(), {})
+    con = MyBackend()
     t = con.table('t')
     with pytest.raises(
         NotImplementedError,
         match=(
             'Could not find signature for execute_node: '
-            '<DatabaseTable, MyClient>'
+            '<DatabaseTable, MyBackend>'
         ),
     ):
         con.execute(t)

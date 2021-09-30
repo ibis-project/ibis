@@ -34,11 +34,6 @@ class BaseBackend(abc.ABC):
         Name of the backend, for example 'sqlite'.
         """
 
-    @property
-    @abc.abstractmethod
-    def client_class(self):
-        """Class of the client, like `PandasClient`."""
-
     @abc.abstractmethod
     def connect(connection_string, **options):
         """
@@ -66,7 +61,7 @@ class BaseBackend(abc.ABC):
             FutureWarning,
         )
         return self.database_class(
-            name=name or self.current_database, client=self.client
+            name=name or self.current_database, client=self
         )
 
     @property
@@ -113,7 +108,7 @@ class BaseBackend(abc.ABC):
             '`name in client.list_databases()` instead.',
             FutureWarning,
         )
-        return name in self.client.list_databases()
+        return name in self.list_databases()
 
     @staticmethod
     def _filter_with_like(values: list[str], like: str = None) -> list[str]:
@@ -166,7 +161,7 @@ class BaseBackend(abc.ABC):
             '`name in client.list_tables()` instead.',
             FutureWarning,
         )
-        return len(self.client.list_tables(like=name, database=database)) > 0
+        return len(self.list_tables(like=name, database=database)) > 0
 
     # @abc.abstractmethod
     def table(self, name: str, database: str = None) -> ir.TableExpr:
@@ -213,7 +208,7 @@ class BaseBackend(abc.ABC):
         """
         Compile the expression.
         """
-        return self.client_class.compiler.to_sql(expr, params=params)
+        return self.compiler.to_sql(expr, params=params)
 
     def execute(self, expr: ir.Expr) -> Any:  # XXX DataFrame for now?
         """ """
@@ -250,7 +245,7 @@ class BaseBackend(abc.ABC):
         ... def _null_literal(translator, expression):
         ...     return 'NULL'
         """
-        if not hasattr(self.client_class, 'compiler'):
+        if not hasattr(self, 'compiler'):
             raise RuntimeError(
                 'Only SQL-based backends support `add_operation`'
             )

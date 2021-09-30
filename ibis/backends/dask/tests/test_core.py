@@ -9,10 +9,10 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.backends.dask import Backend
 from ibis.backends.pandas.dispatch import execute_node as pandas_execute_node
 from ibis.expr.scope import Scope
 
-from ..client import DaskClient
 from ..core import execute, is_computable_input
 from ..dispatch import execute_node, post_execute, pre_execute
 
@@ -72,13 +72,13 @@ def test_missing_data_sources():
 
 
 def test_missing_data_on_custom_client():
-    class MyClient(DaskClient):
+    class MyBackend(Backend):
         def table(self, name):
             return ops.DatabaseTable(
                 name, ibis.schema([('a', 'int64')]), self
             ).to_expr()
 
-    con = MyClient(ibis.dask, {})
+    con = MyBackend(ibis.dask, {})
     t = con.table('t')
     with pytest.raises(
         NotImplementedError,

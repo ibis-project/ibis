@@ -6,7 +6,7 @@ import pandas as pd
 
 import ibis
 import ibis.expr.types as ir
-from ibis.backends.base import BaseBackend, Client, Database
+from ibis.backends.base import BaseBackend, Database
 from ibis.backends.pandas.core import execute_and_reset
 
 # Load options of pandas backend
@@ -17,7 +17,6 @@ class FileDatabase(Database):
     def __init__(self, name, client):
         super().__init__(name, client)
         self.path = client.path
-        self.root = self.path
 
     def __str__(self):
         return '{0.__class__.__name__}({0.name})'.format(self)
@@ -50,23 +49,6 @@ class FileDatabase(Database):
         return sorted(self.client.list_tables(path=path, database=database))
 
 
-class FileClient(Client):
-    def __init__(self, backend, root):
-        self.backend = backend
-        self.backend.root = Path(str(root))
-        self.backend.dictionary = {}
-
-    @property
-    def path(self):
-        return self.backend.path
-
-    def database(self, *args, **kwargs):
-        return self.backend.database(*args, **kwargs)
-
-    def list_databases(self, *args, **kwargs):
-        return self.backend.list_databases(*args, **kwargs)
-
-
 class BaseFileBackend(BaseBackend):
     """
     Base backend class for pandas pseudo-backends for file formats.
@@ -85,9 +67,9 @@ class BaseFileBackend(BaseBackend):
         -------
         Client
         """
-        self.path = Path(path)
-        self.client = self.client_class(backend=self, root=self.path)
-        return self.client
+        self.path = self.root = Path(path)
+        self.dictionary = {}
+        return self
 
     @property
     def version(self) -> str:
@@ -120,6 +102,9 @@ class BaseFileBackend(BaseBackend):
         # rethink this eventually.  For now we just return `None` here, as if
         # databases were not supported
         return '.'
+
+    def compile(self, expr, *args, **kwargs):
+        return expr
 
     def _list_databases_dirs(self, path=None):
         tables = []
@@ -168,7 +153,7 @@ class BaseFileBackend(BaseBackend):
 
     def database(self, name=None, path=None):
         if name is None:
-            self.path = path
+            self.path = path or self.path
             return super().database(name)
 
         if path is None:

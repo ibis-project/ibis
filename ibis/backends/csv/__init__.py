@@ -3,7 +3,7 @@ import toolz
 
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
-from ibis.backends.base.file import BaseFileBackend, FileClient
+from ibis.backends.base.file import BaseFileBackend
 from ibis.backends.pandas.core import execute, execute_node, pre_execute
 from ibis.backends.pandas.execution.selection import physical_tables
 from ibis.expr.scope import Scope
@@ -27,15 +27,10 @@ class CSVTable(ops.DatabaseTable):
         self.read_csv_kwargs = kwargs
 
 
-class CSVClient(FileClient):
-    pass
-
-
 class Backend(BaseFileBackend):
     name = 'csv'
     extension = 'csv'
     table_class = CSVTable
-    client_class = CSVClient
 
     def insert(self, path, expr, index=False, **kwargs):
         path = self.root / path
@@ -65,10 +60,10 @@ class Backend(BaseFileBackend):
         return table
 
 
-@pre_execute.register(ops.Selection, (Backend, CSVClient))
+@pre_execute.register(ops.Selection, Backend)
 def csv_pre_execute_selection(
     op: ops.Node,
-    client: CSVClient,
+    client: Backend,
     scope: Scope,
     timecontext: TimeContext = None,
     **kwargs,
@@ -99,7 +94,7 @@ def csv_pre_execute_selection(
     return ops
 
 
-@execute_node.register(Backend.table_class, (Backend, CSVClient))
+@execute_node.register(Backend.table_class, Backend)
 def csv_read_table(op, client, scope, **kwargs):
     path = client.dictionary[op.name]
     df = _read_csv(path, schema=op.schema, header=0, **op.read_csv_kwargs)

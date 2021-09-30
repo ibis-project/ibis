@@ -7,12 +7,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend
 
-from .client import (
-    PandasClient,
-    PandasDatabase,
-    PandasTable,
-    ibis_schema_to_pandas,
-)
+from .client import PandasDatabase, PandasTable, ibis_schema_to_pandas
 
 
 class BasePandasBackend(BaseBackend):
@@ -35,8 +30,8 @@ class BasePandasBackend(BaseBackend):
         from . import execution  # noqa F401
         from . import udf  # noqa F401
 
-        self.client = self.client_class(backend=self, dictionary=dictionary)
-        return self.client
+        self.dictionary = dictionary
+        return self
 
     def from_dataframe(self, df, name='df', client=None):
         """
@@ -106,7 +101,6 @@ class Backend(BasePandasBackend):
     name = 'pandas'
     database_class = PandasDatabase
     table_class = PandasTable
-    client_class = PandasClient
 
     def execute(self, query, params=None, limit='default', **kwargs):
         from .core import execute_and_reset
