@@ -85,7 +85,7 @@ def test_lineage(companies):
     )
 
     filtered = mutated[
-        (companies.founded_at > '2010-01-01') | companies.founded_at.isnull()
+        lambda t: (t.founded_at > '2010-01-01') | t.founded_at.isnull()
     ]
 
     grouped = filtered.group_by(['bucket', 'status']).size()
@@ -126,13 +126,13 @@ def test_lineage(companies):
     expected = [
         grouped.bucket,
         grouped,
-        filtered.bucket,
-        filtered,
+        mutated.bucket,
+        mutated,
         bucket.name('bucket'),
         companies.funding_total_usd,
         companies,
     ]
-    for r, e in zip(results, expected):
+    for i, (r, e) in enumerate(zip(results, expected)):
         assert_equal(r, e)
 
 

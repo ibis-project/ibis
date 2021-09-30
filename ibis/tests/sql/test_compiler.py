@@ -388,7 +388,7 @@ class ExprTestCases:
         e1 = (
             t1.inner_join(t2, [t1.foo_id == t2.foo_id])
             .projection([t1, t2.value1, t2.value3])
-            .filter([t1.f > 0, t2.value3 < 1000])
+            .filter([lambda t: t.f > 0, lambda t: t.value3 < 1000])
         )
 
         # e2 = (t1.inner_join(t2, [t1.foo_id == t2.foo_id])
@@ -773,40 +773,6 @@ class ExprTestCases:
 
         return result, purchases
 
-    def _case_projection_fuse_filter(self):
-        # Probably test this during the evaluation phase. In SQL, "fusable"
-        # table operations will be combined together into a single select
-        # statement
-        #
-        # see ibis #71 for more on this
-
-        t = ibis.table(
-            [
-                ('a', 'int8'),
-                ('b', 'int16'),
-                ('c', 'int32'),
-                ('d', 'int64'),
-                ('e', 'float'),
-                ('f', 'double'),
-                ('g', 'string'),
-                ('h', 'boolean'),
-            ],
-            'foo',
-        )
-
-        proj = t['a', 'b', 'c']
-
-        # Rewrite a little more aggressively here
-        expr1 = proj[t.a > 0]
-
-        # at one point these yielded different results
-        filtered = t[t.a > 0]
-
-        expr2 = filtered[t.a, t.b, t.c]
-        expr3 = filtered.projection(['a', 'b', 'c'])
-
-        return expr1, expr2, expr3
-
     def _case_startswith(self):
         t1 = self.con.table('star1')
         return t1.foo_id.startswith('foo')
@@ -1001,18 +967,19 @@ WHERE (`f` > 0) AND
     def test_where_with_join(self):
         e1 = self._case_where_with_join()
 
-        expected_sql = """SELECT t0.*, t1.`value1`, t1.`value3`
-FROM star1 t0
-  INNER JOIN star2 t1
-    ON t0.`foo_id` = t1.`foo_id`
+        expected_sql = """\
+SELECT t0.*
+FROM (
+  SELECT t1.*, t2.`value1`, t2.`value3`
+  FROM star1 t1
+    INNER JOIN star2 t2
+      ON t1.`foo_id` = t2.`foo_id`
+) t0
 WHERE (t0.`f` > 0) AND
-      (t1.`value3` < 1000)"""
+      (t0.`value3` < 1000)"""
 
         result_sql = Compiler.to_sql(e1)
         assert result_sql == expected_sql
-
-        # result2_sql = to_sql(e2)
-        # assert result2_sql == expected_sql
 
     def test_where_no_pushdown_possible(self):
         t1 = self.con.table('star1')
@@ -1223,10 +1190,9 @@ FROM t0 t2
 
         # Cases where we project in both cases using the base table reference
         f1 = (table['foo'] + table['bar']).name('baz')
-        pred = table['value'] > 0
 
         table2 = table[table, f1]
-        table2_filtered = table2[pred]
+        table2_filtered = table2[lambda t: t.value > 0]
 
         f2 = (table2['foo'] * 2).name('qux')
         f3 = (table['foo'] * 2).name('qux')
@@ -1237,16 +1203,17 @@ FROM t0 t2
         table3_filtered = table2_filtered.projection([table2, f2])
 
         expected = table[table, f1, f3]
-        expected2 = table[pred][table, f1, f3]
 
         assert table3.equals(expected)
-        assert table3_filtered.equals(expected2)
 
         ex_sql = """SELECT *, `foo` + `bar` AS `baz`, `foo` * 2 AS `qux`
 FROM tbl"""
 
-        ex_sql2 = """SELECT *, `foo` + `bar` AS `baz`, `foo` * 2 AS `qux`
-FROM tbl
+        ex_sql2 = """SELECT *, `foo` * 2 AS `qux`
+FROM (
+  SELECT *, `foo` + `bar` AS `baz`
+  FROM tbl
+) t0
 WHERE `value` > 0"""
 
         table3_sql = Compiler.to_sql(table3)
@@ -1262,20 +1229,8 @@ WHERE `value` > 0"""
         table3_filtered = table2_filtered.projection([table2, f2])
 
         expected = table[table, f1, f3]
-        expected2 = table[pred][table, f1, f3]
 
         assert table3.equals(expected)
-        assert table3_filtered.equals(expected2)
-
-    def test_projection_filter_fuse(self):
-        expr1, expr2, expr3 = self._case_projection_fuse_filter()
-
-        sql1 = Compiler.to_sql(expr1)
-        sql2 = Compiler.to_sql(expr2)
-        sql3 = Compiler.to_sql(expr3)
-
-        assert sql1 == sql2
-        assert sql1 == sql3
 
     def test_bug_project_multiple_times(self):
         # 108
@@ -1293,34 +1248,50 @@ WHERE `value` > 0"""
         topk_by = step1.c_acctbal.cast('double').sum()
         pred = step1.n_name.topk(10, by=topk_by)
 
-        proj_exprs = [step1.c_name, step1.r_name, step1.n_name]
         step2 = step1[pred]
-        expr = step2.projection(proj_exprs)
+        expr = step2.projection(["c_name", "r_name", "n_name"])
 
         # it works!
         result = Compiler.to_sql(expr)
         expected = """\
-WITH t0 AS (
-  SELECT t2.*, t3.`n_name`, t4.`r_name`
-  FROM tpch_customer t2
-    INNER JOIN tpch_nation t3
-      ON t2.`c_nationkey` = t3.`n_nationkey`
-    INNER JOIN tpch_region t4
-      ON t3.`n_regionkey` = t4.`r_regionkey`
-)
 SELECT `c_name`, `r_name`, `n_name`
-FROM t0
-  LEFT SEMI JOIN (
-    SELECT *
-    FROM (
-      SELECT `n_name`, sum(CAST(`c_acctbal` AS double)) AS `sum`
-      FROM t0
-      GROUP BY 1
+FROM (
+  WITH t2 AS (
+    SELECT t3.*, t4.`n_name`, t5.`r_name`
+    FROM tpch_customer t3
+      INNER JOIN tpch_nation t4
+        ON t3.`c_nationkey` = t4.`n_nationkey`
+      INNER JOIN tpch_region t5
+        ON t4.`n_regionkey` = t5.`r_regionkey`
+  )
+  SELECT t2.*
+  FROM (
+    SELECT t3.*, t4.`n_name`, t5.`r_name`
+    FROM tpch_customer t3
+      INNER JOIN tpch_nation t4
+        ON t3.`c_nationkey` = t4.`n_nationkey`
+      INNER JOIN tpch_region t5
+        ON t4.`n_regionkey` = t5.`r_regionkey`
+  ) t2
+    LEFT SEMI JOIN (
+      SELECT *
+      FROM (
+        SELECT `n_name`, sum(CAST(`c_acctbal` AS double)) AS `sum`
+        FROM (
+          SELECT t3.*, t4.`n_name`, t5.`r_name`
+          FROM tpch_customer t3
+            INNER JOIN tpch_nation t4
+              ON t3.`c_nationkey` = t4.`n_nationkey`
+            INNER JOIN tpch_region t5
+              ON t4.`n_regionkey` = t5.`r_regionkey`
+        ) t2
+        GROUP BY 1
+      ) t3
+      ORDER BY `sum` DESC
+      LIMIT 10
     ) t2
-    ORDER BY `sum` DESC
-    LIMIT 10
-  ) t1
-    ON t0.`n_name` = t1.`n_name`"""
+      ON t2.`n_name` = t2.`n_name`
+) t0"""
         assert result == expected
 
     def test_aggregate_projection_subquery(self):
@@ -1341,10 +1312,13 @@ WHERE `f` > 0"""
         filtered = proj[proj.g == 'bar']
 
         result = Compiler.to_sql(filtered)
-        expected = """SELECT *, `a` + `b` AS `foo`
-FROM alltypes
-WHERE (`f` > 0) AND
-      (`g` = 'bar')"""
+        expected = """SELECT *
+FROM (
+  SELECT *, `a` + `b` AS `foo`
+  FROM alltypes
+  WHERE `f` > 0
+) t0
+WHERE `g` = 'bar'"""
         assert result == expected
 
         agged = agg(filtered)
@@ -1356,6 +1330,14 @@ FROM (
   WHERE (`f` > 0) AND
         (`g` = 'bar')
 ) t0
+GROUP BY 1"""
+        expected = """SELECT `g`, sum(`foo`) AS `foo total`
+FROM (
+  SELECT *, `a` + `b` AS `foo`
+  FROM alltypes
+  WHERE `f` > 0
+) t0
+WHERE `g` = 'bar'
 GROUP BY 1"""
         assert result == expected
 
@@ -1711,15 +1693,18 @@ FROM t0
         )
 
         dests = ['ORD', 'JFK', 'SFO']
-        dests_formatted = repr(tuple(set(dests)))
         delay_filter = airlines.dest.topk(10, by=airlines.arrdelay.mean())
         t = airlines[airlines.dest.isin(dests)]
         expr = t[delay_filter].group_by('origin').size()
 
         result = Compiler.to_sql(expr)
-        expected = """\
+        expected = f"""\
 SELECT t0.`origin`, count(*) AS `count`
-FROM airlines t0
+FROM (
+  SELECT *
+  FROM airlines
+  WHERE `dest` IN {repr(tuple(set(dests)))}
+) t0
   LEFT SEMI JOIN (
     SELECT *
     FROM (
@@ -1730,11 +1715,8 @@ FROM airlines t0
     ORDER BY `mean` DESC
     LIMIT 10
   ) t1
-    ON t0.`dest` = t1.`dest`
-WHERE t0.`dest` IN {}
-GROUP BY 1""".format(
-            dests_formatted
-        )
+    ON `dest` = t1.`dest`
+GROUP BY 1"""
 
         assert result == expected
 
@@ -2096,20 +2078,23 @@ ORDER BY `string_col`"""
         expr, _ = self._case_filter_self_join_analysis_bug()
 
         expected = """\
-SELECT t0.`region`, t0.`total` - t1.`total` AS `diff`
-FROM (
+WITH t0 AS (
   SELECT `region`, `kind`, sum(`amount`) AS `total`
   FROM purchases
-  WHERE `kind` = 'foo'
   GROUP BY 1, 2
-) t0
+)
+SELECT t1.`region`, t1.`total` - t2.`total` AS `diff`
+FROM (
+  SELECT *
+  FROM t0
+  WHERE `kind` = 'foo'
+) t1
   INNER JOIN (
-    SELECT `region`, `kind`, sum(`amount`) AS `total`
-    FROM purchases
+    SELECT *
+    FROM t0
     WHERE `kind` = 'bar'
-    GROUP BY 1, 2
-  ) t1
-    ON t0.`region` = t1.`region`"""
+  ) t2
+    ON t1.`region` = t2.`region`"""
         self._compare_sql(expr, expected)
 
     def test_join_filtered_tables_no_pushdown(self):
@@ -2365,10 +2350,13 @@ def test_pushdown_with_or():
     result = Compiler.to_sql(filt)
     expected = """\
 SELECT *
-FROM functional_alltypes
-WHERE (`double_col` > 3.14) AND
-      (locate('foo', `string_col`) - 1 >= 0) AND
-      (((`int_col` - 1) = 0) OR (`float_col` <= 1.34))"""
+FROM (
+  SELECT *
+  FROM functional_alltypes
+  WHERE (`double_col` > 3.14) AND
+        (locate('foo', `string_col`) - 1 >= 0)
+) t0
+WHERE ((`int_col` - 1) = 0) OR (`float_col` <= 1.34)"""
     assert result == expected
 
 
@@ -2437,18 +2425,21 @@ def test_agg_and_non_agg_filter():
     expr = expr[expr.b == 'a']
     result = Compiler.to_sql(expr)
     expected = """\
-SELECT *
+SELECT t0.*
 FROM (
-  SELECT *
-  FROM my_table
-  WHERE `a` < 100
+  SELECT t2.*
+  FROM (
+    SELECT *
+    FROM my_table
+    WHERE `a` < 100
+  ) t2
+  WHERE t2.`a` = (
+    SELECT max(`a`) AS `max`
+    FROM my_table
+    WHERE `a` < 100
+  )
 ) t0
-WHERE (`a` = (
-  SELECT max(`a`) AS `max`
-  FROM my_table
-  WHERE `a` < 100
-)) AND
-      (`b` = 'a')"""
+WHERE t0.`b` = 'a'"""
     assert result == expected
 
 
@@ -2465,15 +2456,19 @@ WITH t0 AS (
   FROM my_table
 ),
 t1 AS (
-  SELECT t0.`a`, t0.`b2`
+  SELECT `a`, `b2`
   FROM t0
-  WHERE t0.`a` < 100
 )
-SELECT t1.*
-FROM t1
-WHERE t1.`a` = (
-  SELECT max(`a`) AS `blah`
+SELECT t2.*
+FROM (
+  SELECT t1.*
   FROM t1
+  WHERE t1.`a` < 100
+) t2
+WHERE t2.`a` = (
+  SELECT max(t1.`a`) AS `blah`
+  FROM t1
+  WHERE t1.`a` < 100
 )"""
     assert result == expected
 
@@ -2491,15 +2486,19 @@ WITH t0 AS (
   FROM my_table
 ),
 t1 AS (
-  SELECT t0.`a`, t0.`b2`
+  SELECT `a`, `b2`
   FROM t0
-  WHERE t0.`a` < 100
 )
-SELECT t1.*
-FROM t1
-WHERE t1.`a` = (
-  SELECT max(`a`) AS `blah`
+SELECT t2.*
+FROM (
+  SELECT t1.*
   FROM t1
+  WHERE t1.`a` < 100
+) t2
+WHERE t2.`a` = (
+  SELECT max(t1.`a`) AS `blah`
+  FROM t1
+  WHERE t1.`a` < 100
 )"""
     assert result == expected
 
@@ -2517,35 +2516,24 @@ def test_table_drop_with_filter():
     joined = joined[left.a]
     joined = joined.filter(joined.a < 1.0)
     result = Compiler.to_sql(joined)
-    # previously this was generating incorrect aliases due to not binding the
-    # self to expressions when calling projection:
-    # SELECT t0.`a`
-    # FROM (
-    #   SELECT t2.`a`, t2.`b`, '2018-01-01 00:00:00' AS `the_date`
-    #   FROM (
-    #     SELECT `a`, `b`, `c` AS `C`
-    #     FROM t
-    #   ) t3
-    #   WHERE t3.`C` = '2018-01-01 00:00:00'
-    # ) t0
-    #   INNER JOIN s t1
-    #     ON t0.`b` = t1.`b`
-    # WHERE t0.`a` < 1.0
     expected = """\
-SELECT t0.`a`
+SELECT t0.*
 FROM (
-  SELECT `a`, `b`, '2018-01-01 00:00:00' AS `the_date`
+  SELECT t2.`a`
   FROM (
-    SELECT *
+    SELECT `a`, `b`, '2018-01-01 00:00:00' AS `the_date`
     FROM (
-      SELECT `a`, `b`, `c` AS `C`
-      FROM t
-    ) t3
-    WHERE `C` = '2018-01-01 00:00:00'
+      SELECT *
+      FROM (
+        SELECT `a`, `b`, `c` AS `C`
+        FROM t
+      ) t5
+      WHERE `C` = '2018-01-01 00:00:00'
+    ) t4
   ) t2
+    INNER JOIN s t1
+      ON t2.`b` = t1.`b`
 ) t0
-  INNER JOIN s t1
-    ON t0.`b` = t1.`b`
 WHERE t0.`a` < 1.0"""
     assert result == expected
 

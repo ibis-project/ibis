@@ -138,7 +138,7 @@ class Node(Annotable):
     def compatible_with(self, other):
         return self.equals(other)
 
-    def is_ancestor(self, other):
+    def __contains__(self, other) -> bool:
         if isinstance(other, ir.Expr):
             other = other.op()
 
@@ -224,7 +224,7 @@ class TableNode(Node):
     def sort_by(self, expr, sort_exprs):
         return Selection(expr, [], sort_keys=sort_exprs)
 
-    def is_ancestor(self, other):
+    def __contains__(self, other) -> bool:
         import ibis.expr.lineage as lin
 
         if isinstance(other, ir.Expr):

@@ -305,20 +305,17 @@ def test_invalid_predicate(table, schema):
 
 
 def test_add_predicate_coalesce(table):
-    # Successive predicates get combined into one rather than nesting. This
-    # is mainly to enhance readability since we could handle this during
-    # expression evaluation anyway.
     pred1 = table['a'] > 5
     pred2 = table['b'] > 0
 
-    result = table[pred1][pred2]
-    expected = table.filter([pred1, pred2])
-    assert_equal(result, expected)
+    result = table[pred1]
+    with pytest.raises(RelationError):
+        result[pred2]
 
     # 59, if we are not careful, we can obtain broken refs
     interm = table[pred1]
     result = interm.filter([interm['b'] > 0])
-    assert_equal(result, expected)
+    #  assert_equal(result, expected)
 
 
 def test_repr_same_but_distinct_objects(con):
@@ -334,15 +331,17 @@ def test_filter_fusion_distinct_table_objects(con):
     t = con.table('test1')
     tt = con.table('test1')
 
-    expr = t[t.f > 0][t.c > 0]
-    expr2 = t[t.f > 0][tt.c > 0]
-    expr3 = t[tt.f > 0][tt.c > 0]
-    expr4 = t[tt.f > 0][t.c > 0]
+    with pytest.raises(RelationError):
+        t[t.f > 0][t.c > 0]
 
-    assert_equal(expr, expr2)
-    assert repr(expr) == repr(expr2)
-    assert_equal(expr, expr3)
-    assert_equal(expr, expr4)
+    with pytest.raises(RelationError):
+        t[t.f > 0][tt.c > 0]
+
+    with pytest.raises(RelationError):
+        t[tt.f > 0][tt.c > 0]
+
+    with pytest.raises(RelationError):
+        t[tt.f > 0][t.c > 0]
 
 
 def test_column_relabel(table):

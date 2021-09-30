@@ -180,29 +180,6 @@ def test_filter_self_join():
     assert_equal(proj_exprs[1], metric)
 
 
-# def test_fuse_filter_projection():
-#     data = ibis.table([('kind', 'string'),
-#                        ('year', 'int64')], 'data')
-
-#     pred = data.year == 2010
-
-#     result = data.projection(['kind'])[pred]
-#     expected = data.filter(pred).kind
-
-#     assert isinstance(result, ops.Selection)
-#     assert result.equals(expected)
-
-
-@pytest.mark.xfail
-def test_fuse_projection_sort_by():
-    assert False
-
-
-@pytest.mark.xfail
-def test_fuse_filter_sort_by():
-    assert False
-
-
 # Refactoring deadpool
 
 
@@ -213,66 +190,6 @@ def test_no_rewrite(con):
     result = L.substitute_parents(expr)
     expected = expr
     assert result.equals(expected)
-
-
-# def test_projection_with_join_pushdown_rewrite_refs():
-#     # Observed this expression IR issue in a TopK-rewrite context
-#     table1 = ibis.table([
-#         ('a_key1', 'string'),
-#         ('a_key2', 'string'),
-#         ('a_value', 'double')
-#     ], 'foo')
-
-#     table2 = ibis.table([
-#         ('b_key1', 'string'),
-#         ('b_name', 'string'),
-#         ('b_value', 'double')
-#     ], 'bar')
-
-#     table3 = ibis.table([
-#         ('c_key2', 'string'),
-#         ('c_name', 'string')
-#     ], 'baz')
-
-#     proj = (table1.inner_join(table2, [('a_key1', 'b_key1')])
-#             .inner_join(table3, [(table1.a_key2, table3.c_key2)])
-#             [table1, table2.b_name.name('b'), table3.c_name.name('c'),
-#              table2.b_value])
-
-#     cases = [
-#         (proj.a_value > 0, table1.a_value > 0),
-#         (proj.b_value > 0, table2.b_value > 0)
-#     ]
-
-#     for higher_pred, lower_pred in cases:
-#         result = proj.filter([higher_pred])
-#         op = result.op()
-#         assert isinstance(op, ops.Selection)
-#         new_pred = op.predicates[0]
-#         assert_equal(new_pred, lower_pred)
-
-# def test_rewrite_expr_with_parent():
-#     table = self.con.table('test1')
-
-#     table2 = table[table['f'] > 0]
-
-#     expr = table2['c'] == 2
-
-#     result = L.substitute_parents(expr)
-#     expected = table['c'] == 2
-#     assert_equal(result, expected)
-
-# def test_rewrite_distinct_but_equal_objects():
-#     t = self.con.table('test1')
-#     t_copy = self.con.table('test1')
-
-#     table2 = t[t_copy['f'] > 0]
-
-#     expr = table2['c'] == 2
-
-#     result = L.substitute_parents(expr)
-#     expected = t['c'] == 2
-#     assert_equal(result, expected)
 
 
 def test_join_table_choice():
@@ -328,39 +245,26 @@ def test_mutation_fusion_overwrite():
     t = ibis.table(ibis.schema([('col', 'int32')]), 't')
 
     result = t
-
     result = result.mutate(col1=t['col'] + 1)
     result = result.mutate(col2=t['col'] + 2)
     result = result.mutate(col3=t['col'] + 3)
-    result = result.mutate(col=t['col'] - 1)
-    result = result.mutate(col4=t['col'] + 4)
+    result1 = result
+    result = result.mutate(col=result['col'] - 1)
+    result = result.mutate(col4=result['col'] + 4)
 
     second_selection = result
     first_selection = second_selection.op().table
 
-    assert len(first_selection.op().selections) == 4
-    assert (
-        first_selection.op().selections[1].equals((t['col'] + 1).name('col1'))
-    )
-    assert (
-        first_selection.op().selections[2].equals((t['col'] + 2).name('col2'))
-    )
-    assert (
-        first_selection.op().selections[3].equals((t['col'] + 3).name('col3'))
-    )
+    sels = first_selection.op().selections
+    assert len(sels) == 4
+    assert sels[1].equals(result1['col1'].name('col1'))
+    assert sels[2].equals(result1['col2'].name('col2'))
+    assert sels[3].equals(result1['col3'].name('col3'))
 
-    # Since the second selection overwrites existing columns, it will
-    # not have the TableExpr as the first selection
-    assert len(second_selection.op().selections) == 5
-    assert (
-        second_selection.op().selections[0].equals((t['col'] - 1).name('col'))
-    )
-    assert second_selection.op().selections[1].equals(first_selection['col1'])
-    assert second_selection.op().selections[2].equals(first_selection['col2'])
-    assert second_selection.op().selections[3].equals(first_selection['col3'])
-    assert (
-        second_selection.op().selections[4].equals((t['col'] + 4).name('col4'))
-    )
+    sels = second_selection.op().selections
+    assert len(sels) == 2
+    assert sels[0].equals(first_selection)
+    assert sels[1].equals((first_selection['col'] + 4).name('col4'))
 
 
 # Pr 2635
@@ -383,7 +287,11 @@ def test_select_filter_mutate_fusion():
         .equals(first_selection['col'].cast('int32').name('col'))
     )
 
-    assert len(first_selection.op().selections) == 1
+    assert len(first_selection.op().selections) == 0
     assert len(first_selection.op().predicates) == 1
-    assert first_selection.op().selections[0].equals(t['col'])
-    assert first_selection.op().predicates[0].equals(t['col'].isnan())
+    assert first_selection.op().table.op().selections[0].equals(t['col'])
+    assert (
+        first_selection.op()
+        .predicates[0]
+        .equals(first_selection.op().table['col'].isnan())
+    )

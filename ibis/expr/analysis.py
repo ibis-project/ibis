@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import operator
+from typing import Sequence
 
 import toolz
 
@@ -532,7 +533,8 @@ def has_reduction(expr):
 
 
 def get_mutation_exprs(
-    exprs: list[ir.Expr], table: ir.TableExpr
+    exprs: Sequence[ir.Expr],
+    table: ir.TableExpr,
 ) -> list[ir.Expr | None]:
     """Given the list of exprs and the underlying table of a mutation op,
     return the exprs to use to instantiate the mutation."""
@@ -608,175 +610,25 @@ def get_mutation_exprs(
 
 
 def apply_filter(expr, predicates):
-    # This will attempt predicate pushdown in the cases where we can do it
-    # easily and safely, to make both cleaner SQL and fewer referential errors
-    # for users
-
     op = expr.op()
 
-    if isinstance(op, ops.Selection):
-        return _filter_selection(expr, predicates)
-    elif isinstance(op, ops.Aggregation):
-        # Potential fusion opportunity
-        # GH1344: We can't sub in things with correlated subqueries
-        simplified_predicates = [
-            sub_for(predicate, [(expr, op.table)])
-            if not has_reduction(predicate)
-            else predicate
-            for predicate in predicates
-        ]
-
-        if op.table._is_valid(simplified_predicates):
+    if isinstance(op, ops.Aggregation):
+        if op.table._is_valid(predicates):
             result = ops.Aggregation(
                 op.table,
                 op.metrics,
                 by=op.by,
                 having=op.having,
-                predicates=op.predicates + simplified_predicates,
+                predicates=op.predicates + predicates,
                 sort_keys=op.sort_keys,
             )
 
-            return ir.TableExpr(result)
+            return result.to_expr()
     elif isinstance(op, ops.Join):
         expr = expr.materialize()
 
     result = ops.Selection(expr, [], predicates)
-    return ir.TableExpr(result)
-
-
-def _filter_selection(expr, predicates):
-    # if any of the filter predicates have the parent expression among
-    # their roots, then pushdown (at least of that predicate) is not
-    # possible
-
-    # It's not unusual for the filter to reference the projection
-    # itself. If a predicate can be pushed down, in this case we must
-    # rewrite replacing the table refs with the roots internal to the
-    # projection we are referencing
-    #
-    # Assuming that the fields referenced by the filter predicate originate
-    # below the projection, we need to rewrite the predicate referencing
-    # the parent tables in the join being projected
-
-    op = expr.op()
-    if not op.blocks():
-        # Potential fusion opportunity. The predicates may need to be
-        # rewritten in terms of the child table. This prevents the broken
-        # ref issue (described in more detail in #59)
-        simplified_predicates = [
-            sub_for(predicate, [(expr, op.table)])
-            if not has_reduction(predicate)
-            else predicate
-            for predicate in predicates
-        ]
-
-        if op.table._is_valid(simplified_predicates):
-            result = ops.Selection(
-                op.table,
-                [],
-                predicates=op.predicates + simplified_predicates,
-                sort_keys=op.sort_keys,
-            )
-            return result.to_expr()
-
-    can_pushdown = _can_pushdown(op, predicates)
-
-    if can_pushdown:
-        simplified_predicates = [substitute_parents(x) for x in predicates]
-        fused_predicates = op.predicates + simplified_predicates
-        result = ops.Selection(
-            op.table,
-            selections=op.selections,
-            predicates=fused_predicates,
-            sort_keys=op.sort_keys,
-        )
-    else:
-        result = ops.Selection(expr, selections=[], predicates=predicates)
-
     return result.to_expr()
-
-
-def _can_pushdown(op, predicates):
-    # Per issues discussed in #173
-    #
-    # The only case in which pushdown is possible is that all table columns
-    # referenced must meet all of the following (not that onerous in practice)
-    # criteria
-    #
-    # 1) Is a table column, not any other kind of expression
-    # 2) Is unaliased. So, if you project t3.foo AS bar, then filter on bar,
-    #    this cannot be pushed down (until we implement alias rewriting if
-    #    necessary)
-    # 3) Appears in the selections in the projection (either is part of one of
-    #    the entire tables or a single column selection)
-
-    for pred in predicates:
-        validator = _PushdownValidate(op, pred)
-        predicate_is_valid = validator.get_result()
-        if not predicate_is_valid:
-            return False
-    return True
-
-
-class _PushdownValidate:
-    def __init__(self, parent, predicate):
-        self.parent = parent
-        self.pred = predicate
-        self.validator = ExprValidator([self.parent.table])
-
-    def get_result(self):
-        predicate = self.pred
-        return not has_reduction(predicate) and all(self._walk(predicate))
-
-    def _walk(self, expr):
-        def validate(expr):
-            op = expr.op()
-            if isinstance(op, ops.TableColumn):
-                return lin.proceed, self._validate_column(expr)
-            return lin.proceed, None
-
-        return lin.traverse(validate, expr, type=ir.ValueExpr)
-
-    def _validate_column(self, expr):
-        if isinstance(self.parent, ops.Selection):
-            return self._validate_projection(expr)
-        else:
-            validator = ExprValidator([self.parent.table])
-            return validator.validate(expr)
-
-    def _validate_projection(self, expr):
-        is_valid = False
-        node = expr.op()
-
-        # Has a different alias, invalid
-        if _is_aliased(expr):
-            return False
-
-        for val in self.parent.selections:
-            if (
-                isinstance(val.op(), ops.PhysicalTable)
-                and node.name in val.schema()
-            ):
-                is_valid = True
-            elif (
-                isinstance(val.op(), ops.TableColumn)
-                and node.name == val.get_name()
-                and not _is_aliased(val)
-            ):
-                # Aliased table columns are no good
-                col_table = val.op().table.op()
-
-                lifted_node = substitute_parents(expr).op()
-
-                is_valid = col_table.equals(
-                    node.table.op()
-                ) or col_table.equals(lifted_node.table.op())
-
-        return is_valid
-
-
-def _is_aliased(col_expr):
-    return col_expr.op().name != col_expr.get_name()
 
 
 def windowize_function(expr, w=None):
@@ -962,7 +814,7 @@ class ExprValidator:
         return self.roots_shared(node) > 0
 
     def roots_shared(self, node):
-        return sum(root.is_ancestor(node) for root in self.roots)
+        return sum(map(node.equals, self.roots))
 
     def shares_some_roots(self, expr):
         expr_roots = expr.op().root_tables()
@@ -1038,19 +890,15 @@ class FilterValidator(ExprValidator):
         else:
             roots_valid = []
             for arg in op.flat_args():
-                if isinstance(arg, ir.ScalarExpr):
-                    # arg_valid = True
-                    pass
-                elif isinstance(arg, ir.TopKExpr):
+                if isinstance(arg, ir.TopKExpr):
                     # TopK not subjected to further analysis for now
                     roots_valid.append(True)
                 elif isinstance(arg, (ir.ColumnExpr, ir.AnalyticExpr)):
                     roots_valid.append(self.shares_some_roots(arg))
-                elif isinstance(arg, ir.Expr):
+                elif isinstance(arg, ir.Expr) and not isinstance(
+                    arg, ir.ScalarExpr
+                ):
                     raise NotImplementedError(repr((type(expr), type(arg))))
-                else:
-                    # arg_valid = True
-                    pass
 
             is_valid = any(roots_valid)
 
