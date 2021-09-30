@@ -138,12 +138,6 @@ class Node(Annotable):
     def compatible_with(self, other):
         return self.equals(other)
 
-    def __contains__(self, other) -> bool:
-        if isinstance(other, ir.Expr):
-            other = other.op()
-
-        return self.equals(other)
-
     def to_expr(self):
         if not hasattr(self, '_expr_cached'):
             self._expr_cached = self._make_expr()
@@ -223,22 +217,6 @@ class TableNode(Node):
 
     def sort_by(self, expr, sort_exprs):
         return Selection(expr, [], sort_keys=sort_exprs)
-
-    def __contains__(self, other) -> bool:
-        import ibis.expr.lineage as lin
-
-        if isinstance(other, ir.Expr):
-            other = other.op()
-
-        if self.equals(other):
-            return True
-
-        fn = lambda e: (lin.proceed, e.op())  # noqa: E731
-        expr = self.to_expr()
-        for child in lin.traverse(fn, expr):
-            if child.equals(other):
-                return True
-        return False
 
 
 class TableColumn(ValueOp):
