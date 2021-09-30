@@ -882,27 +882,23 @@ class FilterValidator(ExprValidator):
         ):
             return True
 
-        is_valid = True
-
         if isinstance(op, ops.Contains):
-            value_valid = super().validate(op.value)
-            is_valid = value_valid
+            if super().validate(op.value):
+                return True
         else:
-            roots_valid = []
             for arg in op.flat_args():
                 if isinstance(arg, ir.TopKExpr):
                     # TopK not subjected to further analysis for now
-                    roots_valid.append(True)
+                    return True
                 elif isinstance(arg, (ir.ColumnExpr, ir.AnalyticExpr)):
-                    roots_valid.append(self.shares_some_roots(arg))
+                    if self.shares_some_roots(arg):
+                        return True
                 elif isinstance(arg, ir.Expr) and not isinstance(
                     arg, ir.ScalarExpr
                 ):
                     raise NotImplementedError(repr((type(expr), type(arg))))
 
-            is_valid = any(roots_valid)
-
-        return is_valid
+        return False
 
 
 def find_source_table(expr):
