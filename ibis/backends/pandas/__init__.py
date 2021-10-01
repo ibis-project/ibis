@@ -105,10 +105,6 @@ class Backend(BasePandasBackend):
 
     def execute(self, query, params=None, limit='default', **kwargs):
         from .core import execute_and_reset
-        from .execution import execute
-
-        if not hasattr(self, 'dictionary'):
-            return execute(query, params, limit, **kwargs)
 
         if limit != 'default':
             raise ValueError(
