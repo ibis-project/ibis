@@ -42,10 +42,7 @@ PANDAS_REGISTERED_TYPES = [
     ),
 ]
 for registered_type in PANDAS_REGISTERED_TYPES:
-    try:
-        del execute_node[registered_type]
-    except KeyError:
-        pass  # ignore if has not been registered
+    del execute_node[registered_type]
 
 
 DASK_DISPATCH_TYPES: TypeRegistrationDict = {

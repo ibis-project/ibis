@@ -30,8 +30,9 @@ class BasePandasBackend(BaseBackend):
         from . import execution  # noqa F401
         from . import udf  # noqa F401
 
-        self.dictionary = dictionary
-        return self
+        new_backend = self.__class__()
+        new_backend.dictionary = dictionary
+        return new_backend
 
     def from_dataframe(self, df, name='df', client=None):
         """

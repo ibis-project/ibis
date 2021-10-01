@@ -78,13 +78,13 @@ def test_missing_data_on_custom_client():
                 name, ibis.schema([('a', 'int64')]), self
             ).to_expr()
 
-    con = MyBackend(ibis.dask, {})
+    con = MyBackend()
     t = con.table('t')
     with pytest.raises(
         NotImplementedError,
         match=(
             'Could not find signature for execute_node: '
-            '<DatabaseTable, MyClient>'
+            '<DatabaseTable, MyBackend>'
         ),
     ):
         con.execute(t)

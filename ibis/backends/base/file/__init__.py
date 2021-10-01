@@ -65,11 +65,12 @@ class BaseFileBackend(BaseBackend):
 
         Returns
         -------
-        Client
+        Backend
         """
-        self.path = self.root = Path(path)
-        self.dictionary = {}
-        return self
+        new_backend = self.__class__()
+        new_backend.path = new_backend.root = Path(path)
+        new_backend.dictionary = {}
+        return new_backend
 
     @property
     def version(self) -> str:
