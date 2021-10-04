@@ -28,7 +28,7 @@ from ibis.backends.base.sql.alchemy import (
     AlchemyExprTranslator,
     schema_from_table,
 )
-from ibis.tests.expr.mocks import MockAlchemyConnection
+from ibis.tests.expr.mocks import MockAlchemyBackend
 from ibis.tests.sql.test_compiler import ExprTestCases
 from ibis.tests.util import assert_equal
 
@@ -49,7 +49,7 @@ def _table_wrapper(name, tname=None):
 
 class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
     def setUp(self):
-        self.con = MockAlchemyConnection()
+        self.con = MockAlchemyBackend()
         self.alltypes = self.con.table('functional_alltypes')
         self.sa_alltypes = self.con.meta.tables['functional_alltypes']
         self.meta = sa.MetaData()

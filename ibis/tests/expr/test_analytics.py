@@ -16,13 +16,13 @@ import unittest
 
 import ibis
 import ibis.expr.types as ir
-from ibis.tests.expr.mocks import MockConnection
+from ibis.tests.expr.mocks import MockBackend
 from ibis.tests.util import assert_equal
 
 
 class TestAnalytics(unittest.TestCase):
     def setUp(self):
-        self.con = MockConnection()
+        self.con = MockBackend()
         self.alltypes = self.con.table('functional_alltypes')
 
     def test_category_project(self):

@@ -1,6 +1,8 @@
 """PostgreSQL backend."""
 import contextlib
 
+import sqlalchemy
+
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 
 from . import udf
@@ -80,17 +82,22 @@ class Backend(BaseAlchemyBackend):
             year : int32
             month : int32
         """
-        self.client = PostgreSQLClient(
-            backend=self,
+        if driver != 'psycopg2':
+            raise NotImplementedError(
+                'psycopg2 is currently the only supported driver'
+            )
+        alchemy_url = self._build_alchemy_url(
+            url=url,
             host=host,
+            port=port,
             user=user,
             password=password,
-            port=port,
             database=database,
-            url=url,
             driver=driver,
         )
-        return self.client
+        new_backend = super().connect(sqlalchemy.create_engine(alchemy_url))
+        new_backend.database_name = alchemy_url.database
+        return new_backend
 
     def list_databases(self, like=None):
         # http://dba.stackexchange.com/a/1304/58517

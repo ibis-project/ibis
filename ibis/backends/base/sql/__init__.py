@@ -8,10 +8,9 @@ import ibis.util as util
 from ibis.backends.base import BaseBackend
 from ibis.expr.typing import TimeContext
 
-from .client import SQLClient
 from .compiler import Compiler
 
-__all__ = ('SQLClient', 'BaseSQLBackend')
+__all__ = 'BaseSQLBackend'
 
 
 class BaseSQLBackend(BaseBackend):

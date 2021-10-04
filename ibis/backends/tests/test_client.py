@@ -305,11 +305,11 @@ def test_insert_overwrite_from_expr(
 def test_list_databases(con):
     # Every backend has its own databases
     TEST_DATABASES = {
-        'SQLiteClient': ['main', 'base'],
-        'PostgreSQLClient': ['postgres', 'ibis_testing'],
-        'MySQLClient': ['ibis_testing', 'information_schema'],
+        'sqlite': ['main', 'base'],
+        'postgres': ['postgres', 'ibis_testing'],
+        'mysql': ['ibis_testing', 'information_schema'],
     }
-    assert con.list_databases() == TEST_DATABASES[con.__class__.__name__]
+    assert con.list_databases() == TEST_DATABASES[con.name]
 
 
 @pytest.mark.only_on_backends(

@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import OrderedDict
 
 import pandas as pd
+from clickhouse_driver.client import Client as _DriverClient
 
 import ibis
 import ibis.config
@@ -10,12 +11,7 @@ import ibis.expr.schema as sch
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.config import options
 
-from .client import (
-    ClickhouseClient,
-    ClickhouseDataType,
-    ClickhouseTable,
-    fully_qualified_re,
-)
+from .client import ClickhouseDataType, ClickhouseTable, fully_qualified_re
 from .compiler import ClickhouseCompiler
 
 _default_compression: str | bool
@@ -30,7 +26,6 @@ except ImportError:
 
 class Backend(BaseSQLBackend):
     name = 'clickhouse'
-    client_class = ClickhouseClient
     table_expr_class = ClickhouseTable
     compiler = ClickhouseCompiler
 
@@ -85,8 +80,8 @@ class Backend(BaseSQLBackend):
         -------
         ClickhouseClient
         """
-        self.client = ClickhouseClient(
-            backend=self,
+        new_backend = self.__class__()
+        new_backend.con = _DriverClient(
             host=host,
             port=port,
             database=database,
@@ -95,7 +90,7 @@ class Backend(BaseSQLBackend):
             client_name=client_name,
             compression=compression,
         )
-        return self.client
+        return new_backend
 
     def register_options(self):
         ibis.config.register_option(
@@ -106,26 +101,26 @@ class Backend(BaseSQLBackend):
 
     @property
     def version(self) -> str:
-        self.client.con.connection.force_connect()
+        self.con.connection.force_connect()
         try:
-            info = self.client.con.connection.server_info
+            info = self.con.connection.server_info
         except Exception:
-            self.client.con.connection.disconnect()
+            self.con.connection.disconnect()
             raise
 
         return f'{info.version_major}.{info.version_minor}.{info.revision}'
 
     @property
     def current_database(self):
-        return self.client.con.connection.database
+        return self.con.connection.database
 
     def list_databases(self, like=None):
-        data, schema = self.client.raw_sql('SELECT name FROM system.databases')
+        data, schema = self.raw_sql('SELECT name FROM system.databases')
         databases = list(data[0])
         return self._filter_with_like(databases, like)
 
     def list_tables(self, like=None, database=None):
-        data, schema = self.client.raw_sql('SHOW TABLES')
+        data, schema = self.raw_sql('SHOW TABLES')
         databases = list(data[0])
         return self._filter_with_like(databases, like)
 

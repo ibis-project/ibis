@@ -8,14 +8,14 @@ import ibis
 import ibis.expr.api as api
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.compiler import Compiler, QueryContext
-from ibis.tests.expr.mocks import MockConnection
+from ibis.tests.expr.mocks import MockBackend
 
 pytest.importorskip('sqlalchemy')
 
 
 class TestASTBuilder(unittest.TestCase):
     def setUp(self):
-        self.con = MockConnection()
+        self.con = MockBackend()
 
     def test_ast_with_projection_join_filter(self):
         table = self.con.table('test1')
@@ -94,7 +94,7 @@ class TestNonTabularResults(unittest.TestCase):
     """ """
 
     def setUp(self):
-        self.con = MockConnection()
+        self.con = MockBackend()
         self.table = self.con.table('alltypes')
 
     def test_simple_scalar_aggregates(self):
@@ -819,7 +819,7 @@ class ExprTestCases:
 class TestSelectSQL(unittest.TestCase, ExprTestCases):
     @classmethod
     def setUpClass(cls):
-        cls.con = MockConnection()
+        cls.con = MockBackend()
 
     def _compare_sql(self, expr, expected):
         result = Compiler.to_sql(expr)
@@ -2234,7 +2234,7 @@ SELECT_QUERY = f"SELECT `key`\nFROM (\n{textwrap.indent(QUERY, '  ')}\n) t0"
 
 class TestUnions(unittest.TestCase, ExprTestCases):
     def setUp(self):
-        self.con = MockConnection()
+        self.con = MockBackend()
 
     def test_union(self):
         union1 = self._case_union()
@@ -2260,7 +2260,7 @@ class TestUnions(unittest.TestCase, ExprTestCases):
 
 class TestIntersect(unittest.TestCase, ExprTestCases):
     def setUp(self):
-        self.con = MockConnection()
+        self.con = MockBackend()
 
     def test_table_intersect(self):
         intersection = self._case_intersect()
@@ -2294,7 +2294,7 @@ class TestIntersect(unittest.TestCase, ExprTestCases):
 
 class TestDistinct(unittest.TestCase):
     def setUp(self):
-        self.con = MockConnection()
+        self.con = MockBackend()
 
     def test_table_distinct(self):
         t = self.con.table('functional_alltypes')

@@ -24,7 +24,7 @@ class BasePandasBackend(BaseBackend):
 
         Returns
         -------
-        Client
+        Backend
         """
         # register dispatchers
         from . import execution  # noqa F401
@@ -43,7 +43,7 @@ class BasePandasBackend(BaseBackend):
         ----------
         df : DataFrame
         name : str, default 'df'
-        client : Client, optional
+        client : Backend, optional
             client dictionary will be mutated with the name of the DataFrame,
             if not provided a new client is created
 
