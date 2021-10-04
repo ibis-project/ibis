@@ -244,10 +244,11 @@ class Backend(BaseSQLBackend):
         new_backend._kudu = None
         new_backend._temp_objects = set()
 
-        new_backend._hdfs = None
-        if isinstance(hdfs_client, hdfs.Client):
+        if hdfs_client is None or isinstance(hdfs_client, HDFS):
+            new_backend._hdfs = hdfs_client
+        elif isinstance(hdfs_client, hdfs.Client):
             new_backend._hdfs = WebHDFS(hdfs_client)
-        elif hdfs_client is not None and not isinstance(hdfs_client, HDFS):
+        else:
             raise TypeError(hdfs_client)
 
         params = {
