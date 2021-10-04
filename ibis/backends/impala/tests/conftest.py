@@ -15,7 +15,7 @@ from ibis.backends.tests.base import (
     RoundAwayFromZero,
     UnorderedComparator,
 )
-from ibis.tests.expr.mocks import MockConnection
+from ibis.tests.expr.mocks import MockBackend
 
 
 class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
@@ -375,7 +375,7 @@ def temp_parquet_table2(con, tmp_db, temp_parquet_table_schema):
 
 @pytest.fixture
 def mockcon():
-    return MockConnection()
+    return MockBackend()
 
 
 @pytest.fixture
