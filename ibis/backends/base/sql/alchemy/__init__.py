@@ -93,7 +93,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
         user = user or getpass.getuser()
         return sqlalchemy.engine.url.URL(
-            f'{self.name}+{driver}',
+            driver,
             host=host,
             port=port,
             username=user,

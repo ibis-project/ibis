@@ -1,7 +1,6 @@
 """PostgreSQL backend."""
 import contextlib
 
-import psycopg2  # noqa F401 (import required for sqlalchemy)
 import sqlalchemy
 
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
@@ -92,7 +91,7 @@ class Backend(BaseAlchemyBackend):
             user=user,
             password=password,
             database=database,
-            driver=driver,
+            driver=f'postgresql+{driver}',
         )
         new_backend = super().connect(sqlalchemy.create_engine(alchemy_url))
         new_backend.database_name = alchemy_url.database

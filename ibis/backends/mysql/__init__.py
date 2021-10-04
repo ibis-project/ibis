@@ -93,7 +93,7 @@ class Backend(BaseAlchemyBackend):
             user=user,
             password=password,
             database=database,
-            driver=driver,
+            driver=f'mysql+{driver}',
         )
 
         new_backend = super().connect(sqlalchemy.create_engine(alchemy_url))
