@@ -5,7 +5,6 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.base.sql import SQLClient
 from ibis.backends.base.sql.ddl import fully_qualified_re
 
 from . import ddl
@@ -163,15 +162,3 @@ class PySparkTable(ir.TableExpr):
             self._qualified_name, tbl_properties=tbl_properties
         )
         return self._client.raw_sql(stmt.compile())
-
-
-class PySparkClient(SQLClient):
-    """
-    An ibis client that uses PySpark SQL Dataframe
-    """
-
-    def __init__(self, backend, session):
-        self.backend = backend
-        self.backend._context = session.sparkContext
-        self.backend._session = session
-        self.backend._catalog = session.catalog

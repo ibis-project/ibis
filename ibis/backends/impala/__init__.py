@@ -32,14 +32,7 @@ from ibis.backends.base.sql.ddl import (
 from ibis.config import options
 
 from . import ddl, udf
-
-# these objects are exposed in the public API and are not used in the module
-from .client import (  # noqa: F401
-    ImpalaClient,
-    ImpalaConnection,
-    ImpalaDatabase,
-    ImpalaTable,
-)
+from .client import ImpalaConnection, ImpalaDatabase, ImpalaTable
 from .compat import HS2Error, ImpylaError
 from .compiler import ImpalaCompiler
 from .hdfs import HDFS, WebHDFS, hdfs_connect
@@ -168,7 +161,6 @@ def _column_batches_to_dataframe(names, batches):
 
 class Backend(BaseSQLBackend):
     name = 'impala'
-    client_class = ImpalaClient
     database_class = ImpalaDatabase
     table_expr_class = ImpalaTable
     HDFS = HDFS
@@ -193,7 +185,7 @@ class Backend(BaseSQLBackend):
         pool_size=8,
         hdfs_client=None,
     ):
-        """Create an ImpalaClient for use with Ibis.
+        """Create a Impala Backend for use with Ibis.
 
         Parameters
         ----------
@@ -240,11 +232,11 @@ class Backend(BaseSQLBackend):
         ...     hdfs_client=hdfs,
         ... )
         >>> client  # doctest: +ELLIPSIS
-        <ibis.impala.client.ImpalaClient object at 0x...>
+        <ibis.backends.impala.Backend object at 0x...>
 
         Returns
         -------
-        ImpalaClient
+        Backend
         """
         import hdfs
 

@@ -1,6 +1,7 @@
 """PostgreSQL backend."""
 import contextlib
 
+import psycopg2  # noqa F401 (import required for sqlalchemy)
 import sqlalchemy
 
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
