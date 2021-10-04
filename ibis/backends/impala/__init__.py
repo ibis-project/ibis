@@ -264,7 +264,7 @@ class Backend(BaseSQLBackend):
         }
         new_backend.con = ImpalaConnection(pool_size=pool_size, **params)
 
-        self._ensure_temp_db_exists()
+        new_backend._ensure_temp_db_exists()
 
         return new_backend
 

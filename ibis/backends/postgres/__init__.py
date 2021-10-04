@@ -101,7 +101,7 @@ class Backend(BaseAlchemyBackend):
         # http://dba.stackexchange.com/a/1304/58517
         databases = [
             row.datname
-            for row in self.client.con.execute(
+            for row in self.con.execute(
                 'SELECT datname FROM pg_database WHERE NOT datistemplate'
             )
         ]

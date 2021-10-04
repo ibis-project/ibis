@@ -97,7 +97,7 @@ class Backend(BaseAlchemyBackend):
         )
 
         new_backend = super().connect(sqlalchemy.create_engine(alchemy_url))
-        new_backend.database_name = url.database
+        new_backend.database_name = alchemy_url.database
 
         return new_backend
 
