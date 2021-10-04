@@ -213,16 +213,6 @@ def con(env, hdfs, test_data_db):
 
 
 @pytest.fixture
-def backend_instance(con):
-    """
-    Instance of Backend.
-    """
-    # See #3021
-    # TODO Remove when `connect` returns `Backend` and not `Client`
-    return con.backend
-
-
-@pytest.fixture
 def temp_char_table(con):
     statement = """\
 CREATE TABLE IF NOT EXISTS {} (
