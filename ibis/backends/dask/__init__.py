@@ -1,11 +1,19 @@
-import dask
+from typing import Mapping
 
+import dask
+import dask.dataframe as dd
+import pandas as pd
+import toolz
+from dask.base import DaskMethodsMixin
+
+import ibis.common.exceptions as com
 import ibis.config
+import ibis.expr.schema as sch
+import ibis.expr.types as ir
 from ibis.backends.pandas import BasePandasBackend
 
-from . import udf  # noqa: F401,F403 - register dispatchers
-from .client import DaskClient, DaskDatabase, DaskTable
-from .execution import execute  # noqa F401
+from .client import DaskDatabase, DaskTable, ibis_schema_to_dask
+from .core import execute_and_reset
 
 # Make sure that the pandas backend is loaded, dispatching has been
 # executed, and options have been loaded
@@ -16,8 +24,74 @@ class Backend(BasePandasBackend):
     name = 'dask'
     database_class = DaskDatabase
     table_class = DaskTable
-    client_class = DaskClient
+
+    def connect(self, dictionary):
+        # register dispatchers
+        from . import udf  # noqa: F401
+
+        return super().connect(dictionary)
 
     @property
     def version(self):
         return dask.__version__
+
+    def execute(
+        self,
+        query: ir.Expr,
+        params: Mapping[ir.Expr, object] = None,
+        limit: str = 'default',
+        **kwargs,
+    ):
+        if limit != 'default':
+            raise ValueError(
+                'limit parameter to execute is not yet implemented in the '
+                'dask backend'
+            )
+
+        if not isinstance(query, ir.Expr):
+            raise TypeError(
+                "`query` has type {!r}, expected ibis.expr.types.Expr".format(
+                    type(query).__name__
+                )
+            )
+
+        result = self.compile(query, params, **kwargs)
+        if isinstance(result, DaskMethodsMixin):
+            return result.compute()
+        else:
+            return result
+
+    def compile(
+        self, query: ir.Expr, params: Mapping[ir.Expr, object] = None, **kwargs
+    ):
+        """Compile `expr`.
+
+        Notes
+        -----
+        For the dask backend returns a dask graph that you can run ``.compute``
+        on to get a pandas object.
+
+        """
+        return execute_and_reset(query, params=params, **kwargs)
+
+    def create_table(
+        self,
+        table_name: str,
+        obj: dd.DataFrame = None,
+        schema: sch.Schema = None,
+    ):
+        """Create a table."""
+        if obj is not None:
+            df = obj
+        elif schema is not None:
+            dtypes = ibis_schema_to_dask(schema)
+            df = schema.apply_to(
+                dd.from_pandas(
+                    pd.DataFrame(columns=list(map(toolz.first, dtypes))),
+                    npartitions=1,
+                )
+            )
+        else:
+            raise com.IbisError('Must pass expr or schema')
+
+        self.dictionary[table_name] = df

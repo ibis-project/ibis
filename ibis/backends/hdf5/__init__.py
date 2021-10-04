@@ -4,7 +4,7 @@ import pandas as pd
 
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
-from ibis.backends.base.file import BaseFileBackend, FileClient
+from ibis.backends.base.file import BaseFileBackend
 from ibis.backends.pandas.core import execute, execute_node
 
 
@@ -12,39 +12,10 @@ class HDFTable(ops.DatabaseTable):
     pass
 
 
-class HDFClient(FileClient):
-    def insert(
-        self, path, key, expr, format='table', data_columns=True, **kwargs
-    ):
-
-        path = self.root / path
-        data = execute(expr)
-        data.to_hdf(
-            str(path), key, format=format, data_columns=data_columns, **kwargs
-        )
-
-    def table(self, name, path=None):
-        if path is None:
-            path = self.root / f"{name}.{self.extension}"
-
-        if name not in self.list_tables(path):
-            raise AttributeError(name)
-
-        # get the schema
-        with pd.HDFStore(str(path), mode='r') as store:
-            df = store.select(name, start=0, stop=50)
-            schema = sch.infer(df)
-
-        t = self.table_class(name, schema, self).to_expr()
-        self.dictionary[name] = path
-        return t
-
-
 class Backend(BaseFileBackend):
     name = 'hdf5'
     extension = 'h5'
     table_class = HDFTable
-    client_class = HDFClient
 
     def list_tables(self, path=None, like=None, database=None):
         """
@@ -88,8 +59,34 @@ class Backend(BaseFileBackend):
         databases = self._list_databases_dirs_or_files(path)
         return self._filter_with_like(databases, like)
 
+    def insert(
+        self, path, key, expr, format='table', data_columns=True, **kwargs
+    ):
 
-@execute_node.register(Backend.table_class, HDFClient)
+        path = self.root / path
+        data = execute(expr)
+        data.to_hdf(
+            str(path), key, format=format, data_columns=data_columns, **kwargs
+        )
+
+    def table(self, name, path=None):
+        if path is None:
+            path = self.root / f"{name}.{self.extension}"
+
+        if name not in self.list_tables(path):
+            raise AttributeError(name)
+
+        # get the schema
+        with pd.HDFStore(str(path), mode='r') as store:
+            df = store.select(name, start=0, stop=50)
+            schema = sch.infer(df)
+
+        t = self.table_class(name, schema, self).to_expr()
+        self.dictionary[name] = path
+        return t
+
+
+@execute_node.register(Backend.table_class, Backend)
 def hdf_read_table(op, client, scope, **kwargs):
     key = op.name
     path = client.dictionary[key]

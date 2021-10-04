@@ -25,8 +25,9 @@ from ibis.expr.scope import Scope
 from ibis.expr.timecontext import get_time_col
 from ibis.expr.typing import TimeContext
 
+from .. import Backend as PandasBackend
 from .. import aggcontext as agg_ctx
-from ..client import PandasClient, PandasTable
+from ..client import PandasTable
 from ..core import (
     boolean_types,
     execute,
@@ -919,7 +920,7 @@ def execute_node_where_scalar_scalar_series(op, cond, true, false, **kwargs):
     return pd.Series(np.repeat(true, len(false))) if cond else false
 
 
-@execute_node.register(PandasTable, PandasClient)
+@execute_node.register(PandasTable, PandasBackend)
 def execute_database_table_client(
     op, client, timecontext: Optional[TimeContext], **kwargs
 ):

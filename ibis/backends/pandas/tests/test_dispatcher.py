@@ -2,7 +2,7 @@ import pytest
 from multipledispatch import Dispatcher
 from multipledispatch.conflict import AmbiguityWarning
 
-from ..dispatcher import TwoLevelDispatcher
+from ibis.backends.pandas.dispatcher import TwoLevelDispatcher
 
 
 class A1:

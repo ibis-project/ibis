@@ -1,3 +1,4 @@
+import abc
 import warnings
 from pathlib import Path
 
@@ -5,7 +6,7 @@ import pandas as pd
 
 import ibis
 import ibis.expr.types as ir
-from ibis.backends.base import BaseBackend, Client, Database
+from ibis.backends.base import BaseBackend, Database
 from ibis.backends.pandas.core import execute_and_reset
 
 # Load options of pandas backend
@@ -48,71 +49,6 @@ class FileDatabase(Database):
         return sorted(self.client.list_tables(path=path, database=database))
 
 
-class FileClient(Client):
-    def __init__(self, backend, root):
-        self.backend = backend
-        self.extension = backend.extension
-        self.table_class = backend.table_class
-        self.root = Path(str(root))
-        self.dictionary = {}
-
-    def insert(self, path, expr, **kwargs):
-        raise NotImplementedError
-
-    def table(self, name, path):
-        raise NotImplementedError
-
-    def database(self, name=None, path=None):
-        if name is None:
-            self.path = path
-            return super().database(name)
-
-        if name not in self.list_databases(path):
-            raise AttributeError(name)
-        if path is None:
-            path = self.root
-
-        new_name = f"{name}.{self.extension}"
-        if (self.root / name).is_dir():
-            path /= name
-        elif not str(path).endswith(new_name):
-            path /= new_name
-
-        self.path = path
-        return super().database(name)
-
-    def compile(self, expr, *args, **kwargs):
-        return expr
-
-    def execute(self, expr, params=None, **kwargs):  # noqa
-        assert isinstance(expr, ir.Expr)
-        return execute_and_reset(expr, params=params, **kwargs)
-
-    def list_databases(self, path=None, like=None):
-        return self.backend.list_databases(path=path, like=like)
-
-    def list_tables(self, path=None, like=None, database=None):
-        return self.backend.list_tables(
-            path=path, like=like, database=database
-        )
-
-    def _list_tables_files(self, path=None):
-        # tables are files in a dir
-        if path is None:
-            path = self.root
-
-        tables = []
-        if path.is_dir():
-            for d in path.iterdir():
-                if d.is_file():
-                    if str(d).endswith(self.extension):
-                        tables.append(d.stem)
-        elif path.is_file():
-            if str(path).endswith(self.extension):
-                tables.append(path.stem)
-        return tables
-
-
 class BaseFileBackend(BaseBackend):
     """
     Base backend class for pandas pseudo-backends for file formats.
@@ -129,11 +65,12 @@ class BaseFileBackend(BaseBackend):
 
         Returns
         -------
-        Client
+        Backend
         """
-        self.path = Path(path)
-        self.client = self.client_class(backend=self, root=self.path)
-        return self.client
+        new_backend = self.__class__()
+        new_backend.path = new_backend.root = Path(path)
+        new_backend.dictionary = {}
+        return new_backend
 
     @property
     def version(self) -> str:
@@ -167,12 +104,31 @@ class BaseFileBackend(BaseBackend):
         # databases were not supported
         return '.'
 
+    def compile(self, expr, *args, **kwargs):
+        return expr
+
     def _list_databases_dirs(self, path=None):
         tables = []
         if path.is_dir():
             for d in path.iterdir():
                 if d.is_dir():
                     tables.append(d.name)
+        return tables
+
+    def _list_tables_files(self, path=None):
+        # tables are files in a dir
+        if path is None:
+            path = self.root
+
+        tables = []
+        if path.is_dir():
+            for d in path.iterdir():
+                if d.is_file():
+                    if str(d).endswith(self.extension):
+                        tables.append(d.stem)
+        elif path.is_file():
+            if str(path).endswith(self.extension):
+                tables.append(path.stem)
         return tables
 
     def list_databases(self, path=None, like=None):
@@ -187,3 +143,34 @@ class BaseFileBackend(BaseBackend):
             )
         databases = ['.'] + self._list_databases_dirs(path)
         return self._filter_with_like(databases, like)
+
+    @abc.abstractmethod
+    def insert(self, path, expr, **kwargs):
+        pass
+
+    @abc.abstractmethod
+    def table(self, name, path):
+        pass
+
+    def database(self, name=None, path=None):
+        if name is None:
+            self.path = path or self.path
+            return super().database(name)
+
+        if path is None:
+            path = self.root
+        if name not in self.list_databases(path):
+            raise AttributeError(name)
+
+        new_name = f"{name}.{self.extension}"
+        if (self.root / name).is_dir():
+            path /= name
+        elif not str(path).endswith(new_name):
+            path /= new_name
+
+        self.path = path
+        return super().database(name)
+
+    def execute(self, expr, params=None, **kwargs):  # noqa
+        assert isinstance(expr, ir.Expr)
+        return execute_and_reset(expr, params=params, **kwargs)

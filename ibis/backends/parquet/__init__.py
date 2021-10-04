@@ -3,13 +3,12 @@ from typing import Optional
 import pyarrow as pa
 import pyarrow.parquet as pq
 import regex as re
-from pkg_resources import parse_version
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.base.file import BaseFileBackend, FileClient
+from ibis.backends.base.file import BaseFileBackend
 from ibis.backends.pandas.core import execute, execute_node
 
 # TODO(jreback) complex types are not implemented
@@ -58,7 +57,11 @@ class ParquetTable(ops.DatabaseTable):
     pass
 
 
-class ParquetClient(FileClient):
+class Backend(BaseFileBackend):
+    name = 'parquet'
+    extension = 'parquet'
+    table_class = ParquetTable
+
     def insert(self, path, expr, **kwargs):
         path = self.root / path
         df = execute(expr)
@@ -85,17 +88,10 @@ class ParquetClient(FileClient):
 
     @property
     def version(self):
-        return parse_version(pa.__version__)
+        return pa.__version__
 
 
-class Backend(BaseFileBackend):
-    name = 'parquet'
-    extension = 'parquet'
-    table_class = ParquetTable
-    client_class = ParquetClient
-
-
-@execute_node.register(Backend.table_class, ParquetClient)
+@execute_node.register(Backend.table_class, Backend)
 def parquet_read_table(op, client, scope, **kwargs):
     path = client.dictionary[op.name]
     table = pq.read_table(str(path))

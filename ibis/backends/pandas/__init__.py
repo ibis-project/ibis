@@ -1,11 +1,13 @@
 import pandas as pd
+import toolz
 
+import ibis.common.exceptions as com
 import ibis.config
+import ibis.expr.schema as sch
+import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend
 
-from .client import PandasClient, PandasDatabase, PandasTable
-from .execution import execute
-from .udf import udf  # noqa F401
+from .client import PandasDatabase, PandasTable, ibis_schema_to_pandas
 
 
 class BasePandasBackend(BaseBackend):
@@ -24,8 +26,13 @@ class BasePandasBackend(BaseBackend):
         -------
         Client
         """
-        self.client = self.client_class(backend=self, dictionary=dictionary)
-        return self.client
+        # register dispatchers
+        from . import execution  # noqa F401
+        from . import udf  # noqa F401
+
+        new_backend = self.__class__()
+        new_backend.dictionary = dictionary
+        return new_backend
 
     def from_dataframe(self, df, name='df', client=None):
         """
@@ -70,16 +77,60 @@ class BasePandasBackend(BaseBackend):
         raise NotImplementedError('pandas backend does not support databases')
 
     def list_tables(self, like=None, database=None):
-        return self._filter_with_like(
-            list(self.client.dictionary.keys()), like
-        )
+        return self._filter_with_like(list(self.dictionary.keys()), like)
+
+    def table(self, name: str, schema: sch.Schema = None):
+        df = self.dictionary[name]
+        schema = sch.infer(df, schema=schema)
+        return self.table_class(name, schema, self).to_expr()
+
+    def database(self, name=None):
+        return self.database_class(name, self)
+
+    def load_data(self, table_name, obj, **kwargs):
+        # kwargs is a catch all for any options required by other backends.
+        self.dictionary[table_name] = obj
+
+    def get_schema(self, table_name, database=None):
+        return sch.infer(self.dictionary[table_name])
+
+    def compile(self, expr, *args, **kwargs):
+        return expr
 
 
 class Backend(BasePandasBackend):
     name = 'pandas'
     database_class = PandasDatabase
     table_class = PandasTable
-    client_class = PandasClient
 
-    def execute(self, *args, **kwargs):
-        return execute(*args, **kwargs)
+    def execute(self, query, params=None, limit='default', **kwargs):
+        from .core import execute_and_reset
+
+        if limit != 'default':
+            raise ValueError(
+                'limit parameter to execute is not yet implemented in the '
+                'pandas backend'
+            )
+
+        if not isinstance(query, ir.Expr):
+            raise TypeError(
+                "`query` has type {!r}, expected ibis.expr.types.Expr".format(
+                    type(query).__name__
+                )
+            )
+        return execute_and_reset(query, params=params, **kwargs)
+
+    def create_table(self, table_name, obj=None, schema=None):
+        """Create a table."""
+        if obj is None and schema is None:
+            raise com.IbisError('Must pass expr or schema')
+
+        if obj is not None:
+            df = pd.DataFrame(obj)
+        else:
+            dtypes = ibis_schema_to_pandas(schema)
+            df = schema.apply_to(
+                pd.DataFrame(columns=list(map(toolz.first, dtypes)))
+            )
+
+        self.dictionary[table_name] = df

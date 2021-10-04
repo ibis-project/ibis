@@ -42,7 +42,6 @@ def test_client(tmpdir, file_backends_data):
 
 
 def test_navigation(csv):
-
     # directory navigation
     assert isinstance(csv, FileDatabase)
     result = dir(csv)

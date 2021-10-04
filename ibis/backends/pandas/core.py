@@ -119,7 +119,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.window as win
 import ibis.util
-from ibis.backends.base import Client
+from ibis.backends.base import BaseBackend, Client
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import canonicalize_context
 from ibis.expr.typing import TimeContext
@@ -148,6 +148,7 @@ def is_computable_input(arg):
     return False
 
 
+@is_computable_input.register(BaseBackend)
 @is_computable_input.register(Client)
 @is_computable_input.register(ir.Expr)
 @is_computable_input.register(dt.DataType)

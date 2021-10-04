@@ -8,9 +8,8 @@ import pytest
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-
-from .. import Backend
-from ..udf import nullable, udf
+from ibis.backends.pandas import Backend
+from ibis.backends.pandas.udf import nullable, udf
 
 
 @pytest.fixture
