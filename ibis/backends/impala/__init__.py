@@ -246,6 +246,18 @@ class Backend(BaseSQLBackend):
         -------
         ImpalaClient
         """
+        import hdfs
+
+        new_backend = self.__class__()
+        new_backend._kudu = None
+        new_backend._temp_objects = set()
+
+        new_backend._hdfs = None
+        if isinstance(hdfs_client, hdfs.Client):
+            new_backend._hdfs = WebHDFS(hdfs_client)
+        elif hdfs_client is not None and not isinstance(hdfs_client, HDFS):
+            raise TypeError(hdfs_client)
+
         params = {
             'host': host,
             'port': port,
@@ -258,17 +270,11 @@ class Backend(BaseSQLBackend):
             'auth_mechanism': auth_mechanism,
             'kerberos_service_name': kerberos_service_name,
         }
+        new_backend.con = ImpalaConnection(pool_size=pool_size, **params)
 
-        con = ImpalaConnection(pool_size=pool_size, **params)
-        try:
-            self.client = ImpalaClient(
-                backend=self, con=con, hdfs_client=hdfs_client
-            )
-        except Exception:
-            con.close()
-            raise
         self._ensure_temp_db_exists()
-        return self.client
+
+        return new_backend
 
     @property
     def version(self):

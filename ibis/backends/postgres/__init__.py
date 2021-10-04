@@ -6,13 +6,11 @@ import sqlalchemy
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 
 from . import udf
-from .client import PostgreSQLClient
 from .compiler import PostgreSQLCompiler
 
 
 class Backend(BaseAlchemyBackend):
     name = 'postgres'
-    client_class = PostgreSQLClient
     compiler = PostgreSQLCompiler
 
     def connect(
@@ -42,7 +40,7 @@ class Backend(BaseAlchemyBackend):
 
         Returns
         -------
-        PostgreSQLClient
+        Backend
 
         Examples
         --------

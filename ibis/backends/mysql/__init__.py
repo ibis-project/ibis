@@ -7,13 +7,11 @@ import sqlalchemy.dialects.mysql as mysql
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 
-from .client import MySQLClient
 from .compiler import MySQLCompiler
 
 
 class Backend(BaseAlchemyBackend):
     name = 'mysql'
-    client_class = MySQLClient
     compiler = MySQLCompiler
 
     def connect(
@@ -44,7 +42,7 @@ class Backend(BaseAlchemyBackend):
 
         Returns
         -------
-        MySQLClient
+        Backend
 
         Examples
         --------
