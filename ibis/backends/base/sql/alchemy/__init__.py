@@ -1,6 +1,7 @@
 import contextlib
+import getpass
 import warnings
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import pandas as pd
 import sqlalchemy
@@ -12,7 +13,6 @@ import ibis.expr.types as ir
 import ibis.util as util
 from ibis.backends.base.sql import BaseSQLBackend
 
-from .client import AlchemyClient
 from .database import AlchemyDatabase, AlchemyTable
 from .datatypes import schema_from_table, table_from_schema, to_sqla_type
 from .geospatial import geospatial_supported
@@ -35,7 +35,6 @@ __all__ = (
     'AlchemyExprTranslator',
     'AlchemyContext',
     'AlchemyCompiler',
-    'AlchemyClient',
     'AlchemyTable',
     'AlchemyDatabase',
     'AlchemyContext',
@@ -85,6 +84,30 @@ class BaseAlchemyBackend(BaseSQLBackend):
     table_class = AlchemyTable
     compiler = AlchemyCompiler
     has_attachment = False
+
+    def _build_alchemy_url(
+        self, url, host, port, user, password, database, driver
+    ):
+        if url is not None:
+            return sqlalchemy.engine.url.make_url(url)
+
+        user = user or getpass.getuser()
+        return sqlalchemy.engine.url.URL(
+            driver,
+            host=host,
+            port=port,
+            username=user,
+            password=password,
+            database=database,
+        )
+
+    def connect(self, con: sqlalchemy.engine.Engine):
+        new_backend = self.__class__()
+        new_backend.con = con
+        new_backend.meta = sqlalchemy.MetaData(bind=con)
+        new_backend._inspector = sqlalchemy.inspect(con)
+        new_backend._schemas: Dict[str, sch.Schema] = {}
+        return new_backend
 
     @property
     def version(self):

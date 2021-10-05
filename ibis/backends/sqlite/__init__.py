@@ -20,13 +20,12 @@ import sqlalchemy
 from ibis.backends.base import Database
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 
-from .client import SQLiteClient
+from . import udf
 from .compiler import SQLiteCompiler
 
 
 class Backend(BaseAlchemyBackend):
     name = 'sqlite'
-    client_class = SQLiteClient
     # TODO check if there is a reason to not use the parent AlchemyDatabase, or
     # if there is technical debt that makes this required
     database_class = Database
@@ -48,8 +47,15 @@ class Backend(BaseAlchemyBackend):
         create : boolean, default False
             If file does not exist, create it
         """
-        self.client = SQLiteClient(backend=self, path=path, create=create)
-        return self.client
+        new_backend = super().connect(sqlalchemy.create_engine("sqlite://"))
+        new_backend.database_name = "base"
+
+        if path is not None:
+            new_backend.attach(new_backend.database_name, path, create=create)
+
+        udf.register_all(new_backend.con)
+
+        return new_backend
 
     def list_tables(self, like=None, database=None):
         if database is None:

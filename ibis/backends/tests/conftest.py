@@ -191,16 +191,6 @@ def con(backend):
 
 
 @pytest.fixture(scope='session')
-def backend_instance(con):
-    """
-    Instance of Backend.
-    """
-    # See #3021
-    # TODO Remove when `connect` returns `Backend` and not `Client`
-    return con.backend
-
-
-@pytest.fixture(scope='session')
 def alltypes(backend):
     return backend.functional_alltypes
 

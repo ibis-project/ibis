@@ -1,15 +1,17 @@
 import contextlib
 import warnings
 
+import sqlalchemy
+import sqlalchemy.dialects.mysql as mysql
+
+import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 
-from .client import MySQLClient
 from .compiler import MySQLCompiler
 
 
 class Backend(BaseAlchemyBackend):
     name = 'mysql'
-    client_class = MySQLClient
     compiler = MySQLCompiler
 
     def connect(
@@ -40,7 +42,7 @@ class Backend(BaseAlchemyBackend):
 
         Returns
         -------
-        MySQLClient
+        Backend
 
         Examples
         --------
@@ -80,17 +82,24 @@ class Backend(BaseAlchemyBackend):
             year : int32
             month : int32
         """
-        self.client = MySQLClient(
-            backend=self,
+        if driver != 'pymysql':
+            raise NotImplementedError(
+                'pymysql is currently the only supported driver'
+            )
+        alchemy_url = self._build_alchemy_url(
+            url=url,
             host=host,
+            port=port,
             user=user,
             password=password,
-            port=port,
             database=database,
-            url=url,
-            driver=driver,
+            driver=f'mysql+{driver}',
         )
-        return self.client
+
+        new_backend = super().connect(sqlalchemy.create_engine(alchemy_url))
+        new_backend.database_name = alchemy_url.database
+
+        return new_backend
 
     @contextlib.contextmanager
     def begin(self):
@@ -135,3 +144,26 @@ class Backend(BaseAlchemyBackend):
             alch_table = self._get_sqla_table(name, schema=schema)
             node = self.table_class(alch_table, self, self._schemas.get(name))
             return self.table_expr_class(node)
+
+
+# TODO(kszucs): unsigned integers
+
+
+@dt.dtype.register((mysql.DOUBLE, mysql.REAL))
+def mysql_double(satype, nullable=True):
+    return dt.Double(nullable=nullable)
+
+
+@dt.dtype.register(mysql.FLOAT)
+def mysql_float(satype, nullable=True):
+    return dt.Float(nullable=nullable)
+
+
+@dt.dtype.register(mysql.TINYINT)
+def mysql_tinyint(satype, nullable=True):
+    return dt.Int8(nullable=nullable)
+
+
+@dt.dtype.register(mysql.BLOB)
+def mysql_blob(satype, nullable=True):
+    return dt.Binary(nullable=nullable)

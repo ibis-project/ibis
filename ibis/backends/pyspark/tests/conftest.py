@@ -22,7 +22,7 @@ def get_common_spark_testing_client(data_directory, connect):
         .getOrCreate()
     )
     _spark_testing_client = connect(spark)
-    s = _spark_testing_client.backend._session
+    s = _spark_testing_client._session
     num_partitions = 4
 
     df_functional_alltypes = (
@@ -199,7 +199,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
 
 @pytest.fixture(scope='session')
 def client(data_directory):
-    client = get_pyspark_testing_client(data_directory).backend
+    client = get_pyspark_testing_client(data_directory)
 
     df = client._session.range(0, 10)
     df = df.withColumn("str_col", F.lit('value'))

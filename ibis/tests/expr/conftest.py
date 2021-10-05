@@ -18,7 +18,7 @@ import pytest
 
 import ibis
 import ibis.common.exceptions as com
-from ibis.tests.expr.mocks import MockConnection
+from ibis.tests.expr.mocks import MockBackend
 
 
 @pytest.fixture
@@ -80,7 +80,7 @@ def col(request):
 
 @pytest.fixture
 def con():
-    return MockConnection()
+    return MockBackend()
 
 
 @pytest.fixture

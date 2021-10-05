@@ -9,7 +9,6 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis.backends.base import Database
-from ibis.backends.base.sql import SQLClient
 from ibis.backends.base.sql.compiler import DDL, DML
 from ibis.backends.base.sql.ddl import (
     AlterTable,
@@ -20,7 +19,6 @@ from ibis.backends.base.sql.ddl import (
 
 from . import ddl
 from .compat import HS2Error, impyla
-from .hdfs import HDFS, WebHDFS
 
 
 class ImpalaDatabase(Database):
@@ -646,84 +644,6 @@ class ImpalaTable(ir.TableExpr):
         column_stats : pandas.DataFrame
         """
         return self._client.column_stats(self._qualified_name)
-
-
-class ImpalaClient(SQLClient):
-
-    """
-    An Ibis client interface that uses Impala
-    """
-
-    def __init__(self, backend, con, hdfs_client=None, **params):
-        import hdfs
-
-        self.backend = backend
-        self.backend.con = con
-
-        if isinstance(hdfs_client, hdfs.Client):
-            hdfs_client = WebHDFS(hdfs_client)
-        elif hdfs_client is not None and not isinstance(hdfs_client, HDFS):
-            raise TypeError(hdfs_client)
-
-        self.backend._hdfs = hdfs_client
-        self.backend._kudu = None
-
-        self.backend._temp_objects = set()
-
-    def _get_hdfs(self):
-        if self.backend._hdfs is None:
-            raise com.IbisError(
-                'No HDFS connection; must pass connection '
-                'using the hdfs_client argument to '
-                'ibis.impala.connect'
-            )
-        return self.backend._hdfs
-
-    def _set_hdfs(self, hdfs):
-        if not isinstance(hdfs, HDFS):
-            raise TypeError('must be HDFS instance')
-        self.backend._hdfs = hdfs
-
-    hdfs = property(fget=_get_hdfs, fset=_set_hdfs)
-
-    def avro_file(self, *args, **kwargs):
-        return self.backend.avro_file(*args, **kwargs)
-
-    def parquet_file(self, *args, **kwargs):
-        return self.backend.parquet_file(*args, **kwargs)
-
-    def disable_codegen(self, *args, **kwargs):
-        return self.backend.disable_codegen(*args, **kwargs)
-
-    def get_options(self, *args, **kwargs):
-        return self.backend.get_options(*args, **kwargs)
-
-    def set_options(self, *args, **kwargs):
-        return self.backend.set_options(*args, **kwargs)
-
-    def delimited_file(self, *args, **kwargs):
-        return self.backend.delimited_file(*args, **kwargs)
-
-    def compute_stats(self, *args, **kwargs):
-        return self.backend.compute_stats(*args, **kwargs)
-
-    def refresh(self, *args, **kwargs):
-        return self.backend.refresh(*args, **kwargs)
-
-    def invalidate_metadata(self, *args, **kwargs):
-        return self.backend.invalidate_metadata(*args, **kwargs)
-
-    def write_dataframe(self, *args, **kwargs):
-        return self.backend.write_dataframe(*args, **kwargs)
-
-    def create_function(self, *args, **kwargs):
-        return self.backend.create_function(*args, **kwargs)
-
-    def set_compression_codec(self, *args, **kwargs):
-        return self.backend.set_compression_codec(*args, **kwargs)
-
-    def list_udas(self, *args, **kwargs):
-        return self.backend.list_udas(*args, **kwargs)
 
 
 # ----------------------------------------------------------------------

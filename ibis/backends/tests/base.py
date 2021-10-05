@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 import pandas.testing as tm
 
-import ibis
 import ibis.expr.types as ir
 
 
@@ -72,7 +71,6 @@ class BackendTest(abc.ABC):
     bool_is_int = False
 
     def __init__(self, data_directory: Path) -> None:
-        self.api  # skips if we can't access the backend
         self.connection = self.connect(data_directory)
 
     def __str__(self):
@@ -145,7 +143,7 @@ class BackendTest(abc.ABC):
 
     @property
     def api(self):
-        return getattr(ibis, self.name())
+        return self.connection
 
     def make_context(
         self, params: Optional[Mapping[ir.ValueExpr, Any]] = None

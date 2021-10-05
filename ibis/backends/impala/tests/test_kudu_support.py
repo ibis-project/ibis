@@ -6,7 +6,7 @@ import pytest
 import ibis  # noqa: E402
 import ibis.expr.datatypes as dt  # noqa: E402
 import ibis.util as util  # noqa: E402
-from ibis.tests.expr.mocks import MockConnection  # noqa: E402
+from ibis.tests.expr.mocks import MockBackend  # noqa: E402
 from ibis.tests.util import assert_equal  # noqa: E402
 
 ksupport = pytest.importorskip('ibis.backends.impala.kudu_support')
@@ -117,7 +117,7 @@ TBLPROPERTIES (
         assert result == expected
 
     def test_ctas_ddl(self):
-        con = MockConnection()
+        con = MockBackend()
 
         select = ImpalaCompiler.to_ast(con.table('test1')).queries[0]
         statement = ksupport.CTASKudu(

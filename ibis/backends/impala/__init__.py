@@ -32,14 +32,7 @@ from ibis.backends.base.sql.ddl import (
 from ibis.config import options
 
 from . import ddl, udf
-
-# these objects are exposed in the public API and are not used in the module
-from .client import (  # noqa: F401
-    ImpalaClient,
-    ImpalaConnection,
-    ImpalaDatabase,
-    ImpalaTable,
-)
+from .client import ImpalaConnection, ImpalaDatabase, ImpalaTable
 from .compat import HS2Error, ImpylaError
 from .compiler import ImpalaCompiler
 from .hdfs import HDFS, WebHDFS, hdfs_connect
@@ -168,7 +161,6 @@ def _column_batches_to_dataframe(names, batches):
 
 class Backend(BaseSQLBackend):
     name = 'impala'
-    client_class = ImpalaClient
     database_class = ImpalaDatabase
     table_expr_class = ImpalaTable
     HDFS = HDFS
@@ -193,7 +185,7 @@ class Backend(BaseSQLBackend):
         pool_size=8,
         hdfs_client=None,
     ):
-        """Create an ImpalaClient for use with Ibis.
+        """Create a Impala Backend for use with Ibis.
 
         Parameters
         ----------
@@ -240,12 +232,25 @@ class Backend(BaseSQLBackend):
         ...     hdfs_client=hdfs,
         ... )
         >>> client  # doctest: +ELLIPSIS
-        <ibis.impala.client.ImpalaClient object at 0x...>
+        <ibis.backends.impala.Backend object at 0x...>
 
         Returns
         -------
-        ImpalaClient
+        Backend
         """
+        import hdfs
+
+        new_backend = self.__class__()
+        new_backend._kudu = None
+        new_backend._temp_objects = set()
+
+        if hdfs_client is None or isinstance(hdfs_client, HDFS):
+            new_backend._hdfs = hdfs_client
+        elif isinstance(hdfs_client, hdfs.Client):
+            new_backend._hdfs = WebHDFS(hdfs_client)
+        else:
+            raise TypeError(hdfs_client)
+
         params = {
             'host': host,
             'port': port,
@@ -258,17 +263,11 @@ class Backend(BaseSQLBackend):
             'auth_mechanism': auth_mechanism,
             'kerberos_service_name': kerberos_service_name,
         }
+        new_backend.con = ImpalaConnection(pool_size=pool_size, **params)
 
-        con = ImpalaConnection(pool_size=pool_size, **params)
-        try:
-            self.client = ImpalaClient(
-                backend=self, con=con, hdfs_client=hdfs_client
-            )
-        except Exception:
-            con.close()
-            raise
-        self._ensure_temp_db_exists()
-        return self.client
+        new_backend._ensure_temp_db_exists()
+
+        return new_backend
 
     @property
     def version(self):

@@ -2,12 +2,10 @@ import re
 
 import numpy as np
 import pandas as pd
-from clickhouse_driver.client import Client as _DriverClient
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-from ibis.backends.base.sql import SQLClient
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
 base_typename_re = re.compile(r"(\w+)")
@@ -151,11 +149,3 @@ class ClickhouseTable(ir.TableExpr):
 
         data = obj.to_dict('records')
         return self._client.con.execute(query, data, **kwargs)
-
-
-class ClickhouseClient(SQLClient):
-    """An Ibis client interface that uses Clickhouse"""
-
-    def __init__(self, backend, *args, **kwargs):
-        self.backend = backend
-        self.backend.con = _DriverClient(*args, **kwargs)

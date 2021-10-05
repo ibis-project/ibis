@@ -12,7 +12,7 @@ import ibis.expr.types as ir
 from ibis import literal as L
 from ibis.common.exceptions import RelationError
 from ibis.expr.datatypes import Category
-from ibis.tests.expr.mocks import MockConnection
+from ibis.tests.expr.mocks import MockBackend
 from ibis.tests.sql.test_compiler import ExprTestCases
 
 from ..compiler import ImpalaCompiler, ImpalaExprTranslator
@@ -38,7 +38,7 @@ class ExprSQLTest:
 
 class TestValueExprs(unittest.TestCase, ExprSQLTest):
     def setUp(self):
-        self.con = MockConnection()
+        self.con = MockBackend()
         self.table = self.con.table('alltypes')
 
         self.int_cols = ['a', 'b', 'c', 'd']
@@ -357,7 +357,7 @@ FROM alltypes"""
 
 class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
     def setUp(self):
-        self.con = MockConnection()
+        self.con = MockBackend()
         self.table = self.con.table('functional_alltypes')
 
     def test_numeric_unary_builtins(self):
@@ -459,7 +459,7 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
 
 class TestCaseExprs(unittest.TestCase, ExprSQLTest, ExprTestCases):
     def setUp(self):
-        self.con = MockConnection()
+        self.con = MockBackend()
         self.table = self.con.table('alltypes')
 
     def test_isnull_1_0(self):
@@ -551,7 +551,7 @@ FROM functional_alltypes"""
 
 class TestBucketHistogram(unittest.TestCase, ExprSQLTest):
     def setUp(self):
-        self.con = MockConnection()
+        self.con = MockBackend()
         self.table = self.con.table('alltypes')
 
     def test_bucket_to_case(self):
@@ -748,7 +748,7 @@ FROM (
 
 class TestInNotIn(unittest.TestCase, ExprSQLTest):
     def setUp(self):
-        self.con = MockConnection()
+        self.con = MockBackend()
         self.table = self.con.table('alltypes')
 
     def test_field_in_literals(self):
@@ -797,7 +797,7 @@ WHERE `g` NOT IN {}"""
 
 class TestCoalesceGreaterLeast(unittest.TestCase, ExprSQLTest):
     def setUp(self):
-        self.con = MockConnection()
+        self.con = MockBackend()
         self.table = self.con.table('functional_alltypes')
 
     def test_coalesce(self):
@@ -842,7 +842,7 @@ class TestCoalesceGreaterLeast(unittest.TestCase, ExprSQLTest):
 
 class TestAnalyticFunctions(unittest.TestCase, ExprSQLTest):
     def setUp(self):
-        self.con = MockConnection()
+        self.con = MockBackend()
         self.table = self.con.table('functional_alltypes')
 
     def test_analytic_exprs(self):
@@ -872,7 +872,7 @@ class TestAnalyticFunctions(unittest.TestCase, ExprSQLTest):
 
 class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
     def setUp(self):
-        self.con = MockConnection()
+        self.con = MockBackend()
         self.table = self.con.table('functional_alltypes')
 
     def test_unary_ops(self):

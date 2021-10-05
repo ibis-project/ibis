@@ -15,7 +15,7 @@ from ibis.backends.tests.base import (
     RoundAwayFromZero,
     UnorderedComparator,
 )
-from ibis.tests.expr.mocks import MockConnection
+from ibis.tests.expr.mocks import MockBackend
 
 
 class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
@@ -213,16 +213,6 @@ def con(env, hdfs, test_data_db):
 
 
 @pytest.fixture
-def backend_instance(con):
-    """
-    Instance of Backend.
-    """
-    # See #3021
-    # TODO Remove when `connect` returns `Backend` and not `Client`
-    return con.backend
-
-
-@pytest.fixture
 def temp_char_table(con):
     statement = """\
 CREATE TABLE IF NOT EXISTS {} (
@@ -375,7 +365,7 @@ def temp_parquet_table2(con, tmp_db, temp_parquet_table_schema):
 
 @pytest.fixture
 def mockcon():
-    return MockConnection()
+    return MockBackend()
 
 
 @pytest.fixture

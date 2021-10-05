@@ -219,7 +219,7 @@ def execute_until_in_scope(
     scope : Scope
     timecontext : Optional[TimeContext]
     aggcontext : Optional[AggregationContext]
-    clients : List[ibis.backends.base.Client]
+    clients : List[ibis.backends.base.BaseBackend]
     kwargs : Mapping
     """
     # these should never be None

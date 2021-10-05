@@ -119,7 +119,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.window as win
 import ibis.util
-from ibis.backends.base import BaseBackend, Client
+from ibis.backends.base import BaseBackend
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import canonicalize_context
 from ibis.expr.typing import TimeContext
@@ -149,7 +149,6 @@ def is_computable_input(arg):
 
 
 @is_computable_input.register(BaseBackend)
-@is_computable_input.register(Client)
 @is_computable_input.register(ir.Expr)
 @is_computable_input.register(dt.DataType)
 @is_computable_input.register(type(None))
@@ -256,7 +255,7 @@ def execute_until_in_scope(
     scope : Scope
     timecontext : Optional[TimeContext]
     aggcontext : Optional[AggregationContext]
-    clients : List[ibis.backends.base.Client]
+    clients : List[ibis.backends.base.BaseBackend]
     kwargs : Mapping
     """
     # these should never be None
@@ -522,7 +521,7 @@ are going to be used in executeion and passes these attributes to children
 nodes.
 
 Param:
-clients: List[ibis.backends.base.Client]
+clients: List[ibis.backends.base.BaseBackend]
     backends for execution
 timecontext : Optional[TimeContext]
     begin and end time context needed for execution

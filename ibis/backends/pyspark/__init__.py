@@ -19,7 +19,7 @@ from ibis.expr.scope import Scope
 from ibis.expr.timecontext import canonicalize_context, localize_context
 
 from . import ddl
-from .client import PySparkClient, PySparkTable, spark_dataframe_schema
+from .client import PySparkTable, spark_dataframe_schema
 from .compiler import PySparkDatabaseTable, PySparkExprTranslator
 from .datatypes import spark_dtype
 
@@ -78,27 +78,29 @@ class _PySparkCursor:
 
 class Backend(BaseSQLBackend):
     name = 'pyspark'
-    client_class = PySparkClient
     table_class = PySparkDatabaseTable
     table_expr_class = PySparkTable
 
     def connect(self, session):
         """
-        Create a `SparkClient` for use with Ibis.
+        Create a pyspark `Backend` for use with Ibis.
 
-        Pipes `**kwargs` into SparkClient, which pipes them into SparkContext.
+        Pipes `**kwargs` into Backend, which pipes them into SparkContext.
         See documentation for SparkContext:
         https://spark.apache.org/docs/latest/api/python/_modules/pyspark/context.html#SparkContext
         """
-        self.client = self.client_class(backend=self, session=session)
+        new_backend = self.__class__()
+        new_backend._context = session.sparkContext
+        new_backend._session = session
+        new_backend._catalog = session.catalog
 
         # Spark internally stores timestamps as UTC values, and timestamp data
         # that is brought in without a specified time zone is converted as
         # local time to UTC with microsecond resolution.
         # https://spark.apache.org/docs/latest/sql-pyspark-pandas-with-arrow.html#timestamp-with-time-zone-semantics
-        self._session.conf.set('spark.sql.session.timeZone', 'UTC')
+        new_backend._session.conf.set('spark.sql.session.timeZone', 'UTC')
 
-        return self.client
+        return new_backend
 
     @property
     def version(self):

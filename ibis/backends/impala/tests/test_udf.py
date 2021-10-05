@@ -14,7 +14,7 @@ import ibis.expr.rules as rules
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis.common.exceptions import IbisTypeError
-from ibis.tests.expr.mocks import MockConnection
+from ibis.tests.expr.mocks import MockBackend
 
 from .. import ddl  # noqa: E402
 
@@ -23,7 +23,7 @@ pytestmark = pytest.mark.udf
 
 class TestWrapping(unittest.TestCase):
     def setUp(self):
-        self.con = MockConnection()
+        self.con = MockBackend()
         self.table = self.con.table('functional_alltypes')
 
         self.i8 = self.table.tinyint_col
@@ -506,7 +506,7 @@ def test_drop_database_with_udfs_and_udas(
 
 class TestUDFDDL(unittest.TestCase):
     def setUp(self):
-        self.con = MockConnection()
+        self.con = MockBackend()
         self.name = 'test_name'
         self.inputs = ['string', 'string']
         self.output = 'int64'

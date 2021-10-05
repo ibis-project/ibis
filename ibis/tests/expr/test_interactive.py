@@ -17,12 +17,12 @@ import unittest
 import pytest
 
 import ibis.config as config
-from ibis.tests.expr.mocks import MockConnection
+from ibis.tests.expr.mocks import MockBackend
 
 
 class TestInteractiveUse(unittest.TestCase):
     def setUp(self):
-        self.con = MockConnection()
+        self.con = MockBackend()
 
     def test_interactive_execute_on_repr(self):
         table = self.con.table('functional_alltypes')
