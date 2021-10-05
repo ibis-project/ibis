@@ -530,7 +530,7 @@ def test_geo_dataframe(backend, geo):
     assert isinstance(geo.execute(), geopandas.geodataframe.GeoDataFrame)
 
 
-@pytest.mark.only_on_backends(all_db_geo_supported)
+@pytest.mark.only_on_backends(['postgres'])
 @pytest.mark.parametrize(
     'modifier',
     [
