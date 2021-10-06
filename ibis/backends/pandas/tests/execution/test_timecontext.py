@@ -1,16 +1,25 @@
+from typing import Optional
+
 import pandas as pd
 import pandas.testing as tm
 import pytest
 
 import ibis
 import ibis.common.exceptions as com
+import ibis.expr.operations as ops
 from ibis.backends.pandas.execution.window import trim_window_result
+from ibis.expr.scope import Scope
 from ibis.expr.timecontext import (
     TimeContextRelation,
     adjust_context,
     compare_timecontext,
     construct_time_context_aware_series,
 )
+from ibis.expr.types import TimeContext
+
+
+class CustomAsOfJoin(ops.AsOfJoin):
+    pass
 
 
 def test_execute_with_timecontext(time_table):
@@ -260,6 +269,31 @@ def test_context_adjustment_window_groupby_id(time_table, time_df3):
     # result should adjust time context accordingly
     result = expr.execute(timecontext=context)
     tm.assert_series_equal(result, expected)
+
+
+def test_adjust_context_scope(time_keyed_left, time_keyed_right):
+    """Test that `adjust_context` has access to `scope` by default."""
+
+    @adjust_context.register(CustomAsOfJoin)
+    def adjust_context_custom_asof_join(
+        op: ops.AsOfJoin,
+        timecontext: TimeContext,
+        scope: Optional[Scope] = None,
+    ) -> TimeContext:
+        """Confirms that `scope` is passed in."""
+        assert scope is not None
+        return timecontext
+
+    expr = CustomAsOfJoin(
+        left=time_keyed_left,
+        right=time_keyed_right,
+        predicates='time',
+        by='key',
+        tolerance=4 * ibis.interval(days=1),
+    ).to_expr()
+    expr = expr[time_keyed_left, time_keyed_right.other_value]
+    context = (pd.Timestamp('20170105'), pd.Timestamp('20170111'))
+    expr.execute(timecontext=context)
 
 
 def test_construct_time_context_aware_series(time_df3):

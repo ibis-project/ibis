@@ -32,6 +32,7 @@ time context.
 from typing import Optional
 
 import ibis.expr.operations as ops
+from ibis.expr.scope import Scope
 from ibis.expr.timecontext import adjust_context
 from ibis.expr.typing import TimeContext
 
@@ -40,7 +41,11 @@ from ..core import compute_time_context, is_computable_input
 
 @compute_time_context.register(ops.AsOfJoin)
 def compute_time_context_asof_join(
-    op, clients, timecontext: Optional[TimeContext] = None, **kwargs
+    op,
+    clients,
+    timecontext: Optional[TimeContext] = None,
+    scope: Optional[Scope] = None,
+    **kwargs
 ):
     new_timecontexts = [
         timecontext for arg in op.inputs if is_computable_input(arg)
@@ -52,7 +57,7 @@ def compute_time_context_asof_join(
     # right table is the second node in children
     new_timecontexts = [
         new_timecontexts[0],
-        adjust_context(op, timecontext=timecontext),
+        adjust_context(op, timecontext=timecontext, scope=scope),
         *new_timecontexts[2:],
     ]
     return new_timecontexts
@@ -60,7 +65,11 @@ def compute_time_context_asof_join(
 
 @compute_time_context.register(ops.WindowOp)
 def compute_time_context_window(
-    op, clients, timecontext: Optional[TimeContext] = None, **kwargs
+    op,
+    clients,
+    timecontext: Optional[TimeContext] = None,
+    scope: Optional[Scope] = None,
+    **kwargs
 ):
     new_timecontexts = [
         timecontext for arg in op.inputs if is_computable_input(arg)
@@ -69,7 +78,7 @@ def compute_time_context_window(
     if not timecontext:
         return new_timecontexts
 
-    result = adjust_context(op, timecontext=timecontext)
+    result = adjust_context(op, timecontext=timecontext, scope=scope)
 
     new_timecontexts = [
         result for arg in op.inputs if is_computable_input(arg)

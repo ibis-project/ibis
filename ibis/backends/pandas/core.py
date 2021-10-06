@@ -293,6 +293,7 @@ def execute_until_in_scope(
             num_args=len(computable_args),
             timecontext=timecontext,
             clients=clients,
+            scope=scope,
         )
     else:
         arg_timecontexts = [None] * len(computable_args)
@@ -538,6 +539,9 @@ See ``computable_args`` in ``execute_until_in_scope``
 
 @compute_time_context.register(ops.Node)
 def compute_time_context_default(
-    node, timecontext: Optional[TimeContext] = None, **kwargs
+    node,
+    timecontext: Optional[TimeContext] = None,
+    scope: Optional[Scope] = None,
+    **kwargs,
 ):
     return [timecontext for arg in node.inputs if is_computable_input(arg)]

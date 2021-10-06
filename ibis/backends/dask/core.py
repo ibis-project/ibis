@@ -257,6 +257,7 @@ def execute_until_in_scope(
             num_args=len(computable_args),
             timecontext=timecontext,
             clients=clients,
+            scope=scope,
         )
     else:
         arg_timecontexts = [None] * len(computable_args)

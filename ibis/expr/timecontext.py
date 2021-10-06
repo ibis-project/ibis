@@ -31,7 +31,7 @@ implementation details.
 
 import enum
 import functools
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 import pandas as pd
@@ -42,6 +42,9 @@ import ibis.expr.api as ir
 import ibis.expr.operations as ops
 from ibis.expr.operations import Node
 from ibis.expr.typing import TimeContext
+
+if TYPE_CHECKING:
+    from ibis.expr.scope import Scope
 
 # In order to use time context feature, there must be a column of Timestamp
 # type, and named as 'time' in TableExpr. This TIME_COL constant will be
@@ -248,13 +251,16 @@ def construct_time_context_aware_series(
 
 
 @functools.singledispatch
-def adjust_context(op: Any, timecontext: TimeContext) -> TimeContext:
+def adjust_context(
+    op: Any, timecontext: TimeContext, scope: Optional['Scope'] = None
+) -> TimeContext:
     """
     Params
     -------
     op: ibis.expr.operations.Node
     timecontext: TimeContext
         time context associated with the node
+    scope: Scope
 
     Returns
     --------
@@ -267,14 +273,16 @@ def adjust_context(op: Any, timecontext: TimeContext) -> TimeContext:
 
 
 @adjust_context.register(ops.Node)
-def adjust_context_node(op: Node, timecontext: TimeContext) -> TimeContext:
+def adjust_context_node(
+    op: Node, timecontext: TimeContext, scope: Optional['Scope'] = None
+) -> TimeContext:
     # For any node, by default, do not adjust time context
     return timecontext
 
 
 @adjust_context.register(ops.AsOfJoin)
 def adjust_context_asof_join(
-    op: ops.AsOfJoin, timecontext: TimeContext
+    op: ops.AsOfJoin, timecontext: TimeContext, scope: Optional['Scope'] = None
 ) -> TimeContext:
     begin, end = timecontext
 
@@ -289,7 +297,7 @@ def adjust_context_asof_join(
 
 @adjust_context.register(ops.WindowOp)
 def adjust_context_window(
-    op: ops.WindowOp, timecontext: TimeContext
+    op: ops.WindowOp, timecontext: TimeContext, scope: Optional['Scope'] = None
 ) -> TimeContext:
     # adjust time context by preceding and following
     begin, end = timecontext
