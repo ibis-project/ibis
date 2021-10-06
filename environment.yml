@@ -37,7 +37,6 @@ dependencies:
   - conda-build # feedstock
   - ruamel.yaml # feedstock
   - pygit2 # dev/genrelease.py
-  - tzlocal<3 # not directly needed, but need to pin since 3.0 is broken
 
   # Docs
   - pip
