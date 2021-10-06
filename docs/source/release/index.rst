@@ -12,6 +12,11 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :support:`2678` Improvement of the backend API. The former `Client` subclasses have been replaced by a `Backend` class that must
+  subclass `ibis.backends.base.BaseBackend`. The `BaseBackend` class contains abstract methods for the minimum subset of methods that
+  backends must implement, and their signatures have been standardized across backends. The Ibis compiler has been refactored, and
+  backends don't need to implement all compiler classes anymore if the default works for them. Only a subclass of
+  `ibis.backends.base.sql.compiler.Compiler` is now required. Backends now need to register themselves as entry points.
 * :support:`2905` Deprecate `exists_table(table)` in favor of `table in list_tables()`
 * :bug:`2991` Fix data races in impala connection pool accounting
 * :bug:`2985` Fix null literal compilation in the Clickhouse backend
