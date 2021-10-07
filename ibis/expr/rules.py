@@ -147,7 +147,7 @@ def member_of(obj, arg):
 
 @validator
 def list_of(inner, arg, min_length=0):
-    if not util.is_iterable(arg) and not isinstance(arg, ir.ListExpr):
+    if not util.is_iterable(arg):
         raise com.IbisTypeError('Argument must be a sequence')
 
     if len(arg) < min_length:

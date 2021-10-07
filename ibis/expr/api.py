@@ -278,7 +278,6 @@ def sequence(values):
 
 
 def schema(pairs=None, names=None, types=None):
-    # TODO(kszucs): if isinstance(pairs, dict): Schema.from_dict
     if pairs is not None:
         return Schema.from_tuples(pairs)
     else:
@@ -302,7 +301,6 @@ def table(schema, name=None):
     -------
     table : TableExpr
     """
-    # TODO(kszucs): use schema function above
     if not isinstance(schema, Schema):
         if isinstance(schema, dict):
             schema = Schema.from_dict(schema)
