@@ -9,7 +9,6 @@ from plumbum import local
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-
 from ibis.backends.pyarrow.compiler import PyArrowCompiler
 
 

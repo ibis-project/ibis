@@ -3,9 +3,9 @@ import enum
 import functools
 import importlib
 import operator
+import pathlib
 import sys
 import tempfile
-import pathlib
 
 import flatbuffers
 import numpy as np
@@ -14,10 +14,9 @@ import pandas as pd
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.types as ir
 import ibis.expr.schema as sch
+import ibis.expr.types as ir
 import ibis.util as util
-
 
 # ugly side effect, we can probably do better
 _computeir_path = pathlib.Path(
