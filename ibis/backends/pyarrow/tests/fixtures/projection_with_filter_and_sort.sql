@@ -1,0 +1,1 @@
+SELECT * FROM tbl ORDER BY foo ASC, bar DESC;

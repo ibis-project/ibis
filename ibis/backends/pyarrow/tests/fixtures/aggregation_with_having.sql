@@ -1,0 +1,1 @@
+SELECT SUM(bar) AS total_bar, MEAN(baz) AS avg_baz FROM tbl WHERE foo < 3 GROUP BY foo HAVING total_bar > 10;

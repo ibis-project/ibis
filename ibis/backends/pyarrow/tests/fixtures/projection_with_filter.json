@@ -1,0 +1,120 @@
+{
+    "sinks": [
+        {
+            "impl": {
+                "base": {
+                    "output_mapping": {},
+                    "output_mapping_type": "PassThrough"
+                },
+                "predicate": {
+                    "impl": {
+                        "arguments": [
+                            {
+                                "impl": {
+                                    "ref": {
+                                        "position": 0
+                                    },
+                                    "ref_type": "FieldIndex",
+                                    "relation_index": 0
+                                },
+                                "impl_type": "FieldRef"
+                            },
+                            {
+                                "impl": {
+                                    "impl": {
+                                        "value": 3
+                                    },
+                                    "impl_type": "Int8Literal",
+                                    "type": {
+                                        "nullable": true,
+                                        "type": {
+                                            "bitWidth": 8,
+                                            "is_signed": true
+                                        },
+                                        "type_type": "Int"
+                                    }
+                                },
+                                "impl_type": "Literal"
+                            }
+                        ],
+                        "name": "less"
+                    },
+                    "impl_type": "Call"
+                },
+                "rel": {
+                    "impl": {
+                        "base": {
+                            "output_mapping": {},
+                            "output_mapping_type": "PassThrough"
+                        },
+                        "expressions": [
+                            {
+                                "impl": {
+                                    "ref": {
+                                        "position": 1
+                                    },
+                                    "ref_type": "FieldIndex",
+                                    "relation_index": 0
+                                },
+                                "impl_type": "FieldRef"
+                            },
+                            {
+                                "impl": {
+                                    "ref": {
+                                        "position": 2
+                                    },
+                                    "ref_type": "FieldIndex",
+                                    "relation_index": 0
+                                },
+                                "impl_type": "FieldRef"
+                            }
+                        ],
+                        "rel": {
+                            "impl": {
+                                "base": {
+                                    "output_mapping": {},
+                                    "output_mapping_type": "PassThrough"
+                                },
+                                "name": "tbl",
+                                "schema": {
+                                    "endianness": "Little",
+                                    "fields": [
+                                        {
+                                            "name": "foo",
+                                            "nullable": true,
+                                            "type": {
+                                                "bitWidth": 32,
+                                                "is_signed": true
+                                            },
+                                            "type_type": "Int"
+                                        },
+                                        {
+                                            "name": "bar",
+                                            "nullable": true,
+                                            "type": {
+                                                "bitWidth": 64,
+                                                "is_signed": true
+                                            },
+                                            "type_type": "Int"
+                                        },
+                                        {
+                                            "name": "baz",
+                                            "nullable": true,
+                                            "type": {
+                                                "precision": "DOUBLE"
+                                            },
+                                            "type_type": "FloatingPoint"
+                                        }
+                                    ]
+                                }
+                            },
+                            "impl_type": "Source"
+                        }
+                    },
+                    "impl_type": "Project"
+                }
+            },
+            "impl_type": "Filter"
+        }
+    ]
+}

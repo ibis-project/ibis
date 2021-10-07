@@ -1,0 +1,54 @@
+{
+    "sinks": [
+        {
+            "impl": {
+                "base": {
+                    "output_mapping": {},
+                    "output_mapping_type": "PassThrough"
+                },
+                "keys": [
+                    {
+                        "expression": {
+                            "impl": {
+                                "ref": {
+                                    "position": 0
+                                },
+                                "ref_type": "FieldIndex",
+                                "relation_index": 0
+                            },
+                            "impl_type": "FieldRef"
+                        },
+                        "ordering": "NULLS_THEN_ASCENDING"
+                    },
+                    {
+                        "expression": {
+                            "impl": {
+                                "ref": {
+                                    "position": 1
+                                },
+                                "ref_type": "FieldIndex",
+                                "relation_index": 0
+                            },
+                            "impl_type": "FieldRef"
+                        },
+                        "ordering": "NULLS_THEN_DESCENDING"
+                    }
+                ],
+                "rel": {
+                    "impl": {
+                        "base": {
+                            "output_mapping": {},
+                            "output_mapping_type": "PassThrough"
+                        },
+                        "expressions": [],
+                        "rel": {
+                            "impl_type": "Limit"
+                        }
+                    },
+                    "impl_type": "Project"
+                }
+            },
+            "impl_type": "OrderBy"
+        }
+    ]
+}

@@ -1,0 +1,1 @@
+SELECT SUM(bar) AS total_bar, MEAN(baz) AS avg_baz FROM tbl GROUP BY foo;
