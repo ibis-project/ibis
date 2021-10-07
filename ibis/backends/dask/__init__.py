@@ -6,6 +6,9 @@ import pandas as pd
 import toolz
 from dask.base import DaskMethodsMixin
 
+# import the pandas execution module to register dispatched implementations of
+# execute_node that the dask backend will later override
+import ibis.backends.pandas.execution  # noqa: F401
 import ibis.common.exceptions as com
 import ibis.config
 import ibis.expr.schema as sch
@@ -15,8 +18,7 @@ from ibis.backends.pandas import BasePandasBackend
 from .client import DaskDatabase, DaskTable, ibis_schema_to_dask
 from .core import execute_and_reset
 
-# Make sure that the pandas backend is loaded, dispatching has been
-# executed, and options have been loaded
+# Make sure that the pandas backend options have been loaded
 ibis.pandas
 
 
