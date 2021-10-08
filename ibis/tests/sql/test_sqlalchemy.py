@@ -484,32 +484,29 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
     def test_lower_projection_sort_key(self):
         expr = self._case_subquery_aliased()
 
-        s1 = self._get_sqla('star1').alias('t2')
-        s2 = self._get_sqla('star2').alias('t1')
+        t3 = self._get_sqla('star1').alias('t3')
+        t2 = self._get_sqla('star2').alias('t2')
+        t4 = (
+            sa.select([t3.c.foo_id, F.sum(t3.c.f).label('total')])
+            .group_by(t3.c.foo_id)
+            .alias('t4')
+        )
+        t1 = (
+            sa.select([t4.c.foo_id, t4.c.total, t2.c.value1])
+            .select_from(t4.join(t2, t4.c.foo_id == t2.c.foo_id))
+            .alias('t1')
+        )
+        t0 = (
+            sa.select([t1.c.foo_id, t1.c.total, t1.c.value1])
+            .where(t1.c.total > L(100))
+            .alias('t0')
+        )
+        expected = sa.select([t0.c.foo_id, t0.c.total, t0.c.value1]).order_by(
+            t0.c.total.desc()
+        )
 
         expr2 = expr[expr.total > 100].sort_by(ibis.desc('total'))
-
-        agged = (
-            sa.select([s1.c.foo_id, F.sum(s1.c.f).label('total')])
-            .group_by(s1.c.foo_id)
-            .alias('t3')
-        )
-
-        joined = agged.join(s2, agged.c.foo_id == s2.c.foo_id)
-        expected = sa.select([agged, s2.c.value1]).select_from(joined)
-
-        joined = agged.join(s2, agged.c.foo_id == s2.c.foo_id)
-        expected = sa.select([agged, s2.c.value1]).select_from(joined)
-
-        ex = expected.alias('t0')
-
-        expected2 = (
-            sa.select([ex])
-            .where(ex.c.total > L(100))
-            .order_by(ex.c.total.desc())
-        )
-
-        self._compare_sqla(expr2, expected2)
+        self._compare_sqla(expr2, expected)
 
     def test_exists(self):
         e1, e2 = self._case_exists()
@@ -627,8 +624,10 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
 
     def _compare_sqla(self, expr, sqla):
         context = AlchemyContext(compiler=AlchemyCompiler)
-        result = AlchemyCompiler.to_sql(expr, context)
-        assert str(result.compile()) == str(sqla.compile())
+        result_sqla = AlchemyCompiler.to_sql(expr, context)
+        result = str(result_sqla.compile())
+        expected = str(sqla.compile())
+        assert result == expected
 
     def _to_sqla(self, table):
         return table.op().sqla_table

@@ -2,7 +2,7 @@ import inspect
 import typing
 
 import ibis.expr.rules as rlz
-import ibis.util as util
+from ibis import util
 
 try:
     from cytoolz import unique

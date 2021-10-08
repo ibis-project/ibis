@@ -25,7 +25,7 @@ markers = [
 [tool.black]
 line_length = 79
 skip_string_normalization = true
-exclude = "(ibis/_version|versioneer)\\.py"
+exclude = "(ibis/_version|versioneer)\\.py|\\.ipynb"
 
 [tool.isort]
 ensure_newline_before_comments = true

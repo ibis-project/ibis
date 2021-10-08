@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 
 import ibis.common.exceptions as com
-import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
 
@@ -102,6 +101,8 @@ class Window:
         max_lookback=None,
         how='rows',
     ):
+        import ibis.expr.operations as ops
+
         if group_by is None:
             group_by = []
 
@@ -228,6 +229,8 @@ class Window:
                 )
 
     def bind(self, table):
+        import ibis.expr.operations as ops
+
         # Internal API, ensure that any unresolved expr references (as strings,
         # say) are bound to the table being windowed
         groups = table._resolve(self._group_by)
@@ -276,6 +279,8 @@ class Window:
         return self._replace(order_by=new_sorts)
 
     def equals(self, other, cache=None):
+        import ibis.expr.operations as ops
+
         if cache is None:
             cache = {}
 
@@ -475,6 +480,8 @@ def trailing_range_window(preceding, order_by, group_by=None):
 
 
 def propagate_down_window(expr, window):
+    import ibis.expr.operations as ops
+
     op = expr.op()
 
     clean_args = []

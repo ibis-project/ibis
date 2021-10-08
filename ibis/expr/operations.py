@@ -1,11 +1,15 @@
 import collections
+import datetime
+import enum
 import functools
 import itertools
 import operator
 from contextlib import suppress
-from typing import Any, Dict, List
+from typing import Any as AnyT
+from typing import Dict, List
 
 import numpy as np
+import pandas as pd
 import toolz
 from cached_property import cached_property
 
@@ -18,6 +22,7 @@ from ibis import util
 from ibis.expr.schema import HasSchema, Schema
 from ibis.expr.signature import Annotable
 from ibis.expr.signature import Argument as Arg
+from ibis.expr.window import propagate_down_window
 
 
 def _safe_repr(x, memo=None):
@@ -57,7 +62,7 @@ class Node(Annotable):
 
         return '{}({})'.format(opname, ', '.join(pprint_args))
 
-    def __getstate__(self) -> Dict[str, Any]:
+    def __getstate__(self) -> Dict[str, AnyT]:
         """The attributes _expr_cached and _hash are
         used as caches; they can be excluded from
         serialization without affecting correctness.
@@ -78,7 +83,7 @@ class Node(Annotable):
             if slot not in excluded_slots
         }
 
-    def __setstate__(self, state: Dict[str, Any]) -> None:
+    def __setstate__(self, state: Dict[str, AnyT]) -> None:
         """
         Parameters
         ----------
@@ -222,7 +227,14 @@ class TableNode(Node):
         return Aggregation(this, metrics, by=by, having=having)
 
     def sort_by(self, expr, sort_exprs):
-        return Selection(expr, [], sort_keys=sort_exprs)
+        return Selection(
+            expr,
+            [],
+            sort_keys=_maybe_convert_sort_keys(
+                [self.to_expr(), expr],
+                sort_exprs,
+            ),
+        )
 
     def is_ancestor(self, other):
         import ibis.expr.lineage as lin
@@ -242,24 +254,10 @@ class TableNode(Node):
 
 
 class TableColumn(ValueOp):
-    """Selects a column from a TableExpr"""
+    """Selects a column from a `TableExpr`."""
 
-    name = Arg((str, int))
-    table = Arg(ir.TableExpr)
-
-    def __init__(self, name, table):
-        schema = table.schema()
-        if isinstance(name, int):
-            name = schema.name_at_position(name)
-        super().__init__(name, table)
-
-    def _validate(self):
-        if self.name not in self.table.schema():
-            raise com.IbisTypeError(
-                "'{}' is not a field in {}".format(
-                    self.name, self.table.columns
-                )
-            )
+    table = Arg(rlz.table)
+    name = Arg(rlz.column_name_from("table"))
 
     def parent(self):
         return self.table
@@ -332,7 +330,7 @@ class DatabaseTable(PhysicalTable):
 class SQLQueryResult(TableNode, HasSchema):
     """A table sourced from the result set of a select query"""
 
-    query = Arg(rlz.noop)
+    query = Arg(str)
     schema = Arg(sch.Schema)
     source = Arg(rlz.client)
 
@@ -347,16 +345,11 @@ class TableArrayView(ValueOp):
     subqueries to be viewed as arrays)
     """
 
-    table = Arg(ir.TableExpr)
-    name = Arg(str)
+    table = Arg(rlz.table)
 
-    def __init__(self, table):
-        schema = table.schema()
-        if len(schema) > 1:
-            raise com.ExpressionError('Table can only have a single column')
-
-        name = schema.names[0]
-        return super().__init__(table, name)
+    @property
+    def name(self):
+        return self.table.schema().names[0]
 
     def _make_expr(self):
         ctype = self.table._get_type(self.name)
@@ -379,9 +372,7 @@ class Cast(ValueOp):
     arg = Arg(rlz.any)
     to = Arg(rlz.datatype)
 
-    # see #396 for the issue preventing this
-    # def resolve_name(self):
-    #     return self.args[0].get_name()
+    # see #396 for the issue preventing an implementation of resolve_name
 
     def output_type(self):
         return rlz.shape_like(self.arg, dtype=self.to)
@@ -392,7 +383,7 @@ class TypeOf(UnaryOp):
 
 
 class Negate(UnaryOp):
-    arg = Arg(rlz.one_of((rlz.numeric(), rlz.interval())))
+    arg = Arg(rlz.one_of((rlz.numeric, rlz.interval)))
     output_type = rlz.typeof('arg')
 
 
@@ -1119,38 +1110,15 @@ class AnalyticOp(ValueOp):
 
 
 class WindowOp(ValueOp):
-    expr = Arg(rlz.noop)
-    window = Arg(rlz.noop)
+    expr = Arg(rlz.analytic)
+    window = Arg(rlz.window(from_base_table_of="expr"))
     output_type = rlz.array_like('expr')
 
     display_argnames = False
 
-    def __init__(self, expr, window):
-        from ibis.expr.analysis import is_analytic
-        from ibis.expr.window import propagate_down_window
-
-        if not is_analytic(expr):
-            raise com.IbisInputError(
-                'Expression does not contain a valid window operation'
-            )
-
-        table = ir.find_base_table(expr)
-        if table is not None:
-            window = window.bind(table)
-
-        if window.max_lookback is not None:
-            error_msg = (
-                "'max lookback' windows must be ordered "
-                "by a timestamp column"
-            )
-            if len(window._order_by) != 1:
-                raise com.IbisInputError(error_msg)
-            order_var = window._order_by[0].op().args[0]
-            if not isinstance(order_var.type(), dt.Timestamp):
-                raise com.IbisInputError(error_msg)
-
-        expr = propagate_down_window(expr, window)
-        super().__init__(expr, window)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.expr = propagate_down_window(self.expr, self.window)
 
     def over(self, window):
         new_window = self.window.combine(window)
@@ -1342,7 +1310,7 @@ class Distinct(TableNode, HasSchema):
     FROM table
     """
 
-    table = Arg(ir.TableExpr)
+    table = Arg(rlz.table)
 
     def _validate(self):
         # check whether schema has overlapping columns or not
@@ -1367,7 +1335,7 @@ class DistinctColumn(ValueOp):
     for calling count()
     """
 
-    arg = Arg(rlz.noop)
+    arg = Arg(rlz.column(rlz.any))
     output_type = rlz.typeof('arg')
 
     def count(self):
@@ -1493,20 +1461,6 @@ class Where(ValueOp):
         return rlz.shape_like(self.bool_expr, self.true_expr.type())
 
 
-def _validate_join_tables(left, right):
-    if not isinstance(left, ir.TableExpr):
-        raise TypeError(
-            'Can only join table expressions, got {} for '
-            'left table'.format(type(left).__name__)
-        )
-
-    if not isinstance(right, ir.TableExpr):
-        raise TypeError(
-            'Can only join table expressions, got {} for '
-            'right table'.format(type(right).__name__)
-        )
-
-
 def _make_distinct_join_predicates(left, right, predicates):
     # see GH #667
 
@@ -1567,12 +1521,11 @@ def _validate_join_predicates(left, right, predicates):
 
 
 class Join(TableNode):
-    left = Arg(ir.TableExpr)
-    right = Arg(ir.TableExpr)
-    predicates = Arg(rlz.noop)
+    left = Arg(rlz.table)
+    right = Arg(rlz.table)
+    predicates = Arg(rlz.list_of(rlz.boolean), default=[])
 
     def __init__(self, left, right, predicates):
-        _validate_join_tables(left, right)
         left, right, predicates = _make_distinct_join_predicates(
             left, right, predicates
         )
@@ -1645,8 +1598,14 @@ class LeftAntiJoin(Join):
         return self.left.schema()
 
 
+class CrossJoin(Join):
+    def __init__(self, left, right, *rest):
+        right = functools.reduce(ir.TableExpr.cross_join, rest, right)
+        super().__init__(left, right, [])
+
+
 class MaterializedJoin(TableNode, HasSchema):
-    join = Arg(ir.TableExpr)
+    join = Arg(rlz.table)
 
     def _validate(self):
         assert isinstance(self.join.op(), Join)
@@ -1664,33 +1623,23 @@ class MaterializedJoin(TableNode, HasSchema):
         return True
 
 
-class CrossJoin(InnerJoin):
-
-    """
-    Some databases have a CROSS JOIN operator, that may be preferential to use
-    over an INNER JOIN with no predicates.
-    """
-
-    def __init__(self, *args, **kwargs):
-        if 'prefixes' in kwargs:
-            raise NotImplementedError
-
-        if len(args) < 2:
-            raise com.IbisInputError('Must pass at least 2 tables')
-
-        left = args[0]
-        right = args[1]
-        for t in args[2:]:
-            right = right.cross_join(t)
-        super().__init__(left, right, [])
-
-
 class AsOfJoin(Join):
-    left = Arg(rlz.noop)
-    right = Arg(rlz.noop)
-    predicates = Arg(rlz.noop)
-    by = Arg(rlz.noop, default=None)
-    tolerance = Arg(rlz.interval(), default=None)
+    left = Arg(rlz.table)
+    right = Arg(rlz.table)
+    predicates = Arg(rlz.list_of(rlz.boolean))
+    by = Arg(
+        rlz.list_of(
+            rlz.one_of(
+                (
+                    rlz.function_of("table"),
+                    rlz.column_from("table"),
+                    rlz.any,
+                )
+            )
+        ),
+        default=[],
+    )
+    tolerance = Arg(rlz.interval, default=None)
 
     def __init__(self, left, right, predicates, by, tolerance):
         super().__init__(left, right, predicates)
@@ -1708,8 +1657,8 @@ class AsOfJoin(Join):
 
 
 class SetOp(TableNode, HasSchema):
-    left = Arg(rlz.noop)
-    right = Arg(rlz.noop)
+    left = Arg(rlz.table)
+    right = Arg(rlz.table)
 
     def _validate(self):
         if not self.left.schema().equals(self.right.schema()):
@@ -1738,7 +1687,7 @@ class Difference(SetOp):
 
 
 class Limit(TableNode):
-    table = Arg(ir.TableExpr)
+    table = Arg(rlz.table)
     n = Arg(rlz.instance_of(int))
     offset = Arg(rlz.instance_of(int))
 
@@ -1788,7 +1737,17 @@ def to_sort_key(table, key):
 
 class SortKey(Node):
     expr = Arg(rlz.column(rlz.any))
-    ascending = Arg(rlz.coerce_to(bool), default=True)
+    ascending = Arg(
+        rlz.one_of(
+            (
+                rlz.literal(True),
+                rlz.literal(False),
+                rlz.enum_mapping(rlz.literal(1), to=True),
+                rlz.enum_mapping(rlz.literal(0), to=False),
+            )
+        ),
+        default=True,
+    )
 
     def __repr__(self):
         # Temporary
@@ -1829,7 +1788,7 @@ class DeferredSortKey:
 
 
 class SelfReference(TableNode, HasSchema):
-    table = Arg(ir.TableExpr)
+    table = Arg(rlz.table)
 
     @cached_property
     def schema(self):
@@ -1846,51 +1805,64 @@ class SelfReference(TableNode, HasSchema):
 
 
 class Selection(TableNode, HasSchema):
-    table = Arg(ir.TableExpr)
-    selections = Arg(rlz.noop, default=None)
-    predicates = Arg(rlz.noop, default=None)
-    sort_keys = Arg(rlz.noop, default=None)
-
-    def __init__(
-        self, table, selections=None, predicates=None, sort_keys=None
-    ):
-        import ibis.expr.analysis as L
-
-        # Argument cleaning
-        selections = util.promote_list(
-            selections if selections is not None else []
-        )
-
-        projections = []
-        for selection in selections:
-            if isinstance(selection, str):
-                projection = table[selection]
-            else:
-                projection = selection
-            projections.append(projection)
-
-        sort_keys = [
-            to_sort_key(table, k)
-            for k in util.promote_list(
-                sort_keys if sort_keys is not None else []
-            )
-        ]
-
-        predicates = list(
-            toolz.concat(
-                map(
-                    L.flatten_predicate,
-                    predicates if predicates is not None else [],
+    table = Arg(rlz.table)
+    selections = Arg(
+        rlz.list_of(
+            rlz.one_of(
+                (
+                    rlz.instance_of(ir.TableExpr),
+                    rlz.column_from("table"),
+                    rlz.function_of("table"),
+                    rlz.any,
+                    rlz.named_literal_expression,
                 )
             )
-        )
-
-        super().__init__(
-            table=table,
-            selections=projections,
-            predicates=predicates,
-            sort_keys=sort_keys,
-        )
+        ),
+        default=[],
+    )
+    predicates = Arg(rlz.list_of(rlz.boolean), default=[])
+    sort_keys = Arg(
+        rlz.list_of(
+            rlz.one_of(
+                (
+                    rlz.column_from("table"),
+                    rlz.function_of("table"),
+                    rlz.sort_key(from_="table"),
+                    rlz.pair(
+                        rlz.one_of(
+                            (
+                                rlz.column_from("table"),
+                                rlz.function_of("table"),
+                                rlz.any,
+                            )
+                        ),
+                        rlz.one_of(
+                            (
+                                rlz.literal(True),
+                                rlz.literal(False),
+                                rlz.enum_mapping(
+                                    rlz.literal("desc"),
+                                    to=False,
+                                ),
+                                rlz.enum_mapping(
+                                    rlz.literal("descending"),
+                                    to=False,
+                                ),
+                                rlz.enum_mapping(rlz.literal("asc"), to=True),
+                                rlz.enum_mapping(
+                                    rlz.literal("ascending"),
+                                    to=True,
+                                ),
+                                rlz.enum_mapping(rlz.literal(1), to=True),
+                                rlz.enum_mapping(rlz.literal(0), to=False),
+                            )
+                        ),
+                    ),
+                )
+            )
+        ),
+        default=[],
+    )
 
     def _validate(self):
         from ibis.expr.analysis import FilterValidator
@@ -1977,10 +1949,11 @@ class Selection(TableNode, HasSchema):
             return helper.get_result()
 
     def sort_by(self, expr, sort_exprs):
-        sort_exprs = util.promote_list(sort_exprs)
+        resolved_keys = _maybe_convert_sort_keys(
+            [self.table, expr], sort_exprs
+        )
         if not self.blocks():
-            resolved_keys = _maybe_convert_sort_keys(self.table, sort_exprs)
-            if resolved_keys and self.table._is_valid(resolved_keys):
+            if self.table._is_valid(resolved_keys):
                 return Selection(
                     self.table,
                     self.selections,
@@ -1988,7 +1961,7 @@ class Selection(TableNode, HasSchema):
                     sort_keys=self.sort_keys + resolved_keys,
                 )
 
-        return Selection(expr, [], sort_keys=sort_exprs)
+        return Selection(expr, [], sort_keys=resolved_keys)
 
 
 class AggregateSelection:
@@ -2016,9 +1989,7 @@ class AggregateSelection:
     def _attempt_pushdown(self):
         metrics_valid, lowered_metrics = self._pushdown_exprs(self.metrics)
         by_valid, lowered_by = self._pushdown_exprs(self.by)
-        having_valid, lowered_having = self._pushdown_exprs(
-            self.having or None
-        )
+        having_valid, lowered_having = self._pushdown_exprs(self.having)
 
         if metrics_valid and by_valid and having_valid:
             return Aggregation(
@@ -2035,7 +2006,8 @@ class AggregateSelection:
     def _pushdown_exprs(self, exprs):
         import ibis.expr.analysis as L
 
-        if exprs is None:
+        # exit early if there's nothing to push down
+        if not exprs:
             return True, []
 
         resolved = self.op.table._resolve(exprs)
@@ -2053,11 +2025,20 @@ class AggregateSelection:
         return valid, subbed_exprs
 
 
-def _maybe_convert_sort_keys(table, exprs):
-    try:
-        return [to_sort_key(table, k) for k in util.promote_list(exprs)]
-    except com.IbisError:
-        return None
+def _maybe_convert_sort_keys(tables, exprs):
+    exprs = util.promote_list(exprs)
+    keys = exprs[:]
+    for i, key in enumerate(exprs):
+        step = -1 if isinstance(key, (str, DeferredSortKey)) else 1
+        for table in tables[::step]:
+            try:
+                sort_key = to_sort_key(table, key)
+            except Exception:
+                continue
+            else:
+                keys[i] = sort_key
+                break
+    return keys
 
 
 class Aggregation(TableNode, HasSchema):
@@ -2071,67 +2052,104 @@ class Aggregation(TableNode, HasSchema):
     where : pre-aggregation predicate
     """
 
-    table = Arg(ir.TableExpr)
-    metrics = Arg(rlz.noop)
-    by = Arg(rlz.noop)
-    having = Arg(rlz.noop, default=None)
-    predicates = Arg(rlz.noop, default=None)
-    sort_keys = Arg(rlz.noop, default=None)
+    table = Arg(rlz.table)
+    metrics = Arg(
+        rlz.list_of(
+            rlz.one_of(
+                (
+                    rlz.function_of(
+                        "table",
+                        output_rule=rlz.one_of(
+                            (rlz.reduction, rlz.scalar(rlz.any))
+                        ),
+                    ),
+                    rlz.reduction,
+                    rlz.scalar(rlz.any),
+                    rlz.expr_list_of(rlz.scalar(rlz.any)),
+                    rlz.named_literal_expression,
+                )
+            ),
+            flatten=True,
+        ),
+        default=[],
+    )
+    by = Arg(
+        rlz.list_of(
+            rlz.one_of(
+                (
+                    rlz.function_of("table"),
+                    rlz.column_from("table"),
+                    rlz.any,
+                )
+            )
+        ),
+        default=[],
+    )
+    having = Arg(
+        rlz.list_of(
+            rlz.one_of(
+                (
+                    rlz.function_of(
+                        "table", output_rule=rlz.scalar(rlz.boolean)
+                    ),
+                    rlz.scalar(rlz.boolean),
+                )
+            ),
+        ),
+        default=[],
+    )
+    predicates = Arg(rlz.list_of(rlz.boolean), default=[])
+    sort_keys = Arg(
+        rlz.list_of(
+            rlz.one_of(
+                (
+                    rlz.column_from("table"),
+                    rlz.function_of("table"),
+                    rlz.sort_key(from_="table"),
+                    rlz.pair(
+                        rlz.one_of(
+                            (
+                                rlz.column_from("table"),
+                                rlz.function_of("table"),
+                                rlz.any,
+                            )
+                        ),
+                        rlz.one_of(
+                            (
+                                rlz.literal(True),
+                                rlz.literal(False),
+                                rlz.enum_mapping(
+                                    rlz.literal("desc"),
+                                    to=False,
+                                ),
+                                rlz.enum_mapping(
+                                    rlz.literal("descending"),
+                                    to=False,
+                                ),
+                                rlz.enum_mapping(rlz.literal("asc"), to=True),
+                                rlz.enum_mapping(
+                                    rlz.literal("ascending"),
+                                    to=True,
+                                ),
+                                rlz.enum_mapping(rlz.literal(1), to=True),
+                                rlz.enum_mapping(rlz.literal(0), to=False),
+                            )
+                        ),
+                    ),
+                )
+            )
+        ),
+        default=[],
+    )
 
-    def __init__(
-        self,
-        table,
-        metrics,
-        by=None,
-        having=None,
-        predicates=None,
-        sort_keys=None,
-    ):
-        # For tables, like joins, that are not materialized
-        metrics = self._rewrite_exprs(table, metrics)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-        by = [] if by is None else by
-        by = table._resolve(by)
-
-        having = [] if having is None else having
-        predicates = [] if predicates is None else predicates
-
-        # order by only makes sense with group by in an aggregation
-        sort_keys = [] if not by or sort_keys is None else sort_keys
-        sort_keys = [
-            to_sort_key(table, k) for k in util.promote_list(sort_keys)
-        ]
-
-        by = self._rewrite_exprs(table, by)
-        having = self._rewrite_exprs(table, having)
-        predicates = self._rewrite_exprs(table, predicates)
-        sort_keys = self._rewrite_exprs(table, sort_keys)
-
-        super().__init__(
-            table=table,
-            metrics=metrics,
-            by=by,
-            having=having,
-            predicates=predicates,
-            sort_keys=sort_keys,
-        )
+        if not self.by:
+            self.sort_keys.clear()
 
     def _validate(self):
-        from ibis.expr.analysis import FilterValidator, is_reduction
-
-        # All aggregates are valid
-        for expr in self.metrics:
-            if not isinstance(expr, ir.ScalarExpr) or not is_reduction(expr):
-                raise TypeError(
-                    'Passed a non-aggregate expression: %s' % _safe_repr(expr)
-                )
-
-        for expr in self.having:
-            if not isinstance(expr, ir.BooleanScalar):
-                raise com.ExpressionError(
-                    'Having clause must be boolean '
-                    'expression, was: {!s}'.format(_safe_repr(expr))
-                )
+        from ibis.expr.analysis import FilterValidator
 
         # All non-scalar refs originate from the input table
         all_exprs = self.metrics + self.by + self.having + self.sort_keys
@@ -2143,28 +2161,6 @@ class Aggregation(TableNode, HasSchema):
 
         # Validate schema has no overlapping columns
         assert self.schema
-
-    def _rewrite_exprs(self, table, what):
-        what = util.promote_list(what)
-
-        all_exprs = []
-        for expr in what:
-            if isinstance(expr, ir.ExprList):
-                all_exprs.extend(expr.exprs())
-            else:
-                bound_expr = ir.bind_expr(table, expr)
-                all_exprs.append(bound_expr)
-
-        return all_exprs
-        # TODO - #2832
-        # this optimization becomes O(n^2) when it calls into
-        # _lift_TableColumn in analysis.py, which itself is O(n) and is
-        # called on each input to the aggregation - thus creating the
-        # aggregation expression can be extremely slow on wide tables
-        # that contain a Selection.
-        # return [
-        #     substitute_parents(x, past_projection=False) for x in all_exprs
-        # ]
 
     def blocks(self):
         return True
@@ -2194,10 +2190,10 @@ class Aggregation(TableNode, HasSchema):
         return Schema(names, types)
 
     def sort_by(self, expr, sort_exprs):
-        sort_exprs = util.promote_list(sort_exprs)
-
-        resolved_keys = _maybe_convert_sort_keys(self.table, sort_exprs)
-        if resolved_keys and self.table._is_valid(resolved_keys):
+        resolved_keys = _maybe_convert_sort_keys(
+            [self.table, expr], sort_exprs
+        )
+        if self.table._is_valid(resolved_keys):
             return Aggregation(
                 self.table,
                 self.metrics,
@@ -2207,7 +2203,7 @@ class Aggregation(TableNode, HasSchema):
                 sort_keys=self.sort_keys + resolved_keys,
             )
 
-        return Selection(expr, [], sort_keys=sort_exprs)
+        return Selection(expr, [], sort_keys=resolved_keys)
 
 
 class NumericBinaryOp(BinaryOp):
@@ -2387,28 +2383,29 @@ class ReplaceValues(ValueOp):
 
 
 class SummaryFilter(ValueOp):
-    expr = Arg(rlz.noop)
+    expr = Arg(ir.TopKExpr)
 
     def output_type(self):
         return dt.boolean.column_type()
 
 
+def _find_base_table(expr):
+    import ibis.expr.types as ir
+
+    return ir.find_base_table(expr)
+
+
 class TopK(ValueOp):
-    arg = Arg(rlz.noop)
-    k = Arg(int)
-    by = Arg(rlz.noop)
-
-    def __init__(self, arg, k, by=None):
-        if by is None:
-            by = arg.count()
-
-        if not isinstance(arg, ir.ColumnExpr):
-            raise TypeError(arg)
-
-        if not isinstance(k, int) or k < 0:
-            raise ValueError(f'k must be positive integer, was: {k}')
-
-        super().__init__(arg, k, by)
+    arg = Arg(rlz.column(rlz.any))
+    k = Arg(rlz.non_negative_integer)
+    by = Arg(
+        rlz.one_of(
+            (
+                rlz.function_of("arg", preprocess=_find_base_table),
+                rlz.any,
+            )
+        ),
+    )
 
     def output_type(self):
         return ir.TopKExpr
@@ -2907,8 +2904,46 @@ class StructField(ValueOp):
         return rlz.shape_like(self.arg, value_dtype)
 
 
+try:
+    import shapely
+except ImportError:
+    BaseGeometry = type(None)
+else:
+    BaseGeometry = shapely.geometry.base.BaseGeometry
+
+
 class Literal(ValueOp):
-    value = Arg(rlz.noop)
+    value = Arg(
+        rlz.one_of(
+            (
+                rlz.instance_of(
+                    (
+                        BaseGeometry,
+                        bytes,
+                        datetime.date,
+                        datetime.datetime,
+                        datetime.time,
+                        datetime.timedelta,
+                        dict,
+                        enum.Enum,
+                        float,
+                        frozenset,
+                        int,
+                        list,
+                        np.generic,
+                        np.ndarray,
+                        pd.Timedelta,
+                        pd.Timestamp,
+                        set,
+                        str,
+                        tuple,
+                        type(None),
+                    )
+                ),
+                rlz.is_computable_input,
+            )
+        )
+    )
     dtype = Arg(rlz.datatype)
 
     def __repr__(self):
@@ -2990,10 +3025,7 @@ class ScalarParameter(ValueOp):
 class ExpressionList(Node):
     """Data structure for a list of arbitrary expressions"""
 
-    exprs = Arg(rlz.noop)
-
-    def __init__(self, values):
-        super().__init__(list(map(rlz.any, values)))
+    exprs = Arg(rlz.list_of(rlz.any))
 
     @property
     def inputs(self):
@@ -3538,18 +3570,16 @@ class AnalyticVectorizedUDF(AnalyticOp):
 
 
 class ExistsSubquery(Node):
-    """Helper class"""
-
-    foreign_table = Arg(rlz.noop)
-    predicates = Arg(rlz.noop)
+    foreign_table = Arg(rlz.table)
+    predicates = Arg(rlz.list_of(rlz.boolean))
 
     def output_type(self):
         return ir.ExistsExpr
 
 
 class NotExistsSubquery(Node):
-    foreign_table = Arg(rlz.noop)
-    predicates = Arg(rlz.noop)
+    foreign_table = Arg(rlz.table)
+    predicates = Arg(rlz.list_of(rlz.boolean))
 
     def output_type(self):
         return ir.ExistsExpr

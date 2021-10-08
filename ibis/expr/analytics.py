@@ -30,8 +30,8 @@ class BucketLike(ops.ValueOp):
 
 
 class Bucket(BucketLike):
-    arg = Arg(rlz.noop)
-    buckets = Arg(rlz.noop)
+    arg = Arg(rlz.column(rlz.any))
+    buckets = Arg(rlz.list_of(rlz.scalar(rlz.any)))
     closed = Arg(rlz.isin({'left', 'right'}), default='left')
     close_extreme = Arg(bool, default=True)
     include_under = Arg(bool, default=False)
@@ -53,12 +53,12 @@ class Bucket(BucketLike):
 
 
 class Histogram(BucketLike):
-    arg = Arg(rlz.noop)
-    nbins = Arg(rlz.noop, default=None)
-    binwidth = Arg(rlz.noop, default=None)
-    base = Arg(rlz.noop, default=None)
+    arg = Arg(rlz.numeric)
+    nbins = Arg(int, default=None)
+    binwidth = Arg(rlz.scalar(rlz.numeric), default=None)
+    base = Arg(rlz.scalar(rlz.numeric), default=None)
     closed = Arg(rlz.isin({'left', 'right'}), default='left')
-    aux_hash = Arg(rlz.noop, default=None)
+    aux_hash = Arg(str, default=None)
 
     def _validate(self):
         if self.nbins is None:
@@ -74,8 +74,8 @@ class Histogram(BucketLike):
 
 class CategoryLabel(ops.ValueOp):
     arg = Arg(rlz.category)
-    labels = Arg(rlz.noop)
-    nulls = Arg(rlz.noop, default=None)
+    labels = Arg(rlz.list_of(rlz.instance_of(str)))
+    nulls = Arg(str, default=None)
     output_type = rlz.shape_like('arg', dt.string)
 
     def _validate(self):
@@ -83,7 +83,7 @@ class CategoryLabel(ops.ValueOp):
         if len(self.labels) != cardinality:
             raise ValueError(
                 'Number of labels must match number of '
-                'categories: {}'.format(cardinality)
+                f'categories: {cardinality}'
             )
 
 

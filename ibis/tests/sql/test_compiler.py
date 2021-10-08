@@ -1091,17 +1091,20 @@ WHERE (`timestamp_col` < date_add(cast({} as timestamp), INTERVAL 3 MONTH)) AND
         # TODO(cpcloud): We should be able to flatten the second subquery into
         # the first
         expected = """\
-SELECT t0.*
+SELECT *
 FROM (
-  SELECT *, avg(`arrdelay`) OVER (PARTITION BY `dest`) AS `dest_avg`,
-         `arrdelay` - avg(`arrdelay`) OVER (PARTITION BY `dest`) AS `dev`
+  SELECT t1.*
   FROM (
-    SELECT `arrdelay`, `dest`
-    FROM airlines
-  ) t2
+    SELECT *, avg(`arrdelay`) OVER (PARTITION BY `dest`) AS `dest_avg`,
+           `arrdelay` - avg(`arrdelay`) OVER (PARTITION BY `dest`) AS `dev`
+    FROM (
+      SELECT `arrdelay`, `dest`
+      FROM airlines
+    ) t3
+  ) t1
+  WHERE t1.`dev` IS NOT NULL
 ) t0
-WHERE t0.`dev` IS NOT NULL
-ORDER BY t0.`dev` DESC
+ORDER BY `dev` DESC
 LIMIT 10"""
         assert result == expected
 
@@ -1717,7 +1720,7 @@ FROM t0
         expr = t[delay_filter].group_by('origin').size()
 
         result = Compiler.to_sql(expr)
-        expected = """\
+        expected = f"""\
 SELECT t0.`origin`, count(*) AS `count`
 FROM airlines t0
   LEFT SEMI JOIN (
@@ -1731,10 +1734,8 @@ FROM airlines t0
     LIMIT 10
   ) t1
     ON t0.`dest` = t1.`dest`
-WHERE t0.`dest` IN {}
-GROUP BY 1""".format(
-            dests_formatted
-        )
+WHERE t0.`dest` IN {dests_formatted}
+GROUP BY 1"""
 
         assert result == expected
 
@@ -2366,8 +2367,7 @@ def test_pushdown_with_or():
     expected = """\
 SELECT *
 FROM functional_alltypes
-WHERE (`double_col` > 3.14) AND
-      (locate('foo', `string_col`) - 1 >= 0) AND
+WHERE ((`double_col` > 3.14) AND (locate('foo', `string_col`) - 1 >= 0)) AND
       (((`int_col` - 1) = 0) OR (`float_col` <= 1.34))"""
     assert result == expected
 
