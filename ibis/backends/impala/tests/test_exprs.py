@@ -752,7 +752,7 @@ class TestInNotIn(unittest.TestCase, ExprSQLTest):
         self.table = self.con.table('alltypes')
 
     def test_field_in_literals(self):
-        values = ['foo', 'bar', 'baz']
+        values = {'foo', 'bar', 'baz'}
         values_formatted = tuple(set(values))
         cases = [
             (self.table.g.isin(values), f"`g` IN {values_formatted}"),
@@ -777,8 +777,8 @@ class TestInNotIn(unittest.TestCase, ExprSQLTest):
         self._check_expr_cases(cases)
 
     def test_isin_notin_in_select(self):
-        values = ['foo', 'bar']
-        values_formatted = tuple(set(values))
+        values = {'foo', 'bar'}
+        values_formatted = tuple(values)
 
         filtered = self.table[self.table.g.isin(values)]
         result = ImpalaCompiler.to_sql(filtered)

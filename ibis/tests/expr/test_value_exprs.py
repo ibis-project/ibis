@@ -234,7 +234,7 @@ def test_literal_array():
 
 def test_mixed_arity(table):
     what = ["bar", table.g, "foo"]
-    expr = api.as_value_expr(what)
+    expr = api.sequence(what)
 
     values = expr.op().values
     assert isinstance(values[1], ir.StringColumn)

@@ -10,7 +10,6 @@ from pandas.api.types import CategoricalDtype, DatetimeTZDtype
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
-import ibis.expr.types as ir
 
 
 def test_no_infer_ambiguities():
@@ -137,15 +136,6 @@ def test_numpy_dtype(numpy_dtype, ibis_dtype):
 )
 def test_pandas_dtype(pandas_dtype, ibis_dtype):
     assert dt.dtype(pandas_dtype) == ibis_dtype
-
-
-def test_series_to_ibis_literal():
-    values = [1, 2, 3, 4]
-    s = pd.Series(values)
-
-    expr = ir.as_value_expr(s)
-    expected = ir.sequence(list(s))
-    assert expr.equals(expected)
 
 
 @pytest.mark.parametrize(

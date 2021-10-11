@@ -475,7 +475,7 @@ class CoalesceLike(ValueOp):
     # Return type: same as the initial argument value, except that integer
     # values are promoted to BIGINT and floating-point values are promoted to
     # DOUBLE; use CAST() when inserting into a smaller numeric column
-    arg = Arg(rlz.list_of(rlz.any))
+    arg = Arg(rlz.value_list_of(rlz.any))
 
     def output_type(self):
         first = self.arg[0]
@@ -773,13 +773,13 @@ class RPad(ValueOp):
 
 class FindInSet(ValueOp):
     needle = Arg(rlz.string)
-    values = Arg(rlz.list_of(rlz.string, min_length=1))
+    values = Arg(rlz.value_list_of(rlz.string, min_length=1))
     output_type = rlz.shape_like('needle', dt.int64)
 
 
 class StringJoin(ValueOp):
     sep = Arg(rlz.string)
-    arg = Arg(rlz.list_of(rlz.string, min_length=1))
+    arg = Arg(rlz.value_list_of(rlz.string, min_length=1))
 
     def output_type(self):
         return rlz.shape_like(tuple(self.flat_args()), dt.string)
@@ -849,7 +849,7 @@ class StringSplit(ValueOp):
 
 
 class StringConcat(ValueOp):
-    arg = Arg(rlz.list_of(rlz.string))
+    arg = Arg(rlz.value_list_of(rlz.string))
     output_type = rlz.shape_like('arg', dt.string)
 
 
@@ -1440,178 +1440,39 @@ class CumulativeAll(CumulativeOp):
 # ---------------------------------------------------------------------
 
 
-class TypedCaseBuilder:
-    __slots__ = ()
-
-    def type(self):
-        types = [result.type() for result in self.results]
-        return dt.highest_precedence(types)
-
-    def else_(self, result_expr):
-        """
-        Specify
-
-        Returns
-        -------
-        builder : CaseBuilder
-        """
-        kwargs = {
-            slot: getattr(self, slot)
-            for slot in self.__slots__
-            if slot != 'default'
-        }
-
-        result_expr = ir.as_value_expr(result_expr)
-        kwargs['default'] = result_expr
-        # Maintain immutability
-        return type(self)(**kwargs)
-
-    def end(self):
-        default = self.default
-        if default is None:
-            default = ir.null().cast(self.type())
-
-        args = [
-            getattr(self, slot) for slot in self.__slots__ if slot != 'default'
-        ]
-        args.append(default)
-        op = self.__class__.case_op(*args)
-        return op.to_expr()
-
-
 class SimpleCase(ValueOp):
     base = Arg(rlz.any)
-    cases = Arg(rlz.list_of(rlz.any))
-    results = Arg(rlz.list_of(rlz.any))
+    cases = Arg(rlz.value_list_of(rlz.any))
+    results = Arg(rlz.value_list_of(rlz.any))
     default = Arg(rlz.any)
 
     def _validate(self):
         assert len(self.cases) == len(self.results)
 
     def root_tables(self):
-        return distinct_roots(
-            *itertools.chain(
-                [self.base],
-                self.cases,
-                self.results,
-                [] if self.default is None else [self.default],
-            )
-        )
+        return distinct_roots(*self.flat_args())
 
     def output_type(self):
-        exprs = self.results + [self.default]
-        return rlz.shape_like(self.base, dtype=exprs.type())
-
-
-class SimpleCaseBuilder(TypedCaseBuilder):
-    __slots__ = 'base', 'cases', 'results', 'default'
-
-    case_op = SimpleCase
-
-    def __init__(self, base, cases=None, results=None, default=None):
-        self.base = base
-        self.cases = list(cases if cases is not None else [])
-        self.results = list(results if results is not None else [])
-        self.default = default
-
-    def when(self, case_expr, result_expr):
-        """
-        Add a new case-result pair.
-
-        Parameters
-        ----------
-        case : Expr
-          Expression to equality-compare with base expression. Must be
-          comparable with the base.
-        result : Expr
-          Value when the case predicate evaluates to true.
-
-        Returns
-        -------
-        builder : CaseBuilder
-        """
-        case_expr = ir.as_value_expr(case_expr)
-        result_expr = ir.as_value_expr(result_expr)
-
-        if not rlz.comparable(self.base, case_expr):
-            raise TypeError(
-                'Base expression and passed case are not ' 'comparable'
-            )
-
-        cases = list(self.cases)
-        cases.append(case_expr)
-
-        results = list(self.results)
-        results.append(result_expr)
-
-        # Maintain immutability
-        return type(self)(self.base, cases, results, self.default)
+        values = self.results + [self.default]
+        dtype = rlz.highest_precedence_dtype(values)
+        return rlz.shape_like(self.base, dtype=dtype)
 
 
 class SearchedCase(ValueOp):
-    cases = Arg(rlz.list_of(rlz.boolean))
-    results = Arg(rlz.list_of(rlz.any))
+    cases = Arg(rlz.value_list_of(rlz.boolean))
+    results = Arg(rlz.value_list_of(rlz.any))
     default = Arg(rlz.any)
 
     def _validate(self):
         assert len(self.cases) == len(self.results)
 
     def root_tables(self):
-        cases, results, default = self.args
-        return distinct_roots(
-            *itertools.chain(
-                cases.values,
-                results.values,
-                [] if default is None else [default],
-            )
-        )
+        return distinct_roots(*self.flat_args())
 
     def output_type(self):
         exprs = self.results + [self.default]
         dtype = rlz.highest_precedence_dtype(exprs)
         return rlz.shape_like(self.cases, dtype)
-
-
-class SearchedCaseBuilder(TypedCaseBuilder):
-    __slots__ = 'cases', 'results', 'default'
-
-    case_op = SearchedCase
-
-    def __init__(self, cases=None, results=None, default=None):
-        self.cases = list(cases if cases is not None else [])
-        self.results = list(results if results is not None else [])
-        self.default = default
-
-    def when(self, case_expr, result_expr):
-        """
-        Add a new case-result pair.
-
-        Parameters
-        ----------
-        case : Expr
-          Expression to equality-compare with base expression. Must be
-          comparable with the base.
-        result : Expr
-          Value when the case predicate evaluates to true.
-
-        Returns
-        -------
-        builder : CaseBuilder
-        """
-        case_expr = ir.as_value_expr(case_expr)
-        result_expr = ir.as_value_expr(result_expr)
-
-        if not isinstance(case_expr, ir.BooleanValue):
-            raise TypeError(case_expr)
-
-        cases = list(self.cases)
-        cases.append(case_expr)
-
-        results = list(self.results)
-        results.append(result_expr)
-
-        # Maintain immutability
-        return type(self)(cases, results, self.default)
 
 
 class Where(ValueOp):
@@ -2496,7 +2357,7 @@ class Contains(ValueOp, BooleanValueOp):
     options = Arg(
         rlz.one_of(
             [
-                rlz.list_of(rlz.any),
+                rlz.value_list_of(rlz.any),
                 rlz.set_,
                 rlz.column(rlz.any),
                 rlz.array_of(rlz.any),
@@ -2504,26 +2365,8 @@ class Contains(ValueOp, BooleanValueOp):
         )
     )
 
-    def __init__(self, value, options):
-        # it can be a single expression, like a column
-        if not isinstance(options, ir.Expr):
-            if util.any_of(options, ir.Expr):
-                # or a list of expressions
-                options = ir.sequence(options)
-            else:
-                # or a set of scalar values
-                options = frozenset(options)
-        super().__init__(value, options)
-
     def output_type(self):
-        all_args = [self.value]
-
-        if isinstance(self.options, ir.ListExpr):
-            all_args += self.options
-        else:
-            all_args += [self.options]
-
-        return rlz.shape_like(all_args, dt.boolean)
+        return rlz.shape_like(list(self.flat_args()), dt.boolean)
 
 
 class NotContains(Contains):
@@ -2930,7 +2773,7 @@ class IntervalFromInteger(ValueOp):
 
 
 class ArrayColumn(ValueOp):
-    cols = Arg(rlz.list_of(rlz.column(rlz.any), min_length=1))
+    cols = Arg(rlz.value_list_of(rlz.column(rlz.any), min_length=1))
 
     def _validate(self):
         if len({col.type() for col in self.cols}) > 1:
