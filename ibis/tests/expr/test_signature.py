@@ -1,13 +1,18 @@
+from collections import OrderedDict
 from functools import partial
 from inspect import Signature
-from collections import OrderedDict
 
 import pytest
 from toolz import identity
 
 from ibis.common.exceptions import IbisTypeError
-from ibis.expr.signature import Annotable, Argument, Parameter, Optional, Validator
-
+from ibis.expr.signature import (
+    Annotable,
+    Argument,
+    Optional,
+    Parameter,
+    Validator,
+)
 
 # @pytest.mark.parametrize(
 #     ('validator', 'expected'),
@@ -187,29 +192,37 @@ def test_signature_inheritance():
     class IntAddClip(FloatAddClip, IntBinop):
         pass
 
-    assert IntBinop.__signature__ == Signature([
-        Parameter('left', validator=IsInt()),
-        Parameter('right', validator=IsInt())
-    ])
+    assert IntBinop.__signature__ == Signature(
+        [
+            Parameter('left', validator=IsInt()),
+            Parameter('right', validator=IsInt()),
+        ]
+    )
 
-    assert FloatAddRhs.__signature__ == Signature([
-        Parameter('left', validator=IsInt()),
-        Parameter('right', validator=IsFloat())
-    ])
+    assert FloatAddRhs.__signature__ == Signature(
+        [
+            Parameter('left', validator=IsInt()),
+            Parameter('right', validator=IsFloat()),
+        ]
+    )
 
-    assert FloatAddClip.__signature__ == Signature([
-        Parameter('left', validator=IsFloat()),
-        Parameter('right', validator=IsFloat()),
-        Parameter('clip_lower', validator=Optional(IsInt(), default=0)),
-        Parameter('clip_upper', validator=Optional(IsInt(), default=10)),
-    ])
+    assert FloatAddClip.__signature__ == Signature(
+        [
+            Parameter('left', validator=IsFloat()),
+            Parameter('right', validator=IsFloat()),
+            Parameter('clip_lower', validator=Optional(IsInt(), default=0)),
+            Parameter('clip_upper', validator=Optional(IsInt(), default=10)),
+        ]
+    )
 
-    assert IntAddClip.__signature__ == Signature([
-        Parameter('left', validator=IsInt()),
-        Parameter('right', validator=IsInt()),
-        Parameter('clip_lower', validator=Optional(IsInt(), default=0)),
-        Parameter('clip_upper', validator=Optional(IsInt(), default=10)),
-    ])
+    assert IntAddClip.__signature__ == Signature(
+        [
+            Parameter('left', validator=IsInt()),
+            Parameter('right', validator=IsInt()),
+            Parameter('clip_lower', validator=Optional(IsInt(), default=0)),
+            Parameter('clip_upper', validator=Optional(IsInt(), default=10)),
+        ]
+    )
 
 
 def test_slots_are_inherited_and_overridable():

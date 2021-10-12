@@ -1,13 +1,13 @@
 import inspect
 from collections import OrderedDict
 
-import ibis.util as util
 import ibis.expr.rules as rlz
+import ibis.util as util
 
 try:
-    from cytoolz import unique, curry
+    from cytoolz import curry, unique
 except ImportError:
-    from toolz import unique, curry
+    from toolz import curry, unique
 
 
 EMPTY = inspect.Parameter.empty  # marker for missing argument

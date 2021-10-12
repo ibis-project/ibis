@@ -8,7 +8,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 
-
 _map_interval_to_microseconds = {
     'W': 604800000000,
     'D': 86400000000,
