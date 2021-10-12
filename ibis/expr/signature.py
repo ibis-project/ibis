@@ -5,9 +5,9 @@ import ibis.expr.rules as rlz
 import ibis.util as util
 
 try:
-    from cytoolz import curry, unique
+    from cytoolz import unique
 except ImportError:
-    from toolz import curry, unique
+    from toolz import unique
 
 
 EMPTY = inspect.Parameter.empty  # marker for missing argument

@@ -1,5 +1,3 @@
-from collections import OrderedDict
-from functools import partial
 from inspect import Signature
 
 import pytest
@@ -13,20 +11,6 @@ from ibis.expr.signature import (
     Parameter,
     Validator,
 )
-
-# @pytest.mark.parametrize(
-#     ('validator', 'expected'),
-#     [(lambda x: x, 3), (lambda x: x ** 2, 9), (lambda x: x + 1, 4)],
-#     ids=['identity', 'square', 'inc'],
-# )
-# def test_argument(validator, expected):
-#     arg = Argument(validator)
-
-#     # test coercion
-#     assert arg.validate(3) == expected
-
-#     # syntactic sugar
-#     assert arg(3) == expected
 
 
 @pytest.mark.parametrize('validator', [3, 'coerce'])
@@ -92,33 +76,6 @@ def test_invalid_optional(arg, value, expected):
         arg(value)
 
 
-# between = TypeSignature(
-#     [
-#         ('value', Argument(int)),
-#         ('lower', Argument(int, default=0)),
-#         ('upper', Argument(int, default=None)),
-#     ]
-# )
-
-
-# @pytest.mark.parametrize(
-#     ('call', 'expected'),
-#     [
-#         (partial(between, 3), (3, 0, None)),
-#         (partial(between, 3), (3, 0, None)),
-#         (partial(between, 3), (3, 0, None)),
-#         (partial(between, 3, 1), (3, 1, None)),
-#         (partial(between, 4, 2, 5), (4, 2, 5)),
-#         (partial(between, 3, lower=1), (3, 1, None)),
-#         (partial(between, 4, lower=2, upper=5), (4, 2, 5)),
-#         (partial(between, 4, upper=5), (4, 0, 5)),
-#         (partial(between, value=4, upper=5), (4, 0, 5)),
-#     ],
-# )
-# def test_input_signature(call, expected):
-#     assert call() == list(zip(['value', 'lower', 'upper'], expected))
-
-
 def test_annotable():
     class Between(Annotable):
         value = Argument(int)
@@ -148,24 +105,6 @@ def test_maintain_definition_order():
 
     param_names = list(Between.__signature__.parameters.keys())
     assert param_names == ['value', 'lower', 'upper']
-
-
-# def test_signature_equals():
-#     s1 = TypeSignature([('left', Argument(int)), ('right', Argument(int))])
-#     s2 = TypeSignature([('left', Argument(int)), ('right', Argument(int))])
-#     s3 = TypeSignature([('left', Argument(int)), ('right', Argument(float))])
-#     s4 = TypeSignature([('left', Argument(int)), ('right', Argument(float))])
-#     s5 = TypeSignature(
-#         [('left_one', Argument(int)), ('right', Argument(float))]
-#     )
-#     s6 = TypeSignature([('left_one', Argument(int)), ('right', Argument(int))])
-#     assert s1 == s2
-#     assert s3 == s4
-#     assert s1 != s3
-#     assert s2 != s4
-#     assert s1 != s5
-#     assert s2 != s6
-#     assert s5 != s6
 
 
 def test_signature_inheritance():

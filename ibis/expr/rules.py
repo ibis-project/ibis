@@ -1,4 +1,3 @@
-import collections
 import enum
 import functools
 from contextlib import suppress
@@ -12,9 +11,9 @@ import ibis.expr.types as ir
 import ibis.util as util
 
 try:
-    from cytoolz import compose, curry, identity
+    from cytoolz import compose, curry
 except ImportError:
-    from toolz import compose, curry, identity
+    from toolz import compose, curry
 
 
 optional = sig.Optional
