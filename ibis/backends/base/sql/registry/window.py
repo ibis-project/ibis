@@ -7,7 +7,7 @@ import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.expr.signature import Argument
+
 
 _map_interval_to_microseconds = {
     'W': 604800000000,
@@ -42,9 +42,7 @@ _cumulative_to_reduction = {
 }
 
 
-def _replace_interval_with_scalar(
-    expr: Union[ir.Expr, dt.Interval, float]
-) -> Union[ir.Expr, float, Argument]:
+def _replace_interval_with_scalar(expr: Union[ir.Expr, dt.Interval, float]):
     """
     Good old Depth-First Search to identify the Interval and IntervalValue
     components of the expression and return a comparable scalar expression.

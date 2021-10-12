@@ -6,7 +6,7 @@ import ibis  # noqa: E402
 import ibis.expr.operations as ops  # noqa: E402
 import ibis.expr.rules as rlz  # noqa: E402
 import ibis.expr.types as ir  # noqa: E402
-from ibis.expr.signature import Argument as Arg  # noqa: E402
+from ibis.expr.rules import Arg  # noqa: E402
 
 pytest.importorskip('graphviz')
 

@@ -16,8 +16,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.expr.schema import HasSchema, Schema
-from ibis.expr.signature import Annotable
-from ibis.expr.signature import Argument as Arg
+from ibis.expr.signature import Annotable, Argument as Arg
 
 
 def _safe_repr(x, memo=None):
