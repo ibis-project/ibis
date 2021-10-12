@@ -194,6 +194,11 @@ def instance_of(klass, arg, **kwargs):
 
 
 @validator
+def coerce_to(klass, arg, **kwargs):
+    return klass(arg)
+
+
+@validator
 def value(dtype, arg, **kwargs):
     """Validates that the given argument is a Value with a particular datatype
 

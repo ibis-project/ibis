@@ -1695,12 +1695,14 @@ class AsOfJoin(Join):
         super().__init__(left, right, predicates)
         self.by = _clean_join_predicates(self.left, self.right, by)
         self.tolerance = tolerance
+
         self._validate_args(['by', 'tolerance'])
 
     def _validate_args(self, args: List[str]):
+        # this should be removed altogether
         for arg in args:
-            argument = self.signature[arg]
-            value = argument.validate(getattr(self, arg))
+            argument = self.__signature__.parameters[arg]
+            value = argument.validate(self, getattr(self, arg))
             setattr(self, arg, value)
 
 
@@ -1785,7 +1787,7 @@ def to_sort_key(table, key):
 
 class SortKey(Node):
     expr = Arg(rlz.column(rlz.any))
-    ascending = Arg(rlz.instance_of(bool), default=True)
+    ascending = Arg(rlz.coerce_to(bool), default=True)
 
     def __repr__(self):
         # Temporary

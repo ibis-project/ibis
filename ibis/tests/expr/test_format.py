@@ -226,28 +226,6 @@ def test_scalar_parameter_formatting():
     assert str(value) == 'my_param = ScalarParameter[int64]'
 
 
-def test_repring_does_not_show_with_option():
-    class CustomExpr(Expr):
-        pass
-
-    class CustomOp(Node):
-        first_arg = Arg(int, show=False)
-        second_arg = Arg(float)
-
-        def output_type(self):
-            return CustomExpr
-
-    op = CustomOp(1, 2.0)
-    expr = op.to_expr()
-
-    result = repr(expr)
-    expected = """\
-CustomOp[CustomExpr]
-  second_arg:
-    2.0"""
-    assert result == expected
-
-
 def test_same_column_multiple_aliases():
     table = ibis.table([('col', 'int64')], name='t')
     expr = table[table.col.name('alias1'), table.col.name('alias2')]

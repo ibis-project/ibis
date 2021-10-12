@@ -51,20 +51,15 @@ class Optional(Validator):
 
 class Parameter(inspect.Parameter):
 
-    __slots__ = ('_validator', '_show')
+    __slots__ = ('_validator',)
 
-    def __init__(self, name, *, validator=EMPTY, show=True):
+    def __init__(self, name, *, validator=EMPTY):
         super().__init__(
             name,
             kind=Parameter.POSITIONAL_OR_KEYWORD,
             default=None if isinstance(validator, Optional) else EMPTY,
         )
-        self._show = show
         self._validator = validator
-
-    @property
-    def show(self):
-        return self._show
 
     @property
     def validator(self):
@@ -77,7 +72,7 @@ class Parameter(inspect.Parameter):
             return self.validator(arg, this=this)
 
 
-def Argument(validator, default=EMPTY, show=True):
+def Argument(validator, default=EMPTY):
     if isinstance(validator, Validator):
         pass
     elif isinstance(validator, type):

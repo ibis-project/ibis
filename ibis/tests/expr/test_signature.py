@@ -6,7 +6,7 @@ import pytest
 from toolz import identity
 
 from ibis.common.exceptions import IbisTypeError
-from ibis.expr.signature import Annotable, Argument, Parameter, Optional, Validator, EMPTY
+from ibis.expr.signature import Annotable, Argument, Parameter, Optional, Validator
 
 
 # @pytest.mark.parametrize(
@@ -54,7 +54,7 @@ def test_argument_raise_on_missing_value():
 )
 def test_optional_argument(default, expected):
     validator = Optional(lambda x: x, default=default)
-    assert validator(EMPTY) == expected
+    assert validator(None) == expected
 
 
 @pytest.mark.parametrize(
