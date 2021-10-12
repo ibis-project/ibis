@@ -2955,11 +2955,7 @@ class ScalarParameter(ValueOp):
     _counter = itertools.count()
 
     dtype = Arg(rlz.datatype)
-    counter = Arg(int, default=1)#default=lambda: next(ScalarParameter._counter))
-
-    def __init__(self, *args, **kwargs):
-        print(args, kwargs)
-        super().__init__(*args, **kwargs)
+    counter = Arg(int, default=lambda: next(ScalarParameter._counter))
 
     def resolve_name(self):
         return f'param_{self.counter:d}'

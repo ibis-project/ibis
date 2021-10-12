@@ -38,7 +38,7 @@ class Optional(Validator):
         self.default = default
 
     def __call__(self, arg, **kwargs):
-        if arg is EMPTY or arg is None:
+        if arg is None:
             if self.default is None:
                 return None
             elif util.is_function(self.default):
@@ -54,17 +54,13 @@ class Parameter(inspect.Parameter):
     __slots__ = ('_validator', '_show')
 
     def __init__(self, name, *, validator=EMPTY, show=True):
-        if isinstance(validator, Optional):
-            default = validator.default
-        else:
-            default = EMPTY
         super().__init__(
-            name, kind=Parameter.POSITIONAL_OR_KEYWORD, default=default
+            name,
+            kind=Parameter.POSITIONAL_OR_KEYWORD,
+            default=None if isinstance(validator, Optional) else EMPTY,
         )
         self._show = show
         self._validator = validator
-        # if default is not EMPTY:
-        #     self.validate(default)
 
     @property
     def show(self):
@@ -75,13 +71,10 @@ class Parameter(inspect.Parameter):
         return self._validator
 
     def validate(self, this, arg):
-        if self.validator is not EMPTY:
-            arg = self.validator(arg, this=this)
-
-        # if self.annotation is not EMPTY:
-        #     typeguard.check_type(self.name, value, self.annotation)
-
-        return arg
+        if self.validator is EMPTY:
+            return arg
+        else:
+            return self.validator(arg, this=this)
 
 
 def Argument(validator, default=EMPTY, show=True):
@@ -113,7 +106,7 @@ class AnnotableMeta(type):
     def __prepare__(metacls, name, bases, **kwds):
         return OrderedDict()
 
-    def __new__(meta, name, bases, dct):
+    def __new__(metacls, clsname, bases, dct):
         slots, params = [], OrderedDict()
 
         for parent in bases:
@@ -148,7 +141,7 @@ class AnnotableMeta(type):
         attribs['__slots__'] = tuple(unique(slots))
         attribs['__signature__'] = signature
 
-        return super().__new__(meta, name, bases, attribs)
+        return super().__new__(metacls, clsname, bases, attribs)
 
 
 class Annotable(metaclass=AnnotableMeta):
