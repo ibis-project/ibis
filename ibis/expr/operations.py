@@ -723,21 +723,25 @@ class Capitalize(StringUnaryOp):
 
 
 class Substring(ValueOp):
-    arg = Arg(rlz.string)
-    start = Arg(rlz.integer)
-    length = Arg(rlz.integer, default=None)
+    arg = rlz.string
+    start = rlz.integer
+    length = rlz.optional(rlz.integer, default=None)
     output_type = rlz.shape_like('arg', dt.string)
 
 
 class StrRight(ValueOp):
-    arg = Arg(rlz.string)
-    nchars = Arg(rlz.integer)
+    arg = rlz.string
+    nchars = rlz.integer
     output_type = rlz.shape_like('arg', dt.string)
 
 
 class Repeat(ValueOp):
-    arg = Arg(rlz.string)
-    times = Arg(rlz.integer)
+    # we may choose other syntax alternatives in the future
+    #   arg = ir.StringValue
+    # or
+    #   arg: ir.StringValue
+    arg = rlz.string
+    times = rlz.integer
     output_type = rlz.shape_like('arg', dt.string)
 
 
