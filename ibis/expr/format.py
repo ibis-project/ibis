@@ -231,11 +231,11 @@ class ExprFormatter:
             for arg in op.flat_args():
                 visit(arg)
         else:
-            signature = op.signature
+            parameters = op.__signature__.parameters
             arg_name_pairs = (
                 (arg, name)
                 for arg, name in zip(op.args, arg_names)
-                if signature[name].show
+                if parameters[name].show
             )
             for arg, name in arg_name_pairs:
                 if name == 'arg' and isinstance(op, ops.ValueOp):

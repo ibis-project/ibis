@@ -87,15 +87,17 @@ def cast(source, target):
 # Input type validators / coercion functions
 
 
-noop = validator(identity)
+@validator
+def noop(arg, **kwargs):
+    return arg
 
 
 @validator
-def one_of(inners, arg, *, this):
+def one_of(inners, arg, **kwargs):
     """At least one of the inner validators must pass"""
     for inner in inners:
         with suppress(com.IbisTypeError, ValueError):
-            return inner(arg)
+            return inner(arg, **kwargs)
 
     rules_formatted = ', '.join(map(repr, inners))
     raise com.IbisTypeError(
@@ -126,7 +128,7 @@ def all_of(inners, arg, *, this):
 
 
 @validator
-def isin(values, arg, *, this):
+def isin(values, arg, **kwargs):
     if arg not in values:
         raise ValueError(f'Value with type {type(arg)} is not in {values!r}')
     if isinstance(values, dict):  # TODO check for mapping instead
@@ -136,7 +138,7 @@ def isin(values, arg, *, this):
 
 
 @validator
-def member_of(obj, arg, *, this):
+def member_of(obj, arg, **kwargs):
     if isinstance(arg, ir.EnumValue):
         arg = arg.op().value
     if isinstance(arg, enum.Enum):
@@ -151,7 +153,7 @@ def member_of(obj, arg, *, this):
 
 
 @validator
-def list_of(inner, arg, *, this, min_length=0):
+def list_of(inner, arg, min_length=0, **kwargs):
     if not util.is_iterable(arg):
         raise com.IbisTypeError('Argument must be a sequence')
 
@@ -159,23 +161,23 @@ def list_of(inner, arg, *, this, min_length=0):
         raise com.IbisTypeError(
             f'Arg must have at least {min_length} number of elements'
         )
-    return [inner(item, this=this) for item in arg]
+    return [inner(item, **kwargs) for item in arg]
 
 
 @validator
-def value_list_of(inner, arg, *, this, min_length=0):
+def value_list_of(inner, arg, **kwargs):
     # TODO(kszucs): would be nice to remove ops.ValueList
     # the main blocker is that some of the backends execution
     # model depends on the wrapper operation, for example
     # the dispatcher in pandas requires operation objects
     import ibis.expr.operations as ops
 
-    values = list_of(inner, arg, this=this, min_length=min_length)
+    values = list_of(inner, arg, **kwargs)
     return ops.ValueList(values).to_expr()
 
 
 @validator
-def datatype(arg):
+def datatype(arg, **kwargs):
     return dt.dtype(arg)
 
 
@@ -192,7 +194,7 @@ def instance_of(klass, arg, **kwargs):
 
 
 @validator
-def value(dtype, arg, *, this):
+def value(dtype, arg, **kwargs):
     """Validates that the given argument is a Value with a particular datatype
 
     Parameters
@@ -236,17 +238,17 @@ def value(dtype, arg, *, this):
 
 
 @validator
-def scalar(inner, arg, *, this):
-    return instance_of(ir.ScalarExpr, inner(arg, this=this))
+def scalar(inner, arg, **kwargs):
+    return instance_of(ir.ScalarExpr, inner(arg, **kwargs))
 
 
 @validator
-def column(inner, arg, *, this):
-    return instance_of(ir.ColumnExpr, inner(arg, this=this))
+def column(inner, arg, **kwargs):
+    return instance_of(ir.ColumnExpr, inner(arg, **kwargs))
 
 
 @validator
-def array_of(inner, arg, *, this):
+def array_of(inner, arg, **kwargs):
     val = arg if isinstance(arg, ir.Expr) else ir.literal(arg)
     argtype = val.type()
     if not isinstance(argtype, dt.Array):
@@ -254,9 +256,9 @@ def array_of(inner, arg, *, this):
             'Argument must be an array, got expression {} which is of type '
             '{}'.format(val, val.type())
         )
-    value_dtype = inner(val[0], this=this).type()
+    value_dtype = inner(val[0], **kwargs).type()
     array_dtype = dt.Array(value_dtype)
-    return value(array_dtype, val, this=this)
+    return value(array_dtype, val, **kwargs)
 
 
 any = value(dt.any)
@@ -291,7 +293,7 @@ multipolygon = value(dt.MultiPolygon)
 
 
 @validator
-def interval(arg, units=None):
+def interval(arg, units=None, **kwargs):
     arg = value(dt.Interval, arg)
     unit = arg.type().unit
     if units is not None and unit not in units:
@@ -301,7 +303,7 @@ def interval(arg, units=None):
 
 
 @validator
-def client(arg):
+def client(arg, **kwargs):
     from ibis.backends.base import BaseBackend
 
     return instance_of(BaseBackend, arg)
@@ -362,7 +364,7 @@ def typeof(arg):
 
 
 @validator
-def table(schema, arg):
+def table(schema, arg, **kwargs):
     """A table argument.
 
     Parameters

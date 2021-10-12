@@ -20,7 +20,7 @@ import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 from ibis import literal
 from ibis.common.exceptions import IbisTypeError
-from ibis.expr.rules import Arg
+from ibis.expr.signature import Argument as Arg
 from ibis.tests.util import assert_equal
 
 

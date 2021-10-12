@@ -51,9 +51,9 @@ class Optional(Validator):
 
 class Parameter(inspect.Parameter):
 
-    __slots__ = ('_validator',)
+    __slots__ = ('_validator', '_show')
 
-    def __init__(self, name, *, validator=EMPTY):
+    def __init__(self, name, *, validator=EMPTY, show=True):
         if isinstance(validator, Optional):
             default = validator.default
         else:
@@ -61,9 +61,14 @@ class Parameter(inspect.Parameter):
         super().__init__(
             name, kind=Parameter.POSITIONAL_OR_KEYWORD, default=default
         )
+        self._show = show
         self._validator = validator
         # if default is not EMPTY:
         #     self.validate(default)
+
+    @property
+    def show(self):
+        return self._show
 
     @property
     def validator(self):
@@ -80,11 +85,15 @@ class Parameter(inspect.Parameter):
 
 
 def Argument(validator, default=EMPTY, show=True):
-    if isinstance(validator, type):
+    if isinstance(validator, Validator):
+        pass
+    elif isinstance(validator, type):
         validator = rlz.instance_of(validator)
     elif isinstance(validator, tuple):
         assert util.all_of(validator, type)
         validator = rlz.instance_of(validator)
+    elif isinstance(validator, Validator):
+        validator = validator
     elif callable(validator):
         validator = ValidatorFunction(validator)
     else:
@@ -92,10 +101,11 @@ def Argument(validator, default=EMPTY, show=True):
             'Argument validator must be a callable, type or '
             'tuple of types, given: {}'.format(validator)
         )
-    if default is not EMPTY:
-        return Optional(validator, default=default)
-    else:
+
+    if default is EMPTY:
         return validator
+    else:
+        return Optional(validator, default=default)
 
 
 class AnnotableMeta(type):
