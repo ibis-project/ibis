@@ -97,9 +97,8 @@ def to_graph(expr, node_attr=None, edge_attr=None):
             vhash = str(hash(vkey))
             g.node(vhash, label=vlabel)
 
-            node = e.op()
-            args = node.args
-            for arg, name in zip(args, node.signature.names()):
+            op = e.op()
+            for name, arg in zip(op.argnames, op.args):
                 if isinstance(arg, ir.Expr):
                     u = arg, name
                     ukey = arg._key, name
