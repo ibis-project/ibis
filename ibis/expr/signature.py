@@ -72,6 +72,20 @@ class Parameter(inspect.Parameter):
 
 
 def Argument(validator, default=EMPTY):
+    """Argument constructor
+
+    Parameters
+    ----------
+    validator : Union[Callable[[arg], coerced], Type, Tuple[Type]]
+        Function which handles validation and/or coercion of the given
+        argument.
+    default : Union[Any, Callable[[], str]]
+        In case of missing (None) value for validation this will be used.
+        Note, that default value (except for None) must also pass the inner
+        validator.
+        If callable is passed, it will be executed just before the inner,
+        and itsreturn value will be treaded as default.
+    """
     if isinstance(validator, Validator):
         pass
     elif isinstance(validator, type):
