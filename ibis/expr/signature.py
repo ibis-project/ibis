@@ -1,4 +1,5 @@
 import inspect
+import typing
 
 import ibis.expr.rules as rlz
 import ibis.util as util
@@ -12,9 +13,8 @@ except ImportError:
 EMPTY = inspect.Parameter.empty  # marker for missing argument
 
 
-class Validator:
-    def __call__(self, arg, **kwargs):
-        raise NotImplementedError()
+class Validator(typing.Callable):
+    pass
 
 
 class ValidatorFunction(Validator):

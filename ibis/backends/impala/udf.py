@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import abc
 import re
 
 import ibis.common.exceptions as com
@@ -39,8 +40,9 @@ class Function:
         self.name = name or util.guid()
         self._klass = self._create_operation_class()
 
+    @abc.abstractmethod
     def _create_operation_class(self):
-        raise NotImplementedError()
+        pass
 
     def __repr__(self):
         klass = type(self).__name__
