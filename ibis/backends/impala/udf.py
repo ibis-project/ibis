@@ -11,8 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import OrderedDict
 import re
+from collections import OrderedDict
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
