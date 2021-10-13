@@ -724,21 +724,21 @@ class Capitalize(StringUnaryOp):
 
 
 class Substring(ValueOp):
-    arg = rlz.string
-    start = rlz.integer
-    length = rlz.optional(rlz.integer, default=None)
+    arg = Arg(rlz.string)
+    start = Arg(rlz.integer)
+    length = Arg(rlz.integer, default=None)
     output_type = rlz.shape_like('arg', dt.string)
 
 
 class StrRight(ValueOp):
-    arg = rlz.string
-    nchars = rlz.integer
+    arg = Arg(rlz.string)
+    nchars = Arg(rlz.integer)
     output_type = rlz.shape_like('arg', dt.string)
 
 
 class Repeat(ValueOp):
-    arg = rlz.string
-    times = rlz.integer
+    arg = Arg(rlz.string)
+    times = Arg(rlz.integer)
     output_type = rlz.shape_like('arg', dt.string)
 
 
@@ -3009,7 +3009,7 @@ class ExpressionList(Node):
 class ValueList(ValueOp):
     """Data structure for a list of value expressions"""
 
-    values = rlz.list_of(rlz.any, container=tuple)
+    values = Arg(rlz.tuple_of(rlz.any))
     display_argnames = False  # disable showing argnames in repr
 
     def output_type(self):

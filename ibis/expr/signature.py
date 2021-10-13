@@ -1,5 +1,4 @@
 import inspect
-from collections import OrderedDict
 
 import ibis.expr.rules as rlz
 import ibis.util as util
@@ -97,12 +96,8 @@ def Argument(validator, default=EMPTY):
 
 
 class AnnotableMeta(type):
-    @classmethod
-    def __prepare__(metacls, name, bases, **kwds):
-        return OrderedDict()
-
     def __new__(metacls, clsname, bases, dct):
-        slots, params = [], OrderedDict()
+        slots, params = [], {}
 
         for parent in bases:
             # inherit parent slots
@@ -112,8 +107,6 @@ class AnnotableMeta(type):
             if hasattr(parent, '__signature__'):
                 params.update(parent.__signature__.parameters)
 
-        # finally apply definitions from the currently created class
-        # thanks to __prepare__ attrs are already ordered
         attribs = {}
         for name, attrib in dct.items():
             if isinstance(attrib, Validator):

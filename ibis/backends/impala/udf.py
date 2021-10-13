@@ -12,7 +12,6 @@
 # limitations under the License.
 
 import re
-from collections import OrderedDict
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -67,28 +66,20 @@ class Function:
 
 class ScalarFunction(Function):
     def _create_operation_class(self):
-        fields = OrderedDict(
-            [
-                (f'_{i}', rlz.value(dtype))
-                for i, dtype in enumerate(self.inputs)
-            ]
-        )
+        fields = {
+            f'_{i}': rlz.value(dtype) for i, dtype in enumerate(self.inputs)
+        }
         fields['output_type'] = rlz.shape_like('args', self.output)
-
         return type(f"UDF_{self.name}", (ops.ValueOp,), fields)
 
 
 class AggregateFunction(Function):
     def _create_operation_class(self):
-        fields = OrderedDict(
-            [
-                (f'_{i}', rlz.value(dtype))
-                for i, dtype in enumerate(self.inputs)
-            ]
-        )
+        fields = {
+            f'_{i}': rlz.value(dtype) for i, dtype in enumerate(self.inputs)
+        }
         fields['output_type'] = lambda op: self.output.scalar_type()
         fields['_reduction'] = True
-
         return type(f"UDA_{self.name}", (ops.ValueOp,), fields)
 
 
