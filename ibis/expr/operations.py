@@ -737,10 +737,6 @@ class StrRight(ValueOp):
 
 
 class Repeat(ValueOp):
-    # we may choose other syntax alternatives in the future
-    #   arg = ir.StringValue
-    # or
-    #   arg: ir.StringValue
     arg = rlz.string
     times = rlz.integer
     output_type = rlz.shape_like('arg', dt.string)
@@ -3013,11 +3009,8 @@ class ExpressionList(Node):
 class ValueList(ValueOp):
     """Data structure for a list of value expressions"""
 
-    values = Arg(rlz.noop)
+    values = rlz.list_of(rlz.any, container=tuple)
     display_argnames = False  # disable showing argnames in repr
-
-    def __init__(self, values):
-        super().__init__(tuple(map(rlz.any, values)))
 
     def output_type(self):
         dtype = rlz.highest_precedence_dtype(self.values)

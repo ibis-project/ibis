@@ -152,7 +152,7 @@ def member_of(obj, arg, **kwargs):
 
 
 @validator
-def list_of(inner, arg, min_length=0, **kwargs):
+def list_of(inner, arg, min_length=0, container=list, **kwargs):
     if not util.is_iterable(arg):
         raise com.IbisTypeError('Argument must be a sequence')
 
@@ -160,7 +160,7 @@ def list_of(inner, arg, min_length=0, **kwargs):
         raise com.IbisTypeError(
             f'Arg must have at least {min_length} number of elements'
         )
-    return [inner(item, **kwargs) for item in arg]
+    return container(inner(item, **kwargs) for item in arg)
 
 
 @validator
