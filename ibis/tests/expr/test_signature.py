@@ -13,6 +13,20 @@ from ibis.expr.signature import (
 )
 
 
+class IsInt(Validator):
+    def __call__(self, arg, **kwargs):
+        if not isinstance(arg, int):
+            raise TypeError(int)
+        return arg
+
+
+class IsFloat(Validator):
+    def __call__(self, arg, **kwargs):
+        if not isinstance(arg, float):
+            raise TypeError(float)
+        return arg
+
+
 @pytest.mark.parametrize('validator', [3, 'coerce'])
 def test_invalid_validator(validator):
     with pytest.raises(TypeError):
@@ -108,14 +122,6 @@ def test_maintain_definition_order():
 
 
 def test_signature_inheritance():
-    class IsInt(Validator):
-        def __call__(self, arg, **kwargs):
-            return isinstance(arg, int)
-
-    class IsFloat(Validator):
-        def __call__(self, arg, **kwargs):
-            return isinstance(arg, float)
-
     class IntBinop(Annotable):
         left = IsInt()
         right = IsInt()
@@ -162,6 +168,33 @@ def test_signature_inheritance():
             Parameter('clip_upper', validator=Optional(IsInt(), default=10)),
         ]
     )
+
+
+def test_positional_argument_reordering():
+    class Farm(Annotable):
+        ducks = IsInt()
+        donkeys = IsInt()
+        horses = IsInt()
+        goats = IsInt()
+        chickens = IsInt()
+
+    class NoHooves(Farm):
+        horses = Optional(IsInt(), default=0)
+        goats = Optional(IsInt(), default=0)
+        donkeys = Optional(IsInt(), default=0)
+
+    f1 = Farm(1, 2, 3, 4, 5)
+    f2 = Farm(1, 2, goats=4, chickens=5, horses=3)
+    f3 = Farm(1, 0, 0, 0, 100)
+    assert f1 == f2
+    assert f1 != f3
+
+    g1 = NoHooves(1, 2, donkeys=-1)
+    assert g1.ducks == 1
+    assert g1.chickens == 2
+    assert g1.donkeys == -1
+    assert g1.horses == 0
+    assert g1.goats == 0
 
 
 def test_slots_are_inherited_and_overridable():

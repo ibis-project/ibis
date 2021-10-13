@@ -147,6 +147,11 @@ class Annotable(metaclass=AnnotableMeta):
     def _validate(self):
         pass
 
+    def __eq__(self, other):
+        if self is other:
+            return True
+        return type(self) == type(other) and self.args == other.args
+
     @property
     def argnames(self):
         return tuple(self.__signature__.parameters.keys())
