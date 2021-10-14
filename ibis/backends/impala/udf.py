@@ -33,7 +33,7 @@ __all__ = [
 ]
 
 
-class Function:
+class Function(metaclass=abc.ABCMeta):
     def __init__(self, inputs, output, name):
         self.inputs = tuple(map(dt.dtype, inputs))
         self.output = dt.dtype(output)
