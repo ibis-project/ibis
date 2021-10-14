@@ -1,3 +1,4 @@
+import copy
 import inspect
 import typing
 
@@ -34,7 +35,7 @@ class Optional(Validator):
 
     def __init__(self, validator, default=None):
         self.validator = validator
-        self.default = default
+        self.default = copy.deepcopy(default)
 
     def __call__(self, arg, **kwargs):
         if arg is None:
