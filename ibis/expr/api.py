@@ -3869,7 +3869,7 @@ def asof_join(left, right, predicates=(), by=(), tolerance=None):
     return ops.AsOfJoin(left, right, predicates, by, tolerance).to_expr()
 
 
-def cross_join(*tables):
+def cross_join(left, right, *rest, **kwargs):
     """
     Perform a cross join (cartesian product) amongst a list of tables, with
     optional set of prefixes to apply to overlapping column names
@@ -3934,7 +3934,12 @@ def cross_join(*tables):
           right:
             Table: ref_4
     """
-    op = ops.CrossJoin(*tables)
+    if 'prefixes' in kwargs:
+        raise NotImplementedError(
+            "`prefixes` keyword argument not implemented"
+        )
+    reducer = functools.partial(ir.TableExpr.cross_join, **kwargs)
+    op = ops.CrossJoin(left, functools.reduce(reducer, rest, right), [])
     return op.to_expr()
 
 
