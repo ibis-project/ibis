@@ -4223,9 +4223,9 @@ def _table_to_array(self):
     """View a single column table as an array."""
 
     schema = self.schema()
-    if len(schema) > 1:
+    if len(schema) != 1:
         raise com.ExpressionError(
-            'Table can only have a single column when viewed as array'
+            'Table must have exactly one column when viewed as array'
         )
 
     return ops.TableArrayView(self).to_expr()
