@@ -257,7 +257,23 @@ class TableColumn(ValueOp):
     """Selects a column from a `TableExpr`."""
 
     table = Arg(rlz.table)
-    name = Arg(rlz.column_name_from("table"))
+    name = Arg(rlz.instance_of((str, int)))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        name = self.name
+        table = self.table
+
+        schema = table.schema()
+
+        if isinstance(name, int):
+            self.name = name = schema.name_at_position(name)
+
+        if name not in schema:
+            raise com.IbisTypeError(
+                f"value {name!r} is not a field in {table.columns}"
+            )
 
     def parent(self):
         return self.table

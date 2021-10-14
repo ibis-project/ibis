@@ -439,26 +439,6 @@ def column_from(name, column, *, this):
 
 
 @validator
-def column_name_from(name, column, *, this):
-    if not isinstance(column, (str, int)):
-        raise com.IbisTypeError(
-            f"value must be an int or str, got {type(column).__name__}"
-        )
-
-    table = getattr(this, name)
-
-    schema = table.schema()
-    if isinstance(column, int):
-        column = schema.name_at_position(column)
-
-    if column not in table.schema():
-        raise com.IbisTypeError(
-            f"value {column!r} is not a field in {table.columns}"
-        )
-    return column
-
-
-@validator
 def function_of(
     argument,
     fn,
