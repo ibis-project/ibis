@@ -518,9 +518,9 @@ def is_computable_input(value, **kwargs):
 def named_literal_expression(value, **kwargs):
     import ibis.expr.operations as ops
 
-    if not isinstance(value, ir.Expr):
+    if not isinstance(value, ir.ScalarExpr):
         raise com.IbisTypeError(
-            "`value` must be an ibis expression; "
+            "`value` must be a scalar expression; "
             f"got value of type {type(value).__name__}"
         )
 
