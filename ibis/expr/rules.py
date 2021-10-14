@@ -137,9 +137,8 @@ def isin(values, arg, **kwargs):
 
 
 @validator
-def enum_mapping(inner, variant, to, **kwargs):
-    inner(variant, **kwargs)
-    return to
+def map_to(mapping, variant, **kwargs):
+    return mapping[variant]
 
 
 @validator
@@ -486,7 +485,7 @@ def non_negative_integer(arg, **kwargs):
 
 
 @validator
-def literal(value, arg, **kwargs):
+def python_literal(value, arg, **kwargs):
     if (
         not isinstance(arg, type(value))
         or not isinstance(value, type(arg))

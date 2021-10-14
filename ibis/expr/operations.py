@@ -1758,13 +1758,13 @@ def to_sort_key(key, *, table=None):
 class SortKey(Node):
     expr = Arg(rlz.column(rlz.any))
     ascending = Arg(
-        rlz.one_of(
-            (
-                rlz.literal(True),
-                rlz.literal(False),
-                rlz.enum_mapping(rlz.literal(1), to=True),
-                rlz.enum_mapping(rlz.literal(0), to=False),
-            )
+        rlz.map_to(
+            {
+                True: True,
+                False: False,
+                1: True,
+                0: False,
+            },
         ),
         default=True,
     )
@@ -1856,26 +1856,17 @@ class Selection(TableNode, HasSchema):
                                 rlz.any,
                             )
                         ),
-                        rlz.one_of(
-                            (
-                                rlz.literal(True),
-                                rlz.literal(False),
-                                rlz.enum_mapping(
-                                    rlz.literal("desc"),
-                                    to=False,
-                                ),
-                                rlz.enum_mapping(
-                                    rlz.literal("descending"),
-                                    to=False,
-                                ),
-                                rlz.enum_mapping(rlz.literal("asc"), to=True),
-                                rlz.enum_mapping(
-                                    rlz.literal("ascending"),
-                                    to=True,
-                                ),
-                                rlz.enum_mapping(rlz.literal(1), to=True),
-                                rlz.enum_mapping(rlz.literal(0), to=False),
-                            )
+                        rlz.map_to(
+                            {
+                                True: True,
+                                False: False,
+                                "desc": False,
+                                "descending": False,
+                                "asc": True,
+                                "ascending": True,
+                                1: True,
+                                0: False,
+                            }
                         ),
                     ),
                 )
@@ -2134,26 +2125,17 @@ class Aggregation(TableNode, HasSchema):
                                 rlz.any,
                             )
                         ),
-                        rlz.one_of(
-                            (
-                                rlz.literal(True),
-                                rlz.literal(False),
-                                rlz.enum_mapping(
-                                    rlz.literal("desc"),
-                                    to=False,
-                                ),
-                                rlz.enum_mapping(
-                                    rlz.literal("descending"),
-                                    to=False,
-                                ),
-                                rlz.enum_mapping(rlz.literal("asc"), to=True),
-                                rlz.enum_mapping(
-                                    rlz.literal("ascending"),
-                                    to=True,
-                                ),
-                                rlz.enum_mapping(rlz.literal(1), to=True),
-                                rlz.enum_mapping(rlz.literal(0), to=False),
-                            )
+                        rlz.map_to(
+                            {
+                                True: True,
+                                False: False,
+                                "desc": False,
+                                "descending": False,
+                                "asc": True,
+                                "ascending": True,
+                                1: True,
+                                0: False,
+                            }
                         ),
                     ),
                 )
