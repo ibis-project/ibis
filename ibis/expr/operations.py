@@ -1599,9 +1599,7 @@ class LeftAntiJoin(Join):
 
 
 class CrossJoin(Join):
-    def __init__(self, left, right, *rest):
-        right = functools.reduce(ir.TableExpr.cross_join, rest, right)
-        super().__init__(left, right, [])
+    pass
 
 
 class MaterializedJoin(TableNode, HasSchema):
