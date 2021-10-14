@@ -1709,8 +1709,12 @@ class Limit(TableNode):
 # Sorting
 
 
-def to_sort_key(table, key):
+def to_sort_key(key, *, table=None):
     if isinstance(key, DeferredSortKey):
+        if table is None:
+            raise com.IbisTypeError(
+                "cannot resolve DeferredSortKey with table=None"
+            )
         key = key.resolve(table)
 
     if isinstance(key, ir.SortExpr):
@@ -1722,9 +1726,11 @@ def to_sort_key(table, key):
         sort_order = True
 
     if not isinstance(key, ir.Expr):
+        if table is None:
+            raise com.IbisTypeError("cannot resolve key with table=None")
         key = table._ensure_expr(key)
         if isinstance(key, (ir.SortExpr, DeferredSortKey)):
-            return to_sort_key(table, key)
+            return to_sort_key(key, table=table)
 
     if isinstance(sort_order, str):
         if sort_order.lower() in ('desc', 'descending'):
@@ -2032,7 +2038,7 @@ def _maybe_convert_sort_keys(tables, exprs):
         step = -1 if isinstance(key, (str, DeferredSortKey)) else 1
         for table in tables[::step]:
             try:
-                sort_key = to_sort_key(table, key)
+                sort_key = to_sort_key(key, table=table)
             except Exception:
                 continue
             else:

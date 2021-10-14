@@ -242,7 +242,7 @@ class GroupedTableExpr:
             sorts = w.order_by + self._order_by
             preceding, following = w.preceding, w.following
 
-        sorts = [ops.to_sort_key(self.table, k) for k in sorts]
+        sorts = [ops.to_sort_key(k, table=self.table) for k in sorts]
 
         groups = _resolve_exprs(self.table, groups)
 
