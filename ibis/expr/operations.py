@@ -906,7 +906,7 @@ class Reduction(ValueOp):
 
 
 class Count(Reduction):
-    arg = Arg((ir.ColumnExpr, ir.TableExpr))
+    arg = Arg(rlz.one_of((rlz.column(rlz.any), rlz.table)))
     where = Arg(rlz.boolean, default=None)
 
     def output_type(self):
@@ -1830,7 +1830,7 @@ class Selection(TableNode, HasSchema):
         rlz.list_of(
             rlz.one_of(
                 (
-                    rlz.instance_of(ir.TableExpr),
+                    rlz.table,
                     rlz.column_from("table"),
                     rlz.function_of("table"),
                     rlz.any,
