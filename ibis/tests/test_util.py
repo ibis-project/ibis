@@ -18,14 +18,14 @@ from ibis import util
         ([[4, [3, [2, [1]]]]], [4, 3, 2, 1]),
         ([[[[4], 3], 2], 1], [4, 3, 2, 1]),
         ([[[[1], 2], 3], 4], [1, 2, 3, 4]),
-        ([{(1,), frozenset({(2,)})}], [1, 2]),
+        ([{(1,), frozenset({(2,)})}], {1, 2}),
         ({(1, (2,)): None, "a": None}, [1, 2, "a"]),
         (([x] for x in range(5)), list(range(5))),
         ({(1, (2, frozenset({(3,)})))}, [1, 2, 3]),
     ],
 )
 def test_flatten(case, expected):
-    assert list(util.flatten_iterable(case)) == expected
+    assert type(expected)(util.flatten_iterable(case)) == expected
 
 
 @pytest.mark.parametrize("case", [1, "abc", b"abc", 2.0, object()])
