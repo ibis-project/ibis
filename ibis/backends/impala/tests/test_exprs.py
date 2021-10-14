@@ -10,12 +10,11 @@ import ibis
 import ibis.expr.api as api
 import ibis.expr.types as ir
 from ibis import literal as L
+from ibis.backends.impala.compiler import ImpalaCompiler, ImpalaExprTranslator
 from ibis.common.exceptions import RelationError
 from ibis.expr.datatypes import Category
 from ibis.tests.expr.mocks import MockBackend
 from ibis.tests.sql.test_compiler import ExprTestCases
-
-from ..compiler import ImpalaCompiler, ImpalaExprTranslator
 
 
 def approx_equal(a, b, eps):
@@ -560,27 +559,27 @@ class TestBucketHistogram(unittest.TestCase, ExprSQLTest):
         expr1 = self.table.f.bucket(buckets)
         expected1 = """\
 CASE
-  WHEN (`f` >= 0) AND (`f` < 10) THEN 0
-  WHEN (`f` >= 10) AND (`f` < 25) THEN 1
-  WHEN (`f` >= 25) AND (`f` <= 50) THEN 2
+  WHEN (0 <= `f`) AND (`f` < 10) THEN 0
+  WHEN (10 <= `f`) AND (`f` < 25) THEN 1
+  WHEN (25 <= `f`) AND (`f` <= 50) THEN 2
   ELSE CAST(NULL AS tinyint)
 END"""
 
         expr2 = self.table.f.bucket(buckets, close_extreme=False)
         expected2 = """\
 CASE
-  WHEN (`f` >= 0) AND (`f` < 10) THEN 0
-  WHEN (`f` >= 10) AND (`f` < 25) THEN 1
-  WHEN (`f` >= 25) AND (`f` < 50) THEN 2
+  WHEN (0 <= `f`) AND (`f` < 10) THEN 0
+  WHEN (10 <= `f`) AND (`f` < 25) THEN 1
+  WHEN (25 <= `f`) AND (`f` < 50) THEN 2
   ELSE CAST(NULL AS tinyint)
 END"""
 
         expr3 = self.table.f.bucket(buckets, closed='right')
         expected3 = """\
 CASE
-  WHEN (`f` >= 0) AND (`f` <= 10) THEN 0
-  WHEN (`f` > 10) AND (`f` <= 25) THEN 1
-  WHEN (`f` > 25) AND (`f` <= 50) THEN 2
+  WHEN (0 <= `f`) AND (`f` <= 10) THEN 0
+  WHEN (10 < `f`) AND (`f` <= 25) THEN 1
+  WHEN (25 < `f`) AND (`f` <= 50) THEN 2
   ELSE CAST(NULL AS tinyint)
 END"""
 
@@ -589,9 +588,9 @@ END"""
         )
         expected4 = """\
 CASE
-  WHEN (`f` > 0) AND (`f` <= 10) THEN 0
-  WHEN (`f` > 10) AND (`f` <= 25) THEN 1
-  WHEN (`f` > 25) AND (`f` <= 50) THEN 2
+  WHEN (0 < `f`) AND (`f` <= 10) THEN 0
+  WHEN (10 < `f`) AND (`f` <= 25) THEN 1
+  WHEN (25 < `f`) AND (`f` <= 50) THEN 2
   ELSE CAST(NULL AS tinyint)
 END"""
 
@@ -599,9 +598,9 @@ END"""
         expected5 = """\
 CASE
   WHEN `f` < 0 THEN 0
-  WHEN (`f` >= 0) AND (`f` < 10) THEN 1
-  WHEN (`f` >= 10) AND (`f` < 25) THEN 2
-  WHEN (`f` >= 25) AND (`f` <= 50) THEN 3
+  WHEN (0 <= `f`) AND (`f` < 10) THEN 1
+  WHEN (10 <= `f`) AND (`f` < 25) THEN 2
+  WHEN (25 <= `f`) AND (`f` <= 50) THEN 3
   ELSE CAST(NULL AS tinyint)
 END"""
 
@@ -611,10 +610,10 @@ END"""
         expected6 = """\
 CASE
   WHEN `f` < 0 THEN 0
-  WHEN (`f` >= 0) AND (`f` < 10) THEN 1
-  WHEN (`f` >= 10) AND (`f` < 25) THEN 2
-  WHEN (`f` >= 25) AND (`f` <= 50) THEN 3
-  WHEN `f` > 50 THEN 4
+  WHEN (0 <= `f`) AND (`f` < 10) THEN 1
+  WHEN (10 <= `f`) AND (`f` < 25) THEN 2
+  WHEN (25 <= `f`) AND (`f` <= 50) THEN 3
+  WHEN 50 < `f` THEN 4
   ELSE CAST(NULL AS tinyint)
 END"""
 
@@ -624,10 +623,10 @@ END"""
         expected7 = """\
 CASE
   WHEN `f` < 0 THEN 0
-  WHEN (`f` >= 0) AND (`f` < 10) THEN 1
-  WHEN (`f` >= 10) AND (`f` < 25) THEN 2
-  WHEN (`f` >= 25) AND (`f` < 50) THEN 3
-  WHEN `f` >= 50 THEN 4
+  WHEN (0 <= `f`) AND (`f` < 10) THEN 1
+  WHEN (10 <= `f`) AND (`f` < 25) THEN 2
+  WHEN (25 <= `f`) AND (`f` < 50) THEN 3
+  WHEN 50 <= `f` THEN 4
   ELSE CAST(NULL AS tinyint)
 END"""
 
@@ -637,9 +636,9 @@ END"""
         expected8 = """\
 CASE
   WHEN `f` <= 0 THEN 0
-  WHEN (`f` > 0) AND (`f` <= 10) THEN 1
-  WHEN (`f` > 10) AND (`f` <= 25) THEN 2
-  WHEN (`f` > 25) AND (`f` <= 50) THEN 3
+  WHEN (0 < `f`) AND (`f` <= 10) THEN 1
+  WHEN (10 < `f`) AND (`f` <= 25) THEN 2
+  WHEN (25 < `f`) AND (`f` <= 50) THEN 3
   ELSE CAST(NULL AS tinyint)
 END"""
 
@@ -649,7 +648,7 @@ END"""
         expected9 = """\
 CASE
   WHEN `f` <= 10 THEN 0
-  WHEN `f` > 10 THEN 1
+  WHEN 10 < `f` THEN 1
   ELSE CAST(NULL AS tinyint)
 END"""
 
@@ -659,7 +658,7 @@ END"""
         expected10 = """\
 CASE
   WHEN `f` < 10 THEN 0
-  WHEN `f` >= 10 THEN 1
+  WHEN 10 <= `f` THEN 1
   ELSE CAST(NULL AS tinyint)
 END"""
 
@@ -687,7 +686,7 @@ END"""
         expected = """\
 CASE
   WHEN `f` < 10 THEN 0
-  WHEN `f` >= 10 THEN 1
+  WHEN 10 <= `f` THEN 1
   ELSE CAST(NULL AS tinyint)
 END"""
 
@@ -698,7 +697,7 @@ END"""
         expected2 = """\
 CAST(CASE
   WHEN `f` < 10 THEN 0
-  WHEN `f` >= 10 THEN 1
+  WHEN 10 <= `f` THEN 1
   ELSE CAST(NULL AS tinyint)
 END AS double)"""
 
@@ -727,9 +726,9 @@ FROM (
   SELECT
     CASE
       WHEN `f` < 0 THEN 0
-      WHEN (`f` >= 0) AND (`f` < 10) THEN 1
-      WHEN (`f` >= 10) AND (`f` < 25) THEN 2
-      WHEN (`f` >= 25) AND (`f` <= 50) THEN 3
+      WHEN (0 <= `f`) AND (`f` < 10) THEN 1
+      WHEN (10 <= `f`) AND (`f` < 25) THEN 2
+      WHEN (25 <= `f`) AND (`f` <= 50) THEN 3
       ELSE CAST(NULL AS tinyint)
     END AS `tier`, count(*) AS `count`
   FROM alltypes
@@ -753,7 +752,7 @@ class TestInNotIn(unittest.TestCase, ExprSQLTest):
 
     def test_field_in_literals(self):
         values = {'foo', 'bar', 'baz'}
-        values_formatted = tuple(set(values))
+        values_formatted = tuple(values)
         cases = [
             (self.table.g.isin(values), f"`g` IN {values_formatted}"),
             (

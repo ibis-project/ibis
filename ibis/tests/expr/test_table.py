@@ -159,10 +159,11 @@ def test_projection_invalid_root(table):
 def test_projection_unnamed_literal_interactive_blowup(con):
     # #147 and #153 alike
     table = con.table('functional_alltypes')
+    exprs = [table.bigint_col, ibis.literal(5)]
 
     with config.option_context('interactive', True):
         try:
-            table.select([table.bigint_col, ibis.literal(5)])
+            table.select(exprs)
         except Exception as e:
             assert 'named' in e.args[0]
 
@@ -561,15 +562,21 @@ def test_filter_aggregate_partial_pushdown(table):
     assert False
 
 
-def test_aggregate_post_predicate(table):
+@pytest.mark.parametrize(
+    "case_fn",
+    [
+        pytest.param(lambda t: t.f.sum(), id="non_boolean"),
+        pytest.param(lambda t: t.f > 2, id="non_scalar"),
+    ],
+)
+def test_aggregate_post_predicate(table, case_fn):
     # Test invalid having clause
     metrics = [table.f.sum().name('total')]
     by = ['g']
+    having = [case_fn(table)]
 
-    invalid_having_cases = [table.f.sum(), table.f > 2]
-    for case in invalid_having_cases:
-        with pytest.raises(com.ExpressionError):
-            table.aggregate(metrics, by=by, having=[case])
+    with pytest.raises(com.IbisTypeError):
+        table.aggregate(metrics, by=by, having=having)
 
 
 def test_group_by_having_api(table):
@@ -1006,7 +1013,10 @@ def test_join_invalid_expr_type(con):
     invalid_right = left.foo_id
     join_key = ['bar_id']
 
-    with pytest.raises(TypeError, match=type(invalid_right).__name__):
+    with pytest.raises(
+        NotImplementedError,
+        match=r'string __getitem__\[str\]',
+    ):
         left.inner_join(invalid_right, join_key)
 
 

@@ -34,8 +34,8 @@ def test_null():
     assert_equal(expr, expr2)
 
     assert expr is expr2
-    assert expr.type() is dt.null
-    assert expr2.type() is dt.null
+    assert expr.type().equals(dt.null)
+    assert expr2.type().equals(dt.null)
 
 
 @pytest.mark.xfail(

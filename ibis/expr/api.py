@@ -1217,7 +1217,7 @@ def topk(arg, k, by=None):
     -------
     topk : TopK filter expression
     """
-    op = ops.TopK(arg, k, by=by)
+    op = ops.TopK(arg, k, by=by if by is not None else arg.count())
     return op.to_expr()
 
 
@@ -3869,7 +3869,7 @@ def asof_join(left, right, predicates=(), by=(), tolerance=None):
     return ops.AsOfJoin(left, right, predicates, by, tolerance).to_expr()
 
 
-def cross_join(*tables, **kwargs):
+def cross_join(left, right, *rest, **kwargs):
     """
     Perform a cross join (cartesian product) amongst a list of tables, with
     optional set of prefixes to apply to overlapping column names
@@ -3934,8 +3934,12 @@ def cross_join(*tables, **kwargs):
           right:
             Table: ref_4
     """
-    # TODO(phillipc): Implement prefix keyword argument
-    op = ops.CrossJoin(*tables, **kwargs)
+    if 'prefixes' in kwargs:
+        raise NotImplementedError(
+            "`prefixes` keyword argument not implemented"
+        )
+    reducer = functools.partial(ir.TableExpr.cross_join, **kwargs)
+    op = ops.CrossJoin(left, functools.reduce(reducer, rest, right), [])
     return op.to_expr()
 
 
@@ -4048,7 +4052,7 @@ def _resolve_predicates(table, predicates):
     return resolved_predicates
 
 
-def aggregate(table, metrics=None, by=None, having=None, **kwds):
+def aggregate(table, metrics=None, by=None, having=None, **kwargs):
     """
     Aggregate a table with a given set of reductions, with grouping
     expressions, and post-aggregation filters.
@@ -4066,14 +4070,18 @@ def aggregate(table, metrics=None, by=None, having=None, **kwds):
     -------
     agg_expr : TableExpr
     """
-    if metrics is None:
-        metrics = []
+    metrics = [] if metrics is None else util.promote_list(metrics)
+    metrics.extend(
+        table._ensure_expr(expr).name(name)
+        for name, expr in sorted(kwargs.items(), key=operator.itemgetter(0))
+    )
 
-    for k, v in sorted(kwds.items()):
-        v = table._ensure_expr(v)
-        metrics.append(v.name(k))
-
-    op = table.op().aggregate(table, metrics, by=by, having=having)
+    op = table.op().aggregate(
+        table,
+        metrics,
+        by=util.promote_list(by if by is not None else []),
+        having=util.promote_list(having if having is not None else []),
+    )
     return op.to_expr()
 
 
@@ -4147,9 +4155,12 @@ def _table_sort_by(table, sort_exprs):
 
     Returns
     -------
-    sorted : TableExpr
+    TableExpr
     """
-    result = table.op().sort_by(table, sort_exprs)
+    result = table.op().sort_by(
+        table,
+        util.promote_list(sort_exprs if sort_exprs is not None else []),
+    )
     return result.to_expr()
 
 
@@ -4209,11 +4220,15 @@ def _table_difference(left: TableExpr, right: TableExpr):
 
 
 def _table_to_array(self):
-    """
-    Single column tables can be viewed as arrays.
-    """
-    op = ops.TableArrayView(self)
-    return op.to_expr()
+    """View a single column table as an array."""
+
+    schema = self.schema()
+    if len(schema) != 1:
+        raise com.ExpressionError(
+            'Table must have exactly one column when viewed as array'
+        )
+
+    return ops.TableArrayView(self).to_expr()
 
 
 def _table_materialize(table):

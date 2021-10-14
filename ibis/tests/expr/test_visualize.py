@@ -94,7 +94,7 @@ def test_join(how):
 def test_sort_by():
     t = ibis.table([('a', 'int64'), ('b', 'string'), ('c', 'int32')])
     expr = (
-        t.groupby(t.b).aggregate(sum_a=t.a.sum().cast('double')).sort_by('c')
+        t.groupby(t.b).aggregate(sum_a=t.a.sum().cast('double')).sort_by('b')
     )
     graph = viz.to_graph(expr)
     assert key(expr) in graph.source
@@ -107,7 +107,7 @@ def test_sort_by():
 def test_optional_graphviz_repr():
     t = ibis.table([('a', 'int64'), ('b', 'string'), ('c', 'int32')])
     expr = (
-        t.groupby(t.b).aggregate(sum_a=t.a.sum().cast('double')).sort_by('c')
+        t.groupby(t.b).aggregate(sum_a=t.a.sum().cast('double')).sort_by('b')
     )
 
     # default behavior

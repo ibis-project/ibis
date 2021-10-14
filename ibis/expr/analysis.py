@@ -384,7 +384,7 @@ class ExprSimplifier:
                     lifted_root = self.lift(value_op.table)
 
             if can_lift and not block:
-                lifted_node = ops.TableColumn(node.name, lifted_root)
+                lifted_node = ops.TableColumn(lifted_root, node.name)
                 result = expr._factory(lifted_node, name=expr._name)
 
         return result

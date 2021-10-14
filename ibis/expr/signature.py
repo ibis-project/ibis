@@ -1,8 +1,9 @@
+import copy
 import inspect
 import typing
 
 import ibis.expr.rules as rlz
-import ibis.util as util
+from ibis import util
 
 try:
     from cytoolz import unique
@@ -34,7 +35,7 @@ class Optional(Validator):
 
     def __init__(self, validator, default=None):
         self.validator = validator
-        self.default = default
+        self.default = copy.deepcopy(default)
 
     def __call__(self, arg, **kwargs):
         if arg is None:

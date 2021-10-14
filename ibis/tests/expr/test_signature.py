@@ -3,6 +3,7 @@ from inspect import Signature
 import pytest
 from toolz import identity
 
+import ibis.expr.rules as rlz
 from ibis.common.exceptions import IbisTypeError
 from ibis.expr.signature import (
     Annotable,
@@ -216,3 +217,13 @@ def test_slots_are_inherited_and_overridable():
     assert StringOp.__slots__ == ('_cache', 'arg')
     assert StringSplit.__slots__ == ('_cache', 'arg', 'sep')
     assert StringJoin.__slots__ == ('_memoize', 'arg', 'sep')
+
+
+def test_copy_default():
+    default = []
+
+    class Op(Annotable):
+        arg = rlz.optional(rlz.instance_of(list), default=default)
+
+    op = Op()
+    assert op.arg is not default
