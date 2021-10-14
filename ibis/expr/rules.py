@@ -514,7 +514,7 @@ def is_computable_input(value, **kwargs):
 
 
 @validator
-def named_literal_expression(value, **kwargs):
+def named_literal(value, **kwargs):
     import ibis.expr.operations as ops
 
     if not isinstance(value, ir.ScalarExpr):
