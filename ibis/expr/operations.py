@@ -2099,7 +2099,7 @@ class Aggregation(TableNode, HasSchema):
                 (
                     rlz.function_of("table"),
                     rlz.column_from("table"),
-                    rlz.any,
+                    rlz.column(rlz.any),
                 )
             )
         ),
