@@ -343,3 +343,15 @@ def consume(iterator: Iterator[T], n: Optional[int] = None) -> None:
     else:
         # advance to the empty slice starting at position n
         next(itertools.islice(iterator, n, n), None)
+
+
+def flatten_iterable(iterable):
+    """Recursively flatten the iterable `iterable`."""
+    if not is_iterable(iterable):
+        raise TypeError("flatten is only defined for non-str iterables")
+
+    for item in iterable:
+        if is_iterable(item):
+            yield from flatten_iterable(item)
+        else:
+            yield item

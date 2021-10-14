@@ -157,15 +157,6 @@ def member_of(obj, arg, **kwargs):
     return getattr(obj, arg)
 
 
-def _flatten(iterable):
-    """Recursively flatten the iterable `iterable`."""
-    for item in iterable:
-        if util.is_iterable(item):
-            yield from _flatten(item)
-        else:
-            yield item
-
-
 @validator
 def container_of(inner, arg, *, type, min_length=0, flatten=False, **kwargs):
     if not util.is_iterable(arg):
@@ -175,7 +166,7 @@ def container_of(inner, arg, *, type, min_length=0, flatten=False, **kwargs):
         raise com.IbisTypeError(
             f'Arg must have at least {min_length} number of elements'
         )
-    flatten_func = _flatten if flatten else identity
+    flatten_func = util.flatten_iterable if flatten else identity
     return type(flatten_func(inner(item, **kwargs) for item in arg))
 
 
