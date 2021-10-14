@@ -11,13 +11,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import abc
 import re
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
-import ibis.expr.signature as sig
 import ibis.udf.validate as v
 import ibis.util as util
 from ibis.backends.base.sql.registry import fixed_arity, sql_type_names
@@ -33,17 +33,16 @@ __all__ = [
 ]
 
 
-class Function:
+class Function(metaclass=abc.ABCMeta):
     def __init__(self, inputs, output, name):
         self.inputs = tuple(map(dt.dtype, inputs))
         self.output = dt.dtype(output)
-        self.name = name
-        self._klass = self._create_operation(name)
+        self.name = name or util.guid()
+        self._klass = self._create_operation_class()
 
-    def _create_operation(self, name):
-        class_name = self._get_class_name(name)
-        input_type, output_type = self._type_signature()
-        return _create_operation_class(class_name, input_type, output_type)
+    @abc.abstractmethod
+    def _create_operation_class(self):
+        pass
 
     def __repr__(self):
         klass = type(self).__name__
@@ -68,35 +67,22 @@ class Function:
 
 
 class ScalarFunction(Function):
-    def _get_class_name(self, name):
-        if name is None:
-            name = util.guid()
-        return f'UDF_{name}'
-
-    def _type_signature(self):
-        input_type = _ibis_signature(self.inputs)
-        output_type = rlz.shape_like('args', dt.dtype(self.output))
-        return input_type, output_type
+    def _create_operation_class(self):
+        fields = {
+            f'_{i}': rlz.value(dtype) for i, dtype in enumerate(self.inputs)
+        }
+        fields['output_type'] = rlz.shape_like('args', self.output)
+        return type(f"UDF_{self.name}", (ops.ValueOp,), fields)
 
 
 class AggregateFunction(Function):
-    def _create_operation(self, name):
-        klass = super()._create_operation(name)
-        klass._reduction = True
-        return klass
-
-    def _get_class_name(self, name):
-        if name is None:
-            name = util.guid()
-        return f'UDA_{name}'
-
-    def _type_signature(self):
-        def output_type(op):
-            return dt.dtype(self.output).scalar_type()
-
-        input_type = _ibis_signature(self.inputs)
-
-        return input_type, output_type
+    def _create_operation_class(self):
+        fields = {
+            f'_{i}': rlz.value(dtype) for i, dtype in enumerate(self.inputs)
+        }
+        fields['output_type'] = lambda op: self.output.scalar_type()
+        fields['_reduction'] = True
+        return type(f"UDA_{self.name}", (ops.ValueOp,), fields)
 
 
 class ImpalaFunction:
@@ -287,23 +273,6 @@ def aggregate_function(inputs, output, name=None):
     return AggregateFunction(inputs, output, name=name)
 
 
-def _ibis_signature(inputs):
-    if isinstance(inputs, sig.TypeSignature):
-        return inputs
-
-    arguments = [
-        (f'_{i}', sig.Argument(rlz.value(dtype)))
-        for i, dtype in enumerate(inputs)
-    ]
-    return sig.TypeSignature(arguments)
-
-
-def _create_operation_class(name, input_type, output_type):
-    func_dict = {'signature': input_type, 'output_type': output_type}
-    klass = type(name, (ops.ValueOp,), func_dict)
-    return klass
-
-
 def add_operation(op, func_name, db):
     """
     Registers the given operation within the Ibis SQL translation toolchain
@@ -319,7 +288,7 @@ def add_operation(op, func_name, db):
     # if op.input_type is rlz.listof:
     #     translator = comp.varargs(full_name)
     # else:
-    arity = len(op.signature)
+    arity = len(op.__signature__.parameters)
     translator = fixed_arity(full_name, arity)
 
     ImpalaExprTranslator._registry[op] = translator

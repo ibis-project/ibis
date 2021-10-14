@@ -6,13 +6,26 @@ from itertools import product, starmap
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
+import ibis.expr.signature as sig
 import ibis.expr.types as ir
 import ibis.util as util
 
 try:
-    from cytoolz import compose, curry, identity
+    from cytoolz import compose, curry
 except ImportError:
-    from toolz import compose, curry, identity
+    from toolz import compose, curry
+
+
+optional = sig.Optional
+
+
+class validator(curry, sig.Validator):
+    def __repr__(self):
+        return '{}({}{})'.format(
+            self.func.__name__,
+            repr(self.args)[1:-1],
+            ', '.join(f'{k}={v!r}' for k, v in self.keywords.items()),
+        )
 
 
 def highest_precedence_dtype(exprs):
@@ -73,24 +86,17 @@ def cast(source, target):
 # Input type validators / coercion functions
 
 
-class validator(curry):
-    def __repr__(self):
-        return '{}({}{})'.format(
-            self.func.__name__,
-            repr(self.args)[1:-1],
-            ', '.join(f'{k}={v!r}' for k, v in self.keywords.items()),
-        )
-
-
-noop = validator(identity)
+@validator
+def noop(arg, **kwargs):
+    return arg
 
 
 @validator
-def one_of(inners, arg):
+def one_of(inners, arg, **kwargs):
     """At least one of the inner validators must pass"""
     for inner in inners:
         with suppress(com.IbisTypeError, ValueError):
-            return inner(arg)
+            return inner(arg, **kwargs)
 
     rules_formatted = ', '.join(map(repr, inners))
     raise com.IbisTypeError(
@@ -99,7 +105,7 @@ def one_of(inners, arg):
 
 
 @validator
-def all_of(inners, arg):
+def all_of(inners, arg, *, this):
     """All of the inner validators must pass.
 
     The order of inner validators matters.
@@ -117,11 +123,11 @@ def all_of(inners, arg):
     arg : Any
       Value maybe coerced by inner validators to the appropiate types
     """
-    return compose(*inners)(arg)
+    return compose(*inners)(arg, this=this)
 
 
 @validator
-def isin(values, arg):
+def isin(values, arg, **kwargs):
     if arg not in values:
         raise ValueError(f'Value with type {type(arg)} is not in {values!r}')
     if isinstance(values, dict):  # TODO check for mapping instead
@@ -131,7 +137,7 @@ def isin(values, arg):
 
 
 @validator
-def member_of(obj, arg):
+def member_of(obj, arg, **kwargs):
     if isinstance(arg, ir.EnumValue):
         arg = arg.op().value
     if isinstance(arg, enum.Enum):
@@ -146,7 +152,7 @@ def member_of(obj, arg):
 
 
 @validator
-def list_of(inner, arg, min_length=0):
+def container_of(inner, arg, *, type, min_length=0, **kwargs):
     if not util.is_iterable(arg):
         raise com.IbisTypeError('Argument must be a sequence')
 
@@ -154,28 +160,32 @@ def list_of(inner, arg, min_length=0):
         raise com.IbisTypeError(
             f'Arg must have at least {min_length} number of elements'
         )
-    return list(map(inner, arg))
+    return type(inner(item, **kwargs) for item in arg)
+
+
+list_of = container_of(type=list)
+tuple_of = container_of(type=tuple)
 
 
 @validator
-def value_list_of(inner, arg, min_length=0):
+def value_list_of(inner, arg, **kwargs):
     # TODO(kszucs): would be nice to remove ops.ValueList
     # the main blocker is that some of the backends execution
     # model depends on the wrapper operation, for example
     # the dispatcher in pandas requires operation objects
     import ibis.expr.operations as ops
 
-    values = list_of(inner, arg, min_length=min_length)
+    values = list_of(inner, arg, **kwargs)
     return ops.ValueList(values).to_expr()
 
 
 @validator
-def datatype(arg):
+def datatype(arg, **kwargs):
     return dt.dtype(arg)
 
 
 @validator
-def instance_of(klass, arg):
+def instance_of(klass, arg, **kwargs):
     """Require that a value has a particular Python type."""
     if not isinstance(arg, klass):
         raise com.IbisTypeError(
@@ -187,7 +197,12 @@ def instance_of(klass, arg):
 
 
 @validator
-def value(dtype, arg):
+def coerce_to(klass, arg, **kwargs):
+    return klass(arg)
+
+
+@validator
+def value(dtype, arg, **kwargs):
     """Validates that the given argument is a Value with a particular datatype
 
     Parameters
@@ -231,17 +246,17 @@ def value(dtype, arg):
 
 
 @validator
-def scalar(inner, arg):
-    return instance_of(ir.ScalarExpr, inner(arg))
+def scalar(inner, arg, **kwargs):
+    return instance_of(ir.ScalarExpr, inner(arg, **kwargs))
 
 
 @validator
-def column(inner, arg):
-    return instance_of(ir.ColumnExpr, inner(arg))
+def column(inner, arg, **kwargs):
+    return instance_of(ir.ColumnExpr, inner(arg, **kwargs))
 
 
 @validator
-def array_of(inner, arg):
+def array_of(inner, arg, **kwargs):
     val = arg if isinstance(arg, ir.Expr) else ir.literal(arg)
     argtype = val.type()
     if not isinstance(argtype, dt.Array):
@@ -249,12 +264,9 @@ def array_of(inner, arg):
             'Argument must be an array, got expression {} which is of type '
             '{}'.format(val, val.type())
         )
-    return value(dt.Array(inner(val[0]).type()), val)
-
-
-@validator
-def optional(validator, arg):
-    return one_of([instance_of(type(None)), validator], arg)
+    value_dtype = inner(val[0], **kwargs).type()
+    array_dtype = dt.Array(value_dtype)
+    return value(array_dtype, val, **kwargs)
 
 
 any = value(dt.any)
@@ -289,7 +301,7 @@ multipolygon = value(dt.MultiPolygon)
 
 
 @validator
-def interval(arg, units=None):
+def interval(arg, units=None, **kwargs):
     arg = value(dt.Interval, arg)
     unit = arg.type().unit
     if units is not None and unit not in units:
@@ -299,7 +311,7 @@ def interval(arg, units=None):
 
 
 @validator
-def client(arg):
+def client(arg, **kwargs):
     from ibis.backends.base import BaseBackend
 
     return instance_of(BaseBackend, arg)
@@ -360,7 +372,7 @@ def typeof(arg):
 
 
 @validator
-def table(schema, arg):
+def table(schema, arg, **kwargs):
     """A table argument.
 
     Parameters

@@ -377,7 +377,7 @@ class BinaryOp(ValueOp):
 
 class Cast(ValueOp):
     arg = Arg(rlz.any)
-    to = Arg(dt.dtype)
+    to = Arg(rlz.datatype)
 
     # see #396 for the issue preventing this
     # def resolve_name(self):
@@ -1696,12 +1696,14 @@ class AsOfJoin(Join):
         super().__init__(left, right, predicates)
         self.by = _clean_join_predicates(self.left, self.right, by)
         self.tolerance = tolerance
+
         self._validate_args(['by', 'tolerance'])
 
     def _validate_args(self, args: List[str]):
+        # this should be removed altogether
         for arg in args:
-            argument = self.signature[arg]
-            value = argument.validate(getattr(self, arg))
+            argument = self.__signature__.parameters[arg]
+            value = argument.validate(self, getattr(self, arg))
             setattr(self, arg, value)
 
 
@@ -1724,7 +1726,7 @@ class SetOp(TableNode, HasSchema):
 
 
 class Union(SetOp):
-    distinct = Arg(rlz.validator(bool), default=False)
+    distinct = Arg(rlz.instance_of(bool), default=False)
 
 
 class Intersection(SetOp):
@@ -1737,8 +1739,8 @@ class Difference(SetOp):
 
 class Limit(TableNode):
     table = Arg(ir.TableExpr)
-    n = Arg(rlz.validator(int))
-    offset = Arg(rlz.validator(int))
+    n = Arg(rlz.instance_of(int))
+    offset = Arg(rlz.instance_of(int))
 
     def blocks(self):
         return True
@@ -1786,7 +1788,7 @@ def to_sort_key(table, key):
 
 class SortKey(Node):
     expr = Arg(rlz.column(rlz.any))
-    ascending = Arg(rlz.validator(bool), default=True)
+    ascending = Arg(rlz.coerce_to(bool), default=True)
 
     def __repr__(self):
         # Temporary
@@ -2907,7 +2909,7 @@ class StructField(ValueOp):
 
 class Literal(ValueOp):
     value = Arg(rlz.noop)
-    dtype = Arg(dt.dtype)
+    dtype = Arg(rlz.datatype)
 
     def __repr__(self):
         return '{}({})'.format(
@@ -2955,7 +2957,7 @@ class NullLiteral(Literal):
 class ScalarParameter(ValueOp):
     _counter = itertools.count()
 
-    dtype = Arg(dt.dtype)
+    dtype = Arg(rlz.datatype)
     counter = Arg(int, default=lambda: next(ScalarParameter._counter))
 
     def resolve_name(self):
@@ -3007,11 +3009,8 @@ class ExpressionList(Node):
 class ValueList(ValueOp):
     """Data structure for a list of value expressions"""
 
-    values = Arg(rlz.noop)
+    values = Arg(rlz.tuple_of(rlz.any))
     display_argnames = False  # disable showing argnames in repr
-
-    def __init__(self, values):
-        super().__init__(tuple(map(rlz.any, values)))
 
     def output_type(self):
         dtype = rlz.highest_precedence_dtype(self.values)
