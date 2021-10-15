@@ -1,7 +1,0 @@
-name: ibis
-dependencies:
-  - sqlalchemy=1.3
-  - clickhouse-cityhash
-  - clickhouse-driver
-  - clickhouse-sqlalchemy
-  - lz4

@@ -1,6 +1,0 @@
-name: ibis
-dependencies:
-  - openjdk=8
-  - pyarrow=1
-  - pyspark=2.4.3
-  - pandas=1.2.5

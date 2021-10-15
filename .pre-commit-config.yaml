@@ -7,7 +7,7 @@ repos:
     rev: 21.9b0
     hooks:
       - id: black
-        exclude: (ibis/_version|versioneer)\.py
+        exclude: setup\.py
   - repo: git://github.com/pre-commit/pre-commit-hooks
     rev: v2.1.0
     hooks:
@@ -19,6 +19,6 @@ repos:
     hooks:
       - id: pyupgrade
         args: [--py37-plus]
-        exclude: (ibis/_version|versioneer)\.py
+        exclude: setup\.py
         types:
           - python

@@ -1,6 +1,0 @@
-# For exclusions see https://github.com/ibis-project/ibis/pull/2802
-# dask 2021.5.0,5.1,6.0 had some issues with meta
-name: ibis
-dependencies:
-  - dask!=2021.5.*,!=2021.6.0
-  - pyarrow

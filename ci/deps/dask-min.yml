@@ -1,4 +1,0 @@
-name: ibis
-dependencies:
-  - dask=2021.2.0
-  - pyarrow

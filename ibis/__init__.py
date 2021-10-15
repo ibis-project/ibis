@@ -13,8 +13,6 @@ from ibis.config import options
 from ibis.expr import api
 from ibis.expr.api import *  # noqa: F401,F403
 
-from ._version import get_versions  # noqa: E402
-
 __all__ = ['api', 'ir', 'util', 'IbisError', 'options']
 __all__ += api.__all__
 
@@ -49,8 +47,18 @@ with ibis.config.config_prefix('sql'):
         'Number of rows to be retrieved for an unlimited table expression',
     )
 
-__version__ = get_versions()['version']
-del get_versions
+try:
+    import importlib.metadata as importlib_metadata
+except ImportError:
+    # TODO: remove this when Python 3.7 support is dropped
+    import importlib_metadata
+
+try:
+    __version__ = importlib_metadata.version(__name__)
+except Exception:
+    __version__ = importlib_metadata.version("ibis-framework")
+
+del importlib_metadata
 
 
 def __getattr__(name: str) -> BaseBackend:

@@ -1,0 +1,113 @@
+name: Check setup.py
+
+on:
+  push:
+    paths:
+      - ./dev/poetry2setup.py
+      - pyproject.toml
+  pull_request:
+    paths:
+      - ./dev/poetry2setup.py
+      - pyproject.toml
+
+jobs:
+  check_setup_py:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version:
+          - "3.9"
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: install python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: install poetry
+        run: pip install black poetry poetry-core tomli
+
+      - name: cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pypoetry
+          key: check-setup-py-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+
+      - name: install base ibis env
+        run: poetry install
+
+      - name: generate setup.py
+        env:
+          # this environment variable is set is to ensure reproducible setup.py
+          # generation
+          #
+          # because various data structures in poetry are unordered, an can
+          # result in things like package extras appearing in a different order
+          PYTHONHASHSEED: 42
+        run: python ./dev/poetry2setup.py -o setup.py
+
+      - name: check whether setup.py needs to be regenerated
+        run: git diff --exit-code setup.py
+
+  check_setuptools_install:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version:
+          - "3.9"
+    needs:
+      - check_setup_py
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: install python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: install poetry
+        run: pip install poetry
+
+      - name: install system dependencies
+        run: sudo apt-get install -y -q build-essential cmake krb5-config python-dev libkrb5-dev libboost-all-dev graphviz
+
+      - name: generate requirements.txt
+        run: poetry export --dev --extras all --without-hashes > requirements.txt
+
+      - name: cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: check-setuptools-install-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
+
+      - name: install using requirements.txt
+        run: pip install -r requirements.txt
+
+      - name: install ibis in development mode
+        run: pip install -e .
+
+      - name: run simple tests
+        run: pytest ibis/tests --numprocesses auto
+
+  check_poetry_lock:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: install python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.9"
+
+      - name: install poetry
+        run: pip install poetry
+
+      - name: run poetry lock
+        run: poetry lock --no-update
+
+      - name: check whether poetry lockfile needs to be updated
+        run: git diff --exit-code poetry.lock

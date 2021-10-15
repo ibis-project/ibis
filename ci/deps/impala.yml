@@ -1,8 +1,0 @@
-name: ibis
-dependencies:
-  - bitarray=2.0.1
-  - impyla
-  - requests
-  - thrift_sasl
-  - python-hdfs
-  - boost
