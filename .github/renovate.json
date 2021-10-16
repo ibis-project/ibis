@@ -1,0 +1,10 @@
+{
+  "schedule": ["daily"],
+  "rangeStrategy": "auto",
+  "extends": ["config:base"],
+  "semanticCommitScope": "deps",
+  "semanticCommitType": "chore",
+  "semanticCommits": "enabled",
+  "lockFileMaintenance": { "enabled": true },
+  "automerge": false
+}
