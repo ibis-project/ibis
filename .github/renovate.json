@@ -1,5 +1,4 @@
 {
-  "schedule": ["every day at 5am"],
   "rangeStrategy": "auto",
   "extends": ["config:base"],
   "semanticCommitScope": "deps",
