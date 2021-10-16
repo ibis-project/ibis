@@ -1,9 +1,11 @@
 {
   "rangeStrategy": "auto",
-  "extends": ["config:base"],
+  "extends": [
+    "config:base",
+    ":semanticCommitTypeAll(chore)",
+    ":semanticCommitTypeAll(deps)"
+  ],
   "schedule": ["after 10pm and before 5am every weekday", "every weekend"],
-  "semanticCommitScope": "deps",
-  "semanticCommitType": "chore",
   "semanticCommits": "enabled",
   "lockFileMaintenance": { "enabled": true },
   "enabledManagers": ["github-actions", "poetry"],
