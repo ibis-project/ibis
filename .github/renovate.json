@@ -1,0 +1,9 @@
+{
+  "rangeStrategy": "widen",
+  "extends": ["config:base"],
+  "schedule": ["after 10pm and before 5am every weekday", "every weekend"],
+  "semanticCommits": "enabled",
+  "lockFileMaintenance": { "enabled": true },
+  "enabledManagers": ["github-actions", "poetry"],
+  "automerge": false
+}
