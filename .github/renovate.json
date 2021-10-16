@@ -1,10 +1,6 @@
 {
   "rangeStrategy": "auto",
-  "extends": [
-    "config:base",
-    ":semanticCommitTypeAll(chore)",
-    ":semanticCommitScope(deps)"
-  ],
+  "extends": ["config:base"],
   "schedule": ["after 10pm and before 5am every weekday", "every weekend"],
   "semanticCommits": "enabled",
   "lockFileMaintenance": { "enabled": true },
