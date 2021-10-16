@@ -1879,7 +1879,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.1,<4"
-content-hash = "94503773b25322341089f238ca7bd0689054098b288cc9e2ea7c857fd33178c2"
+content-hash = "37fa7491dab1f12c05621397650817a7cad72fd47368bc89081e4e729446ce93"
 
 [metadata.files]
 alabaster = [
