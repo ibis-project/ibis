@@ -3,7 +3,7 @@
   "extends": [
     "config:base",
     ":semanticCommitTypeAll(chore)",
-    ":semanticCommitTypeAll(deps)"
+    ":semanticCommitScope(deps)"
   ],
   "schedule": ["after 10pm and before 5am every weekday", "every weekend"],
   "semanticCommits": "enabled",
