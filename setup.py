@@ -54,8 +54,8 @@ install_requires = [
     "numpy>=1,<2",
     "pandas>=1.2.5,<2.0.0",
     "parsy>=1.3.0,<2.0.0",
-    "pytz==2021.1",
-    "regex==2021.7.6",
+    "pytz>=2021.1,<2022.0",
+    "regex>=2021.7.6,<2022.0.0",
     "toolz>=0.11,<0.12",
 ]
 
@@ -64,12 +64,12 @@ extras_require = {
     "all": [
         "clickhouse-driver>=0.1,<0.2",
         "clickhouse-sqlalchemy>=0.1.4,<0.2.0",
-        "dask[array,dataframe]>=2021.2.0,<2021.10.0",
+        "dask[array,dataframe]>=2021.2.0,<2022.0.0",
         "geoalchemy2>=0.6,<0.7",
         "geopandas>=0.6,<0.7",
         "graphviz>=0.16,<0.17",
         "hdfs>=2,<3",
-        "impyla[kerberos]==0.18a1",
+        "impyla[kerberos]>=0.17,<0.19",
         "psycopg2>=2.7,<3.0",
         "pyarrow>=1,<6",
         "pymysql>=1,<2",
@@ -85,7 +85,7 @@ extras_require = {
         "clickhouse-sqlalchemy>=0.1.4,<0.2.0",
         "sqlalchemy>=1.3,<1.4",
     ],
-    "dask": ["dask[array,dataframe]>=2021.2.0,<2021.10.0", "pyarrow>=1,<6"],
+    "dask": ["dask[array,dataframe]>=2021.2.0,<2022.0.0", "pyarrow>=1,<6"],
     "geospatial": [
         "geoalchemy2>=0.6,<0.7",
         "geopandas>=0.6,<0.7",
@@ -94,7 +94,7 @@ extras_require = {
     "hdf5": ["tables>=3,<4"],
     "impala": [
         "hdfs>=2,<3",
-        "impyla[kerberos]==0.18a1",
+        "impyla[kerberos]>=0.17,<0.19",
         "requests>=2,<3",
         "sqlalchemy>=1.3,<1.4",
     ],
