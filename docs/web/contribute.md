@@ -126,6 +126,45 @@ Access the [Ibis "Merging PRs" wiki](https://github.com/ibis-project/ibis/wiki/M
 for more information.
 
 
+### Updating dependencies
+
+#### Automatic dependency updates
+
+WhiteSource Renovate will run every day (outside of traditional business hours)
+and submit PRs that attempt to update dependencies.
+
+These upgrades use a very conservative update strategy, which is only to
+**widen** the dependency range, as opposed to increasing the lower bound.
+
+The PRs will also automatically regenerate `poetry.lock` and `setup.py`, so
+that in most cases, maintainers and contributors do not have to remember to
+generate and commit these files.
+
+In case you need to manually update a dependency see the next section.
+
+#### Manually updating dependencies
+
+**Do not manually edit `setup.py`, it is automatically generated from `pyproject.toml`**
+
+1. Edit `pyproject.toml` as needed.
+2. Run `poetry update`
+3. Run
+
+```sh
+$ PYTHONHASHSEED=42 python ./dev/poetry2setup.py -o setup.py
+```
+
+from the repository root. `tomli` and `poetry-core` are necessary to run this
+script, they can be `pip install`ed.
+
+4. Commit your changes and make a pull request.
+
+Updates of minor versions of dependencies are handled automatically by
+[`renovate`](https://github.com/renovatebot/renovate).
+
+Do not make PRs from changes resulting from running `poetry update` unless
+absolutely necessary.
+
 ### Releasing
 
 Ibis is released in two places:
