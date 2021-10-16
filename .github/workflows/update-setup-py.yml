@@ -11,8 +11,8 @@ jobs:
   # this can only run on pull requests made from branches in the main ibis
   # repository ano not forks, since the add-and-commit action requires the
   # ability to push commits to the PR branch
-  if: ${{ github.repository == 'ibis-project/ibis' }}
   generate_setup_py:
+    if: ${{ github.repository == 'ibis-project/ibis' }}
     runs-on: ubuntu-latest
     steps:
       - name: checkout
