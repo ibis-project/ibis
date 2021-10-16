@@ -1,0 +1,62 @@
+name: Update setup.py
+
+on:
+  pull_request:
+    paths:
+      - ./dev/poetry2setup.py
+      - pyproject.toml
+      - poetry.lock
+
+jobs:
+  # this can only run on pull requests made from branches in the main ibis
+  # repository ano not forks, since the add-and-commit action requires the
+  # ability to push commits to the PR branch
+  if: ${{ github.repository == 'ibis-project/ibis' }}
+  generate_setup_py:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.IBIS_UPDATE_SETUP_PY }}
+
+      - name: install python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.x"
+
+      - name: install deps for poetry2setup
+        run: pip install black poetry-core tomli
+
+      - name: cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pypoetry
+          key: update-setup-py-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+
+      - name: generate setup.py
+        env:
+          # this environment variable is set is to ensure reproducible setup.py
+          # generation
+          #
+          # because various data structures in poetry are unordered, an can
+          # result in things like package extras appearing in a different order
+          PYTHONHASHSEED: 42
+        run: python ./dev/poetry2setup.py -o setup.py
+
+      - name: setup git credentials
+        uses: OleksiyRudenko/gha-git-credentials@v2.1
+        with:
+          token: ${{ secrets.IBIS_UPDATE_SETUP_PY }}
+          global: true
+          name: github-actions[bot]
+          email: 41898282+github-actions[bot]@users.noreply.github.com
+
+      - name: commit setup.py and push to pull request
+        uses: EndBug/add-and-commit@v7
+        with:
+          add: setup.py
+          author_name: github-actions[bot]
+          author_email: 41898282+github-actions[bot]@users.noreply.github.com
+          message: "chore(setup.py): update"
+          push: true
