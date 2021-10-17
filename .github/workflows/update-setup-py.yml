@@ -8,11 +8,14 @@ on:
       - poetry.lock
 
 jobs:
-  # this can only run on pull requests made from branches in the main ibis
-  # repository ano not forks, since the add-and-commit action requires the
-  # ability to push commits to the PR branch
   generate_setup_py:
-    if: ${{ github.repository == 'ibis-project/ibis' }}
+    # this can only run on pull requests made from branches in the main ibis
+    # repository ano not forks, since the add-and-commit action requires the
+    # ability to push commits to the PR branch
+    #
+    # this condition checks whether the PR is coming from a branch in the main
+    # repo
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     steps:
       - name: checkout
