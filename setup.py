@@ -65,7 +65,7 @@ extras_require = {
         "clickhouse-driver>=0.1,<0.3.0",
         "clickhouse-sqlalchemy>=0.1.4,<0.2.0",
         "dask[array,dataframe]>=2021.2.0,<2022.0.0",
-        "geoalchemy2>=0.6,<0.7",
+        "geoalchemy2>=0.6,<0.7|>=0.9.0,<0.10.0",
         "geopandas>=0.6,<0.7",
         "graphviz>=0.16,<0.17",
         "hdfs>=2,<3",
@@ -87,7 +87,7 @@ extras_require = {
     ],
     "dask": ["dask[array,dataframe]>=2021.2.0,<2022.0.0", "pyarrow>=1,<6"],
     "geospatial": [
-        "geoalchemy2>=0.6,<0.7",
+        "geoalchemy2>=0.6,<0.7|>=0.9.0,<0.10.0",
         "geopandas>=0.6,<0.7",
         "shapely>=1.6,<2.0",
     ],
