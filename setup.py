@@ -62,7 +62,7 @@ install_requires = [
 extras_require = {
     ':python_version < "3.8"': ["importlib-metadata>=4,<5"],
     "all": [
-        "clickhouse-driver>=0.1,<0.2",
+        "clickhouse-driver>=0.1,<0.3.0",
         "clickhouse-sqlalchemy>=0.1.4,<0.2.0",
         "dask[array,dataframe]>=2021.2.0,<2022.0.0",
         "geoalchemy2>=0.6,<0.7",
@@ -81,7 +81,7 @@ extras_require = {
         "tables>=3,<4",
     ],
     "clickhouse": [
-        "clickhouse-driver>=0.1,<0.2",
+        "clickhouse-driver>=0.1,<0.3.0",
         "clickhouse-sqlalchemy>=0.1.4,<0.2.0",
         "sqlalchemy>=1.3,<1.4",
     ],
