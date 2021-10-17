@@ -66,7 +66,7 @@ extras_require = {
         "clickhouse-sqlalchemy>=0.1.4,<0.2.0",
         "dask[array,dataframe]>=2021.2.0,<2022.0.0",
         "geoalchemy2>=0.6,<0.7",
-        "geopandas>=0.6,<0.7",
+        "geopandas>=0.6,<0.7|>=0.10.0,<0.11.0",
         "graphviz>=0.16,<0.17",
         "hdfs>=2,<3",
         "impyla[kerberos]>=0.17,<0.19",
@@ -88,7 +88,7 @@ extras_require = {
     "dask": ["dask[array,dataframe]>=2021.2.0,<2022.0.0", "pyarrow>=1,<6"],
     "geospatial": [
         "geoalchemy2>=0.6,<0.7",
-        "geopandas>=0.6,<0.7",
+        "geopandas>=0.6,<0.7|>=0.10.0,<0.11.0",
         "shapely>=1.6,<2.0",
     ],
     "hdf5": ["tables>=3,<4"],
