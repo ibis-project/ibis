@@ -5,7 +5,7 @@
 | Documentation  | [![Documentation Status](https://img.shields.io/badge/docs-docs.ibis--project.org-blue.svg)](http://ibis-project.org) |
 | Conda packages | [![Anaconda-Server Badge](https://anaconda.org/conda-forge/ibis-framework/badges/version.svg)](https://anaconda.org/conda-forge/ibis-framework) |
 | PyPI           | [![PyPI](https://img.shields.io/pypi/v/ibis-framework.svg)](https://pypi.org/project/ibis-framework) |
-| GitHub Actions | [![Build status](https://github.com/ibis-project/ibis/actions/workflows/main.yml/badge.svg)](https://github.com/ibis-project/ibis/actions/workflows/main.yml) |
+| GitHub Actions | [![Build status](https://github.com/ibis-project/ibis/actions/workflows/main.yml/badge.svg)](https://github.com/ibis-project/ibis/actions/workflows/main.yml?query=branch%3Amaster) |
 | Coverage       | [![Codecov branch](https://img.shields.io/codecov/c/github/ibis-project/ibis/master.svg)](https://codecov.io/gh/ibis-project/ibis) |
 
 
