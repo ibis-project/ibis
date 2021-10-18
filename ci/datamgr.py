@@ -8,7 +8,6 @@ from pathlib import Path
 import click
 import pandas as pd
 import sqlalchemy as sa
-from plumbum import local
 from toolz import dissoc
 
 SCRIPT_DIR = Path(__file__).parent.absolute()
@@ -243,19 +242,11 @@ def parquet(tables, data_directory, ignore_missing_dependency, **params):
     ),
 )
 @click.option(
-    '-l',
-    '--psql-path',
-    type=click.Path(exists=True),
-    required=os.name == 'nt',
-    default=None if os.name == 'nt' else '/usr/bin/psql',
-)
-@click.option(
     '--plpython/--no-plpython',
     help='Create PL/Python extension in database',
     default=True,
 )
-def postgres(schema, tables, data_directory, psql_path, plpython, **params):
-    psql = local[psql_path]
+def postgres(schema, tables, data_directory, plpython, **params):
     logger.info('Initializing PostgreSQL...')
     engine = init_database(
         'postgresql', params, schema, isolation_level='AUTOCOMMIT'
@@ -270,8 +261,6 @@ def postgres(schema, tables, data_directory, psql_path, plpython, **params):
     if plpython:
         engine.execute("CREATE EXTENSION IF NOT EXISTS PLPYTHONU")
 
-    query = "COPY {} FROM STDIN WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',')"
-    database = params['database']
     for table in tables:
         src = data_directory / f'{table}.csv'
 
@@ -298,23 +287,21 @@ def postgres(schema, tables, data_directory, psql_path, plpython, **params):
                     "geo_multipolygon": Geometry("MULTIPOLYGON", srid=srid),
                 },
             )
-            continue
-
-        load = psql[
-            '--host',
-            params['host'],
-            '--port',
-            params['port'],
-            '--username',
-            params['user'],
-            '--dbname',
-            database,
-            '--command',
-            query.format(table),
-        ]
-        with local.env(PGPASSWORD=params['password']):
-            with src.open('r') as f:
-                load(stdin=f)
+        else:
+            # Here we insert rows using COPY table FROM STDIN, by way of
+            # psycopg2's `copy_expert` API.
+            #
+            # We could use DataFrame.to_sql(method=callable), but that incurs
+            # an unnecessary round trip and requires more code: the `data_iter`
+            # argument would have to be turned back into a CSV before being
+            # passed to `copy_expert`.
+            sql = (
+                f"COPY {table} FROM STDIN "
+                "WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',')"
+            )
+            with src.open('r') as file:
+                with engine.begin() as con, con.connection.cursor() as cur:
+                    cur.copy_expert(sql=sql, file=file)
 
     engine.execute('VACUUM FULL ANALYZE')
 
