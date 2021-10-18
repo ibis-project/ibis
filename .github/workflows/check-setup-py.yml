@@ -4,12 +4,17 @@ on:
   push:
     paths:
       - ./dev/poetry2setup.py
+      - README.md
+      - poetry.lock
       - pyproject.toml
+      - setup.py
   pull_request:
     paths:
       - ./dev/poetry2setup.py
+      - README.md
+      - poetry.lock
       - pyproject.toml
-
+      - setup.py
 jobs:
   check_setup_py:
     runs-on: ubuntu-latest
