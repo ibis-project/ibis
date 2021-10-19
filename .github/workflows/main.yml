@@ -606,7 +606,7 @@ jobs:
 
       - uses: conda-incubator/setup-miniconda@v2
         with:
-          miniconda-version: "*"
+          mamba-version: "*"
           miniforge-version: latest
           miniforge-variant: Mambaforge
           activate-environment: conda-lock
