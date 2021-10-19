@@ -597,6 +597,10 @@ jobs:
           - "3.7"
           - "3.8"
           - "3.9"
+        platform:
+          - linux-64
+          - osx-64
+          - win-64
     defaults:
       run:
         shell: bash -l {0}
@@ -622,8 +626,6 @@ jobs:
 
           {
             echo 'name: conda-lock'
-            echo 'channels:'
-            echo '  - conda-forge'
             echo 'dependencies:'
             echo '  - python=${{ matrix.python-version }}'
           } > python-version.yml
@@ -631,9 +633,7 @@ jobs:
           conda lock \
             --file pyproject.toml \
             --file python-version.yml \
-            --platform linux-64 \
-            --platform osx-64 \
-            --platform win-64 \
+            --platform ${{ matrix.platform }} \
             --no-dev-dependencies \
             --filename-template 'conda-{platform}-${{ matrix.python-version }}.lock' \
             --extras clickhouse \
@@ -648,20 +648,8 @@ jobs:
             --extras sqlite \
             --mamba
 
-      - name: publish linux conda lock file
+      - name: publish ${{ matrix.platform }} conda lock file
         uses: actions/upload-artifact@v2
         with:
-          name: conda-linux-64-${{ matrix.python-version }}
-          path: conda-linux-64-${{ matrix.python-version }}.lock
-
-      - name: publish osx conda lock file
-        uses: actions/upload-artifact@v2
-        with:
-          name: conda-osx-64-${{ matrix.python-version }}
-          path: conda-osx-64-${{ matrix.python-version }}.lock
-
-      - name: publish windows conda lock file
-        uses: actions/upload-artifact@v2
-        with:
-          name: conda-win-64-${{ matrix.python-version }}
-          path: conda-win-64-${{ matrix.python-version }}.lock
+          name: conda-${{ matrix.platform }}-${{ matrix.python-version }}
+          path: conda-${{ matrix.platform }}-${{ matrix.python-version }}.lock
