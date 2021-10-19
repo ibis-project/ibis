@@ -20,6 +20,6 @@ jobs:
       - name: add condalock comment
         uses: peter-evans/create-or-update-comment@v1
         with:
-           token: ${{ secrets.PAT }}
+           token: ${{ secrets.IBIS_CONDA_LOCK }}
            issue-number: ${{ github.event.number }}
            body: "/condalock"

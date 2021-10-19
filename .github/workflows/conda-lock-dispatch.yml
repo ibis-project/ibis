@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: peter-evans/slash-command-dispatch@v1
         with:
-          token: ${{ secrets.PAT }}
+          token: ${{ secrets.IBIS_CONDA_LOCK }}
           reaction-token: ${{ secrets.GITHUB_TOKEN }}
           permission: none
           issue-type: pull-request
