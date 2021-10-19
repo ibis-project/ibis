@@ -625,7 +625,7 @@ jobs:
             echo 'channels:'
             echo '  - conda-forge'
             echo 'dependencies:'
-            echo '  - python ${{ matrix.python-version }} *_cp*'
+            echo '  - python=${{ matrix.python-version }}'
           } > python-version.yml
 
           conda lock \
