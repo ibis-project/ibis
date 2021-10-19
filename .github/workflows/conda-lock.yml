@@ -73,7 +73,7 @@ jobs:
           add: conda-lock/*.lock
           author_name: github-actions[bot]
           author_email: 41898282+github-actions[bot]@users.noreply.github.com
-          message: "chore(conda-lockiles-${{ matrix.python-version }}): relock"
+          message: "chore(conda-lockfiles-${{ matrix.python-version }}): relock"
 
       - name: react
         uses: peter-evans/create-or-update-comment@v1
