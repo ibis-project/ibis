@@ -31,7 +31,7 @@ pytz = "^2021.1"
 regex = "^2021.7.6"
 cytoolz = "^0.11"
 toolz = "^0.11"
-clickhouse-driver = { version = "^0.1 || ^0.2.0", optional = true }
+clickhouse-driver = { version = ">=0.1,<0.3", optional = true }
 clickhouse-sqlalchemy = { version = "^0.1.4", optional = true }
 dask = { version = "^2021.2.0", optional = true, extras = [
   "array",
@@ -166,6 +166,9 @@ inherit = false
 convention = "numpy"
 match_dir = "ibis"
 add_ignore = ["D100", "D101", "D102", "D103", "D104", "D105"]
+
+[tool.conda-lock]
+channels = ["conda-forge"]
 
 [build-system]
 requires = ["poetry>=1.1", "setuptools>=57,<58"]
