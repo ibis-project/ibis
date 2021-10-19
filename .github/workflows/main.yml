@@ -626,7 +626,7 @@ jobs:
             echo '  - conda-forge'
             echo 'dependencies:'
             echo '  - python ${{ matrix.python-version }} *_cp*'
-          } >> python-version.yml
+          } > python-version.yml
 
           conda lock \
             --file pyproject.toml \
