@@ -689,19 +689,12 @@ def hdfs_connect(
         session = requests.Session()
     session.verify = verify
     if auth_mechanism in ('GSSAPI', 'LDAP'):
+        from hdfs.ext.kerberos import KerberosClient
+
         if use_https == 'default':
             prefix = 'https'
         else:
             prefix = 'https' if use_https else 'http'
-        try:
-            import requests_kerberos  # noqa: F401
-        except ImportError:
-            raise com.IbisError(
-                "Unable to import requests-kerberos, which is required for "
-                "Kerberos HDFS support. Install it by executing `pip install "
-                "requests-kerberos` or `pip install hdfs[kerberos]`."
-            )
-        from hdfs.ext.kerberos import KerberosClient
 
         # note SSL
         url = f'{prefix}://{host}:{port}'
