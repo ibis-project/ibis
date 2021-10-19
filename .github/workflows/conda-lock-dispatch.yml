@@ -1,0 +1,19 @@
+# vim: filetype=yaml
+name: Dispatch conda lock
+
+on:
+  issue_comment:
+    types:
+      - created
+
+jobs:
+  condalock_dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: peter-evans/slash-command-dispatch@v1
+        with:
+          token: ${{ secrets.PAT }}
+          reaction-token: ${{ secrets.GITHUB_TOKEN }}
+          permission: none
+          issue-type: pull-request
+          commands: condalock

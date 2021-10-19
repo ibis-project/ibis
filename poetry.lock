@@ -765,20 +765,6 @@ optional = true
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
-name = "markdown"
-version = "3.3.4"
-description = "Python implementation of Markdown."
-category = "dev"
-optional = false
-python-versions = ">=3.6"
-
-[package.dependencies]
-importlib-metadata = {version = "*", markers = "python_version < \"3.8\""}
-
-[package.extras]
-testing = ["coverage", "pyyaml"]
-
-[[package]]
 name = "markupsafe"
 version = "2.0.1"
 description = "Safely add untrusted strings to HTML/XML markup."
@@ -1307,19 +1293,6 @@ pandas_on_spark = ["numpy (>=1.14)", "pandas (>=0.23.2)", "pyarrow (>=1.0.0)"]
 sql = ["pandas (>=0.23.2)", "pyarrow (>=1.0.0)"]
 
 [[package]]
-name = "pysuerga"
-version = "0.1.0"
-description = "Python simple static site generator for open source projects"
-category = "dev"
-optional = false
-python-versions = "*"
-
-[package.dependencies]
-jinja2 = "*"
-markdown = "*"
-pyyaml = "*"
-
-[[package]]
 name = "pytest"
 version = "6.2.5"
 description = "pytest: simple powerful testing with Python"
@@ -1383,18 +1356,6 @@ pytest = ">=5.0"
 dev = ["pre-commit", "tox", "pytest-asyncio"]
 
 [[package]]
-name = "pytest-randomly"
-version = "3.10.1"
-description = "Pytest plugin to randomly order tests and control random.seed."
-category = "dev"
-optional = false
-python-versions = ">=3.6"
-
-[package.dependencies]
-importlib-metadata = {version = ">=3.6.0", markers = "python_version < \"3.10\""}
-pytest = "*"
-
-[[package]]
 name = "pytest-xdist"
 version = "2.4.0"
 description = "pytest xdist plugin for distributed testing and loop-on-failing modes"
@@ -1456,7 +1417,7 @@ name = "pyyaml"
 version = "6.0"
 description = "YAML parser and emitter for Python"
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.6"
 
 [[package]]
@@ -1478,18 +1439,6 @@ description = "Alternative regular expression module, to replace re."
 category = "main"
 optional = false
 python-versions = "*"
-
-[[package]]
-name = "releases"
-version = "1.6.3"
-description = "A Sphinx extension for changelog manipulation"
-category = "dev"
-optional = false
-python-versions = "*"
-
-[package.dependencies]
-semantic-version = "<2.7"
-sphinx = ">=1.3"
 
 [[package]]
 name = "requests"
@@ -1522,14 +1471,6 @@ cryptography = {version = ">=1.3", markers = "python_version != \"3.3\""}
 pykerberos = {version = ">=1.1.8,<2.0.0", markers = "sys_platform != \"win32\""}
 requests = ">=1.1.0"
 winkerberos = {version = ">=0.5.0", markers = "sys_platform == \"win32\""}
-
-[[package]]
-name = "semantic-version"
-version = "2.6.0"
-description = "A library implementing the 'SemVer' scheme."
-category = "dev"
-optional = false
-python-versions = "*"
 
 [[package]]
 name = "shapely"
@@ -1819,7 +1760,7 @@ python-versions = ">=2"
 
 [[package]]
 name = "tzlocal"
-version = "4.0"
+version = "4.0.1"
 description = "tzinfo object for the local timezone"
 category = "main"
 optional = true
@@ -1902,7 +1843,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.1,<4"
-content-hash = "3c3e04986cb3ec968584121413b9df3be03d11dcd88ef067598c3be5e86b4c62"
+content-hash = "11ac5341e550aaee44e70a052f523eb407c066b3da28fbed52671eb38a2f91bf"
 
 [metadata.files]
 alabaster = [
@@ -2338,10 +2279,6 @@ locket = [
     {file = "locket-0.2.1-py2.py3-none-any.whl", hash = "sha256:12b6ada59d1f50710bca9704dbadd3f447dbf8dac6664575c1281cadab8e6449"},
     {file = "locket-0.2.1.tar.gz", hash = "sha256:3e1faba403619fe201552f083f1ecbf23f550941bc51985ac6ed4d02d25056dd"},
 ]
-markdown = [
-    {file = "Markdown-3.3.4-py3-none-any.whl", hash = "sha256:96c3ba1261de2f7547b46a00ea8463832c921d3f9d6aba3f255a6f71386db20c"},
-    {file = "Markdown-3.3.4.tar.gz", hash = "sha256:31b5b491868dcc87d6c24b7e3d19a0d730d59d3e46f4eea6430a321bed387a49"},
-]
 markupsafe = [
     {file = "MarkupSafe-2.0.1-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:d8446c54dc28c01e5a2dbac5a25f071f6653e6e40f3a8818e8b45d790fe6ef53"},
     {file = "MarkupSafe-2.0.1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:36bc903cbb393720fad60fc28c10de6acf10dc6cc883f3e24ee4012371399a38"},
@@ -2749,10 +2686,6 @@ pyrsistent = [
 pyspark = [
     {file = "pyspark-3.2.0.tar.gz", hash = "sha256:bfea06179edbfb4bc76a0f470bd3c38e12f00e1023e3ad0373558d07cff102ab"},
 ]
-pysuerga = [
-    {file = "pysuerga-0.1.0-py3-none-any.whl", hash = "sha256:409587d00ee4262f464e9e505e81f993fc159572895affd36f6e255dec088b6c"},
-    {file = "pysuerga-0.1.0.tar.gz", hash = "sha256:ae11f38d5d6d7a47cfa5661f3782370e04431cda4e4b2b526f23d8a19447dfcb"},
-]
 pytest = [
     {file = "pytest-6.2.5-py3-none-any.whl", hash = "sha256:7310f8d27bc79ced999e760ca304d69f6ba6c6649c0b60fb0e04a4a77cacc134"},
     {file = "pytest-6.2.5.tar.gz", hash = "sha256:131b36680866a76e6781d13f101efb86cf674ebb9762eb70d3082b6f29889e89"},
@@ -2768,10 +2701,6 @@ pytest-forked = [
 pytest-mock = [
     {file = "pytest-mock-3.6.1.tar.gz", hash = "sha256:40217a058c52a63f1042f0784f62009e976ba824c418cced42e88d5f40ab0e62"},
     {file = "pytest_mock-3.6.1-py3-none-any.whl", hash = "sha256:30c2f2cc9759e76eee674b81ea28c9f0b94f8f0445a1b87762cadf774f0df7e3"},
-]
-pytest-randomly = [
-    {file = "pytest-randomly-3.10.1.tar.gz", hash = "sha256:d4ef5dbf27e542e6a4e4cec7a20ef3f1b906bce21fa340ca5657b5326ef23a64"},
-    {file = "pytest_randomly-3.10.1-py3-none-any.whl", hash = "sha256:d28d490e3a743bdd64c5bc87c5fc182eac966ba6432c6bb6b224e32e76527e9e"},
 ]
 pytest-xdist = [
     {file = "pytest-xdist-2.4.0.tar.gz", hash = "sha256:89b330316f7fc475f999c81b577c2b926c9569f3d397ae432c0c2e2496d61ff9"},
@@ -2934,10 +2863,6 @@ regex = [
     {file = "regex-2021.10.8-cp39-cp39-win_amd64.whl", hash = "sha256:b04e512eb628ea82ed86eb31c0f7fc6842b46bf2601b66b1356a7008327f7700"},
     {file = "regex-2021.10.8.tar.gz", hash = "sha256:26895d7c9bbda5c52b3635ce5991caa90fbb1ddfac9c9ff1c7ce505e2282fb2a"},
 ]
-releases = [
-    {file = "releases-1.6.3-py2.py3-none-any.whl", hash = "sha256:cb3435ba372a6807433800fbe473760cfa781171513f670f3c4b76983ac80f18"},
-    {file = "releases-1.6.3.tar.gz", hash = "sha256:555ae4c97a671a420281c1c782e9236be25157b449fdf20b4c4b293fe93db2f1"},
-]
 requests = [
     {file = "requests-2.26.0-py2.py3-none-any.whl", hash = "sha256:6c1246513ecd5ecd4528a0906f910e8f0f9c6b8ec72030dc9fd154dc1a6efd24"},
     {file = "requests-2.26.0.tar.gz", hash = "sha256:b8aa58f8cf793ffd8782d3d8cb19e66ef36f7aba4353eec859e74678b01b07a7"},
@@ -2945,10 +2870,6 @@ requests = [
 requests-kerberos = [
     {file = "requests-kerberos-0.12.0.tar.gz", hash = "sha256:9d21f15241c53c2ad47e813138b9aee4b9acdd04b82048c4388ade15f40a52fd"},
     {file = "requests_kerberos-0.12.0-py2.py3-none-any.whl", hash = "sha256:5733abc0b6524815f6fc72d5c0ec9f3fb89137b852adea2a461c45931f5675e0"},
-]
-semantic-version = [
-    {file = "semantic_version-2.6.0-py3-none-any.whl", hash = "sha256:2d06ab7372034bcb8b54f2205370f4aa0643c133b7e6dbd129c5200b83ab394b"},
-    {file = "semantic_version-2.6.0.tar.gz", hash = "sha256:2a4328680073e9b243667b201119772aefc5fc63ae32398d6afafff07c4f54c0"},
 ]
 shapely = [
     {file = "Shapely-1.7.1-1-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:46da0ea527da9cf9503e66c18bab6981c5556859e518fe71578b47126e54ca93"},
@@ -3189,8 +3110,8 @@ tzdata = [
     {file = "tzdata-2021.2.post0.tar.gz", hash = "sha256:99d30a01967bb8d7868c03dc924862b1ae8a0e649a322a1107bacc1723c430b9"},
 ]
 tzlocal = [
-    {file = "tzlocal-4.0-py3-none-any.whl", hash = "sha256:5db620b69afe121b5c640cb8914fb6303233284ac4b263660c4146f6248e2639"},
-    {file = "tzlocal-4.0.tar.gz", hash = "sha256:02a29b12b3bb30bc33d0f0184dcf32944bf41d3f0aa1c7c21a9621ca4326b260"},
+    {file = "tzlocal-4.0.1-py3-none-any.whl", hash = "sha256:3689a33e855912057028c41e31c5e27e6aa97658c58e35b76d58d0c301993b6d"},
+    {file = "tzlocal-4.0.1.tar.gz", hash = "sha256:8560aabba61b5d2a5e1697bb781f682e6eaa3ce386cee85a09a458cc0003f836"},
 ]
 urllib3 = [
     {file = "urllib3-1.26.7-py2.py3-none-any.whl", hash = "sha256:c4fdf4019605b6e5423637e01bc9fe4daef873709a7973e195ceba0a62bbc844"},

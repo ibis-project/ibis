@@ -1,0 +1,25 @@
+name: Conda lock PR
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+    paths:
+      - 'conda-lock/*.lock'
+      - pyproject.toml
+      - poetry.lock
+
+jobs:
+  conda_lock_comment:
+    runs-on: ubuntu-latest
+    if: ${{ github.repository == 'ibis-project/ibis' }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: add condalock comment
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+           token: ${{ secrets.PAT }}
+           issue-number: ${{ github.event.number }}
+           body: "/condalock"
