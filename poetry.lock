@@ -468,14 +468,15 @@ ssh = ["paramiko"]
 
 [[package]]
 name = "geoalchemy2"
-version = "0.6.3"
+version = "0.9.4"
 description = "Using SQLAlchemy with Spatial Databases"
 category = "main"
 optional = true
 python-versions = "*"
 
 [package.dependencies]
-SQLAlchemy = ">=0.8"
+packaging = "*"
+SQLAlchemy = ">=1.1"
 
 [[package]]
 name = "geopandas"
@@ -1884,11 +1885,11 @@ docs = ["sphinx", "jaraco.packaging (>=8.2)", "rst.linker (>=1.9)"]
 testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-cov", "pytest-enabler (>=1.0.1)", "jaraco.itertools", "func-timeout", "pytest-black (>=0.3.7)", "pytest-mypy"]
 
 [extras]
-all = ["clickhouse-driver", "clickhouse-sqlalchemy", "dask", "geoalchemy2", "geopandas", "graphviz", "hdfs", "impyla", "psycopg2", "pyarrow", "pymysql", "pyspark", "requests", "shapely", "sqlalchemy", "tables"]
+all = ["clickhouse-driver", "clickhouse-sqlalchemy", "dask", "GeoAlchemy2", "geopandas", "graphviz", "hdfs", "impyla", "psycopg2", "pyarrow", "pymysql", "pyspark", "requests", "shapely", "sqlalchemy", "tables"]
 clickhouse = ["sqlalchemy", "clickhouse-sqlalchemy", "clickhouse-driver"]
 csv = []
 dask = ["dask", "pyarrow"]
-geospatial = ["geoalchemy2", "geopandas", "shapely"]
+geospatial = ["GeoAlchemy2", "geopandas", "shapely"]
 hdf5 = ["tables"]
 impala = ["hdfs", "sqlalchemy", "requests", "impyla"]
 mysql = ["sqlalchemy", "pymysql"]
@@ -1902,7 +1903,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.1,<4"
-content-hash = "41c83c30d550fbfb5bac87534479eb6505b9d1d67619c9882e8760b65f5a0419"
+content-hash = "2e25384fb3f58acbdaa3ad6dcd351a61f7828674765b511dfcfe8c06be43e832"
 
 [metadata.files]
 alabaster = [
@@ -2253,8 +2254,8 @@ fsspec = [
     {file = "fsspec-2021.10.1.tar.gz", hash = "sha256:c245626e3cb8de5cd91485840b215a385fa6f2b0f6ab87978305e99e2d842753"},
 ]
 geoalchemy2 = [
-    {file = "GeoAlchemy2-0.6.3-py2.py3-none-any.whl", hash = "sha256:0d1c9ea3ec13f6a522ccc3ffd2569ac524a6c6e80bab883e8805b28c48e77143"},
-    {file = "GeoAlchemy2-0.6.3.tar.gz", hash = "sha256:4dc4c6c2bda0fc82cccab4aaff185a6570e13a5351d85e29e12984a55d4138ee"},
+    {file = "GeoAlchemy2-0.9.4-py2.py3-none-any.whl", hash = "sha256:2e3323a8442d4b1f8de69106315c17d8ce729fc127a38a5d7e2b53e1a19b9dd5"},
+    {file = "GeoAlchemy2-0.9.4.tar.gz", hash = "sha256:b0e56d4a945bdc0f8fa9edd50ecc912889ea68e0e3558a19160dcb0d5b1b65fc"},
 ]
 geopandas = [
     {file = "geopandas-0.6.3-py2.py3-none-any.whl", hash = "sha256:549eb60665ca49bd2ffd385e68672dce6242e4055b1a00e47fafe17e325324c6"},
