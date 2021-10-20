@@ -1,0 +1,87 @@
+# vim: filetype=yaml
+name: Relock conda environment files
+
+on:
+  repository_dispatch:
+    types:
+      - condalock-command
+
+jobs:
+  condalock:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version:
+          - "3.7"
+          - "3.8"
+          - "3.9"
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.IBIS_CONDA_LOCK }}
+          repository: ${{ github.event.client_payload.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.client_payload.pull_request.head.ref }}
+
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          mamba-version: "*"
+          miniforge-version: latest
+          miniforge-variant: Mambaforge
+          activate-environment: conda-lock
+          python-version: ${{ matrix.python-version }}
+          condarc-file: ci/condarc
+
+      - name: install conda-lock
+        run: mamba install conda-lock
+
+      - name: generate lock file
+        run: |
+          set -euo pipefail
+
+          {
+            echo 'name: conda-lock'
+            echo 'dependencies:'
+            echo '  - python=${{ matrix.python-version }}'
+          } > /tmp/python-version.yml
+
+          conda lock \
+            --file pyproject.toml \
+            --file /tmp/python-version.yml \
+            --platform linux-64 \
+            --platform osx-64 \
+            --platform win-64 \
+            --filename-template 'conda-lock/{platform}-${{ matrix.python-version }}.lock' \
+            --extras clickhouse \
+            --extras dask \
+            --extras geospatial \
+            --extras hdf5 \
+            --extras impala \
+            --extras mysql \
+            --extras parquet \
+            --extras postgres \
+            --extras pyspark \
+            --extras sqlite \
+            --mamba
+
+      - name: create conda environment
+        run: mamba create --name ibis${{ matrix.python-version }} --file conda-lock/linux-64-${{ matrix.python-version }}.lock
+
+      - name: commit lock files and push to PR
+        uses: EndBug/add-and-commit@v7
+        with:
+          add: conda-lock/*.lock
+          author_name: github-actions[bot]
+          author_email: 41898282+github-actions[bot]@users.noreply.github.com
+          message: "chore(conda-lockfiles-${{ matrix.python-version }}): relock"
+
+      - name: react on success
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+          reaction-type: hooray

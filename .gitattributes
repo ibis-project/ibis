@@ -1,2 +1,3 @@
 setup.py linguist-generated=true
 poetry.lock linguist-generated=true
+conda-lock/*.lock linguist-generated=true

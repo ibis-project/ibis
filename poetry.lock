@@ -583,7 +583,7 @@ python-versions = "*"
 
 [[package]]
 name = "ipykernel"
-version = "6.4.1"
+version = "6.4.2"
 description = "IPython Kernel for Jupyter"
 category = "dev"
 optional = false
@@ -689,7 +689,7 @@ i18n = ["Babel (>=2.7)"]
 
 [[package]]
 name = "jsonschema"
-version = "4.1.0"
+version = "4.1.2"
 description = "An implementation of JSON Schema validation for Python"
 category = "dev"
 optional = false
@@ -1811,7 +1811,7 @@ python-versions = "*"
 
 [[package]]
 name = "tzdata"
-version = "2021.2.post0"
+version = "2021.4"
 description = "Provider of IANA time zone data"
 category = "main"
 optional = true
@@ -1819,7 +1819,7 @@ python-versions = ">=2"
 
 [[package]]
 name = "tzlocal"
-version = "4.0"
+version = "4.0.1"
 description = "tzinfo object for the local timezone"
 category = "main"
 optional = true
@@ -1902,7 +1902,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.1,<4"
-content-hash = "3ca912ea95aef978c785d0b763f20de314e28410bcd6f47c5e49f7f3f7f7d4ca"
+content-hash = "41c83c30d550fbfb5bac87534479eb6505b9d1d67619c9882e8760b65f5a0419"
 
 [metadata.files]
 alabaster = [
@@ -2289,8 +2289,8 @@ iniconfig = [
     {file = "iniconfig-1.1.1.tar.gz", hash = "sha256:bc3af051d7d14b2ee5ef9969666def0cd1a000e121eaea580d4a313df4b37f32"},
 ]
 ipykernel = [
-    {file = "ipykernel-6.4.1-py3-none-any.whl", hash = "sha256:a3f6c2dda2ecf63b37446808a70ed825fea04790779ca524889c596deae0def8"},
-    {file = "ipykernel-6.4.1.tar.gz", hash = "sha256:df3355e5eec23126bc89767a676c5f0abfc7f4c3497d118c592b83b316e8c0cd"},
+    {file = "ipykernel-6.4.2-py3-none-any.whl", hash = "sha256:5657a0ab3d9a9eba3eb78b261771d22158388f182e85668c536c1a9932b80e03"},
+    {file = "ipykernel-6.4.2.tar.gz", hash = "sha256:0140f78bfd60e47e387b6433b4bed0f228986420dc4d5fac0e251c9711e23e29"},
 ]
 ipython = [
     {file = "ipython-7.28.0-py3-none-any.whl", hash = "sha256:f16148f9163e1e526f1008d7c8d966d9c15600ca20d1a754287cf96d00ba6f1d"},
@@ -2313,8 +2313,8 @@ jinja2 = [
     {file = "Jinja2-3.0.2.tar.gz", hash = "sha256:827a0e32839ab1600d4eb1c4c33ec5a8edfbc5cb42dafa13b81f182f97784b45"},
 ]
 jsonschema = [
-    {file = "jsonschema-4.1.0-py3-none-any.whl", hash = "sha256:2b3cca28580511d44326f0e7fc582eab3cbe31aabd1a1c2cfa74a399796ffd84"},
-    {file = "jsonschema-4.1.0.tar.gz", hash = "sha256:9dd7c33b4a96138dc37bb86b3610d3b12d30d96433d4d73435ca3025804154a8"},
+    {file = "jsonschema-4.1.2-py3-none-any.whl", hash = "sha256:166870c8ab27bd712a8627e0598de4685bd8d199c4d7bd7cacc3d941ba0c6ca0"},
+    {file = "jsonschema-4.1.2.tar.gz", hash = "sha256:5c1a282ee6b74235057421fd0f766ac5f2972f77440927f6471c9e8493632fac"},
 ]
 jupyter-client = [
     {file = "jupyter_client-7.0.6-py3-none-any.whl", hash = "sha256:074bdeb1ffaef4a3095468ee16313938cfdc48fc65ca95cc18980b956c2e5d79"},
@@ -3185,12 +3185,12 @@ typing-extensions = [
     {file = "typing_extensions-3.10.0.2.tar.gz", hash = "sha256:49f75d16ff11f1cd258e1b988ccff82a3ca5570217d7ad8c5f48205dd99a677e"},
 ]
 tzdata = [
-    {file = "tzdata-2021.2.post0-py2.py3-none-any.whl", hash = "sha256:a843aabf67dea3dc6bbbc8853e1aee6563e74bcfe920e11a571a389155db1401"},
-    {file = "tzdata-2021.2.post0.tar.gz", hash = "sha256:99d30a01967bb8d7868c03dc924862b1ae8a0e649a322a1107bacc1723c430b9"},
+    {file = "tzdata-2021.4-py2.py3-none-any.whl", hash = "sha256:1d480afbf202440771da86cae084d5d43729eec9b818c952210e0fac98edb03c"},
+    {file = "tzdata-2021.4.tar.gz", hash = "sha256:351032b2bb205b23b56ef5ca7b2b4eec739a0d5c078f86278ffdda4863aee8ab"},
 ]
 tzlocal = [
-    {file = "tzlocal-4.0-py3-none-any.whl", hash = "sha256:5db620b69afe121b5c640cb8914fb6303233284ac4b263660c4146f6248e2639"},
-    {file = "tzlocal-4.0.tar.gz", hash = "sha256:02a29b12b3bb30bc33d0f0184dcf32944bf41d3f0aa1c7c21a9621ca4326b260"},
+    {file = "tzlocal-4.0.1-py3-none-any.whl", hash = "sha256:3689a33e855912057028c41e31c5e27e6aa97658c58e35b76d58d0c301993b6d"},
+    {file = "tzlocal-4.0.1.tar.gz", hash = "sha256:8560aabba61b5d2a5e1697bb781f682e6eaa3ce386cee85a09a458cc0003f836"},
 ]
 urllib3 = [
     {file = "urllib3-1.26.7-py2.py3-none-any.whl", hash = "sha256:c4fdf4019605b6e5423637e01bc9fe4daef873709a7973e195ceba0a62bbc844"},
