@@ -134,7 +134,7 @@ https://conda.anaconda.org/conda-forge/noarch/pycparser-2.20-pyh9f0ad1d_2.tar.bz
 https://conda.anaconda.org/conda-forge/noarch/pyflakes-2.4.0-pyhd8ed1ab_0.tar.bz2#1aa3ecd37d0694e2ea5fef48da75371e
 https://conda.anaconda.org/conda-forge/noarch/pymysql-1.0.2-pyhd8ed1ab_0.tar.bz2#6b3c16769e390b5b60729d2eb46b8144
 https://conda.anaconda.org/conda-forge/noarch/pyparsing-2.4.7-pyh9f0ad1d_0.tar.bz2#626c4f20d5bf06dcec9cf2eaa31725c7
-https://conda.anaconda.org/conda-forge/noarch/python-tzdata-2021.2.post0-pyhd8ed1ab_0.tar.bz2#46ce641a1346b285fd15d6a2115bbc27
+https://conda.anaconda.org/conda-forge/noarch/python-tzdata-2021.4-pyhd8ed1ab_0.tar.bz2#f522577cec8926d3fba5c2803ae7e1d6
 https://conda.anaconda.org/conda-forge/osx-64/python_abi-3.9-2_cp39.tar.bz2#262f557ee8ca777fe2190956038024cd
 https://conda.anaconda.org/conda-forge/noarch/pytz-2021.3-pyhd8ed1ab_0.tar.bz2#7e4f811bff46a5a6a7e0094921389395
 https://conda.anaconda.org/conda-forge/noarch/semantic_version-2.6.0-py_0.tar.bz2#f9d12aa48fc359993754ecedb53f1b1a
@@ -230,7 +230,7 @@ https://conda.anaconda.org/conda-forge/osx-64/geotiff-1.7.0-hb0faedc_3.tar.bz2#2
 https://conda.anaconda.org/conda-forge/noarch/isort-5.9.3-pyhd8ed1ab_0.tar.bz2#1d4edd3ed982e6c03ae1788dfb87d907
 https://conda.anaconda.org/conda-forge/noarch/jinja2-3.0.2-pyhd8ed1ab_0.tar.bz2#63bce5b7963c5f50273bd86a57b82272
 https://conda.anaconda.org/conda-forge/noarch/joblib-1.1.0-pyhd8ed1ab_0.tar.bz2#07d1b5c8cde14d95998fd4767e1e62d2
-https://conda.anaconda.org/conda-forge/noarch/jsonschema-4.1.0-pyhd8ed1ab_0.tar.bz2#927b99367c1323748cb259c19f93e1eb
+https://conda.anaconda.org/conda-forge/noarch/jsonschema-4.1.2-pyhd8ed1ab_0.tar.bz2#94188756716d63117f09d546a30d43e7
 https://conda.anaconda.org/conda-forge/noarch/jupyter_client-7.0.6-pyhd8ed1ab_0.tar.bz2#bad4522cf4a022cb5500969ad67c3342
 https://conda.anaconda.org/conda-forge/osx-64/kealib-1.4.14-ha22a8b1_3.tar.bz2#9bf9c8c2443e60943eb84e256f3f7c6f
 https://conda.anaconda.org/conda-forge/osx-64/libdap4-3.20.6-h3e144a0_2.tar.bz2#55e0706347eb18f3616808366236bcaa
@@ -288,7 +288,7 @@ https://conda.anaconda.org/conda-forge/osx-64/pyarrow-5.0.0-py39hc3b5b9c_8_cpu.t
 https://conda.anaconda.org/conda-forge/noarch/requests-2.26.0-pyhd8ed1ab_0.tar.bz2#0ed2ccbde6db9dd5789068eb7194463f
 https://conda.anaconda.org/conda-forge/noarch/clickhouse-sqlalchemy-0.1.4-py_0.tar.bz2#eefe6c41dc23b97fc216348bf8f0b969
 https://conda.anaconda.org/conda-forge/noarch/folium-0.12.0-pyhd8ed1ab_1.tar.bz2#91945fa06d1d7a5a8914f32785388478
-https://conda.anaconda.org/conda-forge/osx-64/ipykernel-6.4.1-py39h71a6800_0.tar.bz2#298de428ef60c9b9985a8a8eb0f60f2e
+https://conda.anaconda.org/conda-forge/osx-64/ipykernel-6.4.2-py39h71a6800_0.tar.bz2#d6e3610d9e00b113867b38cceb0f801d
 https://conda.anaconda.org/conda-forge/noarch/pyspark-3.2.0-pyh6c4a22f_0.tar.bz2#4964a9b503b85205ca5376d9a43dd4d5
 https://conda.anaconda.org/conda-forge/osx-64/requests-kerberos-0.12.0-py39h6e9494a_2.tar.bz2#886152e5a5a2575270467550db4fd318
 https://conda.anaconda.org/conda-forge/noarch/sphinx-4.2.0-pyh6c4a22f_0.tar.bz2#ea5c6881a11a0d9c4d04f1ebae87bb34

@@ -67,6 +67,9 @@ jobs:
             --extras sqlite \
             --mamba
 
+      - name: create conda environment
+        run: mamba create --name ibis${{ matrix.python-version }} --file conda-lock/linux-64-${{ matrix.python-version }}.lock
+
       - name: commit lock files and push to PR
         uses: EndBug/add-and-commit@v7
         with:
@@ -75,7 +78,7 @@ jobs:
           author_email: 41898282+github-actions[bot]@users.noreply.github.com
           message: "chore(conda-lockfiles-${{ matrix.python-version }}): relock"
 
-      - name: react
+      - name: react on success
         uses: peter-evans/create-or-update-comment@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
