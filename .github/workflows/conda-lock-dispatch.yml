@@ -10,7 +10,7 @@ jobs:
   condalock_dispatch:
     runs-on: ubuntu-latest
     steps:
-      - uses: peter-evans/slash-command-dispatch@v1
+      - uses: peter-evans/slash-command-dispatch@v2
         with:
           token: ${{ secrets.IBIS_CONDA_LOCK }}
           reaction-token: ${{ secrets.GITHUB_TOKEN }}
