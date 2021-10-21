@@ -32,6 +32,8 @@ packages = [
     "ibis.backends.parquet.tests",
     "ibis.backends.postgres",
     "ibis.backends.postgres.tests",
+    "ibis.backends.pyarrow",
+    "ibis.backends.pyarrow.tests",
     "ibis.backends.pyspark",
     "ibis.backends.pyspark.tests",
     "ibis.backends.sqlite",
@@ -45,7 +47,7 @@ packages = [
     "ibis.udf",
 ]
 
-package_data = {"": ["*"]}
+package_data = {"": ["*"], "ibis.backends.pyarrow.tests": ["fixtures/*"]}
 
 install_requires = [
     "cached_property>=1,<2",
