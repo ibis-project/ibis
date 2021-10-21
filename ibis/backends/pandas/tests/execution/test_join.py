@@ -413,3 +413,28 @@ def test_select_on_unambiguous_asof_join(func):
     expr = func(join)
     result = expr.execute()
     tm.assert_frame_equal(result, expected)
+
+
+def test_materialized_join():
+    df = pd.DataFrame({"test": [1, 2, 3], "name": ["a", "b", "c"]})
+    df_2 = pd.DataFrame({"test_2": [1, 5, 6], "name_2": ["d", "e", "f"]})
+
+    conn = ibis.pandas.connect({"df": df, "df_2": df_2})
+
+    ibis_table_1 = conn.table("df")
+    ibis_table_2 = conn.table("df_2")
+
+    joined = ibis_table_1.outer_join(
+        ibis_table_2,
+        predicates=ibis_table_1["test"] == ibis_table_2["test_2"],
+    )
+    joined = joined.materialize()
+    result = joined.execute()
+    expected = pd.merge(
+        df,
+        df_2,
+        left_on="test",
+        right_on="test_2",
+        how="outer",
+    )
+    tm.assert_frame_equal(result, expected)

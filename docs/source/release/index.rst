@@ -12,6 +12,7 @@ Release Notes
    These release notes are for versions of ibis **1.0 and later**. Release
    notes for pre-1.0 versions of ibis can be found at :doc:`release-pre-1.0`
 
+* :bug:`3086` Error when trying to join tables with Pandas backend
 * :support:`2678` Improvement of the backend API. The former `Client` subclasses have been replaced by a `Backend` class that must
   subclass `ibis.backends.base.BaseBackend`. The `BaseBackend` class contains abstract methods for the minimum subset of methods that
   backends must implement, and their signatures have been standardized across backends. The Ibis compiler has been refactored, and
