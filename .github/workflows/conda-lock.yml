@@ -70,13 +70,22 @@ jobs:
       - name: create conda environment
         run: mamba create --name ibis${{ matrix.python-version }} --file conda-lock/linux-64-${{ matrix.python-version }}.lock
 
+      - name: set git user info
+        run: |
+          set -euo pipefail
+
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
       - name: commit lock files and push to PR
-        uses: EndBug/add-and-commit@v7
-        with:
-          add: conda-lock/*.lock
-          author_name: github-actions[bot]
-          author_email: 41898282+github-actions[bot]@users.noreply.github.com
-          message: "chore(conda-lockfiles-${{ matrix.python-version }}): relock"
+        run: |
+          set -euo pipefail
+
+          git add conda-lock/*-${{ matrix.python-version }}.lock
+
+          if git commit -m'chore(conda-lock/*-${{ matrix.python-version }}.lock): relock'; then
+            git push
+          fi
 
       - name: react on success
         uses: peter-evans/create-or-update-comment@v1
