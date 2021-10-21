@@ -85,7 +85,10 @@ jobs:
 
           if git commit -m'chore(conda-lock/*-${{ matrix.python-version }}.lock): relock'; then
             # pull in case another commit happened in the meantime
-            git pull --rebase
+            #
+            # `ours` is actually the *other* changeset, not the current branch, per
+            # https://stackoverflow.com/a/3443225/564538
+            git pull --rebase -s recursive -X ours
             git push
           fi
 
