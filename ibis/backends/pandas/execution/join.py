@@ -55,7 +55,7 @@ def execute_cross_join(op, left, right, **kwargs):
 
 
 @execute_node.register(ops.Join, pd.DataFrame, pd.DataFrame)
-def execute_materialized_join(op, left, right, **kwargs):
+def execute_join(op, left, right, **kwargs):
     op_type = type(op)
 
     try:
@@ -91,6 +91,11 @@ def execute_materialized_join(op, left, right, **kwargs):
         right_on=on[right_op],
         suffixes=constants.JOIN_SUFFIXES,
     )
+    return df
+
+
+@execute_node.register(ops.MaterializedJoin, pd.DataFrame)
+def execute_materialized_join(op, df, **kwargs):
     return df
 
 

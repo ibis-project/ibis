@@ -15,6 +15,11 @@ from ..dispatch import execute_node
 from ..execution import constants
 
 
+@execute_node.register(ops.MaterializedJoin, dd.DataFrame)
+def execute_materialized_join(op, df, **kwargs):
+    return df
+
+
 @execute_node.register(
     ops.AsOfJoin, dd.DataFrame, dd.DataFrame, (Timedelta, type(None))
 )
@@ -69,9 +74,9 @@ def execute_cross_join(op, left, right, **kwargs):
     return result
 
 
-# TODO - execute_materialized_join - #2553
+# TODO - execute_join - #2553
 @execute_node.register(ops.Join, dd.DataFrame, dd.DataFrame)
-def execute_materialized_join(op, left, right, **kwargs):
+def execute_join(op, left, right, **kwargs):
     op_type = type(op)
 
     try:

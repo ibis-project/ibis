@@ -237,7 +237,7 @@ def test_multi_join_with_post_expression_filter(how, left, df1):
     )
 
 
-@pytest.mark.xfail(reason="TODO - execute_materialized_join - #2553")
+@pytest.mark.xfail(reason="TODO - execute_join - #2553")
 @join_type
 def test_join_with_non_trivial_key(how, left, right, df1, df2):
     # also test that the order of operands in the predicate doesn't matter
@@ -261,7 +261,7 @@ def test_join_with_non_trivial_key(how, left, right, df1, df2):
     )
 
 
-@pytest.mark.xfail(reason="TODO - execute_materialized_join - #2553")
+@pytest.mark.xfail(reason="TODO - execute_join - #2553")
 @join_type
 def test_join_with_non_trivial_key_project_table(how, left, right, df1, df2):
     # also test that the order of operands in the predicate doesn't matter
@@ -492,6 +492,40 @@ def test_select_on_unambiguous_asof_join(func, npartitions):
     assert not expected.compute(scheduler='single-threaded').empty
     expr = func(join)
     result = expr.compile()
+    tm.assert_frame_equal(
+        result.compute(scheduler='single-threaded'),
+        expected.compute(scheduler='single-threaded'),
+    )
+
+
+def test_materialized_join(npartitions):
+    df = dd.from_pandas(
+        pd.DataFrame({"test": [1, 2, 3], "name": ["a", "b", "c"]}),
+        npartitions=npartitions,
+    )
+    df_2 = dd.from_pandas(
+        pd.DataFrame({"test_2": [1, 5, 6], "name_2": ["d", "e", "f"]}),
+        npartitions=npartitions,
+    )
+
+    conn = ibis.dask.connect({"df": df, "df_2": df_2})
+
+    ibis_table_1 = conn.table("df")
+    ibis_table_2 = conn.table("df_2")
+
+    joined = ibis_table_1.outer_join(
+        ibis_table_2,
+        predicates=ibis_table_1["test"] == ibis_table_2["test_2"],
+    )
+    joined = joined.materialize()
+    result = joined.compile()
+    expected = dd.merge(
+        df,
+        df_2,
+        left_on="test",
+        right_on="test_2",
+        how="outer",
+    )
     tm.assert_frame_equal(
         result.compute(scheduler='single-threaded'),
         expected.compute(scheduler='single-threaded'),
