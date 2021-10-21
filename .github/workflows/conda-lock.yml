@@ -84,6 +84,8 @@ jobs:
           git add conda-lock/*-${{ matrix.python-version }}.lock
 
           if git commit -m'chore(conda-lock/*-${{ matrix.python-version }}.lock): relock'; then
+            # pull in case another commit happened in the meantime
+            git pull --rebase
             git push
           fi
 
