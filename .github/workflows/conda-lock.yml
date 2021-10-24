@@ -22,7 +22,6 @@ jobs:
       - name: checkout
         uses: actions/checkout@v2
         with:
-          token: ${{ secrets.IBIS_CONDA_LOCK }}
           repository: ${{ github.event.client_payload.pull_request.head.repo.full_name }}
           ref: ${{ github.event.client_payload.pull_request.head.ref }}
 
@@ -42,15 +41,17 @@ jobs:
         run: |
           set -euo pipefail
 
+          python_version_file="$(mktemp --suffix=.yml)"
+
           {
             echo 'name: conda-lock'
             echo 'dependencies:'
             echo '  - python=${{ matrix.python-version }}'
-          } > /tmp/python-version.yml
+          } > "${python_version_file}"
 
           conda lock \
             --file pyproject.toml \
-            --file /tmp/python-version.yml \
+            --file "${python_version_file}" \
             --platform linux-64 \
             --platform osx-64 \
             --platform win-64 \
@@ -70,6 +71,30 @@ jobs:
       - name: create conda environment
         run: mamba create --name ibis${{ matrix.python-version }} --file conda-lock/linux-64-${{ matrix.python-version }}.lock
 
+      - name: upload conda lock files
+        uses: actions/upload-artifact@v2
+        with:
+          name: conda-lock-files-${{ github.run_attempt }}
+          path: conda-lock/*-${{ matrix.python-version }}.lock
+
+  condalock_push:
+    runs-on: ubuntu-latest
+    needs:
+      - condalock
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.IBIS_CONDA_LOCK }}
+          repository: ${{ github.event.client_payload.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.client_payload.pull_request.head.ref }}
+
+      - name: download conda lock files
+        uses: actions/download-artifact@v2
+        with:
+          name: conda-lock-files-${{ github.run_attempt }}
+          path: conda-lock
+
       - name: set git user info
         run: |
           set -euo pipefail
@@ -83,7 +108,7 @@ jobs:
 
           git add conda-lock/*-${{ matrix.python-version }}.lock
 
-          if git commit -m'chore(conda-lock/*-${{ matrix.python-version }}.lock): relock'; then
+          if git commit -m'chore(conda-lock): relock'; then
             # pull in case another commit happened in the meantime
             #
             # `ours` is actually the *other* changeset, not the current branch, per
