@@ -14,10 +14,17 @@
 
 import unittest
 
+import pytest
+
 import ibis
 import ibis.expr.types as ir
 from ibis.tests.expr.mocks import MockBackend
 from ibis.tests.util import assert_equal
+
+
+def test_warns_on_deprecated_import():
+    with pytest.warns(FutureWarning, match=r"ibis\.expr\.analytics"):
+        import ibis.expr.analytics  # noqa: F401
 
 
 class TestAnalytics(unittest.TestCase):

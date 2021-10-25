@@ -27,6 +27,7 @@ requirements:
     - poetry
 
   run:
+    - atpublic
     - cached_property
     - clickhouse-driver >=0.1.3
     - clickhouse-cityhash  # [not win]
