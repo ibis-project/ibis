@@ -5,11 +5,10 @@ from ...common import exceptions as com
 from .. import rules as rlz
 from .. import types as ir
 from ..signature import Argument as Arg
-from .core import Node, safe_repr
+from .core import Node, _safe_repr
 
 
-@public
-def to_sort_key(key, *, table=None):
+def _to_sort_key(key, *, table=None):
     if isinstance(key, DeferredSortKey):
         if table is None:
             raise com.IbisTypeError(
@@ -30,7 +29,7 @@ def to_sort_key(key, *, table=None):
             raise com.IbisTypeError("cannot resolve key with table=None")
         key = table._ensure_expr(key)
         if isinstance(key, (ir.SortExpr, DeferredSortKey)):
-            return to_sort_key(key, table=table)
+            return _to_sort_key(key, table=table)
 
     if isinstance(sort_order, str):
         if sort_order.lower() in ('desc', 'descending'):
@@ -41,15 +40,14 @@ def to_sort_key(key, *, table=None):
     return SortKey(key, ascending=sort_order).to_expr()
 
 
-@public
-def maybe_convert_sort_keys(tables, exprs):
+def _maybe_convert_sort_keys(tables, exprs):
     exprs = util.promote_list(exprs)
     keys = exprs[:]
     for i, key in enumerate(exprs):
         step = -1 if isinstance(key, (str, DeferredSortKey)) else 1
         for table in tables[::step]:
             try:
-                sort_key = to_sort_key(key, table=table)
+                sort_key = _to_sort_key(key, table=table)
             except Exception:
                 continue
             else:
@@ -78,7 +76,7 @@ class SortKey(Node):
         rows = [
             'Sort key:',
             f'  ascending: {self.ascending!s}',
-            util.indent(safe_repr(self.expr), 2),
+            util.indent(_safe_repr(self.expr), 2),
         ]
         return '\n'.join(rows)
 

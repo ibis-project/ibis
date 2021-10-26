@@ -11,7 +11,7 @@ from .. import schema as sch
 from .. import types as ir
 from ..signature import Argument as Arg
 from .core import Node, all_equal, distinct_roots
-from .sortkeys import maybe_convert_sort_keys
+from .sortkeys import _maybe_convert_sort_keys
 
 _table_names = (f'unbound_table_{i:d}' for i in itertools.count())
 
@@ -36,7 +36,7 @@ class TableNode(Node):
         return Selection(
             expr,
             [],
-            sort_keys=maybe_convert_sort_keys(
+            sort_keys=_maybe_convert_sort_keys(
                 [self.to_expr(), expr],
                 sort_exprs,
             ),
@@ -507,7 +507,9 @@ class Selection(TableNode, sch.HasSchema):
             return helper.get_result()
 
     def sort_by(self, expr, sort_exprs):
-        resolved_keys = maybe_convert_sort_keys([self.table, expr], sort_exprs)
+        resolved_keys = _maybe_convert_sort_keys(
+            [self.table, expr], sort_exprs
+        )
         if not self.blocks():
             if self.table._is_valid(resolved_keys):
                 return Selection(
@@ -723,7 +725,9 @@ class Aggregation(TableNode, sch.HasSchema):
         return sch.Schema(names, types)
 
     def sort_by(self, expr, sort_exprs):
-        resolved_keys = maybe_convert_sort_keys([self.table, expr], sort_exprs)
+        resolved_keys = _maybe_convert_sort_keys(
+            [self.table, expr], sort_exprs
+        )
         if self.table._is_valid(resolved_keys):
             return Aggregation(
                 self.table,

@@ -14,8 +14,7 @@ from ..signature import Annotable
 from ..signature import Argument as Arg
 
 
-@public
-def safe_repr(x, memo=None):
+def _safe_repr(x, memo=None):
     try:
         return x._repr(memo=memo)
     except AttributeError:
@@ -85,7 +84,7 @@ class Node(Annotable):
         pprint_args = []
 
         def _pp(x):
-            return safe_repr(x, memo=memo)
+            return _safe_repr(x, memo=memo)
 
         for x in self.args:
             if isinstance(x, (tuple, list)):
