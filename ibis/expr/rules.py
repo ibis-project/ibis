@@ -190,7 +190,7 @@ def sort_key(key, *, from_=None, this):
     import ibis.expr.operations as ops
 
     table = getattr(this, from_) if from_ is not None else None
-    return ops._to_sort_key(key, table=table)
+    return ops.sortkeys._to_sort_key(key, table=table)
 
 
 @validator

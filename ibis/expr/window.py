@@ -234,7 +234,9 @@ class Window:
         # Internal API, ensure that any unresolved expr references (as strings,
         # say) are bound to the table being windowed
         groups = table._resolve(self._group_by)
-        sorts = [ops._to_sort_key(k, table=table) for k in self._order_by]
+        sorts = [
+            ops.sortkeys._to_sort_key(k, table=table) for k in self._order_by
+        ]
         return self._replace(group_by=groups, order_by=sorts)
 
     def combine(self, window):
