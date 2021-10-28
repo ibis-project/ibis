@@ -13,7 +13,6 @@ import toolz
 
 import ibis.common.exceptions as com
 import ibis.expr.analysis as _L
-import ibis.expr.analytics as _analytics
 import ibis.expr.builders as bl
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -21,7 +20,6 @@ import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
-from ibis.expr.analytics import bucket, histogram
 from ibis.expr.groupby import GroupedTableExpr  # noqa
 from ibis.expr.random import random  # noqa
 from ibis.expr.schema import Schema
@@ -1637,6 +1635,86 @@ def covariance(left, right, where=None, how='sample'):
     """
     expr = ops.Covariance(left, right, how, where).to_expr()
     return expr
+
+
+def bucket(
+    arg,
+    buckets,
+    closed='left',
+    close_extreme=True,
+    include_under=False,
+    include_over=False,
+):
+    """
+    Compute a discrete binning of a numeric array
+
+    Parameters
+    ----------
+    arg : numeric array expression
+    buckets : list
+    closed : {'left', 'right'}, default 'left'
+      Which side of each interval is closed. For example
+      buckets = [0, 100, 200]
+      closed = 'left': 100 falls in 2nd bucket
+      closed = 'right': 100 falls in 1st bucket
+    close_extreme : boolean, default True
+
+    Returns
+    -------
+    bucketed : coded value expression
+    """
+    op = ops.Bucket(
+        arg,
+        buckets,
+        closed=closed,
+        close_extreme=close_extreme,
+        include_under=include_under,
+        include_over=include_over,
+    )
+    return op.to_expr()
+
+
+def histogram(
+    arg, nbins=None, binwidth=None, base=None, closed='left', aux_hash=None
+):
+    """Compute a histogram with fixed width bins.
+
+    Parameters
+    ----------
+    arg : numeric array expression
+    nbins : int, default None
+      If supplied, will be used to compute the binwidth
+    binwidth : number, default None
+      If not supplied, computed from the data (actual max and min values)
+    base : number, default None
+    closed : {'left', 'right'}, default 'left'
+      Which side of each interval is closed
+
+    Returns
+    -------
+    histogrammed : coded value expression
+    """
+    op = ops.Histogram(
+        arg, nbins, binwidth, base, closed=closed, aux_hash=aux_hash
+    )
+    return op.to_expr()
+
+
+def category_label(arg, labels, nulls=None):
+    """Format a known number of categories as strings.
+
+    Parameters
+    ----------
+    labels : list of string
+    nulls : string, optional
+      How to label any null values among the categories
+
+    Returns
+    -------
+    string_categories : string value expression
+    """
+    op = ops.CategoryLabel(arg, labels, nulls)
+    return op.to_expr()
 
 
 _numeric_column_methods = {
@@ -3793,7 +3871,7 @@ _add_methods(ir.DecimalValue, _decimal_value_methods)
 # Category API
 
 
-_category_value_methods = {'label': _analytics.category_label}
+_category_value_methods = {'label': category_label}
 
 _add_methods(ir.CategoryValue, _category_value_methods)
 

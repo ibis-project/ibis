@@ -3,7 +3,6 @@ from typing import Callable, Dict
 
 import ibis
 import ibis.common.exceptions as com
-import ibis.expr.analytics as analytics
 import ibis.expr.datatypes as dt
 import ibis.expr.format as fmt
 import ibis.expr.operations as ops
@@ -298,7 +297,7 @@ class ExprTranslator:
 rewrites = ExprTranslator.rewrites
 
 
-@rewrites(analytics.Bucket)
+@rewrites(ops.Bucket)
 def _bucket(expr):
     op = expr.op()
     stmt = ibis.case()
@@ -345,7 +344,7 @@ def _bucket(expr):
     return stmt.end().name(expr._name)
 
 
-@rewrites(analytics.CategoryLabel)
+@rewrites(ops.CategoryLabel)
 def _category_label(expr):
     op = expr.op()
 

@@ -39,6 +39,7 @@ packages = [
     "ibis.backends.tests",
     "ibis.common",
     "ibis.expr",
+    "ibis.expr.operations",
     "ibis.tests",
     "ibis.tests.expr",
     "ibis.tests.sql",
@@ -48,6 +49,7 @@ packages = [
 package_data = {"": ["*"]}
 
 install_requires = [
+    "atpublic>=2.3,<3.0",
     "cached_property>=1,<2",
     "cytoolz>=0.11,<0.12",
     "multipledispatch>=0.6,<0.7",
