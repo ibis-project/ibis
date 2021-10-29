@@ -294,7 +294,7 @@ def test_fillna_table(backend, alltypes, value, subset):
     values = {c: value for c in subset} if subset else value
     expected = table_pandas.fillna(values).reset_index(drop=True)
 
-    backend.assert_frame_equal(result, expected)
+    backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
 @pytest.mark.parametrize(
@@ -321,4 +321,4 @@ def test_dropna_table(backend, alltypes, how, subset):
         drop=True
     )
 
-    backend.assert_frame_equal(result, expected)
+    backend.assert_frame_equal(result, expected, check_dtype=False)
