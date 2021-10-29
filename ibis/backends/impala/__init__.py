@@ -488,9 +488,17 @@ class Backend(BaseSQLBackend):
 
         names, types = zip(*pairs)
         ibis_types = [udf.parse_type(type.lower()) for type in types]
-        names = [name.lower() for name in names]
+        cols = []
+        tab_name = '.'.join(table_name.rsplit('.')[1:]).strip('`')
+        for name in names:
+            if not name.__contains__(tab_name):
+                new_col = tab_name + '.' + name.lower()
+            else:
+                new_col = name.lower()
+            cols.append(new_col)
+        #names = [name.lower() for name in names]
 
-        return sch.Schema(names, ibis_types)
+        return sch.Schema(cols, ibis_types)
 
     @property
     def client_options(self):
