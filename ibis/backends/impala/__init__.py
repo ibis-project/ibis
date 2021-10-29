@@ -496,7 +496,7 @@ class Backend(BaseSQLBackend):
             else:
                 new_col = name.lower()
             cols.append(new_col)
-        #names = [name.lower() for name in names]
+        # names = [name.lower() for name in names]
 
         return sch.Schema(cols, ibis_types)
 
