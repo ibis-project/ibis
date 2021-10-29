@@ -4032,6 +4032,53 @@ def _table_count(self):
     return ops.Count(self, None).to_expr().name('count')
 
 
+def _table_dropna(self, how='any', subset=None):
+    """
+    Remove rows with null values from the table.
+
+    Parameters
+    ----------
+    how : determine whether a row is removed if there is at least one null
+    value in the row ('any'), or if all row values are null ('all').
+    Options are 'any' or 'all'. Default is 'all'
+    subset : Optional list of columns names to consider.
+    Defaults to all columns.
+
+    Returns
+    -------
+    table : TableExpr
+      New table expression
+    """
+    if how not in {'any', 'all'}:
+        raise ValueError("Please specify how as either 'any' or 'all'.")
+    subset = util.promote_list(subset)
+    invalid = set(subset) - set(self.schema().names)
+    if invalid:
+        raise ValueError(f'Columns {list(invalid)} do not exist in the table.')
+    return ops.DropNa(self, how, subset).to_expr()
+
+
+def _table_fillna(self, value, subset=None):
+    """
+    Fill null values in the table.
+
+    Parameters
+    ----------
+    value : value with which to fill the nulls
+    subset : Optional list of columns to fill. Defaults to all columns.
+
+    Returns
+    -------
+    table : TableExpr
+      New table expression
+    """
+    subset = util.promote_list(subset)
+    invalid = set(subset) - set(self.schema().names)
+    if invalid:
+        raise ValueError(f'Columns {list(invalid)} do not exist in the table.')
+    return ops.FillNa(self, value, subset).to_expr()
+
+
 def _table_info(self, buf=None):
     """
     Similar to pandas DataFrame.info. Show column names, types, and null
@@ -4609,6 +4656,8 @@ _table_methods = {
     'count': _table_count,
     'distinct': _table_distinct,
     'drop': _table_drop,
+    'dropna': _table_dropna,
+    'fillna': _table_fillna,
     'info': _table_info,
     'limit': _table_limit,
     'head': _head,

@@ -964,6 +964,25 @@ def execute_node_log_number_number(op, value, base, **kwargs):
     return math.log(value, base)
 
 
+@execute_node.register(ops.DropNa, pd.DataFrame, simple_types)
+def execute_node_dropna_dataframe(op, df, how, **kwargs):
+    if op.subset:
+        subset = [col.op().value for col in op.subset]
+        return df.dropna(how=how, subset=subset)
+    else:
+        return df.dropna(how=how)
+
+
+@execute_node.register(ops.FillNa, pd.DataFrame, simple_types)
+def execute_node_fillna_dataframe(op, df, replacement, **kwargs):
+    values = (
+        {c.op().value: replacement for c in op.subset}
+        if op.subset
+        else replacement
+    )
+    return df.fillna(values)
+
+
 @execute_node.register(ops.IfNull, pd.Series, simple_types)
 @execute_node.register(ops.IfNull, pd.Series, pd.Series)
 def execute_node_ifnull_series(op, value, replacement, **kwargs):

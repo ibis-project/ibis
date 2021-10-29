@@ -1772,6 +1772,30 @@ def compile_not_null(t, expr, scope, timecontext, **kwargs):
     return ~F.isnull(col) & ~F.isnan(col)
 
 
+@compiles(ops.DropNa)
+def compile_dropna_table(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+    table = t.translate(op.table, scope, timecontext)
+    how = op.how.op().value
+    if op.subset:
+        subset = [col.op().value for col in op.subset]
+        return table.dropna(how=how, subset=subset)
+    else:
+        return table.dropna(how=how)
+
+
+@compiles(ops.FillNa)
+def compile_fillna_table(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+    table = t.translate(op.table, scope, timecontext)
+    value = op.value.op().value
+    if op.subset:
+        subset = [col.op().value for col in op.subset]
+        return table.fillna(value=value, subset=subset)
+    else:
+        return table.fillna(value)
+
+
 # ------------------------- User defined function ------------------------
 
 

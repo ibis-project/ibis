@@ -785,3 +785,29 @@ class NotExistsSubquery(Node):
 
     def output_type(self):
         return ir.ExistsExpr
+
+
+@public
+class FillNa(TableNode, sch.HasSchema):
+    """Fill null values in the table."""
+
+    table = Arg(rlz.table)
+    value = Arg(rlz.any)
+    subset = Arg(rlz.list_of(rlz.string), default=[])
+
+    @cached_property
+    def schema(self):
+        return self.table.schema()
+
+
+@public
+class DropNa(TableNode, sch.HasSchema):
+    """Drop null values in the table."""
+
+    table = Arg(rlz.table)
+    how = Arg(rlz.string)
+    subset = Arg(rlz.list_of(rlz.string), default=[])
+
+    @cached_property
+    def schema(self):
+        return self.table.schema()
