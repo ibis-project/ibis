@@ -106,14 +106,14 @@ jobs:
 
       - name: cache dependencies linux
         uses: actions/cache@v2
-        if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version != '3.7' }}
+        if: ${{ matrix.os == 'ubuntu-latest' && (matrix.backend.name != 'dask' || matrix.backend.deps == null) }}
         with:
           path: ~/.cache/pypoetry
           key: ${{ matrix.backend.name }}-${{ join(matrix.backend.deps, '-') }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
 
       - name: cache dependencies windows
         uses: actions/cache@v2
-        if: ${{ matrix.os == 'windows-latest' && matrix.python-version != '3.7' }}
+        if: ${{ matrix.os == 'windows-latest' && (matrix.backend.name != 'dask' || matrix.backend.deps == null) }}
         with:
           path: ~\AppData\Local\pypoetry
           key: ${{ matrix.backend.name }}-${{ join(matrix.backend.deps, '-') }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
@@ -182,7 +182,7 @@ jobs:
 
       - name: cache dependencies
         uses: actions/cache@v2
-        if: ${{ matrix.python-version != '3.7' }}
+        if: ${{ matrix.deps != [] }}
         with:
           path: ~/.cache/pypoetry
           key: postgres-geospatial-${{ join(matrix.deps, '-') }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
@@ -256,7 +256,7 @@ jobs:
 
       - name: cache dependencies
         uses: actions/cache@v2
-        if: ${{ matrix.python-version != '3.7' }}
+        if: ${{ matrix.pyspark.version == null }}
         with:
           path: ~/.cache/pypoetry
           key: ${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}-pyspark-${{ matrix.pyspark.version }}
