@@ -104,20 +104,16 @@ jobs:
       - name: install poetry
         run: pip install poetry
 
-      - name: disable the new installer on python3.7
-        if: ${{ matrix.python-version == '3.7' }}
-        run: poetry config experimental.new-installer false
-
       - name: cache dependencies linux
         uses: actions/cache@v2
-        if: ${{ matrix.os == 'ubuntu-latest' }}
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version != '3.7' }}
         with:
           path: ~/.cache/pypoetry
           key: ${{ matrix.backend.name }}-${{ join(matrix.backend.deps, '-') }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
 
       - name: cache dependencies windows
         uses: actions/cache@v2
-        if: ${{ matrix.os == 'windows-latest' }}
+        if: ${{ matrix.os == 'windows-latest' && matrix.python-version != '3.7' }}
         with:
           path: ~\AppData\Local\pypoetry
           key: ${{ matrix.backend.name }}-${{ join(matrix.backend.deps, '-') }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
@@ -181,15 +177,12 @@ jobs:
       - name: install poetry
         run: pip install poetry
 
-      - name: disable the new installer on python3.7
-        if: ${{ matrix.python-version == '3.7' }}
-        run: poetry config experimental.new-installer false
-
       - name: install libgeos for shapely
         run: sudo apt-get install -qq -y build-essential libgeos-dev python-dev
 
       - name: cache dependencies
         uses: actions/cache@v2
+        if: ${{ matrix.python-version != '3.7' }}
         with:
           path: ~/.cache/pypoetry
           key: postgres-geospatial-${{ join(matrix.deps, '-') }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
@@ -261,12 +254,9 @@ jobs:
       - name: install poetry
         run: pip install poetry
 
-      - name: disable the new installer on python3.7
-        if: ${{ matrix.python-version == '3.7' }}
-        run: poetry config experimental.new-installer false
-
       - name: cache dependencies
         uses: actions/cache@v2
+        if: ${{ matrix.python-version != '3.7' }}
         with:
           path: ~/.cache/pypoetry
           key: ${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}-pyspark-${{ matrix.pyspark.version }}
