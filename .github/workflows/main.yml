@@ -543,8 +543,7 @@ jobs:
           target-branch: master
           destination-github-username: ibis-project
           destination-repository-name: ibis-project.org
-          user-name: github-actions
-          user-email: github-actions@github.com
+          user-email: '41898282+github-actions[bot]@users.noreply.github.com'
 
       - name: Clean up doc build
         run: rm -r docbuild
