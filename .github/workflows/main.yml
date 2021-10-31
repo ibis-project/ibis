@@ -104,6 +104,10 @@ jobs:
       - name: install poetry
         run: pip install poetry
 
+      - name: disable the new installer on python3.7
+        if: ${{ matrix.python-version == '3.7' }}
+        run: poetry config experimental.new-installer false
+
       - name: cache dependencies linux
         uses: actions/cache@v2
         if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -176,6 +180,10 @@ jobs:
 
       - name: install poetry
         run: pip install poetry
+
+      - name: disable the new installer on python3.7
+        if: ${{ matrix.python-version == '3.7' }}
+        run: poetry config experimental.new-installer false
 
       - name: install libgeos for shapely
         run: sudo apt-get install -qq -y build-essential libgeos-dev python-dev
@@ -252,6 +260,10 @@ jobs:
 
       - name: install poetry
         run: pip install poetry
+
+      - name: disable the new installer on python3.7
+        if: ${{ matrix.python-version == '3.7' }}
+        run: poetry config experimental.new-installer false
 
       - name: cache dependencies
         uses: actions/cache@v2
