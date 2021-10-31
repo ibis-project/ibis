@@ -535,11 +535,12 @@ jobs:
 
       - name: Push docs
         if: ${{ github.event_name == 'push' }}
-        uses: cpina/github-action-push-to-another-repository@main
+        uses: cpina/github-action-push-to-another-repository@v1.3
         env:
           API_TOKEN_GITHUB: ${{ secrets.IBIS_PROJECT_DOCS_PAT }}
         with:
           source-directory: docbuild
+          target-branch: master
           destination-github-username: ibis-project
           destination-repository-name: ibis-project.org
           user-name: github-actions
