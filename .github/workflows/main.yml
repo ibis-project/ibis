@@ -182,7 +182,7 @@ jobs:
 
       - name: cache dependencies
         uses: actions/cache@v2
-        if: ${{ toJSON(matrix.deps) != '[]' }}
+        if: ${{ toJSON(matrix.deps) == '[]' }}
         with:
           path: ~/.cache/pypoetry
           key: postgres-geospatial-${{ join(matrix.deps, '-') }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
