@@ -18,7 +18,7 @@ import logging
 import ibis.expr.datatypes as dt
 import ibis.dask
 from ibis.udf.vectorized import elementwise
-from ibis.dask import trace
+from ibis.backends.dask import trace
 logging.basicConfig()
 trace.enable()
 df = dd.from_pandas(
