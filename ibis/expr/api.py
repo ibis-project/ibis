@@ -5,7 +5,7 @@ import datetime
 import functools
 import numbers
 import operator
-from typing import Any, List, Union
+from typing import Any, List, Optional, Union
 
 import dateutil.parser
 import pandas as pd
@@ -4032,51 +4032,70 @@ def _table_count(self):
     return ops.Count(self, None).to_expr().name('count')
 
 
-def _table_dropna(self, how='any', subset=None):
+def _table_dropna(self, subset: Optional[List[str]] = None, how: str = 'any'):
     """
     Remove rows with null values from the table.
 
     Parameters
     ----------
-    how : determine whether a row is removed if there is at least one null
-    value in the row ('any'), or if all row values are null ('all').
-    Options are 'any' or 'all'. Default is 'all'
-    subset : Optional list of columns names to consider.
-    Defaults to all columns.
+    subset : list of strings
+      Optional, columns names to consider. Defaults to all columns.
+    how : string
+      Determine whether a row is removed if there is at least one null
+      value in the row ('any'), or if all row values are null ('all').
+      Options are 'any' or 'all'. Default is 'any'.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> t = ibis.table([('a', 'int64'), ('b', 'string')])
+    >>> t = t.dropna()  # Drop all rows where any values are null
+    >>> t = t.dropna(how='all')  # Only drop rows where all values are null
+    >>> t = t.dropna(subset=['a'], how='all')  # Only drop rows where all values in column 'a' are null  # noqa: E501
 
     Returns
     -------
     table : TableExpr
       New table expression
     """
-    if how not in {'any', 'all'}:
-        raise ValueError("Please specify how as either 'any' or 'all'.")
+    if subset is None:
+        subset = []
     subset = util.promote_list(subset)
-    invalid = set(subset) - set(self.schema().names)
-    if invalid:
-        raise ValueError(f'Columns {list(invalid)} do not exist in the table.')
     return ops.DropNa(self, how, subset).to_expr()
 
 
-def _table_fillna(self, value, subset=None):
+def _table_fillna(self, replacements):
     """
     Fill null values in the table.
 
     Parameters
     ----------
-    value : value with which to fill the nulls
-    subset : Optional list of columns to fill. Defaults to all columns.
+    replacements : scalar or dict
+      Value with which to fill the nulls. If passed as a dict, the
+      keys are column name strings that map to their replacement value.
+      If passed as a scalar, all columns are filled with that value.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> t = ibis.table([('a', 'int64'), ('b', 'string')])
+    >>> t = t.fillna(0.0)  # Replace nulls in all columns with 0.0
+    >>> t.fillna({c: 0.0 for c, t in t.schema().items() if t == dt.float64})  # Replace all na values in all columns of a given type with the same value  # noqa: E501
 
     Returns
     -------
     table : TableExpr
       New table expression
     """
-    subset = util.promote_list(subset)
-    invalid = set(subset) - set(self.schema().names)
-    if invalid:
-        raise ValueError(f'Columns {list(invalid)} do not exist in the table.')
-    return ops.FillNa(self, value, subset).to_expr()
+    if isinstance(replacements, collections.abc.Mapping):
+        columns = replacements.keys()
+        table_columns = self.schema().names
+        invalid = set(columns) - set(table_columns)
+        if invalid:
+            raise com.IbisTypeError(
+                f'value {list(invalid)} is not a field in {table_columns}.'
+            )
+    return ops.FillNa(self, replacements).to_expr()
 
 
 def _table_info(self, buf=None):

@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 
 import ibis
+import ibis.common.exceptions as com
 from ibis import literal as L
 
 
@@ -258,41 +259,42 @@ def test_select_filter_mutate(backend, alltypes, df):
 
 def test_fillna_invalid(alltypes):
     with pytest.raises(
-        ValueError, match=r"Columns \['invalid_col'\] do not exist.*"
+        com.IbisTypeError, match=r"value \['invalid_col'\] is not a field in.*"
     ):
-        alltypes.fillna(0.0, subset=['invalid_col'])
+        alltypes.fillna({'invalid_col': 0.0})
 
 
 def test_dropna_invalid(alltypes):
     with pytest.raises(
-        ValueError, match=r"Columns \['invalid_col'\] do not exist.*"
+        com.IbisTypeError, match=r"value 'invalid_col' is not a field in.*"
     ):
         alltypes.dropna(subset=['invalid_col'])
 
-    with pytest.raises(ValueError, match=r".*either 'any' or 'all'.*"):
+    with pytest.raises(ValueError, match=r".*is not in.*"):
         alltypes.dropna(how='invalid')
 
 
 @pytest.mark.parametrize(
-    ('value', 'subset'),
+    'replacements',
     [
-        (0.0, None),
-        (0, []),
-        (0.0, ['na_col']),
-        (1, None),
-        (0.0, ['none_col']),
+        0.0,
+        0,
+        1,
+        ({'na_col': 0.0}),
+        ({'na_col': 1}),
+        ({'none_col': 0.0}),
+        ({'none_col': 1}),
     ],
 )
 @pytest.mark.only_on_backends(['pandas', 'dask', 'pyspark'])
-def test_fillna_table(backend, alltypes, value, subset):
+def test_fillna_table(backend, alltypes, replacements):
     table = alltypes.mutate(na_col=np.nan)
     table = table.mutate(none_col=None)
     table = table.mutate(none_col=table['none_col'].cast('float64'))
     table_pandas = table.execute()
 
-    result = table.fillna(value, subset).execute().reset_index(drop=True)
-    values = {c: value for c in subset} if subset else value
-    expected = table_pandas.fillna(values).reset_index(drop=True)
+    result = table.fillna(replacements).execute().reset_index(drop=True)
+    expected = table_pandas.fillna(replacements).reset_index(drop=True)
 
     backend.assert_frame_equal(result, expected, check_dtype=False)
 
@@ -315,7 +317,7 @@ def test_dropna_table(backend, alltypes, how, subset):
     table = table.mutate(none_col=table['none_col'].cast('float64'))
     table_pandas = table.execute()
 
-    result = table.dropna(how, subset).execute().reset_index(drop=True)
+    result = table.dropna(subset, how).execute().reset_index(drop=True)
     subset = subset if subset else table_pandas.columns
     expected = table_pandas.dropna(how=how, subset=subset).reset_index(
         drop=True

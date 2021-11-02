@@ -38,7 +38,8 @@ from ibis.backends.pandas.execution.generic import (
     execute_isnan,
     execute_node_contains_series_sequence,
     execute_node_dropna_dataframe,
-    execute_node_fillna_dataframe,
+    execute_node_fillna_dataframe_dict,
+    execute_node_fillna_dataframe_scalar,
     execute_node_ifnull_series,
     execute_node_not_contains_series_sequence,
     execute_node_nullif_series,
@@ -112,11 +113,10 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
     ops.Difference: [
         ((dd.DataFrame, dd.DataFrame), execute_difference_dataframe_dataframe)
     ],
-    ops.DropNa: [
-        ((dd.DataFrame, simple_types), execute_node_dropna_dataframe)
-    ],
+    ops.DropNa: [((dd.DataFrame,), execute_node_dropna_dataframe)],
     ops.FillNa: [
-        ((dd.DataFrame, simple_types), execute_node_fillna_dataframe)
+        ((dd.DataFrame, simple_types), execute_node_fillna_dataframe_scalar),
+        ((dd.DataFrame,), execute_node_fillna_dataframe_dict),
     ],
     ops.IsNull: [((dd.Series,), execute_series_isnull)],
     ops.NotNull: [((dd.Series,), execute_series_notnnull)],

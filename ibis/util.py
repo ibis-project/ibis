@@ -84,8 +84,6 @@ def promote_list(val: Union[V, List[V]]) -> List[V]:
     -------
     list
     """
-    if val is None:
-        val = []
     if not isinstance(val, list):
         val = [val]
     return val
