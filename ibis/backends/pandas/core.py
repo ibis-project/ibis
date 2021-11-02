@@ -354,7 +354,7 @@ def execute_until_in_scope(
         new_scope.get_value(arg.op(), timecontext)
         if hasattr(arg, 'op')
         else arg
-        for arg in computable_args
+        for (arg, timecontext) in zip(computable_args, arg_timecontexts)
     ]
     result = execute_node(
         op,
