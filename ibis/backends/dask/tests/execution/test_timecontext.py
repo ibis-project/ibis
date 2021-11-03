@@ -8,6 +8,7 @@ from pandas import Timedelta, Timestamp
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
+from ibis.backends.pandas.execution import execute
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import (
     TimeContextRelation,
@@ -269,6 +270,8 @@ def test_adjust_context_complete_shift(
     This results in an adjusted context that is NOT a subset of the
     original context. This is unlike an `adjust_context` function
     that only expands the context.
+
+    See #3104
     """
 
     # Create a contrived `adjust_context` function for
@@ -281,8 +284,6 @@ def test_adjust_context_complete_shift(
         scope: Optional[Scope] = None,
     ) -> TimeContext:
         """Shifts both the begin and end in the same direction."""
-        from ibis.backends.pandas.execution import execute
-
         begin, end = timecontext
         timedelta = execute(op.tolerance)
         return (begin - timedelta, end - timedelta)
