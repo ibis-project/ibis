@@ -11,7 +11,7 @@ from .reductions import Reduction
 
 class VectorizedUDF(ValueOp):
     func = Arg(rlz.instance_of((FunctionType, LambdaType)))
-    func_args = Arg(rlz.list_of(rlz.any))
+    func_args = Arg(rlz.list_of(rlz.column(rlz.any)))
     input_type = Arg(rlz.list_of(rlz.datatype))
     return_type = Arg(rlz.datatype)
 

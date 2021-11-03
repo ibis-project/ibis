@@ -79,9 +79,7 @@ def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
             return df
         else:
             name = args[0].name if len(args) == 1 else None
-            meta = pandas.Series(
-                [], name=name, dtype=op.return_type.to_dask()
-            )
+            meta = pandas.Series([], name=name, dtype=op.return_type.to_dask())
             df = dd.map_partitions(op.func, *args, meta=meta)
 
             return df
