@@ -297,6 +297,10 @@ def test_fillna_table(backend, alltypes, replacements):
     result = table.fillna(replacements).execute().reset_index(drop=True)
     expected = table_pandas.fillna(replacements).reset_index(drop=True)
 
+    # check_dtype is False here because there are dtype diffs between
+    # Pyspark and Pandas on Java 8 - filling the 'none_col' with an int
+    # results in float in Pyspark, and int in Pandas. This diff does
+    # not exist in Java 11.
     backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
@@ -324,4 +328,8 @@ def test_dropna_table(backend, alltypes, how, subset):
         drop=True
     )
 
+    # check_dtype is False here because there are dtype diffs between
+    # Pyspark and Pandas on Java 8 - the 'bool_col' of an empty DataFrame
+    # is type object in Pyspark, and type bool in Pandas. This diff does
+    # not exist in Java 11.
     backend.assert_frame_equal(result, expected, check_dtype=False)

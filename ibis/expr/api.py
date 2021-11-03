@@ -4075,6 +4075,12 @@ def _table_fillna(self, replacements):
       keys are column name strings that map to their replacement value.
       If passed as a scalar, all columns are filled with that value.
 
+    Notes
+    -----
+    There is potential lack of type stability with the fillna API. For
+    example, different library versions may impact whether or not a given
+    backend type-promotes integer replacement values to floats.
+
     Examples
     --------
     >>> import ibis
