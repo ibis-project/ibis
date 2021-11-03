@@ -6,6 +6,7 @@ import pytest
 
 import ibis
 import ibis.common.exceptions as com
+import ibis.util as util
 from ibis import literal as L
 
 
@@ -307,7 +308,7 @@ def test_fillna_table(backend, alltypes, replacements):
         ('any', ['int_col', 'na_col']),
         ('all', None),
         ('all', ['int_col', 'na_col']),
-        ('all', ['none_col']),
+        ('all', 'none_col'),
     ],
 )
 @pytest.mark.only_on_backends(['pandas', 'dask', 'pyspark'])
@@ -318,7 +319,7 @@ def test_dropna_table(backend, alltypes, how, subset):
     table_pandas = table.execute()
 
     result = table.dropna(subset, how).execute().reset_index(drop=True)
-    subset = subset if subset else table_pandas.columns
+    subset = util.promote_list(subset) if subset else table_pandas.columns
     expected = table_pandas.dropna(how=how, subset=subset).reset_index(
         drop=True
     )
