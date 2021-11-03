@@ -1,3 +1,4 @@
+import pickle
 from inspect import Signature
 
 import pytest
@@ -26,6 +27,24 @@ class IsFloat(Validator):
         if not isinstance(arg, float):
             raise TypeError(float)
         return arg
+
+
+class Op(Annotable):
+    __slots__ = ('_cache', '_hash')
+
+
+class ValueOp(Op):
+    arg = Argument(object)
+
+
+class StringOp(ValueOp):
+    arg = Argument(str)
+
+
+class MagicString(StringOp):
+    foo = Argument(str)
+    bar = Argument(bool)
+    baz = Argument(int)
 
 
 @pytest.mark.parametrize('validator', [3, 'coerce'])
@@ -198,27 +217,6 @@ def test_positional_argument_reordering():
     assert g1.goats == 0
 
 
-def test_slots_are_inherited_and_overridable():
-    class Op(Annotable):
-        __slots__ = ('_cache',)  # first definition
-        arg = Argument(lambda x: x)
-
-    class StringOp(Op):
-        arg = Argument(str)  # inherit
-
-    class StringSplit(StringOp):
-        sep = Argument(str)  # inherit
-
-    class StringJoin(StringOp):
-        __slots__ = ('_memoize',)  # override
-        sep = Argument(str)
-
-    assert Op.__slots__ == ('_cache', 'arg')
-    assert StringOp.__slots__ == ('_cache', 'arg')
-    assert StringSplit.__slots__ == ('_cache', 'arg', 'sep')
-    assert StringJoin.__slots__ == ('_memoize', 'arg', 'sep')
-
-
 def test_copy_default():
     default = []
 
@@ -227,3 +225,69 @@ def test_copy_default():
 
     op = Op()
     assert op.arg is not default
+
+
+def test_slots_are_inherited_and_overridable():
+    class Op(Annotable):
+        __slots__ = ('_cache',)  # first definition
+        arg = Argument(lambda x: x)
+
+    class StringOp(Op):
+        arg = Argument(str)  # new overridden slot
+
+    class StringSplit(StringOp):
+        sep = Argument(str)  # new slot
+
+    class StringJoin(StringOp):
+        __slots__ = ('_memoize',)  # new slot
+        sep = Argument(str)  # new overridden slot
+
+    assert Op.__slots__ == ('_cache', 'arg')
+    assert StringOp.__slots__ == ('arg',)
+    assert StringSplit.__slots__ == ('sep',)
+    assert StringJoin.__slots__ == ('_memoize', 'sep')
+
+
+def test_multiple_inheritance():
+    # multiple inheritance is allowed only if one of the parents has non-empty
+    # __slots__ definition, otherwise python will raise lay-out conflict
+
+    class Op(Annotable):
+        __slots__ = ('_hash',)
+
+    class ValueOp(Annotable):
+        arg = Argument(object)
+
+    class Reduction(ValueOp):
+        _reduction = True
+
+    class UDF(ValueOp):
+        func = Argument(lambda fn, this: fn)
+
+    class UDAF(UDF, Reduction):
+        arity = Argument(int)
+
+    class A(Annotable):
+        a = Argument(int)
+
+    class B(Annotable):
+        b = Argument(int)
+
+    msg = "multiple bases have instance lay-out conflict"
+    with pytest.raises(TypeError, match=msg):
+
+        class AB(A, B):
+            ab = Argument(int)
+
+    assert UDAF.__slots__ == ('arity',)
+    strlen = UDAF(arg=2, func=lambda value: len(str(value)), arity=1)
+    assert strlen.arg == 2
+    assert strlen.arity == 1
+    assert strlen._reduction is True
+
+
+def test_pickling_support():
+    op = MagicString(arg="something", foo="magic", bar=True, baz=8)
+    raw = pickle.dumps(op)
+    loaded = pickle.loads(raw)
+    assert op == loaded

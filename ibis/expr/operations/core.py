@@ -1,8 +1,6 @@
 import collections
 import functools
 import itertools
-from typing import Any as AnyT
-from typing import Dict
 
 import toolz
 from public import public
@@ -94,37 +92,6 @@ class Node(Annotable):
             pprint_args.append(pp)
 
         return '{}({})'.format(opname, ', '.join(pprint_args))
-
-    def __getstate__(self) -> Dict[str, AnyT]:
-        """The attributes _expr_cached and _hash are
-        used as caches; they can be excluded from
-        serialization without affecting correctness.
-
-        Excluding _expr_cached and _hash from serialization
-        will allow the serialized bytes to be the same for
-        equivalent Node objets.
-
-        Returns
-        -------
-        Dict[str, Any]
-            A dictionary storing the objects attributes.
-        """
-        excluded_slots = {'_expr_cached', '_hash'}
-        return {
-            slot: getattr(self, slot)
-            for slot in self.__slots__
-            if slot not in excluded_slots
-        }
-
-    def __setstate__(self, state: Dict[str, AnyT]) -> None:
-        """
-        Parameters
-        ----------
-        state: Dict[str, Any]
-            A dictionary storing the objects attributes.
-        """
-        for slot in state:
-            setattr(self, slot, state[slot])
 
     @property
     def inputs(self):
