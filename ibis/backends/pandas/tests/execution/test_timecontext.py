@@ -7,6 +7,7 @@ import pytest
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
+from ibis.backends.pandas.execution import execute
 from ibis.backends.pandas.execution.window import trim_window_result
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import (
@@ -289,11 +290,72 @@ def test_adjust_context_scope(time_keyed_left, time_keyed_right):
         right=time_keyed_right,
         predicates='time',
         by='key',
-        tolerance=4 * ibis.interval(days=1),
+        tolerance=ibis.interval(days=4),
     ).to_expr()
     expr = expr[time_keyed_left, time_keyed_right.other_value]
     context = (pd.Timestamp('20170105'), pd.Timestamp('20170111'))
     expr.execute(timecontext=context)
+
+
+def test_adjust_context_complete_shift(
+    time_keyed_left,
+    time_keyed_right,
+    time_keyed_df1,
+    time_keyed_df2,
+):
+    """Test `adjust_context` function that completely shifts the context.
+
+    This results in an adjusted context that is NOT a subset of the
+    original context. This is unlike an `adjust_context` function
+    that only expands the context.
+
+    See #3104
+    """
+
+    # Create a contrived `adjust_context` function for
+    # CustomAsOfJoin to mock this.
+
+    @adjust_context.register(CustomAsOfJoin)
+    def adjust_context_custom_asof_join(
+        op: ops.AsOfJoin,
+        timecontext: TimeContext,
+        scope: Optional[Scope] = None,
+    ) -> TimeContext:
+        """Shifts both the begin and end in the same direction."""
+
+        begin, end = timecontext
+        timedelta = execute(op.tolerance)
+        return (begin - timedelta, end - timedelta)
+
+    expr = CustomAsOfJoin(
+        left=time_keyed_left,
+        right=time_keyed_right,
+        predicates='time',
+        by='key',
+        tolerance=ibis.interval(days=4),
+    ).to_expr()
+    expr = expr[time_keyed_left, time_keyed_right.other_value]
+    context = (pd.Timestamp('20170101'), pd.Timestamp('20170111'))
+    result = expr.execute(timecontext=context)
+
+    # Compare with asof_join of manually trimmed tables
+    # Left table: No shift for context
+    # Right table: Shift both begin and end of context by 4 days
+    trimmed_df1 = time_keyed_df1[time_keyed_df1['time'] >= context[0]][
+        time_keyed_df1['time'] < context[1]
+    ]
+    trimmed_df2 = time_keyed_df2[
+        time_keyed_df2['time'] >= context[0] - pd.Timedelta(days=4)
+    ][time_keyed_df2['time'] < context[1] - pd.Timedelta(days=4)]
+    expected = pd.merge_asof(
+        trimmed_df1,
+        trimmed_df2,
+        on='time',
+        by='key',
+        tolerance=pd.Timedelta('4D'),
+    )
+
+    tm.assert_frame_equal(result, expected)
 
 
 def test_construct_time_context_aware_series(time_df3):

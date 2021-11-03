@@ -1,3 +1,5 @@
+from typing import Optional
+
 import dask.dataframe as dd
 import pytest
 from dask.dataframe.utils import tm
@@ -5,7 +7,19 @@ from pandas import Timedelta, Timestamp
 
 import ibis
 import ibis.common.exceptions as com
-from ibis.expr.timecontext import TimeContextRelation, compare_timecontext
+import ibis.expr.operations as ops
+from ibis.backends.pandas.execution import execute
+from ibis.expr.scope import Scope
+from ibis.expr.timecontext import (
+    TimeContextRelation,
+    adjust_context,
+    compare_timecontext,
+)
+from ibis.expr.types import TimeContext
+
+
+class CustomAsOfJoin(ops.AsOfJoin):
+    pass
 
 
 def test_execute_with_timecontext(time_table):
@@ -218,3 +232,88 @@ def test_context_adjustment_window_groupby_id(time_table, time_df3):
     # result should adjust time context accordingly
     result = expr.execute(timecontext=context)
     tm.assert_series_equal(result, expected)
+
+
+def test_adjust_context_scope(time_keyed_left, time_keyed_right):
+    """Test that `adjust_context` has access to `scope` by default."""
+
+    @adjust_context.register(CustomAsOfJoin)
+    def adjust_context_custom_asof_join(
+        op: ops.AsOfJoin,
+        timecontext: TimeContext,
+        scope: Optional[Scope] = None,
+    ) -> TimeContext:
+        """Confirms that `scope` is passed in."""
+        assert scope is not None
+        return timecontext
+
+    expr = CustomAsOfJoin(
+        left=time_keyed_left,
+        right=time_keyed_right,
+        predicates='time',
+        by='key',
+        tolerance=ibis.interval(days=4),
+    ).to_expr()
+    expr = expr[time_keyed_left, time_keyed_right.other_value]
+    context = (Timestamp('20170105'), Timestamp('20170111'))
+    expr.execute(timecontext=context)
+
+
+def test_adjust_context_complete_shift(
+    time_keyed_left,
+    time_keyed_right,
+    time_keyed_df1,
+    time_keyed_df2,
+):
+    """Test `adjust_context` function that completely shifts the context.
+
+    This results in an adjusted context that is NOT a subset of the
+    original context. This is unlike an `adjust_context` function
+    that only expands the context.
+
+    See #3104
+    """
+
+    # Create a contrived `adjust_context` function for
+    # CustomAsOfJoin to mock this.
+
+    @adjust_context.register(CustomAsOfJoin)
+    def adjust_context_custom_asof_join(
+        op: ops.AsOfJoin,
+        timecontext: TimeContext,
+        scope: Optional[Scope] = None,
+    ) -> TimeContext:
+        """Shifts both the begin and end in the same direction."""
+        begin, end = timecontext
+        timedelta = execute(op.tolerance)
+        return (begin - timedelta, end - timedelta)
+
+    expr = CustomAsOfJoin(
+        left=time_keyed_left,
+        right=time_keyed_right,
+        predicates='time',
+        by='key',
+        tolerance=ibis.interval(days=4),
+    ).to_expr()
+    expr = expr[time_keyed_left, time_keyed_right.other_value]
+    context = (Timestamp('20170101'), Timestamp('20170111'))
+    result = expr.execute(timecontext=context)
+
+    # Compare with asof_join of manually trimmed tables
+    # Left table: No shift for context
+    # Right table: Shift both begin and end of context by 4 days
+    trimmed_df1 = time_keyed_df1[time_keyed_df1['time'] >= context[0]][
+        time_keyed_df1['time'] < context[1]
+    ]
+    trimmed_df2 = time_keyed_df2[
+        time_keyed_df2['time'] >= context[0] - Timedelta(days=4)
+    ][time_keyed_df2['time'] < context[1] - Timedelta(days=4)]
+    expected = dd.merge_asof(
+        trimmed_df1,
+        trimmed_df2,
+        on='time',
+        by='key',
+        tolerance=Timedelta('4D'),
+    ).compute()
+
+    tm.assert_frame_equal(result, expected)
