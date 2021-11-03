@@ -1,20 +1,14 @@
 import copy
 import inspect
-import typing
+from typing import Any, Callable, Dict
 
 import ibis.expr.rules as rlz
 from ibis import util
 
-try:
-    from cytoolz import unique
-except ImportError:
-    from toolz import unique
-
-
 EMPTY = inspect.Parameter.empty  # marker for missing argument
 
 
-class Validator(typing.Callable):
+class Validator(Callable):
     pass
 
 
@@ -112,37 +106,30 @@ def Argument(validator, default=EMPTY):
 
 class AnnotableMeta(type):
     def __new__(metacls, clsname, bases, dct):
-        slots, params = [], {}
-
+        params = {}
         for parent in bases:
-            # inherit parent slots
-            if hasattr(parent, '__slots__'):
-                slots += parent.__slots__
             # inherit from parent signatures
             if hasattr(parent, '__signature__'):
                 params.update(parent.__signature__.parameters)
 
+        slots = list(dct.pop('__slots__', []))
         attribs = {}
         for name, attrib in dct.items():
             if isinstance(attrib, Validator):
                 # so we can set directly
                 params[name] = Parameter(name, validator=attrib)
+                slots.append(name)
             else:
                 attribs[name] = attrib
-
-        # if slots or signature are defined no inheritance happens
-        slots = attribs.get('__slots__', tuple(slots))
-        slots += tuple(params.keys())
 
         # mandatory fields without default values must preceed the optional
         # ones in the function signature, the partial ordering will be kept
         params = sorted(
             params.values(), key=lambda p: p.default is EMPTY, reverse=True
         )
-        signature = attribs.get('__signature__', inspect.Signature(params))
 
-        attribs['__slots__'] = tuple(unique(slots))
-        attribs['__signature__'] = signature
+        attribs['__slots__'] = tuple(slots)
+        attribs['__signature__'] = inspect.Signature(params)
 
         return super().__new__(metacls, clsname, bases, attribs)
 
@@ -162,10 +149,26 @@ class Annotable(metaclass=AnnotableMeta):
     def _validate(self):
         pass
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if self is other:
             return True
         return type(self) == type(other) and self.args == other.args
+
+    def __getstate__(self) -> Dict[str, Any]:
+        return {
+            key: getattr(self, key)
+            for key in self.__signature__.parameters.keys()
+        }
+
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        """
+        Parameters
+        ----------
+        state: Dict[str, Any]
+            A dictionary storing the objects attributes.
+        """
+        for key, value in state.items():
+            setattr(self, key, value)
 
     @property
     def argnames(self):
