@@ -1,3 +1,4 @@
+import collections
 import itertools
 from typing import List
 
@@ -785,3 +786,36 @@ class NotExistsSubquery(Node):
 
     def output_type(self):
         return ir.ExistsExpr
+
+
+@public
+class FillNa(TableNode, sch.HasSchema):
+    """Fill null values in the table."""
+
+    table = Arg(rlz.table)
+    replacements = Arg(
+        rlz.one_of(
+            (
+                rlz.numeric,
+                rlz.string,
+                rlz.instance_of(collections.abc.Mapping),
+            )
+        )
+    )
+
+    @cached_property
+    def schema(self):
+        return self.table.schema()
+
+
+@public
+class DropNa(TableNode, sch.HasSchema):
+    """Drop null values in the table."""
+
+    table = Arg(rlz.table)
+    how = Arg(rlz.isin({'any', 'all'}))
+    subset = Arg(rlz.list_of(rlz.column_from("table")), default=[])
+
+    @cached_property
+    def schema(self):
+        return self.table.schema()

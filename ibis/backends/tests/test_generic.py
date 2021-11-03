@@ -5,6 +5,8 @@ import pandas as pd
 import pytest
 
 import ibis
+import ibis.common.exceptions as com
+import ibis.util as util
 from ibis import literal as L
 
 
@@ -254,3 +256,80 @@ def test_select_filter_mutate(backend, alltypes, df):
     expected = expected.assign(float_col=expected['float_col'].astype('int32'))
 
     backend.assert_frame_equal(result, expected)
+
+
+def test_fillna_invalid(alltypes):
+    with pytest.raises(
+        com.IbisTypeError, match=r"value \['invalid_col'\] is not a field in.*"
+    ):
+        alltypes.fillna({'invalid_col': 0.0})
+
+
+def test_dropna_invalid(alltypes):
+    with pytest.raises(
+        com.IbisTypeError, match=r"value 'invalid_col' is not a field in.*"
+    ):
+        alltypes.dropna(subset=['invalid_col'])
+
+    with pytest.raises(ValueError, match=r".*is not in.*"):
+        alltypes.dropna(how='invalid')
+
+
+@pytest.mark.parametrize(
+    'replacements',
+    [
+        0.0,
+        0,
+        1,
+        ({'na_col': 0.0}),
+        ({'na_col': 1}),
+        ({'none_col': 0.0}),
+        ({'none_col': 1}),
+    ],
+)
+@pytest.mark.only_on_backends(['pandas', 'dask', 'pyspark'])
+def test_fillna_table(backend, alltypes, replacements):
+    table = alltypes.mutate(na_col=np.nan)
+    table = table.mutate(none_col=None)
+    table = table.mutate(none_col=table['none_col'].cast('float64'))
+    table_pandas = table.execute()
+
+    result = table.fillna(replacements).execute().reset_index(drop=True)
+    expected = table_pandas.fillna(replacements).reset_index(drop=True)
+
+    # check_dtype is False here because there are dtype diffs between
+    # Pyspark and Pandas on Java 8 - filling the 'none_col' with an int
+    # results in float in Pyspark, and int in Pandas. This diff does
+    # not exist in Java 11.
+    backend.assert_frame_equal(result, expected, check_dtype=False)
+
+
+@pytest.mark.parametrize(
+    ('how', 'subset'),
+    [
+        ('any', None),
+        ('any', []),
+        ('any', ['int_col', 'na_col']),
+        ('all', None),
+        ('all', ['int_col', 'na_col']),
+        ('all', 'none_col'),
+    ],
+)
+@pytest.mark.only_on_backends(['pandas', 'dask', 'pyspark'])
+def test_dropna_table(backend, alltypes, how, subset):
+    table = alltypes.mutate(na_col=np.nan)
+    table = table.mutate(none_col=None)
+    table = table.mutate(none_col=table['none_col'].cast('float64'))
+    table_pandas = table.execute()
+
+    result = table.dropna(subset, how).execute().reset_index(drop=True)
+    subset = util.promote_list(subset) if subset else table_pandas.columns
+    expected = table_pandas.dropna(how=how, subset=subset).reset_index(
+        drop=True
+    )
+
+    # check_dtype is False here because there are dtype diffs between
+    # Pyspark and Pandas on Java 8 - the 'bool_col' of an empty DataFrame
+    # is type object in Pyspark, and type bool in Pandas. This diff does
+    # not exist in Java 11.
+    backend.assert_frame_equal(result, expected, check_dtype=False)
