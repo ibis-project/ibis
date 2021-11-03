@@ -175,12 +175,6 @@ def test_udf(t, df):
     tm.assert_series_equal(result, expected, check_names=False)
 
 
-def test_elementwise_udf_with_non_vectors(con):
-    expr = my_add(1.0, 2.0)
-    result = con.execute(expr)
-    assert result == 3.0
-
-
 def test_multiple_argument_udf(con, t, df):
     expr = my_add(t.b, t.c)
 
