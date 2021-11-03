@@ -1798,7 +1798,7 @@ def compile_fillna_table(t, expr, scope, timecontext, **kwargs):
 @compiles(ops.ElementWiseVectorizedUDF)
 def compile_elementwise_udf(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
-    spark_output_type = spark_dtype(op._output_type)
+    spark_output_type = spark_dtype(op.return_type)
     func = op.func
     spark_udf = pandas_udf(func, spark_output_type, PandasUDFType.SCALAR)
     func_args = (t.translate(arg, scope, timecontext) for arg in op.func_args)
@@ -1809,7 +1809,7 @@ def compile_elementwise_udf(t, expr, scope, timecontext, **kwargs):
 def compile_reduction_udf(t, expr, scope, timecontext, context=None, **kwargs):
     op = expr.op()
 
-    spark_output_type = spark_dtype(op._output_type)
+    spark_output_type = spark_dtype(op.return_type)
     spark_udf = pandas_udf(
         op.func, spark_output_type, PandasUDFType.GROUPED_AGG
     )

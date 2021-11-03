@@ -26,8 +26,8 @@ def make_struct_op_meta(op: ir.Expr) -> List[Tuple[str, np.dtype]]:
     """Unpacks a dt.Struct into a DataFrame meta"""
     return list(
         zip(
-            op._output_type.names,
-            [x.to_dask() for x in op._output_type.types],
+            op.return_type.names,
+            [x.to_dask() for x in op.return_type.types],
         )
     )
 
@@ -72,16 +72,14 @@ def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
         # kwargs here. This is true for all udf execution in this
         # file.
         # See ibis.udf.vectorized.UserDefinedFunction
-        if isinstance(op._output_type, dt.Struct):
+        if isinstance(op.return_type, dt.Struct):
             meta = make_struct_op_meta(op)
 
             df = dd.map_partitions(op.func, *args, meta=meta)
             return df
         else:
             name = args[0].name if len(args) == 1 else None
-            meta = pandas.Series(
-                [], name=name, dtype=op._output_type.to_dask()
-            )
+            meta = pandas.Series([], name=name, dtype=op.return_type.to_dask())
             df = dd.map_partitions(op.func, *args, meta=meta)
 
             return df
@@ -124,11 +122,11 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
         # Depending on the type of operation, lazy_result is a Delayed that
         # could become a dd.Series or a dd.core.Scalar
         if isinstance(op, ops.AnalyticVectorizedUDF):
-            if isinstance(op._output_type, dt.Struct):
+            if isinstance(op.return_type, dt.Struct):
                 meta = make_struct_op_meta(op)
             else:
                 meta = make_meta_series(
-                    dtype=op._output_type.to_dask(),
+                    dtype=op.return_type.to_dask(),
                     name=args[0].name,
                 )
             result = dd.from_delayed(lazy_result, meta=meta)
@@ -151,13 +149,13 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
                 result = result.repartition(divisions=original_divisions)
         else:
             # lazy_result is a dd.core.Scalar from an ungrouped reduction
-            if isinstance(op._output_type, (dt.Array, dt.Struct)):
+            if isinstance(op.return_type, (dt.Array, dt.Struct)):
                 # we're outputing a dt.Struct that will need to be destructured
                 # or an array of an unknown size.
                 # we compute so we can work with items inside downstream.
                 result = lazy_result.compute()
             else:
-                output_meta = safe_scalar_type(op._output_type.to_dask())
+                output_meta = safe_scalar_type(op.return_type.to_dask())
                 result = dd.from_delayed(
                     lazy_result, meta=output_meta, verify_meta=False
                 )
@@ -181,7 +179,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
         func = op.func
         groupings = args[0].index
         parent_df = args[0].obj
-        out_type = op._output_type.to_dask()
+        out_type = op.return_type.to_dask()
 
         grouped_df = parent_df.groupby(groupings)
         col_names = [col._meta._selected_obj.name for col in args]
@@ -223,7 +221,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
         func = op.func
         groupings = args[0].index
         parent_df = args[0].obj
-        out_type = op._output_type.to_dask()
+        out_type = op.return_type.to_dask()
 
         grouped_df = parent_df.groupby(groupings)
         col_names = [col._meta._selected_obj.name for col in args]
@@ -232,7 +230,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
             cols = (df[col] for col in col_names)
             return apply_func(*cols)
 
-        if isinstance(op._output_type, dt.Struct):
+        if isinstance(op.return_type, dt.Struct):
             # with struct output we destruct to a dataframe directly
             meta = dd.utils.make_meta(make_struct_op_meta(op))
             meta.index.name = parent_df.index.name

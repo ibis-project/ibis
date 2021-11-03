@@ -216,10 +216,16 @@ def test_execute_with_same_hash_value_in_scope(
     def my_func(x, y):
         return x
 
-    expr = my_func(left, right)
+    df = pd.DataFrame({"left": [left], "right": [right]})
+    table = ibis.pandas.from_dataframe(df)
+
+    expr = my_func(table.left, table.right)
     result = execute(expr)
-    assert type(result) is expected_type
-    assert result == expected_value
+    assert isinstance(result, pd.Series)
+
+    result = result.tolist()
+    assert result == [expected_value]
+    assert type(result[0]) is expected_type
 
 
 def test_ifelse_returning_bool():
@@ -248,7 +254,12 @@ def test_signature_does_not_match_input_type(dtype, value):
     def func(x):
         return x
 
-    expr = func(value)
-    result = execute(expr)
-    assert type(result) == type(value)
-    assert result == value
+    df = pd.DataFrame({"col": [value]})
+    table = ibis.pandas.from_dataframe(df)
+
+    result = execute(table.col)
+    assert isinstance(result, pd.Series)
+
+    result = result.tolist()
+    assert result == [value]
+    assert type(result[0]) is type(value)
