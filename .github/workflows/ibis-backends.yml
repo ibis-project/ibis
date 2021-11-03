@@ -216,13 +216,13 @@ jobs:
 
       - name: cache dependencies
         uses: actions/cache@v2
-        if: ${{ matrix.pyspark.version == "latest" }}
+        if: ${{ matrix.pyspark.version == 'latest' }}
         with:
           path: ~/.cache/pypoetry
           key: ${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}-pyspark-${{ matrix.pyspark.version }}
 
       - name: pin pyspark
-        if: ${{ matrix.pyspark.version != "latest" }}
+        if: ${{ matrix.pyspark.version != 'latest' }}
         run: poetry add --lock --optional "pyspark@${{ matrix.pyspark.version }}"
 
       - name: install ibis
