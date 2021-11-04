@@ -4,10 +4,8 @@ import pandas as pd
 import pandas.testing as tm
 import pytest
 
-import ibis
 import ibis.config as config
 import ibis.expr.types as ir
-from ibis import literal as L
 
 
 def test_get_table_ref(db):
@@ -133,20 +131,6 @@ def test_table_info(alltypes):
     alltypes.info(buf=buf)
 
     assert buf.getvalue() is not None
-
-
-def test_execute_exprs_no_table_ref(con):
-    cases = [(L(1) + L(2), 3)]
-
-    for expr, expected in cases:
-        result = con.execute(expr)
-        assert result == expected
-
-    # ExprList
-    exlist = ibis.api.expr_list(
-        [L(1).name('a'), ibis.now().name('b'), L(2).log().name('c')]
-    )
-    con.execute(exlist)
 
 
 @pytest.mark.skip(reason="FIXME: it is raising KeyError: 'Unnamed: 0'")

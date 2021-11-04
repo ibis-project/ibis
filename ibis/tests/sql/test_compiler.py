@@ -220,19 +220,6 @@ SELECT 1 + 2 AS `tmp`"""
             result = Compiler.to_sql(expr)
             assert result == expected
 
-    def test_expr_list_no_table_refs(self):
-        exlist = ibis.api.expr_list(
-            [
-                ibis.literal(1).name('a'),
-                ibis.now().name('b'),
-                ibis.literal(2).log().name('c'),
-            ]
-        )
-        result = Compiler.to_sql(exlist)
-        expected = """\
-SELECT 1 AS `a`, now() AS `b`, ln(2) AS `c`"""
-        assert result == expected
-
     def test_isnull_case_expr_rewrite_failure(self):
         # #172, case expression that was not being properly converted into an
         # aggregation

@@ -884,47 +884,6 @@ def test_string_add_concat():
     assert False
 
 
-@pytest.fixture
-def expr():
-    exprs = [ibis.literal(1).name('a'), ibis.literal(2).name('b')]
-
-    return ibis.expr_list(exprs)
-
-
-def test_names(expr):
-    assert expr.names() == ['a', 'b']
-
-
-def test_prefix(expr):
-    prefixed = expr.prefix('foo_')
-    result = prefixed.names()
-    assert result == ['foo_a', 'foo_b']
-
-
-def test_rename(expr):
-    renamed = expr.rename(lambda x: f'foo({x})')
-    result = renamed.names()
-    assert result == ['foo(a)', 'foo(b)']
-
-
-def test_suffix(expr):
-    suffixed = expr.suffix('.x')
-    result = suffixed.names()
-    assert result == ['a.x', 'b.x']
-
-
-def test_concat():
-    exprs = [ibis.literal(1).name('a'), ibis.literal(2).name('b')]
-    exprs2 = [ibis.literal(3).name('c'), ibis.literal(4).name('d')]
-
-    list1 = ibis.expr_list(exprs)
-    list2 = ibis.expr_list(exprs2)
-
-    result = list1.concat(list2)
-    expected = ibis.expr_list(exprs + exprs2)
-    assert_equal(result, expected)
-
-
 def test_substitute_dict():
     table = ibis.table([('foo', 'string'), ('bar', 'string')], 't1')
     subs = {'a': 'one', 'b': table.bar}

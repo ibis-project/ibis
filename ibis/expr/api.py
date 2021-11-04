@@ -121,7 +121,6 @@ __all__ = (
     'date',
     'desc',
     'Expr',
-    'expr_list',
     'geo_area',
     'geo_as_binary',
     'geo_as_ewkb',
@@ -1239,15 +1238,15 @@ def _generic_summary(arg, exact_nunique=False, prefix=None):
     -------
     summary : (count, # nulls, nunique)
     """
-    metrics = [arg.count(), arg.isnull().sum().name('nulls')]
-
     if exact_nunique:
         unique_metric = arg.nunique().name('uniques')
     else:
         unique_metric = arg.approx_nunique().name('uniques')
 
-    metrics.append(unique_metric)
-    return _wrap_summary_metrics(metrics, prefix)
+    # TODO(kszucs): handle prefix
+    metrics = [arg.count(), arg.isnull().sum().name('nulls'), unique_metric]
+
+    return metrics
 
 
 def _numeric_summary(arg, exact_nunique=False, prefix=None):
@@ -1265,6 +1264,12 @@ def _numeric_summary(arg, exact_nunique=False, prefix=None):
     -------
     summary : (count, # nulls, min, max, sum, mean, nunique)
     """
+    if exact_nunique:
+        unique_metric = arg.nunique().name('nunique')
+    else:
+        unique_metric = arg.approx_nunique().name('approx_nunique')
+
+    # TODO(kszucs): handle prefix
     metrics = [
         arg.count(),
         arg.isnull().sum().name('nulls'),
@@ -1272,28 +1277,17 @@ def _numeric_summary(arg, exact_nunique=False, prefix=None):
         arg.max(),
         arg.sum(),
         arg.mean(),
+        unique_metric,
     ]
 
-    if exact_nunique:
-        unique_metric = arg.nunique().name('nunique')
-    else:
-        unique_metric = arg.approx_nunique().name('approx_nunique')
-
-    metrics.append(unique_metric)
-    return _wrap_summary_metrics(metrics, prefix)
+    return metrics
 
 
-def _wrap_summary_metrics(metrics, prefix):
-    result = expr_list(metrics)
-    if prefix is not None:
-        result = result.prefix(prefix)
-    return result
-
-
-def expr_list(exprs):
-    for e in exprs:
-        e.get_name()
-    return ops.ExpressionList(exprs).to_expr()
+# def _wrap_summary_metrics(metrics, prefix):
+#     result = expr_list(metrics)
+#     if prefix is not None:
+#         result = result.prefix(prefix)
+#     return result
 
 
 _generic_column_methods = {

@@ -610,7 +610,7 @@ class Aggregation(TableNode, sch.HasSchema):
                     ),
                     rlz.reduction,
                     rlz.scalar(rlz.any),
-                    rlz.expr_list_of(rlz.scalar(rlz.any)),
+                    rlz.list_of(rlz.scalar(rlz.any)),
                     rlz.named_literal,
                 )
             ),

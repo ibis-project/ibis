@@ -165,8 +165,11 @@ def container_of(inner, arg, *, type, min_length=0, flatten=False, **kwargs):
         raise com.IbisTypeError(
             f'Arg must have at least {min_length} number of elements'
         )
-    flatten_func = util.flatten_iterable if flatten else identity
-    return type(flatten_func(inner(item, **kwargs) for item in arg))
+
+    if flatten:
+        arg = util.flatten_iterable(arg)
+
+    return type(inner(item, **kwargs) for item in arg)
 
 
 list_of = container_of(type=list)
@@ -441,26 +444,6 @@ def function_of(
         raise com.IbisTypeError('argument `fn` must be a function or lambda')
 
     return output_rule(fn(preprocess(getattr(this, argument))), this=this)
-
-
-@validator
-def expr_list_of(inner, arg, *, min_length=0, **kwargs):
-    import ibis
-
-    if isinstance(arg, ir.ExprList):
-        return ibis.expr_list(
-            list(map(functools.partial(inner, **kwargs), arg.exprs()))
-        )
-
-    if not util.is_iterable(arg):
-        raise com.IbisTypeError('argument must be a sequence')
-
-    if len(arg) < min_length:
-        raise com.IbisTypeError(
-            'expression list must have at least '
-            f'{min_length} number of elements'
-        )
-    return ibis.expr_list(list(map(functools.partial(inner, **kwargs), arg)))
 
 
 @validator

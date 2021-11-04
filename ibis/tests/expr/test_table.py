@@ -529,7 +529,7 @@ def test_summary_expand_list(table):
 
     metric = table.g.group_concat().name('bar')
     result = table.aggregate([metric, summ])
-    expected = table.aggregate([metric] + summ.exprs())
+    expected = table.aggregate([metric] + summ)
     assert_equal(result, expected)
 
 

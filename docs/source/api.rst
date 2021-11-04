@@ -30,7 +30,6 @@ These methods are available directly in the ``ibis`` module namespace.
    now
    NA
    null
-   expr_list
    row_number
    window
    range_window

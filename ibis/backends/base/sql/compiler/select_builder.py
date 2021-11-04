@@ -301,26 +301,6 @@ class SelectBuilder:
         elif isinstance(expr, ir.AnalyticExpr):
             return expr.to_aggregation(), toolz.identity
 
-        elif isinstance(expr, ir.ExprList):
-            exprs = expr.exprs()
-
-            is_aggregation = True
-            any_aggregation = False
-
-            for x in exprs:
-                if not L.is_scalar_reduction(x):
-                    is_aggregation = False
-                else:
-                    any_aggregation = True
-
-            if is_aggregation:
-                table = ir.find_base_table(exprs[0])
-                return table.aggregate(exprs), toolz.identity
-            elif not any_aggregation:
-                return expr, toolz.identity
-            else:
-                raise NotImplementedError(expr._repr())
-
         elif isinstance(expr, ir.ColumnExpr):
             op = expr.op()
 
@@ -663,11 +643,7 @@ class SelectBuilder:
             if self.table_set is None:
                 raise com.InternalError('no table set')
         else:
-            # Expressions not depending on any table
-            if isinstance(root_op, ops.ExpressionList):
-                self.select_set = source_expr.exprs()
-            else:
-                self.select_set = [source_expr]
+            self.select_set = [source_expr]
 
     def _collect(self, expr, toplevel=False):
         op = expr.op()

@@ -213,7 +213,7 @@ def awards_players(backend):
 @pytest.fixture(scope='session')
 def geo(backend):
     if backend.geo is None:
-        pytest.skip('Geo Spatial type not supported for {backend}.')
+        pytest.skip(f'Geo Spatial type not supported for {backend}.')
     return backend.geo
 
 
