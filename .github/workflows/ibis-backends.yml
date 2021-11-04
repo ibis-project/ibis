@@ -365,7 +365,7 @@ jobs:
           - name: mysql
             title: MySQL
           - name: clickhouse
-            title: Clickhouse
+            title: ClickHouse
     services:
       mysql:
         image: mariadb:10.4.12
