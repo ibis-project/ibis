@@ -44,11 +44,13 @@ jobs:
             python-version: "3.9"
             backend:
               name: hdf5
+              title: HDF5
         include:
           - os: windows-latest
             python-version: "3.8"
             backend:
               name: hdf5
+              title: HDF5
     steps:
       - name: checkout
         uses: actions/checkout@v2
