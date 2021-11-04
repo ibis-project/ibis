@@ -1283,13 +1283,6 @@ def _numeric_summary(arg, exact_nunique=False, prefix=None):
     return metrics
 
 
-# def _wrap_summary_metrics(metrics, prefix):
-#     result = expr_list(metrics)
-#     if prefix is not None:
-#         result = result.prefix(prefix)
-#     return result
-
-
 _generic_column_methods = {
     'bottomk': bottomk,
     'distinct': distinct,
