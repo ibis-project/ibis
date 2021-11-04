@@ -1,5 +1,5 @@
 # vim: filetype=yaml
-name: CI
+name: Backends
 
 on:
   push:
@@ -9,59 +9,13 @@ on:
     branches:
       - master
 
+concurrency:
+  group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
+  cancel-in-progress: true
+
 jobs:
-  test_no_backends:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-latest
-          - windows-latest
-        python-version:
-          - "3.7"
-          - "3.9"
-    steps:
-      - name: checkout
-        uses: actions/checkout@v2
-
-      - name: install python
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: install poetry
-        run: pip install poetry
-
-      - name: cache dependencies linux
-        uses: actions/cache@v2
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        with:
-          path: ~/.cache/pypoetry
-          key: no-backends-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
-
-      - name: cache dependencies windows
-        uses: actions/cache@v2
-        if: ${{ matrix.os == 'windows-latest' }}
-        with:
-          path: ~\AppData\Local\pypoetry
-          key: no-backends-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
-
-      - name: install ibis
-        run: poetry install
-
-      - name: run tests
-        shell: bash
-        run: ./ci/run_tests.sh ibis/tests
-
-      - name: publish test report
-        uses: actions/upload-artifact@v2
-        if: success() || failure()
-        with:
-          name: no-backends-${{ matrix.os }}-${{ matrix.python-version }}
-          path: junit.xml
-
   test_simple_backends:
+    name: ${{ matrix.backend.title }} ${{ matrix.os }} python-${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -74,24 +28,33 @@ jobs:
           - "3.9"
         backend:
           - name: csv
+            title: CSV
           - name: dask
+            title: Dask
           - name: dask
+            title: Dask Extra
             deps:
               - "dask@2021.2.0 --extras array --extras dataframe"
           - name: hdf5
+            title: HDF5
           - name: pandas
+            title: Pandas
           - name: parquet
+            title: Parquet
           - name: sqlite
+            title: SQLite
         exclude:
           - os: windows-latest
             python-version: "3.9"
             backend:
               name: hdf5
+              title: HDF5
         include:
           - os: windows-latest
             python-version: "3.8"
             backend:
               name: hdf5
+              title: HDF5
     steps:
       - name: checkout
         uses: actions/checkout@v2
@@ -145,6 +108,7 @@ jobs:
           path: junit.xml
 
   test_postgres:
+    name: PostgreSQL ubuntu-latest python-${{ matrix.python-version }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -215,6 +179,7 @@ jobs:
           path: junit.xml
 
   test_pyspark:
+    name: PySpark ${{ matrix.pyspark.version }} ubuntu-latest python-${{ matrix.python-version }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -227,7 +192,8 @@ jobs:
             jdk: "8"
             env:
               ARROW_PRE_0_15_IPC_FORMAT: 1
-          - jdk: "11"
+          - version: "latest"
+            jdk: "11"
             env:
               ARROW_PRE_0_15_IPC_FORMAT: 0
         exclude:
@@ -256,13 +222,13 @@ jobs:
 
       - name: cache dependencies
         uses: actions/cache@v2
-        if: ${{ matrix.pyspark.version == null }}
+        if: ${{ matrix.pyspark.version == 'latest' }}
         with:
           path: ~/.cache/pypoetry
           key: ${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}-pyspark-${{ matrix.pyspark.version }}
 
       - name: pin pyspark
-        if: ${{ matrix.pyspark.version != null }}
+        if: ${{ matrix.pyspark.version != 'latest' }}
         run: poetry add --lock --optional "pyspark@${{ matrix.pyspark.version }}"
 
       - name: install ibis
@@ -285,6 +251,7 @@ jobs:
           path: junit.xml
 
   test_impala:
+    name: Impala ubuntu-latest python-${{ matrix.python-version }}
     runs-on: ubuntu-latest
     env:
       IBIS_TEST_NN_HOST: localhost
@@ -386,6 +353,7 @@ jobs:
           path: junit.xml
 
   test_mysql_clickhouse:
+    name: ${{ matrix.backend.title }} ubuntu-latest python-${{ matrix.python-version }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -394,8 +362,10 @@ jobs:
           - "3.7"
           - "3.9"
         backend:
-          - mysql
-          - clickhouse
+          - name: mysql
+            title: MySQL
+          - name: clickhouse
+            title: ClickHouse
     services:
       mysql:
         image: mariadb:10.4.12
@@ -428,20 +398,20 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.cache/pypoetry
-          key: ${{ matrix.backend }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+          key: ${{ matrix.backend.name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
 
       - name: install ibis
-        run: poetry install --extras ${{ matrix.backend }}
+        run: poetry install --extras ${{ matrix.backend.name }}
 
       - name: download backend data
         run: poetry run python ci/datamgr.py download
 
       - name: install backend data
-        run: poetry run python ci/datamgr.py ${{ matrix.backend }}
+        run: poetry run python ci/datamgr.py ${{ matrix.backend.name }}
 
       - name: run tests
         env:
-          PYTEST_BACKENDS: ${{ matrix.backend }}
+          PYTEST_BACKENDS: ${{ matrix.backend.name }}
         run: ./ci/run_tests.sh
 
       - name: publish test report
@@ -450,143 +420,3 @@ jobs:
         with:
           name: ${{ matrix.backend }}-${{ matrix.python-version }}
           path: junit.xml
-
-  benchmarks:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version:
-          - "3.9"
-    steps:
-      - name: checkout
-        uses: actions/checkout@v2
-
-      - name: install python
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: install system dependencies
-        run: sudo apt-get install -qq -y build-essential cmake krb5-config python-dev libkrb5-dev libboost-all-dev
-
-      - name: install poetry
-        run: pip install poetry
-
-      - name: cache dependencies
-        uses: actions/cache@v2
-        with:
-          path: ~/.cache/pypoetry
-          key: benchmarks-impala-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
-
-      - name: install ibis
-        run: poetry install --extras impala
-
-      - name: benchmark
-        run: |
-          set -euo pipefail
-
-          poetry run asv machine --yes
-          poetry run asv dev
-
-  docs:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version:
-          - "3.9"
-    steps:
-      - name: checkout
-        uses: actions/checkout@v2
-
-      - name: install system dependencies
-        run: sudo apt-get install -qq -y build-essential cmake krb5-config python-dev libkrb5-dev libboost-all-dev pandoc
-
-      - name: install python
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: install poetry
-        run: pip install poetry
-
-      - name: cache dependencies
-        uses: actions/cache@v2
-        with:
-          path: ~/.cache/pypoetry
-          key: docs-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
-
-      - name: install ibis
-        run: poetry install --extras all
-
-      - name: build web
-        run: poetry run python -m pysuerga docs/web --target-path=docbuild
-
-      - name: build docs
-        run: poetry run sphinx-build -b html docs/source docbuild/docs -W -T
-
-      - name: Add config to docs
-        run: |
-          set -euo pipefail
-
-          touch docbuild/.nojekyll
-          echo "ibis-project.org" > docbuild/CNAME
-
-      - name: Push docs
-        if: ${{ github.event_name == 'push' }}
-        uses: cpina/github-action-push-to-another-repository@v1.3
-        env:
-          API_TOKEN_GITHUB: ${{ secrets.IBIS_PROJECT_DOCS_PAT }}
-        with:
-          source-directory: docbuild
-          target-branch: master
-          destination-github-username: ibis-project
-          destination-repository-name: ibis-project.org
-          user-email: '41898282+github-actions[bot]@users.noreply.github.com'
-
-      - name: Clean up doc build
-        run: rm -r docbuild
-
-  conda_package:
-    # TODO: fully automate the conda-forge PR submission on release
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version:
-          - "3.7"
-    defaults:
-      run:
-        shell: bash -l {0}
-    steps:
-      - name: checkout
-        uses: actions/checkout@v2
-
-      - name: update recipe file
-        run: |
-          set -euo pipefail
-
-          # TODO: this is a hack that should be fixed by automatically generating
-          # a recipe from pyproject.toml once we move to poetry
-          set -x
-          IBIS_PATH=`pwd`
-          sed -i "s|url:.*|path: $IBIS_PATH|g" ci/recipe/meta.yaml
-          IBIS_VERSION=$(grep -Po '(?<=^version = ").+(?=")' pyproject.toml)
-          sed -i "s/{{ version }}/$IBIS_VERSION/g" ci/recipe/meta.yaml
-          cat ci/recipe/meta.yaml
-
-      - uses: conda-incubator/setup-miniconda@v2
-        with:
-          mamba-version: "*"
-          miniforge-version: latest
-          miniforge-variant: Mambaforge
-          channel-priority: strict
-          activate-environment: ibis
-          python-version: ${{ matrix.python-version }}
-          condarc-file: ci/condarc
-
-      - name: install boa
-        run: mamba install boa
-
-      - name: build recipe
-        run: conda mambabuild -c conda-forge --python "${{ matrix.python-version }}" ci/recipe/meta.yaml
