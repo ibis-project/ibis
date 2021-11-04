@@ -9,6 +9,10 @@ on:
     branches:
       - master
 
+concurrency:
+  group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
+  cancel-in-progress: true
+
 jobs:
   test_simple_backends:
     name: ${{ matrix.backend.title }} ${{ matrix.os }} python-${{ matrix.python-version }}

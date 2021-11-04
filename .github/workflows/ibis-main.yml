@@ -9,6 +9,10 @@ on:
     branches:
       - master
 
+concurrency:
+  group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
+  cancel-in-progress: true
+
 jobs:
   test_no_backends:
     name: Test ${{ matrix.os }} python-${{ matrix.python-version }}
@@ -104,7 +108,7 @@ jobs:
           poetry run asv dev
 
   docs:
-    name: Benchmark ${{ matrix.os }} python-${{ matrix.python-version }}
+    name: Docs ${{ matrix.os }} python-${{ matrix.python-version }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
