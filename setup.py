@@ -51,7 +51,6 @@ package_data = {"": ["*"]}
 install_requires = [
     "atpublic>=2.3,<3.0",
     "cached_property>=1,<2",
-    "cytoolz>=0.11,<0.12",
     "multipledispatch>=0.6,<0.7",
     "numpy>=1,<2",
     "pandas>=1.2.5,<2.0.0",
@@ -62,6 +61,7 @@ install_requires = [
 ]
 
 extras_require = {
+    ':python_version < "3.10"': ["cytoolz>=0.11,<0.12"],
     ':python_version < "3.8"': ["importlib-metadata>=4,<5"],
     "all": [
         "clickhouse-driver>=0.1,<0.3",
