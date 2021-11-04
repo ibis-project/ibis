@@ -1389,7 +1389,9 @@ def test_boolean_reduction(alltypes, opname, df):
 
 
 def test_boolean_summary(alltypes):
-    expr = alltypes.bool_col.summary()
+    bool_col_summary = alltypes.bool_col.summary()
+    expr = alltypes.aggregate(bool_col_summary)
+
     result = expr.execute()
     expected = pd.DataFrame(
         [[7300, 0, 0, 1, 3650, 0.5, 2]],

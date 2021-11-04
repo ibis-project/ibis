@@ -1015,7 +1015,8 @@ def test_summary_execute(alltypes):
     # also test set_column while we're at it
     table = table.set_column('double_col', table.double_col * 2)
 
-    expr = table.double_col.summary()
+    metrics = table.double_col.summary()
+    expr = table.aggregate(metrics)
     repr(expr)
 
     result = expr.execute()
