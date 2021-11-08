@@ -283,7 +283,7 @@ https://conda.anaconda.org/conda-forge/win-64/nbconvert-6.2.0-py38haa244fe_0.tar
 https://conda.anaconda.org/conda-forge/noarch/networkx-2.6.3-pyhd8ed1ab_1.tar.bz2#4028eff5a1d3deed58c98774e7aa9891
 https://conda.anaconda.org/conda-forge/noarch/plumbum-1.7.0-pyhd8ed1ab_0.tar.bz2#24ec49bf5c2e2cd98cda1a17c8d443f3
 https://conda.anaconda.org/conda-forge/noarch/requests-2.26.0-pyhd8ed1ab_0.tar.bz2#0ed2ccbde6db9dd5789068eb7194463f
-https://conda.anaconda.org/conda-forge/win-64/arrow-cpp-5.0.0-py38h5c92714_9_cpu.tar.bz2#9d4145092cd07f9950e32d03fd71dbf5
+https://conda.anaconda.org/conda-forge/win-64/arrow-cpp-5.0.0-py38h5c92714_10_cpu.tar.bz2#d72a040021033ea3708054538ad4336d
 https://conda.anaconda.org/conda-forge/noarch/clickhouse-sqlalchemy-0.1.4-py_0.tar.bz2#eefe6c41dc23b97fc216348bf8f0b969
 https://conda.anaconda.org/conda-forge/noarch/folium-0.12.0-pyhd8ed1ab_1.tar.bz2#91945fa06d1d7a5a8914f32785388478
 https://conda.anaconda.org/conda-forge/win-64/gdal-3.3.3-py38h117dad8_3.tar.bz2#36cb92310f04074f1bcb2f203f928f00
@@ -298,5 +298,5 @@ https://conda.anaconda.org/conda-forge/noarch/python-hdfs-2.6.0-pyhd8ed1ab_0.tar
 https://conda.anaconda.org/conda-forge/noarch/sphinx-releases-1.6.3-pyhd8ed1ab_1.tar.bz2#a7de55e5052c22aaa3e0f334390054bf
 https://conda.anaconda.org/conda-forge/noarch/sphinx_rtd_theme-1.0.0-pyhd8ed1ab_0.tar.bz2#9f633f2f2869184e31acfeae95b24345
 https://conda.anaconda.org/conda-forge/noarch/geopandas-0.10.2-pyhd8ed1ab_0.tar.bz2#6097c661f844076a5885f1a96809a131
-https://conda.anaconda.org/conda-forge/win-64/pyarrow-5.0.0-py38h0b4a547_9_cpu.tar.bz2#ebcd52708cda603c7ddb022240b9bbc3
+https://conda.anaconda.org/conda-forge/win-64/pyarrow-5.0.0-py38h0b4a547_10_cpu.tar.bz2#a3a218e66d1e8056cf03c48e84bff843
 https://conda.anaconda.org/conda-forge/noarch/pyspark-3.2.0-pyh6c4a22f_0.tar.bz2#4964a9b503b85205ca5376d9a43dd4d5

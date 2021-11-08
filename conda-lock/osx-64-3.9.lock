@@ -285,7 +285,7 @@ https://conda.anaconda.org/conda-forge/osx-64/pytables-3.6.1-py39hfd850c7_4.tar.
 https://conda.anaconda.org/conda-forge/noarch/pytest-xdist-2.4.0-pyhd8ed1ab_0.tar.bz2#ff7ce4f4c4a5e9a7825d4a7f045f0f1a
 https://conda.anaconda.org/conda-forge/osx-64/scikit-learn-1.0.1-py39hd2caeff_1.tar.bz2#0944ae1539c2705acbc27e00ea4ca6fc
 https://conda.anaconda.org/conda-forge/noarch/urllib3-1.26.7-pyhd8ed1ab_0.tar.bz2#be75bab4820a56f77ba1a3fc9139c36a
-https://conda.anaconda.org/conda-forge/osx-64/arrow-cpp-5.0.0-py39h1bf2758_9_cpu.tar.bz2#9c89f6f7be41362cb57153ff32a2df98
+https://conda.anaconda.org/conda-forge/osx-64/arrow-cpp-5.0.0-py39h1bf2758_10_cpu.tar.bz2#039b2558824f5906f37052af03a84a9d
 https://conda.anaconda.org/conda-forge/osx-64/fiona-1.8.20-py39h10412eb_2.tar.bz2#02c723a97bc264361e7571eb6c6f53b4
 https://conda.anaconda.org/conda-forge/osx-64/ipython-7.29.0-py39h71a6800_1.tar.bz2#29b81f0adfc6c12fda6c056316aee7ce
 https://conda.anaconda.org/conda-forge/noarch/mapclassify-2.4.3-pyhd8ed1ab_0.tar.bz2#908bbfb54da154042c5cbda77b37a3d1
@@ -300,7 +300,7 @@ https://conda.anaconda.org/conda-forge/osx-64/requests-kerberos-0.12.0-py39h6e94
 https://conda.anaconda.org/conda-forge/noarch/sphinx-4.2.0-pyh6c4a22f_0.tar.bz2#ea5c6881a11a0d9c4d04f1ebae87bb34
 https://conda.anaconda.org/conda-forge/noarch/geopandas-0.10.2-pyhd8ed1ab_0.tar.bz2#6097c661f844076a5885f1a96809a131
 https://conda.anaconda.org/conda-forge/noarch/nbsphinx-0.8.7-pyhd8ed1ab_0.tar.bz2#679a7e888a2daa3f5bccc0577ba8288c
-https://conda.anaconda.org/conda-forge/osx-64/pyarrow-5.0.0-py39h4d6536f_9_cpu.tar.bz2#a01bd6b0d580f730f2253c12d0bb3fbc
+https://conda.anaconda.org/conda-forge/osx-64/pyarrow-5.0.0-py39h4d6536f_10_cpu.tar.bz2#ddacb0798a28cb83f31ddd19c9ba378f
 https://conda.anaconda.org/conda-forge/noarch/python-hdfs-2.6.0-pyhd8ed1ab_0.tar.bz2#6d826168a0cdc0ac13c33ae6a5bc4b43
 https://conda.anaconda.org/conda-forge/noarch/sphinx-releases-1.6.3-pyhd8ed1ab_1.tar.bz2#a7de55e5052c22aaa3e0f334390054bf
 https://conda.anaconda.org/conda-forge/noarch/sphinx_rtd_theme-1.0.0-pyhd8ed1ab_0.tar.bz2#9f633f2f2869184e31acfeae95b24345

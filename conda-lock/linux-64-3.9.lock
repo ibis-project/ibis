@@ -302,7 +302,7 @@ https://conda.anaconda.org/conda-forge/noarch/pytest-mock-3.6.1-pyhd8ed1ab_0.tar
 https://conda.anaconda.org/conda-forge/noarch/pytest-randomly-3.10.1-pyhd8ed1ab_0.tar.bz2#dfbf07034d5baee9c0b830efb6874202
 https://conda.anaconda.org/conda-forge/linux-64/scikit-learn-1.0.1-py39h7c5d8c9_1.tar.bz2#aad0d090398e5e3e358987c980702441
 https://conda.anaconda.org/conda-forge/noarch/wcwidth-0.2.5-pyh9f0ad1d_2.tar.bz2#5266fcd697043c59621fda522b3d78ee
-https://conda.anaconda.org/conda-forge/linux-64/arrow-cpp-5.0.0-py39he04200f_9_cpu.tar.bz2#564a6f28619bf139ab526702774add18
+https://conda.anaconda.org/conda-forge/linux-64/arrow-cpp-5.0.0-py39he04200f_10_cpu.tar.bz2#64dfc02ef4df50c2a51c2d9b445f80d0
 https://conda.anaconda.org/conda-forge/linux-64/gdal-3.3.3-py39h0494519_3.tar.bz2#bd21c5622f845e9d9d2367f1be0f0889
 https://conda.anaconda.org/conda-forge/noarch/mapclassify-2.4.3-pyhd8ed1ab_0.tar.bz2#908bbfb54da154042c5cbda77b37a3d1
 https://conda.anaconda.org/conda-forge/noarch/nbclient-0.5.4-pyhd8ed1ab_0.tar.bz2#66ea0ea89e4f657a8b85fa5bdfce60ac
@@ -319,7 +319,7 @@ https://conda.anaconda.org/conda-forge/noarch/requests-2.26.0-pyhd8ed1ab_0.tar.b
 https://conda.anaconda.org/conda-forge/noarch/clickhouse-sqlalchemy-0.1.4-py_0.tar.bz2#eefe6c41dc23b97fc216348bf8f0b969
 https://conda.anaconda.org/conda-forge/noarch/folium-0.12.0-pyhd8ed1ab_1.tar.bz2#91945fa06d1d7a5a8914f32785388478
 https://conda.anaconda.org/conda-forge/linux-64/ipykernel-6.4.2-py39hef51801_0.tar.bz2#b4a135cf9f5f29c7ef9905efdfa65271
-https://conda.anaconda.org/conda-forge/linux-64/pyarrow-5.0.0-py39hff6fa39_9_cpu.tar.bz2#ceb7195e2ffc094bbea98d1d80889393
+https://conda.anaconda.org/conda-forge/linux-64/pyarrow-5.0.0-py39hff6fa39_10_cpu.tar.bz2#d8b0381e5de6ef0733005e0156e24d63
 https://conda.anaconda.org/conda-forge/linux-64/requests-kerberos-0.12.0-py39hf3d152e_2.tar.bz2#be98545c2d1f82717d1f78583293460d
 https://conda.anaconda.org/conda-forge/noarch/sphinx-4.2.0-pyh6c4a22f_0.tar.bz2#ea5c6881a11a0d9c4d04f1ebae87bb34
 https://conda.anaconda.org/conda-forge/noarch/geopandas-0.10.2-pyhd8ed1ab_0.tar.bz2#6097c661f844076a5885f1a96809a131

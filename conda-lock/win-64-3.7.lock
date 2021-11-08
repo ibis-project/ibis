@@ -284,7 +284,7 @@ https://conda.anaconda.org/conda-forge/noarch/pytest-forked-1.3.0-pyhd3deb0d_0.t
 https://conda.anaconda.org/conda-forge/noarch/pytest-mock-3.6.1-pyhd8ed1ab_0.tar.bz2#95d022e1556adb78274d59bdf0939608
 https://conda.anaconda.org/conda-forge/noarch/pytest-randomly-3.10.1-pyhd8ed1ab_0.tar.bz2#dfbf07034d5baee9c0b830efb6874202
 https://conda.anaconda.org/conda-forge/noarch/requests-2.26.0-pyhd8ed1ab_0.tar.bz2#0ed2ccbde6db9dd5789068eb7194463f
-https://conda.anaconda.org/conda-forge/win-64/arrow-cpp-5.0.0-py37h4add8b4_9_cpu.tar.bz2#bcad259292f4cc470df36559ac75d384
+https://conda.anaconda.org/conda-forge/win-64/arrow-cpp-5.0.0-py37h4add8b4_10_cpu.tar.bz2#93dac92e94dd342ed9370b5708160084
 https://conda.anaconda.org/conda-forge/noarch/clickhouse-sqlalchemy-0.1.4-py_0.tar.bz2#eefe6c41dc23b97fc216348bf8f0b969
 https://conda.anaconda.org/conda-forge/noarch/folium-0.12.0-pyhd8ed1ab_1.tar.bz2#91945fa06d1d7a5a8914f32785388478
 https://conda.anaconda.org/conda-forge/win-64/gdal-3.3.3-py37h9ecaa47_3.tar.bz2#46898a746417ab5f85424164cf36d5d3
@@ -300,5 +300,5 @@ https://conda.anaconda.org/conda-forge/noarch/python-hdfs-2.6.0-pyhd8ed1ab_0.tar
 https://conda.anaconda.org/conda-forge/noarch/sphinx-releases-1.6.3-pyhd8ed1ab_1.tar.bz2#a7de55e5052c22aaa3e0f334390054bf
 https://conda.anaconda.org/conda-forge/noarch/sphinx_rtd_theme-1.0.0-pyhd8ed1ab_0.tar.bz2#9f633f2f2869184e31acfeae95b24345
 https://conda.anaconda.org/conda-forge/noarch/geopandas-0.10.2-pyhd8ed1ab_0.tar.bz2#6097c661f844076a5885f1a96809a131
-https://conda.anaconda.org/conda-forge/win-64/pyarrow-5.0.0-py37ha6b0ef9_9_cpu.tar.bz2#d3e9f9846f3e00d9f5e51ed71796bddf
+https://conda.anaconda.org/conda-forge/win-64/pyarrow-5.0.0-py37ha6b0ef9_10_cpu.tar.bz2#9814bb99ccfb26c463fb2638a755ee51
 https://conda.anaconda.org/conda-forge/noarch/pyspark-3.2.0-pyh6c4a22f_0.tar.bz2#4964a9b503b85205ca5376d9a43dd4d5
