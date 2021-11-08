@@ -163,9 +163,6 @@ def execute_selection_dataframe(
             op.table.op(), predicates, data, scope, timecontext, **kwargs
         )
         predicate = functools.reduce(operator.and_, predicates)
-        assert len(predicate) == len(
-            result
-        ), 'Selection predicate length does not match underlying table'
         result = result.loc[predicate]
 
     if sort_keys:
