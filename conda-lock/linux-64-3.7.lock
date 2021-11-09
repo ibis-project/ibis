@@ -296,7 +296,7 @@ https://conda.anaconda.org/conda-forge/linux-64/pytables-3.6.1-py37h5dea08b_4.ta
 https://conda.anaconda.org/conda-forge/linux-64/scikit-learn-1.0.1-py37hf0f1638_1.tar.bz2#ebbf18ea2ee46d77d0b82809372f38ab
 https://conda.anaconda.org/conda-forge/linux-64/tzlocal-4.1-py37h89c1867_0.tar.bz2#060e8008f3bb45b2dedb785e683f4f35
 https://conda.anaconda.org/conda-forge/noarch/wcwidth-0.2.5-pyh9f0ad1d_2.tar.bz2#5266fcd697043c59621fda522b3d78ee
-https://conda.anaconda.org/conda-forge/linux-64/arrow-cpp-5.0.0-py37h45a0579_9_cpu.tar.bz2#e767dbf03dae7b87dd1479dfcd4aacb7
+https://conda.anaconda.org/conda-forge/linux-64/arrow-cpp-5.0.0-py37h45a0579_10_cpu.tar.bz2#d80629cba5194b86340e4b77e7ce4c90
 https://conda.anaconda.org/conda-forge/linux-64/clickhouse-driver-0.2.2-py37h5e8e339_0.tar.bz2#306250a80157735f1e5bf1c75eb1a3c4
 https://conda.anaconda.org/conda-forge/linux-64/gdal-3.3.3-py37h7b489ff_3.tar.bz2#8d78abd2c0d8147f20ca5c3664aa1c0a
 https://conda.anaconda.org/conda-forge/noarch/mapclassify-2.4.3-pyhd8ed1ab_0.tar.bz2#908bbfb54da154042c5cbda77b37a3d1
@@ -318,7 +318,7 @@ https://conda.anaconda.org/conda-forge/noarch/requests-2.26.0-pyhd8ed1ab_0.tar.b
 https://conda.anaconda.org/conda-forge/noarch/clickhouse-sqlalchemy-0.1.4-py_0.tar.bz2#eefe6c41dc23b97fc216348bf8f0b969
 https://conda.anaconda.org/conda-forge/noarch/folium-0.12.0-pyhd8ed1ab_1.tar.bz2#91945fa06d1d7a5a8914f32785388478
 https://conda.anaconda.org/conda-forge/linux-64/ipykernel-6.4.2-py37h6531663_0.tar.bz2#b17ebd18d1def049ce4e2625851b149f
-https://conda.anaconda.org/conda-forge/linux-64/pyarrow-5.0.0-py37h20dbb2a_9_cpu.tar.bz2#693a1f309bc332ff8948fee1e38e6919
+https://conda.anaconda.org/conda-forge/linux-64/pyarrow-5.0.0-py37h20dbb2a_10_cpu.tar.bz2#becc3496f1cc9281d9e7beedd38eb649
 https://conda.anaconda.org/conda-forge/noarch/pytest-xdist-2.4.0-pyhd8ed1ab_0.tar.bz2#ff7ce4f4c4a5e9a7825d4a7f045f0f1a
 https://conda.anaconda.org/conda-forge/linux-64/requests-kerberos-0.12.0-py37h89c1867_2.tar.bz2#a7a133db0c8ea3560c79ea5ee58a23ae
 https://conda.anaconda.org/conda-forge/noarch/sphinx-4.2.0-pyh6c4a22f_0.tar.bz2#ea5c6881a11a0d9c4d04f1ebae87bb34

@@ -283,7 +283,7 @@ https://conda.anaconda.org/conda-forge/osx-64/pytables-3.6.1-py37hc0663ee_4.tar.
 https://conda.anaconda.org/conda-forge/osx-64/pytest-6.2.5-py37hf985489_1.tar.bz2#2effb5d73530e43038807b4104701871
 https://conda.anaconda.org/conda-forge/osx-64/scikit-learn-1.0.1-py37h5a4fc86_1.tar.bz2#769d9bd223c851c8b6b0e5c24747bfb7
 https://conda.anaconda.org/conda-forge/noarch/urllib3-1.26.7-pyhd8ed1ab_0.tar.bz2#be75bab4820a56f77ba1a3fc9139c36a
-https://conda.anaconda.org/conda-forge/osx-64/arrow-cpp-5.0.0-py37h63da43f_9_cpu.tar.bz2#97951c52cca6a469f15cb174c7def35e
+https://conda.anaconda.org/conda-forge/osx-64/arrow-cpp-5.0.0-py37h63da43f_10_cpu.tar.bz2#6fd6f663a0f5a65be95e68edefe9ec32
 https://conda.anaconda.org/conda-forge/osx-64/fiona-1.8.20-py37h687fd47_2.tar.bz2#7c70251d55ab39b61c0e6b82b53c35ff
 https://conda.anaconda.org/conda-forge/osx-64/ipython-7.29.0-py37h4c52d7d_1.tar.bz2#c34549f884eda1ca106b03e57798d471
 https://conda.anaconda.org/conda-forge/noarch/mapclassify-2.4.3-pyhd8ed1ab_0.tar.bz2#908bbfb54da154042c5cbda77b37a3d1
@@ -303,7 +303,7 @@ https://conda.anaconda.org/conda-forge/osx-64/requests-kerberos-0.12.0-py37hf985
 https://conda.anaconda.org/conda-forge/noarch/sphinx-4.2.0-pyh6c4a22f_0.tar.bz2#ea5c6881a11a0d9c4d04f1ebae87bb34
 https://conda.anaconda.org/conda-forge/noarch/geopandas-0.10.2-pyhd8ed1ab_0.tar.bz2#6097c661f844076a5885f1a96809a131
 https://conda.anaconda.org/conda-forge/noarch/nbsphinx-0.8.7-pyhd8ed1ab_0.tar.bz2#679a7e888a2daa3f5bccc0577ba8288c
-https://conda.anaconda.org/conda-forge/osx-64/pyarrow-5.0.0-py37hd1ae41a_9_cpu.tar.bz2#99f3982374660af724639f9290d89a82
+https://conda.anaconda.org/conda-forge/osx-64/pyarrow-5.0.0-py37hd1ae41a_10_cpu.tar.bz2#0fad411de5206069508648dc9d0380b9
 https://conda.anaconda.org/conda-forge/noarch/python-hdfs-2.6.0-pyhd8ed1ab_0.tar.bz2#6d826168a0cdc0ac13c33ae6a5bc4b43
 https://conda.anaconda.org/conda-forge/noarch/sphinx-releases-1.6.3-pyhd8ed1ab_1.tar.bz2#a7de55e5052c22aaa3e0f334390054bf
 https://conda.anaconda.org/conda-forge/noarch/sphinx_rtd_theme-1.0.0-pyhd8ed1ab_0.tar.bz2#9f633f2f2869184e31acfeae95b24345
