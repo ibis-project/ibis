@@ -533,6 +533,26 @@ def test_summary_expand_list(table):
     assert_equal(result, expected)
 
 
+def test_summary_prefix(table):
+    summary_names = [
+        expr.get_name() for expr in table.g.summary(prefix="string_")
+    ]
+    numeric_summary_names = [
+        expr.get_name() for expr in table.f.summary(prefix="float_")
+    ]
+
+    assert summary_names == ['string_count', 'string_nulls', 'string_uniques']
+    assert numeric_summary_names == [
+        "float_count",
+        "float_nulls",
+        "float_min",
+        "float_max",
+        "float_sum",
+        "float_mean",
+        "float_approx_nunique",
+    ]
+
+
 @pytest.mark.xfail(raises=AssertionError, reason='NYT')
 def test_aggregate_invalid(table):
     # Pass a non-aggregation or non-scalar expr
