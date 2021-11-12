@@ -1222,7 +1222,7 @@ def bottomk(arg, k, by=None):
     raise NotImplementedError
 
 
-def _generic_summary(arg, exact_nunique=False, prefix=None, suffix=None):
+def _generic_summary(arg, exact_nunique=False, prefix="", suffix=""):
     """
     Compute a set of summary metrics from the input value expression
 
@@ -1231,9 +1231,9 @@ def _generic_summary(arg, exact_nunique=False, prefix=None, suffix=None):
     arg : value expression
     exact_nunique : boolean, default False
       Compute the exact number of distinct values (slower)
-    prefix : string, default None
+    prefix : string, default ""
       String prefix for metric names
-    suffix : string, default None
+    suffix : string, default ""
       String suffix for metric names
 
     Returns
@@ -1246,16 +1246,12 @@ def _generic_summary(arg, exact_nunique=False, prefix=None, suffix=None):
         unique_metric = arg.approx_nunique().name('uniques')
 
     metrics = [arg.count(), arg.isnull().sum().name('nulls'), unique_metric]
-
-    if prefix:
-        metrics = [m.name(f"{prefix}{m.get_name()}") for m in metrics]
-    if suffix:
-        metrics = [m.name(f"{m.get_name()}{suffix}") for m in metrics]
+    metrics = [m.name(f"{prefix}{m.get_name()}{suffix}") for m in metrics]
 
     return metrics
 
 
-def _numeric_summary(arg, exact_nunique=False, prefix=None, suffix=None):
+def _numeric_summary(arg, exact_nunique=False, prefix="", suffix=""):
     """
     Compute a set of summary metrics from the input numeric value expression
 
@@ -1263,9 +1259,9 @@ def _numeric_summary(arg, exact_nunique=False, prefix=None, suffix=None):
     ----------
     arg : numeric value expression
     exact_nunique : boolean, default False
-    prefix : string, default None
+    prefix : string, default ""
       String prefix for metric names
-    suffix : string, default None
+    suffix : string, default ""
       String suffix for metric names
 
     Returns
@@ -1286,11 +1282,7 @@ def _numeric_summary(arg, exact_nunique=False, prefix=None, suffix=None):
         arg.mean(),
         unique_metric,
     ]
-
-    if prefix:
-        metrics = [m.name(f"{prefix}{m.get_name()}") for m in metrics]
-    if suffix:
-        metrics = [m.name(f"{m.get_name()}{suffix}") for m in metrics]
+    metrics = [m.name(f"{prefix}{m.get_name()}{suffix}") for m in metrics]
 
     return metrics
 

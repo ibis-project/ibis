@@ -547,6 +547,12 @@ def test_summary_prefix_suffix(table):
         'nulls_string',
         'uniques_string',
     ]
+    assert get_names(table.g.summary(prefix="pre_", suffix="_post")) == [
+        'pre_count_post',
+        'pre_nulls_post',
+        'pre_uniques_post',
+    ]
+
     assert get_names(table.f.summary(prefix="float_")) == [
         "float_count",
         "float_nulls",
