@@ -149,7 +149,6 @@ class BaseSQLBackend(BaseBackend):
         dml = getattr(query_ast, 'dml', query_ast)
         expr = getattr(dml, 'parent_expr', getattr(dml, 'table_set', None))
 
-        # TODO: check isinstance(query_ast, list) and create a schema
         if isinstance(expr, (ir.TableExpr, sch.HasSchema)):
             return expr.schema()
         elif isinstance(expr, ir.ValueExpr):
