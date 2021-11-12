@@ -1243,8 +1243,10 @@ def _generic_summary(arg, exact_nunique=False, prefix=None):
     else:
         unique_metric = arg.approx_nunique().name('uniques')
 
-    # TODO(kszucs): handle prefix
     metrics = [arg.count(), arg.isnull().sum().name('nulls'), unique_metric]
+
+    if prefix:
+        metrics = [m.name(f"{prefix}{m.get_name()}") for m in metrics]
 
     return metrics
 
@@ -1269,7 +1271,6 @@ def _numeric_summary(arg, exact_nunique=False, prefix=None):
     else:
         unique_metric = arg.approx_nunique().name('approx_nunique')
 
-    # TODO(kszucs): handle prefix
     metrics = [
         arg.count(),
         arg.isnull().sum().name('nulls'),
@@ -1279,6 +1280,9 @@ def _numeric_summary(arg, exact_nunique=False, prefix=None):
         arg.mean(),
         unique_metric,
     ]
+
+    if prefix:
+        metrics = [m.name(f"{prefix}{m.get_name()}") for m in metrics]
 
     return metrics
 
