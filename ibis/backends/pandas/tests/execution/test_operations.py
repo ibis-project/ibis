@@ -668,6 +668,19 @@ def test_quantile_groupby(batting, batting_df):
     tm.assert_series_equal(result, expected)
 
 
+def test_summary_execute(t):
+    expr = t.group_by('plain_strings').aggregate(
+        [
+            t.plain_int64.summary(prefix='int64_'),
+            t.plain_int64.summary(suffix='_int64'),
+            t.plain_datetimes_utc.summary(prefix='datetime_'),
+            t.plain_datetimes_utc.summary(suffix='_datetime'),
+        ]
+    )
+    result = expr.execute()
+    assert isinstance(result, pd.DataFrame)
+
+
 def test_summary_numeric(batting, batting_df):
     expr = batting.G.summary()
     result = expr.execute()

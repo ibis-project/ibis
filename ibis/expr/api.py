@@ -1222,7 +1222,7 @@ def bottomk(arg, k, by=None):
     raise NotImplementedError
 
 
-def _generic_summary(arg, exact_nunique=False, prefix=None):
+def _generic_summary(arg, exact_nunique=False, prefix=None, suffix=None):
     """
     Compute a set of summary metrics from the input value expression
 
@@ -1233,6 +1233,8 @@ def _generic_summary(arg, exact_nunique=False, prefix=None):
       Compute the exact number of distinct values (slower)
     prefix : string, default None
       String prefix for metric names
+    suffix : string, default None
+      String suffix for metric names
 
     Returns
     -------
@@ -1247,11 +1249,13 @@ def _generic_summary(arg, exact_nunique=False, prefix=None):
 
     if prefix:
         metrics = [m.name(f"{prefix}{m.get_name()}") for m in metrics]
+    if suffix:
+        metrics = [m.name(f"{m.get_name()}{suffix}") for m in metrics]
 
     return metrics
 
 
-def _numeric_summary(arg, exact_nunique=False, prefix=None):
+def _numeric_summary(arg, exact_nunique=False, prefix=None, suffix=None):
     """
     Compute a set of summary metrics from the input numeric value expression
 
@@ -1261,6 +1265,8 @@ def _numeric_summary(arg, exact_nunique=False, prefix=None):
     exact_nunique : boolean, default False
     prefix : string, default None
       String prefix for metric names
+    suffix : string, default None
+      String suffix for metric names
 
     Returns
     -------
@@ -1283,6 +1289,8 @@ def _numeric_summary(arg, exact_nunique=False, prefix=None):
 
     if prefix:
         metrics = [m.name(f"{prefix}{m.get_name()}") for m in metrics]
+    if suffix:
+        metrics = [m.name(f"{m.get_name()}{suffix}") for m in metrics]
 
     return metrics
 

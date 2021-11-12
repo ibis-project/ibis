@@ -533,16 +533,21 @@ def test_summary_expand_list(table):
     assert_equal(result, expected)
 
 
-def test_summary_prefix(table):
-    summary_names = [
-        expr.get_name() for expr in table.g.summary(prefix="string_")
-    ]
-    numeric_summary_names = [
-        expr.get_name() for expr in table.f.summary(prefix="float_")
-    ]
+def test_summary_prefix_suffix(table):
+    def get_names(exprs):
+        return [e.get_name() for e in exprs]
 
-    assert summary_names == ['string_count', 'string_nulls', 'string_uniques']
-    assert numeric_summary_names == [
+    assert get_names(table.g.summary(prefix="string_")) == [
+        'string_count',
+        'string_nulls',
+        'string_uniques',
+    ]
+    assert get_names(table.g.summary(suffix="_string")) == [
+        'count_string',
+        'nulls_string',
+        'uniques_string',
+    ]
+    assert get_names(table.f.summary(prefix="float_")) == [
         "float_count",
         "float_nulls",
         "float_min",
@@ -550,6 +555,15 @@ def test_summary_prefix(table):
         "float_sum",
         "float_mean",
         "float_approx_nunique",
+    ]
+    assert get_names(table.f.summary(suffix="_numeric")) == [
+        "count_numeric",
+        "nulls_numeric",
+        "min_numeric",
+        "max_numeric",
+        "sum_numeric",
+        "mean_numeric",
+        "approx_nunique_numeric",
     ]
 
 
