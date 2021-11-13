@@ -16,7 +16,6 @@ import toolz
 from pandas.api.types import DatetimeTZDtype
 from pandas.core.groupby import DataFrameGroupBy, SeriesGroupBy
 
-import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -1054,15 +1053,6 @@ def execute_node_least_list(op, value, **kwargs):
 def execute_node_coalesce(op, values, **kwargs):
     # TODO: this is slow
     return compute_row_reduction(coalesce, values)
-
-
-@execute_node.register(ops.ExpressionList, collections.abc.Sequence)
-def execute_node_expr_list(op, sequence, **kwargs):
-    # TODO: no true approx count distinct for pandas, so we use exact for now
-    columns = [e.get_name() for e in op.exprs]
-    schema = ibis.schema(list(zip(columns, (e.type() for e in op.exprs))))
-    data = {col: [execute(el, **kwargs)] for col, el in zip(columns, sequence)}
-    return schema.apply_to(pd.DataFrame(data, columns=columns))
 
 
 def wrap_case_result(raw, expr):

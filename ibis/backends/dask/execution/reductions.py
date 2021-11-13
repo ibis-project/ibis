@@ -3,7 +3,6 @@ Reduces sequences
 
 NOTE: This file overwrite the pandas backend registered handlers for:
 
-- execute_node_expr_list,
 - execute_node_greatest_list,
 - execute_node_least_list
 
@@ -20,18 +19,14 @@ import dask.array as da
 import dask.dataframe as dd
 import dask.dataframe.groupby as ddgb
 import numpy as np
-import pandas as pd
 import toolz
 
-import ibis
 import ibis.expr.operations as ops
 from ibis.backends.pandas.execution.generic import (
-    execute_node_expr_list,
     execute_node_greatest_list,
     execute_node_least_list,
 )
 
-from ..core import execute
 from ..dispatch import execute_node
 from .util import make_selected_obj
 
@@ -177,16 +172,4 @@ def execute_standard_dev_series(op, data, mask, aggcontext=None, **kwargs):
         data[mask] if mask is not None else data,
         'std',
         ddof=variance_ddof[op.how],
-    )
-
-
-@execute_node.register(ops.ExpressionList, collections.abc.Sequence)
-def dask_execute_node_expr_list(op, sequence, **kwargs):
-    if all(type(s) != dd.Series for s in sequence):
-        execute_node_expr_list(op, sequence, **kwargs)
-    columns = [e.get_name() for e in op.exprs]
-    schema = ibis.schema(list(zip(columns, (e.type() for e in op.exprs))))
-    data = {col: [execute(el, **kwargs)] for col, el in zip(columns, sequence)}
-    return schema.apply_to(
-        dd.from_pandas(pd.DataFrame(data, columns=columns), npartitions=1)
     )

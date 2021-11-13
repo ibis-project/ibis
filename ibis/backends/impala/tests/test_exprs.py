@@ -1009,25 +1009,14 @@ def test_table_info(alltypes):
     assert buf.getvalue() is not None
 
 
-@pytest.mark.parametrize(('expr', 'expected'), [(L(1) + L(2), 3)])
-def test_execute_exprs_no_table_ref(con, expr, expected):
-    result = con.execute(expr)
-    assert result == expected
-
-    # ExprList
-    exlist = ibis.api.expr_list(
-        [L(1).name('a'), ibis.now().name('b'), L(2).log().name('c')]
-    )
-    con.execute(exlist)
-
-
 def test_summary_execute(alltypes):
     table = alltypes
 
     # also test set_column while we're at it
     table = table.set_column('double_col', table.double_col * 2)
 
-    expr = table.double_col.summary()
+    metrics = table.double_col.summary()
+    expr = table.aggregate(metrics)
     repr(expr)
 
     result = expr.execute()
@@ -1035,9 +1024,9 @@ def test_summary_execute(alltypes):
 
     expr = table.group_by('string_col').aggregate(
         [
-            table.double_col.summary().prefix('double_'),
-            table.float_col.summary().prefix('float_'),
-            table.string_col.summary().suffix('_string'),
+            table.double_col.summary(prefix='double_'),
+            table.float_col.summary(prefix='float_'),
+            table.string_col.summary(suffix='_string'),
         ]
     )
     result = expr.execute()

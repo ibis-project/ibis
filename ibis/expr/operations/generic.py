@@ -12,7 +12,7 @@ from .. import datatypes as dt
 from .. import rules as rlz
 from .. import types as ir
 from ..signature import Argument as Arg
-from .core import Node, UnaryOp, ValueOp, distinct_roots
+from .core import UnaryOp, ValueOp, distinct_roots
 
 try:
     import shapely
@@ -331,23 +331,6 @@ class ScalarParameter(ValueOp):
 
     def root_tables(self):
         return []
-
-
-@public
-class ExpressionList(Node):
-    """Data structure for a list of arbitrary expressions"""
-
-    exprs = Arg(rlz.list_of(rlz.any))
-
-    @property
-    def inputs(self):
-        return (tuple(self.exprs),)
-
-    def root_tables(self):
-        return distinct_roots(self.exprs)
-
-    def output_type(self):
-        return ir.ExprList
 
 
 @public

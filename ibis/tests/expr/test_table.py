@@ -529,8 +529,48 @@ def test_summary_expand_list(table):
 
     metric = table.g.group_concat().name('bar')
     result = table.aggregate([metric, summ])
-    expected = table.aggregate([metric] + summ.exprs())
+    expected = table.aggregate([metric] + summ)
     assert_equal(result, expected)
+
+
+def test_summary_prefix_suffix(table):
+    def get_names(exprs):
+        return [e.get_name() for e in exprs]
+
+    assert get_names(table.g.summary(prefix="string_")) == [
+        'string_count',
+        'string_nulls',
+        'string_uniques',
+    ]
+    assert get_names(table.g.summary(suffix="_string")) == [
+        'count_string',
+        'nulls_string',
+        'uniques_string',
+    ]
+    assert get_names(table.g.summary(prefix="pre_", suffix="_post")) == [
+        'pre_count_post',
+        'pre_nulls_post',
+        'pre_uniques_post',
+    ]
+
+    assert get_names(table.f.summary(prefix="float_")) == [
+        "float_count",
+        "float_nulls",
+        "float_min",
+        "float_max",
+        "float_sum",
+        "float_mean",
+        "float_approx_nunique",
+    ]
+    assert get_names(table.f.summary(suffix="_numeric")) == [
+        "count_numeric",
+        "nulls_numeric",
+        "min_numeric",
+        "max_numeric",
+        "sum_numeric",
+        "mean_numeric",
+        "approx_nunique_numeric",
+    ]
 
 
 @pytest.mark.xfail(raises=AssertionError, reason='NYT')
