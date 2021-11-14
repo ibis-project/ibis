@@ -69,7 +69,7 @@ extras_require = {
         "dask[array,dataframe]>=2021.2.0,<2022.0.0",
         "geoalchemy2>=0.6,<0.10",
         "geopandas>=0.6,<0.11",
-        "graphviz>=0.16,<0.17",
+        "graphviz>=0.16,<0.17|>=0.18.0,<0.19.0",
         "hdfs[kerberos]>=2,<3",
         "impyla[kerberos]>=0.17,<0.19",
         "psycopg2>=2.7,<3.0",
@@ -104,7 +104,7 @@ extras_require = {
     "postgres": ["psycopg2>=2.7,<3.0", "sqlalchemy>=1.3,<1.4"],
     "pyspark": ["pyarrow>=1,<7", "pyspark>=2.4.3,<4"],
     "sqlite": ["sqlalchemy>=1.3,<1.4"],
-    "visualization": ["graphviz>=0.16,<0.17"],
+    "visualization": ["graphviz>=0.16,<0.17|>=0.18.0,<0.19.0"],
 }
 
 entry_points = {
