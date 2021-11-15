@@ -208,7 +208,7 @@ https://conda.anaconda.org/conda-forge/linux-64/entrypoints-0.3-py39hde42818_100
 https://conda.anaconda.org/conda-forge/linux-64/fastavro-1.4.7-py39h3811e60_1.tar.bz2#7821f4514ab25b33385db9f0bf0097d0
 https://conda.anaconda.org/conda-forge/noarch/feedparser-6.0.8-pyhd8ed1ab_0.tar.bz2#aec61f51a85df0e61192be8486e87d58
 https://conda.anaconda.org/conda-forge/linux-64/hdf5-1.12.1-nompi_h2750804_101.tar.bz2#5c442e5109bc9758a9bbc5256753507c
-https://conda.anaconda.org/conda-forge/linux-64/importlib-metadata-4.8.2-py39hf3d152e_0.tar.bz2#c99d085fb9beacd7679864876e97b4af
+https://conda.anaconda.org/conda-forge/linux-64/importlib-metadata-4.2.0-py39hf3d152e_0.tar.bz2#bf7bbffc260e7d807cc240360c53bd7e
 https://conda.anaconda.org/conda-forge/noarch/importlib_resources-5.4.0-pyhd8ed1ab_0.tar.bz2#9fb134dbabe7851a9d71411064b2c30d
 https://conda.anaconda.org/conda-forge/linux-64/jedi-0.18.0-py39hf3d152e_3.tar.bz2#8d85bb6c1160fe8d78f1fc69670cfbc7
 https://conda.anaconda.org/conda-forge/linux-64/jupyter_core-4.9.1-py39hf3d152e_1.tar.bz2#e9b6677fca1aa658d98deba00fb89267
@@ -256,7 +256,7 @@ https://conda.anaconda.org/conda-forge/noarch/click-plugins-1.1.1-py_0.tar.bz2#4
 https://conda.anaconda.org/conda-forge/noarch/cligj-0.7.2-pyhd8ed1ab_1.tar.bz2#a29b7c141d6b2de4bb67788a5f107734
 https://conda.anaconda.org/conda-forge/linux-64/cryptography-35.0.0-py39h95dcef6_2.tar.bz2#1ec40ce04031414d34245391ae83455e
 https://conda.anaconda.org/conda-forge/noarch/dask-core-2021.11.1-pyhd8ed1ab_0.tar.bz2#9737b8117bd1b2b7e5e666330184d5db
-https://conda.anaconda.org/conda-forge/noarch/flake8-4.0.1-pyhd8ed1ab_0.tar.bz2#8345403a7a0c5d95bb686fb8257c8638
+https://conda.anaconda.org/conda-forge/noarch/flake8-4.0.1-pyhd8ed1ab_1.tar.bz2#ebcd260142f408f587dafc01170a32f2
 https://conda.anaconda.org/conda-forge/noarch/geoalchemy2-0.6.3-py_0.tar.bz2#1ea49d7c1392265e007a8b2f8de0713b
 https://conda.anaconda.org/conda-forge/linux-64/geotiff-1.7.0-h90a4e78_5.tar.bz2#512429d22b756a8b04efce724021dc22
 https://conda.anaconda.org/conda-forge/noarch/isort-5.10.1-pyhd8ed1ab_0.tar.bz2#83df9ffefe1cc01d9e60405bf871bfdb
