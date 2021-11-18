@@ -379,6 +379,7 @@ class Foo(enum.Enum):
         (False, dt.boolean),
         (True, dt.boolean),
         ('foo', dt.string),
+        (b'fooblob', dt.binary),
         (datetime.date.today(), dt.date),
         (datetime.datetime.now(), dt.timestamp),
         (datetime.timedelta(days=3), dt.Interval(unit='D')),
