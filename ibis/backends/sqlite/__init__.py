@@ -30,6 +30,40 @@ class Backend(BaseAlchemyBackend):
     # if there is technical debt that makes this required
     database_class = Database
     compiler = SQLiteCompiler
+    _con = None
+    _meta = None
+
+    def __getstate__(self):
+        return dict(database_class=self.database_class,
+                compiler=self.compiler,
+                database_name=self.database_name,
+                _path=self._path,
+                _create=self._create)
+
+    @property
+    def con(self):
+        if self._con is None:
+            self._con = sqlalchemy.create_engine("sqlite://")
+            if self._path is not None:
+                self.attach(self.database_name, self._path, create=self._create)
+            udf.register_all(self._con)
+
+            self._inspector = sqlalchemy.inspect(self._con)
+        return self._con
+
+    @con.setter
+    def con(self, v):
+        self._con = v
+
+    @property
+    def meta(self):
+        if self._meta is None:
+            self._meta = sqlalchemy.MetaData(bind=self.con)
+        return self._meta
+
+    @meta.setter
+    def meta(self, v):
+        self._meta = v
 
     def connect(self, path=None, create=False):
 
@@ -47,13 +81,10 @@ class Backend(BaseAlchemyBackend):
         create : boolean, default False
             If file does not exist, create it
         """
-        new_backend = super().connect(sqlalchemy.create_engine("sqlite://"))
+        new_backend = super().connect(None)
         new_backend.database_name = "base"
-
-        if path is not None:
-            new_backend.attach(new_backend.database_name, path, create=create)
-
-        udf.register_all(new_backend.con)
+        new_backend._path = path
+        new_backend._create = create
 
         return new_backend
 

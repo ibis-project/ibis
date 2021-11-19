@@ -104,8 +104,8 @@ class BaseAlchemyBackend(BaseSQLBackend):
     def connect(self, con: sqlalchemy.engine.Engine):
         new_backend = self.__class__()
         new_backend.con = con
-        new_backend.meta = sqlalchemy.MetaData(bind=con)
-        new_backend._inspector = sqlalchemy.inspect(con)
+        new_backend.meta = None
+        new_backend._inspector = None
         new_backend._schemas: Dict[str, sch.Schema] = {}
         return new_backend
 
