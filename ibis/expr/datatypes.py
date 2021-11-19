@@ -1232,6 +1232,11 @@ def infer_string(value: str) -> String:
     return string
 
 
+@infer.register(bytes)
+def infer_bytes(value: bytes) -> Binary:
+    return binary
+
+
 @infer.register(builtins.float)
 def infer_floating(value: builtins.float) -> Double:
     return double

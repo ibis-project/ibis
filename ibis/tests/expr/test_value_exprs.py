@@ -63,6 +63,7 @@ def test_unicode():
         (-2147483649, 'int64'),
         (1.5, 'double'),
         ('foo', 'string'),
+        (b'fooblob', 'binary'),
         ([1, 2, 3], 'array<int8>'),
     ],
 )
