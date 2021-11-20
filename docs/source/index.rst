@@ -105,6 +105,9 @@ SQL engine support needing code contributors:
 - `Presto <https://prestosql.io/>`_
 - `Hive <https://hive.apache.org/>`_
 
+Learning Resources
+------------------
+
 .. toctree::
    :maxdepth: 1
 
@@ -113,9 +116,6 @@ SQL engine support needing code contributors:
    api
    backends/index
    release/index
-
-Learning Resources
-------------------
 
 We collect Jupyter notebooks for learning how to use ibis here:
 https://github.com/ibis-project/ibis/tree/master/docs/source/notebooks/tutorial.
