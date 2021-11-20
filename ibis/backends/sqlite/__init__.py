@@ -34,18 +34,22 @@ class Backend(BaseAlchemyBackend):
     _meta = None
 
     def __getstate__(self):
-        return dict(database_class=self.database_class,
-                compiler=self.compiler,
-                database_name=self.database_name,
-                _path=self._path,
-                _create=self._create)
+        return dict(
+            database_class=self.database_class,
+            compiler=self.compiler,
+            database_name=self.database_name,
+            _path=self._path,
+            _create=self._create,
+        )
 
     @property
     def con(self):
         if self._con is None:
             self._con = sqlalchemy.create_engine("sqlite://")
             if self._path is not None:
-                self.attach(self.database_name, self._path, create=self._create)
+                self.attach(
+                    self.database_name, self._path, create=self._create
+                )
             udf.register_all(self._con)
 
             self._inspector = sqlalchemy.inspect(self._con)
