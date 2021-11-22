@@ -4,7 +4,6 @@ import os
 from collections import OrderedDict
 from datetime import date, datetime, time
 from operator import methodcaller
-import uuid
 
 import numpy as np
 import pandas as pd
