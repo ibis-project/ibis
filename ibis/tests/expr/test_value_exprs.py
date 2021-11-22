@@ -1,10 +1,10 @@
 import functools
 import operator
 import os
+import uuid
 from collections import OrderedDict
 from datetime import date, datetime, time
 from operator import methodcaller
-import uuid
 
 import numpy as np
 import pandas as pd
