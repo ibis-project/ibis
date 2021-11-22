@@ -1,3 +1,7 @@
+import uuid
+
+import pytest
+
 import ibis
 from ibis.expr import datatypes
 from ibis.expr.operations import Literal
@@ -60,3 +64,31 @@ def test_pickle_literal_interval():
     a = ibis.interval(seconds=1).op()
 
     assert_pickle_roundtrip(a)
+
+
+@pytest.mark.parametrize(
+    ("userinput", "literal_type", "expected_type"),
+    [
+        pytest.param(uuid.uuid1(), "uuid", uuid.UUID, id="uuid1_as_uuid"),
+        pytest.param(uuid.uuid4(), "uuid", uuid.UUID, id="uuid4_as_uuid"),
+        pytest.param(
+            str(uuid.uuid1()), "uuid", uuid.UUID, id="str_uuid1_as_uuid"
+        ),
+        pytest.param(
+            str(uuid.uuid4()), "uuid", uuid.UUID, id="str_uuid4_as_uuid"
+        ),
+        pytest.param(uuid.uuid1(), "string", str, id="uuid1_as_str"),
+        pytest.param(uuid.uuid4(), "string", str, id="uuid4_as_str"),
+        pytest.param(str(uuid.uuid1()), "string", str, id="str_uuid1_as_str"),
+        pytest.param(str(uuid.uuid4()), "string", str, id="str_uuid4_as_str"),
+        pytest.param(0, "float", float, id="int_zero_as_float"),
+        pytest.param(0.0, "float", float, id="float_zero_as_float"),
+        pytest.param(42, "float", float, id="int_as_float"),
+        pytest.param(42.0, "float", float, id="float_as_float"),
+        pytest.param(42.0, None, float, id="float_implicit_type_as_float"),
+    ],
+)
+def test_normalized_underlying_value(userinput, literal_type, expected_type):
+    a = ibis.literal(userinput, type=literal_type)
+
+    assert isinstance(a.op().value, expected_type)

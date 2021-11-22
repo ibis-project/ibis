@@ -1,3 +1,5 @@
+import uuid
+
 import pytest
 from pytest import param
 
@@ -285,7 +287,7 @@ def test_special_strings(backend, con, alltypes, data, data_type):
     lit = ibis.literal(data, type=data_type).name('tmp')
     expr = alltypes[[alltypes.id, lit]].head(1)
     df = expr.execute()
-    assert df['tmp'].iloc[0] == data
+    assert df['tmp'].iloc[0] == uuid.UUID(data)
 
 
 @pytest.mark.xfail_backends(['clickhouse'])  # #2642
