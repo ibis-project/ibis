@@ -2,6 +2,7 @@ import datetime
 import enum
 import functools
 import itertools
+import uuid
 
 import numpy as np
 import pandas as pd
@@ -247,6 +248,7 @@ class Literal(ValueOp):
                         str,
                         tuple,
                         type(None),
+                        uuid.UUID,
                     )
                 ),
                 rlz.is_computable_input,

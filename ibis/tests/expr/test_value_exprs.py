@@ -4,6 +4,7 @@ import os
 from collections import OrderedDict
 from datetime import date, datetime, time
 from operator import methodcaller
+import uuid
 
 import numpy as np
 import pandas as pd
@@ -118,6 +119,7 @@ multipolygon1 = [polygon1, polygon2]
         (tuple(multipoint), 'multipoint'),
         (list(multipolygon1), 'multipolygon'),
         (tuple(multipolygon1), 'multipolygon'),
+        (uuid.uuid4(), 'uuid'),
     ],
 )
 def test_literal_with_explicit_type(value, expected_type):
