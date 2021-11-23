@@ -86,7 +86,6 @@ class Backend(BaseAlchemyBackend):
 
         udf.register_all(self.con)
 
-
     def list_tables(self, like=None, database=None):
         if database is None:
             database = self.current_database
