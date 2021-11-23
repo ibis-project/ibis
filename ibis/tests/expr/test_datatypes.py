@@ -497,6 +497,8 @@ def test_infer_dtype(value, expected_dtype):
     ('source', 'target'),
     [
         (dt.any, dt.string),
+        (dt.string, dt.uuid),
+        (dt.uuid, dt.string),
         (dt.null, dt.date),
         (dt.null, dt.any),
         (dt.int8, dt.int64),
