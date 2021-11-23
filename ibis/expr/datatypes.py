@@ -802,7 +802,7 @@ class MultiPolygon(GeoSpatial):
     __slots__ = ()
 
 
-class UUID(String):
+class UUID(DataType):
     """A universally unique identifier (UUID) is a 128-bit number used to
     identify information in computer systems.
     """
@@ -1451,6 +1451,8 @@ def can_cast_geospatial(source, target, **kwargs):
 
 
 @castable.register(UUID, UUID)
+@castable.register(UUID, String)
+@castable.register(String, UUID)
 @castable.register(MACADDR, MACADDR)
 @castable.register(INET, INET)
 def can_cast_special_string(source, target, **kwargs):
@@ -1569,10 +1571,3 @@ def _str_to_uuid(typ: UUID, value: str) -> _uuid.UUID:
 @_normalize.register(String, _uuid.UUID)
 def _uuid_to_str(typ: String, value: _uuid.UUID) -> str:
     return str(value)
-
-
-@_normalize.register(UUID, _uuid.UUID)
-def _uuid_to_uuid(typ: UUID, value: _uuid.UUID) -> _uuid.UUID:
-    """Need this to override _uuid_to_str since dt.UUID is a child of
-    dt.String"""
-    return value
