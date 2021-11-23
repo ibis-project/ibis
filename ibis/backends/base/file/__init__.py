@@ -56,7 +56,7 @@ class BaseFileBackend(BaseBackend):
 
     database_class = FileDatabase
 
-    def connect(self, path):
+    def do_connect(self, path):
         """Create a Client for use with Ibis
 
         Parameters
@@ -67,10 +67,8 @@ class BaseFileBackend(BaseBackend):
         -------
         Backend
         """
-        new_backend = self.__class__()
-        new_backend.path = new_backend.root = Path(path)
-        new_backend.dictionary = {}
-        return new_backend
+        self.path = self.root = Path(path)
+        self.dictionary = {}
 
     @property
     def version(self) -> str:

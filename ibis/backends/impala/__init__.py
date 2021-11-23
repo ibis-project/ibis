@@ -170,8 +170,8 @@ class Backend(BaseSQLBackend):
     def hdfs_connect(self, *args, **kwargs):
         return hdfs_connect(*args, **kwargs)
 
-    def connect(
-        self,
+    def do_connect(
+        new_backend,
         host='localhost',
         port=21050,
         database='default',
@@ -240,7 +240,6 @@ class Backend(BaseSQLBackend):
         """
         import hdfs
 
-        new_backend = self.__class__()
         new_backend._kudu = None
         new_backend._temp_objects = set()
 
@@ -266,8 +265,6 @@ class Backend(BaseSQLBackend):
         new_backend.con = ImpalaConnection(pool_size=pool_size, **params)
 
         new_backend._ensure_temp_db_exists()
-
-        return new_backend
 
     @property
     def version(self):

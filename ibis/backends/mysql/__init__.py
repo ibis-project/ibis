@@ -14,7 +14,7 @@ class Backend(BaseAlchemyBackend):
     name = 'mysql'
     compiler = MySQLCompiler
 
-    def connect(
+    def do_connect(
         self,
         host='localhost',
         user=None,
@@ -96,10 +96,8 @@ class Backend(BaseAlchemyBackend):
             driver=f'mysql+{driver}',
         )
 
-        new_backend = super().connect(sqlalchemy.create_engine(alchemy_url))
-        new_backend.database_name = alchemy_url.database
-
-        return new_backend
+        self.database_name = alchemy_url.database
+        super().do_connect(self, sqlalchemy.create_engine(alchemy_url))
 
     @contextlib.contextmanager
     def begin(self):

@@ -357,7 +357,7 @@ class MockBackend(BaseSQLBackend):
     def __init__(self):
         self.executed_queries = []
 
-    def connect(self):
+    def do_connect(self):
         pass
 
     def list_tables(self):

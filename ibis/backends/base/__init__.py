@@ -135,6 +135,8 @@ class BaseBackend(abc.ABC):
 
     database_class = Database
     table_class: type[ops.DatabaseTable] = ops.DatabaseTable
+    con_str = None
+    con_options = None
 
     @property
     @abc.abstractmethod
@@ -143,10 +145,20 @@ class BaseBackend(abc.ABC):
         Name of the backend, for example 'sqlite'.
         """
 
-    @abc.abstractmethod
-    def connect(connection_string, **options):
+    def connect(self, connection_string, **options):
         """
-        Connect to the underlying database and return a client object.
+        Return client object, ready to connect (via do_connect()) to given *connection_string* with given *options*.
+        """
+        new_backend = self.__class__()
+        new_backend.con_str = connection_string
+        new_backend.con_options = options
+        new_backend.do_connect(connection_string, **options)
+        return new_backend
+
+    @abc.abstractmethod
+    def do_connect(self, connection_string, **options):
+        """
+        Connect to underlying database and set internal state.
         """
 
     def database(self, name: str = None) -> Database:

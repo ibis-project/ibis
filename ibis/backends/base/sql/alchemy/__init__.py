@@ -101,13 +101,11 @@ class BaseAlchemyBackend(BaseSQLBackend):
             database=database,
         )
 
-    def connect(self, con: sqlalchemy.engine.Engine):
-        new_backend = self.__class__()
-        new_backend.con = con
-        new_backend.meta = None
-        new_backend._inspector = None
-        new_backend._schemas: Dict[str, sch.Schema] = {}
-        return new_backend
+    def do_connect(self, con: sqlalchemy.engine.Engine):
+        self.con = con
+        self._inspector = sqlalchemy.inspect(self.con)
+        self.meta = sqlalchemy.MetaData(bind=self.con)
+        self._schemas: Dict[str, sch.Schema] = {}
 
     @property
     def version(self):

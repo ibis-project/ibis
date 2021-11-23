@@ -38,21 +38,14 @@ class Backend(BaseAlchemyBackend):
             database_class=self.database_class,
             compiler=self.compiler,
             database_name=self.database_name,
-            _path=self._path,
-            _create=self._create,
+            con_str=self.con_str,
+            con_options=self.con_options,
         )
 
     @property
     def con(self):
         if self._con is None:
-            self._con = sqlalchemy.create_engine("sqlite://")
-            if self._path is not None:
-                self.attach(
-                    self.database_name, self._path, create=self._create
-                )
-            udf.register_all(self._con)
-
-            self._inspector = sqlalchemy.inspect(self._con)
+            self.do_connect(self.con_str, **self.con_options)
         return self._con
 
     @con.setter
@@ -69,7 +62,7 @@ class Backend(BaseAlchemyBackend):
     def meta(self, v):
         self._meta = v
 
-    def connect(self, path=None, create=False):
+    def do_connect(self, path=None, create=False):
 
         """
         Create an Ibis client connected to a SQLite database.
@@ -85,12 +78,14 @@ class Backend(BaseAlchemyBackend):
         create : boolean, default False
             If file does not exist, create it
         """
-        new_backend = super().connect(None)
-        new_backend.database_name = "base"
-        new_backend._path = path
-        new_backend._create = create
+        self.database_name = "base"
 
-        return new_backend
+        super().do_connect(sqlalchemy.create_engine("sqlite://"))
+        if path is not None:
+            self.attach(self.database_name, path, create=create)
+
+        udf.register_all(self.con)
+
 
     def list_tables(self, like=None, database=None):
         if database is None:

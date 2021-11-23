@@ -27,11 +27,11 @@ class Backend(BasePandasBackend):
     database_class = DaskDatabase
     table_class = DaskTable
 
-    def connect(self, dictionary):
+    def do_connect(self, dictionary):
         # register dispatchers
         from . import udf  # noqa: F401
 
-        return super().connect(dictionary)
+        super().do_connect(dictionary)
 
     @property
     def version(self):
