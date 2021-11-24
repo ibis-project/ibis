@@ -145,14 +145,15 @@ class BaseBackend(abc.ABC):
         Name of the backend, for example 'sqlite'.
         """
 
-    def connect(self, connection_string, **options):
+    def connect(self, *args, **options):
         """
-        Return client object, ready to connect (via do_connect()) to given *connection_string* with given *options*.
+        Return client object, ready to connect (via do_connect())
+            to given *connection_string* with given *options*.
         """
         new_backend = self.__class__()
-        new_backend.con_str = connection_string
+        new_backend.con_args = args
         new_backend.con_options = options
-        new_backend.do_connect(connection_string, **options)
+        new_backend.do_connect(*args, **options)
         return new_backend
 
     @abc.abstractmethod

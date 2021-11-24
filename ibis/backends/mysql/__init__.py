@@ -97,7 +97,7 @@ class Backend(BaseAlchemyBackend):
         )
 
         self.database_name = alchemy_url.database
-        super().do_connect(self, sqlalchemy.create_engine(alchemy_url))
+        super().do_connect(sqlalchemy.create_engine(alchemy_url))
 
     @contextlib.contextmanager
     def begin(self):

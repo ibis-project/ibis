@@ -38,14 +38,14 @@ class Backend(BaseAlchemyBackend):
             database_class=self.database_class,
             compiler=self.compiler,
             database_name=self.database_name,
-            con_str=self.con_str,
+            con_args=self.con_args,
             con_options=self.con_options,
         )
 
     @property
     def con(self):
         if self._con is None:
-            self.do_connect(self.con_str, **self.con_options)
+            self.do_connect(*self.con_args, **self.con_options)
         return self._con
 
     @con.setter
