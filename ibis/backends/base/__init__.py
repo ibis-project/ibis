@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 import re
 import warnings
-from typing import Any, Callable
+from typing import Any, Callable, List, Dict, Tuple
 
 import ibis
 import ibis.expr.operations as ops
@@ -135,8 +135,15 @@ class BaseBackend(abc.ABC):
 
     database_class = Database
     table_class: type[ops.DatabaseTable] = ops.DatabaseTable
-    con_str = None
-    con_options = None
+    _con_args: Tuple[Any]
+    _con_kwargs: Dict[str, Any]
+
+    def __getstate__(self):
+        return dict(
+            database_class=self.database_class,
+            table_class=self.table_class,
+            _con_args=self._con_args,
+            _con_kwargs=self._con_kwargs)
 
     @property
     @abc.abstractmethod
@@ -145,21 +152,27 @@ class BaseBackend(abc.ABC):
         Name of the backend, for example 'sqlite'.
         """
 
-    def connect(self, *args, **options):
+    def connect(self, *args, **kwargs):
         """
-        Return client object, ready to connect (via do_connect())
-            to given *connection_string* with given *options*.
+        Return new client object with saved args/kwargs, having called
+        .reconnect() on it.
         """
         new_backend = self.__class__()
-        new_backend.con_args = args
-        new_backend.con_options = options
-        new_backend.do_connect(*args, **options)
+        new_backend._con_args = args
+        new_backend._con_kwargs = kwargs
+        new_backend.reconnect()
         return new_backend
 
-    @abc.abstractmethod
-    def do_connect(self, connection_string, **options):
+    def reconnect(self):
         """
-        Connect to underlying database and set internal state.
+        Reconnect to the target database already configured with connect().
+        """
+        self.do_connect(*self._con_args, **self._con_kwargs)
+
+    @abc.abstractmethod
+    def do_connect(self, *args, **kwargs):
+        """
+        Connect to database specified by args and kwargs.
         """
 
     def database(self, name: str = None) -> Database:

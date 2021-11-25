@@ -101,7 +101,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
             database=database,
         )
 
-    def do_connect(self, con: sqlalchemy.engine.Engine):
+    def do_connect(self, con):
         self.con = con
         self._inspector = sqlalchemy.inspect(self.con)
         self.meta = sqlalchemy.MetaData(bind=self.con)

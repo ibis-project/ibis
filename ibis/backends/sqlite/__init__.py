@@ -30,40 +30,38 @@ class Backend(BaseAlchemyBackend):
     # if there is technical debt that makes this required
     database_class = Database
     compiler = SQLiteCompiler
-    _con = None
-    _meta = None
+    _con: sqlalchemy.engine.Engine = None
+    _meta: sqlalchemy.MetaData = None
 
-    def __getstate__(self):
-        return dict(
-            database_class=self.database_class,
+    def __getstate__(self) -> dict:
+        r = super().__getstate__()
+        r.update(dict(
             compiler=self.compiler,
             database_name=self.database_name,
-            con_args=self.con_args,
-            con_options=self.con_options,
-        )
+        ))
+        return r
 
     @property
-    def con(self):
+    def con(self) -> sqlalchemy.engine.Engine:
         if self._con is None:
-            self.do_connect(*self.con_args, **self.con_options)
+            self.reconnect()
         return self._con
 
     @con.setter
-    def con(self, v):
+    def con(self, v: Optional[sqlalchemy.engine.Engine]):
         self._con = v
 
     @property
-    def meta(self):
+    def meta(self) -> sqlalchemy.MetaData:
         if self._meta is None:
-            self._meta = sqlalchemy.MetaData(bind=self.con)
+            self.reconnect()
         return self._meta
 
     @meta.setter
-    def meta(self, v):
+    def meta(self, v: sqlalchemy.MetaData):
         self._meta = v
 
     def do_connect(self, path=None, create=False):
-
         """
         Create an Ibis client connected to a SQLite database.
 
@@ -85,6 +83,8 @@ class Backend(BaseAlchemyBackend):
             self.attach(self.database_name, path, create=create)
 
         udf.register_all(self.con)
+
+        self._meta = sqlalchemy.MetaData(bind=self.con)
 
     def list_tables(self, like=None, database=None):
         if database is None:
