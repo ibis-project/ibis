@@ -10,6 +10,7 @@ import itertools
 import numbers
 import re
 import typing
+import uuid as _uuid
 from typing import Iterator, Mapping, NamedTuple, Sequence, TypeVar
 
 import pandas as pd
@@ -1528,3 +1529,50 @@ def same_kind_left_null(_: Null, b: DataType) -> bool:
 def same_kind_both_null(a: Null, b: Null) -> bool:
     """Return ``True``."""
     return True
+
+
+_normalize = Dispatcher(
+    "_normalize",
+    doc="""\
+Ensure that the Python type underlying an
+:class:`~ibis.expr.operations.generic.Literal` resolves to a single acceptable
+type regardless of the input value.
+
+Parameters
+----------
+typ : DataType
+value :
+
+Returns
+-------
+value
+    the input ``value`` normalized to the expected type
+""",
+)
+
+
+@_normalize.register(DataType, object)
+def _normalize_default(typ: DataType, value: object) -> object:
+    return value
+
+
+@_normalize.register(Floating, (int, builtins.float))
+def _float(typ: Floating, value: builtins.float) -> builtins.float:
+    return builtins.float(value)
+
+
+@_normalize.register(UUID, str)
+def _str_to_uuid(typ: UUID, value: str) -> _uuid.UUID:
+    return _uuid.UUID(value)
+
+
+@_normalize.register(String, _uuid.UUID)
+def _uuid_to_str(typ: String, value: _uuid.UUID) -> str:
+    return str(value)
+
+
+@_normalize.register(UUID, _uuid.UUID)
+def _uuid_to_uuid(typ: UUID, value: _uuid.UUID) -> _uuid.UUID:
+    """Need this to override _uuid_to_str since dt.UUID is a child of
+    dt.String"""
+    return value

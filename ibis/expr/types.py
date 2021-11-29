@@ -1239,6 +1239,7 @@ def literal(value, type=None):
     if dtype is dt.null:
         return null().cast(dtype)
     else:
+        value = dt._normalize(dtype, value)
         return ops.Literal(value, dtype=dtype).to_expr()
 
 
