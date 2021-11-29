@@ -28,6 +28,7 @@ jobs:
 
       - name: install python
         uses: actions/setup-python@v2
+        id: install_python
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -38,7 +39,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.cache/pypoetry
-          key: check-setup-py-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+          key: check-setup-py-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}
 
       - name: install base ibis env
         run: poetry install
@@ -70,6 +71,7 @@ jobs:
 
       - name: install python
         uses: actions/setup-python@v2
+        id: install_python
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -86,7 +88,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.cache/pip
-          key: check-setuptools-install-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
+          key: check-setuptools-install-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('requirements.txt') }}
 
       - name: install using requirements.txt
         run: pip install -r requirements.txt

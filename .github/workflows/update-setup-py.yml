@@ -25,6 +25,7 @@ jobs:
 
       - name: install python
         uses: actions/setup-python@v2
+        id: install_python
         with:
           python-version: "3.x"
 
@@ -35,7 +36,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.cache/pypoetry
-          key: update-setup-py-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+          key: update-setup-py-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}
 
       - name: generate setup.py
         env:

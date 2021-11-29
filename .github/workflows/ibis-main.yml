@@ -34,6 +34,7 @@ jobs:
 
       - name: install python
         uses: actions/setup-python@v2
+        id: install_python
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -45,14 +46,14 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-latest' }}
         with:
           path: ~/.cache/pypoetry
-          key: no-backends-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+          key: no-backends-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}
 
       - name: cache dependencies windows
         uses: actions/cache@v2
         if: ${{ matrix.os == 'windows-latest' }}
         with:
           path: ~\AppData\Local\pypoetry
-          key: no-backends-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+          key: no-backends-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}
 
       - name: install ibis
         run: poetry install
@@ -82,6 +83,7 @@ jobs:
 
       - name: install python
         uses: actions/setup-python@v2
+        id: install_python
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -95,7 +97,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.cache/pypoetry
-          key: benchmarks-impala-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+          key: benchmarks-impala-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}
 
       - name: install ibis
         run: poetry install --extras impala
@@ -124,6 +126,7 @@ jobs:
 
       - name: install python
         uses: actions/setup-python@v2
+        id: install_python
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -134,7 +137,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.cache/pypoetry
-          key: docs-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+          key: docs-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}
 
       - name: install ibis
         run: poetry install --extras all

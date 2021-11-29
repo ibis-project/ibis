@@ -61,6 +61,7 @@ jobs:
 
       - name: install python
         uses: actions/setup-python@v2
+        id: install_python
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -72,14 +73,14 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-latest' && (matrix.backend.name != 'dask' || matrix.backend.deps == null) }}
         with:
           path: ~/.cache/pypoetry
-          key: ${{ matrix.backend.name }}-${{ join(matrix.backend.deps, '-') }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+          key: ${{ matrix.backend.name }}-${{ join(matrix.backend.deps, '-') }}-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}
 
       - name: cache dependencies windows
         uses: actions/cache@v2
         if: ${{ matrix.os == 'windows-latest' && (matrix.backend.name != 'dask' || matrix.backend.deps == null) }}
         with:
           path: ~\AppData\Local\pypoetry
-          key: ${{ matrix.backend.name }}-${{ join(matrix.backend.deps, '-') }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+          key: ${{ matrix.backend.name }}-${{ join(matrix.backend.deps, '-') }}-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}
 
       - name: install minimum dask version
         if: ${{ matrix.backend.name == 'dask' && matrix.backend.deps != null }}
@@ -135,6 +136,7 @@ jobs:
 
       - name: install python
         uses: actions/setup-python@v2
+        id: install_python
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -149,7 +151,7 @@ jobs:
         if: ${{ toJSON(matrix.deps) == '[]' }}
         with:
           path: ~/.cache/pypoetry
-          key: postgres-geospatial-${{ join(matrix.deps, '-') }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+          key: postgres-geospatial-${{ join(matrix.deps, '-') }}-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}
 
       - name: install minimum postgres dependencies
         run: |
@@ -209,6 +211,7 @@ jobs:
 
       - name: install python
         uses: actions/setup-python@v2
+        id: install_python
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -225,7 +228,7 @@ jobs:
         if: ${{ matrix.pyspark.version == 'latest' }}
         with:
           path: ~/.cache/pypoetry
-          key: ${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}-pyspark-${{ matrix.pyspark.version }}
+          key: ${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}-pyspark-${{ matrix.pyspark.version }}
 
       - name: pin pyspark
         if: ${{ matrix.pyspark.version != 'latest' }}
@@ -316,6 +319,7 @@ jobs:
 
       - name: install python
         uses: actions/setup-python@v2
+        id: install_python
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -329,7 +333,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.cache/pypoetry
-          key: impala-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+          key: impala-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}
 
       - name: install ibis
         run: poetry install --extras impala
@@ -388,6 +392,7 @@ jobs:
 
       - name: install python
         uses: actions/setup-python@v2
+        id: install_python
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -398,7 +403,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.cache/pypoetry
-          key: ${{ matrix.backend.name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+          key: ${{ matrix.backend.name }}-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}
 
       - name: install ibis
         run: poetry install --extras ${{ matrix.backend.name }}
