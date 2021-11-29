@@ -6,7 +6,6 @@ import uuid
 
 import numpy as np
 import pandas as pd
-from multipledispatch import Dispatcher
 from public import public
 
 from ...common import exceptions as com
@@ -222,36 +221,6 @@ class Least(CoalesceLike):
     pass
 
 
-_normalize = Dispatcher("_normalize")
-
-
-@_normalize.register(dt.DataType, object)
-def default(type: dt.DataType, value: object) -> object:
-    return value
-
-
-@_normalize.register(dt.Floating, (int, float))
-def _float(type: dt.Floating, value: float) -> float:
-    return float(value)
-
-
-@_normalize.register(dt.UUID, str)
-def _str_to_uuid(type: dt.UUID, value: str) -> uuid.UUID:
-    return uuid.UUID(value)
-
-
-@_normalize.register(dt.String, uuid.UUID)
-def _uuid_to_str(type: dt.String, value: uuid.UUID) -> str:
-    return str(value)
-
-
-@_normalize.register(dt.UUID, uuid.UUID)
-def _uuid_to_uuid(type: dt.UUID, value: uuid.UUID) -> uuid.UUID:
-    """Need this to override _uuid_to_str since dt.UUID is a child of
-    dt.String"""
-    return value
-
-
 @public
 class Literal(ValueOp):
     value = Arg(
@@ -287,9 +256,6 @@ class Literal(ValueOp):
         )
     )
     dtype = Arg(rlz.datatype)
-
-    def _validate(self):
-        self.value = _normalize(self.dtype, self.value)
 
     def __repr__(self):
         return '{}({})'.format(
