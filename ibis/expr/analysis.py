@@ -989,7 +989,7 @@ class ExprValidator:
 
     def _error_message(self, expr):
         return (
-            'The expression %s does not fully originate from '
+            'The expression "%s" does not fully originate from '
             'dependencies of the table expression.' % repr(expr)
         )
 
