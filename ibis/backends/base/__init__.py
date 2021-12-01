@@ -145,12 +145,29 @@ class BaseBackend(abc.ABC):
             _con_args=self._con_args,
             _con_kwargs=self._con_kwargs)
 
+    def __hash__(self):
+        return hash(self.datasource)
+
+    def __eq__(self, other):
+        return self.datasource == other.datasource
+
     @property
     @abc.abstractmethod
     def name(self) -> str:
         """
         Name of the backend, for example 'sqlite'.
         """
+
+    @property
+    def datasource(self) -> str:
+        """
+        Identity of the database.  Multiple connections to the same
+        database will have the same datasource.  Default implementation
+        assumes connect
+        """
+        return '_'.join(str(x) for x in (self.table_class,
+                                         self._con_args,
+                                         self._con_kwargs))
 
     def connect(self, *args, **kwargs):
         """
