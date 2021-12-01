@@ -16,6 +16,7 @@ import ibis.expr.types as ir
 from ibis.common.exceptions import ExpressionError, RelationError
 from ibis.expr.types import ColumnExpr, TableExpr
 from ibis.tests.util import assert_equal, assert_pickle_roundtrip
+from ibis.tests.expr.mocks import MockBackend, MockAlchemyBackend
 
 
 @pytest.fixture
@@ -1404,3 +1405,22 @@ def test_mutate_chain():
     assert isinstance(a.op(), ops.IfNull)
     assert isinstance(b.op(), ops.TableColumn)
     assert isinstance(b.op().table.op().selections[1].op(), ops.IfNull)
+
+
+def test_multiple_dbcon():
+    """
+    Expr from multiple connections to same DB should be compatible.
+    """
+    con1 = MockBackend()
+    con2 = MockBackend()
+
+    con1.table('alltypes').union(con2.table('alltypes')).execute()
+
+
+@pytest.mark.xfail(raises=RelationError,
+                   reason='Expr from different DB should fail #64')
+def test_multiple_db():
+    con1 = MockBackend()
+    con2 = MockAlchemyBackend()
+
+    con1.table('alltypes').union(con2.table('alltypes')).execute()
