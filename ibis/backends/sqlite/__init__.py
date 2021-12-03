@@ -35,10 +35,12 @@ class Backend(BaseAlchemyBackend):
 
     def __getstate__(self) -> dict:
         r = super().__getstate__()
-        r.update(dict(
-            compiler=self.compiler,
-            database_name=self.database_name,
-        ))
+        r.update(
+            dict(
+                compiler=self.compiler,
+                database_name=self.database_name,
+            )
+        )
         return r
 
     @property

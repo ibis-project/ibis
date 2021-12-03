@@ -2,7 +2,7 @@ import itertools
 import os
 import warnings
 import webbrowser
-from typing import TYPE_CHECKING, Optional, Dict
+from typing import TYPE_CHECKING, Dict, Optional
 
 import numpy as np
 

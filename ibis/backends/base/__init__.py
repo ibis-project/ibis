@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 import re
 import warnings
-from typing import Any, Callable, List, Dict, Tuple
+from typing import Any, Callable, Dict, List, Tuple
 
 import ibis
 import ibis.expr.operations as ops
@@ -135,15 +135,16 @@ class BaseBackend(abc.ABC):
 
     database_class = Database
     table_class: type[ops.DatabaseTable] = ops.DatabaseTable
-    _con_args: Tuple[Any]
-    _con_kwargs: Dict[str, Any]
+    _con_args: tuple[Any]
+    _con_kwargs: dict[str, Any]
 
     def __getstate__(self):
         return dict(
             database_class=self.database_class,
             table_class=self.table_class,
             _con_args=self._con_args,
-            _con_kwargs=self._con_kwargs)
+            _con_kwargs=self._con_kwargs,
+        )
 
     def __hash__(self):
         return hash(self.datasource)
@@ -165,9 +166,10 @@ class BaseBackend(abc.ABC):
         database will have the same datasource.  Default implementation
         assumes connect
         """
-        return '_'.join(str(x) for x in (self.table_class,
-                                         self._con_args,
-                                         self._con_kwargs))
+        return '_'.join(
+            str(x)
+            for x in (self.table_class, self._con_args, self._con_kwargs)
+        )
 
     def connect(self, *args, **kwargs):
         """
