@@ -30,8 +30,11 @@ class Backend(BaseAlchemyBackend):
     # if there is technical debt that makes this required
     database_class = Database
     compiler = SQLiteCompiler
-    _con: sqlalchemy.engine.Engine = None
-    _meta: sqlalchemy.MetaData = None
+
+    def __init__(self):
+        super().__init__()
+        self._con: sqlalchemy.engine.Engine = None
+        self._meta: sqlalchemy.MetaData = None
 
     def __getstate__(self) -> dict:
         r = super().__getstate__()

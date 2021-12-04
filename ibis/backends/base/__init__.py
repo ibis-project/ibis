@@ -135,8 +135,10 @@ class BaseBackend(abc.ABC):
 
     database_class = Database
     table_class: type[ops.DatabaseTable] = ops.DatabaseTable
-    _con_args: tuple[Any]
-    _con_kwargs: dict[str, Any]
+
+    def __init__(self):
+        self._con_args: Tuple[Any] = tuple()
+        self._con_kwargs: Dict[str, Any] = dict()
 
     def __getstate__(self):
         return dict(
@@ -164,7 +166,7 @@ class BaseBackend(abc.ABC):
         """
         Identity of the database.  Multiple connections to the same
         database will have the same datasource.  Default implementation
-        assumes connect
+        assumes connection parameters uniquely specify the database.
         """
         return '_'.join(
             str(x)

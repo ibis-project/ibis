@@ -355,14 +355,11 @@ class MockBackend(BaseSQLBackend):
     current_database = 'mockdb'
 
     def __init__(self):
+        super().__init__()
         self.executed_queries = []
 
     def do_connect(self):
         pass
-
-    @property
-    def datasource(self):
-        return 'mockdb'
 
     def list_tables(self):
         return list(MOCK_TABLES)
@@ -402,10 +399,6 @@ class MockAlchemyBackend(MockBackend):
         super().__init__()
         sa = pytest.importorskip('sqlalchemy')
         self.meta = sa.MetaData()
-
-    @property
-    def datasource(self):
-        return 'mocksqldb'
 
     def table(self, name, database=None):
         schema = self.get_schema(name)
