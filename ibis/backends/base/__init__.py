@@ -137,8 +137,8 @@ class BaseBackend(abc.ABC):
     table_class: type[ops.DatabaseTable] = ops.DatabaseTable
 
     def __init__(self):
-        self._con_args: Tuple[Any] = tuple()
-        self._con_kwargs: Dict[str, Any] = dict()
+        self._con_args: tuple[Any] = tuple()
+        self._con_kwargs: dict[str, Any] = dict()
 
     def __getstate__(self):
         return dict(
