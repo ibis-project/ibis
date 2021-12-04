@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 import re
 import warnings
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable
 
 import ibis
 import ibis.expr.operations as ops
