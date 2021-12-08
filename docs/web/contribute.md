@@ -10,10 +10,10 @@
 
 2. [Download](https://docs.conda.io/en/latest/miniconda.html) and install Miniconda
 3. Create a Conda environment suitable for ibis development:
-   
+
         :::sh
-        cd  ibis
-        conda env create
+        cd ibis
+        conda create -n ibis-dev -f conda-lock/<platform-64-pyver>.lock
 
 
 4. Activate the environment
