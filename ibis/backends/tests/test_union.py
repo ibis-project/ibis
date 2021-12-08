@@ -4,7 +4,7 @@ import pytest
 
 @pytest.mark.parametrize('distinct', [False, True])
 @pytest.mark.only_on_backends(
-    ['bigquery', 'impala', 'pandas', 'postrges', 'pyspark', 'dask']
+    ['bigquery', 'impala', 'pandas', 'postgres', 'pyspark', 'dask']
 )
 @pytest.mark.xfail_unsupported
 def test_union(backend, alltypes, df, distinct):
