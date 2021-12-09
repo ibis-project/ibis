@@ -42,7 +42,7 @@ class Backend(BaseAlchemyBackend):
             dict(
                 compiler=self.compiler,
                 database_name=self.database_name,
-                _con=None,   # clear connection on copy()
+                _con=None,  # clear connection on copy()
                 _meta=None,
             )
         )
