@@ -133,11 +133,7 @@ def test_multiple_backends(mocker):
 
 
 @pytest.mark.parametrize(
-    ('key', 'value'),
-    [
-        ("two.levels", True),
-        ("gt.two.levels", 55)
-    ]
+    ('key', 'value'), [("two.levels", True), ("gt.two.levels", 55)]
 )
 def test_getting_setting_config_options(key, value):
     ibis.config.register_option(key, "DEFAULT")
