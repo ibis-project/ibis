@@ -31,8 +31,8 @@ class Backend(BaseAlchemyBackend):
     database_class = Database
     compiler = SQLiteCompiler
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._con: sqlalchemy.engine.Engine = None
         self._meta: sqlalchemy.MetaData = None
 

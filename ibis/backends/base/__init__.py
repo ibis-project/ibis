@@ -136,9 +136,9 @@ class BaseBackend(abc.ABC):
     database_class = Database
     table_class: type[ops.DatabaseTable] = ops.DatabaseTable
 
-    def __init__(self):
-        self._con_args: tuple[Any] = tuple()
-        self._con_kwargs: dict[str, Any] = dict()
+    def __init__(self, *args, **kwargs):
+        self._con_args: tuple[Any] = args
+        self._con_kwargs: dict[str, Any] = kwargs
 
     def __getstate__(self):
         return dict(
@@ -178,9 +178,7 @@ class BaseBackend(abc.ABC):
         Return new client object with saved args/kwargs, having called
         .reconnect() on it.
         """
-        new_backend = self.__class__()
-        new_backend._con_args = args
-        new_backend._con_kwargs = kwargs
+        new_backend = self.__class__(*args, **kwargs)
         new_backend.reconnect()
         return new_backend
 
