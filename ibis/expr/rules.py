@@ -424,11 +424,40 @@ def table(arg, *, schema=None, **kwargs):
 
 @validator
 def column_from(name, column, *, this):
-    if not isinstance(column, (str, int)):
-        raise com.IbisTypeError(
-            f"value must be an int or str, got {type(column).__name__}"
-        )
-    return getattr(this, name)[column]
+    """A column from a named table.
+
+    This validator accepts columns passed as string, integer, or column
+    expression. In the case of a column expression, this validator
+    checks if the column in the table is equal to the column being
+    passed.
+    """
+    if not hasattr(this, name):
+        raise com.IbisTypeError(f"Could not get table {name} from {this}")
+    table = getattr(this, name)
+
+    if isinstance(column, (str, int)):
+        return table[column]
+    elif isinstance(column, ir.AnyColumn):
+        if not column.has_name():
+            raise com.IbisTypeError(f"Passed column {column} has no name")
+
+        maybe_column = column.get_name()
+        try:
+            if column.equals(table[maybe_column]):
+                return column
+            else:
+                raise com.IbisTypeError(
+                    f"Passed column is not a column in {table}"
+                )
+        except com.IbisError:
+            raise com.IbisTypeError(
+                f"Cannot get column {maybe_column} from {table}"
+            )
+
+    raise com.IbisTypeError(
+        "value must be an int or str or AnyColumn, got "
+        f"{type(column).__name__}"
+    )
 
 
 @validator
