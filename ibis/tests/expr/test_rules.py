@@ -14,6 +14,10 @@ table = ibis.table(
     [('int_col', 'int64'), ('string_col', 'string'), ('double_col', 'double')]
 )
 
+similar_table = ibis.table(
+    [('int_col', 'int64'), ('string_col', 'string'), ('double_col', 'double')]
+)
+
 
 @pytest.mark.parametrize(
     ('value', 'expected'),
@@ -288,6 +292,43 @@ def test_valid_column_or_scalar(validator, value, expected):
 def test_invalid_column_or_scalar(validator, value, expected):
     with pytest.raises(expected):
         validator(value)
+
+
+@pytest.mark.parametrize(
+    ('check_table', 'value', 'expected'),
+    [
+        (table, "int_col", table.int_col),
+        (table, table.int_col, table.int_col),
+    ],
+)
+def test_valid_column_from(check_table, value, expected):
+    class Test:
+        table = check_table
+
+    validator = rlz.column_from("table")
+    assert validator(value, this=Test()).equals(expected)
+
+
+@pytest.mark.parametrize(
+    ('check_table', 'validator', 'value'),
+    [
+        (table, rlz.column_from("not_table"), "int_col"),
+        (table, rlz.column_from("table"), "col_not_in_table"),
+        (
+            table,
+            rlz.column_from("table"),
+            similar_table.int_col,
+        ),
+    ],
+)
+def test_invalid_column_from(check_table, validator, value):
+    class Test:
+        table = check_table
+
+    test = Test()
+
+    with pytest.raises(IbisTypeError):
+        validator(value, this=test)
 
 
 @pytest.mark.parametrize(
