@@ -570,14 +570,10 @@ def _get_root(
     tuple
     """
     path = key.split('.')
-    if len(path) == 1:
-        return _global_config, path[0]
-    elif len(path) == 2:
-        return _global_config[path[0]], path[1]
-    else:
-        raise AssertionError(
-            f'Option keys cannot have more than 2 levels, found: {key}'
-        )
+    cursor = _global_config
+    for p in path[:-1]:
+        cursor = cursor[p]
+    return (cursor, path[-1])
 
 
 def _is_deprecated(key: str) -> bool:

@@ -130,3 +130,17 @@ def test_multiple_backends(mocker):
     msg = "3 packages found for backend 'foo'"
     with pytest.raises(RuntimeError, match=msg):
         ibis.foo
+
+
+@pytest.mark.parametrize(
+    ('key', 'value'),
+    [
+        ("two.levels", True),
+        ("gt.two.levels", 55)
+    ]
+)
+def test_getting_setting_config_options(key, value):
+    ibis.config.register_option(key, "DEFAULT")
+    assert ibis.config.get_option(key) == "DEFAULT"
+    ibis.config.set_option(key, value)
+    assert ibis.config.get_option(key) == value
