@@ -168,10 +168,10 @@ class BaseBackend(abc.ABC):
         database will have the same datasource.  Default implementation
         assumes connection parameters uniquely specify the database.
         """
-        return '_'.join(
-            str(x)
-            for x in (self.table_class, self._con_args, self._con_kwargs)
-        )
+        parts = [self.table_class.__name__]
+        parts.extend(self._con_args)
+        parts.extend(f'{k}={v}' for k, v in self._con_kwargs.items())
+        return '_'.join(map(str, parts))
 
     def connect(self, *args, **kwargs):
         """
