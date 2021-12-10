@@ -1,6 +1,5 @@
 import itertools
 import os
-import warnings
 import webbrowser
 from typing import TYPE_CHECKING, Dict, Optional
 
@@ -295,15 +294,11 @@ class Expr:
             self, limit=limit, timecontext=timecontext, params=params
         )
 
+    @util.deprecated(version='2.0', instead='compile & catch TranslationError')
     def verify(self):
         """
         Returns True if expression can be compiled to its attached client
         """
-        warnings.warn(
-            '`verify` is deprecated, use `compile` and capture the '
-            '`TranslationError` exception instead',
-            FutureWarning,
-        )
         try:
             self.compile()
         except Exception:

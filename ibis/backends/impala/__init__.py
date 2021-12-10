@@ -3,7 +3,6 @@ import contextlib
 import io
 import operator
 import re
-import warnings
 import weakref
 from posixpath import join as pjoin
 
@@ -371,16 +370,11 @@ class Backend(BaseSQLBackend):
         tuples = cur.fetchall()
         return list(map(operator.itemgetter(0), tuples))
 
+    @util.deprecated(version='2.0', instead='a new connection to database')
     def set_database(self, name):
         # XXX The parent `Client` has a generic method that calls this same
         # method in the backend. But for whatever reason calling this code from
         # that method doesn't seem to work. Maybe `con` is a copy?
-        warnings.warn(
-            '`set_database` is deprecated and will be removed in a future '
-            'version of Ibis. Create a new connection to the desired database '
-            'instead',
-            FutureWarning,
-        )
         self.con.set_database(name)
 
     @property
