@@ -1,5 +1,4 @@
 import abc
-import warnings
 from pathlib import Path
 
 import pandas as pd
@@ -8,6 +7,7 @@ import ibis
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend, Database
 from ibis.backends.pandas.core import execute_and_reset
+from ibis.util import warn_deprecated
 
 # Load options of pandas backend
 ibis.pandas
@@ -133,11 +133,10 @@ class BaseFileBackend(BaseBackend):
         if path is None:
             path = self.path
         else:
-            warnings.warn(
-                'The `path` argument of `list_databases` is deprecated and '
-                'will be removed in a future version of Ibis. Connect to a '
-                'different path with the `connect()` method instead.',
-                FutureWarning,
+            warn_deprecated(
+                'The `path` argument of `list_databases`',
+                version='2.0',
+                instead='`connect()` with a different path',
             )
         databases = ['.'] + self._list_databases_dirs(path)
         return self._filter_with_like(databases, like)

@@ -1,11 +1,10 @@
-import warnings
-
 import pandas as pd
 
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis.backends.base.file import BaseFileBackend
 from ibis.backends.pandas.core import execute, execute_node
+from ibis.util import warn_deprecated
 
 
 class HDFTable(ops.DatabaseTable):
@@ -50,11 +49,10 @@ class Backend(BaseFileBackend):
         if path is None:
             path = self.path
         else:
-            warnings.warn(
-                'The `path` argument of `list_databases` is deprecated and '
-                'will be removed in a future version of Ibis. Connect to a '
-                'different path with the `connect()` method instead.',
-                FutureWarning,
+            warn_deprecated(
+                'The `path` argument of `list_databases`',
+                version='2.0',
+                instead='`connect()` with a different path',
             )
         databases = self._list_databases_dirs_or_files(path)
         return self._filter_with_like(databases, like)

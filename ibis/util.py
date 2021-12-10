@@ -6,6 +6,7 @@ import logging
 import operator
 import os
 import types
+import warnings
 from numbers import Real
 from typing import (
     Any,
@@ -355,3 +356,32 @@ def flatten_iterable(iterable):
             yield from flatten_iterable(item)
         else:
             yield item
+
+
+def warn_deprecated(name, *, instead, version='', stacklevel=1):
+    """Warn about deprecated usage, including stacktrace, and
+    what to do instead."""
+    msg = f'"{name}" is deprecated'
+    if version:
+        msg += f' since v{version}'
+
+    msg += f'; use {instead}.'
+
+    warnings.warn(msg, FutureWarning, stacklevel=stacklevel + 1)
+
+
+def deprecated(*, instead, version=''):
+    """Decorate deprecated function to warn of usage, with stacktrace, and
+    what to do instead."""
+
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            warn_deprecated(
+                func.__name__, instead=instead, version=version, stacklevel=2
+            )
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator

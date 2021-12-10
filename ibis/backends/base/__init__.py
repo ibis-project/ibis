@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import abc
 import re
-import warnings
 from typing import Any, Callable
 
 from cached_property import cached_property
@@ -12,6 +11,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.common.exceptions import TranslationError
+from ibis.util import deprecated
 
 __all__ = ('BaseBackend', 'Database')
 
@@ -195,6 +195,7 @@ class BaseBackend(abc.ABC):
         Connect to database specified by args and kwargs.
         """
 
+    @deprecated(instead='equivalent methods in the backend')
     def database(self, name: str = None) -> Database:
         """
         Return a Database object for the `name` database.
@@ -209,12 +210,6 @@ class BaseBackend(abc.ABC):
         Database
             A database object for the specified database.
         """
-        warnings.warn(
-            'The `database` method and the `Database` object are '
-            'deprecated and will be removed in a future version of Ibis. '
-            'Use the equivalent methods in the backend instead.',
-            FutureWarning,
-        )
         return self.database_class(
             name=name or self.current_database, client=self
         )
@@ -251,18 +246,11 @@ class BaseBackend(abc.ABC):
             the `like` pattern if provided.
         """
 
+    @deprecated(version='2.0', instead='`name in client.list_databases()`')
     def exists_database(self, name: str) -> bool:
         """
         Return whether a database name exists in the current connection.
-
-        Deprecated in Ibis 2.0. Use `name in client.list_databases()` instead.
         """
-        warnings.warn(
-            '`client.exists_database(name)` is deprecated, and will be '
-            'removed in a future version of Ibis. Use '
-            '`name in client.list_databases()` instead.',
-            FutureWarning,
-        )
         return name in self.list_databases()
 
     @staticmethod
@@ -304,42 +292,25 @@ class BaseBackend(abc.ABC):
             The list of the table names that match the pattern `like`.
         """
 
+    @deprecated(version='2.0', instead='`name in client.list_tables()`')
     def exists_table(self, name: str, database: str = None) -> bool:
         """
         Return whether a table name exists in the database.
-
-        Deprecated in Ibis 2.0. Use `name in client.list_tables()` instead.
         """
-        warnings.warn(
-            '`client.exists_table(name)` is deprecated, and will be '
-            'removed in a future version of Ibis. Use '
-            '`name in client.list_tables()` instead.',
-            FutureWarning,
-        )
         return len(self.list_tables(like=name, database=database)) > 0
 
-    # @abc.abstractmethod
+    @deprecated(
+        version='2.0',
+        instead='change the current database before calling `.table()`',
+    )
     def table(self, name: str, database: str = None) -> ir.TableExpr:
         """ """
-        warnings.warn(
-            '`database` argument of `.table()` is deprecated and '
-            'will be removed in a future version of Ibis. Change '
-            'the current database before calling `.table()` instead',
-            FutureWarning,
-        )
 
+    @deprecated(version='2.0', instead='`.table(name).schema()`')
     def get_schema(self, table_name: str, database: str = None) -> sch.Schema:
         """
         Return the schema of `table_name`.
-
-        Deprecated in Ibis 2.0. Use `.table(name).schema()` instead.
         """
-        warnings.warn(
-            '`.get_schema(name)` is deprecated, and will be '
-            'removed in a future version of Ibis. Use '
-            '`.table(name).schema()` instead',
-            FutureWarning,
-        )
         return self.table(name=table_name, database=database).schema()
 
     @property
@@ -368,15 +339,14 @@ class BaseBackend(abc.ABC):
     def execute(self, expr: ir.Expr) -> Any:  # XXX DataFrame for now?
         """ """
 
+    @deprecated(
+        version='2.0',
+        instead='`compile` and capture `TranslationError` instead',
+    )
     def verify(self, expr: ir.Expr, params=None) -> bool:
         """
         Verify `expr` is an expression that can be compiled.
         """
-        warnings.warn(
-            '`verify` is deprecated, use `compile` and capture the '
-            '`TranslationError` exception instead',
-            FutureWarning,
-        )
         try:
             self.compile(expr, params=params)
             return True

@@ -1,5 +1,3 @@
-import warnings
-
 import pandas as pd
 import pyspark
 import pyspark as ps
@@ -8,6 +6,7 @@ from pyspark.sql.column import Column
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
 import ibis.expr.types as types
+import ibis.util as util
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.base.sql.ddl import (
     CreateDatabase,
@@ -103,13 +102,8 @@ class Backend(BaseSQLBackend):
     def version(self):
         return pyspark.__version__
 
+    @util.deprecated(version='2.0', instead='a new connection to database')
     def set_database(self, name):
-        warnings.warn(
-            '`set_database` is deprecated and will be removed in a future '
-            'version of Ibis. Create a new connection to the desired database '
-            'instead',
-            FutureWarning,
-        )
         self._catalog.setCurrentDatabase(name)
 
     @property

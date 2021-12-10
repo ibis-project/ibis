@@ -1,6 +1,5 @@
 import contextlib
 import getpass
-import warnings
 from typing import Dict, List, Optional, Union
 
 import pandas as pd
@@ -323,11 +322,8 @@ class BaseAlchemyBackend(BaseSQLBackend):
         """The name of the current database this client is connected to."""
         return self.database_name
 
+    @util.deprecated(version='2.0', instead='`list_databases`')
     def list_schemas(self):
-        warnings.warn(
-            '`list_schemas` is deprecated, use `list_databases` instead',
-            FutureWarning,
-        )
         return self.list_databases()
 
     def raw_sql(self, query: str, results=False):
