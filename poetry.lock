@@ -505,16 +505,16 @@ shapely = ">=1.6"
 
 [[package]]
 name = "graphviz"
-version = "0.16"
+version = "0.19.1"
 description = "Simple Python interface for Graphviz"
 category = "main"
 optional = true
-python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*"
+python-versions = ">=3.6"
 
 [package.extras]
 dev = ["tox (>=3)", "flake8", "pep8-naming", "wheel", "twine"]
-docs = ["sphinx (>=1.8)", "sphinx-rtd-theme"]
-test = ["mock (>=3)", "pytest (>=4)", "pytest-mock (>=2)", "pytest-cov"]
+docs = ["sphinx (>=1.8)", "sphinx-autodoc-typehints", "sphinx-rtd-theme"]
+test = ["pytest (>=6)", "pytest-mock (>=3)", "mock (>=4)", "pytest-cov", "coverage"]
 
 [[package]]
 name = "gssapi"
@@ -1949,7 +1949,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.1,<4"
-content-hash = "8e8118382381444022bc2863a0e033488141595c523e25dce965f22e85c2913a"
+content-hash = "83ab1a8a1ae2b03acb2299276555057fd7d2c3ff9de49062d0e3c6a53cd2f2db"
 
 [metadata.files]
 alabaster = [
@@ -2313,8 +2313,8 @@ geopandas = [
     {file = "geopandas-0.10.2.tar.gz", hash = "sha256:efbf47e70732e25c3727222019c92b39b2e0a66ebe4fe379fbe1aa43a2a871db"},
 ]
 graphviz = [
-    {file = "graphviz-0.16-py2.py3-none-any.whl", hash = "sha256:3cad5517c961090dfc679df6402a57de62d97703e2880a1a46147bb0dc1639eb"},
-    {file = "graphviz-0.16.zip", hash = "sha256:d2d25af1c199cad567ce4806f0449cb74eb30cf451fd7597251e1da099ac6e57"},
+    {file = "graphviz-0.19.1-py3-none-any.whl", hash = "sha256:f34088c08be2ec16279dfa9c3b4ff3d1453c5c67597a33e2819b000e18d4c546"},
+    {file = "graphviz-0.19.1.zip", hash = "sha256:09ed0cde452d015fe77c4845a210eb642f28d245f5bc250d4b97808cb8f49078"},
 ]
 gssapi = [
     {file = "gssapi-1.7.2-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:c02a563d7e8b4005ccfc1f6080eaf0805c052876397ea9fb03b7ee725bbbbccc"},
