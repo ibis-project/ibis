@@ -156,6 +156,7 @@ jobs:
           echo "ibis-project.org" > docbuild/CNAME
 
       - name: Generate a GitHub token
+        if: ${{ github.event_name == 'push' }}
         uses: tibdex/github-app-token@v1
         id: generate_token
         with:
