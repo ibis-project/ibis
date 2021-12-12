@@ -40,7 +40,7 @@ dask = { version = "^2021.2.0", optional = true, extras = [
 ] }
 geoalchemy2 = { version = ">=0.6,<0.10", optional = true }
 geopandas = { version = ">=0.6,<0.11", optional = true }
-graphviz = { version = "^0.16", optional = true }
+graphviz = { version = "^0.16 || ^0.19.0", optional = true }
 hdfs = { version = "^2", optional = true, extras = ["kerberos"] }
 impyla = { version = ">=0.17,<0.19", optional = true, extras = ["kerberos"] }
 psycopg2 = { version = "^2.7", optional = true }
