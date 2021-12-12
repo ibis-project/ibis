@@ -155,17 +155,24 @@ jobs:
           touch docbuild/.nojekyll
           echo "ibis-project.org" > docbuild/CNAME
 
+      - name: Generate a GitHub token
+        uses: tibdex/github-app-token@v1
+        id: generate_token
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - name: Push docs
         if: ${{ github.event_name == 'push' }}
         uses: cpina/github-action-push-to-another-repository@v1.3
         env:
-          API_TOKEN_GITHUB: ${{ secrets.IBIS_PROJECT_DOCS_PAT }}
+          API_TOKEN_GITHUB: ${{ steps.generate_token.outputs.token }}
         with:
           source-directory: docbuild
           target-branch: master
           destination-github-username: ibis-project
           destination-repository-name: ibis-project.org
-          user-email: '41898282+github-actions[bot]@users.noreply.github.com'
+          user-email: 'ibis-project-bot[bot]@users.noreply.github.com'
 
       - name: Clean up doc build
         run: rm -r docbuild
