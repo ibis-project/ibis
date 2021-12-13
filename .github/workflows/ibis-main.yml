@@ -164,21 +164,45 @@ jobs:
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
           repository: ibis-project/ibis-project.org
 
+      - name: checkout
+        uses: actions/checkout@v2
+        if: ${{ github.event_name == 'push' }}
+        with:
+          repository: ibis-project/ibis-project.org
+          token: ${{ steps.generate_token.outputs.token }}
+
+      - name: Configure git info
+        if: ${{ github.event_name == 'push' }}
+        run: |
+          set -euo pipefail
+
+          git config user.name 'ibis-project-bot[bot]'
+          git config user.email 'ibis-project-bot[bot]@users.noreply.github.com'
+
+      - name: Copy docbuild to checkout
+        if: ${{ github.event_name == 'push' }}
+        run: cp -fr docbuild/* ibis-project.org
+
+      - name: Commit docs
+        if: ${{ github.event_name == 'push' }}
+        run: |
+          set -euo pipefail
+
+          git -C ibis-project.org commit -am 'docs: ibis-project/ibis@{{ github.sha }}' || true
+
       - name: Push docs
         if: ${{ github.event_name == 'push' }}
-        uses: cpina/github-action-push-to-another-repository@v1.3
-        env:
-          API_TOKEN_GITHUB: ${{ steps.generate_token.outputs.token }}
-        with:
-          source-directory: docbuild
-          target-branch: master
-          destination-github-username: ibis-project
-          destination-repository-name: ibis-project.org
-          user-name: ibis-project-bot
-          user-email: '41898282+github-actions[bot]@users.noreply.github.com'
+        run: |
+          set -euo pipefail
+
+          git -C ibis-project.org push -f origin master
 
       - name: Clean up doc build
         run: rm -r docbuild
+
+      - name: Clean up checkout
+        if: ${{ github.event_name == 'push' }}
+        run: rm -r ibis-project.org
 
   conda_package:
     # TODO: fully automate the conda-forge PR submission on release
