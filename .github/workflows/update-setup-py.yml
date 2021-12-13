@@ -18,10 +18,17 @@ jobs:
     if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     steps:
+      - name: Generate a GitHub token
+        uses: tibdex/github-app-token@v1
+        id: generate_token
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - name: checkout
         uses: actions/checkout@v2
         with:
-          token: ${{ secrets.IBIS_UPDATE_SETUP_PY }}
+          token: ${{ steps.generate_token.outputs.token }}
 
       - name: install python
         uses: actions/setup-python@v2
@@ -51,16 +58,16 @@ jobs:
       - name: setup git credentials
         uses: OleksiyRudenko/gha-git-credentials@v2.1
         with:
-          token: ${{ secrets.IBIS_UPDATE_SETUP_PY }}
+          token: ${{ steps.generate_token.outputs.token }}
           global: true
-          name: github-actions[bot]
-          email: 41898282+github-actions[bot]@users.noreply.github.com
+          name: ibis-project-bot[bot]
+          email: ibis-project-bot[bot]@users.noreply.github.com
 
       - name: commit setup.py and push to pull request
         uses: EndBug/add-and-commit@v7
         with:
           add: setup.py
-          author_name: github-actions[bot]
-          author_email: 41898282+github-actions[bot]@users.noreply.github.com
+          author_name: ibis-project-bot[bot]
+          author_email: ibis-project-bot[bot]@users.noreply.github.com
           message: "chore(setup.py): update"
           push: true

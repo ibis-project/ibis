@@ -82,10 +82,17 @@ jobs:
     needs:
       - condalock
     steps:
+      - name: Generate a GitHub token
+        uses: tibdex/github-app-token@v1
+        id: generate_token
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - name: checkout
         uses: actions/checkout@v2
         with:
-          token: ${{ secrets.IBIS_CONDA_LOCK }}
+          token: ${{ steps.generate_token.outputs.token }}
           repository: ${{ github.event.client_payload.pull_request.head.repo.full_name }}
           ref: ${{ github.event.client_payload.pull_request.head.ref }}
 
