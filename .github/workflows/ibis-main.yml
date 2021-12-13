@@ -162,6 +162,7 @@ jobs:
         with:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
+          repository: ibis-project/ibis-project.org
 
       - name: Push docs
         if: ${{ github.event_name == 'push' }}
