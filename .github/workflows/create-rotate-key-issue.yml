@@ -19,7 +19,7 @@ jobs:
       - name: checkout
         uses: actions/checkout@v2
 
-      - name: add condalock comment
+      - name: create issue to rotate key
         uses: peter-evans/create-issue-from-file@v1
         with:
            token: ${{ steps.generate_token.outputs.token }}
