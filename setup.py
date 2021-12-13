@@ -49,12 +49,12 @@ packages = [
 package_data = {"": ["*"]}
 
 install_requires = [
-    "atpublic>=2.3,<3.0",
+    "atpublic>=2.3,<3",
     "cached_property>=1,<2",
     "multipledispatch>=0.6,<0.7",
     "numpy>=1,<2",
-    "pandas>=1.2.5,<2.0.0",
-    "parsy>=1.3.0,<2.0.0",
+    "pandas>=1.2.5,<2",
+    "parsy>=1.3.0,<2",
     "pytz>=2021.1,<2022.0",
     "regex>=2021.7.6,<2022.0.0",
     "toolz>=0.11,<0.12",
@@ -65,32 +65,32 @@ extras_require = {
     ':python_version < "3.8"': ["importlib-metadata>=4,<5"],
     "all": [
         "clickhouse-driver>=0.1,<0.3",
-        "clickhouse-sqlalchemy>=0.1.4,<0.2.0",
+        "clickhouse-sqlalchemy>=0.1.4,<0.2",
         "dask[array,dataframe]>=2021.2.0,<2022.0.0",
         "geoalchemy2>=0.6,<0.10",
         "geopandas>=0.6,<0.11",
-        "graphviz>=0.16,<0.17",
+        "graphviz>=0.16,<0.20",
         "hdfs[kerberos]>=2,<3",
         "impyla[kerberos]>=0.17,<0.19",
-        "psycopg2>=2.7,<3.0",
+        "psycopg2>=2.7,<3",
         "pyarrow>=1,<7",
         "pymysql>=1,<2",
         "pyspark>=2.4.3,<4",
         "requests>=2,<3",
-        "shapely>=1.6,<2.0",
+        "shapely>=1.6,<2",
         "sqlalchemy>=1.3,<1.4",
         "tables>=3,<4",
     ],
     "clickhouse": [
         "clickhouse-driver>=0.1,<0.3",
-        "clickhouse-sqlalchemy>=0.1.4,<0.2.0",
+        "clickhouse-sqlalchemy>=0.1.4,<0.2",
         "sqlalchemy>=1.3,<1.4",
     ],
     "dask": ["dask[array,dataframe]>=2021.2.0,<2022.0.0", "pyarrow>=1,<7"],
     "geospatial": [
         "geoalchemy2>=0.6,<0.10",
         "geopandas>=0.6,<0.11",
-        "shapely>=1.6,<2.0",
+        "shapely>=1.6,<2",
     ],
     "hdf5": ["tables>=3,<4"],
     "impala": [
@@ -101,10 +101,10 @@ extras_require = {
     ],
     "mysql": ["pymysql>=1,<2", "sqlalchemy>=1.3,<1.4"],
     "parquet": ["pyarrow>=1,<7"],
-    "postgres": ["psycopg2>=2.7,<3.0", "sqlalchemy>=1.3,<1.4"],
+    "postgres": ["psycopg2>=2.7,<3", "sqlalchemy>=1.3,<1.4"],
     "pyspark": ["pyarrow>=1,<7", "pyspark>=2.4.3,<4"],
     "sqlite": ["sqlalchemy>=1.3,<1.4"],
-    "visualization": ["graphviz>=0.16,<0.17"],
+    "visualization": ["graphviz>=0.16,<0.20"],
 }
 
 entry_points = {
