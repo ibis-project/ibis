@@ -120,6 +120,8 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v2
+        with:
+          path: ibis
 
       - name: install system dependencies
         run: sudo apt-get install -qq -y build-essential cmake krb5-config python-dev libkrb5-dev libboost-all-dev pandoc
@@ -140,15 +142,19 @@ jobs:
           key: docs-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}
 
       - name: install ibis
+        working-directory: ibis
         run: poetry install --extras all
 
       - name: build web
+        working-directory: ibis
         run: poetry run python -m pysuerga docs/web --target-path=docbuild
 
       - name: build docs
+        working-directory: ibis
         run: poetry run sphinx-build -b html docs/source docbuild/docs -W -T
 
       - name: Add config to docs
+        working-directory: ibis
         run: |
           set -euo pipefail
 
@@ -176,6 +182,7 @@ jobs:
         if: ${{ github.event_name != 'push' }}
         with:
           repository: ibis-project/ibis-project.org
+          path: ibis-project.org
 
       - name: Configure git info
         run: |
@@ -185,12 +192,13 @@ jobs:
           git config user.email 'ibis-project-bot[bot]@users.noreply.github.com'
 
       - name: Copy docbuild to checkout
+        working-directory: ibis
         run: |
           set -euo pipefail
 
           # the trailing slash matters here; it means "everything underneath
           # docbuild, but not docbuild itself"
-          rsync -avz docbuild/ ibis-project.org
+          rsync -avz docbuild/ ../ibis-project.org
 
       - name: Commit docs
         if: ${{ github.event_name == 'push' }}
@@ -204,13 +212,6 @@ jobs:
         if: ${{ github.event_name == 'push' }}
         working-directory: ibis-project.org
         run: git push -f origin master
-
-      - name: Clean up doc build
-        run: rm -r docbuild
-
-      - name: Clean up checkout
-        if: ${{ github.event_name == 'push' }}
-        run: rm -r ibis-project.org
 
   conda_package:
     # TODO: fully automate the conda-forge PR submission on release
