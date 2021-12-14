@@ -185,13 +185,6 @@ jobs:
           repository: ibis-project/ibis-project.org
           path: ibis-project.org
 
-      - name: Configure git info
-        run: |
-          set -euo pipefail
-
-          git config user.name 'ibis-project-bot[bot]'
-          git config user.email 'ibis-project-bot[bot]@users.noreply.github.com'
-
       - name: Copy docbuild to checkout
         working-directory: ibis
         run: |
@@ -200,6 +193,14 @@ jobs:
           # the trailing slash matters here; it means "everything underneath
           # docbuild, but not docbuild itself"
           rsync -avz docbuild/ ../ibis-project.org
+
+      - name: Configure git info
+        working-directory: ibis-project.org
+        run: |
+          set -euo pipefail
+
+          git config user.name 'ibis-project-bot[bot]'
+          git config user.email 'ibis-project-bot[bot]@users.noreply.github.com'
 
       - name: Commit docs
         if: ${{ github.event_name == 'push' }}
