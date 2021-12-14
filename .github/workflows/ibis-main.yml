@@ -188,21 +188,22 @@ jobs:
         run: |
           set -euo pipefail
 
-          cp -fr docbuild/* ibis-project.org
+          # the trailing slash matters here; it means "everything underneath
+          # docbuild, but not docbuild itself"
+          rsync -avz docbuild/ ibis-project.org
 
       - name: Commit docs
         if: ${{ github.event_name == 'push' }}
+        working-directory: ibis-project.org
         run: |
           set -euo pipefail
 
-          git -C ibis-project.org commit -am 'docs: ibis-project/ibis@{{ github.sha }}' || true
+          git commit -am 'docs: ibis-project/ibis@{{ github.sha }}' || true
 
       - name: Push docs
         if: ${{ github.event_name == 'push' }}
-        run: |
-          set -euo pipefail
-
-          git -C ibis-project.org push -f origin master
+        working-directory: ibis-project.org
+        run: git push -f origin master
 
       - name: Clean up doc build
         run: rm -r docbuild
