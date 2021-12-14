@@ -176,6 +176,7 @@ jobs:
         with:
           repository: ibis-project/ibis-project.org
           token: ${{ steps.generate_token.outputs.token }}
+          path: ibis-project.org
 
       - name: checkout
         uses: actions/checkout@v2
