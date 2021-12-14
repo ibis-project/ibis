@@ -171,8 +171,13 @@ jobs:
           repository: ibis-project/ibis-project.org
           token: ${{ steps.generate_token.outputs.token }}
 
+      - name: checkout
+        uses: actions/checkout@v2
+        if: ${{ github.event_name != 'push' }}
+        with:
+          repository: ibis-project/ibis-project.org
+
       - name: Configure git info
-        if: ${{ github.event_name == 'push' }}
         run: |
           set -euo pipefail
 
@@ -180,8 +185,10 @@ jobs:
           git config user.email 'ibis-project-bot[bot]@users.noreply.github.com'
 
       - name: Copy docbuild to checkout
-        if: ${{ github.event_name == 'push' }}
-        run: cp -fr docbuild/* ibis-project.org
+        run: |
+          set -euo pipefail
+
+          cp -fr docbuild/* ibis-project.org
 
       - name: Commit docs
         if: ${{ github.event_name == 'push' }}
