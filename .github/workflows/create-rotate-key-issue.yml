@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: create issue to rotate key
-        uses: peter-evans/create-issue-from-file@v1
+        uses: peter-evans/create-issue-from-file@v3
         with:
            token: ${{ steps.generate_token.outputs.token }}
            title: "chore: rotate ibis-project-bot private key"
