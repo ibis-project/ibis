@@ -23,6 +23,8 @@ if TYPE_CHECKING:
 class Expr:
     """Base expression class"""
 
+    __slots__ = ('_arg',)
+
     def _type_display(self):
         return type(self).__name__
 
@@ -55,6 +57,12 @@ class Expr:
         raise ValueError(
             "The truth value of an Ibis expression is not defined"
         )
+
+    def __getstate__(self):
+        return (self._arg,)
+
+    def __setstate__(self, state):
+        (self._arg,) = state
 
     __nonzero__ = __bool__
 
@@ -325,10 +333,18 @@ class ValueExpr(Expr):
     either a single value (scalar)
     """
 
+    __slots__ = ('_name', '_dtype')
+
     def __init__(self, arg, dtype, name=None):
         super().__init__(arg)
         self._name = name
         self._dtype = dtype
+
+    def __getstate__(self):
+        return (self._arg, self._name, self._dtype)
+
+    def __setstate__(self, state):
+        (self._arg, self._name, self._dtype) = state
 
     def equals(self, other, cache=None):
         return (
@@ -482,9 +498,6 @@ class TableExpr(Expr):
 
     def __len__(self):
         raise com.ExpressionError('Use .count() instead')
-
-    def __setstate__(self, instance_dictionary):
-        self.__dict__ = instance_dictionary
 
     def __getattr__(self, key):
         try:
