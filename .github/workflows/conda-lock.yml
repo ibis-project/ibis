@@ -106,8 +106,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git config --global user.name 'ibis-project-bot[bot]'
+          git config --global user.email 'ibis-project-bot[bot]@users.noreply.github.com'
 
       - name: commit lock files and push to PR
         run: |
