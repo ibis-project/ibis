@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import sys
+from typing import NamedTuple
 
 import pytest
 
@@ -132,12 +135,15 @@ def test_missing_backend():
 
 def test_multiple_backends(mocker):
     if sys.version_info[:2] < (3, 8):
-        api = 'importlib_metadata.entry_points'
+        api = 'importlib_metadata.distribution'
     else:
-        api = 'importlib.metadata.entry_points'
+        api = 'importlib.metadata.distribution'
 
-    return_value = {
-        "ibis.backends": (
+    class Distribution(NamedTuple):
+        entry_points: list[EntryPoint]
+
+    return_value = Distribution(
+        entry_points=(
             EntryPoint(
                 name="foo",
                 value='ibis.backends.backend1',
@@ -149,7 +155,7 @@ def test_multiple_backends(mocker):
                 group="ibis.backends",
             ),
         )
-    }
+    )
 
     mocker.patch(api, return_value=return_value)
 

@@ -52,9 +52,11 @@ with ibis.config.config_prefix('sql'):
     )
 
 try:
+    _distribution_name = __name__
     __version__ = importlib_metadata.version(__name__)
 except Exception:
-    __version__ = importlib_metadata.version("ibis-framework")
+    _distribution_name = "ibis-framework"
+    __version__ = importlib_metadata.version(_distribution_name)
 
 
 def __getattr__(name: str) -> BaseBackend:
@@ -72,14 +74,12 @@ def __getattr__(name: str) -> BaseBackend:
     the `ibis.backends` entrypoints. If successful, the `ibis.sqlite`
     attribute is "cached", so this function is only called the first time.
     """
-    entry_points = {
+    distribution = importlib_metadata.distribution(_distribution_name)
+    entry_points = [
         entry_point
-        for entry_point in importlib_metadata.entry_points().get(
-            "ibis.backends",
-            (),
-        )
-        if entry_point.name == name
-    }
+        for entry_point in distribution.entry_points
+        if name == entry_point.name
+    ]
 
     if not entry_points:
         raise AttributeError(
