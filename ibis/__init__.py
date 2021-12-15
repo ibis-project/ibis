@@ -90,7 +90,8 @@ def __getattr__(name: str) -> BaseBackend:
 
     if len(entry_points) > 1:
         raise RuntimeError(
-            f"{len(entry_points)} packages found for backend '{name}'. "
+            f"{len(entry_points)} packages found for backend '{name}': "
+            f"{entry_points}\n"
             "There should be only one, please uninstall the unused packages "
             "and just leave the one that needs to be used."
         )
