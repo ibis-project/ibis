@@ -97,7 +97,7 @@ jobs:
         run: pip install -e .
 
       - name: run simple tests
-        run: pytest ibis/tests --numprocesses auto
+        run: pytest ibis/tests
 
   check_poetry_lock:
     runs-on: ubuntu-latest
