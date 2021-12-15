@@ -1,7 +1,16 @@
+import sys
+
 import pytest
 
 import ibis
 from ibis.backends.base import BaseBackend
+
+try:
+    import importlib.metadata as importlib_metadata
+except ImportError:
+    import importlib_metadata
+
+EntryPoint = importlib_metadata.EntryPoint
 
 
 def test_top_level_api():
@@ -122,12 +131,29 @@ def test_missing_backend():
 
 
 def test_multiple_backends(mocker):
-    mocker.patch(
-        'pkg_resources.iter_entry_points',
-        return_value=['backend1', 'backend2', 'backend3'],
-    )
+    if sys.version_info[:2] < (3, 8):
+        api = 'importlib_metadata.entry_points'
+    else:
+        api = 'importlib.metadata.entry_points'
 
-    msg = "3 packages found for backend 'foo'"
+    return_value = {
+        "ibis.backends": (
+            EntryPoint(
+                name="foo",
+                value='ibis.backends.backend1',
+                group="ibis.backends",
+            ),
+            EntryPoint(
+                name="foo",
+                value='ibis.backends.backend1',
+                group="ibis.backends",
+            ),
+        )
+    }
+
+    mocker.patch(api, return_value=return_value)
+
+    msg = r"\d+ packages found for backend 'foo'"
     with pytest.raises(RuntimeError, match=msg):
         ibis.foo
 
