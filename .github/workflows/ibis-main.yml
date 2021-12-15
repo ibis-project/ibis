@@ -208,7 +208,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          git commit -am 'docs: ibis-project/ibis@{{ github.sha }}' || true
+          git commit -am 'docs: ibis-project/ibis@${{ github.sha }}' || true
 
       - name: Push docs
         if: ${{ github.event_name == 'push' }}
