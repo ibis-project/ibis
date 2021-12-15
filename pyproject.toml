@@ -111,20 +111,6 @@ pyspark = ["pyspark", "pyarrow"]
 sqlite = ["sqlalchemy"]
 visualization = ["graphviz"]
 
-[tool.poetry.plugins."ibis.backends"]
-clickhouse = "ibis.backends.clickhouse"
-csv = "ibis.backends.csv"
-dask = "ibis.backends.dask"
-hdf5 = "ibis.backends.hdf5"
-impala = "ibis.backends.impala"
-mysql = "ibis.backends.mysql"
-pandas = "ibis.backends.pandas"
-parquet = "ibis.backends.parquet"
-postgres = "ibis.backends.postgres"
-pyspark = "ibis.backends.pyspark"
-spark = "ibis.backends.pyspark"
-sqlite = "ibis.backends.sqlite"
-
 [tool.pytest.ini_options]
 xfail_strict = true
 addopts = [

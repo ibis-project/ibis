@@ -1,5 +1,5 @@
 """Initialize Ibis module."""
-import pkg_resources
+import importlib
 
 # Converting an Ibis schema to a pandas DataFrame requires registering
 # some type conversions that are currently registered in the pandas backend
@@ -76,23 +76,8 @@ def __getattr__(name: str) -> BaseBackend:
     the `ibis.backends` entrypoints. If successful, the `ibis.sqlite`
     attribute is "cached", so this function is only called the first time.
     """
-    entry_points = list(
-        pkg_resources.iter_entry_points(group='ibis.backends', name=name)
-    )
-    if len(entry_points) == 0:
-        raise AttributeError(
-            f"module 'ibis' has no attribute '{name}'. "
-            f"If you are trying to access the '{name}' backend, "
-            f"try installing it first with `pip install ibis-{name}`"
-        )
-    elif len(entry_points) > 1:
-        raise RuntimeError(
-            f"{len(entry_points)} packages found for backend '{name}'. "
-            "There should be only one, please uninstall the unused packages "
-            "and just leave the one that needs to be used."
-        )
-
-    backend = entry_points[0].resolve().Backend()
+    backend_module = importlib.import_module(f"ibis.backends.{name}")
+    backend = backend_module.Backend()
 
     # The first time a backend is loaded, we register its options, and we set
     # it as an attribute of `ibis`, so `__getattr__` is not called again for it

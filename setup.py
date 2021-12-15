@@ -107,23 +107,6 @@ extras_require = {
     "visualization": ["graphviz>=0.16,<0.20"],
 }
 
-entry_points = {
-    "ibis.backends": [
-        "clickhouse = ibis.backends.clickhouse",
-        "csv = ibis.backends.csv",
-        "dask = ibis.backends.dask",
-        "hdf5 = ibis.backends.hdf5",
-        "impala = ibis.backends.impala",
-        "mysql = ibis.backends.mysql",
-        "pandas = ibis.backends.pandas",
-        "parquet = ibis.backends.parquet",
-        "postgres = ibis.backends.postgres",
-        "pyspark = ibis.backends.pyspark",
-        "spark = ibis.backends.pyspark",
-        "sqlite = ibis.backends.sqlite",
-    ]
-}
-
 setup_kwargs = {
     "name": "ibis-framework",
     "version": "2.0.0",
@@ -138,7 +121,6 @@ setup_kwargs = {
     "package_data": package_data,
     "install_requires": install_requires,
     "extras_require": extras_require,
-    "entry_points": entry_points,
     "python_requires": ">=3.7.1,<4",
 }
 
