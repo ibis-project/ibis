@@ -68,7 +68,7 @@ def test_string_col_is_unicode(backend, alltypes, df):
         param(
             lambda t: t.string_col.re_search(r'\\d+'),
             lambda t: t.string_col.str.contains(r'\d+'),
-            id='re_search_spark',
+            id='re_search_spark_raw',
             marks=pytest.mark.xpass_backends(
                 ('clickhouse', 'impala', 'spark')
             ),
@@ -84,7 +84,7 @@ def test_string_col_is_unicode(backend, alltypes, df):
         param(
             lambda t: t.string_col.re_replace(r'\\d+', 'a'),
             lambda t: t.string_col.str.replace(r'\d+', 'a', regex=True),
-            id='re_replace_spark',
+            id='re_replace_spark_raw',
             marks=pytest.mark.xpass_backends(
                 ('clickhouse', 'impala', 'spark')
             ),
@@ -93,25 +93,19 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.string_col.re_search(r'\d+'),
             lambda t: t.string_col.str.contains(r'\d+'),
             id='re_search_spark',
-            marks=pytest.mark.xfail_backends(
-                ('clickhouse', 'impala', 'spark')
-            ),
+            marks=pytest.mark.xfail_backends(('impala', 'spark')),
         ),
         param(
             lambda t: t.string_col.re_extract(r'(\d+)', 0),
             lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
-            id='re_extract_spark',
-            marks=pytest.mark.xfail_backends(
-                ('clickhouse', 'impala', 'spark')
-            ),
+            id='re_extract_spark_raw',
+            marks=pytest.mark.xfail_backends(('impala', 'spark')),
         ),
         param(
             lambda t: t.string_col.re_replace(r'\d+', 'a'),
             lambda t: t.string_col.str.replace(r'\d+', 'a', regex=True),
             id='re_replace_spark',
-            marks=pytest.mark.xfail_backends(
-                ('clickhouse', 'impala', 'spark')
-            ),
+            marks=pytest.mark.xfail_backends(('impala', 'spark')),
         ),
         param(
             lambda t: t.string_col.repeat(2),
