@@ -471,10 +471,6 @@ def interval(
     return literal(value, type=type).op().to_expr()
 
 
-schema.__doc__ = """\
-""".format()
-
-
 def case():
     """
     Similar to the .case method on array expressions, create a case builder
