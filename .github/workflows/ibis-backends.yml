@@ -382,7 +382,7 @@ jobs:
           MYSQL_PASSWORD: ibis
         options: --health-cmd="mysqladmin ping" --health-interval 10s --health-timeout 5s --health-retries 3
       clickhouse:
-        image: yandex/clickhouse-server:20
+        image: yandex/clickhouse-server:20-alpine
         ports:
           - 8123:8123
           - 9000:9000
