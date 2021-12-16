@@ -63,6 +63,7 @@ install_requires = [
 
 extras_require = {
     ':python_version < "3.10"': ["cytoolz>=0.11,<0.12"],
+    ':python_version < "3.8"': ["importlib-metadata>=4,<5"],
     "all": [
         "clickhouse-driver>=0.1,<0.3",
         "clickhouse-sqlalchemy>=0.1.4,<0.2",
