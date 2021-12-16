@@ -240,7 +240,7 @@ https://conda.anaconda.org/conda-forge/linux-64/pyyaml-6.0-py39h3811e60_3.tar.bz
 https://conda.anaconda.org/conda-forge/linux-64/pyzmq-22.3.0-py39h37b5a0c_1.tar.bz2#90dbe11c01a89fc6fddb90cbe2672e68
 https://conda.anaconda.org/conda-forge/linux-64/regex-2021.11.10-py39h3811e60_0.tar.bz2#3b65f61afba55c1684173fbbfca908fd
 https://conda.anaconda.org/conda-forge/linux-64/rtree-0.9.7-py39hb102c33_3.tar.bz2#9b4fd673da8a0ccbc818fedb2e12442b
-https://conda.anaconda.org/conda-forge/linux-64/setuptools-59.4.0-py39hf3d152e_0.tar.bz2#beed56861c0146ae7708f641e9044a06
+https://conda.anaconda.org/conda-forge/linux-64/setuptools-59.6.0-py39hf3d152e_0.tar.bz2#11924653da604a837cf6e57bc54ce166
 https://conda.anaconda.org/conda-forge/linux-64/sqlalchemy-1.3.23-py39h3811e60_0.tar.bz2#bd084e01505dce7307b7a9010e00d61a
 https://conda.anaconda.org/conda-forge/linux-64/thrift-0.15.0-py39he80948d_1.tar.bz2#cba1e99efebc344cfc59b9c872be2314
 https://conda.anaconda.org/conda-forge/linux-64/tornado-6.1-py39h3811e60_2.tar.bz2#5a7bb7af2f3bcf31ee6cd817de1d5011
@@ -272,7 +272,7 @@ https://conda.anaconda.org/conda-forge/linux-64/matplotlib-base-3.5.1-py39h2fa2b
 https://conda.anaconda.org/conda-forge/noarch/munch-2.5.0-py_0.tar.bz2#31d9e9be500e25ff0050bc9f57a6bcd7
 https://conda.anaconda.org/conda-forge/linux-64/mypy-0.910-py39h3811e60_4.tar.bz2#7300cfd78d8703aa07be8f36a7b36c0e
 https://conda.anaconda.org/conda-forge/linux-64/numexpr-2.8.0-py39hbd72853_100.tar.bz2#1aa4ef6f16a71c7f980245e5f0c8cc92
-https://conda.anaconda.org/conda-forge/linux-64/pandas-1.3.4-py39hde0f152_1.tar.bz2#8b043715b3ecda6b4546c962aff6f519
+https://conda.anaconda.org/conda-forge/linux-64/pandas-1.3.5-py39hde0f152_0.tar.bz2#667350acd89504e72f978fa35c105a99
 https://conda.anaconda.org/conda-forge/noarch/pip-21.3.1-pyhd8ed1ab_0.tar.bz2#e4fe2a9af78ff11f1aced7e62128c6a8
 https://conda.anaconda.org/conda-forge/linux-64/poppler-21.11.0-ha39eefc_0.tar.bz2#e8fa8792970ec9278e9ae7e4d0ff2841
 https://conda.anaconda.org/conda-forge/noarch/pygments-2.10.0-pyhd8ed1ab_0.tar.bz2#32bcce837f1316f1c3208118b6c5e5fc
@@ -301,7 +301,7 @@ https://conda.anaconda.org/conda-forge/noarch/pytest-cov-3.0.0-pyhd8ed1ab_0.tar.
 https://conda.anaconda.org/conda-forge/noarch/pytest-forked-1.4.0-pyhd8ed1ab_0.tar.bz2#95286e05a617de9ebfe3246cecbfb72f
 https://conda.anaconda.org/conda-forge/noarch/pytest-mock-3.6.1-pyhd8ed1ab_0.tar.bz2#95d022e1556adb78274d59bdf0939608
 https://conda.anaconda.org/conda-forge/noarch/pytest-randomly-3.10.3-pyhd8ed1ab_0.tar.bz2#efdadd13e0983794406caa5e5ebaf4ee
-https://conda.anaconda.org/conda-forge/linux-64/scikit-learn-1.0.1-py39h4dfa638_2.tar.bz2#60df28eeafdbec30c35daf4af09b17d8
+https://conda.anaconda.org/conda-forge/linux-64/scikit-learn-1.0.1-py39h4dfa638_3.tar.bz2#eda973d26db3839844e138eb14c34c6b
 https://conda.anaconda.org/conda-forge/noarch/wcwidth-0.2.5-pyh9f0ad1d_2.tar.bz2#5266fcd697043c59621fda522b3d78ee
 https://conda.anaconda.org/conda-forge/linux-64/arrow-cpp-6.0.1-py39h2c67c1e_5_cpu.tar.bz2#a26ee1c59fd8997633a006b1f28baff9
 https://conda.anaconda.org/conda-forge/linux-64/gdal-3.4.0-py39h0494519_12.tar.bz2#bf1143ba55a9308f59901ed7c1eb7bd3

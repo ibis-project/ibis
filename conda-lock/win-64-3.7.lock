@@ -190,7 +190,7 @@ https://conda.anaconda.org/conda-forge/win-64/pyyaml-6.0-py37hcc03f2d_3.tar.bz2#
 https://conda.anaconda.org/conda-forge/win-64/pyzmq-22.3.0-py37hcce574b_1.tar.bz2#ff641dbc7d0eb6223ac530501da35517
 https://conda.anaconda.org/conda-forge/win-64/regex-2021.11.10-py37hcc03f2d_0.tar.bz2#98e034630f67cff8bdd4f1fc5cc07b74
 https://conda.anaconda.org/conda-forge/win-64/rtree-0.9.7-py37h13cc57e_3.tar.bz2#90afa8636efc56c2c142c2c0b27bd034
-https://conda.anaconda.org/conda-forge/win-64/setuptools-59.4.0-py37h03978a9_0.tar.bz2#01df85765934f57b4d7ca1d5265e087c
+https://conda.anaconda.org/conda-forge/win-64/setuptools-59.6.0-py37h03978a9_0.tar.bz2#7e5e12be38e2515645a5faac8de50772
 https://conda.anaconda.org/conda-forge/win-64/sqlalchemy-1.3.23-py37hcc03f2d_0.tar.bz2#0b97aef724f52b6c07c1584c61710c77
 https://conda.anaconda.org/conda-forge/win-64/thrift-0.15.0-py37hf2a7229_1.tar.bz2#82f0d24080186b5a916414da573307f8
 https://conda.anaconda.org/conda-forge/win-64/tornado-6.1-py37hcc03f2d_2.tar.bz2#09aafcab336a493c1ac0e2649935b1ee
@@ -263,7 +263,7 @@ https://conda.anaconda.org/conda-forge/win-64/clickhouse-driver-0.2.2-py37hcc03f
 https://conda.anaconda.org/conda-forge/win-64/matplotlib-base-3.5.1-py37h4a79c79_0.tar.bz2#924637d761c43173c72cf75b493ef213
 https://conda.anaconda.org/conda-forge/noarch/nbclient-0.5.9-pyhd8ed1ab_0.tar.bz2#21554dd9bbabff27ae87f715fee4d56c
 https://conda.anaconda.org/conda-forge/win-64/numexpr-2.8.0-py37h79f053c_100.tar.bz2#d68b44ebb8503b05afcade0eb1813247
-https://conda.anaconda.org/conda-forge/win-64/pandas-1.3.4-py37h9386db6_1.tar.bz2#c9c4cf7ef3dad8152e59e67d331e7042
+https://conda.anaconda.org/conda-forge/win-64/pandas-1.3.5-py37h9386db6_0.tar.bz2#9c7fb468cb205bc8ff6ef30c549198d7
 https://conda.anaconda.org/conda-forge/noarch/paramiko-2.8.1-pyhd8ed1ab_0.tar.bz2#e387cbbcfba548e29c70d67a224425cb
 https://conda.anaconda.org/conda-forge/win-64/poppler-21.11.0-h24fffdf_0.tar.bz2#a99eea59b0307d38971467a9f0cc9618
 https://conda.anaconda.org/conda-forge/noarch/prompt-toolkit-3.0.24-pyha770c72_0.tar.bz2#edaf527a6d394e2b965aff228c2e552f
@@ -284,7 +284,7 @@ https://conda.anaconda.org/conda-forge/noarch/pytest-forked-1.4.0-pyhd8ed1ab_0.t
 https://conda.anaconda.org/conda-forge/noarch/pytest-mock-3.6.1-pyhd8ed1ab_0.tar.bz2#95d022e1556adb78274d59bdf0939608
 https://conda.anaconda.org/conda-forge/noarch/pytest-randomly-3.10.3-pyhd8ed1ab_0.tar.bz2#efdadd13e0983794406caa5e5ebaf4ee
 https://conda.anaconda.org/conda-forge/noarch/requests-2.26.0-pyhd8ed1ab_1.tar.bz2#358581cc782802270d77c454c73a811a
-https://conda.anaconda.org/conda-forge/win-64/scikit-learn-1.0.1-py37hcabfae0_2.tar.bz2#e8eff0c2b70abf1723b2b57ccff73b77
+https://conda.anaconda.org/conda-forge/win-64/scikit-learn-1.0.1-py37hcabfae0_3.tar.bz2#c59313a78b84759e6fffb4826ac057ff
 https://conda.anaconda.org/conda-forge/noarch/clickhouse-sqlalchemy-0.1.7-pyhd8ed1ab_0.tar.bz2#4c71e13c43b945576dd9b056872aebc1
 https://conda.anaconda.org/conda-forge/noarch/folium-0.12.1.post1-pyhd8ed1ab_1.tar.bz2#44912901b45260e4338447b9d46f7058
 https://conda.anaconda.org/conda-forge/win-64/gdal-3.4.0-py37h9ecaa47_12.tar.bz2#ef34b6693f4029db67f250c68b385901

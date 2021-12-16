@@ -3,12 +3,16 @@ import os
 from typing import List
 
 import pandas as pd
-import pkg_resources
 import pytest
 
 import ibis
 import ibis.common.exceptions as com
 import ibis.util as util
+
+try:
+    import importlib.metadata as importlib_metadata
+except ImportError:
+    import importlib_metadata
 
 from .base import BackendTest
 
@@ -23,9 +27,7 @@ def _get_all_backends() -> List[str]:
     """
     return [
         entry_point.name
-        for entry_point in pkg_resources.iter_entry_points(
-            group='ibis.backends', name=None
-        )
+        for entry_point in importlib_metadata.entry_points()["ibis.backends"]
     ]
 
 
