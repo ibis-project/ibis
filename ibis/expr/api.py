@@ -1,11 +1,13 @@
 """Ibis expression API definitions."""
 
+from __future__ import annotations
+
 import collections
 import datetime
 import functools
 import numbers
 import operator
-from typing import Any, List, Optional, Union
+from typing import Any, Iterable
 
 import dateutil.parser
 import pandas as pd
@@ -205,25 +207,6 @@ __all__ = (
 )
 
 
-_data_type_docs = """\
-Ibis uses its own type aliases that map onto database types. See, for
-example, the correspondence between Ibis type names and Impala type names:
-
-Ibis type      Impala Type
-~~~~~~~~~      ~~~~~~~~~~~
-int8           TINYINT
-int16          SMALLINT
-int32          INT
-int64          BIGINT
-float          FLOAT
-double         DOUBLE
-boolean        BOOLEAN
-string         STRING
-timestamp      TIMESTAMP
-decimal(p, s)  DECIMAL(p,s)
-interval(u)    INTERVAL(u)"""
-
-
 infer_dtype = dt.infer
 infer_schema = sch.infer
 
@@ -274,7 +257,31 @@ def sequence(values):
     return ops.ValueList(values).to_expr()
 
 
-def schema(pairs=None, names=None, types=None):
+def schema(
+    pairs: Iterable[tuple[str, dt.DataType]] | None = None,
+    names: Iterable[str] | None = None,
+    types: Iterable[str | dt.DataType] | None = None,
+) -> sch.Schema:
+    """Validate and return an :class:`~ibis.expr.schema.Schema` object.
+
+    Parameters
+    ----------
+    pairs
+        List of name, type pairs. Mutually exclusive with `names` and `types`.
+    names
+        Field names. Mutually exclusive with `pairs`.
+    types
+        Field types. Mutually exclusive with `pairs`.
+
+    Examples
+    --------
+    >>> from ibis import schema
+    >>> sc = schema([('foo', 'string'),
+    ...              ('bar', 'int64'),
+    ...              ('baz', 'boolean')])
+    >>> sc2 = schema(names=['foo', 'bar', 'baz'],
+    ...              types=['string', 'int64', 'boolean'])
+    """
     if pairs is not None:
         return Schema.from_tuples(pairs)
     else:
@@ -465,34 +472,7 @@ def interval(
 
 
 schema.__doc__ = """\
-Validate and return an Ibis Schema object
-
-{}
-
-Parameters
-----------
-pairs : list of (name, type) tuples
-  Mutually exclusive with names/types
-names : list of string
-  Field names
-types : list of string
-  Field types
-
-Examples
---------
->>> from ibis import schema
->>> sc = schema([('foo', 'string'),
-...              ('bar', 'int64'),
-...              ('baz', 'boolean')])
->>> sc2 = schema(names=['foo', 'bar', 'baz'],
-...              types=['string', 'int64', 'boolean'])
-
-Returns
--------
-schema : Schema
-""".format(
-    _data_type_docs
-)
+""".format()
 
 
 def case():
@@ -733,6 +713,13 @@ def _extract_field(name, klass):
 
 
 def cast(arg, target_type):
+    """Cast value(s) to indicated data type.
+
+    Parameters
+    ----------
+    target_type
+        Type to cast to
+    """
     # validate
     op = ops.Cast(arg, to=target_type)
 
@@ -751,26 +738,6 @@ def cast(arg, target_type):
         return result
     expr_name = f'cast({arg.get_name()}, {op.to})'
     return result.name(expr_name)
-
-
-cast.__doc__ = """
-Cast value(s) to indicated data type. Values that cannot be
-successfully casted
-
-Parameters
-----------
-target_type : data type name
-
-Notes
------
-{}
-
-Returns
--------
-cast_expr : ValueExpr
-""".format(
-    _data_type_docs
-)
 
 
 def typeof(arg):
@@ -2153,8 +2120,8 @@ def geo_overlaps(left, right):
 
 
 def geo_point(
-    left: Union[NumericValue, int, float],
-    right: Union[NumericValue, int, float],
+    left: NumericValue | int | float,
+    right: NumericValue | int | float,
 ) -> ops.GeoPoint:
     """
     Return a point constructed on the fly from the provided coordinate values.
@@ -4023,7 +3990,7 @@ def _table_count(self):
     return ops.Count(self, None).to_expr().name('count')
 
 
-def _table_dropna(self, subset: Optional[List[str]] = None, how: str = 'any'):
+def _table_dropna(self, subset: list[str] | None = None, how: str = 'any'):
     """
     Remove rows with null values from the table.
 
@@ -4392,7 +4359,7 @@ def _safe_get_name(expr):
 
 
 def mutate(
-    table: ir.TableExpr, exprs: List[ir.Expr] = None, **mutations: Any
+    table: ir.TableExpr, exprs: list[ir.Expr] = None, **mutations: Any
 ) -> ir.TableExpr:
     """
     Convenience function for table projections involving adding columns
@@ -4610,7 +4577,7 @@ def _table_view(self):
     return new_view.to_expr()
 
 
-def _table_drop(self, fields: Union[str, List[str]]) -> ir.TableExpr:
+def _table_drop(self, fields: str | list[str]) -> ir.TableExpr:
     """
     Remove one or more fields from a table.
 
