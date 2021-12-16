@@ -671,6 +671,13 @@ def _zero_if_null(translator, expr):
     return f'ifNull({arg_}, 0)'
 
 
+def _day_of_week_index(translator, expr):
+    (arg,) = expr.op().args
+    weekdays = 7
+    offset = f"toDayOfWeek({translator.translate(arg)})"
+    return f"((({offset} - 1) % {weekdays:d}) + {weekdays:d}) % {weekdays:d}"
+
+
 _undocumented_operations = {
     ops.NullLiteral: _null_literal,  # undocumented
     ops.IsNull: _unary('isNull'),
@@ -680,6 +687,7 @@ _undocumented_operations = {
     ops.Coalesce: _varargs('coalesce'),
     ops.NullIfZero: _null_if_zero,
     ops.ZeroIfNull: _zero_if_null,
+    ops.DayOfWeekIndex: _day_of_week_index,
 }
 
 

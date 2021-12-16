@@ -212,6 +212,18 @@ def _group_concat(t, expr):
     return sa.func.group_concat(arg.op('SEPARATOR')(t.translate(sep)))
 
 
+def _day_of_week_index(t, expr):
+    (arg,) = expr.op().args
+    left = sa.func.dayofweek(t.translate(arg)) - 2
+    right = 7
+    return ((left % right) + right) % right
+
+
+def _day_of_week_name(t, expr):
+    (arg,) = expr.op().args
+    return sa.func.dayname(t.translate(arg))
+
+
 operation_registry.update(
     {
         ops.Literal: _literal,
@@ -259,5 +271,7 @@ operation_registry.update(
         ops.TimestampNow: fixed_arity(sa.func.now, 0),
         # others
         ops.GroupConcat: _group_concat,
+        ops.DayOfWeekIndex: _day_of_week_index,
+        ops.DayOfWeekName: _day_of_week_name,
     }
 )

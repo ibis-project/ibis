@@ -398,21 +398,34 @@ def test_translate_math_functions(con, alltypes, translate, call, expected):
 @pytest.mark.parametrize(
     ('expr', 'expected'),
     [
-        (L(-5).abs(), 5),
-        (L(5).abs(), 5),
-        (L(5.5).round(), 6.0),
-        (L(5.556).round(2), 5.56),
-        (L(5.556).ceil(), 6.0),
-        (L(5.556).floor(), 5.0),
-        (L(5.556).exp(), math.exp(5.556)),
-        (L(5.556).sign(), 1),
-        (L(-5.556).sign(), -1),
-        (L(0).sign(), 0),
-        (L(5.556).sqrt(), math.sqrt(5.556)),
-        (L(5.556).log(2), math.log(5.556, 2)),
-        (L(5.556).ln(), math.log(5.556)),
-        (L(5.556).log2(), math.log(5.556, 2)),
-        (L(5.556).log10(), math.log10(5.556)),
+        pytest.param(L(-5).abs(), 5, id="abs_neg"),
+        pytest.param(L(5).abs(), 5, id="abs"),
+        pytest.param(L(5.5).round(), 6.0, id="round"),
+        pytest.param(L(5.556).round(2), 5.56, id="round_places"),
+        pytest.param(L(5.556).ceil(), 6.0, id="ceil"),
+        pytest.param(L(5.556).floor(), 5.0, id="floor"),
+        pytest.param(L(5.556).sign(), 1, id="sign"),
+        pytest.param(L(-5.556).sign(), -1, id="sign_neg"),
+        pytest.param(L(0).sign(), 0, id="sign_zero"),
+        pytest.param(L(5.556).sqrt(), math.sqrt(5.556), id="sqrt"),
+        pytest.param(L(5.556).log(2), math.log(5.556, 2), id="log2_arg"),
+        pytest.param(L(5.556).log2(), math.log(5.556, 2), id="log2"),
+        pytest.param(L(5.556).log10(), math.log10(5.556), id="log10"),
+        # clickhouse has different functions for exp/ln that are faster
+        # than the defaults, but less precise
+        #
+        # we can't use the e() function as it still gives different results
+        # from `math.exp`
+        pytest.param(
+            L(5.556).exp().round(8),
+            round(math.exp(5.556), 8),
+            id="exp",
+        ),
+        pytest.param(
+            L(5.556).ln().round(7),
+            round(math.log(5.556), 7),
+            id="ln",
+        ),
     ],
 )
 def test_math_functions(con, expr, expected, translate):
