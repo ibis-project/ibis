@@ -81,8 +81,13 @@ def _floor_divide(expr):
 @rewrites(ops.DayOfWeekName)
 def day_of_week_name(expr):
     # ClickHouse 20 doesn't support dateName
+    #
     # ClickHouse 21 is broken for regexen:
     # https://github.com/ClickHouse/ClickHouse/issues/32777
+    #
+    # ClickHouse also has a broken case statement hence the ifnull:
+    # https://github.com/ClickHouse/ClickHouse/issues/32849
+    #
     # We test against 20 in CI, so we implement day_of_week_name as follows
     return (
         expr.op()
