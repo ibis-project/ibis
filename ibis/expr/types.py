@@ -205,7 +205,9 @@ class Expr:
         """
         from ibis.backends.base import BaseBackend
 
-        seen_backends: Dict[str, BaseBackend] = {}  # key is backend.db_identity
+        seen_backends: Dict[
+            str, BaseBackend
+        ] = {}  # key is backend.db_identity
 
         stack = [self.op()]
         seen = set()
