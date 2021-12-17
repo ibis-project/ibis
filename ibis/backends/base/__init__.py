@@ -5,6 +5,8 @@ import re
 import warnings
 from typing import Any, Callable
 
+from cached_property import cached_property
+
 import ibis
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
@@ -161,7 +163,7 @@ class BaseBackend(abc.ABC):
         Name of the backend, for example 'sqlite'.
         """
 
-    @property
+    @cached_property
     def datasource(self) -> str:
         """
         Identity of the database.  Multiple connections to the same
@@ -173,7 +175,7 @@ class BaseBackend(abc.ABC):
         parts.extend(f'{k}={v}' for k, v in self._con_kwargs.items())
         return '_'.join(map(str, parts))
 
-    def connect(self, *args, **kwargs):
+    def connect(self, *args, **kwargs) -> BaseBackend:
         """
         Return new client object with saved args/kwargs, having called
         .reconnect() on it.
@@ -182,14 +184,14 @@ class BaseBackend(abc.ABC):
         new_backend.reconnect()
         return new_backend
 
-    def reconnect(self):
+    def reconnect(self) -> None:
         """
         Reconnect to the target database already configured with connect().
         """
         self.do_connect(*self._con_args, **self._con_kwargs)
 
     @abc.abstractmethod
-    def do_connect(self, *args, **kwargs):
+    def do_connect(self, *args, **kwargs) -> None:
         """
         Connect to database specified by args and kwargs.
         """
