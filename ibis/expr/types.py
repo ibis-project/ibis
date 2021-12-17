@@ -205,7 +205,7 @@ class Expr:
         """
         from ibis.backends.base import BaseBackend
 
-        seen_backends: Dict[str, BaseBackend] = {}  # key is backend.datasource
+        seen_backends: Dict[str, BaseBackend] = {}  # key is backend.db_identity
 
         stack = [self.op()]
         seen = set()
@@ -218,8 +218,8 @@ class Expr:
 
                 for arg in node.flat_args():
                     if isinstance(arg, BaseBackend):
-                        if arg.datasource not in seen_backends:
-                            seen_backends[arg.datasource] = arg
+                        if arg.db_identity not in seen_backends:
+                            seen_backends[arg.db_identity] = arg
                     elif isinstance(arg, ir.Expr):
                         stack.append(arg.op())
 

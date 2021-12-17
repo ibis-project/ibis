@@ -151,10 +151,10 @@ class BaseBackend(abc.ABC):
         )
 
     def __hash__(self):
-        return hash(self.datasource)
+        return hash(self.db_identity)
 
     def __eq__(self, other):
-        return self.datasource == other.datasource
+        return self.db_identity == other.db_identity
 
     @property
     @abc.abstractmethod
@@ -164,10 +164,10 @@ class BaseBackend(abc.ABC):
         """
 
     @cached_property
-    def datasource(self) -> str:
+    def db_identity(self) -> str:
         """
         Identity of the database.  Multiple connections to the same
-        database will have the same datasource.  Default implementation
+        database will have the same db_identity.  Default implementation
         assumes connection parameters uniquely specify the database.
         """
         parts = [self.table_class.__name__]
