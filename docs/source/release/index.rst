@@ -16,19 +16,20 @@ Release Notes
   From now on `column.summary()` returns with a list of expression objects instead of a single expression.
 * :feature:`3097` Support TableExpr fillna and dropna in Pandas, Dask and Pyspark
 * :support:`3088` Added `atpublic` dependency for adding APIs to modules' `__all__`
-* :bug:`3086` Error when trying to join tables with Pandas backend
+* :bug:`3086 major` Error when trying to join tables with Pandas backend
+* :release:`2.0.0 <2021-10-06>`
 * :support:`2678` Improvement of the backend API. The former `Client` subclasses have been replaced by a `Backend` class that must
   subclass `ibis.backends.base.BaseBackend`. The `BaseBackend` class contains abstract methods for the minimum subset of methods that
   backends must implement, and their signatures have been standardized across backends. The Ibis compiler has been refactored, and
   backends don't need to implement all compiler classes anymore if the default works for them. Only a subclass of
   `ibis.backends.base.sql.compiler.Compiler` is now required. Backends now need to register themselves as entry points.
 * :support:`2905` Deprecate `exists_table(table)` in favor of `table in list_tables()`
-* :bug:`2991` Fix data races in impala connection pool accounting
-* :bug:`2985` Fix null literal compilation in the Clickhouse backend
-* :bug:`2984` Fix order of limit and offset parameters in the Clickhouse backend
+* :bug:`2991 major` Fix data races in impala connection pool accounting
+* :bug:`2985 major` Fix null literal compilation in the Clickhouse backend
+* :bug:`2984 major` Fix order of limit and offset parameters in the Clickhouse backend
 * :support:`2977` Remove handwritten type parser; parsing errors that were previously `IbisTypeError` are now `parsy.ParseError`. `parsy` is now a hard requirement.
 * :support:`2962` Methods `current_database` and `list_databases` raise an exception for backends that do not support databases
-* :bug:`2956` Replace `equals` operation for geospatial datatype to `geo_equals`
+* :bug:`2956 major` Replace `equals` operation for geospatial datatype to `geo_equals`
 * :support:`2913` Method `set_database` has been deprecated, in favor of creating a new connection to a different database
 * :feature:`2938` Serialization-deserialization of Node via pickle is now byte compatible between different processes
 * :support:`2914` Removed `log` method of clients, in favor of `verbose_log` option
@@ -37,15 +38,15 @@ Release Notes
 * :support:`2883` Output of `Client.version` returned as a string, instead of a setuptools `Version`
 * :feature:`2882` Unify implementation of fillna and isna in Pyspark backend
 * :support:`2862` Deprecated `list_schemas` in SQLAlchemy backends in favor of `list_databases`
-* :bug:`2829` Fix .drop(fields). The argument can now be either a list of strings or a string.
+* :bug:`2829 major` Fix .drop(fields). The argument can now be either a list of strings or a string.
 * :feature:`2873` Support binary operation with Timedelta in Pyspark backend
 * :support:`2865` Deprecated `ibis.<backend>.verify()` in favor of capturing exception in `ibis.<backend>.compile()`
-* :bug:`2845` Fix projection on differences and intersections for SQL backends
+* :bug:`2845 major` Fix projection on differences and intersections for SQL backends
 * :feature:`2839`: Add `group_concat` operation for Clickhouse backend
-* :bug:`2827` Backends are loaded in a lazy way, so third-party backends can import Ibis without circular imports
-* :bug:`2830` Disable aggregation optimization due to N squared performance
-* :bug:`2821` Fix `.cast()` to array outputting list instead of np.array in Pandas backend
-* :bug:`2820` Fix aggregation with mixed reduction datatypes (array + scalar) on Dask backend
+* :bug:`2827 major` Backends are loaded in a lazy way, so third-party backends can import Ibis without circular imports
+* :bug:`2830 major` Disable aggregation optimization due to N squared performance
+* :bug:`2821 major` Fix `.cast()` to array outputting list instead of np.array in Pandas backend
+* :bug:`2820 major` Fix aggregation with mixed reduction datatypes (array + scalar) on Dask backend
 * :feature:`2808` Support comparison of ColumnExpr to timestamp literal
 * :support:`2789` Simplification of data fetching. Backends don't need to implement `Query` anymore
 * :feature:`2805` Make op schema a cached property
@@ -54,17 +55,17 @@ Release Notes
 * :feature:`2790` Add `startswith` and `endswith` operations
 * :feature:`2776` :feature:`2797` Allow more flexible return type for UDFs
 * :feature:`2779` Implement Clip in the Pyspark backend
-* :bug:`2770` Fix error when using reduction UDF that returns np.array in a grouped aggregation
+* :bug:`2770 major` Fix error when using reduction UDF that returns np.array in a grouped aggregation
 * :feature:`2753` Use `ndarray` as array representation in Pandas backend
 * :support:`2665` Move BigQuery backend to a `separate repository <https://github.com/ibis-project/ibis-bigquery>`_.
   The backend will be released separately, use `pip install ibis-bigquery` or `conda install ibis-bigquery` to
   install it, and then use as before.
-* :bug:`2712` Fix time context trimming error for multi column udfs in pandas backend
-* :bug:`2710` Fix error during compilation of range_window in base_sql backends (:issue:`2608`)
+* :bug:`2712 major` Fix time context trimming error for multi column udfs in pandas backend
+* :bug:`2710 major` Fix error during compilation of range_window in base_sql backends (:issue:`2608`)
 * :feature:`2687` Support Spark filter with window operation
-* :bug:`2696` Fix wrong row indexing in the result for 'window after filter' for timecontext adjustment
-* :bug:`2702` Fix `aggregate` exploding the output of Reduction ops that return a list/ndarray
-* :bug:`2693` Fix issues with context adjustment for filter with PySpark backend
+* :bug:`2696 major` Fix wrong row indexing in the result for 'window after filter' for timecontext adjustment
+* :bug:`2702 major` Fix `aggregate` exploding the output of Reduction ops that return a list/ndarray
+* :bug:`2693 major` Fix issues with context adjustment for filter with PySpark backend
 * :support:`2689` Supporting SQLAlchemy 1.4, and requiring minimum 1.3
 * :support:`2680` Namespace time_col config, fix type check for trim_with_timecontext for pandas window execution
 * :feature:`2646` Support context adjustment for udfs for pandas backend
@@ -74,19 +75,19 @@ Release Notes
   authorization code. Set `auth_external_data` to true to request additional
   scopes required to query Google Drive and Sheets. Set `auth_cache` to
   `reauth` or `none` to force reauthentication.
-* :bug:`2657` Add temporary struct col in pyspark backend to ensure that UDFs are executed only once
-* :bug:`2588` Fix BigQuery connect bug that ignored project ID parameter
-* :bug:`2636` Fix overwrite logic to account for DestructColumn inside mutate API
+* :bug:`2657 major` Add temporary struct col in pyspark backend to ensure that UDFs are executed only once
+* :bug:`2588 major` Fix BigQuery connect bug that ignored project ID parameter
+* :bug:`2636 major` Fix overwrite logic to account for DestructColumn inside mutate API
 * :feature:`2641` Add `bit_and`, `bit_or`, and `bit_xor` integer column aggregates (BigQuery and MySQL backends)
 * :feature:`2379` Backends are defined as entry points
-* :bug:`2635` Fix fusion optimization bug that incorrectly changes operation order
+* :bug:`2635 major` Fix fusion optimization bug that incorrectly changes operation order
 * :feature:`2615` Add `ibis.array` for creating array expressions
 * :feature:`2607` Implement Not operation in PySpark backend
 * :feature:`2610` Added support for case/when in PySpark backend
-* :bug:`2610` Fixes a NPE issue with substr in PySpark backend
+* :bug:`2610 major` Fixes a NPE issue with substr in PySpark backend
 * :feature:`2603` Add support for np.array as literals for backends that already support lists as literals
-* :bug:`2354` Fixes binary data type translation into BigQuery bytes data type
-* :bug:`2577` Make StructValue picklable
+* :bug:`2354 major` Fixes binary data type translation into BigQuery bytes data type
+* :bug:`2577 major` Make StructValue picklable
 * :support:`2505` Remove deprecated `ibis.HDFS`, `ibis.WebHDFS` and `ibis.hdfs_connect`
 * :feature:`2514` Add Struct.from_dict
 * :feature:`2310` Add hash and hashbytes support for BigQuery backend
@@ -94,22 +95,22 @@ Release Notes
 * :feature:`2487` Support analytic and reduction UDF to return multiple columns for Pandas backend
 * :support:`2497` Move `ibis.HDFS`, `ibis.WebHDFS` and `ibis.hdfs_connect` to `ibis.impala.*`
 * :feature:`2473` Support elementwise UDF to return multiple columns for Pandas and PySpark backend
-* :bug:`2462` Table expressions do not recognize inet datatype (Postgres backend)
-* :bug:`2461` Table expressions do not recognize macaddr datatype (Postgres backend)
-* :bug:`2410` Fix ``aggcontext.Summarize`` not always producing scalar (Pandas backend)
-* :bug:`2414` Fix same window op with different window size on table lead to incorrect results for pyspark backend
+* :bug:`2462 major` Table expressions do not recognize inet datatype (Postgres backend)
+* :bug:`2461 major` Table expressions do not recognize macaddr datatype (Postgres backend)
+* :bug:`2410 major` Fix ``aggcontext.Summarize`` not always producing scalar (Pandas backend)
+* :bug:`2414 major` Fix same window op with different window size on table lead to incorrect results for pyspark backend
 * :feature:`2409` FEAT: Support Ibis interval for window in pyspark backend
-* :bug:`2229` Fix same column with multiple aliases not showing properly in repr
+* :bug:`2229 major` Fix same column with multiple aliases not showing properly in repr
 * :feature:`2402` Use Scope class for scope in pyspark backend
-* :bug:`2395` Fix reduction UDFs over ungrouped, bounded windows on Pandas backend
-* :bug:`2386` FEAT: Support rolling window UDF with non numeric inputs for pandas backend.
-* :bug:`2386` Fix scope get to use hashmap lookup instead of list lookup
-* :bug:`2387` Fix equality behavior for Literal ops
-* :bug:`2376` Fix analytic ops over ungrouped and unordered windows on Pandas backend
+* :bug:`2395 major` Fix reduction UDFs over ungrouped, bounded windows on Pandas backend
+* :bug:`2386 major` FEAT: Support rolling window UDF with non numeric inputs for pandas backend.
+* :bug:`2386 major` Fix scope get to use hashmap lookup instead of list lookup
+* :bug:`2387 major` Fix equality behavior for Literal ops
+* :bug:`2376 major` Fix analytic ops over ungrouped and unordered windows on Pandas backend
 * :support:`2288` Drop support to Python 3.6
-* :bug:`2367` Fix the covariance operator in the BigQuery backend.
+* :bug:`2367 major` Fix the covariance operator in the BigQuery backend.
 * :feature:`2366` Add PySpark support for ReductionVectorizedUDF
-* :bug:`2342` Update impala kerberos dependencies
+* :bug:`2342 major` Update impala kerberos dependencies
 * :feature:`2306` Add time context in `scope` in execution for pandas backend
 * :support:`2351` Simplifying tests directories structure
 * :feature:`2081` Add ``start_point`` and ``end_point`` to PostGIS backend.
@@ -118,23 +119,23 @@ Release Notes
 * :feature:`2230` Add intersection to general ibis api
 * :support:`2304` Update ``google-cloud-bigquery`` dependency minimum version to 1.12.0
 * :feature:`2303` Add ``application_name`` argument to ``ibis.bigquery.connect`` to allow attributing Google API requests to projects that use Ibis.
-* :bug:`1320` Added verbose logging to SQL backends
+* :bug:`1320 major` Added verbose logging to SQL backends
 * :feature:`2285` Add support for casting category dtype in pandas backend
 * :feature:`2270` Add support for Union in the PySpark backend
-* :bug:`2256` Fix issue with sql_validate call to OmnisciDB.
+* :bug:`2256 major` Fix issue with sql_validate call to OmnisciDB.
 * :feature:`2260` Add support for implementign custom window object for pandas backend
-* :bug:`2237` Add missing float types to pandas backend
-* :bug:`2252` Allow group_by and order_by as window operation input in pandas backend
+* :bug:`2237 major` Add missing float types to pandas backend
+* :bug:`2252 major` Allow group_by and order_by as window operation input in pandas backend
 * :feature:`2246` Implement two level dispatcher for execute_node
 * :feature:`2233` Add ibis.pandas.trace module to log time and call stack information.
 * :feature:`2198` Validate that the output type of a UDF is a single element
-* :bug:`2223` Fix PySpark compiler error when elementwise UDF output_type is Decimal or Timestamp
+* :bug:`2223 major` Fix PySpark compiler error when elementwise UDF output_type is Decimal or Timestamp
 * :feature:`2186` ZeroIfNull and NullIfZero implementation for OmniSciDB
-* :bug:`2157` Fix interactive mode returning a expression instead of the value when used in Jupyter
+* :bug:`2157 major` Fix interactive mode returning a expression instead of the value when used in Jupyter
 * :feature:`2093` IsNan implementation for OmniSciDB
 * :feature:`2094` [OmnisciDB] Support add_columns and drop_columns for OmnisciDB table
 * :support:`2234` Remove "experimental" mentions for OmniSciDB and Pandas backends
-* :bug:`2127` Fix PySpark error when doing alias after selection
+* :bug:`2127 major` Fix PySpark error when doing alias after selection
 * :support:`2244` Use an OmniSciDB image stable on CI
 * :feature:`2175` Create ExtractQuarter operation and add its support to Clickhouse, CSV, Impala, MySQL, OmniSciDB, Pandas, Parquet, PostgreSQL, PySpark, SQLite and Spark
 * :feature:`2126` Add translation rules for isnull() and notnull() for pyspark backend
@@ -142,7 +143,7 @@ Release Notes
 * :feature:`2062` Implement read_csv for omniscidb backend
 * :feature:`2171` [OmniSciDB] Add support to week extraction
 * :feature:`2097` Date, DateDiff and TimestampDiff implementations for OmniSciDB
-* :bug:`2170` Fix millisecond issue for OmniSciDB :issue:`2167`, MySQL :issue:`2169`, PostgreSQL :issue:`2166`, Pandas :issue:`2168`, BigQuery :issue:`2273` backends
+* :bug:`2170 major` Fix millisecond issue for OmniSciDB :issue:`2167`, MySQL :issue:`2169`, PostgreSQL :issue:`2166`, Pandas :issue:`2168`, BigQuery :issue:`2273` backends
 * :feature:`2177` Create ExtractWeekOfYear operation and add its support to Clickhouse, CSV, MySQL, Pandas, Parquet, PostgreSQL, PySpark and Spark
 * :feature:`2060` Add initial support for ibis.random function
 * :support:`2107` Added fragment_size to table creation for OmniSciDB
@@ -155,7 +156,7 @@ Release Notes
 * :feature:`2125` [OmniSciDB] Add support for within, d_fully_within and point
 * :feature:`2086` OmniSciDB - Refactor DDL and Client; Add temporary parameter to create_table and "force" parameter to drop_view
 * :support:`2113` Enabled cumulative ops support for OmniSciDB
-* :bug:`2134` [OmniSciDB] Fix TopK when used as filter
+* :bug:`2134 major` [OmniSciDB] Fix TopK when used as filter
 * :feature:`2173` Create ExtractDayOfYear operation and add its support to Clickhouse, CSV, MySQL, OmniSciDB, Pandas, Parquet, PostgreSQL, PySpark, SQLite and Spark
 * :feature:`2095` Implementations of Log Log2 Log10 for OmniSciDB backend
 * :release:`1.3.0 <2020-02-27>`
