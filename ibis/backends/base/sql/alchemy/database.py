@@ -21,3 +21,8 @@ class AlchemyTable(ops.DatabaseTable):
         schema = sch.infer(table, schema=schema)
         super().__init__(table.name, schema, source)
         self.sqla_table = table
+
+    def __getstate__(self):
+        d = super().__getstate__()
+        d['sqla_table'] = self.sqla_table
+        return d

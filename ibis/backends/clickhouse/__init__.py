@@ -29,7 +29,7 @@ class Backend(BaseSQLBackend):
     table_expr_class = ClickhouseTable
     compiler = ClickhouseCompiler
 
-    def connect(
+    def do_connect(
         self,
         host='localhost',
         port=9000,
@@ -80,8 +80,7 @@ class Backend(BaseSQLBackend):
         -------
         ClickhouseClient
         """
-        new_backend = self.__class__()
-        new_backend.con = _DriverClient(
+        self.con = _DriverClient(
             host=host,
             port=port,
             database=database,
@@ -90,7 +89,6 @@ class Backend(BaseSQLBackend):
             client_name=client_name,
             compression=compression,
         )
-        return new_backend
 
     def register_options(self):
         ibis.config.register_option(

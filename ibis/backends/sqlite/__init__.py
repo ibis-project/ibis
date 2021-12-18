@@ -31,8 +31,44 @@ class Backend(BaseAlchemyBackend):
     database_class = Database
     compiler = SQLiteCompiler
 
-    def connect(self, path=None, create=False):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._con: sqlalchemy.engine.Engine = None
+        self._meta: sqlalchemy.MetaData = None
 
+    def __getstate__(self) -> dict:
+        r = super().__getstate__()
+        r.update(
+            dict(
+                compiler=self.compiler,
+                database_name=self.database_name,
+                _con=None,  # clear connection on copy()
+                _meta=None,
+            )
+        )
+        return r
+
+    @property
+    def con(self) -> sqlalchemy.engine.Engine:
+        if self._con is None:
+            self.reconnect()
+        return self._con
+
+    @con.setter
+    def con(self, v: Optional[sqlalchemy.engine.Engine]):
+        self._con = v
+
+    @property
+    def meta(self) -> sqlalchemy.MetaData:
+        if self._meta is None:
+            self.reconnect()
+        return self._meta
+
+    @meta.setter
+    def meta(self, v: sqlalchemy.MetaData):
+        self._meta = v
+
+    def do_connect(self, path=None, create=False):
         """
         Create an Ibis client connected to a SQLite database.
 
@@ -47,15 +83,15 @@ class Backend(BaseAlchemyBackend):
         create : boolean, default False
             If file does not exist, create it
         """
-        new_backend = super().connect(sqlalchemy.create_engine("sqlite://"))
-        new_backend.database_name = "base"
+        self.database_name = "base"
 
+        super().do_connect(sqlalchemy.create_engine("sqlite://"))
         if path is not None:
-            new_backend.attach(new_backend.database_name, path, create=create)
+            self.attach(self.database_name, path, create=create)
 
-        udf.register_all(new_backend.con)
+        udf.register_all(self.con)
 
-        return new_backend
+        self._meta = sqlalchemy.MetaData(bind=self.con)
 
     def list_tables(self, like=None, database=None):
         if database is None:

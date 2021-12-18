@@ -81,7 +81,7 @@ class Backend(BaseSQLBackend):
     table_class = PySparkDatabaseTable
     table_expr_class = PySparkTable
 
-    def connect(self, session):
+    def do_connect(self, session):
         """
         Create a pyspark `Backend` for use with Ibis.
 
@@ -89,18 +89,15 @@ class Backend(BaseSQLBackend):
         See documentation for SparkContext:
         https://spark.apache.org/docs/latest/api/python/_modules/pyspark/context.html#SparkContext
         """
-        new_backend = self.__class__()
-        new_backend._context = session.sparkContext
-        new_backend._session = session
-        new_backend._catalog = session.catalog
+        self._context = session.sparkContext
+        self._session = session
+        self._catalog = session.catalog
 
         # Spark internally stores timestamps as UTC values, and timestamp data
         # that is brought in without a specified time zone is converted as
         # local time to UTC with microsecond resolution.
         # https://spark.apache.org/docs/latest/sql-pyspark-pandas-with-arrow.html#timestamp-with-time-zone-semantics
-        new_backend._session.conf.set('spark.sql.session.timeZone', 'UTC')
-
-        return new_backend
+        self._session.conf.set('spark.sql.session.timeZone', 'UTC')
 
     @property
     def version(self):

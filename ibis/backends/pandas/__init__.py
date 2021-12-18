@@ -15,7 +15,7 @@ class BasePandasBackend(BaseBackend):
     Base class for backends based on pandas.
     """
 
-    def connect(self, dictionary):
+    def do_connect(self, dictionary):
         """Construct a client from a dictionary of DataFrames.
 
         Parameters
@@ -30,9 +30,7 @@ class BasePandasBackend(BaseBackend):
         from . import execution  # noqa F401
         from . import udf  # noqa F401
 
-        new_backend = self.__class__()
-        new_backend.dictionary = dictionary
-        return new_backend
+        self.dictionary = dictionary
 
     def from_dataframe(self, df, name='df', client=None):
         """

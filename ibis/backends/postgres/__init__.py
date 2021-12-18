@@ -13,7 +13,7 @@ class Backend(BaseAlchemyBackend):
     name = 'postgres'
     compiler = PostgreSQLCompiler
 
-    def connect(
+    def do_connect(
         self,
         host='localhost',
         user=None,
@@ -93,9 +93,8 @@ class Backend(BaseAlchemyBackend):
             database=database,
             driver=f'postgresql+{driver}',
         )
-        new_backend = super().connect(sqlalchemy.create_engine(alchemy_url))
-        new_backend.database_name = alchemy_url.database
-        return new_backend
+        self.database_name = alchemy_url.database
+        super().do_connect(sqlalchemy.create_engine(alchemy_url))
 
     def list_databases(self, like=None):
         # http://dba.stackexchange.com/a/1304/58517

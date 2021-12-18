@@ -2,7 +2,7 @@ import itertools
 import os
 import warnings
 import webbrowser
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 
 import numpy as np
 
@@ -205,7 +205,9 @@ class Expr:
         """
         from ibis.backends.base import BaseBackend
 
-        seen_backends = set()
+        seen_backends: Dict[
+            str, BaseBackend
+        ] = {}  # key is backend.db_identity
 
         stack = [self.op()]
         seen = set()
@@ -218,11 +220,12 @@ class Expr:
 
                 for arg in node.flat_args():
                     if isinstance(arg, BaseBackend):
-                        seen_backends.add(arg)
+                        if arg.db_identity not in seen_backends:
+                            seen_backends[arg.db_identity] = arg
                     elif isinstance(arg, ir.Expr):
                         stack.append(arg.op())
 
-        return list(seen_backends)
+        return list(seen_backends.values())
 
     def _find_backend(self):
         backends = self._find_backends()

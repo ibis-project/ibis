@@ -5,6 +5,8 @@ import re
 import warnings
 from typing import Any, Callable
 
+from cached_property import cached_property
+
 import ibis
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
@@ -136,6 +138,24 @@ class BaseBackend(abc.ABC):
     database_class = Database
     table_class: type[ops.DatabaseTable] = ops.DatabaseTable
 
+    def __init__(self, *args, **kwargs):
+        self._con_args: tuple[Any] = args
+        self._con_kwargs: dict[str, Any] = kwargs
+
+    def __getstate__(self):
+        return dict(
+            database_class=self.database_class,
+            table_class=self.table_class,
+            _con_args=self._con_args,
+            _con_kwargs=self._con_kwargs,
+        )
+
+    def __hash__(self):
+        return hash(self.db_identity)
+
+    def __eq__(self, other):
+        return self.db_identity == other.db_identity
+
     @property
     @abc.abstractmethod
     def name(self) -> str:
@@ -143,10 +163,37 @@ class BaseBackend(abc.ABC):
         Name of the backend, for example 'sqlite'.
         """
 
-    @abc.abstractmethod
-    def connect(connection_string, **options):
+    @cached_property
+    def db_identity(self) -> str:
         """
-        Connect to the underlying database and return a client object.
+        Identity of the database.  Multiple connections to the same
+        database will have the same db_identity.  Default implementation
+        assumes connection parameters uniquely specify the database.
+        """
+        parts = [self.table_class.__name__]
+        parts.extend(self._con_args)
+        parts.extend(f'{k}={v}' for k, v in self._con_kwargs.items())
+        return '_'.join(map(str, parts))
+
+    def connect(self, *args, **kwargs) -> BaseBackend:
+        """
+        Return new client object with saved args/kwargs, having called
+        .reconnect() on it.
+        """
+        new_backend = self.__class__(*args, **kwargs)
+        new_backend.reconnect()
+        return new_backend
+
+    def reconnect(self) -> None:
+        """
+        Reconnect to the target database already configured with connect().
+        """
+        self.do_connect(*self._con_args, **self._con_kwargs)
+
+    @abc.abstractmethod
+    def do_connect(self, *args, **kwargs) -> None:
+        """
+        Connect to database specified by args and kwargs.
         """
 
     def database(self, name: str = None) -> Database:

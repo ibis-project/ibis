@@ -57,7 +57,7 @@ def test_list_tables(con):
 
 
 def test_attach_file(dbpath):
-    client = Backend().connect()
+    client = Backend().connect(None)
 
     client.attach('foo', dbpath)
     client.attach('bar', dbpath)
