@@ -181,7 +181,7 @@ https://conda.anaconda.org/conda-forge/osx-64/fastavro-1.4.7-py39h89e85a6_1.tar.
 https://conda.anaconda.org/conda-forge/noarch/feedparser-6.0.8-pyhd8ed1ab_0.tar.bz2#aec61f51a85df0e61192be8486e87d58
 https://conda.anaconda.org/conda-forge/osx-64/fonttools-4.28.5-py39h89e85a6_0.tar.bz2#7f5103ac7ad8130a0d2b693b5306f2a3
 https://conda.anaconda.org/conda-forge/osx-64/hdf5-1.12.1-nompi_h2f0ef1a_103.tar.bz2#d425b35b7645412b866e2aa4f2aae871
-https://conda.anaconda.org/conda-forge/osx-64/importlib-metadata-4.9.0-py39h6e9494a_0.tar.bz2#bea75e7a75fe2fe7f799b2fce656df19
+https://conda.anaconda.org/conda-forge/osx-64/importlib-metadata-4.2.0-py39h6e9494a_0.tar.bz2#43a5e894f1239dff6d69bb957d22b241
 https://conda.anaconda.org/conda-forge/noarch/importlib_resources-5.4.0-pyhd8ed1ab_0.tar.bz2#9fb134dbabe7851a9d71411064b2c30d
 https://conda.anaconda.org/conda-forge/osx-64/jedi-0.18.1-py39h6e9494a_0.tar.bz2#e25ec40a35eb99b121e5a728a827cff0
 https://conda.anaconda.org/conda-forge/osx-64/jupyter_core-4.9.1-py39h6e9494a_1.tar.bz2#e9982a722c5ed2d74843bdd2f748b4e3
@@ -227,7 +227,7 @@ https://conda.anaconda.org/conda-forge/noarch/click-plugins-1.1.1-py_0.tar.bz2#4
 https://conda.anaconda.org/conda-forge/noarch/cligj-0.7.2-pyhd8ed1ab_1.tar.bz2#a29b7c141d6b2de4bb67788a5f107734
 https://conda.anaconda.org/conda-forge/osx-64/cryptography-36.0.1-py39h209aa08_0.tar.bz2#ca8fa372f4f6104e41ca4028dca9458a
 https://conda.anaconda.org/conda-forge/noarch/dask-core-2021.12.0-pyhd8ed1ab_0.tar.bz2#e572bf40b1e8783fed2526ecb5f5209e
-https://conda.anaconda.org/conda-forge/noarch/flake8-4.0.1-pyhd8ed1ab_0.tar.bz2#8345403a7a0c5d95bb686fb8257c8638
+https://conda.anaconda.org/conda-forge/noarch/flake8-4.0.1-pyhd8ed1ab_1.tar.bz2#ebcd260142f408f587dafc01170a32f2
 https://conda.anaconda.org/conda-forge/noarch/geoalchemy2-0.6.3-py_0.tar.bz2#1ea49d7c1392265e007a8b2f8de0713b
 https://conda.anaconda.org/conda-forge/osx-64/geotiff-1.7.0-h9e3163f_5.tar.bz2#8b5c325b6c2ca8eee830365e5e467c39
 https://conda.anaconda.org/conda-forge/noarch/isort-5.10.1-pyhd8ed1ab_0.tar.bz2#83df9ffefe1cc01d9e60405bf871bfdb
@@ -239,7 +239,7 @@ https://conda.anaconda.org/conda-forge/osx-64/kealib-1.4.14-ha22a8b1_3.tar.bz2#9
 https://conda.anaconda.org/conda-forge/osx-64/libdap4-3.20.6-h3e144a0_2.tar.bz2#55e0706347eb18f3616808366236bcaa
 https://conda.anaconda.org/conda-forge/osx-64/libnetcdf-4.8.1-nompi_h6609ca0_101.tar.bz2#8bb6071531fc82b4133f3a5280eefdfa
 https://conda.anaconda.org/conda-forge/osx-64/libspatialite-5.0.1-h24415ee_12.tar.bz2#7f90f55a961c82612932c0e53b3036f7
-https://conda.anaconda.org/conda-forge/noarch/markdown-3.3.6-pyhd8ed1ab_0.tar.bz2#e7cbd93fe74dc4a06b4b494d60c659a9
+https://conda.anaconda.org/conda-forge/noarch/markdown-3.3.4-pyhd8ed1ab_0.tar.bz2#b8054f74fbed2b282f032219f114421a
 https://conda.anaconda.org/conda-forge/noarch/munch-2.5.0-py_0.tar.bz2#31d9e9be500e25ff0050bc9f57a6bcd7
 https://conda.anaconda.org/conda-forge/osx-64/mypy-0.920-py39h89e85a6_0.tar.bz2#e34753d4a69ce41a83badec8c4563fb0
 https://conda.anaconda.org/conda-forge/osx-64/numpy-1.21.4-py39h7eed0ac_0.tar.bz2#1c5103c2f7c964e07a5cae06468d0f98
