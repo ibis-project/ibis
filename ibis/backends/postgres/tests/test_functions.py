@@ -1092,35 +1092,9 @@ def test_array_collect(array_types):
         (None, 3),
         (None, None),
         (3, None),
-        # negative slices are not supported
-        param(
-            -3,
-            None,
-            marks=pytest.mark.xfail(
-                raises=ValueError, reason='Negative slicing not supported'
-            ),
-        ),
-        param(
-            None,
-            -3,
-            marks=pytest.mark.xfail(
-                raises=ValueError, reason='Negative slicing not supported'
-            ),
-        ),
-        param(
-            -3,
-            -1,
-            marks=pytest.mark.xfail(
-                raises=ValueError, reason='Negative slicing not supported'
-            ),
-        ),
-        param(
-            -3,
-            -1,
-            marks=pytest.mark.xfail(
-                raises=ValueError, reason='Negative slicing not supported'
-            ),
-        ),
+        (-3, None),
+        (None, -3),
+        (-3, -1),
     ],
 )
 def test_array_slice(array_types, start, stop):
@@ -1132,14 +1106,14 @@ def test_array_slice(array_types, start, stop):
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.parametrize('index', [1, 3, 4, 11])
+@pytest.mark.parametrize('index', [0, 1, 3, 4, 11, -1, -3, -4, -11])
 def test_array_index(array_types, index):
     expr = array_types[array_types.y[index].name('indexed')]
     result = expr.execute()
     expected = pd.DataFrame(
         {
             'indexed': array_types.y.execute().map(
-                lambda x: x[index] if index < len(x) else None
+                lambda x: x[index] if -len(x) <= index < len(x) else None
             )
         }
     )

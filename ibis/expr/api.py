@@ -3332,11 +3332,6 @@ def _array_slice(array, index):
     if isinstance(index, slice):
         start = index.start
         stop = index.stop
-        if (start is not None and start < 0) or (
-            stop is not None and stop < 0
-        ):
-            raise ValueError('negative slicing not yet supported')
-
         step = index.step
 
         if step is not None and step != 1:
