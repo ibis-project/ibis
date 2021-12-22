@@ -1,0 +1,25 @@
+name: Automatic Rebase
+on:
+  pull_request_target:
+    branches-ignore:
+      # Ignore branches automatically created by github-rebase
+      - rebase-pull-request**
+      - cherry-pick-rebase-pull-request**
+    types:
+      - labeled
+
+jobs:
+  auto-rebase:
+    name: AutoRebase
+    runs-on: ubuntu-latest
+    if: ${{ github.repository == 'ibis-project/ibis' }}
+    steps:
+      - uses: tibdex/github-app-token@v1
+        id: generate_token
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - uses: Label305/AutoRebase@v0.1
+        with:
+          github_token: ${{ steps.generate_token.outputs.token }}
