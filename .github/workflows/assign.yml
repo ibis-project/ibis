@@ -1,14 +1,14 @@
-name: Assign
+name: Assign Issue
 on:
   issue_comment:
-    types: created
-
+    types:
+      - created
 jobs:
-  one:
+  assign_issue:
     runs-on: ubuntu-latest
+    if: ${{ github.event.comment.body == '/take' }}
     steps:
-    - if: github.event.comment.body == '/take'
-      name:
-      run: |
-        echo "Assigning issue ${{ github.event.issue.number }} to ${{ github.event.comment.user.login }}"
-        curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -d '{"assignees": ["${{ github.event.comment.user.login }}"]}' https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/assignees
+      - name: Assign issue ${{ github.event.issue.number }} to ${{ github.event.comment.user.login }}
+        run: gh issue edit ${{ github.event.issue.number }} --add-assignee "${{ github.event.comment.user.login }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
