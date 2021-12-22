@@ -4658,6 +4658,7 @@ _table_methods = {
     'anti_join': _regular_join_method('anti_join', 'anti'),
     'asof_join': asof_join,
     'sort_by': _table_sort_by,
+    'order_by': _table_sort_by,
     'to_array': _table_to_array,
     'union': _table_union,
     'intersect': _table_intersect,
