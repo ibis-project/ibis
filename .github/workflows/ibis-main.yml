@@ -242,8 +242,8 @@ jobs:
         uses: tibdex/github-app-token@v1
         id: generate_token
         with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+          app_id: ${{ secrets.DOCS_BOT_APP_ID }}
+          private_key: ${{ secrets.DOCS_BOT_APP_PRIVATE_KEY }}
           repository: ibis-project/ibis-project.org
 
       - name: checkout
