@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 import pandas._testing as tm
 import pytest
-from pytest import param
 
 import ibis
 from ibis.common.exceptions import IbisTypeError
@@ -104,28 +103,9 @@ def test_array_collect_scalar(client):
         (None, 3),
         (None, None),
         (3, None),
-        # negative slices are not supported
-        param(
-            -3,
-            None,
-            marks=pytest.mark.xfail(
-                raises=ValueError, reason='Negative slicing not supported'
-            ),
-        ),
-        param(
-            None,
-            -3,
-            marks=pytest.mark.xfail(
-                raises=ValueError, reason='Negative slicing not supported'
-            ),
-        ),
-        param(
-            -3,
-            -1,
-            marks=pytest.mark.xfail(
-                raises=ValueError, reason='Negative slicing not supported'
-            ),
-        ),
+        (-3, None),
+        (None, -3),
+        (-3, -1),
     ],
 )
 def test_array_slice(t, df, start, stop):
@@ -146,28 +126,9 @@ def test_array_slice(t, df, start, stop):
         (None, 3),
         (None, None),
         (3, None),
-        # negative slices are not supported
-        param(
-            -3,
-            None,
-            marks=pytest.mark.xfail(
-                raises=ValueError, reason='Negative slicing not supported'
-            ),
-        ),
-        param(
-            None,
-            -3,
-            marks=pytest.mark.xfail(
-                raises=ValueError, reason='Negative slicing not supported'
-            ),
-        ),
-        param(
-            -3,
-            -1,
-            marks=pytest.mark.xfail(
-                raises=ValueError, reason='Negative slicing not supported'
-            ),
-        ),
+        (-3, None),
+        (None, -3),
+        (-3, -1),
     ],
 )
 def test_array_slice_scalar(client, start, stop):

@@ -574,6 +574,16 @@ def _mod(t, expr):
         return result
 
 
+def _neg_idx_to_pos(array, idx):
+    return sa.case(
+        [
+            (array.is_(None), None),
+            (idx < 0, sa.func.array_length(array, 1) + idx),
+        ],
+        else_=idx,
+    )
+
+
 def _array_slice(t, expr):
     arg, start, stop = expr.op().args
     sa_arg = t.translate(arg)
@@ -583,6 +593,9 @@ def _array_slice(t, expr):
         sa_stop = _cardinality(sa_arg)
     else:
         sa_stop = t.translate(stop)
+
+    sa_start = _neg_idx_to_pos(sa_arg, sa_start)
+    sa_stop = _neg_idx_to_pos(sa_arg, sa_stop)
     return sa_arg[sa_start + 1 : sa_stop]
 
 
@@ -702,7 +715,9 @@ operation_registry.update(
         ops.ArrayLength: unary(_cardinality),
         ops.ArrayCollect: unary(sa.func.array_agg),
         ops.ArraySlice: _array_slice,
-        ops.ArrayIndex: fixed_arity(lambda array, index: array[index + 1], 2),
+        ops.ArrayIndex: fixed_arity(
+            lambda array, index: array[_neg_idx_to_pos(array, index) + 1], 2
+        ),
         ops.ArrayConcat: fixed_arity(
             sa.sql.expression.ColumnElement.concat, 2
         ),

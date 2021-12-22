@@ -28,22 +28,28 @@ _clickhouse_dtypes = {
     'FixedString': dt.String,
     'Date': dt.Date,
     'DateTime': dt.Timestamp,
+    'DateTime64': dt.Timestamp,
+    'Array': dt.Array,
 }
 _ibis_dtypes = {v: k for k, v in _clickhouse_dtypes.items()}
 _ibis_dtypes[dt.String] = 'String'
+_ibis_dtypes[dt.Timestamp] = 'DateTime'
 
 
 class ClickhouseDataType:
 
-    __slots__ = 'typename', 'nullable'
+    __slots__ = 'typename', 'base_typename', 'nullable'
 
     def __init__(self, typename, nullable=False):
         m = base_typename_re.match(typename)
-        base_typename = m.groups()[0]
-        if base_typename not in _clickhouse_dtypes:
+        self.base_typename = m.groups()[0]
+        if self.base_typename not in _clickhouse_dtypes:
             raise com.UnsupportedBackendType(typename)
-        self.typename = base_typename
+        self.typename = self.base_typename
         self.nullable = nullable
+
+        if self.base_typename == 'Array':
+            self.typename = typename
 
     def __str__(self):
         if self.nullable:
@@ -63,11 +69,37 @@ class ClickhouseDataType:
             return cls(spec)
 
     def to_ibis(self):
-        return _clickhouse_dtypes[self.typename](nullable=self.nullable)
+        if self.base_typename != 'Array':
+            return _clickhouse_dtypes[self.typename](nullable=self.nullable)
+
+        sub_type = ClickhouseDataType(
+            self.get_subname(self.typename)
+        ).to_ibis()
+        return dt.Array(value_type=sub_type)
+
+    @staticmethod
+    def get_subname(name: str) -> str:
+        lbracket_pos = name.find('(')
+        rbracket_pos = name.rfind(')')
+
+        if lbracket_pos == -1 or rbracket_pos == -1:
+            return ''
+
+        subname = name[lbracket_pos + 1 : rbracket_pos]
+        return subname
+
+    @staticmethod
+    def get_typename_from_ibis_dtype(dtype):
+        if not isinstance(dtype, dt.Array):
+            return _ibis_dtypes[type(dtype)]
+
+        return 'Array({})'.format(
+            ClickhouseDataType.get_typename_from_ibis_dtype(dtype.value_type)
+        )
 
     @classmethod
     def from_ibis(cls, dtype, nullable=None):
-        typename = _ibis_dtypes[type(dtype)]
+        typename = ClickhouseDataType.get_typename_from_ibis_dtype(dtype)
         if nullable is None:
             nullable = dtype.nullable
         return cls(typename, nullable=nullable)

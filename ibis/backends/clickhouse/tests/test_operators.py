@@ -273,3 +273,65 @@ def test_search_case(con, alltypes, translate):
 END"""
     assert translate(expr) == expected
     assert len(con.execute(expr))
+
+
+@pytest.mark.parametrize(
+    'arr',
+    [
+        [1, 2, 3],
+        ['qw', 'wq', '1'],
+        [1.2, 0.3, 0.4],
+        [[1], [1, 2], [1, 2, 3]],
+    ],
+)
+@pytest.mark.parametrize(
+    'ids',
+    [
+        lambda arr: range(len(arr)),
+        lambda arr: range(-len(arr), 0),
+    ],
+)
+def test_array_index(con, arr, ids):
+    expr = L(arr)
+    for i in ids(arr):
+        el_expr = expr[i]
+        el = con.execute(el_expr)
+        assert el == arr[i]
+
+
+@pytest.mark.parametrize(
+    'arrays',
+    [
+        ([1], [2]),
+        ([1], [1, 2]),
+        ([1, 2], [1]),
+        ([1, 2], [3, 4]),
+        ([1, 2], [3, 4], [5, 6]),
+    ],
+)
+def test_array_concat(con, arrays):
+    expr = L([]).cast(dt.Array(dt.int8))
+    expected = sum(arrays, [])
+    for arr in arrays:
+        expr += L(arr)
+
+    assert con.execute(expr) == expected
+
+
+@pytest.mark.parametrize(
+    ('arr', 'times'),
+    [([1], 1), ([1], 2), ([1], 3), ([1, 2], 1), ([1, 2], 2), ([1, 2], 3)],
+)
+def test_array_repeat(con, arr, times):
+    expected = arr * times
+    expr = L(arr)
+
+    assert con.execute(expr * times) == expected
+
+
+@pytest.mark.parametrize('arr', [[], [1], [1, 2, 3, 4, 5, 6]])
+@pytest.mark.parametrize('start', [None, 0, 1, 2, -1, -3])
+@pytest.mark.parametrize('stop', [None, 0, 1, 3, -2, -4])
+def test_array_slice(con, arr, start, stop):
+    expr = L(arr)
+    assert con.execute(expr[start:stop]) == arr[start:stop]

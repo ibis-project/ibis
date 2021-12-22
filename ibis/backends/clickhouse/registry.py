@@ -74,6 +74,58 @@ def _fixed_arity(func_name, arity):
     return formatter
 
 
+def _array_index_op(translator, expr):
+    op = expr.op()
+
+    arr = op.args[0]
+    idx = op.args[1]
+
+    arr_ = translator.translate(arr)
+    idx_ = _parenthesize(translator, idx)
+
+    correct_idx = f'if({idx_} >= 0, {idx_} + 1, {idx_})'
+
+    return f'arrayElement({arr_}, {correct_idx})'
+
+
+def _array_repeat_op(translator, expr):
+    op = expr.op()
+    arr, times = op.args
+
+    arr_ = _parenthesize(translator, arr)
+    times_ = _parenthesize(translator, times)
+
+    select = 'arrayFlatten(groupArray(arr))'
+    from_ = f'(select {arr_} as arr from system.numbers limit {times_})'
+    return f'(select {select} from {from_})'
+
+
+def _array_slice_op(translator, expr):
+    op = expr.op()
+    arg, start, stop = op.args
+
+    start_ = _parenthesize(translator, start)
+    arg_ = translator.translate(arg)
+
+    start_correct_ = f'if({start_} < 0, {start_}, {start_} + 1)'
+
+    if stop is not None:
+        stop_ = _parenthesize(translator, stop)
+
+        cast_arg_ = f'if({arg_} = [], CAST({arg_} AS Array(UInt8)), {arg_})'
+        neg_start_ = f'(arrayCount({cast_arg_}) + {start_})'
+        diff_fmt = f'greatest(-0, {stop_} - {{}})'.format
+
+        length_ = (
+            f'if({stop_} < 0, {stop_}, '
+            + f'if({start_} < 0, {diff_fmt(neg_start_)}, {diff_fmt(start_)}))'
+        )
+
+        return f'arraySlice({arg_}, {start_correct_}, {length_})'
+
+    return f'arraySlice({arg_}, {start_correct_})'
+
+
 def _agg(func):
     def formatter(translator, expr):
         return _aggregate(translator, func, *expr.op().args)
@@ -644,6 +696,10 @@ operation_registry = {
     ops.ExistsSubquery: _exists_subquery,
     ops.NotExistsSubquery: _exists_subquery,
     ops.ArrayLength: _unary('length'),
+    ops.ArrayIndex: _array_index_op,
+    ops.ArrayConcat: _fixed_arity('arrayConcat', 2),
+    ops.ArrayRepeat: _array_repeat_op,
+    ops.ArraySlice: _array_slice_op,
 }
 
 
