@@ -1,0 +1,70 @@
+name: Update Dependencies
+on:
+  schedule:
+    # run every 24 hours at midnight
+    - cron: "0 */24 * * *"
+  workflow_dispatch:
+jobs:
+  niv-update:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dep:
+          - nixpkgs
+          - poetry2nix
+          - pre-commit-hooks
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v16
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable-small
+
+      - name: Get current commit
+        uses: cpcloud/niv-dep-info-action@main
+        id: get_current_commit
+        with:
+          dependency: ${{ matrix.dep }}
+
+      - name: Update ${{ matrix.dep }}
+        run: nix run nixpkgs.niv -c niv update ${{ matrix.dep }}
+
+      - name: Get new commit
+        uses: cpcloud/niv-dep-info-action@main
+        id: get_new_commit
+        with:
+          dependency: ${{ matrix.dep }}
+
+      - name: Get commit details for ${{ matrix.dep }} changes
+        uses: cpcloud/compare-commits-action@v5.0.8
+        id: compare_commits
+        if: ${{ steps.get_current_commit.outputs.rev != steps.get_new_commit.outputs.rev }}
+        with:
+          owner: ${{ steps.get_new_commit.outputs.owner }}
+          repo: ${{ steps.get_new_commit.outputs.repo }}
+          basehead: ${{ steps.get_current_commit.outputs.rev }}...${{ steps.get_new_commit.outputs.rev }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          include-merge-commits: false
+
+      - name: Generate a GitHub token
+        uses: tibdex/github-app-token@v1
+        id: generate_token
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Create a pull request to update ${{ matrix.dep }}
+        if: ${{ steps.get_current_commit.outputs.rev != steps.get_new_commit.outputs.rev }}
+        id: create_pr
+        uses: peter-evans/create-pull-request@v3
+        with:
+          commit-message: "chore(deps/${{ matrix.dep }}): update"
+          branch: "create-pull-request/update-${{ matrix.dep }}"
+          delete-branch: true
+          author: "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
+          title: "chore(deps/${{ matrix.dep }}): update"
+          token: ${{ steps.generate_token.outputs.token }}
+          body: ${{ steps.compare_commits.outputs.differences }}
+          labels: dependencies,autorebase:opt-in
