@@ -20,16 +20,14 @@ Installing both `nix` and `conda` is fine, but you should use one or the other f
 
 Use `gh` to fork and clone the `ibis-project/ibis` repository:
 
-     :::sh
-     gh repo fork --clone --remote ibis-project/ibis
-     cd ibis
+        gh repo fork --clone --remote ibis-project/ibis
+        cd ibis
 
 ### Nix
 
 1. [Download and install `nix`](https://nixos.org/guides/install-nix.html)
 2. Run `nix-shell` in the checkout directory:
    
-        :::sh
         cd ibis
 
         # set up the cache to avoid building everything from scratch
@@ -46,38 +44,37 @@ Use `gh` to fork and clone the `ibis-project/ibis` repository:
 2. [Download the latest `environment.yaml`](https://github.com/ibis-project/ibis/releases/latest/download/environment.yaml)
 3. Create a Conda environment suitable for ibis development:
 
-        :::sh
         cd ibis
         conda create -n ibis-dev -f conda-lock/<platform-64-pyver>.lock
 
 
 4. Activate the environment
 
-        :::sh
         conda activate ibis-dev
 
 5. Install your local copy of `ibis` into the Conda environment. In the root of the project run:
 
-        :::sh
         pip install -e .
 
 ### General workflow
 
 #### Find an issue to work on
 
-If you are working with Ibis, and find a bug, or you are reading the documentation and see something
-wrong, or that could be clearer, you can work on that.
+All contributions are welcome! Code, docs, and constructive feedback are all
+great contributions to the project.
 
-But sometimes, you may want to contribute to Ibis, but you don't have anything in mind. In that case,
-you can check the GitHub issue tracker for Ibis, and look for issues with the label
-[good first issue](https://github.com/ibis-project/ibis/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22).
-Feel free to also help with other issues that don't have the label, but they may be more challenging,
-and require knowledge of Ibis internals.
+If you don't have a particular issue in mind head over to the GitHub issue
+tracker for Ibis and look for open issues with the label [`good first
+issue`](https://github.com/ibis-project/ibis/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22).
 
-Once you found an issue you want to work on, write a comment with the text `/take`, and GitHub will
-assign the issue to yourself. This way, nobody else will work on it at the same time. If you find an
-issue that someone else is assigned to, please contact the assignee to know if they are still working
-on it.
+Feel free to help with other issues that aren't labeled as such, but they may be more challenging.
+
+Once you find an issue you want to work on, write a comment with the text
+`/take` on the issue. GitHub will then assign the issue to you.
+
+This lets people know you're working on the issue. If you find an issue that
+has an assignee, comment on the issue and ask whether the assignee is still
+working on the issue.
 
 #### Make a branch
 
@@ -87,8 +84,7 @@ on it.
 
 The first thing you want to do is make a branch. Let's call it `useful-bugfix`.
 
-       :::sh
-       git checkout -b useful-bugfix
+        git checkout -b useful-bugfix
 
 #### Make the desired change
 
@@ -100,7 +96,6 @@ Let's say you've made a change to `ibis/expr/types.py` to fix a bug reported in 
 
 Running `git status` should give output similar to this:
 
-        :::sh
         $ git status
         On branch useful-bugfix
         Your branch is up to date with 'origin/useful-bugfix'.
@@ -151,15 +146,13 @@ table](https://github.com/semantic-release/semantic-release).
 `cz` is already configured and ready to go if you've setup an environment, so
 stage your changes and run `cz commit`:
 
-        :::sh
-        $ git add .
-        $ cz commit
+        git add .
+        cz commit
 
 You should see a series of prompts about actions to take next:
 
 1. Select the type of change you're committing. In this case, we're committing a bug fix, so we'll select fix:
 
-        :::sh
         ? Select the type of change you are committing (Use arrow keys)
          » fix: A bug fix. Correlates with PATCH in SemVer
            feat: A new feature. Correlates with MINOR in SemVer
@@ -180,7 +173,6 @@ You should see a series of prompts about actions to take next:
 
 2. Next, you're asked what the scope of this change is:
 
-        :::sh
         ? What is the scope of this change? (class or file name): (press [enter] to skip)
 
    This is optional, but if there's a clear component or single file that is
@@ -189,7 +181,6 @@ You should see a series of prompts about actions to take next:
 
 3. You'll then be asked to type in a short description of the change which will be the commit message title:
 
-        :::sh
         ? Write a short and imperative summary of the code changes: (lower case and no period)
          fix a type inference issue where floats were incorrectly cast to ints
 
@@ -200,7 +191,6 @@ You should see a series of prompts about actions to take next:
 4. Next you'll be asked for a longer description, which is entirely optional
    **unless the change is a breaking change**, or you feel like a bit of prose
 
-        :::sh
         ? Provide additional contextual information about the code changes: (press [enter] to skip)
          A bug was triggered by some incorrect code that caused floats to be incorrectly cast to integers.
 
@@ -210,7 +200,6 @@ You should see a series of prompts about actions to take next:
 
 5. Next you're asked about breaking changes:
 
-        :::sh
         ? Is this a BREAKING CHANGE? Correlates with MAJOR in SemVer (y/N)
 
    If you answer `y`, then you'll get an additional prompt asking you to
@@ -221,7 +210,6 @@ You should see a series of prompts about actions to take next:
 6. Finally, you're asked whether this change affects any open issues (ignore
    the bit about breaking changes) and if yes then to reference them:
 
-        :::sh
         ? Footer. Information about Breaking Changes and reference issues that this commit closes: (press [enter] to skip)
          fixes #424242
 
@@ -244,7 +232,6 @@ that you should have a commit that looks roughly like this, ready to be automati
 
 Now that you've got a commit, you're ready to push your changes and make a pull request!
 
-        :::sh
         $ gh pr create
 
 Follow the prompts, and `gh` will print a link to your PR upon successfuly submission.
@@ -332,7 +319,6 @@ A number of tasks that are typically associated with maintenance are either part
 
 Occasionally you may need to manually lock poetry dependencies, which can be done by running
 
-        :::sh
         poetry update --lock
 
 If a dependency was updated, you'll see changes to `poetry.lock` in the current directory.
