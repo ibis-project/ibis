@@ -4126,7 +4126,7 @@ def _regular_join_method(name, how, doc=None):
     return f
 
 
-def filter(table, predicates):
+def _filter(table, predicates):
     """
     Select rows from table based on boolean expressions
 
@@ -4641,7 +4641,7 @@ _table_methods = {
     'limit': _table_limit,
     'head': _head,
     'set_column': _table_set_column,
-    'filter': filter,
+    'filter': _filter,
     'materialize': _table_materialize,
     'mutate': mutate,
     'projection': projection,
