@@ -7,7 +7,6 @@ let
     cacert
     cachix
     commitlint
-    gh
     git
     niv
     nix-linter
@@ -56,4 +55,6 @@ pkgs.mkShell {
   buildInputs = devDeps ++ libraryDevDeps ++ [
     pkgs."ibisDevEnv${pythonShortVersion}"
   ];
+
+  PYTHONPATH = builtins.toPath ./.;
 }

@@ -11,22 +11,25 @@ There are two primary ways to setup a development environment.
 
 **Dependencies:**
 
-- required: [`git`](https://git-scm.com/)
-- required: [`gh`](https://github.com/cli/cli)
-- optional: [`nix`](https://nixos.org/download.html#nix-quick-install)
-- optional: [`conda`](https://docs.conda.io/en/latest/)
+#### Required
 
-Installing both `nix` and `conda` is fine, but you should use one or the other for contributing, not both.
+- [`git`](https://git-scm.com/)
 
-Use `gh` to fork and clone the `ibis-project/ibis` repository:
+#### Package Management
 
-        gh repo fork --clone --remote ibis-project/ibis
-        cd ibis
+At least one of `nix` or `conda` is required to contribute to ibis.
+
+- [`conda`](https://docs.conda.io/en/latest/)
 
 ### Nix
 
-1. [Download and install `nix`](https://nixos.org/guides/install-nix.html)
-2. Run `nix-shell` in the checkout directory:
+1. [Download and install `nix`](https://nixos.org/download.html)
+1. Install `gh`: `nix-shell -p gh` **or** `nix-env -iA gh`
+1. Fork and clone the ibis repository:
+
+        gh repo fork --clone --remote ibis-project/ibis
+
+1. Run `nix-shell` in the checkout directory:
    
         cd ibis
 
@@ -41,18 +44,21 @@ Use `gh` to fork and clone the `ibis-project/ibis` repository:
 ### Miniconda
 
 1. [Download](https://docs.conda.io/en/latest/miniconda.html) and install Miniconda
-2. [Download the latest `environment.yaml`](https://github.com/ibis-project/ibis/releases/latest/download/environment.yaml)
-3. Create a Conda environment suitable for ibis development:
+1. Install `gh`: `conda install -c conda-forge gh`
+1. Fork and clone the ibis repository:
+
+        gh repo fork --clone --remote ibis-project/ibis
+
+1. Create a Conda environment suitable for ibis development:
 
         cd ibis
         conda create -n ibis-dev -f conda-lock/<platform-64-pyver>.lock
 
-
-4. Activate the environment
+1. Activate the environment
 
         conda activate ibis-dev
 
-5. Install your local copy of `ibis` into the Conda environment. In the root of the project run:
+1. Install your local copy of `ibis` into the Conda environment. In the root of the project run:
 
         pip install -e .
 
