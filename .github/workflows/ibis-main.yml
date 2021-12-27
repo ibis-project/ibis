@@ -337,7 +337,6 @@ jobs:
 
   simulate_release:
     runs-on: ubuntu-latest
-    concurrency: release
     steps:
       - name: checkout pr
         uses: actions/checkout@v2
