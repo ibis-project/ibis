@@ -4,29 +4,13 @@
 let
   pkgs = import ./nix;
   drv =
-    { poetry2nix
-    , python
-    , lib
-    }:
+    { poetry2nix, python }:
 
-    let
-      backends = [
-        "csv"
-        "dask"
-        "hdf5"
-        "pandas"
-        "parquet"
-        "sqlite"
-      ];
-
-      backendsString = lib.concatStringsSep " " backends;
-    in
     poetry2nix.mkPoetryApplication {
       inherit python;
 
-      pyproject = ./pyproject.toml;
-      poetrylock = ./poetry.lock;
-      src = lib.cleanSource ./.;
+      projectDir = ./.;
+      src = pkgs.gitignoreSource ./.;
 
       overrides = pkgs.poetry2nix.overrides.withDefaults (
         import ./poetry-overrides.nix {
@@ -39,32 +23,12 @@ let
         rm -f setup.py
       '';
 
-      buildInputs = with pkgs; [ graphviz ];
-      checkInputs = with pkgs; [ graphviz ];
+      buildInputs = with pkgs; [ graphviz-nox ];
+      checkInputs = with pkgs; [ graphviz-nox ];
 
       checkPhase = ''
         runHook preCheck
-
-        tempdir="$(mktemp -d)"
-
-        cp -r ${pkgs.ibisTestingData}/* "$tempdir"
-
-        chmod -R u+rwx "$tempdir"
-
-        ln -s "$tempdir" ci/ibis-testing-data
-
-        for backend in ${backendsString}; do
-          python ci/datamgr.py "$backend" &
-        done
-
-        wait
-
-        PYTEST_BACKENDS="${backendsString}" \
-          pytest --numprocesses auto \
-          ibis/tests \
-          ibis/backends/tests \
-          ibis/backends/{${lib.concatStringsSep "," backends}}/tests
-
+        pytest ibis/tests --numprocesses auto
         runHook postCheck
       '';
 

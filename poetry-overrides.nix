@@ -70,8 +70,4 @@ self: super:
 
     pythonImportsCheck = [ "tables" ];
   });
-
-  typing-extensions = super.typing-extensions.overridePythonAttrs (attrs: {
-    buildInputs = (attrs.buildInputs or [ ]) ++ [ self.flit-core ];
-  });
 }

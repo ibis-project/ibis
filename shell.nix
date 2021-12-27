@@ -1,7 +1,6 @@
 { python ? "3.10" }:
 let
   pkgs = import ./nix;
-  inherit (pkgs) lib;
 
   devDeps = with pkgs; [
     cacert
@@ -22,7 +21,7 @@ let
     cmake
   ];
 
-  vizDeps = [ pkgs.graphviz ];
+  vizDeps = [ pkgs.graphviz-nox ];
   pysparkDeps = [ pkgs.openjdk11 ];
   docDeps = [ pkgs.pandoc ];
 
