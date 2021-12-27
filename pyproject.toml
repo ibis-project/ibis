@@ -39,7 +39,7 @@ dask = { version = "^2021.2.0", optional = true, extras = [
   "array",
   "dataframe"
 ] }
-geoalchemy2 = { version = ">=0.6,<0.10", optional = true }
+geoalchemy2 = { version = ">=0.6,<0.11", optional = true }
 geopandas = { version = ">=0.6,<0.11", optional = true }
 graphviz = { version = ">=0.16,<0.20", optional = true }
 hdfs = { version = ">=2,<3", optional = true, extras = ["kerberos"] }
