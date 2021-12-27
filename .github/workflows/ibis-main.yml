@@ -215,7 +215,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.cache/pypoetry
-          key: docs-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}
+          key: docs-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('ibis/poetry.lock') }}
 
       - name: install ibis
         working-directory: ibis
