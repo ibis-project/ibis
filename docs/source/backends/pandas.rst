@@ -112,7 +112,7 @@ Using ``add_one`` from above as an example, the following call will receive a
    import ibis
    import pandas as pd
    df = pd.DataFrame({'a': [1, 2, 3]})
-   con = ibis.backends.pandas.connect({'df': df})
+   con = ibis.pandas.connect({'df': df})
    t = con.table('df')
    expr = add_one(t.a)
    expr

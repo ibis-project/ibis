@@ -33,7 +33,7 @@ df = pd.DataFrame(
     }
 )
 
-con = ibis.backends.pandas.connect({"table1": df})
+con = ibis.pandas.connect({"table1": df})
 
 @elementwise(
     input_type=[dt.double],
