@@ -3,6 +3,11 @@ let
 in
 import sources.nixpkgs {
   overlays = [
+    (pkgs: _: {
+      inherit (import sources."gitignore.nix" {
+        inherit (pkgs) lib;
+      }) gitignoreSource;
+    })
     (pkgs: super: {
       poetry2nix = import sources.poetry2nix {
         inherit pkgs;
@@ -34,6 +39,7 @@ import sources.nixpkgs {
       ibisDevEnv38 = pkgs.mkPoetryEnv pkgs.python38;
       ibisDevEnv39 = pkgs.mkPoetryEnv pkgs.python39;
       ibisDevEnv310 = pkgs.mkPoetryEnv pkgs.python310;
+      ibisDevEnv = pkgs.ibisDevEnv310;
     } // super.lib.optionalAttrs super.stdenv.isDarwin {
       arrow-cpp = super.arrow-cpp.override {
         enableS3 = false;
