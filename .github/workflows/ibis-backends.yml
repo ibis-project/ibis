@@ -168,13 +168,16 @@ jobs:
         if: ${{ toJSON(matrix.deps) == '[]' }}
         with:
           path: ~/.cache/pypoetry
-          key: postgres-geospatial-${{ join(matrix.deps, '-') }}-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}
+          key: postgres-geospatial-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}
 
       - name: install minimum postgres dependencies
+        if: ${{ toJSON(matrix.deps) != '[]' }}
         run: |
-          for dep in ${{ join(matrix.deps, ' ') }}; do
-            poetry add --lock --optional "$dep"
-          done
+          set -euo pipefail
+
+          deps=(${{ join(matrix.deps, ' ') }})
+          args=(${deps[@]/#/--optional })
+          poetry add --lock ${args[*]}
 
       - name: install ibis
         run: poetry install --extras postgres --extras geospatial
