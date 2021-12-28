@@ -54,7 +54,7 @@ jobs:
         uses: actions/setup-python@v2
         id: install_python
         with:
-          python-version: "3.x"
+          python-version: "3.9"
 
       - name: install poetry
         run: pip install poetry
