@@ -21,10 +21,6 @@ on:
 jobs:
   check_setup_py:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version:
-          - "3.10"
     steps:
       - name: checkout
         uses: actions/checkout@v2
@@ -33,8 +29,6 @@ jobs:
         uses: cachix/install-nix-action@v16
         with:
           nix_path: nixpkgs=channel:nixos-unstable-small
-          extra_nix_config: |
-            experimental-features = nix-command flakes
 
       - name: setup cachix
         uses: cachix/cachix-action@v10
@@ -50,10 +44,6 @@ jobs:
 
   check_setuptools_install:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version:
-          - "3.9"
     needs:
       - check_setup_py
     steps:
@@ -64,7 +54,7 @@ jobs:
         uses: actions/setup-python@v2
         id: install_python
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.x"
 
       - name: install poetry
         run: pip install poetry
@@ -99,7 +89,7 @@ jobs:
       - name: install python
         uses: actions/setup-python@v2
         with:
-          python-version: "3.10"
+          python-version: "3.x"
 
       - name: install poetry
         run: pip install poetry

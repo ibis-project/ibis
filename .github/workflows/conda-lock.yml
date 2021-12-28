@@ -102,12 +102,12 @@ jobs:
           name: conda-lock-files-${{ github.run_attempt }}
           path: conda-lock
 
-      - name: set git user info
+      - name: Configure git info
         run: |
           set -euo pipefail
 
-          git config --global user.name 'ibis-project-bot[bot]'
-          git config --global user.email 'ibis-project-bot[bot]@users.noreply.github.com'
+          git config --global user.name 'ibis-squawk-bot[bot]'
+          git config --global user.email 'ibis-squawk-bot[bot]@users.noreply.github.com'
 
       - name: commit lock files and push to PR
         run: |
@@ -115,7 +115,7 @@ jobs:
 
           git add conda-lock/*.lock
 
-          if git commit -m'chore(conda-lock): relock [skip ci]'; then
+          if git commit -m 'chore(conda-lock): relock [skip ci]'; then
             # pull in case another commit happened in the meantime
             #
             # `ours` is actually the *other* changeset, not the current branch, per

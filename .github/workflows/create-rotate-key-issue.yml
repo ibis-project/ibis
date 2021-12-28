@@ -1,4 +1,4 @@
-name: Rotate ibis-project-bot Key
+name: Rotate bot keys
 on:
   schedule:
     # https://crontab.guru/#0_0_1_*/3_*
@@ -23,7 +23,7 @@ jobs:
         uses: peter-evans/create-issue-from-file@v3
         with:
            token: ${{ steps.generate_token.outputs.token }}
-           title: "chore: rotate ibis-project-bot private key"
+           title: "chore: rotate ibis bot keys"
            content-filepath: .github/rotate-key-template.md
            labels: ci
            assignees: cpcloud,jreback

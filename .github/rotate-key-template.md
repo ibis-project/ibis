@@ -1,1 +1,1 @@
-It's time to rotate the `ibis-project-bot` key.
+It's time to rotate the ibis project bots' keys.

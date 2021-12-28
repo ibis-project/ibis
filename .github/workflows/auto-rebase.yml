@@ -10,7 +10,6 @@ on:
 
 jobs:
   auto-rebase:
-    name: AutoRebase
     runs-on: ubuntu-latest
     if: ${{ github.repository == 'ibis-project/ibis' }}
     steps:
