@@ -53,7 +53,6 @@ install_requires = [
     "cached_property>=1,<2",
     "cryptography>=3,<4",
     "multipledispatch>=0.6,<0.7",
-    "numpy>=1,<2",
     "pandas>=1.2.5,<2",
     "parsy>=1.3.0,<2",
     "pytz>=2021.1,<2022.0",
@@ -63,7 +62,12 @@ install_requires = [
 
 extras_require = {
     ':python_version < "3.10"': ["cytoolz>=0.11,<0.12"],
+    ':python_version < "3.10" and sys_platform == "win32"': ["numpy>=1,<2"],
     ':python_version < "3.8"': ["importlib-metadata>=4,<5"],
+    ':python_version >= "3.10" and sys_platform == "win32"': [
+        "numpy>=1.21.3,<2"
+    ],
+    ':sys_platform != "win32"': ["numpy>=1,<2"],
     "all": [
         "clickhouse-driver>=0.1,<0.3",
         "clickhouse-sqlalchemy>=0.1.4,<0.2",
@@ -73,7 +77,7 @@ extras_require = {
         "graphviz>=0.16,<0.20",
         "hdfs[kerberos]>=2,<3",
         "impyla[kerberos]>=0.17,<0.19",
-        "psycopg2>=2.7,<3",
+        "psycopg2>=2.7.6,<3",
         "pyarrow>=1,<7",
         "pymysql>=1,<2",
         "pyspark>=2.4.3,<4",
@@ -102,7 +106,7 @@ extras_require = {
     ],
     "mysql": ["pymysql>=1,<2", "sqlalchemy>=1.3,<1.4"],
     "parquet": ["pyarrow>=1,<7"],
-    "postgres": ["psycopg2>=2.7,<3", "sqlalchemy>=1.3,<1.4"],
+    "postgres": ["psycopg2>=2.7.6,<3", "sqlalchemy>=1.3,<1.4"],
     "pyspark": ["pyarrow>=1,<7", "pyspark>=2.4.3,<4"],
     "sqlite": ["sqlalchemy>=1.3,<1.4"],
     "visualization": ["graphviz>=0.16,<0.20"],
@@ -140,7 +144,7 @@ setup_kwargs = {
     "install_requires": install_requires,
     "extras_require": extras_require,
     "entry_points": entry_points,
-    "python_requires": ">=3.7.1,<4",
+    "python_requires": ">=3.7.1,<3.11",
 }
 
 
