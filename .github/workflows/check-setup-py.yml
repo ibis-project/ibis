@@ -9,6 +9,7 @@ on:
       - poetry.lock
       - pyproject.toml
       - setup.py
+      - .github/workflows/check-setup-py.yml
   pull_request:
     paths:
       - ./dev/poetry2setup
@@ -17,6 +18,7 @@ on:
       - poetry.lock
       - pyproject.toml
       - setup.py
+      - .github/workflows/check-setup-py.yml
 
 jobs:
   check_setup_py:
