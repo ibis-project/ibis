@@ -48,7 +48,12 @@ geoalchemy2 = { version = ">=0.6,<0.11", optional = true }
 geopandas = { version = ">=0.6,<0.11", optional = true }
 graphviz = { version = ">=0.16,<0.20", optional = true }
 hdfs = { version = ">=2,<3", optional = true, extras = ["kerberos"] }
-impyla = { version = ">=0.17,<0.19", optional = true, extras = ["kerberos"] }
+impyla = [
+  { version = ">=0.17,<0.19", platform = "!= win32", optional = true, extras = [
+    "kerberos"
+  ] },
+  { version = ">=0.17,<0.19", platform = "win32", optional = true, extras = [] }
+]
 psycopg2 = { version = ">=2.7.6,<3", optional = true }
 pyarrow = { version = ">=1,<7", optional = true }
 pymysql = { version = ">=1,<2", optional = true }

@@ -2018,7 +2018,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.1,<3.11"
-content-hash = "6c7a3cbd87d943ab3c19d6801f845ae4953bf29275420d7601c5e7ee78ea4efa"
+content-hash = "6ac63f19db309047f09605b03fa334d20899dee55e00d8661062dfde54109531"
 
 [metadata.files]
 alabaster = [
