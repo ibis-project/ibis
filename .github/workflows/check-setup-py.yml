@@ -9,7 +9,6 @@ on:
       - poetry.lock
       - pyproject.toml
       - setup.py
-      - ./.github/workflows/check-setup-py.yml
   pull_request:
     paths:
       - ./dev/poetry2setup
@@ -18,7 +17,6 @@ on:
       - poetry.lock
       - pyproject.toml
       - setup.py
-      - ./.github/workflows/check-setup-py.yml
 
 jobs:
   check_setup_py:
@@ -61,14 +59,8 @@ jobs:
       - name: install poetry
         run: pip install poetry
 
-      - name: add apt repository for gdal
-        run: sudo add-apt-repository -y ppa:ubuntugis/ppa
-
-      - name: update apt metadata
-        run: sudo apt update
-
       - name: install system dependencies
-        run: sudo apt-get install -y -q build-essential cmake krb5-config python-dev libkrb5-dev libboost-all-dev graphviz gdal-bin libgdal-dev libpq-dev
+        run: sudo apt-get install -y -q build-essential cmake krb5-config python-dev libkrb5-dev libboost-all-dev graphviz
 
       - name: generate requirements.txt
         run: poetry export --dev --extras all --without-hashes > requirements.txt
