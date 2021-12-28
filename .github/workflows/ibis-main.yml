@@ -54,7 +54,7 @@ jobs:
           extraPullNames: nix-community,poetry2nix
 
       - name: pre-commit checks
-        run: nix-shell pre-commit-shell.nix --keep-going --pure --run 'pre-commit run --all-files'
+        run: nix develop --file . --keep-going --print-build-logs --command pre-commit run --all-files
 
   nix:
     runs-on: ${{ matrix.os }}
