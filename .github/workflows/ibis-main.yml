@@ -327,6 +327,13 @@ jobs:
 
   simulate_release:
     runs-on: ubuntu-latest
+    needs:
+      - nix
+      - lint
+      - test_no_backends
+      - benchmarks
+      - docs
+      - conda_package
     steps:
       - name: checkout
         uses: actions/checkout@v2

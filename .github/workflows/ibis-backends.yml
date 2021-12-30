@@ -447,3 +447,13 @@ jobs:
         with:
           name: ${{ matrix.backend }}-${{ matrix.python-version }}
           path: junit.xml
+
+  backends:
+    # this job exists so that we can use a single job from this workflow to gate merging
+    runs-on: ubuntu-latest
+    needs:
+      - test_impala
+      - test_mysql_clickhouse
+      - test_postgres
+      - test_pyspark
+      - test_simple_backends
