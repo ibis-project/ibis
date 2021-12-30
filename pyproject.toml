@@ -135,20 +135,6 @@ pyspark = "ibis.backends.pyspark"
 spark = "ibis.backends.pyspark"
 sqlite = "ibis.backends.sqlite"
 
-[tool.semantic_release]
-version_toml = "pyproject.toml:tool.poetry.version"
-version_variable = [
-  "ibis/__init__.py:__version__",
-  "docs/source/conf.py:version"
-]
-branch = "master"
-upload_to_pypi = false
-upload_to_release = false
-build_command = "poetry build"
-commit_subject = "chore(release): {version}"
-commit_author = "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
-changelog_file = "docs/web/release_notes.md"
-
 [tool.pytest.ini_options]
 xfail_strict = true
 addopts = [

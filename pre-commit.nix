@@ -47,13 +47,14 @@ in
         enable = true;
         entry = lib.mkForce "shellcheck";
         files = "\\.sh$";
-        types_or = lib.mkForce [ ];
+        types_or = [ "file" ];
       };
 
       shfmt = {
         enable = true;
         entry = lib.mkForce "shfmt -i 2 -sr -d -s -l";
         files = "\\.sh$";
+        types_or = [ "file" ];
       };
 
       pyupgrade = {
