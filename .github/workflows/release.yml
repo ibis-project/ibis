@@ -1,0 +1,43 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+# we do not want more than one release workflow executing at the same time, ever
+concurrency:
+  group: release
+  # cancelling in the middle of a release would create incomplete releases
+  # so cancel-in-progress is false
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: tibdex/github-app-token@v1
+        id: generate_token
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          token: ${{ steps.generate_token.outputs.token }}
+
+      - uses: cachix/install-nix-action@v16
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable-small
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+
+      - uses: cachix/cachix-action@v10
+        with:
+          name: ibis
+          extraPullNames: nix-community,poetry2nix
+
+      - name: run semantic-release
+        run: ./ci/release/run.sh
+        env:
+          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
