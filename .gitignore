@@ -84,3 +84,7 @@ result-*
 #
 # if you need it
 requirements.txt
+
+# generated mkdocs website
+docs/site
+docs/web/docs
