@@ -20,6 +20,10 @@ on:
       - setup.py
       - .github/workflows/check-setup-py.yml
 
+concurrency:
+  group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
+  cancel-in-progress: true
+
 jobs:
   check_setup_py:
     runs-on: ubuntu-latest
@@ -58,22 +62,33 @@ jobs:
         with:
           python-version: "3.9"
 
-      - name: install poetry
-        run: pip install poetry
-
       - name: install system dependencies
         run: sudo apt-get install -y -q build-essential cmake krb5-config python-dev libkrb5-dev libboost-all-dev graphviz
+
+      - name: install poetry
+        run: pip install poetry
 
       - name: generate requirements.txt
         run: poetry export --dev --extras all --without-hashes > requirements.txt
 
-      - name: cache dependencies
-        uses: actions/cache@v2
+      - name: restore virtualenv
+        uses: syphar/restore-virtualenv@v1
+        id: cache-virtualenv
         with:
-          path: ~/.cache/pip
-          key: check-setuptools-install-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('requirements.txt') }}
+          requirement_files: requirements.txt
+          custom_cache_key_element: check-setuptools-install-${{ steps.install_python.outputs.python-version }}
+
+      - name: upgrade pip
+        run: pip install -U pip
+
+      - uses: syphar/restore-pip-download-cache@v1
+        if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
+        with:
+          requirement_files: requirements.txt
+          custom_cache_key_element: check-setuptools-install-${{ steps.install_python.outputs.python-version }}
 
       - name: install using requirements.txt
+        if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
         run: pip install -r requirements.txt
 
       - name: install ibis in development mode
