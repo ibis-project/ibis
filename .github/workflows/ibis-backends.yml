@@ -76,8 +76,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: restore virtualenv
-        uses: syphar/restore-virtualenv@v1
+      - uses: syphar/restore-virtualenv@v1
         id: cache-virtualenv
         with:
           requirement_files: poetry.lock
@@ -156,8 +155,7 @@ jobs:
       - name: install libgeos for shapely
         run: sudo apt-get install -qq -y build-essential libgeos-dev python-dev
 
-      - name: restore virtualenv
-        uses: syphar/restore-virtualenv@v1
+      - uses: syphar/restore-virtualenv@v1
         id: cache-virtualenv
         with:
           requirement_files: poetry.lock
@@ -240,8 +238,7 @@ jobs:
           distribution: zulu
           java-version: ${{ matrix.pyspark.jdk }}
 
-      - name: restore virtualenv
-        uses: syphar/restore-virtualenv@v1
+      - uses: syphar/restore-virtualenv@v1
         id: cache-virtualenv
         with:
           requirement_files: poetry.lock
@@ -351,8 +348,7 @@ jobs:
       - name: install system dependencies
         run: sudo apt-get install -qq -y build-essential cmake krb5-config python-dev libkrb5-dev libboost-all-dev
 
-      - name: restore virtualenv
-        uses: syphar/restore-virtualenv@v1
+      - uses: syphar/restore-virtualenv@v1
         id: cache-virtualenv
         with:
           requirement_files: poetry.lock
@@ -427,8 +423,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: restore virtualenv
-        uses: syphar/restore-virtualenv@v1
+      - uses: syphar/restore-virtualenv@v1
         id: cache-virtualenv
         with:
           requirement_files: poetry.lock
