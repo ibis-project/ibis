@@ -59,7 +59,6 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          - macos-11
         python-version:
           - "3.7"
           - "3.8"
@@ -178,59 +177,41 @@ jobs:
           poetry run asv dev
 
   docs:
-    name: Docs ${{ matrix.os }} python-${{ matrix.python-version }}
+    name: Docs
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version:
-          - "3.9"
     steps:
       - name: checkout
         uses: actions/checkout@v2
         with:
           path: ibis
 
-      - name: install system dependencies
-        run: sudo apt-get install -qq -y build-essential cmake krb5-config python-dev libkrb5-dev libboost-all-dev pandoc
-
-      - name: install python
-        uses: actions/setup-python@v2
-        id: install_python
+      - name: install nix
+        uses: cachix/install-nix-action@v16
         with:
-          python-version: ${{ matrix.python-version }}
+          nix_path: nixpkgs=channel:nixos-unstable-small
 
-      - uses: syphar/restore-virtualenv@v1
+      - name: setup cachix
+        uses: cachix/cachix-action@v10
         with:
-          requirement_files: ibis/poetry.lock
-          custom_cache_key_element: docs-${{ steps.install_python.outputs.python-version }}
-
-      - uses: syphar/restore-pip-download-cache@v1
-        with:
-          requirement_files: ibis/poetry.lock
-          custom_cache_key_element: docs-${{ steps.install_python.outputs.python-version }}
-
-      - run: python -m pip install --upgrade pip poetry
-
-      - name: install ibis
-        working-directory: ibis
-        run: poetry install --extras all
-
-      - name: build web
-        working-directory: ibis
-        run: poetry run python -m pysuerga docs/web --target-path=docbuild
+          name: ibis
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          extraPullNames: nix-community,poetry2nix
 
       - name: build docs
         working-directory: ibis
-        run: poetry run sphinx-build -b html docs/source docbuild/docs -W -T
+        run: nix-shell --pure --run 'sphinx-build -b html docs/source docs/web/docs -W -T'
+
+      - name: build website
+        working-directory: ibis
+        run: nix-shell --pure --run 'mkdocs build -f docs/mkdocs.yml'
 
       - name: Add config to docs
         working-directory: ibis
         run: |
           set -euo pipefail
 
-          touch docbuild/.nojekyll
-          echo "ibis-project.org" > docbuild/CNAME
+          touch docs/site/.nojekyll
+          echo "ibis-project.org" > docs/site/CNAME
 
       - name: Generate a GitHub token
         if: ${{ github.event_name == 'push' }}
@@ -263,7 +244,7 @@ jobs:
 
           # the trailing slash matters here; it means "everything underneath
           # docbuild, but not docbuild itself"
-          rsync -avz docbuild/ ../ibis-project.org
+          rsync --delete --exclude=.git -avz docs/site/ ../ibis-project.org
 
       - name: Configure git info
         working-directory: ibis-project.org
@@ -274,17 +255,24 @@ jobs:
           git config user.email 'ibis-docs-bot[bot]@users.noreply.github.com'
 
       - name: Commit docs
-        if: ${{ github.event_name == 'push' }}
         working-directory: ibis-project.org
         run: |
           set -euo pipefail
 
           git commit -am 'docs: ibis-project/ibis@${{ github.sha }}' || true
 
+      - name: tag docs if this is a release
+        if: ${{ startsWith(github.ref, 'refs/tags') }}
+        working-directory: ibis-project.org
+        run: |
+          set -euo pipefail
+
+          git tag "${GITHUB_REF##*/}"
+
       - name: Push docs
         if: ${{ github.event_name == 'push' }}
         working-directory: ibis-project.org
-        run: git push -f origin master
+        run: git push --tags -f origin master
 
   conda_package:
     # TODO: fully automate the conda-forge PR submission on release

@@ -51,10 +51,8 @@ sql_to_ibis.query(
 ```
 This would output a dataframe that looks like:
 
-```
 | column1 | my_col2 |
 |---------|---------|
 | 1       | 5       |
 | 2       | 6       |
 | 3       | 7       |
-```

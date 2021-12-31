@@ -39,7 +39,7 @@ import sources.nixpkgs {
       ibisDevEnv38 = pkgs.mkPoetryEnv pkgs.python38;
       ibisDevEnv39 = pkgs.mkPoetryEnv pkgs.python39;
       ibisDevEnv310 = pkgs.mkPoetryEnv pkgs.python310;
-      ibisDevEnv = pkgs.ibisDevEnv310;
+      ibisDevEnv = pkgs.ibisDevEnv39;
     } // super.lib.optionalAttrs super.stdenv.isDarwin {
       arrow-cpp = super.arrow-cpp.override {
         enableS3 = false;

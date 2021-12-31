@@ -1,12 +1,7 @@
-<div class="row">
-    <div class="col">
-        <section class="jumbotron text-center home-jumbotron">
-            <p>
-                Write your analytics code once, run it everywhere.
-            </p>
-        </section>
-    </div>
-</div>
+<figure markdown> 
+  ![Image title](/static/img/ibis_sky.png){ width="300" }
+  <figcaption>Write your analytics code once, run it everywhere.</figcaption>
+</figure>
 
 ## Main features
 

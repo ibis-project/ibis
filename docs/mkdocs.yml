@@ -1,0 +1,82 @@
+site_name: Ibis Project
+project_name: "ibis"
+site_url: https://ibis-project.org
+repo_url: https://github.com/ibis-project/ibis
+docs_dir: web
+theme:
+  name: material
+  features:
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.tabs.link
+    - navigation.instant
+    - header.autohide
+  icon:
+    repo: fontawesome/brands/github
+  logo: static/img/logo_ibis.svg
+  favicon: static/img/favicon.ico
+  palette:
+    - scheme: default
+      media: "(prefers-color-scheme: light)"
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+    - scheme: slate
+      media: "(prefers-color-scheme: dark)"
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
+plugins:
+  - search
+  - macros
+markdown_extensions:
+  - admonition
+  - meta
+  - toc
+  - tables
+  - attr_list
+  - md_in_html
+  - pymdownx.superfences
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
+nav:
+  - Home: index.md
+  - About:
+      - Introduction: about/index.md
+      - Team: about/team.md
+      - Roadmap: about/roadmap.md
+      - License: about/license.md
+  - Getting Started: getting_started.md
+  - Documentation: /docs
+  - Community:
+      - Ask a question (StackOverflow): https://stackoverflow.com/questions/tagged/ibis
+      - Chat (Gitter): https://gitter.im/ibis-dev/Lobby
+      - Code of Conduct: community/coc.md
+      - Ecosystem: community/ecosystem.md
+  - Contribute: contribute.md
+  - Release Notes: release_notes.md
+team:
+  - name: "Active maintainers"
+    kind: github
+    members:
+      - jreback
+      - datapythonista
+      - cpcloud
+      - kszucs
+  - name: "Former maintainers"
+    kind: github
+    members:
+      - wesm
+
+extra:
+  social:
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/IbisData
+    - icon: fontawesome/brands/github
+      link: https://github.com/ibis-project/ibis
+
+copyright: "Copyright &copy; 2014-2021, Ibis developers"
