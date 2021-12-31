@@ -115,8 +115,7 @@ jobs:
           requirement_files: poetry.lock
           custom_cache_key_element: no-backends-${{ steps.install_python.outputs.python-version }}
 
-      - name: upgrade pip
-        run: pip install -U pip poetry
+      - run: pip install poetry
 
       - uses: syphar/restore-pip-download-cache@v1
         if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
@@ -166,8 +165,7 @@ jobs:
           requirement_files: poetry.lock
           custom_cache_key_element: benchmarks-${{ steps.install_python.outputs.python-version }}
 
-      - name: upgrade pip
-        run: pip install -U pip poetry
+      - run: pip install poetry
 
       - uses: syphar/restore-pip-download-cache@v1
         if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
@@ -215,8 +213,7 @@ jobs:
           requirement_files: ibis/poetry.lock
           custom_cache_key_element: docs-${{ steps.install_python.outputs.python-version }}
 
-      - name: upgrade pip
-        run: pip install -U pip poetry
+      - run: pip install poetry
 
       - uses: syphar/restore-pip-download-cache@v1
         if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}

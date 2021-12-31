@@ -83,8 +83,7 @@ jobs:
           requirement_files: poetry.lock
           custom_cache_key_element: ${{ matrix.backend.name }}-${{ matrix.backend.deps }}-${{ steps.install_python.outputs.python-version }}
 
-      - name: upgrade pip
-        run: pip install -U pip poetry
+      - run: pip install poetry
 
       - uses: syphar/restore-pip-download-cache@v1
         if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
@@ -165,8 +164,7 @@ jobs:
           requirement_files: poetry.lock
           custom_cache_key_element: postgres-geospatial-${{ !!matrix.deps }}-${{ steps.install_python.outputs.python-version }}
 
-      - name: upgrade pip
-        run: pip install -U pip poetry
+      - run: pip install poetry
 
       - uses: syphar/restore-pip-download-cache@v1
         if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
@@ -251,8 +249,7 @@ jobs:
           requirement_files: poetry.lock
           custom_cache_key_element: pyspark-${{ matrix.pyspark-version }}-${{ steps.install_python.outputs.python-version }}
 
-      - name: upgrade pip
-        run: pip install -U pip poetry
+      - run: pip install poetry
 
       - uses: syphar/restore-pip-download-cache@v1
         if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
@@ -364,8 +361,7 @@ jobs:
           requirement_files: poetry.lock
           custom_cache_key_element: impala-${{ steps.install_python.outputs.python-version }}
 
-      - name: upgrade pip
-        run: pip install -U pip poetry
+      - run: pip install poetry
 
       - uses: syphar/restore-pip-download-cache@v1
         if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
@@ -442,8 +438,7 @@ jobs:
           requirement_files: poetry.lock
           custom_cache_key_element: ${{ matrix.backend.name }}-${{ steps.install_python.outputs.python-version }}
 
-      - name: upgrade pip
-        run: pip install -U pip poetry
+      - run: pip install poetry
 
       - uses: syphar/restore-pip-download-cache@v1
         if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
