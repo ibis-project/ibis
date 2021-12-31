@@ -71,8 +71,7 @@ jobs:
       - name: generate requirements.txt
         run: poetry export --dev --extras all --without-hashes > requirements.txt
 
-      - name: restore virtualenv
-        uses: syphar/restore-virtualenv@v1
+      - uses: syphar/restore-virtualenv@v1
         id: cache-virtualenv
         with:
           requirement_files: requirements.txt
