@@ -81,7 +81,7 @@ jobs:
         id: cache-virtualenv
         with:
           requirement_files: poetry.lock
-          custom_cache_key_element: ${{ matrix.backend.name }}-${{ steps.install_python.outputs.python-version }}
+          custom_cache_key_element: ${{ matrix.backend.name }}-${{ matrix.backend.deps }}-${{ steps.install_python.outputs.python-version }}
 
       - name: upgrade pip
         run: pip install -U pip poetry
