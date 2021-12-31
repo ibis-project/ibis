@@ -35,7 +35,7 @@ cytoolz = { version = ">=0.11,<0.12", python = "<3.10" }
 toolz = ">=0.11,<0.12"
 clickhouse-driver = { version = ">=0.1,<0.3", optional = true }
 clickhouse-sqlalchemy = { version = ">=0.1.4,<0.2", optional = true }
-dask = { version = "^2021.2.0", optional = true, extras = [
+dask = { version = "^2021.10.0", optional = true, extras = [
   "array",
   "dataframe"
 ] }

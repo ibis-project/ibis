@@ -115,7 +115,7 @@ jobs:
 
           git add conda-lock/*.lock
 
-          if git commit -m 'chore(conda-lock): relock [skip ci]'; then
+          if git commit -m 'chore(conda-lock): relock'; then
             # pull in case another commit happened in the meantime
             #
             # `ours` is actually the *other* changeset, not the current branch, per

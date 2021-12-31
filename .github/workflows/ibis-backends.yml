@@ -33,7 +33,7 @@ jobs:
           - name: dask
             title: Dask Extra
             deps:
-              - "dask@2021.2.0 --extras array --extras dataframe"
+              - "dask@2021.10.0 --extras array --extras dataframe"
           - name: hdf5
             title: HDF5
           - name: pandas
