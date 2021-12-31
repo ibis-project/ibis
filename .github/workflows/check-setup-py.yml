@@ -84,7 +84,6 @@ jobs:
           custom_cache_key_element: check-setuptools-install-${{ steps.install_python.outputs.python-version }}
 
       - name: install using requirements.txt
-        if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
         run: pip install -r requirements.txt
 
       - name: install ibis in development mode
