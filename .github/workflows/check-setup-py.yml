@@ -79,7 +79,6 @@ jobs:
           custom_cache_key_element: check-setuptools-install-${{ steps.install_python.outputs.python-version }}
 
       - uses: syphar/restore-pip-download-cache@v1
-        if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
         with:
           requirement_files: requirements.txt
           custom_cache_key_element: check-setuptools-install-${{ steps.install_python.outputs.python-version }}

@@ -86,7 +86,6 @@ jobs:
       - run: python -m pip install --upgrade pip poetry
 
       - uses: syphar/restore-pip-download-cache@v1
-        if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
         with:
           requirement_files: poetry.lock
           custom_cache_key_element: ${{ matrix.backend.name }}-${{ matrix.backend.deps }}-${{ steps.install_python.outputs.python-version }}
@@ -167,7 +166,6 @@ jobs:
       - run: python -m pip install --upgrade pip poetry
 
       - uses: syphar/restore-pip-download-cache@v1
-        if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
         with:
           requirement_files: poetry.lock
           custom_cache_key_element: postgres-geospatial-${{ join(matrix.deps, '-') }}-${{ steps.install_python.outputs.python-version }}
@@ -252,7 +250,6 @@ jobs:
       - run: python -m pip install --upgrade pip poetry
 
       - uses: syphar/restore-pip-download-cache@v1
-        if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
         with:
           requirement_files: poetry.lock
           custom_cache_key_element: pyspark-${{ matrix.pyspark-version }}-${{ matrix.pyspark.jdk }}-${{ steps.install_python.outputs.python-version }}
@@ -364,7 +361,6 @@ jobs:
       - run: python -m pip install --upgrade pip poetry
 
       - uses: syphar/restore-pip-download-cache@v1
-        if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
         with:
           requirement_files: poetry.lock
           custom_cache_key_element: impala-${{ steps.install_python.outputs.python-version }}
@@ -441,7 +437,6 @@ jobs:
       - run: python -m pip install --upgrade pip poetry
 
       - uses: syphar/restore-pip-download-cache@v1
-        if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
         with:
           requirement_files: poetry.lock
           custom_cache_key_element: ${{ matrix.backend.name }}-${{ steps.install_python.outputs.python-version }}
