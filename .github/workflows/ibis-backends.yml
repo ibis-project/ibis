@@ -1,4 +1,3 @@
-# vim: filetype=yaml
 name: Backends
 
 on:
@@ -77,22 +76,21 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: install poetry
-        run: pip install poetry
-
-      - name: cache dependencies linux
-        uses: actions/cache@v2
-        if: ${{ matrix.os == 'ubuntu-latest' && (matrix.backend.name != 'dask' || matrix.backend.deps == null) }}
+      - name: restore virtualenv
+        uses: syphar/restore-virtualenv@v1
+        id: cache-virtualenv
         with:
-          path: ~/.cache/pypoetry
-          key: ${{ matrix.backend.name }}-${{ join(matrix.backend.deps, '-') }}-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}
+          requirement_files: poetry.lock
+          custom_cache_key_element: ${{ matrix.backend.name }}-${{ steps.install_python.outputs.python-version }}
 
-      - name: cache dependencies windows
-        uses: actions/cache@v2
-        if: ${{ matrix.os == 'windows-latest' && (matrix.backend.name != 'dask' || matrix.backend.deps == null) }}
+      - name: upgrade pip
+        run: pip install -U pip poetry
+
+      - uses: syphar/restore-pip-download-cache@v1
+        if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
         with:
-          path: ~\AppData\Local\pypoetry
-          key: ${{ matrix.backend.name }}-${{ join(matrix.backend.deps, '-') }}-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}
+          requirement_files: poetry.lock
+          custom_cache_key_element: ${{ matrix.backend.name }}-${{ steps.install_python.outputs.python-version }}
 
       - name: install minimum dask version
         if: ${{ matrix.backend.name == 'dask' && matrix.backend.deps != null }}
@@ -157,21 +155,27 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: install poetry
-        run: pip install poetry
-
       - name: install libgeos for shapely
         run: sudo apt-get install -qq -y build-essential libgeos-dev python-dev
 
-      - name: cache dependencies
-        uses: actions/cache@v2
-        if: ${{ toJSON(matrix.deps) == '[]' }}
+      - name: restore virtualenv
+        uses: syphar/restore-virtualenv@v1
+        id: cache-virtualenv
         with:
-          path: ~/.cache/pypoetry
-          key: postgres-geospatial-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}
+          requirement_files: poetry.lock
+          custom_cache_key_element: postgres-geospatial-${{ !!matrix.deps }}-${{ steps.install_python.outputs.python-version }}
+
+      - name: upgrade pip
+        run: pip install -U pip poetry
+
+      - uses: syphar/restore-pip-download-cache@v1
+        if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
+        with:
+          requirement_files: poetry.lock
+          custom_cache_key_element: postgres-geospatial-${{ !!matrix.deps }}-${{ steps.install_python.outputs.python-version }}
 
       - name: install minimum postgres dependencies
-        if: ${{ toJSON(matrix.deps) != '[]' }}
+        if: ${{ !!matrix.deps }}
         run: |
           set -euo pipefail
 
@@ -197,7 +201,7 @@ jobs:
         uses: actions/upload-artifact@v2
         if: success() || failure()
         with:
-          name: postgres-${{ join(matrix.deps, '-') }}-${{ matrix.python-version }}
+          name: postgres-geospatial-${{ join(matrix.deps, '-') }}-${{ matrix.python-version }}
           path: junit.xml
 
   test_pyspark:
@@ -214,7 +218,7 @@ jobs:
             jdk: "8"
             env:
               ARROW_PRE_0_15_IPC_FORMAT: 1
-          - version: "latest"
+          - version: null
             jdk: "11"
             env:
               ARROW_PRE_0_15_IPC_FORMAT: 0
@@ -240,18 +244,24 @@ jobs:
           distribution: zulu
           java-version: ${{ matrix.pyspark.jdk }}
 
-      - name: install poetry
-        run: pip install poetry
-
-      - name: cache dependencies
-        uses: actions/cache@v2
-        if: ${{ matrix.pyspark.version == 'latest' }}
+      - name: restore virtualenv
+        uses: syphar/restore-virtualenv@v1
+        id: cache-virtualenv
         with:
-          path: ~/.cache/pypoetry
-          key: ${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}-pyspark-${{ matrix.pyspark.version }}
+          requirement_files: poetry.lock
+          custom_cache_key_element: pyspark-${{ matrix.pyspark-version }}-${{ steps.install_python.outputs.python-version }}
+
+      - name: upgrade pip
+        run: pip install -U pip poetry
+
+      - uses: syphar/restore-pip-download-cache@v1
+        if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
+        with:
+          requirement_files: poetry.lock
+          custom_cache_key_element: pyspark-${{ matrix.pyspark-version }}-${{ steps.install_python.outputs.python-version }}
 
       - name: pin pyspark
-        if: ${{ matrix.pyspark.version != 'latest' }}
+        if: ${{ matrix.pyspark.version != null }}
         run: poetry add --lock --optional "pyspark@${{ matrix.pyspark.version }}"
 
       - name: install ibis
@@ -270,7 +280,7 @@ jobs:
         uses: actions/upload-artifact@v2
         if: success() || failure()
         with:
-          name: pyspark-${{ matrix.python-version }}-${{ matrix.pyspark.version }}-${{ matrix.pyspark.jdk }}-${{ matrix.pyspark.env.ARROW_PRE_0_15_IPC_FORMAT }}
+          name: pyspark-${{ matrix.python-version }}-${{ matrix.pyspark.jdk }}-${{ matrix.pyspark.env.ARROW_PRE_0_15_IPC_FORMAT }}
           path: junit.xml
 
   test_impala:
@@ -347,14 +357,21 @@ jobs:
       - name: install system dependencies
         run: sudo apt-get install -qq -y build-essential cmake krb5-config python-dev libkrb5-dev libboost-all-dev
 
-      - name: install poetry
-        run: pip install poetry
-
-      - name: cache dependencies
-        uses: actions/cache@v2
+      - name: restore virtualenv
+        uses: syphar/restore-virtualenv@v1
+        id: cache-virtualenv
         with:
-          path: ~/.cache/pypoetry
-          key: impala-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}
+          requirement_files: poetry.lock
+          custom_cache_key_element: impala-${{ steps.install_python.outputs.python-version }}
+
+      - name: upgrade pip
+        run: pip install -U pip poetry
+
+      - uses: syphar/restore-pip-download-cache@v1
+        if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
+        with:
+          requirement_files: poetry.lock
+          custom_cache_key_element: impala-${{ steps.install_python.outputs.python-version }}
 
       - name: install ibis
         run: poetry install --extras impala
@@ -418,14 +435,21 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: install poetry
-        run: pip install poetry
-
-      - name: cache dependencies
-        uses: actions/cache@v2
+      - name: restore virtualenv
+        uses: syphar/restore-virtualenv@v1
+        id: cache-virtualenv
         with:
-          path: ~/.cache/pypoetry
-          key: ${{ matrix.backend.name }}-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}
+          requirement_files: poetry.lock
+          custom_cache_key_element: ${{ matrix.backend.name }}-${{ steps.install_python.outputs.python-version }}
+
+      - name: upgrade pip
+        run: pip install -U pip poetry
+
+      - uses: syphar/restore-pip-download-cache@v1
+        if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
+        with:
+          requirement_files: poetry.lock
+          custom_cache_key_element: ${{ matrix.backend.name }}-${{ steps.install_python.outputs.python-version }}
 
       - name: install ibis
         run: poetry install --extras ${{ matrix.backend.name }}
@@ -445,7 +469,7 @@ jobs:
         uses: actions/upload-artifact@v2
         if: success() || failure()
         with:
-          name: ${{ matrix.backend }}-${{ matrix.python-version }}
+          name: ${{ matrix.backend.name }}-${{ matrix.python-version }}
           path: junit.xml
 
   backends:

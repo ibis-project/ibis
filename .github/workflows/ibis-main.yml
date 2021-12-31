@@ -108,22 +108,21 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: install poetry
-        run: pip install poetry
-
-      - name: cache dependencies linux
-        uses: actions/cache@v2
-        if: ${{ matrix.os == 'ubuntu-latest' }}
+      - name: restore virtualenv
+        uses: syphar/restore-virtualenv@v1
+        id: cache-virtualenv
         with:
-          path: ~/.cache/pypoetry
-          key: no-backends-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}
+          requirement_files: poetry.lock
+          custom_cache_key_element: no-backends-${{ steps.install_python.outputs.python-version }}
 
-      - name: cache dependencies windows
-        uses: actions/cache@v2
-        if: ${{ matrix.os == 'windows-latest' }}
+      - name: upgrade pip
+        run: pip install -U pip poetry
+
+      - uses: syphar/restore-pip-download-cache@v1
+        if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
         with:
-          path: ~\AppData\Local\pypoetry
-          key: no-backends-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}
+          requirement_files: poetry.lock
+          custom_cache_key_element: no-backends-${{ steps.install_python.outputs.python-version }}
 
       - name: install ibis
         run: poetry install
@@ -160,14 +159,21 @@ jobs:
       - name: install system dependencies
         run: sudo apt-get install -qq -y build-essential cmake krb5-config python-dev libkrb5-dev libboost-all-dev
 
-      - name: install poetry
-        run: pip install poetry
-
-      - name: cache dependencies
-        uses: actions/cache@v2
+      - name: restore virtualenv
+        uses: syphar/restore-virtualenv@v1
+        id: cache-virtualenv
         with:
-          path: ~/.cache/pypoetry
-          key: benchmarks-impala-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}
+          requirement_files: poetry.lock
+          custom_cache_key_element: benchmarks-${{ steps.install_python.outputs.python-version }}
+
+      - name: upgrade pip
+        run: pip install -U pip poetry
+
+      - uses: syphar/restore-pip-download-cache@v1
+        if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
+        with:
+          requirement_files: poetry.lock
+          custom_cache_key_element: benchmarks-${{ steps.install_python.outputs.python-version }}
 
       - name: install ibis
         run: poetry install --extras impala
@@ -202,14 +208,21 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: install poetry
-        run: pip install poetry
-
-      - name: cache dependencies
-        uses: actions/cache@v2
+      - name: restore virtualenv
+        uses: syphar/restore-virtualenv@v1
+        id: cache-virtualenv
         with:
-          path: ~/.cache/pypoetry
-          key: docs-${{ runner.os }}-${{ steps.install_python.outputs.python-version }}-${{ hashFiles('ibis/poetry.lock') }}
+          requirement_files: ibis/poetry.lock
+          custom_cache_key_element: docs-${{ steps.install_python.outputs.python-version }}
+
+      - name: upgrade pip
+        run: pip install -U pip poetry
+
+      - uses: syphar/restore-pip-download-cache@v1
+        if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
+        with:
+          requirement_files: ibis/poetry.lock
+          custom_cache_key_element: docs-${{ steps.install_python.outputs.python-version }}
 
       - name: install ibis
         working-directory: ibis
