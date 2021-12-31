@@ -109,7 +109,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - uses: syphar/restore-virtualenv@v1
-        id: cache-virtualenv
         with:
           requirement_files: poetry.lock
           custom_cache_key_element: no-backends-${{ steps.install_python.outputs.python-version }}
@@ -157,7 +156,6 @@ jobs:
         run: sudo apt-get install -qq -y build-essential cmake krb5-config python-dev libkrb5-dev libboost-all-dev
 
       - uses: syphar/restore-virtualenv@v1
-        id: cache-virtualenv
         with:
           requirement_files: poetry.lock
           custom_cache_key_element: benchmarks-${{ steps.install_python.outputs.python-version }}
@@ -203,7 +201,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - uses: syphar/restore-virtualenv@v1
-        id: cache-virtualenv
         with:
           requirement_files: ibis/poetry.lock
           custom_cache_key_element: docs-${{ steps.install_python.outputs.python-version }}

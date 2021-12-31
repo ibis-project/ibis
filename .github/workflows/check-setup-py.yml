@@ -72,7 +72,6 @@ jobs:
         run: poetry export --dev --extras all --without-hashes > requirements.txt
 
       - uses: syphar/restore-virtualenv@v1
-        id: cache-virtualenv
         with:
           requirement_files: requirements.txt
           custom_cache_key_element: check-setuptools-install-${{ steps.install_python.outputs.python-version }}
