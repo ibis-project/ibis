@@ -115,7 +115,7 @@ jobs:
           requirement_files: poetry.lock
           custom_cache_key_element: no-backends-${{ steps.install_python.outputs.python-version }}
 
-      - run: pip install poetry
+      - run: python -m pip install --upgrade pip poetry
 
       - uses: syphar/restore-pip-download-cache@v1
         if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
@@ -165,7 +165,7 @@ jobs:
           requirement_files: poetry.lock
           custom_cache_key_element: benchmarks-${{ steps.install_python.outputs.python-version }}
 
-      - run: pip install poetry
+      - run: python -m pip install --upgrade pip poetry
 
       - uses: syphar/restore-pip-download-cache@v1
         if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
@@ -213,7 +213,7 @@ jobs:
           requirement_files: ibis/poetry.lock
           custom_cache_key_element: docs-${{ steps.install_python.outputs.python-version }}
 
-      - run: pip install poetry
+      - run: python -m pip install --upgrade pip poetry
 
       - uses: syphar/restore-pip-download-cache@v1
         if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
@@ -363,7 +363,7 @@ jobs:
           python-version: "3.x"
 
       - name: install poetry and semantic-release
-        run: pip install poetry python-semantic-release
+        run: python -m pip install poetry python-semantic-release
 
       - name: semantic release
         run: semantic-release publish --noop --verbosity=DEBUG
