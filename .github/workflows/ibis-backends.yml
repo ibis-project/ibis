@@ -77,7 +77,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - uses: syphar/restore-virtualenv@v1
-        id: cache-virtualenv
         with:
           requirement_files: poetry.lock
           custom_cache_key_element: ${{ matrix.backend.name }}-${{ matrix.backend.deps }}-${{ steps.install_python.outputs.python-version }}
@@ -156,7 +155,6 @@ jobs:
         run: sudo apt-get install -qq -y build-essential libgeos-dev python-dev
 
       - uses: syphar/restore-virtualenv@v1
-        id: cache-virtualenv
         with:
           requirement_files: poetry.lock
           custom_cache_key_element: postgres-geospatial-${{ join(matrix.deps, '-') }}-${{ steps.install_python.outputs.python-version }}
@@ -239,7 +237,6 @@ jobs:
           java-version: ${{ matrix.pyspark.jdk }}
 
       - uses: syphar/restore-virtualenv@v1
-        id: cache-virtualenv
         with:
           requirement_files: poetry.lock
           custom_cache_key_element: pyspark-${{ matrix.pyspark-version }}-${{ matrix.pyspark.jdk }}-${{ steps.install_python.outputs.python-version }}
@@ -349,7 +346,6 @@ jobs:
         run: sudo apt-get install -qq -y build-essential cmake krb5-config python-dev libkrb5-dev libboost-all-dev
 
       - uses: syphar/restore-virtualenv@v1
-        id: cache-virtualenv
         with:
           requirement_files: poetry.lock
           custom_cache_key_element: impala-${{ steps.install_python.outputs.python-version }}
@@ -424,7 +420,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - uses: syphar/restore-virtualenv@v1
-        id: cache-virtualenv
         with:
           requirement_files: poetry.lock
           custom_cache_key_element: ${{ matrix.backend.name }}-${{ steps.install_python.outputs.python-version }}
