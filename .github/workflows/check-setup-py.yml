@@ -78,9 +78,6 @@ jobs:
           requirement_files: requirements.txt
           custom_cache_key_element: check-setuptools-install-${{ steps.install_python.outputs.python-version }}
 
-      - name: upgrade pip
-        run: pip install -U pip
-
       - uses: syphar/restore-pip-download-cache@v1
         if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
         with:
