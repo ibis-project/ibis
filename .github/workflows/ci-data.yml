@@ -16,9 +16,6 @@ jobs:
 
           echo "::set-output name=yesterday::$(date --date=yesterday +%Y-%m-%d)"
 
-      - name: checkout
-        uses: actions/checkout@v2
-
       - name: generate data
         id: generate_data
         run: |
