@@ -1,0 +1,61 @@
+name: GCS Insert
+
+on:
+  schedule:
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  gcs_insert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: set date
+        id: set_date
+        run: |
+          set -euo pipefail
+
+          echo "::set-output name=yesterday::$(date --date=yesterday +%Y-%m-%d)"
+
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: generate data
+        id: generate_data
+        run: |
+          set -euo pipefail
+
+          yesterday="${{ steps.set_date.outputs.yesterday }}"
+
+          [ -n "$yesterday" ] || exit 1
+
+          gh api --paginate "repos/ibis-project/ibis/actions/runs?per_page=100&created=${yesterday}" --jq '.workflow_runs[]' > workflows.json
+
+          jq -rcM '.id' < workflows.json | while read -r run_id; do
+            gh api --paginate "repos/ibis-project/ibis/actions/runs/${run_id}/jobs?per_page=100" --jq '.jobs[]' >> jobs.json
+            # sleep to avoid rate limiting
+            sleep 1
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: auth
+        uses: google-github-actions/auth@v0
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - uses: google-github-actions/setup-gcloud@v0
+
+      - run: gcloud info
+
+      - name: copy to gcs
+        run: |
+          set -euo pipefail
+
+          yesterday="${{ steps.set_date.outputs.yesterday }}"
+
+          gsutil cp -Z workflows.json "gs://ibis-workflow-data/${yesterday}/workflows.json"
+          gsutil cp -Z jobs.json "gs://ibis-workflow-data/${yesterday}/jobs.json"
