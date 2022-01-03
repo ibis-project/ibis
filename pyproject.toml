@@ -39,6 +39,7 @@ dask = { version = "^2021.10.0", optional = true, extras = [
   "array",
   "dataframe"
 ] }
+datafusion = { version = ">=0.4,<0.5", optional = true }
 geoalchemy2 = { version = ">=0.6,<0.11", optional = true }
 geopandas = { version = ">=0.6,<0.11", optional = true }
 graphviz = { version = ">=0.16,<0.20", optional = true }
@@ -64,6 +65,7 @@ ipykernel = "^6"
 ipython = "^7.27.0"
 isort = "^5.9.3"
 markdown = "<3.3.5"
+maturin = "^0.12.5"
 mypy = "^0.921"
 nbsphinx = "^0.8.7"
 plumbum = "^1.7.0"
@@ -85,6 +87,7 @@ all = [
   "clickhouse-driver",
   "clickhouse-sqlalchemy",
   "dask",
+  "datafusion",
   "geoalchemy2",
   "geopandas",
   "graphviz",
@@ -102,6 +105,7 @@ all = [
 clickhouse = ["sqlalchemy", "clickhouse-sqlalchemy", "clickhouse-driver"]
 csv = []
 dask = ["dask", "pyarrow"]
+datafusion = ["datafusion"]
 geospatial = ["geoalchemy2", "geopandas", "shapely"]
 hdf5 = ["tables"]
 impala = ["hdfs", "sqlalchemy", "requests", "impyla"]
@@ -117,6 +121,7 @@ visualization = ["graphviz"]
 clickhouse = "ibis.backends.clickhouse"
 csv = "ibis.backends.csv"
 dask = "ibis.backends.dask"
+datafusion = "ibis.backends.datafusion"
 hdf5 = "ibis.backends.hdf5"
 impala = "ibis.backends.impala"
 mysql = "ibis.backends.mysql"

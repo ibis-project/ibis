@@ -155,17 +155,21 @@ def pytest_pyfunc_call(pyfuncitem):
         NotImplementedError,
     ) as e:
         markers = list(pyfuncitem.iter_markers(name="xfail_unsupported"))
-        if not markers:
-            raise
-        assert (
-            len(markers) == 1
-        ), f"More than one xfail_unsupported marker found on test {pyfuncitem}"
-        (marker,) = markers
         backend = pyfuncitem.funcargs["backend"]
-        assert isinstance(
-            backend, BackendTest
-        ), f"backend has type {type(backend).__name__!r}"
-        pytest.xfail(reason=f'{type(backend).__name__}: {e}')
+        backend_type = type(backend).__name__
+
+        if len(markers) == 0:
+            # nothing has marked the failure as an expected one
+            raise e
+        elif len(markers) == 1:
+            if not isinstance(backend, BackendTest):
+                pytest.fail(f"Backend has type {backend_type!r}")
+            pytest.xfail(reason=f"{backend_type!r}: {e}")
+        else:
+            pytest.fail(
+                f"More than one xfail_unsupported marker found on test "
+                f"{pyfuncitem}"
+            )
 
 
 pytestmark = pytest.mark.backend

@@ -294,7 +294,6 @@ def test_substr_with_null_values(backend, alltypes, df):
         .end()
         .substr(0, 2)
     )
-
     result = table.execute()
 
     expected = df.copy()
