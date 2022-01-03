@@ -47,7 +47,7 @@ layout:
     - name: "Contribute"
       target: /contribute.html
     - name: "Release Notes"
-      target: /release_notes.html
+      target: https://ibis-project.org/docs/release/index.html
   social_media:
     - font_awesome: twitter
       url: https://twitter.com/IbisData
