@@ -166,7 +166,7 @@ def test_notin(backend, alltypes, sorted_df, column, elements):
         (lambda t: ~t['bool_col'], lambda df: ~df['bool_col']),
     ],
 )
-@pytest.mark.skip_backends(['dask'])  # TODO - sorting - #2553
+@pytest.mark.skip_backends(['dask', 'datafusion'])  # TODO - sorting - #2553
 @pytest.mark.xfail_unsupported
 def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
     sorted_alltypes = alltypes.sort_by('id')

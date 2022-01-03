@@ -452,6 +452,89 @@ jobs:
           name: ${{ matrix.backend.name }}-${{ matrix.python-version }}
           path: junit.xml
 
+  test_datafusion:
+    name: DataFusion ${{ matrix.datafusion-version }} ubuntu-latest python-${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        datafusion-version:
+          - master
+          - latest
+        python-version:
+          - "3.7"
+          - "3.9"
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: checkout
+        uses: actions/checkout@v2
+        if: ${{ matrix.datafusion-version == 'master' }}
+        with:
+          path: datafusion
+          repository: apache/arrow-datafusion
+
+      - name: install rust
+        uses: actions-rs/toolchain@v1
+        if: ${{ matrix.datafusion-version == 'master' }}
+        with:
+          profile: minimal
+          toolchain: stable
+
+      - name: install python
+        id: install_python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: restore virtualenv
+        uses: syphar/restore-virtualenv@v1
+        id: cache-virtualenv
+        with:
+          requirement_files: poetry.lock
+          custom_cache_key_element: ${{ matrix.datafusion-version }}-${{ steps.install_python.outputs.python-version }}
+
+      - name: upgrade pip
+        run: pip install -U pip
+
+      - uses: syphar/restore-pip-download-cache@v1
+        if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
+        with:
+          requirement_files: poetry.lock
+          custom_cache_key_element: ${{ matrix.datafusion-version }}-${{ steps.install_python.outputs.python-version }}
+
+      - name: install maturin and poetry
+        if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
+        run: pip install poetry maturin
+
+      - name: install datafusion
+        if: ${{ matrix.datafusion-version == 'master' }}
+        working-directory: datafusion/python
+        run: maturin develop
+
+      - name: install ibis
+        if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
+        run: poetry install --extras datafusion
+
+      - name: download backend data
+        run: python ci/datamgr.py download
+
+      - name: install backend data
+        run: python ci/datamgr.py datafusion
+
+      - name: run tests
+        run: ./ci/run_tests.sh
+        env:
+          PYTEST_BACKENDS: datafusion
+
+      - name: publish test report
+        uses: actions/upload-artifact@v2
+        if: success() || failure()
+        with:
+          name: ${{ matrix.backend }}-${{ matrix.python-version }}
+          path: junit.xml
+
   backends:
     # this job exists so that we can use a single job from this workflow to gate merging
     runs-on: ubuntu-latest
@@ -461,5 +544,6 @@ jobs:
       - test_postgres
       - test_pyspark
       - test_simple_backends
+      - test_datafusion
     steps:
       - run: exit 0

@@ -373,6 +373,21 @@ class ScalarExpr(ValueExpr):
     def _type_display(self):
         return str(self.type())
 
+    def to_projection(self):
+        """
+        Promote this column expression to a table projection
+        """
+        roots = self.op().root_tables()
+        if len(roots) > 1:
+            raise com.RelationError(
+                'Cannot convert scalar expression '
+                'involving multiple base table references '
+                'to a projection'
+            )
+
+        table = TableExpr(roots[0])
+        return table.projection([self])
+
 
 class ColumnExpr(ValueExpr):
     def _type_display(self):

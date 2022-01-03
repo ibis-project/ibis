@@ -135,7 +135,6 @@ def test_isnan_isinf(
 @pytest.mark.xfail_unsupported
 def test_math_functions_literals(backend, con, alltypes, df, expr, expected):
     result = con.execute(expr)
-
     if isinstance(result, decimal.Decimal):
         # in case of Impala the result is decimal
         # >>> decimal.Decimal('5.56') == 5.56
@@ -298,6 +297,7 @@ def test_backend_specific_numerics(
     ],
     ids=lambda op: op.__name__,
 )
+@pytest.mark.xfail_unsupported
 def test_binary_arithmetic_operations(backend, alltypes, df, op):
     smallint_col = alltypes.smallint_col + 1  # make it nonzero
     smallint_series = df.smallint_col + 1

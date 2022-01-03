@@ -358,7 +358,7 @@ def test_temporal_binop_invalid_interval_unit(con, alltypes):
     ],
 )
 @pytest.mark.xfail_unsupported
-@pytest.mark.skip_backends(['spark', 'sqlite'])
+@pytest.mark.skip_backends(['spark', 'sqlite', 'datafusion'])
 def test_timestamp_comparison_filter(
     backend, con, alltypes, df, comparison_fn
 ):

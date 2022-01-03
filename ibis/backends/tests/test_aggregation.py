@@ -287,7 +287,7 @@ def test_group_concat(backend, alltypes, df, result_fn, expected_fn):
     ],
 )
 @pytest.mark.xfail_unsupported
-@pytest.mark.xfail_backends(['pyspark'])  # Issue #2130
+@pytest.mark.xfail_backends(['pyspark', 'datafusion'])  # Issue #2130
 def test_topk_op(backend, alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend
     # can have different result for that.
