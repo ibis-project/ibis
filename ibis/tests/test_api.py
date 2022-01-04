@@ -135,15 +135,17 @@ def test_missing_backend():
 
 def test_multiple_backends(mocker):
     if sys.version_info[:2] < (3, 8):
-        api = 'importlib_metadata.distribution'
+        module = 'importlib_metadata'
     else:
-        api = 'importlib.metadata.distribution'
+        module = 'importlib.metadata'
+
+    api = f"{module}.entry_points"
 
     class Distribution(NamedTuple):
         entry_points: list[EntryPoint]
 
-    return_value = Distribution(
-        entry_points=(
+    return_value = {
+        "ibis.backends": [
             EntryPoint(
                 name="foo",
                 value='ibis.backends.backend1',
@@ -154,8 +156,8 @@ def test_multiple_backends(mocker):
                 value='ibis.backends.backend1',
                 group="ibis.backends",
             ),
-        )
-    )
+        ],
+    }
 
     mocker.patch(api, return_value=return_value)
 
