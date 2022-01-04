@@ -190,7 +190,6 @@ class BaseBackend(abc.ABC):
         """
         self.do_connect(*self._con_args, **self._con_kwargs)
 
-    @abc.abstractmethod
     def do_connect(self, *args, **kwargs) -> None:
         """
         Connect to database specified by args and kwargs.
