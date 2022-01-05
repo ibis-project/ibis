@@ -77,3 +77,10 @@ docbuild
 .pre-commit-config.yaml
 result
 result-*
+
+# generate this with:
+#
+#   poetry export --dev --without-hashes --no-ansi > requirements.txt
+#
+# if you need it
+requirements.txt
