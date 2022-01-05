@@ -465,15 +465,17 @@ jobs:
           - "3.7"
           - "3.9"
     steps:
-      - name: checkout
+      - name: checkout ibis
         uses: actions/checkout@v2
+        with:
+          path: ibis
 
-      - name: checkout
+      - name: checkout datafusion
         uses: actions/checkout@v2
         if: ${{ matrix.datafusion-version == 'master' }}
         with:
           path: datafusion
-          repository: apache/arrow-datafusion
+          repository: datafusion-contrib/datafusion-python
 
       - name: install rust
         uses: actions-rs/toolchain@v1
@@ -492,7 +494,7 @@ jobs:
         uses: syphar/restore-virtualenv@v1
         id: cache-virtualenv
         with:
-          requirement_files: poetry.lock
+          requirement_files: ibis/poetry.lock
           custom_cache_key_element: ${{ matrix.datafusion-version }}-${{ steps.install_python.outputs.python-version }}
 
       - name: upgrade pip
@@ -501,7 +503,7 @@ jobs:
       - uses: syphar/restore-pip-download-cache@v1
         if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
         with:
-          requirement_files: poetry.lock
+          requirement_files: ibis/poetry.lock
           custom_cache_key_element: ${{ matrix.datafusion-version }}-${{ steps.install_python.outputs.python-version }}
 
       - name: install maturin and poetry
@@ -515,15 +517,19 @@ jobs:
 
       - name: install ibis
         if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
+        working-directory: ibis
         run: poetry install --extras datafusion
 
       - name: download backend data
+        working-directory: ibis
         run: python ci/datamgr.py download
 
       - name: install backend data
+        working-directory: ibis
         run: python ci/datamgr.py datafusion
 
       - name: run tests
+        working-directory: ibis
         run: ./ci/run_tests.sh
         env:
           PYTEST_BACKENDS: datafusion
@@ -533,7 +539,7 @@ jobs:
         if: success() || failure()
         with:
           name: ${{ matrix.backend }}-${{ matrix.python-version }}
-          path: junit.xml
+          path: ibis/junit.xml
 
   backends:
     # this job exists so that we can use a single job from this workflow to gate merging
