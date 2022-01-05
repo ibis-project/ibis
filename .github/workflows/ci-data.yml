@@ -25,9 +25,9 @@ jobs:
 
           [ -n "$yesterday" ] || exit 1
 
+          seconds_per_hour=3600
           requests_per_hour=1000
-          seconds_per_hour=3600.0
-          rate_limit_sleep="$(printf '%.0f' $((seconds_per_hour / requests_per_hour)))"
+          rate_limit_sleep="$(bc <<< "scale = 1; $seconds_per_hour / $requests_per_hour" | xargs printf "%.0f")"
 
           gh api --paginate "repos/ibis-project/ibis/actions/runs?per_page=100&created=${yesterday}" --jq '.workflow_runs[]' > workflows.json
 
