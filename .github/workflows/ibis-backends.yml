@@ -512,7 +512,7 @@ jobs:
 
       - name: install datafusion
         if: ${{ matrix.datafusion-version == 'master' }}
-        working-directory: datafusion/python
+        working-directory: datafusion
         run: maturin develop
 
       - name: install ibis
