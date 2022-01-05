@@ -153,7 +153,7 @@ def test_multiple_backends(mocker):
             ),
             EntryPoint(
                 name="foo",
-                value='ibis.backends.backend1',
+                value='ibis.backends.backend2',
                 group="ibis.backends",
             ),
         ],

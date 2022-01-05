@@ -72,12 +72,11 @@ def __getattr__(name: str) -> BaseBackend:
     the `ibis.backends` entrypoints. If successful, the `ibis.sqlite`
     attribute is "cached", so this function is only called the first time.
     """
-    ibis_entry_points = importlib_metadata.entry_points()["ibis.backends"]
-    entry_points = [
+    entry_points = {
         entry_point
-        for entry_point in ibis_entry_points
+        for entry_point in importlib_metadata.entry_points()["ibis.backends"]
         if name == entry_point.name
-    ]
+    }
 
     if not entry_points:
         raise AttributeError(
