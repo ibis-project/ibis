@@ -8,8 +8,6 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event.comment.body == '/take' }}
     steps:
-      - uses: actions/checkout@v2
-      - name: Assign issue ${{ github.event.issue.number }} to ${{ github.event.comment.user.login }}
-        run: gh issue edit ${{ github.event.issue.number }} --add-assignee "${{ github.event.comment.user.login }}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: pozil/auto-assign-issue@v1.1.0
+        with:
+          assignees: ${{ github.event.comment.user.login }}
