@@ -70,6 +70,12 @@ jobs:
       - name: checkout
         uses: actions/checkout@v2
 
+      - name: checkout data
+        uses: actions/checkout@v2
+        with:
+          repository: ibis-project/testing-data
+          path: ci/ibis-testing-data
+
       - name: install python
         uses: actions/setup-python@v2
         id: install_python
@@ -94,9 +100,6 @@ jobs:
 
       - name: install ibis
         run: poetry install --extras ${{ matrix.backend.name }}
-
-      - name: download backend data
-        run: poetry run python ci/datamgr.py download
 
       - name: install backend data
         run: poetry run python ci/datamgr.py ${{ matrix.backend.name }}
@@ -145,6 +148,12 @@ jobs:
       - name: checkout
         uses: actions/checkout@v2
 
+      - name: checkout data
+        uses: actions/checkout@v2
+        with:
+          repository: ibis-project/testing-data
+          path: ci/ibis-testing-data
+
       - name: install python
         uses: actions/setup-python@v2
         id: install_python
@@ -177,9 +186,6 @@ jobs:
 
       - name: install ibis
         run: poetry install --extras postgres --extras geospatial
-
-      - name: download backend data
-        run: poetry run python ci/datamgr.py download
 
       - name: install backend data
         run: poetry run python ci/datamgr.py postgres
@@ -225,6 +231,12 @@ jobs:
       - name: checkout
         uses: actions/checkout@v2
 
+      - name: checkout data
+        uses: actions/checkout@v2
+        with:
+          repository: ibis-project/testing-data
+          path: ci/ibis-testing-data
+
       - name: install python
         uses: actions/setup-python@v2
         id: install_python
@@ -254,9 +266,6 @@ jobs:
 
       - name: install ibis
         run: poetry install --extras pyspark
-
-      - name: download backend data
-        run: poetry run python ci/datamgr.py download
 
       - name: run tests
         env:
@@ -336,6 +345,12 @@ jobs:
       - name: checkout
         uses: actions/checkout@v2
 
+      - name: checkout data
+        uses: actions/checkout@v2
+        with:
+          repository: ibis-project/testing-data
+          path: ci/ibis-testing-data
+
       - name: install python
         uses: actions/setup-python@v2
         id: install_python
@@ -359,9 +374,6 @@ jobs:
 
       - name: install ibis
         run: poetry install --extras impala
-
-      - name: download backend data
-        run: poetry run python ci/datamgr.py download
 
       - name: install backend data
         run: poetry run python ci/impalamgr.py load --data
@@ -413,6 +425,12 @@ jobs:
       - name: checkout
         uses: actions/checkout@v2
 
+      - name: checkout data
+        uses: actions/checkout@v2
+        with:
+          repository: ibis-project/testing-data
+          path: ci/ibis-testing-data
+
       - name: install python
         uses: actions/setup-python@v2
         id: install_python
@@ -433,9 +451,6 @@ jobs:
 
       - name: install ibis
         run: poetry install --extras ${{ matrix.backend.name }}
-
-      - name: download backend data
-        run: poetry run python ci/datamgr.py download
 
       - name: install backend data
         run: poetry run python ci/datamgr.py ${{ matrix.backend.name }}
@@ -468,6 +483,12 @@ jobs:
         uses: actions/checkout@v2
         with:
           path: ibis
+
+      - name: checkout data
+        uses: actions/checkout@v2
+        with:
+          repository: ibis-project/testing-data
+          path: ibis/ci/ibis-testing-data
 
       - name: checkout datafusion
         uses: actions/checkout@v2
@@ -518,10 +539,6 @@ jobs:
         if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
         working-directory: ibis
         run: poetry install --extras datafusion
-
-      - name: download backend data
-        working-directory: ibis
-        run: python ci/datamgr.py download
 
       - name: install backend data
         working-directory: ibis
