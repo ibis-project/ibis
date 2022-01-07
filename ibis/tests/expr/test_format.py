@@ -8,12 +8,12 @@ def test_format_custom_expr():
         def _type_display(self):
             return 'my-custom'
 
-    op = ibis.literal(5).op()
+    op = ibis.literal(1234567890).op()
     expr = CustomExpr(op)
 
     result = repr(expr)
-    expected = 'Literal[my-custom]\n  5'
-    assert result == expected
+    assert 'my-custom' in result
+    assert '1234567890' in result
 
 
 def test_format_table_column(table):
@@ -197,23 +197,11 @@ def test_memoize_filtered_tables_in_join():
 
 
 def test_argument_repr_shows_name():
-    t = ibis.table([('a', 'int64')], name='t')
-    expr = t.a.nullif(2)
+    t = ibis.table([('fakecolname1', 'int64')], name='fakename2')
+    expr = t.fakecolname1.nullif(2)
     result = repr(expr)
-    expected = """\
-ref_0
-UnboundTable[table]
-  name: t
-  schema:
-    a : int64
-
-NullIf[int64*]
-  a = Column[int64*] 'a' from table
-    ref_0
-  null_if_expr:
-    Literal[int8]
-      2"""
-    assert result == expected
+    assert 'fakecolname1' in result
+    assert 'fakename2' in result
 
 
 def test_scalar_parameter_formatting():
@@ -226,21 +214,8 @@ def test_scalar_parameter_formatting():
 
 def test_same_column_multiple_aliases():
     table = ibis.table([('col', 'int64')], name='t')
-    expr = table[table.col.name('alias1'), table.col.name('alias2')]
+    expr = table[table.col.name('fakealias1'), table.col.name('fakealias2')]
     result = repr(expr)
-    expected = """\
-ref_0
-UnboundTable[table]
-  name: t
-  schema:
-    col : int64
 
-Selection[table]
-  table:
-    Table: ref_0
-  selections:
-    alias1 = Column[int64*] 'col' from table
-      ref_0
-    alias2 = Column[int64*] 'col' from table
-      ref_0"""
-    assert result == expected
+    assert 'fakealias1' in result
+    assert 'fakealias2' in result

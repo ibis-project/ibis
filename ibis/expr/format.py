@@ -113,9 +113,7 @@ class ExprFormatter:
         elif isinstance(what, ops.TableColumn):
             text = self._format_column(self.expr)
         elif isinstance(what, ops.Literal):
-            text = 'Literal[{}]\n  {}'.format(
-                self._get_type_display(), str(what.value)
-            )
+            text = f'Literal[{self._get_type_display()}] {what.value}'
         elif isinstance(what, ops.ScalarParameter):
             text = f'ScalarParameter[{self._get_type_display()}]'
         elif isinstance(what, ops.Node):
@@ -138,7 +136,7 @@ class ExprFormatter:
             # A hack to suppress printing out of a ref that is the result of
             # the top level expression
             refs = [
-                x + '\n' + y
+                f'{x}  {y}'
                 for x, y, op in alias_to_text
                 if not op.equals(what)
             ]
@@ -184,14 +182,14 @@ class ExprFormatter:
     def _format_table(self, expr):
         table = expr.op()
         # format the schema
-        rows = [f'name: {table.name}\nschema:']
+        rows = [f'{table.name}:']
         rows.extend(
             map('  {} : {}'.format, table.schema.names, table.schema.types)
         )
         opname = type(table).__name__
         type_display = self._get_type_display(expr)
         opline = f'{opname}[{type_display}]'
-        return '{}\n{}'.format(opline, self._indent('\n'.join(rows)))
+        return '{} {}'.format(opline, self._indent('\n'.join(rows)))
 
     def _format_column(self, expr):
         # HACK: if column is pulled from a Filter of another table, this parent
@@ -203,10 +201,9 @@ class ExprFormatter:
             self.memo.observe(parent, formatter=self._format_node)
 
         table_formatted = self.memo.get_alias(parent)
-        table_formatted = self._indent(table_formatted)
 
         type_display = self._get_type_display(self.expr)
-        return "Column[{}] '{}' from table\n{}".format(
+        return "Column[{}] '{!r}' from {}".format(
             type_display, col.name, table_formatted
         )
 
